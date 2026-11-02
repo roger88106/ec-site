@@ -31,9 +31,19 @@ class ProductionClassesTest {
     private static final Path MODULE_DESIGNS = Contracts.path("docs/02-設計");
 
     /**
-     * モジュールの設計書の表の「レベル」の行。値の最初の文字がレベルを表す
+     * バックエンドのモジュールのディレクトリ（テストの作業ディレクトリ {@code backend/ecsite} から）。名前がモジュールの設計書のファイル名になる
      */
-    private static final Pattern LEVEL_ROW = Pattern.compile("^\\| レベル \\| (\\S)", Pattern.MULTILINE);
+    private static final String MODULE_SOURCES = "src/main/java/com/ecsite/module";
+
+    /**
+     * モジュールの設計書の表の「レベル」の行。値の最初の文字がレベルを表し、A、B、C のどれかでなければ一致しない（{@code **A**} などは一致しない）
+     */
+    private static final Pattern LEVEL_ROW = Pattern.compile("^\\| レベル \\| ([ABC])", Pattern.MULTILINE);
+
+    /**
+     * レベルの行を読めなかったときの値（失敗の表示に使う）
+     */
+    private static final String NO_LEVEL_ROW = "② にレベルの行がない、または形が違う";
 
     /**
      * 補助の外に書かない、本番のクラスを読み込む呼び出し
@@ -168,32 +178,56 @@ class ProductionClassesTest {
     @Test
     @DisplayName("レベル A のモジュールの一覧は、モジュールの設計書の「レベル」の行が A のモジュールと一致する")
     void levelAModulesMatchDesignDocuments() throws IOException {
-        Set<String> documented;
-        try (Stream<Path> files = Files.list(MODULE_DESIGNS)) {
-            documented = files
-                    .filter(file -> file.getFileName().toString().endsWith(".md"))
-                    .filter(ProductionClassesTest::isLevelA)
-                    .map(file -> file.getFileName().toString().replaceFirst("\\.md$", ""))
-                    .collect(Collectors.toCollection(TreeSet::new));
+        var documented = new TreeSet<String>();
+        for (String module : moduleDirectories()) {
+            if (levelOf(module).equals("A")) {
+                documented.add(module);
+            }
         }
 
         assertThat(documented).isNotEmpty();
         assertThat(ProductionClasses.LEVEL_A_MODULES).containsExactlyInAnyOrderElementsOf(documented);
     }
 
-    /**
-     * モジュールの設計書のレベルが A かを返す。
-     *
-     * @param file モジュールの設計書
-     * @return 「レベル」の行の最初の文字が A なら true
-     */
-    private static boolean isLevelA(Path file) {
-        try {
-            Matcher matcher = LEVEL_ROW.matcher(Files.readString(file, StandardCharsets.UTF_8));
-            return matcher.find() && matcher.group(1).equals("A");
-        } catch (IOException e) {
-            throw new IllegalStateException("モジュールの設計書を読めない: " + file, e);
+    @Test
+    @DisplayName("バックエンドのモジュールごとに、モジュールの設計書にレベルの行がある（共通の設計書は読まない）")
+    void everyModuleDesignHasLevelRow() throws IOException {
+        var modules = moduleDirectories();
+
+        assertThat(modules).isNotEmpty();
+        for (String module : modules) {
+            assertThat(levelOf(module)).as("docs/02-設計/%s.md のレベルの行", module).isIn("A", "B", "C");
         }
+    }
+
+    /**
+     * バックエンドのモジュールのディレクトリの名前を返す。
+     *
+     * @return {@code src/main/java/com/ecsite/module} の下のディレクトリの名前
+     * @throws IOException ディレクトリを読めないとき
+     */
+    private static Set<String> moduleDirectories() throws IOException {
+        try (Stream<Path> dirs = Files.list(Path.of(MODULE_SOURCES))) {
+            return dirs.filter(Files::isDirectory)
+                    .map(dir -> dir.getFileName().toString())
+                    .collect(Collectors.toCollection(TreeSet::new));
+        }
+    }
+
+    /**
+     * モジュールの設計書の「レベル」の行の値（A、B、C）を返す。
+     *
+     * @param module モジュールの名前（設計書のファイル名と同じ）
+     * @return レベル。設計書がない、行がない、または形が違うときは「② にレベルの行がない、または形が違う」の文字列
+     * @throws IOException 設計書を読めないとき
+     */
+    private static String levelOf(String module) throws IOException {
+        Path file = MODULE_DESIGNS.resolve(module + ".md");
+        if (!Files.exists(file)) {
+            return NO_LEVEL_ROW;
+        }
+        Matcher matcher = LEVEL_ROW.matcher(Files.readString(file, StandardCharsets.UTF_8));
+        return matcher.find() ? matcher.group(1) : NO_LEVEL_ROW;
     }
 
     /**

@@ -23,7 +23,7 @@
 //     コメント・文字列の中の呼び出しも読まない
 // 次のときに失敗する：
 //   - AC 一覧の範囲：マーカーの範囲がない、2 組ある、閉じが前にある
-//   - AC 一覧の形：列が違う、行のセルの数が違う、表の行でない行がある（読み飛ばさない）、AC の番号の形が違う。
+//   - AC 一覧の形：範囲に表の見出しの行がない（空、空行だけ）・列が違う・行のセルの数が違う・表の行でない行がある（読み飛ばさない）・AC の番号の形が違う。
 //     表の中に空行がある（GFM の表はそこで切れる。表より前と、表より後の空行は許す）
 //   - AC 一覧の行：同じ AC の行が 2 つある、状態が有効・変更・廃止でない
 //   - モジュール：有効・変更の AC で、③ の名前か common の 1 つでない。廃止の AC は空でもよい
@@ -34,10 +34,13 @@
 //   - 今の内容の根拠：変更と common の AC で、根拠（リンク [<文書の名前>](<パス>) と、その直後の「の「<見出し>」」）がない。
 //     リンクのない「…の「…」」は根拠と読まない（doc-refs が見出しの実在を確認できないため）
 //   - ③ のマーカー：一覧にある ③ のマーカーの組がない、1 組でない、閉じが前にある、「今有効な AC」の節の外にある、節をまたぐ
-//   - ③ の節と表：一覧にある ③ に「今有効な AC」の節がない、表が古い
-//   - ③ の名前：一覧にある ③ の名前に、バックエンドのモジュールのディレクトリがない
+//   - ③ の節と表：一覧にある ③ に「今有効な AC」の節がない、表が古い、節の中でマーカーの範囲の外に AC の表の行（| AC- で始まる行）がある
+//   - ③ の名前：一覧にある ③ の名前に、バックエンドのモジュールのディレクトリがない。
+//     バックエンドのモジュールのディレクトリと ③ の文書の両方がある名前の ③ が、一覧にない（追加し忘れ）
 //   - その他のマーカー：一覧にない ③ にマーカーがある。既知のマーカー（generated:ac-list、generated:module-ac）でない generated: のコメントがある
-//   - 進行中の spec：AC が AC 一覧にない、AC 一覧の元の spec がその spec でない（番号の重なり）、定義の行が崩れている。
+//   - 進行中の spec：AC が AC 一覧にない、AC 一覧の元の spec がその spec でない（番号の重なり）。
+//     定義の行が崩れている（箇条の先頭の太字の AC が、- **AC-<番号>** <文> の形でない）。
+//     崩れた形には、* や + の箇条、字下げ、番号付きの箇条を含む。
 //     spec から消した AC が、AC 一覧に有効・変更で残っている
 //   - テスト名の AC：AC 一覧にない AC 番号がある、廃止の AC を参照する
 //   - テスト名の書き方：範囲（AC-n〜m）、新しい形の後の数字だけの番号（AC-s-n、m）、空白の区切り（AC-n AC-m）
@@ -413,6 +416,8 @@ export function readAcList(document) {
   const lines = text.split('\n')
   const rows = []
   let tableLine = 0
+  // 表の最後の行（見出し、区切り、AC の行のうち最後のもの。1 から）。転記する行を、表が切れない位置に入れるために返す
+  let lastLine = 0
   // 空行は、表より前と表より後だけ許す。GFM の表は空行で切れ、後ろの行が表にならないため
   const filled = []
   for (let number = pair.open + 1; number < pair.close; number++) {
@@ -426,6 +431,7 @@ export function readAcList(document) {
     }
     const cells = splitRow(line)
     tableLine++
+    lastLine = number
     if (cells === null) {
       problems.push(`${number} 行：AC 一覧の範囲の中に、表の行でない行がある（セルの中で改行しない）`)
       continue
@@ -450,7 +456,8 @@ export function readAcList(document) {
     const [label, module, status, origin, changedBy, content] = cells
     rows.push({ ac: toAcKey(match[1]), label, module, status, origin, changedBy, content, line: number })
   }
-  return { rows, problems, pair }
+  if (tableLine === 0) problems.push(`${pair.open} 行：AC 一覧の範囲に、表の見出しの行がない（列は ${LIST_COLUMNS.join('、')}）`)
+  return { rows, problems, pair, lastLine }
 }
 
 /**
@@ -553,8 +560,10 @@ export function parseSpecAcDefinitions(markdown, specRel) {
   const definitions = []
   const problems = []
   const definition = new RegExp(`^- \\*\\*AC-(${AC_NUMBER})\\*\\*\\s+(\\S.*)$`)
+  // 箇条（- * + と番号。字下げしてもよい）の先頭の太字の AC。定義の形でなければ、読み飛ばされて検査を通らないよう、崩れた行として報告する
+  const attempt = /^\s*(?:[-*+]|\d+[.)])\s*\*\*AC-/
   plain.forEach((line, index) => {
-    if (!line.startsWith('- **AC-')) return
+    if (!attempt.test(line)) return
     const match = definition.exec(line)
     if (!match) {
       problems.push(`${index + 1} 行：AC の定義の行が崩れている（- **AC-<番号>** <文> の形にする）`)
@@ -613,7 +622,7 @@ function renderListRow({ ac, specRel, content }) {
  * @throws {Error} AC 一覧を読めないとき
  */
 export function addAcsToList(document, definitions) {
-  const { rows, problems, pair } = readAcList(document)
+  const { rows, problems, pair, lastLine } = readAcList(document)
   if (problems.length > 0) throw new Error(`AC 一覧を読めないので転記しない：${problems.join(' / ')}`)
   const known = new Set(rows.map((row) => String(row.ac)))
   const added = []
@@ -628,7 +637,8 @@ export function addAcsToList(document, definitions) {
   // 行の前に入れる行（1 から）→ 入れる行
   const inserts = new Map()
   for (const definition of added.sort((a, b) => compareAc(a.ac, b.ac))) {
-    const before = rows.find((row) => compareAc(row.ac, definition.ac) > 0)?.line ?? pair.close
+    // 全ての行より後ろの AC は、閉じのマーカーでなく表の最後の行の直後に入れる（範囲の末尾の空行で、表が切れないように）
+    const before = rows.find((row) => compareAc(row.ac, definition.ac) > 0)?.line ?? lastLine + 1
     inserts.set(before, [...(inserts.get(before) ?? []), `${renderListRow(definition)}${eol}`])
   }
   return lines.map((line, index) => [...(inserts.get(index + 1) ?? []), line].join('')).join('')
@@ -643,6 +653,25 @@ export function addAcsToList(document, definitions) {
 export function listModuleNames({ backendDirs, docFiles }) {
   const docs = new Set(docFiles.filter((file) => file.endsWith('.md')).map((file) => file.slice(0, -3)))
   return new Set(backendDirs.filter((name) => docs.has(name)))
+}
+
+/**
+ * ③ の文書の名前を、バックエンドのモジュールのディレクトリと、構造の検査の対象の一覧（FUNCTIONAL_SPECS）に照合する。<br />
+ * 一覧にある ③ にディレクトリがない名前と、ディレクトリがあるモジュールの ③ が一覧にない名前を、問題にする。
+ * 後者を許すと、追加し忘れた ③ が、節の構造の検査と「今有効な AC」の表の照合から外れる。
+ *
+ * @param {object} input
+ * @param {{ file: string, module: string, required: boolean }[]} input.docs ③ の置き場所の文書（required は構造の検査の対象の一覧にあるか）
+ * @param {Set<string>} input.modules ③ のモジュールの名前（listModuleNames の結果）
+ * @returns {string[]} 問題（ファイルのパスを付ける）
+ */
+export function checkModuleDocNames({ docs, modules }) {
+  const problems = []
+  for (const doc of docs) {
+    if (doc.required && !modules.has(doc.module)) problems.push(`${doc.file}：構造の検査の対象の ③ の名前（${doc.module}）に、バックエンドのモジュールのディレクトリがない`)
+    if (!doc.required && modules.has(doc.module)) problems.push(`${doc.file}：モジュールの ③ が構造の検査の対象の一覧（spec-structure.mjs の FUNCTIONAL_SPECS）にない。固定の節に書いて一覧に追加する`)
+  }
+  return problems
 }
 
 /**
@@ -689,6 +718,14 @@ export function checkModuleDoc({ text, module, rows, required }) {
   else if (pair) {
     const next = h2.find((heading) => heading.line > sections[0].line)?.line ?? Infinity
     if (pair.open < sections[0].line || pair.close > next) problems.push(`生成の印（${pair.open} 行、${pair.close} 行）が「${MODULE_AC_SECTION}」の節の外にあるか、節をまたぐ`)
+    else {
+      // 節の中で、範囲の外の AC の表の行。手動で書いた行が、AC 一覧にない AC が ③ に残ったまま検査を通らないようにする
+      const { plain } = readDocument(lf)
+      for (let number = sections[0].line + 1; number < Math.min(next, plain.length + 1); number++) {
+        if (number >= pair.open && number <= pair.close) continue
+        if (plain[number - 1].trimStart().startsWith('| AC-')) problems.push(`${number} 行：「${MODULE_AC_SECTION}」の節の、生成の印の範囲の外に、AC の表の行がある。AC 一覧に書き、--write で範囲の中に生成する`)
+      }
+    }
   }
   if (problems.length > 0) return { problems, stale: false, updated: null }
 
@@ -894,9 +931,8 @@ function main() {
 
   const specDirExists = (rel) => existsSync(path.join(root, SPECS_DIR, rel))
   listProblems.push(...checkAcRows({ rows: list.rows, modules, specDirExists }), ...checkInProgress({ rows: list.rows, specs: inProgress.specs }))
-  const docProblems = []
+  const docProblems = checkModuleDocNames({ docs, modules })
   for (const doc of docs) {
-    if (doc.required && !modules.has(doc.module)) docProblems.push(`${doc.file}：構造の検査の対象の ③ の名前（${doc.module}）に、バックエンドのモジュールのディレクトリがない`)
     docProblems.push(...checkModuleDoc({ text: doc.text, module: doc.module, rows: list.rows, required: doc.required }).problems.map((problem) => `${doc.file}：${problem}`))
   }
 

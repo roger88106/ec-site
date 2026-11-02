@@ -12,6 +12,7 @@ import {
   checkAcRows,
   checkInProgress,
   checkModuleDoc,
+  checkModuleDocNames,
   describeUnreadableTests,
   isStrict,
   listModuleNames,
@@ -79,6 +80,22 @@ describe('spec の AC の取り出し', () => {
     const { problems } = parseSpecAcDefinitions(['- **AC-5-1**', '- **AC-5-2 閉じていない。', '- **AC-5-3**   '].join('\n'), '5-x')
     assert.equal(problems.length, 3)
     assert.match(problems[0], /^1 行：/)
+  })
+
+  test('「- **AC-」以外の形の定義（* + 字下げ 番号付き）を、崩れた定義の行として報告する', () => {
+    const lines = ['* **AC-5-1** 星の箇条。', '+ **AC-5-2** 足す記号の箇条。', '  - **AC-5-3** 字下げした箇条。', '1. **AC-5-4** 番号付きの箇条。', '2) **AC-5-5** 括弧の番号。', '-  **AC-5-6** 空白が 2 つ。']
+    const { definitions, problems } = parseSpecAcDefinitions(lines.join('\n'), '5-x')
+    assert.deepEqual(definitions, [])
+    assert.equal(problems.length, lines.length)
+    assert.match(problems[0], /^1 行：AC の定義の行が崩れている/)
+    assert.match(problems[5], /^6 行：/)
+  })
+
+  test('「- **AC-」以外の形でも、コードブロックの中と、AC でない太字の箇条は問題にしない', () => {
+    const spec = ['```markdown', '* **AC-5-9** コードブロックの中', '```', '* **注意** AC でない太字', '  - AC-5-1 の補足', '- **AC-5-1** 本物。'].join('\n')
+    const { definitions, problems } = parseSpecAcDefinitions(spec, '5-x')
+    assert.deepEqual(problems, [])
+    assert.deepEqual(definitions.map((definition) => definition.ac), ['5-1'])
   })
 
   test('同じ AC を 2 回定義していても、ac-check では問題にしない（構造の検査が見る）', () => {
@@ -413,6 +430,22 @@ describe('AC 一覧の読み取り', () => {
   })
 })
 
+describe('AC 一覧の表の見出しの行', () => {
+  const document = (...inner) => ['# AC 一覧', '', '<!-- generated:ac-list -->', ...inner, '<!-- /generated:ac-list -->', ''].join('\n')
+
+  test('マーカーの範囲が空、または空行だけで、表の見出しの行がなければ問題にする', () => {
+    for (const inner of [[], [''], ['', '']]) {
+      const { problems } = readAcList(document(...inner))
+      assert.equal(problems.length, 1, JSON.stringify(inner))
+      assert.match(problems[0], /表の見出しの行がない/)
+    }
+  })
+
+  test('見出しと区切りの行だけで AC の行が 0 件の範囲は、問題にしない', () => {
+    assert.deepEqual(readAcList(document(...LIST_HEADER)).problems, [])
+  })
+})
+
 describe('AC 一覧の行の検査', () => {
   test('正しい行は通る（有効、変更、廃止、共通）', () => {
     const changed = listRow({ ac: 'AC-2', status: '変更', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '1 円以上。根拠は[注文モジュール](../../docs/03-機能仕様/order.md)の「注文（集約）」。' })
@@ -522,6 +555,27 @@ describe('③ のモジュールの名前', () => {
       docFiles: ['order.md', 'cart.md', 'template.md', 'acceptance-criteria.md', 'glossary.md', 'draft.md'],
     })
     assert.deepEqual([...names].sort(), ['cart', 'order'])
+  })
+})
+
+describe('③ の文書の名前と構造の検査の対象の一覧', () => {
+  const doc = (module, required) => ({ file: `docs/03-機能仕様/${module}.md`, module, required })
+  const modules = new Set(['order', 'wishlist'])
+
+  test('モジュールの ③ が構造の検査の対象の一覧（FUNCTIONAL_SPECS）になければ、追加し忘れとして失敗にする', () => {
+    const problems = checkModuleDocNames({ docs: [doc('order', true), doc('wishlist', false)], modules })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /^docs\/03-機能仕様\/wishlist\.md：モジュールの ③ が構造の検査の対象の一覧（spec-structure\.mjs の FUNCTIONAL_SPECS）にない/)
+  })
+
+  test('一覧にある ③ にバックエンドのモジュールのディレクトリがなければ失敗にする', () => {
+    const problems = checkModuleDocNames({ docs: [doc('legacy', true)], modules })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /バックエンドのモジュールのディレクトリがない/)
+  })
+
+  test('モジュールでない ③ の文書（template、draft）が一覧になくても、問題にしない', () => {
+    assert.deepEqual(checkModuleDocNames({ docs: [doc('template', false), doc('draft', false), doc('order', true)], modules }), [])
   })
 })
 
@@ -640,6 +694,25 @@ describe('③ の「今有効な AC」の表の照合', () => {
     })
   }
 
+  test('「今有効な AC」の節の中で、マーカーの範囲の外に AC の表の行があれば失敗にし、--write もしない', () => {
+    const outside = [
+      moduleDoc(table, { after: ['', '| AC | 今の内容 | 元の spec |', '|----|----------|-----------|', moduleRow('AC-999', '範囲の外。')] }),
+      moduleDoc(table, { before: ['説明。', '', moduleRow('AC-999', '範囲の前。')] }),
+    ]
+    for (const text of outside) {
+      const checked = result(text)
+      assert.equal(checked.problems.length, 1)
+      assert.match(checked.problems[0], /^[0-9]+ 行：「今有効な AC」の節の、生成の印の範囲の外に、AC の表の行がある/)
+      assert.equal(checked.stale, false)
+      assert.equal(checked.updated, null)
+    }
+  })
+
+  test('範囲の外の AC の表の行でも、コードブロックの中と、次の節にあるものは問題にしない', () => {
+    const text = moduleDoc(table, { after: ['', '```markdown', moduleRow('AC-999', '例。'), '```', '', '## 次の節', '', moduleRow('AC-998', '別の節。')] })
+    assert.deepEqual(result(text).problems, [])
+  })
+
   test('構造の検査の対象の一覧にない ③ にマーカーがあれば失敗にする', () => {
     const checked = result(moduleDoc(table), false)
     assert.equal(checked.problems.length, 1)
@@ -687,6 +760,29 @@ describe('③ の表の書き換え（--write）', () => {
   test('「今有効な AC」の節がない ③ は書き換えない', () => {
     const text = moduleDoc(table).replace('## 今有効な AC', '## 今の AC')
     assert.equal(checkModuleDoc({ text, module: 'order', rows, required: true }).updated, null)
+  })
+})
+
+describe('AC 一覧への転記の位置', () => {
+  const definition = (ac) => ({ ac, specRel: '5-x', content: '転記する。' })
+  const added = (ac) => `| AC-${ac} |  | 有効 | [5](../08-spec/5-x/spec.md) | — | 転記する。 |`
+
+  test('既存の行の全てより後ろの AC は、範囲の末尾に空行があっても、最後の AC の行の直後に入れる', () => {
+    const base = listDoc(listRow({ ac: 'AC-1' })).replace('\n<!-- /generated:ac-list -->', '\n\n\n<!-- /generated:ac-list -->')
+    const expected = ['# AC 一覧', '', '説明。', '', '<!-- generated:ac-list -->', ...LIST_HEADER, listRow({ ac: 'AC-1' }), added(5), '', '', '<!-- /generated:ac-list -->', ''].join('\n')
+    assert.equal(addAcsToList(base, [definition(5)]), expected)
+  })
+
+  test('既存の行が 0 件なら、区切りの行の直後に入れる', () => {
+    const base = listDoc().replace('\n<!-- /generated:ac-list -->', '\n\n<!-- /generated:ac-list -->')
+    const expected = ['# AC 一覧', '', '説明。', '', '<!-- generated:ac-list -->', ...LIST_HEADER, added(5), added(6), '', '<!-- /generated:ac-list -->', ''].join('\n')
+    assert.equal(addAcsToList(base, [definition(6), definition(5)]), expected)
+  })
+
+  test('既存の行の間の AC は、その順の位置に入れる', () => {
+    const base = listDoc(listRow({ ac: 'AC-1' }), listRow({ ac: 'AC-9' }))
+    const expected = listDoc(listRow({ ac: 'AC-1' }), added(5), listRow({ ac: 'AC-9' }), added(12))
+    assert.equal(addAcsToList(base, [definition(12), definition(5)]), expected)
   })
 })
 

@@ -65,6 +65,21 @@ describe('1→10 のアーカイブの進捗の検査', () => {
     }
   })
 
+  test('archive/mvp/ の下の、名前が MVP の形（0 で始まる 3 桁の番号）でない spec のディレクトリを、食い違いとして返す。ファイルは見ない', () => {
+    const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      for (const dir of ['archive/mvp/001-catalog', 'archive/mvp/019-done', 'archive/mvp/330-x', 'archive/mvp/7-seven', 'archive/mvp/0019-x', 'archive/mvp/012', 'archive/1to10/3-cart']) {
+        mkdirSync(path.join(specsDir, dir), { recursive: true })
+      }
+      writeFileSync(path.join(specsDir, 'archive/mvp/mvp.md'), '説明\n')
+      const problems = checkArchiveGroups(specsDir)
+      assert.deepEqual(problems.map((line) => line.split('：')[0]), ['archive/mvp/0019-x', 'archive/mvp/012', 'archive/mvp/330-x', 'archive/mvp/7-seven'])
+      assert.match(problems[0], /1→10 の spec を誤って mvp\/ に移していないか/)
+    } finally {
+      rmSync(specsDir, { recursive: true, force: true })
+    }
+  })
+
   test('1→10 の spec に tasks が 1 つもなければ、「tasks がない」の食い違いとして返す', () => {
     assert.deepEqual(checkArchivedTasks(new Map([['9-none', { total: 0, done: 0 }]])), ['1→10 の spec 9-none：tasks がない'])
   })
@@ -162,6 +177,12 @@ describe('script として実行する', () => {
       assert.equal(result.status, 1, `${group}: ${result.stdout}`)
       assert.match(result.stdout, new RegExp(`archive/${group}`))
     }
+  })
+
+  test('1→10 の spec を誤って archive/mvp/ に移したら、tasks が未完了でも見落とさず、失敗する', () => {
+    const result = run('- [x] **T3-01-01** a', { 'docs/08-spec/archive/mvp/330-x/tasks/01.md': '- [ ] **T330-01-01** a\n' })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /archive\/mvp\/330-x/)
   })
 
   test('MVP の部分を見ない：README の表と mvp.md の有無や食い違いによらず成功する', () => {

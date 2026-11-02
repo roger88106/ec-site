@@ -4,6 +4,8 @@
 // - docs/08-spec/archive/1to10/ の下の spec が 0 件なら、食い違いとして報告する（何も見ずに通らないため）
 // - docs/08-spec/archive/ の下に mvp と 1to10 以外のディレクトリがあれば、食い違いとして報告する。
 //   1→10 の spec を別の場所に移すと、この検査が読まずに通るため
+// - docs/08-spec/archive/mvp/ の下のディレクトリの名前が、MVP の形（0 で始まる 3 桁の番号）でなければ、食い違いとして報告する。
+//   1→10 の spec を誤って mvp に移すと、この検査が読まずに通るため
 // MVP の進捗（README の進捗の表、MVP の完成までの一覧、MVP の spec の tasks の照合）は見ない。MVP の spec は完了してアーカイブに移した。
 // 失敗したとき：アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを [x] にする。
 // アーカイブの後、マージの前に追加するタスクは、アーカイブのタスクの後に、済ませる commit で [x] の行として追加する（開発の進め方の「規模」）。
@@ -71,21 +73,33 @@ export function readArchivedTasks(specsDir) {
   return tasks
 }
 
+/** MVP の spec のディレクトリの名前（0 で始まる 3 桁の番号。1→10 の spec は 0 で埋めない） */
+const MVP_SPEC_DIR = /^0\d{2}-/
+
 /**
- * アーカイブの下のまとまり（ディレクトリ）が、mvp と 1to10 だけかを確認する。
- * 理由：1→10 の spec を別のまとまりに移すと、この検査が読まずに通るため。
+ * アーカイブの下のまとまり（ディレクトリ）が、mvp と 1to10 だけかを確認し、mvp の下に MVP の形でない spec がないかを確認する。
+ * 理由：1→10 の spec を別のまとまりや mvp に移すと、この検査が読まずに通るため。
  *
  * @param {string} specsDir docs/08-spec のパス
- * @returns {string[]} 知らないまとまりの説明（名前の順）
+ * @returns {string[]} 知らないまとまりと、mvp の下の MVP の形でない spec の説明（名前の順）
  */
 export function checkArchiveGroups(specsDir) {
   const archiveDir = path.join(specsDir, ARCHIVE)
   if (!existsSync(archiveDir)) return []
-  return readdirSync(archiveDir, { withFileTypes: true })
+  const unknown = readdirSync(archiveDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !ARCHIVE_GROUPS.includes(entry.name))
     .map((entry) => entry.name)
     .sort()
     .map((name) => `${ARCHIVE}/${name}：アーカイブの下のまとまりは ${ARCHIVE_GROUPS.join('、')} だけにする（1→10 の spec は ${ARCHIVE_1TO10}/ に移す）`)
+  const mvpDir = path.join(archiveDir, 'mvp')
+  const misplaced = existsSync(mvpDir)
+    ? readdirSync(mvpDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory() && !MVP_SPEC_DIR.test(entry.name))
+        .map((entry) => entry.name)
+        .sort()
+        .map((name) => `${ARCHIVE}/mvp/${name}：mvp の下の spec は、0 で始まる 3 桁の番号の名前だけにする（1→10 の spec を誤って mvp/ に移していないか。${ARCHIVE_1TO10}/ に移す）`)
+    : []
+  return [...unknown, ...misplaced]
 }
 
 /**

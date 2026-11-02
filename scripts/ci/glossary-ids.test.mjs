@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { GLOSSARIES, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryIds } from './glossary-ids.mjs'
+import { GLOSSARIES, checkGlossary, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryIds } from './glossary-ids.mjs'
 
 const GLOSSARY = [
   '| 用語 | 識別子 | 意味 |',
@@ -54,6 +54,31 @@ describe('用語集の識別子の検査', () => {
     assert.equal(isSearchedFile('scripts/dev/lib/slot.test.mjs'), true)
     assert.equal(isSearchedFile('backend/ecsite/src/Foo.java'), true)
     assert.equal(isSearchedFile('frontend/store/logo.png'), false)
+  })
+})
+
+describe('用語集の表の見出し', () => {
+  test('見出しの行が「用語、識別子、…」の表は、複数あっても、他の見出しの表があっても問題にしない', () => {
+    const markdown = [GLOSSARY, '', '| 配送業者 | 配送中 | 返送 |', '|---|---|---|', '| a | b | c |', '', '| 用語 | 識別子 | 発行元 |', '|------|--------|--------|', '| 追加 | `Added` | x |'].join('\n')
+    assert.deepEqual(checkGlossary(markdown), [])
+  })
+
+  test('見出しの行の 2 列目が「識別子」でない表（列の入れ替え、識別子の列がない表）を問題にする', () => {
+    const swapped = ['| 用語 | 意味 | 識別子 |', '|------|------|--------|', '| 注文 | 注文 | `Order` |'].join('\n')
+    const identifierFirst = ['| 識別子 | 用語 | 意味 |', '|--------|------|------|', '| `Order` | 注文 | 注文 |'].join('\n')
+    const twoColumns = ['| 用語 | 意味 |', '|------|------|', '| 注文 | 注文 |'].join('\n')
+    for (const markdown of [swapped, identifierFirst, twoColumns]) {
+      const problems = checkGlossary([GLOSSARY, '', markdown].join('\n'))
+      assert.equal(problems.length, 1, markdown)
+      assert.match(problems[0], /^[0-9]+ 行：表の見出しの行の 2 列目が「識別子」でない/)
+    }
+  })
+
+  test('識別子を 1 つも取り出せない用語集（列を入れ替えた表だけ、表がない）を問題にする', () => {
+    const swapped = ['| 用語 | 意味 | 識別子 |', '|------|------|--------|', '| 注文 | 注文 | `Order` |'].join('\n')
+    for (const markdown of [swapped, '# 用語集\n\n説明だけ。\n']) {
+      assert.ok(checkGlossary(markdown).some((problem) => /識別子を 1 つも取り出せない/.test(problem)), markdown)
+    }
   })
 })
 

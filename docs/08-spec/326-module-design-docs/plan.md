@@ -108,7 +108,7 @@
 | BR-9 の定義を調べ、扱いを決める（spec の今の状態に「2 つの spec で定義されている」と書いたが、段階 2 の調査で 002 だけと分かった）。段階 2 の最初に行う | 本書の「BR の行き先」 | 002 の BR-9 と、007 の BR-14、009 の BR-18 を読み、行き先を表に書く |
 | 「BR の行き先」に BR-1〜BR-40 の全件があることを確認する | 本書の「BR の行き先」 | 段階 5 の最後のレビューの前に、表を読む |
 | ③ の業務規則に BR の番号を残し、`writing.md` の「表と注」の例外に加える | `docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md`、`docs/03-機能仕様/template.md` | 文書を読む。`doc-refs` が通る |
-| 共通の BR（行き先が `common` の 9 件）を、今の規則がある共通の文書（② の共通の文書、規則の文書、手順書）に移し、文の末尾に番号を付ける。書き方の規則の例外を広げる（利用者の確認待ち。段階 2 のレビューで、承認の記録がないと指摘された） | 共通の文書、`docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md` | T326-06-07 の確認方法 |
+| 共通の BR（行き先が `common` の 9 件）を、今の規則がある共通の文書（② の共通の文書、規則の文書、手順書）に移し、文の末尾に番号を付ける。書き方の規則の例外を広げる（spec の確認 12。利用者、2026-11-03） | 共通の文書、`docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md` | T326-06-07 の確認方法 |
 
 - 確認 3 が案 A である理由：テスト名の BR の番号（37 ファイル）が、アーカイブでなく ③ の規則を指せる。
 - 確認 3 が案 B のときは、③ に番号を書かず、テスト名の BR の番号はアーカイブの番号を指したままにする。案 C のときは、③ に番号を書かず、テスト名から BR の番号を削る。テスト名を変える範囲が広がり、DN-326-1 の本番のコードを変えない条件に、テストの変更を加えるかを決める必要がある。
@@ -122,7 +122,7 @@
 |----|-----------|----------|------|
 | BR-1 税込価格 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | tax：業務規則の「税込価格」 | 有効 |
 | BR-2 C 側に表示される商品 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog：業務規則の「C 側の表示と検索」の「表示される条件」 | 有効 |
-| BR-3 日時 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-3 日時 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | common：[フロントのアーキテクチャ](../../02-設計/frontend-architecture.md)の「共通の決まり」、[管理画面の構成](../../02-設計/apps/admin.md)の「表示の決まり」 | 有効 |
 | BR-4 価格の表示 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | storefront：業務規則の「価格の表示」 | 有効。③ になかった文を、意味を変えずに加えた |
 | BR-5 品番 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog：業務規則の「商品（集約）」 | 有効 |
 | BR-6 送料 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：見積もり | 有効。金額の既定（1,000 円）、標準税率、設定で変えられることは、コード（`OrderProperties`）と一致する |
@@ -131,7 +131,7 @@
 | BR-9 注文の状態 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：状態の遷移 | 有効。定義は 002 にだけある。「支払待ち」と「出荷済み」は BR-14 と BR-18 が加える。今の ③ の遷移は、BR-9 の遷移を全て含む |
 | BR-10 注文番号 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：注文の成立 | 有効。形式は 002 の plan で決めた形（注文日の 8 桁、ハイフン、ランダムな 6 桁）を書いた |
 | BR-11 引当と販売可能数 | [002](../archive/mvp/002-cart-and-order/spec.md) | inventory：業務規則の「引当」、cart：業務規則の「品目の追加と変更」（カートへの追加を販売可能数で判定する部分） | 変更。元の BR は「在庫数を減らすのは注文の成立だけ」だが、③ とコードでは、運営者の調整・注文の成立・キャンセルで在庫数が変わる。引当が在庫数を減らさない意味は保つ。カートへの追加を販売可能数で判定する部分は、カートの ③ で扱う |
-| BR-12 職務 | [003](../archive/mvp/003-auth/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-12 職務 | [003](../archive/mvp/003-auth/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「業務のコードとの境界」 | 有効。共通の文書になかった文を、意味を変えずに加えた。職務の一覧（MVP の 2 つ）は、今は[ロールと権限の対応表](../../02-設計/role-permissions.md)が realm の設定から作る |
 | BR-13 会員の識別 | [003](../archive/mvp/003-auth/spec.md) | member：業務規則の「会員」 | 有効。元の定義の 2 項目それぞれに番号を付けた |
 | BR-14 注文の状態 | [007](../archive/mvp/007-payment/spec.md) | order：状態の遷移 | 有効 |
 | BR-15 支払の状態 | [007](../archive/mvp/007-payment/spec.md) | payment：業務規則の「支払（集約）」「支払の状態」と、状態の遷移 | 有効 |
@@ -149,17 +149,17 @@
 | BR-27 年齢層 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」 | 有効 |
 | BR-28 レポートの権限 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「権限」 | 有効。元の定義の 2 項目それぞれに番号を付けた。③ になかった文を、意味を変えずに加えた |
 | BR-29 性別 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」（「不明」の扱い）、order：業務規則の「注文時の年齢と性別」（選べる値） | order の分（記録する値と不明の扱い）は有効。テスト名の BR-29 は、order と reporting の両方にある |
-| BR-30 外部サービスの mock | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-32 認可の既定 | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-33 値の置き場所 | [016](../archive/mvp/016-master-data/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-30 外部サービスの mock | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「外部連携（決済・物流）」 | 有効 |
+| BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「設定の値の型」、[環境変数](../../06-手順書/environment.md)の「管理画面」と「店舗画面」 | 有効 |
+| BR-32 認可の既定 | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「業務のコードとの境界」 | 有効 |
+| BR-33 値の置き場所 | [016](../archive/mvp/016-master-data/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「値の置き場所」 | 有効 |
 | BR-34 地方公共団体コード | [016](../archive/mvp/016-master-data/spec.md) | region：業務規則の「マスターデータ」 | 有効 |
 | BR-35 お届け先の写し | [016](../archive/mvp/016-master-data/spec.md) | order：注文（集約） | 有効 |
 | BR-36 郵便番号の使い方 | [016](../archive/mvp/016-master-data/spec.md) | region：業務規則の「マスターデータ」 | 有効。③ になかった文を、意味を変えずに加えた |
 | BR-37 郵便番号のマスターデータ | [016](../archive/mvp/016-master-data/spec.md) | region：業務規則の「マスターデータ」 | 有効。元の定義の 3 項目それぞれに番号を付けた（1 項目は ③ になかった文を加えた） |
-| BR-38 保存期間 | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-39 外部サービスのエラー | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-40 外部サービスとの通信 | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-38 保存期間 | [017](../archive/mvp/017-stability/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「水平スケール」 | 有効 |
+| BR-39 外部サービスのエラー | [017](../archive/mvp/017-stability/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「外部連携（決済・物流）」、[API の規約](../../05-開発規則/api-conventions.md)の「HTTP ステータス」 | 有効 |
+| BR-40 外部サービスとの通信 | [017](../archive/mvp/017-stability/spec.md) | common：[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「トランザクションは application」、[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「外部連携（決済・物流）」 | 有効 |
 
 - BR-9 の調査（T326-02-01）：BR-9 の定義は 002 にだけある。007 の BR-14 と 009 の BR-18 は、BR-9 に遷移を加える別の BR で、BR-9 を再定義していない。行は 1 つで、BR-9 は order に移す。`git grep -n "BR-9"` でコードの側に見つかるのは、次の 3 つ。どれも 002 の BR-9 の注文の状態を指す。
   - フロントのテスト名（`orderLabels.test.ts` の「BR-9、14」「BR-9、14、18」）

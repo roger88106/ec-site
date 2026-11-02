@@ -227,7 +227,7 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 
 - `@Transactional` は application の service のクラスに付ける。参照だけなら `readOnly = true`。api と presentation には付けない。
 - 例外：infrastructure で、別のトランザクションが必要なもの（呼び出し元と別に確定させる記録など）。付けた所に理由を書く。
-- 外部サービス（決済、画像の変換、ファイル保存、物流、メールなど）は、トランザクションの外で呼び、タイムアウトを設定する。呼ぶ前の読み取りと呼んだ後の更新を、それぞれのトランザクションにする（「標準の構成」「外部の呼び出しの前の読み取り」）。イベントのリスナーで呼ぶときは、リスナーをトランザクションなし（`@ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)`）にする。
+- 外部サービス（決済、画像の変換、ファイル保存、物流、メールなど）は、トランザクションの外で呼び、タイムアウトを設定する（BR-40）。呼ぶ前の読み取りと呼んだ後の更新を、それぞれのトランザクションにする（「標準の構成」「外部の呼び出しの前の読み取り」）。イベントのリスナーで呼ぶときは、リスナーをトランザクションなし（`@ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)`）にする。
 - 外で呼べないものは、呼ぶ所と設計書に理由を書く（出荷のメール：[通知モジュール](../03-機能仕様/notification.md)）。
 
 理由：1 つの操作を 1 つのトランザクションにし、境界を層で決めるため。外部サービスを待つ間に DB の接続を持つと、外部サービスが遅いときに接続が尽き、関係のない操作まで止まるため。
@@ -313,7 +313,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 
 - 設定は `@ConfigurationProperties` の record で受け、`@Validated` を付ける。型は使う層に置く（画像の変換の設定は `infrastructure/converter/` など）。
 - 接頭辞は `ecsite.<モジュール>`、まとまりを分けるときは `ecsite.<モジュール>.<範囲>`（`ecsite.media.storage` など）。モジュールでない共通の設定は `ecsite.<範囲>`（`ecsite.security` など）。
-- 環境で変わる値（接続先、資格情報、ID、バケット名）は既定値を持たず必須にする。環境によらない値（上限、時間など）だけ既定値を持つ ※4。
+- 環境で変わる値（接続先、資格情報、ID、バケット名）は既定値を持たず必須にする（BR-31）。環境によらない値（上限、時間など）だけ既定値を持つ ※4。
 - モジュールの `@Configuration` のクラスは、`infrastructure/`（またはその下）に置く。
 - presentation は、設定の値の型（`@ConfigurationProperties` を付けたクラス）を受け取らない。設定の値が必要なときは、application の service が設定の値の型を読み、view で返す。`api/` は対象にしない。
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。

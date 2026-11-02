@@ -60,7 +60,7 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 
 ## 2. 管理画面
 
-ビルド時に埋め込む。本番ビルドでは、`VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がなければビルドに失敗する（既定値は開発サーバーとテストでだけ使う）。
+ビルド時に埋め込む。本番ビルドでは、`VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がなければビルドに失敗する（既定値は開発サーバーとテストでだけ使う）（BR-31）。
 
 | 環境変数 | 内容 | 既定 |
 |----------|------|------|
@@ -82,6 +82,6 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `AUTH_URL` | 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を生成する | `http://localhost:3000` |
 | `STORE_COOKIE_PREFIX` | 店舗画面の Cookie（Auth.js のセッション・CSRF・PKCE など、カート）の名前の前に付ける接頭辞。HTTPS の `__Secure-`・`__Host-` があれば、その後ろに付ける。英数字と `-`、`_` だけ（それ以外は起動に失敗する）。任意。`slot.mjs run` が設定する（[開発環境の起動](setup.md)の「スロット」） | 空（今の名前のまま） |
 
-※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS` 以外がなければ起動に失敗する。
+※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS` 以外がなければ起動に失敗する（BR-31）。
 
 ※2：0 以上の整数。0 はキャッシュしない設定。小数、負の数、数でない値は起動に失敗する。

@@ -1,71 +1,88 @@
 # ロールと権限の対応表
 
-どのロールが、どの API の操作を実行できるかの一覧。認証と認可の方式は [バックエンドのアーキテクチャ](backend-architecture.md)の「認証・認可」、ロールと権限の名前の意味は [用語集](../03-機能仕様/glossary.md)にある。
+どのロールが、どの API の操作を実行できるかの一覧。管理 API は、操作ごとの権限と、ロールごとの権限の表をつないで読む。認証と認可の方式は [バックエンドのアーキテクチャ](backend-architecture.md)の「認証・認可」、ロールと権限の名前の意味は [用語集](../03-機能仕様/glossary.md)にある。
 
 - 表は `scripts/ci/role-permissions.mjs` が、管理 API の契約（各操作の `x-required-permission`）、運営者の realm の設定（`docker/keycloak/realms/ec-admin-realm.json` のロール）、店舗 API の契約（各操作の `security`）から作る。手動で修正しない。
 - 契約か realm の設定を変えると、CI の検査が失敗する。ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認して commit する。
 - 管理画面は、権限のない画面のうちレポートの画面だけをメニューから外す（[管理画面の構成](apps/admin.md)）。ほかの操作は画面に表示されるが、権限がなければ API が 403 を返す。
 - 操作のパスは、契約の `servers.url`（管理 API は `/api/admin`、店舗 API は `/api/store`）の後ろの部分。
+- 「ロールと権限」の節の表は 2 つある。ロールの説明の表と、ロールごとの権限の表である。管理 API の表にロールの列はなく、操作を実行できるロールは、管理 API の表の「権限」の列と、ロールごとの権限の表で分かる。
 - 管理 API の「ログインだけ」は、権限によらず、運営者としてログインしていればよい操作。店舗 API の「会員」はログインが必要な操作、「任意」はログインしていれば会員として扱う操作（カート）、「不要」はログインが必要ない操作。
 
 <!-- generated:role-permissions -->
 ### ロールと権限
 
-| ロール | 説明 | tax:read | tax:write | category:read | category:write | product:read | product:write | inventory:read | inventory:write | order:read | order:write | report-sales-trend:read | report-variant-sales:read | report-customer:read |
-|--------|------|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `administrator` | 管理者：全ての権限 | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| `viewer` | 閲覧者：参照の権限全て | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  |  |  |  |
-| `manager` | 管理職：参照の権限全てと、全てのレポート | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  | ○ | ○ | ○ |
-| `sales` | 営業：参照の権限全てと、売上の推移を除くレポート | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  |  | ○ | ○ |
+| ロール | 説明 |
+|--------|------|
+| `administrator` | 管理者：全ての権限 |
+| `viewer` | 閲覧者：参照の権限全て |
+| `manager` | 管理職：参照の権限全てと、全てのレポート |
+| `sales` | 営業：参照の権限全てと、売上の推移を除くレポート |
+
+| 権限 | `administrator` | `viewer` | `manager` | `sales` |
+|------|---|---|---|---|
+| `tax:read` | ○ | ○ | ○ | ○ |
+| `tax:write` | ○ |  |  |  |
+| `category:read` | ○ | ○ | ○ | ○ |
+| `category:write` | ○ |  |  |  |
+| `product:read` | ○ | ○ | ○ | ○ |
+| `product:write` | ○ |  |  |  |
+| `inventory:read` | ○ | ○ | ○ | ○ |
+| `inventory:write` | ○ |  |  |  |
+| `order:read` | ○ | ○ | ○ | ○ |
+| `order:write` | ○ |  |  |  |
+| `report-sales-trend:read` | ○ |  | ○ |  |
+| `report-variant-sales:read` | ○ |  | ○ | ○ |
+| `report-customer:read` | ○ |  | ○ | ○ |
 
 ### 管理 API
 
-| 操作 | 内容 | 権限 | `administrator` | `viewer` | `manager` | `sales` |
-|------|------|------|---|---|---|---|
-| `GET /tax-categories` | 税区分の一覧（税率を含む） | `tax:read` | ○ | ○ | ○ | ○ |
-| `POST /tax-categories` | 税区分の登録 | `tax:write` | ○ |  |  |  |
-| `GET /tax-categories/{taxCategoryId}` | 税区分の取得（税率を含む） | `tax:read` | ○ | ○ | ○ | ○ |
-| `PUT /tax-categories/{taxCategoryId}/rates` | 税率の一覧を置き換える | `tax:write` | ○ |  |  |  |
-| `GET /categories` | カテゴリの木 | `category:read` | ○ | ○ | ○ | ○ |
-| `POST /categories` | カテゴリの登録 | `category:write` | ○ |  |  |  |
-| `PUT /categories/order` | 兄弟カテゴリの並び順を変更する | `category:write` | ○ |  |  |  |
-| `GET /categories/{categoryId}` | カテゴリの取得 | `category:read` | ○ | ○ | ○ | ○ |
-| `PUT /categories/{categoryId}` | カテゴリ名の変更 | `category:write` | ○ |  |  |  |
-| `DELETE /categories/{categoryId}` | カテゴリの削除 | `category:write` | ○ |  |  |  |
-| `GET /products` | 商品の一覧・絞り込み | `product:read` | ○ | ○ | ○ | ○ |
-| `POST /products` | 商品の登録 | `product:write` | ○ |  |  |  |
-| `GET /products/{productId}` | 商品の詳細（バリアントを含む） | `product:read` | ○ | ○ | ○ | ○ |
-| `PUT /products/{productId}` | 商品の編集 | `product:write` | ○ |  |  |  |
-| `DELETE /products/{productId}` | 商品の削除 | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/publish` | 公開する | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/unpublish` | 非公開にする | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/discontinue` | 販売終了にする | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/publication-period` | 公開期間の設定 | `product:write` | ○ |  |  |  |
-| `POST /products/{productId}/variants` | バリアントの登録 | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/variants/order` | バリアントの表示順を変更する | `product:write` | ○ |  |  |  |
-| `DELETE /products/{productId}/variants/{variantId}` | バリアントの削除 | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/variants/{variantId}/suspend` | バリアントを販売停止にする | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/variants/{variantId}/resume` | バリアントの販売停止を解除する | `product:write` | ○ |  |  |  |
-| `POST /products/{productId}/image-uploads` | 画像のアップロードを受け付ける | `product:write` | ○ |  |  |  |
-| `POST /products/{productId}/images` | 受け付けた画像を登録する | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/images/order` | 画像の並び順の変更 | `product:write` | ○ |  |  |  |
-| `DELETE /products/{productId}/images/{imageId}` | 画像の削除 | `product:write` | ○ |  |  |  |
-| `PUT /products/{productId}/variants/{variantId}/image` | バリアントの画像の指定 | `product:write` | ○ |  |  |  |
-| `GET /inventory/variants/{variantId}` | バリアントの在庫数 | `inventory:read` | ○ | ○ | ○ | ○ |
-| `POST /inventory/variants/{variantId}/adjustments` | 在庫の調整 | `inventory:write` | ○ |  |  |  |
-| `GET /inventory/variants/{variantId}/adjustments` | 在庫調整の履歴 | `inventory:read` | ○ | ○ | ○ | ○ |
-| `GET /inventory/stock-summaries` | 商品ごとの在庫数の合計 | `inventory:read` | ○ | ○ | ○ | ○ |
-| `GET /orders` | 注文一覧 | `order:read` | ○ | ○ | ○ | ○ |
-| `GET /orders/{orderId}` | 注文の詳細 | `order:read` | ○ | ○ | ○ | ○ |
-| `PUT /orders/{orderId}/cancellation-request/approve` | キャンセルの申請の承認 | `order:write` | ○ |  |  |  |
-| `PUT /orders/{orderId}/cancellation-request/reject` | キャンセルの申請の却下 | `order:write` | ○ |  |  |  |
-| `PUT /orders/{orderId}/cancel` | 運営者の判断によるキャンセル | `order:write` | ○ |  |  |  |
-| `POST /orders/{orderId}/shipment` | 出荷の登録 | `order:write` | ○ |  |  |  |
-| `GET /me` | 自分の権限の一覧 | ログインだけ | ○ | ○ | ○ | ○ |
-| `GET /reports/sales-trend` | 売上の推移 | `report-sales-trend:read` | ○ |  | ○ |  |
-| `GET /reports/variant-sales` | バリアントの売れ行き | `report-variant-sales:read` | ○ |  | ○ | ○ |
-| `GET /reports/customer-breakdown` | 地域・年齢層・性別 | `report-customer:read` | ○ |  | ○ | ○ |
-| `GET /reports/settings` | レポートの設定 | ログインだけ | ○ | ○ | ○ | ○ |
+| 操作 | 内容 | 権限 |
+|------|------|------|
+| `GET /tax-categories` | 税区分の一覧（税率を含む） | `tax:read` |
+| `POST /tax-categories` | 税区分の登録 | `tax:write` |
+| `GET /tax-categories/{taxCategoryId}` | 税区分の取得（税率を含む） | `tax:read` |
+| `PUT /tax-categories/{taxCategoryId}/rates` | 税率の一覧を置き換える | `tax:write` |
+| `GET /categories` | カテゴリの木 | `category:read` |
+| `POST /categories` | カテゴリの登録 | `category:write` |
+| `PUT /categories/order` | 兄弟カテゴリの並び順を変更する | `category:write` |
+| `GET /categories/{categoryId}` | カテゴリの取得 | `category:read` |
+| `PUT /categories/{categoryId}` | カテゴリ名の変更 | `category:write` |
+| `DELETE /categories/{categoryId}` | カテゴリの削除 | `category:write` |
+| `GET /products` | 商品の一覧・絞り込み | `product:read` |
+| `POST /products` | 商品の登録 | `product:write` |
+| `GET /products/{productId}` | 商品の詳細（バリアントを含む） | `product:read` |
+| `PUT /products/{productId}` | 商品の編集 | `product:write` |
+| `DELETE /products/{productId}` | 商品の削除 | `product:write` |
+| `PUT /products/{productId}/publish` | 公開する | `product:write` |
+| `PUT /products/{productId}/unpublish` | 非公開にする | `product:write` |
+| `PUT /products/{productId}/discontinue` | 販売終了にする | `product:write` |
+| `PUT /products/{productId}/publication-period` | 公開期間の設定 | `product:write` |
+| `POST /products/{productId}/variants` | バリアントの登録 | `product:write` |
+| `PUT /products/{productId}/variants/order` | バリアントの表示順を変更する | `product:write` |
+| `DELETE /products/{productId}/variants/{variantId}` | バリアントの削除 | `product:write` |
+| `PUT /products/{productId}/variants/{variantId}/suspend` | バリアントを販売停止にする | `product:write` |
+| `PUT /products/{productId}/variants/{variantId}/resume` | バリアントの販売停止を解除する | `product:write` |
+| `POST /products/{productId}/image-uploads` | 画像のアップロードを受け付ける | `product:write` |
+| `POST /products/{productId}/images` | 受け付けた画像を登録する | `product:write` |
+| `PUT /products/{productId}/images/order` | 画像の並び順の変更 | `product:write` |
+| `DELETE /products/{productId}/images/{imageId}` | 画像の削除 | `product:write` |
+| `PUT /products/{productId}/variants/{variantId}/image` | バリアントの画像の指定 | `product:write` |
+| `GET /inventory/variants/{variantId}` | バリアントの在庫数 | `inventory:read` |
+| `POST /inventory/variants/{variantId}/adjustments` | 在庫の調整 | `inventory:write` |
+| `GET /inventory/variants/{variantId}/adjustments` | 在庫調整の履歴 | `inventory:read` |
+| `GET /inventory/stock-summaries` | 商品ごとの在庫数の合計 | `inventory:read` |
+| `GET /orders` | 注文一覧 | `order:read` |
+| `GET /orders/{orderId}` | 注文の詳細 | `order:read` |
+| `PUT /orders/{orderId}/cancellation-request/approve` | キャンセルの申請の承認 | `order:write` |
+| `PUT /orders/{orderId}/cancellation-request/reject` | キャンセルの申請の却下 | `order:write` |
+| `PUT /orders/{orderId}/cancel` | 運営者の判断によるキャンセル | `order:write` |
+| `POST /orders/{orderId}/shipment` | 出荷の登録 | `order:write` |
+| `GET /me` | 自分の権限の一覧 | ログインだけ |
+| `GET /reports/sales-trend` | 売上の推移 | `report-sales-trend:read` |
+| `GET /reports/variant-sales` | バリアントの売れ行き | `report-variant-sales:read` |
+| `GET /reports/customer-breakdown` | 地域・年齢層・性別 | `report-customer:read` |
+| `GET /reports/settings` | レポートの設定 | ログインだけ |
 
 ### 店舗 API
 

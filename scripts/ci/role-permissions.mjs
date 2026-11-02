@@ -185,16 +185,20 @@ export function renderTables({ admin, store, realm }) {
   const lines = []
 
   lines.push('### ロールと権限', '')
-  lines.push(`| ロール | 説明 | ${permissions.join(' | ')} |`)
-  lines.push(`|--------|------|${permissions.map(() => '---|').join('')}`)
-  for (const role of roles) {
-    const cells = permissions.map((permission) => mark(role.permissions.includes(permission)))
-    lines.push(`| \`${role.name}\` | ${role.description} | ${cells.join(' | ')} |`)
+  lines.push('| ロール | 説明 |')
+  lines.push('|--------|------|')
+  for (const role of roles) lines.push(`| \`${role.name}\` | ${role.description} |`)
+  lines.push('')
+  lines.push(`| 権限 | ${roles.map((role) => `\`${role.name}\``).join(' | ')} |`)
+  lines.push(`|------|${roles.map(() => '---|').join('')}`)
+  for (const permission of permissions) {
+    const cells = roles.map((role) => mark(role.permissions.includes(permission)))
+    lines.push(`| \`${permission}\` | ${cells.join(' | ')} |`)
   }
 
   lines.push('', '### 管理 API', '')
-  lines.push(`| 操作 | 内容 | 権限 | ${roles.map((role) => `\`${role.name}\``).join(' | ')} |`)
-  lines.push(`|------|------|------|${roles.map(() => '---|').join('')}`)
+  lines.push('| 操作 | 内容 | 権限 |')
+  lines.push('|------|------|------|')
   for (const operation of admin) {
     const name = `${operation.method} ${operation.path}`
     if (!operation.permission) {
@@ -207,8 +211,7 @@ export function renderTables({ admin, store, realm }) {
       continue
     }
     const permission = authenticatedOnly ? 'ログインだけ' : `\`${operation.permission}\``
-    const cells = roles.map((role) => mark(authenticatedOnly || role.permissions.includes(operation.permission)))
-    lines.push(`| \`${name}\` | ${summaryOf(operation)} | ${permission} | ${cells.join(' | ')} |`)
+    lines.push(`| \`${name}\` | ${summaryOf(operation)} | ${permission} |`)
   }
 
   lines.push('', '### 店舗 API', '')

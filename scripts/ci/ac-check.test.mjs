@@ -1,21 +1,37 @@
 // ac-check.mjs のテスト（node --test scripts/ci/ac-check.test.mjs）
 import assert from 'node:assert/strict'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import {
+  addAcsToList,
   check,
-  checkAcList,
+  checkAcRows,
+  checkInProgress,
+  checkModuleDoc,
+  checkModuleDocNames,
   describeUnreadableTests,
   isStrict,
-  parseAcList,
+  listModuleNames,
+  MODULE_AC_SECTION,
   parseAcRefs,
   findAmbiguousAcLists,
   findSpacedAcLists,
   parseSpecAcDefinitions,
-  parseSpecAcs,
-  renderAcList,
+  readAcList,
+  readInProgressSpecs,
+  renderModuleTable,
+  renderTestMap,
 } from './ac-check.mjs'
+import { withoutGitEnv } from './lib/git-env.mjs'
 import { extractTestNames, findTestFiles, scanTsTests } from './lib/test-files.mjs'
+import { readSkeleton } from './spec-structure.mjs'
+
+/** リポジトリのルート */
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 describe('spec の AC の取り出し', () => {
   test('AC の定義の行（- **AC-n**）から番号を取り出す', () => {
@@ -25,7 +41,67 @@ describe('spec の AC の取り出し', () => {
       '- **AC-2** 税率は、率を持つ。AC-9 を参照する。',
       '- **DC-3** 整理の spec の番号は数えない。',
     ].join('\n')
-    assert.deepEqual([...parseSpecAcs(spec)], [1, 2])
+    assert.deepEqual(parseSpecAcDefinitions(spec, '5-x').definitions.map((definition) => definition.ac), [1, 2])
+  })
+
+  test('定義の文を今の内容にし、下の箇条は「：」の後に読点でつなぐ。縦線は全角にする', () => {
+    const spec = [
+      '- **AC-5-1** 一覧を表示する。',
+      '- **AC-5-2** 次を満たす。',
+      '  - 名前は 10 文字まで。',
+      '  - 値は a|b のどちらか',
+      '- **AC-5-3** 三つ目。',
+    ].join('\n')
+    assert.deepEqual(parseSpecAcDefinitions(spec, '5-x'), {
+      definitions: [
+        { ac: '5-1', specRel: '5-x', content: '一覧を表示する。' },
+        { ac: '5-2', specRel: '5-x', content: '次を満たす：名前は 10 文字まで、値は a｜b のどちらか。' },
+        { ac: '5-3', specRel: '5-x', content: '三つ目。' },
+      ],
+      problems: [],
+    })
+  })
+
+  test('コードブロック・HTML のコメント・1 行のコードにある定義は読まない', () => {
+    const spec = [
+      '```markdown',
+      '- **AC-5-9** コードブロックの中',
+      '```',
+      '<!--',
+      '- **AC-5-8** コメントの中',
+      '-->',
+      '`- **AC-5-7** 1 行のコード`',
+      '- **AC-5-1** 本物。',
+    ].join('\n')
+    assert.deepEqual(parseSpecAcDefinitions(spec, '5-x').definitions.map((definition) => definition.ac), ['5-1'])
+  })
+
+  test('定義の行が崩れている（後ろが空、太字が閉じていない）と、問題にする', () => {
+    const { problems } = parseSpecAcDefinitions(['- **AC-5-1**', '- **AC-5-2 閉じていない。', '- **AC-5-3**   '].join('\n'), '5-x')
+    assert.equal(problems.length, 3)
+    assert.match(problems[0], /^1 行：/)
+  })
+
+  test('「- **AC-」以外の形の定義（* + 字下げ 番号付き）を、崩れた定義の行として報告する', () => {
+    const lines = ['* **AC-5-1** 星の箇条。', '+ **AC-5-2** 足す記号の箇条。', '  - **AC-5-3** 字下げした箇条。', '1. **AC-5-4** 番号付きの箇条。', '2) **AC-5-5** 括弧の番号。', '-  **AC-5-6** 空白が 2 つ。']
+    const { definitions, problems } = parseSpecAcDefinitions(lines.join('\n'), '5-x')
+    assert.deepEqual(definitions, [])
+    assert.equal(problems.length, lines.length)
+    assert.match(problems[0], /^1 行：AC の定義の行が崩れている/)
+    assert.match(problems[5], /^6 行：/)
+  })
+
+  test('「- **AC-」以外の形でも、コードブロックの中と、AC でない太字の箇条は問題にしない', () => {
+    const spec = ['```markdown', '* **AC-5-9** コードブロックの中', '```', '* **注意** AC でない太字', '  - AC-5-1 の補足', '- **AC-5-1** 本物。'].join('\n')
+    const { definitions, problems } = parseSpecAcDefinitions(spec, '5-x')
+    assert.deepEqual(problems, [])
+    assert.deepEqual(definitions.map((definition) => definition.ac), ['5-1'])
+  })
+
+  test('同じ AC を 2 回定義していても、ac-check では問題にしない（構造の検査が見る）', () => {
+    const { definitions, problems } = parseSpecAcDefinitions('- **AC-5-1** 一つ目。\n- **AC-5-1** もう一度。', '5-x')
+    assert.equal(definitions.length, 2)
+    assert.deepEqual(problems, [])
   })
 })
 
@@ -175,6 +251,12 @@ describe('照合', () => {
     assert.deepEqual(result.emptyReasons, ['AC-1'])
   })
 
+  test('除外の一覧のキーが廃止の AC なら失敗する', () => {
+    const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a'), exclusions: { 'AC-2': '手で確認する' }, deprecated: new Set([2]) })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.invalidExclusions, ['AC-2'])
+  })
+
   test('手元では、テスト名に出ない AC があっても通り、その AC を警告に出す', () => {
     const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a'), exclusions: {}, strict: false })
     assert.equal(result.ok, true)
@@ -209,63 +291,620 @@ describe('廃止した AC', () => {
   })
 })
 
-describe('AC 一覧', () => {
-  const spec001 = [
-    '- **AC-1** 税区分を名称で登録できる。名称は重複できない。',
-    '- **AC-2** 税率は、率（%）、適用開始日時、適用終了日時を持つ。開始が空白なら「過去すべて」を意味する。',
+/** AC 一覧の、元の spec の列の値（アーカイブの spec） */
+const ORIGIN = '[001](../08-spec/archive/mvp/001-catalog/spec.md)'
+
+/** AC 一覧の表の見出しと区切りの行 */
+const LIST_HEADER = ['| AC | モジュール | 状態 | 元の spec | 変えた spec | 今の内容 |', '|----|------------|------|-----------|-------------|----------|']
+
+/** AC 一覧の行を作る */
+function listRow({ ac = 'AC-1', module = 'order', status = '有効', origin = ORIGIN, changedBy = '—', content = '注文できる。' } = {}) {
+  return `| ${ac} | ${module} | ${status} | ${origin} | ${changedBy} | ${content} |`
+}
+
+/** AC 一覧の文書を作る */
+function listDoc(...rows) {
+  return ['# AC 一覧', '', '説明。', '', '<!-- generated:ac-list -->', ...LIST_HEADER, ...rows, '<!-- /generated:ac-list -->', ''].join('\n')
+}
+
+/** ③ のモジュールの名前（テスト用） */
+const MODULES = new Set(['order', 'cart'])
+
+/** リンク先の spec のディレクトリがあるか（テスト用。999 だけない） */
+const specDirExists = (rel) => !rel.includes('999-')
+
+/** AC 一覧を読み、行の検査の問題まで返す */
+function listProblems(...rows) {
+  const read = readAcList(listDoc(...rows))
+  return [...read.problems, ...checkAcRows({ rows: read.rows, modules: MODULES, specDirExists })]
+}
+
+/** AC 一覧の行を読む（問題がないことも確認する） */
+function rowsOf(...rows) {
+  const read = readAcList(listDoc(...rows))
+  assert.deepEqual(read.problems, [])
+  return read.rows
+}
+
+/** ③ に生成する表の、見出しと区切りの行 */
+const MODULE_HEADER = ['| AC | 今の内容 | 元の spec |', '|----|----------|-----------|']
+
+/** ③ の生成の表の行を作る */
+function moduleRow(ac, content, origin = ORIGIN) {
+  return `| ${ac} | ${content} | ${origin} |`
+}
+
+/** ③ の文書を作る。inner はマーカーの範囲の中の行 */
+function moduleDoc(inner, { before = ['選んだ基準は、注文を扱う AC であること。'], after = [] } = {}) {
+  return [
+    '# 注文モジュール',
+    '',
+    '## 業務規則',
+    '',
+    'なし',
+    '',
+    '## 今有効な AC',
+    '',
+    ...before,
+    '',
+    '<!-- generated:module-ac -->',
+    ...inner,
+    '<!-- /generated:module-ac -->',
+    ...after,
+    '',
   ].join('\n')
+}
 
-  test('spec の AC の定義から、番号と要約（最初の文、40 字まで）を取り出す', () => {
-    assert.deepEqual(parseSpecAcDefinitions(spec001, '001-catalog-and-inventory'), [
-      { ac: 1, spec: '001-catalog-and-inventory', specPath: '001-catalog-and-inventory', summary: '税区分を名称で登録できる。' },
-      { ac: 2, spec: '001-catalog-and-inventory', specPath: '001-catalog-and-inventory', summary: '税率は、率（%）、適用開始日時、適用終了日時を持つ。' },
+describe('AC 一覧の読み取り', () => {
+  test('6 列の行を読む。改行コードが CRLF でも、今の内容に CR が残らない', () => {
+    const rows = readAcList(listDoc(listRow({ content: '注文できる。' })).replaceAll('\n', '\r\n')).rows
+    assert.deepEqual(rows.map(({ ac, module, status, origin, changedBy, content }) => ({ ac, module, status, origin, changedBy, content })), [
+      { ac: 1, module: 'order', status: '有効', origin: ORIGIN, changedBy: '—', content: '注文できる。' },
     ])
+  })
+
+  test('列「テスト」のない 6 列の一覧は、問題にしない', () => {
+    assert.deepEqual(listProblems(listRow()), [])
+  })
+
+  test('先頭のセルが AC- の行のセルが足りない・多いと、読み飛ばさず問題にする', () => {
+    const short = '| AC-2 | order | 有効 | — | 注文できる。 |'
+    const long = `${listRow({ ac: 'AC-3' })} 余り |`
+    const { rows, problems } = readAcList(listDoc(listRow(), short, long))
+    assert.deepEqual(rows.map((row) => row.ac), [1])
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /AC-2/)
+    assert.match(problems[1], /AC-3/)
+  })
+
+  test('マーカーの範囲の中の、表の行でない行（セルの中の改行の続き）を問題にする', () => {
+    const { problems } = readAcList(listDoc('| AC-1 | order | 有効 | ' + ORIGIN + ' | — | 一行目', '二行目 |'))
+    assert.ok(problems.length > 0)
+  })
+
+  test('AC の番号を読めない行（0 埋め、小文字、空白の区切り）を問題にする', () => {
+    for (const ac of ['AC-07-1', 'ac-7-1', 'AC 7-1']) {
+      assert.equal(readAcList(listDoc(listRow({ ac }))).problems.length, 1, ac)
+    }
+  })
+
+  test('表の見出しが AC・モジュール・状態・元の spec・変えた spec・今の内容でなければ問題にする', () => {
+    const document = listDoc(listRow()).replace('| AC | モジュール | 状態 |', '| AC | 状態 | モジュール |')
+    assert.equal(readAcList(document).problems.length, 1)
+  })
+
+  test('AC 一覧のマーカーの範囲がない、重複している、閉じが前にあるときは失敗にする', () => {
+    const body = [...LIST_HEADER, listRow()]
+    const cases = [
+      ['# AC 一覧', ...body].join('\n'),
+      ['<!-- generated:ac-list -->', ...body, '<!-- /generated:ac-list -->', '<!-- generated:ac-list -->', '<!-- /generated:ac-list -->'].join('\n'),
+      ['<!-- /generated:ac-list -->', ...body, '<!-- generated:ac-list -->'].join('\n'),
+      ['<!-- generated:ac-list -->', ...body].join('\n'),
+    ]
+    for (const document of cases) {
+      assert.ok(readAcList(document).problems.length > 0, document)
+    }
+  })
+
+  test('既知のマーカーのどれとも一致しない generated: のコメント（綴りの誤り）を失敗にする', () => {
+    const document = listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n<!-- generated:modul-ac -->')
+    assert.equal(readAcList(document).problems.length, 1)
+  })
+
+  test('表の途中（AC の行の間）に空行があれば、表がそこで切れるので失敗にする', () => {
+    const { problems } = readAcList(listDoc(listRow({ ac: 'AC-1' }), '', listRow({ ac: 'AC-2' })))
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /^9 行：AC 一覧の表の途中に空行がある/)
+  })
+
+  test('表の見出しと区切りの行の間に空行があれば、失敗にする', () => {
+    const document = listDoc(listRow()).replace(`${LIST_HEADER[0]}\n`, `${LIST_HEADER[0]}\n\n`)
+    const { problems } = readAcList(document)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /AC 一覧の表の途中に空行がある/)
+  })
+
+  test('マーカーの範囲で、表より前と表より後にある空行は問題にしない', () => {
+    const document = listDoc(listRow()).replace('<!-- generated:ac-list -->\n', '<!-- generated:ac-list -->\n\n').replace('\n<!-- /generated:ac-list -->', '\n\n\n<!-- /generated:ac-list -->')
+    assert.deepEqual(readAcList(document).problems, [])
+  })
+})
+
+describe('AC 一覧の表の見出しの行', () => {
+  const document = (...inner) => ['# AC 一覧', '', '<!-- generated:ac-list -->', ...inner, '<!-- /generated:ac-list -->', ''].join('\n')
+
+  test('マーカーの範囲が空、または空行だけで、表の見出しの行がなければ問題にする', () => {
+    for (const inner of [[], [''], ['', '']]) {
+      const { problems } = readAcList(document(...inner))
+      assert.equal(problems.length, 1, JSON.stringify(inner))
+      assert.match(problems[0], /表の見出しの行がない/)
+    }
+  })
+
+  test('見出しと区切りの行だけで AC の行が 0 件の範囲は、問題にしない', () => {
+    assert.deepEqual(readAcList(document(...LIST_HEADER)).problems, [])
+  })
+})
+
+describe('AC 一覧の行の検査', () => {
+  test('正しい行は通る（有効、変更、廃止、共通）', () => {
+    const changed = listRow({ ac: 'AC-2', status: '変更', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '1 円以上。根拠は[注文モジュール](../../docs/03-機能仕様/order.md)の「注文（集約）」。' })
+    const deprecated = listRow({ ac: 'AC-3', module: '', status: '廃止', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '' })
+    const common = listRow({ ac: 'AC-4', module: 'common', content: '死活監視は運用ポートで出す。根拠は[共通コード・ログ・可観測性](../../docs/02-設計/common.md)の「メトリクスと死活監視」。' })
+    assert.deepEqual(listProblems(listRow(), changed, deprecated, common), [])
+  })
+
+  test('同じ AC の行が 2 つあれば問題にする', () => {
+    assert.equal(listProblems(listRow(), listRow()).length, 1)
+  })
+
+  test('状態が有効・変更・廃止のどれでもなければ問題にする', () => {
+    assert.equal(listProblems(listRow({ status: '有功' })).length, 1)
+    assert.equal(listProblems(listRow({ status: '' })).length, 1)
+  })
+
+  test('有効・変更の AC のモジュールが、空白だけ・「—」・「-」なら問題にする', () => {
+    for (const module of ['', '—', '-']) {
+      assert.equal(listProblems(listRow({ module })).length, 1, module)
+    }
+  })
+
+  test('モジュールのセルに 2 つ書くと問題にする', () => {
+    for (const module of ['order、cart', 'order, cart', 'order/cart']) {
+      assert.equal(listProblems(listRow({ module })).length, 1, module)
+    }
+  })
+
+  test('モジュールの名前の大文字小文字・全角半角の違い、.md やパスを付けた名前を問題にする', () => {
+    for (const module of ['Order', 'ｏｒｄｅｒ', 'order.md', 'docs/03-機能仕様/order.md']) {
+      assert.equal(listProblems(listRow({ module })).length, 1, module)
+    }
+  })
+
+  test('廃止の AC のモジュールは空でよく、空でなければ ③ の名前か common でなければならない', () => {
+    const deprecated = (module) => listRow({ module, status: '廃止', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '' })
+    assert.deepEqual(listProblems(deprecated('')), [])
+    assert.deepEqual(listProblems(deprecated('order')), [])
+    assert.equal(listProblems(deprecated('Order')).length, 1)
+  })
+
+  test('変更の AC の変えた spec が、空か「—」なら問題にする', () => {
+    for (const changedBy of ['', '—']) {
+      const row = listRow({ status: '変更', changedBy, content: '根拠は[注文モジュール](../../docs/03-機能仕様/order.md)の「注文（集約）」。' })
+      assert.equal(listProblems(row).length, 1, changedBy)
+    }
+  })
+
+  test('有効の AC の変えた spec が「—」以外なら問題にする', () => {
+    for (const changedBy of ['', '[019](../08-spec/archive/mvp/019-x/spec.md)', '-']) {
+      assert.equal(listProblems(listRow({ changedBy })).length, 1, changedBy)
+    }
+  })
+
+  test('元の spec が、空、リンクの形でない、リンク先の spec のディレクトリがないと問題にする', () => {
+    for (const origin of ['', '001', '[001](001-catalog)', '[002](../08-spec/archive/mvp/001-catalog/spec.md)', '[999](../08-spec/archive/mvp/999-gone/spec.md)']) {
+      assert.equal(listProblems(listRow({ origin })).length, 1, origin)
+    }
+  })
+
+  test('元の spec が進行中の spec へのリンクでも読む', () => {
+    assert.deepEqual(listProblems(listRow({ ac: 'AC-5-1', origin: '[5](../08-spec/5-x/spec.md)' })), [])
+  })
+
+  test('今の内容に、spec の中だけで通じる参照（※1、事実 2、US の番号、spec の節）があれば問題にする', () => {
+    for (const content of ['注文できる※1。', '事実 2 のとおり。', 'US-4-1 の画面で注文できる。', 'spec の「スコープ」のとおり。']) {
+      assert.equal(listProblems(listRow({ content })).length, 1, content)
+    }
+  })
+
+  test('有効・変更の AC の今の内容が、空白だけ・「—」・「なし」・<…> の仮の値なら問題にする', () => {
+    for (const content of ['', '—', 'なし', '<今の内容>']) {
+      assert.equal(listProblems(listRow({ content })).length, 1, content)
+    }
+  })
+
+  test('今の内容が複数行（<br />）なら問題にする', () => {
+    assert.equal(listProblems(listRow({ content: '一行目。<br />二行目。' })).length, 1)
+  })
+
+  test('変更の AC の今の内容に、「<文書の名前>の「<見出し>」」の形がなければ問題にする', () => {
+    const row = listRow({ status: '変更', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '1 円以上。' })
+    assert.equal(listProblems(row).length, 1)
+  })
+
+  test('common の AC の今の内容に、根拠の「<文書の名前>の「<見出し>」」の形がなければ問題にする', () => {
+    assert.equal(listProblems(listRow({ module: 'common', content: 'ポートは 8080。' })).length, 1)
+  })
+
+  test('変更と common の AC の根拠が、リンクのない「…の「…」」なら問題にする（doc-refs が見出しを確認できない）', () => {
+    const changed = listRow({ status: '変更', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '1 円以上。業務規則の「注文の成立」' })
+    assert.equal(listProblems(changed).length, 1)
+    assert.equal(listProblems(listRow({ module: 'common', content: 'ポートは 8080。根拠は構成の文書の「ポート」。' })).length, 1)
+  })
+
+  test('廃止の AC は、今の内容が空でよい', () => {
+    const row = listRow({ module: '', status: '廃止', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '' })
+    assert.deepEqual(listProblems(row), [])
+  })
+})
+
+describe('③ のモジュールの名前', () => {
+  test('バックエンドのモジュールのディレクトリと、③ の文書の両方がある名前だけ', () => {
+    const names = listModuleNames({
+      backendDirs: ['order', 'cart', 'newmodule'],
+      docFiles: ['order.md', 'cart.md', 'template.md', 'acceptance-criteria.md', 'glossary.md', 'draft.md'],
+    })
+    assert.deepEqual([...names].sort(), ['cart', 'order'])
+  })
+})
+
+describe('③ の文書の名前と構造の検査の対象の一覧', () => {
+  const doc = (module, required) => ({ file: `docs/03-機能仕様/${module}.md`, module, required })
+  const modules = new Set(['order', 'wishlist'])
+
+  test('モジュールの ③ が構造の検査の対象の一覧（FUNCTIONAL_SPECS）になければ、追加し忘れとして失敗にする', () => {
+    const problems = checkModuleDocNames({ docs: [doc('order', true), doc('wishlist', false)], modules })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /^docs\/03-機能仕様\/wishlist\.md：モジュールの ③ が構造の検査の対象の一覧（spec-structure\.mjs の FUNCTIONAL_SPECS）にない/)
+  })
+
+  test('一覧にある ③ にバックエンドのモジュールのディレクトリがなければ失敗にする', () => {
+    const problems = checkModuleDocNames({ docs: [doc('legacy', true)], modules })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /バックエンドのモジュールのディレクトリがない/)
+  })
+
+  test('モジュールでない ③ の文書（template、draft）が一覧になくても、問題にしない', () => {
+    assert.deepEqual(checkModuleDocNames({ docs: [doc('template', false), doc('draft', false), doc('order', true)], modules }), [])
+  })
+})
+
+describe('③ の「今有効な AC」の表の生成', () => {
+  test('有効・変更の、そのモジュールの AC を、AC の順（MVP、次に spec の番号と連番）に置く', () => {
+    const rows = rowsOf(
+      listRow({ ac: 'AC-7-10', content: 'c。' }),
+      listRow({ ac: 'AC-10', content: 'b。' }),
+      listRow({ ac: 'AC-7-2', content: 'd。' }),
+      listRow({ ac: 'AC-9', content: 'a。' }),
+      listRow({ ac: 'AC-11', module: 'cart' }),
+      listRow({ ac: 'AC-12', module: '', status: '廃止', changedBy: '[019](../08-spec/archive/mvp/019-x/spec.md)', content: '' }),
+      listRow({ ac: 'AC-13', module: 'common', content: '根拠は[共通コード・ログ・可観測性](../../docs/02-設計/common.md)の「メトリクスと死活監視」。' }),
+    )
     assert.equal(
-      parseSpecAcDefinitions(`- **AC-3** ${'あ'.repeat(50)}。`, '001-x')[0].summary,
-      `${'あ'.repeat(40)}…`,
+      renderModuleTable(rows, 'order'),
+      [...MODULE_HEADER, moduleRow('AC-9', 'a。'), moduleRow('AC-10', 'b。'), moduleRow('AC-7-2', 'd。'), moduleRow('AC-7-10', 'c。')].join('\n'),
     )
   })
 
-  const definitions = parseSpecAcDefinitions(spec001, '001-catalog-and-inventory')
+  test('対応する AC が 0 件なら「なし。」の 1 行', () => {
+    assert.equal(renderModuleTable(rowsOf(listRow({ module: 'cart' })), 'order'), 'なし。')
+  })
 
-  test('一覧を作る。前の一覧の状態・変えた spec・今の内容は残し、ない AC は有効・spec の定義にする', () => {
-    const previous = new Map([[2, { status: '変更', changedBy: '[016](../specs/016-master-data)', location: '[税モジュール](../backend/modules/tax.md)' }]])
-    const testFiles = new Map([[1, ['backend/a/TaxApiTest.java', 'e2e/tests/tax.spec.ts']]])
-    const markdown = renderAcList({ definitions, previous, testFiles, exclusions: { 'AC-2': '手で確認する' } })
-    assert.match(markdown, /^\| AC \| 要約 \| 状態 \| 元の spec \| 変えた spec \| 今の内容 \| テスト \|$/m)
-    assert.match(
-      markdown,
-      /^\| AC-1 \| 税区分を名称で登録できる。 \| 有効 \| \[001\]\(\.\.\/08-spec\/001-catalog-and-inventory\/spec\.md\) \| — \| spec \| `TaxApiTest`、`tax\.spec\.ts` \|$/m,
+  test('common の AC は、どの ③ の表にも入れない', () => {
+    const rows = rowsOf(listRow({ module: 'common', content: '根拠は[共通コード・ログ・可観測性](../../docs/02-設計/common.md)の「メトリクスと死活監視」。' }))
+    assert.equal(renderModuleTable(rows, 'common'), 'なし。')
+  })
+})
+
+describe('③ の「今有効な AC」の節の名前', () => {
+  test('生成の表を置く節の名前が、リポジトリの雛形の骨組みの ## にある（節の名前の正本は雛形）', () => {
+    const { sections, problems } = readSkeleton(readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8'))
+    assert.deepEqual(problems, [])
+    assert.ok(sections.includes(MODULE_AC_SECTION), sections.join('、'))
+  })
+})
+
+describe('③ の「今有効な AC」の表の照合', () => {
+  const rows = rowsOf(listRow({ ac: 'AC-1', content: '一つ目。' }), listRow({ ac: 'AC-2', content: '二つ目。' }))
+  const table = [...MODULE_HEADER, moduleRow('AC-1', '一つ目。'), moduleRow('AC-2', '二つ目。')]
+  const result = (text, required = true) => checkModuleDoc({ text, module: 'order', rows, required })
+
+  test('生成した表と同じなら通る', () => {
+    assert.deepEqual(result(moduleDoc(table)).problems, [])
+  })
+
+  test('範囲の外の説明文（選んだ基準）と、範囲の中の先頭と末尾の空行、末尾の改行の有無は問題にしない', () => {
+    assert.deepEqual(result(moduleDoc(['', ...table, '', ''], { before: ['選んだ基準は、注文を扱う AC。', '', '- 在庫は入れない'] })).problems, [])
+    assert.deepEqual(result(moduleDoc(table).replace(/\n$/, '')).problems, [])
+  })
+
+  test('③ の改行コードが CRLF でも、LF にそろえて比べる', () => {
+    assert.deepEqual(result(moduleDoc(table).replaceAll('\n', '\r\n')).problems, [])
+  })
+
+  test('今の内容の全角と半角が AC 一覧と同じなら、正規化せずに通す', () => {
+    const wide = rowsOf(listRow({ content: '数量は１０まで（ＡＢＣ）。' }))
+    const doc = moduleDoc([...MODULE_HEADER, moduleRow('AC-1', '数量は１０まで（ＡＢＣ）。')])
+    assert.deepEqual(checkModuleDoc({ text: doc, module: 'order', rows: wide, required: true }).problems, [])
+  })
+
+  test('対応する AC が 0 件で、範囲が「なし。」の 1 行なら通る', () => {
+    assert.deepEqual(checkModuleDoc({ text: moduleDoc(['なし。']), module: 'cart', rows, required: true }).problems, [])
+  })
+
+  const stale = [
+    ['行の順が AC の順と違う', [MODULE_HEADER[0], MODULE_HEADER[1], moduleRow('AC-2', '二つ目。'), moduleRow('AC-1', '一つ目。')]],
+    ['生成しない行（廃止にした AC など）が残っている', [...table, moduleRow('AC-3', '三つ目。')]],
+    ['行が足りない', [...MODULE_HEADER, moduleRow('AC-1', '一つ目。')]],
+    ['今の内容が前の文のまま', [...MODULE_HEADER, moduleRow('AC-1', '前の文。'), moduleRow('AC-2', '二つ目。')]],
+    ['列の見出しの名前が違う', ['| AC | 内容 | 元の spec |', MODULE_HEADER[1], ...table.slice(2)]],
+    ['列の見出しの順が違う', ['| AC | 元の spec | 今の内容 |', MODULE_HEADER[1], ...table.slice(2)]],
+    ['元の spec のリンクの宛先が違う', [...MODULE_HEADER, moduleRow('AC-1', '一つ目。', '[001](../08-spec/archive/mvp/002-x/spec.md)'), moduleRow('AC-2', '二つ目。')]],
+    ['AC の番号の表記が違う（AC-01）', [...MODULE_HEADER, moduleRow('AC-01', '一つ目。'), moduleRow('AC-2', '二つ目。')]],
+    ['AC の番号の表記が違う（ac-1）', [...MODULE_HEADER, moduleRow('ac-1', '一つ目。'), moduleRow('AC-2', '二つ目。')]],
+    ['AC の番号の表記が違う（AC 1）', [...MODULE_HEADER, moduleRow('AC 1', '一つ目。'), moduleRow('AC-2', '二つ目。')]],
+    ['今の内容に縦線を入れて列を増やした', [...MODULE_HEADER, moduleRow('AC-1', '一つ目。 | 追加'), moduleRow('AC-2', '二つ目。')]],
+    ['範囲の中に表の他の文（注）を書いた', [...table, '', '※1：注。']],
+    ['区切り行の - の数が違う', [MODULE_HEADER[0], '|---|---|---|', ...table.slice(2)]],
+    ['セルの前後の空白が違う', [...MODULE_HEADER, '|  AC-1 | 一つ目。 | ' + ORIGIN + ' |', moduleRow('AC-2', '二つ目。')]],
+    ['AC があるモジュールの表に「なし。」を書いた', ['なし。']],
+  ]
+  for (const [name, inner] of stale) {
+    test(`表が古い：${name}`, () => {
+      const checked = result(moduleDoc(inner))
+      assert.equal(checked.problems.length, 1)
+      assert.equal(checked.stale, true)
+    })
+  }
+
+  test('0 件のモジュールの範囲が「なし。」の 1 行以外（空の表、空欄）なら失敗にする', () => {
+    for (const inner of [[...MODULE_HEADER], [], ['なし']]) {
+      assert.equal(checkModuleDoc({ text: moduleDoc(inner), module: 'cart', rows, required: true }).problems.length, 1, inner.join('/'))
+    }
+  })
+
+  const broken = [
+    ['開きのマーカーだけがある', moduleDoc(table).replace('<!-- /generated:module-ac -->', '')],
+    ['閉じが開きより前にある', moduleDoc(table).replace('<!-- generated:module-ac -->', '@@').replace('<!-- /generated:module-ac -->', '<!-- generated:module-ac -->').replace('@@', '<!-- /generated:module-ac -->')],
+    ['同じマーカーの組が 2 組ある', moduleDoc(table, { after: ['', '<!-- generated:module-ac -->', 'なし。', '<!-- /generated:module-ac -->'] })],
+    ['マーカーが「今有効な AC」の節の外にある', moduleDoc(table).replace('<!-- generated:module-ac -->', '').replace('<!-- /generated:module-ac -->', '').replace('なし\n', 'なし\n\n<!-- generated:module-ac -->\nなし。\n<!-- /generated:module-ac -->\n')],
+    ['マーカーの範囲が「今有効な AC」の節をまたぐ', moduleDoc(table).replace('<!-- /generated:module-ac -->', '\n## 次の節\n\n<!-- /generated:module-ac -->')],
+    ['マーカーがあるのに「今有効な AC」の節がない', moduleDoc(table).replace('## 今有効な AC', '## 今の AC')],
+    ['既知のマーカーと一致しない generated: のコメント', moduleDoc(table, { after: ['', '<!-- generated:module-acs -->'] })],
+    ['AC 一覧のマーカーが ③ にある', moduleDoc(table, { after: ['', '<!-- generated:ac-list -->'] })],
+    ['構造の検査の対象の一覧にある ③ に、マーカーがない', moduleDoc(table).replace('<!-- generated:module-ac -->', '').replace('<!-- /generated:module-ac -->', '')],
+    ['マーカーをコードブロックや 1 行のコードの中にだけ書いた', moduleDoc(table).replace('<!-- generated:module-ac -->', '`<!-- generated:module-ac -->`').replace('<!-- /generated:module-ac -->', '```\n<!-- /generated:module-ac -->\n```')],
+  ]
+  for (const [name, text] of broken) {
+    test(`失敗にし、--write もしない：${name}`, () => {
+      const checked = result(text)
+      assert.ok(checked.problems.length > 0)
+      assert.equal(checked.stale, false)
+      assert.equal(checked.updated, null)
+    })
+  }
+
+  test('「今有効な AC」の節の中で、マーカーの範囲の外に AC の表の行があれば失敗にし、--write もしない', () => {
+    const outside = [
+      moduleDoc(table, { after: ['', '| AC | 今の内容 | 元の spec |', '|----|----------|-----------|', moduleRow('AC-999', '範囲の外。')] }),
+      moduleDoc(table, { before: ['説明。', '', moduleRow('AC-999', '範囲の前。')] }),
+    ]
+    for (const text of outside) {
+      const checked = result(text)
+      assert.equal(checked.problems.length, 1)
+      assert.match(checked.problems[0], /^[0-9]+ 行：「今有効な AC」の節の、生成の印の範囲の外に、AC の表の行がある/)
+      assert.equal(checked.stale, false)
+      assert.equal(checked.updated, null)
+    }
+  })
+
+  test('範囲の外の AC の表の行でも、コードブロックの中と、次の節にあるものは問題にしない', () => {
+    const text = moduleDoc(table, { after: ['', '```markdown', moduleRow('AC-999', '例。'), '```', '', '## 次の節', '', moduleRow('AC-998', '別の節。')] })
+    assert.deepEqual(result(text).problems, [])
+  })
+
+  test('構造の検査の対象の一覧にない ③ にマーカーがあれば失敗にする', () => {
+    const checked = result(moduleDoc(table), false)
+    assert.equal(checked.problems.length, 1)
+    assert.equal(checked.updated, null)
+  })
+
+  test('構造の検査の対象の一覧にない ③ にマーカーがなければ通り、書き換えない', () => {
+    const text = moduleDoc(table).replace('<!-- generated:module-ac -->', '').replace('<!-- /generated:module-ac -->', '')
+    const checked = result(text, false)
+    assert.deepEqual(checked.problems, [])
+    assert.equal(checked.updated, null)
+  })
+
+  test('コードブロックや 1 行のコードの中に引用したマーカーは、マーカーとして読まない', () => {
+    const text = moduleDoc(table, { before: ['印は `<!-- generated:module-ac -->` の形。', '', '```markdown', '<!-- generated:module-ac -->', '<!-- generated:modul-ac -->', '```'] })
+    assert.deepEqual(result(text).problems, [])
+    const unlisted = text.replace(/^<!-- \/?generated:module-ac -->$/gm, '')
+    assert.deepEqual(result(unlisted, false).problems, [])
+  })
+})
+
+describe('③ の表の書き換え（--write）', () => {
+  const rows = rowsOf(listRow({ ac: 'AC-1', content: '一つ目。' }))
+  const table = [...MODULE_HEADER, moduleRow('AC-1', '一つ目。')]
+
+  test('マーカーの範囲の中だけを生成した表にし、範囲の外は変えない', () => {
+    const before = moduleDoc([moduleRow('AC-1', '古い。')], { after: ['', '末尾の文。'] })
+    const { updated } = checkModuleDoc({ text: before, module: 'order', rows, required: true })
+    assert.equal(updated, moduleDoc(table, { after: ['', '末尾の文。'] }))
+  })
+
+  test('CRLF の文書は、範囲の外の改行コードを変えず、書いた行も CRLF にする', () => {
+    const before = moduleDoc([moduleRow('AC-1', '古い。')]).replaceAll('\n', '\r\n')
+    const { updated } = checkModuleDoc({ text: before, module: 'order', rows, required: true })
+    assert.equal(updated, moduleDoc(table).replaceAll('\n', '\r\n'))
+  })
+
+  test('書き換えた直後の検査は通り、2 回目の書き換えで差分が出ない', () => {
+    const first = checkModuleDoc({ text: moduleDoc(['']), module: 'order', rows, required: true }).updated
+    const second = checkModuleDoc({ text: first, module: 'order', rows, required: true })
+    assert.deepEqual(second.problems, [])
+    assert.equal(second.updated, first)
+  })
+
+  test('「今有効な AC」の節がない ③ は書き換えない', () => {
+    const text = moduleDoc(table).replace('## 今有効な AC', '## 今の AC')
+    assert.equal(checkModuleDoc({ text, module: 'order', rows, required: true }).updated, null)
+  })
+})
+
+describe('AC 一覧への転記の位置', () => {
+  const definition = (ac) => ({ ac, specRel: '5-x', content: '転記する。' })
+  const added = (ac) => `| AC-${ac} |  | 有効 | [5](../08-spec/5-x/spec.md) | — | 転記する。 |`
+
+  test('既存の行の全てより後ろの AC は、範囲の末尾に空行があっても、最後の AC の行の直後に入れる', () => {
+    const base = listDoc(listRow({ ac: 'AC-1' })).replace('\n<!-- /generated:ac-list -->', '\n\n\n<!-- /generated:ac-list -->')
+    const expected = ['# AC 一覧', '', '説明。', '', '<!-- generated:ac-list -->', ...LIST_HEADER, listRow({ ac: 'AC-1' }), added(5), '', '', '<!-- /generated:ac-list -->', ''].join('\n')
+    assert.equal(addAcsToList(base, [definition(5)]), expected)
+  })
+
+  test('既存の行が 0 件なら、区切りの行の直後に入れる', () => {
+    const base = listDoc().replace('\n<!-- /generated:ac-list -->', '\n\n<!-- /generated:ac-list -->')
+    const expected = ['# AC 一覧', '', '説明。', '', '<!-- generated:ac-list -->', ...LIST_HEADER, added(5), added(6), '', '<!-- /generated:ac-list -->', ''].join('\n')
+    assert.equal(addAcsToList(base, [definition(6), definition(5)]), expected)
+  })
+
+  test('既存の行の間の AC は、その順の位置に入れる', () => {
+    const base = listDoc(listRow({ ac: 'AC-1' }), listRow({ ac: 'AC-9' }))
+    const expected = listDoc(listRow({ ac: 'AC-1' }), added(5), listRow({ ac: 'AC-9' }), added(12))
+    assert.equal(addAcsToList(base, [definition(12), definition(5)]), expected)
+  })
+})
+
+describe('進行中の spec の AC と AC 一覧', () => {
+  const IN_PROGRESS = '[5](../08-spec/5-x/spec.md)'
+  const spec = (markdown) => [{ rel: '5-x', ...parseSpecAcDefinitions(markdown, '5-x') }]
+
+  test('進行中の spec の AC が AC 一覧にあり、元の spec がその spec なら通る', () => {
+    const rows = rowsOf(listRow({ ac: 'AC-5-1', origin: IN_PROGRESS }))
+    assert.deepEqual(checkInProgress({ rows, specs: spec('- **AC-5-1** 一つ目。') }), [])
+  })
+
+  test('進行中の spec の AC が AC 一覧になければ、草案でも確定でも失敗にする', () => {
+    assert.equal(checkInProgress({ rows: rowsOf(listRow()), specs: spec('- **AC-5-1** 一つ目。') }).length, 1)
+  })
+
+  test('転記の後に spec から AC を消したのに、AC 一覧に有効のまま残れば失敗にする', () => {
+    const rows = rowsOf(listRow({ ac: 'AC-5-1', origin: IN_PROGRESS }), listRow({ ac: 'AC-5-2', origin: IN_PROGRESS }))
+    assert.equal(checkInProgress({ rows, specs: spec('- **AC-5-1** 一つ目。') }).length, 1)
+  })
+
+  test('進行中の spec の AC の番号が、元の spec が別の既存の AC と重なれば失敗にする', () => {
+    const rows = rowsOf(listRow({ ac: 'AC-5-1', origin: '[5](../08-spec/archive/1to10/5-old/spec.md)' }))
+    assert.equal(checkInProgress({ rows, specs: spec('- **AC-5-1** 一つ目。') }).length, 1)
+  })
+
+  test('転記の後に、進行中の spec で AC の本文を修正しても、AC 一覧と比べない', () => {
+    const rows = rowsOf(listRow({ ac: 'AC-5-1', origin: IN_PROGRESS, content: '転記した文。' }))
+    assert.deepEqual(checkInProgress({ rows, specs: spec('- **AC-5-1** 直した文。') }), [])
+  })
+
+  test('アーカイブに移した spec の AC が、AC 一覧にだけあっても通る', () => {
+    const rows = rowsOf(listRow({ ac: 'AC-5-1', origin: '[5](../08-spec/archive/1to10/5-x/spec.md)' }))
+    assert.deepEqual(checkInProgress({ rows, specs: [] }), [])
+  })
+
+  test('--write は、AC 一覧にない進行中の spec の AC を、AC の順の位置に転記する（モジュールは空、状態は有効）', () => {
+    const document = listDoc(listRow({ ac: 'AC-1' }), listRow({ ac: 'AC-5-3', origin: IN_PROGRESS }), listRow({ ac: 'AC-9-1', origin: '[9](../08-spec/archive/1to10/9-x/spec.md)' }))
+    const { definitions } = parseSpecAcDefinitions('- **AC-5-1** 一つ目。\n- **AC-5-3** 三つ目。\n- **AC-5-10** 十。', '5-x')
+    const updated = addAcsToList(document, definitions)
+    assert.equal(
+      updated,
+      listDoc(
+        listRow({ ac: 'AC-1' }),
+        `| AC-5-1 |  | 有効 | ${IN_PROGRESS} | — | 一つ目。 |`,
+        listRow({ ac: 'AC-5-3', origin: IN_PROGRESS }),
+        `| AC-5-10 |  | 有効 | ${IN_PROGRESS} | — | 十。 |`,
+        listRow({ ac: 'AC-9-1', origin: '[9](../08-spec/archive/1to10/9-x/spec.md)' }),
+      ),
     )
-    assert.match(markdown, /^\| AC-2 \| .* \| 変更 \| .* \| \[016\]\(\.\.\/specs\/016-master-data\) \| \[税モジュール\]\(\.\.\/backend\/modules\/tax\.md\) \| 除外 \|$/m)
+    // 転記した行はモジュールが空なので、モジュールを書くまで検査が失敗する
+    const read = readAcList(updated)
+    assert.equal(checkAcRows({ rows: read.rows, modules: MODULES, specDirExists }).length, 2)
+    assert.deepEqual(checkInProgress({ rows: read.rows, specs: [{ rel: '5-x', definitions }] }), [])
   })
 
-  test('アーカイブの spec の AC は、元の spec のリンクをアーカイブのパスにする', () => {
-    const archived = parseSpecAcDefinitions('- **AC-1** 一つ目。', '001-catalog-and-inventory', 'archive/mvp/001-catalog-and-inventory')
-    const markdown = renderAcList({ definitions: archived, previous: new Map(), testFiles: new Map(), exclusions: {} })
-    assert.match(markdown, /\| \[001\]\(\.\.\/08-spec\/archive\/mvp\/001-catalog-and-inventory\/spec\.md\) \|/)
+  test('--write の転記は、読めない AC 一覧（マーカーの閉じがない）では例外を投げる', () => {
+    const broken = listDoc(listRow()).replace('<!-- /generated:ac-list -->', '')
+    const { definitions } = parseSpecAcDefinitions('- **AC-5-1** 一つ目。', '5-x')
+    assert.throws(() => addAcsToList(broken, definitions), /AC 一覧を読めないので転記しない/)
   })
 
-  test('テストのファイルは 3 つまで書き、残りは数を書く。テストも除外もなければ「なし」', () => {
-    const testFiles = new Map([[1, ['a/A.java', 'b/B.java', 'c/C.java', 'd/D.java', 'e/E.java']]])
-    const markdown = renderAcList({ definitions, previous: new Map(), testFiles, exclusions: {} })
-    assert.match(markdown, /\| `A`、`B`、`C` ほか 2 \|$/m)
-    assert.match(markdown, /^\| AC-2 \| .* \| なし \|$/m)
+  test('--write は、範囲の外と既存の行の改行コード（CRLF）を変えず、転記する AC がなければ文書を変えない', () => {
+    const document = listDoc(listRow({ ac: 'AC-1' })).replaceAll('\n', '\r\n')
+    assert.equal(addAcsToList(document, []), document)
+    const { definitions } = parseSpecAcDefinitions('- **AC-5-1** 一つ目。', '5-x')
+    assert.equal(addAcsToList(document, definitions), listDoc(listRow({ ac: 'AC-1' }), `| AC-5-1 |  | 有効 | ${IN_PROGRESS} | — | 一つ目。 |`).replaceAll('\n', '\r\n'))
+  })
+})
+
+describe('進行中の spec を読む範囲', () => {
+  test('docs/08-spec/ の直下の spec.md だけを読み、アーカイブと spec.md のないディレクトリは読まない', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'ac-check-'))
+    try {
+      mkdirSync(path.join(dir, '5-x'))
+      writeFileSync(path.join(dir, '5-x', 'spec.md'), '- **AC-5-1** 一つ目。\n')
+      mkdirSync(path.join(dir, '6-plan-only'))
+      writeFileSync(path.join(dir, '6-plan-only', 'plan.md'), '- **AC-6-1** plan の中。\n')
+      mkdirSync(path.join(dir, 'archive', 'mvp', '001-old'), { recursive: true })
+      writeFileSync(path.join(dir, 'archive', 'mvp', '001-old', 'spec.md'), '- **AC-1\n壊れた spec。\n')
+      const { specs, problems } = readInProgressSpecs(dir)
+      assert.deepEqual(problems, [])
+      assert.deepEqual(specs.map((spec) => [spec.rel, spec.definitions.map((definition) => definition.ac)]), [['5-x', ['5-1']]])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
-  test('一覧の行から、手で書く列（状態、変えた spec、今の内容）を読む', () => {
-    const markdown = renderAcList({ definitions, previous: new Map(), testFiles: new Map(), exclusions: {} })
-    assert.deepEqual(parseAcList(markdown).get(1), { status: '有効', changedBy: '—', location: 'spec' })
+  test('進行中の spec の崩れた定義の行を、spec のパスを付けて問題にする', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'ac-check-'))
+    try {
+      mkdirSync(path.join(dir, '5-x'))
+      writeFileSync(path.join(dir, '5-x', 'spec.md'), '- **AC-5-1**\n')
+      const { problems } = readInProgressSpecs(dir)
+      assert.equal(problems.length, 1)
+      assert.match(problems[0], /5-x\/spec\.md/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('テストとの対応（AC 一覧の AC に対して）', () => {
+  const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
+
+  test('テスト名が参照する AC が、AC 一覧になければ失敗にする（アーカイブの spec にあっても）', () => {
+    const specAcs = new Set(rowsOf(listRow({ ac: 'AC-1' })).map((row) => row.ac))
+    const result = check({ specAcs, tests: tests('AC-1 a', 'AC-2 アーカイブにだけある'), exclusions: {} })
+    assert.deepEqual(result.unknown.map((item) => item.ac), [2])
   })
 
-  test('spec にあって一覧にない AC、一覧にあって spec にない AC、決まっていない状態を見つける', () => {
-    const list = new Map([
-      [1, { status: '有効', changedBy: '—', location: 'spec' }],
-      [9, { status: '有効', changedBy: '—', location: 'spec' }],
-    ])
-    const extra = parseSpecAcDefinitions('- **AC-3** 三つ目。', '001-x')
-    const problems = checkAcList({ definitions: [...definitions, ...extra], list: new Map([...list, [3, { status: '保留', changedBy: '—', location: 'spec' }]]) })
-    assert.deepEqual(problems, ['AC 一覧にない AC：AC-2', 'spec にない AC が AC 一覧にある：AC-9', 'AC 一覧の状態が有効・変更・廃止でない：AC-3（保留）'])
+  test('--tests の表示：AC ごとにテストのファイル、除外、なしを示す', () => {
+    const rows = rowsOf(listRow({ ac: 'AC-1' }), listRow({ ac: 'AC-2' }), listRow({ ac: 'AC-3' }))
+    const testFiles = new Map([[1, ['backend/a/TaxApiTest.java', 'e2e/tests/tax.spec.ts', 'backend/a/TaxApiTest.java']]])
+    const { lines, ok } = renderTestMap({ list: { rows, problems: [] }, testFiles, exclusions: { 'AC-2': '手で確認する' } })
+    assert.equal(ok, true)
+    assert.deepEqual(lines.slice(0, 3), ['AC-1：backend/a/TaxApiTest.java、e2e/tests/tax.spec.ts', 'AC-2：除外（手で確認する）', 'AC-3：なし'])
+  })
+
+  test('--tests で、AC 一覧の読み取りに失敗したら失敗にする', () => {
+    const { ok } = renderTestMap({ list: readAcList('# 印のない一覧'), testFiles: new Map(), exclusions: {} })
+    assert.equal(ok, false)
   })
 })
 
@@ -279,13 +918,12 @@ describe('1→10 の AC（AC-n-m）', () => {
       '- **AC-7-2** 二つ目。',
       '- **DC-7-3** 整理の番号は数えない。',
     ].join('\n')
-    assert.deepEqual([...parseSpecAcs(spec)], [12, '7-1', '7-2'])
     assert.deepEqual(
-      parseSpecAcDefinitions(spec, '7-dev-process').map(({ ac, summary }) => ({ ac, summary })),
+      parseSpecAcDefinitions(spec, '7-dev-process').definitions.map(({ ac, content }) => ({ ac, content })),
       [
-        { ac: 12, summary: 'MVP の AC。' },
-        { ac: '7-1', summary: '新しい形の AC。' },
-        { ac: '7-2', summary: '二つ目。' },
+        { ac: 12, content: 'MVP の AC。' },
+        { ac: '7-1', content: '新しい形の AC。' },
+        { ac: '7-2', content: '二つ目。' },
       ],
     )
   })
@@ -392,23 +1030,16 @@ describe('1→10 の AC（AC-n-m）', () => {
     assert.deepEqual(result.deprecatedRefs, [{ file: 'X.test.ts', name: 'AC-7-1、7-2 a', ac: '7-2' }])
   })
 
-  test('AC 一覧：新しい形の行を作り、元の spec のリンクは 0 埋めのない番号でも書ける。手で書く列を読み戻せる', () => {
-    const definitions = parseSpecAcDefinitions('- **AC-12** 一つ目。\n- **AC-7-2** 三つ目。\n- **AC-7-1** 二つ目。', '7-dev-process')
-    const markdown = renderAcList({ definitions, previous: new Map(), testFiles: new Map([['7-1', ['a/A.java']]]), exclusions: {} })
-    assert.match(markdown, /^\| AC-7-1 \| 二つ目。 \| 有効 \| \[7\]\(\.\.\/08-spec\/7-dev-process\/spec\.md\) \| — \| spec \| `A` \|$/m)
+  test('AC 一覧への転記：MVP の後に新しい形を spec の番号と連番の順に置き、元の spec のリンクは 0 埋めのない番号で書く。読み戻せる', () => {
+    const { definitions } = parseSpecAcDefinitions('- **AC-12** 一つ目。\n- **AC-7-2** 三つ目。\n- **AC-7-1** 二つ目。', '7-dev-process')
+    const empty = ['<!-- generated:ac-list -->', '| AC | モジュール | 状態 | 元の spec | 変えた spec | 今の内容 |', '|----|------------|------|-----------|-------------|----------|', '<!-- /generated:ac-list -->'].join('\n')
+    const markdown = addAcsToList(empty, definitions)
+    assert.match(markdown, /^\| AC-7-1 \| {2}\| 有効 \| \[7\]\(\.\.\/08-spec\/7-dev-process\/spec\.md\) \| — \| 二つ目。 \|$/m)
     assert.ok(markdown.indexOf('| AC-12 |') < markdown.indexOf('| AC-7-1 |'))
     assert.ok(markdown.indexOf('| AC-7-1 |') < markdown.indexOf('| AC-7-2 |'))
-    assert.deepEqual(parseAcList(markdown).get('7-1'), { status: '有効', changedBy: '—', location: 'spec' })
-    assert.equal(parseAcList(markdown).has(12), true)
-  })
-
-  test('AC 一覧との食い違いも、新しい形の AC で見つける', () => {
-    const definitions = parseSpecAcDefinitions('- **AC-7-1** 一つ目。\n- **AC-7-2** 二つ目。', '7-dev-process')
-    const list = new Map([
-      ['7-1', { status: '有効', changedBy: '—', location: 'spec' }],
-      ['7-9', { status: '有効', changedBy: '—', location: 'spec' }],
-    ])
-    assert.deepEqual(checkAcList({ definitions, list }), ['AC 一覧にない AC：AC-7-2', 'spec にない AC が AC 一覧にある：AC-7-9'])
+    const { rows, problems } = readAcList(markdown)
+    assert.deepEqual(problems, [])
+    assert.deepEqual(rows.map((row) => row.ac), [12, '7-1', '7-2'])
   })
 })
 
@@ -477,6 +1108,68 @@ describe('スキップしたまとまりの範囲とコメント', () => {
       "it('AC-2 数える', () => {})",
     ].join('\n')
     assert.deepEqual(extractTestNames(source, 'ts'), ['AC-2 数える'])
+  })
+})
+
+describe('--write を script として実行する', () => {
+  const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'ac-check.mjs')
+  const LIST = 'docs/03-機能仕様/acceptance-criteria.md'
+  const ORDER = 'docs/03-機能仕様/order.md'
+  const PAYMENT = 'docs/03-機能仕様/legacy.md'
+  const SPEC = 'docs/08-spec/5-x/spec.md'
+
+  /** 構造の検査の対象の一覧にない ③（マーカーがなく、表は AC 一覧と違う） */
+  const paymentText = ['# 旧モジュール', '', '## 今有効な AC', '', ...MODULE_HEADER, moduleRow('AC-9', '古い。'), ''].join('\n')
+
+  /** 書き換える前のファイル。AC 一覧にない進行中の spec の AC と、古い注文の ③ の表がある */
+  function fixture(overrides = {}) {
+    return {
+      [LIST]: listDoc(listRow({ ac: 'AC-1', content: '一つ目。' })),
+      [ORDER]: moduleDoc([moduleRow('AC-1', '古い。')]),
+      [PAYMENT]: paymentText,
+      [SPEC]: '- **AC-5-1** 転記する。\n',
+      ...overrides,
+    }
+  }
+
+  /** git の作業ディレクトリにファイルを置いて --write を実行し、終了コードと実行の後のファイルを返す */
+  function runWrite(files) {
+    const root = mkdtempSync(path.join(tmpdir(), 'ac-check-'))
+    try {
+      execFileSync('git', ['init', '-q'], { cwd: root, env: withoutGitEnv() })
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
+        writeFileSync(path.join(root, file), text)
+      }
+      const result = spawnSync(process.execPath, [script, '--write'], { cwd: root, encoding: 'utf8', env: withoutGitEnv() })
+      const after = Object.fromEntries(Object.keys(files).map((file) => [file, readFileSync(path.join(root, file), 'utf8')]))
+      return { status: result.status, stdout: result.stdout, after }
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  }
+
+  test('AC 一覧のマーカーの範囲が壊れているとき、終了コード 1 で、どのファイルも変えない', () => {
+    const files = fixture({ [LIST]: listDoc(listRow({ ac: 'AC-1', content: '一つ目。' })).replace('<!-- /generated:ac-list -->', '') })
+    const { status, stdout, after } = runWrite(files)
+    assert.equal(status, 1, stdout)
+    assert.deepEqual(after, files)
+  })
+
+  test('対象の ③ に「今有効な AC」の節がないとき、AC 一覧への転記も含めて何も書かずに失敗する', () => {
+    const files = fixture({ [ORDER]: moduleDoc([moduleRow('AC-1', '古い。')]).replace('## 今有効な AC', '## 今の AC') })
+    const { status, stdout, after } = runWrite(files)
+    assert.equal(status, 1, stdout)
+    assert.deepEqual(after, files)
+  })
+
+  test('転記と対象の ③ の書き換えをし、構造の検査の対象の一覧にない ③ は変えない', () => {
+    const files = fixture()
+    const { status, stdout, after } = runWrite(files)
+    assert.equal(status, 0, stdout)
+    assert.match(after[LIST], /^\| AC-5-1 \| {2}\| 有効 \| \[5\]\(\.\.\/08-spec\/5-x\/spec\.md\) \| — \| 転記する。 \|$/m)
+    assert.equal(after[ORDER], moduleDoc([...MODULE_HEADER, moduleRow('AC-1', '一つ目。')]))
+    assert.equal(after[PAYMENT], paymentText)
   })
 })
 

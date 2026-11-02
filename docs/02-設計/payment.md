@@ -1,0 +1,236 @@
+# 決済の設計
+
+決済モジュールは、注文の代金の支払（カードの与信、売上確定、返金）を管理し、外部の決済サービス（Stripe）との連携を受け持つ。業務規則は [決済モジュール](../03-機能仕様/payment.md) にある。
+
+| 項目 | 内容 |
+|------|------|
+| レベル | A（支払の状態遷移、外部からの通知の重複と順序の入れ替わり、期限切れとの競合） |
+
+## 境界
+
+依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。決済は注文のイベントを受けない。受けると、モジュールが循環するため。
+
+### 他のモジュールへの公開
+
+| 種類 | 内容 | 利用者 |
+|------|------|--------|
+| API | 支払を作る | 注文 |
+| API | 支払画面の URL を得る | 注文 |
+| API | 取消 | 注文 |
+| API | 売上確定 | 注文 |
+| API | 支払の状態（注文 ID でまとめて） | 注文 |
+| API | 与信期限と「期限が近い」（注文 ID でまとめて） | 注文 |
+| API | 期限が近い注文 ID の一覧 | 注文 |
+| API | 支払える注文 ID（注文 ID でまとめて） | 注文 |
+| イベント | 与信の成功 | 注文 |
+| イベント | 支払の期限切れ | 注文 |
+
+イベント「与信の取消の依頼」と「返金の依頼」は、モジュールの中だけで使い、他のモジュールへは公開しない。
+
+### 外部のサービス
+
+| 役割 | 実装 | 設定 |
+|------|------|------|
+| 決済サービス | Stripe（`stripe-java`）。ローカル・E2E・統合テストは mock。選び方は下の「実装の選択」 | Stripe は `ecsite.payment.stripe`、mock は `ecsite.payment.mock` |
+
+Stripe の API のバージョンは、`stripe-java` のものに固定される。ライブラリのバージョンを上げると変わる。
+
+#### port
+
+次の 5 つの操作を持つ：支払画面を作る・支払画面を閉じる・与信を取り消す・売上を確定する・返金する。売上確定の結果は、成功・与信期限切れ・接続できない、の 3 つに変換する。決済サービスの型とエラーは `infrastructure` の外に出さない。外部のサービスの失敗の分け方は、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」の表に従う。売上確定の結果と、操作ごとの失敗の扱いは、[決済モジュール](../03-機能仕様/payment.md)の「決済サービスとの通信」に書く。
+
+| 項目 | 内容 |
+|------|------|
+| 実装の選択 | mock フラグ（`ecsite.payment.mock.enabled`）が有効なら mock、そうでなければ Stripe を使う。フラグが有効でなく、Stripe の鍵が不足していれば、起動に失敗する ※1 |
+| 支払画面から戻る先 | 店舗の注文の画面。URL は設定（`ecsite.payment.return-url`）の雛形に注文 ID を入れて作る。リクエストから受け取らない ※2 |
+
+※1：設定を忘れたまま、mock で注文を受けないため。mock フラグは、ローカル・E2E・統合テストの設定ファイルだけに書く。
+
+※2：戻る先をリクエストから受け取ると、任意のサイトへ移す踏み台（オープンリダイレクト）にされるため。
+
+#### mock
+
+- 決済の mock フラグを立てたときだけ動く。フラグがなければ、mock の支払画面は 404。
+- バックエンドが `/mock-payment/{支払画面の ID}` に簡易な HTML を返す。「支払う」「カードを拒否させる」「やめる」の操作を持つ。応答の規則は [API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」にある。
+- 「支払う」は与信の成功の通知を、HTTP を通さずに通知の処理に直接渡してから、店舗の注文の画面に戻す。「カードを拒否させる」は画面に拒否を示し、状態を変えない。
+- 本番の mock は、port と支払画面の操作（支払う、支払を済ませる、与信の成功を通知する、画面と与信の参照を読む）だけを持つ。売上を確定した与信の取消は、Stripe と同じく拒否する。
+- テストのコードは、mock をラップするテスト用の実装（テストで共有するソース `src/testFixtures` に置き、本番の jar に入らない）を使う。この実装は、次を発生させられる。
+  - 与信の成功
+  - 通知の遅れ・重複・順序の入れ替わり
+  - 閉じる前に支払が済んでいたこと
+  - 取消の失敗・売上確定の接続の失敗・返金の失敗（どれも回数を指定）
+  - 売上確定の与信期限切れ
+  - 売上確定の最中の処理（注文のキャンセルなど）
+
+  テストでは、売上確定・返金・取消の記録を確認する。統合テストでは、このテスト用の実装を決済サービスとして使う。
+
+#### Stripe
+
+| 項目 | 内容 |
+|------|------|
+| 支払画面 | Checkout Session（`mode=payment`、`capture_method=manual`、通貨 JPY、金額は総額の 1 行）。支払画面 ID は Session の ID |
+| 画面の期限 | 作ってから 31 分（Stripe の最短の 30 分に、時計のずれの余裕を加える） |
+| タイムアウトと再試行 | 1 回のリクエストごとに接続 5 秒、応答 20 秒。通信の失敗は、`stripe-java` が同じ冪等キーで 2 回まで再試行する |
+| 支払の方法 | Session では指定しない。ダッシュボードの設定で、カードだけを有効にする ※3 |
+| 通知のエンドポイント | `POST /api/webhooks/stripe`。認証は付けず、署名で確認する。署名が合わない・古い通知は 400 で拒否する ※4 |
+| 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../06-手順書/environment.md)） |
+
+※3：Session では支払の方法を指定できない（Stripe の API が受け付けない）。カードで払うウォレット（Apple Pay、Google Pay、Link）は有効にしない。
+
+※4：署名は、ヘッダー `Stripe-Signature` と鍵 `STRIPE_WEBHOOK_SECRET` で確認する。応答の規則は [API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」にある。
+
+通知の種類と、支払への反映：
+
+| 通知の種類 | 中身 | 反映 |
+|------------|------|------|
+| `checkout.session.completed` | Session の `status` は `complete`、`payment_status` は `unpaid`（与信だけで売上はまだ）。`payment_intent` が与信の ID | 与信の成功。与信の参照は `payment_intent` |
+| `checkout.session.expired` | 期限切れ、または画面を閉じた Session | 支払画面の期限切れ |
+| その他 | `payment_intent.*`、`charge.*` など | 受け付けて（200）、何もしない |
+
+- 消費者が支払画面を離れても、通知は送られない。Session は期限まで開いたまま。カードの拒否は画面に表示されるだけで、Session の通知は送られない。
+- 支払画面を閉じる（Session を期限切れにする）とき、`open` でない Session は Stripe が拒否する。拒否されたら Session を読み、`complete` なら「支払が済んでいた」、`expired` なら「閉じた」とする。
+- 与信を取り消す（PaymentIntent の取消）とき、取消済みは Stripe が拒否する（`payment_intent_unexpected_state`）。拒否されたら PaymentIntent を読み、`canceled` なら成功とする。
+
+売上確定と返金（sandbox で確認した応答）：
+
+| 操作 | 呼ぶもの | 応答と結果 |
+|------|----------|------------|
+| 売上確定 | PaymentIntent の capture（総額。冪等キー `capture-<注文 ID>`） | 成功なら PaymentIntent は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
+| 売上確定済みの PaymentIntent の売上確定 | 同上（冪等キーが違う） | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`succeeded` なら成功とする |
+| 与信が切れた PaymentIntent の売上確定 | 同上 | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`canceled` なら与信期限切れとする ※5 |
+| 返金 | Refund（PaymentIntent の総額。冪等キー `refund-<注文 ID>`） | 成功なら Refund は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
+| 返金済みの PaymentIntent の返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
+
+※5：与信が切れると、Stripe が PaymentIntent を取り消す（`canceled`）。与信は 7 日待たないと切れないので、sandbox では与信を取り消した PaymentIntent で、同じ応答（400 `payment_intent_unexpected_state`、状態 `canceled`）になることを確認した。
+
+## 処理の流れ
+
+### 支払画面を開く
+
+注文が決済の API を呼ぶ。業務規則は [決済モジュール](../03-機能仕様/payment.md) の「支払（集約）」に書く。注文での流れは [注文の設計](order.md) の「支払と受付」。
+
+```mermaid
+sequenceDiagram
+    participant O as 注文
+    participant P as 決済
+    participant G as 決済サービス
+    O->>P: 支払画面の URL を求める
+    P->>P: 支払を読む
+    alt 支払えない
+        P-->>O: URL なし
+    else 開いている画面がある
+        P-->>O: 開いている画面の URL
+    else 開いている画面がない
+        P->>G: 支払画面を作る（トランザクションの外）
+        G-->>P: 支払画面
+        P->>P: トランザクション：支払を行ロックし、画面を記録する
+        opt 作った画面を使わない
+            P->>G: 作った画面を閉じる
+        end
+        P-->>O: 支払画面の URL
+    end
+```
+
+### 決済サービスからの通知
+
+業務規則は [決済モジュール](../03-機能仕様/payment.md) の「決済サービスからの通知」に書く。
+
+```mermaid
+sequenceDiagram
+    participant G as 決済サービス
+    participant P as 決済
+    participant O as 注文
+    G->>P: 通知（与信の成功、支払画面の期限切れ）
+    P->>P: 署名を確認する
+    P->>P: トランザクション：支払を行ロックし、通知を反映する
+    P-->>O: イベント「与信の成功」「支払の期限切れ」
+```
+
+### 支払の期限切れ
+
+期限切れのジョブが、決済サービスの支払画面を閉じてから、支払を更新する。業務規則は [決済モジュール](../03-機能仕様/payment.md) の「支払の期限」に書く。
+
+```mermaid
+sequenceDiagram
+    participant J as 期限切れのジョブ
+    participant P as 決済
+    participant G as 決済サービス
+    participant O as 注文
+    J->>P: 期限を過ぎた未払いの支払を探す
+    loop 支払ごと
+        opt 支払画面がある
+            J->>G: 支払画面を閉じる
+            G-->>J: 閉じた / 閉じる前に支払が済んでいた
+        end
+        alt 支払が済んでいた
+            J->>P: トランザクション：支払を行ロックし、与信の通知を待つ支払にする
+        else それ以外
+            J->>P: トランザクション：支払を行ロックし、支払なしにする
+            P-->>O: イベント「支払の期限切れ」
+        end
+    end
+```
+
+### 売上確定
+
+注文が出荷の登録の中で呼ぶ。業務規則は [決済モジュール](../03-機能仕様/payment.md) の「売上確定」に書く。注文での流れは [注文の設計](order.md) の「出荷の登録」。
+
+```mermaid
+sequenceDiagram
+    participant O as 注文
+    participant P as 決済
+    participant G as 決済サービス
+    O->>P: 売上確定（注文 ID）
+    P->>P: 支払を読む（行ロックなし）
+    alt 売上確定済み
+        P-->>O: 成功
+    else 与信済み
+        P->>G: 売上確定（トランザクションの外）
+        G-->>P: 成功 / 与信期限切れ / 接続できない
+        P->>P: トランザクション：支払を行ロックし、結果を反映する
+        P-->>O: 結果
+    else それ以外
+        P-->>O: 業務のエラー
+    end
+```
+
+### 注文のキャンセルと、与信の取消・返金
+
+注文が、キャンセルのトランザクションの中で取消を呼ぶ。業務規則は [決済モジュール](../03-機能仕様/payment.md) の「与信の取消」と「返金」に書く。
+
+```mermaid
+sequenceDiagram
+    participant O as 注文
+    participant P as 決済
+    participant G as 決済サービス
+    O->>P: 取消（注文のキャンセルのトランザクションの中）
+    P->>P: 支払を行ロックし、与信の取消待ちか返金待ちにする
+    P->>P: イベント「与信の取消の依頼」「返金の依頼」を登録する
+    P->>G: コミットの後、与信を取り消す・返金する（トランザクションの外）
+    G-->>P: 結果
+    P->>P: トランザクション：与信の取消済み・返金済みにする
+```
+
+## API
+
+なし。決済は、注文から API で呼ばれるだけで、店舗 API・管理 API の operation を持たない。決済サービスが呼ぶ通知のエンドポイント（`POST /api/webhooks/stripe`）と、mock の支払画面（`/mock-payment/{支払画面の ID}`）は、EC の API ではないので OpenAPI に書かない。
+
+## パッケージの構成
+
+クラスの名前と設定の値は書かない（正本はコード）。通知のエンドポイントと mock の支払画面は、`presentation` でなく `infrastructure` に置く（[バックエンドの書き方](../05-開発規則/backend-coding.md)）。
+
+```
+payment/
+├── api/                    # 注文への公開
+├── event/                  # 与信の成功、支払の期限切れ
+├── application/            # 支払の処理、ジョブ、リスナー
+│   ├── model/view/         # 表示の型
+│   └── port/               # 決済サービス、通知の受信、参照
+├── domain/                 # エラーの定義
+│   └── payment/        # 支払（集約）、状態、依頼
+│       └── port/       # 支払のリポジトリ
+└── infrastructure/
+    ├── persistence/        # リポジトリの実装
+    ├── mock/               # mock の決済サービスと支払画面
+    └── stripe/             # Stripe の連携、通知のエンドポイント
+```

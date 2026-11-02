@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/03-機能仕様/storefront.md）。<br />
+ * 注文の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
  * 注文モジュールの見積もりの API を呼び、カートの表示に変換する。
  */
 @Component

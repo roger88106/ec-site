@@ -213,8 +213,8 @@ tasks.named<Test>("test") {
     unitTestSystemProperties.forEach { (key, value) -> systemProperty(key, value) }
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
-    inputs.files(fileTree("../../docs/02-設計") { include("overview.md") })
-    inputs.dir("../../docs/03-機能仕様")
+    inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
+    inputs.file("../../docs/03-機能仕様/glossary.md")
     inputs.file("../../docs/05-開発規則/backend-coding.md")
     // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
     if (project.hasProperty("updateDocs")) {
@@ -310,7 +310,7 @@ tasks.register("integrationTestShards") {
 }
 
 // -----------------------------------------------------------------------------
-// 地域の最初のデータ（地域モジュールの設計書「最初のデータ」）
+// 地域の最初のデータ（地域モジュールの機能仕様 docs/03-機能仕様/region.md の「最初のデータ」）
 //   ./gradlew generateRegionMigration                      → /.local/masterdata/ の郵便番号のデータから作る
 //   ./gradlew generateRegionMigration -PpostalCodeCsv=<CSV> → CSV の置き場所を指定する
 //   郵便番号のデータは Git に入れない。作ったマイグレーションは Git に入れる
@@ -403,8 +403,8 @@ pitest {
 tasks.named("pitest") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
-    inputs.files(fileTree("../../docs/02-設計") { include("overview.md") })
-    inputs.dir("../../docs/03-機能仕様")
+    inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
+    inputs.file("../../docs/03-機能仕様/glossary.md")
     inputs.file("../../docs/05-開発規則/backend-coding.md")
 }
 

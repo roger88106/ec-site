@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
  * （docs/03-機能仕様/region.md「最初のデータ」）。<br />
  * Gradle のタスク {@code generateRegionMigration} から呼ぶ。本番の jar には入らない。<br />
  * 先頭のコメントは、適用済みのマイグレーションと同じ文字にする。適用済みのマイグレーションは変えられない
- * （Flyway のチェックサムが変わるため）ので、コメントが指す設計書のパスは、文書を移す前の
- * {@code docs/backend/modules/region.md} のままである。今の設計書のパスは {@code docs/03-機能仕様/region.md}。
+ * （Flyway のチェックサムが変わるため）。そのため、コメントが指す設計書のパスは、文書を移す前の
+ * {@code docs/backend/modules/region.md} のままである。今の機能仕様のパスは {@code docs/03-機能仕様/region.md}。
  * 先頭の 3 行がコミット済みのマイグレーションと同じことは、単体テストで確認する。
  */
 public final class RegionMigrationGenerator {
@@ -44,7 +44,7 @@ public final class RegionMigrationGenerator {
         }
         var csv = Path.of(args[0]);
         if (!Files.exists(csv)) {
-            throw new IllegalArgumentException("郵便番号のデータがありません：" + csv + "（地域モジュールの設計書「最初のデータ」）");
+            throw new IllegalArgumentException("郵便番号のデータがありません：" + csv + "（地域モジュールの機能仕様 docs/03-機能仕様/region.md の「最初のデータ」）");
         }
         PostalCodeData all;
         try (var reader = Files.newBufferedReader(csv, StandardCharsets.UTF_8)) {

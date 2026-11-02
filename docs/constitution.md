@@ -121,7 +121,7 @@ ec-site/
 | [system.md](01-概要/system.md) | システムの全体像 |
 | [order.md](01-概要/order.md) | 注文の流れ |
 
-設計（`docs/02-設計/`）：エンジニア向けの構成（全体の構成、アーキテクチャ、アプリ、権限）。
+設計（`docs/02-設計/`）：エンジニア向けの構成（全体の構成、アーキテクチャ、アプリ、権限、モジュールごとの設計）。
 
 | 文書 | 内容 |
 |------|------|
@@ -132,7 +132,7 @@ ec-site/
 | [common.md](02-設計/common.md) | 共通コード・ログ・可観測性 |
 | [role-permissions.md](02-設計/role-permissions.md) | ロールと権限の対応表 |
 | [template.md](02-設計/template.md) | モジュールの設計の雛形 |
-| [order.md](02-設計/order.md) | 注文の設計（境界、処理の流れ、API の一覧、パッケージの構成） |
+| [<モジュール>.md](02-設計) | モジュールごとの設計（境界、処理の流れ、API の一覧、パッケージの構成） |
 
 機能仕様（`docs/03-機能仕様/`）：主にエージェント向けの、モジュールごとの業務の規則、状態遷移、データ構造。
 
@@ -140,7 +140,7 @@ ec-site/
 |------|------|
 | [<モジュール>.md](03-機能仕様) | モジュールごとの機能仕様（業務規則、状態の遷移、データモデル、今有効な AC） |
 | [template.md](03-機能仕様/template.md) | 機能仕様の雛形 |
-| [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（状態とテスト） |
+| [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（AC の正本。状態と今の内容） |
 | [glossary.md](03-機能仕様/glossary.md) | 用語集 |
 
 決定記録（`docs/04-決定記録/`）：決定の理由を、1 つの決定につき 1 ファイルで書く。
@@ -157,6 +157,7 @@ ec-site/
 | 文書 | 内容 |
 |------|------|
 | [workflow.md](05-開発規則/workflow.md) | 開発の進め方（SDD・TDD）、起票と規模、利用者の確認、完了の定義、コードと文書の食い違い |
+| [glossary.md](05-開発規則/glossary.md) | 開発の用語集（開発の進め方・ツール・テスト・セッションの役割などの用語） |
 | [notation.md](05-開発規則/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
 | [review.md](05-開発規則/review.md) | 書き方の規則の書き方とレビュー |
 | [comments.md](05-開発規則/comments.md) | コメントの書き方 |

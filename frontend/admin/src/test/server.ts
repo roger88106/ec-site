@@ -9,7 +9,7 @@ import { stock } from '@/test/fixtures'
 const ADMIN_API = `${window.location.origin}/api/admin`
 
 /**
- * 管理 API の応答を差し替えるハンドラーを作る（管理画面の構成の「結合テストの書き方」）。<br />
+ * 管理 API の応答を差し替えるハンドラーを作る（テストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。<br />
  * パス・パラメーター・リクエストとレスポンスの本文は admin.yaml の型に合わせる。admin.yaml にない応答は型エラーになる。
  * 例：`http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))`
  */

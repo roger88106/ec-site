@@ -200,18 +200,22 @@ describe('ロールと権限の対応表', () => {
     })
   })
 
-  test('管理 API はロール × 操作の表、店舗 API は認証の要否ごとの表にする。要約から AC の番号を除く', () => {
+  test('ロールの表はロールと説明の 2 列、権限の表はロールを列にして権限を行にする。管理 API の表は 3 列。要約から AC の番号を除く', () => {
     const { markdown, problems } = renderTables({
       admin: readOperations(ADMIN).operations,
       store: readOperations(STORE).operations,
       realm: parseRealmRoles(REALM),
     })
     assert.deepEqual(problems, [])
-    assert.match(markdown, /\| ロール \| 説明 \| tax:read \| tax:write \|/)
-    assert.match(markdown, /\| `administrator` \| 管理者：すべての権限 \| ○ \| ○ \|/)
-    assert.match(markdown, /\| `viewer` \| 閲覧者：参照の権限すべて \| ○ \| {2}\|/)
-    assert.match(markdown, /\| `POST \/tax-categories` \| 税区分の登録 \| `tax:write` \| ○ \| {2}\|/)
-    assert.match(markdown, /\| `GET \/me` \| ログインしている運営者 \| ログインだけ \| ○ \| ○ \|/)
+    assert.match(markdown, /^\| ロール \| 説明 \|$/m)
+    assert.match(markdown, /^\| `administrator` \| 管理者：すべての権限 \|$/m)
+    assert.match(markdown, /^\| `viewer` \| 閲覧者：参照の権限すべて \|$/m)
+    assert.match(markdown, /^\| 権限 \| `administrator` \| `viewer` \|$/m)
+    assert.match(markdown, /^\| `tax:read` \| ○ \| ○ \|$/m)
+    assert.match(markdown, /^\| `tax:write` \| ○ \| {2}\|$/m)
+    assert.match(markdown, /^\| 操作 \| 内容 \| 権限 \|$/m)
+    assert.match(markdown, /^\| `POST \/tax-categories` \| 税区分の登録 \| `tax:write` \|$/m)
+    assert.match(markdown, /^\| `GET \/me` \| ログインしている運営者 \| ログインだけ \|$/m)
     assert.match(markdown, /\| `GET \/orders` \| 自分の注文の一覧 \| 会員 \|/)
     assert.match(markdown, /\| `GET \/carts\/\{cartId\}` \| カートの表示 \| 任意 \|/)
     assert.match(markdown, /\| `GET \/products` \| 商品の一覧 \| 不要 \|/)

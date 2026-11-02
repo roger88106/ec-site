@@ -1,31 +1,34 @@
 # 全体構成
 
-システムの全体を 1 ページで示す。モジュールの依存とイベント、外部システムとの境界を載せる。詳しい設計は [バックエンドのアーキテクチャ](backend-architecture.md)、モジュールの設計（`docs/02-設計/<モジュール>.md`。`02-設計/` の設計書がまだないモジュールは [機能仕様](../03-機能仕様)）、[フロントのアーキテクチャ](frontend-architecture.md) に書く。モジュールの論理名は [用語集](../03-機能仕様/glossary.md) に書く。
+システムの全体を 1 ページで示す。モジュールの依存とイベント、外部システムとの境界を載せる。詳しい設計は [バックエンドのアーキテクチャ](backend-architecture.md)、モジュールの設計（`docs/02-設計/<モジュール>.md`）、[フロントのアーキテクチャ](frontend-architecture.md) に書く。モジュールの論理名は [用語集](../03-機能仕様/glossary.md) に書く。
 
 ## 1. モジュールの依存とイベント
 
-- 図は `ModuleDiagramTest`（`backend/ecsite/src/test/java/com/ecsite/modulith/ModuleDiagramTest.java`）がコードから作る。手動で修正しない。
-- 実線は、モジュールが相手の API を呼ぶ（矢印の向きが依存の向き）。点線は、イベントを発行するモジュールから受けるモジュールへ向かい、線の上にイベントの名前を書く。
-- 他のモジュールが受けるイベントだけを書く。リスナーのない公開イベントは図に出ない。
-- 依存は package-info の `allowedDependencies` で宣言し、`ModulithTest` が守らせる（[バックエンドのアーキテクチャ](backend-architecture.md)の「モジュラーモノリス」）。
-- モジュールの依存かイベントが変わると、テストが失敗する。`backend/ecsite` で `./gradlew test --tests ModuleDiagramTest -PupdateDocs` を実行すると図を再生成するので、差分を確認して commit する。
+図は、依存の図とイベントの図の 2 つに分ける。どちらも `ModuleDiagramTest`（`backend/ecsite/src/test/java/com/ecsite/modulith/ModuleDiagramTest.java`）がコードから作る。手動で修正しない。ノードの表示（モジュール）は用語集の論理名から末尾の「モジュール」を除いた名前、線の上の名前（イベント）は用語集の論理名で、識別子は用語集の表を元にする。用語集に名前がないモジュールかイベントがあると、テストが失敗する。
 
-<!-- generated:modules -->
+- 依存は package-info の `allowedDependencies` で宣言し、`ModulithTest` が守らせる（[バックエンドのアーキテクチャ](backend-architecture.md)の「モジュラーモノリス」）。
+- モジュールの依存かイベントが変わるか、用語集のモジュールかイベントの論理名が変わると、テストが失敗する。`backend/ecsite` で `./gradlew test --tests ModuleDiagramTest -PupdateDocs` を実行すると 2 つの図を再生成するので、差分を確認して commit する。
+
+### モジュールの依存
+
+実線は、モジュールが相手の公開 API かイベントの型に依存することを表す（`allowedDependencies`。矢印の向きが依存の向き）。
+
+<!-- generated:module-dependencies -->
 ```mermaid
-flowchart LR
-    cart
-    catalog
-    inventory
-    media
-    member
-    notification
-    order
-    payment
-    region
-    reporting
-    shipping
-    storefront
-    tax
+flowchart TB
+    cart["カート"]
+    catalog["商品カタログ"]
+    inventory["在庫"]
+    media["メディア"]
+    member["会員"]
+    notification["通知"]
+    order["注文"]
+    payment["決済"]
+    region["地域"]
+    reporting["レポート"]
+    shipping["出荷"]
+    storefront["店舗"]
+    tax["税"]
     cart --> catalog
     cart --> inventory
     cart --> member
@@ -49,46 +52,49 @@ flowchart LR
     storefront --> inventory
     storefront --> member
     storefront --> order
-    cart -. CartChanged .-> order
-    catalog -. ProductDeleted<br>VariantDeleted<br>VariantRegistered .-> inventory
-    order -. OrderShipped .-> notification
-    order -. OrderStatusChanged .-> reporting
-    payment -. PaymentAuthorized<br>PaymentExpired .-> order
-    shipping -. DeliveryStatusChanged .-> reporting
 ```
-<!-- /generated:modules -->
+<!-- /generated:module-dependencies -->
+
+### モジュール間のイベント
+
+点線は、イベントを発行するモジュールから受けるモジュールへ向かい、線の上にイベントの名前を書く。他のモジュールが受けるイベントだけを書く。リスナーのない公開イベントは図に出ない。イベントの型だけに依存するモジュールの間は、依存の図でも実線になる。
+
+<!-- generated:module-events -->
+```mermaid
+flowchart LR
+    cart["カート"]
+    catalog["商品カタログ"]
+    inventory["在庫"]
+    notification["通知"]
+    order["注文"]
+    payment["決済"]
+    reporting["レポート"]
+    shipping["出荷"]
+    cart -. カート変更 .-> order
+    catalog -. 商品削除<br>バリアント削除<br>バリアント登録 .-> inventory
+    order -. 注文の出荷 .-> notification
+    order -. 注文の状態の変化 .-> reporting
+    payment -. 与信の成功<br>支払の期限切れ .-> order
+    shipping -. 配送状態の変化 .-> reporting
+```
+<!-- /generated:module-events -->
 
 ## 2. 外部システムとの境目
 
-図は手動で書く。`ModuleDiagramTest` が比較するのはモジュールの名前の一覧だけで、モジュールを追加する・削除するとテストが失敗する。外部システムとの線は比較しないので、境界を変えたらこの図も修正する。
+図は手動で書く。`ModuleDiagramTest` が確認するのは、図の `module_<名前>` のノードが、全てコードのモジュールであることだけである。コードにないモジュールを描くとテストが失敗する。ノードが 1 つもないときも失敗する。全てのモジュールを描くことは求めない。外部システムとの線は比較しないので、外部サービスと接続するモジュールを加えるとき、外部サービスを変えるときは、「モジュールと外部サービス」の図と下の表も修正する。描き忘れはテストで見つけられない。
 
 <!-- external-systems -->
+### 画面と認証
+
+画面、IdP、オブジェクトストレージと、バックエンドの間の線を描く。バックエンドは 1 つのノードにし、中のモジュールは描かない。
+
 ```mermaid
 flowchart LR
     store_app["店舗画面（Next.js）"]
     admin_app["管理画面（Vite の SPA）"]
     idp["IdP（Keycloak）"]
-    payment_service["決済サービス（Stripe）"]
-    carrier["物流サービス"]
-    smtp["メール（SMTP）"]
+    backend["バックエンド"]
     storage["オブジェクトストレージ（S3 互換）"]
-    converter["画像の変換（imgproxy）"]
-
-    subgraph backend["バックエンド"]
-        module_storefront["店舗"]
-        module_cart["カート"]
-        module_order["注文"]
-        module_member["会員"]
-        module_catalog["商品カタログ"]
-        module_inventory["在庫"]
-        module_tax["税"]
-        module_region["地域"]
-        module_media["メディア"]
-        module_payment["決済"]
-        module_shipping["出荷"]
-        module_notification["通知"]
-        module_reporting["レポート"]
-    end
 
     store_app -->|ログイン| idp
     admin_app -->|ログイン| idp
@@ -96,6 +102,26 @@ flowchart LR
     admin_app -->|管理 API| backend
     admin_app -->|画像のアップロード（署名付き URL）| storage
     backend -->|token の検証の鍵| idp
+    store_app -->|商品の画像の表示| storage
+```
+
+### モジュールと外部サービス
+
+外部と接続するモジュール（決済、出荷、通知、メディア）だけを描く。
+
+```mermaid
+flowchart LR
+    payment_service["決済サービス（Stripe）"]
+    carrier["物流サービス"]
+    smtp["メール（SMTP）"]
+    storage["オブジェクトストレージ（S3 互換）"]
+    converter["画像の変換（imgproxy）"]
+
+    module_payment["決済"]
+    module_shipping["出荷"]
+    module_notification["通知"]
+    module_media["メディア"]
+
     module_payment -->|支払画面、与信、売上の確定、取消、返金| payment_service
     payment_service -->|通知| module_payment
     module_shipping -->|追跡を始める| carrier
@@ -103,17 +129,16 @@ flowchart LR
     module_notification -->|出荷通知メール| smtp
     module_media -->|変換| converter
     module_media -->|保存| storage
-    store_app -->|商品の画像の表示| storage
 ```
 <!-- /external-systems -->
 
 | 外部システム | 使うもの | 接続するモジュール | 詳しい文書 |
 |--------------|----------|--------------------|------------|
 | IdP | Keycloak | なし ※1 | [バックエンドのアーキテクチャ](backend-architecture.md)の「認証・認可」、[会員モジュール](../03-機能仕様/member.md) |
-| 決済サービス | Stripe（ローカルの既定は mock） | 決済。通知（webhook）を受ける | [決済モジュール](../03-機能仕様/payment.md)、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」 |
-| 物流サービス | mock だけ（本番の実装はまだない） | 出荷。通知を受ける | [出荷モジュール](../03-機能仕様/shipping.md) |
-| メール | SMTP（ローカルは Mailpit） | 通知 | [通知モジュール](../03-機能仕様/notification.md) |
-| オブジェクトストレージ | S3 互換（ローカルは SeaweedFS）と、画像の変換（imgproxy） | メディア | [メディアモジュール](../03-機能仕様/media.md) |
+| 決済サービス | Stripe（ローカルの既定は mock） | 決済。通知（webhook）を受ける | [決済の設計](payment.md)の「外部のサービス」、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」 |
+| 物流サービス | mock だけ（本番の実装はまだない） | 出荷。通知を受ける | [出荷の設計](shipping.md)の「外部のサービス」 |
+| メール | SMTP（ローカルは Mailpit） | 通知 | [通知の設計](notification.md)の「外部のサービス」 |
+| オブジェクトストレージ | S3 互換（ローカルは SeaweedFS）と、画像の変換（imgproxy） | メディア | [メディアの設計](media.md)の「外部のサービス」 |
 
 ※1：画面がログインする。バックエンドは access token を検証するだけで、検証はモジュールでなく共通の設定が行う。会員モジュールが token の subject と会員 ID を対応づける。
 

@@ -132,9 +132,11 @@ DS ごとに DC を書く。1 つの DC に条件を 1 つ書く。確認方法�
 | AC の正本 | `docs/03-機能仕様/acceptance-criteria.md`（置き場所は確認 1 の決定） |
 | アプリの設計書とテストの書き方 | `docs/02-設計/apps/admin.md`、`docs/02-設計/apps/store.md`、`docs/05-開発規則/test-writing.md`、`docs/03-機能仕様/glossary.md`、`docs/05-開発規則/` の新しい文書（確認 9 の決定による） |
 | 規則 | `docs/constitution.md`、`docs/05-開発規則/workflow.md`、`docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md`、`docs/06-手順書/ci.md` |
-| 検査の script | `scripts/ci/ac-check.mjs`、`scripts/ci/spec-structure.mjs`、`scripts/ci/progress.mjs`、`scripts/ci/role-permissions.mjs`（確認 8 の決定による）、各テスト、用語集を読む検査（確認 9 の決定による） |
-| バックエンドのテスト | `ProductionClassesTest`（確認 6 の決定による） |
-| 本番のコードのコメント | 移した・見出しを変えた設計書を指す参照の修正だけ（DN-326-1 の例外） |
+| 共通の BR の行き先 | 共通の BR の規則がある文書（`docs/02-設計/` の共通の文書、`docs/05-開発規則/` の規則の文書、`docs/06-手順書/` の手順書。確認 12 の決定による） |
+| 検査の script と CI | `scripts/ci/ac-check.mjs`、`scripts/ci/spec-structure.mjs`、`scripts/ci/progress.mjs`、`scripts/ci/role-permissions.mjs`（確認 8 の決定による）、各テスト、用語集を読む検査（確認 9 の決定による）、`.github/workflows/`（テストが読む文書の paths） |
+| バックエンドのテストと build | `ProductionClassesTest`、`backend/ecsite/build.gradle.kts` のテストの入力（確認 6 の決定による） |
+| skill | 移した・見出しを変えた文書を指す参照（`.claude/skills/`） |
+| コードのコメント | 本番のコード、テスト、テストの補助、設定のファイルで、移した・見出しを変えた文書を指す参照の修正だけ（本番のコードは DN-326-1 の例外） |
 
 ## 非機能要件
 

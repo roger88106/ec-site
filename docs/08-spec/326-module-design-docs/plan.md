@@ -148,7 +148,7 @@
 | BR-26 売上額 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「集計」 | 有効。元の定義の 3 項目それぞれに番号を付けた |
 | BR-27 年齢層 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」 | 有効 |
 | BR-28 レポートの権限 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「権限」 | 有効。元の定義の 2 項目それぞれに番号を付けた。③ になかった文を、意味を変えずに加えた |
-| BR-29 性別 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」（「不明」の扱い）、order：業務規則の「注文時の年齢と性別」（選べる値） | order の分（記録する値と不明の扱い）は有効 |
+| BR-29 性別 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」（「不明」の扱い）、order：業務規則の「注文時の年齢と性別」（選べる値） | 有効（order：選べる値と記録、reporting：「不明」として数える） |
 | BR-30 外部サービスの mock | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「外部連携（決済・物流）」 | 有効 |
 | BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「設定の値の型」、[環境変数](../../06-手順書/environment.md)の「管理画面」と「店舗画面」、[フロントの書き方](../../05-開発規則/frontend-coding.md)の「環境変数は起動時に確認する」、[店舗画面の構成](../../02-設計/apps/store.md)と[管理画面の構成](../../02-設計/apps/admin.md)の「ログイン」 | 有効 |
 | BR-32 認可の既定 | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「業務のコードとの境界」 | 有効 |

@@ -113,7 +113,7 @@ flowchart LR
 | 決済サービス | Stripe（ローカルの既定は mock） | 決済。通知（webhook）を受ける | [決済の設計](payment.md)の「外部のサービス」、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」 |
 | 物流サービス | mock だけ（本番の実装はまだない） | 出荷。通知を受ける | [出荷の設計](shipping.md)の「外部のサービス」 |
 | メール | SMTP（ローカルは Mailpit） | 通知 | [通知の設計](notification.md)の「外部のサービス」 |
-| オブジェクトストレージ | S3 互換（ローカルは SeaweedFS）と、画像の変換（imgproxy） | メディア | [メディアモジュール](../03-機能仕様/media.md) |
+| オブジェクトストレージ | S3 互換（ローカルは SeaweedFS）と、画像の変換（imgproxy） | メディア | [メディアの設計](media.md)の「外部のサービス」 |
 
 ※1：画面がログインする。バックエンドは access token を検証するだけで、検証はモジュールでなく共通の設定が行う。会員モジュールが token の subject と会員 ID を対応づける。
 

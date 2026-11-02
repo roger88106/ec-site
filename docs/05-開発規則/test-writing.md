@@ -335,7 +335,7 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
-| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
+| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。`AuthGate` は通さず、ログインしている運営者を差し替えて描画する（token は付けず、401 で IdP へ移る処理も行わない）。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
 | `renderApp.tsx` の `ALL_PERMISSIONS`、`TEST_OPERATOR_NAME` | `ALL_PERMISSIONS` は運営者の権限の既定（全て）。`TEST_OPERATOR_NAME` はログインしている運営者の名前で、画面の表示の確認に使う |
 | `http`、`server` | `http` は `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー）。`server` は API の代わりに応答する |
 | `problem(...)` | エラーレスポンスの本文を作る |

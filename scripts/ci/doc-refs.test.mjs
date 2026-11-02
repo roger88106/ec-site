@@ -490,9 +490,18 @@ describe('見出しの番号と、見出しの参照の先', () => {
       '// `${DIR}${module}.md`「ない」',
       '// build.gradle.kts「ない」',
       '// 「書き言葉」と書く。',
+      '// docs/testing/writing.md の語「ない」',
+      '// a.mdx「ない」',
+      '// （地域モジュールの設計書「ない」）',
+      '// db/seed/local/README.md「ない」',
     ].join('\n')
     assert.deepEqual(check('backend/Foo.java', code), [])
-    assert.deepEqual(check('docs/dev/setup.md', ['```', 'docs/testing/writing.md「ない」', '```', '[外](https://example.com/a.md)「ない」'].join('\n')), [])
+    const docs = { ...DOCS, 'docs/dev/a.png': '', 'docs/dev/setup.md': ['```', 'docs/testing/writing.md「ない」', '```', '[外](https://example.com/a.md)「ない」', '[図](a.png)「ない」'].join('\n') }
+    assert.deepEqual(checkReferences(Object.keys(docs), (path) => docs[path], (path) => path in docs), [])
+  })
+
+  test('「の」のない参照は、YAML のコメントでも確認する', () => {
+    assert.deepEqual(lines(check('docker/compose.yaml', '# docs/testing/writing.md「ない」')), ['1'])
   })
 
   test('「の」のない「」は直後だけを読む（閉じ括弧、「」」、全角の空白、改行を挟んだものは読まない）', () => {

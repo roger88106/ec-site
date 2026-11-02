@@ -280,11 +280,11 @@ export function findReferences(file, text, names, basenames, exists = existsSync
     if (!(isMarkdown && inCode)) {
       // 「」の後に「の「」が続くものは、親から順の見出しとして 1 つの参照にする。
       // 最初の「」は、「の」を挟むか、パスかリンクの直後（NO_PARTICLE_BEFORE）に書いたものだけを読む。読まないときは、続く「の「」から読む
-      for (const match of line.matchAll(/(\s?の)?「[^「」\n]*」(?:\s?の「[^「」\n]*」)*/g)) {
+      for (const match of line.matchAll(/(\s?の)?(「[^「」\n]*」)(?:\s?の「[^「」\n]*」)*/g)) {
         let start = match.index
         let text = match[0]
         if (!match[1] && !NO_PARTICLE_BEFORE.test(line.slice(0, start))) {
-          const first = text.match(/^「[^「」\n]*」/)[0]
+          const first = match[2]
           start += first.length
           text = text.slice(first.length)
           if (!text) continue

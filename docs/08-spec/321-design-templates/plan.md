@@ -1,8 +1,8 @@
 # Plan 321：設計書と spec・plan・tasks の雛形を、試作で決めた構成で入れる
 
-ステータス：草案　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 321 は草案で、Open questions の 4 つは、本書の「利用者に確認すること」で tasks と一緒に聞く。試作の材料は `/.local/refactor/320-trial/`（patches、deferred.md、review-spec-templates.md）と #320 のコメントである。参照用に、patch を当てた作業ツリーを `/.local/refactor/320-trial/tree/` に置いた（Git に入らない。後片付けで削除する）。文書の書き方は[文書の書き方](../../05-開発規則/writing.md)、番号と記号は[文書の記号と番号](../../05-開発規則/notation.md)。
+前提：spec 321 は確定した（2026-11-02）。「利用者に確認すること」の 4 つは、全て案 A に決まった。確認 4 には、試作に入る前に利用者の同意を得る条件が付いた（利用者、2026-11-02）。試作の材料は `/.local/refactor/320-trial/`（patches、deferred.md、review-spec-templates.md）と #320 のコメントである。参照用に、patch を当てた作業ツリーを `/.local/refactor/320-trial/tree/` に置いた（Git に入らない。後片付けで削除する）。文書の書き方は[文書の書き方](../../05-開発規則/writing.md)、番号と記号は[文書の記号と番号](../../05-開発規則/notation.md)。
 
 | 本書の節 | 主な担当 |
 |----------|----------|
@@ -70,7 +70,7 @@
 | CI の文書のワークフローで、Mermaid の検査を実行する | `.github/workflows/docs.yml` | push の後の CI の結果 |
 | CI の検査の文書に、新しい検査を書く | `docs/06-手順書/ci.md`（`ci-docs` が求める所） | `ci-docs` が通る |
 
-- 実行する所は、確認 3 の決定による（推奨は CI の文書のワークフローだけ）。
+- 実行する所は、CI の文書のワークフローだけである（確認 3 の決定）。
 - script は `scripts/ci/` の直下に置かない。理由：直下の script は `check-all.sh` と commit の前の hook が全て実行するため。
 - テストは `scripts/ci/**/*.test.mjs` に当たるので、`check-all.sh` が実行する。
 - mermaid-cli は `npx` でバージョンを固定して使う（`@mermaid-js/mermaid-cli@12.0.0`。試作で動いたバージョン）。
@@ -157,7 +157,7 @@
 
 ## 設計書を読むテスト（DS-321-5：DC-321-27〜29）
 
-| テスト | 読むもの | 決定（確認 1・2 の推奨） |
+| テスト | 読むもの | 決定（確認 1・2） |
 |--------|----------|---------------------------|
 | `ProductionClassesTest` | ③ の全ての `.md` にあるレベルの行 | 残す。レベルは ③ に置いたまま（確認 1）。雛形の形だけ変える（「設計書の雛形と規則」） |
 | `ModuleStructureTest` | `backend-coding.md` のパッケージの大きさの表 | 残す。本 spec の変更に関係しない |
@@ -167,9 +167,8 @@
 
 ## 試作を先にする進め方（DS-321-6：DC-321-30）
 
-- 確認 4 の決定による。推奨は加える。
-- 加えるときは、`workflow.md` の「起票と規模」に、次の条件の表を置く。出典は #320 の本文である。
-  - 利用者の承認
+- 加える（確認 4 の決定）。`workflow.md` の「起票と規模」に、次の条件の表を置く。出典は #320 の本文である。
+  - 試作を始める前に、試作に入るかを利用者に聞き、同意を得る（確認 4 で利用者が付けた条件）
   - ブランチの名前 `<issue>-trial`
   - push の commit に `[skip ci]`
   - pull request を作らない

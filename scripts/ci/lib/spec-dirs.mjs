@@ -44,21 +44,3 @@ export function listSpecDirs(specsDir) {
     )
     .sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }))
 }
-
-/**
- * MVP の完成までの一覧を探す。直下になければ、アーカイブのまとまりの下から探す。
- *
- * @param {string} specsDir docs/08-spec のパス
- * @returns {string | null} 一覧のパス。なければ null
- */
-export function findMvpList(specsDir) {
-  const direct = path.join(specsDir, 'mvp.md')
-  if (existsSync(direct)) return direct
-  const archiveDir = path.join(specsDir, ARCHIVE)
-  if (!existsSync(archiveDir)) return null
-  for (const group of readdirSync(archiveDir, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
-    const archived = path.join(archiveDir, group.name, 'mvp.md')
-    if (existsSync(archived)) return archived
-  }
-  return null
-}

@@ -1,48 +1,21 @@
-// spec の進捗が、README の進捗の表、MVP の完成までの一覧、tasks のチェックボックスで一致することを確認する（AGENTS.md「完了の基準」）。
-// - tasks がすべて済んだ spec は、2 つの表で「完了」。「完了」の spec は、tasks がすべて済んでいる
-// - 2 つの表の両方にある spec は、状態が同じ
-// - docs/08-spec/archive/1to10/ の spec（番号を 0 で埋めない）は、tasks がすべて済んでいる。進行中の spec（docs/08-spec/ の直下）は見ない
-// 表の照合の対象は MVP の 11 番以降の spec（番号は 0 埋めの 3 桁。それより前の spec は、tasks の書き方がそろっていないため）。状態は、表の最後の列の最初の句点まで
-// 失敗したとき：最後のタスクを完了する commit で、2 つの表の状態を「完了」にする。アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを [x] にする。
+// docs/08-spec/archive/1to10/ の spec（番号を 0 で埋めない）の tasks が、全て済んでいることを確認する（AGENTS.md「完了の基準」）。進行中の spec（docs/08-spec/ の直下）と MVP の spec は見ない。
+// - tasks のディレクトリがあればその中のタスクを数える。なければ（規模 M）spec.md の中のタスクの行を数える
+// - タスクが 1 つもない spec、済んでいないタスクがある spec は、食い違いとして報告する
+// MVP の進捗（README の進捗の表、MVP の完成までの一覧、MVP の spec の tasks の照合）は見ない。MVP の spec は完了してアーカイブに移した。
+// 失敗したとき：アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを [x] にする。
 // アーカイブの後、マージの前に追加するタスクは、アーカイブのタスクの後に、済ませる commit で [x] の行として追加する（開発の進め方の「規模」）。
 // 除外：なし。
 // 使い方：node scripts/ci/progress.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { findMvpList, listSpecDirs } from './lib/spec-dirs.mjs'
+import { listSpecDirs } from './lib/spec-dirs.mjs'
 import { isMain } from './lib/is-main.mjs'
-
-/** 対象の最初の spec の番号 */
-const FIRST_SPEC = 11
-
-/** MVP の spec の番号（0 で始まる 3 桁。123-xxx のような 1→10 の spec は含めない） */
-const MVP_SPEC = /^0\d{2}$/
-
-/** 表の 1 行目のセルの spec の番号（リンクの文字） */
-const SPEC_CELL = /^\[(0\d{2})\]/
 
 /** 1→10 の spec をアーカイブしたディレクトリ（docs/08-spec/ から） */
 const ARCHIVE_1TO10 = 'archive/1to10'
 
 /** tasks のタスクの行（字下げした補足の箇条書きは数えない） */
 const TASK_LINE = /^- \[( |x)\] \*\*T/
-
-/**
- * 進捗の表から、spec の番号と状態を読む。
- *
- * @param {string} markdown 表を含む文書
- * @returns {Map<string, string>} spec の番号 → 状態（最後の列の最初の句点まで）
- */
-export function parseStatusTable(markdown) {
-  const statuses = new Map()
-  for (const line of markdown.split(/\r?\n/)) {
-    const cells = line.split('|').slice(1, -1).map((cell) => cell.trim())
-    const match = cells[0]?.match(SPEC_CELL)
-    if (!match || cells.length < 2) continue
-    statuses.set(match[1], cells.at(-1).split('。')[0])
-  }
-  return statuses
-}
 
 /**
  * tasks のファイルのチェックボックスを数える。
@@ -53,70 +26,6 @@ export function parseStatusTable(markdown) {
 export function countTasks(texts) {
   const lines = texts.flatMap((text) => text.split(/\r?\n/)).filter((line) => TASK_LINE.test(line))
   return { total: lines.length, done: lines.filter((line) => line.startsWith('- [x]')).length }
-}
-
-/**
- * 進捗の食い違いを探す。
- *
- * @param {Map<string, string>} readme README の進捗の表
- * @param {Map<string, string>} mvp MVP の完成までの一覧
- * @param {Map<string, { total: number, done: number }>} tasks spec の番号 → タスクの数
- * @param {number} firstSpec 対象の最初の spec の番号
- * @returns {string[]} 食い違いの説明（spec の番号の順）
- */
-export function checkProgress(readme, mvp, tasks, firstSpec) {
-  const tables = [
-    ['README の', readme],
-    ['MVP の完成までの一覧の', mvp],
-  ]
-  const specs = [...new Set([...readme.keys(), ...mvp.keys(), ...tasks.keys()])]
-    .filter((spec) => MVP_SPEC.test(spec) && Number(spec) >= firstSpec)
-    .sort()
-  const problems = []
-  for (const spec of specs) {
-    const count = tasks.get(spec)
-    const hasTasks = Boolean(count) && count.total > 0
-    const allDone = hasTasks && count.done === count.total
-    const completed = tables.filter(([, table]) => table.get(spec) === '完了')
-    for (const [name, table] of tables) {
-      if (allDone && table.has(spec) && table.get(spec) !== '完了') {
-        problems.push(`spec ${spec}：tasks はすべて済んだが、${name}状態が「${table.get(spec)}」`)
-      }
-    }
-    if (hasTasks && !allDone) {
-      for (const [name] of completed) {
-        problems.push(`spec ${spec}：${name}状態が「完了」だが、tasks に残りが ${count.total - count.done} ある`)
-      }
-    }
-    if (readme.has(spec) && mvp.has(spec) && readme.get(spec) !== mvp.get(spec)) {
-      problems.push(
-        `spec ${spec}：README の状態「${readme.get(spec)}」と、MVP の完成までの一覧の状態「${mvp.get(spec)}」が食い違う`,
-      )
-    }
-    if (!hasTasks) {
-      for (const [name] of completed) {
-        problems.push(`spec ${spec}：${name}状態が「完了」だが、tasks がない`)
-      }
-    }
-  }
-  return problems
-}
-
-/**
- * spec（直下とアーカイブ）の tasks のチェックボックスを数える。
- *
- * @param {string} specsDir docs/08-spec のパス
- * @returns {Map<string, { total: number, done: number }>} spec の番号 → タスクの数
- */
-export function readTasks(specsDir) {
-  const tasks = new Map()
-  for (const { name, dir } of listSpecDirs(specsDir)) {
-    const number = name.match(/^(0\d{2})-/)?.[1]
-    if (!number) continue
-    const texts = readTaskTexts(dir)
-    if (texts) tasks.set(number, countTasks(texts))
-  }
-  return tasks
 }
 
 /**
@@ -174,21 +83,7 @@ export function checkArchivedTasks(tasks) {
 }
 
 if (isMain(import.meta.url)) {
-  const specsDir = 'docs/08-spec'
-  const mvpList = findMvpList(specsDir)
-  if (!mvpList) {
-    console.log('MVP の完成までの一覧（mvp.md）が、docs/08-spec/ の直下にもアーカイブの下にもない')
-    process.exit(1)
-  }
-  const problems = [
-    ...checkProgress(
-      parseStatusTable(readFileSync('README.md', 'utf8')),
-      parseStatusTable(readFileSync(mvpList, 'utf8')),
-      readTasks(specsDir),
-      FIRST_SPEC,
-    ),
-    ...checkArchivedTasks(readArchivedTasks(specsDir)),
-  ]
+  const problems = checkArchivedTasks(readArchivedTasks('docs/08-spec'))
   for (const problem of problems) console.log(problem)
   console.log(`進捗の食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

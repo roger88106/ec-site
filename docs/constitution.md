@@ -18,10 +18,8 @@
 - 共通・E2E：OpenAPI（API の契約）、Keycloak（OIDC）、Docker Compose、GitHub Actions、Playwright。
 - バックエンド：Java、Spring Boot、Spring Modulith、jMolecules、PostgreSQL、jOOQ、Flyway、S3 互換オブジェクトストレージ、imgproxy、Stripe、SMTP、ShedLock、Gradle Kotlin DSL、Error Prone、NullAway、Checkstyle、Lombok、JUnit 5、Testcontainers、Actuator、Micrometer。ローカルでは Stripe は mock、メールは Mailpit、ストレージは SeaweedFS を使う。
 - フロントエンド：C 側（`frontend/store`）と B 側（`frontend/admin`）は別のアプリ。TypeScript、pnpm（workspace）、Tailwind CSS、shadcn/ui、`openapi-typescript` + `openapi-fetch`、Biome、Vitest、MSW。C 側は Next.js、B 側は Vite + React。
-- 後から導入する技術は、MVP では入れない。導入するときは本節を更新してから spec を書く。
-  - 検索エンジン（1 → 10 の段階）
-  - Redis（インスタンス間で共有するデータが必要になったとき）
-  - メッセージブローカー（モジュールを別プロセスに切り出すとき）
+
+後から導入する技術は MVP では入れず、導入するときは本節を更新してから spec を書く。検索エンジンは 1 → 10 の段階、Redis はインスタンス間で共有するデータが必要になったとき、メッセージブローカーはモジュールを別プロセスに切り出すときに導入する。
 
 ## 3. リポジトリ構成
 
@@ -102,7 +100,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 - 認証は IdP（Keycloak）に任せ、自前で作らない。ログインは OIDC、API は OAuth 2.0 の Resource Server として token を検証するだけ。業務のコードは認証の仕組み（Spring Security）に依存しない。
 - 消費者と運営者は IdP の別の realm に分ける。
-- 公開ネットワークへのデプロイは、その前提（同じ文書の「公開ネットワークへのデプロイの前提」）を決めてから行う。
+- 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](02-設計/backend-architecture.md)の「公開ネットワークへのデプロイの前提」）を決めてから行う。
 
 ## 10. 外部連携（決済・物流）
 

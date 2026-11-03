@@ -1,6 +1,6 @@
 # 開発の進め方
 
-[constitution](../constitution.md)の「開発の進め方」の細則で、仕様駆動開発（SDD）とテスト駆動開発（TDD）の流れ、規模、利用者の確認と中断、完了の定義を決める。毎回読み、起票・AC 一覧・アーカイブ・試作は[起票と記録の操作](issues.md)、マージと後片付け・pull request のレビューの対応は[マージと後片付け](merging.md)を読む。
+[constitution](../constitution.md)の「開発の進め方」の細則で、毎回読む。場面ごとの規則は[起票と記録の操作](issues.md)と[マージと後片付け](merging.md)にある。
 
 ## 1. 仕様駆動開発（SDD）
 
@@ -32,7 +32,7 @@
 
 ### 1.3 spec と plan の書き方
 
-AC・DC・plan の節・識別子と、plan と tasks を書くときの注意は、[文書の構成](doc-structure.md)の「spec と plan の書き方」。参照の書き方は、[文書の構成](doc-structure.md)の「参照」。本文の書き手は、[文書の書き方](writing.md)の冒頭のとおり。
+AC・DC・plan の節・識別子と、plan と tasks を書くときの注意は、[文書の構成](doc-structure.md)の「spec と plan の書き方」。参照の書き方は、[文書の構成](doc-structure.md)の「参照」。本文の書き手は、[文書の書き方](writing.md)の「本文の書き手」のとおり。
 
 ### 1.4 コードと文書の食い違い
 
@@ -72,7 +72,7 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 
 ## 3. 規模と push
 
-起票は[起票と記録の操作](issues.md)の「起票」、アーカイブの置き場所と手順は同じ文書の「アーカイブの操作」、試作は同じ文書の「構成が決まっていないときの試作」にある。
+起票は[起票と記録の操作](issues.md)の「起票」、アーカイブの置き場所と手順は[起票と記録の操作](issues.md)の「アーカイブの操作」、試作は[起票と記録の操作](issues.md)の「構成が決まっていないときの試作」にある。
 
 ### 3.1 規模
 

@@ -68,7 +68,7 @@ module/<モジュール>/
 確認方法：
 
 - 層の間の依存：モジュールの中の層の間は、依存の表にある全ての組と、表にない層・パッケージへの依存が自動（ArchUnit）。`api/` に interface がないこと、`api/` の型を `api/` の外が実装・継承しないこと、domain のパッケージに循環がないことも自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることはレビュー（集約に依存しないことは次の行で自動）
-- 参照の service の返す型：presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー
+- 参照の service が返す型：presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー
 - 公開の API：`api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit）
 - application の `port/` への依存：自動（ArchUnit）
 - 認証の情報の取り出し：自動（ArchUnit）
@@ -345,7 +345,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 ### 7.1 null の扱い
 
 - main では、`com.ecsite` の下の全てのパッケージ（生成したコードの `com.ecsite.jooq`、`com.ecsite.api` を除く）で、注釈のない引数・戻り値・フィールドを null でないとみなす。NullAway がコンパイルのときに確認する（テストのソースセットと tools は対象外）。
-- null を取りうる所には JSpecify の `org.jspecify.annotations.Nullable` を付ける。他の `Nullable`（`jakarta.annotation`、`javax.annotation`、`org.springframework.lang`）は使わない（確認方法：`scripts/ci/java-rules.mjs`）。型の注釈なので、配列や修飾した型では型の直前に付け、迷ったら JSpecify の位置にする（`String @Nullable []` など）。
+- null を取りうる所には JSpecify の `org.jspecify.annotations.Nullable` を付ける。他の `Nullable`（`jakarta.annotation`、`javax.annotation`、`org.springframework.lang`）は使わない。型の注釈なので、配列や修飾した型では型の直前に付け、迷ったら JSpecify の位置にする（`String @Nullable []` など）。
 - OpenAPI から生成した interface とモデルは null の注釈を持たないが、明示した `@Nullable` は NullAway が読む（設定 `AcknowledgeRestrictiveAnnotations`）。生成した interface の `@Nullable` の引数を、注釈なしでオーバーライドすると、その引数は null でないとみなされる。そこにモデルの `@Nullable` の getter の値を渡すと、NullAway が報告する。
 - 選び方：
   - 今の振る舞いで null が正しい値（API の応答の省略できる項目、DB の null を取りうる列など）には `@Nullable` を付ける。

@@ -139,10 +139,11 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 | 管理画面 | `src/app/paths.ts` の `paths` の関数で作る（ルーターの定義は同じファイルの `routePatterns`）。URL の文字列を直接書かない |
 | 店舗画面 | Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ付きの URL は機能の `*Query.ts` の関数（戻り値は `Route`）で作り、クエリは `URLSearchParams` で組み立てる（文字列で `?`・`&` を付けない）。店舗画面の外の URL（IdP など）だけ `as Route` にし、理由をコメントに書く |
 
+レビューでは、管理画面は `git grep` でパスの文字列の直書きを、店舗画面は `as Route` と、型の付かない `revalidatePath()` と `<form action>` の URL を確認する。
+
 理由：間違った URL を型チェックで見つけるため。
 
 確認方法：自動（型チェック）、クエリ付きの URL の文字列の組み立ては自動（`scripts/ci/frontend-rules.mjs`）、型の付かない他の URL はレビュー
-レビューでは、管理画面は `git grep` でパスの文字列の直書きを、店舗画面は `as Route` と、型の付かない `revalidatePath()` と `<form action>` の URL を確認する。
 
 ## 7. 表示の文言とロケール
 
@@ -233,7 +234,8 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 店舗画面で、内容の変化を支援技術に読み上げさせる領域は、status の役割（`role="status"`）で作り、`aria-live` を直接書かない。読み上げない領域（残り時間の表示 `RemainingTime.tsx`）だけは `aria-live="off"` と書いてよい。
 
+検査（Biome の plugin `no-aria-live`）が見るのは、JSX の属性の `aria-live` の直書きだけで、スプレッドや役割の選び方は見ない。ページを開いたときに描く知らせ（共有の `Alert`、`role="alert"`）は、内容の変化を読み上げる領域ではないので、対象外である。
+
 理由：`aria-live` を直接書くと、領域ごとに値と `aria-atomic` の有無がばらつくため。status の役割は、既定で `aria-live="polite"` と `aria-atomic="true"` を持つ。
 
 確認方法：`aria-live` の直書きは自動（Biome の plugin `no-aria-live`）、status 以外の役割で作っていないかはレビュー
-検査（Biome の plugin `no-aria-live`）が見るのは、JSX の属性の `aria-live` の直書きだけで、スプレッドや役割の選び方は見ない。ページを開いたときに描く知らせ（共有の `Alert`、`role="alert"`）は、内容の変化を読み上げる領域ではないので、対象外である。

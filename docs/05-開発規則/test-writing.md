@@ -193,7 +193,12 @@ PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew che
 
 理由：画面を再作成しても、振る舞いが同じならテストが壊れないようにするため。位置で選ぶと、並びが変わったときに別の要素を操作しても通ってしまい、ボタンの名前が部分一致だと、名前が似た別のボタンに一致する。`getBy…` は見つからないと先に失敗するので `toBeTruthy` は確認にならず、`queryBy…` の `null` は `toBeDefined` を通るので、どちらも確認として弱いため。HTML の属性や要素の並びへの依存は、見た目に影響しない変更でテストを壊すため。
 
-確認方法：CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、E2E の位置で選ぶメソッド（`.first()`・`.nth()`・`.last()`）とボタンの名前の完全一致（`exact: true`、先頭と末尾を固定した正規表現）も自動（同じ script）、他はレビュー
+確認方法：
+
+- CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと：フロントのテストと E2E で自動
+- 画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現：自動（`scripts/ci/frontend-rules.mjs`）
+- E2E の位置で選ぶメソッドとボタンの名前の完全一致：自動（同じ script）
+- その他の探し方：レビュー
 
 ### 4.2 API の差し替えは型付きの MSW
 

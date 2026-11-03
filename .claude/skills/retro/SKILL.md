@@ -50,5 +50,5 @@ You have access to several files in the repo:
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
 - `CODING_STANDARDS.md` はない。書き方の規則の正本は、constitution の「リポジトリ構成」の文書の地図にある書き方の文書（`backend-coding.md`、`frontend-coding.md`、テストとコメントの書き方）で、レビューの手順は `docs/05-開発規則/review.md`。決まりの追加はそこに提案する。
 - 自動の確認は、`.github/workflows/` の CI と、そこから呼ぶ `scripts/ci/` の script。手元で実行する手順は skill `local-dev`。
-- skill は AGENTS.md の skill の表にある。改善点が skill の不足なら、その skill への追記として提案する。
+- skill の一覧は `.claude/skills/`（とセッションの skill の一覧）にある。改善点が skill の不足なら、その skill への追記として提案する。
 - 改善点の提案だけを行い、文書や設定は修正しない（修正するときは tasks に追加してから。AGENTS.md）。

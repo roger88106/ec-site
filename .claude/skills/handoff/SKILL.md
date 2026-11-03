@@ -25,4 +25,4 @@ If the user passed arguments, treat them as a description of what the next sessi
 - spec 担当のセッションを途中で別のセッションに替えるときに使う。引き継ぎの文書に、追跡の issue の番号を書く。平常のやり取りには使わない。平常は、セッションの親子の関係の通知と、追跡の issue のコメントで行う（[セッションの運用](../sessions/SKILL.md)）。
 - 古い引き継ぎの文書は利用者が削除する。エージェントは削除せず、削除するかどうかも聞かない。
 - spec 担当のセッションを途中で別のセッションに替えるときに、引き継ぎの文書を作る（AGENTS.md「セッションの始めと終わり」）。spec の区切りの記録は、追跡の issue のコメントに残す。作業の正本は spec のディレクトリの tasks（規模 M は spec.md の中の tasks）と追跡の issue なので、引き継ぎの文書には、次に着手するタスク番号と、tasks・commit に残っていないこと（未確定の判断、手動確認で気づいたこと、ローカルの DB に残したテストデータなど）だけを書く。
-- 「suggested skills」には、AGENTS.md の skill の表から、次の作業で使うものを挙げる。
+- 「suggested skills」には、セッションの skill の一覧（`.claude/skills/`）から、次の作業で使うものを挙げる。

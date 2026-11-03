@@ -223,7 +223,9 @@ hook や検査に止められてからコマンドを書き換えないよう、
 
 ## 手元の hook の設定
 
-利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 3 つの hook。script は `scripts/dev/hooks/` と `.claude/skills/zh-mixing/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」の表。設定はメインの作業ツリーに置く。
+hook と permission の書き先は 2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のものは `.claude/settings.local.json`（Git に入らない）に置く。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs`、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`）。例外は zh-mixing の手元の hook で、script は `.claude/skills/zh-mixing/` に置く。
+
+利用者の環境（`.claude/settings.local.json`）に置く 3 つの hook は次のとおり。読む場所と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」の表。設定はメインの作業ツリーに置く。
 
 | hook | イベントと matcher | 働き |
 |------|--------------------|------|

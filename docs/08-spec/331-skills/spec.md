@@ -4,7 +4,9 @@
 
 ## 背景と目的
 
-整理の段階の第 2 フェーズの spec 7。対象は、`.claude/skills/` の local-dev、sessions（`rounds.md` を含む）、new-screen、review（`prompts.md`、`convergence.md`、`docs-review.md` を含む）、docs、zh-mixing と、`.claude/agents/` の定義である。
+整理の段階の第 2 フェーズの spec 7。対象は次の 2 つである。
+- `.claude/skills/` の local-dev・sessions（`rounds.md` を含む）・new-screen・review（`prompts.md`・`convergence.md`・`docs-review.md` を含む）・docs・zh-mixing
+- `.claude/agents/` の定義
 
 棚卸し（2026-10-29）で、次の 5 つの問題が見つかった。
 
@@ -36,7 +38,8 @@ skill には、エージェントが実行する手順と雛形だけを残す�
 - 理由の 1 行は残してよい。出来事の説明（いつ、どの spec・issue で何が起きたか）と、一度きりの測定の結果は、本文から削除するか `docs/07-記録/` に移す。
 - 重要度と収束の規則は、[書き方の規則とレビュー](../../05-開発規則/review.md)に節を加えて移す。`convergence.md` は削除する。`prompts.md` の「重要度」の節は削除し、review.md を指す。
 - 「日本語だけの文脈のサブエージェントに書かせる」の規則の正本は、[文書の書き方](../../05-開発規則/writing.md)の冒頭とする。手順（要点の作り方、渡すもの、指示に入れる文）は、skill `docs` の「進め方」に残す。AGENTS.md、[エージェントの作業フロー](../../05-開発規則/subagents.md)、[開発の進め方](../../05-開発規則/workflow.md)、skill `sessions` は、言い換えを書かない。規則は writing.md の冒頭を、手順は skill `docs` の「進め方」を指す。
-- 手元の hook の設定（SessionStart、backslash-guard、zh-mixing の PostToolUse）の JSON と、その前の説明文は、skill `local-dev` の「手元の hook の設定」にだけ置く。skill `zh-mixing` は、環境の印（git の設定 `ecsite.instructionLanguage`）と git の hook の行だけを書く。Claude Code の hook は、local-dev のその節を指す。
+- 手元の hook の設定は、SessionStart・backslash-guard・zh-mixing の PostToolUse の 3 つである。JSON と前の説明文は skill `local-dev` の「手元の hook の設定」にだけ置く。
+  skill `zh-mixing` は、環境の印（git の設定 `ecsite.instructionLanguage`）と git の hook の行だけを書く。Claude Code の hook は、local-dev のその節を指す。
 - 作業ツリーのセッションが読むものの表は、skill `sessions` の「ツールの補足」に残す。測定の出典と日付、公式の文書との比較の段落は、[エージェントの作業フローの調べた仕組みと実績](../../07-記録/subagents-results.md)に移す。
 - skill `new-screen` の共有の部品の表は削除し、`frontend/shared/src/` の `lib`・`components`・`ui` の export を読んで探す手順に替える。
 - 層 1・層 2 の分け方の正本は、skill `review` の `docs-review.md` の手順 4 とする。skill `zh-mixing` は、層 2 の一覧の修正の方法だけを書き、分け方はそこを指す。
@@ -48,7 +51,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
 ### DS-331-1 規則を、規則の文書の 1 か所で読めるようにする（D / P1）
 
 - **DC-331-1** 重要度（高・必須・推奨）の定義と、時点ごとに返す重要度が、`docs/05-開発規則/review.md` にだけ書かれている。skill `review`、`workflow.md`、`subagents.md` は、review.md の節を指す。
-- **DC-331-2** 収束の規則（由来、既存の指摘の扱い、2 回目以降の対象、繰り返しの上限、同じ種類の指摘、同じ判定の別の書き方の指摘、採らなかった指摘）が、`docs/05-開発規則/review.md` にだけ書かれている。`.claude/skills/review/convergence.md` がない。
+- **DC-331-2** 収束の規則（由来・既存の指摘の扱い・2 回目以降の対象・繰り返しの上限・同じ種類の指摘・同じ判定の別の書き方の指摘・採らなかった指摘）が、`docs/05-開発規則/review.md` にだけ書かれている。`.claude/skills/review/convergence.md` がない。
 - **DC-331-3** 「文書の本文は、日本語の要点から、日本語だけの文脈のサブエージェントに書かせる」の規則が、`docs/05-開発規則/writing.md` にだけ書かれている。AGENTS.md、`subagents.md`、`workflow.md`、skill `docs`、skill `sessions` には、言い換えた文がない。skill `docs` の手順と、skill `sessions` の雛形の参照は残る。
 - **DC-331-4** 層 1・層 2 の分け方（何をどちらの一覧に加えるか）が、skill `review` の `docs-review.md` の手順 4 にだけ書かれている。
 
@@ -149,7 +152,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
   - 依存：T331-01-04（同じファイル）
   - 範囲：`.claude/skills/local-dev/SKILL.md`、`docs/06-手順書/setup.md`、`running-tests.md`
   - 確認方法：削除する文ごとに、手順書の同じ内容の場所を、作業の記録（このタスクの下）に書く。setup.md を変える前に、issue 担当のセッションに知らせる
-  - 結果：スロットのポートの表、`slot.mjs` のコマンドの一覧、使えないもの、環境変数の注意、Stripe の起動のコマンド、E2E の構成の説明を削除し、setup.md の「スロット」「Stripe で動かす」と running-tests.md の「E2E」を指した。Windows で `node_modules` のある作業ツリーを削除する手順は、人にも必要なので setup.md の「スロット」に移した。seed の商品・注文・固定の ID の説明は `db/seed/local/README.md` にないので、skill に残した
+  - 結果：スロットのポートの表・`slot.mjs` のコマンドの一覧・使えないもの・環境変数の注意を削除した。Stripe を起動するコマンドと、E2E の構成の説明も削除した。置き換えに、setup.md の「スロット」「Stripe で動かす」と running-tests.md の「E2E」を指した。Windows で `node_modules` のある作業ツリーを削除する手順は、人にも必要なので setup.md の「スロット」に移した。seed にある商品・注文と、固定の ID の説明は `db/seed/local/README.md` にないので、skill に残した
 - [x] **T331-01-06** skill `new-screen` の共有の部品の表を削除し、`frontend/shared/src/` の export を読んで探す手順に替える（DC-331-7）。
   - 依存：なし
   - 範囲：`.claude/skills/new-screen/SKILL.md`

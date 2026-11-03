@@ -97,7 +97,7 @@
 
 skill `sessions` の「作業ツリーのセッションが読むもの」の表の測定である。
 
-- 作業ツリーとメインの作業ツリーに、出力が違う一時の設定・定義・skill を置いて実際に実行し、どちらを読んだかを確認した（Claude Code 2.1.309、2026-10-29、[spec 276](../08-spec/archive/1to10/276-retro-rules/spec.md)の「作業の記録」）。
+- 作業ツリーとメインの作業ツリーに、出力が違う一時の設定・定義・skill を置いた。実際に実行し、どちらを読んだかを確認した（Claude Code 2.1.309、2026-10-29、[spec 276](../08-spec/archive/1to10/276-retro-rules/spec.md)の「作業の記録」）。
 - アプリのセッションの `settings.json` の hook の変更が反映される時点は、確認していない。手動の作業ツリーで作業するアプリのセッションも確認していないが、読む場所は起動したディレクトリで決まる（表の 3 行）ので、メインの作業ツリーのものを読むと見込む。
 
-Claude Code の公式の文書は、設定のファイル（permissions と hooks）、定義、skill の変更が再起動なしで反映されると書いている（[settings](https://code.claude.com/docs/en/settings)、[sub-agents](https://code.claude.com/docs/en/sub-agents)、[skills](https://code.claude.com/docs/en/skills)。起動の時になかったフォルダーは監視しない）。アプリのセッションの定義・skill・`settings.local.json` の hook の実測は、文書と合う。`claude -p` の実測（`settings.local.json` と定義の変更が反映されない）は、文書と違う。原因は確認していない（1 回の実行が短いことなどの可能性）。また、公式の文書は、作業ツリーのセッションがその作業ツリーの `settings.local.json` を読むと書いている。作業ツリーで起動した `claude -p` は文書のとおりで、アプリの作業ツリーのセッションは文書と違い、メインの作業ツリーのものを読む。
+Claude Code の公式の文書は、次の変更が再起動なしで反映されると書いている。設定のファイル（permissions と hooks）、定義、skill である（[settings](https://code.claude.com/docs/en/settings)、[sub-agents](https://code.claude.com/docs/en/sub-agents)、[skills](https://code.claude.com/docs/en/skills)。起動の時になかったフォルダーは監視しない）。アプリのセッションの定義・skill・`settings.local.json` の hook の実測は、文書と合う。`claude -p` の実測（`settings.local.json` と定義の変更が反映されない）は、文書と違う。原因は確認していない（1 回の実行が短いことなどの可能性）。また、公式の文書は、作業ツリーのセッションがその作業ツリーの `settings.local.json` を読むと書いている。作業ツリーで起動した `claude -p` は文書のとおりで、アプリの作業ツリーのセッションは文書と違い、メインの作業ツリーのものを読む。

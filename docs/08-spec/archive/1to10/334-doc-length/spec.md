@@ -228,9 +228,9 @@
   - 依存：T334-01-01〜07
   - 範囲：変えたファイルと、参照する文書・skill・雛形・script のコメントとテスト、`docs/07-記録/context-size.md`
   - 確認方法：`node scripts/ci/doc-refs.mjs`、`scripts/ci/check-all.sh`、`node scripts/ci/ja-text.mjs --changed`、`wc -c`、`claude -p`、この spec で変えた文書の冒頭（最初の `##` まで）を読み、2 文以内である
-  - 結果：大きさは、spec の最後のレビューの修正の後に測り直した値である（[毎回読む文書と固定の文脈の大きさ](../../07-記録/context-size.md)の「spec 334 の前後」）。
+  - 結果：大きさは、spec の最後のレビューの修正の後に測り直した値である（[毎回読む文書と固定の文脈の大きさ](../../../../07-記録/context-size.md)の「spec 334 の前後」）。
     - 毎回読む 3 つの文書は 61,319 バイトから 33,216 バイト（約 46% 減）に、description は 4,145 バイトから 2,744 バイトになった。
-    - 目安を超えたのは `AGENTS.md`（1,482 バイト超）・constitution（1,139 バイト超）・`writing.md`（3,880 バイト超）・`subagents.md`（500 バイト超）である。残りが規則か参照の本体なので、削らなかった（理由は[毎回読む文書と固定の文脈の大きさ](../../07-記録/context-size.md)の「目安を超えたもの」）。
+    - 目安を超えたのは `AGENTS.md`（1,482 バイト超）・constitution（1,139 バイト超）・`writing.md`（3,880 バイト超）・`subagents.md`（500 バイト超）である。残りが規則か参照の本体なので、削らなかった（理由は[毎回読む文書と固定の文脈の大きさ](../../../../07-記録/context-size.md)の「目安を超えたもの」）。
     - 冒頭は、変えた文書のうち `acceptance-criteria.md` とルートの `README.md` を除いて 2 文以内にした。除いた 2 つは、この spec で冒頭を変えておらず、冒頭が AC 一覧の規則とプロジェクトの紹介のため。
     - 作業ツリーで起動した `claude -p` は、変えた skill（local-dev、docs）と agent（implementer、ja-proof-verifier）の description を示した。
 - [x] **T334-01-09** spec の最後のレビュー。指摘を修正し、draft の pull request を作る（DC-334-17 の校閲を含む、DC-334-19）。

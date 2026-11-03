@@ -530,7 +530,7 @@ function blockEnd(code, from) {
 
 /**
  * getAllBy…・findAllBy…・queryAllBy… の結果を、並びのインデックスで選ぶ所を探す。
- * 規則は「画面に見えるもので探す」の「並びの 1 つ目は使わない」。
+ * 規則は、フロントのテストの書き方の「画面に見えるもので探す」。並びの 1 つ目は使わない。
  * 呼び出しの直後の [数字]・.at(数字) と、変数に入れて（配列の分割代入を含む）から [数字]・.at(数字) で選ぶ所を見つける。
  * 変数に入れる形：const・let・var の宣言と、宣言のない代入。= の後の改行、await、括弧、as の型の変換、型の注釈、
  * 受け手（screen.、within(…).）、スプレッド（[...x]）、Array.from(x) をはさんでもよい。
@@ -750,7 +750,7 @@ function isElementVariable(code, name, before) {
 
 /**
  * 要素のプロパティ・属性（.disabled、.checked、.value、getAttribute(…)）を toBe・toEqual で比べる所を探す。
- * 規則は「要素のプロパティ・属性・状態を jest-dom で確認する」。
+ * 規則は、フロントのテストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」。
  * expect の引数の最後がそのプロパティか属性であるもので、受け手が要素のものだけを見つける。受け手が要素なのは、
  * getBy…・queryBy…・findBy…・screen.・within( の結果か、それを入れた変数（要素の型の注釈や変換も）、document.・container. からたどる形。
  * `parts.map((part) => part.value)` のように途中に出てくるものと、`result.current.value` のように要素でない値は見つけない。
@@ -821,7 +821,7 @@ const POSITION_SELECTOR_TEXT = /(?<![\w-])nth=|:nth-(?:match|child|last-child|of
 /**
  * E2E で、位置で要素を選ぶメソッド（.first()・.nth(…)・.last()）を使う行を探す。
  * locator のセレクターの文字列にある位置（nth=、:nth-match(、:nth-child(、:first-child、:last-child など）も探す。
- * 規則は「画面に見えるもので探す」。名前や親の要素で絞る。
+ * 規則は、フロントのテストの書き方の「画面に見えるもので探す」。名前や親の要素で絞る。
  * セレクターの文字列は、locator( の引数の中だけを見る（テストの名前やメッセージの文字列は見ない）。
  *
  * @param {string} text ソース
@@ -1281,7 +1281,7 @@ function nextDeclarator(code, from) {
 
 /**
  * フロントのテストと E2E で、組み込みの名前と同じ名前の const・let の宣言を探す。組み込みの名前は、TypeScript の lib が宣言するグローバルの名前である。
- * 規則は「組み込みの名前をシャドーイングしない」。エラーにならずにグローバルの値が使われるのを防ぐ。
+ * 規則は、フロントのテストの書き方の「組み込みの名前をシャドーイングしない」。エラーにならずにグローバルの値が使われるのを防ぐ。
  * 対象は、const・let の宣言の名前（1 つの宣言に並べたもの、分割代入、for…of・for…in の宣言を含む）。
  * 関数の引数、catch の変数、関数・クラスの宣言、import は対象にしない。
  * 分割代入の { a: name } は右側の name が宣言される名前で、{ name: x } は x。

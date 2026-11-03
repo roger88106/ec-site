@@ -1,6 +1,6 @@
 ---
 name: local-dev
-description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、スロット（作業ツリーごとの環境）、フロント（store・admin）と E2E を要約だけで実行するスクリプト、commit の前の CI の検査、プレビューでの画面の確認方法、壊しての確認（break-check）、手元の hook の設定、シェルと Git の落とし穴。バックエンドやフロントを動かす、テストや E2E を実行する、commit する、画面を確認する、DB や token を見るときに使う。
+description: ec-site をローカルで起動・確認する手順。スロット（作業ツリーごとの環境）、compose・バックエンド・フロントの起動、テストと E2E。commit の前の CI の検査、画面・DB・token の確認、壊しての確認（break-check）、手元の hook の設定のときに使う。
 ---
 
 # ローカルでの起動と確認

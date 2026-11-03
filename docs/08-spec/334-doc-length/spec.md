@@ -211,7 +211,7 @@
   - 依存：T334-01-02（`AGENTS.md` が指す workflow.md の節が決まるため）
   - 範囲：`AGENTS.md`、skill `writing-for-agents`・`handoff`・`retro` の日本語の追記、skill `local-dev`
   - 確認方法：`wc -c`、`git grep -n "skill の表"`
-- [ ] **T334-01-05** skill と agent の description を縮める（DC-334-5）。
+- [x] **T334-01-05** skill と agent の description を縮める（DC-334-5）。
   - 依存：T334-01-03、T334-01-04、T334-01-06（同じ skill の SKILL.md を変えるため）
   - 範囲：対象の skill 6 つの SKILL.md と、`.claude/agents/` の 5 つの frontmatter
   - 確認方法：description のバイト数を node で数える、各 description を読み、何をするかといつ使うかが書いてある

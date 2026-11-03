@@ -1,6 +1,6 @@
 ---
 name: docs
-description: ec-site の文書（docs/、README、AGENTS.md、spec、plan、tasks、issue の本文とコメント）を書く・修正する・移すときの型。置き場所、書き方の規則の正本の案内、進め方、検査、文書を移したり見出しを変えたりしたときの参照の修正方法と確認方法。文書を追加する・書き換える・整理する、置き場所や節を変えるときに使う。
+description: ec-site の文書（docs/・README・AGENTS.md・spec・plan・tasks・issue）を書く・修正する・移すときの型。置き場所・進め方・検査・移したときの参照の修正に使う。
 ---
 
 # 文書を書く・修正する

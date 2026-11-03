@@ -1,6 +1,6 @@
 ---
 name: new-screen
-description: ec-site のフロントに画面や操作を追加するときの型。店舗画面（frontend/store、Next.js のサーバーコンポーネントとサーバーアクション）と管理画面（frontend/admin、TanStack Query の $api）の最小の例と、読むべき既存のファイル。画面・フォーム・ボタンの操作を作る、修正するときに使う。
+description: ec-site のフロントに画面や操作を追加・修正するときの型。店舗画面（frontend/store）と管理画面（frontend/admin）の最小の例と、読むべき既存のファイル。
 ---
 
 # 画面を追加するときの型

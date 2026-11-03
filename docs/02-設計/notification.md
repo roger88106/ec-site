@@ -21,7 +21,7 @@
 | メールの送信 | Spring Boot のメール（`spring-boot-starter-mail`）で SMTP に送る。ローカル・テスト・E2E は Mailpit | `spring.mail.*`、`ecsite.notification` |
 
 - メールを送る port の実装として置く。SMTP の型とエラーを `infrastructure` の外に出さない。
-- ローカル・E2E は compose の Mailpit に送る。SMTP はホストの `localhost:2525`（ポートは `MAILPIT_SMTP_PORT` で変えられる）、届いたメールは `http://localhost:8025` で確認する。統合テストは Testcontainers の Mailpit に送る。
+- ローカル・E2E は compose の Mailpit に送る（SMTP のポートと、届いたメールを見る URL は[開発環境の起動](../06-手順書/setup.md)の「起動」）。統合テストは Testcontainers の Mailpit に送る。
 - 失敗の扱いは、[通知モジュール](../03-機能仕様/notification.md)の「1 通だけ送る」に書く。
 
 | 項目 | 内容 |

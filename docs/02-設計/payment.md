@@ -70,7 +70,7 @@ Stripe の API のバージョンは、`stripe-java` のものに固定される
 |------|------|
 | 支払画面 | Checkout Session（`mode=payment`、`capture_method=manual`、通貨 JPY、金額は総額の 1 行）。支払画面 ID は Session の ID |
 | 画面の期限 | 作ってから 31 分（Stripe の最短の 30 分に、時計のずれの余裕を加える） |
-| タイムアウトと再試行 | 1 回のリクエストごとに接続 5 秒、応答 20 秒。通信の失敗は、`stripe-java` が同じ冪等キーで 2 回まで再試行する |
+| タイムアウトと再試行 | 上限は[環境変数](../06-手順書/environment.md)の「バックエンド」。通信の失敗は、`stripe-java` が同じ冪等キーで 2 回まで再試行する |
 | 支払の方法 | Session では指定しない。ダッシュボードの設定で、カードだけを有効にする ※3 |
 | 通知のエンドポイント | `POST /api/webhooks/stripe`。認証は付けず、署名で確認する。署名が合わない・古い通知は 400 で拒否する ※4 |
 | 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../06-手順書/environment.md)） |

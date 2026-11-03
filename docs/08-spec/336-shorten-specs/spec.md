@@ -215,7 +215,7 @@ AC 一覧の冒頭は「全ての列を手動で書く」としているが、`n
   - 依存：T336-01-04（同じ設計書を変えるため）
   - 範囲：13 のモジュールの設計書、`docs/02-設計/template.md`、`common.md`
   - 確認方法：`git grep -n "operationId" -- docs/02-設計` が 0 件、決定に挙げた 3 つの指示の文の `git grep` が `docs/02-設計/template.md` の外で 0 件、変えた設計書の見出しの一覧（`grep '^#'`）が同じ、`node scripts/ci/doc-refs.mjs`、`./gradlew check`
-- [ ] **T336-01-06** `backend-architecture.md`、`apps/store.md`、`apps/admin.md` とその他の設計の文書を縮める（DC-336-10）。
+- [x] **T336-01-06** `backend-architecture.md`、`apps/store.md`、`apps/admin.md` とその他の設計の文書を縮める（DC-336-10）。
   - 依存：T336-01-05（`common.md` との重複を 1 か所にするため）
   - 範囲：`backend-architecture.md`、`apps/store.md`、`apps/admin.md`、`overview.md`、`frontend-architecture.md`、モジュールの設計書
   - 確認方法：変える前と後の見出しの一覧（`grep '^#'`）が同じ、`wc -c`、`node scripts/ci/doc-refs.mjs`、`./gradlew check`（`ModuleDiagramTest` などが設計書を読むため）

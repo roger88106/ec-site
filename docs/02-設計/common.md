@@ -56,7 +56,7 @@
 
 - 業務のコードがログを書くときは、Lombok の `@Slf4j` を使う。定期ジョブの結果（片付けた件数）は info、継続できる異常（外部サービスの通知の拒否、次回に持ち越す処理）は warn、止めたイベントは error で出力している。
 - ログに出力しないものとして文書とコードに書いてあるのは、イベントの中身と、集約の復元の失敗の値の 2 つ。
-  - 止めたイベントのログには、イベントの種類・イベント ID・リスナー・処理の回数だけを出力する（[バックエンドのアーキテクチャ](backend-architecture.md)の「水平スケール」）。
+  - 止めたイベントのログに出力するものは、[バックエンドのアーキテクチャ](backend-architecture.md)の「水平スケール」。
   - 集約の復元に失敗したとき、`AggregateGuards` が投げる `SystemException` のメッセージは、集約の名前（`category` など）と原因の例外の種類だけを持つ。原因の例外は、元の例外の種類とスタックトレースだけを持つ例外に置き換え、原因の原因と抑制した例外も同じく置き換える。保存した状態と原因の例外のメッセージには値（個人情報を含みうる）が入りうるため。HTTP の要求のほか、定期のジョブとイベントのリスナーも例外の連鎖をそのままログに出すので、ログに出力する箇所でなく、例外を作る箇所で除く。集約の ID も書かない（この補助は共通の部品で、後に加わる集約の ID が利用者を指す値になりうるため）。要求との対応は、トレース ID で追跡する。
 - 秘密の値（Stripe の鍵、物流サービスの署名の鍵）は、環境変数で渡して Git に入れない（`application.yml` のコメント）。ログに出力してよいものと出力しないものを定める規則は、書き方の文書にない。
 
@@ -65,11 +65,10 @@
 - 運用ポート（既定 9080、`MANAGEMENT_SERVER_PORT`）で、`health` と `prometheus` だけを公開する（`management.endpoints.web.exposure.include`）。業務ポート（8080）では公開せず、運用ポートは外部に公開しない（[バックエンドのアーキテクチャ](backend-architecture.md)の「公開ネットワークへのデプロイの前提」）。
 - `health` は liveness（`/actuator/health/liveness`）と readiness（`/actuator/health/readiness`）を有効にし、UP / DOWN だけを返す（`show-details: never`）。
 - ローカルの profile だけ、`beans`、`conditions`、`env`、`mappings`、`modulith` も公開し、`health` の詳細を返す。
-- 独自のメトリクスは、イベントの未完了の件数 `ecsite.events.incomplete` と止めた件数 `ecsite.events.stopped` の 2 つ（`EventPublicationMetrics` の `Gauge`）。再発行のジョブが再集計して値を設定するので、収集のたびに DB を読まない。値を更新するのはジョブを実行したインスタンスだけなので、全インスタンスの最大値で確認する（[バックエンドのアーキテクチャ](backend-architecture.md)の「水平スケール」）。`MeterRegistry` を使うコードは `EventPublicationMetrics` だけ。
+- 独自のメトリクスは、イベントの未完了の件数 `ecsite.events.incomplete` と止めた件数 `ecsite.events.stopped` の 2 つ（`EventPublicationMetrics` の `Gauge`）。値の設定と見方は[バックエンドのアーキテクチャ](backend-architecture.md)の「水平スケール」。`MeterRegistry` を使うコードは `EventPublicationMetrics` だけ。
 
 ## 5. トレース
 
-- 分散トレースの送信先は Zipkin。記録するリクエストの割合は既定 0.1 で、`MANAGEMENT_TRACING_SAMPLING_PROBABILITY` で変える。
-- 送信は既定で無効で、`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` を true にしたときだけ送る。送信先は `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` で指定する。共通の設定は送信先を書かないので、指定しなければ Spring Boot の既定の `http://localhost:9411/api/v2/spans` に送る。
-- ローカルの profile は送信を有効にし、割合を 1.0 にして全リクエストを記録し、compose の Zipkin（`http://localhost:9411`）で確認する。E2E の profile はローカルの profile と一緒に使うので、送信と割合もローカルと同じになる。
+- 分散トレースの送信先は Zipkin。送信の有無、送信先、記録するリクエストの割合の設定と既定値は[環境変数](../06-手順書/environment.md)の「バックエンド」。共通の設定は送信先を書かないので、指定しなければ Spring Boot の既定の送信先に送る。
+- ローカルの profile は送信を有効にし、割合を 1.0 にして全リクエストを記録し、compose の Zipkin（URL は[開発環境の起動](../06-手順書/setup.md)の「起動」）で確認する。E2E の profile はローカルの profile と一緒に使うので、送信と割合もローカルと同じになる。
 - トレース ID は、ログ（「ログ」）とエラーの応答の `traceId` に入る。問い合わせのトレース ID から、ログとトレースを関連づけられる。

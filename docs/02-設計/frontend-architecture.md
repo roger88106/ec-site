@@ -49,7 +49,7 @@ frontend/
 
 ※2：管理画面のフラグと理由の一覧は [管理画面の構成](apps/admin.md)の「表示の決まり」。状態とフラグが食い違うテストデータ（フラグが偽の出荷済みの注文など）を使う結合テストで、画面が状態から推測しないことを確認する。
 
-※3：API の型の生成だけが TypeScript 6 を使うのは、TypeScript 7 に JavaScript のコンパイラーの API がなく、openapi-typescript がその API で型を組み立てるためである。ルートの `.pnpmfile.cjs` が、インストールのときに openapi-typescript にだけ TypeScript 6 を渡す。pnpm の overrides は peer の依存に適用されないので、フックを使う。lock がフックのチェックサムを持つので、フックを変えたら lock も更新する。openapi-typescript の peer の依存の範囲が変わると、フックが install を失敗させる。openapi-typescript が TypeScript 7 で動くようになったら、`.pnpmfile.cjs` を削除する。
+※3：TypeScript 7 に JavaScript のコンパイラーの API がなく、openapi-typescript がその API で型を組み立てるため。ルートの `.pnpmfile.cjs` が、インストールのときに openapi-typescript にだけ TypeScript 6 を渡す（フックの扱いと削除する時期は、そのファイルのコメント）。
 
 ## 4. 共有パッケージ
 

@@ -52,7 +52,7 @@
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
 | 「写しの一覧」の写しを削り、正本を指す | 4 つの文書 | DC-330-5：段階の最後のレビューで読む |
-| テストデータの補助の手順の表を、`scripts/ci/test-helpers.mjs` の `STEP_FINDERS` の隣の定数に移し、文書を読む処理を削除する ※1（確認 2 の決定による） | `scripts/ci/test-helpers.mjs`、そのテスト、`test-writing.md` | DC-330-6：テスト。変える前の検査が見つけた違反と同じ違反を見つけることを、テストで確認する |
+| テストデータの補助の手順の表を、`scripts/ci/test-helpers.mjs` に移し、手順・補助・除外のテスト・探す関数を 1 つの定数（`HELPER_STEPS`。`STEP_FINDERS` を置き換えた）にまとめ、文書を読む処理を削除する ※1（確認 2 の決定による） | `scripts/ci/test-helpers.mjs`、そのテスト、`test-writing.md` | DC-330-6：テスト。変える前の検査が見つけた違反と同じ違反を見つけることを、テストで確認する |
 | 「パッケージの大きさ」の表の「数」の列を削除し、`ModuleStructureTest` の照合を集合の一致だけにする ※2（確認 3 の決定による） | `backend-coding.md`、`ModuleStructureTest.java` | DC-330-7：`./gradlew check` |
 
 ※1：文書を読む処理は `parseHelperTable` と `TEST_WRITING_DOC` である。文書には、補助以外のテストは決まった手順を書かない規則と、対応の正本が script の表であることだけを書く。表の 1 つ目（補助と作るもの）は文書に残す。

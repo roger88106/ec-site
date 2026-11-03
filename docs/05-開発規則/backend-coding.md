@@ -104,18 +104,18 @@ module/<モジュール>/
 
 1 つのパッケージの直下の `.java` は 10 を目安、20 を上限にする（`package-info.java`、テスト、生成したコード（OpenAPI と jOOQ）は数えない）。目安を超えて分けないときは、下の表に理由を書く。
 
-| パッケージ | 数 | 分けない理由 |
-|------------|----|--------------|
-| `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
-| `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラスは package-private。対象は認可の対応表、認可の判定、契約の操作の一覧で、対応表は管理用と店舗用がある。分けるとクラスを公開しなければならない |
+| パッケージ | 分けない理由 |
+|------------|--------------|
+| `catalog.infrastructure.persistence` | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
+| `config.security` | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラスは package-private。対象は認可の対応表、認可の判定、契約の操作の一覧で、対応表は管理用と店舗用がある。分けるとクラスを公開しなければならない |
 
-目安を超えるパッケージの一覧と数は、テスト（`ModuleStructureTest`）が表と照合する。表にない、目安を超えるパッケージ、目安以下のパッケージの行、数の違いのどれかがあると、テストが失敗する。
+テスト（`ModuleStructureTest`）が、目安を超えるパッケージと表の行を照合する。表に行がない、または目安以下のパッケージの行がある（余分な行）と、テストが失敗する。
 
-テストが表を読むので、表の書式を変えない。1 列目は、バッククォートで囲んだパッケージ名（`com.ecsite.` と `module.` を除く。例：`catalog.infrastructure.persistence`）、2 列目は数にする。
+テストが表を読むので、表の書式を変えない。1 列目は、バッククォートで囲んだパッケージ名（`com.ecsite.` と `module.` を除く。例：`catalog.infrastructure.persistence`）にする。
 
-テストは節の見出し（`### 1.4`）で表を探す。節の番号を変えるときは、`ModuleStructureTest` の `PACKAGE_SIZE_HEADING` も修正する。
+テストは節の見出しの名前（「パッケージの大きさ」）で表を探す。見出しの名前を変えるときは、`ModuleStructureTest` の `PACKAGE_SIZE_TITLE` も修正する。
 
-確認方法：上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数を「パッケージの大きさ」の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー
+確認方法：上限は自動（ArchUnit）。目安を超えるパッケージの一覧を「パッケージの大きさ」の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー
 
 ### 1.5 共通の型
 

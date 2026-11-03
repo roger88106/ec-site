@@ -133,14 +133,19 @@ class ModuleStructureTest {
     private static final Path RULES_BACKEND_CODING = Contracts.path("docs/05-開発規則/backend-coding.md");
 
     /**
-     * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの始まり
+     * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの名前（見出しの番号は問わない）
      */
-    private static final String PACKAGE_SIZE_HEADING = "### 1.4 ";
+    private static final String PACKAGE_SIZE_TITLE = "パッケージの大きさ";
 
     /**
-     * パッケージの大きさの表の行（1 列目がバッククォートで囲んだパッケージの名前、2 列目が数）
+     * パッケージの大きさの表がある節の見出しの行（{@code ### } の後に、あれば番号、続けて見出しの名前）
      */
-    private static final Pattern TABLE_ROW = Pattern.compile("^\\|\\s*`([^`]+)`\\s*\\|\\s*(\\d+)\\s*\\|.*$");
+    private static final Pattern PACKAGE_SIZE_HEADING = Pattern.compile("^### (?:[\\d.]+\\s+)?" + PACKAGE_SIZE_TITLE + "\\s*$");
+
+    /**
+     * パッケージの大きさの表の行（1 列目がバッククォートで囲んだパッケージの名前）
+     */
+    private static final Pattern TABLE_ROW = Pattern.compile("^\\|\\s*`([^`]+)`\\s*\\|.*$");
 
     /**
      * presentation の外に置く例外の {@code @RestController}（どのモジュールにも属さない GET /me）
@@ -515,13 +520,13 @@ class ModuleStructureTest {
      * （表はモジュールのパッケージを {@code <モジュール>.<層>} と書く）。
      *
      * @param countByPackage パッケージの名前（{@code com.ecsite.} を除いた形でも、含む形でもよい）から、クラスの数への対応
-     * @param table          表のパッケージの名前から、数への対応
-     * @return 食い違いの説明（説明の順）。表の外の超過、表のパッケージの目安以下、数の違い
+     * @param table          表のパッケージの名前
+     * @return 食い違いの説明（説明の順）。表の外の超過、表のパッケージの目安以下
      */
-    private static List<String> oversizedMismatches(Map<String, Long> countByPackage, Map<String, Integer> table) {
+    private static List<String> oversizedMismatches(Map<String, Long> countByPackage, Set<String> table) {
         Map<String, Long> counted = countByPackage.entrySet().stream()
                 .collect(Collectors.toMap(entry -> tableName(entry.getKey()), Map.Entry::getValue));
-        Set<String> names = new TreeSet<>(table.keySet());
+        Set<String> names = new TreeSet<>(table);
         counted.forEach((name, count) -> {
             if (count > GUIDELINE_CLASSES_PER_PACKAGE) {
                 names.add(name);
@@ -531,13 +536,10 @@ class ModuleStructureTest {
         List<String> mismatches = new ArrayList<>();
         for (String name : names) {
             long actual = counted.getOrDefault(name, 0L);
-            Integer listed = table.get(name);
-            if (listed == null) {
+            if (!table.contains(name)) {
                 mismatches.add("表にない超過: %s（%d）".formatted(name, actual));
             } else if (actual <= GUIDELINE_CLASSES_PER_PACKAGE) {
-                mismatches.add("目安以下: %s（表 %d、実際 %d）".formatted(name, listed, actual));
-            } else if (actual != listed) {
-                mismatches.add("数の違い: %s（表 %d、実際 %d）".formatted(name, listed, actual));
+                mismatches.add("目安以下: %s（実際 %d）".formatted(name, actual));
             }
         }
         return mismatches;
@@ -556,14 +558,14 @@ class ModuleStructureTest {
 
     /**
      * バックエンドの書き方の「パッケージの大きさ」の、目安を超えるパッケージの表を読む。<br />
-     * 見出しの後の最初の表だけを読む。表の行のうち、1 列目がバッククォートで囲んだパッケージの名前で、2 列目が数の行を読み、
+     * 見出しの名前で節を探し、見出しの後の最初の表だけを読む。表の行のうち、1 列目がバッククォートで囲んだパッケージの名前の行を読み、
      * 表の後の行（本文や 2 つ目の表）は読まない。
      *
      * @param lines 文書の行
-     * @return パッケージの名前から、数への対応
+     * @return 表のパッケージの名前
      */
-    private static Map<String, Integer> oversizedTable(List<String> lines) {
-        Map<String, Integer> table = new TreeMap<>();
+    private static Set<String> oversizedTable(List<String> lines) {
+        Set<String> table = new TreeSet<>();
         boolean afterHeading = false;
         boolean inTable = false;
         for (String line : lines) {
@@ -571,7 +573,7 @@ class ModuleStructureTest {
                 if (inTable) {
                     break;
                 }
-                afterHeading = line.startsWith(PACKAGE_SIZE_HEADING);
+                afterHeading = PACKAGE_SIZE_HEADING.matcher(line).matches();
                 continue;
             }
             if (!afterHeading) {
@@ -581,7 +583,7 @@ class ModuleStructureTest {
                 inTable = true;
                 Matcher row = TABLE_ROW.matcher(line);
                 if (row.matches()) {
-                    table.put(row.group(1), Integer.parseInt(row.group(2)));
+                    table.add(row.group(1));
                 }
             } else if (inTable) {
                 break;

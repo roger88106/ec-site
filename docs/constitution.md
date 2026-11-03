@@ -119,7 +119,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 12. CI/CD
 
-細則は [CI の検査](06-手順書/ci.md)、[ブランチとリリース](06-手順書/branches.md)。
+細則は [CI の検査](06-手順書/ci.md)、[CI の検査の script](06-手順書/ci-checks.md)、[ブランチとリリース](06-手順書/branches.md)。
 
 - CI：push と pull request で、バックエンド、フロント、E2E を実行する。文書などだけを変えた push では、CI の検査の script の全てを実行する。CI が失敗している状態で、次の spec の実装に進まない。
 - ブランチ：作業ブランチを `develop` に、リリースを `main` に pull request で入れる。

@@ -45,7 +45,7 @@
   | `docs/06-手順書/ci.md` | CI の検査（今のまま） | 手元での実行、CI のジョブの短い表（1 つのセルに 1 文）、失敗したときに読む順 | commit の前、CI が失敗したとき |
   | `docs/06-手順書/ci-checks.md`（新規） | CI の検査の script | `check-all.sh` の判定（1〜2 文）、検査の表と注、Mermaid の図の描画の検査（何をし、どこで実行するかを数行。中身は `mermaid-check.mjs` の冒頭のコメントを指す） | 検査が失敗したとき |
   | `docs/06-手順書/ci-adding-checks.md`（新規） | CI の検査の追加 | 検査を加える手順、補助の script の置き場所 | 検査を加える・修正するとき |
-  | `docs/06-手順書/ci-backend-jobs.md`（新規） | バックエンドの CI のジョブ | バックエンドのジョブの構成（必須の検査とスキップ、統合テストの分け方、統合テストのフォークの数）、`docs.yml` を分ける理由、変えても `ci.yml` が実行されないファイル（`ci.yml` の `on.push.paths` のコメントを指す 1 行） | `.github/workflows/` を変えるとき、ジョブの時間を調べるとき |
+  | `docs/06-手順書/ci-backend-jobs.md`（新規） | バックエンドの CI のジョブ | ジョブの構成（必須の検査とスキップ、統合テストの分け方とフォークの数）、`docs.yml` を分ける理由、変えても `ci.yml` が実行されないファイル（コメントを指す 1 行） | `.github/workflows/` を変えるとき、ジョブの時間を調べるとき |
 
   - 「GitHub のセキュリティの機能」の節は、[ブランチとリリース](../../06-手順書/branches.md)に移す。理由：リポジトリの設定と Dependabot の節が、既に `branches.md` にあるため。
   - 「カバレッジと mutation score の基準の検査」の節は、[テストの実行方法](../../06-手順書/running-tests.md)の同じ名前の節に統合する（次の決定）。
@@ -58,7 +58,7 @@
   | `docs/05-開発規則/test-writing-backend.md`（新規） | バックエンドのテストの書き方 | 今の「バックエンド」の節 | バックエンドのテストを書く・レビューするとき |
   | `docs/05-開発規則/test-writing-frontend.md`（新規） | フロントのテストの書き方 | 今の「フロント」の節 | 画面と E2E のテストを書く・レビューするとき |
 
-- カバレッジと mutation score の基準は、[テストの実行方法](../../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の 1 か所に書く。書く内容は、対象、基準の値の意味、許容の幅、失敗したときの手順、基準を変える手順である。
+- カバレッジと mutation score の基準は、[テストの実行方法](../../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の 1 か所に書く。書く内容は、対象、基準の値の意味、許容の幅、失敗したときと基準を変えるときの手順である。
   `ci.md` 系（`ci.md` と、分けた 3 つの文書）と `test-writing.md` は、見出しの参照で指す。
 - skill `local-dev` と `sessions` は、一部の場面でだけ読む節を同じフォルダーの別のファイルに移し、SKILL.md には毎回の手順と、移した先へのリンクを残す。
 
@@ -103,7 +103,7 @@
   | `local-ports.mjs` | `setup.md`・`running-tests.md` の `:ポート` の書き方と、スロットの表の行 |
   | skill `review` の `checklist.cjs` | `docs/05-開発規則/` の「確認方法：」の行の形 |
 
-- 分けたファイルの冒頭は、何の文書かといつ読むかを 2 文以内で書く（[文書の構成](../../05-開発規則/doc-structure.md)の「文書の長さの基準」）。参照元は、場面に合う文書を指す。参照元は、constitution、`AGENTS.md`、skill、各フォルダーの `README.md`、script のコメントである。新しい文書は、そのフォルダーの `README.md` の表に加える。
+- 分けたファイルの冒頭は、何の文書かといつ読むかを 2 文以内で書く（[文書の構成](../../05-開発規則/doc-structure.md)の「文書の長さの基準」）。参照元は、場面に合う文書を指す。参照元とは、constitution・`AGENTS.md`・skill・各フォルダーの `README.md`・script のコメントをいう。新しい文書は、そのフォルダーの `README.md` の表に加える。
 - 測り方は `wc -c` のバイト数とする。比べる起点は作業ブランチ `334-shorten-docs` の c02dc7d6。前と後の大きさは、tasks の結果に書く。`docs/05-開発規則/` の文書で目安（15,000 バイト）を超えて残るものは、理由を[毎回読む文書と固定の文脈の大きさ](../../07-記録/context-size.md)の「目安を超えたもの」に書く。
 - 大きさの上限の CI の検査は加えない（利用者の決定、2026-11-03）。
 
@@ -220,7 +220,7 @@
   - 依存：T335-01-01（skill `docs` の検査の説明が `ci-checks.md` を指すため）
   - 範囲：skill `review`、`docs`、`new-screen`、`zh-mixing`、`agent-retro`、`.claude/agents/ja-proofreader.md`、`ja-proof-verifier.md`
   - 確認方法：前と後の文を並べて読む、frontmatter の description が変わっていない（`git diff`）
-- [ ] **T335-01-08** 参照を修正し、検査を通し、大きさを記録する（DC-335-4、DC-335-9、DC-335-11、DC-335-12）。
+- [ ] **T335-01-08** 参照を修正し、検査を通し、大きさを記録する（DC-335-4・DC-335-9・DC-335-11・DC-335-12）。
   - 依存：T335-01-01〜07
   - 範囲：変えたファイルを指す文書・skill・script のコメントとテスト（`doc-refs` が示すもの）、`docs/07-記録/context-size.md`
   - 確認方法：`node scripts/ci/doc-refs.mjs`、`scripts/ci/check-all.sh`、`./gradlew check`、`node scripts/ci/ja-text.mjs --changed`、`wc -c`、分けたファイルの冒頭を読む

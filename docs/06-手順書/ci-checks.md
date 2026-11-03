@@ -38,7 +38,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `runtime-versions` | JDK と Node のバージョンが置き場所の間で一致し、workflow が直接書かずにそれを参照していることを確認する。 |
 | `service-names` | 規則の本文に、AI のサービス固有の名前がない（コードスパンのパス、コードブロック、リンク先を除く）ことを確認する |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する。 |
-| `spec-numbers` | 本番のコードと、テストと設定のファイルと `scripts/` の下の script の、それぞれのコメントに、spec・plan・tasks の番号が書かれていないことを確認する。 |
+| `spec-numbers` | 本番のコード、テストと設定のファイル、`scripts/` の下の script のコメントに、spec・plan・tasks の番号がないことを確認する。 |
 | `spec-structure` | spec・plan・tasks と機能仕様について、構造（節の名前と順）と ID の定義・参照を確認する。判定の区分は誤りの防止 ※3 |
 | `test-names` | バックエンドの全てのテストに、表示の名前（`@DisplayName`）があることを確認する。 |
 | `time-waits` | テストが、決まった時間だけ待つ書き方をしていないことを確認する。 |

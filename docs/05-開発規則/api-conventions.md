@@ -11,9 +11,11 @@ RESTful JSON。OpenAPI を plan に記述し、バックエンドは生成した
 | 項目 | 規則 | 例 |
 |------|------|----|
 | 接頭辞 | EC の API は全て `/api` で始まる | `/api/store/products` |
-| 契約の範囲 | 2 番目のセグメントは契約の範囲で、モジュールではない。`/api/store`（店舗 API、`store.yaml`、消費者）と `/api/admin`（管理 API、`admin.yaml`、運営者）。1 つの契約の操作を、複数のモジュールが実装する | 店舗 API の `/carts` はカート、`/orders` は注文のモジュール |
+| 契約の範囲 | 2 番目のセグメントは契約の範囲で、モジュールではない。`/api/store`（店舗 API、`store.yaml`、消費者）と `/api/admin`（管理 API、`admin.yaml`、運営者） | `/api/store/products`、`/api/admin/products` |
+| 実装するモジュール | 1 つの契約の操作を、複数のモジュールが実装する | 店舗 API の `/carts` はカート、`/orders` は注文のモジュール |
 | `servers.url` と `paths` | 契約の `servers.url` が接頭辞で、`paths` は接頭辞の後ろだけを書く。生成した interface のパスは接頭辞を含まないので、`ApiPathConfig` が Controller に付ける | `paths` の `/products` は、管理 API では `/api/admin/products` |
-| 契約の外の URL | 外部のサービスが呼ぶ通知は `/api/webhooks/<相手>`。mock の画面は `/api` の外。死活監視とメトリクスは運用ポート（既定 9080）の `/actuator`。応答は [「OpenAPI の外のエンドポイント」](#41-openapi-の外のエンドポイント) | `/api/webhooks/stripe`、`/mock-payment`、`/mock-carrier` |
+| 契約の外の URL | 外部のサービスが呼ぶ通知は `/api/webhooks/<相手>`。mock の画面は `/api` の外。応答は [「OpenAPI の外のエンドポイント」](#41-openapi-の外のエンドポイント) | `/api/webhooks/stripe`、`/mock-payment`、`/mock-carrier` |
+| 運用の URL | 死活監視とメトリクスは、運用ポート（既定 9080）の `/actuator` | `/actuator` |
 | リソースの名前 | 小文字の kebab-case の複数形。1 つしかないものは単数形。ログインしている本人は `/me` | `tax-categories`、`image-uploads`、`/shop`、`/me/cart`、`/me/orders`、`/orders/{orderId}/shipment` |
 | パスのパラメータ | camelCase で、何の ID かを名前に書く。`{id}` にしない | `{productId}`、`{variantId}` |
 | ネストの深さ | 親の ID は 2 つまで。集約の一部（バリアント、画像）は集約の下に置く。別の集約は親の下に置かず、上の階層に置く。まとまりの名前を前に置くことがある | `/products/{productId}/variants/{variantId}/image`、`/inventory/variants/{variantId}`、`/reports/...` |
@@ -63,9 +65,10 @@ RESTful JSON。OpenAPI を plan に記述し、バックエンドは生成した
 |----------------|----------|------|
 | `POST /api/webhooks/stripe`（決済の通知） | Stripe | 受け付けたら 200、署名を確認できなければ 400。処理に失敗したら 5xx（Stripe の再送で再処理する） |
 | `POST /api/webhooks/carrier`（物流の通知） | 物流サービス | 受け付けたら 200（どの出荷とも合わない通知、対応の表にない状態も、記録して 200）。署名を確認できなければ 401、本文を読めなければ 400。処理に失敗したら 5xx（再送で再処理する） |
-| `/mock-payment/{pageId}`（mock の支払画面。決済の mock フラグのときだけ） | ブラウザー | 画面は 200、開いていない画面は 404（どちらも HTML）。「支払う」「やめる」は 303 で注文の画面へ戻す。「カードを拒否させる」は状態を変えず、拒否のメッセージ付きで同じ画面を 200 で返す |
+| `/mock-payment/{pageId}`（mock の支払画面。決済の mock フラグのときだけ） | ブラウザー | 画面は 200、開いていない画面は 404（どちらも HTML）。「支払う」「やめる」は 303 で注文の画面へ戻す。「カードを拒否させる」は下の注のとおり |
 | `/mock-carrier`（mock の物流の画面。物流の mock フラグのときだけ） | ブラウザー | 画面は 200 の HTML。通知を送ったら 303 で一覧へ戻し、送れなければその旨の 200 の HTML。ない出荷は 404 の HTML |
 
+- `/mock-payment/{pageId}` の「カードを拒否させる」は、状態を変えず、拒否のメッセージ付きで同じ画面を 200 で返す。
 - どれも認証を付けない。通知は署名で確認し、mock の画面は本番で公開しない（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携」）。
 - 本文は、エラーのときも Problem の形にしない（呼ぶ側は状態のコードだけを見る）。処理の失敗（5xx）だけは、共通の例外ハンドラー（`GlobalExceptionHandler`）が Problem で返す。
 

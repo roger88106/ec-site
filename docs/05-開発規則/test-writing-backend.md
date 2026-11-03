@@ -7,7 +7,7 @@
 - 統合テストは `@IntegrationTest` を付ける。Spring と、Testcontainers の PostgreSQL・SeaweedFS・imgproxy が起動する ※1。例外は、本番の jar を別のプロセスで起動するテスト（`ProductionJarStartupTest`）で、Spring の外で動くので、必要な PostgreSQL を自分で起動する。
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
 - データを残さないテストは `@Transactional` で巻き戻す。
-- 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID、実行ごとの印）でデータを分け、自分のデータだけを確認する。表の全体の数や、一覧の全体を確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要 ※2。
+- 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID や実行ごとの印）でデータを分ける。確認するのは、自分のデータだけである。表の全体の数や一覧の全体は確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要 ※2。
 - ログを確認するテストは、そのテストの中で出た出力だけを確認する。確認する処理の前に `CapturedLogs.mark` で位置を記録し、確認では `CapturedLogs.since` でその後の出力だけを読む ※3。
 - 巻き戻せないテストで、ほかのテストのデータも処理の対象になるときは、処理の前に対象の行を数え、ログの件数がその数と等しいことを確認する（「1 件以上」だけにしない）。
 
@@ -27,7 +27,7 @@
 
 | 補助 | 作るもの |
 |------|----------|
-| `CatalogTestData` | 税区分、カテゴリ、商品（バリアント、画像、公開、販売の終了、公開期間） |
+| `CatalogTestData` | 税区分、カテゴリ、商品（バリアント・画像・公開・販売の終了・公開期間） |
 | `InventoryTestData` | 在庫と、入荷の調整 |
 | `OrderTestData` | カート、注文手続き、注文、支払画面 |
 | `ShippingTestData` | 出荷の登録、配送状態の通知、送り状番号 |
@@ -42,7 +42,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLo
 
 理由：テストの本文に、確認する項目だけを残すため。
 
-package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、その本番クラスと同じパッケージの `src/integrationTest` に、public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。本番クラスを public にしたり、テストのために可視性を広げたりしない。
+package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を、別のパッケージの統合テストから使うことがある。そのときは、本番クラスと同じパッケージの `src/integrationTest` に、public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。本番クラスを public にしたり、テストのために可視性を広げたりしない。
 
 確認方法：レビュー（記録を読む操作と、手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
 
@@ -60,7 +60,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 |------|----------|--------|
 | `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない ※4 |
 | `TestSettings` | 設定のテスト | `load(profile…)` と `bind(接頭辞, 設定の型, 値)` で読む。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
-| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテストと構成の検査（`contract/`、`architecture/`、`modulith/`）、店舗 API の token と Keycloak の統合テスト（`src/integrationTest`） | 契約（OpenAPI）、realm の設定、設計書などの置き場所は、この補助の関数（`openApi`、`realm`、`path` など）で読む。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない ※5 |
+| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテストと構成の検査（`contract/`、`architecture/`、`modulith/`）、店舗 API の token と Keycloak の統合テスト（`src/integrationTest`） | OpenAPI の契約と realm の設定と設計書の置き場所は、この補助の関数（`openApi`・`realm`・`path`）で読む。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない ※5 |
 
 ※4：モジュールの一覧は、Spring Modulith が自分でもクラスを読み込むので、クラスの読み込みとは別になる。
 

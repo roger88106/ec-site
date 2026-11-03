@@ -17,9 +17,9 @@
 | CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。一覧は[CI の検査の script](../06-手順書/ci-checks.md) |
 | 書き方の規則 | `docs/05-開発規則/*-coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確認方法の形でまとめた文書（[書き方の規則とレビュー](review.md)） |
 | 引き継ぎの文書 | `/.local/handoff/` | 作業を別のセッションに引き継ぐための文書。Git に入れない（[AGENTS.md](../../AGENTS.md)） |
-| カバレッジ | | テストで実行されたコードの割合（行・分岐）。基準の値から許容の幅を引いた値を下回ると CI が失敗する（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
-| mutation score | `backend-domain` | PIT で測る、テストが検出できた変異の割合（検出した変異 ÷ 全変異）。バックエンドの domain が対象（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
-| カバレッジの基準 | `scripts/ci/report/quality-baseline.json` | カバレッジと mutation score の、対象ごとの値と許容の幅（`tolerance`）。CI が今回の値と比べる（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
+| カバレッジ | | テストで実行されたコードの割合（行・分岐）。基準を下回ると CI が失敗する（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
+| mutation score | `backend-domain` | PIT で測る、検出できた変異の割合。バックエンドの domain が対象（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
+| カバレッジの基準 | `scripts/ci/report/quality-baseline.json` | 対象ごとの値と許容の幅（`tolerance`）。CI が今回の値と比べる（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
 | mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使う。ローカルと E2E の設定だけで立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
 | テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗させる操作と、呼ばれた操作を記録する機能を加えた実装 |

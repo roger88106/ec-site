@@ -355,7 +355,7 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 // -----------------------------------------------------------------------------
-// 重複の検出（PMD の CPD。テストの書き方の「テストのコードの重複」）
+// 重複の検出（PMD の CPD。バックエンドのテストの書き方の「テストのコードの重複」）
 //   テストのソースセット（src/test、src/integrationTest、src/testFixtures）の Java のコードで、100 トークン以上の重複を見つけると失敗する。
 //   直さない重複は、重複の場所を // CPD-OFF 理由 と // CPD-ON で囲む。main は見ない（生成したコードを含むため）。
 //   報告：build/reports/cpd/。CPD の部品（cpd の構成。Java の部品だけにしている）は、pitest と同じく licenseReport の対象に入れて checkLicense で照合する（Gradle のプラグインは policy.json の gradlePlugins）

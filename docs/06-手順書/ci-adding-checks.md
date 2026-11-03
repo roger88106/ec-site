@@ -18,7 +18,7 @@ CI の検査の script を加える手順と、補助の script の置き場所�
 ## 2. 補助の script の置き場所
 
 - 次の補助の script は、各ディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
-  - `report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`：引数が必要（[CI の検査の script](ci-checks.md)の「カバレッジと mutation score の基準の検査」）。
+  - `report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`：引数が必要（[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」）。
   - `licenses/`：画面の依存が必要な検査。
   - `globals/` の下の `lib-globals.mjs`：TypeScript の依存が必要な、組み込みの名前の一覧の生成と確認（一覧の `lib-globals.json` を `frontend-rules` が読む。`frontend-rules.mjs` の先頭のコメント）。
   - `workflow/` の下の `main-source.mjs`：workflow から呼ぶ判定（元のブランチの名前が引数）。

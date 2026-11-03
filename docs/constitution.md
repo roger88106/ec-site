@@ -111,7 +111,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 11. テスト
 
-細則は [テストの書き方](05-開発規則/test-writing.md)、実行方法は [テストの実行方法](06-手順書/running-tests.md)。
+細則は [テストの書き方](05-開発規則/test-writing.md)、[バックエンドのテストの書き方](05-開発規則/test-writing-backend.md)、[フロントのテストの書き方](05-開発規則/test-writing-frontend.md)、実行方法は [テストの実行方法](06-手順書/running-tests.md)。
 
 - 全ての AC にテストを対応させ、テスト名に AC 番号を入れる。
 - バックエンドは単体テストと統合テスト（Testcontainers）、フロントは単体テストと結合テスト、つないだ流れは E2E（Playwright）。
@@ -135,7 +135,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 14. コードの書き方
 
-書き方は [バックエンドの書き方](05-開発規則/backend-coding.md)、[フロントの書き方](05-開発規則/frontend-coding.md)、[テストの書き方](05-開発規則/test-writing.md)、[コメントの書き方](05-開発規則/comments.md) にある。コードを書く前と、レビューのときに読む（[書き方の規則とレビュー](05-開発規則/review.md)）。
+書き方は [バックエンドの書き方](05-開発規則/backend-coding.md)、[フロントの書き方](05-開発規則/frontend-coding.md)、[テストの書き方](05-開発規則/test-writing.md)、[バックエンドのテストの書き方](05-開発規則/test-writing-backend.md)、[フロントのテストの書き方](05-開発規則/test-writing-frontend.md)、[コメントの書き方](05-開発規則/comments.md) にある。コードを書く前と、レビューのときに読む（[書き方の規則とレビュー](05-開発規則/review.md)）。
 
 ## 15. 依存とライセンス
 

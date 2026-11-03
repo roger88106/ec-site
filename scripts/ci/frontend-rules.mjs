@@ -5,22 +5,22 @@
 // - 店舗画面と管理画面の本番のソースに、共有パッケージが公開する名前と同じ名前の関数・定数・クラスを定義しない（フロントの書き方の「入れるもの・入れないもの」。公開する名前は shared の package.json の exports から読む）
 // - 共通の置き場所（actions/、lib/、api/）は features/ を import しない（フロントの書き方の「機能ごとに features/<機能>/」）
 // - クエリ付きの URL を文字列で組み立てない（フロントの書き方の「画面の URL」）。line-through を直接書かない（フロントの書き方の「取り消し線は <s> で示す」）
-// - テストと E2E で CSS のクラスを確認しない。画面のテストで data-slot と querySelector・querySelectorAll で探さない（テストの書き方の「画面に見えるもので探す」）
+// - テストと E2E で CSS のクラスを確認しない。画面のテストで data-slot と querySelector・querySelectorAll で探さない（フロントのテストの書き方の「画面に見えるもので探す」）
 // - フロントのテストと補助（src/test/）：理由のコメントのない型の回避（as never、as unknown as）を書かない。fireEvent の直接の使用も書かない。
-//   根拠は、テストの書き方の「型を回避する変換を使わない」と、テストの書き方の「fireEvent を直接使わない」。
+//   根拠は、フロントのテストの書き方の「型を回避する変換を使わない」と、フロントのテストの書き方の「fireEvent を直接使わない」。
 //   fireEvent は import の別名（import { fireEvent as fe }）と rtl.fireEvent の形も見る。
 //   理由のコメントは、呼び出しごとに同じ行か、コメントだけの直前の行に書く
 // - フロントのテスト：describe の名前を識別子だけにしない。描画した HTML の文字を要素や属性の並びで確認しない（空の描画の確認 toBe('') は除く）。
-//   根拠は、テストの書き方の「名前は振る舞いを書く」と、テストの書き方の「画面に見えるもので探す」。
+//   根拠は、テストの書き方の「名前は振る舞いを書く」と、フロントのテストの書き方の「画面に見えるもので探す」。
 //   要素の .disabled・.checked・.value・getAttribute(…) を toBe・toEqual で比べない。プロパティの持ち主が要素のものだけを見る。
 //   要素とみなすものは、次のとおり。
 //   - getBy…・queryBy…・findBy…・screen.・within( の結果
 //   - それを入れた変数
 //   - 要素の型（HTMLInputElement など）の変数
 //   - document.・container. からたどる形
-//   result.current.value のような値は見ない。根拠は、テストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」。
+//   result.current.value のような値は見ない。根拠は、フロントのテストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」。
 // - フロントのテストと E2E：toBeTruthy・toBeDefined で確認しない。getAllBy…・findAllBy…・queryAllBy… の結果を [数字]・.at(数字) で選ばない。
-//   変数に入れてから選ぶ形も見る。根拠は、テストの書き方の「画面に見えるもので探す」。
+//   変数に入れてから選ぶ形も見る。根拠は、フロントのテストの書き方の「画面に見えるもので探す」。
 // - E2E（e2e/ の下の全ての TypeScript）：次を書かない。
 //   - .first()・.nth()・.last() で選ぶこと。
 //   - locator のセレクター文字列内の位置で選ぶこと。位置は nth=、:nth-match(、:nth-child(、:first-child、:last-child など。
@@ -29,7 +29,7 @@
 //     連鎖の途中や複数の行にまたがる呼び出しも見る。
 //     オプションが name を読めない形（変数、name のない展開）も見つける。
 //     name に正規表現を入れた変数は追わず、文字列にして exact: true を付ける規則で防ぐ。
-//     根拠は、テストの書き方の「画面に見えるもので探す」。
+//     根拠は、フロントのテストの書き方の「画面に見えるもので探す」。
 //   - networkidle で待つこと。
 //   - 数字のリテラルを含む式（10_000、5 * 1000）を、次の値に書くこと。
 //     - timeout を含む項目の値（timeout、actionTimeout、navigationTimeout など。引用符で囲んだキーを含む）
@@ -41,14 +41,14 @@
 //   名前の一覧は globals/lib-globals.json。
 //   分割代入と for…of の宣言を含む。{ a: name } は右側の name を見る。
 //   関数の引数、catch の変数、関数・クラスの宣言、import は対象外。
-//   根拠は、テストの書き方の「組み込みの名前をシャドーイングしない」。
+//   根拠は、フロントのテストの書き方の「組み込みの名前をシャドーイングしない」。
 //   名前の一覧は手動で書かない。node scripts/ci/globals/lib-globals.mjs --write が、インストールした TypeScript の lib の宣言のファイルから生成する。
 //   --write なしは一覧と今の lib の名前が一致するかを確認し、違えば失敗にする。この確認は、ci.yml の店舗画面 job で実行する。step の名前は「組み込みの名前の一覧の確認」（docs.yml は依存をインストールせず lib を読めないため）
 // - フロントのテストと補助と E2E：テストを閉じる行の直後に、空行なしで test・it・describe を続けない。
 //   テストを閉じる行は、}) と、test('a', () => {}) のように 1 行で閉じるテスト。
 //   続けない対象は、test.each(・describe.skip(・test.describe.serial( などの形を含む。
 //   間にコメントの行があっても、空行がなければ見つける。
-//   test.beforeEach(・test.use(・test.step(・test.info() などは見ない。根拠は、テストの書き方の「テストとテストの間に空行を置く」。
+//   test.beforeEach(・test.use(・test.step(・test.info() などは見ない。根拠は、フロントのテストの書き方の「テストとテストの間に空行を置く」。
 // 失敗したとき：2 つの機能で使うものは components/ か lib/ に置く。ロケールは LOCALE・TIME_ZONE を使う。同じファイルは共有パッケージに移す。
 //   組み込みの名前の変数は、意味の分かる名前（status → orderStatus）にする。
 //   TypeScript を上げて lib の名前が変わったときは、lib-globals.mjs --write で一覧を書き換える。
@@ -283,7 +283,7 @@ export function findQueryUrlStrings(text) {
 }
 
 /**
- * CSS のクラスを確認する行を探す（テストの書き方の「画面に見えるもので探す」。役割と名前で探す）。
+ * CSS のクラスを確認する行を探す（フロントのテストの書き方の「画面に見えるもので探す」。役割と名前で探す）。
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行
@@ -293,7 +293,7 @@ export function findCssClassChecks(text) {
 }
 
 /**
- * コンポーネントの内部の属性（data-slot）と querySelector・querySelectorAll で要素を探す行を探す（テストの書き方の「画面に見えるもので探す」。役割と名前で探す）。
+ * コンポーネントの内部の属性（data-slot）と querySelector・querySelectorAll で要素を探す行を探す（フロントのテストの書き方の「画面に見えるもので探す」。役割と名前で探す）。
  * 画面のテストだけに当てる。E2E は対象にしない：E2E の locator は、IdP の画面（id で探す。e2e/src/auth.ts）と詳細の項目（xpath。e2e/src/detail.ts）に限って許し、
  * 今の E2E に data-slot と querySelector の使用がなく、locator 全体を禁じると許した所まで失敗になるため
  *
@@ -439,7 +439,7 @@ function createReasonChecker(text) {
 }
 
 /**
- * 理由のコメントのない、型を回避する変換（as never、as unknown as）を探す（テストの書き方の「型を回避する変換を使わない」）。
+ * 理由のコメントのない、型を回避する変換（as never、as unknown as）を探す（フロントのテストの書き方の「型を回避する変換を使わない」）。
  * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす。変換が改行をまたぐときは、またぐ行のどれかのコメントも理由とみなす。
  *
  * @param {string} text ソース
@@ -459,7 +459,7 @@ export function findTypeCasts(text) {
 }
 
 /**
- * toBeTruthy・toBeDefined の呼び出しを探す（テストの書き方の「画面に見えるもので探す」。探した要素の確認は toBeInTheDocument か値の形で行う）。
+ * toBeTruthy・toBeDefined の呼び出しを探す（フロントのテストの書き方の「画面に見えるもので探す」。探した要素の確認は toBeInTheDocument か値の形で行う）。
  * 探した要素かどうかは機械で区別しないので、全てを対象にする。
  *
  * @param {string} text ソース
@@ -529,7 +529,7 @@ function blockEnd(code, from) {
 }
 
 /**
- * getAllBy…・findAllBy…・queryAllBy… の結果を、並びのインデックスで選ぶ所を探す（テストの書き方の「画面に見えるもので探す」にある「並びの 1 つ目は使わない」）。
+ * getAllBy…・findAllBy…・queryAllBy… の結果を、並びのインデックスで選ぶ所を探す（フロントのテストの書き方の「画面に見えるもので探す」にある「並びの 1 つ目は使わない」）。
  * 呼び出しの直後の [数字]・.at(数字) と、変数に入れて（配列の分割代入を含む）から [数字]・.at(数字) で選ぶ所を見つける。
  * 変数に入れる形：const・let・var の宣言と、宣言のない代入。= の後の改行、await、括弧、as の型の変換、型の注釈、
  * 受け手（screen.、within(…).）、スプレッド（[...x]）、Array.from(x) をはさんでもよい。
@@ -638,7 +638,7 @@ function literalsOf(code, from, to) {
 }
 
 /**
- * 描画した HTML の文字を、要素や属性の並びに依存して確認する所を探す（テストの書き方の「画面に見えるもので探す」。描画した結果を DOM に読み込み、役割と名前で探す）。
+ * 描画した HTML の文字を、要素や属性の並びに依存して確認する所を探す（フロントのテストの書き方の「画面に見えるもので探す」。描画した結果を DOM に読み込み、役割と名前で探す）。
  * 対象の形は、toMatch・toContain・toBe・toEqual・toStrictEqual の引数の文字列・テンプレート・正規表現に HTML のタグ（`<a`、`</p`）があるもの、
  * toMatch・toContain の引数の文字列・テンプレート・正規表現に属性（`href="`、`aria-label="`）があるもの。
  * 引数のコード（`new Map<string, number>()` の型引数など）は見ない。空の描画の確認（toBe('')）は、引数にタグも属性もないので対象にならない
@@ -748,7 +748,7 @@ function isElementVariable(code, name, before) {
 }
 
 /**
- * 要素のプロパティ・属性（.disabled、.checked、.value、getAttribute(…)）を toBe・toEqual で比べる所を探す（テストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」）。
+ * 要素のプロパティ・属性（.disabled、.checked、.value、getAttribute(…)）を toBe・toEqual で比べる所を探す（フロントのテストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」）。
  * expect の引数の最後がそのプロパティか属性であるもので、受け手が要素のものだけを見つける。受け手が要素なのは、
  * getBy…・queryBy…・findBy…・screen.・within( の結果か、それを入れた変数（要素の型の注釈や変換も）、document.・container. からたどる形。
  * `parts.map((part) => part.value)` のように途中に出てくるものと、`result.current.value` のように要素でない値は見つけない。
@@ -783,7 +783,7 @@ export function findPropertyComparisons(text) {
 const IMPORT_STATEMENT = /\bimport\s+(?:type\s+)?(?:[\w$]+\s*,?\s*)?(?:\*\s*as\s+[\w$]+|\{[^}]*\})?\s*from\b/g
 
 /**
- * 理由のコメントのない fireEvent の使用を探す（テストの書き方の「fireEvent を直接使わない」。import は除く）。
+ * 理由のコメントのない fireEvent の使用を探す（フロントのテストの書き方の「fireEvent を直接使わない」。import は除く）。
  * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす（型の変換と同じ）。呼び出しごとに理由が必要だ。
  * fireEvent を別名で import したとき（import { fireEvent as fe }）は、別名の呼び出し（fe.click(…)、fe(…)）も見つける。
  * 名前空間の import（import * as rtl）の rtl.fireEvent は、fireEvent の語で見つける
@@ -818,7 +818,7 @@ const POSITION_SELECTOR_TEXT = /(?<![\w-])nth=|:nth-(?:match|child|last-child|of
 
 /**
  * E2E で、位置で要素を選ぶメソッド（.first()・.nth(…)・.last()）と、locator の文字列のセレクターの中の位置
- * （nth=、:nth-match(、:nth-child(、:first-child、:last-child など）を使う行を探す（テストの書き方の「画面に見えるもので探す」。名前や親の要素で絞る）。
+ * （nth=、:nth-match(、:nth-child(、:first-child、:last-child など）を使う行を探す（フロントのテストの書き方の「画面に見えるもので探す」。名前や親の要素で絞る）。
  * セレクターの文字列は、locator( の引数の中だけを見る（テストの名前やメッセージの文字列は見ない）。
  *
  * @param {string} text ソース
@@ -877,7 +877,7 @@ function isOneLineTestCall(line) {
 }
 
 /**
- * テストの間に空行がない箇所を探す（テストの書き方の「テストとテストの間に空行を置く」）。
+ * テストの間に空行がない箇所を探す（フロントのテストの書き方の「テストとテストの間に空行を置く」）。
  * テストを閉じる行（`})` と、1 行で閉じるテストの行）の直後に、空行なしで test・it・describe が続く箇所。間にコメントの行があっても、空行がなければ見つける。
  * test.beforeEach・test.use・test.step などはテスト・グループでないので、続く側として見ない。
  *
@@ -962,12 +962,12 @@ function isAnchoredRegex(literal) {
 }
 
 /**
- * E2E で、ボタンを名前で探すのに、完全一致でない箇所を探す（テストの書き方の「画面に見えるもので探す」）。
+ * E2E で、ボタンを名前で探すのに、完全一致でない箇所を探す（フロントのテストの書き方の「画面に見えるもので探す」）。
  * name が正規表現のリテラルなら、先頭の ^ と末尾の $ を固定していること。それ以外（文字列、変数、テンプレート文字列）なら exact: true が付いていること。
  * 役割が button の getByRole だけを見る（row.getByRole(…) のような連鎖の途中、複数の行にまたがる呼び出しも読む）。
  * name のない呼び出しは名前で探さないので対象にしない。オプションがオブジェクトのリテラルでないとき、
  * または展開（...）を含み name を読めないときは、名前を読めないので見つける。
- * name に正規表現を入れた変数を渡す書き方は追わない（変数の名前は文字列にし、exact: true を付ける。テストの書き方の「画面に見えるもので探す」）
+ * name に正規表現を入れた変数を渡す書き方は追わない（変数の名前は文字列にし、exact: true を付ける。フロントのテストの書き方の「画面に見えるもので探す」）
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行（getByRole の行）
@@ -1278,7 +1278,7 @@ function nextDeclarator(code, from) {
 
 /**
  * フロントのテストと E2E で、組み込みの名前（TypeScript の lib が宣言するグローバルの名前）と同じ名前の const・let の宣言を探す
- * （テストの書き方の「組み込みの名前をシャドーイングしない」。エラーにならずにグローバルの値が使われるのを防ぐ）。
+ * （フロントのテストの書き方の「組み込みの名前をシャドーイングしない」。エラーにならずにグローバルの値が使われるのを防ぐ）。
  * 対象は、const・let の宣言の名前（1 つの宣言に並べたもの、分割代入、for…of・for…in の宣言を含む）。
  * 関数の引数、catch の変数、関数・クラスの宣言、import は対象にしない。
  * 分割代入の { a: name } は右側の name が宣言される名前で、{ name: x } は x。
@@ -1370,52 +1370,52 @@ if (isMain(import.meta.url)) {
   }
   for (const file of targets.tests) {
     for (const hit of findCssClassChecks(readFileSync(file, 'utf8'))) {
-      report(`${file}:${hit.line} CSS のクラスを確認する（役割と名前で探す。テストの書き方の「画面に見えるもので探す」）：${hit.text}`)
+      report(`${file}:${hit.line} CSS のクラスを確認する（役割と名前で探す。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
     }
   }
   for (const file of targets.frontendTests) {
     for (const hit of findInternalSelectors(readFileSync(file, 'utf8'))) {
-      report(`${file}:${hit.line} コンポーネントの内部の属性（data-slot）か querySelector で探す（役割と名前で探す。テストの書き方の「画面に見えるもので探す」）：${hit.text}`)
+      report(`${file}:${hit.line} コンポーネントの内部の属性（data-slot）か querySelector で探す（役割と名前で探す。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
     }
   }
   for (const file of targets.testsWithSupport) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findTypeCasts(text)) {
-      report(`${file}:${hit.line} 理由のコメントのない型を回避する変換（型に合う値を補助で作る。避けられないときは理由をコメントに書く。テストの書き方の「型を回避する変換を使わない」）：${hit.text}`)
+      report(`${file}:${hit.line} 理由のコメントのない型を回避する変換（型に合う値を補助で作る。避けられないときは理由をコメントに書く。フロントのテストの書き方の「型を回避する変換を使わない」）：${hit.text}`)
     }
     for (const hit of findFireEvents(text)) {
-      report(`${file}:${hit.line} 理由のコメントのない fireEvent の使用（userEvent で操作する。起こせない出来事だけは、同じ行か直前の行のコメントに理由を書く。テストの書き方の「fireEvent を直接使わない」）：${hit.text}`)
+      report(`${file}:${hit.line} 理由のコメントのない fireEvent の使用（userEvent で操作する。起こせない出来事だけは、同じ行か直前の行のコメントに理由を書く。フロントのテストの書き方の「fireEvent を直接使わない」）：${hit.text}`)
     }
   }
   for (const file of targets.frontendTests) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findMarkupTextChecks(text)) {
-      report(`${file}:${hit.line} 描画した HTML の文字を、要素や属性の並びで確かめる（描画した結果を DOM に読み込み、役割と名前で探す。テストの書き方の「画面に見えるもので探す」）：${hit.text}`)
+      report(`${file}:${hit.line} 描画した HTML の文字を、要素や属性の並びで確かめる（描画した結果を DOM に読み込み、役割と名前で探す。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
     }
     for (const hit of findIdentifierDescribes(text)) {
       report(`${file}:${hit.line} describe の名前が識別子だけ（振る舞いを書く。テストの書き方の「名前は振る舞いを書く」）：${hit.text}`)
     }
     for (const hit of findPropertyComparisons(text)) {
-      report(`${file}:${hit.line} 要素のプロパティ・属性を toBe・toEqual で比べる（toBeDisabled、toHaveValue、toHaveAttribute などを使う。テストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」）：${hit.text}`)
+      report(`${file}:${hit.line} 要素のプロパティ・属性を toBe・toEqual で比べる（toBeDisabled、toHaveValue、toHaveAttribute などを使う。フロントのテストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」）：${hit.text}`)
     }
   }
   for (const file of targets.tests) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findWeakExistenceChecks(text)) {
-      report(`${file}:${hit.line} toBeTruthy・toBeDefined で確かめる（toBeInTheDocument か、値の形で確かめる。テストの書き方の「画面に見えるもので探す」）：${hit.text}`)
+      report(`${file}:${hit.line} toBeTruthy・toBeDefined で確かめる（toBeInTheDocument か、値の形で確かめる。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
     }
     for (const hit of findIndexedMultiples(text)) {
-      report(`${file}:${hit.line} 複数の結果を並びのインデックスで選ぶ（役割と名前で 1 つに絞る。テストの書き方の「画面に見えるもので探す」）：${hit.text}`)
+      report(`${file}:${hit.line} 複数の結果を並びのインデックスで選ぶ（役割と名前で 1 つに絞る。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
     }
   }
   const timeoutFiles = new Set(timeoutTargets(targets.e2e))
   for (const file of targets.e2e) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findPositionSelectors(text)) {
-      report(`${file}:${hit.line} 位置で要素を選ぶ（.first()・.nth()・.last() を使わず、名前や親の要素で絞る。テストの書き方の「画面に見えるもので探す」）：${hit.text}`)
+      report(`${file}:${hit.line} 位置で要素を選ぶ（.first()・.nth()・.last() を使わず、名前や親の要素で絞る。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
     }
     for (const hit of findButtonNameChecks(text)) {
-      report(`${file}:${hit.line} ボタンの名前が完全一致でない（文字列は exact: true を付け、正規表現は先頭の ^ と末尾の $ を固定する。テストの書き方の「画面に見えるもので探す」）：${hit.text}`)
+      report(`${file}:${hit.line} ボタンの名前が完全一致でない（文字列は exact: true を付け、正規表現は先頭の ^ と末尾の $ を固定する。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
     }
     for (const hit of findNetworkIdleWaits(text)) {
       report(`${file}:${hit.line} networkidle で待つ（画面の状態を条件にして待つ。テストの書き方の「待ち方」）：${hit.text}`)
@@ -1427,13 +1427,13 @@ if (isMain(import.meta.url)) {
   }
   for (const file of targets.testsWithSupportAndE2e) {
     for (const hit of findMissingTestSpacing(readFileSync(file, 'utf8'))) {
-      report(`${file}:${hit.line} テストの間に空行がない（}) の直後に test・it・describe を続けず、空行を置く。テストの書き方の「テストとテストの間に空行を置く」）：${hit.text}`)
+      report(`${file}:${hit.line} テストの間に空行がない（}) の直後に test・it・describe を続けず、空行を置く。フロントのテストの書き方の「テストとテストの間に空行を置く」）：${hit.text}`)
     }
   }
   const builtinNames = new Set(JSON.parse(readFileSync(BUILTIN_NAMES_FILE, 'utf8')))
   for (const file of targets.testsWithSupportAndE2e) {
     for (const hit of findBuiltinShadowing(readFileSync(file, 'utf8'), builtinNames)) {
-      report(`${file}:${hit.line} 組み込みの名前 ${hit.name} と同じ名前の const・let（意味の分かる名前にする。テストの書き方の「組み込みの名前をシャドーイングしない」）：${hit.text}`)
+      report(`${file}:${hit.line} 組み込みの名前 ${hit.name} と同じ名前の const・let（意味の分かる名前にする。フロントのテストの書き方の「組み込みの名前をシャドーイングしない」）：${hit.text}`)
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))

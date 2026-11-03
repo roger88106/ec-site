@@ -10,7 +10,7 @@ description: ec-site のフロントに画面や操作を追加・修正する�
 
 - [店舗画面の構成](../../../docs/02-設計/apps/store.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」
 - [管理画面の構成](../../../docs/02-設計/apps/admin.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」
-- [テストの書き方](../../../docs/05-開発規則/test-writing.md)の「管理画面の結合テストは、本物の描画で、API だけを差し替える」
+- [フロントのテストの書き方](../../../docs/05-開発規則/test-writing-frontend.md)の「管理画面の結合テストは、本物の描画で、API だけを差し替える」
 
 共通の前提：
 
@@ -246,7 +246,7 @@ export function FooActions({ fooId }: { fooId: string }) {
 
 ### 結合テスト（`pages/FooPage.test.tsx`）
 
-書き方は [テストの書き方](../../../docs/05-開発規則/test-writing.md)の「管理画面の結合テストは、本物の描画で、API だけを差し替える」。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API は全てハンドラーを渡す、テスト名に AC 番号。
+書き方は [フロントのテストの書き方](../../../docs/05-開発規則/test-writing-frontend.md)の「管理画面の結合テストは、本物の描画で、API だけを差し替える」。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API は全てハンドラーを渡す、テスト名に AC 番号。
 
 ## 画面を追加し終えたら
 

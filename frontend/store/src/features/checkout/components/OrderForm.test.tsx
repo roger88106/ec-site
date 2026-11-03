@@ -8,7 +8,7 @@ import { expectInOrder, input, select } from '@/test/elements'
 import { MUNICIPALITIES, PREFECTURES, postalCodeAddress as postal } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
-// 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確認する（テストの書き方の「店舗画面のテストは、対象ごとの方法で書く」 ※6）
+// 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確認する（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」 ※6）
 vi.mock('@/actions/region', () => ({ listMunicipalities: vi.fn(), findPostalCodeAddresses: vi.fn() }))
 
 /** 注文のサーバーアクションの結果（null は送る前）を渡した、注文のフォームの表示 */

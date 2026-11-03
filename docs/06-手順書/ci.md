@@ -19,7 +19,7 @@
 
 | ワークフロー | ジョブ | 実行するもの | 実行する時 |
 |--------------|--------|----------|----------|
-| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Error Prone と NullAway（コンパイル時の静的解析）、Checkstyle（Javadoc の記載漏れは main だけ、private を含む。使われていない import、`*` の import、import の並びは全てのソースセット）、テストのコードの重複の検出（PMD の CPD。[テストの書き方](../05-開発規則/test-writing.md)の「テストのコードの重複」）、tools のソースのコンパイル、単体テスト、OpenAPI の構文の検証、domain の mutation testing（PIT）と mutation score の基準の検査 | push（[バックエンドの CI のジョブ](ci-backend-jobs.md)の「ci.yml を実行しないファイル」だけの push を除く）と pull request |
+| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Error Prone と NullAway（コンパイル時の静的解析）、Checkstyle（Javadoc の記載漏れは main だけ、private を含む。使われていない import、`*` の import、import の並びは全てのソースセット）、テストのコードの重複の検出（PMD の CPD。[バックエンドのテストの書き方](../05-開発規則/test-writing-backend.md)の「テストのコードの重複」）、tools のソースのコンパイル、単体テスト、OpenAPI の構文の検証、domain の mutation testing（PIT）と mutation score の基準の検査 | push（[バックエンドの CI のジョブ](ci-backend-jobs.md)の「ci.yml を実行しないファイル」だけの push を除く）と pull request |
 | `ci.yml` | バックエンド（統合テスト 1/2・2/2） | 統合テストの半分ずつ（2 つのジョブ。統合テストのコンパイルでも Error Prone が動く） | 同上 |
 | `ci.yml` | バックエンド | 上の 3 つのジョブの結果の確認、カバレッジの報告（要約）、カバレッジの基準の検査 | 同上 |
 | `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの要約、カバレッジの基準の検査 | 同上 |

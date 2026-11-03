@@ -17,9 +17,9 @@
 | CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。一覧は[CI の検査の script](../06-手順書/ci-checks.md) |
 | 書き方の規則 | `docs/05-開発規則/*-coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確認方法の形でまとめた文書（[書き方の規則とレビュー](review.md)） |
 | 引き継ぎの文書 | `/.local/handoff/` | 作業を別のセッションに引き継ぐための文書。Git に入れない（[AGENTS.md](../../AGENTS.md)） |
-| カバレッジ | | テストで実行されたコードの割合（行・分岐）。基準の値から許容の幅を引いた値を下回ると CI が失敗する（[テストの書き方](test-writing.md)の「カバレッジと mutation score の基準」） |
-| mutation score | `backend-domain` | PIT で測る、テストが検出できた変異の割合（検出した変異 ÷ 全変異）。バックエンドの domain が対象（[テストの書き方](test-writing.md)の「カバレッジと mutation score の基準」） |
-| カバレッジの基準 | `scripts/ci/report/quality-baseline.json` | カバレッジと mutation score の、対象ごとの値と許容の幅（`tolerance`）。CI が今回の値と比べる（[CI の検査の script](../06-手順書/ci-checks.md)の「カバレッジと mutation score の基準の検査」） |
+| カバレッジ | | テストで実行されたコードの割合（行・分岐）。基準の値から許容の幅を引いた値を下回ると CI が失敗する（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
+| mutation score | `backend-domain` | PIT で測る、テストが検出できた変異の割合（検出した変異 ÷ 全変異）。バックエンドの domain が対象（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
+| カバレッジの基準 | `scripts/ci/report/quality-baseline.json` | カバレッジと mutation score の、対象ごとの値と許容の幅（`tolerance`）。CI が今回の値と比べる（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
 | mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使う。ローカルと E2E の設定だけで立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
 | テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗させる操作と、呼ばれた操作を記録する機能を加えた実装 |
@@ -48,8 +48,8 @@
 | 整形の関数 | `@ec-site/shared/lib/format` | 金額・価格・数・日時・税額・郵便番号・軸の値を、画面に表示する文字列にする関数。2 つの画面で共有する |
 | 既定の数の整形 | `formatNumber`（`@ec-site/shared/lib/format`） | 既定のロケールで、3 桁ごとに区切る数の整形。金額の整形の数の部分も同じ |
 | 表示名 | `labels.ts` | API の列挙の値を画面に表示する名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`。ただし、2 つの画面で同じ表示名は、機能の数によらず共有パッケージに置く（[フロントの書き方](frontend-coding.md)の「画面に依存しない処理は `lib/` の関数」） |
-| テストの補助 | | 複数のテストで使う、データの作成・API の差し替え・操作・確認の関数（[テストの書き方](test-writing.md)の「複数のテストで使うものは、テストの補助に置く」） |
-| 型を回避する変換 | `as never`、`as unknown as` | 値の型を検査させずに、別の型として扱わせる書き方。テストでは使わない（[テストの書き方](test-writing.md)の「型を回避する変換を使わない」） |
+| テストの補助 | | 複数のテストで使う、データの作成・API の差し替え・操作・確認の関数（[フロントのテストの書き方](test-writing-frontend.md)の「複数のテストで使うものは、テストの補助に置く」） |
+| 型を回避する変換 | `as never`、`as unknown as` | 値の型を検査させずに、別の型として扱わせる書き方。テストでは使わない（[フロントのテストの書き方](test-writing-frontend.md)の「型を回避する変換を使わない」） |
 | 注文の表示名 | `orderLabels` | 注文の状態・配送状態・配送業者の表示名を返す関数。2 つの画面で同じ文言なので、共有パッケージに置く |
 | 金額の内訳 | `AmountsSummary` | 商品の合計・送料・総額・税率ごとの消費税額を並べて表示する、共有のコンポーネント |
 | リンクの見た目のボタン | `LinkButton` | Button の見た目で、リンクの要素を描画する共有のコンポーネント |

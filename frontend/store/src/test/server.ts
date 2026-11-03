@@ -14,7 +14,7 @@ export const IDP = 'http://localhost:8180/realms/ec-store'
 export const TOKEN_ENDPOINT = `${IDP}/protocol/openid-connect/token`
 
 /**
- * 店舗 API の応答を差し替えるハンドラーを作る（テストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * 店舗 API の応答を差し替えるハンドラーを作る（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
  * パス・パラメーター・リクエストとレスポンスの本文は store.yaml の型に合わせる。store.yaml にない応答は型エラーになる。
  * 例：`http.post('/carts', ({ response }) => response(201).json({ id: CART_ID }))`
  */

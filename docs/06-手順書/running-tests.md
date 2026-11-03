@@ -33,7 +33,7 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 
 ※1：jOOQ のコード生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うため、マイグレーションか生成の設定が変わったときだけ Docker が必要（変わらなければ `generateJooq UP-TO-DATE` でスキップされる）。
 
-※2：PIT は変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、時間の多くはその実行に使われる。手元はコンパイル済みで約 2 分（実測 1 分 57 秒）。CI の手順は 2 分 1 秒から 2 分 28 秒（[CI の検査の script](ci-checks.md)の「カバレッジと mutation score の基準の検査」）。
+※2：PIT は変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、時間の多くはその実行に使われる。手元はコンパイル済みで約 2 分（実測 1 分 57 秒）。CI の手順は 2 分 1 秒から 2 分 28 秒（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
 
 単体テストには、構成と契約の検査も含まれる：モジュールの境界（`ModulithTest`）、アーキテクチャの規則（`architecture/` の ArchUnit）、契約の制約（`contract/`）、エラーの定義とメッセージの対応（`MessageContractTest`）。
 
@@ -41,7 +41,7 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 
 Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）が失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`UnusedImports` は使われていない import を、`CustomImportOrder` は import の並びが決まった順（`java`・`javax` 以外、`java`・`javax`、static）でないものを報告する。`AvoidStarImport` は `*` の import を報告する。個々の import に書き換える。Checkstyle は import を修正しないので、報告された import は手動で削除するか、並び替える。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は、本番のコード（`src/main`）の Javadoc の記載漏れなので、Javadoc を書く。修正方法と import の並びは [バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」。test、integrationTest、testFixtures、tools では、Javadoc の 3 つの検査を `backend/ecsite/config/checkstyle/suppressions.xml` で抑えている。
 
-テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`backend/ecsite/build/reports/cpd/cpdCheck.xml`）に重複の場所（ファイルと行）が出る。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[テストの書き方](../05-開発規則/test-writing.md)の「テストのコードの重複」）。
+テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`backend/ecsite/build/reports/cpd/cpdCheck.xml`）に重複の場所（ファイルと行）が出る。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[バックエンドのテストの書き方](../05-開発規則/test-writing-backend.md)の「テストのコードの重複」）。
 
 ## 3. 管理画面・店舗画面
 
@@ -120,7 +120,29 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 ## 6. カバレッジと mutation score の基準の検査
 
-CI と同じ検査を、手元で実行できる（[テストの書き方](../05-開発規則/test-writing.md)の「カバレッジと mutation score の基準」、[CI の検査の script](ci-checks.md)の「カバレッジと mutation score の基準の検査」）。先に、対象のテストを実行して報告を作る。
+カバレッジ（行・分岐）と、domain の mutation score は、基準の値（許容の幅を含む）を下回らない。テストの量や強さが下がったことに気づくため、下回ると CI が失敗する。
+
+- 行と分岐の対象は、バックエンド（`backend`）、管理画面（`admin`）、店舗画面（`store`）、共有パッケージ（`shared`）。mutation score の対象は、バックエンドの domain（`backend-domain`）。mutation score は、PIT で測る、テストが検出できた変異の割合。
+- 基準は `scripts/ci/report/quality-baseline.json` にある、対象ごとの合計の値と許容の幅（`tolerance`）。今回の値が、基準の値から許容の幅を引いた値を下回ると失敗にする。ファイルごとの基準はない。
+- `backend` の許容の幅は、行 0.10、分岐 0.30。統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつくため。根拠は [CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」。
+
+検査は `scripts/ci/report/` の下の script で行う。
+
+| ファイル | 役割 |
+|----------|------|
+| `coverage-summary.mjs` | カバレッジの合計と、行のカバレッジが低い順の 10 件を、job の summary に書く。失敗にはしない |
+| `coverage-baseline.mjs` | 報告の値を基準の値と比べ、下回ると終了コード 1 で失敗にする |
+| `mutation-report.mjs` | PIT の報告（`mutations.xml`）から mutation score と、生き残った変異が多いクラスを読む（`coverage-baseline.mjs` が使う） |
+| `quality-baseline.json` | 基準の値と許容の幅 |
+
+### 6.1 CI での手順の位置
+
+- 検査の手順は、報告を保存した後に置く（失敗しても報告が残る）。位置は、管理画面、店舗画面、「バックエンド」のジョブでは最後。「バックエンド（ビルドと単体テスト）」のジョブでは、失敗時のテストレポートの保存の前。店舗画面のジョブは、店舗画面と共有パッケージの 2 つの手順で検査する。
+- PIT は、ビルドと単体テストのジョブの、単体テストの後で実行する（`./gradlew pitest`。`check` には含まれない）。変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、そのジョブの時間が増える。報告は artifact `pitest-backend` に保存する。根拠は [CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」。
+
+### 6.2 手元での実行
+
+CI と同じ検査を、手元で実行できる。先に、対象のテストを実行して報告を作る。
 
 ```bash
 # ルートで：node scripts/ci/report/coverage-baseline.mjs <対象> <報告のパス> [--write]
@@ -137,7 +159,14 @@ node scripts/ci/report/coverage-baseline.mjs backend-domain backend/ecsite/build
 | `admin`、`store`、`shared` | 各ディレクトリで `pnpm test` | Vitest の `coverage-summary.json` |
 | `backend-domain` | `backend/ecsite/` で `./gradlew pitest` | PIT の `mutations.xml` |
 
-- 基準は `scripts/ci/report/quality-baseline.json` にある（役割は [CI の検査の script](ci-checks.md)の「カバレッジと mutation score の基準の検査」）。今回の値が基準を上回ったときは、成功にして、基準の更新を促す警告を表示する。
-- `--write` は、基準のファイルのその対象の値を、報告の値で書き換える（許容の幅は変えない）。基準を下げるときと、上回った値に更新するときに使い、書き換えたファイルを同じ pull request に含める。下げるときは、pull request に理由を書く。
 - 手元でバックエンドの一部のテストだけを実行すると、報告の値が基準より低くなり、検査が失敗する。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
+- 今回の値が基準を上回ったときは、成功にして、基準の更新を促す警告を表示する。
+
+### 6.3 失敗したとき
+
+ログと summary の対象・基準・今回の値・差を見る。低い箇所は、`coverage-summary.mjs` と `mutation-report.mjs` が summary に書く一覧で見つける。テストを追加して、値を基準以上に戻す。正当な理由で下げるときは、次の手順で基準のファイルを更新する。
+
+### 6.4 基準を変える手順
+
+- `--write` は、基準のファイルのその対象の値を、報告の値で書き換える（許容の幅は変えない）。基準を下げるときと、上回った値に更新するときに使い、書き換えたファイルを同じ pull request に含める。下げるときは、pull request に理由を書く。
 - バックエンドの `--write` は、手元のビルドのキャッシュから読んだテストの報告ではなく、CI の summary の値、または `./gradlew check --rerun-tasks` などでテストを実際に実行した報告の値で行う。キャッシュから読んだ報告は、実行した報告と分岐が 1 つ違うことがある（実測：キャッシュから読んだ値は分岐 85.26%、実行した値は 85.20%）。

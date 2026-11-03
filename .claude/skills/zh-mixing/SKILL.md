@@ -37,24 +37,7 @@ git config --local ecsite.instructionLanguage zh
 中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く（チームの規則は `.claude/settings.json` に書くが、手順 2 の Claude Code の hook は環境に固有なので `.claude/settings.local.json` に書く。分け方は [AGENTS.md](../../../AGENTS.md) の「環境」の節）。環境の印がなければ、設定しても何も調べない。
 
 1. 環境の印：`git config --local ecsite.instructionLanguage zh`。`.git/config` に入り、全ての作業ツリーで共有する。
-2. Claude Code の hook（書き込みの後にエージェントへ返す）：`.claude/settings.local.json` の `hooks.PostToolUse` に、次を追加する。入口は `post-tool-use.cjs` で、書いたファイル（`tool_input.file_path`）を調べる。調べる対象は、リポジトリのファイルと memory のファイル（`~/.claude/projects/<プロジェクト>/memory/` の下）で、`/.local/` の下とリポジトリの外の他のファイルは調べない。見つかれば終了コード 2 と標準エラー出力（ファイル、行、語、直し方）で返し、Claude Code がエージェントに渡す。
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-        "hooks": [
-          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/.claude/skills/zh-mixing/post-tool-use.cjs\" ]; then f=\"$d/.claude/skills/zh-mixing/post-tool-use.cjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-   `.claude/settings.local.json` は Git に入らない。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーのこのファイルを読む（読む場所は、skill `sessions` の「ツールの補足」の「作業ツリーのセッションが読むもの」の表）ので、メインの作業ツリーに置けばよい。作業ツリーで起動した `claude -p` は、メインの作業ツリーのこのファイルを読まないので、この hook は動かない（同じ表）。command は、script を作業ツリーから先に探し、なければメインの作業ツリー（`$CLAUDE_PROJECT_DIR`）の下を使う形にする。環境の印は `.git/config` にあり、作業ツリーの間で共有される。他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
+2. Claude Code の hook：skill `local-dev` の「手元の hook の設定」の PostToolUse の項目を、`.claude/settings.local.json` に置く。
 
 3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 

@@ -141,7 +141,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
   - 依存：なし
   - 範囲：`.claude/skills/review/docs-review.md`、`.claude/skills/zh-mixing/SKILL.md`
   - 確認方法：`git grep -n "層 1"` の結果を読む
-- [ ] **T331-01-04** 手元の hook の設定を skill `local-dev` の「手元の hook の設定」にまとめ、zh-mixing の PostToolUse の項目をそこに移す。作業ツリーのセッションが読むものの表から、測定の出典・日付と、公式の文書との比較を取り出し、`docs/07-記録/subagents-results.md` に移す。`subagents.md` の作業ツリーとスロットの手順を skill への参照に替える（DC-331-5、DC-331-10、DC-331-9 の一部）。
+- [x] **T331-01-04** 手元の hook の設定を skill `local-dev` の「手元の hook の設定」にまとめ、zh-mixing の PostToolUse の項目をそこに移す。作業ツリーのセッションが読むものの表から、測定の出典・日付と、公式の文書との比較を取り出し、`docs/07-記録/subagents-results.md` に移す。`subagents.md` の作業ツリーとスロットの手順を skill への参照に替える（DC-331-5、DC-331-10、DC-331-9 の一部）。
   - 依存：T331-01-03（同じ zh-mixing の SKILL.md を変えるため）
   - 範囲：`.claude/skills/local-dev/SKILL.md`、`zh-mixing/SKILL.md`、`sessions/SKILL.md`、`docs/05-開発規則/subagents.md`、`docs/07-記録/subagents-results.md`、AGENTS.md
   - 確認方法：文書を読む。hook の JSON の項目が、移す前と同じ文字列である（`git show` と比べる）

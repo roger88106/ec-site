@@ -79,7 +79,7 @@ module/<モジュール>/
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
 │   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装
-    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。[バックエンドの書き方](../05-開発規則/backend-coding.md)の「設定の値の型」）
+    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。バックエンドの書き方の「設定の値の型」）
     ├── persistence/    jOOQ の Repository と、それが使うクラス
     ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
     └── <外部>/          外部の仕組み（storage、converter、cache など）

@@ -223,7 +223,7 @@ AC 一覧の冒頭は「全ての列を手動で書く」としているが、`n
   - 依存：なし（T336-01-04 とファイルが分かれる）
   - 範囲：`api/openapi/admin.yaml`、`store.yaml`
   - 確認方法：`git grep -nE "AC-|BR-|spec [0-9]|US-|plan [0-9]" -- api/openapi` が 0 件、description・summary の値（複数行の値の続きの行を含む）とコメントの行を除いた差分が 0 行（`git diff` を node で絞る）、`frontend/admin`・`frontend/store`・`e2e` の `pnpm typecheck`、`node scripts/ci/role-permissions.mjs`、`./gradlew check`
-- [ ] **T336-01-08** 概要と決定記録の冗長を減らす（DC-336-13、DC-336-14）。
+- [x] **T336-01-08** 概要と決定記録の冗長を減らす（DC-336-13、DC-336-14）。
   - 依存：なし
   - 範囲：`docs/01-概要/template.md`、`order.md`、`README.md`（必要なとき）、`docs/04-決定記録/subagent-delegation.md`、`template.md`、`README.md`
   - 確認方法：文書を読む、`node scripts/ci/doc-refs.mjs`。フォルダーの `README.md` を変える前に issue 担当のセッションに知らせる

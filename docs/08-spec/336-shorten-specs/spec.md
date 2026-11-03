@@ -194,11 +194,11 @@ AC 一覧の冒頭は「全ての列を手動で書く」としているが、`n
 
 実装は実装役（汎用）に 1 タスクずつ任せる。文書の本文は、日本語の要点から、日本語だけの文脈のサブエージェント（汎用）が書く。pull request の base は作業ブランチ `334-shorten-docs` にする。各タスクで、削った・移した内容を指す参照を修正し、`doc-refs` が通る状態で終える。
 
-- [ ] **T336-01-01** [テスト] `ac-check.test.mjs` を、元の spec・変えた spec を番号だけで書く形に変え、番号の形でない・ディレクトリがない・同じ番号のディレクトリが 2 つある・変えた spec の番号のディレクトリがないときの失敗と、`--write` の転記の行と ③ の表が番号だけになることのテストを加える。レッドを確認する（DC-336-2、DC-336-3）。
+- [x] **T336-01-01** [テスト] `ac-check.test.mjs` を、元の spec・変えた spec を番号だけで書く形に変え、番号の形でない・ディレクトリがない・同じ番号のディレクトリが 2 つある・変えた spec の番号のディレクトリがないときの失敗と、`--write` の転記の行と ③ の表が番号だけになることのテストを加える。レッドを確認する（DC-336-2、DC-336-3）。
   - 依存：なし
   - 範囲：`scripts/ci/ac-check.test.mjs`
   - 確認方法：`node --test scripts/ci/ac-check.test.mjs` が、変えたテストで失敗する
-- [ ] **T336-01-02** `ac-check.mjs` を番号だけの形に変え、冒頭のコメントを修正する。AC 一覧の列を番号だけに書き換え、`--write` で ③ の表を再生成する。AC 一覧の冒頭の「全ての列を手動で書く」と失敗の条件の箇条を書き換え、`issues.md` と `workflow.md` のアーカイブのリンクの書き換えを削る（DC-336-1〜4）。
+- [x] **T336-01-02** `ac-check.mjs` を番号だけの形に変え、冒頭のコメントを修正する。AC 一覧の列を番号だけに書き換え、`--write` で ③ の表を再生成する。AC 一覧の冒頭の「全ての列を手動で書く」と失敗の条件の箇条を書き換え、`issues.md` と `workflow.md` のアーカイブのリンクの書き換えを削る（DC-336-1〜4）。
   - 依存：T336-01-01（テストのタスクと同じ commit に入れる）
   - 範囲：`scripts/ci/ac-check.mjs`、`docs/03-機能仕様/acceptance-criteria.md`、13 の ③、`docs/05-開発規則/issues.md`、`workflow.md`
   - 確認方法：`node --test scripts/ci/ac-check.test.mjs`、`node scripts/ci/ac-check.mjs`、`git grep -n "](../08-spec/" -- docs/03-機能仕様` が 0 件、`node scripts/ci/doc-refs.mjs`

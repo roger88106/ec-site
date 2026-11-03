@@ -285,7 +285,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
-- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` と同じ形にする）。理由：record の既定の `toString` は全ての項目を出力し、設定の値をログや例外のメッセージに出力したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとする。構成の検査（`ConfigurationPropertiesTest`）は、秘密の値の項目を直接宣言している設定の型が、`toString`（`final` でないもの）を宣言していることを確認する。検査の対象の設定の型は、`@ConfigurationProperties` の型と、その項目（コレクションと Map の要素の型を含む）から再帰的にたどれる `com.ecsite` の型（注釈のない入れ子の record など）である。理由：外側の型の既定の `toString` は入れ子の型の `toString` を呼ぶので、入れ子の型が宣言しないと値が出力されるため。値をマスクしていることの確認方法は単体テスト（`toString` に秘密の値が含まれないこと）で、マスクの方法は設定ごとに違うので構成の検査では判定しない。
+- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` と同じ形にする）。理由：record の既定の `toString` は全ての項目を出力し、設定の値をログや例外のメッセージに出力したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとする。構成の検査（`ConfigurationPropertiesTest`）が、秘密の値の項目を持つ設定の型（入れ子の型を含む）が `toString` を宣言していることを確認する。対象の範囲はテストの Javadoc。
 - 設定の型では、Lombok の `@ToString`・`@Data`・`@Value` を使わず、`toString` を手動で書く。理由：Lombok の注釈はクラスファイルに残らず、作られた `toString` は手動で宣言したものと区別できないので、構成の検査が値を出力する `toString` を見逃すため。
 
 ※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
@@ -332,7 +332,7 @@ public Optional<UUID> memberId() {
 ### 7.2 検査を抑えるとき
 
 - Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付ける。理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く。他の注釈が間にあるときは、その注釈の行を飛ばして直前の行に書く。Javadoc だけでは足りない。全てのソースセットで、CI の検査 `scripts/ci/java-rules.mjs` が確認する。
-- 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。今無効なのは、全てのソースセットで `StringConcatToTextBlock` と `ImmutableEnumChecker`、テストのソースセット（test、integrationTest、testFixtures）で `ArrayRecordComponent` と `TypeParameterUnusedInFormals`（理由は `build.gradle.kts` のコメント）。
+- 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。今無効にしている検査と理由は、`backend/ecsite/build.gradle.kts` の Error Prone の設定。
 - 生成したコード（`build/generated` の下）は検査しない。
 
 ```java
@@ -371,7 +371,7 @@ public record SignedNotification(byte[] body, String signature) {
 
 既存の列の既定値の削除は、段 1 がない。段 2 で、アプリが列に値を必ず書くようにしてリリースし、段 3 で既定値を削除する。除外の一覧に置くのは段 3 の削除（※5 と同じ）。
 
-※5：段 3 の削除は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置く。キーを `<マイグレーションのファイル名>:<変更の種類>`、値を理由にし、理由には、どのリリースで使わなくなったかを書く（詳しくは `scripts/ci/migrations.mjs` の先頭のコメント）。今ある 38 のマイグレーションは本番に適用していないので、検査の対象にしない。
+※5：段 3 の削除は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置き、理由に、どのリリースで使わなくなったかを書く。書き方と検査の対象は `scripts/ci/migrations.mjs` の先頭のコメント。
 
 理由：前のバージョンのアプリが、新しいスキーマで失敗しないため。
 

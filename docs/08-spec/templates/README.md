@@ -1,6 +1,6 @@
 # spec の雛形と見本
 
-spec・plan・tasks を新しく書くときの雛形と、書き方の見本。書き方の規則は[文書の書き方](../../05-開発規則/writing.md)の「spec と plan の書き方」、番号と記号は[文書の記号と番号](../../05-開発規則/notation.md)。
+spec・plan・tasks を新しく書くときの雛形と、書き方の見本。書き方の規則は[文書の構成](../../05-開発規則/doc-structure.md)の「spec と plan の書き方」、番号と記号は[文書の記号と番号](../../05-開発規則/notation.md)。
 
 構造は、検査の script `node scripts/ci/spec-structure.mjs` が確認する。`scripts/ci/check-all.sh` からも実行される。
 

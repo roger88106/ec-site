@@ -3,7 +3,7 @@
 // constitution.md 以外の docs/ 直下のファイルと、一覧にない名前のフォルダーも失敗にする。
 // 最初の要素が docs と大文字・小文字だけ違うもの（Docs、DOCS）も失敗にする。Windows と macOS では、既存の docs/ の中に取り出され、取り違えたフォルダーができるため。
 // 理由：「開発」「記録」は、繁体字の「開發」「記錄」と取り違えやすく、取り違えたフォルダーができても気づきにくいため。
-// 失敗したとき：フォルダー名を修正する。フォルダーを追加・変更するときは、この一覧と constitution の「リポジトリ構成」の文書の地図を一緒に修正する（skill `docs` の「置き場所」）。
+// 失敗したとき：フォルダー名を修正する。フォルダーを追加・変更するときは、この一覧と constitution の「リポジトリ構成」の文書の地図の表を一緒に修正する（skill `docs` の「置き場所」）。
 // 除外：なし
 // 使い方：node scripts/ci/docs-folders.mjs（リポジトリのルートで）
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

@@ -4,5 +4,6 @@
 
 | 文書 | 内容 |
 |------|------|
+| [template.md](template.md) | 概要の雛形 |
 | [system.md](system.md) | システムの全体像 |
 | [order.md](order.md) | 注文の流れ |

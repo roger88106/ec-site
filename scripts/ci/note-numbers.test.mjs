@@ -70,7 +70,7 @@ describe('注の番号の検査', () => {
 
   test('リンクか文書の名前の後の「の「…」 ※N」「の「…」の ※N」は、他の文書の見出しの注を指すので、この文書の参照に数えない', () => {
     const names = new Map([['架空の文書', 'docs/x/fictional.md']])
-    assert.deepEqual(findNoteProblems(['[開発の進め方](../../docs/05-開発規則/workflow.md)の「起票」 ※3 を参照', 'a ※1', '※1：理由'].join('\n'), names), [])
+    assert.deepEqual(findNoteProblems(['[開発の進め方](../../docs/05-開発規則/workflow.md)の「規模」 ※3 を参照', 'a ※1', '※1：理由'].join('\n'), names), [])
     assert.deepEqual(findNoteProblems(['架空の文書の「起票」の ※3 を参照', 'a ※1', '※1：理由'].join('\n'), names), [])
     assert.deepEqual(findNoteProblems(['架空の文書の「段階 1」の「タスク」 ※3 を参照', 'a ※1', '※1：理由'].join('\n'), names), [])
   })

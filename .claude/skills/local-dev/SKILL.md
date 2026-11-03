@@ -1,6 +1,6 @@
 ---
 name: local-dev
-description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、スロット（作業ツリーごとの環境）、フロント（store・admin）と E2E を要約だけで実行するスクリプト、commit の前の CI の検査、プレビューでの画面の確認方法、壊しての確認（break-check）、手元の hook の設定、シェルと Git の落とし穴。バックエンドやフロントを動かす、テストや E2E を実行する、commit する、画面を確認する、DB や token を見るときに使う。
+description: ec-site をローカルで起動・確認する手順。スロット（作業ツリーごとの環境）、compose・バックエンド・フロントの起動、テストと E2E。commit の前の CI の検査、画面・DB・token の確認、壊しての確認（break-check）、手元の hook の設定のときに使う。
 ---
 
 # ローカルでの起動と確認
@@ -223,7 +223,9 @@ hook や検査に止められてからコマンドを書き換えないよう、
 
 ## 手元の hook の設定
 
-利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 3 つの hook。script は `scripts/dev/hooks/` と `.claude/skills/zh-mixing/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」の表。設定はメインの作業ツリーに置く。
+hook と permission の書き先は 2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のものは `.claude/settings.local.json`（Git に入らない）に置く。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs`、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`）。例外は zh-mixing の手元の hook で、script は `.claude/skills/zh-mixing/` に置く。
+
+利用者の環境（`.claude/settings.local.json`）に置く 3 つの hook は次のとおり。読む場所と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」の表。設定はメインの作業ツリーに置く。
 
 | hook | イベントと matcher | 働き |
 |------|--------------------|------|

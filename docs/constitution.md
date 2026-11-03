@@ -1,81 +1,25 @@
 # EC Site Constitution
 
-プロジェクト全体の長期ルール。spec、plan、tasks、コードは全てこれに従う。
-ルールを変えるときは、先に本書を更新してから他を変更する。
-本書は大綱と文書の地図で、細則はリンク先の各文書にある。細則も本書と同じく守る。
+プロジェクト全体の長期ルールで、spec・plan・tasks・コードは全てこれに従い、変えるときは先に本書を更新する。
+本書は大綱と文書の地図で、細則はリンク先の各文書にあり、本書と同じく守る。
 
 ## 1. プロジェクトの位置づけ
 
 日本向けで通貨は日本円のみの、自社 B2C の EC サイト（多店舗プラットフォームではない）で、個人のポートフォリオとして本番相当のやり方を模擬する。
 
-- コアフローは省略しない：閲覧 → カート → 注文 → 決済 → 出荷 → 配送状況。C 側（消費者）は会員登録・ログイン、商品閲覧、カート、チェックアウト、決済、注文・配送状況の照会。B 側（運営者）は商品登録、価格変更、在庫、注文管理、出荷通知、データ収集と簡易レポート。
+- コアフローは省略しない：閲覧 → カート → 注文 → 決済 → 出荷 → 配送状況。C 側（消費者）と B 側（運営者）の機能は [システムの全体像](01-概要/system.md)。
 - MVP は「コアフロー全体を動かせる最小版」とする。購入できるのは会員だけ（ゲストの購入は MVP の後に検討する）。
 - クラウドネイティブで、水平スケールできる構成にする（「水平スケール」）。
 
 ## 2. 技術スタック
 
-### 共通・E2E
+バージョンは設定ファイル（Gradle の version catalog、`package.json`、compose）が正本。フロントの細則は [フロントのアーキテクチャ](02-設計/frontend-architecture.md)。
 
-| 領域 | 採用 |
-|------|------|
-| API の契約 | OpenAPI |
-| 認証 | Keycloak（OIDC） |
-| ローカルの環境 | Docker Compose |
-| CI | GitHub Actions |
-| E2E | Playwright |
+- 共通・E2E：OpenAPI（API の契約）、Keycloak（OIDC）、Docker Compose、GitHub Actions、Playwright。
+- バックエンド：Java、Spring Boot、Spring Modulith、jMolecules、PostgreSQL、jOOQ、Flyway、S3 互換オブジェクトストレージ、imgproxy、Stripe、SMTP、ShedLock、Gradle Kotlin DSL、Error Prone、NullAway、Checkstyle、Lombok、JUnit 5、Testcontainers、Actuator、Micrometer。ローカルでは Stripe は mock、メールは Mailpit、ストレージは SeaweedFS を使う。
+- フロントエンド：C 側（`frontend/store`）と B 側（`frontend/admin`）は別のアプリ。TypeScript、pnpm（workspace）、Tailwind CSS、shadcn/ui、`openapi-typescript` + `openapi-fetch`、Biome、Vitest、MSW。C 側は Next.js、B 側は Vite + React。
 
-### バックエンド
-
-| 領域 | 採用 |
-|------|------|
-| 言語・フレームワーク | Java 21、Spring Boot 4.1.x |
-| モジュール化 | Spring Modulith、jMolecules |
-| DB・データアクセス | PostgreSQL 18、jOOQ、Flyway |
-| ファイル保存 | Amazon S3 互換オブジェクトストレージ（AWS SDK）、SeaweedFS（ローカル・CI） |
-| 画像の変換 | imgproxy |
-| 決済 | Stripe（stripe-java。ローカルの既定は mock） |
-| メール | SMTP（Spring の mail。ローカルは Mailpit） |
-| 定期ジョブの分散ロック | ShedLock |
-| ビルド | Gradle Kotlin DSL、version catalog |
-| 静的解析 | Error Prone、NullAway、Checkstyle |
-| 定型コードの生成 | Lombok |
-| テスト | JUnit 5、AssertJ、Testcontainers、MockMvc |
-| 可観測性 | Actuator、Micrometer（Prometheus）、分散トレーシング（Zipkin）、構造化ログ |
-
-### フロントエンド
-
-C 側と B 側は別のアプリ。構成は [フロントのアーキテクチャ](02-設計/frontend-architecture.md)。
-
-両方で共通：
-
-| 領域 | 採用 |
-|------|------|
-| 言語・パッケージ管理 | TypeScript、pnpm（workspace） |
-| UI | Tailwind CSS、shadcn/ui、lucide-react |
-| API の型と呼び出し | `openapi-typescript` + `openapi-fetch` |
-| lint・整形 | Biome |
-| テスト | Vitest、MSW（`openapi-msw`） |
-
-アプリごと：
-
-| 領域 | C 側（`frontend/store`） | B 側（`frontend/admin`） |
-|------|------|------|
-| フレームワーク | Next.js（App Router） | Vite + React（SPA）、React Router |
-| サーバー状態 | Next.js の fetch とキャッシュ | TanStack Query + `openapi-react-query` |
-| フォーム | サーバーアクション | React Hook Form |
-| ログイン | Auth.js（`next-auth`） | `oidc-client-ts` + `react-oidc-context` |
-| 表示の文言 | `next-intl` | `use-intl` |
-| コンポーネントのテスト | `react-dom/server`（ブラウザーの中だけで終わる操作は React Testing Library と jsdom） | React Testing Library、user-event、jsdom |
-
-### 後から導入する技術
-
-MVP では入れない。導入するときは本節を更新してから spec を書く。
-
-| 技術 | 導入のタイミング |
-|------|------------------|
-| 検索エンジン | 1 → 10 の段階 |
-| Redis | インスタンス間で共有するキャッシュや一時データが必要になったとき |
-| メッセージブローカー | モジュールを別プロセスに切り出すとき（Spring Modulith のイベント外部化） |
+後から導入する技術は MVP では入れず、導入するときは本節を更新してから spec を書く。検索エンジンは 1 → 10 の段階、Redis はインスタンス間で共有するデータが必要になったとき、メッセージブローカーはモジュールを別プロセスに切り出すときに導入する。
 
 ## 3. リポジトリ構成
 
@@ -84,161 +28,48 @@ MVP では入れない。導入するときは本節を更新してから spec �
 ```
 ec-site/
 ├── .github/workflows/
-├── .claude/              # エージェントの設定と skill。Git に入れるものは `.gitignore` の許可の行
-├── .local/               # Git に入れないもの（作業用の script、引き継ぎの文書、マシンに固有の設定）
+├── .claude/              # エージェントの設定と skill
+├── .local/               # Git に入れないもの（作業用の script、マシンに固有の設定など）
 ├── api/openapi/          # API 契約の正本
-├── docs/                 # 各フォルダーの中身は下の「文書の地図」
-│   ├── constitution.md   # 大綱と文書の地図
-│   ├── 01-概要/
-│   ├── 02-設計/
-│   ├── 03-機能仕様/
-│   ├── 04-決定記録/
-│   ├── 05-開発規則/
-│   ├── 06-手順書/
-│   ├── 07-記録/
-│   └── 08-spec/
+├── docs/                 # constitution.md と 8 フォルダー（「文書の地図」）
 ├── backend/ecsite/       # バックエンド
-├── frontend/
-│   ├── store/            # C 側（店舗画面）
-│   ├── admin/            # B 側（管理画面）
-│   └── shared/           # 共有のパッケージ
+├── frontend/             # store（C 側）、admin（B 側）、shared（共有）
 ├── e2e/                  # E2E
-├── showcase/             # 機能紹介のページ（GitHub Pages で公開する）
+├── showcase/             # 機能紹介のページ（GitHub Pages）
 ├── scripts/              # CI と開発の script
 └── docker/               # ローカル開発の compose
 ```
 
 ### 文書の地図
 
-`docs/` は、下の番号付きのフォルダーに分ける。現在の振る舞いはコードを正とし、設計と機能仕様の文書はコードを説明する（[開発の進め方](05-開発規則/workflow.md)の「コードと文書の食い違い」）。
+現在の振る舞いはコードを正とし、設計と機能仕様の文書はコードを説明する（[開発の進め方](05-開発規則/workflow.md)の「コードと文書の食い違い」）。フォルダーごとの文書の一覧は、各フォルダーの `README.md` にある。
 
-概要（`docs/01-概要/`）：専門知識がなくても読める全体像（システムの概要、業務の流れ、画面の操作の流れ）。
-
-| 文書 | 内容 |
-|------|------|
-| [README.md](01-概要/README.md) | このフォルダーに置く文書 |
-| [template.md](01-概要/template.md) | 概要の雛形 |
-| [system.md](01-概要/system.md) | システムの全体像 |
-| [order.md](01-概要/order.md) | 注文の流れ |
-
-設計（`docs/02-設計/`）：エンジニア向けの構成（全体の構成、アーキテクチャ、アプリ、権限、モジュールごとの設計）。
-
-| 文書 | 内容 |
-|------|------|
-| [overview.md](02-設計/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
-| [backend-architecture.md](02-設計/backend-architecture.md) | バックエンドのアーキテクチャ |
-| [frontend-architecture.md](02-設計/frontend-architecture.md) | フロントのアーキテクチャ |
-| [apps/](02-設計/apps) | アプリごとの構成（管理画面、店舗画面） |
-| [common.md](02-設計/common.md) | 共通コード・ログ・可観測性 |
-| [role-permissions.md](02-設計/role-permissions.md) | ロールと権限の対応表 |
-| [template.md](02-設計/template.md) | モジュールの設計の雛形 |
-| [<モジュール>.md](02-設計) | モジュールごとの設計（境界、処理の流れ、API の一覧、パッケージの構成） |
-
-機能仕様（`docs/03-機能仕様/`）：主にエージェント向けの、モジュールごとの業務の規則、状態遷移、データ構造。
-
-| 文書 | 内容 |
-|------|------|
-| [<モジュール>.md](03-機能仕様) | モジュールごとの機能仕様（業務規則、状態の遷移、データモデル、今有効な AC） |
-| [template.md](03-機能仕様/template.md) | 機能仕様の雛形 |
-| [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（AC の正本。状態と今の内容） |
-| [glossary.md](03-機能仕様/glossary.md) | 用語集 |
-
-決定記録（`docs/04-決定記録/`）：決定の理由を、1 つの決定につき 1 ファイルで書く。
-
-| 文書 | 内容 |
-|------|------|
-| [README.md](04-決定記録/README.md) | 決定記録の形 |
-| [subagent-delegation.md](04-決定記録/subagent-delegation.md) | サブエージェントへの任せ方で取り入れたもの |
-| [template.md](04-決定記録/template.md) | 決定記録の雛形 |
-| [order-capture-before-shipment.md](04-決定記録/order-capture-before-shipment.md) | 出荷の登録で、注文を出荷済みにする前に売上を確定する |
-
-規範（`docs/05-開発規則/`）：
-
-| 文書 | 内容 |
-|------|------|
-| [workflow.md](05-開発規則/workflow.md) | 開発の進め方（SDD・TDD）、起票と規模、利用者の確認、完了の定義、コードと文書の食い違い |
-| [glossary.md](05-開発規則/glossary.md) | 開発の用語集（開発の進め方・ツール・テスト・セッションの役割などの用語） |
-| [notation.md](05-開発規則/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
-| [review.md](05-開発規則/review.md) | 書き方の規則の書き方とレビュー |
-| [comments.md](05-開発規則/comments.md) | コメントの書き方 |
-| [writing.md](05-開発規則/writing.md) | 文書の書き方（言語、文書の置き場所、論理名と物理名、表と注、用語の選び方、言い回しと論理、参照、spec と plan の書き方） |
-| [subagents.md](05-開発規則/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |
-| [resources.md](05-開発規則/resources.md) | 作業の形と使用量（profile の決め方、止める閾値、使用量を読む頻度） |
-| [backend-coding.md](05-開発規則/backend-coding.md) | バックエンドの書き方 |
-| [frontend-coding.md](05-開発規則/frontend-coding.md) | フロントの書き方 |
-| [test-writing.md](05-開発規則/test-writing.md) | テストの書き方 |
-| [api-conventions.md](05-開発規則/api-conventions.md) | API の規約 |
-| [licenses.md](05-開発規則/licenses.md) | 依存とライセンス |
-
-手順（`docs/06-手順書/`）：
-
-| 文書 | 内容 |
-|------|------|
-| [setup.md](06-手順書/setup.md) | 開発環境の起動 |
-| [environment.md](06-手順書/environment.md) | 環境変数 |
-| [ci.md](06-手順書/ci.md) | CI の検査 |
-| [running-tests.md](06-手順書/running-tests.md) | テストの実行方法 |
-| [branches.md](06-手順書/branches.md) | ブランチとリリース |
-
-記録（`docs/07-記録/`）：実績と測定。
-
-| 文書 | 内容 |
-|------|------|
-| [subagents-results.md](07-記録/subagents-results.md) | エージェントの作業フローの調べた仕組みと実績 |
-| [ci-results.md](07-記録/ci-results.md) | CI の実測（設定の値の根拠） |
-| [context-size.md](07-記録/context-size.md) | 毎回読む文書と固定の文脈の大きさ |
-
-開発記録（`docs/08-spec/`）：
-
-| 文書 | 内容 |
-|------|------|
-| [08-spec/](08-spec) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `08-spec/archive/<まとまり>/` に移す。MVP の spec は [08-spec/archive/mvp/](08-spec/archive/mvp) にある |
-| [mvp.md](08-spec/archive/mvp/mvp.md) | MVP の完成までの一覧 |
-| [08-spec/templates/](08-spec/templates) | spec・plan・tasks の雛形と見本（機能・整理、規模 L・M） |
+| フォルダー | 中身 | 一覧の文書 |
+|------------|------|------------|
+| `01-概要/` | 専門知識がなくても読める全体像 | [README.md](01-概要/README.md) |
+| `02-設計/` | エンジニア向けの構成 | [README.md](02-設計/README.md) |
+| `03-機能仕様/` | モジュールごとの業務の規則、AC 一覧、用語集 | [README.md](03-機能仕様/README.md) |
+| `04-決定記録/` | 決定の理由 | [README.md](04-決定記録/README.md) |
+| `05-開発規則/` | 開発の進め方、書き方の規則、レビュー | [README.md](05-開発規則/README.md) |
+| `06-手順書/` | 環境の起動、CI、テスト、ブランチ | [README.md](06-手順書/README.md) |
+| `07-記録/` | 実績と測定 | [README.md](07-記録/README.md) |
+| `08-spec/` | spec・plan・tasks | [README.md](08-spec/README.md) |
 
 ## 4. 開発の進め方
 
 仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。細則は [開発の進め方](05-開発規則/workflow.md)。
 
-全ての変更は issue から始まる。変更の大きさで規模（S・M・L）を分け、規模ごとに書く文書が違う（[開発の進め方](05-開発規則/workflow.md)の「起票と規模」）。
-
-### 4.1 仕様駆動開発（SDD：Spec-Driven Development）
-
-spec（何を・なぜ）→ plan（どう作るか）→ tasks（作業の手順）→ 実装。
-
-- spec がコードに先行する。誤りに気づいたら、spec から修正する。
-- spec は「機能」と「整理」の 2 種類（[文書の記号と番号](05-開発規則/notation.md)）。
-
-### 4.2 テスト駆動開発（TDD：Test-Driven Development）
-
-レッド（失敗するテスト）→ グリーン（通る最小の実装）→ リファクタリング。
-
-- テストのタスクを実装より先に置く。
-- 全ての AC に、AC 番号付きのテストを対応させる。
+- 全ての変更は issue から始まり、規模（S・M・L）ごとに書く文書が違う。
+- SDD：spec（何を・なぜ）→ plan（どう作るか）→ tasks（作業の手順）→ 実装。spec がコードに先行し、誤りに気づいたら spec から修正する。
+- TDD：レッド → グリーン → リファクタリング。テストのタスクを実装より先に置き、全ての AC に AC 番号付きのテストを対応させる。
 
 ## 5. バックエンドのアーキテクチャ
 
-Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。細則は [バックエンドのアーキテクチャ](02-設計/backend-architecture.md)。
+Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。細則（モジュールの一覧を含む）は [バックエンドのアーキテクチャ](02-設計/backend-architecture.md)の「モジュラーモノリス」。
 
 - モジュールが外に公開するのは `api/`（同期の呼び出し）と `event/`（非同期の通知）だけ。他のモジュールのテーブルは読み書きしない。
 - モジュールごとに、複雑さに応じて構成のレベル（フル・簡略・イベントストア）を選ぶ。
 - C 側と B 側は同じモジュールを共有し、API のエンドポイント（`/api/store/**`、`/api/admin/**`）で分ける。
-
-| モジュール | 責務 |
-|------------|------|
-| `tax` | 税区分と税率 |
-| `catalog` | 商品、価格、公開、カテゴリ、商品検索 |
-| `inventory` | 在庫数、引当と減算 |
-| `media` | 画像の受け付け、保存、配信 |
-| `storefront` | C 側 API（複数モジュールの結果を合成する参照専用の層） |
-| `cart` | カート |
-| `member` | 会員 |
-| `order` | 注文と状態遷移 |
-| `payment` | 決済 |
-| `shipping` | 出荷と配送状況 |
-| `notification` | 消費者へのメール |
-| `reporting` | データ収集と簡易レポート |
-| `region` | 都道府県・市区町村・郵便番号のマスターデータ |
 
 ## 6. 水平スケール
 
@@ -290,7 +121,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 細則は [CI の検査](06-手順書/ci.md)、[ブランチとリリース](06-手順書/branches.md)。
 
-- CI：push と pull request で、バックエンド、フロント、E2E を実行する。文書などだけを変えた push では、バックエンド、フロント、E2E は実行せず、CI の検査の script の全てを実行する。CI が失敗している状態で、次の spec の実装に進まない。
+- CI：push と pull request で、バックエンド、フロント、E2E を実行する。文書などだけを変えた push では、CI の検査の script の全てを実行する。CI が失敗している状態で、次の spec の実装に進まない。
 - ブランチ：作業ブランチを `develop` に、リリースを `main` に pull request で入れる。
 - CD：まだない（デプロイ先は未定。「未定事項」）。
 
@@ -304,23 +135,16 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 14. コードの書き方
 
-書き方は [バックエンドの書き方](05-開発規則/backend-coding.md)、[フロントの書き方](05-開発規則/frontend-coding.md)、[テストの書き方](05-開発規則/test-writing.md)、[コメントの書き方](05-開発規則/comments.md) にある。コードを書く前と、レビューのときに読む。レビューでの使い方は [書き方の規則とレビュー](05-開発規則/review.md)。
+書き方は [バックエンドの書き方](05-開発規則/backend-coding.md)、[フロントの書き方](05-開発規則/frontend-coding.md)、[テストの書き方](05-開発規則/test-writing.md)、[コメントの書き方](05-開発規則/comments.md) にある。コードを書く前と、レビューのときに読む（[書き方の規則とレビュー](05-開発規則/review.md)）。
 
 ## 15. 依存とライセンス
 
-細則は [依存とライセンス](05-開発規則/licenses.md)。
+細則（区分の表を含む）は [依存とライセンス](05-開発規則/licenses.md)。
 
 - プロジェクトのライセンスは MIT。
 - 依存は、無料で商用に使えて、コピーレフトでない（使う側のコードの公開を求めない）ものだけを使う。CI で確認する。
-
-| 区分 | 当てはまるもの |
-|------|----------------|
-| 許可 | 無料で商用に使え、コピーレフトでない。改変を禁じるものも、無料で商用に使えれば許可（改変しない） |
-| 条件付き | 規模（売上、利用者数など）が一定以内なら無料。改変しなければコピーレフトの義務が生じない |
-| 禁止 | 有料、コピーレフト、非商用に限る、ライセンスが分からない |
-
 - 有料版がある製品は、無料版の範囲で使う。
 
 ## 16. 未定事項
 
-未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [milestone `1→10` の issue](https://github.com/roger88106/ec-site/milestone/1)、全ての issue は [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。起票の規則は [開発の進め方](05-開発規則/workflow.md)の「起票」。
+未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける（[一覧](https://github.com/roger88106/ec-site/milestone/1)）。起票の規則は [起票と記録の操作](05-開発規則/issues.md)の「起票」。

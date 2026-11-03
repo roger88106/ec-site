@@ -23,7 +23,7 @@
   - 依存：T330-03-01
   - 範囲：`scripts/ci/test-helpers.mjs`、`docs/05-開発規則/test-writing.md`
   - 確認方法：テストが通る。`node scripts/ci/test-helpers.mjs` を今のリポジトリで実行して成功し、補助の外に手順を 1 つ書いた一時の変更で失敗する（変更は戻す）（DN-330-4）
-- [ ] **T330-03-03** カバレッジと mutation score の基準の説明を、確認 4 の決定のとおり 3 つの文書に分ける（DC-330-12）。
+- [x] **T330-03-03** カバレッジと mutation score の基準の説明を、確認 4 の決定のとおり 3 つの文書に分ける（DC-330-12）。
   - 依存：T330-03-02
   - 範囲：`docs/05-開発規則/test-writing.md`、`docs/06-手順書/running-tests.md`、`docs/06-手順書/ci.md`。書き換える前に issue 担当のセッションに知らせる
   - 確認方法：3 つの文書を並べて読み、同じ内容が 2 か所にない。#306 を追跡の issue の sub-issue に結ぶ（`gh api graphql` の `addSubIssue`）

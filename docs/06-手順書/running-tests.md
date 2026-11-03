@@ -107,7 +107,7 @@ node scripts/ci/report/coverage-baseline.mjs backend-domain backend/ecsite/build
 | `admin`、`store`、`shared` | 各ディレクトリで `pnpm test` | Vitest の `coverage-summary.json` |
 | `backend-domain` | `backend/ecsite/` で `./gradlew pitest` | PIT の `mutations.xml` |
 
-- 基準は `scripts/ci/report/quality-baseline.json`。報告の値が、基準から許容の幅を引いた値を下回ると、対象、基準、今回の値、差を出力して終了コード 1 で終了する。上回ったときは成功にして、基準の更新を促す警告を表示する。
+- 基準は `scripts/ci/report/quality-baseline.json` にある（役割は [CI の検査](ci.md)の「カバレッジと mutation score の基準の検査」）。今回の値が基準を上回ったときは、成功にして、基準の更新を促す警告を表示する。
 - `--write` は、基準のファイルのその対象の値を、報告の値で書き換える（許容の幅は変えない）。基準を下げるときと、上回った値に更新するときに使い、書き換えたファイルを同じ pull request に含める。下げるときは、pull request に理由を書く。
 - 手元でバックエンドの一部のテストだけを実行すると、報告の値が基準より低くなり、検査が失敗する。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
 - バックエンドの `--write` は、手元のビルドのキャッシュから読んだテストの報告ではなく、CI の summary の値、または `./gradlew check --rerun-tasks` などでテストを実際に実行した報告の値で行う。キャッシュから読んだ報告は、実行した報告と分岐が 1 つ違うことがある（実測：キャッシュから読んだ値は分岐 85.26%、実行した値は 85.20%）。

@@ -310,7 +310,7 @@ tasks.register("integrationTestShards") {
 }
 
 // -----------------------------------------------------------------------------
-// 地域の最初のデータ（地域モジュールの機能仕様 docs/03-機能仕様/region.md の「最初のデータ」）
+// 地域の最初のデータ（地域の設計 docs/02-設計/region.md の「最初のデータの作り方」）
 //   ./gradlew generateRegionMigration                      → /.local/masterdata/ の郵便番号のデータから作る
 //   ./gradlew generateRegionMigration -PpostalCodeCsv=<CSV> → CSV の置き場所を指定する
 //   郵便番号のデータは Git に入れない。作ったマイグレーションは Git に入れる

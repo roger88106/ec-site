@@ -4,7 +4,14 @@
 //   AC の内容を得るために、アーカイブの spec は読まない。
 // 読むもの：
 //   - AC 一覧：生成のマーカー（<!-- generated:ac-list --> とその閉じ）の範囲の表。改行コードは LF にそろえて読む
-//   - AC 一覧の列：AC・モジュール・状態・元の spec・変えた spec・今の内容。全て手動で書く
+//   - AC 一覧の列：AC・モジュール・状態・元の spec・変えた spec・今の内容。
+//     --write は、進行中の spec の AC について、列 AC・状態（有効）・元の spec・今の内容を転記し、変えた spec を「—」にする。
+//     手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容。
+//     転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは手動で修正する
+//     （手順は docs/05-開発規則/issues.md「AC 一覧の操作」）
+//   - 元の spec・変えた spec の値：spec の番号だけ（001、227）。変えた spec が 2 つ以上なら読点で区切る（003、016）。
+//     番号に対応する spec のディレクトリは、docs/08-spec/ の直下とアーカイブのまとまりの下から探す（lib/spec-dirs.mjs）。
+//     番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（001 と 1 は別の番号）
 //   - AC：MVP の AC-n と、1→10 の AC-s-n（s は spec の番号、n は連番）。2 つの形は別の AC として扱う。
 //     AC-s-n を AC-s と読まない。番号は、文書の記号と番号の「spec の番号」
 //   - ③ のモジュールの名前：次の 2 つが両方ある名前と、common（共通。③ の表に生成しない）。
@@ -27,8 +34,9 @@
 //     表の中に空行がある（GFM の表はそこで切れる。表より前と、表より後の空行は許す）
 //   - AC 一覧の行：同じ AC の行が 2 つある、状態が有効・変更・廃止でない
 //   - モジュール：有効・変更の AC で、③ の名前か common の 1 つでない。廃止の AC は空でもよい
-//   - 変えた spec：有効の AC で「—」以外、変更・廃止の AC で空か「—」
-//   - 元の spec：[<番号>](../08-spec/<パス>/spec.md) の形でない、そのディレクトリがない
+//   - 変えた spec：有効の AC で「—」以外、変更・廃止の AC で空か「—」。
+//     変更・廃止の AC の各番号が、番号の形でない、その番号の spec のディレクトリがない、2 つある
+//   - 元の spec：番号の形でない、その番号の spec のディレクトリがない、2 つある
 //   - 今の内容：有効・変更の AC で、空か仮の値（—、なし、<…>）。<br /> がある
 //   - 今の内容の参照：spec の中だけで通じる参照（※1、事実 2、US の番号、spec の「…」）がある
 //   - 今の内容の根拠：変更と common の AC で、根拠（リンク [<文書の名前>](<パス>) と、その直後の「の「<見出し>」」）がない。
@@ -290,8 +298,11 @@ const SEPARATOR_ROW = /^\|(?:\s*:?-+:?\s*\|)+$/
 /** AC の番号のセル（0 で埋めない） */
 const AC_CELL = /^AC-([1-9][0-9]*(?:-[1-9][0-9]*)?)$/
 
-/** 元の spec の列の形：`[<番号>](../08-spec/<アーカイブのまとまり/><番号>-<名前>/spec.md)` */
-const ORIGIN_LINK = /^\[([0-9]+)\]\(\.\.\/08-spec\/((?:archive\/[^/()\s]+\/)?([0-9]+)-[^/()\s]+)\/spec\.md\)$/
+/** 元の spec・変えた spec の列の、spec の番号の形（0 埋めの有無は変えずに、そのまま比べる） */
+const SPEC_NUMBER = /^[0-9]+$/
+
+/** 変えた spec の列で、2 つ以上の番号を区切る記号 */
+const SPEC_NUMBER_SEPARATOR = '、'
 
 /** 今の内容に残してはいけない、spec の中だけで通じる参照（※1、事実 2、US の番号、spec の節） */
 const SPEC_ONLY_REFS = [/※[0-9]/, /事実\s*[0-9]/, /US-[0-9]/, /spec\s*の「/]
@@ -461,15 +472,29 @@ export function readAcList(document) {
 }
 
 /**
- * 元の spec の列を読む。
+ * spec のディレクトリの名前、または docs/08-spec からのパスから、spec の番号を取り出す。
  *
- * @param {string} cell 元の spec の列の値
- * @returns {{ rel: string } | null} docs/08-spec からの spec のディレクトリのパス。リンクの形でない、番号がディレクトリの名前と違うときは null
+ * @param {string} nameOrRel ディレクトリの名前（5-x）か、パス（archive/1to10/5-x）
+ * @returns {string} 先頭の番号（0 埋めはそのまま）
  */
-function parseOrigin(cell) {
-  const match = ORIGIN_LINK.exec(cell)
-  if (!match || match[1] !== match[3]) return null
-  return { rel: match[2] }
+function specNumberOf(nameOrRel) {
+  return /^[0-9]+/.exec(nameOrRel.split('/').pop())[0]
+}
+
+/**
+ * 元の spec・変えた spec の 1 つの番号を、spec のディレクトリと照合する。
+ *
+ * @param {string} number 列の値（変えた spec は読点で区切った 1 つ）
+ * @param {{ name: string, rel: string }[]} specDirs spec のディレクトリ
+ * @param {string} column 列の名前
+ * @returns {string | null} 問題。なければ null
+ */
+function checkSpecNumber(number, specDirs, column) {
+  if (!SPEC_NUMBER.test(number)) return `${column}が spec の番号（001、227）の形でない（${number}）`
+  const found = specDirs.filter((dir) => specNumberOf(dir.name) === number)
+  if (found.length === 0) return `${column}の番号 ${number} の spec のディレクトリがない（${SPECS_DIR} の直下とアーカイブの下を探した）`
+  if (found.length > 1) return `${column}の番号 ${number} の spec のディレクトリが ${found.length} つある（${found.map((dir) => dir.rel).join('、')}。番号から 1 つに決められない）`
+  return null
 }
 
 /**
@@ -478,10 +503,10 @@ function parseOrigin(cell) {
  * @param {object} input
  * @param {ReturnType<typeof readAcList>['rows']} input.rows AC 一覧の行
  * @param {Set<string>} input.modules ③ のモジュールの名前
- * @param {(rel: string) => boolean} input.specDirExists docs/08-spec からのパスの spec のディレクトリがあるか
+ * @param {{ name: string, rel: string }[]} input.specDirs spec のディレクトリ（listSpecDirs の結果）
  * @returns {string[]} 問題（行を付ける）
  */
-export function checkAcRows({ rows, modules, specDirExists }) {
+export function checkAcRows({ rows, modules, specDirs }) {
   const problems = []
   const seen = new Map()
   for (const row of rows) {
@@ -491,9 +516,15 @@ export function checkAcRows({ rows, modules, specDirExists }) {
     if (seen.has(key)) add(`同じ AC の行が ${seen.get(key)} 行にもある`)
     else seen.set(key, row.line)
     const knownModule = modules.has(row.module) || row.module === COMMON
-    const origin = parseOrigin(row.origin)
-    if (!origin) add(`元の spec が [<番号>](../08-spec/<パス>/spec.md) の形でない（${row.origin}）`)
-    else if (!specDirExists(origin.rel)) add(`元の spec のディレクトリ（${SPECS_DIR}/${origin.rel}）がない`)
+    const originProblem = checkSpecNumber(row.origin, specDirs, '元の spec')
+    if (originProblem) add(originProblem)
+    // 変更・廃止の AC の変えた spec の各番号（空と「—」は、状態ごとの検査が見る）
+    const checkChangedBy = () => {
+      for (const number of row.changedBy.split(SPEC_NUMBER_SEPARATOR)) {
+        const problem = checkSpecNumber(number, specDirs, '変えた spec')
+        if (problem) add(problem)
+      }
+    }
     if (row.content !== '') {
       for (const pattern of SPEC_ONLY_REFS) {
         if (pattern.test(row.content)) add(`今の内容に、spec の中だけで通じる参照（${pattern.exec(row.content)[0]}）がある。意味を補って書き換えるか、削る`)
@@ -507,11 +538,15 @@ export function checkAcRows({ rows, modules, specDirExists }) {
     if (row.status === '廃止') {
       if (row.module !== '' && !knownModule) add(`廃止の AC のモジュールが、空でも ③ の名前でも ${COMMON} でもない（${row.module}）`)
       if (row.changedBy === '' || row.changedBy === '—') add('廃止の AC の変えた spec がない')
+      else checkChangedBy()
       continue
     }
     if (!knownModule) add(`モジュールが、③ の名前か ${COMMON} の 1 つでない（「${row.module}」）。名前は ${[...modules].sort().join('、')}`)
     if (row.status === '有効' && row.changedBy !== '—') add(`有効の AC の変えた spec は「—」にする（${row.changedBy}）`)
-    if (row.status === '変更' && (row.changedBy === '' || row.changedBy === '—')) add('変更の AC の変えた spec がない')
+    if (row.status === '変更') {
+      if (row.changedBy === '' || row.changedBy === '—') add('変更の AC の変えた spec がない')
+      else checkChangedBy()
+    }
     if (['', '—', '-', 'なし'].includes(row.content) || PLACEHOLDER.test(row.content)) add(`今の内容が空か仮の値（${row.content}）`)
     else if ((row.status === '変更' || row.module === COMMON) && !BASIS.test(row.content)) {
       add('今の内容に、根拠を、リンク（[<文書の名前>](<パス>)）と、その直後の「の「<見出し>」」の形で添える')
@@ -521,7 +556,8 @@ export function checkAcRows({ rows, modules, specDirExists }) {
 }
 
 /**
- * 進行中の spec の AC と、AC 一覧を照合する。AC の本文は比べない（転記の後は AC 一覧を手動で修正する）。
+ * 進行中の spec の AC と、AC 一覧を照合する。AC 一覧の元の spec は、spec のディレクトリの名前の先頭の番号と文字列として比べる。
+ * AC の本文は比べない（転記の後は AC 一覧を手動で修正する）。
  *
  * @param {object} input
  * @param {ReturnType<typeof readAcList>['rows']} input.rows AC 一覧の行
@@ -532,14 +568,15 @@ export function checkInProgress({ rows, specs }) {
   const problems = []
   const byKey = new Map(rows.map((row) => [String(row.ac), row]))
   for (const spec of specs) {
+    const number = specNumberOf(spec.rel)
     const defined = new Set(spec.definitions.map((definition) => String(definition.ac)))
     for (const key of defined) {
       const row = byKey.get(key)
       if (!row) problems.push(`進行中の spec（${spec.rel}）の AC-${key} が AC 一覧にない。node scripts/ci/ac-check.mjs --write で転記し、モジュールを書く`)
-      else if (parseOrigin(row.origin)?.rel !== spec.rel) problems.push(`AC 一覧の AC-${key} の元の spec が、その AC を定義する進行中の spec（${spec.rel}）でない（番号が重なっていないかも確かめる）`)
+      else if (row.origin !== number) problems.push(`AC 一覧の AC-${key} の元の spec が、その AC を定義する進行中の spec（${spec.rel}）でない（番号が重なっていないかも確かめる）`)
     }
     for (const row of rows) {
-      if (parseOrigin(row.origin)?.rel === spec.rel && row.status !== '廃止' && !defined.has(String(row.ac))) {
+      if (row.origin === number && row.status !== '廃止' && !defined.has(String(row.ac))) {
         problems.push(`${row.line} 行：${row.label} は、元の spec（${spec.rel}）にない。AC 一覧の行を消すか、spec に戻す`)
       }
     }
@@ -609,8 +646,7 @@ export function readInProgressSpecs(specsDir) {
  * @returns {string} 表の行
  */
 function renderListRow({ ac, specRel, content }) {
-  const number = /^[0-9]+/.exec(specRel.split('/').pop())[0]
-  return `| AC-${ac} |  | 有効 | [${number}](../08-spec/${specRel}/spec.md) | — | ${content} |`
+  return `| AC-${ac} |  | 有効 | ${specNumberOf(specRel)} | — | ${content} |`
 }
 
 /**
@@ -929,8 +965,8 @@ function main() {
     process.exit(0)
   }
 
-  const specDirExists = (rel) => existsSync(path.join(root, SPECS_DIR, rel))
-  listProblems.push(...checkAcRows({ rows: list.rows, modules, specDirExists }), ...checkInProgress({ rows: list.rows, specs: inProgress.specs }))
+  const specDirs = listSpecDirs(path.join(root, SPECS_DIR))
+  listProblems.push(...checkAcRows({ rows: list.rows, modules, specDirs }), ...checkInProgress({ rows: list.rows, specs: inProgress.specs }))
   const docProblems = checkModuleDocNames({ docs, modules })
   for (const doc of docs) {
     docProblems.push(...checkModuleDoc({ text: doc.text, module: doc.module, rows: list.rows, required: doc.required }).problems.map((problem) => `${doc.file}：${problem}`))

@@ -29,36 +29,19 @@ frontend/admin/
 └── src/
     ├── app/                # エントリーポイント、ルーター、Provider、レイアウト（Sidebar）、URL（paths.ts）
     ├── auth/               # ログイン（「ログイン」の節）
-    ├── api/
-    │   ├── generated/      # admin.yaml から生成（型と、入力の制約の定数）
-    │   ├── client.ts       # クライアント
-    │   ├── errors.ts       # エラーの変換（ApiError）
-    │   ├── formErrors.ts   # サーバーの入力検証エラーのフォームへの反映
-    │   ├── invalidate.ts   # 更新の後のキャッシュの無効化（パスの前方一致）
-    │   ├── useApiMutation.ts   # 更新の hook（成功の通知と無効化をまとめる）
-    │   ├── useMutationGroup.ts # 複数の更新の待ち状態とエラーをまとめる hook
-    │   └── types.ts        # 画面から使う型の別名
-    ├── components/         # 機能をまたぐコンポーネント（価格、日時、エラー、ページングなど）。ui/ は shadcn/ui
-    ├── i18n/               # 文言の Provider、合わせ方、キーの型、コンポーネントの外で引く translate
+    ├── api/                # 管理 API のクライアント、エラーの変換、更新の hook。generated/ は admin.yaml から生成
+    ├── components/         # 機能をまたぐコンポーネント。ui/ は shadcn/ui
+    ├── i18n/               # 文言の Provider と、共有の文言との結合
     ├── hooks/              # 機能をまたぐ hook
-    │   ├── useVersionedForm.ts # バージョン付きのフォーム
-    │   └── use-mobile.ts   # 画面の幅の判定（モバイルの幅か）
     ├── lib/                # 画面に依存しない関数（単体テストを横に置く）
-    │   ├── array.ts        # 一覧の要素の移動
-    │   ├── code.ts         # 品番の入力の正規化（英小文字を大文字にする）
-    │   ├── date.ts         # 日付の形（yyyy-MM-dd）の判定
-    │   ├── delta.ts        # 在庫の増減量の表示（符号付き）
-    │   ├── format.ts       # 日時の入力欄との変換、日本時間の日付（金額・価格・数・日時などの整形は共有パッケージの lib/format.ts）
-    │   ├── login.ts        # ログインの後に戻る画面のパスの読み取り
-    │   ├── rate.ts         # 税率の表示
-    │   └── searchParams.ts # URL のクエリのページ番号の読み取り
     ├── test/               # 結合テストの土台（画面のコードからは import しない）
-    └── features/<機能>/    # tax、category、product、inventory、order、report
+    └── features/<機能>/
         ├── pages/          # ルートに対応する画面（取得とコンポーネントの組み立てだけ）
         ├── components/     # その機能だけのコンポーネント
-        ├── labels.ts       # その機能だけで使う列挙の表示名と Badge の見た目（2 つ以上の機能で使うなら lib/labels.ts、2 つの画面で同じ表示名なら共有パッケージ）
         └── *.ts            # その機能だけの関数・型・hook
 ```
+
+- 列挙の表示名と Badge の見た目の置き場所は[フロントの書き方](../../05-開発規則/frontend-coding.md)の「画面に依存しない処理は `lib/` の関数」。2 つの画面で同じ表示名なら共有のパッケージに置く。金額・価格・数・日時などの整形は共有のパッケージの `lib/format.ts` に置く。
 
 - `pages/` は薄く保ち、フォームや表は `components/` に分ける。
 - `components/ui/` は生成物のまま使う。修正したいときは外側のコンポーネントでラップする。
@@ -208,5 +191,3 @@ SPA がブラウザーで IdP とやり取りし（public client）、token は�
 - 401 で再ログインしてから 30 秒以内にまた 401 なら、エラーを画面に表示する（IdP へのリダイレクトを繰り返さないため。時刻は sessionStorage）。
 - IdP へ移るのは 1 回だけ（開発時の StrictMode で effect が 2 回動いても、2 つ目の `state` を作らない）。
 - 戻る画面は、画面の中のパス（`/` で始まり、`//` と `/\` で始まらず、制御文字（U+0000〜U+001F と U+007F）を含まない）だけを受け付け、それ以外はトップにする。制御文字を拒むのは、URL の解析は TAB と改行を取り除くので、その後に `//` で始まる形（外部のサイト）になる入力があるため。
-
-結合テストの書き方は、[フロントのテストの書き方](../../05-開発規則/test-writing-frontend.md)の「管理画面の結合テストは、本物の描画で、API だけを差し替える」。

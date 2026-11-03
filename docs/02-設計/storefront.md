@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。会員の API を使うのは presentation だけである。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。会員の API を使うのは presentation だけである。
 
 C 側の画面は、商品の情報と在庫の有無を同時に必要とする。在庫は商品カタログのイベントを購読しているので、商品カタログが在庫を呼ぶと依存が循環する。両方を呼んで組み合わせる層として、店舗モジュールを置く。
 
@@ -73,20 +73,9 @@ sequenceDiagram
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)）が正本である。
-
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | 商品一覧 | `GET /products` | `listProducts` |
-| 店舗 | キーワード検索 | `GET /products/search` | `searchProducts` |
-| 店舗 | 商品の詳細 | `GET /products/{productId}` | `getProduct` |
-| 店舗 | カテゴリの木 | `GET /categories` | `listCategories` |
-| 店舗 | カートの表示 | `GET /carts/{cartId}` | `getCart` |
-| 店舗 | 店舗の情報 | `GET /shop` | `getShop` |
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 storefront/

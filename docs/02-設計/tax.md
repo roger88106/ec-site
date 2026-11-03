@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。
 
 ### 他のモジュールへの公開
 
@@ -23,18 +23,11 @@
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[管理 API](../../api/openapi/admin.yaml)）が正本である。店舗 API に税の operation はない。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 管理 | 税区分の一覧（税率を含む） | `GET /tax-categories` | `listTaxCategories` |
-| 管理 | 税区分の登録 | `POST /tax-categories` | `createTaxCategory` |
-| 管理 | 税区分の取得（税率を含む） | `GET /tax-categories/{taxCategoryId}` | `getTaxCategory` |
-| 管理 | 税率の一覧を置き換える | `PUT /tax-categories/{taxCategoryId}/rates` | `replaceTaxRates` |
+店舗 API に税の operation はない。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 tax/

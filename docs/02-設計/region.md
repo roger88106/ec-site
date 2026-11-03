@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。地域は `common` だけに依存し、業務のモジュールに依存せず、イベントを出さない。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。地域は `common` だけに依存し、業務のモジュールに依存せず、イベントを出さない。
 
 ### 他のモジュールへの公開
 
@@ -29,21 +29,30 @@
 
 ## 処理の流れ
 
-なし。地域は参照だけを公開し、モジュールをまたぐ処理の手順を持たない。
+地域は参照だけを公開し、モジュールをまたぐ処理はない。
+
+### 最初のデータの作り方
+
+データの範囲と出典は [地域モジュール](../03-機能仕様/region.md) の「最初のデータ」に書く。
+
+| 項目 | 内容 |
+|------|------|
+| 変換 | tools（`src/tools/java/com/ecsite/tools/region/`）の `PostalCodeCsv`（注記を除き、マスターデータの行にする）。本番のコードには入れない（本番で動かさず、tools とテストだけが使うため） |
+| 郵便番号の一覧 | `src/tools/resources/region/postal-codes.txt`。seed・テスト・E2E が使う郵便番号と、変換の確認に使う郵便番号 |
+| 作り方 | 下の手順。作ったマイグレーションは手動で修正しない |
+
+1. 日本郵便の郵便番号データのページから `utf_ken_all.zip` をダウンロードし、`/.local/masterdata/utf_ken_all/utf_ken_all.csv` に展開する（Git に入れない）。
+2. `./gradlew generateRegionMigration` を実行する（置き場所を変えるときは `-PpostalCodeCsv=<CSV>`）。都道府県・市区町村・郵便番号の数が出力される。一覧の郵便番号がデータになければ失敗する。
+3. 郵便番号を追加するときは、一覧に追加する。commit 済みのマイグレーションは変えない（[CI の検査の script](../06-手順書/ci-checks.md) の `migrations`）。そこで、新しいマイグレーションに郵便番号の表を全件置き換える（削除してから入れる）SQL を出力するように、Gradle のタスク `generateRegionMigration` を修正してから実行する。理由：今のタスクは、最初のデータのマイグレーションに全件を INSERT だけで出力する。そのまま実行すると commit 済みのマイグレーションを上書きし、出力先だけを変えると主キーが重なるため。
+4. 生成の処理が書く先頭のコメントは、commit 済みのマイグレーションと同じ文字列にしてある。理由：適用済みのマイグレーションを変えると Flyway のチェックサムが変わり、適用済みのデータベースで起動に失敗するため。同じことは `RegionMigrationGeneratorTest` で照合する。
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)）が正本である。管理 API に地域の操作はない。3 つの操作は、地域の presentation が受ける（`storefront` を通さない）。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | 都道府県の一覧 | `GET /prefectures` | `listPrefectures` |
-| 店舗 | 都道府県の市区町村の一覧 | `GET /prefectures/{prefectureCode}/municipalities` | `listMunicipalities` |
-| 店舗 | 郵便番号の住所 | `GET /postal-codes/{postalCode}` | `findPostalCodeAddresses` |
+管理 API に地域の操作はない。3 つの操作は、地域の presentation が処理する（`storefront` を通さない）。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 region/

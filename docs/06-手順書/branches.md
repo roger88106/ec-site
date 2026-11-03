@@ -43,7 +43,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 ※1：分けたバックエンドのジョブ（ビルドと単体テスト、統合テスト 1/2・2/2）は登録しない。「バックエンド」がそれらの結果を確認するため（[CI の検査](ci.md)の「CI のジョブ」）。
 
-※2：続けてマージするとき、取り込みと CI の再実行を待たないために、求めない。代わりに、マージの後に `develop` の CI を見届ける（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
+※2：続けてマージするとき、取り込みと CI の再実行を待たないために、最新の取り込みを必須にしない。代わりに、マージの後に `develop` の CI を見届ける（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
 
 ### 3.2 `main` の元のブランチの制限
 
@@ -130,6 +130,6 @@ CD、staging、preview の環境の方式は、デプロイの spec で決める
 |------|----------|------------|------|
 | Dependabot alerts | 依存ライブラリ（Gradle、pnpm、GitHub Actions）の既知の脆弱性 | Security のタブの Dependabot | 直ったバージョンに更新する（バックエンドは `libs.versions.toml`、画面は `pnpm`）。更新できないときは、影響がない理由を書いて閉じる |
 | secret scanning、push protection | リポジトリに入った秘密情報（API キー、token など）。push protection は、秘密情報を含む push を拒否する | Security のタブの Secret scanning | 秘密情報を無効にして再発行し、履歴から削除する。テスト用の値など誤検出なら、理由を付けて閉じる |
-| CodeQL（default setup） | Java と JavaScript・TypeScript のコードの、セキュリティの問題（注入、パスの操作など） | Security のタブの Code scanning | 修正するか、誤検出・影響がない理由を付けて閉じる |
+| CodeQL（default setup） | Java と JavaScript・TypeScript のコードの、セキュリティの問題（注入、パストラバーサルなど） | Security のタブの Code scanning | 修正するか、誤検出・影響がない理由を付けて閉じる |
 
 - Dependabot の設定は「Dependabot」。

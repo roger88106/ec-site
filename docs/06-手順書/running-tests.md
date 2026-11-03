@@ -51,7 +51,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
 - 管理画面の `pnpm build`（本番ビルド）は、環境変数 `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がないと失敗する。ローカルの値で確認するときは、[環境変数](environment.md)の「管理画面」の既定値を付ける。
-- `pnpm test` はカバレッジのレポートを `coverage/index.html` と `coverage/coverage-summary.json` に出力する（共有パッケージ `frontend/shared` も同じ）。
+- `pnpm test` はカバレッジの報告を `coverage/index.html` と `coverage/coverage-summary.json` に出力する（共有パッケージ `frontend/shared` も同じ）。
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる。
 
@@ -91,7 +91,7 @@ pnpm test
 
 - バックエンドの起動に JDK 21 を使うため、`JAVA_HOME` に JDK 21 のパスを設定しておく。
 - 手元の開発のバックエンド（:8080）と、スロットのバックエンド（[開発環境の起動](setup.md)の「スロット」）と並行して実行できる。
-- メインの作業ツリーでも作業ツリーでも `pnpm test`（`e2e/scripts/run.ts`）を実行できる。E2E は DB、IdP、ポートを共有するので、全ての作業ツリーで 1 つずつ実行する。他の作業ツリーが実行中なら、ロックの所有者を示して終了コード 1 で終了する。ロックの仕組みは `e2e/scripts/run.ts` の冒頭のコメント。示されたロックのファイルは、所有者のプロセスがないのに終了し続けるときだけ削除してよい。
+- メインの作業ツリーでも作業ツリーでも `pnpm test`（`e2e/scripts/run.ts`）を実行できる。E2E は DB、IdP、ポートを共有するので、全ての作業ツリーで 1 つずつ実行する。他の作業ツリーが実行中なら、ロックの所有者を示して終了コード 1 で終了する。ロックの仕組みは `e2e/scripts/run.ts` の冒頭のコメント。示されたロックのファイルは、ロックが残って E2E が失敗し続けるときだけ削除してよい。
 - E2E は常にスロット 0 の固定の環境で実行する（スロットの環境変数は取り除く）。
 - 管理画面・店舗画面を、E2E のポート（:4173、:3100）で起動したままにしない。別の作業ツリーのコードに対して実行することを防ぐため。
 - 店舗画面の API のキャッシュは、E2E では 1 秒（`STORE_API_REVALIDATE_SECONDS`）。

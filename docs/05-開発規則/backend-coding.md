@@ -134,9 +134,9 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 ### 3.3 入力の検証のメッセージ
 
-入力の検証の文は、フレームワークの既定の文（JVM のロケールで言語が変わる）を使わず、`messages.properties` の `ecsite.validation.<種類>`（`notnull`、`size`、`min` など。知らない種類は `ecsite.validation.invalid`）から取る。上限・下限は `{max}`、`{min}`、`{value}` で差し込む。
+入力の検証の文は、フレームワークの既定の文（JVM のロケールで言語が変わる）を使わず、`messages.properties` の `ecsite.validation.<種類>`（`notnull`、`size`、`min` など。対応のない種類は `ecsite.validation.invalid`）から取る。上限・下限は `{max}`、`{min}`、`{value}` で差し込む。
 
-同じ誤りに業務のエラーを持つ項目は、リクエストの本文の項目のパス（`shippingAddress.postalCode` など）ごとに、形の検証の文を業務のエラーのコードへ対応づけられる。対応があれば、そのコードの文と、ドメインの定数から差し込む値を使う。対応の表は、そのモジュールの presentation に `ValidationErrorMapping` の実装の bean で置く。モジュールの間で同じパスを対応づけると、起動で失敗する。
+形の検証の誤りに対応する業務のエラーがある項目は、リクエストの本文の項目のパス（`shippingAddress.postalCode` など）ごとに、形の検証の文を業務のエラーのコードへ対応づけられる。対応があれば、そのコードの文と、ドメインの定数から差し込む値を使う。対応の表は、そのモジュールの presentation に `ValidationErrorMapping` の実装の bean で置く。モジュールの間で同じパスを対応づけると、起動で失敗する。
 
 理由：どの環境でも同じ日本語を返し、形の検証と業務の検証のどちらで見つかっても同じ文を返すため。
 
@@ -214,7 +214,7 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 ### 5.3 インスタンスを作らないクラス
 
-static のメンバーだけの最上位のクラス（定数や補助の関数をまとめたもの）は `final` にし、コンストラクタを `private` にする（Lombok の `@NoArgsConstructor(access = AccessLevel.PRIVATE)` でも、手動でもよい）。enum・record・interface・注釈は対象でない。検査に Checkstyle の `HideUtilityClassConstructor` は使わない（ソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる）。
+static のメンバーだけの最上位のクラス（定数や補助の関数をまとめたもの）は `final` にし、コンストラクターを `private` にする（Lombok の `@NoArgsConstructor(access = AccessLevel.PRIVATE)` でも、手動でもよい）。enum・record・interface・注釈は対象でない。検査に Checkstyle の `HideUtilityClassConstructor` は使わない（ソースを読むので、Lombok で作るコンストラクタが見えずに誤検出される）。
 
 理由：インスタンスを作っても使い道がなく、作れると使い方を誤るため。
 

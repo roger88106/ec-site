@@ -129,7 +129,7 @@ export function FooForm({ fooId }: { fooId: string }) {
   const t = useTranslations('foo.form')
   const [result, formAction, pending] = useActionState(updateFoo, null)
   return (
-    // 失敗の読み上げの領域は、送る前から描く（店舗画面の構成の「結果の知らせ方」）。領域が最後の子なので、親は flex と gap で並べる（components/ActionError.tsx のコメント）
+    // 失敗の読み上げの領域は、送る前から描画しておく（店舗画面の構成の「結果の知らせ方」）。領域が最後の子なので、親は flex と gap で並べる（components/ActionError.tsx のコメント）
     <form action={formAction} className="flex flex-col items-start gap-3">
       <input name="fooId" type="hidden" value={fooId} />
       {/* 入力欄。誤りは欄の下に表示し、aria-describedby と aria-invalid で入力欄に結び付ける（OrderForm の Field） */}

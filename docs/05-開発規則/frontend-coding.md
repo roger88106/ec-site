@@ -64,7 +64,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 ### 3.1 サーバーアクションは `withActionResult` で包む
 
-サーバーアクション（`src/actions/`）では `catch` を書かず、例外は `withActionResult` で結果にする。`redirect` は包みの外で呼ぶ。
+サーバーアクション（`src/actions/`）では `catch` を書かず、例外は `withActionResult` で結果にする。`redirect` は`withActionResult` の外で呼ぶ。
 
 理由：Next.js の `redirect`・`notFound` は例外で画面を遷移させるので、捕捉すると遷移が通信の失敗として扱われるため（`withActionResult` は `unstable_rethrow` で通す）。
 
@@ -88,7 +88,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 ### 4.1 使われていないものを残さない
 
-使われていないファイル、export、依存を残さない。定義したファイルの中だけで使うものは export しない。報告を外すのは生成物の export と型だけ（`knip.ts`）で、テストだけが import している export は使われているとみなす。失敗したときの修正は[テストの実行方法](../06-手順書/running-tests.md)の「knip が失敗したとき」。
+使われていないファイル、export、依存を残さない。定義したファイルの中だけで使うものは export しない。報告の対象から外すのは生成物の export と型だけ（`knip.ts`）で、テストだけが import している export は使われているとみなす。失敗したときの修正は[テストの実行方法](../06-手順書/running-tests.md)の「knip が失敗したとき」。
 
 理由：使われていないものがあると、読む人が使われているかを確認する手間が増えるため。
 
@@ -208,7 +208,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 ### 10.2 店舗画面の読み上げの領域は status の役割で作る
 
-店舗画面で、内容の変化を支援技術に読み上げさせる領域は、status の役割（`role="status"`）で作り、`aria-live` を直接書かない。読み上げない領域（`RemainingTime.tsx`）だけは `aria-live="off"` と書いてよい。ページを開いたときに描く知らせ（共有の `Alert`）は対象外である。
+店舗画面で、内容の変化を支援技術に読み上げさせる領域は、status の役割（`role="status"`）で作り、`aria-live` を直接書かない。読み上げない領域（`RemainingTime.tsx`）だけは `aria-live="off"` と書いてよい。ページを開いたときに表示する知らせ（共有の `Alert`）は対象外である。
 
 理由：`aria-live` を直接書くと、領域ごとに値と `aria-atomic` の有無がばらつくため。
 

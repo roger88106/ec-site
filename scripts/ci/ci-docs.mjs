@@ -1,7 +1,7 @@
-// CI の検査の文書（docs/06-手順書/ci.md）の「CI の検査の script」の表と、scripts/ci/ の検査を確認する。次の 4 つのどれかに当てはまると失敗にする。
+// CI の検査の script の文書（docs/06-手順書/ci-checks.md）の、見出し「CI の検査の script」の節の表と、scripts/ci/ の検査を確認する。次の 4 つのどれかに当てはまると失敗にする。
 // 1. 表の名前と直下の検査が 1 対 1 に対応しない（表にない検査、検査のない表の行、同じ名前の行）
 //    - 直下の検査：*.test.mjs 以外の *.mjs（check-all.sh が引数なしで実行するもの）
-//    - 表：見出し `## 3.` の節の、最初の下の見出し（`### 3.1`）より前の表の 1 列目の名前（`ac-check` など）
+//    - 表：見出しの名前が「CI の検査の script」の節（見出しの番号と階層は見ない）の、次の見出しより前の表の 1 列目の名前（`ac-check` など）
 // 2. 表が 2 列（script と目的）でない。詳しい説明を表に戻さず、script の先頭のコメントに書くため。読めない書き方の行も失敗にする
 //    - 列は縦線で数える。コードスパン（開きと同じ数のバッククォートで閉じる。lib/code-span.mjs）の中の縦線と、エスケープした縦線（\|）は数えない
 //    - 組にならないバッククォートが残る行は、列を数えられないので失敗にする
@@ -22,8 +22,25 @@ import { isMain } from './lib/is-main.mjs'
 import { readCodeSpans, replaceCodeSpans } from './lib/code-span.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
-/** CI の検査の文書 */
-const DOC = 'docs/06-手順書/ci.md'
+/** CI の検査の script の文書 */
+const DOC = 'docs/06-手順書/ci-checks.md'
+
+/** 表を探す節の見出しの名前（番号は見ない） */
+const TABLE_SECTION = 'CI の検査の script'
+
+/** 見出しの行（番号は名前に含めない） */
+const HEADING = /^#{1,3} (?:\d+(?:\.\d+)*\.? )?(.*)$/
+
+/**
+ * 見出しの行なら、表を探す節の見出しかを返す。見出しでない行は null。
+ *
+ * @param {string} line 行
+ * @returns {boolean | null} 表を探す節の見出しなら true
+ */
+function sectionOf(line) {
+  const match = line.match(HEADING)
+  return match ? match[1] === TABLE_SECTION : null
+}
 
 /** 検査を置くディレクトリ */
 const CHECK_DIR = 'scripts/ci/'
@@ -38,7 +55,7 @@ const NAME_ROW = /^\| `([^`\s]+)`(（`[^`]+`）)? \|/
 const SEPARATOR_ROW = /^\|(?:\s*:?-+:?\s*\|)+$/
 
 /**
- * 文書の見出し `## 3.` の節（最初の下の見出し `### 3.1` より前）の表の行を読む。見出しの行（表の最初の行で、次が区切りの行）と区切りの行は除く。
+ * 文書の見出し「CI の検査の script」の節（次の見出しより前）の表の行を読む。見出しの行（表の最初の行で、次が区切りの行）と区切りの行は除く。
  *
  * @param {string} markdown 文書の中身
  * @returns {{ line: number, text: string }[]} 表の行（line は 1 始まり、text は行の最後の空白を除く）
@@ -48,7 +65,7 @@ function readTableRows(markdown) {
   const rows = []
   let inSection = false
   lines.forEach((line, index) => {
-    if (/^#{2,3} /.test(line)) inSection = /^## 3\. /.test(line)
+    inSection = sectionOf(line) ?? inSection
     if (!inSection || !line.startsWith('|') || SEPARATOR_ROW.test(line)) return
     // 見出しの行は、表の最初の行で、次の行が区切りの行
     if (!(lines[index - 1] ?? '').startsWith('|') && SEPARATOR_ROW.test(lines[index + 1] ?? '')) return
@@ -58,7 +75,7 @@ function readTableRows(markdown) {
 }
 
 /**
- * 文書の見出し `## 3.` の節の表（最初の下の見出し `### 3.1` より前）の 1 列目の名前を読む。
+ * 文書の見出し「CI の検査の script」の節の表（次の見出しより前）の 1 列目の名前を読む。
  * 名前の後に（`引数`）を書いた行は数えない（同じ名前の検査を、引数を付けて実行することを表す）。名前の形でない行は checkTableNames が失敗にする。
  *
  * @param {string} markdown 文書の中身
@@ -118,7 +135,7 @@ export function compareChecks(tableNames, checkNames) {
   const table = new Set(tableNames)
   const checks = new Set(checkNames)
   for (const name of checkNames) {
-    if (!table.has(name)) problems.push(`表にない検査：${name}（${DOC} の「CI の検査の script」の表に行を加える）`)
+    if (!table.has(name)) problems.push(`表にない検査：${name}（${DOC} の「${TABLE_SECTION}」の表に行を加える）`)
   }
   for (const name of table) {
     if (!checks.has(name)) problems.push(`検査のない表の行：${name}（${CHECK_DIR} の直下に ${name}.mjs がない）`)
@@ -128,7 +145,7 @@ export function compareChecks(tableNames, checkNames) {
 }
 
 /**
- * 文書の表（`## 3.` の節の、最初の `### 3.1` より前）の各行が 2 列であることを確認する。
+ * 文書の表（見出し「CI の検査の script」の節の、次の見出しより前）の各行が 2 列であることを確認する。
  * 縦線で始まり縦線で終わらない行は、列を数えられないので読み飛ばさずに失敗にする。
  * 表の行の後から空行までの、縦線で始まらない行（前に空白のある行、最初の縦線のない行）も、名前と列の検査から漏れるので失敗にする。
  *
@@ -142,7 +159,7 @@ export function checkTableColumns(markdown) {
   let inTable = false
   markdown.split('\n').forEach((raw, index) => {
     const line = raw.trimEnd()
-    if (/^#{2,3} /.test(line)) inSection = /^## 3\. /.test(line)
+    inSection = sectionOf(line) ?? inSection
     if (!inSection || line.trim() === '') {
       inTable = false
       return

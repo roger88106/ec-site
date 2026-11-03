@@ -1,6 +1,6 @@
 # ブランチとリリース
 
-ブランチの構成、作業ブランチの作り方、保護、リリースと緊急の修正の手順、Dependabot の設定。CI/CD の決まりは [constitution](../constitution.md)の「CI/CD」、CI のジョブは [CI の検査](ci.md)、設定のフラグと完了の定義は [開発の進め方](../05-開発規則/workflow.md)、マージの許可と担当は [マージと後片付け](../05-開発規則/merging.md)。
+ブランチの構成と作業ブランチ、保護、リリースと緊急の修正の手順に加え、Dependabot と GitHub のセキュリティの機能の設定を置く。CI/CD の決まりは [constitution](../constitution.md)の「CI/CD」、CI のジョブは [CI の検査](ci.md)、設定のフラグと完了の定義は [開発の進め方](../05-開発規則/workflow.md)、マージの許可と担当は [マージと後片付け](../05-開発規則/merging.md)。
 
 ## 1. ブランチの構成
 
@@ -123,3 +123,15 @@ CD、staging、preview の環境の方式は、デプロイの spec で決める
 |------|------|
 | 手動の確認 | 手元の環境で、作業ブランチに対して実行する（[開発環境の起動](setup.md)、[テストの実行方法](running-tests.md)） |
 | リリース | `main` へのマージと tag までとし、デプロイしない |
+
+## 8. GitHub のセキュリティの機能
+
+リポジトリの設定（Settings の Code security）で有効にする。CI のジョブではないため、CI の実行時間に含まれない。
+
+| 機能 | 見るもの | 結果の場所 | 対応 |
+|------|----------|------------|------|
+| Dependabot alerts | 依存ライブラリ（Gradle、pnpm、GitHub Actions）の既知の脆弱性 | Security のタブの Dependabot | 直ったバージョンに更新する（バックエンドは `libs.versions.toml`、画面は `pnpm`）。更新できないときは、影響がない理由を書いて閉じる |
+| secret scanning、push protection | リポジトリに入った秘密情報（API キー、token など）。push protection は、秘密情報を含む push を拒否する | Security のタブの Secret scanning | 秘密情報を無効にして再発行し、履歴から削除する。テスト用の値など誤検出なら、理由を付けて閉じる |
+| CodeQL（default setup） | Java と JavaScript・TypeScript のコードの、セキュリティの問題（注入、パスの操作など） | Security のタブの Code scanning | 修正するか、誤検出・影響がない理由を付けて閉じる |
+
+- Dependabot の設定は「Dependabot」。

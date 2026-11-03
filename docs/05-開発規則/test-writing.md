@@ -30,7 +30,7 @@
 カバレッジ（行・分岐）と、domain の mutation score は、基準の値（許容の幅を含む）を下回らない。
 
 - 対象は、行と分岐がバックエンド、管理画面、店舗画面、共有パッケージ（`frontend/shared`）、mutation score がバックエンドの domain。mutation score は、PIT で測る、テストが検出できた変異の割合。
-- 基準のファイルと、基準を変える手順は、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」。CI の手順と失敗したときの対応は、[CI の検査](../06-手順書/ci.md)の「カバレッジと mutation score の基準の検査」。
+- 基準のファイルと、基準を変える手順は、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」。CI の手順と失敗したときの対応は、[CI の検査の script](../06-手順書/ci-checks.md)の「カバレッジと mutation score の基準の検査」。
 
 理由：基準がないと、テストが減っても弱くなっても気づけないため。
 

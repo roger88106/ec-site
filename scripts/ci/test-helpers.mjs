@@ -92,7 +92,7 @@ function constantsOf(code, path) {
  * テストは path を定数（`BASE` など）に置くことが多いので、path の文字列そのものと、その path を値に持つ定数を、`post(` の最初の引数として探す。
  * RestClient・WebTestClient の `.post().uri("…")` と `.post().uri(定数)` も、同じ規則で探す（統合テストの今の要求の書き方は、MockMvc の `post(…)` と RestClient の `.post().uri(…)`）。
  * 限界：他のクラスの定数（`Other.BASE`）、文字列の連結（`BASE + "/x"`）、変数に入れた path は探さない（同じファイルの定数と文字列そのものだけ）。
- * path に ID や `/rates` を足した要求（取得、税率やカテゴリの変更）は、作った後の変更の要求で、表の手順でないので探さない。
+ * path に ID や `/rates` を足したリクエスト（取得、税率やカテゴリの変更）は、作った後の変更のリクエストで、`HELPER_STEPS` の手順でないので探さない。
  *
  * @param {string} code コメントを除いた Java のコード
  * @param {string} path API の path
@@ -111,7 +111,7 @@ function findPostsTo(code, path) {
  * 作成の応答の JSON から ID を取り出す処理を探す。<br />
  * 補助 TestJson は `JsonPath.read(body, "$.id")` と読む。テストが同じ読み取りを書くのは、`JsonPath.read(…, "$.id")` と、
  * 解析した文書の `.read("$.id")` の 2 つ。型引数（`JsonPath.<String>read(…)`）と、path の後の引数（`, String.class`）があっても探す。`jsonPath("$.id")`（MockMvc の応答の検証）は取り出す処理でなく確認なので探さない。
- * 一覧の応答の読み取り（`$.items`、`$.images[*].id`）は表の手順に含めない（テストの書き方）ので、path が `$.id` のものだけを探す。
+ * 一覧の応答の読み取り（`$.items`、`$.images[*].id`）は手順に含めない（テストの書き方の「テストデータは補助のクラスで作る」）ので、path が `$.id` のものだけを探す。
  *
  * @param {string} code コメントを除いた Java のコード
  * @returns {number[]} 呼び出しの位置

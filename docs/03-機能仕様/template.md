@@ -42,8 +42,6 @@
 
 ## 今有効な AC
 
-<選んだ基準を 1 文で書く。表はマーカーの組の中に、AC 一覧から生成する。>
-
 <!-- generated:module-ac -->
 なし。
 <!-- /generated:module-ac -->

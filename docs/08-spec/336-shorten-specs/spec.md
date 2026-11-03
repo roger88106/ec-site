@@ -203,7 +203,7 @@ AC 一覧の冒頭は「全ての列を手動で書く」としているが、`n
   - 範囲：`scripts/ci/ac-check.mjs`、`docs/03-機能仕様/acceptance-criteria.md`、13 の ③、`docs/05-開発規則/issues.md`、`workflow.md`
   - 確認方法：`node --test scripts/ci/ac-check.test.mjs`、`node scripts/ci/ac-check.mjs`、`git grep -n "](../08-spec/" -- docs/03-機能仕様` が 0 件、`node scripts/ci/doc-refs.mjs`
   - AC 一覧の列の書き換えは、スクラッチパッドの script で行う（AC 一覧の行だけを対象にする）。
-- [ ] **T336-01-03** 「今有効な AC」の前置きを削り、選ぶ基準を雛形と AC 一覧の列「モジュール」の説明に置く（DC-336-5）。
+- [x] **T336-01-03** 「今有効な AC」の前置きを削り、選ぶ基準を雛形と AC 一覧の列「モジュール」の説明に置く（DC-336-5）。
   - 依存：T336-01-02（同じファイルを変えるため）
   - 範囲：13 の ③、`docs/03-機能仕様/template.md`、`acceptance-criteria.md`
   - 確認方法：`node scripts/ci/ac-check.mjs`、`node scripts/ci/spec-structure.mjs`、各 ③ の節を読む

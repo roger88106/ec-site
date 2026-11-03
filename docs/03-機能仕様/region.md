@@ -91,8 +91,6 @@ erDiagram
 - 市区町村のコードの先頭 2 桁が都道府県のコードであることは、CHECK 制約でも守る。
 ## 今有効な AC
 
-選んだ基準は、[AC 一覧](acceptance-criteria.md)の列「モジュール」が `region` で、状態が「有効」か「変更」の AC であること。
-
 <!-- generated:module-ac -->
 | AC | 今の内容 | 元の spec |
 |----|----------|-----------|

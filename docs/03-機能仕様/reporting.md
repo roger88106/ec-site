@@ -149,8 +149,6 @@ erDiagram
 
 ## 今有効な AC
 
-選んだ基準は、[AC 一覧](acceptance-criteria.md)の列「モジュール」が `reporting` で、状態が「有効」か「変更」の AC であること。
-
 <!-- generated:module-ac -->
 | AC | 今の内容 | 元の spec |
 |----|----------|-----------|

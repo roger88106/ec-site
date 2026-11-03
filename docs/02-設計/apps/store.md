@@ -51,7 +51,7 @@ frontend/store/
     │   ├── login.ts          # ログイン後の戻り先を、店舗画面の中のパスに限る（「ログイン」）
     │   ├── postalCode.ts     # 郵便番号の形の判定
     │   ├── quantity.ts       # 数量の選択肢（契約の下限から上限まで）
-    │   └── server/           # サーバー専用の関数。formData（フォームの項目の読み取り）、log（JSON のログ）、timeout（待つ時間の上限）、trace（追跡 ID）
+    │   └── server/           # サーバー専用の関数。formData（フォームの項目の読み取り）、log（JSON のログ）、timeout（待つ時間の上限）、trace（トレース ID）
     ├── test/                 # テストの土台（Next.js と Auth.js の置き換え、API の応答のデータ、MSW、描画。画面のコードからは import しない）
     └── features/<機能>/      # catalog、cart、checkout、order
         ├── components/       # その機能だけのコンポーネント
@@ -110,7 +110,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | それ以外 | エラーの画面（`error.tsx`） |
 
 - タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアでタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
-- 追跡 ID：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアで、画面の要求の `traceparent` を付ける。バックエンドのログを画面の要求から辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュする要求に付けてもキャッシュは使われる。
+- トレース ID：店舗 API のクライアント（公開用と会員用）は、リクエストのミドルウェアで、画面のリクエストの `traceparent` を付ける。バックエンドのログを画面のリクエストから辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュするリクエストに付けてもキャッシュは使われる。
 - サーバーアクションの失敗のログ：サーバーアクションが例外で失敗したら、共通の処理（`withActionResult`）が error のログに例外の名前と、原因の例外（`cause`）の名前とコード（`ECONNREFUSED` など）を出力する。API の失敗の例外（`ApiError`）なら、その状態コードを `status` に出力し、状態コードを持たない例外では null にする。例外のメッセージ（原因のものも含む）は出力しない。メッセージにカートの ID などの識別子が入りうるため。
 - 5xx のログ：店舗 API が 5xx を返したら、応答のミドルウェアで warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
 
@@ -255,7 +255,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | ログインの状態 | サーバー側で `currentMember()`（ログインしていれば氏名とメールアドレス、していなければ `null`）。クライアントコンポーネントでは取らず、必要なら props で渡す |
 | アカウント | ヘッダーから IdP のアカウント画面（`<issuer>/account`）へ遷移する。変えた氏名は次のログインから反映する |
 
-※7：既定値はローカルと CI だけで使う値（realm の JSON と同じ）で、開発モードとテストでだけ使う。本番モードでは、この 5 つと `STORE_API_BASE_URL` がなければ起動時に失敗する（BR-31）。確認は `src/auth/config.ts` で行う。E2E は `playwright.config.ts` で渡す。
+※7：必須の設定と起動での確認は「サーバーの設定とログ」。E2E は `playwright.config.ts` で渡す。
 
 ※8：Auth.js は `AUTH_URL` があれば、リクエストの URL をそれに置き換える。`trustHost` は指定しない。ログインの戻り先のテストは、このファイルだけ実際の Auth.js を使う（`auth/loginRedirect.test.ts`）。
 
@@ -286,14 +286,14 @@ access token の有効期限（5 分）の残りが 1 分未満なら、refresh 
 
 ### 10.1 設定
 
-本番（`NODE_ENV=production`）では、次の設定がなければ、起動（`instrumentation.ts` の `register()`）で足りない名前を並べて失敗させる。
+本番（`NODE_ENV=production`）では、次の設定がなければ、起動（`instrumentation.ts` の `register()`）で、足りない設定の名前を列挙したエラーを出して、起動に失敗させる。
 
 - Cookie の暗号の鍵（`AUTH_SECRET`）
-- IdP の client ID と secret
-- IdP と API の場所
-- 店舗画面を公開する URL
+- IdP の client ID と secret（`AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET`）
+- IdP と API の場所（`AUTH_KEYCLOAK_ISSUER`、`STORE_API_BASE_URL`）
+- 店舗画面を公開する URL（`AUTH_URL`）
 
-ローカル用の既定値は、開発モードとテストでだけ使う（BR-31） ※9。任意の設定（既定値のあるもの）も、同じ所（`src/auth/config.ts` の `readServerConfig()`）で読む。管理画面は接続先をビルドの時に埋め込むので、本番ビルドで確認する（管理画面の構成の「ログイン」）。
+ローカル用の既定値（realm の JSON と同じ値）は、開発モードとテストでだけ使う（BR-31） ※9。確認と任意の設定（既定値のあるもの）の読み取りは、同じ所（`src/auth/config.ts` の `readServerConfig()`）で行う。管理画面は接続先をビルドの時に埋め込むので、必須の設定は本番ビルドで確認する（管理画面の構成の「ログイン」）。
 
 ※9：モジュールの読み込み時には確認しない。`next build` も本番モードで動き、CI のビルドには secret がないため。
 
@@ -301,8 +301,8 @@ access token の有効期限（5 分）の残りが 1 分未満なら、refresh 
 
 ### 10.2 ログ
 
-- 店舗画面のサーバーログは `src/lib/server/log.ts` で書き、1 行 1 件の JSON にする。項目は時刻、レベル、メッセージ、追跡 ID、その他の項目。
+- 店舗画面のサーバーログは `src/lib/server/log.ts` で書き、1 行 1 件の JSON にする。項目は時刻、レベル、メッセージ、トレース ID、その他の項目。
 - レベル：操作は失敗したが続けられるものは `warn`、予期しない失敗は `error`、調べるための記録は `info`。
-- バックエンドへの要求に W3C の `traceparent` を付け、同じ追跡 ID をログに出力する。
+- ログに出力するトレース ID は、店舗 API の呼び出しで付ける `traceparent` と同じ（「エラー」のトレース ID）。
 
-理由：バックエンドのログと同じ追跡 ID で、1 つの要求を辿れるようにするため。
+理由：バックエンドのログと同じトレース ID で、1 つのリクエストをたどれるようにするため。

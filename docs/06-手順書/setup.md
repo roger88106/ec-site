@@ -1,6 +1,6 @@
 # 開発環境の起動
 
-ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](running-tests.md)、環境変数は [環境変数](environment.md)。エージェントは skill `local-dev` を使う。
+ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](running-tests.md)、環境変数は [環境変数](environment.md)で、エージェントは skill `local-dev` を使う。
 
 ## 1. 前提
 

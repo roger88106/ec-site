@@ -1,7 +1,7 @@
 # AGENTS.md
 
 AI エージェント（Claude Code など）がこのリポジトリで作業するときの手順。
-プロジェクトのルールは [constitution](docs/constitution.md) とその細則にあり、本書はそれを守って作業する手順だけを書く。一致しないときは constitution を正とする。
+プロジェクトのルールは [constitution](docs/constitution.md) とその細則にあり、本書はそれを守って作業する手順だけを書くので、一致しないときは constitution を正とする。
 
 ## 最初に読むもの
 

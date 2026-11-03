@@ -9,7 +9,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 2. [開発の進め方](docs/05-開発規則/workflow.md)：SDD と TDD、起票と規模、利用者の確認と中断、完了の定義
 3. 着手する段階の tasks と、冒頭の「参照」の文書（`docs/08-spec/<番号>-*/`。規模 L は `tasks/`、規模 M は spec.md の中の tasks、規模 S は issue）
 4. コードを書く・レビューする前に、関わる書き方の文書（constitution の「コードの書き方」の一覧。バックエンド、フロント、テスト、コメント）
-5. 文書（docs/、README、AGENTS.md、spec、plan、tasks、issue の本文とコメント）を書く・レビューする前に、[文書の書き方](docs/05-開発規則/writing.md)。書く前に、skill `docs` の「進め方」も読む（本文は、日本語の要点から、日本語だけの文脈のサブエージェントに書かせる）
+5. 文書（docs/・README・AGENTS.md・spec・plan・tasks・issue の本文とコメント）を書く・レビューする前に、[文書の書き方](docs/05-開発規則/writing.md)。書く前に、skill `docs` の「進め方」も読む
 
 マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。ないときは、本書と `docs/` だけで進める。
 
@@ -123,4 +123,4 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 - JDK 21。統合テストと jOOQ のコード生成には Docker が必要。
 - Gradle のプロジェクトは `backend/ecsite/` にある（`./gradlew` もそこで実行する）。リポジトリのルートと `backend/` には Gradle の設定がない。
 - 起動・テストの手順は [開発環境の起動](docs/06-手順書/setup.md) と [テストの実行方法](docs/06-手順書/running-tests.md)。エージェントは skill `local-dev` を使う。
-- Claude Code の hook と permission の書き先は、2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のもの（zh-mixing の hook、利用者の SessionStart など）は `.claude/settings.local.json`（Git に入らない）である。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs` と、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`。手元の hook は `settings.local.json` に置き、設定は skill `local-dev` の「手元の hook の設定」）。作業ツリーのセッションが読む設定・定義・skill と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」。
+- Claude Code の hook と permission の書き先は、2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のもの（zh-mixing の hook、利用者の SessionStart など）は `.claude/settings.local.json`（Git に入らない）である。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs` と、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`。例外は zh-mixing の手元の hook で、script は skill と一緒に `.claude/skills/zh-mixing/` に置く。手元の hook は `settings.local.json` に置き、一覧と設定は skill `local-dev` の「手元の hook の設定」）。作業ツリーのセッションが読む設定・定義・skill と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」。

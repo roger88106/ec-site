@@ -7,12 +7,7 @@ description: 中国語で指示する環境で、日本語の文書・コメン�
 
 利用者が中国語で指示し、日本語で書かせる環境では、会話から文書へ訳すときや、混ざった文を写して広げるときに、中国語の字・用語が日本語の文に混ざる。混ざった行を、記録される前に見つける。
 
-この検査は層 2 である。層 1（日本語の書き方の規則）は CI と commit の前の検査（`scripts/ci/ja-text.mjs`）が全ての環境で行い、層 2 はこの skill が、中国語で指示する環境だけで行う。CI には入れない。
-
-| 層 | 見つけるもの | 一覧 | 動く環境 |
-|----|--------------|------|----------|
-| 層 1 | 使わない語、文体 | `scripts/ci/ja-text.json` | 全ての環境（CI と commit の前） |
-| 層 2 | 日本語では使わない字、中国語の用語 | `.claude/skills/zh-mixing/zh-mixing.json` | 環境の印がある環境だけ |
+この skill は層 2 の検査である。層 1 と層 2 の分け方と動く環境は、skill `review` の [docs-review.md](../review/docs-review.md) の手順 4。
 
 ## 環境の印
 
@@ -42,26 +37,9 @@ git config --local ecsite.instructionLanguage zh
 中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く（チームの規則は `.claude/settings.json` に書くが、手順 2 の Claude Code の hook は環境に固有なので `.claude/settings.local.json` に書く。分け方は [AGENTS.md](../../../AGENTS.md) の「環境」の節）。環境の印がなければ、設定しても何も調べない。
 
 1. 環境の印：`git config --local ecsite.instructionLanguage zh`。`.git/config` に入り、全ての作業ツリーで共有する。
-2. Claude Code の hook（書き込みの後にエージェントへ返す）：`.claude/settings.local.json` の `hooks.PostToolUse` に、次を追加する。入口は `post-tool-use.cjs` で、書いたファイル（`tool_input.file_path`）を調べる。調べる対象は、リポジトリのファイルと memory のファイル（`~/.claude/projects/<プロジェクト>/memory/` の下）で、`/.local/` の下とリポジトリの外の他のファイルは調べない。見つかれば終了コード 2 と標準エラー出力（ファイル、行、語、直し方）で返し、Claude Code がエージェントに渡す。
+2. Claude Code の hook：skill `local-dev` の「手元の hook の設定」の PostToolUse の項目を、`.claude/settings.local.json` に置く。
 
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-        "hooks": [
-          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/.claude/skills/zh-mixing/post-tool-use.cjs\" ]; then f=\"$d/.claude/skills/zh-mixing/post-tool-use.cjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-   `.claude/settings.local.json` は Git に入らない。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーのこのファイルを読む（読む場所は、skill `sessions` の「ツールの補足」の「作業ツリーのセッションが読むもの」の表）ので、メインの作業ツリーに置けばよい。作業ツリーで起動した `claude -p` は、メインの作業ツリーのこのファイルを読まないので、この hook は動かない（同じ表）。command は、script を作業ツリーから先に探し、なければメインの作業ツリー（`$CLAUDE_PROJECT_DIR`）の下を使う形にする。環境の印は `.git/config` にあり、作業ツリーの間で共有される。他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
-
-3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
+3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md)の「起動」にある `.git/hooks/pre-commit`・`commit-msg` の行（層 1 の `ja-text` の検査）に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 
 | hook | 追加する行 |
 |------|--------|
@@ -70,7 +48,7 @@ git config --local ecsite.instructionLanguage zh
 
 `.git/hooks/` は全ての作業ツリーで共有し、script のないブランチ（例えば `main` から切る `release-`・`hotfix-` のブランチ）でも hook が動くので、行は script があるときだけ呼ぶ形にする。
 
-設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外し、`settings.local.json` の上の項目と、git の hook の上の行を削除する。
+設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外す。次に、`settings.local.json` の PostToolUse の項目（skill `local-dev` の「手元の hook の設定」の `post-tool-use.cjs` の項目）と、手順 3 で git の hook に追加した行を削除する。
 
 ## 一覧の直し方
 
@@ -90,12 +68,7 @@ Git に入れない手元だけの除外は、`.local/agent/zh-allow.txt` に「
 
 ### 層 1 と層 2 のどちらに加えるか
 
-| 原因 | 加える先 |
-|------|----------|
-| 日本語の書き方の規則に反する（使わないと決めた語、文体）。由来が中国語でも、誰が書いても避けるべき語 | 層 1（`scripts/ci/ja-text.json`） |
-| 中国語の字・用語が、日本語の文に混ざった | 層 2（この skill の一覧） |
-
-同じ字・語を両方に置かない。script のテストが、層 1 の一覧との重なりを調べる。
+層 1 と層 2 のどちらに加えるかは、[docs-review.md](../review/docs-review.md) の手順 4 で決める。
 
 ## 書くときの注意
 

@@ -35,7 +35,7 @@
 | Cookie の接頭辞 | `STORE_COOKIE_PREFIX` | 店舗画面の Cookie の名前の先頭に付ける文字列。スロットごとに変え、同じブラウザーで複数のスロットにログインしてもセッションが混ざらないようにする |
 | 契約テスト | `*ContractTest` | 外部との契約を確認するテスト。外部連携の port の実装（mock と本物）が同じ振る舞いを守ることを、同じテストで確認するもの（`PaymentGatewayContractTest`）と、IdP の設定ファイルの値を確認するもの（`RealmSettingsContractTest`）がある |
 | 非同期の処理の待ち | `AsyncEvents` | 統合テストで、コミットの後に動くイベントのリスナーが終わる（または失敗する）のを、イベントの発行の記録で待つ補助（[テストの書き方](test-writing.md)の「待ち方」） |
-| 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
+| 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」。層の中の役割は[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
 | 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に変換するクラス。インターフェースは使う層の `port/`、実装は `infrastructure/directory/` |
 | 参照の service | `XxxQueryService` | データを更新しない application の service。読み取り専用のトランザクションで、view（または外部へのリクエストの型）を返し、集約を返さない（[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
 | 更新の service | `XxxCommandService` など | データを更新する application の service。参照だけのメソッドを持たない |

@@ -6,41 +6,7 @@
 
 ### 1.1 標準の構成
 
-どのモジュールも次の構成にする。不要な層は作らない（イベントを出さないなら `event/` は不要）。
-
-```
-module/<モジュール>/
-├── api/                公開の同期の API（@NamedInterface("api")）
-├── event/              公開のイベント（@NamedInterface("event")）
-├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
-├── application/        use case（@Transactional はここ）
-│   ├── model/          command・query・view
-│   └── port/           application が使う port（参照の Repository、他のモジュールの Directory）
-├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
-│   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
-└── infrastructure/     port の実装
-    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。「設定の値の型」）
-    ├── persistence/    jOOQ の Repository と、それが使うクラス
-    ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
-    └── <外部>/          外部の仕組み（storage、converter、cache など）
-```
-
-| 層 | 依存してよい先 |
-|----|----------------|
-| api・event | application、domain、common |
-| presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
-| application | domain、common、event（自分のモジュールのイベントを発行する。他のモジュールのイベントを購読する） |
-| domain | common、自分のモジュールの event（レベル A は Spring・jOOQ にも依存しない） |
-| infrastructure | application の port と model（port が返す view）、設定の値の型（設定のクラスが有効にしたもの）、domain、common |
-| common | モジュールに依存しない |
-| config | common。モジュールに依存しない |
-
-どの層も、config に依存しない。`application/model/` は、application の `port/` に依存しない。
-
-| レベル | 中身の違い |
-|--------|------------|
-| A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS）。例外：状態を DB の更新の条件で守るモジュール（今は在庫だけ）は、集約のクラスを持たなくてよい（理由は [バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「モジュール内のアーキテクチャレベル」 ※3） |
-| B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port は全て `application/port/`。CQRS なし。`application/model/` は必要なときだけ。クラスが多いときは、用途で domain を分けてよい（`domain/<用途>/`。reporting の `domain/snapshot/` と `domain/sales/`） |
+どのモジュールも、[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」の構成にする。不要な層は作らない（イベントを出さないなら `event/` は不要）。層の間の依存は、バックエンドのアーキテクチャの依存の表のとおりにする。
 
 層の中の役割：
 
@@ -67,7 +33,7 @@ module/<モジュール>/
 
 確認方法：
 
-- 層の間の依存：モジュールの中の層の間は、依存の表にある全ての組と、表にない層・パッケージへの依存が自動（ArchUnit）。`api/` に interface がないこと、`api/` の型を `api/` の外が実装・継承しないこと、domain のパッケージに循環がないことも自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることはレビュー（集約に依存しないことは次の行で自動）
+- 層の間の依存：モジュールの中の層の間は、バックエンドのアーキテクチャの依存の表にある全ての組と、表にない層・パッケージへの依存が自動（ArchUnit）。`api/` に interface がないこと、`api/` の型を `api/` の外が実装・継承しないこと、domain のパッケージに循環がないことも自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることはレビュー（集約に依存しないことは次の行で自動）
 - 参照の service が返す型：presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー
 - 公開の API：`api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit）
 - application の `port/` への依存：自動（ArchUnit）

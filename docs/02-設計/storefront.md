@@ -98,4 +98,4 @@ storefront/
     └── directory/      # 他モジュールの腐敗防止層
 ```
 
-店舗の情報の設定は、値の型を application に置き、infrastructure の設定のクラスが有効にする。層の間の規則は、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「標準の構成」にある。
+店舗の情報の設定は、値の型を application に置き、infrastructure の設定のクラスが有効にする。層の間の依存は、[バックエンドのアーキテクチャ](backend-architecture.md)の「層とパッケージ」にある。

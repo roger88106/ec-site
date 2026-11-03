@@ -38,38 +38,80 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 ## 2. モジュール内のアーキテクチャレベル
 
-複雑さに応じて選び、選んだ理由を `docs/02-設計/<module>.md` に書く。層とパッケージの名前はどのレベルでも同じ（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「層とパッケージ」）。
+複雑さに応じて選び、選んだ理由を `docs/02-設計/<module>.md` に書く。層とパッケージの名前はどのレベルでも同じ（「層とパッケージ」）。
 
 | レベル | 構成 | 向く場面 |
 |--------|------|----------|
 | A. フル | DDD + Clean Architecture + CQRS | 不変条件や状態機械が複雑 |
-| B. 簡略 | domain は振る舞いの少ない型でよく、Spring などに依存してよい。集約ごとのパッケージと CQRS は不要 | ルールが単純、または参照のみ |
+| B. 簡略 | DDD を簡略にした構成 | ルールが単純、または参照のみ |
 | C. イベントストア | Event Sourcing ※2 | 状態の変化の履歴に価値がある |
 
 ※2：採用する前に、plan で保存方式・スナップショット・read model を説明し、本書を修正する。
 
-レベル A のルール：
+レベル A の中身：
 
 - 依存の向き：presentation → application → domain ← infrastructure（domain は何にも依存しない）。
+- Repository の port は `domain/<集約>/port/` に置く。command と query の service・Repository を分ける（CQRS）。
 - ドメインオブジェクトは jMolecules で明示し（`@AggregateRoot`、`@ValueObject`、`@Identity`）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
 - 永続化は `toSnapshot()` で書き出し、Factory で再構築する。application が投げる例外は `BusinessException` / `SystemException` だけ。
 - 例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい ※3。今は在庫だけ。
 
 ※3：在庫数の並行の更新を、集約を読んで書き戻さずに、DB の差分の加算と条件で守るため。この場合、状態を集約のメソッドで変える規則と、集約を jMolecules で明示する規則は当てはまらない。詳細は [在庫モジュール](../03-機能仕様/inventory.md)。
 
-## 3. モジュール間の連携
+レベル B の中身：
+
+- domain は振る舞いの少ない型でよく、Spring などに依存してよい。集約ごとのパッケージは作らず、port は全て `application/port/` に置く。
+- CQRS は行わない。`application/model/` は必要なときだけ作る。
+- クラスが多いときは、用途で domain を分けてよい（`domain/<用途>/`。reporting の `domain/snapshot/` と `domain/sales/`）。
+
+## 3. 層とパッケージ
+
+どのモジュールも次の構成にする。不要な層は作らない（イベントを出さないなら `event/` は不要）。
+
+```
+module/<モジュール>/
+├── api/                公開の同期の API（@NamedInterface("api")）
+├── event/              公開のイベント（@NamedInterface("event")）
+├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
+├── application/        use case（@Transactional はここ）
+│   ├── model/          command・query・view
+│   └── port/           application が使う port（参照の Repository、他のモジュールの Directory）
+├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
+│   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
+└── infrastructure/     port の実装
+    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。[バックエンドの書き方](../05-開発規則/backend-coding.md)の「設定の値の型」）
+    ├── persistence/    jOOQ の Repository と、それが使うクラス
+    ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
+    └── <外部>/          外部の仕組み（storage、converter、cache など）
+```
+
+層ごとの、依存してよい先：
+
+| 層 | 依存してよい先 |
+|----|----------------|
+| api・event | application、domain、common |
+| presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
+| application | domain、common、event（自分のモジュールのイベントを発行する。他のモジュールのイベントを購読する） |
+| domain | common、自分のモジュールの event（レベル A は Spring・jOOQ にも依存しない） |
+| infrastructure | application の port と model（port が返す view）、設定の値の型（設定のクラスが有効にしたもの）、domain、common |
+| common | モジュールに依存しない |
+| config | common。モジュールに依存しない |
+
+どの層も、config に依存しない。`application/model/` は、application の `port/` に依存しない。
+
+## 4. モジュール間の連携
 
 - 同期の呼び出しは、参照か、すぐに結果が必要な場面だけ。それ以外はイベント（名前は過去形。例：`OrderShipped`）。
 - イベントは集約が記録し（`registerEvent`）、リポジトリが保存の後に送り出す。集約を持たないレベル B のモジュールは、application の service が送り出してよい。理由：保存に失敗したときにイベントだけが出ないようにし、domain を送り出しの仕組みから切り離すため。
 - 他のモジュールのテーブルを読み書きせず、外部キーも張らない。
 - モジュールをまたぐ整合性は結果整合。強い一貫性が必要な所は spec に書き、plan で方法を決める。
 
-## 4. C 側と B 側
+## 5. C 側と B 側
 
 - 同じドメインモジュールを共有し、presentation で分ける（`/api/store/**`、`/api/admin/**`）。Controller と Request / Response は共有しない。
 - バックエンドを 2 つに分けるのは、スケール・デプロイの頻度・セキュリティの境界が明確に異なってから。
 
-## 5. 水平スケール
+## 6. 水平スケール
 
 同じアプリを複数のインスタンスで動かせるように作る。
 
@@ -106,9 +148,9 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - 止めたイベントは処理を終えていないので、片付けで削除されない。ログとメトリクスで検知し、原因を修正してから、データベースでイベントの記録の処理の回数を上限より小さく戻す（次の回で再発行される）か、不要なら記録を削除する。上限を上げても再発行される。
 - 印はイベントの記録の表（Spring Modulith のもの）に直接書く。Spring Modulith を上げるときは、処理の回数と状態の意味が変わっていないかを確認する（イベントの記録のマイグレーションの注記）。
 
-## 6. データとファイル
+## 7. データとファイル
 
-### 6.1 永続化
+### 7.1 永続化
 
 | 項目 | ルール |
 |------|--------|
@@ -129,7 +171,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - 画面・API で変えられない番号でも、DB を修正すれば付け替えられるようにする。
 - 過去の記録には、参照ではなくその時点の値を写して持つ。
 
-### 6.2 Flyway
+### 7.2 Flyway
 
 - スキーマの正本は Flyway のマイグレーション（`backend/ecsite/src/main/resources/db/migration/`）。
 - 新しいモジュールの schema は、そのモジュールの最初のマイグレーションで作る。最初の 4 つ（common、tax、catalog、inventory）だけは、1 つのマイグレーション（`common_create_schemas`）で作った。schema の名前はモジュールの名前にする。例外は `order` の schema の `ordering`（`order` が SQL の予約語のため）。
@@ -137,12 +179,12 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - jOOQ のコード生成と統合テストは、Testcontainers の PostgreSQL に Flyway のマイグレーションを適用して行う。
 - 開発と E2E の seed は `db/seed/` に置き、ローカルと E2E の profile でだけ適用する（[使い分け](../../backend/ecsite/src/main/resources/db/seed/local/README.md)）。
 
-### 6.3 ファイル保存
+### 7.3 ファイル保存
 
 - Amazon S3 互換のオブジェクトストレージ（ローカルと CI は SeaweedFS）に置き、DB にはキーだけを持つ。ストレージは port の後ろに置く。
 - アップロードは署名付き URL で、ブラウザーからストレージへ直接送る（バックエンドはファイルを中継しない）。
 
-### 6.4 値の置き場所
+### 7.4 値の置き場所
 
 値は、誰が・いつ変えるかで置き場所を決める（BR-33）。
 
@@ -155,9 +197,9 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - どの値も、正となる所は 1 つにする。画面は値を書かず、API の契約（生成した型と制約）か応答から得る（[フロントの書き方](../05-開発規則/frontend-coding.md)の「API」）。
 - domain の定数を API の契約にも書くとき（入力の長さ、枚数の上限など）は、両者が一致することを契約のテストで確認する。エラーの文に入れる数は、定数から差し込む（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「エラーは `XxxErrorCode` と `BusinessException`」）。
 
-## 7. 認証・認可
+## 8. 認証・認可
 
-### 7.1 認証の方式
+### 8.1 認証の方式
 
 | 項目 | ルール |
 |------|--------|
@@ -168,7 +210,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 | CSRF | API はセッションと Cookie を使わず、token を `Authorization` ヘッダーで受け取るので、Spring Security の CSRF の対策を無効にする。ブラウザーが自動で送る資格情報がないため、CSRF は成り立たない。店舗画面の Cookie は、店舗画面のサーバーだけが読む（[フロントのアーキテクチャ](frontend-architecture.md)） |
 | 行わないこと | 会員登録を始めたのと別のブラウザーで確認メールのリンクを開いたとき、ログインした状態にしない（リンクを持つ人がログインできてしまうため。IdP の画面から店舗に戻り、ログインする）。運営者のアカウントと職務を管理する EC の画面は作らない（IdP の管理画面を使う） |
 
-### 7.2 業務のコードとの境界
+### 8.2 業務のコードとの境界
 
 - domain と application は Spring Security の型に依存しない。呼び出し元は値（会員 ID、運営者の ID と氏名の写し）で渡す。
 - 管理 API の権限は endpoint ごとに `resource:action`（例：`product:write`）で spec に書く。運営者の realm の role として token に載せ、読む処理は 1 か所にまとめる。
@@ -181,7 +223,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
   - `security` を書かない操作があると、起動に失敗する。失敗のメッセージは、操作のメソッドとパスを含む。理由：書き忘れた操作を、公開の操作として受け付けないため。
 - 認可は既定で拒む。契約にない店舗 API・管理 API の操作は拒み、それ以外の URL は、通知（`/api/webhooks/**`）・mock（`/mock-payment/**`、`/mock-carrier/**`）・運用（`/actuator/**`）のエンドポイントだけを許す（BR-32）。拒むときは 401（認証のあるリクエストは 403）。
 
-### 7.3 公開ネットワークへのデプロイの前提
+### 8.3 公開ネットワークへのデプロイの前提
 
 ローカルと CI の設定のままでは IdP と secret が守られない。デプロイ先を決めるときに、次も決める。
 
@@ -200,7 +242,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - トレースを送るなら、`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` を true にし、送信先（`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT`）を渡す。既定は送らない（[環境変数](../06-手順書/environment.md)）
 - 配布物に、第三者のライセンスの告知のファイルと部品表（SBOM）を付ける
 
-## 8. 外部連携（決済・物流）
+## 9. 外部連携（決済・物流）
 
 - 外部サービスは port の後ろに置き、外部の型やエラーコードを domain / application に持ち込まない。
 - 外部サービスと接続するモジュールを加えるとき、外部サービスを変えるときは、[全体構成](overview.md)の「モジュールと外部サービス」の図と表も修正する。テストが確認するのは、図のモジュールがコードにあることだけで、描き忘れは見つけられない。

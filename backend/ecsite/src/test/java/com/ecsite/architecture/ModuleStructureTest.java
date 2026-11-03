@@ -62,7 +62,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの標準の構成の検査（バックエンドの書き方の「層とパッケージ」）。<br />
+ * モジュールの標準の構成の検査（バックエンドのアーキテクチャの「層とパッケージ」）。<br />
  * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
@@ -79,7 +79,7 @@ class ModuleStructureTest {
     private static final Pattern LAYERED_PACKAGE = Pattern.compile("^(.*\\.module\\.[^.]+)\\.([^.]+)(?:\\.(.*))?$");
 
     /**
-     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドの書き方の「標準の構成」の表）。<br />
+     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドのアーキテクチャの「層とパッケージ」の依存の表）。<br />
      * 層の中の自分自身への依存は、表に書かなくても許す。他のモジュールと共通コードへの依存は、この表の対象でない
      * （モジュールの間は {@code ModulithTest} と {@code otherModulesApiIsUsedOnlyByDirectories} が確認する）。
      * presentation の domain への依存は、エラーの定義と値の型に限るが、集約に依存しないことは

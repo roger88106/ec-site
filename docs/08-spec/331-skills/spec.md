@@ -145,10 +145,11 @@ skill には、エージェントが実行する手順と雛形だけを残す�
   - 依存：T331-01-03（同じ zh-mixing の SKILL.md を変えるため）
   - 範囲：`.claude/skills/local-dev/SKILL.md`、`zh-mixing/SKILL.md`、`sessions/SKILL.md`、`docs/05-開発規則/subagents.md`、`docs/07-記録/subagents-results.md`、AGENTS.md
   - 確認方法：文書を読む。hook の JSON の項目が、移す前と同じ文字列である（`git show` と比べる）
-- [ ] **T331-01-05** skill `local-dev` のスロット・決済・E2E・データ・機能紹介の節から、`setup.md`・`running-tests.md`・`db/seed/local/README.md` と同じ内容を削除し、節を指す。skill にだけあり人にも必要な手順は手順書に移す（DC-331-6）。
+- [x] **T331-01-05** skill `local-dev` のスロット・決済・E2E・データ・機能紹介の節から、`setup.md`・`running-tests.md`・`db/seed/local/README.md` と同じ内容を削除し、節を指す。skill にだけあり人にも必要な手順は手順書に移す（DC-331-6）。
   - 依存：T331-01-04（同じファイル）
   - 範囲：`.claude/skills/local-dev/SKILL.md`、`docs/06-手順書/setup.md`、`running-tests.md`
   - 確認方法：削除する文ごとに、手順書の同じ内容の場所を、作業の記録（このタスクの下）に書く。setup.md を変える前に、issue 担当のセッションに知らせる
+  - 結果：スロットのポートの表、`slot.mjs` のコマンドの一覧、使えないもの、環境変数の注意、Stripe の起動のコマンド、E2E の構成の説明を削除し、setup.md の「スロット」「Stripe で動かす」と running-tests.md の「E2E」を指した。Windows で `node_modules` のある作業ツリーを削除する手順は、人にも必要なので setup.md の「スロット」に移した。seed の商品・注文・固定の ID の説明は `db/seed/local/README.md` にないので、skill に残した
 - [ ] **T331-01-06** skill `new-screen` の共有の部品の表を削除し、`frontend/shared/src/` の export を読んで探す手順に替える（DC-331-7）。
   - 依存：なし
   - 範囲：`.claude/skills/new-screen/SKILL.md`

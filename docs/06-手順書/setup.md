@@ -214,6 +214,7 @@ Windows で `run backend` の node を強制終了すると、Gradle のクラ�
 | 3 | 38080 | 39080 | 33000 | 35173 | `ec_site_3` | `ec-site-images-3` | `ec-site-images-incoming-3` | `s3-` |
 
 - 作業ツリーを `release` せずに消しても、作業ツリーの一覧から消えるので、そのスロットは次の `assign` で空きになる。データベースとバケットは共有の基盤に残るが、`assign` が再作成する。
+- `node_modules` のある作業ツリーを Windows で削除すると、パスが長すぎて失敗する。`git config core.longpaths true` を設定してから `git worktree remove <パス>` で削除する。失敗が続くときは、PowerShell で `\\?\` を付けたパスを指定して削除する。
 - 店舗画面の Cookie はポートで分かれない。そのため、スロットごとに環境変数 `STORE_COOKIE_PREFIX` で接頭辞を変え、同じ localhost の店舗画面が、他のスロットのセッションの Cookie を参照しないようにする（[環境変数](environment.md)の「店舗画面」）。Keycloak のログインの状態は共有される。
 - `env` の出力は、`bootRun` などを手動で実行するときだけ使い、subshell の中で使う（`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)`）。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
 - E2E のポート（8090、9090、4173、3100）、データベース、バケットは、どのスロットとも重ならない。E2E は作業ツリーからも流せる（[テストの実行方法](running-tests.md)の「E2E」）。

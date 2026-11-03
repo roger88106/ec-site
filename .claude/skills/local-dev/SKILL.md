@@ -9,7 +9,7 @@ description: ec-site をローカルで起動・確認する手順。DB・Keyclo
 
 前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う（AGENTS.md「環境」）。
 
-以下の 8080、9080、3000、5173 と DB `ec_site` などの固定の値は、メインの作業ツリー（スロット 0）の値。追加の作業ツリーは、「スロット」の節の表の値を使う。
+以下の 8080、9080、3000、5173 と DB `ec_site` などの固定の値は、メインの作業ツリー（スロット 0）の値。追加の作業ツリーは、[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」の表の値を使う。
 
 ## ミドルウェア（compose）
 
@@ -111,37 +111,12 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 ## スロット（作業ツリーごとの環境）
 
-追加の作業ツリー（`git worktree add` で作ったもの）は、スロット 1〜3 を 1 つ割り当てて、バックエンド・画面・DB・画像のバケットを他の作業ツリーと分ける。メインの作業ツリーはいつもスロット 0（上の固定の値）。見分け方は、`node scripts/dev/slot.mjs show` を実行する。
+追加の作業ツリーは、スロット 1〜3 を 1 つ割り当てて、環境を分ける。割り当て、ポートの表、コマンド、使えないもの、環境変数の扱いは[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」。自分のスロットは `node scripts/dev/slot.mjs show` で見分ける。
 
-- 共有の基盤（compose）はメインの作業ツリーで起動する。追加の作業ツリーで `docker compose up` を実行しない。基盤が動いていないと slot.mjs は終了コード 2 で終わる。
-- slot.mjs は作業ツリーのどこから実行してもよい。
-- 新しい作業ツリーは、始めにルートで `pnpm install --frozen-lockfile` を実行する（`run store`・`run admin` は `node_modules` を直接起動する）。
-- スロットで使えないもの：Stripe の通知の転送（`stripe-cli`）と機能紹介のスクリーンショット（`pnpm capture`）はスロット 0 だけで対応する。Mailpit と Zipkin は全スロットで共有する。
+- 基盤が動いていないと、slot.mjs は終了コード 2 で終わる。追加の作業ツリーで `docker compose up` を実行しない。slot.mjs は作業ツリーのどこから実行してもよい。
+- 自分が動いている作業ツリーは、メインの作業ツリーから `git worktree remove` で削除する。使うツールがセッションのアーカイブで作業ツリーを片付けるときは、それに任せる。作業ツリーのセッションが動いていると、ロックで削除できないので、先にセッションをアーカイブする。
 
-```bash
-node scripts/dev/slot.mjs assign   # 空いている最小のスロットを割り当て、DB と 2 つのバケットを作る（割り当て済みなら番号を示すだけ）
-node scripts/dev/slot.mjs show     # 自分のスロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
-node scripts/dev/slot.mjs env      # スロットの環境変数を export の形で出す（Gradle を直接実行するときなど）
-node scripts/dev/slot.mjs reset    # 割り当てを変えずに DB とバケットを再作成する（バックエンドを止めてから）
-node scripts/dev/slot.mjs release  # ポートで待ち受けるプロセスを停止し、DB とバケットを削除して、割り当てを解除する
-```
-
-- 作業ツリーを削除する前に `release` する。`release` せずに削除しても、残った DB とバケットは次の `assign` が再作成するので、手動で削除しない。
-- 自分が動いている作業ツリーは、メインの作業ツリーから `git worktree remove` で削除する。使うツールがセッションのアーカイブで作業ツリーを片付けるときは、それに任せる。
-- `node_modules` のある作業ツリーを削除すると、Windows ではパスが長すぎて失敗する。`git config core.longpaths true` を設定してから `git worktree remove <パス>` で削除する。失敗が続くときは、PowerShell で `\\?\` を付けたパスを指定して削除する。作業ツリーのセッションが動いていると、ロックで削除できないので、先にセッションをアーカイブする。
-- `env` の出力は、`bootRun` などを手動で実行するときだけ使い、`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)` のように subshell の中で使う。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
-- メインの作業ツリーで `scripts/dev/reset.sh all` を実行すると、全スロットの DB とバケットも削除される。各作業ツリーで `node scripts/dev/slot.mjs reset` を実行して再作成する。
-- マージの直後（共有の Keycloak に realm を再度取り込む前）は、スロットの画面のログインがリダイレクト先のエラー（Invalid redirect uri）で失敗する。メインの作業ツリーで `scripts/dev/reset.sh keycloak` を実行する。
-- 割り当ては `<作業ツリー>/.local/slot` に番号だけで書く。メインの作業ツリーでは assign・release・reset は何もしない。
-
-| スロット | バックエンド | 運用ポート | 店舗画面 | 管理画面 | DB |
-|---|---|---|---|---|---|
-| 0（メイン） | 8080 | 9080 | 3000 | 5173 | `ec_site` |
-| 1 | 18080 | 19080 | 13000 | 15173 | `ec_site_1` |
-| 2 | 28080 | 29080 | 23000 | 25173 | `ec_site_2` |
-| 3 | 38080 | 39080 | 33000 | 35173 | `ec_site_3` |
-
-バックエンドは、`run backend` でスロットの環境変数を付けて起動する（出力先をファイルにして、バックグラウンドで実行する）。
+バックエンドは、`run backend` で起動する（出力先をファイルにして、バックグラウンドで実行する）。
 
 ```bash
 node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun.log 2>&1
@@ -150,12 +125,8 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 
 - 待つ先は自分のスロットの運用ポート。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
 - 店舗画面と管理画面のプレビューは、`.claude/launch.json` の `store-<n>`・`admin-<n>`（`store-1`、`admin-2` など。`<n>` は自分のスロット）を `preview_start` で指定する。`admin`・`store` はスロット 0。プレビューのツールがないときは、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>` をバックグラウンドで実行する。番号が自分のスロットと違うと起動しない。
-- `node scripts/dev/slot.mjs run` は、Ctrl+C など停止のシグナルの 1 回目で子プロセスも含めて停止する。`run backend` は、バックエンドか運用のポートが使われていれば、プロセスの ID と停止のコマンドを表示して終了コード 1 で終了するので、表示されたコマンドで停止してから再実行する。
-- スロットを解除するなら、`node scripts/dev/slot.mjs release` が 4 つのポートのプロセスを停止してから解除する。node を強制終了して残ったバックエンドも停止する。停止できないときは、データを削除せず、停止のコマンドを表示して終了する。
 - 割り当てとデータを残したまま停止するときは、自分のスロットのポートで待ち受けているプロセスだけを停止する。Windows の PowerShell では `Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess`（スロット 1 のバックエンド）。他のスロットのポートのプロセスを停止しない。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
-- データの再作成は、作業ツリーでは `scripts/dev/reset.sh`（`db`）だけが使え、自分のスロットの DB とバケットだけを再作成する（`slot.mjs reset` と同じ）。`keycloak` と `all` は共有のコンテナを再作成するので、メインの作業ツリーで実行する。
-- E2E は、どの作業ツリーからでも実行できる。ロックで 1 つずつ実行され、他が実行中なら所有者を示して終了コード 1 で終わるので、待ってから再実行する。PID が再利用されて終了し続けるときは、示されたロックのファイルを削除してよい。E2E は常にスロット 0 の固定の環境で実行され、E2E のエントリポイント（`e2e/scripts/run.ts`）がスロットの環境変数を削除する。
 
 ## CI の検査の script
 
@@ -173,43 +144,36 @@ CI=true scripts/ci/check-all.sh
 
 ## 決済（mock と Stripe）
 
-- profile `local` は mock（`application-local.yml` の mock フラグ。物流も mock）。注文すると `http://localhost:8080/mock-payment/{ID}` の支払画面に移る（「支払う」「カードを拒否させる」「やめる」）。
-- Stripe の sandbox は `docs/06-手順書/setup.md`「Stripe で動かす」の通り。鍵は `/.local/stripe.env`（なければ利用者に頼む。鍵を会話に貼らせない）。
-
-  ```bash
-  docker compose --profile stripe up -d stripe-cli                   # ルートで。通知を :8080 に転送する
-  ./gradlew bootRun --args='--spring.profiles.active=local,stripe'     # backend/ecsite/ で
-  docker logs ec-site-stripe-cli 2>&1 | grep -- '-->' | tail           # 転送した通知（ログ全体は署名の鍵を含むので出さない）
-  ```
-
-- 期限切れを早く確認するときは、`--args` に `--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する。
+- profile `local` は mock で、注文すると mock の支払画面に移る（[決済の設計](../../../docs/02-設計/payment.md)の「mock」）。
+- Stripe の sandbox は[開発環境の起動](../../../docs/06-手順書/setup.md)の「Stripe で動かす」の通り。鍵は `/.local/stripe.env` にある（なければ利用者に頼む。鍵を会話に貼らせない）。
+- 転送した通知は、鍵の行を出さずに読む：`docker logs ec-site-stripe-cli 2>&1 | grep -- '-->' | tail`（ログ全体は署名の鍵を含むので出さない）。
 - 支払は `payment.payment`（`status`、`page_id`、`authorization_ref`）、注文は `ordering.sales_order`。
 - Stripe の Checkout の画面は描画が遅く、入力が遅れて二重に入ることがある。入力の後に拡大して確認してから支払う。
 
 ## 機能紹介のページのスクリーンショット
 
-`docs/06-手順書/setup.md`「機能紹介のページのスクリーンショット」の通り。DB を再作成してから、`e2e/` で `pnpm capture`。
+[開発環境の起動](../../../docs/06-手順書/setup.md)の「機能紹介のページのスクリーンショット」の通り。
 
 ## ローカルの画面のデータ
 
-local profile の seed（`db/seed/local/`）が、画面を確認するためのデータを作る。注文を作るスクリプトは必要ない。
+local profile の seed（`db/seed/local/`）が、画面を確認するためのデータを作る。注文を作るスクリプトは必要ない。レポート用の注文の中身は `db/seed/local/README.md`「レポート用の注文」。
 
 - 商品 15（公開 13、非公開 1、公開の予約 1）、カテゴリ 13、商品画像 31。在庫切れ（`TEE-001` の L、`PANTS-001-M`、`SENBEI-001`）と残りわずか（`TEE-002-M`、`JUICE-001`、`MUG-001-GY` など）がある。
-- レポート用の注文 2 万件（2024-10-01〜2026-09-30、会員 300 人、出荷済みが多い）と、その支払・出荷・レポートの写し。中身は `db/seed/local/README.md`「レポート用の注文」。
 - 会員 `member@example.com` の注文 4 件：受付、キャンセルの申請中、申請の却下（受付のまま）、キャンセル済み。どれも状態に合う支払（mock の与信）を持ち、受付の注文は管理画面から出荷できる（Stripe の profile では売上確定で失敗する）。承認・却下・運営者のキャンセルは、申請中の注文で管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）から試す。
 - ID は固定（`00000000-0000-0000-0000-00000000` + 4 桁）：カテゴリ 1xxx、商品 2xxx、バリアント 3xxx、在庫 4xxx、会員 6001、注文 61xx、支払 64xx、アセット 7xxx、商品画像 8xxx。レポート用は `00000000-0000-0000-<種類 4 桁>-<番号 12 桁>`（会員 0001、注文 0010、支払 0012、出荷 0013）。
-- 画面で変えたデータは、seed を再適用しても戻らない。最初の状態に戻すときは、バックエンドを停止して `scripts/dev/reset.sh` で DB を再作成する（Keycloak は `keycloak`、全ては `all`。[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」）。
+- 画面で変えたデータを最初の状態に戻すときは、バックエンドを停止して `scripts/dev/reset.sh` を実行する（[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」）。
 
 ## E2E（`e2e/`）
 
-`docs/06-手順書/running-tests.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を再作成し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）も毎回起動する（起動済みのサーバーは使い回さず、ポートが使われていれば停止する）。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
+手順と構成は[テストの実行方法](../../../docs/06-手順書/running-tests.md)の「E2E」。ルートで `scripts/dev/e2e.sh` を実行する。
 
 ```bash
-scripts/dev/e2e.sh                                   # ルートで。テストごとの ok / x と失敗の要点だけを出す。前提のコンテナが止まっていれば、名前を出して終了コード 2
+scripts/dev/e2e.sh                                   # テストごとの ok / x と失敗の要点だけを出す。前提のコンテナが止まっていれば、名前を出して終了コード 2
 scripts/dev/e2e.sh tests/payment.spec.ts -g AC-148   # 引数は Playwright にそのまま渡す
 ```
 
-- 準備でポートの EACCES が出たら、Windows の予約範囲（WinNAT）に入っている。[開発環境の起動](../../../docs/06-手順書/setup.md)の「ポートが使えないとき」の手順で外す。
+- 他の作業ツリーが実行中なら、所有者を示して終了コード 1 で終わる。待ってから再実行する（ロックは[テストの実行方法](../../../docs/06-手順書/running-tests.md)の「E2E」）。
+- 準備でポートの EACCES が出たら、[開発環境の起動](../../../docs/06-手順書/setup.md)の「ポートが使えないとき」の手順で外す。
 
 ## 壊しての確認（break-check）
 

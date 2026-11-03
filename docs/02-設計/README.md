@@ -11,4 +11,4 @@
 | [common.md](common.md) | 共通コード・ログ・可観測性 |
 | [role-permissions.md](role-permissions.md) | ロールと権限の対応表 |
 | [template.md](template.md) | モジュールの設計の雛形 |
-| [<モジュール>.md](.) | モジュールごとの設計（境界、処理の流れ、API の一覧、パッケージの構成） |
+| [<モジュール>.md](.) | モジュールごとの設計（境界、処理の流れ、API の案内、パッケージの構成） |

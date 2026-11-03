@@ -26,7 +26,7 @@
 
 ## 業務の流れ
 
-<Mermaid の flowchart で流れを描く。ノードは 15 個程度まで。図の下に、流れを文でも説明する。>
+<Mermaid の flowchart で流れを描く。ノードは 15 個程度まで。図の下には、図にない補足だけを文で書く。>
 
 ```mermaid
 flowchart TD

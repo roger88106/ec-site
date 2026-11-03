@@ -10,7 +10,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。他のモジュールはレポートに依存しない。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。他のモジュールはレポートに依存しない。
 
 ### 他のモジュールへの公開
 
@@ -73,18 +73,11 @@ sequenceDiagram
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[管理 API](../../api/openapi/admin.yaml)）が正本である。レポートの API は管理 API だけにある。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 管理 | 売上の推移 | `GET /reports/sales-trend` | `getSalesTrend` |
-| 管理 | バリアントの売れ行き | `GET /reports/variant-sales` | `getVariantSales` |
-| 管理 | 地域・年齢層・性別 | `GET /reports/customer-breakdown` | `getCustomerBreakdown` |
-| 管理 | レポートの設定 | `GET /reports/settings` | `getReportSettings` |
+レポートの API は管理 API だけにある。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 reporting/

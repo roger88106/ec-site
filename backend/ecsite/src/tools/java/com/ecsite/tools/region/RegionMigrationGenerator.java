@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 /**
  * 地域の最初のデータを入れる Flyway のマイグレーションを、郵便番号のデータから作る
- * （docs/03-機能仕様/region.md「最初のデータ」）。<br />
+ * （docs/02-設計/region.md「最初のデータの作り方」）。<br />
  * Gradle のタスク {@code generateRegionMigration} から呼ぶ。本番の jar には入らない。<br />
  * 先頭のコメントは、適用済みのマイグレーションと同じ文字にする。適用済みのマイグレーションは変えられない
  * （Flyway のチェックサムが変わるため）。そのため、コメントが指す設計書のパスは、文書を移す前の

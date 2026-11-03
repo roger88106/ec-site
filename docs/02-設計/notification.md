@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。通知は、注文のイベント「注文の出荷」だけを受ける（注文の API は呼ばない）。出荷については、公開 API の「配送業者の表示名のキーを返す」操作だけを使う。配送業者の表示名は出荷モジュールが決めるので、文言のキーを文字列で組み立てずに、出荷の公開 API から得る。この操作を呼ぶ port を application に置き、`infrastructure/directory/` の実装が出荷の公開 API を呼ぶ。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。通知は、注文のイベント「注文の出荷」だけを受ける（注文の API は呼ばない）。出荷については、公開 API の「配送業者の表示名のキーを返す」操作だけを使う。配送業者の表示名は出荷モジュールが決めるので、文言のキーを文字列で組み立てずに、出荷の公開 API から得る。この操作を呼ぶ port を application に置き、`infrastructure/directory/` の実装が出荷の公開 API を呼ぶ。
 
 ### 他のモジュールへの公開
 
@@ -21,8 +21,15 @@
 | メールの送信 | Spring Boot のメール（`spring-boot-starter-mail`）で SMTP に送る。ローカル・テスト・E2E は Mailpit | `spring.mail.*`、`ecsite.notification` |
 
 - メールを送る port の実装として置く。SMTP の型とエラーを `infrastructure` の外に出さない。
-- ローカル・E2E は compose の Mailpit に送る。SMTP はホストの `localhost:2525`（ポートは `MAILPIT_SMTP_PORT` で変えられる）、届いたメールは `http://localhost:8025` で確認する。統合テストは Testcontainers の Mailpit に送る。
-- タイムアウトと失敗の扱いは、[通知モジュール](../03-機能仕様/notification.md)の「業務規則」に書く。
+- ローカル・E2E は compose の Mailpit に送る（SMTP のポートと、届いたメールを見る URL は[開発環境の起動](../06-手順書/setup.md)の「起動」）。統合テストは Testcontainers の Mailpit に送る。
+- 失敗の扱いは、[通知モジュール](../03-機能仕様/notification.md)の「1 通だけ送る」に書く。
+
+| 項目 | 内容 |
+|------|------|
+| port | 「メールを送る」の 1 つ（宛先、件名、本文）。送れなければ実行時例外を投げる |
+| タイムアウト | 接続・読み・書きをそれぞれ 10 秒 ※1 |
+
+※1：タイムアウトがないと、応答しない SMTP サーバーでメールのリスナーが止まったままになる。
 
 ## 処理の流れ
 
@@ -50,8 +57,6 @@ sequenceDiagram
 なし。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 notification/

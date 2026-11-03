@@ -2,353 +2,347 @@
 
 全ての受け入れ基準（AC）の、今の状態と今の内容の一覧。この一覧が AC の正本で、各モジュールの機能仕様（③）の「今有効な AC」の表は、この一覧から作る。完了した spec は変更の単位としてアーカイブに残し、AC の今の内容はこの一覧に書く。
 
-全ての列を手動で書く。
+進行中の spec の AC は、`node scripts/ci/ac-check.mjs --write` が AC・状態・元の spec・今の内容を転記し、変えた spec を「—」にする。手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容である。転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは、手動で修正する（手順は[起票と記録の操作](../05-開発規則/issues.md)の「AC 一覧の操作」）。
 
 | 列 | 内容 |
 |----|------|
 | AC | AC の番号 |
 | モジュール | AC を持つモジュール。③ の文書のファイル名から `.md` を除いた名前（`order` など）を 1 つ書く。どのモジュールにも属さない AC（構成の設定・API の契約の全体・イベントの再発行・運営者のアカウントと権限など）は `common`（共通）と書く。共通の AC は、今の内容に、今の規則がある共通の文書（② の共通の文書・規則の文書・手順書）を根拠として添える。廃止の AC は空でよい |
 | 状態 | 有効（定義のとおり）、変更（後の spec か設計の文書で内容が変わった）、廃止（今は成り立たない） |
-| 元の spec | AC を定義した spec |
-| 変えた spec | 変更・廃止にした spec。有効なら「—」 |
+| 元の spec | AC を定義した spec の番号（`001`） |
+| 変えた spec | 変更・廃止した spec の番号。2 つ以上なら読点で区切る（`003、016`）。有効なら「—」 |
 | 今の内容 | 今の規則の全文。有効の AC は定義の文、変更の AC は今の規則と根拠の文書。根拠は、文書の名前のリンクの直後に「の「<見出し>」」を続ける形で書く |
 
+- モジュールに迷う AC は、表示するデータを持つモジュールにする。支払や出荷の状態を画面に表示するだけの AC は、`payment`・`shipping` にする。
 - AC を追加する・変更する手順は、[起票と記録の操作](../05-開発規則/issues.md)の「AC 一覧の操作」。
 - AC とテストの対応は `node scripts/ci/ac-check.mjs --tests` で表示する。
-- CI の検査 `ac-check`（[CI の検査](../06-手順書/ci.md)）がこの一覧を読む。次のときに失敗する。
-  - 進行中の spec の AC が、一覧にない。
-  - 状態が有効・変更・廃止のどれでもない。
-  - 有効・変更の AC のモジュールが 1 つでない、または ③ にないモジュールの名前である。
-  - 今の内容が空である。
-  - 生成のマーカーのある ③ の「今有効な AC」の表が、この一覧から作った表と異なる。
-  - 廃止の AC をテストが参照している。
-  - 有効・変更の AC にテストも除外もない（CI でだけ失敗し、手元は警告）。
+- CI の検査 `ac-check`（[CI の検査](../06-手順書/ci.md)）がこの一覧を読む。検査の内容は `scripts/ci/ac-check.mjs` の冒頭のコメント。
 
 <!-- generated:ac-list -->
 | AC | モジュール | 状態 | 元の spec | 変えた spec | 今の内容 |
 |----|------------|------|-----------|-------------|----------|
-| AC-1 | tax | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 税区分を名称で登録できる。名称は重複できない。 |
-| AC-2 | tax | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 税率は、率（%）、適用開始日時、適用終了日時を持つ。開始が空白なら「過去全て」、終了が空白なら「無期限」を意味する。終了日時ちょうどは含まない。 |
-| AC-3 | tax | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 税区分の税率は、一覧としてまとめて登録・更新する。次を全て満たさない一覧は、全体が拒否される：期間が重複しない（空白は無限として扱う）、期間の間に途切れがない、最後の税率の終了日時は空白。 |
-| AC-4 | tax | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 期間限定の税率に切り替え、元に戻せる（日時は全て日本時間。BR-3）：Given：「標準」に 10%（開始・終了とも空白）がある。現在は 2026-10-08、When：一覧を「10%（〜2027-04-01 00:00）」「8%（2027-04-01 00:00〜2028-04-01 00:00）」「10%（2028-04-01 00:00〜）」に更新する、Then：2027-03-31 23:59 は 10%、2027-04-01 00:00 から 2028-03-31 23:59 は 8%、2028-04-01 00:00 以降は 10% で計算される。 |
-| AC-5 | tax | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 過去の根拠を変えない：現在より前の日時を、開始・終了として新たに設定できない（空白は可）、開始済みの税率（開始が空白のものを含む）は、率と開始日時を変更できず、削除もできない。終了日時は、現在より後の日時に変更できる、終了済みの税率は変更できない。未開始の税率は変更・削除できる。 |
-| AC-6 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 現時点で有効な税率を持たない税区分は、商品に割り当てられない。 |
-| AC-7 | tax | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 税率は 0% 以上 100% 未満。 |
-| AC-8 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | カテゴリを、名称と親カテゴリ（任意）で登録できる。親がなければ最上位になる。 |
-| AC-9 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 階層は最大 3 階層。4 階層目の登録は拒否される。 |
-| AC-10 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 同じ親の下で名称は重複できない。 |
-| AC-11 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 名称と、兄弟カテゴリ間の並び順を変更できる。 |
-| AC-12 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 子カテゴリを持つ、または商品が所属しているカテゴリは削除できない。 |
-| AC-13 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品品番、商品名、説明、税区分、税抜価格、所属カテゴリ（0 個以上、複数可）、バリアント軸（0〜3 個）を指定して登録できる。 |
-| AC-14 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品品番は全商品で一意。 |
-| AC-15 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品品番は半角の英大文字・数字とハイフンで 1〜32 文字。ハイフンは英数字の間にだけ置ける（先頭・末尾・連続は不可。例：`ABC-001` は可、`-ABC`、`ABC--1`、`abc-001` は不可）。登録後は画面・API から変更できない。 |
-| AC-16 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 税区分は必須。 |
-| AC-17 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 登録直後の商品は非公開。 |
-| AC-18 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品名、説明、税区分、税抜価格、所属カテゴリは変更できる。 |
-| AC-19 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 税区分を変更すると、税込価格が変更後の税率で計算される。 |
-| AC-20 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | バリアント品番と軸の値（例：色＝白、サイズ＝M）を指定してバリアントを登録できる。 |
-| AC-21 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | バリアント品番は全バリアントで一意。形式と変更不可の扱いは AC-15 と同じ。 |
-| AC-22 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品に軸があれば、バリアントは全ての軸の値を持つ。 |
-| AC-23 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 同じ商品の中で、軸の値の組み合わせは重複できない。 |
-| AC-24 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 軸を持たない商品のバリアントは 1 つだけ。 |
-| AC-25 | catalog | 変更 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | [019](../08-spec/archive/mvp/019-mvp-completion/spec.md) | 税抜価格は 1 円以上 9,999,999 円以下の整数。根拠は[商品カタログモジュール](catalog.md)の「商品（集約）」。 |
-| AC-26 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 価格の変更は C 側に反映される。 |
-| AC-27 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | バリアントの表示順を変更できる。 |
-| AC-28 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | バリアントを販売停止・解除できる。販売停止中のバリアントも C 側の選択肢には表示するが、選択できない（在庫切れと同様に、選べない状態として示す）。 |
-| AC-29 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 公開にすると、C 側の一覧・検索・詳細に表示される。 |
-| AC-30 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 非公開にすると、C 側に表示されない。 |
-| AC-31 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | バリアントのない商品は公開できない。 |
-| AC-32 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 状態は「非公開」「公開」「販売終了」。販売終了の商品は C 側に表示されず、公開に戻せない。 |
-| AC-33 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | C 側に一度も表示されていない商品は削除できる。表示されたことのある商品は削除できず、販売終了にする。公開の予約をしただけで、開始日時の前に取り消した商品は、表示されていないものとして扱う。 |
-| AC-34 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 公開開始日時と公開終了日時（いずれも任意）を設定できる。 |
-| AC-35 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 公開状態でも、開始日時より前と終了日時以降は C 側に表示されない。運営者の操作なしに、その時刻で切り替わる。 |
-| AC-36 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 終了日時は開始日時より後。 |
-| AC-37 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品に画像を複数登録し、並び順を変えられる。先頭が代表画像。 |
-| AC-38 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | バリアントに画像を 1 枚指定できる（任意）。なければ商品の代表画像を使う。 |
-| AC-39 | media | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 形式は JPEG、PNG、WebP（AC-67 の形式も受け付ける）。1 ファイル 10MB まで。 |
-| AC-40 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 1 商品あたり最大 20 枚。 |
-| AC-41 | inventory | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 新しいバリアントの在庫数は 0。 |
-| AC-42 | inventory | 変更 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | [019](../08-spec/archive/mvp/019-mvp-completion/spec.md) | 在庫数は、増減量と理由で調整する。直接上書きする操作はない。運営者の調整は、1 回の増減量が ±1,000,000 以内で、調整後の在庫数が 1,000,000 以下。根拠は[在庫モジュール](inventory.md)の「在庫と在庫調整」。 |
-| AC-43 | inventory | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 調整後に負になる調整は拒否される。 |
-| AC-44 | inventory | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 同じバリアントへの調整が同時に実行されても、全て反映される：Given：在庫数 10、When：+5 と +3 が同時に実行される、Then：在庫数は 18。 |
-| AC-45 | inventory | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 調整履歴（日時、増減量、理由、調整後の在庫数）を新しい順に参照できる。 |
-| AC-46 | inventory | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 理由は「入荷」「棚卸差異」「破損・紛失」「その他」。「その他」はメモ必須。 |
-| AC-47 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 状態に関係なく、全ての商品を一覧できる。 |
-| AC-48 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品品番・バリアント品番の前方一致、商品名の部分一致、状態、カテゴリで絞り込める。 |
-| AC-49 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品品番、商品名、状態、バリアント数、在庫数の合計を表示する。 |
-| AC-50 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | ページ単位で取得できる。 |
-| AC-51 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | C 側に表示される商品（BR-2）だけが含まれる。 |
-| AC-52 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | カテゴリで絞り込める。子孫カテゴリの商品も含む。 |
-| AC-53 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 税込価格の範囲で絞り込める。 |
-| AC-54 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 新着順（既定）、価格の安い順、高い順で並べ替えられる。新着順の基準は、最初に C 側へ表示された日時（予約公開なら公開開始日時）。再公開しても順位は上がらない。 |
-| AC-55 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品名、代表画像、価格（BR-4）を表示する。 |
-| AC-56 | storefront | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 全バリアントが在庫切れの商品も表示し、「在庫なし」と示す。 |
-| AC-57 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | ページ単位で取得できる。 |
-| AC-58 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品名または説明にキーワードを含む商品が表示される。 |
-| AC-59 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 対象は C 側に表示される商品（BR-2）だけ。 |
-| AC-60 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 精度（表記ゆれ、類義語、関連度順）は問わない。 |
-| AC-61 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | ページ単位で取得できる。 |
-| AC-62 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 商品名、説明、画像、価格（BR-4）、バリアント軸と選択肢を表示する。選択肢には、在庫切れや販売停止で選べない値も含め、選べない状態として示す。 |
-| AC-63 | storefront | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | バリアントを選ぶと、その在庫状況を表示する。 |
-| AC-64 | inventory | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 在庫状況は「在庫あり」「在庫なし」のみ。数量は表示しない。 |
-| AC-65 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | C 側に表示されない商品は、存在しない商品と同じ結果になる。 |
-| AC-66 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | URL は品番が変わっても変わらない。 |
-| AC-67 | media | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | BMP、HEIC / HEIF など一般的な画像形式も受け付ける。 |
-| AC-68 | media | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 全ての画像を WebP に変換して配信する。 |
-| AC-69 | media | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | 変換時に位置情報などのメタデータを除去する。 |
-| AC-70 | media | 変更 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | [017](../08-spec/archive/mvp/017-stability/spec.md) | 変換に失敗した画像は登録されず、運営者にその旨が表示される。変換のサービスがファイルを読めないときは、画像を変換できないエラー（400）を返す。変換のサービスに接続できない、時間内に応答がない、変換のサービスの側の故障のときは 502 を返す。根拠は[メディアモジュール](media.md)の「アップロードの流れ」、[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
-| AC-71 | catalog | 有効 | [001](../08-spec/archive/mvp/001-catalog-and-inventory/spec.md) | — | C 側に一度も表示されていない商品のバリアントは削除できる。表示されたことのある商品のバリアントは削除できない。 |
-| AC-72 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | C 側に表示される商品（BR-2）の、選べるバリアント（販売停止でなく、在庫あり）を、数量を指定してカートに入れられる。選べないバリアントは入れられない。 |
-| AC-73 | cart | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md) | ログインしていない間は、カートを持っていなければ最初に商品を入れたときに作り、そのブラウザーの Cookie のカート ID でだけ使う。ログインしている間は、会員ごとに 1 つの会員のカートを使う。根拠は[カートモジュール](cart.md)の「会員のカート」、[店舗画面の構成](../02-設計/apps/store.md)の「使うカートの選び方」。 |
-| AC-74 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | カートにあるバリアントをもう一度入れると、数量を合算する。 |
-| AC-75 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 1 品目の数量は 1〜10。1 つのカートに入れられるのは 30 品目まで。超える場合は拒否される。 |
-| AC-76 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 入れた後の数量が、その時点の販売可能数（BR-11）を超える場合は拒否される。販売可能数そのものは示さない（AC-64）。カートに入れても在庫は引き当てない。 |
-| AC-77 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 品目ごとに商品名、軸の値、画像、単価（BR-4）、数量、小計を表示し、あわせて商品の合計、送料（BR-6）、総額、税率ごとの消費税額（BR-8）を表示する。 |
-| AC-78 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 品目の数量を変更（AC-75、76 の範囲で）・削除できる。 |
-| AC-79 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 単価は常に現在の価格で表示する。カートに入れた時点の価格は保持しない。 |
-| AC-80 | cart | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。理由は次のいずれか：商品が C 側に表示されなくなった（BR-2）、バリアントが販売停止になった、販売可能数がない、またはカートの数量より少ない。 |
-| AC-81 | cart | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [017](../08-spec/archive/mvp/017-stability/spec.md) | 最後に変更してから 30 日経過したカートは、空のカートとして扱い、期限が切れたカートは片付けのジョブが削除する。根拠は[カートモジュール](cart.md)の「期限」。 |
-| AC-82 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる。1 品目でも引き当てられなければ、どれも引き当てず、引き当てられなかった品目を示す。 |
-| AC-83 | inventory | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない：Given：在庫数 1 のバリアントを、2 人がそれぞれ 1 個ずつカートに入れている、When：2 人が同時に注文手続きに進む、Then：1 人だけ引き当てられ、もう 1 人には在庫不足と示す。 |
-| AC-84 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | 引当は、再び始める、カート変更のイベントを受ける、15 分が経過する、のいずれかで解ける。注文の成立では減算に置き換わる。根拠は[注文モジュール](order.md)の「注文手続き」、[注文モジュール](order.md)の「注文の成立」。 |
-| AC-85 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md)、[016](../08-spec/archive/mvp/016-master-data/spec.md) | 注文手続きで、カートの内容と送料、総額、税率ごとの消費税額を確認し、お届け先を入力して注文できる。根拠は[注文モジュール](order.md)の「注文（集約）」。 |
-| AC-86 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [016](../08-spec/archive/mvp/016-master-data/spec.md) | お届け先の入力の形式：郵便番号は数字 7 桁（ハイフンは任意）、電話番号は数字 10〜11 桁（ハイフンは任意）、氏名と住所は空白不可（長さの上限は OpenAPI）。都道府県と市区町村はコードだけを受け付け、地域の API で確認する（誤りは 400）。根拠は[注文モジュール](order.md)の「注文の成立」。 |
-| AC-87 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | 全品目の在庫数を注文数だけ減らし、引当を解く。1 品目でも足りなければ、どの在庫も減らさず拒否する。注文の保存と支払の作成は、減算の後。根拠は[注文モジュール](order.md)の「注文の成立」。 |
-| AC-88 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 空のカート、または購入できない品目を含むカートは注文できない。 |
-| AC-89 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 確認した総額と、注文時点で計算した総額が異なる場合は、注文を拒否し、変わったことを示す。 |
-| AC-90 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | 注文の成立で注文番号を採番する。注文した品目をカートから除くのは、与信の成功で受付になるとき。根拠は[注文モジュール](order.md)の「注文の成立」、[注文モジュール](order.md)の「状態の遷移」。 |
-| AC-91 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 同じ注文の送信が繰り返されても、注文は 1 件だけ作られる。 |
-| AC-92 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 注文時点の商品品番とバリアント品番、商品名と軸の値、税抜単価と税率と税込単価を、注文に写しとして残す。後で商品や税率が変わっても、注文の内容と金額は変わらない。 |
-| AC-93 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | 注文の画面に、注文番号、注文日時、明細、金額の内訳（BR-7、8）、お届け先、状態を表示する。注文すると決済サービスの支払画面に移り、支払画面から戻ったときに与信の結果をまだ受信していなければ、「確認中」と示す。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「支払画面への移動と戻り」。 |
-| AC-94 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md) | 注文の参照は注文した会員だけができ、他の会員は 404。根拠は[注文モジュール](order.md)の「注文（集約）」。 |
-| AC-95 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md) | 会員が受付の注文のキャンセルを申請できる（理由は任意、500 文字まで）。申請で「キャンセル申請中」になり、在庫は戻らない。根拠は[注文モジュール](order.md)の「注文（集約）」、[注文モジュール](order.md)の「状態の遷移」。 |
-| AC-96 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | キャンセルの申請は、1 つの注文につき 1 回だけ。申請中の注文にもう一度申請しても、成功し、何も変わらない。却下された注文は、もう一度申請できない。 |
-| AC-97 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 全ての注文を、注文日時の新しい順に一覧できる。 |
-| AC-98 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 注文番号の前方一致、状態、注文日の範囲で絞り込める。 |
-| AC-99 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | ページ単位で取得できる。 |
-| AC-100 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 注文番号と注文日時と状態、明細と金額の内訳、メールアドレスとお届け先、キャンセルの申請の日時と理由と結果、運営者の判断によるキャンセルの理由を表示する。 |
-| AC-101 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md)、[009](../08-spec/archive/mvp/009-shipping/spec.md) | キャンセル申請中の注文を承認するとキャンセルになる。同じトランザクションで在庫を戻し、決済の API で支払を取り消させる。根拠は[注文モジュール](order.md)の「注文（集約）」、[注文モジュール](order.md)の「状態の遷移」。 |
-| AC-102 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 申請を却下すると「受付」に戻る。 |
-| AC-103 | order | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md)、[009](../08-spec/archive/mvp/009-shipping/spec.md) | 運営者は受付かキャンセル申請中の注文を、理由（必須、500 文字まで）付きでキャンセルできる。出荷済みは配送状態が返送のときだけで、支払待ちはキャンセルできない。[注文モジュール](order.md)の「状態の遷移」 |
-| AC-104 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | キャンセルと在庫の戻しは、両方とも実行されるか、どちらも実行されない。 |
-| AC-105 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | キャンセル済みの注文へのキャンセル・承認は、成功し、在庫は戻さない。キャンセル済みの注文の申請は却下できない。 |
-| AC-106 | order | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | キャンセル済みの注文も、一覧・詳細に表示される。 |
-| AC-107 | inventory | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | 注文による在庫数の減算と、キャンセルによる戻しは、在庫の調整履歴（AC-45）に、理由「注文」「注文のキャンセル」と注文番号とともに残る。運営者の在庫調整では、これらの理由を選べない。 |
-| AC-108 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 店舗から会員登録の画面に遷移し、メールアドレス、パスワード、氏名で登録できる。会員登録とログインの画面は IdP が表示する。 |
-| AC-109 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 登録済みのメールアドレスでは登録できない。 |
-| AC-110 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | パスワードの条件（長さなど）を満たさない登録は拒否される。 |
-| AC-111 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 登録すると確認メールが届く。メールのリンクでメールアドレスを確認するまでは、ログインできない。 |
-| AC-112 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | メールアドレスの確認が済むと、ログインした状態で店舗（会員登録を始めた画面）に戻る。会員登録を始めたブラウザーとは別のブラウザーで確認メールのリンクを開いたときは、IdP の画面から店舗に戻り、ログインする。 |
-| AC-113 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。ログインすると、ログインの前に見ていた画面に戻る。 |
-| AC-114 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインしている間、店舗の画面に会員の氏名とログアウトの操作を表示する。 |
-| AC-115 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログアウトすると、店舗でも IdP でもログインしていない状態になる。同じブラウザーで、パスワードを入れずに再ログインすることはできない。 |
-| AC-116 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | パスワードを続けて間違えると、そのアカウントは一定時間ログインできなくなる。 |
-| AC-117 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインの状態は、最後に操作してから一定時間続く。過ぎたら、再ログインする必要がある。 |
-| AC-118 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインの画面からメールアドレスを入力して、パスワードの再設定を申し込める。届いたメールのリンクから、新しいパスワードを設定できる。登録されていないメールアドレスでも同じ表示にし、会員かどうかを推測させない。 |
-| AC-119 | member | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインしている会員は、店舗から IdP のアカウントの画面に遷移し、パスワードと氏名を変更できる。 |
-| AC-120 | cart | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインしていなくても、カートを使える。 |
-| AC-121 | cart | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインしている間は、会員のカートを使う。会員のカートは会員ごとに 1 つで、どの端末やブラウザーからログインしても同じカートになる（ログインしていないときは AC-73 のとおり）。 |
-| AC-122 | cart | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインしたとき、そのブラウザーのカート（ログインせずに使っていたもの）に品目があれば、会員のカートに移す。同じバリアントは数量を合算する。移した後、ブラウザーのカートは空になる。 |
-| AC-123 | cart | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 移した結果が上限（AC-75）を超える場合は、数量を 10 に切り詰め、30 品目を超える分は移さない。切り詰めたことと移せなかった品目を表示する。販売可能数（AC-76）は移す時点では確認せず、カートの表示（AC-80）に反映する。 |
-| AC-124 | cart | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログアウトすると、そのブラウザーのカートは空に見える。会員のカートは残り、次にログインしたときに使える。 |
-| AC-125 | order | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 注文手続きに進むには、ログインが必要。 |
-| AC-126 | order | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 注文手続きは、それを始めた会員だけが操作・参照できる。他の会員やログインしていない人には「見つからない」と示す。 |
-| AC-127 | order | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手続きでは入力しない。注文には、注文時点のメールアドレスの写しを残す。 |
-| AC-128 | order | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 注文は、注文した会員に結び付く。 |
-| AC-129 | order | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。ページ単位で取得できる。 |
-| AC-130 | order | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 一覧から注文の詳細（AC-93 と同じ内容）に遷移し、キャンセルを申請できる（AC-95、96）。 |
-| AC-131 | order | 変更 | [003](../08-spec/archive/mvp/003-auth/spec.md) | [015](../08-spec/archive/mvp/015-security/spec.md) | 注文の参照とキャンセルの申請は注文した会員だけができる。他の会員は 404、ログインしていなければ 401。根拠は[注文モジュール](order.md)の「注文（集約）」。 |
-| AC-132 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 管理画面は、ログインしなければ何も表示しない。ログインしていなければ、ログインの画面に遷移する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-133 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 運営者のアカウントは、会員のアカウントとは別にある。管理画面には会員のアカウントでログインできず、店舗には運営者のアカウントでログインできない。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-134 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 運営者は自分で登録できない。運営者のアカウントは、IdP の管理の画面で作る。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-135 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 管理画面に運営者の氏名とログアウトの操作を表示する。ログアウトと、パスワードを続けて間違えたときの扱いは、会員と同じ（AC-115、116）。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-136 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 管理 API の各操作は、運営者がその操作の権限を持つときだけ受け付ける。根拠は[ロールと権限の対応表](../02-設計/role-permissions.md)の「ロールと権限」。 |
-| AC-137 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 認証のないリクエスト（なし、無効、期限切れ）は、管理 API と、店舗 API の会員向けの操作で拒否され、「ログインが必要」と区別できるエラーになる。権限が足りないリクエストは「権限がない」と区別できるエラーになる。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」と、[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
-| AC-138 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 会員のアカウントで得た認証では、管理 API を使えない。運営者のアカウントで得た認証では、店舗 API の会員向けの操作を使えない。どちらも「ログインが必要」と同じ扱いにする。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-139 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 運営者の権限は、IdP で職務（BR-12）を割り当てて与える。根拠は[ロールと権限の対応表](../02-設計/role-permissions.md)の「ロールと権限」。 |
-| AC-140 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 職務の付け外しと、アカウントの無効化は、一定時間のうちに管理 API に反映される。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-141 | common | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | 管理画面で権限のない操作をすると、「権限がない」と表示する。根拠は[ロールと権限の対応表](../02-設計/role-permissions.md)の「ロールと権限」。 |
-| AC-142 | order | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | キャンセルの申請の承認・却下と、運営者の判断によるキャンセルに、操作した運営者の氏名の写しを残し、注文の詳細に表示する（在庫の調整履歴は、ここでは含めない）。 |
-| AC-143 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 注文手続きで注文すると、注文は「支払待ち」で作られ、決済サービスの支払画面に移る。 |
-| AC-144 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 「支払待ち」の注文を作ると、全品目の在庫数を減らす。カートはこの時点では変えない。 |
-| AC-145 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | カード番号は決済サービスの画面で入力する。EC の画面と API は、カード番号を受け取らない。 |
-| AC-146 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 決済サービスで総額の与信が成功すると、注文は「受付」になる。売上は確定しない。 |
-| AC-147 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 与信が成功すると、注文した品目（バリアント）をカートから除く。注文の後にカートに追加した品目は残る。 |
-| AC-148 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。拒否では注文の状態は変わらない。 |
-| AC-149 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 |
-| AC-150 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中」と表示する。画面を再度開くと、その時点の状態を表示する。 |
-| AC-151 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 支払の期限の前なら、「支払待ち」の注文から、支払画面に再び遷移して支払える。 |
-| AC-152 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 |
-| AC-153 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 支払の期限までに与信が成功しなかった注文は、キャンセルになり、明細の数量だけ在庫数を戻す。 |
-| AC-154 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 期限切れのキャンセルは、期限から一定時間のうちに行われる。 |
-| AC-155 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 期限切れのキャンセルの理由は「支払期限切れ」とし、注文の詳細に表示する。 |
-| AC-156 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 期限の直前に与信が成功した注文は、期限切れでキャンセルしない。 |
-| AC-157 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 期限切れでキャンセルした後に与信の成功を受信したら、その与信を取り消す。注文はキャンセルのまま。 |
-| AC-158 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 |
-| AC-159 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 店舗の注文一覧と注文詳細に、「支払待ち」の注文の支払の期限を表示する。注文詳細には、支払画面に遷移する操作を表示する。 |
-| AC-160 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 |
-| AC-161 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 |
-| AC-162 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 与信済みの注文がキャンセルになると、与信を取り消す。キャンセルの理由によらない。 |
-| AC-163 | order | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | キャンセルは、与信の取消の結果を待たずに成立する。 |
-| AC-164 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 与信の取消に失敗したら、取り消せるまで再試行する。 |
-| AC-165 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 与信の取消が完了するまで、管理画面の注文詳細に「与信の取消待ち」と表示する。 |
-| AC-166 | payment | 有効 | [007](../08-spec/archive/mvp/007-payment/spec.md) | — | 同じ与信の取消が重ねて行われても、成功し、何も変わらない。 |
-| AC-167 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 運営者は、「受付」の注文詳細で、配送業者と送り状番号を入力して出荷を登録できる。 |
-| AC-168 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 出荷を登録すると、総額で売上を確定し、注文は「出荷済み」になる。 |
-| AC-169 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 売上確定に失敗したら、出荷は登録されず、注文は「受付」のまま。管理画面に失敗の理由を表示する。 |
-| AC-170 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 「受付」以外の注文は出荷を登録できない。「キャンセル申請中」の注文は、申請を承認か却下してから出荷する。 |
-| AC-171 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 「出荷済み」の注文は、消費者はキャンセルを申請できない。運営者は、配送状態が「返送」のときだけキャンセルできる。 |
-| AC-172 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 同じ注文に出荷を重複して登録しても、売上確定は 1 回だけ実行する。 |
-| AC-173 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 配送業者は決まった一覧から選ぶ。送り状番号は必須。 |
-| AC-174 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 配送状態（BR-19）は、物流サービスからの通知で遷移する。 |
-| AC-175 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 同じ通知が重複して届いても、1 回だけ反映する。 |
-| AC-176 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 通知の順序が入れ替わっても、配送状態は戻らない（例：「配達完了」の後に「配送中」が届いても「配達完了」のまま）。 |
-| AC-177 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 途中の状態の通知が届かなくても、後の状態に遷移する（例：「出荷済み」から「配達完了」）。 |
-| AC-178 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 署名を確認できない通知と、登録済みのどの出荷にも一致しない通知は、処理しない。 |
-| AC-179 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 店舗の注文詳細に、配送状態、配送業者、送り状番号を表示する。出荷後は、注文状態の代わりに配送状態を表示する。理由：注文状態と配送状態の「出荷済み」が並ばないようにするため。 |
-| AC-180 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 店舗の注文一覧で、出荷後の注文は、注文状態の代わりに配送状態を表示する。 |
-| AC-181 | shipping | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 管理画面の注文詳細に、配送状態、配送業者、送り状番号、出荷日時を表示する。 |
-| AC-182 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 管理画面の注文一覧で、状態「出荷済み」で絞り込める。「受付」で絞り込むと、出荷待ちの注文が表示される。 |
-| AC-183 | notification | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 出荷を登録すると、注文のメールアドレスに、注文番号、配送業者、送り状番号を書いた出荷通知メールを送る。 |
-| AC-184 | notification | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 出荷登録は、メール送信の結果を待たない。送信に失敗したら、送れるまで再試行する。理由：メールサーバーが応答しないときも、出荷を止めないため。 |
-| AC-185 | notification | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 再試行しても、1 つの出荷につき出荷通知メールは 1 通だけ届く。 |
-| AC-186 | payment | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 管理画面の注文一覧と注文詳細で、与信期限（BR-20）が近い「受付」の注文に、期限が近いことを表示する。 |
-| AC-187 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 管理画面の注文一覧で、与信期限が近い注文を絞り込める。 |
-| AC-188 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 与信期限を過ぎた注文を出荷すると、売上確定に失敗する。運営者はその注文をキャンセルできる。 |
-| AC-189 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 管理画面の注文一覧で、配送状態「返送」の注文を絞り込める。 |
-| AC-190 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 運営者は、配送状態が「返送」の注文を、理由を入力してキャンセルできる。 |
-| AC-191 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 返送された注文をキャンセルするとき、運営者は在庫に戻すかを選ぶ。戻すときは明細の数量だけ在庫数を増やし、戻さないときは在庫数を変えない。 |
-| AC-192 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 返送された注文をキャンセルすると、総額（送料を含む）を返金する。 |
-| AC-193 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | キャンセルは、返金の結果を待たずに成立する。 |
-| AC-194 | payment | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 返金が済むまで、管理画面の注文詳細に「返金待ち」と表示する。 |
-| AC-195 | payment | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | 同じ注文の返金が重複して実行されても、返金は 1 回だけ。 |
-| AC-196 | order | 有効 | [009](../08-spec/archive/mvp/009-shipping/spec.md) | — | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。消費者にメールは送らない。 |
-| AC-197 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数量の推移を折れ線グラフで見られる。 |
-| AC-198 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 同じ数字を、粒度ごとの行の表でも見られる。 |
-| AC-199 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 商品を 1 つ選ぶと、その商品だけの推移を見られる。選ばなければ全商品の合計。 |
-| AC-200 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 売上の数え方（BR-25）を画面で切り替えられる。 |
-| AC-201 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 売れなかった区切りも、0 の行として示す。理由：線が途切れて読み違えないため。 |
-| AC-202 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 運営者は、商品を 1 つと期間を選び、バリアント（軸の値の組み合わせ）ごとの販売数量と売上額を棒グラフで見られる。 |
-| AC-203 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 同じ数字を表でも見られる。表は販売数量の多い順に並べる。 |
-| AC-204 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 期間に売れなかったバリアントも、0 として示す。 |
-| AC-205 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 運営者は、期間を選び、お届け先の都道府県ごとの売上額と注文件数を、グラフと表で見られる。 |
-| AC-206 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 |
-| AC-207 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。売上額はその商品の明細の分だけを数える。 |
-| AC-208 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 生年月日の分からない会員の注文は、年齢層「不明」として数える。 |
-| AC-209 | member | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | IdP の会員登録の画面で、生年月日を入れられる。 |
-| AC-210 | member | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 生年月日は任意とする。入れなくても登録でき、注文できる。理由：属性の収集のために購入を妨げないため。 |
-| AC-211 | member | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 会員は、IdP のアカウントの画面で、後から生年月日を入れる・修正することができる。 |
-| AC-212 | order | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 注文の成立のときに、その時点の年齢を注文に記録する。後で生年月日を修正しても、成立済みの注文の年齢は変えない。 |
-| AC-213 | order | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 未来の日付と、明らかにありえない日付（120 年より前など）は受け付けない。 |
-| AC-214 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 運営者は、権限を持つレポートだけを、管理画面のメニューで見て開ける。 |
-| AC-215 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 権限のないレポートの API を呼ぶと 403 になる。 |
-| AC-216 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 権限はレポートごとに分ける。レポートの中の選択肢（粒度、商品など）ごとの権限は作らない。 |
-| AC-217 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 役割ごとの権限は BR-28 のとおり。 |
-| AC-218 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 運営者は、表示しているレポートの表を CSV で取り出せる。文字コードは表計算ソフトで文字化けしないもの。 |
-| AC-219 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。性別の分からない会員の注文は「不明」として数える。 |
-| AC-220 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 |
-| AC-221 | member | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | IdP の会員登録の画面で性別（BR-29）を選べる。任意とし、後から IdP のアカウントの画面で修正できる。 |
-| AC-222 | order | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 注文の成立のときに、その時点の性別を注文に記録する。後で修正しても、成立済みの注文の性別は変えない。 |
-| AC-223 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 状態によらず、全ての注文をレポートのデータに集める（支払待ち、支払の期限切れ、キャンセル、返送を含む）。 |
-| AC-224 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 注文の状態と配送状態が変わるたびに、何が・いつ・どの状態からどの状態に変わったかを、履歴として集める。 |
-| AC-225 | reporting | 有効 | [010](../08-spec/archive/mvp/010-sales-report/spec.md) | — | 集めたデータのうち、どの注文を数えるかは、レポートごとに決める（BR-25 など）。集めるときには絞らない。 |
-| AC-226 | payment | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 決済と物流に、それぞれ mock フラグがある。フラグを立てたサービスだけが mock を使い、立てなければ本番の実装を使う。 |
-| AC-227 | payment | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 決済のフラグを立てず、Stripe の設定（鍵）が足りなければ、バックエンドは起動に失敗し、足りない設定の名前をログに出力する。 |
-| AC-228 | shipping | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 物流のフラグを立てなければ、バックエンドは起動に失敗する。理由：物流の本番の実装がまだないため。 |
-| AC-229 | payment | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | mock の支払画面と、mock の配送業者の画面（通知の操作を含む）は、そのサービスのフラグを立てたときだけ使える。フラグがなければ、その URL は見つからない（404）。 |
-| AC-230 | payment | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 決済・物流のサービスは、フラグだけで選ぶ（mock か Stripe かを選ぶ別の設定を持たない）。 |
-| AC-231 | payment | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | ローカルの設定は、決済と物流のフラグを立てる。Stripe の sandbox で動かす設定は、決済のフラグを下ろす。E2E の設定は、ローカルの設定のフラグを受け継ぐ。 |
-| AC-232 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 店舗 API の契約で会員の token が必要な操作は、全て token なしで 401 を返す。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-233 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 契約で token が必要ない操作（商品の閲覧、匿名のカートなど）は、token なしで使える。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-234 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 契約と認可の設定が食い違う（契約で token が必要なのに、token なしで通る操作がある、またはその逆）と、CI で失敗する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
-| AC-235 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 業務ポートは、店舗 API・管理 API・決済と物流の通知のエンドポイント・mock のエンドポイント（フラグを立てたとき）だけを公開する。それ以外の URL は拒む。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「公開ネットワークへのデプロイの前提」。 |
-| AC-236 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 死活監視とメトリクスは、運用ポートだけで公開する。業務ポートでは公開しない。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「メトリクスと死活監視」。 |
-| AC-237 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 運用ポートの番号は設定で変更でき、ローカルの既定は業務ポートと競合しない。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「メトリクスと死活監視」。 |
-| AC-238 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 管理画面を本番モードでビルドするとき、IdP の接続先と client ID がなければ、ビルドに失敗し、足りない設定の名前を出力する。根拠は[環境変数](../06-手順書/environment.md)の「管理画面」。 |
-| AC-239 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 管理画面の開発モードとテストは、ローカルの IdP の既定値で動く。根拠は[環境変数](../06-手順書/environment.md)の「管理画面」。 |
-| AC-240 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 店舗画面は、公開する URL（origin）を環境変数で受け取る。本番モードで値がなければ、起動に失敗する。根拠は[環境変数](../06-手順書/environment.md)の「店舗画面」。 |
-| AC-241 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 店舗画面のログインの戻り先と、ログアウトの後の戻り先は、公開する URL から作り、リクエストヘッダー（ホスト、転送元のプロトコル）を使わない。根拠は[環境変数](../06-手順書/environment.md)の「店舗画面」。 |
-| AC-242 | storefront | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 店舗画面の任意の設定（API の応答を再取得する間隔など）も、必須の設定と同じ 1 か所で読む（[フロントの書き方](../05-開発規則/frontend-coding.md)の「環境変数は起動時に確認する」）。 |
-| AC-243 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | ローカル環境（compose）のサービスのポートは、既定では手元のマシン（127.0.0.1）からだけ接続できる。根拠は[開発環境の起動](../06-手順書/setup.md)の「起動」。 |
-| AC-244 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | バックエンドの本番の jar に、ローカル・E2E・Stripe の sandbox の設定ファイルが入らない。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
-| AC-245 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 本番の jar を、ローカルの profile を指定して起動しても、mock フラグとローカル用の秘密情報は読まれない。物流のフラグがないので、起動に失敗する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
-| AC-246 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | mock の決済の、テストだけで使う操作（次の操作を失敗させる、状態を削除するなど）は、本番の jar に入らない。テストはその操作を使える。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
-| AC-247 | common | 有効 | [015](../08-spec/archive/mvp/015-security/spec.md) | — | 1 つの設定を変えるだけで、compose の全てのサービスのポートを、同じネットワークの他のマシンからも接続できるようにできる。理由：他のマシン（スマートフォンなど）から確認する場面があるため。根拠は[開発環境の起動](../06-手順書/setup.md)の「起動」。 |
-| AC-248 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 注文手続きの画面のお届け先は、都道府県・市区町村・それより下の住所を、別の欄で入力する。都道府県と市区町村は一覧から選ぶ。 |
-| AC-249 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 市区町村の一覧は、選んだ都道府県の市区町村だけを表示する。都道府県を再選択すると、市区町村の選択は解除される。 |
-| AC-250 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 都道府県と市区町村の一覧は、店舗 API のマスターデータから取得する。画面は都道府県・市区町村の表を持たない。 |
-| AC-251 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 注文の確定は、選んだ都道府県に属さない市区町村、またはマスターデータにないコードを、入力の誤り（400）で拒否する。 |
-| AC-252 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 注文の詳細（店舗画面・管理画面）は、お届け先を、都道府県名・市区町村名・それより下の住所の順に表示する。 |
-| AC-253 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 店舗 API は、郵便番号から、都道府県・市区町村・町域を返す。 |
-| AC-254 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 1 つの郵便番号に複数の町域があるときは、全てを返す。 |
-| AC-255 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 注文手続きの画面で郵便番号（7 桁）を入れると、都道府県と市区町村を選んだ状態にする。町域が 1 つで、住所の欄が空のときは、町域を住所の欄に入れる。 |
-| AC-256 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | マスターデータにない郵便番号は、何も補わず、消費者がそのまま入力を続けられる。郵便番号は、マスターデータにないことを理由に拒否しない。理由：最初のデータは一部だけのため。 |
-| AC-257 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 補った後も、消費者は都道府県・市区町村・住所を変えられる。 |
-| AC-258 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 注文は、お届け先の都道府県と市区町村をコードで持つ。 |
-| AC-259 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 都道府県と市区町村のマスターデータは、全国の都道府県（47）と市区町村を、最初のデータとして持つ。 |
-| AC-260 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 郵便番号のマスターデータは、構造と、開発とテストに使う一部の郵便番号だけを、最初のデータとして持つ。 |
-| AC-261 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 既存の注文は、都道府県名をコードに変換し、住所の先頭をマスターデータの市区町村名と照合して、住所から市区町村を切り出す。照合できない注文があれば、DB の移行を失敗させる。 |
-| AC-262 | reporting | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 売上レポートの都道府県別の集計は、注文の都道府県のコードを使い、都道府県名から再度引かない。管理画面は、都道府県名を API の応答から表示し、画面の文言に都道府県の表を持たない。 |
-| AC-263 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 都道府県・市区町村・郵便番号の表は、マスターデータのほかに持たない（バックエンドの検証、画面、レポート、seed）。テストのデータは除く。 |
-| AC-264 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 注文手続きの画面は、入力の誤り（400）の欄ごとの文を、API の応答の文のまま表示する。画面で文を作るのは、応答がないときだけ。 |
-| AC-265 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 店舗 API の入力の誤りの文は、消費者が読んで修正できる文にする。形の誤りに、正規表現などの検証ライブラリの既定の文を表示しない。 |
-| AC-266 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | エラーの文に上限・桁数などの値を入れるときは、数字を文に書かず、正本の値を差し込む。バックエンドのエラーの文と、画面の文言の両方に当てる。 |
-| AC-267 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 店舗 API の注文の応答は、キャンセルの申請の結果（申請していない、申請中、承認、却下）を返す。 |
-| AC-268 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 管理 API の注文の応答は、キャンセルのときに在庫を戻すか運営者に確認するかを返す。 |
-| AC-269 | catalog | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 管理 API の商品の応答は、商品を削除できないときの理由を返す。管理画面は、削除できない理由をこれで表示する。 |
-| AC-270 | catalog | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 管理 API の分類の応答は、子の分類を追加できるかを返す。管理画面は、子の分類を追加する操作の表示をこれで切り替え、分類の深さを持たない。 |
-| AC-271 | order | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 店舗画面と管理画面は、API の応答の操作の可否と理由のほかに、注文の状態や商品の状態から操作の可否を決める判定を持たない。 |
-| AC-272 | media | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 管理 API の契約は、商品の画像の形式・大きさの上限・枚数の上限を、型の制約で示す（説明の文だけにしない）。管理画面は、この値を契約から取得する。 |
-| AC-273 | catalog | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 管理 API の契約は、分類の深さの上限を示し、バックエンドの上限と一致する。 |
-| AC-274 | common | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 店舗 API と管理 API の契約は、操作ごとに、返しうるエラーのコードの一覧を示す。画面は、エラーのコードで分けるとき、契約から作った型を使う。根拠は[API の規約](../05-開発規則/api-conventions.md)の「エラーの本文」。 |
-| AC-275 | common | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | バックエンドのエラーのコードと、契約のエラーのコードの一覧が食い違うと、CI で失敗する。根拠は[API の規約](../05-開発規則/api-conventions.md)の「エラーの本文」。 |
-| AC-276 | catalog | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 管理 API の商品のバリアントの追加は、作ったバリアントの URL を応答の Location に入れる（[API の規約](../05-開発規則/api-conventions.md)の「URL」）。 |
-| AC-277 | common | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | モジュールの間で列挙を別のモジュールの列挙に変換するときは、全ての値の対応を、コンパイルかテストで確認する。値を追加して対応を書き忘れると、コンパイルかテストで失敗する。根拠は[バックエンドの書き方](../05-開発規則/backend-coding.md)の「他のモジュールは腐敗防止層で包む」。 |
-| AC-278 | reporting | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 |
-| AC-279 | common | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 列挙を文字列で持つデータベースの列は、全て取りうる値を制約で制限する。制約の値と列挙の値が食い違うと、テストで失敗する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「永続化」。 |
-| AC-280 | common | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 業務の日付の基準にする時間帯（日本時間）は、バックエンドの 1 か所で決める。注文番号の日付、年齢の基準日、注文の一覧の日付の範囲、売上レポートの日は、そこから取得する。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「共通コード（common/）」。 |
-| AC-281 | tax | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | ある時点に適用する税率の判定は 1 か所で決める。税込価格の端数を処理する規則を SQL でも実装する箇所は、Java と同じ結果になることをテストで確認する。 |
-| AC-282 | catalog | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 分類の深さの上限は、バックエンドの 1 か所で決める。上限を変えたとき、データベースの制約と分類の絞り込みが追従しなければ、テストで失敗する。 |
-| AC-283 | region | 有効 | [016](../08-spec/archive/mvp/016-master-data/spec.md) | — | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の中の補足など）は、町域として返さない。町域名が注記だけの郵便番号は、都道府県と市区町村だけを返す。 |
-| AC-284 | order | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 片付けの定期ジョブが、期限から保存期間（既定 1 日）を過ぎた注文手続きを削除する。根拠は[注文モジュール](order.md)の「注文手続き」。 |
-| AC-285 | order | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 |
-| AC-286 | order | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 片付けは、注文を削除しない。注文になった注文手続きを削除しても、注文は表示・操作できる。 |
-| AC-287 | order | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「水平スケール」）。 |
-| AC-288 | order | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 片付けのジョブは、データごとに削除した件数をログに出力する。 |
-| AC-289 | order | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 期限切れの注文手続きを削除した後に、その注文手続きを使う操作は、期限切れのときと同じ結果か、見つからない（404）になる。 |
-| AC-290 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 再発行しても処理に失敗し続けるイベントは、決めた回数（設定で変更できる）を超えたら、自動の再発行を停止する。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「設定（config/）」。 |
-| AC-291 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | イベントを止めたとき、イベントの種類と ID をエラーのログに出力する。イベントの中身（個人情報を含む）は出力しない。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「設定（config/）」。 |
-| AC-292 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 未完了のイベントの件数と止めたイベントの件数を、運用ポートのメトリクスで公開する。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「メトリクスと死活監視」。 |
-| AC-293 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 止めたイベントは、片付けで削除せずに残す。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「設定（config/）」。 |
-| AC-294 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 外部サービスのエラーは、どのモジュールでも 502 と、再試行できることを示すメッセージで返す。根拠は[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
-| AC-295 | order | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 支払画面を作るとき、決済サービスのエラーなら 502 を返す。 |
-| AC-296 | media | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 画像の確定で、画像の変換のサービスに接続できない、時間内に応答がない、変換のサービスの側の故障のときは 502 を返す。 |
-| AC-297 | media | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 画像の確定で、変換のサービスがファイルを読めない（ファイルの側の問題）ときだけ、画像を変換できないエラー（400）を返す。 |
-| AC-298 | media | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 画像の確定で、ファイル保存のサービスのエラーなら 502 を返す（アップロードの受付は署名付き URL をバックエンドの中で生成し、ファイル保存のサービスを呼ばない）。 |
-| AC-299 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 店舗画面と管理画面は、外部サービスのエラーを受けたら、再試行できることを示すメッセージを表示する。根拠は[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
-| AC-300 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | API の規約に、外部サービスのエラーの扱いと、OpenAPI の外のエンドポイント（決済・物流の通知、mock の画面）の応答をまとめて書く。OpenAPI の各操作には、外部サービスを呼ぶものに 502 を書く。根拠は[API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」。 |
-| AC-301 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | バックエンドから決済サービスとファイル保存のサービスへの呼び出しに、接続と応答のタイムアウトがある。タイムアウトは設定で変更できる。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
-| AC-302 | storefront | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 店舗画面のサーバー側から、バックエンドと IdP への呼び出しに、タイムアウトがある。タイムアウトは設定で変更できる。 |
-| AC-303 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | タイムアウトしたら、バックエンドは外部サービスのエラー（502）として返し、店舗画面は「接続できない」と同じ扱いにする。根拠は[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
-| AC-304 | media | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 画像の確定は、画像の変換と保存のサービスを、データベースのトランザクションの外で呼ぶ。トランザクションの対象は、画像の登録と、商品への画像の追加だけにする。 |
-| AC-305 | media | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 画像を公開の保存先に置いた後に、画像の登録か商品への追加が失敗したら、置いたファイルを削除する。削除するのに失敗したら、警告のログに保存先のキーを出力し、元の失敗を返す。 |
-| AC-306 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 他のモジュールの、外部サービスを呼ぶ処理も、データベースのトランザクションの外で呼ぶ。外で呼べない箇所があれば、理由を書く。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」と、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「トランザクションは application」。 |
-| AC-307 | storefront | 変更 | [017](../08-spec/archive/mvp/017-stability/spec.md) | [193](../08-spec/archive/1to10/193-store-a11y/spec.md)、[227](../08-spec/archive/1to10/227-store-forms/spec.md) | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力してから、「接続できない」の結果を返す。画面遷移の例外と not found の例外は、ログに出力せずに通す。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「エラー」。 |
-| AC-308 | storefront | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 店舗画面のサーバー側で、バックエンドから 5xx を受けたら、警告のログにステータスコードとエラーコードを出力する。 |
-| AC-309 | storefront | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[店舗画面の構成](../02-設計/apps/store.md)の「サーバーの設定とログ」）。token、メールアドレスなどの秘密情報と個人情報は出力しない。 |
-| AC-310 | payment | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 支払の期限切れのジョブは、1 件の支払で例外（種類を問わない）が起きても、その支払 ID をログに出力して、残りの支払を処理する。 |
-| AC-311 | payment | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 決済サービスで支払済みのまま与信の通知を待つ支払が 1 回の処理の件数を超えて滞留しても、それより新しい期限切れの支払を処理する。 |
-| AC-312 | payment | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 与信の通知を待つ支払が、待ち始めてから決めた時間（設定で変更できる）を過ぎても残っていたら、警告のログに件数を出力する。 |
-| AC-193-1 | storefront | 有効 | [193](../08-spec/archive/1to10/193-store-a11y/spec.md) | — | 操作の失敗（カートに入れる、カートの数量の変更と削除、購入の手続きの開始、注文、キャンセルの申請、支払の 6 つ）のエラーメッセージは、フォームを送る前から画面にある読み上げの領域の中に表示される。 |
-| AC-193-2 | storefront | 有効 | [193](../08-spec/archive/1to10/193-store-a11y/spec.md) | — | 読み上げの領域は、状態の知らせ（status の役割）として支援技術に伝わる。「カートに入れる」のフォームの、成功の知らせも表示する領域も、status の役割にする。 |
-| AC-193-3 | storefront | 有効 | [193](../08-spec/archive/1to10/193-store-a11y/spec.md) | — | 失敗の後に成功したとき、前のエラーメッセージの文は消え、読み上げの領域は残る。入力を修正して再送したときも、前の文は消え、領域は残る。 |
-| AC-193-4 | order | 有効 | [193](../08-spec/archive/1to10/193-store-a11y/spec.md) | — | 注文のフォームで欄に誤りがあるとき、その欄の誤りの文が、入力欄の説明として支援技術に伝わる。 |
-| AC-193-5 | order | 有効 | [193](../08-spec/archive/1to10/193-store-a11y/spec.md) | — | 誤りのある欄は、誤りのある状態として支援技術に伝わる。誤りのない欄は、その状態を伝えない。 |
-| AC-193-6 | order | 有効 | [193](../08-spec/archive/1to10/193-store-a11y/spec.md) | — | 欄の補足の文（郵便番号・住所・電話番号の入力の例）も、入力欄の説明として伝わる。誤りがあるときは、補足の文と誤りの文の両方が伝わる。 |
-| AC-227-1 | order | 有効 | [227](../08-spec/archive/1to10/227-store-forms/spec.md) | — | 注文のフォームの送信が欄の誤りで失敗したとき、フォーカスは、選べる誤りの欄のうち画面の順で最初の欄に移る。選べない欄（一覧を取れていない市区町村の欄）は飛ばす。 |
-| AC-227-2 | order | 有効 | [227](../08-spec/archive/1to10/227-store-forms/spec.md) | — | 誤りのある欄が全て選べないときは、フォーカスを移さない。 |
-| AC-227-3 | order | 有効 | [227](../08-spec/archive/1to10/227-store-forms/spec.md) | — | 欄の誤りがない失敗（在庫不足、通信の失敗など、フォームの下に表示するもの）では、フォーカスを移さない。 |
-| AC-227-4 | order | 有効 | [227](../08-spec/archive/1to10/227-store-forms/spec.md) | — | フォーカスを移す処理は、送信の結果を受けたときだけ動く。結果を受けた後に欄を入力・選択しても、フォーカスを欄へ再び移さない。 |
-| AC-227-5 | order | 有効 | [227](../08-spec/archive/1to10/227-store-forms/spec.md) | — | 同じ誤りで再び送信に失敗したときも、AC-227-1 のとおりにフォーカスを移す。 |
-| AC-227-6 | storefront | 有効 | [227](../08-spec/archive/1to10/227-store-forms/spec.md) | — | バリアントの在庫状況の領域は、status の役割を持つ。 |
+| AC-1 | tax | 有効 | 001 | — | 税区分を名称で登録できる。名称は重複できない。 |
+| AC-2 | tax | 有効 | 001 | — | 税率は、率（%）、適用開始日時、適用終了日時を持つ。開始が空白なら「過去全て」、終了が空白なら「無期限」を意味する。終了日時ちょうどは含まない。 |
+| AC-3 | tax | 有効 | 001 | — | 税区分の税率は、一覧としてまとめて登録・更新する。次を全て満たさない一覧は、全体が拒否される：期間が重複しない（空白は無限として扱う）、期間の間に途切れがない、最後の税率の終了日時は空白。 |
+| AC-4 | tax | 有効 | 001 | — | 期間限定の税率に切り替え、元に戻せる（日時は全て日本時間。BR-3）：Given：「標準」に 10%（開始・終了とも空白）がある。現在は 2026-10-08、When：一覧を「10%（〜2027-04-01 00:00）」「8%（2027-04-01 00:00〜2028-04-01 00:00）」「10%（2028-04-01 00:00〜）」に更新する、Then：2027-03-31 23:59 は 10%、2027-04-01 00:00 から 2028-03-31 23:59 は 8%、2028-04-01 00:00 以降は 10% で計算される。 |
+| AC-5 | tax | 有効 | 001 | — | 過去の根拠を変えない：現在より前の日時を、開始・終了として新たに設定できない（空白は可）、開始済みの税率（開始が空白のものを含む）は、率と開始日時を変更できず、削除もできない。終了日時は、現在より後の日時に変更できる、終了済みの税率は変更できない。未開始の税率は変更・削除できる。 |
+| AC-6 | catalog | 有効 | 001 | — | 現時点で有効な税率を持たない税区分は、商品に割り当てられない。 |
+| AC-7 | tax | 有効 | 001 | — | 税率は 0% 以上 100% 未満。 |
+| AC-8 | catalog | 有効 | 001 | — | カテゴリを、名称と親カテゴリ（任意）で登録できる。親がなければ最上位になる。 |
+| AC-9 | catalog | 有効 | 001 | — | 階層は最大 3 階層。4 階層目の登録は拒否される。 |
+| AC-10 | catalog | 有効 | 001 | — | 同じ親の下で名称は重複できない。 |
+| AC-11 | catalog | 有効 | 001 | — | 名称と、兄弟カテゴリ間の並び順を変更できる。 |
+| AC-12 | catalog | 有効 | 001 | — | 子カテゴリを持つ、または商品が所属しているカテゴリは削除できない。 |
+| AC-13 | catalog | 有効 | 001 | — | 商品品番、商品名、説明、税区分、税抜価格、所属カテゴリ（0 個以上、複数可）、バリアント軸（0〜3 個）を指定して登録できる。 |
+| AC-14 | catalog | 有効 | 001 | — | 商品品番は全商品で一意。 |
+| AC-15 | catalog | 有効 | 001 | — | 商品品番は半角の英大文字・数字とハイフンで 1〜32 文字。ハイフンは英数字の間にだけ置ける（先頭・末尾・連続は不可。例：`ABC-001` は可、`-ABC`、`ABC--1`、`abc-001` は不可）。登録後は画面・API から変更できない。 |
+| AC-16 | catalog | 有効 | 001 | — | 税区分は必須。 |
+| AC-17 | catalog | 有効 | 001 | — | 登録直後の商品は非公開。 |
+| AC-18 | catalog | 有効 | 001 | — | 商品名、説明、税区分、税抜価格、所属カテゴリは変更できる。 |
+| AC-19 | catalog | 有効 | 001 | — | 税区分を変更すると、税込価格が変更後の税率で計算される。 |
+| AC-20 | catalog | 有効 | 001 | — | バリアント品番と軸の値（例：色＝白、サイズ＝M）を指定してバリアントを登録できる。 |
+| AC-21 | catalog | 有効 | 001 | — | バリアント品番は全バリアントで一意。形式と変更不可の扱いは AC-15 と同じ。 |
+| AC-22 | catalog | 有効 | 001 | — | 商品に軸があれば、バリアントは全ての軸の値を持つ。 |
+| AC-23 | catalog | 有効 | 001 | — | 同じ商品の中で、軸の値の組み合わせは重複できない。 |
+| AC-24 | catalog | 有効 | 001 | — | 軸を持たない商品のバリアントは 1 つだけ。 |
+| AC-25 | catalog | 変更 | 001 | 019 | 税抜価格は 1 円以上 9,999,999 円以下の整数。根拠は[商品カタログモジュール](catalog.md)の「商品（集約）」。 |
+| AC-26 | catalog | 有効 | 001 | — | 価格の変更は C 側に反映される。 |
+| AC-27 | catalog | 有効 | 001 | — | バリアントの表示順を変更できる。 |
+| AC-28 | catalog | 有効 | 001 | — | バリアントを販売停止・解除できる。販売停止中のバリアントも C 側の選択肢には表示するが、選択できない（在庫切れと同様に、選べない状態として示す）。 |
+| AC-29 | catalog | 有効 | 001 | — | 公開にすると、C 側の一覧・検索・詳細に表示される。 |
+| AC-30 | catalog | 有効 | 001 | — | 非公開にすると、C 側に表示されない。 |
+| AC-31 | catalog | 有効 | 001 | — | バリアントのない商品は公開できない。 |
+| AC-32 | catalog | 有効 | 001 | — | 状態は「非公開」「公開」「販売終了」。販売終了の商品は C 側に表示されず、公開に戻せない。 |
+| AC-33 | catalog | 有効 | 001 | — | C 側に一度も表示されていない商品は削除できる。表示されたことのある商品は削除できず、販売終了にする。公開の予約をしただけで、開始日時の前に取り消した商品は、表示されていないものとして扱う。 |
+| AC-34 | catalog | 有効 | 001 | — | 公開開始日時と公開終了日時（いずれも任意）を設定できる。 |
+| AC-35 | catalog | 有効 | 001 | — | 公開状態でも、開始日時より前と終了日時以降は C 側に表示されない。運営者の操作なしに、その時刻で切り替わる。 |
+| AC-36 | catalog | 有効 | 001 | — | 終了日時は開始日時より後。 |
+| AC-37 | catalog | 有効 | 001 | — | 商品に画像を複数登録し、並び順を変えられる。先頭が代表画像。 |
+| AC-38 | catalog | 有効 | 001 | — | バリアントに画像を 1 枚指定できる（任意）。なければ商品の代表画像を使う。 |
+| AC-39 | media | 有効 | 001 | — | 形式は JPEG、PNG、WebP（AC-67 の形式も受け付ける）。1 ファイル 10MB まで。 |
+| AC-40 | catalog | 有効 | 001 | — | 1 商品あたり最大 20 枚。 |
+| AC-41 | inventory | 有効 | 001 | — | 新しいバリアントの在庫数は 0。 |
+| AC-42 | inventory | 変更 | 001 | 019 | 在庫数は、増減量と理由で調整する。直接上書きする操作はない。運営者の調整は、1 回の増減量が ±1,000,000 以内で、調整後の在庫数が 1,000,000 以下。根拠は[在庫モジュール](inventory.md)の「在庫と在庫調整」。 |
+| AC-43 | inventory | 有効 | 001 | — | 調整後に負になる調整は拒否される。 |
+| AC-44 | inventory | 有効 | 001 | — | 同じバリアントへの調整が同時に実行されても、全て反映される：Given：在庫数 10、When：+5 と +3 が同時に実行される、Then：在庫数は 18。 |
+| AC-45 | inventory | 有効 | 001 | — | 調整履歴（日時、増減量、理由、調整後の在庫数）を新しい順に参照できる。 |
+| AC-46 | inventory | 有効 | 001 | — | 理由は「入荷」「棚卸差異」「破損・紛失」「その他」。「その他」はメモ必須。 |
+| AC-47 | catalog | 有効 | 001 | — | 状態に関係なく、全ての商品を一覧できる。 |
+| AC-48 | catalog | 有効 | 001 | — | 商品品番・バリアント品番の前方一致、商品名の部分一致、状態、カテゴリで絞り込める。 |
+| AC-49 | catalog | 有効 | 001 | — | 商品品番、商品名、状態、バリアント数、在庫数の合計を表示する。 |
+| AC-50 | catalog | 有効 | 001 | — | ページ単位で取得できる。 |
+| AC-51 | catalog | 有効 | 001 | — | C 側に表示される商品（BR-2）だけが含まれる。 |
+| AC-52 | catalog | 有効 | 001 | — | カテゴリで絞り込める。子孫カテゴリの商品も含む。 |
+| AC-53 | catalog | 有効 | 001 | — | 税込価格の範囲で絞り込める。 |
+| AC-54 | catalog | 有効 | 001 | — | 新着順（既定）、価格の安い順、高い順で並べ替えられる。新着順の基準は、最初に C 側へ表示された日時（予約公開なら公開開始日時）。再公開しても順位は上がらない。 |
+| AC-55 | catalog | 有効 | 001 | — | 商品名、代表画像、価格（BR-4）を表示する。 |
+| AC-56 | storefront | 有効 | 001 | — | 全バリアントが在庫切れの商品も表示し、「在庫なし」と示す。 |
+| AC-57 | catalog | 有効 | 001 | — | ページ単位で取得できる。 |
+| AC-58 | catalog | 有効 | 001 | — | 商品名または説明にキーワードを含む商品が表示される。 |
+| AC-59 | catalog | 有効 | 001 | — | 対象は C 側に表示される商品（BR-2）だけ。 |
+| AC-60 | catalog | 有効 | 001 | — | 精度（表記ゆれ、類義語、関連度順）は問わない。 |
+| AC-61 | catalog | 有効 | 001 | — | ページ単位で取得できる。 |
+| AC-62 | catalog | 有効 | 001 | — | 商品名、説明、画像、価格（BR-4）、バリアント軸と選択肢を表示する。選択肢には、在庫切れや販売停止で選べない値も含め、選べない状態として示す。 |
+| AC-63 | storefront | 有効 | 001 | — | バリアントを選ぶと、その在庫状況を表示する。 |
+| AC-64 | inventory | 有効 | 001 | — | 在庫状況は「在庫あり」「在庫なし」のみ。数量は表示しない。 |
+| AC-65 | catalog | 有効 | 001 | — | C 側に表示されない商品は、存在しない商品と同じ結果になる。 |
+| AC-66 | catalog | 有効 | 001 | — | URL は品番が変わっても変わらない。 |
+| AC-67 | media | 有効 | 001 | — | BMP、HEIC / HEIF など一般的な画像形式も受け付ける。 |
+| AC-68 | media | 有効 | 001 | — | 全ての画像を WebP に変換して配信する。 |
+| AC-69 | media | 有効 | 001 | — | 変換時に位置情報などのメタデータを除去する。 |
+| AC-70 | media | 変更 | 001 | 017 | 変換に失敗した画像は登録されず、運営者にその旨が表示される。変換のサービスがファイルを読めないときは、画像を変換できないエラー（400）を返す。変換のサービスに接続できない、時間内に応答がない、変換のサービスの側の故障のときは 502 を返す。根拠は[メディアモジュール](media.md)の「アップロードの流れ」、[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
+| AC-71 | catalog | 有効 | 001 | — | C 側に一度も表示されていない商品のバリアントは削除できる。表示されたことのある商品のバリアントは削除できない。 |
+| AC-72 | cart | 有効 | 002 | — | C 側に表示される商品（BR-2）の、選べるバリアント（販売停止でなく、在庫あり）を、数量を指定してカートに入れられる。選べないバリアントは入れられない。 |
+| AC-73 | cart | 変更 | 002 | 003 | ログインしていない間は、カートを持っていなければ最初に商品を入れたときに作り、そのブラウザーの Cookie のカート ID でだけ使う。ログインしている間は、会員ごとに 1 つの会員のカートを使う。根拠は[カートモジュール](cart.md)の「会員のカート」、[店舗画面の構成](../02-設計/apps/store.md)の「使うカートの選び方」。 |
+| AC-74 | cart | 有効 | 002 | — | カートにあるバリアントをもう一度入れると、数量を合算する。 |
+| AC-75 | cart | 有効 | 002 | — | 1 品目の数量は 1〜10。1 つのカートに入れられるのは 30 品目まで。超える場合は拒否される。 |
+| AC-76 | cart | 有効 | 002 | — | 入れた後の数量が、その時点の販売可能数（BR-11）を超える場合は拒否される。販売可能数そのものは示さない（AC-64）。カートに入れても在庫は引き当てない。 |
+| AC-77 | cart | 有効 | 002 | — | 品目ごとに商品名、軸の値、画像、単価（BR-4）、数量、小計を表示し、あわせて商品の合計、送料（BR-6）、総額、税率ごとの消費税額（BR-8）を表示する。 |
+| AC-78 | cart | 有効 | 002 | — | 品目の数量を変更（AC-75、76 の範囲で）・削除できる。 |
+| AC-79 | cart | 有効 | 002 | — | 単価は常に現在の価格で表示する。カートに入れた時点の価格は保持しない。 |
+| AC-80 | cart | 有効 | 002 | — | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。理由は次のいずれか：商品が C 側に表示されなくなった（BR-2）、バリアントが販売停止になった、販売可能数がない、またはカートの数量より少ない。 |
+| AC-81 | cart | 変更 | 002 | 017 | 最後に変更してから 30 日経過したカートは、空のカートとして扱い、期限が切れたカートは片付けのジョブが削除する。根拠は[カートモジュール](cart.md)の「期限」。 |
+| AC-82 | order | 有効 | 002 | — | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる。1 品目でも引き当てられなければ、どれも引き当てず、引き当てられなかった品目を示す。 |
+| AC-83 | inventory | 有効 | 002 | — | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない：Given：在庫数 1 のバリアントを、2 人がそれぞれ 1 個ずつカートに入れている、When：2 人が同時に注文手続きに進む、Then：1 人だけ引き当てられ、もう 1 人には在庫不足と示す。 |
+| AC-84 | order | 変更 | 002 | 007 | 引当は、再び始める、カート変更のイベントを受ける、15 分が経過する、のいずれかで解ける。注文の成立では減算に置き換わる。根拠は[注文モジュール](order.md)の「注文手続き」、[注文モジュール](order.md)の「注文の成立」。 |
+| AC-85 | order | 変更 | 002 | 003、016 | 注文手続きで、カートの内容と送料、総額、税率ごとの消費税額を確認し、お届け先を入力して注文できる。根拠は[注文モジュール](order.md)の「注文（集約）」。 |
+| AC-86 | order | 変更 | 002 | 016 | お届け先の入力の形式：郵便番号は数字 7 桁（ハイフンは任意）、電話番号は数字 10〜11 桁（ハイフンは任意）、氏名と住所は空白不可（長さの上限は OpenAPI）。都道府県と市区町村はコードだけを受け付け、地域の API で確認する（誤りは 400）。根拠は[注文モジュール](order.md)の「注文の成立」。 |
+| AC-87 | order | 変更 | 002 | 007 | 全品目の在庫数を注文数だけ減らし、引当を解く。1 品目でも足りなければ、どの在庫も減らさず拒否する。注文の保存と支払の作成は、減算の後。根拠は[注文モジュール](order.md)の「注文の成立」。 |
+| AC-88 | order | 有効 | 002 | — | 空のカート、または購入できない品目を含むカートは注文できない。 |
+| AC-89 | order | 有効 | 002 | — | 確認した総額と、注文時点で計算した総額が異なる場合は、注文を拒否し、変わったことを示す。 |
+| AC-90 | order | 変更 | 002 | 007 | 注文の成立で注文番号を採番する。注文した品目をカートから除くのは、与信の成功で受付になるとき。根拠は[注文モジュール](order.md)の「注文の成立」、[注文モジュール](order.md)の「状態の遷移」。 |
+| AC-91 | order | 有効 | 002 | — | 同じ注文の送信が繰り返されても、注文は 1 件だけ作られる。 |
+| AC-92 | order | 有効 | 002 | — | 注文時点の商品品番とバリアント品番、商品名と軸の値、税抜単価と税率と税込単価を、注文に写しとして残す。後で商品や税率が変わっても、注文の内容と金額は変わらない。 |
+| AC-93 | order | 変更 | 002 | 007 | 注文の画面に、注文番号、注文日時、明細、金額の内訳（BR-7、8）、お届け先、状態を表示する。注文すると決済サービスの支払画面に移り、支払画面から戻ったときに与信の結果をまだ受信していなければ、「確認中」と示す。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「支払画面への移動と戻り」。 |
+| AC-94 | order | 変更 | 002 | 003 | 注文の参照は注文した会員だけができ、他の会員は 404。根拠は[注文モジュール](order.md)の「注文（集約）」。 |
+| AC-95 | order | 変更 | 002 | 003 | 会員が受付の注文のキャンセルを申請できる（理由は任意、500 文字まで）。申請で「キャンセル申請中」になり、在庫は戻らない。根拠は[注文モジュール](order.md)の「注文（集約）」、[注文モジュール](order.md)の「状態の遷移」。 |
+| AC-96 | order | 有効 | 002 | — | キャンセルの申請は、1 つの注文につき 1 回だけ。申請中の注文にもう一度申請しても、成功し、何も変わらない。却下された注文は、もう一度申請できない。 |
+| AC-97 | order | 有効 | 002 | — | 全ての注文を、注文日時の新しい順に一覧できる。 |
+| AC-98 | order | 有効 | 002 | — | 注文番号の前方一致、状態、注文日の範囲で絞り込める。 |
+| AC-99 | order | 有効 | 002 | — | ページ単位で取得できる。 |
+| AC-100 | order | 有効 | 002 | — | 注文番号と注文日時と状態、明細と金額の内訳、メールアドレスとお届け先、キャンセルの申請の日時と理由と結果、運営者の判断によるキャンセルの理由を表示する。 |
+| AC-101 | order | 変更 | 002 | 007、009 | キャンセル申請中の注文を承認するとキャンセルになる。同じトランザクションで在庫を戻し、決済の API で支払を取り消させる。根拠は[注文モジュール](order.md)の「注文（集約）」、[注文モジュール](order.md)の「状態の遷移」。 |
+| AC-102 | order | 有効 | 002 | — | 申請を却下すると「受付」に戻る。 |
+| AC-103 | order | 変更 | 002 | 007、009 | 運営者は受付かキャンセル申請中の注文を、理由（必須、500 文字まで）付きでキャンセルできる。出荷済みは配送状態が返送のときだけで、支払待ちはキャンセルできない。[注文モジュール](order.md)の「状態の遷移」 |
+| AC-104 | order | 有効 | 002 | — | キャンセルと在庫の戻しは、両方とも実行されるか、どちらも実行されない。 |
+| AC-105 | order | 有効 | 002 | — | キャンセル済みの注文へのキャンセル・承認は、成功し、在庫は戻さない。キャンセル済みの注文の申請は却下できない。 |
+| AC-106 | order | 有効 | 002 | — | キャンセル済みの注文も、一覧・詳細に表示される。 |
+| AC-107 | inventory | 有効 | 002 | — | 注文による在庫数の減算と、キャンセルによる戻しは、在庫の調整履歴（AC-45）に、理由「注文」「注文のキャンセル」と注文番号とともに残る。運営者の在庫調整では、これらの理由を選べない。 |
+| AC-108 | member | 有効 | 003 | — | 店舗から会員登録の画面に遷移し、メールアドレス、パスワード、氏名で登録できる。会員登録とログインの画面は IdP が表示する。 |
+| AC-109 | member | 有効 | 003 | — | 登録済みのメールアドレスでは登録できない。 |
+| AC-110 | member | 有効 | 003 | — | パスワードの条件（長さなど）を満たさない登録は拒否される。 |
+| AC-111 | member | 有効 | 003 | — | 登録すると確認メールが届く。メールのリンクでメールアドレスを確認するまでは、ログインできない。 |
+| AC-112 | member | 有効 | 003 | — | メールアドレスの確認が済むと、ログインした状態で店舗（会員登録を始めた画面）に戻る。会員登録を始めたブラウザーとは別のブラウザーで確認メールのリンクを開いたときは、IdP の画面から店舗に戻り、ログインする。 |
+| AC-113 | member | 有効 | 003 | — | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。ログインすると、ログインの前に見ていた画面に戻る。 |
+| AC-114 | member | 有効 | 003 | — | ログインしている間、店舗の画面に会員の氏名とログアウトの操作を表示する。 |
+| AC-115 | member | 有効 | 003 | — | ログアウトすると、店舗でも IdP でもログインしていない状態になる。同じブラウザーで、パスワードを入れずに再ログインすることはできない。 |
+| AC-116 | member | 有効 | 003 | — | パスワードを続けて間違えると、そのアカウントは一定時間ログインできなくなる。 |
+| AC-117 | member | 有効 | 003 | — | ログインの状態は、最後に操作してから一定時間続く。過ぎたら、再ログインする必要がある。 |
+| AC-118 | member | 有効 | 003 | — | ログインの画面からメールアドレスを入力して、パスワードの再設定を申し込める。届いたメールのリンクから、新しいパスワードを設定できる。登録されていないメールアドレスでも同じ表示にし、会員かどうかを推測させない。 |
+| AC-119 | member | 有効 | 003 | — | ログインしている会員は、店舗から IdP のアカウントの画面に遷移し、パスワードと氏名を変更できる。 |
+| AC-120 | cart | 有効 | 003 | — | ログインしていなくても、カートを使える。 |
+| AC-121 | cart | 有効 | 003 | — | ログインしている間は、会員のカートを使う。会員のカートは会員ごとに 1 つで、どの端末やブラウザーからログインしても同じカートになる（ログインしていないときは AC-73 のとおり）。 |
+| AC-122 | cart | 有効 | 003 | — | ログインしたとき、そのブラウザーのカート（ログインせずに使っていたもの）に品目があれば、会員のカートに移す。同じバリアントは数量を合算する。移した後、ブラウザーのカートは空になる。 |
+| AC-123 | cart | 有効 | 003 | — | 移した結果が上限（AC-75）を超える場合は、数量を 10 に切り詰め、30 品目を超える分は移さない。切り詰めたことと移せなかった品目を表示する。販売可能数（AC-76）は移す時点では確認せず、カートの表示（AC-80）に反映する。 |
+| AC-124 | cart | 有効 | 003 | — | ログアウトすると、そのブラウザーのカートは空に見える。会員のカートは残り、次にログインしたときに使える。 |
+| AC-125 | order | 有効 | 003 | — | 注文手続きに進むには、ログインが必要。 |
+| AC-126 | order | 有効 | 003 | — | 注文手続きは、それを始めた会員だけが操作・参照できる。他の会員やログインしていない人には「見つからない」と示す。 |
+| AC-127 | order | 有効 | 003 | — | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手続きでは入力しない。注文には、注文時点のメールアドレスの写しを残す。 |
+| AC-128 | order | 有効 | 003 | — | 注文は、注文した会員に結び付く。 |
+| AC-129 | order | 有効 | 003 | — | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。ページ単位で取得できる。 |
+| AC-130 | order | 有効 | 003 | — | 一覧から注文の詳細（AC-93 と同じ内容）に遷移し、キャンセルを申請できる（AC-95、96）。 |
+| AC-131 | order | 変更 | 003 | 015 | 注文の参照とキャンセルの申請は注文した会員だけができる。他の会員は 404、ログインしていなければ 401。根拠は[注文モジュール](order.md)の「注文（集約）」。 |
+| AC-132 | common | 有効 | 003 | — | 管理画面は、ログインしなければ何も表示しない。ログインしていなければ、ログインの画面に遷移する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-133 | common | 有効 | 003 | — | 運営者のアカウントは、会員のアカウントとは別にある。管理画面には会員のアカウントでログインできず、店舗には運営者のアカウントでログインできない。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-134 | common | 有効 | 003 | — | 運営者は自分で登録できない。運営者のアカウントは、IdP の管理の画面で作る。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-135 | common | 有効 | 003 | — | 管理画面に運営者の氏名とログアウトの操作を表示する。ログアウトと、パスワードを続けて間違えたときの扱いは、会員と同じ（AC-115、116）。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-136 | common | 有効 | 003 | — | 管理 API の各操作は、運営者がその操作の権限を持つときだけ受け付ける。根拠は[ロールと権限の対応表](../02-設計/role-permissions.md)の「ロールと権限」。 |
+| AC-137 | common | 有効 | 003 | — | 認証のないリクエスト（なし、無効、期限切れ）は、管理 API と、店舗 API の会員向けの操作で拒否され、「ログインが必要」と区別できるエラーになる。権限が足りないリクエストは「権限がない」と区別できるエラーになる。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」と、[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
+| AC-138 | common | 有効 | 003 | — | 会員のアカウントで得た認証では、管理 API を使えない。運営者のアカウントで得た認証では、店舗 API の会員向けの操作を使えない。どちらも「ログインが必要」と同じ扱いにする。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-139 | common | 有効 | 003 | — | 運営者の権限は、IdP で職務（BR-12）を割り当てて与える。根拠は[ロールと権限の対応表](../02-設計/role-permissions.md)の「ロールと権限」。 |
+| AC-140 | common | 有効 | 003 | — | 職務の付け外しと、アカウントの無効化は、一定時間のうちに管理 API に反映される。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-141 | common | 有効 | 003 | — | 管理画面で権限のない操作をすると、「権限がない」と表示する。根拠は[ロールと権限の対応表](../02-設計/role-permissions.md)の「ロールと権限」。 |
+| AC-142 | order | 有効 | 003 | — | キャンセルの申請の承認・却下と、運営者の判断によるキャンセルに、操作した運営者の氏名の写しを残し、注文の詳細に表示する（在庫の調整履歴は、ここでは含めない）。 |
+| AC-143 | order | 有効 | 007 | — | 注文手続きで注文すると、注文は「支払待ち」で作られ、決済サービスの支払画面に移る。 |
+| AC-144 | order | 有効 | 007 | — | 「支払待ち」の注文を作ると、全品目の在庫数を減らす。カートはこの時点では変えない。 |
+| AC-145 | payment | 有効 | 007 | — | カード番号は決済サービスの画面で入力する。EC の画面と API は、カード番号を受け取らない。 |
+| AC-146 | order | 有効 | 007 | — | 決済サービスで総額の与信が成功すると、注文は「受付」になる。売上は確定しない。 |
+| AC-147 | order | 有効 | 007 | — | 与信が成功すると、注文した品目（バリアント）をカートから除く。注文の後にカートに追加した品目は残る。 |
+| AC-148 | payment | 有効 | 007 | — | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。拒否では注文の状態は変わらない。 |
+| AC-149 | payment | 有効 | 007 | — | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 |
+| AC-150 | payment | 有効 | 007 | — | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中」と表示する。画面を再度開くと、その時点の状態を表示する。 |
+| AC-151 | order | 有効 | 007 | — | 支払の期限の前なら、「支払待ち」の注文から、支払画面に再び遷移して支払える。 |
+| AC-152 | payment | 有効 | 007 | — | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 |
+| AC-153 | order | 有効 | 007 | — | 支払の期限までに与信が成功しなかった注文は、キャンセルになり、明細の数量だけ在庫数を戻す。 |
+| AC-154 | order | 有効 | 007 | — | 期限切れのキャンセルは、期限から一定時間のうちに行われる。 |
+| AC-155 | order | 有効 | 007 | — | 期限切れのキャンセルの理由は「支払期限切れ」とし、注文の詳細に表示する。 |
+| AC-156 | order | 有効 | 007 | — | 期限の直前に与信が成功した注文は、期限切れでキャンセルしない。 |
+| AC-157 | order | 有効 | 007 | — | 期限切れでキャンセルした後に与信の成功を受信したら、その与信を取り消す。注文はキャンセルのまま。 |
+| AC-158 | order | 有効 | 007 | — | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 |
+| AC-159 | payment | 有効 | 007 | — | 店舗の注文一覧と注文詳細に、「支払待ち」の注文の支払の期限を表示する。注文詳細には、支払画面に遷移する操作を表示する。 |
+| AC-160 | payment | 有効 | 007 | — | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 |
+| AC-161 | order | 有効 | 007 | — | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 |
+| AC-162 | order | 有効 | 007 | — | 与信済みの注文がキャンセルになると、与信を取り消す。キャンセルの理由によらない。 |
+| AC-163 | order | 有効 | 007 | — | キャンセルは、与信の取消の結果を待たずに成立する。 |
+| AC-164 | payment | 有効 | 007 | — | 与信の取消に失敗したら、取り消せるまで再試行する。 |
+| AC-165 | payment | 有効 | 007 | — | 与信の取消が完了するまで、管理画面の注文詳細に「与信の取消待ち」と表示する。 |
+| AC-166 | payment | 有効 | 007 | — | 同じ与信の取消が重ねて行われても、成功し、何も変わらない。 |
+| AC-167 | order | 有効 | 009 | — | 運営者は、「受付」の注文詳細で、配送業者と送り状番号を入力して出荷を登録できる。 |
+| AC-168 | order | 有効 | 009 | — | 出荷を登録すると、総額で売上を確定し、注文は「出荷済み」になる。 |
+| AC-169 | order | 有効 | 009 | — | 売上確定に失敗したら、出荷は登録されず、注文は「受付」のまま。管理画面に失敗の理由を表示する。 |
+| AC-170 | order | 有効 | 009 | — | 「受付」以外の注文は出荷を登録できない。「キャンセル申請中」の注文は、申請を承認か却下してから出荷する。 |
+| AC-171 | order | 有効 | 009 | — | 「出荷済み」の注文は、消費者はキャンセルを申請できない。運営者は、配送状態が「返送」のときだけキャンセルできる。 |
+| AC-172 | order | 有効 | 009 | — | 同じ注文に出荷を重複して登録しても、売上確定は 1 回だけ実行する。 |
+| AC-173 | shipping | 有効 | 009 | — | 配送業者は決まった一覧から選ぶ。送り状番号は必須。 |
+| AC-174 | shipping | 有効 | 009 | — | 配送状態（BR-19）は、物流サービスからの通知で遷移する。 |
+| AC-175 | shipping | 有効 | 009 | — | 同じ通知が重複して届いても、1 回だけ反映する。 |
+| AC-176 | shipping | 有効 | 009 | — | 通知の順序が入れ替わっても、配送状態は戻らない（例：「配達完了」の後に「配送中」が届いても「配達完了」のまま）。 |
+| AC-177 | shipping | 有効 | 009 | — | 途中の状態の通知が届かなくても、後の状態に遷移する（例：「出荷済み」から「配達完了」）。 |
+| AC-178 | shipping | 有効 | 009 | — | 署名を確認できない通知と、登録済みのどの出荷にも一致しない通知は、処理しない。 |
+| AC-179 | shipping | 有効 | 009 | — | 店舗の注文詳細に、配送状態、配送業者、送り状番号を表示する。出荷後は、注文状態の代わりに配送状態を表示する。理由：注文状態と配送状態の「出荷済み」が並ばないようにするため。 |
+| AC-180 | shipping | 有効 | 009 | — | 店舗の注文一覧で、出荷後の注文は、注文状態の代わりに配送状態を表示する。 |
+| AC-181 | shipping | 有効 | 009 | — | 管理画面の注文詳細に、配送状態、配送業者、送り状番号、出荷日時を表示する。 |
+| AC-182 | order | 有効 | 009 | — | 管理画面の注文一覧で、状態「出荷済み」で絞り込める。「受付」で絞り込むと、出荷待ちの注文が表示される。 |
+| AC-183 | notification | 有効 | 009 | — | 出荷を登録すると、注文のメールアドレスに、注文番号、配送業者、送り状番号を書いた出荷通知メールを送る。 |
+| AC-184 | notification | 有効 | 009 | — | 出荷登録は、メール送信の結果を待たない。送信に失敗したら、送れるまで再試行する。理由：メールサーバーが応答しないときも、出荷を止めないため。 |
+| AC-185 | notification | 有効 | 009 | — | 再試行しても、1 つの出荷につき出荷通知メールは 1 通だけ届く。 |
+| AC-186 | payment | 有効 | 009 | — | 管理画面の注文一覧と注文詳細で、与信期限（BR-20）が近い「受付」の注文に、期限が近いことを表示する。 |
+| AC-187 | order | 有効 | 009 | — | 管理画面の注文一覧で、与信期限が近い注文を絞り込める。 |
+| AC-188 | order | 有効 | 009 | — | 与信期限を過ぎた注文を出荷すると、売上確定に失敗する。運営者はその注文をキャンセルできる。 |
+| AC-189 | order | 有効 | 009 | — | 管理画面の注文一覧で、配送状態「返送」の注文を絞り込める。 |
+| AC-190 | order | 有効 | 009 | — | 運営者は、配送状態が「返送」の注文を、理由を入力してキャンセルできる。 |
+| AC-191 | order | 有効 | 009 | — | 返送された注文をキャンセルするとき、運営者は在庫に戻すかを選ぶ。戻すときは明細の数量だけ在庫数を増やし、戻さないときは在庫数を変えない。 |
+| AC-192 | order | 有効 | 009 | — | 返送された注文をキャンセルすると、総額（送料を含む）を返金する。 |
+| AC-193 | order | 有効 | 009 | — | キャンセルは、返金の結果を待たずに成立する。 |
+| AC-194 | payment | 有効 | 009 | — | 返金が済むまで、管理画面の注文詳細に「返金待ち」と表示する。 |
+| AC-195 | payment | 有効 | 009 | — | 同じ注文の返金が重複して実行されても、返金は 1 回だけ。 |
+| AC-196 | order | 有効 | 009 | — | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。消費者にメールは送らない。 |
+| AC-197 | reporting | 有効 | 010 | — | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数量の推移を折れ線グラフで見られる。 |
+| AC-198 | reporting | 有効 | 010 | — | 同じ数字を、粒度ごとの行の表でも見られる。 |
+| AC-199 | reporting | 有効 | 010 | — | 商品を 1 つ選ぶと、その商品だけの推移を見られる。選ばなければ全商品の合計。 |
+| AC-200 | reporting | 有効 | 010 | — | 売上の数え方（BR-25）を画面で切り替えられる。 |
+| AC-201 | reporting | 有効 | 010 | — | 売れなかった区切りも、0 の行として示す。理由：線が途切れて読み違えないため。 |
+| AC-202 | reporting | 有効 | 010 | — | 運営者は、商品を 1 つと期間を選び、バリアント（軸の値の組み合わせ）ごとの販売数量と売上額を棒グラフで見られる。 |
+| AC-203 | reporting | 有効 | 010 | — | 同じ数字を表でも見られる。表は販売数量の多い順に並べる。 |
+| AC-204 | reporting | 有効 | 010 | — | 期間に売れなかったバリアントも、0 として示す。 |
+| AC-205 | reporting | 有効 | 010 | — | 運営者は、期間を選び、お届け先の都道府県ごとの売上額と注文件数を、グラフと表で見られる。 |
+| AC-206 | reporting | 有効 | 010 | — | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 |
+| AC-207 | reporting | 有効 | 010 | — | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。売上額はその商品の明細の分だけを数える。 |
+| AC-208 | reporting | 有効 | 010 | — | 生年月日の分からない会員の注文は、年齢層「不明」として数える。 |
+| AC-209 | member | 有効 | 010 | — | IdP の会員登録の画面で、生年月日を入れられる。 |
+| AC-210 | member | 有効 | 010 | — | 生年月日は任意とする。入れなくても登録でき、注文できる。理由：属性の収集のために購入を妨げないため。 |
+| AC-211 | member | 有効 | 010 | — | 会員は、IdP のアカウントの画面で、後から生年月日を入れる・修正することができる。 |
+| AC-212 | order | 有効 | 010 | — | 注文の成立のときに、その時点の年齢を注文に記録する。後で生年月日を修正しても、成立済みの注文の年齢は変えない。 |
+| AC-213 | order | 有効 | 010 | — | 未来の日付と、明らかにありえない日付（120 年より前など）は受け付けない。 |
+| AC-214 | reporting | 有効 | 010 | — | 運営者は、権限を持つレポートだけを、管理画面のメニューで見て開ける。 |
+| AC-215 | reporting | 有効 | 010 | — | 権限のないレポートの API を呼ぶと 403 になる。 |
+| AC-216 | reporting | 有効 | 010 | — | 権限はレポートごとに分ける。レポートの中の選択肢（粒度、商品など）ごとの権限は作らない。 |
+| AC-217 | reporting | 有効 | 010 | — | 役割ごとの権限は BR-28 のとおり。 |
+| AC-218 | reporting | 有効 | 010 | — | 運営者は、表示しているレポートの表を CSV で取り出せる。文字コードは表計算ソフトで文字化けしないもの。 |
+| AC-219 | reporting | 有効 | 010 | — | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。性別の分からない会員の注文は「不明」として数える。 |
+| AC-220 | reporting | 有効 | 010 | — | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 |
+| AC-221 | member | 有効 | 010 | — | IdP の会員登録の画面で性別（BR-29）を選べる。任意とし、後から IdP のアカウントの画面で修正できる。 |
+| AC-222 | order | 有効 | 010 | — | 注文の成立のときに、その時点の性別を注文に記録する。後で修正しても、成立済みの注文の性別は変えない。 |
+| AC-223 | reporting | 有効 | 010 | — | 状態によらず、全ての注文をレポートのデータに集める（支払待ち、支払の期限切れ、キャンセル、返送を含む）。 |
+| AC-224 | reporting | 有効 | 010 | — | 注文の状態と配送状態が変わるたびに、何が・いつ・どの状態からどの状態に変わったかを、履歴として集める。 |
+| AC-225 | reporting | 有効 | 010 | — | 集めたデータのうち、どの注文を数えるかは、レポートごとに決める（BR-25 など）。集めるときには絞らない。 |
+| AC-226 | payment | 有効 | 015 | — | 決済と物流に、それぞれ mock フラグがある。フラグを立てたサービスだけが mock を使い、立てなければ本番の実装を使う。 |
+| AC-227 | payment | 有効 | 015 | — | 決済のフラグを立てず、Stripe の設定（鍵）が足りなければ、バックエンドは起動に失敗し、足りない設定の名前をログに出力する。 |
+| AC-228 | shipping | 有効 | 015 | — | 物流のフラグを立てなければ、バックエンドは起動に失敗する。理由：物流の本番の実装がまだないため。 |
+| AC-229 | payment | 有効 | 015 | — | mock の支払画面と、mock の配送業者の画面（通知の操作を含む）は、そのサービスのフラグを立てたときだけ使える。フラグがなければ、その URL は見つからない（404）。 |
+| AC-230 | payment | 有効 | 015 | — | 決済・物流のサービスは、フラグだけで選ぶ（mock か Stripe かを選ぶ別の設定を持たない）。 |
+| AC-231 | payment | 有効 | 015 | — | ローカルの設定は、決済と物流のフラグを立てる。Stripe の sandbox で動かす設定は、決済のフラグを下ろす。E2E の設定は、ローカルの設定のフラグを受け継ぐ。 |
+| AC-232 | common | 有効 | 015 | — | 店舗 API の契約で会員の token が必要な操作は、全て token なしで 401 を返す。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-233 | common | 有効 | 015 | — | 契約で token が必要ない操作（商品の閲覧、匿名のカートなど）は、token なしで使える。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-234 | common | 有効 | 015 | — | 契約と認可の設定が食い違う（契約で token が必要なのに、token なしで通る操作がある、またはその逆）と、CI で失敗する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「認証・認可」。 |
+| AC-235 | common | 有効 | 015 | — | 業務ポートは、店舗 API・管理 API・決済と物流の通知のエンドポイント・mock のエンドポイント（フラグを立てたとき）だけを公開する。それ以外の URL は拒む。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「公開ネットワークへのデプロイの前提」。 |
+| AC-236 | common | 有効 | 015 | — | 死活監視とメトリクスは、運用ポートだけで公開する。業務ポートでは公開しない。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「メトリクスと死活監視」。 |
+| AC-237 | common | 有効 | 015 | — | 運用ポートの番号は設定で変更でき、ローカルの既定は業務ポートと競合しない。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「メトリクスと死活監視」。 |
+| AC-238 | common | 有効 | 015 | — | 管理画面を本番モードでビルドするとき、IdP の接続先と client ID がなければ、ビルドに失敗し、足りない設定の名前を出力する。根拠は[環境変数](../06-手順書/environment.md)の「管理画面」。 |
+| AC-239 | common | 有効 | 015 | — | 管理画面の開発モードとテストは、ローカルの IdP の既定値で動く。根拠は[環境変数](../06-手順書/environment.md)の「管理画面」。 |
+| AC-240 | common | 有効 | 015 | — | 店舗画面は、公開する URL（origin）を環境変数で受け取る。本番モードで値がなければ、起動に失敗する。根拠は[環境変数](../06-手順書/environment.md)の「店舗画面」。 |
+| AC-241 | common | 有効 | 015 | — | 店舗画面のログインの戻り先と、ログアウトの後の戻り先は、公開する URL から作り、リクエストヘッダー（ホスト、転送元のプロトコル）を使わない。根拠は[環境変数](../06-手順書/environment.md)の「店舗画面」。 |
+| AC-242 | storefront | 有効 | 015 | — | 店舗画面の任意の設定（API の応答を再取得する間隔など）も、必須の設定と同じ 1 か所で読む（[フロントの書き方](../05-開発規則/frontend-coding.md)の「環境変数は起動時に確認する」）。 |
+| AC-243 | common | 有効 | 015 | — | ローカル環境（compose）のサービスのポートは、既定では手元のマシン（127.0.0.1）からだけ接続できる。根拠は[開発環境の起動](../06-手順書/setup.md)の「起動」。 |
+| AC-244 | common | 有効 | 015 | — | バックエンドの本番の jar に、ローカル・E2E・Stripe の sandbox の設定ファイルが入らない。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
+| AC-245 | common | 有効 | 015 | — | 本番の jar を、ローカルの profile を指定して起動しても、mock フラグとローカル用の秘密情報は読まれない。物流のフラグがないので、起動に失敗する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
+| AC-246 | common | 有効 | 015 | — | mock の決済の、テストだけで使う操作（次の操作を失敗させる、状態を削除するなど）は、本番の jar に入らない。テストはその操作を使える。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
+| AC-247 | common | 有効 | 015 | — | 1 つの設定を変えるだけで、compose の全てのサービスのポートを、同じネットワークの他のマシンからも接続できるようにできる。理由：他のマシン（スマートフォンなど）から確認する場面があるため。根拠は[開発環境の起動](../06-手順書/setup.md)の「起動」。 |
+| AC-248 | order | 有効 | 016 | — | 注文手続きの画面のお届け先は、都道府県・市区町村・それより下の住所を、別の欄で入力する。都道府県と市区町村は一覧から選ぶ。 |
+| AC-249 | region | 有効 | 016 | — | 市区町村の一覧は、選んだ都道府県の市区町村だけを表示する。都道府県を再選択すると、市区町村の選択は解除される。 |
+| AC-250 | region | 有効 | 016 | — | 都道府県と市区町村の一覧は、店舗 API のマスターデータから取得する。画面は都道府県・市区町村の表を持たない。 |
+| AC-251 | order | 有効 | 016 | — | 注文の確定は、選んだ都道府県に属さない市区町村、またはマスターデータにないコードを、入力の誤り（400）で拒否する。 |
+| AC-252 | order | 有効 | 016 | — | 注文の詳細（店舗画面・管理画面）は、お届け先を、都道府県名・市区町村名・それより下の住所の順に表示する。 |
+| AC-253 | region | 有効 | 016 | — | 店舗 API は、郵便番号から、都道府県・市区町村・町域を返す。 |
+| AC-254 | region | 有効 | 016 | — | 1 つの郵便番号に複数の町域があるときは、全てを返す。 |
+| AC-255 | region | 有効 | 016 | — | 注文手続きの画面で郵便番号（7 桁）を入れると、都道府県と市区町村を選んだ状態にする。町域が 1 つで、住所の欄が空のときは、町域を住所の欄に入れる。 |
+| AC-256 | region | 有効 | 016 | — | マスターデータにない郵便番号は、何も補わず、消費者がそのまま入力を続けられる。郵便番号は、マスターデータにないことを理由に拒否しない。理由：最初のデータは一部だけのため。 |
+| AC-257 | region | 有効 | 016 | — | 補った後も、消費者は都道府県・市区町村・住所を変えられる。 |
+| AC-258 | order | 有効 | 016 | — | 注文は、お届け先の都道府県と市区町村をコードで持つ。 |
+| AC-259 | region | 有効 | 016 | — | 都道府県と市区町村のマスターデータは、全国の都道府県（47）と市区町村を、最初のデータとして持つ。 |
+| AC-260 | region | 有効 | 016 | — | 郵便番号のマスターデータは、構造と、開発とテストに使う一部の郵便番号だけを、最初のデータとして持つ。 |
+| AC-261 | order | 有効 | 016 | — | 既存の注文は、都道府県名をコードに変換し、住所の先頭をマスターデータの市区町村名と照合して、住所から市区町村を切り出す。照合できない注文があれば、DB の移行を失敗させる。 |
+| AC-262 | reporting | 有効 | 016 | — | 売上レポートの都道府県別の集計は、注文の都道府県のコードを使い、都道府県名から再度引かない。管理画面は、都道府県名を API の応答から表示し、画面の文言に都道府県の表を持たない。 |
+| AC-263 | region | 有効 | 016 | — | 都道府県・市区町村・郵便番号の表は、マスターデータのほかに持たない（バックエンドの検証、画面、レポート、seed）。テストのデータは除く。 |
+| AC-264 | order | 有効 | 016 | — | 注文手続きの画面は、入力の誤り（400）の欄ごとの文を、API の応答の文のまま表示する。画面で文を作るのは、応答がないときだけ。 |
+| AC-265 | order | 有効 | 016 | — | 店舗 API の入力の誤りの文は、消費者が読んで修正できる文にする。形の誤りに、正規表現などの検証ライブラリの既定の文を表示しない。 |
+| AC-266 | order | 有効 | 016 | — | エラーの文に上限・桁数などの値を入れるときは、数字を文に書かず、正本の値を差し込む。バックエンドのエラーの文と、画面の文言の両方に当てる。 |
+| AC-267 | order | 有効 | 016 | — | 店舗 API の注文の応答は、キャンセルの申請の結果（申請していない、申請中、承認、却下）を返す。 |
+| AC-268 | order | 有効 | 016 | — | 管理 API の注文の応答は、キャンセルのときに在庫を戻すか運営者に確認するかを返す。 |
+| AC-269 | catalog | 有効 | 016 | — | 管理 API の商品の応答は、商品を削除できないときの理由を返す。管理画面は、削除できない理由をこれで表示する。 |
+| AC-270 | catalog | 有効 | 016 | — | 管理 API の分類の応答は、子の分類を追加できるかを返す。管理画面は、子の分類を追加する操作の表示をこれで切り替え、分類の深さを持たない。 |
+| AC-271 | order | 有効 | 016 | — | 店舗画面と管理画面は、API の応答の操作の可否と理由のほかに、注文の状態や商品の状態から操作の可否を決める判定を持たない。 |
+| AC-272 | media | 有効 | 016 | — | 管理 API の契約は、商品の画像の形式・大きさの上限・枚数の上限を、型の制約で示す（説明の文だけにしない）。管理画面は、この値を契約から取得する。 |
+| AC-273 | catalog | 有効 | 016 | — | 管理 API の契約は、分類の深さの上限を示し、バックエンドの上限と一致する。 |
+| AC-274 | common | 有効 | 016 | — | 店舗 API と管理 API の契約は、操作ごとに、返しうるエラーのコードの一覧を示す。画面は、エラーのコードで分けるとき、契約から作った型を使う。根拠は[API の規約](../05-開発規則/api-conventions.md)の「エラーの本文」。 |
+| AC-275 | common | 有効 | 016 | — | バックエンドのエラーのコードと、契約のエラーのコードの一覧が食い違うと、CI で失敗する。根拠は[API の規約](../05-開発規則/api-conventions.md)の「エラーの本文」。 |
+| AC-276 | catalog | 有効 | 016 | — | 管理 API の商品のバリアントの追加は、作ったバリアントの URL を応答の Location に入れる（[API の規約](../05-開発規則/api-conventions.md)の「URL」）。 |
+| AC-277 | common | 有効 | 016 | — | モジュールの間で列挙を別のモジュールの列挙に変換するときは、全ての値の対応を、コンパイルかテストで確認する。値を追加して対応を書き忘れると、コンパイルかテストで失敗する。根拠は[バックエンドの書き方](../05-開発規則/backend-coding.md)の「他のモジュールは腐敗防止層で包む」。 |
+| AC-278 | reporting | 有効 | 016 | — | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 |
+| AC-279 | common | 有効 | 016 | — | 列挙を文字列で持つデータベースの列は、全て取りうる値を制約で制限する。制約の値と列挙の値が食い違うと、テストで失敗する。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「永続化」。 |
+| AC-280 | common | 有効 | 016 | — | 業務の日付の基準にする時間帯（日本時間）は、バックエンドの 1 か所で決める。注文番号の日付、年齢の基準日、注文の一覧の日付の範囲、売上レポートの日は、そこから取得する。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「共通コード（common/）」。 |
+| AC-281 | tax | 有効 | 016 | — | ある時点に適用する税率の判定は 1 か所で決める。税込価格の端数を処理する規則を SQL でも実装する箇所は、Java と同じ結果になることをテストで確認する。 |
+| AC-282 | catalog | 有効 | 016 | — | 分類の深さの上限は、バックエンドの 1 か所で決める。上限を変えたとき、データベースの制約と分類の絞り込みが追従しなければ、テストで失敗する。 |
+| AC-283 | region | 有効 | 016 | — | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の中の補足など）は、町域として返さない。町域名が注記だけの郵便番号は、都道府県と市区町村だけを返す。 |
+| AC-284 | order | 有効 | 017 | — | 片付けの定期ジョブが、期限から保存期間（既定 1 日）を過ぎた注文手続きを削除する。根拠は[注文モジュール](order.md)の「注文手続き」。 |
+| AC-285 | order | 有効 | 017 | — | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 |
+| AC-286 | order | 有効 | 017 | — | 片付けは、注文を削除しない。注文になった注文手続きを削除しても、注文は表示・操作できる。 |
+| AC-287 | order | 有効 | 017 | — | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「水平スケール」）。 |
+| AC-288 | order | 有効 | 017 | — | 片付けのジョブは、データごとに削除した件数をログに出力する。 |
+| AC-289 | order | 有効 | 017 | — | 期限切れの注文手続きを削除した後に、その注文手続きを使う操作は、期限切れのときと同じ結果か、見つからない（404）になる。 |
+| AC-290 | common | 有効 | 017 | — | 再発行しても処理に失敗し続けるイベントは、決めた回数（設定で変更できる）を超えたら、自動の再発行を停止する。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「設定（config/）」。 |
+| AC-291 | common | 有効 | 017 | — | イベントを止めたとき、イベントの種類と ID をエラーのログに出力する。イベントの中身（個人情報を含む）は出力しない。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「設定（config/）」。 |
+| AC-292 | common | 有効 | 017 | — | 未完了のイベントの件数と止めたイベントの件数を、運用ポートのメトリクスで公開する。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「メトリクスと死活監視」。 |
+| AC-293 | common | 有効 | 017 | — | 止めたイベントは、片付けで削除せずに残す。根拠は[共通コード・ログ・可観測性](../02-設計/common.md)の「設定（config/）」。 |
+| AC-294 | common | 有効 | 017 | — | 外部サービスのエラーは、どのモジュールでも 502 と、再試行できることを示すメッセージで返す。根拠は[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
+| AC-295 | order | 有効 | 017 | — | 支払画面を作るとき、決済サービスのエラーなら 502 を返す。 |
+| AC-296 | media | 有効 | 017 | — | 画像の確定で、画像の変換のサービスに接続できない、時間内に応答がない、変換のサービスの側の故障のときは 502 を返す。 |
+| AC-297 | media | 有効 | 017 | — | 画像の確定で、変換のサービスがファイルを読めない（ファイルの側の問題）ときだけ、画像を変換できないエラー（400）を返す。 |
+| AC-298 | media | 有効 | 017 | — | 画像の確定で、ファイル保存のサービスのエラーなら 502 を返す（アップロードの受付は署名付き URL をバックエンドの中で生成し、ファイル保存のサービスを呼ばない）。 |
+| AC-299 | common | 有効 | 017 | — | 店舗画面と管理画面は、外部サービスのエラーを受けたら、再試行できることを示すメッセージを表示する。根拠は[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
+| AC-300 | common | 有効 | 017 | — | API の規約に、外部サービスのエラーの扱いと、OpenAPI の外のエンドポイント（決済・物流の通知、mock の画面）の応答をまとめて書く。OpenAPI の各操作には、外部サービスを呼ぶものに 502 を書く。根拠は[API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」。 |
+| AC-301 | common | 有効 | 017 | — | バックエンドから決済サービスとファイル保存のサービスへの呼び出しに、接続と応答のタイムアウトがある。タイムアウトは設定で変更できる。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」。 |
+| AC-302 | storefront | 有効 | 017 | — | 店舗画面のサーバー側から、バックエンドと IdP への呼び出しに、タイムアウトがある。タイムアウトは設定で変更できる。 |
+| AC-303 | common | 有効 | 017 | — | タイムアウトしたら、バックエンドは外部サービスのエラー（502）として返し、店舗画面は「接続できない」と同じ扱いにする。根拠は[API の規約](../05-開発規則/api-conventions.md)の「HTTP ステータス」。 |
+| AC-304 | media | 有効 | 017 | — | 画像の確定は、画像の変換と保存のサービスを、データベースのトランザクションの外で呼ぶ。トランザクションの対象は、画像の登録と、商品への画像の追加だけにする。 |
+| AC-305 | media | 有効 | 017 | — | 画像を公開の保存先に置いた後に、画像の登録か商品への追加が失敗したら、置いたファイルを削除する。削除するのに失敗したら、警告のログに保存先のキーを出力し、元の失敗を返す。 |
+| AC-306 | common | 有効 | 017 | — | 他のモジュールの、外部サービスを呼ぶ処理も、データベースのトランザクションの外で呼ぶ。外で呼べない箇所があれば、理由を書く。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」と、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「トランザクションは application」。 |
+| AC-307 | storefront | 変更 | 017 | 193、227 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力してから、「接続できない」の結果を返す。画面遷移の例外と not found の例外は、ログに出力せずに通す。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「エラー」。 |
+| AC-308 | storefront | 有効 | 017 | — | 店舗画面のサーバー側で、バックエンドから 5xx を受けたら、警告のログにステータスコードとエラーコードを出力する。 |
+| AC-309 | storefront | 有効 | 017 | — | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[店舗画面の構成](../02-設計/apps/store.md)の「サーバーの設定とログ」）。token、メールアドレスなどの秘密情報と個人情報は出力しない。 |
+| AC-310 | payment | 有効 | 017 | — | 支払の期限切れのジョブは、1 件の支払で例外（種類を問わない）が起きても、その支払 ID をログに出力して、残りの支払を処理する。 |
+| AC-311 | payment | 有効 | 017 | — | 決済サービスで支払済みのまま与信の通知を待つ支払が 1 回の処理の件数を超えて滞留しても、それより新しい期限切れの支払を処理する。 |
+| AC-312 | payment | 有効 | 017 | — | 与信の通知を待つ支払が、待ち始めてから決めた時間（設定で変更できる）を過ぎても残っていたら、警告のログに件数を出力する。 |
+| AC-193-1 | storefront | 有効 | 193 | — | 操作の失敗（カートに入れる、カートの数量の変更と削除、購入の手続きの開始、注文、キャンセルの申請、支払の 6 つ）のエラーメッセージは、フォームを送る前から画面にある読み上げの領域の中に表示される。 |
+| AC-193-2 | storefront | 有効 | 193 | — | 読み上げの領域は、状態の知らせ（status の役割）として支援技術に伝わる。「カートに入れる」のフォームの、成功の知らせも表示する領域も、status の役割にする。 |
+| AC-193-3 | storefront | 有効 | 193 | — | 失敗の後に成功したとき、前のエラーメッセージの文は消え、読み上げの領域は残る。入力を修正して再送したときも、前の文は消え、領域は残る。 |
+| AC-193-4 | order | 有効 | 193 | — | 注文のフォームで欄に誤りがあるとき、その欄の誤りの文が、入力欄の説明として支援技術に伝わる。 |
+| AC-193-5 | order | 有効 | 193 | — | 誤りのある欄は、誤りのある状態として支援技術に伝わる。誤りのない欄は、その状態を伝えない。 |
+| AC-193-6 | order | 有効 | 193 | — | 欄の補足の文（郵便番号・住所・電話番号の入力の例）も、入力欄の説明として伝わる。誤りがあるときは、補足の文と誤りの文の両方が伝わる。 |
+| AC-227-1 | order | 有効 | 227 | — | 注文のフォームの送信が欄の誤りで失敗したとき、フォーカスは、選べる誤りの欄のうち画面の順で最初の欄に移る。選べない欄（一覧を取れていない市区町村の欄）は飛ばす。 |
+| AC-227-2 | order | 有効 | 227 | — | 誤りのある欄が全て選べないときは、フォーカスを移さない。 |
+| AC-227-3 | order | 有効 | 227 | — | 欄の誤りがない失敗（在庫不足、通信の失敗など、フォームの下に表示するもの）では、フォーカスを移さない。 |
+| AC-227-4 | order | 有効 | 227 | — | フォーカスを移す処理は、送信の結果を受けたときだけ動く。結果を受けた後に欄を入力・選択しても、フォーカスを欄へ再び移さない。 |
+| AC-227-5 | order | 有効 | 227 | — | 同じ誤りで再び送信に失敗したときも、AC-227-1 のとおりにフォーカスを移す。 |
+| AC-227-6 | storefront | 有効 | 227 | — | バリアントの在庫状況の領域は、status の役割を持つ。 |
 <!-- /generated:ac-list -->

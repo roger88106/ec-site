@@ -114,7 +114,7 @@
 - 照合の結果として、重なるファイルと実装の順序を、plan（規模 M は spec の tasks）に書く。
 - 共有の文書（AC 一覧、用語集）の衝突は、後でマージする pull request が `develop` を取り込んで解消する。
 
-作業ツリーの置き場所と、作業ツリーのセッションが読む設定・定義・skill は、skill `sessions` の「作業ツリーのセッションが読むもの」にある。
+作業ツリーの置き場所と、作業ツリーのセッションが読む設定・定義・skill は、skill `sessions` の[作業ツリーのセッションが読むもの](../../.claude/skills/sessions/session-reads.md)にある。
 
 ## 4. モデルや設定を替えるとき
 

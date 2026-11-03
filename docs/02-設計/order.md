@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。会員の API を使うのは presentation だけである。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。会員の API を使うのは presentation だけである。
 
 ### 他のモジュールへの公開
 
@@ -91,27 +91,9 @@ sequenceDiagram
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）が正本である。
-
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | 注文手続きに進む | `POST /carts/{cartId}/checkouts` | `startCheckout` |
-| 店舗 | 注文手続きの表示 | `GET /checkouts/{checkoutId}` | `getCheckout` |
-| 店舗 | 注文する | `POST /checkouts/{checkoutId}/order` | `placeOrder` |
-| 店舗 | 自分の注文の一覧 | `GET /me/orders` | `listMemberOrders` |
-| 店舗 | 注文の表示 | `GET /orders/{orderId}` | `getOrder` |
-| 店舗 | キャンセルの申請 | `PUT /orders/{orderId}/cancellation-request` | `requestOrderCancellation` |
-| 店舗 | 支払画面を開く | `POST /orders/{orderId}/payment-page` | `openOrderPaymentPage` |
-| 管理 | 注文一覧 | `GET /orders` | `listOrders` |
-| 管理 | 注文の詳細 | `GET /orders/{orderId}` | `getOrder` |
-| 管理 | キャンセルの申請の承認 | `PUT /orders/{orderId}/cancellation-request/approve` | `approveOrderCancellation` |
-| 管理 | キャンセルの申請の却下 | `PUT /orders/{orderId}/cancellation-request/reject` | `rejectOrderCancellation` |
-| 管理 | 運営者の判断によるキャンセル | `PUT /orders/{orderId}/cancel` | `cancelOrder` |
-| 管理 | 出荷の登録 | `POST /orders/{orderId}/shipment` | `shipOrder` |
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 order/

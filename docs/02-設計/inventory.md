@@ -10,7 +10,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。
 
 ### 他のモジュールへの公開
 
@@ -67,18 +67,11 @@ RETURNING quantity;
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[管理 API](../../api/openapi/admin.yaml)）が正本である。店舗 API に在庫の operation はない。店舗の在庫の有無は、商品の応答の `inStock` に含まれる。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 管理 | バリアントの在庫数 | `GET /inventory/variants/{variantId}` | `getStock` |
-| 管理 | 在庫の調整 | `POST /inventory/variants/{variantId}/adjustments` | `adjustStock` |
-| 管理 | 在庫調整の履歴 | `GET /inventory/variants/{variantId}/adjustments` | `listStockAdjustments` |
-| 管理 | 商品ごとの在庫数の合計 | `GET /inventory/stock-summaries` | `listStockSummaries` |
+店舗 API に在庫の operation はない。店舗の在庫の有無は、商品の応答の `inStock` に含まれる。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 inventory/

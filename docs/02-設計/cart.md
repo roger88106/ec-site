@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。会員の API を使うのは presentation だけである。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。会員の API を使うのは presentation だけである。
 
 ### 他のモジュールへの公開
 
@@ -64,20 +64,11 @@ sequenceDiagram
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)）が正本である。管理 API はない。カートの表示（`getCart`）は、店舗モジュールが受ける。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | カートを作る | `POST /carts` | `createCart` |
-| 店舗 | カートに入れる | `POST /carts/{cartId}/items` | `addCartItem` |
-| 店舗 | 品目の数量の変更 | `PUT /carts/{cartId}/items/{variantId}` | `changeCartItemQuantity` |
-| 店舗 | 品目の削除 | `DELETE /carts/{cartId}/items/{variantId}` | `removeCartItem` |
-| 店舗 | 会員のカート | `GET /me/cart` | `getMemberCart` |
-| 店舗 | カートを移す | `POST /me/cart/merge` | `mergeCart` |
+管理 API はない。カートの表示（`getCart`）は、店舗モジュールが受ける。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 cart/

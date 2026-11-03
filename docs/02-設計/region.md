@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。地域は `common` だけに依存し、業務のモジュールに依存せず、イベントを出さない。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。地域は `common` だけに依存し、業務のモジュールに依存せず、イベントを出さない。
 
 ### 他のモジュールへの公開
 
@@ -48,17 +48,11 @@
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)）が正本である。管理 API に地域の操作はない。3 つの操作は、地域の presentation が受ける（`storefront` を通さない）。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | 都道府県の一覧 | `GET /prefectures` | `listPrefectures` |
-| 店舗 | 都道府県の市区町村の一覧 | `GET /prefectures/{prefectureCode}/municipalities` | `listMunicipalities` |
-| 店舗 | 郵便番号の住所 | `GET /postal-codes/{postalCode}` | `findPostalCodeAddresses` |
+管理 API に地域の操作はない。3 つの操作は、地域の presentation が受ける（`storefront` を通さない）。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 region/

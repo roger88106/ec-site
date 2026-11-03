@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。会員の API を呼ぶのは、カート、注文、店舗の presentation である。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。会員の API を呼ぶのは、カート、注文、店舗の presentation である。
 
 token から会員の情報を取り出すクラスは、会員モジュールの外の `common/security` にある（[共通コード・ログ・可観測性](common.md)）。
 
@@ -43,8 +43,6 @@ sequenceDiagram
 会員モジュールは、店舗 API と管理 API の operation を持たない。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 member/

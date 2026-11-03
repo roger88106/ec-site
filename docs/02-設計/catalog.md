@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。
 
 ### 他のモジュールへの公開
 
@@ -66,43 +66,9 @@ sequenceDiagram
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）が正本である。
-
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | 商品一覧 | `GET /products` | `listProducts` |
-| 店舗 | キーワード検索 | `GET /products/search` | `searchProducts` |
-| 店舗 | 商品の詳細 | `GET /products/{productId}` | `getProduct` |
-| 店舗 | カテゴリの木 | `GET /categories` | `listCategories` |
-| 管理 | カテゴリの木 | `GET /categories` | `listCategories` |
-| 管理 | カテゴリの登録 | `POST /categories` | `createCategory` |
-| 管理 | 兄弟カテゴリの並び順を変更する | `PUT /categories/order` | `reorderCategories` |
-| 管理 | カテゴリの取得 | `GET /categories/{categoryId}` | `getCategory` |
-| 管理 | カテゴリ名の変更 | `PUT /categories/{categoryId}` | `renameCategory` |
-| 管理 | カテゴリの削除 | `DELETE /categories/{categoryId}` | `deleteCategory` |
-| 管理 | 商品の一覧・絞り込み | `GET /products` | `listProducts` |
-| 管理 | 商品の登録 | `POST /products` | `createProduct` |
-| 管理 | 商品の詳細（バリアントを含む） | `GET /products/{productId}` | `getProduct` |
-| 管理 | 商品の編集 | `PUT /products/{productId}` | `updateProduct` |
-| 管理 | 商品の削除 | `DELETE /products/{productId}` | `deleteProduct` |
-| 管理 | 公開する | `PUT /products/{productId}/publish` | `publishProduct` |
-| 管理 | 非公開にする | `PUT /products/{productId}/unpublish` | `unpublishProduct` |
-| 管理 | 販売終了にする | `PUT /products/{productId}/discontinue` | `discontinueProduct` |
-| 管理 | 公開期間の設定 | `PUT /products/{productId}/publication-period` | `setPublicationPeriod` |
-| 管理 | バリアントの登録 | `POST /products/{productId}/variants` | `addVariant` |
-| 管理 | バリアントの表示順を変更する | `PUT /products/{productId}/variants/order` | `reorderVariants` |
-| 管理 | バリアントの削除 | `DELETE /products/{productId}/variants/{variantId}` | `deleteVariant` |
-| 管理 | バリアントを販売停止にする | `PUT /products/{productId}/variants/{variantId}/suspend` | `suspendVariant` |
-| 管理 | バリアントの販売停止を解除する | `PUT /products/{productId}/variants/{variantId}/resume` | `resumeVariant` |
-| 管理 | 画像のアップロードを受け付ける | `POST /products/{productId}/image-uploads` | `createImageUpload` |
-| 管理 | 受け付けた画像を登録する | `POST /products/{productId}/images` | `addProductImage` |
-| 管理 | 画像の並び順の変更 | `PUT /products/{productId}/images/order` | `reorderProductImages` |
-| 管理 | 画像の削除 | `DELETE /products/{productId}/images/{imageId}` | `deleteProductImage` |
-| 管理 | バリアントの画像の指定 | `PUT /products/{productId}/variants/{variantId}/image` | `setVariantImage` |
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 catalog/

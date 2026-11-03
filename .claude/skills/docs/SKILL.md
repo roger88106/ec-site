@@ -9,7 +9,7 @@ description: ec-site の文書（docs/、README、AGENTS.md、spec、plan、task
 
 ## 1. 置き場所
 
-置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の書き方](../../../docs/05-開発規則/writing.md)の「文書の置き場所」。手順：文書を追加したら地図に書く。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と地図を一緒に修正する。
+置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の構成](../../../docs/05-開発規則/doc-structure.md)の「文書の置き場所」。手順：文書を追加したら地図に書く。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と地図を一緒に修正する。
 
 ## 2. 書き方
 
@@ -45,7 +45,7 @@ description: ec-site の文書（docs/、README、AGENTS.md、spec、plan、task
 - 「見出しが 1 つに決まらない」と示された参照は、親の見出しを前に付ける（`の「段階 1」の「タスク」`）。
 - 「節の番号で参照している」と示された参照は、メッセージに示された見出しで、見出しの形に書き換える。
 - 適用済みのマイグレーションと seed の SQL は修正しない（Flyway の checksum が変わり、既存の DB で起動に失敗する）。
-- 完了した spec の文書（`docs/08-spec/archive/` の下）は、中のリンクも修正しない（[文書の書き方](../../../docs/05-開発規則/writing.md)の「spec と plan の書き方」）。
+- 完了した spec の文書（`docs/08-spec/archive/` の下）は、中のリンクも修正しない（[文書の構成](../../../docs/05-開発規則/doc-structure.md)の「spec と plan の書き方」）。
 - コードが多く引用している文書の名前（`管理画面の構成` など）は、見出しを変えずに残す。
 
 ## 5. 語の一括の置き換え

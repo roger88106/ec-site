@@ -104,7 +104,7 @@
   | skill `review` の `checklist.cjs` | `docs/05-開発規則/` の「確認方法：」の行の形 |
 
 - 分けたファイルの冒頭は、何の文書かといつ読むかを 2 文以内で書く（[文書の構成](../../05-開発規則/doc-structure.md)の「文書の長さの基準」）。参照元は、場面に合う文書を指す。参照元とは、constitution・`AGENTS.md`・skill・各フォルダーの `README.md`・script のコメントをいう。新しい文書は、そのフォルダーの `README.md` の表に加える。
-- 測り方は `wc -c` のバイト数とする。比べる起点は作業ブランチ `334-shorten-docs` の c02dc7d6。前と後の大きさは、tasks の結果に書く。`docs/05-開発規則/` の文書で目安（15,000 バイト）を超えて残るものは、理由を[毎回読む文書と固定の文脈の大きさ](../../07-記録/context-size.md)の「目安を超えたもの」に書く。
+- 測り方は `wc -c` のバイト数とする。比べる起点は作業ブランチ `334-shorten-docs` の c02dc7d6。前と後の大きさは、tasks の結果に書く。`docs/05-開発規則/` の文書で目安（15,000 バイト）を超えて残るものは、理由を[毎回読む文書と固定の文脈の大きさ](../../07-記録/context-size.md)の「spec 335 の目安を超えたもの」に書く。
 - 大きさの上限の CI の検査は加えない（利用者の決定、2026-11-03）。
 
 ## 目的と完了条件
@@ -192,38 +192,45 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。文書の本文は日本語の要点から、日本語だけの文脈のサブエージェント（汎用）が書く。移した節を指す参照は、そのタスクで修正し、`doc-refs` が通る状態で終える。pull request の base は作業ブランチ `334-shorten-docs` にする。
 
-- [ ] **T335-01-01** `ci.md` を 4 つに分け、GitHub のセキュリティの機能を `branches.md` に移す。`ci-docs` のテストを `ci-checks.md` に合わせて修正し、レッドを確認してから script を修正する（DC-335-1、DC-335-5）。
+- [x] **T335-01-01** `ci.md` を 4 つに分け、GitHub のセキュリティの機能を `branches.md` に移す。`ci-docs` のテストを `ci-checks.md` に合わせて修正し、レッドを確認してから script を修正する（DC-335-1、DC-335-5）。
   - 依存：なし
   - 範囲：`docs/06-手順書/ci.md`、`ci-checks.md`、`ci-adding-checks.md`、`ci-backend-jobs.md`、`branches.md`、`README.md`、`scripts/ci/ci-docs.mjs`、`ci-docs.test.mjs`
   - 確認方法：移す前と後の文を並べて読む（`git show`）、移す前と後の見出しの一覧（`grep '^#'`）を比べる、`node --test scripts/ci/ci-docs.test.mjs`、`node scripts/ci/ci-docs.mjs`、`node scripts/ci/doc-refs.mjs`
-- [ ] **T335-01-02** カバレッジと mutation score の基準を `running-tests.md` に 1 つにまとめ、`test-writing.md` を 3 つに分ける（DC-335-2、DC-335-6）。
+- [x] **T335-01-02** カバレッジと mutation score の基準を `running-tests.md` に 1 つにまとめ、`test-writing.md` を 3 つに分ける（DC-335-2、DC-335-6）。
   - 依存：T335-01-01（`ci.md` の基準の節を移すため）
   - 範囲：`docs/05-開発規則/test-writing.md`、`test-writing-backend.md`、`test-writing-frontend.md`、`README.md`、`docs/06-手順書/running-tests.md`、`ci.md` 系
   - 確認方法：移す前と後の文を並べて読む、見出しの一覧を比べる、`node scripts/ci/doc-refs.mjs`
-- [ ] **T335-01-03** 書き方の規則を縮める（`backend-coding.md`、`frontend-coding.md`、`comments.md`、`api-conventions.md` と、分けた `test-writing` の 3 つ）（DC-335-7、DC-335-8）。
+- [x] **T335-01-03** 書き方の規則を縮める（`backend-coding.md`、`frontend-coding.md`、`comments.md`、`api-conventions.md` と、分けた `test-writing` の 3 つ）（DC-335-7、DC-335-8）。
   - 依存：T335-01-02
   - 範囲：`docs/05-開発規則/backend-coding.md`、`frontend-coding.md`、`comments.md`、`api-conventions.md`、`test-writing.md`、`test-writing-backend.md`、`test-writing-frontend.md`
   - 確認方法：前と後の文を並べて読み、規則が残っていることを確認する、`node .claude/skills/review/checklist.cjs` が成功する、`./gradlew check`（`ModuleStructureTest`）
-- [ ] **T335-01-04** 手順書を縮める（`setup.md`、`running-tests.md`、`branches.md`、`environment.md`、`ci.md` 系）（DC-335-7、DC-335-8）。
+- [x] **T335-01-04** 手順書を縮める（`setup.md`、`running-tests.md`、`branches.md`、`environment.md`、`ci.md` 系）（DC-335-7、DC-335-8）。
   - 依存：T335-01-01、T335-01-02
   - 範囲：`docs/06-手順書/setup.md`、`running-tests.md`、`branches.md`、`environment.md`、`ci.md`、`ci-checks.md`、`ci-adding-checks.md`、`ci-backend-jobs.md`
   - 確認方法：前と後の文を並べて読む、`node scripts/ci/env-defaults.mjs`、`node scripts/ci/local-ports.mjs`
-- [ ] **T335-01-05** skill `local-dev` を分けて縮める（DC-335-3、DC-335-8）。
+- [x] **T335-01-05** skill `local-dev` を分けて縮める（DC-335-3、DC-335-8）。
   - 依存：T335-01-01（`ci-checks.md` を指すため）
   - 範囲：`.claude/skills/local-dev/`、`hooks.md` を指す文書（`AGENTS.md`、skill `zh-mixing` など）
   - 確認方法：移す前と後の文を並べて読む、SKILL.md から移した先へのリンクを読む、`node scripts/ci/doc-refs.mjs`
-- [ ] **T335-01-06** skill `sessions` を分けて縮める（DC-335-3、DC-335-8）。
+- [x] **T335-01-06** skill `sessions` を分けて縮める（DC-335-3、DC-335-8）。
   - 依存：なし
   - 範囲：`.claude/skills/sessions/`、`session-reads.md` を指す文書（`AGENTS.md`、`subagents.md`、記録など）
   - 確認方法：移す前と後の文を並べて読む、SKILL.md から移した先へのリンクを読む、`node scripts/ci/doc-refs.mjs`
-- [ ] **T335-01-07** 他の skill と agent の定義の本文を縮める（DC-335-8、DC-335-10）。
+- [x] **T335-01-07** 他の skill と agent の定義の本文を縮める（DC-335-8、DC-335-10）。
   - 依存：T335-01-01（skill `docs` の検査の説明が `ci-checks.md` を指すため）
   - 範囲：skill `review`、`docs`、`new-screen`、`zh-mixing`、`agent-retro`、`.claude/agents/ja-proofreader.md`、`ja-proof-verifier.md`
   - 確認方法：前と後の文を並べて読む、frontmatter の description が変わっていない（`git diff`）
-- [ ] **T335-01-08** 参照を修正し、検査を通し、大きさを記録する（DC-335-4・DC-335-9・DC-335-11・DC-335-12）。
+- [x] **T335-01-08** 参照を修正し、検査を通し、大きさを記録する（DC-335-4・DC-335-9・DC-335-11・DC-335-12）。
   - 依存：T335-01-01〜07
   - 範囲：変えたファイルを指す文書・skill・script のコメントとテスト（`doc-refs` が示すもの）、`docs/07-記録/context-size.md`
   - 確認方法：`node scripts/ci/doc-refs.mjs`、`scripts/ci/check-all.sh`、`./gradlew check`、`node scripts/ci/ja-text.mjs --changed`、`wc -c`、分けたファイルの冒頭を読む
+  - 結果：前と後の大きさは、[毎回読む文書と固定の文脈の大きさ](../../07-記録/context-size.md)の「spec 335 の前後」にある。
+    - 対象の合計は 343,785 バイトから約 30.6 万バイト（約 11%）に減った。
+    - 1 回に読む量は、`ci.md` が 29,977 から約 4,600、skill `sessions` が 20,705 から約 11,600、skill `local-dev` が 30,193 から 21,869 バイトになった。
+    - `test-writing.md` を読む量は、バックエンドのテストで約 16,900、フロントのテストで約 23,000 バイトになった（分ける前は 36,776）。
+    - 目安を超えて残った `docs/05-開発規則/` の文書は、`backend-coding.md`・`frontend-coding.md`・`test-writing-frontend.md` の 3 つである。理由は、[毎回読む文書と固定の文脈の大きさ](../../07-記録/context-size.md)の「spec 335 の目安を超えたもの」にある。
+    - 縮めた量が少なかった `backend-coding.md`・`frontend-coding.md`・`test-writing-frontend.md` は、高性能の実装役でもう一度縮めた（T335-01-03 の続き）。
+    - `./gradlew check` と `scripts/dev/check-frontend.sh` は成功した。
 - [ ] **T335-01-09** spec の最後のレビュー。指摘を修正し、draft の pull request を作る（DC-335-13、DC-335-14）。
   - 依存：T335-01-08
   - 確認方法：校閲（検出役、確認役の順）を差分の追加行に行い、修正の後に `doc-refs`・`check-all.sh`・`ja-text --changed` を再度実行する

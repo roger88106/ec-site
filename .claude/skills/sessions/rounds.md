@@ -23,7 +23,7 @@ skill `sessions` の「ステップの終わり」と、skill `sessions` の「�
 ## 効果の測定
 
 - 整理の第 2 フェーズの最初のステップだけ、閾値・並行の上限・spec の最後のレビューの量を測り直す。第 1 フェーズの測定の結果は[エージェントの作業フローの調べた仕組みと実績](../../../docs/07-記録/subagents-results.md)の「値を今は変えない理由」、値は[作業の形と使用量](../../../docs/05-開発規則/resources.md)にある。測る作業そのものは、後回しの作業の起票の案に入れる。
-- 方法は、整理の前の基準と同じ script に、レビューの記録の集計（`node .claude/skills/review/stats.cjs`。使い方は [review](../review/SKILL.md) 手順 6 と stats.cjs の冒頭）を加える。セッションの記録（jsonl）から spec ごとの token と時間を集計する `/.local/refactor/baseline/tokens.cjs`（`node tokens.cjs sessions|specs`）と、結果の `report.md`。Git に入らないので、新しい clone にはない。ないときは、利用者に所在を聞く。
+- 方法は、整理の前の基準と同じ script に、レビューの記録の集計（`node .claude/skills/review/stats.cjs`。使い方は [review](../review/SKILL.md) 手順 6 と stats.cjs の冒頭）を加える。方法に使うのは、セッションの記録（jsonl）から spec ごとの token と時間を集計する `/.local/refactor/baseline/tokens.cjs`（`node tokens.cjs sessions|specs`）と、結果の `report.md` である。これらは Git に入らないので、新しい clone にはない。ないときは、利用者に所在を聞く。
 - 比べる項目：レビューの費用の割合、段階ごとの重要度「高」の指摘の件数、待機の token、固定の文脈の大きさ。
 
 ## 危険度が低い変更の推奨と起票の案

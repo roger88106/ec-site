@@ -7,7 +7,7 @@ description: 中国語で指示する環境で、日本語の文書・コメン�
 
 利用者が中国語で指示し、日本語で書かせる環境では、会話から文書へ訳すときや、混ざった文を写して広げるときに、中国語の字・用語が日本語の文に混ざる。混ざった行を、記録される前に見つける。
 
-この skill は層 2 の検査で、中国語で指示する環境だけで動き、CI には入れない。層 1 と層 2 の分け方は、skill `review` の [docs-review.md](../review/docs-review.md) の手順 4。
+この skill は層 2 の検査である。層 1 と層 2 の分け方と動く環境は、skill `review` の [docs-review.md](../review/docs-review.md) の手順 4。
 
 ## 環境の印
 
@@ -39,7 +39,7 @@ git config --local ecsite.instructionLanguage zh
 1. 環境の印：`git config --local ecsite.instructionLanguage zh`。`.git/config` に入り、全ての作業ツリーで共有する。
 2. Claude Code の hook：skill `local-dev` の「手元の hook の設定」の PostToolUse の項目を、`.claude/settings.local.json` に置く。
 
-3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
+3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md)の「起動」にある `.git/hooks/pre-commit`・`commit-msg` の行（層 1 の `ja-text` の検査）に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 
 | hook | 追加する行 |
 |------|--------|
@@ -48,7 +48,7 @@ git config --local ecsite.instructionLanguage zh
 
 `.git/hooks/` は全ての作業ツリーで共有し、script のないブランチ（例えば `main` から切る `release-`・`hotfix-` のブランチ）でも hook が動くので、行は script があるときだけ呼ぶ形にする。
 
-設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外し、`settings.local.json` の上の項目と、git の hook の上の行を削除する。
+設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外す。次に、`settings.local.json` の PostToolUse の項目（skill `local-dev` の「手元の hook の設定」の `post-tool-use.cjs` の項目）と、手順 3 で git の hook に追加した行を削除する。
 
 ## 一覧の直し方
 

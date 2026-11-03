@@ -227,11 +227,25 @@ AC 一覧の冒頭は「全ての列を手動で書く」としているが、`n
   - 依存：なし
   - 範囲：`docs/01-概要/template.md`、`order.md`、`README.md`（必要なとき）、`docs/04-決定記録/subagent-delegation.md`、`template.md`、`README.md`
   - 確認方法：文書を読む、`node scripts/ci/doc-refs.mjs`。フォルダーの `README.md` を変える前に issue 担当のセッションに知らせる
-- [ ] **T336-01-09** 参照を修正し、検査を通し、大きさを記録する（DC-336-15、DC-336-16、DC-336-18）。
+- [x] **T336-01-09** 参照を修正し、検査を通し、大きさを記録する（DC-336-15、DC-336-16、DC-336-18）。
   - 依存：T336-01-01〜08
   - 範囲：変えたファイルと、参照する文書・コードのコメント。constitution、`AGENTS.md`、フォルダーの `README.md`、`context-size.md` を変える前に、箇所を issue 担当のセッションに知らせる
   - 確認方法：`node scripts/ci/ac-check.mjs`、`node scripts/ci/doc-refs.mjs`、`scripts/ci/check-all.sh`、`./gradlew check`、フロントエンドと e2e の型の検査、`node scripts/ci/ja-text.mjs --changed`、`wc -c`、`git diff --stat origin/334-shorten-docs -- docs/08-spec/archive` が空（DN-336-3）
-  - 結果：（実装の後に書く）
+  - 結果：大きさ（バイト。起点は c02dc7d6、`.md` と `.yaml` の合計）は次のとおり。
+
+    | 対象 | 前 | 後 | 減った量 | 割合 |
+    |------|----|----|----------|------|
+    | `docs/01-概要/` | 7,337 | 6,993 | 344 | 4.7% |
+    | `docs/02-設計/` | 187,966 | 179,203 | 8,763 | 4.7% |
+    | `docs/03-機能仕様/` | 295,555 | 250,903 | 44,652 | 15.1% |
+    | `docs/04-決定記録/` | 12,067 | 10,313 | 1,754 | 14.5% |
+    | `api/openapi/` | 142,551 | 131,396 | 11,155 | 7.8% |
+    | 計 | 645,476 | 578,808 | 66,668 | 10.3% |
+
+    - 設計は、機能仕様から移した内容（約 9,500 バイト）を含めて減った。AC 一覧は 87,458 から約 69,800 バイトになった。
+    - 検査は全て成功した（`ac-check`、`doc-refs`、`CI=true scripts/ci/check-all.sh`、`./gradlew check`、`frontend/admin`・`frontend/store`・`e2e` の `pnpm typecheck`）。アーカイブの差分はない。
+    - `ja-text --changed` の warning は、AC の表の行（AC の正本の文で変えない）を除いて 29 件で、1 件ずつ読んだ。AC 一覧の冒頭の長い文と `ac-check.mjs` のコメントの長い文は 2 文に分けた。残したのは、spec の 21 件（spec のレビューで扱いを決めた）と、`common.md` と `subagent-delegation.md` の長いセル 6 件（分けると表の行の中身が落ちる）である。
+    - 決定の表に挙げなかった同じ種類の本文（注文・在庫の行ロックの文、メディアのキーの形、通知の文言のキーなど）は、機能仕様に残した。
 - [ ] **T336-01-10** spec の最後のレビュー。指摘を修正し、draft の pull request を作る（DC-336-17、DC-336-19）。
   - 依存：T336-01-09
   - 確認方法：校閲（検出役、確認役の順）を差分の追加行に行い、修正の後に検査を再度実行する。push の後に GitHub の表示を確認する

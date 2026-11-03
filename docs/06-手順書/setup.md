@@ -261,3 +261,25 @@ realm を再度取り込む前は、スロットの画面のログインがリ�
 
 - 上の表にないものは、置いたまま忘れた作業用のファイルである。見つけたら、中身の一覧を利用者に示し、許可を得て削除する。
 - spec ごとの記録（`review/`、`impl/`、`pr/`）の削除は、[開発の進め方](../05-開発規則/workflow.md)の「マージの許可と後片付け」で行う。
+
+## 11. IDE の設定
+
+IntelliJ IDEA で、Java の import の並びを Checkstyle の検査に合わせ、エージェントが整形するための設定である。import の並びの規則は、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」にある。
+
+### import の並び
+
+Optimize Imports をバックエンドの書き方の「書式」の表の並びにするため、Settings → Editor → Code Style → Java → Imports の「Import Layout」を次の順にする。IntelliJ の既定は `import all other imports`、空行、`import javax.*`、`import java.*`、空行、`import static all other imports` で、`javax.*` が `java.*` の前にある。表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
+
+1. `import all other imports`
+2. 空行
+3. `import java.*`
+4. `import javax.*`
+5. 空行
+6. `import static all other imports`
+
+同じ設定画面の「Class count to use import with *」と「Names count to use static import with *」は、`*` の import を作らないよう、大きな値（999）にする。
+
+### エージェントによる整形
+
+- エージェントは、IntelliJ の MCP（`reformat_file`）を使えるとき、変えた Java のファイルを整形してよい。
+- `reformat_file` が整形できるのは、IntelliJ で開いているプロジェクトのファイルだけ。`.claude/worktrees/` の下の作業ツリーのファイルは、その作業ツリーを IntelliJ で開いていなければ、MCP が「ok」を返しても整形しない。整形の後に `git diff` で変わったかを確認する。

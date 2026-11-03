@@ -27,7 +27,7 @@
   - 依存：T330-02-02
   - 範囲：`docs/05-開発規則/backend-coding.md`、`docs/02-設計/backend-architecture.md`、参照（`ModuleStructureTest` などのコメント、skill、文書）。skill の参照を修正する前に、issue 担当のセッションに知らせる
   - 確認方法：移す前の規則が全てどちらかにある。サブエージェント（汎用）が照合する。`doc-refs` が通る
-- [ ] **T330-02-04** 「書式」から、IntelliJ の Import Layout の設定と MCP の `reformat_file` の注意を、`setup.md` の新しい節「IDE の設定」に移す（DC-330-1、2）。
+- [x] **T330-02-04** 「書式」から、IntelliJ の Import Layout の設定と MCP の `reformat_file` の注意を、`setup.md` の新しい節「IDE の設定」に移す（DC-330-1、2）。
   - 依存：T330-02-03
   - 範囲：`docs/05-開発規則/backend-coding.md`、`docs/06-手順書/setup.md`（新しい節の追加だけ。spec 7 も同じ文書を変えるので、書き換える前に issue 担当のセッションに知らせる）
   - 確認方法：文書を読む。`doc-refs` が通る

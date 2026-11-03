@@ -51,6 +51,20 @@ sequenceDiagram
     O->>I: 数量を戻す（キャンセル）
 ```
 
+### 在庫の調整
+
+業務規則は [在庫モジュール](../03-機能仕様/inventory.md) の「在庫の調整は「差分の加算」」に書く。
+
+- 在庫数は、次の条件付きの更新で変える。引当の判定は、行ロックして読んだ在庫で行う。理由：集約を読み込んで書き戻すと、並行した調整で増減が失われるため。
+
+```sql
+UPDATE inventory.stock_item
+   SET quantity = quantity + :delta
+ WHERE variant_id = :variantId AND quantity + :delta >= 0
+   AND quantity + :delta <= 1000000  -- 運営者の調整のときだけ
+RETURNING quantity;
+```
+
 ## API
 
 リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[管理 API](../../api/openapi/admin.yaml)）が正本である。店舗 API に在庫の operation はない。店舗の在庫の有無は、商品の応答の `inStock` に含まれる。

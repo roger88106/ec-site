@@ -127,6 +127,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 
 - 待つ先は自分のスロットの運用ポート。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
 - 店舗画面と管理画面のプレビューは、`.claude/launch.json` の `store-<n>`・`admin-<n>`（`store-1`、`admin-2` など。`<n>` は自分のスロット）を `preview_start` で指定する。`admin`・`store` はスロット 0。プレビューのツールがないときは、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>` をバックグラウンドで実行する。番号が自分のスロットと違うと起動しない。
+- `run backend` がポートの使用で終了コード 1 で終わったら、表示された停止のコマンドで停止してから再実行する。
 - 割り当てとデータを残したまま停止するときは、自分のスロットのポートで待ち受けているプロセスだけを停止する。Windows の PowerShell では `Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess`（スロット 1 のバックエンド）。他のスロットのポートのプロセスを停止しない。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
 
@@ -146,7 +147,7 @@ CI=true scripts/ci/check-all.sh
 
 ## 決済（mock と Stripe）
 
-- profile `local` は mock で、注文すると mock の支払画面に移る（[決済の設計](../../../docs/02-設計/payment.md)の「mock」）。
+- profile `local` は mock で、注文すると mock の支払画面に移る（[決済の設計](../../../docs/02-設計/payment.md)の「mock」）。期限切れを早く確認する引数は、mock でも[開発環境の起動](../../../docs/06-手順書/setup.md)の「Stripe で動かす」のものを使う。
 - Stripe の sandbox は[開発環境の起動](../../../docs/06-手順書/setup.md)の「Stripe で動かす」の通り。鍵は `/.local/stripe.env` にある（なければ利用者に頼む。鍵を会話に貼らせない）。
 - 転送した通知は、鍵の行を出さずに読む：`docker logs ec-site-stripe-cli 2>&1 | grep -- '-->' | tail`（ログ全体は署名の鍵を含むので出さない）。
 - 支払は `payment.payment`（`status`、`page_id`、`authorization_ref`）、注文は `ordering.sales_order`。

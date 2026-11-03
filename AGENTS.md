@@ -86,4 +86,4 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 - JDK 21。統合テストと jOOQ のコード生成には Docker が必要。
 - Gradle のプロジェクトは `backend/ecsite/` にある（`./gradlew` もそこで実行する）。リポジトリのルートと `backend/` には Gradle の設定がない。
 - 起動・テストの手順は [開発環境の起動](docs/06-手順書/setup.md) と [テストの実行方法](docs/06-手順書/running-tests.md)。エージェントは skill `local-dev` を使う。
-- hook と permission の書き先と script の置き場所は、skill `local-dev` の「手元の hook の設定」。作業ツリーのセッションが読むものは、skill `sessions` の「作業ツリーのセッションが読むもの」。
+- hook と permission の書き先と script の置き場所は、skill `local-dev` の[手元の hook の設定](.claude/skills/local-dev/hooks.md)。作業ツリーのセッションが読むものは、skill `sessions` の「作業ツリーのセッションが読むもの」。

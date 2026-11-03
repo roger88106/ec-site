@@ -37,7 +37,7 @@ git config --local ecsite.instructionLanguage zh
 中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く（チームの規則は `.claude/settings.json` に書くが、手順 2 の Claude Code の hook は環境に固有なので `.claude/settings.local.json` に書く。分け方は [AGENTS.md](../../../AGENTS.md) の「環境」の節）。環境の印がなければ、設定しても何も調べない。
 
 1. 環境の印：`git config --local ecsite.instructionLanguage zh`。`.git/config` に入り、全ての作業ツリーで共有する。
-2. Claude Code の hook：skill `local-dev` の「手元の hook の設定」の PostToolUse の項目を、`.claude/settings.local.json` に置く。
+2. Claude Code の hook：skill `local-dev` の[手元の hook の設定](../local-dev/hooks.md)の PostToolUse の項目を、`.claude/settings.local.json` に置く。
 
 3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md)の「起動」にある `.git/hooks/pre-commit`・`commit-msg` の行（層 1 の `ja-text` の検査）に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 
@@ -48,7 +48,7 @@ git config --local ecsite.instructionLanguage zh
 
 `.git/hooks/` は全ての作業ツリーで共有し、script のないブランチ（例えば `main` から切る `release-`・`hotfix-` のブランチ）でも hook が動くので、行は script があるときだけ呼ぶ形にする。
 
-設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外す。次に、`settings.local.json` の PostToolUse の項目（skill `local-dev` の「手元の hook の設定」の `post-tool-use.cjs` の項目）と、手順 3 で git の hook に追加した行を削除する。
+設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外す。次に、`settings.local.json` の PostToolUse の項目（skill `local-dev` の[手元の hook の設定](../local-dev/hooks.md)の `post-tool-use.cjs` の項目）と、手順 3 で git の hook に追加した行を削除する。
 
 ## 一覧の直し方
 

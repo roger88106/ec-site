@@ -521,7 +521,7 @@ export function checkAcRows({ rows, modules, specDirs }) {
     // 変更・廃止の AC の変えた spec の各番号（空と「—」は、状態ごとの検査が見る）
     const checkChangedBy = () => {
       for (const number of row.changedBy.split(SPEC_NUMBER_SEPARATOR)) {
-        const problem = checkSpecNumber(number.trim(), specDirs, '変えた spec')
+        const problem = checkSpecNumber(number, specDirs, '変えた spec')
         if (problem) add(problem)
       }
     }

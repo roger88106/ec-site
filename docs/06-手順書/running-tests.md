@@ -57,6 +57,20 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる（管理画面のビルドの環境変数は、未設定ならローカルの値を使う）。
 
+### knip が失敗したとき
+
+使われていないものの検査（規則は[フロントの書き方](../05-開発規則/frontend-coding.md)の「使われていないものを残さない」）は、knip（設定は `knip.ts`）が `frontend/*` と `e2e` を調べる。ルートで `pnpm knip` を実行する。`scripts/dev/check-frontend.sh` と、CI のフロントのジョブも実行する。knip の前に、生成物（API の型、入力の制約の定数）を `generate:api` で作る。
+
+報告は次の 3 種類で、種類ごとに修正する。
+
+| 報告 | 修正の方法 |
+|------|--------|
+| どこからも使われていないファイル | 削除する。実行時に import されずに使われるファイル（例：型の拡張 `i18n/types.ts`、E2E の準備の script `e2e/scripts/prepare.ts`）は knip の誤検出なので、`knip.ts` の `entry` に書き、コードに意味のない参照を追加しない |
+| どこからも import されていない export と型 | 削除する。定義したファイルの中だけで使う export も報告するので、export を外す |
+| `package.json` にあって使われていない依存、`package.json` にない依存の import | 依存を削除する、または `package.json` に追加する |
+
+生成物の export と型の報告は、`knip.ts` の `ignoreIssues` に、ファイルの範囲と `exports`・`types` だけを書いて外す。外す理由はコメントに書く。
+
 ## 4. E2E（`e2e/`）
 
 バックエンド、管理画面、店舗画面を起動して、Chromium で操作する（Playwright）。専用の DB（`ec_site_e2e`）、IdP（Keycloak、:8181）、画像のバケットを使い、ローカルのデータを変えない。

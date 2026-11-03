@@ -215,7 +215,7 @@
   - 依存：T334-01-03、T334-01-04、T334-01-06（同じ skill の SKILL.md を変えるため）
   - 範囲：対象の skill 6 つの SKILL.md と、`.claude/agents/` の 5 つの frontmatter
   - 確認方法：description のバイト数を node で数える、各 description を読み、何をするかといつ使うかが書いてある
-- [ ] **T334-01-06** 進め方の規則の文書の重複と転記を減らす（DC-334-9、DC-334-10）。
+- [x] **T334-01-06** 進め方の規則の文書の重複と転記を減らす（DC-334-9、DC-334-10）。
   - 依存：T334-01-01、T334-01-02
   - 範囲：`writing.md`、`workflow.md`、`subagents.md`、`resources.md`、`review.md`、`notation.md`、`glossary.md`、`licenses.md`、skill `sessions`
   - 確認方法：正本の表にある 4 つの規則を `git grep` で検索し、正本の外に言い換えがないことを読む、用語集と `licenses.md` で、決定に挙げた転記（テストの補助のパス、jest-dom の読み込み方、`policy.json` と `build.gradle.kts` の設定の説明）がないことを読む

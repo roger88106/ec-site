@@ -6,7 +6,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 ## 最初に読むもの
 
 1. [constitution](docs/constitution.md)：大綱と文書の地図
-2. [開発の進め方](docs/05-開発規則/workflow.md)：SDD と TDD、起票と規模、利用者の確認と中断、完了の定義
+2. [開発の進め方](docs/05-開発規則/workflow.md)：SDD と TDD、規模と push、利用者の確認と中断、完了の定義
 3. 着手する段階の tasks と、冒頭の「参照」の文書（`docs/08-spec/<番号>-*/`）
 4. コードを書く・レビューする前に、関わる書き方の文書（constitution の「コードの書き方」の一覧）
 5. 文書（docs/・README・AGENTS.md・spec・plan・tasks・issue の本文とコメント）を書く・レビューする前に、場面で分けて読む。書く前に、skill `docs` の「進め方」も読む

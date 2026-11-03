@@ -296,7 +296,7 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 ### 4.13 店舗画面のテストは、対象ごとの方法で書く
 
-店舗画面（`frontend/store`）のテストは、次の表の方法で書く。補助は、「複数のテストで使うものは、テストの補助に置く」の置き場所にある、次の表のものを使う。店舗画面には結合テストを置かない（「テストの種類」）。
+店舗画面（`frontend/store`）のテストは、次の表の方法で書き、店舗画面の補助を使う。補助は `frontend/store/src/test/` にあり（「複数のテストで使うものは、テストの補助に置く」）、各補助の使い方はファイルの TSDoc にある。店舗画面には結合テストを置かない（「テストの種類」）。
 
 | 対象 | テスト |
 |------|--------|
@@ -309,28 +309,13 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 ※6：住所の補完は、結果（1 件・複数・ない・通信の失敗）と、住所の欄に入力したかどうかを組み合わせると場合が多く、E2E では確認しきれないため。読むだけなので、差し替えても、送る内容の確認に漏れが生じない。サーバーアクションそのものは、サーバーの処理のテストで確認する。
 
-| 補助（`src/test/`） | 内容 |
-|---------------------|------|
-| `render.tsx` の `renderMarkup`、`renderStatic`、`renderInBrowser` | コンポーネントを、日本語の文言を渡す Provider（next-intl）で包む。`renderMarkup` は HTML の文字列にし、`renderStatic` はその HTML を jsdom の文書に読み込んで、役割と名前などで探す関数（Testing Library の `within`）を返す。`renderInBrowser` は jsdom に描画して、操作に使う `user`（user-event）と、props を変えて再描画する `rerender`（再描画するときも、同じ Provider で包む）を返す |
-| `next.ts` | Next.js の `next/headers`（Cookie とヘッダー）と `next/cache`（`revalidatePath`）の代わりに使う置き換え。Cookie の値と属性は `cookieValue`・`cookieOptions`、再表示を知らせたパスは `revalidatedPaths` で確認する。`next/navigation` は置き換えず、本物を使う |
-| `next.ts` の `redirectedTo`、`expectNotFound` | 処理が投げた例外の digest で、移る先（`redirectedTo`）と「見つからない」（`expectNotFound`）を確認する。どちらも、該当しなければテストを失敗させる |
-| `auth.ts` の `signInAs`、`authState` | Auth.js（`next-auth`、`next-auth/jwt`）の代わりのログインの状態。`signInAs(token)` で会員がログインしている状態にし（token は上書きできる）、`authState` で `signIn`・`signOut` の呼び出しと `auth.ts` が渡した設定を確認する。ログインしていない状態は、各テストの前に戻る |
-| `auth.ts` の `nowSeconds` | 現在の時刻を UNIX 時刻の秒で返す（token の `expiresAt` と同じ単位）。偽の時計を使っていれば、その時刻。期限切れや期限が近い token を作るときに使う |
-| `fixtures.ts` | 応答に使うデータ（カート、注文、バリアント、お届け先など）と、それらの ID。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す。地域のデータとして、都道府県の一覧（`PREFECTURES`）、都道府県のコードごとの市区町村（`MUNICIPALITIES`）、郵便番号の検索の結果（`postalCodeAddress`）を持つ。`form(fields)` はフォームの値を作る |
-| `env.ts` の `PRODUCTION_ENV` | 本番のモードで渡す環境変数の全て。確認する項目は、スプレッドで上書きするか、分割代入で除く |
-| `server.ts` の `http`、`server` | `http` は `store.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー）。`server` は店舗 API と IdP の代わりに応答する |
-| `server.ts` の `networkError`、`problem` | `networkError` はリクエストを通信の失敗にする、型のない MSW のハンドラーを作る（理由は「API の差し替えは型付きの MSW」）。`problem` はエラーレスポンスの本文を作る |
-| `stderr.ts` の `recordStderr` | 標準エラー出力への書き込みを差し替えて記録し、書いた行（JSON）と全文を返す。差し替えはテストの後に元に戻る |
-| `elements.ts` の `button`、`select`、`input`、`expectInOrder` | `button`、`select`、`input` は、jsdom の上の要素を、役割（ボタン）か見出し（選択欄、入力欄）で探す。型が違えば、テストを失敗させる。`expectInOrder` は、要素が渡した順に文書の中に出ることを確認する（Node の環境でも使える） |
-| `setup.ts` | 全てのテストに共通の設定。jest-dom の照合の関数を読み込み、`next/headers`・`next/cache`・`next-auth` などを置き換え、MSW を開始する。各テストの前に、Cookie とログインの状態を初期化する。各テストの後に実行するのは、次の 5 つである。描画したコンポーネントのアンマウント、`vi.restoreAllMocks()`、環境変数の差し替えの復元、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
-
 理由：表示、ブラウザーの中の操作、サーバーの処理で、確認できる範囲と手間が違うため。対象に合う最小の方法で確認し、サーバーを通る流れは E2E に任せる。
 
 確認方法：レビュー
 
 ### 4.14 管理画面の結合テストは、本物の描画で、API だけを差し替える
 
-管理画面（`frontend/admin`）の結合テストは、画面を本物のルーター・キャッシュ・toast で描画し、API の応答だけを MSW で差し替えて、利用者と同じように操作する。補助は `frontend/admin/src/test/` に置く（「複数のテストで使うものは、テストの補助に置く」）。
+管理画面（`frontend/admin`）の結合テストは、画面を本物のルーター・キャッシュ・toast で描画し、API の応答だけを MSW で差し替えて、利用者と同じように操作する。補助は `frontend/admin/src/test/` に置く（「複数のテストで使うものは、テストの補助に置く」）。各補助の使い方はファイルの TSDoc にある。管理画面の補助を使う。
 
 ```tsx
 // features/<機能>/pages/<画面>.test.tsx
@@ -345,27 +330,10 @@ await user.click(await screen.findByRole('button', { name: '保存' }))
 expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
 ```
 
-| 補助（`src/test/`） | 内容 |
-|---------------------|------|
-| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。`AuthGate` は通さず、ログインしている運営者を差し替えて描画する（token は付けず、401 で IdP へ移る処理も行わない）。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
-| `renderApp.tsx` の `ALL_PERMISSIONS`、`TEST_OPERATOR_NAME` | `ALL_PERMISSIONS` は運営者の権限の既定（全て）。`TEST_OPERATOR_NAME` はログインしている運営者の名前で、画面の表示の確認に使う |
-| `http`、`server` | `http` は `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー）。`server` は API の代わりに応答する |
-| `problem(...)` | エラーレスポンスの本文を作る |
-| `getServerError(path)`、`getNetworkError(path)` | 契約にない応答（サーバーのエラー、通信の失敗）を返す、型のない MSW のハンドラーを作る（理由は「API の差し替えは型付きの MSW」） |
-| `stockHandler(quantity)` | バリアントの在庫数の取得に、バリアントによらず同じ数で応答する。関数を渡すと、取得のたびに関数の戻り値で応答する |
-| `conflict(response)`、`Reply` | 更新の競合（409）の応答を返す。`Reply` は、条件で応答を変える関数の型で、その関数が返す応答は契約にあるものに限られる |
-| `reportServer.ts` の `serveReportBasics` | レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する。会計年度は 4 月始まり、商品は T シャツ 1 つ（ID は `fixtures.ts` の `SHIRT_ID`）。結合テストだけで使う |
-| `setup.ts` | 全てのテストに共通の設定。各テストの後に実行するのは、次の 5 つである。`vi.restoreAllMocks()`（`vi.spyOn` で差し替えたものを戻す）、toast の消去、描画したコンポーネントのアンマウント、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
-| `fixtures.ts` | 応答に使うデータと、テストで共有する定数（`SHIRT_ID`、競合の知らせの文言 `CONFLICT_MESSAGE`）。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す。MSW に依存しないので、単体テストからも読める |
-| `queries.ts` | 詳細の項目の値、一覧の行、一覧のセル（`getCell`）を、名前で探す。`getListItemContaining` は、渡した要素を含む一覧の項目を返す。名前は、項目の値では項目名、行では行の名前、セルでは行の名前と列の見出し。行の見出しのセル（`th scope="row"`）も列に含める。入れ子の表にある見出しとセルは、外の表の列に数えない。テストのファイルでは DOM の位置を指定しない |
-| `download.ts` | ファイルのダウンロード（URL の作成とリンクのクリック）を差し替え、保存名と本文を返す。`download` の属性のないリンクのクリックは記録せず、本物のクリックの処理に渡す。テストの後に、差し替えを元の実装に戻す |
-| `inputs.ts` の `typeDateTime` | 日時の入力（`datetime-local`）に値（`yyyy-MM-ddTHH:mm`）を入れる。user-event は `datetime-local` に入力できず、jsdom は `value` への代入では入力の通知（`input`・`change` イベント）を発火しないので、補助の中で `fireEvent.change` を使う |
-| `inputs.ts` の `returnToTab` | 別のタブから戻ったこと（window の `visibilitychange`）を発火し、画面に再取得させる。user-event に対応する操作がないので `fireEvent` を使う |
-
 - 置き場所は、主に確認する画面（`pages/`）の横。
 - リンクの見た目のボタン（共有の `LinkButton`）は、役割が `button` になる。
 - 送った内容は、ハンドラーの中で `request.json()` を変数に取って確認する。
-- バージョンの決まり（[管理画面の構成](../02-設計/apps/admin.md)の「フォーム」）は、入力中に他の人が更新した後で、画面に再取得させる（`fireEvent(window, new Event('visibilitychange'))`）。入力が消えず、送るバージョンが変わらないことまで確認する。
+- バージョンの決まり（[管理画面の構成](../02-設計/apps/admin.md)の「フォーム」）は、入力中に他の人が更新した後で、画面に再取得させる（`inputs.ts` の `returnToTab()`）。入力が消えず、送るバージョンが変わらないことまで確認する。
 - 管理 API の外へのリクエスト（ストレージへの PUT）は、`msw` の `http` で作る（`admin.yaml` の型がないため）。
 - 画面の外で起きること（バックエンドの業務の規則、店舗画面への反映）は確認しない。
 

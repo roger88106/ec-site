@@ -37,10 +37,7 @@ description: ec-site のフロントに画面や操作を追加・修正する�
 | `src/app/<URL>/page.tsx` | サーバーコンポーネント。取得とコンポーネントの組み立てだけ |
 | `src/features/<機能>/components/` | 画面のコンポーネント。操作のあるコンポーネントだけ `'use client'` |
 | `src/actions/<資源>.ts` | サーバーアクション（`'use server'`）。変更系の API はここからだけ呼ぶ |
-| `src/api/client.ts` | `getApi()`、`UNCACHED` |
-| `src/api/result.ts` | `unwrap()`：404 → `notFound()`、それ以外の失敗 → `ApiError` を投げる（`error.tsx` に表示される） |
-| `src/api/cartCookie.ts` | `readCartId()`（コンポーネントとアクション）、`writeCartId()`（アクションだけ） |
-| `src/lib/actionResult.ts` | `ActionResult`、`SUCCESS`、`toFailure()`、`CONNECTION_FAILED` |
+| `src/api/`、`src/lib/actionResult.ts` | API の呼び出し、`unwrap()`（404 は `notFound()`、それ以外の失敗は `ApiError`）、カートの Cookie（`writeCartId()` はアクションだけ）、`ActionResult`。export の名前は各ファイルを読む |
 
 似た既存の例：取得の画面は `app/orders/[orderId]/page.tsx`、操作は `actions/order.ts` と `features/order/components/CancellationRequestForm.tsx`、カートの Cookie を使う操作は `actions/cart.ts`（404 で再作成する `withCart`）。
 
@@ -114,7 +111,9 @@ export async function updateFoo(_previous: ActionResult | null, formData: FormDa
 
 ### フォーム（`features/<機能>/components/FooForm.tsx`）
 
-結果の表示をテストするフォームは、`useActionState` を呼ぶコンポーネントと、結果を props で受ける表示のコンポーネントに分ける（例：`OrderForm` と `OrderFormView`）。テストは表示のコンポーネントに結果を渡す。結果の表示をテストしない他のフォームは、分けなくてよい。同じ読み上げの領域が残るなど、結果の表示の遷移を確認するときは、分けずにサーバーアクションを `vi.mock` で差し替え、jsdom で操作する（`CancellationRequestForm.test.tsx`。テストの書き方の「テストの種類と基準」）。
+- 結果の表示をテストするフォームは、`useActionState` を呼ぶコンポーネントと、結果を props で受ける表示のコンポーネントに分ける（例：`OrderForm` と `OrderFormView`）。テストは表示のコンポーネントに結果を渡す。
+- 結果の表示をテストしないフォームは、分けなくてよい。
+- 同じ読み上げの領域が残るなど、結果の表示の遷移を確認するときは、分けずにサーバーアクションを `vi.mock` で差し替え、jsdom で操作する（`CancellationRequestForm.test.tsx`。テストの書き方の「テストの種類と基準」）。
 
 ```tsx
 'use client'
@@ -151,11 +150,8 @@ export function FooForm({ fooId }: { fooId: string }) {
 | `src/features/<機能>/components/` | フォーム、表、操作のボタン |
 | `src/app/paths.ts` | 画面の URL の形（`routePatterns`）と、URL を作る関数（`paths`）を追加する |
 | `src/app/router.tsx` | ルートを追加する（path は `routePatterns`）。機能の入口なら `src/app/menu.ts` にも |
-| `src/api/client.ts` | `$api`（openapi-react-query） |
-| `src/api/useApiMutation.ts` | 更新の操作（成功の知らせ、続きの処理、一覧の再取得） |
-| `src/api/useMutationGroup.ts` | 1 つの場所の複数の更新の操作の、待ち状態・最初のエラー・エラーの消去 |
-| `src/api/invalidate.ts` | 再取得するパスの前方一致 `ApiPathPrefix`。新しいパスは [管理画面の構成](../../../docs/02-設計/apps/admin.md)の「API の呼び出し」の表にも追加する |
-| `src/components/` | `PageHeader`、`QueryState`、`ErrorMessage`、`ConfirmDialog`、`Pagination`、`DateTime`、`Price` |
+| `src/api/` | `$api`、更新の操作（`useApiMutation.ts`、`useMutationGroup.ts`）、再取得するパス `ApiPathPrefix`（`invalidate.ts`。新しいパスは [管理画面の構成](../../../docs/02-設計/apps/admin.md)の「API の呼び出し」の表にも追加する）。名前は各ファイルを読む |
+| `src/components/` | 共通のコンポーネント。名前はフォルダーを読む |
 | `src/hooks/useVersionedForm.ts` | バージョンを持つリソースのフォーム（409 の扱い。[管理画面の構成](../../../docs/02-設計/apps/admin.md)の「フォーム」） |
 
 似た既存の例：一覧と URL の絞り込みは `features/order/pages/OrderListPage.tsx` と `features/order/orderFilter.ts`、詳細は `OrderDetailPage.tsx`、確認つきの操作は `features/order/components/OrderActions.tsx`、フォームは `features/inventory/components/AdjustStockForm.tsx`、結合テストは `features/inventory/pages/StockPage.test.tsx`。

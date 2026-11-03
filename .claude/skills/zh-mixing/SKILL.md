@@ -30,15 +30,14 @@ git config --local ecsite.instructionLanguage zh
 
 環境の印がなくても調べるときは、`--force` を付ける（一覧を較正するとき）。
 
-見つかった行は、前後を読み、日本語に直す。コードの識別子は変えない。直せない行（引用など）と誤検出は、次の節で許容用語にする。
+見つかった行は、前後を読み、日本語に直す。コードの識別子は変えない。直せない行（引用など）と誤検出は、「一覧の直し方」で許容用語にする。
 
 ## 設定の手順
 
-中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く（チームの規則は `.claude/settings.json` に書くが、手順 2 の Claude Code の hook は環境に固有なので `.claude/settings.local.json` に書く。分け方は [AGENTS.md](../../../AGENTS.md) の「環境」の節）。環境の印がなければ、設定しても何も調べない。
+中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く。環境の印がなければ、設定しても何も調べない。
 
 1. 環境の印：`git config --local ecsite.instructionLanguage zh`。`.git/config` に入り、全ての作業ツリーで共有する。
-2. Claude Code の hook：skill `local-dev` の[手元の hook の設定](../local-dev/hooks.md)の PostToolUse の項目を、`.claude/settings.local.json` に置く。
-
+2. Claude Code の hook：skill `local-dev` の[手元の hook の設定](../local-dev/hooks.md)の PostToolUse の項目を、`.claude/settings.local.json` に置く（環境に固有なので Git に入らない）。
 3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md)の「起動」にある `.git/hooks/pre-commit`・`commit-msg` の行（層 1 の `ja-text` の検査）に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 
 | hook | 追加する行 |
@@ -65,10 +64,6 @@ node -e "console.log([...process.argv[1]].map(c => '\\u' + c.codePointAt(0).toSt
 | `allow` | 許容用語。`{ "word": "語", "file": "パス（省略すると全てのファイル）", "reason": "理由" }`。理由がないと一覧の読み込みが失敗する |
 
 Git に入れない手元だけの除外は、`.local/agent/zh-allow.txt` に「語」か「ファイルのパス（タブ）語」を 1 行ずつ書く。メインの作業ツリーの `.local/` にあれば、どの作業ツリーでも読む。
-
-### 層 1 と層 2 のどちらに加えるか
-
-層 1 と層 2 のどちらに加えるかは、[docs-review.md](../review/docs-review.md) の手順 4 で決める。
 
 ## 書くときの注意
 

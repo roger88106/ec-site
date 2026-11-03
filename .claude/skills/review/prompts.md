@@ -1,6 +1,6 @@
 # レビューの観点と指示のひな形
 
-[SKILL.md](SKILL.md) の手順 3 で観点を選び、手順 4 でサブエージェントに渡す指示を書くときに読む。手順 7・8 のひな形は [docs-review.md](docs-review.md) にある。
+[SKILL.md](SKILL.md) の手順 3 から読む。手順 7・8 のひな形は [docs-review.md](docs-review.md)。
 
 ## 観点の一覧
 

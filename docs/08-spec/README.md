@@ -1,4 +1,4 @@
-# 開発記録
+# spec の一覧
 
 spec・plan・tasks を置く。進行中の spec は直下に置き、完了した spec は、まとまりごとに `archive/<まとまり>/` に移す。
 

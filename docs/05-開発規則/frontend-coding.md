@@ -94,7 +94,7 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 使われていないファイル、export、依存を残さない。定義したファイルの中だけで使うものは export しない。
 
-- 報告を外すのは、生成物の export と型だけ。生成物のファイル自体が使われていないことは報告する。生成物は、openapi-typescript の型（`src/api/generated/`、`e2e/src/generated/`）、入力の制約の定数（`src/api/generated/constraints.ts`）、shadcn/ui のコンポーネント（`src/components/ui/`、`frontend/shared/src/ui/`）。
+- 報告を外すのは、生成物の export と型だけ（外す範囲は `knip.ts`）。生成物のファイル自体が使われていないことは報告する。
 - テストだけが import している export は、使われているとみなし、報告しない。
 
 実行と、失敗したときの修正は[テストの実行方法](../06-手順書/running-tests.md)の「knip が失敗したとき」。
@@ -109,13 +109,13 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 | 入れる | 入れない |
 |--------|----------|
-| 2 つの画面で使い、画面のフレームワーク（Vite・Next.js）と API の接続に依存しないもの：カテゴリの木、ログインの戻り先、数・日付・金額の整形、2 つの画面で同じ列挙の表示名、同じ表示のコンポーネントとテーマ、共通の文言、2 つの画面の API の生成で使う script（`scripts/`） | API の接続（接続先と認証が違う）、認証、画面の機能、サーバーアクション、片方の画面だけで使うもの |
+| 2 つの画面で使い、画面のフレームワーク（Vite・Next.js）と API の接続に依存しないもの | API の接続（接続先と認証が違う）、認証、画面の機能、サーバーアクション、片方の画面だけで使うもの |
 
+- 入れるものの例は、カテゴリの木、ログインの戻り先、整形（数・日付・金額）。同じ列挙の表示名、同じ表示のコンポーネントとテーマ、共通の文言も入れる。2 つの画面の API の生成で使う script（`scripts/`）も共有する。
 - 共有のものは、各画面の機能を import しない。
 - 各画面は、共有のパッケージが公開するものと同じ名前の関数・定数・クラスを定義せず、共有のものを使う。名前が同じでも中身が画面ごとに違うもの（各画面の文言を渡す `translate`）は、`frontend-rules-exclusions.json` に理由を書く。
 - テーマの CSS は shadcn/ui の生成のまま 1 つにし、片方の画面だけで使う値（サイドバー、グラフ）も含める。テーマは再生成することがあり、分けると、生成のたびに 2 つのファイルを更新する必要があるため。
-- shadcn/ui のコンポーネントは各画面の `components/ui/` に追加し、2 つの画面で同じ内容になったら `frontend/shared/src/ui/` に移す。`src/ui/` の共有コンポーネントは shadcn/ui の生成物のまま置き、`"use client"` の有無も生成物に従う（生成物が付けているもの（`label`、`separator` など）は、店舗画面のサーバーコンポーネントからも使えるよう付けたままにする）。
-- 共有のコンポーネントのうち shadcn/ui の生成物でないものは `frontend/shared/src/components/` に置き、生成物は `src/ui/` に置く。
+- shadcn/ui のコンポーネントは各画面の `components/ui/` に追加し、2 つの画面で同じ内容になったら `frontend/shared/src/ui/` に移す。`src/ui/` は生成物のまま置き、`"use client"` の有無も生成物に従う（`label`、`separator` など、生成物が付けているものは、店舗画面のサーバーコンポーネントからも使えるよう付けたままにする）。生成物でない共有コンポーネントは `frontend/shared/src/components/` に置く。
 - `cn`（クラス名を結合する関数）は、npm のパッケージ `cn` から直接 import する（`import { cn } from 'cn'`）。各画面と共有パッケージに、`cn` を再 export するファイル（`lib/utils.ts` など）を作らない。理由：shadcn/ui の CLI が追加するコンポーネントが、パッケージ `cn` を直接 import するため。
   - 各画面の `components.json` には、CLI が設定の項目として求める別名 `utils`（値は `@/lib/utils`）を残す。この別名が指す `lib/utils.ts` は置かない。
 - `src/components/` の共有コンポーネントは、hook かブラウザーの API を使うものだけに `"use client"` を付ける。使わないもの（金額の内訳など）には付けず、店舗画面のサーバーコンポーネントのまま描画できる。
@@ -130,13 +130,18 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 | 画面 | 作り方 |
 |------|--------|
 | 管理画面 | `src/app/paths.ts` の `paths` の関数で作る（ルーターの定義は同じファイルの `routePatterns`）。URL の文字列を直接書かない |
-| 店舗画面 | Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ付きの URL は機能の `*Query.ts` の関数（戻り値は `Route`）で作り、クエリは `URLSearchParams` で組み立てる（文字列で `?`・`&` を付けない）。店舗画面の外の URL（IdP など）だけ `as Route` にし、理由をコメントに書く |
+| 店舗画面 | Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ付きの URL は機能の `*Query.ts` の関数（戻り値は `Route`）で作る |
 
-レビューでは、管理画面は `git grep` でパスの文字列の直書きを、店舗画面は `as Route` と、型の付かない `revalidatePath()` と `<form action>` の URL を確認する。
+- クエリは `URLSearchParams` で組み立てる（文字列で `?`・`&` を付けない）。
+- 店舗画面の外の URL（IdP など）だけ `as Route` にし、理由をコメントに書く。
 
 理由：間違った URL を型チェックで見つけるため。
 
-確認方法：自動（型チェック）、クエリ付きの URL の文字列の組み立ては自動（`scripts/ci/frontend-rules.mjs`）、型の付かない他の URL はレビュー
+確認方法：
+
+- 型の付く URL：自動（型チェック）
+- クエリ付きの URL の文字列の組み立て：自動（`scripts/ci/frontend-rules.mjs`）
+- 型の付かない他の URL：レビュー（管理画面は `git grep` でパスの直書きを、店舗画面は `as Route`、`revalidatePath()`、`<form action>` を見る）
 
 ## 7. 表示の文言とロケール
 
@@ -216,8 +221,8 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 店舗画面で、内容の変化を支援技術に読み上げさせる領域は、status の役割（`role="status"`）で作り、`aria-live` を直接書かない。読み上げない領域（残り時間の表示 `RemainingTime.tsx`）だけは `aria-live="off"` と書いてよい。
 
-検査（Biome の plugin `no-aria-live`）が見るのは、JSX の属性の `aria-live` の直書きだけで、スプレッドや役割の選び方は見ない。ページを開いたときに描く知らせ（共有の `Alert`、`role="alert"`）は、内容の変化を読み上げる領域ではないので、対象外である。
+ページを開いたときに描く知らせ（共有の `Alert`、`role="alert"`）は、内容の変化を読み上げる領域ではないので、対象外である。
 
 理由：`aria-live` を直接書くと、領域ごとに値と `aria-atomic` の有無がばらつくため。status の役割は、既定で `aria-live="polite"` と `aria-atomic="true"` を持つ。
 
-確認方法：`aria-live` の直書きは自動（Biome の plugin `no-aria-live`）、status 以外の役割で作っていないかはレビュー
+確認方法：`aria-live` の直書きは自動（Biome の plugin `no-aria-live`。スプレッドで渡す値は見ない）、status 以外の役割で作っていないかはレビュー

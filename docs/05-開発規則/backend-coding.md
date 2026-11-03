@@ -20,14 +20,14 @@
 
 | 呼び出し元 | 置き場所 | 例外の理由 |
 |------------|----------|------------|
-| `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation 層に会員の ID を渡すための公開の API（「他のモジュールは腐敗防止層で包む」 ※1）。`CurrentMemberIds` 自身も取り出しの対象に含め、呼び出し元を presentation 層に限る。理由：他のモジュールの `api/` の規則（「他のモジュールは腐敗防止層で包む」）は `infrastructure/directory/` からの利用を除くので、それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため |
-| `MeController` | `config/security/` | モジュールに属さない API のエンドポイントで、役割は presentation 層と同じ。移すとモジュールの構成が変わる |
+| `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation 層に会員の ID を渡す公開の API。呼び出し元は presentation 層に限る ※1 |
+| `MeController` | `config/security/` | モジュールに属さないエンドポイントで、役割は presentation 層と同じ（「生成した interface を実装する」の例外） |
 
 - **jOOQ の置き場所**：jOOQ（`org.jooq` と、生成したコード `com.ecsite.jooq`）を使えるのは、モジュールの `infrastructure/persistence/` のクラスだけにする。application と domain が永続化の形に依存しないようにするためである。モジュールの外の共通の設定（`config/event/EventPublicationRecords`）は、schema の持ち主の検査（`SchemaOwnershipTest`）が別に見る。例外は次の 1 つで、増やすときはこの表に理由を書く。
 
 | クラス | 置き場所 | 例外の理由 |
 |--------|----------|------------|
-| `MockShipmentQuery` | `shipping/infrastructure/mock/` | mock の物流サービスの画面だけが使う問い合わせで、mock を無効にすると Bean が作られない。`persistence/` は port の実装の置き場所なので、本番で使わないクラスを置くと、本番で使うクラスと区別しにくくなる |
+| `MockShipmentQuery` | `shipping/infrastructure/mock/` | mock の物流の画面だけが使う問い合わせ。`persistence/` に置くと、本番で使うクラスと区別しにくくなる |
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
 
@@ -53,7 +53,7 @@
 ### 1.3 他のモジュールは腐敗防止層で包む
 
 - 他のモジュールの `api/` を呼ぶときは、port（`<相手>Directory` の interface と、相手の情報を変換して持つ自分の型）を使う層の `port/` に置き、実装は `infrastructure/directory/` に置く。
-- 他のモジュールの `api/` を使うのは `infrastructure/directory/` だけにする。例外は 1 件で、`member.api.CurrentMemberIds` を presentation から使う ※1。
+- 他のモジュールの `api/` を使うのは `infrastructure/directory/` だけにする。例外は 1 件で、`member.api.CurrentMemberIds` を presentation から使う（「標準の構成」の認証の情報の取り出しの表、※1）。
 - 相手の型を内部で使わない。
 - 腐敗防止層の実装（`<相手>ApiDirectory`）は public にしない。理由：使う側は port の interface を通して使うため。
 - モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
@@ -62,7 +62,7 @@
 
 理由：相手の変更の影響を、実装の 1 か所に限るため。`switch` 式は列挙の全ての値を書かないとコンパイルに失敗するので、片方に値を追加して変換を書き忘れると気づける（名前で変換すると、実行するまで気づけない）。
 
-※1：`CurrentMemberIds` は、要求の token から会員の ID を得る、API の入口（presentation）のためのクラスで、会員のモジュールが presentation 向けに公開している。会員の ID は presentation が token から読み、application へ引数で渡す。会員の腐敗防止層（port と実装）をモジュールごとに作ると、読み取りだけのために同じ port と実装の組が増える。
+※1：`CurrentMemberIds` は、要求の token から会員の ID を得る、API の入口（presentation）のためのクラスで、会員のモジュールが公開している。会員の腐敗防止層（port と実装）をモジュールごとに作ると、読み取りだけのために同じ port と実装の組が増える。`CurrentMemberIds` 自身も取り出しの対象に含め、呼び出し元を presentation 層に限る。理由：他のモジュールの `api/` の規則は `infrastructure/directory/` からの利用を除くので、それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため。
 
 確認方法：置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー
 
@@ -75,13 +75,7 @@
 | `catalog.infrastructure.persistence` | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
 | `config.security` | 認証と認可の設定。組み立てられるクラスは package-private で、分けるとクラスを公開しなければならない |
 
-`config.security` の package-private のクラスは、filter chain の設定のクラスが組み立てる、認可の対応表（管理用と店舗用）、認可の判定、契約の操作の一覧である。
-
-テスト（`ModuleStructureTest`）が、目安を超えるパッケージと表の行を照合する。目安を超えるパッケージの行が表にない、または目安以下のパッケージの行が表にあると、テストが失敗する。
-
-テストが表を読むので、表の書式を変えない。1 列目は、バッククォートで囲んだパッケージ名（`com.ecsite.` と `module.` を除く。例：`catalog.infrastructure.persistence`）にする。
-
-テストは節の見出しの名前（「パッケージの大きさ」）で表を探す。見出しの名前を変えるときは、`ModuleStructureTest` の `PACKAGE_SIZE_TITLE` も修正する。
+`ModuleStructureTest` が表を読むので、表の書式を変えない。1 列目は、バッククォートで囲んだパッケージ名（`com.ecsite.` と `module.` を除く。例：`catalog.infrastructure.persistence`）にする。節の見出しの名前（「パッケージの大きさ」）を変えるときは、`PACKAGE_SIZE_TITLE` も修正する。
 
 確認方法：上限は自動（ArchUnit）。目安を超えるパッケージの一覧を「パッケージの大きさ」の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー
 
@@ -92,7 +86,7 @@
 - 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものは、そのモジュールの domain に置く。置き場所（集約の `vo/` か domain の直下）は「標準の構成」のとおり。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけ。設定の値の金額は、使う所で `Money` にする。
 - 金額の掛け算・割り算は、`Money` の操作と税の計算（`TaxCalculator`）の中だけで行う。端数が出る計算は、端数の扱い（切り捨て など）をメソッドで明示する。
-- 例外として、商品の一覧の税込価格の絞り込みと並べ替えは、SQL で税込価格を計算する。計算するクラスは `catalog.infrastructure.persistence.PriceInclTaxField` で、式は 税抜価格 × (100 + 税率) ÷ 100 の切り捨て。理由：税区分ごとに税率が違い、税抜の順と税込の順が一致しない。一覧は DB で `LIMIT`・`OFFSET` を使ってページングするので、絞り込みと並べ替えも DB で行う必要がある。`TaxCalculator` と同じ結果になることは、端数の境界値を含めて `PriceInclTaxFieldTest` で確認する。
+- 例外として、商品の一覧の税込価格の絞り込みと並べ替えは、`catalog.infrastructure.persistence.PriceInclTaxField` が SQL で税込価格を計算する。理由：税区分ごとに税率が違い、税抜の順と税込の順が一致しない。一覧は DB で `LIMIT`・`OFFSET` を使ってページングするので、絞り込みと並べ替えも DB で行う必要がある。`TaxCalculator` と同じ結果になることは、端数の境界値を含めて `PriceInclTaxFieldTest` で確認する。
 
 理由：同じ規則を 1 か所に置きつつ、共通の型を増やしすぎて、モジュールが互いに依存しないようにするため。金額の計算を複数の場所に書くと、端数の扱いが場所によって変わる。
 
@@ -104,9 +98,9 @@
 
 Controller は OpenAPI から生成した interface（`XxxApi`）を実装する。パスと入力の形は interface に任せ、`@RequestMapping` を書かない。
 
-例外：外部のサービスとのやり取りのエンドポイント（決済・物流の通知、mock の支払画面と物流の画面。[API の規約](api-conventions.md)の「OpenAPI の外のエンドポイント」）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済の設計](../02-設計/payment.md)、[出荷の設計](../02-設計/shipping.md)）。
+例外：[API の規約](api-conventions.md)の「OpenAPI の外のエンドポイント」（決済・物流の通知、mock の画面）は、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済の設計](../02-設計/payment.md)、[出荷の設計](../02-設計/shipping.md)）。
 
-例外：ログインした人の情報を返す操作（`MeController`）は、モジュールの presentation でなく `config/security/` に置く。認可の設定と同じ権限の変換（`PermissionConverter`）を使い、どのモジュールにも属さないため。`@RestController` の置き場所の検査（ArchUnit）は、`MeController` だけを完全修飾名で除く。
+例外：ログインした人の情報を返す操作（`MeController`）は、モジュールの presentation でなく `config/security/` に置く。認可の設定と同じ権限の変換（`PermissionConverter`）を使い、どのモジュールにも属さないため。ArchUnit の `@RestController` の置き場所の検査は、`MeController` だけを完全修飾名で除く。
 
 理由：契約（`api/openapi/`）を正本にし、実装とずれないようにするため。
 
@@ -178,7 +172,7 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 
 ### 3.5 更新の競合は `version`
 
-同時に編集されうる集約の更新は、`version` が合わなければ `CONCURRENT_MODIFICATION`（409）。状態の切り替えは冪等にし、`version` を取らない。
+契約の形（`version` を送る、状態の切り替えは冪等にして送らない）は、[API の規約](api-conventions.md)の「HTTP メソッド」。同時に編集されうる集約の更新は、`version` が合わなければ `CONCURRENT_MODIFICATION` を投げる。
 
 理由：他の利用者の変更を、通知なしに上書きしないため。
 
@@ -237,19 +231,13 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 static のメンバーだけのクラス（定数や補助の関数をまとめたもの）は `final` にし、コンストラクタを `private` にする。Lombok の `@NoArgsConstructor(access = AccessLevel.PRIVATE)` でも、手動で書いてもよい。
 
-```java
-/** 金額の表示の補助 */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class MoneyFormat {
-    ...
-}
-```
-
 - 対象は最上位のクラス。enum・record・interface・注釈は対象でない。
 
-理由：インスタンスを作っても使い道がなく、作れると使い方を誤る。Checkstyle の `HideUtilityClassConstructor` はソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる。ArchUnit はコンパイルした後のクラスを読むので、Lombok で書いても手動で書いても同じに確認できる。
+理由：インスタンスを作っても使い道がなく、作れると使い方を誤る。
 
-確認方法：自動（ArchUnit）。`src/test/java/com/ecsite/architecture/` のテストが、static でないメンバーを持たない最上位のクラスが `final` で、コンストラクタが全て `private` であることを確認する
+検査に Checkstyle の `HideUtilityClassConstructor` を使わない理由：ソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる。ArchUnit はコンパイルした後のクラスを読むので、Lombok で書いても手動で書いても同じに確認できる。
+
+確認方法：自動（ArchUnit）
 
 ### 5.4 書式
 
@@ -287,7 +275,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
-- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は `toString` を上書きして、秘密の値を `***` にする（`StripeProperties` と同じ形にする）。理由：record の既定の `toString` は全ての項目を出力し、設定の値をログや例外のメッセージに出力したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとする。構成の検査（`ConfigurationPropertiesTest`）が、秘密の値の項目を持つ設定の型（入れ子の型を含む）が `toString` を宣言していることを確認する。検査の対象の範囲は、`ConfigurationPropertiesTest` の Javadoc にある。
+- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は `toString` を上書きして、秘密の値を `***` にする（`StripeProperties` と同じ形にする）。理由：record の既定の `toString` は全ての項目を出力し、設定の値をログや例外のメッセージに出力したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとする。
 - 設定の型では、Lombok の `@ToString`・`@Data`・`@Value` を使わず、`toString` を手動で書く。理由：Lombok の注釈はクラスファイルに残らず、作られた `toString` は手動で宣言したものと区別できないので、構成の検査が値を出力する `toString` を見逃すため。
 
 ※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
@@ -297,7 +285,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 確認方法：
 
 - 設定の値の型：自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー
-- 秘密の値の `toString`：`toString` を宣言していることは自動（ArchUnit）。値をマスクしていることは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー
+- 秘密の値の `toString`：秘密の値の項目を持つ設定の型（入れ子を含む）が `toString` を宣言していることは自動（`ConfigurationPropertiesTest`。対象の範囲はその Javadoc）。値をマスクしていることは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー
 
 ## 7. 静的解析
 
@@ -317,23 +305,17 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 - jOOQ のレコードの getter は注釈がないので、NullAway は null を確認しない。null を取りうる列の値は、`@Nullable` を付けたローカル変数・引数か `Optional` で受ける（null を取りうる列を、注釈のない引数に渡さない）。
 - `lombok.NonNull` は実行時の確認として使ってよい（外さない）。
 
-```java
-public Optional<Cart> findById(UUID id) {
-    ...
-}
-
-public Optional<UUID> memberId() {
-    return Optional.ofNullable(memberId);
-}
-```
-
 理由：null の誤りを、実行より前のコンパイルで見つけるため。Spring Framework 7 と同じ JSpecify の注釈なので、Spring の API の null の注釈も NullAway が読む。
 
 確認方法：自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー
 
 ### 7.2 検査を抑えるとき
 
-- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付ける。理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く。他の注釈が間にあるときは、その注釈の行を飛ばして直前の行に書く。Javadoc だけでは足りない。全てのソースセットで、CI の検査 `scripts/ci/java-rules.mjs` が確認する。
+- Error Prone と NullAway の報告は修正する。次のものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付ける。
+  - 誤った報告（フレームワークが初期化するフィールドなど）
+  - 修正すると振る舞いが変わるもの
+  - mock（本番で動かないコード）で、修正する手間に見合わないもの
+- 抑える理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く。他の注釈が間にあるときは、その注釈の行を飛ばして直前の行に書く。
 - 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。今無効にしている検査と理由は、`backend/ecsite/build.gradle.kts` の Error Prone の設定。
 - 生成したコード（`build/generated` の下）は検査しない。
 
@@ -356,12 +338,13 @@ public record SignedNotification(byte[] body, String signature) {
 
 新しいマイグレーションは、前のリリースのアプリが動き続けられる変更だけにする。次の変更は、1 つのリリースでしない。
 
-- 表・列の削除（スキーマの削除 `DROP SCHEMA` を含む）
-- 表・列の改名（スキーマの改名と、表の別のスキーマへの移動 `SET SCHEMA` を含む）
-- 列の型の変更
-- 既存の列を NOT NULL にすること（既存の列への主キーの制約の追加 `ADD PRIMARY KEY` を含む）
-- 既定値のない NOT NULL の列の追加（主キーの列の追加と、`DEFAULT NULL` を指定した NOT NULL の列の追加を含む。`IDENTITY` の列は既定値があるので除く）
-- 既存の列の既定値の削除（`ALTER COLUMN … DROP DEFAULT` と、同じ結果になる `ALTER COLUMN … SET DEFAULT NULL`。列が NOT NULL かに関わらず）。NOT NULL の列では、既定値が入ることを前提に列を指定しない、前のリリースのアプリの INSERT が失敗する。NULL を許す列でも、前のリリースのアプリが既定値が入ることを前提にしていれば、列に入る値が NULL に変わる
+- 表・列の削除、改名、列の型の変更
+- 既存の列を NOT NULL にすること、既定値のない NOT NULL の列の追加
+- 既存の列の既定値の削除
+
+検出する変更の種類と、SQL の書き方ごとの扱いは、`scripts/ci/migrations.mjs` の先頭のコメント。
+
+既定値の削除を同じ扱いにする理由：NOT NULL の列では、既定値が入ることを前提に列を指定しない、前のリリースのアプリの INSERT が失敗する。NULL を許す列でも、前のリリースのアプリが既定値を前提にしていれば、列に入る値が NULL に変わる。
 
 これらは、次の 3 段に分ける。
 
@@ -373,7 +356,7 @@ public record SignedNotification(byte[] body, String signature) {
 
 既存の列の既定値の削除は、段 1 がない。段 2 で、アプリが列に値を必ず書くようにしてリリースし、段 3 で既定値を削除する。除外の一覧に置くのは段 3 の削除（※5 と同じ）。
 
-※5：段 3 の削除は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置き、理由に、どのリリースで使わなくなったかを書く。書き方と検査の対象は `scripts/ci/migrations.mjs` の先頭のコメント。
+※5：段 3 の削除は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置き、理由に、どのリリースで使わなくなったかを書く。書き方は `scripts/ci/migrations.mjs` の先頭のコメント。
 
 理由：前のバージョンのアプリが、新しいスキーマで失敗しないため。
 

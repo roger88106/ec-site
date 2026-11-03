@@ -8,13 +8,14 @@
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
 - データを残さないテストは `@Transactional` で巻き戻す。
 - 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID、実行ごとの印）でデータを分け、自分のデータだけを確認する。表の全体の数や、一覧の全体を確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要 ※2。
-- ログを確認するテストは、そのテストの中で出た出力だけを確認する。`CapturedOutput` には、テストの外で出た出力（Spring の起動のログ、前のテストの非同期の処理が後から出したログ）と、同じテストの中で確認の前に出た出力（準備の処理が出したログ）が残りうるので、確認する処理の前に `CapturedLogs.mark` で位置を記録し、確認では `CapturedLogs.since` でその後の出力だけを読む ※3。巻き戻せないテストで、ほかのテストのデータも処理の対象になるときは、処理の前に対象の行を数え、ログの件数がその数と等しいことを確認する（「1 件以上」だけにしない）。
+- ログを確認するテストは、そのテストの中で出た出力だけを確認する。確認する処理の前に `CapturedLogs.mark` で位置を記録し、確認では `CapturedLogs.since` でその後の出力だけを読む ※3。
+- 巻き戻せないテストで、ほかのテストのデータも処理の対象になるときは、処理の前に対象の行を数え、ログの件数がその数と等しいことを確認する（「1 件以上」だけにしない）。
 
 ※1：IdP は起動せず、`TestSecurityConfig` が署名の鍵を `TestTokens` の鍵に差し替える。Keycloak は、それを確認するテストだけが自分で起動する。
 
 ※2：DB はテストの実行ごとに作る（Testcontainers）。削除する処理には、削除の漏れと順序（外部キー）の手間がある。今ある後処理は残してよい。
 
-※3：テストの外や準備の処理が同じ件数のログを出していると、その出力が件数に数えられ、件数を誤っていても通る。`CapturedOutput` はテストごとの capture を、終了時に解除するので、前のテストの中で出た出力は残らない。
+※3：`CapturedOutput` には、テストの外で出た出力（Spring の起動のログ、前のテストの非同期の処理が後から出したログ）と、同じテストの中で確認の前に出た出力（準備の処理が出したログ）が残りうる。同じ件数のログを出していると、その出力が件数に数えられ、件数を誤っていても通る。前のテストの中で出た出力は、テストごとの capture を終了時に解除するので残らない。
 
 理由：テストごとにコンテナを再起動せず、データが他のテストに漏れないようにするため。
 
@@ -35,26 +36,13 @@
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
 
-補助以外のテストは、次の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。
+補助以外のテストは、補助が持つ手順（`HELPER_STEPS` に挙げたもの）を直接書かない。ただし、その操作そのものを確認するテストは除く。手順と、手順を書いてよい補助・テストの対応は `scripts/ci/test-helpers.mjs` の `HELPER_STEPS`、手順に含めないものは同じ script の先頭のコメントが正本である。
 
-- 在庫の作成
-- 税区分とカテゴリの登録の要求
-- 作成の応答から ID を取り出す処理
-- 支払の API の作成の操作
-
-手順と、手順を書いてよい補助とテストの対応の正本は、`scripts/ci/test-helpers.mjs` の `HELPER_STEPS` である。
-
-手順に、次のものは含めない。
-
-- Repository のテストが、集約を直接作る処理（支払の Repository のテストなど）
-- 作った後の変更の要求（店舗の鮮度のテストの税率の変更など）
-- 一覧の応答から、複数の ID を読む処理（画像の並び、税率の一覧など）
-
-イベントの発行の記録（`EventPublicationRegistry`）を読む操作（`find` で始まる操作）は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。テストは記録を読んで待たずに、補助の待つ操作を呼ぶ。補助を作るために記録を注入して渡すだけのテストは、この規則に反しない。CI の `scripts/ci/test-helpers.mjs` が、統合テストで補助の外の呼び出しを見つける。
+イベントの発行の記録（`EventPublicationRegistry`）を読む操作（`find` で始まる操作）は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。テストは記録を読んで待たずに、補助の待つ操作を呼ぶ。
 
 理由：テストの本文に、確認する項目だけを残すため。
 
-package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、その本番クラスと同じパッケージの `src/integrationTest` に、public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。今ある補助クラスは、`TaxRateScheduleCaches`（catalog の `infrastructure/directory`）、`PaymentJobs`（payment の `application`）、`OrderPayments`（order の `application/payment`）、`TrackingRequests`（shipping の `application`）。本番クラスを public にしたり、テストのために可視性を広げたりしない。
+package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、その本番クラスと同じパッケージの `src/integrationTest` に、public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。本番クラスを public にしたり、テストのために可視性を広げたりしない。
 
 確認方法：レビュー（記録を読む操作と、手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
 
@@ -70,15 +58,17 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 | 補助 | 使う場面 | 使い方 |
 |------|----------|--------|
-| `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む（モジュールの一覧は、Spring Modulith が自分でもクラスを読み込むので、クラスの読み込みとは別になる）。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
-| `TestSettings` | 設定のテスト | `load(profile…)` で `application.yml` に profile の設定ファイルを重ねた値を読み、`bind(接頭辞, 設定の型, 値)` で設定の型に値を当てはめる。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
-| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテスト（`contract/`）、構成の検査（`architecture/`、`modulith/`、`ProductionClassesTest`）、店舗 API の token の契約のテストと Keycloak の統合テスト（`src/integrationTest`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読み、`openApiDir()`、`realmsDir()`、`themeDir()` で置き場所を読み、設計書などそれ以外の置き場所（ファイルもディレクトリも）は `path(リポジトリのルートからの相対パス)` で読む（例：`path("docs/02-設計/overview.md")`）。置き場所は、Gradle が system property で渡す（`path` は、リポジトリのルートを `repo.root` で受け取る）。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない（統合テストの `RegionApiTest` と `ProductionJarStartupTest` は、Gradle が渡す別の property を読むので対象にしない）。渡されないときは、置き場所が渡されなかったことを示して失敗する |
+| `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない ※4 |
+| `TestSettings` | 設定のテスト | `load(profile…)` と `bind(接頭辞, 設定の型, 値)` で読む。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
+| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテストと構成の検査（`contract/`、`architecture/`、`modulith/`）、店舗 API の token と Keycloak の統合テスト（`src/integrationTest`） | 契約（OpenAPI）、realm の設定、設計書などの置き場所は、この補助の関数（`openApi`、`realm`、`path` など）で読む。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない ※5 |
+
+※4：モジュールの一覧は、Spring Modulith が自分でもクラスを読み込むので、クラスの読み込みとは別になる。
+
+※5：置き場所は Gradle が system property で渡し、渡されないときは、渡されなかったことを示して失敗する。統合テストの `RegionApiTest` と `ProductionJarStartupTest` は、Gradle が渡す別の property を読むので対象にしない。
 
 理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が残り、メモリを使うため（`ProductionClasses` の理由）。設定の読み込みを 1 か所にして、全ての設定のテストが、同じ設定ファイルの重ね方で値を読むため（`TestSettings` の理由）。契約や realm の置き場所を既定の相対パスで読むと、Gradle が置き場所を渡さなくても通り、設定の誤りに気づけないため（`Contracts` の理由）。
 
-`ProductionClassesTest` が、`src/test/java`、`src/integrationTest/java`、`src/testFixtures/java` の Java のファイルで、本番のクラスを補助の外で読み込む呼び出しを見つける。探す呼び出しの一覧は `ProductionClassesTest` にある。
-
-確認方法：`ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー
+確認方法：`ProductionClasses` を使うことは自動（`ProductionClassesTest`。探す呼び出しの一覧はそのテストにある）、`TestSettings` と `Contracts` を使うことはレビュー
 
 ## 5. テストのコードの重複
 

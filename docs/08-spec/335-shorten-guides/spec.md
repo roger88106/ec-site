@@ -66,7 +66,7 @@
   |-------|------------------|--------|
   | `local-dev` | `.claude/skills/local-dev/hooks.md` | 手元の hook の設定（hook の JSON を含む） |
   | `local-dev` | `.claude/skills/local-dev/screen-data.md` | 決済（mock と Stripe）、機能紹介のページのスクリーンショット、ローカルの画面のデータ |
-  | `sessions` | `.claude/skills/sessions/worktree-reads.md` | 作業ツリーのセッションが読むもの |
+  | `sessions` | `.claude/skills/sessions/session-reads.md` | 作業ツリーのセッションが読むもの |
   | `sessions` | `.claude/skills/sessions/handover.md` | 予備のセッションに担当を渡すメッセージ |
 
 - 縮めるときは、次を削る。規則の中身は保つ。
@@ -142,7 +142,7 @@
 | 書き方の規則 | `docs/05-開発規則/backend-coding.md`、`frontend-coding.md`、`comments.md`、`api-conventions.md`、`test-writing.md`、`test-writing-backend.md`（新規）、`test-writing-frontend.md`（新規）、`README.md` |
 | 手順書 | `docs/06-手順書/ci.md`、`ci-checks.md`（新規）、`ci-adding-checks.md`（新規）、`ci-backend-jobs.md`（新規）、`setup.md`、`environment.md`、`running-tests.md`、`branches.md`、`README.md` |
 | skill `local-dev` | `.claude/skills/local-dev/`（SKILL.md、`hooks.md` と `screen-data.md` は新規） |
-| skill `sessions` | `.claude/skills/sessions/`（SKILL.md、`rounds.md`、`worktree-reads.md` と `handover.md` は新規） |
+| skill `sessions` | `.claude/skills/sessions/`（SKILL.md、`rounds.md`、`session-reads.md` と `handover.md` は新規） |
 | 他の skill | `.claude/skills/review/`（SKILL.md、`docs-review.md`、`prompts.md`）、`.claude/skills/docs/SKILL.md`、`.claude/skills/new-screen/SKILL.md`、`.claude/skills/zh-mixing/SKILL.md`、`.claude/skills/agent-retro/SKILL.md` |
 | agent | `.claude/agents/ja-proofreader.md`、`.claude/agents/ja-proof-verifier.md`（本文） |
 | 検査 | `scripts/ci/ci-docs.mjs` と `ci-docs.test.mjs` |
@@ -214,7 +214,7 @@
   - 確認方法：移す前と後の文を並べて読む、SKILL.md から移した先へのリンクを読む、`node scripts/ci/doc-refs.mjs`
 - [ ] **T335-01-06** skill `sessions` を分けて縮める（DC-335-3、DC-335-8）。
   - 依存：なし
-  - 範囲：`.claude/skills/sessions/`、`worktree-reads.md` を指す文書（`AGENTS.md`、`subagents.md`、記録など）
+  - 範囲：`.claude/skills/sessions/`、`session-reads.md` を指す文書（`AGENTS.md`、`subagents.md`、記録など）
   - 確認方法：移す前と後の文を並べて読む、SKILL.md から移した先へのリンクを読む、`node scripts/ci/doc-refs.mjs`
 - [ ] **T335-01-07** 他の skill と agent の定義の本文を縮める（DC-335-8、DC-335-10）。
   - 依存：T335-01-01（skill `docs` の検査の説明が `ci-checks.md` を指すため）

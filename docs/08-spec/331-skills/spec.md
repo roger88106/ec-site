@@ -137,7 +137,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
   - 依存：なし
   - 範囲：`writing.md`、`subagents.md`、`workflow.md`、AGENTS.md、`.claude/skills/docs/SKILL.md`、`.claude/skills/sessions/SKILL.md`
   - 確認方法：`git grep -n "日本語だけの文脈"` の結果を読む（用語集の定義は残る）
-- [ ] **T331-01-03** 層 1・層 2 の分け方を `docs-review.md` の手順 4 だけに置く。skill `zh-mixing` の「層 1 と層 2 のどちらに加えるか」と冒頭の表は、参照に替える（DC-331-4）。
+- [x] **T331-01-03** 層 1・層 2 の分け方を `docs-review.md` の手順 4 だけに置く。skill `zh-mixing` の「層 1 と層 2 のどちらに加えるか」と冒頭の表は、参照に替える（DC-331-4）。
   - 依存：なし
   - 範囲：`.claude/skills/review/docs-review.md`、`.claude/skills/zh-mixing/SKILL.md`
   - 確認方法：`git grep -n "層 1"` の結果を読む

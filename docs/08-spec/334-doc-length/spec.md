@@ -48,7 +48,7 @@
   | `docs/05-開発規則/merging.md`（新規） | マージと後片付け | マージの許可と後片付け、pull request のレビューの対応 | pull request を作る・マージする・後片付けのとき |
 
   - 表の括弧の補足。`workflow.md` に残す「コードと文書の食い違い」から、AC 一覧の操作（今の `ac-check --write` 以降の箇条）を除く。「利用者の確認と中断」から、pull request のレビューの対応を除く。`issues.md` のアーカイブの操作は、今の「規模」の tasks・アーカイブの手順の箇条である。`merging.md` のマージの許可と後片付けには、変更の危険度を含む。
-  - `workflow.md` の「文書の置き場所」の表は、新しい「文書の構成」の「文書の置き場所」に移す。
+  - `workflow.md` にあった文書の置き場所の表は、`doc-structure.md` の同じ名前の節に移す。
   - 起票の節の issue のテンプレートの項目の表は削除し、`.github/ISSUE_TEMPLATE/` を指す。理由：テンプレートの転記のため。
   - 毎回読む `workflow.md` の目安は 15,000 バイト以下にする。
 - `writing.md` は次の 2 つに分ける。
@@ -199,7 +199,7 @@
   - 依存：なし
   - 範囲：`docs/05-開発規則/writing.md`、`docs/05-開発規則/doc-structure.md`
   - 確認方法：移す前と後の文を並べて読む（`git show`）、`node scripts/ci/doc-refs.mjs`、移す前と後の見出しの一覧（`grep '^#'`）を比べ、見出しの名前が変わっていない
-- [ ] **T334-01-02** `workflow.md` を分け、`issues.md` と `merging.md` を作る。「文書の置き場所」の表を `doc-structure.md` に移す。issue のテンプレートの項目の表を削除し、`.github/ISSUE_TEMPLATE/` を指す（DC-334-1、DC-334-2）。
+- [x] **T334-01-02** `workflow.md` を分け、`issues.md` と `merging.md` を作る。「文書の置き場所」の表を `doc-structure.md` に移す。issue のテンプレートの項目の表を削除し、`.github/ISSUE_TEMPLATE/` を指す（DC-334-1、DC-334-2）。
   - 依存：T334-01-01
   - 範囲：`docs/05-開発規則/workflow.md`、`issues.md`、`merging.md`、`doc-structure.md`
   - 確認方法：移す前と後の文を並べて読む、`wc -c`、移す前と後の見出しの一覧（`grep '^#'`）を比べ、見出しの名前が変わっていない

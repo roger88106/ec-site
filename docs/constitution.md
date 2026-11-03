@@ -157,6 +157,8 @@ ec-site/
 | 文書 | 内容 |
 |------|------|
 | [workflow.md](05-開発規則/workflow.md) | 開発の進め方（SDD・TDD）、起票と規模、利用者の確認、完了の定義、コードと文書の食い違い |
+| [issues.md](05-開発規則/issues.md) | 起票と記録の操作（起票、AC 一覧の操作、アーカイブの操作、構成が決まっていないときの試作） |
+| [merging.md](05-開発規則/merging.md) | マージと後片付け（マージの許可と後片付け、pull request のレビューの対応） |
 | [glossary.md](05-開発規則/glossary.md) | 開発の用語集（開発の進め方・ツール・テスト・セッションの役割などの用語） |
 | [notation.md](05-開発規則/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
 | [review.md](05-開発規則/review.md) | 書き方の規則の書き方とレビュー |
@@ -201,7 +203,7 @@ ec-site/
 
 仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。細則は [開発の進め方](05-開発規則/workflow.md)。
 
-全ての変更は issue から始まる。変更の大きさで規模（S・M・L）を分け、規模ごとに書く文書が違う（[開発の進め方](05-開発規則/workflow.md)の「起票と規模」）。
+全ての変更は issue から始まる。変更の大きさで規模（S・M・L）を分け、規模ごとに書く文書が違う（[開発の進め方](05-開発規則/workflow.md)の「規模」）。
 
 ### 4.1 仕様駆動開発（SDD：Spec-Driven Development）
 
@@ -324,4 +326,4 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 16. 未定事項
 
-未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [milestone `1→10` の issue](https://github.com/roger88106/ec-site/milestone/1)、全ての issue は [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。起票の規則は [開発の進め方](05-開発規則/workflow.md)の「起票」。
+未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [milestone `1→10` の issue](https://github.com/roger88106/ec-site/milestone/1)、全ての issue は [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。起票の規則は [起票と記録の操作](05-開発規則/issues.md)の「起票」。

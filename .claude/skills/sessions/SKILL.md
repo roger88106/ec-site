@@ -59,7 +59,7 @@ issue 担当のセッションと spec 担当のセッションの運用。役�
 - 利用者が「今すぐ始めて」などと特例を明示したときは、開始の条件を飛ばし、配分は [作業の形と使用量](../../../docs/05-開発規則/resources.md)の「作業の形と profile の決め方」に従う。
 - spec 担当のセッションが直接その特例を受けたときは、issue 担当のセッションに知らせ、返事を待たずに始める。
 - 始めたら、[開発の進め方](../../../docs/05-開発規則/workflow.md)の「実装を始める前の照合」に進む。
-- spec の最後のレビューの後は、pull request を draft で先に作ってから組み込みのコードレビューを行う。順と理由は [開発の進め方](../../../docs/05-開発規則/workflow.md)の「規模」。spec 担当のセッションは、push を段階の最後に行う（[開発の進め方](../../../docs/05-開発規則/workflow.md)の「push のタイミング」）。
+- spec の最後のレビューの後は、pull request を draft で先に作ってから組み込みのコードレビューを行う。順と理由は [起票と記録の操作](../../../docs/05-開発規則/issues.md)の「アーカイブの操作」。spec 担当のセッションは、push を段階の最後に行う（[開発の進め方](../../../docs/05-開発規則/workflow.md)の「push のタイミング」）。
 
 ## 予備のセッションに担当を渡すメッセージ
 
@@ -74,7 +74,7 @@ issue 担当のセッションは、待機している予備のセッション�
 2. 作業ツリーの `AGENTS.md` の「最初に読むもの」と、担当の spec（または issue の本文とコメント）を再読する。
 3. 返答の言語は、メインの `/.local/agent/environment.md` に従う。Git に入るものは日本語で書く。
 4. 文書の本文の書き手は、[文書の書き方](../../../docs/05-開発規則/writing.md)の冒頭と、skill `docs` の「進め方」のとおり。校閲（検出役、確認役の順）は、skill `review` の docs-review.md の手順 3 に書かれた対象と時点で行う。commit の前に、skill `local-dev` の「CI の検査の script」を実行する。
-5. push は段階の最後に行う（規模 S は作業の最後）。pull request は draft で作り、pull request の前のレビューを draft で行う（順は開発の進め方の「規模」）。指摘に対応し、本文の「## 危険度」を書いてから ready にする。
+5. push は段階の最後に行う（規模 S は作業の最後）。pull request は draft で作り、pull request の前のレビューを draft で行う（順は起票と記録の操作の「アーカイブの操作」）。指摘に対応し、本文の「## 危険度」を書いてから ready にする。
 6. 資源：利用者が <確認する対象（spec、plan と tasks など）> を承認し、5 時間の使用量が <x>% 未満、週が <y>% 未満なら、問い合わせずに始め、開始を知らせる。特例：<有無>。レビューの profile：<profile>。並行している他のセッション：<セッションと担当>。
 7. ready にしたら、issue 担当のセッションに識別子で、pull request の番号、head の commit、危険度を知らせる。
 ```
@@ -99,13 +99,13 @@ issue 担当のセッションは、待機している予備のセッション�
 
 ## マージの後
 
-- `develop` の push の CI を、issue 担当のセッションがバックグラウンドの実行（「ツールの補足」の名前）で見届ける。失敗したら、他の pull request のマージを止めてすぐに起票し（[開発の進め方](../../../docs/05-開発規則/workflow.md)の「起票」の急ぐ作業）、直るまで次のマージをしない。
+- `develop` の push の CI を、issue 担当のセッションがバックグラウンドの実行（「ツールの補足」の名前）で見届ける。失敗したら、他の pull request のマージを止めてすぐに起票し（[起票と記録の操作](../../../docs/05-開発規則/issues.md)の「起票」の急ぐ作業）、直るまで次のマージをしない。
 - `.claude/`（skill、サブエージェントの定義、設定）を変えた pull request をマージしたら、issue 担当のセッションが、メインのチェックアウトの `develop` を最新にする。理由：メインの作業ツリーで起動した `claude -p` は、メインの作業ツリーの skill と定義を読み、作業ツリーのものを読まないため。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーのものを読む（「ツールの補足」の「作業ツリーのセッションが読むもの」の表）。
-- 後片付けで自分をアーカイブできないときは、許可した利用者の言葉を添えて、issue 担当のセッションに頼む（[開発の進め方](../../../docs/05-開発規則/workflow.md)の「マージの許可と後片付け」）。
+- 後片付けで自分をアーカイブできないときは、許可した利用者の言葉を添えて、issue 担当のセッションに頼む（[マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」）。
 
 ## Dependabot の pull request のマージ
 
-危険度の判定が「低」の pull request を、issue 担当のセッションがまとめてマージするときに使う。判定の読み方は [開発の進め方](../../../docs/05-開発規則/workflow.md)の「マージの許可と後片付け」。
+危険度の判定が「低」の pull request を、issue 担当のセッションがまとめてマージするときに使う。判定の読み方は [マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」。
 
 ```bash
 bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処理する
@@ -141,7 +141,7 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 - 見逃しの一覧と CI：`gh issue list --label 見逃し`、`gh run list -b develop -L 1`。
 - 使用量：`mcp__ccd_session_mgmt__get_usage`（5 時間と週の使用率、戻る時刻）。
 - `claude -p` の起動：`claude -p --model <モデル> --permission-mode default --allowedTools "<許すツール>" "<指示>"`。`--permission-mode bypassPermissions` は auto mode の判定が拒否するので使わない。Write のツールは、`claude -p` を起動したディレクトリの `.claude/` の下（`settings.json`、`agents/`、`skills/`）に書けない（`--allowedTools Write` でも拒否される）。動作の確認でファイルを置くときは、許可した Bash から script で置く。
-- マージの許可の確認の画面：hook（`agent-guard`）が、利用者の許可が必要なマージで Claude Code の確認の画面を表示する（AGENTS.md の Git の表）。遠隔操作（Remote Control）では、確認の画面とアプリの「次の一歩」の表示欄が見えないことがある。許可を求めるときの伝え方は [開発の進め方](../../../docs/05-開発規則/workflow.md)の「マージの許可と後片付け」。
+- マージの許可の確認の画面：hook（`agent-guard`）が、利用者の許可が必要なマージで Claude Code の確認の画面を表示する（AGENTS.md の Git の表）。遠隔操作（Remote Control）では、確認の画面とアプリの「次の一歩」の表示欄が見えないことがある。許可を求めるときの伝え方は [マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」。
 
 ### 作業ツリーのセッションが読むもの
 

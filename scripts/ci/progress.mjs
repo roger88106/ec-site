@@ -8,7 +8,7 @@
 //   1→10 の spec を誤って mvp に移すと、この検査が読まずに通るため
 // MVP の進捗（README の進捗の表、MVP の完成までの一覧、MVP の spec の tasks の照合）は見ない。MVP の spec は完了してアーカイブに移した。
 // 失敗したとき：アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを [x] にする。
-// アーカイブの後、マージの前に追加するタスクは、アーカイブのタスクの後に、済ませる commit で [x] の行として追加する（開発の進め方の「規模」）。
+// アーカイブの後、マージの前に追加するタスクは、アーカイブのタスクの後に、済ませる commit で [x] の行として追加する（起票と記録の操作の「アーカイブの操作」）。
 // 除外：なし。
 // 使い方：node scripts/ci/progress.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -116,7 +116,7 @@ export function checkArchivedTasks(tasks) {
     .map((name) =>
       tasks.get(name).total === 0
         ? `1→10 の spec ${name}：tasks がない`
-        : `1→10 の spec ${name}：tasks に残りが ${tasks.get(name).total - tasks.get(name).done} ある（アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクを \`[x]\` にする。アーカイブの後に追加するタスクは \`[x]\` の行で追加する。開発の進め方の「規模」）`,
+        : `1→10 の spec ${name}：tasks に残りが ${tasks.get(name).total - tasks.get(name).done} ある（アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクを \`[x]\` にする。アーカイブの後に追加するタスクは \`[x]\` の行で追加する。起票と記録の操作の「アーカイブの操作」）`,
     )
 }
 

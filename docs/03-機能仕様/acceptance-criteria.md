@@ -16,7 +16,7 @@
 - モジュールに迷う AC は、表示するデータを持つモジュールにする。支払や出荷の状態を画面に表示するだけの AC は、`payment`・`shipping` にする。
 - AC を追加する・変更する手順は、[起票と記録の操作](../05-開発規則/issues.md)の「AC 一覧の操作」。
 - AC とテストの対応は `node scripts/ci/ac-check.mjs --tests` で表示する。
-- CI の検査 `ac-check`（[CI の検査](../06-手順書/ci.md)）がこの一覧を読む。検査の内容は `scripts/ci/ac-check.mjs` の冒頭のコメント。
+- CI の検査 `ac-check`（[CI の検査の script](../06-手順書/ci-checks.md)）がこの一覧を読む。検査の内容は `scripts/ci/ac-check.mjs` の冒頭のコメント。
 
 <!-- generated:ac-list -->
 | AC | モジュール | 状態 | 元の spec | 変えた spec | 今の内容 |

@@ -24,12 +24,14 @@ description: ec-site の文書を書いて検査するまでの手順。docs/・
    - 既存の文書の言い回しのレビュー：skill `review` の文書のレビューの手順（見本を渡す）で行う。
 3. 文書を移した、見出しを変えた、節を別の文書に移したときは、「参照の修正」で参照を修正する。
 4. 確認する。次が全て通ること：
-   - `node scripts/ci/doc-refs.mjs`（Markdown のリンク、リンクテキストが文書の名前か、見出しの参照 `<文書の名前>の「<見出し>」` と、「の」のない `<パス>「<見出し>」`。節の番号の参照は失敗にする。CI の docs.yml でも実行する）
-   - `node scripts/ci/note-numbers.mjs`（注の番号 `※N` が、1 つの文書の中で重複せず、出る順に並ぶ）
-   - `node scripts/ci/ja-text.mjs`（日本語の文の検査。error は使わない語で、失敗になるので修正する）
-   - `node scripts/ci/ja-text.mjs --warning`（warning の一覧を出力する。終了コードは 0）。文脈で言い換える語と文体の型の文が、ファイルと行とともに示される。型は、「の」が続く文・長い文・読点の多い文・否定が続く文・複合動詞が崩れた疑いのある文である。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する
+   - `node scripts/ci/doc-refs.mjs`
+   - `node scripts/ci/note-numbers.mjs`
+   - `node scripts/ci/ja-text.mjs`（error は失敗になるので修正する）
+   - `node scripts/ci/ja-text.mjs --warning`（終了コードは 0）。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する
+
+   各検査の内容は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)。
    - コードのコメントを修正したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`
-5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。全ての変更は issue から始まり、規模 S は issue を spec とする（[起票と記録の操作](../../../docs/05-開発規則/issues.md)の「起票」、[開発の進め方](../../../docs/05-開発規則/workflow.md)の「規模」）。spec の tasks にないタスクの番号は付けない。push と pull request の作成は許可を求めず、マージの許可と担当は、危険度によって異なる（[マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」）。
+5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。spec の tasks にないタスクの番号は付けない。起票は [起票と記録の操作](../../../docs/05-開発規則/issues.md)の「起票」、push と pull request は [AGENTS.md](../../../AGENTS.md) の Git、マージは [マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」に従う。
 
 ## 4. 参照の修正
 

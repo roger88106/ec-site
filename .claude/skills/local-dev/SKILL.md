@@ -81,11 +81,12 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 lint・型チェック・テスト・ビルドは、手順ごとに 1 行の要約だけを出力する script で実行する。失敗した手順だけ、出力の末尾とログのパスが表示される。
 
 ```bash
-scripts/dev/check-frontend.sh                       # 依存の再インストール、ライセンスの検査、knip の実行、組み込みの名前の一覧の確認の後に、共有パッケージで lint typecheck test、両方のアプリで lint typecheck test build、E2E のコードで lint typecheck（CI と同じ）
+scripts/dev/check-frontend.sh                       # 全部（CI と同じ）
 scripts/dev/check-frontend.sh admin test            # 管理画面のテストだけ
 scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 ```
 
+- 手順の一覧と、対象ごとに実行する手順は、`scripts/dev/check-frontend.sh` の冒頭のコメントにある。
 - 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
 - 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`（ルートから実行すると、設定が入れ子だというエラーになる）。
 - 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため、テストデータの形の誤りが、テストの失敗として間接的に表れる。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
@@ -122,18 +123,17 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 ```bash
 node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun.log 2>&1
-curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{http_code}\n' localhost:19080/actuator/health   # スロット 1 の運用ポート
 ```
 
-- 待つ先は自分のスロットの運用ポート。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
+- 起動を待つ curl は「バックエンド」の節と同じで、待つ先は自分のスロットの運用ポート（スロット 1 は `localhost:19080`）。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
 - 店舗画面と管理画面のプレビューは、`.claude/launch.json` の `store-<n>`・`admin-<n>`（`store-1`、`admin-2` など。`<n>` は自分のスロット）を `preview_start` で指定する。`admin`・`store` はスロット 0。プレビューのツールがないときは、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>` をバックグラウンドで実行する。番号が自分のスロットと違うと起動しない。
 - `run backend` がポートの使用で終了コード 1 で終わったら、表示された停止のコマンドで停止してから再実行する。
-- 割り当てとデータを残したまま停止するときは、自分のスロットのポートで待ち受けているプロセスだけを停止する。Windows の PowerShell では `Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess`（スロット 1 のバックエンド）。他のスロットのポートのプロセスを停止しない。
+- 割り当てとデータを残したまま停止するときは、「バックエンド」の節の `Stop-Process` で、自分のスロットのポート（スロット 1 のバックエンドは 18080）で待ち受けているプロセスだけを停止する。他のスロットのポートのプロセスを停止しない。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
 
 ## CI の検査の script
 
-`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで実行する（hook を置いていれば commit のときに実行される）。各検査の目的は [CI の検査](../../../docs/06-手順書/ci.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
+`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで実行する（hook を置いていれば commit のときに実行される）。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
 
 ```bash
 scripts/ci/check-all.sh
@@ -144,27 +144,6 @@ scripts/ci/check-all.sh
 ```bash
 CI=true scripts/ci/check-all.sh
 ```
-
-## 決済（mock と Stripe）
-
-- profile `local` は mock で、注文すると mock の支払画面に移る（[決済の設計](../../../docs/02-設計/payment.md)の「mock」）。期限切れを早く確認する引数は、mock でも[開発環境の起動](../../../docs/06-手順書/setup.md)の「Stripe で動かす」のものを使う。
-- Stripe の sandbox は[開発環境の起動](../../../docs/06-手順書/setup.md)の「Stripe で動かす」の通り。鍵は `/.local/stripe.env` にある（なければ利用者に頼む。鍵を会話に貼らせない）。
-- 転送した通知は、鍵の行を出さずに読む：`docker logs ec-site-stripe-cli 2>&1 | grep -- '-->' | tail`（ログ全体は署名の鍵を含むので出さない）。
-- 支払は `payment.payment`（`status`、`page_id`、`authorization_ref`）、注文は `ordering.sales_order`。
-- Stripe の Checkout の画面は描画が遅く、入力が遅れて二重に入ることがある。入力の後に拡大して確認してから支払う。
-
-## 機能紹介のページのスクリーンショット
-
-[開発環境の起動](../../../docs/06-手順書/setup.md)の「機能紹介のページのスクリーンショット」の通り。
-
-## ローカルの画面のデータ
-
-local profile の seed（`db/seed/local/`）が、画面を確認するためのデータを作る。注文を作るスクリプトは必要ない。レポート用の注文の中身は `db/seed/local/README.md`「レポート用の注文」。
-
-- 商品 15（公開 13、非公開 1、公開の予約 1）、カテゴリ 13、商品画像 31。在庫切れ（`TEE-001` の L、`PANTS-001-M`、`SENBEI-001`）と残りわずか（`TEE-002-M`、`JUICE-001`、`MUG-001-GY` など）がある。
-- 会員 `member@example.com` の注文 4 件：受付、キャンセルの申請中、申請の却下（受付のまま）、キャンセル済み。どれも状態に合う支払（mock の与信）を持ち、受付の注文は管理画面から出荷できる（Stripe の profile では売上確定で失敗する）。承認・却下・運営者のキャンセルは、申請中の注文で管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）から試す。
-- ID は固定（`00000000-0000-0000-0000-00000000` + 4 桁）：カテゴリ 1xxx、商品 2xxx、バリアント 3xxx、在庫 4xxx、会員 6001、注文 61xx、支払 64xx、アセット 7xxx、商品画像 8xxx。レポート用は `00000000-0000-0000-<種類 4 桁>-<番号 12 桁>`（会員 0001、注文 0010、支払 0012、出荷 0013）。
-- 画面で変えたデータを最初の状態に戻す手順は、[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」。
 
 ## E2E（`e2e/`）
 
@@ -187,8 +166,8 @@ node scripts/dev/break-check.mjs <ファイル> <置き換える文字列> <置�
 node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false && <p" frontend/store "npx vitest run src/x.test.tsx"
 ```
 
-- 置き換えは文字列で行い、1 か所に当たらなければ変えずに終了コード 2 で止まる。テストのコマンドは Git Bash で実行するので、`./gradlew` も起動できる。テストの後は、成否によらず、Ctrl+C などの停止のシグナルを受けたときも、元に戻す。
-- 出力は、失敗したテストの行（`×`、`FAILED`、`BUILD`）と件数、最後の `→ 失敗した（壊すと検出できる）` か `→ 通った（壊しても検出できない）`。終了コードは、失敗すれば 0（壊すと検出できた）、通れば 1、置き換えが当たらない・ファイルが読めない・bash を起動できない・テストのコマンドが見つからない（bash の終了コード 127）か実行できない（126）ときは 2（理由は標準エラー出力。コマンドの誤りをテストの失敗と読み違えないため、127 と 126 は 0 にしない）。
+- 置き換える文字列が 1 か所だけに一致しなければ、変えずに止まる。テストの後は元に戻す。
+- 最後の行が `→ 失敗した（壊すと検出できる）` なら終了コード 0、`→ 通った（壊しても検出できない）` なら 1。置き換える文字列が一致しない・コマンドが実行できないときは 2（理由は標準エラー出力）。詳しい終了コードと、元に戻す条件は `scripts/dev/break-check.mjs` の冒頭のコメントにある。
 - Gradle のテストでは、出力に `FAILED` か `BUILD` の行があることを確認する。ない失敗は、テスト以外の原因（起動の失敗など）を疑う。
 
 ## シェルと Git の落とし穴
@@ -196,7 +175,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 hook や検査に止められてからコマンドを書き換えないよう、初めから次の手順で行う。
 
 - 複数のファイルの置き換えと、`\` や正規表現を含む書き換えは、初めから Edit で行う（新しいファイルは Write）。script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。heredoc（`<<'EOF'` も）と `node -e` の文字列に `\` を入れない。理由：Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れるため。hook `backslash-guard` も、heredoc と `node -e` の中の `\` を拒否する。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記も Edit で書く。
-- コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと止まる。
+- コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと止まる（語の一覧は skill `zh-mixing` の「書くときの注意」）。
 - CI を待つときは、バックグラウンドで実行し、ワークフローのファイル名・`event`・commit で絞る。フォアグラウンドで長い `sleep` を実行しない（Claude Code の Bash ツールが拒否する）。絞らないと、同じ commit の別のワークフロー（Dependabot の更新など）の完了で待ちが終わる。
 
   ```bash
@@ -207,66 +186,19 @@ hook や検査に止められてからコマンドを書き換えないよう、
   - push で待つワークフローは、変えたファイルで決まる。`.md` と `.claude/` の下のファイルだけなら、ワークフロー「CI」（`ci.yml`）は push で実行されないので、ワークフロー「文書」（`docs.yml`）だけを待つ。理由：`ci.yml` の push の `paths` がそれらを除くため。ただし、モジュールの設計書など一部の `.md` は、`paths` が個別に指定しているので、push でも「CI」が実行される。pull request では、「CI」は変えたファイルによらず実行される。
 - commit の前の hook（`pre-commit`）は、作業ツリーでなく index（ステージした内容）を検査する。ステージしていない変更は検査に入らない。そのため、前の段階の変更を参照するファイルを先に commit すると、参照先が index にないので、hook が切れた参照として commit を失敗にする。段階の順に commit する。
   - `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
-- 次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
+- 最初の 2 つの箇条のほかに、次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
 
 | 書き方 | 拒否するもの | 避け方 |
 |--------|------------|--------|
-| heredoc・`node -e` の中の `\`（Markdown の表の `\|` を含む） | hook `backslash-guard`（次の節） | 上の箇条のとおり、`\|` を含む表の追記も Edit で書く |
 | `gh pr edit` と `gh pr ready` など、GitHub の状態を変える `gh` の操作を `&&` や `;` で 1 つにつないだコマンド | auto mode の判定 | pull request の編集・ready・マージ、issue の編集は、1 つのコマンドに操作を 1 つだけ書き、別の呼び出しで実行する |
 | `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` の「ツールの補足」） |
-| コミットメッセージの、層 1 の使わない語（`scripts/ci/ja-text.json` の error の語） | git の hook `commit-msg`（日本語の検査） | 上の箇条のとおり、commit の前に `--message` で検査する。語の一覧は skill `zh-mixing` の「書くときの注意」 |
 | spec やコミットメッセージに写した、利用者の中国語の言葉 | git の hook `commit-msg`・`pre-commit`（中国語の混入の検査） | 日本語に訳して書く（skill `zh-mixing` の「書くときの注意」） |
 | `git -C` と `cd` のパスに変数やコマンドの置き換え（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（`git commit` の対象のリポジトリを決められないとき） | 変数を使わず、絶対パスを直接書く |
 | `cd` で `/.local/` などに移る | 拒否されない。以後のコマンドの作業ディレクトリが意図しない場所になる | `cd` で作業ディレクトリを移さず、`git -C <絶対パス>` と絶対パスを使う |
 
 - 検査を `| tail` に通すと、終了コードが `tail` のものになり、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
 
-## 手元の hook の設定
+## 場面ごとに読むファイル
 
-hook と permission の書き先は 2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のものは `.claude/settings.local.json`（Git に入らない）に置く。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs`、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`）。例外は zh-mixing の手元の hook で、script は `.claude/skills/zh-mixing/` に置く。
-
-利用者の環境（`.claude/settings.local.json`）に置く 3 つの hook は次のとおり。読む場所と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」の表。設定はメインの作業ツリーに置く。
-
-| hook | イベントと matcher | 働き |
-|------|--------------------|------|
-| `session-start.mjs` | SessionStart、`startup\|resume\|compact` | メインの作業ツリーの `/.local/agent/environment.md` を文脈に入れる。hook が動くセッションでは、どの作業ツリーでも同じファイルを読む。ファイルがなければ何も出さない |
-| `backslash-guard.mjs` | PreToolUse、`Bash` | heredoc と `node -e` の中の `\` を拒否する。コマンドの他の箇所の `\`（grep の `\|` など）は通す |
-| `post-tool-use.cjs` | PostToolUse、`Write\|Edit\|MultiEdit\|NotebookEdit` | 書いたファイル（`tool_input.file_path`）を層 2 の検査にかけ、見つかれば終了コード 2 で返す（詳細は表の下の箇条） |
-
-command は、script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから探し、なければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う形にする。探し方は `.claude/settings.json` と同じだが、どちらにも見つからないときは、`settings.json` はコマンドを止め、この例は何もせず通す。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。
-
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup|resume|compact",
-        "hooks": [
-          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/scripts/dev/hooks/session-start.mjs\" ]; then f=\"$d/scripts/dev/hooks/session-start.mjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/scripts/dev/hooks/backslash-guard.mjs\" ]; then f=\"$d/scripts/dev/hooks/backslash-guard.mjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-        "hooks": [
-          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/.claude/skills/zh-mixing/post-tool-use.cjs\" ]; then f=\"$d/.claude/skills/zh-mixing/post-tool-use.cjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-- 既に `hooks` があれば、イベントごとの配列に項目を追加する。設定を変えたら、新しいセッションを起動する。
-- PostToolUse の項目は、中国語で指示する環境だけに置く。環境の印と git の hook は skill `zh-mixing`。
-- `post-tool-use.cjs` は、書いたファイルのうち、リポジトリのファイルと memory のファイル（`~/.claude/projects/<プロジェクト>/memory/` の下）を調べる。`/.local/` の下とリポジトリの外の他のファイルは調べない。見つかれば終了コード 2 と標準エラー出力（ファイル、行、語、直し方）で返し、Claude Code がエージェントに渡す。script は `.claude/skills/zh-mixing/` にある。
-- 他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、PostToolUse の command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
+- [画面の確認のデータ](screen-data.md)：決済（mock と Stripe）の確認、機能紹介のページのスクリーンショット、画面で確認する seed のデータを見るとき。
+- [手元の hook の設定](hooks.md)：hook を `.claude/settings.local.json` に置く、修正するとき。

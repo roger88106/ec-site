@@ -18,5 +18,7 @@
 | [backend-coding.md](backend-coding.md) | バックエンドの書き方 |
 | [frontend-coding.md](frontend-coding.md) | フロントの書き方 |
 | [test-writing.md](test-writing.md) | テストの書き方 |
+| [test-writing-backend.md](test-writing-backend.md) | バックエンドのテストの書き方 |
+| [test-writing-frontend.md](test-writing-frontend.md) | フロントのテストの書き方 |
 | [api-conventions.md](api-conventions.md) | API の規約 |
 | [licenses.md](licenses.md) | 依存とライセンス |

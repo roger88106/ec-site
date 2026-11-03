@@ -5,31 +5,28 @@ info:
   description: |
     B 側（運営者）向けの API。
 
-    - 全ての操作に、運営者の realm（IdP）が発行した access token（audience `ec-admin-api`）を `Authorization: Bearer` で付ける。token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）を返す（バックエンドのアーキテクチャの「認証・認可」）。
-    - 各操作に必要な権限を `x-required-permission` に記す。token の権限（`resource_access.ec-admin-api.roles`）に含まれなければ 403（`FORBIDDEN`）を返す。本書にない操作は、権限によらず拒否する（spec 003 NFR-3）。`authenticated` は権限ではなく、ログインしていればよい操作を表す。
-    - 同時に編集されうるリソースの更新では、取得時の `version` を送る。一致しなければ 409 を返す。
-    - 状態の切り替え（公開・非公開・販売終了、販売停止・解除、注文のキャンセルとその申請の承認）は冪等で、`version` を送らない。すでにその状態なら何もせず 204 を返す。
-    - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。API の規約）。
-    - 日時は ISO 8601 のオフセット付き文字列。
+    - 全ての操作に、運営者の realm（IdP）が発行した access token（audience `ec-admin-api`）を付ける。各操作に必要な権限を `x-required-permission` に記す（`authenticated` は、ログインしていればよい操作）。
+    - 状態の切り替え（公開・非公開・販売終了、販売停止・解除、注文のキャンセルとその申請の承認）は冪等である。
+    - 認証・認可（401、403）は `docs/02-設計/backend-architecture.md` の「認証・認可」、更新の競合（`version` と 409）・冪等・並び・日時の規約は `docs/05-開発規則/api-conventions.md` による。
 servers:
   - url: /api/admin
 security:
   - operatorToken: []
 tags:
   - name: tax
-    description: 税区分と税率（spec 001 US-1）
+    description: 税区分と税率
   - name: category
-    description: カテゴリ（spec 001 US-2）
+    description: カテゴリ
   - name: product
-    description: 商品とバリアント（spec 001 US-3〜6、9）
+    description: 商品とバリアント
   - name: inventory
-    description: 在庫（spec 001 US-8）
+    description: 在庫
   - name: order
-    description: 注文（spec 002 US-19〜21）
+    description: 注文
   - name: me
-    description: ログインしている運営者（spec 010 US-45）
+    description: ログインしている運営者
   - name: report
-    description: 売上のレポート（spec 010 US-41〜43）
+    description: 売上のレポート
 
 paths:
   # ============================== 税 ==============================
@@ -54,7 +51,7 @@ paths:
       tags: [tax]
       operationId: createTaxCategory
       x-error-codes: [INVALID_TAX_CATEGORY_NAME, TAX_CATEGORY_NAME_ALREADY_EXISTS]
-      summary: 税区分の登録（AC-1）
+      summary: 税区分の登録
       x-required-permission: tax:write
       requestBody:
         required: true
@@ -103,7 +100,7 @@ paths:
       tags: [tax]
       operationId: replaceTaxRates
       x-error-codes: [INVALID_RATE_PERCENT, INVALID_EFFECTIVE_PERIOD, TAX_RATES_REQUIRED, INVALID_TAX_RATE_ID, TAX_RATE_PERIODS_OVERLAP, TAX_RATE_PERIODS_GAP, TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED, TAX_RATE_PAST_DATETIME, TAX_RATE_STARTED_UNCHANGEABLE, TAX_RATE_ENDED_UNCHANGEABLE]
-      summary: 税率の一覧を置き換える（AC-2〜5、7）
+      summary: 税率の一覧を置き換える
       description: |
         税区分の税率を一覧ごと置き換える。既存の税率を残す場合は `id` を指定する。
         `id` のない要素は新しい税率として扱い、送られなかった既存の税率は削除として扱う。
@@ -150,7 +147,7 @@ paths:
       tags: [category]
       operationId: createCategory
       x-error-codes: [INVALID_CATEGORY_NAME, CATEGORY_DEPTH_EXCEEDED, CATEGORY_NAME_ALREADY_EXISTS]
-      summary: カテゴリの登録（AC-8〜10）
+      summary: カテゴリの登録
       x-required-permission: category:write
       requestBody:
         required: true
@@ -177,7 +174,7 @@ paths:
       tags: [category]
       operationId: reorderCategories
       x-error-codes: [INVALID_CATEGORY_ORDER]
-      summary: 兄弟カテゴリの並び順を変更する（AC-11）
+      summary: 兄弟カテゴリの並び順を変更する
       description: 同じ親を持つカテゴリを、並べたい順に全て送る。
       x-required-permission: category:write
       requestBody:
@@ -223,7 +220,7 @@ paths:
       tags: [category]
       operationId: renameCategory
       x-error-codes: [INVALID_CATEGORY_NAME, CATEGORY_NAME_ALREADY_EXISTS]
-      summary: カテゴリ名の変更（AC-10、11）
+      summary: カテゴリ名の変更
       x-required-permission: category:write
       requestBody:
         required: true
@@ -248,8 +245,7 @@ paths:
       tags: [category]
       operationId: deleteCategory
       x-error-codes: [CATEGORY_HAS_CHILDREN, CATEGORY_HAS_PRODUCTS]
-      summary: カテゴリの削除（AC-12）
-      description: 子カテゴリを持つ、または商品が所属しているカテゴリは削除できない（400）。
+      summary: カテゴリの削除
       x-required-permission: category:write
       responses:
         '204':
@@ -268,8 +264,8 @@ paths:
     get:
       tags: [product]
       operationId: listProducts
-      summary: 商品の一覧・絞り込み（AC-47〜50）
-      description: 状態に関係なく、全ての商品が対象。並びは登録日時の新しい順（同じなら ID 順）。
+      summary: 商品の一覧・絞り込み
+      description: 状態に関係なく、全ての商品が対象。登録日時の新しい順。
       x-required-permission: product:read
       parameters:
         - name: code
@@ -312,7 +308,7 @@ paths:
       tags: [product]
       operationId: createProduct
       x-error-codes: [INVALID_PRODUCT_CODE, INVALID_PRICE_EXCL_TAX, INVALID_PRODUCT_NAME, INVALID_PRODUCT_DESCRIPTION, INVALID_VARIANT_AXES, INVALID_CATEGORY_ID, TAX_CATEGORY_NOT_ASSIGNABLE, PRODUCT_CODE_ALREADY_EXISTS]
-      summary: 商品の登録（AC-6、13〜17、25）
+      summary: 商品の登録
       x-required-permission: product:write
       requestBody:
         required: true
@@ -357,7 +353,7 @@ paths:
       tags: [product]
       operationId: updateProduct
       x-error-codes: [INVALID_PRICE_EXCL_TAX, INVALID_PRODUCT_NAME, INVALID_PRODUCT_DESCRIPTION, INVALID_CATEGORY_ID, TAX_CATEGORY_NOT_ASSIGNABLE]
-      summary: 商品の編集（AC-6、18、19、25、26）
+      summary: 商品の編集
       x-required-permission: product:write
       requestBody:
         required: true
@@ -382,8 +378,7 @@ paths:
       tags: [product]
       operationId: deleteProduct
       x-error-codes: [PRODUCT_ALREADY_SHOWN]
-      summary: 商品の削除（AC-33）
-      description: C 側に一度でも表示された商品は削除できない（400）。
+      summary: 商品の削除
       x-required-permission: product:write
       parameters:
         - $ref: '#/components/parameters/Version'
@@ -408,8 +403,7 @@ paths:
       tags: [product]
       operationId: publishProduct
       x-error-codes: [PRODUCT_HAS_NO_VARIANTS, PRODUCT_DISCONTINUED]
-      summary: 公開する（AC-29、31）
-      description: 冪等。すでに公開なら何もしない。バリアントのない商品、販売終了の商品は 400。
+      summary: 公開する
       x-required-permission: product:write
       responses:
         '204':
@@ -432,8 +426,7 @@ paths:
       tags: [product]
       operationId: unpublishProduct
       x-error-codes: [PRODUCT_DISCONTINUED]
-      summary: 非公開にする（AC-30）
-      description: 冪等。すでに非公開なら何もしない。販売終了の商品は 400。
+      summary: 非公開にする
       x-required-permission: product:write
       responses:
         '204':
@@ -455,8 +448,7 @@ paths:
     put:
       tags: [product]
       operationId: discontinueProduct
-      summary: 販売終了にする（AC-32）
-      description: 冪等。すでに販売終了なら何もしない。
+      summary: 販売終了にする
       x-required-permission: product:write
       responses:
         '204':
@@ -479,7 +471,7 @@ paths:
       tags: [product]
       operationId: setPublicationPeriod
       x-error-codes: [INVALID_PUBLICATION_PERIOD]
-      summary: 公開期間の設定（AC-34〜36、P2）
+      summary: 公開期間の設定
       x-required-permission: product:write
       requestBody:
         required: true
@@ -509,8 +501,8 @@ paths:
       tags: [product]
       operationId: addVariant
       x-error-codes: [INVALID_VARIANT_CODE, INVALID_AXIS_VALUES, SINGLE_VARIANT_ONLY, VARIANT_AXIS_VALUES_ALREADY_EXISTS, VARIANT_CODE_ALREADY_EXISTS]
-      summary: バリアントの登録（AC-20〜24）
-      description: 応答の `Location` は、登録したバリアントを取得する操作の URL で、ホストを含まない相対の URL（`/api/admin/products/{productId}/variants/{variantId}`。AC-276）。
+      summary: バリアントの登録
+      description: 応答の `Location` は `/api/admin/products/{productId}/variants/{variantId}`。
       x-required-permission: product:write
       requestBody:
         required: true
@@ -539,7 +531,7 @@ paths:
       tags: [product]
       operationId: reorderVariants
       x-error-codes: [INVALID_VARIANT_ORDER]
-      summary: バリアントの表示順を変更する（AC-27）
+      summary: バリアントの表示順を変更する
       description: 商品の全てのバリアントを、並べたい順に送る。
       x-required-permission: product:write
       requestBody:
@@ -570,8 +562,7 @@ paths:
       tags: [product]
       operationId: deleteVariant
       x-error-codes: [PRODUCT_ALREADY_SHOWN]
-      summary: バリアントの削除（AC-71）
-      description: C 側に一度でも表示された商品のバリアントは削除できない（400）。
+      summary: バリアントの削除
       x-required-permission: product:write
       parameters:
         - $ref: '#/components/parameters/Version'
@@ -596,8 +587,7 @@ paths:
     put:
       tags: [product]
       operationId: suspendVariant
-      summary: バリアントを販売停止にする（AC-28、P2）
-      description: 冪等。すでに販売停止なら何もしない。
+      summary: バリアントを販売停止にする
       x-required-permission: product:write
       responses:
         '204':
@@ -620,8 +610,7 @@ paths:
     put:
       tags: [product]
       operationId: resumeVariant
-      summary: バリアントの販売停止を解除する（AC-28、P2）
-      description: 冪等。販売停止でなければ何もしない。
+      summary: バリアントの販売停止を解除する
       x-required-permission: product:write
       responses:
         '204':
@@ -645,9 +634,9 @@ paths:
       tags: [product]
       operationId: createImageUpload
       x-error-codes: [UNSUPPORTED_IMAGE_FORMAT, IMAGE_TOO_LARGE, TOO_MANY_PRODUCT_IMAGES]
-      summary: 画像のアップロードを受け付ける（AC-39、40、67、P2）
+      summary: 画像のアップロードを受け付ける
       description: |
-        形式・サイズ・枚数を確認し、アップロードのバケットへの署名付き URL（PUT）を返す（plan 001 の「商品画像」）。
+        アップロードのバケットへの署名付き URL（PUT）を返す。
         ブラウザは `uploadUrl` に `headers` を付けてファイルを PUT し、その後 `POST /products/{productId}/images` で登録する。
         受付だけで登録しなかったファイルは、1 日で消える。
       x-required-permission: product:write
@@ -680,12 +669,10 @@ paths:
       tags: [product]
       operationId: addProductImage
       x-error-codes: [IMAGE_TOO_LARGE, IMAGE_UPLOAD_NOT_FOUND, INVALID_IMAGE_FILE, IMAGE_CONVERSION_FAILED, TOO_MANY_PRODUCT_IMAGES, IMAGE_SERVICE_UNAVAILABLE]
-      summary: 受け付けた画像を登録する（AC-37、39、40、67〜70、296〜298、P2）
+      summary: 受け付けた画像を登録する
       description: |
-        アップロードしたファイルの大きさと形式（先頭のバイト）を確認し、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 の「画像の変換」）。
-        変換のサービスがファイルを読めない画像は登録せず、400（`IMAGE_CONVERSION_FAILED`）を返す（AC-70、297）。
-        変換のサービスやファイル保存のサービスに届かない・時間内に応答がない・その側の故障のときは、502（`IMAGE_SERVICE_UNAVAILABLE`）を返す。しばらくしてからやり直せる（AC-296、298）。
-        バリアントと同じく商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
+        アップロードしたファイルを WebP に変換して配信のバケットへ置き、商品の画像の最後に加える。
+        商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
       x-required-permission: product:write
       requestBody:
         required: true
@@ -720,8 +707,8 @@ paths:
       tags: [product]
       operationId: reorderProductImages
       x-error-codes: [INVALID_IMAGE_ORDER]
-      summary: 画像の並び順の変更（AC-37、P2）
-      description: 商品の全ての画像の ID を、並べたい順に送る。過不足があれば 400。先頭が代表画像。
+      summary: 画像の並び順の変更
+      description: 商品の全ての画像の ID を、並べたい順に送る。先頭が代表画像。
       x-required-permission: product:write
       requestBody:
         required: true
@@ -750,7 +737,7 @@ paths:
     delete:
       tags: [product]
       operationId: deleteProductImage
-      summary: 画像の削除（AC-37、P2）
+      summary: 画像の削除
       description: その画像を指定していたバリアントの指定は外れる。配信のファイルは、削除の後に消える。
       x-required-permission: product:write
       parameters:
@@ -775,7 +762,7 @@ paths:
       tags: [product]
       operationId: setVariantImage
       x-error-codes: [INVALID_VARIANT_IMAGE]
-      summary: バリアントの画像の指定（AC-38、P2）
+      summary: バリアントの画像の指定
       description: その商品の画像を 1 枚指定する。`imageId` を null にすると指定を外す（代表画像を使う）。
       x-required-permission: product:write
       requestBody:
@@ -828,7 +815,7 @@ paths:
       tags: [inventory]
       operationId: adjustStock
       x-error-codes: [INVALID_STOCK_DELTA, STOCK_MEMO_REQUIRED, INVALID_STOCK_MEMO, INSUFFICIENT_STOCK, STOCK_QUANTITY_EXCEEDED, ORDER_REASON_NOT_SELECTABLE]
-      summary: 在庫の調整（AC-42〜44、46）
+      summary: 在庫の調整
       description: 在庫調整は履歴の 1 件で単独の URL を持たないため、`Location` は返さず、本文で結果を返す。
       x-required-permission: inventory:write
       requestBody:
@@ -855,7 +842,7 @@ paths:
     get:
       tags: [inventory]
       operationId: listStockAdjustments
-      summary: 在庫調整の履歴（AC-45）
+      summary: 在庫調整の履歴
       description: 新しい順。
       x-required-permission: inventory:read
       parameters:
@@ -879,7 +866,7 @@ paths:
     get:
       tags: [inventory]
       operationId: listStockSummaries
-      summary: 商品ごとの在庫数の合計（AC-49）
+      summary: 商品ごとの在庫数の合計
       x-required-permission: inventory:read
       parameters:
         - name: productIds
@@ -914,7 +901,7 @@ paths:
     get:
       tags: [order]
       operationId: listOrders
-      summary: 注文一覧（AC-97〜99、106、182、186、187、189）
+      summary: 注文一覧
       description: 注文日時の新しい順。キャンセル済みの注文も含む。
       x-required-permission: order:read
       parameters:
@@ -942,12 +929,12 @@ paths:
             format: date
         - name: authorizationExpiring
           in: query
-          description: true なら、与信期限が近い注文（期限を過ぎたものを含む）だけ（AC-187）
+          description: true なら、与信期限が近い注文（期限を過ぎたものを含む）だけ
           schema:
             type: boolean
         - name: returned
           in: query
-          description: true なら、配送状態が返送の注文だけ（AC-189）
+          description: true なら、配送状態が返送の注文だけ
           schema:
             type: boolean
         - $ref: '#/components/parameters/Page'
@@ -972,7 +959,7 @@ paths:
     get:
       tags: [order]
       operationId: getOrder
-      summary: 注文の詳細（AC-100、106、181、186、194）
+      summary: 注文の詳細
       x-required-permission: order:read
       responses:
         '200':
@@ -995,10 +982,8 @@ paths:
       tags: [order]
       operationId: approveOrderCancellation
       x-error-codes: [CANCELLATION_NOT_PENDING]
-      summary: キャンセルの申請の承認（AC-101、104、105）
-      description: |
-        キャンセルにし、同じトランザクションで明細の数量だけ在庫数を戻す。キャンセル済みなら何もせず 204（冪等）。
-        申請中でない「受付」の注文は 400。
+      summary: キャンセルの申請の承認
+      description: 注文をキャンセルにし、明細の数量だけ在庫数を戻す。
       x-required-permission: order:write
       responses:
         '204':
@@ -1019,8 +1004,8 @@ paths:
       tags: [order]
       operationId: rejectOrderCancellation
       x-error-codes: [CANCELLATION_NOT_PENDING]
-      summary: キャンセルの申請の却下（AC-102、105）
-      description: 「受付」に戻す。申請中でない注文（キャンセル済みを含む）は 400。
+      summary: キャンセルの申請の却下
+      description: 注文を「受付」に戻す。
       x-required-permission: order:write
       responses:
         '204':
@@ -1041,10 +1026,9 @@ paths:
       tags: [order]
       operationId: cancelOrder
       x-error-codes: [CANCELLATION_REASON_REQUIRED, INVALID_CANCELLATION_REASON, AWAITING_PAYMENT, SHIPPED_ORDER_NOT_RETURNED, RESTOCK_CHOICE_REQUIRED]
-      summary: 運営者の判断によるキャンセル（AC-103〜105、171、190〜193）
+      summary: 運営者の判断によるキャンセル
       description: |
-        「受付」「キャンセル申請中」の注文をキャンセルにし、在庫数を戻す。キャンセル済みなら何もせず 204（冪等。理由は変えない）。
-        「出荷済み」は、配送状態が返送のときだけ受け付け、`restock` の指定で在庫数を戻すかを決める。返送でなければ 409。
+        注文をキャンセルにし、在庫数を戻す（出荷済みの注文は `restock` の指定による）。
         支払は取り消す（与信の取消か返金）。決済サービスでの取消・返金の結果は待たない。
       x-required-permission: order:write
       requestBody:
@@ -1074,11 +1058,8 @@ paths:
       tags: [order]
       operationId: shipOrder
       x-error-codes: [ORDER_NOT_SHIPPABLE, AUTHORIZATION_EXPIRED, PAYMENT_NOT_CAPTURABLE, PAYMENT_GATEWAY_UNAVAILABLE, TRACKING_NUMBER_INVALID, SHIPMENT_ALREADY_EXISTS]
-      summary: 出荷の登録（AC-167〜173、188）
-      description: |
-        売上を確定してから、注文を「出荷済み」にし、出荷を作る。「受付」の注文だけ。
-        与信期限切れ（`AUTHORIZATION_EXPIRED`）と、受付でない注文は 409。決済サービスに接続できないときは 502 で、出荷は作らない。
-        売上確定の後に注文が受付でなくなっていたら 409 で、支払は売上確定済みのまま残る（登録し直すと確定せずに進む）。
+      summary: 出荷の登録
+      description: 売上を確定してから、注文を「出荷済み」にし、出荷を作る。
       x-required-permission: order:write
       requestBody:
         required: true
@@ -1111,8 +1092,8 @@ paths:
     get:
       tags: [me]
       operationId: getMe
-      summary: 自分の権限の一覧（spec 010 AC-214）
-      description: 管理画面が、メニューと画面を権限で出し分けるのに使う。権限は必要なく、ログインしていればよい。
+      summary: 自分の権限の一覧
+      description: 管理画面が、メニューと画面を権限で出し分けるのに使う。
       x-required-permission: authenticated
       responses:
         '200':
@@ -1130,7 +1111,7 @@ paths:
       tags: [report]
       operationId: getSalesTrend
       x-error-codes: [INVALID_PERIOD]
-      summary: 売上の推移（spec 010 AC-197〜201、BR-24〜26）
+      summary: 売上の推移
       description: |
         期間の全ての区切りを並べ、売れなかった区切りは 0 にする。期間が区切りの途中で切れたら、その区切りは期間の中の日だけを数える。
         商品を選ぶと、その商品の明細だけを数え、送料は含めない（`shippingExcluded` が true）。
@@ -1171,7 +1152,7 @@ paths:
       tags: [report]
       operationId: getVariantSales
       x-error-codes: [INVALID_PERIOD]
-      summary: バリアントの売れ行き（spec 010 AC-202〜204）
+      summary: バリアントの売れ行き
       description: 商品の全てのバリアントを、販売数量の多い順（同じなら商品の並びの順）に返す。売れなかったバリアントは 0。送料は含めない。
       x-required-permission: report-variant-sales:read
       parameters:
@@ -1206,7 +1187,7 @@ paths:
       tags: [report]
       operationId: getCustomerBreakdown
       x-error-codes: [INVALID_PERIOD]
-      summary: 地域・年齢層・性別（spec 010 AC-205〜208、219、220、BR-27、29）
+      summary: 地域・年齢層・性別
       description: |
         都道府県は売れたものだけを全国地方公共団体コードの順に、不明（コードなし）を最後に返す。年齢層と性別は、全ての区分を返す。
         商品を選ぶと、その商品を含む注文だけを数え、売上額はその商品の明細の分だけ（`shippingExcluded` が true）。
@@ -1241,8 +1222,8 @@ paths:
     get:
       tags: [report]
       operationId: getReportSettings
-      summary: レポートの設定（spec 010 AC-197、BR-24）
-      description: 管理画面が、期間の選択肢（今年度・前年度）を、バックエンドと同じ会計年度で求めるのに使う。秘密ではないので、ログインしていればよい。
+      summary: レポートの設定
+      description: 管理画面が、期間の選択肢（今年度・前年度）を、バックエンドと同じ会計年度で求めるのに使う。
       x-required-permission: authenticated
       responses:
         '200':
@@ -1346,7 +1327,7 @@ components:
     Page:
       name: page
       in: query
-      description: ページ番号（1 始まり）
+      description: ページ番号
       schema:
         type: integer
         format: int32
@@ -1702,7 +1683,7 @@ components:
       properties:
         addChild:
           type: boolean
-          description: 子のカテゴリを足せる（いちばん深い階層でないとき。AC-9、270）
+          description: 子のカテゴリを足せる
     Category:
       type: object
       required: [id, name, depth, displayOrder, version]
@@ -1777,14 +1758,14 @@ components:
       minLength: 1
       maxLength: 32
       pattern: '^[A-Z0-9]+(-[A-Z0-9]+)*$'
-      description: 商品品番。半角の英大文字・数字とハイフンで 1〜32 文字。ハイフンは英数字の間にだけ置ける（AC-15）
+      description: 商品品番
       example: ABC-001
     VariantCode:
       type: string
       minLength: 1
       maxLength: 32
       pattern: '^[A-Z0-9]+(-[A-Z0-9]+)*$'
-      description: バリアント品番。形式は商品品番と同じ（AC-21）
+      description: バリアント品番
       example: ABC-001-WH-M
     ProductSummaryPage:
       allOf:
@@ -1867,7 +1848,7 @@ components:
         images:
           type: array
           maxItems: 20
-          description: 表示順。先頭が代表画像（AC-37）。枚数の上限まで（AC-272）
+          description: 表示順。先頭が代表画像
           items:
             $ref: '#/components/schemas/ProductImage'
         variants:
@@ -1892,28 +1873,28 @@ components:
       properties:
         publish:
           type: boolean
-          description: 公開できる（非公開のとき）
+          description: 公開できる
         unpublish:
           type: boolean
-          description: 非公開にできる（公開のとき）
+          description: 非公開にできる
         discontinue:
           type: boolean
-          description: 販売終了にできる（販売終了でないとき）
+          description: 販売終了にできる
         delete:
           type: boolean
-          description: 削除できる（C 側に表示されたことがないとき。AC-71）
+          description: 削除できる
         deleteVariants:
           type: boolean
-          description: バリアントを削除できる（C 側に表示されたことがないとき。AC-71）
+          description: バリアントを削除できる
         addVariant:
           type: boolean
-          description: バリアントを追加できる（軸があるか、バリアントがないとき。AC-24）
+          description: バリアントを追加できる
         deleteBlockedReason:
           $ref: '#/components/schemas/ProductDeleteBlockedReason'
     ProductDeleteBlockedReason:
       type: string
       enum: [ALREADY_SHOWN]
-      description: 商品を削除できない理由（AC-269）。ALREADY_SHOWN：C 側に表示されたことがある（AC-71）。削除できるときは省く
+      description: 商品を削除できない理由。ALREADY_SHOWN：C 側に表示されたことがある。削除できるときは省く
     Variant:
       type: object
       required: [id, variantCode, axisValues, salesSuspended]
@@ -1934,7 +1915,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: バリアントに指定した画像（AC-38）。なければ代表画像を使う
+          description: バリアントに指定した画像。なければ代表画像を使う
     ProductImage:
       type: object
       required: [id, url]
@@ -1953,14 +1934,14 @@ components:
         contentType:
           type: string
           enum: [image/jpeg, image/png, image/webp, image/bmp, image/heic, image/heif, image/avif]
-          description: ファイルの形式（AC-39、67、272）
+          description: ファイルの形式
           example: image/jpeg
         contentLength:
           type: integer
           format: int64
           minimum: 0
           maximum: 10485760
-          description: ファイルの大きさ（バイト。AC-39、272）
+          description: ファイルの大きさ（バイト）
     ImageUpload:
       type: object
       required: [uploadId, uploadUrl, headers, expiresAt]
@@ -2140,7 +2121,7 @@ components:
     StockAdjustmentReason:
       type: string
       enum: [ARRIVAL, STOCKTAKE, DAMAGE_OR_LOSS, OTHER, ORDER, ORDER_CANCELLATION]
-      description: 入荷、棚卸差異、破損・紛失、その他、注文、注文のキャンセル（注文の 2 つは注文に由来し、運営者の調整では選べない。AC-107）
+      description: 入荷、棚卸差異、破損・紛失、その他、注文、注文のキャンセル（注文の 2 つは注文に由来し、運営者の調整では選べない）
     ManualStockAdjustmentReason:
       type: string
       enum: [ARRIVAL, STOCKTAKE, DAMAGE_OR_LOSS, OTHER]
@@ -2196,7 +2177,7 @@ components:
         operatorName:
           type: string
           nullable: true
-          description: 調整した運営者の氏名（調整の時点の写し。AC-142）。注文に由来する調整と、記録を始める前の調整は null
+          description: 調整した運営者の氏名（調整の時点の写し）。注文に由来する調整と、記録を始める前の調整は null
     StockAdjustmentPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -2226,15 +2207,15 @@ components:
           type: integer
           format: int64
 
-    # ---------- 注文（spec 002） ----------
+    # ---------- 注文 ----------
     OrderStatus:
       type: string
       enum: [PENDING_PAYMENT, ACCEPTED, CANCELLATION_REQUESTED, CANCELLED, SHIPPED]
-      description: 支払待ち、受付、キャンセル申請中、キャンセル（BR-9、14）、出荷済み（BR-18）
+      description: 支払待ち、受付、キャンセル申請中、キャンセル、出荷済み
     PaymentStatus:
       type: string
       enum: [UNPAID, AUTHORIZED, VOID_PENDING, VOIDED, NOT_PAID, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED]
-      description: 未払い、与信済み、与信の取消待ち、与信の取消済み、支払なし（BR-15）、売上確定済み、与信期限切れ、返金待ち、返金済み（BR-21）
+      description: 未払い、与信済み、与信の取消待ち、与信の取消済み、支払なし、売上確定済み、与信期限切れ、返金待ち、返金済み
     OrderSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -2272,7 +2253,7 @@ components:
           $ref: '#/components/schemas/ShipmentStatus'
         authorizationExpiring:
           type: boolean
-          description: 与信期限が近い（期限を過ぎたものを含む。売上確定の前だけ。AC-186）
+          description: 与信期限が近い（期限を過ぎたものを含む）
     OrderDetail:
       type: object
       required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress, actions]
@@ -2309,7 +2290,7 @@ components:
           $ref: '#/components/schemas/OrderActions'
     Payment:
       type: object
-      description: 注文の支払（AC-160）。決済を入れる前の注文は省く
+      description: 注文の支払。決済を入れる前の注文は省く
       required: [status, deadline, authorizationExpiring]
       properties:
         status:
@@ -2317,14 +2298,14 @@ components:
         deadline:
           type: string
           format: date-time
-          description: 支払の期限（BR-16）
+          description: 支払の期限
         authorizationDeadline:
           type: string
           format: date-time
-          description: 与信期限（BR-20。AC-186）。与信を受けていなければ省く
+          description: 与信期限。与信を受けていなければ省く
         authorizationExpiring:
           type: boolean
-          description: 与信期限が近い（期限を過ぎたものを含む。売上確定の前だけ。AC-186）
+          description: 与信期限が近い（期限を過ぎたものを含む）
     OrderActions:
       type: object
       description: 今の注文にできる操作。画面はこれで操作を出し分け、同じ判定を持たない
@@ -2332,22 +2313,22 @@ components:
       properties:
         approveCancellation:
           type: boolean
-          description: キャンセルの申請を承認できる（キャンセル申請中のとき。AC-101）
+          description: キャンセルの申請を承認できる
         rejectCancellation:
           type: boolean
-          description: キャンセルの申請を却下できる（キャンセル申請中のとき。AC-102）
+          description: キャンセルの申請を却下できる
         cancel:
           type: boolean
-          description: キャンセルできる（受付・キャンセル申請中か、出荷済みで配送状態が返送のとき。AC-103、158、171、190）
+          description: キャンセルできる
         cancelAsksRestock:
           type: boolean
-          description: キャンセルの時に、在庫に戻すかを聞く（出荷済みで配送状態が返送のとき。AC-191、268）。偽なら在庫に必ず戻すので、restock を送らない
+          description: キャンセルの時に、在庫に戻すかを聞く。偽なら restock を送らない
         ship:
           type: boolean
-          description: 出荷を登録できる（受付のとき。AC-167、170）
+          description: 出荷を登録できる
     OrderLine:
       type: object
-      description: 注文時点の写し（AC-92）
+      description: 注文時点の写し
       required: [variantId, productCode, variantCode, productName, axisValues, unitPriceExclTax, unitPriceInclTax, ratePercent, quantity, subtotal]
       properties:
         variantId:
@@ -2388,7 +2369,7 @@ components:
           type: string
     OrderAmounts:
       type: object
-      description: 金額の内訳（BR-7、8）
+      description: 金額の内訳
       required: [itemsTotal, shippingFee, total, taxes]
       properties:
         itemsTotal:
@@ -2419,7 +2400,7 @@ components:
           format: int64
     ShippingAddress:
       type: object
-      description: 注文のお届け先。都道府県と市区町村の名前は注文の時点の写し（AC-258）
+      description: 注文のお届け先。都道府県と市区町村の名前は注文の時点の写し
       required: [name, postalCode, prefectureCode, prefectureName, municipalityCode, municipalityName, address, phone]
       properties:
         name:
@@ -2466,7 +2447,7 @@ components:
         decidedBy:
           type: string
           nullable: true
-          description: 承認・却下した運営者の氏名（判断の時点の写し。AC-142）。申請中と、記録を始める前の判断は null
+          description: 承認・却下した運営者の氏名（判断の時点の写し）。申請中と、記録を始める前の判断は null
     Cancellation:
       type: object
       description: キャンセルした内容。キャンセルでなければ省く
@@ -2479,7 +2460,7 @@ components:
           $ref: '#/components/schemas/CancellationKind'
         restocked:
           type: boolean
-          description: 在庫数を戻したか（AC-191）。出荷済みの注文のキャンセルで戻さなかったときだけ false
+          description: 在庫数を戻したか
         reason:
           type: string
           nullable: true
@@ -2487,11 +2468,11 @@ components:
         cancelledBy:
           type: string
           nullable: true
-          description: キャンセルした運営者の氏名（キャンセルの時点の写し。AC-142）。申請の承認なら承認した運営者。記録を始める前のキャンセルは null
+          description: キャンセルした運営者の氏名（キャンセルの時点の写し）。申請の承認なら承認した運営者。記録を始める前のキャンセルは null
     CancellationKind:
       type: string
       enum: [REQUEST_APPROVED, OPERATOR, PAYMENT_EXPIRED]
-      description: 申請の承認、運営者の判断、支払期限切れ（AC-155）
+      description: 申請の承認、運営者の判断、支払期限切れ
     CancelOrderRequest:
       type: object
       required: [reason]
@@ -2500,12 +2481,12 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-          description: キャンセルの理由（必須）
+          description: キャンセルの理由
         restock:
           type: boolean
-          description: 在庫数を戻すか（AC-191）。出荷済みの注文では必須。それ以外は無視し、必ず戻す
+          description: 在庫数を戻すか。出荷済みの注文では必須。それ以外は無視する
 
-    # ---------- 出荷（spec 009） ----------
+    # ---------- 出荷 ----------
     Carrier:
       type: string
       enum: [YAMATO, SAGAWA, JAPAN_POST]
@@ -2513,7 +2494,7 @@ components:
     ShipmentStatus:
       type: string
       enum: [SHIPPED, IN_TRANSIT, DELIVERED, RETURNED]
-      description: 出荷済み、配送中、配達完了、返送（BR-19）
+      description: 出荷済み、配送中、配達完了、返送
     ShipOrderRequest:
       type: object
       required: [carrier, trackingNumber]
@@ -2525,10 +2506,10 @@ components:
           minLength: 1
           maxLength: 30
           pattern: '^[0-9-]*[0-9][0-9-]*$'
-          description: 送り状番号（半角の数字とハイフン。数字が 1 つ以上。ハイフンは除いて保存する。AC-173）
+          description: 送り状番号。ハイフンは除いて保存する
     Shipment:
       type: object
-      description: 注文の出荷（AC-181）。出荷していなければ省く
+      description: 注文の出荷。出荷していなければ省く
       required: [carrier, trackingNumber, status, shippedAt]
       properties:
         carrier:
@@ -2560,15 +2541,15 @@ components:
           format: int32
           minimum: 1
           maximum: 12
-          description: 会計年度の始まりの月（1〜12。年度は始まりの月の年で呼ぶ）
+          description: 会計年度の始まりの月（年度は始まりの月の年で呼ぶ）
     ReportBasis:
       type: string
       enum: [ORDER, SHIPMENT]
-      description: 注文基準（受付・キャンセル申請中・出荷済みを注文日で数える）、出荷基準（出荷済みを出荷日で数える）（BR-25）
+      description: 注文基準（受付・キャンセル申請中・出荷済みを注文日で数える）、出荷基準（出荷済みを出荷日で数える）
     Granularity:
       type: string
       enum: [WEEK, MONTH, QUARTER, YEAR]
-      description: 週（月曜始まり）、月、四半期・年（会計年度）（BR-24）
+      description: 週（月曜始まり）、月、四半期・年（会計年度）
     SalesTrendReport:
       type: object
       required: [points, shippingExcluded]
@@ -2676,7 +2657,7 @@ components:
           description: 全国地方公共団体コードの上 2 桁（01〜47）。不明なら省く
         prefectureName:
           type: string
-          description: 都道府県名（地域のマスターデータの今の名前。AC-262）。不明なら省く
+          description: 都道府県名（地域のマスターデータの今の名前）。不明なら省く
           example: 東京都
         amount:
           type: integer
@@ -2693,7 +2674,7 @@ components:
         ageGroup:
           type: string
           enum: [TEENS_OR_YOUNGER, TWENTIES, THIRTIES, FORTIES, FIFTIES, SIXTIES_OR_OLDER, UNKNOWN]
-          description: 10 代以下、20 代、30 代、40 代、50 代、60 代以上、不明（BR-27）
+          description: 10 代以下、20 代、30 代、40 代、50 代、60 代以上、不明
         amount:
           type: integer
           format: int64
@@ -2709,7 +2690,7 @@ components:
         gender:
           type: string
           enum: [MALE, FEMALE, OTHER, UNKNOWN]
-          description: 男性、女性、その他、不明（回答しないを含む）（BR-29）
+          description: 男性、女性、その他、不明（回答しないを含む）
         amount:
           type: integer
           format: int64

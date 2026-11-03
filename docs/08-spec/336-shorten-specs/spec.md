@@ -219,7 +219,7 @@ AC 一覧の冒頭は「全ての列を手動で書く」としているが、`n
   - 依存：T336-01-05（`common.md` との重複を 1 か所にするため）
   - 範囲：`backend-architecture.md`、`apps/store.md`、`apps/admin.md`、`overview.md`、`frontend-architecture.md`、モジュールの設計書
   - 確認方法：変える前と後の見出しの一覧（`grep '^#'`）が同じ、`wc -c`、`node scripts/ci/doc-refs.mjs`、`./gradlew check`（`ModuleDiagramTest` などが設計書を読むため）
-- [ ] **T336-01-07** OpenAPI の description・summary・コメントから番号と、description の規則の言い換えを削る。型を再生成し、型の検査を通す（DC-336-11、DC-336-12）。
+- [x] **T336-01-07** OpenAPI の description・summary・コメントから番号と、description の規則の言い換えを削る。型を再生成し、型の検査を通す（DC-336-11、DC-336-12）。
   - 依存：なし（T336-01-04 とファイルが分かれる）
   - 範囲：`api/openapi/admin.yaml`、`store.yaml`
   - 確認方法：`git grep -nE "AC-|BR-|spec [0-9]|US-|plan [0-9]" -- api/openapi` が 0 件、description・summary の値（複数行の値の続きの行を含む）とコメントの行を除いた差分が 0 行（`git diff` を node で絞る）、`frontend/admin`・`frontend/store`・`e2e` の `pnpm typecheck`、`node scripts/ci/role-permissions.mjs`、`./gradlew check`

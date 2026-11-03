@@ -2,15 +2,13 @@
 // 規則は 2 種類ある。
 // - イベントの発行の記録（EventPublicationRegistry）を読む操作（find で始まる操作）は、非同期のイベントの補助（AsyncEvents、EventPublications）だけが呼ぶ。
 //   テストは、記録を読んで待たずに、補助の待つ操作を呼ぶ。補助を作るために記録を注入して渡すだけのテストは、違反にしない。
-// - テストの書き方で「テストデータは補助のクラスで作る」とした節の 2 つ目の表：全ての行は、列に挙げた 2 つのクラスだけが書く。
-//   行の操作は、在庫の作成、税区分・カテゴリの登録のリクエスト、応答から ID を取得する処理、支払の作成の操作。
-//   2 つの列は、「補助」と「その操作そのものを確認するテスト」。
-//   この 2 つの列は、実行時に文書から読む（コードに一覧を重ねて書かない。バッククォートで囲んだクラス名だけを読む）。
-//   表の書式が読めないとき（表がない、列が違う、知らない手順の行がある、手順の行が欠けている、クラスのファイルが見つからない）は失敗にする。
+// - 補助の手順：HELPER_STEPS の全ての手順は、そこに挙げたクラスだけが書く。
+//   手順は、在庫の作成、税区分・カテゴリの登録のリクエスト、応答から ID を取得する処理、支払の作成の操作。
+//   クラスは、「補助」と「その操作そのものを確認するテスト」の 2 種類。クラス名からファイルを特定し、見つからないとき（0 件、2 件以上）は失敗にする。
 // Java のコメントは読まない。構文は解析しない（宣言した変数の名前や、文字列の定数から、呼び出しを探す）。
 // 税区分とカテゴリの登録のリクエストは、MockMvc の post(…) と RestClient などの .post().uri(…) の、最初の引数（文字列そのもの、同じファイルの定数）を探す。他のクラスの定数と文字列の連結は探さない（限界）。
-// 規則の表は loadRules が作る（イベントの規則に、文書の表の行を追加する）。表の手順を探す関数は STEP_FINDERS の表に追加する。
-// 失敗したとき：手順を補助に移し、テストは補助の操作を呼ぶ。操作そのものを確認するテストを増やすときは、テストの書き方の表の列にクラスを追加する。
+// 規則の表は loadRules が作る（イベントの規則に、HELPER_STEPS の手順を追加する）。手順の名前、クラス、探す関数の対応は、HELPER_STEPS の 1 か所にある。
+// 失敗したとき：手順を補助に移し、テストは補助の操作を呼ぶ。操作そのものを確認するテストを増やすときは、HELPER_STEPS の exceptions にクラスを追加する。
 // 除外：なし。
 // 使い方：node scripts/ci/test-helpers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -21,9 +19,6 @@ import { stripJavaComments } from './lib/strip-comments.mjs'
 
 /** 検査する統合テストの Java のファイル（テストの補助も含む） */
 export const TARGET_FILE = /^backend\/ecsite\/src\/integrationTest\/java\/com\/ecsite\/.*\.java$/
-
-/** 補助と、操作そのもののテストの表を持つ文書（リポジトリのルートからのパス） */
-export const TEST_WRITING_DOC = 'docs/05-開発規則/test-writing.md'
 
 /** イベントの発行の記録を読んでよい、非同期のイベントの補助 */
 export const ASYNC_EVENT_HELPERS = [
@@ -139,62 +134,39 @@ function findPaymentCreations(code) {
 }
 
 /**
- * テストの書き方の表の手順の名前（表の「手順」の列の文字）→ その手順を探す関数。<br />
- * 表に行を追加するときは、ここにも追加する（追加しないと、知らない手順として失敗する）。
+ * 補助の手順。
+ * - step：手順の名前（違反の報告に添える）
+ * - helpers：この手順を書いてよい補助のクラス名
+ * - exceptions：その操作そのものを確認するので、書いてよいテストのクラス名
+ * - find：コメントを除いたコードから、手順の位置を返す関数
  *
- * @type {Record<string, (code: string) => number[]>}
+ * @typedef {{ step: string, helpers: string[], exceptions: string[], find: (code: string) => number[] }} HelperStep
  */
-export const STEP_FINDERS = {
-  在庫の作成: findStockCreations,
-  税区分の登録の要求: (code) => findPostsTo(code, '/api/admin/tax-categories'),
-  '作成の応答から ID を取り出す処理': findIdExtractions,
-  カテゴリの登録の要求: (code) => findPostsTo(code, '/api/admin/categories'),
-  '支払の API の作成の操作': findPaymentCreations,
-}
-
-/** 表の見出しの行（手順、補助、その操作そのものを確認するテスト） */
-const TABLE_HEADER = /^\|\s*手順\s*\|\s*補助\s*\|\s*その操作そのものを確認するテスト\s*\|\s*$/
 
 /**
- * 表のセルから、バッククォートで囲んだクラス名を読む。括弧の注記など、バッククォートの外の文字は読まない。
+ * 手順と、手順を書いてよい補助とテストの対応（テストの書き方の「テストデータは補助のクラスで作る」の規則の正本）。<br />
+ * 手順を増やすときは、探す関数と一緒にここに追加する。
  *
- * @param {string} cell セルの文字
- * @param {string} where 失敗の文に添える場所
- * @returns {string[]} クラス名
+ * @type {HelperStep[]}
  */
-function classNamesOf(cell, where) {
-  return [...cell.matchAll(/`([^`]*)`/g)].map((match) => {
-    if (!/^[A-Z]\w*$/.test(match[1])) throw new Error(`${where}：クラス名の形が違う（${match[1]}）`)
-    return match[1]
-  })
-}
-
-/**
- * テストの書き方の文書から、補助の表を読む。
- *
- * @param {string} markdown 文書の本文
- * @returns {{ step: string, helpers: string[], exceptions: string[] }[]} 行（手順、補助のクラス名、操作そのものを確認するテストのクラス名）
- * @throws {Error} 表がない、列が違う、行の形が違う、補助がないとき
- */
-export function parseHelperTable(markdown) {
-  const lines = markdown.split(/\r?\n/)
-  const start = lines.findIndex((line) => TABLE_HEADER.test(line))
-  if (start < 0 || !/^\|[\s|:-]+\|\s*$/.test(lines[start + 1] ?? '')) {
-    throw new Error(`${TEST_WRITING_DOC} の表の形が違う（見出し「| 手順 | 補助 | その操作そのものを確認するテスト |」の表がない、または列が違う）`)
-  }
-  const rows = []
-  for (const line of lines.slice(start + 2)) {
-    if (!line.startsWith('|')) break
-    const cells = line.replace(/^\|/, '').replace(/\|\s*$/, '').split('|').map((cell) => cell.trim())
-    const step = cells[0]
-    if (cells.length !== 3 || !step) throw new Error(`${TEST_WRITING_DOC} の表の行の形が違う（列が 3 つでない：${line}）`)
-    const helpers = classNamesOf(cells[1], `手順「${step}」の補助`)
-    if (helpers.length === 0) throw new Error(`手順「${step}」の補助の列に、バッククォートで囲んだクラス名がない`)
-    rows.push({ step, helpers, exceptions: classNamesOf(cells[2], `手順「${step}」の除外`) })
-  }
-  if (rows.length === 0) throw new Error(`${TEST_WRITING_DOC} の表に行がない`)
-  return rows
-}
+export const HELPER_STEPS = [
+  { step: '在庫の作成', helpers: ['InventoryTestData'], exceptions: ['JooqStockItemRepositoryTest'], find: findStockCreations },
+  {
+    step: '税区分の登録の要求',
+    helpers: ['CatalogTestData'],
+    exceptions: ['TaxCategoryApiTest', 'AuthorizationTest', 'KeycloakIntegrationTest'],
+    find: (code) => findPostsTo(code, '/api/admin/tax-categories'),
+  },
+  {
+    step: '作成の応答から ID を取り出す処理',
+    helpers: ['TestJson', 'CatalogTestData'],
+    // PlaceOrderConcurrencyTest は、確認する API の作成の応答から ID を取り出す
+    exceptions: ['TaxCategoryApiTest', 'CategoryApiTest', 'ProductApiTest', 'PlaceOrderConcurrencyTest'],
+    find: findIdExtractions,
+  },
+  { step: 'カテゴリの登録の要求', helpers: ['CatalogTestData'], exceptions: ['CategoryApiTest'], find: (code) => findPostsTo(code, '/api/admin/categories') },
+  { step: '支払の API の作成の操作', helpers: ['PaymentTestData'], exceptions: ['PaymentApiTest'], find: findPaymentCreations },
+]
 
 /**
  * クラス名から、統合テストのファイルを特定する。
@@ -221,27 +193,20 @@ function fileOfClass(className, files) {
  */
 
 /**
- * テストの書き方の表から、表の全ての行の規則を作る。
+ * 手順の一覧から、全ての手順の規則を作る。
  *
- * @param {string} markdown テストの書き方の本文
+ * @param {HelperStep[]} steps 手順の一覧
  * @param {string[]} files リポジトリのファイルの一覧（クラスのファイルを特定する）
- * @returns {HelperRule[]} 規則（表の行の順）
- * @throws {Error} 表が読めない、知らない手順の行がある、手順の行が欠けている、クラスのファイルが見つからないとき
+ * @returns {HelperRule[]} 規則（手順の順）
+ * @throws {Error} クラスのファイルが見つからないとき、2 件以上あるとき
  */
-export function buildTableRules(markdown, files) {
-  const rows = parseHelperTable(markdown)
-  const rules = rows.map(({ step, helpers, exceptions }) => {
-    if (!Object.hasOwn(STEP_FINDERS, step)) throw new Error(`表に知らない手順の行がある（${step}）。STEP_FINDERS に探す関数を足す`)
-    return {
-      name: step,
-      helpers: helpers.map((className) => fileOfClass(className, files)),
-      exceptions: exceptions.map((className) => fileOfClass(className, files)),
-      find: STEP_FINDERS[step],
-    }
-  })
-  const missing = Object.keys(STEP_FINDERS).filter((step) => !rows.some((row) => row.step === step))
-  if (missing.length > 0) throw new Error(`表に手順の行がない（${missing.join('、')}）`)
-  return rules
+export function buildStepRules(steps, files) {
+  return steps.map(({ step, helpers, exceptions, find }) => ({
+    name: step,
+    helpers: helpers.map((className) => fileOfClass(className, files)),
+    exceptions: exceptions.map((className) => fileOfClass(className, files)),
+    find,
+  }))
 }
 
 /** 統合テストが、イベントの発行の記録を直接読んで待たない */
@@ -255,14 +220,14 @@ export const EVENT_PUBLICATION_READS = {
 let cachedRules = null
 
 /**
- * 検査する規則の表（イベントの発行の記録の規則と、テストの書き方の表の全ての行）を返す。<br />
- * 文書とファイルの一覧を読むので、読み込みの時でなく、検査の始めに呼ぶ（対象のファイルが 0 件のときの失敗の文を先に出すため）。
+ * 検査する規則の表（イベントの発行の記録の規則と、HELPER_STEPS の全ての手順）を返す。<br />
+ * ファイルの一覧を読むので、読み込みの時でなく、検査の始めに呼ぶ（対象のファイルが 0 件のときの失敗の文を先に出すため）。
  *
  * @returns {HelperRule[]} 規則
- * @throws {Error} テストの書き方の表が読めないとき
+ * @throws {Error} 手順のクラスのファイルが見つからないとき
  */
 export function loadRules() {
-  cachedRules ??= [EVENT_PUBLICATION_READS, ...buildTableRules(readFileSync(TEST_WRITING_DOC, 'utf8'), listGitFiles())]
+  cachedRules ??= [EVENT_PUBLICATION_READS, ...buildStepRules(HELPER_STEPS, listGitFiles())]
   return cachedRules
 }
 

@@ -100,19 +100,16 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
 
-補助以外のテストは、次の表の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。CI の `scripts/ci/test-helpers.mjs` が、この表の全ての行について、「補助」と「その操作そのものを確認するテスト」の列のクラス以外のファイルで手順を書いていないかを調べる。2 つの列は、バッククォートで囲んだクラス名をそのまま読むので、クラスの名前を実際のファイルと合わせて書く（括弧の注記は読まない）。表の行や列を変えるときは、script の手順の対応も直す。
+補助以外のテストは、次の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。
 
-| 手順 | 補助 | その操作そのものを確認するテスト |
-|------|------|----------------------------------|
-| 在庫の作成 | `InventoryTestData` | `JooqStockItemRepositoryTest` |
-| 税区分の登録の要求 | `CatalogTestData` | `TaxCategoryApiTest`、`AuthorizationTest`、`KeycloakIntegrationTest` |
-| 作成の応答から ID を取り出す処理 | `TestJson`、`CatalogTestData` | `TaxCategoryApiTest`、`CategoryApiTest`、`ProductApiTest`、`PlaceOrderConcurrencyTest`（確認する API の作成の応答） |
-| カテゴリの登録の要求 | `CatalogTestData` | `CategoryApiTest` |
-| 支払の API の作成の操作 | `PaymentTestData` | `PaymentApiTest` |
+- 在庫の作成
+- 税区分とカテゴリの登録の要求
+- 作成の応答から ID を取り出す処理
+- 支払の API の作成の操作
 
-表に手順の行を追加するときは、`scripts/ci/test-helpers.mjs` の `STEP_FINDERS` に探す関数を追加する（ないと検査が失敗する）。
+手順と、手順を書いてよい補助とテストの対応の正本は、`scripts/ci/test-helpers.mjs` の `HELPER_STEPS` である。
 
-表の手順に、次のものは含めない。
+手順に、次のものは含めない。
 
 - Repository のテストが、集約を直接作る処理（支払の Repository のテストなど）
 - 作った後の変更の要求（店舗の鮮度のテストの税率の変更など）
@@ -124,7 +121,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLo
 
 package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、その本番クラスと同じパッケージの `src/integrationTest` に、public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。今ある補助クラスは、`TaxRateScheduleCaches`（catalog の `infrastructure/directory`）、`PaymentJobs`（payment の `application`）、`OrderPayments`（order の `application/payment`）、`TrackingRequests`（shipping の `application`）。本番クラスを public にしたり、テストのために可視性を広げたりしない。
 
-確認方法：レビュー（記録を読む操作と、表の手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
+確認方法：レビュー（記録を読む操作と、手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
 
 ### 3.3 テストの置き場所
 

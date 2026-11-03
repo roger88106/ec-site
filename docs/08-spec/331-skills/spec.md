@@ -1,6 +1,6 @@
 # Spec 331：skill から規則と手順書の写しを除き、skill と規則の境界を決める
 
-種類：整理　規模：M　ステータス：草案
+種類：整理　規模：M　ステータス：確定
 
 ## 背景と目的
 
@@ -29,17 +29,17 @@ skill には、エージェントが実行する手順と雛形だけを残す�
 | skill の間で重複した説明をなくし、日付つきの経緯と一度きりの測定の結果を移すか削除する | |
 | `.claude/agents/` の定義の修正 | |
 
-決定（Open questions の推奨の案で書く。利用者の確認で変わったら修正する）：
+決定（利用者の承認、2026-11-03）：
 
 - 残すものの基準：skill に残すのは、エージェントだけが行う手順（ツールの使い方、待ち方、出力の読み方、避ける書き方）と雛形である。人も行う手順は `docs/06-手順書/` に置き、skill はその節を指す。規則（何をするか、なぜか）は `docs/05-開発規則/` に置く。
 - 手順書に同じ内容がある記述は、skill から削除する。skill にだけあり、人にも必要な手順は、手順書に移す。
 - 理由の 1 行は残してよい。出来事の説明（いつ、どの spec・issue で何が起きたか）と、一度きりの測定の結果は、本文から削除するか `docs/07-記録/` に移す。
-- 重要度と収束の規則は、[書き方の規則とレビュー](../../05-開発規則/review.md)に節を加えて移す。`convergence.md` は削除する。`prompts.md` の「重要度」の節は削除し、review.md を指す（Open questions 1）。
-- 「日本語だけの文脈のサブエージェントに書かせる」の規則の正本は、[文書の書き方](../../05-開発規則/writing.md)の冒頭とする。手順（要点の作り方、渡すもの、指示に入れる文）は、skill `docs` の「進め方」に残す。AGENTS.md、[エージェントの作業フロー](../../05-開発規則/subagents.md)、[開発の進め方](../../05-開発規則/workflow.md)、skill `sessions` は、言い換えを書かない。規則は writing.md の冒頭を、手順は skill `docs` の「進め方」を指す（Open questions 2）。
-- 手元の hook の設定（SessionStart、backslash-guard、zh-mixing の PostToolUse）の JSON と、その前の説明文は、skill `local-dev` の「手元の hook の設定」にだけ置く。skill `zh-mixing` は、環境の印（git の設定 `ecsite.instructionLanguage`）と git の hook の行だけを書く。Claude Code の hook は、local-dev のその節を指す（Open questions 3）。
-- 作業ツリーのセッションが読むものの表は、skill `sessions` の「ツールの補足」に残す。測定の出典と日付、公式の文書との比較の段落は、[エージェントの作業フローの調べた仕組みと実績](../../07-記録/subagents-results.md)に移す（Open questions 4）。
-- skill `new-screen` の共有の部品の表は削除し、`frontend/shared/src/` の `lib`・`components`・`ui` の export を読んで探す手順に替える（Open questions 5）。
-- 層 1・層 2 の分け方の正本は、skill `review` の `docs-review.md` の手順 4 とする。skill `zh-mixing` は、層 2 の一覧の修正の方法だけを書き、分け方はそこを指す（Open questions 6）。
+- 重要度と収束の規則は、[書き方の規則とレビュー](../../05-開発規則/review.md)に節を加えて移す。`convergence.md` は削除する。`prompts.md` の「重要度」の節は削除し、review.md を指す。
+- 「日本語だけの文脈のサブエージェントに書かせる」の規則の正本は、[文書の書き方](../../05-開発規則/writing.md)の冒頭とする。手順（要点の作り方、渡すもの、指示に入れる文）は、skill `docs` の「進め方」に残す。AGENTS.md、[エージェントの作業フロー](../../05-開発規則/subagents.md)、[開発の進め方](../../05-開発規則/workflow.md)、skill `sessions` は、言い換えを書かない。規則は writing.md の冒頭を、手順は skill `docs` の「進め方」を指す。
+- 手元の hook の設定（SessionStart、backslash-guard、zh-mixing の PostToolUse）の JSON と、その前の説明文は、skill `local-dev` の「手元の hook の設定」にだけ置く。skill `zh-mixing` は、環境の印（git の設定 `ecsite.instructionLanguage`）と git の hook の行だけを書く。Claude Code の hook は、local-dev のその節を指す。
+- 作業ツリーのセッションが読むものの表は、skill `sessions` の「ツールの補足」に残す。測定の出典と日付、公式の文書との比較の段落は、[エージェントの作業フローの調べた仕組みと実績](../../07-記録/subagents-results.md)に移す。
+- skill `new-screen` の共有の部品の表は削除し、`frontend/shared/src/` の `lib`・`components`・`ui` の export を読んで探す手順に替える。
+- 層 1・層 2 の分け方の正本は、skill `review` の `docs-review.md` の手順 4 とする。skill `zh-mixing` は、層 2 の一覧の修正の方法だけを書き、分け方はそこを指す。
 - ステップの終わりの手順は、skill `sessions` の `rounds.md` にだけ書く。SKILL.md の「ステップの終わり」は、手順の名前と rounds.md の節への参照だけにする。
 - 並行の可否：spec 6（#330）と並行で進める（利用者の決定、2026-11-03）。重なるファイルと順序は、tasks の「並行する spec との重なり」に書く。
 
@@ -117,36 +117,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
 
 ## Open questions
 
-推奨を先に書く。利用者が決めたら「決定」に反映して削除する。
-
-1. 重要度と収束の規則の移し先。
-   - 案 A（推奨）：`docs/05-開発規則/review.md` に「重要度」と「レビューの収束」の節を加え、`convergence.md` を削除し、`prompts.md` から「重要度」の節を削除する。
-   - 案 B：`docs/05-開発規則/` に新しい文書を作る。
-   - 推奨の理由：review.md は「段階の最後のレビュー」の規則の文書で、毎回読む文書ではないので、毎回読み込む文脈は増えない（spec 309 の確認 5 の懸念）。文書を増やさずに済む。
-2. 「日本語だけの文脈のサブエージェントに書かせる」の規則の正本。
-   - 案 A（推奨）：`writing.md` の冒頭。
-   - 案 B：`subagents.md` の「サブエージェントへの任せ方」。
-   - 推奨の理由：文書を書く全てのセッションが、書く前に writing.md を読む（AGENTS.md の「最初に読むもの」の 5）。subagents.md はサブエージェントに任せるときに読む文書で、issue 担当のセッションが自分で書く場面では読まれないことがある。
-3. 手元の hook の設定の正本。
-   - 案 A（推奨）：skill `local-dev` の「手元の hook の設定」に、zh-mixing の PostToolUse の項目も含めて置く。
-   - 案 B：`docs/06-手順書/setup.md` に移す。
-   - 推奨の理由：Claude Code の設定はエージェントに固有の手順で、writing.md の「文書の置き場所」で skill に置くと決まっている。AGENTS.md の「環境」も、設定は skill `local-dev` と書いている。
-4. 作業ツリーのセッションが読むものの表。
-   - 案 A（推奨）：表は skill `sessions` の「ツールの補足」に残し、測定の出典・日付と公式の文書との比較を `docs/07-記録/subagents-results.md` に移す。
-   - 案 B：表ごと記録に移し、skill は記録を指す。
-   - 推奨の理由：表はサービスに固有の手順で、「ツールの補足」はサービスを替えるときに修正する節である。測定の経緯だけが記録に当たる。
-5. skill `new-screen` の共有の部品の表。
-   - 案 A（推奨）：表を削除し、`frontend/shared/src/` の `lib`・`components`・`ui` の export を読んで探す手順に替える。
-   - 案 B：表を残し、コードとの照合の検査を加える。
-   - 推奨の理由：表はコードの写しで、部品を加えるたびに古くなる。案 B は script を加えるので、この spec の範囲（DN-331-1）を超える。
-6. 層 1・層 2 の分け方の正本。
-   - 案 A（推奨）：skill `review` の `docs-review.md` の手順 4。
-   - 案 B：skill `zh-mixing`。
-   - 推奨の理由：層 1 は全ての環境で使い、zh-mixing は中国語で指示する環境でだけ読む。語や文体を検査の一覧に加える手順は docs-review.md の手順 4 で、どちらの層にも使う。
-7. 危険度。
-   - 案 A（推奨）：「危険度：高」の行を書かない。
-   - 案 B：書く。
-   - 推奨の理由：規則の意味を変えず（DN-331-2）、置き場所と参照だけを変える。経路の判定（`scripts/ci/risk.mjs`）が危険度「高」を返せば、それに従う。
+なし。
 
 ## tasks
 

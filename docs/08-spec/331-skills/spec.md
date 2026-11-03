@@ -103,7 +103,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
 | spec 8 | 全体の字数の圧縮は spec 8 で行う。本 spec の後に始める |
 | spec 309 | 確認 5 の案 A で、重要度と収束の移動を本 spec に回した |
 
-※1：重なるもの。`docs/05-開発規則/review.md`（spec 6 は冒頭の「規則の一覧」の形、本 spec は重要度と収束の節の追加）。`docs/06-手順書/setup.md`（spec 6 は IDE の設定の移し先の候補、本 spec は local-dev との重複の解消）。書き方の規則の節（spec 6 は見出しや置き場所を変える、本 spec は skill `new-screen`・`local-dev` がその節を指す参照）。
+※1：重なるもの。`docs/05-開発規則/review.md`（spec 6 は冒頭の「規則の一覧」の形、本 spec は重要度と収束の節の追加）。`docs/06-手順書/setup.md`（spec 6 は IDE の設定の節の追加、本 spec は local-dev との重複の解消）。`docs/06-手順書/running-tests.md`（spec 6 はテストの種類などの移動、本 spec は local-dev の E2E などとの重複の解消）。書き方の規則の節（spec 6 は見出しや置き場所を変える、本 spec は skill `new-screen`・`local-dev` がその節を指す参照）。
 
 ## Non-goals
 
@@ -125,11 +125,11 @@ skill には、エージェントが実行する手順と雛形だけを残す�
 
 並行する spec との重なり：
 
-- spec 6（#330）と重なりうるファイルは、`docs/05-開発規則/review.md`、`docs/06-手順書/setup.md`、skill `new-screen`・`local-dev` が指す書き方の規則の節である。
+- spec 6（#330）と重なりうるファイルは、`docs/05-開発規則/review.md`、`docs/06-手順書/setup.md`、`running-tests.md`、skill `new-screen`・`local-dev` が指す書き方の規則の節である。spec 6 は、`review.md` では「規則の書き方」だけを、`setup.md` では新しい節の追加だけを行う（spec 6 の plan）。
 - 順序：後にマージする spec が develop を取り込み、競合を解消する。本 spec が先なら、spec 6 が取り込む。本 spec が後なら、本 spec が取り込み、`node scripts/ci/doc-refs.mjs` で参照を確認する。
 - 同じ節を書き換える前に、issue 担当のセッションに知らせる。
 
-- [ ] **T331-01-01** 重要度と収束の規則を `review.md` に移し、`convergence.md` を削除し、`prompts.md` の「重要度」の節を削除する。参照（skill `review` の SKILL.md、`workflow.md`、`subagents.md`）を、review.md の節を指すように修正する（DC-331-1、DC-331-2）。
+- [x] **T331-01-01** 重要度と収束の規則を `review.md` に移し、`convergence.md` を削除し、`prompts.md` の「重要度」の節を削除する。参照（skill `review` の SKILL.md、`workflow.md`、`subagents.md`）を、review.md の節を指すように修正する（DC-331-1、DC-331-2）。
   - 依存：なし
   - 範囲：`docs/05-開発規則/review.md`、`workflow.md`、`subagents.md`、`.claude/skills/review/SKILL.md`、`prompts.md`、`convergence.md`
   - 確認方法：移す前と後の文を並べて読む（`git show`）。`node scripts/ci/doc-refs.mjs`。`git grep convergence.md` が、アーカイブと評価の一覧の例文の外に残らない

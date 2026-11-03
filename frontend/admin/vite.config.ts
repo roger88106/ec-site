@@ -45,7 +45,7 @@ export default defineConfig(({ command, mode }) => {
       // 既定の数（論理 CPU − 1）が物理コアより多いと 1 テストの時間が延び、タイムアウトで失敗する
       maxWorkers: '50%',
       setupFiles: ['src/test/setup.ts'],
-      // カバレッジは報告と基準の検査に使う（テストの書き方の「カバレッジと mutation score の基準」）。生成物と shadcn/ui の生成物、テストの補助は数えない
+      // カバレッジは報告と基準の検査に使う（テストの実行方法の「カバレッジと mutation score の基準の検査」）。生成物と shadcn/ui の生成物、テストの補助は数えない
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,tsx}'],

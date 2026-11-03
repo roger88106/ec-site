@@ -37,7 +37,7 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 
 コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`-Werror` を付けているので、警告でも失敗する。修正は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「null の扱い」と「検査を抑えるとき」。
 
-Checkstyle（`checkstyleMain`、`checkstyleTest` など）が失敗したときも、`[検査の名前]` で分かる。import の違反（`UnusedImports`、`CustomImportOrder`、`AvoidStarImport`）の修正方法は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」。Checkstyle は import を修正しないので、手動で修正する。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は `src/main` の Javadoc の記載漏れなので、Javadoc を書く（他のソースセットでは `config/checkstyle/suppressions.xml` で抑えている）。
+Checkstyle（`checkstyleMain`、`checkstyleTest` など）が失敗したときも、`[検査の名前]` で分かる。import の違反（`UnusedImports`、`CustomImportOrder`、`AvoidStarImport`）の修正方法は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は `src/main` の Javadoc の記載漏れなので、Javadoc を書く（他のソースセットでは `config/checkstyle/suppressions.xml` で抑えている）。
 
 テストのコードの重複（`cpdCheck`）が失敗したときは、報告 `backend/ecsite/build/reports/cpd/cpdCheck.xml` の場所を見る。修正方法は [バックエンドのテストの書き方](../05-開発規則/test-writing-backend.md)の「テストのコードの重複」。
 

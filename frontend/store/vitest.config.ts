@@ -15,7 +15,7 @@ export default defineConfig({
     setupFiles: ['src/test/setup.ts'],
     // next-auth は拡張子なしで next/server を読むので、Vite の解決を通す（ログインの戻り先のテストは本物の Auth.js を使う）
     server: { deps: { inline: ['next-auth'] } },
-    // カバレッジは報告と基準の検査に使う（テストの書き方の「カバレッジと mutation score の基準」）。生成物と shadcn/ui の生成物、テストの補助は数えない
+    // カバレッジは報告と基準の検査に使う（テストの実行方法の「カバレッジと mutation score の基準の検査」）。生成物と shadcn/ui の生成物、テストの補助は数えない
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

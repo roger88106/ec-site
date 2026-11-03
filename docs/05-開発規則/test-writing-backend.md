@@ -36,7 +36,13 @@
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
 
-補助以外のテストは、補助が持つ手順（`HELPER_STEPS` に挙げたもの）を直接書かない。ただし、その操作そのものを確認するテストは除く。手順と、手順を書いてよい補助・テストの対応は `scripts/ci/test-helpers.mjs` の `HELPER_STEPS`、手順に含めないものは同じ script の先頭のコメントが正本である。
+補助以外のテストは、補助が持つ手順（`HELPER_STEPS` に挙げたもの）を直接書かない。ただし、その操作そのものを確認するテストは除く。手順と、手順を書いてよい補助・テストの対応は `scripts/ci/test-helpers.mjs` の `HELPER_STEPS`、`HELPER_STEPS` が正本である。
+
+次の 3 つは手順に含めず、テストが直接書いてよい。
+
+- Repository のテストが集約を直接作る処理（支払の Repository のテストなど）
+- 作った後に変更する呼び出し（店舗の鮮度のテストで税率を変えるなど）
+- 一覧の応答から複数の ID を読む処理（画像の並び、税率の一覧など）
 
 イベントの発行の記録（`EventPublicationRegistry`）を読む操作（`find` で始まる操作）は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。テストは記録を読んで待たずに、補助の待つ操作を呼ぶ。
 

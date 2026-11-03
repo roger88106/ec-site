@@ -101,7 +101,7 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 - 変換はモジュールごとの mapper（`XxxMapper`）に手動で書き、変換のライブラリーは使わない。
 - 生成したモデルは、引数なしのコンストラクターと項目名のメソッドで組み立て（`new OrderLine().productCode(...)`）、位置で並べるコンストラクターは使わない。項目が 1 つの型（作成した ID など）も同じ。
-- 作成の応答（201、Location、作成した ID）は `common/presentation` の共通の補助で作る。`Location` はホストを含まない相対の URL（`/api/...`）にする。
+- 作成の応答（201、Location、作成した ID）は `common/presentation` の共通の補助で作る。`Location` の形は [API の規約](api-conventions.md)の「HTTP メソッド」。
 - 入れ子の型（明細、金額、住所など）は型ごとに private メソッドに分け、上位のメソッドには項目の並びだけを残す。自分で定義した record は、引数が多ければ 1 行に 1 つ書く。
 
 理由：項目の取り違えを防ぎ、変換を読みやすくするため。
@@ -233,7 +233,7 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 | 3 | static |
 
 - IntelliJ の Optimize Imports を上の表の並びにする設定と、エージェントが整形するときの注意は、[開発環境の起動](../06-手順書/setup.md)の「IDE の設定」にある。
-- import は、全てのソースセットで Checkstyle（`backend/ecsite/config/checkstyle/checkstyle.xml`）が検査し、違反があれば `./gradlew check` と CI が失敗する。
+- import は、全てのソースセットで Checkstyle（`backend/ecsite/config/checkstyle/checkstyle.xml`）が検査し、違反があれば `./gradlew check` と CI が失敗する。Checkstyle は import を修正しないので、使われていない import は削除し、順序の違反は並べ替え、`*` の import は個々の import に書き換える。
 
 理由：今のコードは IntelliJ の書式でほぼそろい、Spotless で強制すると読みやすさが下がる変更が出たため（[issue #19 のコメント](https://github.com/roger88106/ec-site/issues/19)）。
 

@@ -14,7 +14,10 @@
 - 2 つのジョブの差は 1 分 30 秒以下を目安にする。差が大きいときは、`backend/ecsite/build.gradle.kts` の `shardOf` の salt を変えて再分割し、一覧で重複と漏れがないことと、CI の時間の差を確認する。
 - 分ける数は、`ci.yml` の matrix の `shard` の一覧の長さだけで決まる（ジョブの名前と `-PintegrationTestShard=<番号>/<総数>` の総数は `strategy.job-total` から読む）。変えるときは、次を直す。
   - `ci.yml` の `shard` の一覧。
-  - [CI の検査](ci.md)の、ジョブの名前の「1/2・2/2」と「2 つのジョブ」「3 つのジョブ」の書き方（「手元での実行」の表、「CI のジョブ」）。
+  - この文書の「バックエンドのジョブの構成」の、ジョブの名前の「1/2・2/2」と「2 つのジョブ」「3 つのジョブ」。
+  - [CI の検査](ci.md)の表の、「1/2・2/2」「半分ずつ」「上の 3 つ」。
+  - [テストの実行方法](running-tests.md)の「バックエンド」の、「1/2・2/2」「2 つのジョブ」。
+  - [ブランチとリリース](branches.md)の ruleset の注の、「1/2・2/2」。
   - `backend/ecsite/build.gradle.kts` の `integrationTestShards` の既定の数（`integrationTestShardCount` の `orElse`）。
 - 統合テストのフォークの数（`maxParallelForks`）は 1。CI で測って 10% 以上短くなれば、`-PintegrationTestForks=2` にする。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「統合テストのフォークの数」。
 - 「バックエンド」は、各ジョブが保存したカバレッジの実行データとクラスを集めて、1 つの報告にする（コンパイルもテストもしない）。各ジョブが別々にコンパイルしたクラスの実行データを合わせるので、クラスが一致しないと JaCoCo が警告を出し、「バックエンド」が注釈（warning）を出す。

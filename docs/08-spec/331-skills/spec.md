@@ -158,7 +158,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
   - 依存：T331-01-01〜06（同じファイルを変えるため、最後に行う）
   - 範囲：`.claude/skills/sessions/SKILL.md`、`rounds.md`、`review/SKILL.md`、他の対象の skill、`docs/07-記録/` の該当の文書
   - 確認方法：対象の skill を `20[0-9][0-9]-`、`spec [0-9]`、`#[0-9]` で検索し、残るものが理由の 1 行か出典だけであることを読む
-- [ ] **T331-01-08** `reviewer` の description から、レビューの時点の一覧を削除する。`implementer` から、AGENTS.md の規則の転記を削除する（DC-331-11、DC-331-12）。
+- [x] **T331-01-08** `reviewer` の description から、レビューの時点の一覧を削除する。`implementer` から、AGENTS.md の規則の転記を削除する（DC-331-11、DC-331-12）。
   - 依存：なし
   - 範囲：`.claude/agents/reviewer.md`、`implementer.md`
   - 確認方法：文書を読む。`git grep -n "^model:" .claude/agents` が空

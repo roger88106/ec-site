@@ -1,38 +1,22 @@
 # テストの書き方
 
-テストの種類と、今のテストで守っている書き方。実行方法は [テストの実行方法](../06-手順書/running-tests.md)、テスト先行の進め方は [開発の進め方](workflow.md)の「テスト駆動開発」。確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
+今のテストで守っている書き方。実行方法は [テストの実行方法](../06-手順書/running-tests.md)、テスト先行の進め方は [開発の進め方](workflow.md)の「テスト駆動開発」。確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
 
 ## 1. テストの種類と基準
 
 ### 1.1 テストの種類
 
-| 種類 | 対象 | ツール | 置き場所 |
-|------|------|------|----------|
-| バックエンドの単体テスト | Spring を起動しないもの | JUnit、AssertJ | `src/test` |
-| バックエンドの統合テスト | Spring と DB などをつないだもの | `@SpringBootTest`、Testcontainers | `src/integrationTest` |
-| フロントの単体テスト | 画面に依存しない関数（判定、変換、表示の整形） | Vitest | 対象の横（`*.test.ts`） |
-| フロントの結合テスト | コンポーネントを描画し、利用者の操作で振る舞いを確認する（API は MSW） | Vitest、React Testing Library | 対象の横（`*.test.tsx`） |
-| E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `e2e/` |
+テストの種類と置き場所は、[テストの実行方法](../06-手順書/running-tests.md)の「テストの種類」。
 
 - 必須の統合テスト：Modulith の境界、Repository（永続化・再構築・差分更新・イベント発行）、並行性（並行の不変条件を持つモジュール）、外部連携の port（mock と実装の挙動の一致）。
 - 店舗画面には結合テストを置かない ※1（対象ごとの方法は「店舗画面のテストは、対象ごとの方法で書く」）。画面をつないだ流れは E2E で確認する。
-- E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状態から実行する（ローカルの開発のデータを変えない）。
 - 見た目（配置、色、余白）は目視で確認する。
 - テストに出ない AC は CI が失敗にする。テストで確認できない AC は、理由と一緒に除外の一覧に書く。
 - IdP（Keycloak）の振る舞いだけで決まる AC は、realm の設定ファイルの契約テスト（`RealmSettingsContractTest`）で確認する ※2。
 
 ※1：操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないため。サーバーアクションを呼ばない操作はこの理由に当たらないので、例外にする。結果の表示の遷移は、同じ要素が残ることを、結果を変えて再描画する静的な HTML では確認できないので、サーバーアクションの処理は差し替え、表示だけを確認する（処理はサーバーアクションのテストと E2E で確認する）。
 
-※2：IdP は自分たちで作っていないので、設定が正しければ IdP が振る舞いを守る、とみなす。IdP を取り替えたときは、会員の登録・ログインの E2E で振る舞いを確認する。対象の AC は、`node scripts/ci/ac-check.mjs --tests` で `RealmSettingsContractTest` が表示される AC で、次はその例。
-
-| AC | 振る舞い | 契約テストで確認する設定 |
-|----|----------|--------------------------|
-| AC-109 | 登録済みのメールアドレスでは登録できない | メールアドレスの重複を許さない |
-| AC-110 | パスワードの条件を満たさない登録は拒否される | パスワードの方針 |
-| AC-116 | パスワードを続けて間違えると一定時間ログインできない | 総当たりの防止の回数と時間 |
-| AC-118 | パスワードの再設定を申し込める | パスワードを忘れたときの画面とメール |
-| AC-134 | 運営者は自分で登録できない | 登録の画面が消費者の realm だけで有効 |
-| AC-210、211 | 生年月日は任意で、後から入れられる | 利用者の属性の必須と、編集の可否 |
+※2：IdP は自分たちで作っていないので、設定が正しければ IdP が振る舞いを守る、とみなす。IdP を取り替えたときは、会員の登録・ログインの E2E で振る舞いを確認する。対象の AC は、`node scripts/ci/ac-check.mjs --tests` で `RealmSettingsContractTest` が表示される AC である。
 
 ### 1.2 カバレッジと mutation score の基準
 
@@ -139,23 +123,13 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が残り、メモリを使うため（`ProductionClasses` の理由）。設定の読み込みを 1 か所にして、全ての設定のテストが、同じ設定ファイルの重ね方で値を読むため（`TestSettings` の理由）。契約や realm の置き場所を既定の相対パスで読むと、Gradle が置き場所を渡さなくても通り、設定の誤りに気づけないため（`Contracts` の理由）。
 
-本番のクラスの読み込みの検査（`ProductionClassesTest`）は、`src/test/java`、`src/integrationTest/java`、`src/testFixtures/java` の全ての Java のファイルを読む。次の文字列があれば失敗にする。ただし `ProductionClasses` のファイルは対象にしない。
-
-- `importPackages(`
-- `importPackagesOf(`
-- `importClasspath(`
-- `importPath(`
-- `importLocations(`
-- `ApplicationModules.of(`
-- `@AnalyzeClasses`
-
-`importClasses(` は、検査自身のテストが、違反する例のクラスを読むために使う。本番のクラスを読まないので、対象にしない。
+`ProductionClassesTest` が、`src/test/java`、`src/integrationTest/java`、`src/testFixtures/java` の Java のファイルで、本番のクラスを補助の外で読み込む呼び出しを見つける。探す呼び出しの一覧は `ProductionClassesTest` にある。
 
 確認方法：`ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー
 
 ### 3.5 テストのコードの重複
 
-PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew check` で重複を検出し、見つかると失敗にする（タスクは `cpdCheck`、報告は `backend/ecsite/build/reports/cpd/`）。
+PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew check` で重複を検出し、見つかると失敗にする（タスクは `cpdCheck`。報告の置き場所は[テストの実行方法](../06-手順書/running-tests.md)の「バックエンド」）。
 
 | 項目 | 内容 |
 |------|------|

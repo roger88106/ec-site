@@ -2,7 +2,21 @@
 
 テストの書き方は [テストの書き方](../05-開発規則/test-writing.md)、起動の準備は [開発環境の起動](setup.md)。エージェントは skill `local-dev` を使う。
 
-## 1. バックエンド
+## 1. テストの種類
+
+テストを書くときの規則は [テストの書き方](../05-開発規則/test-writing.md)。
+
+| 種類 | 対象 | ツール | 置き場所 |
+|------|------|------|----------|
+| バックエンドの単体テスト | Spring を起動しないもの | JUnit、AssertJ | `src/test` |
+| バックエンドの統合テスト | Spring と DB などをつないだもの | `@SpringBootTest`、Testcontainers | `src/integrationTest` |
+| フロントの単体テスト | 画面に依存しない関数（判定、変換、表示の整形） | Vitest | 対象の横（`*.test.ts`） |
+| フロントの結合テスト | コンポーネントを描画し、利用者の操作で振る舞いを確認する（API は MSW） | Vitest、React Testing Library | 対象の横（`*.test.tsx`） |
+| E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `e2e/` |
+
+E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状態から実行する（ローカルの開発のデータを変えない）。
+
+## 2. バックエンド
 
 `backend/ecsite/` で実行する。
 
@@ -27,9 +41,9 @@
 
 Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）が失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`UnusedImports` は使われていない import を、`CustomImportOrder` は import の並びが決まった順（`java`・`javax` 以外、`java`・`javax`、static）でないものを報告する。`AvoidStarImport` は `*` の import を報告する。個々の import に書き換える。Checkstyle は import を修正しないので、報告された import は手動で削除するか、並び替える。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は、本番のコード（`src/main`）の Javadoc の記載漏れなので、Javadoc を書く。修正方法と import の並びは [バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」。test、integrationTest、testFixtures、tools では、Javadoc の 3 つの検査を `backend/ecsite/config/checkstyle/suppressions.xml` で抑えている。
 
-テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`backend/ecsite/build/reports/cpd/cpdCheck.xml`）に重複の場所（ファイルと行）が出る。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[テストの書き方](../05-開発規則/test-writing.md)の「テストのコードの重複」）。
+テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`cpdCheck.xml`）に重複の場所（ファイルと行）が出る。CPD の重複の報告は `backend/ecsite/build/reports/cpd/` にある。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[テストの書き方](../05-開発規則/test-writing.md)の「テストのコードの重複」）。
 
-## 2. 管理画面・店舗画面
+## 3. 管理画面・店舗画面
 
 `frontend/admin/`・`frontend/store/` で実行する（ルートで実行すると、全てのプロジェクトをまとめて実行する）。
 
@@ -43,7 +57,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる（管理画面のビルドの環境変数は、未設定ならローカルの値を使う）。
 
-## 3. E2E（`e2e/`）
+## 4. E2E（`e2e/`）
 
 バックエンド、管理画面、店舗画面を起動して、Chromium で操作する（Playwright）。専用の DB（`ec_site_e2e`）、IdP（Keycloak、:8181）、画像のバケットを使い、ローカルのデータを変えない。
 
@@ -74,7 +88,7 @@ pnpm test
 - 結果の要約だけを見るときは、ルートで `scripts/dev/e2e.sh [Playwright の引数]`（テストごとの ok / x と失敗の要点だけを出力し、全体はログのファイルに残す）。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を確認する。
 
-## 4. 既存のテストを変えていないことの確認
+## 5. 既存のテストを変えていないことの確認
 
 振る舞いを変えない整理（書き方の統一など）では、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものと、中身を変えずにテストを別のファイルへ移したものだけであることを確認する。
 
@@ -88,7 +102,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 - 既存のファイルの追加した行で、照合して残ったものも出力する。新しく追加したファイルの、照合して残った行は対象外（移した先の import と枠の行、新しいテスト）。
 - 名前の対応のファイルは、1 行に `旧=新`（クラスの単純名か完全修飾名、画面はモジュールのパスも）。名前は語の境界で置き換える。
 
-## 5. カバレッジと mutation score の基準の検査
+## 6. カバレッジと mutation score の基準の検査
 
 CI と同じ検査を、手元で実行できる（[テストの書き方](../05-開発規則/test-writing.md)の「カバレッジと mutation score の基準」、[CI の検査](ci.md)の「カバレッジと mutation score の基準の検査」）。先に、対象のテストを実行して報告を作る。
 

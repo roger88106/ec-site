@@ -133,7 +133,7 @@ skill には、エージェントが実行する手順と雛形だけを残す�
   - 依存：なし
   - 範囲：`docs/05-開発規則/review.md`、`workflow.md`、`subagents.md`、`.claude/skills/review/SKILL.md`、`prompts.md`、`convergence.md`
   - 確認方法：移す前と後の文を並べて読む（`git show`）。`node scripts/ci/doc-refs.mjs`。`git grep convergence.md` が、アーカイブと評価の一覧の例文の外に残らない
-- [ ] **T331-01-02** 「日本語だけの文脈のサブエージェントに書かせる」の規則を `writing.md` の冒頭だけに置き、他の 5 か所を参照に替える（DC-331-3）。
+- [x] **T331-01-02** 「日本語だけの文脈のサブエージェントに書かせる」の規則を `writing.md` の冒頭だけに置き、他の 5 か所を参照に替える（DC-331-3）。
   - 依存：なし
   - 範囲：`writing.md`、`subagents.md`、`workflow.md`、AGENTS.md、`.claude/skills/docs/SKILL.md`、`.claude/skills/sessions/SKILL.md`
   - 確認方法：`git grep -n "日本語だけの文脈"` の結果を読む（用語集の定義は残る）

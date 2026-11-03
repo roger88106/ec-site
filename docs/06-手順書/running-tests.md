@@ -65,9 +65,11 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 | 報告 | 修正の方法 |
 |------|--------|
-| どこからも使われていないファイル | 削除する。実行時に import されずに使われるファイル（例：型の拡張 `i18n/types.ts`、E2E の準備の script `e2e/scripts/prepare.ts`）は knip の誤検出なので、`knip.ts` の `entry` に書き、コードに意味のない参照を追加しない |
+| どこからも使われていないファイル | 削除する。実行時に import されずに使われるファイルは knip の誤検出なので、`knip.ts` の `entry` に書く。コードに意味のない参照を追加しない |
 | どこからも import されていない export と型 | 削除する。定義したファイルの中だけで使う export も報告するので、export を外す |
 | `package.json` にあって使われていない依存、`package.json` にない依存の import | 依存を削除する、または `package.json` に追加する |
+
+実行時に import されずに使われるファイルの例は、型の拡張 `i18n/types.ts` と、E2E の準備の script `e2e/scripts/prepare.ts` である。
 
 生成物の export と型の報告は、`knip.ts` の `ignoreIssues` に、ファイルの範囲と `exports`・`types` だけを書いて外す。外す理由はコメントに書く。
 

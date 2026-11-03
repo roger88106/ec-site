@@ -268,7 +268,16 @@ IntelliJ IDEA で、Java の import の並びを Checkstyle の検査に合わ�
 
 ### import の並び
 
-Optimize Imports の並びを、バックエンドの書き方の「書式」の表に合わせる。Settings → Editor → Code Style → Java → Imports の「Import Layout」を、次の順にする。IntelliJ の既定は `import all other imports`、空行、`import javax.*`、`import java.*`、空行、`import static all other imports` の順で、`javax.*` が `java.*` の前にある。表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
+Optimize Imports の並びを、バックエンドの書き方の「書式」の表に合わせる。Settings → Editor → Code Style → Java → Imports の「Import Layout」を、次の順にする。IntelliJ の既定は次の順で、`javax.*` が `java.*` の前にある。
+
+1. `import all other imports`
+2. 空行
+3. `import javax.*`
+4. `import java.*`
+5. 空行
+6. `import static all other imports`
+
+表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
 
 1. `import all other imports`
 2. 空行

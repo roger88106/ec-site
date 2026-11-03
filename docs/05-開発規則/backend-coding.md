@@ -73,7 +73,9 @@
 | パッケージ | 分けない理由 |
 |------------|--------------|
 | `catalog.infrastructure.persistence` | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
-| `config.security` | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラスは package-private。対象は認可の対応表、認可の判定、契約の操作の一覧で、対応表は管理用と店舗用がある。分けるとクラスを公開しなければならない |
+| `config.security` | 認証と認可の設定。組み立てられるクラスは package-private で、分けるとクラスを公開しなければならない |
+
+`config.security` の package-private のクラスは、filter chain の設定のクラスが組み立てる、認可の対応表（管理用と店舗用）、認可の判定、契約の操作の一覧である。
 
 テスト（`ModuleStructureTest`）が、目安を超えるパッケージと表の行を照合する。目安を超えるパッケージの行が表にない、または目安以下のパッケージの行が表にあると、テストが失敗する。
 
@@ -285,7 +287,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
-- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` と同じ形にする）。理由：record の既定の `toString` は全ての項目を出力し、設定の値をログや例外のメッセージに出力したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとする。構成の検査（`ConfigurationPropertiesTest`）が、秘密の値の項目を持つ設定の型（入れ子の型を含む）が `toString` を宣言していることを確認する。検査の対象の範囲は、`ConfigurationPropertiesTest` の Javadoc にある。
+- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は `toString` を上書きして、秘密の値を `***` にする（`StripeProperties` と同じ形にする）。理由：record の既定の `toString` は全ての項目を出力し、設定の値をログや例外のメッセージに出力したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとする。構成の検査（`ConfigurationPropertiesTest`）が、秘密の値の項目を持つ設定の型（入れ子の型を含む）が `toString` を宣言していることを確認する。検査の対象の範囲は、`ConfigurationPropertiesTest` の Javadoc にある。
 - 設定の型では、Lombok の `@ToString`・`@Data`・`@Value` を使わず、`toString` を手動で書く。理由：Lombok の注釈はクラスファイルに残らず、作られた `toString` は手動で宣言したものと区別できないので、構成の検査が値を出力する `toString` を見逃すため。
 
 ※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。

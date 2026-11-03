@@ -136,7 +136,7 @@ test('~~~ の囲みの中は読まない', () => {
   assert.equal(r.entries[0].check, '自動')
 })
 
-test('異常：閉じない囲みは異常', () => {
+test('異常：閉じないコードブロックがあるとき', () => {
   const errors = errorsOf(['# 題', '', '## 1 a', '', '確認方法：レビュー', '', '```', '本文'])
   assert.equal(errors.length, 1)
   assert.equal(errors[0].line, 7)

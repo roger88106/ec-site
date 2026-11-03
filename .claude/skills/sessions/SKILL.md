@@ -145,7 +145,7 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 
 ### 作業ツリーのセッションが読むもの
 
-作業ツリーの置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`。`.gitignore` で無視され、検索の対象にならない。デスクトップアプリが作る作業ツリーも同じ場所に置かれる。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。IntelliJ の `reformat_file` が使えないことの注意は [バックエンドの書き方](../../../docs/05-開発規則/backend-coding.md)。
+作業ツリーの置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`。`.gitignore` で無視され、検索の対象にならない。デスクトップアプリが作る作業ツリーも同じ場所に置かれる。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。IntelliJ の `reformat_file` が使えないことの注意は [開発環境の起動](../../../docs/06-手順書/setup.md)の「IDE の設定」。
 
 起動の形ごとに、設定・定義・skill を読む場所と、変更が反映される時点。作業ツリーとメインの作業ツリーに、出力が違う一時の設定・定義・skill を置いて実際に実行し、どちらを読んだかを確認した（Claude Code 2.1.309、2026-10-29、[spec 276](../../../docs/08-spec/archive/1to10/276-retro-rules/spec.md)の「作業の記録」）。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーの、commit していない変更を含む内容を読む。
 

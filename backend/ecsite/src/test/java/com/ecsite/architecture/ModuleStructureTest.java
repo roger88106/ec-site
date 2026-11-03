@@ -62,7 +62,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの標準の構成の検査（バックエンドのアーキテクチャの「層とパッケージ」）。<br />
+ * モジュールの標準の構成の検査（バックエンドの書き方の「層とパッケージ」、バックエンドのアーキテクチャの「層とパッケージ」）。<br />
  * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
@@ -521,7 +521,7 @@ class ModuleStructureTest {
      *
      * @param countByPackage パッケージの名前（{@code com.ecsite.} を除いた形でも、含む形でもよい）から、クラスの数への対応
      * @param table          表のパッケージの名前
-     * @return 食い違いの説明（説明の順）。表の外の超過、表のパッケージの目安以下
+     * @return 食い違いの説明（説明の順）。表にない超過、表のパッケージの目安以下
      */
     private static List<String> oversizedMismatches(Map<String, Long> countByPackage, Set<String> table) {
         Map<String, Long> counted = countByPackage.entrySet().stream()

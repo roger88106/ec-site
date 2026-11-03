@@ -264,11 +264,11 @@ realm を再度取り込む前は、スロットの画面のログインがリ�
 
 ## 11. IDE の設定
 
-IntelliJ IDEA で、Java の import の並びを Checkstyle の検査に合わせ、エージェントが整形するための設定である。import の並びの規則は、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」にある。
+IntelliJ IDEA で、Java の import の並びを Checkstyle の検査に合わせる設定と、エージェントが整形するときの注意である。import の並びの規則は、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」にある。
 
 ### import の並び
 
-Optimize Imports をバックエンドの書き方の「書式」の表の並びにするため、Settings → Editor → Code Style → Java → Imports の「Import Layout」を次の順にする。IntelliJ の既定は `import all other imports`、空行、`import javax.*`、`import java.*`、空行、`import static all other imports` で、`javax.*` が `java.*` の前にある。表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
+Optimize Imports の並びを、バックエンドの書き方の「書式」の表に合わせる。Settings → Editor → Code Style → Java → Imports の「Import Layout」を、次の順にする。IntelliJ の既定は `import all other imports`、空行、`import javax.*`、`import java.*`、空行、`import static all other imports` の順で、`javax.*` が `java.*` の前にある。表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
 
 1. `import all other imports`
 2. 空行
@@ -277,7 +277,7 @@ Optimize Imports をバックエンドの書き方の「書式」の表の並び
 5. 空行
 6. `import static all other imports`
 
-同じ設定画面の「Class count to use import with *」と「Names count to use static import with *」は、`*` の import を作らないよう、大きな値（999）にする。
+同じ設定画面の「Class count to use import with *」と「Names count to use static import with *」は、大きな値（999）にする。`*` の import を作らないためである。
 
 ### エージェントによる整形
 

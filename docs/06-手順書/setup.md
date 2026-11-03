@@ -277,7 +277,7 @@ Optimize Imports の並びを、バックエンドの書き方の「書式」の
 5. 空行
 6. `import static all other imports`
 
-表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
+バックエンドの書き方の「書式」の表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
 
 1. `import all other imports`
 2. 空行

@@ -87,7 +87,7 @@
 
 - 用語集（`docs/05-開発規則/glossary.md`）と `licenses.md` は、コード・設定から読める内容を削除し、ファイルを指す。削除するのは、テストの補助のパス、jest-dom の読み込み方、`policy.json` と `build.gradle.kts` の設定の説明などである。
 - 記録（`docs/07-記録/`）は、空の節、移した先を指すだけの節、節の一覧を文で列挙する前置きを削る。`context-size.md` は、古い基準を表 1 つに縮め、この spec の結果を加える。
-- README の MVP の進捗の表は、`docs/08-spec/archive/mvp/mvp.md` への 1 行の案内にする。
+- README の MVP の進捗の表は、行ごとに繰り返す定型文（完了の状態、段階、レビューの結果の文）を削り、spec の番号・内容・リンクの列に縮める。理由：`docs/08-spec/archive/mvp/mvp.md` の一覧は spec 011〜019 だけで、アーカイブは変えないため。
 - 文書の長さの基準を、`doc-structure.md` の新しい節に書く。
   - 大きさの目安：`AGENTS.md` 8,000 バイト、constitution 10,000 バイト、`docs/05-開発規則/` の 1 つの文書 15,000 バイト。
   - 冒頭（1 行目の見出しから最初の `##` まで）は、何の文書かと、いつ読むかの 2 文以内。節の一覧を文で列挙しない。
@@ -131,7 +131,7 @@
 
 - **DC-334-9** 正本の表にある 4 つの規則が、正本の 1 か所にだけ書かれ、他の文書は見出しの参照で指す。
 - **DC-334-10** 用語集と `licenses.md` に、コード・設定から読める内容の転記がない。
-- **DC-334-11** `docs/07-記録/` の 3 つに、空の節と、移した先を指すだけの節がない。README の MVP の進捗が 1 行の案内である。
+- **DC-334-11** `docs/07-記録/` の 3 つに、空の節と、移した先を指すだけの節がない。README の MVP の進捗の表に、行ごとに繰り返す定型文がない。
 
 ### DS-334-4 文書の長さの基準と雛形を決める（D / P1）
 
@@ -203,11 +203,11 @@
   - 依存：T334-01-01
   - 範囲：`docs/05-開発規則/workflow.md`、`issues.md`、`merging.md`、`doc-structure.md`
   - 確認方法：移す前と後の文を並べて読む、`wc -c`、移す前と後の見出しの一覧（`grep '^#'`）を比べ、見出しの名前が変わっていない
-- [ ] **T334-01-03** constitution を縮め、フォルダーの `README.md` を作る。設計の文書と `licenses.md` と同じ表を削除し、技術スタックのバージョンの記述は設計の文書を指し、「リポジトリ構成」の図を縮める（DC-334-2、DC-334-3）。
+- [x] **T334-01-03** constitution を縮め、フォルダーの `README.md` を作る。設計の文書と `licenses.md` と同じ表を削除し、技術スタックのバージョンの記述は設計の文書を指し、「リポジトリ構成」の図を縮める（DC-334-2、DC-334-3）。
   - 依存：T334-01-01、T334-01-02（新しい文書を README に載せ、`doc-structure.md` を同じく変えるため）
   - 範囲：`docs/constitution.md`、各フォルダーの `README.md`、`writing.md`・`doc-structure.md`・skill `docs`・`scripts/ci/docs-folders.mjs` のコメントの「地図に書く」の記述
   - 確認方法：移す前の地図の全ての文書が、どれかの `README.md` にある、`wc -c`
-- [ ] **T334-01-04** `AGENTS.md` を縮める。skill の表を前提にした規則を修正し、hook の書き先の段落を skill `local-dev` に移す。「最初に読むもの」の項目 5 を、`writing.md` と `doc-structure.md` に分けて指す（DC-334-2、DC-334-4）。
+- [x] **T334-01-04** `AGENTS.md` を縮める。skill の表を前提にした規則を修正し、hook の書き先の段落を skill `local-dev` に移す。「最初に読むもの」の項目 5 を、`writing.md` と `doc-structure.md` に分けて指す（DC-334-2、DC-334-4）。
   - 依存：T334-01-02（`AGENTS.md` が指す workflow.md の節が決まるため）
   - 範囲：`AGENTS.md`、skill `writing-for-agents`・`handoff`・`retro` の日本語の追記、skill `local-dev`
   - 確認方法：`wc -c`、`git grep -n "skill の表"`
@@ -219,7 +219,7 @@
   - 依存：T334-01-01、T334-01-02
   - 範囲：`writing.md`、`workflow.md`、`subagents.md`、`resources.md`、`review.md`、`notation.md`、`glossary.md`、`licenses.md`、skill `sessions`
   - 確認方法：正本の表にある 4 つの規則を `git grep` で検索し、正本の外に言い換えがないことを読む、用語集と `licenses.md` で、決定に挙げた転記（テストの補助のパス、jest-dom の読み込み方、`policy.json` と `build.gradle.kts` の設定の説明）がないことを読む
-- [ ] **T334-01-07** 記録と README を縮める（DC-334-11）。
+- [x] **T334-01-07** 記録と README を縮める（DC-334-11）。
   - 依存：なし
   - 範囲：`docs/07-記録/` の 3 つ、`README.md`
   - 確認方法：文書を読む

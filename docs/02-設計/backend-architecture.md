@@ -50,7 +50,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 レベル A の中身：
 
-- 依存の向き：presentation → application → domain ← infrastructure（domain は何にも依存しない）。
+- 依存の向き：presentation → application → domain ← infrastructure（層ごとの依存してよい先は「層とパッケージ」の表）。
 - Repository の port は `domain/<集約>/port/` に置く。command と query の service・Repository を分ける（CQRS）。
 - ドメインオブジェクトは jMolecules で明示し（`@AggregateRoot`、`@ValueObject`、`@Identity`）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
 - 永続化は `toSnapshot()` で書き出し、Factory で再構築する。application が投げる例外は `BusinessException` / `SystemException` だけ。
@@ -66,7 +66,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 ### 2.1 層とパッケージ
 
-どのモジュールも次の構成にする。
+モジュールの構成は次のとおり。
 
 ```
 module/<モジュール>/

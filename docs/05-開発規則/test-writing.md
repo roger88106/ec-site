@@ -18,6 +18,13 @@
 
 ※2：IdP は自分たちで作っていないので、設定が正しければ IdP が振る舞いを守る、とみなす。IdP を取り替えたときは、会員の登録・ログインの E2E で振る舞いを確認する。対象の AC は、`node scripts/ci/ac-check.mjs --tests` で `RealmSettingsContractTest` が表示される AC である。
 
+確認方法：
+
+- 必須の統合テスト：レビュー
+- 店舗画面に結合テストを置かない：レビュー
+- テストに出ない AC：自動（`scripts/ci/ac-check.mjs`）
+- IdP の振る舞いだけで決まる AC：自動（`RealmSettingsContractTest`）
+
 ### 1.2 カバレッジと mutation score の基準
 
 カバレッジ（行・分岐）と、domain の mutation score は、基準の値（許容の幅を含む）を下回らない。

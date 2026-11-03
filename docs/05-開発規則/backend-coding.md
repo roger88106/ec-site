@@ -1,44 +1,6 @@
 # バックエンドの書き方
 
-今のコードで守っている書き方。構成の考え方は [バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)、API の規約は [API の規約](api-conventions.md)。
-
-## 規則の一覧
-
-| 節 | 規則 | 確認方法 |
-|----|------|----------|
-| 1.1 | 標準の構成（層とパッケージ） | モジュールの中の層の間は、依存の表にある全ての組と、表にない層・パッケージへの依存が自動（ArchUnit）。`api/` に interface がないこと、`api/` の型を `api/` の外が実装・継承しないこと、domain のパッケージに循環がないことも自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることはレビュー（集約に依存しないことは次の行で自動） |
-| 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
-| 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
-| 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
-| 1.1 | token の取り出し（`CurrentToken`）と、会員・運営者・会員 ID の取り出し（`CurrentMember`、`CurrentOperator`、`CurrentMemberIds`）は、presentation、`common.security`、表の例外の 2 つだけが使う | 自動（ArchUnit） |
-| 1.1 | モジュールの中では、jOOQ（`org.jooq` と生成したコード）を使うのは `infrastructure/persistence/` だけ。例外は表の 1 つ | 自動（ArchUnit） |
-| 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
-| 1.1 | 共通コードと設定はモジュールに依存しない。共通コードとモジュールは設定に依存しない | 自動（ArchUnit） |
-| 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
-| 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー |
-| 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数を「パッケージの大きさ」の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー |
-| 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー |
-| 2.1 | 生成した interface を実装する。`@RestController` は presentation だけに付ける（`MeController` を除く） | `@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー |
-| 2.2 | 応答への変換は手動で書く | 生成したモデルの組み立ては自動（ArchUnit）、他はレビュー |
-| 3.1 | 形の検証は presentation、業務の規則は domain | 自動（契約のテスト）、判定の重複はレビュー |
-| 3.2 | エラーは `XxxErrorCode` と `BusinessException` | 自動（メッセージのテスト）、文に数字がないことは自動（CI の検査 `message-numbers`） |
-| 3.3 | 入力の検証のメッセージ | 自動（検証のメッセージのテスト） |
-| 3.4 | DB の制約の違反は業務のエラーに変えるか、重複を吸収する | 自動（リポジトリの統合テスト）、扱い方の選び方はレビュー |
-| 3.5 | 更新の競合は `version` | 自動（API の統合テスト） |
-| 4.1 | トランザクションは application。外部サービスはトランザクションの外で呼ぶ | 自動（ArchUnit）、infrastructure の例外の理由と外部サービスの呼び出しはレビュー |
-| 4.2 | 現在時刻は `Clock` から | 自動（ArchUnit） |
-| 5.1 | Lombok は main だけ | 自動（`scripts/ci/java-rules.mjs`） |
-| 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
-| 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
-| 5.4 | 整形は IntelliJ の Reformat Code を推奨する（強制しない） | なし |
-| 5.4 | import の並びと、使われていない import と `*` の import（static を含む）は強制する | 自動（Checkstyle） |
-| 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
-| 6.1 | 秘密の値を持つ設定の record（入れ子の型を含む）は、`toString` で値をマスクする。設定の型で Lombok の `@ToString`・`@Data`・`@Value` を使わない | `toString` を宣言していることは自動（ArchUnit）。値をマスクしていることは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー |
-| 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
-| 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントは自動（`scripts/ci/java-rules.mjs`） |
-| 8.1 | 新しいマイグレーションは、前のリリースのアプリが動き続けられる変更だけにする（表・列の削除と改名などは 3 段に分ける） | 自動（CI の検査 `migrations`）。3 段に分ける手順の妥当性はレビュー |
-
-確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
+今のコードで守っている書き方。構成の考え方は [バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)、API の規約は [API の規約](api-conventions.md)。確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
 
 ## 1. 層とパッケージ
 
@@ -73,7 +35,7 @@ module/<モジュール>/
 | common | モジュールに依存しない |
 | config | common。モジュールに依存しない |
 
-どの層も、config に依存しない。
+どの層も、config に依存しない。`application/model/` は、application の `port/` に依存しない。
 
 | レベル | 中身の違い |
 |--------|------------|
@@ -84,7 +46,7 @@ module/<モジュール>/
 
 - **参照と更新（レベル A）**：参照の service は、`application/model/` の view を返し、集約を返さない。presentation は集約を受け取らない。画面の操作の可否は、view を作る所で集約のメソッドを呼んで view に入れる。
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
-- **イベント**：送り出し方は [バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
+- **イベント**：レベル A の application は、イベントを送り出さない（集約が記録し、リポジトリが送り出す）。送り出し方は [バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
 - **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。`api/` の型を `api/` の外が実装・継承しない。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
 - **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、集約のパッケージの直下に置く。`vo/` に置くと、`vo/` と集約のパッケージが互いに依存して循環するためである（例：order の `BuyerProfile`、`Cancellation`）。
 
@@ -103,11 +65,24 @@ module/<モジュール>/
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
 
+確認方法：
+
+- 層の間の依存：モジュールの中の層の間は、依存の表にある全ての組と、表にない層・パッケージへの依存が自動（ArchUnit）。`api/` に interface がないこと、`api/` の型を `api/` の外が実装・継承しないこと、domain のパッケージに循環がないことも自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることはレビュー（集約に依存しないことは次の行で自動）
+- 参照の service の返す型：presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー
+- 公開の API：`api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit）
+- application の `port/` への依存：自動（ArchUnit）
+- 認証の情報の取り出し：自動（ArchUnit）
+- jOOQ の置き場所：自動（ArchUnit）
+- イベントの置き場所と送り出し：レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー
+- 共通コードと設定の依存：自動（ArchUnit）
+
 ### 1.2 モジュールの外に出すのは `api/` と `event/` だけ
 
 他のモジュールから使う型は `api/`（同期の呼び出し）と `event/`（イベント）に置く。
 
 理由：モジュールの中を、他のモジュールに影響なく変えられるようにするため。
+
+確認方法：自動（ModulithTest）
 
 ### 1.3 他のモジュールは腐敗防止層で包む
 
@@ -122,6 +97,8 @@ module/<モジュール>/
 理由：相手の変更の影響を、実装の 1 か所に限るため。`switch` 式は列挙の全ての値を書かないとコンパイルに失敗するので、片方に値を追加して変換を書き忘れると気づける（名前で変換すると、実行するまで気づけない）。
 
 ※1：`CurrentMemberIds` は、要求の token から会員の ID を得る、API の入口（presentation）のためのクラスで、会員のモジュールが presentation 向けに公開している。会員の ID は presentation が token から読み、application へ引数で渡す。会員の腐敗防止層（port と実装）をモジュールごとに作ると、読み取りだけのために同じ port と実装の組が増える。
+
+確認方法：置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー
 
 ### 1.4 パッケージの大きさ
 
@@ -138,6 +115,8 @@ module/<モジュール>/
 
 テストは節の見出し（`### 1.4`）で表を探す。節の番号を変えるときは、`ModuleStructureTest` の `PACKAGE_SIZE_HEADING` も修正する。
 
+確認方法：上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数を「パッケージの大きさ」の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー
+
 ### 1.5 共通の型
 
 - 共通コード（`common/`）には、2 つ以上のモジュールが使うものだけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。例外は横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）で、全てのモジュールの要求の処理に関わり、どのモジュールにも属さないので、`common/` に置く。
@@ -148,6 +127,8 @@ module/<モジュール>/
 - 例外として、商品の一覧の税込価格の絞り込みと並べ替えは、SQL で税込価格を計算する。計算するクラスは `catalog.infrastructure.persistence.PriceInclTaxField` で、式は 税抜価格 × (100 + 税率) ÷ 100 の切り捨て。理由：税区分ごとに税率が違い、税抜の順と税込の順が一致しない。一覧は DB で `LIMIT`・`OFFSET` を使ってページングするので、絞り込みと並べ替えも DB で行う必要がある。`TaxCalculator` と同じ結果になることは、端数の境界値を含めて `PriceInclTaxFieldTest` で確認する。
 
 理由：同じ規則を 1 か所に置きつつ、共通の型を増やしすぎて、モジュールが互いに依存しないようにするため。金額の計算を複数の場所に書くと、端数の扱いが場所によって変わる。
+
+確認方法：金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー
 
 ## 2. API の実装
 
@@ -161,6 +142,8 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 
 理由：契約（`api/openapi/`）を正本にし、実装とずれないようにするため。
 
+確認方法：`@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー
+
 ### 2.2 応答への変換は手動で書く
 
 - 変換はモジュールごとの mapper（`XxxMapper`）に手動で書く。変換のライブラリーは使わない。
@@ -170,6 +153,8 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 - 自分で定義した record は、引数が多ければ 1 行に 1 つ書く。
 
 理由：項目の取り違えを防ぎ、変換を読みやすくするため。
+
+確認方法：生成したモデルの組み立ては自動（ArchUnit）、他はレビュー
 
 ## 3. 入力の検証とエラー
 
@@ -184,6 +169,8 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 
 理由：契約に書ける検証は契約に、業務の規則は 1 か所に置くため。
 
+確認方法：自動（契約のテスト）、判定の重複はレビュー
+
 ### 3.2 エラーは `XxxErrorCode` と `BusinessException`
 
 - 業務のエラーは、モジュールごとの `XxxErrorCode`（`ErrorCodeProvider` の enum）で表し、`BusinessException.of(...)` で投げる。定数は種類（`ErrorType`）と、いつ起きるかの Javadoc を持つ。
@@ -192,6 +179,8 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 - レスポンスへの変換は `GlobalExceptionHandler` だけが行う。
 
 理由：フロントが `errorCode` で分岐でき、画面に表示する日本語を 1 か所で管理し、規則の値が変わっても文が取り残されないようにするため。
+
+確認方法：自動（メッセージのテスト）、文に数字がないことは自動（CI の検査 `message-numbers`）
 
 ### 3.3 入力の検証のメッセージ
 
@@ -204,6 +193,8 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 
 理由：どの環境でも同じ日本語を返し、形の検証と業務の検証のどちらで見つかっても、消費者に同じ文を返すため。
 
+確認方法：自動（検証のメッセージのテスト）
+
 ### 3.4 DB の制約の違反は業務のエラーに変えるか、重複を吸収する
 
 DB の制約でしか守れない規則（一意性など）の違反は、リポジトリが次のどちらかで扱う。
@@ -215,11 +206,15 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 
 理由：制約の違反を 500 にしないため。PostgreSQL は制約の違反でトランザクション全体を失敗させるので、続ける処理では違反を起こさない挿入にする。
 
+確認方法：自動（リポジトリの統合テスト）、扱い方の選び方はレビュー
+
 ### 3.5 更新の競合は `version`
 
 同時に編集されうる集約の更新は、`version` が合わなければ `CONCURRENT_MODIFICATION`（409）。状態の切り替えは冪等にし、`version` を取らない。
 
 理由：他の利用者の変更を、通知なしに上書きしないため。
+
+確認方法：自動（API の統合テスト）
 
 ## 4. トランザクションと時刻
 
@@ -232,11 +227,15 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 
 理由：1 つの操作を 1 つのトランザクションにし、境界を層で決めるため。外部サービスを待つ間に DB の接続を持つと、外部サービスが遅いときに接続が尽き、関係のない操作まで止まるため。
 
+確認方法：自動（ArchUnit）、infrastructure の例外の理由と外部サービスの呼び出しはレビュー
+
 ### 4.2 現在時刻は `Clock` から
 
 現在時刻は注入した `Clock` から取り（`Instant.now()` を直接呼ばない）、domain には `Instant` を引数で渡す。統合テストは `TestClockConfig` で時計を固定する。
 
 理由：テストで時刻を固定し、時刻で切り替わるデータを確認するため。
+
+確認方法：自動（ArchUnit）
 
 ## 5. 命名と書き方
 
@@ -245,6 +244,8 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 getter・コンストラクターの注入などの定型コードは、main では Lombok で書く。テストのソースセットには Lombok を入れていない。
 
 理由：テストのクラスは、JUnit でコンストラクターの注入に設定が必要なのでフィールドの注入を使い、定型コードもほとんどないため。
+
+確認方法：自動（`scripts/ci/java-rules.mjs`）
 
 ### 5.2 名前の形
 
@@ -262,6 +263,8 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
 
+確認方法：リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー
+
 ### 5.3 インスタンスを作らないクラス
 
 static のメンバーだけのクラス（定数や補助の関数をまとめたもの）は `final` にし、コンストラクタを `private` にする。Lombok の `@NoArgsConstructor(access = AccessLevel.PRIVATE)` でも、手動で書いてもよい。
@@ -275,9 +278,10 @@ public final class MoneyFormat {
 ```
 
 - 対象は最上位のクラス。enum・record・interface・注釈は対象でない。
-- 確認方法：ArchUnit（`src/test/java/com/ecsite/architecture/`）で、static でないメンバーを持たない最上位のクラスが `final` で、コンストラクタが全て `private` であることを確認する。
 
 理由：インスタンスを作っても使い道がなく、作れると使い方を誤る。Checkstyle の `HideUtilityClassConstructor` はソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる。ArchUnit はコンパイルした後のクラスを読むので、Lombok で書いても手動で書いても同じに確認できる。
+
+確認方法：自動（ArchUnit）。`src/test/java/com/ecsite/architecture/` のテストが、static でないメンバーを持たない最上位のクラスが `final` で、コンストラクタが全て `private` であることを確認する
 
 ### 5.4 書式
 
@@ -307,6 +311,11 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 
 理由：今のコードは IntelliJ の書式でほぼそろっている。Spotless で強制する案は、今の書式に最も近い設定でも、読みやすさが下がる変更が出た（測定の記録は [issue #19 のコメント](https://github.com/roger88106/ec-site/issues/19)）。
 
+確認方法：
+
+- 整形：なし
+- import：自動（Checkstyle）
+
 ## 6. 設定の値
 
 ### 6.1 設定の値の型
@@ -325,6 +334,11 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 ※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
 
 理由：設定を忘れたまま、別の環境の値で動き出さないようにするため（足りなければ起動に失敗する）。
+
+確認方法：
+
+- 設定の値の型：自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー
+- 秘密の値の `toString`：`toString` を宣言していることは自動（ArchUnit）。値をマスクしていることは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー
 
 ## 7. 静的解析
 
@@ -356,6 +370,8 @@ public Optional<UUID> memberId() {
 
 理由：null の誤りを、実行より前のコンパイルで見つけるため。Spring Framework 7 と同じ JSpecify の注釈なので、Spring の API の null の注釈も NullAway が読む。
 
+確認方法：自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー
+
 ### 7.2 検査を抑えるとき
 
 - Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付ける。理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く。他の注釈が間にあるときは、その注釈の行を飛ばして直前の行に書く。Javadoc だけでは足りない。全てのソースセットで、CI の検査 `scripts/ci/java-rules.mjs` が確認する。
@@ -370,6 +386,8 @@ public record SignedNotification(byte[] body, String signature) {
 ```
 
 理由：検査を抑える範囲と理由が見えれば、後で外せるかをレビューで判断できるため。
+
+確認方法：`@SuppressWarnings` の理由のコメントは自動（`scripts/ci/java-rules.mjs`）
 
 ## 8. マイグレーション
 
@@ -398,6 +416,6 @@ public record SignedNotification(byte[] body, String signature) {
 
 ※5：段 3 の削除は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置く。キーを `<マイグレーションのファイル名>:<変更の種類>`、値を理由にし、理由には、どのリリースで使わなくなったかを書く（詳しくは `scripts/ci/migrations.mjs` の先頭のコメント）。今ある 38 のマイグレーションは本番に適用していないので、検査の対象にしない。
 
-確認方法は CI の検査（`migrations`）。
-
 理由：前のバージョンのアプリが、新しいスキーマで失敗しないため。
+
+確認方法：自動（CI の検査 `migrations`）。3 段に分ける手順の妥当性はレビュー

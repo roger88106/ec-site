@@ -324,10 +324,10 @@ class ModuleStructureTest {
     }
 
     @Test
-    @DisplayName("目安を超えるパッケージは、バックエンドの書き方の「パッケージの大きさ」の表と、パッケージも数も一致する")
+    @DisplayName("目安を超えるパッケージは、バックエンドの書き方の「パッケージの大きさ」の表の行と、パッケージが一致する")
     void oversizedPackagesMatchTable() throws IOException {
-        Map<String, Integer> table = oversizedTable(Files.readAllLines(RULES_BACKEND_CODING, StandardCharsets.UTF_8));
-        ProductionClasses.requireNotEmpty(table.entrySet(), "バックエンドの書き方の「パッケージの大きさ」の表の行");
+        Set<String> table = oversizedTable(Files.readAllLines(RULES_BACKEND_CODING, StandardCharsets.UTF_8));
+        ProductionClasses.requireNotEmpty(table, "バックエンドの書き方の「パッケージの大きさ」の表の行");
 
         assertThat(oversizedMismatches(classCountByPackage(ProductionClasses.all()), table)).isEmpty();
     }
@@ -337,7 +337,7 @@ class ModuleStructureTest {
     void mismatchWhenPackageOutsideTableExceedsGuideline() {
         Map<String, Long> counted = Map.of("module.order.application", 11L);
 
-        assertThat(oversizedMismatches(counted, Map.of())).containsExactly("表にない超過: order.application（11）");
+        assertThat(oversizedMismatches(counted, Set.of())).containsExactly("表にない超過: order.application（11）");
     }
 
     @Test
@@ -345,33 +345,44 @@ class ModuleStructureTest {
     void mismatchWhenPackageInTableIsWithinGuideline() {
         Map<String, Long> counted = Map.of("module.order.application", 10L);
 
-        assertThat(oversizedMismatches(counted, Map.of("order.application", 12)))
-                .containsExactly("目安以下: order.application（表 12、実際 10）");
+        assertThat(oversizedMismatches(counted, Set.of("order.application")))
+                .containsExactly("目安以下: order.application（実際 10）");
     }
 
     @Test
-    @DisplayName("表のパッケージの数が実際と違うと、不一致になる")
-    void mismatchWhenCountDiffers() {
-        Map<String, Long> counted = Map.of("config.security", 12L, "module.order.application", 10L);
-
-        assertThat(oversizedMismatches(counted, Map.of("config.security", 11)))
-                .containsExactly("数の違い: config.security（表 11、実際 12）");
-    }
-
-    @Test
-    @DisplayName("表の読み取りは、見出しの後の最初の表の、パッケージと数の行だけを読む")
+    @DisplayName("表の読み取りは、見出しの後の最初の表の、パッケージの行だけを読む")
     void tableIsReadFromFirstTableAfterHeading() {
         List<String> lines = List.of(
-                "| 別の表 | 数 |", "|---|---|", "| `x.y` | 99 |",
+                "| 別の表 | 分けない理由 |", "|---|---|", "| `x.y` | 理由 |",
                 "### 1.4 パッケージの大きさ", "本文",
-                "| パッケージ | 数 | 分けない理由 |", "|---|---|---|",
-                "| `catalog.infrastructure.persistence` | 14 | 理由 |", "| `config.security` | 11 | 理由 |",
+                "| パッケージ | 分けない理由 |", "|---|---|",
+                "| `catalog.infrastructure.persistence` | 理由 |", "| `config.security` | 理由 |",
                 "", "表の後の本文",
-                "| 2 つ目の表 | 数 |", "|---|---|", "| `w.w` | 7 |",
-                "### 1.5 共通の型", "| `z.z` | 5 | 理由 |");
+                "| 2 つ目の表 | 理由 |", "|---|---|", "| `w.w` | 理由 |",
+                "### 1.5 共通の型", "| `z.z` | 理由 |");
 
-        assertThat(oversizedTable(lines)).containsExactlyInAnyOrderEntriesOf(
-                Map.of("catalog.infrastructure.persistence", 14, "config.security", 11));
+        assertThat(oversizedTable(lines)).containsExactlyInAnyOrder("catalog.infrastructure.persistence", "config.security");
+    }
+
+    @Test
+    @DisplayName("表の読み取りは、見出しの番号が違っても、見出しの名前で表を探す")
+    void tableIsFoundByHeadingNameRegardlessOfNumber() {
+        List<String> lines = List.of(
+                "### 2.2 共通の型", "| `z.z` | 理由 |",
+                "### 2.3 パッケージの大きさ", "| パッケージ | 分けない理由 |", "|---|---|", "| `config.security` | 理由 |");
+
+        assertThat(oversizedTable(lines)).containsExactly("config.security");
+    }
+
+    @Test
+    @DisplayName("表の読み取りは、パッケージと分けない理由の 2 列の表を読める")
+    void twoColumnTableIsRead() {
+        List<String> lines = List.of(
+                "### 1.4 パッケージの大きさ", "",
+                "| パッケージ | 分けない理由 |", "|------------|--------------|",
+                "| `catalog.infrastructure.persistence` | jOOQ の Repository |");
+
+        assertThat(oversizedTable(lines)).containsExactly("catalog.infrastructure.persistence");
     }
 
     @Test

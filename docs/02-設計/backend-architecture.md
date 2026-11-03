@@ -38,24 +38,64 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 ## 2. モジュール内のアーキテクチャレベル
 
-複雑さに応じて選び、選んだ理由を `docs/02-設計/<module>.md` に書く。層とパッケージの名前はどのレベルでも同じ（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「層とパッケージ」）。
+複雑さに応じて選び、選んだ理由を `docs/02-設計/<module>.md` に書く。層とパッケージの名前はどのレベルでも同じ（「層とパッケージ」）。
 
 | レベル | 構成 | 向く場面 |
 |--------|------|----------|
 | A. フル | DDD + Clean Architecture + CQRS | 不変条件や状態機械が複雑 |
-| B. 簡略 | domain は振る舞いの少ない型でよく、Spring などに依存してよい。集約ごとのパッケージと CQRS は不要 | ルールが単純、または参照のみ |
+| B. 簡略 | DDD を簡略にした構成 | ルールが単純、または参照のみ |
 | C. イベントストア | Event Sourcing ※2 | 状態の変化の履歴に価値がある |
 
 ※2：採用する前に、plan で保存方式・スナップショット・read model を説明し、本書を修正する。
 
-レベル A のルール：
+レベル A の中身：
 
-- 依存の向き：presentation → application → domain ← infrastructure（domain は何にも依存しない）。
+- 依存の向き：presentation → application → domain ← infrastructure（各層が依存してよい層は「層とパッケージ」の表のとおり）。
+- Repository の port は `domain/<集約>/port/` に置く。command と query の service・Repository を分ける（CQRS）。
 - ドメインオブジェクトは jMolecules で明示し（`@AggregateRoot`、`@ValueObject`、`@Identity`）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
 - 永続化は `toSnapshot()` で書き出し、Factory で再構築する。application が投げる例外は `BusinessException` / `SystemException` だけ。
 - 例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい ※3。今は在庫だけ。
 
 ※3：在庫数の並行の更新を、集約を読んで書き戻さずに、DB の差分の加算と条件で守るため。この場合、状態を集約のメソッドで変える規則と、集約を jMolecules で明示する規則は当てはまらない。詳細は [在庫モジュール](../03-機能仕様/inventory.md)。
+
+レベル B の中身：
+
+- domain は振る舞いの少ない型でよく、Spring などに依存してよい。集約ごとのパッケージは作らず、port は全て `application/port/` に置く。
+- CQRS は採用しない。`application/model/` は必要なときだけ作る。
+- クラスが多いときは、用途で domain を分けてよい（`domain/<用途>/`。reporting の `domain/snapshot/` と `domain/sales/`）。
+
+### 2.1 層とパッケージ
+
+モジュールの構成は次のとおり。
+
+```
+module/<モジュール>/
+├── api/                公開の同期の API（@NamedInterface("api")）
+├── event/              公開のイベント（@NamedInterface("event")）
+├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
+├── application/        use case（@Transactional はここ）
+│   ├── model/          command・query・view
+│   └── port/           application が使う port（参照の Repository、他のモジュールの Directory）
+├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
+│   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
+└── infrastructure/     port の実装
+    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。バックエンドの書き方の「設定の値の型」）
+    ├── persistence/    jOOQ の Repository と、それが使うクラス
+    ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
+    └── <外部>/          外部の仕組み（storage、converter、cache など）
+```
+
+層ごとの、依存してよい先：
+
+| 層 | 依存してよい先 |
+|----|----------------|
+| api・event | application、domain、common |
+| presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
+| application | domain、common、event（自分のモジュールのイベントを発行する。他のモジュールのイベントを購読する） |
+| domain | common、自分のモジュールの event（レベル A は Spring・jOOQ にも依存しない） |
+| infrastructure | application の port と model（port が返す view）、設定の値の型（設定のクラスが有効にしたもの）、domain、common |
+| common | モジュールに依存しない |
+| config | common。モジュールに依存しない |
 
 ## 3. モジュール間の連携
 

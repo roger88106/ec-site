@@ -2,7 +2,21 @@
 
 テストの書き方は [テストの書き方](../05-開発規則/test-writing.md)、起動の準備は [開発環境の起動](setup.md)。エージェントは skill `local-dev` を使う。
 
-## 1. バックエンド
+## 1. テストの種類
+
+テストを書くときの規則は [テストの書き方](../05-開発規則/test-writing.md)。
+
+| 種類 | 対象 | ツール | 置き場所 |
+|------|------|------|----------|
+| バックエンドの単体テスト | Spring を起動しないもの | JUnit、AssertJ | `src/test` |
+| バックエンドの統合テスト | Spring と DB などをつないだもの | `@SpringBootTest`、Testcontainers | `src/integrationTest` |
+| フロントの単体テスト | 画面に依存しない関数（判定、変換、表示の整形） | Vitest | 対象の横（`*.test.ts`） |
+| フロントの結合テスト | コンポーネントを描画し、利用者の操作で振る舞いを確認する（API は MSW） | Vitest、React Testing Library | 対象の横（`*.test.tsx`） |
+| E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `e2e/` |
+
+E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状態から実行する（ローカルの開発のデータを変えない）。
+
+## 2. バックエンド
 
 `backend/ecsite/` で実行する。
 
@@ -29,7 +43,7 @@ Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）�
 
 テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`backend/ecsite/build/reports/cpd/cpdCheck.xml`）に重複の場所（ファイルと行）が出る。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[テストの書き方](../05-開発規則/test-writing.md)の「テストのコードの重複」）。
 
-## 2. 管理画面・店舗画面
+## 3. 管理画面・店舗画面
 
 `frontend/admin/`・`frontend/store/` で実行する（ルートで実行すると、全てのプロジェクトをまとめて実行する）。
 
@@ -43,7 +57,23 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる（管理画面のビルドの環境変数は、未設定ならローカルの値を使う）。
 
-## 3. E2E（`e2e/`）
+### knip が失敗したとき
+
+使われていないものの検査（規則は[フロントの書き方](../05-開発規則/frontend-coding.md)の「使われていないものを残さない」）は、knip（設定は `knip.ts`）が `frontend/*` と `e2e` を調べる。ルートで `pnpm knip` を実行する。`scripts/dev/check-frontend.sh` と、CI のフロントのジョブも実行する。knip の前に、生成物（API の型、入力の制約の定数）を `generate:api` で作る。
+
+報告は次の 3 種類で、種類ごとに修正する。
+
+| 報告 | 修正の方法 |
+|------|--------|
+| どこからも使われていないファイル | 削除する。実行時に import されずに使われるファイルは knip の誤検出なので、`knip.ts` の `entry` に書く。コードに意味のない参照を追加しない |
+| どこからも import されていない export と型 | 削除する。定義したファイルの中だけで使う export も報告するので、export を外す |
+| `package.json` にあって使われていない依存、`package.json` にない依存の import | 依存を削除する、または `package.json` に追加する |
+
+実行時に import されずに使われるファイルの例は、型の拡張 `i18n/types.ts` と、E2E の準備の script `e2e/scripts/prepare.ts` である。
+
+生成物の export と型の報告は、`knip.ts` の `ignoreIssues` に、ファイルの範囲と `exports`・`types` だけを書いて外す。外す理由はコメントに書く。
+
+## 4. E2E（`e2e/`）
 
 バックエンド、管理画面、店舗画面を起動して、Chromium で操作する（Playwright）。専用の DB（`ec_site_e2e`）、IdP（Keycloak、:8181）、画像のバケットを使い、ローカルのデータを変えない。
 
@@ -74,7 +104,7 @@ pnpm test
 - 結果の要約だけを見るときは、ルートで `scripts/dev/e2e.sh [Playwright の引数]`（テストごとの ok / x と失敗の要点だけを出力し、全体はログのファイルに残す）。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を確認する。
 
-## 4. 既存のテストを変えていないことの確認
+## 5. 既存のテストを変えていないことの確認
 
 振る舞いを変えない整理（書き方の統一など）では、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものと、中身を変えずにテストを別のファイルへ移したものだけであることを確認する。
 
@@ -88,7 +118,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 - 既存のファイルの追加した行で、照合して残ったものも出力する。新しく追加したファイルの、照合して残った行は対象外（移した先の import と枠の行、新しいテスト）。
 - 名前の対応のファイルは、1 行に `旧=新`（クラスの単純名か完全修飾名、画面はモジュールのパスも）。名前は語の境界で置き換える。
 
-## 5. カバレッジと mutation score の基準の検査
+## 6. カバレッジと mutation score の基準の検査
 
 CI と同じ検査を、手元で実行できる（[テストの書き方](../05-開発規則/test-writing.md)の「カバレッジと mutation score の基準」、[CI の検査](ci.md)の「カバレッジと mutation score の基準の検査」）。先に、対象のテストを実行して報告を作る。
 
@@ -107,7 +137,7 @@ node scripts/ci/report/coverage-baseline.mjs backend-domain backend/ecsite/build
 | `admin`、`store`、`shared` | 各ディレクトリで `pnpm test` | Vitest の `coverage-summary.json` |
 | `backend-domain` | `backend/ecsite/` で `./gradlew pitest` | PIT の `mutations.xml` |
 
-- 基準は `scripts/ci/report/quality-baseline.json`。報告の値が、基準から許容の幅を引いた値を下回ると、対象、基準、今回の値、差を出力して終了コード 1 で終了する。上回ったときは成功にして、基準の更新を促す警告を表示する。
+- 基準は `scripts/ci/report/quality-baseline.json` にある（役割は [CI の検査](ci.md)の「カバレッジと mutation score の基準の検査」）。今回の値が基準を上回ったときは、成功にして、基準の更新を促す警告を表示する。
 - `--write` は、基準のファイルのその対象の値を、報告の値で書き換える（許容の幅は変えない）。基準を下げるときと、上回った値に更新するときに使い、書き換えたファイルを同じ pull request に含める。下げるときは、pull request に理由を書く。
 - 手元でバックエンドの一部のテストだけを実行すると、報告の値が基準より低くなり、検査が失敗する。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
 - バックエンドの `--write` は、手元のビルドのキャッシュから読んだテストの報告ではなく、CI の summary の値、または `./gradlew check --rerun-tasks` などでテストを実際に実行した報告の値で行う。キャッシュから読んだ報告は、実行した報告と分岐が 1 つ違うことがある（実測：キャッシュから読んだ値は分岐 85.26%、実行した値は 85.20%）。

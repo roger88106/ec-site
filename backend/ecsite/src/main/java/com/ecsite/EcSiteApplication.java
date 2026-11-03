@@ -6,8 +6,9 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 
 /**
  * EC サイトのアプリケーション。<br />
- * 部品の名前は、クラスの完全修飾名にする。モジュールの標準の構成では、別のモジュールに同じ単純名の部品
- * （腐敗防止層の実装 {@code StockApiDirectory} など）があるため（バックエンドの書き方の「標準の構成」）。
+ * 部品の名前は、クラスの完全修飾名にする。
+ * 別のモジュールに、同じ単純名の部品（腐敗防止層の実装 {@code StockApiDirectory} など）があるためである。
+ * モジュールの標準の構成は、バックエンドのアーキテクチャの「層とパッケージ」にある。
  */
 @SpringBootApplication(nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class EcSiteApplication {

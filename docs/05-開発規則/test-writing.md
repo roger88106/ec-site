@@ -1,79 +1,40 @@
 # テストの書き方
 
-テストの種類と、今のテストで守っている書き方。実行方法は [テストの実行方法](../06-手順書/running-tests.md)、テスト先行の進め方は [開発の進め方](workflow.md)の「テスト駆動開発」。
-
-## 規則の一覧
-
-| 節 | 規則 | 確認方法 |
-|----|------|----------|
-| 1.2 | カバレッジと mutation score は、基準の値（許容の幅を含む）を下回らない | 自動（`scripts/ci/report/coverage-baseline.mjs`） |
-| 2.1 | テスト名に AC 番号を入れる | 自動（`ac-check.mjs`） |
-| 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`） |
-| 3.1 | 統合テストの土台を使う。ログを確認するテストは、そのテストの中で出た出力だけを確認する | レビュー |
-| 3.2 | テストデータは補助のクラスで作る。イベントの発行の記録を読む操作は、非同期のイベントの補助の中だけに置く | レビュー（記録を読む操作と、表の手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`） |
-| 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
-| 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
-| 3.5 | テストのコードに、100 トークン以上の重複を置かない。修正しない重複は `// CPD-OFF 理由` と `// CPD-ON` で囲む | 自動（`./gradlew check` の `cpdCheck`。PMD の CPD） |
-| 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない。E2E で、`.first()`・`.nth()`・`.last()` で選ばず、ボタンの名前は完全一致で探す | CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、E2E の位置で選ぶメソッド（`.first()`・`.nth()`・`.last()`）とボタンの名前の完全一致（`exact: true`、先頭と末尾を固定した正規表現）も自動（同じ script）、他はレビュー |
-| 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
-| 4.3 | E2E のデータに実行ごとの印 | レビュー |
-| 4.4 | テストの関数は `test` にそろえる | レビュー |
-| 4.5 | 複数のテストで使うものは、テストの補助に置く | レビュー |
-| 4.6 | テストは型を回避する変換を使わない | 理由のコメントのない `as never`・`as unknown as` は自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
-| 4.7 | 要素のプロパティ・属性・状態を `toBe` で比べず、jest-dom の照合で確認する | 受け手が要素のもの（`getBy…` の結果やそれを入れた変数など）のプロパティ・属性は自動（`scripts/ci/frontend-rules.mjs`）、ほかはレビュー |
-| 4.8 | テストのファイルで `fireEvent` を直接使わない | 理由のコメントのないものは自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
-| 4.9 | 環境変数は `vi.stubEnv` で変え、`process.env` に代入しない | レビュー |
-| 4.10 | フロントのテストとテストの補助、E2E（`e2e/` の下の全ての TypeScript）の `const`・`let` で、TypeScript の lib のグローバルの名前をシャドーイングしない | 自動（`scripts/ci/frontend-rules.mjs`。名前の一覧は `scripts/ci/globals/lib-globals.mjs` が lib から生成し、CI が一致を確認する） |
-| 4.11 | テストとテストの間に空行を置く | 自動（`scripts/ci/frontend-rules.mjs`。フロントのテストと補助、E2E） |
-| 4.12 | 管理画面の `renderApp` が返す `user` は、入力のキーの間で待たない（`renderApp` を使わないテストは対象外） | レビュー |
-| 4.13 | 店舗画面のテストは、対象ごとの方法で書き、店舗画面の補助を使う | レビュー |
-| 4.14 | 管理画面の結合テストは、本物のルーター・キャッシュ・toast で描画し、API の応答だけを差し替え、管理画面の補助を使う | レビュー |
-| 5 | 時間で待たない。E2E で `networkidle` で待たず、タイムアウトを数字のリテラルで書かない | 時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`） |
-
-確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
+今のテストで守っている書き方。実行方法は [テストの実行方法](../06-手順書/running-tests.md)、テスト先行の進め方は [開発の進め方](workflow.md)の「テスト駆動開発」。確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
 
 ## 1. テストの種類と基準
 
 ### 1.1 テストの種類
 
-| 種類 | 対象 | ツール | 置き場所 |
-|------|------|------|----------|
-| バックエンドの単体テスト | Spring を起動しないもの | JUnit、AssertJ | `src/test` |
-| バックエンドの統合テスト | Spring と DB などをつないだもの | `@SpringBootTest`、Testcontainers | `src/integrationTest` |
-| フロントの単体テスト | 画面に依存しない関数（判定、変換、表示の整形） | Vitest | 対象の横（`*.test.ts`） |
-| フロントの結合テスト | コンポーネントを描画し、利用者の操作で振る舞いを確認する（API は MSW） | Vitest、React Testing Library | 対象の横（`*.test.tsx`） |
-| E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `e2e/` |
+テストの種類と置き場所は、[テストの実行方法](../06-手順書/running-tests.md)の「テストの種類」。
 
 - 必須の統合テスト：Modulith の境界、Repository（永続化・再構築・差分更新・イベント発行）、並行性（並行の不変条件を持つモジュール）、外部連携の port（mock と実装の挙動の一致）。
 - 店舗画面には結合テストを置かない ※1（対象ごとの方法は「店舗画面のテストは、対象ごとの方法で書く」）。画面をつないだ流れは E2E で確認する。
-- E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状態から実行する（ローカルの開発のデータを変えない）。
 - 見た目（配置、色、余白）は目視で確認する。
 - テストに出ない AC は CI が失敗にする。テストで確認できない AC は、理由と一緒に除外の一覧に書く。
 - IdP（Keycloak）の振る舞いだけで決まる AC は、realm の設定ファイルの契約テスト（`RealmSettingsContractTest`）で確認する ※2。
 
 ※1：操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないため。サーバーアクションを呼ばない操作はこの理由に当たらないので、例外にする。結果の表示の遷移は、同じ要素が残ることを、結果を変えて再描画する静的な HTML では確認できないので、サーバーアクションの処理は差し替え、表示だけを確認する（処理はサーバーアクションのテストと E2E で確認する）。
 
-※2：IdP は自分たちで作っていないので、設定が正しければ IdP が振る舞いを守る、とみなす。IdP を取り替えたときは、会員の登録・ログインの E2E で振る舞いを確認する。対象の AC は、`node scripts/ci/ac-check.mjs --tests` で `RealmSettingsContractTest` が表示される AC で、次はその例。
+※2：IdP は自分たちで作っていないので、設定が正しければ IdP が振る舞いを守る、とみなす。IdP を取り替えたときは、会員の登録・ログインの E2E で振る舞いを確認する。対象の AC は、`node scripts/ci/ac-check.mjs --tests` で `RealmSettingsContractTest` が表示される AC である。
 
-| AC | 振る舞い | 契約テストで確認する設定 |
-|----|----------|--------------------------|
-| AC-109 | 登録済みのメールアドレスでは登録できない | メールアドレスの重複を許さない |
-| AC-110 | パスワードの条件を満たさない登録は拒否される | パスワードの方針 |
-| AC-116 | パスワードを続けて間違えると一定時間ログインできない | 総当たりの防止の回数と時間 |
-| AC-118 | パスワードの再設定を申し込める | パスワードを忘れたときの画面とメール |
-| AC-134 | 運営者は自分で登録できない | 登録の画面が消費者の realm だけで有効 |
-| AC-210、211 | 生年月日は任意で、後から入れられる | 利用者の属性の必須と、編集の可否 |
+確認方法：
+
+- 必須の統合テスト：レビュー
+- 店舗画面に結合テストを置かない：レビュー
+- テストに出ない AC：自動（`scripts/ci/ac-check.mjs`）
+- IdP の振る舞いだけで決まる AC：自動（`RealmSettingsContractTest`）
 
 ### 1.2 カバレッジと mutation score の基準
 
-カバレッジ（行・分岐）と、domain の mutation score は、基準の値（許容の幅を含む）を下回らない。CI が基準の値と比べ、下回ると失敗にする。
+カバレッジ（行・分岐）と、domain の mutation score は、基準の値（許容の幅を含む）を下回らない。
 
 - 対象は、行と分岐がバックエンド、管理画面、店舗画面、共有パッケージ（`frontend/shared`）、mutation score がバックエンドの domain。mutation score は、PIT で測る、テストが検出できた変異の割合。
-- 基準の値は `scripts/ci/report/quality-baseline.json` に置く。対象ごとの合計だけで、ファイルやパッケージごとの基準はない。基準のファイルは、値ごとに、実行ごとのばらつきを吸収する許容の幅（`tolerance`）を持つ。
-- 基準を下げるときは、`--write` で基準のファイルを書き換え、pull request に理由を書く。今回の値が基準を上回ったときは、失敗にせず、基準の更新を促す警告を表示する。
-- カバレッジが低い箇所は、CI の job の summary に出る合計と、行のカバレッジが低い順の 10 件で見つける。mutation score は、生き残った変異（テストが検出できなかった変異）が多いクラスの上位 10 件が出る。
+- 基準のファイルと、基準を変える手順は、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」。CI の手順と失敗したときの対応は、[CI の検査](../06-手順書/ci.md)の「カバレッジと mutation score の基準の検査」。
 
 理由：基準がないと、テストが減っても弱くなっても気づけないため。
+
+確認方法：自動（`scripts/ci/report/coverage-baseline.mjs`）
 
 ## 2. テスト名
 
@@ -83,11 +44,15 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 理由：AC からテストを、テストから AC を引けるようにするため。
 
+確認方法：自動（`ac-check.mjs`）
+
 ### 2.2 名前は振る舞いを書く
 
 「〜すると〜になる」の形で、画面や API に起きることを書く。メソッド名やクラス名をそのまま書かない。フロントの `describe` の名前も同じで、関数名・コンポーネント名だけにせず、日本語で振る舞いを書く（`describe('ページ送り', …)`。`describe('Pagination', …)` は書かない）。Java のテストは、全ての `@Test`・`@ParameterizedTest` に `@DisplayName` を付ける。名前に書く AC の番号は、spec の AC の文と照合してから書く（`ac-check` は番号があることだけを確認し、中身が合うかは見ない）。
 
 理由：失敗したときに、どの振る舞いが壊れたかが名前だけで分かるようにするため。
+
+確認方法：レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`）
 
 ## 3. バックエンド
 
@@ -107,6 +72,8 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 理由：テストごとにコンテナを再起動せず、データが他のテストに漏れないようにするため。
 
+確認方法：レビュー
+
 ### 3.2 テストデータは補助のクラスで作る
 
 複数のテストで使うデータは、統合テストの補助（次の表）で作る。複数のモジュールのテストで使う補助は `src/integrationTest` の `com.ecsite` の直下に、1 つのパッケージのテストだけが使う補助はそのパッケージに置く。テストのクラスで同じ手順を再定義しない。
@@ -122,19 +89,16 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
 
-補助以外のテストは、次の表の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。CI の `scripts/ci/test-helpers.mjs` が、この表の全ての行について、「補助」と「その操作そのものを確認するテスト」の列のクラス以外のファイルで手順を書いていないかを調べる。2 つの列は、バッククォートで囲んだクラス名をそのまま読むので、クラスの名前を実際のファイルと合わせて書く（括弧の注記は読まない）。表の行や列を変えるときは、script の手順の対応も直す。
+補助以外のテストは、次の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。
 
-| 手順 | 補助 | その操作そのものを確認するテスト |
-|------|------|----------------------------------|
-| 在庫の作成 | `InventoryTestData` | `JooqStockItemRepositoryTest` |
-| 税区分の登録の要求 | `CatalogTestData` | `TaxCategoryApiTest`、`AuthorizationTest`、`KeycloakIntegrationTest` |
-| 作成の応答から ID を取り出す処理 | `TestJson`、`CatalogTestData` | `TaxCategoryApiTest`、`CategoryApiTest`、`ProductApiTest`、`PlaceOrderConcurrencyTest`（確認する API の作成の応答） |
-| カテゴリの登録の要求 | `CatalogTestData` | `CategoryApiTest` |
-| 支払の API の作成の操作 | `PaymentTestData` | `PaymentApiTest` |
+- 在庫の作成
+- 税区分とカテゴリの登録の要求
+- 作成の応答から ID を取り出す処理
+- 支払の API の作成の操作
 
-表に手順の行を追加するときは、`scripts/ci/test-helpers.mjs` の `STEP_FINDERS` に探す関数を追加する（ないと検査が失敗する）。
+手順と、手順を書いてよい補助とテストの対応の正本は、`scripts/ci/test-helpers.mjs` の `HELPER_STEPS` である。
 
-表の手順に、次のものは含めない。
+手順に、次のものは含めない。
 
 - Repository のテストが、集約を直接作る処理（支払の Repository のテストなど）
 - 作った後の変更の要求（店舗の鮮度のテストの税率の変更など）
@@ -146,9 +110,13 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLo
 
 package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、その本番クラスと同じパッケージの `src/integrationTest` に、public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。今ある補助クラスは、`TaxRateScheduleCaches`（catalog の `infrastructure/directory`）、`PaymentJobs`（payment の `application`）、`OrderPayments`（order の `application/payment`）、`TrackingRequests`（shipping の `application`）。本番クラスを public にしたり、テストのために可視性を広げたりしない。
 
+確認方法：レビュー（記録を読む操作と、手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
+
 ### 3.3 テストの置き場所
 
 main と同じパッケージに置く。Spring を起動しないものは `src/test`、起動するものは `src/integrationTest`。
+
+確認方法：自動（ソースセット）
 
 ### 3.4 単体テストの補助
 
@@ -162,21 +130,13 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が残り、メモリを使うため（`ProductionClasses` の理由）。設定の読み込みを 1 か所にして、全ての設定のテストが、同じ設定ファイルの重ね方で値を読むため（`TestSettings` の理由）。契約や realm の置き場所を既定の相対パスで読むと、Gradle が置き場所を渡さなくても通り、設定の誤りに気づけないため（`Contracts` の理由）。
 
-本番のクラスの読み込みの検査（`ProductionClassesTest`）は、`src/test/java`、`src/integrationTest/java`、`src/testFixtures/java` の全ての Java のファイルを読む。次の文字列があれば失敗にする。ただし `ProductionClasses` のファイルは対象にしない。
+`ProductionClassesTest` が、`src/test/java`、`src/integrationTest/java`、`src/testFixtures/java` の Java のファイルで、本番のクラスを補助の外で読み込む呼び出しを見つける。探す呼び出しの一覧は `ProductionClassesTest` にある。
 
-- `importPackages(`
-- `importPackagesOf(`
-- `importClasspath(`
-- `importPath(`
-- `importLocations(`
-- `ApplicationModules.of(`
-- `@AnalyzeClasses`
-
-`importClasses(` は、検査自身のテストが、違反する例のクラスを読むために使う。本番のクラスを読まないので、対象にしない。
+確認方法：`ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー
 
 ### 3.5 テストのコードの重複
 
-PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew check` で重複を検出し、見つかると失敗にする（タスクは `cpdCheck`、報告は `backend/ecsite/build/reports/cpd/`）。
+PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew check` で重複を検出し、見つかると失敗にする（タスクは `cpdCheck`。報告の置き場所は[テストの実行方法](../06-手順書/running-tests.md)の「バックエンド」）。
 
 | 項目 | 内容 |
 |------|------|
@@ -188,6 +148,8 @@ PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew che
 修正しない重複の例は、API の仕様そのものを読めるように、各 API のテストに書く確認の並び（登録の応答の確認）と、テストデータの並び。補助に移すと、テストが何を確認するかが読めなくなるとき、または補助にするほどの共通の意味がないときだけ囲む。「修正が面倒」は理由にならない。
 
 理由：同じコードを複数のテストに複製すると、仕様の変更で修正漏れが出て、テストごとに確認の内容がずれるため。除外を重複の場所のコメントに残すと、理由と一緒に読める。
+
+確認方法：自動（`./gradlew check` の `cpdCheck`。PMD の CPD）
 
 ## 4. フロント
 
@@ -207,6 +169,13 @@ PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew che
 
 理由：画面を再作成しても、振る舞いが同じならテストが壊れないようにするため。位置で選ぶと、並びが変わったときに別の要素を操作しても通ってしまい、ボタンの名前が部分一致だと、名前が似た別のボタンに一致する。`getBy…` は見つからないと先に失敗するので `toBeTruthy` は確認にならず、`queryBy…` の `null` は `toBeDefined` を通るので、どちらも確認として弱いため。HTML の属性や要素の並びへの依存は、見た目に影響しない変更でテストを壊すため。
 
+確認方法：
+
+- CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと：フロントのテストと E2E で自動
+- 画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現：自動（`scripts/ci/frontend-rules.mjs`）
+- E2E の位置で選ぶメソッドとボタンの名前の完全一致：自動（同じ script）
+- その他の探し方：レビュー
+
 ### 4.2 API の差し替えは型付きの MSW
 
 管理画面の結合テストと、店舗画面のサーバーの処理（サーバーアクション、API の接続）とページのテストは、`src/test/` の `http`（openapi-msw）で OpenAPI の型に合ったハンドラーを作る。店舗画面は `frontend/store/src/test/server.ts` の `http` を使う（店舗画面に結合テストは置かない。「テストの種類」）。既定のハンドラーは置かず、テストごとに `server.use(...)` で渡す。
@@ -215,17 +184,23 @@ PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew che
 
 理由：契約にない応答をテストで作らないため。契約にない応答を作る場所を限り、理由をコメントに残して、契約の応答と区別できるようにするため。
 
+確認方法：自動（型チェック）
+
 ### 4.3 E2E のデータに実行ごとの印
 
 E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-…`）を付ける（`e2e/src/data.ts`）。
 
 理由：前の実行や手動で作ったデータと混ざらないようにするため。
 
+確認方法：レビュー
+
 ### 4.4 テストの関数は `test` にそろえる
 
 フロントのテストの関数は `test` を使い、`it` を使わない。`describe` でまとめてよい。
 
 理由：テストの関数名を 1 つにそろえ、どのファイルでも同じ名前で検索できるようにするため。
+
+確認方法：レビュー
 
 ### 4.5 複数のテストで使うものは、テストの補助に置く
 
@@ -242,11 +217,15 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 理由：同じデータと手順の修正を 1 か所で済ませ、テストごとに食い違わないようにするため。
 
+確認方法：レビュー
+
 ### 4.6 型を回避する変換を使わない
 
 テストは型を回避する変換（`as never`、`as unknown as`）を使わない。型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、理由をコメントに書いて使う。
 
 理由：型を回避する変換で、「API の差し替えは型付きの MSW」が禁じる契約にない応答を、型付きの `http` を通さずに作れてしまうため。
+
+確認方法：理由のコメントのない `as never`・`as unknown as` は自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー
 
 ### 4.7 要素のプロパティ・属性・状態を jest-dom で確認する
 
@@ -254,11 +233,15 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 理由：失敗したときの表示が分かりやすく、支援技術から見える状態で確認するため。
 
+確認方法：受け手が要素のもの（`getBy…` の結果やそれを入れた変数など）のプロパティ・属性は自動（`scripts/ci/frontend-rules.mjs`）、ほかはレビュー
+
 ### 4.8 `fireEvent` を直接使わない
 
 テストのファイルで `fireEvent` を直接使わず、`userEvent` で操作する。`userEvent` で起こせない出来事（入力できない種類の入力欄への値の設定、ブラウザーが起こす出来事など）だけは、理由をコメントに書いて使ってよい。理由は呼び出しごとに、同じ行のコメントか、コメントだけの直前の行に書く。
 
 理由：`fireEvent` はイベントを 1 つ発火するだけで、利用者の操作で起きる一連の出来事（フォーカス、キー入力など）を再現せず、実際の操作では起きない状態でもテストが成功することがあるため。
+
+確認方法：理由のコメントのないものは自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー
 
 ### 4.9 環境変数は `vi.stubEnv` で変える
 
@@ -266,11 +249,15 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 理由：`process.env` への代入は、テストが終わっても残り、他のテストの結果に影響するため。`vi.stubEnv` は、後始末で元の値に戻せる。
 
+確認方法：レビュー
+
 ### 4.10 組み込みの名前をシャドーイングしない
 
 フロントのテストとテストの補助、E2E（`e2e/` の下の全ての TypeScript）の定数・変数（`const`・`let`）の名前は、TypeScript の lib（ES と DOM）が宣言するグローバルの名前（`URL`、`screen`、`location`、`name`、`status` など）と同じにしない。関数の引数は対象外。
 
 理由：変数の宣言を忘れたときに、エラーにならずにグローバルの値が使われ、意図しない値でテストが通るため。
+
+確認方法：自動（`scripts/ci/frontend-rules.mjs`。名前の一覧は `scripts/ci/globals/lib-globals.mjs` が lib から生成し、CI が一致を確認する）
 
 ### 4.11 テストとテストの間に空行を置く
 
@@ -278,15 +265,19 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 理由：テストの境目を、一目で分かるようにするため。
 
+確認方法：自動（`scripts/ci/frontend-rules.mjs`。フロントのテストと補助、E2E）
+
 ### 4.12 入力のキーの間で待たない
 
 管理画面の `renderApp` が返す `user` は、入力のキーの間で待たない（`userEvent.setup({ delay: null })`）。キーの間の非同期の処理（キーごとの検索など）を確認するテストだけは、既定の delay の `userEvent.setup()` を使う。`renderApp` を使わないテストの `userEvent.setup()` は対象外（入力が少なく遅くならないため）。
 
 理由：既定では 1 文字ごとにタイマーで待ち、入力の多いテストが遅くなって、タイムアウトで失敗しやすくなるため。
 
+確認方法：レビュー
+
 ### 4.13 店舗画面のテストは、対象ごとの方法で書く
 
-店舗画面（`frontend/store`）のテストは、次の表の方法で書く。補助は、「複数のテストで使うものは、テストの補助に置く」の置き場所にある、次の表のものを使う。店舗画面には結合テストを置かない（「テストの種類」）。
+店舗画面（`frontend/store`）のテストは、次の表の方法で書き、店舗画面の補助を使う。補助は `frontend/store/src/test/` にあり（「複数のテストで使うものは、テストの補助に置く」）、各補助の使い方はファイルの TSDoc にある。店舗画面には結合テストを置かない（「テストの種類」）。
 
 | 対象 | テスト |
 |------|--------|
@@ -299,26 +290,13 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 ※6：住所の補完は、結果（1 件・複数・ない・通信の失敗）と、住所の欄に入力したかどうかを組み合わせると場合が多く、E2E では確認しきれないため。読むだけなので、差し替えても、送る内容の確認に漏れが生じない。サーバーアクションそのものは、サーバーの処理のテストで確認する。
 
-| 補助（`src/test/`） | 内容 |
-|---------------------|------|
-| `render.tsx` の `renderMarkup`、`renderStatic`、`renderInBrowser` | コンポーネントを、日本語の文言を渡す Provider（next-intl）で包む。`renderMarkup` は HTML の文字列にし、`renderStatic` はその HTML を jsdom の文書に読み込んで、役割と名前などで探す関数（Testing Library の `within`）を返す。`renderInBrowser` は jsdom に描画して、操作に使う `user`（user-event）と、props を変えて再描画する `rerender`（再描画するときも、同じ Provider で包む）を返す |
-| `next.ts` | Next.js の `next/headers`（Cookie とヘッダー）と `next/cache`（`revalidatePath`）の代わりに使う置き換え。Cookie の値と属性は `cookieValue`・`cookieOptions`、再表示を知らせたパスは `revalidatedPaths` で確認する。`next/navigation` は置き換えず、本物を使う |
-| `next.ts` の `redirectedTo`、`expectNotFound` | 処理が投げた例外の digest で、移る先（`redirectedTo`）と「見つからない」（`expectNotFound`）を確認する。どちらも、該当しなければテストを失敗させる |
-| `auth.ts` の `signInAs`、`authState` | Auth.js（`next-auth`、`next-auth/jwt`）の代わりのログインの状態。`signInAs(token)` で会員がログインしている状態にし（token は上書きできる）、`authState` で `signIn`・`signOut` の呼び出しと `auth.ts` が渡した設定を確認する。ログインしていない状態は、各テストの前に戻る |
-| `auth.ts` の `nowSeconds` | 現在の時刻を UNIX 時刻の秒で返す（token の `expiresAt` と同じ単位）。偽の時計を使っていれば、その時刻。期限切れや期限が近い token を作るときに使う |
-| `fixtures.ts` | 応答に使うデータ（カート、注文、バリアント、お届け先など）と、それらの ID。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す。地域のデータとして、都道府県の一覧（`PREFECTURES`）、都道府県のコードごとの市区町村（`MUNICIPALITIES`）、郵便番号の検索の結果（`postalCodeAddress`）を持つ。`form(fields)` はフォームの値を作る |
-| `env.ts` の `PRODUCTION_ENV` | 本番のモードで渡す環境変数の全て。確認する項目は、スプレッドで上書きするか、分割代入で除く |
-| `server.ts` の `http`、`server` | `http` は `store.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー）。`server` は店舗 API と IdP の代わりに応答する |
-| `server.ts` の `networkError`、`problem` | `networkError` はリクエストを通信の失敗にする、型のない MSW のハンドラーを作る（理由は「API の差し替えは型付きの MSW」）。`problem` はエラーレスポンスの本文を作る |
-| `stderr.ts` の `recordStderr` | 標準エラー出力への書き込みを差し替えて記録し、書いた行（JSON）と全文を返す。差し替えはテストの後に元に戻る |
-| `elements.ts` の `button`、`select`、`input`、`expectInOrder` | `button`、`select`、`input` は、jsdom の上の要素を、役割（ボタン）か見出し（選択欄、入力欄）で探す。型が違えば、テストを失敗させる。`expectInOrder` は、要素が渡した順に文書の中に出ることを確認する（Node の環境でも使える） |
-| `setup.ts` | 全てのテストに共通の設定。jest-dom の照合の関数を読み込み、`next/headers`・`next/cache`・`next-auth` などを置き換え、MSW を開始する。各テストの前に、Cookie とログインの状態を初期化する。各テストの後に実行するのは、次の 5 つである。描画したコンポーネントのアンマウント、`vi.restoreAllMocks()`、環境変数の差し替えの復元、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
-
 理由：表示、ブラウザーの中の操作、サーバーの処理で、確認できる範囲と手間が違うため。対象に合う最小の方法で確認し、サーバーを通る流れは E2E に任せる。
+
+確認方法：レビュー
 
 ### 4.14 管理画面の結合テストは、本物の描画で、API だけを差し替える
 
-管理画面（`frontend/admin`）の結合テストは、画面を本物のルーター・キャッシュ・toast で描画し、API の応答だけを MSW で差し替えて、利用者と同じように操作する。補助は `frontend/admin/src/test/` に置く（「複数のテストで使うものは、テストの補助に置く」）。
+管理画面（`frontend/admin`）の結合テストは、画面を本物のルーター・キャッシュ・toast で描画し、API の応答だけを MSW で差し替えて、利用者と同じように操作する。補助は `frontend/admin/src/test/` に置く（「複数のテストで使うものは、テストの補助に置く」）。管理画面の補助を使う。各補助の使い方はファイルの TSDoc にある。
 
 ```tsx
 // features/<機能>/pages/<画面>.test.tsx
@@ -333,31 +311,16 @@ await user.click(await screen.findByRole('button', { name: '保存' }))
 expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
 ```
 
-| 補助（`src/test/`） | 内容 |
-|---------------------|------|
-| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。`AuthGate` は通さず、ログインしている運営者を差し替えて描画する（token は付けず、401 で IdP へ移る処理も行わない）。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
-| `renderApp.tsx` の `ALL_PERMISSIONS`、`TEST_OPERATOR_NAME` | `ALL_PERMISSIONS` は運営者の権限の既定（全て）。`TEST_OPERATOR_NAME` はログインしている運営者の名前で、画面の表示の確認に使う |
-| `http`、`server` | `http` は `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー）。`server` は API の代わりに応答する |
-| `problem(...)` | エラーレスポンスの本文を作る |
-| `getServerError(path)`、`getNetworkError(path)` | 契約にない応答（サーバーのエラー、通信の失敗）を返す、型のない MSW のハンドラーを作る（理由は「API の差し替えは型付きの MSW」） |
-| `stockHandler(quantity)` | バリアントの在庫数の取得に、バリアントによらず同じ数で応答する。関数を渡すと、取得のたびに関数の戻り値で応答する |
-| `conflict(response)`、`Reply` | 更新の競合（409）の応答を返す。`Reply` は、条件で応答を変える関数の型で、その関数が返す応答は契約にあるものに限られる |
-| `reportServer.ts` の `serveReportBasics` | レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する。会計年度は 4 月始まり、商品は T シャツ 1 つ（ID は `fixtures.ts` の `SHIRT_ID`）。結合テストだけで使う |
-| `setup.ts` | 全てのテストに共通の設定。各テストの後に実行するのは、次の 5 つである。`vi.restoreAllMocks()`（`vi.spyOn` で差し替えたものを戻す）、toast の消去、描画したコンポーネントのアンマウント、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
-| `fixtures.ts` | 応答に使うデータと、テストで共有する定数（`SHIRT_ID`、競合の知らせの文言 `CONFLICT_MESSAGE`）。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す。MSW に依存しないので、単体テストからも読める |
-| `queries.ts` | 詳細の項目の値、一覧の行、一覧のセル（`getCell`）を、名前で探す。`getListItemContaining` は、渡した要素を含む一覧の項目を返す。名前は、項目の値では項目名、行では行の名前、セルでは行の名前と列の見出し。行の見出しのセル（`th scope="row"`）も列に含める。入れ子の表にある見出しとセルは、外の表の列に数えない。テストのファイルでは DOM の位置を指定しない |
-| `download.ts` | ファイルのダウンロード（URL の作成とリンクのクリック）を差し替え、保存名と本文を返す。`download` の属性のないリンクのクリックは記録せず、本物のクリックの処理に渡す。テストの後に、差し替えを元の実装に戻す |
-| `inputs.ts` の `typeDateTime` | 日時の入力（`datetime-local`）に値（`yyyy-MM-ddTHH:mm`）を入れる。user-event は `datetime-local` に入力できず、jsdom は `value` への代入では入力の通知（`input`・`change` イベント）を発火しないので、補助の中で `fireEvent.change` を使う |
-| `inputs.ts` の `returnToTab` | 別のタブから戻ったこと（window の `visibilitychange`）を発火し、画面に再取得させる。user-event に対応する操作がないので `fireEvent` を使う |
-
 - 置き場所は、主に確認する画面（`pages/`）の横。
 - リンクの見た目のボタン（共有の `LinkButton`）は、役割が `button` になる。
 - 送った内容は、ハンドラーの中で `request.json()` を変数に取って確認する。
-- バージョンの決まり（[管理画面の構成](../02-設計/apps/admin.md)の「フォーム」）は、入力中に他の人が更新した後で、画面に再取得させる（`fireEvent(window, new Event('visibilitychange'))`）。入力が消えず、送るバージョンが変わらないことまで確認する。
+- バージョンの決まり（[管理画面の構成](../02-設計/apps/admin.md)の「フォーム」）は、入力中に他の人が更新した後で、画面に再取得させる（`inputs.ts` の `returnToTab()`）。入力が消えず、送るバージョンが変わらないことまで確認する。
 - 管理 API の外へのリクエスト（ストレージへの PUT）は、`msw` の `http` で作る（`admin.yaml` の型がないため）。
 - 画面の外で起きること（バックエンドの業務の規則、店舗画面への反映）は確認しない。
 
 理由：画面を本物に近い形で描画して、利用者の操作の流れを確認し、API の呼び出しの契約とのずれを型で見つけるため。画面の外の規則は、バックエンドのテストと E2E が確認する。
+
+確認方法：レビュー
 
 ## 5. 待ち方
 
@@ -370,3 +333,5 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 - 同じイベントを連続して発行するテストは、前の発行の処理が終わるのを待ってから次を発行する。Spring Modulith は処理中の発行を（イベント、リスナー）の組で持つので、同じイベントの処理が重なると発行の記録が完了にならないことがある。
 
 理由：処理が遅い環境では失敗し、速い環境では待ち時間が無駄になるため。決まった時間だけ見ると、遅い環境では、処理が終わる前に確認が終わり、誤って通るため。
+
+確認方法：時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`）

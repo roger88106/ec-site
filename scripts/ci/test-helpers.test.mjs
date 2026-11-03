@@ -1,18 +1,15 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { readFileSync } from 'node:fs'
 import { listGitFiles } from './lib/git-files.mjs'
 import {
   ASYNC_EVENT_HELPERS,
   EVENT_PUBLICATION_READS,
+  HELPER_STEPS,
   loadRules,
-  STEP_FINDERS,
   TARGET_FILE,
-  TEST_WRITING_DOC,
-  buildTableRules,
+  buildStepRules,
   findHelperViolations,
   isHelperFile,
-  parseHelperTable,
 } from './test-helpers.mjs'
 
 const IT = 'backend/ecsite/src/integrationTest/java/com/ecsite/'
@@ -134,17 +131,7 @@ describe('規則を足しやすい形', () => {
   })
 })
 
-describe('テストの書き方の表から読む規則', () => {
-  const HEADER = ['| 手順 | 補助 | その操作そのものを確認するテスト |', '|------|------|----------------------------------|']
-  const table = (...rows) => [...HEADER, ...rows].join('\n')
-  const ROWS = {
-    stock: '| 在庫の作成 | `InventoryTestData` | `JooqStockItemRepositoryTest` |',
-    tax: '| 税区分の登録の要求 | `CatalogTestData` | `TaxCategoryApiTest`、`AuthorizationTest` |',
-    id: '| 作成の応答から ID を取り出す処理 | `TestJson`、`CatalogTestData` | `CategoryApiTest`、`PlaceOrderConcurrencyTest`（確認する API の作成の応答） |',
-    category: '| カテゴリの登録の要求 | `CatalogTestData` | `CategoryApiTest` |',
-    payment: '| 支払の API の作成の操作 | `PaymentTestData` | `PaymentApiTest` |',
-  }
-  const markdown = table(...Object.values(ROWS))
+describe('script の手順の一覧から作る規則', () => {
   const files = [
     'InventoryTestData',
     'CatalogTestData',
@@ -153,16 +140,18 @@ describe('テストの書き方の表から読む規則', () => {
     'module/inventory/infrastructure/persistence/JooqStockItemRepositoryTest',
     'module/tax/presentation/TaxCategoryApiTest',
     'config/security/AuthorizationTest',
+    'config/security/KeycloakIntegrationTest',
     'module/catalog/presentation/CategoryApiTest',
+    'module/catalog/presentation/ProductApiTest',
     'module/order/presentation/PlaceOrderConcurrencyTest',
     'module/payment/api/PaymentApiTest',
   ].map((name) => `${IT}${name}.java`)
-  const rules = buildTableRules(markdown, files)
+  const rules = buildStepRules(HELPER_STEPS, files)
   const rule = (step) => rules.find((candidate) => candidate.name.includes(step))
   const FOO = `${IT}module/foo/FooTest.java`
   const hits = (step, body, file = FOO) => findHelperViolations(file, `class FooTest {\n${body}\n}`, [rule(step)]).map((hit) => hit.line)
 
-  test('表の行ごとに規則を作り、補助と除外のファイルを表から求める', () => {
+  test('手順ごとに規則を作り、補助と除外のファイルをクラス名から求める', () => {
     assert.equal(rules.length, 5)
     const stock = rule('在庫の作成')
     assert.equal(isHelperFile(`${IT}InventoryTestData.java`, stock), true)
@@ -171,8 +160,8 @@ describe('テストの書き方の表から読む規則', () => {
     const id = rule('ID を取り出す')
     assert.equal(isHelperFile(`${IT}TestJson.java`, id), true)
     assert.equal(isHelperFile(`${IT}CatalogTestData.java`, id), true)
-    // 括弧の注記の中の語は、クラスに数えない（バッククォートの中だけ読む）
     assert.equal(isHelperFile(`${IT}module/order/presentation/PlaceOrderConcurrencyTest.java`, id), true)
+    assert.equal(isHelperFile(`${IT}module/payment/api/PaymentApiTest.java`, id), false)
   })
 
   test('在庫の作成：createIfAbsent の呼び出しと、在庫の表への insert を、違反にする', () => {
@@ -205,6 +194,7 @@ describe('テストの書き方の表から読む規則', () => {
     ].join('\n')
     assert.deepEqual(hits('税区分の登録', body), [4, 5, 6])
     assert.deepEqual(hits('税区分の登録', body, `${IT}module/tax/presentation/TaxCategoryApiTest.java`), [])
+    assert.deepEqual(hits('税区分の登録', body, `${IT}config/security/KeycloakIntegrationTest.java`), [])
     assert.deepEqual(hits('税区分の登録', body, `${IT}CatalogTestData.java`), [])
   })
 
@@ -289,30 +279,26 @@ describe('テストの書き方の表から読む規則', () => {
     assert.deepEqual(hits('支払の API', body, `${IT}module/payment/api/PaymentApiTest.java`), [])
   })
 
-  test('表の書式が読めないときは、失敗にする', () => {
-    assert.throws(() => parseHelperTable('表がない文書'), /表/)
-    assert.throws(() => parseHelperTable(['| 手順 | 補助 |', '|---|---|', '| 在庫の作成 | `InventoryTestData` |'].join('\n')), /表/)
-    assert.throws(() => buildTableRules(table('| 知らない手順 | `InventoryTestData` | `JooqStockItemRepositoryTest` |'), files), /知らない手順/)
-    assert.throws(() => buildTableRules(table('| 在庫の作成 | `NoSuchHelper` | `JooqStockItemRepositoryTest` |'), files), /NoSuchHelper/)
-    assert.throws(() => buildTableRules(table('| 在庫の作成 | 補助 | `JooqStockItemRepositoryTest` |'), files), /補助/)
+  test('クラスのファイルが見つからないとき、2 件以上あるときは、失敗にする', () => {
+    const step = (helpers) => [{ step: '試し', helpers, exceptions: [], find: () => [] }]
+    assert.throws(() => buildStepRules(step(['NoSuchHelper']), files), /NoSuchHelper.*見つからない/)
+    assert.throws(() => buildStepRules(step(['TestJson']), [...files, `${IT}other/TestJson.java`]), /TestJson.*2 件/)
   })
 
-  test('表に、script が探す手順の行がないとき、データの行がないとき、列が 3 つでないときは、期待のメッセージで失敗にする', () => {
-    const { stock, ...withoutStock } = ROWS
-    assert.throws(() => buildTableRules(table(...Object.values(withoutStock)), files), /表に手順の行がない（在庫の作成）/)
-    assert.throws(() => parseHelperTable(table()), /表に行がない/)
-    assert.throws(() => parseHelperTable(table('| 在庫の作成 | `InventoryTestData` |')), /列が 3 つでない/)
-    assert.throws(() => parseHelperTable(table('| 在庫の作成 | `InventoryTestData` | `JooqStockItemRepositoryTest` | 余分 |')), /列が 3 つでない/)
+  test('手順ごとに、名前、補助、探す関数を持つ', () => {
+    assert.equal(HELPER_STEPS.length, 5)
+    assert.equal(new Set(HELPER_STEPS.map((entry) => entry.step)).size, HELPER_STEPS.length)
+    for (const entry of HELPER_STEPS) {
+      assert.ok(entry.step, entry.step)
+      assert.ok(entry.helpers.length > 0, `${entry.step} の補助`)
+      assert.equal(typeof entry.find, 'function', entry.step)
+    }
   })
 
-  test('手順の名前ごとに、探す関数を持つ', () => {
-    assert.equal(Object.keys(STEP_FINDERS).length, 5)
-    for (const find of Object.values(STEP_FINDERS)) assert.equal(typeof find, 'function')
-  })
-
-  test('テストの書き方の今の表から、表の全ての行の規則を作る（loadRules が返す）', () => {
-    const current = buildTableRules(readFileSync(TEST_WRITING_DOC, 'utf8'), listGitFiles())
-    assert.equal(current.length, Object.keys(STEP_FINDERS).length)
+  test('今の手順の一覧から、全ての手順の規則を作る（loadRules が返す）', () => {
+    const current = buildStepRules(HELPER_STEPS, listGitFiles())
+    assert.equal(current.length, HELPER_STEPS.length)
     assert.equal(loadRules().length, 1 + current.length)
   })
 })
+

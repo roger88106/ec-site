@@ -335,7 +335,7 @@
 | AC-306 | common | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 他のモジュールの、外部サービスを呼ぶ処理も、データベースのトランザクションの外で呼ぶ。外で呼べない箇所があれば、理由を書く。根拠は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携（決済・物流）」と、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「トランザクションは application」。 |
 | AC-307 | storefront | 変更 | [017](../08-spec/archive/mvp/017-stability/spec.md) | [193](../08-spec/archive/1to10/193-store-a11y/spec.md)、[227](../08-spec/archive/1to10/227-store-forms/spec.md) | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力してから、「接続できない」の結果を返す。画面遷移の例外と not found の例外は、ログに出力せずに通す。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「エラー」。 |
 | AC-308 | storefront | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 店舗画面のサーバー側で、バックエンドから 5xx を受けたら、警告のログにステータスコードとエラーコードを出力する。 |
-| AC-309 | storefront | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[フロントの書き方](../05-開発規則/frontend-coding.md)の「サーバーログは 1 行 1 件の JSON」）。token、メールアドレスなどの秘密情報と個人情報は出力しない。 |
+| AC-309 | storefront | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[店舗画面の構成](../02-設計/apps/store.md)の「サーバーの設定とログ」）。token、メールアドレスなどの秘密情報と個人情報は出力しない。 |
 | AC-310 | payment | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 支払の期限切れのジョブは、1 件の支払で例外（種類を問わない）が起きても、その支払 ID をログに出力して、残りの支払を処理する。 |
 | AC-311 | payment | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 決済サービスで支払済みのまま与信の通知を待つ支払が 1 回の処理の件数を超えて滞留しても、それより新しい期限切れの支払を処理する。 |
 | AC-312 | payment | 有効 | [017](../08-spec/archive/mvp/017-stability/spec.md) | — | 与信の通知を待つ支払が、待ち始めてから決めた時間（設定で変更できる）を過ぎても残っていたら、警告のログに件数を出力する。 |

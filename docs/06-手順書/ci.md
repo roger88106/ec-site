@@ -129,13 +129,13 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | ファイル | 役割 |
 |----------|------|
 | `coverage-summary.mjs` | カバレッジの合計と、行のカバレッジが低い順の 10 件を、job の summary に書く。失敗にはしない |
-| `coverage-baseline.mjs` | 報告の値を基準の値と比べ、下回ると終了コード 1 で失敗にする。上回ったときは、基準の更新を促す警告を表示する。`--write` で基準のファイルを書き換える |
+| `coverage-baseline.mjs` | 報告の値を基準の値と比べ、下回ると終了コード 1 で失敗にする。`--write` の動作は[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」 |
 | `mutation-report.mjs` | PIT の報告（`mutations.xml`）から mutation score と、生き残った変異が多いクラスを読む（`coverage-baseline.mjs` が使う） |
-| `quality-baseline.json` | 基準の値と許容の幅（`tolerance`）。対象は、行と分岐を持つ `backend`、`admin`、`store`、`shared` と、mutation score を持つ `backend-domain` |
+| `quality-baseline.json` | 基準の値と許容の幅（`tolerance`）。対象は[テストの書き方](../05-開発規則/test-writing.md)の「カバレッジと mutation score の基準」 |
 
 - 検査の手順は、報告を保存した後に置く（失敗しても報告が残る）。位置は、管理画面、店舗画面、「バックエンド」のジョブでは最後。「バックエンド（ビルドと単体テスト）」のジョブでは、失敗時のテストレポートの保存の前。店舗画面のジョブは、店舗画面と共有パッケージの 2 つの手順で検査する。
-- 基準は対象ごとの合計で、ファイルごとの基準はない。
-- 失敗したときは、ログと summary に出る対象、基準、今回の値、差を確認し、テストを追加して値を戻す。正当な理由で下げるときは、手元で `--write` を実行して基準のファイルを更新する。更新したファイルは同じ pull request に含め、pull request に理由を書く。手元の実行は [テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」。
+- 基準は対象ごとの合計で、ファイルごとの基準はない。低い箇所は、表の `coverage-summary.mjs` と `mutation-report.mjs` が summary に書く一覧で見つける。
+- 失敗したときは、ログと summary の対象・基準・今回の値・差を見て、テストを追加して、値を基準以上に戻す。正当な理由で下げるときは、[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」の手順で基準のファイルを更新する。
 - バックエンドのカバレッジは、統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつく。そのため `backend` の許容の幅は、行 0.10、分岐 0.30 にしている。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」。
 - PIT は、ビルドと単体テストのジョブの、単体テストの後で実行する（`./gradlew pitest`。`check` には含まれない）。変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、そのジョブの時間が増える。報告は artifact `pitest-backend` に保存する。
 - このジョブは、統合テストの遅い方のジョブより早く終わるので、`ci.yml` の全体の時間は遅い方のジョブで決まる。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」。

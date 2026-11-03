@@ -12,7 +12,7 @@
 
 ## 1. 共通コード（common/）
 
-`common/` と `config/` はモジュールではない。`application.yml` の `spring.modulith.detection-strategy: explicitly-annotated` により、`package-info.java` に `@ApplicationModule` を付けたパッケージだけがモジュールになるためである。`common/` はどのモジュールからも使える。`common/` と `config/` はモジュールに依存せず、モジュールも `config/` に依存しない（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「標準の構成」）。
+`common/` と `config/` はモジュールではない。`application.yml` の `spring.modulith.detection-strategy: explicitly-annotated` により、`package-info.java` に `@ApplicationModule` を付けたパッケージだけがモジュールになるためである。`common/` はどのモジュールからも使える。`common/` と `config/` はモジュールに依存せず、モジュールも `config/` に依存しない（[バックエンドのアーキテクチャ](backend-architecture.md)の「層とパッケージ」）。
 
 | パッケージ | 置くもの | 使う場面 |
 |------------|----------|----------|

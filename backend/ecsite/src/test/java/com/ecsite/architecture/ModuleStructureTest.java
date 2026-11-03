@@ -62,7 +62,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの標準の構成の検査（バックエンドの書き方の「層とパッケージ」）。<br />
+ * モジュールの標準の構成の検査（バックエンドの書き方の「層とパッケージ」、バックエンドのアーキテクチャの「層とパッケージ」）。<br />
  * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
@@ -79,7 +79,7 @@ class ModuleStructureTest {
     private static final Pattern LAYERED_PACKAGE = Pattern.compile("^(.*\\.module\\.[^.]+)\\.([^.]+)(?:\\.(.*))?$");
 
     /**
-     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドの書き方の「標準の構成」の表）。<br />
+     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドのアーキテクチャの「層とパッケージ」の依存の表）。<br />
      * 層の中の自分自身への依存は、表に書かなくても許す。他のモジュールと共通コードへの依存は、この表の対象でない
      * （モジュールの間は {@code ModulithTest} と {@code otherModulesApiIsUsedOnlyByDirectories} が確認する）。
      * presentation の domain への依存は、エラーの定義と値の型に限るが、集約に依存しないことは
@@ -133,14 +133,19 @@ class ModuleStructureTest {
     private static final Path RULES_BACKEND_CODING = Contracts.path("docs/05-開発規則/backend-coding.md");
 
     /**
-     * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの始まり
+     * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの名前（見出しの番号は問わない）
      */
-    private static final String PACKAGE_SIZE_HEADING = "### 1.4 ";
+    private static final String PACKAGE_SIZE_TITLE = "パッケージの大きさ";
 
     /**
-     * パッケージの大きさの表の行（1 列目がバッククォートで囲んだパッケージの名前、2 列目が数）
+     * パッケージの大きさの表がある節の見出しの行（{@code ### } の後に、あれば番号、続けて見出しの名前）
      */
-    private static final Pattern TABLE_ROW = Pattern.compile("^\\|\\s*`([^`]+)`\\s*\\|\\s*(\\d+)\\s*\\|.*$");
+    private static final Pattern PACKAGE_SIZE_HEADING = Pattern.compile("^### (?:[\\d.]+\\s+)?" + PACKAGE_SIZE_TITLE + "\\s*$");
+
+    /**
+     * パッケージの大きさの表の行（1 列目がバッククォートで囲んだパッケージの名前）
+     */
+    private static final Pattern TABLE_ROW = Pattern.compile("^\\|\\s*`([^`]+)`\\s*\\|.*$");
 
     /**
      * presentation の外に置く例外の {@code @RestController}（どのモジュールにも属さない GET /me）
@@ -324,10 +329,10 @@ class ModuleStructureTest {
     }
 
     @Test
-    @DisplayName("目安を超えるパッケージは、バックエンドの書き方の「パッケージの大きさ」の表と、パッケージも数も一致する")
+    @DisplayName("目安を超えるパッケージは、バックエンドの書き方の「パッケージの大きさ」の表の行と、パッケージが一致する")
     void oversizedPackagesMatchTable() throws IOException {
-        Map<String, Integer> table = oversizedTable(Files.readAllLines(RULES_BACKEND_CODING, StandardCharsets.UTF_8));
-        ProductionClasses.requireNotEmpty(table.entrySet(), "バックエンドの書き方の「パッケージの大きさ」の表の行");
+        Set<String> table = oversizedTable(Files.readAllLines(RULES_BACKEND_CODING, StandardCharsets.UTF_8));
+        ProductionClasses.requireNotEmpty(table, "バックエンドの書き方の「パッケージの大きさ」の表の行");
 
         assertThat(oversizedMismatches(classCountByPackage(ProductionClasses.all()), table)).isEmpty();
     }
@@ -337,7 +342,7 @@ class ModuleStructureTest {
     void mismatchWhenPackageOutsideTableExceedsGuideline() {
         Map<String, Long> counted = Map.of("module.order.application", 11L);
 
-        assertThat(oversizedMismatches(counted, Map.of())).containsExactly("表にない超過: order.application（11）");
+        assertThat(oversizedMismatches(counted, Set.of())).containsExactly("表にない超過: order.application（11）");
     }
 
     @Test
@@ -345,33 +350,44 @@ class ModuleStructureTest {
     void mismatchWhenPackageInTableIsWithinGuideline() {
         Map<String, Long> counted = Map.of("module.order.application", 10L);
 
-        assertThat(oversizedMismatches(counted, Map.of("order.application", 12)))
-                .containsExactly("目安以下: order.application（表 12、実際 10）");
+        assertThat(oversizedMismatches(counted, Set.of("order.application")))
+                .containsExactly("目安以下: order.application（実際 10）");
     }
 
     @Test
-    @DisplayName("表のパッケージの数が実際と違うと、不一致になる")
-    void mismatchWhenCountDiffers() {
-        Map<String, Long> counted = Map.of("config.security", 12L, "module.order.application", 10L);
-
-        assertThat(oversizedMismatches(counted, Map.of("config.security", 11)))
-                .containsExactly("数の違い: config.security（表 11、実際 12）");
-    }
-
-    @Test
-    @DisplayName("表の読み取りは、見出しの後の最初の表の、パッケージと数の行だけを読む")
+    @DisplayName("表の読み取りは、見出しの後の最初の表の、パッケージの行だけを読む")
     void tableIsReadFromFirstTableAfterHeading() {
         List<String> lines = List.of(
-                "| 別の表 | 数 |", "|---|---|", "| `x.y` | 99 |",
+                "| 別の表 | 分けない理由 |", "|---|---|", "| `x.y` | 理由 |",
                 "### 1.4 パッケージの大きさ", "本文",
-                "| パッケージ | 数 | 分けない理由 |", "|---|---|---|",
-                "| `catalog.infrastructure.persistence` | 14 | 理由 |", "| `config.security` | 11 | 理由 |",
+                "| パッケージ | 分けない理由 |", "|---|---|",
+                "| `catalog.infrastructure.persistence` | 理由 |", "| `config.security` | 理由 |",
                 "", "表の後の本文",
-                "| 2 つ目の表 | 数 |", "|---|---|", "| `w.w` | 7 |",
-                "### 1.5 共通の型", "| `z.z` | 5 | 理由 |");
+                "| 2 つ目の表 | 理由 |", "|---|---|", "| `w.w` | 理由 |",
+                "### 1.5 共通の型", "| `z.z` | 理由 |");
 
-        assertThat(oversizedTable(lines)).containsExactlyInAnyOrderEntriesOf(
-                Map.of("catalog.infrastructure.persistence", 14, "config.security", 11));
+        assertThat(oversizedTable(lines)).containsExactlyInAnyOrder("catalog.infrastructure.persistence", "config.security");
+    }
+
+    @Test
+    @DisplayName("表の読み取りは、見出しの番号が違っても、見出しの名前で表を探す")
+    void tableIsFoundByHeadingNameRegardlessOfNumber() {
+        List<String> lines = List.of(
+                "### 2.2 共通の型", "| `z.z` | 理由 |",
+                "### 2.3 パッケージの大きさ", "| パッケージ | 分けない理由 |", "|---|---|", "| `config.security` | 理由 |");
+
+        assertThat(oversizedTable(lines)).containsExactly("config.security");
+    }
+
+    @Test
+    @DisplayName("表の読み取りは、パッケージと分けない理由の 2 列の表を読める")
+    void twoColumnTableIsRead() {
+        List<String> lines = List.of(
+                "### 1.4 パッケージの大きさ", "",
+                "| パッケージ | 分けない理由 |", "|------------|--------------|",
+                "| `catalog.infrastructure.persistence` | jOOQ の Repository |");
+
+        assertThat(oversizedTable(lines)).containsExactly("catalog.infrastructure.persistence");
     }
 
     @Test
@@ -504,13 +520,13 @@ class ModuleStructureTest {
      * （表はモジュールのパッケージを {@code <モジュール>.<層>} と書く）。
      *
      * @param countByPackage パッケージの名前（{@code com.ecsite.} を除いた形でも、含む形でもよい）から、クラスの数への対応
-     * @param table          表のパッケージの名前から、数への対応
-     * @return 食い違いの説明（説明の順）。表の外の超過、表のパッケージの目安以下、数の違い
+     * @param table          表のパッケージの名前
+     * @return 食い違いの説明（説明の順）。表にない超過、表のパッケージの目安以下
      */
-    private static List<String> oversizedMismatches(Map<String, Long> countByPackage, Map<String, Integer> table) {
+    private static List<String> oversizedMismatches(Map<String, Long> countByPackage, Set<String> table) {
         Map<String, Long> counted = countByPackage.entrySet().stream()
                 .collect(Collectors.toMap(entry -> tableName(entry.getKey()), Map.Entry::getValue));
-        Set<String> names = new TreeSet<>(table.keySet());
+        Set<String> names = new TreeSet<>(table);
         counted.forEach((name, count) -> {
             if (count > GUIDELINE_CLASSES_PER_PACKAGE) {
                 names.add(name);
@@ -520,13 +536,10 @@ class ModuleStructureTest {
         List<String> mismatches = new ArrayList<>();
         for (String name : names) {
             long actual = counted.getOrDefault(name, 0L);
-            Integer listed = table.get(name);
-            if (listed == null) {
+            if (!table.contains(name)) {
                 mismatches.add("表にない超過: %s（%d）".formatted(name, actual));
             } else if (actual <= GUIDELINE_CLASSES_PER_PACKAGE) {
-                mismatches.add("目安以下: %s（表 %d、実際 %d）".formatted(name, listed, actual));
-            } else if (actual != listed) {
-                mismatches.add("数の違い: %s（表 %d、実際 %d）".formatted(name, listed, actual));
+                mismatches.add("目安以下: %s（実際 %d）".formatted(name, actual));
             }
         }
         return mismatches;
@@ -545,14 +558,14 @@ class ModuleStructureTest {
 
     /**
      * バックエンドの書き方の「パッケージの大きさ」の、目安を超えるパッケージの表を読む。<br />
-     * 見出しの後の最初の表だけを読む。表の行のうち、1 列目がバッククォートで囲んだパッケージの名前で、2 列目が数の行を読み、
+     * 見出しの名前で節を探し、見出しの後の最初の表だけを読む。表の行のうち、1 列目がバッククォートで囲んだパッケージの名前の行を読み、
      * 表の後の行（本文や 2 つ目の表）は読まない。
      *
      * @param lines 文書の行
-     * @return パッケージの名前から、数への対応
+     * @return 表のパッケージの名前
      */
-    private static Map<String, Integer> oversizedTable(List<String> lines) {
-        Map<String, Integer> table = new TreeMap<>();
+    private static Set<String> oversizedTable(List<String> lines) {
+        Set<String> table = new TreeSet<>();
         boolean afterHeading = false;
         boolean inTable = false;
         for (String line : lines) {
@@ -560,7 +573,7 @@ class ModuleStructureTest {
                 if (inTable) {
                     break;
                 }
-                afterHeading = line.startsWith(PACKAGE_SIZE_HEADING);
+                afterHeading = PACKAGE_SIZE_HEADING.matcher(line).matches();
                 continue;
             }
             if (!afterHeading) {
@@ -570,7 +583,7 @@ class ModuleStructureTest {
                 inTable = true;
                 Matcher row = TABLE_ROW.matcher(line);
                 if (row.matches()) {
-                    table.put(row.group(1), Integer.parseInt(row.group(2)));
+                    table.add(row.group(1));
                 }
             } else if (inTable) {
                 break;

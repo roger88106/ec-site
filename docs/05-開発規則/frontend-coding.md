@@ -64,7 +64,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 ### 3.1 サーバーアクションは `withActionResult` で包む
 
-サーバーアクション（`src/actions/`）では `catch` を書かず、例外は `withActionResult` で結果にする。`redirect` は`withActionResult` の外で呼ぶ。
+サーバーアクション（`src/actions/`）では `catch` を書かず、例外は `withActionResult` で結果にする。`redirect` は `withActionResult` の外で呼ぶ。
 
 理由：Next.js の `redirect`・`notFound` は例外で画面を遷移させるので、捕捉すると遷移が通信の失敗として扱われるため（`withActionResult` は `unstable_rethrow` で通す）。
 

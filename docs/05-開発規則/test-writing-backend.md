@@ -36,7 +36,7 @@
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
 
-補助以外のテストは、補助が持つ手順（`HELPER_STEPS` に挙げたもの）を直接書かない。ただし、その操作そのものを確認するテストは除く。手順と、手順を書いてよい補助・テストの対応は `scripts/ci/test-helpers.mjs` の `HELPER_STEPS`、`HELPER_STEPS` が正本である。
+補助以外のテストは、補助が持つ手順（`HELPER_STEPS` に挙げたもの）を直接書かない。ただし、その操作そのものを確認するテストは除く。手順と、手順を書いてよい補助・テストの対応は `scripts/ci/test-helpers.mjs` の `HELPER_STEPS` にあり、これが正本である。
 
 次の 3 つは手順に含めず、テストが直接書いてよい。
 

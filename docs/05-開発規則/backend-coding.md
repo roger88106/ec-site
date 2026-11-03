@@ -136,7 +136,7 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 入力の検証の文は、フレームワークの既定の文（JVM のロケールで言語が変わる）を使わず、`messages.properties` の `ecsite.validation.<種類>`（`notnull`、`size`、`min` など。対応のない種類は `ecsite.validation.invalid`）から取る。上限・下限は `{max}`、`{min}`、`{value}` で差し込む。
 
-形の検証の誤りに対応する業務のエラーがある項目は、リクエストの本文の項目のパス（`shippingAddress.postalCode` など）ごとに、形の検証の文を業務のエラーのコードへ対応づけられる。対応があれば、そのコードの文と、ドメインの定数から差し込む値を使う。対応の表は、そのモジュールの presentation に `ValidationErrorMapping` の実装の bean で置く。モジュールの間で同じパスを対応づけると、起動で失敗する。
+形の検証の誤りに対応する業務のエラーがある項目は、リクエストの本文の項目のパス（`shippingAddress.postalCode` など）ごとに、形の検証の文を業務のエラーのコードへ対応づけられる。対応があれば、そのコードの文と、ドメインの定数から差し込む値を使う。対応の表は、そのモジュールの presentation に `ValidationErrorMapping` を実装した bean として置く。モジュールの間で同じパスを対応づけると、起動で失敗する。
 
 理由：どの環境でも同じ日本語を返し、形の検証と業務の検証のどちらで見つかっても同じ文を返すため。
 

@@ -2,8 +2,7 @@
 
 CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検査が失敗したときに読む。
 
-`scripts/ci/check-all.sh` は、script のテスト（`*.test.mjs`、`*.test.cjs`）と `scripts/ci/` の直下の検査を全て実行し、1 つでも失敗すれば最後に終了コード 1 を返す。検査は、終了コードが 0 でなく、または最後の行が要約の行（`<何>：<件数>`）でなければ失敗で、判定の規則は `check-all.sh` の冒頭のコメントと `lib/check-result.mjs` にある。
-直下の検査の他に、`ja-text` を `--changed` で実行する（表の `ja-text`（`--changed`）の行）。分岐点を求めるので、shallow clone では失敗する。
+`scripts/ci/check-all.sh` は、script のテストと `scripts/ci/` の直下の検査を全て実行し、1 つでも失敗すれば最後に終了コード 1 を返す。判定の規則は `check-all.sh` の冒頭のコメントにある。`ja-text --changed` は分岐点を求めるので、shallow clone では失敗する。
 
 各検査の詳しい説明（確認すること、失敗したときの修正の手順、除外の書き方）は、script の先頭のコメントにある。
 
@@ -44,7 +43,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `test-names` | バックエンドの全てのテストに、表示の名前（`@DisplayName`）があることを確認する。 |
 | `time-waits` | テストが、決まった時間だけ待つ書き方をしていないことを確認する。 |
 
-※1：確認することは 3 つ。進行中の spec の AC が AC 一覧にある。定義の行は、`- **AC-<番号>** <文>` の形で書く。`*`・`+`・字下げ・番号付きの箇条は、崩れた行として失敗にする。③ の「今有効な AC」の表が AC 一覧から作った表と一致する（節の中でマーカーの範囲の外に AC の表の行があると失敗にする。バックエンドのモジュールのディレクトリと ③ の文書の両方がある名前の ③ が、構造の検査の対象の一覧にないときも失敗にする）。有効・変更の AC がテスト名（@DisplayName、test・it の第 1 引数）に出る（テスト名の確認は CI でだけ失敗）。アーカイブの spec は読まない。
+※1：確認すること、定義の行の書き方、失敗の条件は `scripts/ci/ac-check.mjs` の冒頭のコメント。
 
 ※2：表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。
 
@@ -58,7 +57,5 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 文書の Mermaid の図が描画できることを確認する検査。`scripts/ci/mermaid/mermaid-check.mjs` が実行する。確認すること、対象、失敗したときの修正は、script の冒頭のコメントにある。
 
-- 実行するのは、CI の `docs.yml` だけである。Chrome とネットワークが必要で遅いため、`check-all.sh` と commit の前の hook では実行しない。
-- script は `scripts/ci/` の直下に置かない（直下の検査は `check-all.sh` が全て実行する）。script のテストは、他の script のテストと同じく `check-all.sh` が実行する。
-- 手元では、ルートで `node scripts/ci/mermaid/mermaid-check.mjs` を実行する。Chrome の場所は、環境変数 `MERMAID_CHROME` で指定する。
-- CI のランナー（ubuntu-latest）には Google Chrome が `/usr/bin/google-chrome` に入っているので、`MERMAID_CHROME` は指定しない。
+- 実行するのは、CI の `docs.yml` だけである。Chrome とネットワークが必要で遅いため、`check-all.sh` と commit の前の hook では実行しない（script を直下に置かない理由）。
+- 手元では、ルートで `node scripts/ci/mermaid/mermaid-check.mjs` を実行する。Chrome の場所は、環境変数 `MERMAID_CHROME` で指定する（指定しなければ既定の場所を探す。CI は指定しない）。

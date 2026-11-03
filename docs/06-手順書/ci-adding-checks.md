@@ -10,10 +10,10 @@ CI の検査の script を加える手順と、補助の script の置き場所�
   - 違反は標準出力に出し、最後の行に要約の行（`<何>：<件数>`。例：`切れた参照：0`）を出して、違反があれば終了コード 1 にする。
   - 先頭のコメント（1 行目から `//`）に、確認すること、失敗したとき、除外を書く。
   - [CI の検査の script](ci-checks.md)の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。
-  - Git の一覧は `listGitFiles`（`lib/git-files.mjs`）で求め、`git ls-files` を直接呼ばない。対象が 0 件のとき `exitIfNoFiles`（文は `emptyListReason`）で失敗にする。0 件で失敗にすることは、`lib/git-files.test.mjs` が `scripts/ci/` の直下の検査を走査して確認する。
+  - Git の一覧は `listGitFiles`（`lib/git-files.mjs`）で求め、`git ls-files` を直接呼ばない。対象が 0 件のとき `exitIfNoFiles` で失敗にする（`lib/git-files.test.mjs` が確認する）。
   - 対応していない書き方の行は、読み飛ばさずに `describeUnreadableLine`（`lib/unreadable-line.mjs`）で `ファイル:行 内容（理由）` の形にして出し、失敗にする。
   - 除外の一覧を持つなら、パスを `exclusionsPath`、誤りの文を `checkExclusions`（`lib/exclusions.mjs`）で作る。
-  - 画面のソースを読むなら `lib/screen-sources.mjs` を使う。行番号が必要なら `lib/line-number.mjs` を使う。
+  - 画面のソースを読むなら `lib/screen-sources.mjs`（違う対象を読むときは理由を書く）、行番号が必要なら `lib/line-number.mjs` を使う。
 
 ## 2. 補助の script の置き場所
 
@@ -24,4 +24,4 @@ CI の検査の script を加える手順と、補助の script の置き場所�
   - `workflow/` の下の `main-source.mjs`：workflow から呼ぶ判定（元のブランチの名前が引数）。
   - `review/` の下の `test-diff.mjs`：レビューで手動で使う補助（[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）。
   - `mermaid/` の下の `mermaid-check.mjs`：Chrome とネットワークが必要な Mermaid の図の描画の検査（[CI の検査の script](ci-checks.md)の「Mermaid の図の描画の検査」）。
-- 複数の検査が使う関数は `lib/` に置き（テストは `*.test.mjs`）、役割は各ファイルの先頭のコメントに書く。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
+- 複数の検査が使う関数は `lib/` に置き（テストは `*.test.mjs`）、役割は各ファイルの先頭のコメントに書く。

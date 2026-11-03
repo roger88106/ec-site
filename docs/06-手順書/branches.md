@@ -1,6 +1,6 @@
 # ブランチとリリース
 
-ブランチの構成と作業ブランチ、保護、リリースと緊急の修正の手順に加え、Dependabot と GitHub のセキュリティの機能の設定を置く。CI/CD の決まりは [constitution](../constitution.md)の「CI/CD」、CI のジョブは [CI の検査](ci.md)、設定のフラグと完了の定義は [開発の進め方](../05-開発規則/workflow.md)、マージの許可と担当は [マージと後片付け](../05-開発規則/merging.md)。
+ブランチの構成、保護、リリースと緊急の修正の手順、Dependabot と GitHub のセキュリティの機能の設定。ブランチを切る・マージする・リリースするときに読む。マージの許可は [マージと後片付け](../05-開発規則/merging.md)、CI のジョブは [CI の検査](ci.md)。
 
 ## 1. ブランチの構成
 
@@ -24,7 +24,6 @@
 - 通常の作業ブランチは `develop` から切る。緊急の修正は `main` から切る（「緊急の修正」）。
 - 作業ブランチは、pull request で `develop` に入れる。
 - `develop` と衝突するとき、または `develop` が同じファイルを変えたときは、`develop` を作業ブランチに取り込んでから入れる（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。最新の `develop` を含むことは求めない（「ruleset」）。
-- 完了の定義（`develop` に入れる条件）は [開発の進め方](../05-開発規則/workflow.md)。
 - `.gitignore` は許可リストで、Git に入れるものだけを `!` で戻す。`.claude/` の下で Git に入れるものは、`.gitignore` の許可の行（`!` の行）に書いてある。作業用の script などを置く `/.local/` は Git に入れない。
 
 ## 3. 保護
@@ -44,7 +43,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 ※1：分けたバックエンドのジョブ（ビルドと単体テスト、統合テスト 1/2・2/2）は登録しない。「バックエンド」がそれらの結果を確認するため（[CI の検査](ci.md)の「CI のジョブ」）。
 
-※2：2026-10-28 に外した。理由：続けてマージするときの、取り込みと CI の再実行の待ちをなくすため。代わりに、マージの後に `develop` の CI を見届ける（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
+※2：続けてマージするとき、取り込みと CI の再実行を待たないために、求めない。代わりに、マージの後に `develop` の CI を見届ける（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
 
 ### 3.2 `main` の元のブランチの制限
 
@@ -80,13 +79,12 @@ GitHub の ruleset を `develop` と `main` に作る。
 | 正式な公開 | MAJOR（`1.0.0`。それまでは上げない） |
 - リリースの内容は、issue 担当のセッションがまとめる（[開発の進め方](../05-開発規則/workflow.md)）。
 - `release-` のブランチの `main` へのマージと tag は、issue 担当のセッションが利用者の許可を得て行う。
-- デプロイの spec で決めるまでのリリースは、`main` へのマージと tag までとし、デプロイしない（「デプロイの spec まで」）。
 
 ## 5. 緊急の修正
 
 - `hotfix-<issue の番号>-<短い名前>` のブランチを `main` から切り、pull request で `main` に入れる。
 - `main` に入れた後に、`develop` に戻す。`main` から `<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`main` を直接 `develop` に入れる pull request で衝突すると、`main` に commit しなければ解消できないため。
-- 必須の検査が GitHub の障害などで動かず、マージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。`gh api` で ruleset を変えると、Claude Code の hook が確認の画面を表示する。
+- 必須の検査が GitHub の障害で動かずマージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。`gh api` での変更は、Claude Code の hook が確認する。
 - `hotfix-` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
 - tag と GitHub の Release は、「リリース」の手順 3、4 と同じ。
 
@@ -99,7 +97,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 | 対象 | `gradle`（`/backend/ecsite`）、`npm`（`/`。pnpm の workspace）、`github-actions`（`/`）、`docker-compose`（`/docker`） |
 | 頻度 | 週 1 回（月曜、日本時間） |
 | group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする。`github-actions` は major も含めて 1 つの pull request にする ※3 |
-| cooldown | 新しいバージョンがリリースされてから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は、GitHub の文書の cooldown の対応表で SemVer の日数（major・minor・patch）に対応しないため、7 日（`default-days`）にする |
+| cooldown | リリースから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は SemVer の日数に対応しないため、7 日（`default-days`） |
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 
@@ -107,13 +105,13 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
 - Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
-- `@types/node` の major は、Dependabot の対象から外す。理由：実行の環境は `.node-version` の Node（`package.json` の `engines.node` はその下限の範囲）で、型の定義だけを上げると、そのバージョンにない API も型の検査を通ってしまうため。Node のバージョンを上げるときに、合わせて上げる。
-- `github-actions` は、ワークフローに加え、ローカルの複合の action（`.github/actions/setup-frontend`）で使う action のバージョンも更新する。理由：`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため、`directories` に複合の action のディレクトリを追加している。複合の action を増やしたら、追加する。
+- `@types/node` の major は、Dependabot の対象から外す。型の定義だけを上げると、`.node-version` の Node にない API も型の検査を通るため。Node のバージョンを上げるときに合わせて上げる。
+- `github-actions` の `directories` に、ローカルの複合の action のディレクトリ（`.github/actions/setup-frontend`）を加えている（`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため）。複合の action を増やしたら追加する。
 - 危険度は、経路と、pull request の題から読む更新の種類で判定する。`github-actions` の更新（`.github/`）と major の更新、題から更新の種類を読めないものは危険度が高く、利用者が許可する。他の minor と patch は危険度が低く、issue 担当のセッションがマージする。CI の job は作成者で見分け、本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
-- Gradle のバージョンを上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<バージョン>-bin.zip.sha256` の値に替える。Dependabot の Gradle の wrapper の更新がこの値も替えるかは確認していないので、更新の pull request で確認する。
-- TypeScript のバージョンを上げる pull request は、`node scripts/ci/globals/lib-globals.mjs --write` で組み込みの名前の一覧（`scripts/ci/globals/lib-globals.json`）を書き直し、差分を確認する。そのうえで `node scripts/ci/frontend-rules.mjs` を実行し、増えた名前によるシャドーイングがないことを確認する。lib の名前が変わると、CI の店舗画面の「組み込みの名前の一覧の確認」が失敗する。
-- 注意：GitHub の文書（2026-10-22 の時点）では、Dependabot の pnpm の対応は v10 まで。このリポジトリは pnpm 12 である。`npm` の更新が失敗したときは、issue を起票し、その issue で Renovate への切り替えを検討する。
+- Gradle のバージョンを上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<バージョン>-bin.zip.sha256` の値に替える（Dependabot の更新がこの値も替えるかは未確認なので、pull request で確認する）。
+- TypeScript のバージョンを上げる pull request は、`node scripts/ci/globals/lib-globals.mjs --write` で組み込みの名前の一覧（`lib-globals.json`）を再生成して差分を確認し、`node scripts/ci/frontend-rules.mjs` で増えた名前によるシャドーイングがないことを確認する。
+- Dependabot の pnpm の対応は v10 まで（このリポジトリは pnpm 12）。`npm` の更新が失敗したときは、issue を起票し、Renovate への切り替えを検討する。
 
 ## 7. デプロイの spec まで
 

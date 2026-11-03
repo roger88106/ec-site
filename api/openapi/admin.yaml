@@ -2290,7 +2290,7 @@ components:
           $ref: '#/components/schemas/OrderActions'
     Payment:
       type: object
-      description: 注文の支払。決済を入れる前の注文は省く
+      description: 注文の支払。決済の機能を導入する前の注文は省く
       required: [status, deadline, authorizationExpiring]
       properties:
         status:
@@ -2322,7 +2322,7 @@ components:
           description: キャンセルできる
         cancelAsksRestock:
           type: boolean
-          description: キャンセルの時に、在庫に戻すかを聞く。偽なら restock を送らない
+          description: キャンセルのときに、在庫に戻すかを確認する。偽なら restock を送らない
         ship:
           type: boolean
           description: 出荷を登録できる

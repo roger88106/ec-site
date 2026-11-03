@@ -8,7 +8,7 @@ info:
     - 対象は C 側に表示される商品だけ。表示されない商品は、存在しない商品と同じく 404 を返す。
     - 価格は商品単位（全バリアント共通）で、税込・税抜の両方を返す。在庫は有無だけを返し、数量は返さない。
     - 会員の操作には、消費者の realm（IdP）が発行した会員の access token（audience `ec-store-api`）を付ける。token の要否は操作ごとの `security` で示す。
-    - ログインせずに作ったカートは、推測できないカート ID を知っていることが使える条件になる。
+    - ログインせずに作ったカートは、推測できないカート ID を知っている人だけが使える。
     - 認証（`security` の読み方と 401）は `docs/02-設計/backend-architecture.md` の「認証・認可」、並びと日時などの規約は `docs/05-開発規則/api-conventions.md` による。
 servers:
   - url: /api/store
@@ -270,7 +270,7 @@ paths:
       operationId: mergeCart
       summary: カートを移す
       description: |
-        ログインせずに使っていたカートの品目を、token の会員のカートへ移し、移したカートを空にする。同じバリアントは数量を合算する。
+        ログインせずに使っていたカートの品目を、token が示す会員のカートへ移し、移す元のカートを空にする。同じバリアントは数量を合算する。
         移す元に指定できるのは、会員を持たないカートだけ（会員のカートは 404）。
       security:
         - memberToken: []
@@ -436,7 +436,7 @@ paths:
       security:
         - memberToken: []
       summary: キャンセルの申請
-      description: 注文を「キャンセル申請中」にする。申請中なら何もせず 204（冪等）。
+      description: 注文を「キャンセル申請中」にする。申請中なら状態を変えずに 204 を返す（冪等）。
       requestBody:
         required: true
         content:
@@ -465,7 +465,7 @@ paths:
       summary: 支払画面を開く
       description: |
         決済サービスの支払画面の URL を返す。店舗画面はこの URL に移す。
-        開いている画面があれば同じ URL を返し、決済サービスに再作成させない。
+        有効な支払画面があれば同じ URL を返し、決済サービスに再作成させない。
       responses:
         '200':
           description: 支払画面
@@ -976,7 +976,7 @@ components:
             $ref: '#/components/schemas/MergedCartItem'
         skippedItems:
           type: array
-          description: 品目の数の上限を超えたので移さなかった品目（移す元の数量）
+          description: 品目数の上限を超えたため移さなかった品目（移す元のカートでの数量）
           items:
             $ref: '#/components/schemas/MergedCartItem'
     MergedCartItem:
@@ -1042,7 +1042,7 @@ components:
       type: string
       nullable: true
       enum: [NOT_SHOWN, SALES_SUSPENDED, OUT_OF_STOCK, INSUFFICIENT_STOCK]
-      description: 購入できない理由。C 側に表示されない、販売停止、販売可能数がない、販売可能数が数量より少ない。購入できる品目は null
+      description: 購入できない理由。C 側に表示されない、販売停止、販売可能数が 0 以下、販売可能数が数量を下回る。購入できる品目は null
     Amounts:
       type: object
       description: 金額の内訳。購入できない品目は含めない

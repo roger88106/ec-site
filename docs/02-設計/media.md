@@ -25,7 +25,7 @@
 | ストレージ | Amazon S3（AWS SDK v2）。ローカルと CI は SeaweedFS | `ecsite.media.storage` |
 | 画像の変換 | 別コンテナの imgproxy を HTTP で呼ぶ | `ecsite.media.converter` |
 
-どちらも port（`ObjectStorage`、`ImageConverter`）の実装として置く。ストレージの操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする。署名付き PUT の URL、ファイルの情報、先頭の読み取り、書き込み、削除が該当する。画像の変換は同期に行う。タイムアウトと失敗の分け方は、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」に書く。それに加えて、imgproxy の応答が WebP でない（先頭のバイトで判定）ときも、画像を変換できないエラー（400）にする。アップロードの受付は署名付き URL を手元で作り、ストレージを呼ばない。
+どちらも port（`ObjectStorage`、`ImageConverter`）の実装として置く。ストレージの操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする。署名付き PUT の URL、ファイルの情報、先頭の読み取り、書き込み、削除が該当する。画像の変換は同期で行う。タイムアウトは[環境変数](../06-手順書/environment.md)の「バックエンド」、失敗の分け方は[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」に書く。それに加えて、imgproxy の応答が WebP でない（先頭のバイトで判定）ときも、画像を変換できないエラー（400）にする。アップロードの受付は署名付き URL を手元で作り、ストレージを呼ばない。
 
 ## 処理の流れ
 

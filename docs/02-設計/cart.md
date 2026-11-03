@@ -66,7 +66,7 @@ sequenceDiagram
 
 操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-管理 API はない。カートの表示（`getCart`）は、店舗モジュールが受ける。
+管理 API はない。カートの表示（`getCart`）は、店舗モジュールが処理する。
 
 ## パッケージの構成
 

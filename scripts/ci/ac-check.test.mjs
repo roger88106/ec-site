@@ -545,11 +545,11 @@ describe('AC 一覧の行の検査', () => {
     }
   })
 
-  test('元の spec が進行中の spec（docs/08-spec/ の直下）の番号でも読む', () => {
+  test('元の spec が進行中の spec（docs/08-spec/ の直下）の番号でも受け付ける', () => {
     assert.deepEqual(listProblems(listRow({ ac: 'AC-5-1', origin: '5' })), [])
   })
 
-  test('変更・廃止の AC の変えた spec は、読点で区切った番号を読む', () => {
+  test('変更・廃止の AC の変えた spec は、読点で区切った番号を受け付ける', () => {
     const content = '根拠は[注文モジュール](../../docs/03-機能仕様/order.md)の「注文（集約）」。'
     assert.deepEqual(listProblems(listRow({ status: '変更', changedBy: '003、016', content })), [])
     assert.deepEqual(listProblems(listRow({ status: '廃止', module: '', changedBy: '003、016、7', content: '' })), [])
@@ -1132,7 +1132,7 @@ describe('1→10 の AC（AC-n-m）', () => {
     assert.deepEqual(result.deprecatedRefs, [{ file: 'X.test.ts', name: 'AC-7-1、7-2 a', ac: '7-2' }])
   })
 
-  test('AC 一覧への転記：MVP の後に新しい形を spec の番号と連番の順に置き、元の spec は 0 埋めのない番号だけで書く。読み戻せる', () => {
+  test('AC 一覧への転記：MVP の形の行の後に、新しい形（AC-<spec の番号>-<連番>）の行を、spec の番号と連番の順に置き、元の spec は 0 埋めのない番号だけで書く。読み戻せる', () => {
     const { definitions } = parseSpecAcDefinitions('- **AC-12** 一つ目。\n- **AC-7-2** 三つ目。\n- **AC-7-1** 二つ目。', '7-dev-process')
     const empty = ['<!-- generated:ac-list -->', '| AC | モジュール | 状態 | 元の spec | 変えた spec | 今の内容 |', '|----|------------|------|-----------|-------------|----------|', '<!-- /generated:ac-list -->'].join('\n')
     const markdown = addAcsToList(empty, definitions)

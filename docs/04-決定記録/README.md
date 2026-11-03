@@ -4,7 +4,7 @@
 
 ## 形
 
-書き方、骨組み、決定を変えたときの扱いは、雛形 [template.md](template.md)。この形を決める前に書いた記録（subagent-delegation.md）は、旧い形（背景・決定・日付・関連）のまま残す。
+書き方、骨組み、決定を変えたときの扱いは、雛形 [template.md](template.md)。この形を決める前に書いた記録（subagent-delegation.md）は、古い形（背景・決定・日付・関連）のまま残す。
 
 ## 文書
 

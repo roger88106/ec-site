@@ -17,14 +17,14 @@
 | パッケージ | 置くもの |
 |------------|----------|
 | `common/error/` | エラーの定義の基底と、例外から Problem Details への変換（`error/exception/`、`error/handler/`） |
-| `common/message/` | メッセージのコードとパラメータから日本語の文を作る部品 |
+| `common/message/` | メッセージのコードとパラメータから日本語の文を作るクラス |
 | `common/model/base/` | 集約とドメインイベントの基底 |
 | `common/model/value/` | 規則を持つ共通の値（金額、文字の項目、業務の日付、操作した運営者）。業務の日付の時間帯（日本時間）は 1 か所で決める |
 | `common/paging/` | ページ指定と一覧の結果 |
-| `common/persistence/` | DB の制約の違反を業務のエラーに変える部品 |
-| `common/presentation/` | API の日時の変換、作成の応答、店舗 API の価格など、Controller と応答への変換の共通の部品 |
+| `common/persistence/` | DB の制約の違反を業務のエラーに変えるクラス |
+| `common/presentation/` | API の日時の変換、作成の応答、店舗 API の価格など、Controller と応答への変換の共通のクラス |
 | `common/scheduling/` | 期限切れのデータの片付けの共通の処理。`@Scheduled` と `@SchedulerLock` は各ジョブに残す |
-| `common/security/` | 認証情報から、店舗 API の会員と管理 API の運営者を取り出す部品。Spring Security の型は application・domain に出さない（[バックエンドのアーキテクチャ](backend-architecture.md)の「業務のコードとの境界」） |
+| `common/security/` | 認証情報から、店舗 API の会員と管理 API の運営者を取り出すクラス。Spring Security の型は application・domain に出さない（[バックエンドのアーキテクチャ](backend-architecture.md)の「業務のコードとの境界」） |
 
 - common に置く基準は、2 つ以上のモジュールが使うものだけ。ただし、エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出しは、横断の仕組みとして除く（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「共通の型」）。
 
@@ -33,7 +33,7 @@
 | パッケージ | 役割 |
 |------------|------|
 | `config/`（直下） | 時刻（`Clock`）、API のパスのプレフィックス、Bean Validation、OpenAPI の列挙型の変換、定期ジョブの起動と分散ロックの設定 |
-| `config/event/` | イベントの再発行と片付け。再発行は、決めた回数（設定で変更できる）を超えたら止める。止めたイベントは片付けで削除せず、種類と ID だけをエラーのログに出力する（中身は出力しない）。件数はメトリクスで公開する |
+| `config/event/` | イベントの再発行と片付け。再発行は、決めた回数（設定で変更できる）を超えたら止める。止めたイベントは片付けで削除せず、エラーのログに出力する（中身は出力しない。出力する項目は[バックエンドのアーキテクチャ](backend-architecture.md)の「水平スケール」）。件数はメトリクスで公開する |
 | `config/security/` | 認証・認可の設定。管理 API の権限と店舗 API の token の要否を、契約の操作ごとに適用する |
 
 - イベント・ジョブ・分散ロックの動きと設定の値は [バックエンドのアーキテクチャ](backend-architecture.md)の「水平スケール」に書く。

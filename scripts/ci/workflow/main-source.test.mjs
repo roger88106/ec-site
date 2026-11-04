@@ -13,7 +13,7 @@ describe('main に入れられる元のブランチ', () => {
   })
 
   test('release/ と hotfix/ で始まらない名前は通さない', () => {
-    for (const name of ['release-1.2.0', 'hotfix-123-fix', 'develop', 'main', '158-ci-checks', 'agent/158-ci-checks', 'release', 'hotfix', 'feature/release-x', 'my-release-1', 'Release/1']) {
+    for (const name of ['release-1.2.0', 'hotfix-123-fix', 'develop', 'main', '158-ci-checks', 'agent/158-ci-checks', 'release', 'hotfix', 'feature/release-x', 'feature/release/1', 'agent/hotfix/1-x', 'my-release-1', 'Release/1']) {
       assert.equal(isAllowedMainSource(name), false, name)
     }
   })

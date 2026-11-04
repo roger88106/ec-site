@@ -55,13 +55,13 @@
   | 進行中の作業ブランチ（本 spec のマージの前に作ったもの。まとめの作業の `346-cleanup-batch` と本 spec のブランチ `367-branch-names` を含む） | 名前を変えない。`develop` へのマージでは元のブランチの名前を判定しないので、名前を変えずにマージできる |
   | 本 spec のマージの後に作る作業ブランチ | 新しい名前を使う |
   | 古い名前のリモートの `hotfix-`・`release-` のブランチ | 今はない（2026-11-05 に `git ls-remote` で確認した）ので、改名の手順は要らない |
-  | 本 spec の変更が `main` に入るまでの緊急の修正 | `hotfix-` の名前を使う ※2 |
+  | 本 spec の変更が `main` に入るまでの緊急の修正と、変更を含まない commit から作るリリース | 古い名前（`hotfix-`、`release-`）を使う ※2 |
   | 本 spec の変更を含む commit から作るリリース | リリースのブランチが新しい script を含むので、新しい名前を使う |
-  | 本 spec の変更を含まない commit から作るリリース | 緊急の修正と同じ理由で、`release-<バージョン>` を使う ※2 |
+  | 本 spec の変更が `main` に入った後の全ての pull request | 新しい名前だけが通る。開いている古い名前の pull request は、新しい名前のブランチで再作成する |
 
-  ※2：`main` への pull request の検査は、pull request の merge commit の script を使う（`.github/workflows/main-source.yml` のコメント）。`main` から切ったブランチは古い script で判定される。この動作は workflow のコメントを読んだものであり、`main` への実際の pull request では確認していない。
+  ※2：`main` への pull request の検査は、pull request の merge commit の script を使う（`.github/workflows/main-source.yml` のコメント）。`main` が変更を含むまでは、変更を含まないブランチの merge commit も古い script を含むので、古い script で判定される。この動作は workflow のコメントを読んだものであり、`main` への実際の pull request では確認していない。
 
-- 本 spec の変更を含むリリースが `main` に入ったら、移行の説明を文書から削る。移行の説明の削除は本 spec に含めない（Non-goals）。
+- 本 spec の変更を含むリリースが `main` に入ったら、移行の説明を文書から削る。文書には、この削除の条件も書く。削除の作業は本 spec に含めない（Non-goals）。
 
 ## 目的と完了条件
 
@@ -135,7 +135,7 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。文書の本文は日本語の要点から、日本語だけの文脈のサブエージェント（汎用）が書く。
 
-- [ ] **T367-01-01** [テスト] `main-source.test.mjs` を新しい名前に変える。新しい名前は通し、古い名前、`hotfix`、`release`、`feature/release-x`、`Release/1` は通さない。`pre-commit.test.mjs` の表示の期待を新しい名前に変え、`agent/367-x` のブランチで commit できるテストを加える。失敗することを確認する（DC-367-7、DC-367-9、DC-367-10）。commit は T367-01-02 と同じにする（[開発の進め方](../../05-開発規則/workflow.md)の「循環」の例外）。
+- [ ] **T367-01-01** [テスト] `main-source.test.mjs` を新しい名前に変える。新しい名前は通し、古い名前、`hotfix`、`release`、`feature/release/1`、`agent/hotfix/1-x`、`Release/1` は通さない。`pre-commit.test.mjs` の表示の期待を新しい名前に変え、`agent/367-x` のブランチで commit できるテストを加える。失敗することを確認する（DC-367-7、DC-367-9、DC-367-10）。commit は T367-01-02 と同じにする（[開発の進め方](../../05-開発規則/workflow.md)の「循環」の例外）。
   - 依存：なし
   - 範囲：`scripts/ci/workflow/main-source.test.mjs`、`scripts/dev/lib/pre-commit.test.mjs`
   - 確認方法：`node --test` で新しいテストが失敗する

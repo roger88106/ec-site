@@ -1,4 +1,5 @@
 // Markdown の囲みのコードブロック（```、~~~）を読む。Mermaid の検査（mermaid/mermaid-check）と、文書の構造の検査が使う。文書の構造の検査は、コードブロックの中を除いて見出しを読むために使う。
+// 規則の文書の節の検査（rule-sections）は、閉じていないコメントを見つけるために使う。
 // CommonMark と同じく読む：
 //   - 開き：0〜3 個の空白で字下げした、3 個以上の ` か ~ の並び。後ろは info string。` の並びの開きは、info string に ` を含められない（1 行のコードの範囲になるため）
 //   - 閉じ：0〜3 個の空白で字下げした、開きと同じ字で、開き以上の長さの並び。後ろは空白だけ
@@ -37,15 +38,18 @@ export function readCodeBlocks(text) {
  * 文書の中の囲みのコードブロックと、HTML のコメントの範囲を、出る順に読む。
  *
  * @param {string} text 文書の内容（改行は LF でも CRLF でもよい）
- * @returns {{ codeBlocks: object[], comments: { line: number, start: number, end: number }[] }}
- *   codeBlocks は readCodeBlocks の結果と同じ形。comments はコメントの範囲を行ごとに分けたもの（line は行（1 から）、start と end は行の中の位置。end は含まない）
+ * @returns {{ codeBlocks: object[], comments: { line: number, start: number, end: number }[], unclosedComments: number[] }}
+ *   codeBlocks は readCodeBlocks の結果と同じ形。comments はコメントの範囲を行ごとに分けたもの（line は行（1 から）、start と end は行の中の位置。end は含まない）。
+ *   unclosedComments は、閉じのないまま文書の終わりまで続くコメントの開きの行（1 から。なければ空）
  */
 export function readBlocks(text) {
   const lines = text.split(/\r?\n/)
   const codeBlocks = []
   const comments = []
   let open = null
+  const unclosedComments = []
   let inComment = false
+  let commentStart = 0
   lines.forEach((line, index) => {
     if (open !== null) {
       if (isClose(line, open)) {
@@ -67,10 +71,12 @@ export function readBlocks(text) {
     }
     const scanned = scanComment(line, inComment)
     for (const range of scanned.ranges) comments.push({ line: index + 1, ...range })
+    if (scanned.inComment && !inComment) commentStart = index + 1
     inComment = scanned.inComment
   })
   if (open !== null) codeBlocks.push(open)
-  return { codeBlocks, comments }
+  if (inComment) unclosedComments.push(commentStart)
+  return { codeBlocks, comments, unclosedComments }
 }
 
 /**

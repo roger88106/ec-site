@@ -35,6 +35,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `progress` | 1→10 のアーカイブの spec の tasks が、全て済んでいることを確認する |
 | `risk` | 変更の危険度を判定し、pull request の本文の判定と比べる |
 | `role-permissions` | ロールと権限の対応表が、API の契約と運営者の realm の設定から再作成した表と一致することを確認する ※1 |
+| `rule-sections` | 書き方の規則の文書の各節に、`確認方法：` と `理由：` の行があることを確認する |
 | `runtime-versions` | JDK と Node のバージョンの一致と、workflow が直接書かずに参照していることを確認する |
 | `service-names` | 規則の本文に、AI のサービス固有の名前がないことを確認する |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する |

@@ -1,5 +1,5 @@
 // 文書の構造（見出しの名前と順）と、ID（US・DS・AC・BR・NFR・DC・DN・T）の定義と参照を読む関数。
-// spec・plan・tasks の構造の検査（spec-structure）と、固定の節に書き換えた機能仕様の検査が使う。Mermaid の検査（mermaid/mermaid-check）は、readDocument を使う。
+// spec・plan・tasks の構造の検査（spec-structure）と、固定の節に書き換えた機能仕様の検査が使う。Mermaid の検査（mermaid/mermaid-check）は、readDocument を使う。規則の文書の節の検査（rule-sections）は、readDocument、readHeadings、SETEXT_UNDERLINE を使う。
 // 見出しと ID は、コードブロックと HTML のコメント（lib/code-block）と、1 行のコード（lib/code-span）の中を読まない。
 //   - 見出し：ATX の見出し（`## 名前`。閉じの `#` は名前に含めない）と、Setext の見出し（段落の行の直後の `---` は `##`、`===` は `#`。段落の前は空行・ATX の見出し・区切り線・文書の始めだけで、箇条・引用・HTML のブロックの続きの行や、4 個以上字下げした行は見出しにしない）
 //   - ID の定義は 3 つ：字下げしない箇条の先頭の太字、見出しの先頭の US・DS、タスクの行の先頭の太字。他の太字は参照として読む
@@ -55,7 +55,7 @@ const LIST_ELEMENT_WITH_NUMBER = new RegExp(`^(、(\\d+)-(\\d+))(?:${RANGE_MARK}
 const TASK_LIST_ELEMENT = new RegExp(`^(、(\\d+))(?:${RANGE_MARK}(\\d+)${NUMBER_END})?`)
 
 /** Setext の見出しの下線（`---` は `##`、`===` は `#`） */
-const SETEXT_UNDERLINE = /^ {0,3}(-+|=+)[ \t]*$/
+export const SETEXT_UNDERLINE = /^ {0,3}(-+|=+)[ \t]*$/
 
 /** 段落の行でない行（空行・ATX の見出し・箇条・表・引用・HTML のブロック・区切り線） */
 const NOT_PARAGRAPH = /^\s*$|^ {0,3}#{1,6}(?:[ \t]|$)|^\s*(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)|^\s*\||^\s*>|^ {0,3}<[A-Za-z/!?]|^ {0,3}([*_])(?:[ \t]*\1){2,}[ \t]*$/

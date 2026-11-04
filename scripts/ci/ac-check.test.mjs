@@ -98,6 +98,60 @@ describe('spec の AC の取り出し', () => {
     assert.deepEqual(definitions.map((definition) => definition.ac), ['5-1'])
   })
 
+  test('定義の形でない 5 つの書き方（太字のない箇条・箇条のない太字・チェックボックス・見出し・表の行）を、崩れた定義の行として報告する', () => {
+    const lines = [
+      '- AC-400 文。',
+      '* AC-5-1 文。',
+      '1. AC-5-2 文。',
+      '  - AC-5-3 文。',
+      '**AC-400** 文。',
+      '**AC-5-4**',
+      '- [ ] **AC-400** 文。',
+      '- [x] **AC-5-5** 文。',
+      '- [ ] AC-5-6 文。',
+      '### AC-400 文。',
+      '## **AC-5-7** 文。',
+      '### AC-5-8',
+      '| AC-400 | 文。 |',
+      '| **AC-5-9** | 文。 |',
+    ]
+    for (const [index, line] of lines.entries()) {
+      const { definitions, problems } = parseSpecAcDefinitions(['前の文。', line].join('\n'), '5-x')
+      assert.deepEqual(definitions, [], line)
+      assert.equal(problems.length, 1, line)
+      assert.match(problems[0], /^2 行：AC の定義の行が崩れている/, `${index}：${line}`)
+    }
+  })
+
+  test('文の中で AC の番号を書く書き方は問題にしない', () => {
+    const lines = [
+      '- AC-90 にテストがない。',
+      '- AC-5-1 の補足。',
+      '  - AC-5-1 と同じ。',
+      '- AC-90、91 を変える。',
+      '- AC-90（注文）を変える。',
+      '- AC-90 → AC-147 に置き換える。',
+      'AC-400 は文である。',
+      '**AC-400** は文である。',
+      '- [ ] AC-5-1 のテストを書く。',
+      '- [ ] **T5-01** AC-5-1 文。',
+      '### 6.3 読み上げの領域（AC-193-2）',
+      '### AC-5-1 の確認方法',
+      '| AC-73（カート） | 文。 |',
+      '| AC-307 のテストの名前 | 文。 |',
+      '| AC-94、95 | 文。 |',
+      '| 項目 | AC-44 | 文。 |',
+    ]
+    for (const line of lines) {
+      assert.deepEqual(parseSpecAcDefinitions(line, '5-x'), { definitions: [], problems: [] }, line)
+    }
+  })
+
+  test('定義の形でない 5 つの書き方でも、コードブロック・HTML のコメント・1 行のコードの中は問題にしない', () => {
+    const spec = ['```markdown', '- AC-5-1 文。', '| AC-5-2 | 文。 |', '```', '<!-- ### AC-5-3 文。 -->', '`**AC-5-4** 文。`', '| `AC-5-5` | 文。 |'].join('\n')
+    assert.deepEqual(parseSpecAcDefinitions(spec, '5-x'), { definitions: [], problems: [] })
+  })
+
   test('同じ AC を 2 回定義していても、ac-check では問題にしない（構造の検査が見る）', () => {
     const { definitions, problems } = parseSpecAcDefinitions('- **AC-5-1** 一つ目。\n- **AC-5-1** もう一度。', '5-x')
     assert.equal(definitions.length, 2)
@@ -566,12 +620,28 @@ describe('AC 一覧の行の検査', () => {
 
   test('AC-n の行は、元の spec が番号だけだと、ディレクトリがあっても問題にする（有効、変更、廃止）', () => {
     const content = '根拠は[注文モジュール](../../docs/03-機能仕様/order.md)の「注文（集約）」。'
-    const rows = [listRow({ ac: 'AC-400', origin: '227' }), listRow({ ac: 'AC-400', origin: '227', status: '変更', changedBy: '227', content }), listRow({ ac: 'AC-400', origin: '227', module: '', status: '廃止', changedBy: '227', content: '' })]
+    const rows = [listRow({ ac: 'AC-312', origin: '227' }), listRow({ ac: 'AC-312', origin: '227', status: '変更', changedBy: '227', content }), listRow({ ac: 'AC-312', origin: '227', module: '', status: '廃止', changedBy: '227', content: '' })]
     for (const row of rows) {
       const problems = listProblems(row)
       assert.equal(problems.length, 1, row)
-      assert.match(problems[0], /AC-400：元の spec（227）が番号だけ/, row)
+      assert.match(problems[0], /AC-312：元の spec（227）が番号だけ/, row)
     }
+  })
+
+  test('AC-n の番号が上限の 312 を超える行は、元の spec と状態によらず問題にする', () => {
+    const content = '1 円以上。根拠は[注文モジュール](../../docs/03-機能仕様/order.md)の「注文（集約）」。'
+    const rows = [listRow({ ac: 'AC-313', origin: 'MVP-019' }), listRow({ ac: 'AC-313', origin: 'MVP-019', status: '変更', changedBy: 'MVP-019', content }), listRow({ ac: 'AC-313', origin: 'MVP-019', module: '', status: '廃止', changedBy: 'MVP-019', content: '' })]
+    for (const row of rows) {
+      const problems = listProblems(row)
+      assert.equal(problems.length, 1, row)
+      assert.match(problems[0], /AC-313：AC-n の番号が上限（312）を超えている/, row)
+    }
+    assert.ok(listProblems(listRow({ ac: 'AC-400', origin: '227' })).some((problem) => problem.includes('上限（312）')))
+  })
+
+  test('AC-n の番号が上限の 312 の行と、AC-s-n の形の行は、上限の問題にしない', () => {
+    assert.deepEqual(listProblems(listRow({ ac: 'AC-312', origin: 'MVP-019' })), [])
+    assert.deepEqual(listProblems(listRow({ ac: 'AC-227-313', origin: '227' })), [])
   })
 
   test('進行中の spec に AC-n の形で定義した AC は、転記した行が問題になる', () => {
@@ -1096,6 +1166,20 @@ describe('進行中の spec を読む範囲', () => {
       const { problems } = readInProgressSpecs(dir)
       assert.equal(problems.length, 1)
       assert.match(problems[0], /5-x\/spec\.md/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('進行中の spec の、定義の形でない書き方を、spec のパスを付けて問題にする', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'ac-check-'))
+    try {
+      mkdirSync(path.join(dir, '5-x'))
+      writeFileSync(path.join(dir, '5-x', 'spec.md'), '- AC-5-1 文。\n')
+      const { specs, problems } = readInProgressSpecs(dir)
+      assert.deepEqual(specs.map((spec) => spec.definitions), [[]])
+      assert.equal(problems.length, 1)
+      assert.match(problems[0], /5-x\/spec\.md：1 行：AC の定義の行が崩れている/)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

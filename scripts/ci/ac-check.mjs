@@ -42,6 +42,7 @@
 //   - 元の spec：変えた spec の各番号と同じ。
 //     AC が AC-s-n の形の行（状態によらない）で、元の spec が s と文字列として一致しない（0 埋めの違いと、MVP- を付けた値も一致しない）。
 //     AC が MVP の形（AC-n）の行（状態によらない）で、元の spec が MVP-<番号> でない。番号と n は比べない
+//   - AC の番号：AC が MVP の形（AC-n）の行（状態によらない）で、n が上限（312）を超える。MVP は終わっていて、AC-n は増えないため
 //   - 今の内容：有効・変更の AC で、空か仮の値（—、なし、<…>）。<br /> がある
 //   - 今の内容の参照：spec の中だけで通じる参照（※1、事実 2、US の番号、spec の「…」）がある
 //   - 今の内容の根拠：変更と common の AC で、根拠（リンク [<文書の名前>](<パス>) と、その直後の「の「<見出し>」」）がない。
@@ -54,6 +55,8 @@
 //   - 進行中の spec：AC が AC 一覧にない、AC 一覧の元の spec がその spec でない（番号の重なり）。
 //     定義の行が崩れている（箇条の先頭の太字の AC が、- **AC-<番号>** <文> の形でない）。
 //     崩れた形には、* や + の箇条、字下げ、番号付きの箇条を含む。
+//     太字のない箇条・箇条のない太字・チェックボックス・見出し・表の行（先頭のセルが番号だけ）の定義も、崩れた行にする。
+//     番号の直後が助詞か記号の行は、文の中で番号を書いた行として問題にしない（- AC-<番号> の補足）。
 //     spec から消した AC が、AC 一覧に有効・変更で残っている
 //   - テスト名の AC：AC 一覧にない AC 番号がある、廃止の AC を参照する
 //   - テスト名の書き方：範囲（AC-n〜m）、新しい形の後の数字だけの番号（AC-s-n、m）、空白の区切り（AC-n AC-m）
@@ -303,6 +306,34 @@ const SEPARATOR_ROW = /^\|(?:\s*:?-+:?\s*\|)+$/
 /** AC の番号のセル（0 で埋めない） */
 const AC_CELL = /^AC-([1-9][0-9]*(?:-[1-9][0-9]*)?)$/
 
+/** MVP の形（AC-n）の番号の上限。MVP は終わっていて、AC-n は増えない */
+const MVP_AC_LIMIT = 312
+
+/** AC の番号の後に文が続く形。番号の直後が助詞か記号なら、文の中で番号を書いた行なので当たらない */
+const AC_SENTENCE = '\\s+(?!(?:の|に|は|を|が|で|と|も|へ|や|か|まで|より|など|だけ|および|または|[\\p{P}\\p{S}]))\\S'
+
+/** AC の番号の後が、文か行の終わりである形 */
+const AC_SENTENCE_OR_END = `(?:${AC_SENTENCE}|\\s*$)`
+
+/** 太字でも太字でなくてもよい AC の番号 */
+const AC_LABEL = `(?:\\*\\*AC-${AC_NUMBER}\\*\\*|AC-${AC_NUMBER})`
+
+/** AC の定義を書こうとした行の形。定義の形でなければ、読み飛ばされて検査を通らないよう、崩れた行として報告する */
+const DEFINITION_ATTEMPTS = [
+  // 箇条（- * + と番号。字下げしてもよい）の先頭の太字の AC
+  /^\s*(?:[-*+]|\d+[.)])\s*\*\*AC-/,
+  // 太字のない箇条
+  new RegExp(`^\\s*(?:[-*+]|\\d+[.)])\\s+AC-${AC_NUMBER}${AC_SENTENCE}`, 'u'),
+  // 箇条のない太字
+  new RegExp(`^\\s*\\*\\*AC-${AC_NUMBER}\\*\\*${AC_SENTENCE_OR_END}`, 'u'),
+  // チェックボックス
+  new RegExp(`^\\s*[-*+]\\s*\\[[ xX]\\]\\s*${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
+  // 見出し
+  new RegExp(`^\\s*#{1,6}\\s+${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
+  // 表の行（先頭のセルが番号だけ）
+  new RegExp(`^\\s*\\|\\s*${AC_LABEL}\\s*\\|`, 'u'),
+]
+
 /** 元の spec・変えた spec の列の、spec の番号の形。MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（0 埋めの有無は変えずに、そのまま比べる） */
 const SPEC_NUMBER = /^(?:MVP-(?<mvp>[0-9]{3})|(?<plain>[0-9]+))$/
 
@@ -544,6 +575,7 @@ export function checkAcRows({ rows, modules, specDirs }) {
       // AC-n の行は、元の spec が MVP の spec。形の誤りと、ディレクトリがない値は、originProblem で報告済み
       add(`元の spec（${row.origin}）が番号だけで、AC が MVP の形（AC-n）である。MVP の AC なら元の spec を MVP-<番号> に、1→10 の AC なら AC を AC-<spec の番号>-<連番> に直す`)
     }
+    if (typeof row.ac === 'number' && row.ac > MVP_AC_LIMIT) add(`AC-n の番号が上限（${MVP_AC_LIMIT}）を超えている。MVP は終わっていて、AC-n は増えない。1→10 の AC は AC-<spec の番号>-<連番> にする`)
     // 変更・廃止の AC の変えた spec の各番号（空と「—」は、状態ごとの検査が見る）
     const checkChangedBy = () => {
       for (const number of row.changedBy.split(SPEC_NUMBER_SEPARATOR)) {
@@ -623,10 +655,8 @@ export function parseSpecAcDefinitions(markdown, specRel) {
   const definitions = []
   const problems = []
   const definition = new RegExp(`^- \\*\\*AC-(${AC_NUMBER})\\*\\*\\s+(\\S.*)$`)
-  // 箇条（- * + と番号。字下げしてもよい）の先頭の太字の AC。定義の形でなければ、読み飛ばされて検査を通らないよう、崩れた行として報告する
-  const attempt = /^\s*(?:[-*+]|\d+[.)])\s*\*\*AC-/
   plain.forEach((line, index) => {
-    if (!attempt.test(line)) return
+    if (!DEFINITION_ATTEMPTS.some((attempt) => attempt.test(line))) return
     const match = definition.exec(line)
     if (!match) {
       problems.push(`${index + 1} 行：AC の定義の行が崩れている（- **AC-<番号>** <文> の形にする）`)

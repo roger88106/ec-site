@@ -43,16 +43,16 @@ describe('commit するブランチ', () => {
   test('develop では、今の develop から作業ブランチを作る手順を表示する（ステージした変更は持ち越される）', () => {
     const message = branchRejection('develop')
     assert.match(message, /develop には直接 commit しない/)
-    assert.match(message, /^ {2}git switch -c <issue の番号>-<短い名前>$/m)
+    assert.match(message, /^ {2}git switch -c agent\/<issue の番号>-<短い名前>$/m)
     assert.match(message, /持ち越される/)
   })
 
   test('main では、緊急の修正は main から hotfix のブランチを、それ以外は退避して develop から作業ブランチを作る手順を表示する', () => {
     const message = branchRejection('main')
     assert.match(message, /main には直接 commit しない/)
-    assert.match(message, /^ {2}git switch -c hotfix-<issue の番号>-<短い名前>$/m)
+    assert.match(message, /^ {2}git switch -c hotfix\/<issue の番号>-<短い名前>$/m)
     assert.match(message, /^ {2}git stash push -m <退避の名前>$/m)
-    assert.match(message, /^ {2}git switch -c <issue の番号>-<短い名前> develop$/m)
+    assert.match(message, /^ {2}git switch -c agent\/<issue の番号>-<短い名前> develop$/m)
     assert.doesNotMatch(message, /持ち越される/)
   })
 
@@ -73,6 +73,7 @@ describe('commit するブランチ', () => {
   test('HEAD がブランチを指していれば、そのブランチの名前を返す', () => {
     assert.equal(branchOfHead({ status: 0, stdout: 'refs/heads/develop\n' }), 'develop')
     assert.equal(branchOfHead({ status: 0, stdout: 'refs/heads/246-enforce-hooks\r\n' }), '246-enforce-hooks')
+    assert.equal(branchOfHead({ status: 0, stdout: 'refs/heads/agent/367-x\n' }), 'agent/367-x')
   })
 
   test('detached HEAD か、HEAD を読めなければ null を返す', () => {
@@ -357,7 +358,7 @@ describe('実際の hook', () => {
   const markedCheck = '#!/usr/bin/env bash\necho CHECKED\n'
 
   test('develop と main では、検査の前に失敗にし、ブランチごとの作業ブランチを作る手順を表示する', () => {
-    const expected = { develop: /git switch -c <issue の番号>-<短い名前>$/m, main: /git switch -c hotfix-<issue の番号>-<短い名前>$/m }
+    const expected = { develop: /git switch -c agent\/<issue の番号>-<短い名前>$/m, main: /git switch -c hotfix\/<issue の番号>-<短い名前>$/m }
     for (const [head, command] of Object.entries(expected)) {
       const { status, output, error } = runHook(markedCheck, { head })
       assert.equal(status, BRANCH_REJECTED)
@@ -368,7 +369,7 @@ describe('実際の hook', () => {
   })
 
   test('作業ブランチと detached HEAD では、検査を実行して通す', () => {
-    for (const head of [WORK_BRANCH, null]) {
+    for (const head of [WORK_BRANCH, 'agent/367-x', null]) {
       const { status, output } = runHook(markedCheck, { head })
       assert.equal(status, 0)
       assert.match(output, /CHECKED/)

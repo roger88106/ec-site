@@ -266,6 +266,18 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
+  test('作業ブランチ、緊急の修正、リリースのブランチの名前に `/` を含む push は通し、force と削除は拒否する', () => {
+    for (const command of ['git push -u origin agent/367-x', 'git push origin hotfix/1-x', 'git push origin release/1.2.0']) {
+      assertPassed(command)
+    }
+    for (const command of ['git push -f origin agent/367-x', 'git push origin +agent/367-x']) {
+      assertDenied(command, /force push/)
+    }
+    for (const command of ['git push --delete origin agent/367-x', 'git push origin :agent/367-x']) {
+      assertDenied(command, /ブランチを消して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+  })
+
   test('tag の削除（tag を指す名前と refs/tags/ の refspec）は拒否せず、確認を求める', () => {
     for (const command of [
       'git push origin --delete v1.0.0',

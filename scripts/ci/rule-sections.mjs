@@ -82,8 +82,11 @@ function analyze(text) {
     }
     if (hasBody) sections.push({ title: stripNumber(heading.title), headingLine: heading.line, start, end, confirmRows: [] })
   })
-  return { raw, doc, sections }
+  return { raw, doc, sections, headings }
 }
+
+/** 見出しの形の誤り（# の後が半角の空白でない。全角の空白を含む） */
+const MALFORMED_HEADING = /^ {0,3}#{1,6}(?:[^#\s]|　)/
 
 /**
  * 節（本文のある見出し）の、番号を除いた見出しを返す。
@@ -103,7 +106,7 @@ export function listSections(text) {
  * @returns {{ line: number, message: string }[]} 問題（行の順）
  */
 export function findSectionProblems(text, isExcluded = () => false) {
-  const { raw, doc, sections } = analyze(text)
+  const { raw, doc, sections, headings } = analyze(text)
   const problems = [
     ...doc.unclosed.map((line) => ({ line, message: '閉じていないコードブロックがある（後ろの節を読めない）' })),
     ...readBlocks(text).unclosedComments.map((line) => ({ line, message: '閉じていない HTML のコメントがある（後ろの行を読めない）' })),
@@ -113,8 +116,18 @@ export function findSectionProblems(text, isExcluded = () => false) {
     for (let line = section.start; line <= section.end; line++) ownerOf.set(line, section)
   })
 
+  const firstSection = headings.findIndex((heading) => heading.level >= 2)
+  if (firstSection >= 0) {
+    for (const heading of headings.slice(firstSection)) {
+      if (heading.level === 1) problems.push({ line: heading.line, message: '最初の ## より後に深さ 1 の見出しがある（文書の題は 1 つだけ）' })
+    }
+  }
+
   for (let line = 1; line <= raw.length; line++) {
-    const matches = [...doc.plain[line - 1].matchAll(CONFIRM_CANDIDATE)]
+    if (MALFORMED_HEADING.test(doc.plain[line - 1])) {
+      problems.push({ line, message: '見出しの形が誤り（# の後に半角の空白がない）' })
+    }
+    const matches =[...doc.plain[line - 1].matchAll(CONFIRM_CANDIDATE)]
     if (matches.length === 0) continue
     const owner = ownerOf.get(line)
     const [first, ...others] = matches
@@ -162,7 +175,9 @@ export function checkDocuments(docs, exclusions) {
   const existing = new Set()
   const problems = []
   for (const { file, text } of docs) {
-    for (const title of listSections(text)) existing.add(keyOf(file, title))
+    const titles = listSections(text)
+    for (const title of titles) existing.add(keyOf(file, title))
+    if (titles.length === 0) problems.push({ file, line: 1, message: '節が 1 つもない（本文のある ## から ###### の見出しがない）' })
     const isExcluded = (title) => Object.hasOwn(exclusions, keyOf(file, title))
     for (const problem of findSectionProblems(text, isExcluded)) problems.push({ file, ...problem })
   }
@@ -200,7 +215,7 @@ export function readTargetDocs(reviewText) {
  *
  * @param {string} reviewText 書き方の規則とレビューの本文
  * @param {(file: string) => string} read ファイル名から内容を返す関数。ないときは例外を投げる
- * @returns {{ docs: { file: string, text: string }[], problems: string[] }} 読めた文書と、読めなかったことの文
+ * @returns {{ docs: { file: string, text: string }[], problems: string[] }} 読めた文書と、読めなかった文書の誤りの文
  */
 export function loadDocuments(reviewText, read) {
   const names = readTargetDocs(reviewText)
@@ -208,7 +223,7 @@ export function loadDocuments(reviewText, read) {
   const problems = []
   if (names.length === 0) problems.push(`${REVIEW_DOC}：冒頭の文に対象の文書のリンクがない（対象を読めない）`)
   for (const file of names) {
-    if (file === '' || /[/:]/.test(file)) {
+    if (file === '' || /[/\\:]/.test(file)) {
       problems.push(`${REVIEW_DOC}：リンク先「${file}」は対象にできない（同じフォルダーの文書だけを対象にする。ファイル名だけで書く）`)
       continue
     }
@@ -251,6 +266,7 @@ if (isMain(import.meta.url)) {
   }
   const allDocs = readdirSync(RULE_DIR)
     .filter((file) => file.endsWith('.md'))
+    .sort()
     .map((file) => ({ file, text: readFileSync(`${RULE_DIR}/${file}`, 'utf8') }))
   const unlisted = findUnlistedDocs(allDocs, readTargetDocs(reviewText))
   const { problems, exclusionProblems } = checkDocuments(

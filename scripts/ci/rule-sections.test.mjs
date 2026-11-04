@@ -348,15 +348,36 @@ describe('検出すべき例', () => {
 
   test('例 50：同じフォルダーのファイル名だけを許し、パスや URL のリンクは対象にせず問題にする', () => {
     assert.deepEqual(readTargetDocs(['# 題', '', '規則（[A](a.md#節)、[B](sub/b.md)）。'].join('\n')), ['a.md', 'sub/b.md'])
-    const review = ['# 題', '', '規則（[A](a.md)、[B](sub/b.md)、[C](../c.md)、[D](https://example.com/d.md)）。'].join('\n')
+    const review = ['# 題', '', '規則（[A](a.md)、[B](sub/b.md)、[C](../c.md)、[D](https://example.com/d.md)、[E](..\\c.md)）。'].join('\n')
     const read = (file) => {
       assert.equal(file, 'a.md')
       return withRows('本文。')
     }
     const result = loadDocuments(review, read)
     assert.deepEqual(result.docs.map((doc) => doc.file), ['a.md'])
-    assert.equal(result.problems.length, 3)
+    assert.equal(result.problems.length, 4)
     for (const problem of result.problems) assert.match(problem, /同じフォルダーの文書だけ/)
+  })
+
+  test('例 52：半角の空白のない見出しの形（##名前、全角の空白）は失敗にする', () => {
+    for (const bad of ['##名前', '##　名前']) {
+      expectOne(withRows(bad), /見出し/, LINE_OF_EXTRA)
+    }
+  })
+
+  test('例 53：最初の ## より後の深さ 1 の見出しは、ATX でも Setext でも失敗にする', () => {
+    expectOne([section(...rows), '', '# 二つ目'].join('\n'), /深さ 1/, 6)
+    expectOne([section(...rows), '', '二つ目', '====='].join('\n'), /深さ 1/, 6)
+    expectNone(['# 題', '', section(...rows)].join('\n'))
+  })
+
+  test('例 54：節が 1 つもない文書（空のファイル、題だけの文書）は失敗にする', () => {
+    for (const text of ['', '# 題', '# 題\n\n冒頭の文。']) {
+      const result = checkDocuments([{ file: 'a.md', text }], {})
+      assert.equal(result.problems.length, 1, text)
+      assert.equal(result.problems[0].file, 'a.md')
+      assert.match(result.problems[0].message, /節が 1 つもない/)
+    }
   })
 
   test('例 51：冒頭の文のリンクにない文書が、行頭の確認方法の行を持てば失敗にする', () => {

@@ -9,11 +9,12 @@
 //   - 節に、字下げのない行頭から始まり、内容のある `理由：` の行が 1 つ以上ある
 //   - `確認方法：` が、行の途中・箇条・表のセル・字下げ・見出し・太字・半角のコロン・コロンの前の空白の形で書かれていない（節の外も同じ）
 //   - コードブロック、インラインコード、HTML のコメントの中は見ない
+//   - コードブロックと HTML のコメントが閉じている。見出しの形が正しい（`##名前`、全角の空白、名前のない `##` でない）。深さ 1 の見出しは文書の題だけ。節が 1 つ以上ある
 // 判定の区分は誤りの防止。誤って書いたものを拒否し、意図して作った回避（見出しの偽装など）は対象にしない。許可する形の一覧で判定する。
 // 失敗したとき：行を加えるか、形を直す。形から外れる節は、除外の一覧に理由を書く。
 //   対象の文書を読めないとき・リンクにないときは、書き方の規則とレビューの冒頭の文のリンクを文書の置き場所に合わせる（対象は同じフォルダーだけ）。
 //   除外した節の見出しかファイル名を変えたときは、除外のキーを新しい名前に直す（一覧から消さない）。
-//   閉じていないコードブロックかコメントは閉じる。
+//   閉じていないコードブロックかコメントは閉じる。見出しは `## 名前` の形にし、題の他の `#` は `##` にする。
 // 除外：rule-sections-exclusions.json に {キー: 理由} を書く。キーは `<ファイル>「<番号を除いた見出し>」`（ルートからのパス）。
 //   除外するのは、行の有無だけ。形の誤りは除外しない。理由のない除外と、今の文書にない節の除外は失敗にする。
 // 使い方：node scripts/ci/rule-sections.mjs（リポジトリのルートで）
@@ -41,8 +42,8 @@ const CONFIRM_HEAD = '確認方法：'
 /** 理由の行の始まり */
 const REASON_HEAD = '理由：'
 
-/** 見出しの番号 */
-const HEADING_NUMBER = /^\d+(?:\.\d+)*\.?\s+/
+/** 見出しの番号（`1.`、`1.1`、`1.1.`。点のない数字は番号にしない） */
+const HEADING_NUMBER = /^(?:\d+\.|\d+(?:\.\d+)+\.?)\s+/
 
 /**
  * 見出しから番号を除く。
@@ -58,8 +59,8 @@ function stripNumber(title) {
  * 文書を、見出しと節に分けて読む。
  *
  * @param {string} text 文書の内容
- * @returns {{ raw: string[], doc: ReturnType<typeof readDocument>, sections: object[] }}
- *   raw は元の行、sections は本文のある深さ 2 以上の見出し
+ * @returns {{ raw: string[], doc: ReturnType<typeof readDocument>, sections: object[], headings: ReturnType<typeof readHeadings> }}
+ *   raw は元の行、sections は本文のある深さ 2 以上の見出し、headings は全ての見出し
  */
 function analyze(text) {
   const raw = text.split(/\r?\n/)
@@ -76,17 +77,14 @@ function analyze(text) {
     if (heading.level < 2) return
     const start = bodyStarts[index]
     const end = index + 1 < headings.length ? headings[index + 1].line - 1 : raw.length
-    let hasBody = false
-    for (let line = start; line <= end; line++) {
-      if (raw[line - 1].trim() !== '') hasBody = true
-    }
+    const hasBody = raw.slice(start - 1, end).some((line) => line.trim() !== '')
     if (hasBody) sections.push({ title: stripNumber(heading.title), headingLine: heading.line, start, end, confirmRows: [] })
   })
   return { raw, doc, sections, headings }
 }
 
-/** 見出しの形の誤り（# の後が半角の空白でない。全角の空白を含む） */
-const MALFORMED_HEADING = /^ {0,3}#{1,6}(?:[^#\s]|　)/
+/** 見出しの形の誤り（名前がない、全角の空白、# の後に空白がない。`#349` のような issue の番号は見出しにしない） */
+const MALFORMED_HEADING = /^ {0,3}(?:#{1,6}[ \t]*$|#{1,6}　|#{2,6}[^#\s]|#[^#\s\d])/
 
 /**
  * 節（本文のある見出し）の、番号を除いた見出しを返す。
@@ -116,18 +114,16 @@ export function findSectionProblems(text, isExcluded = () => false) {
     for (let line = section.start; line <= section.end; line++) ownerOf.set(line, section)
   })
 
-  const firstSection = headings.findIndex((heading) => heading.level >= 2)
-  if (firstSection >= 0) {
-    for (const heading of headings.slice(firstSection)) {
-      if (heading.level === 1) problems.push({ line: heading.line, message: '最初の ## より後に深さ 1 の見出しがある（文書の題は 1 つだけ）' })
-    }
-  }
+  headings.forEach((heading, index) => {
+    // 文書の題は、最初の見出しの 1 つだけ
+    if (heading.level === 1 && index > 0) problems.push({ line: heading.line, message: '文書の題の他に深さ 1 の見出しがある（文書の題は最初の見出しの 1 つだけ）' })
+  })
 
   for (let line = 1; line <= raw.length; line++) {
     if (MALFORMED_HEADING.test(doc.plain[line - 1])) {
-      problems.push({ line, message: '見出しの形が誤り（# の後に半角の空白がない）' })
+      problems.push({ line, message: '見出しの形が誤り（# の後に半角の空白と名前を書く）' })
     }
-    const matches =[...doc.plain[line - 1].matchAll(CONFIRM_CANDIDATE)]
+    const matches = [...doc.plain[line - 1].matchAll(CONFIRM_CANDIDATE)]
     if (matches.length === 0) continue
     const owner = ownerOf.get(line)
     const [first, ...others] = matches
@@ -153,11 +149,10 @@ export function findSectionProblems(text, isExcluded = () => false) {
     if (section.confirmRows.length === 0) {
       problems.push({ line: section.headingLine, message: `「${section.title}」に確認方法：の行がない` })
     }
-    let reasons = 0
-    for (let line = section.start; line <= section.end; line++) {
-      if (doc.plain[line - 1].startsWith(REASON_HEAD) && doc.lines[line - 1].slice(REASON_HEAD.length).trim() !== '') reasons++
-    }
-    if (reasons === 0) {
+    const hasReason = doc.plain
+      .slice(section.start - 1, section.end)
+      .some((line, offset) => line.startsWith(REASON_HEAD) && doc.lines[section.start - 1 + offset].slice(REASON_HEAD.length).trim() !== '')
+    if (!hasReason) {
       problems.push({ line: section.headingLine, message: `「${section.title}」に理由：の行（行頭から始まり、内容のある行）がない` })
     }
   }

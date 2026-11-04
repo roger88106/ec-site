@@ -55,7 +55,7 @@ const LIST_ELEMENT_WITH_NUMBER = new RegExp(`^(、(\\d+)-(\\d+))(?:${RANGE_MARK}
 const TASK_LIST_ELEMENT = new RegExp(`^(、(\\d+))(?:${RANGE_MARK}(\\d+)${NUMBER_END})?`)
 
 /** Setext の見出しの下線（`---` は `##`、`===` は `#`） */
-export const SETEXT_UNDERLINE =/^ {0,3}(-+|=+)[ \t]*$/
+export const SETEXT_UNDERLINE = /^ {0,3}(-+|=+)[ \t]*$/
 
 /** 段落の行でない行（空行・ATX の見出し・箇条・表・引用・HTML のブロック・区切り線） */
 const NOT_PARAGRAPH = /^\s*$|^ {0,3}#{1,6}(?:[ \t]|$)|^\s*(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)|^\s*\||^\s*>|^ {0,3}<[A-Za-z/!?]|^ {0,3}([*_])(?:[ \t]*\1){2,}[ \t]*$/

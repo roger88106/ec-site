@@ -360,7 +360,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 52：半角の空白のない見出しの形（##名前、全角の空白）は失敗にする', () => {
-    for (const bad of ['##名前', '##　名前']) {
+    for (const bad of ['##名前', '##　名前', '#名前', '##', '## ']) {
       expectOne(withRows(bad), /見出し/, LINE_OF_EXTRA)
     }
   })
@@ -368,6 +368,7 @@ describe('検出すべき例', () => {
   test('例 53：最初の ## より後の深さ 1 の見出しは、ATX でも Setext でも失敗にする', () => {
     expectOne([section(...rows), '', '# 二つ目'].join('\n'), /深さ 1/, 6)
     expectOne([section(...rows), '', '二つ目', '====='].join('\n'), /深さ 1/, 6)
+    expectOne(['# 題', '', '# 二つ目', '', section(...rows)].join('\n'), /深さ 1/, 3)
     expectNone(['# 題', '', section(...rows)].join('\n'))
   })
 
@@ -543,6 +544,14 @@ describe('検出してはいけない例', () => {
 
   test('例 30：箇条の確認方法が「- 整形：なし」でも、方法の値は判定しない', () => {
     expectNone(section('理由：理由を書く。', '確認方法：', '', '- 整形：なし'))
+  })
+
+  test('例 31：行頭の issue の番号は、見出しの形の誤りにしない', () => {
+    expectNone(withRows('#349 に記録する。'))
+  })
+
+  test('例 32：番号でない先頭の数字は、見出しから除かない', () => {
+    assert.deepEqual(listSections(['## 2 つの節', '', ...rows, '', '## 1. 節', '', ...rows, '', '### 1.1 小節', '', ...rows].join('\n')), ['2 つの節', '節', '小節'])
   })
 })
 

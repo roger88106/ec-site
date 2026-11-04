@@ -538,7 +538,7 @@ export function checkAcRows({ rows, modules, specDirs }) {
     // AC-s-n の行は、元の spec が s と同じ（文字列として完全一致）
     if (typeof row.ac === 'string') {
       const acSpec = row.ac.split('-')[0]
-      if (row.origin !== acSpec) add(`元の spec（${row.origin}）が AC の番号の spec（${acSpec}）と違う。AC-s-n の s と同じ番号にする`)
+      if (row.origin !== acSpec) add(`元の spec（${row.origin}）が AC の番号に含まれる spec（${acSpec}）と違う。誤っている方を直す`)
     }
     // 変更・廃止の AC の変えた spec の各番号（空と「—」は、状態ごとの検査が見る）
     const checkChangedBy = () => {

@@ -548,7 +548,7 @@ describe('AC 一覧の行の検査', () => {
   test('AC-s-n の行は、元の spec が s と完全一致でないと問題にする（別の番号、MVP-007、0 埋めの違い）', () => {
     for (const origin of ['9', '007', 'MVP-007']) {
       const problems = listProblems(listRow({ ac: 'AC-7-1', origin }))
-      assert.ok(problems.some((problem) => problem.includes(`元の spec（${origin}）が AC の番号の spec（7）と違う`)), origin)
+      assert.ok(problems.some((problem) => problem.includes(`元の spec（${origin}）が AC の番号に含まれる spec（7）と違う`)), origin)
     }
     assert.deepEqual(listProblems(listRow({ ac: 'AC-7-1', origin: '7' })), [])
   })
@@ -556,13 +556,12 @@ describe('AC 一覧の行の検査', () => {
   test('AC-s-n の行は、状態（変更・廃止）によらず、元の spec と s を比べる', () => {
     for (const status of ['変更', '廃止']) {
       const problems = listProblems(listRow({ ac: 'AC-7-1', origin: '9', status, changedBy: '9' }))
-      assert.ok(problems.some((problem) => problem.includes('AC の番号の spec（7）と違う')), status)
+      assert.ok(problems.some((problem) => problem.includes('AC の番号に含まれる spec（7）と違う')), status)
     }
   })
 
   test('MVP の形（AC-n）の行は、元の spec と AC の番号を比べない', () => {
-    const problems = listProblems(listRow({ ac: 'AC-7', origin: 'MVP-001' }))
-    assert.ok(!problems.some((problem) => problem.includes('AC の番号の spec')))
+    assert.deepEqual(listProblems(listRow({ ac: 'AC-7', origin: 'MVP-001' })), [])
   })
 
   test('MVP-<番号> は、archive/mvp/ の下のディレクトリに対応する', () => {

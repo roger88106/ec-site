@@ -200,7 +200,7 @@ describe('ロールと権限の対応表', () => {
     })
   })
 
-  test('ロールの表はロールと説明の 2 列、権限の表はロールを列にして権限を行にする。管理 API の表は 3 列。要約から AC の番号を除く', () => {
+  test('ロールの表はロールと説明の 2 列、権限の表はロールを列にして権限を行にする。管理 API の表は 3 列', () => {
     const { markdown, problems } = renderTables({
       admin: readOperations(ADMIN).operations,
       store: readOperations(STORE).operations,

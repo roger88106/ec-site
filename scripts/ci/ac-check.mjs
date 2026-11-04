@@ -9,9 +9,11 @@
 //     手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容。
 //     転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは手動で修正する
 //     （手順は docs/05-開発規則/issues.md「AC 一覧の操作」）
-//   - 元の spec・変えた spec の値：spec の番号だけ（001、227）。変えた spec が 2 つ以上なら読点で区切る（003、016）。
-//     番号に対応する spec のディレクトリは、docs/08-spec/ の直下とアーカイブのまとまりの下から探す（lib/spec-dirs.mjs）。
-//     番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（001 と 1 は別の番号）
+//   - 元の spec・変えた spec の値：MVP の spec は MVP-<3 桁の番号>（MVP-001）、それ以外は番号だけ（227）。
+//     変えた spec が 2 つ以上なら読点で区切る（MVP-003、MVP-016、227）。
+//     spec のディレクトリは lib/spec-dirs.mjs で探す。MVP-<番号> は docs/08-spec/archive/mvp/ の下と照合する。
+//     番号だけは、docs/08-spec/ の直下と他のまとまりの下と照合する。
+//     番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（007 と 7 は別の番号）
 //   - AC：MVP の AC-n と、1→10 の AC-s-n（s は spec の番号、n は連番）。2 つの形は別の AC として扱う。
 //     AC-s-n を AC-s と読まない。番号は、文書の記号と番号の「spec の番号」
 //   - ③ のモジュールの名前：次の 2 つが両方ある名前と、common（共通。③ の表に生成しない）。
@@ -35,8 +37,9 @@
 //   - AC 一覧の行：同じ AC の行が 2 つある、状態が有効・変更・廃止でない
 //   - モジュール：有効・変更の AC で、③ の名前か common の 1 つでない。廃止の AC は空でもよい
 //   - 変えた spec：有効の AC で「—」以外、変更・廃止の AC で空か「—」。
-//     変更・廃止の AC の各番号が、番号の形でない、その番号の spec のディレクトリがない、2 つある
-//   - 元の spec：番号の形でない、その番号の spec のディレクトリがない、2 つある
+//     変更・廃止の AC の各番号が、番号の形でない、その番号の spec のディレクトリがない、2 つある。
+//     MVP の spec を番号だけで書いたもの（001）と、MVP にない番号（MVP-227）は、ディレクトリがないものとして失敗にする
+//   - 元の spec：変えた spec の各番号と同じ
 //   - 今の内容：有効・変更の AC で、空か仮の値（—、なし、<…>）。<br /> がある
 //   - 今の内容の参照：spec の中だけで通じる参照（※1、事実 2、US の番号、spec の「…」）がある
 //   - 今の内容の根拠：変更と common の AC で、根拠（リンク [<文書の名前>](<パス>) と、その直後の「の「<見出し>」」）がない。
@@ -298,8 +301,11 @@ const SEPARATOR_ROW = /^\|(?:\s*:?-+:?\s*\|)+$/
 /** AC の番号のセル（0 で埋めない） */
 const AC_CELL = /^AC-([1-9][0-9]*(?:-[1-9][0-9]*)?)$/
 
-/** 元の spec・変えた spec の列の、spec の番号の形（0 埋めの有無は変えずに、そのまま比べる） */
-const SPEC_NUMBER = /^[0-9]+$/
+/** 元の spec・変えた spec の列の、spec の番号の形。MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（0 埋めの有無は変えずに、そのまま比べる） */
+const SPEC_NUMBER = /^(?:MVP-(?<mvp>[0-9]{3})|(?<plain>[0-9]+))$/
+
+/** MVP の spec のディレクトリの置き場所（docs/08-spec/ から） */
+const MVP_ARCHIVE_PREFIX = `${ARCHIVE}/mvp/`
 
 /** 変えた spec の列で、2 つ以上の番号を区切る記号 */
 const SPEC_NUMBER_SEPARATOR = '、'
@@ -483,17 +489,27 @@ function specNumberOf(nameOrRel) {
 
 /**
  * 元の spec・変えた spec の 1 つの番号を、spec のディレクトリと照合する。
+ * MVP-<番号> は MVP の spec のディレクトリと、番号だけは MVP の外のディレクトリと照合する。
  *
- * @param {string} number 列の値（変えた spec は読点で区切った 1 つ）
+ * @param {string} value 列の値（変えた spec は読点で区切った 1 つ）
  * @param {{ name: string, rel: string }[]} specDirs spec のディレクトリ
  * @param {string} column 列の名前
  * @returns {string | null} 問題。なければ null
  */
-function checkSpecNumber(number, specDirs, column) {
-  if (!SPEC_NUMBER.test(number)) return `${column}が spec の番号（001、227）の形でない（${number}）`
-  const found = specDirs.filter((dir) => specNumberOf(dir.name) === number)
-  if (found.length === 0) return `${column}の番号 ${number} の spec のディレクトリがない（${SPECS_DIR} の直下とアーカイブの下を探した）`
-  if (found.length > 1) return `${column}の番号 ${number} の spec のディレクトリが ${found.length} つある（${found.map((dir) => dir.rel).join('、')}。番号から 1 つに決められない）`
+function checkSpecNumber(value, specDirs, column) {
+  const match = SPEC_NUMBER.exec(value)
+  if (!match) return `${column}が spec の番号（MVP-001、227）の形でない（${value}）`
+  const { mvp, plain } = match.groups
+  const number = mvp ?? plain
+  const inMvp = (dir) => dir.rel.startsWith(MVP_ARCHIVE_PREFIX)
+  const sameNumber = specDirs.filter((dir) => specNumberOf(dir.name) === number)
+  const found = sameNumber.filter((dir) => inMvp(dir) === (mvp !== undefined))
+  if (found.length === 0) {
+    if (mvp !== undefined) return `${column}の ${value} の spec のディレクトリがない（${SPECS_DIR}/${MVP_ARCHIVE_PREFIX} の下を探した）`
+    const hint = sameNumber.length > 0 ? `。MVP の spec は MVP-${number} と書く` : ''
+    return `${column}の番号 ${value} の spec のディレクトリがない（${SPECS_DIR}/${MVP_ARCHIVE_PREFIX} の外を探した${hint}）`
+  }
+  if (found.length > 1) return `${column}の番号 ${value} の spec のディレクトリが ${found.length} つある（${found.map((dir) => dir.rel).join('、')}。番号から 1 つに決められない）`
   return null
 }
 

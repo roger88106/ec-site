@@ -22,6 +22,7 @@ spec・plan・tasks・モジュールの設計書で使う番号と記号の意�
 
 - 番号の飛びを許す。理由：pull request と番号を共有するため。
 - MVP の spec（001〜019）の番号は 3 桁の 0 埋めのまま、変えない。新しい文書で MVP の spec を指すときは「MVP 012」と書く。
+- [AC 一覧](../03-機能仕様/acceptance-criteria.md)と ③ の表の列「元の spec」「変えた spec」は、MVP の spec を `MVP-001`、1→10 の spec を `227` の形で書く。理由：番号だけでは、MVP の spec と issue の番号を区別できないため。
 - 検査の script は、0 で始まる 3 桁の番号を MVP、0 で始めない番号を 1→10 の spec として区別する。理由：spec 7〜19 が MVP の 007〜019 と同じ数になるため。
 
 ## spec の中の番号

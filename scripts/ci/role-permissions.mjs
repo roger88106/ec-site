@@ -159,11 +159,6 @@ export function parseRealmRoles(realm) {
   return { roles, permissions }
 }
 
-/** 表に書く要約。AC などの番号の括弧を除く */
-function summaryOf(operation) {
-  return operation.summary.replace(/（[^（）]*AC-[^（）]*）/g, '').trim()
-}
-
 /** 店舗 API の操作の、ログインの要否。security を書いていない操作は呼ばない（問題にする） */
 function storeLogin(operation) {
   const security = operation.security
@@ -211,7 +206,7 @@ export function renderTables({ admin, store, realm }) {
       continue
     }
     const permission = authenticatedOnly ? 'ログインだけ' : `\`${operation.permission}\``
-    lines.push(`| \`${name}\` | ${summaryOf(operation)} | ${permission} |`)
+    lines.push(`| \`${name}\` | ${operation.summary} | ${permission} |`)
   }
 
   lines.push('', '### 店舗 API', '')
@@ -223,7 +218,7 @@ export function renderTables({ admin, store, realm }) {
       problems.push(`${operation.method} ${operation.path}：security がない。token が要らない操作は security: [] と書く`)
       continue
     }
-    lines.push(`| \`${operation.method} ${operation.path}\` | ${summaryOf(operation)} | ${storeLogin(operation)} |`)
+    lines.push(`| \`${operation.method} ${operation.path}\` | ${operation.summary} | ${storeLogin(operation)} |`)
   }
 
   return { markdown: `${lines.join('\n')}\n`, problems }

@@ -18,6 +18,9 @@ export const SHOWCASE_TEST_TIMEOUT = 180_000
 /** 裏の処理（支払の通知、イベント、店舗画面のキャッシュの期限）の結果が出るまでに待つ時間の上限 */
 export const ASYNC_TIMEOUT = 20_000
 
+/** 機能紹介・設計書の撮影で、店舗画面のキャッシュの反映を、ページを開き直しながら待つ時間の上限。撮影環境のキャッシュの既定値（60 秒。docs/06-手順書/environment.md）より長い */
+export const SHOWCASE_CACHE_TIMEOUT = 75_000
+
 /** 開き直しながら待つときの、1 回の確認で表示を待つ時間 */
 export const CHECK_TIMEOUT = 1_000
 

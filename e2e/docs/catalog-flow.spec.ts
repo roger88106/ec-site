@@ -4,7 +4,7 @@ import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { makeShot } from '../src/screenshot'
 import { SHOWCASE_ADMIN_URL as ADMIN, SHOWCASE_STORE_URL as STORE } from '../src/showcase-urls'
 import { productCard } from '../src/store'
-import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from '../src/waits'
+import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil, SHOWCASE_CACHE_TIMEOUT } from '../src/waits'
 
 /** 撮った画像の置き場所（docs/01-概要/catalog.md が載せる） */
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/catalog')
@@ -31,6 +31,9 @@ const PRODUCT = {
     { suffix: 'WH', color: 'ホワイト' },
   ],
 }
+
+/** 在庫を調整したときの通知の文 */
+const STOCK_ADJUSTED = '+10 を反映し、在庫数は 10 になりました'
 
 /**
  * 通知（トースト）が消えるのを待つ。通知が次の画像に重ならないようにする。固定の時間は待たない。
@@ -107,15 +110,18 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
         await expectOpaque(adjust)
         await shot(page, '04-stock', adjust)
       }
+      // 同じ文の通知が重なると複数の要素に一致するので、前の調整の通知が消えてから調整する
+      await expectToastGone(page, STOCK_ADJUSTED)
       await adjust.click()
-      await expect(page.getByText('+10 を反映し、在庫数は 10 になりました')).toBeVisible()
+      await expect(page.getByText(STOCK_ADJUSTED)).toBeVisible()
       await page.getByRole('button', { name: '商品へ戻る', exact: true }).click()
     }
     await expect(page).toHaveURL(productUrl)
   })
 
   await test.step('管理画面：公開する', async () => {
-    await expectToastGone(page, '+10 を反映し、在庫数は 10 になりました')
+    // 最後の調整の通知が消えてから公開する（公開の通知だけが出るようにする）
+    await expectToastGone(page, STOCK_ADJUSTED)
     await page.getByRole('button', { name: '公開する', exact: true }).click()
     await expect(page.getByText('公開しました')).toBeVisible()
     // 通知は写さない。通知が消え、状態のバッジが「公開」になって色の変化が終わってから撮る
@@ -126,21 +132,25 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
   })
 
   await test.step('店舗画面：一覧に出る', async () => {
-    // 一覧は店舗画面のキャッシュを通る。DB を再作成する前に撮った同名の商品のカード（古い商品 ID を指す）が残っていることがあるので、
+    // 一覧は店舗画面のキャッシュから返される。DB を再作成する前に撮った同名の商品のカード（古い商品 ID を指す）が残っていることがあるので、
     // カードの表示だけでなく、リンクの先が今回の商品 ID になるまで、開き直しながら待つ
-    await reopenUntil(page, `${STORE}/products`, async () => {
-      await expect(productCard(page, PRODUCT.name)).toHaveAttribute('href', `/products/${productId}`, {
-        timeout: CHECK_TIMEOUT,
-      })
-    })
+    await reopenUntil(
+      page,
+      `${STORE}/products`,
+      async () => {
+        await expect(productCard(page, PRODUCT.name)).toHaveAttribute('href', `/products/${productId}`, {
+          timeout: CHECK_TIMEOUT,
+        })
+      },
+      { timeout: SHOWCASE_CACHE_TIMEOUT },
+    )
     await shot(page, '06-store-list', productCard(page, PRODUCT.name))
   })
 
   await test.step('店舗画面：詳細でバリアントを選ぶ', async () => {
-    // 詳細も店舗画面のキャッシュを通るので、公開の直後は開き直しながら待つ（カードは押さず、今回の商品 ID で開く）
-    await reopenUntil(page, `${STORE}/products/${productId}`, async () => {
-      await expect(page.getByRole('heading', { name: PRODUCT.name })).toBeVisible({ timeout: CHECK_TIMEOUT })
-    })
+    // カードは押さず、今回の商品 ID で開く（同名の古いカードが一覧に残りうるため）
+    await page.goto(`${STORE}/products/${productId}`)
+    await expect(page.getByRole('heading', { name: PRODUCT.name })).toBeVisible()
     await page.getByRole('button', { name: PRODUCT.variants[0].color, exact: true }).click()
     const addToCartButton = page.getByRole('button', { name: 'カートに入れる', exact: true })
     await expect(addToCartButton).toBeEnabled()

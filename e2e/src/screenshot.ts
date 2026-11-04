@@ -36,7 +36,7 @@ export function makeShot(outDir: string): (page: Page, name: string, ready: Loca
     await expect
       .poll(() => page.evaluate(() => Array.from(document.images).every((image) => image.complete)))
       .toBe(true)
-    // スクロールしていると、fullPage の画像でサイドバーが途中から始まって写るので、先頭に戻す
+    // スクロールしていると、fullPage の画像でサイドバーが途中から表示された状態で撮影されるので、先頭に戻す
     await page.evaluate(() => window.scrollTo(0, 0))
     // 店舗画面の開発サーバーが表示する Next.js のインジケーター（画面の左下）は、本番の画面にないので写さない
     await page.screenshot({

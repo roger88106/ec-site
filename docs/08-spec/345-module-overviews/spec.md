@@ -34,8 +34,10 @@
   - レポート：売上の推移、バリアントの売れ行き、地域・年齢層・性別
 - 商品の流れの撮影では、商品を新しく登録する。画像は、ローカルのストレージに seed として入っている商品の画像（`docker/seaweedfs/seed/assets/` の WebP）を使う。理由：E2E のテスト用の画像（`e2e/fixtures/photo.avif`）は 64x32 の 2 色の画像で、画面の説明に向かないため。
 - 会員の流れの撮影では、撮影のたびに新しいメールアドレスで登録する（`e2e/src/auth.ts` の `memberEmail` と同じ考え方）。確認のメール自体は撮らない。理由：同じメールアドレスは再度登録できないため。メールは Mailpit の画面であり、製品の画面ではないため。
+- 会員の流れの撮影のために、`e2e/src/auth.ts` の会員登録の関数を、入力と送信に分ける。IdP の画面の要素の選び方も `auth.ts` に集める。理由：入力した後、送信する前の画面を撮るため。既存の E2E の動作は変えない。
 - レポートの流れの撮影では、seed のレポート用の注文を使う。撮影中は注文しない。seed の期間の定数は `e2e/showcase/capture.spec.ts` から `e2e/src/screenshot.ts` に移して共有する。
 - 撮影は `pnpm capture:docs`（`e2e/playwright.docs.config.ts`）で実行する。前提はスロット 0、全てのサーバー、local の seed で、続けて撮るときは DB を再作成する。この前提を、[開発環境の起動](../../06-手順書/setup.md)の「機能紹介のページのスクリーンショット」に 1 行で書く。理由：商品の流れが同じ品番で再度登録できないため。
+- `makeShot` は、撮る前にページの先頭へ戻す。機能紹介と注文の流れの撮影にも適用される。理由：スクロールしたまま撮ると、管理画面のサイドバーが途中から表示された状態で撮影されるため。
 - `pnpm capture:docs` は `order-flow` も撮るので、`docs/01-概要/img/order/` の差分は commit しない（作業ツリーで元に戻す）。
 
 ## 目的と完了条件
@@ -63,7 +65,7 @@
 |----------|----------|
 | 文書 | `docs/01-概要/catalog.md`・`member.md`・`reporting.md`（新規）、`README.md`、`system.md` |
 | 画像 | `docs/01-概要/img/catalog/`・`member/`・`reporting/`（新規） |
-| 撮影の script | `e2e/docs/catalog-flow.spec.ts`・`member-flow.spec.ts`・`reporting-flow.spec.ts`（新規）、`e2e/src/screenshot.ts`、`e2e/showcase/capture.spec.ts` |
+| 撮影の script | `e2e/docs/catalog-flow.spec.ts`・`member-flow.spec.ts`・`reporting-flow.spec.ts`（新規）、`e2e/src/screenshot.ts`、`e2e/src/auth.ts`、`e2e/src/waits.ts`、`e2e/showcase/capture.spec.ts` |
 | 手順書 | `docs/06-手順書/setup.md` |
 | spec | `docs/08-spec/345-module-overviews/spec.md`（アーカイブで `docs/08-spec/archive/1to10/345-module-overviews/` に移す） |
 
@@ -97,29 +99,50 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。文書の本文は日本語の要点から、日本語だけの文脈のサブエージェント（汎用）が書く。
 
-- [ ] **T345-01-01** seed の期間の定数を `e2e/src/screenshot.ts` に移し、3 つの撮影の script を加えて撮り、画像を目視で確認する（DC-345-5、DC-345-6）。
+- [x] **T345-01-01** seed の期間の定数を `e2e/src/screenshot.ts` に移し、3 つの撮影の script を加えて撮り、画像を目視で確認する（DC-345-5、DC-345-6）。
   - 依存：なし
-  - 範囲：`e2e/src/screenshot.ts`、`e2e/showcase/capture.spec.ts`、`e2e/docs/`、`docs/01-概要/img/`
+  - 範囲：`e2e/src/screenshot.ts`、`e2e/src/auth.ts`、`e2e/src/waits.ts`、`e2e/showcase/capture.spec.ts`、`e2e/docs/`、`docs/01-概要/img/`
   - 確認方法：スロット 0 で DB を再作成し、`e2e/` で `pnpm capture:docs` を実行する。`e2e/` で lint と型チェックを実行する。画像を目視で確認する
-- [ ] **T345-01-02** 商品の登録と公開の流れの文書を書く（DC-345-1〜3）。
+- [x] **T345-01-02** 商品の登録と公開の流れの文書を書く（DC-345-1〜3）。
   - 依存：T345-01-01
   - 範囲：`docs/01-概要/catalog.md`
   - 確認方法：機能仕様（`docs/03-機能仕様/catalog.md`）と照合して読む、`node scripts/ci/mermaid/mermaid-check.mjs`
-- [ ] **T345-01-03** 会員登録とログインの流れの文書を書く（DC-345-1〜3）。
+- [x] **T345-01-03** 会員登録とログインの流れの文書を書く（DC-345-1〜3）。
   - 依存：T345-01-01
   - 範囲：`docs/01-概要/member.md`
   - 確認方法：機能仕様（`docs/03-機能仕様/member.md`）と照合して読む、`node scripts/ci/mermaid/mermaid-check.mjs`
-- [ ] **T345-01-04** レポートの流れの文書を書く（DC-345-1〜3）。
+- [x] **T345-01-04** レポートの流れの文書を書く（DC-345-1〜3）。
   - 依存：T345-01-01
   - 範囲：`docs/01-概要/reporting.md`
   - 確認方法：機能仕様（`docs/03-機能仕様/reporting.md`）と照合して読む、`node scripts/ci/mermaid/mermaid-check.mjs`
-- [ ] **T345-01-05** 一覧と全体像からリンクし、手順書に撮影の前提を書く（DC-345-4）。
+- [x] **T345-01-05** 一覧と全体像からリンクし、手順書に撮影の前提を書く（DC-345-4）。
   - 依存：T345-01-02〜04
   - 範囲：`docs/01-概要/README.md`、`system.md`、`docs/06-手順書/setup.md`
   - 確認方法：`node scripts/ci/doc-refs.mjs`
-- [ ] **T345-01-06** 検査を通し、spec の最後のレビューをして、指摘を修正し、draft の pull request を作る（DC-345-7、DC-345-8）。
+- [x] **T345-01-06** 検査を通し、spec の最後のレビューをして、指摘を修正し、draft の pull request を作る（DC-345-7、DC-345-8）。
   - 依存：T345-01-05
   - 確認方法：`CI=true scripts/ci/check-all.sh`、`node scripts/ci/doc-refs.mjs`、`scripts/dev/check-frontend.sh e2e`、差分の追加行を校閲する
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | spec との一致 | 高性能 | 1 | 151009 | 5m10s | 0 | 7 | 4 | 10 |
+    | spec の最後 | ファイルをまたぐ影響 | 高性能 | 1 | 149964 | 5m17s | 0 | 2 | 1 | 3 |
+    | spec の最後 | タスクをまたぐ影響 | 高性能 | 1 | 167258 | 7m03s | 0 | 3 | 3 | 6 |
+    | spec の最後 | 重複を除く | — | 1 | — | — | 0 | 10 | 5 | 14 |
+
+    - 修正したもの：今回の必須の 9 件と推奨の 5 件の全て。主な必須は次のとおり。
+      - レポートの流れの図が、出荷の後に初めてデータが集まるように読めたこと
+      - 商品の流れの登場する人に、画像のサービスがなかったこと
+      - 雛形が置かないとする項目の一覧（会員の情報、レポートが持たない項目）
+      - 図の下の補足の重複
+      - spec の変える範囲と決定に、`e2e/src/auth.ts` の分割と `makeShot` の変更がなかったこと
+      - 撮影の script の IdP の画面の要素の選び方、同じ文の通知の重なり、商品の詳細のキャッシュの誤ったコメント
+    - 残したもの：既存の必須の 1 件（AC-108 の今の内容は、会員登録の画面でパスワードを入力すると読める）。issue #252 に追加する。
+    - 校閲：差分の追加行に 1 回（検出役 24 件、確認役が挙げた 12 件のうち 11 件を修正）、指摘の修正の差分に 1 回（検出役 15 件、確認役が挙げた 7 件を修正）。修正しなかった 1 件は「CSV で取り出す」で、管理画面のボタンの文言と AC-218 に揃えた。
+    - 機械の検査に移したもの：なし。`.locator(` を補助のファイルに限る検査は移せるが、誤検出の幅を確認していないので、この spec では加えない。
+    - 本文の書き手：3 つの文書と spec は日本語だけの文脈のサブエージェント。撮影の script は実装役。指摘の数行の修正は spec 担当のセッション。
+    - 撮影：スロット 0 の DB を再作成し、`pnpm capture:docs` が 4 つの流れの全てで成功した。画像は spec 担当のセッションが目視で確認した。`img/order/` の差分は元に戻した。
 - [ ] **T345-01-07** pull request の前のレビューをする。指摘を修正し、draft を外す。
   - 依存：T345-01-06
 - [ ] **T345-01-08** spec をアーカイブに移す。

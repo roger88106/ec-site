@@ -11,7 +11,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 4. コードを書く・レビューする前に、関わる書き方の文書（constitution の「コードの書き方」の一覧）
 5. 文書（docs/・README・AGENTS.md・spec・plan・tasks・issue の本文とコメント）を書く・レビューする前に、場面で分けて読む。書く前に、skill `docs` の「進め方」も読む
    - 言い回し（用語、文の書き方）：[文書の書き方](docs/05-開発規則/writing.md)
-   - 置き場所、参照、spec と plan の書き方、文書の長さ、内容を追加するときの基準：[文書の構成](docs/05-開発規則/doc-structure.md)
+   - 置き場所、参照、spec と plan の書き方、文書の長さ、文書に内容を追加するときの基準：[文書の構成](docs/05-開発規則/doc-structure.md)
 
 マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。ないときは、本書と `docs/` だけで進める。
 

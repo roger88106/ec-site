@@ -25,7 +25,7 @@ const ADMIN = [
   '          description: 一覧',
   '    post:',
   '      operationId: createTaxCategory',
-  '      summary: 税区分の登録（AC-1）',
+  '      summary: 税区分の登録',
   '      x-required-permission: tax:write',
   '  /me:',
   '    get:',
@@ -45,7 +45,7 @@ const STORE = [
   '    get:',
   '      operationId: listProducts',
   '      security: []',
-  '      summary: 商品の一覧（AC-50）',
+  '      summary: 商品の一覧',
   '  /carts/{cartId}:',
   '    parameters:',
   "      - $ref: '#/components/parameters/CartId'",
@@ -88,7 +88,7 @@ describe('ロールと権限の対応表', () => {
   test('OpenAPI の操作から、メソッド、パス、要約、権限、security を読む。components の後は読まない', () => {
     assert.deepEqual(readOperations(ADMIN).operations, [
       { method: 'GET', path: '/tax-categories', summary: '税区分の一覧（税率を含む）', permission: 'tax:read', security: null },
-      { method: 'POST', path: '/tax-categories', summary: '税区分の登録（AC-1）', permission: 'tax:write', security: null },
+      { method: 'POST', path: '/tax-categories', summary: '税区分の登録', permission: 'tax:write', security: null },
       { method: 'GET', path: '/me', summary: 'ログインしている運営者', permission: 'authenticated', security: null },
     ])
     assert.deepEqual(

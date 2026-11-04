@@ -26,27 +26,27 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 
 | spec | 種類 | 内容 |
 |------|------|------|
-| [001](docs/08-spec/archive/mvp/001-catalog-and-inventory) | 機能 | 商品カタログと在庫 |
-| [002](docs/08-spec/archive/mvp/002-cart-and-order) | 機能 | カートと注文 |
-| [003](docs/08-spec/archive/mvp/003-auth) | 機能 | 認証 |
-| [004](docs/08-spec/archive/mvp/004-foundation) | 整理 | 開発基盤の整理 |
-| [005](docs/08-spec/archive/mvp/005-backend-cleanup) | 整理 | バックエンドの整理 |
-| [006](docs/08-spec/archive/mvp/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n |
-| [007](docs/08-spec/archive/mvp/007-payment) | 機能 | 決済 |
-| [008](docs/08-spec/archive/mvp/008-showcase) | 整理 | 機能紹介のページ |
-| [009](docs/08-spec/archive/mvp/009-shipping) | 機能 | 出荷と配送状況 |
-| [010](docs/08-spec/archive/mvp/010-sales-report) | 機能 | 売上の簡易レポート |
-| [011](docs/08-spec/archive/mvp/011-dev-foundation) | 整理 | 開発の基盤の整理 |
-| [012](docs/08-spec/archive/mvp/012-test-safety-net) | 整理 | テストの安全網 |
-| [013](docs/08-spec/archive/mvp/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） |
-| [014](docs/08-spec/archive/mvp/014-frontend-consistency) | 整理 | 書き方の統一（フロント） |
-| [015](docs/08-spec/archive/mvp/015-security) | 機能 | セキュリティ |
-| [016](docs/08-spec/archive/mvp/016-master-data) | 機能 | マスターデータ |
-| [017](docs/08-spec/archive/mvp/017-stability) | 機能 | 安定性 |
-| [018](docs/08-spec/archive/mvp/018-docs-and-tools) | 整理 | 文書とツールの整理 |
-| [019](docs/08-spec/archive/mvp/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 |
+| [MVP-001](docs/08-spec/archive/mvp/001-catalog-and-inventory) | 機能 | 商品カタログと在庫 |
+| [MVP-002](docs/08-spec/archive/mvp/002-cart-and-order) | 機能 | カートと注文 |
+| [MVP-003](docs/08-spec/archive/mvp/003-auth) | 機能 | 認証 |
+| [MVP-004](docs/08-spec/archive/mvp/004-foundation) | 整理 | 開発基盤の整理 |
+| [MVP-005](docs/08-spec/archive/mvp/005-backend-cleanup) | 整理 | バックエンドの整理 |
+| [MVP-006](docs/08-spec/archive/mvp/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n |
+| [MVP-007](docs/08-spec/archive/mvp/007-payment) | 機能 | 決済 |
+| [MVP-008](docs/08-spec/archive/mvp/008-showcase) | 整理 | 機能紹介のページ |
+| [MVP-009](docs/08-spec/archive/mvp/009-shipping) | 機能 | 出荷と配送状況 |
+| [MVP-010](docs/08-spec/archive/mvp/010-sales-report) | 機能 | 売上の簡易レポート |
+| [MVP-011](docs/08-spec/archive/mvp/011-dev-foundation) | 整理 | 開発の基盤の整理 |
+| [MVP-012](docs/08-spec/archive/mvp/012-test-safety-net) | 整理 | テストの安全網 |
+| [MVP-013](docs/08-spec/archive/mvp/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） |
+| [MVP-014](docs/08-spec/archive/mvp/014-frontend-consistency) | 整理 | 書き方の統一（フロント） |
+| [MVP-015](docs/08-spec/archive/mvp/015-security) | 機能 | セキュリティ |
+| [MVP-016](docs/08-spec/archive/mvp/016-master-data) | 機能 | マスターデータ |
+| [MVP-017](docs/08-spec/archive/mvp/017-stability) | 機能 | 安定性 |
+| [MVP-018](docs/08-spec/archive/mvp/018-docs-and-tools) | 整理 | 文書とツールの整理 |
+| [MVP-019](docs/08-spec/archive/mvp/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 |
 
-上の spec は全て完了した（019 の完了で tag `v0.1.0`）。MVP を完成させるまでの spec の順は [MVP の完成までの一覧](docs/08-spec/archive/mvp/mvp.md)、MVP の後に行う作業と未決事項は GitHub の [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。
+上の spec は全て完了した（MVP-019 の完了で tag `v0.1.0`）。MVP を完成させるまでの spec の順は [MVP の完成までの一覧](docs/08-spec/archive/mvp/mvp.md)、MVP の後に行う作業と未決事項は GitHub の [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。
 
 ### 1→10
 

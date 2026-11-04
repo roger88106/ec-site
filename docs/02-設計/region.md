@@ -43,7 +43,7 @@
 
 1. 日本郵便の郵便番号データのページから `utf_ken_all.zip` をダウンロードし、`/.local/masterdata/utf_ken_all/utf_ken_all.csv` に展開する（Git に入れない）。
 2. `./gradlew generateRegionMigration` を実行する（置き場所の指定は `build.gradle.kts` のコメント）。一覧の郵便番号がデータになければ失敗する。
-3. 郵便番号を追加するときは、一覧に追加する。Gradle のタスク `generateRegionMigration` を、新しいマイグレーションに郵便番号の表を全件置き換える（削除してから入れる）SQL を出力するように修正してから実行する。理由：今のタスクをそのまま実行すると、commit 済みのマイグレーションを上書きするため（[CI の検査の script](../06-手順書/ci-checks.md) の `migrations`）。
+3. 郵便番号を追加するときは、一覧に追加する。Gradle のタスク `generateRegionMigration` を、新しいマイグレーションに郵便番号の表を全件置き換える（削除してから入れる）SQL を出力するように修正してから実行する。理由：今のタスクをそのまま実行すると、commit 済みのマイグレーションを上書きし（[CI の検査の script](../06-手順書/ci-checks.md) の `migrations`）、出力先だけを変えると、全件の INSERT で主キーが重なるため。
 4. 生成の処理が書く先頭のコメントは変えない。理由は `RegionMigrationGenerator` のコメントに書いてある。
 
 ## API

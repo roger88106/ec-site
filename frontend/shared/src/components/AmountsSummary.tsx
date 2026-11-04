@@ -34,14 +34,14 @@ export function AmountsSummary({ amounts, variant }: { amounts: AmountsSummaryVa
       {!isCard && <Separator />}
       <div
         className={
-          isCard ? 'flex justify-between border-t pt-1 font-semibold' : 'flex justify-between font-semibold text-base'
+          isCard ? 'flex justify-between border-t pt-1 font-semibold' : 'flex justify-between text-base font-semibold'
         }
       >
         <dt>{translate('common.amounts.total') /* 総額 */}</dt>
         <dd className="tabular-nums">{formatYen(amounts.total)}</dd>
       </div>
       {amounts.taxes.map((tax) => (
-        <div className="text-right text-muted-foreground tabular-nums" key={tax.ratePercent}>
+        <div className="text-muted-foreground text-right tabular-nums" key={tax.ratePercent}>
           <dt className="sr-only">
             {translate('common.amounts.taxOf', { ratePercent: tax.ratePercent }) /* 税率ごとの消費税 */}
           </dt>

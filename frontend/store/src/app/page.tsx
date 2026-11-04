@@ -19,12 +19,12 @@ export default async function HomePage() {
   return (
     <div className="space-y-10">
       <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-xl">{t('categories') /* カテゴリ */}</h2>
+        <h2 className="font-heading text-xl font-semibold">{t('categories') /* カテゴリ */}</h2>
         <CategoryList categories={categories.items} />
       </section>
       <section className="space-y-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-heading font-semibold text-xl">{t('newest') /* 新着の商品 */}</h2>
+          <h2 className="font-heading text-xl font-semibold">{t('newest') /* 新着の商品 */}</h2>
           <Link className="text-sm hover:underline" href="/products">
             {t('allProducts') /* すべての商品を見る */}
           </Link>

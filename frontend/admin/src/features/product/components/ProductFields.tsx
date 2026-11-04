@@ -85,7 +85,7 @@ export function ProductFields({ constraints }: { constraints: ProductFieldConstr
         </Field>
       </div>
       <FieldSet>
-        <span className="font-medium text-sm">{t('categories') /* 所属カテゴリ */}</span>
+        <span className="text-sm font-medium">{t('categories') /* 所属カテゴリ */}</span>
         <Controller
           control={control}
           name="categoryIds"

@@ -58,7 +58,7 @@ export function StockPage() {
               {(data) => (
                 <p
                   aria-label={t('quantity') /* 在庫数 */}
-                  className="font-semibold text-3xl tabular-nums"
+                  className="text-3xl font-semibold tabular-nums"
                   role="status"
                 >
                   {data.quantity}

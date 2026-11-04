@@ -35,7 +35,7 @@ export function ProductShowcase({
   return (
     <article className="grid gap-8 md:grid-cols-2">
       <div className="space-y-3">
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
+        <div className="bg-muted flex aspect-square items-center justify-center overflow-hidden rounded-lg">
           <ProductImage alt={t('image') /* 商品の画像 */} iconSize="lg" src={shown} />
         </div>
         {imageUrls.length > 1 && (
@@ -45,7 +45,7 @@ export function ProductShowcase({
                 <button
                   aria-label={t('showImage', { number: index + 1 }) /* 画像を見る */}
                   aria-pressed={url === shown}
-                  className="block aspect-square w-full overflow-hidden rounded-md border aria-pressed:ring-2 aria-pressed:ring-primary"
+                  className="aria-pressed:ring-primary block aspect-square w-full overflow-hidden rounded-md border aria-pressed:ring-2"
                   onClick={() => setShown(url)}
                   type="button"
                 >

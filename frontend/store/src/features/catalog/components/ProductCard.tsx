@@ -11,7 +11,7 @@ export function ProductCard({ product }: { product: ProductSummary }) {
   const tShowcase = useTranslations('catalog.showcase')
   return (
     <Link className="group block space-y-2" href={`/products/${product.id}`}>
-      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
+      <div className="bg-muted relative flex aspect-square items-center justify-center overflow-hidden rounded-lg">
         <ProductImage alt={tShowcase('image') /* 商品の画像 */} iconSize="md" src={product.imageUrl} />
         {!product.inStock && (
           <Badge className="absolute top-2 left-2" variant="secondary">

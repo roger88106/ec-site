@@ -55,7 +55,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="font-heading font-semibold text-2xl">{t('title') /* ご注文の内容 */}</h1>
+        <h1 className="font-heading text-2xl font-semibold">{t('title') /* ご注文の内容 */}</h1>
         <p className="text-muted-foreground text-sm">
           {
             t.rich('ordersHint', {

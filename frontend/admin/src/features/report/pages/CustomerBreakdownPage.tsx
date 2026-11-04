@@ -108,7 +108,7 @@ function SegmentSection({ name, rows, horizontal }: { name: string; rows: Segmen
   const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-3)' } } satisfies ChartConfig // 売上額
   return (
     <section aria-label={t('chart', { dimension: name }) /* 分け方ごとの売上額 */} className="space-y-4">
-      <h2 className="font-heading font-semibold text-lg">{name}</h2>
+      <h2 className="font-heading text-lg font-semibold">{name}</h2>
       {horizontal ? (
         <ChartContainer
           className="aspect-auto w-full"

@@ -29,7 +29,7 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading font-semibold text-2xl">{t('title') /* ご注文履歴 */}</h1>
+      <h1 className="font-heading text-2xl font-semibold">{t('title') /* ご注文履歴 */}</h1>
       {orders.items.length === 0 ? (
         <div className="space-y-4">
           <p className="text-muted-foreground">{t('empty') /* まだない */}</p>
@@ -40,7 +40,7 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
       ) : (
         <div className="space-y-4">
           <table className="w-full text-sm">
-            <thead className="border-b text-left text-muted-foreground">
+            <thead className="text-muted-foreground border-b text-left">
               <tr>
                 <th className="py-2 font-normal">{tCommon('order.orderNumber') /* 注文番号 */}</th>
                 <th className="py-2 font-normal">{tCommon('order.orderedAt') /* 注文日時 */}</th>
@@ -61,7 +61,7 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
                   <td className="py-3 text-right">
                     <OrderStatusBadge shipmentStatus={order.shipmentStatus} status={order.status} />
                     {paymentDeadlineLabel(order) !== null && (
-                      <p className="mt-1 text-muted-foreground text-xs tabular-nums">
+                      <p className="text-muted-foreground mt-1 text-xs tabular-nums">
                         {paymentDeadlineLabel(order) /* 支払の期限 */}
                       </p>
                     )}

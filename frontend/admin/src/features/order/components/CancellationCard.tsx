@@ -46,7 +46,7 @@ export function CancellationCard({
               <dd>
                 {cancellationRequestResultLabel(request.result)}
                 {request.decidedAt && (
-                  <span className="ml-2 text-muted-foreground">
+                  <span className="text-muted-foreground ml-2">
                     {t.rich('decidedAt', { date: () => <DateTime value={request.decidedAt} /> }) /* 判断の日時 */}
                   </span>
                 )}

@@ -45,7 +45,7 @@ export default async function CartPage() {
   const [cart, mergeNotice] = await Promise.all([fetchCart(), readCartMergeNotice()])
   return (
     <div className="space-y-6">
-      <h1 className="font-heading font-semibold text-2xl">{t('title') /* カート */}</h1>
+      <h1 className="font-heading text-2xl font-semibold">{t('title') /* カート */}</h1>
       <CartMergeNoticeView notice={mergeNotice} />
       {cart === null || cart.items.length === 0 ? (
         <div className="space-y-4">

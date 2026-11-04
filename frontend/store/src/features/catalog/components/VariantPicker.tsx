@@ -43,9 +43,9 @@ export function VariantPicker({
     <div className="space-y-4">
       {axes.map((axis, axisIndex) => (
         <fieldset className="space-y-2" key={axis.name}>
-          <legend className="font-medium text-sm">
+          <legend className="text-sm font-medium">
             {axis.name}
-            {selection[axisIndex] && <span className="ml-2 text-muted-foreground">{selection[axisIndex]}</span>}
+            {selection[axisIndex] && <span className="text-muted-foreground ml-2">{selection[axisIndex]}</span>}
           </legend>
           <div className="flex flex-wrap gap-2">
             {axis.values.map((value) => {

@@ -32,14 +32,14 @@ export default async function ProductDetailPage({ params }: PageProps<'/products
       axes={product.axes}
       header={
         <>
-          <h1 className="font-heading font-semibold text-2xl">{product.name}</h1>
+          <h1 className="font-heading text-2xl font-semibold">{product.name}</h1>
           <PriceText price={product.price} size="lg" />
         </>
       }
       imageUrls={product.imageUrls}
       variants={product.variants}
     >
-      {product.description && <p className="whitespace-pre-wrap text-sm leading-relaxed">{product.description}</p>}
+      {product.description && <p className="text-sm leading-relaxed whitespace-pre-wrap">{product.description}</p>}
     </ProductShowcase>
   )
 }

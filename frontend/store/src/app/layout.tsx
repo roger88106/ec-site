@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html className={cn('font-sans', geist.variable)} lang={LOCALE}>
-      <body className="min-h-svh bg-background text-foreground">
+      <body className="bg-background text-foreground min-h-svh">
         {/* クライアントコンポーネントに文言を渡す（ロケールと文言は request.ts の設定を引き継ぐ） */}
         <NextIntlClientProvider>
           <SiteHeader />

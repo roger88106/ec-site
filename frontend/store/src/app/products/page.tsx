@@ -44,7 +44,7 @@ export default async function ProductListPage({ searchParams }: PageProps<'/prod
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading font-semibold text-2xl">{categoryName ?? t('title') /* カテゴリ名か商品一覧 */}</h1>
+      <h1 className="font-heading text-2xl font-semibold">{categoryName ?? t('title') /* カテゴリ名か商品一覧 */}</h1>
       <ListFilterForm categories={flatCategories} query={query} />
       {result.response.status === 400 ? (
         <Alert variant="destructive">

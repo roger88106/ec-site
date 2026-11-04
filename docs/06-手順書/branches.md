@@ -1,6 +1,6 @@
 # ブランチとリリース
 
-ブランチの構成、保護、リリースと緊急の修正の手順、Dependabot と GitHub のセキュリティの機能の設定。ブランチを切る・マージする・リリースするときに読む。マージの許可は [マージと後片付け](../05-開発規則/merging.md)、CI のジョブは [CI の検査](ci.md)。
+ブランチの構成、保護、リリースと緊急の修正の手順、Dependabot と GitHub のセキュリティの機能の設定。ブランチを切る・マージする・リリースするときに読む。
 
 ## 1. ブランチの構成
 
@@ -124,12 +124,10 @@ CD、staging、preview の環境の方式は、デプロイの spec で決める
 
 ## 8. GitHub のセキュリティの機能
 
-リポジトリの設定（Settings の Code security）で有効にする。CI のジョブではないため、CI の実行時間に含まれない。
+リポジトリの設定（Settings の Code security）で有効にする。CI のジョブではない。
 
 | 機能 | 見るもの | 結果の場所 | 対応 |
 |------|----------|------------|------|
 | Dependabot alerts | 依存ライブラリ（Gradle、pnpm、GitHub Actions）の既知の脆弱性 | Security のタブの Dependabot | 直ったバージョンに更新する（バックエンドは `libs.versions.toml`、画面は `pnpm`）。更新できないときは、影響がない理由を書いて閉じる |
 | secret scanning、push protection | リポジトリに入った秘密情報（API キー、token など）。push protection は、秘密情報を含む push を拒否する | Security のタブの Secret scanning | 秘密情報を無効にして再発行し、履歴から削除する。テスト用の値など誤検出なら、理由を付けて閉じる |
 | CodeQL（default setup） | Java と JavaScript・TypeScript のコードの、セキュリティの問題（注入、パストラバーサルなど） | Security のタブの Code scanning | 修正するか、誤検出・影響がない理由を付けて閉じる |
-
-- Dependabot の設定は「Dependabot」。

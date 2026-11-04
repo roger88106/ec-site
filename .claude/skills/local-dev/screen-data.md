@@ -16,7 +16,7 @@
 
 ## ローカルの画面のデータ
 
-local profile の seed（`backend/ecsite/src/main/resources/db/seed/local/`）が、画面を確認するためのデータを作る。注文を作る script は必要ない。商品、在庫切れ・残りわずかの商品、会員 `member@example.com` の注文の状態、ID の体系は、seed の SQL と `README.md` を読む（レポート用の注文は README の「レポート用の注文」）。
+local profile の seed（`backend/ecsite/src/main/resources/db/seed/local/`）が、画面を確認するためのデータを作る。注文を作る script は必要ない。商品（在庫切れ・残りわずかを含む）、会員 `member@example.com` の注文の状態、レポート用の注文、ID の体系は、seed の SQL と `README.md` を読む。
 
 - 会員の注文は、状態に合う支払（mock の与信）を持ち、受付の注文は管理画面から出荷できる（Stripe の profile では売上確定で失敗する）。承認・却下・運営者のキャンセルは、申請中の注文で管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）から試す。
 - 画面で変えたデータを最初の状態に戻す手順は、[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」。

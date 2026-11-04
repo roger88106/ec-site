@@ -113,18 +113,16 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 ## 6. カバレッジと mutation score の基準の検査
 
-カバレッジ（行・分岐）と、domain の mutation score は、基準の値（許容の幅を含む）を下回らない。テストの量や強さが下がったことに気づくため、下回ると CI が失敗する。
+カバレッジ（行・分岐）と、domain の mutation score（PIT で測る、テストが検出できた変異の割合）が基準の値（許容の幅を含む）を下回ると、CI が失敗する。理由：テストの量や強さが下がったことに気づくため。
 
-- 行と分岐の対象は、バックエンド（`backend`）、管理画面（`admin`）、店舗画面（`store`）、共有パッケージ（`shared`）。mutation score の対象は、バックエンドの domain（`backend-domain`）。mutation score は、PIT で測る、テストが検出できた変異の割合。
-- 基準は `scripts/ci/report/quality-baseline.json` にある、対象ごとの合計の値と許容の幅（`tolerance`）。今回の値が、基準の値から許容の幅を引いた値を下回ると失敗にする。ファイルごとの基準はない。
-- `backend` の許容の幅は、行 0.10、分岐 0.30。統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつくため。根拠は [CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」。
+- 基準は `scripts/ci/report/quality-baseline.json` にある、対象ごとの合計の値と許容の幅（`tolerance`）。ファイルごとの基準はない。
+- `backend` の許容の幅は、行 0.10、分岐 0.30。理由：統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつくため（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）。
 
-検査は `scripts/ci/report/` の下の script で行う。`coverage-baseline.mjs` が基準と比べて失敗にし、`coverage-summary.mjs` と `mutation-report.mjs` が低い箇所の一覧を job の summary に書く。
+`scripts/ci/report/coverage-baseline.mjs` が基準と比べて失敗にし（対象と結果は冒頭のコメント）、`coverage-summary.mjs` と `mutation-report.mjs` が低い箇所の一覧を job の summary に書く。
 
 ### 6.1 CI での手順の位置
 
-- 検査の手順は、報告を保存した後に置く（失敗しても報告が残る）。店舗画面のジョブは、店舗画面と共有パッケージの 2 つの手順で検査する。
-- PIT は、ビルドと単体テストのジョブの、単体テストの後で実行する。報告は artifact `pitest-backend` に保存する。ジョブの時間が約 2 分増える根拠は [CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」。
+手順は `.github/workflows/ci.yml` にある。検査は報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブの、単体テストの後で実行し、ジョブの時間が約 2 分増える（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
 
 ### 6.2 手元での実行
 
@@ -133,26 +131,21 @@ CI と同じ検査を、手元で実行できる。先に、対象のテスト�
 ```bash
 # ルートで：node scripts/ci/report/coverage-baseline.mjs <対象> <報告のパス> [--write]
 node scripts/ci/report/coverage-baseline.mjs backend backend/ecsite/build/reports/jacoco/coverageReport/coverageReport.xml
-node scripts/ci/report/coverage-baseline.mjs admin frontend/admin/coverage/coverage-summary.json
-node scripts/ci/report/coverage-baseline.mjs store frontend/store/coverage/coverage-summary.json
-node scripts/ci/report/coverage-baseline.mjs shared frontend/shared/coverage/coverage-summary.json
-node scripts/ci/report/coverage-baseline.mjs backend-domain backend/ecsite/build/reports/pitest/mutations.xml
 ```
 
-| 対象 | 報告を作るコマンド | 報告 |
-|------|--------------------|------|
-| `backend` | `backend/ecsite/` で `./gradlew check`（統合テストを含む。`coverageReport` を実行する） | JaCoCo の XML |
-| `admin`、`store`、`shared` | 各ディレクトリで `pnpm test` | Vitest の `coverage-summary.json` |
-| `backend-domain` | `backend/ecsite/` で `./gradlew pitest` | PIT の `mutations.xml` |
+| 対象 | 報告を作るコマンド | 報告のパス |
+|------|--------------------|------------|
+| `backend` | `backend/ecsite/` で `./gradlew check`（統合テストを含む。`coverageReport` を実行する） | `backend/ecsite/build/reports/jacoco/coverageReport/coverageReport.xml` |
+| `admin`、`store`、`shared` | 各ディレクトリで `pnpm test` | `frontend/<対象>/coverage/coverage-summary.json` |
+| `backend-domain` | `backend/ecsite/` で `./gradlew pitest` | `backend/ecsite/build/reports/pitest/mutations.xml` |
 
 - 手元でバックエンドの一部のテストだけを実行すると、報告の値が基準より低くなり、検査が失敗する。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
-- 今回の値が基準を上回ったときは、成功にして、基準の更新を促す警告を表示する。
 
 ### 6.3 失敗したとき
 
-ログと summary の対象・基準・今回の値・差を見る。低い箇所は、`coverage-summary.mjs` と `mutation-report.mjs` が summary に書く一覧で見つける。テストを追加して、値を基準以上に戻す。正当な理由で下げるときは、次の手順で基準のファイルを更新する。
+ログと summary の対象・基準・今回の値・差を見て、低い箇所を summary の一覧で見つけ、テストを追加して値を基準以上に戻す。正当な理由で下げるときは、「基準を変える手順」のとおりにする。
 
 ### 6.4 基準を変える手順
 
-- `--write` は、基準のファイルのその対象の値を、報告の値で書き換える（許容の幅は変えない）。基準を下げるときと、上回った値に更新するときに使い、書き換えたファイルを同じ pull request に含める。下げるときは、pull request に理由を書く。
+- `--write` で基準のファイルの値を報告の値に書き換え、同じ pull request に含める（基準を下げるときと、上回った値に更新するとき）。下げるときは、pull request に理由を書く。
 - バックエンドの `--write` は、CI の summary の値、または `./gradlew check --rerun-tasks` などでテストを実際に実行した報告の値で行う。ビルドのキャッシュから読んだ報告は、実行した報告と分岐が 1 つ違うことがある（[CI の実測](../07-記録/ci-results.md)の「キャッシュから読んだ値と実行した値」）。

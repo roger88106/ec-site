@@ -9,12 +9,12 @@
 //   - 節に、字下げのない行頭から始まり、内容のある `理由：` の行が 1 つ以上ある
 //   - `確認方法：` が、行の途中・箇条・表のセル・字下げ・見出し・太字・半角のコロン・コロンの前の空白の形で書かれていない（節の外も同じ）
 //   - コードブロック、インラインコード、HTML のコメントの中は見ない
-//   - コードブロックと HTML のコメントが閉じている。見出しの形が正しい（`##名前`、全角の空白、名前のない `##` でない）。深さ 1 の見出しは文書の題だけ。節が 1 つ以上ある
+//   - コードブロックと HTML のコメントが閉じている。見出しの形が正しい（`##名前`、`##　名前`、名前のない `##` のどれでもない）。深さ 1 の見出しは文書の題だけ。節が 1 つ以上ある
 // 判定の区分は誤りの防止。誤って書いたものを拒否し、意図して作った回避（見出しの偽装など）は対象にしない。許可する形の一覧で判定する。
 // 失敗したとき：行を加えるか、形を直す。形から外れる節は、除外の一覧に理由を書く。
 //   対象の文書を読めないとき・リンクにないときは、書き方の規則とレビューの冒頭の文のリンクを文書の置き場所に合わせる（対象は同じフォルダーだけ）。
 //   除外した節の見出しかファイル名を変えたときは、除外のキーを新しい名前に直す（一覧から消さない）。
-//   閉じていないコードブロックかコメントは閉じる。見出しは `## 名前` の形にし、題の他の `#` は `##` にする。
+//   閉じていないコードブロックかコメントは閉じる。見出しは `## 名前` の形にし、題以外の `#` は `##` にする。
 // 除外：rule-sections-exclusions.json に {キー: 理由} を書く。キーは `<ファイル>「<番号を除いた見出し>」`（ルートからのパス）。
 //   除外するのは、行の有無だけ。形の誤りは除外しない。理由のない除外と、今の文書にない節の除外は失敗にする。
 // 使い方：node scripts/ci/rule-sections.mjs（リポジトリのルートで）
@@ -115,8 +115,8 @@ export function findSectionProblems(text, isExcluded = () => false) {
   })
 
   headings.forEach((heading, index) => {
-    // 文書の題は、最初の見出しの 1 つだけ
-    if (heading.level === 1 && index > 0) problems.push({ line: heading.line, message: '文書の題の他に深さ 1 の見出しがある（文書の題は最初の見出しの 1 つだけ）' })
+    // 文書の題は、最初の見出し 1 つだけ
+    if (heading.level === 1 && index > 0) problems.push({ line: heading.line, message: '文書の題以外に深さ 1 の見出しがある（文書の題は最初の見出し 1 つだけ）' })
   })
 
   for (let line = 1; line <= raw.length; line++) {
@@ -210,7 +210,7 @@ export function readTargetDocs(reviewText) {
  *
  * @param {string} reviewText 書き方の規則とレビューの本文
  * @param {(file: string) => string} read ファイル名から内容を返す関数。ないときは例外を投げる
- * @returns {{ docs: { file: string, text: string }[], problems: string[] }} 読めた文書と、読めなかった文書の誤りの文
+ * @returns {{ docs: { file: string, text: string }[], problems: string[] }} 読めた文書と、読めなかった理由の文
  */
 export function loadDocuments(reviewText, read) {
   const names = readTargetDocs(reviewText)

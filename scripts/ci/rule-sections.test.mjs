@@ -359,13 +359,13 @@ describe('検出すべき例', () => {
     for (const problem of result.problems) assert.match(problem, /同じフォルダーの文書だけ/)
   })
 
-  test('例 52：半角の空白のない見出しの形（##名前、全角の空白）は失敗にする', () => {
+  test('例 52：形の誤った見出し（##名前、##　名前、#名前、名前のない ##）は失敗にする', () => {
     for (const bad of ['##名前', '##　名前', '#名前', '##', '## ']) {
       expectOne(withRows(bad), /見出し/, LINE_OF_EXTRA)
     }
   })
 
-  test('例 53：最初の ## より後の深さ 1 の見出しは、ATX でも Setext でも失敗にする', () => {
+  test('例 53：題以外の深さ 1 の見出しは、ATX でも Setext でも失敗にする', () => {
     expectOne([section(...rows), '', '# 二つ目'].join('\n'), /深さ 1/, 6)
     expectOne([section(...rows), '', '二つ目', '====='].join('\n'), /深さ 1/, 6)
     expectOne(['# 題', '', '# 二つ目', '', section(...rows)].join('\n'), /深さ 1/, 3)

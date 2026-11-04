@@ -564,6 +564,24 @@ describe('AC 一覧の行の検査', () => {
     assert.deepEqual(listProblems(listRow({ ac: 'AC-7', origin: 'MVP-001' })), [])
   })
 
+  test('AC-n の行は、元の spec が番号だけだと、ディレクトリがあっても問題にする（有効、変更、廃止）', () => {
+    const content = '根拠は[注文モジュール](../../docs/03-機能仕様/order.md)の「注文（集約）」。'
+    const rows = [listRow({ ac: 'AC-400', origin: '227' }), listRow({ ac: 'AC-400', origin: '227', status: '変更', changedBy: '227', content }), listRow({ ac: 'AC-400', origin: '227', module: '', status: '廃止', changedBy: '227', content: '' })]
+    for (const row of rows) {
+      const problems = listProblems(row)
+      assert.equal(problems.length, 1, row)
+      assert.match(problems[0], /AC-400：元の spec（227）が番号だけ/, row)
+    }
+  })
+
+  test('進行中の spec に AC-n の形で定義した AC は、転記した行が問題になる', () => {
+    const { definitions } = parseSpecAcDefinitions('- **AC-400** 文。', '5-x')
+    const read = readAcList(addAcsToList(listDoc(listRow()), definitions))
+    assert.deepEqual(read.problems, [])
+    const problems = checkAcRows({ rows: read.rows, modules: MODULES, specDirs: SPEC_DIRS })
+    assert.ok(problems.some((problem) => problem.includes('AC-400：元の spec（5）が番号だけ')), problems.join('\n'))
+  })
+
   test('MVP-<番号> は、archive/mvp/ の下のディレクトリに対応する', () => {
     for (const origin of ['MVP-001', 'MVP-003', 'MVP-019']) {
       assert.deepEqual(listProblems(listRow({ origin })), [], origin)
@@ -572,7 +590,7 @@ describe('AC 一覧の行の検査', () => {
 
   test('番号だけの値は、archive/mvp/ の外のディレクトリに対応する（1→10 のアーカイブと、進行中）', () => {
     for (const origin of ['227', '7', '5']) {
-      assert.deepEqual(listProblems(listRow({ origin })), [], origin)
+      assert.deepEqual(listProblems(listRow({ ac: `AC-${origin}-1`, origin })), [], origin)
     }
   })
 
@@ -603,10 +621,9 @@ describe('AC 一覧の行の検査', () => {
   })
 
   test('MVP のまとまりは、rel の archive/mvp/ で見分ける（名前の前半が同じ archive/mvp-old/ は MVP でない）', () => {
-    const specDirs = [{ name: '001-x', rel: 'archive/mvp-old/001-x' }]
-    const rows = (origin) => rowsOf(listRow({ origin }))
-    assert.equal(checkAcRows({ rows: rows('MVP-001'), modules: MODULES, specDirs }).length, 1)
-    assert.deepEqual(checkAcRows({ rows: rows('001'), modules: MODULES, specDirs }), [])
+    const specDirs = [{ name: '100-x', rel: 'archive/mvp-old/100-x' }]
+    assert.equal(checkAcRows({ rows: rowsOf(listRow({ origin: 'MVP-100' })), modules: MODULES, specDirs }).length, 1)
+    assert.deepEqual(checkAcRows({ rows: rowsOf(listRow({ ac: 'AC-100-1', origin: '100' })), modules: MODULES, specDirs }), [])
   })
 
   test('元の spec が進行中の spec（docs/08-spec/ の直下）の番号でも受け付ける', () => {

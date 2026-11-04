@@ -7,3 +7,6 @@
 | [template.md](template.md) | 概要の雛形 |
 | [system.md](system.md) | システムの全体像 |
 | [order.md](order.md) | 注文の流れ |
+| [catalog.md](catalog.md) | 商品の登録と公開の流れ |
+| [member.md](member.md) | 会員登録とログインの流れ |
+| [reporting.md](reporting.md) | レポートの流れ |

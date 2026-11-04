@@ -41,8 +41,48 @@ export function memberEmail(label: string): string {
  */
 export async function submitIdpLogin(page: Page, account: Account): Promise<void> {
   await page.locator('#username').fill(account.email)
-  await page.locator('#password').fill(account.password)
-  await page.getByRole('button', { name: 'サインイン', exact: true }).click()
+  await idpPasswordInput(page).fill(account.password)
+  await idpSignInButton(page).click()
+}
+
+/**
+ * IdP のログイン画面のサインインボタン。
+ *
+ * @param page IdP のログイン画面を開いているページ
+ * @returns サインインボタン
+ */
+export function idpSignInButton(page: Page): Locator {
+  return page.getByRole('button', { name: 'サインイン', exact: true })
+}
+
+/**
+ * IdP の会員登録画面の登録ボタン。
+ *
+ * @param page IdP の会員登録画面を開いているページ
+ * @returns 登録ボタン
+ */
+export function idpSignupButton(page: Page): Locator {
+  return page.getByRole('button', { name: '登録', exact: true })
+}
+
+/**
+ * 会員登録の後に出る、確認のメールを送ったと伝える文。
+ *
+ * @param page 会員登録の内容を送信した後の IdP の画面を開いているページ
+ * @returns 確認のメールを送ったと伝える文
+ */
+export function idpMailSentNotice(page: Page): Locator {
+  return page.getByText(/メールアドレスを確認する手順を記載したメール/)
+}
+
+/**
+ * IdP のパスワードを設定する画面の送信ボタン。
+ *
+ * @param page パスワードを設定する画面を開いているページ
+ * @returns 送信ボタン
+ */
+export function idpPasswordSubmitButton(page: Page): Locator {
+  return page.getByRole('button', { name: '送信', exact: true })
 }
 
 /**
@@ -113,7 +153,7 @@ export async function registerMember(
 
 /**
  * 店舗画面のヘッダーの「会員登録」から、IdP の会員登録の画面でメールアドレス・氏名・任意の属性を入れて送る。
- * 確認のメールを送ったと出るまで待つ（パスワードは確認のメールのリンクで決める。{@link setPasswordFromMail}）。
+ * 確認のメールを送ったと出るまで待つ（パスワードは確認のメールのリンクで設定する。{@link setPasswordFromMail}）。
  *
  * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
  * @param account 登録するアカウント（メールアドレスだけを入れる）
@@ -121,6 +161,25 @@ export async function registerMember(
  * @param profile 生年月日と性別（省けば入れない）
  */
 export async function submitSignup(
+  page: Page,
+  account: Account,
+  name: { lastName: string; firstName: string },
+  profile: MemberProfile = {},
+): Promise<void> {
+  await fillSignup(page, account, name, profile)
+  await idpSignupButton(page).click()
+  await expect(idpMailSentNotice(page)).toBeVisible()
+}
+
+/**
+ * 店舗画面のヘッダーの「会員登録」から IdP の会員登録の画面を開き、メールアドレス・氏名・任意の属性を入れる。送らない（{@link submitSignup} が送る）。
+ *
+ * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
+ * @param account 登録するアカウント（メールアドレスだけを入れる）
+ * @param name 氏名
+ * @param profile 生年月日と性別（省けば入れない）
+ */
+export async function fillSignup(
   page: Page,
   account: Account,
   name: { lastName: string; firstName: string },
@@ -136,21 +195,49 @@ export async function submitSignup(
   if (profile.gender) {
     await page.locator('#gender').selectOption({ label: profile.gender })
   }
-  await page.getByRole('button', { name: '登録', exact: true }).click()
-  await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
 }
 
 /**
- * 確認のメールのリンクを開き、IdP の画面でパスワードを決めて送る。送った後の画面は確認しない（呼ぶ側が確認する）。
+ * 確認のメールのリンクを開き、IdP の画面でパスワードを設定して送る。送った後の画面は確認しない（呼ぶ側が確認する）。
  *
  * @param page 使うページ（登録を始めたのと同じブラウザーなら、ログインした状態で登録を始めた画面に戻る）
- * @param account 登録したアカウント（メールアドレスでメールを探し、パスワードを決める）
+ * @param account 登録したアカウント（メールアドレスでメールを探し、パスワードを設定する）
  */
 export async function setPasswordFromMail(page: Page, account: Account): Promise<void> {
+  await openMailLink(page, account)
+  await submitNewPassword(page, account)
+}
+
+/**
+ * 確認のメールのリンクを開く（パスワードを設定する画面が出る）。
+ *
+ * @param page 使うページ
+ * @param account 登録したアカウント（メールアドレスでメールを探す）
+ */
+export async function openMailLink(page: Page, account: Account): Promise<void> {
   await page.goto(await latestIdpLink(account.email))
+}
+
+/**
+ * IdP のパスワードを設定する画面で、パスワードを入れる。送らない（{@link submitNewPassword} が送る）。
+ *
+ * @param page パスワードを設定する画面を開いているページ
+ * @param account 登録したアカウント（パスワードを入れる）
+ */
+export async function fillNewPassword(page: Page, account: Account): Promise<void> {
   await page.locator('#password-new').fill(account.password)
   await page.locator('#password-confirm').fill(account.password)
-  await page.getByRole('button', { name: '送信', exact: true }).click()
+}
+
+/**
+ * IdP のパスワードを設定する画面で、パスワードを入れて送る。
+ *
+ * @param page パスワードを設定する画面を開いているページ
+ * @param account 登録したアカウント（パスワードを設定する）
+ */
+async function submitNewPassword(page: Page, account: Account): Promise<void> {
+  await fillNewPassword(page, account)
+  await idpPasswordSubmitButton(page).click()
 }
 
 /**

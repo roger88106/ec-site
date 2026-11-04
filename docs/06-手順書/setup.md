@@ -136,7 +136,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 3. `e2e/` で `pnpm capture`。`showcase/img/` の 14 枚を上書きする。
 
 - 撮影では、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面を撮るため）。白のマグカップの在庫を 2 つ使うため、続けて撮るときも DB を再作成する。
-- 設計書の画像（`docs/01-概要/img/`）は `pnpm capture:docs` で撮る。前提は同じ（スロット 0、全てのサーバー、local の seed）。
+- 設計書の画像（`docs/01-概要/img/`）は `pnpm capture:docs` で撮る。前提は上の手順 1、2 と同じ。続けて撮るときは DB を再作成し（品番が重複するため）、店舗画面のトップと商品一覧を開いてから撮る（古い商品がキャッシュから表示されるため）。
 - 撮影は E2E とは別で、CI では実行しない。撮った画像は目視で確認してから commit する。
 - ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。
 

@@ -25,10 +25,10 @@ description: ec-site のフロントに画面や操作を追加・修正する�
 画面に表示や処理を書く前に、共有の部品を探す。
 
 1. 書こうとする表示や処理（整形、表示名、リンクのボタンなど）に当たるものを、`frontend/shared/src/lib/`・`components/`・`ui/` のファイル名と export で探す（例：`git grep -n "^export" -- frontend/shared/src`）。
-2. あれば import して使い、自分で同じものを書かない。import のパスは `@ec-site/shared/` の後ろに置き場所を続ける（例：`@ec-site/shared/lib/format`）。金額、数、日時の既定の書式で足りるときは、自分で `toLocaleString` や `Intl` を呼ばない。
+2. あれば import して使い、自分で同じものを書かない。import のパスは `@ec-site/shared/` の後ろに置き場所を続ける（例：`@ec-site/shared/lib/format`）。書式と色などの値は、[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「既定の書式とテーマの値は共有のものを使う」に従う。
 3. ないものを 2 つの画面で使うときは、各画面に書かず `frontend/shared` に置く。置き場所と条件は [フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「入れるもの・入れないもの」。
 
-共有の文言は `frontend/shared/src/messages/ja.json` の `common` にある（置く条件は[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「表示の文言は文言ファイルに置く」）。色などの値は `frontend/shared/src/theme.css` のテーマから使い、画面に直接書かない。`frontend/shared/scripts/export-constraints.mjs`（OpenAPI の入力の制約を定数のファイルに出力する）は直接実行せず、各画面の `pnpm generate:api` から実行する。
+共有の文言は `frontend/shared/src/messages/ja.json` の `common` にある（置く条件は[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「表示の文言は文言ファイルに置く」）。`frontend/shared/scripts/export-constraints.mjs`（OpenAPI の入力の制約を定数のファイルに出力する）は直接実行せず、各画面の `pnpm generate:api` から実行する。
 
 ## 店舗画面（`frontend/store`）
 

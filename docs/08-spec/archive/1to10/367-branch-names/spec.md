@@ -47,7 +47,7 @@
 
   ※1：2026-11-05 に `gh api` で読んだ。規則は、削除の禁止、force の禁止、pull request、必須の検査である。
 
-- `main-source.mjs` の判定は、許可する形の一覧で書き、誤りの防止とする。誤って付けた名前は拒否する。意図的な回避は防止の対象にしない。理由：[文書の構成](../../05-開発規則/doc-structure.md)の「spec と plan の書き方」に、判定の script は許可する形の一覧で書き、誤りの防止か回避の防止かを DC で先に決めると定めているため。
+- `main-source.mjs` の判定は、許可する形の一覧で書き、誤りの防止とする。誤って付けた名前は拒否する。意図的な回避は防止の対象にしない。理由：[文書の構成](../../../../05-開発規則/doc-structure.md)の「spec と plan の書き方」に、判定の script は許可する形の一覧で書き、誤りの防止か回避の防止かを DC で先に決めると定めているため。
 - 移行の扱いは次の表のとおり。文書では `docs/06-手順書/branches.md` の「名前」に書く。リモートのブランチの行は、消しても読む人が誤らないので、文書に書かない。
 
   | 対象 | 扱い |
@@ -57,7 +57,7 @@
   | 古い名前のリモートの `hotfix-`・`release-` のブランチ | 今はない（2026-11-05 に `git ls-remote` で確認した）ので、改名の手順は要らない |
   | 本 spec の変更が `main` に入るまでの緊急の修正と、変更を含まない commit から作るリリース | 古い名前（`hotfix-`、`release-`）を使う ※2 |
   | 本 spec の変更を含む commit から作るリリース | リリースのブランチが新しい script を含むので、新しい名前を使う |
-  | 本 spec の変更が `main` に入った後の全ての pull request | 新しい名前だけが通る。開いている古い名前の pull request は、新しい名前のブランチで再作成する |
+  | 本 spec の変更が `main` に入った後の、`main` への pull request | 新しい名前だけが通る。開いている古い名前の pull request は、新しい名前のブランチで再作成する |
 
   ※2：`main` への pull request の検査は、pull request の merge commit の script を使う（`.github/workflows/main-source.yml` のコメント）。`main` が変更を含むまでは、変更を含まないブランチの merge commit も古い script を含むので、古い script で判定される。この動作は workflow のコメントを読んだものであり、`main` への実際の pull request では確認していない。
 
@@ -135,27 +135,43 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。文書の本文は日本語の要点から、日本語だけの文脈のサブエージェント（汎用）が書く。
 
-- [ ] **T367-01-01** [テスト] `main-source.test.mjs` を新しい名前に変える。新しい名前は通し、古い名前、`hotfix`、`release`、`feature/release/1`、`agent/hotfix/1-x`、`Release/1` は通さない。`pre-commit.test.mjs` の表示の期待を新しい名前に変え、`agent/367-x` のブランチで commit できるテストを加える。失敗することを確認する（DC-367-7、DC-367-9、DC-367-10）。commit は T367-01-02 と同じにする（[開発の進め方](../../05-開発規則/workflow.md)の「循環」の例外）。
+- [x] **T367-01-01** [テスト] `main-source.test.mjs` を新しい名前に変える。新しい名前は通し、古い名前、`hotfix`、`release`、`feature/release/1`、`agent/hotfix/1-x`、`Release/1` は通さない。`pre-commit.test.mjs` の表示の期待を新しい名前に変え、`agent/367-x` のブランチで commit できるテストを加える。失敗することを確認する（DC-367-7、DC-367-9、DC-367-10）。commit は T367-01-02 と同じにする（[開発の進め方](../../../../05-開発規則/workflow.md)の「循環」の例外）。
   - 依存：なし
   - 範囲：`scripts/ci/workflow/main-source.test.mjs`、`scripts/dev/lib/pre-commit.test.mjs`
   - 確認方法：`node --test` で新しいテストが失敗する
-- [ ] **T367-01-02** `main-source.mjs`、`main-source.yml` のコメント、`pre-commit.mjs` の表示を変える（DC-367-7〜10）。
+- [x] **T367-01-02** `main-source.mjs`、`main-source.yml` のコメント、`pre-commit.mjs` の表示を変える（DC-367-7〜10）。
   - 依存：T367-01-01
   - 範囲：`scripts/ci/workflow/main-source.mjs`、`.github/workflows/main-source.yml`、`scripts/dev/lib/pre-commit.mjs`
   - 確認方法：`node --test` が通る
-- [ ] **T367-01-03** [テスト] `agent-guard.test.mjs` に、`git push -u origin agent/367-x`、`hotfix/1-x`、`release/1.2.0` が通り、force と削除が拒否されるテストを加える（DC-367-11）。
+- [x] **T367-01-03** [テスト] `agent-guard.test.mjs` に、`git push -u origin agent/367-x`、`hotfix/1-x`、`release/1.2.0` が通り、force と削除が拒否されるテストを加える（DC-367-11）。
   - 依存：なし
   - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`
   - 確認方法：今の振る舞いを固定するテストなので、一時的に壊して失敗することを `scripts/dev/break-check.mjs` で確認する
-- [ ] **T367-01-04** 規則と手順の文書、`glossary-ids-exclusions.json` を変え、branches.md に移行の扱いを書く（DC-367-1〜6）。
+- [x] **T367-01-04** 規則と手順の文書、`glossary-ids-exclusions.json` を変え、branches.md に移行の扱いを書く（DC-367-1〜6）。
   - 依存：T367-01-02
   - 範囲：「変える範囲」の規則と手順の行、`scripts/ci/glossary-ids-exclusions.json`
   - 確認方法：`git grep` で古い名前の形を検索する、`node scripts/ci/doc-refs.mjs`
-- [ ] **T367-01-05** spec の最後のレビュー、文書のレビュー、校閲、pull request の前のレビューを行い、指摘を修正する（DC-367-12）。
+- [x] **T367-01-05** spec の最後のレビュー、文書のレビュー、校閲、pull request の前のレビューを行い、指摘を修正する（DC-367-12）。
   - 依存：T367-01-01〜04
   - 確認する項目：spec の最後のレビューは高性能で、段階をまたぐ影響、ファイルをまたぐ影響、spec との一致を見る。校閲は差分の追加行に行う。pull request の前のレビューは `/code-review` の high と、文脈を持たない高性能のレビュー役で行う（hook と CI の検査の script を変えるため）
   - 確認方法：`CI=true scripts/ci/check-all.sh`
   - 結果：
-- [ ] **T367-01-06** spec を `docs/08-spec/archive/1to10/` に移し、全てのチェックボックスを `[x]` にする（[起票と記録の操作](../../05-開発規則/issues.md)の「アーカイブの操作」）。
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | ファイルをまたぐ影響 | 高性能 | 1 | 147962 | 5m09s | 0 | 1 | 1 | 2 |
+    | spec の最後 | spec との一致 | 高性能 | 1 | 92125 | 3m26s | 0 | 2 | 3 | 4 |
+    | spec の最後 | 重複を除く | — | 1 | — | — | 0 | 2 | 3 | 4 |
+    | pull request の前 | hook と検査の script | 高性能 | 1 | 150483 | 4m29s | 0 | 1 | 1 | 2 |
+    | pull request の前 | 組み込み | 組み込み | 1 | — | — | 0 | 0 | 2 | 2 |
+    | pull request の前 | 重複を除く | — | 1 | — | — | 0 | 1 | 2 | 3 |
+    | pull request の前 | 修正の確認 | 高性能 | 2 | 36298 | 1m14s | 0 | 2 | 0 | 2 |
+
+    修正したもの：移行の表の不足と条件、DC-367-6 の範囲、判定が名前の先頭だけを見るテスト、移行の説明を削除する条件。2 回目の指摘の修正は、表の対象と削除の範囲の文だけなので、読んで確認し、3 回目のレビューは行わなかった。
+    残したものと理由：`agent-guard.mjs` の差分が「変える範囲」にない指摘は、#317 の commit の分なので採らなかった。
+    機械の検査に移したもの：なし。指摘は文の意味の照合で、script で判定できないため。判定の先頭の確認はテストに加えた。
+    本文の書き手：spec は要点からサブエージェントが書いた。他の文書は数行の修正で、セッションが書いた。
+    文書のレビューの候補 25 件と、校閲の候補 45 件（確認役が「挙げる」としたもの 14 件）は、読んで採否を決めた。
+- [x] **T367-01-06** spec を `docs/08-spec/archive/1to10/` に移し、全てのチェックボックスを `[x]` にする（[起票と記録の操作](../../../../05-開発規則/issues.md)の「アーカイブの操作」）。
   - 依存：T367-01-05
   - 確認方法：`node scripts/ci/spec-structure.mjs`、`node scripts/ci/doc-refs.mjs`

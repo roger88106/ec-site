@@ -19,13 +19,15 @@
 | 通常 | `agent/<issue の番号>-<短い名前>` |
 | 緊急の修正 | `hotfix/<issue の番号>-<短い名前>` |
 
-名前の変更（#367）の移行の扱いは、次のとおり。
+名前の変更（#367）に伴う移行の扱いは、次のとおり。
 
 | 対象 | 扱い |
 |------|------|
-| 変更の前に作った作業ブランチ | 名前を変えない。`develop` へのマージでは元のブランチの名前を判定しないので、そのままマージできる |
-| 変更が `main` に入るまでの緊急の修正 | `hotfix-<issue の番号>-<短い名前>` を使う。検査は merge commit の script を使い、`main` から切ったブランチは `main` にある古い script で判定されるため（実際の pull request では未確認） |
-| 変更を含む最初のリリース | `release/<バージョン>` を使う。リリースのブランチが新しい script を含むため |
+| 名前の変更が `develop` に入る前に作った作業ブランチ | 名前を変えない。`develop` へのマージでは元のブランチの名前を判定しないため |
+| 名前の変更が `develop` に入った後に作る作業ブランチ | 新しい名前を使う |
+| 名前の変更が `main` に入るまでの緊急の修正 | `hotfix-<issue の番号>-<短い名前>` を使う。検査は merge commit の script を使うので、`main` から切ったブランチは `main` にある古い script で判定される（実際の pull request では未確認） |
+| 名前の変更を含む commit から作るリリース | `release/<バージョン>` を使う。リリースのブランチが新しい script を含むため |
+| 名前の変更を含まない commit から作るリリース | `release-<バージョン>` を使う。理由は緊急の修正と同じ |
 
 ### 2.2 切り方と pull request
 
@@ -73,7 +75,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 | 手順 | 内容 |
 |------|------|
-| 1 | 確認した commit から `release/<バージョン>` のブランチを作成する。確認した commit は `develop` の最新とは限らない |
+| 1 | 確認した commit から `release/<バージョン>` のブランチを作成する（移行の間の名前は「名前」）。確認した commit は `develop` の最新とは限らない |
 | 2 | pull request で `main` にマージする |
 | 3 | tag `v<バージョン>` を付ける |
 | 4 | `gh release create` で GitHub の Release を作成する |
@@ -90,7 +92,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 ## 5. 緊急の修正
 
-- `hotfix/<issue の番号>-<短い名前>` のブランチを `main` から切り、pull request で `main` に入れる。
+- `hotfix/<issue の番号>-<短い名前>` のブランチ（移行の間の名前は「名前」）を `main` から切り、pull request で `main` に入れる。
 - `main` に入れた後に、`develop` に戻す。`main` から `agent/<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`main` を直接 `develop` に入れる pull request で衝突すると、`main` に commit しなければ解消できないため。
 - 必須の検査が GitHub の障害で動かずマージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。`gh api` での変更は、Claude Code の hook が確認する。
 - `hotfix/` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。

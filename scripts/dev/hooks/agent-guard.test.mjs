@@ -266,7 +266,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
-  test('作業ブランチ、緊急の修正、リリースの `/` を含む名前の push は通し、force と削除は拒否する', () => {
+  test('作業ブランチ、緊急の修正、リリースのブランチの名前に `/` を含む push は通し、force と削除は拒否する', () => {
     for (const command of ['git push -u origin agent/367-x', 'git push origin hotfix/1-x', 'git push origin release/1.2.0']) {
       assertPassed(command)
     }

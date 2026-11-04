@@ -140,6 +140,6 @@ flowchart LR
 | メール | ローカルは Mailpit | [通知の設計](notification.md)の「外部のサービス」 |
 | オブジェクトストレージ、画像の変換 | ストレージはローカルでは SeaweedFS | [メディアの設計](media.md)の「外部のサービス」 |
 
-※1：画面がログインする。バックエンドは access token を検証するだけで、検証はモジュールでなく共通の設定が行う。会員モジュールが token の subject と会員 ID を対応づける。
+※1：画面がログインし、バックエンドは共通の設定で access token を検証するだけである。token の subject と会員 ID は、会員モジュールが対応づける。
 
 画面は 2 つある。店舗画面は Next.js で、サーバーから API を呼ぶ。管理画面は Vite の SPA で、ブラウザーから API を呼ぶ。構成は [フロントのアーキテクチャ](frontend-architecture.md) に書く。

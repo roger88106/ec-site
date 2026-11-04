@@ -235,7 +235,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 ※7：必須の設定と起動での確認は「サーバーの設定とログ」。E2E は `playwright.config.ts` で渡す。
 
-※8：Auth.js は `AUTH_URL` があれば、リクエストの URL をそれに置き換える。`trustHost` は指定しない。ログインの戻り先のテストは、このファイルだけ実際の Auth.js を使う（`auth/loginRedirect.test.ts`）。
+※8：Auth.js は `AUTH_URL` があれば、リクエストの URL をそれに置き換える。`trustHost` は指定せず、ログインの戻り先は実際の Auth.js を使うテスト（`auth/loginRedirect.test.ts`）で確認する。
 
 ### 9.1 token の更新
 

@@ -37,12 +37,12 @@
 
 | 項目 | 内容 |
 |------|------|
-| 変換 | tools（`src/tools/java/com/ecsite/tools/region/`）の `PostalCodeCsv`（注記を除き、マスターデータの行にする）。本番のコードには入れない（本番で動かさず、tools とテストだけが使うため） |
-| 郵便番号の一覧 | `src/tools/resources/region/postal-codes.txt`。seed・テスト・E2E が使う郵便番号と、変換の確認に使う郵便番号 |
+| 変換 | tools（`src/tools/java/com/ecsite/tools/region/`）の `PostalCodeCsv`。本番のコードには入れない。理由：本番で動かさず、tools とテストだけが使うため |
+| 郵便番号の一覧 | `src/tools/resources/region/postal-codes.txt`（用途はファイルのコメント） |
 | 作り方 | 下の手順。作ったマイグレーションは手動で修正しない |
 
 1. 日本郵便の郵便番号データのページから `utf_ken_all.zip` をダウンロードし、`/.local/masterdata/utf_ken_all/utf_ken_all.csv` に展開する（Git に入れない）。
-2. `./gradlew generateRegionMigration` を実行する（置き場所を変えるときは `-PpostalCodeCsv=<CSV>`）。都道府県・市区町村・郵便番号の数が出力される。一覧の郵便番号がデータになければ失敗する。
+2. `./gradlew generateRegionMigration` を実行する（置き場所の指定は `build.gradle.kts` のコメント）。一覧の郵便番号がデータになければ失敗する。
 3. 郵便番号を追加するときは、一覧に追加する。Gradle のタスク `generateRegionMigration` を、新しいマイグレーションに郵便番号の表を全件置き換える（削除してから入れる）SQL を出力するように修正してから実行する。理由：今のタスクをそのまま実行すると、commit 済みのマイグレーションを上書きするため（[CI の検査の script](../06-手順書/ci-checks.md) の `migrations`）。
 4. 生成の処理が書く先頭のコメントは変えない。理由は `RegionMigrationGenerator` のコメントに書いてある。
 

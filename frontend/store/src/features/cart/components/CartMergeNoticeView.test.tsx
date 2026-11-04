@@ -15,7 +15,7 @@ function listWith(container: HTMLElement, itemText: string): HTMLElement {
   const found = within(container)
     .getAllByRole('list')
     .find((list) => within(list).queryByText(itemText) !== null)
-  if (!found) throw new Error('「' + itemText + '」を持つ一覧がない')
+  if (!found) throw new Error(`「${itemText}」を持つ一覧がない`)
   return found
 }
 

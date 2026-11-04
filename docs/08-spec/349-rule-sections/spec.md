@@ -209,11 +209,11 @@
   - 依存：なし
   - 範囲：`docs/05-開発規則/test-writing.md`、`docs/05-開発規則/test-writing-backend.md`、`docs/05-開発規則/backend-coding.md`
   - 確認方法：`node scripts/ci/doc-refs.mjs`、`./gradlew test --tests '*ModuleStructureTest'`
-- [ ] **T349-01-03** [テスト] 検査のテストを書き、レッドを確認する（DC-349-1〜9）。
+- [x] **T349-01-03** [テスト] 検査のテストを書き、レッドを確認する（DC-349-1〜9）。
   - 依存：T349-01-01
   - 範囲：`scripts/ci/rule-sections.test.mjs`
   - 確認方法：`node --test scripts/ci/rule-sections.test.mjs` が失敗する。commit は次のタスクと同じにする（[開発の進め方](../../05-開発規則/workflow.md)の「循環」）
-- [ ] **T349-01-04** 検査を実装し、除外の一覧と検査の一覧を加える（DC-349-1〜10、DC-349-12）。
+- [x] **T349-01-04** 検査を実装し、除外の一覧と検査の一覧を加える（DC-349-1〜10、DC-349-12）。
   - 依存：T349-01-02、T349-01-03
   - 範囲：`scripts/ci/rule-sections.mjs`、`scripts/ci/rule-sections-exclusions.json`、`scripts/ci/lib/exclusions.mjs`、`docs/06-手順書/ci-checks.md`
   - 確認方法：`node --test scripts/ci/rule-sections.test.mjs`、`node scripts/ci/rule-sections.mjs`。規則の文書の `確認方法：` と `理由：` の行を一時的に消して、検査が失敗することも確認する

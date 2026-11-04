@@ -424,7 +424,7 @@ describe('ID の定義と参照（DC-321-20）', () => {
   })
 
   test('MVP の ID（AC-82）、MVP の spec を指す文、古い形式のタスクの ID は見ない', () => {
-    assert.deepEqual(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：AC-82 と MVP 012、T011-01-01、T301、T3101 を参照する。')), [])
+    assert.deepEqual(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：AC-82 と MVP-012、T011-01-01、T301、T3101 を参照する。')), [])
   })
 
   test('見本の番号 900 の ID の参照は、定義を調べない', () => {

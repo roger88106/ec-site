@@ -24,7 +24,7 @@ export function RemainingTime({ expiresAt }: { expiresAt: string }) {
   }
   const remaining = remainingTime(expiresAt, now)
   return (
-    <p aria-live="off" className="rounded-lg bg-muted px-4 py-3 text-sm">
+    <p aria-live="off" className="bg-muted rounded-lg px-4 py-3 text-sm">
       {
         remaining === null
           ? t('expired') /* 期限切れ */

@@ -35,7 +35,7 @@ export function CategoryTreeList({
           {/* biome-ignore lint/a11y/useSemanticElements: 行は入力のまとまりでないので fieldset にしない。行に名前を付ける（支援技術向け。見た目は変えない） */}
           <div
             aria-label={node.name}
-            className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted"
+            className="hover:bg-muted flex items-center gap-2 rounded-md px-2 py-1"
             role="group"
           >
             <span className="flex-1">{node.name}</span>

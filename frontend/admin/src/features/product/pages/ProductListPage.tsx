@@ -94,7 +94,7 @@ export function ProductListPage() {
                   ))}
                   {result.items.length === 0 && (
                     <TableRow>
-                      <TableCell className="text-center text-muted-foreground" colSpan={5}>
+                      <TableCell className="text-muted-foreground text-center" colSpan={5}>
                         {t('empty') /* 該当なし */}
                       </TableCell>
                     </TableRow>

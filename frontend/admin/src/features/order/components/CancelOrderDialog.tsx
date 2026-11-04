@@ -77,7 +77,7 @@ export function CancelOrderDialog({
           </Field>
           {askRestock && (
             <fieldset className="grid gap-2">
-              <legend className="mb-2 font-medium text-sm">{t('restock') /* 在庫 */}</legend>
+              <legend className="mb-2 text-sm font-medium">{t('restock') /* 在庫 */}</legend>
               <label className="flex items-center gap-2 text-sm">
                 <input type="radio" value="true" {...form.register('restock')} />
                 {t('restockYes') /* 在庫に戻す */}

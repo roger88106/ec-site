@@ -83,7 +83,7 @@ export function VariantRow({
       <TableCell className="text-right">
         <StockLink productId={productId} variantId={variant.id} />
       </TableCell>
-      <TableCell className="space-x-1 whitespace-nowrap text-right">
+      <TableCell className="space-x-1 text-right whitespace-nowrap">
         <Button
           aria-label={tApp('moveUp', { name: variant.variantCode }) /* 上へ */}
           disabled={first || pending}

@@ -25,7 +25,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
   const query = parseSearchQuery(await searchParams)
   return (
     <div className="space-y-6">
-      <h1 className="font-heading font-semibold text-2xl">
+      <h1 className="font-heading text-2xl font-semibold">
         {query.q ? t('heading', { q: query.q }) : t('prompt') /* 検索結果か、入力を促す */}
       </h1>
       <form action="/search" className="flex max-w-md gap-2">

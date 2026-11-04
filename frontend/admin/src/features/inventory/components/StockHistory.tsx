@@ -63,7 +63,7 @@ export function StockHistory({ variantId }: { variantId: string }) {
                   ))}
                   {result.items.length === 0 && (
                     <TableRow>
-                      <TableCell className="text-center text-muted-foreground" colSpan={6}>
+                      <TableCell className="text-muted-foreground text-center" colSpan={6}>
                         {t('empty') /* まだない */}
                       </TableCell>
                     </TableRow>

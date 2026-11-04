@@ -8,7 +8,7 @@ export function PriceText({ price, size = 'md' }: { price: Price; size?: 'md' | 
   const { inclTax, exclTax } = yenParts(price)
   return (
     <span className="tabular-nums">
-      <span className={size === 'lg' ? 'font-semibold text-2xl' : 'font-semibold'}>
+      <span className={size === 'lg' ? 'text-2xl font-semibold' : 'font-semibold'}>
         {t('inclTax', { amount: inclTax }) /* 税込の金額 */}
       </span>
       <span className="text-muted-foreground text-sm">{t('exclTax', { amount: exclTax }) /* 税抜の金額 */}</span>

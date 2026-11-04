@@ -15,7 +15,7 @@ export function CategoryList({ categories }: { categories: CategoryNode[] }) {
             {category.name}
           </Link>
           {category.children.length > 0 && (
-            <ul className="mt-2 space-y-1 text-muted-foreground text-sm">
+            <ul className="text-muted-foreground mt-2 space-y-1 text-sm">
               {category.children.map((child) => (
                 <li key={child.id}>
                   <Link className="hover:text-foreground hover:underline" href={categoryHref(child.id)}>

@@ -17,7 +17,7 @@ export function QuoteItemSummary({ item, children }: { item: QuoteItem; children
   const tLabels = useTranslations('labels')
   return (
     <div className="flex gap-4">
-      <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+      <div className="bg-muted flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md">
         <ProductImage alt="" iconSize="sm" src={item.imageUrl} />
       </div>
       <div className="flex-1 space-y-1">
@@ -31,7 +31,7 @@ export function QuoteItemSummary({ item, children }: { item: QuoteItem; children
         )}
         <PriceText price={item.unitPrice} />
         {!item.purchasable && item.unpurchasableReason && (
-          <p className="flex items-center gap-2 text-destructive text-sm">
+          <p className="text-destructive flex items-center gap-2 text-sm">
             <Badge variant="destructive">{t('unpurchasable') /* 購入できない */}</Badge>
             {unpurchasableReasonLabel(item.unpurchasableReason)}
           </p>

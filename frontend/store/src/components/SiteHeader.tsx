@@ -20,7 +20,7 @@ export async function SiteHeader() {
   return (
     <header className="border-b">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
-        <Link className="font-heading font-semibold text-lg" href="/">
+        <Link className="font-heading text-lg font-semibold" href="/">
           {tCommon('siteName') /* 店名 */}
         </Link>
         <nav className="text-sm">
@@ -30,7 +30,7 @@ export async function SiteHeader() {
         </nav>
         <search className="ml-auto">
           <form action="/search" className="flex items-center gap-2">
-            <SearchIcon aria-hidden className="size-4 text-muted-foreground" />
+            <SearchIcon aria-hidden className="text-muted-foreground size-4" />
             <Input
               aria-label={t('keyword') /* キーワード */}
               className="w-56"

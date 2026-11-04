@@ -32,7 +32,7 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
       <div className="w-full space-y-1.5">
         <Label htmlFor="cancellation-reason">{t('reason') /* 理由 */}</Label>
         <textarea
-          className="min-h-20 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-20 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:ring-3"
           id="cancellation-reason"
           maxLength={REASON_MAX_LENGTH}
           name="reason"

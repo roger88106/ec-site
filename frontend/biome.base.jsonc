@@ -31,13 +31,11 @@
     "rules": {
       "preset": "recommended",
       "nursery": {
-        // Tailwind のクラスの並びを揃える（cn、cva の引数も対象）
-        "useSortedClasses": {
+        // Tailwind のクラスの並びを揃える（cn、cva の引数も、tailwind の既定で対象になる）
+        // tailwind.stylesheet は指定しない。Biome は各プロジェクトの外にある shared の theme.css を読まず、プロジェクトごとに並びが変わるため。テーマの値のクラス（text-muted-foreground など）は先頭に並ぶ
+        "useTailwindSortedClasses": {
           "level": "warn",
-          "fix": "safe",
-          "options": {
-            "functions": ["cn", "cva"]
-          }
+          "fix": "safe"
         }
       }
     }
@@ -70,7 +68,7 @@
             "useExhaustiveDependencies": "off"
           },
           "nursery": {
-            "useSortedClasses": "off"
+            "useTailwindSortedClasses": "off"
           },
           "security": {
             "noDangerouslySetInnerHtml": "off"

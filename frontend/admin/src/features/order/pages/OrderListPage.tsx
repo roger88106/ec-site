@@ -101,7 +101,7 @@ export function OrderListPage() {
                   ))}
                   {result.items.length === 0 && (
                     <TableRow>
-                      <TableCell className="text-center text-muted-foreground" colSpan={7}>
+                      <TableCell className="text-muted-foreground text-center" colSpan={7}>
                         {t('empty') /* 該当なし */}
                       </TableCell>
                     </TableRow>

@@ -41,7 +41,7 @@ export default async function CheckoutPage({ params }: PageProps<'/checkout/[che
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading font-semibold text-2xl">{t('title') /* ご注文手続き */}</h1>
+      <h1 className="font-heading text-2xl font-semibold">{t('title') /* ご注文手続き */}</h1>
       <RemainingTime expiresAt={checkout.expiresAt} />
       <div className="grid gap-8 md:grid-cols-[1fr_22rem]">
         <section className="space-y-4">

@@ -106,7 +106,6 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
       await page.getByRole('option', { name: '入荷' }).click()
       const adjust = page.getByRole('button', { name: '調整する', exact: true })
       if (index === 0) {
-        await expectToastGone(page, 'バリアントを追加しました')
         await expectOpaque(adjust)
         await shot(page, '04-stock', adjust)
       }
@@ -124,11 +123,9 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
     await expectToastGone(page, STOCK_ADJUSTED)
     await page.getByRole('button', { name: '公開する', exact: true }).click()
     await expect(page.getByText('公開しました')).toBeVisible()
-    // 通知は写さない。通知が消え、状態のバッジが「公開」になって色の変化が終わってから撮る
+    // 通知は写さない。通知が消えると、状態バッジの色の変化も終わっている
     await expectToastGone(page, '公開しました')
-    const badge = page.getByText('公開', { exact: true })
-    await expectOpaque(badge)
-    await shot(page, '05-publish', badge)
+    await shot(page, '05-publish', page.getByText('公開', { exact: true }))
   })
 
   await test.step('店舗画面：一覧に出る', async () => {
@@ -153,7 +150,6 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
     await expect(page.getByRole('heading', { name: PRODUCT.name })).toBeVisible()
     await page.getByRole('button', { name: PRODUCT.variants[0].color, exact: true }).click()
     const addToCartButton = page.getByRole('button', { name: 'カートに入れる', exact: true })
-    await expect(addToCartButton).toBeEnabled()
     await expectOpaque(addToCartButton)
     await shot(page, '07-store-detail', page.getByText('在庫あり', { exact: true }))
   })

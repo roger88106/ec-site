@@ -147,7 +147,7 @@ test('行の途中の「確認方法：」は異常にしない', () => {
   assert.deepEqual(r.errors, [])
 })
 
-test('今の docs/05-開発規則/ の文書は、異常が 0 で、項目が 53', () => {
+test('今の docs/05-開発規則/ の文書は、異常が 0 で、項目が 54', () => {
   const fs = require('fs'), path = require('path')
   const dir = path.join(__dirname, '..', '..', '..', 'docs', '05-開発規則')
   let errors = 0
@@ -159,5 +159,5 @@ test('今の docs/05-開発規則/ の文書は、異常が 0 で、項目が 53
     items += reviewItems(r.entries).length
   }
   assert.equal(errors, 0)
-  assert.equal(items, 53)
+  assert.equal(items, 54)
 })

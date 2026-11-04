@@ -128,7 +128,7 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 - 起動を待つ curl は「バックエンド」の節と同じで、待つ先は自分のスロットの運用ポート（スロット 1 は `localhost:19080`）。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
 - 店舗画面と管理画面のプレビューは、`.claude/launch.json` の `store-<n>`・`admin-<n>`（`store-1`、`admin-2` など。`<n>` は自分のスロット）を `preview_start` で指定する。`admin`・`store` はスロット 0。プレビューのツールがないときは、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>` をバックグラウンドで実行する。番号が自分のスロットと違うと起動しない。
 - `run backend` がポートの使用で終了コード 1 で終わったら、表示された停止のコマンドで停止してから再実行する。
-- 割り当てとデータを残したまま停止するときは、「バックエンド」の節の `Stop-Process` で、自分のスロットのポート（スロット 1 のバックエンドは 18080）で待ち受けているプロセスだけを停止する。他のスロットのポートのプロセスを停止しない。
+- 割り当てとデータを残したまま停止するときは、[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」のコマンドを使う。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
 
 ## CI の検査の script

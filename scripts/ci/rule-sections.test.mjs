@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkDocuments, findSectionProblems, listSections, loadDocuments, readTargetDocs } from './rule-sections.mjs'
+import { checkDocuments, findSectionProblems, findUnlistedDocs, listSections, loadDocuments, readTargetDocs } from './rule-sections.mjs'
 
 // 正しい形の 2 行。節の末尾に置く
 const rows = ['理由：理由を書く。', '確認方法：レビュー']
@@ -30,11 +30,11 @@ const excludeAll = () => true
 
 describe('検出すべき例', () => {
   test('例 1：本文があり、確認方法の行がない節は失敗にする', () => {
-    expectOne(section('理由：理由を書く。'), /確認方法/)
+    expectOne(section('理由：理由を書く。'), /確認方法：の行がない/)
   })
 
   test('例 2：本文があり、理由の行がない節は失敗にする', () => {
-    expectOne(section('確認方法：レビュー'), /理由/)
+    expectOne(section('確認方法：レビュー'), /理由：の行/)
   })
 
   test('例 3：行の途中の確認方法は失敗にする', () => {
@@ -62,7 +62,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 9：同じ節に確認方法の行が 2 つあれば失敗にする', () => {
-    expectOne(section('確認方法：レビュー', '確認方法：自動', '', '理由：理由を書く。'), /確認方法/)
+    expectOne(section('確認方法：レビュー', '確認方法：自動', '', '理由：理由を書く。'), /2 つ以上/)
   })
 
   test('例 10：内容のない理由の行だけでは失敗にする', () => {
@@ -78,12 +78,12 @@ describe('検出すべき例', () => {
   })
 
   test('例 13：内容のない確認方法の後に箇条がなければ失敗にする', () => {
-    expectOne(section('理由：理由を書く。', '確認方法：', '', 'ただの文。'), /確認方法/)
+    expectOne(section('理由：理由を書く。', '確認方法：', '', 'ただの文。'), /箇条/)
   })
 
   test('例 14：親の見出しに本文があって行がなく、子の見出しにだけ行があれば、親を失敗にする', () => {
     const text = ['## 1. 親', '', '理由：理由を書く。', '', '### 1.1 子', '', ...rows].join('\n')
-    expectOne(text, /確認方法/)
+    expectOne(text, /「親」に確認方法：の行がない/, 1)
   })
 
   test('例 15：確認方法がコードブロックの中にだけあれば失敗にする', () => {
@@ -94,12 +94,14 @@ describe('検出すべき例', () => {
     const result = checkDocuments([{ file: 'a.md', text: withRows('本文。') }], { 'a.md「消えた節」': '理由' })
     assert.equal(result.exclusionProblems.length, 1)
     assert.match(result.exclusionProblems[0], /消えた節/)
+    assert.match(result.exclusionProblems[0], /不要/)
   })
 
   test('例 17：理由が空の除外は失敗にする', () => {
     const result = checkDocuments([{ file: 'a.md', text: withRows('本文。') }], { 'a.md「節」': '' })
     assert.equal(result.exclusionProblems.length, 1)
     assert.match(result.exclusionProblems[0], /節/)
+    assert.match(result.exclusionProblems[0], /理由がない/)
   })
 
   test('例 18：正しい行のある節でも、別の行の形の誤りは失敗にする', () => {
@@ -150,34 +152,36 @@ describe('検出すべき例', () => {
   test('例 26：見出しの確認方法は失敗にする', () => {
     const text = [section(...rows), '', '### 確認方法：レビュー'].join('\n')
     expectOne(text, /確認方法/, 6)
+    const setext = [section(...rows), '', '規則の文（確認方法：自動）', '---'].join('\n')
+    expectOne(setext, /確認方法/, 6)
   })
 
   test('例 27：行頭が確認方法で始まっても、コロンのない語だけなら行がないとして失敗にする', () => {
     for (const bad of ['確認方法は自動', '確認方法 レビュー']) {
-      expectOne(section('理由：理由を書く。', bad), /確認方法/)
+      expectOne(section('理由：理由を書く。', bad), /確認方法：の行がない/)
     }
   })
 
   test('例 28：内容のない確認方法の直後が次の見出しか文書の終わりなら失敗にする', () => {
     const followedByHeading = ['## 1. 節', '', '理由：理由を書く。', '確認方法：', '', '## 2. 次', '', ...rows].join('\n')
-    expectOne(followedByHeading, /確認方法/)
+    expectOne(followedByHeading, /箇条/)
     const adjacentHeading = ['## 1. 節', '', '理由：理由を書く。', '確認方法：', '## 2. 次', '', ...rows].join('\n')
-    expectOne(adjacentHeading, /確認方法/)
-    expectOne(section('理由：理由を書く。', '確認方法：'), /確認方法/)
+    expectOne(adjacentHeading, /箇条/)
+    expectOne(section('理由：理由を書く。', '確認方法：'), /箇条/)
   })
 
   test('例 29：内容のない確認方法の後がコードブロックなら、その後に箇条があっても失敗にする', () => {
     const text = section('理由：理由を書く。', '確認方法：', '', '```', '例', '```', '', '- 名前：方法')
-    expectOne(text, /確認方法/)
+    expectOne(text, /箇条/)
   })
 
   test('例 30：後ろに空白だけがある確認方法の後に箇条がなければ失敗にする', () => {
-    expectOne(section('理由：理由を書く。', '確認方法：   ', '', 'ただの文。'), /確認方法/)
+    expectOne(section('理由：理由を書く。', '確認方法：   ', '', 'ただの文。'), /箇条/)
   })
 
   test('例 31：内容のない確認方法の後が箇条の形でなければ失敗にする', () => {
     for (const bad of ['-名前：方法', '  - 名前：方法']) {
-      expectOne(section('理由：理由を書く。', '確認方法：', '', bad), /確認方法/)
+      expectOne(section('理由：理由を書く。', '確認方法：', '', bad), /箇条/)
     }
   })
 
@@ -211,6 +215,10 @@ describe('検出すべき例', () => {
     expectOne(section('理由：理由を書く。', '<!--', '確認方法：レビュー', '-->'), /確認方法/)
     expectOne(section('<!-- 理由：理由を書く。 -->', '確認方法：レビュー'), /理由/)
     expectOne(section('<!--', '理由：理由を書く。', '-->', '確認方法：レビュー'), /理由/)
+    const bothInComments = findSectionProblems(section('<!-- 理由：理由を書く。 -->', '<!-- 確認方法：レビュー -->'))
+    assert.equal(bothInComments.length, 2)
+    assert.ok(bothInComments.some((problem) => /確認方法：の行がない/.test(problem.message)))
+    assert.ok(bothInComments.some((problem) => /理由：の行/.test(problem.message)))
   })
 
   test('例 38：本文がコードブロックだけの節は、確認方法と理由の両方がないとして失敗にする', () => {
@@ -224,22 +232,38 @@ describe('検出すべき例', () => {
     const text = ['## 1. 親', '', ...rows, '', '### 1.1 子', '', '本文。'].join('\n')
     const problems = findSectionProblems(text)
     assert.equal(problems.length, 2)
+    assert.ok(problems.every((problem) => problem.line === 6 && /「子」/.test(problem.message)))
     assert.ok(problems.some((problem) => /確認方法/.test(problem.message)))
     assert.ok(problems.some((problem) => /理由/.test(problem.message)))
   })
 
   test('例 40：文書の最後の節、深さ 6 の見出しの節、Setext の見出しの節に行がなければ失敗にする', () => {
-    const last = ['## 1. 節', '', ...rows, '', '## 2. 最後', '', '本文。'].join('\n')
-    assert.equal(findSectionProblems(last).length, 2)
-    const deep = ['## 1. 節', '', ...rows, '', '###### 深い節', '', '本文。'].join('\n')
-    assert.equal(findSectionProblems(deep).length, 2)
-    const setext = ['## 1. 節', '', ...rows, '', 'Setext の節', '-----------', '', '本文。'].join('\n')
-    assert.equal(findSectionProblems(setext).length, 2)
+    const cases = [
+      ['## 1. 節', '', ...rows, '', '## 2. 最後', '', '本文。', '「最後」'],
+      ['## 1. 節', '', ...rows, '', '###### 深い節', '', '本文。', '「深い節」'],
+      ['## 1. 節', '', ...rows, '', 'Setext の節', '-----------', '', '本文。', '「Setext の節」'],
+    ]
+    for (const item of cases) {
+      const name = item.pop()
+      const problems = findSectionProblems(item.join('\n'))
+      assert.equal(problems.length, 2)
+      assert.ok(problems.every((problem) => problem.line === 6 && problem.message.includes(name)), JSON.stringify(problems))
+    }
   })
 
   test('例 41：確認方法の直後の行が --- なら、その行が見出しになって行がなくなり失敗にする', () => {
     const text = ['## 1. 節', '', '理由：理由を書く。', '', '確認方法：レビュー', '---'].join('\n')
-    expectOne(text, /確認方法/)
+    const problems = findSectionProblems(text)
+    assert.equal(problems.length, 2)
+    assert.match(problems[0].message, /確認方法：の行がない/)
+    assert.equal(problems[0].line, 1)
+    assert.match(problems[1].message, /字下げのない行頭/)
+    assert.equal(problems[1].line, 5)
+  })
+
+  test('例 41：理由、確認方法、--- が隣り合う形は、見出しの中の確認方法として失敗にする', () => {
+    const text = ['## 1. 節', '', '理由：理由を書く。', '確認方法：レビュー', '---'].join('\n')
+    expectOne(text, /字下げのない行頭/, 4)
   })
 
   test('例 42：閉じていないコードブロックは失敗にする', () => {
@@ -266,6 +290,10 @@ describe('検出すべき例', () => {
     }
     const emptyWithoutBullet = findSectionProblems(section('確認方法：', '', 'ただの文。'), isExcluded)
     assert.equal(emptyWithoutBullet.length, 1)
+    assert.match(emptyWithoutBullet[0].message, /箇条/)
+    const twoRows = findSectionProblems(section('確認方法：レビュー', '確認方法：自動'), isExcluded)
+    assert.equal(twoRows.length, 1)
+    assert.match(twoRows[0].message, /2 つ以上/)
   })
 
   test('例 45：除外のキーが本文のない親の見出しを指していれば失敗にする', () => {
@@ -273,6 +301,7 @@ describe('検出すべき例', () => {
     const result = checkDocuments([{ file: 'a.md', text }], { 'a.md「親」': '理由' })
     assert.equal(result.exclusionProblems.length, 1)
     assert.match(result.exclusionProblems[0], /親/)
+    assert.match(result.exclusionProblems[0], /不要/)
   })
 
   test('例 46：除外のキーの文書がリンクになければ失敗にする。同じ名前の節が他の文書にあっても除外にならない', () => {
@@ -288,6 +317,7 @@ describe('検出すべき例', () => {
       const result = checkDocuments([{ file: 'a.md', text: withRows('本文。') }], { 'a.md「節」': reason })
       assert.equal(result.exclusionProblems.length, 1)
       assert.match(result.exclusionProblems[0], /節/)
+      assert.match(result.exclusionProblems[0], /理由がない/)
     }
   })
 
@@ -307,6 +337,39 @@ describe('検出すべき例', () => {
     assert.deepEqual(missing.docs.map((doc) => doc.file), ['a.md'])
     assert.equal(missing.problems.length, 1)
     assert.match(missing.problems[0], /b\.md/)
+  })
+
+  test('例 49：閉じていない HTML のコメントは失敗にする', () => {
+    const text = [withRows('本文。'), '', '<!--', '閉じない'].join('\n')
+    expectOne(text, /コメント/, 8)
+    expectOne(text.replaceAll('\n', '\r\n'), /コメント/, 8)
+    assert.equal(findSectionProblems([withRows('本文。'), '', '文 <!-- 途中'].join('\n')).length, 0)
+  })
+
+  test('例 50：同じフォルダーのファイル名だけを許し、パスや URL のリンクは対象にせず問題にする', () => {
+    assert.deepEqual(readTargetDocs(['# 題', '', '規則（[A](a.md#節)、[B](sub/b.md)）。'].join('\n')), ['a.md', 'sub/b.md'])
+    const review = ['# 題', '', '規則（[A](a.md)、[B](sub/b.md)、[C](../c.md)、[D](https://example.com/d.md)）。'].join('\n')
+    const read = (file) => {
+      assert.equal(file, 'a.md')
+      return withRows('本文。')
+    }
+    const result = loadDocuments(review, read)
+    assert.deepEqual(result.docs.map((doc) => doc.file), ['a.md'])
+    assert.equal(result.problems.length, 3)
+    for (const problem of result.problems) assert.match(problem, /同じフォルダーの文書だけ/)
+  })
+
+  test('例 51：冒頭の文のリンクにない文書が、行頭の確認方法の行を持てば失敗にする', () => {
+    const allDocs = [
+      { file: 'a.md', text: section(...rows) },
+      { file: 'b.md', text: ['# 題', '', '本文。', '', section(...rows)].join('\n') },
+    ]
+    const problems = findUnlistedDocs(allDocs, ['a.md'])
+    assert.equal(problems.length, 1)
+    assert.equal(problems[0].file, 'b.md')
+    assert.equal(problems[0].line, 8)
+    assert.match(problems[0].message, /リンク/)
+    assert.deepEqual(findUnlistedDocs(allDocs, ['a.md', 'b.md']), [])
   })
 })
 
@@ -367,6 +430,7 @@ describe('検出してはいけない例', () => {
 
   test('例 14：理由の行が 2 つあり、内容のない行と内容のある行があれば成功にする', () => {
     expectNone(section('理由：', '理由：内容。', '確認方法：レビュー'))
+    expectNone(section('理由：内容。', '理由：別の内容。', '確認方法：レビュー'))
   })
 
   test('例 15：表のセルの理由に加えて、行頭の理由の行があれば成功にする', () => {
@@ -449,6 +513,11 @@ describe('検出してはいけない例', () => {
       '[別の文書](other.md) は対象ではない。',
     ].join('\n')
     assert.deepEqual(readTargetDocs(review), ['backend-coding.md', 'comments.md'])
+    const unlistedWithoutRows = [
+      { file: 'backend-coding.md', text: section(...rows) },
+      { file: 'other.md', text: section('本文。') },
+    ]
+    assert.deepEqual(findUnlistedDocs(unlistedWithoutRows, ['backend-coding.md', 'comments.md']), [])
   })
 
   test('例 30：箇条の確認方法が「- 整形：なし」でも、方法の値は判定しない', () => {

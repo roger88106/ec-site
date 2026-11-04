@@ -39,7 +39,8 @@
 //   - 変えた spec：有効の AC で「—」以外、変更・廃止の AC で空か「—」。
 //     変更・廃止の AC の各番号が、番号の形でない、その番号の spec のディレクトリがない、2 つある。
 //     MVP の spec を番号だけで書いたもの（001）と、MVP にない番号（MVP-227）は、ディレクトリがないものとして失敗にする
-//   - 元の spec：変えた spec の各番号と同じ
+//   - 元の spec：変えた spec の各番号と同じ。
+//     AC が AC-s-n の形の行（状態によらない）で、元の spec が s と文字列として一致しない（0 埋めの違いと、MVP- を付けた値も一致しない）。MVP の形（AC-n）の行は比べない
 //   - 今の内容：有効・変更の AC で、空か仮の値（—、なし、<…>）。<br /> がある
 //   - 今の内容の参照：spec の中だけで通じる参照（※1、事実 2、US の番号、spec の「…」）がある
 //   - 今の内容の根拠：変更と common の AC で、根拠（リンク [<文書の名前>](<パス>) と、その直後の「の「<見出し>」」）がない。
@@ -534,6 +535,11 @@ export function checkAcRows({ rows, modules, specDirs }) {
     const knownModule = modules.has(row.module) || row.module === COMMON
     const originProblem = checkSpecNumber(row.origin, specDirs, '元の spec')
     if (originProblem) add(originProblem)
+    // AC-s-n の行は、元の spec が s と同じ（文字列として完全一致）
+    if (typeof row.ac === 'string') {
+      const acSpec = row.ac.split('-')[0]
+      if (row.origin !== acSpec) add(`元の spec（${row.origin}）が AC の番号の spec（${acSpec}）と違う。AC-s-n の s と同じ番号にする`)
+    }
     // 変更・廃止の AC の変えた spec の各番号（空と「—」は、状態ごとの検査が見る）
     const checkChangedBy = () => {
       for (const number of row.changedBy.split(SPEC_NUMBER_SEPARATOR)) {

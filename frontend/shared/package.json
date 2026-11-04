@@ -12,7 +12,7 @@
     "./theme.css": "./src/theme.css"
   },
   "scripts": {
-    "lint": "biome check .",
+    "lint": "biome check --error-on-warnings .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage"
   },

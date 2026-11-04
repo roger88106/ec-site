@@ -126,6 +126,25 @@ export async function submitSignup(
   name: { lastName: string; firstName: string },
   profile: MemberProfile = {},
 ): Promise<void> {
+  await fillSignup(page, account, name, profile)
+  await page.getByRole('button', { name: '登録', exact: true }).click()
+  await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
+}
+
+/**
+ * 店舗画面のヘッダーの「会員登録」から IdP の会員登録の画面を開き、メールアドレス・氏名・任意の属性を入れる。送らない（{@link submitSignup} が送る）。
+ *
+ * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
+ * @param account 登録するアカウント（メールアドレスだけを入れる）
+ * @param name 氏名
+ * @param profile 生年月日と性別（省けば入れない）
+ */
+export async function fillSignup(
+  page: Page,
+  account: Account,
+  name: { lastName: string; firstName: string },
+  profile: MemberProfile = {},
+): Promise<void> {
   await page.getByRole('link', { name: '会員登録' }).click()
   await page.locator('#email').fill(account.email)
   await page.locator('#lastName').fill(name.lastName)
@@ -136,8 +155,6 @@ export async function submitSignup(
   if (profile.gender) {
     await page.locator('#gender').selectOption({ label: profile.gender })
   }
-  await page.getByRole('button', { name: '登録', exact: true }).click()
-  await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
 }
 
 /**
@@ -147,9 +164,39 @@ export async function submitSignup(
  * @param account 登録したアカウント（メールアドレスでメールを探し、パスワードを決める）
  */
 export async function setPasswordFromMail(page: Page, account: Account): Promise<void> {
+  await openMailLink(page, account)
+  await submitNewPassword(page, account)
+}
+
+/**
+ * 確認のメールのリンクを開く（パスワードを決める画面が出る）。
+ *
+ * @param page 使うページ
+ * @param account 登録したアカウント（メールアドレスでメールを探す）
+ */
+export async function openMailLink(page: Page, account: Account): Promise<void> {
   await page.goto(await latestIdpLink(account.email))
+}
+
+/**
+ * IdP のパスワードを決める画面で、パスワードを入れる。送らない（{@link submitNewPassword} が送る）。
+ *
+ * @param page パスワードを決める画面を開いているページ
+ * @param account 登録したアカウント（パスワードを入れる）
+ */
+export async function fillNewPassword(page: Page, account: Account): Promise<void> {
   await page.locator('#password-new').fill(account.password)
   await page.locator('#password-confirm').fill(account.password)
+}
+
+/**
+ * IdP のパスワードを決める画面で、パスワードを入れて送る。
+ *
+ * @param page パスワードを決める画面を開いているページ
+ * @param account 登録したアカウント（パスワードを決める）
+ */
+async function submitNewPassword(page: Page, account: Account): Promise<void> {
+  await fillNewPassword(page, account)
   await page.getByRole('button', { name: '送信', exact: true }).click()
 }
 

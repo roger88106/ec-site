@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
-import { makeShot, RECIPIENT, SEED } from '../src/screenshot'
+import { makeShot, RECIPIENT, SEED, SEED_ORDERS } from '../src/screenshot'
 import { notifyCarrier, shipOnAdmin } from '../src/shipping'
 import {
   SHOWCASE_ADMIN_URL as ADMIN,
@@ -15,16 +15,6 @@ const OUT = path.resolve(import.meta.dirname, '../../showcase/img')
 
 /** 画面を撮って OUT に置く */
 const shot = makeShot(OUT)
-
-/** local の seed のレポート用の注文の期間（db/seed/local/README.md「レポート用の注文」） */
-const SEED_ORDERS = {
-  /** 最初の日 */
-  from: '2024-10-01',
-  /** 最後の 1 年の最初の日 */
-  lastYear: '2025-10-01',
-  /** 最後の日 */
-  to: '2026-09-30',
-}
 
 test('機能紹介のページのスクリーンショットを撮る', async ({ page }) => {
   let paidOrderId = ''

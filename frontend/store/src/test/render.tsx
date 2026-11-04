@@ -23,7 +23,7 @@ export function renderMarkup(element: ReactElement): string {
 }
 
 /**
- * コンポーネントを jsdom の上に描画する（ブラウザーの中だけで終わる操作を確認する。テストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * コンポーネントを jsdom の上に描画する（ブラウザーの中だけで終わる操作を確認する。フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
  * テストのファイルの先頭で jsdom を選ぶ（`// @vitest-environment jsdom`）。
  *
  * @param element 描画する部品

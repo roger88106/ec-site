@@ -310,7 +310,7 @@ tasks.register("integrationTestShards") {
 }
 
 // -----------------------------------------------------------------------------
-// 地域の最初のデータ（地域モジュールの機能仕様 docs/03-機能仕様/region.md の「最初のデータ」）
+// 地域の最初のデータ（地域の設計 docs/02-設計/region.md の「最初のデータの作り方」）
 //   ./gradlew generateRegionMigration                      → /.local/masterdata/ の郵便番号のデータから作る
 //   ./gradlew generateRegionMigration -PpostalCodeCsv=<CSV> → CSV の置き場所を指定する
 //   郵便番号のデータは Git に入れない。作ったマイグレーションは Git に入れる
@@ -355,7 +355,7 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 // -----------------------------------------------------------------------------
-// 重複の検出（PMD の CPD。テストの書き方の「テストのコードの重複」）
+// 重複の検出（PMD の CPD）。規則はバックエンドのテストの書き方の「テストのコードの重複」。
 //   テストのソースセット（src/test、src/integrationTest、src/testFixtures）の Java のコードで、100 トークン以上の重複を見つけると失敗する。
 //   直さない重複は、重複の場所を // CPD-OFF 理由 と // CPD-ON で囲む。main は見ない（生成したコードを含むため）。
 //   報告：build/reports/cpd/。CPD の部品（cpd の構成。Java の部品だけにしている）は、pitest と同じく licenseReport の対象に入れて checkLicense で照合する（Gradle のプラグインは policy.json の gradlePlugins）
@@ -409,7 +409,7 @@ tasks.named("pitest") {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの書き方の「カバレッジと mutation score の基準」。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
+// カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
 //   報告：build/reports/jacoco/coverageReport/（html、xml）
 //   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：

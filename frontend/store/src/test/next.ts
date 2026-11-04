@@ -1,5 +1,5 @@
 /**
- * Next.js のリクエストを扱うモジュール（next/headers、next/cache）の代わりに使う入れ物。サーバーの処理のテストで使う（テストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * Next.js のリクエストを扱うモジュール（next/headers、next/cache）を置き換える、テスト用の Cookie・ヘッダー・再表示の記録。サーバーの処理のテストで使う（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
  * setup.ts が next/headers・next/cache をこれに置き換える。next/navigation（redirect、notFound、unstable_rethrow）は
  * 置き換えず、本物を使う（redirect が例外で移動を知らせ、unstable_rethrow がそれを通すことまで確認するため）。
  */

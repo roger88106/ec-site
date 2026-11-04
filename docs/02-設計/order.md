@@ -8,18 +8,23 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。会員の API を使うのは presentation だけである。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。会員の API を使うのは presentation だけである。
 
 ### 他のモジュールへの公開
 
 | 種類 | 内容 | 利用者 |
 |------|------|--------|
 | API | 見積もり（カートの表示用） | 店舗 |
-| API | レポート用の注文の写し ※1 | レポート |
+| API | レポート用の注文の写し | レポート |
 | イベント | 注文の出荷 | 通知（出荷通知メール） |
 | イベント | 注文の状態の変化 | レポート |
 
-※1：注文 ID で、次を返す。注文番号・会員 ID・注文日時・状態。キャンセル（日時・種類・在庫に戻したか）。お届け先の郵便番号と都道府県。注文時の年齢と性別。金額（総額・送料・消費税の合計・送料の消費税）。明細（商品・バリアント・軸の値・数量・税率・税込小計・税抜小計）。氏名・住所・電話番号・メールアドレスは返さない。送料の消費税は、送料と、注文日時の送料の税区分の税率から求める。理由：税率ごとの消費税額を、明細と送料を合わせて求めるため。出荷の情報は、レポートが出荷のイベントから受け取って持つ。
+#### レポート用の注文の写し
+
+- 注文 ID で返す。項目は `OrderReportSnapshot`（`module/order/api/`）にある。
+- 氏名・住所・電話番号・メールアドレスは返さない。
+- 送料の消費税は、送料と、注文日時の送料の税区分の税率から求める。理由：税率ごとの消費税額を、明細と送料を合わせて求めるため。
+- 出荷の情報は、レポートが出荷のイベントから受け取って持つ。
 
 ## 処理の流れ
 
@@ -75,8 +80,8 @@ sequenceDiagram
     participant S as 出荷
     participant N as 通知
     A->>O: 出荷を登録（配送業者、送り状番号）
-    O->>O: 受付か確認する
-    O->>P: 売上確定（注文 ID）
+    O->>O: 受付か確認する（行ロックなし）
+    O->>P: 売上確定（注文 ID。トランザクションの外）
     P->>G: 売上確定（冪等キー：注文 ID）
     G-->>P: 成功 / 与信期限切れ / 接続できない
     P-->>O: 結果
@@ -91,27 +96,9 @@ sequenceDiagram
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）が正本である。
-
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | 注文手続きに進む | `POST /carts/{cartId}/checkouts` | `startCheckout` |
-| 店舗 | 注文手続きの表示 | `GET /checkouts/{checkoutId}` | `getCheckout` |
-| 店舗 | 注文する | `POST /checkouts/{checkoutId}/order` | `placeOrder` |
-| 店舗 | 自分の注文の一覧 | `GET /me/orders` | `listMemberOrders` |
-| 店舗 | 注文の表示 | `GET /orders/{orderId}` | `getOrder` |
-| 店舗 | キャンセルの申請 | `PUT /orders/{orderId}/cancellation-request` | `requestOrderCancellation` |
-| 店舗 | 支払画面を開く | `POST /orders/{orderId}/payment-page` | `openOrderPaymentPage` |
-| 管理 | 注文一覧 | `GET /orders` | `listOrders` |
-| 管理 | 注文の詳細 | `GET /orders/{orderId}` | `getOrder` |
-| 管理 | キャンセルの申請の承認 | `PUT /orders/{orderId}/cancellation-request/approve` | `approveOrderCancellation` |
-| 管理 | キャンセルの申請の却下 | `PUT /orders/{orderId}/cancellation-request/reject` | `rejectOrderCancellation` |
-| 管理 | 運営者の判断によるキャンセル | `PUT /orders/{orderId}/cancel` | `cancelOrder` |
-| 管理 | 出荷の登録 | `POST /orders/{orderId}/shipment` | `shipOrder` |
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 order/

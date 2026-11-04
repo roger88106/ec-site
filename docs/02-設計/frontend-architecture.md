@@ -31,7 +31,7 @@ frontend/
 | 文言 | next-intl | use-intl |
 | コンポーネントのテスト | HTML にして DOM に読み込み、役割と名前で探して確認する。ブラウザーの中だけで終わる操作と、サーバーアクションの結果の表示の遷移は、jsdom と Testing Library で操作する（結合テストなし ※1） | React Testing Library と MSW の結合テスト |
 
-※1：操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないため。結果の表示の遷移を確認するときは、サーバーアクションを差し替える（[テストの書き方](../05-開発規則/test-writing.md)の「テストの種類と基準」）。画面をつないだ流れは E2E で確認する。
+※1：操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないため。結果の表示の遷移はサーバーアクションを差し替えて確認し（[テストの書き方](../05-開発規則/test-writing.md)の「テストの種類と基準」）、画面をつないだ流れは E2E で確認する。
 
 ## 3. 共通の決まり
 
@@ -49,7 +49,7 @@ frontend/
 
 ※2：管理画面のフラグと理由の一覧は [管理画面の構成](apps/admin.md)の「表示の決まり」。状態とフラグが食い違うテストデータ（フラグが偽の出荷済みの注文など）を使う結合テストで、画面が状態から推測しないことを確認する。
 
-※3：API の型の生成だけが TypeScript 6 を使うのは、TypeScript 7 に JavaScript のコンパイラーの API がなく、openapi-typescript がその API で型を組み立てるためである。ルートの `.pnpmfile.cjs` が、インストールのときに openapi-typescript にだけ TypeScript 6 を渡す。pnpm の overrides は peer の依存に適用されないので、フックを使う。lock がフックのチェックサムを持つので、フックを変えたら lock も更新する。openapi-typescript の peer の依存の範囲が変わると、フックが install を失敗させる。openapi-typescript が TypeScript 7 で動くようになったら、`.pnpmfile.cjs` を削除する。
+※3：TypeScript 7 に JavaScript のコンパイラーの API がなく、openapi-typescript がその API で型を組み立てるため。ルートの `.pnpmfile.cjs` が、インストールのときに openapi-typescript にだけ TypeScript 6 を渡す（フックの扱いと削除する時期は、そのファイルのコメント）。
 
 ## 4. 共有パッケージ
 

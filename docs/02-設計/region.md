@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。地域は `common` だけに依存し、業務のモジュールに依存せず、イベントを出さない。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。地域は `common` だけに依存し、業務のモジュールに依存せず、イベントを出さない。
 
 ### 他のモジュールへの公開
 
@@ -29,21 +29,30 @@
 
 ## 処理の流れ
 
-なし。地域は参照だけを公開し、モジュールをまたぐ処理の手順を持たない。
+地域は参照だけを公開し、モジュールをまたぐ処理はない。
+
+### 最初のデータの作り方
+
+データの範囲と出典は [地域モジュール](../03-機能仕様/region.md) の「最初のデータ」に書く。
+
+| 項目 | 内容 |
+|------|------|
+| 変換 | tools（`src/tools/java/com/ecsite/tools/region/`）の `PostalCodeCsv`。本番のコードには入れない。理由：本番で動かさず、tools とテストだけが使うため |
+| 郵便番号の一覧 | `src/tools/resources/region/postal-codes.txt`（用途はファイルのコメント） |
+| 作り方 | 下の手順。作ったマイグレーションは手動で修正しない |
+
+1. 日本郵便の郵便番号データのページから `utf_ken_all.zip` をダウンロードし、`/.local/masterdata/utf_ken_all/utf_ken_all.csv` に展開する（Git に入れない）。
+2. `./gradlew generateRegionMigration` を実行する（置き場所の指定は `build.gradle.kts` のコメント）。一覧の郵便番号がデータになければ失敗する。
+3. 郵便番号を追加するときは、一覧に追加する。Gradle のタスク `generateRegionMigration` を、新しいマイグレーションに郵便番号の表を全件置き換える（削除してから入れる）SQL を出力するように修正してから実行する。理由：今のタスクをそのまま実行すると、commit 済みのマイグレーションを上書きし（[CI の検査の script](../06-手順書/ci-checks.md) の `migrations`）、出力先だけを変えると、全件の INSERT で主キーが重なるため。
+4. 生成の処理が書く先頭のコメントは変えない。理由は `RegionMigrationGenerator` のコメントに書いてある。
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[店舗 API](../../api/openapi/store.yaml)）が正本である。管理 API に地域の操作はない。3 つの操作は、地域の presentation が受ける（`storefront` を通さない）。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 店舗 | 都道府県の一覧 | `GET /prefectures` | `listPrefectures` |
-| 店舗 | 都道府県の市区町村の一覧 | `GET /prefectures/{prefectureCode}/municipalities` | `listMunicipalities` |
-| 店舗 | 郵便番号の住所 | `GET /postal-codes/{postalCode}` | `findPostalCodeAddresses` |
+管理 API に地域の操作はない。3 つの操作は、地域の presentation が処理する（`storefront` を通さない）。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 region/

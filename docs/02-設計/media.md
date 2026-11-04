@@ -8,7 +8,7 @@
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。
 
 ### 他のモジュールへの公開
 
@@ -25,7 +25,7 @@
 | ストレージ | Amazon S3（AWS SDK v2）。ローカルと CI は SeaweedFS | `ecsite.media.storage` |
 | 画像の変換 | 別コンテナの imgproxy を HTTP で呼ぶ | `ecsite.media.converter` |
 
-どちらも port（`ObjectStorage`、`ImageConverter`）の実装として置く。ストレージの操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする。署名付き PUT の URL、ファイルの情報、先頭の読み取り、書き込み、削除が該当する。タイムアウトと失敗の扱いは、[メディアモジュール](../03-機能仕様/media.md)の「業務規則」に書く。
+どちらも port（`ObjectStorage`、`ImageConverter`）の実装として置く。ストレージの操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする（一覧は `ObjectStorage`）。画像の変換は同期で行う。タイムアウトは[環境変数](../06-手順書/environment.md)の「バックエンド」、失敗の分け方は[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」。imgproxy の応答が WebP でないときも、画像を変換できないエラー（400）にする（`ImgproxyImageConverter`）。アップロードの受付は署名付き URL を手元で作り、ストレージを呼ばない。
 
 ## 処理の流れ
 
@@ -53,6 +53,8 @@ sequenceDiagram
     C->>M: 失敗したときは破棄
 ```
 
+- 用意・登録・破棄のトランザクションと、破棄の失敗の扱いは、`MediaApi` の各メソッドのコメント。
+
 ### アセットの解放
 
 商品カタログが画像や商品を削除するとき、自分のトランザクションの中で解放を呼ぶ。配信のファイルは、コミットの後にメディアの中のイベントで削除する。業務規則は [メディアモジュール](../03-機能仕様/media.md) の「アセットの解放」に書く。
@@ -67,13 +69,13 @@ sequenceDiagram
     M->>S: コミットの後、配信のファイルを削除する
 ```
 
+- リスナーはトランザクションを始めない（理由は `AssetFileHandler` のコメント）。
+
 ## API
 
 なし。メディアは、他のモジュールから API で呼ばれるだけで、店舗 API・管理 API の operation を持たない。画像のアップロードの operation（`createImageUpload` など）は、商品カタログの API に置く。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 media/

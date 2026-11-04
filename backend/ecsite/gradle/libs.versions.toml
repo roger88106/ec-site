@@ -57,7 +57,7 @@ shedlock = "7.10.1"
 # --- 決済サービス（Stripe。docs/02-設計/payment.md の「Stripe」） ---
 stripe = "34.0.0"
 
-# --- 画像のファイル（オブジェクトストレージ。plan 001 の「商品画像」） ---
+# --- 画像のファイル（オブジェクトストレージ） ---
 awssdk = "2.56.0"
 
 # --- テスト ---
@@ -80,7 +80,7 @@ spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-
 spring-boot-starter-zipkin = { module = "org.springframework.boot:spring-boot-starter-zipkin" }
 spring-boot-starter-jooq = { module = "org.springframework.boot:spring-boot-starter-jooq" }
 spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
-# 認証（OAuth 2.0 の Resource Server。plan 003 の「token の検証」）
+# 認証（OAuth 2.0 の Resource Server）
 spring-boot-starter-security-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server" }
 
 # --- 可観測性（Boot BOM 管理） ---

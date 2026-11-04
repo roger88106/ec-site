@@ -6,11 +6,11 @@
 |------|------|
 | レベル | B（集約の不変条件がなく、写しと集計だけ。理由は ※1） |
 
-※1：業務の状態を変える操作がなく、持つのは他のモジュールの写しと、受けたイベントの履歴だけ。写しは、イベントを受けるたびに注文の API から再読み込みして上書きするので、守る不変条件がない。集計は問い合わせのときに SQL で行い、結果を持たないので、CQRS の read model も必要ない。
+※1：業務の状態を変える操作がなく、持つのは他のモジュールの写し（イベントを受けるたびに注文の API から再読み込みして上書きする）と、受けたイベントの履歴だけなので、守る不変条件がない。集計は問い合わせのときに SQL で行い、結果を持たないので、CQRS の read model も必要ない。
 
 ## 境界
 
-依存は写さず、[全体構成](overview.md) の「モジュールの依存とイベント」を指す。他のモジュールはレポートに依存しない。
+依存は[全体構成](overview.md)の「モジュールの依存とイベント」。他のモジュールはレポートに依存しない。
 
 ### 他のモジュールへの公開
 
@@ -73,18 +73,11 @@ sequenceDiagram
 
 ## API
 
-リクエストとレスポンスの項目、エラーコード、状態コードは OpenAPI（[管理 API](../../api/openapi/admin.yaml)）が正本である。レポートの API は管理 API だけにある。
+操作の一覧は[ロールと権限の対応表](role-permissions.md)、リクエストとレスポンスの項目は OpenAPI（[店舗 API](../../api/openapi/store.yaml)、[管理 API](../../api/openapi/admin.yaml)）。
 
-| 画面 | 操作 | メソッドとパス | operationId |
-|------|------|----------------|-------------|
-| 管理 | 売上の推移 | `GET /reports/sales-trend` | `getSalesTrend` |
-| 管理 | バリアントの売れ行き | `GET /reports/variant-sales` | `getVariantSales` |
-| 管理 | 地域・年齢層・性別 | `GET /reports/customer-breakdown` | `getCustomerBreakdown` |
-| 管理 | レポートの設定 | `GET /reports/settings` | `getReportSettings` |
+レポートの API は管理 API だけにある。
 
 ## パッケージの構成
-
-クラスの名前と設定の値は書かない（正本はコード）。
 
 ```
 reporting/

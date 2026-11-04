@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: 指示された問いについて、リポジトリのファイルと Web の公式の文書を読み、出典を付けて答える。ファイルを変えない。指示の文書と memory を持たない。ライブラリやツールの仕様、他の設計の調べものに使う。モデルと effort は呼び出しのときに指定する。
+description: 指示された問いについて、リポジトリのファイルと Web の公式の文書を読み、出典を付けて答える。指示の文書と memory を持たない。ライブラリやツールの仕様、他の設計の調べものに使う。
 tools: Read, Grep, Glob, WebFetch, WebSearch
 omitClaudeMd: true
 ---

@@ -5,12 +5,12 @@ import com.ecsite.module.shipping.domain.Carrier;
 import java.time.Instant;
 
 /**
- * 物流サービスの通知の本文（docs/03-機能仕様/shipping.md「通知のエンドポイント」）。
+ * 物流サービスの通知の本文（docs/02-設計/shipping.md「通知のエンドポイント」）。本文は JSON で受け取る。
  *
  * @param carrier        配送業者
  * @param trackingNumber 送り状番号
  * @param status         物流サービスの状態の名前（ヤマト運輸なら「配達中」など）
- * @param occurredAt     状態が変わった日時
+ * @param occurredAt     状態が変わった日時（ISO 8601）
  */
 public record CarrierNotification(Carrier carrier, String trackingNumber, String status, Instant occurredAt) {
 

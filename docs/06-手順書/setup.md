@@ -1,13 +1,13 @@
 # 開発環境の起動
 
-ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](running-tests.md)、環境変数は [環境変数](environment.md)。エージェントは skill `local-dev` を使う。
+ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](running-tests.md)、環境変数は [環境変数](environment.md)で、エージェントは skill `local-dev` を使う。
 
 ## 1. 前提
 
 JDK 21、Docker（Compose 2.20 以上。ルートの `compose.yaml` が `include` を使うため）、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
 
-- `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に JDK 21 のパスを設定してから実行する（例：`export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21…"`）。コンパイルとテストに使う JDK 21 は、Gradle の toolchain がインストール済みの JDK から探す。
-- clone したら、リポジトリのルートで `git config core.quotepath false` を実行する。理由：`git status` などで、日本語を含むパス（`docs/03-機能仕様/` など）を読める形で表示するため。設定しないと、`"docs/\346\251\237..."` の形（引用符と 8 進数）で表示される。
+- `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に JDK 21 のパスを設定する。コンパイルとテストの JDK 21 は、Gradle の toolchain が探す。
+- clone したら、リポジトリのルートで `git config core.quotepath false` を実行する。日本語を含むパスを、`git status` などで読める形で表示するため。
 
 IntelliJ IDEA でルートを開いたら、`backend/ecsite/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
 
@@ -42,15 +42,15 @@ pnpm dev
 | http://localhost:8025 | Mailpit（Keycloak とバックエンドが送ったメール。外部には送信しない） |
 
 - `docker compose` はメインの作業ツリーのルートで実行する（作業ツリーでは実行しない。「スロット」。ルートの `compose.yaml` が [docker/compose.yaml](../../docker/compose.yaml) を読む）。DB は `localhost:5432/ec_site`。
-- Mailpit の SMTP はホストの 2525 番ポートで待ち受ける（1025 は Windows のシステムプロセスが使うことがあるため使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いているポートを設定して、compose とバックエンドを起動する（両方が同じ値を読む）。
-- compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理者のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）から接続するときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を設定して、`docker compose up -d` で再作成する。終わったら設定を削除して再作成する。バックエンドと画面の開発サーバーは、この設定の対象外である。
-- 停止するときは `docker compose stop`。E2E を実行した後は、E2E 用の Keycloak（profile `e2e`）も止めるために `docker compose --profile e2e stop` にする。データを再作成するときは「データの再作成」。作業ツリーごとに環境を分けるときは「スロット」。
-- 店舗画面の開発サーバーのログに、Edge Runtime で使えない API（`instrumentation.ts` の `process.exit`）の警告が出る。Node.js の実行環境でだけ呼ぶので、起動と表示に影響しない。
-- compose のプロジェクトの名前（`ec-site`）とコンテナの名前は固定なので、同じマシンに 2 つ目の clone を置くと、volume（DB と画像のデータ）を共有する。2 つ目の clone を別のデータで動かすときは、1 つ目の compose を停止して（`docker compose down`。volume は残る）、環境変数 `COMPOSE_PROJECT_NAME` に別の名前を設定してから起動する。
-- E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に含まれない。E2E の準備の script（`e2e/scripts/prepare.ts`）が起動する（[テストの実行方法](running-tests.md)）。
+- Mailpit の SMTP はホストの 2525 番ポートで待ち受ける。他のプログラムが 2525 を使っているときは、環境変数 `MAILPIT_SMTP_PORT` に空いているポートを設定して、compose とバックエンドを起動する（両方が同じ値を読む）。
+- compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用のパスワードは公開されているため）。他のマシン（スマートフォンなど）から接続するときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を設定して、`docker compose up -d` で再作成する。終わったら設定を削除して再作成する。バックエンドと画面の開発サーバーは対象外である。
+- 停止するときは `docker compose stop`。E2E を実行した後は、E2E 用の Keycloak も停止するため `docker compose --profile e2e stop` にする。
+- 店舗画面の開発サーバーのログに、Edge Runtime で使えない API（`instrumentation.ts` の `process.exit`）の警告が出る。Node.js の実行環境でだけ呼ぶので、影響しない。
+- compose のプロジェクトの名前（`ec-site`）とコンテナの名前は固定なので、2 つ目の clone は volume（DB と画像のデータ）を共有する。別のデータで動かすときは、1 つ目の compose を `docker compose down` で停止し、環境変数 `COMPOSE_PROJECT_NAME` に別の名前を設定してから起動する。
+- E2E 用の Keycloak（:8181、profile `e2e`）はこの一覧に含まれない。E2E の準備の script が起動する（[テストの実行方法](running-tests.md)）。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で修正できる lint は `pnpm lint:fix`。
-- commit のときに CI の検査の script（[CI の検査](ci.md)）を実行するには、次の 2 つの hook を置く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いた他の hook と併用できるよう、`core.hooksPath` は変えない。
+- commit のときに CI の検査の script（[CI の検査の script](ci-checks.md)）を実行するには、次の 2 つの hook を置く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`core.hooksPath` は変えない。
 
   | hook | 書く 1 行 | 実行するもの |
   |------|-----------|--------------|
@@ -90,11 +90,9 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 | Keycloak（realm の JSON を変えたとき） | `scripts/dev/reset.sh keycloak`（ローカルで登録した会員も削除される） | DB、E2E の Keycloak |
 | 全て | `scripts/dev/reset.sh all`（`docker compose down -v` と `up -d`）。全スロットのデータベースとバケットも削除される | なし |
 
-作業ツリー（「スロット」）で `scripts/dev/reset.sh` を実行すると、`db`（既定）はそのスロットのデータベースと 2 つのバケットだけを再作成する（`node scripts/dev/slot.mjs reset` と同じ。バックエンドを停止してから実行する）。`keycloak` と `all` は共有のコンテナを再作成するので、メインの作業ツリーで実行するよう示して終了する。
+作業ツリー（「スロット」）で実行すると、`db`（既定）はそのスロットのデータベースと 2 つのバケットだけを再作成する（`node scripts/dev/slot.mjs reset` と同じ）。`keycloak` と `all` は共有のコンテナを再作成するので、メインの作業ツリーで実行するよう示して終了する。メインの作業ツリーで `all` を実行した後は、各作業ツリーで `node scripts/dev/slot.mjs reset` を実行する。
 
-メインの作業ツリーで `all` を実行した後は、各作業ツリーで `node scripts/dev/slot.mjs reset` を実行して、スロットのデータベースとバケットを再作成する。
-
-正本は、DB の seed が `backend/ecsite/src/main/resources/db/seed/`、画像が `docker/seaweedfs/seed/`、Keycloak が `docker/keycloak/realms/`。seed の商品画像の ID と、seed の注文の会員 ID は、それぞれ画像と realm の正本に合わせてある。
+正本は、DB の seed が `backend/ecsite/src/main/resources/db/seed/`、画像が `docker/seaweedfs/seed/`、Keycloak が `docker/keycloak/realms/`。seed の商品画像の ID と注文の会員 ID は、画像と realm の正本に合わせてある。
 
 ## 5. Stripe で動かす
 
@@ -123,11 +121,11 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
    ./gradlew bootRun --args='--spring.profiles.active=local,stripe'
    ```
 
-- 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で確認する。このログは起動時に通知の署名鍵（`whsec_`）を出力するので、エージェントが読むときは `docker logs ec-site-stripe-cli 2>&1 | grep -v whsec_` で鍵の行を除き、鍵を会話に出さない。停止するときは `docker compose --profile stripe stop stripe-cli`。
+- 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で確認する。起動時のログに署名鍵（`whsec_`）が出るので、エージェントは `docker logs ec-site-stripe-cli 2>&1 | grep -v whsec_` で鍵の行を除き、鍵を会話に出さない。停止は `docker compose --profile stripe stop stripe-cli`。
 - テストのカード番号は Stripe の文書のもの（成功は `4242 4242 4242 4242`、拒否は `4000 0000 0000 0002`。有効期限は未来の日付、セキュリティコードは任意の 3 桁）。
-- 支払画面に表示される支払方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードだけを有効にする。カード以外の方法（コンビニ、銀行振込など）は与信だけを行えない。カードで払うウォレット（Apple Pay、Google Pay、Link）は MVP の後に再検討する（issue [#44](https://github.com/roger88106/ec-site/issues/44)）。
-- 期限切れを早く確認するときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する。Stripe の支払画面の期限は長い（[決済の設計](../02-設計/payment.md)の「Stripe」）が、その前に支払の期限を過ぎ、期限切れのジョブが支払を閉じる。
-- seed の注文（`db/seed/local/`）の与信は mock のもので、Stripe には存在しない。Stripe で動かすときは、seed の注文を出荷すると売上確定で失敗する。出荷は、Stripe で支払った注文で確認する。
+- 支払方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードだけを有効にする（カード以外は与信だけを行えない）。ウォレット（Apple Pay、Google Pay、Link）は MVP の後に再検討する（issue [#44](https://github.com/roger88106/ec-site/issues/44)）。
+- 期限切れを早く確認するときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する（Stripe の支払画面の期限は長い。[決済の設計](../02-設計/payment.md)の「Stripe」）。
+- seed の注文（`db/seed/local/`）の与信は mock のもので、Stripe には存在しない。Stripe で動かすときは、seed の注文を出荷すると売上確定で失敗するので、出荷は Stripe で支払った注文で確認する。
 
 ## 6. 機能紹介のページのスクリーンショット
 
@@ -138,9 +136,9 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 3. `e2e/` で `pnpm capture`。`showcase/img/` の 14 枚を上書きする。
 
 - 撮影では、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面を撮るため）。白のマグカップの在庫を 2 つ使うため、続けて撮るときも DB を再作成する。
-- 設計書の画像（`docs/01-概要/img/`）は `pnpm capture:docs` で撮る。前提は同じで、スロット 0、ローカル環境の全てのサーバー、local の seed である。
-- 撮影は E2E ではなく、CI では実行しない。撮った画像は目視で確認してから commit する。
-- ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。テストの数は、Java を実行した件数（パラメーターの組ごと）で数える。
+- 設計書の画像（`docs/01-概要/img/`）は `pnpm capture:docs` で撮る。前提は同じ（スロット 0、全てのサーバー、local の seed）。
+- 撮影は E2E とは別で、CI では実行しない。撮った画像は目視で確認してから commit する。
+- ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。
 
 ## 7. ポートが使えないとき（Windows）
 
@@ -148,8 +146,8 @@ Windows は、WinNAT（Docker や WSL が使う）などのために、ポート
 
 - 症状：待ち受けているプロセスがないのに、起動が `EACCES`、`bind: An attempt was made to access a socket in a way forbidden by its access permissions`、`ports are not available` で失敗する。
 - 確認方法：`netsh interface ipv4 show excludedportrange protocol=tcp` の範囲に、そのポートが含まれているか。
-- 解決方法：compose・バックエンド・画面を停止してから、管理者の PowerShell で `scripts\dev\windows\exclude-ports.ps1` を実行する。ローカル環境のポートを予約範囲と照合して表示し、確認してから WinNAT を停止し、ポートを 1 つずつ予約して WinNAT を再開する。予約は再起動の後も残る。スロット 1〜3 のポート（「スロット」）も、この script の対象である。`-WhatIf` を付けると、照合した結果だけを表示する。
-- 暫定的な対処：管理者の権限で `net stop winnat` と `net start winnat` を実行する。動的な範囲が再割り当てされるため空くことが多いが、再起動などでまた含まれることがある。
+- 解決方法：compose・バックエンド・画面を停止してから、管理者の PowerShell で `scripts\dev\windows\exclude-ports.ps1` を実行する（スロット 1〜3 のポートも対象）。動作は script の冒頭のコメントにある。`-WhatIf` で、照合した結果だけを表示する。
+- 暫定的な対処：管理者の権限で `net stop winnat` と `net start winnat` を実行する。再起動などでまた含まれることがある。
 
 ## 8. エージェントの MCP サーバー（任意）
 
@@ -160,7 +158,7 @@ Windows は、WinNAT（Docker や WSL が使う）などのために、ポート
 | IntelliJ IDEA の MCP サーバー | Java のメソッドの呼び出し元を調べる（同じ名前のメソッドが複数あるとき、移動・削除の前）。依存ライブラリのソースの中のクラスやメソッドを検索する | IntelliJ IDEA でこのプロジェクトを開き、MCP サーバーの機能を有効にして、エージェントに登録する（手順は IntelliJ IDEA の文書） |
 | Context7 | ライブラリの最新の文書を参照する（Spring Boot 4、Spring Modulith 2 など、エージェントの知識より新しいバージョン） | Context7 の手順（`npx ctx7 setup`）で、MCP サーバーとして利用者の全体の設定に登録する。API キーは任意（使える回数が増える） |
 
-理由：同じ名前のメソッドが複数あると、文字列の検索ではどれの呼び出しか区別できない。IDE の呼び出しの階層は、メソッドの型まで区別する。単純な検索では、IDE と文字列の検索で token の消費の差はほとんどない。
+理由：同じ名前のメソッドが複数あると、文字列の検索では呼び出しを区別できない。IDE の呼び出しの階層は、メソッドの型まで区別する。
 
 ## 9. スロット（作業ツリーごとの環境）
 
@@ -189,22 +187,11 @@ node scripts/dev/slot.mjs show
 node scripts/dev/slot.mjs release
 ```
 
-| コマンド | 内容 |
-|----------|------|
-| `assign` | 空いている最小のスロットを割り当てる。割り当て済みなら番号を示すだけ。スロット 1〜3 が全て使われていれば、使っている作業ツリーのパスを示して終了する。メインの作業ツリーでは何もせずに知らせる |
-| `run backend`、`run store`、`run admin` | スロットの環境変数を付けて起動する。バックエンドは profile `local` で起動し、ポートの使用を確認する ※3。`run store` と `run admin` は、起動の前に `pnpm generate:api` で API の型を生成する（失敗したら起動しない）。停止のシグナルの扱いは ※4 |
-| `show` | 今のスロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧 |
-| `reset` | 割り当てを変えずに、データベースと 2 つのバケットを再作成する（バックエンドを停止してから）。`scripts/dev/reset.sh` からも実行できる（「データの再作成」） |
-| `env` | スロットの環境変数を `export` の形で出力する |
-| `release` | スロットの 4 つのポートで待ち受けるプロセスを停止してから、データベースと 2 つのバケットを削除し、割り当てを解除する。ポートの問い合わせが失敗したとき、停止の後も待ち受けが残るとき、停止の後もバックエンドが応答するときは、データを削除せず、停止のコマンドを表示して終了コード 1 で終了する |
-
-※3：バックエンドのポートか運用のポートが使われていれば、待ち受けるプロセスの ID と停止のコマンドを表示して、終了コード 1 で終了する。ポートの問い合わせが失敗したときは、警告して起動する。
-
-※4：停止のシグナル（Ctrl+C など）の 1 回目で、起動したプロセスを子プロセスも含めて停止し、終了するのを待ってから終了する。2 回目は待たずに終了する。
+各コマンドの振る舞いと終了コードは、`scripts/dev/slot.mjs` の冒頭のコメントにある。`release` は、ポートの停止を確認できないときと、停止の後もバックエンドが応答するときは、データを削除せず終了コード 1 で終了する（動いているバックエンドの DB を消さないため）。
 
 Windows で `run backend` の node を強制終了すると、Gradle のクライアントとバックエンドが残る。`release` で停止できる。割り当てを残したまま停止するときは、スロットのバックエンドのポートで待ち受けるプロセスを停止する（skill `local-dev`）。
 
-ポートは「スロット 0 の値 + 10000 × スロットの番号」。データベースとバケットは、名前の末尾にスロットの番号を付ける。ポートの一覧は `scripts/dev/ports.json` にある。ポートを加えるときはそこに加え、`node scripts/ci/local-ports.mjs` で、compose や設定など他の書き場所との食い違いを確認する。
+ポートは「スロット 0 の値 + 10000 × スロットの番号」。データベースとバケットは、名前の末尾にスロットの番号を付ける。ポートの一覧は `scripts/dev/ports.json` にある。ポートを加えるときはそこに加え、`node scripts/ci/local-ports.mjs` で他の置き場所との食い違いを確認する。
 
 | スロット | バックエンド | 運用ポート | 店舗画面 | 管理画面 | データベース | 配信のバケット | 受付のバケット | 店舗画面の Cookie の接頭辞 |
 |---|---|---|---|---|---|---|---|---|
@@ -213,10 +200,10 @@ Windows で `run backend` の node を強制終了すると、Gradle のクラ�
 | 2 | 28080 | 29080 | 23000 | 25173 | `ec_site_2` | `ec-site-images-2` | `ec-site-images-incoming-2` | `s2-` |
 | 3 | 38080 | 39080 | 33000 | 35173 | `ec_site_3` | `ec-site-images-3` | `ec-site-images-incoming-3` | `s3-` |
 
-- 作業ツリーを `release` せずに消しても、作業ツリーの一覧から消えるので、そのスロットは次の `assign` で空きになる。データベースとバケットは共有の基盤に残るが、`assign` が再作成する。
+- 作業ツリーを `release` せずに消しても、そのスロットは次の `assign` で空きになる。データベースとバケットは共有の基盤に残るが、`assign` が再作成する。
 - `node_modules` のある作業ツリーを Windows で削除すると、パスが長すぎて失敗する。`git config core.longpaths true` を設定してから `git worktree remove <パス>` で削除する。失敗が続くときは、PowerShell で `\\?\` を付けたパスを指定して削除する。
-- 店舗画面の Cookie はポートで分かれない。そのため、スロットごとに環境変数 `STORE_COOKIE_PREFIX` で接頭辞を変え、同じ localhost の店舗画面が、他のスロットのセッションの Cookie を参照しないようにする（[環境変数](environment.md)の「店舗画面」）。Keycloak のログインの状態は共有される。
-- `env` の出力は、`bootRun` などを手動で実行するときだけ使い、subshell の中で使う（`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)`）。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
+- 店舗画面の Cookie はポートで分かれないので、スロットごとに環境変数 `STORE_COOKIE_PREFIX` で接頭辞を変える（[環境変数](environment.md)の「店舗画面」）。Keycloak のログインの状態は共有される。
+- `env` の出力は、`bootRun` などを手動で実行するときだけ subshell の中で使う（`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)`）。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
 - E2E のポート（8090、9090、4173、3100）、データベース、バケットは、どのスロットとも重ならない。E2E は作業ツリーからも流せる（[テストの実行方法](running-tests.md)の「E2E」）。
 
 ### スロットで使えないもの
@@ -240,11 +227,11 @@ realm を再度取り込む前は、スロットの画面のログインがリ�
 
 ## 10. 手元の置き場所（`/.local/`）
 
-`/.local/` は Git に入らない手元の置き場所である。作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣を置く。ここで扱うのはメインの作業ツリーの `/.local/` である。作業ツリーの `.local/slot` は「スロット」。作業ツリーで作業するセッションのレビューの記録は、その作業ツリーの `.local/review/` に置き、作業ツリーの削除で一緒に消える（skill `review`）。フォルダーの名前と場所は、Git の文書と skill が参照しているので変えない。
+`/.local/` は Git に入らない手元の置き場所である。作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣を置く。ここで扱うのはメインの作業ツリーの `/.local/` である（作業ツリーの `.local/slot` は「スロット」。作業ツリーのレビューの記録は、その作業ツリーの `.local/review/` に置き、作業ツリーの削除で消える。skill `review`）。フォルダーの名前と場所は、文書と skill が参照しているので変えない。
 
 | 項目 | 中身 | 使う者 | 保存の期間 |
 |------|------|--------|------------|
-| `agent/` | `environment.md`（このマシンと利用者に固有の環境と習慣。セッションの始めと文脈の圧縮の後に文脈に入る）、`usage-log.md`（使用量の記録）、`zh-allow.txt`（skill `zh-mixing` の手元だけの除外） | エージェント | `environment.md`、`usage-log.md`、`zh-allow.txt` は残す。ツールは `scripts/dev/` に移したので、`agent/` に script を置かない |
+| `agent/` | `environment.md`（このマシンと利用者に固有の環境と習慣）、`usage-log.md`（使用量の記録）、`zh-allow.txt`（skill `zh-mixing` の手元だけの除外） | エージェント | 残す。script は置かない（`scripts/dev/` に置く） |
 | `handoff/` | 引き継ぎの文書（skill `handoff`） | 両方 | 引き継いだ後に削除する |
 | `retro/` | 振り返り（skill `agent-retro` が読む） | エージェント | 残す |
 | `review/` | レビューの記録（skill `review`） | エージェント | その spec のマージ後に、後片付けで削除する |
@@ -261,7 +248,7 @@ realm を再度取り込む前は、スロットの画面のログインがリ�
 | `WinNAT再起動.ps1` | WinNAT を再起動する script（「ポートが使えないとき」に同じ手順がある） | 利用者 | 利用者が使う間は残す |
 
 - 上の表にないものは、置いたまま忘れた作業用のファイルである。見つけたら、中身の一覧を利用者に示し、許可を得て削除する。
-- spec ごとの記録（`review/`、`impl/`、`pr/`）の削除は、[開発の進め方](../05-開発規則/workflow.md)の「マージの許可と後片付け」で行う。
+- spec ごとの記録（`review/`、`impl/`、`pr/`）の削除は、[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」で行う。
 
 ## 11. IDE の設定
 
@@ -269,16 +256,7 @@ IntelliJ IDEA で、Java の import の並びを Checkstyle の検査に合わ�
 
 ### import の並び
 
-Optimize Imports の並びを、バックエンドの書き方の「書式」の表に合わせる。Settings → Editor → Code Style → Java → Imports の「Import Layout」を、次の順にする。IntelliJ の既定は次の順で、`javax.*` が `java.*` の前にある。
-
-1. `import all other imports`
-2. 空行
-3. `import javax.*`
-4. `import java.*`
-5. 空行
-6. `import static all other imports`
-
-バックエンドの書き方の「書式」の表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
+Settings → Editor → Code Style → Java → Imports の「Import Layout」を、次の順にする（既定から `import javax.*` と `import java.*` の 2 行を入れ替える）。
 
 1. `import all other imports`
 2. 空行
@@ -287,7 +265,7 @@ Optimize Imports の並びを、バックエンドの書き方の「書式」の
 5. 空行
 6. `import static all other imports`
 
-同じ設定画面の「Class count to use import with *」と「Names count to use static import with *」は、大きな値（999）にする。`*` の import を作らないためである。
+同じ画面の「Class count to use import with *」と「Names count to use static import with *」は、999 にする。
 
 ### エージェントによる整形
 

@@ -21,7 +21,7 @@ describe('1→10 のアーカイブの進捗の検査', () => {
       ['5-done', { total: 2, done: 2 }],
       ['7-open', { total: 3, done: 1 }],
     ])
-    assert.deepEqual(checkArchivedTasks(tasks), ['1→10 の spec 7-open：tasks に残りが 2 ある（アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクを `[x]` にする。アーカイブの後に追加するタスクは `[x]` の行で追加する。開発の進め方の「規模」）'])
+    assert.deepEqual(checkArchivedTasks(tasks), ['1→10 の spec 7-open：tasks に残りが 2 ある（アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクを `[x]` にする。アーカイブの後に追加するタスクは `[x]` の行で追加する。起票と記録の操作の「アーカイブの操作」）'])
     assert.deepEqual(checkArchivedTasks(new Map([['5-done', { total: 2, done: 2 }]])), [])
   })
 

@@ -55,8 +55,11 @@
 //   - 進行中の spec：AC が AC 一覧にない、AC 一覧の元の spec がその spec でない（番号の重なり）。
 //     定義の行が崩れている（箇条の先頭の太字の AC が、- **AC-<番号>** <文> の形でない）。
 //     崩れた形には、* や + の箇条、字下げ、番号付きの箇条を含む。
-//     太字のない箇条・箇条のない太字・チェックボックス・見出し・表の行（先頭のセルが番号だけ）の定義も、崩れた行にする。
-//     番号の直後が助詞か記号の行は、文の中で番号を書いた行として問題にしない（- AC-<番号> の補足）。
+//     太字のない箇条・箇条のない太字・チェックボックス・見出し・表の行（先頭のセルが番号だけ）の定義も、崩れた行として報告する。
+//     表の行を除く 4 つの形は、番号に続く文が一覧の助詞か記号で始まるなら、文の中で番号に触れただけの行として問題にしない（例：- AC-<番号> の補足）。
+//     開きのかぎかっこ（「 『）、[ で始まるリンク、* の強調、1 行のコードは、文の先頭として扱う（記号に含めない）。
+//     助詞の一覧は語の先頭で比べるので、同じかなで始まる文も問題にしない。
+//     太字のない箇条は、番号だけの行も問題にしない（番号の一覧の箇条のため）。
 //     spec から消した AC が、AC 一覧に有効・変更で残っている
 //   - テスト名の AC：AC 一覧にない AC 番号がある、廃止の AC を参照する
 //   - テスト名の書き方：範囲（AC-n〜m）、新しい形の後の数字だけの番号（AC-s-n、m）、空白の区切り（AC-n AC-m）
@@ -309,8 +312,11 @@ const AC_CELL = /^AC-([1-9][0-9]*(?:-[1-9][0-9]*)?)$/
 /** MVP の形（AC-n）の番号の上限。MVP は終わっていて、AC-n は増えない */
 const MVP_AC_LIMIT = 312
 
-/** AC の番号の後に文が続く形。番号の直後が助詞か記号なら、文の中で番号を書いた行なので当たらない */
-const AC_SENTENCE = '\\s+(?!(?:の|に|は|を|が|で|と|も|へ|や|か|まで|より|など|だけ|および|または|[\\p{P}\\p{S}]))\\S'
+/**
+ * AC の番号の後に文が続く形。文の先頭が一覧の助詞か記号なら、文の中で番号に触れただけの行なので一致しない。
+ * 開きのかぎかっこ、[ で始まるリンク、* の強調は、文の先頭に書くので記号から除く。助詞の一覧は語の先頭で比べる
+ */
+const AC_SENTENCE = '\\s+(?!(?:の|に|は|を|が|で|と|も|へ|や|か|まで|より|など|だけ|および|または|(?![「『\\[*])[\\p{P}\\p{S}]))\\S'
 
 /** AC の番号の後が、文か行の終わりである形 */
 const AC_SENTENCE_OR_END = `(?:${AC_SENTENCE}|\\s*$)`
@@ -318,7 +324,7 @@ const AC_SENTENCE_OR_END = `(?:${AC_SENTENCE}|\\s*$)`
 /** 太字でも太字でなくてもよい AC の番号 */
 const AC_LABEL = `(?:\\*\\*AC-${AC_NUMBER}\\*\\*|AC-${AC_NUMBER})`
 
-/** AC の定義を書こうとした行の形。定義の形でなければ、読み飛ばされて検査を通らないよう、崩れた行として報告する */
+/** AC の定義を書こうとした行の形。定義の形でなければ、読み飛ばされて検査をすり抜けないよう、崩れた行として報告する */
 const DEFINITION_ATTEMPTS = [
   // 箇条（- * + と番号。字下げしてもよい）の先頭の太字の AC
   /^\s*(?:[-*+]|\d+[.)])\s*\*\*AC-/,
@@ -327,9 +333,9 @@ const DEFINITION_ATTEMPTS = [
   // 箇条のない太字
   new RegExp(`^\\s*\\*\\*AC-${AC_NUMBER}\\*\\*${AC_SENTENCE_OR_END}`, 'u'),
   // チェックボックス
-  new RegExp(`^\\s*[-*+]\\s*\\[[ xX]\\]\\s*${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
-  // 見出し
-  new RegExp(`^\\s*#{1,6}\\s+${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
+  new RegExp(`^\\s*(?:[-*+]|\\d+[.)])\\s*\\[[ xX]\\]\\s*${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
+  // 見出し（節の番号を付けてもよい）
+  new RegExp(`^\\s*#{1,6}\\s+(?:[0-9][0-9.]*\\s+)?${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
   // 表の行（先頭のセルが番号だけ）
   new RegExp(`^\\s*\\|\\s*${AC_LABEL}\\s*\\|`, 'u'),
 ]
@@ -656,7 +662,9 @@ export function parseSpecAcDefinitions(markdown, specRel) {
   const problems = []
   const definition = new RegExp(`^- \\*\\*AC-(${AC_NUMBER})\\*\\*\\s+(\\S.*)$`)
   plain.forEach((line, index) => {
-    if (!DEFINITION_ATTEMPTS.some((attempt) => attempt.test(line))) return
+    // 1 行のコードを文の先頭として扱えるよう、コードを記号でない文字（x）に替えた行で判定する
+    const marked = replaceCodeSpans(lines[index], () => 'x')
+    if (!DEFINITION_ATTEMPTS.some((attempt) => attempt.test(marked))) return
     const match = definition.exec(line)
     if (!match) {
       problems.push(`${index + 1} 行：AC の定義の行が崩れている（- **AC-<番号>** <文> の形にする）`)

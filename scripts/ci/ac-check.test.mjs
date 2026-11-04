@@ -114,6 +114,16 @@ describe('spec の AC の取り出し', () => {
       '### AC-5-8',
       '| AC-400 | 文。 |',
       '| **AC-5-9** | 文。 |',
+      '- AC-5-10 「受付」以外は文。',
+      '**AC-5-11** 「受付」は文。',
+      '### AC-5-12 「受付」は文。',
+      '- AC-5-13 `POST /orders` は 201 を返す。',
+      '**AC-5-14** `x` を返す。',
+      '- AC-5-15 [注文](x.md) は文。',
+      '- AC-5-16 **注文** は文。',
+      '1. [ ] **AC-5-17** 文。',
+      '2) [x] AC-5-18 文。',
+      '### 1. AC-5-19 文。',
     ]
     for (const [index, line] of lines.entries()) {
       const { definitions, problems } = parseSpecAcDefinitions(['前の文。', line].join('\n'), '5-x')
@@ -141,10 +151,17 @@ describe('spec の AC の取り出し', () => {
       '| AC-307 のテストの名前 | 文。 |',
       '| AC-94、95 | 文。 |',
       '| 項目 | AC-44 | 文。 |',
+      '- AC-90',
+      '- `AC-5-1` 文。',
+      '### 1. AC-5-1 の確認方法',
     ]
     for (const line of lines) {
       assert.deepEqual(parseSpecAcDefinitions(line, '5-x'), { definitions: [], problems: [] }, line)
     }
+  })
+
+  test('助詞の一覧は語の先頭で比べるので、同じかなで始まる文は問題にしない（既知の制限）', () => {
+    assert.deepEqual(parseSpecAcDefinitions('- AC-5-1 もし在庫がなければ拒否する。', '5-x'), { definitions: [], problems: [] })
   })
 
   test('定義の形でない 5 つの書き方でも、コードブロック・HTML のコメント・1 行のコードの中は問題にしない', () => {

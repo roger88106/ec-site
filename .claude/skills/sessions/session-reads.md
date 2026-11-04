@@ -2,7 +2,7 @@
 
 セッションの起動の形ごとに、設定・定義・skill を読む場所と、変更が反映される時点を示す。作業ツリーを作るとき、定義・skill・hook を変える spec を確認するときに読む。
 
-作業ツリーの置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`（`.gitignore` で無視され、検索の対象にならない。デスクトップアプリが作るものも同じ）。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。`reformat_file` の注意は [開発環境の起動](../../../docs/06-手順書/setup.md)の「IDE の設定」。
+作業ツリーの置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`（`.gitignore` で無視され、検索の対象にならない。デスクトップアプリが作るものも同じ）。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b agent/<issue の番号>-<短い名前> develop`。`reformat_file` の注意は [開発環境の起動](../../../docs/06-手順書/setup.md)の「IDE の設定」。
 
 測定の方法、確認していない項目、公式の文書との比較は[エージェントの作業フローの調べた仕組みと実績](../../../docs/07-記録/subagents-results.md)の「作業ツリーのセッションが読む設定の測定」。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーの、commit していない変更を含む内容を読む。
 

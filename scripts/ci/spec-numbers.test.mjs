@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { withoutGitEnv } from './lib/git-env.mjs'
 import { keepJavaComments, keepTsComments } from './lib/strip-comments.mjs'
 import { commentsOf, findSpecNumbers, isBackendTestFile, isCommentOnlyTsFile, isConfigFile, isProductionFile, isScriptFile } from './spec-numbers.mjs'
 
@@ -18,11 +24,27 @@ describe('本番のコードの spec の番号の検査', () => {
   })
 
   test('新しい形式と古い形式のタスクの番号を見つける', () => {
-    const text = ['// 割引の上限（T011-01-01）', '// 例（T1000-01-01、T11-02-03）', '// 古い形式（T3101）'].join('\n')
+    const text = ['// 割引の上限（T011-01-01）', '// 例（T1000-01-01、T11-02-03）', '// 古い形式（T3101）', '// 古い形式の 3 桁（T301）'].join('\n')
     assert.deepEqual(
       findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
-      ['1 T011-01-01', '2 T1000-01-01', '2 T11-02-03', '3 T3101'],
+      ['1 T011-01-01', '2 T1000-01-01', '2 T11-02-03', '3 T3101', '4 T301'],
     )
+  })
+
+  test('古い形式のタスクの番号は 3〜4 桁だけで、2 桁と 5 桁は見つけない', () => {
+    assert.deepEqual(findSpecNumbers('// T10、T30101'), [])
+  })
+
+  test('MVP の spec の番号（MVP-001、区切りのない MVP001、空白で区切った MVP 019、全角、# の直後）を見つける', () => {
+    const text = ['// MVP-001 の plan の「商品画像」', '// 元の番号（MVP019）', '// 全角（ＭＶＰ－００３）', '// MVP 019 の規則', '// #MVP-001'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 MVP-001', '2 MVP019', '3 MVP-003', '4 MVP 019', '5 MVP-001'],
+    )
+  })
+
+  test('数字の続かない MVP と、MVP で始まる別の語は、番号として見つけない', () => {
+    assert.deepEqual(findSpecNumbers('// MVP の spec、MVP-<3 桁の番号>、MVP-、MVPS3'), [])
   })
 
   test('1→10 の spec の番号（AC-7-1 など）、タスクの番号（T7-01-01）、spec 7・plan 7 を見つける', () => {
@@ -88,7 +110,10 @@ describe('本番のコードの spec の番号の検査', () => {
   test('画面のテスト、生成物、マイグレーションは見ない', () => {
     assert.equal(isProductionFile('backend/ecsite/src/main/java/com/ecsite/Foo.java'), true)
     assert.equal(isProductionFile('frontend/store/src/lib/price.ts'), true)
+    assert.equal(isProductionFile('frontend/admin/src/lib/price.ts'), true)
+    assert.equal(isProductionFile('frontend/shared/src/lib/format.ts'), true)
     assert.equal(isProductionFile('frontend/store/src/lib/price.test.ts'), false)
+    assert.equal(isProductionFile('frontend/store/src/app/Page.test.tsx'), false)
     assert.equal(isProductionFile('frontend/admin/src/test/server.ts'), false)
     assert.equal(isProductionFile('frontend/admin/src/api/generated/schema.ts'), false)
     assert.equal(isProductionFile('backend/ecsite/src/main/resources/db/migration/V1__init.sql'), false)
@@ -311,5 +336,70 @@ describe('フロントのテストと E2E のコメントの spec の番号の�
       '})',
     ].join('\n')
     assert.deepEqual(numbers(text), [])
+  })
+})
+
+describe('script の実行', () => {
+  const script = fileURLToPath(new URL('./spec-numbers.mjs', import.meta.url))
+
+  /**
+   * 一時の Git のリポジトリにファイルを置いて、script を実行する。
+   *
+   * @param {Record<string, string>} files リポジトリのルートからのパスと内容
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function run(files) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'spec-numbers-'))
+    const env = withoutGitEnv()
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: dir, env })
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      return spawnSync(process.execPath, [script], { cwd: dir, env, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('本番のコードは、コメントの外の番号も見つけ、ファイルと行を出して終了コード 1 で終わる', () => {
+    const result = run({ 'frontend/store/src/lib/price.ts': "const ok = 1\nconst label = 'AC-12'\n" })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /frontend\/store\/src\/lib\/price\.ts:2 AC-12/)
+    assert.match(result.stdout, /spec の番号：1/)
+  })
+
+  test('本番のコード以外は、コメントの番号を見つけて終了コード 1 で終わる', () => {
+    const result = run({ 'frontend/store/src/lib/price.test.ts': "// 上限（DC-5）\ntest('x', () => {})\n" })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /price\.test\.ts:1 DC-5/)
+  })
+
+  test('本番のコード以外は、文字列の番号を見つけず、終了コード 0 で終わる', () => {
+    const result = run({ 'frontend/store/src/lib/price.test.ts': "test('AC-12 合計を返す', () => {})\n" })
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /spec の番号：0/)
+  })
+
+  test('バックエンドのテスト、設定のファイル、script のコメントも対象にする', () => {
+    const cases = [
+      ['backend/ecsite/src/test/java/com/ecsite/FooTest.java', '// 上限（DC-5）\n'],
+      ['knip.ts', '// 上限（DC-5）\n'],
+      ['scripts/ci/foo.mjs', '// 上限（DC-5）\n'],
+      ['scripts/ci/foo.sh', '# 上限（DC-5）\n'],
+    ]
+    for (const [file, text] of cases) {
+      const result = run({ [file]: text })
+      assert.equal(result.status, 1, `${file}：${result.stdout}`)
+      assert.ok(result.stdout.includes(`${file}:1 DC-5`), `${file}：${result.stdout}`)
+    }
+  })
+
+  test('対象のファイルが 0 件なら、理由を出して終了コード 1 で終わる', () => {
+    const result = run({ 'README.md': 'AC-12\n' })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /1 件も見つからない/)
+    assert.doesNotMatch(result.stdout, /spec の番号：/)
   })
 })

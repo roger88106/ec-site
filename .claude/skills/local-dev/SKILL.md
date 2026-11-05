@@ -19,7 +19,7 @@ docker compose stop           # 止める（データは残る）
 ```
 
 - Keycloak は起動に 20 秒ほどかかる。`docker inspect -f '{{.State.Health.Status}}' ec-site-keycloak` が `healthy` になるまで待つ。
-- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で再作成する（[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」。database は compose の PostgreSQL を初めて作ったときだけ自動で作られる）。
+- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で再作成する（[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」）。
 
 - DB：`localhost:5432`、DB `ec_site`、ユーザー `ec_site`、パスワード `ec_site`。
 - SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で一覧にする。注文は `ordering`）。
@@ -71,7 +71,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 ```
 
 - `check` は単体・統合テストと OpenAPI の検証を含む（AGENTS.md の完了の基準）。一部だけなら `test`（単体）、`integrationTest`（統合）、`--tests '<クラス名>'`。
-- `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。書き誤りが、テストや E2E の途中まで検出されないため。
+- `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。
 - 長い検査は、最初からバックグラウンドで実行する。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、`e2e.sh` は続けて実行し、同時に実行しない（CPU が足りずに、時間の上限のあるテストと管理画面のテストがタイムアウトする）。
 - バックエンドと画面は、スロットごとに同時に起動してよい（「スロット」の節）。E2E はロックで 1 つずつ実行される。他のセッションがバックエンドの全テスト、フロントの検査の script、E2E を実行しているときは待つ。
 - 失敗の詳細は `build/test-results/**/TEST-*.xml` を、失敗したクラスだけ grep する。
@@ -88,10 +88,10 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 - 手順の一覧と、対象ごとに実行する手順は、`scripts/dev/check-frontend.sh` の冒頭のコメントにある。
 - 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
-- 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`（ルートから実行すると、設定が入れ子だというエラーになる）。
-- 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため、テストデータの形の誤りが、テストの失敗として間接的に表れる。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
+- 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`。
+- 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
-- 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「依存を追加したら再インストールして確認する」）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
+- 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「依存を追加したら再インストールして確認する」）。
 
 開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で `.claude/launch.json` の名前を指定して起動する。プレビューのツールがないとき（コマンドラインの実行など）は、各アプリのディレクトリで `pnpm dev` をバックグラウンドで実行し、URL に curl して 200 を確認する。
 
@@ -184,7 +184,7 @@ hook や検査に止められてからコマンドを書き換えないよう、
   ```
 
   - push で待つワークフローは、`ci.yml` の push の `paths` で決まる。`.md` と `.claude/` の下のファイルだけなら「文書」（`docs.yml`）だけを待つ（モジュールの設計書など一部の `.md` は「CI」も実行される）。pull request では、「CI」は変えたファイルによらず実行される。
-  - pull request の全ての CI を待つときは、`gh pr checks <番号> --watch` を使う。
+  - pull request の全ての CI は、issue 担当のセッションが待つ（[マージと後片付け](../../../docs/05-開発規則/merging.md)の「ready と CI の順」）。
 - commit の前の hook（`pre-commit`）は、作業ツリーでなく index（ステージした内容）を検査する。ステージしていない変更は検査に入らない。そのため、前の段階の変更を参照するファイルを先に commit すると、参照先が index にないので、hook が切れた参照として commit を失敗にする。段階の順に commit する。
   - `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
 - 最初の 2 つの箇条のほかに、次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。

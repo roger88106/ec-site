@@ -10,6 +10,7 @@ import { SHOWCASE_TEST_TIMEOUT } from './src/waits'
  */
 export default defineConfig({
   testDir: 'showcase',
+  globalSetup: './src/refresh-store-cache.ts',
   fullyParallel: false,
   workers: 1,
   retries: 0,

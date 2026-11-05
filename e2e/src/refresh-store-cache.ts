@@ -1,6 +1,6 @@
 import { chromium, type Page } from '@playwright/test'
-import { SHOWCASE_BACKEND_URL as BACKEND, SHOWCASE_STORE_URL as STORE } from '../src/showcase-urls'
-import { reopenUntil, SHOWCASE_CACHE_TIMEOUT } from '../src/waits'
+import { SHOWCASE_BACKEND_URL as BACKEND, SHOWCASE_STORE_URL as STORE } from './showcase-urls'
+import { reopenUntil, SHOWCASE_CACHE_TIMEOUT } from './waits'
 
 /** 撮影で開く、商品のカードを表示する店舗画面のパス（トップと商品一覧） */
 const PAGES_WITH_CARDS = ['/', '/products']

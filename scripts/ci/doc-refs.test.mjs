@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkReferences, countHeadingMatches, isExcluded, isTargetFile, readHeadings, referenceName, slug, splitSectionNumbers } from './doc-refs.mjs'
+import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, readHeadings, referenceName, slug, splitSectionNumbers } from './doc-refs.mjs'
 
 /** 調べる文書の組。キーがパス、値が中身 */
 const DOCS = {
@@ -444,6 +444,36 @@ describe('リンクテキストの検査', () => {
 
   test('リンク先の文書がないときは、ファイルがないことだけを示す', () => {
     assert.deepEqual(checkLinks('docs/rules/a.md', '[ない文書](../design/none.md)'), ['ファイルがない：docs/rules/a.md:1 ../design/none.md'])
+  })
+})
+
+describe('番号のある見出しの検査', () => {
+  const find = (documents) => findNumberedHeadings(Object.keys(documents), (file) => documents[file])
+
+  test('「1.」「1.2」「1.2.」の形の見出しを、ファイルと行を付けて失敗にする', () => {
+    assert.deepEqual(find({ 'docs/rules/a.md': '# 題\n## 1. 送る\n本文\n### 1.2 再送\n#### 1.2.3. 詳細\n' }), [
+      '見出しに番号がある。番号を外す：docs/rules/a.md:2 ## 1. 送る',
+      '見出しに番号がある。番号を外す：docs/rules/a.md:4 ### 1.2 再送',
+      '見出しに番号がある。番号を外す：docs/rules/a.md:5 #### 1.2.3. 詳細',
+    ])
+  })
+
+  test('docs/ の外の Markdown も見る', () => {
+    assert.equal(find({ 'README.md': '## 1. 概要\n', '.claude/skills/x/SKILL.md': '## 2. 手順\n' }).length, 2)
+  })
+
+  test('数字で始まる見出しの名前は、番号としない', () => {
+    const text = '### 1 通だけ送る\n### 1→10\n### 1 回に読む量\n## 2026-11-05 の記録\n## 3 つの観点\n'
+    assert.deepEqual(find({ 'docs/rules/a.md': text }), [])
+  })
+
+  test('コードブロックの中は見ない', () => {
+    assert.deepEqual(find({ 'docs/rules/a.md': '```markdown\n## 1. 例\n```\n' }), [])
+  })
+
+  test('docs/08-spec/ の下と、Markdown でないファイルは見ない', () => {
+    const text = '## 1. 節\n'
+    assert.deepEqual(find({ 'docs/08-spec/7-a/spec.md': text, 'docs/08-spec/archive/1to10/7-a/plan.md': text, 'scripts/ci/a.mjs': text }), [])
   })
 })
 

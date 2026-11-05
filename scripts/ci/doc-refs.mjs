@@ -11,6 +11,7 @@
 //     Markdown は、インラインコードとコードブロックの外の全て（名前のないもの、spec・plan の節も）。コードは、文書の名前・リンク・パスの直後（間の「の」は許す）のものだけ。
 //     指す先の文書に、その番号の見出しがあれば、失敗のメッセージにその見出しを示す。名前のない番号は、Markdown では、直前が行の始め・文の切れ目・表の区切り・
 //     リストの印・`この文書の` のときだけ、その文書自身を指すとして見出しを求める。それ以外の語が直前にあれば、他の文書の節かもしれないので見出しを示さず、先の文書を書くよう示す
+//   - 見出しの番号（`1.`、`1.2`、`1.2.` の形）：docs/08-spec/ の外の Markdown で失敗にする（文書の構成の「参照」）。コードブロックの中は見ない。判定の区分は誤りの防止で、意図して作った回避（`1) ` など）は対象にしない
 // 文書の名前は、docs/ の下の各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたものと、skill の `skill `<名前>``（.claude/skills/<名前>/SKILL.md を指す）。
 // `skill `<名前>` の <ファイル名>`（`skill `review` の prompts.md`）は、その skill のフォルダーのファイルを指す。リポジトリにない skill の参照は見ない。
 // 見出しの参照と節の番号の参照の先は、直前のリンク、文書の名前、パス（`docs/06-手順書/ci.md`、`notification.md` など）で決める。
@@ -25,7 +26,7 @@
 // アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
 // ただし、アーカイブの下の MVP の完成までの一覧（mvp.md）は spec の記録でなく一覧の文書で、spec を移すたびにリンクが切れるので見る。
 // この検査のテストと ja-text のテストも見ない。検査の例として、切れた参照と `第 N 節` をわざと書くため。
-// 失敗したとき：リンクか見出しの参照を修正する（skill `docs`）。
+// 失敗したとき：リンクか見出しの参照を修正する（skill `docs`）。見出しの番号は外す。
 // 除外：なし
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
@@ -83,7 +84,7 @@ const SELF_BEFORE = /(?:^|[。．：:|]|^\s*(?:[-*+]|\d+\.)|この文書の?|本
  */
 const NO_PARTICLE_BEFORE = /(?:\.md`?|\]\([^)\s]+\))$/
 
-/** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない） */
+/** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない）。アーカイブした spec の見出しを指す参照で除く */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*\.|\d+(?:\.\d+)+)\s+/
 
 /**
@@ -498,10 +499,34 @@ export function checkReferences(files, read, exists) {
   return problems
 }
 
+/**
+ * docs/08-spec/ の外の Markdown で、番号のある見出しを探す。
+ *
+ * @param {string[]} files 調べるファイル
+ * @param {(file: string) => string} read ファイルを読む関数
+ * @returns {string[]} 番号のある見出しの説明
+ */
+export function findNumberedHeadings(files, read) {
+  const problems = []
+  for (const file of files) {
+    if (!file.endsWith('.md') || file.startsWith('docs/08-spec/')) continue
+    let inCode = false
+    read(file)
+      .split('\n')
+      .forEach((line, index) => {
+        if (line.startsWith('```')) inCode = !inCode
+        const match = !inCode && line.match(/^#{1,6}\s+(.*)$/)
+        if (match && HEADING_NUMBER.test(match[1])) problems.push(`見出しに番号がある。番号を外す：${file}:${index + 1} ${line.trimEnd()}`)
+      })
+  }
+  return problems
+}
+
 if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => isTargetFile(file) && !isExcluded(file))
   exitIfNoFiles(files, '参照を調べる文書')
-  const problems = checkReferences(files, (file) => readFileSync(file, 'utf8'), existsSync)
+  const read = (file) => readFileSync(file, 'utf8')
+  const problems = [...checkReferences(files, read, existsSync), ...findNumberedHeadings(files, read)]
   for (const problem of problems) console.log(problem)
   console.log(`切れた参照：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

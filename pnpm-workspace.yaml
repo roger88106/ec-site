@@ -3,6 +3,12 @@ packages:
   - frontend/*
   - e2e
 
+# 間接の依存のバージョンの固定
+overrides:
+  # minimatch の DoS（GHSA-g3hv-75wg-m249）は 11.0.1 で修正された。@ts-morph/common は最新でも ^10 を求めるので、ここで上げる
+  # @ts-morph/common が 11.0.1 以上を求めるようになったら、この行を削除する
+  '@ts-morph/common>minimatch': ^11.0.1
+
 # 依存のインストール時のスクリプトの実行（pnpm は、ここに書いていないものがあるとエラーにする）
 allowBuilds:
   # Service Worker を public に写すだけ。テストは Node の MSW（msw/node）を使うので要らない

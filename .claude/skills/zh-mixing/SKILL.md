@@ -24,11 +24,13 @@ git config --local ecsite.instructionLanguage zh
 | 対象 | コマンド |
 |------|----------|
 | 指定したファイル | `node .claude/skills/zh-mixing/zh-mixing.cjs file <パス>...` |
-| ステージした追加行 | `node .claude/skills/zh-mixing/zh-mixing.cjs staged` |
+| ステージした追加行（アーカイブした spec と、評価の一覧の置き場所 `.claude/skills/review/evals/` を除く） | `node .claude/skills/zh-mixing/zh-mixing.cjs staged` |
 | コミットメッセージのファイル | `node .claude/skills/zh-mixing/zh-mixing.cjs message <ファイル>` |
 | Git が追跡している全てのファイル（アーカイブした spec と、評価の一覧の置き場所 `.claude/skills/review/evals/` を除く） | `node .claude/skills/zh-mixing/zh-mixing.cjs tracked` |
 
 環境の印がなくても調べるときは、`--force` を付ける（一覧を較正するとき）。
+
+既知の制限：`staged` は移した先のパスで判定するので、アーカイブへ移す commit の追加行と、移した後の commit で追加した行は調べない。
 
 見つかった行は、前後を読み、日本語に直す。コードの識別子は変えない。直せない行（引用など）と誤検出は、「一覧の直し方」で許容用語にする。
 

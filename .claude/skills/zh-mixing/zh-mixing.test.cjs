@@ -233,12 +233,37 @@ test('追跡しているファイルを調べるとき、評価の一覧の置�
   assert.equal(zh.run(['tracked'], deps), 0)
 })
 
+/** 1 つのファイルに 1 行を追加した差分 */
+const addedLineDiff = (file, text) => ['diff --git a/' + file + ' b/' + file, '--- a/' + file, '+++ b/' + file, '@@ -0,0 +1 @@', `+${text}`].join('\n')
+
 test('ステージした追加行を調べるとき、評価の一覧の置き場所（review の evals）は除く', () => {
-  const diff = (file, text) => ['diff --git a/' + file + ' b/' + file, '--- a/' + file, '+++ b/' + file, '@@ -0,0 +1 @@', `+${text}`].join('\n')
-  const evals = makeDeps({ stagedDiff: () => diff('.claude/skills/review/evals/cases.md', SIMPLIFIED) })
+  const evals = makeDeps({ stagedDiff: () => addedLineDiff('.claude/skills/review/evals/cases.md', SIMPLIFIED) })
   assert.equal(zh.run(['staged'], evals.deps), 0)
-  const other = makeDeps({ stagedDiff: () => diff('.claude/skills/review/SKILL.md', SIMPLIFIED) })
+  const other = makeDeps({ stagedDiff: () => addedLineDiff('.claude/skills/review/SKILL.md', SIMPLIFIED) })
   assert.equal(zh.run(['staged'], other.deps), 1)
+})
+
+test('ステージした追加行を調べるとき、アーカイブした spec は除く', () => {
+  const archive = makeDeps({ stagedDiff: () => addedLineDiff('docs/08-spec/archive/x/spec.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], archive.deps), 0)
+  const other = makeDeps({ stagedDiff: () => addedLineDiff('docs/08-spec/x/spec.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], other.deps), 1)
+})
+
+test('アーカイブへ移しながら追加した行は、移した先のパスで判定して除く', () => {
+  const diff = [
+    'diff --git a/docs/08-spec/x/spec.md b/docs/08-spec/archive/x/spec.md',
+    'similarity index 90%',
+    'rename from docs/08-spec/x/spec.md',
+    'rename to docs/08-spec/archive/x/spec.md',
+    '--- a/docs/08-spec/x/spec.md',
+    '+++ b/docs/08-spec/archive/x/spec.md',
+    '@@ -1 +1 @@',
+    `-${JAPANESE}`,
+    `+${SIMPLIFIED}`,
+  ].join('\n')
+  const { deps } = makeDeps({ stagedDiff: () => diff })
+  assert.equal(zh.run(['staged'], deps), 0)
 })
 
 test('入口の指定がなければ、使い方を出して 2', () => {

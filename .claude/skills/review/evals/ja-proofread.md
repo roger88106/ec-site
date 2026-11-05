@@ -11,7 +11,7 @@
 
 出典は、文書のパスと commit である。例文は、出典の文書の文をそのまま使う。出典に該当する文がない例だけ、出典に「作った例」と書く（今は 0 件）。issue の本文とコメントの例の出典は、issue の番号とコメントの URL と書く。
 
-「ja-text の扱い」の列は、その語が今の言い換えの一覧（`scripts/ci/ja-text.json`）にあるかを示す（2026-11-01 の状態）。
+「ja-text の扱い」の列は、その語が今の言い換えの一覧（`scripts/ci/ja-text.json`）にあるかを示す（2026-11-01 の状態。M-15 と M-16 は 2026-11-05 の状態）。
 
 ### 見逃しの例
 
@@ -31,6 +31,8 @@
 | M-12 | 見逃し | 口語的な言い方より、書面語で明確に書く。 | `書面語` | `.claude/skills/docs/SKILL.md`（`5b6d3e6a`） | error |
 | M-13 | 見逃し | 「和語より技術文書の語」の今の規則と、口頭の語を避ける規則が、DC-283-7〜9 と矛盾しない形で残る。 | `口頭の語` | `docs/08-spec/283-writing-rules/spec.md`（`5b6d3e6a`） | error |
 | M-14 | 見逃し | 起動の形ごとに、設定・定義・skill を読む場所と、変更が効く時点。 | `効く` | `.claude/skills/sessions/SKILL.md`（`faa8823b`） | error |
+| M-15 | 見逃し | E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-…`）を付ける（`e2e/src/data.ts`）。 | `印` | `docs/05-開発規則/test-writing-frontend.md`（`8b4d9208`）。#294 のコメント（https://github.com/roger88106/ec-site/issues/294#issuecomment-6615991347） | なし |
+| M-16 | 見逃し | 入力のキーの間で待たない | `入力のキーの間` | `docs/05-開発規則/test-writing-frontend.md`（`8b4d9208`）の見出し。#294 のコメント（https://github.com/roger88106/ec-site/issues/294#issuecomment-6615991817） | なし |
 
 M-14 は、見逃しの例を 14 件にするために加えた、`効く` の 2 件目の例である。
 
@@ -45,7 +47,7 @@ M-14 は、見逃しの例を 14 件にするために加えた、`効く` の 2
 | F-05 | 誤検出 | policy.json から checkLicense の許可の一覧を作る | なし | `backend/ecsite/build.gradle.kts`（`8bbc72a7`）。アーカイブした spec 276（`docs/08-spec/archive/1to10/276-retro-rules/spec.md`）の校閲の記録で「残したもの」（「許可の一覧」） | なし |
 | F-06 | 誤検出 | 指定した持ち主のうち、引当が残っているもの | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/StockReservationCleanupJobTest.java`（`f7e5d755`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（別の意味の `持ち主の`）。見逃しの例 M-08 の `主の` を含む文 ※3 | `主の` は、error（「持ち主の」は当てない） |
 
-見逃しの例 14 件、誤検出の例 6 件である。誤検出の例の「挙げるべき語句」は、挙げてはいけないので「なし」とする。
+見逃しの例 16 件、誤検出の例 6 件である。誤検出の例の「挙げるべき語句」は、挙げてはいけないので「なし」とする。
 
 ※2：F-01 は、最初に選んだ `docs/05-開発規則/workflow.md` の文の「旧い」が常用漢字表にない読みで、一般の技術文書では「古い」と書くので、別の文に替えた（2026-11-01、issue 担当のセッションの判断）。
 

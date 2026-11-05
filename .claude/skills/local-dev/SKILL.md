@@ -7,7 +7,7 @@ description: ec-site をローカルで起動・確認する手順。スロッ�
 
 エージェントだけが行う手順（待ち方、出力の読み方、避けるコマンドの書き方）を書く。人も行う手順は、各節が指す `docs/06-手順書/` の節にある。
 
-前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う（AGENTS.md「環境」）。
+前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う。
 
 以下の 8080、9080、3000、5173 と DB `ec_site` などの固定の値は、メインの作業ツリー（スロット 0）の値。追加の作業ツリーは、[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」の表の値を使う。
 

@@ -10,7 +10,7 @@ issue 担当のセッションが、待機している予備のセッション�
 <spec の番号または issue の番号> の担当を渡す。次の順に進める。
 
 1. 作業ツリーを作る。`git -C <メインの作業ツリー> worktree add .claude/worktrees/<issue の番号>-<短い名前> -b agent/<issue の番号>-<短い名前> develop` を実行する。以後は、作業ツリーの絶対パスと `git -C` で作業し、メインの作業ツリーを変えない。
-2. 作業ツリーの `AGENTS.md` の「最初に読むもの」と、担当の spec（または issue の本文とコメント。`gh issue view <番号> --json body,comments` で読む）を再読する。
+2. 作業ツリーの `AGENTS.md` の「最初に読むもの」と、担当の spec（または issue の本文とコメント）を再読する。issue は `gh issue view <番号> --json body,comments` で読む。
 3. 返答の言語は、メインの `/.local/agent/environment.md` に従う。Git に入るものは日本語で書く。
 4. 文書の本文の書き手は、[文書の書き方](../../../docs/05-開発規則/writing.md)の「本文の書き手」と、skill `docs` の「進め方」のとおり。校閲（検出役、確認役の順）は、skill `review` の docs-review.md の手順 3 に書かれた対象と時点で行う。検査は skill `local-dev` の「CI の検査の script」のとおりに実行する。
 5. push は段階の最後に行う（規模 S は作業の最後）。pull request は draft で作り、pull request の前のレビューを draft で行う（順は起票と記録の操作の「アーカイブの操作」）。

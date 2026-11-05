@@ -133,13 +133,13 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 
 ## CI の検査の script
 
-`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。hook `pre-commit` を置いていれば同じ検査が commit のときに動くので、手動で実行しない。置いていなければ、commit の前にルートで実行する。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
+`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。hook `pre-commit` を置いていれば同じ検査が commit のときに実行されるので、手動で実行しない。置いていなければ、commit の前にルートで実行する。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
 
 ```bash
 scripts/ci/check-all.sh
 ```
 
-手元では、テスト名に出ない AC は警告だけで通る。hook の有無によらず、最後の commit の後、push の前に 1 回、CI と同じに確認する。
+手元では、テスト名に出ない AC は警告だけで通る。spec の最後（最後の commit の後、push の前）に 1 回、CI と同じ条件で確認する。
 
 ```bash
 CI=true scripts/ci/check-all.sh
@@ -184,6 +184,7 @@ hook や検査に止められてからコマンドを書き換えないよう、
   ```
 
   - push で待つワークフローは、`ci.yml` の push の `paths` で決まる。`.md` と `.claude/` の下のファイルだけなら「文書」（`docs.yml`）だけを待つ（モジュールの設計書など一部の `.md` は「CI」も実行される）。pull request では、「CI」は変えたファイルによらず実行される。
+  - pull request の全ての CI を待つときは、`gh pr checks <番号> --watch` を使う。
 - commit の前の hook（`pre-commit`）は、作業ツリーでなく index（ステージした内容）を検査する。ステージしていない変更は検査に入らない。そのため、前の段階の変更を参照するファイルを先に commit すると、参照先が index にないので、hook が切れた参照として commit を失敗にする。段階の順に commit する。
   - `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
 - 最初の 2 つの箇条のほかに、次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。

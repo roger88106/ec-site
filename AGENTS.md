@@ -73,7 +73,7 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 |------|--------|
 | ブランチ | `develop` から作業ブランチ `agent/<issue の番号>-<短い名前>` を切って作業し、pull request で `develop` に入れる。`develop` と `main` には直接コミットしない（構成と保護は [ブランチとリリース](docs/06-手順書/branches.md)） |
 | メッセージ | 日本語。1 行目は `<対象>: <要約>`（例：`tax: 税率の一覧の置き換えを実装する`）、決定の理由は本文 |
-| 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
+| 単位 | セッションは、いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | セッションは、push と pull request の作成で許可を求めない ※2。push は段階の最後にする（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」） |
 | マージ・tag | 許可と担当は [マージと後片付け](docs/05-開発規則/merging.md)の「マージの許可と後片付け」。マージは `gh pr merge --match-head-commit <SHA>` で head の commit を指定する。hook の扱いは ※3 |

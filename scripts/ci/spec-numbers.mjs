@@ -1,6 +1,6 @@
 // 本番のコード（コメントの外を含む）と、テスト・設定のファイル・script のコメントに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方の「何を書くか」）。
 // 規則は言葉で書き、spec との対応はテストの名前（@DisplayName、test の名前）に書く。
-// 番号は、MVP の AC-n とタスクの番号（T の後に 3 桁の spec の番号）、1→10 の AC-s-n とタスクの番号（T の後に 0 で埋めない spec の番号）、MVP の spec の番号（MVP- の後に数字）。s は spec の番号、n は連番。記号と数字の間に区切りのない形（AC の直後に数字）と、全角で書いた形（NFKC で正規化して照合する）も見つける。
+// 番号は、MVP の AC-n とタスクの番号（T の後に 3 桁の spec の番号）、1→10 の AC-s-n とタスクの番号（T の後に 0 で埋めない spec の番号）、MVP の spec の番号（MVP の後に数字。空白で区切った形も見つける）。s は spec の番号、n は連番。記号と数字の間に区切りのない形（AC の直後に数字）と、全角で書いた形（NFKC で正規化して照合する）も見つける。
 // - 本番のコード：行の全体を見る
 // - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）
 // - 設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、backend/ecsite/ の *.gradle.kts）：コメントだけを見る
@@ -26,8 +26,8 @@ const SOURCE_DIRS = ['backend/ecsite/src/main/', 'frontend/admin/src/', 'fronten
 /** 本番のコードでないもの（テスト、テストの補助、生成物、適用済みのマイグレーション） */
 const EXCLUDED = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/db\/migration\//]
 
-/** spec の番号（MVP の AC-n、1→10 の spec の AC-s-n など）、MVP の spec の番号（MVP の後の数字）、タスクの番号（T の後に spec の番号・段階・連番を - で区切ったもの、古い形式の T と 3〜4 桁の数字）、spec・plan の番号（spec・plan の後の数字）。# の直後の語は 16 進の色（#DC2626 など）なので番号にしない */
-const SPEC_NUMBER = /(?<!#)(?:\b(?:AC|DC|BR|NFR|US|DS|DN|MVP)-?\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.))/g
+/** spec の番号（MVP の AC-n、1→10 の spec の AC-s-n など）、MVP の spec の番号（MVP の後の数字）、タスクの番号（T の後に spec の番号・段階・連番を - で区切ったもの、古い形式の T と 3〜4 桁の数字）、spec・plan の番号（spec・plan の後の数字）。# の直後の語は 16 進の色（#DC2626 など）なので番号にしない。M・V・P は 16 進の文字でないので、MVP の番号は # の直後でも見つける */
+const SPEC_NUMBER = /\bMVP[- ]?\d+\b|(?<!#)(?:\b(?:AC|DC|BR|NFR|US|DS|DN)-?\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.))/g
 
 /**
  * spec・plan・tasks の番号を書いた行を探す。

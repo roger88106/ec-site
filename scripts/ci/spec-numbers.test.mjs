@@ -35,11 +35,11 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.deepEqual(findSpecNumbers('// T10、T30101'), [])
   })
 
-  test('MVP の spec の番号（MVP-001、区切りのない MVP001、全角）を見つける', () => {
-    const text = ['// MVP-001 の plan の「商品画像」', '// 元の番号（MVP019）', '// 全角（ＭＶＰ－００３）'].join('\n')
+  test('MVP の spec の番号（MVP-001、区切りのない MVP001、空白で区切った MVP 019、全角、# の直後）を見つける', () => {
+    const text = ['// MVP-001 の plan の「商品画像」', '// 元の番号（MVP019）', '// 全角（ＭＶＰ－００３）', '// MVP 019 の規則', '// #MVP-001'].join('\n')
     assert.deepEqual(
       findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
-      ['1 MVP-001', '2 MVP019', '3 MVP-003'],
+      ['1 MVP-001', '2 MVP019', '3 MVP-003', '4 MVP 019', '5 MVP-001'],
     )
   })
 
@@ -380,6 +380,20 @@ describe('script の実行', () => {
     const result = run({ 'frontend/store/src/lib/price.test.ts': "test('AC-12 合計を返す', () => {})\n" })
     assert.equal(result.status, 0, result.stdout)
     assert.match(result.stdout, /spec の番号：0/)
+  })
+
+  test('バックエンドのテスト、設定のファイル、script のコメントも対象にする', () => {
+    const cases = [
+      ['backend/ecsite/src/test/java/com/ecsite/FooTest.java', '// 上限（DC-5）\n'],
+      ['knip.ts', '// 上限（DC-5）\n'],
+      ['scripts/ci/foo.mjs', '// 上限（DC-5）\n'],
+      ['scripts/ci/foo.sh', '# 上限（DC-5）\n'],
+    ]
+    for (const [file, text] of cases) {
+      const result = run({ [file]: text })
+      assert.equal(result.status, 1, `${file}：${result.stdout}`)
+      assert.ok(result.stdout.includes(`${file}:1 DC-5`), `${file}：${result.stdout}`)
+    }
   })
 
   test('対象のファイルが 0 件なら、理由を出して終了コード 1 で終わる', () => {

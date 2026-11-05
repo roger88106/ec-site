@@ -7,7 +7,6 @@
 !/.gitattributes
 !/.github/
 !/.gitignore
-!/.ignore
 !/.node-version
 !/.pnpmfile.cjs
 !/AGENTS.md

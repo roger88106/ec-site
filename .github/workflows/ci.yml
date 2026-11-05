@@ -24,6 +24,7 @@ on:
       - '!.github/ISSUE_TEMPLATE/**' # issue のテンプレート
       - '!.github/dependabot.yml'     # 依存の更新の設定（更新の pull request で CI が流れる）
       - '!.gitignore'
+      - '!docs/08-spec/.ignore' # エージェントの検索から除外する指定
       - '!LICENSE'
       - 'docs/02-設計/*.md' # 全体構成とモジュールの設計。バックエンドの単体テストが、全体構成の図（ModuleDiagramTest）と、モジュールの設計のレベル（ProductionClassesTest）を照合する
       - 'docs/03-機能仕様/glossary.md' # 用語集。バックエンドの単体テスト（ModuleDiagramTest）が、全体構成の図に出すモジュールとイベントの名前を読む

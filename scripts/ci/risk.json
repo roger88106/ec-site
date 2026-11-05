@@ -3,7 +3,7 @@
   "groups": [
     {
       "name": "エージェントの規則と設定",
-      "paths": ["AGENTS.md", "docs/constitution.md", "docs/05-開発規則/", ".claude/", "scripts/ci/", "scripts/dev/hooks/", "docs/06-手順書/branches.md"]
+      "paths": ["AGENTS.md", "docs/constitution.md", "docs/05-開発規則/", ".claude/", "scripts/ci/", "scripts/dev/hooks/", "docs/06-手順書/branches.md", "docs/08-spec/.ignore"]
     },
     {
       "name": "CI とリリース",

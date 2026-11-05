@@ -9,7 +9,7 @@ description: ec-site の文書を書いて検査するまでの手順。docs/・
 
 ## 1. 置き場所
 
-置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の構成](../../../docs/05-開発規則/doc-structure.md)の「文書の置き場所」。手順：文書を追加したら、そのフォルダーの `README.md` の表に書く。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と、constitution の地図の表を一緒に修正する。
+置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の構成](../../../docs/05-開発規則/doc-structure.md)の「文書の置き場所」。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と、constitution の地図の表を一緒に修正する。
 
 ## 2. 書き方
 

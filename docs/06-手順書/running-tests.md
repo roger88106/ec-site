@@ -9,8 +9,10 @@
 | バックエンドの単体テスト | Spring を起動しないもの | JUnit、AssertJ | `src/test` |
 | バックエンドの統合テスト | Spring と DB などをつないだもの | `@SpringBootTest`、Testcontainers | `src/integrationTest` |
 | フロントの単体テスト | 画面に依存しない関数（判定、変換、表示の整形） | Vitest | 対象の横（`*.test.ts`） |
-| フロントの結合テスト | コンポーネントを描画し、利用者の操作で振る舞いを確認する（API は MSW） | Vitest、React Testing Library | 対象の横（`*.test.tsx`） |
+| フロントの結合テスト | 管理画面のコンポーネントを描画し、利用者の操作で振る舞いを確認する（API は MSW）※1 | Vitest、React Testing Library | 対象の横（`*.test.tsx`） |
 | E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `e2e/` |
+
+※1：店舗画面は[フロントのテストの書き方](../05-開発規則/test-writing-frontend.md)の「店舗画面のテストは、対象ごとの方法で書く」に従う。
 
 E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状態から実行する（ローカルの開発のデータを変えない）。
 
@@ -20,18 +22,18 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 
 | コマンド | 内容 | Docker |
 |----------|------|--------|
-| `./gradlew test` | 単体テスト（Spring を起動しない） | 不要 ※1 |
+| `./gradlew test` | 単体テスト（Spring を起動しない） | 不要 ※2 |
 | `./gradlew integrationTest` | 統合テスト（Spring + Testcontainers の PostgreSQL など） | 必要 |
 | `./gradlew check` | 単体・統合テスト、OpenAPI の構文の検証（CI はジョブに分けて同じものを実行する） | 必要 |
 | `./gradlew integrationTest -PintegrationTestShard=<番号>/<総数>` | 統合テストの一部だけ（クラスの名前の hash で分ける。例 `1/2`）。CI が 2 つのジョブに分けるために使う。手元では通常は使わない | 必要 |
 | `./gradlew integrationTest -PintegrationTestForks=<数>` | 統合テストを実行するフォークの数（既定 1。CI も 1）。手元では通常は使わない | 必要 |
 | `./gradlew integrationTestShards` | 統合テストのジョブ（1/2・2/2）に入るクラスの一覧（`-PintegrationTestShardCount=<数>` で分ける数を変える。既定 2） | 不要 |
 | `./gradlew coverageReport` | 単体テストと統合テストを合算したカバレッジ（`build/reports/jacoco/coverageReport/`）。`-PcoverageExecDir`・`-PcoverageClassesDir` は CI が使う。手元では通常は使わない | 必要 |
-| `./gradlew pitest` | domain（`com.ecsite.module.*.domain.*`）の mutation testing（PIT）。単体テスト（`src/test`）だけを使う。報告は `build/reports/pitest/`。`check` と `build` には含まれない。時間は ※2 | 不要 ※1 |
+| `./gradlew pitest` | domain（`com.ecsite.module.*.domain.*`）の mutation testing（PIT）。単体テスト（`src/test`）だけを使う。報告は `build/reports/pitest/`。`check` と `build` には含まれない。時間は ※3 | 不要 ※2 |
 
-※1：jOOQ のコード生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うため、マイグレーションか生成の設定が変わったときだけ Docker が必要（変わらなければ `generateJooq UP-TO-DATE` でスキップされる）。
+※2：jOOQ のコード生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うため、マイグレーションか生成の設定が変わったときだけ Docker が必要（変わらなければ `generateJooq UP-TO-DATE` でスキップされる）。
 
-※2：PIT は変異の前に全ての単体テストを 1 回実行するので、手元（コンパイル済み）で約 2 分かかる（CI の実測は [CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
+※3：PIT は変異の前に全ての単体テストを 1 回実行するので、手元（コンパイル済み）で約 2 分かかる（CI の実測は [CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
 
 単体テストには、構成と契約の検査も含まれる：モジュールの境界（`ModulithTest`）、アーキテクチャの規則（`architecture/` の ArchUnit）、契約の制約（`contract/`）、エラーの定義とメッセージの対応（`MessageContractTest`）。
 

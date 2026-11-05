@@ -5,6 +5,8 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 
 ## 最初に読むもの
 
+本節はセッションの手順である。サブエージェントは、呼び出しの指示と定義に従う。
+
 1. [constitution](docs/constitution.md)：大綱と文書の地図
 2. [開発の進め方](docs/05-開発規則/workflow.md)：SDD と TDD、規模と push、利用者の確認と中断、完了の定義
 3. 着手する段階の tasks と、冒頭の「参照」の文書（`docs/08-spec/<番号>-*/`）
@@ -36,7 +38,7 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 
 ### セッションの始めと終わり
 
-- 始めに直近の CI を確認し（`gh run list -b develop -L 1`）、`develop` の CI が失敗していれば、すぐに起票し、spec の作業の前に修正する。
+- セッションの始めに直近の CI を確認し（`gh run list -b develop -L 1`）、`develop` の CI が失敗していれば、すぐに起票し、spec の作業の前に修正する。
 - 1 つの spec は 1 つの spec 担当のセッションで進め、長くなったら文脈の圧縮で続ける。セッションを替えるときは引き継ぎの文書を作り、新しいセッションは始めにそれを読む（置き場所と読み方は skill `handoff`）。
 
 ## モデルの区分
@@ -73,7 +75,7 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 | メッセージ | 日本語。1 行目は `<対象>: <要約>`（例：`tax: 税率の一覧の置き換えを実装する`）、決定の理由は本文 |
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
-| push・pull request | push と pull request の作成は、許可を求めない ※2。push は段階の最後にする（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」） |
+| push・pull request | セッションは、push と pull request の作成で許可を求めない ※2。push は段階の最後にする（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」） |
 | マージ・tag | 許可と担当は [マージと後片付け](docs/05-開発規則/merging.md)の「マージの許可と後片付け」。マージは `gh pr merge --match-head-commit <SHA>` で head の commit を指定する。hook の扱いは ※3 |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（[開発環境の起動](docs/06-手順書/setup.md)の「手元の置き場所」） |
 

@@ -26,7 +26,7 @@
 //
 // .claude/settings.json の hook のコマンドは、tool_input.command に git か gh の語がなければ、この script を起動せずに通す
 // （判定は全て git・gh のコマンドだけが対象なので、他のコマンドで node を起動する時間を省く）。command は node を使わずに awk で取り出し、
-// JSON のエスケープと引用符を戻してから語を探す。Windows では bash -c の引数の \\ が \ に減って届くので、hook のコマンドに \ を書かず、awk の中で作る。
+// JSON のエスケープと引用符を戻してから語を探す。\ を消した形（gi\t）と、\ を空白に置き換えた形（C:\tools\gh）の両方で語を探す。Windows では bash -c の引数の \\ が \ に減って届くので、hook のコマンドに \ を書かず、awk の中で作る。
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash と PowerShell 以外のツールは何もせずに通す。
 // 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出力する。通すときは何も出力しない。終了コードは常に 0。
 // 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd・pushd・popd、env -C、git -C で決める。前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る

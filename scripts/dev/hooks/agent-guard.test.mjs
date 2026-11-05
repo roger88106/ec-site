@@ -1122,8 +1122,22 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
         const result = runHook(command, dir)
         assert.equal(result.status, 2, `${command}：${result.stderr}`)
       }
+      // \ 区切りのパスの git・gh。フォルダーの名前に git・gh があるときは、本体を不要に起動しても、検査を省かない
+      for (const command of [
+        '"C:\\Program Files\\Git\\cmd\\git.exe" push --force',
+        '& "C:\\Program Files\\GitHub CLI\\gh.exe" api -X PUT repos/x/rulesets/1',
+        'C:\\tools\\gh pr merge 1',
+        'C:\\tools\\gh.exe pr merge 1',
+        'C:\\Tools\\GH.EXE pr merge 1',
+        '.\\gh.exe pr merge 1',
+        '\\\\server\\share\\git.exe push --force',
+        'ls C:\\git\\logs',
+      ]) {
+        const result = runHook(command, dir)
+        assert.equal(result.status, 2, `${command}：${result.stderr}`)
+      }
       // 語の一部にある git・gh と、二重引用符で囲んだ \n に続く git は、コマンドにならない
-      for (const command of ['echo digit ghost', 'ls "a\\ngit"']) {
+      for (const command of ['echo digit ghost', 'ls "a\\ngit"', 'C:\\tools\\digit.exe', 'C:\\tools\\ghost.exe']) {
         const result = runHook(command, dir)
         assert.equal(result.status, 0, `${command}：${result.stderr}`)
       }

@@ -340,6 +340,6 @@ for (const agent of ['ja-proofreader.md', 'ja-proof-verifier.md']) {
     const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: agent, line: i + 1, text })), strict)
     assert.deepEqual(hits.map((h) => h.line), [])
     assert.match(body, /^omitClaudeMd: true$/m)
-    assert.match(body, /^tools: Read, Grep, Glob$/m)
+    assert.match(body, /^tools: Read, Grep, Glob, Write$/m)
   })
 }

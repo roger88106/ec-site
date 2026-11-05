@@ -5,9 +5,9 @@ description: ec-site をローカルで起動・確認する手順。スロッ�
 
 # ローカルでの起動と確認
 
-エージェントだけが行う手順（待ち方、出力の読み方、避けるコマンドの書き方）を書く。人も行う手順は、各節が指す `docs/06-手順書/` の節にある。この skill と指された節のとおりに実行する。
+エージェントだけが行う手順（待ち方、出力の読み方、避けるコマンドの書き方）を書く。人も行う手順は、各節が指す `docs/06-手順書/` の節にある。
 
-前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う（AGENTS.md「環境」）。
+前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う。
 
 以下の 8080、9080、3000、5173 と DB `ec_site` などの固定の値は、メインの作業ツリー（スロット 0）の値。追加の作業ツリーは、[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」の表の値を使う。
 
@@ -19,7 +19,7 @@ docker compose stop           # 止める（データは残る）
 ```
 
 - Keycloak は起動に 20 秒ほどかかる。`docker inspect -f '{{.State.Health.Status}}' ec-site-keycloak` が `healthy` になるまで待つ。
-- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で再作成する（[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」。database は compose の PostgreSQL を初めて作ったときだけ自動で作られる）。
+- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で再作成する（[開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」）。
 
 - DB：`localhost:5432`、DB `ec_site`、ユーザー `ec_site`、パスワード `ec_site`。
 - SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で一覧にする。注文は `ordering`）。
@@ -58,11 +58,11 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 ```
 
 - 死活監視は運用ポート（9080）で公開する。業務ポート（8080）では公開しない。
-- 200 が返ったら起動済み。すでに起動しているかは同じ curl を `--retry` なしで確認する。バックグラウンドの起動のコマンドが、ツールの時間の上限で「停止」と通知されても、プロセスは動き続けていることがある。起動したかはこの curl で判断する。
+- 200 が返ったら起動済み。すでに起動しているかは同じ curl を `--retry` なしで確認する。ツールが時間の上限で「停止」と通知しても、プロセスが動き続けていることがあるので、起動したかはこの curl で判断する。
 - 起動に失敗したら `bootrun.log` を `grep -n "ERROR\|Caused by" ` で見る。全体を読まない。
 - local profile では、起動時にマイグレーションと seed（`db/seed/base`、`db/seed/local`）が適用される。使い分けは `db/seed/local/README.md`。
 - 停止するときは、ポート 8080 で待ち受けているプロセスを停止する。Windows では PowerShell の `Stop-Process -Id (Get-NetTCPConnection -LocalPort 8080 -State Listen).OwningProcess`（Git Bash には `pkill` がない）。画面の開発サーバーも、ポート（3000、5173）で同じく停止する。
-- `bootRun` のバックグラウンドのタスクをツールで停止しても、java のプロセスが残って 8080 で待ち受け続ける。必ず上の `Stop-Process` で停止し、8080 が空いたことを確認する。
+- `bootRun` のタスクをツールで停止しても java のプロセスが残るので、上の `Stop-Process` で停止し、8080 が空いたことを確認する。
 
 テスト（`backend/ecsite/` で。Docker が必要）：
 
@@ -71,9 +71,9 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 ```
 
 - `check` は単体・統合テストと OpenAPI の検証を含む（AGENTS.md の完了の基準）。一部だけなら `test`（単体）、`integrationTest`（統合）、`--tests '<クラス名>'`。
-- `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。書き誤りが、テストや E2E の途中まで検出されないため。
-- 長い検査は、最初からバックグラウンドで実行する（Bash の上限 10 分を超えて途中でバックグラウンドに移ると、結果の読み方が変わるため）。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、`e2e.sh` は続けて実行し、同時に実行しない（CPU が足りずに、時間の上限のあるテストと管理画面のテストがタイムアウトする）。
-- バックエンドと画面は、スロットごとに同時に起動してよい（「スロット」の節）。E2E はロックで 1 つずつ実行される。バックエンドの全テスト、フロントの検査の script、E2E は、同時に実行すると、タイムアウトを設定したテストが失敗しうるので、他のセッションが実行しているときは待つ。
+- `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。
+- 長い検査は、最初からバックグラウンドで実行する。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、`e2e.sh` は続けて実行し、同時に実行しない（CPU が足りずに、時間の上限のあるテストと管理画面のテストがタイムアウトする）。
+- バックエンドと画面は、スロットごとに同時に起動してよい（「スロット」の節）。E2E はロックで 1 つずつ実行される。他のセッションがバックエンドの全テスト、フロントの検査の script、E2E を実行しているときは待つ。
 - 失敗の詳細は `build/test-results/**/TEST-*.xml` を、失敗したクラスだけ grep する。
 
 ## フロント（`frontend/store`、`frontend/admin`）
@@ -88,10 +88,10 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 - 手順の一覧と、対象ごとに実行する手順は、`scripts/dev/check-frontend.sh` の冒頭のコメントにある。
 - 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
-- 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`（ルートから実行すると、設定が入れ子だというエラーになる）。
-- 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため、テストデータの形の誤りが、テストの失敗として間接的に表れる。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
+- 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`。
+- 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
-- 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「依存を追加したら再インストールして確認する」）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
+- 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「依存を追加したら再インストールして確認する」）。
 
 開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で `.claude/launch.json` の名前を指定して起動する。プレビューのツールがないとき（コマンドラインの実行など）は、各アプリのディレクトリで `pnpm dev` をバックグラウンドで実行し、URL に curl して 200 を確認する。
 
@@ -133,13 +133,13 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 
 ## CI の検査の script
 
-`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで実行する（hook を置いていれば commit のときに実行される）。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
+`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。hook `pre-commit` を置いていれば同じ検査が commit のときに実行されるので、手動で実行しない。置いていなければ、commit の前にルートで実行する。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
 
 ```bash
 scripts/ci/check-all.sh
 ```
 
-手元では、テスト名に出ない AC は警告だけで通る。spec の最後（push の前）は、CI と同じに確認する。
+手元では、テスト名に出ない AC は警告だけで通る。spec の最後（最後の commit の後、push の前）に 1 回、CI と同じ条件で確認する。
 
 ```bash
 CI=true scripts/ci/check-all.sh
@@ -176,14 +176,15 @@ hook や検査に止められてからコマンドを書き換えないよう、
 
 - 複数のファイルの置き換えと、`\` や正規表現を含む書き換えは、初めから Edit で行う（新しいファイルは Write）。script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。heredoc（`<<'EOF'` も）と `node -e` の文字列に `\` を入れない。理由：Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れるため。hook `backslash-guard` も、heredoc と `node -e` の中の `\` を拒否する。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記も Edit で書く。
 - コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと止まる（語の一覧は skill `zh-mixing` の「書くときの注意」）。
-- CI を待つときは、バックグラウンドで実行し、ワークフローのファイル名・`event`・commit で絞る。フォアグラウンドで長い `sleep` を実行しない（Claude Code の Bash ツールが拒否する）。絞らないと、同じ commit の別のワークフロー（Dependabot の更新など）の完了で待ちが終わる。
+- CI を待つときは、バックグラウンドで実行し、ワークフローのファイル名・`event`・commit で絞る。絞らないと、同じ commit の別のワークフロー（Dependabot の更新など）の完了で待ちが終わる。
 
   ```bash
   gh run list -c <SHA> -w docs.yml -e push --json databaseId -q '.[0].databaseId'   # 実行の ID。push の直後は空のことがある
   gh run watch <ID> --exit-status
   ```
 
-  - push で待つワークフローは、変えたファイルで決まる。`.md` と `.claude/` の下のファイルだけなら、ワークフロー「CI」（`ci.yml`）は push で実行されないので、ワークフロー「文書」（`docs.yml`）だけを待つ。理由：`ci.yml` の push の `paths` がそれらを除くため。ただし、モジュールの設計書など一部の `.md` は、`paths` が個別に指定しているので、push でも「CI」が実行される。pull request では、「CI」は変えたファイルによらず実行される。
+  - push で待つワークフローは、`ci.yml` の push の `paths` で決まる。`.md` と `.claude/` の下のファイルだけなら「文書」（`docs.yml`）だけを待つ（モジュールの設計書など一部の `.md` は「CI」も実行される）。pull request では、「CI」は変えたファイルによらず実行される。
+  - pull request の全ての CI は、issue 担当のセッションが待つ（[マージと後片付け](../../../docs/05-開発規則/merging.md)の「ready と CI の順」）。
 - commit の前の hook（`pre-commit`）は、作業ツリーでなく index（ステージした内容）を検査する。ステージしていない変更は検査に入らない。そのため、前の段階の変更を参照するファイルを先に commit すると、参照先が index にないので、hook が切れた参照として commit を失敗にする。段階の順に commit する。
   - `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
 - 最初の 2 つの箇条のほかに、次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
@@ -191,6 +192,7 @@ hook や検査に止められてからコマンドを書き換えないよう、
 | 書き方 | 拒否するもの | 避け方 |
 |--------|------------|--------|
 | `gh pr edit` と `gh pr ready` など、GitHub の状態を変える `gh` の操作を `&&` や `;` で 1 つにつないだコマンド | auto mode の判定 | pull request の編集・ready・マージ、issue の編集は、1 つのコマンドに操作を 1 つだけ書き、別の呼び出しで実行する |
+| PowerShell のツールで実行する `git`・`gh` の commit、push、merge、tag、api など | hook `agent-guard` | Bash のツールで実行する |
 | `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` の「ツールの補足」） |
 | spec やコミットメッセージに写した、利用者の中国語の言葉 | git の hook `commit-msg`・`pre-commit`（中国語の混入の検査） | 日本語に訳して書く（skill `zh-mixing` の「書くときの注意」） |
 | `git -C` と `cd` のパスに変数やコマンドの置き換え（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（`git commit` の対象のリポジトリを決められないとき） | 変数を使わず、絶対パスを直接書く |

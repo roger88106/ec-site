@@ -115,6 +115,15 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー
 
+### 5.2 既定の書式とテーマの値は共有のものを使う
+
+- 金額、数、日時の既定の書式で足りるときは、自分で `toLocaleString` や `Intl` を呼ばない（`frontend/shared/src/lib/format.ts` の関数を使う）。
+- 色などの値は `frontend/shared/src/theme.css` のテーマから使い、画面に直接書かない。
+
+理由：書式と色を 1 か所で修正するため。
+
+確認方法：レビュー
+
 ## 6. 画面の URL
 
 | 画面 | 作り方 |

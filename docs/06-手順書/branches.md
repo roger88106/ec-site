@@ -7,7 +7,7 @@
 | ブランチ | 役割 | 備考 |
 |----------|------|------|
 | `develop` | 開発。既定のブランチ | 作業ブランチは `develop` から切り、pull request で `develop` に入れる |
-| `main` | 本番 | `release-` と `hotfix-` で始まるブランチからの pull request だけを受け付ける（「`main` の元のブランチの制限」） |
+| `main` | 本番 | `release/` と `hotfix/` で始まるブランチからの pull request だけを受け付ける（「`main` の元のブランチの制限」） |
 | 作業ブランチ | 1 つの spec の作業（規模 S は 1 つの issue） | 名前の付け方は「名前」。マージした後は自動で削除される |
 
 ## 2. 作業ブランチ
@@ -16,8 +16,20 @@
 
 | 種類 | 名前の形 |
 |------|----------|
-| 通常 | `<issue の番号>-<短い名前>` |
-| 緊急の修正 | `hotfix-<issue の番号>-<短い名前>` |
+| 通常 | `agent/<issue の番号>-<短い名前>` |
+| 緊急の修正 | `hotfix/<issue の番号>-<短い名前>` |
+
+名前の変更（#367）に伴う移行の扱いは、次のとおり。
+
+| 対象 | 扱い |
+|------|------|
+| 名前の変更が `develop` に入る前に作った作業ブランチ | 名前を変えない。`develop` へのマージでは元のブランチの名前を判定しないため |
+| 名前の変更が `develop` に入った後に作る作業ブランチ | 新しい名前を使う |
+| 名前の変更が `main` に入るまでの緊急の修正と、変更を含まない commit から作るリリース | 古い名前（`hotfix-`、`release-`）を使う。検査は merge commit の script を使い、その script が古いため（実際の pull request では未確認） |
+| 名前の変更を含む commit から作るリリース | `release/<バージョン>` を使う。リリースのブランチが新しい script を含むため |
+| 名前の変更が `main` に入った後の、`main` への pull request | 新しい名前だけが通る。開いている古い名前の pull request は、新しい名前のブランチで再作成する |
+
+名前の変更を含むリリースが `main` に入ったら、この移行の説明（上の文、表、この文）と、「リリース」「緊急の修正」の「移行の間の名前は「名前」」を削除する。
 
 ### 2.2 切り方と pull request
 
@@ -47,9 +59,9 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 ### 3.2 `main` の元のブランチの制限
 
-`main` は、`release-` と `hotfix-` で始まるブランチからの pull request だけを受け付ける。理由：リリースするのは確認した commit で、`develop` の最新とは限らないため（「リリース」）。
+`main` は、`release/` と `hotfix/` で始まるブランチからの pull request だけを受け付ける。理由：リリースするのは確認した commit で、`develop` の最新とは限らないため（「リリース」）。
 
-- 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request の元のブランチの名前が `release-` か `hotfix-` で始まらなければ失敗する。判定は `scripts/ci/workflow/main-source.mjs`（テストあり）。
+- 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request の元のブランチの名前が `release/` か `hotfix/` で始まらなければ失敗する。判定は `scripts/ci/workflow/main-source.mjs`（テストあり）。
 - この検査を `main` の ruleset の必須の検査にする。
 
 ### 3.3 マージの方式
@@ -65,7 +77,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 | 手順 | 内容 |
 |------|------|
-| 1 | 確認した commit から `release-<バージョン>` のブランチを作成する。確認した commit は `develop` の最新とは限らない |
+| 1 | 確認した commit から `release/<バージョン>` のブランチを作成する（移行の間の名前は「名前」）。確認した commit は `develop` の最新とは限らない |
 | 2 | pull request で `main` にマージする |
 | 3 | tag `v<バージョン>` を付ける |
 | 4 | `gh release create` で GitHub の Release を作成する |
@@ -78,14 +90,14 @@ GitHub の ruleset を `develop` と `main` に作る。
 | 不具合の修正、整理、進め方、依存の更新だけ | PATCH |
 | 正式な公開 | MAJOR（`1.0.0`。それまでは上げない） |
 - リリースの内容は、issue 担当のセッションがまとめる（[開発の進め方](../05-開発規則/workflow.md)）。
-- `release-` のブランチの `main` へのマージと tag は、issue 担当のセッションが利用者の許可を得て行う。
+- `release/` のブランチの `main` へのマージと tag は、issue 担当のセッションが利用者の許可を得て行う。
 
 ## 5. 緊急の修正
 
-- `hotfix-<issue の番号>-<短い名前>` のブランチを `main` から切り、pull request で `main` に入れる。
-- `main` に入れた後に、`develop` に戻す。`main` から `<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`main` を直接 `develop` に入れる pull request で衝突すると、`main` に commit しなければ解消できないため。
+- `hotfix/<issue の番号>-<短い名前>` のブランチ（移行の間の名前は「名前」）を `main` から切り、pull request で `main` に入れる。
+- `main` に入れた後に、`develop` に戻す。`main` から `agent/<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`main` を直接 `develop` に入れる pull request で衝突すると、`main` に commit しなければ解消できないため。
 - 必須の検査が GitHub の障害で動かずマージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。`gh api` での変更は、Claude Code の hook が確認する。
-- `hotfix-` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
+- `hotfix/` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
 - tag と GitHub の Release は、「リリース」の手順 3、4 と同じ。
 
 ## 6. Dependabot

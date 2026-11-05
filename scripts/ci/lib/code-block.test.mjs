@@ -120,6 +120,12 @@ describe('HTML のコメントの範囲の読み方', () => {
     assert.deepEqual(readBlocks('```x\n<!-- a -->\n```\n`<!-- b -->`').comments, [])
   })
 
+  test('行頭の閉じのない <!-- は、開きの行を unclosedComments で返す。閉じたコメントと、行の途中の閉じのない <!-- は返さない', () => {
+    assert.deepEqual(readBlocks('文\n<!-- a\nb').unclosedComments, [2])
+    assert.deepEqual(readBlocks('<!-- a\nb -->\n文 <!-- c').unclosedComments, [])
+    assert.deepEqual(readBlocks('<!-- a -->\n```x\n<!-- b\n```').unclosedComments, [])
+  })
+
   test('コードブロックは、readCodeBlocks と同じものを返す', () => {
     const text = '<!-- a -->\n```x\nb\n```'
     assert.deepEqual(readBlocks(text).codeBlocks, readCodeBlocks(text))

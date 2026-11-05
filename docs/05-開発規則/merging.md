@@ -11,8 +11,8 @@ pull request のマージと、その後の作業の規則。pull request を作
 | 操作 | 担当のセッション |
 |------|------------------|
 | 危険度が高い変更と機能の spec の、作業ブランチから `develop` へのマージ | spec 担当 |
-| `release-`・`hotfix-` のブランチから `main` へのマージ | issue 担当 |
-| `hotfix-` の後の `main` から `develop` への取り込み | issue 担当 |
+| `release/`・`hotfix/` のブランチから `main` へのマージ | issue 担当 |
+| `hotfix/` の後の `main` から `develop` への取り込み | issue 担当 |
 | tag | issue 担当 |
 
 - それ以外は、CI が全て通り、未解決の重要度「高」「必須」の指摘が 0 なら、issue 担当のセッションがマージし、spec 担当のセッションに知らせる。spec 担当のセッションは、pull request を作り、条件を満たしたことを issue 担当のセッションに報告する。推奨の指摘と起票の案も本文に書き、利用者はステップの終わりに確認する（skill `sessions`）。

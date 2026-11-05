@@ -7,13 +7,13 @@ import { checkMainSource, isAllowedMainSource } from './main-source.mjs'
 const SCRIPT = fileURLToPath(new URL('./main-source.mjs', import.meta.url))
 
 describe('main に入れられる元のブランチ', () => {
-  test('release- と hotfix- で始まる名前は通す', () => {
-    assert.equal(isAllowedMainSource('release-1.2.0'), true)
-    assert.equal(isAllowedMainSource('hotfix-123-fix'), true)
+  test('release/ と hotfix/ で始まる名前は通す', () => {
+    assert.equal(isAllowedMainSource('release/1.2.0'), true)
+    assert.equal(isAllowedMainSource('hotfix/123-fix'), true)
   })
 
-  test('release- と hotfix- で始まらない名前は通さない', () => {
-    for (const name of ['develop', 'main', '158-ci-checks', 'release', 'hotfix', 'feature/release-x', 'my-release-1', 'Release-1', 'hotfix']) {
+  test('release/ と hotfix/ で始まらない名前は通さない', () => {
+    for (const name of ['release-1.2.0', 'hotfix-123-fix', 'develop', 'main', '158-ci-checks', 'agent/158-ci-checks', 'release', 'hotfix', 'feature/release-x', 'feature/release/1', 'agent/hotfix/1-x', 'my-release-1', 'Release/1']) {
       assert.equal(isAllowedMainSource(name), false, name)
     }
   })
@@ -27,23 +27,23 @@ describe('main に入れられる元のブランチ', () => {
 
 describe('判定の結果の文', () => {
   test('通すときは入れられると伝える', () => {
-    assert.deepEqual(checkMainSource('release-1.0'), {
+    assert.deepEqual(checkMainSource('release/1.0'), {
       ok: true,
-      message: '元のブランチ release-1.0 は main に入れられる。',
+      message: '元のブランチ release/1.0 は main に入れられる。',
     })
   })
 
   test('通さないときは、入れられるブランチと元のブランチの名前を伝える', () => {
     assert.deepEqual(checkMainSource('develop'), {
       ok: false,
-      message: '::error::main に入れられるのは release- か hotfix- で始まるブランチだけ。元のブランチ「develop」は入れられない。',
+      message: '::error::main に入れられるのは release/ か hotfix/ で始まるブランチだけ。元のブランチ「develop」は入れられない。',
     })
   })
 })
 
 describe('入口', () => {
   test('通すブランチは終了コード 0', () => {
-    const result = spawnSync(process.execPath, [SCRIPT, 'hotfix-9-x'], { encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [SCRIPT, 'hotfix/9-x'], { encoding: 'utf8' })
     assert.equal(result.status, 0)
     assert.match(result.stdout, /main に入れられる/)
   })

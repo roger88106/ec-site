@@ -45,7 +45,7 @@ git config --local ecsite.instructionLanguage zh
 | `.git/hooks/pre-commit` | `f="$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs"; [ ! -f "$f" ] \|\| node "$f" staged \|\| exit 1` |
 | `.git/hooks/commit-msg` | `f="$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs"; [ ! -f "$f" ] \|\| node "$f" message "$1" \|\| exit 1` |
 
-`.git/hooks/` は全ての作業ツリーで共有し、script のないブランチ（例えば `main` から切る `release-`・`hotfix-` のブランチ）でも hook が動くので、行は script があるときだけ呼ぶ形にする。
+`.git/hooks/` は全ての作業ツリーで共有し、script のないブランチ（例えば `main` から切る `release/`・`hotfix/` のブランチ）でも hook が動くので、行は script があるときだけ呼ぶ形にする。
 
 設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外す。次に、`settings.local.json` の PostToolUse の項目（skill `local-dev` の[手元の hook の設定](../local-dev/hooks.md)の `post-tool-use.cjs` の項目）と、手順 3 で git の hook に追加した行を削除する。
 

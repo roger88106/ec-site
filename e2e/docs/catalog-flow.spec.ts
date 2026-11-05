@@ -129,8 +129,7 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
   })
 
   await test.step('店舗画面：一覧に出る', async () => {
-    // 一覧は店舗画面のキャッシュから返される。DB を再作成する前に撮った同名の商品のカード（古い商品 ID を指す）が残っていることがあるので、
-    // カードの表示だけでなく、リンクの先が今回の商品 ID になるまで、開き直しながら待つ
+    // 一覧は店舗画面のキャッシュから返されるので、今回の商品のカードが出るまで、開き直しながら待つ
     await reopenUntil(
       page,
       `${STORE}/products`,
@@ -145,7 +144,6 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
   })
 
   await test.step('店舗画面：詳細でバリアントを選ぶ', async () => {
-    // カードは押さず、今回の商品 ID で開く（同名の古いカードが一覧に残りうるため）
     await page.goto(`${STORE}/products/${productId}`)
     await expect(page.getByRole('heading', { name: PRODUCT.name })).toBeVisible()
     await page.getByRole('button', { name: PRODUCT.variants[0].color, exact: true }).click()

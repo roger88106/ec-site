@@ -11,7 +11,7 @@
 // - gh api によるマージ（REST の …/pulls/<番号>/merge と GraphQL の mergePullRequest）、gh pr merge の --admin と、
 //   --match-head-commit のない gh pr merge
 // 利用者の許可が必要な操作では、確認を求める（利用者に確認の画面を表示させる）。
-// - マージ：gh pr merge のうち、利用者の許可なしにマージしてよい条件（AGENTS.md の Git の表）を満たさないもの。
+// - マージ：gh pr merge のうち、利用者の許可なしにマージしてよい条件（docs/05-開発規則/merging.md「マージの許可と後片付け」）を満たさないもの。
 //   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）。
 //   予約のマージ（gh pr merge --auto、GraphQL の enablePullRequestAutoMerge）でも確認を求める。
 //   GraphQL の本文を読めないとき（ファイルから読む本文、シェルの展開を含む値のうち、キーが query か GraphQL の変数の名前の形でないもの）も、確認を求める。
@@ -263,7 +263,7 @@ const NO_MATCH_HEAD_REASON =
 const APPROVE_ONLY_IF_ALLOWED = '利用者が会話でこの操作を許可したときだけ承認する。'
 
 /** tag の作成と push で確認を求める理由 */
-const TAG_REASON = `tag の作成と push（gh release create と、Release・tag の参照を変える gh api を含む）は、利用者の許可が必要（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`
+const TAG_REASON = `tag の作成と push（gh release create と、Release・tag の参照を変える gh api を含む）は、利用者の許可が必要（マージと後片付けの「マージの許可と後片付け」。docs/05-開発規則/merging.md）。${APPROVE_ONLY_IF_ALLOWED}`
 
 /** ruleset の変更で確認を求める理由 */
 const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は、利用者の許可が必要（ブランチとリリースの「緊急の修正」。docs/06-手順書/branches.md）。${APPROVE_ONLY_IF_ALLOWED}`
@@ -1096,7 +1096,7 @@ function judgeGraphql(options, gh, deps) {
   const { texts, unreadable } = graphqlBodies(options, gh, deps)
   if (texts.some((text) => GRAPHQL_MERGE.test(text))) return deny(API_MERGE_REASON)
   if (texts.some((text) => GRAPHQL_AUTO_MERGE.test(text))) {
-    return ask(`GraphQL の enablePullRequestAutoMerge（予約のマージ）は、マージの時点の条件を判定できないので、確認を求める（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`)
+    return ask(`GraphQL の enablePullRequestAutoMerge（予約のマージ）は、マージの時点の条件を判定できないので、確認を求める（マージと後片付けの「マージの許可と後片付け」。docs/05-開発規則/merging.md）。${APPROVE_ONLY_IF_ALLOWED}`)
   }
   if (unreadable.length > 0) {
     return ask(
@@ -1399,7 +1399,7 @@ function judgeMerge(args, gh, deps, budget) {
   const headCommit = optionValue(options, 'match-head-commit')
   if (headCommit === null || headCommit === '') return deny(NO_MATCH_HEAD_REASON)
   const askMerge = (label, problems) =>
-    ask(`利用者の許可なしにマージしてよい条件（AGENTS.md の Git の表）を満たさないので、確認を求める。pull request：${label}。満たさない条件：${problems.join('。')}。${APPROVE_ONLY_IF_ALLOWED}`)
+    ask(`利用者の許可なしにマージしてよい条件（マージと後片付けの「マージの許可と後片付け」。docs/05-開発規則/merging.md）を満たさないので、確認を求める。pull request：${label}。満たさない条件：${problems.join('。')}。${APPROVE_ONLY_IF_ALLOWED}`)
   if (flagEnabled(options, 'auto')) return askMerge(positionals[1] ?? '（今のブランチ）', ['--auto（予約のマージ）は、マージの時点の条件を判定できない'])
   const target = resolveMergeTarget(positionals[1], optionValue(options, 'repo'), gh.ghRepo)
   if ('error' in target) return askMerge(positionals[1] ?? '（今のブランチ）', [target.error])

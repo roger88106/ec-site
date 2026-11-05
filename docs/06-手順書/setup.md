@@ -136,7 +136,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 3. `e2e/` で `pnpm capture`。`showcase/img/` の 14 枚を上書きする。
 
 - 撮影では、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面を撮るため）。白のマグカップの在庫を 2 つ使うため、続けて撮るときも DB を再作成する。
-- 設計書の画像（`docs/01-概要/img/`）は `pnpm capture:docs` で撮る。前提は上の手順 1、2 と同じ。続けて撮るときは DB を再作成し（品番が重複するため）、店舗画面のトップと商品一覧を開いてから撮る（古い商品がキャッシュから表示されるため）。
+- 設計書の画像（`docs/01-概要/img/`）は `pnpm capture:docs` で撮る。前提は上の手順 1、2 と同じ。続けて撮るときは DB を再作成する（品番が重複するため）。
 - 撮影は E2E とは別で、CI では実行しない。撮った画像は目視で確認してから commit する。
 - ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。
 
@@ -189,7 +189,19 @@ node scripts/dev/slot.mjs release
 
 各コマンドの振る舞いと終了コードは、`scripts/dev/slot.mjs` の冒頭のコメントにある。`release` は、ポートの停止を確認できないときと、停止の後もバックエンドが応答するときは、データを削除せず終了コード 1 で終了する（動いているバックエンドの DB を消さないため）。
 
-Windows で `run backend` の node を強制終了すると、Gradle のクライアントとバックエンドが残る。`release` で停止できる。割り当てを残したまま停止するときは、スロットのバックエンドのポートで待ち受けるプロセスを停止する（skill `local-dev`）。
+Windows で `run backend` の node を強制終了すると、Gradle のクライアントとバックエンドが残る。`release` で停止できる。
+
+割り当てとデータを残したまま停止するときは、自分のスロットのポート（下の表）で待ち受けるプロセスだけを停止する。
+
+```powershell
+# スロット 1 のバックエンドの例。Windows
+Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess -Force
+```
+
+```bash
+# スロット 1 のバックエンドの例。Windows 以外
+kill $(lsof -t -sTCP:LISTEN -iTCP:18080)
+```
 
 ポートは「スロット 0 の値 + 10000 × スロットの番号」。データベースとバケットは、名前の末尾にスロットの番号を付ける。ポートの一覧は `scripts/dev/ports.json` にある。ポートを加えるときはそこに加え、`node scripts/ci/local-ports.mjs` で他の置き場所との食い違いを確認する。
 

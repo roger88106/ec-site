@@ -28,7 +28,7 @@
 | `ci.yml` | 店舗画面 | 画面全体の検査（ライセンス、knip など）と、共有パッケージ・店舗画面のテストとビルドを行う。 | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェックの後、ブラウザーで操作する。 | 同上 |
 | `docs.yml` | 文書と CI の検査の script | `check-all.sh` と Mermaid の図の描画の検査を実行する（[CI の検査の script](ci-checks.md)）。 | 全ての push と pull request |
-| `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチ名が `release-` か `hotfix-` で始まることを確認する（[ブランチとリリース](branches.md)の「`main` の元のブランチの制限」）。 | `main` への pull request |
+| `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチ名が `release/` か `hotfix/` で始まることを確認する（[ブランチとリリース](branches.md)の「`main` の元のブランチの制限」）。 | `main` への pull request |
 | `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する。 | `main` で `showcase/` が変わったとき、手動 |
 

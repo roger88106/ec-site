@@ -4,13 +4,13 @@
 //
 //   使い方：node scripts/ci/workflow/main-source.mjs <元のブランチの名前>
 //
-// release- か hotfix- で始まる名前だけを通す。通さないときは終了コード 1 を返す。
+// release/ か hotfix/ で始まる名前だけを通す。通さないときは終了コード 1 を返す。
 // 引数が必要なので、check-all.sh が引数なしで流す scripts/ci/ の直下には置かない。
 // ============================================================================
 import { isMain } from '../lib/is-main.mjs'
 
 /** main に入れられる元のブランチの名前の始まり */
-const ALLOWED_PREFIXES = ['release-', 'hotfix-']
+const ALLOWED_PREFIXES = ['release/', 'hotfix/']
 
 /** 元のブランチの名前が、main に入れられるものか */
 export function isAllowedMainSource(headRef) {
@@ -24,7 +24,7 @@ export function checkMainSource(headRef) {
   }
   return {
     ok: false,
-    message: `::error::main に入れられるのは release- か hotfix- で始まるブランチだけ。元のブランチ「${headRef ?? ''}」は入れられない。`,
+    message: `::error::main に入れられるのは release/ か hotfix/ で始まるブランチだけ。元のブランチ「${headRef ?? ''}」は入れられない。`,
   }
 }
 

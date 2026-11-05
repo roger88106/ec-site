@@ -2,9 +2,9 @@
 
 管理画面と店舗画面に共通する書き方。アプリごとの構成は [管理画面の構成](../02-設計/apps/admin.md) と [店舗画面の構成](../02-設計/apps/store.md)。確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
 
-## 1. 置き場所
+## 置き場所
 
-### 1.1 画面に依存しない処理は `lib/` の関数
+### 画面に依存しない処理は `lib/` の関数
 
 判定、変換、表示の整形、列挙の表示名は `lib/` の関数（React に依存しない）にし、横に単体テストを置く。コンポーネントはその関数を呼ぶだけにする。
 
@@ -15,7 +15,7 @@
 
 確認方法：レビュー
 
-### 1.2 機能ごとに `features/<機能>/`
+### 機能ごとに `features/<機能>/`
 
 画面とその画面だけで使うコンポーネント・処理は `features/<機能>/`、複数の機能で使うコンポーネントは `components/`、shadcn/ui の生成物は `components/ui/`（手動で修正せず、Biome の対象外）に置く。
 
@@ -26,9 +26,9 @@
 
 確認方法：機能の間と、共通の置き場所から機能への import は自動（`scripts/ci/frontend-rules.mjs`）、置き場所はレビュー
 
-## 2. API
+## API
 
-### 2.1 生成した型で呼ぶ
+### 生成した型で呼ぶ
 
 API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で、生成した型を使って呼ぶ。パスや応答の型を手動で書かない。
 
@@ -36,7 +36,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 確認方法：自動（型チェック）
 
-### 2.2 エラーの文は API の `message` を表示する
+### エラーの文は API の `message` を表示する
 
 業務と入力のエラーは、API の `message`（項目ごとは `errors`）をそのまま表示する。画面で文を作るのは、通信の失敗など応答がないときだけ。エラーのコードで処理を分ける所（更新の競合など）は、契約の全体の列挙（`ErrorCode`）から生成した型の値で比べる（[API の規約](api-conventions.md)の「エラーの本文」）。
 
@@ -44,7 +44,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 確認方法：文はレビュー、コードは自動（型チェック）
 
-### 2.3 入力の制約は契約から書き出した定数
+### 入力の制約は契約から書き出した定数
 
 入力欄の `maxLength`・`minLength`・`max`・`min` は、`generate:api` が OpenAPI から作る `src/api/generated/constraints.ts` の定数で書き、数字を直接書かない。
 
@@ -52,7 +52,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 確認方法：自動（`input-constraints.mjs`）
 
-### 2.4 API の列挙の値ごとの表示は、全ての値を書く
+### API の列挙の値ごとの表示は、全ての値を書く
 
 列挙の値ごとに文言や見た目を選ぶときは、`Record<列挙, …>`（または `satisfies Record<列挙, …>`）に全ての値を書き、三項演算子で「それ以外」にまとめない。1 つの値だけを特別に扱う判定（理由が「その他」ならメモを必須にする など）は、比較でよい。
 
@@ -60,9 +60,9 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 確認方法：レビュー（書けば、型チェックが値の漏れを見つける）
 
-## 3. 店舗画面のサーバーアクション
+## 店舗画面のサーバーアクション
 
-### 3.1 サーバーアクションは `withActionResult` で包む
+### サーバーアクションは `withActionResult` で包む
 
 サーバーアクション（`src/actions/`）では `catch` を書かず、例外は `withActionResult` で結果にする。`redirect` は `withActionResult` の外で呼ぶ。
 
@@ -70,7 +70,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 確認方法：自動（Biome の plugin `no-catch-in-actions`）
 
-### 3.2 結果は `ActionResult` で返す
+### 結果は `ActionResult` で返す
 
 サーバーアクションは失敗を例外にせず、`ActionResult`（`lib/actionResult.ts`）で返す。401 だけはログイン画面へ遷移させる。
 
@@ -78,7 +78,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 確認方法：レビュー
 
-## 4. 整形と lint
+## 整形と lint
 
 Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）に従う。
 
@@ -86,7 +86,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（`pnpm lint`）
 
-### 4.1 使われていないものを残さない
+### 使われていないものを残さない
 
 使われていないファイル、export、依存を残さない。定義したファイルの中だけで使うものは export しない。報告の対象から外すのは生成物の export と型だけ（`knip.ts`）で、テストだけが import している export は使われているとみなす。失敗したときの修正は[テストの実行方法](../06-手順書/running-tests.md)の「knip が失敗したとき」。
 
@@ -94,9 +94,9 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（knip）
 
-## 5. 共有パッケージ（`frontend/shared/`）
+## 共有パッケージ（`frontend/shared/`）
 
-### 5.1 入れるもの・入れないもの
+### 入れるもの・入れないもの
 
 | 入れる | 入れない |
 |--------|----------|
@@ -115,7 +115,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー
 
-### 5.2 既定の書式とテーマの値は共有のものを使う
+### 既定の書式とテーマの値は共有のものを使う
 
 - 金額、数、日時の既定の書式で足りるときは、自分で `toLocaleString` や `Intl` を呼ばない（`frontend/shared/src/lib/format.ts` の関数を使う）。
 - 色などの値は `frontend/shared/src/theme.css` のテーマから使い、画面に直接書かない。
@@ -124,7 +124,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：レビュー
 
-## 6. 画面の URL
+## 画面の URL
 
 | 画面 | 作り方 |
 |------|--------|
@@ -142,9 +142,9 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 - クエリ付きの URL の文字列の組み立て：自動（`scripts/ci/frontend-rules.mjs`）
 - 型の付かない他の URL：レビュー（管理画面は `git grep` でパスの直書きを、店舗画面は `as Route`、`revalidatePath()`、`<form action>` を見る）
 
-## 7. 表示の文言とロケール
+## 表示の文言とロケール
 
-### 7.1 表示の文言は文言ファイルに置く
+### 表示の文言は文言ファイルに置く
 
 - 見出し、ボタン、ラベル、知らせ、確認の文、エラーの既定の文、ページの題名、店の名前は、各画面の `messages/ja.json` に置き、コードではキーで引く。
 - 共有の文言（`frontend/shared/src/messages/ja.json` の `common.*`）に置くのは、2 つの画面で同じ役割の文言だけ。たまたま同じ文の別の役割の文言（「状態」など）と、片方の画面だけで使う文言は、それぞれの画面に置く。
@@ -159,7 +159,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（`hardcoded-text.mjs`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー
 
-### 7.2 文言キーの形
+### 文言キーの形
 
 `<機能>.<画面かコンポーネント>.<項目>`（例：`tax.list.title`）、共通は `common.<項目>`。英小文字で始める `camelCase` を `.` でつなぐ。API の列挙の値やエラーコードの表示名は、最後をその値のまま書く（`labels.publicationStatus.PUBLISHED`）。
 
@@ -167,7 +167,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：レビュー
 
-### 7.3 ロケールは 1 か所
+### ロケールは 1 か所
 
 既定のロケール（`ja-JP`）とタイムゾーンは `frontend/shared/src/lib/locale.ts` だけに書き、整形とページの言語（`lang`）はそこから取る。`Intl.*` にロケールを直接書かない。
 
@@ -175,9 +175,9 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（`scripts/ci/frontend-rules.mjs`）
 
-## 8. 店舗画面のサーバーの設定とログ
+## 店舗画面のサーバーの設定とログ
 
-### 8.1 環境変数は起動時に確認する
+### 環境変数は起動時に確認する
 
 設定は `src/auth/config.ts` の `readServerConfig()` で読み、各所で `process.env` を読まない（`NODE_ENV` など、Next.js が決める実行のモードは除く）。本番で必須の設定がなければ、起動で失敗させる（必須の設定は[店舗画面の構成](../02-設計/apps/store.md)の「サーバーの設定とログ」）。
 
@@ -185,7 +185,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（単体テスト）
 
-### 8.2 サーバーログは 1 行 1 件の JSON
+### サーバーログは 1 行 1 件の JSON
 
 店舗画面のサーバーログは `src/lib/server/log.ts` で書き、`console.*` を直接呼ばない。形とレベルの使い分けは[店舗画面の構成](../02-設計/apps/store.md)の「サーバーの設定とログ」。
 
@@ -193,9 +193,9 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（単体テスト）、`console.*` の直書きは自動（Biome の `noConsole`）
 
-## 9. 依存
+## 依存
 
-### 9.1 依存を追加したら再インストールして確認する
+### 依存を追加したら再インストールして確認する
 
 - 依存を追加・更新したら、ルートで `pnpm install --frozen-lockfile` を再実行する。
 - インストール時のスクリプトを持つライブラリ（間接の依存も含む）は、`pnpm-workspace.yaml` の `allowBuilds` に、実行するか（`true`・`false`）と理由を書く。
@@ -205,9 +205,9 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（CI のインストールとライセンス検査）
 
-## 10. 表示の要素
+## 表示の要素
 
-### 10.1 取り消し線は `<s>` で示す
+### 取り消し線は `<s>` で示す
 
 取り消し線（購入できない品目の小計など）は HTML の要素 `<s>` で示し、CSS のクラス（`line-through`）で書かない。
 
@@ -215,7 +215,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：`line-through` の直書きは自動（`scripts/ci/frontend-rules.mjs`）、他の書き方はレビュー
 
-### 10.2 店舗画面の読み上げの領域は status の役割で作る
+### 店舗画面の読み上げの領域は status の役割で作る
 
 店舗画面で、内容の変化を支援技術に読み上げさせる領域は、status の役割（`role="status"`）で作り、`aria-live` を直接書かない。読み上げない領域（`RemainingTime.tsx`）だけは `aria-live="off"` と書いてよい。ページを開いたときに表示する知らせ（共有の `Alert`）は対象外である。
 

@@ -2,7 +2,7 @@
 
 バックエンドのテストを書く・レビューするときの規則。共通の規則（テストの種類と基準、テスト名、待ち方）は [テストの書き方](test-writing.md)。
 
-## 1. 統合テストの土台
+## 統合テストの土台
 
 - 統合テストは `@IntegrationTest` を付ける。Spring と、Testcontainers の PostgreSQL・SeaweedFS・imgproxy が起動する ※1。例外は、本番の jar を別のプロセスで起動するテスト（`ProductionJarStartupTest`）で、Spring の外で動くので、必要な PostgreSQL を自分で起動する。
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
@@ -17,7 +17,7 @@
 
 確認方法：レビュー
 
-## 2. テストデータは補助のクラスで作る
+## テストデータは補助のクラスで作る
 
 複数のテストで使うデータは、統合テストの補助（次の表）で作る。複数のモジュールのテストで使う補助は `src/integrationTest` の `com.ecsite` の直下に、1 つのパッケージのテストだけが使う補助はそのパッケージに置く。テストのクラスで同じ手順を再定義しない。
 
@@ -48,7 +48,7 @@ package-private の本番クラス（ジョブ、スケジュールのキャッ�
 
 確認方法：レビュー（記録を読む操作と、手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
 
-## 3. テストの置き場所
+## テストの置き場所
 
 main と同じパッケージに置く。Spring を起動しないものは `src/test`、起動するものは `src/integrationTest`。
 
@@ -56,7 +56,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 確認方法：自動（ソースセット）
 
-## 4. 単体テストの補助
+## 単体テストの補助
 
 単体テストの補助は、`src/test` の `com.ecsite` の直下に置く。ただし `Contracts` は、単体テストと統合テストが共有するので `src/testFixtures` の `contract/` に置く。
 
@@ -72,7 +72,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 確認方法：`ProductionClasses` を使うことは自動（`ProductionClassesTest`。探す呼び出しの一覧はそのテストにある）、`TestSettings` と `Contracts` を使うことはレビュー
 
-## 5. テストのコードの重複
+## テストのコードの重複
 
 PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew check` で重複を検出し、見つかると失敗にする（タスクは `cpdCheck`。報告の置き場所は[テストの実行方法](../06-手順書/running-tests.md)の「バックエンド」）。
 

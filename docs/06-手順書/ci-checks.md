@@ -2,7 +2,7 @@
 
 CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検査が失敗したときに読む。
 
-## 1. 検査の一覧
+## 検査の一覧
 
 `scripts/ci/check-all.sh` は、script のテストと `scripts/ci/` の直下の検査を全て実行する（判定の規則は冒頭のコメント）。`ja-text --changed` は分岐点を求めるので、shallow clone では失敗する。各検査の確認すること、失敗したときの修正の手順、除外の書き方は、script の先頭のコメントにある。
 
@@ -12,7 +12,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査の先頭のコメントを確認する |
 | `compose-ports` | compose の全ての ports が `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action のディレクトリが、Dependabot の directories に入っていることを確認する |
-| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照を確認する |
+| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないことを確認する |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
 | `ja-text` | 使わない語（error）がないことを確認し、文脈で決める語と文体の型を warning として示す |
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |
@@ -46,11 +46,11 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 ※1：表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。
 
-## 2. カバレッジと mutation score の基準の検査
+## カバレッジと mutation score の基準の検査
 
 基準の値、手順の位置、失敗したときと基準を変えるときの手順は、[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」。
 
-## 3. Mermaid の図の描画の検査
+## Mermaid の図の描画の検査
 
 文書の Mermaid の図が描画できることを確認する検査。確認すること、対象、失敗したときの修正、Chrome の場所は、`scripts/ci/mermaid/mermaid-check.mjs` の冒頭のコメントにある。
 

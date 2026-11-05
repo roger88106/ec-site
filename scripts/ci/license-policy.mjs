@@ -1,5 +1,5 @@
 // 許可のライセンスの一覧が、文書と policy.json で一致することを確認する。
-// 文書は docs/05-開発規則/licenses.md の番号 2 の節（`## 2.`）の表の「許可」の行（2 列目）。policy.json は scripts/ci/licenses/policy.json の allowed。
+// 文書は docs/05-開発規則/licenses.md の「依存のライセンスの方針」の表の「許可」の行（2 列目）。policy.json は scripts/ci/licenses/policy.json の allowed。
 // 片方だけを変えると、文書の方針と CI が確認する方針が食い違うため、過不足を失敗にする。
 // 「許可」の行の 2 列目は、先に「。他に、」から後ろの文（ライセンスの名前でない説明）を除いてから、「、」で分けて読む。
 // 次のときは、照合の対象から外れて誤って通るため、ファイルと行を出して失敗にする。
@@ -19,6 +19,9 @@ const DOC_FILE = 'docs/05-開発規則/licenses.md'
 /** ライセンスの検査の方針 */
 const POLICY_FILE = 'scripts/ci/licenses/policy.json'
 
+/** 「許可」の行を読む節の見出し */
+const POLICY_HEADING = '## 依存のライセンスの方針'
+
 /** 読めない項目の理由 */
 const UNREADABLE_REASON = 'ライセンスの識別子を「、」で区切った形で読めない'
 
@@ -29,7 +32,7 @@ const DUPLICATE_ROW_REASON = '「許可」の行が複数ある（最初の行�
 const LICENSE_ID = /^[\w.+-]+$/
 
 /**
- * 文書の第 2 節の「許可」の行から、ライセンスの一覧を読む。
+ * 文書の「依存のライセンスの方針」の「許可」の行から、ライセンスの一覧を読む。
  *
  * @param {string} text licenses.md の内容
  * @returns {{ licenses: string[] | null, unreadable: { line: number, text: string, reason?: string }[] }} ライセンス（書いた順。最初の行だけ。行がなければ null）と、読めない行（1 始まりの行番号、行の内容、既定と違う理由）
@@ -42,7 +45,7 @@ export function readAllowedRow(text) {
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index].replace(/\r$/, '')
     if (/^## /.test(line)) {
-      inSection = /^## 2\. /.test(line)
+      inSection = line.trimEnd() === POLICY_HEADING
       continue
     }
     const cells = line.split('|').map((cell) => cell.trim())
@@ -101,7 +104,7 @@ export function findPolicyProblems(docText, policy) {
     problems.push(`${POLICY_FILE} に allowed がない`)
   }
   if (row.licenses === null) {
-    problems.push(`${DOC_FILE} 第 2 節の表に「許可」の行がない`)
+    problems.push(`${DOC_FILE} の「依存のライセンスの方針」の表に「許可」の行がない`)
   } else if (Array.isArray(policy?.allowed)) {
     problems.push(...findLicenseProblems(row.licenses, policy.allowed))
   }

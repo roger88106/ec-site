@@ -2,7 +2,7 @@
 
 手元で CI と同じ検査を実行するコマンドと、CI のジョブの一覧。commit の前と、CI が失敗したときに読む。
 
-## 1. 手元での実行
+## 手元での実行
 
 | 検査 | コマンド（ルートで） | CI のジョブ |
 |------|----------------------|-------------|
@@ -15,7 +15,7 @@
 - 手元のバックエンドのコマンドは、ジョブに分けず、単体テストと統合テストの全てを実行する。
 - commit の hook が実行するものは、[開発環境の起動](setup.md)の「起動」。テストは含まないので手動で実行する（[テストの実行方法](running-tests.md)）。
 
-## 2. CI のジョブ
+## CI のジョブ
 
 ジョブの手順は、各 workflow のコメントと手順の名前にある。
 
@@ -32,7 +32,7 @@
 | `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する。 | `main` で `showcase/` が変わったとき、手動 |
 
-## 3. 他の文書
+## 他の文書
 
 - CI の決まり（失敗したまま次の spec に進まない、など）は [constitution](../constitution.md)の「CI/CD」。
 - CI の検査の script の一覧と、検査が失敗したときの対応は、[CI の検査の script](ci-checks.md)。

@@ -2,9 +2,9 @@
 
 今のテストで守っている書き方。実行方法は [テストの実行方法](../06-手順書/running-tests.md)、テスト先行の進め方は [開発の進め方](workflow.md)の「テスト駆動開発」。確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。バックエンドのテストは [バックエンドのテストの書き方](test-writing-backend.md)、画面と E2E のテストは [フロントのテストの書き方](test-writing-frontend.md)に分けてある。
 
-## 1. テストの種類と基準
+## テストの種類と基準
 
-### 1.1 テストの種類
+### テストの種類
 
 テストの種類と置き場所は、[テストの実行方法](../06-手順書/running-tests.md)の「テストの種類」。
 
@@ -27,13 +27,13 @@
 - テストに出ない AC：自動（`scripts/ci/ac-check.mjs`）
 - IdP の振る舞いだけで決まる AC：自動（`RealmSettingsContractTest`）
 
-### 1.2 カバレッジと mutation score の基準
+### カバレッジと mutation score の基準
 
 基準の値、許容の幅、失敗したときと基準を変えるときの手順は、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」。
 
-## 2. テスト名
+## テスト名
 
-### 2.1 AC 番号を入れる
+### AC 番号を入れる
 
 AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Playwright は `test` の第 1 引数）の先頭に AC 番号を入れ、続けて振る舞いを日本語で書く（`AC-43 調整後に負になる調整は拒否される`）。複数の AC は 1 つずつ並べ（`AC-8、9、10`）、範囲（`AC-8〜10`）でまとめず、空白で区切った並び（`AC-1 AC-2`）にもしない。1→10 の AC は、spec の番号を付けて `AC-7-1、AC-7-2` と書く（`AC-7-1、2` は曖昧なので、ac-check が失敗にする）。
 
@@ -41,7 +41,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 確認方法：自動（`ac-check.mjs`）
 
-### 2.2 名前は振る舞いを書く
+### 名前は振る舞いを書く
 
 「〜すると〜になる」の形で、画面や API に起きることを書く。メソッド名やクラス名をそのまま書かない。フロントの `describe` の名前も同じで、関数名・コンポーネント名だけにせず、日本語で振る舞いを書く（`describe('ページ送り', …)`。`describe('Pagination', …)` は書かない）。Java のテストは、全ての `@Test`・`@ParameterizedTest` に `@DisplayName` を付ける。名前に書く AC の番号は、spec の AC の文と照合してから書く（`ac-check` は番号があることだけを確認し、中身が合うかは見ない）。
 
@@ -50,7 +50,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 確認方法：レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`）
 
 
-## 3. 待ち方
+## 待ち方
 
 時間で待たない（`Thread.sleep`、`waitForTimeout`）。条件で待つ（Playwright の `expect(...).toBeVisible()` などの自動の再試行、状態を直接確認する）。
 

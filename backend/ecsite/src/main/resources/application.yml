@@ -12,7 +12,7 @@ spring:
   application:
     name: ecsite
   web:
-    # 対象市場は日本だけなので、メッセージ（入力検証を含む）は常に日本語にする（constitution 1、14）。
+    # 対象市場は日本だけなので、メッセージ（入力検証を含む）は常に日本語にする（constitution の「プロジェクトの位置づけ」）。
     # リクエストの Accept-Language や、実行環境の既定のロケールに左右されないよう固定する。
     locale: ja
     locale-resolver: fixed

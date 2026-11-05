@@ -2,7 +2,7 @@
 
 テストの書き方は [テストの書き方](../05-開発規則/test-writing.md)、起動の準備は [開発環境の起動](setup.md)。エージェントは skill `local-dev` を使う。
 
-## 1. テストの種類
+## テストの種類
 
 | 種類 | 対象 | ツール | 置き場所 |
 |------|------|------|----------|
@@ -14,7 +14,7 @@
 
 E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状態から実行する（ローカルの開発のデータを変えない）。
 
-## 2. バックエンド
+## バックエンド
 
 `backend/ecsite/` で実行する。
 
@@ -41,7 +41,7 @@ Checkstyle（`checkstyleMain`、`checkstyleTest` など）が失敗したとき�
 
 テストのコードの重複（`cpdCheck`）が失敗したときは、報告 `backend/ecsite/build/reports/cpd/cpdCheck.xml` の場所を見る。修正方法は [バックエンドのテストの書き方](../05-開発規則/test-writing-backend.md)の「テストのコードの重複」。
 
-## 3. 管理画面・店舗画面
+## 管理画面・店舗画面
 
 `frontend/admin/`・`frontend/store/` で実行する（ルートで実行すると、全てのプロジェクトをまとめて実行する）。
 
@@ -69,7 +69,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 生成物の export と型の報告は、`knip.ts` の `ignoreIssues` に、ファイルの範囲と `exports`・`types` だけを書いて外す。外す理由はコメントに書く。
 
-## 4. E2E（`e2e/`）
+## E2E（`e2e/`）
 
 バックエンド、管理画面、店舗画面を起動して、Chromium で操作する（Playwright）。専用の DB（`ec_site_e2e`）、IdP（Keycloak、:8181）、画像のバケットを使い、ローカルのデータを変えない。
 
@@ -100,7 +100,7 @@ pnpm test
 - 結果の要約だけを見るときは、ルートで `scripts/dev/e2e.sh [Playwright の引数]`。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を確認する。
 
-## 5. 既存のテストを変えていないことの確認
+## 既存のテストを変えていないことの確認
 
 振る舞いを変えない整理（書き方の統一など）では、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものと、中身を変えずにテストを別のファイルへ移したものだけであることを確認する。
 
@@ -111,7 +111,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 判定と名前の対応のファイルの書き方は、`scripts/ci/review/test-diff.mjs` の冒頭のコメントにある。
 
-## 6. カバレッジと mutation score の基準の検査
+## カバレッジと mutation score の基準の検査
 
 カバレッジ（行・分岐）と、domain の mutation score（PIT で測る、テストが検出できた変異の割合）が基準の値（許容の幅を含む）を下回ると、CI が失敗する。理由：テストの量や強さが下がったことに気づくため。
 
@@ -120,11 +120,11 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 `scripts/ci/report/coverage-baseline.mjs` が基準と比べて失敗にし（対象と結果は冒頭のコメント）、`coverage-summary.mjs` と `mutation-report.mjs` が低い箇所の一覧を job の summary に書く。
 
-### 6.1 CI での手順の位置
+### CI での手順の位置
 
 手順は `.github/workflows/ci.yml` にある。検査は報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブの、単体テストの後で実行し、ジョブの時間が約 2 分増える（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
 
-### 6.2 手元での実行
+### 手元での実行
 
 CI と同じ検査を、手元で実行できる。先に、対象のテストを実行して報告を作る。
 
@@ -141,11 +141,11 @@ node scripts/ci/report/coverage-baseline.mjs backend backend/ecsite/build/report
 
 - 手元でバックエンドの一部のテストだけを実行すると、報告の値が基準より低くなり、検査が失敗する。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
 
-### 6.3 失敗したとき
+### 失敗したとき
 
 ログと summary の対象・基準・今回の値・差を見て、低い箇所を summary の一覧で見つけ、テストを追加して値を基準以上に戻す。正当な理由で下げるときは、「基準を変える手順」のとおりにする。
 
-### 6.4 基準を変える手順
+### 基準を変える手順
 
 - `--write` で基準のファイルの値を報告の値に書き換え、同じ pull request に含める（基準を下げるときと、上回った値に更新するとき）。下げるときは、pull request に理由を書く。
 - バックエンドの `--write` は、CI の summary の値、または `./gradlew check --rerun-tasks` などでテストを実際に実行した報告の値で行う。ビルドのキャッシュから読んだ報告は、実行した報告と分岐が 1 つ違うことがある（[CI の実測](../07-記録/ci-results.md)の「キャッシュから読んだ値と実行した値」）。

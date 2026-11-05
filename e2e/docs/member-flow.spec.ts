@@ -24,13 +24,14 @@ const shot = makeShot(OUT)
 const NAME = { lastName: '山田', firstName: '花子' }
 
 /**
- * トップの新着の欄に今の DB の最新の商品が出るまで、開き直す。<br />
- * 店舗画面のキャッシュは、期限の切れた後の最初の表示で古い一覧を返す。そのままだと、前の流れで登録した商品が写るかが撮影のたびに変わる。
+ * トップの新着欄に、DB にある最新の商品が出るまで開き直す。<br />
+ * 店舗画面のキャッシュは、期限の切れた後の最初の表示で古い一覧を返す。そのままだと、前の流れで登録した商品が写るかどうかが、撮影のたびに変わる。
  *
  * @param page 使うページ
  */
 async function openLatestStoreTop(page: Page): Promise<void> {
   const response = await fetch(`${BACKEND}/api/store/products?sort=newest&size=1`)
+  if (!response.ok) throw new Error(`新着の商品を取得できない（${response.status}）`)
   const { items } = (await response.json()) as { items: { id: string }[] }
   const newestId = items.at(0)?.id
   await reopenUntil(

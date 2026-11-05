@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 import { findLicenseProblems, findPolicyProblems, readAllowedRow } from './license-policy.mjs'
 
 const doc = (row) =>
-  ['## 2. 依存のライセンスの方針', '', '| 区分 | ライセンス | 扱い |', '|------|------------|------|', row, '| 条件付き | EPL-1.0・2.0 | 条件 |', '', '## 3. 次'].join('\n')
+  ['## 依存のライセンスの方針', '', '| 区分 | ライセンス | 扱い |', '|------|------------|------|', row, '| 条件付き | EPL-1.0・2.0 | 条件 |', '', '## 次'].join('\n')
 
 describe('許可の行の読み取り', () => {
   test('2 列目を「、」で分けて読む', () => {
@@ -30,8 +30,8 @@ describe('許可の行の読み取り', () => {
     assert.equal(spaced.unreadable[0].line, 5)
   })
 
-  test('第 2 節に許可の行が 2 つ以上あるときは、2 つ目以降の行を理由つきで出し、ライセンスは最初の行だけ読む', () => {
-    const text = ['## 2. 依存のライセンスの方針', '| 許可 | MIT | a |', '| 許可 | ISC | b |', '| 許可 | Zlib | c |', '## 3. 次'].join('\n')
+  test('方針の節に許可の行が 2 つ以上あるときは、2 つ目以降の行を理由つきで出し、ライセンスは最初の行だけ読む', () => {
+    const text = ['## 依存のライセンスの方針', '| 許可 | MIT | a |', '| 許可 | ISC | b |', '| 許可 | Zlib | c |', '## 次'].join('\n')
     const result = readAllowedRow(text)
     assert.deepEqual(result.licenses, ['MIT'])
     assert.deepEqual(
@@ -41,8 +41,13 @@ describe('許可の行の読み取り', () => {
     assert.match(result.unreadable[0].reason, /複数/)
   })
 
-  test('第 2 節の外の許可の行は読まない', () => {
-    const text = ['## 1. 前', '| 許可 | MIT | x |', '## 2. 依存のライセンスの方針', '| 区分 | a | b |'].join('\n')
+  test('名前の違う節の許可の行は読まない（節は見出しの名前全体で決める）', () => {
+    const text = ['## 依存のライセンスの方針の補足', '| 許可 | MIT | x |', '## 依存のライセンス', '| 許可 | ISC | y |'].join('\n')
+    assert.equal(readAllowedRow(text).licenses, null)
+  })
+
+  test('許可の行は、方針の節の外では読まない', () => {
+    const text = ['## 前', '| 許可 | MIT | x |', '## 依存のライセンスの方針', '| 区分 | a | b |'].join('\n')
     assert.equal(readAllowedRow(text).licenses, null)
   })
 })
@@ -97,7 +102,7 @@ describe('問題の集め方', () => {
   })
 
   test('許可の行が複数あるときは、2 つ目以降の行を問題にする', () => {
-    const text = ['## 2. 依存', '| 許可 | MIT | a |', '| 許可 | ISC | b |', '## 3. 次'].join('\n')
+    const text = ['## 依存のライセンスの方針', '| 許可 | MIT | a |', '| 許可 | ISC | b |', '## 次'].join('\n')
     const problems = problemsOf(text, { allowed: ['MIT'] })
     assert.equal(problems.length, 1)
     assert.match(problems[0], /複数/)

@@ -2,7 +2,7 @@
 
 ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](running-tests.md)、環境変数は [環境変数](environment.md)で、エージェントは skill `local-dev` を使う。
 
-## 1. 前提
+## 前提
 
 JDK 21、Docker（Compose 2.20 以上。ルートの `compose.yaml` が `include` を使うため）、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
 
@@ -11,7 +11,7 @@ JDK 21、Docker（Compose 2.20 以上。ルートの `compose.yaml` が `include
 
 IntelliJ IDEA でルートを開いたら、`backend/ecsite/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
 
-## 2. 起動
+## 起動
 
 ```bash
 # ルートで：PostgreSQL、Zipkin、SeaweedFS、imgproxy、Keycloak、Mailpit を起動する
@@ -61,7 +61,7 @@ pnpm dev
 
   ※2：pre-commit hook を置いていないと、Claude Code の hook（`scripts/dev/hooks/agent-guard.mjs`）が `git commit` を拒否する。
 
-## 3. アカウント
+## アカウント
 
 realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の JSON が正本で、Keycloak の起動時に取り込まれる。ローカルと CI で使うアカウント（パスワードはローカル専用）：
 
@@ -80,7 +80,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 - 会員登録の確認とパスワードの再設定のメール（Keycloak）、出荷通知メール（バックエンド）は Mailpit で受信される。宛先のアドレスは実在しなくてよい。
 - token の内容は `scripts/dev/keycloak.sh token <realm> <アカウント> <パスワード>` で確認する。
 
-## 4. データの再作成
+## データの再作成
 
 画面で変えたデータは、seed を再適用しても戻らない。`scripts/dev/reset.sh` で、Git の正本から再作成する。
 
@@ -94,7 +94,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 正本は、DB の seed が `backend/ecsite/src/main/resources/db/seed/`、画像が `docker/seaweedfs/seed/`、Keycloak が `docker/keycloak/realms/`。seed の商品画像の ID と注文の会員 ID は、画像と realm の正本に合わせてある。
 
-## 5. Stripe で動かす
+## Stripe で動かす
 
 既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済サービスの接続の設計は [決済の設計](../02-設計/payment.md)の「外部のサービス」。
 
@@ -127,7 +127,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 - 期限切れを早く確認するときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する（Stripe の支払画面の期限は長い。[決済の設計](../02-設計/payment.md)の「Stripe」）。
 - seed の注文（`db/seed/local/`）の与信は mock のもので、Stripe には存在しない。Stripe で動かすときは、seed の注文を出荷すると売上確定で失敗するので、出荷は Stripe で支払った注文で確認する。
 
-## 6. 機能紹介のページのスクリーンショット
+## 機能紹介のページのスクリーンショット
 
 機能紹介のページ（`showcase/`）の画像を、ローカルの環境の画面で再撮影する。機能を追加して画面が変わったときに使う。
 
@@ -140,7 +140,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 - 撮影は E2E とは別で、CI では実行しない。撮った画像は目視で確認してから commit する。
 - ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。
 
-## 7. ポートが使えないとき（Windows）
+## ポートが使えないとき（Windows）
 
 Windows は、WinNAT（Docker や WSL が使う）などのために、ポートの範囲を動的に予約する。ローカル環境のポートが予約範囲に含まれると使えなくなる。
 
@@ -149,7 +149,7 @@ Windows は、WinNAT（Docker や WSL が使う）などのために、ポート
 - 解決方法：compose・バックエンド・画面を停止してから、管理者の PowerShell で `scripts\dev\windows\exclude-ports.ps1` を実行する（スロット 1〜3 のポートも対象）。動作は script の冒頭のコメントにある。`-WhatIf` で、照合した結果だけを表示する。
 - 暫定的な対処：管理者の権限で `net stop winnat` と `net start winnat` を実行する。再起動などでまた含まれることがある。
 
-## 8. エージェントの MCP サーバー（任意）
+## エージェントの MCP サーバー（任意）
 
 なくても同じ作業ができる。使える環境では、次の場面での使用を推奨する。
 
@@ -160,7 +160,7 @@ Windows は、WinNAT（Docker や WSL が使う）などのために、ポート
 
 理由：同じ名前のメソッドが複数あると、文字列の検索では呼び出しを区別できない。IDE の呼び出しの階層は、メソッドの型まで区別する。
 
-## 9. スロット（作業ツリーごとの環境）
+## スロット（作業ツリーごとの環境）
 
 複数の作業ツリーで並行して開発するとき、作業ツリーごとにデータベース、画像のバケット、ポートを分ける。分けた環境を「スロット」と呼ぶ。compose の共有の基盤（PostgreSQL、SeaweedFS、imgproxy、Keycloak など）は 1 つで、全てのスロットが使う。
 
@@ -237,7 +237,7 @@ kill $(lsof -t -sTCP:LISTEN -iTCP:18080)
 
 realm を再度取り込む前は、スロットの画面のログインがリダイレクト先のエラー（Invalid redirect uri）で失敗する。
 
-## 10. 手元の置き場所（`/.local/`）
+## 手元の置き場所（`/.local/`）
 
 `/.local/` は Git に入らない手元の置き場所である。作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣を置く。ここで扱うのはメインの作業ツリーの `/.local/` である（作業ツリーの `.local/slot` は「スロット」。作業ツリーのレビューの記録は、その作業ツリーの `.local/review/` に置き、作業ツリーの削除で消える。skill `review`）。フォルダーの名前と場所は、文書と skill が参照しているので変えない。
 
@@ -262,7 +262,7 @@ realm を再度取り込む前は、スロットの画面のログインがリ�
 - 上の表にないものは、置いたまま忘れた作業用のファイルである。見つけたら、中身の一覧を利用者に示し、許可を得て削除する。
 - spec ごとの記録（`review/`、`impl/`、`pr/`）の削除は、[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」で行う。
 
-## 11. IDE の設定
+## IDE の設定
 
 IntelliJ IDEA で、Java の import の並びを Checkstyle の検査に合わせる設定と、エージェントが整形するときの注意である。import の並びの規則は、[バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」にある。
 

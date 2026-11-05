@@ -2,7 +2,7 @@
 
 CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検査が失敗したときに読む。
 
-## 1. 検査の一覧
+## 検査の一覧
 
 `scripts/ci/check-all.sh` は、script のテストと `scripts/ci/` の直下の検査を全て実行する（判定の規則は冒頭のコメント）。`ja-text --changed` は分岐点を求めるので、shallow clone では失敗する。各検査の確認すること、失敗したときの修正の手順、除外の書き方は、script の先頭のコメントにある。
 
@@ -46,11 +46,11 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 ※1：表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。
 
-## 2. カバレッジと mutation score の基準の検査
+## カバレッジと mutation score の基準の検査
 
 基準の値、手順の位置、失敗したときと基準を変えるときの手順は、[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」。
 
-## 3. Mermaid の図の描画の検査
+## Mermaid の図の描画の検査
 
 文書の Mermaid の図が描画できることを確認する検査。確認すること、対象、失敗したときの修正、Chrome の場所は、`scripts/ci/mermaid/mermaid-check.mjs` の冒頭のコメントにある。
 

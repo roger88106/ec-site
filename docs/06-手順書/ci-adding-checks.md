@@ -2,7 +2,7 @@
 
 CI の検査の script を加える手順と、補助の script の置き場所。検査を加える・修正するときに読む。
 
-## 1. 検査を追加する手順
+## 検査を追加する手順
 
 - 引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
 - 処理は `if (isMain(import.meta.url)) { … }`（`lib/is-main.mjs`）の中に書き、テストが import しても動かないようにする。
@@ -14,7 +14,7 @@ CI の検査の script を加える手順と、補助の script の置き場所�
 - 除外の一覧を持つなら、パスを `exclusionsPath`、誤りの文を `checkExclusions`（`lib/exclusions.mjs`）で作る。
 - 画面のソースを読むなら `lib/screen-sources.mjs`（違う対象を読むときは理由を書く）、行番号が必要なら `lib/line-number.mjs` を使う。
 
-## 2. 補助の script の置き場所
+## 補助の script の置き場所
 
 - 次の補助の script は、各ディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
   - `report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`：引数が必要（[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」）。

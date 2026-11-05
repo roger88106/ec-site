@@ -2,7 +2,7 @@
 
 ブランチの構成、保護、リリースと緊急の修正の手順、Dependabot と GitHub のセキュリティの機能の設定。ブランチを切る・マージする・リリースするときに読む。
 
-## 1. ブランチの構成
+## ブランチの構成
 
 | ブランチ | 役割 | 備考 |
 |----------|------|------|
@@ -10,9 +10,9 @@
 | `main` | 本番 | `release/` と `hotfix/` で始まるブランチからの pull request だけを受け付ける（「`main` の元のブランチの制限」） |
 | 作業ブランチ | 1 つの spec の作業（規模 S は 1 つの issue） | 名前の付け方は「名前」。マージした後は自動で削除される |
 
-## 2. 作業ブランチ
+## 作業ブランチ
 
-### 2.1 名前
+### 名前
 
 | 種類 | 名前の形 |
 |------|----------|
@@ -31,16 +31,16 @@
 
 名前の変更を含むリリースが `main` に入ったら、この移行の説明（上の文、表、この文）と、「リリース」「緊急の修正」の「移行の間の名前は「名前」」を削除する。
 
-### 2.2 切り方と pull request
+### 切り方と pull request
 
 - 通常の作業ブランチは `develop` から切る。緊急の修正は `main` から切る（「緊急の修正」）。
 - 作業ブランチは、pull request で `develop` に入れる。
 - `develop` と衝突するとき、または `develop` が同じファイルを変えたときは、`develop` を作業ブランチに取り込んでから入れる（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。最新の `develop` を含むことは求めない（「ruleset」）。
 - `.gitignore` は許可リストで、Git に入れるものだけを `!` で戻す。`.claude/` の下で Git に入れるものは、`.gitignore` の許可の行（`!` の行）に書いてある。作業用の script などを置く `/.local/` は Git に入れない。
 
-## 3. 保護
+## 保護
 
-### 3.1 ruleset
+### ruleset
 
 GitHub の ruleset を `develop` と `main` に作る。
 
@@ -57,23 +57,23 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 ※2：続けてマージするとき、取り込みと CI の再実行を待たないために、最新の取り込みを必須にしない。代わりに、マージの後に `develop` の CI を見届ける（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
 
-### 3.2 `main` の元のブランチの制限
+### `main` の元のブランチの制限
 
 `main` は、`release/` と `hotfix/` で始まるブランチからの pull request だけを受け付ける。理由：リリースするのは確認した commit で、`develop` の最新とは限らないため（「リリース」）。
 
 - 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request の元のブランチの名前が `release/` か `hotfix/` で始まらなければ失敗する。判定は `scripts/ci/workflow/main-source.mjs`（テストあり）。
 - この検査を `main` の ruleset の必須の検査にする。
 
-### 3.3 マージの方式
+### マージの方式
 
 - マージは merge commit で実行する。リポジトリの設定で、squash と rebase は無効にしている。
 - `develop` から `main` へは squash しない。理由：履歴が分かれ、次のリリースで衝突するため。
 
-### 3.4 自動の削除
+### 自動の削除
 
 マージした作業ブランチは、リポジトリの設定で自動で削除される。
 
-## 4. リリース
+## リリース
 
 | 手順 | 内容 |
 |------|------|
@@ -92,7 +92,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 - リリースの内容は、issue 担当のセッションがまとめる（[開発の進め方](../05-開発規則/workflow.md)）。
 - `release/` のブランチの `main` へのマージと tag は、issue 担当のセッションが利用者の許可を得て行う。
 
-## 5. 緊急の修正
+## 緊急の修正
 
 - `hotfix/<issue の番号>-<短い名前>` のブランチ（移行の間の名前は「名前」）を `main` から切り、pull request で `main` に入れる。
 - `main` に入れた後に、`develop` に戻す。`main` から `agent/<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`main` を直接 `develop` に入れる pull request で衝突すると、`main` に commit しなければ解消できないため。
@@ -100,7 +100,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 - `hotfix/` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
 - tag と GitHub の Release は、「リリース」の手順 3、4 と同じ。
 
-## 6. Dependabot
+## Dependabot
 
 `.github/dependabot.yml` で設定する。更新の pull request は `develop` に対して作成される。
 
@@ -125,7 +125,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 - TypeScript のバージョンを上げる pull request は、`node scripts/ci/globals/lib-globals.mjs --write` で組み込みの名前の一覧（`lib-globals.json`）を再生成して差分を確認し、`node scripts/ci/frontend-rules.mjs` で増えた名前によるシャドーイングがないことを確認する。
 - Dependabot の pnpm の対応は v10 まで（このリポジトリは pnpm 12）。`npm` の更新が失敗したときは、issue を起票し、Renovate への切り替えを検討する。
 
-## 7. デプロイの spec まで
+## デプロイの spec まで
 
 CD、staging、preview の環境の方式は、デプロイの spec で決める。決めるまでは次のとおり。
 
@@ -134,7 +134,7 @@ CD、staging、preview の環境の方式は、デプロイの spec で決める
 | 手動の確認 | 手元の環境で、作業ブランチに対して実行する（[開発環境の起動](setup.md)、[テストの実行方法](running-tests.md)） |
 | リリース | `main` へのマージと tag までとし、デプロイしない |
 
-## 8. GitHub のセキュリティの機能
+## GitHub のセキュリティの機能
 
 リポジトリの設定（Settings の Code security）で有効にする。CI のジョブではない。
 

@@ -2,7 +2,7 @@
 
 バックエンドのジョブの構成と、`docs.yml` を分ける理由、`ci.yml` を実行しないファイル。`.github/workflows/` を変えるとき、ジョブの時間を調べるときに読む。
 
-## 1. バックエンドのジョブの構成
+## バックエンドのジョブの構成
 
 - ジョブの分け方、同時に始める理由、「バックエンド」の実行の条件、カバレッジの報告の合わせ方は、`.github/workflows/ci.yml` のコメントにある。
 - 「ビルドと単体テスト」のジョブは、ビルドと単体テストのほかに、静的解析（Error Prone など）と PIT を実行する。統合テストのジョブのコンパイルでも、Error Prone が動く。
@@ -20,10 +20,10 @@
 - E2E は、ブラウザーの OS の依存を apt で入れない（理由は `ci.yml` のコメント）。失敗時の画面の撮影の文字が四角になって読めないときは、手元の `scripts/dev/e2e.sh` で再現する。
 - Node のバージョンは `.node-version`、JDK のバージョンは `ci.yml` の `JAVA_VERSION` と `libs.versions.toml` の `java` に書く。1 か所にできない組は、検査 `runtime-versions`（[CI の検査の script](ci-checks.md)）が一致を確認する。
 
-## 2. docs.yml を分ける理由
+## docs.yml を分ける理由
 
 `.github/workflows/docs.yml` の冒頭のコメントにある。
 
-## 3. ci.yml を実行しないファイル
+## ci.yml を実行しないファイル
 
 変えても `ci.yml` が実行されないファイルは、`.github/workflows/ci.yml` の `on.push.paths` のコメントにある。pull request はいつも実行する。

@@ -8,7 +8,7 @@
 | `e2e` | E2E。DB・IdP・画像のバケット・ポートを E2E 用に分離し、ローカルのデータを変えない（[テストの実行方法](running-tests.md)） | `local,e2e` |
 | `stripe` | Stripe の sandbox での確認。決済サービスを Stripe にし、秘密情報を `/.local/stripe.env` から読む（[開発環境の起動](setup.md)の「Stripe で動かす」） | `local,stripe` |
 
-## 1. バックエンド
+## バックエンド
 
 | 環境変数 | 内容 | 既定 |
 |----------|------|------|
@@ -56,7 +56,7 @@
 - ログは標準出力に JSON（Elastic Common Schema）で出力される。
 - 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「公開ネットワークへのデプロイの前提」）を決めてから行う。
 
-## 2. 管理画面
+## 管理画面
 
 ビルド時に埋め込む。本番ビルドでは、`VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がなければビルドに失敗する（BR-31）。既定値は開発サーバーとテストでだけ使う。
 
@@ -66,7 +66,7 @@
 | `VITE_OIDC_CLIENT_ID` | client ID | `ec-admin-web` |
 | `ADMIN_API_PROXY_TARGET` | 開発サーバーと `vite preview` の `/api` の転送先（E2E は 8090） | `http://localhost:8080` |
 
-## 3. 店舗画面
+## 店舗画面
 
 | 環境変数 | 内容 | 既定 ※1 |
 |----------|------|---------|

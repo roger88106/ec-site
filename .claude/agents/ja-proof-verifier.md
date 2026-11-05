@@ -12,7 +12,7 @@ omitClaudeMd: true
 ## 受け取るもの
 
 - 検出役の結果の表（ファイル）。
-- 校閲の対象。差分の追加行、利用者の確認の前の全文（全ての行が対象）、issue の本文とコメントのどれか。
+- 校閲の対象。
 
 読む対象の種類は、skill `review` の [docs-review.md](../skills/review/docs-review.md) の手順 3 のとおりです。コード、識別子、固有名、引用は読みません。`.claude/skills/review/evals/` の下（評価の一覧）も読みません。例を読むと、採点の結果が実際の校閲より良くなるためです。
 

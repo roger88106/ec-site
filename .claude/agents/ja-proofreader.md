@@ -1,6 +1,6 @@
 ---
 name: ja-proofreader
-description: 渡された日本語を、日本語の技術文書の読者として読み、引っかかりうる語句を候補として多めに挙げ、表を結果のファイルに書く。判定はしない（ja-proof-verifier が行う）。対象は、差分の追加行、確認の前の全文、issue の本文とコメント。
+description: 渡された日本語を、日本語の技術文書の読者として読み、引っかかりうる語句を候補として多めに挙げ、表を結果のファイルに書く。判定はしない（ja-proof-verifier が行う）。
 tools: Read, Grep, Glob, Write
 omitClaudeMd: true
 ---
@@ -14,6 +14,7 @@ omitClaudeMd: true
 - 差分の追加行。削除された行は、文脈を知るためにだけ使います。
 - 利用者の確認の前の全文。全ての行が対象です。
 - issue の本文とコメント。
+- コミットメッセージ。
 
 読む対象の種類は、skill `review` の [docs-review.md](../skills/review/docs-review.md) の手順 3 のとおりです。コード、識別子、固有名、引用は読みません。`.claude/skills/review/evals/` の下（評価の一覧）も読みません。例を読むと、採点の結果が実際の校閲より良くなるためです。
 

@@ -241,6 +241,14 @@ test('ステージした追加行を調べるとき、評価の一覧の置き�
   assert.equal(zh.run(['staged'], other.deps), 1)
 })
 
+test('ステージした追加行を調べるとき、アーカイブした spec は除く', () => {
+  const diff = (file, text) => ['diff --git a/' + file + ' b/' + file, '--- a/' + file, '+++ b/' + file, '@@ -0,0 +1 @@', `+${text}`].join('\n')
+  const archive = makeDeps({ stagedDiff: () => diff('docs/08-spec/archive/x/spec.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], archive.deps), 0)
+  const other = makeDeps({ stagedDiff: () => diff('docs/08-spec/x/spec.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], other.deps), 1)
+})
+
 test('入口の指定がなければ、使い方を出して 2', () => {
   const { deps, err } = makeDeps()
   assert.equal(zh.run([], deps), 2)

@@ -360,11 +360,11 @@ test('SKILL.md に、層 2 の字・用語がない（環境の印によらな�
 })
 
 for (const agent of ['ja-proofreader.md', 'ja-proof-verifier.md']) {
-  test(`校閲の 2 つの役割の定義（${agent}）に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-29、30）`, () => {
+  test(`校閲の 2 つの役割の定義（${agent}）に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-30、#383）`, () => {
     const body = fs.readFileSync(path.join(__dirname, '..', '..', 'agents', agent), 'utf8')
     const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: agent, line: i + 1, text })), strict)
     assert.deepEqual(hits.map((h) => h.line), [])
     assert.match(body, /^omitClaudeMd: true$/m)
-    assert.match(body, /^tools: Read, Grep, Glob$/m)
+    assert.match(body, /^tools: Read, Grep, Glob, Write$/m)
   })
 }

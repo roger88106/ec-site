@@ -11,7 +11,7 @@ description: 中国語で指示する環境で、日本語の文書・コメン�
 
 ## 環境の印
 
-リポジトリの git の設定 `ecsite.instructionLanguage` の値が `zh` のときだけ調べる。印がなければ、script は何も調べず、何も出さず、終了コード 0 で終わる。印は Git に入らず、作業ツリーの間で共有される。
+リポジトリの git の設定 `ecsite.instructionLanguage` の値が `zh` のときだけ調べる（`--local`、なければ `--worktree` の順に読み、グローバルは読まない）。印がなければ、script は何も調べず、何も出さず、終了コード 0 で終わる。印は Git に入らず、作業ツリーの間で共有される。
 
 ```
 git config --local ecsite.instructionLanguage zh

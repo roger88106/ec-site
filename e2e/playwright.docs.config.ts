@@ -10,5 +10,4 @@ import showcase from './playwright.showcase.config'
 export default defineConfig({
   ...showcase,
   testDir: 'docs',
-  globalSetup: './docs/refresh-store-cache.ts',
 })

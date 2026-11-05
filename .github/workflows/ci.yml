@@ -1,5 +1,5 @@
 # ============================================================================
-# CI（constitution 12）
+# CI（constitution の「CI/CD」）
 #
 # push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
 # ジョブの一覧と手元で同じ検査を実行するコマンドは docs/06-手順書/ci.md、CI の検査の script の中身は docs/06-手順書/ci-checks.md。
@@ -8,7 +8,7 @@
 name: CI
 
 on:
-  # CI の結果に関わらないファイルだけを変えた push では流さない（constitution 12）。
+  # CI の結果に関わらないファイルだけを変えた push では流さない（constitution の「CI/CD」）。
   # 1 つでも他のファイルが含まれていれば、すべての job を流す。
   # paths は上から順に当てる（! で除いたものも、後の行で再度含められる）
   push:

@@ -11,7 +11,8 @@
 //     Markdown は、インラインコードとコードブロックの外の全て（名前のないもの、spec・plan の節も）。コードは、文書の名前・リンク・パスの直後（間の「の」は許す）のものだけ。
 //     指す先の文書に、その番号の見出しがあれば、失敗のメッセージにその見出しを示す。名前のない番号は、Markdown では、直前が行の始め・文の切れ目・表の区切り・
 //     リストの印・`この文書の` のときだけ、その文書自身を指すとして見出しを求める。それ以外の語が直前にあれば、他の文書の節かもしれないので見出しを示さず、先の文書を書くよう示す
-//   - 見出しの番号（`1.`、`1.2`、`1.2.` の形）：docs/08-spec/ の外の Markdown で失敗にする（文書の構成の「参照」）。コードブロックの中は見ない。判定の区分は誤りの防止で、意図して作った回避（`1) ` など）は対象にしない
+//   - 見出しの番号（`1.`、`1.2`、`1.2.` の形。全角の数字と点、点の後に空白のない `1.概要`、行の始めの 3 個までの空白も）：docs/08-spec/ の外の Markdown で失敗にする（文書の構成の「参照」）。
+//     コードブロックの中は見ない。誤りを防ぐ検査なので、意図して番号を避けた書き方（`1) ` など）は対象にしない。`1.5 倍の負荷` は形で番号と区別できず失敗になるので、数字を名前の先頭に置かない
 // 文書の名前は、docs/ の下の各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたものと、skill の `skill `<名前>``（.claude/skills/<名前>/SKILL.md を指す）。
 // `skill `<名前>` の <ファイル名>`（`skill `review` の prompts.md`）は、その skill のフォルダーのファイルを指す。リポジトリにない skill の参照は見ない。
 // 見出しの参照と節の番号の参照の先は、直前のリンク、文書の名前、パス（`docs/06-手順書/ci.md`、`notification.md` など）で決める。
@@ -84,7 +85,7 @@ const SELF_BEFORE = /(?:^|[。．：:|]|^\s*(?:[-*+]|\d+\.)|この文書の?|本
  */
 const NO_PARTICLE_BEFORE = /(?:\.md`?|\]\([^)\s]+\))$/
 
-/** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない）。アーカイブした spec の見出しを指す参照で除く */
+/** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない）。docs/08-spec/ の見出しを指す参照で除く */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*\.|\d+(?:\.\d+)+)\s+/
 
 /**
@@ -500,6 +501,12 @@ export function checkReferences(files, read, exists) {
 }
 
 /**
+ * 番号のある見出しの行（NFKC で揃えた後の形）。`1.5倍` と `1.x` は、点の直後が英数字なので番号としない。
+ * 参照の読み方（HEADING_NUMBER）より広い。参照は見出しの名前を正しく取り出す必要があり、この検査は、誤って付けた番号を広く見つけるため
+ */
+const NUMBERED_HEADING = /^ {0,3}#{1,6}[ \t]+(?:\d+(?:\.\d+)*\.(?![\da-zA-Z])|\d+(?:\.\d+)+(?:\s|$))/
+
+/**
  * docs/08-spec/ の外の Markdown で、番号のある見出しを探す。
  *
  * @param {string[]} files 調べるファイル
@@ -512,11 +519,10 @@ export function findNumberedHeadings(files, read) {
     if (!file.endsWith('.md') || file.startsWith('docs/08-spec/')) continue
     let inCode = false
     read(file)
-      .split('\n')
+      .split(/\r?\n/)
       .forEach((line, index) => {
         if (line.startsWith('```')) inCode = !inCode
-        const match = !inCode && line.match(/^#{1,6}\s+(.*)$/)
-        if (match && HEADING_NUMBER.test(match[1])) problems.push(`見出しに番号がある。番号を外す：${file}:${index + 1} ${line.trimEnd()}`)
+        if (!inCode && NUMBERED_HEADING.test(line.normalize('NFKC'))) problems.push(`見出しに番号がある。番号を外す：${file}:${index + 1} ${line.trimEnd()}`)
       })
   }
   return problems
@@ -528,6 +534,6 @@ if (isMain(import.meta.url)) {
   const read = (file) => readFileSync(file, 'utf8')
   const problems = [...checkReferences(files, read, existsSync), ...findNumberedHeadings(files, read)]
   for (const problem of problems) console.log(problem)
-  console.log(`切れた参照：${problems.length}`)
+  console.log(`切れた参照と番号のある見出し：${problems.length}`)
   process.exit(problems.length ? 1 : 0)
 }

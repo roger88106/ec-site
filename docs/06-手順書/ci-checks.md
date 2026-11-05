@@ -12,7 +12,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査の先頭のコメントを確認する |
 | `compose-ports` | compose の全ての ports が `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action のディレクトリが、Dependabot の directories に入っていることを確認する |
-| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しの番号を確認する |
+| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないことを確認する |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
 | `ja-text` | 使わない語（error）がないことを確認し、文脈で決める語と文体の型を warning として示す |
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |

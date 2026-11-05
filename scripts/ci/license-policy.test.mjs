@@ -41,7 +41,12 @@ describe('許可の行の読み取り', () => {
     assert.match(result.unreadable[0].reason, /複数/)
   })
 
-  test('名前の違う節の許可の行は読まない（節は見出しの名前全体で決める）', () => {
+  test('見出しの末尾の空白と CRLF があっても、方針の節を読む', () => {
+    const text = ['## 依存のライセンスの方針  ', '| 許可 | MIT | a |', '## 次'].join('\r\n')
+    assert.deepEqual(readAllowedRow(text).licenses, ['MIT'])
+  })
+
+  test('見出しの名前が方針の節と違う節にある許可の行は読まない（節は見出しの名前の全体で決める）', () => {
     const text = ['## 依存のライセンスの方針の補足', '| 許可 | MIT | x |', '## 依存のライセンス', '| 許可 | ISC | y |'].join('\n')
     assert.equal(readAllowedRow(text).licenses, null)
   })

@@ -458,6 +458,19 @@ describe('番号のある見出しの検査', () => {
     ])
   })
 
+  test('番号の後の空白がない形、全角の数字と点、行の始めの 3 個までの空白も、番号のある見出しとする', () => {
+    const headings = ['## 1.概要', '## 1．概要', '## １．概要', '## １. 概要', '### １.２ 再送', ' ## 1. 概要', '   ### 1.2 再送']
+    for (const heading of headings) assert.equal(find({ 'docs/rules/a.md': `${heading}\n` }).length, 1, heading)
+  })
+
+  test('小数とバージョンの形（点の直後が英数字）は、番号としない', () => {
+    assert.deepEqual(find({ 'docs/rules/a.md': '## 1.5倍の負荷\n## 1.x の変更\n    ## 1. 字下げのコード\n' }), [])
+  })
+
+  test('CRLF の行も見る', () => {
+    assert.deepEqual(find({ 'docs/rules/a.md': '# 題\r\n## 1. 送る\r\n' }), ['見出しに番号がある。番号を外す：docs/rules/a.md:2 ## 1. 送る'])
+  })
+
   test('docs/ の外の Markdown も見る', () => {
     assert.equal(find({ 'README.md': '## 1. 概要\n', '.claude/skills/x/SKILL.md': '## 2. 手順\n' }).length, 2)
   })

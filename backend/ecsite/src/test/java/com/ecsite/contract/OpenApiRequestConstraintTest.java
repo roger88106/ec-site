@@ -99,8 +99,6 @@ class OpenApiRequestConstraintTest {
         }
         String type = String.valueOf(s.get("type"));
         switch (type) {
-            case "object" -> map(s.get("properties")).forEach((name, property) ->
-                    walk(document, property, where + "." + name, new HashSet<>(visited), missing));
             case "array" -> walk(document, s.get("items"), where + "[]", visited, missing);
             case "integer", "number" -> {
                 String name = where.substring(Math.max(where.lastIndexOf('.'), where.lastIndexOf(':')) + 1);
@@ -114,6 +112,7 @@ class OpenApiRequestConstraintTest {
                     missing.add(where + "（string：長さも形式もない）");
                 }
             }
+            // object と、type のない（properties だけの）スキーマは、properties の各項目を調べる
             default -> {
                 if (s.get("properties") != null) {
                     map(s.get("properties")).forEach((name, property) ->

@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -35,7 +36,8 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
         return dsl.select(PAYMENT_.ORDER_ID, PAYMENT_.STATUS, PAYMENT_.DEADLINE)
                 .from(PAYMENT_)
                 .where(PAYMENT_.ORDER_ID.in(orderIds))
-                .fetch(row -> new PaymentSummaryView(row.value1(), PaymentStatus.valueOf(row.value2()), row.value3()));
+                .fetch(row -> new PaymentSummaryView(row.value1(),
+                        AggregateGuards.restore("payment", () -> PaymentStatus.valueOf(row.value2())), row.value3()));
     }
 
     @Override

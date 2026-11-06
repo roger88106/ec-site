@@ -40,6 +40,6 @@ public class MemberCommandService {
     public UUID create(String idpSubject) {
         memberRepository.insertIfAbsent(new Member(UUID.randomUUID(), idpSubject, clock.instant()));
         return memberRepository.findIdByIdpSubject(idpSubject)
-                .orElseThrow(() -> SystemException.of("会員を作れない：" + idpSubject, null));
+                .orElseThrow(() -> SystemException.of("会員を作れない", null));
     }
 }

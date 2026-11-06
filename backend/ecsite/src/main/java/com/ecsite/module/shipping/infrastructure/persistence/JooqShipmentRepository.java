@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.persistence;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.shipping.tables.records.ShipmentRecord;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
@@ -105,8 +106,10 @@ class JooqShipmentRepository implements ShipmentRepository {
      * 出荷のレコードを、出荷に変換する。
      */
     private static Shipment toShipment(ShipmentRecord record) {
-        return Shipment.restore(record.getId(), record.getOrderId(), Carrier.valueOf(record.getCarrier()),
-                new TrackingNumber(record.getTrackingNumber()), DeliveryStatus.valueOf(record.getStatus()),
+        return Shipment.restore(record.getId(), record.getOrderId(),
+                AggregateGuards.restore("shipment", () -> Carrier.valueOf(record.getCarrier())),
+                new TrackingNumber(record.getTrackingNumber()),
+                AggregateGuards.restore("shipment", () -> DeliveryStatus.valueOf(record.getStatus())),
                 record.getShippedAt(), record.getLastNotifiedAt());
     }
 }

@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.catalog.Keys;
 import com.ecsite.jooq.catalog.tables.records.ProductRecord;
@@ -360,7 +361,7 @@ class JooqProductRepository implements ProductRepository {
                 PriceExclTax.of(record.getPriceExclTax()),
                 categoryIds,
                 axes,
-                PublicationStatus.valueOf(record.getStatus()),
+                AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
                 record.getFirstShownAt(),
                 PublicationPeriod.of(record.getPublishStart(), record.getPublishEnd()),
                 images,

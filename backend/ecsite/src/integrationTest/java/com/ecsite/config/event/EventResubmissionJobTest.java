@@ -202,8 +202,7 @@ class EventResubmissionJobTest {
         var event = failedUntil(job, 2);
         var publication = publicationOf(event);
         // 処理中に見せる（再発行の後、リスナーが終わる前の状態）
-        dsl.update(EVENT_PUBLICATION).set(STATUS, "RESUBMITTED")
-                .where(ID.eq(publication.getIdentifier())).execute();
+        markStatus(event, "RESUBMITTED");
 
         clock.advance(Duration.ofMinutes(1));
         var logStart = CapturedLogs.mark(output);
@@ -260,6 +259,22 @@ class EventResubmissionJobTest {
     }
 
     @Test
+    @DisplayName("再発行の間隔を設定で変えると、同じイベントの試行の間も、その間隔を空ける")
+    void waitsForConfiguredIntervalBetweenAttempts() {
+        var event = failedUntil(jobWithMaxAttempts(3), 2);
+        var job = jobWith(Duration.ofMinutes(3), Duration.ofMinutes(5), 3);
+
+        clock.advance(Duration.ofMinutes(2));
+        job.resubmit();
+        assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
+
+        clock.advance(Duration.ofMinutes(1));
+        job.resubmit();
+        asyncEvents.awaitFailed(event::equals, 3);
+        assertThat(failingListener.attempts(event)).isEqualTo(3);
+    }
+
+    @Test
     @DisplayName("再発行の印を付けた後でインスタンスが止まったイベントは、最後の試行から 5 分たつと再発行される")
     void resubmitsEventStuckAfterResubmissionMark() {
         var job = jobWithMaxAttempts(3);
@@ -303,7 +318,9 @@ class EventResubmissionJobTest {
         job.resubmit();
 
         assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(3);
-        assertThat(CapturedLogs.since(output, logStart)).contains("ERROR", publication.getIdentifier().toString());
+        assertThat(CapturedLogs.since(output, logStart).lines()
+                .filter(line -> line.contains("ERROR") && line.contains(publication.getIdentifier().toString())))
+                .hasSize(1);
     }
 
     /**
@@ -362,8 +379,15 @@ class EventResubmissionJobTest {
      * 発行からの時間の下限と処理の回数の上限を変えた再発行のジョブ
      */
     private EventResubmissionJob jobWith(Duration minAge, int maxAttempts) {
+        return jobWith(Duration.ofMinutes(1), minAge, maxAttempts);
+    }
+
+    /**
+     * 間隔、発行からの時間の下限、処理の回数の上限を変えた再発行のジョブ
+     */
+    private EventResubmissionJob jobWith(Duration interval, Duration minAge, int maxAttempts) {
         return new EventResubmissionJob(incompletePublications,
-                new EventResubmissionJob.Properties(Duration.ofMinutes(1), minAge, maxAttempts), clock,
+                new EventResubmissionJob.Properties(interval, minAge, maxAttempts), clock,
                 publicationRecords, publicationMetrics);
     }
 

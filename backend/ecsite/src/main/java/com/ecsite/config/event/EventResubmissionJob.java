@@ -90,7 +90,7 @@ class EventResubmissionJob {
     /**
      * 再発行の設定。環境変数で上書きする（例：ECSITE_SCHEDULING_EVENT_RESUBMISSION_MIN_AGE）。
      *
-     * @param interval    再発行のジョブの間隔
+     * @param interval    再発行のジョブの間隔。同じイベントの試行の間も、この間隔を空ける
      * @param minAge      再発行するイベントの、発行からの時間の下限
      * @param maxAttempts 処理の回数（発行の時の 1 回と再発行の回数）の上限
      */

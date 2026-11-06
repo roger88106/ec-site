@@ -116,13 +116,23 @@ export async function orderAsMember(page: Page, account: Account, productIds: st
 }
 
 /**
+ * URL のパスの最後の部分（`/products/{商品 ID}` なら商品 ID）。
+ *
+ * @param url URL（クエリは付いていてもよい）
+ * @returns パスの最後の部分。パスが空なら undefined
+ */
+export function lastPathSegment(url: string): string | undefined {
+  return new URL(url).pathname.split('/').at(-1)
+}
+
+/**
  * 注文の画面の URL から、注文 ID を読む。
  *
  * @param orderUrl 注文の画面の URL（`/orders/{注文 ID}`。クエリは付いていてもよい）
  * @returns 注文 ID
  */
 export function orderIdOf(orderUrl: string): string {
-  const orderId = new URL(orderUrl).pathname.split('/').at(-1)
+  const orderId = lastPathSegment(orderUrl)
   if (!orderId) {
     throw new Error(`注文の画面の URL から注文 ID を読めない：${orderUrl}`)
   }

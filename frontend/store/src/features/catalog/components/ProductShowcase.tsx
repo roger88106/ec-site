@@ -49,8 +49,7 @@ export function ProductShowcase({
                   onClick={() => setShown(url)}
                   type="button"
                 >
-                  {/* biome-ignore lint/performance/noImgElement: 画像は配信の側（CDN）で最適化する */}
-                  <img alt="" className="size-full object-cover" src={url} />
+                  <ProductImage alt="" iconSize="sm" src={url} />
                 </button>
               </li>
             ))}

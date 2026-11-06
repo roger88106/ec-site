@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { pageParam } from '@/lib/searchParams'
+import { enumParam, pageParam } from '@/lib/searchParams'
 
 describe('URL のページ番号の読み取り', () => {
   test('1 以上の整数は、そのままページ番号にする', () => {
@@ -23,5 +23,22 @@ describe('URL のページ番号の読み取り', () => {
   test('空と文字は 1 ページ目にする', () => {
     expect(pageParam(new URLSearchParams('page='))).toBe(1)
     expect(pageParam(new URLSearchParams('page=abc'))).toBe(1)
+  })
+})
+
+describe('クエリの列挙の値を読む', () => {
+  const values = ['A', 'B'] as const
+
+  test('列挙にある値は、そのまま返す', () => {
+    expect(enumParam(values, 'B', null)).toBe('B')
+  })
+
+  test('列挙にない値は、既定を返す', () => {
+    expect(enumParam(values, 'C', 'A')).toBe('A')
+    expect(enumParam(values, '', null)).toBeNull()
+  })
+
+  test('値がないときは、既定を返す', () => {
+    expect(enumParam(values, null, 'A')).toBe('A')
   })
 })

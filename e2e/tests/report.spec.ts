@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, memberEmail, registerMember } from '../src/auth'
-import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
+import { createSimpleProduct } from '../src/data'
 import { addToCart, orderCart, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, REPORT_WAIT, reopenUntil } from '../src/waits'
@@ -22,13 +22,10 @@ function segmentRow(page: Page, dimension: string, segment: string) {
 test('AC-197、199、205、206、207、209、219、221、222 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
   browser,
 }) => {
-  const { id: taxCategoryId } = await taxCategoryWithRate(10)
-  const productId = await createPublishedProduct({
+  const productId = await createSimpleProduct({
     code: 'REPORT',
     name: 'レポートの確認の商品',
-    taxCategoryId,
-    priceExclTax: 1000,
-    variants: [{ code: 'A', stock: 5 }],
+    stock: 5,
   })
   const { year, month } = thisMonthInJapan()
 

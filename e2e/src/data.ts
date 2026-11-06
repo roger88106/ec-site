@@ -146,6 +146,29 @@ export async function createPublishedProduct(product: PublishedProduct): Promise
   return id
 }
 
+/** 単純な商品の作り方 */
+export type SimpleProduct = Pick<PublishedProduct, 'code' | 'name' | 'categoryIds' | 'publishStart'> & {
+  /** 唯一のバリアントの在庫 */
+  stock: number
+}
+
+/**
+ * 単純な商品（税率 10%、税抜 1,000 円、軸なし、バリアント 1 つ「A」）を、{@link createPublishedProduct} で公開する。
+ * 軸のある商品や、10% 以外の税率の商品は、{@link createPublishedProduct} で作る。
+ *
+ * @param product 商品の作り方
+ * @returns 商品 ID
+ */
+export async function createSimpleProduct({ stock, ...product }: SimpleProduct): Promise<string> {
+  const { id: taxCategoryId } = await taxCategoryWithRate(10)
+  return createPublishedProduct({
+    ...product,
+    taxCategoryId,
+    priceExclTax: 1000,
+    variants: [{ code: 'A', stock }],
+  })
+}
+
 /**
  * 公開開始日時を変える（公開した後でも変えられる）。
  *

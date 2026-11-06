@@ -8,7 +8,7 @@ import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
-import { currentMember, redirectToLogin } from '@/auth'
+import { requireMember } from '@/auth'
 import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
@@ -38,9 +38,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
   const tLabels = await getTranslations('labels')
   const { orderId } = await params
   const returned = (await searchParams).payment === 'returned'
-  if ((await currentMember()) === null) {
-    return redirectToLogin()
-  }
+  await requireMember()
   if (!isUuid(orderId)) {
     notFound()
   }

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { changePublishStart, createPublishedProduct, RUN_ID, taxCategoryWithRate } from '../src/data'
+import { changePublishStart, createSimpleProduct, RUN_ID } from '../src/data'
 import { STORE_URL } from '../src/urls'
 import { ASYNC_TIMEOUT, reopenUntil } from '../src/waits'
 
@@ -10,15 +10,12 @@ const FAR_FUTURE_MILLIS = 60 * 60_000
 const RESERVATION_MILLIS = 3_000
 
 test('AC-35 公開開始日時を予約して公開すると、開始前は店舗画面に出ず、開始日時になると出る', async ({ page }) => {
-  const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const productName = `E2E 予約 ${RUN_ID}`
   // 準備（在庫ができるのを待つ など）にかかる時間によらないよう、先の日時で予約して作り、開始前を確認してから近づける
-  const productId = await createPublishedProduct({
+  const productId = await createSimpleProduct({
     code: 'RESERVE',
     name: productName,
-    taxCategoryId,
-    priceExclTax: 1000,
-    variants: [{ code: 'A', stock: 1 }],
+    stock: 1,
     publishStart: new Date(Date.now() + FAR_FUTURE_MILLIS),
   })
   const url = `${STORE_URL}/products/${productId}`

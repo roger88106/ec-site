@@ -2,6 +2,7 @@ import { isUuid } from '@ec-site/shared/lib/patterns'
 import { granularityValues, reportBasisValues } from '@/api/generated/admin'
 import type { Granularity, ReportBasis } from '@/api/types'
 import { isDate } from '@/features/report/period'
+import { enumParam } from '@/lib/searchParams'
 
 /** レポートの条件。URL のクエリに持つ（再読込とリンクの共有のため。管理画面の構成の「画面の URL」） */
 export type ReportCondition = {
@@ -30,8 +31,8 @@ export function parseCondition(params: URLSearchParams, defaultPeriod: { from: s
   return {
     from: from !== null && isDate(from) ? from : defaultPeriod.from,
     to: to !== null && isDate(to) ? to : defaultPeriod.to,
-    granularity: granularityValues.includes(granularity as Granularity) ? (granularity as Granularity) : 'MONTH',
-    basis: reportBasisValues.includes(basis as ReportBasis) ? (basis as ReportBasis) : 'ORDER',
+    granularity: enumParam(granularityValues, granularity, 'MONTH'),
+    basis: enumParam(reportBasisValues, basis, 'ORDER'),
     productId: productId !== null && isUuid(productId) ? productId : undefined,
     excludeTax: params.get('excludeTax') === 'true',
     excludeShipping: params.get('excludeShipping') === 'true',

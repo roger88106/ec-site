@@ -1,7 +1,7 @@
 import { orderStatusValues } from '@/api/generated/admin'
 import type { OrderStatus } from '@/api/types'
 import { isDateString } from '@/lib/date'
-import { pageParam } from '@/lib/searchParams'
+import { enumParam, pageParam } from '@/lib/searchParams'
 
 /** 注文一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成の「画面の URL」） */
 export type OrderFilter = {
@@ -36,7 +36,7 @@ export function parseFilter(params: URLSearchParams): OrderFilter {
   const status = params.get('status')
   return {
     orderNumber: params.get('orderNumber') ?? '',
-    status: orderStatusValues.includes(status as OrderStatus) ? (status as OrderStatus) : null,
+    status: enumParam(orderStatusValues, status, null),
     orderedFrom: date(params.get('orderedFrom')),
     orderedTo: date(params.get('orderedTo')),
     authorizationExpiring: params.get('authorizationExpiring') === 'true',

@@ -116,13 +116,23 @@ export async function orderAsMember(page: Page, account: Account, productIds: st
 }
 
 /**
+ * URL のパスの最後の部分（`/products/{商品 ID}` なら商品 ID）。
+ *
+ * @param url URL（クエリは付いていてもよい）
+ * @returns パスの最後の部分。パスが空なら undefined
+ */
+export function lastPathSegment(url: string): string | undefined {
+  return new URL(url).pathname.split('/').at(-1)
+}
+
+/**
  * 注文の画面の URL から、注文 ID を読む。
  *
  * @param orderUrl 注文の画面の URL（`/orders/{注文 ID}`。クエリは付いていてもよい）
  * @returns 注文 ID
  */
 export function orderIdOf(orderUrl: string): string {
-  const orderId = new URL(orderUrl).pathname.split('/').at(-1)
+  const orderId = lastPathSegment(orderUrl)
   if (!orderId) {
     throw new Error(`注文の画面の URL から注文 ID を読めない：${orderUrl}`)
   }
@@ -155,6 +165,26 @@ export async function fillShipping(page: Page, postalCode: string, name = 'E2E �
 }
 
 /**
+ * カートの「注文手続きへ進む」を押し、注文手続きの画面が出るのを待つ。
+ *
+ * @param page カートを開いている店舗画面のページ
+ */
+export async function proceedToCheckout(page: Page) {
+  await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
+}
+
+/**
+ * 注文手続きの画面で注文のボタンを押し、mock の支払画面が出るのを待つ。
+ *
+ * @param page お届け先を入れた注文手続きのページ
+ */
+export async function submitOrder(page: Page) {
+  await placeOrderButton(page).click()
+  await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+}
+
+/**
  * カートから注文手続きに進み、お届け先を入れて注文する。注文すると mock の支払画面に移る。
  *
  * @param page カートに商品のある店舗画面のページ
@@ -164,10 +194,9 @@ export async function fillShipping(page: Page, postalCode: string, name = 'E2E �
  */
 export async function orderCart(page: Page, { storeUrl = STORE_URL, name }: { storeUrl?: string; name?: string } = {}) {
   await page.goto(`${storeUrl}/cart`)
-  await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
+  await proceedToCheckout(page)
   await fillShipping(page, '100-0001', name)
-  await placeOrderButton(page).click()
-  await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+  await submitOrder(page)
 }
 
 /**

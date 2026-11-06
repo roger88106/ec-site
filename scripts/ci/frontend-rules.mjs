@@ -71,6 +71,7 @@ import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
+import { skipModifiers } from './lib/test-files.mjs'
 
 /** ロケールとタイムゾーンを書いてよいファイル */
 const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
@@ -666,6 +667,9 @@ export function findMarkupTextChecks(text) {
 /** describe の呼び出しの始まり（前が . や語の文字のものは読まない） */
 const DESCRIBE_CALL = /(?<![.\w$])describe(?![\w$])/g
 
+/** describe の表を引数に取る修飾 */
+const TABLE_MODIFIERS = new Set(['each', 'for'])
+
 /** 識別子だけの名前（英数字、_、$、.、<>、/、()、-、:、#、@ だけ。空白と日本語を含まない。コンポーネントの書き方 `<Foo />` は空白を許す） */
 const IDENTIFIER_NAME = /^(?:[A-Za-z0-9_$.<>/()\-:#@]+|<[A-Za-z0-9_$.]+\s*\/?>)$/
 
@@ -685,15 +689,8 @@ export function findIdentifierDescribes(text) {
   const lineOf = createLineLocator(code)
   const lineNumbers = []
   for (const match of blanked.matchAll(DESCRIBE_CALL)) {
-    let pos = match.index + match[0].length
-    let table = false
-    for (let modifier = /^\.(\w+)/.exec(code.slice(pos, pos + 20)); modifier; modifier = /^\.(\w+)/.exec(code.slice(pos, pos + 20))) {
-      pos += modifier[0].length
-      if (modifier[1] !== 'each' && modifier[1] !== 'for') continue
-      table = true
-      if (code[pos] === '(') pos = closingParen(code, pos) + 1
-      else if (code[pos] === '`') pos = templateEnd(code, pos)
-    }
+    const { pos, modifiers } = skipModifiers(code, match.index + match[0].length, TABLE_MODIFIERS)
+    const table = modifiers.some((modifier) => TABLE_MODIFIERS.has(modifier))
     if (code[pos] !== '(') continue
     const start = pos + 1 + /^\s*/.exec(code.slice(pos + 1))[0].length
     let name

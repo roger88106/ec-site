@@ -3,7 +3,7 @@
 import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
 import { redirectIfUnauthenticated, redirectOnSuccess } from '@/actions/memberAction'
-import { withActionResult } from '@/actions/withActionResult'
+import { withFallback } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
 import type { ErrorCode } from '@/api/types'
 import { type ActionResult, toFailure } from '@/lib/actionResult'
@@ -56,11 +56,10 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
  * 注文の支払画面の URL を求める。得られなければ（決済サービスが応えないなど）null。
  */
 async function paymentPageUrl(orderId: string): Promise<string | null> {
-  const url = await withActionResult(async () => {
+  // 接続の失敗も、URL を得られなかったときと同じに扱う
+  return withFallback(async () => {
     const api = await getMemberApi()
     const { data } = await api.POST('/orders/{orderId}/payment-page', { params: { path: { orderId } } })
     return data?.url ?? null
-  })
-  // 接続の失敗も、URL を得られなかったときと同じに扱う
-  return typeof url === 'string' ? url : null
+  }, null)
 }

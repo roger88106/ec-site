@@ -8,7 +8,15 @@ import {
   SHOWCASE_BACKEND_URL as BACKEND,
   SHOWCASE_STORE_URL as STORE,
 } from '../src/showcase-urls'
-import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage, placeOrderButton } from '../src/store'
+import {
+  addToCart,
+  emptyCart,
+  fillShipping,
+  orderIdOf,
+  payOnMockPage,
+  placeOrderButton,
+  proceedToCheckout,
+} from '../src/store'
 
 /** 撮った画像の置き場所（docs/01-概要/order.md が載せる） */
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/order')
@@ -28,7 +36,7 @@ test('注文の流れのスクリーンショットを撮る', async ({ page }) 
     await page.goto(`${STORE}/cart`)
     await shot(page, '01-cart', page.getByRole('button', { name: '注文手続きへ進む', exact: true }))
 
-    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
+    await proceedToCheckout(page)
     await fillShipping(page, '100-0001', RECIPIENT)
     await shot(page, '02-checkout', placeOrderButton(page))
 

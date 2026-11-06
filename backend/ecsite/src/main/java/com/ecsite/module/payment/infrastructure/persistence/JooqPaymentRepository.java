@@ -143,6 +143,11 @@ class JooqPaymentRepository implements PaymentRepository {
                 .fetch(JooqPaymentRepository::restore);
     }
 
+    @Override
+    public List<Payment> findUnpaidAwaitingAuthorization(int limit) {
+        return List.of();
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**

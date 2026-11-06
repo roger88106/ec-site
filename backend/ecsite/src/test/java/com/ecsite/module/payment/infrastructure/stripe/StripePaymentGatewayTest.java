@@ -5,6 +5,7 @@ import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.PaymentProperties;
+import com.ecsite.module.payment.application.port.PaymentGateway.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
@@ -272,6 +273,69 @@ class StripePaymentGatewayTest {
     }
 
     @Nested
+    @DisplayName("与信の取得")
+    class FetchAuthorization {
+
+        /**
+         * PaymentIntent の作成時刻（エポック秒）
+         */
+        private static final long INTENT_CREATED = 1_793_926_800L;
+
+        @Test
+        @DisplayName("AC-409-2 PaymentIntent を展開した Session から、与信の参照（PaymentIntent の ID）と与信の時刻（作成時刻）を読む")
+        void fetches() {
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
+                    StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, INTENT_CREATED));
+
+            var authorization = gateway.fetchAuthorization(SESSION_ID);
+
+            assertThat(authorization).isEqualTo(new Authorization(INTENT_ID, Instant.ofEpochSecond(INTENT_CREATED)));
+        }
+
+        @Test
+        @DisplayName("Session の取得に、PaymentIntent の展開（expand）を付ける")
+        void expandsPaymentIntent() {
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
+                    StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, INTENT_CREATED));
+
+            gateway.fetchAuthorization(SESSION_ID);
+
+            assertThat(requests()).singleElement().satisfies(request -> {
+                assertThat(request.key()).isEqualTo("GET /v1/checkout/sessions/" + SESSION_ID);
+                assertThat(request.query()).contains("expand[0]=payment_intent");
+            });
+        }
+
+        @Test
+        @DisplayName("Session が complete でなければ（expired）、予期しないエラー")
+        void rejectsIncompleteSession() {
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 200, session("expired"));
+
+            assertThatThrownBy(() -> gateway.fetchAuthorization(SESSION_ID)).isInstanceOfSatisfying(SystemException.class,
+                    e -> assertThat(e.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode()));
+        }
+
+        @Test
+        @DisplayName("complete でも PaymentIntent がなければ、予期しないエラー")
+        void rejectsSessionWithoutIntent() {
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 200, session("complete"));
+
+            assertThatThrownBy(() -> gateway.fetchAuthorization(SESSION_ID)).isInstanceOfSatisfying(SystemException.class,
+                    e -> assertThat(e.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode()));
+        }
+
+        @Test
+        @DisplayName("Stripe の 5xx は、外部サービスのエラー")
+        void serverError() {
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 500, StripeApiStub.error("api_error", null));
+
+            assertThatThrownBy(() -> gateway.fetchAuthorization(SESSION_ID)).isInstanceOfSatisfying(SystemException.class,
+                    e -> assertThat(e.getErrorDetail().errorCode())
+                            .isEqualTo(PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE.getCode()));
+        }
+    }
+
+    @Nested
     @DisplayName("与信の取消")
     class VoidAuthorization {
 
@@ -367,6 +431,7 @@ class StripePaymentGatewayTest {
             assertFailure(() -> unreachable.closePage(SESSION_ID), code);
             assertFailure(() -> unreachable.refund(refundRequest()), code);
             assertFailure(() -> unreachable.voidAuthorization(INTENT_ID), code);
+            assertFailure(() -> unreachable.fetchAuthorization(SESSION_ID), code);
         }
 
         @Test
@@ -406,7 +471,9 @@ class StripePaymentGatewayTest {
                 Arguments.of("返金", "POST /v1/refunds",
                         (Consumer<StripePaymentGateway>) gateway -> gateway.refund(refundRequest())),
                 Arguments.of("与信の取消", "POST /v1/payment_intents/" + INTENT_ID + "/cancel",
-                        (Consumer<StripePaymentGateway>) gateway -> gateway.voidAuthorization(INTENT_ID)));
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.voidAuthorization(INTENT_ID)),
+                Arguments.of("与信の取得", "GET /v1/checkout/sessions/" + SESSION_ID,
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.fetchAuthorization(SESSION_ID)));
     }
 
     // ============================== 補助 ==============================

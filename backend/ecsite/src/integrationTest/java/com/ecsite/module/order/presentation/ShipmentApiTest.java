@@ -9,6 +9,8 @@ import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.module.payment.application.PaymentJobs;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -181,6 +184,67 @@ class ShipmentApiTest {
 
             // やり直せば出荷できる
             ship("YAMATO", "123456789012").andExpect(status().isCreated());
+        }
+    }
+
+    @Nested
+    @DisplayName("AC-409-7、8 与信の通知が届かず、期限切れのジョブが与信済みにした注文")
+    class RecoveredByJob {
+
+        private String pageId;
+
+        @BeforeEach
+        void setUpRecovered() throws Exception {
+            // 支払は済んだが、与信の成功の通知は届かない注文
+            orderId = orders.placePendingOrder(variantId, 1);
+            pageId = orders.openPaymentPage(orderId);
+            gateway.markPaid(pageId);
+        }
+
+        @Test
+        @DisplayName("AC-409-7 ジョブで受付になった注文は、出荷を登録でき、売上確定には取得した与信の参照を渡す")
+        void shipsRecoveredOrder() throws Exception {
+            recoverByJob();
+
+            ship("YAMATO", "123456789012").andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.status").value("SHIPPED"));
+
+            assertThat(gateway.captured()).containsExactly(orderId);
+            assertThat(gateway.capturedAuthorizationRef(orderId)).contains(gateway.authorizationRefOf(pageId));
+        }
+
+        @Test
+        @DisplayName("AC-409-8 決済サービスで与信が切れていた注文も受付になり、出荷は与信期限切れで失敗し、運営者がキャンセルできる")
+        void cancelsRecoveredOrderWithExpiredAuthorization() throws Exception {
+            gateway.expireAuthorization(gateway.authorizationRefOf(pageId));
+            recoverByJob();
+
+            ship("YAMATO", "123456789012").andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.errorCode").value("AUTHORIZATION_EXPIRED"));
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"))
+                    .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"))
+                    .andExpect(jsonPath("$.actions.cancel").value(true));
+
+            mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON).content("""
+                                    {"reason": "在庫の不備"}"""))
+                    .andExpect(status().isNoContent());
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.status").value("CANCELLED"));
+        }
+
+        /**
+         * 期限を過ぎてから、期限切れのジョブを流す。<br />
+         * 与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。注文への反映は、リスナーと同じ処理をここで呼ぶ。
+         */
+        private void recoverByJob() throws Exception {
+            clock.setInstant(NOW.plus(Duration.ofHours(2)));
+            PaymentJobs.expire(applicationContext);
+            OrderPayments.accept(applicationContext, orderId);
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"))
+                    .andExpect(jsonPath("$.payment.status").value("AUTHORIZED"));
         }
     }
 

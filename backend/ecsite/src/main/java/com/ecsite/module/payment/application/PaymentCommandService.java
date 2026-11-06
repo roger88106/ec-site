@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -96,6 +97,17 @@ public class PaymentCommandService {
         paymentRepository.lockById(paymentId)
                 .filter(payment -> payment.awaitAuthorization(now))
                 .ifPresent(paymentRepository::update);
+    }
+
+    /**
+     * 決済サービスから取得した与信を反映する。期限切れのジョブから呼ぶ。行ロックの後に確認し直す。
+     *
+     * @param paymentId     支払 ID
+     * @param authorization 取得した与信
+     * @return 未払いから与信済みにしたら true（先に通知が届いていれば false）
+     */
+    public boolean authorizeFromGateway(UUID paymentId, PaymentGateway.Authorization authorization) {
+        return false;
     }
 
     /**

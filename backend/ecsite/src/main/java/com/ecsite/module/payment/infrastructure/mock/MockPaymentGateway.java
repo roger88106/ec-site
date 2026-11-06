@@ -6,8 +6,11 @@ import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentMock;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,6 +53,11 @@ public class MockPaymentGateway implements PaymentGateway {
     private final MockPaymentProperties properties;
 
     /**
+     * 時計（支払を済ませた時刻を記録する）
+     */
+    private final Clock clock;
+
+    /**
      * 支払画面 ID → 画面
      */
     private final Map<String, Page> pages = new ConcurrentHashMap<>();
@@ -64,7 +72,7 @@ public class MockPaymentGateway implements PaymentGateway {
     @Override
     public PaymentPage openPage(PageRequest request) {
         var id = PAGE_ID_PREFIX + UUID.randomUUID();
-        pages.put(id, new Page(request.orderId(), request.amount(), request.returnUrl(), PageStatus.OPEN));
+        pages.put(id, new Page(request.orderId(), request.amount(), request.returnUrl(), PageStatus.OPEN, null));
         return new PaymentPage(id, properties.baseUrl() + "/mock-payment/" + id);
     }
 
@@ -73,6 +81,11 @@ public class MockPaymentGateway implements PaymentGateway {
         var page = pages.computeIfPresent(pageId,
                 (id, current) -> current.status() == PageStatus.PAID ? current : current.with(PageStatus.CLOSED));
         return page != null && page.status() == PageStatus.PAID ? CloseResult.ALREADY_PAID : CloseResult.CLOSED;
+    }
+
+    @Override
+    public Authorization fetchAuthorization(String pageId) {
+        throw new UnsupportedOperationException("未実装");
     }
 
     @Override
@@ -110,7 +123,7 @@ public class MockPaymentGateway implements PaymentGateway {
      * @param pageId 支払画面 ID
      */
     public void markPaid(String pageId) {
-        pages.computeIfPresent(pageId, (id, current) -> current.with(PageStatus.PAID));
+        pages.computeIfPresent(pageId, (id, current) -> current.paid(clock.instant()));
     }
 
     /**
@@ -149,8 +162,9 @@ public class MockPaymentGateway implements PaymentGateway {
      * @param amount    金額
      * @param returnUrl 戻る先
      * @param status    画面の状態
+     * @param paidAt    支払を済ませた最初の時刻。済んでいなければ null
      */
-    public record Page(UUID orderId, Money amount, String returnUrl, PageStatus status) {
+    public record Page(UUID orderId, Money amount, String returnUrl, PageStatus status, @Nullable Instant paidAt) {
 
         /**
          * 状態だけを変えた画面を返す。
@@ -159,7 +173,17 @@ public class MockPaymentGateway implements PaymentGateway {
          * @return 画面
          */
         Page with(PageStatus status) {
-            return new Page(orderId, amount, returnUrl, status);
+            return new Page(orderId, amount, returnUrl, status, paidAt);
+        }
+
+        /**
+         * 支払を済ませた画面を返す。最初の 1 回の時刻を残す（重ねて済ませても変えない）。
+         *
+         * @param now 現在時刻
+         * @return 画面
+         */
+        Page paid(Instant now) {
+            return new Page(orderId, amount, returnUrl, PageStatus.PAID, paidAt == null ? now : paidAt);
         }
     }
 

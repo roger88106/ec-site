@@ -133,6 +133,11 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     @Override
+    public Authorization fetchAuthorization(String pageId) {
+        throw new UnsupportedOperationException("未実装");
+    }
+
+    @Override
     public VoidResult voidAuthorization(String authorizationRef) {
         try {
             client.v1().paymentIntents().cancel(authorizationRef);

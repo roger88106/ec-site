@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.application.model.view.AuthorizationDeadlineView;
+import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.model.view.PayablePaymentView;
 import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
@@ -148,6 +149,16 @@ public class PaymentQueryService {
         return paymentRepository.findUnpaidPastDeadline(clock.instant(), limit).stream()
                 .map(payment -> new PastDeadlinePaymentView(payment.id(), payment.page().orElse(null)))
                 .toList();
+    }
+
+    /**
+     * 与信の反映を待つ支払を、待ち始めた時刻の古い順に取得する。
+     *
+     * @param limit 取得する数の上限
+     * @return 支払
+     */
+    public List<AwaitingAuthorizationPaymentView> findAwaitingAuthorization(int limit) {
+        return List.of();
     }
 
     /**

@@ -85,4 +85,12 @@ public interface PaymentRepository {
      * @return 支払
      */
     List<Payment> findUnpaidPastDeadline(Instant now, int limit);
+
+    /**
+     * 与信の反映を待つ支払（未払いで、待ち始めた時刻がある支払）を、待ち始めた時刻の古い順に取得する。
+     *
+     * @param limit 取得する数の上限
+     * @return 支払
+     */
+    List<Payment> findUnpaidAwaitingAuthorization(int limit);
 }

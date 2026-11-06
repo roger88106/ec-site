@@ -5,8 +5,11 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
+import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
+import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,10 +22,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 /**
@@ -60,6 +66,9 @@ class PaymentVoidTest {
 
     @Autowired
     AsyncEvents asyncEvents;
+
+    @Autowired
+    VoidRequestedHandler voidRequestedHandler;
 
     @Autowired
     DSLContext dsl;
@@ -161,5 +170,71 @@ class PaymentVoidTest {
         assertThat(gateway.voided()).containsExactly(gateway.authorizationRefOf(pageId));
     }
 
+    @Test
+    @DisplayName("AC-407-1 売上確定の応答が届かなかった支払の注文をキャンセルすると、返金済みになり、総額が 1 回だけ返金される。与信の取消は成立しない")
+    void refundsCaptureWhoseResponseWasLost() {
+        var orderId = capturedWithLostResponse();
+
+        paymentApi.cancel(orderId);
+
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.voided()).isEmpty();
+        assertThat(gateway.refunded()).containsExactly(orderId);
+        assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).containsExactly(Money.of(6940));
+    }
+
+    @Test
+    @DisplayName("AC-407-2 売上確定の応答が届かなかった支払で、与信の取消の依頼が重複して処理されても、返金は 1 回だけ行う")
+    void refundsOnceWhenVoidRequestedTwice() {
+        var orderId = capturedWithLostResponse();
+        paymentApi.cancel(orderId);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+
+        voidRequestedHandler.on(VoidRequested.of(clock.instant(), paymentIdOf(orderId)));
+
+        assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.voided()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("AC-407-3 売上確定の最中に注文がキャンセルされ、与信の取消が売上確定の反映より先に処理されても、返金は 1 回だけ行う")
+    void refundsOnceWhenCancelledDuringCapture() {
+        var orderId = payments.authorized(ORDERED_AT);
+        gateway.duringNextCapture(() -> {
+            paymentApi.cancel(orderId);
+            await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        });
+
+        paymentApi.capture(orderId);
+
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
+        assertThat(gateway.voided()).isEmpty();
+    }
+
     // ============================== 補助 ==============================
+
+    /**
+     * 決済サービスで売上を確定したが応答が届かず、与信済みのままの支払を作る。
+     *
+     * @return 注文 ID
+     */
+    private UUID capturedWithLostResponse() {
+        var orderId = payments.authorized(ORDERED_AT);
+        gateway.loseNextCaptureResponses(1);
+        assertThatThrownBy(() -> paymentApi.capture(orderId)).isInstanceOf(SystemException.class);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+        return orderId;
+    }
+
+    /**
+     * 注文の支払 ID を読む。
+     *
+     * @param orderId 注文 ID
+     * @return 支払 ID
+     */
+    private UUID paymentIdOf(UUID orderId) {
+        return dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchOne(PAYMENT_.ID);
+    }
 }

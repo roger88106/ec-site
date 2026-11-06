@@ -78,6 +78,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger captureFailures = new AtomicInteger();
 
     /**
+     * 売上は確定するが、応答が届かないことにする売上確定の残りの回数
+     */
+    private final AtomicInteger captureResponseLosses = new AtomicInteger();
+
+    /**
      * 返金した注文 ID（返金した順）
      */
     private final List<UUID> refunded = new CopyOnWriteArrayList<>();
@@ -147,6 +152,9 @@ public class TestPaymentGateway implements PaymentGateway {
         var during = duringNextCapture.getAndSet(null);
         if (during != null) {
             during.run();
+        }
+        if (consume(captureResponseLosses)) {
+            return CaptureResult.UNREACHABLE;
         }
         return result;
     }
@@ -253,6 +261,16 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 次の売上確定を、指定した回数だけ、決済サービスでは確定するが、応答が届かないことにする。
+     * 呼んだ側には、接続できなかった場合と同じ結果が返る。
+     *
+     * @param times 応答を届かなくする回数
+     */
+    public void loseNextCaptureResponses(int times) {
+        captureResponseLosses.set(times);
+    }
+
+    /**
      * 次の売上確定で、決済サービスが確定した後、応答を返す前に処理を行う。
      *
      * @param action 行う処理（注文のキャンセルなど）
@@ -352,6 +370,7 @@ public class TestPaymentGateway implements PaymentGateway {
         duringNextCapture.set(null);
         captureCalls.set(0);
         captureFailures.set(0);
+        captureResponseLosses.set(0);
         refunded.clear();
         refundFailures.set(0);
         onRefundOrVoid.set(null);

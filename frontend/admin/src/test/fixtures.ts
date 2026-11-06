@@ -4,6 +4,7 @@ import type {
   OrderActions,
   OrderDetail,
   OrderSummary,
+  PaymentStatus,
   ProductActions,
   ProductDetail,
   ProductSummary,
@@ -103,6 +104,16 @@ export function orderActions(overrides: Partial<OrderActions> = {}): OrderAction
     ship: false,
     ...overrides,
   }
+}
+
+/** 注文の支払。期限は 2026-10-10T01:30:00Z で、与信期限は近くない */
+export function payment(status: PaymentStatus): NonNullable<OrderDetail['payment']> {
+  return { status, deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false }
+}
+
+/** キャンセル済みの注文（操作のフラグは、キャンセルを出さない）。キャンセルの内容は overrides で与える */
+export function cancelledOrder(overrides: Partial<OrderDetail> = {}): OrderDetail {
+  return orderDetail({ status: 'CANCELLED', actions: orderActions({ cancel: false }), ...overrides })
 }
 
 /** 一覧の「受付」の注文 1 件 */

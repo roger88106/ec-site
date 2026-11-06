@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS } from '../src/auth'
 import { createSimpleProduct } from '../src/data'
-import { loginWithCart } from '../src/store'
+import { loginWithCart, proceedToCheckout } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 test('AC-82、83 在庫 1 の商品を 2 つのブラウザーで注文手続きに進むと、後の方は在庫不足と示される', async ({
@@ -22,8 +22,7 @@ test('AC-82、83 在庫 1 の商品を 2 つのブラウザーで注文手続き
     await page.goto(`${STORE_URL}/cart`)
   }
 
-  await first.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
-  await expect(first.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
+  await proceedToCheckout(first)
 
   await second.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
   await expect(second.getByText('在庫が足りない商品があります。カートを確かめてください。')).toBeVisible()

@@ -10,7 +10,8 @@ import {
   orderCart,
   orderIdOf,
   payOnMockPage,
-  placeOrderButton,
+  proceedToCheckout,
+  submitOrder,
 } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits'
@@ -47,13 +48,11 @@ test('AC-143、145、146、147、149 注文すると mock の支払画面に移�
 
   await test.step('注文手続き：カードの入力はなく、注文すると mock の支払画面に移る（AC-143、145）', async () => {
     await page.goto(`${STORE_URL}/cart`)
-    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
+    await proceedToCheckout(page)
     await expect(page.getByLabel(/カード/)).toHaveCount(0)
     await fillShipping(page, '100-0001')
-    await placeOrderButton(page).click()
+    await submitOrder(page)
     await expect(page).toHaveURL(new RegExp(`^${BACKEND_URL}/mock-payment/`))
-    await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
   })
 
   await test.step('支払うと注文の画面に戻り、受付になる（AC-146、149）', async () => {

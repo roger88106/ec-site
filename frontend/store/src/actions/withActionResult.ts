@@ -40,10 +40,9 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
  * @returns 処理の値。例外なら fallback
  */
 export async function withFallback<T>(work: () => Promise<T>, fallback: T): Promise<T> {
-  const outcome: { value: T }[] = []
+  let value = fallback
   await withActionResult(async () => {
-    outcome.push({ value: await work() })
+    value = await work()
   })
-  const [first] = outcome
-  return first ? first.value : fallback
+  return value
 }

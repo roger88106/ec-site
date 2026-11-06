@@ -75,7 +75,7 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
     await expect(page.getByText('商品を登録しました')).toBeVisible()
     await expect(page.getByRole('heading', { name: PRODUCT.code })).toBeVisible()
     productUrl = page.url()
-    productId = lastPathSegment(productUrl) ?? ''
+    productId = lastPathSegment(productUrl)
   })
 
   await test.step('管理画面：画像を登録する', async () => {

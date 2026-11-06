@@ -119,10 +119,10 @@ export async function orderAsMember(page: Page, account: Account, productIds: st
  * URL のパスの最後の部分（`/products/{商品 ID}` なら商品 ID）。
  *
  * @param url URL（クエリは付いていてもよい）
- * @returns パスの最後の部分。パスが空なら undefined
+ * @returns パスの最後の部分。パスが空なら空文字
  */
-export function lastPathSegment(url: string): string | undefined {
-  return new URL(url).pathname.split('/').at(-1)
+export function lastPathSegment(url: string): string {
+  return new URL(url).pathname.split('/').at(-1) ?? ''
 }
 
 /**

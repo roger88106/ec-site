@@ -31,11 +31,13 @@ public interface PaymentGateway {
     CloseResult closePage(String pageId);
 
     /**
-     * 与信を取り消す。すでに取り消していれば成功とする。
+     * 与信を取り消す。すでに取り消していれば成功とする。<br />
+     * 売上を確定した与信は取り消せないので、例外にせず結果で返す。
      *
      * @param authorizationRef 与信の参照
+     * @return 与信の取消の結果
      */
-    void voidAuthorization(String authorizationRef);
+    VoidResult voidAuthorization(String authorizationRef);
 
     /**
      * 与信の総額の売上を確定する。同じ注文で重ねて呼ばれても、決済サービスで売上は 1 回だけ確定するようにする。<br />
@@ -104,6 +106,22 @@ public interface PaymentGateway {
          * 決済サービスに接続できない。売上を確定したかは分からないので、重ねて呼んでよい
          */
         UNREACHABLE,
+    }
+
+    /**
+     * 与信の取消の結果
+     */
+    enum VoidResult {
+
+        /**
+         * 取り消した（すでに取り消していた場合を含む）
+         */
+        VOIDED,
+
+        /**
+         * 売上を確定していて、取り消せない。返金で戻す
+         */
+        ALREADY_CAPTURED,
     }
 
     /**

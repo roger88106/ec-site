@@ -1,12 +1,12 @@
 package com.ecsite.module.payment.infrastructure;
 
-import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
+import com.ecsite.module.payment.application.port.PaymentGateway.VoidResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 決済サービスの port（{@link PaymentGateway}）の、実装によらない振る舞い（テストの書き方の「テストの種類と基準」「mock と実装の挙動の一致」）。<br />
@@ -107,21 +106,21 @@ public abstract class PaymentGatewayContractTest {
     }
 
     @Test
-    @DisplayName("取消済みの与信を重ねて取り消しても、成功")
+    @DisplayName("取消済みの与信を重ねて取り消しても、取り消した")
     void voidsAgain() {
         var authorizationRef = authorized();
         givenVoided(authorizationRef);
 
-        assertThatCode(() -> gateway().voidAuthorization(authorizationRef)).doesNotThrowAnyException();
+        assertThat(gateway().voidAuthorization(authorizationRef)).isEqualTo(VoidResult.VOIDED);
     }
 
     @Test
-    @DisplayName("売上を確定した与信は取り消せず、システムのエラー（返金で戻す）")
-    void cannotVoidCaptured() {
+    @DisplayName("売上を確定した与信の取消は、例外にせず、売上確定済みを返す（返金で戻す）")
+    void voidCapturedReturnsAlreadyCaptured() {
         var authorizationRef = authorized();
         givenCaptured(authorizationRef);
 
-        assertThatThrownBy(() -> gateway().voidAuthorization(authorizationRef)).isInstanceOf(SystemException.class);
+        assertThat(gateway().voidAuthorization(authorizationRef)).isEqualTo(VoidResult.ALREADY_CAPTURED);
     }
 
     @Test

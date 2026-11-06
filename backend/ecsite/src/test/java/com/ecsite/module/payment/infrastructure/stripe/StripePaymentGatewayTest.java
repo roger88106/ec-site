@@ -10,6 +10,7 @@ import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
+import com.ecsite.module.payment.application.port.PaymentGateway.VoidResult;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.Request;
@@ -279,8 +280,9 @@ class StripePaymentGatewayTest {
         void voids() {
             respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 200, intent("canceled"));
 
-            gateway.voidAuthorization(INTENT_ID);
+            var result = gateway.voidAuthorization(INTENT_ID);
 
+            assertThat(result).isEqualTo(VoidResult.VOIDED);
             assertThat(requests()).extracting(Request::key).containsExactly("POST /v1/payment_intents/" + INTENT_ID + "/cancel");
         }
 
@@ -291,15 +293,25 @@ class StripePaymentGatewayTest {
                     StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
             respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("canceled"));
 
-            gateway.voidAuthorization(INTENT_ID);
+            assertThat(gateway.voidAuthorization(INTENT_ID)).isEqualTo(VoidResult.VOIDED);
         }
 
         @Test
-        @DisplayName("断られ、取消済みでなければ（売上確定済みなど）、システムのエラー")
-        void rejected() {
+        @DisplayName("売上確定済みで断られたら（状態 succeeded）、例外にせず、売上確定済みを返す")
+        void alreadyCaptured() {
             respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 400,
                     StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
             respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("succeeded"));
+
+            assertThat(gateway.voidAuthorization(INTENT_ID)).isEqualTo(VoidResult.ALREADY_CAPTURED);
+        }
+
+        @Test
+        @DisplayName("AC-407-4 断られ、取消済みでも売上確定済みでもなければ（状態 requires_capture）、システムのエラー")
+        void rejected() {
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 400,
+                    StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
+            respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("requires_capture"));
 
             assertThatThrownBy(() -> gateway.voidAuthorization(INTENT_ID)).isInstanceOf(SystemException.class);
         }

@@ -133,15 +133,13 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     @Override
-    public void voidAuthorization(String authorizationRef) {
+    public VoidResult voidAuthorization(String authorizationRef) {
         try {
             client.v1().paymentIntents().cancel(authorizationRef);
+            return VoidResult.VOIDED;
         } catch (InvalidRequestException e) {
-            // 取消済みの与信は取り消せない。読み直して、取消済みなら成功とする
-            if (!isCanceled(authorizationRef)) {
-                throw failure("与信を取り消せない: authorizationRef=" + authorizationRef, e);
-            }
-            log.info("取消済みの与信の取消を、成功として扱う: authorizationRef={}", authorizationRef);
+            // 取消済みと売上確定済みの与信は取り消せない。状態を再取得して見分ける
+            return voidedState(authorizationRef, e);
         } catch (StripeException e) {
             throw failure("与信を取り消せない: authorizationRef=" + authorizationRef, e);
         }
@@ -225,14 +223,26 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信が取消済みか。
+     * 取消を拒否された PaymentIntent の状態から、取消の結果を決める。取消済みなら成功、売上確定済みなら返金に進める。
      */
-    private boolean isCanceled(String authorizationRef) {
+    private VoidResult voidedState(String authorizationRef, InvalidRequestException rejected) {
+        String status;
         try {
-            return INTENT_CANCELED.equals(client.v1().paymentIntents().retrieve(authorizationRef).getStatus());
+            status = client.v1().paymentIntents().retrieve(authorizationRef).getStatus();
         } catch (StripeException e) {
             throw failure("与信の状態を読めない: authorizationRef=" + authorizationRef, e);
         }
+        return switch (status) {
+            case INTENT_CANCELED -> {
+                log.info("取消済みの与信の取消を、成功として扱う: authorizationRef={}", authorizationRef);
+                yield VoidResult.VOIDED;
+            }
+            case INTENT_SUCCEEDED -> {
+                log.warn("売上確定済みの与信の取消を、返金に進める: authorizationRef={}", authorizationRef);
+                yield VoidResult.ALREADY_CAPTURED;
+            }
+            default -> throw failure("与信を取り消せない: authorizationRef=" + authorizationRef + ", status=" + status, rejected);
+        };
     }
 
     /**

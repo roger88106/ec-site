@@ -125,13 +125,16 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     @Override
-    public void voidAuthorization(String authorizationRef) {
+    public VoidResult voidAuthorization(String authorizationRef) {
         runOnRefundOrVoid();
         if (consume(voidFailures)) {
             throw SystemException.of("mock：与信の取消に失敗させる: " + authorizationRef, null);
         }
-        mock.voidAuthorization(authorizationRef);
-        voided.add(authorizationRef);
+        var result = mock.voidAuthorization(authorizationRef);
+        if (result == VoidResult.VOIDED) {
+            voided.add(authorizationRef);
+        }
+        return result;
     }
 
     @Override

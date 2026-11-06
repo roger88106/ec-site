@@ -129,7 +129,7 @@ AC-164 の内容を次のとおりに変更する。状態は「変更」、変�
   - 依存：T407-01-01
   - 範囲：`PaymentVoidTest`、`TestPaymentGateway`
   - 確認方法：`./gradlew integrationTest --tests '*PaymentVoidTest'` で、AC-407-1、2、3 のテストが失敗する。
-- [ ] **T407-01-03** T407-01-02 のテストが通る実装を書く。実装の変更は決定 2〜6 に従う。契約テストと本番の実装の単体テストを書き換える。AC-407-4 のテストは本番の実装の単体テストに書く（今の振る舞いを固定するテストなので最初から通る。状態による分岐を一時的に変更して、失敗することを確認する）。
+- [x] **T407-01-03** T407-01-02 のテストが通る実装を書く。実装の変更は決定 2〜6 に従う。契約テストと本番の実装の単体テストを書き換える。AC-407-4 のテストは本番の実装の単体テストに書く（今の振る舞いを固定するテストなので最初から通る。状態による分岐を一時的に変更して、失敗することを確認する）。
   - 依存：T407-01-02
   - 範囲：`PaymentGateway`、`StripePaymentGateway`、`MockPaymentGateway`、`TestPaymentGateway`、`VoidRequestedHandler`、`PaymentGatewayContractTest`、`StripePaymentGatewayTest`
   - 確認方法：`./gradlew check` が通る。

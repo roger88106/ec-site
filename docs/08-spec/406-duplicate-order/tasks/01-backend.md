@@ -28,9 +28,9 @@
   - 依存：T406-01-04
   - 範囲：`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest`
   - 確認方法：テストが失敗することを確認する
-- [ ] **T406-01-06** [リスク] 会員の行ロックと注文の時点の判定を実装する。`[リスク]` のタスクの後のレビューを行い、指摘を修正する。
+- [ ] **T406-01-06** [リスク] 会員のアドバイザリロックと注文の時点の判定を実装する。`[リスク]` のタスクの後のレビューを行い、指摘を修正する。
   - 依存：T406-01-05
-  - 範囲：`MemberOrderLockRepository`、`OrderPlacementService`、`PendingOrderGuard`、用語集（「確認した注文」と「会員ごとの注文のロック」の行。識別子ができたこのタスクで追加する）
+  - 範囲：`OrderRepository`、`JooqOrderRepository`、`OrderPlacementService`、`PendingOrderGuard`、用語集（「確認した注文」の行。識別子ができたこのタスクで追加する）
   - 確認方法：T406-01-05 のテストが通る
   - 確認する項目：ロックの順序（会員、注文手続き、在庫）、判定の順序、同時の注文で一方だけが成立すること
   - 結果：レビューごとに 1 行の表で書く。列の形は skill `review` の手順 6

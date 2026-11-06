@@ -281,6 +281,20 @@ class OrderPaymentApiTest {
         }
 
         @Test
+        @DisplayName("AC-409-1 与信の成功の通知が届かなくても、期限切れのジョブが与信を取得し、注文は受付になり、注文した品目がカートから除かれる")
+        void acceptsOrderWithoutNotification() throws Exception {
+            var orderId = pending(1);
+            gateway.markPaid(orders.openPaymentPage(orderId));
+            clock.setInstant(deadlineOf(orderId));
+
+            PaymentJobs.expire(applicationContext);
+
+            orders.awaitStatus(orderId, "ACCEPTED");
+            admin(orderId).andExpect(jsonPath("$.payment.status").value("AUTHORIZED"));
+            assertThat(cartVariantIds()).isEmpty();
+        }
+
+        @Test
         @DisplayName("AC-158 支払待ちの注文は、運営者もキャンセルできない")
         void operatorCannotCancelPending() throws Exception {
             var orderId = pending(1);

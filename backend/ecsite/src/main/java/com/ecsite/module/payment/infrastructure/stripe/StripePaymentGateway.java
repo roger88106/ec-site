@@ -14,11 +14,13 @@ import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCaptureParams;
 import com.stripe.param.RefundCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
+import com.stripe.param.checkout.SessionRetrieveParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Stripe の決済サービス（docs/02-設計/payment.md「Stripe」）。<br />
@@ -129,6 +131,22 @@ class StripePaymentGateway implements PaymentGateway {
             return closedState(pageId, e);
         } catch (StripeException e) {
             throw failure("支払画面を閉じられない: pageId=" + pageId, e);
+        }
+    }
+
+    @Override
+    public Authorization fetchAuthorization(String pageId) {
+        var params = SessionRetrieveParams.builder().addExpand("payment_intent").build();
+        try {
+            var session = client.v1().checkout().sessions().retrieve(pageId, params);
+            var intent = session.getPaymentIntentObject();
+            if (!SESSION_COMPLETE.equals(session.getStatus()) || intent == null || intent.getCreated() == null) {
+                throw SystemException.of("Stripe：支払の済んだ支払画面ではないので、与信を取得できない: pageId=" + pageId
+                        + ", status=" + session.getStatus() + ", paymentIntent=" + (intent != null), null);
+            }
+            return new Authorization(intent.getId(), Instant.ofEpochSecond(intent.getCreated()));
+        } catch (StripeException e) {
+            throw failure("与信を取得できない: pageId=" + pageId, e);
         }
     }
 

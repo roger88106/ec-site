@@ -182,9 +182,9 @@ class JooqPaymentRepositoryTest {
     }
 
     @Test
-    @DisplayName("期限を過ぎた未払いの支払を期限の古い順に上限まで取得し、期限内・未払いでない・与信の通知を待つ支払は除く")
+    @DisplayName("期限を過ぎた未払いの支払を期限の古い順に上限まで取得し、期限内・未払いでない・与信の反映を待つ支払は除く")
     void findsUnpaidPastDeadline() {
-        // 表の全体から期限切れを引くので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする
+        // テーブル全体を検索して期限切れを引くので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする
         var now = Instant.parse("1980-01-01T00:00:00Z");
         var oldest = payment(UUID.randomUUID(), now.minusSeconds(300));
         var older = payment(UUID.randomUUID(), now.minusSeconds(200));
@@ -208,7 +208,43 @@ class JooqPaymentRepositoryTest {
                 .containsExactly(oldest.id(), older.id());
     }
 
+    @Test
+    @DisplayName("AC-409-3 与信の反映を待つ未払いの支払を、待ち始めた時刻の古い順に上限まで取得し、待っていない・未払いでない支払は除く")
+    void findsUnpaidAwaitingAuthorization() {
+        // テーブル全体を検索するので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする
+        var since = Instant.parse("1980-01-01T00:00:00Z");
+        var oldest = payment(UUID.randomUUID(), DEADLINE);
+        var older = payment(UUID.randomUUID(), DEADLINE);
+        var notAwaiting = payment(UUID.randomUUID(), DEADLINE);
+        var authorized = payment(UUID.randomUUID(), DEADLINE);
+        for (var payment : List.of(older, notAwaiting, oldest, authorized)) {
+            repository.insertIfAbsent(payment);
+        }
+        awaitAuthorization(older, since.plusSeconds(100));
+        awaitAuthorization(oldest, since);
+        awaitAuthorization(authorized, since.plusSeconds(50));
+        var authorizedLoaded = repository.findById(authorized.id()).orElseThrow();
+        authorizedLoaded.authorize("auth-1", since.plusSeconds(60));
+        repository.update(authorizedLoaded);
+        var mine = List.of(oldest.id(), older.id(), notAwaiting.id(), authorized.id());
+
+        assertThat(repository.findUnpaidAwaitingAuthorization(Integer.MAX_VALUE)).extracting(Payment::id)
+                .filteredOn(mine::contains).containsExactly(oldest.id(), older.id());
+        assertThat(repository.findUnpaidAwaitingAuthorization(1)).extracting(Payment::id)
+                .containsExactly(oldest.id());
+    }
+
     // ============================== 補助 ==============================
+
+    /**
+     * 保存した支払を、与信の反映を待つ支払にする
+     */
+    private void awaitAuthorization(Payment payment, Instant since) {
+        var loaded = repository.findById(payment.id()).orElseThrow();
+        assertThat(loaded.awaitAuthorization(since)).isTrue();
+        repository.update(loaded);
+    }
+
 
     /**
      * 指定した注文と期限の未払いの支払を作る

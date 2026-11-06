@@ -3,6 +3,7 @@ package com.ecsite.module.payment.application.port;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -29,6 +30,15 @@ public interface PaymentGateway {
      * @return 閉じた結果
      */
     CloseResult closePage(String pageId);
+
+    /**
+     * 支払の済んだ支払画面の与信を取得する。支払が済んでいなければ、予期しないエラーの SystemException を投げる。
+     * 接続の失敗の扱いは他の操作と同じ。
+     *
+     * @param pageId 支払画面 ID
+     * @return 取得した与信
+     */
+    Authorization fetchAuthorization(String pageId);
 
     /**
      * 与信を取り消す。すでに取り消していれば成功とする。<br />
@@ -65,6 +75,15 @@ public interface PaymentGateway {
      * @param returnUrl 支払を終える・やめるときに戻る URL
      */
     record PageRequest(UUID paymentId, UUID orderId, Money amount, String returnUrl) {
+    }
+
+    /**
+     * 取得した与信
+     *
+     * @param authorizationRef 与信の参照
+     * @param authorizedAt     与信の時刻（決済サービスが返す時刻。実際の与信より早いことがある）
+     */
+    record Authorization(String authorizationRef, Instant authorizedAt) {
     }
 
     /**
@@ -135,7 +154,7 @@ public interface PaymentGateway {
         CLOSED,
 
         /**
-         * 閉じる前に支払が済んでいた。与信の成功の通知で与信済みになる
+         * 閉じる前に支払が済んでいた。与信は、通知か、期限切れのジョブの取得で反映する
          */
         ALREADY_PAID,
     }

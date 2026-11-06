@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import java.io.IOException;
 import java.time.Clock;
 
+import static com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.completedSession;
 import static com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.error;
 import static com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.intent;
 import static com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.session;
@@ -77,7 +78,16 @@ class StripePaymentGatewayContractTest extends PaymentGatewayContractTest {
     @Override
     protected String paidPage() {
         rejectExpire();
-        stripe.respond("GET /v1/checkout/sessions/" + SESSION_ID, 200, session(SESSION_ID, SESSION_URL, "complete"));
+        stripe.respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
+                completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "requires_capture", 1_793_926_800L));
+        return SESSION_ID;
+    }
+
+    @Override
+    protected String paidPageWithExpiredAuthorization() {
+        rejectExpire();
+        stripe.respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
+                completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "canceled", 1_793_926_800L));
         return SESSION_ID;
     }
 

@@ -23,6 +23,12 @@ class AdminPermissionAuthorizationManager implements AuthorizationManager<Reques
     private static final AuthorizationDecision DENY = new AuthorizationDecision(false);
 
     /**
+     * ログインしているかの判定
+     */
+    private static final AuthenticatedAuthorizationManager<RequestAuthorizationContext> LOGGED_IN =
+            AuthenticatedAuthorizationManager.authenticated();
+
+    /**
      * 権限ではなく、ログインしていればよい操作を表す値（admin.yaml の冒頭の説明）
      */
     static final String AUTHENTICATED = "authenticated";
@@ -45,10 +51,9 @@ class AdminPermissionAuthorizationManager implements AuthorizationManager<Reques
     @Override
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
         var request = context.getRequest();
-        var path = request.getRequestURI().substring(request.getContextPath().length());
-        return permissions.requiredPermission(request.getMethod(), path)
+        return permissions.requiredPermission(request.getMethod(), RequestPaths.pathOf(request))
                 .map(permission -> permission.equals(AUTHENTICATED)
-                        ? AuthenticatedAuthorizationManager.<RequestAuthorizationContext>authenticated().authorize(authentication, context)
+                        ? LOGGED_IN.authorize(authentication, context)
                         : AuthorityAuthorizationManager.<RequestAuthorizationContext>hasAuthority(permission)
                                 .authorize(authentication, context))
                 .orElse(DENY);

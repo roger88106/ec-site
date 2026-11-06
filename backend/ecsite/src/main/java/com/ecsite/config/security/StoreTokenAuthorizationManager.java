@@ -26,6 +26,12 @@ class StoreTokenAuthorizationManager implements AuthorizationManager<RequestAuth
     private static final AuthorizationDecision DENY = new AuthorizationDecision(false);
 
     /**
+     * ログインしているかの判定
+     */
+    private static final AuthenticatedAuthorizationManager<RequestAuthorizationContext> LOGGED_IN =
+            AuthenticatedAuthorizationManager.authenticated();
+
+    /**
      * 操作ごとの token の要否
      */
     private final StoreOperationSecurity security;
@@ -43,10 +49,9 @@ class StoreTokenAuthorizationManager implements AuthorizationManager<RequestAuth
     @Override
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
         var request = context.getRequest();
-        var path = request.getRequestURI().substring(request.getContextPath().length());
-        return security.requiresToken(request.getMethod(), path)
+        return security.requiresToken(request.getMethod(), RequestPaths.pathOf(request))
                 .map(requiresToken -> requiresToken
-                        ? AuthenticatedAuthorizationManager.<RequestAuthorizationContext>authenticated().authorize(authentication, context)
+                        ? LOGGED_IN.authorize(authentication, context)
                         : PERMIT)
                 .orElse(DENY);
     }

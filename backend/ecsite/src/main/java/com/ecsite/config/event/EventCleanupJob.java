@@ -1,5 +1,6 @@
 package com.ecsite.config.event;
 
+import com.ecsite.common.scheduling.ExpiredDataCleanup;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,11 +49,7 @@ class EventCleanupJob {
     @SchedulerLock(name = "event-cleanup")
     void cleanUp() {
         int deleted = publicationRecords.deleteCompletedBefore(clock.instant().minus(properties.retention()));
-        if (deleted > 0) {
-            log.info("処理の済んだイベントを消した：{} 件", deleted);
-        } else {
-            log.debug("処理の済んだイベントを消した：0 件");
-        }
+        ExpiredDataCleanup.logDeleted(log, "処理の済んだイベント", deleted);
     }
 
     /**

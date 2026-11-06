@@ -6,7 +6,7 @@ import java.util.function.IntSupplier;
 
 /**
  * 期限切れのデータの片付けの共通の処理（docs/02-設計/common.md）。<br />
- * カート、在庫の引当、注文手続きの片付けのジョブが使う。
+ * カート、在庫の引当、注文手続きの片付けのジョブが使う。処理の済んだイベントの片付けのジョブは、ログの出力だけを使う。
  * 件数の上限ずつ消し、消した件数が上限と等しい間は繰り返す。
  * {@code @Scheduled} と {@code @SchedulerLock} は注釈の定数しか取れないので、ジョブに残す。
  */
@@ -34,6 +34,18 @@ public final class ExpiredDataCleanup {
             deleted = deleteOnce.getAsInt();
             total += deleted;
         } while (deleted == batchSize);
+        logDeleted(log, noun, total);
+    }
+
+    /**
+     * 消した件数をログに出す。1 件以上なら info、0 件なら debug で出す。ログの文は {@code {}を消した：{} 件}（名詞は引数で渡す）。<br />
+     * 件数の上限を置かずに 1 文で消すジョブも、これで出す。
+     *
+     * @param log   ログを出すロガー（呼ぶジョブのもの）
+     * @param noun  消したものを表す名詞（例：期限切れのカート）
+     * @param total 消した件数
+     */
+    public static void logDeleted(Logger log, String noun, long total) {
         if (total > 0) {
             log.info("{}を消した：{} 件", noun, total);
         } else {

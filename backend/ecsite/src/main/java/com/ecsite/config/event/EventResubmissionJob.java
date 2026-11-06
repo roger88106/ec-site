@@ -19,6 +19,8 @@ import java.time.Duration;
  * 未完了のイベントを再発行する定期ジョブ（バックエンドのアーキテクチャの「水平スケール」）。<br />
  * リスナーの処理に失敗した（または処理の途中でインスタンスが止まった）イベントを、もう一度リスナーに渡す。
  * リスナーは冪等に作るので、重ねて届いてもよい。
+ * 再発行の印を付けた後で止まったイベントと、処理の回数が上限に達した試行の途中で止まったイベントは、この選択の対象にならない。
+ * それらは Spring Modulith の監視（{@code spring.modulith.events.staleness}）が失敗の状態に変えるので、次の回で再発行するか止める。
  * 間隔は再発行の設定 {@code ecsite.scheduling.event-resubmission.interval}（既定 1 分）で変えられる。
  */
 @Slf4j
@@ -54,6 +56,7 @@ class EventResubmissionJob {
     /**
      * 発行から一定時間（既定 5 分）より前の、未完了のイベントを再発行する。<br />
      * 発行の直後のイベントは、まだ処理中のことがあるので除く。
+     * 最後の試行から再発行の間隔以上の時間がたっていないイベントも除く（処理の回数の増え方を、インスタンスの台数によらず同じにする）。
      * 処理の回数（発行の時の 1 回と再発行の回数）が上限（既定 60）に達したイベントは、再発行しない。
      * 上限に達して最後の処理に失敗したイベントには止めた印を付けてエラーのログに出し、
      * 終わりに未完了と止めたイベントの件数をメトリクスに置く。
@@ -67,13 +70,18 @@ class EventResubmissionJob {
             log.error("処理の回数が上限に達したイベントの再発行を止めた：種類 {}、イベント ID {}、リスナー {}、処理の回数 {}",
                     stopped.eventType(), stopped.id(), stopped.listenerId(), stopped.completionAttempts());
         }
-        log.debug("未完了のイベントを再発行する（発行から {} より前で、処理の回数が {} より少ないもの）",
-                properties.minAge(), properties.maxAttempts());
-        var publishedBefore = clock.instant().minus(properties.minAge());
-        // 再発行の選択肢（ResubmissionOptions）は使わない：状態が FAILED のものだけを、件数の上限で古い順に読んでから絞るので、
-        // 止めたイベントが上限の件数だけ溜まると、新しいイベントが再発行されなくなる。処理中のまま止まったイベントも拾わない
+        log.debug("未完了のイベントを再発行する（発行から {} より前で、最後の試行から {} 以上たち、処理の回数が {} より少ないもの）",
+                properties.minAge(), properties.interval(), properties.maxAttempts());
+        var now = clock.instant();
+        var publishedBefore = now.minus(properties.minAge());
+        var lastTriedBy = now.minus(properties.interval());
+        // 再発行の選択肢（ResubmissionOptions）は使わない。状態が FAILED のものだけを、件数の上限で古い順に読んでから絞るので、
+        // 止めたイベントが上限の件数だけ溜まると、新しいイベントが再発行されなくなるため。
+        // 発行から下限の時間がたち、最後の試行から間隔以上の時間がたち、回数が上限より少ないものを選ぶ。
+        // 間隔のタイマーはインスタンスごとにあるので、最後の試行からの時間で見ないと、台数のぶんだけ回数が速く増える
         incompletePublications.resubmitIncompletePublications(publication ->
                 publication.getPublicationDate().isBefore(publishedBefore)
+                        && !publication.getLastPublicationDate().isAfter(lastTriedBy)
                         && publication.getCompletionAttempts() < properties.maxAttempts());
         publicationMetrics.record(publicationRecords.countIncomplete(),
                 publicationRecords.countStopped(properties.maxAttempts()));

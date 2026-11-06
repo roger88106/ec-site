@@ -6,6 +6,7 @@ import com.ecsite.architecture.money.module.sample.application.model.PricedComma
 import com.ecsite.architecture.money.module.sample.application.model.PricedRow;
 import com.ecsite.architecture.money.module.sample.application.model.PricedView;
 import com.ecsite.architecture.money.module.sample.application.model.view.PricedReport;
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaField;
@@ -41,17 +42,17 @@ class MoneyTypeTest {
     /**
      * モジュールの公開の型のパッケージ（api・event とその下）の形
      */
-    private static final Pattern PUBLIC_PACKAGE = Pattern.compile(".*\\.module\\.[^.]+\\.(api|event)(\\..*)?");
+    private static final DescribedPredicate<JavaClass> PUBLIC_PACKAGE = JavaClass.Predicates.resideInAnyPackage("..module.*.api..", "..module.*.event..");
 
     /**
      * command・view を置く application.model（とその下）のパッケージの形
      */
-    private static final Pattern MODEL_PACKAGE = Pattern.compile(".*\\.module\\.[^.]+\\.application\\.model(\\..*)?");
+    private static final DescribedPredicate<JavaClass> MODEL_PACKAGE = JavaClass.Predicates.resideInAPackage("..module.*.application.model..");
 
     /**
      * 表示用（view）のパッケージ（application.model.view とその下）の形
      */
-    private static final Pattern VIEW_PACKAGE = Pattern.compile(".*\\.module\\.[^.]+\\.application\\.model\\.view(\\..*)?");
+    private static final DescribedPredicate<JavaClass> VIEW_PACKAGE = JavaClass.Predicates.resideInAPackage("..module.*.application.model.view..");
 
     @Test
     @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない（対象は、それぞれ 1 件以上ある）")
@@ -94,7 +95,7 @@ class MoneyTypeTest {
      */
     private static List<JavaClass> publicClasses(JavaClasses classes) {
         return classes.stream()
-                .filter(javaClass -> PUBLIC_PACKAGE.matcher(javaClass.getPackageName()).matches())
+                .filter(javaClass -> PUBLIC_PACKAGE.test(javaClass))
                 .toList();
     }
 
@@ -106,8 +107,8 @@ class MoneyTypeTest {
      */
     private static List<JavaClass> modelClasses(JavaClasses classes) {
         return classes.stream()
-                .filter(javaClass -> VIEW_PACKAGE.matcher(javaClass.getPackageName()).matches()
-                        || (MODEL_PACKAGE.matcher(javaClass.getPackageName()).matches() && isViewOrCommand(javaClass)))
+                .filter(javaClass -> VIEW_PACKAGE.test(javaClass)
+                        || (MODEL_PACKAGE.test(javaClass) && isViewOrCommand(javaClass)))
                 .toList();
     }
 

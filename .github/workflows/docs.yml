@@ -17,8 +17,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-${{ github.ref }}
-  cancel-in-progress: true
+  group: docs-${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && github.sha || github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' }}
 
 jobs:
   docs:

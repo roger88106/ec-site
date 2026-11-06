@@ -217,6 +217,7 @@ class CartApiTest {
 
             change(cartId, variant, 1).andExpect(status().isNotFound());
             add(cartId, variant, 1).andExpect(status().isNoContent());
+            change(cartId, variant, 0).andExpect(status().isBadRequest());
             change(cartId, variant, 11).andExpect(status().isBadRequest());
         }
 

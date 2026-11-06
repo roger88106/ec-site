@@ -208,7 +208,7 @@ paths:
     put:
       tags: [cart]
       operationId: changeCartItemQuantity
-      x-error-codes: [INVALID_CART_QUANTITY, VARIANT_NOT_SELECTABLE, QUANTITY_EXCEEDS_STOCK]
+      x-error-codes: [INVALID_CART_QUANTITY, QUANTITY_EXCEEDS_STOCK]
       security:
         - {}
         - memberToken: []

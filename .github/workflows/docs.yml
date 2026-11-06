@@ -13,8 +13,7 @@ on:
   push:
   pull_request:
 
-permissions:
-  contents: read
+permissions: {}
 
 # 考え方は ci.yml の concurrency と同じ
 concurrency:
@@ -24,16 +23,19 @@ concurrency:
 jobs:
   docs:
     name: 文書と CI の検査の script
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           # 全ての branch を取得する。migrations、ja-text の --changed、risk が、origin/develop と origin/main との分岐点を求めるため
           fetch-depth: 0
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
 

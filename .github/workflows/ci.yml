@@ -32,8 +32,7 @@ on:
   # pull request は、変えたファイルによらずいつも流す（develop と main に入る前に必ず確認する）
   pull_request:
 
-permissions:
-  contents: read
+permissions: {}
 
 # 全ての job の JDK のバージョン。バックエンドの toolchain のバージョン（backend/ecsite/gradle/libs.versions.toml の java）と同じにする。
 # setup-java は libs.versions.toml を読めないので、ここに 1 か所だけ書き、各 job が参照する
@@ -53,6 +52,8 @@ jobs:
   # 手元は分けずに ./gradlew check で全て流す（docs/06-手順書/ci.md）。
   backend-build:
     name: バックエンド（ビルドと単体テスト）
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -60,15 +61,17 @@ jobs:
         working-directory: backend/ecsite
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
       # Gradle のキャッシュと、wrapper の検証
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照合する（依存とライセンス）。
       # `check` がライセンスの検査（checkLicense）を含む。
@@ -81,7 +84,7 @@ jobs:
       # 合わせるジョブ（backend）が、コンパイルなしでカバレッジの報告を作るために使う。
       # クラスは、各ジョブが別々にコンパイルしたものと中身が同じ（JaCoCo のクラスの ID が一致する）
       - name: カバレッジの実行データ（単体テスト）を保存
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-exec-unit
           path: backend/ecsite/build/jacoco/test.exec
@@ -89,7 +92,7 @@ jobs:
           retention-days: 1
 
       - name: コンパイルしたクラスを保存
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-classes
           path: backend/ecsite/build/classes/java/main/
@@ -103,7 +106,7 @@ jobs:
 
       - name: mutation testing の報告を保存
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pitest-backend
           path: backend/ecsite/build/reports/pitest/
@@ -117,7 +120,7 @@ jobs:
 
       - name: テストレポートを保存（失敗時）
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-reports-build
           path: |
@@ -130,6 +133,8 @@ jobs:
   # 片方が失敗しても、もう片方は最後まで流す（失敗の全体を一度に見るため）
   backend-integration:
     name: バックエンド（統合テスト ${{ matrix.shard }}/${{ strategy.job-total }}）
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -141,14 +146,16 @@ jobs:
         working-directory: backend/ecsite
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       # 統合テストに必要な task だけが流れる（ライセンスの検査と Checkstyle は、ビルドと単体テストのジョブで流す）。
       # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
@@ -156,7 +163,7 @@ jobs:
         run: ./gradlew integrationTest -PintegrationTestShard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: カバレッジの実行データ（統合テスト）を保存
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-exec-integration-${{ matrix.shard }}
           path: backend/ecsite/build/jacoco/integrationTest.exec
@@ -165,7 +172,7 @@ jobs:
 
       - name: テストレポートを保存（失敗時）
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-reports-integration-${{ matrix.shard }}
           path: |
@@ -182,6 +189,8 @@ jobs:
   # このジョブも中止にするため（古い commit に失敗を残さない）。中止も成功ではないので、必須の検査としては通らない
   backend:
     name: バックエンド
+    permissions:
+      contents: read
     needs: [backend-build, backend-integration]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
@@ -205,18 +214,20 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
       # 報告を作る Gradle の呼び出しだけに使う（テストもコンパイルも流さない）
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: 実行データとクラスを取得
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: backend-*
           path: ${{ runner.temp }}/backend
@@ -239,7 +250,7 @@ jobs:
         run: node ../../scripts/ci/report/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
 
       - name: カバレッジの報告を保存
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-backend
           path: backend/ecsite/build/reports/jacoco/coverageReport/
@@ -252,6 +263,8 @@ jobs:
 
   admin:
     name: 管理画面
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -259,7 +272,9 @@ jobs:
         working-directory: frontend/admin
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
@@ -281,7 +296,7 @@ jobs:
 
       - name: カバレッジの報告を保存
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-admin
           path: frontend/admin/coverage/
@@ -302,6 +317,8 @@ jobs:
 
   store:
     name: 店舗画面
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -309,7 +326,9 @@ jobs:
         working-directory: frontend/store
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
@@ -344,7 +363,7 @@ jobs:
 
       - name: 共有のパッケージのカバレッジの報告を保存
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-shared
           path: frontend/shared/coverage/
@@ -368,7 +387,7 @@ jobs:
 
       - name: カバレッジの報告を保存
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-store
           path: frontend/store/coverage/
@@ -393,6 +412,8 @@ jobs:
 
   e2e:
     name: E2E
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # ほかのジョブを待たずに始める（CI の全体の時間を短くするため）。
@@ -400,14 +421,16 @@ jobs:
     # 失敗したときは、部分のジョブの結果を先に見る（docs/06-手順書/ci.md）
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
@@ -436,7 +459,7 @@ jobs:
 
       - name: ブラウザーのキャッシュ
         id: browsers
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
@@ -459,7 +482,7 @@ jobs:
 
       - name: Playwright のレポートを保存（失敗時）
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
           path: |

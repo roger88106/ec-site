@@ -86,6 +86,49 @@ export function idpPasswordSubmitButton(page: Page): Locator {
 }
 
 /**
+ * パスワードの条件を満たさないと出る、パスワードを設定する画面の拒否の表示。
+ *
+ * @param page パスワードを設定する画面を開いているページ
+ * @returns 拒否の表示
+ */
+export function idpPasswordRejected(page: Page): Locator {
+  return page.getByText(/無効なパスワード/)
+}
+
+/**
+ * ログインできなかったときに出る、IdP のログイン画面の誤りの表示。
+ *
+ * @param page IdP のログイン画面を開いているページ
+ * @returns 誤りの表示
+ */
+export function idpLoginError(page: Page): Locator {
+  return page.getByText(/無効なユーザー名またはパスワード/)
+}
+
+/**
+ * 登録を始めたのとは別のブラウザーで確認のメールのリンクを開くと、パスワードを設定する画面の前に出る、続行のリンク。
+ *
+ * @param page 確認のメールのリンクを開いたページ
+ * @returns 続行のリンク
+ */
+export function idpContinueLink(page: Page): Locator {
+  return page.getByRole('link', { name: /続行するにはここをクリックしてください/ })
+}
+
+/** IdP の store の client に設定してある、店舗の URL（「アプリケーションに戻る」の戻り先。E2E の店舗とはポートが違う。urls.ts は E2E のサーバーの URL だけを置くので、ここに置く） */
+export const IDP_STORE_BASE_URL = 'http://localhost:3000'
+
+/**
+ * パスワードを設定した後に IdP の画面に出る、アプリケーション（店舗）に戻るリンク。
+ *
+ * @param page パスワードを設定した後の画面を開いているページ
+ * @returns 戻るリンク
+ */
+export function idpBackToApplication(page: Page): Locator {
+  return page.getByRole('link', { name: /アプリケーションに戻る/ })
+}
+
+/**
  * 管理画面を開き、運営者としてログインする（管理画面は、開くと IdP のログインへ移る）。
  *
  * @param page 使うページ

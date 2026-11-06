@@ -1,11 +1,26 @@
 import { expect, test } from '@playwright/test'
-import { idpPasswordInput, memberEmail, setPasswordFromMail, submitIdpLogin, submitSignup } from '../src/auth'
+import {
+  fillNewPassword,
+  IDP_STORE_BASE_URL,
+  idpBackToApplication,
+  idpContinueLink,
+  idpLoginError,
+  idpPasswordInput,
+  idpPasswordRejected,
+  idpPasswordSubmitButton,
+  loginStore,
+  memberEmail,
+  openMailLink,
+  setPasswordFromMail,
+  submitIdpLogin,
+  submitSignup,
+} from '../src/auth'
 import { createSimpleProduct } from '../src/data'
 import { detailValue } from '../src/detail'
 import { addToCart, fillShipping, payOnMockPage, proceedToCheckout, submitOrder } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
-test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
+test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開いてパスワードを設定すると、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
   page,
 }) => {
   const productName = '会員の注文の商品'
@@ -65,4 +80,88 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
     await page.getByRole('link', { name: 'ログイン' }).click()
     await expect(idpPasswordInput(page)).toBeVisible()
   })
+})
+
+test('AC-110 確認メールのリンク先の画面で、条件を満たさないパスワードの設定は拒否される', async ({ page }) => {
+  const account = { email: memberEmail('weakpass'), password: 'E2e-pass-1234' }
+  await page.goto(STORE_URL)
+  await submitSignup(page, account, { lastName: '会員', firstName: '拒否' })
+  await openMailLink(page, account)
+
+  await test.step('短すぎるパスワードは拒否され、パスワードの設定の画面に残る', async () => {
+    await fillNewPassword(page, { ...account, password: 'Ab1-xyz' })
+    await idpPasswordSubmitButton(page).click()
+    await expect(idpPasswordRejected(page)).toBeVisible()
+    await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeHidden()
+  })
+
+  await test.step('メールアドレスと同じパスワードは拒否される', async () => {
+    await fillNewPassword(page, { ...account, password: account.email })
+    await idpPasswordSubmitButton(page).click()
+    await expect(idpPasswordRejected(page)).toBeVisible()
+  })
+
+  await test.step('条件を満たすパスワードなら設定でき、ログインした状態で店舗に戻る', async () => {
+    await fillNewPassword(page, account)
+    await idpPasswordSubmitButton(page).click()
+    await expect(page.getByText('会員 拒否 様')).toBeVisible()
+  })
+})
+
+test('AC-111 確認メールのリンクでパスワードを設定するまでは、ログインできない', async ({ page, browser }) => {
+  const account = { email: memberEmail('unverified'), password: 'E2e-pass-1234' }
+  await page.goto(STORE_URL)
+  await submitSignup(page, account, { lastName: '会員', firstName: '未確認' })
+
+  await test.step('パスワードを設定する前は、ログインできない（登録の手続きを壊さないよう、別のブラウザーで試す）', async () => {
+    const other = await browser.newContext()
+    try {
+      const otherPage = await other.newPage()
+      await otherPage.goto(`${STORE_URL}/login`)
+      await submitIdpLogin(otherPage, account)
+      await expect(idpLoginError(otherPage)).toBeVisible()
+    } finally {
+      await other.close()
+    }
+  })
+
+  await test.step('パスワードを設定した後は、ログインできる', async () => {
+    await setPasswordFromMail(page, account)
+    await expect(page.getByText('会員 未確認 様')).toBeVisible()
+  })
+})
+
+test('AC-112 登録を始めたのと別のブラウザーで確認メールのリンクを開くと、パスワードを設定した後、IdP の画面から店舗に戻ってログインする', async ({
+  page,
+  browser,
+}) => {
+  const account = { email: memberEmail('otherbrowser'), password: 'E2e-pass-1234' }
+  await page.goto(STORE_URL)
+  await submitSignup(page, account, { lastName: '会員', firstName: '別端末' })
+
+  const other = await browser.newContext()
+  try {
+    const otherPage = await other.newPage()
+    await test.step('別のブラウザーでパスワードを設定すると、IdP の画面から店舗に戻る操作ができる', async () => {
+      await openMailLink(otherPage, account)
+      await idpContinueLink(otherPage).click()
+      await fillNewPassword(otherPage, account)
+      await idpPasswordSubmitButton(otherPage).click()
+      await expect(idpBackToApplication(otherPage)).toHaveAttribute('href', `${IDP_STORE_BASE_URL}/`)
+      // IdP の戻り先は開発用の店舗の URL で、E2E の店舗とはポートが違う。戻り先への要求だけを E2E の店舗に振り替える
+      await otherPage.route(`${IDP_STORE_BASE_URL}/**`, (route) =>
+        route.fulfill({ status: 302, headers: { location: `${STORE_URL}/` } }),
+      )
+      await idpBackToApplication(otherPage).click()
+      await expect(otherPage).toHaveURL(`${STORE_URL}/`)
+    })
+
+    await test.step('店舗ではログインしていないので、ログインする', async () => {
+      await expect(otherPage.getByRole('link', { name: 'ログイン' })).toBeVisible()
+      await loginStore(otherPage, account)
+      await expect(otherPage.getByText('会員 別端末 様')).toBeVisible()
+    })
+  } finally {
+    await other.close()
+  }
 })

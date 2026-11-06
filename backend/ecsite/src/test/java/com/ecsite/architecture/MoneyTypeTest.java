@@ -118,7 +118,7 @@ class MoneyTypeTest {
      * @return 最上位のクラスの名前が View か Command で終わるなら true
      */
     private static boolean isViewOrCommand(JavaClass javaClass) {
-        String topLevelName = javaClass.getName().split("\\$", 2)[0];
+        String topLevelName = ProductionClasses.outermostName(javaClass);
         return topLevelName.endsWith("View") || topLevelName.endsWith("Command");
     }
 

@@ -147,6 +147,6 @@ class SchemaOwnershipTest {
      * @return 例外のクラスか、その入れ子のクラスなら true
      */
     private static boolean isExceptionClass(JavaClass javaClass, String exception) {
-        return javaClass.getName().equals(exception) || javaClass.getName().startsWith(exception + "$");
+        return ProductionClasses.outermostName(javaClass).equals(exception);
     }
 }

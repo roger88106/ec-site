@@ -119,7 +119,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 - Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
 - `@types/node` の major は、Dependabot の対象から外す。型の定義だけを上げると、`.node-version` の Node にない API も型の検査を通るため。Node のバージョンを上げるときに合わせて上げる。
 - `github-actions` の `directories` に、ローカルの複合の action のディレクトリ（`.github/actions/setup-frontend`）を加えている（`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため）。複合の action を増やしたら追加する。
-- workflow と複合の action の `uses` は、commit の SHA に固定し、同じ行のコメントにタグを書く（`uses: actions/checkout@<SHA> # v7.0.1`）。GitHub の文書では、Dependabot はこの形の SHA とコメントを更新する（実際の更新の pull request は未確認）。ローカルの action（`./.github/actions/...`）は固定しない。
+- workflow と複合の action の `uses` は、commit の SHA に固定し、同じ行のコメントにタグを書く（`uses: actions/checkout@<SHA> # v7.0.1`）。GitHub の文書では、Dependabot はこの形の SHA とコメントを更新する（Dependabot が実際に作る更新の pull request は未確認）。SHA に固定した action は Dependabot alerts の対象にならないので、脆弱性を修正したバージョンも、週 1 回の更新（cooldown あり）で取り込む。ローカルの action（`./.github/actions/...`）は固定しない。
 - 危険度は、経路と、pull request の題から読む更新の種類で判定する。`github-actions` の更新（`.github/`）と major の更新、題から更新の種類を読めないものは危険度が高く、利用者が許可する。他の minor と patch は危険度が低く、issue 担当のセッションがマージする。CI の job は作成者で見分け、本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
 - Gradle のバージョンを上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<バージョン>-bin.zip.sha256` の値に替える（Dependabot の更新がこの値も替えるかは未確認なので、pull request で確認する）。

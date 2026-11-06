@@ -3,7 +3,7 @@
 // コメントと、開発者だけが見る文（ログ、プログラムの誤りの例外）は見ない。テスト、生成物、shadcn/ui のコンポーネント、除外の一覧のファイルも見ない。
 // 失敗したとき：文言を messages/ja.json に置き、キーで取得する。
 // 除外：hardcoded-text-exclusions.json に {キー: 理由} で書く。キーはリポジトリのルートからのファイルのパス。文言を直接書いていないファイルの除外は失敗にする。
-// 使い方：node scripts/ci/hardcoded-text.mjs [--count]（リポジトリのルートで。--count は数だけを出し、失敗にしない）
+// 使い方：node scripts/ci/hardcoded-text.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
@@ -56,18 +56,9 @@ if (isMain(import.meta.url)) {
   const hitsByFile = scanSources(files, (file) => readFileSync(file, 'utf8'))
   const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))
   const problems = checkExclusions('hardcoded-text-exclusions.json', exclusions, (file) => hitsByFile.has(file))
-  const countOnly = process.argv.includes('--count')
-  if (countOnly) {
-    // --count は数だけを出し、失敗にしない。除外の誤りは警告として出して、数も出す
-    for (const problem of problems) console.log(`警告：${problem}`)
-    const byFile = Object.groupBy(found, (hit) => hit.file)
-    for (const [file, hits] of Object.entries(byFile)) console.log(`${hits.length}\t${file}`)
-    console.log(`合計 ${found.length} 行、${Object.keys(byFile).length} ファイル`)
-  } else {
-    // 他の検査と同じ形：違反と誤りを標準出力に出し、最後の行に要約を出す。違反があれば失敗
-    for (const problem of problems) console.log(problem)
-    for (const hit of found) console.log(`${hit.file}:${hit.line}  ${hit.text}`)
-    console.log(`表示の文言を直接書いた所：${found.length}、除外の誤り：${problems.length}`)
-    process.exit(found.length > 0 || problems.length > 0 ? 1 : 0)
-  }
+  // 他の検査と同じ形：違反と誤りを標準出力に出し、最後の行に要約を出す。違反があれば失敗
+  for (const problem of problems) console.log(problem)
+  for (const hit of found) console.log(`${hit.file}:${hit.line}  ${hit.text}`)
+  console.log(`表示の文言を直接書いた所：${found.length}、除外の誤り：${problems.length}`)
+  process.exit(found.length > 0 || problems.length > 0 ? 1 : 0)
 }

@@ -88,7 +88,7 @@ describe('表示の文言を直接書いた所の検査', () => {
 })
 
 /** 画面のソースを 1 つ置いた一時の Git リポジトリで、検査を子プロセスとして実行する */
-function runCheck(source, args = []) {
+function runCheck(source) {
   const dir = mkdtempSync(path.join(tmpdir(), 'hardcoded-text-'))
   try {
     const env = withoutGitEnv()
@@ -97,7 +97,7 @@ function runCheck(source, args = []) {
     mkdirSync(path.dirname(file), { recursive: true })
     writeFileSync(file, source)
     const script = fileURLToPath(new URL('./hardcoded-text.mjs', import.meta.url))
-    return spawnSync(process.execPath, [script, ...args], { cwd: dir, env, encoding: 'utf8' })
+    return spawnSync(process.execPath, [script], { cwd: dir, env, encoding: 'utf8' })
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -117,13 +117,5 @@ describe('表示の文言の検査の実行（コマンドライン）', () => {
     const result = runCheck('const a = 1\n')
     assert.equal(result.status, 0)
     assert.equal(result.stdout.trim(), '表示の文言を直接書いた所：0、除外の誤り：0')
-  })
-
-  test('--count は、ファイルごとの数と合計を出し、違反があっても終了コード 0 にする', () => {
-    const result = runCheck("const a = '保存'\nconst b = '削除'\n", ['--count'])
-    assert.equal(result.status, 0)
-    const lines = result.stdout.trim().split('\n')
-    assert.equal(lines[0], '2\tfrontend/store/src/Sample.tsx')
-    assert.equal(lines.at(-1), '合計 2 行、1 ファイル')
   })
 })

@@ -300,11 +300,20 @@ paths:
     post:
       tags: [checkout]
       operationId: startCheckout
-      x-error-codes: [CART_NOT_ORDERABLE, OUT_OF_STOCK]
+      x-error-codes: [CART_NOT_ORDERABLE, OUT_OF_STOCK, PENDING_ORDER_CONFIRMATION_REQUIRED]
       security:
         - memberToken: []
       summary: 注文手続きに進む
-      description: カートの全品目を、カートの数量だけ引き当てる。1 品目でも引き当てられなければ、どれも引き当てない。
+      description: |
+        カートの全品目を、カートの数量だけ引き当てる。1 品目でも引き当てられなければ、どれも引き当てない。
+        会員に支払待ちの注文があるときは、本文の `acknowledgedOrderIds` に、その全ての注文の ID が含まれていなければ 409（`PENDING_ORDER_CONFIRMATION_REQUIRED`）を返す。この場合は、注文手続きを作らず、引当も変えない。判定では品目を比べない。
+        含まれていれば、そのときの支払待ちの注文の ID の集合を、確認した注文として注文手続きに保存する。本文がないときは、確認した注文は空である。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartCheckoutRequest'
       responses:
         '201':
           $ref: '#/components/responses/Created'
@@ -319,7 +328,11 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundForOthers'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 在庫不足（`OUT_OF_STOCK`）、または確認していない支払待ちの注文がある（`PENDING_ORDER_CONFIRMATION_REQUIRED`）
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
 
   # ============================== 注文手続き ==============================
   /checkouts/{checkoutId}:
@@ -350,13 +363,14 @@ paths:
     post:
       tags: [checkout]
       operationId: placeOrder
-      x-error-codes: [INVALID_EMAIL, EMAIL_NOT_VERIFIED, INVALID_RECIPIENT_NAME, INVALID_POSTAL_CODE, INVALID_PREFECTURE, INVALID_MUNICIPALITY, INVALID_ADDRESS, INVALID_PHONE_NUMBER, CART_NOT_ORDERABLE, OUT_OF_STOCK, TOTAL_AMOUNT_CHANGED, CART_CHANGED]
+      x-error-codes: [INVALID_EMAIL, EMAIL_NOT_VERIFIED, INVALID_RECIPIENT_NAME, INVALID_POSTAL_CODE, INVALID_PREFECTURE, INVALID_MUNICIPALITY, INVALID_ADDRESS, INVALID_PHONE_NUMBER, CART_NOT_ORDERABLE, OUT_OF_STOCK, TOTAL_AMOUNT_CHANGED, CART_CHANGED, PENDING_ORDER_CONFIRMATION_REQUIRED]
       security:
         - memberToken: []
       summary: 注文する
       description: |
         注文と支払を作る。同じ注文手続きでの再送には、作成済みの注文の ID を 200 で返す。
-        409 の `errorCode`：`OUT_OF_STOCK`（在庫不足）、`TOTAL_AMOUNT_CHANGED`（確認した総額と違う）、`CART_CHANGED`（注文手続きの後にカートが変わった）。
+        409 の `errorCode`：`OUT_OF_STOCK`（在庫不足）、`TOTAL_AMOUNT_CHANGED`（確認した総額と違う）、`CART_CHANGED`（注文手続きの後にカートが変わった）、`PENDING_ORDER_CONFIRMATION_REQUIRED`（注文手続きで確認していない支払待ちの注文がある）。
+        支払待ちの注文の判定は、注文の時点の状態で行う。注文手続きで確認した注文に全て含まれていなければ 409 で、注文を作らず、在庫も減らさない。
       requestBody:
         required: true
         content:
@@ -402,6 +416,24 @@ paths:
                 $ref: '#/components/schemas/OrderSummaryPage'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/orders/pending:
+    get:
+      tags: [order]
+      operationId: listMemberPendingOrders
+      summary: 自分の支払待ちの注文の一覧
+      description: token の会員の支払待ちの注文を、注文日時の新しい順に返す。支払の期限を過ぎ、期限切れによるキャンセルの前の注文も含む。注文手続きの確認の画面の材料である。
+      security:
+        - memberToken: []
+      responses:
+        '200':
+          description: 支払待ちの注文の一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingOrderList'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -709,6 +741,7 @@ components:
         - ORDER_NOT_PAYABLE
         - OUT_OF_STOCK
         - PAYMENT_GATEWAY_UNAVAILABLE
+        - PENDING_ORDER_CONFIRMATION_REQUIRED
         - QUANTITY_EXCEEDS_STOCK
         - RESTORE_ERROR
         - SYSTEM_ERROR
@@ -1171,6 +1204,16 @@ components:
           type: string
           description: 電話番号（数字だけ）
           example: '0312345678'
+    StartCheckoutRequest:
+      type: object
+      description: 注文手続きの開始の任意の本文。本文がないときは、確認した注文がないものとして扱う
+      properties:
+        acknowledgedOrderIds:
+          type: array
+          description: 確認の画面で表示した、支払待ちの注文の ID
+          items:
+            type: string
+            format: uuid
     PlaceOrderRequest:
       type: object
       description: 連絡先のメールアドレスは受けず、会員の token のメールアドレス（確認済み）を使う
@@ -1315,6 +1358,15 @@ components:
           type: string
           format: uri
           description: 決済サービスの支払画面の URL
+    PendingOrderList:
+      type: object
+      description: 支払待ちの注文の一覧。注文日時の新しい順
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
     OrderSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'

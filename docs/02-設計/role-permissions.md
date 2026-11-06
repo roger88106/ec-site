@@ -103,6 +103,7 @@
 | `GET /checkouts/{checkoutId}` | 注文手続きの表示 | 会員 |
 | `POST /checkouts/{checkoutId}/order` | 注文する | 会員 |
 | `GET /me/orders` | 自分の注文の一覧 | 会員 |
+| `GET /me/orders/pending` | 自分の支払待ちの注文の一覧 | 会員 |
 | `GET /orders/{orderId}` | 注文の表示 | 会員 |
 | `PUT /orders/{orderId}/cancellation-request` | キャンセルの申請 | 会員 |
 | `POST /orders/{orderId}/payment-page` | 支払画面を開く | 会員 |

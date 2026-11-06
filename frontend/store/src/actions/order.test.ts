@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { payOrder, requestCancellation } from '@/actions/order'
+import { PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
 import { form, ORDER_ID, PAYMENT_PAGE_URL } from '@/test/fixtures'
 import { redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
@@ -77,7 +78,7 @@ describe('支払う', () => {
       message: 'この注文は支払えません。支払が済んでいるか、支払の期限を過ぎています。',
       errorCode: 'ORDER_NOT_PAYABLE',
     })
-    expect(revalidatedPaths).toEqual([`/orders/${ORDER_ID}`])
+    expect(revalidatedPaths).toEqual([`/orders/${ORDER_ID}`, PENDING_ORDERS_PATH])
   })
 
   test('AC-299 決済サービスのエラー（502）なら、やり直せることを示す API のメッセージを返す', async () => {

@@ -209,7 +209,7 @@ class JooqOrderRepository implements OrderRepository {
      */
     @Override
     public void lockForMember(UUID memberId) {
-        // トランザクションの終わりで外れる、会員 ID のロック（PostgreSQL の advisory lock）
+        // トランザクションの終わりで解放される、会員 ID のロック（PostgreSQL の advisory lock）
         dsl.select(DSL.function("pg_advisory_xact_lock", Object.class,
                 DSL.val(memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits()))).fetch();
     }

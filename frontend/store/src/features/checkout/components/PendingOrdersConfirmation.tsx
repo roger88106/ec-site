@@ -3,9 +3,9 @@ import { buttonVariants } from '@ec-site/shared/ui/button'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import type { Order } from '@/api/types'
+import { PayForm } from '@/components/PayForm'
 import { PriceText } from '@/components/PriceText'
 import { NewOrderForm } from '@/features/checkout/components/NewOrderForm'
-import { PayPendingOrderForm } from '@/features/checkout/components/PayPendingOrderForm'
 
 /**
  * 支払待ちの注文の確認。注文ごとに、注文番号、注文日時、明細、総額、支払の期限を示し、支払へ進むか、新しく注文するか、戻るかを選ばせる。<br />
@@ -61,7 +61,13 @@ export function PendingOrdersConfirmation({ orders }: { orders: Order[] }) {
             <p className="text-right font-semibold tabular-nums">
               {t('total', { total: formatYen(order.amounts.total) }) /* 総額 */}
             </p>
-            {order.actions.pay && <PayPendingOrderForm orderId={order.id} />}
+            {order.actions.pay && (
+              <PayForm
+                label={t('pay') /* 支払へ進む */}
+                orderId={order.id}
+                pendingLabel={t('paying') /* 移っています */}
+              />
+            )}
           </li>
         ))}
       </ul>

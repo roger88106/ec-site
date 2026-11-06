@@ -102,9 +102,10 @@ public class OrderPlacementService {
      */
     @Transactional
     public PlacementResult place(PlaceOrderCommand command) {
-        var now = clock.instant();
         // 同じ会員の注文を 1 つずつ処理する。支払待ちの注文を読む前に取るので、ロックを待った後の読み取りに先の注文が見える（注文の設計の「同時の注文」）
         orderRepository.lockForMember(command.memberId());
+        // 時刻はロックを待った後に取る
+        var now = clock.instant();
         // 同じ注文手続きでの送信を 1 つずつ処理する。2 回目以降は作成済みの注文を返す
         var checkout = checkoutRepository.lockById(command.checkoutId())
                 // 始めた会員だけが注文できる。ほかの会員には 404

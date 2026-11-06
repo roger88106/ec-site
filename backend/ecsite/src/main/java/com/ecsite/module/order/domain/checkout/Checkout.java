@@ -33,22 +33,6 @@ public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartV
     }
 
     /**
-     * 注文手続きを始める。
-     *
-     * @param id             注文手続き ID
-     * @param memberId       会員 ID
-     * @param cartId         カート ID
-     * @param cartVersion    カートのバージョン
-     * @param now            現在時刻
-     * @param reservationTtl 引当の期限までの時間（15 分）
-     * @return 注文手続き
-     */
-    public static Checkout start(@NonNull UUID id, @NonNull UUID memberId, @NonNull UUID cartId, long cartVersion, @NonNull Instant now,
-                                 @NonNull Duration reservationTtl) {
-        return start(id, memberId, cartId, cartVersion, now, reservationTtl, Set.of());
-    }
-
-    /**
      * 確認した注文の ID の集合を持って、注文手続きを始める。
      *
      * @param id                   注文手続き ID

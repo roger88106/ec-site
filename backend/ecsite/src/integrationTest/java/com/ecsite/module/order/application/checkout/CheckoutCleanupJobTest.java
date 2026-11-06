@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
@@ -226,7 +227,7 @@ class CheckoutCleanupJobTest {
      * @return 注文手続き ID
      */
     private UUID insertCheckout(Instant startedAt) {
-        var checkout = Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, startedAt, TTL);
+        var checkout = Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, startedAt, TTL, Set.of());
         checkoutRepository.insert(checkout);
         return checkout.id();
     }

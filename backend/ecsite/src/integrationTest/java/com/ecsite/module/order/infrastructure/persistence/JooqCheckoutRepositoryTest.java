@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +44,7 @@ class JooqCheckoutRepositoryTest {
     @Test
     @DisplayName("注文手続きを保存すると、カートのバージョンと期限を含めて ID から再構築できる。ない ID には空を返す")
     void savesAndRestoresCheckout() {
-        var checkout = Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 7, STARTED_AT, TTL);
+        var checkout = Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 7, STARTED_AT, TTL, Set.of());
 
         repository.insert(checkout);
 
@@ -117,6 +118,6 @@ class JooqCheckoutRepositoryTest {
      * 指定したカートと開始時刻の注文手続きを作る
      */
     private static Checkout checkout(UUID cartId, Instant startedAt) {
-        return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), cartId, 1, startedAt, TTL);
+        return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), cartId, 1, startedAt, TTL, Set.of());
     }
 }

@@ -67,9 +67,8 @@ describe('支払待ちの注文の確認の画面', () => {
   test('AC-406-4 案内として、支払待ちの注文があること、新しく注文すると別の注文になること、期限で自動でキャンセルされることを示す', async () => {
     const view = await renderPage([PAYABLE])
 
-    expect(
-      view.getByText(/お支払い待ちのご注文があります。このまま新しく注文すると、別のご注文になります/),
-    ).toBeInTheDocument()
+    expect(view.getByRole('heading', { name: 'お支払い待ちのご注文があります' })).toBeInTheDocument()
+    expect(view.getByText(/このまま新しく注文すると、別のご注文になります/)).toBeInTheDocument()
     expect(view.getByText(/お支払いのないご注文は、お支払い期限になると自動でキャンセルされます/)).toBeInTheDocument()
     expect(view.queryByRole('button', { name: /キャンセル/ })).toBeNull()
   })

@@ -6,7 +6,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
-import { currentMember, redirectToLogin } from '@/auth'
+import { requireMember } from '@/auth'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import { RemainingTime } from '@/features/checkout/components/RemainingTime'
@@ -24,10 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CheckoutPage({ params }: PageProps<'/checkout/[checkoutId]'>) {
   const t = await getTranslations('checkout.page')
   const { checkoutId } = await params
-  const member = await currentMember()
-  if (member === null) {
-    return redirectToLogin()
-  }
+  const member = await requireMember()
   if (!isUuid(checkoutId)) {
     notFound()
   }

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { getMemberApi } from '@/api/client'
 import { unwrapMember } from '@/api/result'
-import { currentMember, redirectToLogin } from '@/auth'
+import { requireMember } from '@/auth'
 import { PageLinks } from '@/components/PageLinks'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
@@ -20,9 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function OrdersPage({ searchParams }: PageProps<'/orders'>) {
   const t = await getTranslations('order.list')
   const tCommon = await getTranslations('common')
-  if ((await currentMember()) === null) {
-    return redirectToLogin()
-  }
+  await requireMember()
   const page = parseOrderListPage(await searchParams)
   const api = await getMemberApi()
   const orders = await unwrapMember(await api.GET('/me/orders', { params: { query: { page } } }))

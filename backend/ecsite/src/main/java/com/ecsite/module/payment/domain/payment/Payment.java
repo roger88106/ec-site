@@ -159,6 +159,20 @@ public class Payment extends AggregateRoot {
      * @param now              現在時刻
      */
     public void authorize(@NonNull String authorizationRef, @NonNull Instant now) {
+        authorize(authorizationRef, now, now);
+    }
+
+    /**
+     * 与信を反映する。通知の処理と、期限切れのジョブが決済サービスから取得した与信の反映で使う。<br />
+     * 未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを現在時刻で登録する。
+     * 支払なし（期限切れかキャンセルの後）なら、取り消すために与信の取消待ちにする。
+     * それ以外（すでに与信がある）なら何もしない。
+     *
+     * @param authorizationRef 与信の参照
+     * @param authorizedAt     与信の時刻（与信期限の起点）
+     * @param now              現在時刻（イベントの発生時刻）
+     */
+    public void authorize(@NonNull String authorizationRef, @NonNull Instant authorizedAt, @NonNull Instant now) {
         switch (status) {
             case UNPAID -> {
                 this.authorizationRef = authorizationRef;

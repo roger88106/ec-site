@@ -119,6 +119,49 @@ class PaymentTest {
         }
 
         @Test
+        @DisplayName("AC-409-2 与信の時刻を渡すと、未払い → 与信済みで、与信の時刻は渡した時刻、イベントの発生時刻は現在時刻")
+        void authorizesWithAuthorizedAt() {
+            var payment = unpaid();
+            var authorizedAt = ORDERED_AT.plusSeconds(10);
+            var now = ORDERED_AT.plus(Duration.ofHours(1));
+
+            payment.authorize(AUTHORIZATION_REF, authorizedAt, now);
+
+            assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
+            assertThat(payment.authorizationRef()).isEqualTo(AUTHORIZATION_REF);
+            assertThat(payment.authorizedAt()).contains(authorizedAt);
+            assertThat(payment.pullEvents()).singleElement().isInstanceOfSatisfying(PaymentAuthorized.class,
+                    event -> assertThat(event.occurredAt()).isEqualTo(now));
+        }
+
+        @Test
+        @DisplayName("AC-409-4 与信済みに与信の時刻を渡して重ねても、状態・参照・与信の時刻は変わらず、イベントも出ない")
+        void keepsFirstAuthorizationWithAuthorizedAt() {
+            var payment = unpaid();
+            payment.authorize(AUTHORIZATION_REF, ORDERED_AT.plusSeconds(10), ORDERED_AT.plusSeconds(20));
+            payment.pullEvents();
+
+            payment.authorize("pi_test_other", ORDERED_AT.plusSeconds(30), ORDERED_AT.plusSeconds(40));
+
+            assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
+            assertThat(payment.authorizationRef()).isEqualTo(AUTHORIZATION_REF);
+            assertThat(payment.authorizedAt()).contains(ORDERED_AT.plusSeconds(10));
+            assertThat(payment.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-157 支払なしに与信の時刻を渡しても、与信の取消待ちになり、与信の時刻は覚えず、与信の成功のイベントも出ない")
+        void voidsLateAuthorizationWithAuthorizedAt() {
+            var payment = expired();
+
+            payment.authorize(AUTHORIZATION_REF, ORDERED_AT.plusSeconds(10), ORDERED_AT.plusSeconds(20));
+
+            assertThat(payment.status()).isEqualTo(PaymentStatus.VOID_PENDING);
+            assertThat(payment.authorizedAt()).isEmpty();
+            assertThat(payment.pullEvents()).singleElement().isInstanceOf(VoidRequested.class);
+        }
+
+        @Test
         @DisplayName("BR-17 与信の取消済みに届いても（順序の入れ替わり）、何も変わらない")
         void ignoresAfterVoided() {
             var payment = voided();

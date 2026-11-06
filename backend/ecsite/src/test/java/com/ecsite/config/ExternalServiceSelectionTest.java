@@ -7,6 +7,7 @@ import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
+import com.ecsite.module.shipping.infrastructure.carrier.UnconnectedCarrierTracking;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrierTracking;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +17,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -105,20 +107,35 @@ class ExternalServiceSelectionTest {
     }
 
     @Test
-    @DisplayName("AC-228 物流のフラグを立てなければ、起動に失敗し、フラグの名前が知らされる")
-    void failsWithoutShippingFlag() {
+    @DisplayName("AC-226 物流のフラグを立てなければ、物流は接続していない物流サービスを使う")
+    void usesUnconnectedCarrierWithoutFlag() {
         runner.withPropertyValues(PAYMENT_MOCK).run(context -> {
-            assertThat(context).hasFailed();
-            assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("ecsite.shipping.mock.enabled");
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(CarrierTracking.class)).isInstanceOf(UnconnectedCarrierTracking.class);
         });
     }
 
     @Test
-    @DisplayName("AC-228 物流のフラグを立てなければ、追跡を使う Bean が先に作られても、フラグの名前が知らされる")
-    void failsWithFlagNameEvenIfTrackingIsRequiredFirst() {
+    @DisplayName("AC-226 物流のフラグを false にすると、物流は接続していない物流サービスを使う")
+    void usesUnconnectedCarrierWithFlagFalse() {
+        runner.withPropertyValues(PAYMENT_MOCK, "ecsite.shipping.mock.enabled=false").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(CarrierTracking.class)).isInstanceOf(UnconnectedCarrierTracking.class);
+        });
+    }
+
+    @Test
+    @DisplayName("AC-228 物流のフラグを立てなくても、起動に成功する")
+    void startsWithoutShippingFlag() {
+        runner.withPropertyValues(PAYMENT_MOCK).run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
+    @DisplayName("AC-228 物流のフラグを立てなくても、追跡を使う Bean が先に作られて、起動に成功する")
+    void startsWithoutShippingFlagEvenIfTrackingIsRequiredFirst() {
         base.withUserConfiguration(TrackingUser.class, ExternalServices.class).withPropertyValues(PAYMENT_MOCK).run(context -> {
-            assertThat(context).hasFailed();
-            assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("ecsite.shipping.mock.enabled");
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(TrackingUser.class).tracking()).isInstanceOf(UnconnectedCarrierTracking.class);
         });
     }
 
@@ -140,6 +157,16 @@ class ExternalServiceSelectionTest {
     }
 
     @Test
+    @DisplayName("AC-229 物流のフラグを立てなければ、mock の配送業者の画面と、最近の出荷を問い合わせる Bean がない")
+    void noMockCarrierPageWithoutFlag() {
+        runner.withPropertyValues(PAYMENT_MOCK).run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).doesNotHaveBean("mockCarrierController");
+            assertThat(context).doesNotHaveBean("mockShipmentQuery");
+        });
+    }
+
+    @Test
     @DisplayName("AC-230 決済を mock にする今までの設定だけでは、mock を使わない")
     void oldGatewaySettingDoesNotSelectMock() {
         runner.withPropertyValues(SHIPPING_MOCK, "ecsite.payment.gateway=mock").withPropertyValues(STRIPE_KEYS)
@@ -150,13 +177,15 @@ class ExternalServiceSelectionTest {
     }
 
     /**
-     * 決済と物流の実装の置き場所を読み込む
+     * 決済と物流の実装の置き場所を読み込む。<br />
+     * 接続していない物流サービスは、そのクラスだけを読み込む（同じパッケージの通知のエンドポイントの依存を持ち込まないため）。
      */
     @Configuration(proxyBeanMethods = false)
     @ComponentScan({
             "com.ecsite.module.payment.infrastructure.mock",
             "com.ecsite.module.payment.infrastructure.stripe",
             "com.ecsite.module.shipping.infrastructure.mock"})
+    @Import(UnconnectedCarrierTracking.class)
     static class ExternalServices {
     }
 

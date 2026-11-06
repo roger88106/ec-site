@@ -9,7 +9,6 @@ import com.ecsite.module.cart.application.port.CatalogDirectory;
 import com.ecsite.module.cart.application.port.StockDirectory;
 import com.ecsite.module.cart.domain.Cart;
 import com.ecsite.module.cart.domain.CartErrorCode;
-import com.ecsite.module.cart.domain.CartItem;
 import com.ecsite.module.cart.domain.CartMergeResult;
 import com.ecsite.module.cart.event.CartChanged;
 import lombok.RequiredArgsConstructor;
@@ -116,10 +115,7 @@ public class CartService {
     public void changeQuantity(UUID cartId, @Nullable UUID requester, UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
             // 今の数量より増やすときだけ、在庫を確認する（減らす操作は、在庫が減っていても受け付ける）
-            var current = cart.itemsAt(now).stream()
-                    .filter(item -> item.variantId().equals(variantId))
-                    .mapToInt(CartItem::quantity)
-                    .findFirst();
+            var current = cart.quantityOf(variantId, now);
             if (current.isPresent() && quantity > current.getAsInt()) {
                 verifyStock(variantId, quantity);
             }
@@ -148,8 +144,7 @@ public class CartService {
     @Transactional(readOnly = true)
     public Optional<CartContentsView> findContents(UUID cartId) {
         var now = clock.instant();
-        return cartRepository.findById(cartId).map(cart -> new CartContentsView(cart.id(), cart.memberId().orElse(null), cart.version(),
-                cart.itemsAt(now).stream().map(item -> new CartContentsView.Item(item.variantId(), item.quantity())).toList()));
+        return cartRepository.findById(cartId).map(cart -> toView(cart, now));
     }
 
     /**
@@ -270,6 +265,16 @@ public class CartService {
         if (quantity > stockDirectory.sellableQuantity(variantId)) {
             throw BusinessException.of(CartErrorCode.QUANTITY_EXCEEDS_STOCK);
         }
+    }
+
+    /**
+     * 指定した時刻の中身から、返す値を作る。
+     */
+    private static CartContentsView toView(Cart cart, Instant now) {
+        var items = cart.itemsAt(now).stream()
+                .map(item -> new CartContentsView.Item(item.variantId(), item.quantity()))
+                .toList();
+        return new CartContentsView(cart.id(), cart.memberId().orElse(null), cart.version(), items);
     }
 
     /**

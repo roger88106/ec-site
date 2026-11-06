@@ -5,7 +5,6 @@ import com.ecsite.api.store.model.AxisValue;
 import com.ecsite.api.store.model.Cart;
 import com.ecsite.api.store.model.CategoryNode;
 import com.ecsite.api.store.model.CategoryTree;
-import com.ecsite.api.store.model.Price;
 import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummary;
@@ -191,7 +190,7 @@ class StorefrontMapper {
                 .productName(item.productName())
                 .axisValues(item.axisValues().stream().map(StorefrontMapper::toAxisValue).toList())
                 .imageUrl(item.imageUrl())
-                .unitPrice(new Price().inclTax(item.unitPriceInclTax().yen()).exclTax(item.unitPriceExclTax().yen()))
+                .unitPrice(StorePrices.of(item.unitPriceInclTax(), item.unitPriceExclTax()))
                 .quantity(item.quantity())
                 .subtotal(item.subtotal().yen())
                 .purchasable(purchasable)

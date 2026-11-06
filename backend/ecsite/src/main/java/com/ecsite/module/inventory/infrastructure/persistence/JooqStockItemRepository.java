@@ -67,7 +67,8 @@ class JooqStockItemRepository implements StockItemRepository {
     @Override
     public int adjust(UUID variantId, StockAdjustment adjustment) {
         var delta = adjustment.delta();
-        var limited = adjustment.operator() != null;
+        var operator = adjustment.operator();
+        var limited = operator != null;
 
         // 差分の加算 ※調整後に負にならず、運営者の調整なら上限を超えない場合だけ更新する
         var condition = STOCK_ITEM.VARIANT_ID.eq(variantId).and(STOCK_ITEM.QUANTITY.plus(delta).ge(0));
@@ -97,8 +98,8 @@ class JooqStockItemRepository implements StockItemRepository {
                 .set(STOCK_ADJUSTMENT.ORDER_NUMBER, adjustment.orderNumber())
                 .set(STOCK_ADJUSTMENT.QUANTITY_AFTER, quantityAfter)
                 .set(STOCK_ADJUSTMENT.ADJUSTED_AT, adjustment.adjustedAt())
-                .set(STOCK_ADJUSTMENT.ACTOR_ID, adjustment.operator() == null ? null : adjustment.operator().id())
-                .set(STOCK_ADJUSTMENT.ACTOR_NAME, adjustment.operator() == null ? null : adjustment.operator().name())
+                .set(STOCK_ADJUSTMENT.ACTOR_ID, operator == null ? null : operator.id())
+                .set(STOCK_ADJUSTMENT.ACTOR_NAME, operator == null ? null : operator.name())
                 .execute();
 
         return quantityAfter;

@@ -5,8 +5,8 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentMock;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  */
 @Component
-@ConditionalOnBooleanProperty(name = "ecsite.payment.mock.enabled")
+@ConditionalOnPaymentMock
 @RequiredArgsConstructor
 public class MockPaymentGateway implements PaymentGateway {
 

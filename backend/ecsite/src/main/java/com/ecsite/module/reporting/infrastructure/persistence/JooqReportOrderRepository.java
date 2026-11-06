@@ -129,6 +129,14 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      */
     @Override
     public void save(ReportOrder order) {
+        saveOrder(order);
+        replaceLines(order);
+    }
+
+    /**
+     * 注文の行を上書きする（なければ作る）。
+     */
+    private void saveOrder(ReportOrder order) {
         var now = clock.instant();
         var record = dsl.newRecord(SALES_ORDER);
         record.setOrderId(order.orderId());
@@ -157,7 +165,12 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .doUpdate()
                 .set(record)
                 .execute();
+    }
 
+    /**
+     * 明細を消して入れ直す。
+     */
+    private void replaceLines(ReportOrder order) {
         dsl.deleteFrom(SALES_ORDER_LINE).where(SALES_ORDER_LINE.ORDER_ID.eq(order.orderId())).execute();
         if (order.lines().isEmpty()) {
             return;

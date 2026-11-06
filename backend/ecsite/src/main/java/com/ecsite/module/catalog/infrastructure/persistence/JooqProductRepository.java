@@ -326,24 +326,14 @@ class JooqProductRepository implements ProductRepository {
     private Product toProduct(ProductRecord record) {
         var id = record.getId();
 
-        var axes = dsl.select(PRODUCT_AXIS.NAME)
-                .from(PRODUCT_AXIS)
-                .where(PRODUCT_AXIS.PRODUCT_ID.eq(id))
-                .orderBy(PRODUCT_AXIS.POSITION)
-                .fetch(PRODUCT_AXIS.NAME);
+        var axes = ProductParts.axes(dsl, id);
 
         var categoryIds = dsl.select(PRODUCT_CATEGORY.CATEGORY_ID)
                 .from(PRODUCT_CATEGORY)
                 .where(PRODUCT_CATEGORY.PRODUCT_ID.eq(id))
                 .fetchSet(PRODUCT_CATEGORY.CATEGORY_ID);
 
-        // バリアント ID → 軸の値（軸の並び）
-        Map<UUID, List<String>> axisValuesByVariant = dsl.select(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE)
-                .from(VARIANT_AXIS_VALUE)
-                .join(VARIANT).on(VARIANT.ID.eq(VARIANT_AXIS_VALUE.VARIANT_ID))
-                .where(VARIANT.PRODUCT_ID.eq(id))
-                .orderBy(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.POSITION)
-                .fetchGroups(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE);
+        var axisValuesByVariant = ProductParts.axisValuesByVariant(dsl, id);
 
         var variants = dsl.selectFrom(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(id))

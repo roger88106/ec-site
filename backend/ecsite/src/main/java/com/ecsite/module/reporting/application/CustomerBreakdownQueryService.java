@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CustomerBreakdownQueryService {
+
+    /**
+     * 都道府県が不明な組をまとめるキー（都道府県のコードは空にならないので、他のコードと重ならない）
+     */
+    private static final String UNKNOWN_PREFECTURE = "";
+
+    /**
+     * 都道府県の並べ替えで、不明を最後に置くキー（実在のコードは 01〜47）
+     */
+    private static final String UNKNOWN_PREFECTURE_SORT_KEY = "99";
 
     /**
      * 写しを集計する問い合わせ
@@ -53,33 +64,43 @@ public class CustomerBreakdownQueryService {
         var segments = queryRepository.segmentSales(query.period(), query.basis(), query.productId(), query.excludeTax(),
                 query.excludeShipping());
 
-        // 都道府県：売れた都道府県だけを、コードの順に。不明は最後。名前は地域から引く
+        // 年齢層と性別：すべての区分を、売れなかったものも 0 として
+        var ageGroups = forEveryValue(AgeGroup.values(), group(segments, segment -> AgeGroup.of(segment.age())),
+                (group, total) -> new AgeGroupSales(group, total.amount(), total.orders()));
+        var genders = forEveryValue(ReportGender.values(), group(segments, segment -> ReportGender.of(segment.gender())),
+                (gender, total) -> new GenderSales(gender, total.amount(), total.orders()));
+
+        return new CustomerBreakdownReport(prefectureSales(segments), ageGroups, genders,
+                query.excludeShipping() || query.productId() != null);
+    }
+
+    /**
+     * 都道府県の売上を求める：売れた都道府県だけを、コードの順に。不明は最後。名前は地域から引く。
+     */
+    private List<PrefectureSales> prefectureSales(List<SegmentTotal> segments) {
         var names = regionDirectory.prefectureNames();
-        var prefectures = group(segments, segment -> Objects.requireNonNullElse(segment.prefectureCode(), "")).entrySet()
+        return group(segments, segment -> Objects.requireNonNullElse(segment.prefectureCode(), UNKNOWN_PREFECTURE)).entrySet()
                 .stream()
-                .sorted(Comparator.comparing(entry -> entry.getKey().isEmpty() ? "99" : entry.getKey()))
-                .map(entry -> new PrefectureSales(entry.getKey().isEmpty() ? null : entry.getKey(),
+                .sorted(Comparator.comparing(entry -> isUnknown(entry.getKey()) ? UNKNOWN_PREFECTURE_SORT_KEY : entry.getKey()))
+                .map(entry -> new PrefectureSales(isUnknown(entry.getKey()) ? null : entry.getKey(),
                         names.get(entry.getKey()), entry.getValue().amount(), entry.getValue().orders()))
                 .toList();
+    }
 
-        // 年齢層と性別：すべての区分を、売れなかったものも 0 として
-        var byAge = group(segments, segment -> AgeGroup.of(segment.age()));
-        var ageGroups = Arrays.stream(AgeGroup.values())
-                .map(group -> {
-                    var total = byAge.getOrDefault(group, Total.ZERO);
-                    return new AgeGroupSales(group, total.amount(), total.orders());
-                })
-                .toList();
-        var byGender = group(segments, segment -> ReportGender.of(segment.gender()));
-        var genders = Arrays.stream(ReportGender.values())
-                .map(gender -> {
-                    var total = byGender.getOrDefault(gender, Total.ZERO);
-                    return new GenderSales(gender, total.amount(), total.orders());
-                })
-                .toList();
+    /**
+     * 都道府県のコードが、不明を表す値か。
+     */
+    private static boolean isUnknown(String prefectureKey) {
+        return prefectureKey.equals(UNKNOWN_PREFECTURE);
+    }
 
-        return new CustomerBreakdownReport(prefectures, ageGroups, genders,
-                query.excludeShipping() || query.productId() != null);
+    /**
+     * すべての区分について、売上を作る。売れなかった区分は 0 にする。
+     */
+    private static <K, R> List<R> forEveryValue(K[] values, Map<K, Total> totals, BiFunction<K, Total, R> toSales) {
+        return Arrays.stream(values)
+                .map(value -> toSales.apply(value, totals.getOrDefault(value, Total.ZERO)))
+                .toList();
     }
 
     /**

@@ -49,25 +49,26 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
               </tr>
             </thead>
             <tbody className="divide-y">
-              {orders.items.map((order) => (
-                <tr key={order.id}>
-                  <td className="py-3">
-                    <Link className="font-medium tabular-nums underline" href={`/orders/${order.id}`}>
-                      {order.orderNumber}
-                    </Link>
-                  </td>
-                  <td className="py-3 tabular-nums">{formatDateTime(order.orderedAt)}</td>
-                  <td className="py-3 text-right tabular-nums">{formatYen(order.totalAmount)}</td>
-                  <td className="py-3 text-right">
-                    <OrderStatusBadge shipmentStatus={order.shipmentStatus} status={order.status} />
-                    {paymentDeadlineLabel(order) !== null && (
-                      <p className="text-muted-foreground mt-1 text-xs tabular-nums">
-                        {paymentDeadlineLabel(order) /* 支払の期限 */}
-                      </p>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {orders.items.map((order) => {
+                const deadline = paymentDeadlineLabel(order)
+                return (
+                  <tr key={order.id}>
+                    <td className="py-3">
+                      <Link className="font-medium tabular-nums underline" href={`/orders/${order.id}`}>
+                        {order.orderNumber}
+                      </Link>
+                    </td>
+                    <td className="py-3 tabular-nums">{formatDateTime(order.orderedAt)}</td>
+                    <td className="py-3 text-right tabular-nums">{formatYen(order.totalAmount)}</td>
+                    <td className="py-3 text-right">
+                      <OrderStatusBadge shipmentStatus={order.shipmentStatus} status={order.status} />
+                      {deadline !== null && (
+                        <p className="text-muted-foreground mt-1 text-xs tabular-nums">{deadline /* 支払の期限 */}</p>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
           <PageLinks

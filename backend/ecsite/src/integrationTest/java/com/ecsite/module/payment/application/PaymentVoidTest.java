@@ -192,7 +192,7 @@ class PaymentVoidTest {
         var orderId = capturedWithLostResponse();
         var paymentId = paymentIdOf(orderId);
         var duplicated = new AtomicBoolean();
-        // 1 回目の取消の呼び出しの中で、重複した依頼を返金済みまで処理する。どちらの処理も与信の取消待ちを読む
+        // 1 回目の取消の呼び出しの中で、重複した依頼を、支払が返金済みになるまで処理する。どちらの処理も、与信の取消待ちの状態の支払を読み込む
         gateway.onRefundOrVoid(() -> {
             if (duplicated.compareAndSet(false, true)) {
                 AopTestUtils.<VoidRequestedHandler>getTargetObject(voidRequestedHandler)

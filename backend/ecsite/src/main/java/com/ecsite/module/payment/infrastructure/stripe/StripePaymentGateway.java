@@ -209,12 +209,7 @@ class StripePaymentGateway implements PaymentGateway {
      * 売上確定を拒否された PaymentIntent の状態から、確定の結果を決める。確定済みなら成功、取消済みなら与信期限切れ。
      */
     private CaptureResult capturedState(CaptureRequest request, InvalidRequestException rejected) {
-        String status;
-        try {
-            status = client.v1().paymentIntents().retrieve(request.authorizationRef()).getStatus();
-        } catch (StripeException e) {
-            throw failure("与信の状態を読めない: authorizationRef=" + request.authorizationRef(), e);
-        }
+        var status = intentStatus(request.authorizationRef());
         return switch (status) {
             case INTENT_SUCCEEDED -> CaptureResult.CAPTURED;
             case INTENT_CANCELED -> CaptureResult.AUTHORIZATION_EXPIRED;
@@ -226,12 +221,7 @@ class StripePaymentGateway implements PaymentGateway {
      * 取消を拒否された PaymentIntent の状態から、取消の結果を決める。取消済みなら成功、売上確定済みなら返金に進める。
      */
     private VoidResult voidedState(String authorizationRef, InvalidRequestException rejected) {
-        String status;
-        try {
-            status = client.v1().paymentIntents().retrieve(authorizationRef).getStatus();
-        } catch (StripeException e) {
-            throw failure("与信の状態を読めない: authorizationRef=" + authorizationRef, e);
-        }
+        var status = intentStatus(authorizationRef);
         return switch (status) {
             case INTENT_CANCELED -> {
                 log.info("取消済みの与信の取消を、成功として扱う: authorizationRef={}", authorizationRef);
@@ -243,6 +233,17 @@ class StripePaymentGateway implements PaymentGateway {
             }
             default -> throw failure("与信を取り消せない: authorizationRef=" + authorizationRef + ", status=" + status, rejected);
         };
+    }
+
+    /**
+     * 与信の PaymentIntent の状態を読む。
+     */
+    private String intentStatus(String authorizationRef) {
+        try {
+            return client.v1().paymentIntents().retrieve(authorizationRef).getStatus();
+        } catch (StripeException e) {
+            throw failure("与信の状態を読めない: authorizationRef=" + authorizationRef, e);
+        }
     }
 
     /**

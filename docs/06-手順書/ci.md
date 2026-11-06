@@ -32,6 +32,8 @@
 | `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する。 | `main` で `showcase/` が変わったとき、手動 |
 
+`ci.yml` と `docs.yml` は、`develop` と `main` では全ての commit を検査し、前の実行を中止しない。作業ブランチでは、新しい push が、同じブランチの前の push の実行を中止する。pull request の実行も、同じ pull request の前の実行を中止する。push と pull request の実行は別に動くので、pull request のあるブランチでは同じ commit で 2 回実行される（`ci.yml` は、文書だけの push では pull request の 1 回）。これらを同じ group にしない（中止された check が残ると、同じ名前の成功した check があっても、必須の検査を満たさずマージできないため）。
+
 ## 他の文書
 
 - CI の決まり（失敗したまま次の spec に進まない、など）は [constitution](../constitution.md)の「CI/CD」。

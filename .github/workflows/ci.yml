@@ -40,10 +40,11 @@ permissions:
 env:
   JAVA_VERSION: '21'
 
-# 同じブランチで新しい実行が始まったら、古い実行は止める
+# develop と main は全ての commit を検査し、前の実行を中止しない。作業ブランチは、同じ ref で新しい実行が始まったら、古い実行を中止する。
+# 作業ブランチの push と pull request を同じ group にしない（docs/06-手順書/ci.md の「CI のジョブ」）
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' }}
 
 jobs:
   # バックエンドは、ビルドと単体テスト、統合テスト（matrix の shard の一覧の数に分ける）、集計のジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、分けて同時に流す。

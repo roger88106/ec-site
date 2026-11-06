@@ -44,8 +44,10 @@ final class StripeApiStub implements AutoCloseable {
         server.createContext("/", exchange -> {
             var key = exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath();
             var body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            var query = exchange.getRequestURI().getRawQuery();
             requests.add(new Request(key, URLDecoder.decode(body, StandardCharsets.UTF_8),
-                    exchange.getRequestHeaders().getFirst("Idempotency-Key")));
+                    exchange.getRequestHeaders().getFirst("Idempotency-Key"),
+                    query == null ? "" : URLDecoder.decode(query, StandardCharsets.UTF_8)));
             var response = responses.getOrDefault(key, new Response(404, error("invalid_request_error", "resource_missing")));
             var bytes = response.body().getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
@@ -134,6 +136,24 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
+     * 支払が済んだ Checkout Session の応答（{@code expand[]=payment_intent} で PaymentIntent を含めた形）。
+     *
+     * @param id        Session の ID
+     * @param url       支払画面の URL
+     * @param intentId  PaymentIntent の ID
+     * @param intentStatus PaymentIntent の状態
+     * @param createdAt PaymentIntent の作成時刻（エポック秒）
+     * @return 本文
+     */
+    static String completedSession(String id, String url, String intentId, String intentStatus, long createdAt) {
+        return """
+                {"id": "%s", "object": "checkout.session", "url": "%s", "status": "complete",
+                 "payment_intent": {"id": "%s", "object": "payment_intent", "amount": 6940, "currency": "jpy",
+                  "status": "%s", "created": %d}}"""
+                .formatted(id, url, intentId, intentStatus, createdAt);
+    }
+
+    /**
      * エラーの応答。
      *
      * @param type 種類
@@ -163,7 +183,8 @@ final class StripeApiStub implements AutoCloseable {
      * @param key            メソッドとパス
      * @param body           本文（URL のデコードの後）
      * @param idempotencyKey 冪等キーのヘッダー
+     * @param query          クエリ（URL のデコードの後。なければ空）
      */
-    record Request(String key, String body, String idempotencyKey) {
+    record Request(String key, String body, String idempotencyKey, String query) {
     }
 }

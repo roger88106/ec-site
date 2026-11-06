@@ -1,5 +1,7 @@
 package com.ecsite.module.payment.infrastructure;
 
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 決済サービスの port（{@link PaymentGateway}）の、実装によらない振る舞い（テストの書き方の「テストの種類と基準」「mock と実装の挙動の一致」）。<br />
@@ -80,6 +83,13 @@ public abstract class PaymentGatewayContractTest {
     protected abstract String paidPage();
 
     /**
+     * 支払の済んだ支払画面で、与信の期限が切れた状態にする。
+     *
+     * @return 支払画面 ID
+     */
+    protected abstract String paidPageWithExpiredAuthorization();
+
+    /**
      * 閉じた支払画面を用意する。
      *
      * @return 支払画面 ID
@@ -137,6 +147,32 @@ public abstract class PaymentGatewayContractTest {
     @DisplayName("支払の済んだ画面を閉じると、支払済み")
     void closesPaidPage() {
         assertThat(gateway().closePage(paidPage())).isEqualTo(CloseResult.ALREADY_PAID);
+    }
+
+    @Test
+    @DisplayName("AC-409-1 支払の済んだ画面から、与信の参照と与信の時刻を取得できる")
+    void fetchesAuthorizationOfPaidPage() {
+        var authorization = gateway().fetchAuthorization(paidPage());
+
+        assertThat(authorization.authorizationRef()).isNotBlank();
+        assertThat(authorization.authorizedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("与信が切れた支払画面からも、与信を取得できる")
+    void fetchesAuthorizationOfPageWithExpiredAuthorization() {
+        var authorization = gateway().fetchAuthorization(paidPageWithExpiredAuthorization());
+
+        assertThat(authorization.authorizationRef()).isNotBlank();
+        assertThat(authorization.authorizedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("閉じた画面の与信の取得は、予期しないエラーの例外")
+    void fetchesNothingFromClosedPage() {
+        assertThatThrownBy(() -> gateway().fetchAuthorization(closedPage()))
+                .isInstanceOfSatisfying(SystemException.class,
+                        e -> assertThat(e.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode()));
     }
 
     @Test

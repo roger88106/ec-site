@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.application.model.view.AuthorizationDeadlineView;
+import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.model.view.PayablePaymentView;
 import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
@@ -8,6 +9,7 @@ import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -128,7 +130,7 @@ public class PaymentQueryService {
     }
 
     /**
-     * 与信の通知を長く待つ未払いの支払の数を返す。待ち始めてから決済の設定
+     * 与信の反映を長く待つ未払いの支払の数を返す。待ち始めてから決済の設定
      * {@code ecsite.payment.awaiting-authorization-warning}（既定 1 時間）を過ぎたものを数える。
      *
      * @return 支払の数
@@ -139,7 +141,7 @@ public class PaymentQueryService {
     }
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の通知を待つ支払は除く。
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の反映を待つ支払は除く。
      *
      * @param limit 取得する数の上限
      * @return 支払
@@ -147,6 +149,19 @@ public class PaymentQueryService {
     public List<PastDeadlinePaymentView> findPastDeadline(int limit) {
         return paymentRepository.findUnpaidPastDeadline(clock.instant(), limit).stream()
                 .map(payment -> new PastDeadlinePaymentView(payment.id(), payment.page().orElse(null)))
+                .toList();
+    }
+
+    /**
+     * 与信の反映を待つ支払を、待ち始めた時刻の古い順に取得する。
+     *
+     * @param limit 取得する数の上限
+     * @return 支払
+     */
+    public List<AwaitingAuthorizationPaymentView> findAwaitingAuthorization(int limit) {
+        return paymentRepository.findUnpaidAwaitingAuthorization(limit).stream()
+                .map(payment -> new AwaitingAuthorizationPaymentView(payment.id(),
+                        payment.page().map(PaymentPage::id).orElse(null)))
                 .toList();
     }
 

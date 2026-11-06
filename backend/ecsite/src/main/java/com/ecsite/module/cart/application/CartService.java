@@ -79,7 +79,7 @@ public class CartService {
         var cart = Cart.create(UUID.randomUUID(), clock.instant());
         // 会員を持たないカートは、会員ごとの一意制約に当たらないので、保存されないのは想定外
         if (!cartRepository.create(cart)) {
-            throw SystemException.of("カートを作れない：" + cart.id(), null);
+            throw SystemException.of("カートを作れない", null);
         }
         return cart.id();
     }
@@ -184,7 +184,7 @@ public class CartService {
             return cart.id();
         }
         return cartRepository.findIdByMemberId(memberId)
-                .orElseThrow(() -> SystemException.of("会員のカートを作れない：" + memberId, null));
+                .orElseThrow(() -> SystemException.of("会員のカートを作れない", null));
     }
 
     /**

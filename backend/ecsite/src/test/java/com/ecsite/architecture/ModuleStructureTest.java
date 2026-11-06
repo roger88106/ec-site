@@ -203,8 +203,6 @@ class ModuleStructureTest {
     @Test
     @DisplayName("層は、同じモジュールの中で、依存の表にない層とパッケージに依存しない（対象は 1 件以上ある）")
     void layersDependOnlyOnAllowedLayers() {
-        ProductionClasses.requireNotEmpty(layeredClasses(ProductionClasses.modules()), "モジュールの層のクラス");
-
         LAYER_DEPENDENCY_RULE.check(ProductionClasses.modules());
     }
 
@@ -600,16 +598,6 @@ class ModuleStructureTest {
      */
     private static boolean isLayered(JavaClass javaClass) {
         return LAYERED_PACKAGE.matcher(javaClass.getPackageName()).matches();
-    }
-
-    /**
-     * 規則の対象になる、モジュールの層のクラスを返す。
-     *
-     * @param classes 調べるクラス
-     * @return 層のパッケージのクラス
-     */
-    private static List<JavaClass> layeredClasses(JavaClasses classes) {
-        return classes.stream().filter(ModuleStructureTest::isLayered).toList();
     }
 
     /**

@@ -28,6 +28,13 @@ spring:
           enabled: false
       # 再起動時の再発行は使わない。未完了のイベントは定期ジョブ（EventResubmissionJob）が再発行する
       republish-outstanding-events-on-restart: false
+      # 最後の試行から結果が出ないまま 5 分たったイベントは、インスタンスが止まったとみなして失敗の状態にする。
+      # 再発行のジョブが次の回で再発行するか、処理の回数が上限なら止める
+      staleness:
+        published: 5m
+        processing: 5m
+        resubmitted: 5m
+        check-interval: 5m
     moments:
       # 時の経過のイベント（Moments）は使わない。有効だと @EnableScheduling を付けるので、
       # 定期ジョブの切り替え（ecsite.scheduling.enabled）を false にしても、定期ジョブが動いてしまう

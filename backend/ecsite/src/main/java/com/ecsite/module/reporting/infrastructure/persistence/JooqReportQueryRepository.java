@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.sales.Basis;
@@ -147,7 +148,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      * 列の性別の値を、注文時の性別の列挙にする。
      */
     private static @Nullable ReportBuyerGender buyerGender(@Nullable String value) {
-        return value == null ? null : ReportBuyerGender.valueOf(value);
+        return value == null ? null : AggregateGuards.restore("report segment", () -> ReportBuyerGender.valueOf(value));
     }
 
     /**

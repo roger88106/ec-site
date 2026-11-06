@@ -42,8 +42,8 @@ env:
 
 # 同じブランチで新しい実行が始まったら、古い実行は止める
 concurrency:
-  group: ci-${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && github.sha || github.head_ref || github.ref_name }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' }}
+  group: ci-${{ (github.ref == 'refs/heads/agent/420-trial' || github.ref == 'refs/heads/main') && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/agent/420-trial' && github.ref != 'refs/heads/main' }}
 
 jobs:
   # バックエンドは、ビルドと単体テスト、統合テスト（matrix の shard の一覧の数に分ける）、集計のジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、分けて同時に流す。

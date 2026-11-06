@@ -1118,7 +1118,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
   test('command の JSON のエスケープ（改行、引用符、\\）を戻してから、git・gh の語があるかを調べる', () => {
     inTempDir((dir) => {
       // どれも bash では git か gh のコマンドになる
-      for (const command of ['echo "a"\ngit push --force', 'ls; g"it" push -f', "ls; g'i't push -f", 'ls; \\git push -f', 'ls; gi\\t push -f', 'echo "a\\"b" && gh pr merge 1']) {
+      for (const command of ['echo "a"\ngit push --force', 'ls; g"it" push -f', "ls; g'i't push -f", 'ls; \\git push -f', 'ls; gi\\t push -f', 'echo "a\\"b" && gh pr merge 1', 'env -S"git push --force"', 'env -Sgh pr merge 1', "env -S'git push --force'", 'env -iS"gh pr merge 1"']) {
         const result = runHook(command, dir)
         assert.equal(result.status, 2, `${command}：${result.stderr}`)
       }

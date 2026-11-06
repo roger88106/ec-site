@@ -4,6 +4,7 @@ import com.ecsite.api.store.OrderApi;
 import com.ecsite.api.store.model.Order;
 import com.ecsite.api.store.model.OrderSummaryPage;
 import com.ecsite.api.store.model.PaymentPage;
+import com.ecsite.api.store.model.PendingOrderList;
 import com.ecsite.api.store.model.RequestOrderCancellationRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.member.api.CurrentMemberIds;
@@ -59,6 +60,16 @@ class StoreOrderController implements OrderApi {
     @Override
     public ResponseEntity<Order> getOrder(UUID orderId) {
         return ResponseEntity.ok(mapper.toOrder(orderQueryService.getForMember(orderId, currentMemberIds.require())));
+    }
+
+    /**
+     * 自分の支払待ちの注文の一覧（確認の画面に表示する情報）。注文日時の新しい順
+     *
+     * @return Http 200 : {@link PendingOrderList}
+     */
+    @Override
+    public ResponseEntity<PendingOrderList> listMemberPendingOrders() {
+        return ResponseEntity.ok(mapper.toPendingOrderList(orderQueryService.listPendingForMember(currentMemberIds.require())));
     }
 
     /**

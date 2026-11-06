@@ -95,6 +95,25 @@ public class OrderQueryService {
     }
 
     /**
+     * 会員の支払待ちの注文の詳細を、注文日時の新しい順に全て取得する（確認の画面に表示する情報）。<br />
+     * 支払の期限を過ぎ、まだキャンセルされていない注文も含む。
+     *
+     * @param memberId 会員 ID
+     * @return 注文の詳細
+     */
+    public List<OrderDetailView> listPendingForMember(UUID memberId) {
+        var orderIds = orderRepository.findPendingIdsByMemberId(memberId);
+        var payments = findPayments(orderIds);
+        var shipments = findShipments(orderIds);
+        // ID を読んだ後に受付やキャンセルになった注文は、支払待ちの一覧に含めない
+        return orderIds.stream()
+                .flatMap(orderId -> orderRepository.findById(orderId).stream())
+                .filter(Order::isAwaitingPayment)
+                .map(order -> toDetail(order, payments.get(order.id()), shipments.get(order.id())))
+                .toList();
+    }
+
+    /**
      * 注文を、注文日時の新しい順に一覧する。注文日の範囲は日本時間の日付で、両端を含む。<br />
      * 与信期限が近い・返送の絞り込みは、決済・出荷の API から注文 ID を受け取り、ID の条件にする（他のモジュールのテーブルは結合しない）。
      *
@@ -162,12 +181,17 @@ public class OrderQueryService {
     }
 
     /**
-     * 注文を、支払と出荷を合わせた詳細の表示にする。操作の可否は注文の判定を使う。
+     * 注文の支払と出荷を読み、詳細の表示にする。
      */
     private OrderDetailView toDetail(Order order) {
         var ids = List.of(order.id());
-        var payment = findPayments(ids).get(order.id());
-        var shipment = findShipments(ids).get(order.id());
+        return toDetail(order, findPayments(ids).get(order.id()), findShipments(ids).get(order.id()));
+    }
+
+    /**
+     * 注文を、読んだ支払と出荷を合わせた詳細の表示にする。操作の可否は注文の判定を使う。
+     */
+    private static OrderDetailView toDetail(Order order, @Nullable OrderPayment payment, @Nullable OrderShipment shipment) {
         var awaitingPayment = order.isAwaitingPayment() && payment != null;
         var returned = shipment != null && shipment.isReturned();
         var actions = new OrderDetailView.Actions(order.isCancellationRequestable(),

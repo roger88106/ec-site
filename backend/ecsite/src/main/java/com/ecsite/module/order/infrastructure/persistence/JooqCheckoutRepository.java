@@ -1,15 +1,20 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.jooq.ordering.tables.records.CheckoutRecord;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.JSONB;
 import org.springframework.stereotype.Repository;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
@@ -22,9 +27,25 @@ import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 class JooqCheckoutRepository implements CheckoutRepository {
 
     /**
+     * 集約の名前（戻すときの失敗のメッセージに書く）
+     */
+    private static final String AGGREGATE_NAME = "checkout";
+
+    /**
+     * 確認した注文の ID の型（jsonb の読み書き）
+     */
+    private static final TypeReference<Set<UUID>> ORDER_IDS = new TypeReference<>() {
+    };
+
+    /**
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
+
+    /**
+     * 確認した注文の ID を jsonb にするための JSON の変換
+     */
+    private final JsonMapper jsonMapper;
 
     /**
      * 注文手続きを追加する。
@@ -38,6 +59,7 @@ class JooqCheckoutRepository implements CheckoutRepository {
                 .set(CHECKOUT.CART_VERSION, checkout.cartVersion())
                 .set(CHECKOUT.EXPIRES_AT, checkout.expiresAt())
                 .set(CHECKOUT.CREATED_AT, checkout.createdAt())
+                .set(CHECKOUT.ACKNOWLEDGED_ORDER_IDS, JSONB.valueOf(jsonMapper.writeValueAsString(checkout.acknowledgedOrderIds())))
                 .execute();
     }
 
@@ -46,7 +68,7 @@ class JooqCheckoutRepository implements CheckoutRepository {
      */
     @Override
     public Optional<Checkout> findById(UUID id) {
-        return dsl.selectFrom(CHECKOUT).where(CHECKOUT.ID.eq(id)).fetchOptional().map(JooqCheckoutRepository::toCheckout);
+        return dsl.selectFrom(CHECKOUT).where(CHECKOUT.ID.eq(id)).fetchOptional().map(this::toCheckout);
     }
 
     /**
@@ -55,7 +77,7 @@ class JooqCheckoutRepository implements CheckoutRepository {
     @Override
     public Optional<Checkout> lockById(UUID id) {
         return dsl.selectFrom(CHECKOUT).where(CHECKOUT.ID.eq(id)).forUpdate().fetchOptional()
-                .map(JooqCheckoutRepository::toCheckout);
+                .map(this::toCheckout);
     }
 
     /**
@@ -98,8 +120,9 @@ class JooqCheckoutRepository implements CheckoutRepository {
     /**
      * レコードから注文手続きを作る。
      */
-    private static Checkout toCheckout(CheckoutRecord record) {
+    private Checkout toCheckout(CheckoutRecord record) {
         return new Checkout(record.getId(), record.getMemberId(), record.getCartId(), record.getCartVersion(), record.getExpiresAt(),
-                record.getCreatedAt());
+                record.getCreatedAt(),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(record.getAcknowledgedOrderIds().data(), ORDER_IDS)));
     }
 }

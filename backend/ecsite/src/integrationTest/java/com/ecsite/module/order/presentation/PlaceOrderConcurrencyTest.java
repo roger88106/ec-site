@@ -1,12 +1,15 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.LockWaits;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
@@ -19,6 +22,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -32,17 +36,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
+import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
+import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
  * 注文の並行性の受け入れテスト。<br />
- * 行ロックが働いていることを確認するため、リクエストごとにコミットする。ロールバックしないが、作ったデータは消さない。
+ * 行ロックと会員のロックが働いていることを確認するため、リクエストごとにコミットする。ロールバックしないが、作ったデータは消さない。
  * 税区分の名称は一意なので、ほかのテストと重ならない名前にする。
  */
 @IntegrationTest
@@ -71,6 +79,12 @@ class PlaceOrderConcurrencyTest {
 
     @Autowired
     DSLContext dsl;
+
+    /**
+     * テストの側でトランザクションを開いて、在庫の行をロックする TransactionTemplate
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     /**
      * 注文を作る補助
@@ -132,15 +146,113 @@ class PlaceOrderConcurrencyTest {
         var second = startCheckout(cartWith(1));
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(20)));
 
-        var checkouts = List.of(first, second);
-        var index = new AtomicInteger();
-        var responses = concurrently(2, () -> place(checkouts.get(index.getAndIncrement())));
+        var responses = placeAll(List.of(first, second));
 
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsExactlyInAnyOrder(201, 409);
         assertThat(quantity()).isZero();
     }
 
+    @Test
+    @DisplayName("AC-406-14 同じ会員の確認していない 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 件分だけ減り、他方は確認を求められる")
+    void placesOnlyOneForSameMember() throws Exception {
+        stock(5);
+        var cartId = cartWith(1);
+        var checkouts = List.of(startCheckout(cartId), startCheckout(cartId));
+
+        var responses = placeAll(checkouts);
+
+        expectOnePlacedAndOneRejected(responses, checkouts);
+        assertThat(quantity()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("AC-406-12、AC-406-14 同じ支払待ちの注文を確認した 2 つの注文手続きから同時に注文すると、先に成立した注文を確認していないので、一方だけ成立する")
+    void placesOnlyOneWhenBothAcknowledged() throws Exception {
+        stock(5);
+        var cartId = cartWith(1);
+        var pending = TestJson.createdId(place(startCheckout(cartId)).getContentAsString());
+        var checkouts = List.of(startAcknowledging(cartId, pending), startAcknowledging(cartId, pending));
+
+        var responses = placeAll(checkouts);
+
+        expectOnePlacedAndOneRejected(responses, checkouts);
+        assertThat(quantity()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("AC-406-14 先の注文のトランザクションが終わるまで、同じ会員の後の注文は会員のロックを待ち、先の注文の成立の後に判定されて、確認を求められる")
+    void waitsForMemberLockAndRejectsLater() throws Exception {
+        stock(5);
+        var cartId = cartWith(1);
+        var earlier = startCheckout(cartId);
+        var later = startCheckout(cartId);
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var placing = new ArrayList<Future<MockHttpServletResponse>>();
+            whileStockLocked(() -> {
+                // 先の注文は、会員のロックを持ったまま、在庫の行で待つ。トランザクションはコミットしない
+                placing.add(executor.submit(() -> place(earlier)));
+                LockWaits.awaitBlockedByThisTransaction(dsl);
+                // 後の注文は、先の注文が持つ会員のロックを待つ。ロックがなければ、この待ちは現れない
+                placing.add(executor.submit(() -> place(later)));
+                LockWaits.awaitMemberLockWaiter(dsl, memberOf(later));
+            });
+
+            var placed = placing.get(0).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            var rejected = placing.get(1).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            assertThat(placed.getStatus()).isEqualTo(201);
+            expectOnePlacedAndOneRejected(List.of(placed, rejected), List.of(earlier, later));
+            assertThat(rejected.getStatus()).isEqualTo(409);
+            assertThat(quantity()).isEqualTo(4);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @DisplayName("AC-87 在庫の行を待つ間に在庫がなくなると、どの在庫も減らさずに拒否し、先に解いた引当は取り消しで元に戻る")
+    void keepsReservationWhenRejectedAfterRelease() throws Exception {
+        stock(1);
+        var checkoutId = startCheckout(cartWith(1));
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var placing = new AtomicReference<Future<MockHttpServletResponse>>();
+            whileStockLocked(() -> {
+                placing.set(executor.submit(() -> place(checkoutId)));
+                LockWaits.awaitBlockedByThisTransaction(dsl);
+                // 注文の判定は終わっているので、在庫の行を読む減算で足りないと分かる
+                dsl.update(STOCK_ITEM).set(STOCK_ITEM.QUANTITY, 0)
+                        .where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).execute();
+            });
+
+            var rejected = placing.get().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            assertThat(rejected.getStatus()).isEqualTo(409);
+            assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");
+            assertThat(dsl.fetchCount(STOCK_RESERVATION, STOCK_RESERVATION.HOLDER_ID.eq(checkoutId))).isEqualTo(1);
+            assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isZero();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     // ============================== 補助 ==============================
+
+    /**
+     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。処理の後のコミットでロックが解放される
+     */
+    private void whileStockLocked(Runnable body) {
+        transactionTemplate.executeWithoutResult(status -> {
+            dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).forUpdate().fetch();
+            body.run();
+        });
+    }
+
+    /**
+     * 注文手続きの持ち主の会員 ID
+     */
+    private UUID memberOf(UUID checkoutId) {
+        return dsl.select(CHECKOUT.MEMBER_ID).from(CHECKOUT).where(CHECKOUT.ID.eq(checkoutId)).fetchSingle(CHECKOUT.MEMBER_ID);
+    }
 
     /**
      * 同じ処理を、複数のスレッドで同時に始める
@@ -173,6 +285,25 @@ class PlaceOrderConcurrencyTest {
     }
 
     /**
+     * 注文手続きごとに 1 つのスレッドで、同時に注文する
+     */
+    private List<MockHttpServletResponse> placeAll(List<UUID> checkouts) throws Exception {
+        var index = new AtomicInteger();
+        return concurrently(checkouts.size(), () -> place(checkouts.get(index.getAndIncrement())));
+    }
+
+    /**
+     * 一方だけ成立し、他方は確認を求める 409 で、注文が 1 件だけであることを確認する
+     */
+    private void expectOnePlacedAndOneRejected(List<MockHttpServletResponse> responses, List<UUID> checkouts) throws Exception {
+        assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsExactlyInAnyOrder(201, 409);
+        var rejected = responses.stream().filter(response -> response.getStatus() == 409).findFirst().orElseThrow();
+        assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode"))
+                .isEqualTo("PENDING_ORDER_CONFIRMATION_REQUIRED");
+        assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.in(checkouts))).isEqualTo(1);
+    }
+
+    /**
      * 注文する（総額は 1,100 円 × 数量 ＋ 送料。数量はカートのとおり）
      */
     private MockHttpServletResponse place(UUID checkoutId) throws Exception {
@@ -201,6 +332,16 @@ class PlaceOrderConcurrencyTest {
     private UUID startCheckout(UUID cartId) throws Exception {
         var owner = owners.get(cartId);
         var checkoutId = orders.startCheckout(cartId, owner.bearer());
+        checkoutOwners.put(checkoutId, owner);
+        return checkoutId;
+    }
+
+    /**
+     * 確認した注文の ID を送って注文手続きに進み、201 を確認して、注文手続き ID を返す
+     */
+    private UUID startAcknowledging(UUID cartId, UUID acknowledged) throws Exception {
+        var owner = owners.get(cartId);
+        var checkoutId = orders.startCheckout(cartId, owner.bearer(), List.of(acknowledged));
         checkoutOwners.put(checkoutId, owner);
         return checkoutId;
     }

@@ -13,6 +13,7 @@ import com.ecsite.api.store.model.OrderLine;
 import com.ecsite.api.store.model.OrderStatus;
 import com.ecsite.api.store.model.OrderSummary;
 import com.ecsite.api.store.model.OrderSummaryPage;
+import com.ecsite.api.store.model.PendingOrderList;
 import com.ecsite.api.store.model.PlaceOrderRequest;
 import com.ecsite.api.store.model.QuoteItem;
 import com.ecsite.api.store.model.Shipment;
@@ -86,6 +87,16 @@ class StoreOrderMapper {
                 Money.of(request.getExpectedTotal()),
                 member.birthdate(),
                 member.gender());
+    }
+
+    /**
+     * 支払待ちの注文の一覧のレスポンスに変換する。
+     *
+     * @param views 注文の詳細
+     * @return 支払待ちの注文の一覧のレスポンス
+     */
+    PendingOrderList toPendingOrderList(List<OrderDetailView> views) {
+        return new PendingOrderList().items(views.stream().map(this::toOrder).toList());
     }
 
     /**

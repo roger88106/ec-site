@@ -9,9 +9,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.awaitility.Awaitility.await;
@@ -159,6 +161,52 @@ public class OrderTestData {
     }
 
     /**
+     * 会員として、確認した注文の ID を送って注文手続きを始め、201 を確認して、注文手続き ID を返す。
+     *
+     * @param cartId               カート ID
+     * @param acknowledgedOrderIds 確認した支払待ちの注文の ID
+     * @return 注文手続き ID
+     */
+    public UUID startCheckout(UUID cartId, Collection<UUID> acknowledgedOrderIds) throws Exception {
+        return startCheckout(cartId, member, acknowledgedOrderIds);
+    }
+
+    /**
+     * 指定した要求者で、確認した注文の ID を送って注文手続きを始め、201 を確認して、注文手続き ID を返す。
+     *
+     * @param cartId               カート ID
+     * @param requester            token などを付ける後処理
+     * @param acknowledgedOrderIds 確認した支払待ちの注文の ID
+     * @return 注文手続き ID
+     */
+    public UUID startCheckout(UUID cartId, RequestPostProcessor requester, Collection<UUID> acknowledgedOrderIds)
+            throws Exception {
+        return TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId, acknowledgedOrderIds).with(requester))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+    }
+
+    /**
+     * 会員として、注文手続きの総額を読んで注文し、201 を確認して、注文 ID を返す。
+     *
+     * @param checkoutId 注文手続き ID
+     * @return 注文 ID
+     */
+    public UUID placeFromCheckout(UUID checkoutId) throws Exception {
+        return placeFromCheckout(checkoutId, member);
+    }
+
+    /**
+     * 指定した要求者で、注文手続きの総額を読んで注文し、201 を確認して、注文 ID を返す。
+     *
+     * @param checkoutId 注文手続き ID
+     * @param requester  token などを付ける後処理
+     * @return 注文 ID
+     */
+    public UUID placeFromCheckout(UUID checkoutId, RequestPostProcessor requester) throws Exception {
+        return placeFromCheckout(checkoutId, requester, "山田 太郎");
+    }
+
+    /**
      * 決まったお届け先（氏名：山田 太郎）で注文し、支払って「受付」にする。
      *
      * @param variantId バリアント ID
@@ -248,10 +296,17 @@ public class OrderTestData {
     private UUID placePendingOrder(UUID variantId, int quantity, String name) throws Exception {
         var cartId = cart();
         add(cartId, variantId, quantity);
-        var checkoutId = startCheckout(cartId);
-        var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId).with(member)).andReturn().getResponse().getContentAsString();
+        return placeFromCheckout(startCheckout(cartId), member, name);
+    }
+
+    /**
+     * 注文手続きの総額を読み、氏名を指定して注文し、201 を確認して、注文 ID を返す。
+     */
+    private UUID placeFromCheckout(UUID checkoutId, RequestPostProcessor requester, String name) throws Exception {
+        var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId).with(requester))
+                .andReturn().getResponse().getContentAsString();
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        var order = mockMvc.perform(placeOrderRequest(checkoutId, orderBody(total, name)).with(member))
+        var order = mockMvc.perform(placeOrderRequest(checkoutId, orderBody(total, name)).with(requester))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return TestJson.createdId(order);
@@ -290,6 +345,19 @@ public class OrderTestData {
      */
     public static MockHttpServletRequestBuilder startCheckoutRequest(UUID cartId) {
         return post("/api/store/carts/" + cartId + "/checkouts");
+    }
+
+    /**
+     * 確認した注文の ID の一覧を送って、カートから注文手続きを始めるリクエスト。token などは呼ぶ側で追加する。
+     *
+     * @param cartId               カート ID
+     * @param acknowledgedOrderIds 確認した支払待ちの注文の ID
+     * @return リクエスト
+     */
+    public static MockHttpServletRequestBuilder startCheckoutRequest(UUID cartId, Collection<UUID> acknowledgedOrderIds) {
+        var ids = acknowledgedOrderIds.stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(", "));
+        return startCheckoutRequest(cartId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"acknowledgedOrderIds\": [" + ids + "]}");
     }
 
     /**

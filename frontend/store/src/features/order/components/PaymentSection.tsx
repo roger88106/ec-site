@@ -1,7 +1,7 @@
 import { formatDateTime } from '@ec-site/shared/lib/format'
 import { useTranslations } from 'next-intl'
 import type { Order } from '@/api/types'
-import { PayForm } from '@/features/order/components/PayForm'
+import { PayForm } from '@/components/PayForm'
 import { paymentState } from '@/features/order/orderState'
 
 /**
@@ -30,7 +30,9 @@ export function PaymentSection({
       {state === 'PAYABLE' && <p>{t('payable', { deadline }) /* 支払の期限 */}</p>}
       {state === 'CONFIRMING' && <p role="status">{t('confirming') /* 確認中 */}</p>}
       {state === 'CLOSING' && <p>{t('closing') /* まもなくキャンセル */}</p>}
-      {order.actions.pay && <PayForm orderId={order.id} />}
+      {order.actions.pay && (
+        <PayForm label={t('pay') /* 支払う */} orderId={order.id} pendingLabel={t('paying') /* 移っています */} />
+      )}
     </div>
   )
 }

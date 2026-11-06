@@ -8,27 +8,38 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestJson;
+import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
+import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.startCheckoutRequest;
+import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -70,6 +81,12 @@ class CheckoutApiTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    ApplicationContext applicationContext;
+
+    @Autowired
+    CheckoutRepository checkoutRepository;
 
     /**
      * 税区分・カテゴリ・商品を作る補助
@@ -222,6 +239,220 @@ class CheckoutApiTest {
         mockMvc.perform(get("/api/store/checkouts/" + UUID.randomUUID())).andExpect(status().isNotFound());
     }
 
+    @Nested
+    @DisplayName("支払待ちの注文の確認")
+    class PendingOrderConfirmation {
+
+        @Test
+        @DisplayName("AC-406-1、AC-406-18 支払待ちの注文があれば、開始は確認を求める 409 を返し、注文手続きを作らない")
+        void requiresConfirmation() throws Exception {
+            orders.placePendingOrder(stockedVariant(3), 1);
+            var checkouts = checkoutCount();
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+
+            assertThat(checkoutCount()).isEqualTo(checkouts);
+        }
+
+        @Test
+        @DisplayName("AC-406-1 古い一覧（今の支払待ちの注文を含まない）を送ると、確認を求める")
+        void rejectsStaleList() throws Exception {
+            var first = orders.placePendingOrder(stockedVariant(5), 1);
+            var second = orders.placeFromCheckout(orders.startCheckout(cartId, List.of(first)));
+            var checkouts = checkoutCount();
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId, List.of(first))));
+
+            assertThat(checkoutCount()).isEqualTo(checkouts);
+            assertThat(acknowledgedOrderIds(orders.startCheckout(cartId, List.of(first, second)))).containsExactlyInAnyOrder(first, second);
+        }
+
+        @Test
+        @DisplayName("AC-406-1 本文の一覧が空、null、または null の要素を含むなら、確認していないものとして確認を求める")
+        void treatsEmptyListAsNotAcknowledged() throws Exception {
+            orders.placePendingOrder(stockedVariant(3), 1);
+
+            for (var body : List.of("{}", "{\"acknowledgedOrderIds\": []}", "{\"acknowledgedOrderIds\": null}",
+                    "{\"acknowledgedOrderIds\": [null]}")) {
+                expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)
+                        .contentType(MediaType.APPLICATION_JSON).content(body)));
+            }
+        }
+
+        @Test
+        @DisplayName("AC-406-2 確認を求めるときは、前の注文手続きの引当を解かず、注文手続きも増やさない")
+        void keepsPreviousReservationWhenRejected() throws Exception {
+            var variant = stockedVariant(5);
+            var pending = orders.placePendingOrder(variant, 1);
+            orders.startCheckout(cartId, List.of(pending));
+            assertThat(sellable(variant)).isEqualTo(3);
+            var checkouts = checkoutCount();
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+
+            assertThat(sellable(variant)).isEqualTo(3);
+            assertThat(checkoutCount()).isEqualTo(checkouts);
+        }
+
+        @Test
+        @DisplayName("AC-406-3 カートを変えた後も、品目を比べずに確認を求める")
+        void requiresConfirmationAfterCartChange() throws Exception {
+            orders.placePendingOrder(stockedVariant(3), 1);
+            orders.add(cartId, stockedVariant(3), 1);
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+        }
+
+        @Test
+        @DisplayName("AC-406-3 購入できない品目（販売停止）があっても、購入の可否の判定より先に確認を求める")
+        void requiresConfirmationBeforeOrderableCheck() throws Exception {
+            orderThenSuspend();
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+        }
+
+        @Test
+        @DisplayName("AC-406-3 在庫が足りない品目があっても、購入の可否の判定より先に確認を求める")
+        void requiresConfirmationBeforeStockCheck() throws Exception {
+            // 在庫の全てを注文したので、カートに残った品目は在庫が足りない
+            orders.placePendingOrder(stockedVariant(1), 1);
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+        }
+
+        @Test
+        @DisplayName("AC-406-3 カートが空でも、購入の可否の判定より先に確認を求める")
+        void requiresConfirmationForEmptyCart() throws Exception {
+            var variant = stockedVariant(3);
+            orders.placePendingOrder(variant, 1);
+            mockMvc.perform(delete("/api/store/carts/" + cartId + "/items/" + variant)).andExpect(status().isNoContent());
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+        }
+
+        @Test
+        @DisplayName("AC-406-7 確認した一覧を送ると、通常と同じく引き当てて注文手続きを始める")
+        void startsWhenAcknowledged() throws Exception {
+            var variant = stockedVariant(5);
+            var pending = orders.placePendingOrder(variant, 1);
+
+            var checkoutId = orders.startCheckout(cartId, List.of(pending));
+
+            assertThat(sellable(variant)).isEqualTo(3);
+            mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.expiresAt").value(clock.instant().plus(Duration.ofMinutes(15)).toString()));
+        }
+
+        @Test
+        @DisplayName("AC-406-7 保存するのは受けた一覧でなく、その時点で支払待ちの注文の ID である")
+        void savesCurrentPendingOrderIds() throws Exception {
+            var pending = orders.placePendingOrder(stockedVariant(3), 1);
+
+            var checkoutId = orders.startCheckout(cartId, List.of(pending, UUID.randomUUID()));
+
+            assertThat(acknowledgedOrderIds(checkoutId)).containsExactly(pending);
+        }
+
+        @Test
+        @DisplayName("AC-406-7 確認した後も、在庫が足りなければ 409 で始められない")
+        void checksStockAfterAcknowledged() throws Exception {
+            var pending = orders.placePendingOrder(stockedVariant(1), 1);
+
+            mockMvc.perform(startCheckoutRequest(cartId, List.of(pending)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.errorCode").value("OUT_OF_STOCK"));
+        }
+
+        @Test
+        @DisplayName("AC-406-7 確認した後も、購入できない品目があれば 400 で始められない")
+        void checksOrderableAfterAcknowledged() throws Exception {
+            var pending = orderThenSuspend();
+
+            mockMvc.perform(startCheckoutRequest(cartId, List.of(pending)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
+        }
+
+        @Test
+        @DisplayName("AC-406-10 確認はその注文手続きにだけ有効で、次に始めるときは再び確認を求める")
+        void requiresConfirmationAgain() throws Exception {
+            var pending = orders.placePendingOrder(stockedVariant(5), 1);
+            orders.startCheckout(cartId, List.of(pending));
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+
+            assertThat(acknowledgedOrderIds(orders.startCheckout(cartId, List.of(pending)))).containsExactly(pending);
+        }
+
+        @Test
+        @DisplayName("AC-406-16 支払の期限切れでキャンセルされた後は、確認なしで始められ、確認した注文は空になる")
+        void startsAfterExpiry() throws Exception {
+            var pending = orders.placePendingOrder(stockedVariant(3), 1);
+            OrderPayments.expire(applicationContext, pending);
+
+            assertThat(acknowledgedOrderIds(startCheckout(cartId))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-406-16 与信の成功で受付になった後は、確認なしで始められ、確認した注文は空になる")
+        void startsAfterAcceptance() throws Exception {
+            var variant = stockedVariant(3);
+            var pending = orders.placePendingOrder(variant, 1);
+            OrderPayments.accept(applicationContext, pending);
+            // 受付になると、注文した品目はカートから除かれる
+            orders.add(cartId, variant, 1);
+
+            assertThat(acknowledgedOrderIds(startCheckout(cartId))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-406-16 支払待ちの注文がなければ、送った一覧は保存しない")
+        void ignoresListWithoutPendingOrders() throws Exception {
+            orders.add(cartId, stockedVariant(3), 1);
+
+            assertThat(acknowledgedOrderIds(orders.startCheckout(cartId, List.of(UUID.randomUUID())))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-406-17 他の会員のカートは、持ち主や自分に支払待ちの注文があっても 404 で、注文を示さない")
+        void hidesOrdersFromOtherMembers() throws Exception {
+            var pending = orders.placePendingOrder(stockedVariant(5), 1);
+            var other = TestTokens.member().subject(UUID.randomUUID()).email("other@example.com");
+            new OrderTestData(mockMvc, null, null, other.bearer()).placePendingOrder(stockedVariant(3), 1);
+            var checkouts = checkoutCount();
+
+            mockMvc.perform(startCheckoutRequest(cartId).with(other.bearer()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
+            mockMvc.perform(startCheckoutRequest(cartId, List.of(pending)).with(other.bearer()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
+
+            assertThat(checkoutCount()).isEqualTo(checkouts);
+        }
+
+        @Test
+        @DisplayName("BR-406-1 支払の期限を過ぎ、まだキャンセルされていない注文も、支払待ちとして確認を求める")
+        void treatsOverdueOrderAsPending() throws Exception {
+            var pending = orders.placePendingOrder(stockedVariant(3), 1);
+            var order = mockMvc.perform(get("/api/store/orders/" + pending)).andReturn().getResponse().getContentAsString();
+            clock.setInstant(Instant.parse(JsonPath.read(order, "$.paymentDeadline")).plusSeconds(1));
+
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
+        }
+
+        @Test
+        @DisplayName("BR-406-2 他の会員の支払待ちの注文は、判定の対象にしない")
+        void ignoresPendingOrdersOfOtherMembers() throws Exception {
+            var other = TestTokens.member().subject(UUID.randomUUID()).email("other@example.com");
+            new OrderTestData(mockMvc, null, null, other.bearer()).placePendingOrder(stockedVariant(3), 1);
+            orders.add(cartId, stockedVariant(3), 1);
+
+            assertThat(acknowledgedOrderIds(startCheckout(cartId))).isEmpty();
+        }
+    }
+
     // ============================== 補助 ==============================
 
     /**
@@ -233,6 +464,47 @@ class CheckoutApiTest {
                 .andExpect(header().exists("Location"))
                 .andReturn().getResponse().getContentAsString();
         return TestJson.createdId(body);
+    }
+
+    /**
+     * 商品を注文した後に販売停止にして、注文 ID を返す（カートには購入できない品目が残る）
+     */
+    private UUID orderThenSuspend() throws Exception {
+        var product = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
+        var variant = product.variantIds.getFirst();
+        inventory.stock(variant, product.id, 3);
+        var pending = orders.placePendingOrder(variant, 1);
+        product.suspend(0);
+        return pending;
+    }
+
+    /**
+     * 確認を求める 409 であることを確認する
+     */
+    private static void expectConfirmationRequired(ResultActions result) throws Exception {
+        result.andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("PENDING_ORDER_CONFIRMATION_REQUIRED"));
+    }
+
+    /**
+     * 注文手続きに保存した、確認した注文の ID を返す
+     */
+    private Set<UUID> acknowledgedOrderIds(UUID checkoutId) {
+        return checkoutRepository.findById(checkoutId).orElseThrow().acknowledgedOrderIds();
+    }
+
+    /**
+     * テストのカートの注文手続きの数を返す
+     */
+    private int checkoutCount() {
+        return dsl.fetchCount(CHECKOUT, CHECKOUT.CART_ID.eq(cartId));
+    }
+
+    /**
+     * バリアントの販売可能数を返す
+     */
+    private int sellable(UUID variant) {
+        return stockReservationApi.sellableQuantities(List.of(variant), null).get(variant);
     }
 
     /**

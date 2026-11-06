@@ -3,6 +3,7 @@ package com.ecsite.module.order.domain.order.port;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,6 +51,22 @@ public interface OrderRepository {
      * @return 注文 ID。まだ注文がなければ空
      */
     Optional<UUID> findIdByCheckoutId(UUID checkoutId);
+
+    /**
+     * 会員の支払待ちの注文の ID を、注文日時の新しい順に取得する。同じ日時なら ID の順。
+     *
+     * @param memberId 会員 ID
+     * @return 注文 ID。支払待ちの注文がなければ空
+     */
+    List<UUID> findPendingIdsByMemberId(UUID memberId);
+
+    /**
+     * 会員ごとのロックを、トランザクションの終わりまで取る。同じ会員の注文の判定と保存を 1 つずつ処理するため。<br />
+     * トランザクションの中で呼ぶ。外で呼ぶと、すぐに解放され、ロックとして働かない。
+     *
+     * @param memberId 会員 ID
+     */
+    void lockForMember(UUID memberId);
 
     /**
      * 注文番号が使われているか。

@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.orderBody;
@@ -246,9 +247,9 @@ class MemberOrderApiTest {
         void listsOwnOrdersNewestFirst() throws Exception {
             var first = placeOrder(owner);
             clock.setInstant(NOW.plus(Duration.ofHours(1)));
-            var second = placeOrder(owner);
+            var second = placeOrder(owner, startAcknowledging(owner, first));
             clock.setInstant(NOW.plus(Duration.ofHours(2)));
-            var third = placeOrder(owner);
+            var third = placeOrder(owner, startAcknowledging(owner, first, second));
             placeOrder(other);
 
             mockMvc.perform(get(STORE + "/me/orders").param("size", "2").with(owner.bearer()))
@@ -282,6 +283,84 @@ class MemberOrderApiTest {
         @DisplayName("AC-137 token がなければ 401")
         void requiresToken() throws Exception {
             mockMvc.perform(get(STORE + "/me/orders").with(TestTokens.none()))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("AC-406-4 自分の支払待ちの注文の一覧")
+    class MyPendingOrders {
+
+        @Test
+        @DisplayName("AC-406-4 自分の支払待ちの注文だけを、注文日時の新しい順に全て返す（受付とキャンセルは含まない）")
+        void listsOwnPendingOrdersNewestFirst() throws Exception {
+            var first = placeOrder(owner);
+            clock.setInstant(NOW.plus(Duration.ofHours(1)));
+            var second = placeOrder(owner, startAcknowledging(owner, first));
+            clock.setInstant(NOW.plus(Duration.ofHours(2)));
+            var accepted = placeOrder(owner, startAcknowledging(owner, first, second));
+            OrderPayments.accept(applicationContext, accepted);
+            clock.setInstant(NOW.plus(Duration.ofHours(3)));
+            var expired = placeOrder(owner, startAcknowledging(owner, first, second));
+            OrderPayments.expire(applicationContext, expired);
+            placeOrder(other);
+
+            mockMvc.perform(get(STORE + "/me/orders/pending").with(owner.bearer()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[*].id").value(contains(second.toString(), first.toString())));
+        }
+
+        @Test
+        @DisplayName("AC-406-4 各項目は注文の表示と同じ内容で、確認の画面に必要な項目を含む")
+        void returnsSameContentAsOrder() throws Exception {
+            var orderId = placeOrder(owner);
+
+            var list = mockMvc.perform(get(STORE + "/me/orders/pending").with(owner.bearer()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items", hasSize(1)))
+                    .andExpect(jsonPath("$.items[0].id").value(orderId.toString()))
+                    .andExpect(jsonPath("$.items[0].orderNumber").isNotEmpty())
+                    .andExpect(jsonPath("$.items[0].orderedAt").value(clock.instant().toString()))
+                    .andExpect(jsonPath("$.items[0].status").value("PENDING_PAYMENT"))
+                    .andExpect(jsonPath("$.items[0].lines[0].productName").value("T シャツ"))
+                    .andExpect(jsonPath("$.items[0].amounts.total").isNumber())
+                    .andExpect(jsonPath("$.items[0].paymentDeadline").isNotEmpty())
+                    .andExpect(jsonPath("$.items[0].actions.pay").value(true))
+                    .andReturn().getResponse().getContentAsString();
+
+            var order = mockMvc.perform(get(STORE + "/orders/" + orderId).with(owner.bearer()))
+                    .andReturn().getResponse().getContentAsString();
+            assertThat(JsonPath.<Object>read(list, "$.items[0]")).isEqualTo(JsonPath.<Object>read(order, "$"));
+        }
+
+        @Test
+        @DisplayName("AC-406-4 支払の期限を過ぎ、まだキャンセルされていない注文も示し、支払えないことを示す")
+        void includesOverdueOrder() throws Exception {
+            var orderId = placeOrder(owner);
+            var order = mockMvc.perform(get(STORE + "/orders/" + orderId).with(owner.bearer()))
+                    .andReturn().getResponse().getContentAsString();
+            clock.setInstant(Instant.parse(JsonPath.read(order, "$.paymentDeadline")).plusSeconds(1));
+
+            mockMvc.perform(get(STORE + "/me/orders/pending").with(owner.bearer()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[0].id").value(orderId.toString()))
+                    .andExpect(jsonPath("$.items[0].actions.pay").value(false));
+        }
+
+        @Test
+        @DisplayName("AC-406-4 支払待ちの注文がない会員は空の一覧")
+        void emptyWithoutPendingOrders() throws Exception {
+            placeOrder(owner);
+
+            mockMvc.perform(get(STORE + "/me/orders/pending").with(other.bearer()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items", hasSize(0)));
+        }
+
+        @Test
+        @DisplayName("AC-406-4 token がなければ 401")
+        void requiresToken() throws Exception {
+            mockMvc.perform(get(STORE + "/me/orders/pending").with(TestTokens.none()))
                     .andExpect(status().isUnauthorized());
         }
     }
@@ -325,16 +404,21 @@ class MemberOrderApiTest {
      * 会員として注文し、注文 ID を返す
      */
     private UUID placeOrder(TestTokens.Builder member) throws Exception {
-        var checkoutId = checkout(member);
-        var checkout = mockMvc.perform(get(STORE + "/checkouts/" + checkoutId).with(member.bearer()))
-                .andReturn().getResponse().getContentAsString();
-        long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        var body = mockMvc.perform(post(STORE + "/checkouts/" + checkoutId + "/order").with(member.bearer())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(orderBody(total)))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return TestJson.createdId(body);
+        return placeOrder(member, checkout(member));
+    }
+
+    /**
+     * 会員のカートに入れて、確認した注文の一覧を送って注文手続きを始め、注文手続き ID を返す
+     */
+    private UUID startAcknowledging(TestTokens.Builder member, UUID... acknowledged) throws Exception {
+        return orders.startCheckout(memberCartWithItem(member), member.bearer(), List.of(acknowledged));
+    }
+
+    /**
+     * 会員として注文手続きから注文し、注文 ID を返す
+     */
+    private UUID placeOrder(TestTokens.Builder member, UUID checkoutId) throws Exception {
+        return orders.placeFromCheckout(checkoutId, member.bearer());
     }
 
     private ResultActions requestCancellation(UUID orderId, RequestPostProcessor requester) throws Exception {

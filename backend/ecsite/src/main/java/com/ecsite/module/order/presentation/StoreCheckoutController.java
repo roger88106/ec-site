@@ -4,6 +4,7 @@ import com.ecsite.api.store.CheckoutApi;
 import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.PlaceOrderRequest;
+import com.ecsite.api.store.model.StartCheckoutRequest;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.api.CurrentMemberIds;
@@ -11,9 +12,12 @@ import com.ecsite.module.order.application.checkout.CheckoutQueryService;
 import com.ecsite.module.order.application.checkout.CheckoutService;
 import com.ecsite.module.order.application.checkout.OrderPlacementService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -56,14 +60,29 @@ class StoreCheckoutController implements CheckoutApi {
     /**
      * 注文手続きに進む
      *
-     * @param cartId カート ID
+     * @param cartId  カート ID
+     * @param request 開始のリクエスト（確認した注文の ID の一覧）。本文がなければ null
      * @return Http 201 : {@link CreatedId}
      */
     @Override
-    public ResponseEntity<CreatedId> startCheckout(UUID cartId) {
-        var id = checkoutService.start(cartId, currentMemberIds.require());
+    public ResponseEntity<CreatedId> startCheckout(UUID cartId, @Nullable StartCheckoutRequest request) {
+        var id = checkoutService.start(cartId, currentMemberIds.require(), acknowledgedOrderIds(request));
         // ロケーション：作った注文手続きの URL
         return CreatedResponses.storeAt("/api/store/checkouts/{id}", id);
+    }
+
+    /**
+     * 開始のリクエストから、確認した注文の ID を読む。本文も一覧もなければ空。
+     *
+     * @param request 開始のリクエスト
+     * @return 確認した注文の ID
+     */
+    private static Set<UUID> acknowledgedOrderIds(@Nullable StartCheckoutRequest request) {
+        if (request == null || request.getAcknowledgedOrderIds() == null) {
+            return Set.of();
+        }
+        // 契約は一覧の要素の null を拒まないので、null を持てる集合にする（どの注文とも一致しない）
+        return new HashSet<>(request.getAcknowledgedOrderIds());
     }
 
     /**

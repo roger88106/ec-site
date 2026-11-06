@@ -1,17 +1,15 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
-import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,7 +37,7 @@ class ShippingAreaMigrationTest {
     /**
      * テストのデータベース
      */
-    private DriverManagerDataSource dataSource;
+    private MigrationDatabase database;
 
     /**
      * テストのデータベースの SQL
@@ -47,16 +45,9 @@ class ShippingAreaMigrationTest {
     private JdbcTemplate jdbc;
 
     @BeforeEach
-    void createDatabase() throws Exception {
-        var name = "migration_" + UUID.randomUUID().toString().replace("-", "");
-        try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-             var statement = connection.createStatement()) {
-            statement.execute("CREATE DATABASE " + name);
-        }
-        dataSource = new DriverManagerDataSource("jdbc:postgresql://%s:%d/%s".formatted(postgres.getHost(),
-                postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT), name), postgres.getUsername(), postgres.getPassword());
-        jdbc = new JdbcTemplate(dataSource);
-        flyway(BEFORE_MIGRATION).migrate();
+    void createDatabase() throws SQLException {
+        database = MigrationDatabase.migratedTo(postgres, BEFORE_MIGRATION);
+        jdbc = database.jdbc();
     }
 
     @Test
@@ -66,7 +57,7 @@ class ShippingAreaMigrationTest {
         insertOrder("20261001-000002", "神奈川県", "横浜市中区山下町 1");
         insertOrder("20261001-000003", "東京都", "西多摩郡瑞穂町箱根ケ崎 2335");
 
-        flyway(null).migrate();
+        database.flyway().migrate();
 
         assertThat(shippingArea("20261001-000001")).containsExactly(
                 "13", "東京都", "13101", "千代田区", "千代田 1-1");
@@ -82,22 +73,9 @@ class ShippingAreaMigrationTest {
         insertOrder("20261001-000001", "東京都", "千代田区千代田 1-1");
         insertOrder("20261001-000009", "東京都", "横浜市中区山下町 1");
 
-        assertThatThrownBy(() -> flyway(null).migrate())
+        assertThatThrownBy(() -> database.flyway().migrate())
                 .isInstanceOf(FlywayException.class)
                 .hasMessageContaining("20261001-000009");
-    }
-
-    /**
-     * テストのデータベースの Flyway
-     *
-     * @param target 流す最後のバージョン。null なら最新まで
-     */
-    private Flyway flyway(String target) {
-        var configuration = Flyway.configure().dataSource(dataSource).locations("classpath:db/migration");
-        if (target != null) {
-            configuration.target(target);
-        }
-        return configuration.load();
     }
 
     /**

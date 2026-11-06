@@ -22,6 +22,7 @@ import com.ecsite.module.order.domain.quote.TaxAmount;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
@@ -183,6 +184,34 @@ class JooqOrderRepository implements OrderRepository {
                 .from(SALES_ORDER)
                 .where(SALES_ORDER.CHECKOUT_ID.eq(checkoutId))
                 .fetchOptional(SALES_ORDER.ID);
+    }
+
+    /**
+     * 会員の支払待ちの注文の ID を、注文日時の新しい順に取得する。
+     *
+     * @param memberId 会員 ID
+     * @return 注文 ID
+     */
+    @Override
+    public List<UUID> findPendingIdsByMemberId(UUID memberId) {
+        return dsl.select(SALES_ORDER.ID)
+                .from(SALES_ORDER)
+                .where(SALES_ORDER.MEMBER_ID.eq(memberId), SALES_ORDER.STATUS.eq(OrderStatus.PENDING_PAYMENT.name()))
+                .orderBy(SALES_ORDER.ORDERED_AT.desc(), SALES_ORDER.ID)
+                .fetch(SALES_ORDER.ID);
+    }
+
+    /**
+     * 会員ごとのロックを、トランザクションの終わりまで取る。<br />
+     * 複数の支払待ちの注文を認めるので一意索引では防げず、判定と保存を会員ごとに 1 つずつ処理する（注文の設計の「同時の注文」）。
+     *
+     * @param memberId 会員 ID
+     */
+    @Override
+    public void lockForMember(UUID memberId) {
+        // トランザクションの終わりで解放される、会員 ID のロック（PostgreSQL の advisory lock）
+        dsl.select(DSL.function("pg_advisory_xact_lock", Object.class,
+                DSL.val(memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits()))).fetch();
     }
 
     /**

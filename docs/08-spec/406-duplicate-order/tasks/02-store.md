@@ -16,7 +16,7 @@
   - 依存：T406-02-01
   - 範囲：`frontend/store/src/actions/cart.ts`、`frontend/store/src/actions/checkout.ts`
   - 確認方法：テストが通る
-- [ ] **T406-02-03** 確認の画面と文言を実装し、画面のテストを書く（AC-406-4、5、6、8）。
+- [x] **T406-02-03** 確認の画面と文言を実装し、画面のテストを書く（AC-406-4、5、6、8）。
   - 依存：T406-02-02
   - 範囲：`frontend/store/src/app/checkout/pending-orders/page.tsx`、`frontend/store/src/features/checkout/components/PendingOrdersConfirmation.tsx`、画面のテスト
   - 確認方法：テストが通る

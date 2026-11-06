@@ -160,6 +160,18 @@
       "placing": "注文しています…",
       "submit": "注文する（{total}）"
     },
+    "pendingOrders": {
+      "title": "お支払い待ちのご注文があります",
+      "description": "お支払い待ちのご注文があります。このまま新しく注文すると、別のご注文になります。お支払いのないご注文は、お支払い期限になると自動でキャンセルされます。",
+      "deadlineLabel": "お支払い期限",
+      "quantity": "数量 {quantity}",
+      "total": "総額 {total}",
+      "pay": "支払へ進む",
+      "paying": "移っています…",
+      "newOrder": "新しく注文する",
+      "starting": "在庫を確保しています…",
+      "back": "戻る"
+    },
     "remaining": {
       "expired": "在庫の確保の期限が切れました。このまま注文できますが、その時点で在庫が足りなければ注文できません。",
       "reserving": "ご注文の商品の在庫を確保しています。残り <time>{remaining}</time>"

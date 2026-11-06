@@ -175,7 +175,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
 
     /**
      * 税率を追加または更新し、遅らせていた排他制約を検査させる。<br />
-     * 途中で一時的に期間が重なってもよいので、排他制約の検査は最後に行う。
+     * 途中で一時的に期間が重なってもよいので、排他制約は最後に検査する。
      *
      * @param snapshot 税区分のスナップショット
      */

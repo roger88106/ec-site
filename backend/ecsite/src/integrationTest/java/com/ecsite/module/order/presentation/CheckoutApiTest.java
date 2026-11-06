@@ -26,17 +26,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.OrderTestData.startCheckoutRequest;
@@ -265,7 +262,7 @@ class CheckoutApiTest {
             var second = placeOrder(startAcknowledging(cartId, first));
             var checkouts = checkoutCount();
 
-            expectConfirmationRequired(mockMvc.perform(acknowledgingRequest(cartId, first)));
+            expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId, List.of(first))));
 
             assertThat(checkoutCount()).isEqualTo(checkouts);
             assertThat(acknowledgedOrderIds(startAcknowledging(cartId, first, second))).containsExactlyInAnyOrder(first, second);
@@ -363,7 +360,7 @@ class CheckoutApiTest {
         void checksStockAfterAcknowledged() throws Exception {
             var pending = orders.placePendingOrder(stockedVariant(1), 1);
 
-            mockMvc.perform(acknowledgingRequest(cartId, pending))
+            mockMvc.perform(startCheckoutRequest(cartId, List.of(pending)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("OUT_OF_STOCK"));
         }
@@ -373,7 +370,7 @@ class CheckoutApiTest {
         void checksOrderableAfterAcknowledged() throws Exception {
             var pending = orderThenSuspend();
 
-            mockMvc.perform(acknowledgingRequest(cartId, pending))
+            mockMvc.perform(startCheckoutRequest(cartId, List.of(pending)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
         }
@@ -429,7 +426,7 @@ class CheckoutApiTest {
             mockMvc.perform(startCheckoutRequest(cartId).with(other.bearer()))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
-            mockMvc.perform(acknowledgingRequest(cartId, pending).with(other.bearer()))
+            mockMvc.perform(startCheckoutRequest(cartId, List.of(pending)).with(other.bearer()))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
 
@@ -471,19 +468,10 @@ class CheckoutApiTest {
     }
 
     /**
-     * 確認した注文の一覧を送って注文手続きに進むリクエスト
-     */
-    private static MockHttpServletRequestBuilder acknowledgingRequest(UUID cart, UUID... acknowledged) {
-        var ids = Arrays.stream(acknowledged).map(id -> "\"" + id + "\"").collect(Collectors.joining(", "));
-        return startCheckoutRequest(cart).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"acknowledgedOrderIds\": [" + ids + "]}");
-    }
-
-    /**
      * 確認した注文の一覧を送って注文手続きに進み、201 を確認して、注文手続き ID を返す
      */
     private UUID startAcknowledging(UUID cart, UUID... acknowledged) throws Exception {
-        return TestJson.createdId(mockMvc.perform(acknowledgingRequest(cart, acknowledged))
+        return TestJson.createdId(mockMvc.perform(startCheckoutRequest(cart, List.of(acknowledged)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());
     }

@@ -314,12 +314,15 @@ class OrderPaymentApiTest {
         @DisplayName("AC-160、161 管理画面の一覧で「支払待ち」で絞り込め、各行に支払の状態がある")
         void filtersPendingPayment() throws Exception {
             var pendingId = pending(1);
-            var acceptedId = pending(1);
-            orders.pay(acceptedId);
+            // 支払待ちの注文は会員に 1 件なので、受付にする注文は別の会員で作る
+            var other = TestTokens.member().subject(UUID.randomUUID());
+            var otherOrders = new OrderTestData(mockMvc, gateway, applicationContext, other.bearer());
+            var acceptedId = otherOrders.placePendingOrder(variantId, 1);
+            otherOrders.pay(acceptedId);
 
             // 他のテストの注文が混ざらないよう、自分の注文の注文番号でも絞る
             var pendingNumber = orderNumber(pendingId);
-            var acceptedNumber = orderNumber(acceptedId);
+            var acceptedNumber = orderNumber(acceptedId, other);
             mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("orderNumber", pendingNumber))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.items[*].id").value(hasItem(pendingId.toString())))
@@ -431,7 +434,11 @@ class OrderPaymentApiTest {
      * 注文の注文番号を、購入者として取得する。
      */
     private String orderNumber(UUID orderId) throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andReturn().getResponse()
+        return orderNumber(orderId, owner);
+    }
+
+    private String orderNumber(UUID orderId, TestTokens.Builder member) throws Exception {
+        return JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(member.bearer())).andReturn().getResponse()
                 .getContentAsString(), "$.orderNumber");
     }
 

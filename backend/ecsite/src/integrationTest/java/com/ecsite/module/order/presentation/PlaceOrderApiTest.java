@@ -32,11 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.OrderTestData.startCheckoutRequest;
@@ -550,9 +548,7 @@ class PlaceOrderApiTest {
          * 確認した注文の一覧を送って注文手続きに進み、201 を確認して、注文手続き ID を返す
          */
         private UUID startAcknowledging(UUID... acknowledged) throws Exception {
-            var ids = Arrays.stream(acknowledged).map(id -> "\"" + id + "\"").collect(Collectors.joining(", "));
-            return TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId).contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"acknowledgedOrderIds\": [" + ids + "]}"))
+            return TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId, List.of(acknowledged)))
                     .andExpect(status().isCreated())
                     .andReturn().getResponse().getContentAsString());
         }
@@ -674,7 +670,7 @@ class PlaceOrderApiTest {
 
             var changed = TestTokens.member().birthdate("2000-01-01").gender("male");
             mockMvc.perform(get("/api/store/orders/" + first).with(changed.bearer())).andExpect(status().isOk());
-            var second = placeAs(changed);
+            var second = placeAs(changed, first);
 
             assertThat(buyer(first)).containsExactly((short) 36, "FEMALE");
             assertThat(buyer(second)).containsExactly((short) 26, "MALE");
@@ -705,10 +701,10 @@ class PlaceOrderApiTest {
         }
 
         /**
-         * token を指定して、T シャツ 2 枚を注文し、注文 ID を返す
+         * token を指定して、確認した注文の一覧を送り、T シャツ 2 枚を注文し、注文 ID を返す
          */
-        private UUID placeAs(TestTokens.Builder token) throws Exception {
-            var checkoutId = TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId).with(token.bearer()))
+        private UUID placeAs(TestTokens.Builder token, UUID... acknowledged) throws Exception {
+            var checkoutId = TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId, List.of(acknowledged)).with(token.bearer()))
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
             var body = mockMvc.perform(placeOrderRequest(checkoutId, 6940).with(token.bearer()))
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

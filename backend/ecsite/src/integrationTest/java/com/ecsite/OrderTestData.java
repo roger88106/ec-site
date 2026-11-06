@@ -9,9 +9,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.awaitility.Awaitility.await;
@@ -290,6 +292,19 @@ public class OrderTestData {
      */
     public static MockHttpServletRequestBuilder startCheckoutRequest(UUID cartId) {
         return post("/api/store/carts/" + cartId + "/checkouts");
+    }
+
+    /**
+     * 確認した注文の ID の一覧を送って、カートから注文手続きを始めるリクエスト。token などは呼ぶ側で追加する。
+     *
+     * @param cartId               カート ID
+     * @param acknowledgedOrderIds 確認した支払待ちの注文の ID
+     * @return リクエスト
+     */
+    public static MockHttpServletRequestBuilder startCheckoutRequest(UUID cartId, Collection<UUID> acknowledgedOrderIds) {
+        var ids = acknowledgedOrderIds.stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(", "));
+        return startCheckoutRequest(cartId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"acknowledgedOrderIds\": [" + ids + "]}");
     }
 
     /**

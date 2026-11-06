@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -257,9 +256,7 @@ class PlaceOrderConcurrencyTest {
      */
     private UUID startAcknowledging(UUID cartId, UUID acknowledged) throws Exception {
         var owner = owners.get(cartId);
-        var response = mockMvc.perform(startCheckoutRequest(cartId).with(owner.bearer())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"acknowledgedOrderIds\": [\"" + acknowledged + "\"]}"))
+        var response = mockMvc.perform(startCheckoutRequest(cartId, List.of(acknowledged)).with(owner.bearer()))
                 .andReturn().getResponse();
         assertThat(response.getStatus()).isEqualTo(201);
         var checkoutId = TestJson.createdId(response.getContentAsString());

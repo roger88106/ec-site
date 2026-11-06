@@ -29,9 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.ecsite.OrderTestData.orderBody;
 import static com.ecsite.OrderTestData.startCheckoutRequest;
@@ -248,9 +247,9 @@ class MemberOrderApiTest {
         void listsOwnOrdersNewestFirst() throws Exception {
             var first = placeOrder(owner);
             clock.setInstant(NOW.plus(Duration.ofHours(1)));
-            var second = placeOrder(owner);
+            var second = placeOrder(owner, startAcknowledging(owner, first));
             clock.setInstant(NOW.plus(Duration.ofHours(2)));
-            var third = placeOrder(owner);
+            var third = placeOrder(owner, startAcknowledging(owner, first, second));
             placeOrder(other);
 
             mockMvc.perform(get(STORE + "/me/orders").param("size", "2").with(owner.bearer()))
@@ -412,10 +411,8 @@ class MemberOrderApiTest {
      * 会員のカートに入れて、確認した注文の一覧を送って注文手続きを始め、注文手続き ID を返す
      */
     private UUID startAcknowledging(TestTokens.Builder member, UUID... acknowledged) throws Exception {
-        var ids = Arrays.stream(acknowledged).map(id -> "\"" + id + "\"").collect(Collectors.joining(", "));
-        return TestJson.createdId(mockMvc.perform(startCheckoutRequest(memberCartWithItem(member)).with(member.bearer())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"acknowledgedOrderIds\": [" + ids + "]}"))
+        return TestJson.createdId(mockMvc.perform(startCheckoutRequest(memberCartWithItem(member), List.of(acknowledged))
+                        .with(member.bearer()))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());
     }

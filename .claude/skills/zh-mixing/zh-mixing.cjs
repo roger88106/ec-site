@@ -20,7 +20,7 @@ const ENABLED_VALUE = 'zh'
 const LOCAL_ALLOW = '.local/agent/zh-allow.txt'
 /** 評価の一覧の置き場所（中国語の混入を例として書くので、tracked と staged の入口と、書いたファイルの検査の hook（post-tool-use.cjs）で見ない。file の入口は、明示したパスを調べる） */
 const EVALS_EXCLUDED = /^\.claude\/skills\/review\/evals\//
-/** アーカイブした spec（当時の記録なので、tracked と staged の入口で見ない） */
+/** アーカイブした spec（当時の記録なので、tracked と staged の入口と、書いたファイルの検査の hook（post-tool-use.cjs）で見ない。file の入口は、明示したパスを調べる） */
 const ARCHIVE_EXCLUDED = /^docs\/08-spec\/archive\//
 const COMMIT_MSG = 'COMMIT_MSG'
 
@@ -296,6 +296,7 @@ function run(argv, deps) {
 
 module.exports = {
   CONFIG_KEY,
+  ARCHIVE_EXCLUDED,
   EVALS_EXCLUDED,
   checkList,
   loadList,

@@ -1,9 +1,9 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
+import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentStripe;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
  */
 @Slf4j
 @Controller
-@ConditionalOnBooleanProperty(name = "ecsite.payment.mock.enabled", havingValue = false, matchIfMissing = true)
+@ConditionalOnPaymentStripe
 @RequiredArgsConstructor
 class StripeWebhookController {
 

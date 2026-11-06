@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * 支払の更新のサービス。決済サービスを呼ばない、DB の中の操作だけを持つ。<br />
@@ -58,10 +59,7 @@ public class PaymentCommandService {
      * @param paymentId 支払 ID
      */
     public void markCaptured(UUID paymentId) {
-        paymentRepository.lockById(paymentId).ifPresent(payment -> {
-            payment.capture(clock.instant());
-            paymentRepository.update(payment);
-        });
+        modify(paymentId, payment -> payment.capture(clock.instant()));
     }
 
     /**
@@ -70,10 +68,7 @@ public class PaymentCommandService {
      * @param paymentId 支払 ID
      */
     public void markAuthorizationExpired(UUID paymentId) {
-        paymentRepository.lockById(paymentId).ifPresent(payment -> {
-            payment.expireAuthorization();
-            paymentRepository.update(payment);
-        });
+        modify(paymentId, Payment::expireAuthorization);
     }
 
     /**
@@ -123,10 +118,7 @@ public class PaymentCommandService {
      * @param paymentId 支払 ID
      */
     public void markVoided(UUID paymentId) {
-        paymentRepository.lockById(paymentId).ifPresent(payment -> {
-            payment.markVoided();
-            paymentRepository.update(payment);
-        });
+        modify(paymentId, Payment::markVoided);
     }
 
     /**
@@ -135,10 +127,7 @@ public class PaymentCommandService {
      * @param paymentId 支払 ID
      */
     public void markRefunded(UUID paymentId) {
-        paymentRepository.lockById(paymentId).ifPresent(payment -> {
-            payment.markRefunded();
-            paymentRepository.update(payment);
-        });
+        modify(paymentId, Payment::markRefunded);
     }
 
     /**
@@ -161,5 +150,20 @@ public class PaymentCommandService {
                     paymentRepository.update(payment);
                     return opened;
                 });
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 支払を行ロックして操作を 1 つ呼び、保存する。支払がなければ何もしない。
+     *
+     * @param paymentId 支払 ID
+     * @param operation 支払への操作
+     */
+    private void modify(UUID paymentId, Consumer<Payment> operation) {
+        paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            operation.accept(payment);
+            paymentRepository.update(payment);
+        });
     }
 }

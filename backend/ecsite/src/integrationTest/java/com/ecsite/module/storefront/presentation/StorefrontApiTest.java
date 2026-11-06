@@ -399,7 +399,7 @@ class StorefrontApiTest {
     }
 
     /**
-     * 商品名の先頭に付ける、テストごとの印（検索をこの印で絞る。他の語と重ならない英数字）
+     * 商品名の先頭に付ける、テストごとの識別子（検索をこの識別子で絞る。他の語と重ならない英数字）
      */
     private static String newMark() {
         return "mk" + UUID.randomUUID().toString().replace("-", "");

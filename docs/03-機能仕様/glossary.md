@@ -160,7 +160,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 支払の状態 | `PaymentStatus` / `status` | 未払い（`UNPAID`）、与信済み（`AUTHORIZED`）、与信の取消待ち（`VOID_PENDING`）、与信の取消済み（`VOIDED`）、支払なし（`NOT_PAID`）、売上確定済み（`CAPTURED`）、与信期限切れ（`AUTHORIZATION_EXPIRED`）、返金待ち（`REFUND_PENDING`）、返金済み（`REFUNDED`） |
 | 与信 | `authorization` | カードの利用枠のうち、総額分を確保すること（オーソリ）。売上の確定（出荷の時）までは代金を受け取らない |
 | 与信の取消 | `void` | 確保した与信を解くこと。売上の確定の前なので、返金ではない |
-| 与信の取消の結果 | `VoidResult` | 決済サービスで与信を取り消した結果。取り消した（`VOIDED`）、売上確定済みで取り消せない（`ALREADY_CAPTURED`） |
+| 与信の取消の結果 | `VoidResult` | 決済サービスで与信を取り消した結果。取り消した（すでに取消済みを含む。`VOIDED`）、売上確定済みで取り消せない（`ALREADY_CAPTURED`） |
 | 与信の参照 | `authorizationRef` / `authorization_ref` | 決済サービスでの与信の ID。与信を取り消すときに使う |
 | 支払画面 | `PaymentPage` / `page_id`・`page_url` | 消費者がカード番号を入力する、決済サービスの画面（Stripe Checkout） |
 | 支払の期限 | `deadline` | 支払を受け付ける期限。計算と過ぎたときの扱いは[決済モジュール](payment.md)の「支払の期限」 |

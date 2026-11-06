@@ -18,12 +18,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.IncompleteEventPublications;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
@@ -171,13 +173,14 @@ class PaymentVoidTest {
     }
 
     @Test
-    @DisplayName("AC-407-1 売上確定の応答が届かなかった支払の注文をキャンセルすると、返金済みになり、総額が 1 回だけ返金される。与信の取消は成立しない")
+    @DisplayName("AC-407-1 売上確定の応答が届かなかった支払の注文をキャンセルすると、返金済みになり、総額が 1 回だけ返金される。与信の取消済みにならない")
     void refundsCaptureWhoseResponseWasLost() {
         var orderId = capturedWithLostResponse();
 
         paymentApi.cancel(orderId);
 
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(gateway.voided()).isEmpty();
         assertThat(gateway.refunded()).containsExactly(orderId);
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).containsExactly(Money.of(6940));
@@ -187,11 +190,22 @@ class PaymentVoidTest {
     @DisplayName("AC-407-2 売上確定の応答が届かなかった支払で、与信の取消の依頼が重複して処理されても、返金は 1 回だけ行う")
     void refundsOnceWhenVoidRequestedTwice() {
         var orderId = capturedWithLostResponse();
+        var paymentId = paymentIdOf(orderId);
+        var duplicated = new AtomicBoolean();
+        // 1 回目の取消の呼び出しの中で、重複した依頼を返金済みまで処理する。どちらの処理も与信の取消待ちを読む
+        gateway.onRefundOrVoid(() -> {
+            if (duplicated.compareAndSet(false, true)) {
+                AopTestUtils.<VoidRequestedHandler>getTargetObject(voidRequestedHandler)
+                        .on(VoidRequested.of(clock.instant(), paymentId));
+                await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+            }
+        });
+
         paymentApi.cancel(orderId);
+
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
-
-        voidRequestedHandler.on(VoidRequested.of(clock.instant(), paymentIdOf(orderId)));
-
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+        assertThat(duplicated).isTrue();
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
         assertThat(gateway.voided()).isEmpty();
@@ -208,6 +222,7 @@ class PaymentVoidTest {
 
         paymentApi.capture(orderId);
 
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
         assertThat(gateway.voided()).isEmpty();

@@ -106,7 +106,7 @@ public abstract class PaymentGatewayContractTest {
     }
 
     @Test
-    @DisplayName("取消済みの与信を重ねて取り消しても、取り消した")
+    @DisplayName("取消済みの与信を重ねて取り消しても、結果は「取り消した」")
     void voidsAgain() {
         var authorizationRef = authorized();
         givenVoided(authorizationRef);

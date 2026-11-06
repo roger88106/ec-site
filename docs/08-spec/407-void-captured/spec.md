@@ -28,7 +28,7 @@
 
 ※1：docs.stripe.com/api/payment_intents/cancel、2026-11-06 確認。
 
-再現では実際の Stripe を呼んでいない。確定済みの状態は、DB の状態が同じになるテスト用の決済サービスで再現した。Stripe が確定済みの与信の取消をエラーにすることは、この時点では実行して確認していない（T407-01-03 で確認する）。
+再現では実際の Stripe を呼んでいない。確定済みの状態は、DB の状態が同じになるテスト用の決済サービスで再現した。Stripe が確定済みの与信の取消をエラーにすることは、この時点では実行して確認していない（T407-01-01 で確認する）。
 
 ## スコープ
 
@@ -121,18 +121,18 @@ AC-164 の内容を次のとおりに変更する。状態は「変更」、変�
 
 実装はセッションがサブエージェントの実装役に任せる。文書はセッションが書く（数行の修正）。
 
-- [ ] **T407-01-01** [テスト] 統合テストと、テスト用の決済サービスの「売上は確定するが、応答が届かない」操作を書き、レッドを確認する（AC-407-1〜3）。
+- [x] **T407-01-01** Stripe の sandbox で、売上を確定した与信の取消を実行し、決定 3 の前提を確認する。応答が届かない状況は作らない。前提が外れたら、実装を始めず止めて報告する。鍵は `/.local/stripe.env` のものだけを使い、sandbox だけを呼ぶ。
   - 依存：なし
-  - 範囲：`PaymentVoidTest`、`TestPaymentGateway`
-  - 確認方法：`./gradlew integrationTest --tests '*PaymentVoidTest'` で、AC-407-1、2、3 のテストが失敗する。
-- [ ] **T407-01-02** T407-01-01 のテストが通る実装を書く。実装の変更は決定 2〜6 に従う。契約テストと本番の実装の単体テストを書き換える。AC-407-4 のテストは本番の実装の単体テストに書く（今の振る舞いを固定するテストなので最初から通る。状態による分岐を一時的に変更して、失敗することを確認する）。
-  - 依存：T407-01-01
-  - 範囲：`PaymentGateway`、`StripePaymentGateway`、`MockPaymentGateway`、`TestPaymentGateway`、`VoidRequestedHandler`、`PaymentGatewayContractTest`、`StripePaymentGatewayTest`
-  - 確認方法：`./gradlew check` が通る。
-- [ ] **T407-01-03** Stripe の sandbox で、売上を確定した与信の取消を実行し、決定 3 の前提を確認する。応答が届かない状況は作らない。
-  - 依存：T407-01-02
   - 範囲：コードは変えない
   - 確認方法：取消が `invalid_request_error` で拒否され、再取得した状態が `succeeded` である。結果は pull request の本文に書く。
+- [ ] **T407-01-02** [テスト] 統合テストと、テスト用の決済サービスの「売上は確定するが、応答が届かない」操作を書き、レッドを確認する（AC-407-1〜3）。
+  - 依存：T407-01-01
+  - 範囲：`PaymentVoidTest`、`TestPaymentGateway`
+  - 確認方法：`./gradlew integrationTest --tests '*PaymentVoidTest'` で、AC-407-1、2、3 のテストが失敗する。
+- [ ] **T407-01-03** T407-01-02 のテストが通る実装を書く。実装の変更は決定 2〜6 に従う。契約テストと本番の実装の単体テストを書き換える。AC-407-4 のテストは本番の実装の単体テストに書く（今の振る舞いを固定するテストなので最初から通る。状態による分岐を一時的に変更して、失敗することを確認する）。
+  - 依存：T407-01-02
+  - 範囲：`PaymentGateway`、`StripePaymentGateway`、`MockPaymentGateway`、`TestPaymentGateway`、`VoidRequestedHandler`、`PaymentGatewayContractTest`、`StripePaymentGatewayTest`
+  - 確認方法：`./gradlew check` が通る。
 - [ ] **T407-01-04** 機能仕様、設計、用語集を更新する（決定 2〜5）。
   - 依存：T407-01-03
   - 範囲：`docs/03-機能仕様/payment.md`（売上確定、与信の取消、状態の遷移の図）、`docs/02-設計/payment.md`（mock、注文のキャンセルと、与信の取消・返金）、`docs/03-機能仕様/glossary.md`

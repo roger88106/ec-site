@@ -185,7 +185,8 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 用語 | 識別子 | 意味 |
 |------|--------|------|
 | 出荷 | `Shipment` / `shipment` | 注文を配送業者に渡したことの記録。注文ごとの出荷の数と、出荷する明細の範囲の規則は[出荷モジュール](shipping.md)の「出荷（集約）」 |
-| 物流サービス | `CarrierTracking` | 配送業者の追跡の仕組みを提供する外部のサービス。配送状態の通知を送信する。本番の実装はなく、mock（`MockCarrierTracking`）だけがある（[出荷の設計](../02-設計/shipping.md)の「外部のサービス」） |
+| 物流サービス | `CarrierTracking` | 配送業者の追跡の仕組みを提供する外部のサービス。配送状態の通知を送信する。本番の実装はない。実装の選び方は[出荷の設計](../02-設計/shipping.md)の「外部のサービス」 |
+| 接続していない物流サービス | `UnconnectedCarrierTracking` | 物流の mock フラグを立てないときに使う物流サービスの実装。追跡の開始の依頼を受けても何も送らず、成功を返す |
 | 配送業者 | `Carrier` / `carrier` | 荷物を届ける事業者。ヤマト運輸（`YAMATO`）、佐川急便（`SAGAWA`）、日本郵便（`JAPAN_POST`） |
 | 送り状番号 | `TrackingNumber` / `tracking_number` | 配送業者が荷物に付ける追跡の番号。形と保存の規則は[出荷モジュール](shipping.md)の「送り状番号」 |
 | 配送状態 | `DeliveryStatus` / `status` | 出荷した荷物の状態。出荷済み（`SHIPPED`）、配送中（`IN_TRANSIT`）、配達完了（`DELIVERED`）、返送（`RETURNED`）。値と順位、配送業者の表示との対応は[出荷モジュール](shipping.md)の「配送状態」 |

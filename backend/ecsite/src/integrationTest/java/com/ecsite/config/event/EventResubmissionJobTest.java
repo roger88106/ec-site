@@ -10,7 +10,10 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -20,6 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.modulith.events.IncompleteEventPublications;
+import org.springframework.modulith.events.config.StalenessProperties;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.modulith.events.core.TargetEventPublication;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -96,6 +100,9 @@ class EventResubmissionJobTest {
 
     @Autowired
     AsyncEvents asyncEvents;
+
+    @Autowired
+    StalenessProperties staleness;
 
     /**
      * イベントの発行を確認する補助
@@ -195,8 +202,7 @@ class EventResubmissionJobTest {
         var event = failedUntil(job, 2);
         var publication = publicationOf(event);
         // 処理中に見せる（再発行の後、リスナーが終わる前の状態）
-        dsl.update(EVENT_PUBLICATION).set(STATUS, "RESUBMITTED")
-                .where(ID.eq(publication.getIdentifier())).execute();
+        markStatus(event, "RESUBMITTED");
 
         clock.advance(Duration.ofMinutes(1));
         var logStart = CapturedLogs.mark(output);
@@ -240,6 +246,121 @@ class EventResubmissionJobTest {
         });
     }
 
+    @Test
+    @Timeout(60)
+    @DisplayName("3 台で動かしても、処理の回数が上限に達するまでの時間は 1 台と同じ")
+    void timeToMaxAttemptsDoesNotDependOnInstanceCount() {
+        var oneInstance = timeToReachMaxAttempts(Duration.ofMinutes(1));
+        // 3 台のタイマーが 20 秒ずつずれていて、合わせて 1 分に 3 回ジョブを呼ぶ
+        var threeInstances = timeToReachMaxAttempts(Duration.ofSeconds(20));
+
+        assertThat(oneInstance).isEqualTo(Duration.ofMinutes(2));
+        assertThat(threeInstances).isEqualTo(oneInstance);
+    }
+
+    @Test
+    @DisplayName("再発行の間隔を設定で変えると、同じイベントの試行の間も、その間隔を空ける")
+    void waitsForConfiguredIntervalBetweenAttempts() {
+        var event = failedUntil(jobWithMaxAttempts(3), 2);
+        var job = jobWith(Duration.ofMinutes(3), Duration.ofMinutes(5), 3);
+
+        clock.advance(Duration.ofMinutes(2));
+        job.resubmit();
+        assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
+
+        clock.advance(Duration.ofMinutes(1));
+        job.resubmit();
+        asyncEvents.awaitFailed(event::equals, 3);
+        assertThat(failingListener.attempts(event)).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("再発行の印を付けた後でインスタンスが止まったイベントは、最後の試行から 5 分たつと再発行される")
+    void resubmitsEventStuckAfterResubmissionMark() {
+        var job = jobWithMaxAttempts(3);
+        var event = failedUntil(job, 2);
+        markStatus(event, "RESUBMITTED");
+
+        clock.advance(Duration.ofMinutes(6));
+        registry.markStalePublicationsFailed(staleness);
+        job.resubmit();
+
+        asyncEvents.awaitFailed(event::equals, 3);
+        assertThat(failingListener.attempts(event)).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("最後の試行から 5 分たっていない処理中のイベントは、失敗の扱いにしない")
+    void doesNotFailRecentEventInProcess() {
+        var job = jobWithMaxAttempts(3);
+        var event = failedUntil(job, 2);
+        markStatus(event, "RESUBMITTED");
+
+        clock.advance(Duration.ofMinutes(4));
+        registry.markStalePublicationsFailed(staleness);
+
+        assertThat(dsl.select(STATUS).from(EVENT_PUBLICATION).where(ID.eq(publicationOf(event).getIdentifier())).fetchOne(STATUS))
+                .isEqualTo("RESUBMITTED");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
+    @DisplayName("AC-291 処理の回数が上限に達したイベントが、結果の出ないまま最後の試行から 5 分たつと、止めてエラーのログに出力する")
+    void stopsEventStuckAtMaxAttempts(String status, CapturedOutput output) {
+        var job = jobWithMaxAttempts(2);
+        var event = failedUntil(job, 2);
+        var publication = publicationOf(event);
+        markStatus(event, status);
+
+        clock.advance(Duration.ofMinutes(6));
+        var logStart = CapturedLogs.mark(output);
+        registry.markStalePublicationsFailed(staleness);
+        job.resubmit();
+
+        assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(3);
+        assertThat(CapturedLogs.since(output, logStart).lines()
+                .filter(line -> line.contains("ERROR") && line.contains(publication.getIdentifier().toString())))
+                .hasSize(1);
+    }
+
+    /**
+     * 1 回目の処理に失敗したイベントについて、ジョブを決まった間隔で呼び、処理の回数が上限（4）に達するまでの時間を測る。
+     *
+     * @param timerGap ジョブを呼ぶ間隔
+     * @return 再発行の対象になってから、処理の回数が上限に達するまでの時間
+     */
+    private Duration timeToReachMaxAttempts(Duration timerGap) {
+        var maxAttempts = 4;
+        var job = jobWithMaxAttempts(maxAttempts);
+        var event = publications.failedOnce(new FailingEvent(UUID.randomUUID(), "budget-" + UUID.randomUUID() + "@example.com"));
+        clock.advance(Duration.ofMinutes(6));
+        var start = clock.instant();
+        var attempts = 1;
+        while (true) {
+            job.resubmit();
+            var current = publicationOf(event).getCompletionAttempts();
+            if (current > attempts) {
+                attempts = current;
+                asyncEvents.awaitFailed(event::equals, attempts);
+            }
+            if (attempts >= maxAttempts) {
+                return Duration.between(start, clock.instant());
+            }
+            clock.advance(timerGap);
+        }
+    }
+
+    /**
+     * イベントの記録の状態を書き換え、インスタンスが処理の途中で止まった状態に見せる。
+     *
+     * @param event  発行したイベント
+     * @param status 処理の状態
+     */
+    private void markStatus(Object event, String status) {
+        dsl.update(EVENT_PUBLICATION).set(STATUS, status)
+                .where(ID.eq(publicationOf(event).getIdentifier())).execute();
+    }
+
     /**
      * メトリクスの値
      */
@@ -258,8 +379,15 @@ class EventResubmissionJobTest {
      * 発行からの時間の下限と処理の回数の上限を変えた再発行のジョブ
      */
     private EventResubmissionJob jobWith(Duration minAge, int maxAttempts) {
+        return jobWith(Duration.ofMinutes(1), minAge, maxAttempts);
+    }
+
+    /**
+     * 間隔、発行からの時間の下限、処理の回数の上限を変えた再発行のジョブ
+     */
+    private EventResubmissionJob jobWith(Duration interval, Duration minAge, int maxAttempts) {
         return new EventResubmissionJob(incompletePublications,
-                new EventResubmissionJob.Properties(Duration.ofMinutes(1), minAge, maxAttempts), clock,
+                new EventResubmissionJob.Properties(interval, minAge, maxAttempts), clock,
                 publicationRecords, publicationMetrics);
     }
 

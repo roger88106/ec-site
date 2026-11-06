@@ -24,7 +24,7 @@
   - 依存：T406-01-03
   - 範囲：Flyway のマイグレーション、`CheckoutService`、`PendingOrderGuard`、`StoreOrderController`、`OrderQueryService`、`OrderErrorCode`
   - 確認方法：T406-01-03 のテストが通る。マイグレーションが、支払待ちの注文が複数ある DB で失敗しない。同じ会員で 2 件目を注文する既存の統合テストは、T406-01-07 まで失敗してよい
-- [ ] **T406-01-05** [テスト] 注文の統合テストと同時のテストを書く（AC-406-9、11、12、14、15、16、17）。
+- [x] **T406-01-05** [テスト] 注文の統合テストと同時のテストを書く（AC-406-9、11、12、14、15、16、17）。
   - 依存：T406-01-04
   - 範囲：`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest`
   - 確認方法：テストが失敗することを確認する

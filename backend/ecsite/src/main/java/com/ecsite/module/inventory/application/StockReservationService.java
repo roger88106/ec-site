@@ -93,7 +93,9 @@ public class StockReservationService {
 
     /**
      * 引当を在庫数の減算に置き換える。<br />
-     * 引当の期限が切れていても、その時点で足りれば減算する（引き当て直しを兼ねる）。1 つでも足りなければ何も変えない。
+     * 持ち主の引当を解いてから在庫をロックする。注文手続きの開始と同じ順序にして、デッドロックを防ぐ（注文の設計の「同時の注文」）。
+     * 引当の期限が切れていても、その時点で足りれば減算する（引き当て直しを兼ねる）。
+     * 1 つでも足りなければ在庫数を変えず、足りない品目を返す。呼び出し元が例外でトランザクションを取り消すので、解いた引当も戻る。
      *
      * @param holderId    持ち主 ID（注文手続き）
      * @param quantities  バリアント ID → 数量
@@ -104,6 +106,8 @@ public class StockReservationService {
     @Transactional
     public Set<UUID> commit(UUID holderId, Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
         var now = clock.instant();
+        // 販売可能数は持ち主の引当を数えないので、先に解いても判定は変わらない
+        reservationRepository.deleteByHolder(holderId);
         var locked = lockStocks(quantities.keySet());
         var shortages = StockAllocation.shortages(quantities, sellableOf(locked, holderId, now));
         if (!shortages.isEmpty()) {
@@ -113,7 +117,6 @@ public class StockReservationService {
         locked.keySet().forEach(variantId -> stockItemRepository.adjust(variantId, StockAdjustment.forOrder(
                 -Objects.requireNonNull(quantities.get(variantId), "ロックした在庫は数量を指定したバリアントのもの"),
                 StockAdjustmentReason.ORDER, orderId, orderNumber, now)));
-        reservationRepository.deleteByHolder(holderId);
         return Set.of();
     }
 

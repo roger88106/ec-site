@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
@@ -16,15 +17,23 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
+import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * 注文による在庫の増減の統合テスト。<br />
@@ -68,6 +77,12 @@ class StockOrderApiTest {
 
     @Autowired
     DSLContext dsl;
+
+    /**
+     * テストの側でトランザクションを開いて、在庫の行をロックする TransactionTemplate
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     private UUID productId;
 
@@ -121,7 +136,7 @@ class StockOrderApiTest {
     }
 
     @Test
-    @DisplayName("AC-87 期限切れの間にほかの持ち主が引き当てて足りなければ、何も変えずに足りない品目を返す")
+    @DisplayName("AC-87 期限切れの間にほかの持ち主が引き当てて足りなければ、どの在庫も減らさずに足りない品目を返す")
     void rejectsCommitWhenOthersReservedAfterExpiry() {
         var plenty = stock(5);
         var scarce = stock(1);
@@ -136,6 +151,33 @@ class StockOrderApiTest {
         assertThat(stockQueryRepository.findQuantity(plenty)).contains(5);
         assertThat(stockQueryRepository.findQuantity(scarce)).contains(1);
         assertThat(latestAdjustment(plenty).reason()).isEqualTo(StockAdjustmentReason.ARRIVAL);
+    }
+
+    @Test
+    @DisplayName("AC-87 減算は、持ち主の引当の行をロックしてから在庫の行をロックする（注文手続きの開始と同じ順序で、デッドロックにならない）")
+    void locksReservationBeforeStock() throws Exception {
+        var variant = stock(5);
+        var holder = UUID.randomUUID();
+        assertThat(api.reserve(holder, Map.of(variant, 2), EXPIRES_AT)).isEmpty();
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var committing = new AtomicReference<Future<Set<UUID>>>();
+            transactionTemplate.executeWithoutResult(status -> {
+                // テストのトランザクションが在庫の行をロックし、減算を在庫の行で待たせる
+                dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variant)).forUpdate().fetch();
+                committing.set(executor.submit(() -> api.commit(holder, Map.of(variant, 2), orderId, ORDER_NUMBER)));
+                awaitBlockedByThisTransaction();
+
+                // 在庫の行を待つ減算が引当の行をロックしていれば、飛ばされて読めない
+                assertThat(dsl.selectFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holder))
+                        .forUpdate().skipLocked().fetch()).isEmpty();
+            });
+
+            assertThat(committing.get().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isEmpty();
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(3);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test
@@ -162,6 +204,15 @@ class StockOrderApiTest {
         var variantId = UUID.randomUUID();
         inventory.stock(variantId, productId, quantity);
         return variantId;
+    }
+
+    /**
+     * このトランザクションのロックを、別のセッションが待ち始めるのを待つ
+     */
+    private void awaitBlockedByThisTransaction() {
+        var pid = dsl.fetchValue("select pg_backend_pid()");
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchExists(dsl.selectOne().from("pg_locks")
+                .where("not granted and ? = any(pg_blocking_pids(pid))", pid)));
     }
 
     /**

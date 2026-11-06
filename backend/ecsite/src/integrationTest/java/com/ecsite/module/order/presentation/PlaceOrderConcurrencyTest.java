@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
@@ -20,6 +21,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -33,13 +35,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
+import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
+import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
@@ -73,6 +80,12 @@ class PlaceOrderConcurrencyTest {
 
     @Autowired
     DSLContext dsl;
+
+    /**
+     * テストの側でトランザクションを開いて、在庫の行をロックする TransactionTemplate
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     /**
      * 注文を作る補助
@@ -167,7 +180,98 @@ class PlaceOrderConcurrencyTest {
         assertThat(quantity()).isEqualTo(3);
     }
 
+    @Test
+    @DisplayName("AC-406-14 先の注文のトランザクションが終わるまで、同じ会員の後の注文は会員のロックを待ち、先の注文の成立の後に判定されて、確認を求められる")
+    void waitsForMemberLockAndRejectsLater() throws Exception {
+        stock(5);
+        var cartId = cartWith(1);
+        var earlier = startCheckout(cartId);
+        var later = startCheckout(cartId);
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var placing = new ArrayList<Future<MockHttpServletResponse>>();
+            whileStockLocked(() -> {
+                // 先の注文は、会員のロックを持ったまま、在庫の行で待つ。トランザクションはコミットしない
+                placing.add(executor.submit(() -> place(earlier)));
+                awaitBlockedByThisTransaction();
+                // 後の注文は、先の注文が持つ会員のロックを待つ。ロックがなければ、この待ちは現れない
+                placing.add(executor.submit(() -> place(later)));
+                awaitMemberLockWaiter(memberOf(later));
+            });
+
+            var placed = placing.get(0).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            var rejected = placing.get(1).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            assertThat(placed.getStatus()).isEqualTo(201);
+            expectOnePlacedAndOneRejected(List.of(placed, rejected), List.of(earlier, later));
+            assertThat(rejected.getStatus()).isEqualTo(409);
+            assertThat(quantity()).isEqualTo(4);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @DisplayName("AC-87 在庫の行を待つ間に在庫がなくなると、どの在庫も減らさずに拒否し、先に解いた引当は取り消しで元に戻る")
+    void keepsReservationWhenRejectedAfterRelease() throws Exception {
+        stock(1);
+        var checkoutId = startCheckout(cartWith(1));
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var placing = new AtomicReference<Future<MockHttpServletResponse>>();
+            whileStockLocked(() -> {
+                placing.set(executor.submit(() -> place(checkoutId)));
+                awaitBlockedByThisTransaction();
+                // 注文の判定は終わっているので、在庫の行を読む減算で足りないと分かる
+                dsl.update(STOCK_ITEM).set(STOCK_ITEM.QUANTITY, 0)
+                        .where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).execute();
+            });
+
+            var rejected = placing.get().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            assertThat(rejected.getStatus()).isEqualTo(409);
+            assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");
+            assertThat(dsl.fetchCount(STOCK_RESERVATION, STOCK_RESERVATION.HOLDER_ID.eq(checkoutId))).isEqualTo(1);
+            assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isZero();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     // ============================== 補助 ==============================
+
+    /**
+     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。処理の後のコミットでロックが外れる
+     */
+    private void whileStockLocked(Runnable body) {
+        transactionTemplate.executeWithoutResult(status -> {
+            dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).forUpdate().fetch();
+            body.run();
+        });
+    }
+
+    /**
+     * このトランザクションのロックを、別のセッションが待ち始めるのを待つ
+     */
+    private void awaitBlockedByThisTransaction() {
+        var pid = dsl.fetchValue("select pg_backend_pid()");
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchExists(dsl.selectOne().from("pg_locks")
+                .where("not granted and ? = any(pg_blocking_pids(pid))", pid)));
+    }
+
+    /**
+     * 会員のアドバイザリロック（JooqOrderRepository.lockForMember と同じキー）を、未取得のまま待つセッションが現れるのを待つ
+     */
+    private void awaitMemberLockWaiter(UUID memberId) {
+        var key = memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits();
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchExists(dsl.selectOne().from("pg_locks")
+                .where("locktype = 'advisory' and not granted and ((classid::bigint << 32) | objid::bigint) = ?", key)));
+    }
+
+    /**
+     * 注文手続きの持ち主の会員 ID
+     */
+    private UUID memberOf(UUID checkoutId) {
+        return dsl.select(CHECKOUT.MEMBER_ID).from(CHECKOUT).where(CHECKOUT.ID.eq(checkoutId)).fetchSingle(CHECKOUT.MEMBER_ID);
+    }
 
     /**
      * 同じ処理を、複数のスレッドで同時に始める

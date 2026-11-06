@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -207,7 +208,43 @@ class JooqOrderRepositoryTest {
         }
     }
 
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("AC-406-14 会員のロックを取っている間は、別のトランザクションが同じ会員のロックを取れず、別の会員のロックは取れる")
+    void blocksOtherTransactionWhileMemberLocked() {
+        // ロックはトランザクションの終わりで外れ、行を作らないので、ロールバックは要らない
+        var memberId = UUID.randomUUID();
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            transactionTemplate.executeWithoutResult(status -> {
+                repository.lockForMember(memberId);
+
+                assertThat(tryLockInOtherTransaction(executor, memberId)).isFalse();
+                assertThat(tryLockInOtherTransaction(executor, UUID.randomUUID())).isTrue();
+            });
+
+            assertThat(tryLockInOtherTransaction(executor, memberId)).isTrue();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     // ============================== 補助 ==============================
+
+    /**
+     * 別のトランザクションで、会員のロックを待たずに取れるかを返す
+     */
+    private boolean tryLockInOtherTransaction(ExecutorService executor, UUID memberId) {
+        var key = memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits();
+        try {
+            return executor.submit(() -> transactionTemplate.execute(inner ->
+                            dsl.fetchValue("select pg_try_advisory_xact_lock(?)", key)))
+                    .get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)
+                    .equals(true);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     /**
      * 他のテストが使わない日付と、乱数の 6 桁で作った注文番号

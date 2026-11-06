@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import java.util.UUID;
 
 /**
- * 移行のテストの補助。テストごとに別のデータベースを作り、移行の前のバージョンまで流す。
+ * マイグレーションのテストの補助。テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流す。
  */
 final class MigrationDatabase {
 
@@ -34,7 +34,7 @@ final class MigrationDatabase {
      * 新しいデータベースを作り、指定のバージョンまで流す。
      *
      * @param postgres 統合テストの PostgreSQL
-     * @param target   流す最後のバージョン（移行の前のバージョン）
+     * @param target   流す最後のバージョン（マイグレーションの前のバージョン）
      * @return テストのデータベース
      */
     static MigrationDatabase migratedTo(PostgreSQLContainer postgres, String target) throws SQLException {

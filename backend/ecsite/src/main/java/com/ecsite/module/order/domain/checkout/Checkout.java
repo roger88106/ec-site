@@ -26,7 +26,7 @@ public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartV
                        Set<UUID> acknowledgedOrderIds) {
 
     /**
-     * 確認した注文の ID の集合は、後から変えられないように複写する。
+     * 確認した注文の ID の集合は、後から変えられないようにコピーする。
      */
     public Checkout {
         acknowledgedOrderIds = Set.copyOf(acknowledgedOrderIds);

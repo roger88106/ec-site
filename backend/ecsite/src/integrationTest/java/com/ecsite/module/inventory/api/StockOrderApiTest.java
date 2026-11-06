@@ -3,6 +3,7 @@ package com.ecsite.module.inventory.api;
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.LockWaits;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.paging.PageRequest;
@@ -33,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 /**
  * 注文による在庫の増減の統合テスト。<br />
@@ -166,9 +166,9 @@ class StockOrderApiTest {
                 // テストのトランザクションが在庫の行をロックし、減算を在庫の行で待たせる
                 dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variant)).forUpdate().fetch();
                 committing.set(executor.submit(() -> api.commit(holder, Map.of(variant, 2), orderId, ORDER_NUMBER)));
-                awaitBlockedByThisTransaction();
+                LockWaits.awaitBlockedByThisTransaction(dsl);
 
-                // 在庫の行を待つ減算が引当の行をロックしていれば、飛ばされて読めない
+                // 在庫の行を待つ減算が引当の行をロックしていれば、引当の行は読み飛ばされ、行が返らない
                 assertThat(dsl.selectFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holder))
                         .forUpdate().skipLocked().fetch()).isEmpty();
             });
@@ -204,15 +204,6 @@ class StockOrderApiTest {
         var variantId = UUID.randomUUID();
         inventory.stock(variantId, productId, quantity);
         return variantId;
-    }
-
-    /**
-     * このトランザクションのロックを、別のセッションが待ち始めるのを待つ
-     */
-    private void awaitBlockedByThisTransaction() {
-        var pid = dsl.fetchValue("select pg_backend_pid()");
-        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchExists(dsl.selectOne().from("pg_locks")
-                .where("not granted and ? = any(pg_blocking_pids(pid))", pid)));
     }
 
     /**

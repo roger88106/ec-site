@@ -334,7 +334,7 @@ class MemberOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-406-4 支払の期限を過ぎ、キャンセルの前の注文も示し、支払えないことを示す")
+        @DisplayName("AC-406-4 支払の期限を過ぎ、まだキャンセルされていない注文も示し、支払えないことを示す")
         void includesOverdueOrder() throws Exception {
             var orderId = placeOrder(owner);
             var order = mockMvc.perform(get(STORE + "/orders/" + orderId).with(owner.bearer()))
@@ -411,25 +411,14 @@ class MemberOrderApiTest {
      * 会員のカートに入れて、確認した注文の一覧を送って注文手続きを始め、注文手続き ID を返す
      */
     private UUID startAcknowledging(TestTokens.Builder member, UUID... acknowledged) throws Exception {
-        return TestJson.createdId(mockMvc.perform(startCheckoutRequest(memberCartWithItem(member), List.of(acknowledged))
-                        .with(member.bearer()))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString());
+        return orders.startCheckout(memberCartWithItem(member), member.bearer(), List.of(acknowledged));
     }
 
     /**
      * 会員として注文手続きから注文し、注文 ID を返す
      */
     private UUID placeOrder(TestTokens.Builder member, UUID checkoutId) throws Exception {
-        var checkout = mockMvc.perform(get(STORE + "/checkouts/" + checkoutId).with(member.bearer()))
-                .andReturn().getResponse().getContentAsString();
-        long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        var body = mockMvc.perform(post(STORE + "/checkouts/" + checkoutId + "/order").with(member.bearer())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(orderBody(total)))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return TestJson.createdId(body);
+        return orders.placeFromCheckout(checkoutId, member.bearer());
     }
 
     private ResultActions requestCancellation(UUID orderId, RequestPostProcessor requester) throws Exception {

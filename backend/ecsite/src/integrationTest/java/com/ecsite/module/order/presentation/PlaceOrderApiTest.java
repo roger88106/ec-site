@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
-import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -521,7 +520,7 @@ class PlaceOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-406-17 他の会員が注文の済んだ注文手続きから送っても 404 で、注文を示さない")
+        @DisplayName("AC-406-17 注文の済んだ注文手続きに対して、他の会員が注文を送っても 404 で、注文を示さない")
         void hidesPlacedOrderFromOtherMembers() throws Exception {
             var checkoutId = orders.startCheckout(cartId);
             placed(checkoutId);
@@ -533,7 +532,7 @@ class PlaceOrderApiTest {
         }
 
         @Test
-        @DisplayName("BR-406-1 支払の期限を過ぎ、キャンセルの前の注文も、支払待ちとして確認を求める")
+        @DisplayName("BR-406-1 支払の期限を過ぎ、まだキャンセルされていない注文も、支払待ちとして確認を求める")
         void treatsOverdueOrderAsPending() throws Exception {
             var firstTab = orders.startCheckout(cartId);
             var secondTab = orders.startCheckout(cartId);
@@ -548,9 +547,7 @@ class PlaceOrderApiTest {
          * 確認した注文の一覧を送って注文手続きに進み、201 を確認して、注文手続き ID を返す
          */
         private UUID startAcknowledging(UUID... acknowledged) throws Exception {
-            return TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId, List.of(acknowledged)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString());
+            return orders.startCheckout(cartId, List.of(acknowledged));
         }
 
         /**
@@ -704,8 +701,7 @@ class PlaceOrderApiTest {
          * token を指定して、確認した注文の一覧を送り、T シャツ 2 枚を注文し、注文 ID を返す
          */
         private UUID placeAs(TestTokens.Builder token, UUID... acknowledged) throws Exception {
-            var checkoutId = TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId, List.of(acknowledged)).with(token.bearer()))
-                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+            var checkoutId = orders.startCheckout(cartId, token.bearer(), List.of(acknowledged));
             var body = mockMvc.perform(placeOrderRequest(checkoutId, 6940).with(token.bearer()))
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
             return TestJson.createdId(body);

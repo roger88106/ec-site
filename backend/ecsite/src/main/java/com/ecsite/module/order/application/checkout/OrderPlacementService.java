@@ -118,7 +118,7 @@ public class OrderPlacementService {
         if (existing.isPresent()) {
             return new PlacementResult(existing.get(), false);
         }
-        // 再送は注文の状態によらず作成済みの注文を返すので、作成済みの注文の確認の後に行う
+        // 再送は注文の状態によらず作成済みの注文を返すので、作成済みの注文があるかの確認の後に行う
         pendingOrderGuard.verifyAcknowledged(checkout);
 
         // 判定：カートの変更、購入できるか、確認した総額

@@ -17,13 +17,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 注文手続きに確認した注文の列を追加するマイグレーションの受け入れテスト。<br />
- * テストごとに別のデータベースを作り、移行の前のバージョンまで流してから、適用の時点のデータを入れ、残りを流す。
+ * テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流してから、適用の時点のデータを入れ、残りを流す。
  */
 @IntegrationTest
 class CheckoutAcknowledgedOrdersMigrationTest {
 
     /**
-     * 移行の前のバージョン（V202611062100 の 1 つ前）
+     * マイグレーションの前のバージョン（V202611062100 の 1 つ前）
      */
     private static final String BEFORE_MIGRATION = "202610211600";
 
@@ -70,7 +70,7 @@ class CheckoutAcknowledgedOrdersMigrationTest {
     // ============================== 補助 ==============================
 
     /**
-     * 移行の前の形で、支払待ちの注文を入れる
+     * マイグレーションの前の形で、支払待ちの注文を入れる
      */
     private void insertPendingOrder(String orderNumber, UUID memberId) {
         jdbc.update("""
@@ -84,7 +84,7 @@ class CheckoutAcknowledgedOrdersMigrationTest {
     }
 
     /**
-     * 移行の前の形で、進行中の注文手続きを入れ、注文手続き ID を返す
+     * マイグレーションの前の形で、進行中の注文手続きを入れ、注文手続き ID を返す
      */
     private UUID insertCheckout(UUID memberId) {
         var checkoutId = UUID.randomUUID();

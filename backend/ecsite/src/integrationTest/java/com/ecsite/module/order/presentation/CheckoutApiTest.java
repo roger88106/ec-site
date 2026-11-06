@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -259,17 +258,17 @@ class CheckoutApiTest {
         @DisplayName("AC-406-1 古い一覧（今の支払待ちの注文を含まない）を送ると、確認を求める")
         void rejectsStaleList() throws Exception {
             var first = orders.placePendingOrder(stockedVariant(5), 1);
-            var second = placeOrder(startAcknowledging(cartId, first));
+            var second = orders.placeFromCheckout(orders.startCheckout(cartId, List.of(first)));
             var checkouts = checkoutCount();
 
             expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId, List.of(first))));
 
             assertThat(checkoutCount()).isEqualTo(checkouts);
-            assertThat(acknowledgedOrderIds(startAcknowledging(cartId, first, second))).containsExactlyInAnyOrder(first, second);
+            assertThat(acknowledgedOrderIds(orders.startCheckout(cartId, List.of(first, second)))).containsExactlyInAnyOrder(first, second);
         }
 
         @Test
-        @DisplayName("AC-406-1 本文の一覧が空、null、null の要素なら、確認していないものとして確認を求める")
+        @DisplayName("AC-406-1 本文の一覧が空、null、または null の要素を含むなら、確認していないものとして確認を求める")
         void treatsEmptyListAsNotAcknowledged() throws Exception {
             orders.placePendingOrder(stockedVariant(3), 1);
 
@@ -285,7 +284,7 @@ class CheckoutApiTest {
         void keepsPreviousReservationWhenRejected() throws Exception {
             var variant = stockedVariant(5);
             var pending = orders.placePendingOrder(variant, 1);
-            startAcknowledging(cartId, pending);
+            orders.startCheckout(cartId, List.of(pending));
             assertThat(sellable(variant)).isEqualTo(3);
             var checkouts = checkoutCount();
 
@@ -337,7 +336,7 @@ class CheckoutApiTest {
             var variant = stockedVariant(5);
             var pending = orders.placePendingOrder(variant, 1);
 
-            var checkoutId = startAcknowledging(cartId, pending);
+            var checkoutId = orders.startCheckout(cartId, List.of(pending));
 
             assertThat(sellable(variant)).isEqualTo(3);
             mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
@@ -350,7 +349,7 @@ class CheckoutApiTest {
         void savesCurrentPendingOrderIds() throws Exception {
             var pending = orders.placePendingOrder(stockedVariant(3), 1);
 
-            var checkoutId = startAcknowledging(cartId, pending, UUID.randomUUID());
+            var checkoutId = orders.startCheckout(cartId, List.of(pending, UUID.randomUUID()));
 
             assertThat(acknowledgedOrderIds(checkoutId)).containsExactly(pending);
         }
@@ -379,11 +378,11 @@ class CheckoutApiTest {
         @DisplayName("AC-406-10 確認はその注文手続きにだけ有効で、次に始めるときは再び確認を求める")
         void requiresConfirmationAgain() throws Exception {
             var pending = orders.placePendingOrder(stockedVariant(5), 1);
-            startAcknowledging(cartId, pending);
+            orders.startCheckout(cartId, List.of(pending));
 
             expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
 
-            assertThat(acknowledgedOrderIds(startAcknowledging(cartId, pending))).containsExactly(pending);
+            assertThat(acknowledgedOrderIds(orders.startCheckout(cartId, List.of(pending)))).containsExactly(pending);
         }
 
         @Test
@@ -412,7 +411,7 @@ class CheckoutApiTest {
         void ignoresListWithoutPendingOrders() throws Exception {
             orders.add(cartId, stockedVariant(3), 1);
 
-            assertThat(acknowledgedOrderIds(startAcknowledging(cartId, UUID.randomUUID()))).isEmpty();
+            assertThat(acknowledgedOrderIds(orders.startCheckout(cartId, List.of(UUID.randomUUID())))).isEmpty();
         }
 
         @Test
@@ -434,7 +433,7 @@ class CheckoutApiTest {
         }
 
         @Test
-        @DisplayName("BR-406-1 支払の期限を過ぎ、キャンセルの前の注文も、支払待ちとして確認を求める")
+        @DisplayName("BR-406-1 支払の期限を過ぎ、まだキャンセルされていない注文も、支払待ちとして確認を求める")
         void treatsOverdueOrderAsPending() throws Exception {
             var pending = orders.placePendingOrder(stockedVariant(3), 1);
             var order = mockMvc.perform(get("/api/store/orders/" + pending)).andReturn().getResponse().getContentAsString();
@@ -465,26 +464,6 @@ class CheckoutApiTest {
                 .andExpect(header().exists("Location"))
                 .andReturn().getResponse().getContentAsString();
         return TestJson.createdId(body);
-    }
-
-    /**
-     * 確認した注文の一覧を送って注文手続きに進み、201 を確認して、注文手続き ID を返す
-     */
-    private UUID startAcknowledging(UUID cart, UUID... acknowledged) throws Exception {
-        return TestJson.createdId(mockMvc.perform(startCheckoutRequest(cart, List.of(acknowledged)))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString());
-    }
-
-    /**
-     * 注文手続きから注文し、201 を確認して、注文 ID を返す
-     */
-    private UUID placeOrder(UUID checkoutId) throws Exception {
-        var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId)).andReturn().getResponse().getContentAsString();
-        long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        return TestJson.createdId(mockMvc.perform(placeOrderRequest(checkoutId, total))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString());
     }
 
     /**

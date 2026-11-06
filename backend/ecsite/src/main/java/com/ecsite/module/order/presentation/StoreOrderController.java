@@ -63,7 +63,7 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 自分の支払待ちの注文の一覧（確認の画面の材料）。注文日時の新しい順
+     * 自分の支払待ちの注文の一覧（確認の画面に表示する情報）。注文日時の新しい順
      *
      * @return Http 200 : {@link PendingOrderList}
      */

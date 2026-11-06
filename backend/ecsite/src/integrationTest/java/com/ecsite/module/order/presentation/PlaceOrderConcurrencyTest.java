@@ -4,6 +4,7 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.LockWaits;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
@@ -40,13 +41,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
-import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
@@ -193,10 +192,10 @@ class PlaceOrderConcurrencyTest {
             whileStockLocked(() -> {
                 // 先の注文は、会員のロックを持ったまま、在庫の行で待つ。トランザクションはコミットしない
                 placing.add(executor.submit(() -> place(earlier)));
-                awaitBlockedByThisTransaction();
+                LockWaits.awaitBlockedByThisTransaction(dsl);
                 // 後の注文は、先の注文が持つ会員のロックを待つ。ロックがなければ、この待ちは現れない
                 placing.add(executor.submit(() -> place(later)));
-                awaitMemberLockWaiter(memberOf(later));
+                LockWaits.awaitMemberLockWaiter(dsl, memberOf(later));
             });
 
             var placed = placing.get(0).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
@@ -220,7 +219,7 @@ class PlaceOrderConcurrencyTest {
             var placing = new AtomicReference<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
                 placing.set(executor.submit(() -> place(checkoutId)));
-                awaitBlockedByThisTransaction();
+                LockWaits.awaitBlockedByThisTransaction(dsl);
                 // 注文の判定は終わっているので、在庫の行を読む減算で足りないと分かる
                 dsl.update(STOCK_ITEM).set(STOCK_ITEM.QUANTITY, 0)
                         .where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).execute();
@@ -239,31 +238,13 @@ class PlaceOrderConcurrencyTest {
     // ============================== 補助 ==============================
 
     /**
-     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。処理の後のコミットでロックが外れる
+     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。処理の後のコミットでロックが解放される
      */
     private void whileStockLocked(Runnable body) {
         transactionTemplate.executeWithoutResult(status -> {
             dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).forUpdate().fetch();
             body.run();
         });
-    }
-
-    /**
-     * このトランザクションのロックを、別のセッションが待ち始めるのを待つ
-     */
-    private void awaitBlockedByThisTransaction() {
-        var pid = dsl.fetchValue("select pg_backend_pid()");
-        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchExists(dsl.selectOne().from("pg_locks")
-                .where("not granted and ? = any(pg_blocking_pids(pid))", pid)));
-    }
-
-    /**
-     * 会員のアドバイザリロック（JooqOrderRepository.lockForMember と同じキー）を、未取得のまま待つセッションが現れるのを待つ
-     */
-    private void awaitMemberLockWaiter(UUID memberId) {
-        var key = memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits();
-        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchExists(dsl.selectOne().from("pg_locks")
-                .where("locktype = 'advisory' and not granted and ((classid::bigint << 32) | objid::bigint) = ?", key)));
     }
 
     /**
@@ -360,10 +341,7 @@ class PlaceOrderConcurrencyTest {
      */
     private UUID startAcknowledging(UUID cartId, UUID acknowledged) throws Exception {
         var owner = owners.get(cartId);
-        var response = mockMvc.perform(startCheckoutRequest(cartId, List.of(acknowledged)).with(owner.bearer()))
-                .andReturn().getResponse();
-        assertThat(response.getStatus()).isEqualTo(201);
-        var checkoutId = TestJson.createdId(response.getContentAsString());
+        var checkoutId = orders.startCheckout(cartId, owner.bearer(), List.of(acknowledged));
         checkoutOwners.put(checkoutId, owner);
         return checkoutId;
     }

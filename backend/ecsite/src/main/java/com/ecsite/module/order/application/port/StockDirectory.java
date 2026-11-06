@@ -40,7 +40,8 @@ public interface StockDirectory {
     void release(UUID holderId);
 
     /**
-     * 引当を在庫数の減算に置き換える。
+     * 引当を在庫数の減算に置き換える。<br />
+     * 1 つでも足りなければ在庫数を変えず、足りない品目を返す。引当は解いた状態で返るので、呼び出し元がトランザクションをロールバックして元に戻す。
      *
      * @param holderId    持ち主 ID
      * @param quantities  バリアント ID → 数量

@@ -68,7 +68,7 @@ public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartV
     /**
      * 今の支払待ちの注文が全て、確認した注文に含まれるかを返す。
      *
-     * @param pendingOrderIds 今の支払待ちの注文の ID の集合
+     * @param pendingOrderIds 今の支払待ちの注文の ID
      * @return 全て含まれていれば true（支払待ちがなければ常に true）
      */
     public boolean acknowledges(@NonNull Set<UUID> pendingOrderIds) {

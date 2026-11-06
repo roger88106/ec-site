@@ -20,7 +20,7 @@
   - 依存：T406-01-02
   - 範囲：`CheckoutApiTest`、`MemberOrderApiTest`
   - 確認方法：テストが失敗することを確認する
-- [ ] **T406-01-04** [リスク] マイグレーション、開始の判定、一覧の API を実装する。契約（`store.yaml`）から生成した型を使う。
+- [x] **T406-01-04** [リスク] マイグレーション、開始の判定、一覧の API を実装する。契約（`store.yaml`）から生成した型を使う。
   - 依存：T406-01-03
   - 範囲：Flyway のマイグレーション、`CheckoutService`、`PendingOrderGuard`、`StoreOrderController`、`OrderQueryService`、`OrderErrorCode`
   - 確認方法：T406-01-03 のテストが通る。マイグレーションが、支払待ちの注文が複数ある DB で失敗しない。同じ会員で 2 件目を注文する既存の統合テストは、T406-01-07 まで失敗してよい

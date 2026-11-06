@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -48,6 +49,11 @@ public class CheckoutService {
     private final QuoteService quoteService;
 
     /**
+     * 支払待ちの注文の判定
+     */
+    private final PendingOrderGuard pendingOrderGuard;
+
+    /**
      * 注文の設定（引当の期限）
      */
     private final OrderProperties properties;
@@ -60,24 +66,28 @@ public class CheckoutService {
     /**
      * 注文手続きに進む。全品目をカートの数量だけ引き当てる。<br />
      * 同じカートの前の注文手続きの引当は解く（進み直し）。1 品目でも引き当てられなければ何も引き当てない。
-     * 始められるのは、会員の自分の会員のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは 404。
+     * 始められるのは、会員の自分の会員のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは 404。<br />
+     * 確認していない支払待ちの注文があれば拒否する。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
      *
-     * @param cartId   カート ID
-     * @param memberId 会員 ID
+     * @param cartId               カート ID
+     * @param memberId             会員 ID
+     * @param acknowledgedOrderIds 確認した注文の ID（確認の画面で表示した注文。確認していなければ空）
      * @return 注文手続き ID
      */
     @Transactional
-    public UUID start(UUID cartId, UUID memberId) {
+    public UUID start(UUID cartId, UUID memberId, Set<UUID> acknowledgedOrderIds) {
         var now = clock.instant();
         var cart = cartDirectory.find(cartId)
                 .filter(found -> found.isOwnedBy(memberId))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        // 拒否するときは前の引当を残し、購入の可否によらず確認の画面へ案内するので、引当の解除と購入の可否の判定より先に行う
+        var pendingOrderIds = pendingOrderGuard.verifyAcknowledged(memberId, acknowledgedOrderIds);
         // 進み直し：前の注文手続きの引当を解いてから判定する（自分の前の引当で足りなくならないように）
         releaseReservations(cartId);
 
         verifyOrderable(quoteService.quote(cart.lines(), now, null));
 
-        var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl());
+        var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);
         checkoutRepository.insert(checkout);
         var shortages = stockDirectory.reserve(checkout.id(), quantities(cart.lines()), checkout.expiresAt());
         if (!shortages.isEmpty()) {

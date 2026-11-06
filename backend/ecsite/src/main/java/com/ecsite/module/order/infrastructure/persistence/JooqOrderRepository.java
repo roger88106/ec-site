@@ -186,6 +186,21 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
+     * 会員の支払待ちの注文の ID を、注文日時の新しい順に取得する。
+     *
+     * @param memberId 会員 ID
+     * @return 注文 ID
+     */
+    @Override
+    public List<UUID> findPendingIdsByMemberId(UUID memberId) {
+        return dsl.select(SALES_ORDER.ID)
+                .from(SALES_ORDER)
+                .where(SALES_ORDER.MEMBER_ID.eq(memberId), SALES_ORDER.STATUS.eq(OrderStatus.PENDING_PAYMENT.name()))
+                .orderBy(SALES_ORDER.ORDERED_AT.desc(), SALES_ORDER.ID)
+                .fetch(SALES_ORDER.ID);
+    }
+
+    /**
      * 注文番号が使われているか。
      *
      * @param orderNumber 注文番号

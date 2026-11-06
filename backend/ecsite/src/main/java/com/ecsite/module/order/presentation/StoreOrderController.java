@@ -63,13 +63,13 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 支払待ちの注文の一覧（確認の画面の材料）。今は空の一覧を返す
+     * 自分の支払待ちの注文の一覧（確認の画面の材料）。注文日時の新しい順
      *
      * @return Http 200 : {@link PendingOrderList}
      */
     @Override
     public ResponseEntity<PendingOrderList> listMemberPendingOrders() {
-        return ResponseEntity.ok(new PendingOrderList());
+        return ResponseEntity.ok(mapper.toPendingOrderList(orderQueryService.listPendingForMember(currentMemberIds.require())));
     }
 
     /**

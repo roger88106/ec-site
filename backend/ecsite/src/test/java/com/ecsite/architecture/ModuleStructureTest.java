@@ -56,6 +56,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.ecsite.ProductionClasses.outermostName;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -462,18 +463,6 @@ class ModuleStructureTest {
     }
 
     /**
-     * 入れ子のクラスを含む外側のクラスの名前を返す。
-     *
-     * @param javaClass クラス
-     * @return 入れ子でないクラスの名前
-     */
-    private static String outermostName(JavaClass javaClass) {
-        String name = javaClass.getName();
-        int nested = name.indexOf('$');
-        return nested < 0 ? name : name.substring(0, nested);
-    }
-
-    /**
      * 手で書いたパッケージごとに、入れ子でないクラスの数を返す（package-info は数えない）。
      *
      * @param classes 調べるクラス
@@ -647,7 +636,7 @@ class ModuleStructureTest {
      * @return モジュールの中なら true
      */
     private static boolean isInModule(JavaClass javaClass, String modulePackage) {
-        return javaClass.getPackageName().equals(modulePackage) || javaClass.getPackageName().startsWith(modulePackage + ".");
+        return ProductionClasses.isInPackage(javaClass.getPackageName(), modulePackage);
     }
 
     /**
@@ -837,7 +826,7 @@ class ModuleStructureTest {
          * @return パッケージそのもの、またはその下なら true
          */
         static boolean isInside(String relative, String root) {
-            return relative.equals(root) || relative.startsWith(root + ".");
+            return ProductionClasses.isInPackage(relative, root);
         }
 
         /**

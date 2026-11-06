@@ -1,6 +1,8 @@
 package com.ecsite.contract;
 
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -106,7 +108,7 @@ public final class Contracts {
      */
     public static Map<String, Object> openApi(String file) {
         try {
-            return new Yaml().load(Files.readString(openApiDir().resolve(file)));
+            return new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(openApiDir().resolve(file)));
         } catch (IOException e) {
             throw new UncheckedIOException("契約を読めない: " + file, e);
         }

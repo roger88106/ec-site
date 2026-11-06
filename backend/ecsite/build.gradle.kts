@@ -201,21 +201,28 @@ val unitTestMaxHeap = "768m"
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、ModuleStructureTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
+val openApiSourceDir = file("../../api/openapi")
+val keycloakRealmsDir = file("../../docker/keycloak/realms")
 val unitTestSystemProperties = mapOf(
-    "openapi.dir" to file("../../api/openapi").absolutePath,
-    "keycloak.realms.dir" to file("../../docker/keycloak/realms").absolutePath,
+    "openapi.dir" to openApiSourceDir.absolutePath,
+    "keycloak.realms.dir" to keycloakRealmsDir.absolutePath,
     "repo.root" to file("../..").absolutePath,
 )
+
+// 単体テストが読む契約・realm の設定・文書を、task の入力に宣言する（変わったときにテストと PIT を再実行するため）
+fun Task.declareUnitTestInputs() {
+    inputs.dir(openApiSourceDir)
+    inputs.dir(keycloakRealmsDir)
+    inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
+    inputs.file("../../docs/03-機能仕様/glossary.md")
+    inputs.file("../../docs/05-開発規則/backend-coding.md")
+}
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
     maxHeapSize = unitTestMaxHeap
     unitTestSystemProperties.forEach { (key, value) -> systemProperty(key, value) }
-    inputs.dir("../../api/openapi")
-    inputs.dir("../../docker/keycloak/realms")
-    inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
-    inputs.file("../../docs/03-機能仕様/glossary.md")
-    inputs.file("../../docs/05-開発規則/backend-coding.md")
+    declareUnitTestInputs()
     // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
     if (project.hasProperty("updateDocs")) {
         systemProperty("ecsite.update-docs", "true")
@@ -230,13 +237,13 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     classpath = sourceSets["integrationTest"].runtimeClasspath
     useJUnitPlatform()
     // 契約の補助（Contracts）が読む置き場所：店舗 API の token の契約のテストが読む OpenAPI、IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
-    systemProperty("openapi.dir", file("../../api/openapi").absolutePath)
-    systemProperty("keycloak.realms.dir", file("../../docker/keycloak/realms").absolutePath)
+    systemProperty("openapi.dir", openApiSourceDir.absolutePath)
+    systemProperty("keycloak.realms.dir", keycloakRealmsDir.absolutePath)
     systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
     // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照合する）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
-    inputs.dir("../../api/openapi")
+    inputs.dir(openApiSourceDir)
     // 本番の jar の起動の統合テスト（ProductionJarStartupTest）が別のプロセスで起動する jar
     val bootJarFile = tasks.bootJar.flatMap { it.archiveFile }
     inputs.file(bootJarFile)
@@ -398,11 +405,7 @@ pitest {
 
 // jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）
 tasks.named("pitest") {
-    inputs.dir("../../api/openapi")
-    inputs.dir("../../docker/keycloak/realms")
-    inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
-    inputs.file("../../docs/03-機能仕様/glossary.md")
-    inputs.file("../../docs/05-開発規則/backend-coding.md")
+    declareUnitTestInputs()
 }
 
 // -----------------------------------------------------------------------------

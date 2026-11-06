@@ -5,6 +5,7 @@ import com.ecsite.architecture.apitype.module.sample.api.ExampleApi;
 import com.ecsite.architecture.apitype.module.sample.api.ExampleApiInterface;
 import com.ecsite.architecture.apitype.module.sample.application.ExtendsExampleApi;
 import com.ecsite.architecture.apitype.module.sample.application.PlainService;
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +26,7 @@ class ApiTypeTest {
     /**
      * モジュールの公開の API のパッケージ（api とその下）の形
      */
-    private static final Pattern API_PACKAGE = Pattern.compile(".*\\.module\\.[^.]+\\.api(\\..*)?");
+    private static final DescribedPredicate<JavaClass> API_PACKAGE = JavaClass.Predicates.resideInAPackage("..module.*.api..");
 
     /**
      * package-info.java から作られるクラスの名前。コンパイラが interface として作るので、interface の数から除く
@@ -115,6 +115,6 @@ class ApiTypeTest {
      * @return api（とその下）のパッケージなら true
      */
     private static boolean isInApi(JavaClass javaClass) {
-        return API_PACKAGE.matcher(javaClass.getPackageName()).matches();
+        return API_PACKAGE.test(javaClass);
     }
 }

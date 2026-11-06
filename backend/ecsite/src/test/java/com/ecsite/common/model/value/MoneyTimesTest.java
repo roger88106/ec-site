@@ -1,10 +1,10 @@
 package com.ecsite.common.model.value;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -42,8 +42,6 @@ class MoneyTimesTest {
     @Test
     @DisplayName("負の数量は、負の金額として拒否される")
     void rejectsNegativeQuantity() {
-        assertThatThrownBy(() -> Money.of(100).times(-1))
-                .isInstanceOfSatisfying(BusinessException.class, ex ->
-                        assertThat(ex.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.INVALID_MONEY.getCode()));
+        assertBusinessError(() -> Money.of(100).times(-1), CommonErrorCode.INVALID_MONEY);
     }
 }

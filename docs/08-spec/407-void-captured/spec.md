@@ -133,7 +133,7 @@ AC-164 の内容を次のとおりに変更する。状態は「変更」、変�
   - 依存：T407-01-02
   - 範囲：`PaymentGateway`、`StripePaymentGateway`、`MockPaymentGateway`、`TestPaymentGateway`、`VoidRequestedHandler`、`PaymentGatewayContractTest`、`StripePaymentGatewayTest`
   - 確認方法：`./gradlew check` が通る。
-- [ ] **T407-01-04** 機能仕様、設計、用語集を更新する（決定 2〜5）。
+- [x] **T407-01-04** 機能仕様、設計、用語集を更新する（決定 2〜5）。
   - 依存：T407-01-03
   - 範囲：`docs/03-機能仕様/payment.md`（売上確定、与信の取消、状態の遷移の図）、`docs/02-設計/payment.md`（mock、注文のキャンセルと、与信の取消・返金）、`docs/03-機能仕様/glossary.md`
   - 確認方法：`node scripts/ci/ac-check.mjs` と `CI=true bash scripts/ci/check-all.sh` が通る。

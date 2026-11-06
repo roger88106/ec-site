@@ -182,7 +182,7 @@ public class MockPaymentGateway implements PaymentGateway {
         }
 
         /**
-         * 支払を済ませた画面を返す。最初の 1 回の時刻を残す（重ねて済ませても変えない）。
+         * 支払を済ませた画面を返す。最初の 1 回の時刻を残す（重ねて支払っても変えない）。
          *
          * @param now 現在時刻
          * @return 画面

@@ -49,12 +49,12 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger authorizationFetchCalls = new AtomicInteger();
 
     /**
-     * これから接続できないことにする与信の取得の回数
+     * これから接続の失敗にする与信の取得の回数
      */
     private final AtomicInteger authorizationFetchFailures = new AtomicInteger();
 
     /**
-     * 与信の取得を、接続の失敗でない失敗（予期しないエラー）に続けてする支払画面 ID
+     * 与信の取得を、予期しないエラーで失敗させ続ける支払画面 ID
      */
     private final Set<String> rejectedAuthorizationFetches = ConcurrentHashMap.newKeySet();
 
@@ -119,6 +119,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicReference<Runnable> onRefundOrVoid = new AtomicReference<>();
 
     /**
+     * 与信の取得を呼ばれた時点で行う処理（呼ばれた時点の状態を記録するテスト用）。なければ null
+     */
+    private final AtomicReference<Runnable> onFetchAuthorization = new AtomicReference<>();
+
+    /**
      * 本番の mock を包む。
      *
      * @param mock 包む mock
@@ -148,8 +153,12 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public Authorization fetchAuthorization(String pageId) {
         authorizationFetchCalls.incrementAndGet();
+        var action = onFetchAuthorization.get();
+        if (action != null) {
+            action.run();
+        }
         if (consume(authorizationFetchFailures)) {
-            throw SystemException.of("mock：与信の取得を接続できなくする: " + pageId, null,
+            throw SystemException.of("mock：与信の取得を接続の失敗にする: " + pageId, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
         if (rejectedAuthorizationFetches.contains(pageId)) {
@@ -281,16 +290,16 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 次の与信の取得を、指定した回数だけ、決済サービスに接続できないこと（外部サービスのエラー）にする。
+     * 次の与信の取得を、指定した回数だけ、接続の失敗（外部サービスのエラー）にする。
      *
-     * @param times 接続できなくする回数
+     * @param times 接続の失敗にする回数
      */
     public void failNextAuthorizationFetches(int times) {
         authorizationFetchFailures.set(times);
     }
 
     /**
-     * その支払画面の与信の取得を、接続の失敗でない失敗（予期しないエラー）に続けてする。解除は {@link #reset()}。
+     * その支払画面の与信の取得を、予期しないエラーで失敗させ続ける。解除は {@link #reset()}。
      *
      * @param pageId 支払画面 ID
      */
@@ -351,6 +360,15 @@ public class TestPaymentGateway implements PaymentGateway {
      */
     public void onRefundOrVoid(Runnable action) {
         onRefundOrVoid.set(action);
+    }
+
+    /**
+     * これからの与信の取得で、呼ばれた時点に処理を行う（呼ばれた時点のトランザクションの有無の記録など）。
+     *
+     * @param action 行う処理
+     */
+    public void onFetchAuthorization(Runnable action) {
+        onFetchAuthorization.set(action);
     }
 
     /**
@@ -453,6 +471,7 @@ public class TestPaymentGateway implements PaymentGateway {
         refunded.clear();
         refundFailures.set(0);
         onRefundOrVoid.set(null);
+        onFetchAuthorization.set(null);
     }
 
     /**

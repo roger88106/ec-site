@@ -33,7 +33,7 @@ public interface PaymentGateway {
 
     /**
      * 支払の済んだ支払画面の与信を取得する。支払が済んでいなければ、予期しないエラーの SystemException を投げる。
-     * 接続の失敗は他の操作と同じ。
+     * 接続の失敗の扱いは他の操作と同じ。
      *
      * @param pageId 支払画面 ID
      * @return 取得した与信
@@ -81,7 +81,7 @@ public interface PaymentGateway {
      * 取得した与信
      *
      * @param authorizationRef 与信の参照
-     * @param authorizedAt     与信の時刻（決済サービスで与信が作られた時刻）
+     * @param authorizedAt     与信の時刻（決済サービスが返す時刻。実際の与信より早いことがある）
      */
     record Authorization(String authorizationRef, Instant authorizedAt) {
     }

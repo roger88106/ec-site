@@ -168,6 +168,20 @@ class PaymentExpiryJobLoggingTest {
     }
 
     @Test
+    @DisplayName("AC-409-6 支払画面のない行があっても、warn のログに支払 ID を出して、残りの支払を処理する")
+    void continuesAfterRowWithoutPage(CapturedOutput output) {
+        var broken = new AwaitingAuthorizationPaymentView(UUID.randomUUID(), null);
+        when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(broken, AWAITING_SECOND));
+        when(gateway.fetchAuthorization("page-awaiting-second")).thenReturn(AUTHORIZATION);
+
+        job.expire();
+
+        verify(commandService, never()).authorizeFromGateway(eq(broken.id()), any());
+        verify(commandService).authorizeFromGateway(AWAITING_SECOND.id(), AUTHORIZATION);
+        assertThat(warnLinesOf(output, broken.id())).hasSize(1);
+    }
+
+    @Test
     @DisplayName("AC-409-9 ジョブの取得で与信済みにしたら、warn のログに支払 ID を出す")
     void warnsWhenAuthorizedFromGateway(CapturedOutput output) {
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(AWAITING_FIRST));
@@ -193,7 +207,7 @@ class PaymentExpiryJobLoggingTest {
     }
 
     @Test
-    @DisplayName("AC-409-10 決済サービスに接続できない失敗が 3 件続いたら、4 件目以降を取得せず、打ち切ったことを warn のログに出す")
+    @DisplayName("AC-409-10 決済サービスへの接続の失敗が 3 件続いたら、4 件目以降を取得せず、打ち切ったことを warn のログに出す")
     void stopsAfterConsecutiveUnavailable(CapturedOutput output) {
         var payments = awaitingPayments(5);
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(payments);
@@ -209,7 +223,7 @@ class PaymentExpiryJobLoggingTest {
     }
 
     @Test
-    @DisplayName("AC-409-10 接続できない失敗の間に成功が入ったら、数を 0 に戻して続ける")
+    @DisplayName("AC-409-10 接続の失敗の間に成功が入ったら、連続した失敗の件数を 0 に戻して続ける")
     void resetsCountOnSuccess() {
         var payments = awaitingPayments(5);
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(payments);
@@ -225,7 +239,7 @@ class PaymentExpiryJobLoggingTest {
     }
 
     @Test
-    @DisplayName("AC-409-10 接続できない失敗の間に他の失敗が入ったら、数を 0 に戻して続ける")
+    @DisplayName("AC-409-10 接続の失敗の間に他の失敗が入ったら、連続した失敗の件数を 0 に戻して続ける")
     void resetsCountOnOtherFailure() {
         var payments = awaitingPayments(5);
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(payments);
@@ -241,7 +255,7 @@ class PaymentExpiryJobLoggingTest {
     }
 
     @Test
-    @DisplayName("AC-312 与信の反映を長く待つとする時間は、既定で 1 時間。設定で変えられる")
+    @DisplayName("AC-312 与信の反映を長く待つと見なす時間は、既定で 1 時間。設定で変えられる")
     void awaitingAuthorizationWarningSetting() {
         assertThat(bind(Map.of()).awaitingAuthorizationWarning()).isEqualTo(Duration.ofHours(1));
         assertThat(bind(Map.of("awaiting-authorization-warning", "30m")).awaitingAuthorizationWarning())
@@ -260,10 +274,10 @@ class PaymentExpiryJobLoggingTest {
     }
 
     /**
-     * 決済サービスに接続できない失敗
+     * 決済サービスへの接続の失敗
      */
     private static SystemException unavailable() {
-        return SystemException.of("接続できない", null, PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        return SystemException.of("接続の失敗", null, PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
     }
 
     /**

@@ -285,7 +285,7 @@ class StripePaymentGatewayTest {
         @DisplayName("AC-409-2 PaymentIntent を展開した Session から、与信の参照（PaymentIntent の ID）と与信の時刻（作成時刻）を読む")
         void fetches() {
             respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
-                    StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, INTENT_CREATED));
+                    StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "requires_capture", INTENT_CREATED));
 
             var authorization = gateway.fetchAuthorization(SESSION_ID);
 
@@ -296,7 +296,7 @@ class StripePaymentGatewayTest {
         @DisplayName("Session の取得に、PaymentIntent の展開（expand）を付ける")
         void expandsPaymentIntent() {
             respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
-                    StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, INTENT_CREATED));
+                    StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "requires_capture", INTENT_CREATED));
 
             gateway.fetchAuthorization(SESSION_ID);
 

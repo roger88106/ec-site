@@ -184,7 +184,7 @@ class JooqPaymentRepositoryTest {
     @Test
     @DisplayName("期限を過ぎた未払いの支払を期限の古い順に上限まで取得し、期限内・未払いでない・与信の反映を待つ支払は除く")
     void findsUnpaidPastDeadline() {
-        // 表の全体から期限切れを引くので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする
+        // テーブル全体を検索して期限切れを引くので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする
         var now = Instant.parse("1980-01-01T00:00:00Z");
         var oldest = payment(UUID.randomUUID(), now.minusSeconds(300));
         var older = payment(UUID.randomUUID(), now.minusSeconds(200));
@@ -211,7 +211,7 @@ class JooqPaymentRepositoryTest {
     @Test
     @DisplayName("AC-409-3 与信の反映を待つ未払いの支払を、待ち始めた時刻の古い順に上限まで取得し、待っていない・未払いでない支払は除く")
     void findsUnpaidAwaitingAuthorization() {
-        // 表の全体から探すので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする
+        // テーブル全体を検索するので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする
         var since = Instant.parse("1980-01-01T00:00:00Z");
         var oldest = payment(UUID.randomUUID(), DEADLINE);
         var older = payment(UUID.randomUUID(), DEADLINE);

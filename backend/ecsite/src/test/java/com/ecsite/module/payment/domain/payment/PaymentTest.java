@@ -135,7 +135,7 @@ class PaymentTest {
         }
 
         @Test
-        @DisplayName("AC-409-4 与信済みに与信の時刻を渡して重ねても、状態・参照・与信の時刻は変わらず、イベントも出ない")
+        @DisplayName("AC-409-4 与信済みの支払に、別の与信を再度反映しても、状態・参照・与信の時刻は変わらず、イベントも出ない")
         void keepsFirstAuthorizationWithAuthorizedAt() {
             var payment = unpaid();
             payment.authorize(AUTHORIZATION_REF, ORDERED_AT.plusSeconds(10), ORDERED_AT.plusSeconds(20));
@@ -150,7 +150,7 @@ class PaymentTest {
         }
 
         @Test
-        @DisplayName("AC-157 支払なしに与信の時刻を渡しても、与信の取消待ちになり、与信の時刻は覚えず、与信の成功のイベントも出ない")
+        @DisplayName("AC-157 状態が支払なしの支払に与信を反映しても、与信の取消待ちになり、与信の時刻は覚えず、与信の成功のイベントも出ない")
         void voidsLateAuthorizationWithAuthorizedAt() {
             var payment = expired();
 

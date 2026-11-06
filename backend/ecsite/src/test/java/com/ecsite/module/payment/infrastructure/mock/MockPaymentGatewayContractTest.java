@@ -33,7 +33,7 @@ class MockPaymentGatewayContractTest extends PaymentGatewayContractTest {
             mock(PaymentNotificationReceiver.class), new MockPaymentProperties("http://localhost:8080"), clock));
 
     @Test
-    @DisplayName("AC-409-2 mock は、支払を済ませた時刻を与信の時刻として返し、重ねて済ませても最初の時刻のまま")
+    @DisplayName("AC-409-2 mock は、支払を済ませた時刻を与信の時刻として返し、重ねて支払っても最初の時刻のまま")
     void returnsFirstPaidTimeAsAuthorizedAt() {
         var pageId = gateway.openPage(new PageRequest(UUID.randomUUID(), ORDER_ID, AMOUNT, "http://localhost:3000/orders")).id();
         gateway.markPaid(pageId);
@@ -47,7 +47,7 @@ class MockPaymentGatewayContractTest extends PaymentGatewayContractTest {
     }
 
     @Test
-    @DisplayName("知らない支払画面の与信の取得は、予期しないエラー")
+    @DisplayName("存在しない支払画面の与信の取得は、予期しないエラー")
     void rejectsUnknownPage() {
         assertThatThrownBy(() -> gateway.fetchAuthorization("mock_page_unknown")).isInstanceOf(SystemException.class);
     }
@@ -88,6 +88,13 @@ class MockPaymentGatewayContractTest extends PaymentGatewayContractTest {
     protected String paidPage() {
         var pageId = gateway.openPage(new PageRequest(UUID.randomUUID(), ORDER_ID, AMOUNT, "http://localhost:3000/orders")).id();
         gateway.markPaid(pageId);
+        return pageId;
+    }
+
+    @Override
+    protected String paidPageWithExpiredAuthorization() {
+        var pageId = paidPage();
+        gateway.expireAuthorization(gateway.authorizationRefOf(pageId));
         return pageId;
     }
 

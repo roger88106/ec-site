@@ -83,6 +83,13 @@ public abstract class PaymentGatewayContractTest {
     protected abstract String paidPage();
 
     /**
+     * 支払の済んだ支払画面で、与信の期限が切れた状態にする。
+     *
+     * @return 支払画面 ID
+     */
+    protected abstract String paidPageWithExpiredAuthorization();
+
+    /**
      * 閉じた支払画面を用意する。
      *
      * @return 支払画面 ID
@@ -146,6 +153,15 @@ public abstract class PaymentGatewayContractTest {
     @DisplayName("AC-409-1 支払の済んだ画面から、与信の参照と与信の時刻を取得できる")
     void fetchesAuthorizationOfPaidPage() {
         var authorization = gateway().fetchAuthorization(paidPage());
+
+        assertThat(authorization.authorizationRef()).isNotBlank();
+        assertThat(authorization.authorizedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("与信が切れた支払画面からも、与信を取得できる")
+    void fetchesAuthorizationOfPageWithExpiredAuthorization() {
+        var authorization = gateway().fetchAuthorization(paidPageWithExpiredAuthorization());
 
         assertThat(authorization.authorizationRef()).isNotBlank();
         assertThat(authorization.authorizedAt()).isNotNull();

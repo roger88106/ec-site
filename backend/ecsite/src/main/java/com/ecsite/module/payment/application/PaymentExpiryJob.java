@@ -11,6 +11,8 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 /**
  * 支払の期限切れのジョブ（docs/03-機能仕様/payment.md「支払の期限」）。<br />
  * 期限を過ぎた未払いの支払について、決済サービスの支払画面を閉じてから、支払なしにする。
@@ -30,7 +32,7 @@ class PaymentExpiryJob {
     private static final int BATCH_SIZE = 100;
 
     /**
-     * 決済サービスに接続できない失敗が続いたら、その回の与信の取得を打ち切る件数。
+     * 決済サービスへの接続の失敗が続いたら、その回の与信の取得を打ち切る件数。
      * 応答がないと 1 件で最大約 75 秒かかるので、この件数（約 225 秒）で止めて、ジョブのロックの上限（10 分）を超えないようにする
      */
     private static final int MAX_CONSECUTIVE_UNAVAILABLE = 3;
@@ -87,7 +89,7 @@ class PaymentExpiryJob {
     /**
      * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。<br />
      * 取得できなかった支払は待つ支払のまま残し、次の回でやり直す。
-     * 決済サービスに接続できない失敗が続いたら、その回の取得を打ち切る。
+     * 決済サービスへの接続の失敗が続いたら、その回の取得を打ち切る。
      */
     private void recoverAuthorizations() {
         int unavailable = 0;
@@ -96,10 +98,10 @@ class PaymentExpiryJob {
                 recoverAuthorization(payment);
                 unavailable = 0;
             } catch (RuntimeException e) {
-                log.warn("与信を取得できないので、次の回に回す: paymentId={}", payment.id(), e);
+                log.warn("与信を取得できないので、次の回で再試行する: paymentId={}", payment.id(), e);
                 unavailable = isUnavailable(e) ? unavailable + 1 : 0;
                 if (unavailable >= MAX_CONSECUTIVE_UNAVAILABLE) {
-                    log.warn("決済サービスに接続できないので、この回の与信の取得を打ち切る: count={}", unavailable);
+                    log.warn("決済サービスへの接続の失敗が続いたので、この回の与信の取得を打ち切る: count={}", unavailable);
                     return;
                 }
             }
@@ -110,14 +112,15 @@ class PaymentExpiryJob {
      * 1 つの支払の与信を取得して反映する。
      */
     private void recoverAuthorization(AwaitingAuthorizationPaymentView payment) {
-        var authorization = gateway.fetchAuthorization(payment.pageId());
+        var pageId = Objects.requireNonNull(payment.pageId(), "与信の反映を待つ支払には支払画面がある");
+        var authorization = gateway.fetchAuthorization(pageId);
         if (commandService.authorizeFromGateway(payment.id(), authorization)) {
             log.warn("与信の通知が届いていないので、決済サービスから与信を取得して反映した: paymentId={}", payment.id());
         }
     }
 
     /**
-     * 決済サービスに接続できない失敗（外部サービスのエラー）か。
+     * 決済サービスへの接続の失敗（外部サービスのエラー）か。
      */
     private static boolean isUnavailable(RuntimeException e) {
         return e instanceof SystemException systemException
@@ -130,7 +133,7 @@ class PaymentExpiryJob {
     private void warnLongAwaitingAuthorization() {
         long count = queryService.countLongAwaitingAuthorization();
         if (count > 0) {
-            log.warn("与信の反映を長く待つ支払があります: count={}", count);
+            log.warn("与信の反映を長く待つ支払がある: count={}", count);
         }
     }
 }

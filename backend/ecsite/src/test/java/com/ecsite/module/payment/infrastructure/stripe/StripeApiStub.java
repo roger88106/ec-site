@@ -141,15 +141,16 @@ final class StripeApiStub implements AutoCloseable {
      * @param id        Session の ID
      * @param url       支払画面の URL
      * @param intentId  PaymentIntent の ID
+     * @param intentStatus PaymentIntent の状態
      * @param createdAt PaymentIntent の作成時刻（エポック秒）
      * @return 本文
      */
-    static String completedSession(String id, String url, String intentId, long createdAt) {
+    static String completedSession(String id, String url, String intentId, String intentStatus, long createdAt) {
         return """
                 {"id": "%s", "object": "checkout.session", "url": "%s", "status": "complete",
                  "payment_intent": {"id": "%s", "object": "payment_intent", "amount": 6940, "currency": "jpy",
-                  "status": "requires_capture", "created": %d}}"""
-                .formatted(id, url, intentId, createdAt);
+                  "status": "%s", "created": %d}}"""
+                .formatted(id, url, intentId, intentStatus, createdAt);
     }
 
     /**

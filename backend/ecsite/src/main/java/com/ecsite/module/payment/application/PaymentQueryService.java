@@ -9,6 +9,7 @@ import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -160,7 +161,7 @@ public class PaymentQueryService {
     public List<AwaitingAuthorizationPaymentView> findAwaitingAuthorization(int limit) {
         return paymentRepository.findUnpaidAwaitingAuthorization(limit).stream()
                 .map(payment -> new AwaitingAuthorizationPaymentView(payment.id(),
-                        Objects.requireNonNull(payment.page().orElse(null), "与信の反映を待つ支払には支払画面がある").id()))
+                        payment.page().map(PaymentPage::id).orElse(null)))
                 .toList();
     }
 

@@ -24,12 +24,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -273,7 +275,54 @@ class PaymentExpiryJobTest {
     }
 
     @Test
-    @DisplayName("AC-311 与信の反映を待つ支払が 1 回の件数（100 件）を超えてたまっても、それより新しい期限切れの支払を処理する")
+    @DisplayName("AC-409-10 接続の失敗が 3 件続いたら、その回は取得を打ち切って 4 件とも未払いのまま残り、次のジョブの実行で 4 件とも与信済みになる")
+    void stopsAfterConsecutiveUnavailableAndRetriesNextRun() {
+        // 他のテストが残した、与信の反映を待つ支払を先に解消して、取得の呼び出しの回数に影響しないようにする
+        clock.setInstant(DEADLINE);
+        int maxRuns = queryService.findAwaitingAuthorization(Integer.MAX_VALUE).size() / 100 + 2;
+        for (int run = 0; run < maxRuns && !queryService.findAwaitingAuthorization(1).isEmpty(); run++) {
+            job.expire();
+        }
+        gateway.reset();
+        clock.setInstant(ORDERED_AT);
+        var orderIds = new ArrayList<UUID>();
+        for (int i = 0; i < 4; i++) {
+            var orderId = payments.created(ORDERED_AT);
+            gateway.markPaid(payments.openPage(orderId));
+            orderIds.add(orderId);
+        }
+        gateway.failNextAuthorizationFetches(3);
+
+        clock.setInstant(DEADLINE);
+        job.expire();
+
+        assertThat(gateway.fetchAuthorizationCalls()).isEqualTo(3);
+        assertThat(allAwaitingAuthorization(orderIds)).isTrue();
+        assertThat(paymentApi.find(orderIds)).extracting(PaymentSummary::status)
+                .containsOnly(PaymentSummary.Status.UNPAID);
+
+        job.expire();
+
+        assertThat(allAuthorized(orderIds)).isTrue();
+    }
+
+    @Test
+    @DisplayName("NFR-409-3 与信の取得は、データベースのトランザクションの外で決済サービスを呼ぶ")
+    void fetchesOutsideTransaction() {
+        var orderId = payments.created(ORDERED_AT);
+        gateway.markPaid(payments.openPage(orderId));
+        var transactionActive = new CopyOnWriteArrayList<Boolean>();
+        gateway.onFetchAuthorization(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
+
+        clock.setInstant(DEADLINE);
+        job.expire();
+
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+        assertThat(transactionActive).isNotEmpty().containsOnly(false);
+    }
+
+    @Test
+    @DisplayName("AC-311 与信の反映を待つ支払が 1 回の件数（100 件）を超えて滞留しても、それより新しい期限切れの支払を処理する")
     void expiresNewerPaymentBehindAwaitingPayments() {
         // 期限の前に支払が済み、与信を取得できない支払を、1 回の件数より多く作る
         var awaiting = new ArrayList<UUID>();
@@ -286,14 +335,14 @@ class PaymentExpiryJobTest {
         }
         try {
             clock.setInstant(DEADLINE);
-            // 自分の支払がすべて与信の反映を待つ支払になるまで流す（ほかのテストが残した期限切れの支払も、同じ回で処理される）。
+            // 自分の支払が全て与信の反映を待つ支払になるまで実行する（他のテストが残した期限切れの支払も、同じ回で処理される）。
             // 1 回に少なくとも 1 件は処理するので、回数の上限は、未処理の支払の数に 1 を加えたもの
             int pending = queryService.findPastDeadline(Integer.MAX_VALUE).size();
             int maxRuns = pending + 1;
             for (int run = 0; run < maxRuns && !allAwaitingAuthorization(awaiting); run++) {
                 job.expire();
             }
-            assertThat(allAwaitingAuthorization(awaiting)).as("上限の回数で、自分の支払がすべて処理される").isTrue();
+            assertThat(allAwaitingAuthorization(awaiting)).as("上限の回数で、自分の支払が全て処理される").isTrue();
 
             // それより新しい支払が、期限を過ぎる
             var newerOrderedAt = ORDERED_AT.plus(Duration.ofHours(1));
@@ -305,7 +354,7 @@ class PaymentExpiryJobTest {
             assertThat(paymentApi.find(awaiting)).extracting(PaymentSummary::status)
                     .containsOnly(PaymentSummary.Status.UNPAID);
         } finally {
-            // 待つ支払を残すと、100 件の上限で他のテストに影響する。取得できるようにして、自分の支払がすべて与信済みになるまで流す
+            // 与信の反映を待つ支払を残すと、100 件の上限で他のテストに影響する。取得できるようにして、自分の支払が全て与信済みになるまで実行する
             gateway.reset();
             int maxRuns = queryService.findAwaitingAuthorization(Integer.MAX_VALUE).size() / 100 + 2;
             for (int run = 0; run < maxRuns && !allAuthorized(awaiting); run++) {
@@ -316,7 +365,7 @@ class PaymentExpiryJobTest {
     }
 
     @Test
-    @DisplayName("NFR-7 ジョブを 2 回流しても、期限切れのイベントは 1 回だけ")
+    @DisplayName("NFR-7 ジョブを 2 回実行しても、期限切れのイベントは 1 回だけ")
     void expiresOnlyOnce() {
         var orderId = payments.created(ORDERED_AT);
         payments.openPage(orderId);
@@ -341,7 +390,7 @@ class PaymentExpiryJobTest {
     // ============================== 補助 ==============================
 
     /**
-     * 指定の注文の支払が、すべて与信の反映を待つ支払になっているか。
+     * 指定の注文の支払が、全て与信の反映を待つ支払になっているか。
      */
     private boolean allAwaitingAuthorization(List<UUID> orderIds) {
         var found = paymentRepository.findByOrderIds(orderIds);
@@ -350,7 +399,7 @@ class PaymentExpiryJobTest {
     }
 
     /**
-     * 指定の注文の支払が、すべて与信済みか。
+     * 指定の注文の支払が、全て与信済みか。
      */
     private boolean allAuthorized(List<UUID> orderIds) {
         var found = paymentRepository.findByOrderIds(orderIds);

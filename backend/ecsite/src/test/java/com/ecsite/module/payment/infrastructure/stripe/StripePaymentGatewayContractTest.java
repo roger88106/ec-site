@@ -79,7 +79,15 @@ class StripePaymentGatewayContractTest extends PaymentGatewayContractTest {
     protected String paidPage() {
         rejectExpire();
         stripe.respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
-                completedSession(SESSION_ID, SESSION_URL, INTENT_ID, 1_793_926_800L));
+                completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "requires_capture", 1_793_926_800L));
+        return SESSION_ID;
+    }
+
+    @Override
+    protected String paidPageWithExpiredAuthorization() {
+        rejectExpire();
+        stripe.respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
+                completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "canceled", 1_793_926_800L));
         return SESSION_ID;
     }
 

@@ -12,6 +12,7 @@ import { redirectToLogin } from '@/auth'
 import { translate } from '@/i18n/translate'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
+import { PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
 /**
@@ -78,9 +79,15 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
 /**
  * 注文手続きに進む。全品目を引き当て、注文手続きの画面へ移る。<br />
  * ログインしていなければ、ログインの画面へ移し、ログインの後は（カートを移して）カートに戻る。
- * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。
+ * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。<br />
+ * 確認していない支払待ちの注文があれば（409）、確認の画面へ移る。確認の画面の「新しく注文する」は、
+ * 表示した注文の ID を送る。フォームの項目：acknowledgedOrderIds（任意、複数）。
  */
-export async function startCheckout(_previous: ActionResult | null, _formData: FormData): Promise<ActionResult> {
+export async function startCheckout(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const acknowledgedOrderIds = formData
+    .getAll('acknowledgedOrderIds')
+    .map((id) => String(id).trim())
+    .filter((id) => id !== '')
   return redirectOnSuccess(async () => {
     if ((await currentCartChoice()).kind !== 'member') {
       await redirectToLogin('/cart')
@@ -89,11 +96,16 @@ export async function startCheckout(_previous: ActionResult | null, _formData: F
     const api = await getMemberApi()
     const { data, error, response } = await api.POST('/carts/{cartId}/checkouts', {
       params: { path: { cartId } },
+      ...(acknowledgedOrderIds.length > 0 && { body: { acknowledgedOrderIds } }),
     })
     await redirectIfUnauthenticated(response, '/cart')
     if (!data) {
+      const failure = toFailure(response.status, error)
+      if (failure.errorCode === PENDING_ORDER_CONFIRMATION_REQUIRED) {
+        return PENDING_ORDERS_PATH
+      }
       revalidatePath('/cart')
-      return toFailure(response.status, error)
+      return failure
     }
     return `/checkout/${data.id}`
   })

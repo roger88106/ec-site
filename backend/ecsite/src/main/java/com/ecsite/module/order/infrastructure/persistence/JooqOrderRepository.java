@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
@@ -43,6 +44,11 @@ import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_TAX;
 @Repository
 @RequiredArgsConstructor
 class JooqOrderRepository implements OrderRepository {
+
+    /**
+     * 集約の名前（戻すときの失敗のメッセージに書く）
+     */
+    private static final String AGGREGATE_NAME = "order";
 
     /**
      * 軸の値の一覧の型（jsonb の読み書き）
@@ -257,7 +263,8 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。
+     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。<br />
+     * 例外のメッセージに DB の値が入る変換だけを、集約を戻す共通の補助で包む（金額の検証のエラーは値を持たず、今の応答のまま）。
      */
     private Order restore(SalesOrderRecord record) {
         var lines = restoreLines(record.getId());
@@ -268,17 +275,18 @@ class JooqOrderRepository implements OrderRepository {
                 record.getPhone());
         return Order.restore(new Order.Snapshot(
                 record.getId(),
-                OrderNumber.of(record.getOrderNumber()),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderNumber.of(record.getOrderNumber())),
                 record.getCheckoutId(),
                 record.getMemberId(),
                 record.getOrderedAt(),
-                OrderStatus.valueOf(record.getStatus()),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderStatus.valueOf(record.getStatus())),
                 lines,
                 amounts,
                 record.getEmail(),
                 address,
                 new BuyerProfile(record.getBuyerAge() == null ? null : record.getBuyerAge().intValue(),
-                        record.getBuyerGender() == null ? null : Gender.valueOf(record.getBuyerGender())),
+                        record.getBuyerGender() == null ? null
+                                : AggregateGuards.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()))),
                 restoreRequest(record),
                 restoreCancellation(record),
                 record.getVersion()));
@@ -297,7 +305,7 @@ class JooqOrderRepository implements OrderRepository {
                         line.getProductCode(),
                         line.getVariantCode(),
                         line.getProductName(),
-                        jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES),
+                        AggregateGuards.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES)),
                         Money.of(line.getUnitPriceExclTax()),
                         normalize(line.getRatePercent()),
                         Money.of(line.getUnitPriceInclTax()),
@@ -327,7 +335,7 @@ class JooqOrderRepository implements OrderRepository {
         }
         return new CancellationRequest(
                 record.getCancellationRequestedAt(), record.getCancellationRequestReason(),
-                CancellationRequest.Result.valueOf(record.getCancellationRequestResult()),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
                 record.getCancellationDecidedAt(),
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
     }
@@ -340,7 +348,7 @@ class JooqOrderRepository implements OrderRepository {
             return null;
         }
         return new Cancellation(record.getCancelledAt(),
-                CancellationKind.valueOf(record.getCancellationKind()), record.getCancellationReason(),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())), record.getCancellationReason(),
                 operatorOf(record.getCancelledById(), record.getCancelledByName()), record.getCancellationRestocked());
     }
 

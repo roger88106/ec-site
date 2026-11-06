@@ -1,5 +1,6 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.jooq.media.tables.records.AssetRecord;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.domain.Asset;
@@ -71,7 +72,7 @@ class JooqAssetRepository implements AssetRepository {
      * アセットのレコードを、アセットに変換する。
      */
     private static Asset toAsset(AssetRecord record) {
-        return new Asset(record.getId(), ImageFormat.valueOf(record.getFormat()), record.getStorageKey(),
+        return new Asset(record.getId(), AggregateGuards.restore("asset", () -> ImageFormat.valueOf(record.getFormat())), record.getStorageKey(),
                 record.getCreatedAt());
     }
 }

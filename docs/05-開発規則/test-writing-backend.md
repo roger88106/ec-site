@@ -63,6 +63,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 | 補助 | 使う場面 | 使い方 |
 |------|----------|--------|
 | `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
+| `RestoreFailures` | Repository が DB の値を戻すときの失敗のテスト | 表ごとの行を返す jOOQ の mock を `with` と `dsl` で作り、`assertValueIsHidden` で例外の出力に値がないことを確認する |
 | `TestSettings` | 設定のテスト | `load(profile…)` と `bind(接頭辞, 設定の型, 値)` で読む。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
 | `Contracts`（`src/testFixtures` の `contract/`） | 契約のテストと構成の検査、店舗 API の token と Keycloak の統合テスト | OpenAPI の契約と realm の設定と設計書の置き場所は、この補助の関数（`openApi`・`realm`・`path`）で読む。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない ※2 |
 

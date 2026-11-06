@@ -221,7 +221,7 @@ module/<モジュール>/
 - secret の管理：client の secret、店舗画面の Cookie の鍵、物流サービスの通知の署名の鍵（ローカル用の値を使わない）
 - HTTPS（店舗画面の Cookie は本番で `Secure`）
 - 運用ポート（既定 9080。死活監視とメトリクス）を外に出さない。業務ポート（8080）だけを公開する
-- mock フラグ（`ecsite.<モジュール>.mock.enabled`）を立てない。mock の画面は認証なしで使えるため。ローカル・E2E・Stripe の sandbox の設定ファイルは本番の jar に入らない（「外部連携」）
+- mock の画面は認証なしで使えるので、mock フラグ（`ecsite.<モジュール>.mock.enabled`）を立てない。ローカル・E2E・Stripe の sandbox の設定ファイルは本番の jar に入らない（「外部連携」）
 - 店舗画面を公開する URL（`AUTH_URL`）を渡す。ログインとログアウトの戻り先は、この URL から作る（[店舗画面の構成](apps/store.md)の「ログイン」）
 - 管理画面の本番ビルドに、本番の IdP の値（`VITE_OIDC_AUTHORITY`、`VITE_OIDC_CLIENT_ID`）を渡す
 - 注文とカートの URL の総当たりを防ぐ（入口でのレート制限など）。カートと注文の画面は、推測できない ID を知っている人だけが使えるようにしている

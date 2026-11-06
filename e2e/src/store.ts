@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import messages from '../../frontend/store/messages/ja.json' with { type: 'json' }
 import { type Account, loginStore } from './auth'
 import { STORE_URL } from './urls'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from './waits'
@@ -164,14 +165,33 @@ export async function fillShipping(page: Page, postalCode: string, name = 'E2E �
   await page.getByLabel('電話番号').fill('03-1234-5678')
 }
 
+/** 支払待ちの注文の確認の画面の文言（店舗画面の文言の定義から読む） */
+export const PENDING_ORDERS_TEXT = messages.checkout.pendingOrders
+
 /**
- * カートの「注文手続きへ進む」を押し、注文手続きの画面が出るのを待つ。
+ * 支払待ちの注文の確認の画面の見出し。
+ *
+ * @param page 店舗画面のページ
+ * @returns 確認の画面の見出し
+ */
+export function pendingOrdersHeading(page: Page): Locator {
+  return page.getByRole('heading', { name: PENDING_ORDERS_TEXT.title, exact: true })
+}
+
+/**
+ * カートの「注文手続きへ進む」を押し、注文手続きの画面か、支払待ちの注文の確認の画面のどちらかが出るのを待つ。
+ * 会員の支払待ちの注文が残っていると確認の画面になるので、出たら「新しく注文する」を選ぶ。
  *
  * @param page カートを開いている店舗画面のページ
  */
 export async function proceedToCheckout(page: Page) {
   await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
+  const checkout = page.getByRole('heading', { name: 'ご注文手続き' })
+  await expect(checkout.or(pendingOrdersHeading(page))).toBeVisible()
+  if (await pendingOrdersHeading(page).isVisible()) {
+    await page.getByRole('button', { name: PENDING_ORDERS_TEXT.newOrder, exact: true }).click()
+    await expect(checkout).toBeVisible()
+  }
 }
 
 /**

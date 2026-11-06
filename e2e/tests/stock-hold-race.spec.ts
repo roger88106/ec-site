@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS } from '../src/auth'
 import { createSimpleProduct } from '../src/data'
-import { loginWithCart, proceedToCheckout } from '../src/store'
+import { loginWithCart, PENDING_ORDERS_TEXT, pendingOrdersHeading, proceedToCheckout } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 test('AC-82、83 在庫 1 の商品を 2 つのブラウザーで注文手続きに進むと、後の方は在庫不足と示される', async ({
@@ -25,8 +25,16 @@ test('AC-82、83 在庫 1 の商品を 2 つのブラウザーで注文手続き
   await proceedToCheckout(first)
 
   await second.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
-  await expect(second.getByText('在庫が足りない商品があります。カートを確かめてください。')).toBeVisible()
-  await expect(second.getByText('在庫切れです')).toBeVisible()
-  await expect(second).toHaveURL(`${STORE_URL}/cart`)
+  // 共用の会員に支払待ちの注文が残っていると、先に確認の画面になる。その画面の「新しく注文する」の結果にも、不足のメッセージが出る
+  const shortage = second.getByText('在庫が足りない商品があります。カートを確かめてください。')
+  const confirmation = pendingOrdersHeading(second)
+  await expect(shortage.or(confirmation)).toBeVisible()
+  if (await confirmation.isVisible()) {
+    await second.getByRole('button', { name: PENDING_ORDERS_TEXT.newOrder, exact: true }).click()
+    await expect(shortage).toBeVisible()
+  } else {
+    await expect(second.getByText('在庫切れです')).toBeVisible()
+    await expect(second).toHaveURL(`${STORE_URL}/cart`)
+  }
   await Promise.all([first.context().close(), second.context().close()])
 })

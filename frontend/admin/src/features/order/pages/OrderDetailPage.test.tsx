@@ -132,7 +132,9 @@ describe('注文の詳細', () => {
   })
 
   test('キャンセルの申請に理由がないときは、理由に「（なし）」を表示する', async () => {
-    serveOrder(orderDetail({ status: 'CANCELLATION_REQUESTED', cancellationRequest: { ...REQUEST, reason: undefined } }))
+    serveOrder(
+      orderDetail({ status: 'CANCELLATION_REQUESTED', cancellationRequest: { ...REQUEST, reason: undefined } }),
+    )
     renderApp(PAGE_PATH)
 
     expect(await screen.findByText('（なし）')).toBeInTheDocument()

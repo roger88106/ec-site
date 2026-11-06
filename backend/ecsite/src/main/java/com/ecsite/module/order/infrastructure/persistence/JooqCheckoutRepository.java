@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
@@ -100,6 +101,6 @@ class JooqCheckoutRepository implements CheckoutRepository {
      */
     private static Checkout toCheckout(CheckoutRecord record) {
         return new Checkout(record.getId(), record.getMemberId(), record.getCartId(), record.getCartVersion(), record.getExpiresAt(),
-                record.getCreatedAt());
+                record.getCreatedAt(), Set.of());
     }
 }

@@ -6,6 +6,7 @@ import org.jmolecules.ddd.annotation.Identity;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -18,9 +19,18 @@ import java.util.UUID;
  * @param cartVersion 始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
  * @param expiresAt   引当の期限
  * @param createdAt   作成日時
+ * @param acknowledgedOrderIds 確認した注文の ID の集合（始めるときに会員が確認した支払待ちの注文。確認していなければ空）
  */
 @AggregateRoot
-public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt) {
+public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt,
+                       Set<UUID> acknowledgedOrderIds) {
+
+    /**
+     * 確認した注文の ID の集合は、後から変えられないように複写する。
+     */
+    public Checkout {
+        acknowledgedOrderIds = Set.copyOf(acknowledgedOrderIds);
+    }
 
     /**
      * 注文手続きを始める。
@@ -35,7 +45,34 @@ public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartV
      */
     public static Checkout start(@NonNull UUID id, @NonNull UUID memberId, @NonNull UUID cartId, long cartVersion, @NonNull Instant now,
                                  @NonNull Duration reservationTtl) {
-        return new Checkout(id, memberId, cartId, cartVersion, now.plus(reservationTtl), now);
+        return start(id, memberId, cartId, cartVersion, now, reservationTtl, Set.of());
+    }
+
+    /**
+     * 確認した注文の ID の集合を持って、注文手続きを始める。
+     *
+     * @param id                   注文手続き ID
+     * @param memberId             会員 ID
+     * @param cartId               カート ID
+     * @param cartVersion          カートのバージョン
+     * @param now                  現在時刻
+     * @param reservationTtl       引当の期限までの時間（15 分）
+     * @param acknowledgedOrderIds 確認した注文の ID の集合
+     * @return 注文手続き
+     */
+    public static Checkout start(@NonNull UUID id, @NonNull UUID memberId, @NonNull UUID cartId, long cartVersion, @NonNull Instant now,
+                                 @NonNull Duration reservationTtl, @NonNull Set<UUID> acknowledgedOrderIds) {
+        return new Checkout(id, memberId, cartId, cartVersion, now.plus(reservationTtl), now, acknowledgedOrderIds);
+    }
+
+    /**
+     * 今の支払待ちの注文が全て、確認した注文に含まれるかを返す。
+     *
+     * @param pendingOrderIds 今の支払待ちの注文の ID の集合
+     * @return 全て含まれていれば true（支払待ちがなければ常に true）
+     */
+    public boolean acknowledges(@NonNull Set<UUID> pendingOrderIds) {
+        return acknowledgedOrderIds.containsAll(pendingOrderIds);
     }
 
     /**

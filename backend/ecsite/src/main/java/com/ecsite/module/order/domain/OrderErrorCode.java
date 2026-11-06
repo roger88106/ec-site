@@ -94,6 +94,10 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      * 出荷済みの注文のキャンセルで、在庫に戻すかの指定がない
      */
     RESTOCK_CHOICE_REQUIRED(ErrorType.VALIDATION_ERROR),
+    /**
+     * 支払待ちの注文が確認されていない（確認の画面を表示する）
+     */
+    PENDING_ORDER_CONFIRMATION_REQUIRED(ErrorType.CONFLICT_ERROR),
     ;
 
     /**

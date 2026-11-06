@@ -131,6 +131,13 @@ describe('注文の詳細', () => {
     expect(screen.getByRole('button', { name: 'キャンセルする' })).toBeInTheDocument()
   })
 
+  test('キャンセルの申請に理由がないときは、理由に「（なし）」を表示する', async () => {
+    serveOrder(orderDetail({ status: 'CANCELLATION_REQUESTED', cancellationRequest: { ...REQUEST, reason: undefined } }))
+    renderApp(PAGE_PATH)
+
+    expect(await screen.findByText('（なし）')).toBeInTheDocument()
+  })
+
   test('AC-103 運営者のキャンセルは理由がないと送れず、理由を付けて送ると、キャンセルの内容に理由を出す', async () => {
     const state = serveOrder(
       orderDetail(),

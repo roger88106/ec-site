@@ -1,4 +1,3 @@
-import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import type { Metadata } from 'next'
@@ -7,6 +6,7 @@ import { getApi } from '@/api/client'
 import { parameters } from '@/api/generated/constraints'
 import { unwrap } from '@/api/result'
 import { PageLinks } from '@/components/PageLinks'
+import { ProblemAlert } from '@/components/ProblemAlert'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
 import { parseSearchQuery, searchHref } from '@/features/catalog/searchQuery'
 
@@ -53,11 +53,7 @@ async function SearchResult({ q, page }: { q: string; page: number }) {
   const api = await getApi()
   const result = await api.GET('/products/search', { params: { query: { q, page } } })
   if (result.response.status === 400) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{result.error?.message ?? t('invalidKeyword') /* キーワードの再検討 */}</AlertDescription>
-      </Alert>
-    )
+    return <ProblemAlert error={result.error} fallback={t('invalidKeyword') /* キーワードの再検討 */} />
   }
   const found = unwrap(result)
   return (

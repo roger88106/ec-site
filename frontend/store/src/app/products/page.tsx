@@ -1,5 +1,4 @@
 import { flattenTree } from '@ec-site/shared/lib/categoryTree'
-import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
 import type { Metadata, Route } from 'next'
 import { useTranslations } from 'next-intl'
 import { getTranslations } from 'next-intl/server'
@@ -7,6 +6,7 @@ import { getApi } from '@/api/client'
 import { unwrap } from '@/api/result'
 import type { ProductSummaryPage } from '@/api/types'
 import { PageLinks } from '@/components/PageLinks'
+import { ProblemAlert } from '@/components/ProblemAlert'
 import { ListFilterForm } from '@/features/catalog/components/ListFilterForm'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
 import { listHref, parseListQuery } from '@/features/catalog/listQuery'
@@ -47,9 +47,7 @@ export default async function ProductListPage({ searchParams }: PageProps<'/prod
       <h1 className="font-heading text-2xl font-semibold">{categoryName ?? t('title') /* カテゴリ名か商品一覧 */}</h1>
       <ListFilterForm categories={flatCategories} query={query} />
       {result.response.status === 400 ? (
-        <Alert variant="destructive">
-          <AlertDescription>{result.error?.message ?? t('invalidQuery') /* 条件の再検討 */}</AlertDescription>
-        </Alert>
+        <ProblemAlert error={result.error} fallback={t('invalidQuery') /* 条件の再検討 */} />
       ) : (
         <ProductList hrefFor={(page) => listHref({ ...query, page })} page={unwrap(result)} />
       )}

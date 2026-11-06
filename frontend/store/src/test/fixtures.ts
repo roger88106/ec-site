@@ -31,6 +31,8 @@ export const VARIANT_ID = '00000000-0000-0000-0000-000000000201'
 export const CHECKOUT_ID = '00000000-0000-0000-0000-000000000401'
 /** 注文の ID */
 export const ORDER_ID = '00000000-0000-0000-0000-000000000501'
+/** もう 1 つの注文の ID */
+export const OTHER_ORDER_ID = '00000000-0000-0000-0000-000000000502'
 
 /** 10% の商品（税込 1,100 円）の品目 1 つ */
 export function quoteItem(overrides: Partial<QuoteItem> = {}): QuoteItem {

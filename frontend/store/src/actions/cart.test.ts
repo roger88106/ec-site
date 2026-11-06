@@ -3,7 +3,16 @@ import { describe, expect, test } from 'vitest'
 import { addToCart, changeCartItemQuantity, removeCartItem, startCheckout } from '@/actions/cart'
 import { connectionFailedMessage } from '@/lib/actionResult'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
-import { CHECKOUT_ID, COOKIE_CART_ID, form, MEMBER_CART_ID, NEW_CART_ID, VARIANT_ID } from '@/test/fixtures'
+import {
+  CHECKOUT_ID,
+  COOKIE_CART_ID,
+  form,
+  MEMBER_CART_ID,
+  NEW_CART_ID,
+  ORDER_ID,
+  OTHER_ORDER_ID,
+  VARIANT_ID,
+} from '@/test/fixtures'
 import { cookieOptions, cookieValue, redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
 import { http, networkError, problem, STORE_API, server } from '@/test/server'
 import { recordStderr } from '@/test/stderr'
@@ -211,5 +220,39 @@ describe('注文手続きに進む', () => {
     )
 
     expect(await redirectedTo(() => startCheckout(null, form({})))).toBe(`/checkout/${CHECKOUT_ID}`)
+  })
+
+  test('AC-406-7 フォームの acknowledgedOrderIds を、本文で送る', async () => {
+    signInAs()
+    let body: unknown
+    server.use(
+      memberCart(),
+      http.post('/carts/{cartId}/checkouts', async ({ request, response }) => {
+        body = await request.json()
+        return response(201).json({ id: CHECKOUT_ID })
+      }),
+    )
+    const data = new FormData()
+    data.append('acknowledgedOrderIds', ORDER_ID)
+    data.append('acknowledgedOrderIds', OTHER_ORDER_ID)
+
+    expect(await redirectedTo(() => startCheckout(null, data))).toBe(`/checkout/${CHECKOUT_ID}`)
+
+    expect(body).toEqual({ acknowledgedOrderIds: [ORDER_ID, OTHER_ORDER_ID] })
+  })
+
+  test('AC-406-7 確認が必要（409）なら確認の画面へ移る。確認した注文を送っても、また 409 なら確認の画面へ移る', async () => {
+    signInAs()
+    server.use(
+      memberCart(),
+      http.post('/carts/{cartId}/checkouts', ({ response }) =>
+        response(409).json(problem(409, 'PENDING_ORDER_CONFIRMATION_REQUIRED', '支払待ちの注文があります。')),
+      ),
+    )
+    const data = new FormData()
+    data.append('acknowledgedOrderIds', ORDER_ID)
+
+    expect(await redirectedTo(() => startCheckout(null, form({})))).toBe('/checkout/pending-orders')
+    expect(await redirectedTo(() => startCheckout(null, data))).toBe('/checkout/pending-orders')
   })
 })

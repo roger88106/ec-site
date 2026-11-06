@@ -111,6 +111,18 @@ describe('注文する', () => {
     expect(revalidatedPaths).toEqual([`/checkout/${CHECKOUT_ID}`])
   })
 
+  test('AC-406-13 確認が必要（409）なら、入力を保存せず、確認の画面へ移る', async () => {
+    signInAs()
+    server.use(
+      http.post('/checkouts/{checkoutId}/order', ({ response }) =>
+        response(409).json(problem(409, 'PENDING_ORDER_CONFIRMATION_REQUIRED', '支払待ちの注文があります。')),
+      ),
+    )
+
+    expect(await redirectedTo(() => placeOrder(null, orderForm()))).toBe('/checkout/pending-orders')
+    expect(revalidatedPaths).toEqual([])
+  })
+
   test('会員の token が無効（401）なら、注文手続きの画面に戻るようにログインの画面へ移す', async () => {
     signInAs()
     resetRequest({ headers: { 'x-pathname': `/checkout/${CHECKOUT_ID}` } })

@@ -1,20 +1,17 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
-import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
+import { createSimpleProduct, variantIds } from '../src/data'
 import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage, placeOrderButton } from '../src/store'
 import { ADMIN_URL } from '../src/urls'
 
 test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-1 店舗画面でカートに入れ、郵便番号でお届け先を補って注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
   page,
 }) => {
-  const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const productName = '注文の流れの商品'
-  const productId = await createPublishedProduct({
+  const productId = await createSimpleProduct({
     code: 'ORDER',
     name: productName,
-    taxCategoryId,
-    priceExclTax: 1000,
-    variants: [{ code: 'A', stock: 3 }],
+    stock: 3,
   })
   const [variantId] = await variantIds(productId)
   let orderUrl = ''

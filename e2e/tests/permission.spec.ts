@@ -1,18 +1,15 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
-import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
+import { createSimpleProduct } from '../src/data'
 import { orderAsMember, orderIdOf, payOnMockPage } from '../src/store'
 
 test('AC-136、141 閲覧者は注文を見られるが、キャンセルの申請を承認すると「権限がない」と示される', async ({
   browser,
 }) => {
-  const { id: taxCategoryId } = await taxCategoryWithRate(10)
-  const productId = await createPublishedProduct({
+  const productId = await createSimpleProduct({
     code: 'VIEWER',
     name: '閲覧者の確認の商品',
-    taxCategoryId,
-    priceExclTax: 1000,
-    variants: [{ code: 'A', stock: 3 }],
+    stock: 3,
   })
   let orderId = ''
 

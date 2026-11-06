@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
-import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
+import { createSimpleProduct } from '../src/data'
 import { detailValue } from '../src/detail'
 import {
   expectOrderPage,
@@ -26,16 +26,13 @@ import { CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits
  * @param count 作る商品の数
  */
 async function memberCartWith(page: Page, code: string, count = 1) {
-  const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const productIds: string[] = []
   for (let index = 1; index <= count; index++) {
     productIds.push(
-      await createPublishedProduct({
+      await createSimpleProduct({
         code: `${code}${index}`,
         name: `支払の商品 ${code}${index}`,
-        taxCategoryId,
-        priceExclTax: 1000,
-        variants: [{ code: 'A', stock: 3 }],
+        stock: 3,
       }),
     )
   }

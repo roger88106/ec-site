@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { idpPasswordInput, memberEmail, setPasswordFromMail, submitIdpLogin, submitSignup } from '../src/auth'
-import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
+import { createSimpleProduct } from '../src/data'
 import { detailValue } from '../src/detail'
 import { addToCart, fillShipping, payOnMockPage, placeOrderButton } from '../src/store'
 import { STORE_URL } from '../src/urls'
@@ -8,14 +8,11 @@ import { STORE_URL } from '../src/urls'
 test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
   page,
 }) => {
-  const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const productName = '会員の注文の商品'
-  const productId = await createPublishedProduct({
+  const productId = await createSimpleProduct({
     code: 'MEMBER',
     name: productName,
-    taxCategoryId,
-    priceExclTax: 1000,
-    variants: [{ code: 'A', stock: 5 }],
+    stock: 5,
   })
   const account = { email: memberEmail('signup'), password: 'E2e-pass-1234' }
 

@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,13 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.ProblemAssertions.problem;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -220,24 +219,6 @@ class ErrorResponseTest {
         ResultActions result = mockMvc.perform(get(BASE + "/not-found"));
 
         result.andExpect(jsonPath("$.traceId").value(matchesPattern("[0-9a-f]{32}")));
-    }
-
-    // ============================== 検証の部品 ==============================
-
-    /**
-     * すべてのエラーレスポンスに共通する形。
-     *
-     * @param errorCode エラーコード
-     * @param message   画面にそのまま出せるメッセージ
-     * @return 検証
-     */
-    private static ResultMatcher[] problem(String errorCode, String message) {
-        return List.of(
-                content().contentType(MediaType.APPLICATION_PROBLEM_JSON),
-                jsonPath("$.errorCode").value(errorCode),
-                jsonPath("$.message").value(message),
-                jsonPath("$.traceId").isNotEmpty()
-        ).toArray(ResultMatcher[]::new);
     }
 
     // ============================== テスト用の Controller ==============================

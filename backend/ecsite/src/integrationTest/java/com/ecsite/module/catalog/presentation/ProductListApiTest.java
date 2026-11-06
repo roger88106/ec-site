@@ -117,6 +117,19 @@ class ProductListApiTest {
     }
 
     @Test
+    @DisplayName("AC-48 品番の絞り込みの % と _ は、ワイルドカードとして扱わず、ただの文字として前方一致で比べる")
+    void doesNotTreatWildcardsInCodeAsWildcards() throws Exception {
+        catalog.draft("ABC-001", taxCategoryId, "商品 1", scope);
+
+        mockMvc.perform(get(BASE).param("code", "A%").param("categoryId", scope.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalItems").value(0));
+        mockMvc.perform(get(BASE).param("code", "A_C").param("categoryId", scope.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalItems").value(0));
+    }
+
+    @Test
     @DisplayName("AC-48 商品名の部分一致で絞り込める。英字の大文字・小文字は区別しない")
     void filtersByName() throws Exception {
         var shirt = catalog.draft("A-001", taxCategoryId, "Basic T-Shirt", scope).id.toString();

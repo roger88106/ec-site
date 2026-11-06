@@ -1,12 +1,11 @@
 package com.ecsite.common.model.value;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 金額の単体テスト（バックエンドのアーキテクチャの「永続化」）
@@ -30,9 +29,7 @@ class MoneyTest {
     @Test
     @DisplayName("負の金額は拒否される")
     void rejectsNegative() {
-        assertThatThrownBy(() -> Money.of(-1))
-                .isInstanceOfSatisfying(BusinessException.class, ex ->
-                        assertThat(ex.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.INVALID_MONEY.getCode()));
+        assertBusinessError(() -> Money.of(-1), CommonErrorCode.INVALID_MONEY);
     }
 
     @Test

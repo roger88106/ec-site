@@ -3,7 +3,7 @@ import { expect, type Locator, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { makeShot } from '../src/screenshot'
 import { SHOWCASE_ADMIN_URL as ADMIN, SHOWCASE_STORE_URL as STORE } from '../src/showcase-urls'
-import { productCard } from '../src/store'
+import { lastPathSegment, productCard } from '../src/store'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil, SHOWCASE_CACHE_TIMEOUT } from '../src/waits'
 
 /** 撮った画像の置き場所（docs/01-概要/catalog.md が載せる） */
@@ -75,7 +75,7 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
     await expect(page.getByText('商品を登録しました')).toBeVisible()
     await expect(page.getByRole('heading', { name: PRODUCT.code })).toBeVisible()
     productUrl = page.url()
-    productId = new URL(productUrl).pathname.split('/').at(-1) ?? ''
+    productId = lastPathSegment(productUrl) ?? ''
   })
 
   await test.step('管理画面：画像を登録する', async () => {

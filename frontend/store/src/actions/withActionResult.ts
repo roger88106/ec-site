@@ -31,3 +31,19 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
     return { ok: false, message: connectionFailedMessage() }
   }
 }
+
+/**
+ * 読むだけの処理を包み、例外なら代わりの値を返す。例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
+ *
+ * @param work 処理
+ * @param fallback 例外で失敗したときに返す値
+ * @returns 処理の値。例外なら fallback
+ */
+export async function withFallback<T>(work: () => Promise<T>, fallback: T): Promise<T> {
+  const outcome: { value: T }[] = []
+  await withActionResult(async () => {
+    outcome.push({ value: await work() })
+  })
+  const [first] = outcome
+  return first ? first.value : fallback
+}

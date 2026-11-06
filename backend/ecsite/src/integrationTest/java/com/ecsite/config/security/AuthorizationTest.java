@@ -9,19 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.ProblemAssertions.problem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -219,23 +216,5 @@ class AuthorizationTest {
             mockMvc.perform(get("/actuator/health"))
                     .andExpect(status().isOk());
         }
-    }
-
-    // ============================== 検証の部品 ==============================
-
-    /**
-     * Problem Details の形（API の規約）。
-     *
-     * @param errorCode エラーコード
-     * @param message   メッセージ
-     * @return 検証
-     */
-    private static ResultMatcher[] problem(String errorCode, String message) {
-        return List.of(
-                content().contentType(MediaType.APPLICATION_PROBLEM_JSON),
-                jsonPath("$.errorCode").value(errorCode),
-                jsonPath("$.message").value(message),
-                jsonPath("$.traceId").isNotEmpty()
-        ).toArray(ResultMatcher[]::new);
     }
 }

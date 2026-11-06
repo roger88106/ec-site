@@ -177,8 +177,20 @@ public final class ProductionClasses {
      * @param root        パッケージ
      * @return パッケージそのもの、またはその下なら true
      */
-    private static boolean isInPackage(String packageName, String root) {
+    public static boolean isInPackage(String packageName, String root) {
         return packageName.equals(root) || packageName.startsWith(root + ".");
+    }
+
+    /**
+     * 入れ子のクラスを含む外側のクラスの名前を返す。
+     *
+     * @param javaClass クラス
+     * @return 入れ子でないクラスの名前
+     */
+    public static String outermostName(JavaClass javaClass) {
+        String name = javaClass.getName();
+        int nested = name.indexOf('$');
+        return nested < 0 ? name : name.substring(0, nested);
     }
 
     /**

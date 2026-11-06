@@ -70,6 +70,29 @@ const TS_NAME = /(['"`])((?:(?!\1)[^\\]|\\.)*)\1/y
 const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescribe)\(/g
 
 /**
+ * describe・it・test の名前の前にある修飾の連鎖（.skip、.each(表)、.skipIf(条件) など）を読み飛ばす。
+ * 引数を取る修飾は、続く括弧かテンプレートの表も読み飛ばす。閉じない括弧とテンプレートは、読み飛ばした位置が範囲の外になるので、呼び出し側が見る。
+ *
+ * @param {string} source ソース（コメントの中を読まないものを渡す）
+ * @param {number} pos describe・it・test の直後の位置
+ * @param {ReadonlySet<string>} argumentModifiers 表や条件を引数に取る修飾の名前
+ * @returns {{ pos: number, modifiers: string[] }} 修飾の後の位置と、読んだ修飾の名前
+ */
+export function skipModifiers(source, pos, argumentModifiers) {
+  const modifiers = []
+  while (source[pos] === '.') {
+    const modifier = /^\.(\w+)/.exec(source.slice(pos, pos + 20))
+    if (!modifier) break
+    pos += modifier[0].length
+    modifiers.push(modifier[1])
+    if (!argumentModifiers.has(modifier[1])) continue
+    if (source[pos] === '(') pos = closingParen(source, pos) + 1
+    else if (source[pos] === '`') pos = templateEnd(source, pos)
+  }
+  return { pos, modifiers }
+}
+
+/**
  * 1 つの呼び出しを読む。
  *
  * @param {string} source ソース

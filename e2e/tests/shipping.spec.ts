@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
-import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
+import { createSimpleProduct, variantIds } from '../src/data'
 import { detailValue } from '../src/detail'
 import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
 import { orderAsMember, orderIdOf, payOnMockPage } from '../src/store'
@@ -20,13 +20,10 @@ type AcceptedOrder = { productId: string; variantId: string; orderId: string; or
  * @param code 品番の一部
  */
 async function acceptedOrder(page: Page, code: string): Promise<AcceptedOrder> {
-  const { id: taxCategoryId } = await taxCategoryWithRate(10)
-  const productId = await createPublishedProduct({
+  const productId = await createSimpleProduct({
     code,
     name: `出荷の商品 ${code}`,
-    taxCategoryId,
-    priceExclTax: 1000,
-    variants: [{ code: 'A', stock: 3 }],
+    stock: 3,
   })
   const [variantId] = await variantIds(productId)
   await orderAsMember(page, ACCOUNTS.member, [productId])

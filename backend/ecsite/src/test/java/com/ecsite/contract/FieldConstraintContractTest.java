@@ -1,5 +1,6 @@
 package com.ecsite.contract;
 
+import com.ecsite.DomainConstants;
 import com.ecsite.module.media.domain.ImageFormat;
 import org.jooq.Field;
 import org.junit.jupiter.api.BeforeAll;
@@ -153,7 +154,7 @@ class FieldConstraintContractTest {
         assertThat(contractLimits).as("契約の上限（場所ごと）").containsOnly(limit);
 
         if (row.domain() != null) {
-            assertThat(domainLimit(row.domain())).as("ドメインの上限").isEqualTo(limit);
+            assertThat(DomainConstants.read(row.domain()).intValue()).as("ドメインの上限").isEqualTo(limit);
         }
         for (Field<?> column : row.columns()) {
             assertThat(column.getDataType().length()).as("DB の列 " + column).isEqualTo(limit);
@@ -192,17 +193,4 @@ class FieldConstraintContractTest {
         return limit == null ? null : ((Number) limit).intValue();
     }
 
-    /**
-     * ドメインの上限の定数の値を読む（package-private の定数を、テストから読むため反射を使う）。
-     *
-     * @param location {@code クラスの完全修飾名#定数名}
-     * @return 定数の値
-     * @throws ReflectiveOperationException クラスか定数がない
-     */
-    private static int domainLimit(String location) throws ReflectiveOperationException {
-        String[] classAndField = location.split("#", -1);
-        var field = Class.forName(classAndField[0]).getDeclaredField(classAndField[1]);
-        field.setAccessible(true);
-        return ((Number) field.get(null)).intValue();
-    }
 }

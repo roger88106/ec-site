@@ -112,6 +112,16 @@ export const currentMember = cache(async (): Promise<CurrentMember | null> => {
 })
 
 /**
+ * ログインしている会員。ログインしていなければ、ログインの画面へ移す（ログインを求める画面から呼ぶ）。
+ *
+ * @returns ログインしている会員
+ */
+export async function requireMember(): Promise<CurrentMember> {
+  const member = await currentMember()
+  return member ?? (await redirectToLogin())
+}
+
+/**
  * 会員の access token（サーバー専用）。期限が切れていれば、その場で取り直して使う（Cookie には書かない。
  * 次の要求で proxy が書く）。要求の中では 1 回だけ読む。
  *

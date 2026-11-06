@@ -1,5 +1,6 @@
 package com.ecsite.config;
 
+import com.ecsite.TestcontainersConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,7 +39,7 @@ class ProductionJarStartupTest {
     @Test
     @DisplayName("AC-245 本番の jar を、物流の mock フラグのないローカルの設定で起動すると、フラグの名前を出して起動に失敗する")
     void productionJarStopsWithoutShippingFlag(@TempDir Path dir) throws Exception {
-        try (var postgres = new PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"))) {
+        try (var postgres = new PostgreSQLContainer(DockerImageName.parse(TestcontainersConfig.POSTGRES_IMAGE))) {
             postgres.start();
             Files.writeString(dir.resolve("application-local.yml"), withoutShippingMock(localConfig()));
             var log = dir.resolve("startup.log");

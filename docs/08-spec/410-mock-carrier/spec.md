@@ -140,7 +140,7 @@ AC-229 と AC-230 の内容は変えない。AC-229 の文は今のまま成り�
   - 依存：T410-01-02
   - 範囲：`docs/03-機能仕様/shipping.md`（物流サービス）、`docs/03-機能仕様/glossary.md`、`docs/03-機能仕様/acceptance-criteria.md`、`docs/02-設計/shipping.md`（外部のサービス）、`docs/02-設計/overview.md`（外部サービスの表）、`docs/02-設計/backend-architecture.md`（公開ネットワークへのデプロイの前提、外部連携（決済・物流））、`docs/06-手順書/environment.md`（物流の mock フラグと署名の鍵の行）
   - 確認方法：`node scripts/ci/ac-check.mjs` と `CI=true bash scripts/ci/check-all.sh` が通る。
-- [ ] **T410-01-04** ローカルの開発と E2E で mock が今までどおり使えることを確認する（NFR-410-2）。
+- [x] **T410-01-04** ローカルの開発と E2E で mock が今までどおり使えることを確認する（NFR-410-2）。
   - 依存：T410-01-02
   - 範囲：コードは変えない
   - 確認方法：ローカルの起動で mock の画面を開いて通知し、配送状態が進む。出荷の E2E が通る。結果は pull request の本文に書く。

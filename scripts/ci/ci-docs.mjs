@@ -25,11 +25,11 @@ import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 /** CI の検査の script の文書 */
 const DOC = 'docs/06-手順書/ci-checks.md'
 
-/** 表を探す節の見出しの名前（番号は見ない） */
+/** 表を探す節の見出しの名前 */
 const TABLE_SECTION = '検査の一覧'
 
-/** 見出しの行（h2・h3。番号は名前に含めない） */
-const HEADING = /^#{2,3} (?:\d+(?:\.\d+)*\.? )?(.*)$/
+/** 見出しの行（h2・h3） */
+const HEADING = /^#{2,3} (.*)$/
 
 /**
  * 見出しの行なら、表を探す節の見出しかを返す。見出しでない行は null。

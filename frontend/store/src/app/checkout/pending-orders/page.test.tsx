@@ -69,7 +69,7 @@ describe('支払待ちの注文の確認の画面', () => {
 
     expect(view.getByRole('heading', { name: 'お支払い待ちのご注文があります' })).toBeInTheDocument()
     expect(view.getByText(/このまま新しく注文すると、別のご注文になります/)).toBeInTheDocument()
-    expect(view.getByText(/お支払いのないご注文は、お支払い期限になると自動でキャンセルされます/)).toBeInTheDocument()
+    expect(view.getByText(/お支払いのないご注文は、お支払い期限を過ぎると自動でキャンセルされます/)).toBeInTheDocument()
     expect(view.queryByRole('button', { name: /キャンセル/ })).toBeNull()
   })
 

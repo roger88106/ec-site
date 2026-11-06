@@ -13,7 +13,7 @@ import {
 } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
-test('AC-406-4、AC-406-5、AC-406-7、AC-406-8、AC-406-9 支払わない注文があると注文手続きの前に確認の画面が出て、戻る・支払へ進む・新しく注文するを選べる', async ({
+test('AC-406-4、AC-406-5、AC-406-7、AC-406-8、AC-406-9 支払待ちの注文があると注文手続きの前に確認の画面が出て、戻る・支払へ進む・新しく注文するを選べる', async ({
   page,
 }) => {
   const productId = await createSimpleProduct({

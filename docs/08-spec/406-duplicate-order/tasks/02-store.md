@@ -24,7 +24,7 @@
   - 依存：T406-02-03
   - 範囲：`e2e/src/store.ts`、`e2e/tests/member.spec.ts`、`e2e/tests/stock-hold-race.spec.ts`、`e2e/docs/order-flow.spec.ts`、`e2e/showcase/capture.spec.ts`
   - 確認方法：既存の E2E が通る
-- [ ] **T406-02-05** [E2E] 確認の流れの E2E を書く。
+- [x] **T406-02-05** [E2E] 確認の流れの E2E を書く。
   - 依存：T406-02-04
   - 範囲：`e2e/tests/pending-order-confirmation.spec.ts`
   - 確認方法：E2E が通る

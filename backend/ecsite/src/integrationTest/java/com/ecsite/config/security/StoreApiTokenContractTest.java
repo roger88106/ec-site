@@ -10,12 +10,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -116,8 +111,8 @@ class StoreApiTokenContractTest {
      */
     // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
-    private static List<Operation> operations() throws IOException {
-        Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(Contracts.openApiDir().resolve("store.yaml")));
+    private static List<Operation> operations() {
+        Map<String, Object> root = Contracts.openApi("store.yaml");
         var basePath = (String) ((List<Map<String, Object>>) root.get("servers")).getFirst().get("url");
         var operations = new ArrayList<Operation>();
         ((Map<String, Map<String, Object>>) root.get("paths")).forEach((path, item) -> item.forEach((key, value) -> {

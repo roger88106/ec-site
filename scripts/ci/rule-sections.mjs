@@ -15,7 +15,7 @@
 //   対象の文書を読めないとき・リンクにないときは、書き方の規則とレビューの冒頭の文のリンクを文書の置き場所に合わせる（対象は同じフォルダーだけ）。
 //   除外した節の見出しかファイル名を変えたときは、除外のキーを新しい名前に直す（一覧から消さない）。
 //   閉じていないコードブロックかコメントは閉じる。見出しは `## 名前` の形にし、題以外の `#` は `##` にする。
-// 除外：rule-sections-exclusions.json に {キー: 理由} を書く。キーは `<ファイル>「<番号を除いた見出し>」`（ルートからのパス）。
+// 除外：rule-sections-exclusions.json に {キー: 理由} を書く。キーは `<ファイル>「<見出し>」`（ルートからのパス）。
 //   除外するのは、行の有無だけ。形の誤りは除外しない。理由のない除外と、今の文書にない節の除外は失敗にする。
 // 使い方：node scripts/ci/rule-sections.mjs（リポジトリのルートで）
 import { readdirSync, readFileSync } from 'node:fs'
@@ -42,19 +42,6 @@ const CONFIRM_HEAD = '確認方法：'
 /** 理由の行の始まり */
 const REASON_HEAD = '理由：'
 
-/** 見出しの番号（`1.`、`1.1`、`1.1.`。点のない数字は番号にしない） */
-const HEADING_NUMBER = /^(?:\d+\.|\d+(?:\.\d+)+\.?)\s+/
-
-/**
- * 見出しから番号を除く。
- *
- * @param {string} title 見出しの文字
- * @returns {string} 番号を除いた見出し
- */
-function stripNumber(title) {
-  return title.replace(HEADING_NUMBER, '')
-}
-
 /**
  * 文書を、見出しと節に分けて読む。
  *
@@ -78,7 +65,7 @@ function analyze(text) {
     const start = bodyStarts[index]
     const end = index + 1 < headings.length ? headings[index + 1].line - 1 : raw.length
     const hasBody = raw.slice(start - 1, end).some((line) => line.trim() !== '')
-    if (hasBody) sections.push({ title: stripNumber(heading.title), headingLine: heading.line, start, end, confirmRows: [] })
+    if (hasBody) sections.push({ title: heading.title, headingLine: heading.line, start, end, confirmRows: [] })
   })
   return { raw, doc, sections, headings }
 }
@@ -87,7 +74,7 @@ function analyze(text) {
 const MALFORMED_HEADING = /^ {0,3}(?:#{1,6}[ \t]*$|#{1,6}　|#{2,6}[^#\s]|#[^#\s\d])/
 
 /**
- * 節（本文のある見出し）の、番号を除いた見出しを返す。
+ * 節（本文のある見出し）の、見出しを返す。
  *
  * @param {string} text 文書の内容
  * @returns {string[]} 見出しの文字（出る順）
@@ -100,7 +87,7 @@ export function listSections(text) {
  * 1 つの文書の問題を探す。
  *
  * @param {string} text 文書の内容
- * @param {(title: string) => boolean} [isExcluded] 番号を除いた見出しを受け取り、除外の節なら true（行の有無だけを見ない）
+ * @param {(title: string) => boolean} [isExcluded] 見出しを受け取り、除外の節なら true（行の有無だけを見ない）
  * @returns {{ line: number, message: string }[]} 問題（行の順）
  */
 export function findSectionProblems(text, isExcluded = () => false) {
@@ -163,7 +150,7 @@ export function findSectionProblems(text, isExcluded = () => false) {
  * 複数の文書を調べ、除外の誤りも見つける。
  *
  * @param {{ file: string, text: string }[]} docs 文書
- * @param {Record<string, unknown>} exclusions 除外の一覧（キーは `<ファイル>「<番号を除いた見出し>」`）
+ * @param {Record<string, unknown>} exclusions 除外の一覧（キーは `<ファイル>「<見出し>」`）
  * @returns {{ problems: { file: string, line: number, message: string }[], exclusionProblems: string[] }} 問題と、除外の誤りの文
  */
 export function checkDocuments(docs, exclusions) {
@@ -184,7 +171,7 @@ export function checkDocuments(docs, exclusions) {
  * 除外のキーを作る。
  *
  * @param {string} file 文書のパス
- * @param {string} title 番号を除いた見出し
+ * @param {string} title 見出し
  * @returns {string} `<ファイル>「<見出し>」`
  */
 function keyOf(file, title) {

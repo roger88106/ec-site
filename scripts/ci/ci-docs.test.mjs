@@ -11,9 +11,9 @@ const DOC = [
   '|--------|--------------|',
   '| `ac-check` | AC |',
   '| `doc-refs` | 参照 |',
-  '## 1. カバレッジ',
+  '## カバレッジ',
   '| `coverage-summary.mjs` | 合計 |',
-  '## 2. GitHub',
+  '## GitHub',
   '| `other` | y |',
 ].join('\n')
 
@@ -23,10 +23,10 @@ describe('CI の検査の文書の表の検査', () => {
   })
 
   test('表を探す節は、見出しの番号でなく名前で決める（番号つきでも、番号がなくても読み、名前の違う節の表は読まない）', () => {
-    const numbered = ['## 3. 別の節', '| `x` | y |', '## 7. 検査の一覧', '| `a` | b |', '## 8. 次の節', '| `z` | y |'].join('\n')
+    const numbered = ['## 別の節', '| `x` | y |', '## 検査の一覧', '| `a` | b |', '## 次の節', '| `z` | y |'].join('\n')
     assert.deepEqual(readTableChecks(numbered), ['a'])
     assert.deepEqual(readTableChecks(['## 検査の一覧', '| `a` | b |'].join('\n')), ['a'])
-    assert.deepEqual(readTableChecks(['## 3. 検査の一覧s', '| `a` | b |'].join('\n')), [])
+    assert.deepEqual(readTableChecks(['## 検査の一覧s', '| `a` | b |'].join('\n')), [])
   })
 
   test('節の中の表の前にコードブロックがあり、その中に `# コメント` の行があっても、節は終わらず表を読む', () => {
@@ -64,7 +64,7 @@ describe('CI の検査の文書の表の検査', () => {
   })
 
   test('表が 3 列と 4 列の行を、行の番号つきで失敗にする', () => {
-    const doc = ['## 検査の一覧', '| script | 確認すること | 失敗したとき |', '|---|---|---|', '| `a` | x | y | z |', '## 1. カバレッジ', '| `b` | x | y |'].join('\n')
+    const doc = ['## 検査の一覧', '| script | 確認すること | 失敗したとき |', '|---|---|---|', '| `a` | x | y | z |', '## カバレッジ', '| `b` | x | y |'].join('\n')
     const problems = checkTableColumns(doc)
     assert.equal(problems.length, 3)
     assert.match(problems[0], /ci-checks.md:2 .*3 列/)

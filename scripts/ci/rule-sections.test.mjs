@@ -6,7 +6,7 @@ import { checkDocuments, findSectionProblems, findUnlistedDocs, listSections, lo
 const rows = ['理由：理由を書く。', '確認方法：レビュー']
 
 // 見出しの後に空行を置き、本文を続ける。本文の最初の行は 3 行目になる
-const section = (...body) => ['## 1. 節', '', ...body].join('\n')
+const section = (...body) => ['## 節', '', ...body].join('\n')
 
 // 3 行目に例の行を置き、正しい形の 2 行を続ける
 const withRows = (...extra) => section(...extra, '', ...rows)
@@ -82,7 +82,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 14：親の見出しに本文があって行がなく、子の見出しにだけ行があれば、親を失敗にする', () => {
-    const text = ['## 1. 親', '', '理由：理由を書く。', '', '### 1.1 子', '', ...rows].join('\n')
+    const text = ['## 親', '', '理由：理由を書く。', '', '### 子', '', ...rows].join('\n')
     expectOne(text, /「親」に確認方法：の行がない/, 1)
   })
 
@@ -163,9 +163,9 @@ describe('検出すべき例', () => {
   })
 
   test('例 28：内容のない確認方法の直後が次の見出しか文書の終わりなら失敗にする', () => {
-    const followedByHeading = ['## 1. 節', '', '理由：理由を書く。', '確認方法：', '', '## 2. 次', '', ...rows].join('\n')
+    const followedByHeading = ['## 節', '', '理由：理由を書く。', '確認方法：', '', '## 次', '', ...rows].join('\n')
     expectOne(followedByHeading, /箇条/)
-    const adjacentHeading = ['## 1. 節', '', '理由：理由を書く。', '確認方法：', '## 2. 次', '', ...rows].join('\n')
+    const adjacentHeading = ['## 節', '', '理由：理由を書く。', '確認方法：', '## 次', '', ...rows].join('\n')
     expectOne(adjacentHeading, /箇条/)
     expectOne(section('理由：理由を書く。', '確認方法：'), /箇条/)
   })
@@ -229,7 +229,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 39：親の節に行があっても、本文のある子の節に行がなければ、子を失敗にする', () => {
-    const text = ['## 1. 親', '', ...rows, '', '### 1.1 子', '', '本文。'].join('\n')
+    const text = ['## 親', '', ...rows, '', '### 子', '', '本文。'].join('\n')
     const problems = findSectionProblems(text)
     assert.equal(problems.length, 2)
     assert.ok(problems.every((problem) => problem.line === 6 && /「子」/.test(problem.message)))
@@ -239,9 +239,9 @@ describe('検出すべき例', () => {
 
   test('例 40：文書の最後の節、深さ 6 の見出しの節、Setext の見出しの節に行がなければ失敗にする', () => {
     const cases = [
-      ['## 1. 節', '', ...rows, '', '## 2. 最後', '', '本文。', '「最後」'],
-      ['## 1. 節', '', ...rows, '', '###### 深い節', '', '本文。', '「深い節」'],
-      ['## 1. 節', '', ...rows, '', 'Setext の節', '-----------', '', '本文。', '「Setext の節」'],
+      ['## 節', '', ...rows, '', '## 最後', '', '本文。', '「最後」'],
+      ['## 節', '', ...rows, '', '###### 深い節', '', '本文。', '「深い節」'],
+      ['## 節', '', ...rows, '', 'Setext の節', '-----------', '', '本文。', '「Setext の節」'],
     ]
     for (const item of cases) {
       const name = item.pop()
@@ -252,7 +252,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 41：確認方法の直後の行が --- なら、その行が見出しになって行がなくなり失敗にする', () => {
-    const text = ['## 1. 節', '', '理由：理由を書く。', '', '確認方法：レビュー', '---'].join('\n')
+    const text = ['## 節', '', '理由：理由を書く。', '', '確認方法：レビュー', '---'].join('\n')
     const problems = findSectionProblems(text)
     assert.equal(problems.length, 2)
     assert.match(problems[0].message, /確認方法：の行がない/)
@@ -262,7 +262,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 41：理由、確認方法、--- が隣り合う形は、見出しの中の確認方法として失敗にする', () => {
-    const text = ['## 1. 節', '', '理由：理由を書く。', '確認方法：レビュー', '---'].join('\n')
+    const text = ['## 節', '', '理由：理由を書く。', '確認方法：レビュー', '---'].join('\n')
     expectOne(text, /字下げのない行頭/, 4)
   })
 
@@ -297,7 +297,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 45：除外のキーが本文のない親の見出しを指していれば失敗にする', () => {
-    const text = ['## 1. 親', '', '### 1.1 子', '', ...rows].join('\n')
+    const text = ['## 親', '', '### 子', '', ...rows].join('\n')
     const result = checkDocuments([{ file: 'a.md', text }], { 'a.md「親」': '理由' })
     assert.equal(result.exclusionProblems.length, 1)
     assert.match(result.exclusionProblems[0], /親/)
@@ -322,7 +322,7 @@ describe('検出すべき例', () => {
   })
 
   test('例 48：冒頭の文のリンクが 0 件か、リンク先のファイルがなければ、対象を読めないとして失敗にする', () => {
-    const noLink = ['# 書き方の規則とレビュー', '', 'リンクのない冒頭の文。', '', '## 1. 規則の書き方', '', '[別](other.md)'].join('\n')
+    const noLink = ['# 書き方の規則とレビュー', '', 'リンクのない冒頭の文。', '', '## 規則の書き方', '', '[別](other.md)'].join('\n')
     assert.deepEqual(readTargetDocs(noLink), [])
     const noLinkResult = loadDocuments(noLink, () => withRows('本文。'))
     assert.deepEqual(noLinkResult.docs, [])
@@ -405,7 +405,7 @@ describe('検出してはいけない例', () => {
   })
 
   test('例 3：本文のない親の見出しは節に数えない', () => {
-    expectNone(['## 1. 親', '', '### 1.1 子', '', ...rows].join('\n'))
+    expectNone(['## 親', '', '### 子', '', ...rows].join('\n'))
   })
 
   test('例 4：最初の ## より前にある冒頭の文は節にしない', () => {
@@ -438,7 +438,7 @@ describe('検出してはいけない例', () => {
   })
 
   test('例 11：親の節と子の節の両方に、それぞれ本文と行があれば成功にする', () => {
-    expectNone(['## 1. 親', '', ...rows, '', '### 1.1 子', '', ...rows].join('\n'))
+    expectNone(['## 親', '', ...rows, '', '### 子', '', ...rows].join('\n'))
   })
 
   test('例 12：理由と確認方法の間に段落があってもよく、確認方法が先でもよい', () => {
@@ -466,7 +466,7 @@ describe('検出してはいけない例', () => {
   })
 
   test('例 17：見出しの後が空白だけの行で次の見出しが続く親は、本文に数えない', () => {
-    expectNone(['## 1. 親', '   ', '### 1.1 子', '', ...rows].join('\n'))
+    expectNone(['## 親', '   ', '### 子', '', ...rows].join('\n'))
   })
 
   test('例 18：コードを含む内容も内容として読む', () => {
@@ -519,7 +519,7 @@ describe('検出してはいけない例', () => {
   })
 
   test('例 28：除外のキーは、インラインコードや <機能> を含む見出しを書かれたままの文字で照合する', () => {
-    const text = ['## 2. `foo` と <機能>', '', '本文。', '', '### 6.1 `x` の <機能>', '', '本文。'].join('\n')
+    const text = ['## `foo` と <機能>', '', '本文。', '', '### `x` の <機能>', '', '本文。'].join('\n')
     const exclusions = { 'a.md「`foo` と <機能>」': '理由', 'a.md「`x` の <機能>」': '理由' }
     assert.deepEqual(checkDocuments([{ file: 'a.md', text }], exclusions), { problems: [], exclusionProblems: [] })
   })
@@ -530,7 +530,7 @@ describe('検出してはいけない例', () => {
       '',
       '書き方の規則（[バックエンドの書き方](backend-coding.md)、[コメントの書き方](comments.md)）を書くときの形。',
       '',
-      '## 1. 規則の書き方',
+      '## 規則の書き方',
       '',
       '[別の文書](other.md) は対象ではない。',
     ].join('\n')
@@ -551,7 +551,7 @@ describe('検出してはいけない例', () => {
   })
 
   test('例 32：番号でない先頭の数字は、見出しから除かない', () => {
-    assert.deepEqual(listSections(['## 2 つの節', '', ...rows, '', '## 1. 節', '', ...rows, '', '### 1.1 小節', '', ...rows].join('\n')), ['2 つの節', '節', '小節'])
+    assert.deepEqual(listSections(['## 2 つの節', '', ...rows, '', '## 節', '', ...rows, '', '### 小節', '', ...rows].join('\n')), ['2 つの節', '節', '小節'])
   })
 })
 
@@ -569,14 +569,14 @@ describe('対象の文書の読み取り', () => {
   })
 
   test('改行が CRLF でも読める', () => {
-    const review = ['# 題', '', '規則（[A](a.md)、[B](b.md)）。', '', '## 1. 節'].join('\r\n')
+    const review = ['# 題', '', '規則（[A](a.md)、[B](b.md)）。', '', '## 節'].join('\r\n')
     assert.deepEqual(readTargetDocs(review), ['a.md', 'b.md'])
   })
 })
 
 describe('節の一覧', () => {
   test('本文のある見出しだけを、番号を除いて返す', () => {
-    const text = ['# 題', '', '冒頭。', '', '## 1. 親', '', '### 1.1 子', '', '本文。', '', '## 2. `x` と <機能>', '', '本文。'].join('\n')
+    const text = ['# 題', '', '冒頭。', '', '## 親', '', '### 子', '', '本文。', '', '## `x` と <機能>', '', '本文。'].join('\n')
     assert.deepEqual(listSections(text), ['子', '`x` と <機能>'])
   })
 

@@ -172,7 +172,7 @@ class JooqReportOrderRepositoryTest {
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @DisplayName("注文ごとのロックを取っている間は、別のトランザクションが同じ注文のロックを取れず、別の注文のロックは取れる")
-    void blocksOtherTransactionWhileOrderLocked() throws Exception {
+    void blocksOtherTransactionWhileOrderLocked() {
         // ロックはトランザクションの終わりで外れ、行を作らないので、ロールバックは要らない
         var orderId = UUID.randomUUID();
         var executor = Executors.newSingleThreadExecutor();

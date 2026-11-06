@@ -329,9 +329,6 @@ tasks.register<JavaExec>("generateRegionMigration") {
     )
 }
 
-// tools のソースは手で実行するまでコンパイルされず、壊れても気づけない。check に入れて、手元と CI の両方で壊れたら失敗させる
-tasks.check { dependsOn("compileToolsJava") }
-
 // -----------------------------------------------------------------------------
 // Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」）
 //   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。

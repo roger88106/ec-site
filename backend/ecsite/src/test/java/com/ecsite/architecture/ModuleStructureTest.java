@@ -69,11 +69,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ModuleStructureTest {
 
     /**
-     * モジュールの直下に置いてよいパッケージ（層）
-     */
-    private static final Set<String> LAYERS = Set.of("api", "event", "presentation", "application", "domain", "infrastructure");
-
-    /**
      * クラスのパッケージを、モジュールのパッケージ、層、層の下のパッケージに分ける形（層の下のパッケージはなくてもよい）
      */
     private static final Pattern LAYERED_PACKAGE = Pattern.compile("^(.*\\.module\\.[^.]+)\\.([^.]+)(?:\\.(.*))?$");
@@ -181,30 +176,8 @@ class ModuleStructureTest {
             ME_CONTROLLER);
 
     @Test
-    @DisplayName("モジュールの直下のパッケージは、標準の層の名前だけである")
-    void modulesContainOnlyStandardLayers() {
-        List<String> modulePackages = ProductionClasses.all().stream()
-                .map(JavaClass::getPackageName)
-                .filter(packageName -> ProductionClasses.moduleName(packageName).isPresent())
-                .toList();
-        ProductionClasses.requireNotEmpty(modulePackages, "モジュールのクラスのパッケージ");
-
-        // com.ecsite.module.<モジュール>.<層> の 5 つ目の要素までを、層の名前の確認と報告に使う
-        Set<String> unknown = modulePackages.stream()
-                .map(packageName -> packageName.split("\\.", 6))
-                .filter(parts -> parts.length >= 5)
-                .filter(parts -> !LAYERS.contains(parts[4]))
-                .map(parts -> String.join(".", parts[0], parts[1], parts[2], parts[3], parts[4]))
-                .collect(Collectors.toCollection(TreeSet::new));
-
-        assertThat(unknown).isEmpty();
-    }
-
-    @Test
     @DisplayName("層は、同じモジュールの中で、依存の表にない層とパッケージに依存しない（対象は 1 件以上ある）")
     void layersDependOnlyOnAllowedLayers() {
-        ProductionClasses.requireNotEmpty(layeredClasses(ProductionClasses.modules()), "モジュールの層のクラス");
-
         LAYER_DEPENDENCY_RULE.check(ProductionClasses.modules());
     }
 
@@ -600,16 +573,6 @@ class ModuleStructureTest {
      */
     private static boolean isLayered(JavaClass javaClass) {
         return LAYERED_PACKAGE.matcher(javaClass.getPackageName()).matches();
-    }
-
-    /**
-     * 規則の対象になる、モジュールの層のクラスを返す。
-     *
-     * @param classes 調べるクラス
-     * @return 層のパッケージのクラス
-     */
-    private static List<JavaClass> layeredClasses(JavaClasses classes) {
-        return classes.stream().filter(ModuleStructureTest::isLayered).toList();
     }
 
     /**

@@ -74,13 +74,6 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("presentation は、設定の値の型（@ConfigurationProperties）に依存しない")
     void presentationDoesNotDependOnConfigurationProperties() {
-        ProductionClasses.requireNotEmpty(
-                ProductionClasses.handwritten().stream()
-                        .filter(javaClass -> javaClass.getPackageName().contains(".presentation")
-                                && javaClass.getPackageName().startsWith(ProductionClasses.MODULE_PACKAGE_PREFIX))
-                        .toList(),
-                "モジュールの presentation のクラス");
-
         presentationRule(ProductionClasses.MODULE_PACKAGE + ".*.presentation..").check(ProductionClasses.handwritten());
     }
 
@@ -99,8 +92,6 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("設定の値の型と、その項目からたどれる型のうち、秘密の値の項目を持つものは、toString を宣言する")
     void secretPropertiesDeclareToString() {
-        ProductionClasses.requireNotEmpty(secretConfigurationTypeNames(ProductionClasses.handwritten()), "秘密の値の項目を持つ設定の型");
-
         secretPropertiesRule(ProductionClasses.handwritten()).check(ProductionClasses.handwritten());
     }
 

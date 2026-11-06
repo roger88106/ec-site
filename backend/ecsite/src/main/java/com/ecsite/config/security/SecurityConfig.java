@@ -147,7 +147,7 @@ class SecurityConfig {
     /**
      * filter chain の共通の設定：ステートレス、CSRF の対策なし、失敗は Problem Details。
      */
-    private static HttpSecurity stateless(HttpSecurity http, SecurityProblemResponder responder) throws Exception {
+    private static HttpSecurity stateless(HttpSecurity http, SecurityProblemResponder responder) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

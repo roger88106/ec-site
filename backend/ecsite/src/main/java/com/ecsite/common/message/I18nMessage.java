@@ -27,6 +27,6 @@ public record I18nMessage(@NonNull String code, @NonNull List<String> paramKeys)
      * @return {@link I18nMessage}
      */
     public static I18nMessage of(@NonNull String code, @NonNull List<String> paramKeys) {
-        return new I18nMessage(code, List.copyOf(paramKeys));
+        return new I18nMessage(code, paramKeys);
     }
 }

@@ -26,8 +26,7 @@
 // 除外：部分の一致が誤検出になる語は、項目を word の代わりに pattern（正規表現）で書き、examples の hit（当たる例）と miss（当たらない例）を必ず書く。
 //   examples がない、正規表現が読めない、例が合わない項目は失敗にする。
 //   使わない語を含む正しい語は、error の項目の allow に書く（上の error の行）。使わない語を含まない許容用語も失敗にする。
-// 使い方：node scripts/ci/ja-text.mjs [--warning [--added] | --stats | --changed]（リポジトリのルートで）
-//   --stats：閾値ごとの文の数を出力する。表のセルは、セルごとに文の字数を合計して数える（閾値を決めるときに見る）。
+// 使い方：node scripts/ci/ja-text.mjs [--warning [--added] | --changed]（リポジトリのルートで）
 //   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。
 //       文は、どれかの行が追加行なら、最初の追加行で示す（--changed と同じ選び方）。
 //   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものを示す。
@@ -510,7 +509,7 @@ function withoutTagType(sentence) {
 }
 
 /**
- * 表のセルごとに、文の字数の合計を返す（--stats）。表の行はつながないので、セルの文は proseSentences と同じになる。かなを含む文のないセルは含めない。
+ * 表のセルごとに、文の字数の合計を返す。表の行はつながないので、セルの文は proseSentences と同じになる。かなを含む文のないセルは含めない。
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書
  * @returns {{ line: number, total: number }[]} 行番号（1 から）とセルの合計
@@ -647,32 +646,6 @@ export function findStyleWarnings(text, limits, { kind = 'markdown', added = nul
     }
   }
   return hits.sort((a, b) => a.line - b.line)
-}
-
-/**
- * 閾値ごとの文の数を出力する（閾値を決めるときに使う。--stats）。
- *
- * @param {{ text: string, kind: 'markdown' | 'lines' }[]} docs 調べる文書の内容と測り方
- * @param {{ text: string, kind: 'code', trailing: Set<number> }[]} codes コメントとテスト名だけを残した文書と、行末のコメントの行
- * @param {{ warning: { word: string }[], style: { compound: string[] } }} list 一覧
- */
-function printStats(docs, codes, list) {
-  for (const [label, items] of [['文書', docs], ['コメントとテスト名', codes]]) {
-    const texts = items.map((item) => item.text)
-    const measured = items.flatMap(({ text, kind, trailing }) => proseSentences(text, kind, trailing).map(({ sentence }) => measureSentence(sentence)))
-    const countAtLeast = (key, value) => measured.filter((item) => item[key] >= value).length
-    const styleCount = (limits, kind) => items.reduce((n, item) => n + findStyleWarnings(item.text, limits, item).filter((hit) => hit.kind === kind).length, 0)
-    const negation = styleCount({}, 'negation')
-    const compound = styleCount({ compound: list.style.compound }, 'compound')
-    const request = texts.reduce((n, text) => n + findTerms(text, list.warning.filter((term) => term.word === '要求')).length, 0)
-    console.log(`${label}：${measured.length} 文`)
-    console.log(`  「の」（1 区間）：${[3, 4, 5, 6].map((v) => `${v}以上 ${countAtLeast('no', v)}`).join('、')}`)
-    console.log(`  字数：${[80, 100, 120].map((v) => `${v}以上 ${countAtLeast('length', v)}`).join('、')}`)
-    console.log(`  読点：${[4, 5, 6].map((v) => `${v}以上 ${countAtLeast('comma', v)}`).join('、')}`)
-    const cells = texts.flatMap((text) => tableCellTotals(text))
-    console.log(`  表のセルの文の字数の合計：${[40, 60, 80].map((v) => `${v}以上 ${cells.filter((cell) => cell.total >= v).length}`).join('、')}（セル ${cells.length}）`)
-    console.log(`  「〜なく〜ない」：${negation}、複合動詞の崩れの疑い：${compound}、「要求」を書いた行：${request}`)
-  }
 }
 
 /** git commit -v がメッセージのファイルに付ける、切り取り線の行。この行から下は差分で、git が捨てる */
@@ -863,10 +836,6 @@ if (isMain(import.meta.url)) {
   const codeComments = codeFiles.map((file, index) => commentText(codeTexts[index], codeKind(file)))
   // コードの文の測り方（行末のコメントは、前後の行とつながない）
   const codeStyles = codeFiles.map((file, index) => ({ kind: 'code', trailing: trailingCommentLines(codeTexts[index], codeKind(file)) }))
-  if (args.includes('--stats')) {
-    printStats(texts.map((text, index) => ({ text, kind: styleKind(files[index]) })), codeComments.map((text, index) => ({ text, ...codeStyles[index] })), list)
-    process.exit(0)
-  }
   const allowTexts = [...texts, ...codeComments]
   const allowProblems = warning ? [] : findAllowProblems(allowTexts, terms)
   for (const problem of allowProblems) {

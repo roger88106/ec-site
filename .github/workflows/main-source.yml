@@ -14,8 +14,7 @@ on:
     types: [opened, synchronize, reopened, edited]
     branches: [main]
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: main-source-${{ github.ref }}
@@ -24,12 +23,16 @@ concurrency:
 jobs:
   main-source:
     name: main への元のブランチ
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       # 判定の script を取り出す（pull request の merge commit。script を使うだけで、他のコードは実行しない）
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: 元のブランチの名前を確認する
         # ブランチの名前は信頼できない入力なので、run の中に直接展開せず、環境変数を経由する

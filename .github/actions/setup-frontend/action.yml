@@ -6,13 +6,13 @@ runs:
   using: composite
   steps:
     # 依存のストアをキャッシュする（キーはルートの pnpm-lock.yaml）
-    - uses: pnpm/action-setup@v6
+    - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       with:
         package_json_file: package.json
         cache: true
         cache_dependency_path: pnpm-lock.yaml
 
-    - uses: actions/setup-node@v7
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         # バージョンはルートの .node-version。package.json の engines.node は範囲（>=24）で、最新のバージョンに解決されるため使わない
         node-version-file: .node-version

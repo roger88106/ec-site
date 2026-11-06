@@ -2,7 +2,6 @@
 // 一覧を読む所（スロットの script `scripts/dev/lib/slot.mjs`）は検査の対象にしない。
 // 一覧を読めない所は次のとおり。
 // - compose（docker/compose.yaml）のホスト側のポート（共有の基盤）
-// - Windows の予約の script（scripts/dev/windows/exclude-ports.ps1）の表（スロットごとにずらした分を含む）
 // - Playwright の設定（e2e/src/urls.ts、e2e/playwright.config.ts）の E2E のポート
 // - setup.md（開発環境の起動）と running-tests.md（テストの実行方法）（`:ポート` の書き方と、スロットの表の行）
 // - ポートを直接書く設定とスクリプト（CONFIG_FILES）。例は次のとおり。
@@ -25,7 +24,7 @@
 // compose の待ち受けるアドレス（LOCAL_BIND_ADDRESS）は compose-ports が確認する。この検査は、ポートの番号だけを照合する。
 // 失敗したとき：一覧と、食い違う所のどちらかを修正する。
 //   ポートを加えるときは、次を同時に修正する。
-//   - 一覧、compose、Windows の script
+//   - 一覧、compose
 //   - 文書、設定とスクリプト、realm の redirect URI
 // 除外：なし
 // 使い方：node scripts/ci/local-ports.mjs（リポジトリのルートで）
@@ -39,9 +38,6 @@ const LIST_FILE = 'scripts/dev/ports.json'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
-
-/** Windows の予約の script */
-const POWERSHELL_FILE = 'scripts/dev/windows/exclude-ports.ps1'
 
 /** ポートを書く文書 */
 const DOC_FILES = ['docs/06-手順書/setup.md', 'docs/06-手順書/running-tests.md']
@@ -113,16 +109,6 @@ export function readComposeHostPorts(text) {
     }
   }
   return { ports, unreadable }
-}
-
-/**
- * Windows の予約の script の表（`$ports = [ordered]@{ 5432 = '…' }`）から、ポートを読む。
- *
- * @param {string} text script
- * @returns {number[]} 表のポート（行の順）
- */
-export function readPowerShellPorts(text) {
-  return [...text.matchAll(/^\s*(\d{2,5})\s*=\s*'/gm)].map((match) => Number(match[1]))
 }
 
 /**
@@ -209,11 +195,11 @@ function diffProblems(actual, expected, where, place) {
  * 一覧と、一覧を読めない所のポートの食い違いを探す。
  *
  * @param {{ list: { slotCount: number, slotOffset: number, ports: { key: string, port: number, group: string, slotted: boolean }[] },
- *   compose: string, powershell: string, docs: Record<string, string>, sources: Record<string, string> }} input
+ *   compose: string, docs: Record<string, string>, sources: Record<string, string> }} input
  *   docs・sources・configs は、ファイルのパス → 内容。realms は、ファイルのパス → { text: 内容, keys: redirect URI に全て書く画面の一覧の key }
  * @returns {string[]} 問題の文
  */
-export function findPortMismatches({ list, compose, powershell, docs, sources, configs = {}, realms = {} }) {
+export function findPortMismatches({ list, compose, docs, sources, configs = {}, realms = {} }) {
   const problems = []
 
   const used = new Map()
@@ -234,8 +220,6 @@ export function findPortMismatches({ list, compose, powershell, docs, sources, c
     problems.push(describeUnreadableHostPort(COMPOSE_FILE, port))
   }
   problems.push(...diffProblems(composePorts.ports, shared, COMPOSE_FILE, 'compose'))
-
-  problems.push(...diffProblems(readPowerShellPorts(powershell), expandedPorts(list), POWERSHELL_FILE, 'Windows の予約の script'))
 
   const all = expandedPorts(list)
   const docsText = Object.values(docs).join('\n')
@@ -317,7 +301,7 @@ export function findPortMismatches({ list, compose, powershell, docs, sources, c
 }
 
 if (isMain(import.meta.url)) {
-  const files = [LIST_FILE, COMPOSE_FILE, POWERSHELL_FILE, ...DOC_FILES, ...SOURCE_FILES, ...CONFIG_FILES, ...Object.keys(REALM_FILES)]
+  const files = [LIST_FILE, COMPOSE_FILE, ...DOC_FILES, ...SOURCE_FILES, ...CONFIG_FILES, ...Object.keys(REALM_FILES)]
   const missing = files.filter((file) => !existsSync(file))
   for (const file of missing) {
     console.log(`${file} がない（置き場所が変わっていないか確認する）`)
@@ -331,7 +315,6 @@ if (isMain(import.meta.url)) {
   const problems = findPortMismatches({
     list,
     compose: read(COMPOSE_FILE),
-    powershell: read(POWERSHELL_FILE),
     docs: Object.fromEntries(DOC_FILES.map((file) => [file, read(file)])),
     sources: Object.fromEntries(SOURCE_FILES.map((file) => [file, read(file)])),
     configs: Object.fromEntries(CONFIG_FILES.map((file) => [file, read(file)])),

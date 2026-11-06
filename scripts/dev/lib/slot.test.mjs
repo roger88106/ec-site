@@ -536,17 +536,6 @@ describe('スロットの値を書き写したファイル', () => {
     for (const slot of [0, ...slots]) assert.ok(identity.actions.includes(`Read:${slotValues(slot).incomingBucket}`), `スロット ${slot}`)
   })
 
-  test('Windows のポートの予約の表は、全スロットのポートを、スロットの名前を付けて含む', () => {
-    const script = repoFile('scripts/dev/windows/exclude-ports.ps1')
-    const listed = [...script.matchAll(/^\s+(\d+) = '([^']*)'/gm)].map((m) => ({ port: Number(m[1]), label: m[2] }))
-    for (const slot of slots) {
-      for (const port of slotPorts(slot)) {
-        const entry = listed.find((e) => e.port === port)
-        assert.ok(entry, `${port} がない`)
-        assert.ok(entry.label.includes(`スロット ${slot}`), `${port} の名前にスロット ${slot} がない`)
-      }
-    }
-  })
 })
 
 describe('バックエンドが止まっているかの判定（fetch の誤りから）', () => {

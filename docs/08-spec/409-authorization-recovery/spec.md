@@ -173,7 +173,7 @@ AC-158 は変えない（支払待ちのキャンセルはできないまま）�
   - 依存：T409-01-01
   - 範囲：`PaymentExpiryJobTest`、`TestPaymentGateway`
   - 確認方法：対象の統合テストが失敗する。
-- [ ] **T409-01-03** 実装する（決定 2〜4、6〜12、14、処理の流れ）。契約テストと Stripe の実装の単体テスト、`PaymentExpiryJobLoggingTest` を書き換える。既存の AC-156、AC-311 のテストは、通知を待たずに与信済みになることに合わせて書き換える（テストを弱めない。AC-311 は与信の取得を失敗させて滞留を作る）。
+- [x] **T409-01-03** 実装する（決定 2〜4、6〜12、14、処理の流れ）。契約テストと Stripe の実装の単体テスト、`PaymentExpiryJobLoggingTest` を書き換える。既存の AC-156、AC-311 のテストは、通知を待たずに与信済みになることに合わせて書き換える（テストを弱めない。AC-311 は与信の取得を失敗させて滞留を作る）。
   - 依存：T409-01-02
   - 範囲：`PaymentGateway`、`StripePaymentGateway`、`MockPaymentGateway`、`TestPaymentGateway`、`PaymentExpiryJob`、`PaymentCommandService`、`PaymentQueryService`、`PaymentRepository`、`JooqPaymentRepository`、`Payment`、`PaymentNotificationService`
   - 確認方法：`./gradlew check` が通る。

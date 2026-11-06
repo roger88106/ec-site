@@ -145,7 +145,12 @@ class JooqPaymentRepository implements PaymentRepository {
 
     @Override
     public List<Payment> findUnpaidAwaitingAuthorization(int limit) {
-        return List.of();
+        return dsl.selectFrom(PAYMENT_)
+                .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
+                .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNotNull())
+                .orderBy(PAYMENT_.AWAITING_AUTHORIZATION_SINCE)
+                .limit(limit)
+                .fetch(JooqPaymentRepository::restore);
     }
 
 // ============================== プライベートメソッド ==============================
@@ -162,7 +167,7 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     /**
-     * 変わりうる項目（状態、支払画面、与信の参照、与信の時刻、通知を待ち始めた時刻）をレコードに書く。
+     * 変わりうる項目（状態、支払画面、与信の参照、与信の時刻、与信の反映を待ち始めた時刻）をレコードに書く。
      */
     private static void writeState(PaymentRecord record, Payment.Snapshot snapshot) {
         record.setStatus(snapshot.status().name());

@@ -215,7 +215,7 @@ class PaymentTest {
     }
 
     @Nested
-    @DisplayName("与信の通知を待つ")
+    @DisplayName("与信の反映を待つ")
     class AwaitAuthorization {
 
         /**
@@ -224,7 +224,7 @@ class PaymentTest {
         private static final Instant AWAITING_SINCE = DEADLINE.plus(Duration.ofMinutes(1));
 
         @Test
-        @DisplayName("AC-311 未払いの支払を通知を待つ状態にすると、待ち始めた時刻を持ち、状態は未払いのまま")
+        @DisplayName("AC-311 未払いの支払を与信の反映を待つ状態にすると、待ち始めた時刻を持ち、状態は未払いのまま")
         void awaitsUnpaid() {
             var payment = unpaid();
 
@@ -260,7 +260,7 @@ class PaymentTest {
         }
 
         @Test
-        @DisplayName("AC-311 通知を待つ支払に与信の通知が届いたら、与信済みにする")
+        @DisplayName("AC-311 与信の反映を待つ支払に与信の通知が届いたら、与信済みにする")
         void authorizesAwaiting() {
             var payment = unpaid();
             payment.awaitAuthorization(AWAITING_SINCE);
@@ -284,7 +284,7 @@ class PaymentTest {
         }
 
         @Test
-        @DisplayName("AC-311 作ったばかりの支払は、通知を待っていない")
+        @DisplayName("AC-311 作ったばかりの支払は、与信の反映を待っていない")
         void notAwaitingWhenCreated() {
             assertThat(unpaid().awaitingAuthorizationSince()).isEmpty();
         }

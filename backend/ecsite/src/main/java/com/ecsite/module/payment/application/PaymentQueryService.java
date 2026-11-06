@@ -129,7 +129,7 @@ public class PaymentQueryService {
     }
 
     /**
-     * 与信の通知を長く待つ未払いの支払の数を返す。待ち始めてから決済の設定
+     * 与信の反映を長く待つ未払いの支払の数を返す。待ち始めてから決済の設定
      * {@code ecsite.payment.awaiting-authorization-warning}（既定 1 時間）を過ぎたものを数える。
      *
      * @return 支払の数
@@ -140,7 +140,7 @@ public class PaymentQueryService {
     }
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の通知を待つ支払は除く。
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の反映を待つ支払は除く。
      *
      * @param limit 取得する数の上限
      * @return 支払
@@ -158,7 +158,10 @@ public class PaymentQueryService {
      * @return 支払
      */
     public List<AwaitingAuthorizationPaymentView> findAwaitingAuthorization(int limit) {
-        return List.of();
+        return paymentRepository.findUnpaidAwaitingAuthorization(limit).stream()
+                .map(payment -> new AwaitingAuthorizationPaymentView(payment.id(),
+                        Objects.requireNonNull(payment.page().orElse(null), "与信の反映を待つ支払には支払画面がある").id()))
+                .toList();
     }
 
     /**

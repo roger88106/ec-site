@@ -65,14 +65,15 @@ public class Payment extends AggregateRoot {
     private String authorizationRef;
 
     /**
-     * 与信の時刻（与信の成功を受けた時刻。与信期限の起点）。与信がなければ null
+     * 与信の時刻（与信期限の起点）。通知で与信済みにした支払は通知を受けた時刻、期限切れのジョブで与信済みにした支払は決済サービスの与信の時刻。
+     * 与信がなければ null
      */
     @Nullable
     @Getter(lombok.AccessLevel.NONE)
     private Instant authorizedAt;
 
     /**
-     * 与信の通知を待ち始めた時刻（期限切れにしようとして、決済サービスで支払済みと知った時刻）。待っていなければ null
+     * 与信の反映を待ち始めた時刻（期限切れにしようとして、決済サービスで支払済みと知った時刻）。待っていなければ null
      */
     @Nullable
     @Getter(lombok.AccessLevel.NONE)
@@ -150,7 +151,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信の成功の通知を反映する。<br />
+     * 与信の成功の通知を反映する。与信の時刻は通知を受けた時刻にする。<br />
      * 未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを登録する。
      * 支払なし（期限切れかキャンセルの後）なら、取り消すために与信の取消待ちにする。
      * それ以外（すでに与信がある）なら何もしない。
@@ -176,7 +177,7 @@ public class Payment extends AggregateRoot {
         switch (status) {
             case UNPAID -> {
                 this.authorizationRef = authorizationRef;
-                this.authorizedAt = now;
+                this.authorizedAt = authorizedAt;
                 status = PaymentStatus.AUTHORIZED;
                 registerEvent(PaymentAuthorized.of(now, orderId));
             }
@@ -206,7 +207,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信の通知を待つ。期限を過ぎたが、決済サービスで支払が済んでいて画面を閉じられなかったとき。<br />
+     * 与信の反映を待つ。期限を過ぎたが、決済サービスで支払が済んでいて画面を閉じられなかったとき。<br />
      * 状態は未払いのまま、待ち始めた時刻を覚える（期限切れのジョブが、次から探さないため）。
      * 未払いでない（通知が先に届いた）か、すでに待っていれば何もしない。
      *
@@ -222,7 +223,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信の通知を待ち始めた時刻を返す。
+     * 与信の反映を待ち始めた時刻を返す。
      *
      * @return 待ち始めた時刻。待っていなければ空
      */
@@ -354,7 +355,7 @@ public class Payment extends AggregateRoot {
      * @param page             支払画面
      * @param authorizationRef 与信の参照
      * @param authorizedAt               与信の時刻
-     * @param awaitingAuthorizationSince 与信の通知を待ち始めた時刻
+     * @param awaitingAuthorizationSince 与信の反映を待ち始めた時刻
      * @param version                    バージョン
      */
     public record Snapshot(UUID id, UUID orderId, Money amount, Instant deadline, PaymentStatus status,

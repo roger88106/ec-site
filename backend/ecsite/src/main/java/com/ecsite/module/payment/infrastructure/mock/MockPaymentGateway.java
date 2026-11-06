@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
+import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
@@ -85,7 +86,11 @@ public class MockPaymentGateway implements PaymentGateway {
 
     @Override
     public Authorization fetchAuthorization(String pageId) {
-        throw new UnsupportedOperationException("未実装");
+        var page = pages.get(pageId);
+        if (page == null || page.status() != PageStatus.PAID || page.paidAt() == null) {
+            throw SystemException.of("mock：支払の済んでいない支払画面の与信は取得できない: pageId=" + pageId, null);
+        }
+        return new Authorization(authorizationRefOf(pageId), page.paidAt());
     }
 
     @Override

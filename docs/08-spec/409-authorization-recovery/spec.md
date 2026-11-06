@@ -177,11 +177,11 @@ AC-158 は変えない（支払待ちのキャンセルはできないまま）�
   - 依存：T409-01-02
   - 範囲：`PaymentGateway`、`StripePaymentGateway`、`MockPaymentGateway`、`TestPaymentGateway`、`PaymentExpiryJob`、`PaymentCommandService`、`PaymentQueryService`、`PaymentRepository`、`JooqPaymentRepository`、`Payment`、`PaymentNotificationService`
   - 確認方法：`./gradlew check` が通る。
-- [ ] **T409-01-04** 本番の Stripe の実装で、sandbox の完了済みの Session から与信を取得し、決定 3 の前提を確認する。一時のテストで実行し、commit しない。鍵は `/.local/stripe.env` のものだけを使い、sandbox だけを呼ぶ。前提が外れたら作業を中断して報告する。
+- [x] **T409-01-04** 本番の Stripe の実装で、sandbox の完了済みの Session から与信を取得し、決定 3 の前提を確認する。一時のテストで実行し、commit しない。鍵は `/.local/stripe.env` のものだけを使い、sandbox だけを呼ぶ。前提が外れたら作業を中断して報告する。
   - 依存：T409-01-03
   - 範囲：コードは変えない
   - 確認方法：与信の参照と作成の時刻が取得できる。結果は pull request の本文に書く。
-- [ ] **T409-01-05** 機能仕様、設計、用語集、環境変数の文書、AC 一覧を更新する（BR-409-1、決定 2、3、5、処理の流れ）。
+- [x] **T409-01-05** 機能仕様、設計、用語集、環境変数の文書、AC 一覧を更新する（BR-409-1、決定 2、3、5、処理の流れ）。
   - 依存：T409-01-04
   - 範囲：`docs/03-機能仕様/payment.md`（支払の期限、決済サービスからの通知、状態の遷移）、`docs/02-設計/payment.md`（port、mock、Stripe、支払の期限切れ。与信を補完しないとする注を削除する）、`docs/02-設計/apps/store.md`（与信の結果の注）、`docs/03-機能仕様/glossary.md`、`docs/06-手順書/environment.md`、`docs/03-機能仕様/acceptance-criteria.md`
   - 確認方法：`node scripts/ci/ac-check.mjs` と `CI=true bash scripts/ci/check-all.sh` が通る。

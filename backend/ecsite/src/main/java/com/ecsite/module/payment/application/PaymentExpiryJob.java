@@ -33,7 +33,8 @@ class PaymentExpiryJob {
 
     /**
      * 決済サービスへの接続の失敗が続いたら、その回の与信の取得を打ち切る件数。
-     * 応答がないと 1 件で最大約 75 秒かかるので、この件数（約 225 秒）で止めて、ジョブのロックの上限（10 分）を超えないようにする
+     * 応答がないと 1 件で最大約 75 秒かかるので、応答のない状態が続くときは、この件数（約 225 秒）で与信の取得を止める。
+     * 接続の失敗が断続的に起きるときの取得の時間と、支払画面を閉じる処理の時間は制限しない（業務の正しさは行ロックと冪等な遷移で保つ）
      */
     private static final int MAX_CONSECUTIVE_UNAVAILABLE = 3;
 
@@ -115,7 +116,7 @@ class PaymentExpiryJob {
         var pageId = Objects.requireNonNull(payment.pageId(), "与信の反映を待つ支払には支払画面がある");
         var authorization = gateway.fetchAuthorization(pageId);
         if (commandService.authorizeFromGateway(payment.id(), authorization)) {
-            log.warn("与信の通知が届いていないので、決済サービスから与信を取得して反映した: paymentId={}", payment.id());
+            log.warn("通知より先に、決済サービスから与信を取得して反映した: paymentId={}", payment.id());
         }
     }
 

@@ -282,7 +282,7 @@ class StripePaymentGatewayTest {
         private static final long INTENT_CREATED = 1_793_926_800L;
 
         @Test
-        @DisplayName("AC-409-2 PaymentIntent を展開した Session から、与信の参照（PaymentIntent の ID）と与信の時刻（作成時刻）を読む")
+        @DisplayName("AC-409-2 PaymentIntent を含めて取得した Session から、与信の参照（PaymentIntent の ID）と与信の時刻（作成時刻）を読む")
         void fetches() {
             respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
                     StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "requires_capture", INTENT_CREATED));
@@ -293,7 +293,7 @@ class StripePaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("Session の取得に、PaymentIntent の展開（expand）を付ける")
+        @DisplayName("Session の取得に、PaymentIntent を含める指定（expand）を付ける")
         void expandsPaymentIntent() {
             respond("GET /v1/checkout/sessions/" + SESSION_ID, 200,
                     StripeApiStub.completedSession(SESSION_ID, SESSION_URL, INTENT_ID, "requires_capture", INTENT_CREATED));

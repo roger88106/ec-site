@@ -191,7 +191,7 @@ class PaymentExpiryJobLoggingTest {
         job.expire();
 
         assertThat(warnLinesOf(output, AWAITING_FIRST.id())).singleElement()
-                .satisfies(line -> assertThat(line).contains("与信の通知が届いていないので"));
+                .satisfies(line -> assertThat(line).contains("通知より先に、決済サービスから与信を取得して反映した"));
     }
 
     @Test

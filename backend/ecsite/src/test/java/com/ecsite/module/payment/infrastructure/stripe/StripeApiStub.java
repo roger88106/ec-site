@@ -136,7 +136,7 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
-     * 支払が済んだ Checkout Session の応答（{@code expand[]=payment_intent} で PaymentIntent を展開した形）。
+     * 支払が済んだ Checkout Session の応答（{@code expand[]=payment_intent} で PaymentIntent を含めた形）。
      *
      * @param id        Session の ID
      * @param url       支払画面の URL

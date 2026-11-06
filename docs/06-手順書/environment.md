@@ -41,7 +41,7 @@
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API のシークレットキー、通知の署名鍵。Git にコミットしない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md)の「Stripe で動かす」） | 決済の mock フラグを有効にしなければ必須 |
 | `ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT`、`_READ_TIMEOUT` | Stripe の API への接続、応答のタイムアウト（応答は 1 回の要求ごと。SDK の自動の再試行は別に数える） | 5s、20s |
 | `ECSITE_SHIPPING_MOCK_ENABLED` | 物流の mock フラグ。`true` でなければ、接続していない物流サービスを使う（配送状態は進まない）。本番では有効にしない | false |
-| `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名鍵。Git にコミットしない。ローカルと統合テストでは、テスト用の値を設定ファイルに書く。物流サービスを接続していない環境でも、推測できない値を渡す | 必須 |
+| `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名鍵。Git にコミットしない。ローカルと統合テストでは、テスト用の値を設定ファイルに書く。物流サービスを接続していない環境でも、通知のエンドポイントが残るので、推測できない値を設定し、外部に渡さない | 必須 |
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |
 | `SPRING_MAIL_HOST`、`_PORT`、`_USERNAME`、`_PASSWORD` | メールを送る SMTP サーバーの接続先と認証（Spring Boot の設定）。ローカルは compose の Mailpit（`localhost:2525`。ポートは `MAILPIT_SMTP_PORT` で変える） | host は必須、port は 25 |
 | `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で実行するか | true |

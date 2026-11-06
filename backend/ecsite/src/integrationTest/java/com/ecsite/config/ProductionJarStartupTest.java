@@ -41,7 +41,7 @@ import static org.awaitility.Awaitility.await;
 class ProductionJarStartupTest {
 
     /**
-     * 起動を待つ時間の上限。Spring の起動を別のプロセスで待つので、非同期のリスナーより長く待つ
+     * 起動を待つ時間の上限。Spring の起動を別のプロセスで待つので、非同期のリスナーのタイムアウトより長く待つ
      */
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
 
@@ -51,7 +51,7 @@ class ProductionJarStartupTest {
     private static final String SHIPPING_MOCK_FLAG = "ecsite.shipping.mock.enabled";
 
     /**
-     * 移動（リダイレクト）を追わない HTTP の送り手
+     * リダイレクトを追わない HTTP クライアント
      */
     private static final HttpClient HTTP = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
 
@@ -123,7 +123,7 @@ class ProductionJarStartupTest {
     }
 
     @Test
-    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の画面の GET と通知の POST は 404 になる")
+    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の画面の GET と通知の操作の POST は 404 になる")
     void mockCarrierPageIsNotFound() throws Exception {
         assertThat(send(HttpRequest.newBuilder(businessUri("/mock-carrier")).GET()).statusCode())
                 .as("画面の GET").isEqualTo(404);

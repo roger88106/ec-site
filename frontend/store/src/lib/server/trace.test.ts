@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { newTraceparent, traceIdOf } from '@/lib/server/trace'
 import { TRACEPARENT } from '@/test/fixtures'
 
-/** 要求のヘッダーの traceparent（proxy が付けたもの） */
+/** リクエストのヘッダーの traceparent（proxy が付けたもの） */
 
 describe('追跡の ID', () => {
   test('traceparent は W3C の形（バージョン、32 桁の追跡の ID、16 桁の区間の ID、印）', () => {

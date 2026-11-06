@@ -47,7 +47,7 @@ public class OrderTestData {
     private final Map<UUID, String> paidPageIds = new HashMap<>();
 
     /**
-     * 補助が会員として行う要求に付ける後処理（既定の会員なら何も付けない）
+     * 補助が会員として行うリクエストに付ける後処理（既定の会員なら何も付けない）
      */
     private final RequestPostProcessor member;
 
@@ -262,7 +262,7 @@ public class OrderTestData {
      * お届け先の項目を確認するテストは、確認する項目を変えた本文をテストの中で書く。
      *
      * @param expectedTotal 確認した総額
-     * @return 注文の要求の本文
+     * @return 注文のリクエストの本文
      */
     public static String orderBody(long expectedTotal) {
         return orderBody(expectedTotal, "山田 太郎");
@@ -273,7 +273,7 @@ public class OrderTestData {
      *
      * @param expectedTotal 確認した総額
      * @param name          お届け先の氏名
-     * @return 注文の要求の本文
+     * @return 注文のリクエストの本文
      */
     public static String orderBody(long expectedTotal, String name) {
         return """
@@ -283,32 +283,32 @@ public class OrderTestData {
     }
 
     /**
-     * カートから注文手続きを始める要求。token などは呼ぶ側で追加する。
+     * カートから注文手続きを始めるリクエスト。token などは呼ぶ側で追加する。
      *
      * @param cartId カート ID
-     * @return 要求
+     * @return リクエスト
      */
     public static MockHttpServletRequestBuilder startCheckoutRequest(UUID cartId) {
         return post("/api/store/carts/" + cartId + "/checkouts");
     }
 
     /**
-     * 決まったお届け先で注文する要求。token などは呼ぶ側で追加する。
+     * 決まったお届け先で注文するリクエスト。token などは呼ぶ側で追加する。
      *
      * @param checkoutId    注文手続き ID
      * @param expectedTotal 確認した総額
-     * @return 要求
+     * @return リクエスト
      */
     public static MockHttpServletRequestBuilder placeOrderRequest(UUID checkoutId, long expectedTotal) {
         return placeOrderRequest(checkoutId, orderBody(expectedTotal));
     }
 
     /**
-     * 本文を指定して注文する要求。
+     * 本文を指定して注文するリクエスト。
      *
      * @param checkoutId 注文手続き ID
-     * @param body       注文の要求の本文
-     * @return 要求
+     * @param body       注文のリクエストの本文
+     * @return リクエスト
      */
     public static MockHttpServletRequestBuilder placeOrderRequest(UUID checkoutId, String body) {
         return post("/api/store/checkouts/" + checkoutId + "/order").contentType(MediaType.APPLICATION_JSON).content(body);

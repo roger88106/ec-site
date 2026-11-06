@@ -19,15 +19,15 @@ async function write(level: Level, message: string, fields: Record<string, unkno
 }
 
 /**
- * いまの要求の追跡の ID（proxy が要求のヘッダーに付けた traceparent から）。
+ * いまのリクエストの追跡の ID（proxy がリクエストのヘッダーに付けた traceparent から）。
  *
- * @returns 追跡の ID。要求の外（起動のときなど）や、ヘッダーがなければ null
+ * @returns 追跡の ID。リクエストの外（起動のときなど）や、ヘッダーがなければ null
  */
 async function currentTraceId(): Promise<string | null> {
   try {
     return traceIdOf((await headers()).get(TRACEPARENT_HEADER))
   } catch {
-    // 要求の外では headers() が使えない
+    // リクエストの外では headers() が使えない
     return null
   }
 }

@@ -236,9 +236,9 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * Stripe の失敗をシステムのエラーにする。Stripe の要求の ID を残し、ダッシュボードの記録と照合できるようにする。<br />
+     * Stripe の失敗をシステムのエラーにする。Stripe のリクエストの ID を残し、ダッシュボードの記録と照合できるようにする。<br />
      * 接続できない・Stripe の側の故障・回数の制限は、外部サービスのエラー（やり直せば成功しうる）にする。
-     * 認証・権限・要求の誤りは、設定かコードの誤りなので、予期しないエラーのままにする。
+     * 認証・権限・リクエストの誤りは、設定かコードの誤りなので、予期しないエラーのままにする。
      */
     private static SystemException failure(String message, StripeException e) {
         var debugMessage = "Stripe：" + message + ", requestId=" + e.getRequestId();

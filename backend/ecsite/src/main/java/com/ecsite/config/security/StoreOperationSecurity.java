@@ -11,7 +11,7 @@ import java.util.Optional;
  * {@code store.yaml} の各操作（メソッドとパス）の {@code security} を読み込む。{@code memberToken} だけの操作は token が要り、
  * 空の要件（{@code {}}）を含む操作と空の一覧（{@code security: []}）の操作は token なしで使える。
  * {@code security} のない操作があれば起動を止める（書き忘れを公開として扱わない）。
- * 認可の設定にパスを並べないので、操作を追加しても契約と食い違わない。対応にない要求には要否を返さない（呼び出し側が拒否する）。
+ * 認可の設定にパスを並べないので、操作を追加しても契約と食い違わない。対応にないリクエストには要否を返さない（呼び出し側が拒否する）。
  */
 class StoreOperationSecurity {
 
@@ -47,11 +47,11 @@ class StoreOperationSecurity {
     }
 
     /**
-     * 要求に会員の token が必要かを求める。
+     * リクエストに会員の token が必要かを求める。
      *
      * @param method HTTP メソッド
      * @param path   アプリの中のパス（{@code /api/store/...}）
-     * @return token が要れば true。{@code store.yaml} にない要求なら空
+     * @return token が要れば true。{@code store.yaml} にないリクエストなら空
      */
     Optional<Boolean> requiresToken(String method, String path) {
         return operations.find(method, path);

@@ -13,7 +13,7 @@ export function register() {
   try {
     loadServerConfig()
   } catch (error) {
-    // 例外を投げるだけでは、Next.js はエラーを出したまま要求を受け続ける。プロセスを止めて、起動の失敗にする
+    // 例外を投げるだけでは、Next.js はエラーを出したままリクエストを受け続ける。プロセスを止めて、起動の失敗にする
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
     process.exit(1)
   }

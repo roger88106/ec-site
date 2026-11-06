@@ -282,14 +282,14 @@ class PlaceOrderApiTest {
         }
 
         /**
-         * 郵便番号と都道府県・市区町村のコードを指定した、注文の要求の本文
+         * 郵便番号と都道府県・市区町村のコードを指定した、注文のリクエストの本文
          */
         private static String body(String postalCode, String prefectureCode, String municipalityCode) {
             return body(postalCode, prefectureCode, municipalityCode, "03-1234-5678");
         }
 
         /**
-         * 郵便番号と都道府県・市区町村のコードと電話番号を指定した、注文の要求の本文
+         * 郵便番号と都道府県・市区町村のコードと電話番号を指定した、注文のリクエストの本文
          */
         private static String body(String postalCode, String prefectureCode, String municipalityCode, String phone) {
             return """

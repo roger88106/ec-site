@@ -89,7 +89,7 @@ class StripePaymentGatewayContractTest extends PaymentGatewayContractTest {
     }
 
     /**
-     * 今の状態ではできない要求（確定済み・取消済みの PaymentIntent の売上確定と取消）を、Stripe と同じ形で断る。
+     * 今の状態ではできないリクエスト（確定済み・取消済みの PaymentIntent の売上確定と取消）を、Stripe と同じ形で断る。
      */
     private void rejectAsUnexpectedState(String authorizationRef) {
         var rejected = error("invalid_request_error", "payment_intent_unexpected_state");
@@ -98,7 +98,7 @@ class StripePaymentGatewayContractTest extends PaymentGatewayContractTest {
     }
 
     /**
-     * 開いていない Session を閉じる要求を、Stripe と同じ形で断る。
+     * 開いていない Session を閉じるリクエストを、Stripe と同じ形で断る。
      */
     private void rejectExpire() {
         stripe.respond("POST /v1/checkout/sessions/" + SESSION_ID + "/expire", 400,

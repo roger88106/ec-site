@@ -8,7 +8,7 @@ import java.util.Optional;
  * 管理 API の操作ごとに必要な権限。<br />
  * {@code admin.yaml} の各操作（メソッドとパス）と {@code x-required-permission} の対応を読み込む。
  * Controller には権限を書かないので、契約と食い違わず、書き漏れで公開されることもない。
- * 対応にない要求には権限を返さない（呼び出し側が拒否する）。
+ * 対応にないリクエストには権限を返さない（呼び出し側が拒否する）。
  */
 class AdminOperationPermissions {
 
@@ -47,11 +47,11 @@ class AdminOperationPermissions {
     }
 
     /**
-     * 要求に必要な権限を求める。
+     * リクエストに必要な権限を求める。
      *
      * @param method HTTP メソッド
      * @param path   アプリの中のパス（{@code /api/admin/...}）
-     * @return 必要な権限。{@code admin.yaml} にない要求なら空
+     * @return 必要な権限。{@code admin.yaml} にないリクエストなら空
      */
     Optional<String> requiredPermission(String method, String path) {
         return operations.find(method, path);

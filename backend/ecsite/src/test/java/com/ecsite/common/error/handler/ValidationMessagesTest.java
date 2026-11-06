@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 入力の検証のメッセージの単体テスト（バックエンドの書き方の「入力の検証のメッセージ」）。<br />
- * 制約の種類から ecsite.validation.* の文を選び、制約の値を差し込む。JVM と要求のロケールによらず、同じ日本語になる。
+ * 制約の種類から ecsite.validation.* の文を選び、制約の値を差し込む。JVM とリクエストのロケールによらず、同じ日本語になる。
  */
 class ValidationMessagesTest {
 
@@ -86,12 +86,12 @@ class ValidationMessagesTest {
     private MessageHelper helper;
 
     /**
-     * JVM と要求のロケールを英語にし、メッセージのファイルを読む部品を作る
+     * JVM とリクエストのロケールを英語にし、メッセージのファイルを読む部品を作る
      */
     @BeforeEach
     void setUp() {
         originalLocale = Locale.getDefault();
-        // 実行環境のロケールと要求のロケールが日本語でなくても、日本語になることを確認する
+        // 実行環境のロケールとリクエストのロケールが日本語でなくても、日本語になることを確認する
         Locale.setDefault(Locale.US);
         LocaleContextHolder.setLocale(Locale.US);
         var messageSource = new ResourceBundleMessageSource();

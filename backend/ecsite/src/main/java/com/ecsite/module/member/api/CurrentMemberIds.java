@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 要求した会員の会員 ID を求める（docs/03-機能仕様/member.md）。<br />
+ * リクエストした会員の会員 ID を求める（docs/03-機能仕様/member.md）。<br />
  * API の入口が使う。IdP のアカウント（token の subject）から会員 ID を求める処理は、会員モジュールの中に閉じる。
  */
 @Component
@@ -20,7 +20,7 @@ import java.util.UUID;
 public class CurrentMemberIds {
 
     /**
-     * 要求の token の会員
+     * リクエストの token の会員
      */
     private final CurrentMember currentMember;
 
@@ -55,7 +55,7 @@ public class CurrentMemberIds {
 
     /**
      * IdP のアカウントの ID から会員 ID を求める。<br />
-     * ログインしたすべての要求で動くので、まず読み取り専用で探し、いなければ（初めての要求）作る。
+     * ログインしたすべてのリクエストで動くので、まず読み取り専用で探し、いなければ（初めてのリクエスト）作る。
      */
     private UUID memberIdOf(@Nullable String subject) {
         var idpSubject = Objects.requireNonNull(subject, "token に subject がある");

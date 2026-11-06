@@ -51,7 +51,7 @@ public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartV
     /**
      * 注文手続きを始めた会員かを返す。
      *
-     * @param requester 要求した会員の ID
+     * @param requester リクエストした会員の ID
      * @return 始めた会員なら true
      */
     public boolean isOwnedBy(UUID requester) {

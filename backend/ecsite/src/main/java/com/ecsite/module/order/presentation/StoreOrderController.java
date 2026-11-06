@@ -46,7 +46,7 @@ class StoreOrderController implements OrderApi {
     private final StoreOrderMapper mapper;
 
     /**
-     * 要求した会員の会員 ID
+     * リクエストした会員の会員 ID
      */
     private final CurrentMemberIds currentMemberIds;
 

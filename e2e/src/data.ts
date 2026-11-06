@@ -5,7 +5,7 @@ import type { components, paths } from './generated/admin'
 import { BACKEND_URL } from './urls'
 import { ASYNC_TIMEOUT } from './waits'
 
-/** バリアントの登録の要求の本文 */
+/** バリアントの登録のリクエストの本文 */
 type AddVariantRequest = components['schemas']['AddVariantRequest']
 
 /**

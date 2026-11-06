@@ -719,7 +719,7 @@ class ProductApiTest {
     // 商品とバリアントの登録は、このテストが確認する API なので、品番・本文・応答をここで扱う。税区分とカテゴリは CatalogTestData で作る
 
     /**
-     * 要求を送って 201 を確認し、応答の本文の ID を返す
+     * リクエストを送って 201 を確認し、応答の本文の ID を返す
      */
     private String createdId(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

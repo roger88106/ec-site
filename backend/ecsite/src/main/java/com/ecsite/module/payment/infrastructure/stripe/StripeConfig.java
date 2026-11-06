@@ -41,7 +41,7 @@ class StripeConfig {
      * @return Stripe の API のビルダー
      */
     static StripeClient.StripeClientBuilder clientBuilder(StripeProperties properties) {
-        // SDK の既定（応答 80 秒）だと、支払画面を開く要求が、やり直しを含めて数分待たせうる
+        // SDK の既定（応答 80 秒）だと、支払画面を開くリクエストが、やり直しを含めて数分待たせうる
         return StripeClient.builder()
                 .setApiKey(properties.secretKey())
                 .setMaxNetworkRetries(MAX_NETWORK_RETRIES)

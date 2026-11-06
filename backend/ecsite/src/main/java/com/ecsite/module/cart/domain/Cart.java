@@ -121,9 +121,9 @@ public class Cart {
     }
 
     /**
-     * 要求した人がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
+     * リクエストした人がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
      *
-     * @param requesterMemberId 要求した会員の ID（ログインしていなければ null）
+     * @param requesterMemberId リクエストした会員の ID（ログインしていなければ null）
      * @return 使えれば true
      */
     public boolean isAccessibleBy(@Nullable UUID requesterMemberId) {

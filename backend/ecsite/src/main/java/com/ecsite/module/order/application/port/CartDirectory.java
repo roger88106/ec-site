@@ -39,9 +39,9 @@ public interface CartDirectory {
     record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, List<Line> lines) {
 
         /**
-         * 要求した会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
+         * リクエストした会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
          *
-         * @param requester 要求した会員の ID（ログインしていなければ null）
+         * @param requester リクエストした会員の ID（ログインしていなければ null）
          * @return 使えれば true
          */
         public boolean isAccessibleBy(@Nullable UUID requester) {

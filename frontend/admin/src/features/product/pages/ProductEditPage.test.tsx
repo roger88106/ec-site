@@ -14,22 +14,22 @@ import { conflict, http, problem, server, stockHandler } from '@/test/server'
 /** 商品の編集の画面のパス */
 const PAGE_PATH = `/products/${PRODUCT_ID}`
 
-/** 商品の基本情報の更新の要求の本文（送った内容を確認する） */
+/** 商品の基本情報の更新のリクエストの本文（送った内容を確認する） */
 type UpdateProductRequest = components['schemas']['UpdateProductRequest']
 
-/** バリアントの追加の要求の本文（送った内容を確認する） */
+/** バリアントの追加のリクエストの本文（送った内容を確認する） */
 type AddVariantRequest = components['schemas']['AddVariantRequest']
 
-/** バリアントの並び替えの要求の本文（送った内容を確認する） */
+/** バリアントの並び替えのリクエストの本文（送った内容を確認する） */
 type ReorderVariantsRequest = components['schemas']['ReorderVariantsRequest']
 
-/** 公開期間の設定の要求の本文（送った内容を確認する） */
+/** 公開期間の設定のリクエストの本文（送った内容を確認する） */
 type SetPublicationPeriodRequest = components['schemas']['SetPublicationPeriodRequest']
 
-/** バリアントの画像の指定の要求の本文（送った内容を確認する） */
+/** バリアントの画像の指定のリクエストの本文（送った内容を確認する） */
 type SetVariantImageRequest = components['schemas']['SetVariantImageRequest']
 
-/** 商品の画像の並び替えの要求の本文（送った内容を確認する） */
+/** 商品の画像の並び替えのリクエストの本文（送った内容を確認する） */
 type ReorderProductImagesRequest = components['schemas']['ReorderProductImagesRequest']
 
 /** 契約の画像の大きさの上限（バイト） */
@@ -41,7 +41,7 @@ const MAX_IMAGES = schemas.ProductDetail.images.maxItems
 /**
  * 商品の編集の画面が使う API に応答する。<br />
  * 基本情報の保存は、送ったバージョンが今のものと違えば 409 にし、同じなら保存してバージョンを上げる。
- * 状態の変更・削除の要求は calls に「メソッド パス」で取っておく。
+ * 状態の変更・削除のリクエストは calls に「メソッド パス」で取っておく。
  */
 function serveProduct(initial: ProductDetail) {
   const state = { current: initial, versions: [] as number[], calls: [] as string[] }

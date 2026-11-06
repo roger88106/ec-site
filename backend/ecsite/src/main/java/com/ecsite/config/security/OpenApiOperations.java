@@ -134,11 +134,11 @@ final class OpenApiOperations<T> {
     }
 
     /**
-     * 要求に合う操作の値を求める。
+     * リクエストに合う操作の値を求める。
      *
      * @param method HTTP メソッド
      * @param path   アプリの中のパス（{@code /api/admin/...}）
-     * @return 操作の値。契約にない要求なら空
+     * @return 操作の値。契約にないリクエストなら空
      */
     Optional<T> find(String method, String path) {
         var container = PathContainer.parsePath(path);

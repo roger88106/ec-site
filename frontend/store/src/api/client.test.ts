@@ -9,7 +9,7 @@ import { http, problem, STORE_API, server } from '@/test/server'
 import { recordStderr } from '@/test/stderr'
 
 describe('店舗 API の口', () => {
-  test('会員の口の要求には、いまの要求の traceparent を付ける（バックエンドのログと同じ追跡の ID にする）', async () => {
+  test('会員の口のリクエストには、いまのリクエストの traceparent を付ける（バックエンドのログと同じ追跡の ID にする）', async () => {
     resetRequest({ headers: { [TRACEPARENT_HEADER]: TRACEPARENT } })
     let received: string | null = null
     server.use(
@@ -24,7 +24,7 @@ describe('店舗 API の口', () => {
     expect(received).toBe(TRACEPARENT)
   })
 
-  test('公開の口の要求にも、いまの要求の traceparent を付ける（キャッシュする GET も同じ）', async () => {
+  test('公開の口のリクエストにも、いまのリクエストの traceparent を付ける（キャッシュする GET も同じ）', async () => {
     resetRequest({ headers: { [TRACEPARENT_HEADER]: TRACEPARENT } })
     let received: string | null = null
     server.use(
@@ -39,7 +39,7 @@ describe('店舗 API の口', () => {
     expect(received).toBe(TRACEPARENT)
   })
 
-  test('会員の口は、呼ぶ側が Authorization を付けた要求には、セッションの token を重ねて付けずそのまま使う', async () => {
+  test('会員の口は、呼ぶ側が Authorization を付けたリクエストには、セッションの token を重ねて付けずそのまま使う', async () => {
     signInAs()
     let received: string | null = null
     server.use(
@@ -64,7 +64,7 @@ describe('店舗 API の口', () => {
     fetchSpy.mockRestore()
   })
 
-  test('要求に traceparent がなければ、付けない', async () => {
+  test('リクエストに traceparent がなければ、付けない', async () => {
     let received: string | null = 'unset'
     server.use(
       http.get('/categories', ({ request, response }) => {
@@ -141,7 +141,7 @@ describe('店舗 API の 5xx のログ', () => {
     expect(stderr.text()).toBe('')
   })
 
-  test('AC-309 ログに token、Cookie、要求の本文、クエリを出さない', async () => {
+  test('AC-309 ログに token、Cookie、リクエストの本文、クエリを出さない', async () => {
     signInAs()
     const stderr = recordStderr()
     // 500 は store.yaml にない応答なので、型のない msw のハンドラーで作る

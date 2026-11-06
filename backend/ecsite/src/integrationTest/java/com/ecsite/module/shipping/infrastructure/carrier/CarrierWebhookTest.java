@@ -233,7 +233,7 @@ class CarrierWebhookTest {
 // ============================== 補助 ==============================
 
     /**
-     * 署名付きの要求（本文と、ヘッダーに入れる署名）
+     * 署名付きのリクエスト（本文と、ヘッダーに入れる署名）
      */
     private record Request(String body, String signature) {
     }

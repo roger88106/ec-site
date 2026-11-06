@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 /**
  * 店舗 API の認可。{@code store.yaml} で会員の token が必要な操作は、ログインしていれば許す。<br />
- * token の要らない操作は許し、{@code store.yaml} にない要求は拒否する（認証がなければ 401、あれば 403）。
+ * token の要らない操作は許し、{@code store.yaml} にないリクエストは拒否する（認証がなければ 401、あれば 403）。
  */
 class StoreTokenAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
@@ -44,7 +44,7 @@ class StoreTokenAuthorizationManager implements AuthorizationManager<RequestAuth
     }
 
     /**
-     * 要求のメソッドとパスで token の要否を求め、必要ならログインしているかで決める。{@code store.yaml} にない要求は拒否する。
+     * リクエストのメソッドとパスで token の要否を求め、必要ならログインしているかで決める。{@code store.yaml} にないリクエストは拒否する。
      */
     @Override
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {

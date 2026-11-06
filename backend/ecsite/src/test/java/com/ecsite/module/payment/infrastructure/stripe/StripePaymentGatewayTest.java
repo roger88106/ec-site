@@ -383,7 +383,7 @@ class StripePaymentGatewayTest {
     }
 
     /**
-     * 失敗の分類を確認する操作（名前、Stripe の要求、呼び出し）。売上確定は結果で返すので除く
+     * 失敗の分類を確認する操作（名前、Stripe のリクエスト、呼び出し）。売上確定は結果で返すので除く
      */
     static Stream<Arguments> operations() {
         return Stream.of(

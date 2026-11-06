@@ -406,7 +406,7 @@ class StorefrontApiTest {
     }
 
     /**
-     * カテゴリで絞った商品一覧の要求
+     * カテゴリで絞った商品一覧のリクエスト
      */
     private static MockHttpServletRequestBuilder listIn(UUID category) {
         return get(BASE + "/products").param("categoryId", category.toString());

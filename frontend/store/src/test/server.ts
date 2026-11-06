@@ -28,7 +28,7 @@ export const http = createOpenApiHttp<paths>({ baseUrl: STORE_API })
 export const server = setupServer()
 
 /**
- * 要求を通信の失敗（接続できない）にするハンドラーを作る。
+ * リクエストを通信の失敗（接続できない）にするハンドラーを作る。
  *
  * @param method HTTP のメソッド
  * @param url    完全な URL。`:name` でパスのパラメーターを書ける（例：`${STORE_API}/carts/:cartId/items`）

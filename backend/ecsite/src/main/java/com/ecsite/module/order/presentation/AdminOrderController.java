@@ -50,7 +50,7 @@ class AdminOrderController implements OrderApi {
     private final AdminOrderMapper mapper;
 
     /**
-     * 要求の token の運営者
+     * リクエストの token の運営者
      */
     private final CurrentOperator currentOperator;
 

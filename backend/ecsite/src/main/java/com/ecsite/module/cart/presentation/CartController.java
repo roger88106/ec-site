@@ -31,7 +31,7 @@ class CartController implements CartApi {
     private final CartService cartService;
 
     /**
-     * 要求した会員の会員 ID
+     * リクエストした会員の会員 ID
      */
     private final CurrentMemberIds currentMemberIds;
 

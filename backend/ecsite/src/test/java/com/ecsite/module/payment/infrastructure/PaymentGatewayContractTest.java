@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 決済サービスの port（{@link PaymentGateway}）の、実装によらない振る舞い（テストの書き方の「テストの種類と基準」「mock と実装の挙動の一致」）。<br />
  * mock と Stripe の実装の子のクラスが、決済サービスの状態を用意する。支払の処理は、ここの振る舞いを前提に、
- * 重ねて届いた要求や、済んだ後の要求を成功として扱う。
+ * 重ねて届いたリクエストや、済んだ後のリクエストを成功として扱う。
  */
 public abstract class PaymentGatewayContractTest {
 

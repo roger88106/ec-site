@@ -88,7 +88,7 @@ public class CartService {
      * バリアントを入れる。同じバリアントは数量を合算する。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  数量
      */
@@ -107,7 +107,7 @@ public class CartService {
      * 品目の数量を変える。増やすときだけ販売可能数を確認する。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  新しい数量
      */
@@ -127,7 +127,7 @@ public class CartService {
      * 品目を削除する。カートになければ何もしない。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      */
     @Transactional
@@ -167,8 +167,8 @@ public class CartService {
 
     /**
      * 会員のカートの ID を返す。まだなければ空のカートを作る（会員ごとに 1 つ）。<br />
-     * 同じ会員の初回の要求が同時に来ても、会員ごとの一意制約で 1 つだけ作られる。作れた要求は作ったカートの ID を返し、
-     * 作れなかった要求だけが先に作られたカートを読み直す。
+     * 同じ会員の初回のリクエストが同時に来ても、会員ごとの一意制約で 1 つだけ作られる。作れたリクエストは作ったカートの ID を返し、
+     * 作れなかったリクエストだけが先に作られたカートを読み直す。
      *
      * @param memberId 会員 ID
      * @return カート ID
@@ -227,7 +227,7 @@ public class CartService {
      * カートを読み込んで変更し、変わっていれば保存してカート変更のイベントを発行する。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）。会員のカートは持ち主だけが変えられる
+     * @param requester リクエストした会員の ID（ログインしていなければ null）。会員のカートは持ち主だけが変えられる
      * @param change    変更（カートと現在時刻を受け取る）
      */
     private void change(UUID cartId, @Nullable UUID requester, CartChange change) {

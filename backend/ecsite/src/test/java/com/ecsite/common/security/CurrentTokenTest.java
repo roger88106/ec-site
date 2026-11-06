@@ -17,7 +17,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 要求の token を取り出す処理の単体テスト
+ * リクエストの token を取り出す処理の単体テスト
  */
 class CurrentTokenTest {
 

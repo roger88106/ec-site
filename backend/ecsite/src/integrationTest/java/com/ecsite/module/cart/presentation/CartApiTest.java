@@ -254,7 +254,7 @@ class CartApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * カートに入れる要求を送る
+     * カートに入れるリクエストを送る
      */
     private ResultActions add(UUID cart, UUID variantId, int quantity) throws Exception {
         return mockMvc.perform(post(BASE + "/" + cart + "/items")
@@ -264,7 +264,7 @@ class CartApiTest {
     }
 
     /**
-     * 品目の数量を変える要求を送る
+     * 品目の数量を変えるリクエストを送る
      */
     private ResultActions change(UUID cart, UUID variantId, int quantity) throws Exception {
         return mockMvc.perform(put(BASE + "/" + cart + "/items/" + variantId)

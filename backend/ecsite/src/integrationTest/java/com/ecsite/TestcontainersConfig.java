@@ -108,7 +108,7 @@ public class TestcontainersConfig {
                 .withNetwork(network)
                 .withNetworkAliases(SEAWEEDFS_ALIAS)
                 .withExposedPorts(S3_PORT)
-                // 認証のない要求は 403 になるが、応答があれば S3 の口の準備ができている
+                // 認証のないリクエストは 403 になるが、応答があれば S3 の口の準備ができている
                 .waitingFor(Wait.forHttp("/").forPort(S3_PORT).forStatusCode(403));
         container.start();
         createBuckets(endpoint(container));

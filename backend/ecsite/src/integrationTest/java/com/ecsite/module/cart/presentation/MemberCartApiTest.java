@@ -331,7 +331,7 @@ class MemberCartApiTest {
     }
 
     /**
-     * カートに入れる要求を送る
+     * カートに入れるリクエストを送る
      */
     private ResultActions add(UUID cartId, UUID variantId, int quantity, RequestPostProcessor requester) throws Exception {
         return mockMvc.perform(post(CARTS + "/" + cartId + "/items").with(requester)
@@ -341,7 +341,7 @@ class MemberCartApiTest {
     }
 
     /**
-     * カートを移す要求を送る
+     * カートを移すリクエストを送る
      */
     private ResultActions merge(UUID sourceCartId, RequestPostProcessor requester) throws Exception {
         return mockMvc.perform(post(MERGE).with(requester)

@@ -74,7 +74,7 @@ public class OrderQueryService {
      * 会員の注文の詳細を取得する。注文した会員でなければ、ないときと同じく 404。
      *
      * @param orderId  注文 ID
-     * @param memberId 要求した会員の ID
+     * @param memberId リクエストした会員の ID
      * @return 注文の詳細
      */
     public OrderDetailView getForMember(UUID orderId, UUID memberId) {

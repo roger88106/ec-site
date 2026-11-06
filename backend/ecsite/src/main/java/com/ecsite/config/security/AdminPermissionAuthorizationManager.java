@@ -12,8 +12,8 @@ import java.util.function.Supplier;
 
 /**
  * 管理 API の認可。{@code admin.yaml} の {@code x-required-permission} の権限を、token が持つかで決める。<br />
- * {@code admin.yaml} にない要求は、権限によらず拒否する。権限が {@code authenticated} の操作は、ログインしていれば許す。
- * 認証のない要求は拒否され、401 になる（403 にするのは、認証のある運営者だけ）。
+ * {@code admin.yaml} にないリクエストは、権限によらず拒否する。権限が {@code authenticated} の操作は、ログインしていれば許す。
+ * 認証のないリクエストは拒否され、401 になる（403 にするのは、認証のある運営者だけ）。
  */
 class AdminPermissionAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
@@ -46,7 +46,7 @@ class AdminPermissionAuthorizationManager implements AuthorizationManager<Reques
     }
 
     /**
-     * 要求のメソッドとパスに必要な権限を求め、token がその権限を持てば許す。{@code admin.yaml} にない要求は拒否する。
+     * リクエストのメソッドとパスに必要な権限を求め、token がその権限を持てば許す。{@code admin.yaml} にないリクエストは拒否する。
      */
     @Override
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {

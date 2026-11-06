@@ -136,7 +136,7 @@ AC-229 と AC-230 の内容は変えない。AC-229 の文は今のまま成り�
   - 依存：T410-01-01
   - 範囲：`UnconnectedCarrierTracking`（新規）、`MockCarrierRequiredConfig`（削除）
   - 確認方法：`./gradlew check` が通る。
-- [ ] **T410-01-03** 機能仕様、設計、手順書、用語集を更新する。AC 一覧の AC-226、AC-228、AC-245 を変更し、AC-410-1、2 を転記する。
+- [x] **T410-01-03** 機能仕様、設計、手順書、用語集を更新する。AC 一覧の AC-226、AC-228、AC-245 を変更し、AC-410-1、2 を転記する。
   - 依存：T410-01-02
   - 範囲：`docs/03-機能仕様/shipping.md`（物流サービス）、`docs/03-機能仕様/glossary.md`、`docs/03-機能仕様/acceptance-criteria.md`、`docs/02-設計/shipping.md`（外部のサービス）、`docs/02-設計/overview.md`（外部サービスの表）、`docs/02-設計/backend-architecture.md`（公開ネットワークへのデプロイの前提、外部連携（決済・物流））、`docs/06-手順書/environment.md`（物流の mock フラグと署名の鍵の行）
   - 確認方法：`node scripts/ci/ac-check.mjs` と `CI=true bash scripts/ci/check-all.sh` が通る。

@@ -24,10 +24,10 @@
 
 | 役割 | 実装 | 設定 |
 |------|------|------|
-| 物流サービス | mock だけ。本番の実装はまだない | 有効にするフラグ `ecsite.shipping.mock.enabled` |
-| 通知の署名の鍵 | 環境変数 `CARRIER_WEBHOOK_SECRET` で渡す | `ecsite.shipping.webhook-secret` |
+| 物流サービス | 接続していない物流サービスか mock。本番の実装はまだない | mock を選ぶフラグ `ecsite.shipping.mock.enabled` |
+| 通知の署名の鍵 | 環境変数 `CARRIER_WEBHOOK_SECRET` で渡す。フラグによらず必須 | `ecsite.shipping.webhook-secret` |
 
-物流サービスは port（追跡を始める）の実装として `infrastructure` に置き、型とエラーを外に出さない。mock のフラグが有効でなければ、起動に失敗し、フラグの名前を示す（`MockCarrierRequiredConfig`）。通知のエンドポイントも `infrastructure` に置く（[API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」）。
+物流サービスは port（追跡を始める）の実装として `infrastructure` に置き、型とエラーを外に出さない。フラグが有効なら mock、そうでなければ接続していない物流サービス（`UnconnectedCarrierTracking`）を使う。接続していない物流サービスは何も送らずに成功を返し、起動の時に 1 回、フラグの名前を含む警告のログを出力する。理由：フラグの設定漏れでも起動に成功するため。通知のエンドポイントはフラグによらず置き、署名で守る（[API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」）。
 
 #### mock
 
@@ -109,6 +109,6 @@ shipping/
 ├── domain/                 # 出荷、配送業者、配送状態、送り状番号
 └── infrastructure/
     ├── persistence/        # リポジトリの実装
-    ├── carrier/            # 通知の受信、署名、状態の名前の対応
+    ├── carrier/            # 接続していない物流サービス、通知の受信、署名、状態の名前の対応
     └── mock/               # mock の物流サービスと画面
 ```

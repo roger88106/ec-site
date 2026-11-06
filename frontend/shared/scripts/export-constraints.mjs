@@ -49,11 +49,11 @@ export function exportConstraints(doc) {
  * 項目の参照の先がオブジェクトなら写さない（そのスキーマの名前で引く）。制約がなければ undefined。
  */
 function schemaConstraints(doc, schema) {
-  if (schema.type === 'object' || schema.properties) {
+  if (isObjectSchema(schema)) {
     const properties = {}
     for (const [name, property] of Object.entries(schema.properties ?? {})) {
       const target = resolve(doc, property)
-      if (property.$ref && (target.type === 'object' || target.properties)) continue
+      if (property.$ref && isObjectSchema(target)) continue
       const constraints = schemaConstraints(doc, target)
       if (constraints) properties[name] = constraints
     }
@@ -65,12 +65,17 @@ function schemaConstraints(doc, schema) {
   }
   if (schema.type === 'array' && schema.items) {
     const items = resolve(doc, schema.items)
-    if (!(schema.items.$ref && (items.type === 'object' || items.properties))) {
+    if (!(schema.items.$ref && isObjectSchema(items))) {
       const itemConstraints = schemaConstraints(doc, items)
       if (itemConstraints) constraints.items = itemConstraints
     }
   }
   return nonEmpty(constraints)
+}
+
+/** オブジェクトのスキーマか（type が object か、properties を持つ） */
+function isObjectSchema(schema) {
+  return schema.type === 'object' || Boolean(schema.properties)
 }
 
 /** 参照（#/components/...）なら、その先を返す */

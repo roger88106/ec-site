@@ -66,8 +66,7 @@ class ProductLoader {
      * @param operation 切り替えの操作。状態が変わったら true を返す
      */
     void changeStatus(UUID productId, BiPredicate<Product, Instant> operation) {
-        var product = productRepository.findById(productId)
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        var product = get(productId);
 
         if (operation.test(product, clock.instant())) {
             productRepository.save(product);

@@ -7,10 +7,10 @@
 /** Cookie に書いた値と属性 */
 type StoredCookie = { value: string; options?: Record<string, unknown> }
 
-/** 要求の Cookie（サーバーアクションが書いた値も、ここに残る） */
+/** リクエストの Cookie（サーバーアクションが書いた値も、ここに残る） */
 const cookieJar = new Map<string, StoredCookie>()
 
-/** 要求のヘッダー */
+/** リクエストのヘッダー */
 let requestHeaders = new Headers()
 
 /** revalidatePath で表示し直しを知らせたパス */
@@ -37,7 +37,7 @@ export function currentHeaders(): Headers {
 }
 
 /**
- * 要求の状態を再作成する（各テストの前に setup.ts が呼ぶ）。
+ * リクエストの状態を再作成する（各テストの前に setup.ts が呼ぶ）。
  *
  * @param init.cookies Cookie（名前 → 値）
  * @param init.headers ヘッダー

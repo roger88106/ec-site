@@ -7,46 +7,26 @@
 # 先に compose（docker compose stop）、バックエンド、画面を止める。使っているポートは予約できない。
 # 管理者の権限が必要だ。管理者でなければ、照合した結果を示して何も変えずに終わる。
 # すること：
-#   1. 今の予約の範囲と、下の表のポートを照合して示す
+#   1. 今の予約の範囲と、一覧のポートを照合して示す
 #   2. 変えること（WinNAT を止める → 各ポートを 1 つずつ予約する → WinNAT を始める）を示し、確認を求める
 #   3. 確認したら変える。予約したポートは、ほかのプログラムが動的に取る範囲に入らなくなる（再起動の後も残る）
 # 予約を消すとき：netsh int ipv4 delete excludedportrange protocol=tcp startport=<ポート> numberofports=1
 #
-# ポートを追加したら（compose、バックエンド、画面、E2E）、この表も直す。一覧は scripts/dev/ports.json。この表との一致は CI の検査（local-ports）が確認する。
+# ポートの一覧は scripts/dev/ports.json を読む。ポートを追加したら（compose、バックエンド、画面、E2E）、一覧に加える。
 # ============================================================================
 param([switch]$WhatIf)
 
 $ErrorActionPreference = 'Stop'
 
-$ports = [ordered]@{
-  5432 = 'PostgreSQL'
-  9411 = 'Zipkin'
-  8333 = 'SeaweedFS'
-  8081 = 'imgproxy'
-  8180 = 'Keycloak'
-  8181 = 'Keycloak（E2E）'
-  2525 = 'Mailpit の SMTP'
-  8025 = 'Mailpit の画面'
-  8080 = 'バックエンド'
-  8090 = 'バックエンド（E2E）'
-  9080 = 'バックエンドの運用ポート'
-  9090 = 'バックエンドの運用ポート（E2E）'
-  5173 = '管理画面'
-  4173 = '管理画面（E2E）'
-  3000 = '店舗画面'
-  3100 = '店舗画面（E2E）'
-  18080 = 'バックエンド（スロット 1）'
-  19080 = 'バックエンドの運用ポート（スロット 1）'
-  13000 = '店舗画面（スロット 1）'
-  15173 = '管理画面（スロット 1）'
-  28080 = 'バックエンド（スロット 2）'
-  29080 = 'バックエンドの運用ポート（スロット 2）'
-  23000 = '店舗画面（スロット 2）'
-  25173 = '管理画面（スロット 2）'
-  38080 = 'バックエンド（スロット 3）'
-  39080 = 'バックエンドの運用ポート（スロット 3）'
-  33000 = '店舗画面（スロット 3）'
-  35173 = '管理画面（スロット 3）'
+# ポートの一覧（scripts/dev/ports.json）を読み、スロットごとにずらした分（スロット 1 以降は、スロットを使う項目だけ）を含めて展開する
+$list = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot '..\ports.json') | ConvertFrom-Json
+$ports = @()
+foreach ($slot in 0..($list.slotCount - 1)) {
+  foreach ($entry in $list.ports) {
+    if ($slot -gt 0 -and -not $entry.slotted) { continue }
+    $name = if ($slot -eq 0) { $entry.name } else { "$($entry.name)（スロット $slot）" }
+    $ports += [pscustomobject]@{ Port = [int]$entry.port + [int]$list.slotOffset * $slot; Name = $name }
+  }
 }
 
 # 今の予約の範囲（netsh の出力の、数字の 2 列の行）。末尾の * は管理者が追加した予約
@@ -62,7 +42,8 @@ function Get-ExcludedRanges {
 $ranges = @(Get-ExcludedRanges)
 $toAdd = @()
 Write-Host 'ポートと今の予約の範囲：'
-foreach ($port in $ports.Keys) {
+foreach ($item in $ports) {
+  $port = $item.Port
   $range = $ranges | Where-Object { $_.Start -le $port -and $port -le $_.End } | Select-Object -First 1
   if ($null -eq $range) {
     $state = '予約の範囲の外（使える。予約して、後で範囲に入らないようにする）'
@@ -73,7 +54,7 @@ foreach ($port in $ports.Keys) {
     $state = "予約の範囲 $($range.Start)〜$($range.End) の中（今は使えない）"
     $toAdd += $port
   }
-  Write-Host ('  {0,5}  {1,-20} {2}' -f $port, $ports[$port], $state)
+  Write-Host ('  {0,5}  {1,-20} {2}' -f $port, $item.Name, $state)
 }
 
 if ($toAdd.Count -eq 0) {

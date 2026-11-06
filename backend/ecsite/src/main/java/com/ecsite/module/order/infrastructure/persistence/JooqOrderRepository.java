@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
@@ -43,6 +44,11 @@ import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_TAX;
 @Repository
 @RequiredArgsConstructor
 class JooqOrderRepository implements OrderRepository {
+
+    /**
+     * 集約の名前（戻すときの失敗のメッセージに書く）
+     */
+    private static final String AGGREGATE_NAME = "order";
 
     /**
      * 軸の値の一覧の型（jsonb の読み書き）
@@ -197,7 +203,14 @@ class JooqOrderRepository implements OrderRepository {
      */
     private static void writeState(SalesOrderRecord record, Order.Snapshot snapshot) {
         record.setStatus(snapshot.status().name());
-        var request = snapshot.cancellationRequest();
+        writeRequest(record, snapshot.cancellationRequest());
+        writeCancellation(record, snapshot.cancellation());
+    }
+
+    /**
+     * キャンセルの申請をレコードに書く。申請がなければ（null）、申請の項目は全て null にする。
+     */
+    private static void writeRequest(SalesOrderRecord record, @Nullable CancellationRequest request) {
         record.setCancellationRequestedAt(request == null ? null : request.requestedAt());
         record.setCancellationRequestReason(request == null ? null : request.reason());
         record.setCancellationRequestResult(request == null ? null : request.result().name());
@@ -205,7 +218,12 @@ class JooqOrderRepository implements OrderRepository {
         var decidedBy = request == null ? null : request.decidedBy();
         record.setCancellationDecidedById(decidedBy == null ? null : decidedBy.id());
         record.setCancellationDecidedByName(decidedBy == null ? null : decidedBy.name());
-        var cancellation = snapshot.cancellation();
+    }
+
+    /**
+     * キャンセルをレコードに書く。キャンセルがなければ（null）、キャンセルの項目は全て null にする。
+     */
+    private static void writeCancellation(SalesOrderRecord record, @Nullable Cancellation cancellation) {
         record.setCancelledAt(cancellation == null ? null : cancellation.cancelledAt());
         record.setCancellationKind(cancellation == null ? null : cancellation.kind().name());
         record.setCancellationReason(cancellation == null ? null : cancellation.reason());
@@ -245,11 +263,41 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。
+     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。<br />
+     * 例外のメッセージに DB の値が入る変換だけを、集約を戻す共通の補助で包む（金額の検証のエラーは値を持たず、今の応答のまま）。
      */
     private Order restore(SalesOrderRecord record) {
-        var lines = dsl.selectFrom(SALES_ORDER_LINE)
-                .where(SALES_ORDER_LINE.ORDER_ID.eq(record.getId()))
+        var lines = restoreLines(record.getId());
+        var amounts = restoreAmounts(record);
+        var area = new AddressArea(record.getPrefectureCode(), record.getPrefectureName(), record.getMunicipalityCode(),
+                record.getMunicipalityName());
+        var address = new ShippingAddress(record.getRecipientName(), record.getPostalCode(), area, record.getAddress(),
+                record.getPhone());
+        return Order.restore(new Order.Snapshot(
+                record.getId(),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderNumber.of(record.getOrderNumber())),
+                record.getCheckoutId(),
+                record.getMemberId(),
+                record.getOrderedAt(),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderStatus.valueOf(record.getStatus())),
+                lines,
+                amounts,
+                record.getEmail(),
+                address,
+                new BuyerProfile(record.getBuyerAge() == null ? null : record.getBuyerAge().intValue(),
+                        record.getBuyerGender() == null ? null
+                                : AggregateGuards.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()))),
+                restoreRequest(record),
+                restoreCancellation(record),
+                record.getVersion()));
+    }
+
+    /**
+     * 注文の明細を、行番号の順に読む。
+     */
+    private List<OrderLine> restoreLines(UUID orderId) {
+        return dsl.selectFrom(SALES_ORDER_LINE)
+                .where(SALES_ORDER_LINE.ORDER_ID.eq(orderId))
                 .orderBy(SALES_ORDER_LINE.LINE_NO)
                 .fetch(line -> new OrderLine(
                         line.getLineNo(),
@@ -257,48 +305,51 @@ class JooqOrderRepository implements OrderRepository {
                         line.getProductCode(),
                         line.getVariantCode(),
                         line.getProductName(),
-                        jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES),
+                        AggregateGuards.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES)),
                         Money.of(line.getUnitPriceExclTax()),
                         normalize(line.getRatePercent()),
                         Money.of(line.getUnitPriceInclTax()),
                         line.getQuantity(),
                         Money.of(line.getSubtotal())));
+    }
+
+    /**
+     * 注文の金額を読む。税率ごとの消費税額は別の表から、税率の高い順（の表示の順）に読む。
+     */
+    private Amounts restoreAmounts(SalesOrderRecord record) {
         var taxes = dsl.selectFrom(SALES_ORDER_TAX)
                 .where(SALES_ORDER_TAX.ORDER_ID.eq(record.getId()))
-                // 税率の高い順（の表示の順）
                 .orderBy(SALES_ORDER_TAX.RATE_PERCENT.desc())
                 .fetch(tax -> new TaxAmount(normalize(tax.getRatePercent()), Money.of(tax.getTaxableAmount()),
                         Money.of(tax.getTaxAmount())));
-        var amounts = new Amounts(Money.of(record.getItemsTotal()), Money.of(record.getShippingFee()),
+        return new Amounts(Money.of(record.getItemsTotal()), Money.of(record.getShippingFee()),
                 Money.of(record.getTotalAmount()), taxes);
-        var area = new AddressArea(record.getPrefectureCode(), record.getPrefectureName(), record.getMunicipalityCode(),
-                record.getMunicipalityName());
-        var address = new ShippingAddress(record.getRecipientName(), record.getPostalCode(), area, record.getAddress(),
-                record.getPhone());
-        var request = record.getCancellationRequestedAt() == null ? null : new CancellationRequest(
+    }
+
+    /**
+     * キャンセルの申請を読む。申請がなければ null。
+     */
+    private static @Nullable CancellationRequest restoreRequest(SalesOrderRecord record) {
+        if (record.getCancellationRequestedAt() == null) {
+            return null;
+        }
+        return new CancellationRequest(
                 record.getCancellationRequestedAt(), record.getCancellationRequestReason(),
-                CancellationRequest.Result.valueOf(record.getCancellationRequestResult()),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
                 record.getCancellationDecidedAt(),
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
-        var cancellation = record.getCancelledAt() == null ? null : new Cancellation(record.getCancelledAt(),
-                CancellationKind.valueOf(record.getCancellationKind()), record.getCancellationReason(),
+    }
+
+    /**
+     * キャンセルを読む。キャンセルされていなければ null。
+     */
+    private static @Nullable Cancellation restoreCancellation(SalesOrderRecord record) {
+        if (record.getCancelledAt() == null) {
+            return null;
+        }
+        return new Cancellation(record.getCancelledAt(),
+                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())), record.getCancellationReason(),
                 operatorOf(record.getCancelledById(), record.getCancelledByName()), record.getCancellationRestocked());
-        return Order.restore(new Order.Snapshot(
-                record.getId(),
-                OrderNumber.of(record.getOrderNumber()),
-                record.getCheckoutId(),
-                record.getMemberId(),
-                record.getOrderedAt(),
-                OrderStatus.valueOf(record.getStatus()),
-                lines,
-                amounts,
-                record.getEmail(),
-                address,
-                new BuyerProfile(record.getBuyerAge() == null ? null : record.getBuyerAge().intValue(),
-                        record.getBuyerGender() == null ? null : Gender.valueOf(record.getBuyerGender())),
-                request,
-                cancellation,
-                record.getVersion()));
     }
 
     /**

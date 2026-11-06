@@ -8,7 +8,7 @@ import { getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
 
-/** 税率の一覧の置き換えの要求の本文（送った内容を確認する） */
+/** 税率の一覧の置き換えのリクエストの本文（送った内容を確認する） */
 type ReplaceTaxRatesRequest = components['schemas']['ReplaceTaxRatesRequest']
 
 /** 既存の税率の ID（fixtures の taxCategory() の税率） */
@@ -17,7 +17,7 @@ const RATE_ID = taxCategory().rates[0].id
 const PAGE_PATH = `/tax-categories/${TAX_CATEGORY_ID}`
 
 /**
- * 税区分の取得と税率の置き換えに応答する。置き換えの要求は requests に取っておく。<br />
+ * 税区分の取得と税率の置き換えに応答する。置き換えのリクエストは requests に取っておく。<br />
  * 置き換えの応答は reply で決める。省略すると成功（204）にし、取得の結果も送った一覧に変える。
  */
 function serveTaxCategory(

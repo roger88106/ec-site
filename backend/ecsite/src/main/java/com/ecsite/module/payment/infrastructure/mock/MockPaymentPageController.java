@@ -1,11 +1,10 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
+import com.ecsite.common.presentation.MockPageResponses;
+import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentMock;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 
 /**
  * mock の支払画面（docs/02-設計/payment.md「mock」）。<br />
@@ -21,7 +19,7 @@ import java.nio.charset.StandardCharsets;
  * 「支払う」「カードを拒否させる」「やめる」の操作を持ち、支払う・やめるときは店舗の注文の画面に戻す。
  */
 @Controller
-@ConditionalOnBooleanProperty(name = "ecsite.payment.mock.enabled")
+@ConditionalOnPaymentMock
 @RequiredArgsConstructor
 class MockPaymentPageController {
 
@@ -88,22 +86,14 @@ class MockPaymentPageController {
      */
     private ResponseEntity<String> render(String pageId, @Nullable String error) {
         return gateway.page(pageId)
-                .map(page -> html(HttpStatus.OK, MockPaymentPageHtml.of(pageId, page, error)))
-                .orElseGet(() -> html(HttpStatus.NOT_FOUND, MockPaymentPageHtml.notFound()));
+                .map(page -> MockPageResponses.html(HttpStatus.OK, MockPaymentPageHtml.of(pageId, page, error)))
+                .orElseGet(() -> MockPageResponses.html(HttpStatus.NOT_FOUND, MockPaymentPageHtml.notFound()));
     }
 
     /**
-     * HTML の応答を作る。
-     */
-    private static ResponseEntity<String> html(HttpStatus status, String document) {
-        return ResponseEntity.status(status).contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
-                .body(document);
-    }
-
-    /**
-     * 戻る先に移す（POST の後なので 303）。
+     * 戻る先に移す（POST の後なので 303）。戻る先が URL として正しくなければ、例外になる。
      */
     private static ResponseEntity<String> redirect(String url) {
-        return ResponseEntity.status(HttpStatus.SEE_OTHER).header(HttpHeaders.LOCATION, URI.create(url).toString()).build();
+        return MockPageResponses.redirect(URI.create(url));
     }
 }

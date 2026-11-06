@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { expandedPorts, findPortMismatches, readComposeHostPorts, readConfigPorts, readDocPorts, readPowerShellPorts } from './local-ports.mjs'
+import { expandedPorts, findPortMismatches, readComposeHostPorts, readConfigPorts, readDocPorts } from './local-ports.mjs'
 
 /** 小さな一覧（共有 2 件、スロットでずらす 1 件、E2E 1 件、スロット 3 つ） */
 const LIST = {
@@ -24,17 +24,6 @@ const COMPOSE = [
   '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"',
 ].join('\n')
 
-const PS1 = [
-  '$ports = [ordered]@{',
-  "  5432 = 'PostgreSQL'",
-  "  2525 = 'Mailpit'",
-  "  8080 = 'バックエンド'",
-  "  8090 = 'E2E'",
-  "  18080 = 'スロット 1'",
-  "  28080 = 'スロット 2'",
-  '}',
-].join('\n')
-
 const DOC = [
   '| http://localhost:8080/api | API |',
   'DB は localhost:5432、SMTP は :2525',
@@ -47,7 +36,6 @@ const DOC = [
 const INPUT = {
   list: LIST,
   compose: COMPOSE,
-  powershell: PS1,
   docs: { 'docs/06-手順書/setup.md': DOC },
   sources: { 'e2e/src/urls.ts': "export const BACKEND_URL = 'http://localhost:8090'" },
 }
@@ -73,10 +61,6 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.match(problems[1], /docker\/compose\.yaml:11 .*9000-9001/)
   })
 
-  test('PowerShell の表のポートを読む', () => {
-    assert.deepEqual(readPowerShellPorts(PS1), [5432, 2525, 8080, 8090, 18080, 28080])
-  })
-
   test('文書のポートは、コロンの後の数字だけを読む（カード番号などは読まない）', () => {
     assert.deepEqual(readDocPorts('http://localhost:8080/api と :8090、4242 4242、12:3456'), [8080, 8090, 3456])
   })
@@ -94,15 +78,6 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.equal(problems.length, 2)
     assert.ok(problems.some((problem) => /5433/.test(problem)))
     assert.ok(problems.some((problem) => /5432/.test(problem)))
-  })
-
-  test('Windows の予約の表が、一覧とスロットの展開に足りない・余るとき失敗にする', () => {
-    const missing = findPortMismatches({ ...INPUT, powershell: PS1.replace("  28080 = 'スロット 2'\n", '') })
-    assert.equal(missing.length, 1)
-    assert.match(missing[0], /28080/)
-    const extra = findPortMismatches({ ...INPUT, powershell: PS1.replaceAll('}', "  7777 = 'x'\n}") })
-    assert.equal(extra.length, 1)
-    assert.match(extra[0], /7777/)
   })
 
   test('文書に一覧にないポートがあれば失敗にする', () => {

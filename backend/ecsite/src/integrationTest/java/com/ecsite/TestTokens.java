@@ -170,9 +170,9 @@ public final class TestTokens {
     }
 
     /**
-     * 要求から {@code Authorization} のヘッダーを除く（認証のない要求）。
+     * リクエストから {@code Authorization} のヘッダーを除く（認証のないリクエスト）。
      *
-     * @return 要求の加工
+     * @return リクエストの加工
      */
     public static RequestPostProcessor none() {
         return request -> {
@@ -376,9 +376,9 @@ public final class TestTokens {
         }
 
         /**
-         * 要求に {@code Authorization: Bearer} で token を付ける（すでにあれば置き換える）。
+         * リクエストに {@code Authorization: Bearer} で token を付ける（すでにあれば置き換える）。
          *
-         * @return 要求の加工
+         * @return リクエストの加工
          */
         public RequestPostProcessor bearer() {
             var token = encode();

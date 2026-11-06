@@ -6,6 +6,8 @@ import com.ecsite.module.region.domain.PostalAddress;
 import com.ecsite.module.region.domain.Prefecture;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.Record2;
+import org.jooq.Record3;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -33,7 +35,7 @@ class JooqRegionRepository implements RegionRepository {
     @Override
     public List<Prefecture> findPrefectures() {
         return dsl.select(PREFECTURE.CODE, PREFECTURE.NAME).from(PREFECTURE).orderBy(PREFECTURE.CODE)
-                .fetch(r -> new Prefecture(r.value1(), r.value2()));
+                .fetch(JooqRegionRepository::toPrefecture);
     }
 
     /**
@@ -42,7 +44,7 @@ class JooqRegionRepository implements RegionRepository {
     @Override
     public Optional<Prefecture> findPrefecture(String code) {
         return dsl.select(PREFECTURE.CODE, PREFECTURE.NAME).from(PREFECTURE).where(PREFECTURE.CODE.eq(code))
-                .fetchOptional(r -> new Prefecture(r.value1(), r.value2()));
+                .fetchOptional(JooqRegionRepository::toPrefecture);
     }
 
     /**
@@ -53,7 +55,7 @@ class JooqRegionRepository implements RegionRepository {
         return dsl.select(MUNICIPALITY.CODE, MUNICIPALITY.PREFECTURE_CODE, MUNICIPALITY.NAME).from(MUNICIPALITY)
                 .where(MUNICIPALITY.PREFECTURE_CODE.eq(prefectureCode))
                 .orderBy(MUNICIPALITY.CODE)
-                .fetch(r -> new Municipality(r.value1(), r.value2(), r.value3()));
+                .fetch(JooqRegionRepository::toMunicipality);
     }
 
     /**
@@ -63,7 +65,7 @@ class JooqRegionRepository implements RegionRepository {
     public Optional<Municipality> findMunicipality(String code) {
         return dsl.select(MUNICIPALITY.CODE, MUNICIPALITY.PREFECTURE_CODE, MUNICIPALITY.NAME).from(MUNICIPALITY)
                 .where(MUNICIPALITY.CODE.eq(code))
-                .fetchOptional(r -> new Municipality(r.value1(), r.value2(), r.value3()));
+                .fetchOptional(JooqRegionRepository::toMunicipality);
     }
 
     /**
@@ -80,5 +82,21 @@ class JooqRegionRepository implements RegionRepository {
                 .orderBy(POSTAL_CODE.DISPLAY_ORDER)
                 .fetch(r -> new PostalAddress(r.value1(), new Prefecture(r.value4(), r.value6()),
                         new Municipality(r.value3(), r.value4(), r.value5()), r.value2()));
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 都道府県の行（コード、名前）を都道府県にする。
+     */
+    private static Prefecture toPrefecture(Record2<String, String> row) {
+        return new Prefecture(row.value1(), row.value2());
+    }
+
+    /**
+     * 市区町村の行（コード、都道府県のコード、名前）を市区町村にする。
+     */
+    private static Municipality toMunicipality(Record3<String, String, String> row) {
+        return new Municipality(row.value1(), row.value2(), row.value3());
     }
 }

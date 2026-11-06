@@ -115,7 +115,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     @Test
-    @DisplayName("imgproxy には、アップロードのバケットのファイルを指す署名付きの URL で要求する")
+    @DisplayName("imgproxy には、アップロードのバケットのファイルを指す署名付きの URL でリクエストする")
     void requestsSignedUrlOfUploadedFile() throws Exception {
         byte[] webp = {'R', 'I', 'F', 'F', 4, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '};
         var requested = new AtomicReference<String>();
@@ -139,7 +139,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     @Test
-    @DisplayName("AC-297 imgproxy が要求を断った（4xx）ら、変換の失敗になる")
+    @DisplayName("AC-297 imgproxy がリクエストを断った（4xx）ら、変換の失敗になる")
     void failsOnClientError() {
         responder.set(exchange -> send(exchange, 422, "unprocessable"));
 
@@ -178,9 +178,9 @@ class ImgproxyImageConverterFailureTest {
     @FunctionalInterface
     private interface Responder {
         /**
-         * 要求に応答する
+         * リクエストに応答する
          *
-         * @param exchange 要求と応答
+         * @param exchange リクエストと応答
          * @throws IOException 応答を書けない
          */
         void respond(HttpExchange exchange) throws IOException;
@@ -255,7 +255,7 @@ class ImgproxyImageConverterFailureTest {
     /**
      * 応答を書く
      *
-     * @param exchange 要求と応答
+     * @param exchange リクエストと応答
      * @param status   HTTP の状態
      * @param body     本文
      * @throws IOException 応答を書けない
@@ -271,7 +271,7 @@ class ImgproxyImageConverterFailureTest {
     /**
      * 200 と、形式と本文を返す。
      *
-     * @param exchange    要求と応答
+     * @param exchange    リクエストと応答
      * @param contentType 応答の形式
      * @param body        本文
      * @throws IOException 応答を書けない

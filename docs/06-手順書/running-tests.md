@@ -39,6 +39,8 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 
 コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`-Werror` を付けているので、警告でも失敗する。修正は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「null の扱い」と「検査を抑えるとき」。
 
+Docker を再起動した後は、`./gradlew --stop` を実行してからテストを実行する。Gradle のデーモンが Docker に接続できなかった結果を保持し、`./gradlew check` が失敗することがあるため。
+
 Checkstyle（`checkstyleMain`、`checkstyleTest` など）が失敗したときも、`[検査の名前]` で分かる。import の違反（`UnusedImports`、`CustomImportOrder`、`AvoidStarImport`）の修正方法は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は `src/main` の Javadoc の記載漏れなので、Javadoc を書く（他のソースセットでは `config/checkstyle/suppressions.xml` で抑えている）。
 
 テストのコードの重複（`cpdCheck`）が失敗したときは、報告 `backend/ecsite/build/reports/cpd/cpdCheck.xml` の場所を見る。修正方法は [バックエンドのテストの書き方](../05-開発規則/test-writing-backend.md)の「テストのコードの重複」。
@@ -89,7 +91,7 @@ pnpm test
 |------|------|
 | 準備（`e2e/scripts/prepare.ts`） | ポートを確認し、E2E 用の DB と Keycloak を再作成する。DB は毎回、マイグレーションと税のデータ（`db/seed/base`）だけから始まる |
 | 起動 | バックエンド（:8090、profile `local,e2e`）、管理画面（:4173）、店舗画面（:3100）を毎回起動する |
-| データ | 管理 API で作り、品番・名称に実行ごとの識別子（`E2E-<印>-…`）を付ける |
+| データ | 管理 API で作り、品番・名称に実行ごとの識別子（`E2E-<識別子>-…`）を付ける |
 
 - バックエンドの起動に JDK 21 を使うため、`JAVA_HOME` に JDK 21 のパスを設定しておく。
 - 手元の開発のバックエンド（:8080）と、スロットのバックエンド（[開発環境の起動](setup.md)の「スロット」）と並行して実行できる。

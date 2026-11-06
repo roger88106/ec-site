@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
 import com.ecsite.common.message.MessageHelper;
+import com.ecsite.common.presentation.MockPageResponses;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
@@ -9,9 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -78,7 +77,7 @@ class MockCarrierController {
      *
      * @param orderId 注文 ID
      * @param status  通知する配送状態（配送中、配達完了、返送）
-     * @param request 要求（エンドポイントの URL を求めるため）
+     * @param request リクエスト（エンドポイントの URL を求めるため）
      * @return 一覧への移動。通知が受け付けられなかったときは、その旨を示した一覧
      */
     @PostMapping("/mock-carrier/orders/{orderId}/notify")
@@ -86,7 +85,7 @@ class MockCarrierController {
                                         HttpServletRequest request) {
         var shipment = shipmentRepository.findAllByOrderIds(List.of(orderId)).stream().findFirst();
         if (shipment.isEmpty() || !MockCarrierPageHtml.NOTIFIABLE.contains(status)) {
-            return html(HttpStatus.NOT_FOUND, MockCarrierPageHtml.notFound());
+            return MockPageResponses.html(HttpStatus.NOT_FOUND, MockCarrierPageHtml.notFound());
         }
         if (shipment.get().carrier() != Carrier.YAMATO) {
             return render("この mock は、" + carrierName(Carrier.YAMATO) + "の表示の名前でだけ通知できます。");
@@ -103,13 +102,13 @@ class MockCarrierController {
             log.warn("配送業者の mock の通知を送れない：orderId={}", orderId, e);
             return render("通知を送れませんでした。バックエンドのログを確認してください。");
         }
-        return ResponseEntity.status(HttpStatus.SEE_OTHER).header(HttpHeaders.LOCATION, "/mock-carrier").build();
+        return MockPageResponses.redirect(URI.create("/mock-carrier"));
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * エンドポイントを持つ、このサーバーの URL（要求と同じ接続先）を求める。
+     * エンドポイントを持つ、このサーバーの URL（リクエストと同じ接続先）を求める。
      */
     private static String baseUrl(HttpServletRequest request) {
         return ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();
@@ -121,7 +120,7 @@ class MockCarrierController {
      * @param error 示す失敗。なければ null
      */
     private ResponseEntity<String> render(@Nullable String error) {
-        return html(HttpStatus.OK,
+        return MockPageResponses.html(HttpStatus.OK,
                 MockCarrierPageHtml.list(shipmentQuery.findRecent(LIST_LIMIT), this::carrierName, error));
     }
 
@@ -130,13 +129,5 @@ class MockCarrierController {
      */
     private String carrierName(Carrier carrier) {
         return messageHelper.getMessage(carrier.nameMessageKey(), Map.of());
-    }
-
-    /**
-     * HTML の応答を作る。
-     */
-    private static ResponseEntity<String> html(HttpStatus status, String document) {
-        return ResponseEntity.status(status).contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
-                .body(document);
     }
 }

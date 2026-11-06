@@ -7,7 +7,7 @@ import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, type Reply, server } from '@/test/server'
 
-/** 税区分の登録の要求の本文（送った内容を確認する） */
+/** 税区分の登録のリクエストの本文（送った内容を確認する） */
 type CreateTaxCategoryRequest = components['schemas']['CreateTaxCategoryRequest']
 
 /** 税区分の画面の URL */
@@ -22,7 +22,7 @@ const REDUCED = taxCategory({
 })
 
 /**
- * 税区分の一覧と登録に応答する。登録の要求は requests に取っておく。<br />
+ * 税区分の一覧と登録に応答する。登録のリクエストは requests に取っておく。<br />
  * 登録の応答は reply で決める。省略すると成功（201）にし、一覧に追加する。
  */
 function serveTaxCategories(

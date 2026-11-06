@@ -114,7 +114,7 @@ public class StockReservationService {
                 -Objects.requireNonNull(quantities.get(variantId), "ロックした在庫は数量を指定したバリアントのもの"),
                 StockAdjustmentReason.ORDER, orderId, orderNumber, now)));
         reservationRepository.deleteByHolder(holderId);
-        return shortages;
+        return Set.of();
     }
 
     /**

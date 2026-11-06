@@ -81,7 +81,7 @@ class StorefrontFreshnessTest {
     private String categoryId;
 
     /**
-     * このテストのカテゴリで絞った商品の一覧の要求
+     * このテストのカテゴリで絞った商品の一覧のリクエスト
      */
     private MockHttpServletRequestBuilder list() {
         return get(STORE + "/products").param("categoryId", categoryId);

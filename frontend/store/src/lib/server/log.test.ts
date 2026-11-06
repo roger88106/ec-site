@@ -22,7 +22,7 @@ describe('サーバー側のログ', () => {
     return JSON.parse(line)
   }
 
-  test('1 行 1 件の JSON に、時刻、レベル、メッセージ、要求の追跡の ID、項目を書く', async () => {
+  test('1 行 1 件の JSON に、時刻、レベル、メッセージ、リクエストの追跡の ID、項目を書く', async () => {
     resetRequest({ headers: { [TRACEPARENT_HEADER]: TRACEPARENT } })
 
     await log.warn('カートを移せませんでした', { cartId: 'cart-1' })
@@ -55,7 +55,7 @@ describe('サーバー側のログ', () => {
     expect(stdout).not.toHaveBeenCalled()
   })
 
-  test('要求に追跡の ID がなければ、traceId は null', async () => {
+  test('リクエストに追跡の ID がなければ、traceId は null', async () => {
     resetRequest()
 
     await log.info('起動の外の記録')

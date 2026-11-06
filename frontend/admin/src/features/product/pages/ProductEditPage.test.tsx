@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import userEvent, { type UserEvent } from '@testing-library/user-event'
 import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
@@ -14,22 +14,22 @@ import { conflict, http, problem, server, stockHandler } from '@/test/server'
 /** 商品の編集の画面のパス */
 const PAGE_PATH = `/products/${PRODUCT_ID}`
 
-/** 商品の基本情報の更新の要求の本文（送った内容を確認する） */
+/** 商品の基本情報の更新のリクエストの本文（送った内容を確認する） */
 type UpdateProductRequest = components['schemas']['UpdateProductRequest']
 
-/** バリアントの追加の要求の本文（送った内容を確認する） */
+/** バリアントの追加のリクエストの本文（送った内容を確認する） */
 type AddVariantRequest = components['schemas']['AddVariantRequest']
 
-/** バリアントの並び替えの要求の本文（送った内容を確認する） */
+/** バリアントの並び替えのリクエストの本文（送った内容を確認する） */
 type ReorderVariantsRequest = components['schemas']['ReorderVariantsRequest']
 
-/** 公開期間の設定の要求の本文（送った内容を確認する） */
+/** 公開期間の設定のリクエストの本文（送った内容を確認する） */
 type SetPublicationPeriodRequest = components['schemas']['SetPublicationPeriodRequest']
 
-/** バリアントの画像の指定の要求の本文（送った内容を確認する） */
+/** バリアントの画像の指定のリクエストの本文（送った内容を確認する） */
 type SetVariantImageRequest = components['schemas']['SetVariantImageRequest']
 
-/** 商品の画像の並び替えの要求の本文（送った内容を確認する） */
+/** 商品の画像の並び替えのリクエストの本文（送った内容を確認する） */
 type ReorderProductImagesRequest = components['schemas']['ReorderProductImagesRequest']
 
 /** 契約の画像の大きさの上限（バイト） */
@@ -41,7 +41,7 @@ const MAX_IMAGES = schemas.ProductDetail.images.maxItems
 /**
  * 商品の編集の画面が使う API に応答する。<br />
  * 基本情報の保存は、送ったバージョンが今のものと違えば 409 にし、同じなら保存してバージョンを上げる。
- * 状態の変更・削除の要求は calls に「メソッド パス」で取っておく。
+ * 状態の変更・削除のリクエストは calls に「メソッド パス」で取っておく。
  */
 function serveProduct(initial: ProductDetail) {
   const state = { current: initial, versions: [] as number[], calls: [] as string[] }
@@ -274,8 +274,8 @@ describe('商品の編集', () => {
   test('AC-21、24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))
     const requests: AddVariantRequest[] = []
-    server.use(stockHandler(0))
     server.use(
+      stockHandler(0),
       http.post('/products/{productId}/variants', async ({ request, response }) => {
         requests.push(await request.json())
         state.current = {
@@ -301,8 +301,8 @@ describe('商品の編集', () => {
   test('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
     const state = serveProduct(productDetail({ axes: ['色', 'サイズ'], variants: [] }))
     const requests: AddVariantRequest[] = []
-    server.use(stockHandler(0))
     server.use(
+      stockHandler(0),
       http.post('/products/{productId}/variants', async ({ request, response }) => {
         requests.push(await request.json())
         state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
@@ -413,8 +413,8 @@ describe('商品の編集', () => {
         version: state.current.version + 1,
       }
     }
-    server.use(stockHandler(3))
     server.use(
+      stockHandler(3),
       http.put('/products/{productId}/variants/{variantId}/suspend', ({ params, response }) => {
         calls.push(`suspend ${params.variantId}`)
         setSuspended(true)
@@ -450,8 +450,8 @@ describe('商品の編集', () => {
       }),
     )
     const requests: ReorderVariantsRequest[] = []
-    server.use(stockHandler(3))
     server.use(
+      stockHandler(3),
       http.put('/products/{productId}/variants/order', async ({ request, response }) => {
         requests.push(await request.json())
         state.current = {
@@ -473,8 +473,8 @@ describe('商品の編集', () => {
   test('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
     const state = serveProduct(productDetail({ version: 5, variants: [variant()] }))
     const calls: string[] = []
-    server.use(stockHandler(3))
     server.use(
+      stockHandler(3),
       http.delete('/products/{productId}/variants/{variantId}', ({ params, query, response }) => {
         calls.push(`DELETE ${params.variantId} version=${query.get('version')}`)
         state.current = { ...state.current, variants: [], version: state.current.version + 1 }
@@ -647,6 +647,14 @@ describe('公開期間', () => {
 describe('商品画像', () => {
   const UPLOAD_URL = 'http://storage.test/images-incoming/upload-1?X-Amz-Signature=test'
 
+  /** 画像のファイルの欄に、PNG のファイルを選ぶ */
+  async function uploadPng(user: UserEvent) {
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+    )
+  }
+
   /** 画像のアップロードの受付・ストレージへの PUT・登録に応答する。登録すると、商品の画像の最後に加える */
   function serveUpload(state: ReturnType<typeof serveProduct>) {
     const calls: string[] = []
@@ -686,10 +694,7 @@ describe('商品画像', () => {
     const calls = serveUpload(state)
     const { user } = renderApp(PAGE_PATH)
 
-    await user.upload(
-      await screen.findByLabelText('画像のファイル'),
-      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
-    )
+    await uploadPng(user)
 
     expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
     const image = await screen.findByRole('img', { name: '画像 1' })
@@ -745,10 +750,7 @@ describe('商品画像', () => {
     )
     const { user } = renderApp(PAGE_PATH)
 
-    await user.upload(
-      await screen.findByLabelText('画像のファイル'),
-      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
-    )
+    await uploadPng(user)
 
     expect(
       await screen.findByText(
@@ -774,10 +776,7 @@ describe('商品画像', () => {
     )
     const { user } = renderApp(PAGE_PATH)
 
-    await user.upload(
-      await screen.findByLabelText('画像のファイル'),
-      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
-    )
+    await uploadPng(user)
 
     expect(
       await screen.findByText('画像のサービスに接続できませんでした。しばらくしてから、やり直してください。'),
@@ -817,10 +816,7 @@ describe('商品画像', () => {
     )
     const { user } = renderApp(PAGE_PATH)
 
-    await user.upload(
-      await screen.findByLabelText('画像のファイル'),
-      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
-    )
+    await uploadPng(user)
 
     expect(await screen.findByText('画像は 1 商品あたり 20 枚まで登録できます。')).toBeInTheDocument()
   })
@@ -832,10 +828,7 @@ describe('商品画像', () => {
     server.use(rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 403 })))
     const { user } = renderApp(PAGE_PATH)
 
-    await user.upload(
-      await screen.findByLabelText('画像のファイル'),
-      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
-    )
+    await uploadPng(user)
 
     expect(
       await screen.findByText('画像のファイルを送れませんでした。もう一度やり直してください。'),
@@ -850,8 +843,8 @@ describe('商品画像', () => {
     ]
     const state = serveProduct(productDetail({ images, variants: [variant()] }))
     const requests: SetVariantImageRequest[] = []
-    server.use(stockHandler(0))
     server.use(
+      stockHandler(0),
       http.put('/products/{productId}/variants/{variantId}/image', async ({ request, response }) => {
         const body = await request.json()
         requests.push(body)

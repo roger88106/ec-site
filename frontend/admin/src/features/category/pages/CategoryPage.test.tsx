@@ -7,9 +7,9 @@ import { findGroup, getListItemContaining } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
 
-/** カテゴリの登録の要求の本文 */
+/** カテゴリの登録のリクエストの本文 */
 type CreateCategoryRequest = components['schemas']['CreateCategoryRequest']
-/** カテゴリの名称の変更の要求の本文 */
+/** カテゴリの名称の変更のリクエストの本文 */
 type RenameCategoryRequest = components['schemas']['RenameCategoryRequest']
 
 /** 衣類 > トップス > T シャツ と、雑貨 */
@@ -19,7 +19,7 @@ const CLOTHING = categoryNode('101', '衣類', 1, [TOPS])
 const GOODS = categoryNode('201', '雑貨', 1)
 
 /**
- * カテゴリの画面が使う API に応答する。木は tree を返し、変更の要求は requests に取っておく。<br />
+ * カテゴリの画面が使う API に応答する。木は tree を返し、変更のリクエストは requests に取っておく。<br />
  * 登録・名称の変更・削除は、それぞれ create・rename・remove の関数があればその応答を、なければ成功を返す。
  */
 function serveCategories(

@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.sales.Basis;
@@ -10,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Record3;
+import org.jooq.Record5;
+import org.jooq.ResultQuery;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
@@ -50,25 +54,25 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     public Map<LocalDate, DailySales> dailySales(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
                                                  boolean excludeShipping) {
         var day = dayOf(basis);
-        var result = new LinkedHashMap<LocalDate, DailySales>();
+        ResultQuery<Record3<LocalDate, BigDecimal, BigDecimal>> query;
         if (productId == null) {
             // 注文ごとの販売数量は、明細の数量の合計
             Field<BigDecimal> quantity = DSL.field(DSL.select(DSL.sum(SALES_ORDER_LINE.QUANTITY))
                     .from(SALES_ORDER_LINE)
                     .where(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID)));
-            dsl.select(day, DSL.sum(orderAmount(excludeTax, excludeShipping)), DSL.sum(quantity))
+            query = dsl.select(day, DSL.sum(orderAmount(excludeTax, excludeShipping)), DSL.sum(quantity))
                     .from(SALES_ORDER)
                     .where(counted(period, basis))
-                    .groupBy(day)
-                    .forEach(row -> result.put(row.value1(), new DailySales(money(row.value2()), count(row.value3()))));
+                    .groupBy(day);
         } else {
-            dsl.select(day, DSL.sum(lineAmount(excludeTax)), DSL.sum(SALES_ORDER_LINE.QUANTITY))
+            query = dsl.select(day, DSL.sum(lineAmount(excludeTax)), DSL.sum(SALES_ORDER_LINE.QUANTITY))
                     .from(SALES_ORDER)
                     .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
                     .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
-                    .groupBy(day)
-                    .forEach(row -> result.put(row.value1(), new DailySales(money(row.value2()), count(row.value3()))));
+                    .groupBy(day);
         }
+        var result = new LinkedHashMap<LocalDate, DailySales>();
+        query.forEach(row -> result.put(row.value1(), toDailySales(row)));
         return result;
     }
 
@@ -112,8 +116,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
                     .from(SALES_ORDER)
                     .where(counted(period, basis))
                     .groupBy(keys)
-                    .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), buyerGender(row.value3()), money(row.value4()),
-                            row.value5()));
+                    .fetch(JooqReportQueryRepository::toSegmentTotal);
         }
         // 商品を選んだら、その商品の明細を含む注文だけを数え、売上額はその明細の分だけ
         return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER,
@@ -122,17 +125,30 @@ class JooqReportQueryRepository implements ReportQueryRepository {
                 .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
                 .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
                 .groupBy(keys)
-                .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), buyerGender(row.value3()), money(row.value4()),
-                        row.value5()));
+                .fetch(JooqReportQueryRepository::toSegmentTotal);
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
+     * 日ごとの集計の行（日、売上額の合計、数量の合計）を、日の売上にする。
+     */
+    private static DailySales toDailySales(Record3<LocalDate, BigDecimal, BigDecimal> row) {
+        return new DailySales(money(row.value2()), count(row.value3()));
+    }
+
+    /**
+     * 組ごとの集計の行（都道府県、年齢、性別、売上額の合計、注文件数）を、組の売上にする。
+     */
+    private static SegmentTotal toSegmentTotal(Record5<String, Short, String, BigDecimal, Integer> row) {
+        return new SegmentTotal(row.value1(), age(row.value2()), buyerGender(row.value3()), money(row.value4()), row.value5());
+    }
+
+    /**
      * 列の性別の値を、注文時の性別の列挙にする。
      */
     private static @Nullable ReportBuyerGender buyerGender(@Nullable String value) {
-        return value == null ? null : ReportBuyerGender.valueOf(value);
+        return value == null ? null : AggregateGuards.restore("report segment", () -> ReportBuyerGender.valueOf(value));
     }
 
     /**

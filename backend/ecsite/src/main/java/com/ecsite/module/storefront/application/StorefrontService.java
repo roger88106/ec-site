@@ -101,7 +101,7 @@ public class StorefrontService {
      * 会員のカートは、持ち主の会員だけに見せる。ほかの人には 404。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return カートの表示
      */
     public CartView getCart(UUID cartId, @Nullable UUID requester) {

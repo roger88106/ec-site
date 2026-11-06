@@ -54,7 +54,7 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
     }
 
     /**
-     * 指定した時点を期間に含むものを返す（時点の税率の判定。税区分、税区分の照会、税率の予定が使う）。
+     * 指定した時点を期間に含むものを返す。
      * 税区分の税率の期間は重複しないので、該当は 0 件か 1 件。
      *
      * @param items   期間を持つもの（税率など）

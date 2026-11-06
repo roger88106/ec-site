@@ -20,7 +20,7 @@ const {
 } = readServerConfig()
 
 /**
- * 店舗 API の応答を待つ時間の上限を、要求に付ける（店舗画面の構成の「エラー」）。上限を過ぎた要求は例外で失敗し、
+ * 店舗 API の応答を待つ時間の上限を、リクエストに付ける（店舗画面の構成の「エラー」）。上限を過ぎたリクエストは例外で失敗し、
  * サーバーアクションでは「接続できない」の結果になる。呼ぶときに fetch を替えても（{@link UNCACHED}）有効になる。
  */
 const timeout: Middleware = {
@@ -30,10 +30,10 @@ const timeout: Middleware = {
 }
 
 /**
- * 画面の要求と同じ追跡の ID（traceparent）を、店舗 API の要求に付ける（店舗画面の構成の「エラー」）。
- * バックエンドのログを、画面の要求から辿れるようにする。<br />
- * Next.js はキャッシュの鍵から traceparent を除くので、キャッシュする要求に付けてもキャッシュは使われる。
- * 呼ぶ口（{@link getApi}、{@link getMemberApi}）は connection() の後に返すので、必ず要求の中で動く。
+ * 画面のリクエストと同じ追跡の ID（traceparent）を、店舗 API のリクエストに付ける（店舗画面の構成の「エラー」）。
+ * バックエンドのログを、画面のリクエストから辿れるようにする。<br />
+ * Next.js はキャッシュの鍵から traceparent を除くので、キャッシュするリクエストに付けてもキャッシュは使われる。
+ * 呼ぶ口（{@link getApi}、{@link getMemberApi}）は connection() の後に返すので、必ずリクエストの中で動く。
  */
 const trace: Middleware = {
   async onRequest({ request }) {
@@ -48,7 +48,7 @@ const trace: Middleware = {
 /**
  * 店舗 API の 5xx の応答を、warn のログに出す（店舗画面の構成の「エラー」）。<br />
  * 出すのは状態コード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）だけ。
- * token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出さない。
+ * token、Cookie、リクエストの本文、クエリ（メールアドレスなどを含みうる）は出さない。
  */
 const serverErrorLog: Middleware = {
   async onResponse({ request, response, schemaPath }) {

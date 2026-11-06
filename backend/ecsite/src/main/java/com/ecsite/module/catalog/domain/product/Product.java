@@ -260,9 +260,7 @@ public class Product extends AggregateRoot {
      * @param now       現在時刻
      */
     public void deleteVariant(@NonNull UUID variantId, @NonNull Instant now) {
-        if (variants.stream().noneMatch(variant -> variant.id().equals(variantId))) {
-            throw BusinessException.of(CommonErrorCode.NOT_FOUND);
-        }
+        requireVariant(variantId);
         if (hasBeenShown(now)) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_ALREADY_SHOWN);
         }
@@ -350,8 +348,7 @@ public class Product extends AggregateRoot {
      * @return 削除した画像のアセット ID
      */
     public UUID deleteImage(@NonNull UUID imageId) {
-        var image = images.stream().filter(candidate -> candidate.id().equals(imageId)).findFirst()
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        var image = requireImage(imageId);
 
         this.images = images.stream().filter(candidate -> !candidate.id().equals(imageId)).toList();
         this.variants = variants.stream()
@@ -367,9 +364,7 @@ public class Product extends AggregateRoot {
      * @param imageId   画像 ID。null で指定を外す（代表画像を使う）
      */
     public void setVariantImage(@NonNull UUID variantId, @Nullable UUID imageId) {
-        if (variants.stream().noneMatch(variant -> variant.id().equals(variantId))) {
-            throw BusinessException.of(CommonErrorCode.NOT_FOUND);
-        }
+        requireVariant(variantId);
         if (imageId != null && images.stream().noneMatch(image -> image.id().equals(imageId))) {
             throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_IMAGE);
         }
@@ -526,8 +521,7 @@ public class Product extends AggregateRoot {
      * @return 変わったら true。すでにその状態なら false
      */
     private boolean changeSalesSuspended(UUID variantId, boolean salesSuspended) {
-        var variant = variants.stream().filter(v -> v.id().equals(variantId)).findFirst()
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        var variant = requireVariant(variantId);
         if (variant.salesSuspended() == salesSuspended) {
             return false;
         }
@@ -535,6 +529,28 @@ public class Product extends AggregateRoot {
                 .map(v -> v.id().equals(variantId) ? v.withSalesSuspended(salesSuspended) : v)
                 .toList();
         return true;
+    }
+
+    /**
+     * 商品のバリアントを ID で探す。なければ、見つからない業務のエラーを投げる。
+     *
+     * @param variantId バリアント ID
+     * @return バリアント
+     */
+    private Variant requireVariant(UUID variantId) {
+        return variants.stream().filter(variant -> variant.id().equals(variantId)).findFirst()
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+    }
+
+    /**
+     * 商品の画像を ID で探す。なければ、見つからない業務のエラーを投げる。
+     *
+     * @param imageId 画像 ID
+     * @return 画像
+     */
+    private ProductImage requireImage(UUID imageId) {
+        return images.stream().filter(image -> image.id().equals(imageId)).findFirst()
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
     /**

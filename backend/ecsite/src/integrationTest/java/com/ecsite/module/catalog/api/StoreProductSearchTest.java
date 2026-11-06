@@ -61,7 +61,7 @@ class StoreProductSearchTest {
     private CatalogTestData catalog;
 
     /**
-     * テストごとの印（商品名に入れて、検索を自分の商品に絞る。他の語と重ならない英数字）
+     * テストごとの識別子（商品名に入れて、検索を自分の商品に絞る。他の語と重ならない英数字）
      */
     private String mark;
 

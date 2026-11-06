@@ -5,11 +5,11 @@ import type { components, paths } from './generated/admin'
 import { BACKEND_URL } from './urls'
 import { ASYNC_TIMEOUT } from './waits'
 
-/** バリアントの登録の要求の本文 */
+/** バリアントの登録のリクエストの本文 */
 type AddVariantRequest = components['schemas']['AddVariantRequest']
 
 /**
- * 実行ごとの印。テストで作る品番・名称に付け、前の実行や手で作ったデータと混ざらないようにする。<br />
+ * 実行ごとの識別子。テストで作る品番・名称に付け、前の実行や手で作ったデータと混ざらないようにする。<br />
  * 品番に使えるよう、英大文字と数字だけにする（例：MG3K2J1A）。
  */
 export const RUN_ID = Date.now().toString(36).toUpperCase()
@@ -68,10 +68,10 @@ export async function taxCategoryWithRate(ratePercent: number): Promise<TaxCateg
 let categorySequence = 0
 
 /**
- * 最上位のカテゴリを作る。名称には実行ごとの印と通し番号を付ける。
+ * 最上位のカテゴリを作る。名称には実行ごとの識別子と通し番号を付ける。
  *
- * @param name 名称（印と通し番号を後ろに付ける）
- * @returns カテゴリの ID と、印を付けた名称
+ * @param name 名称（識別子と通し番号を後ろに付ける）
+ * @returns カテゴリの ID と、識別子を付けた名称
  */
 export async function createCategory(name: string): Promise<{ id: string; name: string }> {
   categorySequence += 1
@@ -82,7 +82,7 @@ export async function createCategory(name: string): Promise<{ id: string; name: 
 
 /** 公開した商品の作り方 */
 export type PublishedProduct = {
-  /** 品番の後ろの部分。前に「E2E-<実行ごとの印>-」を付ける */
+  /** 品番の後ろの部分。前に「E2E-<実行ごとの識別子>-」を付ける */
   code: string
   name: string
   taxCategoryId: string
@@ -96,10 +96,10 @@ export type PublishedProduct = {
 }
 
 /**
- * 実行ごとの印を付けた品番（例：E2E-MG3K2J1A-SHIRT）。
+ * 実行ごとの識別子を付けた品番（例：E2E-MG3K2J1A-SHIRT）。
  *
  * @param code 品番の後ろの部分
- * @returns 印を付けた商品品番
+ * @returns 識別子を付けた商品品番
  */
 export function productCode(code: string): string {
   return `E2E-${RUN_ID}-${code}`
@@ -144,6 +144,29 @@ export async function createPublishedProduct(product: PublishedProduct): Promise
   }
   unwrap(await api.PUT('/products/{productId}/publish', { params: { path: { productId: id } } }))
   return id
+}
+
+/** 単純な商品の作り方 */
+export type SimpleProduct = Pick<PublishedProduct, 'code' | 'name' | 'categoryIds' | 'publishStart'> & {
+  /** 唯一のバリアントの在庫 */
+  stock: number
+}
+
+/**
+ * 単純な商品（税率 10%、税抜 1,000 円、軸なし、バリアント 1 つ「A」）を、{@link createPublishedProduct} で公開する。
+ * 軸のある商品や、10% 以外の税率の商品は、{@link createPublishedProduct} で作る。
+ *
+ * @param product 商品の作り方
+ * @returns 商品 ID
+ */
+export async function createSimpleProduct({ stock, ...product }: SimpleProduct): Promise<string> {
+  const { id: taxCategoryId } = await taxCategoryWithRate(10)
+  return createPublishedProduct({
+    ...product,
+    taxCategoryId,
+    priceExclTax: 1000,
+    variants: [{ code: 'A', stock }],
+  })
 }
 
 /**

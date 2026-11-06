@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -120,9 +121,9 @@ public class Cart {
     }
 
     /**
-     * 要求した人がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
+     * リクエストした人がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
      *
-     * @param requesterMemberId 要求した会員の ID（ログインしていなければ null）
+     * @param requesterMemberId リクエストした会員の ID（ログインしていなければ null）
      * @return 使えれば true
      */
     public boolean isAccessibleBy(@Nullable UUID requesterMemberId) {
@@ -148,10 +149,21 @@ public class Cart {
      * @return 合算した数量
      */
     public int quantityAfterAdding(UUID variantId, int quantity, Instant now) {
+        return quantityOf(variantId, now).orElse(0) + quantity;
+    }
+
+    /**
+     * 指定した時刻での、バリアントの数量を返す。
+     *
+     * @param variantId バリアント ID
+     * @param now       現在時刻
+     * @return 数量。カートになければ（期限が切れていれば）空
+     */
+    public OptionalInt quantityOf(UUID variantId, Instant now) {
         return itemsAt(now).stream()
                 .filter(item -> item.variantId().equals(variantId))
                 .mapToInt(CartItem::quantity)
-                .sum() + quantity;
+                .findFirst();
     }
 
     /**
@@ -262,7 +274,7 @@ public class Cart {
     }
 
     /**
-     * 品目をすべて消す（注文の成立）。
+     * 品目を全て削除する（移した後に、元のカートを空にする）。
      *
      * @param now 現在時刻
      */

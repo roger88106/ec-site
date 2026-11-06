@@ -1,6 +1,5 @@
 package com.ecsite.module.payment.application;
 
-import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import lombok.RequiredArgsConstructor;
@@ -53,11 +52,8 @@ class PaymentExpiryJob {
         for (var payment : queryService.findPastDeadline(BATCH_SIZE)) {
             try {
                 expire(payment);
-            } catch (SystemException e) {
-                // 決済サービスが応えない。次の回でやり直す
-                log.warn("支払の期限切れを次の回に回す: paymentId={}", payment.id(), e);
             } catch (RuntimeException e) {
-                // 予期しない例外（決済サービスの応答、保存の失敗など）。次の回でやり直す
+                // 決済サービスの応答、保存の失敗、DB の値の破損のどれでも、次の回でやり直す
                 log.warn("支払の期限切れに失敗したので、次の回に回す: paymentId={}", payment.id(), e);
             }
         }

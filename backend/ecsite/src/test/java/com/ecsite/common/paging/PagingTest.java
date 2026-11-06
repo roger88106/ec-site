@@ -1,7 +1,6 @@
 package com.ecsite.common.paging;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,8 +9,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.List;
 
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * ページングの単体テスト（API の規約）
@@ -48,9 +47,7 @@ class PagingTest {
         @CsvSource({"0, 20", "-1, 20", "1, 0", "1, 101"})
         @DisplayName("範囲外のページ・件数は拒否される")
         void rejectsOutOfRange(int page, int size) {
-            assertThatThrownBy(() -> PageRequest.of(page, size))
-                    .isInstanceOfSatisfying(BusinessException.class, ex ->
-                            assertThat(ex.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.INVALID_REQUEST.getCode()));
+            assertBusinessError(() -> PageRequest.of(page, size), CommonErrorCode.INVALID_REQUEST);
         }
     }
 

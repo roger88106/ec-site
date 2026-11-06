@@ -35,10 +35,10 @@ const {
 /** セッションの Cookie を HTTPS だけで送るか（カート ID の Cookie と同じく、本番の起動で true） */
 const SECURE_COOKIE = process.env.NODE_ENV === 'production'
 
-/** access token の期限までの残りがこれ以下なら、要求のたびの確認（proxy）で取り直す（秒） */
+/** access token の期限までの残りがこれ以下なら、リクエストのたびの確認（proxy）で取り直す（秒） */
 const REFRESH_MARGIN_SECONDS = 60
 
-/** proxy が、いまの画面のパス（クエリを含む）を知らせる要求のヘッダー */
+/** proxy が、いまの画面のパス（クエリを含む）を知らせるリクエストのヘッダー */
 export const PATHNAME_HEADER = 'x-pathname'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -99,7 +99,7 @@ type CurrentMember = {
 }
 
 /**
- * ログインしている会員。サーバーコンポーネントとサーバーアクションから呼ぶ。要求の中では 1 回だけ読む。
+ * ログインしている会員。サーバーコンポーネントとサーバーアクションから呼ぶ。リクエストの中では 1 回だけ読む。
  *
  * @returns ログインしていなければ（IdP のログインの状態が切れて token を取り直せないときも）null
  */
@@ -112,8 +112,18 @@ export const currentMember = cache(async (): Promise<CurrentMember | null> => {
 })
 
 /**
+ * ログインしている会員。ログインしていなければ、ログインの画面へ移す（ログインを求める画面から呼ぶ）。
+ *
+ * @returns ログインしている会員
+ */
+export async function requireMember(): Promise<CurrentMember> {
+  const member = await currentMember()
+  return member ?? (await redirectToLogin())
+}
+
+/**
  * 会員の access token（サーバー専用）。期限が切れていれば、その場で取り直して使う（Cookie には書かない。
- * 次の要求で proxy が書く）。要求の中では 1 回だけ読む。
+ * 次のリクエストで proxy が書く）。リクエストの中では 1 回だけ読む。
  *
  * @returns ログインしていない、または取り直せなければ null
  */

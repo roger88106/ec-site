@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -19,16 +20,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
-import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
 /**
  * 商品照会のクエリリポジトリ
@@ -84,7 +82,8 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .limit(request.size())
                 .offset(request.offset())
                 .fetch(record -> new ProductSummaryView(
-                        record.value1(), record.value2(), record.value3(), PublicationStatus.valueOf(record.value4()),
+                        record.value1(), record.value2(), record.value3(),
+                        AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.value4())),
                         record.value5()));
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
@@ -102,12 +101,12 @@ class JooqProductQueryRepository implements ProductQueryRepository {
         var condition = DSL.noCondition();
         if (query.code() != null && !query.code().isBlank()) {
             // 英小文字は大文字として扱う。品番は英大文字・数字・ハイフンだけなので、大文字にそろえて比べる
-            var pattern = LikePatterns.startsWith(query.code().toUpperCase(Locale.ROOT));
-            condition = condition.and(PRODUCT.PRODUCT_CODE.like(pattern, LikePatterns.ESCAPE)
+            var code = query.code().toUpperCase(Locale.ROOT);
+            condition = condition.and(PRODUCT.PRODUCT_CODE.startsWith(code)
                     .or(DSL.exists(DSL.selectOne()
                             .from(VARIANT)
                             .where(VARIANT.PRODUCT_ID.eq(PRODUCT.ID))
-                            .and(VARIANT.VARIANT_CODE.like(pattern, LikePatterns.ESCAPE)))));
+                            .and(VARIANT.VARIANT_CODE.startsWith(code)))));
         }
         if (query.name() != null && !query.name().isBlank()) {
             condition = condition.and(PRODUCT.NAME.likeIgnoreCase(LikePatterns.contains(query.name()), LikePatterns.ESCAPE));
@@ -130,11 +129,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
     private ProductDetailView toDetail(ProductRecord record) {
         var id = record.getId();
 
-        var axes = dsl.select(PRODUCT_AXIS.NAME)
-                .from(PRODUCT_AXIS)
-                .where(PRODUCT_AXIS.PRODUCT_ID.eq(id))
-                .orderBy(PRODUCT_AXIS.POSITION)
-                .fetch(PRODUCT_AXIS.NAME);
+        var axes = ProductParts.axes(dsl, id);
 
         var categoryIds = dsl.select(PRODUCT_CATEGORY.CATEGORY_ID)
                 .from(PRODUCT_CATEGORY)
@@ -142,13 +137,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .orderBy(PRODUCT_CATEGORY.CATEGORY_ID)
                 .fetch(PRODUCT_CATEGORY.CATEGORY_ID);
 
-        // バリアント ID → 軸の値（軸の並び）
-        Map<UUID, List<String>> axisValuesByVariant = dsl.select(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE)
-                .from(VARIANT_AXIS_VALUE)
-                .join(VARIANT).on(VARIANT.ID.eq(VARIANT_AXIS_VALUE.VARIANT_ID))
-                .where(VARIANT.PRODUCT_ID.eq(id))
-                .orderBy(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.POSITION)
-                .fetchGroups(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE);
+        var axisValuesByVariant = ProductParts.axisValuesByVariant(dsl, id);
 
         var variants = dsl.selectFrom(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(id))
@@ -177,7 +166,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 null,
                 categoryIds,
                 axes,
-                PublicationStatus.valueOf(record.getStatus()),
+                AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
                 record.getFirstShownAt(),
                 record.getPublishStart(),
                 record.getPublishEnd(),

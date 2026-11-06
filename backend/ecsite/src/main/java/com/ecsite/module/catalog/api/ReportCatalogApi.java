@@ -1,12 +1,14 @@
 package com.ecsite.module.catalog.api;
 
 import com.ecsite.module.catalog.application.OrderableVariantQueryService;
+import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.product.ProductQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,11 +52,26 @@ public class ReportCatalogApi {
      * @return 商品。なければ空
      */
     public Optional<ReportProduct> findProduct(UUID productId) {
-        return productQueryService.findProduct(productId).map(product -> new ReportProduct(product.id(), product.name(),
-                product.variants().stream().map(variant -> new ReportProduct.Variant(variant.id(), variant.variantCode(),
-                        IntStream.range(0, product.axes().size())
-                                .mapToObj(i -> new ReportProduct.AxisValue(product.axes().get(i), variant.axisValues().get(i)))
-                                .toList()))
-                        .toList()));
+        return productQueryService.findProduct(productId).map(ReportCatalogApi::toProduct);
+    }
+
+    /**
+     * application の view を公開の型に変換する。
+     */
+    private static ReportProduct toProduct(ProductDetailView product) {
+        var variants = product.variants().stream()
+                .map(variant -> toVariant(product.axes(), variant))
+                .toList();
+        return new ReportProduct(product.id(), product.name(), variants);
+    }
+
+    /**
+     * バリアントを公開の型に変換する。軸の名前と、バリアントの軸の値を、並びの位置で組にする。
+     */
+    private static ReportProduct.Variant toVariant(List<String> axes, ProductDetailView.VariantView variant) {
+        var axisValues = IntStream.range(0, axes.size())
+                .mapToObj(i -> new ReportProduct.AxisValue(axes.get(i), variant.axisValues().get(i)))
+                .toList();
+        return new ReportProduct.Variant(variant.id(), variant.variantCode(), axisValues);
     }
 }

@@ -17,16 +17,6 @@ final class LikePatterns {
     static final char ESCAPE = '!';
 
     /**
-     * 前方一致のパターンを作る。
-     *
-     * @param value 利用者が入力した文字列
-     * @return {@code value%}（ワイルドカード文字はエスケープ済み）
-     */
-    static String startsWith(String value) {
-        return escape(value) + "%";
-    }
-
-    /**
      * 部分一致のパターンを作る。
      *
      * @param value 利用者が入力した文字列

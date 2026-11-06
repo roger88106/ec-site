@@ -18,7 +18,7 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
     // 画面の移動・not found の例外は、ここで飲み込まずに Next.js へ返す
     unstable_rethrow(error)
     // 例外の名前と、原因の例外の名前とコード、API の失敗の状態コードだけを出す。メッセージには、カートの ID などの識別子や
-    // 要求の内容が入りうるので、例外と原因のどちらのメッセージも出さない
+    // リクエストの内容が入りうるので、例外と原因のどちらのメッセージも出さない
     const cause: unknown = error instanceof Error ? error.cause : undefined
     const causeCode = cause instanceof Error && 'code' in cause ? cause.code : undefined
     await log.error('サーバーアクションが失敗しました', {
@@ -30,4 +30,19 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
     })
     return { ok: false, message: connectionFailedMessage() }
   }
+}
+
+/**
+ * 読むだけの処理を包み、例外なら代わりの値を返す。例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
+ *
+ * @param work 処理
+ * @param fallback 例外で失敗したときに返す値
+ * @returns 処理の値。例外なら fallback
+ */
+export async function withFallback<T>(work: () => Promise<T>, fallback: T): Promise<T> {
+  let value = fallback
+  await withActionResult(async () => {
+    value = await work()
+  })
+  return value
 }

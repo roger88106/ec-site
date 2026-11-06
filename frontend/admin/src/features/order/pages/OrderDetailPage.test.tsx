@@ -2,15 +2,15 @@ import { screen, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { CancellationRequest, OrderDetail, Shipment } from '@/api/types'
-import { ORDER_ID, orderActions, orderDetail } from '@/test/fixtures'
+import { cancelledOrder, ORDER_ID, orderActions, orderDetail, payment } from '@/test/fixtures'
 import { findDetailValue, getDetailValue } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
-/** 出荷の登録の要求の本文（送った内容を確認する） */
+/** 出荷の登録のリクエストの本文（送った内容を確認する） */
 type ShipOrderRequest = components['schemas']['ShipOrderRequest']
 
-/** キャンセルの要求の本文（送った内容を確認する） */
+/** キャンセルのリクエストの本文（送った内容を確認する） */
 type CancelOrderRequest = components['schemas']['CancelOrderRequest']
 
 /** 注文の詳細の URL */
@@ -86,9 +86,7 @@ describe('注文の詳細', () => {
   test('AC-101、142 申請を承認すると、確認の後で送り、キャンセルになった注文と、判断した運営者・キャンセルした運営者の氏名を出す', async () => {
     serveOrder(
       REQUESTED,
-      orderDetail({
-        status: 'CANCELLED',
-        actions: orderActions({ cancel: false }),
+      cancelledOrder({
         cancellationRequest: {
           ...REQUEST,
           result: 'APPROVED',
@@ -133,12 +131,19 @@ describe('注文の詳細', () => {
     expect(screen.getByRole('button', { name: 'キャンセルする' })).toBeInTheDocument()
   })
 
+  test('キャンセルの申請に理由がないときは、理由に「（なし）」を表示する', async () => {
+    serveOrder(
+      orderDetail({ status: 'CANCELLATION_REQUESTED', cancellationRequest: { ...REQUEST, reason: undefined } }),
+    )
+    renderApp(PAGE_PATH)
+
+    expect(await screen.findByText('（なし）')).toBeInTheDocument()
+  })
+
   test('AC-103 運営者のキャンセルは理由がないと送れず、理由を付けて送ると、キャンセルの内容に理由を出す', async () => {
     const state = serveOrder(
       orderDetail(),
-      orderDetail({
-        status: 'CANCELLED',
-        actions: orderActions({ cancel: false }),
+      cancelledOrder({
         cancellation: {
           cancelledAt: '2026-10-10T03:00:00Z',
           kind: 'OPERATOR',
@@ -207,9 +212,7 @@ describe('注文の詳細', () => {
 
   test('AC-105 キャンセル済みの注文には操作を出さない', async () => {
     serveOrder(
-      orderDetail({
-        status: 'CANCELLED',
-        actions: orderActions({ cancel: false }),
+      cancelledOrder({
         cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り', restocked: true },
       }),
     )
@@ -223,7 +226,7 @@ describe('注文の詳細', () => {
   test('AC-160 支払の状態と、支払の期限を出す', async () => {
     serveOrder(
       orderDetail({
-        payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+        payment: payment('AUTHORIZED'),
       }),
     )
     renderApp(PAGE_PATH)
@@ -234,11 +237,9 @@ describe('注文の詳細', () => {
 
   test('AC-165 与信の取消が済むまで「与信の取消待ち」と示す', async () => {
     serveOrder(
-      orderDetail({
-        status: 'CANCELLED',
-        actions: orderActions({ cancel: false }),
+      cancelledOrder({
         cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り', restocked: true },
-        payment: { status: 'VOID_PENDING', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+        payment: payment('VOID_PENDING'),
       }),
     )
     renderApp(PAGE_PATH)
@@ -248,11 +249,9 @@ describe('注文の詳細', () => {
 
   test('AC-155 支払期限切れのキャンセルを示す', async () => {
     serveOrder(
-      orderDetail({
-        status: 'CANCELLED',
-        actions: orderActions({ cancel: false }),
+      cancelledOrder({
         cancellation: { cancelledAt: '2026-10-10T01:31:00Z', kind: 'PAYMENT_EXPIRED', restocked: true },
-        payment: { status: 'NOT_PAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+        payment: payment('NOT_PAID'),
       }),
     )
     renderApp(PAGE_PATH)
@@ -267,7 +266,7 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'PENDING_PAYMENT',
         actions: orderActions({ cancel: false }),
-        payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+        payment: payment('UNPAID'),
       }),
     )
     renderApp(PAGE_PATH)
@@ -290,7 +289,7 @@ describe('出荷', () => {
   /** 出荷を登録できる「受付」の注文 */
   const SHIPPABLE = orderDetail({
     actions: orderActions({ ship: true }),
-    payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+    payment: payment('AUTHORIZED'),
   })
 
   /** 登録した直後の出荷（API の応答） */
@@ -313,7 +312,7 @@ describe('出荷', () => {
   const SHIPPED = orderDetail({
     status: 'SHIPPED',
     actions: orderActions({ cancel: false }),
-    payment: { status: 'CAPTURED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+    payment: payment('CAPTURED'),
     shipment: SHIPMENT,
   })
 
@@ -401,7 +400,7 @@ describe('出荷', () => {
       orderDetail({
         status: 'PENDING_PAYMENT',
         actions: orderActions({ cancel: false }),
-        payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+        payment: payment('UNPAID'),
       }),
     )
     renderApp(PAGE_PATH)
@@ -436,11 +435,9 @@ describe('与信期限と返金', () => {
     ['REFUNDED', '返金済み'],
   ] as const)('AC-194 返金の状態（%s）を示す', async (status, label) => {
     serveOrder(
-      orderDetail({
-        status: 'CANCELLED',
-        actions: orderActions({ cancel: false }),
+      cancelledOrder({
         cancellation: { cancelledAt: '2026-10-12T03:00:00Z', kind: 'OPERATOR', reason: '返送', restocked: true },
-        payment: { status, deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+        payment: payment(status),
       }),
     )
     renderApp(PAGE_PATH)
@@ -454,7 +451,7 @@ describe('返送の注文のキャンセル', () => {
   const RETURNED = orderDetail({
     status: 'SHIPPED',
     actions: orderActions({ cancel: true, cancelAsksRestock: true }),
-    payment: { status: 'CAPTURED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+    payment: payment('CAPTURED'),
     shipment: {
       carrier: 'YAMATO',
       trackingNumber: '123456789012',

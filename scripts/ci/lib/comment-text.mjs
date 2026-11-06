@@ -4,8 +4,8 @@
 // - テンプレートで書いたテスト名：外側のバッククォートは文字列の区切りなので " に替え、埋め込み（${…}）は X に替えて取り出す
 // - シェル（.sh）：# のコメント（1 行目の #! を除く）
 // 走査（コメント・文字列の読み分け）は scan-code が行う。ja-text が使う
-import { closingParen } from './closing-paren.mjs'
 import { scanCode, templateEnd } from './scan-code.mjs'
+import { skipModifiers } from './test-files.mjs'
 
 /** Java と Kotlin の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */
 const JAVA_SCAN = { regex: false, templates: false, textBlocks: true }
@@ -86,18 +86,7 @@ function tsTestNameRanges(text) {
   const ranges = []
   for (const match of text.matchAll(TS_TEST_CALL)) {
     if (!code[match.index]) continue
-    let pos = match.index + match[0].length
-    while (text[pos] === '.') {
-      const modifier = /^\.(\w+)/.exec(text.slice(pos, pos + 20))
-      if (!modifier) break
-      pos += modifier[0].length
-      if (!TS_ARGUMENT_MODIFIERS.has(modifier[1])) continue
-      if (text[pos] === '(') {
-        pos = closingParen(text, pos) + 1
-      } else if (text[pos] === '`') {
-        pos = templateEnd(text, pos)
-      }
-    }
+    const { pos } = skipModifiers(text, match.index + match[0].length, TS_ARGUMENT_MODIFIERS)
     if (text[pos] !== '(') continue
     const from = pos + 1 + /^\s*/.exec(text.slice(pos + 1))[0].length
     if (text[from] === '`') ranges.push({ from, to: templateEnd(text, from), template: true })

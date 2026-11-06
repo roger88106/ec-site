@@ -7,7 +7,7 @@
 - 統合テストは `@IntegrationTest` を付ける。Spring と、Testcontainers の PostgreSQL・SeaweedFS・imgproxy が起動する ※1。例外は、本番の jar を別のプロセスで起動するテスト（`ProductionJarStartupTest`）で、Spring の外で動くので、必要な PostgreSQL を自分で起動する。
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
 - データを残さないテストは `@Transactional` で巻き戻す。
-- 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID や実行ごとの印）でデータを分ける。確認するのは、自分のデータだけである。表の全体の数や一覧の全体は確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要で、今あるものは残してよい。理由：DB はテストの実行ごとに作り、削除には漏れと順序（外部キー）の手間があるため。
+- 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID や実行ごとの識別子）でデータを分ける。確認するのは、自分のデータだけである。表の全体の数や一覧の全体は確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要で、今あるものは残してよい。理由：DB はテストの実行ごとに作り、削除には漏れと順序（外部キー）の手間があるため。
 - ログを確認するテストは、そのテストの中で出た出力だけを確認する。確認する処理の前に `CapturedLogs.mark` で位置を記録し、確認では `CapturedLogs.since` でその後の出力だけを読む。理由：`CapturedOutput` に残る他の出力（`CapturedLogs` の Javadoc）が件数に数えられ、件数を誤っていても通るため。
 - 巻き戻せないテストで、他のテストのデータも処理の対象になるときは、処理の前に対象の行を数え、ログの件数がその数と等しいことを確認する（「1 件以上」だけにしない）。
 
@@ -63,6 +63,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 | 補助 | 使う場面 | 使い方 |
 |------|----------|--------|
 | `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
+| `RestoreFailures` | Repository が DB の値を戻すときの失敗のテスト | 表ごとの行を返す jOOQ の mock を `with` と `dsl` で作り、`assertValueIsHidden` で例外の出力に値がないことを確認する |
 | `TestSettings` | 設定のテスト | `load(profile…)` と `bind(接頭辞, 設定の型, 値)` で読む。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
 | `Contracts`（`src/testFixtures` の `contract/`） | 契約のテストと構成の検査、店舗 API の token と Keycloak の統合テスト | OpenAPI の契約と realm の設定と設計書の置き場所は、この補助の関数（`openApi`・`realm`・`path`）で読む。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない ※2 |
 

@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.payment.tables.records.PaymentRecord;
 import com.ecsite.module.payment.domain.payment.Payment;
@@ -178,7 +179,7 @@ class JooqPaymentRepository implements PaymentRepository {
                 record.getOrderId(),
                 Money.of(record.getAmount()),
                 record.getDeadline(),
-                PaymentStatus.valueOf(record.getStatus()),
+                AggregateGuards.restore("payment", () -> PaymentStatus.valueOf(record.getStatus())),
                 page,
                 record.getAuthorizationRef(),
                 record.getAuthorizedAt(),

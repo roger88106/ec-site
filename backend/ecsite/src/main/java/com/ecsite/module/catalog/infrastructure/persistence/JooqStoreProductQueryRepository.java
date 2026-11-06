@@ -22,9 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
-import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
 /**
  * C 側向けの商品照会のクエリリポジトリ（docs/03-機能仕様/catalog.md）
@@ -103,7 +101,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .map(row -> {
                     var images = storeImageUrls.ofProduct(id);
                     return new StoreProductDetailView(row.value1(), row.value2(), row.value3(), Money.of(row.value4()), Money.of(row.value5()),
-                            axes(id), variants(id, images), List.copyOf(images.values()));
+                            ProductParts.axes(dsl, id), variants(id, images), List.copyOf(images.values()));
                 });
     }
 
@@ -138,26 +136,10 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * バリアント軸の名前を並び順で取得する。
-     */
-    private List<String> axes(UUID productId) {
-        return dsl.select(PRODUCT_AXIS.NAME)
-                .from(PRODUCT_AXIS)
-                .where(PRODUCT_AXIS.PRODUCT_ID.eq(productId))
-                .orderBy(PRODUCT_AXIS.POSITION)
-                .fetch(PRODUCT_AXIS.NAME);
-    }
-
-    /**
      * すべてのバリアント（販売停止中を含む）を表示順で取得する。バリアントの画像は、指定した画像の URL（なければ null）。
      */
     private List<StoreProductDetailView.Variant> variants(UUID productId, Map<UUID, String> imageUrls) {
-        Map<UUID, List<String>> axisValuesByVariant = dsl.select(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE)
-                .from(VARIANT_AXIS_VALUE)
-                .join(VARIANT).on(VARIANT.ID.eq(VARIANT_AXIS_VALUE.VARIANT_ID))
-                .where(VARIANT.PRODUCT_ID.eq(productId))
-                .orderBy(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.POSITION)
-                .fetchGroups(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE);
+        var axisValuesByVariant = ProductParts.axisValuesByVariant(dsl, productId);
         return dsl.selectFrom(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(productId))
                 .orderBy(VARIANT.DISPLAY_ORDER)

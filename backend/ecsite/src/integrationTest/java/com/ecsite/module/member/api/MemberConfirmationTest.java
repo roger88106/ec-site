@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 
 /**
  * 会員の確認の統合テスト（docs/03-機能仕様/member.md）。<br />
- * 同時の初回の要求を確認するため、要求ごとにコミットする。ロールバックしないので、作った会員を後で消す。
+ * 同時の初回のリクエストを確認するため、リクエストごとにコミットする。ロールバックしないので、作った会員を後で消す。
  * トランザクションが読み取り専用かは、会員のリポジトリを包み、呼ばれたときの状態を記録して確認する。
  */
 @IntegrationTest
@@ -92,7 +92,7 @@ class MemberConfirmationTest {
     }
 
     @Test
-    @DisplayName("同じアカウントの初回の要求が同時に来ても、会員は 1 人だけ作られ、すべて同じ会員 ID になる")
+    @DisplayName("同じアカウントの初回のリクエストが同時に来ても、会員は 1 人だけ作られ、すべて同じ会員 ID になる")
     void createsOnlyOneMemberOnConcurrentFirstRequests() throws Exception {
         var subject = newSubject();
         var threads = 8;
@@ -169,7 +169,7 @@ class MemberConfirmationTest {
     }
 
     /**
-     * IdP のアカウントでログインした要求として、会員 ID を求める。
+     * IdP のアカウントでログインしたリクエストとして、会員 ID を求める。
      */
     private UUID memberIdOf(String subject) {
         var jwt = Jwt.withTokenValue("token").header("alg", "none").subject(subject).build();

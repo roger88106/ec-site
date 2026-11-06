@@ -1,5 +1,6 @@
 package com.ecsite.common.message;
 
+import com.ecsite.DomainConstants;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.ErrorDetail;
@@ -115,7 +116,7 @@ class MessageInterpolationTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("cases")
     @DisplayName("AC-266 ドメインの定数を差し込んだ文が、整理の前の文と同じになる")
-    void interpolatesDomainConstants(Case example) throws ReflectiveOperationException {
+    void interpolatesDomainConstants(Case example) {
         var messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
@@ -140,9 +141,7 @@ class MessageInterpolationTest {
             if (classAndField[1].endsWith("()")) {
                 return Class.forName(classAndField[0]).getMethod(classAndField[1].replace("()", "")).invoke(null);
             }
-            var field = Class.forName(classAndField[0]).getDeclaredField(classAndField[1]);
-            field.setAccessible(true);
-            long value = ((Number) field.get(null)).longValue();
+            long value = DomainConstants.read(location.replace("/MB", "")).longValue();
             return megabytes ? value / (1024 * 1024) : value;
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException(Arrays.toString(classAndField), e);

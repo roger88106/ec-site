@@ -11,7 +11,7 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
   const taxCategory = await taxCategoryWithRate(10)
   const category = await createCategory('E2E カテゴリ')
   const code = productCode('FLOW')
-  // 検索のキーワード。実行ごとの印を含め、他の商品に当たらないようにする
+  // 検索のキーワード。実行ごとの識別子を含め、他の商品に当たらないようにする
   const keyword = `公開の流れ${RUN_ID}`
   const productName = `E2E ${keyword} T シャツ`
 

@@ -9,7 +9,6 @@ import com.ecsite.module.cart.application.port.CatalogDirectory;
 import com.ecsite.module.cart.application.port.StockDirectory;
 import com.ecsite.module.cart.domain.Cart;
 import com.ecsite.module.cart.domain.CartErrorCode;
-import com.ecsite.module.cart.domain.CartItem;
 import com.ecsite.module.cart.domain.CartMergeResult;
 import com.ecsite.module.cart.event.CartChanged;
 import lombok.RequiredArgsConstructor;
@@ -80,7 +79,7 @@ public class CartService {
         var cart = Cart.create(UUID.randomUUID(), clock.instant());
         // 会員を持たないカートは、会員ごとの一意制約に当たらないので、保存されないのは想定外
         if (!cartRepository.create(cart)) {
-            throw SystemException.of("カートを作れない：" + cart.id(), null);
+            throw SystemException.of("カートを作れない", null);
         }
         return cart.id();
     }
@@ -89,7 +88,7 @@ public class CartService {
      * バリアントを入れる。同じバリアントは数量を合算する。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  数量
      */
@@ -108,7 +107,7 @@ public class CartService {
      * 品目の数量を変える。増やすときだけ販売可能数を確認する。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  新しい数量
      */
@@ -116,10 +115,7 @@ public class CartService {
     public void changeQuantity(UUID cartId, @Nullable UUID requester, UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
             // 今の数量より増やすときだけ、在庫を確認する（減らす操作は、在庫が減っていても受け付ける）
-            var current = cart.itemsAt(now).stream()
-                    .filter(item -> item.variantId().equals(variantId))
-                    .mapToInt(CartItem::quantity)
-                    .findFirst();
+            var current = cart.quantityOf(variantId, now);
             if (current.isPresent() && quantity > current.getAsInt()) {
                 verifyStock(variantId, quantity);
             }
@@ -131,7 +127,7 @@ public class CartService {
      * 品目を削除する。カートになければ何もしない。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      */
     @Transactional
@@ -148,8 +144,7 @@ public class CartService {
     @Transactional(readOnly = true)
     public Optional<CartContentsView> findContents(UUID cartId) {
         var now = clock.instant();
-        return cartRepository.findById(cartId).map(cart -> new CartContentsView(cart.id(), cart.memberId().orElse(null), cart.version(),
-                cart.itemsAt(now).stream().map(item -> new CartContentsView.Item(item.variantId(), item.quantity())).toList()));
+        return cartRepository.findById(cartId).map(cart -> toView(cart, now));
     }
 
     /**
@@ -172,8 +167,8 @@ public class CartService {
 
     /**
      * 会員のカートの ID を返す。まだなければ空のカートを作る（会員ごとに 1 つ）。<br />
-     * 同じ会員の初回の要求が同時に来ても、会員ごとの一意制約で 1 つだけ作られる。作れた要求は作ったカートの ID を返し、
-     * 作れなかった要求だけが先に作られたカートを読み直す。
+     * 同じ会員の初回のリクエストが同時に来ても、会員ごとの一意制約で 1 つだけ作られる。作れたリクエストは作ったカートの ID を返し、
+     * 作れなかったリクエストだけが先に作られたカートを読み直す。
      *
      * @param memberId 会員 ID
      * @return カート ID
@@ -189,7 +184,7 @@ public class CartService {
             return cart.id();
         }
         return cartRepository.findIdByMemberId(memberId)
-                .orElseThrow(() -> SystemException.of("会員のカートを作れない：" + memberId, null));
+                .orElseThrow(() -> SystemException.of("会員のカートを作れない", null));
     }
 
     /**
@@ -232,7 +227,7 @@ public class CartService {
      * カートを読み込んで変更し、変わっていれば保存してカート変更のイベントを発行する。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）。会員のカートは持ち主だけが変えられる
+     * @param requester リクエストした会員の ID（ログインしていなければ null）。会員のカートは持ち主だけが変えられる
      * @param change    変更（カートと現在時刻を受け取る）
      */
     private void change(UUID cartId, @Nullable UUID requester, CartChange change) {
@@ -270,6 +265,16 @@ public class CartService {
         if (quantity > stockDirectory.sellableQuantity(variantId)) {
             throw BusinessException.of(CartErrorCode.QUANTITY_EXCEEDS_STOCK);
         }
+    }
+
+    /**
+     * 指定した時刻の中身から、返す値を作る。
+     */
+    private static CartContentsView toView(Cart cart, Instant now) {
+        var items = cart.itemsAt(now).stream()
+                .map(item -> new CartContentsView.Item(item.variantId(), item.quantity()))
+                .toList();
+        return new CartContentsView(cart.id(), cart.memberId().orElse(null), cart.version(), items);
     }
 
     /**

@@ -1,7 +1,6 @@
 package com.ecsite.common.model.base;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,6 +13,7 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,9 +37,7 @@ class AggregateGuardsTest {
         @Test
         @DisplayName("バージョンが違えば、更新の競合の業務のエラー")
         void rejectsDifferentVersion() {
-            assertThatThrownBy(() -> AggregateGuards.requireVersion(4, 3))
-                    .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getErrorDetail().errorCode())
-                            .isEqualTo(CommonErrorCode.CONCURRENT_MODIFICATION.getCode()));
+            assertBusinessError(() -> AggregateGuards.requireVersion(4, 3), CommonErrorCode.CONCURRENT_MODIFICATION);
         }
     }
 

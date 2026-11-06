@@ -42,19 +42,6 @@ public class RegionLookupApi {
     }
 
     /**
-     * 都道府県の市区町村の一覧
-     *
-     * @param prefectureCode 都道府県のコード
-     * @return コードの順の市区町村。都道府県がなければ空
-     */
-    public Optional<List<RegionMunicipality>> municipalitiesOf(String prefectureCode) {
-        return queryService.municipalitiesOf(prefectureCode)
-                .map(found -> found.municipalities().stream()
-                        .map(municipality -> toMunicipality(found.prefecture(), municipality))
-                        .toList());
-    }
-
-    /**
      * 市区町村をコードで引く
      *
      * @param code 市区町村のコード

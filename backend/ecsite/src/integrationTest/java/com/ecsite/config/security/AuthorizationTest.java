@@ -9,26 +9,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.ProblemAssertions.problem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 認証と認可の統合テスト。<br />
  * token は {@link TestTokens} がテストの鍵で署名したもので、本番と同じ検証（署名・issuer・audience・有効期限）と、
  * {@code admin.yaml} の {@code x-required-permission} による判定を通す。<br />
- * 管理 API の要求には既定で管理者の token が付く（{@link com.ecsite.TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
+ * 管理 API のリクエストには既定で管理者の token が付く（{@link com.ecsite.TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -159,7 +156,7 @@ class AuthorizationTest {
     }
 
     @Nested
-    @DisplayName("NFR-3 admin.yaml にない要求は拒否する")
+    @DisplayName("NFR-3 admin.yaml にないリクエストは拒否する")
     class DefaultDeny {
 
         @Test
@@ -187,7 +184,7 @@ class AuthorizationTest {
         }
 
         @Test
-        @DisplayName("NFR-3 admin.yaml にない要求も、token がなければ 401")
+        @DisplayName("NFR-3 admin.yaml にないリクエストも、token がなければ 401")
         void rejectsUndeclaredWithoutToken() throws Exception {
             mockMvc.perform(get("/api/admin/undeclared").with(TestTokens.none()))
                     .andExpect(status().isUnauthorized())
@@ -219,23 +216,5 @@ class AuthorizationTest {
             mockMvc.perform(get("/actuator/health"))
                     .andExpect(status().isOk());
         }
-    }
-
-    // ============================== 検証の部品 ==============================
-
-    /**
-     * Problem Details の形（API の規約）。
-     *
-     * @param errorCode エラーコード
-     * @param message   メッセージ
-     * @return 検証
-     */
-    private static ResultMatcher[] problem(String errorCode, String message) {
-        return List.of(
-                content().contentType(MediaType.APPLICATION_PROBLEM_JSON),
-                jsonPath("$.errorCode").value(errorCode),
-                jsonPath("$.message").value(message),
-                jsonPath("$.traceId").isNotEmpty()
-        ).toArray(ResultMatcher[]::new);
     }
 }

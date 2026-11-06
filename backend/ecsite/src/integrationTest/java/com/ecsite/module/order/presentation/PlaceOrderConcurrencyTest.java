@@ -39,11 +39,10 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 注文の並行性の受け入れテスト。<br />
- * 行ロックが働いていることを確認するため、要求ごとにコミットする。ロールバックしないが、作ったデータは消さない。
+ * 行ロックが働いていることを確認するため、リクエストごとにコミットする。ロールバックしないが、作ったデータは消さない。
  * 税区分の名称は一意なので、ほかのテストと重ならない名前にする。
  */
 @IntegrationTest

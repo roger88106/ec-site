@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 集約の復元に失敗した要求のログのテスト。<br />
+ * 集約の復元に失敗したリクエストのログのテスト。<br />
  * カテゴリのファクトリーを包み、復元の処理を、値を入れたメッセージの例外を投げるものに替える（集約を戻す共通の補助はそのまま通す）。
  * DB の値を直接壊す方法は、カテゴリの表の制約が集約の検証と同じ範囲を守るので使えず、メッセージに任意の値を入れることもできない。
  */
@@ -61,7 +61,7 @@ class CategoryRestoreFailureLogTest {
     CategoryFactory categoryFactory;
 
     @Test
-    @DisplayName("復元に失敗した要求は 500 の共通のシステムエラーを返し、ログには集約の名前と原因の例外の種類が出て、原因の例外のメッセージの値は出ない")
+    @DisplayName("復元に失敗したリクエストは 500 の共通のシステムエラーを返し、ログには集約の名前と原因の例外の種類が出て、原因の例外のメッセージの値は出ない")
     void logsWithoutCauseMessages(CapturedOutput output) throws Exception {
         var id = new CatalogTestData(mockMvc, clock).category("衣類", null);
         var secret = "secret-" + UUID.randomUUID();

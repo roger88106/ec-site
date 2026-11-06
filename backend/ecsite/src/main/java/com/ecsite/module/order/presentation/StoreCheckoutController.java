@@ -49,7 +49,7 @@ class StoreCheckoutController implements CheckoutApi {
     private final CurrentMember currentMember;
 
     /**
-     * 要求した会員の会員 ID
+     * リクエストした会員の会員 ID
      */
     private final CurrentMemberIds currentMemberIds;
 

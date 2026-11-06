@@ -3,6 +3,7 @@ import { ACCOUNTS, loginAdmin } from '../src/auth'
 import {
   createCategory,
   createPublishedProduct,
+  createSimpleProduct,
   discontinue,
   RUN_ID,
   taxCategoryWithRate,
@@ -24,16 +25,13 @@ for (const [label, change, button, toast] of [
   ['AC-32 販売終了', discontinue, '販売終了にする', '販売終了にしました'],
 ] as const) {
   test(`${label}にすると、店舗画面の詳細はすぐ「見つかりません」になり、一覧から消える`, async ({ page }) => {
-    const { id: taxCategoryId } = await taxCategoryWithRate(10)
     const { id: categoryId } = await createCategory('E2E カテゴリ')
     const productName = `E2E ${label} ${RUN_ID}`
-    const productId = await createPublishedProduct({
+    const productId = await createSimpleProduct({
       code: change === unpublish ? 'HIDE' : 'END',
       name: productName,
-      taxCategoryId,
-      priceExclTax: 1000,
       categoryIds: [categoryId],
-      variants: [{ code: 'A', stock: 1 }],
+      stock: 1,
     })
     const listUrl = `${STORE_URL}/products?categoryId=${categoryId}`
 

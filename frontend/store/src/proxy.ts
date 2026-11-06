@@ -3,10 +3,10 @@ import { auth, PATHNAME_HEADER } from '@/auth'
 import { newTraceparent, TRACEPARENT_HEADER, traceIdOf } from '@/lib/server/trace'
 
 /**
- * 要求ごとにセッションを確認する（店舗画面の構成の「ログイン」）。access token の期限が近ければ取り直し、Cookie に書く
+ * リクエストごとにセッションを確認する（店舗画面の構成の「ログイン」）。access token の期限が近ければ取り直し、Cookie に書く
  * （サーバーコンポーネントは Cookie を書けないため）。<br />
- * あわせて、いまの画面のパスを要求のヘッダーで知らせる（ログインの後に、その画面へ戻すため）。
- * 追跡の ID（traceparent）も要求ごとに作って知らせる（ログとバックエンドへの要求に同じ ID を付けるため）。
+ * あわせて、いまの画面のパスをリクエストのヘッダーで知らせる（ログインの後に、その画面へ戻すため）。
+ * 追跡の ID（traceparent）もリクエストごとに作って知らせる（ログとバックエンドへのリクエストに同じ ID を付けるため）。
  */
 export const proxy = auth((request) => {
   const requestHeaders = new Headers(request.headers)

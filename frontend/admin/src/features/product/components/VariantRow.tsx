@@ -2,14 +2,11 @@ import { Badge } from '@ec-site/shared/ui/badge'
 import { Button } from '@ec-site/shared/ui/button'
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
 import { useTranslations } from 'use-intl'
-import type { ProductDetail } from '@/api/types'
+import type { Variant } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { OptionSelect } from '@/components/OptionSelect'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { StockLink } from '@/features/product/components/StockLink'
-
-/** バリアント */
-type Variant = ProductDetail['variants'][number]
 
 /** バリアントの 1 行の操作。送る値（商品のバージョンなど）は一覧の側で決める */
 export type VariantRowActions = {

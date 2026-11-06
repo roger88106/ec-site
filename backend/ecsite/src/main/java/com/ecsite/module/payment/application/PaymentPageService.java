@@ -54,7 +54,7 @@ public class PaymentPageService {
         var opened = gateway.openPage(new PaymentGateway.PageRequest(payment.id(), orderId, payment.amount(),
                 properties.returnUrlOf(orderId)));
         var used = commandService.recordPage(orderId, opened);
-        // 使わない画面（同時の要求に先を越された、その間に支払えなくなった）は、支払えないように閉じる
+        // 使わない画面（同時のリクエストに先を越された、その間に支払えなくなった）は、支払えないように閉じる
         if (used.filter(page -> page.id().equals(opened.id())).isEmpty()) {
             gateway.closePage(opened.id());
         }

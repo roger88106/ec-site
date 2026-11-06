@@ -2,8 +2,8 @@ package com.ecsite.module.payment.infrastructure.stripe;
 
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
+import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentStripe;
 import com.stripe.StripeClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +14,7 @@ import java.time.Clock;
  * Stripe の決済サービスの設定。決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にする。
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnBooleanProperty(name = "ecsite.payment.mock.enabled", havingValue = false, matchIfMissing = true)
+@ConditionalOnPaymentStripe
 @EnableConfigurationProperties(StripeProperties.class)
 class StripeConfig {
 
@@ -41,7 +41,7 @@ class StripeConfig {
      * @return Stripe の API のビルダー
      */
     static StripeClient.StripeClientBuilder clientBuilder(StripeProperties properties) {
-        // SDK の既定（応答 80 秒）だと、支払画面を開く要求が、やり直しを含めて数分待たせうる
+        // SDK の既定（応答 80 秒）だと、支払画面を開くリクエストが、やり直しを含めて数分待たせうる
         return StripeClient.builder()
                 .setApiKey(properties.secretKey())
                 .setMaxNetworkRetries(MAX_NETWORK_RETRIES)

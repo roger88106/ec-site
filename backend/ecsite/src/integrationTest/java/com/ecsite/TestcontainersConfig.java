@@ -58,6 +58,11 @@ public class TestcontainersConfig {
     private static final int VOLUME_SIZE_LIMIT_MB = 100;
 
     /**
+     * PostgreSQL のイメージ。docker/compose.yaml と同じ
+     */
+    public static final String POSTGRES_IMAGE = "postgres:18-alpine";
+
+    /**
      * コンテナ同士のネットワークの中での SeaweedFS の名前
      */
     private static final String SEAWEEDFS_ALIAS = "seaweedfs";
@@ -82,7 +87,7 @@ public class TestcontainersConfig {
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgres() {
-        return new PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"));
+        return new PostgreSQLContainer(DockerImageName.parse(POSTGRES_IMAGE));
     }
 
     /**
@@ -103,7 +108,7 @@ public class TestcontainersConfig {
                 .withNetwork(network)
                 .withNetworkAliases(SEAWEEDFS_ALIAS)
                 .withExposedPorts(S3_PORT)
-                // 認証のない要求は 403 になるが、応答があれば S3 の口の準備ができている
+                // 認証のないリクエストは 403 になるが、応答があれば S3 の口の準備ができている
                 .waitingFor(Wait.forHttp("/").forPort(S3_PORT).forStatusCode(403));
         container.start();
         createBuckets(endpoint(container));

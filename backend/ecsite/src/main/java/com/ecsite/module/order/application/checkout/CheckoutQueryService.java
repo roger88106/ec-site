@@ -52,7 +52,7 @@ public class CheckoutQueryService {
      * 始めた会員だけが参照できる。ほかの会員には 404。
      *
      * @param checkoutId 注文手続き ID
-     * @param memberId   要求した会員の ID
+     * @param memberId   リクエストした会員の ID
      * @return 注文手続きの表示
      */
     public CheckoutView get(UUID checkoutId, UUID memberId) {

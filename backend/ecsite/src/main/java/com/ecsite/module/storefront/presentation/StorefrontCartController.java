@@ -28,7 +28,7 @@ class StorefrontCartController implements CartViewApi {
     private final StorefrontMapper mapper;
 
     /**
-     * 要求した会員の会員 ID
+     * リクエストした会員の会員 ID
      */
     private final CurrentMemberIds currentMemberIds;
 

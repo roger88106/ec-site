@@ -31,8 +31,8 @@ public class MemberCommandService {
 
     /**
      * IdP のアカウントの会員を作り、会員 ID を返す。<br />
-     * 同じアカウントの初回の要求が同時に来たら、IdP のアカウントの ID の一意制約で 1 人だけ作られ、
-     * 作れなかった要求は、先に作られた会員を読み直す。
+     * 同じアカウントの初回のリクエストが同時に来たら、IdP のアカウントの ID の一意制約で 1 人だけ作られ、
+     * 作れなかったリクエストは、先に作られた会員を読み直す。
      *
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID
@@ -40,6 +40,6 @@ public class MemberCommandService {
     public UUID create(String idpSubject) {
         memberRepository.insertIfAbsent(new Member(UUID.randomUUID(), idpSubject, clock.instant()));
         return memberRepository.findIdByIdpSubject(idpSubject)
-                .orElseThrow(() -> SystemException.of("会員を作れない：" + idpSubject, null));
+                .orElseThrow(() -> SystemException.of("会員を作れない", null));
     }
 }

@@ -19,7 +19,7 @@ public abstract class AggregateRoot {
     /**
      * 登録されたイベント（永続化しない）
      */
-    private final transient List<DomainEvent> domainEvents = new ArrayList<>();
+    private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     /**
      * イベントを登録する。

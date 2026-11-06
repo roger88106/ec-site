@@ -7,12 +7,15 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -21,6 +24,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.util.Collection;
@@ -91,19 +95,8 @@ class SecurityConfig {
     @Order(1)
     SecurityFilterChain adminFilterChain(HttpSecurity http, SecurityProperties properties, RealmKeys keys,
                                          AdminOperationPermissions permissions, SecurityProblemResponder responder) throws Exception {
-        var authenticationConverter = new JwtAuthenticationConverter();
-        authenticationConverter.setJwtGrantedAuthoritiesConverter(new PermissionConverter(properties.admin().audience()));
-        return stateless(http, responder)
-                .securityMatcher("/api/admin/**")
-                .oauth2ResourceServer(resourceServer -> resourceServer
-                        .jwt(jwt -> jwt
-                                .decoder(decoder(properties.admin(), keys))
-                                .jwtAuthenticationConverter(authenticationConverter))
-                        .authenticationEntryPoint(responder)
-                        .accessDeniedHandler(responder))
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().access(new AdminPermissionAuthorizationManager(permissions)))
-                .build();
+        return resourceServerChain(http, responder, "/api/admin/**", properties.admin(), keys,
+                new PermissionConverter(properties.admin().audience()), new AdminPermissionAuthorizationManager(permissions));
     }
 
     /**
@@ -113,19 +106,8 @@ class SecurityConfig {
     @Order(2)
     SecurityFilterChain storeFilterChain(HttpSecurity http, SecurityProperties properties, RealmKeys keys,
                                          StoreOperationSecurity security, SecurityProblemResponder responder) throws Exception {
-        var authenticationConverter = new JwtAuthenticationConverter();
-        authenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> List.<GrantedAuthority>of());
-        return stateless(http, responder)
-                .securityMatcher("/api/store/**")
-                .oauth2ResourceServer(resourceServer -> resourceServer
-                        .jwt(jwt -> jwt
-                                .decoder(decoder(properties.store(), keys))
-                                .jwtAuthenticationConverter(authenticationConverter))
-                        .authenticationEntryPoint(responder)
-                        .accessDeniedHandler(responder))
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().access(new StoreTokenAuthorizationManager(security)))
-                .build();
+        return resourceServerChain(http, responder, "/api/store/**", properties.store(), keys,
+                jwt -> List.<GrantedAuthority>of(), new StoreTokenAuthorizationManager(security));
     }
 
     /**
@@ -147,7 +129,7 @@ class SecurityConfig {
     /**
      * filter chain の共通の設定：ステートレス、CSRF の対策なし、失敗は Problem Details。
      */
-    private static HttpSecurity stateless(HttpSecurity http, SecurityProblemResponder responder) throws Exception {
+    private static HttpSecurity stateless(HttpSecurity http, SecurityProblemResponder responder) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -155,6 +137,37 @@ class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(responder)
                         .accessDeniedHandler(responder));
+    }
+
+    /**
+     * realm の token を受ける filter chain：{@link #stateless} の共通の設定に、realm の token の検証と認可を追加する。
+     *
+     * @param http                 HttpSecurity
+     * @param responder            認証・認可の失敗の応答
+     * @param pathPattern          この filter chain が扱うパス
+     * @param realm                realm の設定
+     * @param keys                 realm の署名の鍵
+     * @param authoritiesConverter token から権限を取り出す変換
+     * @param authorizationManager リクエストごとの認可
+     * @return filter chain
+     * @throws Exception 設定の失敗
+     */
+    private static SecurityFilterChain resourceServerChain(
+            HttpSecurity http, SecurityProblemResponder responder, String pathPattern, SecurityProperties.Realm realm, RealmKeys keys,
+            Converter<Jwt, Collection<GrantedAuthority>> authoritiesConverter,
+            AuthorizationManager<RequestAuthorizationContext> authorizationManager) throws Exception {
+        var authenticationConverter = new JwtAuthenticationConverter();
+        authenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        return stateless(http, responder)
+                .securityMatcher(pathPattern)
+                .oauth2ResourceServer(resourceServer -> resourceServer
+                        .jwt(jwt -> jwt
+                                .decoder(decoder(realm, keys))
+                                .jwtAuthenticationConverter(authenticationConverter))
+                        .authenticationEntryPoint(responder)
+                        .accessDeniedHandler(responder))
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().access(authorizationManager))
+                .build();
     }
 
     /**

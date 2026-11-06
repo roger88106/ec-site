@@ -60,17 +60,6 @@ class RegionApiTest {
     }
 
     @Test
-    @DisplayName("都道府県の市区町村の一覧は、その都道府県の市区町村だけをコードの順に返す。ない都道府県は空")
-    void municipalitiesOfPrefecture() {
-        var tokyo = regionApi.municipalitiesOf("13").orElseThrow();
-
-        assertThat(tokyo).isNotEmpty().allMatch(m -> m.prefectureCode().equals("13"));
-        assertThat(tokyo).extracting(RegionMunicipality::code).isSorted();
-        assertThat(tokyo).first().isEqualTo(new RegionMunicipality("13101", "千代田区", "13", "東京都"));
-        assertThat(regionApi.municipalitiesOf("48")).isEmpty();
-    }
-
-    @Test
     @DisplayName("市区町村をコードで引くと、都道府県の名前も返す。ないコードは空")
     void findMunicipality() {
         assertThat(regionApi.findMunicipality("01101")).contains(new RegionMunicipality("01101", "札幌市中央区", "01", "北海道"));

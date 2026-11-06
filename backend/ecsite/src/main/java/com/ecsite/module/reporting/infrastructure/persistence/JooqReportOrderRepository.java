@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
 import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
@@ -96,14 +97,14 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         return dsl.selectFrom(STATUS_HISTORY)
                 .where(STATUS_HISTORY.ORDER_ID.eq(orderId))
                 .orderBy(STATUS_HISTORY.OCCURRED_AT, STATUS_HISTORY.EVENT_ID)
-                .fetch(row -> {
+                .fetch(row -> AggregateGuards.restore("status history", () -> {
                     var kind = HistoryKind.valueOf(row.getKind());
                     return new StatusHistoryEntry(row.getEventId(), row.getOrderId(), kind,
                             row.getFromStatus() == null ? null : historyStatus(kind, row.getFromStatus()),
                             historyStatus(kind, row.getToStatus()), row.getOccurredAt(),
                             row.getCancellationKind() == null ? null : ReportCancellationKind.valueOf(row.getCancellationKind()),
                             row.getRestocked());
-                });
+                }));
     }
 
     /**
@@ -129,6 +130,14 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      */
     @Override
     public void save(ReportOrder order) {
+        saveOrder(order);
+        replaceLines(order);
+    }
+
+    /**
+     * 注文の行を上書きする（なければ作る）。
+     */
+    private void saveOrder(ReportOrder order) {
         var now = clock.instant();
         var record = dsl.newRecord(SALES_ORDER);
         record.setOrderId(order.orderId());
@@ -157,7 +166,12 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .doUpdate()
                 .set(record)
                 .execute();
+    }
 
+    /**
+     * 明細を消して入れ直す。
+     */
+    private void replaceLines(ReportOrder order) {
         dsl.deleteFrom(SALES_ORDER_LINE).where(SALES_ORDER_LINE.ORDER_ID.eq(order.orderId())).execute();
         if (order.lines().isEmpty()) {
             return;

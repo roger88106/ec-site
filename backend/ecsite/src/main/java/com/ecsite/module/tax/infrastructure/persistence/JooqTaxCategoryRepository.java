@@ -102,7 +102,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
         var snapshot = taxCategory.toSnapshot();
         var now = clock.instant();
 
-        try {
+        translatingConstraintViolations(() -> {
             // 税区分の登録
             dsl.insertInto(TAX_CATEGORY)
                     .set(TAX_CATEGORY.ID, snapshot.id())
@@ -113,11 +113,8 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
                     .execute();
 
             // 税率の登録
-            snapshot.rates().forEach(rate -> upsertRate(snapshot.id(), rate));
-            checkDeferredConstraints();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw CONSTRAINTS.translate(e);
-        }
+            writeRates(snapshot);
+        });
 
         // イベント発行
         taxCategory.pullEvents().forEach(eventPublisher::publishEvent);
@@ -133,7 +130,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     public void save(TaxCategory taxCategory) {
         var snapshot = taxCategory.toSnapshot();
 
-        try {
+        translatingConstraintViolations(() -> {
             // 税区分の更新 ※バージョンが一致しなければ、取得後に他で更新されている。
             // 税区分の行を先にロックするので、同じ税区分の税率の書き換えは直列になる
             int affected = dsl.update(TAX_CATEGORY)
@@ -153,18 +150,39 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
                     .and(TAX_RATE.ID.notIn(snapshot.rates().stream().map(TaxRate::id).toList()))
                     .execute();
 
-            // 税率の追加・更新 ※途中で一時的に期間が重なってもよい（排他制約の検査は最後に行う）
-            snapshot.rates().forEach(rate -> upsertRate(snapshot.id(), rate));
-            checkDeferredConstraints();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw CONSTRAINTS.translate(e);
-        }
+            // 税率の追加・更新
+            writeRates(snapshot);
+        });
 
         // イベント発行
         taxCategory.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 書き込みを実行し、制約の違反を業務のエラーに変える。業務のエラーはそのまま投げる。
+     *
+     * @param write 書き込み
+     */
+    private static void translatingConstraintViolations(Runnable write) {
+        try {
+            write.run();
+        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
+            throw CONSTRAINTS.translate(e);
+        }
+    }
+
+    /**
+     * 税率を追加または更新し、遅らせていた排他制約を検査させる。<br />
+     * 途中で一時的に期間が重なってもよいので、排他制約は最後に検査する。
+     *
+     * @param snapshot 税区分のスナップショット
+     */
+    private void writeRates(TaxCategory.Snapshot snapshot) {
+        snapshot.rates().forEach(rate -> upsertRate(snapshot.id(), rate));
+        checkDeferredConstraints();
+    }
 
     /**
      * 税率を追加する。すでにあれば更新する。

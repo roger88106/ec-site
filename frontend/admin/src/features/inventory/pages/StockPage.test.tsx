@@ -6,7 +6,7 @@ import { getCell } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server, stockHandler } from '@/test/server'
 
-/** 在庫の調整の要求の本文（送った内容を確認する） */
+/** 在庫の調整のリクエストの本文（送った内容を確認する） */
 type AdjustStockRequest = components['schemas']['AdjustStockRequest']
 /** 調整履歴の 1 件 */
 type StockAdjustment = components['schemas']['StockAdjustment']
@@ -19,7 +19,7 @@ const PAGE_PATH = `/products/${PRODUCT_ID}/variants/${VARIANT.id}/stock`
 /**
  * 在庫の画面が使う API に応答する。在庫数は quantity から始める。<br />
  * 調整は、調整後に負になるなら 400（INSUFFICIENT_STOCK）、「その他」でメモがなければ 400（STOCK_MEMO_REQUIRED）、
- * それ以外は在庫数に反映する。調整の要求は requests に取っておく。履歴は history を返す。
+ * それ以外は在庫数に反映する。調整のリクエストは requests に取っておく。履歴は history を返す。
  */
 function serveStock(quantity: number, history: StockAdjustment[] = []) {
   const state = { quantity, requests: [] as AdjustStockRequest[] }

@@ -31,7 +31,7 @@ public class OrderPaymentPageService {
      * 会員の注文の支払画面の URL を返す。注文した会員でなければ 404。
      *
      * @param orderId  注文 ID
-     * @param memberId 要求した会員の ID
+     * @param memberId リクエストした会員の ID
      * @return 支払画面の URL
      * @throws BusinessException 支払待ちでない、支払の期限の後（{@link OrderErrorCode#ORDER_NOT_PAYABLE}）
      */

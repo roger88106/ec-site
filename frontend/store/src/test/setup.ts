@@ -42,7 +42,7 @@ vi.mock('next-auth/providers/keycloak', () => ({ default: (options: object) => (
 
 // テストのファイルを読み込む前に始める。API のクライアント（openapi-fetch）は、作ったときの fetch を持ち続けるので、
 // MSW が fetch を差し替えた後に作らせる必要がある。
-// ハンドラーのない API が呼ばれたら、その要求を失敗させ、テストの終わりにテストを失敗させる（要求の失敗だけでは、
+// ハンドラーのない API が呼ばれたら、そのリクエストを失敗させ、テストの終わりにテストを失敗させる（リクエストの失敗だけでは、
 // 処理が「通信の失敗」の結果を返すだけで、テストが通ってしまうことがあるため）
 const unhandledRequests: string[] = []
 server.listen({

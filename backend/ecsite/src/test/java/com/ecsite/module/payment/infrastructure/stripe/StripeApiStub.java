@@ -15,7 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Stripe の API の代わりに立てる、手元の HTTP サーバー。sandbox で記録した応答の形（必要な項目だけ）を返す。<br />
- * 返す応答はテストが決め、決めていない要求には 404（resource_missing）を返す。
+ * 返す応答はテストが決め、決めていないリクエストには 404（resource_missing）を返す。
  */
 final class StripeApiStub implements AutoCloseable {
 
@@ -25,7 +25,7 @@ final class StripeApiStub implements AutoCloseable {
     private final Map<String, Response> responses = new ConcurrentHashMap<>();
 
     /**
-     * 受けた要求（受けた順）
+     * 受けたリクエスト（受けた順）
      */
     private final List<Request> requests = new CopyOnWriteArrayList<>();
 
@@ -57,7 +57,7 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
-     * 要求に返す応答を決める。
+     * リクエストに返す応答を決める。
      *
      * @param key    メソッドとパス（例：{@code POST /v1/refunds}）
      * @param status HTTP の状態
@@ -68,7 +68,7 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
-     * @return 受けた要求（受けた順）
+     * @return 受けたリクエスト（受けた順）
      */
     List<Request> requests() {
         return requests;
@@ -158,7 +158,7 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
-     * 受けた要求
+     * 受けたリクエスト
      *
      * @param key            メソッドとパス
      * @param body           本文（URL のデコードの後）

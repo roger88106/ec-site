@@ -160,7 +160,7 @@ class ModuleStructureTest {
     /**
      * token の取り出し（token、会員、運営者、会員 ID）のクラスの名前。<br />
      * 会員 ID の取り出し（CurrentMemberIds）を含める。他のモジュールの api の規則は infrastructure.directory からの利用を除くので、
-     * それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため。
+     * それだけでは directory を経て application 層がリクエストの会員 ID を得る形を防げないため。
      */
     private static final Set<String> TOKEN_ACCESSORS = Set.of(
             CurrentToken.class.getName(), CurrentMember.class.getName(), CurrentOperator.class.getName(),

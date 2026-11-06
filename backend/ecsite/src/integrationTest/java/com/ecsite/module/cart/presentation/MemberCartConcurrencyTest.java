@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 会員のカートの並行性の受け入れテスト（docs/03-機能仕様/cart.md）。<br />
- * 会員ごとの一意制約が働いていることを確認するため、要求ごとにコミットする。ロールバックしないので、
+ * 会員ごとの一意制約が働いていることを確認するため、リクエストごとにコミットする。ロールバックしないので、
  * テストごとに新しい会員を使い、その会員のカートだけを確認する。作ったデータは消さない。
  */
 @IntegrationTest
@@ -43,7 +43,7 @@ class MemberCartConcurrencyTest {
     DSLContext dsl;
 
     @Test
-    @DisplayName("AC-121 同じ会員の最初のカートの要求が同時に来ても、カートは 1 つだけ作られ、全ての要求が同じカート ID を受け取る")
+    @DisplayName("AC-121 同じ会員の最初のカートのリクエストが同時に来ても、カートは 1 つだけ作られ、全てのリクエストが同じカート ID を受け取る")
     void createsOnlyOneCartOnConcurrentFirstRequests() throws Exception {
         var member = TestTokens.member().subject(UUID.randomUUID());
         var threads = 8;

@@ -77,7 +77,7 @@ class MockCarrierController {
      *
      * @param orderId 注文 ID
      * @param status  通知する配送状態（配送中、配達完了、返送）
-     * @param request 要求（エンドポイントの URL を求めるため）
+     * @param request リクエスト（エンドポイントの URL を求めるため）
      * @return 一覧への移動。通知が受け付けられなかったときは、その旨を示した一覧
      */
     @PostMapping("/mock-carrier/orders/{orderId}/notify")
@@ -108,7 +108,7 @@ class MockCarrierController {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * エンドポイントを持つ、このサーバーの URL（要求と同じ接続先）を求める。
+     * エンドポイントを持つ、このサーバーの URL（リクエストと同じ接続先）を求める。
      */
     private static String baseUrl(HttpServletRequest request) {
         return ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();

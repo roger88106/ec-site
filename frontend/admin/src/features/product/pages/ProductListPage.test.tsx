@@ -20,7 +20,7 @@ const CAP = productSummary({
 
 /**
  * 商品の一覧の画面が使う API に応答する。一覧は 2 ページあるものとし、どの条件でも items を返す。<br />
- * 一覧と在庫の集計の要求のクエリは、それぞれ listQueries、summaryQueries に取っておく。
+ * 一覧と在庫の集計のリクエストのクエリは、それぞれ listQueries、summaryQueries に取っておく。
  */
 function serveList(items: ProductSummary[], summary: Reply<'/inventory/stock-summaries', 'get', string>) {
   const state = { listQueries: [] as string[], summaryQueries: [] as string[] }
@@ -84,7 +84,7 @@ describe('商品の一覧', () => {
 
     const expected = `?code=ABC&name=${encodeURIComponent('シャツ')}&status=PUBLISHED`
     expect(new URLSearchParams(router.state.location.search).toString()).toBe(expected.slice(1))
-    // 取得し直す間は前の一覧を出したままなので、要求が届くのを待つ
+    // 取得し直す間は前の一覧を出したままなので、リクエストが届くのを待つ
     await waitFor(() => expect(state.listQueries.at(-1)).toBe(`${expected}&page=1`))
   })
 

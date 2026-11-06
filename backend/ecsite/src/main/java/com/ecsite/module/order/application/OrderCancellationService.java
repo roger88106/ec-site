@@ -59,7 +59,7 @@ public class OrderCancellationService {
      * 会員がキャンセルを申請する。注文した会員でなければ、ないときと同じく 404。
      *
      * @param orderId  注文 ID
-     * @param memberId 要求した会員の ID
+     * @param memberId リクエストした会員の ID
      * @param reason   理由（任意）
      */
     @Transactional

@@ -6,8 +6,8 @@ import { TRACEPARENT } from '@/test/fixtures'
 /**
  * proxy を呼ぶ（Auth.js のセッションの確認は、テストでは置き換えてある）。
  *
- * @param url  要求の URL
- * @param init 要求のヘッダーなど
+ * @param url  リクエストの URL
+ * @param init リクエストのヘッダーなど
  */
 async function runProxy(url: string, init?: ConstructorParameters<typeof NextRequest>[1]): Promise<Response> {
   // auth(処理) の型は、ルートハンドラーの形（第 2 引数に params）になる。置き換えた auth は処理をそのまま返すので、第 2 引数は使われない
@@ -18,15 +18,15 @@ async function runProxy(url: string, init?: ConstructorParameters<typeof NextReq
   return response
 }
 
-describe('要求ごとの確認（proxy）', () => {
-  test('いまの画面のパスとクエリを、要求のヘッダーで画面に知らせる（ログインの後にその画面へ戻すため）', async () => {
+describe('リクエストごとの確認（proxy）', () => {
+  test('いまの画面のパスとクエリを、リクエストのヘッダーで画面に知らせる（ログインの後にその画面へ戻すため）', async () => {
     const response = await runProxy('http://localhost:3000/products?category=abc&page=2')
 
-    // NextResponse.next の要求のヘッダーの上書きは、x-middleware-request-<名前> で次の処理に渡る
+    // NextResponse.next のリクエストのヘッダーの上書きは、x-middleware-request-<名前> で次の処理に渡る
     expect(response.headers.get('x-middleware-request-x-pathname')).toBe('/products?category=abc&page=2')
   })
 
-  test('要求ごとに追跡の ID（traceparent）を作り、要求のヘッダーで画面に知らせる', async () => {
+  test('リクエストごとに追跡の ID（traceparent）を作り、リクエストのヘッダーで画面に知らせる', async () => {
     const first = await runProxy('http://localhost:3000/products')
     const second = await runProxy('http://localhost:3000/products')
 
@@ -35,7 +35,7 @@ describe('要求ごとの確認（proxy）', () => {
     expect(second.headers.get('x-middleware-request-traceparent')).not.toBe(traceparent)
   })
 
-  test('要求がすでに正しい traceparent を持っていれば、その追跡の ID を引き継ぐ', async () => {
+  test('リクエストがすでに正しい traceparent を持っていれば、その追跡の ID を引き継ぐ', async () => {
     const incoming = TRACEPARENT
 
     const response = await runProxy('http://localhost:3000/products', { headers: { traceparent: incoming } })

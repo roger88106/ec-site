@@ -263,7 +263,7 @@ public class CatalogTestData {
     }
 
     /**
-     * 作成の要求を送り、201 を確認して、本文の ID を返す
+     * 作成のリクエストを送り、201 を確認して、本文の ID を返す
      */
     private UUID createdId(MockHttpServletRequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

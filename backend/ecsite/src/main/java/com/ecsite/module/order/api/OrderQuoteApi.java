@@ -31,7 +31,7 @@ public class OrderQuoteApi {
      * 会員のカートは、持ち主の会員にだけ見積もる。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
     public Optional<CartQuote> quoteCart(UUID cartId, @Nullable UUID requester) {

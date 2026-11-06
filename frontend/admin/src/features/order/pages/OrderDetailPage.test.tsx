@@ -7,10 +7,10 @@ import { findDetailValue, getDetailValue } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
-/** 出荷の登録の要求の本文（送った内容を確認する） */
+/** 出荷の登録のリクエストの本文（送った内容を確認する） */
 type ShipOrderRequest = components['schemas']['ShipOrderRequest']
 
-/** キャンセルの要求の本文（送った内容を確認する） */
+/** キャンセルのリクエストの本文（送った内容を確認する） */
 type CancelOrderRequest = components['schemas']['CancelOrderRequest']
 
 /** 注文の詳細の URL */

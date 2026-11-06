@@ -10,14 +10,14 @@ import java.util.UUID;
  * 実装は mock と Stripe で、mock フラグ {@code ecsite.payment.mock.enabled} が立てば mock、なければ Stripe を使う。決済サービスの型とエラーは実装の外に出さない。
  * 売上確定を除き、どの操作も、決済サービスに接続できなければ（時間内に応えない、決済サービスの側の故障、回数の制限）、
  * 外部サービスのエラー（{@code PAYMENT_GATEWAY_UNAVAILABLE}）の {@link com.ecsite.common.error.exception.SystemException} を投げる。
- * それ以外の失敗（認証・要求の誤りなど）は、予期しないエラーの {@link com.ecsite.common.error.exception.SystemException} を投げる。
+ * それ以外の失敗（認証・リクエストの誤りなど）は、予期しないエラーの {@link com.ecsite.common.error.exception.SystemException} を投げる。
  */
 public interface PaymentGateway {
 
     /**
-     * 与信だけを取る支払画面を作る。同じ要求で重ねて呼ばれても、決済サービスで支払は 1 つになるようにする。
+     * 与信だけを取る支払画面を作る。同じリクエストで重ねて呼ばれても、決済サービスで支払は 1 つになるようにする。
      *
-     * @param request 支払画面の要求
+     * @param request 支払画面のリクエスト
      * @return 作った支払画面
      */
     PaymentPage openPage(PageRequest request);
@@ -41,7 +41,7 @@ public interface PaymentGateway {
      * 与信の総額の売上を確定する。同じ注文で重ねて呼ばれても、決済サービスで売上は 1 回だけ確定するようにする。<br />
      * 与信の期限切れと、決済サービスに接続できないことは、例外にせず結果で返す。
      *
-     * @param request 売上確定の要求
+     * @param request 売上確定のリクエスト
      * @return 売上確定の結果
      */
     CaptureResult capture(CaptureRequest request);
@@ -50,12 +50,12 @@ public interface PaymentGateway {
      * 確定した売上を返金する。同じ注文で重ねて呼ばれても、決済サービスで返金は 1 回だけ行うようにする。
      * すでに返金済みなら成功とする。
      *
-     * @param request 返金の要求
+     * @param request 返金のリクエスト
      */
     void refund(RefundRequest request);
 
     /**
-     * 支払画面の要求
+     * 支払画面のリクエスト
      *
      * @param paymentId 支払 ID（決済サービスでの重複を防ぐ鍵に使う）
      * @param orderId   注文 ID
@@ -66,7 +66,7 @@ public interface PaymentGateway {
     }
 
     /**
-     * 売上確定の要求
+     * 売上確定のリクエスト
      *
      * @param orderId          注文 ID（決済サービスでの重複を防ぐ鍵に使う）
      * @param authorizationRef 与信の参照
@@ -76,7 +76,7 @@ public interface PaymentGateway {
     }
 
     /**
-     * 返金の要求
+     * 返金のリクエスト
      *
      * @param orderId          注文 ID（決済サービスでの重複を防ぐ鍵に使う）
      * @param authorizationRef 与信の参照

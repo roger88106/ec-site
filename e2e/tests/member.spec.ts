@@ -148,7 +148,7 @@ test('AC-112 登録を始めたのと別のブラウザーで確認メールの�
       await fillNewPassword(otherPage, account)
       await idpPasswordSubmitButton(otherPage).click()
       await expect(idpBackToApplication(otherPage)).toHaveAttribute('href', `${IDP_STORE_BASE_URL}/`)
-      // IdP の戻り先は開発用の店舗の URL で、E2E の店舗とはポートが違う。戻り先への要求だけを E2E の店舗に振り替える
+      // IdP の戻り先は開発用の店舗の URL で、E2E の店舗とはポートが違う。戻り先へのリクエストだけを E2E の店舗に振り替える
       await otherPage.route(`${IDP_STORE_BASE_URL}/**`, (route) =>
         route.fulfill({ status: 302, headers: { location: `${STORE_URL}/` } }),
       )

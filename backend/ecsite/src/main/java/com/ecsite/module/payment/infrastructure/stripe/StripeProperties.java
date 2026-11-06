@@ -15,7 +15,7 @@ import java.time.Duration;
  * @param secretKey      API の秘密の鍵（テストモードは {@code sk_test_} で始まる）
  * @param webhookSecret  通知の署名の鍵（{@code whsec_} で始まる）
  * @param connectTimeout Stripe への接続を待つ時間の上限
- * @param readTimeout    Stripe の応答を待つ時間の上限（1 回の要求ごと。自動のやり直しは別に数える）
+ * @param readTimeout    Stripe の応答を待つ時間の上限（1 回のリクエストごと。自動のやり直しは別に数える）
  */
 @Validated
 @ConfigurationProperties("ecsite.payment.stripe")

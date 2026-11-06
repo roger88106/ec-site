@@ -36,7 +36,7 @@ class MediaStorageConfig {
                 .region(Region.of(properties.region()))
                 .credentialsProvider(credentials(properties))
                 .forcePathStyle(properties.pathStyleAccess())
-                // 応えない S3 で、利用者の要求とリスナーが止まったままにならないよう、試行と全体に上限を置く
+                // 応えない S3 で、利用者のリクエストとリスナーが止まったままにならないよう、試行と全体に上限を置く
                 .overrideConfiguration(config -> config
                         .apiCallAttemptTimeout(properties.attemptTimeout())
                         .apiCallTimeout(properties.callTimeout()))

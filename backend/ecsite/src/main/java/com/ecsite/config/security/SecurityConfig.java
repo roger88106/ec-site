@@ -148,7 +148,7 @@ class SecurityConfig {
      * @param realm                realm の設定
      * @param keys                 realm の署名の鍵
      * @param authoritiesConverter token から権限を取り出す変換
-     * @param authorizationManager 要求ごとの認可
+     * @param authorizationManager リクエストごとの認可
      * @return filter chain
      * @throws Exception 設定の失敗
      */

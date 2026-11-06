@@ -45,7 +45,7 @@ public class CartQuoteService {
      * 会員のカートは、持ち主の会員にだけ見積もる（ほかの人には、カートがないときと同じく空）。
      *
      * @param cartId    カート ID
-     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
     @Transactional(readOnly = true)

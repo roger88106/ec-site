@@ -1,4 +1,4 @@
-/** 追跡の ID を運ぶ要求のヘッダー（W3C Trace Context） */
+/** 追跡の ID を運ぶリクエストのヘッダー（W3C Trace Context） */
 export const TRACEPARENT_HEADER = 'traceparent'
 
 /** traceparent の形（バージョン 00、32 桁の追跡の ID、16 桁の区間の ID、印） */

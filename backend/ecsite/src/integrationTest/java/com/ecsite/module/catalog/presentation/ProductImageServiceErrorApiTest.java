@@ -66,7 +66,7 @@ class ProductImageServiceErrorApiTest {
     /**
      * imgproxy を、待ち受けのないポートに向ける（接続を拒まれる）。
      * URL は、テストのコンテナの設定（{@code DynamicPropertyRegistrar}）が上書きするので、設定の値でなく設定の型ごと差し替える。
-     * 鍵とソルトは、要求が届かないので何でもよい。
+     * 鍵とソルトは、リクエストが届かないので何でもよい。
      */
     static ImgproxyProperties converterProperties() {
         int port;

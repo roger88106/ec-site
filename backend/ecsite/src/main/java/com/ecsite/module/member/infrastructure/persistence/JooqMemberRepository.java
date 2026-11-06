@@ -36,7 +36,7 @@ class JooqMemberRepository implements MemberRepository {
      */
     @Override
     public void insertIfAbsent(Member member) {
-        // 同じアカウントの会員を、ほかの要求が先に作っていたら何もしない（一意制約の違反でトランザクションを壊さない）
+        // 同じアカウントの会員を、ほかのリクエストが先に作っていたら何もしない（一意制約の違反でトランザクションを壊さない）
         dsl.insertInto(MEMBER_)
                 .set(MEMBER_.ID, member.id())
                 .set(MEMBER_.IDP_SUBJECT, member.idpSubject())

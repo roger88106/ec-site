@@ -309,7 +309,7 @@ class MemberOrderApiTest {
     }
 
     /**
-     * 注文の要求を送る。総額は、注文手続きの持ち主として読んだものを送る（ほかの会員の要求が、総額の違いで拒まれないように）
+     * 注文のリクエストを送る。総額は、注文手続きの持ち主として読んだものを送る（ほかの会員のリクエストが、総額の違いで拒まれないように）
      */
     private ResultActions order(UUID checkoutId, TestTokens.Builder checkoutOwner, RequestPostProcessor requester) throws Exception {
         var checkout = mockMvc.perform(get(STORE + "/checkouts/" + checkoutId).with(checkoutOwner.bearer()))

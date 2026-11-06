@@ -163,10 +163,10 @@ public class PaymentQueryService {
     }
 
     /**
-     * 決済サービスに求める返金の要求を返す。
+     * 決済サービスに求める返金のリクエストを返す。
      *
      * @param paymentId 支払 ID
-     * @return 返金の要求。返金待ちでなければ空（返金済みなど）
+     * @return 返金のリクエスト。返金待ちでなければ空（返金済みなど）
      */
     public Optional<PaymentGateway.RefundRequest> findRefundRequest(UUID paymentId) {
         return paymentRepository.findById(paymentId)

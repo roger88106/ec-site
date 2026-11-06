@@ -314,7 +314,7 @@ public record SignedNotification(byte[] body, String signature) {
 
 - 表・列の削除、改名、列の型の変更
 - 既存の列を NOT NULL にすること、既定値のない NOT NULL の列の追加
-- 既存の列の既定値の削除 ※5
+- 既存の列の既定値の削除（IDENTITY の解除 `DROP IDENTITY` と生成列の解除 `DROP EXPRESSION` を含む） ※5
 
 | 段 | リリース | すること |
 |----|----------|----------|
@@ -322,7 +322,7 @@ public record SignedNotification(byte[] body, String signature) {
 | 2 | 次 | アプリを新しい表・列に切り替えてリリースする |
 | 3 | その次 | 使わなくなった表・列を削除する ※6 |
 
-※5：前のリリースのアプリは既定値を前提に列を指定せずに INSERT するので、NOT NULL の列では失敗し、NULL を許す列では値が NULL に変わるため。既定値の削除は段 1 がなく、段 2 でアプリが列に値を必ず書くようにし、段 3 で既定値を削除する。
+※5：前のリリースのアプリは既定値を前提に列を指定せずに INSERT するので、NOT NULL の列では失敗し、NULL を許す列では値が NULL に変わるため。既定値の削除は段 1 がなく、段 2 でアプリが列に値を必ず書くようにし、段 3 で既定値を削除する。IDENTITY の解除と生成列の解除も、列が自動で値を持たなくなるので、同じ扱いにする。
 
 ※6：段 3 の削除（既定値の削除を含む）は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置き、理由に、どのリリースで使わなくなったかを書く。書き方は `scripts/ci/migrations.mjs` の先頭のコメント。
 

@@ -13,7 +13,7 @@
 //   - 列の型の変更
 //   - 既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）
 //   - 既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む。IDENTITY は既定値があるので除く）
-//   - 既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL。SET DEFAULT 0 のような既定値の変更は含まない）
+//   - 既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL、IDENTITY の解除 DROP IDENTITY、生成列の解除 DROP EXPRESSION。SET DEFAULT 0 のような既定値の変更は含まない）
 // 対象外は、今あるマイグレーションのファイル名の一覧（LEGACY_MIGRATIONS）に入っているものだけ（本番に適用していないので互換性を問わない）。それ以外は番号が小さくても全て対象にする。一覧にあって実在しない名前は失敗にする。
 // 失敗したとき：適用済みのマイグレーションは元に戻し、変更は新しいマイグレーションで加える。互換性のない変更は 3 段に分ける。
 // 除外：互換性のない変更だけ、migrations-exclusions.json に {キー: 理由} を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値。例：V202611010900__x.sql:列の削除）で、同じファイルの同じ種類の変更全てに適用される。
@@ -245,7 +245,7 @@ function isNullDefault(rawExpr) {
 
 /**
  * ALTER COLUMN の、列の名前より後ろの部分が、互換性のない変更なら、その種類を返す。
- * 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧、::型、COLLATE、CAST(… AS 型) が何重に付いてもよい）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない。
+ * 既定値の削除は、DROP DEFAULT、IDENTITY の解除（DROP IDENTITY）、生成列の解除（DROP EXPRESSION）と、同じ結果になる SET DEFAULT NULL（括弧、::型、COLLATE、CAST(… AS 型) が何重に付いてもよい）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない。
  *
  * @param {string} change 大文字にして空白を 1 つにした、列の名前の後ろ（例：SET DATA TYPE TEXT）
  * @returns {string | null} INCOMPATIBLE_KINDS の値。なければ null
@@ -253,7 +253,7 @@ function isNullDefault(rawExpr) {
 function classifyColumnChange(change) {
   if (/^(?:SET\s+DATA\s+)?TYPE\b/.test(change)) return INCOMPATIBLE_KINDS.changeType
   if (/^SET\s+NOT\s+NULL\b/.test(change)) return INCOMPATIBLE_KINDS.setNotNull
-  if (/^DROP\s+DEFAULT\b/.test(change)) return INCOMPATIBLE_KINDS.dropDefault
+  if (/^DROP\s+(?:DEFAULT|IDENTITY|EXPRESSION)\b/.test(change)) return INCOMPATIBLE_KINDS.dropDefault
   const setDefault = /^SET\s+DEFAULT\s+(.*)$/.exec(change)
   if (setDefault && isNullDefault(setDefault[1])) return INCOMPATIBLE_KINDS.dropDefault
   return null

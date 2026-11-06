@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Clock;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +35,8 @@ class MockPaymentPageControllerTest {
 
     private final PaymentNotificationReceiver receiver = mock(PaymentNotificationReceiver.class);
 
-    private final MockPaymentGateway gateway = new MockPaymentGateway(receiver, new MockPaymentProperties("http://localhost:8080"));
+    private final MockPaymentGateway gateway = new MockPaymentGateway(receiver, new MockPaymentProperties("http://localhost:8080"),
+            Clock.systemUTC());
 
     private MockMvc mockMvc;
 

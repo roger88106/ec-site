@@ -1,8 +1,10 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +88,7 @@ public class PaymentCommandService {
     }
 
     /**
-     * 期限を過ぎたが決済サービスで支払が済んでいた支払を、与信の通知を待つ支払にする。期限切れのジョブから呼ぶ。<br />
+     * 期限を過ぎたが決済サービスで支払が済んでいた支払を、与信の反映を待つ支払にする。期限切れのジョブから呼ぶ。<br />
      * 行ロックの後に確認直すので、その間に通知が届いて与信済みになった支払は変えない。
      *
      * @param paymentId 支払 ID
@@ -96,6 +98,23 @@ public class PaymentCommandService {
         paymentRepository.lockById(paymentId)
                 .filter(payment -> payment.awaitAuthorization(now))
                 .ifPresent(paymentRepository::update);
+    }
+
+    /**
+     * 決済サービスから取得した与信を反映する。期限切れのジョブから呼ぶ。行ロックの後に確認し直す。
+     *
+     * @param paymentId     支払 ID
+     * @param authorization 取得した与信
+     * @return 未払いから与信済みにしたら true（先に通知が届いていれば false）
+     */
+    public boolean authorizeFromGateway(UUID paymentId, PaymentGateway.Authorization authorization) {
+        var now = clock.instant();
+        return paymentRepository.lockById(paymentId).map(payment -> {
+            var wasUnpaid = payment.status() == PaymentStatus.UNPAID;
+            payment.authorize(authorization.authorizationRef(), authorization.authorizedAt(), now);
+            paymentRepository.update(payment);
+            return wasUnpaid;
+        }).orElse(false);
     }
 
     /**

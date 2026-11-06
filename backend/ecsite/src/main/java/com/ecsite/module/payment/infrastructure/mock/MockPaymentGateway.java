@@ -1,6 +1,5 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
-import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
@@ -77,11 +76,9 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     @Override
-    public void voidAuthorization(String authorizationRef) {
-        // 売上を確定した与信は、決済サービスが取消を断る（返金で戻す）
-        if (capturedAuthorizations.contains(authorizationRef)) {
-            throw SystemException.of("mock：売上を確定した与信は取り消せない: " + authorizationRef, null);
-        }
+    public VoidResult voidAuthorization(String authorizationRef) {
+        // 売上を確定した与信は取り消せない（返金で戻す）
+        return capturedAuthorizations.contains(authorizationRef) ? VoidResult.ALREADY_CAPTURED : VoidResult.VOIDED;
     }
 
     @Override

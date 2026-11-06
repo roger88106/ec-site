@@ -162,6 +162,8 @@ class PaymentRefundTest {
     void refundsWhenCancelledDuringCapture() {
         var orderId = payments.authorized(ORDERED_AT);
         var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
+        // 取消を失敗させ、確定の反映が与信の取消の処理より先になる順序に固定する
+        gateway.failNextVoids(1);
         // 決済サービスが確定した後、確定を反映する前に、注文のキャンセルで支払が与信の取消待ちになる
         gateway.duringNextCapture(() -> paymentApi.cancel(orderId));
 

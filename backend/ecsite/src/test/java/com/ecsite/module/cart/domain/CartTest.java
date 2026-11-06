@@ -120,6 +120,8 @@ class CartTest {
         assertThat(cart.itemsAt(NOW)).extracting(CartItem::variantId, CartItem::quantity)
                 .containsExactly(tuple(WHITE, 7));
         assertBusinessError(() -> cart.changeQuantity(BLACK, 1, NOW), CommonErrorCode.NOT_FOUND);
+        assertBusinessError(() -> cart.changeQuantity(WHITE, 0, NOW), CartErrorCode.INVALID_CART_QUANTITY);
+        assertBusinessError(() -> cart.changeQuantity(WHITE, -1, NOW), CartErrorCode.INVALID_CART_QUANTITY);
         assertBusinessError(() -> cart.changeQuantity(WHITE, 11, NOW), CartErrorCode.INVALID_CART_QUANTITY);
     }
 

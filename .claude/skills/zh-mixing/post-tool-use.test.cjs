@@ -108,6 +108,15 @@ test('評価の一覧の置き場所（.claude/skills/review/evals/）の下は�
   })
 })
 
+test('アーカイブした spec（docs/08-spec/archive/）の下は、字があっても調べない', () => {
+  withDirs((d) => {
+    const file = put(path.join(d.root, 'docs', '08-spec', 'archive', 'mvp', '001-x', 'spec.md'), BAD)
+    assert.deepEqual(hook.handle(input(file, d.root), makeDeps(d)), SILENT)
+    const active = put(path.join(d.root, 'docs', '08-spec', '002-y', 'spec.md'), BAD)
+    assert.equal(hook.handle(input(active, d.root), makeDeps(d)).code, 2)
+  })
+})
+
 test('ファイルのパスがない入力と、読めないファイルは何も返さない', () => {
   withDirs((d) => {
     const deps = makeDeps(d)

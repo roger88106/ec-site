@@ -56,6 +56,11 @@ public class OrderPlacementService {
     private final OrderRepository orderRepository;
 
     /**
+     * 支払待ちの注文の判定
+     */
+    private final PendingOrderGuard pendingOrderGuard;
+
+    /**
      * カートの腐敗防止層
      */
     private final CartDirectory cartDirectory;
@@ -90,6 +95,7 @@ public class OrderPlacementService {
      * 判定（カートの変更、購入できるか、総額、入力）をすべて済ませてから、在庫の減算 → 注文の保存（支払待ち） → 支払を作る、の順に書く。
      * どこかで失敗すれば、トランザクションごと取り消される。
      * 注文できるのは注文手続きを始めた会員だけで、メールアドレスは会員の token のもの（確認済み）を写す。
+     * 確認していない支払待ちの注文があれば拒否する（注文の設計の「注文手続きと注文の成立」）。
      *
      * @param command 注文のコマンド
      * @return 注文の結果
@@ -97,6 +103,8 @@ public class OrderPlacementService {
     @Transactional
     public PlacementResult place(PlaceOrderCommand command) {
         var now = clock.instant();
+        // 同じ会員の注文を 1 つずつ処理する。支払待ちの注文を読む前に取るので、ロックを待った後の読み取りに先の注文が見える（注文の設計の「同時の注文」）
+        orderRepository.lockForMember(command.memberId());
         // 同じ注文手続きでの送信を 1 つずつ処理する。2 回目以降は作成済みの注文を返す
         var checkout = checkoutRepository.lockById(command.checkoutId())
                 // 始めた会員だけが注文できる。ほかの会員には 404
@@ -110,6 +118,8 @@ public class OrderPlacementService {
         if (existing.isPresent()) {
             return new PlacementResult(existing.get(), false);
         }
+        // 再送は注文の状態によらず作成済みの注文を返すので、作成済みの注文の確認の後に行う
+        pendingOrderGuard.verifyAcknowledged(checkout);
 
         // 判定：カートの変更、購入できるか、確認した総額
         var cart = cartDirectory.find(checkout.cartId())

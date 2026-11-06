@@ -61,6 +61,14 @@ public interface OrderRepository {
     List<UUID> findPendingIdsByMemberId(UUID memberId);
 
     /**
+     * 会員ごとのロックを、トランザクションの終わりまで取る。同じ会員の注文の判定と保存を 1 つずつ処理するため。<br />
+     * トランザクションの中で呼ぶ。外で呼ぶと、すぐに外れてロックの役に立たない。
+     *
+     * @param memberId 会員 ID
+     */
+    void lockForMember(UUID memberId);
+
+    /**
      * 注文番号が使われているか。
      *
      * @param orderNumber 注文番号

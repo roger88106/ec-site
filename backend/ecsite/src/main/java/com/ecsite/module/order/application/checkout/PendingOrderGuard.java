@@ -2,6 +2,7 @@ package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.domain.OrderErrorCode;
+import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -31,10 +32,41 @@ class PendingOrderGuard {
      * @throws BusinessException 確認していない支払待ちの注文があるとき
      */
     Set<UUID> verifyAcknowledged(UUID memberId, Set<UUID> acknowledgedOrderIds) {
-        var pendingOrderIds = Set.copyOf(orderRepository.findPendingIdsByMemberId(memberId));
-        if (!acknowledgedOrderIds.containsAll(pendingOrderIds)) {
+        var pendingOrderIds = pendingOrderIds(memberId);
+        requireAcknowledged(acknowledgedOrderIds.containsAll(pendingOrderIds));
+        return pendingOrderIds;
+    }
+
+    /**
+     * 今の支払待ちの注文が、全て注文手続きの確認した注文に含まれることを確認する。<br />
+     * 注文の時点の判定で、画面の値でなく、注文手続きに保存した集合と比べる。
+     *
+     * @param checkout 注文手続き
+     * @throws BusinessException 確認していない支払待ちの注文があるとき
+     */
+    void verifyAcknowledged(Checkout checkout) {
+        requireAcknowledged(checkout.acknowledges(pendingOrderIds(checkout.memberId())));
+    }
+
+    /**
+     * 会員について、今の支払待ちの注文の ID を読む。
+     *
+     * @param memberId 会員 ID
+     * @return 今の支払待ちの注文の ID
+     */
+    private Set<UUID> pendingOrderIds(UUID memberId) {
+        return Set.copyOf(orderRepository.findPendingIdsByMemberId(memberId));
+    }
+
+    /**
+     * 確認していない支払待ちの注文があれば拒否する。
+     *
+     * @param acknowledged 全て確認していれば true
+     * @throws BusinessException 確認していない支払待ちの注文があるとき
+     */
+    private static void requireAcknowledged(boolean acknowledged) {
+        if (!acknowledged) {
             throw BusinessException.of(OrderErrorCode.PENDING_ORDER_CONFIRMATION_REQUIRED);
         }
-        return pendingOrderIds;
     }
 }

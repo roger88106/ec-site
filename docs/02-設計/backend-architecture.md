@@ -222,10 +222,10 @@ module/<モジュール>/
 - secret の管理：client の secret、店舗画面の Cookie の鍵、物流サービスの通知の署名の鍵（ローカル用の値を使わない）
 - HTTPS（店舗画面の Cookie は本番で `Secure`）
 - 運用ポート（既定 9080。死活監視とメトリクス）を外に出さない。業務ポート（8080）だけを公開する
-- mock の画面は認証なしで使えるので、mock フラグ（`ecsite.<モジュール>.mock.enabled`）を立てない。ローカル・E2E・Stripe の sandbox の設定ファイルは本番の jar に入らない（「外部連携」）
+- mock の画面は認証なしで使えるので、mock フラグ（`ecsite.<モジュール>.mock.enabled`）を立てない。店舗画面にも `STORE_MOCK_PAYMENT_ORIGIN` を設定しない（店舗画面の CSP が、そのオリジンへのフォームの送信を許すため。[店舗画面の構成](apps/store.md)の「セキュリティヘッダー」）。ローカル・E2E・Stripe の sandbox の設定ファイルは本番の jar に入らない（「外部連携」）
 - 店舗画面を公開する URL（`AUTH_URL`）を渡す。ログインとログアウトの戻り先は、この URL から作る（[店舗画面の構成](apps/store.md)の「ログイン」）
-- 店舗画面に、商品の画像の配信元のオリジン（`STORE_IMAGE_ORIGIN`）を渡す。店舗画面の CSP が画像に許すオリジンになるので、画像の配信の基準 URL（`ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL`）のオリジンと同じ値にする（[店舗画面の構成](apps/store.md)の「セキュリティヘッダー」）
-- 管理画面のセキュリティヘッダー（CSP、埋め込みの禁止など）を、配信の方式に合わせて付ける（issue #418）
+- 店舗画面に、商品の画像の配信元のオリジン（`STORE_IMAGE_ORIGIN`）を、画像の配信の基準 URL（`ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL`）のオリジンと同じ値で渡す（[店舗画面の構成](apps/store.md)の「セキュリティヘッダー」）
+- 管理画面のセキュリティヘッダーを、配信の方式に合わせて付ける（issue #418）
 - 管理画面の本番ビルドに、本番の IdP の値（`VITE_OIDC_AUTHORITY`、`VITE_OIDC_CLIENT_ID`）を渡す
 - 注文とカートの URL の総当たりを防ぐ（入口でのレート制限など）。カートと注文の画面は、推測できない ID を知っている人だけが使えるようにしている
 - 決済サービスと物流サービスの通知のエンドポイント（`/api/webhooks/*`）を公開する URL と、エンドポイントのレート制限を決める。認証はなく、署名で確認する（「外部連携」）

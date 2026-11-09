@@ -50,8 +50,9 @@ export function AddToCartFormView({
 
   return (
     <form
+      action={formAction}
       className="space-y-3"
-      // action で送ると、React が送った後にフォームを空にし、数量が 1 に戻る。onSubmit から送る
+      // action は JavaScript の読み込みの前の送信に使う。読み込みの後は onSubmit から送る（action で送ると、React が送った後にフォームを空にし、数量が 1 に戻る）
       onSubmit={(event) => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)

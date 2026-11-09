@@ -79,8 +79,8 @@ describe('カートに入れた後の数量の欄', () => {
     await screen.findByText('在庫が足りません。')
 
     expect(screen.getByLabelText('数量')).toHaveValue('3')
-    const sent = vi.mocked(addToCart).mock.calls.at(-1)?.[1] as FormData
-    expect(sent.get('quantity')).toBe('3')
+    const sent = vi.mocked(addToCart).mock.calls.at(-1)?.[1]
+    expect(sent?.get('quantity')).toBe('3')
   })
 
   test('AC-414-4 成功したとき、選んだ数量が残る', async () => {
@@ -92,6 +92,18 @@ describe('カートに入れた後の数量の欄', () => {
     await screen.findByRole('link', { name: 'カートを見る' })
 
     expect(screen.getByLabelText('数量')).toHaveValue('3')
+  })
+
+  test('送信中はボタンを押せず、結果を受けると押せるようになる', async () => {
+    let finish: (result: ActionResult) => void = () => {}
+    vi.mocked(addToCart).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+    const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)
+
+    await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
+    expect(await screen.findByRole('button', { name: '入れています…' })).toBeDisabled()
+
+    finish({ ok: true })
+    expect(await screen.findByRole('button', { name: 'カートに入れる' })).toBeEnabled()
   })
 })
 

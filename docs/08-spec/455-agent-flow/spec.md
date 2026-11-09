@@ -144,7 +144,7 @@
   - 依存：T455-01-03
   - 範囲：`scripts/dev/slot.mjs`、`scripts/dev/lib/slot-ports.mjs`、`scripts/dev/lib/port-stop.mjs`
   - 確認方法：`node --test` でテストが通る
-- [ ] **T455-01-05** push のタイミングと書き換えの規則を、開発の進め方・AGENTS.md・skill `local-dev` に入れる（DC-455-1、DC-455-5）。
+- [x] **T455-01-05** push のタイミングと書き換えの規則を、開発の進め方・AGENTS.md・skill `local-dev` に入れる（DC-455-1、DC-455-5）。
   - 依存：T455-01-02
   - 範囲：`docs/05-開発規則/workflow.md`、`AGENTS.md`、`.claude/skills/local-dev/SKILL.md`
   - 確認方法：文書を読む

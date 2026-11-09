@@ -12,6 +12,9 @@
       "orders": "ご注文履歴",
       "account": "アカウント"
     },
+    "headerMenu": {
+      "open": "メニュー"
+    },
     "loginLinks": {
       "login": "ログイン",
       "register": "会員登録"

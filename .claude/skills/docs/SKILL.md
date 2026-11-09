@@ -32,10 +32,10 @@ description: ec-site の文書を書いて検査するまでの手順。docs/・
    - `node scripts/ci/ja-text.mjs`（error は失敗になるので修正する）
    - `node scripts/ci/ja-text.mjs --warning`（終了コードは 0）。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する
    - `node scripts/ci/doc-shape.mjs --list`（文書の形の warning。終了コードは 0）。変えた文書の行に出たものを読み、修正するかを 1 件ずつ決める
-   - Mermaid の図を変えたときは、push の後に GitHub で描画を確認する。blob を head の SHA で開き（`https://github.com/<owner>/<repo>/blob/<SHA>/<パス>`）、図の右上の展開ボタンで全体を見る。文字が小さい、ラベルが線に重なるときは、雛形（`docs/02-設計/template.md`、骨組みの処理の流れ）の目安で図を分ける
 
    各検査の内容は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)。
    - コードのコメントを修正したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`
+   - Mermaid の図を変えたときは、push の後に GitHub で描画を確認する。blob を head の SHA で開き（`https://github.com/<owner>/<repo>/blob/<SHA>/<パス>`）、図の右上の展開ボタンで全体を見る。文字が小さい、ラベルが線に重なるときは、雛形（`docs/02-設計/template.md`、骨組みの処理の流れ）の目安で図を分ける
 5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。spec の tasks にないタスクの番号は付けない。起票は [起票と記録の操作](../../../docs/05-開発規則/issues.md)の「起票」、push と pull request は [AGENTS.md](../../../AGENTS.md) の Git、マージは [マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」に従う。
    - pull request の本文に、文書の追加と削除の行数を書く。数え方は `git diff --numstat develop...HEAD -- docs .claude AGENTS.md README.md` の合計。
 

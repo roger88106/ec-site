@@ -244,7 +244,7 @@ describe('他の矢印', () => {
     assert.deepEqual(findShapeWarnings(OTHER, text), [])
   })
 
-  test('ラベルが空の矢印は検出せず、エラーにもしない', () => {
+  test('ラベルが空の矢印は検出せず、例外で止まらない', () => {
     assert.deepEqual(findShapeWarnings(OTHER, diagram('P->>Q:', 'P->>Q: ')), [])
   })
 })

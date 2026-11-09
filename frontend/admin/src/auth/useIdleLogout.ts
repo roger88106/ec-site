@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ACTIVITY_EVENTS,
+  IDLE_CHECK_INTERVAL_MS,
   IDLE_WARNING_BEFORE_MS,
   idleStatus,
   LAST_ACTIVITY_KEY,
@@ -13,8 +14,11 @@ import {
 /** 操作のたびに共有の時刻を書く最短の間隔（ミリ秒）。キーの入力のたびにローカルストレージへ書かないため */
 const SHARE_INTERVAL_MS = 1000
 
+/** スリープなどでタイマーが止まった後に、window で受けて判定し直すイベント（前面に戻った、ページが表示された） */
+const WAKE_EVENTS = ['focus', 'pageshow'] as const
+
 /** 無操作のログアウトの状態 */
-export type IdleLogout = {
+type IdleLogoutState = {
   /** 警告を出す間は true */
   warning: boolean
   /** ログアウトする時刻（ミリ秒）。最後に判定したときの値で、警告の間は正しい */
@@ -26,15 +30,17 @@ export type IdleLogout = {
 /**
  * 無操作が続いたら onExpire を 1 回だけ呼ぶ。警告の状態を返す。<br />
  * 最後に操作した時刻をローカルストレージでタブの間に共有し、現在の時刻との比較で判定する。
- * 判定は、次に状態が変わる時刻のタイマーと、タブが再び見えたときに行う。
+ * 判定は、次に状態が変わる時刻のタイマー、短い間隔の繰り返し、タブが再び見えた・前面に戻ったときに行う。
  *
  * @param options.onExpire ログアウトするときに呼ぶ
  * @returns 警告の状態
  */
-export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogout {
+export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogoutState {
   const [warning, setWarning] = useState(false)
   const [logoutAtMs, setLogoutAtMs] = useState(() => logoutAt(Date.now()))
+  // 判定の effect を onExpire が変わるたびに置き直す（計測をやり直す）と困るので、ref で最新の関数を渡す
   const onExpireRef = useRef(onExpire)
+  // 「操作を続ける」は effect が作る記録の処理を呼ぶので、effect が置いた関数を ref で外に渡す
   const keepWorkingRef = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -48,10 +54,10 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
     let expired = false
     let timer: ReturnType<typeof setTimeout> | undefined
 
-    /** 他のタブの操作の時刻を取り込む。今の値より古ければ戻さず、未来の時刻は現在の時刻にする */
+    /** 他のタブの操作の時刻を取り込む。今の値より古ければ戻さない。未来の時刻は、判定のときに現在の時刻にする */
     const adopt = (at: number | null) => {
       if (at !== null) {
-        lastActivityAt = Math.max(lastActivityAt, Math.min(at, Date.now()))
+        lastActivityAt = Math.max(lastActivityAt, at)
       }
     }
 
@@ -71,9 +77,15 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
       clearTimeout(timer)
       adopt(readLastActivity())
       const now = Date.now()
+      if (lastActivityAt > now) {
+        // 時計が戻った、未来の値を取り込んだときは、現在の時刻にする。共有の値も書き換える（他のタブが未来の値を取り込み続けないため）
+        lastActivityAt = now
+        share(now, true)
+      }
       const status = idleStatus(lastActivityAt, now)
       if (status === 'expired') {
         expired = true
+        clearInterval(interval)
         onExpireRef.current()
         return
       }
@@ -118,8 +130,8 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
       }
     }
 
-    // スリープなどでタイマーが止まった後、タブが再び見えたときに判定する
-    const onVisibilityChange = () => evaluate()
+    // スリープなどでタイマーが止まった後、タブが再び見えた・前面に戻ったときに判定する
+    const onWake = () => evaluate()
 
     keepWorkingRef.current = () => record(true)
     share(lastActivityAt, true)
@@ -128,18 +140,27 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
       window.addEventListener(type, onActivity, { capture: true, passive: true })
     }
     window.addEventListener('storage', onStorage)
-    document.addEventListener('visibilitychange', onVisibilityChange)
+    for (const type of WAKE_EVENTS) {
+      window.addEventListener(type, onWake)
+    }
+    document.addEventListener('visibilitychange', onWake)
+    // タブを前面に表示したままスリープから再開すると、上のイベントが起きず、タイマーも止まる前の残りの時間を待つので、短い間隔でも判定する
+    const interval = setInterval(evaluate, IDLE_CHECK_INTERVAL_MS)
     evaluate()
 
     return () => {
       expired = true
       clearTimeout(timer)
+      clearInterval(interval)
       keepWorkingRef.current = () => {}
       for (const type of ACTIVITY_EVENTS) {
         window.removeEventListener(type, onActivity, { capture: true })
       }
       window.removeEventListener('storage', onStorage)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
+      for (const type of WAKE_EVENTS) {
+        window.removeEventListener(type, onWake)
+      }
+      document.removeEventListener('visibilitychange', onWake)
     }
   }, [])
 

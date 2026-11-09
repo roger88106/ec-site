@@ -4,6 +4,12 @@ export const IDLE_LIMIT_MS = 30 * 60 * 1000
 /** ログアウトの何ミリ秒前に警告を出すか */
 export const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000
 
+/**
+ * 状態が変わる時刻のタイマーとは別に、判定を繰り返す間隔（ミリ秒）。<br />
+ * タブを前面に表示したままスリープから再開し、visibilitychange が起きないときも、ログアウトの遅れをこの間隔に抑える
+ */
+export const IDLE_CHECK_INTERVAL_MS = 15 * 1000
+
 /** 操作に数えるイベント。ポインターの移動と API の呼び出しは数えない */
 export const ACTIVITY_EVENTS = ['keydown', 'pointerdown', 'wheel'] as const
 
@@ -11,7 +17,7 @@ export const ACTIVITY_EVENTS = ['keydown', 'pointerdown', 'wheel'] as const
 export const LAST_ACTIVITY_KEY = 'ec-admin.lastActivityAt'
 
 /** 無操作の状態。操作中、警告を出す間、期限切れ */
-export type IdleStatus = 'active' | 'warning' | 'expired'
+type IdleStatus = 'active' | 'warning' | 'expired'
 
 /**
  * 最後に操作した時刻と現在の時刻から、無操作の状態を求める。<br />
@@ -47,13 +53,15 @@ export function logoutAt(lastActivityAt: number): number {
  * ローカルストレージに置いた値を、最後に操作した時刻として読む。
  *
  * @param raw 置いた値
- * @returns 時刻（ミリ秒）。値がない、0 以上の整数でないときは null
+ * @returns 時刻（ミリ秒）。値がない、0 以上の整数でない、安全に扱える整数の上限を超えるときは null
  */
 export function parseLastActivity(raw: string | null): number | null {
   if (raw === null || !/^\d+$/.test(raw)) {
     return null
   }
-  return Number(raw)
+  const at = Number(raw)
+  // 桁の多い値は Infinity や丸めた値になるので、取り込まない
+  return Number.isSafeInteger(at) ? at : null
 }
 
 /**

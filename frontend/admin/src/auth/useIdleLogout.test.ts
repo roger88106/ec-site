@@ -1,30 +1,25 @@
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { IDLE_LIMIT_MS, LAST_ACTIVITY_KEY } from '@/auth/idle'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { IDLE_CHECK_INTERVAL_MS, IDLE_LIMIT_MS, LAST_ACTIVITY_KEY } from '@/auth/idle'
 import { useIdleLogout } from '@/auth/useIdleLogout'
+import { advanceClock, MINUTE, operate, START, startClock } from '@/test/idle'
 
-const MINUTE = 60 * 1000
-const START = Date.UTC(2026, 0, 1)
+/** 1 日（ミリ秒） */
+const DAY = 24 * 60 * MINUTE
 
-/** 時計とタイマーを進める（タイマーが動く通常の経過） */
-function advance(ms: number) {
-  act(() => {
-    vi.advanceTimersByTime(ms)
-  })
-}
-
-/** タイマーを進めずに時刻だけ進め、タブが見えるようになったことを知らせる（PC のスリープからの再開） */
-function sleepAndWake(ms: number) {
+/** タイマーを進めずに時刻だけ進める（PC のスリープ。偽の時計は、置いたタイマーの予定も同じだけ動かす） */
+function sleep(ms: number) {
   act(() => {
     vi.setSystemTime(Date.now() + ms)
-    document.dispatchEvent(new Event('visibilitychange'))
   })
 }
 
-/** window で操作のイベントを起こす */
-function operate(type: string) {
+/** タイマーを進めずに時刻だけ進め、タブが再び見えた・前面に戻ったことを知らせる（PC のスリープからの再開） */
+function sleepAndWake(ms: number, wake: 'visibilitychange' | 'focus' | 'pageshow' = 'visibilitychange') {
   act(() => {
-    window.dispatchEvent(new Event(type))
+    vi.setSystemTime(Date.now() + ms)
+    const target = wake === 'visibilitychange' ? document : window
+    target.dispatchEvent(new Event(wake))
   })
 }
 
@@ -36,6 +31,11 @@ function otherTabOperatesAt(at: number) {
   })
 }
 
+/** addEventListener・removeEventListener の呼び出しから、イベントの種類とリスナーの組だけを取り出す（順は問わない） */
+function listeners(calls: unknown[][]) {
+  return new Set(calls.map(([type, listener]) => [type, listener]))
+}
+
 function renderIdle() {
   const onExpire = vi.fn()
   const view = renderHook(() => useIdleLogout({ onExpire }))
@@ -45,68 +45,61 @@ function renderIdle() {
 describe('無操作のログアウト（フック）', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.useFakeTimers()
-    vi.setSystemTime(START)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
+    startClock()
   })
 
   test.each(['keydown', 'pointerdown', 'wheel'])(
     'AC-413-3 %s を操作に数え、30 分の計測を最初から始めて、時刻を共有する',
     (type) => {
       const { onExpire } = renderIdle()
-      advance(29 * MINUTE)
+      advanceClock(29 * MINUTE)
 
       operate(type)
-      advance(29 * MINUTE)
+      advanceClock(29 * MINUTE)
 
       expect(onExpire).not.toHaveBeenCalled()
       expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START + 29 * MINUTE))
 
-      advance(MINUTE)
+      advanceClock(MINUTE)
 
       expect(onExpire).toHaveBeenCalledTimes(1)
     },
   )
 
-  test('AC-413-4 ポインターの移動と API の呼び出しは操作に数えず、30 分でログアウトする', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'))
+  // API の呼び出しを数えないことは、フックが DOM の操作のイベント（ACTIVITY_EVENTS）だけを受け、fetch を見ないことで決まる
+  test('AC-413-4 ポインターの移動は操作に数えず、30 分でログアウトする', () => {
     const { onExpire } = renderIdle()
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
 
     operate('pointermove')
-    await fetch('/orders')
-    advance(MINUTE - 1)
+    advanceClock(MINUTE - 1)
 
     expect(onExpire).not.toHaveBeenCalled()
 
-    advance(1)
+    advanceClock(1)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
-    fetchSpy.mockRestore()
   })
 
   test('AC-413-5 他のタブの操作を取り込み、その時刻から 30 分たつまでログアウトしない', () => {
     const { result, onExpire } = renderIdle()
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
 
     otherTabOperatesAt(START + 29 * MINUTE)
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
 
     // 他のタブの操作から 29 分なので、ログアウトはせず、警告の間にある
     expect(onExpire).not.toHaveBeenCalled()
     expect(result.current.warning).toBe(true)
 
-    advance(MINUTE)
+    advanceClock(MINUTE)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
   })
 
   test('AC-413-5 他のタブの操作は、警告も閉じる', () => {
     const { result } = renderIdle()
-    advance(28 * MINUTE)
+    advanceClock(28 * MINUTE)
     expect(result.current.warning).toBe(true)
 
     otherTabOperatesAt(START + 28 * MINUTE)
@@ -114,27 +107,79 @@ describe('無操作のログアウト（フック）', () => {
     expect(result.current.warning).toBe(false)
   })
 
+  test('AC-413-5 他のタブの古い時刻では、自分のタブの最後の操作を戻さない', () => {
+    const { onExpire } = renderIdle()
+    advanceClock(10 * MINUTE)
+    operate('keydown')
+
+    otherTabOperatesAt(START)
+    advanceClock(29 * MINUTE)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(MINUTE)
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
   test('AC-413-5 別のキーの書き込みは取り込まない', () => {
     const { onExpire } = renderIdle()
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
 
     act(() => {
       window.dispatchEvent(
         new StorageEvent('storage', { key: 'ec-admin.other', newValue: String(START + 29 * MINUTE) }),
       )
     })
-    advance(MINUTE)
+    advanceClock(MINUTE)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
   })
 
-  test('AC-413-6 スリープの後に再開したとき、最後の操作から 30 分を過ぎていればログアウトする', () => {
+  test('AC-413-5 操作の時刻の共有は、前に書いてから 1 秒たつまで書かない', () => {
+    renderIdle()
+    advanceClock(999)
+
+    operate('keydown')
+
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START))
+
+    advanceClock(1)
+    operate('keydown')
+
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START + 1000))
+  })
+
+  test('AC-413-5 ローカルストレージが例外を投げるときは、共有せずにそのタブの中で判定を続ける', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('使えない', 'SecurityError')
+    })
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('使えない', 'SecurityError')
+    })
     const { onExpire } = renderIdle()
+    advanceClock(29 * MINUTE)
 
-    sleepAndWake(IDLE_LIMIT_MS)
+    operate('keydown')
+    advanceClock(30 * MINUTE - 1)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
   })
+
+  test.each(['visibilitychange', 'focus', 'pageshow'] as const)(
+    'AC-413-6 スリープの後に再開したとき（%s）、最後の操作から 30 分を過ぎていればログアウトする',
+    (wake) => {
+      const { onExpire } = renderIdle()
+
+      sleepAndWake(IDLE_LIMIT_MS, wake)
+
+      expect(onExpire).toHaveBeenCalledTimes(1)
+    },
+  )
 
   test('AC-413-6 スリープの後に再開したとき、30 分の直前なら、ログアウトしない', () => {
     const { onExpire } = renderIdle()
@@ -156,13 +201,61 @@ describe('無操作のログアウト（フック）', () => {
     expect(onExpire).not.toHaveBeenCalled()
   })
 
-  test('AC-413-6 スリープの後の次のタイマーでも、30 分を過ぎていればログアウトする', () => {
+  test('AC-413-6 スリープの後にタブの見え方が変わらなくても、判定の間隔のうちにログアウトする', () => {
+    const { onExpire } = renderIdle()
+    sleep(31 * MINUTE)
+
+    advanceClock(IDLE_CHECK_INTERVAL_MS - 1)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-6 スリープの後の最初の操作では、計測を始め直さずにログアウトする', () => {
+    const { onExpire } = renderIdle()
+    sleep(31 * MINUTE)
+
+    operate('keydown')
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START))
+  })
+
+  test('AC-413-1 時計が戻ったときは、判定の間隔のうちに現在の時刻から計測を再開し、共有の値も書き換える', () => {
+    const { onExpire } = renderIdle()
+    sleep(-DAY)
+
+    advanceClock(IDLE_CHECK_INTERVAL_MS)
+
+    const restartedAt = START - DAY + IDLE_CHECK_INTERVAL_MS
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(restartedAt))
+
+    advanceClock(30 * MINUTE - 1)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-5 他のタブの未来の時刻は、判定の間隔のうちに現在の時刻にし、共有の値も書き換える', () => {
     const { onExpire } = renderIdle()
 
-    act(() => {
-      vi.setSystemTime(START + 31 * MINUTE)
-      vi.advanceTimersToNextTimer()
-    })
+    otherTabOperatesAt(START + DAY)
+    advanceClock(IDLE_CHECK_INTERVAL_MS)
+
+    const adoptedAt = START + IDLE_CHECK_INTERVAL_MS
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(adoptedAt))
+
+    advanceClock(30 * MINUTE - 1)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
   })
@@ -170,11 +263,11 @@ describe('無操作のログアウト（フック）', () => {
   test('AC-413-7 28 分の直前までは警告を出さず、28 分で警告とログアウトする時刻を返す', () => {
     const { result } = renderIdle()
 
-    advance(28 * MINUTE - 1)
+    advanceClock(28 * MINUTE - 1)
 
     expect(result.current.warning).toBe(false)
 
-    advance(1)
+    advanceClock(1)
 
     expect(result.current.warning).toBe(true)
     expect(result.current.logoutAt).toBe(START + 30 * MINUTE)
@@ -182,14 +275,14 @@ describe('無操作のログアウト（フック）', () => {
 
   test('AC-413-8 警告の間に操作すると、警告を閉じ、30 分の計測を最初から始める', () => {
     const { result, onExpire } = renderIdle()
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
     expect(result.current.warning).toBe(true)
 
     operate('keydown')
 
     expect(result.current.warning).toBe(false)
 
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
 
     expect(onExpire).not.toHaveBeenCalled()
     expect(result.current.logoutAt).toBe(START + 59 * MINUTE)
@@ -197,7 +290,7 @@ describe('無操作のログアウト（フック）', () => {
 
   test('AC-413-8 「操作を続ける」を呼ぶと、警告を閉じ、30 分の計測を最初から始め、時刻を共有する', () => {
     const { result, onExpire } = renderIdle()
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
 
     act(() => {
       result.current.keepWorking()
@@ -206,11 +299,11 @@ describe('無操作のログアウト（フック）', () => {
     expect(result.current.warning).toBe(false)
     expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START + 29 * MINUTE))
 
-    advance(29 * MINUTE)
+    advanceClock(29 * MINUTE)
 
     expect(onExpire).not.toHaveBeenCalled()
 
-    advance(MINUTE)
+    advanceClock(MINUTE)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
   })
@@ -218,10 +311,26 @@ describe('無操作のログアウト（フック）', () => {
   test('AC-413-1 30 分で onExpire を呼ぶのは 1 回だけ', () => {
     const { onExpire } = renderIdle()
 
-    advance(30 * MINUTE)
-    advance(10 * MINUTE)
+    advanceClock(30 * MINUTE)
+    advanceClock(10 * MINUTE)
     sleepAndWake(10 * MINUTE)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
+  test('アンマウントの後は、タイマーとイベントのリスナーを残さない', () => {
+    const windowAdded = vi.spyOn(window, 'addEventListener')
+    const windowRemoved = vi.spyOn(window, 'removeEventListener')
+    const documentAdded = vi.spyOn(document, 'addEventListener')
+    const documentRemoved = vi.spyOn(document, 'removeEventListener')
+    const { onExpire, unmount } = renderIdle()
+
+    unmount()
+
+    expect(vi.getTimerCount()).toBe(0)
+    expect(listeners(windowRemoved.mock.calls)).toEqual(listeners(windowAdded.mock.calls))
+    expect(listeners(documentRemoved.mock.calls)).toEqual(listeners(documentAdded.mock.calls))
+    advanceClock(30 * MINUTE)
+    expect(onExpire).not.toHaveBeenCalled()
   })
 })

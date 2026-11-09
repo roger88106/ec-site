@@ -21,15 +21,8 @@ export function IdleLogout({ onExpire }: { onExpire: () => void }) {
   const t = useTranslations('auth.idleWarning')
   const { warning, logoutAt, keepWorking } = useIdleLogout({ onExpire })
   return (
-    <AlertDialog
-      // Esc で閉じたときも、操作を続けるとして扱う
-      onOpenChange={(open) => {
-        if (!open) {
-          keepWorking()
-        }
-      }}
-      open={warning}
-    >
+    // Esc で閉じる処理は置かない。Esc の keydown も操作に数え、フックが警告を閉じる
+    <AlertDialog open={warning}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t('title') /* まもなくログアウト */}</AlertDialogTitle>

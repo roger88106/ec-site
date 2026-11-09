@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   ACTIVITY_EVENTS,
   IDLE_LIMIT_MS,
@@ -9,9 +9,8 @@ import {
   readLastActivity,
   writeLastActivity,
 } from '@/auth/idle'
-
-const MINUTE = 60 * 1000
-const START = Date.UTC(2026, 0, 1)
+import { MINUTE, START } from '@/test/idle'
+import adminRealm from '../../../../docker/keycloak/realms/ec-admin-realm.json'
 
 describe('無操作の判定', () => {
   beforeEach(() => {
@@ -25,6 +24,10 @@ describe('無操作の判定', () => {
   test('AC-413-7 警告は 28 分（ログアウトの 2 分前）で、ログアウトは 30 分', () => {
     expect(IDLE_LIMIT_MS).toBe(30 * MINUTE)
     expect(IDLE_WARNING_BEFORE_MS).toBe(2 * MINUTE)
+  })
+
+  test('AC-413-1 ログアウトまでの時間は、運営者の realm のアイドルタイムアウトと同じ', () => {
+    expect(IDLE_LIMIT_MS).toBe(adminRealm.ssoSessionIdleTimeout * 1000)
   })
 
   test('AC-413-7 28 分の直前までは操作中で、28 分から警告になる', () => {
@@ -58,5 +61,31 @@ describe('無操作の判定', () => {
     localStorage.setItem(LAST_ACTIVITY_KEY, 'abc')
 
     expect(readLastActivity()).toBeNull()
+  })
+
+  test('AC-413-5 安全に扱える整数の上限までは読み、上限を超える値は null にする', () => {
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(Number.MAX_SAFE_INTEGER))
+
+    expect(readLastActivity()).toBe(Number.MAX_SAFE_INTEGER)
+
+    localStorage.setItem(LAST_ACTIVITY_KEY, '9007199254740992')
+
+    expect(readLastActivity()).toBeNull()
+
+    localStorage.setItem(LAST_ACTIVITY_KEY, '9'.repeat(400))
+
+    expect(readLastActivity()).toBeNull()
+  })
+
+  test('AC-413-5 ローカルストレージが例外を投げるときは、読み取りを null にし、書き込みで例外を投げない', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('使えない', 'SecurityError')
+    })
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('容量が足りない', 'QuotaExceededError')
+    })
+
+    expect(readLastActivity()).toBeNull()
+    expect(() => writeLastActivity(START)).not.toThrow()
   })
 })

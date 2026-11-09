@@ -164,7 +164,7 @@
   - 依存：T455-01-05
   - 範囲：`.claude/skills/sessions/SKILL.md`、`.claude/skills/sessions/handover.md`、`.claude/skills/sessions/rounds.md`
   - 確認方法：文書を読む
-- [ ] **T455-01-10** 実装役の定義、skill `review`・`agent-retro` を修正する（DC-455-22、DC-455-24〜DC-455-26）。
+- [x] **T455-01-10** 実装役の定義、skill `review`・`agent-retro` を修正する（DC-455-22、DC-455-24〜DC-455-26）。
   - 依存：T455-01-07
   - 範囲：`.claude/agents/implementer.md`、`.claude/skills/review/SKILL.md`、`.claude/skills/agent-retro/SKILL.md`
   - 確認方法：文書を読む

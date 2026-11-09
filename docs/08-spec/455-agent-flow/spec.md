@@ -156,7 +156,7 @@
   - 依存：T455-01-06
   - 範囲：`docs/05-開発規則/doc-structure.md`、`docs/08-spec/templates/plan.md`、`docs/05-開発規則/review.md`、`.claude/skills/review/prompts.md`、`.github/pull_request_template.md`
   - 確認方法：文書を読む
-- [ ] **T455-01-08** skill `local-dev` を修正する（DC-455-11〜DC-455-20）。
+- [x] **T455-01-08** skill `local-dev` を修正する（DC-455-11〜DC-455-20）。
   - 依存：T455-01-04、T455-01-05
   - 範囲：`.claude/skills/local-dev/SKILL.md`（必要なら同じフォルダーに場面ごとのファイルを追加する）
   - 確認方法：文書を読む

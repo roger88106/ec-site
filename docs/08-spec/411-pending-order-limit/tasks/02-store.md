@@ -24,7 +24,7 @@
   - 依存：T411-02-03
   - 範囲：`frontend/store/src/app/checkout/pending-orders/page.tsx`、`frontend/store/src/features/checkout/components/PendingOrdersConfirmation.tsx`、`frontend/store/messages/ja.json`
   - 確認方法：テストが通る
-- [ ] **T411-02-05** 既存の E2E を全て実行する。上限で失敗するものがあれば、テストを弱めずに直す。
+- [ ] **T411-02-05** 既存の E2E を全て実行する。上限で失敗するものがあれば、テストを弱めずに修正する。
   - 依存：T411-02-04
   - 範囲：`e2e/`
   - 確認方法：E2E が通る

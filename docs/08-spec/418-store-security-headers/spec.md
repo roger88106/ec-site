@@ -28,12 +28,12 @@
 |------|--------|
 | ログインとログアウトの IdP | `AUTH_KEYCLOAK_ISSUER` のオリジン |
 | 決済サービスの支払画面（Stripe） | コードの定数 `https://checkout.stripe.com` |
-| mock の支払画面 ※2 | `STORE_API_BASE_URL` のオリジン |
+| mock の支払画面 | 新しい任意の環境変数 `STORE_MOCK_PAYMENT_ORIGIN` ※2 |
 | 商品の画像 | 新しい環境変数 `STORE_IMAGE_ORIGIN`（既定は `http://localhost:8333`。既定を使うのは開発モードとテストだけ） |
 
 ※1：Next.js の本番のサーバーは、設定ファイルのヘッダーを、ビルドで作る `routes-manifest.json` から読む（`next/dist/server/lib/router-utils/filesystem.js` の本番の分岐）。
 
-※2：mock の支払画面は、バックエンドが表示する。
+※2：設定したときだけ許す。本番モードで設定がなくても起動は失敗しない。開発モードとテストの既定は `http://localhost:8080`。mock を使わない環境では設定しない。
 
 ## User stories
 
@@ -73,7 +73,7 @@
 | `frame-ancestors` | `'none'` |
 | `base-uri` | `'self'` |
 | `object-src` | `'none'` |
-| `form-action` | `'self'` と、IdP、決済サービス、mock の支払画面の各オリジン |
+| `form-action` | `'self'` と、IdP、決済サービスの各オリジン。mock の支払画面のオリジンは、設定したときだけ加える |
 
 ## 業務ルール
 

@@ -123,7 +123,7 @@ describe('注文する', () => {
     expect(revalidatedPaths).toEqual([])
   })
 
-  test('AC-411-10 上限の拒否（409）なら、入力を保存せず、メッセージを出さずに、上限を示す確認の画面へ移る', async () => {
+  test('AC-411-10 上限による拒否（409）なら、入力を保存せず、メッセージを出さずに、上限に達したことを示す確認の画面へ移る', async () => {
     signInAs()
     server.use(
       http.post('/checkouts/{checkoutId}/order', ({ response }) =>

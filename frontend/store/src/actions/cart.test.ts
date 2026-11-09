@@ -256,7 +256,7 @@ describe('注文手続きに進む', () => {
     expect(await redirectedTo(() => startCheckout(null, data))).toBe('/checkout/pending-orders')
   })
 
-  test('AC-411-9 上限の拒否（409）なら、上限を示す確認の画面へ移る', async () => {
+  test('AC-411-9 上限による拒否（409）なら、上限に達したことを示す確認の画面へ移る', async () => {
     signInAs()
     server.use(
       memberCart(),

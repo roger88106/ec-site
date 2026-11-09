@@ -40,11 +40,11 @@ const EXPIRED = order({
   actions: { requestCancellation: false, pay: false },
 })
 
-/** 上限に達したことを示す文（一部） */
+/** 上限に達したことを示す文の一部 */
 const LIMIT_TEXT = /お支払い待ちのご注文が上限に達しているため、新しく注文できません/
 
 /**
- * 画面の引数（クエリ付き）を作る。
+ * 画面の関数に渡す引数（クエリ付き）を作る。
  *
  * @param query URL のクエリ
  */
@@ -111,14 +111,6 @@ describe('支払待ちの注文の確認の画面', () => {
 
     const other = await renderPage([PAYABLE], { limit: 'other' })
     expect(other.queryByText(LIMIT_TEXT)).toBeNull()
-  })
-
-  test('AC-411-11 上限の文を示す画面でも、支払える注文には「支払へ進む」を示し、「新しく注文する」と「戻る」も示す', async () => {
-    const view = await renderPage([PAYABLE, EXPIRED], { limit: 'reached' })
-
-    expect(view.getAllByRole('button', { name: '支払へ進む' })).toHaveLength(1)
-    expect(view.getByRole('button', { name: '新しく注文する' })).toBeInTheDocument()
-    expect(view.getByRole('link', { name: '戻る' })).toHaveAttribute('href', '/cart')
   })
 
   test('支払待ちの注文がなければ、カートへ移る', async () => {

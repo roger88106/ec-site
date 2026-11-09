@@ -15,8 +15,8 @@ import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
 import {
   PENDING_ORDER_CONFIRMATION_REQUIRED,
   PENDING_ORDER_LIMIT_EXCEEDED,
-  PENDING_ORDERS_LIMIT_PATH,
   PENDING_ORDERS_PATH,
+  pendingOrdersLimitHref,
 } from '@/lib/pendingOrders'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
@@ -86,7 +86,9 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
  * ログインしていなければ、ログインの画面へ移し、ログインの後は（カートを移して）カートに戻る。
  * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。<br />
  * 確認していない支払待ちの注文があれば（409）、確認の画面へ移る。確認の画面の「新しく注文する」は、
- * 表示した注文の ID を送る。フォームの項目：acknowledgedOrderIds（任意、複数）。
+ * 表示した注文の ID を送る。<br />
+ * 支払待ちの注文の上限による拒否（409）なら、上限に達したことを示す確認の画面へ移る。<br />
+ * フォームの項目：acknowledgedOrderIds（任意、複数）。
  */
 export async function startCheckout(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const acknowledgedOrderIds = formData
@@ -110,8 +112,8 @@ export async function startCheckout(_previous: ActionResult | null, formData: Fo
         return PENDING_ORDERS_PATH
       }
       if (failure.errorCode === PENDING_ORDER_LIMIT_EXCEEDED) {
-        // 上限に達している。確認の画面で、上限のため注文できないことを示す
-        return PENDING_ORDERS_LIMIT_PATH
+        // 上限に達している。確認の画面で、上限に達したため注文できないことを示す
+        return pendingOrdersLimitHref()
       }
       revalidatePath('/cart')
       return failure

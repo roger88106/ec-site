@@ -10,8 +10,8 @@ import { type ActionResult, toFailure } from '@/lib/actionResult'
 import {
   PENDING_ORDER_CONFIRMATION_REQUIRED,
   PENDING_ORDER_LIMIT_EXCEEDED,
-  PENDING_ORDERS_LIMIT_PATH,
   PENDING_ORDERS_PATH,
+  pendingOrdersLimitHref,
 } from '@/lib/pendingOrders'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
@@ -50,8 +50,8 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
         return PENDING_ORDERS_PATH
       }
       if (failure.errorCode === PENDING_ORDER_LIMIT_EXCEEDED) {
-        // 入力は保存しない。確認の画面で、上限のため注文できないことを示す
-        return PENDING_ORDERS_LIMIT_PATH
+        // 入力は保存しない。確認の画面で、上限に達したため注文できないことを示す
+        return pendingOrdersLimitHref()
       }
       if (failure.errorCode === TOTAL_AMOUNT_CHANGED) {
         revalidatePath(`/checkout/${checkoutId}`)

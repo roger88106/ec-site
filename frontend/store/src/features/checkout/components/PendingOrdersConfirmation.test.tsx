@@ -45,25 +45,33 @@ describe('支払待ちの注文の確認の操作', () => {
     expect(sent?.getAll('acknowledgedOrderIds')).toEqual([ORDER_ID, OTHER_ORDER_ID])
   })
 
-  test('AC-411-9、AC-411-10 上限に達しているときは、新しく注文できないことを知らせる文を、読み上げられる役割で示す', () => {
+  test('AC-411-9、AC-411-10 上限に達しているときは、新しく注文できないことを知らせる文を、画面を開いたときの知らせ（Alert）として示す', () => {
     renderInBrowser(<PendingOrdersConfirmation limitReached orders={[PAYABLE]} />)
 
-    const notice = screen.getByText('お支払い待ちのご注文が上限に達しているため、新しく注文できません。', {
-      exact: false,
-    })
-    expect(notice).toHaveAttribute('role', 'status')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'お支払い待ちのご注文が上限に達しているため、新しく注文できません。',
+    )
   })
 
-  test('AC-411-9 上限に達していないときは、上限の文を示さない', () => {
+  test('AC-411-9 上限に達しているときは、食い違う案内文（このまま新しく注文すると、別のご注文になります）を示さない', () => {
+    renderInBrowser(<PendingOrdersConfirmation limitReached orders={[PAYABLE]} />)
+
+    expect(screen.queryByText(/このまま新しく注文すると、別のご注文になります/)).toBeNull()
+  })
+
+  test('AC-411-9 上限に達していないときは、上限の文を示さず、案内文を示す', () => {
     renderInBrowser(<PendingOrdersConfirmation orders={[PAYABLE]} />)
 
     expect(screen.queryByText(/上限に達しているため/)).toBeNull()
+    expect(screen.getByText(/このまま新しく注文すると、別のご注文になります/)).toBeInTheDocument()
   })
 
-  test('AC-411-11 上限に達しているときも、支払える注文の「支払へ進む」を示す', () => {
+  test('AC-411-11 上限に達しているときも、支払える注文にだけ「支払へ進む」を示し、「新しく注文する」と「戻る」も示す', () => {
     renderInBrowser(<PendingOrdersConfirmation limitReached orders={[PAYABLE, EXPIRED]} />)
 
     expect(screen.getAllByRole('button', { name: '支払へ進む' })).toHaveLength(1)
+    expect(screen.getByRole('button', { name: '新しく注文する' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '戻る' })).toHaveAttribute('href', '/cart')
   })
 
   test('AC-406-7 在庫不足などの失敗は、API のメッセージを示す', async () => {

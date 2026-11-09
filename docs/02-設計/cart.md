@@ -53,7 +53,7 @@ sequenceDiagram
     participant U as 店舗画面
     participant C as カート
     participant O as 注文
-    U->>C: ログインの直後に、カートを移す
+    U->>C: ログインの直後か再試行で、カートを移す
     C->>C: 会員のカートへ品目を移し、移すカートを空にする
     C-->>O: イベント「カート変更」
     O->>O: 注文手続きの引当を解く

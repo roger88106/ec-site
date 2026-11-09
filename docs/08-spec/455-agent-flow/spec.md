@@ -148,7 +148,7 @@
   - 依存：T455-01-02
   - 範囲：`docs/05-開発規則/workflow.md`、`AGENTS.md`、`.claude/skills/local-dev/SKILL.md`
   - 確認方法：文書を読む
-- [ ] **T455-01-06** 規模 S と危険度の規則を、エージェントの作業フローと pull request の雛形に入れる（DC-455-6、DC-455-7、DC-455-8）。
+- [x] **T455-01-06** 規模 S と危険度の規則を、エージェントの作業フローと pull request の雛形に入れる（DC-455-6、DC-455-7、DC-455-8）。
   - 依存：なし
   - 範囲：`docs/05-開発規則/subagents.md`、`.github/pull_request_template.md`
   - 確認方法：文書を読む

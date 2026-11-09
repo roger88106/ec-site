@@ -71,16 +71,20 @@
 
 | 環境変数 | 内容 | 既定 ※1 |
 |----------|------|---------|
-| `STORE_API_BASE_URL` | 店舗 API の接続先 | `http://localhost:8080/api/store` |
-| `STORE_API_REVALIDATE_SECONDS` | API の結果をキャッシュする秒数（E2E で短くする。本番相当では設定しない） ※2 | 60 |
+| `STORE_API_BASE_URL` | 店舗 API の接続先 ※2 | `http://localhost:8080/api/store` |
+| `STORE_API_REVALIDATE_SECONDS` | API の結果をキャッシュする秒数（E2E で短くする。本番相当では設定しない） ※3 | 60 |
 | `STORE_API_TIMEOUT_SECONDS` | 店舗 API の応答のタイムアウト（秒）。正の数でなければ起動に失敗する | 30 |
 | `AUTH_KEYCLOAK_TIMEOUT_SECONDS` | IdP（ログイン、token の更新）の応答のタイムアウト（秒）。正の数でなければ起動に失敗する | 10 |
-| `AUTH_KEYCLOAK_ISSUER` | IdP（消費者の realm） | `http://localhost:8180/realms/ec-store` |
+| `AUTH_KEYCLOAK_ISSUER` | IdP（消費者の realm） ※2 | `http://localhost:8180/realms/ec-store` |
 | `AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET` | client ID と secret | `ec-store-web`、ローカル用の値 |
 | `AUTH_SECRET` | セッションの Cookie の暗号化キー | ローカル用の値 |
 | `AUTH_URL` | 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を生成する | `http://localhost:3000` |
+| `STORE_IMAGE_ORIGIN` | 商品の画像の配信元のオリジン（スキームとホストとポート。パスは使わない）。店舗画面の CSP が画像に許す。バックエンドの `ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL` のオリジンと同じ値にする ※2 | `http://localhost:8333` |
+| `STORE_MOCK_PAYMENT_ORIGIN` | mock の支払画面のオリジン。店舗画面の CSP がフォームの送信先に許す。任意で、なければ許さない。バックエンドの `ECSITE_PAYMENT_MOCK_BASE_URL` のオリジンと同じ値にする。mock を使わない環境では設定しない。`slot.mjs run` が設定する ※2 | `http://localhost:8080` |
 | `STORE_COOKIE_PREFIX` | 店舗画面の Cookie（セッション、カートなど）の名前の接頭辞。英数字と `-`、`_` だけ。任意。`slot.mjs run` が設定する（[開発環境の起動](setup.md)の「スロット」） | 空 |
 
-※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS` 以外がなければ起動に失敗する（BR-31）。
+※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS`、`STORE_MOCK_PAYMENT_ORIGIN` 以外がなければ起動に失敗する（BR-31）。
 
-※2：0 以上の整数。0 はキャッシュしない設定。小数、負の数、数でない値は起動に失敗する。
+※2：値があれば http か https の URL でなければ、モードによらず起動に失敗する。
+
+※3：0 以上の整数。0 はキャッシュしない設定。小数、負の数、数でない値は起動に失敗する。

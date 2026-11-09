@@ -418,4 +418,9 @@
 | AC-417-1 | storefront | 有効 | 417 | — | 幅 375px で、ログインしていない消費者が店舗画面を開くと、横スクロールが出ない。 |
 | AC-417-2 | storefront | 有効 | 417 | — | 幅 375px で、ログインしている会員が店舗画面を開くと、横スクロールが出ない。 |
 | AC-417-3 | storefront | 有効 | 417 | — | 幅 375px でも、ヘッダーの全ての項目（検索、カート、商品一覧、ログイン状態の項目）を使える。 |
+| AC-418-1 | common | 有効 | 418 | — | 店舗画面の全ての応答に、`X-Frame-Options: DENY`、`X-Content-Type-Options: nosniff`、`Referrer-Policy: strict-origin-when-cross-origin` が付く。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「セキュリティヘッダー」。 |
+| AC-418-2 | common | 有効 | 418 | — | 画面の応答に CSP が付く。ディレクティブは `default-src 'self'`、`script-src 'self' 'unsafe-inline'`（開発モードだけ `'unsafe-eval'` を加える）、`style-src 'self' 'unsafe-inline'`、`img-src 'self' data:` と画像の配信元のオリジン、`font-src 'self'`、`connect-src 'self'`、`frame-ancestors 'none'`、`base-uri 'self'`、`object-src 'none'`、`form-action 'self'` と IdP・決済サービスの各オリジン（mock の支払画面のオリジンは設定したときだけ加える）である。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「セキュリティヘッダー」。 |
+| AC-418-3 | common | 有効 | 418 | — | 本番モードの応答に `Strict-Transport-Security: max-age=31536000` が付く。開発モードでは付かない。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「セキュリティヘッダー」。 |
+| AC-418-4 | common | 有効 | 418 | — | 商品一覧、商品の詳細、カート、注文手続きの画面を開いたとき、ブラウザーが CSP の違反を検出しない。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「セキュリティヘッダー」。 |
+| AC-418-5 | common | 有効 | 418 | — | 本番モードで、画像の配信元のオリジンの環境変数がなければ、店舗画面は起動に失敗する。根拠は[店舗画面の構成](../02-設計/apps/store.md)の「サーバーの設定とログ」。 |
 <!-- /generated:ac-list -->

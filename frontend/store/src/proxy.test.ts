@@ -43,6 +43,14 @@ describe('リクエストごとの確認（proxy）', () => {
     expect(response.headers.get('x-middleware-request-traceparent')).toBe(incoming)
   })
 
+  test('AC-418-2 応答に CSP が付き、フレームへの埋め込みを禁じ、読み込み元を自身に限る', async () => {
+    const response = await runProxy('http://localhost:3000/products')
+
+    const policy = response.headers.get('Content-Security-Policy') ?? ''
+    expect(policy).toContain("frame-ancestors 'none'")
+    expect(policy).toContain("default-src 'self'")
+  })
+
   test('Auth.js の口と静的なファイルには、proxy を通さない', () => {
     const matcher = new RegExp(`^${config.matcher[0]}$`)
 

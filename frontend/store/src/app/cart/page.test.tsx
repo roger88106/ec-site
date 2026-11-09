@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import CartPage from '@/app/cart/page'
 import { signInAs } from '@/test/auth'
-import { cart, COOKIE_CART_ID, MEMBER_CART_ID } from '@/test/fixtures'
+import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { resetRequest } from '@/test/next'
 import { renderStatic } from '@/test/render'
 import { http, server } from '@/test/server'

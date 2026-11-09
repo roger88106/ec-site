@@ -31,7 +31,10 @@ describe('カートを移す再試行', () => {
   test('AC-415-3 移せたときは、再表示で pending が false になっても、知らせを示し続ける', async () => {
     vi.mocked(retryCartMerge).mockResolvedValueOnce({
       kind: 'merged',
-      notice: { truncated: { items: [{ label: 'マグカップ', quantity: 10 }], more: 0 }, skipped: { items: [], more: 0 } },
+      notice: {
+        truncated: { items: [{ label: 'マグカップ', quantity: 10 }], more: 0 },
+        skipped: { items: [], more: 0 },
+      },
     })
 
     const { rerender } = renderInBrowser(<CartMergeRetry pending />)

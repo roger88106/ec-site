@@ -164,7 +164,7 @@
   - 依存：T415-01-06
   - 範囲：`frontend/store/src/app/cart/page.test.tsx`、`frontend/store/src/features/cart/components/` のテスト
   - 確認方法：追加したテストが失敗する。
-- [ ] **T415-01-08** T415-01-07 のテストが通る実装を書く（決定 4〜6）。
+- [x] **T415-01-08** T415-01-07 のテストが通る実装を書く（決定 4〜6）。
   - 依存：T415-01-07
   - 範囲：`frontend/store/src/app/cart/page.tsx`、`frontend/store/src/features/cart/components/`、`frontend/store/messages/ja.json`
   - 確認方法：追加したテストが通る。

@@ -91,9 +91,9 @@ Stripe の API のバージョンは、`stripe-java` のものに固定される
 - 消費者が支払画面を離れても、通知は送られない。Session は期限まで開いたまま。カードの拒否は画面に表示されるだけで、Session の通知は送られない。
 - 支払画面を閉じる（Session を期限切れにする）とき、`open` でない Session は Stripe が拒否する。拒否されたら Session を読み、`complete` なら「支払が済んでいた」、`expired` なら「閉じた」とする。
 - 与信を取得するときは、PaymentIntent を含めて Session を読む。与信の参照は PaymentIntent の ID、与信の時刻は PaymentIntent の作成時刻にする。Session が `complete` でないか、PaymentIntent がないときは失敗にする。PaymentIntent の状態によって扱いを変えない。
-- 与信を取り消す（PaymentIntent の取消）とき、取消済みと売上確定済みは Stripe が拒否する（`payment_intent_unexpected_state`。売上確定済みは sandbox で確認した）。拒否されたら PaymentIntent を読み、`canceled` なら成功、`succeeded` なら結果「売上確定済み」とする。
+- 与信を取り消す（PaymentIntent の取消）とき、取消済みと売上確定済みは Stripe が拒否する（`payment_intent_unexpected_state`）。拒否されたら PaymentIntent を読み、`canceled` なら成功、`succeeded` なら結果「売上確定済み」とする。
 
-売上確定と返金（sandbox で確認した応答）：
+売上確定と返金の応答：
 
 | 操作 | 呼ぶもの | 応答と結果 |
 |------|----------|------------|
@@ -103,7 +103,7 @@ Stripe の API のバージョンは、`stripe-java` のものに固定される
 | 返金 | Refund（PaymentIntent の総額。冪等キー `refund-<注文 ID>`） | 成功なら Refund は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
 | 返金済みの PaymentIntent の返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
 
-※5：与信が切れると、Stripe が PaymentIntent を取り消す（`canceled`）。与信は 7 日待たないと切れないので、sandbox では与信を取り消した PaymentIntent で、同じ応答（400 `payment_intent_unexpected_state`、状態 `canceled`）になることを確認した。
+※5：与信が切れると、Stripe が PaymentIntent を取り消す（`canceled`）。そのため、与信を取り消した PaymentIntent の売上確定と同じ応答になる。
 
 ## 処理の流れ
 

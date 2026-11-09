@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server'
 import { describe, expect, test } from 'vitest'
-import { readServerConfig } from '@/auth/config'
-import { contentSecurityPolicy } from '@/lib/server/securityHeaders'
 import { config, proxy } from '@/proxy'
 import { TRACEPARENT } from '@/test/fixtures'
 
@@ -51,19 +49,6 @@ describe('リクエストごとの確認（proxy）', () => {
     const policy = response.headers.get('Content-Security-Policy') ?? ''
     expect(policy).toContain("frame-ancestors 'none'")
     expect(policy).toContain("default-src 'self'")
-  })
-
-  test('店舗 API の接続先のホストは、CSP のどこにも出ない', () => {
-    const config = readServerConfig({ STORE_API_BASE_URL: 'http://backend.internal:8080/api/store' })
-    const policy = contentSecurityPolicy({
-      production: true,
-      issuer: config.issuer,
-      mockPaymentOrigin: config.mockPaymentOrigin,
-      imageOrigin: config.imageOrigin,
-    })
-
-    expect(config.apiBaseUrl).toContain('backend.internal')
-    expect(policy).not.toContain('backend.internal')
   })
 
   test('Auth.js の口と静的なファイルには、proxy を通さない', () => {

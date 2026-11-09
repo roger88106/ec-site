@@ -38,7 +38,7 @@ const DEFAULT_IDP_TIMEOUT_SECONDS = 10
 /** 待つ時間の上限の環境変数（正の数でなければ起動に失敗させる） */
 const TIMEOUT_SETTINGS = ['STORE_API_TIMEOUT_SECONDS', 'AUTH_KEYCLOAK_TIMEOUT_SECONDS'] as const
 
-/** URL の形を確認する環境変数（CSP のオリジンの元になる。形が違うと proxy の読み込みで例外になるか、画像が全て止まる） */
+/** URL の形を確認する環境変数（CSP のオリジンの元になる。形が違うと、proxy の読み込みで例外になるか、画像の読み込みが全て CSP で止められる） */
 const URL_SETTINGS = [
   'STORE_IMAGE_ORIGIN',
   'AUTH_KEYCLOAK_ISSUER',
@@ -46,7 +46,7 @@ const URL_SETTINGS = [
   'STORE_MOCK_PAYMENT_ORIGIN',
 ] as const
 
-/** mock の支払画面のオリジンの既定（開発のモードとテストでだけ使う。バックエンドのローカルの既定の口） */
+/** mock の支払画面のオリジンの既定（開発のモードとテストでだけ使う。バックエンドのローカルの既定のポート） */
 const LOCAL_MOCK_PAYMENT_ORIGIN = 'http://localhost:8080'
 
 /**
@@ -102,7 +102,7 @@ const COOKIE_PREFIX_PATTERN = /^[A-Za-z0-9_-]*$/
  * 環境変数から設定を読む。本番のモードで必須の値がなければ（空も含む）、足りない名前を並べた例外を投げる。
  * 待つ時間の上限が正の数でなければ、モードによらず、その名前を並べた例外を投げる。
  * 再取得の間隔が 0 以上の整数でなければ、同じくモードによらず例外を投げる。
- * 画像の配信元・issuer・店舗 API の場所・mock の支払画面のオリジンは、値があれば http か https の URL でなければ、同じく例外を投げる。
+ * 画像の配信元・issuer・店舗 API の接続先・mock の支払画面のオリジンは、値があれば http か https の URL でなければ、同じく例外を投げる。
  *
  * @param env 環境変数
  * @returns 設定

@@ -44,8 +44,13 @@ export function fixedSecurityHeaders(production: boolean): SecurityHeader[] {
 
 /**
  * CSP の値。<br />
- * 許すオリジンを追加するときは、この関数の入力と `proxy.ts` の呼び出しを変える。環境変数から取るなら、あわせて `auth/config.ts`、
- * 環境変数の文書、E2E の起動の設定、テストの期待値も変える。
+ * 許すオリジンを追加するときは、この関数の入力と `proxy.ts` の呼び出しを変える。環境変数から取るなら、あわせて次も変える。
+ * <ul>
+ * <li>`auth/config.ts`、環境変数の文書、E2E の起動の設定、テストの期待値</li>
+ * <li>スロットの script（`scripts/dev/lib/slot.mjs` とそのテスト。スロットごとに値が変わるとき）</li>
+ * <li>店舗画面の構成の「セキュリティヘッダー」の表</li>
+ * <li>デプロイの前提（本番で設定する値のとき）</li>
+ * </ul>
  *
  * @param input 本番かどうかと、許すオリジンの元になる値
  * @returns `Content-Security-Policy` の値
@@ -62,7 +67,7 @@ export function contentSecurityPolicy(input: ContentSecurityPolicyInput): string
     'frame-ancestors': ["'none'"],
     'base-uri': ["'self'"],
     'object-src': ["'none'"],
-    // 外部のオリジン（mock の支払画面は設定したときだけ）を許すのは、JavaScript の読み込みの前に送ったフォームの外部へのリダイレクト（ログイン、支払画面）を止めないため
+    // 外部のオリジン（mock の支払画面は設定したときだけ）を許すのは、JavaScript の読み込みの前に送ったフォームの外部へのリダイレクト（支払画面、IdP のログアウト）を止めないため
     'form-action': [
       "'self'",
       new URL(input.issuer).origin,

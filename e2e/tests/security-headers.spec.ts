@@ -6,7 +6,7 @@ import { BACKEND_URL, IDP_URL, IMAGE_ORIGIN, STORE_URL } from '../src/urls'
 
 declare global {
   interface Window {
-    /** テストの側が公開する、CSP の違反の記録（`recordViolations` が `exposeFunction` で登録する） */
+    /** テストの側がページに登録する、CSP の違反を記録する関数（`recordViolations` が `exposeFunction` で登録する） */
     reportCspViolation: (violation: string) => void
   }
 }
@@ -61,7 +61,7 @@ function directivesOf(response: Response): Record<string, string[]> {
   )
 }
 
-test('AC-418-1、AC-418-2、AC-418-3、AC-418-4 店舗画面の応答にセキュリティヘッダーが付き、主要な画面で CSP の違反が報告されない', async ({
+test('AC-418-1、AC-418-2、AC-418-3、AC-418-4 店舗画面の応答にセキュリティヘッダーが付き、主要な画面でブラウザーが CSP の違反を検出しない', async ({
   page,
   request,
 }) => {
@@ -96,7 +96,7 @@ test('AC-418-1、AC-418-2、AC-418-3、AC-418-4 店舗画面の応答にセキ�
       throw new Error('ページの HTML に /_next/static/ のファイルがない')
     }
     const targets = [
-      // Auth.js の口と静的なファイルは proxy を通らないので、CSP は付かない。存在しないパスは proxy を通るので付く
+      // Auth.js のエンドポイントと静的なファイルは proxy を通らないので、CSP は付かない。存在しないパスは proxy を通るので付く
       { url: `${STORE_URL}/api/auth/session`, csp: false },
       { url: `${STORE_URL}${staticPath}`, csp: false },
       { url: `${STORE_URL}/no-such-page-418`, csp: true },

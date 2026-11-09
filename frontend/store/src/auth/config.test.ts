@@ -52,7 +52,7 @@ describe('店舗画面のサーバーの設定', () => {
   })
 
   test.each(['img.example', 'localhost:8333', 'ftp://x'])(
-    '画像の配信元・issuer・店舗 API の場所・mock の支払画面のオリジンが http か https の URL でなければ（%s）、モードによらず名前を出して失敗する',
+    '画像の配信元・issuer・店舗 API の接続先・mock の支払画面のオリジンが http か https の URL でなければ（%s）、モードによらず設定の名前を示して起動に失敗する',
     (value) => {
       for (const setting of [
         'STORE_IMAGE_ORIGIN',
@@ -73,12 +73,19 @@ describe('店舗画面のサーバーの設定', () => {
     ).toBe('https://mock.example')
   })
 
+  test('mock の支払画面のオリジンは、店舗 API の接続先から作らない', () => {
+    const config = readServerConfig({ ...PRODUCTION_ENV, STORE_API_BASE_URL: 'http://backend.internal:8080/api/store' })
+
+    expect(config.apiBaseUrl).toContain('backend.internal')
+    expect(config.mockPaymentOrigin).toBeUndefined()
+  })
+
   test('開発のモードとテストでは、mock の支払画面のオリジンがなければローカルの既定を使う', () => {
     expect(loadServerConfig({ NODE_ENV: 'development' }).mockPaymentOrigin).toBe('http://localhost:8080')
     expect(readServerConfig({}).mockPaymentOrigin).toBe('http://localhost:8080')
   })
 
-  test('AC-242API の応答を取り直す間隔は、設定の 1 か所で読み、なければ 60 秒', () => {
+  test('AC-242 API の応答を取り直す間隔は、設定の 1 か所で読み、なければ 60 秒', () => {
     expect(readServerConfig({ STORE_API_REVALIDATE_SECONDS: '1' }).apiRevalidateSeconds).toBe(1)
     expect(readServerConfig({}).apiRevalidateSeconds).toBe(60)
   })

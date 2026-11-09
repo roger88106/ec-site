@@ -1,16 +1,19 @@
 import { fullName } from '@ec-site/shared/lib/login'
 import { Button } from '@ec-site/shared/ui/button'
-import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { hasAuthParams, useAuth } from 'react-oidc-context'
 import { useTranslations } from 'use-intl'
 import { paths } from '@/app/paths'
+import { IdleLogout } from '@/auth/IdleLogout'
 import { type Operator, OperatorProvider } from '@/auth/operator'
+import { useSharedLogout } from '@/auth/sharedLogout'
 import { setTokenSource } from '@/auth/token'
 
 /**
  * すべての画面を包み、ログインを求める（管理画面の構成の「ログイン」）。<br />
  * ログインしていなければ、何も表示せずに IdP のログインへ移り、戻ってきたら移る前の画面に戻す。
  * ログインしていれば、運営者（氏名とログアウト）と、API に付ける token を渡してから画面を出す。
+ * ログインしている間は、操作がないまま 30 分たつとログアウトする。ログアウトは、同じブラウザーの他のタブにも伝える。
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const t = useTranslations('auth.gate')
@@ -42,15 +45,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => setTokenSource(null)
   }, [user, signinRedirect])
 
+  const signout = useCallback(() => signoutRedirect({ id_token_hint: user?.id_token }), [user, signoutRedirect])
+  // auth_time は IdP でパスワードを入れた時刻（秒）で、token の更新やパスワードなしの再ログインでは変わらない
+  const authTime = user?.profile.auth_time
+  // 手動のログアウトも無操作のログアウトも、同じ処理で他のタブに伝える
+  const { logout, loggingOut } = useSharedLogout({
+    enabled: isAuthenticated && user != null,
+    loggedInAt: authTime === undefined ? undefined : authTime * 1000,
+    signout,
+  })
+
   const operator = useMemo<Operator | null>(
-    () =>
-      user
-        ? {
-            name: fullName(user.profile.family_name, user.profile.given_name),
-            logout: () => void signoutRedirect({ id_token_hint: user.id_token }),
-          }
-        : null,
-    [user, signoutRedirect],
+    () => (user ? { name: fullName(user.profile.family_name, user.profile.given_name), logout } : null),
+    [user, logout],
   )
 
   if (error && !isAuthenticated) {
@@ -66,7 +73,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!isAuthenticated || operator === null) {
     return null
   }
-  return <OperatorProvider value={operator}>{children}</OperatorProvider>
+  return (
+    <OperatorProvider value={operator}>
+      {
+        // IdP のログアウトへ移り始めたら、無操作の判定を止める（削除した最後に操作した時刻を、また書かないため）
+        !loggingOut && <IdleLogout onExpire={operator.logout} />
+      }
+      {children}
+    </OperatorProvider>
+  )
 }
 
 /** 401 でログインし直した時刻を持つ sessionStorage のキー */

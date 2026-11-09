@@ -7,6 +7,7 @@ import { withFallback } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
 import type { ErrorCode } from '@/api/types'
 import { type ActionResult, toFailure } from '@/lib/actionResult'
+import { toHalfWidth } from '@/lib/halfWidth'
 import { PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
@@ -16,6 +17,7 @@ const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
 /**
  * 注文する。成立したら、決済サービスの支払画面へ移る。支払画面の URL を得られなければ、注文の画面へ移る（そこから支払える）。<br />
  * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、name、postalCode、prefectureCode、municipalityCode、address、phone。
+ * 郵便番号と電話番号は、全角の数字とハイフンの類を半角にして API に送る（氏名と住所は入力のまま）。
  * 連絡先のメールアドレスは、API が会員の token から取る。
  * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す。
  */
@@ -28,11 +30,11 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
       body: {
         shippingAddress: {
           name: readString(formData, 'name'),
-          postalCode: readString(formData, 'postalCode'),
+          postalCode: toHalfWidth(readString(formData, 'postalCode')),
           prefectureCode: readString(formData, 'prefectureCode'),
           municipalityCode: readString(formData, 'municipalityCode'),
           address: readString(formData, 'address'),
-          phone: readString(formData, 'phone'),
+          phone: toHalfWidth(readString(formData, 'phone')),
         },
         expectedTotal: readIntOrNaN(formData, 'expectedTotal'),
       },

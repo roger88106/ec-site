@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
+import { HttpNetworkFrame } from 'msw/experimental'
 import { afterAll, afterEach, beforeEach, vi } from 'vitest'
 import { resetAuth } from '@/test/auth'
 import { resetRequest } from '@/test/next'
@@ -43,12 +44,16 @@ vi.mock('next-auth/providers/keycloak', () => ({ default: (options: object) => (
 // テストのファイルを読み込む前に始める。API のクライアント（openapi-fetch）は、作ったときの fetch を持ち続けるので、
 // MSW が fetch を差し替えた後に作らせる必要がある。
 // ハンドラーのない API が呼ばれたら、そのリクエストを失敗させ、テストの終わりにテストを失敗させる（リクエストの失敗だけでは、
-// 処理が「通信の失敗」の結果を返すだけで、テストが通ってしまうことがあるため）
+// 処理が「通信の失敗」の結果を返すだけで、テストが通ってしまうことがあるため）。
+// MSW 3 では、この関数が例外を投げないと、リクエストが実際のネットワークへ送信される。defaults.error() はエラーを表示するだけなので、例外を投げて 500 の応答で失敗させる
 const unhandledRequests: string[] = []
 server.listen({
-  onUnhandledRequest: (request, print) => {
-    unhandledRequests.push(`${request.method} ${request.url}`)
-    print.error()
+  onUnhandledFrame: ({ frame, defaults }) => {
+    unhandledRequests.push(
+      frame instanceof HttpNetworkFrame ? `${frame.data.request.method} ${frame.data.request.url}` : frame.protocol,
+    )
+    defaults.error()
+    throw new Error('ハンドラーのない通信')
   },
 })
 

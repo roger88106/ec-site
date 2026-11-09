@@ -79,9 +79,10 @@
 | `AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET` | client ID と secret | `ec-store-web`、ローカル用の値 |
 | `AUTH_SECRET` | セッションの Cookie の暗号化キー | ローカル用の値 |
 | `AUTH_URL` | 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を生成する | `http://localhost:3000` |
-| `STORE_IMAGE_ORIGIN` | 商品の画像の配信元のオリジン。店舗画面の CSP が画像に許す | `http://localhost:8333` |
+| `STORE_IMAGE_ORIGIN` | 商品の画像の配信元のオリジン（スキームとホストとポート。パスは使わない）。店舗画面の CSP が画像に許す。バックエンドの `ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL` のオリジンと同じ値にする | `http://localhost:8333` |
+| `STORE_MOCK_PAYMENT_ORIGIN` | mock の支払画面のオリジン。店舗画面の CSP がフォームの送信先に許す。任意で、なければ許さない。バックエンドの `ECSITE_PAYMENT_MOCK_BASE_URL` のオリジンと同じ値にする。mock を使わない環境では設定しない。`slot.mjs run` が設定する | `http://localhost:8080` |
 | `STORE_COOKIE_PREFIX` | 店舗画面の Cookie（セッション、カートなど）の名前の接頭辞。英数字と `-`、`_` だけ。任意。`slot.mjs run` が設定する（[開発環境の起動](setup.md)の「スロット」） | 空 |
 
-※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS` 以外がなければ起動に失敗する（BR-31）。
+※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS`、`STORE_MOCK_PAYMENT_ORIGIN` 以外がなければ起動に失敗する（BR-31）。本番モードの `STORE_MOCK_PAYMENT_ORIGIN` には既定値がなく、設定しなければ mock の支払画面を許さない。
 
 ※2：0 以上の整数。0 はキャッシュしない設定。小数、負の数、数でない値は起動に失敗する。

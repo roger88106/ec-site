@@ -41,13 +41,13 @@ describe('ヘッダーのログインの状態', () => {
 })
 
 describe('ヘッダーのメニュー', () => {
-  test('AC-417-3 狭い幅でメニューを開くボタンがある', async () => {
+  test('狭い幅でメニューを開くボタンがある', async () => {
     const view = await renderHeader()
 
     expect(view.getByRole('button', { name: 'メニュー' })).toBeInTheDocument()
   })
 
-  test('AC-417-3 決定 6：ログイン中も、メニューの中の項目（商品一覧、ご注文履歴、アカウント）は 1 組だけ描画される', async () => {
+  test('決定 6：ログイン中も、メニューの中の項目（商品一覧、ご注文履歴、アカウント）は 1 組だけ描画される', async () => {
     signInAs()
 
     const view = await renderHeader()
@@ -58,7 +58,7 @@ describe('ヘッダーのメニュー', () => {
     expect(view.getAllByRole('button', { name: 'ログアウト' })).toHaveLength(1)
   })
 
-  test('AC-417-3 決定 6：ログインなしでも、メニューの中の商品一覧は 1 組だけ描画される', async () => {
+  test('決定 6：ログインなしでも、メニューの中の商品一覧は 1 組だけ描画される', async () => {
     const view = await renderHeader()
 
     expect(view.getAllByRole('link', { name: '商品一覧' })).toHaveLength(1)

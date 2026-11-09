@@ -44,7 +44,7 @@ describe('ヘッダーのメニュー', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false')
   })
 
-  test('AC-417-5 パスが同じでも、メニューの中のリンクを押すと閉じる', async () => {
+  test('パスが同じでも、メニューの中のリンクを押すと閉じる', async () => {
     const { user } = renderInBrowser(menu())
     const button = screen.getByRole('button', { name: 'メニュー' })
     await user.click(button)
@@ -55,7 +55,7 @@ describe('ヘッダーのメニュー', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false')
   })
 
-  test('AC-417-5 修飾キーを押したままリンクを押す（別のタブで開く）と、メニューは閉じない', async () => {
+  test('修飾キーを押したままリンクを押す（別のタブで開く）と、メニューは閉じない', async () => {
     const { user } = renderInBrowser(menu())
     const button = screen.getByRole('button', { name: 'メニュー' })
     await user.click(button)
@@ -70,7 +70,7 @@ describe('ヘッダーのメニュー', () => {
     expect(button).toHaveAttribute('aria-expanded', 'true')
   })
 
-  test('AC-417-5 メニューを開いた状態で画面を遷移する（パスが変わる）と、メニューが閉じる', async () => {
+  test('メニューを開いた状態で画面を遷移する（パスが変わる）と、メニューが閉じる', async () => {
     const { user, rerender } = renderInBrowser(menu())
     const button = screen.getByRole('button', { name: 'メニュー' })
     await user.click(button)

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { isLimitReached, pendingOrdersLimitHref } from '@/lib/pendingOrders'
 
-describe('支払待ちの注文の確認の画面のクエリ', () => {
+describe('確認の画面で上限を示すクエリ', () => {
   test('AC-411-9 limit=reached なら、上限に達したことを示す', () => {
     expect(isLimitReached({ limit: 'reached' })).toBe(true)
   })

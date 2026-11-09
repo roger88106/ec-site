@@ -4,7 +4,8 @@
 //
 // エージェントが Bash で実行しようとするコマンドの全文を読み、例外のない規則に反するものを拒否する。
 // - push 済みの履歴の書き換え：git push の force（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ の refspec）
-// - リモートのブランチの削除：git push の --delete・-d と、: で始まる refspec のうち tag を指さないもの（削除した後の push は、書き換えと同じ結果になる）
+// - リモートのブランチの削除：git push の --delete・-d と、: で始まる refspec のうち tag を指さないもの（削除した後の push は、書き換えと同じ結果になる）。
+//   作業ブランチ（agent/ で始まるもの）の削除は通す（docs/06-手順書/branches.md「自動の削除」）
 // - commit の前の検査の省略：git commit・git push の --no-verify、git commit の -n、git -c core.hooksPath=…
 // - pre-commit hook を置いていないリポジトリでの git commit（git rev-parse --git-path hooks/pre-commit のファイルが、
 //   scripts/dev/hooks/pre-commit を呼んでいなければ拒否する。作業ツリーでは共通の .git の hooks を見る）
@@ -229,9 +230,12 @@ const FORCE_REASON =
   'push 済みの履歴を書き換えないため、force push（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ で始まる refspec）は使えない（AGENTS.md の Git の表）。' +
   'push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
 
+/** 削除を通す作業ブランチの名前（refs/heads/ を付けた形を含む） */
+const WORK_BRANCH = /^(refs\/heads\/)?agent\//
+
 /** リモートのブランチの削除を拒否する理由と代わりの手順 */
 const DELETE_BRANCH_REASON =
-  'push 済みのブランチを消して push し直すことも、履歴の書き換えになるので、git push の --delete（-d）と : で始まる refspec でリモートのブランチを消すことはできない（AGENTS.md の Git の表）。' +
+  'push 済みのブランチを削除して push し直すことも、履歴の書き換えになる。そのため、git push の --delete（-d）と : で始まる refspec で、作業ブランチ（agent/ で始まるもの）以外のリモートのブランチは削除できない（AGENTS.md の Git の表）。' +
   'マージした作業ブランチはリモートで自動で削除されるので消さない。push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。' +
   'tag を消すときは `refs/tags/<名前>` で指定する（確認を求める）。'
 
@@ -813,24 +817,25 @@ function judgeHooksPath(git) {
  * @returns {string[]} refspec
  */
 function pushRefspecs(longs, positionals) {
-  return longs.includes('repo') ? positionals : positionals.slice(1)
+  // git は --rep のような略記も --repo として受け付ける。略記を見落とすと、最初の refspec をリモートとみなして読み飛ばす
+  return longs.some((name) => matchesLong(name, ['repo'])) ? positionals : positionals.slice(1)
 }
 
 /**
- * git push が、tag でないリモートの参照を削除するか。--delete（-d）の名前と、: で始まる refspec の先を見る（: だけの refspec は、一致するブランチの push で削除でない）。
+ * git push が、tag でも作業ブランチ（agent/ で始まるもの）でもないリモートの参照を削除するか。--delete（-d）の引数と、: で始まる refspec の削除する参照を見る（: だけの refspec は、一致するブランチの push で、削除ではない）。
  * tag か、tag かを git で調べられない名前は、ここでは見ない（tag の push の判定で確認を求める）。
  *
  * @param {GitInvocation} git git の呼び出し
  * @param {Deps} deps 外部の処理
  * @param {{ longs: string[], shorts: string[], positionals: string[] }} scanned push のオプションと位置引数
- * @returns {boolean} tag でない参照を削除するなら true
+ * @returns {boolean} tag でも作業ブランチでもない参照を削除するなら true
  */
 function deletesBranch(git, deps, { longs, shorts, positionals }) {
   const deleting = longs.some((name) => matchesLong(name, ['delete'])) || shorts.includes('d')
   const targets = pushRefspecs(longs, positionals)
     .map((refspec) => (deleting ? refspec : refspec.startsWith(':') && refspec !== ':' ? refspec.slice(1) : null))
     .filter((name) => name !== null && name !== '')
-  return targets.some((name) => refTagState(name, git, deps) === null)
+  return targets.some((name) => !WORK_BRANCH.test(name) && refTagState(name, git, deps) === null)
 }
 
 /**

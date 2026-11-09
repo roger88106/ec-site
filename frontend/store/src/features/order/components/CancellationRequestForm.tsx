@@ -3,7 +3,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import { useTranslations } from 'next-intl'
-import { useActionState } from 'react'
+import { startTransition, useActionState } from 'react'
 import { requestCancellation } from '@/actions/order'
 import { schemas } from '@/api/generated/constraints'
 import { ActionError } from '@/components/ActionError'
@@ -22,9 +22,12 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
     <form
       action={formAction}
       className="flex flex-col items-start gap-3"
+      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを初期値に戻し、失敗したときに理由が消える）
       onSubmit={(event) => {
-        if (!window.confirm(t('confirm') /* 申請の確認 */)) {
-          event.preventDefault()
+        event.preventDefault()
+        if (window.confirm(t('confirm') /* 申請の確認 */)) {
+          const formData = new FormData(event.currentTarget)
+          startTransition(() => formAction(formData))
         }
       }}
     >

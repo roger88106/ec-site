@@ -5,10 +5,12 @@ import { StrictMode } from 'react'
 import type { AuthContextProps } from 'react-oidc-context'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { AuthGate } from '@/auth/AuthGate'
+import { LAST_ACTIVITY_KEY } from '@/auth/idle'
 import { useOperator } from '@/auth/operator'
+import { LOGOUT_KEY } from '@/auth/sharedLogout'
 import { currentAccessToken, handleUnauthorized } from '@/auth/token'
 import { I18nProvider } from '@/i18n/I18nProvider'
-import { advanceClock, MINUTE, startClock } from '@/test/idle'
+import { advanceClock, MINUTE, otherTabWrites, START, startClock } from '@/test/idle'
 
 /** 差し替えた useAuth が返す値（テストごとに再作成する） */
 let auth: Partial<AuthContextProps>
@@ -245,5 +247,141 @@ describe('ログインの門の、無操作のログアウト', () => {
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(auth.signoutRedirect).not.toHaveBeenCalled()
+  })
+})
+
+/** ローカルストレージの中身（キーと値） */
+function storageEntries(): Record<string, string | null> {
+  const entries: Record<string, string | null> = {}
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key !== null) {
+      entries[key] = localStorage.getItem(key)
+    }
+  }
+  return entries
+}
+
+/** ログインした状態。IdP のログアウトへ移るたびに、そのときのローカルストレージの中身を atSignout に残す */
+function signedInRecordingStorage() {
+  const atSignout: Record<string, string | null>[] = []
+  const state: Partial<AuthContextProps> = {
+    ...signedIn(),
+    signoutRedirect: vi.fn(async () => {
+      atSignout.push(storageEntries())
+    }),
+  }
+  return { state, atSignout }
+}
+
+describe('ログインの門の、タブの間のログアウト', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    startClock()
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+  })
+
+  test('AC-413-9 ログアウトの印は、ec-admin. で始まるキーに置く', () => {
+    expect(LOGOUT_KEY.startsWith('ec-admin.')).toBe(true)
+  })
+
+  test('AC-413-9 手動でログアウトすると、IdP のログアウトへ移る前に、ログアウトの印（時刻だけ）を書き、最後に操作した時刻を削除する', async () => {
+    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間とともにも進める
+    startClock({ shouldAdvanceTime: true })
+    const { state, atSignout } = signedInRecordingStorage()
+    auth = state
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+    renderGate()
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).not.toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'ログアウト' }))
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+    expect(auth.signoutRedirect).toHaveBeenCalledWith({ id_token_hint: 'id-token-1' })
+    expect(atSignout).toEqual([{ [LOGOUT_KEY]: expect.stringMatching(/^\d+$/) }])
+  })
+
+  test('AC-413-9 操作しないまま 30 分たってログアウトするときも、IdP のログアウトへ移る前に、印を書き、最後に操作した時刻を削除する', () => {
+    const { state, atSignout } = signedInRecordingStorage()
+    auth = state
+    renderGate()
+
+    advanceClock(30 * MINUTE)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+    expect(atSignout).toEqual([{ [LOGOUT_KEY]: String(START + 30 * MINUTE) }])
+  })
+
+  test('AC-413-9 他のタブがログアウトの印を書くと、このタブも IdP のログアウトへ 1 回だけ移る', () => {
+    auth = signedIn()
+    renderGate()
+
+    otherTabWrites(LOGOUT_KEY, String(START + MINUTE))
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+    expect(auth.signoutRedirect).toHaveBeenCalledWith({ id_token_hint: 'id-token-1' })
+
+    // 2 つ目の印と、無操作の 30 分では、もう移らない
+    otherTabWrites(LOGOUT_KEY, String(START + 2 * MINUTE))
+    advanceClock(30 * MINUTE)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-9 他のタブの印を受けたタブも、IdP のログアウトへ移る前に、最後に操作した時刻を削除する', () => {
+    const { state, atSignout } = signedInRecordingStorage()
+    auth = state
+    renderGate()
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(START + MINUTE))
+
+    otherTabWrites(LOGOUT_KEY, String(START + MINUTE))
+
+    expect(atSignout).toEqual([{ [LOGOUT_KEY]: String(START + MINUTE) }])
+  })
+
+  test('AC-413-9 関係のないキーの書き込みや、印の削除では、IdP のログアウトへ移らない', () => {
+    auth = signedIn()
+    renderGate()
+
+    otherTabWrites('ec-admin.other', String(START))
+    otherTabWrites(LAST_ACTIVITY_KEY, String(START))
+    otherTabWrites(LOGOUT_KEY, null)
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+  })
+
+  test('AC-413-9 ログインしていないタブは、他のタブの印を受けても何もしない', () => {
+    auth = signedOut()
+    renderGate()
+
+    otherTabWrites(LOGOUT_KEY, String(START))
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+  })
+
+  test('AC-413-9 ログアウトしてからログインし直すと、前のログインの時刻や印で早くログアウトせず、ログインから 30 分でログアウトする', async () => {
+    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間とともにも進める
+    startClock({ shouldAdvanceTime: true })
+    auth = signedIn()
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+    const before = renderGate()
+    advanceClock(20 * MINUTE)
+    await user.click(screen.getByRole('button', { name: 'ログアウト' }))
+    before.unmount()
+    advanceClock(MINUTE)
+
+    auth = signedIn()
+    renderGate()
+    advanceClock(30 * MINUTE - 1000)
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+
+    advanceClock(1000)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
   })
 })

@@ -31,6 +31,24 @@ export function advanceClock(ms: number): void {
 }
 
 /**
+ * 他のタブがローカルストレージに書いた・削除したことを、storage イベントで知らせる。例：`otherTabWrites(LOGOUT_KEY, String(START))`
+ *
+ * @param key   キー
+ * @param value 書いた値。null は削除
+ */
+export function otherTabWrites(key: string, value: string | null): void {
+  act(() => {
+    if (value === null) {
+      localStorage.removeItem(key)
+    } else {
+      localStorage.setItem(key, value)
+    }
+    // storage イベントは書いたタブには起きず、他のタブにだけ起きるので、他のタブの書き込みとして直接起こす
+    window.dispatchEvent(new StorageEvent('storage', { key, newValue: value }))
+  })
+}
+
+/**
  * window で操作のイベントを起こす。例：`operate('keydown')`
  *
  * @param type イベントの種類

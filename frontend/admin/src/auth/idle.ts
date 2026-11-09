@@ -79,6 +79,28 @@ export function readLastActivity(): number | null {
 }
 
 /**
+ * 計測を始める時刻を求める。共有した時刻が 30 分以内ならそれを取り込み、ないか 30 分を過ぎていれば現在の時刻にする。<br />
+ * 再マウントや新しいタブで計測を延ばさないため。前のログインの時刻は、ログアウトのときに削除してある。
+ *
+ * @param now 現在の時刻（ミリ秒）
+ * @returns 計測を始める時刻（ミリ秒）
+ */
+export function startingActivity(now: number): number {
+  const shared = readLastActivity()
+  // 未来の時刻は、判定のときに現在の時刻にするので、ここでは取り込む
+  return shared === null || idleStatus(shared, now) === 'expired' ? now : shared
+}
+
+/** 共有した最後に操作した時刻を削除する（ログアウトのとき。次のログインで前のログインの時刻を取り込まないため） */
+export function clearLastActivity(): void {
+  try {
+    localStorage.removeItem(LAST_ACTIVITY_KEY)
+  } catch {
+    // ローカルストレージを使えないときは、共有していないので削除するものもない
+  }
+}
+
+/**
  * 最後に操作した時刻を共有する。置くのは時刻だけで、token は置かない。
  *
  * @param at 最後に操作した時刻（ミリ秒）

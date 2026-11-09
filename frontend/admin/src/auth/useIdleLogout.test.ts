@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { IDLE_CHECK_INTERVAL_MS, IDLE_LIMIT_MS, LAST_ACTIVITY_KEY } from '@/auth/idle'
 import { useIdleLogout } from '@/auth/useIdleLogout'
-import { advanceClock, MINUTE, operate, START, startClock } from '@/test/idle'
+import { advanceClock, MINUTE, operate, otherTabWrites, START, startClock } from '@/test/idle'
 
 /** 1 日（ミリ秒） */
 const DAY = 24 * 60 * MINUTE
@@ -25,10 +25,7 @@ function sleepAndWake(ms: number, wake: 'visibilitychange' | 'focus' | 'pageshow
 
 /** 他のタブが最後に操作した時刻を書いたことを、storage イベントで知らせる */
 function otherTabOperatesAt(at: number) {
-  act(() => {
-    localStorage.setItem(LAST_ACTIVITY_KEY, String(at))
-    window.dispatchEvent(new StorageEvent('storage', { key: LAST_ACTIVITY_KEY, newValue: String(at) }))
-  })
+  otherTabWrites(LAST_ACTIVITY_KEY, String(at))
 }
 
 /** addEventListener・removeEventListener の呼び出しから、イベントの種類とリスナーの組だけを取り出す（順は問わない） */
@@ -118,6 +115,41 @@ describe('無操作のログアウト（フック）', () => {
     expect(onExpire).not.toHaveBeenCalled()
 
     advanceClock(MINUTE)
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-5 共有の時刻が 30 分以内なら、マウントのときに取り込み、再マウントしても計測を延ばさない', () => {
+    const first = renderIdle()
+    advanceClock(20 * MINUTE)
+    first.unmount()
+
+    const { onExpire } = renderIdle()
+
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START))
+
+    advanceClock(10 * MINUTE - 1)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-1 共有の時刻が 30 分を過ぎていれば、マウントのときに現在の時刻から計測を始め、共有の値も書き換える', () => {
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(START - 30 * MINUTE))
+
+    const { onExpire } = renderIdle()
+
+    expect(onExpire).not.toHaveBeenCalled()
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START))
+
+    advanceClock(30 * MINUTE - 1)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
   })

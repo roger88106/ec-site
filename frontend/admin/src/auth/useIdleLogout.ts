@@ -8,6 +8,7 @@ import {
   logoutAt,
   parseLastActivity,
   readLastActivity,
+  startingActivity,
   writeLastActivity,
 } from '@/auth/idle'
 
@@ -48,7 +49,7 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
   }, [onExpire])
 
   useEffect(() => {
-    let lastActivityAt = Date.now()
+    let lastActivityAt = startingActivity(Date.now())
     let sharedAt = Number.NEGATIVE_INFINITY
     let warned = false
     let expired = false

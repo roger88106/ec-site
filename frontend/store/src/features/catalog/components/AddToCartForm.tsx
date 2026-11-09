@@ -4,7 +4,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { useActionState, useId } from 'react'
+import { startTransition, useActionState, useId } from 'react'
 import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
 import { ActionError } from '@/components/ActionError'
@@ -49,7 +49,15 @@ export function AddToCartFormView({
   const quantityId = useId()
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form
+      className="space-y-3"
+      // action で送ると、React が送った後にフォームを空にし、数量が 1 に戻る。onSubmit から送る
+      onSubmit={(event) => {
+        event.preventDefault()
+        const formData = new FormData(event.currentTarget)
+        startTransition(() => formAction(formData))
+      }}
+    >
       <input name="variantId" type="hidden" value={variant?.id ?? ''} />
       <div className="flex items-center gap-3">
         <Label htmlFor={quantityId}>{t('quantity') /* 数量 */}</Label>

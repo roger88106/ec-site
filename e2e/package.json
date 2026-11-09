@@ -18,7 +18,7 @@
     "capture:docs": "playwright test -c playwright.docs.config.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.3",
+    "@biomejs/biome": "^2.6.5",
     "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.1",
     "openapi-fetch": "^0.17.0",

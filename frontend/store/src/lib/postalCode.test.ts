@@ -34,9 +34,9 @@ describe('郵便番号の正規化', () => {
     expect(normalizePostalCode('１００－０００１')).toBe('1000001')
     expect(normalizePostalCode('１０００００１')).toBe('1000001')
     // U+30FC（長音符）、U+2212（マイナス記号）、U+2015（水平線）
-    expect(normalizePostalCode('100ー0001')).toBe('1000001')
-    expect(normalizePostalCode('100−0001')).toBe('1000001')
-    expect(normalizePostalCode('100―0001')).toBe('1000001')
+    expect(normalizePostalCode('100\u30FC0001')).toBe('1000001')
+    expect(normalizePostalCode('100\u22120001')).toBe('1000001')
+    expect(normalizePostalCode('100\u20150001')).toBe('1000001')
   })
 
   test('AC-416-4 変換の後もハイフンが 2 つ以上ある全角の入力は、null を返す', () => {

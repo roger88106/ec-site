@@ -77,7 +77,7 @@ describe('注文する', () => {
       municipalityCode: '13101',
       address: '千代田１－１',
       // U+2015（水平線）、U+30FC（長音符）
-      phone: '０３―１２３４ー５６７８',
+      phone: '０３\u2015１２３４\u30FC５６７８',
     })
 
     await redirectedTo(() => placeOrder(null, fullWidth))

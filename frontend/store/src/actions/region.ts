@@ -26,7 +26,7 @@ export async function listMunicipalities(prefectureCode: string): Promise<Munici
  * 郵便番号の住所を引く（店舗画面の構成の「お届け先の都道府県と市区町村」）。読むだけなので、失敗は投げずに空で返す
  * （補えなくても、消費者は一覧から選べる）。
  *
- * @param postalCode 郵便番号（ハイフンは任意）
+ * @param postalCode 郵便番号（全角でもよい。ハイフンは任意）
  * @returns 並び順の住所。形が違う、ない、通信の失敗なら空
  */
 export async function findPostalCodeAddresses(postalCode: string): Promise<PostalCodeAddress[]> {

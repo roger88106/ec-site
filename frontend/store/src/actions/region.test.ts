@@ -44,6 +44,19 @@ describe('郵便番号で住所を引く', () => {
     expect(requested).toBe('1000001')
   })
 
+  test('AC-416-1 全角の数字とハイフンの郵便番号も、半角の 7 桁にして引く', async () => {
+    let requested: unknown
+    server.use(
+      http.get('/postal-codes/{postalCode}', ({ params, response }) => {
+        requested = params.postalCode
+        return response(200).json({ items: [postalCodeAddress('13', '13101', '千代田')] })
+      }),
+    )
+
+    expect(await findPostalCodeAddresses('１００－０００１')).toEqual([postalCodeAddress('13', '13101', '千代田')])
+    expect(requested).toBe('1000001')
+  })
+
   test('AC-256 ない郵便番号は空の一覧を返す', async () => {
     server.use(http.get('/postal-codes/{postalCode}', ({ response }) => response(200).json({ items: [] })))
 

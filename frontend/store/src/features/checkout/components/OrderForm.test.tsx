@@ -295,14 +295,17 @@ describe('郵便番号で補う', () => {
     expect(input('住所')).toHaveValue('千代田')
   })
 
-  test('AC-416-3 全角で入れても、郵便番号の欄の値は入力のまま変えない', async () => {
+  test('AC-416-3 全角で入れても、郵便番号と電話番号の欄の値は入力のまま変えない', async () => {
     vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('13', '13101', '千代田')])
-    const { user } = renderInBrowser(form())
+    const formAction = vi.fn<(formData: FormData) => void>()
+    const { user } = renderInBrowser(form(null, formAction))
 
     await user.type(screen.getByLabelText('郵便番号'), '１００－０００１')
-    await act(async () => {})
+    await user.type(screen.getByLabelText('電話番号'), '０３－１２３４－５６７８')
+    await user.click(screen.getByRole('button', { name: '注文する（3,200 円）' }))
 
     expect(input('郵便番号')).toHaveValue('１００－０００１')
+    expect(input('電話番号')).toHaveValue('０３－１２３４－５６７８')
   })
 
   test('AC-416-4 変換の後もハイフンが 2 つ以上ある全角の入力では、引かない', async () => {

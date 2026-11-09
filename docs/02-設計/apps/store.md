@@ -103,6 +103,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
   - `redirectOnSuccess(work)`：処理を `withActionResult` でラップし、処理が返した移動先へ遷移する。失敗の結果はそのまま返す（`redirect` をラッパーの外で呼ぶ形を 1 か所にする）。
 - `withActionResult` が例外を結果にするときは、画面の移動・not found を通した後、「エラー」のサーバーアクションの失敗のログを出力する。
 - フォームは `useActionState` で結果を受け、送信中はボタンを押せなくする（二重送信の防止。API も、同じ注文手続きの再送には作成済みの注文を返す）。
+- 利用者が入力・選択する欄のあるフォーム（カートに入れる、注文、キャンセルの申請）は、`action` でなく `onSubmit` で既定の送信を無効にし、`startTransition` の中でサーバーアクションを呼ぶ。`action` で送ると、React が結果を待たずにフォームを初期値に戻し、失敗の後に入力が消える。
 
 ### カート ID の Cookie
 

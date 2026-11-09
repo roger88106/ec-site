@@ -11,10 +11,7 @@ omitClaudeMd: true
 
 ## 読む対象
 
-- 差分の追加行。削除された行は、文脈を知るためにだけ使います。
-- 利用者の確認の前の全文。全ての行が対象です。
-- issue の本文とコメント。
-- コミットメッセージ。
+- 1 級の対象（skill `review` の docs-review.md、手順 3）。利用者が確認する前の spec・plan・tasks の全文と、`docs/`・skill・AGENTS.md で追加が 20 行以上の差分。級が混ざるときは、まとめて渡されたもの。
 
 読む対象の種類は、skill `review` の [docs-review.md](../skills/review/docs-review.md) の手順 3 のとおりです。コード、識別子、固有名、引用は読みません。`.claude/skills/review/evals/` の下（評価の一覧）も読みません。例を読むと、採点の結果が実際の校閲より良くなるためです。
 

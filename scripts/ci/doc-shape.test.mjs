@@ -42,7 +42,7 @@ describe('表のセル', () => {
   })
 
   test('前後の空白を含めると 301 バイトで、中身が 299 バイトのセルは検出しない', () => {
-    assert.deepEqual(lines(OTHER, `| a |\n|---|\n|  ${'a'.repeat(299)} |`, KIND.cell), [])
+    assert.deepEqual(lines(OTHER, `| a |\n|---|\n| ${'a'.repeat(299)} |`, KIND.cell), [])
   })
 
   test('コードブロック（バッククォート 3 個、4 個以上、チルダ）の中の表の行は検出しない', () => {
@@ -191,8 +191,10 @@ describe('Mermaid の参加者', () => {
 describe('自分への矢印', () => {
   const label = (count) => 'あ'.repeat(count)
 
-  test('ラベルが 21 字（全角を 1 字と数える）を検出する', () => {
+  test('ラベルが 21 字（全角の記号を 1 字と数える）を検出し、20 字は検出しない', () => {
     assert.deepEqual(lines(OTHER, diagram(`P->>P: ${label(21)}`), KIND.selfArrow), [3])
+    assert.deepEqual(lines(OTHER, diagram(`P->>P: ${label(18)}、（）`), KIND.selfArrow), [3])
+    assert.deepEqual(lines(OTHER, diagram(`P->>P: ${label(17)}、（）`), KIND.selfArrow), [])
   })
 
   test('活性化の印の付いた P->>+P: の 21 字を検出する', () => {

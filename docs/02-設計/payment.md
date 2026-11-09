@@ -103,7 +103,7 @@ Stripe の API のバージョンは、`stripe-java` のものに固定される
 | 返金 | Refund（PaymentIntent の総額。冪等キー `refund-<注文 ID>`） | 成功なら Refund は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
 | 返金済みの PaymentIntent の返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
 
-※5：与信が切れると、Stripe が PaymentIntent を取り消す（`canceled`）。そのため、与信を取り消した PaymentIntent の売上確定と同じ応答になる。
+※5：与信が切れると、Stripe が PaymentIntent を取り消す（`canceled`）。
 
 ## 処理の流れ
 

@@ -11,9 +11,9 @@ omitClaudeMd: true
 
 ## 読む対象
 
-- `docs/`・skill の、追加が 20 行未満の差分の追加行。削除された行は、文脈を知るためにだけ使います。
+- `docs/`・skill・AGENTS.md・README の、追加が 20 行未満の差分の追加行。削除された行は、文脈を知るためにだけ使います。
 - コードのコメントとテスト名の追加行。
-- pull request と issue の本文とコメント。
+- pull request の本文。issue の本文とコメント。
 - コミットメッセージ。
 - tasks の結果。
 - レビューの記録。

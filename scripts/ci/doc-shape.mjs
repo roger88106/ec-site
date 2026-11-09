@@ -7,7 +7,7 @@
 // 対象：Git が管理する Markdown から、docs/08-spec/archive/、.claude/skills/review/evals/、`.claude/worktrees/` を除いたもの。
 //   観測の語と Stripe の語は template.md も除く（見本として語を書くため）。コードブロックの中は、Mermaid の図以外は見ない。
 // 1 行が 2 つの種類に当たるときは、種類ごとに 1 件ずつ出す。改行（CRLF と LF）と BOM で結果は変わらない。
-// 失敗したとき：失敗にはならない（warning だけで、終了コードは常に 0）。--list で一覧を出し、示された所を、文書を書く規則（writing.md、各 template.md）に沿って直すかを決める。
+// 失敗したとき：warning では失敗にしない（終了コードは 0）。対象の Markdown が 0 件のときだけ、他の検査と同じく失敗にする。--list で一覧を出し、示された所を、文書を書く規則（writing.md、各 template.md）に沿って直すかを決める。
 // 除外：なし。閾値と語は、この script の先頭の定数で変える。
 // 使い方：node scripts/ci/doc-shape.mjs [--list]（リポジトリのルートで）
 //   既定：種類ごとの件数を「警告：…」の行で示し、最後に合計を示す。
@@ -34,8 +34,7 @@ const OBSERVATION_WORDS = /sandbox で(?:動かして)?確認|実測では|試�
 /** Stripe の語（機能仕様に書かない API の名前）。大文字小文字を区別し、プロジェクトの識別子（RefundRequested など）に当てない */
 const STRIPE_WORDS = /PaymentIntent|Checkout Session|capture_before|payment_intent|checkout\.session\.[a-z_]+|Refunds API|(?<![A-Za-z0-9_])Refund(?![A-Za-z0-9_])/
 
-/** 書き手が目指す値（warning の文に示す）。ラベルの 12 字と 20 字は docs/02-設計/template.md（骨組みの処理の流れ）の目安と同じ値。上の warning の閾値は、この目安より緩い */
-const GUIDE_PARTICIPANTS = 5
+/** warning の文に示すラベルの目安。12 字と 20 字だけが docs/02-設計/template.md（骨組みの処理の流れ）の目安と同じ値。上の warning の閾値は、この目安より緩い */
 const GUIDE_SELF_LABEL = 12
 const GUIDE_OTHER_LABEL = 20
 
@@ -173,7 +172,7 @@ function findDiagrams(rows) {
   let diagram = null
   const finish = () => {
     if (diagram && diagram.ids.size >= PARTICIPANTS) {
-      found.push({ line: diagram.line, kind: KIND.participants, message: `参加者が ${diagram.ids.size}（目安は ${GUIDE_PARTICIPANTS} まで）。図を分けるか、参加者を減らす` })
+      found.push({ line: diagram.line, kind: KIND.participants, message: `参加者が ${diagram.ids.size}。図を分けるか、参加者を減らす` })
     }
     diagram = null
   }
@@ -243,7 +242,7 @@ if (isMain(import.meta.url)) {
       const count = all.filter((warning) => warning.kind === kind).length
       if (count > 0) console.log(`警告：${kind}が ${count} 件ある`)
     }
-    if (all.length > 0) console.log('警告の一覧：node scripts/ci/doc-shape.mjs --list')
+    if (all.length > 0) console.log('警告：一覧は node scripts/ci/doc-shape.mjs --list')
   }
   console.log(`文書の形の警告：${all.length}`)
 }

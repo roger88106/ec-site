@@ -62,5 +62,5 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 文の形から推定する文書の形（長い表のセル、設計と機能仕様の観測の語と Stripe の語、大きい sequenceDiagram）を、warning として示す検査。確認すること、対象、warning の扱い、閾値は、`scripts/ci/doc-shape.mjs` の冒頭のコメントにある。
 
-- `check-all.sh` が実行する。warning だけで、終了コードは常に 0（CI を止めない）。
+- `check-all.sh` が実行する。warning では失敗にしない（終了コードは 0）。対象の Markdown が 0 件のときだけ、他の検査と同じく失敗にする。
 - 手元では、ルートで `node scripts/ci/doc-shape.mjs`（件数）と `node scripts/ci/doc-shape.mjs --list`（1 件 1 行の一覧）を実行する。

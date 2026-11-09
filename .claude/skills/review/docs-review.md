@@ -13,11 +13,11 @@
 
      | 級 | 対象 | 校閲する役 | モデル |
      |----|------|------------|--------|
-     | 1 | 利用者が確認する前の spec・plan・tasks の全文。`docs/`・skill・AGENTS.md の差分で、追加が 20 行以上のもの | 検出役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）を先に呼ぶ。「候補なし」でなければ、確認役 `ja-proof-verifier`（[定義](../../agents/ja-proof-verifier.md)）に、検出役の結果の表のファイルと、校閲の対象を渡す | 検出役は汎用、確認役は高性能 |
-     | 2 | `docs/`・skill の 20 行未満の差分、コードのコメントとテスト名の追加行、pull request と issue の本文、コミットメッセージ | 単独の校閲役 `ja-proof-single`（[定義](../../agents/ja-proof-single.md)） | 汎用 |
+     | 1 | 利用者が確認する前の spec・plan・tasks の全文。`docs/`・skill・AGENTS.md・README の差分で、追加が 20 行以上のもの | 検出役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）を先に呼ぶ。「候補なし」でなければ、確認役 `ja-proof-verifier`（[定義](../../agents/ja-proof-verifier.md)）に、検出役の結果の表のファイルと、校閲の対象を渡す | 検出役は汎用、確認役は高性能 |
+     | 2 | `docs/`・skill・AGENTS.md・README の 20 行未満の差分、コードのコメントとテスト名の追加行、pull request の本文、issue の本文とコメント（3 級のものを除く）、コミットメッセージ | 単独の校閲役 `ja-proof-single`（[定義](../../agents/ja-proof-single.md)） | 汎用 |
      | 3 | tasks の結果、レビューの記録、issue の開始と完了のコメント | 単独の校閲役 | 軽量 |
 
-     - 20 行は、渡す差分の、`docs/`・skill・AGENTS.md のファイルの追加行の合計で数える（`git diff --numstat`）。試行中の値で、効果を見て変える。書き手を使う条件の 5 行（`docs/05-開発規則/writing.md` の「本文の書き手」）とは別の値である。
+     - 20 行は、渡す差分の、`docs/`・skill・AGENTS.md・README のファイルの追加行の合計で数える（`git diff --numstat`）。試行中の値で、効果を見て変える。書き手を使う条件の 5 行（`docs/05-開発規則/writing.md` の「本文の書き手」）とは別の値である。
      - 1 回に渡すものに級が混ざるときは、番号が最も小さい級で 1 回だけ呼ぶ。
      - 修正の後の再校閲は、1 級の規則の文書（`docs/05-開発規則/`、skill、AGENTS.md）の本文を変えたときだけ行う。
    - 対象と時点：
@@ -27,6 +27,8 @@
      | 差分の追加行（文書、コードのコメント、テスト名） | 段階の最後と spec の最後のレビュー、pull request の前のレビュー。2 回目以降は、前回校閲した commit（結果の書き先に記録する）からの差分だけを渡す |
      | 利用者の確認の前の全文 | 規模 M の spec、規模 L の spec・plan・tasks |
      | issue の本文とコメント | 起票と投稿の前（書くセッションの担当によらない） |
+     | pull request の本文 | 作成と、本文を書き換える前 |
+     | tasks の結果、レビューの記録 | 書いた後、その commit の前 |
      | コミットメッセージ | 最初の push の前に、push していない全ての commit のメッセージを 1 回で渡す。pull request の後に足した commit も、push の前にまとめて渡す |
 
      issue の本文とコメントを同時に複数書いたときは、1 回にまとめて渡す。

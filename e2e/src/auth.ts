@@ -155,15 +155,22 @@ export async function loginAdmin(
  * @param options 省けば既定の値を使う
  * @param options.returnTo ログインの後に戻る店舗画面のパス（既定は `/`）
  * @param options.storeUrl 店舗画面の URL（既定は E2E の店舗画面）
+ * @param options.waitForLoggedIn ログインが済んだことを待つ処理（既定はログアウトのボタンが見えること。メニューの中にログアウトのボタンがある狭い幅では、別の条件を渡す）
  */
 export async function loginStore(
   page: Page,
   account: Account,
-  { returnTo = '/', storeUrl = STORE_URL }: { returnTo?: string; storeUrl?: string } = {},
+  {
+    returnTo = '/',
+    storeUrl = STORE_URL,
+    waitForLoggedIn = async () => {
+      await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+    },
+  }: { returnTo?: string; storeUrl?: string; waitForLoggedIn?: () => Promise<void> } = {},
 ): Promise<void> {
   await page.goto(`${storeUrl}/login?returnTo=${encodeURIComponent(returnTo)}`)
   await submitIdpLogin(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+  await waitForLoggedIn()
 }
 
 /** 会員登録で入れる、会員の任意の属性（IdP の画面の表示のとおり） */

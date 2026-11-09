@@ -94,7 +94,7 @@ describe('カートに入れた後の数量の欄', () => {
     expect(screen.getByLabelText('数量')).toHaveValue('3')
   })
 
-  test('送信中はボタンを押せず、結果を受けると押せるようになる', async () => {
+  test('送信中はボタンを押せず、結果を受け取ると押せるようになる', async () => {
     let finish: (result: ActionResult) => void = () => {}
     vi.mocked(addToCart).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
     const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)

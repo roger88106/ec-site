@@ -69,7 +69,7 @@ describe('キャンセルの申請', () => {
     expect(screen.getByRole('status')).toBe(statusRegion)
   })
 
-  test('AC-414-1 申請が失敗して書き直しになっても、理由の欄に入力した文字列が残る', async () => {
+  test('AC-414-1 申請が失敗しても、理由の欄に入力した文字列が残る', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(requestCancellation).mockResolvedValueOnce({
       ok: false,
@@ -83,7 +83,7 @@ describe('キャンセルの申請', () => {
 
     expect(await screen.findByText('入力を確かめてください。')).toBeInTheDocument()
     expect(screen.getByLabelText('理由（任意）')).toHaveValue('誤って注文したため')
-    // 送った内容も、入力した文字列
+    // 送った内容も、入力した文字列と同じ
     const formData = vi.mocked(requestCancellation).mock.lastCall?.[1]
     expect(formData?.get('reason')).toBe('誤って注文したため')
   })
@@ -101,7 +101,7 @@ describe('キャンセルの申請', () => {
     expect(screen.getByLabelText('理由（任意）')).toHaveValue('誤って注文したため')
   })
 
-  test('送信中はボタンを押せず、結果を受けると押せるようになる', async () => {
+  test('送信中はボタンを押せず、結果を受け取ると押せるようになる', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     let finish: (result: ActionResult) => void = () => {}
     vi.mocked(requestCancellation).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))

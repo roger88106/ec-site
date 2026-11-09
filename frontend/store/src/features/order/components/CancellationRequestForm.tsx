@@ -22,7 +22,7 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
     <form
       action={formAction}
       className="flex flex-col items-start gap-3"
-      // action は JavaScript の読み込みの前の送信に使う。読み込みの後は onSubmit から送る（action で送ると、React が送った後にフォームを空にし、エラーのときに理由が消える）
+      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを初期値に戻し、失敗したときに理由が消える）
       onSubmit={(event) => {
         event.preventDefault()
         if (window.confirm(t('confirm') /* 申請の確認 */)) {

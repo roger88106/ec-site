@@ -16,7 +16,7 @@ issue 担当のセッションが、spec か issue の担当を渡すときに�
    | 担当（issue） | 変えるもの |
    |---------------|------------|
    | <issue> | <変えるもの> |
-6. 文書と commit：文書の本文の書き手は、文書の書き方の「本文の書き手」と、skill docs の「進め方」のとおり。校閲は、skill review の docs-review.md の手順 3 のとおり。コミットメッセージは、skill local-dev の「最初に読む：検査に拒否されない書き方」のとおり。
+6. 文書と commit：文書の本文の書き手は、文書の書き方の「本文の書き手」と、skill docs の「進め方」のとおり。校閲は、skill review の docs-review.md の手順 3 の級の表で決めた役が行う。コミットメッセージは、skill local-dev の「最初に読む：検査に拒否されない書き方」のとおり。
 7. push と pull request：最初の push は、draft の pull request を作る直前にする（開発の進め方の「push のタイミング」）。pull request の本文は .github/pull_request_template.md に合わせる。ready にしたら、pull request の番号、head の commit、危険度を issue 担当のセッションに知らせ、CI の監視を任せる（マージと後片付けの「ready と CI の順」）。
 8. マージ：危険度が高い変更と機能の spec は、利用者が受け入れ、許可を得てから、spec 担当のセッションがマージする。許可は head の commit にだけ有効。転送した許可は auto mode に拒否されることがあるので、拒否されたら回避せず、利用者にこのセッションで直接答えてもらうよう頼み、issue 担当のセッションに知らせる。それ以外は issue 担当のセッションがマージし、spec 担当のセッションはマージしない（マージと後片付けの「マージの許可」）。
 9. 後片付け：マージの後は、マージと後片付けの「後片付け」と、振り返り（skill agent-retro）を行い、issue 担当のセッションに知らせる。アーカイブは、利用者の許可を待つ。

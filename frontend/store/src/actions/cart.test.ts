@@ -262,6 +262,18 @@ describe('注文手続きに進む', () => {
     expect(await redirectedTo(() => startCheckout(null, form({})))).toBe('/checkout/pending-orders')
     expect(await redirectedTo(() => startCheckout(null, data))).toBe('/checkout/pending-orders')
   })
+
+  test('AC-411-9 上限による拒否（409）なら、上限に達したことを示す確認の画面へ移る', async () => {
+    signInAs()
+    server.use(
+      memberCart(),
+      http.post('/carts/{cartId}/checkouts', ({ response }) =>
+        response(409).json(problem(409, 'PENDING_ORDER_LIMIT_EXCEEDED', '支払待ちの注文が上限に達しています。')),
+      ),
+    )
+
+    expect(await redirectedTo(() => startCheckout(null, form({})))).toBe('/checkout/pending-orders?limit=reached')
+  })
 })
 
 describe('カートの画面でカートを移す処理を再試行する', () => {

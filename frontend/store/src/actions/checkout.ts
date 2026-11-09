@@ -8,7 +8,12 @@ import { getMemberApi } from '@/api/client'
 import type { ErrorCode } from '@/api/types'
 import { type ActionResult, toFailure } from '@/lib/actionResult'
 import { toHalfWidth } from '@/lib/halfWidth'
-import { PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
+import {
+  PENDING_ORDER_CONFIRMATION_REQUIRED,
+  PENDING_ORDER_LIMIT_EXCEEDED,
+  PENDING_ORDERS_PATH,
+  pendingOrdersLimitHref,
+} from '@/lib/pendingOrders'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
 /** 確認した総額が注文の時点と違うときのエラーコード */
@@ -45,6 +50,10 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
       if (failure.errorCode === PENDING_ORDER_CONFIRMATION_REQUIRED) {
         // 入力は保存しない。確認の画面から注文手続きをやり直す
         return PENDING_ORDERS_PATH
+      }
+      if (failure.errorCode === PENDING_ORDER_LIMIT_EXCEEDED) {
+        // 入力は保存しない。確認の画面で、上限に達したため注文できないことを示す
+        return pendingOrdersLimitHref()
       }
       if (failure.errorCode === TOTAL_AMOUNT_CHANGED) {
         revalidatePath(`/checkout/${checkoutId}`)

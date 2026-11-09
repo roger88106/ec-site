@@ -300,14 +300,15 @@ paths:
     post:
       tags: [checkout]
       operationId: startCheckout
-      x-error-codes: [CART_NOT_ORDERABLE, OUT_OF_STOCK, PENDING_ORDER_CONFIRMATION_REQUIRED]
+      x-error-codes: [CART_NOT_ORDERABLE, OUT_OF_STOCK, PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDER_LIMIT_EXCEEDED]
       security:
         - memberToken: []
       summary: 注文手続きに進む
       description: |
         カートの全品目を、カートの数量だけ引き当てる。1 品目でも引き当てられなければ、どれも引き当てない。
         会員に支払待ちの注文があるときは、本文の `acknowledgedOrderIds` に、その全ての注文の ID が含まれていなければ 409（`PENDING_ORDER_CONFIRMATION_REQUIRED`）を返す。この場合は、注文手続きを作らず、引当も変えない。判定では品目を比べない。
-        含まれていれば、そのときの支払待ちの注文の ID の集合を、確認した注文として注文手続きに保存する。本文がないときは、確認した注文は空である。
+        全て含まれていても、支払待ちの注文の件数が上限（設定。既定は 3 件）以上なら 409（`PENDING_ORDER_LIMIT_EXCEEDED`）を返す。この判定は確認の判定の後に行い、同じく注文手続きを作らず、引当も変えない。
+        上限に達していなければ、そのときの支払待ちの注文の ID の集合を、確認した注文として注文手続きに保存する。本文がないときは、確認した注文は空である。
       requestBody:
         required: false
         content:
@@ -328,7 +329,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundForOthers'
         '409':
-          description: 在庫不足（`OUT_OF_STOCK`）、または確認していない支払待ちの注文がある（`PENDING_ORDER_CONFIRMATION_REQUIRED`）
+          description: 在庫不足（`OUT_OF_STOCK`）、確認していない支払待ちの注文がある（`PENDING_ORDER_CONFIRMATION_REQUIRED`）、または支払待ちの注文が上限に達している（`PENDING_ORDER_LIMIT_EXCEEDED`）
           content:
             application/problem+json:
               schema:
@@ -363,14 +364,15 @@ paths:
     post:
       tags: [checkout]
       operationId: placeOrder
-      x-error-codes: [INVALID_EMAIL, EMAIL_NOT_VERIFIED, INVALID_RECIPIENT_NAME, INVALID_POSTAL_CODE, INVALID_PREFECTURE, INVALID_MUNICIPALITY, INVALID_ADDRESS, INVALID_PHONE_NUMBER, CART_NOT_ORDERABLE, OUT_OF_STOCK, TOTAL_AMOUNT_CHANGED, CART_CHANGED, PENDING_ORDER_CONFIRMATION_REQUIRED]
+      x-error-codes: [INVALID_EMAIL, EMAIL_NOT_VERIFIED, INVALID_RECIPIENT_NAME, INVALID_POSTAL_CODE, INVALID_PREFECTURE, INVALID_MUNICIPALITY, INVALID_ADDRESS, INVALID_PHONE_NUMBER, CART_NOT_ORDERABLE, OUT_OF_STOCK, TOTAL_AMOUNT_CHANGED, CART_CHANGED, PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDER_LIMIT_EXCEEDED]
       security:
         - memberToken: []
       summary: 注文する
       description: |
         注文と支払を作る。同じ注文手続きでの再送には、作成済みの注文の ID を 200 で返す。
-        409 の `errorCode`：`OUT_OF_STOCK`（在庫不足）、`TOTAL_AMOUNT_CHANGED`（確認した総額と違う）、`CART_CHANGED`（注文手続きの後にカートが変わった）、`PENDING_ORDER_CONFIRMATION_REQUIRED`（注文手続きで確認していない支払待ちの注文がある）。
+        409 の `errorCode`：`OUT_OF_STOCK`（在庫不足）、`TOTAL_AMOUNT_CHANGED`（確認した総額と違う）、`CART_CHANGED`（注文手続きの後にカートが変わった）、`PENDING_ORDER_CONFIRMATION_REQUIRED`（注文手続きで確認していない支払待ちの注文がある）、`PENDING_ORDER_LIMIT_EXCEEDED`（支払待ちの注文が上限に達している）。
         支払待ちの注文の判定は、注文の時点の状態で行う。注文手続きで確認した注文に全て含まれていなければ 409 で、注文を作らず、在庫も減らさない。
+        全て含まれていても、支払待ちの注文の件数が上限（設定。既定は 3 件）以上なら 409（`PENDING_ORDER_LIMIT_EXCEEDED`）で、注文を作らず、在庫も減らさない。この判定は確認の判定の後に行う。再送には、上限によらず作成済みの注文を返す。
       requestBody:
         required: true
         content:
@@ -742,6 +744,7 @@ components:
         - OUT_OF_STOCK
         - PAYMENT_GATEWAY_UNAVAILABLE
         - PENDING_ORDER_CONFIRMATION_REQUIRED
+        - PENDING_ORDER_LIMIT_EXCEEDED
         - QUANTITY_EXCEEDS_STOCK
         - RESTORE_ERROR
         - SYSTEM_ERROR

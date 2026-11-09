@@ -40,15 +40,28 @@ const EXPIRED = order({
   actions: { requestCancellation: false, pay: false },
 })
 
+/** 上限に達したことを示す文の一部 */
+const LIMIT_TEXT = /お支払い待ちのご注文が上限に達しているため、新しく注文できません/
+
+/**
+ * 画面の関数に渡す引数（クエリ付き）を作る。
+ *
+ * @param query URL のクエリ
+ */
+function pageProps(query: Record<string, string> = {}) {
+  return { params: Promise.resolve({}), searchParams: Promise.resolve(query) }
+}
+
 /**
  * 確認の画面を DOM に読み込む（会員がログインしている）。
  *
  * @param items 支払待ちの注文の API の応答
+ * @param query URL のクエリ
  */
-async function renderPage(items: (typeof PAYABLE)[]) {
+async function renderPage(items: (typeof PAYABLE)[], query: Record<string, string> = {}) {
   signInAs()
   server.use(http.get('/me/orders/pending', ({ response }) => response(200).json({ items })))
-  return renderStatic(await PendingOrdersPage())
+  return renderStatic(await PendingOrdersPage(pageProps(query)))
 }
 
 describe('支払待ちの注文の確認の画面', () => {
@@ -85,10 +98,25 @@ describe('支払待ちの注文の確認の画面', () => {
     expect(view.getByRole('link', { name: '戻る' })).toHaveAttribute('href', '/cart')
   })
 
+  test('AC-411-9、AC-411-10 クエリ limit=reached があると、上限に達したため新しく注文できないことと、支払うか期限切れを待つ案内を示す', async () => {
+    const view = await renderPage([PAYABLE], { limit: 'reached' })
+
+    expect(view.getByText(LIMIT_TEXT)).toBeInTheDocument()
+    expect(view.getByText(/お支払いいただくか、お支払い期限が過ぎるまでお待ちください/)).toBeInTheDocument()
+  })
+
+  test('AC-411-9 クエリがない、または limit が reached 以外なら、上限の文を示さない', async () => {
+    const without = await renderPage([PAYABLE])
+    expect(without.queryByText(LIMIT_TEXT)).toBeNull()
+
+    const other = await renderPage([PAYABLE], { limit: 'other' })
+    expect(other.queryByText(LIMIT_TEXT)).toBeNull()
+  })
+
   test('支払待ちの注文がなければ、カートへ移る', async () => {
     signInAs()
     server.use(http.get('/me/orders/pending', ({ response }) => response(200).json({ items: [] })))
 
-    expect(await redirectedTo(() => PendingOrdersPage())).toBe('/cart')
+    expect(await redirectedTo(() => PendingOrdersPage(pageProps()))).toBe('/cart')
   })
 })

@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server'
 import { auth, PATHNAME_HEADER } from '@/auth'
+import { readServerConfig } from '@/auth/config'
+import { contentSecurityPolicy } from '@/lib/server/securityHeaders'
 import { newTraceparent, TRACEPARENT_HEADER, traceIdOf } from '@/lib/server/trace'
+
+/** CSP の値。環境変数から作るので、モジュールの読み込みのときに 1 回だけ作る */
+const { issuer, apiBaseUrl, imageOrigin } = readServerConfig()
+const CONTENT_SECURITY_POLICY = contentSecurityPolicy({
+  production: process.env.NODE_ENV === 'production',
+  issuer,
+  apiBaseUrl,
+  imageOrigin,
+})
 
 /**
  * リクエストごとにセッションを確認する（店舗画面の構成の「ログイン」）。access token の期限が近ければ取り直し、Cookie に書く
@@ -15,7 +26,9 @@ export const proxy = auth((request) => {
   if (traceIdOf(request.headers.get(TRACEPARENT_HEADER)) === null) {
     requestHeaders.set(TRACEPARENT_HEADER, newTraceparent())
   }
-  return NextResponse.next({ request: { headers: requestHeaders } })
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set('Content-Security-Policy', CONTENT_SECURITY_POLICY)
+  return response
 })
 
 /** Auth.js の口と、静的なファイルは除く */

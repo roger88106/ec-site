@@ -76,10 +76,7 @@ describe('CSP の値', () => {
     expect(directives(contentSecurityPolicy(INPUT))['img-src']).toEqual(["'self'", 'data:', 'https://img.example'])
   })
 
-  test.each([
-    true,
-    false,
-  ])('AC-418-2 connect-src は self だけ（本番のモード：%s）', (production) => {
+  test.each([true, false])('AC-418-2 connect-src は self だけ（本番のモード：%s）', (production) => {
     expect(directives(contentSecurityPolicy({ ...INPUT, production }))['connect-src']).toEqual(["'self'"])
   })
 

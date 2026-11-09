@@ -12,6 +12,7 @@ const REQUIRED_IN_PRODUCTION = [
   'AUTH_KEYCLOAK_ID',
   'STORE_API_BASE_URL',
   'AUTH_URL',
+  'STORE_IMAGE_ORIGIN',
 ] as const
 
 /** 開発のモードとテストで使う、ローカル用の既定の値 */
@@ -22,6 +23,7 @@ const LOCAL_DEFAULTS: Record<(typeof REQUIRED_IN_PRODUCTION)[number], string> = 
   AUTH_KEYCLOAK_ID: 'ec-store-web',
   STORE_API_BASE_URL: 'http://localhost:8080/api/store',
   AUTH_URL: 'http://localhost:3000',
+  STORE_IMAGE_ORIGIN: 'http://localhost:8333',
 }
 
 /** 店舗 API の公開の口の結果をキャッシュする秒数の既定（変更は 1 分以内に店舗画面へ反映する） */
@@ -50,6 +52,8 @@ type ServerConfig = {
   apiBaseUrl: string
   /** 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を作る（Auth.js も同じ環境変数 AUTH_URL を読む） */
   publicUrl: string
+  /** 商品の画像の配信元のオリジン（CSP の img-src に使う） */
+  imageOrigin: string
   /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定 60） */
   apiRevalidateSeconds: number
   /** 店舗 API の応答を待つ秒数（任意。既定 30） */
@@ -111,6 +115,7 @@ export function readServerConfig(env: Record<string, string | undefined> = proce
     secret: value('AUTH_SECRET'),
     apiBaseUrl: value('STORE_API_BASE_URL'),
     publicUrl: value('AUTH_URL'),
+    imageOrigin: value('STORE_IMAGE_ORIGIN'),
     apiRevalidateSeconds: Number(env.STORE_API_REVALIDATE_SECONDS || DEFAULT_REVALIDATE_SECONDS),
     apiTimeoutSeconds: Number(env.STORE_API_TIMEOUT_SECONDS || DEFAULT_API_TIMEOUT_SECONDS),
     idpTimeoutSeconds: Number(env.AUTH_KEYCLOAK_TIMEOUT_SECONDS || DEFAULT_IDP_TIMEOUT_SECONDS),

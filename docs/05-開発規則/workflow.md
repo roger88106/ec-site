@@ -96,9 +96,9 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 
 ### push のタイミング
 
-作業ブランチの push は、段階の最後（段階のない規模 S・M では、作業の最後）に行う。段階の途中は commit だけにする。理由：push のたびに CI が全て実行されるが、段階の途中の CI の結果は使わないため。
+作業ブランチの最初の push は、draft の pull request を作る直前に行う（規模によらない）。それまでは commit だけにする。pull request を作った後の修正の commit も、push の前にまとめる。理由は 2 つある。push のたびに CI が全て実行されるが、途中の CI の結果は使わないので、実行が無駄になる。push していない commit は、校閲の後にコミットメッセージを書き換えられる（skill `local-dev` の「コミットメッセージの書き換え」）。
 
-段階の途中で push してよいのは、次のときだけ。
+draft の pull request を作る前に push してよいのは、次のときだけ。
 
 | とき | 例 |
 |------|----|

@@ -1,5 +1,5 @@
 // スロットのポートで待ち受けるプロセスを探し、停止する。
-// スロットの script（scripts/dev/slot.mjs）の release と run backend が使う。
+// スロットの script（scripts/dev/slot.mjs）の release と stop と run backend が使う。
 // script の node を強制終了すると停止の処理が動かず、Gradle のデーモンの子のバックエンドがポートで待ち受け続けるため。
 import { spawnSync } from 'node:child_process'
 import { killTreeOnWindows } from './child-stop.mjs'
@@ -224,17 +224,17 @@ export function stoppedMessage(listeners) {
 }
 
 /**
- * ポートが使われていて起動しないときに示す文。停止のコマンド（解除できるときは release も）を示す。
+ * ポートが使われていて起動しないときに示す文。stop backend のコマンドを先に示し、stop が使えないときの代わりに手動の停止のコマンドを示す。
+ * release はデータベースとバケットも消すので示さない。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
- * @param {{ platform: NodeJS.Platform, canRelease: boolean }} options OS と、スロットを解除できるか（メインの作業ツリーは解除できない）
+ * @param {{ platform: NodeJS.Platform }} options OS
  * @returns {string} 示す文
  */
-export function portBusyMessage(listeners, { platform, canRelease }) {
-  const release = canRelease ? 'node scripts/dev/slot.mjs release（スロットのデータベースとバケットも消す）か、' : ''
+export function portBusyMessage(listeners, { platform }) {
   return (
     `バックエンドのポートが使われているので起動しない。待ち受けるプロセス：${describeListeners(listeners)}\n` +
-    `止めるには、${release}${manualStopCommand(listeners, platform)} を流す`
+    `止めるには、node scripts/dev/slot.mjs stop backend を流す。使えないときは、${manualStopCommand(listeners, platform)} を流す`
   )
 }
 
@@ -253,6 +253,20 @@ export function stopFailedMessage(listeners, platform) {
 }
 
 /**
+ * stop コマンドで停止しても待ち受けが残ったときに示す文。割り当てとデータは変えていないので、手動の停止のコマンドだけを示す。
+ *
+ * @param {Listener[]} listeners 残った待ち受けるプロセス
+ * @param {NodeJS.Platform} platform OS
+ * @returns {string} 示す文
+ */
+export function stopLeftMessage(listeners, platform) {
+  return (
+    `スロットのポートで待ち受けるプロセスが残っている。待ち受けるプロセス：${describeListeners(listeners)}\n` +
+    `${manualStopCommand(listeners, platform)} で止める`
+  )
+}
+
+/**
  * ポートの問い合わせが失敗したときに示す文。プロセスの ID が分からないので、ポートで探して止めるコマンドを示す。
  *
  * @param {number[]} ports 問い合わせたポート
@@ -263,7 +277,8 @@ export function stopFailedMessage(listeners, platform) {
 export function queryFailedMessage(ports, reason, platform) {
   const manual =
     platform === 'win32'
-      ? `PowerShell で Stop-Process -Id (Get-NetTCPConnection -LocalPort ${ports.join(',')} -State Listen).OwningProcess -Force`
+      ? // -State を付けた問い合わせは、環境によって何も返さないことがあるので、findListeners と同じく付けずに問い合わせ、Where-Object で絞る
+        `PowerShell で Stop-Process -Id (Get-NetTCPConnection -LocalPort ${ports.join(',')} | Where-Object { $_.State -eq 'Listen' }).OwningProcess -Force`
       : `kill $(lsof -t -sTCP:LISTEN ${ports.map((port) => `-iTCP:${port}`).join(' ')})`
   return `ポート ${ports.join('、')} で待ち受けるプロセスを問い合わせられなかった（${reason}）。\n待ち受けるプロセスがあれば、${manual} で止める`
 }

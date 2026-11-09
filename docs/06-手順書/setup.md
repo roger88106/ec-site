@@ -180,6 +180,9 @@ node scripts/dev/slot.mjs run backend
 node scripts/dev/slot.mjs run store
 node scripts/dev/slot.mjs run admin
 
+# 割り当てとデータを残したまま、自分のスロットのポートで待ち受けるプロセスを停止する（対象を省略すると全て）
+node scripts/dev/slot.mjs stop [backend|store|admin]
+
 # スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧を示す
 node scripts/dev/slot.mjs show
 
@@ -189,19 +192,7 @@ node scripts/dev/slot.mjs release
 
 各コマンドの振る舞いと終了コードは、`scripts/dev/slot.mjs` の冒頭のコメントにある。`release` は、ポートの停止を確認できないときと、停止の後もバックエンドが応答するときは、データを削除せず終了コード 1 で終了する（動いているバックエンドの DB を消さないため）。
 
-Windows で `run backend` の node を強制終了すると、Gradle のクライアントとバックエンドが残る。`release` で停止できる。
-
-割り当てとデータを残したまま停止するときは、自分のスロットのポート（下の表）で待ち受けるプロセスだけを停止する。
-
-```powershell
-# スロット 1 のバックエンドの例。Windows
-Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess -Force
-```
-
-```bash
-# スロット 1 のバックエンドの例。Windows 以外
-kill $(lsof -t -sTCP:LISTEN -iTCP:18080)
-```
+Windows で `run backend` の node を強制終了すると、Gradle のクライアントとバックエンドが残る。`stop` で停止できる（データも削除するときは `release`）。`stop` は、停止の後もポートで待ち受けるプロセスが残るときと、ポートを問い合わせられないときに、手動で停止するコマンドを示して終了コード 1 で終了する。
 
 ポートは「スロット 0 の値 + 10000 × スロットの番号」。データベースとバケットは、名前の末尾にスロットの番号を付ける。ポートの一覧は `scripts/dev/ports.json` にある。ポートを加えるときはそこに加え、`node scripts/ci/local-ports.mjs` で他の置き場所との食い違いを確認する。
 
@@ -239,7 +230,7 @@ realm を再度取り込む前は、スロットの画面のログインがリ�
 
 ## 手元の置き場所（`/.local/`）
 
-`/.local/` は Git に入らない手元の置き場所である。作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣を置く。ここで扱うのはメインの作業ツリーの `/.local/` である（作業ツリーの `.local/slot` は「スロット」。作業ツリーのレビューの記録は、その作業ツリーの `.local/review/` に置き、作業ツリーの削除で消える。skill `review`）。フォルダーの名前と場所は、文書と skill が参照しているので変えない。
+`/.local/` は Git に入らない手元の置き場所である。作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣を置く。ここで扱うのはメインの作業ツリーの `/.local/` である（作業ツリーの `.local/slot` は「スロット」。作業ツリーのレビューの記録は、その作業ツリーの `.local/review/` に置き、作業ツリーの削除で消える。skill `review`。作業ツリーの振り返りは、その作業ツリーの `.local/retro/` に書き、削除の前にメインの作業ツリーにコピーする。skill `agent-retro`）。フォルダーの名前と場所は、文書と skill が参照しているので変えない。
 
 | 項目 | 中身 | 使う者 | 保存の期間 |
 |------|------|--------|------------|

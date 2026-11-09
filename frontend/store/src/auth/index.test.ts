@@ -220,6 +220,19 @@ describe('token の取り直し', () => {
     expect(await callbacks().jwt(jwtParams({ token }))).toEqual(token)
   })
 
+  test.each([
+    ['IdP の障害（500、別のエラー）', () => HttpResponse.json({ error: 'unknown_error' }, { status: 500 })],
+    ['IdP の障害（503、本文なし）', () => new HttpResponse(null, { status: 503 })],
+    ['リクエスト数の制限（429）', () => new HttpResponse(null, { status: 429 })],
+    ['client の認証の失敗（401）', () => HttpResponse.json({ error: 'invalid_client' }, { status: 401 })],
+    ['前段のプロキシーが返す HTML の 400', () => HttpResponse.html('<html>Bad Request</html>', { status: 400 })],
+  ])('IdP が refresh token を拒否したのでなければ（%s）、ログインの状態を残す', async (_, response) => {
+    server.use(mswHttp.post(TOKEN_ENDPOINT, response))
+    const token = { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: nowSeconds() - 10 }
+
+    expect(await callbacks().jwt(jwtParams({ token }))).toEqual(token)
+  })
+
   test('API を呼ぶときの access token は、期限が切れていればその場で取り直したものを使う', async () => {
     expect(await getAccessToken()).toBeNull()
 
@@ -227,6 +240,14 @@ describe('token の取り直し', () => {
     server.use(mswHttp.post(TOKEN_ENDPOINT, () => HttpResponse.json({ access_token: 'fresh', expires_in: 300 })))
 
     expect(await getAccessToken()).toBe('fresh')
+  })
+
+  test('API を呼ぶときに IdP の障害で取り直せなければ、セッションの access token を使う', async () => {
+    signInAs({ expiresAt: nowSeconds() - 10 })
+    server.use(mswHttp.post(TOKEN_ENDPOINT, () => new HttpResponse(null, { status: 503 })))
+
+    // 期限の切れた token を API に送り、API の 401 でログインの画面へ移る（IdP に届かないときと同じ）
+    expect(await getAccessToken()).toBe(ACCESS_TOKEN)
   })
 
   test('期限が切れていなければ、セッションの access token を使う', async () => {

@@ -25,7 +25,8 @@ const {
  *
  * @param token         セッションの token
  * @param marginSeconds 期限までの残りがこの秒数以下なら取り直す
- * @returns 取り直した（または取り直さなくてよい）token。IdP に断られたら null（ログインしていないものとする）
+ * @returns 再取得した（または再取得しなくてよい）token。IdP に refresh token を拒否されたら null（ログインしていないものとする）。
+ *          他の失敗（IdP に届かない、IdP の障害など）では、今の token
  */
 export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): Promise<MemberJwt | null> {
   if (!needsTokenRefresh(token.expiresAt, Math.floor(Date.now() / 1000), marginSeconds)) {
@@ -48,7 +49,9 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
       signal: timeoutSignal(IDP_TIMEOUT_SECONDS),
     })
     if (!response.ok) {
-      return null
+      // 拒否（IdP のログインが切れた）だけをログアウトにする。IdP の障害や client の設定の誤りでは、
+      // 会員のセッションの Cookie を削除しない（Auth.js は null を受けると Cookie を削除する）
+      return (await isRefreshTokenRejected(response)) ? null : token
     }
     const refreshed = (await response.json()) as {
       access_token: string
@@ -64,7 +67,18 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
       idToken: refreshed.id_token ?? token.idToken,
     }
   } catch {
-    // IdP に届かなかった：ログインの状態は残す（期限が切れていれば、API が 401 を返し、ログインの画面へ移る）
+    // IdP に届かなかった、または応答が読めなかった：ログインの状態は残す（期限が切れていれば、API が 401 を返し、ログインの画面へ移る）
     return token
+  }
+}
+
+/** IdP が refresh token を拒否した（応答の本文の error が invalid_grant）か */
+async function isRefreshTokenRejected(response: Response): Promise<boolean> {
+  try {
+    const body = (await response.json()) as { error?: unknown } | null
+    return body?.error === 'invalid_grant'
+  } catch {
+    // 本文が JSON でない（前段のプロキシーが返すエラー画面など）
+    return false
   }
 }

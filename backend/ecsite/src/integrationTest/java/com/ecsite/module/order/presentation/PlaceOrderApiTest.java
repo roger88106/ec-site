@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
+import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -662,7 +663,7 @@ class PlaceOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-411-6 支払の期限切れでキャンセルされて上限より少なくなると、上限で拒否された注文手続きから再び注文できる")
+        @DisplayName("AC-411-6 開始の後に上限が下がった注文手続きでも、支払の期限切れでキャンセルされて上限より少なくなると、その注文手続きから再び注文できる")
         void placesAfterExpiry() throws Exception {
             var checkoutId = startAcknowledgingAtLimit();
             expectLimitExceeded(place(checkoutId, 6940));
@@ -674,7 +675,7 @@ class PlaceOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-411-6 与信の成功で受付になって上限より少なくなると、上限で拒否された注文手続きから再び注文できる")
+        @DisplayName("AC-411-6 開始の後に上限が下がった注文手続きでも、与信の成功で受付になって上限より少なくなると、その注文手続きから再び注文できる")
         void placesAfterAcceptance() throws Exception {
             var checkoutId = startAcknowledgingAtLimit();
             expectLimitExceeded(place(checkoutId, 6940));
@@ -682,6 +683,34 @@ class PlaceOrderApiTest {
             // 受付にした注文の品目は、もうカートにないので、注文手続きのカートは変わらない
             OrderPayments.accept(applicationContext, anyAcknowledged(checkoutId));
 
+            placed(checkoutId);
+            expectQuantity(1);
+        }
+
+        @Test
+        @DisplayName("AC-411-6 上限で開始を拒否された後、支払の期限切れでキャンセルされて上限より少なくなると、残りの支払待ちを確認して再び開始した注文手続きから 201 で注文でき、在庫が減る")
+        void startsAgainAndPlacesAfterExpiry() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
+            orders.add(cartId, shirt.variantIds.getFirst(), 2);
+            expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
+
+            OrderPayments.expire(applicationContext, pendingIds.getFirst());
+
+            var checkoutId = orders.startCheckout(cartId, pendingIds.subList(1, 3));
+            placed(checkoutId);
+            expectQuantity(1);
+        }
+
+        @Test
+        @DisplayName("AC-411-6 上限で開始を拒否された後、与信の成功で受付になって上限より少なくなると、残りの支払待ちを確認して再び開始した注文手続きから 201 で注文でき、在庫が減る")
+        void startsAgainAndPlacesAfterAcceptance() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
+            orders.add(cartId, shirt.variantIds.getFirst(), 2);
+            expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
+
+            OrderPayments.accept(applicationContext, pendingIds.getFirst());
+
+            var checkoutId = orders.startCheckout(cartId, pendingIds.subList(1, 3));
             placed(checkoutId);
             expectQuantity(1);
         }

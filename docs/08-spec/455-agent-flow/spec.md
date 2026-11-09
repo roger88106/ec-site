@@ -152,7 +152,7 @@
   - 依存：なし
   - 範囲：`docs/05-開発規則/subagents.md`、`.github/pull_request_template.md`
   - 確認方法：文書を読む
-- [ ] **T455-01-07** 推定で判定する検査の規則を、文書の構成・plan の雛形・書き方の規則とレビュー・skill `review` の prompts.md に入れる（DC-455-9、DC-455-10）。既存の指摘の一覧へ転記する手順を、書き方の規則とレビューと pull request の雛形に入れる（DC-455-28）。
+- [x] **T455-01-07** 推定で判定する検査の規則を、文書の構成・plan の雛形・書き方の規則とレビュー・skill `review` の prompts.md に入れる（DC-455-9、DC-455-10）。既存の指摘の一覧へ転記する手順を、書き方の規則とレビューと pull request の雛形に入れる（DC-455-28）。
   - 依存：T455-01-06
   - 範囲：`docs/05-開発規則/doc-structure.md`、`docs/08-spec/templates/plan.md`、`docs/05-開発規則/review.md`、`.claude/skills/review/prompts.md`、`.github/pull_request_template.md`
   - 確認方法：文書を読む

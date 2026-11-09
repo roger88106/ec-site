@@ -60,7 +60,7 @@ class KeycloakIntegrationTest {
     /**
      * docker/compose.yaml と同じイメージ
      */
-    private static final String IMAGE = "quay.io/keycloak/keycloak:26.8.1";
+    private static final String IMAGE = "quay.io/keycloak/keycloak:26.8.2";
 
     private static final int HTTP_PORT = 8080;
     private static final int MANAGEMENT_PORT = 9000;

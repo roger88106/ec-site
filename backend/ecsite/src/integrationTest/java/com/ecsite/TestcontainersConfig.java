@@ -99,7 +99,7 @@ public class TestcontainersConfig {
      */
     @Bean
     GenericContainer<?> seaweedfs(Network network) {
-        var container = new GenericContainer<>(DockerImageName.parse("chrislusf/seaweedfs:4.50"))
+        var container = new GenericContainer<>(DockerImageName.parse("chrislusf/seaweedfs:4.51"))
                 // ボリュームの数の上限は「空きの容量 ÷ ボリュームの大きさ（既定 30GB）」になる。空きの少ない CI の
                 // 環境では 2 つ目のバケットにボリュームを割り当てられず 500 になるので、ボリュームを小さくする
                 .withCommand("server", "-dir=/data", "-s3", "-s3.port=" + S3_PORT, "-s3.config=/etc/seaweedfs/s3.json",

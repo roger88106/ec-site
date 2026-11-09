@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { User } from 'oidc-client-ts'
 import { StrictMode } from 'react'
@@ -158,5 +158,90 @@ describe('ログインの門', () => {
 
     await user.click(screen.getByRole('button', { name: 'ログインし直す' }))
     expect(auth.signinRedirect).toHaveBeenCalledWith({ state: { returnTo: '/' } })
+  })
+})
+
+describe('ログインの門の、無操作のログアウト', () => {
+  const MINUTE = 60 * 1000
+  /** 始めの時刻。日本時間の 2026/01/01 09:00:00 */
+  const START = Date.UTC(2026, 0, 1)
+
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+    vi.setSystemTime(START)
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+  })
+
+  /** 時計とタイマーを進める */
+  function advance(ms: number) {
+    act(() => {
+      vi.advanceTimersByTime(ms)
+    })
+  }
+
+  test('AC-413-1 ログインしていて、操作しないまま 30 分たつと、IdP のログアウトへ移る', () => {
+    auth = signedIn()
+    renderGate()
+
+    advance(30 * MINUTE - 1)
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+
+    advance(1)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+    expect(auth.signoutRedirect).toHaveBeenCalledWith({ id_token_hint: 'id-token-1' })
+  })
+
+  test('AC-413-7 28 分の直前までは警告を出さず、28 分でログアウトする時刻と「操作を続ける」をダイアログに出す', () => {
+    auth = signedIn()
+    renderGate()
+
+    advance(28 * MINUTE - 1)
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+    advance(1)
+
+    const dialog = screen.getByRole('alertdialog')
+    expect(within(dialog).getByText(/2026\/01\/01 09:30/)).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: '操作を続ける' })).toBeInTheDocument()
+  })
+
+  test('AC-413-8 「操作を続ける」を押すと、警告を閉じ、そこから 30 分たつまでログアウトしない', async () => {
+    // Testing Library は操作の後に setTimeout で待ち、vitest の偽の時計を進めないので、偽の時計を実際の時間とともにも進める
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(START)
+    auth = signedIn()
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+    renderGate()
+    advance(28 * MINUTE)
+
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: '操作を続ける' }))
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+    advance(30 * MINUTE - 1000)
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+
+    advance(1000)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+  })
+
+  test('ログインしていない間は、30 分たっても警告もログアウトもしない', () => {
+    auth = signedOut()
+    renderGate()
+
+    advance(30 * MINUTE)
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
   })
 })

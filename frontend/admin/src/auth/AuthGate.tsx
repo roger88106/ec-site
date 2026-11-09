@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'rea
 import { hasAuthParams, useAuth } from 'react-oidc-context'
 import { useTranslations } from 'use-intl'
 import { paths } from '@/app/paths'
+import { IdleLogout } from '@/auth/IdleLogout'
 import { type Operator, OperatorProvider } from '@/auth/operator'
 import { setTokenSource } from '@/auth/token'
 
@@ -11,6 +12,7 @@ import { setTokenSource } from '@/auth/token'
  * すべての画面を包み、ログインを求める（管理画面の構成の「ログイン」）。<br />
  * ログインしていなければ、何も表示せずに IdP のログインへ移り、戻ってきたら移る前の画面に戻す。
  * ログインしていれば、運営者（氏名とログアウト）と、API に付ける token を渡してから画面を出す。
+ * ログインしている間は、操作がないまま 30 分たつとログアウトする。
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const t = useTranslations('auth.gate')
@@ -66,7 +68,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!isAuthenticated || operator === null) {
     return null
   }
-  return <OperatorProvider value={operator}>{children}</OperatorProvider>
+  return (
+    <OperatorProvider value={operator}>
+      <IdleLogout onExpire={operator.logout} />
+      {children}
+    </OperatorProvider>
+  )
 }
 
 /** 401 でログインし直した時刻を持つ sessionStorage のキー */

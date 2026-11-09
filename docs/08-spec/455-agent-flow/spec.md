@@ -136,11 +136,11 @@
   - 依存：T455-01-01
   - 範囲：`scripts/dev/reword.mjs`
   - 確認方法：`node --test` でテストが通る
-- [ ] **T455-01-03** [テスト] スロットの script の停止のテストを書き、レッドを確認する（DC-455-15）。
+- [x] **T455-01-03** [テスト] スロットの script の停止のテストを書き、レッドを確認する（DC-455-15）。
   - 依存：なし
   - 範囲：`scripts/dev/lib/slot-ports.test.mjs`、`scripts/dev/lib/port-stop.test.mjs`
   - 確認方法：`node --test` でテストが失敗することを確認する
-- [ ] **T455-01-04** スロットの script に停止のコマンドを追加し、停止に失敗したときの案内の文を修正する（DC-455-15）。
+- [x] **T455-01-04** スロットの script に停止のコマンドを追加し、停止に失敗したときの案内の文を修正する（DC-455-15）。
   - 依存：T455-01-03
   - 範囲：`scripts/dev/slot.mjs`、`scripts/dev/lib/slot-ports.mjs`、`scripts/dev/lib/port-stop.mjs`
   - 確認方法：`node --test` でテストが通る

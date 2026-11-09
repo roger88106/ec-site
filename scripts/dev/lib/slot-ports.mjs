@@ -1,7 +1,53 @@
 // スロットのポートを使うプロセスの扱い：解除で止めてからデータを消す判断と、バックエンドの起動の前の確認。
 // スロットの script（scripts/dev/slot.mjs）が、問い合わせ・停止・データの削除の実体を渡して使う。
-import { portBusyMessage, queryFailedMessage, stopFailedMessage, stoppedMessage } from './port-stop.mjs'
-import { checkBackendStopped } from './slot.mjs'
+import { portBusyMessage, queryFailedMessage, stopFailedMessage, stopLeftMessage, stoppedMessage } from './port-stop.mjs'
+import { checkBackendStopped, slotPorts } from './slot.mjs'
+
+/**
+ * stop コマンドの対象から、停止するポートを決める。
+ *
+ * @param {number} slot スロットの番号
+ * @param {string | undefined} target backend、store、admin のどれか。省略は 4 つ全て
+ * @returns {number[] | null} 停止するポート。知らない対象は null
+ */
+export function stopTargetPorts(slot, target) {
+  const [backend, management, store, admin] = slotPorts(slot)
+  if (target === undefined) return [backend, management, store, admin]
+  if (target === 'backend') return [backend, management]
+  if (target === 'store') return [store]
+  if (target === 'admin') return [admin]
+  return null
+}
+
+/**
+ * ポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。<br />
+ * 待ち受けがなければ、ないことを示して 0。あれば停止して示し、もう一度問い合わせて残りがないことを確認する。
+ * 問い合わせが失敗したときと、停止の後に残ったときは、手で止めるコマンドを含む理由を付けて 1 を返す。
+ *
+ * @param {{
+ *   ports: number[],
+ *   platform: NodeJS.Platform,
+ *   find: (ports: number[]) => { ok: true, listeners: import('./port-stop.mjs').Listener[] } | { ok: false, reason: string },
+ *   stop: (listeners: import('./port-stop.mjs').Listener[]) => void,
+ *   log: (line: string) => void,
+ * }} deps ポート、OS、問い合わせ・停止・出力の実体
+ * @returns {{ code: 0 } | { code: 1, message: string }} 停止したか、失敗の理由
+ */
+export function stopSlot({ ports, platform, find, stop, log }) {
+  const queryFailed = (reason) => ({ code: 1, message: queryFailedMessage(ports, reason, platform) })
+  const found = find(ports)
+  if (!found.ok) return queryFailed(found.reason)
+  if (found.listeners.length === 0) {
+    log('スロットのポートで待ち受けるプロセスはない')
+    return { code: 0 }
+  }
+  stop(found.listeners)
+  log(stoppedMessage(found.listeners))
+  const left = find(ports)
+  if (!left.ok) return queryFailed(left.reason)
+  if (left.listeners.length > 0) return { code: 1, message: stopLeftMessage(left.listeners, platform) }
+  return { code: 0 }
+}
 
 /**
  * スロットを解除する。ポートで待ち受けるプロセスを止め、空いたことと、バックエンドが応答しないことを確認してからデータを消す。<br />

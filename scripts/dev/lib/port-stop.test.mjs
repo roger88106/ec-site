@@ -341,7 +341,11 @@ describe('示す文', () => {
   test('問い合わせが失敗したときは、理由と、ポートで探して止めるコマンドを示す（Windows）', () => {
     const message = queryFailedMessage([18080, 19080], 'ENOENT', 'win32')
     assert.match(message, /ENOENT/)
-    assert.match(message, /Stop-Process -Id \(Get-NetTCPConnection -LocalPort 18080,19080 -State Listen\)\.OwningProcess -Force/)
+    assert.match(
+      message,
+      /Stop-Process -Id \(Get-NetTCPConnection -LocalPort 18080,19080 \| Where-Object \{ \$_\.State -eq 'Listen' \}\)\.OwningProcess -Force/,
+    )
+    assert.doesNotMatch(message, /-State Listen/)
   })
 
   test('問い合わせが失敗したときの止めるコマンドは、Windows 以外では lsof と kill', () => {

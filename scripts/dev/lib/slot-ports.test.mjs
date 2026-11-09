@@ -1,7 +1,7 @@
 // slot-ports.mjs のテスト（node --test scripts/dev/lib/slot-ports.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkBackendPorts, releaseSlot } from './slot-ports.mjs'
+import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './slot-ports.mjs'
 
 /** スロット 1 の 4 つのポート */
 const PORTS = [18080, 19080, 13000, 15173]
@@ -108,6 +108,100 @@ describe('スロットの解除', () => {
     assert.equal(result.code, 1)
     assert.equal(calls.backendRunning, 1)
     assert.equal(calls.drop, 0)
+  })
+})
+
+describe('停止の対象のポート', () => {
+  test('backend はバックエンドと運用のポート', () => {
+    assert.deepEqual(stopTargetPorts(1, 'backend'), [18080, 19080])
+  })
+
+  test('store は店舗画面、admin は管理画面のポート', () => {
+    assert.deepEqual(stopTargetPorts(1, 'store'), [13000])
+    assert.deepEqual(stopTargetPorts(1, 'admin'), [15173])
+  })
+
+  test('省略したときは 4 つ全て', () => {
+    assert.deepEqual(stopTargetPorts(1, undefined), PORTS)
+  })
+
+  test('スロット 0 は既定のポート', () => {
+    assert.deepEqual(stopTargetPorts(0, undefined), [8080, 9080, 3000, 5173])
+  })
+
+  test('知らない対象は null', () => {
+    assert.equal(stopTargetPorts(1, 'api'), null)
+  })
+})
+
+describe('スロットのプロセスの停止', () => {
+  /**
+   * 停止の依存を差し替える。find は呼ばれるたびに answers を順に返す。
+   *
+   * @param {object[]} answers 問い合わせの結果の並び
+   */
+  function stopDeps(answers) {
+    const calls = { find: [], stop: [], log: [] }
+    let index = 0
+    return {
+      calls,
+      deps: {
+        ports: PORTS,
+        platform: 'win32',
+        find: (ports) => {
+          calls.find.push(ports)
+          return answers[index++]
+        },
+        stop: (listeners) => calls.stop.push(listeners),
+        log: (line) => calls.log.push(line),
+      },
+    }
+  }
+
+  test('待ち受けがなければ、止めずに、ないことを示して 0', () => {
+    const { calls, deps } = stopDeps([{ ok: true, listeners: [] }])
+    assert.deepEqual(stopSlot(deps), { code: 0 })
+    assert.deepEqual(calls.stop, [])
+    assert.equal(calls.log.length, 1)
+    assert.match(calls.log[0], /待ち受けるプロセスはない/)
+  })
+
+  test('待ち受けがあれば、止め、止めたことを示し、もう一度問い合わせて残りがなければ 0', () => {
+    const listeners = [{ port: 18080, pid: 1234 }]
+    const { calls, deps } = stopDeps([{ ok: true, listeners }, { ok: true, listeners: [] }])
+    assert.deepEqual(stopSlot(deps), { code: 0 })
+    assert.deepEqual(calls.stop, [listeners])
+    assert.equal(calls.log.length, 1)
+    assert.match(calls.log[0], /1234（ポート 18080）/)
+    assert.deepEqual(calls.find, [PORTS, PORTS])
+  })
+
+  test('最初の問い合わせが失敗したら、止めずに 1 と、理由と手で止めるコマンドを示す', () => {
+    const { calls, deps } = stopDeps([{ ok: false, reason: 'lsof がない' }])
+    const result = stopSlot(deps)
+    assert.equal(result.code, 1)
+    assert.match(result.message, /lsof がない/)
+    assert.match(result.message, /Stop-Process/)
+    assert.deepEqual(calls.stop, [])
+  })
+
+  test('止めた後の問い合わせが失敗したら 1', () => {
+    const { deps } = stopDeps([{ ok: true, listeners: [{ port: 18080, pid: 1234 }] }, { ok: false, reason: '誤り' }])
+    const result = stopSlot(deps)
+    assert.equal(result.code, 1)
+    assert.match(result.message, /誤り/)
+  })
+
+  test('止めた後も残れば 1 と、残ったプロセスと手で止めるコマンドを示し、release の文にしない', () => {
+    const { deps } = stopDeps([
+      { ok: true, listeners: [{ port: 18080, pid: 1234 }] },
+      { ok: true, listeners: [{ port: 18080, pid: 5678 }] },
+    ])
+    const result = stopSlot(deps)
+    assert.equal(result.code, 1)
+    assert.match(result.message, /5678（ポート 18080）/)
+    assert.match(result.message, /Stop-Process -Id 5678 -Force/)
+    assert.doesNotMatch(result.message, /release|解かない/)
   })
 })
 

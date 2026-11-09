@@ -253,6 +253,20 @@ export function stopFailedMessage(listeners, platform) {
 }
 
 /**
+ * stop コマンドで停止しても待ち受けが残ったときに示す文。割り当てとデータは変えていないので、手動の停止のコマンドだけを示す。
+ *
+ * @param {Listener[]} listeners 残った待ち受けるプロセス
+ * @param {NodeJS.Platform} platform OS
+ * @returns {string} 示す文
+ */
+export function stopLeftMessage(listeners, platform) {
+  return (
+    `スロットのポートで待ち受けるプロセスが残っている。待ち受けるプロセス：${describeListeners(listeners)}\n` +
+    `${manualStopCommand(listeners, platform)} で止める`
+  )
+}
+
+/**
  * ポートの問い合わせが失敗したときに示す文。プロセスの ID が分からないので、ポートで探して止めるコマンドを示す。
  *
  * @param {number[]} ports 問い合わせたポート
@@ -263,7 +277,8 @@ export function stopFailedMessage(listeners, platform) {
 export function queryFailedMessage(ports, reason, platform) {
   const manual =
     platform === 'win32'
-      ? `PowerShell で Stop-Process -Id (Get-NetTCPConnection -LocalPort ${ports.join(',')} -State Listen).OwningProcess -Force`
+      ? // -State を付けた問い合わせは、環境によって何も返さないことがあるので、findListeners と同じく付けずに問い合わせ、Where-Object で絞る
+        `PowerShell で Stop-Process -Id (Get-NetTCPConnection -LocalPort ${ports.join(',')} | Where-Object { $_.State -eq 'Listen' }).OwningProcess -Force`
       : `kill $(lsof -t -sTCP:LISTEN ${ports.map((port) => `-iTCP:${port}`).join(' ')})`
   return `ポート ${ports.join('、')} で待ち受けるプロセスを問い合わせられなかった（${reason}）。\n待ち受けるプロセスがあれば、${manual} で止める`
 }

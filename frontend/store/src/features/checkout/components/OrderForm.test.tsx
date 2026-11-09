@@ -301,9 +301,11 @@ describe('郵便番号で補う', () => {
     const { user } = renderInBrowser(form(null, formAction))
 
     await user.type(screen.getByLabelText('郵便番号'), '１００－０００１')
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
     await user.type(screen.getByLabelText('電話番号'), '０３－１２３４－５６７８')
     await user.click(screen.getByRole('button', { name: '注文する（3,200 円）' }))
 
+    expect(formAction).toHaveBeenCalledTimes(1)
     expect(input('郵便番号')).toHaveValue('１００－０００１')
     expect(input('電話番号')).toHaveValue('０３－１２３４－５６７８')
   })

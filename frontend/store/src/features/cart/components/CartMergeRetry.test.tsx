@@ -55,7 +55,7 @@ describe('カートを移す再試行', () => {
     expect(screen.getByText('マグカップ（10 点）')).toBeInTheDocument()
   })
 
-  test('pending でなければ、再試行を呼ばず、何も描かない', () => {
+  test('pending でなければ、再試行を呼ばず、何も表示しない', () => {
     renderInBrowser(<CartMergeRetry pending={false} />)
 
     expect(retryCartMerge).not.toHaveBeenCalled()

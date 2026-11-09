@@ -69,7 +69,7 @@
 | `style-src` | `'self'` と `'unsafe-inline'` |
 | `img-src` | `'self'`、`data:`、画像の配信元のオリジン |
 | `font-src` | `'self'` |
-| `connect-src` | `'self'`。開発モードは、開発サーバーのホットリロードの接続も許す |
+| `connect-src` | `'self'` |
 | `frame-ancestors` | `'none'` |
 | `base-uri` | `'self'` |
 | `object-src` | `'none'` |

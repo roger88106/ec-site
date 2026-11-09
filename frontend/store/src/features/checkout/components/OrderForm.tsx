@@ -41,7 +41,8 @@ export function OrderForm(props: OrderFormProps) {
  * お届け先の入力と、注文の表示。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />
  * 都道府県と市区町村は一覧から選び、郵便番号が 7 桁になったら補う（店舗画面の構成の「お届け先の都道府県と市区町村」）。
  * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
- * フォームの action ではなく onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。<br />
+ * 読み込み後は onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。
+ * action は、JavaScript の読み込み前の送信に使う（ないと、ブラウザーが入力を今の URL のクエリに載せて送る）。<br />
  * サーバーアクションの結果を props で受けるので、結果ごとの表示をテストで確認できる。
  *
  * @param result     注文のサーバーアクションの結果（送る前は null）
@@ -69,10 +70,11 @@ export function OrderFormView({
 
   return (
     <form
+      action={formAction}
       className="space-y-4"
       ref={formRef}
       noValidate
-      // action で送ると、React が送った後にフォームを空にし、誤りのときに入力が消える。onSubmit から送る
+      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを空にし、誤りのときに入力が消える）
       onSubmit={(event) => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)

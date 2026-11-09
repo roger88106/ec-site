@@ -201,7 +201,7 @@ describe('お届け先の入力と注文', () => {
     expect(view.getByRole('button', { name: '注文する（3,200 円）' })).toBeEnabled()
   })
 
-  test('注文のボタンを押すと、入力した値と隠しの値を送る関数に渡す', async () => {
+  test('注文のボタンを押すと、入力した値と隠しの値を送る関数に 1 回だけ渡し、入力した値は欄に残る', async () => {
     const formAction = vi.fn<(formData: FormData) => void>()
     const { user } = renderInBrowser(form(null, formAction))
 
@@ -213,6 +213,14 @@ describe('お届け先の入力と注文', () => {
     expect(sent?.get('name')).toBe('山田 太郎')
     expect(sent?.get('checkoutId')).toBe('checkout-1')
     expect(sent?.get('expectedTotal')).toBe('3200')
+    expect(screen.getByLabelText('氏名')).toHaveValue('山田 太郎')
+  })
+
+  test('サーバーが返す HTML のフォームに action を渡す（ないと、JavaScript の読み込み前に押したとき、入力を今の URL へ GET で送る）', () => {
+    const view = renderStatic(form())
+
+    const orderForm = view.getByRole('button', { name: '注文する（3,200 円）' }).closest('form')
+    expect(orderForm).toHaveAttribute('action')
   })
 })
 

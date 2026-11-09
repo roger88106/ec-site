@@ -12,7 +12,12 @@ import { redirectToLogin } from '@/auth'
 import { translate } from '@/i18n/translate'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
-import { PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
+import {
+  PENDING_ORDER_CONFIRMATION_REQUIRED,
+  PENDING_ORDER_LIMIT_EXCEEDED,
+  PENDING_ORDERS_LIMIT_PATH,
+  PENDING_ORDERS_PATH,
+} from '@/lib/pendingOrders'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
 /**
@@ -103,6 +108,10 @@ export async function startCheckout(_previous: ActionResult | null, formData: Fo
       const failure = toFailure(response.status, error)
       if (failure.errorCode === PENDING_ORDER_CONFIRMATION_REQUIRED) {
         return PENDING_ORDERS_PATH
+      }
+      if (failure.errorCode === PENDING_ORDER_LIMIT_EXCEEDED) {
+        // 上限に達している。確認の画面で、上限のため注文できないことを示す
+        return PENDING_ORDERS_LIMIT_PATH
       }
       revalidatePath('/cart')
       return failure

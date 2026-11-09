@@ -4,7 +4,7 @@ import { contentSecurityPolicy, fixedSecurityHeaders } from '@/lib/server/securi
 const INPUT = {
   production: true,
   issuer: 'https://idp.example/realms/ec-store',
-  apiBaseUrl: 'https://api.example/api/store',
+  mockPaymentOrigin: 'https://mock.example',
   imageOrigin: 'https://img.example',
 }
 
@@ -46,7 +46,7 @@ describe('値が固定のセキュリティヘッダー', () => {
 })
 
 describe('CSP の値', () => {
-  test('AC-418-2 default-src、base-uri、font-src、object-src、frame-ancestors は表の値になる', () => {
+  test('AC-418-2 default-src・base-uri・font-src は self、object-src・frame-ancestors は none', () => {
     const csp = directives(contentSecurityPolicy(INPUT))
 
     expect(csp['default-src']).toEqual(["'self'"])
@@ -80,20 +80,29 @@ describe('CSP の値', () => {
     expect(directives(contentSecurityPolicy({ ...INPUT, production }))['connect-src']).toEqual(["'self'"])
   })
 
-  test('AC-418-2 form-action は self と、IdP、決済サービス、mock の支払画面の 3 つのオリジンを許す', () => {
+  test('AC-418-2 form-action は self と、IdP、決済サービス、mock の支払画面のオリジンを許す', () => {
     expect(directives(contentSecurityPolicy(INPUT))['form-action']).toEqual([
       "'self'",
       'https://idp.example',
       'https://checkout.stripe.com',
-      'https://api.example',
+      'https://mock.example',
     ])
   })
 
-  test('AC-418-2 IdP と店舗 API のパスはオリジンに入らない', () => {
+  test('AC-418-2 mock の支払画面のオリジンがなければ、form-action は self と IdP と決済サービスだけ', () => {
+    const { mockPaymentOrigin: _origin, ...withoutMock } = INPUT
+
+    expect(directives(contentSecurityPolicy(withoutMock))['form-action']).toEqual([
+      "'self'",
+      'https://idp.example',
+      'https://checkout.stripe.com',
+    ])
+  })
+
+  test('AC-418-2 IdP のパスはオリジンに入らない', () => {
     const csp = contentSecurityPolicy(INPUT)
 
     expect(csp).not.toContain('/realms/')
-    expect(csp).not.toContain('/api/store')
   })
 
   test('AC-418-2 ポートつきのローカルの URL からは、ポートつきのオリジンを作る', () => {
@@ -101,7 +110,7 @@ describe('CSP の値', () => {
       contentSecurityPolicy({
         production: false,
         issuer: 'http://localhost:8180/realms/ec-store',
-        apiBaseUrl: 'http://localhost:8080/api/store',
+        mockPaymentOrigin: 'http://localhost:8080',
         imageOrigin: 'http://localhost:8333',
       }),
     )

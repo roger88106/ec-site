@@ -4,6 +4,13 @@ import { createSimpleProduct } from '../src/data'
 import { addToCart, loginWithCart, proceedToCheckout } from '../src/store'
 import { BACKEND_URL, IDP_URL, IMAGE_ORIGIN, STORE_URL } from '../src/urls'
 
+declare global {
+  interface Window {
+    /** テストの側が公開する、CSP の違反の記録（`recordViolations` が `exposeFunction` で登録する） */
+    reportCspViolation: (violation: string) => void
+  }
+}
+
 /** E2E の店舗画面は本番モード（next start）なので、HSTS も付く */
 const FIXED_HEADERS = {
   'x-frame-options': 'DENY',
@@ -31,8 +38,7 @@ async function recordViolations(page: Page): Promise<string[]> {
   })
   await page.addInitScript(() => {
     document.addEventListener('securitypolicyviolation', (event) => {
-      const report = (window as unknown as { reportCspViolation: (violation: string) => void }).reportCspViolation
-      report(`${event.violatedDirective} ${event.blockedURI}`)
+      window.reportCspViolation(`${event.violatedDirective} ${event.blockedURI}`)
     })
   })
   return violations
@@ -57,18 +63,21 @@ function directivesOf(response: Response): Record<string, string[]> {
 
 test('AC-418-1、AC-418-2、AC-418-3、AC-418-4 店舗画面の応答にセキュリティヘッダーが付き、主要な画面で CSP の違反が報告されない', async ({
   page,
+  request,
 }) => {
   const productId = await createSimpleProduct({ code: 'SECHDR', name: 'セキュリティヘッダーの確認の商品', stock: 10 })
   const violations = await recordViolations(page)
 
   await test.step('商品一覧：値が固定のヘッダーと CSP が付く（AC-418-1、AC-418-2、AC-418-3）', async () => {
     const response = await page.goto(`${STORE_URL}/products`)
-    expect(response).not.toBeNull()
-    const headers = response?.headers() ?? {}
+    if (!response) {
+      throw new Error('商品一覧の応答がない')
+    }
+    const headers = response.headers()
     for (const [header, value] of Object.entries(FIXED_HEADERS)) {
       expect(headers[header], header).toBe(value)
     }
-    const directives = directivesOf(response as Response)
+    const directives = directivesOf(response)
     expect(directives['frame-ancestors']).toEqual(["'none'"])
     expect(directives['script-src']).toEqual(["'self'", "'unsafe-inline'"])
     expect(directives['img-src']).toEqual(["'self'", 'data:', IMAGE_ORIGIN])
@@ -78,6 +87,28 @@ test('AC-418-1、AC-418-2、AC-418-3、AC-418-4 店舗画面の応答にセキ�
       'https://checkout.stripe.com',
       new URL(BACKEND_URL).origin,
     ])
+  })
+
+  await test.step('proxy の対象外の応答にも、値が固定のヘッダーが付く（AC-418-1）', async () => {
+    const html = await (await request.get(`${STORE_URL}/products`)).text()
+    const staticPath = /\/_next\/static\/[^"'\s\\]+\.(?:js|css)/.exec(html)?.[0]
+    if (!staticPath) {
+      throw new Error('ページの HTML に /_next/static/ のファイルがない')
+    }
+    const targets = [
+      // Auth.js の口と静的なファイルは proxy を通らないので、CSP は付かない。存在しないパスは proxy を通るので付く
+      { url: `${STORE_URL}/api/auth/session`, csp: false },
+      { url: `${STORE_URL}${staticPath}`, csp: false },
+      { url: `${STORE_URL}/no-such-page-418`, csp: true },
+    ]
+    for (const { url, csp } of targets) {
+      const response = await request.get(url)
+      const headers = response.headers()
+      for (const [header, value] of Object.entries(FIXED_HEADERS)) {
+        expect(headers[header], `${url} ${header}`).toBe(value)
+      }
+      expect(headers['content-security-policy'] !== undefined, `${url} CSP`).toBe(csp)
+    }
   })
 
   await test.step('商品の詳細とカート（AC-418-4）', async () => {

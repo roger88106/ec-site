@@ -88,6 +88,7 @@ export default defineConfig({
         AUTH_SECRET: 'ec-store-local-auth-secret-only-for-local-and-ci',
         AUTH_URL: STORE_URL,
         STORE_IMAGE_ORIGIN: IMAGE_ORIGIN,
+        STORE_MOCK_PAYMENT_ORIGIN: BACKEND_URL,
       },
       timeout: FRONTEND_START_TIMEOUT,
       reuseExistingServer: false,

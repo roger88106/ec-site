@@ -12,8 +12,8 @@ type ContentSecurityPolicyInput = {
   production: boolean
   /** IdP の issuer（オリジンだけを使う） */
   issuer: string
-  /** 店舗 API の場所（オリジンだけを使う。mock の支払画面の許可に使う） */
-  apiBaseUrl: string
+  /** mock の支払画面のオリジン（あるときだけ form-action に許す） */
+  mockPaymentOrigin?: string
   /** 商品の画像の配信元のオリジン */
   imageOrigin: string
 }
@@ -43,7 +43,9 @@ export function fixedSecurityHeaders(production: boolean): SecurityHeader[] {
 }
 
 /**
- * CSP の値。
+ * CSP の値。<br />
+ * 許すオリジンを追加するときは、この関数の入力と `proxy.ts` の呼び出しを変える。環境変数から取るなら、あわせて `auth/config.ts`、
+ * 環境変数の文書、E2E の起動の設定、テストの期待値も変える。
  *
  * @param input 本番かどうかと、許すオリジンの元になる値
  * @returns `Content-Security-Policy` の値
@@ -51,6 +53,7 @@ export function fixedSecurityHeaders(production: boolean): SecurityHeader[] {
 export function contentSecurityPolicy(input: ContentSecurityPolicyInput): string {
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
+    // 'unsafe-inline' は、nonce を使わないため（Next.js のインラインのスクリプトとスタイルを止めない）
     'script-src': ["'self'", "'unsafe-inline'", ...(input.production ? [] : ["'unsafe-eval'"])],
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', new URL(input.imageOrigin).origin],
@@ -59,7 +62,13 @@ export function contentSecurityPolicy(input: ContentSecurityPolicyInput): string
     'frame-ancestors': ["'none'"],
     'base-uri': ["'self'"],
     'object-src': ["'none'"],
-    'form-action': ["'self'", new URL(input.issuer).origin, STRIPE_CHECKOUT_ORIGIN, new URL(input.apiBaseUrl).origin],
+    // 外部のオリジン（mock の支払画面は設定したときだけ）を許すのは、JavaScript の読み込みの前に送ったフォームの外部へのリダイレクト（ログイン、支払画面）を止めないため
+    'form-action': [
+      "'self'",
+      new URL(input.issuer).origin,
+      STRIPE_CHECKOUT_ORIGIN,
+      ...(input.mockPaymentOrigin ? [new URL(input.mockPaymentOrigin).origin] : []),
+    ],
   }
   return Object.entries(directives)
     .map(([name, values]) => `${name} ${values.join(' ')}`)

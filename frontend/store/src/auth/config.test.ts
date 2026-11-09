@@ -37,6 +37,20 @@ describe('店舗画面のサーバーの設定', () => {
     expect(loadServerConfig({ NODE_ENV: 'development' }).publicUrl).toBe('http://localhost:3000')
   })
 
+  test('AC-418-5 本番のモードで画像の配信元のオリジン（STORE_IMAGE_ORIGIN）がなければ、起動に失敗する', () => {
+    const { STORE_IMAGE_ORIGIN: _origin, ...missing } = PRODUCTION_ENV
+
+    expect(() => loadServerConfig(missing)).toThrow(/STORE_IMAGE_ORIGIN/)
+  })
+
+  test('AC-418-5 本番のモードで画像の配信元のオリジンがあれば、その値を使う', () => {
+    expect(loadServerConfig(PRODUCTION_ENV).imageOrigin).toBe(PRODUCTION_ENV.STORE_IMAGE_ORIGIN)
+  })
+
+  test('AC-418-5 開発のモードとテストでは、値がなければローカルの画像の配信元を使う', () => {
+    expect(readServerConfig({}).imageOrigin).toBe('http://localhost:8333')
+  })
+
   test('AC-242 API の応答を取り直す間隔は、設定の 1 か所で読み、なければ 60 秒', () => {
     expect(readServerConfig({ STORE_API_REVALIDATE_SECONDS: '1' }).apiRevalidateSeconds).toBe(1)
     expect(readServerConfig({}).apiRevalidateSeconds).toBe(60)

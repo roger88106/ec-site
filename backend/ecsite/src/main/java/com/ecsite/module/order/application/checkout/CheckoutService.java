@@ -67,7 +67,7 @@ public class CheckoutService {
      * 注文手続きに進む。全品目をカートの数量だけ引き当てる。<br />
      * 同じカートの前の注文手続きの引当は解く（進み直し）。1 品目でも引き当てられなければ何も引き当てない。
      * 始められるのは、会員の自分の会員のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは 404。<br />
-     * 確認していない支払待ちの注文があれば拒否する。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
+     * 確認していない支払待ちの注文があれば拒否する。確認の後に、支払待ちの注文が上限に達していても拒否する。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
      *
      * @param cartId               カート ID
      * @param memberId             会員 ID
@@ -81,6 +81,7 @@ public class CheckoutService {
                 .filter(found -> found.isOwnedBy(memberId))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         // 拒否するときは前の引当を残し、購入の可否によらず確認の画面へ案内するので、引当の解除と購入の可否の判定より先に行う
+        // （確認の判定、上限の判定の順）
         var pendingOrderIds = pendingOrderGuard.verifyAcknowledged(memberId, acknowledgedOrderIds);
         // 進み直し：前の注文手続きの引当を解いてから判定する（自分の前の引当で足りなくならないように）
         releaseReservations(cartId);

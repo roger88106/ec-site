@@ -3,20 +3,25 @@ package com.ecsite;
 import com.ecsite.module.order.application.payment.OrderPayments;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
+import org.jooq.DSLContext;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.awaitility.Awaitility.await;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -240,6 +245,39 @@ public class OrderTestData {
      */
     public UUID placePendingOrder(UUID variantId, int quantity) throws Exception {
         return placePendingOrder(variantId, quantity, "山田 太郎");
+    }
+
+    /**
+     * 会員のカートで、バリアントごとに 1 個ずつの支払待ちの注文を続けて作り、その ID を作った順に返す（支払わない）。<br />
+     * 2 件目からは、それまでに作った支払待ちの注文を確認して注文手続きを始める。会員は、ほかに支払待ちの注文を持っていないこと。
+     * 支払待ちの注文はカートの品目を残すので、続けて注文できるように、注文した品目をカートから除く。
+     * 除いた品目は、後で与信の成功やキャンセルがあっても、カートの内容（バージョン）を変えない。
+     * カートは、呼ぶ前に空にしておく（残っている品目も注文に入るため）。商品と在庫は、呼ぶ側が先に用意する。
+     *
+     * @param cartId     カート ID
+     * @param variantIds バリアント ID（注文ごとに 1 つ）
+     * @return 作った注文の ID（作った順。呼ぶ側で変えられる一覧）
+     */
+    public List<UUID> placePendingOrders(UUID cartId, List<UUID> variantIds) throws Exception {
+        var pendingIds = new ArrayList<UUID>();
+        for (var variantId : variantIds) {
+            add(cartId, variantId, 1);
+            pendingIds.add(placeFromCheckout(startCheckout(cartId, pendingIds)));
+            mockMvc.perform(delete("/api/store/carts/" + cartId + "/items/" + variantId).with(member))
+                    .andExpect(status().isNoContent());
+        }
+        return pendingIds;
+    }
+
+    /**
+     * 会員が持つ、支払待ちの注文の件数を返す（支払の期限を過ぎ、まだキャンセルされていない注文も数える）。
+     *
+     * @param dsl      DB の操作
+     * @param memberId 会員 ID
+     * @return 支払待ちの注文の件数
+     */
+    public static int pendingOrderCount(DSLContext dsl, UUID memberId) {
+        return dsl.fetchCount(SALES_ORDER, SALES_ORDER.MEMBER_ID.eq(memberId).and(SALES_ORDER.STATUS.eq("PENDING_PAYMENT")));
     }
 
     /**

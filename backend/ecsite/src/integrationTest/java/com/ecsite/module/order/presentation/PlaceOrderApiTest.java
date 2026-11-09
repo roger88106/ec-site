@@ -11,7 +11,9 @@ import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -24,6 +26,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,16 +35,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
+import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -89,6 +97,9 @@ class PlaceOrderApiTest {
 
     @Autowired
     ApplicationContext applicationContext;
+
+    @Autowired
+    CheckoutRepository checkoutRepository;
 
     /**
      * 税区分・カテゴリ・商品を作る補助
@@ -551,50 +562,232 @@ class PlaceOrderApiTest {
         }
 
         /**
-         * T シャツ 2 枚の注文手続きから注文し、201 を確認して、注文 ID を返す
-         */
-        private UUID placed(UUID checkoutId) throws Exception {
-            return TestJson.createdId(place(checkoutId, 6940).andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString());
-        }
-
-        /**
-         * 再送が、作成済みの注文 ID を 200 で返すことを確認する
-         */
-        private void expectExisting(UUID checkoutId, UUID orderId) throws Exception {
-            place(checkoutId, 6940)
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(orderId.toString()));
-        }
-
-        /**
-         * 確認を求める 409 であることを確認する
-         */
-        private void expectConfirmationRequired(ResultActions result) throws Exception {
-            result.andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("PENDING_ORDER_CONFIRMATION_REQUIRED"));
-        }
-
-        /**
-         * 注文手続きに注文がないことを確認する
-         */
-        private void expectNotPlaced(UUID checkoutId) {
-            assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isZero();
-        }
-
-        /**
-         * T シャツの在庫数を確認する
-         */
-        private void expectQuantity(int quantity) throws Exception {
-            mockMvc.perform(get("/api/admin/inventory/variants/" + shirt.variantIds.getFirst()))
-                    .andExpect(jsonPath("$.quantity").value(quantity));
-        }
-
-        /**
          * 既定の会員と別の会員の token を返す
          */
         private TestTokens.Builder otherMember() {
             return TestTokens.member().subject(UUID.randomUUID()).email("other@example.com");
+        }
+    }
+
+    @Nested
+    @DisplayName("支払待ちの注文の上限")
+    class PendingOrderLimit {
+
+        /**
+         * 上限を一時的に上げる値（上限を超えた状態を作るために、既定の上限より十分大きくする）
+         */
+        private static final int RAISED_LIMIT = 10;
+
+        /**
+         * 注文の設定（上限の既定は 3 件。注文の時点で上限に達した状態を作るテストだけ、上限を差し替える）
+         */
+        @MockitoSpyBean
+        OrderProperties properties;
+
+        /**
+         * 支払待ちの注文は、注文ごとに別の商品で作るので、カートを空にしておく（T シャツは、確認した注文を送って注文手続きを始める前に、もう一度入れる）
+         */
+        @BeforeEach
+        void emptyCart() throws Exception {
+            mockMvc.perform(delete("/api/store/carts/" + cartId + "/items/" + shirt.variantIds.getFirst()))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("AC-411-1、BR-411-2 支払待ちの注文が上限（3 件）に達していると、全て確認した注文手続きからの注文も 409 で拒否し、注文を作らず、在庫を減らさない")
+        void rejectsAtLimit() throws Exception {
+            var checkoutId = startAcknowledgingAtLimit();
+
+            expectLimitExceeded(place(checkoutId, 6940));
+
+            expectNotPlaced(checkoutId);
+            expectQuantity(3);
+            assertThat(pendingOrderCount(checkoutId)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("AC-411-8 上限を超える件数（4 件）の支払待ちの注文を持つ会員の注文も、全て確認した注文手続きからでも 409 で拒否し、注文を作らず、在庫を減らさない")
+        void rejectsAboveLimit() throws Exception {
+            // 上限を下げる前の状態を作るため、4 件を作る間だけ上限を上げる（上限が 3 件のままでは 4 件目を注文できない）
+            raiseLimit();
+            var checkoutId = startWithShirts(orders.placePendingOrders(cartId, stockedVariants(4)));
+            restoreLimit();
+
+            expectLimitExceeded(place(checkoutId, 6940));
+
+            expectNotPlaced(checkoutId);
+            expectQuantity(3);
+            assertThat(pendingOrderCount(checkoutId)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("BR-411-1 支払の期限を過ぎても、期限切れのキャンセルが済むまでは、上限の件数に数えて注文を 409 で拒否する")
+        void countsOverdueOrderUntilCancelled() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
+            raiseLimit();
+            var checkoutId = startWithShirts(pendingIds);
+            restoreLimit();
+            var order = mockMvc.perform(get("/api/store/orders/" + pendingIds.getLast())).andReturn().getResponse().getContentAsString();
+            clock.setInstant(Instant.parse(JsonPath.read(order, "$.paymentDeadline")).plusSeconds(1));
+
+            expectLimitExceeded(place(checkoutId, 6940));
+
+            expectNotPlaced(checkoutId);
+        }
+
+        @Test
+        @DisplayName("AC-411-2 支払待ちの注文が上限より 1 件少ない（2 件）ときは、全て確認した注文手続きから注文でき、支払待ちが 3 件になる")
+        void placesBelowLimit() throws Exception {
+            var checkoutId = startWithShirts(orders.placePendingOrders(cartId, stockedVariants(2)));
+
+            var orderId = placed(checkoutId);
+
+            mockMvc.perform(get("/api/store/orders/" + orderId)).andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
+            expectQuantity(1);
+            assertThat(pendingOrderCount(checkoutId)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("AC-411-4 上限に達していても、確認していない支払待ちの注文があれば、注文の時点でも上限でなく確認を求める 409 を返し、注文を作らない")
+        void requiresConfirmationBeforeLimit() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(2));
+            var earlier = startWithShirts(pendingIds);
+            var later = orders.startCheckout(cartId, pendingIds);
+            // 後に始めた注文手続きから 3 件目が成立し、先に始めた注文手続きはその注文を確認していない
+            placed(later);
+
+            expectConfirmationRequired(place(earlier, 6940));
+
+            expectNotPlaced(earlier);
+            expectQuantity(1);
+        }
+
+        @Test
+        @DisplayName("AC-411-6 開始の後に上限が下がった注文手続きでも、支払の期限切れでキャンセルされて上限より少なくなると、その注文手続きから再び注文できる")
+        void placesAfterExpiry() throws Exception {
+            var checkoutId = startAcknowledgingAtLimit();
+            expectLimitExceeded(place(checkoutId, 6940));
+
+            OrderPayments.expire(applicationContext, anyAcknowledged(checkoutId));
+
+            placed(checkoutId);
+            expectQuantity(1);
+        }
+
+        @Test
+        @DisplayName("AC-411-6 開始の後に上限が下がった注文手続きでも、与信の成功で受付になって上限より少なくなると、その注文手続きから再び注文できる")
+        void placesAfterAcceptance() throws Exception {
+            var checkoutId = startAcknowledgingAtLimit();
+            expectLimitExceeded(place(checkoutId, 6940));
+
+            // 受付にした注文の品目は、もうカートにないので、注文手続きのカートは変わらない
+            OrderPayments.accept(applicationContext, anyAcknowledged(checkoutId));
+
+            placed(checkoutId);
+            expectQuantity(1);
+        }
+
+        @Test
+        @DisplayName("AC-411-6 上限で開始を拒否された後、支払の期限切れでキャンセルされて上限より少なくなると、残りの支払待ちを確認して再び開始した注文手続きから 201 で注文でき、在庫が減る")
+        void startsAgainAndPlacesAfterExpiry() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
+            orders.add(cartId, shirt.variantIds.getFirst(), 2);
+            expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
+
+            OrderPayments.expire(applicationContext, pendingIds.getFirst());
+
+            var checkoutId = orders.startCheckout(cartId, pendingIds.subList(1, 3));
+            placed(checkoutId);
+            expectQuantity(1);
+        }
+
+        @Test
+        @DisplayName("AC-411-6 上限で開始を拒否された後、与信の成功で受付になって上限より少なくなると、残りの支払待ちを確認して再び開始した注文手続きから 201 で注文でき、在庫が減る")
+        void startsAgainAndPlacesAfterAcceptance() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
+            orders.add(cartId, shirt.variantIds.getFirst(), 2);
+            expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
+
+            OrderPayments.accept(applicationContext, pendingIds.getFirst());
+
+            var checkoutId = orders.startCheckout(cartId, pendingIds.subList(1, 3));
+            placed(checkoutId);
+            expectQuantity(1);
+        }
+
+        @Test
+        @DisplayName("AC-411-7 上限に達した後の同じ注文手続きの再送は、作成済みの注文 ID を 200 で返し、注文は 1 件だけになる")
+        void returnsExistingOrderOnResendAtLimit() throws Exception {
+            var checkoutId = startWithShirts(orders.placePendingOrders(cartId, stockedVariants(2)));
+            var orderId = placed(checkoutId);
+            assertThat(pendingOrderCount(checkoutId)).isEqualTo(3);
+
+            expectExisting(checkoutId, orderId);
+
+            assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isEqualTo(1);
+            expectQuantity(1);
+        }
+
+        /**
+         * 支払待ちの注文を上限（3 件）まで作り、それらを全て確認して T シャツ 2 枚の注文手続きを始め、注文手続き ID を返す。<br />
+         * 開始の時点も上限で拒否するので、開始の間だけ上限を上げる。設定の上限が、開始と注文の間に下がった場合を想定する（最終的な判定は注文の時点）
+         */
+        private UUID startAcknowledgingAtLimit() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
+            raiseLimit();
+            var checkoutId = startWithShirts(pendingIds);
+            restoreLimit();
+            return checkoutId;
+        }
+
+        /**
+         * 上限を一時的に上げる（開始の時点の判定を通すため）
+         */
+        private void raiseLimit() {
+            doReturn(RAISED_LIMIT).when(properties).pendingOrderLimit();
+        }
+
+        /**
+         * 上げた上限を、差し替える前の値に戻す
+         */
+        private void restoreLimit() {
+            reset(properties);
+        }
+
+        /**
+         * カートに T シャツ 2 枚を入れ、確認した注文の一覧を送って注文手続きを始め、注文手続き ID を返す
+         */
+        private UUID startWithShirts(List<UUID> acknowledged) throws Exception {
+            orders.add(cartId, shirt.variantIds.getFirst(), 2);
+            return orders.startCheckout(cartId, acknowledged);
+        }
+
+        /**
+         * 注文手続きに保存した、確認した注文の ID の 1 つを返す
+         */
+        private UUID anyAcknowledged(UUID checkoutId) {
+            return checkoutRepository.findById(checkoutId).orElseThrow().acknowledgedOrderIds().iterator().next();
+        }
+
+        /**
+         * 注文手続きの会員が持つ、支払待ちの注文の件数
+         */
+        private int pendingOrderCount(UUID checkoutId) {
+            return OrderTestData.pendingOrderCount(dsl, checkoutRepository.findById(checkoutId).orElseThrow().memberId());
+        }
+
+        /**
+         * 公開した商品（1,000 円・10%）のバリアントを、指定した数だけ作る（在庫数は各 3）。バリアント ID を返す
+         */
+        private List<UUID> stockedVariants(int count) throws Exception {
+            var variants = new ArrayList<UUID>();
+            for (int i = 0; i < count; i++) {
+                var product = data.product(standard, "商品", 1000).publish();
+                var variantId = product.variantIds.getFirst();
+                inventory.stock(variantId, product.id, 3);
+                variants.add(variantId);
+            }
+            return variants;
         }
     }
 
@@ -723,6 +916,54 @@ class PlaceOrderApiTest {
     private String placeOrder() throws Exception {
         var body = place(orders.startCheckout(cartId), 6940).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return TestJson.createdId(body).toString();
+    }
+
+    /**
+     * T シャツ 2 枚の注文手続きから注文し、201 を確認して、注文 ID を返す
+     */
+    private UUID placed(UUID checkoutId) throws Exception {
+        return TestJson.createdId(place(checkoutId, 6940).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+    }
+
+    /**
+     * 再送が、作成済みの注文 ID を 200 で返すことを確認する
+     */
+    private void expectExisting(UUID checkoutId, UUID orderId) throws Exception {
+        place(checkoutId, 6940)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(orderId.toString()));
+    }
+
+    /**
+     * 確認を求める 409 であることを確認する
+     */
+    private static void expectConfirmationRequired(ResultActions result) throws Exception {
+        result.andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("PENDING_ORDER_CONFIRMATION_REQUIRED"));
+    }
+
+    /**
+     * 支払待ちの注文が上限に達していることを示す 409 であることを確認する
+     */
+    private static void expectLimitExceeded(ResultActions result) throws Exception {
+        result.andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("PENDING_ORDER_LIMIT_EXCEEDED"));
+    }
+
+    /**
+     * 注文手続きに注文がないことを確認する
+     */
+    private void expectNotPlaced(UUID checkoutId) {
+        assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isZero();
+    }
+
+    /**
+     * T シャツの在庫数を確認する
+     */
+    private void expectQuantity(int quantity) throws Exception {
+        mockMvc.perform(get("/api/admin/inventory/variants/" + shirt.variantIds.getFirst()))
+                .andExpect(jsonPath("$.quantity").value(quantity));
     }
 
     /**

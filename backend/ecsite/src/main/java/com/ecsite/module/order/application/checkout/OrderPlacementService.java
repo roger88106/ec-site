@@ -96,6 +96,7 @@ public class OrderPlacementService {
      * どこかで失敗すれば、トランザクションごと取り消される。
      * 注文できるのは注文手続きを始めた会員だけで、メールアドレスは会員の token のもの（確認済み）を写す。
      * 確認していない支払待ちの注文があれば拒否する（注文の設計の「注文手続きと注文の成立」）。
+     * 確認の後に、支払待ちの注文が上限に達していても拒否する（注文の設計の「同時の注文」）。
      *
      * @param command 注文のコマンド
      * @return 注文の結果
@@ -119,7 +120,8 @@ public class OrderPlacementService {
         if (existing.isPresent()) {
             return new PlacementResult(existing.get(), false);
         }
-        // 再送は注文の状態によらず作成済みの注文を返すので、作成済みの注文があるかの確認の後に行う
+        // 再送は注文の状態と上限によらず作成済みの注文を返すので、作成済みの注文があるかの確認の後に行う（確認の判定、上限の判定の順）。
+        // 会員のロックの中で判定するので、同時の注文でも支払待ちの注文は上限を超えない
         pendingOrderGuard.verifyAcknowledged(checkout);
 
         // 判定：カートの変更、購入できるか、確認した総額

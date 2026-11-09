@@ -15,11 +15,13 @@ import java.util.UUID;
  * @param shippingFee           送料（税込、円）
  * @param shippingTaxCategoryId 送料に適用する税区分の ID（標準税率）。税率は注文日時のものを税モジュールから取る
  * @param reservationTtl        引当の期限（注文手続きに進んでからの時間）
+ * @param pendingOrderLimit     会員ごとの支払待ちの注文の上限（件数）。この件数に達していると、新しく注文できない
  */
 @Validated
 @ConfigurationProperties("ecsite.order")
 public record OrderProperties(
         @DefaultValue("1000") @Min(0) long shippingFee,
         @NotNull UUID shippingTaxCategoryId,
-        @DefaultValue("15m") Duration reservationTtl) {
+        @DefaultValue("15m") Duration reservationTtl,
+        @DefaultValue("3") @Min(1) int pendingOrderLimit) {
 }

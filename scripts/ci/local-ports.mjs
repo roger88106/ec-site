@@ -12,7 +12,7 @@
 //   - 起動の補助の script
 //   - CI の workflow
 // 設定のポートは、一覧から決まる値（スロットでずらした値を含む）であることを確認する。
-// E2E の設定は、E2E のポートと、E2E が使う共有の IdP・Mailpit のポートだけを許し、開発の画面のポートなどに替えると失敗にする。
+// E2E の設定は、E2E のポートと、E2E が使う共有の IdP・Mailpit・画像の配信元のポートだけを許し、開発の画面のポートなどに替えると失敗にする。
 // realm は、一覧の画面のポートが、スロットごとの分と E2E を含めて全て redirect URI にあることも確認する。
 // 失敗にする場合：
 // - 一覧にないポートが書かれている
@@ -45,8 +45,8 @@ const DOC_FILES = ['docs/06-手順書/setup.md', 'docs/06-手順書/running-test
 /** E2E のポートを書く設定（E2E のサーバーの URL、画面のサーバーの `--port`、Playwright の `port:`。読み方は CONFIG_FILES と同じ readConfigPorts） */
 const SOURCE_FILES = ['e2e/src/urls.ts', 'e2e/playwright.config.ts']
 
-/** E2E の設定が書いてよい共有のサービスの key（E2E 用の IdP と、メールを確認する Mailpit の画面） */
-const E2E_SHARED_KEYS = ['keycloak-e2e', 'mailpit-ui']
+/** E2E の設定が書いてよい共有のサービスの key（E2E 用の IdP、メールを確認する Mailpit の画面、店舗画面の CSP が許す画像の配信元） */
+const E2E_SHARED_KEYS = ['keycloak-e2e', 'mailpit-ui', 'seaweedfs']
 
 /** ポートを直接書く設定とスクリプト（一覧にあるポートだけが書かれていることを確認する） */
 const CONFIG_FILES = [

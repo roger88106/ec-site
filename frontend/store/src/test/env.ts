@@ -11,4 +11,5 @@ export const PRODUCTION_ENV = {
   AUTH_KEYCLOAK_ID: 'ec-store-web',
   STORE_API_BASE_URL: 'https://api.example/api/store',
   AUTH_URL: 'https://shop.example',
+  STORE_IMAGE_ORIGIN: 'https://img.example',
 }

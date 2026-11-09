@@ -58,6 +58,35 @@ describe('注文する', () => {
     })
   })
 
+  test('AC-416-2 郵便番号と電話番号の全角の数字とハイフンの類を、半角にして送る。氏名と住所は変えない', async () => {
+    signInAs()
+    let sent: unknown
+    server.use(
+      http.post('/checkouts/{checkoutId}/order', async ({ request, response }) => {
+        sent = await request.json()
+        return response(201).json({ id: ORDER_ID })
+      }),
+      http.post('/orders/{orderId}/payment-page', ({ response }) => response(200).json({ url: PAYMENT_PAGE_URL })),
+    )
+    const fullWidth = form({
+      checkoutId: CHECKOUT_ID,
+      expectedTotal: '4300',
+      name: '山田 太郎',
+      postalCode: '１００－０００１',
+      prefectureCode: '13',
+      municipalityCode: '13101',
+      address: '千代田１－１',
+      // U+2015（水平線）、U+30FC（長音符）
+      phone: '０３\u2015１２３４\u30FC５６７８',
+    })
+
+    await redirectedTo(() => placeOrder(null, fullWidth))
+
+    expect(sent).toMatchObject({
+      shippingAddress: { name: '山田 太郎', postalCode: '100-0001', address: '千代田１－１', phone: '03-1234-5678' },
+    })
+  })
+
   test('AC-143 支払画面の URL を得られなければ、注文の画面へ移る（そこから支払える）', async () => {
     signInAs()
     server.use(
@@ -120,6 +149,18 @@ describe('注文する', () => {
     )
 
     expect(await redirectedTo(() => placeOrder(null, orderForm()))).toBe('/checkout/pending-orders')
+    expect(revalidatedPaths).toEqual([])
+  })
+
+  test('AC-411-10 上限による拒否（409）なら、入力を保存せず、メッセージを出さずに、上限に達したことを示す確認の画面へ移る', async () => {
+    signInAs()
+    server.use(
+      http.post('/checkouts/{checkoutId}/order', ({ response }) =>
+        response(409).json(problem(409, 'PENDING_ORDER_LIMIT_EXCEEDED', '支払待ちの注文が上限に達しています。')),
+      ),
+    )
+
+    expect(await redirectedTo(() => placeOrder(null, orderForm()))).toBe('/checkout/pending-orders?limit=reached')
     expect(revalidatedPaths).toEqual([])
   })
 

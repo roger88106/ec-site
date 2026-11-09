@@ -3,6 +3,7 @@
 // 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい）
 //   assign                          空いている最小のスロットを割り当て、データベースとバケットを作る。割り当て済みなら番号を示すだけ
 //   release                         スロットのポートで待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
+//   stop [backend|store|admin]      自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。省略は 4 つのポート全て
 //   reset                           割り当てを変えずに、データベースとバケットを再作成する（バックエンドを止めてから）
 //   show                            スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
 //   env                             スロットの環境変数を `export NAME='value'` の形で出す
@@ -11,7 +12,7 @@
 //     - run store と run admin は、起動の前に pnpm generate:api で API の型を生成する（失敗したら起動しない）
 //     - 停止のシグナル（Ctrl+C など）の 1 回目で、起動したプロセスを子プロセスも含めて停止し、終了するのを待ってから終了する。2 回目は待たずに終了する
 //
-// メインの作業ツリーはいつもスロット 0。assign・release・reset は何もせずに知らせ、show・env・run はスロット 0 の値で動く。
+// メインの作業ツリーはいつもスロット 0。assign・release・reset は何もせずに知らせ、show・env・run・stop はスロット 0 の値で動く。
 // 割り当ては `<作業ツリー>/.local/slot` に番号だけで書く。
 // 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、2 共有の基盤が動いていない。
 // 共有の基盤（compose）は、メインの作業ツリーで起動する。この script は起動しない。
@@ -22,7 +23,7 @@ import { stopOnSignals } from './lib/child-stop.mjs'
 import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
 import { findListeners, stopListeners } from './lib/port-stop.mjs'
 import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
-import { checkBackendPorts, releaseSlot } from './lib/slot-ports.mjs'
+import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './lib/slot-ports.mjs'
 import {
   assignSlot,
   checkBackendStopped,
@@ -54,6 +55,7 @@ const LOCK_WAIT_MS = 90_000
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
   assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
   release                           待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
+  stop [backend|store|admin]        自分のスロットのポートで待ち受けるプロセスを停止する（割り当てとデータは変えない）
   reset                             割り当てを変えずに、データベースとバケットを作り直す
   show                              スロットのポート・URL・名前と、作業ツリーの一覧を示す
   env                               スロットの環境変数を export の形で出す
@@ -364,6 +366,27 @@ async function release(ctx) {
 }
 
 /**
+ * stop：自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。
+ *
+ * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {string[]} args 対象（backend、store、admin のどれか 1 つ。省略は全て）
+ */
+function stop(ctx, args) {
+  const slot = currentSlot(ctx)
+  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
+  const target = stopTargetPorts(slot, args)
+  if (target.error !== undefined) throw new Exit(1, target.error)
+  const result = stopSlot({
+    ports: target.ports,
+    platform: process.platform,
+    find: (list) => findListeners(list),
+    stop: (listeners) => stopListeners(listeners),
+    log: (line) => console.log(line),
+  })
+  if (result.code !== 0) throw new Exit(result.code, result.message)
+}
+
+/**
  * スロットのバックエンドが動いているか。運用ポートの死活監視に応答があるかで見る。
  *
  * @param {number} slot スロットの番号
@@ -472,7 +495,6 @@ async function run(ctx, args) {
     const check = checkBackendPorts({
       ports: [values.backendPort, values.managementPort],
       platform: process.platform,
-      canRelease: !ctx.main,
       find: (ports) => findListeners(ports),
     })
     if (!check.start) throw new Exit(check.code, check.message)
@@ -530,7 +552,7 @@ async function run(ctx, args) {
  */
 async function main(argv) {
   const [command, ...rest] = argv
-  const known = ['assign', 'release', 'reset', 'show', 'env', 'run']
+  const known = ['assign', 'release', 'stop', 'reset', 'show', 'env', 'run']
   if (!known.includes(command)) {
     console.error(USAGE)
     return command === undefined ? 0 : 1
@@ -543,6 +565,7 @@ async function main(argv) {
   }
   if (command === 'assign') await assign(ctx)
   else if (command === 'release') await release(ctx)
+  else if (command === 'stop') stop(ctx, rest)
   else if (command === 'reset') await reset(ctx)
   else if (command === 'show') show(ctx)
   else if (command === 'env') env(ctx)

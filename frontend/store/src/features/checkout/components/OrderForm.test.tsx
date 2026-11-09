@@ -201,7 +201,7 @@ describe('お届け先の入力と注文', () => {
     expect(view.getByRole('button', { name: '注文する（3,200 円）' })).toBeEnabled()
   })
 
-  test('注文のボタンを押すと、入力した値と隠しの値を送る関数に渡す', async () => {
+  test('注文のボタンを押すと、入力した値と隠しの値を送る関数に 1 回だけ渡し、入力した値は欄に残る', async () => {
     const formAction = vi.fn<(formData: FormData) => void>()
     const { user } = renderInBrowser(form(null, formAction))
 
@@ -213,6 +213,14 @@ describe('お届け先の入力と注文', () => {
     expect(sent?.get('name')).toBe('山田 太郎')
     expect(sent?.get('checkoutId')).toBe('checkout-1')
     expect(sent?.get('expectedTotal')).toBe('3200')
+    expect(screen.getByLabelText('氏名')).toHaveValue('山田 太郎')
+  })
+
+  test('サーバーが返す HTML のフォームに action を渡す（ないと、JavaScript の読み込み前に押したとき、入力を今の URL へ GET で送る）', () => {
+    const view = renderStatic(form())
+
+    const orderForm = view.getByRole('button', { name: '注文する（3,200 円）' }).closest('form')
+    expect(orderForm).toHaveAttribute('action')
   })
 })
 
@@ -273,6 +281,43 @@ describe('郵便番号で補う', () => {
     expect(findPostalCodeAddresses).toHaveBeenCalledWith('1000001')
     expect(select('都道府県')).toHaveValue('13')
     expect(input('住所')).toHaveValue('千代田')
+  })
+
+  test('AC-416-1 全角の数字とハイフンで 7 桁になると、半角と同じく引いて補う', async () => {
+    vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('13', '13101', '千代田')])
+    const { user } = renderInBrowser(form())
+
+    await user.type(screen.getByLabelText('郵便番号'), '１００－０００１')
+
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
+    expect(findPostalCodeAddresses).toHaveBeenCalledWith('1000001')
+    expect(select('都道府県')).toHaveValue('13')
+    expect(input('住所')).toHaveValue('千代田')
+  })
+
+  test('AC-416-3 全角で入れても、郵便番号と電話番号の欄の値は入力のまま変えない', async () => {
+    vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('13', '13101', '千代田')])
+    const formAction = vi.fn<(formData: FormData) => void>()
+    const { user } = renderInBrowser(form(null, formAction))
+
+    await user.type(screen.getByLabelText('郵便番号'), '１００－０００１')
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
+    await user.type(screen.getByLabelText('電話番号'), '０３－１２３４－５６７８')
+    await user.click(screen.getByRole('button', { name: '注文する（3,200 円）' }))
+
+    expect(formAction).toHaveBeenCalledTimes(1)
+    expect(input('郵便番号')).toHaveValue('１００－０００１')
+    expect(input('電話番号')).toHaveValue('０３－１２３４－５６７８')
+  })
+
+  test('AC-416-4 変換の後もハイフンが 2 つ以上ある全角の入力では、引かない', async () => {
+    const { user } = renderInBrowser(form())
+
+    await user.type(screen.getByLabelText('郵便番号'), '１００－００－０１')
+    await act(async () => {})
+
+    expect(findPostalCodeAddresses).not.toHaveBeenCalled()
+    expect(select('都道府県')).toHaveValue('')
   })
 
   test('AC-255 住所の欄に入力があれば、町域を入れない', async () => {

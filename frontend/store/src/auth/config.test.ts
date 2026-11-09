@@ -37,6 +37,67 @@ describe('店舗画面のサーバーの設定', () => {
     expect(loadServerConfig({ NODE_ENV: 'development' }).publicUrl).toBe('http://localhost:3000')
   })
 
+  test('AC-418-5 本番のモードで画像の配信元のオリジン（STORE_IMAGE_ORIGIN）がなければ、起動に失敗する', () => {
+    const { STORE_IMAGE_ORIGIN: _origin, ...missing } = PRODUCTION_ENV
+
+    expect(() => loadServerConfig(missing)).toThrow(/STORE_IMAGE_ORIGIN/)
+  })
+
+  test('本番のモードで画像の配信元のオリジンがあれば、その値を使う', () => {
+    expect(loadServerConfig(PRODUCTION_ENV).imageOrigin).toBe(PRODUCTION_ENV.STORE_IMAGE_ORIGIN)
+  })
+
+  test('開発のモードとテストでは、値がなければローカルの画像の配信元を使う', () => {
+    expect(readServerConfig({}).imageOrigin).toBe('http://localhost:8333')
+  })
+
+  test.each([
+    'img.example',
+    'localhost:8333',
+    'ftp://x',
+    'https://*',
+    'https://*.example.com',
+    'https://%2A.example.com',
+  ])(
+    '画像の配信元・issuer・店舗 API の接続先・mock の支払画面のオリジンが http か https の URL でなければ（%s）、モードによらず設定の名前を示して起動に失敗する',
+    (value) => {
+      for (const setting of [
+        'STORE_IMAGE_ORIGIN',
+        'AUTH_KEYCLOAK_ISSUER',
+        'STORE_API_BASE_URL',
+        'STORE_MOCK_PAYMENT_ORIGIN',
+      ]) {
+        expect(() => loadServerConfig({ NODE_ENV: 'development', [setting]: value })).toThrow(new RegExp(setting))
+        expect(() => loadServerConfig({ ...PRODUCTION_ENV, [setting]: value })).toThrow(new RegExp(setting))
+      }
+    },
+  )
+
+  test('本番のモードで mock の支払画面のオリジンがなくても起動に失敗せず、あればその値を使う', () => {
+    expect(loadServerConfig(PRODUCTION_ENV).mockPaymentOrigin).toBeUndefined()
+    expect(
+      loadServerConfig({ ...PRODUCTION_ENV, STORE_MOCK_PAYMENT_ORIGIN: 'https://mock.example' }).mockPaymentOrigin,
+    ).toBe('https://mock.example')
+  })
+
+  test('mock の支払画面のオリジンは、店舗 API の接続先から作らない', () => {
+    const config = readServerConfig({ ...PRODUCTION_ENV, STORE_API_BASE_URL: 'http://backend.internal:8080/api/store' })
+
+    expect(config.apiBaseUrl).toContain('backend.internal')
+    expect(config.mockPaymentOrigin).toBeUndefined()
+  })
+
+  test('開発のモードとテストでは、mock の支払画面のオリジンがなければローカルの既定を使う', () => {
+    expect(loadServerConfig({ NODE_ENV: 'development' }).mockPaymentOrigin).toBe('http://localhost:8080')
+    expect(readServerConfig({}).mockPaymentOrigin).toBe('http://localhost:8080')
+  })
+
+  test('mock の支払画面のオリジンを空にすると、開発のモードでも許さない', () => {
+    expect(
+      readServerConfig({ NODE_ENV: 'development', STORE_MOCK_PAYMENT_ORIGIN: '' }).mockPaymentOrigin,
+    ).toBeUndefined()
+  })
+
   test('AC-242 API の応答を取り直す間隔は、設定の 1 か所で読み、なければ 60 秒', () => {
     expect(readServerConfig({ STORE_API_REVALIDATE_SECONDS: '1' }).apiRevalidateSeconds).toBe(1)
     expect(readServerConfig({}).apiRevalidateSeconds).toBe(60)

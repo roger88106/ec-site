@@ -8,6 +8,8 @@ export const ADMIN_URL = 'http://localhost:4173'
 export const STORE_URL = 'http://localhost:3100'
 /** E2E 用の IdP（Keycloak。compose の profile e2e）の URL */
 export const IDP_URL = 'http://localhost:8181'
+/** 商品の画像の配信元（compose の SeaweedFS。E2E のバケットの public-base-url と同じオリジン。application-e2e.yml） */
+export const IMAGE_ORIGIN = 'http://localhost:8333'
 /** IdP が送るメールを受ける Mailpit（compose）の画面と API の URL */
 export const MAILPIT_URL = 'http://localhost:8025'
 

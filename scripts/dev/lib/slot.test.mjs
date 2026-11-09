@@ -417,6 +417,7 @@ describe('環境変数の組み立て', () => {
       STORE_API_BASE_URL: 'http://localhost:28080/api/store',
       AUTH_URL: 'http://localhost:23000',
       STORE_COOKIE_PREFIX: 's2-',
+      STORE_MOCK_PAYMENT_ORIGIN: 'http://localhost:28080',
     })
   })
 

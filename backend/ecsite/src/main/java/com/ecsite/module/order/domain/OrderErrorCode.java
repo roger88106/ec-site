@@ -98,6 +98,10 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      * 支払待ちの注文が確認されていない（確認の画面を表示する）
      */
     PENDING_ORDER_CONFIRMATION_REQUIRED(ErrorType.CONFLICT_ERROR),
+    /**
+     * 支払待ちの注文が上限に達している
+     */
+    PENDING_ORDER_LIMIT_EXCEEDED(ErrorType.CONFLICT_ERROR),
     ;
 
     /**

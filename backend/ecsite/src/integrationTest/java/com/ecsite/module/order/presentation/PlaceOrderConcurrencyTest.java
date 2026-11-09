@@ -180,6 +180,25 @@ class PlaceOrderConcurrencyTest {
     }
 
     @Test
+    @DisplayName("AC-411-5、NFR-411-1 支払待ちの 2 件を全て確認した 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 個分だけ減り、支払待ちは上限（3 件）を超えない（後の注文は確認の判定で拒否される）")
+    void placesOnlyOneBelowLimit() throws Exception {
+        stock(5);
+        var cartId = cartWith(1);
+        var first = TestJson.createdId(place(startCheckout(cartId)).getContentAsString());
+        var second = TestJson.createdId(place(startAcknowledging(cartId, first)).getContentAsString());
+        var checkouts = List.of(startAcknowledging(cartId, first, second), startAcknowledging(cartId, first, second));
+
+        var responses = placeAll(checkouts);
+
+        // 確認するのは、同時の注文でも支払待ちが上限を超えない結果である。
+        // 後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される
+        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderApiTest で確認する）
+        expectOnePlacedAndOneRejected(responses, checkouts);
+        assertThat(quantity()).isEqualTo(2);
+        assertThat(OrderTestData.pendingOrderCount(dsl, memberOf(checkouts.getFirst()))).isEqualTo(3);
+    }
+
+    @Test
     @DisplayName("AC-406-14 先の注文のトランザクションが終わるまで、同じ会員の後の注文は会員のロックを待ち、先の注文の成立の後に判定されて、確認を求められる")
     void waitsForMemberLockAndRejectsLater() throws Exception {
         stock(5);
@@ -339,7 +358,7 @@ class PlaceOrderConcurrencyTest {
     /**
      * 確認した注文の ID を送って注文手続きに進み、201 を確認して、注文手続き ID を返す
      */
-    private UUID startAcknowledging(UUID cartId, UUID acknowledged) throws Exception {
+    private UUID startAcknowledging(UUID cartId, UUID... acknowledged) throws Exception {
         var owner = owners.get(cartId);
         var checkoutId = orders.startCheckout(cartId, owner.bearer(), List.of(acknowledged));
         checkoutOwners.put(checkoutId, owner);

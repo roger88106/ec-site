@@ -65,6 +65,48 @@ describe('カートに入れる操作の失敗', () => {
   })
 })
 
+describe('カートに入れた後の数量の欄', () => {
+  test('AC-414-3 失敗したとき、選んだ数量が残る', async () => {
+    vi.mocked(addToCart).mockResolvedValueOnce({
+      ok: false,
+      message: '在庫が足りません。',
+      errorCode: 'OUT_OF_STOCK',
+    })
+    const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)
+
+    await user.selectOptions(screen.getByLabelText('数量'), '3')
+    await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
+    await screen.findByText('在庫が足りません。')
+
+    expect(screen.getByLabelText('数量')).toHaveValue('3')
+    const sent = vi.mocked(addToCart).mock.calls.at(-1)?.[1]
+    expect(sent?.get('quantity')).toBe('3')
+  })
+
+  test('AC-414-4 成功したとき、選んだ数量が残る', async () => {
+    vi.mocked(addToCart).mockResolvedValueOnce({ ok: true })
+    const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)
+
+    await user.selectOptions(screen.getByLabelText('数量'), '3')
+    await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
+    await screen.findByRole('link', { name: 'カートを見る' })
+
+    expect(screen.getByLabelText('数量')).toHaveValue('3')
+  })
+
+  test('送信中はボタンを押せず、結果を受け取ると押せるようになる', async () => {
+    let finish: (result: ActionResult) => void = () => {}
+    vi.mocked(addToCart).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+    const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)
+
+    await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
+    expect(await screen.findByRole('button', { name: '入れています…' })).toBeDisabled()
+
+    finish({ ok: true })
+    expect(await screen.findByRole('button', { name: 'カートに入れる' })).toBeEnabled()
+  })
+})
+
 describe('結果を受ける前の初期表示', () => {
   test('AddToCartForm は、表示と同じ初期表示を出す', () => {
     const view = renderStatic(<AddToCartForm variant={VARIANT} />)

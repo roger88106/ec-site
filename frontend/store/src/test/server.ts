@@ -40,6 +40,19 @@ export function networkError(method: 'get' | 'post' | 'put' | 'patch' | 'delete'
 }
 
 /**
+ * 状態コードを指定して、エラーの応答を返すハンドラーを作る。
+ *
+ * @param method HTTP のメソッド
+ * @param url    完全な URL。`:name` でパスのパラメーターを書ける
+ * @param status 返す HTTP の状態コード（例：500、503）
+ * @returns 指定した状態コードを返すハンドラー
+ */
+export function statusError(method: 'get' | 'post' | 'put' | 'patch' | 'delete', url: string, status: number) {
+  // 500・503 などは store.yaml にない応答なので、型付きの http でなく、型のない msw のハンドラーで作る
+  return mswHttp[method](url, () => HttpResponse.json({ message: 'error' }, { status }))
+}
+
+/**
  * エラーレスポンス（Problem）の本文を作る。画面に出るのは message。
  *
  * @param status    HTTP の状態

@@ -12,6 +12,7 @@ const REQUIRED_IN_PRODUCTION = [
   'AUTH_KEYCLOAK_ID',
   'STORE_API_BASE_URL',
   'AUTH_URL',
+  'STORE_IMAGE_ORIGIN',
 ] as const
 
 /** 開発のモードとテストで使う、ローカル用の既定の値 */
@@ -22,6 +23,7 @@ const LOCAL_DEFAULTS: Record<(typeof REQUIRED_IN_PRODUCTION)[number], string> = 
   AUTH_KEYCLOAK_ID: 'ec-store-web',
   STORE_API_BASE_URL: 'http://localhost:8080/api/store',
   AUTH_URL: 'http://localhost:3000',
+  STORE_IMAGE_ORIGIN: 'http://localhost:8333',
 }
 
 /** 店舗 API の公開の口の結果をキャッシュする秒数の既定（変更は 1 分以内に店舗画面へ反映する） */
@@ -35,6 +37,33 @@ const DEFAULT_IDP_TIMEOUT_SECONDS = 10
 
 /** 待つ時間の上限の環境変数（正の数でなければ起動に失敗させる） */
 const TIMEOUT_SETTINGS = ['STORE_API_TIMEOUT_SECONDS', 'AUTH_KEYCLOAK_TIMEOUT_SECONDS'] as const
+
+/** URL の形を確認する環境変数（CSP のオリジンの元になる。形が違うと、proxy の読み込みで例外になるか、画像の読み込みが全て CSP で止められる） */
+const URL_SETTINGS = [
+  'STORE_IMAGE_ORIGIN',
+  'AUTH_KEYCLOAK_ISSUER',
+  'STORE_API_BASE_URL',
+  'STORE_MOCK_PAYMENT_ORIGIN',
+] as const
+
+/** mock の支払画面のオリジンの既定（開発のモードとテストでだけ使う。バックエンドのローカルの既定のポート） */
+const LOCAL_MOCK_PAYMENT_ORIGIN = 'http://localhost:8080'
+
+/**
+ * `http:` か `https:` の URL として解析できるか。
+ *
+ * @param value 確認する値
+ * @returns 解析できて、スキームが `http:` か `https:` なら true
+ */
+function isHttpUrl(value: string | undefined): boolean {
+  try {
+    const { protocol, hostname } = new URL(value ?? '')
+    // ホストの `*`（`%2A` を含む）は、CSP ではワイルドカードとして働き、許す範囲を 1 つのオリジンより広げるので拒否する
+    return (protocol === 'http:' || protocol === 'https:') && !hostname.includes('*')
+  } catch {
+    return false
+  }
+}
 
 /** 店舗画面のサーバーの設定 */
 type ServerConfig = {
@@ -50,6 +79,10 @@ type ServerConfig = {
   apiBaseUrl: string
   /** 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を作る（Auth.js も同じ環境変数 AUTH_URL を読む） */
   publicUrl: string
+  /** 商品の画像の配信元のオリジン（CSP の img-src に使う） */
+  imageOrigin: string
+  /** mock の支払画面のオリジン（CSP の form-action に使う。任意。本番のモードでなければ既定 `http://localhost:8080`、本番のモードでは設定したときだけ） */
+  mockPaymentOrigin: string | undefined
   /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定 60） */
   apiRevalidateSeconds: number
   /** 店舗 API の応答を待つ秒数（任意。既定 30） */
@@ -70,6 +103,7 @@ const COOKIE_PREFIX_PATTERN = /^[A-Za-z0-9_-]*$/
  * 環境変数から設定を読む。本番のモードで必須の値がなければ（空も含む）、足りない名前を並べた例外を投げる。
  * 待つ時間の上限が正の数でなければ、モードによらず、その名前を並べた例外を投げる。
  * 再取得の間隔が 0 以上の整数でなければ、同じくモードによらず例外を投げる。
+ * 画像の配信元・issuer・店舗 API の接続先・mock の支払画面のオリジンは、値があれば http か https の URL でなければ、同じく例外を投げる。
  *
  * @param env 環境変数
  * @returns 設定
@@ -83,6 +117,10 @@ export function loadServerConfig(env: Record<string, string | undefined> = proce
   const invalid = TIMEOUT_SETTINGS.filter((name) => env[name] && !(Number(env[name]) > 0))
   if (invalid.length > 0) {
     throw new Error(`待つ時間の上限は正の数にしてください：${invalid.join(', ')}`)
+  }
+  const invalidUrls = URL_SETTINGS.filter((name) => env[name] && !isHttpUrl(env[name]))
+  if (invalidUrls.length > 0) {
+    throw new Error(`URL は http:// か https:// で始まる形にしてください：${invalidUrls.join(', ')}`)
   }
   const revalidate = env.STORE_API_REVALIDATE_SECONDS
   if (revalidate && !NON_NEGATIVE_INTEGER_PATTERN.test(revalidate)) {
@@ -111,6 +149,11 @@ export function readServerConfig(env: Record<string, string | undefined> = proce
     secret: value('AUTH_SECRET'),
     apiBaseUrl: value('STORE_API_BASE_URL'),
     publicUrl: value('AUTH_URL'),
+    imageOrigin: value('STORE_IMAGE_ORIGIN'),
+    // 空の値は「許さない」の指定として扱う（開発モードでも、Stripe の sandbox で動かすときに mock を許さないため）
+    mockPaymentOrigin:
+      (env.STORE_MOCK_PAYMENT_ORIGIN ?? (env.NODE_ENV === 'production' ? undefined : LOCAL_MOCK_PAYMENT_ORIGIN)) ||
+      undefined,
     apiRevalidateSeconds: Number(env.STORE_API_REVALIDATE_SECONDS || DEFAULT_REVALIDATE_SECONDS),
     apiTimeoutSeconds: Number(env.STORE_API_TIMEOUT_SECONDS || DEFAULT_API_TIMEOUT_SECONDS),
     idpTimeoutSeconds: Number(env.AUTH_KEYCLOAK_TIMEOUT_SECONDS || DEFAULT_IDP_TIMEOUT_SECONDS),

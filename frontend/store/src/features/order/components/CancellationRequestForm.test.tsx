@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { requestCancellation } from '@/actions/order'
 import { CancellationRequestForm } from '@/features/order/components/CancellationRequestForm'
+import type { ActionResult } from '@/lib/actionResult'
 import { renderInBrowser } from '@/test/render'
 
 // 申請はサーバーアクションを通るので、送る前の確認（ブラウザーの中だけで終わる操作）と、結果の表示の遷移を、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方の「テストの種類と基準」）
@@ -66,5 +67,50 @@ describe('キャンセルの申請', () => {
     await waitFor(() => expect(statusRegion).toBeEmptyDOMElement())
     expect(screen.getAllByRole('status')).toHaveLength(1)
     expect(screen.getByRole('status')).toBe(statusRegion)
+  })
+
+  test('AC-414-1 申請が失敗しても、理由の欄に入力した文字列が残る', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(requestCancellation).mockResolvedValueOnce({
+      ok: false,
+      message: '入力を確かめてください。',
+      errorCode: 'INVALID_REQUEST',
+    })
+    const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
+
+    await user.type(screen.getByLabelText('理由（任意）'), '誤って注文したため')
+    await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
+
+    expect(await screen.findByText('入力を確かめてください。')).toBeInTheDocument()
+    expect(screen.getByLabelText('理由（任意）')).toHaveValue('誤って注文したため')
+    // 送った内容も、入力した文字列と同じ
+    const formData = vi.mocked(requestCancellation).mock.lastCall?.[1]
+    expect(formData?.get('reason')).toBe('誤って注文したため')
+  })
+
+  test('AC-414-2 確認でやめたとき、申請せず、理由の欄に入力した文字列が残る', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    // 前のテストの呼び出しを数えない
+    vi.mocked(requestCancellation).mockClear()
+    const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
+
+    await user.type(screen.getByLabelText('理由（任意）'), '誤って注文したため')
+    await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
+
+    expect(requestCancellation).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('理由（任意）')).toHaveValue('誤って注文したため')
+  })
+
+  test('送信中はボタンを押せず、結果を受け取ると押せるようになる', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    let finish: (result: ActionResult) => void = () => {}
+    vi.mocked(requestCancellation).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+    const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
+
+    await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
+    expect(await screen.findByRole('button', { name: '申請しています…' })).toBeDisabled()
+
+    finish({ ok: false, message: 'この注文はキャンセルを申請できません。', errorCode: 'CANCELLATION_NOT_REQUESTABLE' })
+    expect(await screen.findByRole('button', { name: 'キャンセルを申請する' })).toBeEnabled()
   })
 })

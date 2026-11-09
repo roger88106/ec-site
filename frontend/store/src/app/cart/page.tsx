@@ -3,14 +3,17 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { currentCartChoice, memberCartId } from '@/api/cart'
-import { readCartMergeNotice } from '@/api/cartCookie'
+import { readCartId, readCartMergeNotice } from '@/api/cartCookie'
 import { getApi, getMemberApi, UNCACHED } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
 import type { Cart } from '@/api/types'
+import { currentMember } from '@/auth'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { CartItemControls } from '@/features/cart/components/CartItemControls'
 import { CartMergeNoticeView } from '@/features/cart/components/CartMergeNoticeView'
+import { CartMergeRetry } from '@/features/cart/components/CartMergeRetry'
 import { StartCheckoutForm } from '@/features/cart/components/StartCheckoutForm'
+import { shouldRetryCartMerge } from '@/lib/cartChoice'
 
 /** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -39,14 +42,29 @@ async function fetchCart(): Promise<Cart | null> {
   return result.response.status === 404 ? null : unwrap(result)
 }
 
+/**
+ * カートを移す処理の再試行が必要か。
+ *
+ * @returns 必要なら true（判定は {@link shouldRetryCartMerge}）
+ */
+async function isCartMergePending(): Promise<boolean> {
+  return shouldRetryCartMerge((await currentMember()) !== null, await readCartId())
+}
+
 /** カート */
 export default async function CartPage() {
   const t = await getTranslations('cart.page')
-  const [cart, mergeNotice] = await Promise.all([fetchCart(), readCartMergeNotice()])
+  const [cart, mergeNotice, retryPending] = await Promise.all([
+    fetchCart(),
+    readCartMergeNotice(),
+    isCartMergePending(),
+  ])
   return (
     <div className="space-y-6">
       <h1 className="font-heading text-2xl font-semibold">{t('title') /* カート */}</h1>
       <CartMergeNoticeView notice={mergeNotice} />
+      {/* 再試行の結果を再表示の後も示すため、pending によらず同じ位置に置く */}
+      <CartMergeRetry pending={retryPending} />
       {cart === null || cart.items.length === 0 ? (
         <div className="space-y-4">
           <p className="text-muted-foreground">{t('empty') /* 空 */}</p>

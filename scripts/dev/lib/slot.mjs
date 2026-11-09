@@ -183,6 +183,7 @@ export function slotEnv(slot, target) {
       STORE_API_BASE_URL: `${backendOrigin}/api/store`,
       AUTH_URL: `http://localhost:${values.storePort}`,
       STORE_COOKIE_PREFIX: values.cookiePrefix,
+      STORE_MOCK_PAYMENT_ORIGIN: backendOrigin,
     }
   }
   return { ADMIN_API_PROXY_TARGET: backendOrigin }

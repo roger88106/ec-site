@@ -50,13 +50,16 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
 
   await test.step('店舗画面：一覧の代表画像と、詳細の画像に、並べ替えた順で出る', async () => {
     await reopenUntil(page, `${STORE_URL}/products?categoryId=${categoryId}`, async () => {
-      await expect(productCard(page, productName).getByRole('img', { name: '商品の画像' })).toHaveAttribute(
-        'src',
-        imageUrl ?? '',
-        {
+      const listImage = productCard(page, productName).getByRole('img', { name: '商品の画像' })
+      await expect(listImage).toHaveAttribute('src', imageUrl ?? '', {
+        timeout: CHECK_TIMEOUT,
+      })
+      // CSP などで止められると、要素はあっても読み込まれない
+      await expect
+        .poll(() => listImage.evaluate((element: HTMLImageElement) => element.naturalWidth), {
           timeout: CHECK_TIMEOUT,
-        },
-      )
+        })
+        .toBeGreaterThan(0)
     })
     await page.goto(`${STORE_URL}/products/${productId}`)
     const image = page.getByRole('img', { name: '商品の画像' })

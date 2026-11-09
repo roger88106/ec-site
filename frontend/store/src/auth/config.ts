@@ -57,8 +57,9 @@ const LOCAL_MOCK_PAYMENT_ORIGIN = 'http://localhost:8080'
  */
 function isHttpUrl(value: string | undefined): boolean {
   try {
-    const { protocol } = new URL(value ?? '')
-    return protocol === 'http:' || protocol === 'https:'
+    const { protocol, hostname } = new URL(value ?? '')
+    // ホストの `*`（`%2A` を含む）は、CSP ではワイルドカードとして働き、許す範囲を 1 つのオリジンより広げるので拒否する
+    return (protocol === 'http:' || protocol === 'https:') && !hostname.includes('*')
   } catch {
     return false
   }
@@ -149,8 +150,10 @@ export function readServerConfig(env: Record<string, string | undefined> = proce
     apiBaseUrl: value('STORE_API_BASE_URL'),
     publicUrl: value('AUTH_URL'),
     imageOrigin: value('STORE_IMAGE_ORIGIN'),
+    // 空の値は「許さない」の指定として扱う（開発モードでも、Stripe の sandbox で動かすときに mock を許さないため）
     mockPaymentOrigin:
-      env.STORE_MOCK_PAYMENT_ORIGIN || (env.NODE_ENV === 'production' ? undefined : LOCAL_MOCK_PAYMENT_ORIGIN),
+      (env.STORE_MOCK_PAYMENT_ORIGIN ?? (env.NODE_ENV === 'production' ? undefined : LOCAL_MOCK_PAYMENT_ORIGIN)) ||
+      undefined,
     apiRevalidateSeconds: Number(env.STORE_API_REVALIDATE_SECONDS || DEFAULT_REVALIDATE_SECONDS),
     apiTimeoutSeconds: Number(env.STORE_API_TIMEOUT_SECONDS || DEFAULT_API_TIMEOUT_SECONDS),
     idpTimeoutSeconds: Number(env.AUTH_KEYCLOAK_TIMEOUT_SECONDS || DEFAULT_IDP_TIMEOUT_SECONDS),

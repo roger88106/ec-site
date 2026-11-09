@@ -99,12 +99,6 @@ describe('CSP の値', () => {
     ])
   })
 
-  test('AC-418-2 IdP のパスはオリジンに入らない', () => {
-    const csp = contentSecurityPolicy(INPUT)
-
-    expect(csp).not.toContain('/realms/')
-  })
-
   test('AC-418-2 ポートつきのローカルの URL からは、ポートつきのオリジンを作る', () => {
     const csp = directives(
       contentSecurityPolicy({

@@ -28,19 +28,25 @@ const FIXED_HEADERS = {
 async function recordViolations(page: Page): Promise<string[]> {
   // 画面を移ってもページの外に残るよう、テストの側の配列に集める
   const violations: string[] = []
+  // 店舗画面の違反だけを集める（ログインで通る IdP の画面は、IdP 自身の CSP を持つため）
+  const storeOrigin = new URL(STORE_URL).origin
   page.on('console', (message) => {
-    if (message.type() === 'error' && message.text().includes('Content Security Policy')) {
+    const fromStore = message.location().url.startsWith(storeOrigin)
+    if (fromStore && message.type() === 'error' && message.text().includes('Content Security Policy')) {
       violations.push(message.text())
     }
   })
   await page.exposeFunction('reportCspViolation', (violation: string) => {
     violations.push(violation)
   })
-  await page.addInitScript(() => {
+  await page.addInitScript((origin) => {
+    if (location.origin !== origin) {
+      return
+    }
     document.addEventListener('securitypolicyviolation', (event) => {
       window.reportCspViolation(`${event.violatedDirective} ${event.blockedURI}`)
     })
-  })
+  }, storeOrigin)
   return violations
 }
 

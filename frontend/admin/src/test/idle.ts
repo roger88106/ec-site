@@ -59,3 +59,24 @@ export function operate(type: string): void {
     window.dispatchEvent(new Event(type))
   })
 }
+
+/** タブに戻ったことを知らせるイベント。pageshow は戻る・進むのキャッシュから戻った、visibilitychange は再び見えた、focus は前面に戻った */
+export type TabComeBack = 'pageshow' | 'visibilitychange' | 'focus'
+
+/**
+ * タブに戻ったことを、ブラウザーが起こすイベントで知らせる。例：`comeBackToTab('pageshow')`
+ *
+ * @param type イベントの種類
+ */
+export function comeBackToTab(type: TabComeBack): void {
+  // ブラウザーが起こすイベントで、user-event では起こせないので、直接起こす
+  act(() => {
+    if (type === 'pageshow') {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
+    } else if (type === 'visibilitychange') {
+      document.dispatchEvent(new Event('visibilitychange'))
+    } else {
+      window.dispatchEvent(new Event('focus'))
+    }
+  })
+}

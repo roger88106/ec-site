@@ -137,6 +137,41 @@ describe('無操作のログアウト（フック）', () => {
     expect(onExpire).toHaveBeenCalledTimes(1)
   })
 
+  test('AC-413-7 共有の時刻が警告の範囲なら、マウントのときに取り込まず、警告を出さずに現在の時刻から計測を始め、共有の値も書き換える', () => {
+    // 新しいタブを開くこと自体が操作なので、開いた直後に警告を出さない
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(START - 28 * MINUTE))
+
+    const { result, onExpire } = renderIdle()
+
+    expect(result.current.warning).toBe(false)
+    expect(localStorage.getItem(LAST_ACTIVITY_KEY)).toBe(String(START))
+
+    advanceClock(30 * MINUTE - 1)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-5 共有の時刻が警告の直前なら、マウントのときに取り込む', () => {
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(START - 28 * MINUTE + 1))
+
+    const { result, onExpire } = renderIdle()
+
+    expect(result.current.warning).toBe(false)
+
+    // 取り込んだ時刻の 30 分後（現在の時刻から 2 分と 1 ミリ秒の後）にログアウトする
+    advanceClock(2 * MINUTE)
+
+    expect(onExpire).not.toHaveBeenCalled()
+
+    advanceClock(1)
+
+    expect(onExpire).toHaveBeenCalledTimes(1)
+  })
+
   test('AC-413-1 共有の時刻が 30 分を過ぎていれば、マウントのときに現在の時刻から計測を始め、共有の値も書き換える', () => {
     localStorage.setItem(LAST_ACTIVITY_KEY, String(START - 30 * MINUTE))
 

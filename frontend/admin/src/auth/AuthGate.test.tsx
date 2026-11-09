@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { User } from 'oidc-client-ts'
 import { StrictMode } from 'react'
@@ -10,7 +10,7 @@ import { useOperator } from '@/auth/operator'
 import { LOGOUT_KEY } from '@/auth/sharedLogout'
 import { currentAccessToken, handleUnauthorized } from '@/auth/token'
 import { I18nProvider } from '@/i18n/I18nProvider'
-import { advanceClock, MINUTE, otherTabWrites, START, startClock } from '@/test/idle'
+import { advanceClock, comeBackToTab, MINUTE, otherTabWrites, START, startClock } from '@/test/idle'
 
 /** 差し替えた useAuth が返す値（テストごとに再作成する） */
 let auth: Partial<AuthContextProps>
@@ -20,21 +20,32 @@ vi.mock('react-oidc-context', () => ({
   hasAuthParams: () => false,
 }))
 
-/** ログインした運営者（IdP の token の中身。門が使わない必須の項目は、固定の値で埋める） */
-const USER = new User({
-  access_token: 'access-token-1',
-  id_token: 'id-token-1',
-  token_type: 'Bearer',
-  profile: {
-    iss: 'http://idp.test',
-    sub: 'operator-1',
-    aud: 'admin',
-    exp: 4102444800,
-    iat: 1767225600,
-    family_name: '管理',
-    given_name: '太郎',
-  },
-})
+/**
+ * ログインした運営者（IdP の token の中身。門が使わない必須の項目は、固定の値で埋める）を作る。
+ *
+ * @param loggedInAt IdP でパスワードを入れた時刻（ミリ秒。秒にして ID token の auth_time に置く）。省くと auth_time を置かない
+ * @returns 運営者
+ */
+function operatorUser(loggedInAt?: number): User {
+  return new User({
+    access_token: 'access-token-1',
+    id_token: 'id-token-1',
+    token_type: 'Bearer',
+    profile: {
+      iss: 'http://idp.test',
+      sub: 'operator-1',
+      aud: 'admin',
+      exp: 4102444800,
+      iat: 1767225600,
+      ...(loggedInAt === undefined ? {} : { auth_time: Math.floor(loggedInAt / 1000) }),
+      family_name: '管理',
+      given_name: '太郎',
+    },
+  })
+}
+
+/** ログインした運営者（ID token に auth_time がない） */
+const USER = operatorUser()
 
 /** ログインしていない状態 */
 function signedOut(): Partial<AuthContextProps> {
@@ -52,6 +63,29 @@ function signedOut(): Partial<AuthContextProps> {
 /** ログインした状態 */
 function signedIn(): Partial<AuthContextProps> {
   return { ...signedOut(), isAuthenticated: true, user: USER }
+}
+
+/**
+ * IdP でパスワードを入れてログインした状態（ID token に auth_time がある）
+ *
+ * @param loggedInAt パスワードを入れた時刻（ミリ秒）
+ * @returns ログインした状態
+ */
+function signedInSince(loggedInAt: number): Partial<AuthContextProps> {
+  return { ...signedOut(), isAuthenticated: true, user: operatorUser(loggedInAt) }
+}
+
+/** ログインした状態。IdP のログアウトへ移り始めるのに、1 回目だけ失敗する */
+function signedInFailingSignoutOnce(): Partial<AuthContextProps> {
+  return {
+    ...signedIn(),
+    signoutRedirect: vi.fn(async () => {}).mockRejectedValueOnce(new Error('IdP に届かない')),
+  }
+}
+
+/** IdP のログアウトの失敗（reject）を、門が受け取るまで待つ */
+async function settleSignout(): Promise<void> {
+  await act(async () => {})
 }
 
 /** 門の中に置く画面。運営者の名前とログアウトを出す */
@@ -383,5 +417,94 @@ describe('ログインの門の、タブの間のログアウト', () => {
     advanceClock(1000)
 
     expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+  })
+
+  test.each(['pageshow', 'visibilitychange', 'focus'] as const)(
+    'AC-413-9 storage イベントが届かなかったタブ（戻る・進むのキャッシュの中にあった）も、%s のときに、ログインより後の印があれば IdP のログアウトへ 1 回だけ移る',
+    (type) => {
+      auth = signedInSince(START)
+      renderGate()
+      // 止まっていたタブには storage イベントが届かないので、印を書くだけにする
+      localStorage.setItem(LOGOUT_KEY, String(START + MINUTE))
+
+      expect(auth.signoutRedirect).not.toHaveBeenCalled()
+
+      comeBackToTab(type)
+      comeBackToTab(type)
+
+      expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+      expect(auth.signoutRedirect).toHaveBeenCalledWith({ id_token_hint: 'id-token-1' })
+    },
+  )
+
+  test('AC-413-9 印が書かれたときに読み込み中だったタブは、残っている IdP のセッションで前のログインのまま戻ると、IdP のログアウトへ移る', () => {
+    localStorage.setItem(LOGOUT_KEY, String(START + MINUTE))
+    vi.setSystemTime(START + 2 * MINUTE)
+    auth = signedInSince(START)
+
+    renderGate()
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-9 印より後にパスワードでログインし直したタブは、印があってもログアウトしない', () => {
+    localStorage.setItem(LOGOUT_KEY, String(START + MINUTE))
+    vi.setSystemTime(START + 2 * MINUTE)
+    auth = signedInSince(START + 2 * MINUTE)
+
+    renderGate()
+    comeBackToTab('pageshow')
+    comeBackToTab('visibilitychange')
+    comeBackToTab('focus')
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+  })
+
+  test('AC-413-9 ID token に auth_time がないときは、ログインしたタブで画面を出した時刻より後の印でだけ、IdP のログアウトへ移る', () => {
+    localStorage.setItem(LOGOUT_KEY, String(START - MINUTE))
+    auth = signedIn()
+    renderGate()
+    comeBackToTab('focus')
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+
+    localStorage.setItem(LOGOUT_KEY, String(START + MINUTE))
+    comeBackToTab('focus')
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+  })
+
+  test('AC-413-9 手動のログアウトで IdP へ移り始めるのに失敗すると、画面に留まり、もう一度ログアウトできる', async () => {
+    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間でも進める
+    startClock({ shouldAdvanceTime: true })
+    auth = signedInFailingSignoutOnce()
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+    renderGate()
+
+    await user.click(screen.getByRole('button', { name: 'ログアウト' }))
+    await settleSignout()
+
+    expect(screen.getByText('画面：管理 太郎')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'ログアウト' }))
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(2)
+  })
+
+  test('AC-413-1 無操作のログアウトで IdP へ移り始めるのに失敗すると、無操作の判定を再び動かし、そこから 30 分でもう一度ログアウトする', async () => {
+    auth = signedInFailingSignoutOnce()
+    renderGate()
+    advanceClock(30 * MINUTE)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+
+    await settleSignout()
+    advanceClock(30 * MINUTE - 1)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
+
+    advanceClock(1)
+
+    expect(auth.signoutRedirect).toHaveBeenCalledTimes(2)
   })
 })

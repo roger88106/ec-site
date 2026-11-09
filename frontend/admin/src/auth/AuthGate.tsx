@@ -45,9 +45,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => setTokenSource(null)
   }, [user, signinRedirect])
 
-  const signout = useCallback(() => void signoutRedirect({ id_token_hint: user?.id_token }), [user, signoutRedirect])
+  const signout = useCallback(() => signoutRedirect({ id_token_hint: user?.id_token }), [user, signoutRedirect])
+  // auth_time は IdP でパスワードを入れた時刻（秒）で、token の更新やパスワードなしの再ログインでは変わらない
+  const authTime = user?.profile.auth_time
   // 手動のログアウトも無操作のログアウトも、同じ処理で他のタブに伝える
-  const { logout, loggingOut } = useSharedLogout({ enabled: isAuthenticated && user != null, signout })
+  const { logout, loggingOut } = useSharedLogout({
+    enabled: isAuthenticated && user != null,
+    loggedInAt: authTime === undefined ? undefined : authTime * 1000,
+    signout,
+  })
 
   const operator = useMemo<Operator | null>(
     () => (user ? { name: fullName(user.profile.family_name, user.profile.given_name), logout } : null),

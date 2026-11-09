@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { clearLastActivity } from '@/auth/idle'
+import { clearLastActivity, readStoredTime, writeStoredTime } from '@/auth/idle'
 
 /** ログアウトの印（ログアウトした時刻のミリ秒の数値）を書くローカルストレージのキー。タブの間で共有する */
 export const LOGOUT_KEY = 'ec-admin.loggedOutAt'
@@ -8,7 +8,7 @@ export const LOGOUT_KEY = 'ec-admin.loggedOutAt'
 type SharedLogout = {
   /** ログアウトする（手動と無操作のどちらも）。印を書き、最後に操作した時刻を削除してから、IdP のログアウトへ移る */
   logout: () => void
-  /** IdP のログアウトへ移り始めたら true（このタブでも、他のタブの印を受けても） */
+  /** IdP のログアウトへ移り始めたら true（このタブでも、他のタブの印を受けても）。移り始めに失敗したら false に戻る */
   loggingOut: boolean
 }
 
@@ -16,13 +16,25 @@ type SharedLogout = {
  * ログアウトを、同じブラウザーの他のタブに伝え、他のタブのログアウトを受ける（管理画面の構成の「ログイン」）。<br />
  * 他のタブのログアウトの印を受け取ったら、このタブも IdP のログアウトへ移る。token を捨てるだけにしないのは、
  * 他のタブが IdP のログインへ移り、残っている IdP のセッションでパスワードなしに再ログインしないため。
+ * 印は storage イベントで受けるほか、このタブのログインより新しい印があるかを、ログインしたとき、
+ * ページが表示されたとき、タブが再び見えた・前面に戻ったときにも確認する。戻る・進むのキャッシュから戻ったタブや、
+ * 印が書かれたときに読み込み中だったタブには、storage イベントが届かないため。
  * IdP のログアウトへ移るのは 1 回だけ。
  *
- * @param options.enabled ログインしているときだけ true（ログインしていないタブでは、印を受けても何もしない）
- * @param options.signout IdP のログアウトへ移る
+ * @param options.enabled    ログインしているときだけ true（ログインしていないタブでは、印を受けても何もしない）
+ * @param options.loggedInAt このタブのログインの時刻（ミリ秒。ID token の auth_time）。ないときは、enabled が true になった時刻にする
+ * @param options.signout    IdP のログアウトへ移る。移り始めに失敗したら reject する
  * @returns ログアウトの処理と、移り始めたか
  */
-export function useSharedLogout({ enabled, signout }: { enabled: boolean; signout: () => void }): SharedLogout {
+export function useSharedLogout({
+  enabled,
+  loggedInAt,
+  signout,
+}: {
+  enabled: boolean
+  loggedInAt: number | undefined
+  signout: () => Promise<void>
+}): SharedLogout {
   const [loggingOut, setLoggingOut] = useState(false)
   // 印を受けた後や、手動と無操作のログアウトが重なっても、IdP へ移るのは 1 回だけにする
   const leaving = useRef(false)
@@ -41,12 +53,16 @@ export function useSharedLogout({ enabled, signout }: { enabled: boolean; signou
     leaving.current = true
     clearLastActivity()
     setLoggingOut(true)
-    signoutRef.current()
+    // 移り始めに失敗したら（IdP に届かないなど）、このタブに留まるので、ログアウトをやり直せるようにし、無操作の判定を再び動かす
+    signoutRef.current().catch(() => {
+      leaving.current = false
+      setLoggingOut(false)
+    })
   }, [])
 
   const logout = useCallback(() => {
     if (!leaving.current) {
-      markLogout(Date.now())
+      writeStoredTime(LOGOUT_KEY, Date.now())
     }
     leave()
   }, [leave])
@@ -55,28 +71,37 @@ export function useSharedLogout({ enabled, signout }: { enabled: boolean; signou
     if (!enabled) {
       return
     }
+    const since = loggedInAt ?? Date.now()
+    /** このタブのログインより後に書かれた印があれば、IdP のログアウトへ移る */
+    const check = () => {
+      const at = readStoredTime(LOGOUT_KEY)
+      if (at !== null && at > since) {
+        leave()
+      }
+    }
     // 他のタブが書いた印だけを受ける。印の削除（newValue が null）は受けない
     const onStorage = (event: StorageEvent) => {
       if (event.key === LOGOUT_KEY && event.newValue !== null) {
         leave()
       }
     }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        check()
+      }
+    }
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [enabled, leave])
+    window.addEventListener('pageshow', check)
+    window.addEventListener('focus', check)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    check()
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('pageshow', check)
+      window.removeEventListener('focus', check)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [enabled, loggedInAt, leave])
 
   return { logout, loggingOut }
-}
-
-/**
- * ログアウトの印を書き、他のタブに伝える。置くのは時刻だけで、token は置かない。
- *
- * @param at ログアウトした時刻（ミリ秒）
- */
-function markLogout(at: number): void {
-  try {
-    localStorage.setItem(LOGOUT_KEY, String(at))
-  } catch {
-    // ローカルストレージを使えないときは、他のタブに伝えずに、このタブだけログアウトする
-  }
 }

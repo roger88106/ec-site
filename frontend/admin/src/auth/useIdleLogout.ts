@@ -6,7 +6,7 @@ import {
   idleStatus,
   LAST_ACTIVITY_KEY,
   logoutAt,
-  parseLastActivity,
+  parseStoredTime,
   readLastActivity,
   startingActivity,
   writeLastActivity,
@@ -125,7 +125,7 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
       if (expired || event.key !== LAST_ACTIVITY_KEY) {
         return
       }
-      adopt(parseLastActivity(event.newValue))
+      adopt(parseStoredTime(event.newValue))
       if (warned) {
         evaluate()
       }

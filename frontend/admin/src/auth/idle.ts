@@ -50,12 +50,12 @@ export function logoutAt(lastActivityAt: number): number {
 }
 
 /**
- * ローカルストレージに置いた値を、最後に操作した時刻として読む。
+ * ローカルストレージに置いた値を、時刻（最後に操作した時刻、ログアウトの印）として読む。
  *
  * @param raw 置いた値
  * @returns 時刻（ミリ秒）。値がない、0 以上の整数でない、安全に扱える整数の上限を超えるときは null
  */
-export function parseLastActivity(raw: string | null): number | null {
+export function parseStoredTime(raw: string | null): number | null {
   if (raw === null || !/^\d+$/.test(raw)) {
     return null
   }
@@ -65,13 +65,14 @@ export function parseLastActivity(raw: string | null): number | null {
 }
 
 /**
- * 共有した最後に操作した時刻を読む。
+ * ローカルストレージのキーに置いた時刻を読む。
  *
+ * @param key キー
  * @returns 時刻（ミリ秒）。値がない、数値でない、ローカルストレージが使えないときは null
  */
-export function readLastActivity(): number | null {
+export function readStoredTime(key: string): number | null {
   try {
-    return parseLastActivity(localStorage.getItem(LAST_ACTIVITY_KEY))
+    return parseStoredTime(localStorage.getItem(key))
   } catch {
     // ローカルストレージを使えないブラウザーでは、共有せずにそのタブの中だけで判定する
     return null
@@ -79,8 +80,33 @@ export function readLastActivity(): number | null {
 }
 
 /**
- * 計測を始める時刻を求める。共有した時刻が 30 分以内ならそれを取り込み、ないか 30 分を過ぎていれば現在の時刻にする。<br />
- * 再マウントや新しいタブで計測を延ばさないため。前のログインの時刻は、ログアウトのときに削除してある。
+ * ローカルストレージのキーに時刻を置き、タブの間で共有する。置くのは時刻だけで、token は置かない。
+ *
+ * @param key キー
+ * @param at  時刻（ミリ秒）
+ */
+export function writeStoredTime(key: string, at: number): void {
+  try {
+    localStorage.setItem(key, String(at))
+  } catch {
+    // ローカルストレージを使えない、容量が足りないときは、共有せずにそのタブの中だけで判定し、ログアウトする
+  }
+}
+
+/**
+ * 共有した最後に操作した時刻を読む。
+ *
+ * @returns 時刻（ミリ秒）。値がない、数値でない、ローカルストレージが使えないときは null
+ */
+export function readLastActivity(): number | null {
+  return readStoredTime(LAST_ACTIVITY_KEY)
+}
+
+/**
+ * 計測を始める時刻を求める。共有した時刻が操作中の範囲（28 分より前）ならそれを取り込み、ないか、
+ * 警告の範囲か、30 分を過ぎていれば現在の時刻にする。<br />
+ * 再マウントで計測を延ばさないため。新しいタブを開くこと自体が運営者の操作なので、開いた直後に警告を出してすぐにはログアウトしない。
+ * 前のログインの時刻は、ログアウトのときに削除してある。
  *
  * @param now 現在の時刻（ミリ秒）
  * @returns 計測を始める時刻（ミリ秒）
@@ -88,7 +114,7 @@ export function readLastActivity(): number | null {
 export function startingActivity(now: number): number {
   const shared = readLastActivity()
   // 未来の時刻は、判定のときに現在の時刻にするので、ここでは取り込む
-  return shared === null || idleStatus(shared, now) === 'expired' ? now : shared
+  return shared !== null && idleStatus(shared, now) === 'active' ? shared : now
 }
 
 /** 共有した最後に操作した時刻を削除する（ログアウトのとき。次のログインで前のログインの時刻を取り込まないため） */
@@ -101,14 +127,10 @@ export function clearLastActivity(): void {
 }
 
 /**
- * 最後に操作した時刻を共有する。置くのは時刻だけで、token は置かない。
+ * 最後に操作した時刻を共有する。
  *
  * @param at 最後に操作した時刻（ミリ秒）
  */
 export function writeLastActivity(at: number): void {
-  try {
-    localStorage.setItem(LAST_ACTIVITY_KEY, String(at))
-  } catch {
-    // ローカルストレージを使えない、容量が足りないときは、共有せずにそのタブの中だけで判定する
-  }
+  writeStoredTime(LAST_ACTIVITY_KEY, at)
 }

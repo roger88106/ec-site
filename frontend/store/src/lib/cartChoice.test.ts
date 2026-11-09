@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { chooseCart, shouldMergeCart } from '@/lib/cartChoice'
+import { chooseCart, shouldMergeCart, shouldRetryCartMerge } from '@/lib/cartChoice'
 import { COOKIE_CART_ID } from '@/test/fixtures'
 
 describe('使うカート', () => {
@@ -24,5 +24,19 @@ describe('ログインの直後にカートを移すか', () => {
 
   test('Cookie のカートがなければ移さない', () => {
     expect(shouldMergeCart(null)).toBe(false)
+  })
+})
+
+describe('カートの画面で、カートを移す処理を再試行するか', () => {
+  test('AC-415-2 ログインしていて Cookie のカート ID があれば、再試行する', () => {
+    expect(shouldRetryCartMerge(true, COOKIE_CART_ID)).toBe(true)
+  })
+
+  test('ログインしていなければ、Cookie のカート ID があっても再試行しない', () => {
+    expect(shouldRetryCartMerge(false, COOKIE_CART_ID)).toBe(false)
+  })
+
+  test('Cookie のカート ID がなければ、ログインしていても再試行しない', () => {
+    expect(shouldRetryCartMerge(true, null)).toBe(false)
   })
 })

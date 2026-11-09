@@ -1,20 +1,28 @@
-import { HttpResponse, http as mswHttp } from 'msw'
-import { describe, expect, test } from 'vitest'
-import { addToCart, changeCartItemQuantity, removeCartItem, startCheckout } from '@/actions/cart'
+import { describe, expect, test, vi } from 'vitest'
+import { addToCart, changeCartItemQuantity, removeCartItem, retryCartMerge, startCheckout } from '@/actions/cart'
 import { connectionFailedMessage } from '@/lib/actionResult'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
 import {
   CHECKOUT_ID,
   COOKIE_CART_ID,
+  cart,
   form,
   MEMBER_CART_ID,
   NEW_CART_ID,
   ORDER_ID,
   OTHER_ORDER_ID,
+  quoteItem,
   VARIANT_ID,
 } from '@/test/fixtures'
-import { cookieOptions, cookieValue, redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
-import { http, networkError, problem, STORE_API, server } from '@/test/server'
+import {
+  cookieOptions,
+  cookieValue,
+  redirectedTo,
+  requestCookieStore,
+  resetRequest,
+  revalidatedPaths,
+} from '@/test/next'
+import { http, networkError, problem, STORE_API, server, statusError } from '@/test/server'
 import { recordStderr } from '@/test/stderr'
 
 /** カートに入れるフォーム */
@@ -95,8 +103,7 @@ describe('カートに入れる（ゲスト）', () => {
 
   test('NFR-227-1 カートを作る API が失敗したら、通信の失敗を返し、ログに API の状態コードを出す', async () => {
     const stderr = recordStderr()
-    // POST /carts は store.yaml に 201 しか定義がないので、500 の応答は型のない msw のハンドラーで作る
-    server.use(mswHttp.post(`${STORE_API}/carts`, () => HttpResponse.json({ message: 'down' }, { status: 500 })))
+    server.use(statusError('post', `${STORE_API}/carts`, 500))
 
     expect(await addToCart(null, addForm())).toEqual({ ok: false, message: connectionFailedMessage() })
 
@@ -254,5 +261,194 @@ describe('注文手続きに進む', () => {
 
     expect(await redirectedTo(() => startCheckout(null, form({})))).toBe('/checkout/pending-orders')
     expect(await redirectedTo(() => startCheckout(null, data))).toBe('/checkout/pending-orders')
+  })
+})
+
+describe('カートの画面でカートを移す処理を再試行する', () => {
+  const RED = quoteItem({ variantId: '00000000-0000-0000-0000-000000000211', productName: 'T シャツ' })
+
+  test('AC-415-3、AC-415-4 移せたら Cookie のカート ID を消し、切り詰めた品目と移せなかった品目を返し、カートの画面を再表示する', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    let authorization: string | null = null
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      http.post('/me/cart/merge', ({ request, response }) => {
+        authorization = request.headers.get('Authorization')
+        return response(200).json({
+          cartId: MEMBER_CART_ID,
+          truncatedItems: [{ variantId: RED.variantId, quantity: 10 }],
+          skippedItems: [],
+        })
+      }),
+    )
+
+    expect(await retryCartMerge()).toEqual({
+      kind: 'merged',
+      notice: {
+        truncated: { items: [{ label: 'T シャツ（色：赤）', quantity: 10 }], more: 0 },
+        skipped: { items: [], more: 0 },
+      },
+    })
+
+    expect(authorization).toBe(`Bearer ${ACCESS_TOKEN}`)
+    expect(cookieValue('cart_id')).toBeUndefined()
+    expect(revalidatedPaths).toEqual(['/cart'])
+  })
+
+  test('AC-415-3、AC-415-4 切り詰めた品目も移せなかった品目もなければ、知らせなしで移せたと返す', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      http.post('/me/cart/merge', ({ response }) =>
+        response(200).json({ cartId: MEMBER_CART_ID, truncatedItems: [], skippedItems: [] }),
+      ),
+    )
+
+    expect(await retryCartMerge()).toEqual({ kind: 'merged', notice: null })
+    expect(cookieValue('cart_id')).toBeUndefined()
+  })
+
+  test.each([500, 503] as const)(
+    'AC-415-5 移す API が %i なら、Cookie のカート ID を残して失敗を返す',
+    async (status) => {
+      signInAs()
+      resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+      recordStderr()
+      server.use(
+        http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+        statusError('post', `${STORE_API}/me/cart/merge`, status),
+      )
+
+      expect(await retryCartMerge()).toEqual({ kind: 'failed' })
+
+      expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+      expect(revalidatedPaths).toEqual([])
+    },
+  )
+
+  test('AC-415-5 移す API が 2xx で本文のない応答を返したら、Cookie のカート ID を残して失敗を返す', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    recordStderr()
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      http.post('/me/cart/merge', () => new Response(null, { status: 200 })),
+    )
+
+    expect(await retryCartMerge()).toEqual({ kind: 'failed' })
+
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+    expect(revalidatedPaths).toEqual([])
+  })
+
+  test('AC-415-5 通信が例外になったら、Cookie のカート ID を残して失敗を返す', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    recordStderr()
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      networkError('post', `${STORE_API}/me/cart/merge`),
+    )
+
+    expect(await retryCartMerge()).toEqual({ kind: 'failed' })
+
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+    expect(revalidatedPaths).toEqual([])
+  })
+
+  test('AC-415-5 移す前のカートの取得が例外になったら、移さずに Cookie のカート ID を残して失敗を返す', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    recordStderr()
+    // 移す API のハンドラーを渡さないので、呼ばれればテストが失敗する（setup.ts）
+    server.use(networkError('get', `${STORE_API}/carts/:cartId`))
+
+    expect(await retryCartMerge()).toEqual({ kind: 'failed' })
+
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+    expect(revalidatedPaths).toEqual([])
+  })
+
+  test('AC-415-5 移せた後の Cookie の操作が例外になっても、例外にせず失敗を返す', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    recordStderr()
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      http.post('/me/cart/merge', ({ response }) =>
+        response(200).json({ cartId: MEMBER_CART_ID, truncatedItems: [], skippedItems: [] }),
+      ),
+    )
+    vi.spyOn(requestCookieStore, 'delete').mockImplementation(() => {
+      throw new Error('cookie error')
+    })
+
+    expect(await retryCartMerge()).toEqual({ kind: 'failed' })
+  })
+
+  test.each([404, 400] as const)(
+    'AC-415-6 移す API が %i なら、Cookie のカート ID を消して何も返さない',
+    async (status) => {
+      signInAs()
+      resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+      recordStderr()
+      server.use(
+        http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+        http.post('/me/cart/merge', ({ response }) =>
+          response(status).json(problem(status, 'NOT_FOUND', '見つかりませんでした。')),
+        ),
+      )
+
+      expect(await retryCartMerge()).toEqual({ kind: 'none' })
+
+      expect(cookieValue('cart_id')).toBeUndefined()
+      expect(revalidatedPaths).toEqual([])
+    },
+  )
+
+  test('AC-415-8 移す API が 401 なら、Cookie のカート ID を残し、カートの画面に戻るようにログインの画面へ移す', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    recordStderr()
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      http.post('/me/cart/merge', ({ response }) => response(401).json(problem(401, 'UNAUTHENTICATED', ''))),
+    )
+
+    expect(await redirectedTo(() => retryCartMerge())).toBe('/login?returnTo=%2Fcart')
+
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+    expect(revalidatedPaths).toEqual([])
+  })
+
+  test('NFR-415-2 移せなかったときの警告のログに、カートの ID（Cookie の値）を出力しない', async () => {
+    signInAs()
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    const stderr = recordStderr()
+    // 例外のメッセージに URL（カートの ID）が入る場合
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError(`fetch failed: /carts/${COOKIE_CART_ID}`))
+
+    expect(await retryCartMerge()).toEqual({ kind: 'failed' })
+
+    const logged = stderr.text()
+    expect(logged).toContain('カートを移せませんでした')
+    expect(logged).not.toContain(COOKIE_CART_ID)
+  })
+
+  test('Cookie のカートがなければ、API を呼ばずに何も返さない', async () => {
+    signInAs()
+
+    // ハンドラーを渡さないので、API を呼べばテストが失敗する（setup.ts）
+    expect(await retryCartMerge()).toEqual({ kind: 'none' })
+  })
+
+  test('ログインしていなければ、API を呼ばずに何も返さず、Cookie のカート ID を残す', async () => {
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+
+    expect(await retryCartMerge()).toEqual({ kind: 'none' })
+
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
   })
 })

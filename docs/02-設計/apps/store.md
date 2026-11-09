@@ -253,12 +253,22 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 ### token の更新
 
-access token の有効期限（5 分）の残りが 1 分未満なら、refresh token で再取得する。
+access token の期限までの残りが 1 分未満なら、refresh token で再取得する。
 
-- `proxy.ts` が要求ごとにセッションを確認し、再取得した token を Cookie に書く（サーバーコンポーネントは Cookie を書けないため）。
-- 同じ要求の中では画面は古い Cookie を読むので、`getAccessToken()` は期限切れなら自分でも再取得して使う（Cookie には次の要求で `proxy.ts` が書く）。
-- 再取得できなければ（IdP のログインが切れた）、ログインしていないものとして扱う。
-- IdP に到達できない・タイムアウト（`AUTH_KEYCLOAK_TIMEOUT_SECONDS`、既定 10 秒）を過ぎたときは、ログインの状態を残す（期限が切れていれば、API が 401 を返してログイン画面へリダイレクトする）。
+- `proxy.ts` がリクエストごとにセッションを確認し、再取得した token を Cookie に書く（サーバーコンポーネントは Cookie を書けないため）。
+- 同じリクエストの中では画面は古い Cookie を読む。そのため `getAccessToken()` は、期限が切れていれば自分でも再取得して使う。Cookie には、次のリクエストで `proxy.ts` が書く。
+
+再取得の結果ごとの扱いは次のとおり。
+
+| 結果 | 扱い |
+|------|------|
+| 再取得できた | 新しい token をセッションに持つ |
+| IdP が refresh token を拒否した（応答の本文の `error` が `invalid_grant`。IdP のログインが切れた） | ログインしていないものとする |
+| refresh token を持っていない | ログインしていないものとする |
+| それ以外の失敗：IdP に届かない、タイムアウト（`AUTH_KEYCLOAK_TIMEOUT_SECONDS`）、`invalid_grant` でないエラーの応答（5xx、429、client の認証の失敗など）、応答の本文が読めない | ログインの状態を残し、今の token を使う |
+
+- `invalid_grant` だけでログアウトするのは、IdP の一時的な障害や client の設定の誤りで、会員のセッションの Cookie を削除しないため。
+- ログインの状態を残しても、access token の期限が切れていれば API が 401 を返すので、画面はログイン画面へ移る（「ログイン画面へ移す」）。
 - ログインの IdP への呼び出し（discovery、token の交換、userinfo）にも、Auth.js の provider の fetch を差し替える仕組み（`customFetch`）で同じタイムアウトを付ける。
 
 ### ログイン画面へ移す

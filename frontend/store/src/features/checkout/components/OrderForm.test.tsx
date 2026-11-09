@@ -283,6 +283,43 @@ describe('郵便番号で補う', () => {
     expect(input('住所')).toHaveValue('千代田')
   })
 
+  test('AC-416-1 全角の数字とハイフンで 7 桁になると、半角と同じく引いて補う', async () => {
+    vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('13', '13101', '千代田')])
+    const { user } = renderInBrowser(form())
+
+    await user.type(screen.getByLabelText('郵便番号'), '１００－０００１')
+
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
+    expect(findPostalCodeAddresses).toHaveBeenCalledWith('1000001')
+    expect(select('都道府県')).toHaveValue('13')
+    expect(input('住所')).toHaveValue('千代田')
+  })
+
+  test('AC-416-3 全角で入れても、郵便番号と電話番号の欄の値は入力のまま変えない', async () => {
+    vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('13', '13101', '千代田')])
+    const formAction = vi.fn<(formData: FormData) => void>()
+    const { user } = renderInBrowser(form(null, formAction))
+
+    await user.type(screen.getByLabelText('郵便番号'), '１００－０００１')
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
+    await user.type(screen.getByLabelText('電話番号'), '０３－１２３４－５６７８')
+    await user.click(screen.getByRole('button', { name: '注文する（3,200 円）' }))
+
+    expect(formAction).toHaveBeenCalledTimes(1)
+    expect(input('郵便番号')).toHaveValue('１００－０００１')
+    expect(input('電話番号')).toHaveValue('０３－１２３４－５６７８')
+  })
+
+  test('AC-416-4 変換の後もハイフンが 2 つ以上ある全角の入力では、引かない', async () => {
+    const { user } = renderInBrowser(form())
+
+    await user.type(screen.getByLabelText('郵便番号'), '１００－００－０１')
+    await act(async () => {})
+
+    expect(findPostalCodeAddresses).not.toHaveBeenCalled()
+    expect(select('都道府県')).toHaveValue('')
+  })
+
   test('AC-255 住所の欄に入力があれば、町域を入れない', async () => {
     vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('13', '13101', '千代田')])
     const { user } = renderInBrowser(form())

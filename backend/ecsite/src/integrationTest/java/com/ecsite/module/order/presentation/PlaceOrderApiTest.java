@@ -47,6 +47,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -572,13 +573,18 @@ class PlaceOrderApiTest {
     class PendingOrderLimit {
 
         /**
+         * 上限を一時的に上げる値（上限を超えた状態を作るために、既定の上限より十分大きくする）
+         */
+        private static final int RAISED_LIMIT = 10;
+
+        /**
          * 注文の設定（上限の既定は 3 件。注文の時点で上限に達した状態を作るテストだけ、上限を差し替える）
          */
         @MockitoSpyBean
         OrderProperties properties;
 
         /**
-         * 支払待ちの注文は、注文ごとに別の商品で作るので、カートを空にしておく（T シャツは、確認した注文手続きを始める前に、もう一度入れる）
+         * 支払待ちの注文は、注文ごとに別の商品で作るので、カートを空にしておく（T シャツは、確認した注文を送って注文手続きを始める前に、もう一度入れる）
          */
         @BeforeEach
         void emptyCart() throws Exception {
@@ -587,7 +593,7 @@ class PlaceOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-411-1 支払待ちの注文が上限（3 件）に達していると、全て確認した注文手続きからの注文も 409 で拒否し、注文を作らず、在庫を減らさない")
+        @DisplayName("AC-411-1、BR-411-2 支払待ちの注文が上限（3 件）に達していると、全て確認した注文手続きからの注文も 409 で拒否し、注文を作らず、在庫を減らさない")
         void rejectsAtLimit() throws Exception {
             var checkoutId = startAcknowledgingAtLimit();
 
@@ -596,6 +602,36 @@ class PlaceOrderApiTest {
             expectNotPlaced(checkoutId);
             expectQuantity(3);
             assertThat(pendingOrderCount(checkoutId)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("AC-411-8 上限を超える件数（4 件）の支払待ちの注文を持つ会員の注文も、全て確認した注文手続きからでも 409 で拒否し、注文を作らず、在庫を減らさない")
+        void rejectsAboveLimit() throws Exception {
+            // 上限を下げる前の状態を作るため、4 件を作る間だけ上限を上げる（上限が 3 件のままでは 4 件目を注文できない）
+            raiseLimit();
+            var checkoutId = startWithShirts(orders.placePendingOrders(cartId, stockedVariants(4)));
+            restoreLimit();
+
+            expectLimitExceeded(place(checkoutId, 6940));
+
+            expectNotPlaced(checkoutId);
+            expectQuantity(3);
+            assertThat(pendingOrderCount(checkoutId)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("BR-411-1 支払の期限を過ぎても、期限切れのキャンセルが済むまでは、上限の件数に数えて注文を 409 で拒否する")
+        void countsOverdueOrderUntilCancelled() throws Exception {
+            var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
+            raiseLimit();
+            var checkoutId = startWithShirts(pendingIds);
+            restoreLimit();
+            var order = mockMvc.perform(get("/api/store/orders/" + pendingIds.getLast())).andReturn().getResponse().getContentAsString();
+            clock.setInstant(Instant.parse(JsonPath.read(order, "$.paymentDeadline")).plusSeconds(1));
+
+            expectLimitExceeded(place(checkoutId, 6940));
+
+            expectNotPlaced(checkoutId);
         }
 
         @Test
@@ -651,7 +687,7 @@ class PlaceOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-411-7 上限に達した後の同じ注文手続きの再送は、作成済みの注文 ID を 200 で返し、注文は 1 件だけ")
+        @DisplayName("AC-411-7 上限に達した後の同じ注文手続きの再送は、作成済みの注文 ID を 200 で返し、注文は 1 件だけになる")
         void returnsExistingOrderOnResendAtLimit() throws Exception {
             var checkoutId = startWithShirts(orders.placePendingOrders(cartId, stockedVariants(2)));
             var orderId = placed(checkoutId);
@@ -665,14 +701,28 @@ class PlaceOrderApiTest {
 
         /**
          * 支払待ちの注文を上限（3 件）まで作り、それらを全て確認して T シャツ 2 枚の注文手続きを始め、注文手続き ID を返す。<br />
-         * 開始の時点も上限で拒否するので、開始の間だけ上限を上げる。設定の上限が、開始と注文の間に下がった場合に当たる（判定の正は注文の時点）
+         * 開始の時点も上限で拒否するので、開始の間だけ上限を上げる。設定の上限が、開始と注文の間に下がった場合を想定する（最終的な判定は注文の時点）
          */
         private UUID startAcknowledgingAtLimit() throws Exception {
             var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
-            doReturn(10).when(properties).pendingOrderLimit();
+            raiseLimit();
             var checkoutId = startWithShirts(pendingIds);
-            doReturn(3).when(properties).pendingOrderLimit();
+            restoreLimit();
             return checkoutId;
+        }
+
+        /**
+         * 上限を一時的に上げる（開始の時点の判定を通すため）
+         */
+        private void raiseLimit() {
+            doReturn(RAISED_LIMIT).when(properties).pendingOrderLimit();
+        }
+
+        /**
+         * 上げた上限を、差し替える前の値に戻す
+         */
+        private void restoreLimit() {
+            reset(properties);
         }
 
         /**
@@ -691,15 +741,14 @@ class PlaceOrderApiTest {
         }
 
         /**
-         * 注文手続きの会員の、支払待ちの注文の件数
+         * 注文手続きの会員が持つ、支払待ちの注文の件数
          */
         private int pendingOrderCount(UUID checkoutId) {
-            var memberId = checkoutRepository.findById(checkoutId).orElseThrow().memberId();
-            return dsl.fetchCount(SALES_ORDER, SALES_ORDER.MEMBER_ID.eq(memberId).and(SALES_ORDER.STATUS.eq("PENDING_PAYMENT")));
+            return OrderTestData.pendingOrderCount(dsl, checkoutRepository.findById(checkoutId).orElseThrow().memberId());
         }
 
         /**
-         * 公開した商品（1,000 円・10%）のバリアントを、指定した数だけ作り（在庫数は 3）、バリアント ID を返す
+         * 公開した商品（1,000 円・10%）のバリアントを、指定した数だけ作る（在庫数は各 3）。バリアント ID を返す
          */
         private List<UUID> stockedVariants(int count) throws Exception {
             var variants = new ArrayList<UUID>();

@@ -3,6 +3,7 @@ package com.ecsite;
 import com.ecsite.module.order.application.payment.OrderPayments;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
+import org.jooq.DSLContext;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -18,6 +19,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -265,6 +267,17 @@ public class OrderTestData {
                     .andExpect(status().isNoContent());
         }
         return pendingIds;
+    }
+
+    /**
+     * 会員が持つ、支払待ちの注文の件数を返す（支払の期限を過ぎ、まだキャンセルされていない注文も数える）。
+     *
+     * @param dsl      DB の操作
+     * @param memberId 会員 ID
+     * @return 支払待ちの注文の件数
+     */
+    public static int pendingOrderCount(DSLContext dsl, UUID memberId) {
+        return dsl.fetchCount(SALES_ORDER, SALES_ORDER.MEMBER_ID.eq(memberId).and(SALES_ORDER.STATUS.eq("PENDING_PAYMENT")));
     }
 
     /**

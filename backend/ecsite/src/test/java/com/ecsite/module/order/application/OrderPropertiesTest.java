@@ -51,6 +51,15 @@ class OrderPropertiesTest {
         });
     }
 
+    @Test
+    @DisplayName("NFR-411-2 支払待ちの注文の上限が 1 なら、起動できる")
+    void startsWithLimitOfOne() {
+        runner.withPropertyValues(TAX_CATEGORY_ID, "ecsite.order.pending-order-limit=1").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(OrderProperties.class).pendingOrderLimit()).isEqualTo(1);
+        });
+    }
+
     /**
      * 注文の設定を有効にする
      */

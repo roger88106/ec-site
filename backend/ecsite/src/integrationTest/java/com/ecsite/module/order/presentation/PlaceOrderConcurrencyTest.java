@@ -180,7 +180,7 @@ class PlaceOrderConcurrencyTest {
     }
 
     @Test
-    @DisplayName("AC-411-5 支払待ちの 2 件を全て確認した 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 件分だけ減り、支払待ちは上限（3 件）を超えない")
+    @DisplayName("AC-411-5、NFR-411-1 支払待ちの 2 件を全て確認した 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 個分だけ減り、支払待ちは上限（3 件）を超えない（後の注文は確認の判定で拒否される）")
     void placesOnlyOneBelowLimit() throws Exception {
         stock(5);
         var cartId = cartWith(1);
@@ -190,11 +190,12 @@ class PlaceOrderConcurrencyTest {
 
         var responses = placeAll(checkouts);
 
-        // 後の注文は、会員のロックを待った後の読み取りで先の注文が見え、それを確認していないので拒否される
+        // 確認するのは、同時の注文でも支払待ちが上限を超えない結果である。
+        // 後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される
+        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderApiTest で確認する）
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(2);
-        assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.MEMBER_ID.eq(memberOf(checkouts.getFirst()))
-                .and(SALES_ORDER.STATUS.eq("PENDING_PAYMENT")))).isEqualTo(3);
+        assertThat(OrderTestData.pendingOrderCount(dsl, memberOf(checkouts.getFirst()))).isEqualTo(3);
     }
 
     @Test

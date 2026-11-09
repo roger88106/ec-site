@@ -43,6 +43,7 @@ import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -462,6 +463,11 @@ class CheckoutApiTest {
     class PendingOrderLimit {
 
         /**
+         * 上限を一時的に上げる値（上限を超えた状態を作るために、既定の上限より十分大きくする）
+         */
+        private static final int RAISED_LIMIT = 10;
+
+        /**
          * 注文の設定（上限の既定は 3 件。上限を超えた状態を作るテストだけ、上限を差し替える）
          */
         @MockitoSpyBean
@@ -471,7 +477,7 @@ class CheckoutApiTest {
         @DisplayName("AC-411-3 支払待ちの注文が上限（3 件）に達していると、全て確認していても開始は 409 で拒否し、注文手続きも引当も変えない")
         void rejectsStartAtLimit() throws Exception {
             var variant = stockedVariant(5);
-            var pendingIds = placePendingOrders(2);
+            var pendingIds = placePendingOrdersOfNewVariants(2);
             // 3 件目の支払待ちの注文は、このバリアントがカートに残ったまま作る
             orders.add(cartId, variant, 1);
             pendingIds.add(orders.placeFromCheckout(orders.startCheckout(cartId, pendingIds)));
@@ -488,13 +494,13 @@ class CheckoutApiTest {
         @Test
         @DisplayName("AC-411-3 上限に達して拒否するときは、前の注文手続きの引当も解かない")
         void keepsPreviousReservationWhenRejected() throws Exception {
-            var pendingIds = placePendingOrders(3);
+            var pendingIds = placePendingOrdersOfNewVariants(3);
             var variant = stockedVariant(5);
             orders.add(cartId, variant, 1);
             // 前の注文手続きの引当を残すため、その開始の間だけ上限を上げる
-            doReturn(10).when(properties).pendingOrderLimit();
+            raiseLimit();
             orders.startCheckout(cartId, pendingIds);
-            doReturn(3).when(properties).pendingOrderLimit();
+            restoreLimit();
             var reserved = sellable(variant);
             assertThat(reserved).isEqualTo(4);
             var checkouts = checkoutCount();
@@ -508,7 +514,7 @@ class CheckoutApiTest {
         @Test
         @DisplayName("BR-411-1 支払の期限を過ぎても、期限切れのキャンセルが済むまでは、上限の件数に数えて開始を拒否する")
         void countsOverdueOrderUntilCancelled() throws Exception {
-            var pendingIds = placePendingOrders(3);
+            var pendingIds = placePendingOrdersOfNewVariants(3);
             orders.add(cartId, stockedVariant(3), 1);
             var order = mockMvc.perform(get("/api/store/orders/" + pendingIds.getLast())).andReturn().getResponse().getContentAsString();
             clock.setInstant(Instant.parse(JsonPath.read(order, "$.paymentDeadline")).plusSeconds(1));
@@ -519,7 +525,7 @@ class CheckoutApiTest {
         @Test
         @DisplayName("AC-411-4 上限に達していても、確認していない支払待ちの注文があれば、上限でなく確認を求める 409 を返す")
         void requiresConfirmationBeforeLimit() throws Exception {
-            var pendingIds = placePendingOrders(3);
+            var pendingIds = placePendingOrdersOfNewVariants(3);
             orders.add(cartId, stockedVariant(3), 1);
 
             expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
@@ -529,7 +535,7 @@ class CheckoutApiTest {
         @Test
         @DisplayName("AC-411-6 支払の期限切れでキャンセルされて上限より少なくなると、再び注文手続きを開始できる")
         void startsAfterExpiry() throws Exception {
-            var pendingIds = placePendingOrders(3);
+            var pendingIds = placePendingOrdersOfNewVariants(3);
             orders.add(cartId, stockedVariant(3), 1);
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
 
@@ -542,7 +548,7 @@ class CheckoutApiTest {
         @Test
         @DisplayName("AC-411-6 与信の成功で受付になって上限より少なくなると、再び注文手続きを開始できる")
         void startsAfterAcceptance() throws Exception {
-            var pendingIds = placePendingOrders(3);
+            var pendingIds = placePendingOrdersOfNewVariants(3);
             orders.add(cartId, stockedVariant(3), 1);
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
 
@@ -555,10 +561,10 @@ class CheckoutApiTest {
         @Test
         @DisplayName("AC-411-8 上限を超える件数（4 件）の支払待ちの注文を持つ会員の開始も、409 で拒否する")
         void rejectsStartAboveLimit() throws Exception {
-            // 変更の適用前の状態を作るため、4 件を作る間だけ上限を上げる（上限が 3 件のままでは 4 件目を注文できない）
-            doReturn(10).when(properties).pendingOrderLimit();
-            var pendingIds = placePendingOrders(4);
-            doReturn(3).when(properties).pendingOrderLimit();
+            // 上限を下げる前の状態を作るため、4 件を作る間だけ上限を上げる（上限が 3 件のままでは 4 件目を注文できない）
+            raiseLimit();
+            var pendingIds = placePendingOrdersOfNewVariants(4);
+            restoreLimit();
             orders.add(cartId, stockedVariant(3), 1);
 
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
@@ -567,7 +573,7 @@ class CheckoutApiTest {
         @Test
         @DisplayName("AC-411-3 支払待ちの注文が上限より 1 件少ない（2 件）ときは、確認すれば開始できる")
         void startsBelowLimit() throws Exception {
-            var pendingIds = placePendingOrders(2);
+            var pendingIds = placePendingOrdersOfNewVariants(2);
             orders.add(cartId, stockedVariant(3), 1);
 
             assertThat(acknowledgedOrderIds(orders.startCheckout(cartId, pendingIds)))
@@ -575,9 +581,23 @@ class CheckoutApiTest {
         }
 
         /**
+         * 上限を一時的に上げる（上限を超えた状態を作るため）
+         */
+        private void raiseLimit() {
+            doReturn(RAISED_LIMIT).when(properties).pendingOrderLimit();
+        }
+
+        /**
+         * 上げた上限を、差し替える前の値に戻す
+         */
+        private void restoreLimit() {
+            reset(properties);
+        }
+
+        /**
          * 支払待ちの注文を、指定した件数まで続けて作る（注文ごとに別の商品）
          */
-        private List<UUID> placePendingOrders(int count) throws Exception {
+        private List<UUID> placePendingOrdersOfNewVariants(int count) throws Exception {
             var variants = new ArrayList<UUID>();
             for (int i = 0; i < count; i++) {
                 variants.add(stockedVariant(3));

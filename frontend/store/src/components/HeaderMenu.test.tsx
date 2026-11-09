@@ -24,7 +24,7 @@ function menu() {
 }
 
 describe('ヘッダーのメニュー', () => {
-  test('AC-417-3 メニューを開くボタンを押すと aria-expanded が true になり、もう一度押すと false に戻る', async () => {
+  test('NFR-417-3 メニューを開くボタンは、クリックでもキーボード（Enter）でも aria-expanded が true と false に切り替わる', async () => {
     const { user } = renderInBrowser(menu())
     const button = screen.getByRole('button', { name: 'メニュー' })
     expect(button).toHaveAttribute('aria-expanded', 'false')
@@ -35,9 +35,27 @@ describe('ヘッダーのメニュー', () => {
 
     await user.click(button)
     expect(button).toHaveAttribute('aria-expanded', 'false')
+
+    button.focus()
+    await user.keyboard('{Enter}')
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+
+    await user.keyboard('{Enter}')
+    expect(button).toHaveAttribute('aria-expanded', 'false')
   })
 
-  test('AC-417-5 メニューを開いた状態で画面を遷移（パスが変わる）すると、メニューが閉じる', async () => {
+  test('AC-417-5 パスが同じでも、メニューの中のリンクを押すと閉じる', async () => {
+    const { user } = renderInBrowser(menu())
+    const button = screen.getByRole('button', { name: 'メニュー' })
+    await user.click(button)
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+
+    await user.click(screen.getByRole('link', { name: '商品一覧' }))
+
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('AC-417-5 メニューを開いた状態で画面を遷移する（パスが変わる）と、メニューが閉じる', async () => {
     const { user, rerender } = renderInBrowser(menu())
     const button = screen.getByRole('button', { name: 'メニュー' })
     await user.click(button)
@@ -61,5 +79,36 @@ describe('ヘッダーのメニュー', () => {
 
     expect(button).toHaveAttribute('aria-expanded', 'false')
     expect(button).toHaveFocus()
+  })
+
+  test('NFR-417-4 フォーカスがメニューの外（body）にあるときも、Esc キーでメニューが閉じ、フォーカスがボタンに戻る', async () => {
+    const { user } = renderInBrowser(menu())
+    const button = screen.getByRole('button', { name: 'メニュー' })
+    await user.click(button)
+    button.blur()
+    expect(document.body).toHaveFocus()
+
+    await user.keyboard('{Escape}')
+
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+    expect(button).toHaveFocus()
+  })
+
+  test('NFR-417-4 フォーカスがメニューの外の入力欄にあるときは、Esc キーでメニューが閉じ、フォーカスは入力欄に残る', async () => {
+    const { user } = renderInBrowser(
+      <>
+        <input aria-label="検索" />
+        {menu()}
+      </>,
+    )
+    const button = screen.getByRole('button', { name: 'メニュー' })
+    await user.click(button)
+    const input = screen.getByRole('textbox', { name: '検索' })
+    input.focus()
+
+    await user.keyboard('{Escape}')
+
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+    expect(input).toHaveFocus()
   })
 })

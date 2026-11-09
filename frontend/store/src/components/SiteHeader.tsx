@@ -14,7 +14,8 @@ import { LoginLinks } from '@/components/LoginLinks'
  * ログインの状態。<br />
  * ログインしていなければ「ログイン」「会員登録」、していれば氏名、「ご注文履歴」、「アカウント」（IdP のアカウントの画面）、「ログアウト」。<br />
  * 幅 1024px 以上は、全てを 1 行に並べる。1024px 未満は、1 行目に店名、カート、メニューのボタン、2 行目に検索欄を置き、
- * 商品一覧とログインの状態の項目は、ボタンで開くメニューに入れる。項目は 1 組だけ描画し、並び順は CSS の order で切り替える。
+ * 商品一覧とログイン状態の項目は、ボタンで開くメニューに入れる。項目は 1 組だけ描画し、1024px 以上の並びは CSS の `lg:order-*` で決める。<br />
+ * 既知の制限：DOM の順は 1024px 未満の見た目の順（店名、カート、メニュー、検索）に合わせてあり、1024px 以上ではキーボードの移動と読み上げの順が見た目と違う（項目を 1 組だけ描画するため）。
  */
 export async function SiteHeader() {
   const tCommon = await getTranslations('common')
@@ -23,31 +24,15 @@ export async function SiteHeader() {
   return (
     <header className="border-b">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 lg:h-14 lg:flex-nowrap lg:py-0">
-        <Link className="font-heading order-1 text-lg font-semibold whitespace-nowrap" href="/">
+        <Link className="font-heading text-lg font-semibold whitespace-nowrap" href="/">
           {tCommon('siteName') /* 店名 */}
         </Link>
-        <search className="order-4 w-full lg:order-3 lg:ml-auto lg:w-auto">
-          <form action="/search" className="flex items-center gap-2">
-            <SearchIcon aria-hidden className="text-muted-foreground size-4" />
-            <Input
-              aria-label={t('keyword') /* キーワード */}
-              className="lg:w-56"
-              maxLength={parameters.searchProducts.q.maxLength}
-              name="q"
-              placeholder={t('keywordPlaceholder') /* 探すことを促す */}
-              required
-            />
-          </form>
-        </search>
-        <Link
-          className="order-2 flex items-center gap-1 text-sm whitespace-nowrap hover:underline lg:order-4"
-          href="/cart"
-        >
+        <Link className="flex items-center gap-1 text-sm whitespace-nowrap hover:underline lg:order-4" href="/cart">
           <ShoppingCartIcon aria-hidden className="size-4" />
           {t('cart') /* カート */}
         </Link>
         <HeaderMenu>
-          <nav className="text-sm lg:order-2">
+          <nav className="flex text-sm lg:order-2">
             <Link className="hover:underline" href="/products">
               {t('products') /* 商品一覧 */}
             </Link>
@@ -75,6 +60,19 @@ export async function SiteHeader() {
             )}
           </div>
         </HeaderMenu>
+        <search className="w-full lg:order-3 lg:ml-auto lg:w-auto">
+          <form action="/search" className="flex items-center gap-2">
+            <SearchIcon aria-hidden className="text-muted-foreground size-4" />
+            <Input
+              aria-label={t('keyword') /* キーワード */}
+              className="lg:w-56"
+              maxLength={parameters.searchProducts.q.maxLength}
+              name="q"
+              placeholder={t('keywordPlaceholder') /* 探すことを促す */}
+              required
+            />
+          </form>
+        </search>
       </div>
     </header>
   )

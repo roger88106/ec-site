@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { ACCOUNTS, submitIdpLogin } from '../src/auth'
+import { ACCOUNTS, loginStore } from '../src/auth'
 import { STORE_URL } from '../src/urls'
 
 // このファイルは、幅 375px の project（narrow）だけで実行する（playwright.config.ts）
@@ -9,7 +9,7 @@ function menuButton(page: Page) {
   return page.getByRole('banner').getByRole('button', { name: 'メニュー', exact: true })
 }
 
-/** ヘッダーの中の、リンクかボタン以外の項目を探す起点 */
+/** ヘッダーの中の項目を探す起点 */
 function header(page: Page) {
   return page.getByRole('banner')
 }
@@ -21,13 +21,18 @@ async function expectNoHorizontalScroll(page: Page) {
 }
 
 /**
- * 会員としてログインする。狭い幅ではログアウトのボタンがメニューの中にあり、`loginStore` は使えないので、
- * ログインの後にメニューのボタンが出るのを待つ。
+ * 会員としてログインする。狭い幅ではログアウトのボタンがメニューの中にあり見えないので、
+ * ログインが済んだことは、メニューのボタンが見え、かつヘッダーに「ログイン」のリンクがない（見えないものも含めて）ことで待つ。
  */
 async function loginNarrow(page: Page) {
-  await page.goto(`${STORE_URL}/login?returnTo=${encodeURIComponent('/')}`)
-  await submitIdpLogin(page, ACCOUNTS.member)
-  await expect(menuButton(page)).toBeVisible()
+  await loginStore(page, ACCOUNTS.member, {
+    waitForLoggedIn: async () => {
+      await expect(menuButton(page)).toBeVisible()
+      await expect(header(page).getByRole('link', { name: 'ログイン', exact: true, includeHidden: true })).toHaveCount(
+        0,
+      )
+    },
+  })
 }
 
 test('AC-417-1、AC-417-3 ログインしていない消費者がトップと商品一覧を開いても、横スクロールが出ない。メニューを開くと「ログイン」「会員登録」が出る', async ({
@@ -53,7 +58,7 @@ test('AC-417-1、AC-417-3 ログインしていない消費者がトップと商
   })
 })
 
-test('AC-417-2、AC-417-3、AC-417-5 ログインした会員が開いても横スクロールが出ない。メニューに氏名と項目が出て、「ご注文履歴」で画面を移るとメニューが閉じる', async ({
+test('AC-417-2、AC-417-3、AC-417-5 ログインした会員が開いても横スクロールが出ない。メニューに氏名と項目が出て、「ご注文履歴」で画面を遷移するとメニューが閉じる', async ({
   page,
 }) => {
   await loginNarrow(page)
@@ -86,7 +91,7 @@ test('AC-417-2、AC-417-3、AC-417-5 ログインした会員が開いても横�
   })
 })
 
-test('AC-417-4 メニューを開かずに、検索欄で検索して結果の画面に移れ、カートのリンクが使える', async ({ page }) => {
+test('AC-417-4 メニューを開かずに、検索欄で検索して結果の画面に遷移でき、カートのリンクが使える', async ({ page }) => {
   await page.goto(STORE_URL)
 
   await test.step('検索欄とカートのリンクが、メニューを閉じたまま見える', async () => {
@@ -95,7 +100,7 @@ test('AC-417-4 メニューを開かずに、検索欄で検索して結果の�
     await expect(header(page).getByRole('link', { name: 'カート' })).toBeVisible()
   })
 
-  await test.step('検索すると、検索の結果の画面に移る', async () => {
+  await test.step('検索すると、検索結果の画面に遷移する', async () => {
     await header(page).getByRole('textbox', { name: 'キーワード' }).fill('シャツ')
     await header(page).getByRole('textbox', { name: 'キーワード' }).press('Enter')
     await expect(page).toHaveURL(`${STORE_URL}/search?q=${encodeURIComponent('シャツ')}`)
@@ -119,15 +124,33 @@ test('AC-417-6 幅 1280px では、メニューのボタンが出ず、商品一
     await expect(header(page).getByRole('link', { name: '商品一覧' })).toBeHidden()
   })
 
-  await test.step('幅 1280px にすると、メニューのボタンが見えず、項目が 1 行に見える', async () => {
+  await test.step('幅 1023px では、メニューを開くボタンが見える', async () => {
+    await page.setViewportSize({ width: 1023, height: 800 })
+    await expect(menuButton(page)).toBeVisible()
+  })
+
+  await test.step('幅 1024px では、メニューを開くボタンが見えず、横スクロールが出ない', async () => {
+    await page.setViewportSize({ width: 1024, height: 800 })
+    await expect(menuButton(page)).toBeHidden()
+    await expect(header(page).getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+    await expectNoHorizontalScroll(page)
+  })
+
+  await test.step('幅 1280px にすると、メニューを開くボタンが見えず、項目が 1 行に並んで見える', async () => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await expect(menuButton(page)).toBeHidden()
     await expect(header(page).getByRole('link', { name: '商品一覧' })).toBeVisible()
     await expect(header(page).getByRole('link', { name: 'ご注文履歴' })).toBeVisible()
-    await expect(header(page).getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+    const logout = header(page).getByRole('button', { name: 'ログアウト', exact: true })
+    await expect(logout).toBeVisible()
+    // 1 行であることは、店名とログアウトのボタンの縦の中心が近いことで確認する
+    const siteName = await header(page).getByRole('link', { name: 'EC Site' }).boundingBox()
+    const logoutBox = await logout.boundingBox()
+    if (siteName === null || logoutBox === null) throw new Error('店名かログアウトのボタンの位置が取れない')
+    expect(Math.abs(siteName.y + siteName.height / 2 - (logoutBox.y + logoutBox.height / 2))).toBeLessThan(8)
   })
 
-  await test.step('ログアウトすると、ログインしていないときも、ボタンが見えず「ログイン」が見える', async () => {
+  await test.step('ログアウトすると、ログインしていない状態でも、メニューを開くボタンが見えず「ログイン」が見える', async () => {
     await header(page).getByRole('button', { name: 'ログアウト', exact: true }).click()
     await expect(header(page).getByRole('link', { name: 'ログイン' })).toBeVisible()
     await expect(menuButton(page)).toBeHidden()

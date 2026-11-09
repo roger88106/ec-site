@@ -12,7 +12,7 @@
 //     - run store と run admin は、起動の前に pnpm generate:api で API の型を生成する（失敗したら起動しない）
 //     - 停止のシグナル（Ctrl+C など）の 1 回目で、起動したプロセスを子プロセスも含めて停止し、終了するのを待ってから終了する。2 回目は待たずに終了する
 //
-// メインの作業ツリーはいつもスロット 0。assign・release・reset は何もせずに知らせ、show・env・run はスロット 0 の値で動く。
+// メインの作業ツリーはいつもスロット 0。assign・release・reset は何もせずに知らせ、show・env・run・stop はスロット 0 の値で動く。
 // 割り当ては `<作業ツリー>/.local/slot` に番号だけで書く。
 // 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、2 共有の基盤が動いていない。
 // 共有の基盤（compose）は、メインの作業ツリーで起動する。この script は起動しない。
@@ -374,7 +374,7 @@ async function release(ctx) {
 function stop(ctx, args) {
   const [target] = args
   const slot = currentSlot(ctx)
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
+  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
   const ports = stopTargetPorts(slot, target)
   if (ports === null) throw new Exit(1, `停止する対象は backend、store、admin のどれか：${target}`)
   const result = stopSlot({
@@ -496,7 +496,6 @@ async function run(ctx, args) {
     const check = checkBackendPorts({
       ports: [values.backendPort, values.managementPort],
       platform: process.platform,
-      canRelease: !ctx.main,
       find: (ports) => findListeners(ports),
     })
     if (!check.start) throw new Exit(check.code, check.message)

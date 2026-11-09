@@ -1,5 +1,5 @@
 // スロットのポートで待ち受けるプロセスを探し、停止する。
-// スロットの script（scripts/dev/slot.mjs）の release と run backend が使う。
+// スロットの script（scripts/dev/slot.mjs）の release と stop と run backend が使う。
 // script の node を強制終了すると停止の処理が動かず、Gradle のデーモンの子のバックエンドがポートで待ち受け続けるため。
 import { spawnSync } from 'node:child_process'
 import { killTreeOnWindows } from './child-stop.mjs'
@@ -224,17 +224,17 @@ export function stoppedMessage(listeners) {
 }
 
 /**
- * ポートが使われていて起動しないときに示す文。停止のコマンド（解除できるときは release も）を示す。
+ * ポートが使われていて起動しないときに示す文。stop backend のコマンドを先に示し、stop が使えないときの代わりに手動の停止のコマンドを示す。
+ * release はデータベースとバケットも消すので示さない。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
- * @param {{ platform: NodeJS.Platform, canRelease: boolean }} options OS と、スロットを解除できるか（メインの作業ツリーは解除できない）
+ * @param {{ platform: NodeJS.Platform }} options OS
  * @returns {string} 示す文
  */
-export function portBusyMessage(listeners, { platform, canRelease }) {
-  const release = canRelease ? 'node scripts/dev/slot.mjs release（スロットのデータベースとバケットも消す）か、' : ''
+export function portBusyMessage(listeners, { platform }) {
   return (
     `バックエンドのポートが使われているので起動しない。待ち受けるプロセス：${describeListeners(listeners)}\n` +
-    `止めるには、${release}${manualStopCommand(listeners, platform)} を流す`
+    `止めるには、node scripts/dev/slot.mjs stop backend を流す。使えないときは、${manualStopCommand(listeners, platform)} を流す`
   )
 }
 

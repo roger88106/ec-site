@@ -96,7 +96,7 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 
 ### push のタイミング
 
-作業ブランチの最初の push は、draft の pull request を作る直前に行う（規模によらない）。それまでは commit だけにする。pull request を作った後の修正の commit も、push の前にまとめる。理由は 2 つある。push のたびに CI が全て実行されるが、途中の CI の結果は使わない。push していない commit は、校閲の後にコミットメッセージを書き換えられる（skill `local-dev` の「コミットメッセージの書き換え」）。
+作業ブランチの最初の push は、draft の pull request を作る直前に行う（規模によらない）。それまでは commit だけにする。pull request を作った後の修正の commit も、push の前にまとめる。理由は 2 つある。push のたびに CI が全て実行されるが、途中の CI の結果は使わないので、実行が無駄になる。push していない commit は、校閲の後にコミットメッセージを書き換えられる（skill `local-dev` の「コミットメッセージの書き換え」）。
 
 draft の pull request を作る前に push してよいのは、次のときだけ。
 

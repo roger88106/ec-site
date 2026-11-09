@@ -13,20 +13,19 @@ description: ec-site をローカルで起動・確認する手順。スロッ�
 
 ## 最初に読む：検査に拒否されない書き方
 
-hook や検査に止められてからコマンドを書き換えないよう、初めから次のとおりに書く。検査に拒否されて同じコマンドを書き直すことが、振り返りで最も多かった（47 件）。
+hook や検査に止められてからコマンドを書き換えないよう、次のとおりに書く。検査に拒否されて同じコマンドを書き直すことが、振り返りで最も多かった（47 件）。
 
 - 文書・コメント・コミットメッセージを書く前に、避ける語の一覧を読む。一覧は `scripts/ci/ja-text.json` の error と、skill `zh-mixing` の「書くときの注意」。
-- 複数のファイルの置き換えと、`\` や正規表現を含む書き換えは、初めから Edit で行う（新しいファイルは Write）。script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。heredoc（`<<'EOF'` も）と `node -e` の文字列に `\` を入れない。理由：Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れるため。hook `backslash-guard` も、heredoc と `node -e` の中の `\` を拒否する。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記も Edit で書く。
-- コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと止まる。
-- commit の失敗を見逃さない。`git commit` の出力を `tail`・`grep` に通さない（出力はファイルに書く）。commit と次の操作を `;` でつながない（`&&` でつなぐか、別の呼び出しにする）。commit の後に `git log --oneline -1` で、commit ができたかを確認する。理由：終了コードが隠れ、commit がないまま push や次の commit に進んだことがあったため。
-- 検査を `| tail` に通すと、終了コードが `tail` のものになり、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
+- 複数のファイルの置き換えと、`\` や正規表現を含む書き換えは、初めから Edit で行う（新しいファイルは Write）。script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。heredoc（`<<'EOF'` も）と `node -e` の文字列に `\` を入れない。理由：Windows の Git Bash では `\` が除かれ、正規表現がエラーにならずに誤った内容になるため。hook `backslash-guard` も、heredoc と `node -e` の中の `\` を拒否する。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記も Edit で書く。
+- コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと hook に拒否される。
+- commit の失敗を見逃さない。`git commit` の出力を `tail`・`grep` に通さない（出力はファイルに書く）。commit と次の操作を `;` でつながない（`&&` でつなぐか、別の呼び出しにする）。commit の後に `git log --oneline -1` で、commit ができたかを確認する。理由：終了コードが隠れ、commit がないまま push や次の commit に進んだことがあったため。検査の出力を `| tail` に通すときも同じで、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
 - issue は `gh issue view <番号> --json title,body,comments` で読む。理由：`--comments` は、コメントのない issue で本文を出さないため。
 
 ## 環境の準備
 
 - `java` が PATH にないシェル（Bash のツールなど）では、`./gradlew`・`scripts/dev/e2e.sh`・`node scripts/dev/slot.mjs run backend` が JDK を見つけられず失敗する。`JAVA_HOME=<JDK 21 のパス>` をコマンドの前に付ける（パスはマシンごと。`/.local/agent/environment.md`）。手順は[開発環境の起動](../../../docs/06-手順書/setup.md)の冒頭の箇条にある。
-- Docker を使うテストの前に `docker info` で、エンジンが応答するかを確認する。応答しないときは、マシンの手順（`/.local/agent/environment.md`）で復旧する。複数のセッションが同時に復旧しない（issue 担当のセッションに知らせる）。復旧の後は `./gradlew --stop` を実行してからテストする（Gradle のデーモンが Docker の失敗を覚えているため。[テストの実行方法](../../../docs/06-手順書/running-tests.md)）。
-- 新しい作業ツリーでは、フロントのテスト・型検査の前に、各アプリのディレクトリで `pnpm generate:api` を実行する。生成した API の型 `src/api/generated/` は Git に入らず、ないと Vitest が `@/api/generated/constraints` を解決できず、`npx tsc --noEmit` も失敗する。
+- Docker を使うテストの前に `docker info` で、エンジンが応答するかを確認する。応答しないときは、マシンの手順（`/.local/agent/environment.md`）で復旧する。複数のセッションが同時に復旧しない（issue 担当のセッションに知らせる）。復旧の後は `./gradlew --stop` を実行してからテストする（Gradle のデーモンが Docker の失敗の状態を保持しているため。[テストの実行方法](../../../docs/06-手順書/running-tests.md)）。
+- 新しい作業ツリーでは、フロントのテスト・型検査の前に、各アプリのディレクトリで `pnpm generate:api` を実行する。生成した API の型 `src/api/generated/` は Git に入らず、ないと Vitest が `@/api/generated/constraints` を解決できず、`npx tsc --noEmit` も失敗する。`typecheck`・`build`・`dev` の前には自動で生成されるが、`vitest` と `npx tsc --noEmit` を直接実行するときは生成されない。
 
 ## ミドルウェア（compose）
 
@@ -79,7 +78,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 - 起動に失敗したら `bootrun.log` を `grep -n "ERROR\|Caused by" ` で見る。全体を読まない。
 - local profile では、起動時にマイグレーションと seed（`db/seed/base`、`db/seed/local`）が適用される。使い分けは `db/seed/local/README.md`。
 - 停止するときは、`node scripts/dev/slot.mjs stop [backend|store|admin]` を使う。自分のスロットのポートで待ち受けるプロセスを停止する（メインの作業ツリーはスロット 0 の 8080、9080、3000、5173。割り当てとデータは変えない）。省略すると 4 つ全て。
-- 停止したかは、起動の確認と同じ curl に応答がないことで確認する。ツールでタスクを停止しても java や node のプロセスが残ることがあるので、そのときも `stop` を使う。
+- 停止したかは、`stop` の終了コード 0 で確認する（停止の後に問い合わせ直し、残れば 1 で終わる）。応答で確認するときは、起動の確認と同じ curl を `--retry` なしで実行する。ツールでタスクを停止しても java や node のプロセスが残ることがあるので、そのときも `stop` を使う。
 
 テスト（`backend/ecsite/` で。Docker が必要）：
 
@@ -107,10 +106,9 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 - 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
 - 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`。
 - 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
-- 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。`vitest` と `npx tsc --noEmit` を直接実行するときは生成されないので、「環境の準備」のとおり先に生成する。
 - 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「依存を追加したら再インストールして確認する」）。
 
-開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で起動する。`.claude/launch.json` の名前を渡す起動は、メインの作業ツリー（スロット 0）の `admin`・`store` だけで使う。プレビューのツールはメインの作業ツリーの launch.json で起動するので、追加の作業ツリーの名前（`store-1` など）は「スロットが違う」で起動しない（振り返りで 8 件）。追加の作業ツリーは、「スロット」の節のとおり、script をバックグラウンドで実行してから URL を渡して開く。プレビューのツールがないとき（コマンドラインの実行など）は、各アプリのディレクトリで `pnpm dev` をバックグラウンドで実行し、URL に curl して 200 を確認する。
+開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で起動する。`.claude/launch.json` の名前を渡す起動は、メインの作業ツリー（スロット 0）の `admin`・`store` だけで使う。プレビューのツールはメインの作業ツリーの launch.json で起動するので、追加の作業ツリーの名前（`store-1` など）は「スロットが違う」というエラーで起動しない。追加の作業ツリーは「スロット」の節の手順で開く。プレビューのツールがないとき（コマンドラインの実行など）は、各アプリのディレクトリで `pnpm dev` をバックグラウンドで実行し、URL に curl して 200 を確認する。
 
 | 名前 | URL | 前提 |
 |------|-----|------|
@@ -143,15 +141,15 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 ```
 
 - 起動を待つ curl は「バックエンド」の節と同じで、待つ先は自分のスロットの運用ポート（スロット 1 は `localhost:19080`）。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
-- 店舗画面と管理画面は、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>`（`<n>` は自分のスロット）をバックグラウンドで実行し、curl で 200 を確認してから、`preview_start` に URL を渡して開く。URL は `http://localhost:<自分のスロットのポート>`（`node scripts/dev/slot.mjs show` で見る）。番号が自分のスロットと違うと起動しない。
-- 停止は `node scripts/dev/slot.mjs stop [backend|store|admin]`（「バックエンド」の節）。`run backend` がポートの使用で終了コード 1 で終わったら、`stop` で停止してから再実行する。
+- 店舗画面と管理画面は、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>`（`<n>` は自分のスロット）をバックグラウンドで実行し、curl で 200 を確認してから、`preview_start` に URL を渡して開く。URL は `http://localhost:<自分のスロットのポート>`（`node scripts/dev/slot.mjs show` で見る）。
+- 停止は「バックエンド」の節の `stop`。`run backend` がポートの使用で終了コード 1 で終わったら、`stop` で停止してから再実行する。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
 
 ## CI の検査の script
 
 `./gradlew check` と `check-frontend.sh` に入っていない CI の検査。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
 
-hook `pre-commit` を置いていれば、commit のときに同じ検査が実行される。commit の前に `scripts/ci/check-all.sh` を手で重ねて実行しない（約 1 分の二重）。失敗の理由を見るときは、commit をやり直さずに、失敗した検査の script を直接実行する。hook を置いていなければ、commit の前にルートで実行する。
+hook `pre-commit` を置いていれば、commit のときに同じ検査が実行される。commit の前に `scripts/ci/check-all.sh` を手動で実行しない（約 1 分の重複実行になる）。失敗の理由を見るときは、commit をやり直さずに、失敗した検査の script を直接実行する。hook を置いていなければ、commit の前にルートで実行する。
 
 ```bash
 scripts/ci/check-all.sh
@@ -224,7 +222,7 @@ node scripts/dev/reword.mjs <対応表の JSON>   # [{ "commit": "<SHA>", "messa
 ```
 
 - メッセージのファイルは、commit のときと同じく `ja-text.mjs --message` で検査してから渡す。各 commit の書き換えは commit の hook を通るので、hook の検査の時間（1 件 1 分ほど）がかかる。最初からバックグラウンドで実行する。
-- push 済みの commit、未 commit の変更、範囲のマージの commit があると、状態を変えずに終了コード 1 で終わる。`develop` を取り込む前に書き換える。
+- push 済みの commit、未 commit の変更、書き換える範囲にあるマージの commit があると、状態を変えずに終了コード 1 で終わる。`develop` を取り込む前に書き換える。
 - 最後の行で、書き換えた件数と、各 commit の内容（tree）が元と一致したことを確認する。途中で hook が拒否したときは、元の HEAD に戻して終了コード 1 で終わる。条件と終了コードの詳細は script の冒頭のコメント。
 
 ## 場面ごとに読むファイル

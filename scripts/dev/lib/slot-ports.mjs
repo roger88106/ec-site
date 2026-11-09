@@ -1,4 +1,4 @@
-// スロットのポートを使うプロセスの扱い：解除で止めてからデータを消す判断と、バックエンドの起動の前の確認。
+// スロットのポートを使うプロセスの扱い：解除で止めてからデータを消す判断と、停止（stop）と、バックエンドの起動の前の確認。
 // スロットの script（scripts/dev/slot.mjs）が、問い合わせ・停止・データの削除の実体を渡して使う。
 import { portBusyMessage, queryFailedMessage, stopFailedMessage, stopLeftMessage, stoppedMessage } from './port-stop.mjs'
 import { checkBackendStopped, slotPorts } from './slot.mjs'
@@ -21,7 +21,7 @@ export function stopTargetPorts(slot, target) {
 
 /**
  * ポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。<br />
- * 待ち受けがなければ、ないことを示して 0。あれば停止して示し、もう一度問い合わせて残りがないことを確認する。
+ * 待ち受けがなければ、ないことを示して 0。あれば停止し、停止したことを示し、もう一度問い合わせて残りがないことを確認する。
  * 問い合わせが失敗したときと、停止の後に残ったときは、手で止めるコマンドを含む理由を付けて 1 を返す。
  *
  * @param {{
@@ -96,14 +96,13 @@ export async function releaseSlot({ slot, ports, platform, find, stop, backendRu
  * @param {{
  *   ports: number[],
  *   platform: NodeJS.Platform,
- *   canRelease: boolean,
  *   find: (ports: number[]) => { ok: true, listeners: import('./port-stop.mjs').Listener[] } | { ok: false, reason: string },
- * }} deps ポート、OS、スロットを解除できるか（メインの作業ツリーは解除できない）、問い合わせの実体
+ * }} deps ポート、OS、問い合わせの実体
  * @returns {{ start: true, warning: string | null } | { start: false, code: 1, message: string }} 起動するか
  */
-export function checkBackendPorts({ ports, platform, canRelease, find }) {
+export function checkBackendPorts({ ports, platform, find }) {
   const found = find(ports)
   if (!found.ok) return { start: true, warning: `${queryFailedMessage(ports, found.reason, platform)}\nポートを確かめずに起動する` }
-  if (found.listeners.length > 0) return { start: false, code: 1, message: portBusyMessage(found.listeners, { platform, canRelease }) }
+  if (found.listeners.length > 0) return { start: false, code: 1, message: portBusyMessage(found.listeners, { platform }) }
   return { start: true, warning: null }
 }

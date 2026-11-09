@@ -75,7 +75,7 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 | メッセージ | 日本語。1 行目は `<対象>: <要約>`（例：`tax: 税率の一覧の置き換えを実装する`）、決定の理由は本文 |
 | 単位 | セッションは、いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
-| push・pull request | セッションは、push と pull request の作成で許可を求めない ※2。最初の push は draft の pull request を作る直前にする（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」） |
+| push・pull request | セッションは、push と pull request の作成で許可を求めない ※2。push の時点は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」 |
 | マージ・tag | 許可と担当は [マージと後片付け](docs/05-開発規則/merging.md)の「マージの許可と後片付け」。マージは `gh pr merge --match-head-commit <SHA>` で head の commit を指定する。hook の扱いは ※3 |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（[開発環境の起動](docs/06-手順書/setup.md)の「手元の置き場所」） |
 

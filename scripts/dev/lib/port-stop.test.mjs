@@ -320,15 +320,16 @@ describe('示す文', () => {
     assert.match(message, /5678（ポート 13000）/)
   })
 
-  test('ポートが使われているときは、プロセスの ID と、release と手動の停止のコマンドを示す（Windows）', () => {
-    const message = portBusyMessage(listeners, { platform: 'win32', canRelease: true })
+  test('ポートが使われているときは、プロセスの ID と、stop backend と手動の停止のコマンドを示し、release は示さない（Windows）', () => {
+    const message = portBusyMessage(listeners, { platform: 'win32' })
     assert.match(message, /1234（ポート 18080、19080）/)
-    assert.match(message, /node scripts\/dev\/slot\.mjs release/)
+    assert.match(message, /node scripts\/dev\/slot\.mjs stop backend/)
+    assert.doesNotMatch(message, /release/)
     assert.match(message, /Stop-Process -Id 1234,5678 -Force/)
   })
 
   test('ポートが使われているときの手動の停止のコマンドは、Windows 以外では kill', () => {
-    assert.match(portBusyMessage(listeners, { platform: 'linux', canRelease: true }), /kill 1234 5678/)
+    assert.match(portBusyMessage(listeners, { platform: 'linux' }), /kill 1234 5678/)
   })
 
   test('停止しても待ち受けが残ったときは、プロセスの ID と手動の停止のコマンド、release の流し直しを示す', () => {
@@ -350,11 +351,5 @@ describe('示す文', () => {
 
   test('問い合わせが失敗したときの止めるコマンドは、Windows 以外では lsof と kill', () => {
     assert.match(queryFailedMessage([18080, 19080], 'ENOENT', 'linux'), /kill \$\(lsof -t -sTCP:LISTEN -iTCP:18080 -iTCP:19080\)/)
-  })
-
-  test('解除できない（メインの作業ツリーの）ときは、release を示さず、手動の停止のコマンドだけを示す', () => {
-    const message = portBusyMessage(listeners, { platform: 'win32', canRelease: false })
-    assert.doesNotMatch(message, /release/)
-    assert.match(message, /Stop-Process -Id 1234,5678 -Force/)
   })
 })

@@ -48,7 +48,7 @@ issue 担当のセッションは、作業の形と profile、並行の数、特
 
 ## spec 担当のセッションの起動と実装の開始
 
-起動の指示は、[launch.md](launch.md)の雛形で書く。文書の本文の書き手の指示（上の「issue 担当のセッション」と同じ）も、雛形に入っている。雛形に書く開始の条件の形：
+雛形に書く開始の条件の形：
 
 > 利用者が確認対象を承認し、5 時間の使用量が x% 未満、週が y% 未満なら、問い合わせずに始め、開始を知らせる。
 
@@ -77,6 +77,7 @@ issue 担当のセッションは、作業の形と profile、並行の数、特
 
 - `develop` の push の CI を、issue 担当のセッションがバックグラウンドの実行（「ツールの補足」の名前）で見届ける。失敗したら、他の pull request のマージを止めてすぐに起票し（[起票と記録の操作](../../../docs/05-開発規則/issues.md)の「起票」の急ぐ作業）、直るまで次のマージをしない。
 - `.claude/`（skill、サブエージェントの定義、設定）を変えた pull request をマージしたら、issue 担当のセッションが、メインの作業ツリーの `develop` を最新にする。理由：メインの作業ツリーで起動した `claude -p` は、メインの作業ツリーの skill と定義を読み、作業ツリーのものを読まないため。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーのものを読む（[作業ツリーのセッションが読むもの](session-reads.md)の表）。
+- pull request の本文の「既存の指摘」が「なし」でなければ、issue 担当のセッションが、既存のレビューの指摘の一覧（#252）に転記する（[書き方の規則とレビュー](../../../docs/05-開発規則/review.md)の「レビューの収束」）。
 - 後片付けで自分をアーカイブできないときは、許可した利用者の言葉を添えて、issue 担当のセッションに頼む（[マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」）。
 
 ## Dependabot の pull request のマージ
@@ -108,5 +109,6 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 - 終わったら知らせる指定：バックグラウンドの実行（`run_in_background`）か、起動したセッションの終了の通知。通知でターンが再開する。
 - 見逃しの一覧と CI：`gh issue list --label 見逃し`、`gh run list -b develop -L 1`。
 - 使用量：`mcp__ccd_session_mgmt__get_usage`（5 時間と週の使用率、戻る時刻）。
-- `claude -p` の起動：`claude -p --model <モデル> --permission-mode default --allowedTools "<許すツール>" < <指示のファイル>`。プロンプトは標準入力で渡す。理由：`--allowedTools` の後ろに置いたプロンプトは、ツールの名前の値として読まれ、「Input must be provided」で失敗するため。失敗したら `claude auth status` でログインの状態を確認する。`--permission-mode bypassPermissions` は auto mode の判定が拒否するので使わない。Write のツールは、`claude -p` を起動したディレクトリの `.claude/` の下（`settings.json`、`agents/`、`skills/`）に書けない（`--allowedTools Write` でも拒否される）。動作の確認でファイルを置くときは、許可した Bash から script で置く。
+- `claude -p` の起動：`claude -p --model <モデル> --permission-mode default --allowedTools "<許すツール>" < <指示のファイル>`。プロンプトは標準入力で渡す。理由：`--allowedTools` の後ろに置いたプロンプトは、ツールの名前の値として読まれ、「Input must be provided」で失敗するため。失敗したら `claude auth status` でログインの状態を確認する。`--permission-mode bypassPermissions` は auto mode の判定が拒否するので使わない。
+- `claude -p` の Write のツールは、`claude -p` を起動したディレクトリの `.claude/` の下（`settings.json`、`agents/`、`skills/`）に書けない（`--allowedTools Write` でも拒否される）。動作の確認でファイルを置くときは、許可した Bash から script で置く。
 - マージの許可を求める確認の画面：遠隔操作（Remote Control）では、hook（`agent-guard`）の確認の画面とアプリの「次の一歩」の表示欄が見えないことがある。許可を求めるときの伝え方は [マージと後片付け](../../../docs/05-開発規則/merging.md)の「マージの許可と後片付け」。

@@ -209,7 +209,7 @@ describe('バックエンドの起動の前のポートの確認', () => {
   const ports = [18080, 19080]
 
   test('ポートが空いていれば、警告なしで起動する', () => {
-    assert.deepEqual(checkBackendPorts({ ports, platform: 'win32', canRelease: true, find: () => ({ ok: true, listeners: [] }) }), {
+    assert.deepEqual(checkBackendPorts({ ports, platform: 'win32', find: () => ({ ok: true, listeners: [] }) }), {
       start: true,
       warning: null,
     })
@@ -219,18 +219,18 @@ describe('バックエンドの起動の前のポートの確認', () => {
     const result = checkBackendPorts({
       ports,
       platform: 'win32',
-      canRelease: true,
       find: () => ({ ok: true, listeners: [{ port: 19080, pid: 4321 }] }),
     })
     assert.equal(result.start, false)
     assert.equal(result.code, 1)
     assert.match(result.message, /4321（ポート 19080）/)
-    assert.match(result.message, /node scripts\/dev\/slot\.mjs release/)
+    assert.match(result.message, /node scripts\/dev\/slot\.mjs stop backend/)
+    assert.doesNotMatch(result.message, /release/)
     assert.match(result.message, /Stop-Process -Id 4321 -Force/)
   })
 
   test('問い合わせが失敗したら、理由を警告にして起動する', () => {
-    const result = checkBackendPorts({ ports, platform: 'linux', canRelease: true, find: () => ({ ok: false, reason: 'lsof がない' }) })
+    const result = checkBackendPorts({ ports, platform: 'linux', find: () => ({ ok: false, reason: 'lsof がない' }) })
     assert.equal(result.start, true)
     assert.match(result.warning, /lsof がない/)
     assert.match(result.warning, /確かめずに起動する/)
@@ -238,7 +238,7 @@ describe('バックエンドの起動の前のポートの確認', () => {
 
   test('問い合わせるのは渡したポートだけ', () => {
     const asked = []
-    checkBackendPorts({ ports, platform: 'win32', canRelease: false, find: (p) => (asked.push(p), { ok: true, listeners: [] }) })
+    checkBackendPorts({ ports, platform: 'win32', find: (p) => (asked.push(p), { ok: true, listeners: [] }) })
     assert.deepEqual(asked, [ports])
   })
 })

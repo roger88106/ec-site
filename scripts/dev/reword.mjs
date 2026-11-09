@@ -9,7 +9,7 @@
 // 終了コード：0 成功、1 書き換えなかった（条件に合わない、途中で失敗して戻した）、2 使い方の誤り。
 //
 // 書き換える前に確認すること：追跡しているファイルに未 commit の変更がない、対応表が読める、
-// 対象が HEAD の祖先で重複せず push 済み（refs/remotes/ のどれかから届く）でない、
+// 対象が HEAD の祖先である、重複がない、push 済み（refs/remotes/ のどれかから届く）でない、
 // 範囲（最も古い対象の親から HEAD まで）にマージの commit がない（rebase で平らになるため）。
 // どれかに当たれば、状態を変えずに 1 で終わる。
 // 各 commit の書き換えは commit の hook（commit-msg など）を通す。hook が拒否すると rebase が途中で止まるので、
@@ -31,7 +31,7 @@ class Refusal extends Error {}
 
 /**
  * rebase の todo を書き換える。対象の commit の pick の行の後に、メッセージを差し替える exec の行を入れる。
- * entries は { commit: 完全な SHA, message: メッセージのファイルの絶対パス }。todo の SHA は短縮形なので前方一致で当てる
+ * entries は { commit: 完全な SHA, message: メッセージのファイルの絶対パス }。todo の SHA は短縮形なので前方一致で照合する
  */
 export function editTodo(todo, entries) {
   const lines = todo.split('\n')
@@ -121,7 +121,7 @@ export function reword(mapPath, cwd = process.cwd()) {
   if (gitOrThrow(cwd, ['rev-list', '--merges', ...range]) !== '') {
     throw new Refusal('範囲にマージの commit がある（rebase で平らになるため書き換えない）')
   }
-  // 最も古い対象が最初の commit でないとき、その親の以降を並べる。--root のときは全て
+  // 最も古い対象が最初の commit でないとき、その親より後の commit を並べる。--root のときは全て
   const original = listCommits(cwd, base)
   const targets = new Set(plan.map((entry) => entry.commit))
 

@@ -1,9 +1,10 @@
+import { HttpResponse, http as mswHttp } from 'msw'
 import { describe, expect, test, vi } from 'vitest'
 import { mergeCartAfterLogin } from '@/api/cart'
 import { parseCartMergeNotice } from '@/lib/cartMergeNotice'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID, quoteItem } from '@/test/fixtures'
 import { cookieValue, resetRequest } from '@/test/next'
-import { http, problem, server } from '@/test/server'
+import { http, problem, STORE_API, server } from '@/test/server'
 import { recordStderr } from '@/test/stderr'
 
 /** ログインで得た access token（セッションの Cookie はまだない） */
@@ -84,9 +85,8 @@ describe('ログインの直後にカートを移す', () => {
       recordStderr()
       server.use(
         http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
-        http.post('/me/cart/merge', ({ response }) =>
-          response(status).json(problem(status, 'ERROR', '失敗しました。')),
-        ),
+        // 500・503 は API の契約にないので、型のない MSW のハンドラーで返す
+        mswHttp.post(`${STORE_API}/me/cart/merge`, () => HttpResponse.json({ message: 'error' }, { status })),
       )
 
       await mergeCartAfterLogin(LOGIN_TOKEN)

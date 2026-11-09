@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { HeaderMenu } from '@/components/HeaderMenu'
 import { renderInBrowser } from '@/test/render'
@@ -55,6 +55,21 @@ describe('ヘッダーのメニュー', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false')
   })
 
+  test('AC-417-5 修飾キーを押したままリンクを押す（別のタブで開く）と、メニューは閉じない', async () => {
+    const { user } = renderInBrowser(menu())
+    const button = screen.getByRole('button', { name: 'メニュー' })
+    await user.click(button)
+    const link = screen.getByRole('link', { name: '商品一覧' })
+    // jsdom は別のタブを開かないので、既定の遷移を止めて、クリックの扱いだけを確認する
+    link.addEventListener('click', (event) => event.preventDefault())
+
+    await user.keyboard('{Control>}')
+    await user.click(link)
+    await user.keyboard('{/Control}')
+
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+  })
+
   test('AC-417-5 メニューを開いた状態で画面を遷移する（パスが変わる）と、メニューが閉じる', async () => {
     const { user, rerender } = renderInBrowser(menu())
     const button = screen.getByRole('button', { name: 'メニュー' })
@@ -92,6 +107,18 @@ describe('ヘッダーのメニュー', () => {
 
     expect(button).toHaveAttribute('aria-expanded', 'false')
     expect(button).toHaveFocus()
+  })
+
+  test('NFR-417-4 日本語の変換の取り消しの Esc キーでは、メニューは閉じない', async () => {
+    const { user } = renderInBrowser(menu())
+    const button = screen.getByRole('button', { name: 'メニュー' })
+    await user.click(button)
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true }))
+    })
+
+    expect(button).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('NFR-417-4 フォーカスがメニューの外の入力欄にあるときは、Esc キーでメニューが閉じ、フォーカスは入力欄に残る', async () => {

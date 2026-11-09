@@ -20,21 +20,23 @@ export function HeaderMenu({ children }: { children: ReactNode }) {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
-  const [openedPathname, setOpenedPathname] = useState(pathname)
+  const [renderedPathname, setRenderedPathname] = useState(pathname)
 
   // ヘッダーは画面を遷移しても再作成されないので、パスが変わったら描画の中で閉じる
-  if (openedPathname !== pathname) {
-    setOpenedPathname(pathname)
+  if (renderedPathname !== pathname) {
+    setRenderedPathname(pathname)
     setOpen(false)
   }
 
   // 静的な要素の onKeyDown・onClick は lint の警告になるので、開いている間だけ document で受ける。
   // Esc キーは、フォーカスの位置によらず閉じる。フォーカスをボタンに戻すのは、フォーカスがメニューの中・ボタン・body にあったときだけ（検索欄などから奪わない）。
-  // メニューの中のリンクのクリックは、パスが同じ遷移でも閉じる（パスの変化で閉じる処理は戻る・進むのため）
+  // 日本語の変換の取り消しの Esc と、他の処理が扱った Esc では閉じない。
+  // メニューの中のリンクのクリックは、パスが同じ遷移でも閉じる（パスの変化で閉じる処理は戻る・進むのため）。
+  // 修飾キーと中ボタンのクリックは別のタブで開き、今の画面は遷移しないので閉じない
   useEffect(() => {
     if (!open) return
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
+      if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented) return
       const active = document.activeElement
       const focusIsHere =
         active === null ||
@@ -46,7 +48,13 @@ export function HeaderMenu({ children }: { children: ReactNode }) {
     }
     function closeOnLinkClick(event: MouseEvent) {
       const target = event.target
-      if (target instanceof Element && menuRef.current?.contains(target) && target.closest('a') !== null) {
+      const opensElsewhere = event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey
+      if (
+        !opensElsewhere &&
+        target instanceof Element &&
+        menuRef.current?.contains(target) &&
+        target.closest('a') !== null
+      ) {
         setOpen(false)
       }
     }

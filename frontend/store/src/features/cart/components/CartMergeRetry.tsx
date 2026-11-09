@@ -23,7 +23,10 @@ export function CartMergeRetry({ pending }: { pending: boolean }) {
       return
     }
     started.current = true
-    void retryCartMerge().then(setResult)
+    // 呼び出しが拒否されても、移せなかったことを示す（画面を「移しています」のまま止めない）
+    retryCartMerge()
+      .catch((): CartMergeRetryResult => ({ kind: 'failed' }))
+      .then(setResult)
   }, [initiallyPending])
 
   if (!initiallyPending) {

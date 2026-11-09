@@ -13,7 +13,7 @@ import { CartItemControls } from '@/features/cart/components/CartItemControls'
 import { CartMergeNoticeView } from '@/features/cart/components/CartMergeNoticeView'
 import { CartMergeRetry } from '@/features/cart/components/CartMergeRetry'
 import { StartCheckoutForm } from '@/features/cart/components/StartCheckoutForm'
-import { shouldMergeCart } from '@/lib/cartChoice'
+import { shouldRetryCartMerge } from '@/lib/cartChoice'
 
 /** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,10 +43,12 @@ async function fetchCart(): Promise<Cart | null> {
 }
 
 /**
- * カートを移す処理の再試行が必要か。ログインしていて Cookie のカート ID があるとき（ログインしている間に ID が残るのは、移せていないときだけ）。
+ * カートを移す処理の再試行が必要か。
+ *
+ * @returns 必要なら true（判定は {@link shouldRetryCartMerge}）
  */
 async function isCartMergePending(): Promise<boolean> {
-  return (await currentMember()) !== null && shouldMergeCart(await readCartId())
+  return shouldRetryCartMerge((await currentMember()) !== null, await readCartId())
 }
 
 /** カート */

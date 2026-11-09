@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirectIfUnauthenticated, redirectOnSuccess } from '@/actions/memberAction'
-import { withActionResult } from '@/actions/withActionResult'
+import { withActionResult, withFallback } from '@/actions/withActionResult'
 import { currentCartChoice, memberCartId, mergeCart } from '@/api/cart'
 import { deleteCartId, deleteCartMergeNotice, readCartId, writeCartId } from '@/api/cartCookie'
 import { getApi, getMemberApi } from '@/api/client'
@@ -11,7 +11,7 @@ import type { Problem } from '@/api/types'
 import { currentMember, redirectToLogin } from '@/auth'
 import { translate } from '@/i18n/translate'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
-import { shouldMergeCart } from '@/lib/cartChoice'
+import { shouldRetryCartMerge } from '@/lib/cartChoice'
 import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
 import type { CartMergeRetryResult } from '@/lib/cartMergeRetryResult'
 import { PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
@@ -127,27 +127,36 @@ export async function dismissCartMergeNotice(): Promise<void> {
  * ログインしていないか、Cookie のカートの ID がなければ、API を呼ばずに none を返す。<br />
  * 移せたときは ID を削除してカートの画面を再表示し、移すカートがないとき（none）は ID だけを削除する。
  * 一時的な失敗は ID を残して failed を返す。ログインが切れていれば、ID を残してログインの画面へ移す
- * （ログインの後はカートの画面に戻る）。
+ * （ログインの後はカートの画面に戻る）。<br />
+ * Cookie の操作などで例外になったときも、例外にせず failed を返す。
+ *
+ * @returns 再試行の結果
  */
 export async function retryCartMerge(): Promise<CartMergeRetryResult> {
-  const cartId = await readCartId()
-  if (!shouldMergeCart(cartId) || (await currentMember()) === null) {
-    return { kind: 'none' }
-  }
-  const result = await mergeCart(cartId)
-  switch (result.kind) {
-    case 'merged':
-      await deleteCartId()
-      revalidatePath('/cart')
-      return { kind: 'merged', notice: result.notice }
-    case 'gone':
-      await deleteCartId()
-      return { kind: 'none' }
-    case 'failed':
-      return { kind: 'failed' }
-    case 'unauthenticated':
-      return await redirectToLogin('/cart')
-  }
+  return withFallback<CartMergeRetryResult>(
+    async () => {
+      const cartId = await readCartId()
+      if (cartId === null || !shouldRetryCartMerge((await currentMember()) !== null, cartId)) {
+        return { kind: 'none' }
+      }
+      const result = await mergeCart(cartId)
+      // 移した結果ごとに、Cookie の ID の扱いと、画面に返す値を分ける
+      switch (result.kind) {
+        case 'merged':
+          await deleteCartId()
+          revalidatePath('/cart')
+          return { kind: 'merged', notice: result.notice }
+        case 'gone':
+          await deleteCartId()
+          return { kind: 'none' }
+        case 'failed':
+          return { kind: 'failed' }
+        case 'unauthenticated':
+          return await redirectToLogin('/cart')
+      }
+    },
+    { kind: 'failed' },
+  )
 }
 
 // ============================== プライベート ==============================

@@ -1,18 +1,18 @@
-import { Alert, AlertDescription, AlertTitle } from '@ec-site/shared/ui/alert'
 import { useTranslations } from 'next-intl'
 import { schemas } from '@/api/generated/constraints'
 import type { CartMergeNotice } from '@/lib/cartMergeNotice'
 
 /**
  * カートを移した結果の知らせの中身。切り詰めた品目と移せなかった品目を示す（状態を持たない）。<br />
- * ログインの直後の知らせ（CartMergeNoticeView）と、カートの画面での再試行の結果（CartMergeRetryView）が使う。
+ * 読み上げの役割（`alert`、`status`）は持たない。ログインの直後の知らせ（CartMergeNoticeView）は `Alert` で包み、
+ * カートの画面での再試行の結果（CartMergeRetryView）は `status` の領域の中に入れる。
  */
 export function CartMergeNoticeBody({ notice }: { notice: CartMergeNotice }) {
   const t = useTranslations('cart.merge')
   return (
-    <Alert>
-      <AlertTitle>{t('title') /* 移した知らせ */}</AlertTitle>
-      <AlertDescription className="space-y-3">
+    <>
+      <p className="font-medium">{t('title') /* 移した知らせ */}</p>
+      <div className="text-muted-foreground space-y-3">
         {(notice.truncated.items.length > 0 || notice.truncated.more > 0) && (
           <div>
             <p>{t('truncated', { max: schemas.Quantity.maximum }) /* 数量を減らした */}</p>
@@ -25,8 +25,8 @@ export function CartMergeNoticeBody({ notice }: { notice: CartMergeNotice }) {
             <NoticeList items={notice.skipped.items} more={notice.skipped.more} />
           </div>
         )}
-      </AlertDescription>
-    </Alert>
+      </div>
+    </>
   )
 }
 

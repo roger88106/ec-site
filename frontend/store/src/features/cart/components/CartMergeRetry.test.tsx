@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { retryCartMerge } from '@/actions/cart'
 import { CartMergeRetry } from '@/features/cart/components/CartMergeRetry'
@@ -7,8 +7,10 @@ import { renderInBrowser } from '@/test/render'
 
 vi.mock('@/actions/cart', () => ({ retryCartMerge: vi.fn() }))
 
+const RETRYING = 'ログインする前のカートを移しています。'
+const FAILED = '会員のカートに移せませんでした'
+
 afterEach(() => {
-  cleanup()
   vi.mocked(retryCartMerge).mockReset()
 })
 
@@ -18,17 +20,26 @@ describe('カートを移す再試行', () => {
 
     const { rerender } = renderInBrowser(<CartMergeRetry pending />)
 
-    expect(screen.getByRole('status')).toHaveTextContent('ログインする前のカートを移しています。')
-    expect(await screen.findByRole('alert')).toHaveTextContent('会員のカートに移せませんでした')
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    expect(screen.getByRole('status')).toHaveTextContent(RETRYING)
+    expect(await screen.findByText(FAILED, { exact: false })).toBeInTheDocument()
+    expect(screen.getByRole('status')).not.toHaveTextContent(RETRYING)
 
-    // 成功の後は、カートの画面が再表示されて pending が false で届く。結果は残し、再び呼ばない
+    // 失敗のときはカートの画面を再表示しないが、pending が変わって届いても、結果は残し、再び呼ばない
     rerender(<CartMergeRetry pending={false} />)
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(screen.getByText(FAILED, { exact: false })).toBeInTheDocument()
     expect(retryCartMerge).toHaveBeenCalledTimes(1)
   })
 
-  test('AC-415-3 移せたときは、再表示で pending が false になっても、知らせを示し続ける', async () => {
+  test('AC-415-5 再試行の呼び出しが拒否されたら、移している間の文を消し、移せなかったことを示す', async () => {
+    vi.mocked(retryCartMerge).mockRejectedValueOnce(new Error('network'))
+
+    renderInBrowser(<CartMergeRetry pending />)
+
+    expect(await screen.findByText(FAILED, { exact: false })).toBeInTheDocument()
+    expect(screen.queryByText(RETRYING)).toBeNull()
+  })
+
+  test('AC-415-4 移せたときは、再表示で pending が false になっても、切り詰めた品目の知らせを示し続ける', async () => {
     vi.mocked(retryCartMerge).mockResolvedValueOnce({
       kind: 'merged',
       notice: {

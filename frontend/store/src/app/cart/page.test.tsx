@@ -13,6 +13,7 @@ const RETRYING = 'ログインする前のカートを移しています。'
  *
  * @param loggedIn     会員がログインしているか
  * @param cookieCartId Cookie のカート ID（なければ null）
+ * @returns カートの画面を読み込んだ DOM
  */
 async function renderCartPage(loggedIn: boolean, cookieCartId: string | null) {
   resetRequest(cookieCartId === null ? {} : { cookies: { cart_id: cookieCartId } })

@@ -1,10 +1,9 @@
-import { HttpResponse, http as mswHttp } from 'msw'
 import { describe, expect, test, vi } from 'vitest'
 import { mergeCartAfterLogin } from '@/api/cart'
 import { parseCartMergeNotice } from '@/lib/cartMergeNotice'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID, quoteItem } from '@/test/fixtures'
 import { cookieValue, resetRequest } from '@/test/next'
-import { http, problem, STORE_API, server } from '@/test/server'
+import { http, networkError, problem, STORE_API, server, statusError } from '@/test/server'
 import { recordStderr } from '@/test/stderr'
 
 /** ログインで得た access token（セッションの Cookie はまだない） */
@@ -78,15 +77,14 @@ describe('ログインの直後にカートを移す', () => {
     },
   )
 
-  test.each([500, 503, 401] as const)(
+  test.each([500, 503] as const)(
     'AC-415-1 移す API が %i のときは、Cookie のカート ID を残し、知らせの Cookie を書かない',
     async (status) => {
       resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
       recordStderr()
       server.use(
         http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
-        // 500・503 は API の契約にないので、型のない MSW のハンドラーで返す
-        mswHttp.post(`${STORE_API}/me/cart/merge`, () => HttpResponse.json({ message: 'error' }, { status })),
+        statusError('post', `${STORE_API}/me/cart/merge`, status),
       )
 
       await mergeCartAfterLogin(LOGIN_TOKEN)
@@ -96,10 +94,27 @@ describe('ログインの直後にカートを移す', () => {
     },
   )
 
+  test('移す API が 401 のときは、Cookie のカート ID を残し、知らせの Cookie を書かない', async () => {
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    recordStderr()
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      http.post('/me/cart/merge', ({ response }) => response(401).json(problem(401, 'UNAUTHENTICATED', ''))),
+    )
+
+    await mergeCartAfterLogin(LOGIN_TOKEN)
+
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+    expect(cookieValue('cart_merge_notice')).toBeUndefined()
+  })
+
   test('AC-415-1 通信が例外になったときは、Cookie のカート ID を残し、知らせの Cookie を書かない', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
     recordStderr()
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'))
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      networkError('post', `${STORE_API}/me/cart/merge`),
+    )
 
     await mergeCartAfterLogin(LOGIN_TOKEN)
 
@@ -110,8 +125,8 @@ describe('ログインの直後にカートを移す', () => {
   test('AC-415-1 移す前のカートの取得が例外になったときは、移さずに Cookie のカート ID を残す', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
     recordStderr()
-    // 1 回目（移す前のカートの取得）だけを例外にする。移す API が呼ばれれば、テストが失敗する（setup.ts）
-    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('fetch failed'))
+    // 移す API のハンドラーを渡さないので、呼ばれればテストが失敗する（setup.ts）
+    server.use(networkError('get', `${STORE_API}/carts/:cartId`))
 
     await mergeCartAfterLogin(LOGIN_TOKEN)
 

@@ -30,7 +30,7 @@ export type CartMergeResult =
   | { kind: 'merged'; notice: CartMergeNotice | null }
   /** 移すカートがない、または ID が不正（再試行しても結果が変わらない） */
   | { kind: 'gone' }
-  /** 一時的な失敗（5xx、例外） */
+  /** 一時的な失敗（5xx、例外、契約にない応答、2xx で本文のない応答） */
   | { kind: 'failed' }
   /** ログインが切れている */
   | { kind: 'unauthenticated' }
@@ -55,6 +55,7 @@ export async function mergeCart(cartId: string, headers?: Record<string, string>
     }
     // カートの ID は Cookie の値で、ゲストのカートは ID を知れば操作できるため、ログに出力しない
     await log.warn('カートを移せませんでした', { status: response.status })
+    // 2xx で本文がないのは契約にない応答なので、一時的な失敗にする
     return outcome === 'merged' ? { kind: 'failed' } : { kind: outcome }
   } catch (error) {
     // 例外のメッセージに URL（カートの ID）が入りうるため、例外の名前だけを残す
@@ -65,7 +66,7 @@ export async function mergeCart(cartId: string, headers?: Record<string, string>
 
 /**
  * ログインの直後に、Cookie のカートを会員のカートへ移す。Auth.js の signIn のイベントから呼ぶ。<br />
- * 移せたときと、移すカートがないときは、Cookie のカート ID を消す（ログインしている間は使わず、残すとログアウトの後に古いカートが見えるため）。
+ * 移せたときと、移すカートがないときは、Cookie のカート ID を消す（移せたときは移すカートが空になり、移すカートがないときは再試行しても結果が変わらないため）。
  * 移せたときは、切り詰めた品目と移せなかった品目の名前を、知らせの Cookie に書く。
  * 一時的な失敗とログインが切れているときは、カート ID を残し、知らせの Cookie も書かない（カートの画面を開くと、移す処理を再試行する）。
  *

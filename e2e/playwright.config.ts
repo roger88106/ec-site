@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
-import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, portOf, STORE_URL } from './src/urls'
+import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, IMAGE_ORIGIN, portOf, STORE_URL } from './src/urls'
 import { BACKEND_START_TIMEOUT, FRONTEND_START_TIMEOUT, TEST_TIMEOUT } from './src/waits'
 
 /** CI で動いているか（test.only を禁止し、HTML のレポートを残す） */
@@ -87,6 +87,7 @@ export default defineConfig({
         AUTH_KEYCLOAK_SECRET: 'ec-store-web-local-secret',
         AUTH_SECRET: 'ec-store-local-auth-secret-only-for-local-and-ci',
         AUTH_URL: STORE_URL,
+        STORE_IMAGE_ORIGIN: IMAGE_ORIGIN,
       },
       timeout: FRONTEND_START_TIMEOUT,
       reuseExistingServer: false,

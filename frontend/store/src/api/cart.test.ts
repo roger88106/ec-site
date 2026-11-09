@@ -58,19 +58,64 @@ describe('ログインの直後にカートを移す', () => {
     expect(cookieValue('cart_id')).toBeUndefined()
   })
 
-  test('AC-124 移せなかったときも、Cookie のカート ID を消す', async () => {
+  test.each([404, 400] as const)(
+    'AC-415-6 移す API が %i のときは、Cookie のカート ID を消し、知らせの Cookie を書かない',
+    async (status) => {
+      resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+      recordStderr()
+      server.use(
+        http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+        http.post('/me/cart/merge', ({ response }) =>
+          response(status).json(problem(status, 'NOT_FOUND', '見つかりませんでした。')),
+        ),
+      )
+
+      await mergeCartAfterLogin(LOGIN_TOKEN)
+
+      expect(cookieValue('cart_id')).toBeUndefined()
+      expect(cookieValue('cart_merge_notice')).toBeUndefined()
+    },
+  )
+
+  test.each([500, 503, 401] as const)(
+    'AC-415-1 移す API が %i のときは、Cookie のカート ID を残し、知らせの Cookie を書かない',
+    async (status) => {
+      resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+      recordStderr()
+      server.use(
+        http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+        http.post('/me/cart/merge', ({ response }) =>
+          response(status).json(problem(status, 'ERROR', '失敗しました。')),
+        ),
+      )
+
+      await mergeCartAfterLogin(LOGIN_TOKEN)
+
+      expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+      expect(cookieValue('cart_merge_notice')).toBeUndefined()
+    },
+  )
+
+  test('AC-415-1 通信が例外になったときは、Cookie のカート ID を残し、知らせの Cookie を書かない', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
     recordStderr()
-    server.use(
-      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
-      http.post('/me/cart/merge', ({ response }) =>
-        response(404).json(problem(404, 'NOT_FOUND', '見つかりませんでした。')),
-      ),
-    )
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'))
 
     await mergeCartAfterLogin(LOGIN_TOKEN)
 
-    expect(cookieValue('cart_id')).toBeUndefined()
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
+    expect(cookieValue('cart_merge_notice')).toBeUndefined()
+  })
+
+  test('AC-415-1 移す前のカートの取得が例外になったときは、移さずに Cookie のカート ID を残す', async () => {
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    recordStderr()
+    // 1 回目（移す前のカートの取得）だけを例外にする。移す API が呼ばれれば、テストが失敗する（setup.ts）
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('fetch failed'))
+
+    await mergeCartAfterLogin(LOGIN_TOKEN)
+
+    expect(cookieValue('cart_id')).toBe(COOKIE_CART_ID)
     expect(cookieValue('cart_merge_notice')).toBeUndefined()
   })
 

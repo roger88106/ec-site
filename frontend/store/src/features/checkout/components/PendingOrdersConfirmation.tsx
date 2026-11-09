@@ -11,9 +11,18 @@ import { NewOrderForm } from '@/features/checkout/components/NewOrderForm'
  * 支払待ちの注文の確認。注文ごとに、注文番号、注文日時、明細、総額、支払の期限を示し、支払へ進むか、新しく注文するか、戻るかを選ばせる。<br />
  * 「支払へ進む」は、支払える注文（`actions.pay`）にだけ出す。支払待ちのキャンセルの操作は置かない。
  *
+ * 上限に達して拒否されたときは、見出しの下に、新しく注文できないことを示す。
+ *
  * @param orders 支払待ちの注文（1 件以上）
+ * @param limitReached 支払待ちの注文の上限に達して拒否されたか（省略は false）
  */
-export function PendingOrdersConfirmation({ orders }: { orders: Order[] }) {
+export function PendingOrdersConfirmation({
+  orders,
+  limitReached = false,
+}: {
+  orders: Order[]
+  limitReached?: boolean
+}) {
   const t = useTranslations('checkout.pendingOrders')
   const tCommon = useTranslations('common')
   const tLabels = useTranslations('labels')
@@ -21,6 +30,11 @@ export function PendingOrdersConfirmation({ orders }: { orders: Order[] }) {
     <div className="space-y-6">
       <header className="space-y-2">
         <h1 className="font-heading text-2xl font-semibold">{t('title') /* お支払い待ちのご注文があります */}</h1>
+        {limitReached && (
+          <p className="text-sm font-semibold" role="status">
+            {t('limitReached') /* 上限に達しているため新しく注文できない */}
+          </p>
+        )}
         <p className="text-sm">{t('description') /* 案内 */}</p>
       </header>
 

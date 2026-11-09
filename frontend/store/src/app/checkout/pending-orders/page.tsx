@@ -5,6 +5,7 @@ import { getMemberApi } from '@/api/client'
 import { unwrapMember } from '@/api/result'
 import { requireMember } from '@/auth'
 import { PendingOrdersConfirmation } from '@/features/checkout/components/PendingOrdersConfirmation'
+import { LIMIT_PARAM, LIMIT_REACHED } from '@/lib/pendingOrders'
 
 /** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,13 +16,15 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * 支払待ちの注文の確認。注文手続きに進む前に、支払うか、新しく注文するか、戻るかを選ばせる。<br />
  * ログインを求め、支払待ちの注文がなければカートへ移る。
+ * クエリ `limit=reached` があるときは、上限に達して注文できないことを示す。
  */
-export default async function PendingOrdersPage() {
+export default async function PendingOrdersPage({ searchParams }: PageProps<'/checkout/pending-orders'>) {
+  const limitReached = (await searchParams)[LIMIT_PARAM] === LIMIT_REACHED
   await requireMember()
   const api = await getMemberApi()
   const { items } = await unwrapMember(await api.GET('/me/orders/pending'))
   if (items.length === 0) {
     redirect('/cart')
   }
-  return <PendingOrdersConfirmation orders={items} />
+  return <PendingOrdersConfirmation limitReached={limitReached} orders={items} />
 }

@@ -62,12 +62,35 @@ describe('表のセル', () => {
     const text = `<!-- generated:x -->\n${tableWithCell(301)}\n<!-- /generated:x -->\n${tableWithCell(301)}`
     assert.deepEqual(lines(OTHER, text, KIND.cell), [8])
   })
+
+  test('インラインコードの中の generated のマーカーは数えず、その後の表を検出する', () => {
+    const text = `開きは \`<!-- generated:x -->\` と書く\n\n${tableWithCell(301)}`
+    assert.deepEqual(lines(OTHER, text, KIND.cell), [5])
+    const indented = `  <!-- generated:x -->\n${tableWithCell(301)}\n  <!-- /generated:x -->\n${tableWithCell(301)}`
+    assert.deepEqual(lines(OTHER, indented, KIND.cell), [8])
+  })
 })
 
 describe('観測の語', () => {
   test('設計の「sandbox で確認した」を検出する', () => {
     assert.deepEqual(lines(DESIGN, '（売上確定済みは sandbox で確認した）', KIND.observation), [1])
     assert.deepEqual(lines(DESIGN, 'sandbox で確認した応答', KIND.observation), [1])
+  })
+
+  test('sandbox で試した結果の言い回し（2 つの動詞）を検出する', () => {
+    assert.deepEqual(lines(DESIGN, 'sandbox で確かめた', KIND.observation), [1])
+    assert.deepEqual(lines(DESIGN, 'sandbox で試した', KIND.observation), [1])
+  })
+
+  test('「sandbox では…確認した」「ことを確認した」「確認した結果」を検出する', () => {
+    assert.deepEqual(lines(DESIGN, 'sandbox では与信を取り消した PaymentIntent で、同じ応答になることを確認した', KIND.observation), [1])
+    assert.deepEqual(lines(DESIGN, '同じ応答になることを確認した', KIND.observation), [1])
+    assert.deepEqual(lines(DESIGN, '確認した結果', KIND.observation), [1])
+  })
+
+  test('手順の「sandbox で確認するときは」は検出しない', () => {
+    assert.deepEqual(lines(DESIGN, 'sandbox で確認するときは profile `stripe` を使う', KIND.observation), [])
+    assert.deepEqual(lines(DESIGN, 'Stripe の sandbox で確認するときだけ、次の手順で切り替える', KIND.observation), [])
   })
 
   test('設計の「sandbox で動かして確認した」を検出する', () => {
@@ -127,6 +150,16 @@ describe('Stripe の語', () => {
     assert.deepEqual(lines(SPEC, '`checkout.session.expired`', KIND.stripe), [1])
   })
 
+  test('機能仕様の charge の事象、charge_already_refunded、capture_method、Stripe-Signature を検出する', () => {
+    for (const word of ['`charge.refunded`', '`charge.*`', '`charge_already_refunded`', '`capture_method`', '`Stripe-Signature`', '`checkout.session.*`']) {
+      assert.deepEqual(lines(SPEC, `名前は ${word} である`, KIND.stripe), [1], word)
+    }
+  })
+
+  test('単独の Session と、charge の語を含む別の語は検出しない', () => {
+    assert.deepEqual(lines(SPEC, 'Session を持つ。discharge. 請求（charge）', KIND.stripe), [])
+  })
+
   test('機能仕様の Refund と Refunds API を検出する', () => {
     assert.deepEqual(lines(SPEC, '`Refund` を作る', KIND.stripe), [1])
     assert.deepEqual(lines(SPEC, 'Refunds API を呼ぶ', KIND.stripe), [1])
@@ -178,6 +211,12 @@ describe('Mermaid の参加者', () => {
   test('参加者が 3 の図を 2 つ置いた文書は検出しない', () => {
     const one = diagram('participant A', 'participant B', 'participant C')
     assert.deepEqual(lines(OTHER, `${one}\n\n${one}`, KIND.participants), [])
+  })
+
+  test('間に行のない 2 つの mermaid の囲み（参加者 3 と 3）は検出しない', () => {
+    const one = diagram('participant A', 'participant B', 'participant C')
+    const two = diagram('participant D', 'participant E', 'participant F')
+    assert.deepEqual(lines(OTHER, `${one}\n${two}`, KIND.participants), [])
   })
 
   test('ノードが 6 以上の flowchart と、text の囲みの中の sequenceDiagram は検出しない', () => {

@@ -5,7 +5,7 @@
 //   - Mermaid の sequenceDiagram：参加者が PARTICIPANTS（6）以上、自分への矢印のラベルが SELF_LABEL（21）字以上、他の矢印のラベルが OTHER_LABEL（26）字以上。
 //       参加者は宣言（participant、actor、create）と矢印の両端を、図ごとに重複なく数える。ラベルは `<br>` で分けた各行の最大の字数（コードポイント）で見る。
 // 対象：Git が管理する Markdown から、docs/08-spec/archive/、.claude/skills/review/evals/、`.claude/worktrees/` を除いたもの。
-//   観測の語と Stripe の語は template.md も除く（見本として語を書くため）。コードブロックの中は、Mermaid の図以外は見ない。
+//   観測の語と Stripe の語は template.md も除く（見本として語を書くため）。語の検査はコードブロック（Mermaid の図を含む）の中を見ない。表のセルもコードブロックの中を見ない。Mermaid の図の検査だけが mermaid の囲みの中を見る。
 // 1 行が 2 つの種類に当たるときは、種類ごとに 1 件ずつ出す。改行（CRLF と LF）と BOM で結果は変わらない。
 // 失敗したとき：warning では失敗にしない（終了コードは 0）。対象の Markdown が 0 件のときだけ、他の検査と同じく失敗にする。--list で一覧を出し、示された所を、文書を書く規則（writing.md、各 template.md）に沿って直すかを決める。
 // 除外：なし。閾値と語は、この script の先頭の定数で変える。
@@ -29,10 +29,10 @@ const SELF_LABEL = 21
 const OTHER_LABEL = 26
 
 /** 観測の語（設計・機能仕様に書かない観測の結果の言い回し） */
-const OBSERVATION_WORDS = /sandbox で(?:動かして)?確認|実測では|試したところ|検証したところ|確認したところ|計測では|動かしたところ/
+const OBSERVATION_WORDS = /sandbox で(?:動かして)?(?:確認し|確かめ|試し)た|sandbox では[^。]*確認した|ことを確認した|確認した結果|実測では|試したところ|検証したところ|確認したところ|計測では|動かしたところ/
 
 /** Stripe の語（機能仕様に書かない API の名前）。大文字小文字を区別し、プロジェクトの識別子（RefundRequested など）に当てない */
-const STRIPE_WORDS = /PaymentIntent|Checkout Session|capture_before|payment_intent|checkout\.session\.[a-z_]+|Refunds API|(?<![A-Za-z0-9_])Refund(?![A-Za-z0-9_])/
+const STRIPE_WORDS = /PaymentIntent|Checkout Session|capture_before|payment_intent|checkout\.session\.[a-z_*]+|(?<![A-Za-z0-9_])charge\.[a-z_*]|charge_already_refunded|capture_method|Stripe-Signature|Refunds API|(?<![A-Za-z0-9_])Refund(?![A-Za-z0-9_])/
 
 /** warning の文に示すラベルの目安。12 字と 20 字だけが docs/02-設計/template.md（骨組みの処理の流れ）の目安と同じ値。上の warning の閾値は、この目安より緩い */
 const GUIDE_SELF_LABEL = 12
@@ -85,11 +85,12 @@ function splitCells(row) {
  * 文書を、コードブロックの内と外に分けた行にする。
  *
  * @param {string} text 文書
- * @returns {{ line: number, text: string, fence: string | null }[]} 行。fence はコードブロックの中なら情報文字列（なければ空文字）、外なら null。開きと閉じの行は含めない
+ * @returns {{ line: number, text: string, fence: string | null, block: number }[]} 行。fence はコードブロックの中なら情報文字列（なければ空文字）、外なら null。block はコードブロックごとの番号（外は 0）。開きと閉じの行は含めない
  */
 function readLines(text) {
   const rows = []
   let open = null
+  let blocks = 0
   text
     .replace(/^﻿/, '')
     .split(/\r?\n/)
@@ -97,14 +98,15 @@ function readLines(text) {
       const match = raw.match(FENCE)
       if (open) {
         if (match && match[1][0] === open.char && match[1].length >= open.length && match[2].trim() === '') open = null
-        else rows.push({ line: index + 1, text: raw, fence: open.info })
+        else rows.push({ line: index + 1, text: raw, fence: open.info, block: blocks })
         return
       }
       if (match && !(match[1][0] === '`' && match[2].includes('`'))) {
+        blocks += 1
         open = { char: match[1][0], length: match[1].length, info: match[2].trim().split(/\s+/)[0] }
         return
       }
-      rows.push({ line: index + 1, text: raw, fence: null })
+      rows.push({ line: index + 1, text: raw, fence: null, block: 0 })
     })
   return rows
 }
@@ -112,7 +114,7 @@ function readLines(text) {
 /**
  * 表のセルの warning を探す。
  *
- * @param {{ line: number, text: string, fence: string | null }[]} rows 行
+ * @param {{ line: number, text: string, fence: string | null, block: number }[]} rows 行
  * @returns {{ line: number, kind: string, message: string }[]} warning
  */
 function findCells(rows) {
@@ -120,8 +122,8 @@ function findCells(rows) {
   let generated = 0
   for (const row of rows) {
     if (row.fence !== null) continue
-    if (/<!--\s*generated:/.test(row.text)) generated += 1
-    if (/<!--\s*\/generated:/.test(row.text)) generated = Math.max(0, generated - 1)
+    if (/^\s*<!--\s*generated:/.test(row.text)) generated += 1
+    if (/^\s*<!--\s*\/generated:/.test(row.text)) generated = Math.max(0, generated - 1)
     if (generated > 0 || !/^\s*\|/.test(row.text)) continue
     const cells = splitCells(row.text)
     if (cells.every((cell) => /^:?-+:?$/.test(cell))) continue
@@ -134,7 +136,7 @@ function findCells(rows) {
 /**
  * 語の warning を探す（1 行に種類ごとに 1 件）。
  *
- * @param {{ line: number, text: string, fence: string | null }[]} rows 行
+ * @param {{ line: number, text: string, fence: string | null, block: number }[]} rows 行
  * @param {string} kind 種類
  * @param {RegExp} pattern 語
  * @param {string} advice 説明の後半
@@ -164,7 +166,7 @@ function labelLength(label) {
 /**
  * Mermaid の sequenceDiagram の warning を探す。
  *
- * @param {{ line: number, text: string, fence: string | null }[]} rows 行
+ * @param {{ line: number, text: string, fence: string | null, block: number }[]} rows 行
  * @returns {{ line: number, kind: string, message: string }[]} warning
  */
 function findDiagrams(rows) {
@@ -179,11 +181,12 @@ function findDiagrams(rows) {
   let previous = null
   for (const row of rows) {
     if (row.fence !== 'mermaid') {
-      if (previous === 'mermaid') finish()
-      previous = row.fence
+      if (previous !== null) finish()
+      previous = null
       continue
     }
-    previous = 'mermaid'
+    if (previous !== row.block) finish()
+    previous = row.block
     const body = row.text.trim()
     if (body === 'sequenceDiagram') {
       finish()

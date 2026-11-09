@@ -125,7 +125,7 @@
   - 依存：T417-01-03
   - 範囲：`e2e/playwright.config.ts`、`e2e/tests/` の新しいファイル
   - 確認方法：追加した E2E と既存の E2E が通る。E2E の全体の実行時間の増分を pull request に書く。
-- [ ] **T417-01-05** 店舗画面の構成の「表示の決まり」の更新（決定 9）と、AC 一覧の更新。
+- [x] **T417-01-05** 店舗画面の構成の「表示の決まり」の更新（決定 9）と、AC 一覧の更新。
   - 依存：T417-01-03
   - 範囲：`docs/02-設計/apps/store.md`、`docs/03-機能仕様/acceptance-criteria.md`、`docs/03-機能仕様/storefront.md`（「今有効な AC」）
   - 確認方法：`node scripts/ci/ac-check.mjs` が通る。

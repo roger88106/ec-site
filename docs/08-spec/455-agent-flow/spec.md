@@ -160,7 +160,7 @@
   - 依存：T455-01-04、T455-01-05
   - 範囲：`.claude/skills/local-dev/SKILL.md`（必要なら同じフォルダーに場面ごとのファイルを追加する）
   - 確認方法：文書を読む
-- [ ] **T455-01-09** skill `sessions` に起動の指示の雛形を置く。`claude -p` と issue の読み方も修正する（DC-455-14、DC-455-21、DC-455-23、DC-455-27）。
+- [x] **T455-01-09** skill `sessions` に起動の指示の雛形を置く。`claude -p` と issue の読み方も修正する（DC-455-14、DC-455-21、DC-455-23、DC-455-27）。
   - 依存：T455-01-05
   - 範囲：`.claude/skills/sessions/SKILL.md`、`.claude/skills/sessions/handover.md`、`.claude/skills/sessions/rounds.md`
   - 確認方法：文書を読む

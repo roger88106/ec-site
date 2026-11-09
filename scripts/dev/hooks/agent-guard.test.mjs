@@ -262,7 +262,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
       'git push --repo origin --delete feature',
       'git push -d origin v1.0.0 feature',
     ]) {
-      assertDenied(command, /ブランチを消して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
+      assertDenied(command, /ブランチを削除して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
     }
   })
 
@@ -273,8 +273,31 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     for (const command of ['git push -f origin agent/367-x', 'git push origin +agent/367-x']) {
       assertDenied(command, /force push/)
     }
-    for (const command of ['git push --delete origin agent/367-x', 'git push origin :agent/367-x']) {
-      assertDenied(command, /ブランチを消して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
+    for (const command of ['git push --delete origin hotfix/1-x', 'git push origin :release/1.2.0']) {
+      assertDenied(command, /ブランチを削除して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+  })
+
+  test('作業ブランチ（agent/ で始まるもの）の削除は通す。他のブランチと同時に削除するときは拒否する', () => {
+    for (const command of [
+      'git push --delete origin agent/367-x',
+      'git push origin -d agent/367-x agent/368-y',
+      'git push origin :agent/367-x',
+      'git push origin :refs/heads/agent/367-x',
+    ]) {
+      assertPassed(command, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+    for (const command of [
+      'git push --delete origin agent/367-x feature',
+      'git push origin :agent/367-x :develop',
+      'git push --delete origin agentx/1',
+      'git push --delete origin refs/heads/main',
+      'git push --delete origin refs/remotes/agent/367-x',
+      'git push --delete origin Agent/367-x',
+      'git push --rep=origin --delete develop agent/367-x',
+      'git push --repo=origin --delete develop agent/367-x',
+    ]) {
+      assertDenied(command, /ブランチを削除して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
     }
   })
 

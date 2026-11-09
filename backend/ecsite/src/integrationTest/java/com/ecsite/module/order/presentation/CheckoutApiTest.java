@@ -544,26 +544,14 @@ class CheckoutApiTest {
         }
 
         /**
-         * 支払待ちの注文を、指定した件数まで続けて作る
+         * 支払待ちの注文を、指定した件数まで続けて作る（注文ごとに別の商品）
          */
         private List<UUID> placePendingOrders(int count) throws Exception {
-            var pendingIds = new ArrayList<UUID>();
+            var variants = new ArrayList<UUID>();
             for (int i = 0; i < count; i++) {
-                pendingIds.add(placeAnotherPendingOrder(pendingIds));
+                variants.add(stockedVariant(3));
             }
-            return pendingIds;
-        }
-
-        /**
-         * 今の支払待ちの注文を確認して、支払待ちの注文をもう 1 件作り、その ID を返す。
-         * 支払待ちの注文はカートの品目を残すので、続けて注文できるように、注文した品目をカートから除く。
-         */
-        private UUID placeAnotherPendingOrder(List<UUID> pendingIds) throws Exception {
-            var variant = stockedVariant(3);
-            orders.add(cartId, variant, 1);
-            var orderId = orders.placeFromCheckout(orders.startCheckout(cartId, pendingIds));
-            mockMvc.perform(delete("/api/store/carts/" + cartId + "/items/" + variant)).andExpect(status().isNoContent());
-            return orderId;
+            return orders.placePendingOrders(cartId, variants);
         }
     }
 

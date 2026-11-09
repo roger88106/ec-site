@@ -8,7 +8,7 @@
 // 出力：書き換えた commit（元の短い SHA → 新しい短い SHA と 1 行目）、件数、tree が一致したこと。
 // 終了コード：0 成功、1 書き換えなかった（条件に合わない、途中で失敗して戻した）、2 使い方の誤り。
 //
-// 書き換える前に確認すること：追跡しているファイルに未 commit の変更がない、対応表が読める、
+// 書き換える前に確認すること：rebase・merge・cherry-pick・revert・bisect が進行中でない、追跡しているファイルに未 commit の変更がない、対応表が読める、
 // 対象が HEAD の祖先である、重複がない、push 済み（refs/remotes/ のどれかから届く）でない、
 // 範囲（最も古い対象の親から HEAD まで）にマージの commit がない（rebase で平らになるため）。
 // どれかに当たれば、状態を変えずに 1 で終わる。
@@ -18,7 +18,7 @@
 // 失敗したときの見方：標準エラー出力の最初の行に理由が出る。途中で止まったときは git の出力も続く。
 // 元に戻せなかったときは、その旨と元の HEAD の SHA が出るので、git reset --hard <SHA> で手で戻す。
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -31,7 +31,9 @@ class Refusal extends Error {}
 
 /**
  * rebase の todo を書き換える。対象の commit の pick の行の後に、メッセージを差し替える exec の行を入れる。
- * entries は { commit: 完全な SHA, message: メッセージのファイルの絶対パス }。todo の SHA は短縮形なので前方一致で照合する
+ * entries は { commit: 完全な SHA, message: メッセージのファイルの絶対パス }。
+ * todo の SHA は、rebase を core.abbrev=no で実行して完全な形にしてあるので、完全な SHA の一致で照合する
+ * （短縮形の前方一致だと、前方が同じ 2 つの対象で、最初の対象のメッセージが両方に当たる）
  */
 export function editTodo(todo, entries) {
   const lines = todo.split('\n')
@@ -40,7 +42,7 @@ export function editTodo(todo, entries) {
     out.push(line)
     const match = /^(?:pick|p)\s+([0-9a-f]+)(?:\s|$)/.exec(line)
     if (!match) continue
-    const entry = entries.find((e) => e.commit.startsWith(match[1]))
+    const entry = entries.find((e) => e.commit === match[1])
     if (entry) out.push(`exec git commit --amend -F "${entry.message.replaceAll('\\', '/')}"`)
   }
   return out.join('\n')
@@ -96,8 +98,31 @@ function listCommits(cwd, base) {
   return out === '' ? [] : out.split('\n').map((line) => line.split(' '))
 }
 
+/** 進行中の操作の名前と、git のディレクトリの中でその印になるファイルかディレクトリ */
+const OPERATION_MARKERS = [
+  ['rebase', 'rebase-merge'],
+  ['rebase', 'rebase-apply'],
+  ['merge', 'MERGE_HEAD'],
+  ['cherry-pick', 'CHERRY_PICK_HEAD'],
+  ['revert', 'REVERT_HEAD'],
+  ['bisect', 'BISECT_LOG'],
+]
+
+/** rebase・merge・cherry-pick などが進行中ならその名前、なければ null。利用者が先に始めた操作を、自分の失敗の巻き戻しで中止しないため */
+function operationInProgress(cwd) {
+  for (const [name, marker] of OPERATION_MARKERS) {
+    const found = git(cwd, ['rev-parse', '--git-path', marker])
+    if (found.status === 0 && existsSync(path.resolve(cwd, found.stdout))) return name
+  }
+  return null
+}
+
 /** 書き換えを実行する。成功なら { lines }、条件に合わなければ Refusal を投げる */
 export function reword(mapPath, cwd = process.cwd()) {
+  const inProgress = operationInProgress(cwd)
+  if (inProgress !== null) {
+    throw new Refusal(`${inProgress}が進行中なので書き換えない（状態は変えていない）。終えるか中止してから、もう一度流す`)
+  }
   if (gitOrThrow(cwd, ['status', '--porcelain', '--untracked-files=no']) !== '') {
     throw new Refusal('追跡しているファイルに未 commit の変更がある（ステージを含む）')
   }
@@ -131,7 +156,7 @@ export function reword(mapPath, cwd = process.cwd()) {
     writeFileSync(planFile, JSON.stringify(plan))
     const q = (p) => `"${p.replaceAll('\\', '/')}"`
     const editor = `${q(process.execPath)} ${q(self)} --edit-todo ${q(planFile)}`
-    const rebase = git(cwd, ['-c', `sequence.editor=${editor}`, 'rebase', '-i', ...(isRoot ? ['--root'] : [base])], {
+    const rebase = git(cwd, ['-c', 'core.abbrev=no', '-c', `sequence.editor=${editor}`, 'rebase', '-i', ...(isRoot ? ['--root'] : [base])], {
       env: { ...process.env, GIT_EDITOR: 'true' },
     })
     if (rebase.status !== 0) {

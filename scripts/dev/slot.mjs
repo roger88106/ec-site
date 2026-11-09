@@ -369,16 +369,15 @@ async function release(ctx) {
  * stop：自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
- * @param {string[]} args 対象（backend、store、admin のどれか。省略は全て）
+ * @param {string[]} args 対象（backend、store、admin のどれか 1 つ。省略は全て）
  */
 function stop(ctx, args) {
-  const [target] = args
   const slot = currentSlot(ctx)
   if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
-  const ports = stopTargetPorts(slot, target)
-  if (ports === null) throw new Exit(1, `停止する対象は backend、store、admin のどれか：${target}`)
+  const target = stopTargetPorts(slot, args)
+  if (target.error !== undefined) throw new Exit(1, target.error)
   const result = stopSlot({
-    ports,
+    ports: target.ports,
     platform: process.platform,
     find: (list) => findListeners(list),
     stop: (listeners) => stopListeners(listeners),

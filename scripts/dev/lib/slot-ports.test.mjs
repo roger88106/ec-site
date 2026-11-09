@@ -113,24 +113,33 @@ describe('スロットの解除', () => {
 
 describe('停止の対象のポート', () => {
   test('backend はバックエンドと運用のポート', () => {
-    assert.deepEqual(stopTargetPorts(1, 'backend'), [18080, 19080])
+    assert.deepEqual(stopTargetPorts(1, ['backend']), { ports: [18080, 19080] })
   })
 
   test('store は店舗画面、admin は管理画面のポート', () => {
-    assert.deepEqual(stopTargetPorts(1, 'store'), [13000])
-    assert.deepEqual(stopTargetPorts(1, 'admin'), [15173])
+    assert.deepEqual(stopTargetPorts(1, ['store']), { ports: [13000] })
+    assert.deepEqual(stopTargetPorts(1, ['admin']), { ports: [15173] })
   })
 
   test('省略したときは 4 つ全て', () => {
-    assert.deepEqual(stopTargetPorts(1, undefined), PORTS)
+    assert.deepEqual(stopTargetPorts(1, []), { ports: PORTS })
   })
 
   test('スロット 0 は既定のポート', () => {
-    assert.deepEqual(stopTargetPorts(0, undefined), [8080, 9080, 3000, 5173])
+    assert.deepEqual(stopTargetPorts(0, []), { ports: [8080, 9080, 3000, 5173] })
   })
 
-  test('知らない対象は null', () => {
-    assert.equal(stopTargetPorts(1, 'api'), null)
+  test('知らない対象は、対象を示す理由を返す', () => {
+    const result = stopTargetPorts(1, ['api'])
+    assert.equal(result.ports, undefined)
+    assert.match(result.error, /backend、store、admin のどれか：api/)
+  })
+
+  test('対象が 2 つ以上なら、黙って無視せず、理由を返す', () => {
+    const result = stopTargetPorts(1, ['store', 'admin'])
+    assert.equal(result.ports, undefined)
+    assert.match(result.error, /1 つだけ/)
+    assert.match(result.error, /store admin/)
   })
 })
 

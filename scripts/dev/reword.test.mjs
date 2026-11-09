@@ -2,7 +2,7 @@
 // os.tmpdir() の下の一時のリポジトリの中だけで行い、テストの後に消す
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, beforeEach, describe, test } from 'node:test'
@@ -69,11 +69,41 @@ const subjects = (dir) => git(dir, 'log', '--reverse', '--format=%s')
 
 describe('todo の編集', () => {
   test('対象の commit の pick の行の後に exec を入れ、対象でない行は変えない', () => {
-    const todo = 'pick aaaaaaa one\npick bbbbbbb two\npick ccccccc three\n\n# comment\n'
-    const out = editTodo(todo, [{ commit: 'bbbbbbb0000000000000000000000000000000000', message: 'C:/tmp/m.txt' }])
+    const a = 'a'.repeat(40)
+    const b = 'b'.repeat(40)
+    const c = 'c'.repeat(40)
+    const todo = `pick ${a} one\npick ${b} two\npick ${c} three\n\n# comment\n`
+    const out = editTodo(todo, [{ commit: b, message: 'C:/tmp/m.txt' }])
     assert.equal(
       out,
-      'pick aaaaaaa one\npick bbbbbbb two\nexec git commit --amend -F "C:/tmp/m.txt"\npick ccccccc three\n\n# comment\n',
+      `pick ${a} one\npick ${b} two\nexec git commit --amend -F "C:/tmp/m.txt"\npick ${c} three\n\n# comment\n`,
+    )
+  })
+
+  test('前方が同じ 2 つの対象は、それぞれ自分のメッセージを受ける', () => {
+    const first = `abcdef1${'0'.repeat(33)}`
+    const second = `abcdef1${'2'.repeat(33)}`
+    const todo = `pick ${first} one\npick ${second} two\n`
+    const out = editTodo(todo, [
+      { commit: first, message: 'C:/tmp/first.txt' },
+      { commit: second, message: 'C:/tmp/second.txt' },
+    ])
+    assert.equal(
+      out,
+      `pick ${first} one\nexec git commit --amend -F "C:/tmp/first.txt"\npick ${second} two\nexec git commit --amend -F "C:/tmp/second.txt"\n`,
+    )
+  })
+
+  test('短縮形の SHA の行は、前方一致で対象にしない（完全な SHA の一致だけ）', () => {
+    const first = `abcdef1${'0'.repeat(33)}`
+    const second = `abcdef1${'2'.repeat(33)}`
+    const todo = 'pick abcdef1 one\npick abcdef1 two\n'
+    assert.equal(
+      editTodo(todo, [
+        { commit: first, message: 'C:/tmp/first.txt' },
+        { commit: second, message: 'C:/tmp/second.txt' },
+      ]),
+      todo,
     )
   })
 })
@@ -229,6 +259,32 @@ describe('拒否', () => {
     assert.equal(result.status, 1, result.stdout + result.stderr)
     assert.match(result.stderr, /マージ/)
     assertUntouched(dir, head, before)
+  })
+
+  test('rebase が進行中なら、状態を変えず、進行中の rebase を残して終了コード 1 で止まる', () => {
+    const { dir } = makeRepo(['one', 'two', 'three'])
+    // 最初の commit を edit にして止める
+    const editor = path.join(root, `seq-editor-${counter++}.mjs`)
+    writeFileSync(
+      editor,
+      "import { readFileSync, writeFileSync } from 'node:fs'\n" +
+        'const file = process.argv[2]\n' +
+        "writeFileSync(file, readFileSync(file, 'utf8').replace(/^pick /, 'edit '))\n",
+    )
+    const rebaseEnv = { ...env, GIT_SEQUENCE_EDITOR: `node "${editor.replaceAll('\\', '/')}"` }
+    const started = spawnSync('git', ['rebase', '-i', '--root'], { cwd: dir, encoding: 'utf8', env: rebaseEnv })
+    assert.equal(started.status, 0, started.stdout + started.stderr)
+    const rebaseDir = path.resolve(dir, git(dir, 'rev-parse', '--git-path', 'rebase-merge'))
+    assert.equal(existsSync(rebaseDir), true)
+    const head = git(dir, 'rev-parse', 'HEAD')
+
+    const result = run(dir, [{ commit: head, message: 'one2\n' }])
+
+    assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /進行中/)
+    assert.equal(existsSync(rebaseDir), true, '進行中の rebase を中止してはいけない')
+    assert.equal(git(dir, 'rev-parse', 'HEAD'), head)
+    assert.equal(git(dir, 'log', '-1', '--format=%s'), 'one')
   })
 
   test('使い方の誤り（引数なし）は終了コード 2', () => {

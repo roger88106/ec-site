@@ -7,16 +7,18 @@ import { checkBackendStopped, slotPorts } from './slot.mjs'
  * stop コマンドの対象から、停止するポートを決める。
  *
  * @param {number} slot スロットの番号
- * @param {string | undefined} target backend、store、admin のどれか。省略は 4 つ全て
- * @returns {number[] | null} 停止するポート。知らない対象は null
+ * @param {string[]} args stop の引数。backend、store、admin のどれか 1 つ。空は 4 つ全て
+ * @returns {{ ports: number[] } | { error: string }} 停止するポート。2 つ以上の対象と知らない対象は、理由
  */
-export function stopTargetPorts(slot, target) {
+export function stopTargetPorts(slot, args) {
   const [backend, management, store, admin] = slotPorts(slot)
-  if (target === undefined) return [backend, management, store, admin]
-  if (target === 'backend') return [backend, management]
-  if (target === 'store') return [store]
-  if (target === 'admin') return [admin]
-  return null
+  if (args.length > 1) return { error: `停止する対象は 1 つだけ指定する（省略は全て）：${args.join(' ')}` }
+  const [target] = args
+  if (target === undefined) return { ports: [backend, management, store, admin] }
+  if (target === 'backend') return { ports: [backend, management] }
+  if (target === 'store') return { ports: [store] }
+  if (target === 'admin') return { ports: [admin] }
+  return { error: `停止する対象は backend、store、admin のどれか：${target}` }
 }
 
 /**

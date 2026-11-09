@@ -29,4 +29,18 @@ describe('郵便番号の正規化', () => {
   test('DC-135-7 先頭のハイフン 1 つも除かれる今の振る舞いを保つ', () => {
     expect(normalizePostalCode('-1234567')).toBe('1234567')
   })
+
+  test('AC-416-1 全角の数字とハイフンの類も、変換して 7 桁にする', () => {
+    expect(normalizePostalCode('１００－０００１')).toBe('1000001')
+    expect(normalizePostalCode('１０００００１')).toBe('1000001')
+    // U+30FC（長音符）、U+2212（マイナス記号）、U+2015（水平線）
+    expect(normalizePostalCode('100ー0001')).toBe('1000001')
+    expect(normalizePostalCode('100−0001')).toBe('1000001')
+    expect(normalizePostalCode('100―0001')).toBe('1000001')
+  })
+
+  test('AC-416-4 変換の後もハイフンが 2 つ以上ある全角の入力は、null を返す', () => {
+    expect(normalizePostalCode('１００－００－０１')).toBeNull()
+    expect(normalizePostalCode('１００－－０００１')).toBeNull()
+  })
 })

@@ -8,19 +8,19 @@
 
 実装役が実装し、汎用で effort は中。
 
-- [ ] **T411-02-01** [テスト] アクションのテストを書く（AC-411-9、10 の遷移）。
+- [x] **T411-02-01** [テスト] アクションのテストを書く（AC-411-9、10 の遷移）。
   - 依存：なし
   - 範囲：`cart.test.ts`、`checkout.test.ts`
   - 確認方法：テストが失敗することを確認する
-- [ ] **T411-02-02** T411-02-01 のテストが通る実装を書く。開始と注文の 409 で上限の拒否を受けたら、上限を示すクエリパラメーターを付けた確認の画面へ遷移する。
+- [x] **T411-02-02** T411-02-01 のテストが通る実装を書く。開始と注文の 409 で上限の拒否を受けたら、上限を示すクエリパラメーターを付けた確認の画面へ遷移する。
   - 依存：T411-02-01
   - 範囲：`frontend/store/src/actions/cart.ts`、`frontend/store/src/actions/checkout.ts`、`frontend/store/src/lib/pendingOrders.ts`
   - 確認方法：テストが通る
-- [ ] **T411-02-03** [テスト] 確認の画面のテストを書く（AC-411-9、10 の文、11）。
+- [x] **T411-02-03** [テスト] 確認の画面のテストを書く（AC-411-9、10 の文、11）。
   - 依存：T411-02-02
   - 範囲：`PendingOrdersConfirmation.test.tsx`、`app/checkout/pending-orders/page.test.tsx`
   - 確認方法：テストが失敗することを確認する
-- [ ] **T411-02-04** T411-02-03 のテストが通る実装を書く。クエリパラメーターがあれば上限の文を表示する。
+- [x] **T411-02-04** T411-02-03 のテストが通る実装を書く。クエリパラメーターがあれば上限の文を表示する。
   - 依存：T411-02-03
   - 範囲：`frontend/store/src/app/checkout/pending-orders/page.tsx`、`frontend/store/src/features/checkout/components/PendingOrdersConfirmation.tsx`、`frontend/store/messages/ja.json`
   - 確認方法：テストが通る

@@ -486,6 +486,37 @@ class CheckoutApiTest {
         }
 
         @Test
+        @DisplayName("AC-411-3 上限に達して拒否するときは、前の注文手続きの引当も解かない")
+        void keepsPreviousReservationWhenRejected() throws Exception {
+            var pendingIds = placePendingOrders(3);
+            var variant = stockedVariant(5);
+            orders.add(cartId, variant, 1);
+            // 前の注文手続きの引当を残すため、その開始の間だけ上限を上げる
+            doReturn(10).when(properties).pendingOrderLimit();
+            orders.startCheckout(cartId, pendingIds);
+            doReturn(3).when(properties).pendingOrderLimit();
+            var reserved = sellable(variant);
+            assertThat(reserved).isEqualTo(4);
+            var checkouts = checkoutCount();
+
+            expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
+
+            assertThat(sellable(variant)).isEqualTo(reserved);
+            assertThat(checkoutCount()).isEqualTo(checkouts);
+        }
+
+        @Test
+        @DisplayName("BR-411-1 支払の期限を過ぎても、期限切れのキャンセルが済むまでは、上限の件数に数えて開始を拒否する")
+        void countsOverdueOrderUntilCancelled() throws Exception {
+            var pendingIds = placePendingOrders(3);
+            orders.add(cartId, stockedVariant(3), 1);
+            var order = mockMvc.perform(get("/api/store/orders/" + pendingIds.getLast())).andReturn().getResponse().getContentAsString();
+            clock.setInstant(Instant.parse(JsonPath.read(order, "$.paymentDeadline")).plusSeconds(1));
+
+            expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
+        }
+
+        @Test
         @DisplayName("AC-411-4 上限に達していても、確認していない支払待ちの注文があれば、上限でなく確認を求める 409 を返す")
         void requiresConfirmationBeforeLimit() throws Exception {
             var pendingIds = placePendingOrders(3);

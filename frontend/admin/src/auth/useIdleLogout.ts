@@ -39,9 +39,9 @@ type IdleLogoutState = {
 export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogoutState {
   const [warning, setWarning] = useState(false)
   const [logoutAtMs, setLogoutAtMs] = useState(() => logoutAt(Date.now()))
-  // 判定の effect を onExpire が変わるたびに置き直す（計測をやり直す）と困るので、ref で最新の関数を渡す
+  // 判定の effect を onExpire が変わるたびに置き直す（計測をやり直す）ことを避けるため、ref で最新の関数を渡す
   const onExpireRef = useRef(onExpire)
-  // 「操作を続ける」は effect が作る記録の処理を呼ぶので、effect が置いた関数を ref で外に渡す
+  // 「操作を続ける」は effect の中で作る記録の処理を外から呼ぶため、effect が ref に入れた関数を使う
   const keepWorkingRef = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -112,7 +112,7 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
       }
       lastActivityAt = now
       share(now, force)
-      // 操作中のタイマーは、鳴ったときに新しい時刻から置き直すので、警告の間だけ判定し直す
+      // 操作中のタイマーは、実行されたときに新しい時刻から置き直すので、警告の間だけ判定し直す
       if (warned || force) {
         evaluate()
       }
@@ -136,7 +136,7 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
 
     keepWorkingRef.current = () => record(true)
     share(lastActivityAt, true)
-    // 子の部品が操作のイベントを止めても数えるよう、捕捉の段階で受け取る
+    // 子のコンポーネントがイベントの伝播を止めても数えるよう、キャプチャーフェーズで受け取る
     for (const type of ACTIVITY_EVENTS) {
       window.addEventListener(type, onActivity, { capture: true, passive: true })
     }

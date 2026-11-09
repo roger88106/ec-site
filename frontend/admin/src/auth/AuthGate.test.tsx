@@ -205,7 +205,7 @@ describe('ログインの門の、無操作のログアウト', () => {
   })
 
   test('AC-413-8 「操作を続ける」を押すと、警告を閉じ、そこから 30 分たつまでログアウトしない', async () => {
-    // Testing Library は操作の後に setTimeout で待ち、vitest の偽の時計を進めないので、偽の時計を実際の時間とともにも進める
+    // Testing Library は操作の後に setTimeout で待ち、vitest の偽の時計を進めないので、偽の時計を実際の時間でも進める
     startClock({ shouldAdvanceTime: true })
     auth = signedIn()
     const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
@@ -226,7 +226,7 @@ describe('ログインの門の、無操作のログアウト', () => {
   })
 
   test('AC-413-8 警告の間に Esc を押すと、警告を閉じる', async () => {
-    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間とともにも進める
+    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間でも進める
     startClock({ shouldAdvanceTime: true })
     auth = signedIn()
     const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
@@ -285,12 +285,12 @@ describe('ログインの門の、タブの間のログアウト', () => {
     sessionStorage.clear()
   })
 
-  test('AC-413-9 ログアウトの印は、ec-admin. で始まるキーに置く', () => {
+  test('AC-413-9 ログアウトの印は、ec-admin. で始まるキーに書く', () => {
     expect(LOGOUT_KEY.startsWith('ec-admin.')).toBe(true)
   })
 
   test('AC-413-9 手動でログアウトすると、IdP のログアウトへ移る前に、ログアウトの印（時刻だけ）を書き、最後に操作した時刻を削除する', async () => {
-    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間とともにも進める
+    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間でも進める
     startClock({ shouldAdvanceTime: true })
     const { state, atSignout } = signedInRecordingStorage()
     auth = state
@@ -364,7 +364,7 @@ describe('ログインの門の、タブの間のログアウト', () => {
   })
 
   test('AC-413-9 ログアウトしてからログインし直すと、前のログインの時刻や印で早くログアウトせず、ログインから 30 分でログアウトする', async () => {
-    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間とともにも進める
+    // 「操作を続ける」のテストと同じく、偽の時計を実際の時間でも進める
     startClock({ shouldAdvanceTime: true })
     auth = signedIn()
     const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })

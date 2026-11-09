@@ -7,7 +7,7 @@ import { advanceClock, MINUTE, operate, otherTabWrites, START, startClock } from
 /** 1 日（ミリ秒） */
 const DAY = 24 * 60 * MINUTE
 
-/** タイマーを進めずに時刻だけ進める（PC のスリープ。偽の時計は、置いたタイマーの予定も同じだけ動かす） */
+/** タイマーを進めずに時刻だけ進める（PC のスリープ。偽の時計は、登録したタイマーの実行時刻も同じだけ動かす） */
 function sleep(ms: number) {
   act(() => {
     vi.setSystemTime(Date.now() + ms)
@@ -233,7 +233,7 @@ describe('無操作のログアウト（フック）', () => {
     expect(onExpire).not.toHaveBeenCalled()
   })
 
-  test('AC-413-6 スリープの後にタブの見え方が変わらなくても、判定の間隔のうちにログアウトする', () => {
+  test('AC-413-6 スリープの後にタブの表示状態が変わらなくても、判定の間隔のうちにログアウトする', () => {
     const { onExpire } = renderIdle()
     sleep(31 * MINUTE)
 

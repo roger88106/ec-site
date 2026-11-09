@@ -4,6 +4,13 @@ import { clearLastActivity, readStoredTime, writeStoredTime } from '@/auth/idle'
 /** ログアウトの印（ログアウトした時刻のミリ秒の数値）を書くローカルストレージのキー。タブの間で共有する */
 export const LOGOUT_KEY = 'ec-admin.loggedOutAt'
 
+/**
+ * 印の時刻（ブラウザーの時計）と auth_time（IdP の時計）を比べるときに許す、時計のずれ（ミリ秒）。<br />
+ * ブラウザーの時計が進んでいると、印の後にパスワードでログインし直しても auth_time が印より古くなり、
+ * ログインし直すたびにログアウトするため。
+ */
+const CLOCK_SKEW_MS = 5 * 60 * 1000
+
 /** タブの間で共有するログアウト */
 type SharedLogout = {
   /** ログアウトする（手動と無操作のどちらも）。印を書き、最後に操作した時刻を削除してから、IdP のログアウトへ移る */
@@ -16,13 +23,13 @@ type SharedLogout = {
  * ログアウトを、同じブラウザーの他のタブに伝え、他のタブのログアウトを受ける（管理画面の構成の「ログイン」）。<br />
  * 他のタブのログアウトの印を受け取ったら、このタブも IdP のログアウトへ移る。token を捨てるだけにしないのは、
  * 他のタブが IdP のログインへ移り、残っている IdP のセッションでパスワードなしに再ログインしないため。
- * 印は storage イベントで受けるほか、このタブのログインより新しい印があるかを、ログインしたとき、
- * ページが表示されたとき、タブが再び見えた・前面に戻ったときにも確認する。戻る・進むのキャッシュから戻ったタブや、
- * 印が書かれたときに読み込み中だったタブには、storage イベントが届かないため。
+ * 印は storage イベントで受けるほか、このタブが画面を出した時刻か、ログインの時刻（auth_time に時計のずれの幅を加える）より
+ * 新しい印があるかを、ログインしたとき、ページが表示されたとき、タブが再び見えた・前面に戻ったときにも確認する。
+ * 戻る・進むのキャッシュから戻ったタブや、印が書かれたときに読み込み中だったタブには、storage イベントが届かないため。
  * IdP のログアウトへ移るのは 1 回だけ。
  *
  * @param options.enabled    ログインしているときだけ true（ログインしていないタブでは、印を受けても何もしない）
- * @param options.loggedInAt このタブのログインの時刻（ミリ秒。ID token の auth_time）。ないときは、enabled が true になった時刻にする
+ * @param options.loggedInAt このタブのログインの時刻（ミリ秒。ID token の auth_time）。ないときは undefined
  * @param options.signout    IdP のログアウトへ移る。移り始めに失敗したら reject する
  * @returns ログアウトの処理と、移り始めたか
  */
@@ -71,11 +78,16 @@ export function useSharedLogout({
     if (!enabled) {
       return
     }
-    const since = loggedInAt ?? Date.now()
+    const enabledAt = Date.now()
     /** このタブのログインより後に書かれた印があれば、IdP のログアウトへ移る */
     const check = () => {
       const at = readStoredTime(LOGOUT_KEY)
-      if (at !== null && at > since) {
+      if (at === null) {
+        return
+      }
+      // 画面を出した後の印（戻る・進むのキャッシュから戻ったタブ）は、同じブラウザーの時計どうしで比べる。
+      // 画面を出す前の印（読み込み中だったタブ）は、IdP の時計の auth_time と、時計のずれの幅を空けて比べる
+      if (at > enabledAt || (loggedInAt !== undefined && at > loggedInAt + CLOCK_SKEW_MS)) {
         leave()
       }
     }

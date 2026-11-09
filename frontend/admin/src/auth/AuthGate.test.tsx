@@ -440,7 +440,8 @@ describe('ログインの門の、タブの間のログアウト', () => {
   test('AC-413-9 印が書かれたときに読み込み中だったタブは、残っている IdP のセッションで前のログインのまま戻ると、IdP のログアウトへ移る', () => {
     localStorage.setItem(LOGOUT_KEY, String(START + MINUTE))
     vi.setSystemTime(START + 2 * MINUTE)
-    auth = signedInSince(START)
+    // 前のログインは、印より時計のずれの幅（5 分）を超えて前
+    auth = signedInSince(START - 10 * MINUTE)
 
     renderGate()
 
@@ -451,6 +452,20 @@ describe('ログインの門の、タブの間のログアウト', () => {
     localStorage.setItem(LOGOUT_KEY, String(START + MINUTE))
     vi.setSystemTime(START + 2 * MINUTE)
     auth = signedInSince(START + 2 * MINUTE)
+
+    renderGate()
+    comeBackToTab('pageshow')
+    comeBackToTab('visibilitychange')
+    comeBackToTab('focus')
+
+    expect(auth.signoutRedirect).not.toHaveBeenCalled()
+  })
+
+  test('AC-413-9 ブラウザーの時計が IdP より 3 分進んでいても、印より後にパスワードでログインし直したタブはログアウトしない', () => {
+    // ブラウザーの時計で、印の 1 分後にログインし直す。IdP の時計の auth_time は、ずれの分だけ印より前になる
+    localStorage.setItem(LOGOUT_KEY, String(START + MINUTE))
+    vi.setSystemTime(START + 2 * MINUTE)
+    auth = signedInSince(START + 2 * MINUTE - 3 * MINUTE)
 
     renderGate()
     comeBackToTab('pageshow')

@@ -4,7 +4,7 @@ import { readServerConfig } from '@/auth/config'
 import { contentSecurityPolicy } from '@/lib/server/securityHeaders'
 import { newTraceparent, TRACEPARENT_HEADER, traceIdOf } from '@/lib/server/trace'
 
-/** CSP の値。環境変数から作るので、モジュールの読み込みのときに 1 回だけ作る */
+/** CSP の値（店舗画面の構成の「セキュリティヘッダー」）。環境変数から作るので、モジュールの読み込みのときに 1 回だけ作る */
 const { issuer, apiBaseUrl, imageOrigin } = readServerConfig()
 const CONTENT_SECURITY_POLICY = contentSecurityPolicy({
   production: process.env.NODE_ENV === 'production',

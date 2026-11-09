@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   // 共有のパッケージは TypeScript のソースのまま使う（フロントの書き方の「共有パッケージ」）
   transpilePackages: ['@ec-site/shared'],
   typedRoutes: true,
-  // 値が固定のヘッダーだけをここに置く。本番のモードでは設定ファイルのヘッダーがビルドのときに決まり、起動のときの環境変数を反映しない。
+  // 店舗画面の構成の「セキュリティヘッダー」。値が固定のヘッダーだけをここに置く。本番のモードでは設定ファイルのヘッダーがビルドのときに決まり、起動のときの環境変数を反映しない。
   // 環境変数に依存する CSP は proxy.ts で付ける
   headers: async () => [{ source: '/:path*', headers: fixedSecurityHeaders(process.env.NODE_ENV === 'production') }],
   // 開発のサーバーに、エージェント向けの AGENTS.md を作らせない。エージェントの手順はリポジトリのルートの AGENTS.md と skill に書く

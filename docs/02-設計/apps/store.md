@@ -309,6 +309,7 @@ access token の期限までの残りが 1 分未満なら、refresh token で�
 - IdP の client ID と secret（`AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET`）
 - IdP と API の接続先（`AUTH_KEYCLOAK_ISSUER`、`STORE_API_BASE_URL`）
 - 店舗画面を公開する URL（`AUTH_URL`）
+- 商品の画像の配信元のオリジン（`STORE_IMAGE_ORIGIN`）
 
 ローカル用の既定値（realm の JSON と同じ値）は、開発モードとテストでだけ使う（BR-31） ※10。確認と任意の設定（既定値のあるもの）の読み取りの場所は、フロントの書き方の「環境変数は起動時に確認する」のとおり。管理画面は接続先をビルドの時に埋め込むので、必須の設定は本番ビルドで確認する（管理画面の構成の「ログイン」）。
 
@@ -319,3 +320,28 @@ access token の期限までの残りが 1 分未満なら、refresh token で�
 - サーバーログは 1 行 1 件の JSON にする。項目は時刻、レベル、メッセージ、トレース ID、その他の項目。
 - レベル：操作は失敗したが処理を続けられるものは `warn`、予期しない失敗は `error`、調べるための記録は `info`。
 - ログに出力するトレース ID は、店舗 API の呼び出しで付ける `traceparent` と同じ（「エラー」のトレース ID）。
+
+### セキュリティヘッダー
+
+店舗画面の応答に、セキュリティヘッダーを付ける。付け方は、ヘッダーの値が固定かどうかで分ける。
+
+| ヘッダー | 付け方 |
+|----------|--------|
+| 値が固定のもの（`X-Frame-Options`、`X-Content-Type-Options`、`Referrer-Policy`。本番モードだけ `Strict-Transport-Security`） | Next.js の設定ファイル（`next.config.ts` の `headers()`）で、全てのパスに付ける |
+| CSP | 環境変数から作るオリジンを含むので、proxy（`proxy.ts`）でリクエストごとに付ける。proxy の対象外のパス（Auth.js のエンドポイント、静的なファイル）には付かない（固定のヘッダーは付く） |
+
+CSP を設定ファイルに置かないのは、本番モードの Next.js が、設定ファイルのヘッダーに起動のときの環境変数を反映しないため。
+
+値の正本は `frontend/store/src/lib/server/securityHeaders.ts`。ディレクティブの値は、ここに写さない。許すオリジンは、次のように作る。
+
+| 許すもの | 作り方 |
+|----------|--------|
+| 商品の画像（`img-src`） | `STORE_IMAGE_ORIGIN` |
+| フォームの送信先（`form-action`）の IdP | `AUTH_KEYCLOAK_ISSUER` のオリジン |
+| フォームの送信先の決済サービス | Stripe の支払画面のオリジン（コードの定数） |
+| フォームの送信先の mock の支払画面 | `STORE_API_BASE_URL` のオリジン（mock の支払画面はバックエンドが表示する） |
+
+- nonce は使わないので、インラインのスクリプトとスタイルを許す（`'unsafe-inline'`）。開発モードだけ `'unsafe-eval'` も許す。
+- フォームの送信先に外部のオリジンを入れるのは、JavaScript が読み込まれる前に送ったフォームの、外部へのリダイレクト（支払、ログアウト）を止めないため。
+- `Strict-Transport-Security` のサブドメインへの適用とプリロードの登録は、公開のドメインが決まるまで指定しない。
+- 管理画面のヘッダーは、デプロイ先が決まってから付ける（issue #418）。

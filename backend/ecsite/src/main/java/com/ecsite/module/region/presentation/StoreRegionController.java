@@ -12,8 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 地域のコントローラー（C 側。store.yaml の tag: region）。<br />
- * 3 つとも token なしで使える。店舗モジュールを通さず、地域モジュールが受ける（docs/03-機能仕様/region.md「参照」、docs/02-設計/region.md「API」）。
+ * 地域の店舗 API のコントローラー
+ *
+ * <p>store.yaml のタグ region の 3 つの操作を実装する。どれも token なしで使える。
+ * 店舗モジュールを通さず、地域モジュールが受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -43,7 +45,8 @@ class StoreRegionController implements RegionApi {
      * 都道府県の市区町村の一覧
      *
      * @param prefectureCode 都道府県のコード
-     * @return Http 200 : {@link MunicipalityList}。都道府県がなければ 404
+     * @return Http 200 : {@link MunicipalityList}
+     * @throws BusinessException 都道府県がない（{@code NOT_FOUND}）
      */
     @Override
     public ResponseEntity<MunicipalityList> listMunicipalities(String prefectureCode) {

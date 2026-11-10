@@ -31,6 +31,8 @@ class JooqRegionRepository implements RegionRepository {
 
     /**
      * 都道府県の一覧
+     *
+     * @return コードの順の都道府県
      */
     @Override
     public List<Prefecture> findPrefectures() {
@@ -40,6 +42,9 @@ class JooqRegionRepository implements RegionRepository {
 
     /**
      * 都道府県をコードで引く
+     *
+     * @param code 都道府県のコード
+     * @return 都道府県。なければ空
      */
     @Override
     public Optional<Prefecture> findPrefecture(String code) {
@@ -49,6 +54,9 @@ class JooqRegionRepository implements RegionRepository {
 
     /**
      * 都道府県の市区町村の一覧
+     *
+     * @param prefectureCode 都道府県のコード
+     * @return コードの順の市区町村。都道府県がなければ空の一覧
      */
     @Override
     public List<Municipality> findMunicipalities(String prefectureCode) {
@@ -60,6 +68,9 @@ class JooqRegionRepository implements RegionRepository {
 
     /**
      * 市区町村をコードで引く
+     *
+     * @param code 市区町村のコード
+     * @return 市区町村。なければ空
      */
     @Override
     public Optional<Municipality> findMunicipality(String code) {
@@ -69,7 +80,12 @@ class JooqRegionRepository implements RegionRepository {
     }
 
     /**
-     * 郵便番号の住所。市区町村と都道府県を結んで、並び順に返す
+     * 郵便番号の住所
+     *
+     * <p>市区町村と都道府県を結合して、並び順に返す。
+     *
+     * @param postalCode 郵便番号（数字 7 桁）
+     * @return 並び順の住所。なければ空の一覧
      */
     @Override
     public List<PostalAddress> findPostalAddresses(String postalCode) {

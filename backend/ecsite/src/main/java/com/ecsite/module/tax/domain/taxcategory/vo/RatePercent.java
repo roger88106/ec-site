@@ -6,6 +6,7 @@ import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 /**
@@ -68,6 +69,6 @@ public record RatePercent(BigDecimal value) {
      */
     private static BigDecimal normalize(BigDecimal value) {
         var stripped = value.stripTrailingZeros();
-        return stripped.scale() < 0 ? stripped.setScale(0) : stripped;
+        return stripped.scale() < 0 ? stripped.setScale(0, RoundingMode.UNNECESSARY) : stripped;
     }
 }

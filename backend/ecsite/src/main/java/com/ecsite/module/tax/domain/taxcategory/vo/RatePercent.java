@@ -9,8 +9,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 率（%）。0 以上 100 未満、小数第 2 位まで。<br />
- * 値は末尾の 0 を除いた形にそろえる。書き方（{@code 10} と {@code 10.00}）が違っても、同じ値なら等しい。
+ * 率（%）
+ *
+ * <p>0 以上 100 未満、小数第 2 位まで。値は末尾の 0 を除いた形にそろえ、
+ * 書き方（{@code 10} と {@code 10.00}）が違っても、同じ値なら等しい。
  *
  * @param value 率（%）
  */
@@ -36,6 +38,7 @@ public record RatePercent(BigDecimal value) {
      * コンストラクタ。
      *
      * @param value 率（%）
+     * @throws BusinessException 0 以上 100 未満でない、または小数が 2 桁を超える
      */
     public RatePercent(@NonNull BigDecimal value) {
         var normalized = normalize(value);
@@ -51,6 +54,7 @@ public record RatePercent(BigDecimal value) {
      *
      * @param value 率（%）
      * @return 率
+     * @throws BusinessException 0 以上 100 未満でない、または小数が 2 桁を超える
      */
     public static RatePercent of(BigDecimal value) {
         return new RatePercent(value);

@@ -5,6 +5,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,7 @@ public class TaxCategoryQueryService {
     /**
      * すべての税区分を取得する。
      *
-     * @return 税区分の一覧（現時点の率を含む）
+     * @return 税区分の一覧（現時点の率を含む。税率は適用開始日時の古い順）
      */
     public List<TaxCategoryView> listTaxCategories() {
         var now = clock.instant();
@@ -49,9 +50,10 @@ public class TaxCategoryQueryService {
      * 税区分を取得する。
      *
      * @param id 税区分 ID
-     * @return 税区分（現時点の率を含む）
+     * @return 税区分（現時点の率を含む。税率は適用開始日時の古い順）
+     * @throws BusinessException 税区分がない（{@code NOT_FOUND}）
      */
-    public TaxCategoryView getTaxCategory(UUID id) {
+    public TaxCategoryView getTaxCategory(@NonNull UUID id) {
         return findTaxCategory(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
@@ -59,9 +61,9 @@ public class TaxCategoryQueryService {
      * 税区分を取得する。なければ空を返す。
      *
      * @param id 税区分 ID
-     * @return 税区分（現時点の率を含む）。なければ空
+     * @return 税区分（現時点の率を含む。税率は適用開始日時の古い順）。なければ空
      */
-    public Optional<TaxCategoryView> findTaxCategory(UUID id) {
+    public Optional<TaxCategoryView> findTaxCategory(@NonNull UUID id) {
         return taxCategoryQueryRepository.findById(id)
                 .map(view -> withCurrentRate(view, clock.instant()));
     }

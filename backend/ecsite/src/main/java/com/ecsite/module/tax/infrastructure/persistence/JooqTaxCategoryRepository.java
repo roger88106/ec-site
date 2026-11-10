@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.tax.Keys;
+import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Name;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
@@ -36,9 +38,9 @@ import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 class JooqTaxCategoryRepository implements TaxCategoryRepository {
 
     /**
-     * 適用期間の重複を防ぐ排他制約（検査を遅らせる設定）。<br />
-     * jOOQ は排他制約のコードを生成せず、SET CONSTRAINTS の DSL もないため、名前で指す。
-     * マイグレーションとの一致は統合テストで確認する（JooqTaxCategoryRepositoryTest）。
+     * 適用期間の重複を防ぐ排他制約（検査を遅らせる設定）
+     *
+     * <p>jOOQ は排他制約のコードを生成しないので、名前で指す。
      */
     static final Name PERIOD_NO_OVERLAP = DSL.name("tax", "tax_rate_period_no_overlap");
 
@@ -77,19 +79,22 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      */
     @Override
     public Optional<TaxCategory> findById(UUID id) {
-        return dsl.selectFrom(TAX_CATEGORY)
+        // 税区分の取得
+        @Nullable TaxCategoryRecord category = dsl.selectFrom(TAX_CATEGORY)
                 .where(TAX_CATEGORY.ID.eq(id))
-                .fetchOptional()
-                // スナップショットに変換する
-                .map(category -> new TaxCategory.Snapshot(
-                        category.getId(),
-                        category.getName(),
-                        dsl.selectFrom(TAX_RATE)
-                                .where(TAX_RATE.TAX_CATEGORY_ID.eq(id))
-                                .fetch(JooqTaxCategoryRepository::toTaxRate),
-                        category.getVersion()))
-                // スナップショットからドメインに変換する
-                .map(factory::restore);
+                .fetchOne();
+        if (category == null) {
+            return Optional.empty();
+        }
+
+        // 税率の取得
+        var rates = dsl.selectFrom(TAX_RATE)
+                .where(TAX_RATE.TAX_CATEGORY_ID.eq(id))
+                .fetch(JooqTaxCategoryRepository::toTaxRate);
+
+        // スナップショットからドメインに変換する
+        var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
+        return Optional.of(factory.restore(snapshot));
     }
 
     /**
@@ -121,8 +126,9 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     }
 
     /**
-     * 税区分を更新する。<br />
-     * 税率は差分で更新する：なくなった税率を削除し、残りを追加または更新する。
+     * 税区分を更新する。
+     *
+     * <p>税率は差分で更新する：なくなった税率を削除し、残りを追加または更新する。
      *
      * @param taxCategory 税区分
      */
@@ -174,8 +180,9 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     }
 
     /**
-     * 税率を追加または更新し、遅らせていた排他制約を検査させる。<br />
-     * 途中で一時的に期間が重なってもよいので、排他制約は最後に検査する。
+     * 税率を追加または更新し、遅らせていた排他制約を検査させる。
+     *
+     * <p>途中で一時的に期間が重なってもよいので、排他制約は最後に検査する。
      *
      * @param snapshot 税区分のスナップショット
      */
@@ -207,8 +214,9 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     }
 
     /**
-     * 遅らせていた排他制約（適用期間の重複）を、この時点で検査させる。<br />
-     * コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため（docs/03-機能仕様/tax.md）。
+     * 遅らせていた排他制約（適用期間の重複）を、この時点で検査させる。
+     *
+     * <p>コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため。
      * 検査の後は遅らせる設定に戻し、同じトランザクションの後続の書き込みでも途中の重なりを許す。
      */
     private void checkDeferredConstraints() {

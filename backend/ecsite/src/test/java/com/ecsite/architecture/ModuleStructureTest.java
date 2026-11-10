@@ -723,7 +723,7 @@ class ModuleStructureTest {
         public void check(JavaClass javaClass, ConditionEvents events) {
             for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
                 JavaClass target = dependency.getTargetClass();
-                if (target.getPackageName().equals(apiPackage) && !isAllowed(javaClass, target)) {
+                if (ProductionClasses.isInPackage(target.getPackageName(), apiPackage) && !isAllowed(javaClass, target)) {
                     events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
                 }
             }

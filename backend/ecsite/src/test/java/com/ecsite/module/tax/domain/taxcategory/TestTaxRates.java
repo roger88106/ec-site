@@ -2,6 +2,7 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
 
 import java.math.BigDecimal;
 import java.time.Instant;

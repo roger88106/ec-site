@@ -1,10 +1,14 @@
 package com.ecsite.module.tax.api;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.tax.api.model.ConsumptionTaxAmount;
+import com.ecsite.module.tax.api.model.TaxRateSchedule;
+import com.ecsite.module.tax.api.model.TaxableAmount;
 import com.ecsite.module.tax.application.TaxCategoryQueryService;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.domain.taxcategory.TaxCalculator;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +19,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税モジュールが商品カタログと注文に公開する API（docs/02-設計/tax.md「他のモジュールへの公開」）
+ * 税モジュールの公開の API
+ *
+ * <p>税率の一覧、指定した時点の率、税込価格と税率ごとの消費税額の計算を提供する。
  */
 @Component
 @RequiredArgsConstructor
@@ -29,21 +35,20 @@ public class TaxRateApi {
     /**
      * 税区分ごとの税率の一覧（予定を含む）を返す。
      *
-     * @return すべての税区分の税率の一覧
+     * @return すべての税区分の税率の一覧（税率は適用開始日時の古い順）
      */
     public List<TaxRateSchedule> listRateSchedules() {
         return queryService.listTaxCategories().stream().map(TaxRateApi::toSchedule).toList();
     }
 
     /**
-     * 指定した時点の率を返す。<br />
-     * 商品への割り当て時に、現時点で有効な税率を持つかの判定にも使う。
+     * 指定した時点の率を返す。
      *
      * @param taxCategoryId 税区分 ID
      * @param instant       時点
      * @return 率（%）。税区分がない、またはその時点の税率がなければ空
      */
-    public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
+    public Optional<BigDecimal> rateAt(@NonNull UUID taxCategoryId, @NonNull Instant instant) {
         return queryService.findTaxCategory(taxCategoryId).flatMap(view -> toSchedule(view).rateAt(instant));
     }
 
@@ -54,7 +59,7 @@ public class TaxRateApi {
      * @param ratePercent  率（%）
      * @return 税込価格
      */
-    public Money priceInclTax(Money priceExclTax, BigDecimal ratePercent) {
+    public Money priceInclTax(@NonNull Money priceExclTax, @NonNull BigDecimal ratePercent) {
         return TaxCalculator.priceInclTax(priceExclTax, RatePercent.of(ratePercent));
     }
 
@@ -64,7 +69,7 @@ public class TaxRateApi {
      * @param taxables 税率と税込金額の組の一覧
      * @return 税率ごとの消費税額（税率の高い順）
      */
-    public List<ConsumptionTaxAmount> consumptionTaxes(List<TaxableAmount> taxables) {
+    public List<ConsumptionTaxAmount> consumptionTaxes(@NonNull List<TaxableAmount> taxables) {
         var domainTaxables = taxables.stream()
                 .map(taxable -> new TaxCalculator.Taxable(RatePercent.of(taxable.ratePercent()), taxable.amountInclTax()))
                 .toList();

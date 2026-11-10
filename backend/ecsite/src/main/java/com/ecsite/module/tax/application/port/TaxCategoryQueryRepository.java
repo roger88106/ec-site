@@ -7,15 +7,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税区分のクエリリポジトリ。<br />
- * 返すビューの現時点の率（{@code currentRatePercent}）は空のまま。時刻で決まるので、クエリサービスが設定する。
+ * 税区分のクエリリポジトリ
  */
 public interface TaxCategoryQueryRepository {
 
     /**
      * すべての税区分を取得する。
      *
-     * @return 税区分の一覧（登録の古い順）
+     * @return 税区分の一覧（登録の古い順）。税率は適用開始日時の古い順で、現時点の率は空
      */
     List<TaxCategoryView> findAll();
 
@@ -23,7 +22,7 @@ public interface TaxCategoryQueryRepository {
      * 税区分を取得する。
      *
      * @param id 税区分 ID
-     * @return 税区分。なければ空
+     * @return 税区分（税率は適用開始日時の古い順で、現時点の率は空）。なければ空
      */
     Optional<TaxCategoryView> findById(UUID id);
 }

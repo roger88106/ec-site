@@ -4,7 +4,8 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.tax.domain.TaxErrorCode;
-import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -12,7 +13,6 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +23,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 税区分の Aggregate Root。<br />
- * 名称と、税率の一覧を持つ。税率は 1 件ずつではなく、一覧ごと置き換える（docs/03-機能仕様/tax.md）。
+ * 税区分
+ *
+ * <p>名称と、税率の一覧を持つ集約のルート。税率は 1 件ずつではなく、一覧ごと置き換える。
  */
 @Getter
 @Accessors(fluent = true)
@@ -35,12 +36,6 @@ public class TaxCategory extends AggregateRoot {
      * 名称の最大の文字数
      */
     static final int NAME_MAX_LENGTH = 50;
-
-    /**
-     * 税率の並び順：適用開始日時の古い順（空白が先頭）
-     */
-    private static final Comparator<TaxRate> BY_EFFECTIVE_FROM = Comparator.comparing(
-            (TaxRate rate) -> rate.period().effectiveFrom(), Comparator.nullsFirst(Comparator.naturalOrder()));
 
 // ============================== フィールド定義 ==============================
 
@@ -58,7 +53,8 @@ public class TaxCategory extends AggregateRoot {
     /**
      * 税率の一覧（適用開始日時の古い順）
      */
-    private List<TaxRate> rates;
+    @Getter(AccessLevel.NONE)
+    private TaxRates rates;
 
     /**
      * バージョン（楽観ロック）。リポジトリが保存するときに上げる
@@ -81,7 +77,7 @@ public class TaxCategory extends AggregateRoot {
         }
         this.id = id;
         this.name = name;
-        this.rates = rates.stream().sorted(BY_EFFECTIVE_FROM).toList();
+        this.rates = new TaxRates(rates);
         this.version = version;
     }
 
@@ -91,6 +87,7 @@ public class TaxCategory extends AggregateRoot {
      * @param id   税区分 ID
      * @param name 名称
      * @return 税区分
+     * @throws BusinessException 名称が空、または長すぎる
      */
     static TaxCategory create(UUID id, String name) {
         return new TaxCategory(id, name, List.of(), 0);
@@ -99,43 +96,48 @@ public class TaxCategory extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
+     * 税率の一覧を返す。
+     *
+     * @return 税率の一覧（適用開始日時の古い順）
+     */
+    public List<TaxRate> rates() {
+        return rates.list();
+    }
+
+    /**
      * 指定した時点の税率を返す。期間は重複しないので、該当は 0 件か 1 件。
      *
      * @param instant 時点
      * @return その時点を含む税率。なければ空
      */
     public Optional<TaxRate> rateAt(Instant instant) {
-        return EffectivePeriod.findAt(rates, TaxRate::period, instant);
+        return rates.at(instant);
     }
 
     /**
-     * 税率の一覧を置き換える。<br />
-     * 検証に失敗した場合は、一覧を変えずに業務のエラーを投げる。
+     * 税率の一覧を置き換える。
      *
      * @param drafts 置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する
      * @param now    現在時刻
+     * @throws BusinessException 置き換え後の一覧が検証に合わない。一覧は変えない
      */
     public void replaceRates(@NonNull List<TaxRateDraft> drafts, @NonNull Instant now) {
         if (drafts.isEmpty()) {
             throw BusinessException.of(TaxErrorCode.TAX_RATES_REQUIRED);
         }
-        var currentById = rates.stream().collect(Collectors.toMap(TaxRate::id, Function.identity()));
+        var currentById = rates.byId();
         var draftsById = verifyReferences(drafts, currentById);
 
         // 既存の税率と照合して、変更できるかを判定する
-        rates.forEach(current -> verifyChangeable(current, draftsById.get(current.id()), now));
+        rates.list().forEach(current -> verifyChangeable(current, draftsById.get(current.id()), now));
         drafts.forEach(draft -> verifyNoPastDateTime(draft, currentById.get(draft.id()), now));
 
-        // 一覧の形を検証する
+        // 新しい税率（ID なし）には ID を振り、一覧の形（期間の連続）を検証する
         var replaced = drafts.stream()
-                // 新しい税率（ID なし）には ID を振る
                 .map(draft -> new TaxRate(Objects.requireNonNullElseGet(draft.id(), UUID::randomUUID),
                         draft.ratePercent(), draft.period()))
-                .sorted(BY_EFFECTIVE_FROM)
                 .toList();
-        verifyContinuous(replaced);
-
-        this.rates = replaced;
+        this.rates = TaxRates.continuous(replaced);
     }
 
 // ============================== プライベートメソッド ==============================
@@ -189,7 +191,8 @@ public class TaxCategory extends AggregateRoot {
 
     /**
      * 新たに設定する開始・終了が、空白か現在より後であることを検証する。
-     * 既存の税率で変えていない日時は、新たに設定したものとみなさない。
+     *
+     * <p>既存の税率で変えていない日時は、新たに設定したものとみなさない。
      *
      * @param draft   置き換え後の税率
      * @param current 既存の税率。新しい税率なら null
@@ -217,28 +220,6 @@ public class TaxCategory extends AggregateRoot {
         return instant != null && !instant.isAfter(now);
     }
 
-    /**
-     * 期間が重複せず、途切れがなく、最後の税率の終了が空白であることを検証する。
-     *
-     * @param sorted 適用開始日時の古い順に並べた税率の一覧
-     */
-    private static void verifyContinuous(List<TaxRate> sorted) {
-        for (int i = 1; i < sorted.size(); i++) {
-            var previousEnd = sorted.get(i - 1).period().effectiveTo();
-            var start = sorted.get(i).period().effectiveFrom();
-            // どちらかが空白なら、無限に伸びる側と重なる
-            if (previousEnd == null || start == null || previousEnd.isAfter(start)) {
-                throw BusinessException.of(TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);
-            }
-            if (previousEnd.isBefore(start)) {
-                throw BusinessException.of(TaxErrorCode.TAX_RATE_PERIODS_GAP);
-            }
-        }
-        if (sorted.getLast().period().effectiveTo() != null) {
-            throw BusinessException.of(TaxErrorCode.TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED);
-        }
-    }
-
 // ============================== スナップショット関連処理 ==============================
 
     /**
@@ -258,7 +239,7 @@ public class TaxCategory extends AggregateRoot {
      * @return 税区分のスナップショット
      */
     public Snapshot toSnapshot() {
-        return new Snapshot(id, name, rates, version);
+        return new Snapshot(id, name, rates.list(), version);
     }
 
     /**

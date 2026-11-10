@@ -1,5 +1,6 @@
 package com.ecsite.module.region.infrastructure.persistence;
 
+import com.ecsite.module.region.application.model.MunicipalityView;
 import com.ecsite.module.region.application.port.RegionRepository;
 import com.ecsite.module.region.domain.vo.Municipality;
 import com.ecsite.module.region.domain.vo.PostalAddress;
@@ -89,16 +90,19 @@ class JooqRegionRepository implements RegionRepository {
     }
 
     /**
-     * 市区町村をコードで引く
+     * 市区町村と、属する都道府県をコードで引く
      *
      * @param code 市区町村のコード
-     * @return 市区町村。なければ空
+     * @return 都道府県と市区町村。なければ空
      */
     @Override
-    public Optional<Municipality> findMunicipality(String code) {
-        return dsl.select(MUNICIPALITY_ROW).from(MUNICIPALITY)
+    public Optional<MunicipalityView> findMunicipality(String code) {
+        // 列の並びは MunicipalityView の項目の順にする
+        return dsl.select(PREFECTURE_ROW, MUNICIPALITY_ROW)
+                .from(MUNICIPALITY)
+                .join(PREFECTURE).on(PREFECTURE.CODE.eq(MUNICIPALITY.PREFECTURE_CODE))
                 .where(MUNICIPALITY.CODE.eq(code))
-                .fetchOptional(Record1::value1);
+                .fetchOptional(Records.mapping(MunicipalityView::new));
     }
 
     /**

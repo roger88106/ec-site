@@ -70,16 +70,7 @@ public class RegionQueryService {
      * @return 都道府県と市区町村。なければ空
      */
     public Optional<MunicipalityView> findMunicipality(@NonNull String code) {
-        // 市区町村の取得
-        var found = repository.findMunicipality(code);
-        if (found.isEmpty()) {
-            return Optional.empty();
-        }
-        var municipality = found.get();
-
-        // 属する都道府県の取得
-        return repository.findPrefecture(municipality.prefectureCode())
-                .map(prefecture -> new MunicipalityView(prefecture, municipality));
+        return repository.findMunicipality(code);
     }
 
     /**

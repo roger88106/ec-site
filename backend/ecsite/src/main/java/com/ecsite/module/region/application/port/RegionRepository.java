@@ -1,5 +1,6 @@
 package com.ecsite.module.region.application.port;
 
+import com.ecsite.module.region.application.model.MunicipalityView;
 import com.ecsite.module.region.domain.vo.Municipality;
 import com.ecsite.module.region.domain.vo.PostalAddress;
 import com.ecsite.module.region.domain.vo.Prefecture;
@@ -36,12 +37,12 @@ public interface RegionRepository {
     List<Municipality> findMunicipalities(String prefectureCode);
 
     /**
-     * 市区町村をコードで引く
+     * 市区町村と、属する都道府県をコードで引く
      *
      * @param code 市区町村のコード
-     * @return 市区町村。なければ空
+     * @return 都道府県と市区町村。なければ空
      */
-    Optional<Municipality> findMunicipality(String code);
+    Optional<MunicipalityView> findMunicipality(String code);
 
     /**
      * 郵便番号の住所

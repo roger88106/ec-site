@@ -6,7 +6,7 @@ import com.ecsite.api.store.model.PostalCodeAddress;
 import com.ecsite.api.store.model.PostalCodeAddressList;
 import com.ecsite.api.store.model.Prefecture;
 import com.ecsite.api.store.model.PrefectureList;
-import com.ecsite.module.region.domain.PostalAddress;
+import com.ecsite.module.region.domain.vo.PostalAddress;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,7 +23,7 @@ class RegionMapper {
      * @param prefectures 都道府県
      * @return 都道府県の一覧のレスポンス
      */
-    PrefectureList toPrefectureList(List<com.ecsite.module.region.domain.Prefecture> prefectures) {
+    PrefectureList toPrefectureList(List<com.ecsite.module.region.domain.vo.Prefecture> prefectures) {
         return new PrefectureList().items(prefectures.stream().map(RegionMapper::toPrefecture).toList());
     }
 
@@ -33,7 +33,7 @@ class RegionMapper {
      * @param municipalities 市区町村
      * @return 市区町村の一覧のレスポンス
      */
-    MunicipalityList toMunicipalityList(List<com.ecsite.module.region.domain.Municipality> municipalities) {
+    MunicipalityList toMunicipalityList(List<com.ecsite.module.region.domain.vo.Municipality> municipalities) {
         return new MunicipalityList().items(municipalities.stream().map(RegionMapper::toMunicipality).toList());
     }
 
@@ -60,7 +60,7 @@ class RegionMapper {
      * @param prefecture 都道府県
      * @return 都道府県の型
      */
-    private static Prefecture toPrefecture(com.ecsite.module.region.domain.Prefecture prefecture) {
+    private static Prefecture toPrefecture(com.ecsite.module.region.domain.vo.Prefecture prefecture) {
         return new Prefecture().code(prefecture.code()).name(prefecture.name());
     }
 
@@ -70,7 +70,7 @@ class RegionMapper {
      * @param municipality 市区町村
      * @return 市区町村の型
      */
-    private static Municipality toMunicipality(com.ecsite.module.region.domain.Municipality municipality) {
+    private static Municipality toMunicipality(com.ecsite.module.region.domain.vo.Municipality municipality) {
         return new Municipality().code(municipality.code()).name(municipality.name());
     }
 }

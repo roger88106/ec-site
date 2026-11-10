@@ -1,9 +1,9 @@
 package com.ecsite.module.region.infrastructure.persistence;
 
 import com.ecsite.module.region.application.port.RegionRepository;
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.PostalAddress;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.PostalAddress;
+import com.ecsite.module.region.domain.vo.Prefecture;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Record1;

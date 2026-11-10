@@ -1,4 +1,4 @@
-package com.ecsite.module.region.domain;
+package com.ecsite.module.region.domain.vo;
 
 import lombok.NonNull;
 

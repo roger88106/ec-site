@@ -1,8 +1,8 @@
 package com.ecsite.module.region.application.port;
 
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.PostalAddress;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.PostalAddress;
+import com.ecsite.module.region.domain.vo.Prefecture;
 
 import java.util.List;
 import java.util.Optional;

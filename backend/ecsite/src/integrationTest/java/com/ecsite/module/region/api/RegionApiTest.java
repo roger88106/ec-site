@@ -1,6 +1,8 @@
 package com.ecsite.module.region.api;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.module.region.api.model.RegionMunicipality;
+import com.ecsite.module.region.api.model.RegionPrefecture;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

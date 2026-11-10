@@ -1,5 +1,7 @@
 package com.ecsite.module.region.api;
 
+import com.ecsite.module.region.api.model.RegionMunicipality;
+import com.ecsite.module.region.api.model.RegionPrefecture;
 import com.ecsite.module.region.application.RegionQueryService;
 import com.ecsite.module.region.domain.Municipality;
 import com.ecsite.module.region.domain.Prefecture;

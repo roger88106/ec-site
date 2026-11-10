@@ -1,4 +1,4 @@
-package com.ecsite.module.region.api;
+package com.ecsite.module.region.api.model;
 
 /**
  * 都道府県

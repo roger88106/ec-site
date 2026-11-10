@@ -41,7 +41,7 @@ services:
 
   # 画像のファイルの置き場所（S3 互換）。http://localhost:8333
   seaweedfs:
-    image: chrislusf/seaweedfs:4.50
+    image: chrislusf/seaweedfs:4.51
     container_name: ec-site-seaweedfs
     # ボリュームの数の上限は「空きの容量 ÷ ボリュームの大きさ（既定 30GB）」。空きの少ない環境（CI）でも
     # 両方のバケットにボリュームを割り当てられるよう、ボリュームを小さくする
@@ -60,7 +60,7 @@ services:
 
   # 画像のバケット、CORS、公開の設定、ライフサイクル規則を作り、seed の商品画像を写して終わる
   seaweedfs-init:
-    image: amazon/aws-cli:2.39.0
+    image: amazon/aws-cli:2.39.3
     container_name: ec-site-seaweedfs-init
     depends_on:
       seaweedfs:
@@ -115,7 +115,7 @@ services:
   # 認証（IdP）。http://localhost:8180（管理の画面は /admin、admin / admin）
   # 起動時に keycloak/realms/ の realm を取り込む。すでにある realm は取り込み直さない
   keycloak:
-    image: quay.io/keycloak/keycloak:26.8.1
+    image: quay.io/keycloak/keycloak:26.8.2
     container_name: ec-site-keycloak
     depends_on:
       postgres:
@@ -147,7 +147,7 @@ services:
   # E2E の準備の script（e2e/scripts/prepare.ts）が、database keycloak_e2e を再作成してから起動するので、
   # 毎回、realm の JSON の状態から始まる。E2E で登録した会員は、ローカルの Keycloak に残らない
   keycloak-e2e:
-    image: quay.io/keycloak/keycloak:26.8.1
+    image: quay.io/keycloak/keycloak:26.8.2
     container_name: ec-site-keycloak-e2e
     profiles: [e2e]
     depends_on:
@@ -178,7 +178,7 @@ services:
   # http://localhost:8025（画面と API）。SMTP はコンテナの中で 1025、ホストで 2525（MAILPIT_SMTP_PORT で変えられる）。
   # ホストの既定を 1025 にしないのは、Windows のシステムのプログラムが 1025 を使うことがあるため
   mailpit:
-    image: axllent/mailpit:v1.32.0
+    image: axllent/mailpit:v1.33.0
     container_name: ec-site-mailpit
     ports:
       - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"
@@ -187,7 +187,7 @@ services:
   # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する
   # （docs/06-手順書/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
   stripe-cli:
-    image: stripe/stripe-cli:v1.55.3
+    image: stripe/stripe-cli:v1.55.6
     container_name: ec-site-stripe-cli
     profiles: [stripe]
     env_file:

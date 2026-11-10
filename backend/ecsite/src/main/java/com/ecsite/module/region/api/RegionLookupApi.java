@@ -56,6 +56,8 @@ public class RegionLookupApi {
                 .map(found -> toMunicipality(found.prefecture(), found.municipality()));
     }
 
+// ============================== プライベートメソッド ==============================
+
     /**
      * 公開する都道府県の型に変換する
      *

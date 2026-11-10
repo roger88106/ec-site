@@ -19,7 +19,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税モジュールが商品カタログと注文に公開する API（docs/02-設計/tax.md「他のモジュールへの公開」）
+ * 税モジュールの公開の API
+ *
+ * <p>税率の一覧、指定した時点の率、税込価格と税率ごとの消費税額の計算を提供する。
  */
 @Component
 @RequiredArgsConstructor
@@ -33,15 +35,14 @@ public class TaxRateApi {
     /**
      * 税区分ごとの税率の一覧（予定を含む）を返す。
      *
-     * @return すべての税区分の税率の一覧
+     * @return すべての税区分の税率の一覧（税率は適用開始日時の古い順）
      */
     public List<TaxRateSchedule> listRateSchedules() {
         return queryService.listTaxCategories().stream().map(TaxRateApi::toSchedule).toList();
     }
 
     /**
-     * 指定した時点の率を返す。<br />
-     * 商品への割り当て時に、現時点で有効な税率を持つかの判定にも使う。
+     * 指定した時点の率を返す。
      *
      * @param taxCategoryId 税区分 ID
      * @param instant       時点

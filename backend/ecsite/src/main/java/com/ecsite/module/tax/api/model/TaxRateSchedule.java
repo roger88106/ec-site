@@ -10,11 +10,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税区分ごとの税率の一覧（予定を含む）。<br />
- * 商品カタログが、表示時刻で有効な率を決めて SQL に埋め込むために使う（docs/03-機能仕様/catalog.md）。
+ * 税区分ごとの税率の一覧
+ *
+ * <p>これから適用する予定の税率を含む。
  *
  * @param taxCategoryId 税区分 ID
- * @param rates         税率の一覧（適用開始日時の古い順）
+ * @param rates         税率の一覧
  */
 public record TaxRateSchedule(UUID taxCategoryId, List<Rate> rates) {
 
@@ -29,7 +30,9 @@ public record TaxRateSchedule(UUID taxCategoryId, List<Rate> rates) {
     }
 
     /**
-     * 税率。適用期間は開始を含み、終了を含まない。
+     * 税率
+     *
+     * <p>適用期間は開始を含み、終了を含まない。
      *
      * @param ratePercent   率（%）
      * @param effectiveFrom 適用開始日時。null は過去すべて

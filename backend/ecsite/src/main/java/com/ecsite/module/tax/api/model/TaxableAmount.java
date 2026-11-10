@@ -5,7 +5,9 @@ import com.ecsite.common.model.value.Money;
 import java.math.BigDecimal;
 
 /**
- * 消費税額の計算の対象。品目の小計や送料を、その率と組にして渡す。
+ * 消費税額の計算の対象
+ *
+ * <p>品目の小計や送料などの税込金額を、その率と組にしたもの。
  *
  * @param ratePercent   率（%）
  * @param amountInclTax 税込金額

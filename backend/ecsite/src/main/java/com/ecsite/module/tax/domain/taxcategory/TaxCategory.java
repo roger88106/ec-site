@@ -23,8 +23,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 税区分の Aggregate Root。<br />
- * 名称と、税率の一覧を持つ。税率は 1 件ずつではなく、一覧ごと置き換える（docs/03-機能仕様/tax.md）。
+ * 税区分
+ *
+ * <p>名称と、税率の一覧を持つ集約のルート。税率は 1 件ずつではなく、一覧ごと置き換える。
  */
 @Getter
 @Accessors(fluent = true)
@@ -86,6 +87,7 @@ public class TaxCategory extends AggregateRoot {
      * @param id   税区分 ID
      * @param name 名称
      * @return 税区分
+     * @throws BusinessException 名称が空、または長すぎる
      */
     static TaxCategory create(UUID id, String name) {
         return new TaxCategory(id, name, List.of(), 0);
@@ -113,11 +115,11 @@ public class TaxCategory extends AggregateRoot {
     }
 
     /**
-     * 税率の一覧を置き換える。<br />
-     * 検証に失敗した場合は、一覧を変えずに業務のエラーを投げる。
+     * 税率の一覧を置き換える。
      *
      * @param drafts 置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する
      * @param now    現在時刻
+     * @throws BusinessException 置き換え後の一覧が検証に合わない。一覧は変えない
      */
     public void replaceRates(@NonNull List<TaxRateDraft> drafts, @NonNull Instant now) {
         if (drafts.isEmpty()) {
@@ -189,7 +191,8 @@ public class TaxCategory extends AggregateRoot {
 
     /**
      * 新たに設定する開始・終了が、空白か現在より後であることを検証する。
-     * 既存の税率で変えていない日時は、新たに設定したものとみなさない。
+     *
+     * <p>既存の税率で変えていない日時は、新たに設定したものとみなさない。
      *
      * @param draft   置き換え後の税率
      * @param current 既存の税率。新しい税率なら null

@@ -10,7 +10,9 @@ import org.jmolecules.ddd.annotation.Identity;
 import java.util.UUID;
 
 /**
- * 税率。税区分の集約の一部で、率と適用期間を持つ。
+ * 税率
+ *
+ * <p>税区分の集約の一部で、率と適用期間を持つ。
  *
  * @param id          税率 ID
  * @param ratePercent 率

@@ -1,7 +1,7 @@
 package com.ecsite.tools.region;
 
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.Prefecture;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

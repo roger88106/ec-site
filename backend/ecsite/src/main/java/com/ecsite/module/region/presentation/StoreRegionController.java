@@ -14,8 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 地域の店舗 API のコントローラー
  *
- * <p>store.yaml のタグ region の 3 つの操作を実装する。どれも token なしで使える。
- * 店舗モジュールを通さず、地域モジュールが受ける。
+ * <p>store.yaml のタグ region の操作を、店舗モジュールを通さずに地域モジュールで受ける。
  */
 @RestController
 @RequiredArgsConstructor

@@ -3,8 +3,8 @@ package com.ecsite.module.region.api;
 import com.ecsite.module.region.api.model.RegionMunicipality;
 import com.ecsite.module.region.api.model.RegionPrefecture;
 import com.ecsite.module.region.application.RegionQueryService;
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.Prefecture;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * 地域モジュールの公開の API
  *
- * <p>都道府県と市区町村を参照するだけで、EC に固有の判断を持たない（別のサービスに切り出せるようにするため）。
+ * <p>地域のマスターデータを参照するだけで、EC に固有の判断を持たない（別のサービスに切り出せるようにするため）。
  */
 @Component
 @RequiredArgsConstructor

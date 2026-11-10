@@ -1,7 +1,7 @@
 package com.ecsite.tools.region;
 
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.Prefecture;
 
 import java.io.BufferedReader;
 import java.io.IOException;

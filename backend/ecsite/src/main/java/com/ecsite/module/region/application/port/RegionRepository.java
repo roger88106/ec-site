@@ -9,8 +9,6 @@ import java.util.Optional;
 
 /**
  * 地域のマスターデータのリポジトリ
- *
- * <p>参照だけを持つ。
  */
 public interface RegionRepository {
 

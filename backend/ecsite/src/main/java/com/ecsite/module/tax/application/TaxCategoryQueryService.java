@@ -5,6 +5,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +52,7 @@ public class TaxCategoryQueryService {
      * @param id 税区分 ID
      * @return 税区分（現時点の率を含む）
      */
-    public TaxCategoryView getTaxCategory(UUID id) {
+    public TaxCategoryView getTaxCategory(@NonNull UUID id) {
         return findTaxCategory(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
@@ -61,7 +62,7 @@ public class TaxCategoryQueryService {
      * @param id 税区分 ID
      * @return 税区分（現時点の率を含む）。なければ空
      */
-    public Optional<TaxCategoryView> findTaxCategory(UUID id) {
+    public Optional<TaxCategoryView> findTaxCategory(@NonNull UUID id) {
         return taxCategoryQueryRepository.findById(id)
                 .map(view -> withCurrentRate(view, clock.instant()));
     }

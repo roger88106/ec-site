@@ -8,6 +8,7 @@ import com.ecsite.module.tax.application.TaxCategoryQueryService;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.domain.taxcategory.TaxCalculator;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +47,7 @@ public class TaxRateApi {
      * @param instant       時点
      * @return 率（%）。税区分がない、またはその時点の税率がなければ空
      */
-    public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
+    public Optional<BigDecimal> rateAt(@NonNull UUID taxCategoryId, @NonNull Instant instant) {
         return queryService.findTaxCategory(taxCategoryId).flatMap(view -> toSchedule(view).rateAt(instant));
     }
 
@@ -57,7 +58,7 @@ public class TaxRateApi {
      * @param ratePercent  率（%）
      * @return 税込価格
      */
-    public Money priceInclTax(Money priceExclTax, BigDecimal ratePercent) {
+    public Money priceInclTax(@NonNull Money priceExclTax, @NonNull BigDecimal ratePercent) {
         return TaxCalculator.priceInclTax(priceExclTax, RatePercent.of(ratePercent));
     }
 
@@ -67,7 +68,7 @@ public class TaxRateApi {
      * @param taxables 税率と税込金額の組の一覧
      * @return 税率ごとの消費税額（税率の高い順）
      */
-    public List<ConsumptionTaxAmount> consumptionTaxes(List<TaxableAmount> taxables) {
+    public List<ConsumptionTaxAmount> consumptionTaxes(@NonNull List<TaxableAmount> taxables) {
         var domainTaxables = taxables.stream()
                 .map(taxable -> new TaxCalculator.Taxable(RatePercent.of(taxable.ratePercent()), taxable.amountInclTax()))
                 .toList();

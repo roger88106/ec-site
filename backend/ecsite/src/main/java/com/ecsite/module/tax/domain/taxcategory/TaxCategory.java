@@ -132,7 +132,7 @@ public class TaxCategory extends AggregateRoot {
         rates.list().forEach(current -> verifyChangeable(current, draftsById.get(current.id()), now));
         drafts.forEach(draft -> verifyNoPastDateTime(draft, currentById.get(draft.id()), now));
 
-        // 新しい税率（ID なし）には ID を振り、一覧の形（期間の連続）を検証する
+        // ID のない新しい税率には ID を振り、一覧の形（期間の連続）を検証する
         var replaced = drafts.stream()
                 .map(draft -> new TaxRate(Objects.requireNonNullElseGet(draft.id(), UUID::randomUUID),
                         draft.ratePercent(), draft.period()))

@@ -863,7 +863,9 @@ describe('商品画像', () => {
 
     expect(await screen.findByText('バリアントの画像を変更しました')).toBeInTheDocument()
     expect(requests).toEqual([{ imageId: images[1].id, version: 0 }])
-    expect(screen.getByRole('combobox', { name: 'ABC-001-REDの画像' })).toHaveTextContent('画像 2')
+    // 知らせは商品の再取得より前に表示されるので、再取得した商品が表示されるまで待つ
+    const select = screen.getByRole('combobox', { name: 'ABC-001-REDの画像' })
+    await waitFor(() => expect(select).toHaveTextContent('画像 2'))
   })
 
   const TWO_IMAGES = [

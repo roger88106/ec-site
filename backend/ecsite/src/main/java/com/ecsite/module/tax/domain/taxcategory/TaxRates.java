@@ -4,7 +4,6 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import lombok.NonNull;
-import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -78,7 +77,7 @@ record TaxRates(List<TaxRate> list) {
      */
     private void verifyContinuous() {
         // 隣り合う 2 件ずつ、前の終了と次の開始を比べる
-        @Nullable TaxRate previous = null;
+        TaxRate previous = null;
         for (var rate : list) {
             if (previous != null) {
                 verifyAdjacent(previous, rate);

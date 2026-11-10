@@ -4,6 +4,7 @@ import com.ecsite.module.region.application.port.RegionRepository;
 import com.ecsite.module.region.domain.Municipality;
 import com.ecsite.module.region.domain.PostalAddress;
 import com.ecsite.module.region.domain.Prefecture;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 地域のマスターデータの参照（docs/03-機能仕様/region.md）
+ * 地域のマスターデータの参照
  */
 @Service
 @Transactional(readOnly = true)
@@ -39,7 +40,7 @@ public class RegionQueryService {
      * @param code 都道府県のコード
      * @return 都道府県。なければ空
      */
-    public Optional<Prefecture> findPrefecture(String code) {
+    public Optional<Prefecture> findPrefecture(@NonNull String code) {
         return repository.findPrefecture(code);
     }
 
@@ -49,9 +50,16 @@ public class RegionQueryService {
      * @param prefectureCode 都道府県のコード
      * @return 都道府県と、コードの順の市区町村。都道府県がなければ空
      */
-    public Optional<PrefectureMunicipalities> municipalitiesOf(String prefectureCode) {
-        return repository.findPrefecture(prefectureCode)
-                .map(prefecture -> new PrefectureMunicipalities(prefecture, repository.findMunicipalities(prefectureCode)));
+    public Optional<PrefectureMunicipalities> municipalitiesOf(@NonNull String prefectureCode) {
+        // 都道府県の取得
+        var prefecture = repository.findPrefecture(prefectureCode);
+        if (prefecture.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // 市区町村の取得
+        var municipalities = repository.findMunicipalities(prefectureCode);
+        return Optional.of(new PrefectureMunicipalities(prefecture.get(), municipalities));
     }
 
     /**
@@ -60,10 +68,17 @@ public class RegionQueryService {
      * @param code 市区町村のコード
      * @return 都道府県と市区町村。なければ空
      */
-    public Optional<PrefectureMunicipality> findMunicipality(String code) {
-        return repository.findMunicipality(code)
-                .flatMap(municipality -> repository.findPrefecture(municipality.prefectureCode())
-                        .map(prefecture -> new PrefectureMunicipality(prefecture, municipality)));
+    public Optional<PrefectureMunicipality> findMunicipality(@NonNull String code) {
+        // 市区町村の取得
+        var found = repository.findMunicipality(code);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        var municipality = found.get();
+
+        // 属する都道府県の取得
+        return repository.findPrefecture(municipality.prefectureCode())
+                .map(prefecture -> new PrefectureMunicipality(prefecture, municipality));
     }
 
     /**
@@ -72,7 +87,7 @@ public class RegionQueryService {
      * @param postalCode 郵便番号（数字 7 桁）
      * @return 並び順の住所。なければ空の一覧
      */
-    public List<PostalAddress> findPostalAddresses(String postalCode) {
+    public List<PostalAddress> findPostalAddresses(@NonNull String postalCode) {
         return repository.findPostalAddresses(postalCode);
     }
 

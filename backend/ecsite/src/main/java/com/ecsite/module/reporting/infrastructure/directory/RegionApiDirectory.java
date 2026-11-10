@@ -1,7 +1,7 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
 import com.ecsite.module.region.api.RegionLookupApi;
-import com.ecsite.module.region.api.RegionPrefecture;
+import com.ecsite.module.region.api.model.RegionPrefecture;
 import com.ecsite.module.reporting.application.port.RegionDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

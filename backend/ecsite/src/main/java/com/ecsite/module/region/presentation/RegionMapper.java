@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 地域の API の型への変換（バックエンドの書き方の「応答への変換は手動で書く」）
+ * 地域の API の型への変換
  */
 @Component
 class RegionMapper {
@@ -51,6 +51,8 @@ class RegionMapper {
                         .townName(address.townName()))
                 .toList());
     }
+
+// ============================== プライベートメソッド ==============================
 
     /**
      * 都道府県の型に変換する。

@@ -1,4 +1,4 @@
-package com.ecsite.module.region.api;
+package com.ecsite.module.region.api.model;
 
 /**
  * 市区町村と、属する都道府県

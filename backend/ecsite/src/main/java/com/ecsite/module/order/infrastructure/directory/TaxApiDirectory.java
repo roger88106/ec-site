@@ -4,7 +4,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import com.ecsite.module.tax.api.TaxRateApi;
-import com.ecsite.module.tax.api.TaxableAmount;
+import com.ecsite.module.tax.api.model.TaxableAmount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

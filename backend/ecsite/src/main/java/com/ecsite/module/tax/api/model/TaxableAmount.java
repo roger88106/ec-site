@@ -1,4 +1,4 @@
-package com.ecsite.module.tax.api;
+package com.ecsite.module.tax.api.model;
 
 import com.ecsite.common.model.value.Money;
 

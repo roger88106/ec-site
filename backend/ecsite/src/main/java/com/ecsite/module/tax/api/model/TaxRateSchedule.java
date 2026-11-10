@@ -1,4 +1,4 @@
-package com.ecsite.module.tax.api;
+package com.ecsite.module.tax.api.model;
 
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import org.jspecify.annotations.Nullable;

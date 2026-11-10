@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.infrastructure.directory;
 
 import com.ecsite.module.tax.api.TaxRateApi;
-import com.ecsite.module.tax.api.TaxRateSchedule;
+import com.ecsite.module.tax.api.model.TaxRateSchedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

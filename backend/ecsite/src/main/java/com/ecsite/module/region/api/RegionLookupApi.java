@@ -5,6 +5,7 @@ import com.ecsite.module.region.api.model.RegionPrefecture;
 import com.ecsite.module.region.application.RegionQueryService;
 import com.ecsite.module.region.domain.Municipality;
 import com.ecsite.module.region.domain.Prefecture;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,7 @@ public class RegionLookupApi {
      * @param code 都道府県のコード
      * @return 都道府県。なければ空
      */
-    public Optional<RegionPrefecture> findPrefecture(String code) {
+    public Optional<RegionPrefecture> findPrefecture(@NonNull String code) {
         return queryService.findPrefecture(code).map(RegionLookupApi::toPrefecture);
     }
 
@@ -49,7 +50,7 @@ public class RegionLookupApi {
      * @param code 市区町村のコード
      * @return 市区町村と、属する都道府県。なければ空
      */
-    public Optional<RegionMunicipality> findMunicipality(String code) {
+    public Optional<RegionMunicipality> findMunicipality(@NonNull String code) {
         return queryService.findMunicipality(code)
                 .map(found -> toMunicipality(found.prefecture(), found.municipality()));
     }

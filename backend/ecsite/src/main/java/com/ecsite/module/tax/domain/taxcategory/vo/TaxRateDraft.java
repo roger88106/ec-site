@@ -1,7 +1,5 @@
-package com.ecsite.module.tax.domain.taxcategory;
+package com.ecsite.module.tax.domain.taxcategory.vo;
 
-import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
-import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.jspecify.annotations.Nullable;

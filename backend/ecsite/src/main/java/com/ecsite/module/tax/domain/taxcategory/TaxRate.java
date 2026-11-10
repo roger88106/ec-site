@@ -2,6 +2,7 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;

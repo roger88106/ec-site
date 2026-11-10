@@ -1,12 +1,14 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.model.base.AggregateGuards;
+import org.jmolecules.ddd.annotation.Factory;
 
 import java.util.UUID;
 
 /**
  * 税区分のファクトリー
  */
+@Factory
 public class TaxCategoryFactory {
 
     /**

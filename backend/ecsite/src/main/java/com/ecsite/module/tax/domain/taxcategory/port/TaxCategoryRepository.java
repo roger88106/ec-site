@@ -1,6 +1,7 @@
 package com.ecsite.module.tax.domain.taxcategory.port;
 
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
 /**
  * 税区分のリポジトリ
  */
+@Repository
 public interface TaxCategoryRepository {
 
     /**

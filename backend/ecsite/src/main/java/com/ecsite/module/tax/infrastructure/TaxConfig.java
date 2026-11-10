@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  * domain は Spring に依存しないので、注釈を付けずにここで登録する（バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」）。
  */
 @Configuration(proxyBeanMethods = false)
-class TaxDomainConfig {
+class TaxConfig {
 
     /**
      * 税区分の生成と復元の部品を返す。

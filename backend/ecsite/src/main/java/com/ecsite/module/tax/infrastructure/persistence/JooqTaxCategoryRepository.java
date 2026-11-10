@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.tax.Keys;
+import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Name;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
@@ -77,19 +79,22 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      */
     @Override
     public Optional<TaxCategory> findById(UUID id) {
-        return dsl.selectFrom(TAX_CATEGORY)
+        // 税区分の取得
+        @Nullable TaxCategoryRecord category = dsl.selectFrom(TAX_CATEGORY)
                 .where(TAX_CATEGORY.ID.eq(id))
-                .fetchOptional()
-                // スナップショットに変換する
-                .map(category -> new TaxCategory.Snapshot(
-                        category.getId(),
-                        category.getName(),
-                        dsl.selectFrom(TAX_RATE)
-                                .where(TAX_RATE.TAX_CATEGORY_ID.eq(id))
-                                .fetch(JooqTaxCategoryRepository::toTaxRate),
-                        category.getVersion()))
-                // スナップショットからドメインに変換する
-                .map(factory::restore);
+                .fetchOne();
+        if (category == null) {
+            return Optional.empty();
+        }
+
+        // 税率の取得
+        var rates = dsl.selectFrom(TAX_RATE)
+                .where(TAX_RATE.TAX_CATEGORY_ID.eq(id))
+                .fetch(JooqTaxCategoryRepository::toTaxRate);
+
+        // スナップショットからドメインに変換する
+        var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
+        return Optional.of(factory.restore(snapshot));
     }
 
     /**

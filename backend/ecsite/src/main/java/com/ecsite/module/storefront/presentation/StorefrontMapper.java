@@ -39,7 +39,7 @@ import java.util.UUID;
 class StorefrontMapper {
 
     /**
-     * 並び順を変換する。省略されたときの既定（新着順）は、API の契約が持つ。
+     * 並び順を変換する。
      *
      * @param sort 並び順
      * @return 並び順

@@ -37,8 +37,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 店舗 API の受け入れテスト。<br />
- * 商品は B 側の API で作って公開する。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
+ * 店舗 API の受け入れテスト
+ *
+ * <p>商品は B 側の API で作って公開する。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
  * 在庫モジュールのリポジトリで直接作る。公開するごとに時計を 1 分進める。テストごとにロールバックする。
  */
 @IntegrationTest

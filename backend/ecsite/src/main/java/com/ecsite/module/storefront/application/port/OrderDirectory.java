@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文の腐敗防止層の口
+ * 注文の腐敗防止層の port
  *
  * <p>カートの見積もりを、店舗の型で返す。
  */

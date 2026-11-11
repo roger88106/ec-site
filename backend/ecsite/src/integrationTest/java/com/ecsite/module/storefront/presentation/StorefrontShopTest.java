@@ -12,7 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 店舗の情報の受け入れテスト。問い合わせ先は、統合テストの設定の値を返す。
+ * 店舗の情報の受け入れテスト
+ *
+ * <p>問い合わせ先は、統合テストの設定の値を返す。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

@@ -5,9 +5,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層の口
+ * 在庫の腐敗防止層の port
  *
- * <p>在庫があるバリアントを返す。
+ * <p>在庫のあるバリアントの ID を返す。
  */
 public interface StockDirectory {
 

@@ -100,7 +100,7 @@ public class StorefrontService {
     }
 
     /**
-     * カートを表示する。金額と購入できるかは、注文モジュールの見積もりで求める。
+     * カートを表示する。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）

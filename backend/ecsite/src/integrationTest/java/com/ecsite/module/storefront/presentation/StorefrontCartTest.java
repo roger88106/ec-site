@@ -35,8 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * カートの表示の受け入れテスト。<br />
- * 商品は B 側の API で作り、在庫は在庫モジュールのリポジトリで直接作る。テストごとにロールバックする。
+ * カートの表示の受け入れテスト
+ *
+ * <p>商品は B 側の API で作り、在庫は在庫モジュールのリポジトリで直接作る。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

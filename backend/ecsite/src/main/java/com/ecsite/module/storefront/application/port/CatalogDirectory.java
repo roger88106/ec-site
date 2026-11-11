@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層の口
+ * 商品カタログの腐敗防止層の port
  *
  * <p>商品とカテゴリを、店舗の型で返す。
  */

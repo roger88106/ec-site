@@ -19,7 +19,7 @@ public interface MemberRepository {
     Optional<UUID> findIdByIdpSubject(String idpSubject);
 
     /**
-     * 会員を作る。同じ IdP のアカウントの会員がすでにいれば、何もしない（トランザクションを壊さない）。
+     * 会員を作る。同じ IdP のアカウントの会員がすでにいれば、何もしない（一意制約の違反でトランザクションを失敗させない）。
      *
      * @param member 会員
      */

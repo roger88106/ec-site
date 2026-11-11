@@ -13,8 +13,6 @@ import java.util.UUID;
 
 /**
  * 会員の更新のサービス
- *
- * <p>会員は、会員の token で初めて EC の API を呼んだときに作る。
  */
 @Service
 @RequiredArgsConstructor
@@ -39,10 +37,11 @@ public class MemberCommandService {
      *
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID
+     * @throws SystemException 作った後に再取得しても、会員がいない
      */
     public UUID create(@NonNull String idpSubject) {
         memberRepository.insertIfAbsent(new Member(UUID.randomUUID(), idpSubject, clock.instant()));
         return memberRepository.findIdByIdpSubject(idpSubject)
-                .orElseThrow(() -> SystemException.of("会員を作れない", null));
+                .orElseThrow(() -> SystemException.of("会員作成失敗", null));
     }
 }

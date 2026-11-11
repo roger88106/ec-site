@@ -14,7 +14,7 @@ import java.util.UUID;
 /**
  * リクエストした会員の会員 ID
  *
- * <p>IdP のアカウント（token の subject）から会員 ID を求める処理は、会員モジュールの中に閉じる。
+ * <p>IdP のアカウント（token の subject）から会員 ID を求める処理は、会員モジュールの中だけで行う。
  */
 @Component
 @RequiredArgsConstructor
@@ -57,7 +57,7 @@ public class CurrentMemberIds {
     /**
      * IdP のアカウントの ID から会員 ID を求める。
      *
-     * <p>ログインしたすべてのリクエストで動くので、まず読み取り専用で探し、いなければ（初めてのリクエスト）作る。
+     * <p>まず読み取り専用のトランザクションで探し、いなければ（初めてのリクエスト）作る。
      */
     private UUID memberIdOf(@Nullable String subject) {
         var idpSubject = Objects.requireNonNull(subject, "token に subject がある");

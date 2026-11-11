@@ -7,6 +7,7 @@ import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.model.view.StockSummaryView;
 import com.ecsite.module.inventory.application.port.StockQueryRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -42,8 +43,9 @@ public class StockQueryService {
      *
      * @param variantId バリアント ID
      * @return 在庫数
+     * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
-    public int getQuantity(UUID variantId) {
+    public int getQuantity(@NonNull UUID variantId) {
         return stockQueryRepository.findQuantity(variantId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
@@ -54,8 +56,9 @@ public class StockQueryService {
      * @param variantId バリアント ID
      * @param request   ページの指定
      * @return 調整履歴（新しい順）
+     * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
-    public PageResult<StockAdjustmentView> listAdjustments(UUID variantId, PageRequest request) {
+    public PageResult<StockAdjustmentView> listAdjustments(@NonNull UUID variantId, @NonNull PageRequest request) {
         return stockQueryRepository.findAdjustments(variantId, request)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
@@ -66,7 +69,7 @@ public class StockQueryService {
      * @param productIds 商品 ID
      * @return 指定した順の合計。在庫がまだない商品は 0
      */
-    public List<StockSummaryView> listStockSummaries(List<UUID> productIds) {
+    public List<StockSummaryView> listStockSummaries(@NonNull List<UUID> productIds) {
         var totals = stockQueryRepository.sumQuantitiesByProduct(productIds);
         return productIds.stream()
                 .map(productId -> new StockSummaryView(productId, totals.getOrDefault(productId, 0L)))
@@ -80,7 +83,7 @@ public class StockQueryService {
      * @param excludedHolderId 数えない引当の持ち主（注文手続き中の自分の引当）。なければ null
      * @return バリアント ID → 販売可能数（指定したすべてのバリアントを含む）
      */
-    public Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId) {
+    public Map<UUID, Integer> sellableQuantities(@NonNull Collection<UUID> variantIds, @Nullable UUID excludedHolderId) {
         if (variantIds.isEmpty()) {
             return Map.of();
         }

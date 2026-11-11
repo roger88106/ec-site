@@ -57,12 +57,13 @@ class JooqStockItemRepository implements StockItemRepository {
     }
 
     /**
-     * 在庫数に増減量を加え、調整履歴を記録する（docs/03-機能仕様/inventory.md）。<br />
-     * 更新されなかったら、「負になる」「運営者の調整で上限を超える」「在庫がない」のどれかなので、増減量と今の在庫数でエラーを分ける。
+     * 在庫数に増減量を加え、調整履歴を記録する。
      *
      * @param variantId  バリアント ID
      * @param adjustment 在庫調整
      * @return 調整後の在庫数
+     * @throws BusinessException 調整後に負になる（{@code INSUFFICIENT_STOCK}）、運営者の調整で在庫数が上限を超える
+     *                           （{@code STOCK_QUANTITY_EXCEEDED}）、または在庫がない（{@code NOT_FOUND}）
      */
     @Override
     public int adjust(UUID variantId, StockAdjustment adjustment) {
@@ -81,16 +82,14 @@ class JooqStockItemRepository implements StockItemRepository {
                 .where(condition)
                 .returningResult(STOCK_ITEM.ID, STOCK_ITEM.QUANTITY)
                 .fetchOptional()
-                .orElseThrow(() -> failureOf(delta, limited, () -> dsl.select(STOCK_ITEM.QUANTITY)
-                        .from(STOCK_ITEM)
-                        .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
-                        .fetchOptional(STOCK_ITEM.QUANTITY)));
-        int quantityAfter = updated.value2();
+                // 更新されなければ「負になる」「運営者の調整で上限を超える」「在庫がない」のどれかなので、増減量と今の在庫数で例外を分ける
+                .orElseThrow(() -> failureOf(delta, limited, () -> currentQuantity(variantId)));
+        int quantityAfter = updated.get(STOCK_ITEM.QUANTITY);
 
         // 調整履歴の記録
         dsl.insertInto(STOCK_ADJUSTMENT)
                 .set(STOCK_ADJUSTMENT.ID, adjustment.id())
-                .set(STOCK_ADJUSTMENT.STOCK_ITEM_ID, updated.value1())
+                .set(STOCK_ADJUSTMENT.STOCK_ITEM_ID, updated.get(STOCK_ITEM.ID))
                 .set(STOCK_ADJUSTMENT.DELTA, delta)
                 .set(STOCK_ADJUSTMENT.REASON, adjustment.reason().name())
                 .set(STOCK_ADJUSTMENT.MEMO, adjustment.memo())
@@ -106,24 +105,25 @@ class JooqStockItemRepository implements StockItemRepository {
     }
 
     /**
-     * 調整が更新されなかったときのエラーを選ぶ（docs/03-機能仕様/inventory.md）。<br />
-     * 増やす調整は、上限を超えるときのほかは在庫があれば必ず更新されるので、上限を超えないなら更新の時点で在庫がなかったことになる。
-     * 更新の後に作られた在庫は在庫数 0 なので、上限を超えない（運営者の 1 回の増減量は上限以下）。「負になる」「上限を超える」と誤らない。
+     * 調整が更新されなかったときの例外を選ぶ。
      *
      * @param delta    増減量
      * @param limited  運営者の調整で、在庫数の上限を当てるか
      * @param quantity 今の在庫数。在庫がなければ空（増やす調整で上限を当てないときは読まない）
-     * @return 業務のエラー
+     * @return 例外（{@code STOCK_QUANTITY_EXCEEDED}、{@code INSUFFICIENT_STOCK}、{@code NOT_FOUND} のどれか）
      */
     static BusinessException failureOf(int delta, boolean limited, Supplier<Optional<Integer>> quantity) {
+        // 増やす調整は、上限を超えるときのほかは在庫があれば必ず更新されるので、上限を超えないなら更新の時点で在庫がなかった
         if (delta > 0) {
             if (!limited) {
                 return BusinessException.of(CommonErrorCode.NOT_FOUND);
             }
+            // 更新の後に作られた在庫は在庫数 0 で、運営者の 1 回の増減量は上限以下なので、上限を超えたと誤らない
             return quantity.get().filter(current -> current + delta > StockAdjustment.MAX_MANUAL_QUANTITY).isPresent()
                     ? BusinessException.of(InventoryErrorCode.STOCK_QUANTITY_EXCEEDED, List.of(StockAdjustment.MAX_MANUAL_QUANTITY))
                     : BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
+        // 減らす調整は、在庫があれば負になるときだけ更新されない
         return quantity.get().isPresent()
                 ? BusinessException.of(InventoryErrorCode.INSUFFICIENT_STOCK)
                 : BusinessException.of(CommonErrorCode.NOT_FOUND);
@@ -147,5 +147,20 @@ class JooqStockItemRepository implements StockItemRepository {
     @Override
     public void deleteByProductId(UUID productId) {
         dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(productId)).execute();
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * バリアントの今の在庫数を読む。
+     *
+     * @param variantId バリアント ID
+     * @return 在庫数。在庫がなければ空
+     */
+    private Optional<Integer> currentQuantity(UUID variantId) {
+        return dsl.select(STOCK_ITEM.QUANTITY)
+                .from(STOCK_ITEM)
+                .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
+                .fetchOptional(STOCK_ITEM.QUANTITY);
     }
 }

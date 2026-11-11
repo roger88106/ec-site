@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 在庫 API のリクエスト・レスポンスと、アプリケーション層のモデルの変換
+ * 在庫 API のマッパー
+ *
+ * <p>在庫 API のリクエスト・レスポンスと、アプリケーション層のモデルを変換する。
  */
 @Component
 class InventoryMapper {

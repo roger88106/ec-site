@@ -41,16 +41,17 @@ class JooqStockReservationRepository implements StockReservationRepository {
                 .where(STOCK_ITEM.VARIANT_ID.in(variantIds))
                 .orderBy(STOCK_ITEM.VARIANT_ID)
                 .forUpdate()
-                .fetch(record -> new LockedStock(record.value1(), record.value2(), record.value3()));
+                .fetch(record -> new LockedStock(
+                        record.get(STOCK_ITEM.ID), record.get(STOCK_ITEM.VARIANT_ID), record.get(STOCK_ITEM.QUANTITY)));
     }
 
     /**
      * 在庫ごとに、有効な引当の数量を合計する。
      *
      * @param stockItemIds     在庫 ID
-     * @param excludedHolderId 除く持ち主
+     * @param excludedHolderId 数えない引当の持ち主
      * @param now              現在時刻
-     * @return 在庫 ID → 引当の数量の合計
+     * @return 在庫 ID → 引当の数量の合計。引当のない在庫は含まない
      */
     @Override
     public Map<UUID, Integer> sumActiveReservations(Collection<UUID> stockItemIds, UUID excludedHolderId, Instant now) {
@@ -96,8 +97,7 @@ class JooqStockReservationRepository implements StockReservationRepository {
     }
 
     /**
-     * 期限が指定した時刻より前の引当を、件数の上限まで消す。<br />
-     * 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行は飛ばす（次の回で消す）。
+     * 期限が指定した時刻より前の引当を、件数の上限まで消す。
      *
      * @param expiredBefore この時刻
      * @param limit         件数の上限
@@ -105,6 +105,7 @@ class JooqStockReservationRepository implements StockReservationRepository {
      */
     @Override
     public int deleteExpiredBefore(Instant expiredBefore, int limit) {
+        // 選ぶのと消すのを 1 文にし、他のトランザクションがロックしている行は飛ばす（次の回で消す）
         return dsl.deleteFrom(STOCK_RESERVATION)
                 .where(STOCK_RESERVATION.ID.in(dsl.select(STOCK_RESERVATION.ID)
                         .from(STOCK_RESERVATION)

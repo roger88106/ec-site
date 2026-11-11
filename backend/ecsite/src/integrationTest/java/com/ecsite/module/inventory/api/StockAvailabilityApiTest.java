@@ -18,7 +18,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 店舗向けの在庫の API の統合テスト。テストごとにロールバックする。
+ * 在庫の有無の API の統合テスト
+ *
+ * <p>テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional

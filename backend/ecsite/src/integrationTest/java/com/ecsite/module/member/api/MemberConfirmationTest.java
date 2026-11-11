@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 /**
  * 会員の確認の統合テスト
  *
- * <p>同時の初回のリクエストを確認するため、リクエストごとにコミットする。ロールバックしないので、作った会員を後で消す。
+ * <p>初回のリクエストが同時に来る場合を確認するため、リクエストごとにコミットする。ロールバックしないので、作った会員を後で削除する。
  * トランザクションが読み取り専用かは、会員のリポジトリを包み、呼ばれたときの状態を記録して確認する。
  */
 @IntegrationTest
@@ -50,7 +50,7 @@ class MemberConfirmationTest {
     DSLContext dsl;
 
     /**
-     * テストで使った IdP のアカウントの ID（後で消す）
+     * テストで使った IdP のアカウントの ID（後で削除する）
      */
     private final List<String> subjects = new ArrayList<>();
 

@@ -23,7 +23,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * カートを作れないときの例外の単体テスト。ゲストのカートの ID と会員 ID は利用者を指すので、メッセージに入れない。
+ * カートを作れないときの例外の単体テスト
+ *
+ * <p>ゲストのカートの ID と会員 ID は利用者を指すので、メッセージに入れない。
  */
 class CartServiceFailureMessageTest {
 

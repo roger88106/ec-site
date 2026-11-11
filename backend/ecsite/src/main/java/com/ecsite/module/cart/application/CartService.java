@@ -4,13 +4,14 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.cart.application.model.CartContentsView;
+import com.ecsite.module.cart.application.model.MergedCart;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.application.port.CatalogDirectory;
 import com.ecsite.module.cart.application.port.StockDirectory;
 import com.ecsite.module.cart.domain.Cart;
 import com.ecsite.module.cart.domain.CartErrorCode;
-import com.ecsite.module.cart.domain.CartMergeResult;
 import com.ecsite.module.cart.event.CartChanged;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,9 +25,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートのサービス（docs/03-機能仕様/cart.md）。<br />
- * 変更したら、カート変更のイベントを発行する（注文モジュールが引当を解く）。
- * 会員のカートは、持ち主の会員だけが使える。ほかの人には、カートがないときと同じく 404 にする。
+ * カートのサービス
+ *
+ * <p>カートを変更したら、カート変更のイベントを発行する。
  */
 @Service
 @RequiredArgsConstructor
@@ -58,14 +59,14 @@ public class CartService {
     private final Clock clock;
 
     /**
-     * 期限が指定した時刻より前に切れたカートを、品目と共に、件数の上限まで消す（片付けのジョブから呼ぶ）。
+     * 期限が指定した時刻より前に切れたカートを、品目と共に、件数の上限まで消す。
      *
      * @param expiredBefore この時刻より前に期限が切れたカートを消す
      * @param limit         消す件数の上限
      * @return 消した件数
      */
     @Transactional
-    public int deleteExpired(Instant expiredBefore, int limit) {
+    public int deleteExpired(@NonNull Instant expiredBefore, int limit) {
         return cartRepository.deleteUpdatedBefore(Cart.lastUpdateExpiredBefore(expiredBefore), limit);
     }
 
@@ -91,14 +92,22 @@ public class CartService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  数量
+     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）。
+     *                           バリアントを選べない（{@code VARIANT_NOT_SELECTABLE}）。
+     *                           数量が範囲の外（{@code INVALID_CART_QUANTITY}）、販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）、
+     *                           品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）。
+     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public void addItem(UUID cartId, @Nullable UUID requester, UUID variantId, int quantity) {
+    public void addItem(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
+            // 選べるバリアントかの確認
             if (!catalogDirectory.isSelectable(variantId)) {
                 throw BusinessException.of(CartErrorCode.VARIANT_NOT_SELECTABLE);
             }
+            // 合算した後の数量と販売可能数の比較
             verifyStock(variantId, cart.quantityAfterAdding(variantId, quantity, now));
+            // 品目の追加
             cart.add(variantId, quantity, now);
         });
     }
@@ -110,9 +119,12 @@ public class CartService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  新しい数量
+     * @throws BusinessException カートがない、持ち主でない、またはカートにない品目（{@code NOT_FOUND}）。
+     *                           数量が範囲の外（{@code INVALID_CART_QUANTITY}）、販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）。
+     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public void changeQuantity(UUID cartId, @Nullable UUID requester, UUID variantId, int quantity) {
+    public void changeQuantity(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
             // 今の数量より増やすときだけ、在庫を確認する（減らす操作は、在庫が減っていても受け付ける）
             var current = cart.quantityOf(variantId, now);
@@ -124,39 +136,40 @@ public class CartService {
     }
 
     /**
-     * 品目を削除する。カートになければ何もしない。
+     * 品目を削除する。品目がカートになければ何もしない。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
+     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）。
+     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public void removeItem(UUID cartId, @Nullable UUID requester, UUID variantId) {
+    public void removeItem(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId) {
         change(cartId, requester, (cart, now) -> cart.remove(variantId, now));
     }
 
     /**
-     * カートの中身を返す（注文モジュール向け）。期限切れのカートは品目が空。
+     * カートの中身を返す。期限切れのカートは品目が空。
      *
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<CartContentsView> findContents(UUID cartId) {
+    public Optional<CartContentsView> findContents(@NonNull UUID cartId) {
         var now = clock.instant();
         return cartRepository.findById(cartId).map(cart -> toView(cart, now));
     }
 
     /**
-     * 注文した品目（バリアント）を、数量によらず行ごとカートから除く（注文の与信の成功）。<br />
-     * 注文の後に追加した品目は残る。カートがなければ何もしない。
+     * 指定したバリアントの品目を、数量によらず行ごとカートから除く。カートがなければ何もしない。持ち主は確認しない。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public void removeItems(UUID cartId, Collection<UUID> variantIds) {
-        // 注文の与信の成功で呼ばれる。持ち主の確認は、注文手続きを始めるときに注文モジュールが済ませている
+    public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds) {
         var now = clock.instant();
         cartRepository.findById(cartId).ifPresent(cart -> {
             var version = cart.version();
@@ -166,59 +179,57 @@ public class CartService {
     }
 
     /**
-     * 会員のカートの ID を返す。まだなければ空のカートを作る（会員ごとに 1 つ）。<br />
-     * 同じ会員の初回のリクエストが同時に来ても、会員ごとの一意制約で 1 つだけ作られる。作れたリクエストは作ったカートの ID を返し、
-     * 作れなかったリクエストだけが先に作られたカートを読み直す。
+     * 会員のカートの ID を返す。まだなければ空のカートを作る（会員ごとに 1 つ）。
      *
      * @param memberId 会員 ID
      * @return カート ID
      */
     @Transactional
-    public UUID memberCartId(UUID memberId) {
+    public UUID memberCartId(@NonNull UUID memberId) {
+        // 既存のカートの検索
         var existing = cartRepository.findIdByMemberId(memberId);
         if (existing.isPresent()) {
             return existing.get();
         }
+        // カートの作成
         var cart = Cart.createForMember(UUID.randomUUID(), memberId, clock.instant());
         if (cartRepository.create(cart)) {
             return cart.id();
         }
+        // 同じ会員の初回のリクエストが同時に来ると、会員ごとの一意制約で 1 つだけ作られる。作れなかったときは、先に作られたカートを読み直す
         return cartRepository.findIdByMemberId(memberId)
                 .orElseThrow(() -> SystemException.of("会員のカートを作れない", null));
     }
 
     /**
-     * ログインせずに使っていたカートの品目を、会員のカートへ移す。移したカートは空になる。<br />
-     * 移す元に指定できるのは、会員を持たないカートだけ（会員のカートは 404）。商品カタログ・在庫は確認しない。
-     * 変わったカートごとに、カート変更のイベントを発行する（その注文手続きの引当を解く）。
+     * ログインせずに使っていたカートの品目を、会員のカートへ移す。移したカートは空になる。
+     *
+     * <p>商品カタログ・在庫は確認しない。変わったカートごとに、カート変更のイベントを発行する。
      *
      * @param memberId     会員 ID
      * @param sourceCartId 移すカートの ID
      * @return 会員のカートの ID と、移した結果
+     * @throws BusinessException 移すカートがない、または会員のカートである（{@code NOT_FOUND}）。
+     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public MergedCart merge(UUID memberId, UUID sourceCartId) {
+    public MergedCart merge(@NonNull UUID memberId, @NonNull UUID sourceCartId) {
+        // 移す元の取得 ※会員のカートは移す元にできない（ないカートと同じく NOT_FOUND にする）
         var source = load(sourceCartId);
         if (source.memberId().isPresent()) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
+        // 移す先（会員のカート）の取得
         var target = load(memberCartId(memberId));
+        // 品目の移動
         var now = clock.instant();
         var sourceVersion = source.version();
         var targetVersion = target.version();
         var result = target.mergeFrom(source, now);
+        // 変わったカートの保存
         saveIfChanged(target, targetVersion, now);
         saveIfChanged(source, sourceVersion, now);
         return new MergedCart(target.id(), result);
-    }
-
-    /**
-     * 会員のカートと、移した結果
-     *
-     * @param cartId 会員のカートの ID
-     * @param result 移した結果
-     */
-    public record MergedCart(UUID cartId, CartMergeResult result) {
     }
 
 // ============================== プライベートメソッド ==============================
@@ -227,12 +238,13 @@ public class CartService {
      * カートを読み込んで変更し、変わっていれば保存してカート変更のイベントを発行する。
      *
      * @param cartId    カート ID
-     * @param requester リクエストした会員の ID（ログインしていなければ null）。会員のカートは持ち主だけが変えられる
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param change    変更（カートと現在時刻を受け取る）
      */
     private void change(UUID cartId, @Nullable UUID requester, CartChange change) {
         var now = clock.instant();
         var cart = load(cartId);
+        // 会員のカートは持ち主だけが変えられる。ほかの人には、ないカートと同じく NOT_FOUND にする
         if (!cart.isAccessibleBy(requester)) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
@@ -242,7 +254,7 @@ public class CartService {
     }
 
     /**
-     * カートを読み込む。なければ 404。
+     * カートを読み込む。なければ {@code NOT_FOUND}。
      */
     private Cart load(UUID cartId) {
         return cartRepository.findById(cartId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));

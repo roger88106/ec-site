@@ -19,10 +19,12 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * カート（docs/03-機能仕様/cart.md）。品目を入れた順に持つ。価格は持たない。<br />
- * 最後の変更から 30 日たったカートは空として扱い、次に書くときに品目を消す。
- * 変更のたびにバージョンを上げる（注文手続きの後の変更を見つけるため）。<br />
- * 会員のカートは会員 ID を持ち、持ち主の会員だけが使える。ログインせずに作ったカートは会員を持たず、ID を知っていればだれでも使える。
+ * カート
+ *
+ * <p>品目を入れた順に持つ。価格は持たない。
+ * 最後の変更から 30 日たったカートは空として扱い、次に書くときに品目を消す。変更のたびにバージョンを上げる。
+ *
+ * <p>会員のカートは会員 ID を持ち、持ち主の会員だけが使える。ログインせずに作ったカートは会員を持たず、ID を知っていればだれでも使える。
  */
 @Getter
 @Accessors(fluent = true)
@@ -72,7 +74,7 @@ public class Cart {
     private Instant updatedAt;
 
     /**
-     * 全属性コンストラクタ（リポジトリが復元に使う）
+     * 全属性コンストラクタ
      *
      * @param id        カート ID
      * @param memberId  会員 ID（ログインせずに作ったカートは null）
@@ -141,7 +143,7 @@ public class Cart {
     }
 
     /**
-     * バリアントを入れた後の数量を、変更せずに求める（販売可能数と比べるため）。
+     * バリアントを入れた後の数量を、変更せずに求める。
      *
      * @param variantId バリアント ID
      * @param quantity  入れる数量
@@ -172,6 +174,8 @@ public class Cart {
      * @param variantId バリアント ID
      * @param quantity  入れる数量（1〜10）
      * @param now       現在時刻
+     * @throws BusinessException 数量か合算した数量が 1〜10 でない（{@code INVALID_CART_QUANTITY}）、
+     *                           または品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）
      */
     public void add(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
         verifyQuantity(quantity);
@@ -196,6 +200,8 @@ public class Cart {
      * @param variantId バリアント ID
      * @param quantity  新しい数量（1〜10）
      * @param now       現在時刻
+     * @throws BusinessException 数量が 1〜10 でない（{@code INVALID_CART_QUANTITY}）、
+     *                           またはカートにない品目（{@code NOT_FOUND}）
      */
     public void changeQuantity(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
         verifyQuantity(quantity);
@@ -223,24 +229,25 @@ public class Cart {
     }
 
     /**
-     * 複数の品目を一度に削除する（注文した品目を除く）。カートにない品目は無視する。<br />
-     * 1 つの変更として記録し、バージョンは 1 だけ上げる（保存の楽観ロックは 1 つ前のバージョンと比べるため）。
+     * 複数の品目を一度に削除する。カートにない品目は無視する。1 つの変更として記録し、バージョンは 1 だけ上げる。
      *
      * @param variantIds 削除するバリアントの ID
      * @param now        現在時刻
      */
     public void removeAll(@NonNull Collection<UUID> variantIds, @NonNull Instant now) {
+        // 保存の楽観ロックは 1 つ前のバージョンと比べるので、何品目を消してもバージョンは 1 だけ上げる
         if (!isExpiredAt(now) && items.removeIf(item -> variantIds.contains(item.variantId()))) {
             touch(now);
         }
     }
 
     /**
-     * ログインせずに使っていたカートの品目を、このカート（会員のカート）へ移し、移したカートを空にする。<br />
-     * 品目を入れた順に後ろへ入れ、同じバリアントは数量を合算して 10 で切り詰める。品目が 30 に達したら、残りの新しいバリアントは移さない。
-     * 商品カタログ・在庫は確認しない。移すカートが空なら（2 回目）、どちらも変えない。
+     * 別のカートの品目を、このカートへ移し、移したカートを空にする。
      *
-     * @param source 移すカート（ログインせずに使っていたもの）
+     * <p>品目を入れた順に後ろへ入れ、同じバリアントは数量を合算して 10 で切り詰める。品目が 30 に達したら、残りの新しいバリアントは移さない。
+     * 商品カタログ・在庫は確認しない。移すカートが空なら、どちらも変えない。
+     *
+     * @param source 移すカート
      * @param now    現在時刻
      * @return 切り詰めた品目と、移さなかった品目
      */
@@ -274,7 +281,7 @@ public class Cart {
     }
 
     /**
-     * 品目を全て削除する（移した後に、元のカートを空にする）。
+     * 品目を全て削除する。
      *
      * @param now 現在時刻
      */
@@ -284,7 +291,7 @@ public class Cart {
     }
 
     /**
-     * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限（片付けで、消すカートを探すため）。<br />
+     * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限を求める。
      * 最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
      *
      * @param expiredBefore 期限が切れた時刻の上限

@@ -1,4 +1,4 @@
-package com.ecsite.module.cart.api;
+package com.ecsite.module.cart.api.model;
 
 import org.jspecify.annotations.Nullable;
 
@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * カートの中身（docs/02-設計/cart.md「他のモジュールへの公開」）。期限切れのカートは品目が空。
+ * カートの中身
+ *
+ * <p>期限切れのカートは品目が空。
  *
  * @param cartId   カート ID
- * @param memberId 会員 ID（ログインせずに作ったカートは null）。持ち主の確認に使う
+ * @param memberId 会員 ID（ログインせずに作ったカートは null）
  * @param version  バージョン（変更のたびに上がる）
  * @param items    品目（入れた順）
  */

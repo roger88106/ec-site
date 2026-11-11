@@ -4,8 +4,6 @@ import com.ecsite.module.order.event.OrderShipped;
 
 /**
  * 配送業者の表示名の文言のキーの取得
- *
- * <p>表示名は出荷モジュールが決めるので、実装は出荷モジュールの API から得る。
  */
 public interface ShippingDirectory {
 

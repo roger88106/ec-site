@@ -2,15 +2,14 @@ package com.ecsite.module.notification.application.port;
 
 /**
  * メールの送信
- *
- * <p>SMTP の型とエラーは実装の中に閉じ、送れなければ実行時例外を投げる。
  */
 public interface Mailer {
 
     /**
-     * メールを送る。送信元は設定の値。
+     * メールを送る。
      *
      * @param mail メール
+     * @throws RuntimeException 送れなかったとき
      */
     void send(Mail mail);
 

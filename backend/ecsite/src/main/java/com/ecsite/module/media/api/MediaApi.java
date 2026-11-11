@@ -3,6 +3,7 @@ package com.ecsite.module.media.api;
 import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.MediaService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,7 @@ public class MediaApi {
      * @return 受付
      * @throws com.ecsite.common.error.exception.BusinessException 形式が対象外、または大きさが範囲の外
      */
-    public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
+    public ImageUpload requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
         var view = mediaService.requestImageUpload(scope, contentType, contentLength);
         return new ImageUpload(view.uploadId(), view.uploadUrl(), view.headers(), view.expiresAt());
     }
@@ -53,7 +54,7 @@ public class MediaApi {
      * @return 用意した画像
      * @throws com.ecsite.common.error.exception.BusinessException 受付がない（範囲の違うものを含む）、大きさが範囲の外、中身が対象の画像でない、変換できない
      */
-    public PreparedImage prepareImage(String scope, UUID uploadId) {
+    public PreparedImage prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
         return new PreparedImage(mediaService.prepareImage(scope, uploadId));
     }
 
@@ -66,7 +67,7 @@ public class MediaApi {
      * @return アセット ID
      * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
      */
-    public UUID registerImage(PreparedImage prepared) {
+    public UUID registerImage(@NonNull PreparedImage prepared) {
         return mediaService.registerImage(prepared.assetId());
     }
 
@@ -77,7 +78,7 @@ public class MediaApi {
      *
      * @param prepared 用意した画像
      */
-    public void discardImage(PreparedImage prepared) {
+    public void discardImage(@NonNull PreparedImage prepared) {
         mediaService.discardImage(prepared.assetId());
     }
 
@@ -88,7 +89,7 @@ public class MediaApi {
      *
      * @param assetIds アセット ID
      */
-    public void release(Collection<UUID> assetIds) {
+    public void release(@NonNull Collection<UUID> assetIds) {
         mediaService.release(assetIds);
     }
 
@@ -98,7 +99,7 @@ public class MediaApi {
      * @param assetIds アセット ID
      * @return アセット ID → 配信の URL。ないアセットは含まない
      */
-    public Map<UUID, URI> urls(Collection<UUID> assetIds) {
+    public Map<UUID, URI> urls(@NonNull Collection<UUID> assetIds) {
         return mediaService.urls(assetIds);
     }
 }

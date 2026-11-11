@@ -9,6 +9,7 @@ import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.AssetKeys;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -68,7 +69,7 @@ public class MediaService {
      * @param contentLength ファイルの大きさ（バイト）
      * @return 受付の情報
      */
-    public ImageUploadView requestImageUpload(String scope, String contentType, long contentLength) {
+    public ImageUploadView requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
         var uploadId = UUID.randomUUID();
         var uploadKey = AssetKeys.upload(scope, uploadId);
         if (ImageFormat.ofContentType(contentType).isEmpty()) {
@@ -91,7 +92,7 @@ public class MediaService {
      * @return 配信のバケットに置いた画像のアセット ID（まだ記録していない）
      * @throws BusinessException 受付がない、大きさが範囲の外、中身が対象の画像でない、変換できない
      */
-    public UUID prepareImage(String scope, UUID uploadId) {
+    public UUID prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
         var uploadKey = AssetKeys.upload(scope, uploadId);
         var size = storage.findUploadSize(uploadKey)
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND));
@@ -115,7 +116,7 @@ public class MediaService {
      * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public UUID registerImage(UUID assetId) {
+    public UUID registerImage(@NonNull UUID assetId) {
         assetRepository.insert(new Asset(assetId, ImageFormat.WEBP, storageKey(assetId), clock.instant()));
         return assetId;
     }
@@ -127,7 +128,7 @@ public class MediaService {
      *
      * @param assetId 用意した画像のアセット ID
      */
-    public void discardImage(UUID assetId) {
+    public void discardImage(@NonNull UUID assetId) {
         var storageKey = storageKey(assetId);
         try {
             storage.deletePublished(storageKey);
@@ -144,7 +145,7 @@ public class MediaService {
      * @param assetIds アセット ID
      */
     @Transactional
-    public void release(Collection<UUID> assetIds) {
+    public void release(@NonNull Collection<UUID> assetIds) {
         if (assetIds.isEmpty()) {
             return;
         }
@@ -164,12 +165,23 @@ public class MediaService {
      * @return アセット ID → 配信の URL。ないアセットは含まない
      */
     @Transactional(readOnly = true)
-    public Map<UUID, URI> urls(Collection<UUID> assetIds) {
+    public Map<UUID, URI> urls(@NonNull Collection<UUID> assetIds) {
         if (assetIds.isEmpty()) {
             return Map.of();
         }
         return assetRepository.findAllById(assetIds).stream()
                 .collect(Collectors.toUnmodifiableMap(Asset::id, asset -> storage.publicUrl(asset.storageKey())));
+    }
+
+    /**
+     * 手放したアセットの配信のファイルを消す。ファイルがなくても成功とする（何度行っても同じ結果）。
+     *
+     * <p>イベントは重ねて届くことがある（失敗したイベントを再発行するため）。
+     *
+     * @param event アセット解放
+     */
+    void deleteReleasedFile(AssetReleased event) {
+        storage.deletePublished(event.storageKey());
     }
 
 // ============================== プライベートメソッド ==============================

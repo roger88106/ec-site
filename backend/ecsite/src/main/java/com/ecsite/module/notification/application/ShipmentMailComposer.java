@@ -16,7 +16,7 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
-public class ShipmentMailComposer {
+class ShipmentMailComposer {
 
     /**
      * メッセージヘルパー
@@ -34,7 +34,7 @@ public class ShipmentMailComposer {
      * @param event 注文の出荷
      * @return メール
      */
-    public Mailer.Mail compose(OrderShipped event) {
+    Mailer.Mail compose(OrderShipped event) {
         var carrierName = messageHelper.getMessage(shippingDirectory.nameKey(event.carrier()), Map.of());
         var params = Map.of(
                 "orderNumber", event.orderNumber(),

@@ -63,7 +63,7 @@ public class MediaService {
     /**
      * 画像のアップロードの受付を始める。形式と大きさを確認し、アップロードのバケットへの署名付き URL を発行する。
      *
-     * @param scope         受付の範囲（呼ぶ側が決める。例：商品ごと）
+     * @param scope         受付の範囲（英数字とハイフン）
      * @param contentType   ファイルの形式
      * @param contentLength ファイルの大きさ（バイト）
      * @return 受付の情報

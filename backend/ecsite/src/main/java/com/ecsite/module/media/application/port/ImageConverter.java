@@ -5,7 +5,6 @@ package com.ecsite.module.media.application.port;
  *
  * <p>アップロードのバケットのファイルを、配信する形式（WebP）に変換する。
  * 向き（EXIF の Orientation）を画素に反映し、位置情報などのメタデータを除く。
- * いまは用意の中で同期に呼ぶ。時間がかかるようになったら、イベントの後で呼ぶ形に変えられる。
  */
 public interface ImageConverter {
 

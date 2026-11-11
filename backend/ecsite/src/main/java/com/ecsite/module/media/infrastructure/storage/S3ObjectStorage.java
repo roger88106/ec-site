@@ -168,7 +168,7 @@ public class S3ObjectStorage implements ObjectStorage {
 
     /**
      * S3 を呼ぶ。接続できない・時間内に応答がない（SDK の例外）と、S3 の側の故障（5xx）は、外部サービスのエラーにする。
-     * 5xx でない S3 の失敗（権限がない、ファイルがないなど）は、そのまま投げる（呼ぶ側が扱うか、予期しないエラー）。
+     * 5xx でない S3 の失敗（権限がない、ファイルがないなど）は、そのまま投げる。
      */
     private <T> T call(String failure, Supplier<T> operation) {
         try {

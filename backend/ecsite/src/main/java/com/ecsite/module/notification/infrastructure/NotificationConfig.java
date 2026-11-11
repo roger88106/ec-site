@@ -5,7 +5,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 通知モジュールの設定（送信元のアドレス）を有効にする。
+ * 通知モジュールの設定
+ *
+ * <p>通知の設定（送信元のアドレス）を有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(NotificationProperties.class)

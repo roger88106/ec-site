@@ -7,7 +7,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 /**
- * SMTP でメールを送る（Spring Boot のメール。接続先は設定 spring.mail.*）。<br />
+ * SMTP のメールの送信
+ *
+ * <p>Spring Boot のメールで送る。接続先は設定 spring.mail.* にある。
  * 送れなければ Spring の MailException（実行時例外）がそのまま伝わる。
  */
 @Component

@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * 出荷通知メールを組み立てる。件名と本文の雛形は messages.properties の ecsite.notification.shipment.* にある。
+ * 出荷通知メールの組み立て
+ *
+ * <p>件名と本文の雛形は messages.properties の ecsite.notification.shipment.* にある。
  */
 @Component
 @RequiredArgsConstructor

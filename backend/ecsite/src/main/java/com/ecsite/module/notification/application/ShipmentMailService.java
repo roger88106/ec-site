@@ -40,17 +40,17 @@ class ShipmentMailService {
     private final MessageHelper messageHelper;
 
     /**
-     * 配送業者の表示名のキー
+     * 配送業者の表示名の文言のキーの取得
      */
     private final ShippingDirectory shippingDirectory;
 
     /**
      * まだ送っていなければ、出荷通知メールを記録して送る。
      *
-     * <p>同じ注文には 1 通だけ送る。送ったメールの記録と送信を同じトランザクションで行い、
-     * 送信に失敗したら記録ごと巻き戻す。
+     * <p>同じ注文には 1 通だけ送る。送ったメールの記録と送信を同じトランザクションで行う。
      *
      * @param event 注文の出荷
+     * @throws RuntimeException 送れなかったとき（送ったメールの記録は巻き戻る）
      */
     @Transactional
     void send(OrderShipped event) {

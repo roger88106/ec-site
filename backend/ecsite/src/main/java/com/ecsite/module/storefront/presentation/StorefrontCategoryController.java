@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 店舗のカテゴリのコントローラー（C 側。store.yaml の tag: category）
+ * 店舗のカテゴリのコントローラー
+ *
+ * <p>C 側の API のうち、store.yaml のタグ category の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -25,7 +27,7 @@ class StorefrontCategoryController implements CategoryApi {
     private final StorefrontMapper mapper;
 
     /**
-     * カテゴリの木（の絞り込み用）
+     * カテゴリの木
      *
      * @return Http 200 : {@link CategoryTree}
      */

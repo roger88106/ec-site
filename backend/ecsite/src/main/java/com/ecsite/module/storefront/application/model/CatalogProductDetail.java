@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.application.port;
+package com.ecsite.module.storefront.application.model;
 
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品カタログから受け取った、商品の詳細
+ * 商品カタログの商品の詳細
  *
  * @param id           商品 ID
  * @param name         商品名

@@ -3,6 +3,8 @@ package com.ecsite.module.storefront.application.port;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.storefront.application.model.CatalogCategory;
+import com.ecsite.module.storefront.application.model.CatalogProduct;
+import com.ecsite.module.storefront.application.model.CatalogProductDetail;
 import com.ecsite.module.storefront.application.model.ProductCondition;
 
 import java.util.List;
@@ -10,8 +12,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層の口（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
- * 商品とカテゴリを、店舗の型で返す。
+ * 商品カタログの腐敗防止層の port
+ *
+ * <p>商品とカテゴリを、店舗の型で返す。
  */
 public interface CatalogDirectory {
 

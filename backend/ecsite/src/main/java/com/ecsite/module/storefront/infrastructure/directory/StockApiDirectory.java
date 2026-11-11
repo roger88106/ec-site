@@ -12,8 +12,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 在庫の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
- * 在庫モジュールの API を呼び、在庫のあるバリアントの集合に変換する。
+ * 在庫の腐敗防止層
+ *
+ * <p>在庫モジュールの API を呼び、在庫のあるバリアントの集合に変換する。
  */
 @Component
 @RequiredArgsConstructor
@@ -25,7 +26,7 @@ class StockApiDirectory implements StockDirectory {
     private final StockAvailabilityApi stockAvailabilityApi;
 
     /**
-     * 在庫のあるバリアントを返す。在庫がまだないバリアントは「在庫なし」とする（docs/03-機能仕様/inventory.md）。
+     * 在庫のあるバリアントを返す。在庫がまだないバリアントは「在庫なし」とする。
      *
      * @param variantIds バリアント ID
      * @return 指定したうち、在庫のあるバリアントの ID

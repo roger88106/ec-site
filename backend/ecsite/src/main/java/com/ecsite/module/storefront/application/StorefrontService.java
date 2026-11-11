@@ -6,15 +6,16 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.storefront.application.model.CartView;
 import com.ecsite.module.storefront.application.model.CatalogCategory;
+import com.ecsite.module.storefront.application.model.CatalogProduct;
+import com.ecsite.module.storefront.application.model.CatalogProductDetail;
 import com.ecsite.module.storefront.application.model.ProductCondition;
 import com.ecsite.module.storefront.application.model.ProductDetailView;
 import com.ecsite.module.storefront.application.model.ProductSummaryView;
 import com.ecsite.module.storefront.application.model.ShopView;
 import com.ecsite.module.storefront.application.port.CatalogDirectory;
-import com.ecsite.module.storefront.application.port.CatalogProduct;
-import com.ecsite.module.storefront.application.port.CatalogProductDetail;
 import com.ecsite.module.storefront.application.port.OrderDirectory;
 import com.ecsite.module.storefront.application.port.StockDirectory;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -27,8 +28,9 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * 店舗のサービス。商品カタログと在庫の結果を組み合わせる（docs/03-機能仕様/storefront.md）。<br />
- * 商品・価格・公開状態・在庫はキャッシュしない。
+ * 店舗のサービス
+ *
+ * <p>他のモジュールの結果を組み合わせる。商品・価格・公開状態・在庫はキャッシュしない。
  */
 @Service
 @RequiredArgsConstructor
@@ -62,7 +64,7 @@ public class StorefrontService {
      * @param request   ページの指定
      * @return 商品の一覧（在庫の有無を含む）
      */
-    public PageResult<ProductSummaryView> listProducts(ProductCondition condition, PageRequest request) {
+    public PageResult<ProductSummaryView> listProducts(@NonNull ProductCondition condition, @NonNull PageRequest request) {
         return withStock(catalogDirectory.listProducts(condition, request));
     }
 
@@ -73,17 +75,18 @@ public class StorefrontService {
      * @param request ページの指定
      * @return 検索結果（在庫の有無を含む）
      */
-    public PageResult<ProductSummaryView> searchProducts(String keyword, PageRequest request) {
+    public PageResult<ProductSummaryView> searchProducts(@NonNull String keyword, @NonNull PageRequest request) {
         return withStock(catalogDirectory.searchProducts(keyword, request));
     }
 
     /**
-     * 商品の詳細を取得する。表示されない商品は、存在しない商品と同じく見つからない。
+     * 商品の詳細を取得する。
      *
      * @param productId 商品 ID
      * @return 商品の詳細（バリアントごとの在庫の有無を含む）
+     * @throws BusinessException 商品がない、または C 側に表示されない（NOT_FOUND）
      */
-    public ProductDetailView getProduct(UUID productId) {
+    public ProductDetailView getProduct(@NonNull UUID productId) {
         var detail = catalogDirectory.findProduct(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         var inStock = stockDirectory.inStock(detail.variants().stream().map(CatalogProductDetail.Variant::id).toList());
@@ -97,14 +100,14 @@ public class StorefrontService {
     }
 
     /**
-     * カートを表示する。金額と購入できるかは、注文モジュールの見積もりで求める。<br />
-     * 会員のカートは、持ち主の会員だけに見せる。ほかの人には 404。
+     * カートを表示する。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return カートの表示
+     * @throws BusinessException カートがない、または会員のカートで持ち主でない（NOT_FOUND）
      */
-    public CartView getCart(UUID cartId, @Nullable UUID requester) {
+    public CartView getCart(@NonNull UUID cartId, @Nullable UUID requester) {
         return orderDirectory.findCart(cartId, requester).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
@@ -118,11 +121,11 @@ public class StorefrontService {
     }
 
     /**
-     * 店舗の情報を取得する。設定の値から返すので、DB は読まない。<br />
-     * クラス全体の読み取り専用のトランザクションと接続を取らないよう、トランザクションなしで動かす（{@code MediaService} の DB を使わない操作と同じ）。
+     * 店舗の情報を取得する。設定の値から返す。
      *
      * @return 店舗の情報
      */
+    // DB を使わないので、クラス全体の読み取り専用のトランザクションから外し、接続を取らない
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ShopView getShop() {
         return new ShopView(shopProperties.contactEmail());
@@ -131,8 +134,7 @@ public class StorefrontService {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 1 ページ分の商品に、在庫の有無を付ける。販売中のいずれかのバリアントに在庫があれば「在庫あり」。<br />
-     * 在庫の有無は、ページのすべてのバリアントについてまとめて 1 回で問い合わせる。
+     * 1 ページ分の商品に、在庫の有無を付ける。販売中のいずれかのバリアントに在庫があれば「在庫あり」。
      *
      * @param page 商品の一覧
      * @return 在庫の有無を付けた一覧

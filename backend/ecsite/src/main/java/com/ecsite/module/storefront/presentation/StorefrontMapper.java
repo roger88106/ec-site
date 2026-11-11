@@ -31,13 +31,15 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルの変換。
+ * 店舗 API のマッパー
+ *
+ * <p>店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルを変換する。
  */
 @Component
 class StorefrontMapper {
 
     /**
-     * 並び順を変換する。省略されたときの既定（新着順）は、API の契約が持つ。
+     * 並び順を変換する。
      *
      * @param sort 並び順
      * @return 並び順

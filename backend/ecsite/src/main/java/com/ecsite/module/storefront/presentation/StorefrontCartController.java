@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * 店舗のカートの表示のコントローラー（C 側。store.yaml の tag: cart-view）
+ * 店舗のカートの表示のコントローラー
+ *
+ * <p>C 側の API のうち、store.yaml のタグ cart-view の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor

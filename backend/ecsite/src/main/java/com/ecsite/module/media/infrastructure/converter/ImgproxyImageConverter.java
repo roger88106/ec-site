@@ -6,19 +6,18 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
-import com.ecsite.module.media.infrastructure.storage.S3ObjectStorage;
+import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.net.http.HttpClient;
 import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Set;
@@ -33,12 +32,8 @@ import javax.crypto.spec.SecretKeySpec;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 class ImgproxyImageConverter implements ImageConverter {
-
-    /**
-     * imgproxy への接続を待つ時間の上限（変換を待つ時間とは別）
-     */
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
     /**
      * imgproxy に届いていないことを示す HTTP の状態（imgproxy の手前の代理が返す）
@@ -51,8 +46,9 @@ class ImgproxyImageConverter implements ImageConverter {
     private static final Base64.Encoder BASE64_URL = Base64.getUrlEncoder().withoutPadding();
 
     /**
-     * imgproxy を呼ぶ HTTP クライアント（基準 URL と時間の上限を設定済み）
+     * imgproxy を呼ぶ HTTP クライアント
      */
+    @Qualifier(ImgproxyConfig.REST_CLIENT)
     private final RestClient restClient;
 
     /**
@@ -61,63 +57,58 @@ class ImgproxyImageConverter implements ImageConverter {
     private final ImgproxyProperties properties;
 
     /**
-     * ファイルの置き場所（変換元の場所を作る）
+     * ファイルの置き場所の設定（変換元のアップロードのバケット）
      */
-    private final S3ObjectStorage storage;
+    private final MediaStorageProperties storageProperties;
 
     /**
-     * コンストラクタ
-     *
-     * @param restClientBuilder HTTP クライアントのビルダー（トレースとメトリクスが付く）
-     * @param properties        画像の変換の設定
-     * @param storage           ファイルの置き場所（変換元の場所を作る）
-     */
-    ImgproxyImageConverter(RestClient.Builder restClientBuilder, ImgproxyProperties properties,
-                           S3ObjectStorage storage) {
-        var requestFactory = new JdkClientHttpRequestFactory(
-                HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build());
-        requestFactory.setReadTimeout(properties.timeout());
-        this.restClient = restClientBuilder.baseUrl(properties.baseUrl().toString()).requestFactory(requestFactory).build();
-        this.properties = properties;
-        this.storage = storage;
-    }
-
-    /**
-     * imgproxy に変換させる。imgproxy が応答したエラー（4xx と、壊れたファイルに返す 500）は、変換の失敗にする。
-     * imgproxy の中の故障（アップロードのバケットを読めないなど）も 500 なので区別できないため、応答をログに残す。
-     * imgproxy に届かない・応えない（接続できない、時間切れ、手前の代理の 502・503・504）は、外部サービスのエラーにする。
-     *
-     * <p>配信する画像はすべて WebP にするので、応答の本文が WebP でなければ（先頭のバイトで判定し、Content-Type には
-     * 頼らない）、変換の失敗にする。
+     * imgproxy に WebP へ変換させる。
      *
      * @param uploadKey アップロードのバケットのキー
      * @return 変換した WebP
+     * @throws BusinessException imgproxy が変換できなかった、応答が WebP でない
+     * @throws SystemException   imgproxy に接続できない、届かない、時間の上限を超えた
      */
     @Override
     public byte[] convertToWebp(String uploadKey) {
         var path = processingPath(uploadKey);
         try {
-            byte[] body = restClient.get().uri(signature(path) + path).retrieve().body(byte[].class);
+            var body = restClient.get().uri(signature(path) + path).retrieve().body(byte[].class);
+            // 配信する画像は全て WebP にするので、本文の先頭のバイトで確認する（Content-Type には頼らない）
             if (body == null || ImageFormat.detect(body).filter(ImageFormat.WEBP::equals).isEmpty()) {
                 log.warn("imgproxy の応答が WebP でない：uploadKey={}, bytes={}", uploadKey, body == null ? 0 : body.length);
                 throw BusinessException.of(MediaErrorCode.IMAGE_CONVERSION_FAILED);
             }
             return body;
         } catch (RestClientResponseException e) {
-            int status = e.getStatusCode().value();
+            var status = e.getStatusCode().value();
+            // 手前の代理の 502・503・504 は、imgproxy に届いていない
             if (UNREACHABLE_STATUSES.contains(status)) {
                 throw SystemException.of("imgproxy に届かない：uploadKey=" + uploadKey + ", status=" + status, e,
                         MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
             }
+            // imgproxy が応答したエラー（4xx と、壊れたファイルに返す 500）は変換の失敗にする。
+            // imgproxy の中の故障（アップロードのバケットを読めないなど）も 500 で区別できないので、応答をログに残す
             log.warn("imgproxy が画像を変換できなかった：uploadKey={}, status={}, body={}",
                     uploadKey, status, e.getResponseBodyAsString());
             throw BusinessException.of(MediaErrorCode.IMAGE_CONVERSION_FAILED);
         } catch (ResourceAccessException e) {
+            // 接続できない・時間の上限を超えた（imgproxy が応えない）
             var reason = e.getCause() instanceof HttpTimeoutException
                     ? "imgproxy の変換が時間の上限（" + properties.timeout() + "）を超えた"
                     : "imgproxy に接続できない";
             throw SystemException.of(reason + "：uploadKey=" + uploadKey, e, MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
         }
+    }
+
+    /**
+     * アップロードのバケットのファイルの、S3 の連携での場所（imgproxy が変換元として読む）を返す。
+     *
+     * @param uploadKey アップロードのキー
+     * @return {@code s3://<アップロードのバケット>/<キー>}
+     */
+    String uploadSourceUrl(String uploadKey) {
+        return "s3://" + storageProperties.incomingBucket() + "/" + uploadKey;
     }
 
 // ============================== プライベートメソッド ==============================
@@ -126,7 +117,7 @@ class ImgproxyImageConverter implements ImageConverter {
      * 処理の指定と元のファイルの URL（base64url）。/q:{品質}/f:webp/{元の URL}
      */
     private String processingPath(String uploadKey) {
-        var source = storage.uploadSourceUrl(uploadKey);
+        var source = uploadSourceUrl(uploadKey);
         return "/q:" + properties.quality() + "/f:webp/" + BASE64_URL.encodeToString(source.getBytes(StandardCharsets.UTF_8));
     }
 

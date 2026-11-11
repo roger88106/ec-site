@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 /**
  * メディアのサービス
  *
- * <p>ファイルは署名付き URL でブラウザーからアップロードのバケットへ直接送られ、用意のときに中身を確認し、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
+ * <p>アセットとして配信するのは、中身を確認して WebP に変換したファイルだけ。アップロードされたファイルはそのまま配信しない。
  */
 @Slf4j
 @Service
@@ -70,14 +70,18 @@ public class MediaService {
      * @return 受付の情報
      */
     public ImageUploadView requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
+        // 受付のキー作成
         var uploadId = UUID.randomUUID();
         var uploadKey = AssetKeys.upload(scope, uploadId);
+
+        // 形式と大きさの確認（申告の値）
         if (ImageFormat.ofContentType(contentType).isEmpty()) {
             throw BusinessException.of(MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT, List.of(ImageFormat.displayNames()));
         }
         verifySize(contentLength);
 
-        // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザーが付ける Content-Type と合う）
+        // 署名付き URL の発行
+        // ※申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザーが付ける Content-Type と合う）
         var presigned = storage.presignUpload(uploadKey, contentType.toLowerCase(Locale.ROOT), contentLength);
         return new ImageUploadView(uploadId, presigned.url(), presigned.headers(), presigned.expiresAt());
     }
@@ -93,16 +97,21 @@ public class MediaService {
      * @throws BusinessException 受付がない、大きさが範囲の外、中身が対象の画像でない、変換できない
      */
     public UUID prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
+        // 受付の大きさの確認
         var uploadKey = AssetKeys.upload(scope, uploadId);
         var size = storage.findUploadSize(uploadKey)
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND));
         verifySize(size);
-        // 変換の前に、受け付ける形式であることを確認する（判定できないものは変換に回さない）
+
+        // 形式の確認 ※判定できないものは変換に回さない
         if (ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH)).isEmpty()) {
             throw BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE, List.of(ImageFormat.displayNames()));
         }
+
+        // WebP への変換
         var webp = imageConverter.convertToWebp(uploadKey);
 
+        // 配信のバケットへの保存
         var assetId = UUID.randomUUID();
         storage.putPublished(storageKey(assetId), webp, ImageFormat.WEBP.contentType());
         return assetId;
@@ -112,13 +121,11 @@ public class MediaService {
      * 用意した画像をアセットとして記録する。呼んだ側のトランザクションの中で記録する。
      *
      * @param assetId 用意した画像のアセット ID
-     * @return アセット ID
      * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public UUID registerImage(@NonNull UUID assetId) {
+    public void registerImage(@NonNull UUID assetId) {
         assetRepository.insert(new Asset(assetId, ImageFormat.WEBP, storageKey(assetId), clock.instant()));
-        return assetId;
     }
 
     /**
@@ -132,15 +139,16 @@ public class MediaService {
         var storageKey = storageKey(assetId);
         try {
             storage.deletePublished(storageKey);
-        } catch (RuntimeException ex) {
-            log.warn("用意した画像の配信のファイルを消せない：storageKey={}", storageKey, ex);
+        } catch (RuntimeException e) {
+            log.warn("用意した画像の配信のファイルを消せない：storageKey={}", storageKey, e);
         }
     }
 
     /**
      * アセットを手放す。記録を消し、配信のファイルはコミットの後に消す。すでにないアセットは無視する。
      *
-     * <p>イベントはコミットの後に届き、ファイルを消す（{@link AssetFileHandler}）。呼んだ側の保存が失敗すれば、イベントも取り消される。
+     * <p>記録の削除と同じトランザクションで、アセット解放のイベントを記録する。配信のファイルはコミットの後に消え、
+     * トランザクションが取り消されたときは残る。
      *
      * @param assetIds アセット ID
      */
@@ -149,9 +157,11 @@ public class MediaService {
         if (assetIds.isEmpty()) {
             return;
         }
+        // アセットの記録の削除
         var assets = assetRepository.findAllById(assetIds);
         assetRepository.deleteAllById(assets.stream().map(Asset::id).toList());
 
+        // アセット解放の発行 ※配信のファイルはコミットの後に消す
         var now = clock.instant();
         assets.forEach(asset -> eventPublisher.publishEvent(AssetReleased.of(now, asset)));
     }

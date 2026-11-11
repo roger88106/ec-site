@@ -3,7 +3,6 @@ package com.ecsite.module.media.infrastructure.storage;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.MediaErrorCode;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -24,8 +23,8 @@ import java.util.function.Supplier;
  * <p>AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
  */
 @Component
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public class S3ObjectStorage implements ObjectStorage {
+@RequiredArgsConstructor
+class S3ObjectStorage implements ObjectStorage {
 
     /**
      * 配信のファイルのキャッシュの指定。キーを上書きしないので、長くキャッシュさせる
@@ -76,16 +75,6 @@ public class S3ObjectStorage implements ObjectStorage {
                         .contentLength(contentLength)));
         return new PresignedUpload(URI.create(presigned.url().toString()), Map.of("Content-Type", contentType),
                 presigned.expiration());
-    }
-
-    /**
-     * アップロードのバケットのファイルの、S3 の連携での場所（imgproxy が変換元として読む）を返す。
-     *
-     * @param uploadKey アップロードのキー
-     * @return {@code s3://<アップロードのバケット>/<キー>}
-     */
-    public String uploadSourceUrl(String uploadKey) {
-        return "s3://" + properties.incomingBucket() + "/" + uploadKey;
     }
 
     /**
@@ -165,6 +154,8 @@ public class S3ObjectStorage implements ObjectStorage {
     public URI publicUrl(String publicKey) {
         return URI.create(properties.publicBaseUrl() + "/" + publicKey);
     }
+
+// ============================== プライベートメソッド ==============================
 
     /**
      * S3 を呼ぶ。接続できない・時間内に応答がない（SDK の例外）と、S3 の側の故障（5xx）は、外部サービスのエラーにする。

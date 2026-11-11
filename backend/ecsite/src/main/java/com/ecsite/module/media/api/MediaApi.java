@@ -68,7 +68,8 @@ public class MediaApi {
      * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
      */
     public UUID registerImage(@NonNull PreparedImage prepared) {
-        return mediaService.registerImage(prepared.assetId());
+        mediaService.registerImage(prepared.assetId());
+        return prepared.assetId();
     }
 
     /**

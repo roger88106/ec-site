@@ -2,6 +2,7 @@ package com.ecsite.module.media.domain;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -27,8 +28,8 @@ public final class AssetKeys {
      * @return {範囲}/{uploadId}
      * @throws IllegalArgumentException 範囲に使えない文字がある
      */
-    public static String upload(String scope, UUID uploadId) {
-        if (scope == null || !SCOPE.matcher(scope).matches()) {
+    public static String upload(@NonNull String scope, @NonNull UUID uploadId) {
+        if (!SCOPE.matcher(scope).matches()) {
             throw new IllegalArgumentException("範囲は英数字とハイフンで 1〜64 文字にする：" + scope);
         }
         return scope + "/" + uploadId;
@@ -41,7 +42,7 @@ public final class AssetKeys {
      * @param format  形式
      * @return assets/{assetId}.{拡張子}
      */
-    public static String published(UUID assetId, ImageFormat format) {
+    public static String published(@NonNull UUID assetId, @NonNull ImageFormat format) {
         return "assets/" + assetId + "." + format.extension();
     }
 }

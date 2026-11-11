@@ -9,8 +9,9 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 画像の保存先の設定の文字列表現。<br />
- * ログに出ても秘密の値が漏れないことを確認する。
+ * ファイルの置き場所の設定（MediaStorageProperties）の文字列表現のテスト
+ *
+ * <p>ログに出ても秘密の値が漏れないことを確認する。
  */
 class MediaStoragePropertiesTest {
 

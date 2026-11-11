@@ -26,8 +26,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * メディアのサービス（docs/03-機能仕様/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
- * ファイルは署名付き URL でブラウザーからアップロードのバケットへ直接送られ、用意のときに中身を確認し、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
+ * メディアのサービス
+ *
+ * <p>ファイルは署名付き URL でブラウザーからアップロードのバケットへ直接送られ、用意のときに中身を確認し、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
  */
 @Slf4j
 @Service
@@ -81,8 +82,14 @@ public class MediaService {
     }
 
     /**
-     * 受け付けた画像を用意する（MediaApi の同じメソッドの説明を参照）。<br />
-     * DB を使わないので、トランザクションを始めない。
+     * 受け付けた画像を用意する。大きさと、先頭のバイトで判定した形式を確認し、WebP に変換して配信のバケットへ置く。
+     *
+     * <p>DB を使わないので、トランザクションを始めない。
+     *
+     * @param scope    受付の範囲
+     * @param uploadId 受付 ID
+     * @return 配信のバケットに置いた画像のアセット ID（まだ記録していない）
+     * @throws BusinessException 受付がない、大きさが範囲の外、中身が対象の画像でない、変換できない
      */
     public UUID prepareImage(String scope, UUID uploadId) {
         var uploadKey = AssetKeys.upload(scope, uploadId);
@@ -101,7 +108,11 @@ public class MediaService {
     }
 
     /**
-     * 用意した画像をアセットとして記録する（MediaApi の同じメソッドの説明を参照）。
+     * 用意した画像をアセットとして記録する。呼んだ側のトランザクションの中で記録する。
+     *
+     * @param assetId 用意した画像のアセット ID
+     * @return アセット ID
+     * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public UUID registerImage(UUID assetId) {
@@ -110,8 +121,11 @@ public class MediaService {
     }
 
     /**
-     * 用意した画像の配信のファイルを消す（MediaApi の同じメソッドの説明を参照）。<br />
-     * 消せなかったファイルは、だれからも参照されずに残る（登録のないファイルを探して消すことはしない）。
+     * 用意した画像の配信のファイルを消す。消すのに失敗しても例外を投げず、警告のログに保存先のキーを出す。
+     *
+     * <p>消せなかったファイルは、だれからも参照されずに残る（登録のないファイルを探して消すことはしない）。
+     *
+     * @param assetId 用意した画像のアセット ID
      */
     public void discardImage(UUID assetId) {
         var storageKey = storageKey(assetId);
@@ -123,8 +137,11 @@ public class MediaService {
     }
 
     /**
-     * アセットを手放す（MediaApi の同じメソッドの説明を参照）。<br />
-     * イベントはコミットの後に届き、ファイルを消す（{@link AssetFileHandler}）。呼んだ側の保存が失敗すれば、イベントも取り消される。
+     * アセットを手放す。記録を消し、配信のファイルはコミットの後に消す。すでにないアセットは無視する。
+     *
+     * <p>イベントはコミットの後に届き、ファイルを消す（{@link AssetFileHandler}）。呼んだ側の保存が失敗すれば、イベントも取り消される。
+     *
+     * @param assetIds アセット ID
      */
     @Transactional
     public void release(Collection<UUID> assetIds) {
@@ -139,8 +156,12 @@ public class MediaService {
     }
 
     /**
-     * アセットの配信の URL をまとめて返す（MediaApi の同じメソッドの説明を参照）。<br />
-     * URL は配信の基準 URL とキーから組み立てる（ストレージへの問い合わせはしない）。
+     * アセットの配信の URL をまとめて返す。
+     *
+     * <p>URL は配信の基準 URL とキーから組み立てる（ストレージへの問い合わせはしない）。
+     *
+     * @param assetIds アセット ID
+     * @return アセット ID → 配信の URL。ないアセットは含まない
      */
     @Transactional(readOnly = true)
     public Map<UUID, URI> urls(Collection<UUID> assetIds) {

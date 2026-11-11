@@ -16,7 +16,7 @@ import java.util.UUID;
 import static com.ecsite.jooq.media.Tables.ASSET;
 
 /**
- * アセットのリポジトリの jOOQ の実装
+ * jOOQ のアセットのリポジトリ
  */
 @Repository
 @RequiredArgsConstructor

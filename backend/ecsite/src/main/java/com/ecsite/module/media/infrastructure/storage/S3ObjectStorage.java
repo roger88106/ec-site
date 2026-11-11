@@ -19,7 +19,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * ファイルの置き場所の S3 の実装。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
+ * S3 のファイルの置き場所
+ *
+ * <p>AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
  */
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
@@ -57,6 +59,11 @@ public class S3ObjectStorage implements ObjectStorage {
 
     /**
      * アップロードのバケットへの署名付き URL を発行する。形式と大きさを署名に含める（AWS は、違う形式・大きさの PUT を拒否する）。
+     *
+     * @param uploadKey     アップロードのキー
+     * @param contentType   ファイルの形式
+     * @param contentLength ファイルの大きさ（バイト）
+     * @return 署名付き URL と、PUT に付けるヘッダー、期限
      */
     @Override
     public PresignedUpload presignUpload(String uploadKey, String contentType, long contentLength) {

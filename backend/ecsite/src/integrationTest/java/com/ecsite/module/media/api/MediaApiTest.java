@@ -5,6 +5,8 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.TestImages;
 import com.ecsite.TestcontainersConfig;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.media.api.model.ImageUpload;
+import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.jooq.DSLContext;
@@ -52,8 +54,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 
 /**
- * メディアモジュールの API の統合テスト（docs/03-機能仕様/media.md）。<br />
- * 用意では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
+ * メディアの API の統合テスト
+ *
+ * <p>用意では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
  * ファイルは、受付の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
  * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったアセットを消す。
  * エラーコードは、商品画像 API の契約と同じ文字列であることを確認する。

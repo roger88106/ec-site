@@ -26,8 +26,9 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * 画像の変換の imgproxy の実装。<br />
- * imgproxy はアップロードのバケットを S3 の連携で直接読み、変換した WebP を返す。向きの反映とメタデータの除去は、
+ * imgproxy の画像の変換
+ *
+ * <p>imgproxy はアップロードのバケットを S3 の連携で直接読み、変換した WebP を返す。向きの反映とメタデータの除去は、
  * imgproxy の設定（IMGPROXY_AUTO_ROTATE、IMGPROXY_STRIP_METADATA）で行う。URL には署名を付ける。
  */
 @Slf4j
@@ -84,9 +85,13 @@ class ImgproxyImageConverter implements ImageConverter {
     /**
      * imgproxy に変換させる。imgproxy が応答したエラー（4xx と、壊れたファイルに返す 500）は、変換の失敗にする。
      * imgproxy の中の故障（アップロードのバケットを読めないなど）も 500 なので区別できないため、応答をログに残す。
-     * imgproxy に届かない・応えない（接続できない、時間切れ、手前の代理の 502・503・504）は、外部サービスのエラーにする。<br />
-     * 配信する画像はすべて WebP にするので、応答の本文が WebP でなければ（先頭のバイトで判定し、Content-Type には
+     * imgproxy に届かない・応えない（接続できない、時間切れ、手前の代理の 502・503・504）は、外部サービスのエラーにする。
+     *
+     * <p>配信する画像はすべて WebP にするので、応答の本文が WebP でなければ（先頭のバイトで判定し、Content-Type には
      * 頼らない）、変換の失敗にする。
+     *
+     * @param uploadKey アップロードのバケットのキー
+     * @return 変換した WebP
      */
     @Override
     public byte[] convertToWebp(String uploadKey) {

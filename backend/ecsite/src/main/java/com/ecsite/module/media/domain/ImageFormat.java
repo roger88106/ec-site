@@ -12,8 +12,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 受け付ける画像の形式。ファイルの先頭のバイト（マジックナンバー）で判定する。<br />
- * ブラウザーが申告した形式は信用せず、確定のときに先頭のバイトで確認する（docs/03-機能仕様/media.md）。
+ * 受け付ける画像の形式
+ *
+ * <p>ファイルの先頭のバイト（マジックナンバー）で判定する。
  */
 public enum ImageFormat {
 
@@ -190,8 +191,9 @@ public enum ImageFormat {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * ftyp のボックス（大きさ 4 バイト、"ftyp"、メジャーブランド、バージョン 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。<br />
-     * メジャーブランドが汎用（mif1、msf1）なら、互換のブランドを見る。どちらとも分からなければ HEIF とする（中身は変換で確認する）。
+     * ftyp のボックス（大きさ 4 バイト、"ftyp"、メジャーブランド、バージョン 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。
+     *
+     * <p>メジャーブランドが汎用（mif1、msf1）なら、互換のブランドを見る。どちらとも分からなければ HEIF とする（中身は変換で確認する）。
      */
     private static Optional<ImageFormat> detectFtyp(byte[] head) {
         if (head.length < 12) {

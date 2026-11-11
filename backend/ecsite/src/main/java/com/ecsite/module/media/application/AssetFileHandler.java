@@ -7,8 +7,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 
 /**
- * 手放したアセットの配信のファイルを、コミットの後に消す（docs/03-機能仕様/media.md「アセットの解放」）。<br />
- * イベントは重ねて届くことがある（バックエンドのアーキテクチャの「水平スケール」）。削除は何度行っても同じ結果になる。
+ * アセット解放のハンドラー
+ *
+ * <p>手放したアセットの配信のファイルを、コミットの後に消す。
+ * イベントは重ねて届くことがある（失敗したイベントを再発行するため）。削除は何度行っても同じ結果になる。
  * DB を使わないので、トランザクションを始めない（ファイル保存を待つ間に DB の接続を持たない）。
  */
 @Component

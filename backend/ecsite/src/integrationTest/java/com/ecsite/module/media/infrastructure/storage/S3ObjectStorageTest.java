@@ -31,8 +31,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * ファイルの置き場所の S3 の実装の統合テスト。<br />
- * Testcontainers の SeaweedFS（資格情報を検証する設定）に対して、署名付き URL での PUT から、配信のバケットへの書き込み・削除までを確認する。
+ * S3 のファイルの置き場所の統合テスト
+ *
+ * <p>Testcontainers の SeaweedFS（資格情報を検証する設定）に対して、署名付き URL での PUT から、配信のバケットへの書き込み・削除までを確認する。
  */
 @IntegrationTest
 class S3ObjectStorageTest {
@@ -157,8 +158,9 @@ class S3ObjectStorageTest {
     // ============================== 補助 ==============================
 
     /**
-     * アップロードのバケットへの PUT の署名付き URL（有効期間 1 分）を、指定の時計の時刻で署名して作り、PUT する。<br />
-     * アプリの署名者は署名の時刻を変えられないので、同じ方式（SigV4、クエリに署名）の署名者を直接使う。
+     * アップロードのバケットへの PUT の署名付き URL（有効期間 1 分）を、指定の時計の時刻で署名して作り、PUT する。
+     *
+     * <p>アプリの署名者は署名の時刻を変えられないので、同じ方式（SigV4、クエリに署名）の署名者を直接使う。
      *
      * @param clock     署名の時刻を取る時計
      * @param uploadKey アップロードのキー

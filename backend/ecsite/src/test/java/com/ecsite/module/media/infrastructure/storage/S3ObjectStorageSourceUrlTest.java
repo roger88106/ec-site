@@ -9,7 +9,7 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * ファイルの置き場所の S3 の実装の、変換元の場所のテスト（docs/03-機能仕様/media.md「アップロードの流れ」）。
+ * S3 のファイルの置き場所の、変換元の場所のテスト
  */
 class S3ObjectStorageSourceUrlTest {
 

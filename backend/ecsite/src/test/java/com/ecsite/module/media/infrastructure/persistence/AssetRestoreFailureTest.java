@@ -12,7 +12,9 @@ import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.media.Tables.ASSET;
 
 /**
- * アセットを DB の値から戻すときの失敗の単体テスト。例外の出力に DB の値が出ないことを確認する。
+ * アセットを DB の値から戻すときの失敗の単体テスト
+ *
+ * <p>例外の出力に DB の値が出ないことを確認する。
  */
 class AssetRestoreFailureTest {
 

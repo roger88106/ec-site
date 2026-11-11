@@ -72,7 +72,10 @@ class JooqAssetRepository implements AssetRepository {
      * アセットのレコードを、アセットに変換する。
      */
     private static Asset toAsset(AssetRecord record) {
-        return new Asset(record.getId(), AggregateGuards.restore("asset", () -> ImageFormat.valueOf(record.getFormat())), record.getStorageKey(),
+        return new Asset(
+                record.getId(),
+                AggregateGuards.restore("asset", () -> ImageFormat.valueOf(record.getFormat())),
+                record.getStorageKey(),
                 record.getCreatedAt());
     }
 }

@@ -1,55 +1,32 @@
 package com.ecsite.module.notification.application;
 
-import com.ecsite.module.notification.application.port.Mailer;
-import com.ecsite.module.notification.application.port.SentMailRepository;
 import com.ecsite.module.order.event.OrderShipped;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-
 /**
  * 注文の出荷のハンドラー
  *
- * <p>注文の出荷を受けて、出荷通知メールを送る。同じ注文には 1 通だけ送る。
- * 注文のコミットの後に、新しいトランザクションで受ける。送ったメールの記録と送信を同じトランザクションで行い、
- * 送信に失敗したら記録ごと巻き戻し、イベントは未完了のまま残る。
+ * <p>注文の出荷を受けて、出荷通知メールを送る。注文のコミットの後に、新しいトランザクションで受ける。
+ * 送信に失敗したら、イベントは未完了のまま残る。
  */
 @Component
 @RequiredArgsConstructor
 class OrderShippedHandler {
 
     /**
-     * 送ったメールの記録
+     * 出荷通知メールのサービス
      */
-    private final SentMailRepository sentMails;
+    private final ShipmentMailService shipmentMailService;
 
     /**
-     * 出荷通知メールの組み立て
-     */
-    private final ShipmentMailComposer composer;
-
-    /**
-     * メールの送信
-     */
-    private final Mailer mailer;
-
-    /**
-     * 時計
-     */
-    private final Clock clock;
-
-    /**
-     * 注文の出荷：まだ送っていなければ、出荷通知メールを記録して送る。
+     * 注文の出荷：出荷通知メールを送る。
      *
      * @param event 注文の出荷
      */
     @ApplicationModuleListener
     void on(OrderShipped event) {
-        if (!sentMails.recordIfAbsent(event.orderId(), SentMailRepository.Kind.SHIPMENT, event.email(), clock.instant())) {
-            return;
-        }
-        mailer.send(composer.compose(event));
+        shipmentMailService.send(event);
     }
 }

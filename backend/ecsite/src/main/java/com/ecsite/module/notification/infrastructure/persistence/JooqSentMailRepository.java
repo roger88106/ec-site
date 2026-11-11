@@ -22,9 +22,19 @@ class JooqSentMailRepository implements SentMailRepository {
      */
     private final DSLContext dsl;
 
+    /**
+     * 送ったメールを記録する。
+     *
+     * <p>注文 ID と種類の一意制約で、重ねて届いたイベントでは挿入しない（同時なら先のコミットを待つ）。
+     *
+     * @param orderId   注文 ID
+     * @param kind      メールの種類
+     * @param recipient 宛先
+     * @param sentAt    送った日時
+     * @return 記録したら true。すでに記録があれば false
+     */
     @Override
     public boolean recordIfAbsent(UUID orderId, Kind kind, String recipient, Instant sentAt) {
-        // 注文 ID と種類の一意制約で、重ねて届いたイベントでは挿入しない（同時なら先のコミットを待つ）
         return dsl.insertInto(SENT_MAIL)
                 .set(SENT_MAIL.ID, UUID.randomUUID())
                 .set(SENT_MAIL.ORDER_ID, orderId)

@@ -7,9 +7,6 @@ import org.springframework.stereotype.Component;
 
 /**
  * 注文の出荷のハンドラー
- *
- * <p>注文の出荷を受けて、出荷通知メールを送る。注文のコミットの後に、新しいトランザクションで受ける。
- * 送信に失敗したら、イベントは未完了のまま残る。
  */
 @Component
 @RequiredArgsConstructor
@@ -22,6 +19,8 @@ class OrderShippedHandler {
 
     /**
      * 注文の出荷：出荷通知メールを送る。
+     *
+     * <p>注文のコミットの後に、新しいトランザクションで受ける。送信に失敗したら、イベントは未完了のまま残る。
      *
      * @param event 注文の出荷
      */

@@ -31,7 +31,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルの変換。
+ * 店舗 API のマッパー
+ *
+ * <p>店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルを変換する。
  */
 @Component
 class StorefrontMapper {

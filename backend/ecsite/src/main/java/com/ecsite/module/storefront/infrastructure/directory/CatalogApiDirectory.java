@@ -21,8 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
- * 商品カタログの API を呼び、店舗の型に変換する。商品カタログの型を店舗の内部に持ち込まない。
+ * 商品カタログの腐敗防止層
+ *
+ * <p>商品カタログの API を呼び、店舗の型に変換する。商品カタログの型を店舗の内部に持ち込まない。
  */
 @Component
 @RequiredArgsConstructor

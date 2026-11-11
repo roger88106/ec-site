@@ -5,13 +5,14 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層の口（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
- * 在庫があるバリアントを返す。
+ * 在庫の腐敗防止層の口
+ *
+ * <p>在庫があるバリアントを返す。
  */
 public interface StockDirectory {
 
     /**
-     * 在庫のあるバリアントを返す。在庫がまだないバリアントは「在庫なし」とする（docs/03-機能仕様/inventory.md）。
+     * 在庫のあるバリアントを返す。在庫がまだないバリアントは「在庫なし」とする。
      *
      * @param variantIds バリアント ID
      * @return 指定したうち、在庫のあるバリアントの ID

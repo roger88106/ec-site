@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品カタログから受け取った、商品の詳細
+ * 商品カタログの商品の詳細
  *
  * @param id           商品 ID
  * @param name         商品名

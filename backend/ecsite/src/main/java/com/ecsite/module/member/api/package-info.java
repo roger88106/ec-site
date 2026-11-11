@@ -1,6 +1,7 @@
 /**
- * 会員モジュールが他のモジュールに公開する API（同期呼び出し）。<br />
- * 利用者：カート、注文、店舗の presentation 層（token の会員の会員 ID を求める）。
+ * 会員モジュールの公開の API
+ *
+ * <p>他のモジュールが同期で呼び出す。
  */
 @org.springframework.modulith.NamedInterface("api")
 package com.ecsite.module.member.api;

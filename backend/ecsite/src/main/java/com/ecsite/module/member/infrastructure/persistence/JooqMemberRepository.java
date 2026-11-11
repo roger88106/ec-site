@@ -25,6 +25,9 @@ class JooqMemberRepository implements MemberRepository {
 
     /**
      * IdP のアカウントの ID で、会員 ID を探す。
+     *
+     * @param idpSubject IdP のアカウントの ID
+     * @return 会員 ID。いなければ空
      */
     @Override
     public Optional<UUID> findIdByIdpSubject(String idpSubject) {
@@ -33,6 +36,8 @@ class JooqMemberRepository implements MemberRepository {
 
     /**
      * 会員を作る。同じ IdP のアカウントの会員がすでにいれば、何もしない。
+     *
+     * @param member 会員
      */
     @Override
     public void insertIfAbsent(Member member) {

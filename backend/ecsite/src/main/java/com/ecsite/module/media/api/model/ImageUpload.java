@@ -1,4 +1,4 @@
-package com.ecsite.module.media.api;
+package com.ecsite.module.media.api.model;
 
 import java.net.URI;
 import java.time.Instant;

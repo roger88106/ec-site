@@ -10,7 +10,9 @@ import java.net.URI;
 import java.time.Duration;
 
 /**
- * ファイルの置き場所の設定。環境変数で上書きする（例：ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET）。
+ * ファイルの置き場所の設定
+ *
+ * <p>環境変数で上書きする（例：ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET）。
  *
  * @param endpoint        S3 のエンドポイント。エミュレーター（SeaweedFS）のときだけ指定し、AWS では空にする
  * @param region          リージョン
@@ -49,8 +51,9 @@ public record MediaStorageProperties(
     }
 
     /**
-     * 文字列表現を返す。アクセスキー ID と秘密の鍵は、ログに出さないため {@code ***} にする。<br />
-     * 本番は資格情報を設定しない（null）ので、設定していないことが分かるように null はそのまま出す。
+     * 文字列表現を返す。アクセスキー ID と秘密の鍵は、ログに出さないため {@code ***} にする。
+     *
+     * <p>本番は資格情報を設定しない（null）ので、設定していないことが分かるように null はそのまま出す。
      *
      * @return 文字列表現
      */

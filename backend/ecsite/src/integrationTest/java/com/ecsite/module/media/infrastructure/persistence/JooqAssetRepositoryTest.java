@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * アセットのリポジトリの統合テスト。テストごとにロールバックする。
+ * jOOQ のアセットのリポジトリの統合テスト
+ *
+ * <p>テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional

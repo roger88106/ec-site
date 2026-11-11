@@ -28,8 +28,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 /**
- * ファイルの置き場所の S3 の実装の、失敗のときの振る舞いのテスト（docs/03-機能仕様/media.md）。<br />
- * S3 の代わりに、テストの中の小さな HTTP サーバーが応答する。クライアントはアプリと同じ設定（{@link MediaStorageConfig}）で作る。
+ * S3 のファイルの置き場所の、失敗のときの振る舞いのテスト
+ *
+ * <p>S3 の代わりに、テストの中の小さな HTTP サーバーが応答する。クライアントはアプリと同じ設定（{@link MediaStorageConfig}）で作る。
  * 接続できない・時間内に応答がない・5xx は外部サービスのエラー、404 は「受付がない」、5xx でないその他は S3 の例外のまま（予期しないエラー）。
  */
 class S3ObjectStorageFailureTest {

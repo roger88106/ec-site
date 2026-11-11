@@ -3,7 +3,6 @@ package com.ecsite.module.media.infrastructure.storage;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.MediaErrorCode;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -19,11 +18,13 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * ファイルの置き場所の S3 の実装。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
+ * S3 のファイルの置き場所
+ *
+ * <p>AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
  */
 @Component
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public class S3ObjectStorage implements ObjectStorage {
+@RequiredArgsConstructor
+class S3ObjectStorage implements ObjectStorage {
 
     /**
      * 配信のファイルのキャッシュの指定。キーを上書きしないので、長くキャッシュさせる
@@ -57,6 +58,11 @@ public class S3ObjectStorage implements ObjectStorage {
 
     /**
      * アップロードのバケットへの署名付き URL を発行する。形式と大きさを署名に含める（AWS は、違う形式・大きさの PUT を拒否する）。
+     *
+     * @param uploadKey     アップロードのキー
+     * @param contentType   ファイルの形式
+     * @param contentLength ファイルの大きさ（バイト）
+     * @return 署名付き URL と、PUT に付けるヘッダー、期限
      */
     @Override
     public PresignedUpload presignUpload(String uploadKey, String contentType, long contentLength) {
@@ -69,16 +75,6 @@ public class S3ObjectStorage implements ObjectStorage {
                         .contentLength(contentLength)));
         return new PresignedUpload(URI.create(presigned.url().toString()), Map.of("Content-Type", contentType),
                 presigned.expiration());
-    }
-
-    /**
-     * アップロードのバケットのファイルの、S3 の連携での場所（imgproxy が変換元として読む）を返す。
-     *
-     * @param uploadKey アップロードのキー
-     * @return {@code s3://<アップロードのバケット>/<キー>}
-     */
-    public String uploadSourceUrl(String uploadKey) {
-        return "s3://" + properties.incomingBucket() + "/" + uploadKey;
     }
 
     /**
@@ -159,9 +155,11 @@ public class S3ObjectStorage implements ObjectStorage {
         return URI.create(properties.publicBaseUrl() + "/" + publicKey);
     }
 
+// ============================== プライベートメソッド ==============================
+
     /**
      * S3 を呼ぶ。接続できない・時間内に応答がない（SDK の例外）と、S3 の側の故障（5xx）は、外部サービスのエラーにする。
-     * 5xx でない S3 の失敗（権限がない、ファイルがないなど）は、そのまま投げる（呼ぶ側が扱うか、予期しないエラー）。
+     * 5xx でない S3 の失敗（権限がない、ファイルがないなど）は、そのまま投げる。
      */
     private <T> T call(String failure, Supplier<T> operation) {
         try {

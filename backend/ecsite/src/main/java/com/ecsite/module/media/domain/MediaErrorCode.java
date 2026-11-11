@@ -6,8 +6,9 @@ import com.ecsite.common.error.ErrorType;
 import lombok.Getter;
 
 /**
- * メディアのエラーコード。<br />
- * コードの文字列は、商品画像 API の契約（admin.yaml）のとおり。商品カタログから移したときに変えていない。
+ * メディアのエラーコード
+ *
+ * <p>コードの文字列は、商品画像 API の契約（admin.yaml）のとおり。商品カタログから移したときに変えていない。
  */
 public enum MediaErrorCode implements ErrorCodeProvider {
 

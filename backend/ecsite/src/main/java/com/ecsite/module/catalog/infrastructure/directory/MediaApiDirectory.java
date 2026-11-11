@@ -102,7 +102,7 @@ class MediaApiDirectory implements MediaDirectory {
     /**
      * 用意した画像を、メディアモジュールの型にする
      */
-    private static com.ecsite.module.media.api.PreparedImage toMedia(PreparedImage prepared) {
-        return new com.ecsite.module.media.api.PreparedImage(prepared.assetId());
+    private static com.ecsite.module.media.api.model.PreparedImage toMedia(PreparedImage prepared) {
+        return new com.ecsite.module.media.api.model.PreparedImage(prepared.assetId());
     }
 }

@@ -1,10 +1,10 @@
-package com.ecsite.module.shipping.api;
+package com.ecsite.module.shipping.api.model;
 
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文に公開する出荷の情報。
+ * 出荷の要約
  *
  * @param orderId        注文 ID
  * @param carrier        配送業者

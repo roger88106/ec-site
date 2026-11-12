@@ -13,10 +13,9 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 物流サービスの通知のエンドポイント（docs/02-設計/shipping.md「通知のエンドポイント」）。<br />
- * 物流サービスが呼ぶ口で、EC の API ではない（OpenAPI に書かず、presentation にも置かない）。認証は付けず、署名で確認する。
- * 登録済みのどの出荷とも合わない通知と、対応の表にない状態の名前は、再送されても合うようにならないので、
- * 記録して 200 を返す。処理に失敗したら 5xx を返し、物流サービスの再送で処理し直す。
+ * 物流サービスの通知のエンドポイント
+ *
+ * <p>EC の API ではないので、OpenAPI に書かず、presentation に置かない。認証は付けず、署名で確認する。
  */
 @Slf4j
 @Controller
@@ -34,7 +33,7 @@ class CarrierWebhookController {
     private final CarrierStatusMapping statusMapping;
 
     /**
-     * 通知のエンドポイント
+     * 配送状態の通知の受け取り
      */
     private final ShipmentNotificationReceiver receiver;
 
@@ -48,7 +47,8 @@ class CarrierWebhookController {
      *
      * @param payload         本文（署名を確認するため、受け取ったままのバイト列で受け取る）
      * @param signatureHeader ヘッダー {@code X-Carrier-Signature}
-     * @return 受け付けたら 200、署名を確認できなければ 401、署名が合っても本文が読めなければ 400
+     * @return 受け付けたら 200（合う出荷がない通知と、対応の表にない状態の名前を含む）、署名を確認できなければ 401、
+     *         署名が合っても本文が読めなければ 400。処理に失敗したら 5xx
      */
     @PostMapping(CarrierNotification.WEBHOOK_PATH)
     ResponseEntity<Void> receive(@RequestBody(required = false) byte @Nullable [] payload,
@@ -62,6 +62,8 @@ class CarrierWebhookController {
         if (notification == null) {
             return ResponseEntity.badRequest().build();
         }
+        // 対応の表にない状態の名前と、合う出荷がない通知は、再送されても合うようにならないので、記録して 200 を返す。
+        // 処理の失敗は 5xx にし、物流サービスの再送で処理し直す
         var status = statusMapping.resolve(notification.carrier(), notification.status());
         if (status.isEmpty()) {
             log.warn("対応の表にない状態の名前の通知を無視する: carrier={}, status={}", notification.carrier(), notification.status());

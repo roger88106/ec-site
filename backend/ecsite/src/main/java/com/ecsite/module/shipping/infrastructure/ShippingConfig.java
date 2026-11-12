@@ -6,7 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 出荷モジュールの設定（物流サービス、通知の署名の鍵）を有効にする。
+ * 出荷モジュールの設定
+ *
+ * <p>出荷の設定を有効にし、物流サービスの通知の署名を作る。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ShippingProperties.class)

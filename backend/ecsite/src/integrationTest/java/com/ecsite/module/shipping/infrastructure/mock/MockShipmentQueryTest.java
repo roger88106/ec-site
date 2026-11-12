@@ -16,8 +16,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * mock の最近の出荷の問い合わせの統合テスト。<br />
- * 各テストは巻き戻すので、データは残らない。
+ * mock の最近の出荷の問い合わせの統合テスト
+ *
+ * <p>各テストは巻き戻すので、データは残らない。
  */
 @IntegrationTest
 @Transactional

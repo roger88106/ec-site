@@ -10,8 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 出荷（docs/03-機能仕様/shipping.md「出荷（集約）」）。<br />
- * 配送状態は、物流サービスの通知で、今より高い順位にだけ進む。
+ * 出荷
+ *
+ * <p>配送状態は、今より高い順位にだけ進む。
  */
 @Getter
 @Accessors(fluent = true)
@@ -55,7 +56,7 @@ public class Shipment {
     private Instant lastNotifiedAt;
 
     /**
-     * 項目をそのまま持つ。作るときは出荷の登録か、保存した状態からの復元を使う。
+     * 項目をそのまま持つ。
      */
     private Shipment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Carrier carrier,
                      @NonNull TrackingNumber trackingNumber, @NonNull DeliveryStatus status,
@@ -96,7 +97,7 @@ public class Shipment {
      * @return 出荷
      */
     public static Shipment restore(UUID id, UUID orderId, Carrier carrier, TrackingNumber trackingNumber,
-                                   DeliveryStatus status, Instant shippedAt, Instant lastNotifiedAt) {
+                                   DeliveryStatus status, Instant shippedAt, @Nullable Instant lastNotifiedAt) {
         return new Shipment(id, orderId, carrier, trackingNumber, status, shippedAt, lastNotifiedAt);
     }
 

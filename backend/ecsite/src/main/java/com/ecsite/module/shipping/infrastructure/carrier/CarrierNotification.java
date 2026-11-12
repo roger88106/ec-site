@@ -5,7 +5,9 @@ import com.ecsite.module.shipping.domain.Carrier;
 import java.time.Instant;
 
 /**
- * 物流サービスの通知の本文（docs/02-設計/shipping.md「通知のエンドポイント」）。本文は JSON で受け取る。
+ * 物流サービスの通知の本文
+ *
+ * <p>JSON で受け取る。
  *
  * @param carrier        配送業者
  * @param trackingNumber 送り状番号
@@ -15,12 +17,12 @@ import java.time.Instant;
 public record CarrierNotification(Carrier carrier, String trackingNumber, String status, Instant occurredAt) {
 
     /**
-     * 通知のエンドポイントのパス（エンドポイントと mock の物流サービスで使う）
+     * 通知のエンドポイントのパス
      */
     public static final String WEBHOOK_PATH = "/api/webhooks/carrier";
 
     /**
-     * 項目がすべてそろっているかを返す。
+     * 項目が全てそろっているかを返す。
      *
      * @return そろっていれば true
      */

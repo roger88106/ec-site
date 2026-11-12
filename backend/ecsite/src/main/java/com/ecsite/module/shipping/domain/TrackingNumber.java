@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * 送り状番号（docs/03-機能仕様/shipping.md「送り状番号」）。ハイフンを除いた数字だけを持つ。
+ * 送り状番号
+ *
+ * <p>ハイフンを除いた数字だけを持つ。
  *
  * @param value 数字だけの送り状番号
  */
@@ -27,7 +29,7 @@ public record TrackingNumber(String value) {
      *
      * @param input 入力（半角の数字とハイフン、前後の空白を除いて 30 文字まで）
      * @return 送り状番号
-     * @throws BusinessException 形に合わないとき（必須、半角の数字とハイフンだけ、数字が 1 つ以上、30 文字まで）
+     * @throws BusinessException 入力がない、半角の数字とハイフン以外を含む、数字がない、30 文字を超える（TRACKING_NUMBER_INVALID）
      */
     public static TrackingNumber of(String input) {
         var trimmed = input == null ? "" : input.strip();

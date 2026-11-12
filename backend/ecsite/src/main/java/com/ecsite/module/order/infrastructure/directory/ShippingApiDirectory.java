@@ -3,8 +3,8 @@ package com.ecsite.module.order.infrastructure.directory;
 import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
-import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

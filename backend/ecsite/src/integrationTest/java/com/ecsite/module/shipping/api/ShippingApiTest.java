@@ -2,6 +2,7 @@ package com.ecsite.module.shipping.api;
 
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.TrackingRequests;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -28,8 +29,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 
 /**
- * 出荷の API の統合テスト。<br />
- * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
+ * 出荷の API の統合テスト
+ *
+ * <p>出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest
 class ShippingApiTest {

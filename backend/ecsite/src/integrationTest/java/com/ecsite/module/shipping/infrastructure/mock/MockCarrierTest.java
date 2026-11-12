@@ -2,8 +2,8 @@ package com.ecsite.module.shipping.infrastructure.mock;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.ShippingTestData;
-import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,8 +22,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * mock の物流サービスの統合テスト。<br />
- * 実際の HTTP（ランダムなポート）で、画面のボタンと、テストから送る通知が、署名の検証を含む通知のエンドポイントを通ることを確認する。
+ * mock の物流サービスの統合テスト
+ *
+ * <p>実際の HTTP（ランダムなポート）で、画面のボタンと、テストから送る通知が、署名の検証を含む通知のエンドポイントを通ることを確認する。
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */
 @IntegrationTest

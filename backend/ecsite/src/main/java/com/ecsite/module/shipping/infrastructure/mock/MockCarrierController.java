@@ -26,10 +26,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * mock の物流サービスの画面（docs/02-設計/shipping.md「mock」）。<br />
- * 外部の物流サービスの代わりで、EC の API ではない（OpenAPI に書かない）。物流の mock フラグを立てたときだけ出す。
- * 出荷の一覧と、出荷ごとに「配送中」「配達完了」「返送」のボタンを持つ。ボタンを押すと、署名付きの通知を
- * HTTP で自分の通知のエンドポイントに送る。
+ * mock の物流サービスの画面
+ *
+ * <p>外部の物流サービスの代わりで、EC の API ではないので、OpenAPI に書かない。物流の mock のフラグを立てたときだけ出す。
  */
 @Slf4j
 @Controller
@@ -125,7 +124,7 @@ class MockCarrierController {
     }
 
     /**
-     * 配送業者の表示の名前を、出荷モジュールのメッセージから取る。通知のメールも同じキーを使う。
+     * 配送業者の表示の名前を、出荷モジュールのメッセージから取る。
      */
     private String carrierName(Carrier carrier) {
         return messageHelper.getMessage(carrier.nameMessageKey(), Map.of());

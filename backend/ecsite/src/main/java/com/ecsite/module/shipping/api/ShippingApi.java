@@ -1,9 +1,12 @@
 package com.ecsite.module.shipping.api;
 
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.ShipmentService;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,8 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 注文に公開する、出荷の API（docs/02-設計/shipping.md「他のモジュールへの公開」）。<br />
- * 出荷を作るのは、呼び出し元（注文）のトランザクションに参加する。
+ * 出荷の API
  */
 @Component
 @RequiredArgsConstructor
@@ -26,15 +28,18 @@ public class ShippingApi {
     private final ShipmentService shipmentService;
 
     /**
-     * 注文の出荷を作る。配送状態は「出荷済み」。同じ注文で重ねて作ると、業務のエラー（409）になる。
+     * 注文の出荷を作る。配送状態は「出荷済み」。呼んだ側のトランザクションに加わる。
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（前後の空白とハイフンは除いて保存する）
      * @param shippedAt      出荷日時
      * @return 作った出荷
+     * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）、
+     *                           同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
      */
-    public ShipmentSummary create(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+    public ShipmentSummary create(@NonNull UUID orderId, @NonNull ShipmentSummary.Carrier carrier, String trackingNumber,
+                                  @NonNull Instant shippedAt) {
         return toSummary(shipmentService.create(orderId, toCarrier(carrier), trackingNumber, shippedAt));
     }
 
@@ -44,7 +49,7 @@ public class ShippingApi {
      * @param orderIds 注文 ID
      * @return 出荷。出荷のない注文は含まない
      */
-    public List<ShipmentSummary> find(Collection<UUID> orderIds) {
+    public List<ShipmentSummary> find(@NonNull Collection<UUID> orderIds) {
         return shipmentService.find(orderIds).stream().map(ShippingApi::toSummary).toList();
     }
 
@@ -58,12 +63,12 @@ public class ShippingApi {
     }
 
     /**
-     * 配送業者の表示名の文言のキーを返す。表示名は出荷モジュールが決める。
+     * 配送業者の表示名の文言のキーを返す。
      *
      * @param carrier 配送業者
      * @return 文言のキー
      */
-    public String carrierNameKey(ShipmentSummary.Carrier carrier) {
+    public String carrierNameKey(@NonNull ShipmentSummary.Carrier carrier) {
         return toCarrier(carrier).nameMessageKey();
     }
 

@@ -4,32 +4,30 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierNotification;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 
 /**
- * mock の物流サービス（docs/02-設計/shipping.md「mock」）。<br />
- * 署名付きの通知を作り、HTTP で通知のエンドポイントに送る。本物の物流サービスと同じ道（署名の検証を含む）を通す。
- * mock の画面のボタンと、テストのコードが使う。通知の重複は同じ通知を重ねて送り、順序の入れ替わりと途中の欠けは
- * 送る順序と内容を選び、署名の誤りと合わない送り状番号は、通知を作る口で選べる。
+ * mock の物流サービス
+ *
+ * <p>署名付きの通知を作り、HTTP で通知のエンドポイントに送る。本物の物流サービスと同じ道（署名の検証を含む）を通す。
+ * 通知の重複は同じ通知を重ねて送り、順序の入れ替わりと途中の欠けは送る順序と内容を選んで作る。
+ * 合わない送り状番号の通知は、登録していない番号を渡して作る。署名の誤りは、テストで共有するソースの
+ * {@code TestCarrierNotifications} で作る。
  */
 @Component
 @ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
+@RequiredArgsConstructor
 public class MockCarrier {
-
-    /**
-     * エンドポイントの応答を待つ時間の上限
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     /**
      * 署名
@@ -47,24 +45,10 @@ public class MockCarrier {
     private final Clock clock;
 
     /**
-     * HTTP の呼び出し
+     * 通知のエンドポイントを呼ぶ HTTP クライアント
      */
+    @Qualifier(MockCarrierConfig.REST_CLIENT)
     private final RestClient restClient;
-
-    /**
-     * @param signature  署名
-     * @param jsonMapper JSON の書き出し
-     * @param clock      時計
-     * @param builder    HTTP の呼び出しの土台
-     */
-    MockCarrier(CarrierSignature signature, JsonMapper jsonMapper, Clock clock, RestClient.Builder builder) {
-        this.signature = signature;
-        this.jsonMapper = jsonMapper;
-        this.clock = clock;
-        var requestFactory = new JdkClientHttpRequestFactory();
-        requestFactory.setReadTimeout(TIMEOUT);
-        this.restClient = builder.requestFactory(requestFactory).build();
-    }
 
     /**
      * 正しい署名の通知を作る。発生日時は今。
@@ -95,10 +79,10 @@ public class MockCarrier {
     }
 
     /**
-     * 配送状態に当たる、ヤマト運輸の表示の名前を返す。mock の画面のボタンは、この名前で通知する。
+     * 配送状態に当たる、ヤマト運輸の表示の名前を返す。
      *
-     * @param status 配送状態（配送中、配達完了、返送）
-     * @return 状態の名前。出荷済みには当たる名前がない
+     * @param status 配送状態（配送中、配達完了、返送。出荷済みには当たる名前がない）
+     * @return 状態の名前
      */
     public static String yamatoNameOf(DeliveryStatus status) {
         return switch (status) {

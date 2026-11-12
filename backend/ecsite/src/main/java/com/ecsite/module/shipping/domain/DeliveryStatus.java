@@ -1,8 +1,9 @@
 package com.ecsite.module.shipping.domain;
 
 /**
- * 配送状態（docs/03-機能仕様/shipping.md「配送状態」）。<br />
- * 順位を持ち、今より高い順位にだけ進める。
+ * 配送状態
+ *
+ * <p>順位を持ち、今より高い順位にだけ進める。
  */
 public enum DeliveryStatus {
 
@@ -33,6 +34,8 @@ public enum DeliveryStatus {
     private final int rank;
 
     /**
+     * 順位を持つ配送状態を作る。
+     *
      * @param rank 順位
      */
     DeliveryStatus(int rank) {

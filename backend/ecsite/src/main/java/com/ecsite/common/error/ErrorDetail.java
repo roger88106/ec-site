@@ -7,7 +7,7 @@ import java.util.List;
 
 
 /**
- * エラー詳細情報。
+ * エラー詳細情報
  *
  * @param errorCode エラーコード
  * @param message   メッセージ

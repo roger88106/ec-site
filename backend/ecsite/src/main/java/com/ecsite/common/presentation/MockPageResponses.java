@@ -10,8 +10,9 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 /**
- * mock の画面（決済サービス、配送業者）の応答を作る。<br />
- * mock の画面は EC の API ではなく、HTML を返して、操作の後に別の画面へ移す。
+ * mock の画面（決済サービス、配送業者）の応答
+ *
+ * <p>mock の画面は EC の API ではなく、HTML を返して、操作の後に別の画面へ移す。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MockPageResponses {
@@ -29,12 +30,13 @@ public final class MockPageResponses {
     }
 
     /**
-     * 別の画面に移す応答を作る（POST の後なので 303）。
+     * 別の画面に移す応答（303）を作る。
      *
      * @param location 移す先
      * @return 応答
      */
     public static ResponseEntity<String> redirect(URI location) {
+        // POST の後に GET で移させるため、303 にする
         return ResponseEntity.status(HttpStatus.SEE_OTHER).location(location).build();
     }
 }

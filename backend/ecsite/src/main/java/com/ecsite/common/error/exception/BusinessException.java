@@ -7,35 +7,37 @@ import lombok.NonNull;
 import java.util.List;
 
 /**
- * ビジネス例外 ※HTTP 400系
+ * ビジネス例外
+ *
+ * <p>HTTP の 4xx で返す。
  */
 public class BusinessException extends BaseException {
 
     /**
-     * {@code BusinessException}の新しいインスタンスを作成して返します。
+     * ビジネス例外を作る。
      *
      * @param errorCodeProvider エラーコードプロバイダー
-     * @return 指定されたパラメータで初期化された新しい{@code BusinessException}インスタンス
+     * @return ビジネス例外
      */
     public static BusinessException of(@NonNull ErrorCodeProvider errorCodeProvider) {
         return new BusinessException(ErrorDetail.of(errorCodeProvider.getCode()));
     }
 
     /**
-     * {@code BusinessException}の新しいインスタンスを作成して返します。
+     * 文に差し込む値を持つビジネス例外を作る。
      *
      * @param errorCodeProvider エラーコードプロバイダー
      * @param messageParams     メッセージパラメータ
-     * @return 指定されたパラメータで初期化された新しい{@code BusinessException}インスタンス
+     * @return ビジネス例外
      */
     public static BusinessException of(@NonNull ErrorCodeProvider errorCodeProvider, List<Object> messageParams) {
         return new BusinessException(ErrorDetail.of(errorCodeProvider.getCode(), messageParams));
     }
 
     /**
-     * ビジネス例外
+     * コンストラクタ。
      *
-     * @param errorDetail エラー明細
+     * @param errorDetail エラー詳細情報
      */
     private BusinessException(ErrorDetail errorDetail) {
         super(errorDetail.errorCode().code(), null, errorDetail);

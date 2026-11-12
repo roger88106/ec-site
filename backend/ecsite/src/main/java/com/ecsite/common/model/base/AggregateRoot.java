@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 集約の基底クラス。<br />
- * 状態を変えるメソッドの中でドメインイベントを登録し、リポジトリが保存した後に取り出して発行する（バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」）。
- * <p>
- * 集約には jMolecules のアノテーションも付ける。名前が同じなので、アノテーションは完全修飾名で書く。
- * </p>
+ * 集約の基底クラス
+ *
+ * <p>状態を変えるメソッドの中で登録したドメインイベントを、取り出すまで持つ。
+ *
+ * <p>集約には jMolecules のアノテーションも付ける。名前が同じなので、アノテーションは完全修飾名で書く。
  * <pre>{@code
  * @org.jmolecules.ddd.annotation.AggregateRoot
  * public class TaxCategory extends AggregateRoot { ... }

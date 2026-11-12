@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * エラーコードプロバイダー。<br />
- * 各モジュールのエラーの定義（enum）が実装する。メッセージのキーは、モジュールの名前と定数の名前から決まる
- * （バックエンドの書き方の「エラーは XxxErrorCode と BusinessException」）。
+ * エラーコードプロバイダー
+ *
+ * <p>メッセージのキーは、モジュールの名前と定数の名前から決まる。
  */
 public interface ErrorCodeProvider {
 
@@ -20,8 +20,9 @@ public interface ErrorCodeProvider {
     ErrorCode getCode();
 
     /**
-     * エラーの定義の定数から、エラーコードを作る。<br />
-     * メッセージのキーは {@code ecsite.<モジュール>.<定数の名前の小文字>}。
+     * エラーの定義の定数から、エラーコードを作る。
+     *
+     * <p>メッセージのキーは {@code ecsite.<モジュール>.<定数の名前の小文字>}。
      *
      * @param module    モジュールの名前（モジュールでない共通のものは common）
      * @param name      定数の名前

@@ -7,8 +7,9 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * profile ごとの設定ファイルが立てる mock フラグの検査。<br />
- * 起動のときと同じ順（共通の設定、指定した profile の順）に設定ファイルを重ね、後のものが先のものを上書きするとして読む。
+ * profile ごとの設定ファイルが立てる mock フラグの検査
+ *
+ * <p>起動のときと同じ順（共通の設定、指定した profile の順）に設定ファイルを重ね、後のものが先のものを上書きするとして読む。
  */
 class ProfileFlagsTest {
 

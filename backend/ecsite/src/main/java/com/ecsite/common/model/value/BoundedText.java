@@ -4,9 +4,9 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 /**
- * 文字の項目の判定（バックエンドの書き方の「形の検証は presentation、業務の規則は domain」）。<br />
- * 長さは code point で数える（サロゲートペアの文字を 1 文字とし、画面の見た目の文字数と合わせるため）。
- * 各ドメインは上限の定数とエラーの種類だけを持ち、判定はここに任せる。
+ * 文字の項目の判定
+ *
+ * <p>長さは code point で数える（サロゲートペアの文字を 1 文字とし、画面の見た目の文字数と合わせるため）。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BoundedText {
@@ -22,7 +22,7 @@ public final class BoundedText {
     }
 
     /**
-     * 必須の項目として正しいか（空白だけでなく、上限以内か）を返す。
+     * 必須の項目として正しいか（null・空・空白だけのどれでもなく、上限以内か）を返す。
      *
      * @param text      文字列
      * @param maxLength 上限の文字の数

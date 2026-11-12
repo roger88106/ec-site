@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 金額に数量を掛ける操作の単体テスト（バックエンドの書き方の「共通の型」）。
+ * 金額に数量を掛ける操作の単体テスト
  */
 class MoneyTimesTest {
 

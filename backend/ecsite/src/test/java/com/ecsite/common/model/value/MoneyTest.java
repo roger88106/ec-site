@@ -8,7 +8,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 金額の単体テスト（バックエンドのアーキテクチャの「永続化」）
+ * 金額の単体テスト
  */
 class MoneyTest {
 

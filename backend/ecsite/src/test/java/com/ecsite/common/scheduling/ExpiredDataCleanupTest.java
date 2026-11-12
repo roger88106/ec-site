@@ -16,8 +16,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
- * 期限切れのデータの片付けの共通の処理の単体テスト。<br />
- * 削除の処理とロガーは差し替えて、繰り返しの回数とログの出し方を確認する。
+ * 期限切れのデータの片付けの共通の処理の単体テスト
+ *
+ * <p>削除の処理とロガーは差し替えて、繰り返しの回数とログの出し方を確認する。
  */
 class ExpiredDataCleanupTest {
 

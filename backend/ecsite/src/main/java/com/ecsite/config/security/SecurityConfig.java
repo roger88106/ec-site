@@ -31,14 +31,15 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 認証と認可の設定（バックエンドのアーキテクチャの「業務のコードとの境界」）。<br />
- * パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
+ * 認証と認可の設定
+ *
+ * <p>パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
  * <ul>
  *     <li>{@code /api/admin/**}：運営者の realm の token が必須。権限は {@code admin.yaml} で決める</li>
  *     <li>{@code /api/store/**}：消費者の realm の token。token の要否は {@code store.yaml} で決める</li>
- *     <li>そのほか：既定で拒み、通知の口・mock の口・運用の口だけを許す</li>
+ *     <li>そのほか：既定で拒み、通知のパス・mock の画面のパス・運用のパスだけを許す</li>
  * </ul>
- * 契約にない操作と、決めていない URL は拒む（認証がなければ 401）。
+ * <p>契約にない操作と、決めていない URL は拒む（認証がなければ 401）。
  * token はステートレスに検証する。Cookie を使わない（token をヘッダーで受ける）ので、CSRF の対策は無効にする。
  */
 @Configuration(proxyBeanMethods = false)
@@ -111,16 +112,17 @@ class SecurityConfig {
     }
 
     /**
-     * そのほか：既定で拒み、決めた口だけを許す。<br />
-     * 通知の口は署名で、mock の口は mock フラグ（フラグがなければ Controller がなく 404）で守る。
-     * 運用の口は運用ポートで出す。エラーの画面への転送を許さないと、許した口の 404 が 401 に変わる。
+     * そのほか：既定で拒み、決めたパスだけを許す。
      */
     @Bean
     @Order(3)
     SecurityFilterChain defaultFilterChain(HttpSecurity http, SecurityProblemResponder responder) throws Exception {
         return stateless(http, responder)
                 .authorizeHttpRequests(authorize -> authorize
+                        // エラーの画面への転送を許さないと、許したパスの 404 が 401 に変わる
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        // 通知のパスは署名で、mock の画面のパスは mock フラグ（フラグがなければ Controller がなく 404）で守る。
+                        // 運用のパスは運用ポートで出す
                         .requestMatchers("/api/webhooks/**", "/mock-payment/**", "/mock-carrier/**", "/actuator/**").permitAll()
                         .anyRequest().denyAll())
                 .build();
@@ -171,14 +173,14 @@ class SecurityConfig {
     }
 
     /**
-     * realm の token の decoder。署名に加え、issuer・audience・有効期限を確認する。<br />
-     * 鍵は最初の検証のときに取る（起動のときに IdP が動いていなくてもよい）。
+     * realm の token の decoder。署名に加え、issuer・audience・有効期限を確認する。鍵は最初の検証のときに取る。
      *
      * @param realm realm の設定
      * @param keys  realm の署名の鍵
      * @return decoder
      */
     private static JwtDecoder decoder(SecurityProperties.Realm realm, RealmKeys keys) {
+        // 起動のときに IdP が動いていなくてもよいように、鍵は最初の検証のときに取る
         return new SupplierJwtDecoder(() -> {
             var decoder = keys.decoder(realm.issuerUri());
             decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(

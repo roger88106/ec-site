@@ -5,10 +5,11 @@ import org.springframework.core.io.Resource;
 import java.util.Optional;
 
 /**
- * 管理 API の操作ごとに必要な権限。<br />
- * {@code admin.yaml} の各操作（メソッドとパス）と {@code x-required-permission} の対応を読み込む。
- * Controller には権限を書かないので、契約と食い違わず、書き漏れで公開されることもない。
- * 対応にないリクエストには権限を返さない（呼び出し側が拒否する）。
+ * 管理 API の操作ごとに必要な権限
+ *
+ * <p>{@code admin.yaml} の各操作（メソッドとパス）と {@code x-required-permission} の対応を読み込む。
+ * 権限は契約だけから読むので、契約と食い違わず、書き漏れで公開されることもない。
+ * 対応にないリクエストには権限を返さない。
  */
 class AdminOperationPermissions {
 
@@ -23,6 +24,8 @@ class AdminOperationPermissions {
     private final OpenApiOperations<String> operations;
 
     /**
+     * コンストラクタ。
+     *
      * @param operations 操作ごとの権限
      */
     private AdminOperationPermissions(OpenApiOperations<String> operations) {

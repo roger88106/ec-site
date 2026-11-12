@@ -57,6 +57,9 @@ class JooqCartRepository implements CartRepository {
 
     /**
      * 会員のカートの ID を探す。
+     *
+     * @param memberId 会員 ID
+     * @return カート ID。なければ空
      */
     @Override
     public Optional<UUID> findIdByMemberId(UUID memberId) {
@@ -67,27 +70,29 @@ class JooqCartRepository implements CartRepository {
      * カートを取得する。品目は入れた順（連番の順）。
      *
      * @param id カート ID
-     * @return カート
+     * @return カート。なければ空
      */
     @Override
     public Optional<Cart> findById(UUID id) {
-        return dsl.selectFrom(CART_)
-                .where(CART_.ID.eq(id))
-                .fetchOptional()
-                .map(cart -> new Cart(cart.getId(), cart.getMemberId(),
-                        dsl.selectFrom(CART_ITEM)
-                                .where(CART_ITEM.CART_ID.eq(id))
-                                .orderBy(CART_ITEM.SEQUENCE_NO)
-                                .fetch(item -> new CartItem(item.getVariantId(), item.getQuantity(), item.getAddedAt())),
-                        cart.getVersion(),
-                        cart.getUpdatedAt()));
+        var found = dsl.selectFrom(CART_).where(CART_.ID.eq(id)).fetchOptional();
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        var cart = found.get();
+        var items = dsl.selectFrom(CART_ITEM)
+                .where(CART_ITEM.CART_ID.eq(id))
+                .orderBy(CART_ITEM.SEQUENCE_NO)
+                .fetch(item -> new CartItem(item.getVariantId(), item.getQuantity(), item.getAddedAt()));
+        return Optional.of(new Cart(cart.getId(), cart.getMemberId(), items, cart.getVersion(), cart.getUpdatedAt()));
     }
 
     /**
-     * カートの変更を保存する。<br />
-     * バージョンが 1 つ前のときだけ更新し（楽観ロック）、品目は消してから入れた順に入れ直す（連番も入れた順に振り直される）。
+     * カートの変更を保存する。
+     *
+     * <p>バージョンが 1 つ前のときだけ更新し（楽観ロック）、品目は消してから入れた順に入れ直す（連番も入れた順に振り直される）。
      *
      * @param cart 変更したカート
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Override
     public void save(Cart cart) {
@@ -112,11 +117,15 @@ class JooqCartRepository implements CartRepository {
     }
 
     /**
-     * 最後の変更が指定した時刻より前のカートを、件数の上限まで消す。品目は外部キーの連鎖で消える。<br />
-     * 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行は飛ばす（次の回で消す）。
+     * 最後の変更が指定した時刻より前のカートを、件数の上限まで消す。品目は外部キーの連鎖で消える。
+     *
+     * @param updatedBefore 最後の変更の時刻の上限
+     * @param limit         消す件数の上限
+     * @return 消した件数
      */
     @Override
     public int deleteUpdatedBefore(Instant updatedBefore, int limit) {
+        // 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行は飛ばし、次の回で消す
         return dsl.deleteFrom(CART_)
                 .where(CART_.ID.in(dsl.select(CART_.ID)
                         .from(CART_)

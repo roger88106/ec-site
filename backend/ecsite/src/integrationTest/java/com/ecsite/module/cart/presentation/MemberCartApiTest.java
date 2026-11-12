@@ -42,8 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 会員のカートの受け入れテスト（docs/03-機能仕様/cart.md）。<br />
- * 会員の token はテストの鍵で作る（TestTokens）。テストごとにロールバックする。
+ * 会員のカートの受け入れテスト
+ *
+ * <p>会員の token はテストの鍵で作る（TestTokens）。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

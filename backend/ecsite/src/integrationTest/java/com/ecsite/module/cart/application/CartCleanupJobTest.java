@@ -41,8 +41,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * カートの片付けのジョブの統合テスト。<br />
- * ジョブはテストから呼ぶ。テストごとにロールバックする（片付けはテストのトランザクションに参加する）。
+ * カートの片付けのジョブの統合テスト
+ *
+ * <p>ジョブはテストから呼ぶ。テストごとにロールバックする（片付けはテストのトランザクションに参加する）。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * カートのコントローラー（C 側。store.yaml の tag: cart）。<br />
- * カートの表示（tag: cart-view）は、店舗モジュールが受ける。<br />
- * カートの操作は認証が任意で、token があれば会員として扱う。会員のカートは持ち主だけが使える。
+ * カートのコントローラー
+ *
+ * <p>C 側の API のうち、store.yaml のタグ cart の操作を受ける。認証は任意で、token があれば会員として扱う。
  */
 @RestController
 @RequiredArgsConstructor
@@ -54,7 +54,7 @@ class CartController implements CartApi {
     }
 
     /**
-     * カートに入れる。品目はカートの一部で単独の URL を持たないので、Location は返さない
+     * カートに入れる
      *
      * @param cartId  カート ID
      * @param request カートに入れるリクエスト
@@ -63,6 +63,7 @@ class CartController implements CartApi {
     @Override
     public ResponseEntity<Void> addCartItem(UUID cartId, AddCartItemRequest request) {
         cartService.addItem(cartId, currentMemberIds.find().orElse(null), request.getVariantId(), request.getQuantity());
+        // 品目はカートの一部で単独の URL を持たないので、Location は返さない
         return ResponseEntity.noContent().build();
     }
 
@@ -81,11 +82,11 @@ class CartController implements CartApi {
     }
 
     /**
-     * 品目の削除。カートにない品目でも 204
+     * 品目の削除
      *
      * @param cartId    カート ID
      * @param variantId バリアント ID
-     * @return Http 204
+     * @return Http 204（カートにない品目も）
      */
     @Override
     public ResponseEntity<Void> removeCartItem(UUID cartId, UUID variantId) {

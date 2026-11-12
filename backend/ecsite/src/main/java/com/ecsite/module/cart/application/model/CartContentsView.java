@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * カートの中身の表示。期限切れのカートは品目が空。
+ * カートの中身の表示
+ *
+ * <p>期限切れのカートは品目が空。
  *
  * @param cartId   カート ID
  * @param memberId 会員 ID（ログインせずに作ったカートは null）

@@ -5,7 +5,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * カートモジュールの設定（カートの片付け）を有効にする。
+ * カートモジュールの設定
+ *
+ * <p>カートの片付けの設定を有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(CartCleanupProperties.class)

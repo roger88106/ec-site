@@ -43,8 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * カートの変更の受け入れテスト。<br />
- * 商品は B 側の API で作る。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
+ * カートの変更の受け入れテスト
+ *
+ * <p>商品は B 側の API で作る。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
  * 在庫モジュールのリポジトリで直接作る。カートの中身は DB で確認する。テストごとにロールバックする。
  */
 @IntegrationTest

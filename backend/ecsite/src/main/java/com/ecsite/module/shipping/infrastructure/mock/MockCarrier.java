@@ -67,7 +67,8 @@ public class MockCarrier {
      *
      * @param baseUrl      バックエンドの URL（エンドポイントを持つサーバー）
      * @param notification 署名付きの通知
-     * @return エンドポイントの応答のステータス     */
+     * @return エンドポイントの応答のステータス
+     */
     public int send(String baseUrl, SignedNotification notification) {
         return restClient.post()
                 .uri(baseUrl + CarrierNotification.WEBHOOK_PATH)

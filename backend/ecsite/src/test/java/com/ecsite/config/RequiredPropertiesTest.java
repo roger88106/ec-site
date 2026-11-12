@@ -20,8 +20,9 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 環境ごとに変わる設定の値が必須であることの検査（バックエンドの書き方の「設定の値の型」）。<br />
- * 設定の値の型ごとに、必須の値を 1 つ渡さないと起動に失敗し、その値の名前が知らされることを確認する。
+ * 環境ごとに変わる設定の値が必須であることの検査
+ *
+ * <p>設定の値の型ごとに、必須の値を 1 つ渡さないと起動に失敗し、その値の名前が知らされることを確認する。
  */
 class RequiredPropertiesTest {
 

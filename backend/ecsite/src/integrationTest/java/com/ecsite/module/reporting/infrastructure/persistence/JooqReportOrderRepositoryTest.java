@@ -32,7 +32,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * レポートの注文の写しと状態の履歴のリポジトリの統合テスト。テストごとにロールバックする。
+ * レポートの注文の写しと状態の履歴のリポジトリの統合テスト
+ *
+ * <p>テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional

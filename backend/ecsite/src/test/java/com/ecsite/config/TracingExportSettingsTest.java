@@ -9,8 +9,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * トレースの送信の既定の検査。<br />
- * 共通の設定は送信しない（送信先を持たない）ので、送信先のない環境が、届かない送信先へ送り続けない。local の profile は、compose の Zipkin に送る。
+ * トレースの送信の既定の検査
+ *
+ * <p>共通の設定は送信しない（送信先を持たない）ので、送信先のない環境が、届かない送信先へ送り続けない。local の profile は、compose の Zipkin に送る。
  */
 class TracingExportSettingsTest {
 

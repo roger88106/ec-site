@@ -10,8 +10,9 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * 作成の応答（201、Location、作成した ID）を作る（バックエンドの書き方の「応答への変換は手動で書く」）。<br />
- * 作成した ID の型は、管理 API と店舗の API で別に生成されるので、API ごとに分ける。
+ * 作成の応答（201、Location、作成した ID）
+ *
+ * <p>作成した ID の型は、管理 API と店舗の API で別に生成されるので、API ごとに分ける。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CreatedResponses {
@@ -39,7 +40,7 @@ public final class CreatedResponses {
     /**
      * 店舗の API の作成の応答を、別のパスを指して作る。Location は、アプリの起点にパスを追加した、ホストを含まない相対の URL。
      *
-     * @param path パス（`{id}` に ID を入れる。例：`/api/store/orders/{id}`）
+     * @param path パス（{@code {id}} に ID を入れる。例：{@code /api/store/orders/{id}}）
      * @param id   作成した ID
      * @return 作成の応答
      */
@@ -52,7 +53,7 @@ public final class CreatedResponses {
     }
 
     /**
-     * 店舗の API の作成した ID を作る（作成済みを 200 で返すときの本文）。
+     * 店舗の API の作成した ID を作る。
      *
      * @param id 作成した ID
      * @return 作成した ID
@@ -77,12 +78,12 @@ public final class CreatedResponses {
 
     /**
      * URI のパスの部分だけにする。スキーム・ホスト・ポートとクエリを除く。
-     * デプロイ先のプロキシのヘッダーの扱い（`server.forward-headers-strategy`）によらず、同じ値にするため。
      *
      * @param uri 絶対の URI
      * @return パスだけの相対の URL
      */
     private static URI pathOnly(URI uri) {
+        // デプロイ先のプロキシのヘッダーの扱い（`server.forward-headers-strategy`）によらず、同じ値にする
         return URI.create(uri.getRawPath());
     }
 }

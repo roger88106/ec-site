@@ -5,8 +5,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * 定期ジョブの起動の設定（バックエンドのアーキテクチャの「水平スケール」）。<br />
- * {@code ecsite.scheduling.enabled} が false なら、定期ジョブを自動では動かさない（統合テストは、テストからジョブを呼ぶ）。
+ * 定期ジョブの起動の設定
+ *
+ * <p>{@code ecsite.scheduling.enabled} が false なら、定期ジョブを自動では動かさない。
  */
 @Configuration
 @EnableScheduling

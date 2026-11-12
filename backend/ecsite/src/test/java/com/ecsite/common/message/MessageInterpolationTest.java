@@ -23,13 +23,14 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 規則の値を差し込むメッセージの単体テスト（バックエンドの書き方の「エラーは XxxErrorCode と BusinessException」）。<br />
- * 差し込む値をドメインの定数から取り、整理の前（数字を文に書いていたとき）と同じ文になることを確認する。
+ * 規則の値を差し込むメッセージの単体テスト
+ *
+ * <p>差し込む値をドメインの定数から取り、整理の前（数字を文に書いていたとき）と同じ文になることを確認する。
  */
 class MessageInterpolationTest {
 
     /**
-     * 1 件の見本。
+     * 1 件の見本
      *
      * @param error    エラーの定義
      * @param values   差し込む値の出どころ（{@code クラスの完全修飾名#定数名}）。MB にする値は {@code #MAX_BYTES/MB}

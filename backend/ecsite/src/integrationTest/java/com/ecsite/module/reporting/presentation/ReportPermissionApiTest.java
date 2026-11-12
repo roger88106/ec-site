@@ -30,8 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * レポートの権限と、自分の権限の一覧と、レポートの設定の統合テスト。<br />
- * 役割ごとの token は、運営者の realm の職務と同じ権限を持つ（{@link TestTokens}）。テストごとにロールバックする。
+ * レポートの権限と、自分の権限の一覧と、レポートの設定の統合テスト
+ *
+ * <p>役割ごとの token は、運営者の realm の職務と同じ権限を持つ（{@link TestTokens}）。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

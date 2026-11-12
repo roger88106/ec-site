@@ -30,8 +30,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * バリアントの売れ行きの統合テスト。<br />
- * 商品とバリアントは商品カタログの API で作り、写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
+ * バリアントの売れ行きの統合テスト
+ *
+ * <p>商品とバリアントは商品カタログの API で作り、写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

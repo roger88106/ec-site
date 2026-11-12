@@ -11,9 +11,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * エラーレスポンスに入れるトレース ID を決める。<br />
- * 現在の span があればそのトレース ID を使う。span がない場合（トレーシングが無効、サンプリングの対象外など）は、
- * 新しい ID を作る。どちらの場合も、エラーのログに同じ ID を出すことで、問い合わせとログを結び付けられるようにする。
+ * エラーレスポンスのトレース ID の解決
+ *
+ * <p>現在の span があればそのトレース ID を使う。span がない場合（トレーシングが無効、サンプリングの対象外など）は、
+ * 新しい ID を作る。
  */
 @Component
 @RequiredArgsConstructor

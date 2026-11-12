@@ -9,8 +9,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 自分の権限の一覧のコントローラー（B 側。admin.yaml の tag: me）。<br />
- * 管理画面がメニューと画面を権限で出し分けるのに使う。権限は token から {@link PermissionConverter} で読む
+ * 自分の権限の一覧のコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ me の操作を受ける。権限は token から {@link PermissionConverter} で読む
  * （認可と同じ読み方。Spring Security が追加する権限、たとえば認証の方式を表すものは含めない）。
  */
 @RestController
@@ -25,7 +26,7 @@ class MeController implements MeApi {
 // ============================== GET ==============================
 
     /**
-     * 自分の権限の一覧
+     * 自分の権限の一覧を返す。
      *
      * @return Http 200 : {@link Me}
      */

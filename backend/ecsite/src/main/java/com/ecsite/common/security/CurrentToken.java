@@ -11,8 +11,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import java.util.Optional;
 
 /**
- * リクエストの認証情報から token を取り出す。{@link CurrentMember}、{@link CurrentOperator}、自分の権限の一覧の API が使う。<br />
- * 認証情報がない、匿名、token でない認証のときは、token がないとみなす。
+ * リクエストの token の取り出し
+ *
+ * <p>認証情報がない、匿名、token でない認証のときは、token がないとみなす。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CurrentToken {
@@ -30,10 +31,10 @@ public final class CurrentToken {
     }
 
     /**
-     * リクエストの token を返す。認証を必須にした API で使う（filter で認証を必須にしているが、念のため確認する）。
+     * リクエストの token を返す。なければ業務のエラーにする。
      *
      * @return token
-     * @throws BusinessException token で認証していない（401）
+     * @throws BusinessException token で認証していない（{@code UNAUTHENTICATED}）
      */
     public static Jwt require() {
         return find().orElseThrow(() -> BusinessException.of(CommonErrorCode.UNAUTHENTICATED));

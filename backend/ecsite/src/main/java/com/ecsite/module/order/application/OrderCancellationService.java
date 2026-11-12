@@ -64,7 +64,7 @@ public class OrderCancellationService {
      * @param reason   理由（任意）
      * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
      * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
-     * @throws BusinessException 理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 理由が上限の文字数を超える（{@code INVALID_CANCELLATION_REASON}）
      */
     @Transactional
     public void request(@NonNull UUID orderId, @NonNull UUID memberId, @Nullable String reason) {
@@ -123,7 +123,7 @@ public class OrderCancellationService {
      * @param operator キャンセルした運営者
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      * @throws BusinessException 理由がない（{@code CANCELLATION_REASON_REQUIRED}）
-     * @throws BusinessException 理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 理由が上限の文字数を超える（{@code INVALID_CANCELLATION_REASON}）
      * @throws BusinessException 支払待ち（{@code AWAITING_PAYMENT}）
      * @throws BusinessException 出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）
      * @throws BusinessException 出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）

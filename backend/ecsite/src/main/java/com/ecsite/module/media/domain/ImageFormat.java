@@ -44,7 +44,7 @@ public enum ImageFormat {
     AVIF("AVIF", "avif", "image/avif");
 
     /**
-     * 1 ファイルの大きさの上限（10MB）
+     * 1 ファイルの大きさの上限（バイト）
      */
     public static final long MAX_BYTES = 10L * 1024 * 1024;
 

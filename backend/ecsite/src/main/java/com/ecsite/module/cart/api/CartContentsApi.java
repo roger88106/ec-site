@@ -27,7 +27,7 @@ public class CartContentsApi {
     /**
      * カートの中身を返す。
      *
-     * <p>最後の変更から 30 日たったカートは品目が空。
+     * <p>最後の変更から有効期間がたったカートは品目が空。
      *
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空

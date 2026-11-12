@@ -11,11 +11,11 @@ import lombok.Getter;
 public enum CategoryErrorCode implements ErrorCodeProvider {
 
     /**
-     * カテゴリの名称が 1 文字以上 50 文字以内でない
+     * カテゴリの名称が 1 文字以上 {max} 文字以内でない
      */
     INVALID_CATEGORY_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 4 階層目のカテゴリを登録しようとした
+     * {max} 階層を超えてカテゴリを登録しようとした
      */
     CATEGORY_DEPTH_EXCEEDED(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**

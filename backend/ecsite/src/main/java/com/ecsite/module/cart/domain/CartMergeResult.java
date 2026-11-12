@@ -6,7 +6,7 @@ import java.util.UUID;
 /**
  * カートを移した結果
  *
- * @param truncatedItems 数量を 10 に切り詰めた品目（切り詰めた後の数量）
+ * @param truncatedItems 数量を上限に切り詰めた品目（切り詰めた後の数量）
  * @param skippedItems   品目の上限（30）を超えたので移さなかった品目（移す元の数量）
  */
 public record CartMergeResult(List<Item> truncatedItems, List<Item> skippedItems) {

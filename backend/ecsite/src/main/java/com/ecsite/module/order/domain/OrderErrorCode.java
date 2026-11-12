@@ -19,11 +19,11 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     EMAIL_NOT_VERIFIED(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 氏名が空白、または 50 文字を超える
+     * 氏名が空白、または {max} 文字を超える
      */
     INVALID_RECIPIENT_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 郵便番号が数字 7 桁でない
+     * 郵便番号が数字 {digits} 桁でない
      */
     INVALID_POSTAL_CODE(ErrorType.VALIDATION_ERROR, "digits"),
     /**
@@ -35,11 +35,11 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     INVALID_MUNICIPALITY(ErrorType.VALIDATION_ERROR),
     /**
-     * 住所が空白、または 200 文字を超える
+     * 住所が空白、または {max} 文字を超える
      */
     INVALID_ADDRESS(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 電話番号が数字 10〜11 桁でない
+     * 電話番号が数字 {minDigits}〜{maxDigits} 桁でない
      */
     INVALID_PHONE_NUMBER(ErrorType.VALIDATION_ERROR, "minDigits", "maxDigits"),
     /**
@@ -71,7 +71,7 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     CANCELLATION_REASON_REQUIRED(ErrorType.VALIDATION_ERROR),
     /**
-     * キャンセルの理由が 500 文字を超える
+     * キャンセルの理由が {max} 文字を超える
      */
     INVALID_CANCELLATION_REASON(ErrorType.VALIDATION_ERROR, "max"),
     /**

@@ -17,7 +17,7 @@ public enum MediaErrorCode implements ErrorCodeProvider {
      */
     UNSUPPORTED_IMAGE_FORMAT(ErrorType.VALIDATION_ERROR, "formats"),
     /**
-     * 画像の大きさが範囲の外（0 バイト、または 10MB を超える）
+     * 画像の大きさが範囲の外（0 バイト、または {maxMegabytes}MB を超える）
      */
     IMAGE_TOO_LARGE(ErrorType.VALIDATION_ERROR, "maxMegabytes"),
     /**

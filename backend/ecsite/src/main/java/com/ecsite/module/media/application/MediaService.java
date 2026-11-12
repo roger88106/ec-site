@@ -217,7 +217,7 @@ public class MediaService {
     }
 
     /**
-     * 大きさが 1 バイト以上、上限（10MB）以下であることを確認する。
+     * 大きさが 1 バイト以上、上限（{@link ImageFormat#MAX_BYTES} バイト）以下であることを確認する。
      */
     private static void verifySize(long size) {
         if (size <= 0 || size > ImageFormat.MAX_BYTES) {

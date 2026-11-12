@@ -52,7 +52,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      *
      * <p>空白だけのメモは、メモなしとして扱う。
      *
-     * @param delta    増減量（0 以外、±1,000,000 以内）
+     * @param delta    増減量（0 以外、±{@link #MAX_MANUAL_DELTA} 以内）
      * @param reason   調整理由
      * @param memo     メモ。理由が「その他」なら必須
      * @param operator 調整した運営者

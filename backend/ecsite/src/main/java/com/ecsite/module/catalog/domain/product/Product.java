@@ -7,6 +7,8 @@ import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.catalog.domain.DisplayOrders;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
+import com.ecsite.module.catalog.domain.product.vo.ProductActions;
+import com.ecsite.module.catalog.domain.product.vo.ProductActions.DeleteBlockedReason;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
@@ -202,8 +204,6 @@ public class Product extends AggregateRoot {
                 PublicationPeriod.UNLIMITED, List.of(), List.of(), 0));
     }
 
-// ============================== Getter（ほかのフィールドの Getter は Lombok で作る） ==============================
-
 // ============================== ドメインの振る舞い ==============================
 
     /**
@@ -336,7 +336,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を加えられるか（上限の 20 枚に達していないか）を確認する。
+     * 画像を加えられるか（上限の {@link #MAX_IMAGES} 枚に達していないか）を確認する。
      *
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
@@ -540,7 +540,30 @@ public class Product extends AggregateRoot {
      * @return できる操作
      */
     public ProductActions actions(@NonNull Instant now) {
-        return ProductActions.of(status, firstShownAt, axes.size(), variants.size(), now);
+        return actionsOf(status, firstShownAt, axes.size(), variants.size(), now);
+    }
+
+    /**
+     * 商品の状態から、できる操作を決める。
+     *
+     * @param status       公開状態
+     * @param firstShownAt 初回表示日時。なければ null
+     * @param axisCount    バリアント軸の数
+     * @param variantCount バリアントの数
+     * @param now          現在時刻
+     * @return できる操作
+     */
+    public static ProductActions actionsOf(@NonNull PublicationStatus status, @Nullable Instant firstShownAt,
+                                           int axisCount, int variantCount, @NonNull Instant now) {
+        var neverShown = !hasBeenShown(firstShownAt, now);
+        return new ProductActions(
+                status == PublicationStatus.UNPUBLISHED,
+                status == PublicationStatus.PUBLISHED,
+                status != PublicationStatus.DISCONTINUED,
+                neverShown,
+                neverShown,
+                canAddVariant(axisCount, variantCount),
+                neverShown ? null : DeleteBlockedReason.ALREADY_SHOWN);
     }
 
     /**
@@ -688,7 +711,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜50 文字であることを検証する。
+     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜{@link #AXIS_VALUE_MAX_LENGTH} 文字であることを検証する。
      *
      * <p>軸キーの区切り文字は、値に含められない。
      *
@@ -704,7 +727,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 商品名が 1〜200 文字（空白のみは不可）であることを検証する。
+     * 商品名が 1〜{@link #NAME_MAX_LENGTH} 文字（空白のみは不可）であることを検証する。
      *
      * @param name 商品名
      * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
@@ -716,7 +739,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 説明が 10,000 文字以内であることを検証する。
+     * 説明が {@link #DESCRIPTION_MAX_LENGTH} 文字以内であることを検証する。
      *
      * <p>空でもよい。
      *
@@ -730,7 +753,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアント軸が 0〜3 つで、名前が 1〜30 文字、重複がないことを検証する。
+     * バリアント軸が 0〜{@link #MAX_AXES} つで、名前が 1〜{@link #AXIS_NAME_MAX_LENGTH} 文字、重複がないことを検証する。
      *
      * @param axes バリアント軸の名前
      * @return 変更できない一覧

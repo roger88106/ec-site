@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
+import com.ecsite.module.catalog.domain.product.vo.ProductActions;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;

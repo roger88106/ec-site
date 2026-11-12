@@ -17,8 +17,8 @@ import java.util.UUID;
  * <p>環境変数で上書きする（例：ECSITE_PAYMENT_DEADLINE）。決済サービスは mock フラグ（{@code ecsite.payment.mock.enabled}）で選び、
  * ここには持たない。
  *
- * @param deadline                     支払の期限（注文日時からの時間）。上限は 30 分。支払画面は注文の後に作り、その期限（作ってから 31 分）が
- *                                     支払の期限より前に来ないようにするため
+ * @param deadline                     支払の期限（注文日時からの時間）。上限は 30 分。支払画面は注文の後に作り、
+ *                                     その期限（Stripe の最短の 30 分に余裕を足した時間）が支払の期限より前に来ないようにするため
  * @param expiryInterval               支払の期限切れのジョブの間隔
  * @param awaitingAuthorizationWarning 与信の反映を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに出すか
  * @param authorizationValidity        与信の有効期間（与信の時刻からの時間）。Stripe のカード決済の与信が切れる 7 日

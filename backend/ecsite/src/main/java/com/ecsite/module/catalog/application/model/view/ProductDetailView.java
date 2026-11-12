@@ -1,8 +1,8 @@
 package com.ecsite.module.catalog.application.model.view;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.domain.product.ProductActions;
 import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.ProductActions;
 import org.jspecify.annotations.Nullable;
 
 import java.net.URI;

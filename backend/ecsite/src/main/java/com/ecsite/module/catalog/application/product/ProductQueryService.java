@@ -9,7 +9,7 @@ import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
-import com.ecsite.module.catalog.domain.product.ProductActions;
+import com.ecsite.module.catalog.domain.product.Product;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -87,7 +87,7 @@ public class ProductQueryService {
         // 今の税込価格と、できる操作の設定
         var now = clock.instant();
         var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), view.priceExclTax(), now).orElse(null);
-        var actions = ProductActions.of(view.status(), view.firstShownAt(), view.axes().size(),
+        var actions = Product.actionsOf(view.status(), view.firstShownAt(), view.axes().size(),
                 view.variants().size(), now);
         return view.withCurrentState(priceInclTax, actions);
     }

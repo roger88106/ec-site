@@ -13,11 +13,11 @@ import java.util.regex.Pattern;
  *
  * <p>郵便番号と電話番号はハイフンを除いた数字で持つ。都道府県と市区町村がマスターデータにあるかは確認しない。
  *
- * @param name       氏名（50 文字まで）
- * @param postalCode 郵便番号（数字 7 桁）
+ * @param name       氏名（{@link #NAME_MAX_LENGTH} 文字まで）
+ * @param postalCode 郵便番号（数字 {@link #POSTAL_CODE_DIGITS} 桁）
  * @param area       都道府県と市区町村（コードと注文の時点の名前）
- * @param address    市区町村より下の住所（200 文字まで）
- * @param phone      電話番号（数字 10〜11 桁）
+ * @param address    市区町村より下の住所（{@link #ADDRESS_MAX_LENGTH} 文字まで）
+ * @param phone      電話番号（数字 {@link #PHONE_MIN_DIGITS}〜{@link #PHONE_MAX_DIGITS} 桁）
  */
 @ValueObject
 public record ShippingAddress(String name, String postalCode, AddressArea area, String address, String phone) {

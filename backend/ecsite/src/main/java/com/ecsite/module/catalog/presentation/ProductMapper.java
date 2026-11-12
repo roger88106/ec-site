@@ -26,6 +26,7 @@ import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
+import com.ecsite.module.catalog.domain.product.vo.ProductActions.DeleteBlockedReason;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -257,7 +258,7 @@ class ProductMapper {
     /**
      * できる操作をレスポンスに変換する。
      */
-    private static ProductActions toActions(com.ecsite.module.catalog.domain.product.ProductActions actions) {
+    private static ProductActions toActions(com.ecsite.module.catalog.domain.product.vo.ProductActions actions) {
         return new ProductActions()
                 .publish(actions.publish())
                 .unpublish(actions.unpublish())
@@ -272,8 +273,7 @@ class ProductMapper {
     /**
      * 削除できない理由をレスポンスに変換する。
      */
-    private static ProductDeleteBlockedReason toDeleteBlockedReason(
-            com.ecsite.module.catalog.domain.product.DeleteBlockedReason reason) {
+    private static ProductDeleteBlockedReason toDeleteBlockedReason(DeleteBlockedReason reason) {
         return switch (reason) {
             case ALREADY_SHOWN -> ProductDeleteBlockedReason.ALREADY_SHOWN;
         };

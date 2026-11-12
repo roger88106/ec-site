@@ -29,9 +29,9 @@ public record TrackingNumber(String value) {
      *
      * <p>前後の空白を除き、ハイフンを除く。
      *
-     * @param input 入力（半角の数字とハイフン、前後の空白を除いて 30 文字まで）
+     * @param input 入力（半角の数字とハイフン、前後の空白を除いて {@link #MAX_LENGTH} 文字まで）
      * @return 送り状番号
-     * @throws BusinessException 入力がない、半角の数字とハイフン以外を含む、数字がない、30 文字を超える（TRACKING_NUMBER_INVALID）
+     * @throws BusinessException 入力がない、半角の数字とハイフン以外を含む、数字がない、{@link #MAX_LENGTH} 文字を超える（TRACKING_NUMBER_INVALID）
      */
     public static TrackingNumber of(String input) {
         var trimmed = input == null ? "" : input.strip();

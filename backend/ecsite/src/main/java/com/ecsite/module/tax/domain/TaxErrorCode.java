@@ -11,7 +11,7 @@ import lombok.Getter;
 public enum TaxErrorCode implements ErrorCodeProvider {
 
     /**
-     * 率が 0 以上 100 未満、小数第 2 位まででない
+     * 率が {min} 以上 {max} 未満、小数第 {scale} 位まででない
      */
     INVALID_RATE_PERCENT(ErrorType.VALIDATION_ERROR, "min", "max", "scale"),
     /**
@@ -19,7 +19,7 @@ public enum TaxErrorCode implements ErrorCodeProvider {
      */
     INVALID_EFFECTIVE_PERIOD(ErrorType.VALIDATION_ERROR),
     /**
-     * 税区分の名称が 1 文字以上 50 文字以内でない
+     * 税区分の名称が 1 文字以上 {max} 文字以内でない
      */
     INVALID_TAX_CATEGORY_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**

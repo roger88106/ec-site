@@ -7,7 +7,7 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.api.PaymentApi;
-import com.ecsite.module.payment.api.PaymentSummary;
+import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,8 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 売上確定の統合テスト。<br />
- * 決済サービスは mock。支払はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
+ * 売上確定の統合テスト
+ *
+ * <p>決済サービスは mock。支払はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)

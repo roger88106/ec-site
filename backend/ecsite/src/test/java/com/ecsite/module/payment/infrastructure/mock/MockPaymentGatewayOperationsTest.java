@@ -14,8 +14,9 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 本番の mock の決済サービスが、テストだけで使う操作を持たないことの検証。
- * テストだけで使う操作は、テストのソースの、mock を包む実装（{@code TestPaymentGateway}）が持つ。
+ * 本番の mock の決済サービスが、テストだけで使う操作を持たないことの検証
+ *
+ * <p>テストだけで使う操作は、テストのソースの、mock を包む実装（{@code TestPaymentGateway}）が持つ。
  */
 @DisplayName("本番の mock の決済サービスの公開の操作")
 class MockPaymentGatewayOperationsTest {

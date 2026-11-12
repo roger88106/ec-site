@@ -3,8 +3,9 @@ package com.ecsite.module.payment.application;
 import org.springframework.context.ApplicationContext;
 
 /**
- * 決済のジョブ（{@link PaymentExpiryJob}）を実行する、統合テストの補助。<br />
- * ジョブのクラスは package-private なので、同じパッケージのこのクラスを通して呼ぶ。
+ * 決済のジョブ（{@link PaymentExpiryJob}）を実行する、統合テストの補助
+ *
+ * <p>ジョブのクラスは package-private なので、同じパッケージのこのクラスを通して呼ぶ。
  */
 public final class PaymentJobs {
 

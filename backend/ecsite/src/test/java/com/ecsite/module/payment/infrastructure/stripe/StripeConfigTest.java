@@ -10,8 +10,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Stripe の API の設定の単体テスト。<br />
- * 設定は Spring を起動せずに、設定の型へ値を当てはめて確認する。
+ * Stripe の API の設定の単体テスト
+ *
+ * <p>設定は Spring を起動せずに、設定の型へ値を当てはめて確認する。
  */
 class StripeConfigTest {
 

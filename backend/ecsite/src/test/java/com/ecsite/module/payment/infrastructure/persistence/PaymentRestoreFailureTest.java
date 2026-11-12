@@ -16,7 +16,9 @@ import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.mockito.Mockito.mock;
 
 /**
- * 支払を DB の値から戻すときの失敗の単体テスト。例外の出力に DB の値が出ないことを確認する。
+ * 支払を DB の値から戻すときの失敗の単体テスト
+ *
+ * <p>例外の出力に DB の値が出ないことを確認する。
  */
 class PaymentRestoreFailureTest {
 

@@ -6,6 +6,7 @@ import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,9 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * 支払の更新のサービス。決済サービスを呼ばない、DB の中の操作だけを持つ。<br />
- * 決済サービスの呼び出しはトランザクションの外で行う（{@link PaymentPageService} など）。外部の応答を待つ間、行ロックを持たないため。
+ * 支払の更新のサービス
+ *
+ * <p>決済サービスを呼ばず、DB の中の操作だけを行う。外部の応答を待つ間に、行ロックを持たないため。
  */
 @Slf4j
 @Service
@@ -43,14 +45,13 @@ public class PaymentCommandService {
     private final Clock clock;
 
     /**
-     * 注文の支払を未払いで作る。同じ注文の支払がすでにあれば何もしない。<br />
-     * 呼び出し元（注文の成立）のトランザクションに参加する。
+     * 注文の支払を未払いで作る。同じ注文の支払がすでにあれば何もしない。呼んだ側のトランザクションに加わる。
      *
      * @param orderId   注文 ID
      * @param amount    金額（注文の総額）
      * @param orderedAt 注文日時（支払の期限の起点）
      */
-    public void create(UUID orderId, Money amount, Instant orderedAt) {
+    public void create(@NonNull UUID orderId, @NonNull Money amount, @NonNull Instant orderedAt) {
         var payment = Payment.create(UUID.randomUUID(), orderId, amount, orderedAt.plus(properties.deadline()));
         paymentRepository.insertIfAbsent(payment);
     }
@@ -60,7 +61,7 @@ public class PaymentCommandService {
      *
      * @param paymentId 支払 ID
      */
-    public void markCaptured(UUID paymentId) {
+    public void markCaptured(@NonNull UUID paymentId) {
         modify(paymentId, payment -> payment.capture(clock.instant()));
     }
 
@@ -69,18 +70,18 @@ public class PaymentCommandService {
      *
      * @param paymentId 支払 ID
      */
-    public void markAuthorizationExpired(UUID paymentId) {
+    public void markAuthorizationExpired(@NonNull UUID paymentId) {
         modify(paymentId, Payment::expireAuthorization);
     }
 
     /**
-     * 期限を過ぎた未払いの支払を、支払なしにする。期限切れのジョブと、支払画面の期限切れの通知から呼ぶ。<br />
-     * 行ロックの後に確認直すので、その間に与信済みになった支払や、期限の前の支払は変えない。
+     * 期限を過ぎた未払いの支払を、支払なしにする。期限の前の支払と、未払いでない支払は変えない。
      *
      * @param paymentId 支払 ID
      */
-    public void expire(UUID paymentId) {
+    public void expire(@NonNull UUID paymentId) {
         var now = clock.instant();
+        // 行ロックの後に確認し直し、読んでから与信済みになった支払を変えない
         paymentRepository.lockById(paymentId)
                 .filter(payment -> !payment.isPayable(now))
                 .filter(payment -> payment.expire(now))
@@ -88,26 +89,26 @@ public class PaymentCommandService {
     }
 
     /**
-     * 期限を過ぎたが決済サービスで支払が済んでいた支払を、与信の反映を待つ支払にする。期限切れのジョブから呼ぶ。<br />
-     * 行ロックの後に確認直すので、その間に通知が届いて与信済みになった支払は変えない。
+     * 期限を過ぎたが決済サービスで支払が済んでいた支払を、与信の反映を待つ支払にする。
      *
      * @param paymentId 支払 ID
      */
-    public void awaitAuthorization(UUID paymentId) {
+    public void awaitAuthorization(@NonNull UUID paymentId) {
         var now = clock.instant();
+        // 行ロックの後に確認し直し、読んでから通知が届いて与信済みになった支払を変えない
         paymentRepository.lockById(paymentId)
                 .filter(payment -> payment.awaitAuthorization(now))
                 .ifPresent(paymentRepository::update);
     }
 
     /**
-     * 決済サービスから取得した与信を反映する。期限切れのジョブから呼ぶ。行ロックの後に確認し直す。
+     * 決済サービスから取得した与信を反映する。行ロックの後に確認し直す。
      *
      * @param paymentId     支払 ID
      * @param authorization 取得した与信
      * @return 未払いから与信済みにしたら true（先に通知が届いていれば false）
      */
-    public boolean authorizeFromGateway(UUID paymentId, PaymentGateway.Authorization authorization) {
+    public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull PaymentGateway.Authorization authorization) {
         var now = clock.instant();
         return paymentRepository.lockById(paymentId).map(payment -> {
             var wasUnpaid = payment.status() == PaymentStatus.UNPAID;
@@ -118,13 +119,13 @@ public class PaymentCommandService {
     }
 
     /**
-     * 注文のキャンセルに合わせて支払を取り消す。与信済みなら与信の取消待ちに、売上確定済みなら返金待ちにし、
-     * コミットの後に決済サービスで取り消す・返金する。与信期限切れなら何もしない。<br />
-     * 呼び出し元（注文のキャンセル）のトランザクションに参加する。支払のない注文（決済を入れる前の注文）なら何もしない。
+     * 注文のキャンセルに合わせて支払を取り消す。決済サービスでの取消と返金は、コミットの後に行う。
+     * 支払がなければ何もしない。呼んだ側のトランザクションに加わる。
      *
      * @param orderId 注文 ID
      */
-    public void cancel(UUID orderId) {
+    public void cancel(@NonNull UUID orderId) {
+        // 支払のない注文（決済を入れる前の注文）は、取り消すものがない
         paymentRepository.lockByOrderId(orderId).ifPresentOrElse(payment -> {
             payment.cancel(clock.instant());
             paymentRepository.update(payment);
@@ -136,7 +137,7 @@ public class PaymentCommandService {
      *
      * @param paymentId 支払 ID
      */
-    public void markVoided(UUID paymentId) {
+    public void markVoided(@NonNull UUID paymentId) {
         modify(paymentId, Payment::markVoided);
     }
 
@@ -145,23 +146,23 @@ public class PaymentCommandService {
      *
      * @param paymentId 支払 ID
      */
-    public void markRefunded(UUID paymentId) {
+    public void markRefunded(@NonNull UUID paymentId) {
         modify(paymentId, Payment::markRefunded);
     }
 
     /**
-     * 決済サービスで開いた支払画面を覚える。<br />
-     * ほかのリクエストが先に画面を覚えていれば、その画面を返す。支払えなくなっていれば空を返す（呼ぶ側が開いた画面を閉じる）。
+     * 決済サービスで開いた支払画面を覚える。先に覚えた画面があれば、その画面を返す。
      *
      * @param orderId 注文 ID
      * @param opened  開いた支払画面
      * @return 使う支払画面。支払えなければ空
      */
-    public Optional<PaymentPage> recordPage(UUID orderId, PaymentPage opened) {
+    public Optional<PaymentPage> recordPage(@NonNull UUID orderId, @NonNull PaymentPage opened) {
         var now = clock.instant();
         return paymentRepository.lockByOrderId(orderId)
                 .filter(payment -> payment.isPayable(now))
                 .map(payment -> {
+                    // 同時のリクエストが先に覚えた画面を使う
                     if (payment.page().isPresent()) {
                         return payment.page().get();
                     }

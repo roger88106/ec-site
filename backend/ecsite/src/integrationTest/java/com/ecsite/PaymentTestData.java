@@ -2,7 +2,7 @@ package com.ecsite;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
-import com.ecsite.module.payment.api.PaymentSummary;
+import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 
 import java.time.Instant;
@@ -12,8 +12,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 統合テストで、支払の API とテスト用の決済サービスを使い、支払を作り、与信済み・売上確定済みにし、状態を読む補助。<br />
- * 支払の金額は 6,940 円で固定する。支払は注文ごとに別の ID で作る。
+ * 支払を進める統合テストの補助
+ *
+ * <p>支払の API とテスト用の決済サービスを使い、支払を作り、与信済み・売上確定済みにし、状態を読む。支払の金額は 6,940 円で固定する。支払は注文ごとに別の ID で作る。
  */
 public class PaymentTestData {
 

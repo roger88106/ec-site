@@ -9,8 +9,10 @@ import org.springframework.validation.annotation.Validated;
 import java.time.Duration;
 
 /**
- * Stripe の設定。決済サービスが stripe のときだけ使う。<br />
- * 秘密の値は Git に入れず、環境変数 {@code STRIPE_SECRET_KEY}、{@code STRIPE_WEBHOOK_SECRET} で渡す（application.yml）。
+ * Stripe の設定
+ *
+ * <p>決済サービスが Stripe のときだけ使う。秘密の値は Git に入れず、環境変数 {@code STRIPE_SECRET_KEY}、
+ * {@code STRIPE_WEBHOOK_SECRET} で渡す（application.yml）。
  *
  * @param secretKey      API の秘密の鍵（テストモードは {@code sk_test_} で始まる）
  * @param webhookSecret  通知の署名の鍵（{@code whsec_} で始まる）

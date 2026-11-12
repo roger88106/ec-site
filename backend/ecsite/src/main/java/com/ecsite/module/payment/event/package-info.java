@@ -1,6 +1,7 @@
 /**
- * 決済モジュールが発行するイベント。<br />
- * 利用者：注文。
+ * 決済モジュールの公開のイベント
+ *
+ * <p>他のモジュールが非同期で受け取る。
  */
 @org.springframework.modulith.NamedInterface("event")
 package com.ecsite.module.payment.event;

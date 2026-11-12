@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application.port;
 
+import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 
@@ -7,11 +8,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 決済サービスの口（docs/02-設計/payment.md「外部のサービス」）。<br />
- * 実装は mock と Stripe で、mock フラグ {@code ecsite.payment.mock.enabled} が立てば mock、なければ Stripe を使う。決済サービスの型とエラーは実装の外に出さない。
- * 売上確定を除き、どの操作も、決済サービスに接続できなければ（時間内に応えない、決済サービスの側の故障、回数の制限）、
- * 外部サービスのエラー（{@code PAYMENT_GATEWAY_UNAVAILABLE}）の {@link com.ecsite.common.error.exception.SystemException} を投げる。
- * それ以外の失敗（認証・リクエストの誤りなど）は、予期しないエラーの {@link com.ecsite.common.error.exception.SystemException} を投げる。
+ * 決済サービスの port
+ *
+ * <p>決済サービスの型とエラーは、この port の実装（infrastructure）の外に出さない。
+ * 決済サービスに接続できない（時間内に応えない、決済サービスの側の故障、回数の制限）ことは、
+ * 外部サービスのエラー（PAYMENT_GATEWAY_UNAVAILABLE）で示す。
  */
 public interface PaymentGateway {
 
@@ -20,6 +21,7 @@ public interface PaymentGateway {
      *
      * @param request 支払画面のリクエスト
      * @return 作った支払画面
+     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     PaymentPage openPage(PageRequest request);
 
@@ -28,29 +30,30 @@ public interface PaymentGateway {
      *
      * @param pageId 支払画面 ID
      * @return 閉じた結果
+     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     CloseResult closePage(String pageId);
 
     /**
-     * 支払の済んだ支払画面の与信を取得する。支払が済んでいなければ、予期しないエラーの SystemException を投げる。
-     * 接続の失敗の扱いは他の操作と同じ。
+     * 支払の済んだ支払画面の与信を取得する。
      *
-     * @param pageId 支払画面 ID
+     * @param pageId 支払画面 ID（支払の済んだ画面）
      * @return 取得した与信
+     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     Authorization fetchAuthorization(String pageId);
 
     /**
-     * 与信を取り消す。すでに取り消していれば成功とする。<br />
-     * 売上を確定した与信は取り消せないので、例外にせず結果で返す。
+     * 与信を取り消す。すでに取り消していれば成功とする。売上を確定した与信は取り消せないので、例外にせず結果で返す。
      *
      * @param authorizationRef 与信の参照
      * @return 与信の取消の結果
+     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     VoidResult voidAuthorization(String authorizationRef);
 
     /**
-     * 与信の総額の売上を確定する。同じ注文で重ねて呼ばれても、決済サービスで売上は 1 回だけ確定するようにする。<br />
+     * 与信の総額の売上を確定する。同じ注文で重ねて呼ばれても、決済サービスで売上は 1 回だけ確定するようにする。
      * 与信の期限切れと、決済サービスに接続できないことは、例外にせず結果で返す。
      *
      * @param request 売上確定のリクエスト
@@ -63,6 +66,7 @@ public interface PaymentGateway {
      * すでに返金済みなら成功とする。
      *
      * @param request 返金のリクエスト
+     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     void refund(RefundRequest request);
 
@@ -138,7 +142,7 @@ public interface PaymentGateway {
         VOIDED,
 
         /**
-         * 売上を確定していて、取り消せない。返金で戻す
+         * 売上を確定していて、取り消せない
          */
         ALREADY_CAPTURED,
     }
@@ -154,7 +158,7 @@ public interface PaymentGateway {
         CLOSED,
 
         /**
-         * 閉じる前に支払が済んでいた。与信は、通知か、期限切れのジョブの取得で反映する
+         * 閉じる前に支払が済んでいた
          */
         ALREADY_PAID,
     }

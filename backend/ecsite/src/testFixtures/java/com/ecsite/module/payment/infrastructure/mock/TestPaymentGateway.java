@@ -17,8 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * テストで使う決済サービス。本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。<br />
- * 通知の遅れ・重複・順序の入れ替わりや、取消・売上確定・返金の失敗を起こし、呼ばれた操作を記録する。
+ * テストで使う決済サービス
+ *
+ * <p>本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。通知の遅れ・重複・順序の入れ替わりや、取消・売上確定・返金の失敗を起こし、呼ばれた操作を記録する。
  * 本番の jar に入れないため、テストで共有するソースに置く。
  */
 public class TestPaymentGateway implements PaymentGateway {

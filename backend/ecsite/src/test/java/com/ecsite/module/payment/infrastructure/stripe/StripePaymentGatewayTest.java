@@ -41,7 +41,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Stripe の実装の単体テスト（docs/02-設計/payment.md「Stripe」）。支払画面の作成・閉じる、与信の取消、売上確定、返金。<br />
+ * Stripe の実装の単体テスト
+ *
+ * <p>支払画面の作成・閉じる、与信の取消、売上確定、返金を確認する。
  * Stripe の API の代わりに手元の HTTP サーバー（{@link StripeApiStub}）を立て、sandbox で記録した応答の形を返す。
  */
 class StripePaymentGatewayTest {

@@ -11,7 +11,9 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Clock;
 
 /**
- * Stripe の決済サービスの設定。決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にする。
+ * Stripe の決済サービスの設定
+ *
+ * <p>決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnPaymentStripe
@@ -35,7 +37,7 @@ class StripeConfig {
     }
 
     /**
-     * Stripe の API のビルダー（テストが、設定の渡り方を確認するため）。
+     * Stripe の API のビルダーを、設定の値で作る。
      *
      * @param properties Stripe の設定
      * @return Stripe の API のビルダー

@@ -20,8 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Stripe の通知の受け取りの単体テスト。<br />
- * 通知の中身は、sandbox で記録したもの（{@code src/test/resources/stripe/}）を使い、テストの鍵で署名する。
+ * Stripe の通知の受け取りの単体テスト
+ *
+ * <p>通知の中身は、sandbox で記録したもの（{@code src/test/resources/stripe/}）を使い、テストの鍵で署名する。
  */
 class StripeNotificationHandlerTest {
 

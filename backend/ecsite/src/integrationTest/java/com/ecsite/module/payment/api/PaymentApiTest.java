@@ -5,6 +5,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
@@ -26,8 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * 決済の API の統合テスト。<br />
- * 決済サービスは mock。支払はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
+ * 決済の API の統合テスト
+ *
+ * <p>決済サービスは mock。支払はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)

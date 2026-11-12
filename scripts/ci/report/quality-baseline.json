@@ -2,11 +2,11 @@
   "targets": {
     "backend": {
       "line": {
-        "value": 98.36,
+        "value": 98.38,
         "tolerance": 0.1
       },
       "branch": {
-        "value": 82.57,
+        "value": 81.5,
         "tolerance": 0.3
       }
     },

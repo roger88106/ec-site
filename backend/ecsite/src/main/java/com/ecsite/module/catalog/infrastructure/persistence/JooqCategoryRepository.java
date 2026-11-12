@@ -12,6 +12,7 @@ import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.RowN;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -226,6 +227,51 @@ class JooqCategoryRepository implements CategoryRepository {
 
         // イベント発行
         category.pullEvents().forEach(eventPublisher::publishEvent);
+    }
+
+    /**
+     * 複数のカテゴリを、1 つの文で更新する。
+     *
+     * <p>親と深さは変わらないので、名称と表示順だけを書き換える。
+     *
+     * @param categories カテゴリ
+     * @throws BusinessException どれかを取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     */
+    @Override
+    public void saveAll(Collection<Category> categories) {
+        if (categories.isEmpty()) {
+            return;
+        }
+        var rows = categories.stream()
+                .map(Category::toSnapshot)
+                .map(snapshot -> DSL.row(List.of(snapshot.id(), snapshot.version(), snapshot.name(), snapshot.displayOrder())))
+                .toArray(RowN[]::new);
+        var changes = DSL.values(rows).as("changes", "id", "version", "name", "display_order");
+        var id = changes.field("id", UUID.class);
+        var version = changes.field("version", Long.class);
+
+        int affected;
+        try {
+            // バージョンが一致しなければ、取得後に他で更新されている
+            affected = dsl.update(CATEGORY)
+                    .set(CATEGORY.NAME, changes.field("name", String.class))
+                    .set(CATEGORY.DISPLAY_ORDER, changes.field("display_order", Integer.class))
+                    .set(CATEGORY.VERSION, CATEGORY.VERSION.plus(1))
+                    .set(CATEGORY.UPDATED_AT, clock.instant())
+                    .from(changes)
+                    .where(CATEGORY.ID.eq(id))
+                    .and(CATEGORY.VERSION.eq(version))
+                    .execute();
+        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
+            throw WRITE_CONSTRAINTS.translate(e);
+        }
+        if (affected != categories.size()) {
+            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
+
+        // イベント発行
+        categories.forEach(category -> category.pullEvents().forEach(eventPublisher::publishEvent));
     }
 
     /**

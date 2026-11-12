@@ -22,6 +22,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TaxCategoryCommandService {
 
     /**
@@ -46,7 +47,6 @@ public class TaxCategoryCommandService {
      * @return 登録した税区分の ID
      * @throws BusinessException 名称が空、長すぎる、または重複している
      */
-    @Transactional
     public UUID createTaxCategory(CreateTaxCategoryCommand command) {
         // 税区分作成
         var taxCategory = taxCategoryFactory.create(command.name());
@@ -63,7 +63,6 @@ public class TaxCategoryCommandService {
      * @param command 税率の一覧の置き換えコマンド
      * @throws BusinessException 税区分がない、取得した後に他で更新された、または置き換え後の一覧が検証に合わない
      */
-    @Transactional
     public void replaceTaxRates(ReplaceTaxRatesCommand command) {
         // 税区分取得
         var taxCategory = taxCategoryRepository.findById(command.taxCategoryId())

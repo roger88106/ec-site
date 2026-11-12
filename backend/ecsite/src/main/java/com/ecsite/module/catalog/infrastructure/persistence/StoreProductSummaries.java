@@ -9,9 +9,13 @@ import org.jooq.Record;
 import org.jooq.Result;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
+import static com.ecsite.jooq.catalog.Tables.VARIANT;
 
 /**
  * C 側の一覧の 1 ページ分の商品の組み立て
@@ -41,12 +45,27 @@ class StoreProductSummaries {
      */
     List<StoreProductSummaryView> of(Result<? extends Record> rows, Field<Long> priceInclTax) {
         var productIds = rows.map(row -> row.get(PRODUCT.ID));
-        var sellable = SellableVariants.byProduct(dsl, productIds);
+        var sellable = sellableVariants(productIds);
         var images = storeImageUrls.representatives(productIds);
         return rows.map(row -> {
             var productId = row.get(PRODUCT.ID);
             return new StoreProductSummaryView(productId, row.get(PRODUCT.NAME), Money.of(row.get(priceInclTax)),
                     Money.of(row.get(PRODUCT.PRICE_EXCL_TAX)), sellable.getOrDefault(productId, List.of()), images.get(productId));
         });
+    }
+
+    /**
+     * 販売中（販売停止でない）のバリアントの ID を、商品ごとに表示順で取得する。
+     *
+     * @param productIds 商品 ID
+     * @return 商品 ID → バリアント ID。販売中のバリアントがない商品は含まない
+     */
+    private Map<UUID, List<UUID>> sellableVariants(Collection<UUID> productIds) {
+        return dsl.select(VARIANT.PRODUCT_ID, VARIANT.ID)
+                .from(VARIANT)
+                .where(VARIANT.PRODUCT_ID.in(productIds))
+                .and(VARIANT.SALES_SUSPENDED.isFalse())
+                .orderBy(VARIANT.PRODUCT_ID, VARIANT.DISPLAY_ORDER, VARIANT.ID)
+                .fetchGroups(VARIANT.PRODUCT_ID, VARIANT.ID);
     }
 }

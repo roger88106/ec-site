@@ -19,15 +19,16 @@ import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
@@ -83,10 +84,13 @@ class JooqProductRepository implements ProductRepository {
      */
     @Override
     public Optional<Product> findById(UUID id) {
-        return dsl.selectFrom(PRODUCT)
+        var axes = ProductParts.axes(PRODUCT.ID);
+        var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
+        return dsl.select(PRODUCT.asterisk(), axes, categoryIds)
+                .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
                 .fetchOptional()
-                .map(this::toProduct);
+                .map(row -> toProduct(row.into(PRODUCT), List.of(row.get(axes)), Set.of(row.get(categoryIds))));
     }
 
     /**
@@ -121,19 +125,10 @@ class JooqProductRepository implements ProductRepository {
                     .execute();
 
             // 軸の登録（登録後は変わらない）
-            short position = 0;
-            for (var axis : snapshot.axes()) {
-                dsl.insertInto(PRODUCT_AXIS)
-                        .set(PRODUCT_AXIS.PRODUCT_ID, snapshot.id())
-                        .set(PRODUCT_AXIS.POSITION, ++position)
-                        .set(PRODUCT_AXIS.NAME, axis)
-                        .execute();
-            }
+            insertAxes(snapshot);
 
-            // 所属カテゴリ、画像、バリアントの登録 ※バリアントが画像を指すので、画像を先に保存する
-            saveCategories(snapshot);
-            saveImages(snapshot);
-            saveVariants(snapshot);
+            // 所属カテゴリ、画像、バリアントの登録 ※新しい商品なので、なくなったものの削除は要らない
+            writeParts(snapshot);
         } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
             throw CONSTRAINTS.translate(e);
         }
@@ -179,9 +174,8 @@ class JooqProductRepository implements ProductRepository {
             }
 
             // 所属カテゴリ、画像、バリアントの保存
-            saveCategories(snapshot);
-            saveImages(snapshot);
-            saveVariants(snapshot);
+            deleteRemovedParts(snapshot);
+            writeParts(snapshot);
         } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
             throw CONSTRAINTS.translate(e);
         }
@@ -217,158 +211,178 @@ class JooqProductRepository implements ProductRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 所属カテゴリを差分で保存する：なくなったものを削除し、新しいものを追加する。
+     * 軸を追加する。
      *
      * @param snapshot 商品のスナップショット
      */
-    private void saveCategories(Product.Snapshot snapshot) {
-        dsl.deleteFrom(PRODUCT_CATEGORY)
-                .where(PRODUCT_CATEGORY.PRODUCT_ID.eq(snapshot.id()))
-                .and(PRODUCT_CATEGORY.CATEGORY_ID.notIn(snapshot.categoryIds()))
-                .execute();
-        for (var categoryId : snapshot.categoryIds()) {
-            dsl.insertInto(PRODUCT_CATEGORY)
-                    .set(PRODUCT_CATEGORY.PRODUCT_ID, snapshot.id())
-                    .set(PRODUCT_CATEGORY.CATEGORY_ID, categoryId)
-                    .onConflictDoNothing()
-                    .execute();
+    private void insertAxes(Product.Snapshot snapshot) {
+        if (snapshot.axes().isEmpty()) {
+            return;
         }
+        var insert = dsl.insertInto(PRODUCT_AXIS, PRODUCT_AXIS.PRODUCT_ID, PRODUCT_AXIS.POSITION, PRODUCT_AXIS.NAME);
+        short position = 0;
+        for (var axis : snapshot.axes()) {
+            insert = insert.values(snapshot.id(), ++position, axis);
+        }
+        insert.execute();
     }
 
     /**
-     * 画像を差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順を更新する。
+     * なくなった所属カテゴリ、画像、バリアントを削除する。
      *
      * <p>削除した画像のアセットは手放さない。
      *
      * @param snapshot 商品のスナップショット
      */
-    private void saveImages(Product.Snapshot snapshot) {
-        var imageIds = snapshot.images().stream().map(ProductImage::id).toList();
-
-        // なくなった画像の削除 ※削除した画像を指すバリアントの指定は、外部キーで外れる
-        dsl.deleteFrom(PRODUCT_IMAGE)
-                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
-                .and(PRODUCT_IMAGE.ID.notIn(imageIds))
+    private void deleteRemovedParts(Product.Snapshot snapshot) {
+        dsl.deleteFrom(PRODUCT_CATEGORY)
+                .where(PRODUCT_CATEGORY.PRODUCT_ID.eq(snapshot.id()))
+                .and(PRODUCT_CATEGORY.CATEGORY_ID.notIn(snapshot.categoryIds()))
                 .execute();
 
-        var existingIds = new HashSet<>(dsl.select(PRODUCT_IMAGE.ID)
-                .from(PRODUCT_IMAGE)
+        // 削除した画像を指すバリアントの指定は、外部キーで外れる
+        dsl.deleteFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
-                .fetch(PRODUCT_IMAGE.ID));
+                .and(PRODUCT_IMAGE.ID.notIn(snapshot.images().stream().map(ProductImage::id).toList()))
+                .execute();
 
-        for (var image : snapshot.images()) {
-            if (existingIds.contains(image.id())) {
-                // アセット ID は登録の後に変わらないので、表示順だけを更新する
-                dsl.update(PRODUCT_IMAGE)
-                        .set(PRODUCT_IMAGE.DISPLAY_ORDER, image.displayOrder())
-                        .where(PRODUCT_IMAGE.ID.eq(image.id()))
-                        .execute();
-            } else {
-                dsl.insertInto(PRODUCT_IMAGE)
-                        .set(PRODUCT_IMAGE.ID, image.id())
-                        .set(PRODUCT_IMAGE.PRODUCT_ID, snapshot.id())
-                        .set(PRODUCT_IMAGE.ASSET_ID, image.assetId())
-                        .set(PRODUCT_IMAGE.DISPLAY_ORDER, image.displayOrder())
-                        .set(PRODUCT_IMAGE.CREATED_AT, clock.instant())
-                        .execute();
-            }
-        }
+        // 軸の値は ON DELETE CASCADE で消える。品番を新しいバリアントで使えるよう、追加より先に行う
+        dsl.deleteFrom(VARIANT)
+                .where(VARIANT.PRODUCT_ID.eq(snapshot.id()))
+                .and(VARIANT.ID.notIn(snapshot.variants().stream().map(Variant::id).toList()))
+                .execute();
     }
 
     /**
-     * バリアントを差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順、販売停止、画像を更新する。
+     * 所属カテゴリ、画像、バリアントを、それぞれ 1 つの文で追加または更新する。
+     *
+     * <p>バリアントが画像を指すので、画像を先に保存する。
      *
      * @param snapshot 商品のスナップショット
      */
-    private void saveVariants(Product.Snapshot snapshot) {
-        var variantIds = snapshot.variants().stream().map(Variant::id).toList();
-
-        // なくなったバリアントの削除 ※軸の値は ON DELETE CASCADE で消える。品番を新しいバリアントで使えるよう、追加より先に行う
-        dsl.deleteFrom(VARIANT)
-                .where(VARIANT.PRODUCT_ID.eq(snapshot.id()))
-                .and(VARIANT.ID.notIn(variantIds))
-                .execute();
-
-        var existingIds = new HashSet<>(dsl.select(VARIANT.ID)
-                .from(VARIANT)
-                .where(VARIANT.PRODUCT_ID.eq(snapshot.id()))
-                .fetch(VARIANT.ID));
-
-        for (var variant : snapshot.variants()) {
-            if (existingIds.contains(variant.id())) {
-                // 品番と軸の値は登録の後に変わらないので、更新しない
-                dsl.update(VARIANT)
-                        .set(VARIANT.DISPLAY_ORDER, variant.displayOrder())
-                        .set(VARIANT.SALES_SUSPENDED, variant.salesSuspended())
-                        .set(VARIANT.IMAGE_ID, variant.imageId())
-                        .where(VARIANT.ID.eq(variant.id()))
-                        .execute();
-            } else {
-                insertVariant(snapshot.id(), variant);
-            }
-        }
+    private void writeParts(Product.Snapshot snapshot) {
+        insertCategories(snapshot);
+        upsertImages(snapshot);
+        upsertVariants(snapshot);
+        insertAxisValues(snapshot);
     }
 
     /**
-     * バリアントと軸の値を追加する。
+     * 所属カテゴリを追加する。すでにあるものは変えない。
      *
-     * @param productId 商品 ID
-     * @param variant   バリアント
+     * @param snapshot 商品のスナップショット
      */
-    private void insertVariant(UUID productId, Variant variant) {
-        dsl.insertInto(VARIANT)
-                .set(VARIANT.ID, variant.id())
-                .set(VARIANT.PRODUCT_ID, productId)
-                .set(VARIANT.VARIANT_CODE, variant.variantCode().value())
-                .set(VARIANT.AXIS_KEY, variant.axisKey())
-                .set(VARIANT.DISPLAY_ORDER, variant.displayOrder())
-                .set(VARIANT.SALES_SUSPENDED, variant.salesSuspended())
-                .set(VARIANT.IMAGE_ID, variant.imageId())
+    private void insertCategories(Product.Snapshot snapshot) {
+        if (snapshot.categoryIds().isEmpty()) {
+            return;
+        }
+        var insert = dsl.insertInto(PRODUCT_CATEGORY, PRODUCT_CATEGORY.PRODUCT_ID, PRODUCT_CATEGORY.CATEGORY_ID);
+        for (var categoryId : snapshot.categoryIds()) {
+            insert = insert.values(snapshot.id(), categoryId);
+        }
+        insert.onConflictDoNothing().execute();
+    }
+
+    /**
+     * 画像を追加する。すでにあるものは表示順を更新する。
+     *
+     * <p>アセット ID と登録日時は、登録の後に変わらないので更新しない。
+     *
+     * @param snapshot 商品のスナップショット
+     */
+    private void upsertImages(Product.Snapshot snapshot) {
+        if (snapshot.images().isEmpty()) {
+            return;
+        }
+        var now = clock.instant();
+        var insert = dsl.insertInto(PRODUCT_IMAGE, PRODUCT_IMAGE.ID, PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.ASSET_ID,
+                PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.CREATED_AT);
+        for (var image : snapshot.images()) {
+            insert = insert.values(image.id(), snapshot.id(), image.assetId(), image.displayOrder(), now);
+        }
+        insert.onConflict(PRODUCT_IMAGE.ID)
+                .doUpdate()
+                .set(PRODUCT_IMAGE.DISPLAY_ORDER, DSL.excluded(PRODUCT_IMAGE.DISPLAY_ORDER))
+                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
                 .execute();
-        short position = 0;
-        for (var value : variant.axisValues()) {
-            dsl.insertInto(VARIANT_AXIS_VALUE)
-                    .set(VARIANT_AXIS_VALUE.VARIANT_ID, variant.id())
-                    .set(VARIANT_AXIS_VALUE.POSITION, ++position)
-                    .set(VARIANT_AXIS_VALUE.VALUE, value)
-                    .execute();
+    }
+
+    /**
+     * バリアントを追加する。すでにあるものは表示順、販売停止、画像を更新する。
+     *
+     * <p>品番と軸の値は、登録の後に変わらないので更新しない。
+     *
+     * @param snapshot 商品のスナップショット
+     */
+    private void upsertVariants(Product.Snapshot snapshot) {
+        if (snapshot.variants().isEmpty()) {
+            return;
+        }
+        var insert = dsl.insertInto(VARIANT, VARIANT.ID, VARIANT.PRODUCT_ID, VARIANT.VARIANT_CODE, VARIANT.AXIS_KEY,
+                VARIANT.DISPLAY_ORDER, VARIANT.SALES_SUSPENDED, VARIANT.IMAGE_ID);
+        for (var variant : snapshot.variants()) {
+            insert = insert.values(variant.id(), snapshot.id(), variant.variantCode().value(), variant.axisKey(),
+                    variant.displayOrder(), variant.salesSuspended(), variant.imageId());
+        }
+        insert.onConflict(VARIANT.ID)
+                .doUpdate()
+                .set(VARIANT.DISPLAY_ORDER, DSL.excluded(VARIANT.DISPLAY_ORDER))
+                .set(VARIANT.SALES_SUSPENDED, DSL.excluded(VARIANT.SALES_SUSPENDED))
+                .set(VARIANT.IMAGE_ID, DSL.excluded(VARIANT.IMAGE_ID))
+                .where(VARIANT.PRODUCT_ID.eq(snapshot.id()))
+                .execute();
+    }
+
+    /**
+     * バリアントの軸の値を追加する。すでにあるものは変えない（登録の後に変わらない）。
+     *
+     * @param snapshot 商品のスナップショット
+     */
+    private void insertAxisValues(Product.Snapshot snapshot) {
+        var insert = dsl.insertInto(VARIANT_AXIS_VALUE, VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.POSITION,
+                VARIANT_AXIS_VALUE.VALUE);
+        boolean empty = true;
+        for (var variant : snapshot.variants()) {
+            short position = 0;
+            for (var value : variant.axisValues()) {
+                insert = insert.values(variant.id(), ++position, value);
+                empty = false;
+            }
+        }
+        if (!empty) {
+            insert.onConflictDoNothing().execute();
         }
     }
 
     /**
      * レコードから商品に変換する。
      *
-     * <p>商品の一部は別に取得する。
+     * <p>バリアントと画像は別に取得する。
      *
-     * @param record 商品のレコード
+     * @param record      商品のレコード
+     * @param axes        軸の名前（並び順）
+     * @param categoryIds 所属カテゴリ ID
      * @return 商品
      */
-    private Product toProduct(ProductRecord record) {
+    private Product toProduct(ProductRecord record, List<String> axes, Set<UUID> categoryIds) {
         var id = record.getId();
 
-        var axes = ProductParts.axes(dsl, id);
-
-        var categoryIds = dsl.select(PRODUCT_CATEGORY.CATEGORY_ID)
-                .from(PRODUCT_CATEGORY)
-                .where(PRODUCT_CATEGORY.PRODUCT_ID.eq(id))
-                .fetchSet(PRODUCT_CATEGORY.CATEGORY_ID);
-
-        var axisValuesByVariant = ProductParts.axisValuesByVariant(dsl, id);
-
-        var variants = dsl.selectFrom(VARIANT)
+        var axisValues = ProductParts.axisValues(VARIANT.ID);
+        var variants = dsl.select(VARIANT.asterisk(), axisValues)
+                .from(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(id))
-                .orderBy(VARIANT.DISPLAY_ORDER)
-                .fetch(variant -> new Variant(
-                        variant.getId(),
-                        VariantCode.of(variant.getVariantCode()),
-                        axisValuesByVariant.getOrDefault(variant.getId(), List.of()),
-                        variant.getDisplayOrder(),
-                        variant.getSalesSuspended(),
-                        variant.getImageId()));
+                .orderBy(VARIANT.DISPLAY_ORDER, VARIANT.ID)
+                .fetch(row -> new Variant(
+                        row.get(VARIANT.ID),
+                        VariantCode.of(row.get(VARIANT.VARIANT_CODE)),
+                        List.of(row.get(axisValues)),
+                        row.get(VARIANT.DISPLAY_ORDER),
+                        row.get(VARIANT.SALES_SUSPENDED),
+                        row.get(VARIANT.IMAGE_ID)));
 
         var images = dsl.selectFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
-                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
+                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.ID)
                 .fetch(image -> new ProductImage(image.getId(), image.getAssetId(), image.getDisplayOrder()));
 
         return factory.restore(new Product.Snapshot(

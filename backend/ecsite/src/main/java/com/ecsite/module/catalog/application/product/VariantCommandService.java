@@ -18,6 +18,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class VariantCommandService {
 
     /**
@@ -46,7 +47,6 @@ public class VariantCommandService {
      * @throws BusinessException 軸を持たない商品に 2 つ目のバリアントを登録しようとした（{@code SINGLE_VARIANT_ONLY}）
      * @throws BusinessException 品番か軸の値の組み合わせが重複している（{@code VARIANT_CODE_ALREADY_EXISTS}、{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      */
-    @Transactional
     public UUID addVariant(@NonNull AddVariantCommand command) {
         // 商品取得
         var product = productLoader.get(command.productId(), command.version());
@@ -71,7 +71,6 @@ public class VariantCommandService {
      * @throws BusinessException C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）
      * @throws BusinessException 公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
-    @Transactional
     public void deleteVariant(@NonNull UUID productId, @NonNull UUID variantId, long version) {
         // 商品取得
         var product = productLoader.get(productId, version);
@@ -91,7 +90,6 @@ public class VariantCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）
      */
-    @Transactional
     public void reorderVariants(@NonNull ReorderVariantsCommand command) {
         // 商品取得
         var product = productLoader.get(command.productId(), command.version());
@@ -113,7 +111,6 @@ public class VariantCommandService {
      * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
     public void suspendVariant(@NonNull UUID productId, @NonNull UUID variantId) {
         productLoader.changeStatus(productId, (product, now) -> product.suspendVariant(variantId));
     }
@@ -128,7 +125,6 @@ public class VariantCommandService {
      * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
     public void resumeVariant(@NonNull UUID productId, @NonNull UUID variantId) {
         productLoader.changeStatus(productId, (product, now) -> product.resumeVariant(variantId));
     }

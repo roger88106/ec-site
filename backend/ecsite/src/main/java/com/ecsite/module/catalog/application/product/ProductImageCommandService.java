@@ -18,6 +18,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 class ProductImageCommandService {
 
     /**
@@ -46,7 +47,6 @@ class ProductImageCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}。アセットの記録も取り消される）
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
-    @Transactional
     public UUID saveAddedImage(@NonNull UUID productId, long version, @NonNull PreparedImage prepared) {
         // 商品取得と枚数の確認
         var product = productLoader.get(productId, version);

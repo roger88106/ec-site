@@ -85,6 +85,15 @@ public interface CategoryRepository {
     void save(Category category);
 
     /**
+     * 複数のカテゴリを、まとめて更新する。
+     *
+     * @param categories カテゴリ
+     * @throws BusinessException どれかを取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     */
+    void saveAll(Collection<Category> categories);
+
+    /**
      * カテゴリを削除する。
      *
      * @param category カテゴリ

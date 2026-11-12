@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SalesTrendQueryService {
 
     /**
@@ -32,7 +33,6 @@ public class SalesTrendQueryService {
      * @param query 条件
      * @return 区切りごとの売上
      */
-    @Transactional(readOnly = true)
     public SalesTrendReport trend(@NonNull SalesTrendQuery query) {
         // 日ごとの集計
         var daily = queryRepository.dailySales(query.period(), query.basis(), query.productId(), query.excludeTax(),

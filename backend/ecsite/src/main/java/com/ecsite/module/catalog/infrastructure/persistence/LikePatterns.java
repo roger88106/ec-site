@@ -33,7 +33,7 @@ final class LikePatterns {
      * @param value 文字列
      * @return エスケープした文字列
      */
-    static String escape(String value) {
+    private static String escape(String value) {
         return value
                 .replace(String.valueOf(ESCAPE), "" + ESCAPE + ESCAPE)
                 .replace("%", ESCAPE + "%")

@@ -46,7 +46,7 @@ class StoreImageUrls {
                 .distinctOn(PRODUCT_IMAGE.PRODUCT_ID)
                 .from(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.in(productIds))
-                .orderBy(PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.DISPLAY_ORDER)
+                .orderBy(PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.ID)
                 .fetchMap(PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.ASSET_ID);
         return toUrls(assetIds);
     }
@@ -62,7 +62,7 @@ class StoreImageUrls {
         dsl.select(PRODUCT_IMAGE.ID, PRODUCT_IMAGE.ASSET_ID)
                 .from(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(productId))
-                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
+                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.ID)
                 .forEach(record -> assetIds.put(record.get(PRODUCT_IMAGE.ID), record.get(PRODUCT_IMAGE.ASSET_ID)));
         return toUrls(assetIds);
     }

@@ -2,17 +2,20 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.RestoreFailures;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.jooq.catalog.tables.records.ProductRecord;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
+import org.jooq.Field;
+import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
+import java.util.Arrays;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.ecsite.RestoreFailures.RECORDS;
 import static com.ecsite.RestoreFailures.assertValueIsHidden;
@@ -62,14 +65,21 @@ class ProductRestoreFailureTest {
     /**
      * 公開の状態を壊した商品の行を作る。
      *
+     * <p>商品の詳細の問い合わせと同じく、商品の列の後に、軸と所属カテゴリの配列の列を持つ。
+     *
      * @return 商品の行
      */
-    private ProductRecord brokenProduct() {
-        var product = RECORDS.newRecord(PRODUCT);
-        product.setId(UUID.randomUUID());
-        product.setProductCode("PROD-1");
-        product.setPriceExclTax(1L);
-        product.setStatus(value);
+    private Record brokenProduct() {
+        var axes = ProductParts.axes(PRODUCT.ID);
+        var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
+        var fields = Stream.concat(Arrays.stream(PRODUCT.fields()), Stream.of(axes, categoryIds)).toArray(Field<?>[]::new);
+        var product = RECORDS.newRecord(fields);
+        product.set(PRODUCT.ID, UUID.randomUUID());
+        product.set(PRODUCT.PRODUCT_CODE, "PROD-1");
+        product.set(PRODUCT.PRICE_EXCL_TAX, 1L);
+        product.set(PRODUCT.STATUS, value);
+        product.set(axes, new String[0]);
+        product.set(categoryIds, new UUID[0]);
         return product;
     }
 }

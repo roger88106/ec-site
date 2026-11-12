@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class VariantSalesQueryService {
 
     /**
@@ -46,7 +47,6 @@ public class VariantSalesQueryService {
      * @return バリアントごとの売れ行き
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      */
-    @Transactional(readOnly = true)
     public VariantSalesReport variants(@NonNull VariantSalesQuery query) {
         // 商品カタログのバリアントの一覧と、売れたバリアントの集計
         var product = catalogDirectory.findProduct(query.productId())

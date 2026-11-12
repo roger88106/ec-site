@@ -22,6 +22,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CategoryCommandService {
 
     /**
@@ -46,7 +47,6 @@ public class CategoryCommandService {
      * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
-    @Transactional
     public UUID createCategory(@NonNull CreateCategoryCommand command) {
         // 親カテゴリ取得 ※深さは親の深さで決まる
         var parent = command.parentId() == null ? null : getCategory(command.parentId());
@@ -70,7 +70,6 @@ public class CategoryCommandService {
      * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
-    @Transactional
     public void renameCategory(@NonNull RenameCategoryCommand command) {
         // カテゴリ取得
         var category = getCategory(command.categoryId());
@@ -92,7 +91,6 @@ public class CategoryCommandService {
      * @throws BusinessException 親カテゴリがない（{@code NOT_FOUND}）
      * @throws BusinessException 兄弟と過不足なく一致しない（{@code INVALID_CATEGORY_ORDER}）
      */
-    @Transactional
     public void reorderCategories(@NonNull ReorderCategoriesCommand command) {
         // 親カテゴリの存在確認
         if (command.parentId() != null) {
@@ -103,7 +101,7 @@ public class CategoryCommandService {
         var siblings = categoryRepository.lockChildren(command.parentId());
 
         // 並び順変更 ※表示順が変わったカテゴリだけ保存する
-        Category.reorder(siblings, command.categoryIds()).forEach(categoryRepository::save);
+        categoryRepository.saveAll(Category.reorder(siblings, command.categoryIds()));
     }
 
     /**
@@ -114,7 +112,6 @@ public class CategoryCommandService {
      * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）
      * @throws BusinessException 商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）
      */
-    @Transactional
     public void deleteCategory(@NonNull UUID categoryId) {
         // カテゴリ取得
         var category = getCategory(categoryId);

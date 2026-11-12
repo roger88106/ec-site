@@ -188,31 +188,31 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      * @param snapshot 税区分のスナップショット
      */
     private void writeRates(TaxCategory.Snapshot snapshot) {
-        snapshot.rates().forEach(rate -> upsertRate(snapshot.id(), rate));
+        upsertRates(snapshot);
         checkDeferredConstraints();
     }
 
     /**
-     * 税率を追加する。
+     * 税率を 1 つの文で追加する。すでにあるものは更新する。
      *
-     * <p>すでにあれば更新する。
-     *
-     * @param taxCategoryId 税区分 ID
-     * @param rate          税率
+     * @param snapshot 税区分のスナップショット
      */
-    private void upsertRate(UUID taxCategoryId, TaxRate rate) {
-        var period = rate.period();
-        dsl.insertInto(TAX_RATE)
-                .set(TAX_RATE.ID, rate.id())
-                .set(TAX_RATE.TAX_CATEGORY_ID, taxCategoryId)
-                .set(TAX_RATE.RATE_PERCENT, rate.ratePercent().value())
-                .set(TAX_RATE.EFFECTIVE_FROM, period.effectiveFrom())
-                .set(TAX_RATE.EFFECTIVE_TO, period.effectiveTo())
-                .onConflict(TAX_RATE.ID)
+    private void upsertRates(TaxCategory.Snapshot snapshot) {
+        if (snapshot.rates().isEmpty()) {
+            return;
+        }
+        var insert = dsl.insertInto(TAX_RATE, TAX_RATE.ID, TAX_RATE.TAX_CATEGORY_ID, TAX_RATE.RATE_PERCENT,
+                TAX_RATE.EFFECTIVE_FROM, TAX_RATE.EFFECTIVE_TO);
+        for (var rate : snapshot.rates()) {
+            var period = rate.period();
+            insert = insert.values(rate.id(), snapshot.id(), rate.ratePercent().value(), period.effectiveFrom(),
+                    period.effectiveTo());
+        }
+        insert.onConflict(TAX_RATE.ID)
                 .doUpdate()
-                .set(TAX_RATE.RATE_PERCENT, rate.ratePercent().value())
-                .set(TAX_RATE.EFFECTIVE_FROM, period.effectiveFrom())
-                .set(TAX_RATE.EFFECTIVE_TO, period.effectiveTo())
+                .set(TAX_RATE.RATE_PERCENT, DSL.excluded(TAX_RATE.RATE_PERCENT))
+                .set(TAX_RATE.EFFECTIVE_FROM, DSL.excluded(TAX_RATE.EFFECTIVE_FROM))
+                .set(TAX_RATE.EFFECTIVE_TO, DSL.excluded(TAX_RATE.EFFECTIVE_TO))
                 .execute();
     }
 

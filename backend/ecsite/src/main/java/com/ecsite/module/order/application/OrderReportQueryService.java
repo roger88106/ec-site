@@ -21,6 +21,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderReportQueryService {
 
     /**
@@ -44,7 +45,6 @@ public class OrderReportQueryService {
      * @param orderId 注文 ID
      * @return 注文と送料の消費税。注文がなければ空
      */
-    @Transactional(readOnly = true)
     public Optional<OrderReportView> find(@NonNull UUID orderId) {
         return orderRepository.findById(orderId).map(this::toView);
     }

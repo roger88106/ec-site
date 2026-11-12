@@ -27,6 +27,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProductCommandService {
 
     /**
@@ -74,7 +75,6 @@ public class ProductCommandService {
      * @throws BusinessException 項目の値が正しくない（{@code INVALID_PRODUCT_CODE}、{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}、{@code INVALID_VARIANT_AXES}）
      * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
      */
-    @Transactional
     public UUID createProduct(@NonNull CreateProductCommand command) {
         var now = clock.instant();
 
@@ -108,7 +108,6 @@ public class ProductCommandService {
      * @throws BusinessException 所属カテゴリがない（{@code INVALID_CATEGORY_ID}）
      * @throws BusinessException 項目の値が正しくない（{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}）
      */
-    @Transactional
     public void updateProduct(@NonNull UpdateProductCommand command) {
         var now = clock.instant();
 
@@ -140,7 +139,6 @@ public class ProductCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）
      */
-    @Transactional
     public void deleteProduct(@NonNull UUID productId, long version) {
         // 商品取得
         var product = productLoader.get(productId, version);

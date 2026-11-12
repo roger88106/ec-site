@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CustomerBreakdownQueryService {
 
     /**
@@ -58,7 +59,6 @@ public class CustomerBreakdownQueryService {
      * @param query 条件
      * @return 3 つの分け方の売上
      */
-    @Transactional(readOnly = true)
     public CustomerBreakdownReport breakdown(@NonNull CustomerBreakdownQuery query) {
         // 都道府県・年齢・性別の組ごとの集計 ※注文は 1 つの組にだけ入るので、組の注文件数を合算しても、同じ注文を 2 回数えない
         var segments = queryRepository.segmentSales(query.period(), query.basis(), query.productId(), query.excludeTax(),

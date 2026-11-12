@@ -1,10 +1,10 @@
 package com.ecsite.module.reporting.application.port;
 
-import com.ecsite.common.model.value.Money;
+import com.ecsite.module.reporting.application.model.SegmentTotal;
+import com.ecsite.module.reporting.application.model.VariantTotal;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.DailySales;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
-import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
@@ -13,8 +13,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 写しを集計する問い合わせ（docs/03-機能仕様/reporting.md「集計」）。<br />
- * 数える注文と日は売上の数え方で決める。商品を指定したら、その商品の明細だけを数え、送料は含めない。
+ * 写しを集計する問い合わせ
+ *
+ * <p>数える注文と日は売上の数え方で決める。商品を指定したら、その商品の明細だけを数え、送料は含めない。
  */
 public interface ReportQueryRepository {
 
@@ -54,28 +55,4 @@ public interface ReportQueryRepository {
      */
     List<SegmentTotal> segmentSales(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
                                     boolean excludeShipping);
-
-    /**
-     * バリアントの売上
-     *
-     * @param variantId   バリアント ID
-     * @param variantCode バリアント品番の写し
-     * @param quantity    販売数量
-     * @param amount      売上額
-     */
-    record VariantTotal(UUID variantId, String variantCode, long quantity, Money amount) {
-    }
-
-    /**
-     * 都道府県・年齢・性別の組の売上
-     *
-     * @param prefectureCode 都道府県のコード。不明なら null
-     * @param age            注文時の年齢。不明なら null
-     * @param gender         注文時の性別。不明なら null
-     * @param amount         売上額
-     * @param orders         注文件数
-     */
-    record SegmentTotal(@Nullable String prefectureCode, @Nullable Integer age, @Nullable ReportBuyerGender gender,
-                        Money amount, long orders) {
-    }
 }

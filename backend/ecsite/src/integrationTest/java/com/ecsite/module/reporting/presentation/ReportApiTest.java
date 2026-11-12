@@ -42,8 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * レポートの API の形の統合テスト。<br />
- * 集計の規則は application 層のテスト（{@code SalesTrendQueryTest} など）で確認し、ここはリクエストの受け取りと応答の形を確認する。
+ * レポートの API の形の統合テスト
+ *
+ * <p>集計の規則は application 層のテスト（{@code SalesTrendQueryTest} など）で確認し、ここはリクエストの受け取りと応答の形を確認する。
  * 写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  */
 @IntegrationTest

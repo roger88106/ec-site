@@ -1,7 +1,9 @@
 package com.ecsite.module.reporting.domain.sales;
 
 /**
- * 集計の粒度（売上の推移の区切り）
+ * 集計の粒度
+ *
+ * <p>売上の推移の区切りの単位。
  */
 public enum Granularity {
 

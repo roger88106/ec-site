@@ -3,7 +3,6 @@ package com.ecsite.module.reporting.infrastructure.directory;
 import com.ecsite.module.order.api.OrderReportApi;
 import com.ecsite.module.order.api.OrderReportSnapshot;
 import com.ecsite.module.reporting.application.port.OrderDirectory;
-import com.ecsite.module.reporting.domain.sales.ReportGender;
 import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrder;
@@ -16,7 +15,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文の腐敗防止層の実装。注文モジュールの API（{@link OrderReportApi}）を呼ぶ。
+ * 注文の腐敗防止層
+ *
+ * <p>注文モジュールの API を呼び、レポートの写しに変換する。
  */
 @Component
 @RequiredArgsConstructor
@@ -78,6 +79,9 @@ class OrderApiDirectory implements OrderDirectory {
 
     /**
      * 注文の API の注文の状態を、レポートの型にする。
+     *
+     * @param status 注文の API の注文の状態
+     * @return レポートの注文の状態
      */
     static ReportOrderStatus toStatus(OrderReportSnapshot.Status status) {
         return switch (status) {
@@ -90,7 +94,7 @@ class OrderApiDirectory implements OrderDirectory {
     }
 
     /**
-     * 注文の API のキャンセルの種類を、レポートの型にして写しに入れる。
+     * 注文の API のキャンセルの種類を、レポートの型にする。
      *
      * @param kind キャンセルの種類。キャンセルでなければ null
      * @return レポートのキャンセルの種類。キャンセルでなければ null
@@ -107,8 +111,9 @@ class OrderApiDirectory implements OrderDirectory {
     }
 
     /**
-     * 注文の API の性別を、レポートの注文時の性別にして写しに入れる。<br />
-     * 「回答しない」を不明にまとめるのは、読むとき（{@link ReportGender#of}）に行う。
+     * 注文の API の性別を、レポートの注文時の性別にする。
+     *
+     * <p>「回答しない」は不明にまとめず、そのまま持つ。
      *
      * @param gender 注文時の性別。分からなければ null
      * @return 写しの性別。分からなければ null

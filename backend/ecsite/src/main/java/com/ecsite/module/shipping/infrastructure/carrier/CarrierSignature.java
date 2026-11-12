@@ -51,9 +51,7 @@ public final class CarrierSignature {
      * 本文に署名して、ヘッダーの値を作る。
      *
      * @param body 本文
-     * @return ヘッダーの値
-     * @throws SystemException HMAC の方式を使えない
-     */
+     * @return ヘッダーの値     */
     public String sign(byte[] body) {
         try {
             var mac = Mac.getInstance(ALGORITHM);

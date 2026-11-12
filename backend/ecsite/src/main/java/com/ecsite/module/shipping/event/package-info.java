@@ -1,7 +1,7 @@
 /**
- * 出荷モジュールのイベント
+ * 出荷モジュールの公開のイベント
  *
- * <p>他のモジュールに非同期で知らせる。
+ * <p>他のモジュールが非同期で受け取る。
  */
 @org.springframework.modulith.NamedInterface("event")
 package com.ecsite.module.shipping.event;

@@ -67,9 +67,7 @@ public class MockCarrier {
      *
      * @param baseUrl      バックエンドの URL（エンドポイントを持つサーバー）
      * @param notification 署名付きの通知
-     * @return エンドポイントの応答のステータス
-     * @throws org.springframework.web.client.RestClientException エンドポイントに接続できない、時間の上限を超えた
-     */
+     * @return エンドポイントの応答のステータス     */
     public int send(String baseUrl, SignedNotification notification) {
         return restClient.post()
                 .uri(baseUrl + CarrierNotification.WEBHOOK_PATH)
@@ -82,9 +80,8 @@ public class MockCarrier {
     /**
      * 配送状態に当たる、ヤマト運輸の表示の名前を返す。
      *
-     * @param status 配送状態（配送中、配達完了、返送）
+     * @param status 配送状態（配送中、配達完了、返送。出荷済みには当たる名前がない）
      * @return 状態の名前
-     * @throws IllegalArgumentException 出荷済み（当たる名前がない）
      */
     public static String yamatoNameOf(DeliveryStatus status) {
         return switch (status) {

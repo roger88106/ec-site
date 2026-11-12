@@ -25,8 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 商品カタログのイベントによる在庫の作成・削除の統合テスト。<br />
- * イベントはコミット後に非同期で処理されるので、コミットするトランザクションで発行し、処理を待つ。
+ * 商品カタログのイベントによる在庫の作成・削除の統合テスト
+ *
+ * <p>イベントはコミット後に非同期で処理されるので、コミットするトランザクションで発行し、処理を待つ。
  * ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest
@@ -162,7 +163,7 @@ class CatalogEventHandlerTest {
      * @return 在庫 ID
      */
     private UUID addAdjustment(UUID variantId) {
-        var stockItemId = dsl.select(STOCK_ITEM.ID).from(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId)).fetchSingle().value1();
+        var stockItemId = dsl.select(STOCK_ITEM.ID).from(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId)).fetchSingle(STOCK_ITEM.ID);
         dsl.insertInto(STOCK_ADJUSTMENT)
                 .set(STOCK_ADJUSTMENT.ID, UUID.randomUUID())
                 .set(STOCK_ADJUSTMENT.STOCK_ITEM_ID, stockItemId)

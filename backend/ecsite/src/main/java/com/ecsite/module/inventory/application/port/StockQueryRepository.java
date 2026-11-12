@@ -25,8 +25,9 @@ public interface StockQueryRepository {
     Optional<Integer> findQuantity(UUID variantId);
 
     /**
-     * バリアントの調整履歴を取得する。<br />
-     * 調整日時の新しい順。同じ日時なら記録した順の新しい順（docs/03-機能仕様/inventory.md）。
+     * バリアントの調整履歴を取得する。
+     *
+     * <p>調整日時の新しい順。同じ日時なら記録した順の新しい順。
      *
      * @param variantId バリアント ID
      * @param request   ページの指定
@@ -42,12 +43,11 @@ public interface StockQueryRepository {
      */
     Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds);
 
-
     /**
      * 販売可能数（在庫数 − 有効な引当の合計）を返す。
      *
      * @param variantIds       バリアント ID
-     * @param excludedHolderId 販売可能数から除かない（数えない）引当の持ち主。なければ null
+     * @param excludedHolderId 数えない引当の持ち主。なければ null
      * @param now              現在時刻
      * @return バリアント ID → 販売可能数。在庫のないバリアントは含まない
      */

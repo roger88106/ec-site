@@ -5,7 +5,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 在庫モジュールの設定（引当の片付け）を有効にする。
+ * 在庫モジュールの設定
+ *
+ * <p>引当の片付けの設定を有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(StockReservationCleanupProperties.class)

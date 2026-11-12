@@ -13,7 +13,9 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 
 /**
- * 在庫の調整履歴を DB の値から戻すときの失敗の単体テスト。例外の出力に DB の値が出ないことを確認する。
+ * 在庫の調整履歴を DB の値から戻すときの失敗の単体テスト
+ *
+ * <p>例外の出力に DB の値が出ないことを確認する。
  */
 class StockAdjustmentRestoreFailureTest {
 

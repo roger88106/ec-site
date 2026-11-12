@@ -36,8 +36,9 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文による在庫の増減の統合テスト。<br />
- * 操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
+ * 注文による在庫の増減の統合テスト
+ *
+ * <p>操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)

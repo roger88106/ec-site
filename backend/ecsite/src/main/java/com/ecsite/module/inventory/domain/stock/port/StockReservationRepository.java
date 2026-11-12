@@ -9,14 +9,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 引当のリポジトリ（docs/03-機能仕様/inventory.md「引当」）。<br />
- * 同じ在庫への引当を 1 つずつ処理するため、判定の前に在庫を行ロックする。
+ * 引当のリポジトリ
  */
 public interface StockReservationRepository {
 
     /**
-     * バリアントの在庫を、バリアント ID の順に行ロックして読み込む。<br />
-     * 順序を固定して、複数の在庫をロックするときのデッドロックを避ける。トランザクションの中で呼ぶ。
+     * バリアントの在庫を、バリアント ID の順に行ロックして読み込む。
+     *
+     * <p>順序を固定して、複数の在庫をロックするときのデッドロックを避ける。ロックは、呼んだ側のトランザクションの終わりまで続く。
      *
      * @param variantIds バリアント ID
      * @return 在庫（バリアント ID の順）。在庫のないバリアントは含まない
@@ -27,7 +27,7 @@ public interface StockReservationRepository {
      * 在庫ごとに、有効な（期限の切れていない）引当の数量を合計する。
      *
      * @param stockItemIds     在庫 ID
-     * @param excludedHolderId 除く持ち主。なければ null
+     * @param excludedHolderId 数えない引当の持ち主
      * @param now              現在時刻
      * @return 在庫 ID → 引当の数量の合計。引当のない在庫は含まない
      */
@@ -51,7 +51,7 @@ public interface StockReservationRepository {
     void deleteByHolder(UUID holderId);
 
     /**
-     * 期限が指定した時刻より前の引当を、件数の上限まで消す（片付け）。
+     * 期限が指定した時刻より前の引当を、件数の上限まで消す。
      *
      * @param expiredBefore この時刻より前に期限が切れた引当を消す
      * @param limit         消す件数の上限

@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 在庫のコントローラー（B 側。admin.yaml の tag: inventory）
+ * 在庫のコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ inventory の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -86,7 +88,7 @@ class InventoryController implements InventoryApi {
 // ============================== POST ==============================
 
     /**
-     * 在庫の調整。履歴の 1 件で単独の URL を持たないので、Location は返さない
+     * 在庫の調整
      *
      * @param variantId バリアント ID
      * @param request   在庫の調整リクエスト
@@ -95,6 +97,7 @@ class InventoryController implements InventoryApi {
     @Override
     public ResponseEntity<StockAdjustment> adjustStock(UUID variantId, AdjustStockRequest request) {
         var adjustment = commandService.adjustStock(mapper.toAdjustStockCommand(variantId, request, currentOperator.require()));
+        // 調整は履歴の 1 件で、単独の URL を持たないので、Location は返さない
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toStockAdjustment(adjustment));
     }
 }

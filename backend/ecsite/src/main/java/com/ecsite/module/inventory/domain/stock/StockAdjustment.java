@@ -14,12 +14,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 在庫調整。増減量、調整理由、メモを持つ。注文に由来する調整は、注文 ID と注文番号の写しを持つ。<br />
- * 在庫数が負にならないことは、ここではなく、リポジトリの条件付きの更新と DB の CHECK 制約で守る（docs/03-機能仕様/inventory.md）。
+ * 在庫調整
  *
- * @param id         在庫調整 ID
- * @param delta      増減量（0 以外）
- * @param reason     調整理由
+ * <p>在庫数が負にならないことは、この型ではなく、リポジトリの条件付きの更新と DB の CHECK 制約で守る。
+ *
+ * @param id          在庫調整 ID
+ * @param delta       増減量（0 以外）
+ * @param reason      調整理由
  * @param memo        メモ。なければ null
  * @param orderId     注文 ID。注文に由来する調整でなければ null
  * @param orderNumber 注文番号（写し）。注文に由来する調整でなければ null
@@ -47,17 +48,21 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
     public static final int MAX_MANUAL_QUANTITY = 1_000_000;
 
     /**
-     * 運営者の在庫調整を作る。空白だけのメモは、メモなしとして扱う。注文に由来する理由は選べない。
+     * 運営者の在庫調整を作る。
      *
-     * @param delta  増減量（0 以外、±1,000,000 以内）
-     * @param reason 調整理由
+     * <p>空白だけのメモは、メモなしとして扱う。
+     *
+     * @param delta    増減量（0 以外、±1,000,000 以内）
+     * @param reason   調整理由
      * @param memo     メモ。理由が「その他」なら必須
      * @param operator 調整した運営者
      * @param now      現在時刻
      * @return 在庫調整
+     * @throws BusinessException 増減量が 0 か範囲の外、理由が注文に由来する、理由が「その他」でメモがない、またはメモが長すぎる
      */
     public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
+        // 0 と、絶対値が上限を超える増減量は受け付けない
         if (delta == 0 || delta > MAX_MANUAL_DELTA || delta < -MAX_MANUAL_DELTA) {
             throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));
         }
@@ -83,6 +88,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      * @param orderNumber 注文番号
      * @param now         現在時刻
      * @return 在庫調整
+     * @throws BusinessException 増減量が 0
      */
     public static StockAdjustment forOrder(int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
                                            @NonNull String orderNumber, @NonNull Instant now) {

@@ -51,7 +51,7 @@ public enum CommonErrorCode implements ErrorCodeProvider {
     private final ErrorCode code;
 
     /**
-     * コンストラクタ
+     * コンストラクタ。
      *
      * @param errorType エラータイプ
      * @param paramKeys 文に差し込む値の名前

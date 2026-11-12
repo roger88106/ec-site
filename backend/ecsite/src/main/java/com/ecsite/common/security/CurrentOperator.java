@@ -10,18 +10,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * リクエストの token の運営者を取り出す。管理 API の presentation 層が使う。<br />
- * Spring Security の型は、ここより先（application 層）に出さない（バックエンドのアーキテクチャの「業務のコードとの境界」）。
+ * リクエストの token の運営者の取り出し
+ *
+ * <p>Spring Security の型は外に出さない。
  * 管理 API の filter chain は運営者の realm の token だけを受け付けるので、ここで取り出せるのは運営者だけ。
  */
 @Component
 public class CurrentOperator {
 
     /**
-     * token の運営者を返す。氏名は、token の姓と名を「姓 名」の順に並べる（管理画面の表示と同じ）。
+     * token の運営者を返す。氏名は、token の姓と名を「姓 名」の順に並べる。
      *
      * @return 運営者
-     * @throws BusinessException token がない（401。filter で認証を必須にしているが、念のため確認する）
+     * @throws BusinessException token がない（{@code UNAUTHENTICATED}）
      */
     public Operator require() {
         var jwt = CurrentToken.require();

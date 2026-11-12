@@ -15,10 +15,7 @@ import java.time.Clock;
 import java.time.Duration;
 
 /**
- * 処理の済んだイベントの片付けのジョブ（バックエンドのアーキテクチャの「水平スケール」）。<br />
- * 処理を終えた時刻から保存期間を過ぎたイベントの記録を消す。未完了のイベントと止めたイベントは消さない。
- * 処理の済んだイベントは他の操作が読み書きしないので、件数の上限を置かずに 1 文で消す。
- * 間隔と保存期間は片付けの設定 {@code ecsite.scheduling.event-cleanup}（既定 1 時間、7 日）で変えられる。
+ * 処理の済んだイベントの片付けのジョブ
  */
 @Slf4j
 @Component
@@ -41,19 +38,22 @@ class EventCleanupJob {
     private final Clock clock;
 
     /**
-     * 処理を終えた時刻から保存期間を過ぎたイベントを消す。
+     * 処理を終えた時刻から保存期間を過ぎたイベントを消す。未完了のイベントと止めたイベントは消さない。
      */
     // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"
             + "com.ecsite.config.event.EventCleanupJob$Properties'.interval()}")
     @SchedulerLock(name = "event-cleanup")
     void cleanUp() {
+        // 処理の済んだイベントは他の操作が読み書きしないので、件数の上限を置かずに 1 文で消す
         int deleted = publicationRecords.deleteCompletedBefore(clock.instant().minus(properties.retention()));
         ExpiredDataCleanup.logDeleted(log, "処理の済んだイベント", deleted);
     }
 
     /**
-     * 片付けの設定。環境変数で上書きする（例：ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION）。
+     * 片付けの設定
+     *
+     * <p>環境変数で上書きする（例：ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION）。
      *
      * @param interval  片付けのジョブの間隔
      * @param retention 保存期間（処理を終えた時刻から、消すまでの時間）

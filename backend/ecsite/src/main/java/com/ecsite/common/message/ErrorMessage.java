@@ -29,8 +29,7 @@ public record ErrorMessage(@NonNull String code, @Nullable Map<String, String> p
         I18nMessage i18n = errorCode.message();
         List<String> paramKeys = i18n.paramKeys();
 
-        // パラメータ数が合わない場合は例外をスローする
-        // ※ハンドラー層のため、バックエンドのエラーページに遷移する想定
+        // パラメータの数が合わないのはプログラムの誤りなので、例外を投げる
         if (paramKeys.size() != messageParams.size()) {
             throw new IllegalArgumentException("messageParams size is not equal to paramKeys size");
         }

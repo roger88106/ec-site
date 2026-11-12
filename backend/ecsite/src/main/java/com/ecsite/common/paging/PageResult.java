@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * ページの結果（API の規約）。<br />
- * レスポンスの {@code { items, page, size, totalItems, totalPages }} の元になる。
- * API ごとのレスポンスの型（OpenAPI の生成モデル）への変換は、presentation 層で行う。
+ * ページの結果
  *
  * @param items      このページの要素
  * @param page       ページ番号（1 始まり）

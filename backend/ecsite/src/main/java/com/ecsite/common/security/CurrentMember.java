@@ -7,10 +7,10 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 
 /**
- * リクエストの token の会員を取り出す。店舗 API の presentation 層が使う。<br />
- * Spring Security の型は、ここより先（application 層）に出さない（バックエンドのアーキテクチャの「業務のコードとの境界」）。
+ * リクエストの token の会員の取り出し
+ *
+ * <p>Spring Security の型は外に出さない。
  * 店舗 API の filter chain は消費者の realm の token だけを受け付けるので、ここで取り出せるのは会員だけ。
- * 管理 API の presentation 層では使わない。
  */
 @Component
 public class CurrentMember {
@@ -25,10 +25,10 @@ public class CurrentMember {
     }
 
     /**
-     * token の会員を返す。会員の操作で使う（filter で認証を必須にしているが、念のため確認する）。
+     * token の会員を返す。なければ業務のエラーにする。
      *
      * @return 会員
-     * @throws BusinessException token がない（401）
+     * @throws BusinessException token がない（{@code UNAUTHENTICATED}）
      */
     public AuthenticatedMember require() {
         return toMember(CurrentToken.require());

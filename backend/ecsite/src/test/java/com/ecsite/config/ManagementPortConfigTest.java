@@ -9,8 +9,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 運用ポートの設定の検査。<br />
- * 起動のときと同じ順（共通の設定、指定した profile の順）に設定ファイルを重ね、後のものが先のものを上書きするとして読む。
+ * 運用ポートの設定の検査
+ *
+ * <p>起動のときと同じ順（共通の設定、指定した profile の順）に設定ファイルを重ね、後のものが先のものを上書きするとして読む。
  */
 class ManagementPortConfigTest {
 

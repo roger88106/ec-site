@@ -7,9 +7,9 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.List;
 
 /**
- * 金額（円）。<br />
- * 通貨は日本円だけなので、円単位の整数で表す（constitution の「プロジェクトの位置づけ」、constitution の「データとファイル」）。小数を含む計算（税込価格など）は
- * 呼び出す側が誤差の出ない十進数で行い、端数を処理してから金額にする。
+ * 金額（円）
+ *
+ * <p>通貨は日本円だけなので、円単位の整数で表す。
  *
  * @param yen 金額（円）。0 以上
  */
@@ -30,6 +30,7 @@ public record Money(long yen) {
      * コンストラクタ。
      *
      * @param yen 金額（円）
+     * @throws BusinessException 金額が負（{@code INVALID_MONEY}）
      */
     public Money {
         if (yen < MIN_YEN) {
@@ -42,6 +43,7 @@ public record Money(long yen) {
      *
      * @param yen 金額（円）。0 以上
      * @return 金額
+     * @throws BusinessException 金額が負（{@code INVALID_MONEY}）
      */
     public static Money of(long yen) {
         return new Money(yen);
@@ -58,11 +60,11 @@ public record Money(long yen) {
     }
 
     /**
-     * 数量を掛ける。<br />
-     * 桁あふれは {@link ArithmeticException}、負の数量は負の金額として {@link BusinessException} になる。
+     * 数量を掛ける。桁あふれは {@link ArithmeticException} を投げる。
      *
      * @param quantity 数量
      * @return 数量を掛けた金額
+     * @throws BusinessException 数量が負で、金額が負になる（{@code INVALID_MONEY}）
      */
     public Money times(int quantity) {
         return new Money(Math.multiplyExact(yen, quantity));

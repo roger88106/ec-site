@@ -7,7 +7,9 @@ import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /**
- * システム上予期せぬエラー。 ※HTTP 500系
+ * システム例外
+ *
+ * <p>HTTP の 5xx で返す。
  */
 public class SystemException extends BaseException {
 
@@ -17,23 +19,23 @@ public class SystemException extends BaseException {
     private static final ErrorDetail SYSTEM_ERROR_DETAIL = ErrorDetail.of(CommonErrorCode.SYSTEM_ERROR.getCode());
 
     /**
-     * {@code SystemException}の新しいインスタンスを作成して返します。
+     * エラーコードを指定して、システム例外を作る。
      *
      * @param debugMessage      デバッグ用メッセージ
      * @param cause             原因となった例外
      * @param errorCodeProvider エラーコードプロバイダー
-     * @return 指定されたパラメータで初期化された新しい{@code SystemException}インスタンス
+     * @return システム例外
      */
     public static SystemException of(String debugMessage, @Nullable Throwable cause, @NonNull ErrorCodeProvider errorCodeProvider) {
         return new SystemException(debugMessage, cause, ErrorDetail.of(errorCodeProvider.getCode()));
     }
 
     /**
-     * {@code SystemException}の新しいインスタンスを作成して返します。
+     * エラーコードを共通のシステムエラー（{@code SYSTEM_ERROR}）にして、システム例外を作る。
      *
      * @param debugMessage デバッグ用メッセージ
      * @param cause        原因となった例外
-     * @return 指定されたパラメータで初期化された新しい{@code SystemException}インスタンス
+     * @return システム例外
      */
     public static SystemException of(String debugMessage, @Nullable Throwable cause) {
         return new SystemException(debugMessage, cause, SYSTEM_ERROR_DETAIL);
@@ -44,7 +46,7 @@ public class SystemException extends BaseException {
      *
      * @param debugMessage デバッグ用メッセージ
      * @param cause        原因となった例外
-     * @param detail       エラー詳細
+     * @param detail       エラー詳細情報
      */
     private SystemException(String debugMessage, @Nullable Throwable cause, ErrorDetail detail) {
         super(debugMessage, cause, detail);

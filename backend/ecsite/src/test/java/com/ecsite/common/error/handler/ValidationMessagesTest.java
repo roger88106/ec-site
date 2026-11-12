@@ -40,8 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 入力の検証のメッセージの単体テスト（バックエンドの書き方の「入力の検証のメッセージ」）。<br />
- * 制約の種類から ecsite.validation.* の文を選び、制約の値を差し込む。JVM とリクエストのロケールによらず、同じ日本語になる。
+ * 入力の検証のメッセージの単体テスト
+ *
+ * <p>制約の種類から ecsite.validation.* の文を選び、制約の値を差し込む。JVM とリクエストのロケールによらず、同じ日本語になる。
  */
 class ValidationMessagesTest {
 

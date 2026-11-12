@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Spring Modulith のイベントの記録を、再発行のジョブと片付けのジョブのために直接読み書きする（バックエンドのアーキテクチャの「水平スケール」）。<br />
- * 止めた印は、処理の回数を上限より 1 つ多くした値で表す（Spring Modulith の再発行は、処理の回数を見ずに読むため、
- * 絞り込みは再発行のジョブが行う）。
+ * Spring Modulith のイベントの記録の直接の読み書き
+ *
+ * <p>止めた印は、処理の回数を上限より 1 つ多くした値で表す。
  */
 @Component
 @RequiredArgsConstructor
@@ -77,6 +77,7 @@ class EventPublicationRecords {
      * @return 印を付けたイベント
      */
     List<StoppedPublication> markStopped(int maxAttempts) {
+        // Spring Modulith の再発行は処理の回数を見ずに読むので、印は回数を上限より 1 つ多くした値にする。
         // 1 文で印を付け、付けた行だけを返す（同じイベントを 2 回ログに出さない）。
         // 処理中（RESUBMITTED など）のものは、最後の処理の結果が出ていないので除く
         return dsl.update(EVENT_PUBLICATION)
@@ -122,7 +123,9 @@ class EventPublicationRecords {
     }
 
     /**
-     * 止めたイベント（ログに出す項目だけ。イベントの中身は持たない）
+     * 止めたイベント
+     *
+     * <p>イベントの中身は持たない。
      *
      * @param id                 イベントの記録の ID
      * @param eventType          イベントの種類（クラスの完全修飾名）

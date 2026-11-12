@@ -12,8 +12,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * クエリパラメータの文字列を、OpenAPI から生成した列挙型に変換する。<br />
- * 生成した列挙型は、API 上の値（例：{@code price_asc}）と定数名（{@code PRICE_ASC}）が違うことがある。
+ * OpenAPI から生成した列挙型の変換の設定
+ *
+ * <p>クエリパラメータの文字列を、OpenAPI から生成した列挙型に変換する。生成した列挙型は、API 上の値（例：{@code price_asc}）と定数名（{@code PRICE_ASC}）が違うことがある。
  * Spring MVC の既定の変換は定数名で探すので、生成した列挙型が持つ {@code fromValue} で変換する。
  * {@code fromValue} を持たない列挙型は、既定どおり定数名で変換する。
  */
@@ -31,12 +32,17 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
     }
 
     /**
-     * 文字列から列挙型への変換。値が合わなければ {@link IllegalArgumentException}（400 になる）。
+     * 文字列から列挙型への変換
+     *
+     * <p>値が合わなければ {@link IllegalArgumentException} を投げる。
      */
     // 変換先の列挙型は実行時にしか分からず、Enum の型引数を静的に確認できないので、生の型で変換する
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static final class StringToEnumConverterFactory implements ConverterFactory<String, Enum> {
 
+        /**
+         * 変換先の列挙型への変換を返す。{@code fromValue} があればそれで、なければ定数名で変換する。
+         */
         @Override
         public <T extends Enum> @NonNull Converter<String, T> getConverter(@NonNull Class<T> targetType) {
             @Nullable Method fromValue = findFromValue(targetType);

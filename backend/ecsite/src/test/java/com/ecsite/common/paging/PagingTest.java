@@ -13,7 +13,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * ページングの単体テスト（API の規約）
+ * ページングの単体テスト
  */
 class PagingTest {
 

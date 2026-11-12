@@ -12,8 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
- * OpenAPI の操作の一覧の読み方の検査。<br />
- * 操作ごとの値は、管理 API なら権限、店舗 API なら token の要否で、読む側が決める（ここでは operationId を値にする）。
+ * OpenAPI の操作の一覧の読み方の検査
+ *
+ * <p>操作ごとの値は、管理 API なら権限、店舗 API なら token の要否で、読む側が決める（ここでは operationId を値にする）。
  */
 class OpenApiOperationsTest {
 

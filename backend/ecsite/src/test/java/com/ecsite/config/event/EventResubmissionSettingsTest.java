@@ -10,8 +10,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 再発行の設定の単体テスト。<br />
- * Spring を起動せずに、設定の型へ値を当てはめて確認する。
+ * 再発行の設定の単体テスト
+ *
+ * <p>Spring を起動せずに、設定の型へ値を当てはめて確認する。
  */
 class EventResubmissionSettingsTest {
 

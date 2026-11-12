@@ -34,15 +34,16 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * グローバルエラーハンドラー。<br />
- * すべてのエラーを RFC 9457（Problem Details）に次の項目を加えた形で返す（API の規約）。
+ * グローバルエラーハンドラー
+ *
+ * <p>すべてのエラーを RFC 9457（Problem Details）に次の項目を加えた形で返す。
  * <ul>
- *     <li>{@code errorCode}：フロントが分岐に使うコード</li>
+ *     <li>{@code errorCode}：分岐に使うコード</li>
  *     <li>{@code message}：画面にそのまま出せる日本語の文字列</li>
  *     <li>{@code traceId}：すべてのエラーで返す</li>
  *     <li>{@code errors}：入力検証エラーのときだけ</li>
  * </ul>
- * アプリの例外に加え、Spring MVC の標準の例外（{@link ResponseEntityExceptionHandler} が扱うもの）も同じ形に変換する。
+ * <p>アプリの例外に加え、Spring MVC の標準の例外（{@link ResponseEntityExceptionHandler} が扱うもの）も同じ形に変換する。
  */
 @Slf4j
 @RestControllerAdvice
@@ -102,7 +103,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * システム例外のハンドラー。外部のサービスに接続できないエラーは 502 で、エラーコードとメッセージを返す（やり直せることを示す）。
+     * システム例外のハンドラー。外部のサービスに接続できないエラーは 502 で、エラーコードとメッセージを返す。
      *
      * @param ex      {@link SystemException} システム例外
      * @param request リクエスト
@@ -111,6 +112,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(SystemException.class)
     public ResponseEntity<Object> handleSystemException(SystemException ex, WebRequest request) {
         ErrorDetail errorDetail = ex.getErrorDetail();
+        // 外部のサービスに接続できないエラーだけは、やり直せることを示すため、エラーコードとメッセージを返す。それ以外は想定外のエラーにする
         if (errorDetail.errorCode().type() != ErrorType.EXTERNAL_SERVICE_ERROR) {
             return handleUnexpected(ex, request);
         }
@@ -136,8 +138,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // ============================== 入力検証 ==============================
 
     /**
-     * リクエスト本文の検証例外のハンドラー<br />
-     * {@code @Valid} で拒否されたフィールドごとのメッセージを {@code errors} に列挙する。
+     * リクエスト本文の検証例外のハンドラー。
+     *
+     * <p>{@code @Valid} で拒否されたフィールドごとのメッセージを {@code errors} に列挙する。
      */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -148,8 +151,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * メソッド引数の検証例外のハンドラー<br />
-     * {@code @RequestParam} などに付いた制約（生成インターフェースの {@code @Max} など）で拒否された場合に発生する。
+     * メソッド引数の検証例外のハンドラー。
+     *
+     * <p>{@code @RequestParam} などに付いた制約（生成インターフェースの {@code @Max} など）で拒否された場合に発生する。
      */
     @Override
     protected ResponseEntity<Object> handleHandlerMethodValidationException(
@@ -171,8 +175,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * メソッド引数の検証例外のハンドラー（{@code @Validated} の Controller）<br />
-     * 生成インターフェースは {@code @Validated} 付きなので、{@code @RequestParam} の制約は Spring MVC ではなく
+     * メソッド引数の検証例外のハンドラー（{@code @Validated} の Controller）。
+     *
+     * <p>生成インターフェースは {@code @Validated} 付きなので、{@code @RequestParam} の制約は Spring MVC ではなく
      * メソッド検証の AOP で検査され、{@link HandlerMethodValidationException} ではなくこの例外になる。
      * {@code errors} の {@code field} は、プロパティパスの最後（引数名）にする。
      *
@@ -198,8 +203,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // ============================== Spring MVC の標準の例外 ==============================
 
     /**
-     * Spring MVC の標準の例外を、アプリのエラーレスポンスの形に変換する。<br />
-     * {@link ResponseEntityExceptionHandler} が扱う例外（型の不一致、必須パラメータの欠落、存在しないパス、
+     * Spring MVC の標準の例外を、アプリのエラーレスポンスの形に変換する。
+     *
+     * <p>{@link ResponseEntityExceptionHandler} が扱う例外（型の不一致、必須パラメータの欠落、存在しないパス、
      * 許可されていないメソッドなど）は、すべてここを通る。HTTP ステータスとヘッダーは Spring MVC の決めたものを使う。
      */
     @Override
@@ -234,8 +240,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * 想定外のエラー（500）のレスポンスを作る。<br />
-     * 原因はログにだけ出し、レスポンスには共通のシステムエラーを返す。ログとレスポンスに同じトレース ID を出す。
+     * 想定外のエラー（500）のレスポンスを作る。
+     *
+     * <p>原因はログにだけ出し、レスポンスには共通のシステムエラーを返す。ログとレスポンスに同じトレース ID を出す。
      */
     private ResponseEntity<Object> handleUnexpected(Exception ex, WebRequest request) {
         ErrorCode errorCode = CommonErrorCode.SYSTEM_ERROR.getCode();

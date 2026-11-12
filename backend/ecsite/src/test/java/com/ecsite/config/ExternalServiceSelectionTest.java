@@ -27,8 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
- * 外部サービス（決済、物流）の実装を、mock フラグで選ぶことの検査。<br />
- * 決済と物流の実装の置き場所だけを読み込み、フラグの有無で、使われる実装と起動の成否を確認する。
+ * 外部サービス（決済、物流）の実装を、mock フラグで選ぶことの検査
+ *
+ * <p>決済と物流の実装の置き場所だけを読み込み、フラグの有無で、使われる実装と起動の成否を確認する。
  */
 class ExternalServiceSelectionTest {
 
@@ -177,8 +178,9 @@ class ExternalServiceSelectionTest {
     }
 
     /**
-     * 決済と物流の実装の置き場所を読み込む。<br />
-     * 接続していない物流サービスは、そのクラスだけを読み込む（同じパッケージの通知のエンドポイントの依存を持ち込まないため）。
+     * 決済と物流の実装の置き場所の読み込み
+     *
+     * <p>接続していない物流サービスは、そのクラスだけを読み込む（同じパッケージの通知のエンドポイントの依存を持ち込まないため）。
      */
     @Configuration(proxyBeanMethods = false)
     @ComponentScan({

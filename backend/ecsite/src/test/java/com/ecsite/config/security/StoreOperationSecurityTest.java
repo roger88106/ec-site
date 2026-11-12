@@ -10,7 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 店舗 API の操作ごとの token の要否を、{@code store.yaml} の {@code security} から読むことの検査。
+ * 店舗 API の操作ごとの token の要否の検査
+ *
+ * <p>{@code store.yaml} の {@code security} から読むことを確認する。
  */
 class StoreOperationSecurityTest {
 

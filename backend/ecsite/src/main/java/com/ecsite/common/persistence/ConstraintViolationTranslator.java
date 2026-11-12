@@ -10,9 +10,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * DB の制約違反を、業務のエラーに変換する（API の規約）。<br />
- * 一意性や外部キーなど、同時に操作されたときに DB の制約でしか守れない規則の違反を、500 ではなく業務のエラーとして返すために使う。
- * 各リポジトリが、自分のテーブルの制約名と業務のエラーの対応を持つ。
+ * DB の制約違反の業務のエラーへの変換
+ *
+ * <p>一意性や外部キーなど、同時に操作されたときに DB の制約でしか守れない規則の違反を、業務のエラーにする。
  *
  * <pre>{@code
  * private static final ConstraintViolationTranslator CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
@@ -52,8 +52,9 @@ public final class ConstraintViolationTranslator {
     }
 
     /**
-     * 例外を変換する。<br />
-     * 対応が登録された制約の違反なら業務のエラーに、それ以外はシステムエラーにする。
+     * 例外を変換する。
+     *
+     * <p>対応が登録された制約の違反なら業務のエラーに、それ以外はシステムエラーにする。
      *
      * @param ex DB アクセスで発生した例外
      * @return 投げる例外
@@ -66,8 +67,9 @@ public final class ConstraintViolationTranslator {
     }
 
     /**
-     * 違反した制約の名前を取り出す。<br />
-     * jOOQ や Spring の例外に包まれていても、原因をたどって PostgreSQL のエラーを探す。
+     * 違反した制約の名前を取り出す。
+     *
+     * <p>jOOQ や Spring の例外に包まれていても、原因をたどって PostgreSQL のエラーを探す。
      *
      * @param ex 例外
      * @return 制約名。制約違反でなければ空

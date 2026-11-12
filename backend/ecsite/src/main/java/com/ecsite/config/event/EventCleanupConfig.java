@@ -4,7 +4,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 処理の済んだイベントの片付けの設定（間隔、保存期間）を有効にする。
+ * 処理の済んだイベントの片付けの設定
+ *
+ * <p>片付けの設定の型（間隔、保存期間）を有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(EventCleanupJob.Properties.class)

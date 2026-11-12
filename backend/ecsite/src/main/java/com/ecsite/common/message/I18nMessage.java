@@ -13,7 +13,7 @@ import java.util.List;
 public record I18nMessage(@NonNull String code, @NonNull List<String> paramKeys) {
 
     /**
-     * 正規のコンストラクター。paramKeys を変更できない一覧にする
+     * コンストラクタ。paramKeys を変更できない一覧にする。
      */
     public I18nMessage {
         paramKeys = List.copyOf(paramKeys);

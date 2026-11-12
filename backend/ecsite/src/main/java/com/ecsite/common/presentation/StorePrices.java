@@ -6,7 +6,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 /**
- * 店舗の API の価格（税込と税抜の組）を作る。商品の表示と注文の表示で同じ形にする。
+ * 店舗の API の価格（税込と税抜の組）
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class StorePrices {

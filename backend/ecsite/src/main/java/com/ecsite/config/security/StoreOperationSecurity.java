@@ -7,11 +7,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 店舗 API の操作ごとの、会員の token の要否。<br />
- * {@code store.yaml} の各操作（メソッドとパス）の {@code security} を読み込む。{@code memberToken} だけの操作は token が要り、
+ * 店舗 API の操作ごとの、会員の token の要否
+ *
+ * <p>{@code store.yaml} の各操作（メソッドとパス）の {@code security} を読み込む。{@code memberToken} だけの操作は token が要り、
  * 空の要件（{@code {}}）を含む操作と空の一覧（{@code security: []}）の操作は token なしで使える。
  * {@code security} のない操作があれば起動を止める（書き忘れを公開として扱わない）。
- * 認可の設定にパスを並べないので、操作を追加しても契約と食い違わない。対応にないリクエストには要否を返さない（呼び出し側が拒否する）。
+ * token の要否は契約だけから読むので、操作を追加しても契約と食い違わない。対応にないリクエストには要否を返さない。
  */
 class StoreOperationSecurity {
 
@@ -21,6 +22,8 @@ class StoreOperationSecurity {
     private final OpenApiOperations<Boolean> operations;
 
     /**
+     * コンストラクタ。
+     *
      * @param operations 操作ごとの token の要否
      */
     private StoreOperationSecurity(OpenApiOperations<Boolean> operations) {

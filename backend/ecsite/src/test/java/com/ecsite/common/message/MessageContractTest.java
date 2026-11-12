@@ -22,8 +22,9 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * エラーの定義とメッセージのファイルの対応を確認する契約テスト（バックエンドの書き方の「エラーは XxxErrorCode と BusinessException」）。<br />
- * エラーの定義（{@link ErrorCodeProvider} の enum の定数）とメッセージのキーが過不足なく対応し、
+ * エラーの定義とメッセージのファイルの対応を確認する契約テスト
+ *
+ * <p>エラーの定義（{@link ErrorCodeProvider} の enum の定数）とメッセージのキーが過不足なく対応し、
  * キーが定数の名前から決まり、文の差し込みの名前と定数に書いた値の名前が一致することを確認する。
  */
 class MessageContractTest {

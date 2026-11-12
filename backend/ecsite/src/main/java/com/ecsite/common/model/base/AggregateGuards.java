@@ -14,9 +14,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * 集約のバージョンの比べ方と、集約を戻すときの失敗の扱い（バックエンドの書き方の「更新の競合は version」）。<br />
- * バージョンは、service が読んだ時点のバージョンで更新の前に比べ、リポジトリが保存のときにもう一度比べる。
- * 前者は更新の処理を始める前に失敗させ、後者は読んだ後に他の人が保存した場合を見つける。
+ * 集約の検査
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AggregateGuards {
@@ -26,6 +24,7 @@ public final class AggregateGuards {
      *
      * @param current  今のバージョン
      * @param expected 読んだ時点のバージョン（リクエストのバージョン）
+     * @throws BusinessException バージョンが違う（{@code CONCURRENT_MODIFICATION}）
      */
     public static void requireVersion(long current, long expected) {
         if (current != expected) {
@@ -34,14 +33,12 @@ public final class AggregateGuards {
     }
 
     /**
-     * 保存した状態から集約を戻す。戻すときに例外が出れば、復元の失敗のシステムの例外にする。<br />
-     * 保存した状態は集約の全ての値を含む（集約によっては個人情報を含みうる）ので、メッセージには集約の名前と原因の例外の種類だけを書く。
-     * 原因の例外のメッセージにも値が入りうるので、原因は、元の例外の種類とスタックトレースだけを持つ例外に置き換える。
-     * 原因の原因と抑制した例外も同じく置き換える。この例外は、HTTP のリクエストのほか、定期のジョブとイベントのリスナーでも、連鎖ごとログに出るため。
-     * 集約の ID も書かない（この補助は共通の部品で、後に加わる集約の ID が利用者を指す値になりうるため）。リクエストとの対応は、ログのトレース ID で追う。<br />
-     * Repository が DB の値を変換する処理（列挙の変換など）も、例外のメッセージに値が入るので、この補助で包む。読み取りのモデルも同じである。
+     * 保存した状態から集約を戻す。戻すときに例外が出れば、復元の失敗のシステムの例外にする。
      *
-     * @param name     集約か読み取りのモデルの名前（デバッグ用のメッセージに書く。例：`category`）
+     * <p>メッセージには集約の名前と原因の例外の種類だけを書き、集約の ID を書かない。
+     * 原因は、元の例外の種類とスタックトレースだけを持つ例外に置き換える。原因の原因と抑制した例外も同じく置き換える。
+     *
+     * @param name     集約か読み取りのモデルの名前（デバッグ用のメッセージに書く。例：{@code category}）
      * @param restorer 集約か DB の値を戻す処理
      * @param <T>      戻す値の型
      * @return 戻した値
@@ -50,6 +47,8 @@ public final class AggregateGuards {
         try {
             return restorer.get();
         } catch (Exception e) {
+            // 保存した状態と原因の例外のメッセージには、個人情報を含みうる値が入る。例外は連鎖ごとログに出るので、値を残さない。
+            // 集約の ID も、後に加わる集約で利用者を指す値になりうるので書かない（リクエストとの対応は、ログのトレース ID で追う）
             String debugMessage = "%s restore error: %s".formatted(name, e.getClass().getName());
             throw SystemException.of(debugMessage, redact(e, Collections.newSetFromMap(new IdentityHashMap<>())),
                     CommonErrorCode.RESTORE_ERROR);
@@ -79,7 +78,9 @@ public final class AggregateGuards {
     }
 
     /**
-     * 元の例外の種類をメッセージに持ち、元の例外のメッセージを持たない例外。スタックトレースは元の例外のものを入れる。
+     * 伏せた例外
+     *
+     * <p>元の例外の種類をメッセージに持ち、元の例外のメッセージを持たない。スタックトレースは元の例外のものを入れる。
      */
     private static final class RedactedException extends RuntimeException {
 

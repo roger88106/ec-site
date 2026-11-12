@@ -4,12 +4,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * ドメインイベント。<br />
- * イベントは過去形で命名する（バックエンドのアーキテクチャの「モジュール間の連携」）。受け取る側は同じイベントが複数回届いても結果が変わらないように作る
- * （at-least-once 配信。バックエンドのアーキテクチャの「水平スケール」）。そのための識別子として {@link #eventId()} を持つ。
- * <p>
- * 発生時刻は {@code Instant.now()} で取らず、アプリの {@link java.time.Clock} から得た時刻を受け取る（バックエンドのアーキテクチャの「水平スケール」）。
- * </p>
+ * ドメインイベント
+ *
+ * <p>イベントは過去形で命名する。同じイベントが複数回届きうる（at-least-once 配信）ので、重複を見分ける識別子として {@link #eventId()} を持つ。
+ * 発生時刻は {@code Instant.now()} で取らず、アプリの {@link java.time.Clock} から得た時刻にする。
  */
 public interface DomainEvent extends org.jmolecules.event.types.DomainEvent {
 

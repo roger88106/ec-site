@@ -5,8 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * 出荷の設定。<br />
- * 物流サービスは mock フラグ（{@code ecsite.shipping.mock.enabled}）で選び、ここには持たない。
+ * 出荷の設定
+ *
+ * <p>物流サービスは mock のフラグ（{@code ecsite.shipping.mock.enabled}）で選び、ここには持たない。
  *
  * @param webhookSecret 物流サービスの通知の署名の鍵。Git に入れず、環境変数 {@code CARRIER_WEBHOOK_SECRET} で渡す（application.yml）
  */

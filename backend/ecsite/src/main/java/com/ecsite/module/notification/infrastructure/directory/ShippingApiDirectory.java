@@ -2,8 +2,8 @@ package com.ecsite.module.notification.infrastructure.directory;
 
 import com.ecsite.module.notification.application.port.ShippingDirectory;
 import com.ecsite.module.order.event.OrderShipped;
-import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

@@ -3,8 +3,8 @@ package com.ecsite.module.shipping.infrastructure.carrier;
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.ShippingTestData;
-import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.TrackingRequests;
 import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -22,8 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 /**
- * 物流の mock フラグを下ろした環境の、出荷の統合テスト。<br />
- * 接続していない物流サービスは通知を送らないので、配送状態は出荷済みから進まない。
+ * 物流の mock フラグを下ろした環境の、出荷の統合テスト
+ *
+ * <p>接続していない物流サービスは通知を送らないので、配送状態は出荷済みから進まない。
  * mock の物流サービスの Bean がないので、mock に依存する補助は使わない。
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */

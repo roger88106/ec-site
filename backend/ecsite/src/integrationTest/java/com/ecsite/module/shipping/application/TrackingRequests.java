@@ -3,8 +3,9 @@ package com.ecsite.module.shipping.application;
 import java.util.List;
 
 /**
- * 追跡の開始の依頼（{@link TrackingRequested}）を見分ける、統合テストの補助。<br />
- * イベントのクラスは package-private なので、同じパッケージのこのクラスを通して調べる。
+ * 追跡の開始の依頼（{@link TrackingRequested}）を見分ける、統合テストの補助
+ *
+ * <p>イベントのクラスは package-private なので、同じパッケージのこのクラスを通して調べる。
  */
 public final class TrackingRequests {
 

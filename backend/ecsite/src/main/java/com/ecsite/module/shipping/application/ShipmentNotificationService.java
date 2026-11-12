@@ -7,6 +7,7 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -17,9 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 
 /**
- * 物流サービスの通知の反映（docs/03-機能仕様/shipping.md「状態の遷移」）。<br />
- * 出荷の行をロックしてから進めるので、同じ出荷への通知が同時に届いても、順位が高い状態が残る。
- * 進めたときだけ、配送状態の変化のイベントを出す。
+ * 配送状態の通知のサービス
  */
 @Slf4j
 @Service
@@ -43,15 +42,19 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
 
     @Override
     @Transactional
-    public Result receive(Carrier carrier, String trackingNumber, DeliveryStatus status) {
+    public Result receive(@NonNull Carrier carrier, String trackingNumber, @NonNull DeliveryStatus status) {
+        // 出荷取得
         var normalized = normalize(trackingNumber);
         if (normalized == null) {
             return Result.NOT_FOUND;
         }
+        // 行をロックしてから進めるので、同じ出荷への通知が同時に届いても、順位が高い状態が残る
         var shipments = shipmentRepository.findAllByTrackingForUpdate(carrier, normalized);
         if (shipments.isEmpty()) {
             return Result.NOT_FOUND;
         }
+
+        // 配送状態の更新と、配送状態の変化の発行
         var now = clock.instant();
         var result = Result.UNCHANGED;
         for (var shipment : shipments) {
@@ -64,6 +67,8 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
         }
         return result;
     }
+
+// ============================== プライベートメソッド ==============================
 
     /**
      * 配送状態を、イベントの配送状態にする。
@@ -78,12 +83,13 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
     }
 
     /**
-     * 通知の送り状番号を、保存と同じ形にする。形に合わなければ、どの出荷にも合わないので null。
+     * 通知の送り状番号を、保存と同じ形にする。形に合わなければ null。
      */
     private static @Nullable TrackingNumber normalize(String trackingNumber) {
         try {
             return TrackingNumber.of(trackingNumber);
         } catch (BusinessException e) {
+            // 形に合わない番号は、どの出荷にも合わないので、出荷がない通知として扱う
             log.warn("形に合わない送り状番号の通知を無視する: {}", trackingNumber);
             return null;
         }

@@ -4,8 +4,8 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
-import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +37,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 物流サービスの通知のエンドポイントの統合テスト。<br />
- * HTTP（MockMvc）を通し、署名はエンドポイントの実装を使わずにテストで作る。
+ * 物流サービスの通知のエンドポイントの統合テスト
+ *
+ * <p>HTTP（MockMvc）を通し、署名はエンドポイントの実装を使わずにテストで作る。
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */
 @IntegrationTest

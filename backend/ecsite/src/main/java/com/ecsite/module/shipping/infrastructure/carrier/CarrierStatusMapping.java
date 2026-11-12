@@ -8,11 +8,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 物流サービスの状態の名前から、配送状態への対応の表（docs/03-機能仕様/shipping.md「状態の名前の対応」）。<br />
- * 配送業者ごとの表示の名前を、途中のものはすべて「配送中」にまとめる。表にない名前と、表のない配送業者は、対応なし。
+ * 状態の名前の対応の表
+ *
+ * <p>物流サービスの状態の名前を、配送状態に対応させる。配送業者ごとの途中の状態の名前は、全て「配送中」にまとめる。
  */
 @Component
-public class CarrierStatusMapping {
+class CarrierStatusMapping {
 
     /**
      * 配送業者 → （状態の名前 → 配送状態）。佐川急便と日本郵便は、表示を確認していないので表がない
@@ -33,12 +34,9 @@ public class CarrierStatusMapping {
      *
      * @param carrier 配送業者
      * @param name    物流サービスの状態の名前
-     * @return 配送状態。表にない名前なら空
+     * @return 配送状態。表にない名前と、表のない配送業者なら空
      */
-    public Optional<DeliveryStatus> resolve(Carrier carrier, String name) {
-        if (name == null) {
-            return Optional.empty();
-        }
+    Optional<DeliveryStatus> resolve(Carrier carrier, String name) {
         return Optional.ofNullable(TABLE.getOrDefault(carrier, Map.of()).get(name.strip()));
     }
 }

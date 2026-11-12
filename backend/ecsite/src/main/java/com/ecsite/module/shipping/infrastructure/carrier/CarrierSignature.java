@@ -12,8 +12,9 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * 物流サービスの通知の署名（docs/02-設計/shipping.md「通知のエンドポイント」）。<br />
- * ヘッダーの値は {@code sha256=} と、本文のバイト列の HMAC-SHA256（16 進、小文字）。
+ * 物流サービスの通知の署名
+ *
+ * <p>ヘッダーの値は {@code sha256=} と、本文のバイト列の HMAC-SHA256（16 進、小文字）。
  */
 public final class CarrierSignature {
 
@@ -38,6 +39,8 @@ public final class CarrierSignature {
     private final SecretKeySpec key;
 
     /**
+     * 共有の鍵で署名を作る。
+     *
      * @param secret 共有の鍵
      */
     public CarrierSignature(String secret) {
@@ -49,6 +52,7 @@ public final class CarrierSignature {
      *
      * @param body 本文
      * @return ヘッダーの値
+     * @throws SystemException HMAC の方式を使えない
      */
     public String sign(byte[] body) {
         try {

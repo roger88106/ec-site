@@ -8,8 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
 /**
- * 統合テストの物流サービスの追跡。<br />
- * 物流の mock を使うときは、mock を包むテスト用の実装（{@link TestCarrierTracking}）を、追跡として使う。
+ * 統合テストの物流サービスの追跡
+ *
+ * <p>物流の mock を使うときは、mock を包むテスト用の実装（{@link TestCarrierTracking}）を、追跡として使う。
  * テストは、これを注入して、追跡を始めた送り状番号を確認する。
  */
 @TestConfiguration(proxyBeanMethods = false)

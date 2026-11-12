@@ -4,8 +4,8 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
-import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged.Status;
@@ -29,8 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * イベント「配送状態の変化」の統合テスト。<br />
- * 出荷を作ったときと、通知で配送状態が進んだときだけ出て、重ねて届いた通知・戻る通知では出ないことを確認する。
+ * イベント「配送状態の変化」の統合テスト
+ *
+ * <p>出荷を作ったときと、通知で配送状態が進んだときだけ出て、重ねて届いた通知・戻る通知では出ないことを確認する。
  * テストごとにロールバックする。
  */
 @IntegrationTest

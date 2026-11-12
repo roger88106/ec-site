@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.api;
 
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.ShipmentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

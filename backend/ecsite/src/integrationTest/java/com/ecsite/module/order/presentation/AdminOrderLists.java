@@ -14,8 +14,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 管理の注文の一覧を、条件に合う全てのページから集めて確認するテストの補助。<br />
- * 他のテストの注文が一覧に混ざっても、自分の注文を ID で識別して確認できる。
+ * 管理の注文の一覧を、条件に合う全てのページから集めて確認するテストの補助
+ *
+ * <p>他のテストの注文が一覧に混ざっても、自分の注文を ID で識別して確認できる。
  */
 final class AdminOrderLists {
 

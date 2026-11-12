@@ -7,7 +7,9 @@ import org.jspecify.annotations.Nullable;
 import java.time.Instant;
 
 /**
- * 消費者によるキャンセルの申請。1 つの注文に 1 回だけ。
+ * 消費者によるキャンセルの申請
+ *
+ * <p>1 つの注文に 1 回だけ。
  *
  * @param requestedAt 申請日時
  * @param reason      理由。なければ null

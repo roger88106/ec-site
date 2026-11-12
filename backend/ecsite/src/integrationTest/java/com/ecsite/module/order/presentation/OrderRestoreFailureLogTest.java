@@ -34,8 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文を戻せなかったリクエストの応答とログのテスト。<br />
- * 列挙の列は制約が壊れた値を入れさせないので、制約のない明細の軸の値（jsonb）を壊す。テストごとにロールバックする。
+ * 注文を戻せなかったリクエストの応答とログのテスト
+ *
+ * <p>列挙の列は制約が壊れた値を入れさせないので、制約のない明細の軸の値（jsonb）を壊す。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

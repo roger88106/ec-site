@@ -14,14 +14,16 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層の実装。商品カタログの API（{@link OrderCatalogApi}）を呼ぶ。
+ * 商品カタログの腐敗防止層
+ *
+ * <p>商品カタログモジュールの API を呼ぶ。
  */
 @Component
 @RequiredArgsConstructor
 class CatalogApiDirectory implements CatalogDirectory {
 
     /**
-     * カート・注文向けの商品カタログの API
+     * 注文に使うバリアントの API
      */
     private final OrderCatalogApi orderCatalogApi;
 

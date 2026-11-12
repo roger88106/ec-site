@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」）
+ * 商品カタログの腐敗防止層の port
  */
 public interface CatalogDirectory {
 

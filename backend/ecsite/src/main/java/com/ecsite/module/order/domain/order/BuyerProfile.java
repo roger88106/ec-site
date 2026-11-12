@@ -13,8 +13,9 @@ import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 
 /**
- * 注文時の年齢と性別（docs/03-機能仕様/order.md「注文時の年齢と性別」）。<br />
- * 注文の成立のときに、会員の token の生年月日と性別から求める。生年月日は持たない（レポートに個人を特定できる情報を出さないため）。
+ * 注文時の年齢と性別
+ *
+ * <p>注文の成立のときに、会員の token の生年月日と性別から求める。生年月日は持たない（個人を特定できる情報を持たないため）。
  *
  * @param age    注文日（日本時間）の時点の満年齢。分からなければ null
  * @param gender 性別。分からなければ null
@@ -51,8 +52,7 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
     }
 
     /**
-     * 注文日の満年齢を求める。生年月日がない、形が正しくない、注文日より後、上限の年齢より前なら null。<br />
-     * 2 月 29 日生まれは、うるう年でない年は 3 月 1 日に年を取る（{@link Period} の数え方）。
+     * 注文日の満年齢を求める。生年月日がない、形が正しくない、注文日より後、上限の年齢より前なら null。
      */
     private static @Nullable Integer ageOf(@Nullable String birthdate, LocalDate orderDate) {
         if (birthdate == null) {
@@ -67,6 +67,7 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
         if (born.isAfter(orderDate) || born.isBefore(orderDate.minusYears(MAX_AGE))) {
             return null;
         }
+        // 2 月 29 日生まれは、うるう年でない年は 3 月 1 日に年を取る（Period の数え方）
         return Period.between(born, orderDate).getYears();
     }
 }

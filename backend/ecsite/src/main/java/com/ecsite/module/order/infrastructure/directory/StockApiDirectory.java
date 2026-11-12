@@ -13,7 +13,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層の実装。在庫モジュールの API（{@link StockReservationApi}）を呼ぶ。
+ * 在庫の腐敗防止層
+ *
+ * <p>在庫モジュールの API を呼ぶ。
  */
 @Component
 @RequiredArgsConstructor

@@ -1,7 +1,9 @@
 package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.order.application.model.OrderPayment;
+import com.ecsite.module.order.application.model.PaymentAuthorization;
+import com.ecsite.module.order.application.model.PaymentSnapshot;
+import com.ecsite.module.order.application.model.view.OrderPayment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.AuthorizationDeadline;
@@ -18,7 +20,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 決済の腐敗防止層の実装。決済モジュールの API を呼ぶ。
+ * 決済の腐敗防止層
+ *
+ * <p>決済モジュールの API を呼ぶ。
  */
 @Component
 @RequiredArgsConstructor
@@ -50,17 +54,17 @@ class PaymentApiDirectory implements PaymentDirectory {
     }
 
     @Override
-    public Map<UUID, Payment> find(Collection<UUID> orderIds) {
+    public Map<UUID, PaymentSnapshot> find(Collection<UUID> orderIds) {
         var payable = paymentApi.findPayableOrderIds(orderIds);
         return paymentApi.find(orderIds).stream().collect(Collectors.toMap(PaymentSummary::orderId,
-                summary -> new Payment(toStatus(summary.status()), summary.deadline(),
+                summary -> new PaymentSnapshot(toStatus(summary.status()), summary.deadline(),
                         payable.contains(summary.orderId()))));
     }
 
     @Override
-    public Map<UUID, Authorization> findAuthorizations(Collection<UUID> orderIds) {
+    public Map<UUID, PaymentAuthorization> findAuthorizations(Collection<UUID> orderIds) {
         return paymentApi.findAuthorizationDeadlines(orderIds).stream().collect(Collectors.toMap(AuthorizationDeadline::orderId,
-                deadline -> new Authorization(deadline.deadline(), deadline.expiring())));
+                deadline -> new PaymentAuthorization(deadline.deadline(), deadline.expiring())));
     }
 
     @Override

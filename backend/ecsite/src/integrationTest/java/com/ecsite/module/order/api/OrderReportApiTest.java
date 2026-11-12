@@ -10,6 +10,7 @@ import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.api.model.OrderReportSnapshot;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
@@ -40,7 +41,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * レポート用の注文の写しの API の統合テスト。テストごとにロールバックする。
+ * 注文の写しの API の統合テスト
+ *
+ * <p>テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

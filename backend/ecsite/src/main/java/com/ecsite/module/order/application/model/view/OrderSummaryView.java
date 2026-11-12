@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application.model;
+package com.ecsite.module.order.application.model.view;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.order.OrderStatus;

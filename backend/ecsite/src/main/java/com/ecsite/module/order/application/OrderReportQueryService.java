@@ -2,11 +2,12 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.order.application.model.OrderReportView;
+import com.ecsite.module.order.application.model.view.OrderReportView;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * レポート用に注文を読むサービス（docs/02-設計/order.md「他のモジュールへの公開」）。<br />
- * 注文と、注文の金額のうち送料の消費税を返す。送料の消費税は注文に持たないので、注文日時の送料の税区分の税率で求める
- * （税率ごとの消費税額は、明細と送料を合わせて求めているため）。
+ * 注文の写しの参照のサービス
  */
 @Service
 @RequiredArgsConstructor
@@ -46,12 +45,12 @@ public class OrderReportQueryService {
      * @return 注文と送料の消費税。注文がなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<OrderReportView> find(UUID orderId) {
+    public Optional<OrderReportView> find(@NonNull UUID orderId) {
         return orderRepository.findById(orderId).map(this::toView);
     }
 
     /**
-     * 注文を、レポート用の表示にする。
+     * 注文を、写しの表示にする。
      */
     private OrderReportView toView(Order order) {
         return new OrderReportView(order.id(), order.orderNumber(), order.memberId(), order.orderedAt(),
@@ -67,6 +66,7 @@ public class OrderReportQueryService {
         if (fee.yen() == 0) {
             return Money.ZERO;
         }
+        // 送料の消費税は注文に持たない（税率ごとの消費税額は、明細と送料を合わせて求めている）ので、注文日時の送料の税区分の税率で求める
         var rate = taxDirectory.rateAt(properties.shippingTaxCategoryId(), order.orderedAt())
                 .orElseThrow(() -> SystemException.of("送料の税区分に、注文日時の税率がありません: " + order.id(), null));
         return taxDirectory.consumptionTaxes(List.of(new TaxDirectory.Taxable(rate, fee))).stream()

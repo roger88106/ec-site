@@ -10,15 +10,16 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 注文手続き（docs/03-機能仕様/order.md「注文手続き」）。カートから注文に進んだ 1 回の手続きで、引当の持ち主になる。<br />
- * 作った後は変わらない。
+ * 注文手続き
  *
- * @param id          注文手続き ID（引当の持ち主 ID）
- * @param memberId    会員 ID（始めた会員。その会員だけが参照・注文できる）
- * @param cartId      カート ID
- * @param cartVersion 始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
- * @param expiresAt   引当の期限
- * @param createdAt   作成日時
+ * <p>カートから注文に進んだ 1 回の手続きで、引当の持ち主になる。作った後は変わらない。
+ *
+ * @param id                   注文手続き ID（引当の持ち主 ID）
+ * @param memberId             会員 ID（始めた会員。その会員だけが参照・注文できる）
+ * @param cartId               カート ID
+ * @param cartVersion          始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
+ * @param expiresAt            引当の期限
+ * @param createdAt            作成日時
  * @param acknowledgedOrderIds 確認した注文の ID の集合（始めるときに会員が確認した支払待ちの注文。確認していなければ空）
  */
 @AggregateRoot

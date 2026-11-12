@@ -5,16 +5,17 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.order.application.model.OrderDetailView;
-import com.ecsite.module.order.application.model.OrderPayment;
-import com.ecsite.module.order.application.model.OrderShipment;
-import com.ecsite.module.order.application.model.OrderSummaryView;
+import com.ecsite.module.order.application.model.view.OrderDetailView;
+import com.ecsite.module.order.application.model.view.OrderPayment;
+import com.ecsite.module.order.application.model.view.OrderShipment;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.lang.Contract;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +34,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 注文の照会のサービス。支払と出荷は、決済・出荷の API から読む。
+ * 注文の照会のサービス
+ *
+ * <p>支払と出荷は、決済・出荷の API から読む。
  */
 @Service
 @RequiredArgsConstructor
@@ -60,24 +64,27 @@ public class OrderQueryService {
     private final ShippingDirectory shippingDirectory;
 
     /**
-     * 注文の詳細を取得する（運営者用）。
+     * 注文の詳細を取得する。
      *
      * @param orderId 注文 ID
      * @return 注文の詳細
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      */
-    public OrderDetailView get(UUID orderId) {
+    public OrderDetailView get(@NonNull UUID orderId) {
         return toDetail(orderRepository.findById(orderId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
     }
 
     /**
-     * 会員の注文の詳細を取得する。注文した会員でなければ、ないときと同じく 404。
+     * 会員の注文の詳細を取得する。
      *
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @return 注文の詳細
+     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
      */
-    public OrderDetailView getForMember(UUID orderId, UUID memberId) {
+    public OrderDetailView getForMember(@NonNull UUID orderId, @NonNull UUID memberId) {
+        // 注文した会員でなければ、ないときと同じにする
         return toDetail(orderRepository.findById(orderId)
                 .filter(order -> order.memberId().equals(memberId))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
@@ -90,32 +97,34 @@ public class OrderQueryService {
      * @param request  ページの指定
      * @return 注文の一覧
      */
-    public PageResult<OrderSummaryView> listForMember(UUID memberId, PageRequest request) {
+    public PageResult<OrderSummaryView> listForMember(@NonNull UUID memberId, @NonNull PageRequest request) {
         return orderQueryRepository.findOrders(OrderQueryRepository.Filter.ofMember(memberId), request);
     }
 
     /**
-     * 会員の支払待ちの注文の詳細を、注文日時の新しい順に全て取得する（確認の画面に表示する情報）。<br />
-     * 支払の期限を過ぎ、まだキャンセルされていない注文も含む。
+     * 会員の支払待ちの注文の詳細を、注文日時の新しい順に全て取得する。支払の期限を過ぎ、まだキャンセルされていない注文も含む。
      *
      * @param memberId 会員 ID
      * @return 注文の詳細
      */
-    public List<OrderDetailView> listPendingForMember(UUID memberId) {
+    public List<OrderDetailView> listPendingForMember(@NonNull UUID memberId) {
+        // 支払待ちの注文 ID と、その支払・出荷の取得
         var orderIds = orderRepository.findPendingIdsByMemberId(memberId);
         var payments = findPayments(orderIds);
         var shipments = findShipments(orderIds);
-        // ID を読んだ後に受付やキャンセルになった注文は、支払待ちの一覧に含めない
-        return orderIds.stream()
-                .flatMap(orderId -> orderRepository.findById(orderId).stream())
-                .filter(Order::isAwaitingPayment)
-                .map(order -> toDetail(order, payments.get(order.id()), shipments.get(order.id())))
-                .toList();
+
+        // 注文の取得と詳細の組み立て ※ID を読んだ後に受付やキャンセルになった注文は、支払待ちの一覧に含めない
+        var details = new ArrayList<OrderDetailView>();
+        for (var orderId : orderIds) {
+            orderRepository.findById(orderId)
+                    .filter(Order::isAwaitingPayment)
+                    .ifPresent(order -> details.add(toDetail(order, payments.get(order.id()), shipments.get(order.id()))));
+        }
+        return List.copyOf(details);
     }
 
     /**
-     * 注文を、注文日時の新しい順に一覧する。注文日の範囲は日本時間の日付で、両端を含む。<br />
-     * 与信期限が近い・返送の絞り込みは、決済・出荷の API から注文 ID を受け取り、ID の条件にする（他のモジュールのテーブルは結合しない）。
+     * 注文を、注文日時の新しい順に一覧する。注文日の範囲は日本時間の日付で、両端を含む。
      *
      * @param orderNumberPrefix     注文番号の前方一致。なければ null
      * @param status                状態。なければ null
@@ -130,8 +139,9 @@ public class OrderQueryService {
                                              @Nullable OrderStatus status,
                                              @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
                                              boolean authorizationExpiring, boolean returned,
-                                             PageRequest request) {
-        @Nullable Set<UUID> orderIds = null;
+                                             @NonNull PageRequest request) {
+        // 与信期限が近い・返送の絞り込み ※決済・出荷の API から注文 ID を受け取り、ID の条件にする（他のモジュールのテーブルは結合しない）
+        Set<UUID> orderIds = null;
         if (authorizationExpiring) {
             // 与信期限が近いのは「受付」の注文だけ（キャンセル済みの注文は、与信期限切れの支払が残っても除く）
             orderIds = status == null || status == OrderStatus.ACCEPTED
@@ -147,6 +157,8 @@ public class OrderQueryService {
                 orderIds.retainAll(returnedIds);
             }
         }
+
+        // 注文の検索
         var filter = new OrderQueryRepository.Filter(null, orderNumberPrefix, status, startOf(orderedFrom),
                 orderedTo == null ? null : startOf(orderedTo.plusDays(1)), orderIds);
         return orderQueryRepository.findOrders(filter, request);
@@ -158,7 +170,7 @@ public class OrderQueryService {
      * @param orderIds 注文 ID
      * @return 注文 ID → 支払。支払のない注文（決済を入れる前の注文）は含まない
      */
-    public Map<UUID, OrderPayment> findPayments(Collection<UUID> orderIds) {
+    public Map<UUID, OrderPayment> findPayments(@NonNull Collection<UUID> orderIds) {
         var authorizations = paymentDirectory.findAuthorizations(orderIds);
         var payments = new HashMap<UUID, OrderPayment>();
         paymentDirectory.find(orderIds).forEach((orderId, payment) -> {
@@ -176,7 +188,7 @@ public class OrderQueryService {
      * @param orderIds 注文 ID
      * @return 注文 ID → 出荷。出荷のない注文は含まない
      */
-    public Map<UUID, OrderShipment> findShipments(Collection<UUID> orderIds) {
+    public Map<UUID, OrderShipment> findShipments(@NonNull Collection<UUID> orderIds) {
         return shippingDirectory.find(orderIds);
     }
 
@@ -189,9 +201,10 @@ public class OrderQueryService {
     }
 
     /**
-     * 注文を、読んだ支払と出荷を合わせた詳細の表示にする。操作の可否は注文の判定を使う。
+     * 注文を、読んだ支払と出荷を合わせた詳細の表示にする。
      */
     private static OrderDetailView toDetail(Order order, @Nullable OrderPayment payment, @Nullable OrderShipment shipment) {
+        // 操作の可否は注文の判定を使う
         var awaitingPayment = order.isAwaitingPayment() && payment != null;
         var returned = shipment != null && shipment.isReturned();
         var actions = new OrderDetailView.Actions(order.isCancellationRequestable(),

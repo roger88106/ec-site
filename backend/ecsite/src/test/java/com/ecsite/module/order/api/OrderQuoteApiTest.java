@@ -1,7 +1,8 @@
 package com.ecsite.module.order.api;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.order.application.model.CartQuoteView;
+import com.ecsite.module.order.api.model.CartQuote;
+import com.ecsite.module.order.application.model.view.CartQuoteView;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.Quote;

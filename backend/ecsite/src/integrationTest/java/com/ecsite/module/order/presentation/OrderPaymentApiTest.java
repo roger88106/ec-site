@@ -49,8 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文と支払の受け入れテスト。<br />
- * 決済のイベントはコミットの後に非同期で届くので、コミットして処理を待つ。作ったデータは消さない。
+ * 注文と支払の受け入れテスト
+ *
+ * <p>決済のイベントはコミットの後に非同期で届くので、コミットして処理を待つ。作ったデータは消さない。
  * 決済サービスは mock。支払の期限は、時計を進めて期限切れのジョブを呼んで確認する。
  */
 @IntegrationTest

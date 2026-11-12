@@ -3,12 +3,14 @@ package com.ecsite.module.order.application.checkout;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.application.OrderProperties;
+import com.ecsite.module.order.application.model.CartSnapshot;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.quote.Quote;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 注文手続きのサービス（docs/03-機能仕様/order.md「注文手続き」）
+ * 注文手続きのサービス
  */
 @Service
 @RequiredArgsConstructor
@@ -64,30 +66,36 @@ public class CheckoutService {
     private final Clock clock;
 
     /**
-     * 注文手続きに進む。全品目をカートの数量だけ引き当てる。<br />
-     * 同じカートの前の注文手続きの引当は解く（進み直し）。1 品目でも引き当てられなければ何も引き当てない。
-     * 始められるのは、会員の自分の会員のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは 404。<br />
-     * 確認していない支払待ちの注文があれば拒否する。確認の後に、支払待ちの注文が上限に達していても拒否する。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
+     * 注文手続きに進む。全品目をカートの数量だけ引き当てる。同じカートの前の注文手続きの引当は解く（進み直し）。
+     * 1 品目でも引き当てられなければ何も引き当てない。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
      *
      * @param cartId               カート ID
      * @param memberId             会員 ID
      * @param acknowledgedOrderIds 確認した注文の ID（確認の画面で表示した注文。確認していなければ空）
      * @return 注文手続き ID
+     * @throws BusinessException カートがない、または会員の自分のカートでない（{@code NOT_FOUND}）。
+     *                           確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
+     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）。
+     *                           在庫が足りない（{@code OUT_OF_STOCK}）。注文できないカート（{@code CART_NOT_ORDERABLE}）
      */
     @Transactional
-    public UUID start(UUID cartId, UUID memberId, Set<UUID> acknowledgedOrderIds) {
+    public UUID start(@NonNull UUID cartId, @NonNull UUID memberId, @NonNull Set<UUID> acknowledgedOrderIds) {
         var now = clock.instant();
+        // カート取得 ※始められるのは会員の自分のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは、ないときと同じにする
         var cart = cartDirectory.find(cartId)
                 .filter(found -> found.isOwnedBy(memberId))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+
+        // 支払待ちの注文の確認
         // 拒否するときは前の引当を残し、購入の可否によらず確認の画面へ案内するので、引当の解除と購入の可否の判定より先に行う
         // （確認の判定、上限の判定の順）
         var pendingOrderIds = pendingOrderGuard.verifyAcknowledged(memberId, acknowledgedOrderIds);
-        // 進み直し：前の注文手続きの引当を解いてから判定する（自分の前の引当で足りなくならないように）
-        releaseReservations(cartId);
 
+        // 購入できるかの判定 ※前の注文手続きの引当を解いてから判定する（自分の前の引当で足りなくならないように）
+        releaseReservations(cartId);
         verifyOrderable(quoteService.quote(cart.lines(), now, null));
 
+        // 注文手続き登録と引当
         var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);
         checkoutRepository.insert(checkout);
         var shortages = stockDirectory.reserve(checkout.id(), quantities(cart.lines()), checkout.expiresAt());
@@ -99,31 +107,34 @@ public class CheckoutService {
     }
 
     /**
-     * カートのすべての注文手続きの引当を解く（カート変更）。何度呼んでも結果は同じ。
+     * カートのすべての注文手続きの引当を解く。何度呼んでも結果は同じ。
      *
      * @param cartId カート ID
      */
     @Transactional
-    public void releaseReservations(UUID cartId) {
-        checkoutRepository.findIdsByCartId(cartId).forEach(stockDirectory::release);
+    public void releaseReservations(@NonNull UUID cartId) {
+        for (var checkoutId : checkoutRepository.findIdsByCartId(cartId)) {
+            stockDirectory.release(checkoutId);
+        }
     }
 
     /**
-     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す（片付けのジョブから呼ぶ）。注文になったものも消す。
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。注文になったものも消す。
      *
      * @param expiredBefore この時刻より前に期限が切れた注文手続きを消す
      * @param limit         消す件数の上限
      * @return 消した件数
      */
     @Transactional
-    public int deleteExpired(Instant expiredBefore, int limit) {
+    public int deleteExpired(@NonNull Instant expiredBefore, int limit) {
         return checkoutRepository.deleteExpiredBefore(expiredBefore, limit);
     }
 
     /**
-     * 見積もりが注文できることを確認する。在庫だけが足りなければ 409、それ以外（空、表示されない、販売停止）は 400。
+     * 見積もりが注文できることを確認する。
      *
      * @param quote 見積もり
+     * @throws BusinessException 在庫だけが足りない（{@code OUT_OF_STOCK}）。それ以外で注文できない（{@code CART_NOT_ORDERABLE}。空、表示されない、販売停止）
      */
     static void verifyOrderable(Quote quote) {
         if (quote.orderable()) {
@@ -138,7 +149,7 @@ public class CheckoutService {
      * @param lines 品目
      * @return バリアント ID → 数量
      */
-    static Map<UUID, Integer> quantities(List<CartDirectory.Line> lines) {
+    static Map<UUID, Integer> quantities(List<CartSnapshot.Line> lines) {
         var quantities = new LinkedHashMap<UUID, Integer>();
         lines.forEach(line -> quantities.put(line.variantId(), line.quantity()));
         return quantities;

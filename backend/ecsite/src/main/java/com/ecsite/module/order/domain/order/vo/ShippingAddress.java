@@ -9,8 +9,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * お届け先。郵便番号と電話番号はハイフンを除いた数字で持つ。<br />
- * 都道府県と市区町村がマスターデータにあるかは、作る前に注文の確定で確認する（地域の API）。
+ * お届け先
+ *
+ * <p>郵便番号と電話番号はハイフンを除いた数字で持つ。都道府県と市区町村がマスターデータにあるかは確認しない。
  *
  * @param name       氏名（50 文字まで）
  * @param postalCode 郵便番号（数字 7 桁）
@@ -71,6 +72,8 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
      * @param address    市区町村より下の住所
      * @param phone      電話番号（ハイフンは任意）
      * @return お届け先
+     * @throws BusinessException 氏名が正しくない（{@code INVALID_RECIPIENT_NAME}）。郵便番号が正しくない（{@code INVALID_POSTAL_CODE}）。
+     *                           住所が正しくない（{@code INVALID_ADDRESS}）。電話番号が正しくない（{@code INVALID_PHONE_NUMBER}）
      */
     public static ShippingAddress of(String name, String postalCode, AddressArea area, String address, String phone) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {

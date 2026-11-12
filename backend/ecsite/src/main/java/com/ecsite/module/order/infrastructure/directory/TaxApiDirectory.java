@@ -15,7 +15,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税の腐敗防止層の実装。税モジュールの API（{@link TaxRateApi}）を呼ぶ。
+ * 税の腐敗防止層
+ *
+ * <p>税モジュールの API を呼ぶ。
  */
 @Component
 @RequiredArgsConstructor

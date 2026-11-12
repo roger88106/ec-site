@@ -1,4 +1,4 @@
-package com.ecsite.module.order.api;
+package com.ecsite.module.order.api.model;
 
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * カートの見積もり（docs/02-設計/order.md「他のモジュールへの公開」）。店舗モジュールがカートの表示に使う。
+ * カートの見積もり
  *
  * @param cartId    カート ID
  * @param items     品目（入れた順）

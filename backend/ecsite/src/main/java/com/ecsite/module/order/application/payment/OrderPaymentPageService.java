@@ -4,14 +4,16 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 /**
- * 注文の支払画面のサービス（docs/03-機能仕様/order.md「支払」）。<br />
- * 決済サービスを呼ぶので、トランザクションを持たない（支払画面を作る間、注文の行ロックを持たない）。
+ * 注文の支払画面のサービス
+ *
+ * <p>決済サービスを呼ぶので、トランザクションを持たない（支払画面を作る間、注文の行ロックを持たない）。
  */
 @Service
 @RequiredArgsConstructor
@@ -28,14 +30,14 @@ public class OrderPaymentPageService {
     private final PaymentDirectory paymentDirectory;
 
     /**
-     * 会員の注文の支払画面の URL を返す。注文した会員でなければ 404。
+     * 会員の注文の支払画面の URL を返す。
      *
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @return 支払画面の URL
-     * @throws BusinessException 支払待ちでない、支払の期限の後（{@link OrderErrorCode#ORDER_NOT_PAYABLE}）
+     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）。支払待ちでない、支払の期限の後（{@code ORDER_NOT_PAYABLE}）
      */
-    public String pageUrl(UUID orderId, UUID memberId) {
+    public String pageUrl(@NonNull UUID orderId, @NonNull UUID memberId) {
         var order = orderQueryService.getForMember(orderId, memberId);
         if (!order.awaitingPayment()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_PAYABLE);

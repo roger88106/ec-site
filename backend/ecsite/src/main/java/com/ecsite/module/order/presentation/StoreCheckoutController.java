@@ -21,7 +21,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 注文手続きのコントローラー（C 側。store.yaml の tag: checkout）
+ * 注文手続きのコントローラー
+ *
+ * <p>C 側の API のうち、store.yaml のタグ checkout の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -43,7 +45,7 @@ class StoreCheckoutController implements CheckoutApi {
     private final OrderPlacementService orderPlacementService;
 
     /**
-     * 店舗 API（注文手続き・注文）のマッパー
+     * 店舗の注文 API のマッパー
      */
     private final StoreOrderMapper mapper;
 

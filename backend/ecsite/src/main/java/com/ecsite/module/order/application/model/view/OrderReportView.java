@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application.model;
+package com.ecsite.module.order.application.model.view;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.order.BuyerProfile;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * レポート用の注文の表示
+ * 注文の写しの表示
  *
  * @param id              注文 ID
  * @param orderNumber     注文番号

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 見積もり（docs/03-機能仕様/order.md「見積もり」）。カートの表示、注文手続き、注文の成立で同じ計算をする。
+ * 見積もり
  *
  * @param items     品目（カートの並び）
  * @param amounts   金額の内訳
@@ -20,7 +20,7 @@ import java.util.Objects;
 public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
 
     /**
-     * 品目から金額の内訳を求める。購入できない品目は合計・消費税額に含めない。<br />
+     * 品目から金額の内訳を求める。購入できない品目は合計・消費税額に含めない。
      * 送料は購入できる品目があるときだけかけ、標準税率の対象として消費税額に含める。
      *
      * @param items          品目
@@ -52,7 +52,7 @@ public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
     }
 
     /**
-     * 購入できない品目があり、その理由がすべて在庫によるものか（注文手続き・注文の拒否を 409 にする）。
+     * 購入できない品目があり、その理由がすべて在庫によるものか。
      *
      * @return 在庫だけが足りないなら true
      */

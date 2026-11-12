@@ -21,16 +21,18 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
 /**
- * 注文の Aggregate Root（docs/03-機能仕様/order.md「注文（集約）」）。<br />
- * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/03-機能仕様/order.md「状態の遷移」）。<br />
- * 注文は支払待ちで作られ、決済のイベント（与信の成功、支払の期限切れ）で受付かキャンセルになる。受付から出荷すると出荷済みになる。
+ * 注文
+ *
+ * <p>明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ。
+ *
+ * <p>支払待ちで作り、与信の成功で受付に、支払の期限切れでキャンセルにする。受付から出荷すると出荷済みになる。
  */
 @Getter
 @Accessors(fluent = true)
@@ -166,6 +168,7 @@ public class Order extends AggregateRoot {
      * @param shippingAddress お届け先
      * @param buyerProfile    注文時の年齢と性別
      * @return 注文
+     * @throws BusinessException メールアドレスの形が違う（{@code INVALID_EMAIL}）
      */
     public static Order place(UUID id, OrderNumber orderNumber, UUID checkoutId, UUID memberId, Instant orderedAt,
                               @NonNull Quote quote,
@@ -177,8 +180,11 @@ public class Order extends AggregateRoot {
         if (email == null || email.length() > EMAIL_MAX_LENGTH || !EMAIL.matcher(email).matches()) {
             throw BusinessException.of(OrderErrorCode.INVALID_EMAIL);
         }
-        var items = quote.items();
-        var lines = IntStream.range(0, items.size()).mapToObj(i -> toLine(i + 1, items.get(i))).toList();
+        // 行番号は 1 から、見積もりの品目の並びで振る
+        var lines = new ArrayList<OrderLine>();
+        for (var item : quote.items()) {
+            lines.add(toLine(lines.size() + 1, item));
+        }
         var order = new Order(id, orderNumber, checkoutId, memberId, orderedAt, OrderStatus.PENDING_PAYMENT, lines, quote.amounts(),
                 email, shippingAddress, buyerProfile, null, null, 0);
         order.registerEvent(OrderStatusChanged.of(orderedAt, id, null, OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
@@ -200,7 +206,7 @@ public class Order extends AggregateRoot {
      * 与信の成功を受けて、「支払待ち」から「受付」にする。支払待ちでなければ何もしない。
      *
      * @param now 現在時刻
-     * @return 受付にしたら true（呼ぶ側がカートから品目を除く）。支払待ちでなければ false
+     * @return 受付にしたら true。支払待ちでなければ false
      */
     public boolean acceptPayment(@NonNull Instant now) {
         if (status != OrderStatus.PENDING_PAYMENT) {
@@ -214,7 +220,7 @@ public class Order extends AggregateRoot {
      * 支払の期限切れを受けて、「支払待ち」からキャンセル（支払期限切れ）にする。支払待ちでなければ何もしない。
      *
      * @param now 現在時刻
-     * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。支払待ちでなければ false
+     * @return キャンセルにしたら true。支払待ちでなければ false
      */
     public boolean expirePayment(@NonNull Instant now) {
         if (status != OrderStatus.PENDING_PAYMENT) {
@@ -226,33 +232,34 @@ public class Order extends AggregateRoot {
 
     /**
      * 運営者がキャンセルできるかを返す。「受付」と「キャンセル申請中」、出荷済みなら配送状態が返送のときだけ。
-     * 支払待ちは支払の期限で自動でキャンセルになり、キャンセル済みは何もしない（できる操作のフラグに出さない）。
      *
      * @param returned 配送状態が返送か（出荷済みのときだけ使う）
      * @return キャンセルできれば true
      */
     public boolean isCancellableByOperator(boolean returned) {
+        // 支払待ちは支払の期限で自動でキャンセルになり、キャンセル済みは何もしないので、できる操作に出さない
         return status == OrderStatus.ACCEPTED || status == OrderStatus.CANCELLATION_REQUESTED
                 || (status == OrderStatus.SHIPPED && returned);
     }
 
     /**
-     * 運営者のキャンセルで、在庫に戻すかを聞くかを返す。出荷済みで返送の注文だけ（商品が戻るので、戻すかを選ぶ）。
-     * 出荷の前の注文は、在庫に必ず戻す。
+     * 運営者のキャンセルで、在庫に戻すかを聞くかを返す。出荷済みで返送の注文だけ。
      *
      * @param returned 配送状態が返送か（出荷済みのときだけ使う）
      * @return 在庫に戻すかを聞くなら true
      */
     public boolean asksRestockOnCancel(boolean returned) {
+        // 返送では商品が戻るので、戻すかを選ぶ。出荷の前の注文は、在庫に必ず戻す
         return status == OrderStatus.SHIPPED && returned;
     }
 
     /**
-     * 出荷できるかを返す。「受付」だけ（キャンセル申請中は、判断の後に出荷する）。
+     * 出荷できるかを返す。「受付」だけ。
      *
      * @return 出荷できれば true
      */
     public boolean isShippable() {
+        // キャンセル申請中は、判断の後に出荷する
         return status == OrderStatus.ACCEPTED;
     }
 
@@ -266,11 +273,12 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * キャンセルを申請できるかを返す。「受付」で、まだ申請していない注文だけ（申請は 1 回だけ）。
+     * キャンセルを申請できるかを返す。「受付」で、まだ申請していない注文だけ。
      *
      * @return 申請できれば true
      */
     public boolean isCancellationRequestable() {
+        // 申請は 1 回だけ
         return status == OrderStatus.ACCEPTED && cancellationRequest == null;
     }
 
@@ -284,11 +292,12 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 消費者がキャンセルを申請する。「受付」から「キャンセル申請中」にする。<br />
-     * 申請中なら何もしない（冪等）。申請は 1 回だけで、却下済み・キャンセル済みの注文は申請できない。
+     * 消費者がキャンセルを申請する。「受付」から「キャンセル申請中」にする。申請中なら何もしない（冪等）。
      *
      * @param reason 理由（任意、500 文字まで）。空白だけなら理由なし
      * @param now    現在時刻
+     * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}。申請は 1 回だけで、却下済み・キャンセル済みも含む）。
+     *                           理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      */
     public void requestCancellation(@Nullable String reason, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
@@ -307,7 +316,8 @@ public class Order extends AggregateRoot {
      *
      * @param operator 承認した運営者
      * @param now      現在時刻
-     * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。すでにキャンセルなら false
+     * @return キャンセルにしたら true。すでにキャンセルなら false
+     * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
     public boolean approveCancellation(@NonNull Operator operator, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLED) {
@@ -326,6 +336,7 @@ public class Order extends AggregateRoot {
      *
      * @param operator 却下した運営者
      * @param now      現在時刻
+     * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
     public void rejectCancellation(@NonNull Operator operator, @NonNull Instant now) {
         if (!isCancellationPending()) {
@@ -336,11 +347,12 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 出荷する。「受付」から「出荷済み」にし、注文の出荷のイベントを登録する。売上の確定は呼ぶ側が先に済ませる。
+     * 出荷する。「受付」から「出荷済み」にし、注文の出荷のイベントを登録する。
      *
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（ハイフンを除いた数字）
      * @param now            現在時刻（出荷日時）
+     * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}）
      */
     public void ship(@NonNull Carrier carrier, @NonNull String trackingNumber, @NonNull Instant now) {
         if (!isShippable()) {
@@ -352,16 +364,18 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 運営者の判断でキャンセルする。申請中なら、申請は承認されたものとする。<br />
-     * キャンセル済みなら何もせず、理由も変えない。支払待ちはキャンセルできない（支払の期限で自動でキャンセルになる）。
-     * 出荷済みは、配送状態が返送のときだけキャンセルでき、在庫に戻すかの指定が必要だ。出荷済みでなければ、指定によらず在庫に戻す。
+     * 運営者の判断でキャンセルする。申請中なら、申請は承認されたものとする。キャンセル済みなら何もせず、理由も変えない。
+     * 出荷済みでなければ、指定によらず在庫に戻す。
      *
      * @param reason   理由（必須、500 文字まで）
      * @param restock  在庫に戻すか（出荷済みのときは必須。それ以外は使わない）
      * @param returned 配送状態が返送か（出荷済みのときだけ使う）
      * @param operator キャンセルした運営者。申請中なら、判断した運営者にもなる
      * @param now      現在時刻
-     * @return キャンセルにしたら true（呼ぶ側は、キャンセルの記録に従って在庫を戻す）。すでにキャンセルなら false
+     * @return キャンセルにしたら true。すでにキャンセルなら false
+     * @throws BusinessException 理由がない（{@code CANCELLATION_REASON_REQUIRED}）。理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）。
+     *                           支払待ち（{@code AWAITING_PAYMENT}）。出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）。
+     *                           出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
      */
     public boolean cancelByOperator(@Nullable String reason, @Nullable Boolean restock, boolean returned, @NonNull Operator operator,
                                     @NonNull Instant now) {
@@ -372,10 +386,12 @@ public class Order extends AggregateRoot {
         if (status == OrderStatus.CANCELLED) {
             return false;
         }
+        // 支払待ちは、支払の期限で自動でキャンセルになる
         if (status == OrderStatus.PENDING_PAYMENT) {
             throw BusinessException.of(OrderErrorCode.AWAITING_PAYMENT);
         }
         var restocked = true;
+        // 出荷済みは、配送状態が返送のときだけキャンセルでき、在庫に戻すかの指定が必要だ
         if (status == OrderStatus.SHIPPED) {
             if (!returned) {
                 throw BusinessException.of(OrderErrorCode.SHIPPED_ORDER_NOT_RETURNED);

@@ -23,7 +23,9 @@ import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_LINE;
 import static org.mockito.Mockito.mock;
 
 /**
- * 注文を DB の値から戻すときの失敗の単体テスト。例外の出力に DB の値が出ないことを確認する。
+ * 注文を DB の値から戻すときの失敗の単体テスト
+ *
+ * <p>例外の出力に DB の値が出ないことを確認する。
  */
 class OrderRestoreFailureTest {
 

@@ -20,10 +20,10 @@ import com.ecsite.api.admin.model.ShipmentStatus;
 import com.ecsite.api.admin.model.ShippingAddress;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
-import com.ecsite.module.order.application.model.OrderDetailView;
-import com.ecsite.module.order.application.model.OrderPayment;
-import com.ecsite.module.order.application.model.OrderShipment;
-import com.ecsite.module.order.application.model.OrderSummaryView;
+import com.ecsite.module.order.application.model.view.OrderDetailView;
+import com.ecsite.module.order.application.model.view.OrderPayment;
+import com.ecsite.module.order.application.model.view.OrderShipment;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.domain.quote.Amounts;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -32,7 +32,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 管理 API（注文）のレスポンスと、アプリケーション層のモデルの変換
+ * 管理の注文 API のマッパー
+ *
+ * <p>管理の注文 API のレスポンスと、アプリケーション層のモデルを変換する。
  */
 @Component
 class AdminOrderMapper {

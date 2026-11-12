@@ -1,10 +1,11 @@
 package com.ecsite.module.order.application.port;
 
+import com.ecsite.module.order.application.model.Municipality;
+
 import java.util.Optional;
 
 /**
- * 地域の腐敗防止層（docs/03-機能仕様/order.md「注文の成立」）。<br />
- * 地域のモジュールを別のサービスに切り出しても、注文はこの型だけを使う。
+ * 地域の腐敗防止層の port
  */
 public interface RegionDirectory {
 
@@ -23,14 +24,4 @@ public interface RegionDirectory {
      * @return 市区町村。なければ空
      */
     Optional<Municipality> findMunicipality(String municipalityCode);
-
-    /**
-     * 市区町村
-     *
-     * @param code           市区町村のコード
-     * @param name           市区町村名
-     * @param prefectureCode 属する都道府県のコード
-     */
-    record Municipality(String code, String name, String prefectureCode) {
-    }
 }

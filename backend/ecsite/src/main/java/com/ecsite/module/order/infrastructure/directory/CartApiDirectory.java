@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.module.cart.api.CartContentsApi;
+import com.ecsite.module.order.application.model.CartSnapshot;
 import com.ecsite.module.order.application.port.CartDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -10,7 +11,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートの腐敗防止層の実装。カートモジュールの API（{@link CartContentsApi}）を呼ぶ。
+ * カートの腐敗防止層
+ *
+ * <p>カートモジュールの API を呼ぶ。
  */
 @Component
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ class CartApiDirectory implements CartDirectory {
     @Override
     public Optional<CartSnapshot> find(UUID cartId) {
         return cartContentsApi.find(cartId).map(contents -> new CartSnapshot(contents.cartId(), contents.memberId(), contents.version(),
-                contents.items().stream().map(item -> new Line(item.variantId(), item.quantity())).toList()));
+                contents.items().stream().map(item -> new CartSnapshot.Line(item.variantId(), item.quantity())).toList()));
     }
 
     /**

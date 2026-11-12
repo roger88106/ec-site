@@ -1,11 +1,13 @@
 package com.ecsite.module.order.api;
 
+import com.ecsite.module.order.api.model.CartQuote;
 import com.ecsite.module.order.application.checkout.CartQuoteService;
-import com.ecsite.module.order.application.model.CartQuoteView;
+import com.ecsite.module.order.application.model.view.CartQuoteView;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.UnpurchasableReason;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 店舗に公開する見積もりの API（docs/02-設計/order.md「他のモジュールへの公開」）
+ * カートの見積もりの API
  */
 @Component
 @RequiredArgsConstructor
@@ -26,15 +28,13 @@ public class OrderQuoteApi {
     private final CartQuoteService cartQuoteService;
 
     /**
-     * カートを現在の価格・税率・販売可能数で見積もる。
-     *
-     * 会員のカートは、持ち主の会員にだけ見積もる。
+     * カートを現在の価格・税率・販売可能数で見積もる。会員のカートは、持ち主の会員にだけ見積もる。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
-    public Optional<CartQuote> quoteCart(UUID cartId, @Nullable UUID requester) {
+    public Optional<CartQuote> quoteCart(@NonNull UUID cartId, @Nullable UUID requester) {
         return cartQuoteService.quoteCart(cartId, requester).map(OrderQuoteApi::toCartQuote);
     }
 

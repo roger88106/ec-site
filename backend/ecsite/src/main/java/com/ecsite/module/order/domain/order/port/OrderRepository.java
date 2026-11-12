@@ -2,6 +2,7 @@ package com.ecsite.module.order.domain.order.port;
 
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,11 +11,11 @@ import java.util.UUID;
 /**
  * 注文のリポジトリ
  */
+@Repository
 public interface OrderRepository {
 
     /**
-     * 新しい注文を保存し、登録されたイベントを発行する。<br />
-     * 注文番号が重複したら何も保存せずに false を返す（呼ぶ側が番号を再作成する）。トランザクションは壊さない。
+     * 新しい注文を保存し、登録されたイベントを発行する。注文番号が重複したら何も保存せずに false を返す。トランザクションは壊さない。
      *
      * @param order 注文
      * @return 保存したら true
@@ -29,7 +30,7 @@ public interface OrderRepository {
     void update(Order order);
 
     /**
-     * 注文を行ロックして取得する。同じ注文への操作を 1 つずつ処理し、在庫を二重に戻さないため。トランザクションの中で呼ぶ。
+     * 注文を行ロックして取得する。ロックはトランザクションの終わりまで続く。
      *
      * @param id 注文 ID
      * @return 注文。なければ空
@@ -61,8 +62,7 @@ public interface OrderRepository {
     List<UUID> findPendingIdsByMemberId(UUID memberId);
 
     /**
-     * 会員ごとのロックを、トランザクションの終わりまで取る。同じ会員の注文の判定と保存を 1 つずつ処理するため。<br />
-     * トランザクションの中で呼ぶ。外で呼ぶと、すぐに解放され、ロックとして働かない。
+     * 会員ごとのロックを、トランザクションの終わりまで取る。トランザクションの外では、すぐに解放され、ロックとして働かない。
      *
      * @param memberId 会員 ID
      */

@@ -1,4 +1,4 @@
-package com.ecsite.module.order.api;
+package com.ecsite.module.order.api.model;
 
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
@@ -9,8 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * レポート用の注文の写し（docs/02-設計/order.md「他のモジュールへの公開」）。<br />
- * 氏名、住所、電話番号、メールアドレスは載せない。お届け先は郵便番号と都道府県だけ。
+ * 注文の写し
+ *
+ * <p>氏名、住所、電話番号、メールアドレスは載せない。お届け先は郵便番号と都道府県だけ。
  *
  * @param orderId          注文 ID
  * @param orderNumber      注文番号

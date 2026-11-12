@@ -2,11 +2,12 @@ package com.ecsite.module.order.application.shipment;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.order.application.model.OrderShipment;
+import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.Carrier;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +16,9 @@ import java.time.Clock;
 import java.util.UUID;
 
 /**
- * 出荷の登録の更新のサービス。売上確定の後に、注文を出荷済みにして出荷を作る（{@link OrderShipmentService} から呼ぶ）。
+ * 出荷の登録の更新のサービス
+ *
+ * <p>注文を出荷済みにして出荷を作る。売上の確定は行わない。
  */
 @Service
 @RequiredArgsConstructor
@@ -43,14 +46,18 @@ class OrderShipmentCommandService {
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号
      * @return 作った出荷
-     * @throws BusinessException 売上確定の後に、注文が受付でなくなっていた（支払は売上確定済みのまま残る）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。受付でない（{@code ORDER_NOT_SHIPPABLE}）。
+     *                           送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）。同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
     @Transactional
-    public OrderShipment ship(UUID orderId, Carrier carrier, String trackingNumber) {
+    public OrderShipment ship(@NonNull UUID orderId, @NonNull Carrier carrier, @NonNull String trackingNumber) {
+        // 注文取得
         var order = orderRepository.lockById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         if (!order.isShippable()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
         }
+
+        // 出荷登録
         var now = clock.instant();
         // 送り状番号は出荷モジュールが検証してハイフンを除くので、先に出荷を作り、除いた番号をイベントに載せる
         var shipment = shippingDirectory.create(orderId, carrier, trackingNumber, now);

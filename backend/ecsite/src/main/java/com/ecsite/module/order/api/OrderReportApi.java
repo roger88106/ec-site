@@ -1,13 +1,15 @@
 package com.ecsite.module.order.api;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.api.model.OrderReportSnapshot;
 import com.ecsite.module.order.application.OrderReportQueryService;
-import com.ecsite.module.order.application.model.OrderReportView;
+import com.ecsite.module.order.application.model.view.OrderReportView;
 import com.ecsite.module.order.domain.order.CancellationKind;
 import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.quote.TaxAmount;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,15 +17,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * レポートに公開する、レポート用の注文の写しの API（docs/02-設計/order.md「他のモジュールへの公開」）。<br />
- * レポートは、注文の状態の変化のイベントを受けるたびに、ここで今の写しを読み直す。
+ * 注文の写しの API
  */
 @Component
 @RequiredArgsConstructor
 public class OrderReportApi {
 
     /**
-     * レポート用に注文を読むサービス
+     * 注文の写しの参照
      */
     private final OrderReportQueryService orderReportQueryService;
 
@@ -33,7 +34,7 @@ public class OrderReportApi {
      * @param orderId 注文 ID
      * @return 写し。注文がなければ空
      */
-    public Optional<OrderReportSnapshot> find(UUID orderId) {
+    public Optional<OrderReportSnapshot> find(@NonNull UUID orderId) {
         return orderReportQueryService.find(orderId).map(OrderReportApi::toSnapshot);
     }
 

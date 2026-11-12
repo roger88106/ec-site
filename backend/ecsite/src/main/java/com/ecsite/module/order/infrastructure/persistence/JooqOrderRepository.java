@@ -40,7 +40,9 @@ import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_LINE;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_TAX;
 
 /**
- * 注文のリポジトリ。注文、明細、税率ごとの消費税額を、集約の単位で保存・再構築する。
+ * 注文のリポジトリ
+ *
+ * <p>注文、明細、税率ごとの消費税額を、集約の単位で保存・再構築する。
  */
 @Repository
 @RequiredArgsConstructor
@@ -128,12 +130,13 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文の状態の変更を保存する。明細と金額は成立の後に変わらないので、注文の行だけを更新する。
+     * 注文の状態の変更を保存する。注文の行だけを更新する。
      *
      * @param order 変更した注文
      */
     @Override
     public void update(Order order) {
+        // 明細と金額は成立の後に変わらない
         var snapshot = order.toSnapshot();
         var record = dsl.newRecord(SALES_ORDER);
         writeState(record, snapshot);
@@ -202,14 +205,13 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 会員ごとのロックを、トランザクションの終わりまで取る。<br />
-     * 複数の支払待ちの注文を認めるので一意索引では防げず、判定と保存を会員ごとに 1 つずつ処理する（注文の設計の「同時の注文」）。
+     * 会員ごとのロックを、トランザクションの終わりまで取る。
      *
      * @param memberId 会員 ID
      */
     @Override
     public void lockForMember(UUID memberId) {
-        // トランザクションの終わりで解放される、会員 ID のロック（PostgreSQL の advisory lock）
+        // 複数の支払待ちの注文を認めるので一意索引では防げない。トランザクションの終わりで解放される、会員 ID の advisory lock を使う
         dsl.select(DSL.function("pg_advisory_xact_lock", Object.class,
                 DSL.val(memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits()))).fetch();
     }
@@ -292,10 +294,10 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。<br />
-     * 例外のメッセージに DB の値が入る変換だけを、集約を戻す共通の補助で包む（金額の検証のエラーは値を持たず、今の応答のまま）。
+     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。
      */
     private Order restore(SalesOrderRecord record) {
+        // 例外のメッセージに DB の値が入る変換だけを、集約を戻す共通の補助で包む（金額の検証のエラーは値を持たず、今の応答のまま）
         var lines = restoreLines(record.getId());
         var amounts = restoreAmounts(record);
         var area = new AddressArea(record.getPrefectureCode(), record.getPrefectureName(), record.getMunicipalityCode(),

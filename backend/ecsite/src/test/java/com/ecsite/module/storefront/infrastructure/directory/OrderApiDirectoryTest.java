@@ -1,6 +1,6 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
-import com.ecsite.module.order.api.CartQuote;
+import com.ecsite.module.order.api.model.CartQuote;
 import com.ecsite.module.storefront.application.model.CartView;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;

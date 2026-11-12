@@ -30,6 +30,6 @@ final class CodeFormat {
      * @return 形式に合えば true
      */
     static boolean matches(String value) {
-        return value.length() <= MAX_LENGTH && PATTERN.matcher(value).matches();
+        return value != null && value.length() <= MAX_LENGTH && PATTERN.matcher(value).matches();
     }
 }

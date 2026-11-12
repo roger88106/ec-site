@@ -34,8 +34,7 @@ public class StockCommandService {
      *
      * @param command 在庫の調整コマンド
      * @return 記録した在庫調整
-     * @throws BusinessException 増減量・調整理由・メモが検証に合わない、調整後の在庫数が負になるか上限を超える、
-     *                           または在庫がない（{@code NOT_FOUND}）
+     * @throws BusinessException 増減量・調整理由・メモが検証に合わない、調整後の在庫数が負になるか上限を超える、または在庫がない（{@code NOT_FOUND}）
      */
     @Transactional
     public StockAdjustmentView adjustStock(@NonNull AdjustStockCommand command) {

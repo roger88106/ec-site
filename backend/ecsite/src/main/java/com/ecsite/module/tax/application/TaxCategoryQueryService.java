@@ -58,7 +58,9 @@ public class TaxCategoryQueryService {
     }
 
     /**
-     * 税区分を取得する。なければ空を返す。
+     * 税区分を取得する。
+     *
+     * <p>なければ空を返す。
      *
      * @param id 税区分 ID
      * @return 税区分（現時点の率を含む。税率は適用開始日時の古い順）。なければ空

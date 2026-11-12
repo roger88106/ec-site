@@ -57,7 +57,9 @@ class S3ObjectStorage implements ObjectStorage {
     private final MediaStorageProperties properties;
 
     /**
-     * アップロードのバケットへの署名付き URL を発行する。形式と大きさを署名に含める（AWS は、違う形式・大きさの PUT を拒否する）。
+     * アップロードのバケットへの署名付き URL を発行する。
+     *
+     * <p>形式と大きさを署名に含める（AWS は、違う形式・大きさの PUT を拒否する）。
      *
      * @param uploadKey     アップロードのキー
      * @param contentType   ファイルの形式
@@ -116,7 +118,9 @@ class S3ObjectStorage implements ObjectStorage {
     }
 
     /**
-     * 配信のバケットへファイルを書き込む。長くキャッシュさせる（キーを上書きしないため）。
+     * 配信のバケットへファイルを書き込む。
+     *
+     * <p>長くキャッシュさせる（キーを上書きしないため）。
      *
      * @param publicKey   配信のキー
      * @param content     中身
@@ -133,7 +137,9 @@ class S3ObjectStorage implements ObjectStorage {
     }
 
     /**
-     * 配信のバケットのファイルを消す。ファイルがなくても成功とする（何度行っても同じ結果）。
+     * 配信のバケットのファイルを消す。
+     *
+     * <p>ファイルがなくても成功とする（何度行っても同じ結果）。
      *
      * @param publicKey 配信のキー
      */
@@ -158,7 +164,9 @@ class S3ObjectStorage implements ObjectStorage {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * S3 を呼ぶ。接続できない・時間内に応答がない（SDK の例外）と、S3 の側の故障（5xx）は、外部サービスのエラーにする。
+     * S3 を呼ぶ。
+     *
+     * <p>接続できない・時間内に応答がない（SDK の例外）と、S3 の側の故障（5xx）は、外部サービスのエラーにする。
      * 5xx でない S3 の失敗（権限がない、ファイルがないなど）は、そのまま投げる。
      */
     private <T> T call(String failure, Supplier<T> operation) {

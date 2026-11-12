@@ -32,7 +32,9 @@ class PaymentReversalService {
     private final PaymentGateway gateway;
 
     /**
-     * 決済サービスで与信を取り消してから、与信の取消済みにする。与信の取消待ちでなければ何もしない。
+     * 決済サービスで与信を取り消してから、与信の取消済みにする。
+     *
+     * <p>与信の取消待ちでなければ何もしない。
      * 売上を確定していて取り消せなければ、返金待ちにして、返金の依頼を登録する。
      *
      * @param paymentId 支払 ID
@@ -48,7 +50,9 @@ class PaymentReversalService {
     }
 
     /**
-     * 決済サービスで返金してから、返金済みにする。返金待ちでなければ何もしない。
+     * 決済サービスで返金してから、返金済みにする。
+     *
+     * <p>返金待ちでなければ何もしない。
      *
      * @param paymentId 支払 ID
      */

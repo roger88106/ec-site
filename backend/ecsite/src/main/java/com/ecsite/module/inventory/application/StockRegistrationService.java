@@ -21,7 +21,9 @@ public class StockRegistrationService {
     private final StockItemRepository stockItemRepository;
 
     /**
-     * 在庫数 0 の在庫を作る。すでにあれば何もしない。
+     * 在庫数 0 の在庫を作る。
+     *
+     * <p>すでにあれば何もしない。
      *
      * @param variantId バリアント ID
      * @param productId 商品 ID
@@ -32,7 +34,9 @@ public class StockRegistrationService {
     }
 
     /**
-     * バリアントの在庫と調整履歴を消す。なければ何もしない。
+     * バリアントの在庫と調整履歴を消す。
+     *
+     * <p>なければ何もしない。
      *
      * @param variantId バリアント ID
      */
@@ -42,7 +46,9 @@ public class StockRegistrationService {
     }
 
     /**
-     * 商品のすべての在庫と調整履歴を消す。なければ何もしない。
+     * 商品のすべての在庫と調整履歴を消す。
+     *
+     * <p>なければ何もしない。
      *
      * @param productId 商品 ID
      */

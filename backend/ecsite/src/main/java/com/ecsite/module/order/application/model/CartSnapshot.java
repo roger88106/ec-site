@@ -16,7 +16,9 @@ import java.util.UUID;
 public record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, List<Line> lines) {
 
     /**
-     * リクエストした会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
+     * リクエストした会員がカートを使えるか。
+     *
+     * <p>会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
      *
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 使えれば true

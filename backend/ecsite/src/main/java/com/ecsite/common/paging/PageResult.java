@@ -35,7 +35,9 @@ public record PageResult<T>(List<T> items, int page, int size, long totalItems) 
     }
 
     /**
-     * 総ページ数。0 件なら 0。
+     * 総ページ数。
+     *
+     * <p>0 件なら 0。
      *
      * @return 総ページ数
      */
@@ -44,7 +46,9 @@ public record PageResult<T>(List<T> items, int page, int size, long totalItems) 
     }
 
     /**
-     * 要素を変換する。ページの情報はそのまま。
+     * 要素を変換する。
+     *
+     * <p>ページの情報はそのまま。
      *
      * @param mapper 変換
      * @param <R>    変換後の型

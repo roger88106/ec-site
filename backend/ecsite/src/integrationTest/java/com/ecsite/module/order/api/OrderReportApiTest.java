@@ -197,7 +197,9 @@ class OrderReportApiTest {
     }
 
     /**
-     * record の項目を「型名.項目名」で集める。項目の型が record のとき、List の要素の型が record のときは、その中まで集める。
+     * record の項目を「型名.項目名」で集める。
+     *
+     * <p>項目の型が record のとき、List の要素の型が record のときは、その中まで集める。
      */
     private static void collectRecordComponents(Class<?> type, List<String> paths) {
         for (var component : type.getRecordComponents()) {

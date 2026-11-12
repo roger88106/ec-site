@@ -310,7 +310,9 @@ class InventoryApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * 在庫を調整する。メモがなければ null で送る
+     * 在庫を調整する。
+     *
+     * <p>メモがなければ null で送る
      */
     private ResultActions adjust(UUID variantId, int delta, String reason, String memo) throws Exception {
         var memoJson = memo == null ? "null" : "\"%s\"".formatted(memo);

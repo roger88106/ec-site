@@ -20,7 +20,9 @@ import java.util.Objects;
 public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
 
     /**
-     * 品目から金額の内訳を求める。購入できない品目は合計・消費税額に含めない。
+     * 品目から金額の内訳を求める。
+     *
+     * <p>購入できない品目は合計・消費税額に含めない。
      * 送料は購入できる品目があるときだけかけ、標準税率の対象として消費税額に含める。
      *
      * @param items          品目

@@ -23,7 +23,9 @@ class StockApiDirectory implements StockDirectory {
     private final StockReservationApi stockReservationApi;
 
     /**
-     * バリアントの販売可能数を返す。全ての注文手続きの引当を差し引く（このカートの注文手続きの引当を含む）。
+     * バリアントの販売可能数を返す。
+     *
+     * <p>全ての注文手続きの引当を差し引く（このカートの注文手続きの引当を含む）。
      *
      * @param variantId バリアント ID
      * @return 販売可能数。在庫がなければ 0

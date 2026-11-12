@@ -123,7 +123,9 @@ public class Cart {
     }
 
     /**
-     * リクエストした人がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
+     * リクエストした人がカートを使えるか。
+     *
+     * <p>会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
      *
      * @param requesterMemberId リクエストした会員の ID（ログインしていなければ null）
      * @return 使えれば true
@@ -133,7 +135,9 @@ public class Cart {
     }
 
     /**
-     * 指定した時刻での品目を返す。期限が切れていれば空。
+     * 指定した時刻での品目を返す。
+     *
+     * <p>期限が切れていれば空。
      *
      * @param now 現在時刻
      * @return 品目（入れた順）
@@ -169,13 +173,15 @@ public class Cart {
     }
 
     /**
-     * バリアントを入れる。カートにあれば数量を合算する。
+     * バリアントを入れる。
+     *
+     * <p>カートにあれば数量を合算する。
      *
      * @param variantId バリアント ID
      * @param quantity  入れる数量（1〜10）
      * @param now       現在時刻
-     * @throws BusinessException 数量か合算した数量が 1〜10 でない（{@code INVALID_CART_QUANTITY}）、
-     *                           または品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）
+     * @throws BusinessException 数量か合算した数量が 1〜10 でない（{@code INVALID_CART_QUANTITY}）
+     * @throws BusinessException 品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）
      */
     public void add(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
         verifyQuantity(quantity);
@@ -200,8 +206,8 @@ public class Cart {
      * @param variantId バリアント ID
      * @param quantity  新しい数量（1〜10）
      * @param now       現在時刻
-     * @throws BusinessException 数量が 1〜10 でない（{@code INVALID_CART_QUANTITY}）、
-     *                           またはカートにない品目（{@code NOT_FOUND}）
+     * @throws BusinessException 数量が 1〜10 でない（{@code INVALID_CART_QUANTITY}）
+     * @throws BusinessException カートにない品目（{@code NOT_FOUND}）
      */
     public void changeQuantity(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
         verifyQuantity(quantity);
@@ -215,7 +221,9 @@ public class Cart {
     }
 
     /**
-     * 品目を削除する。カートになければ何もしない（冪等）。
+     * 品目を削除する。
+     *
+     * <p>カートになければ何もしない（冪等）。
      *
      * @param variantId バリアント ID
      * @param now       現在時刻
@@ -229,7 +237,9 @@ public class Cart {
     }
 
     /**
-     * 複数の品目を一度に削除する。カートにない品目は無視する。1 つの変更として記録し、バージョンは 1 だけ上げる。
+     * 複数の品目を一度に削除する。
+     *
+     * <p>カートにない品目は無視する。1 つの変更として記録し、バージョンは 1 だけ上げる。
      *
      * @param variantIds 削除するバリアントの ID
      * @param now        現在時刻
@@ -292,7 +302,8 @@ public class Cart {
 
     /**
      * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限を求める。
-     * 最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
+     *
+     * <p>最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
      *
      * @param expiredBefore 期限が切れた時刻の上限
      * @return 最後の変更の時刻の上限
@@ -304,7 +315,9 @@ public class Cart {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 期限が切れているか。最後の変更から 30 日ちょうどで切れる。
+     * 期限が切れているか。
+     *
+     * <p>最後の変更から 30 日ちょうどで切れる。
      */
     private boolean isExpiredAt(Instant now) {
         return !now.isBefore(updatedAt.plus(LIFETIME));
@@ -329,7 +342,9 @@ public class Cart {
     }
 
     /**
-     * バリアントの品目の位置。なければ -1。
+     * バリアントの品目の位置。
+     *
+     * <p>なければ -1。
      */
     private int indexOf(UUID variantId) {
         return IntStream.range(0, items.size())

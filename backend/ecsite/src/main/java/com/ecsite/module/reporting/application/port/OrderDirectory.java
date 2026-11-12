@@ -11,7 +11,9 @@ import java.util.UUID;
 public interface OrderDirectory {
 
     /**
-     * 注文の今の写しを読む。明細の商品 ID、出荷日時、配送状態は空（注文は持たない）。
+     * 注文の今の写しを読む。
+     *
+     * <p>明細の商品 ID、出荷日時、配送状態は空（注文は持たない）。
      *
      * @param orderId 注文 ID
      * @return 写し。注文がなければ空

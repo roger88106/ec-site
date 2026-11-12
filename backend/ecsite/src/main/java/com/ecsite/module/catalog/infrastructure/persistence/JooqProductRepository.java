@@ -93,9 +93,9 @@ class JooqProductRepository implements ProductRepository {
      * 商品を登録する。
      *
      * @param product 商品
-     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）。
-     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）。
-     *                           所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
+     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
+     * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     @Override
     public void add(Product product) {
@@ -143,13 +143,15 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 商品を更新する。所属カテゴリ、画像、バリアントは差分で更新する。
+     * 商品を更新する。
+     *
+     * <p>所属カテゴリ、画像、バリアントは差分で更新する。
      *
      * @param product 商品
-     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）。
-     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）。
-     *                           所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
+     * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     @Override
     public void save(Product product) {
@@ -189,7 +191,9 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 商品を削除する。商品の一部（画像を含む）は外部キーの ON DELETE CASCADE で消える。画像のアセットは手放さない。
+     * 商品を削除する。
+     *
+     * <p>商品の一部（画像を含む）は外部キーの ON DELETE CASCADE で消える。画像のアセットは手放さない。
      *
      * @param product 商品
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
@@ -232,7 +236,9 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 画像を差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順を更新する。削除した画像のアセットは手放さない。
+     * 画像を差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順を更新する。
+     *
+     * <p>削除した画像のアセットは手放さない。
      *
      * @param snapshot 商品のスナップショット
      */
@@ -330,7 +336,9 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * レコードから商品に変換する。商品の一部は別に取得する。
+     * レコードから商品に変換する。
+     *
+     * <p>商品の一部は別に取得する。
      *
      * @param record 商品のレコード
      * @return 商品

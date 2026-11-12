@@ -1,5 +1,6 @@
 package com.ecsite.module.member.api;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.application.MemberCommandService;
 import com.ecsite.module.member.application.MemberQueryService;
@@ -39,7 +40,7 @@ public class CurrentMemberIds {
      * ログインが必要な操作の、会員 ID を返す（初めてなら会員を作る）。
      *
      * @return 会員 ID
-     * @throws com.ecsite.common.error.exception.BusinessException ログインしていない（401）
+     * @throws BusinessException ログインしていない（401）
      */
     public UUID require() {
         return memberIdOf(currentMember.require().subject());

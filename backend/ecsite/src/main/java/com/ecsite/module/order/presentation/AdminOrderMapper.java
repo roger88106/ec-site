@@ -58,7 +58,9 @@ class AdminOrderMapper {
     }
 
     /**
-     * 注文の詳細のレスポンスに変換する。申請・キャンセル・支払・出荷がなければ、その項目を返さない。
+     * 注文の詳細のレスポンスに変換する。
+     *
+     * <p>申請・キャンセル・支払・出荷がなければ、その項目を返さない。
      *
      * @param view 注文の詳細
      * @return 注文の詳細のレスポンス
@@ -149,7 +151,9 @@ class AdminOrderMapper {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 注文一覧の 1 件。支払のない注文（決済を入れる前の注文）は支払の状態を、出荷していない注文は配送状態を返さない。
+     * 注文一覧の 1 件。
+     *
+     * <p>支払のない注文（決済を入れる前の注文）は支払の状態を、出荷していない注文は配送状態を返さない。
      */
     private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
                                           @Nullable OrderShipment shipment) {
@@ -258,7 +262,9 @@ class AdminOrderMapper {
     }
 
     /**
-     * 与信期限が近い印を付けるか。「受付」の注文だけに付ける（キャンセル済みの注文は、与信期限切れのままでも付けない）。
+     * 与信期限が近い印を付けるか。
+     *
+     * <p>「受付」の注文だけに付ける（キャンセル済みの注文は、与信期限切れのままでも付けない）。
      */
     private static boolean isAuthorizationExpiring(com.ecsite.module.order.domain.order.OrderStatus status,
                                                    @Nullable OrderPayment payment) {

@@ -22,7 +22,9 @@ class ShippingApiDirectory implements ShippingDirectory {
     private final ShippingApi shippingApi;
 
     /**
-     * 配送業者の表示名の文言のキーを返す。イベントの配送業者を、出荷モジュールの配送業者に変換して問い合わせる。
+     * 配送業者の表示名の文言のキーを返す。
+     *
+     * <p>イベントの配送業者を、出荷モジュールの配送業者に変換して問い合わせる。
      *
      * @param carrier 注文の出荷イベントの配送業者
      * @return 文言のキー

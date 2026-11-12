@@ -69,7 +69,8 @@ class SmtpTimeoutTest {
 
     /**
      * 送信の部品の宛先を、応えないサーバーにする（待ち時間の上限などの設定は、アプリの設定のまま）。
-     * 部品を書き換えるので、このテストの後に Spring のコンテキストを捨てる。
+     *
+     * <p>部品を書き換えるので、このテストの後に Spring のコンテキストを捨てる。
      */
     @BeforeEach
     void pointToSilentServer() {

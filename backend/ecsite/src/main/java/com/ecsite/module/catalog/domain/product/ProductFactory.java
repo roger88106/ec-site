@@ -17,7 +17,9 @@ import java.util.UUID;
 public class ProductFactory {
 
     /**
-     * 商品を作る。登録直後は非公開で、バリアントはない。
+     * 商品を作る。
+     *
+     * <p>登録直後は非公開で、バリアントはない。
      *
      * @param productCode   商品品番
      * @param name          商品名
@@ -27,8 +29,9 @@ public class ProductFactory {
      * @param categoryIds   所属カテゴリの ID
      * @param axes          バリアント軸の名前（並び順）
      * @return 商品
-     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）。
-     *                           バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     public Product create(ProductCode productCode, String name, String description, UUID taxCategoryId,
                           PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {

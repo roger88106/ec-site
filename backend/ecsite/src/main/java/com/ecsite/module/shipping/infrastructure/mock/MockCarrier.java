@@ -51,7 +51,9 @@ public class MockCarrier {
     private final RestClient restClient;
 
     /**
-     * 正しい署名の通知を作る。発生日時は今。
+     * 正しい署名の通知を作る。
+     *
+     * <p>発生日時は今。
      *
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号

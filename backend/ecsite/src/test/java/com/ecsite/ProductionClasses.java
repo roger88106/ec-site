@@ -81,7 +81,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * 本番のクラス（テストを除く）を返す。生成したコードを含む。
+     * 本番のクラス（テストを除く）を返す。
+     *
+     * <p>生成したコードを含む。
      *
      * @return {@code com.ecsite} の本番のクラス
      */
@@ -90,7 +92,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * 手書きの本番のクラスを返す。{@link #all()} から生成したコードを除いたもの。<br />
+     * 手書きの本番のクラスを返す。
+     *
+     * <p>{@link #all()} から生成したコードを除いたもの。<br />
      * 生成したコードのクラスも依存先としては読み込まれているので、生成したコードへの依存は見える。
      *
      * @return 生成したコードを除いた本番のクラス
@@ -100,7 +104,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * モジュールの本番のクラスを返す。{@link #all()} から {@code com.ecsite.module} の外を除いたもの。
+     * モジュールの本番のクラスを返す。
+     *
+     * <p>{@link #all()} から {@code com.ecsite.module} の外を除いたもの。
      *
      * @return {@code com.ecsite.module} の本番のクラス
      */
@@ -118,8 +124,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * 指定した層のどれかに、本番のクラスがあるモジュールの名前を返す。<br />
-     * 層を持たないモジュールで繰り返すと、規則の対象が 0 件になって常に通るので、層を持つモジュールだけを返す。
+     * 指定した層のどれかに、本番のクラスがあるモジュールの名前を返す。
+     *
+     * <p>層を持たないモジュールで繰り返すと、規則の対象が 0 件になって常に通るので、層を持つモジュールだけを返す。
      *
      * @param layers 層の名前
      * @return モジュールの名前（名前の順）
@@ -136,8 +143,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * エラーの種類を表す列挙（{@link ErrorCodeProvider} を実装する enum）の定数を、全て返す。<br />
-     * 文言の契約とエラーコードの契約の検査が、本番のエラーの定義を探すために使う。
+     * エラーの種類を表す列挙（{@link ErrorCodeProvider} を実装する enum）の定数を、全て返す。
+     *
+     * <p>文言の契約とエラーコードの契約の検査が、本番のエラーの定義を探すために使う。
      *
      * @return 本番のエラーの種類の列挙の定数
      */
@@ -204,7 +212,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * ソースの場所が testFixtures かを返す。単体テストの classpath には、ディレクトリでなく、test-fixtures の jar として入る。
+     * ソースの場所が testFixtures かを返す。
+     *
+     * <p>単体テストの classpath には、ディレクトリでなく、test-fixtures の jar として入る。
      *
      * @param location クラスの場所の URI
      * @return testFixtures のディレクトリか jar なら true
@@ -214,7 +224,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * ソースの場所が tools の出力かを返す。tools は開発で流すツールで、本番のクラスではない。
+     * ソースの場所が tools の出力かを返す。
+     *
+     * <p>tools は開発で流すツールで、本番のクラスではない。
      * 単体テストの classpath には、tools の出力のディレクトリ（build/classes/java/tools）が入る。
      *
      * @param location クラスの場所の URI
@@ -225,8 +237,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * 絞り込んだ検査の対象が 1 件以上あることを確認する。<br />
-     * 対象が 0 件の規則は、違反を見つけられないまま常に通るので、0 件なら説明を付けて失敗させる。
+     * 絞り込んだ検査の対象が 1 件以上あることを確認する。
+     *
+     * <p>対象が 0 件の規則は、違反を見つけられないまま常に通るので、0 件なら説明を付けて失敗させる。
      *
      * @param targets     絞り込んだ検査の対象
      * @param description 対象の説明（失敗の原因に出す）

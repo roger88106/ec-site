@@ -52,7 +52,9 @@ class ProfileFlagsTest {
     }
 
     /**
-     * 設定ファイルを重ねたときのフラグの値。どれにも書かれていなければ false。
+     * 設定ファイルを重ねたときのフラグの値。
+     *
+     * <p>どれにも書かれていなければ false。
      *
      * @param name     フラグの名前
      * @param profiles 指定する profile（順に重ねる）

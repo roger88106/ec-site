@@ -8,6 +8,7 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestSecurityConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -37,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 店舗の注文の詳細と一覧の、出荷の表示の受け入れテスト
  *
- * <p>注文と出荷は既定の会員（{@link com.ecsite.TestSecurityConfig}）で作る。テストごとにロールバックする。
+ * <p>注文と出荷は既定の会員（{@link TestSecurityConfig}）で作る。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

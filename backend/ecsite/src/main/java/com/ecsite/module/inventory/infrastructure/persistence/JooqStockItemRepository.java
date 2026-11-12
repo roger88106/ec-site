@@ -36,7 +36,9 @@ class JooqStockItemRepository implements StockItemRepository {
     private final Clock clock;
 
     /**
-     * 在庫数 0 の在庫を作る。バリアントの一意制約で、すでにあれば何もしない。
+     * 在庫数 0 の在庫を作る。
+     *
+     * <p>バリアントの一意制約で、すでにあれば何もしない。
      *
      * @param variantId バリアント ID
      * @param productId 商品 ID
@@ -62,8 +64,9 @@ class JooqStockItemRepository implements StockItemRepository {
      * @param variantId  バリアント ID
      * @param adjustment 在庫調整
      * @return 調整後の在庫数
-     * @throws BusinessException 調整後に負になる（{@code INSUFFICIENT_STOCK}）、運営者の調整で在庫数が上限を超える
-     *                           （{@code STOCK_QUANTITY_EXCEEDED}）、または在庫がない（{@code NOT_FOUND}）
+     * @throws BusinessException 調整後に負になる（{@code INSUFFICIENT_STOCK}）
+     * @throws BusinessException 運営者の調整で在庫数が上限を超える（{@code STOCK_QUANTITY_EXCEEDED}）
+     * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
     @Override
     public int adjust(UUID variantId, StockAdjustment adjustment) {
@@ -130,7 +133,9 @@ class JooqStockItemRepository implements StockItemRepository {
     }
 
     /**
-     * バリアントの在庫を消す。調整履歴は外部キーの ON DELETE CASCADE で消える。
+     * バリアントの在庫を消す。
+     *
+     * <p>調整履歴は外部キーの ON DELETE CASCADE で消える。
      *
      * @param variantId バリアント ID
      */
@@ -140,7 +145,9 @@ class JooqStockItemRepository implements StockItemRepository {
     }
 
     /**
-     * 商品のすべての在庫を消す。調整履歴は外部キーの ON DELETE CASCADE で消える。
+     * 商品のすべての在庫を消す。
+     *
+     * <p>調整履歴は外部キーの ON DELETE CASCADE で消える。
      *
      * @param productId 商品 ID
      */

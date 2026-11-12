@@ -43,7 +43,9 @@ class PermissionConverter implements Converter<Jwt, Collection<GrantedAuthority>
     }
 
     /**
-     * 管理 API の client role を権限にする。client role がなければ、権限なし。
+     * 管理 API の client role を権限にする。
+     *
+     * <p>client role がなければ、権限なし。
      */
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {

@@ -103,7 +103,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * システム例外のハンドラー。外部のサービスに接続できないエラーは 502 で、エラーコードとメッセージを返す。
+     * システム例外のハンドラー。
+     *
+     * <p>外部のサービスに接続できないエラーは 502 で、エラーコードとメッセージを返す。
      *
      * @param ex      {@link SystemException} システム例外
      * @param request リクエスト

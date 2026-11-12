@@ -66,17 +66,20 @@ public class CheckoutService {
     private final Clock clock;
 
     /**
-     * 注文手続きに進む。全品目をカートの数量だけ引き当てる。同じカートの前の注文手続きの引当は解く（進み直し）。
+     * 注文手続きに進む。
+     *
+     * <p>全品目をカートの数量だけ引き当てる。同じカートの前の注文手続きの引当は解く（進み直し）。
      * 1 品目でも引き当てられなければ何も引き当てない。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
      *
      * @param cartId               カート ID
      * @param memberId             会員 ID
      * @param acknowledgedOrderIds 確認した注文の ID（確認の画面で表示した注文。確認していなければ空）
      * @return 注文手続き ID
-     * @throws BusinessException カートがない、または会員の自分のカートでない（{@code NOT_FOUND}）。
-     *                           確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
-     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）。
-     *                           在庫が足りない（{@code OUT_OF_STOCK}）。注文できないカート（{@code CART_NOT_ORDERABLE}）
+     * @throws BusinessException カートがない、または会員の自分のカートでない（{@code NOT_FOUND}）
+     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
+     * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
+     * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）
+     * @throws BusinessException 注文できないカート（{@code CART_NOT_ORDERABLE}）
      */
     @Transactional
     public UUID start(@NonNull UUID cartId, @NonNull UUID memberId, @NonNull Set<UUID> acknowledgedOrderIds) {
@@ -107,7 +110,9 @@ public class CheckoutService {
     }
 
     /**
-     * カートのすべての注文手続きの引当を解く。何度呼んでも結果は同じ。
+     * カートのすべての注文手続きの引当を解く。
+     *
+     * <p>何度呼んでも結果は同じ。
      *
      * @param cartId カート ID
      */
@@ -119,7 +124,9 @@ public class CheckoutService {
     }
 
     /**
-     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。注文になったものも消す。
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。
+     *
+     * <p>注文になったものも消す。
      *
      * @param expiredBefore この時刻より前に期限が切れた注文手続きを消す
      * @param limit         消す件数の上限
@@ -134,7 +141,8 @@ public class CheckoutService {
      * 見積もりが注文できることを確認する。
      *
      * @param quote 見積もり
-     * @throws BusinessException 在庫だけが足りない（{@code OUT_OF_STOCK}）。それ以外で注文できない（{@code CART_NOT_ORDERABLE}。空、表示されない、販売停止）
+     * @throws BusinessException 在庫だけが足りない（{@code OUT_OF_STOCK}）
+     * @throws BusinessException それ以外で注文できない（{@code CART_NOT_ORDERABLE}。空、表示されない、販売停止）
      */
     static void verifyOrderable(Quote quote) {
         if (quote.orderable()) {

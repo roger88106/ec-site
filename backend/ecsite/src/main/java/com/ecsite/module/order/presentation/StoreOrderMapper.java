@@ -102,7 +102,9 @@ class StoreOrderMapper {
     }
 
     /**
-     * 注文のレスポンスに変換する。キャンセルの申請・キャンセル・出荷がなければ、その項目を返さない。
+     * 注文のレスポンスに変換する。
+     *
+     * <p>キャンセルの申請・キャンセル・出荷がなければ、その項目を返さない。
      * 支払の期限は、支払待ちのときだけ返す。出荷はキャンセルの後も返す。
      *
      * @param view 注文の詳細
@@ -171,7 +173,9 @@ class StoreOrderMapper {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 見積もりの品目 1 件。画像と購入できない理由は、null でも項目として返す。
+     * 見積もりの品目 1 件。
+     *
+     * <p>画像と購入できない理由は、null でも項目として返す。
      */
     private static QuoteItem toQuoteItem(com.ecsite.module.order.domain.quote.QuoteItem item) {
         var variant = item.variant();
@@ -267,7 +271,9 @@ class StoreOrderMapper {
     }
 
     /**
-     * 自分の注文の一覧の 1 件。支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
+     * 自分の注文の一覧の 1 件。
+     *
+     * <p>支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
      */
     private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
                                           @Nullable OrderShipment shipment) {

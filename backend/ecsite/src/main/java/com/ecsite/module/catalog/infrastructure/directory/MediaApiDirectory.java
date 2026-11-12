@@ -77,7 +77,9 @@ class MediaApiDirectory implements MediaDirectory {
     }
 
     /**
-     * アセットを手放す。配信のファイルは、コミットの後に消える。
+     * アセットを手放す。
+     *
+     * <p>配信のファイルは、コミットの後に消える。
      *
      * @param assetIds アセット ID
      */
@@ -100,7 +102,9 @@ class MediaApiDirectory implements MediaDirectory {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 受付の範囲を返す。商品 ID にする。
+     * 受付の範囲を返す。
+     *
+     * <p>商品 ID にする。
      */
     private static String scope(UUID productId) {
         return productId.toString();

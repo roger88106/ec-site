@@ -78,7 +78,9 @@ public class CustomerBreakdownQueryService {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 都道府県の売上を求める。売れた都道府県だけを、コードの順に並べ、不明を最後に置く。名前は地域から引く。
+     * 都道府県の売上を求める。
+     *
+     * <p>売れた都道府県だけを、コードの順に並べ、不明を最後に置く。名前は地域から引く。
      */
     private List<PrefectureSales> prefectureSales(List<SegmentTotal> segments) {
         var names = regionDirectory.prefectureNames();
@@ -98,7 +100,9 @@ public class CustomerBreakdownQueryService {
     }
 
     /**
-     * すべての区分について、売上を作る。売れなかった区分は 0 にする。
+     * すべての区分について、売上を作る。
+     *
+     * <p>売れなかった区分は 0 にする。
      */
     private static <K, R> List<R> forEveryValue(K[] values, Map<K, Total> totals, BiFunction<K, Total, R> toSales) {
         return Arrays.stream(values)

@@ -52,8 +52,9 @@ public class ProductQueryService {
      *
      * @param productId 商品 ID
      * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
     public void verifyCanAddImage(@NonNull UUID productId, long version) {
         productLoader.get(productId, version).verifyCanAddImage();
@@ -63,14 +64,17 @@ public class ProductQueryService {
      * 画像を加えられることを、バージョンなしで確認する（商品がある、枚数が上限に達していない）。
      *
      * @param productId 商品 ID
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
     public void verifyCanAddImage(@NonNull UUID productId) {
         productLoader.get(productId).verifyCanAddImage();
     }
 
     /**
-     * 商品の詳細を取得する。税込価格は現時点の税率で計算し、できる操作は現在時刻で決める。
+     * 商品の詳細を取得する。
+     *
+     * <p>税込価格は現時点の税率で計算し、できる操作は現在時刻で決める。
      *
      * @param id 商品 ID
      * @return 商品の詳細

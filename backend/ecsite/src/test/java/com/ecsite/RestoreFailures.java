@@ -36,7 +36,9 @@ public final class RestoreFailures {
     private final Map<String, Record> rowsByTable = new LinkedHashMap<>();
 
     /**
-     * 表が返す行を追加する。追加していない表は行を返さない。
+     * 表が返す行を追加する。
+     *
+     * <p>追加していない表は行を返さない。
      *
      * @param table 表の名前
      * @param row   返す行

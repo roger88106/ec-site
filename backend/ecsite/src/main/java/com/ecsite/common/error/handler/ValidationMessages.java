@@ -55,7 +55,9 @@ public class ValidationMessages {
     private final Map<String, ErrorDetail> errorsByField;
 
     /**
-     * 各モジュールの対応を合わせる。同じパスを複数のモジュールが対応づけていれば、起動で失敗させる。
+     * 各モジュールの対応を合わせる。
+     *
+     * <p>同じパスを複数のモジュールが対応づけていれば、起動で失敗させる。
      *
      * @param messageHelper メッセージの取り出し
      * @param mappings      各モジュールの、形の検証の誤りの業務のエラーへの対応
@@ -84,7 +86,9 @@ public class ValidationMessages {
     }
 
     /**
-     * 検証エラーの文を作る。業務のエラーに対応づけた項目ならその文、Bean Validation の違反なら制約の種類から作り、
+     * 検証エラーの文を作る。
+     *
+     * <p>業務のエラーに対応づけた項目ならその文、Bean Validation の違反なら制約の種類から作り、
      * そうでなければ（型の変換の失敗など）入力の検証の共通の文にする。
      *
      * @param error 検証エラー
@@ -101,7 +105,9 @@ public class ValidationMessages {
     }
 
     /**
-     * メソッド引数の検証エラーの文を作る。Bean Validation の違反でなければ、入力の検証の共通の文にする。
+     * メソッド引数の検証エラーの文を作る。
+     *
+     * <p>Bean Validation の違反でなければ、入力の検証の共通の文にする。
      *
      * @param result 引数の検証の結果
      * @param error  検証エラー
@@ -125,7 +131,9 @@ public class ValidationMessages {
     }
 
     /**
-     * 制約の種類と属性から文を作る。配列・一覧の長さは、文字数ではなく件数の文にする。
+     * 制約の種類と属性から文を作る。
+     *
+     * <p>配列・一覧の長さは、文字数ではなく件数の文にする。
      *
      * @param constraint 制約の種類（注釈の単純名。例：Size）
      * @param attributes 制約の属性（min、max、value など）

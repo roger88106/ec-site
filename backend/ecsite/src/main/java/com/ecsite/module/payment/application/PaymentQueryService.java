@@ -82,7 +82,9 @@ public class PaymentQueryService {
     }
 
     /**
-     * 与信期限が近い注文 ID を、与信の古い順に取得する。期限を過ぎたものを含む。
+     * 与信期限が近い注文 ID を、与信の古い順に取得する。
+     *
+     * <p>期限を過ぎたものを含む。
      *
      * @return 注文 ID
      */
@@ -131,7 +133,9 @@ public class PaymentQueryService {
     }
 
     /**
-     * 与信の反映を長く待つ未払いの支払の数を返す。待ち始めてから決済の設定
+     * 与信の反映を長く待つ未払いの支払の数を返す。
+     *
+     * <p>待ち始めてから決済の設定
      * {@code ecsite.payment.awaiting-authorization-warning}（既定 1 時間）を過ぎたものを数える。
      *
      * @return 支払の数
@@ -142,7 +146,9 @@ public class PaymentQueryService {
     }
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の反映を待つ支払は除く。
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
+     *
+     * <p>与信の反映を待つ支払は除く。
      *
      * @param limit 取得する数の上限
      * @return 支払

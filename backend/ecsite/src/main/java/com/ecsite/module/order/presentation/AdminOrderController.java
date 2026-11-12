@@ -57,7 +57,9 @@ class AdminOrderController implements OrderApi {
     private final CurrentOperator currentOperator;
 
     /**
-     * 注文一覧。注文日時の新しい順
+     * 注文一覧。
+     *
+     * <p>注文日時の新しい順
      *
      * @param orderNumber           注文番号の前方一致
      * @param status                状態
@@ -109,7 +111,9 @@ class AdminOrderController implements OrderApi {
     }
 
     /**
-     * キャンセルの申請の承認。キャンセル済みなら何もしない
+     * キャンセルの申請の承認。
+     *
+     * <p>キャンセル済みなら何もしない
      *
      * @param orderId 注文 ID
      * @return Http 204
@@ -133,7 +137,9 @@ class AdminOrderController implements OrderApi {
     }
 
     /**
-     * 運営者の判断によるキャンセル。キャンセル済みなら何もしない
+     * 運営者の判断によるキャンセル。
+     *
+     * <p>キャンセル済みなら何もしない
      *
      * @param orderId 注文 ID
      * @param request キャンセルのリクエスト（理由は必須。出荷済みなら在庫に戻すかも必須）

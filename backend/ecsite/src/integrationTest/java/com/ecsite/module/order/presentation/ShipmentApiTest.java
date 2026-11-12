@@ -237,7 +237,8 @@ class ShipmentApiTest {
 
         /**
          * 期限を過ぎてから、期限切れのジョブを実行する。
-         * 与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。注文への反映は、リスナーと同じ処理をここで呼ぶ。
+         *
+         * <p>与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。注文への反映は、リスナーと同じ処理をここで呼ぶ。
          */
         private void recoverByJob() throws Exception {
             clock.setInstant(NOW.plus(Duration.ofHours(2)));
@@ -362,7 +363,9 @@ class ShipmentApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * 400 で項目を示し、売上を確定しないことを確認する。項目が null のときは、項目ごとの誤りが付かないことを確認する
+     * 400 で項目を示し、売上を確定しないことを確認する。
+     *
+     * <p>項目が null のときは、項目ごとの誤りが付かないことを確認する
      */
     private void assertRejected(String carrier, String trackingNumber, String field) throws Exception {
         var body = trackingNumber == null

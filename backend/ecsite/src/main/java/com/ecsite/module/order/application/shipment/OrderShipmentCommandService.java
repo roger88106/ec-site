@@ -46,8 +46,10 @@ class OrderShipmentCommandService {
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号
      * @return 作った出荷
-     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。受付でない（{@code ORDER_NOT_SHIPPABLE}）。
-     *                           送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）。同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}）
+     * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
+     * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
     @Transactional
     public OrderShipment ship(@NonNull UUID orderId, @NonNull Carrier carrier, @NonNull String trackingNumber) {

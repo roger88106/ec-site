@@ -48,7 +48,9 @@ class StoreTokenAuthorizationManager implements AuthorizationManager<RequestAuth
     }
 
     /**
-     * リクエストのメソッドとパスで token の要否を求め、必要ならログインしているかで決める。{@code store.yaml} にないリクエストは拒否する。
+     * リクエストのメソッドとパスで token の要否を求め、必要ならログインしているかで決める。
+     *
+     * <p>{@code store.yaml} にないリクエストは拒否する。
      */
     @Override
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {

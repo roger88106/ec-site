@@ -28,7 +28,9 @@ class SchedulerLockConfig {
     static final String LOCK_AT_MOST_FOR = "PT10M";
 
     /**
-     * ロックの表（common.shedlock）を使うロックの provider。ロックの期限は DB の時計で決める。
+     * ロックの表（common.shedlock）を使うロックの provider。
+     *
+     * <p>ロックの期限は DB の時計で決める。
      *
      * @param dataSource データソース
      * @return ロックの provider

@@ -59,7 +59,9 @@ public class OrderReportQueryService {
     }
 
     /**
-     * 送料の消費税を求める。送料がなければ 0。
+     * 送料の消費税を求める。
+     *
+     * <p>送料がなければ 0。
      */
     private Money shippingTax(Order order) {
         var fee = order.amounts().shippingFee();

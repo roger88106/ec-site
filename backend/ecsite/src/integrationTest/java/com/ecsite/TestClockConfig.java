@@ -4,6 +4,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
+import java.time.Clock;
 import java.time.Instant;
 
 /**
@@ -14,7 +15,9 @@ import java.time.Instant;
 public class TestClockConfig {
 
     /**
-     * テスト用の時計。アプリの {@link java.time.Clock} より優先して注入される。
+     * テスト用の時計。
+     *
+     * <p>アプリの {@link Clock} より優先して注入される。
      * 初期値は、テストの例で使う日付（2026-10-08 00:00 日本時間）。
      *
      * @return 時計

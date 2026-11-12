@@ -60,7 +60,9 @@ class ManagementPortConfigTest {
     }
 
     /**
-     * 設定ファイルを重ねたときの値。どれにも書かれていなければ空。
+     * 設定ファイルを重ねたときの値。
+     *
+     * <p>どれにも書かれていなければ空。
      */
     private static Optional<String> value(String name, String... profiles) {
         return Optional.ofNullable(TestSettings.load(profiles).get(name));

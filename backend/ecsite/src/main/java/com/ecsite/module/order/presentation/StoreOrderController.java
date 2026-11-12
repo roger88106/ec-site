@@ -65,7 +65,9 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 自分の支払待ちの注文の一覧。注文日時の新しい順
+     * 自分の支払待ちの注文の一覧。
+     *
+     * <p>注文日時の新しい順
      *
      * @return Http 200 : {@link PendingOrderList}
      */
@@ -75,7 +77,9 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * キャンセルの申請。申請中なら何もしない
+     * キャンセルの申請。
+     *
+     * <p>申請中なら何もしない
      *
      * @param orderId 注文 ID
      * @param request キャンセルの申請のリクエスト
@@ -88,7 +92,9 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 支払画面を開く。開いている画面があれば同じ画面
+     * 支払画面を開く。
+     *
+     * <p>開いている画面があれば同じ画面
      *
      * @param orderId 注文 ID
      * @return Http 200 : {@link PaymentPage}
@@ -100,7 +106,9 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 自分の注文の一覧。注文日時の新しい順
+     * 自分の注文の一覧。
+     *
+     * <p>注文日時の新しい順
      *
      * @param page ページ番号
      * @param size 1 ページの件数

@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.port;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.model.PaymentAuthorization;
 import com.ecsite.module.order.application.model.PaymentSnapshot;
@@ -17,7 +18,9 @@ import java.util.UUID;
 public interface PaymentDirectory {
 
     /**
-     * 注文の支払（未払い）を作る。呼んだ側のトランザクションに加わる。
+     * 注文の支払（未払い）を作る。
+     *
+     * <p>呼んだ側のトランザクションに加わる。
      *
      * @param orderId   注文 ID
      * @param amount    金額（総額）
@@ -34,16 +37,20 @@ public interface PaymentDirectory {
     Optional<String> pageUrl(UUID orderId);
 
     /**
-     * 売上確定済みでなければ決済サービスを呼んで、注文の支払の売上を確定する。売上確定済みなら、呼ばずに成功する。
+     * 売上確定済みでなければ決済サービスを呼んで、注文の支払の売上を確定する。
+     *
+     * <p>売上確定済みなら、呼ばずに成功する。
      *
      * @param orderId 注文 ID
-     * @throws com.ecsite.common.error.exception.BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）。
-     *                                                             売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
+     * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
+     * @throws BusinessException 売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
      */
     void capture(UUID orderId);
 
     /**
-     * 注文の支払を取り消す。呼んだ側のトランザクションに加わり、与信の取消・返金の結果は待たない。
+     * 注文の支払を取り消す。
+     *
+     * <p>呼んだ側のトランザクションに加わり、与信の取消・返金の結果は待たない。
      *
      * @param orderId 注文 ID
      */
@@ -66,7 +73,9 @@ public interface PaymentDirectory {
     Map<UUID, PaymentAuthorization> findAuthorizations(Collection<UUID> orderIds);
 
     /**
-     * 与信期限が近い注文 ID を返す。期限を過ぎたものを含む。売上確定の前の注文だけが対象。
+     * 与信期限が近い注文 ID を返す。
+     *
+     * <p>期限を過ぎたものを含む。売上確定の前の注文だけが対象。
      *
      * @return 注文 ID
      */

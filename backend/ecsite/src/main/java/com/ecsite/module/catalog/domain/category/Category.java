@@ -81,7 +81,8 @@ public class Category extends AggregateRoot {
      * @param depth        階層の深さ
      * @param displayOrder 表示順
      * @param version      バージョン
-     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）。名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
+     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）
+     * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
     private Category(@NonNull UUID id, @Nullable UUID parentId, String name, int depth, int displayOrder, long version) {
         if (depth < 1 || depth > MAX_DEPTH) {
@@ -107,7 +108,8 @@ public class Category extends AggregateRoot {
      * @param name         名称
      * @param displayOrder 表示順
      * @return カテゴリ
-     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）。名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
+     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）
+     * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
     static Category create(UUID id, @Nullable Category parent, String name, int displayOrder) {
         if (parent == null) {
@@ -140,7 +142,9 @@ public class Category extends AggregateRoot {
     }
 
     /**
-     * 兄弟の並び順を変更する。送られた順に 1 から表示順を振り直す。
+     * 兄弟の並び順を変更する。
+     *
+     * <p>送られた順に 1 から表示順を振り直す。
      *
      * @param siblings   同じ親を持つ、今のカテゴリの全て
      * @param orderedIds 並べたい順のカテゴリ ID

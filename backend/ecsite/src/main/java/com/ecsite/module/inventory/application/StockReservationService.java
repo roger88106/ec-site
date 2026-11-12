@@ -90,7 +90,9 @@ public class StockReservationService {
     }
 
     /**
-     * 持ち主の引当を解く。なければ何もしない。
+     * 持ち主の引当を解く。
+     *
+     * <p>なければ何もしない。
      *
      * @param holderId 持ち主 ID
      */
@@ -180,7 +182,9 @@ public class StockReservationService {
     }
 
     /**
-     * ロックした在庫の販売可能数を求める。持ち主自身の引当は数えない。
+     * ロックした在庫の販売可能数を求める。
+     *
+     * <p>持ち主自身の引当は数えない。
      *
      * @return バリアント ID → 販売可能数
      */

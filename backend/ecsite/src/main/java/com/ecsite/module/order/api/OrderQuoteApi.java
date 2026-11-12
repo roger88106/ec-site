@@ -28,7 +28,9 @@ public class OrderQuoteApi {
     private final CartQuoteService cartQuoteService;
 
     /**
-     * カートを現在の価格・税率・販売可能数で見積もる。会員のカートは、持ち主の会員にだけ見積もる。
+     * カートを現在の価格・税率・販売可能数で見積もる。
+     *
+     * <p>会員のカートは、持ち主の会員にだけ見積もる。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）

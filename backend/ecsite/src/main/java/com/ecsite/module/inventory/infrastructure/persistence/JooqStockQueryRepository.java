@@ -104,7 +104,9 @@ class JooqStockQueryRepository implements StockQueryRepository {
     }
 
     /**
-     * 販売可能数を返す。在庫数から、在庫ごとの有効な引当の合計を引く。
+     * 販売可能数を返す。
+     *
+     * <p>在庫数から、在庫ごとの有効な引当の合計を引く。
      *
      * @param variantIds       バリアント ID
      * @param excludedHolderId 数えない引当の持ち主。なければ null

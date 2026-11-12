@@ -40,10 +40,11 @@ public class VariantCommandService {
      *
      * @param command バリアントの登録コマンド
      * @return 登録したバリアントの ID
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           項目の値が正しくない（{@code INVALID_VARIANT_CODE}、{@code INVALID_AXIS_VALUES}）。
-     *                           軸を持たない商品に 2 つ目のバリアントを登録しようとした（{@code SINGLE_VARIANT_ONLY}）。
-     *                           品番か軸の値の組み合わせが重複している（{@code VARIANT_CODE_ALREADY_EXISTS}、{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 項目の値が正しくない（{@code INVALID_VARIANT_CODE}、{@code INVALID_AXIS_VALUES}）
+     * @throws BusinessException 軸を持たない商品に 2 つ目のバリアントを登録しようとした（{@code SINGLE_VARIANT_ONLY}）
+     * @throws BusinessException 品番か軸の値の組み合わせが重複している（{@code VARIANT_CODE_ALREADY_EXISTS}、{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      */
     @Transactional
     public UUID addVariant(@NonNull AddVariantCommand command) {
@@ -65,9 +66,10 @@ public class VariantCommandService {
      * @param productId 商品 ID
      * @param variantId バリアント ID
      * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）。
-     *                           公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
+     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）
+     * @throws BusinessException 公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
     @Transactional
     public void deleteVariant(@NonNull UUID productId, @NonNull UUID variantId, long version) {
@@ -85,8 +87,9 @@ public class VariantCommandService {
      * バリアントの並び順を変更する。
      *
      * @param command バリアントの並び順の変更コマンド
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）
      */
     @Transactional
     public void reorderVariants(@NonNull ReorderVariantsCommand command) {
@@ -101,11 +104,14 @@ public class VariantCommandService {
     }
 
     /**
-     * バリアントを販売停止にする。冪等。
+     * バリアントを販売停止にする。
+     *
+     * <p>冪等。
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
-     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）。取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void suspendVariant(@NonNull UUID productId, @NonNull UUID variantId) {
@@ -113,11 +119,14 @@ public class VariantCommandService {
     }
 
     /**
-     * バリアントの販売停止を解除する。冪等。
+     * バリアントの販売停止を解除する。
+     *
+     * <p>冪等。
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
-     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）。取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void resumeVariant(@NonNull UUID productId, @NonNull UUID variantId) {

@@ -37,7 +37,9 @@ class PaymentNotificationService implements PaymentNotificationReceiver {
     private final Clock clock;
 
     /**
-     * 与信の成功を反映する。知らない支払画面なら、記録して無視する。
+     * 与信の成功を反映する。
+     *
+     * <p>知らない支払画面なら、記録して無視する。
      *
      * @param pageId           支払画面 ID
      * @param authorizationRef 与信の参照
@@ -51,7 +53,9 @@ class PaymentNotificationService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 支払画面の期限切れを反映する。支払の期限の後で未払いなら、支払なしにする。
+     * 支払画面の期限切れを反映する。
+     *
+     * <p>支払の期限の後で未払いなら、支払なしにする。
      *
      * @param pageId 支払画面 ID
      */

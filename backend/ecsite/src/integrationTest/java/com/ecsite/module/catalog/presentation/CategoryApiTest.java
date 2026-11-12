@@ -447,7 +447,9 @@ class CategoryApiTest {
     }
 
     /**
-     * カテゴリを登録する。親がなければ最上位
+     * カテゴリを登録する。
+     *
+     * <p>親がなければ最上位
      */
     private ResultActions createCategory(String name, String parentId) throws Exception {
         var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
@@ -476,7 +478,9 @@ class CategoryApiTest {
     }
 
     /**
-     * 兄弟のカテゴリを、指定した順に並び替える。親がなければ最上位
+     * 兄弟のカテゴリを、指定した順に並び替える。
+     *
+     * <p>親がなければ最上位
      */
     private ResultActions reorder(String parentId, String... categoryIds) throws Exception {
         var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);

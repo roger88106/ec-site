@@ -16,7 +16,9 @@ import java.util.UUID;
 public interface TaxDirectory {
 
     /**
-     * 税区分が、指定した時点で有効な税率を持つかを返す。存在しない税区分は持たないとみなす。
+     * 税区分が、指定した時点で有効な税率を持つかを返す。
+     *
+     * <p>存在しない税区分は持たないとみなす。
      *
      * @param taxCategoryId 税区分 ID
      * @param instant       時点
@@ -35,7 +37,9 @@ public interface TaxDirectory {
     Optional<Money> priceInclTaxAt(UUID taxCategoryId, Money priceExclTax, Instant instant);
 
     /**
-     * 全ての税区分について、指定した時点で有効な率を返す。税率の一覧はインスタンスの中で 30 秒キャッシュする。
+     * 全ての税区分について、指定した時点で有効な率を返す。
+     *
+     * <p>税率の一覧はインスタンスの中で 30 秒キャッシュする。
      *
      * @param instant 時点
      * @return 税区分 ID → 率（%）。有効な税率のない税区分は含まない

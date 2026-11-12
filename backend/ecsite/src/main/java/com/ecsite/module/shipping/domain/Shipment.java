@@ -1,5 +1,7 @@
 package com.ecsite.module.shipping.domain;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -16,62 +18,56 @@ import java.util.UUID;
  */
 @Getter
 @Accessors(fluent = true)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Shipment {
 
     /**
      * 出荷 ID
      */
+    @NonNull
     private final UUID id;
 
     /**
      * 注文 ID（注文 1 つにつき出荷は 1 つ）
      */
+    @NonNull
     private final UUID orderId;
 
     /**
      * 配送業者
      */
+    @NonNull
     private final Carrier carrier;
 
     /**
      * 送り状番号
      */
+    @NonNull
     private final TrackingNumber trackingNumber;
 
     /**
      * 配送状態
      */
+    @NonNull
     private DeliveryStatus status;
 
     /**
      * 出荷日時（運営者が出荷を登録した日時）
      */
+    @NonNull
     private final Instant shippedAt;
 
     /**
      * 最後に通知を反映した日時。まだ通知を反映していなければ null
      */
     @Nullable
-    @Getter(lombok.AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private Instant lastNotifiedAt;
 
     /**
-     * 項目をそのまま持つ。
-     */
-    private Shipment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Carrier carrier,
-                     @NonNull TrackingNumber trackingNumber, @NonNull DeliveryStatus status,
-                     @NonNull Instant shippedAt, @Nullable Instant lastNotifiedAt) {
-        this.id = id;
-        this.orderId = orderId;
-        this.carrier = carrier;
-        this.trackingNumber = trackingNumber;
-        this.status = status;
-        this.shippedAt = shippedAt;
-        this.lastNotifiedAt = lastNotifiedAt;
-    }
-
-    /**
-     * 出荷を作る。配送状態は「出荷済み」。
+     * 出荷を作る。
+     *
+     * <p>配送状態は「出荷済み」。
      *
      * @param id             出荷 ID
      * @param orderId        注文 ID
@@ -111,7 +107,9 @@ public class Shipment {
     }
 
     /**
-     * 通知の配送状態へ進める。今より高い順位でなければ、何もしない。
+     * 通知の配送状態へ進める。
+     *
+     * <p>今より高い順位でなければ、何もしない。
      *
      * @param next       通知の配送状態
      * @param notifiedAt 通知を反映する日時

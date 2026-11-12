@@ -15,7 +15,9 @@ import java.util.Map;
 public final class SalesTrend {
 
     /**
-     * 日ごとの売上を区切りにまとめる。売れなかった区切りも 0 として並べる。
+     * 日ごとの売上を区切りにまとめる。
+     *
+     * <p>売れなかった区切りも 0 として並べる。
      *
      * @param buckets 区切り（期間のすべて）
      * @param daily   日 → その日の売上

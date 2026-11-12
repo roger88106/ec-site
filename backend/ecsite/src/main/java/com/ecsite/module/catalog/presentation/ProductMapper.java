@@ -102,7 +102,9 @@ class ProductMapper {
     }
 
     /**
-     * 公開期間の変更コマンドに変換する。日時を省略・null にしたら、その側は限りがない。
+     * 公開期間の変更コマンドに変換する。
+     *
+     * <p>日時を省略・null にしたら、その側は限りがない。
      *
      * @param productId 商品 ID
      * @param request   公開期間の設定リクエスト
@@ -218,7 +220,9 @@ class ProductMapper {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * バリアントをレスポンスに変換する。画像 ID は指定がなければ null のまま返す。
+     * バリアントをレスポンスに変換する。
+     *
+     * <p>画像 ID は指定がなければ null のまま返す。
      */
     private static Variant toVariant(ProductDetailView.VariantView view) {
         return new Variant()

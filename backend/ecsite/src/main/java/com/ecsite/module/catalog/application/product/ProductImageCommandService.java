@@ -42,8 +42,9 @@ class ProductImageCommandService {
      * @param version   取得時の商品のバージョン
      * @param prepared  用意した画像
      * @return 画像 ID
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}。
-     *                           アセットの記録も取り消される）。画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}。アセットの記録も取り消される）
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
     @Transactional
     public UUID saveAddedImage(@NonNull UUID productId, long version, @NonNull PreparedImage prepared) {

@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.port;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.domain.order.Carrier;
 
@@ -15,15 +16,17 @@ import java.util.UUID;
 public interface ShippingDirectory {
 
     /**
-     * 注文の出荷を作る。呼んだ側のトランザクションに加わる。
+     * 注文の出荷を作る。
+     *
+     * <p>呼んだ側のトランザクションに加わる。
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（ハイフンは出荷モジュールが除く）
      * @param shippedAt      出荷日時
      * @return 作った出荷
-     * @throws com.ecsite.common.error.exception.BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）。
-     *                                                             同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
+     * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
+     * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
     OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt);
 

@@ -70,7 +70,9 @@ public final class ErrorCodeCheck {
     }
 
     /**
-     * 応答を確認する。エラーの本文（状態コードが 400 以上の JSON）でなければ何もしない。
+     * 応答を確認する。
+     *
+     * <p>エラーの本文（状態コードが 400 以上の JSON）でなければ何もしない。
      *
      * @param method      HTTP メソッド
      * @param path        アプリの中のパス（{@code /api/admin/...}）

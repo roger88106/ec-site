@@ -65,7 +65,9 @@ class StripeNotificationHandler {
     }
 
     /**
-     * 通知を受け取る。扱う種類は、与信の成功（Checkout Session の完了）と、支払画面の期限切れ（Checkout Session の期限切れ）だけで、
+     * 通知を受け取る。
+     *
+     * <p>扱う種類は、与信の成功（Checkout Session の完了）と、支払画面の期限切れ（Checkout Session の期限切れ）だけで、
      * 扱わない種類は、何もせずに受け付ける。
      *
      * @param payload         通知の本文（受け取ったまま。署名は本文のバイト列に対して付いている）

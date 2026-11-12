@@ -246,7 +246,9 @@ class CarrierWebhookTest {
     }
 
     /**
-     * ヤマト運輸の出荷を作る。送り状番号は、ほかのテストが確定した出荷と重ならない。
+     * ヤマト運輸の出荷を作る。
+     *
+     * <p>送り状番号は、ほかのテストが確定した出荷と重ならない。
      */
     private Created shipped() {
         var orderId = UUID.randomUUID();

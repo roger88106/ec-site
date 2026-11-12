@@ -1,11 +1,13 @@
 package com.ecsite.module.media.api;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.MediaService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.IllegalTransactionStateException;
 
 import java.net.URI;
 import java.util.Collection;
@@ -27,7 +29,9 @@ public class MediaApi {
     private final MediaService mediaService;
 
     /**
-     * 画像のアップロードを受け付ける。形式と大きさを確認し、アップロードのバケットへの署名付き URL を返す。
+     * 画像のアップロードを受け付ける。
+     *
+     * <p>形式と大きさを確認し、アップロードのバケットへの署名付き URL を返す。
      *
      * <p>受付は DB に記録しない。枚数の上限は確認しない。
      *
@@ -35,7 +39,7 @@ public class MediaApi {
      * @param contentType   ファイルの形式（申告）
      * @param contentLength ファイルの大きさ（申告。バイト）
      * @return 受付
-     * @throws com.ecsite.common.error.exception.BusinessException 形式が対象外、または大きさが範囲の外
+     * @throws BusinessException 形式が対象外、または大きさが範囲の外
      */
     public ImageUpload requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
         var view = mediaService.requestImageUpload(scope, contentType, contentLength);
@@ -52,7 +56,7 @@ public class MediaApi {
      * @param scope    受付のときの範囲。範囲の違う受付は見つからない
      * @param uploadId 受付 ID
      * @return 用意した画像
-     * @throws com.ecsite.common.error.exception.BusinessException 受付がない（範囲の違うものを含む）、大きさが範囲の外、中身が対象の画像でない、変換できない
+     * @throws BusinessException 受付がない（範囲の違うものを含む）、大きさが範囲の外、中身が対象の画像でない、変換できない
      */
     public PreparedImage prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
         return new PreparedImage(mediaService.prepareImage(scope, uploadId));
@@ -65,7 +69,7 @@ public class MediaApi {
      *
      * @param prepared 用意した画像
      * @return アセット ID
-     * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
+     * @throws IllegalTransactionStateException トランザクションの外で呼んだ
      */
     public UUID registerImage(@NonNull PreparedImage prepared) {
         mediaService.registerImage(prepared.assetId());
@@ -84,7 +88,9 @@ public class MediaApi {
     }
 
     /**
-     * アセットを手放す。記録を消し、配信のファイルはコミットの後に消す。
+     * アセットを手放す。
+     *
+     * <p>記録を消し、配信のファイルはコミットの後に消す。
      *
      * <p>呼んだ側のトランザクションがあれば、それに加わる。すでにないアセットは無視する（何度行っても同じ結果）。
      *

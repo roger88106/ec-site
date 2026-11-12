@@ -12,7 +12,9 @@ import java.util.UUID;
 public interface StockDirectory {
 
     /**
-     * 在庫のあるバリアントを返す。在庫がまだないバリアントは「在庫なし」とする。
+     * 在庫のあるバリアントを返す。
+     *
+     * <p>在庫がまだないバリアントは「在庫なし」とする。
      *
      * @param variantIds バリアント ID
      * @return 指定したうち、在庫のあるバリアントの ID

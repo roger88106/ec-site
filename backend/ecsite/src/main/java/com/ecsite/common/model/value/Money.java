@@ -60,7 +60,9 @@ public record Money(long yen) {
     }
 
     /**
-     * 数量を掛ける。桁あふれは {@link ArithmeticException} を投げる。
+     * 数量を掛ける。
+     *
+     * <p>桁あふれは {@link ArithmeticException} を投げる。
      *
      * @param quantity 数量
      * @return 数量を掛けた金額

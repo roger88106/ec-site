@@ -4,6 +4,8 @@ import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -22,6 +24,7 @@ import java.util.UUID;
  */
 @Getter
 @Accessors(fluent = true)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Payment extends AggregateRoot {
 
@@ -31,33 +34,38 @@ public class Payment extends AggregateRoot {
      * 支払 ID
      */
     @Identity
+    @NonNull
     private final UUID id;
 
     /**
      * 注文 ID（注文 1 つにつき支払は 1 つ）
      */
+    @NonNull
     private final UUID orderId;
 
     /**
      * 金額（注文の総額）
      */
+    @NonNull
     private final Money amount;
 
     /**
      * 支払の期限
      */
+    @NonNull
     private final Instant deadline;
 
     /**
      * 状態
      */
+    @NonNull
     private PaymentStatus status;
 
     /**
      * 開いている支払画面。まだ開いていなければ null
      */
     @Nullable
-    @Getter(lombok.AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private PaymentPage page;
 
     /**
@@ -71,14 +79,14 @@ public class Payment extends AggregateRoot {
      * 与信済みにした支払は決済サービスが返す与信の時刻。与信がなければ null
      */
     @Nullable
-    @Getter(lombok.AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private Instant authorizedAt;
 
     /**
      * 与信の反映を待ち始めた時刻（期限切れにしようとして、決済サービスで支払済みと知った時刻）。待っていなければ null
      */
     @Nullable
-    @Getter(lombok.AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private Instant awaitingAuthorizationSince;
 
     /**
@@ -87,24 +95,6 @@ public class Payment extends AggregateRoot {
     private final long version;
 
 // ============================== コンストラクタ ==============================
-
-    /**
-     * 全属性コンストラクタ
-     */
-    private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
-                    @NonNull PaymentStatus status, @Nullable PaymentPage page, @Nullable String authorizationRef,
-                    @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince, long version) {
-        this.id = id;
-        this.orderId = orderId;
-        this.amount = amount;
-        this.deadline = deadline;
-        this.status = status;
-        this.page = page;
-        this.authorizationRef = authorizationRef;
-        this.authorizedAt = authorizedAt;
-        this.awaitingAuthorizationSince = awaitingAuthorizationSince;
-        this.version = version;
-    }
 
     /**
      * 未払いの支払を作る。
@@ -131,7 +121,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 支払えるか（支払画面に移れるか）を返す。未払いで、期限の前だけ。
+     * 支払えるか（支払画面に移れるか）を返す。
+     *
+     * <p>未払いで、期限の前だけ。
      *
      * @param now 現在時刻
      * @return 支払えれば true
@@ -141,7 +133,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 開いた支払画面を覚える。次からは同じ画面を使う。
+     * 開いた支払画面を覚える。
+     *
+     * <p>次からは同じ画面を使う。
      *
      * @param page 支払画面
      */
@@ -153,7 +147,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信を反映する。与信の時刻は現在時刻にする。反映の仕方は {@link #authorize(String, Instant, Instant)} と同じ。
+     * 与信を反映する。
+     *
+     * <p>与信の時刻は現在時刻にする。反映の仕方は {@link #authorize(String, Instant, Instant)} と同じ。
      *
      * @param authorizationRef 与信の参照
      * @param now              現在時刻
@@ -163,7 +159,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信を反映する。未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを現在時刻で登録する。
+     * 与信を反映する。
+     *
+     * <p>未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを現在時刻で登録する。
      * 支払なしなら与信の取消待ちにする。それ以外なら何もしない。
      *
      * @param authorizationRef 与信の参照
@@ -190,7 +188,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 期限切れにする。未払いなら支払なしにして、支払の期限切れのイベントを登録する。
+     * 期限切れにする。
+     *
+     * <p>未払いなら支払なしにして、支払の期限切れのイベントを登録する。
      *
      * @param now 現在時刻
      * @return 支払なしにしたら true。未払いでなければ false
@@ -205,7 +205,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信の反映を待つ支払にする。状態は未払いのまま、待ち始めた時刻を覚える。未払いでないか、すでに待っていれば何もしない。
+     * 与信の反映を待つ支払にする。
+     *
+     * <p>状態は未払いのまま、待ち始めた時刻を覚える。未払いでないか、すでに待っていれば何もしない。
      *
      * @param now 現在時刻
      * @return 待ち始めたら true
@@ -229,7 +231,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 注文のキャンセルに合わせて取り消す。与信済みなら与信の取消待ちに、売上確定済みなら返金待ちに、未払いなら支払なしにする。
+     * 注文のキャンセルに合わせて取り消す。
+     *
+     * <p>与信済みなら与信の取消待ちに、売上確定済みなら返金待ちに、未払いなら支払なしにする。
      * それ以外なら何もしない。
      *
      * @param now 現在時刻
@@ -247,7 +251,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 売上を確定したことを反映する。与信済みなら売上確定済みにする。与信の取消待ちなら、返金待ちにして返金の依頼を登録する。
+     * 売上を確定したことを反映する。
+     *
+     * <p>与信済みなら売上確定済みにする。与信の取消待ちなら、返金待ちにして返金の依頼を登録する。
      * それ以外なら何もしない。
      *
      * @param now 現在時刻
@@ -264,7 +270,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 売上確定が与信の期限切れで断られたことを反映する。与信済みでなければ何もしない。
+     * 売上確定が与信の期限切れで断られたことを反映する。
+     *
+     * <p>与信済みでなければ何もしない。
      */
     public void expireAuthorization() {
         if (status == PaymentStatus.AUTHORIZED) {
@@ -273,7 +281,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 決済サービスで返金したことを反映する。返金待ちでなければ何もしない。
+     * 決済サービスで返金したことを反映する。
+     *
+     * <p>返金待ちでなければ何もしない。
      */
     public void markRefunded() {
         if (status == PaymentStatus.REFUND_PENDING) {
@@ -301,7 +311,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信期限が近いかを返す。与信済みと与信期限切れの支払だけが対象で、期限を過ぎていても近いとする。
+     * 与信期限が近いかを返す。
+     *
+     * <p>与信済みと与信期限切れの支払だけが対象で、期限を過ぎていても近いとする。
      *
      * @param term 与信の有効期間と、近いとする長さ
      * @param now  現在時刻
@@ -313,7 +325,9 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 決済サービスで与信を取り消したことを反映する。与信の取消待ちでなければ何もしない。
+     * 決済サービスで与信を取り消したことを反映する。
+     *
+     * <p>与信の取消待ちでなければ何もしない。
      */
     public void markVoided() {
         if (status == PaymentStatus.VOID_PENDING) {

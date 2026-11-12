@@ -159,7 +159,9 @@ class QuoteTest {
     }
 
     /**
-     * 見積もりの品目。率がなければ税込単価もない
+     * 見積もりの品目。
+     *
+     * <p>率がなければ税込単価もない
      */
     private static QuoteItem item(VariantInfo variant, int quantity, int sellable, BigDecimal ratePercent) {
         var priceInclTax = ratePercent == null ? null : TAX.priceInclTax(variant.priceExclTax(), ratePercent);

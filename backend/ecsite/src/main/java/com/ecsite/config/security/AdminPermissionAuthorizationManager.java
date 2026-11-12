@@ -50,7 +50,9 @@ class AdminPermissionAuthorizationManager implements AuthorizationManager<Reques
     }
 
     /**
-     * リクエストのメソッドとパスに必要な権限を求め、token がその権限を持てば許す。{@code admin.yaml} にないリクエストは拒否する。
+     * リクエストのメソッドとパスに必要な権限を求め、token がその権限を持てば許す。
+     *
+     * <p>{@code admin.yaml} にないリクエストは拒否する。
      */
     @Override
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {

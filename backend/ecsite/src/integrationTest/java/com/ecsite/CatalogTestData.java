@@ -107,7 +107,9 @@ public class CatalogTestData {
     }
 
     /**
-     * 軸を指定して商品を登録する。軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
+     * 軸を指定して商品を登録する。
+     *
+     * <p>軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
      *
      * @param taxCategoryId 税区分 ID
      * @param name          商品名
@@ -121,7 +123,9 @@ public class CatalogTestData {
     }
 
     /**
-     * 品番と軸を指定して商品を登録する。軸がなければ、バリアントを 1 つ持つ。
+     * 品番と軸を指定して商品を登録する。
+     *
+     * <p>軸がなければ、バリアントを 1 つ持つ。
      *
      * @param productCode   商品品番
      * @param taxCategoryId 税区分 ID
@@ -140,7 +144,9 @@ public class CatalogTestData {
     }
 
     /**
-     * カテゴリと軸を指定して商品を登録する。軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
+     * カテゴリと軸を指定して商品を登録する。
+     *
+     * <p>軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
      *
      * @param taxCategoryId 税区分 ID
      * @param name          商品名
@@ -160,7 +166,9 @@ public class CatalogTestData {
     }
 
     /**
-     * 説明とカテゴリを指定して、バリアントを 1 つ持つ商品を登録する。品番は呼ぶたびに振り直す。
+     * 説明とカテゴリを指定して、バリアントを 1 つ持つ商品を登録する。
+     *
+     * <p>品番は呼ぶたびに振り直す。
      *
      * @param taxCategoryId 税区分 ID
      * @param name          商品名
@@ -176,8 +184,9 @@ public class CatalogTestData {
     }
 
     /**
-     * バリアントを持たない商品を、カテゴリを指定して登録し、時計を 1 分進める（登録日時をずらして、一覧の並びが決まるようにする）。<br />
-     * バリアントは {@link TestProduct#variantCoded} で続けて登録する。
+     * バリアントを持たない商品を、カテゴリを指定して登録し、時計を 1 分進める（登録日時をずらして、一覧の並びが決まるようにする）。
+     *
+     * <p>バリアントは {@link TestProduct#variantCoded} で続けて登録する。
      *
      * @param productCode   商品品番
      * @param taxCategoryId 税区分 ID
@@ -192,7 +201,9 @@ public class CatalogTestData {
     }
 
     /**
-     * 画像のアップロードを受け付ける。応答は呼び出し側で確認する。
+     * 画像のアップロードを受け付ける。
+     *
+     * <p>応答は呼び出し側で確認する。
      *
      * @param productId     商品 ID
      * @param contentType   ファイルの Content-Type
@@ -227,7 +238,9 @@ public class CatalogTestData {
     }
 
     /**
-     * 受け付けた画像を確定する。結果は呼び出し側で確認する（商品のバージョンは進めない）。
+     * 受け付けた画像を確定する。
+     *
+     * <p>結果は呼び出し側で確認する（商品のバージョンは進めない）。
      *
      * @param productId 商品 ID
      * @param uploadId  受付の ID
@@ -351,7 +364,9 @@ public class CatalogTestData {
         }
 
         /**
-         * 受け付けた画像を確定する。結果は呼び出し側で確認する（商品のバージョンは進めない）。
+         * 受け付けた画像を確定する。
+         *
+         * <p>結果は呼び出し側で確認する（商品のバージョンは進めない）。
          *
          * @param uploadId 受付の ID
          * @param version  送るバージョン

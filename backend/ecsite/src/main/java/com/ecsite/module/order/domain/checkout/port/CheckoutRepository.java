@@ -30,7 +30,9 @@ public interface CheckoutRepository {
     Optional<Checkout> findById(UUID id);
 
     /**
-     * 注文手続きを行ロックして取得する。ロックはトランザクションの終わりまで続く。
+     * 注文手続きを行ロックして取得する。
+     *
+     * <p>ロックはトランザクションの終わりまで続く。
      *
      * @param id 注文手続き ID
      * @return 注文手続き。なければ空
@@ -54,7 +56,9 @@ public interface CheckoutRepository {
     Optional<UUID> findLatestIdByCartId(UUID cartId);
 
     /**
-     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。注文になったものも消す。
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。
+     *
+     * <p>注文になったものも消す。
      *
      * @param expiredBefore この時刻より前に期限が切れた注文手続きを消す
      * @param limit         消す件数の上限

@@ -67,7 +67,9 @@ public class ReportCatalogApi {
     }
 
     /**
-     * バリアントを公開の型に変換する。軸の名前と、バリアントの軸の値を、並びの位置で組にする。
+     * バリアントを公開の型に変換する。
+     *
+     * <p>軸の名前と、バリアントの軸の値を、並びの位置で組にする。
      */
     private static ReportProduct.Variant toVariant(List<String> axes, ProductDetailView.VariantView variant) {
         var axisValues = IntStream.range(0, axes.size())

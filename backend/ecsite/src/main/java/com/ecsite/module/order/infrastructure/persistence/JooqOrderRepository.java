@@ -80,7 +80,9 @@ class JooqOrderRepository implements OrderRepository {
     private final Clock clock;
 
     /**
-     * 注文を保存する。注文番号の一意制約に当たったら、何もせずに false を返す。
+     * 注文を保存する。
+     *
+     * <p>注文番号の一意制約に当たったら、何もせずに false を返す。
      *
      * @param order 注文
      * @return 保存したら true
@@ -130,7 +132,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文の状態の変更を保存する。注文の行だけを更新する。
+     * 注文の状態の変更を保存する。
+     *
+     * <p>注文の行だけを更新する。
      *
      * @param order 変更した注文
      */
@@ -239,7 +243,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * キャンセルの申請をレコードに書く。申請がなければ（null）、申請の項目は全て null にする。
+     * キャンセルの申請をレコードに書く。
+     *
+     * <p>申請がなければ（null）、申請の項目は全て null にする。
      */
     private static void writeRequest(SalesOrderRecord record, @Nullable CancellationRequest request) {
         record.setCancellationRequestedAt(request == null ? null : request.requestedAt());
@@ -252,7 +258,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * キャンセルをレコードに書く。キャンセルがなければ（null）、キャンセルの項目は全て null にする。
+     * キャンセルをレコードに書く。
+     *
+     * <p>キャンセルがなければ（null）、キャンセルの項目は全て null にする。
      */
     private static void writeCancellation(SalesOrderRecord record, @Nullable Cancellation cancellation) {
         record.setCancelledAt(cancellation == null ? null : cancellation.cancelledAt());
@@ -345,7 +353,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文の金額を読む。税率ごとの消費税額は別の表から、税率の高い順（の表示の順）に読む。
+     * 注文の金額を読む。
+     *
+     * <p>税率ごとの消費税額は別の表から、税率の高い順（の表示の順）に読む。
      */
     private Amounts restoreAmounts(SalesOrderRecord record) {
         var taxes = dsl.selectFrom(SALES_ORDER_TAX)
@@ -358,7 +368,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * キャンセルの申請を読む。申請がなければ null。
+     * キャンセルの申請を読む。
+     *
+     * <p>申請がなければ null。
      */
     private static @Nullable CancellationRequest restoreRequest(SalesOrderRecord record) {
         if (record.getCancellationRequestedAt() == null) {
@@ -372,7 +384,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * キャンセルを読む。キャンセルされていなければ null。
+     * キャンセルを読む。
+     *
+     * <p>キャンセルされていなければ null。
      */
     private static @Nullable Cancellation restoreCancellation(SalesOrderRecord record) {
         if (record.getCancelledAt() == null) {
@@ -392,7 +406,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 操作した運営者。記録を始める前の行は空なので null。
+     * 操作した運営者。
+     *
+     * <p>記録を始める前の行は空なので null。
      */
     private static @Nullable Operator operatorOf(@Nullable UUID id, String name) {
         return id == null ? null : new Operator(id, name);

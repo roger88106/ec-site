@@ -64,7 +64,9 @@ public final class CarrierSignature {
     }
 
     /**
-     * ヘッダーの値が、本文の署名と合うかを確認する。比べる時間が値で変わらないようにする。
+     * ヘッダーの値が、本文の署名と合うかを確認する。
+     *
+     * <p>比べる時間が値で変わらないようにする。
      *
      * @param body   本文
      * @param header ヘッダーの値。なければ null

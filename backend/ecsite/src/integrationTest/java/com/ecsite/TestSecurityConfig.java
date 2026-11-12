@@ -42,8 +42,9 @@ public class TestSecurityConfig {
     }
 
     /**
-     * テストだけの Controller（{@code /api/test-*}。エラーの応答の形などを確認する）を、認証なしで使えるようにする。<br />
-     * 本番の filter chain は、決めていない URL を拒むため（バックエンドのアーキテクチャの「業務のコードとの境界」）。
+     * テストだけの Controller（{@code /api/test-*}。エラーの応答の形などを確認する）を、認証なしで使えるようにする。
+     *
+     * <p>本番の filter chain は、決めていない URL を拒むため（バックエンドのアーキテクチャの「業務のコードとの境界」）。
      *
      * @param http HTTP の設定
      * @return テストだけの Controller の filter chain
@@ -59,7 +60,9 @@ public class TestSecurityConfig {
     }
 
     /**
-     * MockMvc のリクエストに、既定の token を付ける。管理 API には管理者（すべての権限）の token、
+     * MockMvc のリクエストに、既定の token を付ける。
+     *
+     * <p>管理 API には管理者（すべての権限）の token、
      * 店舗 API には既定の会員（{@link TestTokens#MEMBER_SUBJECT}）の token。<br />
      * 認証と認可・持ち主を確認するテスト以外は、ログインを前提に業務の振る舞いを確認するので、リクエストごとに token を書かない。
      * 店舗 API の会員を持たないカートは、token があっても今までどおり使える。

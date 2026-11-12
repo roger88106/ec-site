@@ -13,7 +13,9 @@ import java.util.UUID;
 public record CartItem(UUID variantId, int quantity, Instant addedAt) {
 
     /**
-     * 数量を変えた品目を返す。入れた日時（並びの位置）は変えない。
+     * 数量を変えた品目を返す。
+     *
+     * <p>入れた日時（並びの位置）は変えない。
      *
      * @param newQuantity 新しい数量
      * @return 品目

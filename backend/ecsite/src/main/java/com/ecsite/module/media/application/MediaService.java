@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +63,9 @@ public class MediaService {
     private final Clock clock;
 
     /**
-     * 画像のアップロードの受付を始める。形式と大きさを確認し、アップロードのバケットへの署名付き URL を発行する。
+     * 画像のアップロードの受付を始める。
+     *
+     * <p>形式と大きさを確認し、アップロードのバケットへの署名付き URL を発行する。
      *
      * @param scope         受付の範囲（英数字とハイフン）
      * @param contentType   ファイルの形式
@@ -87,7 +90,9 @@ public class MediaService {
     }
 
     /**
-     * 受け付けた画像を用意する。大きさと、先頭のバイトで判定した形式を確認し、WebP に変換して配信のバケットへ置く。
+     * 受け付けた画像を用意する。
+     *
+     * <p>大きさと、先頭のバイトで判定した形式を確認し、WebP に変換して配信のバケットへ置く。
      *
      * <p>DB を使わないので、トランザクションを始めない。
      *
@@ -118,10 +123,12 @@ public class MediaService {
     }
 
     /**
-     * 用意した画像をアセットとして記録する。呼んだ側のトランザクションの中で記録する。
+     * 用意した画像をアセットとして記録する。
+     *
+     * <p>呼んだ側のトランザクションの中で記録する。
      *
      * @param assetId 用意した画像のアセット ID
-     * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
+     * @throws IllegalTransactionStateException トランザクションの外で呼んだ
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerImage(@NonNull UUID assetId) {
@@ -129,7 +136,9 @@ public class MediaService {
     }
 
     /**
-     * 用意した画像の配信のファイルを消す。消すのに失敗しても例外を投げず、警告のログに保存先のキーを出す。
+     * 用意した画像の配信のファイルを消す。
+     *
+     * <p>消すのに失敗しても例外を投げず、警告のログに保存先のキーを出す。
      *
      * <p>消せなかったファイルは、だれからも参照されずに残る（登録のないファイルを探して消すことはしない）。
      *
@@ -145,7 +154,9 @@ public class MediaService {
     }
 
     /**
-     * アセットを手放す。記録を消し、配信のファイルはコミットの後に消す。すでにないアセットは無視する。
+     * アセットを手放す。
+     *
+     * <p>記録を消し、配信のファイルはコミットの後に消す。すでにないアセットは無視する。
      *
      * <p>記録の削除と同じトランザクションで、アセット解放のイベントを記録する。配信のファイルはコミットの後に消え、
      * トランザクションが取り消されたときは残る。
@@ -184,7 +195,9 @@ public class MediaService {
     }
 
     /**
-     * 手放したアセットの配信のファイルを消す。ファイルがなくても成功とする（何度行っても同じ結果）。
+     * 手放したアセットの配信のファイルを消す。
+     *
+     * <p>ファイルがなくても成功とする（何度行っても同じ結果）。
      *
      * <p>イベントは重ねて届くことがある（失敗したイベントを再発行するため）。
      *

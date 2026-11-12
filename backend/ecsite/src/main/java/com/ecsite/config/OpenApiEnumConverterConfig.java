@@ -41,7 +41,9 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
     private static final class StringToEnumConverterFactory implements ConverterFactory<String, Enum> {
 
         /**
-         * 変換先の列挙型への変換を返す。{@code fromValue} があればそれで、なければ定数名で変換する。
+         * 変換先の列挙型への変換を返す。
+         *
+         * <p>{@code fromValue} があればそれで、なければ定数名で変換する。
          */
         @Override
         public <T extends Enum> @NonNull Converter<String, T> getConverter(@NonNull Class<T> targetType) {

@@ -1,5 +1,7 @@
 package com.ecsite.common.error;
 
+import com.ecsite.common.error.exception.SystemException;
+
 /**
  * エラータイプ
  *
@@ -89,7 +91,7 @@ public enum ErrorType {
      * <ul>
      *     <li>決済サービスが応えず、売上を確定できない場合（しばらくしてからやり直せる）</li>
      * </ul>
-     * <p>{@link com.ecsite.common.error.exception.SystemException} で投げ、メッセージは利用者に見せる。
+     * <p>{@link SystemException} で投げ、メッセージは利用者に見せる。
      */
     EXTERNAL_SERVICE_ERROR,
 

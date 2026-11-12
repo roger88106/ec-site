@@ -72,7 +72,9 @@ final class OpenApiOperations<T> {
     }
 
     /**
-     * 契約を読み込む。パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキーがあれば、起動を止める。
+     * 契約を読み込む。
+     *
+     * <p>パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキーがあれば、起動を止める。
      *
      * @param resource 契約（{@code admin.yaml} など）
      * @param valueOf  操作の名前（{@code GET /products} の形）と操作の定義から、操作ごとの値を作る。起動を止めるときは例外を投げる
@@ -121,7 +123,9 @@ final class OpenApiOperations<T> {
     }
 
     /**
-     * 操作でないパスの下のキーが、OpenAPI の Path Item の項目か拡張であることを確認する。そうでなければ起動を止める。
+     * 操作でないパスの下のキーが、OpenAPI の Path Item の項目か拡張であることを確認する。
+     *
+     * <p>そうでなければ起動を止める。
      *
      * @param contract 契約のファイル
      * @param path     パス

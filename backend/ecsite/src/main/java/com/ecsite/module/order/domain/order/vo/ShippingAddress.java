@@ -64,7 +64,9 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
     private static final Pattern PHONE_DIGITS = Pattern.compile("\\d{%d,%d}".formatted(PHONE_MIN_DIGITS, PHONE_MAX_DIGITS));
 
     /**
-     * 入力からお届け先を作る。郵便番号と電話番号のハイフンを除く。
+     * 入力からお届け先を作る。
+     *
+     * <p>郵便番号と電話番号のハイフンを除く。
      *
      * @param name       氏名
      * @param postalCode 郵便番号（ハイフンは任意）
@@ -72,8 +74,10 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
      * @param address    市区町村より下の住所
      * @param phone      電話番号（ハイフンは任意）
      * @return お届け先
-     * @throws BusinessException 氏名が正しくない（{@code INVALID_RECIPIENT_NAME}）。郵便番号が正しくない（{@code INVALID_POSTAL_CODE}）。
-     *                           住所が正しくない（{@code INVALID_ADDRESS}）。電話番号が正しくない（{@code INVALID_PHONE_NUMBER}）
+     * @throws BusinessException 氏名が正しくない（{@code INVALID_RECIPIENT_NAME}）
+     * @throws BusinessException 郵便番号が正しくない（{@code INVALID_POSTAL_CODE}）
+     * @throws BusinessException 住所が正しくない（{@code INVALID_ADDRESS}）
+     * @throws BusinessException 電話番号が正しくない（{@code INVALID_PHONE_NUMBER}）
      */
     public static ShippingAddress of(String name, String postalCode, AddressArea area, String address, String phone) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {

@@ -25,7 +25,9 @@ public class CurrentMember {
     }
 
     /**
-     * token の会員を返す。なければ業務のエラーにする。
+     * token の会員を返す。
+     *
+     * <p>なければ業務のエラーにする。
      *
      * @return 会員
      * @throws BusinessException token がない（{@code UNAUTHENTICATED}）

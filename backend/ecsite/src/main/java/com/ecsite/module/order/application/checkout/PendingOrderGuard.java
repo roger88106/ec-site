@@ -36,8 +36,8 @@ class PendingOrderGuard {
      * @param memberId             会員 ID
      * @param acknowledgedOrderIds 確認した注文の ID
      * @return 今の支払待ちの注文の ID
-     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
-     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
+     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
+     * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      */
     Set<UUID> verifyAcknowledged(UUID memberId, Set<UUID> acknowledgedOrderIds) {
         // 確認の判定の後に、上限の判定を行う。両方の判定で、同じ支払待ちの注文の ID を使う
@@ -49,11 +49,12 @@ class PendingOrderGuard {
 
     /**
      * 今の支払待ちの注文が、全て注文手続きの確認した注文に含まれ、上限に達していないことを確認する。
-     * 画面の値でなく、注文手続きに保存した集合と比べる。
+     *
+     * <p>画面の値でなく、注文手続きに保存した集合と比べる。
      *
      * @param checkout 注文手続き
-     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
-     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
+     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
+     * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      */
     void verifyAcknowledged(Checkout checkout) {
         // 確認の判定の後に、上限の判定を行う。両方の判定で、同じ支払待ちの注文の ID を使う（読み取りは 1 回）。

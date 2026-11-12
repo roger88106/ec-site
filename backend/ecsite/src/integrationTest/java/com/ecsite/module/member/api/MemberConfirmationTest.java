@@ -191,7 +191,9 @@ class MemberConfirmationTest {
     }
 
     /**
-     * いまのトランザクションが読み取り専用か。トランザクションがなければ null
+     * いまのトランザクションが読み取り専用か。
+     *
+     * <p>トランザクションがなければ null
      */
     private static Boolean currentTransactionReadOnly() {
         return TransactionSynchronizationManager.isActualTransactionActive()

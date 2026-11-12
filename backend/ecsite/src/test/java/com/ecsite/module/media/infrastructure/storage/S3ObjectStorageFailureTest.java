@@ -135,7 +135,9 @@ class S3ObjectStorageFailureTest {
     }
 
     /**
-     * 失敗の分類を確認する操作（名前、呼び出し）。署名付き URL の発行は S3 を呼ばないので除く
+     * 失敗の分類を確認する操作（名前、呼び出し）。
+     *
+     * <p>署名付き URL の発行は S3 を呼ばないので除く
      */
     static Stream<Arguments> operations() {
         return Stream.of(

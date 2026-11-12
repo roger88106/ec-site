@@ -41,15 +41,17 @@ public class ShipmentService {
     private final ApplicationEventPublisher events;
 
     /**
-     * 出荷を作る。配送状態は「出荷済み」で、配送状態の変化のイベントを出す。呼んだ側のトランザクションに加わる。
+     * 出荷を作る。
+     *
+     * <p>配送状態は「出荷済み」で、配送状態の変化のイベントを出す。呼んだ側のトランザクションに加わる。
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号の入力
      * @param shippedAt      出荷日時
      * @return 作った出荷
-     * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）、
-     *                           同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
+     * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）
+     * @throws BusinessException 同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
      */
     @Transactional
     public Shipment create(@NonNull UUID orderId, @NonNull Carrier carrier, String trackingNumber,

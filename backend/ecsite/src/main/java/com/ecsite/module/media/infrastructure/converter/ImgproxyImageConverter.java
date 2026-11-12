@@ -114,7 +114,9 @@ class ImgproxyImageConverter implements ImageConverter {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 処理の指定と元のファイルの URL（base64url）。/q:{品質}/f:webp/{元の URL}
+     * 処理の指定と元のファイルの URL（base64url）。
+     *
+     * <p>/q:{品質}/f:webp/{元の URL}
      */
     private String processingPath(String uploadKey) {
         var source = uploadSourceUrl(uploadKey);
@@ -122,7 +124,9 @@ class ImgproxyImageConverter implements ImageConverter {
     }
 
     /**
-     * URL の署名。base64url(HMAC-SHA256(鍵, ソルト + パス))
+     * URL の署名。
+     *
+     * <p>base64url(HMAC-SHA256(鍵, ソルト + パス))
      */
     private String signature(String path) {
         try {

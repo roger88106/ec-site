@@ -38,7 +38,9 @@ public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCo
     }
 
     /**
-     * 軸の値を連結した軸キーを返す。軸キーは、商品の中の軸の値の組み合わせを一意に表す。軸のない商品では空文字。
+     * 軸の値を連結した軸キーを返す。
+     *
+     * <p>軸キーは、商品の中の軸の値の組み合わせを一意に表す。軸のない商品では空文字。
      *
      * @return 軸キー
      */

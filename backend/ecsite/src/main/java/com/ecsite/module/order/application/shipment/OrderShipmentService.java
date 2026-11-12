@@ -38,16 +38,20 @@ public class OrderShipmentService {
     private final OrderShipmentCommandService commandService;
 
     /**
-     * 出荷を登録する。受付の注文の売上を確定してから、注文を出荷済みにし、出荷を作る。
+     * 出荷を登録する。
+     *
+     * <p>受付の注文の売上を確定してから、注文を出荷済みにし、出荷を作る。
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号
      * @return 作った出荷
-     * @throws BusinessException 注文または支払がない（{@code NOT_FOUND}）。受付でない（{@code ORDER_NOT_SHIPPABLE}。売上確定の後に変わった場合を含み、
-     *                           そのとき支払は売上確定済みのまま残る）。与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）。
-     *                           売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）。送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）。
-     *                           同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
+     * @throws BusinessException 注文または支払がない（{@code NOT_FOUND}）
+     * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}。売上確定の後に変わった場合を含み、そのとき支払は売上確定済みのまま残る）
+     * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
+     * @throws BusinessException 売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
+     * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
+     * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
     public OrderShipment ship(@NonNull UUID orderId, @NonNull Carrier carrier, @NonNull String trackingNumber) {
         // 出荷できるかの確認 ※出荷できなければ、売上を確定しない

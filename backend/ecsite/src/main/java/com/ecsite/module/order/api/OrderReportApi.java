@@ -66,7 +66,9 @@ public class OrderReportApi {
     }
 
     /**
-     * 明細を公開の型にする。税抜小計は税抜単価 × 数量。
+     * 明細を公開の型にする。
+     *
+     * <p>税抜小計は税抜単価 × 数量。
      */
     private static OrderReportSnapshot.Line toLine(OrderLine line) {
         return new OrderReportSnapshot.Line(

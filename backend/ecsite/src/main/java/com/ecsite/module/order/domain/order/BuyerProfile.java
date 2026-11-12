@@ -52,7 +52,9 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
     }
 
     /**
-     * 注文日の満年齢を求める。生年月日がない、形が正しくない、注文日より後、上限の年齢より前なら null。
+     * 注文日の満年齢を求める。
+     *
+     * <p>生年月日がない、形が正しくない、注文日より後、上限の年齢より前なら null。
      */
     private static @Nullable Integer ageOf(@Nullable String birthdate, LocalDate orderDate) {
         if (birthdate == null) {

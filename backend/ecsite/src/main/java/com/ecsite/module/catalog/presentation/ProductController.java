@@ -121,7 +121,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの登録。Location は、登録したバリアントの URL（削除などの操作の URL）
+     * バリアントの登録。
+     *
+     * <p>Location は、登録したバリアントの URL（削除などの操作の URL）
      *
      * @param productId 商品 ID
      * @param request   バリアントの登録リクエスト
@@ -149,7 +151,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 公開する。冪等
+     * 公開する。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -161,7 +165,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 非公開にする。冪等
+     * 非公開にする。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -173,7 +179,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 販売終了にする。冪等
+     * 販売終了にする。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -211,7 +219,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの販売停止。冪等
+     * バリアントの販売停止。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -224,7 +234,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの販売停止の解除。冪等
+     * バリアントの販売停止の解除。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -252,7 +264,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 受け付けた画像の登録。商品の一部で単独の URL を持たないので、Location は返さない
+     * 受け付けた画像の登録。
+     *
+     * <p>商品の一部で単独の URL を持たないので、Location は返さない
      *
      * @param productId 商品 ID
      * @param request   画像の登録リクエスト

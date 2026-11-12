@@ -38,7 +38,9 @@ class EventCleanupJob {
     private final Clock clock;
 
     /**
-     * 処理を終えた時刻から保存期間を過ぎたイベントを消す。未完了のイベントと止めたイベントは消さない。
+     * 処理を終えた時刻から保存期間を過ぎたイベントを消す。
+     *
+     * <p>未完了のイベントと止めたイベントは消さない。
      */
     // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"

@@ -50,7 +50,9 @@ public class CheckoutQueryService {
     private final Clock clock;
 
     /**
-     * 注文手続きを表示する。見積もりは表示の時点の価格・税率で、自分の引当を販売可能数から除く。
+     * 注文手続きを表示する。
+     *
+     * <p>見積もりは表示の時点の価格・税率で、自分の引当を販売可能数から除く。
      *
      * @param checkoutId 注文手続き ID
      * @param memberId   リクエストした会員の ID

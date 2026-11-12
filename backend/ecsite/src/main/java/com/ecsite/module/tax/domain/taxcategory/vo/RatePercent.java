@@ -62,7 +62,9 @@ public record RatePercent(BigDecimal value) {
     }
 
     /**
-     * 末尾の 0 を除く。整数は指数表記（{@code 1E+1}）にならないよう、小数の桁数を 0 にする。
+     * 末尾の 0 を除く。
+     *
+     * <p>整数は指数表記（{@code 1E+1}）にならないよう、小数の桁数を 0 にする。
      *
      * @param value 値
      * @return そろえた値

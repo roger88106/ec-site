@@ -38,7 +38,8 @@ class ProductLoader {
      * @param productId 商品 ID
      * @param version   取得時のバージョン
      * @return 商品
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     Product get(UUID productId, long version) {
         var product = get(productId);
@@ -65,7 +66,8 @@ class ProductLoader {
      *
      * @param productId 商品 ID
      * @param operation 切り替えの操作。状態が変わったら true を返す
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     void changeStatus(UUID productId, BiPredicate<Product, Instant> operation) {
         // 状態の切り替えはバージョンを受け取らない（API の規約）。取得から保存までの間の更新は、保存のときに競合として検出する

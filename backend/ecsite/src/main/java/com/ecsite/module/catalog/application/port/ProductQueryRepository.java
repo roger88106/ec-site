@@ -25,7 +25,9 @@ public interface ProductQueryRepository {
     Optional<ProductDetailView> findDetailById(UUID id);
 
     /**
-     * B 側の商品一覧を取得する。状態に関係なく、全ての商品が対象。並びは登録日時の新しい順で、同じなら ID の順。
+     * B 側の商品一覧を取得する。
+     *
+     * <p>状態に関係なく、全ての商品が対象。並びは登録日時の新しい順で、同じなら ID の順。
      *
      * @param query   絞り込みの条件
      * @param request ページの指定

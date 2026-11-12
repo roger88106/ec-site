@@ -255,7 +255,9 @@ class KeycloakIntegrationTest {
     }
 
     /**
-     * パスワードで access token を取る。失敗すると、ステータスを含む例外になる。
+     * パスワードで access token を取る。
+     *
+     * <p>失敗すると、ステータスを含む例外になる。
      */
     private static String token(String realm, String clientId, String secret, String username, String password) {
         var form = new LinkedMultiValueMap<String, String>();

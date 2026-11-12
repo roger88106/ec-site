@@ -73,7 +73,9 @@ public class PaymentTestData {
     }
 
     /**
-     * 支払画面を開いて支払い、与信済みにする。画面の ID は覚えておく。
+     * 支払画面を開いて支払い、与信済みにする。
+     *
+     * <p>画面の ID は覚えておく。
      *
      * @param orderId 注文 ID
      * @return 支払画面 ID

@@ -853,7 +853,9 @@ class ProductApiTest {
     }
 
     /**
-     * 公開期間を設定する。日時は JSON の値（文字列か null）で渡す
+     * 公開期間を設定する。
+     *
+     * <p>日時は JSON の値（文字列か null）で渡す
      */
     private ResultActions setPeriod(String id, String publishStart, String publishEnd, long version) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/publication-period")

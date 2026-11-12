@@ -36,11 +36,15 @@ public class ProductPublicationService {
     private final Clock clock;
 
     /**
-     * 公開する。冪等。
+     * 公開する。
+     *
+     * <p>冪等。
      *
      * @param productId 商品 ID
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。販売終了の商品（{@code PRODUCT_DISCONTINUED}）。
-     *                           バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）。取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
+     * @throws BusinessException バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）
+     * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void publishProduct(@NonNull UUID productId) {
@@ -48,11 +52,14 @@ public class ProductPublicationService {
     }
 
     /**
-     * 非公開にする。冪等。
+     * 非公開にする。
+     *
+     * <p>冪等。
      *
      * @param productId 商品 ID
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。販売終了の商品（{@code PRODUCT_DISCONTINUED}）。
-     *                           取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
+     * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void unpublishProduct(@NonNull UUID productId) {
@@ -60,10 +67,13 @@ public class ProductPublicationService {
     }
 
     /**
-     * 販売終了にする。冪等。
+     * 販売終了にする。
+     *
+     * <p>冪等。
      *
      * @param productId 商品 ID
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void discontinueProduct(@NonNull UUID productId) {
@@ -74,8 +84,9 @@ public class ProductPublicationService {
      * 公開期間を変更する。
      *
      * @param command 公開期間の変更コマンド
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           開始が終了より前でない（{@code INVALID_PUBLICATION_PERIOD}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 開始が終了より前でない（{@code INVALID_PUBLICATION_PERIOD}）
      */
     @Transactional
     public void changePublicationPeriod(@NonNull ChangePublicationPeriodCommand command) {

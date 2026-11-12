@@ -43,7 +43,9 @@ public enum DeliveryStatus {
     }
 
     /**
-     * 指定した状態へ進めるかを返す。今より高い順位だけ。
+     * 指定した状態へ進めるかを返す。
+     *
+     * <p>今より高い順位だけ。
      *
      * @param next 進める先の状態
      * @return 進めれば true

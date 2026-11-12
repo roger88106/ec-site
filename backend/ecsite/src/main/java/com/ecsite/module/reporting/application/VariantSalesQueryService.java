@@ -38,7 +38,9 @@ public class VariantSalesQueryService {
     private final CatalogDirectory catalogDirectory;
 
     /**
-     * バリアントの売れ行きを求める。売れなかったバリアントも 0 として返す。
+     * バリアントの売れ行きを求める。
+     *
+     * <p>売れなかったバリアントも 0 として返す。
      *
      * @param query 条件
      * @return バリアントごとの売れ行き

@@ -35,12 +35,16 @@ public class CategoryCommandService {
     private final CategoryFactory categoryFactory;
 
     /**
-     * カテゴリを登録する。兄弟の最後に並べる。
+     * カテゴリを登録する。
+     *
+     * <p>兄弟の最後に並べる。
      *
      * @param command カテゴリの登録コマンド
      * @return 登録したカテゴリの ID
-     * @throws BusinessException 親カテゴリがない（{@code NOT_FOUND}）。深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）。
-     *                           名称が範囲の外（{@code INVALID_CATEGORY_NAME}）。同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     * @throws BusinessException 親カテゴリがない（{@code NOT_FOUND}）
+     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）
+     * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     @Transactional
     public UUID createCategory(@NonNull CreateCategoryCommand command) {
@@ -61,8 +65,10 @@ public class CategoryCommandService {
      * カテゴリ名を変更する。
      *
      * @param command カテゴリ名の変更コマンド
-     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           名称が範囲の外（{@code INVALID_CATEGORY_NAME}）。同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     @Transactional
     public void renameCategory(@NonNull RenameCategoryCommand command) {
@@ -83,7 +89,8 @@ public class CategoryCommandService {
      * 兄弟カテゴリの並び順を変更する。
      *
      * @param command 並び順の変更コマンド
-     * @throws BusinessException 親カテゴリがない（{@code NOT_FOUND}）。兄弟と過不足なく一致しない（{@code INVALID_CATEGORY_ORDER}）
+     * @throws BusinessException 親カテゴリがない（{@code NOT_FOUND}）
+     * @throws BusinessException 兄弟と過不足なく一致しない（{@code INVALID_CATEGORY_ORDER}）
      */
     @Transactional
     public void reorderCategories(@NonNull ReorderCategoriesCommand command) {
@@ -103,8 +110,9 @@ public class CategoryCommandService {
      * カテゴリを削除する。
      *
      * @param categoryId カテゴリ ID
-     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）。子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）。
-     *                           商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）
+     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）
+     * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）
+     * @throws BusinessException 商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）
      */
     @Transactional
     public void deleteCategory(@NonNull UUID categoryId) {

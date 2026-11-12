@@ -41,7 +41,9 @@ public interface ObjectStorage {
     byte[] readUploadHead(String uploadKey, int length);
 
     /**
-     * 配信のバケットへファイルを書き込む。長くキャッシュさせる（キーを上書きしないため）。
+     * 配信のバケットへファイルを書き込む。
+     *
+     * <p>長くキャッシュさせる（キーを上書きしないため）。
      *
      * @param publicKey   配信のバケットのキー
      * @param content     ファイルの中身（変換した画像）
@@ -50,7 +52,9 @@ public interface ObjectStorage {
     void putPublished(String publicKey, byte[] content, String contentType);
 
     /**
-     * 配信のバケットのファイルを消す。ファイルがなくても成功とする（何度行っても同じ結果）。
+     * 配信のバケットのファイルを消す。
+     *
+     * <p>ファイルがなくても成功とする（何度行っても同じ結果）。
      *
      * @param publicKey 配信のバケットのキー
      */

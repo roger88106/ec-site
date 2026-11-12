@@ -360,7 +360,9 @@ class PlaceOrderApiTest {
         }
 
         /**
-         * カートの 1 品目の数量の上限（{@code Cart.MAX_QUANTITY}）。値を直書きせず、カートの定数から取る。
+         * カートの 1 品目の数量の上限（{@code Cart.MAX_QUANTITY}）。
+         *
+         * <p>値を直書きせず、カートの定数から取る。
          * 定数はカートのモジュールの中だけに公開しているので、リフレクションで読む（FieldConstraintContractTest と同じ）
          */
         private static int maxCartQuantity() throws Exception {
@@ -731,7 +733,8 @@ class PlaceOrderApiTest {
 
         /**
          * 支払待ちの注文を上限（3 件）まで作り、それらを全て確認して T シャツ 2 枚の注文手続きを始め、注文手続き ID を返す。
-         * 開始の時点も上限で拒否するので、開始の間だけ上限を上げる。設定の上限が、開始と注文の間に下がった場合を想定する（最終的な判定は注文の時点）
+         *
+         * <p>開始の時点も上限で拒否するので、開始の間だけ上限を上げる。設定の上限が、開始と注文の間に下がった場合を想定する（最終的な判定は注文の時点）
          */
         private UUID startAcknowledgingAtLimit() throws Exception {
             var pendingIds = orders.placePendingOrders(cartId, stockedVariants(3));
@@ -778,7 +781,9 @@ class PlaceOrderApiTest {
         }
 
         /**
-         * 公開した商品（1,000 円・10%）のバリアントを、指定した数だけ作る（在庫数は各 3）。バリアント ID を返す
+         * 公開した商品（1,000 円・10%）のバリアントを、指定した数だけ作る（在庫数は各 3）。
+         *
+         * <p>バリアント ID を返す
          */
         private List<UUID> stockedVariants(int count) throws Exception {
             var variants = new ArrayList<UUID>();

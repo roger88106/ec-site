@@ -41,7 +41,9 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
     }
 
     /**
-     * 期間を区切りに分ける。期間が区切りの途中で切れたら、その区切りは期間の中の日だけにする。
+     * 期間を区切りに分ける。
+     *
+     * <p>期間が区切りの途中で切れたら、その区切りは期間の中の日だけにする。
      *
      * @param granularity          粒度
      * @param fiscalYearStartMonth 会計年度の始まりの月（1〜12）
@@ -87,7 +89,9 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
     }
 
     /**
-     * 日の会計年度（始まりの月の年）。始まりの月より前の月は、前の年の年度。
+     * 日の会計年度（始まりの月の年）。
+     *
+     * <p>始まりの月より前の月は、前の年の年度。
      */
     private static int fiscalYearOf(LocalDate date, int fiscalYearStartMonth) {
         return date.getMonthValue() >= fiscalYearStartMonth ? date.getYear() : date.getYear() - 1;

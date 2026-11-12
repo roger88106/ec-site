@@ -36,7 +36,9 @@ public record OrderNumber(String value) {
     private static final int RANDOM_BOUND = 1_000_000;
 
     /**
-     * コンストラクタ。形の違う値は、プログラムの誤りとして拒否する。
+     * コンストラクタ。
+     *
+     * <p>形の違う値は、プログラムの誤りとして拒否する。
      *
      * @param value 注文番号
      */
@@ -58,7 +60,9 @@ public record OrderNumber(String value) {
     }
 
     /**
-     * 注文日時から注文番号を作る。重複しないことは保証しない。
+     * 注文日時から注文番号を作る。
+     *
+     * <p>重複しないことは保証しない。
      *
      * @param orderedAt 注文日時
      * @param random    乱数

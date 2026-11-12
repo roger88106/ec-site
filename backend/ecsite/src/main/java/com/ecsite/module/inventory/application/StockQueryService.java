@@ -77,7 +77,9 @@ public class StockQueryService {
     }
 
     /**
-     * 販売可能数を返す。在庫のないバリアントは 0。
+     * 販売可能数を返す。
+     *
+     * <p>在庫のないバリアントは 0。
      *
      * @param variantIds       バリアント ID
      * @param excludedHolderId 数えない引当の持ち主（注文手続き中の自分の引当）。なければ null

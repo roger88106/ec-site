@@ -10,7 +10,9 @@ import com.ecsite.module.shipping.domain.Carrier;
 public interface CarrierTracking {
 
     /**
-     * 追跡を始める。物流サービスに送り状番号を登録し、配送状態の通知を受け取れるようにする。重ねて呼んでも結果は同じ。
+     * 追跡を始める。
+     *
+     * <p>物流サービスに送り状番号を登録し、配送状態の通知を受け取れるようにする。重ねて呼んでも結果は同じ。
      *
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（ハイフンを除いた数字）

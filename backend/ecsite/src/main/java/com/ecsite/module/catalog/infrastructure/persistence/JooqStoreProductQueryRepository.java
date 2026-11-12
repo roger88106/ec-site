@@ -111,7 +111,9 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 一覧の条件：表示される商品で、税込価格を出せること。カテゴリ・価格の範囲で絞り込む。
+     * 一覧の条件：表示される商品で、税込価格を出せること。
+     *
+     * <p>カテゴリ・価格の範囲で絞り込む。
      */
     private static Condition condition(StoreProductListQuery query, Instant now, Field<Long> priceInclTax) {
         var condition = ProductVisibility.visibleAt(now).and(priceInclTax.isNotNull());
@@ -128,7 +130,9 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * 並び順を返す。同じ値なら ID の順。
+     * 並び順を返す。
+     *
+     * <p>同じ値なら ID の順。
      */
     private static List<OrderField<?>> orderBy(StoreProductListQuery.Sort sort, Field<Long> priceInclTax) {
         // 同じ値を ID の順にして、ページをまたいでも重複・欠落しないようにする（API の規約）
@@ -140,7 +144,9 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * 全てのバリアント（販売停止中を含む）を表示順で取得する。バリアントの画像は、指定した画像の URL（なければ null）。
+     * 全てのバリアント（販売停止中を含む）を表示順で取得する。
+     *
+     * <p>バリアントの画像は、指定した画像の URL（なければ null）。
      */
     private List<StoreProductDetailView.Variant> variants(UUID productId, Map<UUID, String> imageUrls) {
         var axisValuesByVariant = ProductParts.axisValuesByVariant(dsl, productId);

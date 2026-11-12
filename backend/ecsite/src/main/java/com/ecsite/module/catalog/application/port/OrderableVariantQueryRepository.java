@@ -13,7 +13,9 @@ import java.util.UUID;
 public interface OrderableVariantQueryRepository {
 
     /**
-     * 複数のバリアントについて、注文に使う情報を取得する。表示されない商品のバリアントも含める。
+     * 複数のバリアントについて、注文に使う情報を取得する。
+     *
+     * <p>表示されない商品のバリアントも含める。
      *
      * @param variantIds バリアント ID（1 つ以上）
      * @param now        表示されるかを判定する時刻

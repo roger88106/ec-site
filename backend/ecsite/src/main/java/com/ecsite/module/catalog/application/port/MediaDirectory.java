@@ -38,7 +38,9 @@ public interface MediaDirectory {
     PreparedImage prepareImage(UUID productId, UUID uploadId);
 
     /**
-     * 用意した画像をアセットとして記録する。呼んだ側のトランザクションに加わる。
+     * 用意した画像をアセットとして記録する。
+     *
+     * <p>呼んだ側のトランザクションに加わる。
      *
      * @param prepared 用意した画像
      * @return アセット ID
@@ -46,14 +48,18 @@ public interface MediaDirectory {
     UUID registerImage(PreparedImage prepared);
 
     /**
-     * 用意した画像の配信のファイルを消す。消すのに失敗しても例外を投げない。
+     * 用意した画像の配信のファイルを消す。
+     *
+     * <p>消すのに失敗しても例外を投げない。
      *
      * @param prepared 用意した画像
      */
     void discardImage(PreparedImage prepared);
 
     /**
-     * アセットを手放す。配信のファイルは、コミットの後に消える。
+     * アセットを手放す。
+     *
+     * <p>配信のファイルは、コミットの後に消える。
      *
      * @param assetIds アセット ID
      */

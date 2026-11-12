@@ -18,7 +18,9 @@ import java.nio.charset.StandardCharsets;
 public final class MockPageResponses {
 
     /**
-     * HTML の応答を作る。文字コードは UTF-8。
+     * HTML の応答を作る。
+     *
+     * <p>文字コードは UTF-8。
      *
      * @param status   HTTP ステータス
      * @param document HTML

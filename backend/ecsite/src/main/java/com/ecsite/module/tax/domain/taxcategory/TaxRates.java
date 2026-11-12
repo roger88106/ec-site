@@ -30,7 +30,9 @@ record TaxRates(List<TaxRate> list) {
             (TaxRate rate) -> rate.period().effectiveFrom(), Comparator.nullsFirst(Comparator.naturalOrder()));
 
     /**
-     * コンストラクタ。適用開始日時の古い順に並べ替える。
+     * コンストラクタ。
+     *
+     * <p>適用開始日時の古い順に並べ替える。
      *
      * @param list 税率の一覧
      */
@@ -54,7 +56,9 @@ record TaxRates(List<TaxRate> list) {
     }
 
     /**
-     * 指定した時点の税率を返す。期間は重複しないので、該当は 0 件か 1 件。
+     * 指定した時点の税率を返す。
+     *
+     * <p>期間は重複しないので、該当は 0 件か 1 件。
      *
      * @param instant 時点
      * @return その時点を含む税率。なければ空

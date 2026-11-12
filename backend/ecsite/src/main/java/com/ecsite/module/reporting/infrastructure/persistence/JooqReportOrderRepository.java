@@ -64,7 +64,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 状態の履歴に 1 行追加する。同じイベント ID の行があれば何もしない。
+     * 状態の履歴に 1 行追加する。
+     *
+     * <p>同じイベント ID の行があれば何もしない。
      *
      * @param entry 履歴の行
      * @return 追加したら true
@@ -87,7 +89,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 注文の状態の履歴を、発生日時の順に読む。同じ日時はイベント ID の順にする。
+     * 注文の状態の履歴を、発生日時の順に読む。
+     *
+     * <p>同じ日時はイベント ID の順にする。
      *
      * @param orderId 注文 ID
      * @return 履歴
@@ -125,7 +129,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 写しを上書きする（なければ作る）。明細は消して入れ直す。注文日・出荷日は日本時間の日付にする。
+     * 写しを上書きする（なければ作る）。
+     *
+     * <p>明細は消して入れ直す。注文日・出荷日は日本時間の日付にする。
      *
      * @param order 写し
      */

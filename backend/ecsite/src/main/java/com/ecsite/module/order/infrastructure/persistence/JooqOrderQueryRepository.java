@@ -53,7 +53,9 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
     }
 
     /**
-     * 絞り込みの条件を SQL の条件にする。注文番号の前方一致は、% や _ を文字として扱う。
+     * 絞り込みの条件を SQL の条件にする。
+     *
+     * <p>注文番号の前方一致は、% や _ を文字として扱う。
      */
     private static Condition where(Filter filter) {
         var where = DSL.noCondition();

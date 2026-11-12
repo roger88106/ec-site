@@ -166,7 +166,9 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 書き込みを実行し、制約の違反を業務のエラーに変える。業務のエラーはそのまま投げる。
+     * 書き込みを実行し、制約の違反を業務のエラーに変える。
+     *
+     * <p>業務のエラーはそのまま投げる。
      *
      * @param write 書き込み
      */
@@ -191,7 +193,9 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     }
 
     /**
-     * 税率を追加する。すでにあれば更新する。
+     * 税率を追加する。
+     *
+     * <p>すでにあれば更新する。
      *
      * @param taxCategoryId 税区分 ID
      * @param rate          税率

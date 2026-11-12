@@ -23,7 +23,9 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 final class PriceInclTaxField {
 
     /**
-     * 税込価格の式を作る。率のない税区分の商品は null になる。
+     * 税込価格の式を作る。
+     *
+     * <p>率のない税区分の商品は null になる。
      *
      * @param rates 税区分 ID → 率（%）。空でないこと
      * @return 税込価格（円）の式

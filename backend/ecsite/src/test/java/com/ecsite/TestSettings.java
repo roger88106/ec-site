@@ -26,8 +26,9 @@ public final class TestSettings {
     }
 
     /**
-     * 設定ファイルを重ねて読んだ値を返す。<br />
-     * 起動のときと同じ順（{@code application.yml}、指定した profile の順）に重ね、後のものが先のものを上書きするとして読む。後のファイルで値が null のキーは、先の値を消さず、無視する。
+     * 設定ファイルを重ねて読んだ値を返す。
+     *
+     * <p>起動のときと同じ順（{@code application.yml}、指定した profile の順）に重ね、後のものが先のものを上書きするとして読む。後のファイルで値が null のキーは、先の値を消さず、無視する。
      *
      * @param profiles 指定する profile（順に重ねる。{@code application-<profile>.yml} を読む）
      * @return 設定の名前（階層は . でつなぐ。配列は {@code a[0]} のように添字付きの名前になる）と、文字列にした値。
@@ -60,7 +61,9 @@ public final class TestSettings {
     }
 
     /**
-     * 接頭辞の下の値を、設定の型に当てはめる。Spring を起動せずに、設定の型の既定値と値の変換を確認するために使う。
+     * 接頭辞の下の値を、設定の型に当てはめる。
+     *
+     * <p>Spring を起動せずに、設定の型の既定値と値の変換を確認するために使う。
      *
      * @param prefix 設定の接頭辞
      * @param type   設定の型

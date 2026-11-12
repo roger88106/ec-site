@@ -44,7 +44,9 @@ public interface StockReservationRepository {
     void replace(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now);
 
     /**
-     * 持ち主の引当を消す。なければ何もしない。
+     * 持ち主の引当を消す。
+     *
+     * <p>なければ何もしない。
      *
      * @param holderId 持ち主 ID
      */

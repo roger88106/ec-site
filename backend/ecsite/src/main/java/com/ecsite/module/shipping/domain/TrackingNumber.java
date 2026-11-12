@@ -25,7 +25,9 @@ public record TrackingNumber(String value) {
     private static final Pattern FORM = Pattern.compile("[0-9-]+");
 
     /**
-     * 入力された送り状番号から作る。前後の空白を除き、ハイフンを除く。
+     * 入力された送り状番号から作る。
+     *
+     * <p>前後の空白を除き、ハイフンを除く。
      *
      * @param input 入力（半角の数字とハイフン、前後の空白を除いて 30 文字まで）
      * @return 送り状番号

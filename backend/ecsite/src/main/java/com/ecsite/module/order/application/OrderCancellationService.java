@@ -62,8 +62,9 @@ public class OrderCancellationService {
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @param reason   理由（任意）
-     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）。申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）。
-     *                           理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
+     * @throws BusinessException 理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      */
     @Transactional
     public void request(@NonNull UUID orderId, @NonNull UUID memberId, @Nullable String reason) {
@@ -79,11 +80,14 @@ public class OrderCancellationService {
     }
 
     /**
-     * キャンセルの申請を承認する。キャンセルになったら在庫を戻す。
+     * キャンセルの申請を承認する。
+     *
+     * <p>キャンセルになったら在庫を戻す。
      *
      * @param orderId  注文 ID
      * @param operator 承認した運営者
-     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
     @Transactional
     public void approve(@NonNull UUID orderId, @NonNull Operator operator) {
@@ -95,7 +99,8 @@ public class OrderCancellationService {
      *
      * @param orderId  注文 ID
      * @param operator 却下した運営者
-     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
     @Transactional
     public void reject(@NonNull UUID orderId, @NonNull Operator operator) {
@@ -108,16 +113,20 @@ public class OrderCancellationService {
     }
 
     /**
-     * 運営者の判断でキャンセルする。キャンセルになったら在庫を戻す（出荷済みなら、在庫に戻すと指定したときだけ）。
+     * 運営者の判断でキャンセルする。
+     *
+     * <p>キャンセルになったら在庫を戻す（出荷済みなら、在庫に戻すと指定したときだけ）。
      *
      * @param orderId  注文 ID
      * @param reason   理由（必須）
      * @param restock  在庫に戻すか（出荷済みのときは必須。それ以外は使わない）
      * @param operator キャンセルした運営者
-     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。理由がない（{@code CANCELLATION_REASON_REQUIRED}）。
-     *                           理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）。支払待ち（{@code AWAITING_PAYMENT}）。
-     *                           出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）。
-     *                           出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException 理由がない（{@code CANCELLATION_REASON_REQUIRED}）
+     * @throws BusinessException 理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 支払待ち（{@code AWAITING_PAYMENT}）
+     * @throws BusinessException 出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）
+     * @throws BusinessException 出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
      */
     @Transactional
     public void cancel(@NonNull UUID orderId, @NonNull String reason, @Nullable Boolean restock, @NonNull Operator operator) {
@@ -126,7 +135,9 @@ public class OrderCancellationService {
     }
 
     /**
-     * 支払の期限切れでキャンセルにする。支払待ちでなければ何もしない。キャンセルになったら在庫を戻す。
+     * 支払の期限切れでキャンセルにする。
+     *
+     * <p>支払待ちでなければ何もしない。キャンセルになったら在庫を戻す。
      *
      * @param orderId 注文 ID
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
@@ -148,7 +159,9 @@ public class OrderCancellationService {
     }
 
     /**
-     * 出荷済みの注文の配送状態が返送かを返す。出荷済みでなければ出荷を読まない。
+     * 出荷済みの注文の配送状態が返送かを返す。
+     *
+     * <p>出荷済みでなければ出荷を読まない。
      */
     private boolean isReturned(Order order) {
         if (!order.isShipped()) {
@@ -160,7 +173,9 @@ public class OrderCancellationService {
 
     /**
      * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻し（戻さないと記録したときを除く）、
-     * 支払を取り消させる。すでにキャンセルなら何もしない。
+     * 支払を取り消させる。
+     *
+     * <p>すでにキャンセルなら何もしない。
      *
      * @param orderId 注文 ID
      * @param cancel  キャンセルにする操作。キャンセルにしたら true

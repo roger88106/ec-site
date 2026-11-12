@@ -17,7 +17,9 @@ import java.util.UUID;
 public interface PaymentGateway {
 
     /**
-     * 与信だけを取る支払画面を作る。同じリクエストで重ねて呼ばれても、決済サービスで支払は 1 つになるようにする。
+     * 与信だけを取る支払画面を作る。
+     *
+     * <p>同じリクエストで重ねて呼ばれても、決済サービスで支払は 1 つになるようにする。
      *
      * @param request 支払画面のリクエスト
      * @return 作った支払画面
@@ -26,7 +28,9 @@ public interface PaymentGateway {
     PaymentPage openPage(PageRequest request);
 
     /**
-     * 支払画面を閉じ、それ以降は支払えないようにする。すでに閉じていれば成功とする。
+     * 支払画面を閉じ、それ以降は支払えないようにする。
+     *
+     * <p>すでに閉じていれば成功とする。
      *
      * @param pageId 支払画面 ID
      * @return 閉じた結果
@@ -44,7 +48,9 @@ public interface PaymentGateway {
     Authorization fetchAuthorization(String pageId);
 
     /**
-     * 与信を取り消す。すでに取り消していれば成功とする。売上を確定した与信は取り消せないので、例外にせず結果で返す。
+     * 与信を取り消す。
+     *
+     * <p>すでに取り消していれば成功とする。売上を確定した与信は取り消せないので、例外にせず結果で返す。
      *
      * @param authorizationRef 与信の参照
      * @return 与信の取消の結果
@@ -53,7 +59,9 @@ public interface PaymentGateway {
     VoidResult voidAuthorization(String authorizationRef);
 
     /**
-     * 与信の総額の売上を確定する。同じ注文で重ねて呼ばれても、決済サービスで売上は 1 回だけ確定するようにする。
+     * 与信の総額の売上を確定する。
+     *
+     * <p>同じ注文で重ねて呼ばれても、決済サービスで売上は 1 回だけ確定するようにする。
      * 与信の期限切れと、決済サービスに接続できないことは、例外にせず結果で返す。
      *
      * @param request 売上確定のリクエスト
@@ -62,7 +70,9 @@ public interface PaymentGateway {
     CaptureResult capture(CaptureRequest request);
 
     /**
-     * 確定した売上を返金する。同じ注文で重ねて呼ばれても、決済サービスで返金は 1 回だけ行うようにする。
+     * 確定した売上を返金する。
+     *
+     * <p>同じ注文で重ねて呼ばれても、決済サービスで返金は 1 回だけ行うようにする。
      * すでに返金済みなら成功とする。
      *
      * @param request 返金のリクエスト

@@ -40,7 +40,9 @@ class MockPaymentPageController {
     }
 
     /**
-     * 支払う。与信の成功を通知してから、店舗の注文の画面に戻す。
+     * 支払う。
+     *
+     * <p>与信の成功を通知してから、店舗の注文の画面に戻す。
      *
      * @param pageId 支払画面 ID
      * @return 戻る先への移動。開いていない画面なら、その旨の画面
@@ -56,7 +58,9 @@ class MockPaymentPageController {
     }
 
     /**
-     * カードを拒否させる。状態は変えず、拒否を示して同じ画面を出す。
+     * カードを拒否させる。
+     *
+     * <p>状態は変えず、拒否を示して同じ画面を出す。
      *
      * @param pageId 支払画面 ID
      * @return 画面
@@ -67,7 +71,9 @@ class MockPaymentPageController {
     }
 
     /**
-     * やめる。支払わずに、店舗の注文の画面に戻す。
+     * やめる。
+     *
+     * <p>支払わずに、店舗の注文の画面に戻す。
      *
      * @param pageId 支払画面 ID
      * @return 戻る先への移動
@@ -91,7 +97,9 @@ class MockPaymentPageController {
     }
 
     /**
-     * 戻る先に移す（POST の後なので 303）。戻る先が URL として正しくなければ、例外になる。
+     * 戻る先に移す（POST の後なので 303）。
+     *
+     * <p>戻る先が URL として正しくなければ、例外になる。
      */
     private static ResponseEntity<String> redirect(String url) {
         return MockPageResponses.redirect(URI.create(url));

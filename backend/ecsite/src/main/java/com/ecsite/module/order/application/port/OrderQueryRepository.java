@@ -16,7 +16,9 @@ import java.util.UUID;
 public interface OrderQueryRepository {
 
     /**
-     * 注文を、注文日時の新しい順に取得する。同じ日時なら ID の順。
+     * 注文を、注文日時の新しい順に取得する。
+     *
+     * <p>同じ日時なら ID の順。
      *
      * @param filter  絞り込みの条件
      * @param request ページの指定

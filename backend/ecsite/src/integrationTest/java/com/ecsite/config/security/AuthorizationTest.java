@@ -1,6 +1,7 @@
 package com.ecsite.config.security;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.TestSecurityConfig;
 import com.ecsite.TestTokens;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 認証と認可の統合テスト。<br />
  * token は {@link TestTokens} がテストの鍵で署名したもので、本番と同じ検証（署名・issuer・audience・有効期限）と、
  * {@code admin.yaml} の {@code x-required-permission} による判定を通す。<br />
- * 管理 API のリクエストには既定で管理者の token が付く（{@link com.ecsite.TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
+ * 管理 API のリクエストには既定で管理者の token が付く（{@link TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

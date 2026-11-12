@@ -27,7 +27,9 @@ class StripeWebhookController {
     private final StripeNotificationHandler handler;
 
     /**
-     * 通知を受け取る。処理に失敗したら 5xx を返し、Stripe の再送で処理し直す。
+     * 通知を受け取る。
+     *
+     * <p>処理に失敗したら 5xx を返し、Stripe の再送で処理し直す。
      *
      * @param payload   本文（署名を確認するため、文字列のまま受け取る）
      * @param signature ヘッダー {@code Stripe-Signature}

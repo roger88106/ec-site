@@ -66,7 +66,9 @@ public final class RegionMigrationGenerator {
     }
 
     /**
-     * 郵便番号の一覧を読む。空の行と「#」で始まる行は除く
+     * 郵便番号の一覧を読む。
+     *
+     * <p>空の行と「#」で始まる行は除く
      *
      * @param path 一覧のファイル
      * @return 郵便番号

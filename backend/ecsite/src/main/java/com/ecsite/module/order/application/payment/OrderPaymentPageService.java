@@ -35,7 +35,8 @@ public class OrderPaymentPageService {
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @return 支払画面の URL
-     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）。支払待ちでない、支払の期限の後（{@code ORDER_NOT_PAYABLE}）
+     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 支払待ちでない、支払の期限の後（{@code ORDER_NOT_PAYABLE}）
      */
     public String pageUrl(@NonNull UUID orderId, @NonNull UUID memberId) {
         var order = orderQueryService.getForMember(orderId, memberId);

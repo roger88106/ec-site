@@ -437,7 +437,9 @@ class MediaApiTest {
     }
 
     /**
-     * 受け付けた画像を用意し、トランザクションの中で登録する。テストの後に消すためにアセット ID を覚えておく
+     * 受け付けた画像を用意し、トランザクションの中で登録する。
+     *
+     * <p>テストの後に消すためにアセット ID を覚えておく
      */
     private UUID confirm(String scope, UUID uploadId) {
         var prepared = media.prepareImage(scope, uploadId);

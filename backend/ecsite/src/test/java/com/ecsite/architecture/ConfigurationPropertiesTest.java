@@ -151,8 +151,9 @@ class ConfigurationPropertiesTest {
     }
 
     /**
-     * 設定の型のうち、秘密の値の項目を自分で持つものが toString を宣言する規則を作る。<br />
-     * 外側の型の既定の toString は入れ子の型の toString を呼ぶので、入れ子の型も対象にする。
+     * 設定の型のうち、秘密の値の項目を自分で持つものが toString を宣言する規則を作る。
+     *
+     * <p>外側の型の既定の toString は入れ子の型の toString を呼ぶので、入れ子の型も対象にする。
      *
      * @param classes 設定の型を探すクラス
      * @return 規則
@@ -176,7 +177,9 @@ class ConfigurationPropertiesTest {
     }
 
     /**
-     * 設定の型のうち、秘密の値の項目を自分で持つものの名前を返す。static の項目（定数、enum の定数）は設定の値でないので数えない。
+     * 設定の型のうち、秘密の値の項目を自分で持つものの名前を返す。
+     *
+     * <p>static の項目（定数、enum の定数）は設定の値でないので数えない。
      *
      * @param classes 設定の型を探すクラス
      * @return 型の名前
@@ -191,8 +194,9 @@ class ConfigurationPropertiesTest {
     }
 
     /**
-     * 設定の型（{@code @ConfigurationProperties} の型と、その項目からたどれる自分のコードの型）を返す。<br />
-     * 項目の型は、コレクションと Map の要素の型（型引数）を含め、再帰的にたどる。static の項目は設定の値でないのでたどらない。
+     * 設定の型（{@code @ConfigurationProperties} の型と、その項目からたどれる自分のコードの型）を返す。
+     *
+     * <p>項目の型は、コレクションと Map の要素の型（型引数）を含め、再帰的にたどる。static の項目は設定の値でないのでたどらない。
      *
      * @param classes 設定の型を探すクラス
      * @return 設定の型
@@ -217,7 +221,9 @@ class ConfigurationPropertiesTest {
     }
 
     /**
-     * 秘密の値の項目の名前かを返す。名前を小文字にして判定する。
+     * 秘密の値の項目の名前かを返す。
+     *
+     * <p>名前を小文字にして判定する。
      *
      * @param name 項目の名前
      * @return 秘密の値の項目なら true

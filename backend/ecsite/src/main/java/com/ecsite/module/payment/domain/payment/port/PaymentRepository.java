@@ -16,7 +16,9 @@ import java.util.UUID;
 public interface PaymentRepository {
 
     /**
-     * 新しい支払を保存する。同じ注文の支払がすでにあれば、何もせずに false を返す。トランザクションは壊さない。
+     * 新しい支払を保存する。
+     *
+     * <p>同じ注文の支払がすでにあれば、何もせずに false を返す。トランザクションは壊さない。
      *
      * @param payment 支払
      * @return 保存したら true
@@ -24,14 +26,18 @@ public interface PaymentRepository {
     boolean insertIfAbsent(Payment payment);
 
     /**
-     * 支払の変更を保存し、登録されたイベントを発行する。バージョンを上げる。
+     * 支払の変更を保存し、登録されたイベントを発行する。
+     *
+     * <p>バージョンを上げる。
      *
      * @param payment 変更した支払
      */
     void update(Payment payment);
 
     /**
-     * 支払を行ロックして取得する。ロックは、呼んだ側のトランザクションが終わるまで続く。
+     * 支払を行ロックして取得する。
+     *
+     * <p>ロックは、呼んだ側のトランザクションが終わるまで続く。
      *
      * @param id 支払 ID
      * @return 支払。なければ空
@@ -39,7 +45,9 @@ public interface PaymentRepository {
     Optional<Payment> lockById(UUID id);
 
     /**
-     * 注文の支払を行ロックして取得する。ロックは、呼んだ側のトランザクションが終わるまで続く。
+     * 注文の支払を行ロックして取得する。
+     *
+     * <p>ロックは、呼んだ側のトランザクションが終わるまで続く。
      *
      * @param orderId 注文 ID
      * @return 支払。なければ空
@@ -47,7 +55,9 @@ public interface PaymentRepository {
     Optional<Payment> lockByOrderId(UUID orderId);
 
     /**
-     * 支払画面の支払を行ロックして取得する。ロックは、呼んだ側のトランザクションが終わるまで続く。
+     * 支払画面の支払を行ロックして取得する。
+     *
+     * <p>ロックは、呼んだ側のトランザクションが終わるまで続く。
      *
      * @param pageId 支払画面 ID
      * @return 支払。なければ空
@@ -79,7 +89,9 @@ public interface PaymentRepository {
     List<Payment> findByOrderIds(Collection<UUID> orderIds);
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の反映を待つ支払は除く。
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
+     *
+     * <p>与信の反映を待つ支払は除く。
      *
      * @param now   現在時刻
      * @param limit 取得する数の上限

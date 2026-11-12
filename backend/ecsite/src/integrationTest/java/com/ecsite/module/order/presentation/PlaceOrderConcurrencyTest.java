@@ -258,7 +258,9 @@ class PlaceOrderConcurrencyTest {
     // ============================== 補助 ==============================
 
     /**
-     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。処理の後のコミットでロックが解放される
+     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。
+     *
+     * <p>処理の後のコミットでロックが解放される
      */
     private void whileStockLocked(Runnable body) {
         transactionTemplate.executeWithoutResult(status -> {

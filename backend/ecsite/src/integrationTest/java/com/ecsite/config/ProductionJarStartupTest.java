@@ -157,7 +157,9 @@ class ProductionJarStartupTest {
     }
 
     /**
-     * 運用ポートの準備の完了を確認する。接続できない間は、まだ準備ができていないとみなす。
+     * 運用ポートの準備の完了を確認する。
+     *
+     * <p>接続できない間は、まだ準備ができていないとみなす。
      *
      * @param managementPort 運用ポート
      * @return 準備ができていれば true

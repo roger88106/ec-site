@@ -15,7 +15,9 @@ import java.time.Clock;
 class ClockConfig {
 
     /**
-     * UTC のシステム時計。時刻は UTC で扱う。
+     * UTC のシステム時計。
+     *
+     * <p>時刻は UTC で扱う。
      *
      * @return 時計
      */

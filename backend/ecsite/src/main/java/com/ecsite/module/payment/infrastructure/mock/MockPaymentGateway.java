@@ -131,7 +131,9 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信の成功を通知する。重ねて呼ぶと、重ねて届いた通知になる。
+     * 与信の成功を通知する。
+     *
+     * <p>重ねて呼ぶと、重ねて届いた通知になる。
      *
      * @param pageId 支払画面 ID
      */
@@ -150,7 +152,9 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信の参照を返す。支払画面ごとに決まる。
+     * 与信の参照を返す。
+     *
+     * <p>支払画面ごとに決まる。
      *
      * @param pageId 支払画面 ID
      * @return 与信の参照
@@ -181,7 +185,9 @@ public class MockPaymentGateway implements PaymentGateway {
         }
 
         /**
-         * 支払を済ませた画面を返す。最初の 1 回の時刻を残す（重ねて支払っても変えない）。
+         * 支払を済ませた画面を返す。
+         *
+         * <p>最初の 1 回の時刻を残す（重ねて支払っても変えない）。
          *
          * @param now 現在時刻
          * @return 画面

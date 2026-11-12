@@ -156,7 +156,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 見積もりから注文を作る。状態は「支払待ち」。
+     * 見積もりから注文を作る。
+     *
+     * <p>状態は「支払待ち」。
      *
      * @param id              注文 ID
      * @param orderNumber     注文番号
@@ -203,7 +205,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 与信の成功を受けて、「支払待ち」から「受付」にする。支払待ちでなければ何もしない。
+     * 与信の成功を受けて、「支払待ち」から「受付」にする。
+     *
+     * <p>支払待ちでなければ何もしない。
      *
      * @param now 現在時刻
      * @return 受付にしたら true。支払待ちでなければ false
@@ -217,7 +221,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 支払の期限切れを受けて、「支払待ち」からキャンセル（支払期限切れ）にする。支払待ちでなければ何もしない。
+     * 支払の期限切れを受けて、「支払待ち」からキャンセル（支払期限切れ）にする。
+     *
+     * <p>支払待ちでなければ何もしない。
      *
      * @param now 現在時刻
      * @return キャンセルにしたら true。支払待ちでなければ false
@@ -231,7 +237,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 運営者がキャンセルできるかを返す。「受付」と「キャンセル申請中」、出荷済みなら配送状態が返送のときだけ。
+     * 運営者がキャンセルできるかを返す。
+     *
+     * <p>「受付」と「キャンセル申請中」、出荷済みなら配送状態が返送のときだけ。
      *
      * @param returned 配送状態が返送か（出荷済みのときだけ使う）
      * @return キャンセルできれば true
@@ -243,7 +251,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 運営者のキャンセルで、在庫に戻すかを聞くかを返す。出荷済みで返送の注文だけ。
+     * 運営者のキャンセルで、在庫に戻すかを聞くかを返す。
+     *
+     * <p>出荷済みで返送の注文だけ。
      *
      * @param returned 配送状態が返送か（出荷済みのときだけ使う）
      * @return 在庫に戻すかを聞くなら true
@@ -254,7 +264,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 出荷できるかを返す。「受付」だけ。
+     * 出荷できるかを返す。
+     *
+     * <p>「受付」だけ。
      *
      * @return 出荷できれば true
      */
@@ -273,7 +285,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * キャンセルを申請できるかを返す。「受付」で、まだ申請していない注文だけ。
+     * キャンセルを申請できるかを返す。
+     *
+     * <p>「受付」で、まだ申請していない注文だけ。
      *
      * @return 申請できれば true
      */
@@ -292,12 +306,14 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 消費者がキャンセルを申請する。「受付」から「キャンセル申請中」にする。申請中なら何もしない（冪等）。
+     * 消費者がキャンセルを申請する。
+     *
+     * <p>「受付」から「キャンセル申請中」にする。申請中なら何もしない（冪等）。
      *
      * @param reason 理由（任意、500 文字まで）。空白だけなら理由なし
      * @param now    現在時刻
-     * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}。申請は 1 回だけで、却下済み・キャンセル済みも含む）。
-     *                           理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}。申請は 1 回だけで、却下済み・キャンセル済みも含む）
+     * @throws BusinessException 理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      */
     public void requestCancellation(@Nullable String reason, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
@@ -312,7 +328,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * キャンセルの申請を承認し、キャンセルにする。キャンセル済みなら何もしない。
+     * キャンセルの申請を承認し、キャンセルにする。
+     *
+     * <p>キャンセル済みなら何もしない。
      *
      * @param operator 承認した運営者
      * @param now      現在時刻
@@ -332,7 +350,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * キャンセルの申請を却下し、「受付」に戻す。申請中でない注文（キャンセル済みを含む）は却下できない。
+     * キャンセルの申請を却下し、「受付」に戻す。
+     *
+     * <p>申請中でない注文（キャンセル済みを含む）は却下できない。
      *
      * @param operator 却下した運営者
      * @param now      現在時刻
@@ -347,7 +367,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 出荷する。「受付」から「出荷済み」にし、注文の出荷のイベントを登録する。
+     * 出荷する。
+     *
+     * <p>「受付」から「出荷済み」にし、注文の出荷のイベントを登録する。
      *
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（ハイフンを除いた数字）
@@ -364,7 +386,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 運営者の判断でキャンセルする。申請中なら、申請は承認されたものとする。キャンセル済みなら何もせず、理由も変えない。
+     * 運営者の判断でキャンセルする。
+     *
+     * <p>申請中なら、申請は承認されたものとする。キャンセル済みなら何もせず、理由も変えない。
      * 出荷済みでなければ、指定によらず在庫に戻す。
      *
      * @param reason   理由（必須、500 文字まで）
@@ -373,9 +397,11 @@ public class Order extends AggregateRoot {
      * @param operator キャンセルした運営者。申請中なら、判断した運営者にもなる
      * @param now      現在時刻
      * @return キャンセルにしたら true。すでにキャンセルなら false
-     * @throws BusinessException 理由がない（{@code CANCELLATION_REASON_REQUIRED}）。理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）。
-     *                           支払待ち（{@code AWAITING_PAYMENT}）。出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）。
-     *                           出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
+     * @throws BusinessException 理由がない（{@code CANCELLATION_REASON_REQUIRED}）
+     * @throws BusinessException 理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 支払待ち（{@code AWAITING_PAYMENT}）
+     * @throws BusinessException 出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）
+     * @throws BusinessException 出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
      */
     public boolean cancelByOperator(@Nullable String reason, @Nullable Boolean restock, boolean returned, @NonNull Operator operator,
                                     @NonNull Instant now) {
@@ -475,7 +501,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 理由を検証する。空白だけなら理由なし（null）とし、500 文字を超えれば拒否する。
+     * 理由を検証する。
+     *
+     * <p>空白だけなら理由なし（null）とし、500 文字を超えれば拒否する。
      */
     private static @Nullable String optionalReason(@Nullable String reason) {
         if (reason == null || reason.isBlank()) {

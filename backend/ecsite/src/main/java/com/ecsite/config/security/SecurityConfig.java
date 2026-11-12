@@ -47,7 +47,9 @@ import java.util.List;
 class SecurityConfig {
 
     /**
-     * realm の署名の鍵。issuer の OpenID Connect の設定から公開鍵の URL を求める（最初の検証のときに IdP から取る）。
+     * realm の署名の鍵。
+     *
+     * <p>issuer の OpenID Connect の設定から公開鍵の URL を求める（最初の検証のときに IdP から取る）。
      *
      * @return realm の署名の鍵
      */
@@ -57,7 +59,9 @@ class SecurityConfig {
     }
 
     /**
-     * 管理 API の操作ごとに必要な権限。ビルドのときにリソースに写した {@code admin.yaml} を、起動時に読む。
+     * 管理 API の操作ごとに必要な権限。
+     *
+     * <p>ビルドのときにリソースに写した {@code admin.yaml} を、起動時に読む。
      *
      * @param adminApi {@code admin.yaml}
      * @return 操作ごとに必要な権限
@@ -68,7 +72,9 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API の操作ごとの token の要否。ビルドのときにリソースに写した {@code store.yaml} を、起動時に読む。
+     * 店舗 API の操作ごとの token の要否。
+     *
+     * <p>ビルドのときにリソースに写した {@code store.yaml} を、起動時に読む。
      *
      * @param storeApi {@code store.yaml}
      * @return 操作ごとの token の要否
@@ -101,7 +107,9 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API：消費者の realm の token を受け付ける。会員の token には権限を載せない。token の要否は {@code store.yaml} で決める。
+     * 店舗 API：消費者の realm の token を受け付ける。
+     *
+     * <p>会員の token には権限を載せない。token の要否は {@code store.yaml} で決める。
      */
     @Bean
     @Order(2)
@@ -173,7 +181,9 @@ class SecurityConfig {
     }
 
     /**
-     * realm の token の decoder。署名に加え、issuer・audience・有効期限を確認する。鍵は最初の検証のときに取る。
+     * realm の token の decoder。
+     *
+     * <p>署名に加え、issuer・audience・有効期限を確認する。鍵は最初の検証のときに取る。
      *
      * @param realm realm の設定
      * @param keys  realm の署名の鍵

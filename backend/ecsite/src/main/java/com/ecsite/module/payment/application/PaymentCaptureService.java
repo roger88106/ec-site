@@ -38,11 +38,14 @@ public class PaymentCaptureService {
     private final PaymentGateway gateway;
 
     /**
-     * 注文の支払の売上を確定する。売上確定済みなら、決済サービスを呼ばずに成功する。
+     * 注文の支払の売上を確定する。
+     *
+     * <p>売上確定済みなら、決済サービスを呼ばずに成功する。
      *
      * @param orderId 注文 ID
-     * @throws BusinessException 支払がない（NOT_FOUND）、売上を確定できる状態でない（PAYMENT_NOT_CAPTURABLE）、
-     *                           与信の期限が切れている（AUTHORIZATION_EXPIRED）
+     * @throws BusinessException 支払がない（NOT_FOUND）
+     * @throws BusinessException 売上を確定できる状態でない（PAYMENT_NOT_CAPTURABLE）
+     * @throws BusinessException 与信の期限が切れている（AUTHORIZATION_EXPIRED）
      * @throws SystemException   決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）。支払は与信済みのまま残る
      */
     public void capture(@NonNull UUID orderId) {

@@ -95,7 +95,9 @@ class CartController implements CartApi {
     }
 
     /**
-     * 会員のカート。なければ作る
+     * 会員のカート。
+     *
+     * <p>なければ作る
      *
      * @return Http 200 : {@link MemberCart}
      */

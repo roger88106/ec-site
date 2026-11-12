@@ -80,7 +80,9 @@ public class TestcontainersConfig {
     private static final String IMGPROXY_SALT = "696e746567726174696f6e2d746573742d73616c74";
 
     /**
-     * PostgreSQL コンテナ。docker/compose.yaml と同じイメージを使う。
+     * PostgreSQL コンテナ。
+     *
+     * <p>docker/compose.yaml と同じイメージを使う。
      *
      * @return PostgreSQL コンテナ
      */
@@ -91,7 +93,9 @@ public class TestcontainersConfig {
     }
 
     /**
-     * SeaweedFS コンテナ。docker/compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確認するため）。<br />
+     * SeaweedFS コンテナ。
+     *
+     * <p>docker/compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確認するため）。<br />
      * 起動したら、受付・配信のバケットを作り、配信のバケットをだれでも読めるようにする。
      *
      * @param network コンテナ同士のネットワーク
@@ -137,7 +141,9 @@ public class TestcontainersConfig {
     }
 
     /**
-     * メールの受け手（Mailpit）。docker/compose.yaml と同じイメージを使う。
+     * メールの受け手（Mailpit）。
+     *
+     * <p>docker/compose.yaml と同じイメージを使う。
      *
      * @return Mailpit
      */
@@ -171,7 +177,9 @@ public class TestcontainersConfig {
     }
 
     /**
-     * imgproxy コンテナ（画像の変換）。docker/compose.yaml と同じイメージと設定を使う。<br />
+     * imgproxy コンテナ（画像の変換）。
+     *
+     * <p>docker/compose.yaml と同じイメージと設定を使う。<br />
      * アップロードのバケットを、読むだけの資格情報で、SeaweedFS のネットワークの中の名前で読む。
      *
      * @param network   コンテナ同士のネットワーク

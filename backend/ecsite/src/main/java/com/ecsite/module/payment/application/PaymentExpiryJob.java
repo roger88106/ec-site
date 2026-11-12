@@ -50,7 +50,8 @@ class PaymentExpiryJob {
 
     /**
      * 期限を過ぎた未払いの支払を支払なしにし、与信の反映を待つ支払を与信済みにする。
-     * 与信の反映を長く待つ支払があれば、warn のログに件数を出す。決済サービスはトランザクションの外で呼ぶ。
+     *
+     * <p>与信の反映を長く待つ支払があれば、warn のログに件数を出す。決済サービスはトランザクションの外で呼ぶ。
      */
     // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
@@ -89,7 +90,9 @@ class PaymentExpiryJob {
     }
 
     /**
-     * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。取得できなかった支払は、次の回でやり直す。
+     * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。
+     *
+     * <p>取得できなかった支払は、次の回でやり直す。
      * 決済サービスへの接続の失敗が続いたら、その回の取得を打ち切る。
      */
     private void recoverAuthorizations() {

@@ -51,7 +51,9 @@ class ReportCollectionService {
     private final CatalogDirectory catalogDirectory;
 
     /**
-     * 注文の状態の変化を履歴に 1 行追加し、注文の写しを再作成する。履歴の状態は、レポートの列挙で持つ。
+     * 注文の状態の変化を履歴に 1 行追加し、注文の写しを再作成する。
+     *
+     * <p>履歴の状態は、レポートの列挙で持つ。
      *
      * @param event 注文の状態の変化
      */
@@ -65,7 +67,9 @@ class ReportCollectionService {
     }
 
     /**
-     * 配送状態の変化を履歴に 1 行追加し、注文の写しを再作成する。履歴の状態は、レポートの列挙で持つ。
+     * 配送状態の変化を履歴に 1 行追加し、注文の写しを再作成する。
+     *
+     * <p>履歴の状態は、レポートの列挙で持つ。
      *
      * @param event 配送状態の変化
      */
@@ -151,7 +155,9 @@ class ReportCollectionService {
     }
 
     /**
-     * 明細の商品 ID を、商品カタログの API で求める。求められなければ、前の写しの商品 ID を残す。
+     * 明細の商品 ID を、商品カタログの API で求める。
+     *
+     * <p>求められなければ、前の写しの商品 ID を残す。
      */
     private Map<Integer, UUID> productIds(ReportOrder order) {
         var byVariant = catalogDirectory.productIdsOf(order.lines().stream().map(ReportOrder.Line::variantId).toList());
@@ -167,7 +173,9 @@ class ReportCollectionService {
     }
 
     /**
-     * 出荷日時を求める。注文の状態が出荷済みになった変化と、配送状態が出荷済みになった変化のうち、早いほうの発生日時。
+     * 出荷日時を求める。
+     *
+     * <p>注文の状態が出荷済みになった変化と、配送状態が出荷済みになった変化のうち、早いほうの発生日時。
      */
     private static @Nullable Instant shippedAt(List<StatusHistoryEntry> history) {
         return history.stream()
@@ -178,7 +186,9 @@ class ReportCollectionService {
     }
 
     /**
-     * 配送状態を求める。配送状態の変化の後の状態のうち、順位の最も高いもの。
+     * 配送状態を求める。
+     *
+     * <p>配送状態の変化の後の状態のうち、順位の最も高いもの。
      */
     private static @Nullable DeliveryStatus deliveryStatus(List<StatusHistoryEntry> history) {
         // 届いた順でなく順位で決める（イベントの届く順によらないため）

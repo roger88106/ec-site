@@ -48,14 +48,17 @@ public class ProductImageService {
     private final ProductImageCommandService commandService;
 
     /**
-     * 画像のアップロードを受け付ける。受付は DB に記録しない（登録されなかったファイルはライフサイクル規則で消える）。
+     * 画像のアップロードを受け付ける。
+     *
+     * <p>受付は DB に記録しない（登録されなかったファイルはライフサイクル規則で消える）。
      *
      * @param productId     商品 ID
      * @param contentType   ファイルの形式（申告）
      * @param contentLength ファイルの大きさ（申告）
      * @return 受付
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）。
-     *                           形式が対象外、または大きさが範囲の外
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
+     * @throws BusinessException 形式が対象外、または大きさが範囲の外
      */
     public ImageUploadView createUpload(@NonNull UUID productId, @NonNull String contentType, long contentLength) {
         // 枚数の確認
@@ -72,9 +75,10 @@ public class ProductImageService {
      * @param uploadId  受付 ID
      * @param version   取得時の商品のバージョン
      * @return 画像 ID
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）。
-     *                           受付がない、大きさが範囲の外、中身が対象の画像でない、または変換できない
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
+     * @throws BusinessException 受付がない、大きさが範囲の外、中身が対象の画像でない、または変換できない
      */
     public UUID addImage(@NonNull UUID productId, @NonNull UUID uploadId, long version) {
         // 加えられることの確認 ※画像の変換と保存の間に DB の接続を持たないよう、確認・用意・保存でトランザクションを分ける
@@ -99,8 +103,9 @@ public class ProductImageService {
      * @param productId 商品 ID
      * @param imageIds  並べたい順の画像 ID（全て）
      * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）
      */
     @Transactional
     public void reorderImages(@NonNull UUID productId, @NonNull List<UUID> imageIds, long version) {
@@ -115,12 +120,15 @@ public class ProductImageService {
     }
 
     /**
-     * 画像を削除する。同じトランザクションの中でアセットを手放す。
+     * 画像を削除する。
+     *
+     * <p>同じトランザクションの中でアセットを手放す。
      *
      * @param productId 商品 ID
      * @param imageId   画像 ID
      * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品か画像がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品か画像がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void deleteImage(@NonNull UUID productId, @NonNull UUID imageId, long version) {
@@ -142,8 +150,9 @@ public class ProductImageService {
      * @param variantId バリアント ID
      * @param imageId   画像 ID。null で指定を外す
      * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           商品にない画像（{@code INVALID_VARIANT_IMAGE}）
+     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 商品にない画像（{@code INVALID_VARIANT_IMAGE}）
      */
     @Transactional
     public void setVariantImage(@NonNull UUID productId, @NonNull UUID variantId, @Nullable UUID imageId, long version) {

@@ -50,7 +50,9 @@ public class PaymentApi {
     private final PaymentQueryService queryService;
 
     /**
-     * 注文の支払を未払いで作る。支払の期限は、注文日時に設定の時間を加えた時刻。同じ注文で重ねて呼んでも 1 つ。
+     * 注文の支払を未払いで作る。
+     *
+     * <p>支払の期限は、注文日時に設定の時間を加えた時刻。同じ注文で重ねて呼んでも 1 つ。
      * 呼んだ側のトランザクションに加わり、決済サービスを呼ばない。
      *
      * @param orderId   注文 ID
@@ -62,7 +64,9 @@ public class PaymentApi {
     }
 
     /**
-     * 支払画面の URL を返す。開いている画面があれば同じ画面を返す。
+     * 支払画面の URL を返す。
+     *
+     * <p>開いている画面があれば同じ画面を返す。
      * トランザクションの外で呼ばれる前提で、読み取りと更新を別々のトランザクションで行い、その間で決済サービスを呼ぶ。
      *
      * @param orderId 注文 ID
@@ -74,7 +78,9 @@ public class PaymentApi {
     }
 
     /**
-     * 注文のキャンセルに合わせて支払を取り消す。与信済みなら与信の取消待ちに、売上確定済みなら返金待ちにする。
+     * 注文のキャンセルに合わせて支払を取り消す。
+     *
+     * <p>与信済みなら与信の取消待ちに、売上確定済みなら返金待ちにする。
      * 決済サービスでの取消と返金はコミットの後に行い、その結果を待たない。
      * 呼んだ側のトランザクションに加わり、何度呼んでも結果は同じ。
      *
@@ -85,12 +91,15 @@ public class PaymentApi {
     }
 
     /**
-     * 注文の支払の売上を確定する。売上確定済みなら、決済サービスを呼ばずに成功する。
+     * 注文の支払の売上を確定する。
+     *
+     * <p>売上確定済みなら、決済サービスを呼ばずに成功する。
      * トランザクションの外で呼ばれる前提で、読み取りと更新を別々のトランザクションで行い、その間で決済サービスを呼ぶ。
      *
      * @param orderId 注文 ID
-     * @throws BusinessException 支払がない（NOT_FOUND）、売上を確定できる状態でない（PAYMENT_NOT_CAPTURABLE）、
-     *                           与信の期限が切れている（AUTHORIZATION_EXPIRED）
+     * @throws BusinessException 支払がない（NOT_FOUND）
+     * @throws BusinessException 売上を確定できる状態でない（PAYMENT_NOT_CAPTURABLE）
+     * @throws BusinessException 与信の期限が切れている（AUTHORIZATION_EXPIRED）
      * @throws SystemException   決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）。支払は与信済みのまま残る
      */
     public void capture(@NonNull UUID orderId) {
@@ -130,7 +139,9 @@ public class PaymentApi {
     }
 
     /**
-     * 与信期限が近い注文 ID を返す。期限を過ぎたものを含む。売上確定の前の注文だけが対象。
+     * 与信期限が近い注文 ID を返す。
+     *
+     * <p>期限を過ぎたものを含む。売上確定の前の注文だけが対象。
      *
      * @return 注文 ID（与信の古い順）
      */

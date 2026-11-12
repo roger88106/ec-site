@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.api;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.cart.api.model.CartContents;
 import com.ecsite.module.cart.application.CartService;
 import com.ecsite.module.cart.application.model.CartContentsView;
@@ -24,7 +25,9 @@ public class CartContentsApi {
     private final CartService cartService;
 
     /**
-     * カートの中身を返す。最後の変更から 30 日たったカートは品目が空。
+     * カートの中身を返す。
+     *
+     * <p>最後の変更から 30 日たったカートは品目が空。
      *
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空
@@ -49,7 +52,7 @@ public class CartContentsApi {
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
-     * @throws com.ecsite.common.error.exception.BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds) {
         cartService.removeItems(cartId, variantIds);

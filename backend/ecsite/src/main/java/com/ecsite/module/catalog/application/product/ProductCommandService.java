@@ -69,9 +69,10 @@ public class ProductCommandService {
      *
      * @param command 商品の登録コマンド
      * @return 登録した商品の ID
-     * @throws BusinessException 税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）。所属カテゴリがない（{@code INVALID_CATEGORY_ID}）。
-     *                           項目の値が正しくない（{@code INVALID_PRODUCT_CODE}、{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、
-     *                           {@code INVALID_PRODUCT_DESCRIPTION}、{@code INVALID_VARIANT_AXES}）。商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）
+     * @throws BusinessException 所属カテゴリがない（{@code INVALID_CATEGORY_ID}）
+     * @throws BusinessException 項目の値が正しくない（{@code INVALID_PRODUCT_CODE}、{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}、{@code INVALID_VARIANT_AXES}）
+     * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
      */
     @Transactional
     public UUID createProduct(@NonNull CreateProductCommand command) {
@@ -101,9 +102,11 @@ public class ProductCommandService {
      * 商品を編集する。
      *
      * @param command 商品の編集コマンド
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）。所属カテゴリがない（{@code INVALID_CATEGORY_ID}）。
-     *                           項目の値が正しくない（{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）
+     * @throws BusinessException 所属カテゴリがない（{@code INVALID_CATEGORY_ID}）
+     * @throws BusinessException 項目の値が正しくない（{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}）
      */
     @Transactional
     public void updateProduct(@NonNull UpdateProductCommand command) {
@@ -127,12 +130,15 @@ public class ProductCommandService {
     }
 
     /**
-     * 商品を削除する。画像のアセットも手放す。
+     * 商品を削除する。
+     *
+     * <p>画像のアセットも手放す。
      *
      * @param productId 商品 ID
      * @param version   取得時のバージョン
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）
      */
     @Transactional
     public void deleteProduct(@NonNull UUID productId, long version) {

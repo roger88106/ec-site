@@ -28,15 +28,17 @@ public class ShippingApi {
     private final ShipmentService shipmentService;
 
     /**
-     * 注文の出荷を作る。配送状態は「出荷済み」。呼んだ側のトランザクションに加わる。
+     * 注文の出荷を作る。
+     *
+     * <p>配送状態は「出荷済み」。呼んだ側のトランザクションに加わる。
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（前後の空白とハイフンは除いて保存する）
      * @param shippedAt      出荷日時
      * @return 作った出荷
-     * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）、
-     *                           同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
+     * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）
+     * @throws BusinessException 同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
      */
     public ShipmentSummary create(@NonNull UUID orderId, @NonNull ShipmentSummary.Carrier carrier, String trackingNumber,
                                   @NonNull Instant shippedAt) {

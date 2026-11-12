@@ -35,7 +35,9 @@ class JooqCartRepository implements CartRepository {
     private final Clock clock;
 
     /**
-     * カートを作る。会員ごとの一意制約に当たったら、何もせずに false を返す。
+     * カートを作る。
+     *
+     * <p>会員ごとの一意制約に当たったら、何もせずに false を返す。
      *
      * @param cart 空のカート
      * @return 保存したら true
@@ -67,7 +69,9 @@ class JooqCartRepository implements CartRepository {
     }
 
     /**
-     * カートを取得する。品目は入れた順（連番の順）。
+     * カートを取得する。
+     *
+     * <p>品目は入れた順（連番の順）。
      *
      * @param id カート ID
      * @return カート。なければ空
@@ -117,7 +121,9 @@ class JooqCartRepository implements CartRepository {
     }
 
     /**
-     * 最後の変更が指定した時刻より前のカートを、件数の上限まで消す。品目は外部キーの連鎖で消える。
+     * 最後の変更が指定した時刻より前のカートを、件数の上限まで消す。
+     *
+     * <p>品目は外部キーの連鎖で消える。
      *
      * @param updatedBefore 最後の変更の時刻の上限
      * @param limit         消す件数の上限

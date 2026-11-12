@@ -47,7 +47,9 @@ public class InventoryTestData {
     }
 
     /**
-     * 在庫を作る（なければ）。在庫数は 0 のまま。
+     * 在庫を作る（なければ）。
+     *
+     * <p>在庫数は 0 のまま。
      *
      * @param variantId バリアント ID
      * @param productId 商品 ID

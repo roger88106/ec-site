@@ -11,7 +11,9 @@ import com.ecsite.module.shipping.domain.DeliveryStatus;
 public interface ShipmentNotificationReceiver {
 
     /**
-     * 配送状態の通知を受ける。今より高い順位の状態だけを反映し、反映したときだけ配送状態の変化のイベントを出す。
+     * 配送状態の通知を受ける。
+     *
+     * <p>今より高い順位の状態だけを反映し、反映したときだけ配送状態の変化のイベントを出す。
      *
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（ハイフンがあってもよい）

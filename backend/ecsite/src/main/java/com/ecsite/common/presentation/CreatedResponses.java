@@ -18,7 +18,9 @@ import java.util.UUID;
 public final class CreatedResponses {
 
     /**
-     * 管理 API の作成の応答を作る。Location は、今のリクエストのパスに ID を追加した、ホストを含まない相対の URL。
+     * 管理 API の作成の応答を作る。
+     *
+     * <p>Location は、今のリクエストのパスに ID を追加した、ホストを含まない相対の URL。
      *
      * @param id 作成した ID
      * @return 作成の応答
@@ -28,7 +30,9 @@ public final class CreatedResponses {
     }
 
     /**
-     * 店舗の API の作成の応答を作る。Location は、今のリクエストのパスに ID を追加した、ホストを含まない相対の URL。
+     * 店舗の API の作成の応答を作る。
+     *
+     * <p>Location は、今のリクエストのパスに ID を追加した、ホストを含まない相対の URL。
      *
      * @param id 作成した ID
      * @return 作成の応答
@@ -38,7 +42,9 @@ public final class CreatedResponses {
     }
 
     /**
-     * 店舗の API の作成の応答を、別のパスを指して作る。Location は、アプリの起点にパスを追加した、ホストを含まない相対の URL。
+     * 店舗の API の作成の応答を、別のパスを指して作る。
+     *
+     * <p>Location は、アプリの起点にパスを追加した、ホストを含まない相対の URL。
      *
      * @param path パス（{@code {id}} に ID を入れる。例：{@code /api/store/orders/{id}}）
      * @param id   作成した ID
@@ -63,7 +69,9 @@ public final class CreatedResponses {
     }
 
     /**
-     * 今のリクエストのパスに ID を追加する。スキーム・ホスト・ポートは含めない。
+     * 今のリクエストのパスに ID を追加する。
+     *
+     * <p>スキーム・ホスト・ポートは含めない。
      *
      * @param id 作成した ID
      * @return 作成したものの相対の URL
@@ -77,7 +85,9 @@ public final class CreatedResponses {
     }
 
     /**
-     * URI のパスの部分だけにする。スキーム・ホスト・ポートとクエリを除く。
+     * URI のパスの部分だけにする。
+     *
+     * <p>スキーム・ホスト・ポートとクエリを除く。
      *
      * @param uri 絶対の URI
      * @return パスだけの相対の URL

@@ -89,7 +89,9 @@ class JooqCheckoutRepository implements CheckoutRepository {
     }
 
     /**
-     * カートの最新の注文手続きの ID を返す。同時刻なら ID の順で決める。
+     * カートの最新の注文手続きの ID を返す。
+     *
+     * <p>同時刻なら ID の順で決める。
      */
     @Override
     public Optional<UUID> findLatestIdByCartId(UUID cartId) {
@@ -102,7 +104,9 @@ class JooqCheckoutRepository implements CheckoutRepository {
     }
 
     /**
-     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。他のトランザクションがロックしている行（注文の途中）は飛ばす。
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。
+     *
+     * <p>他のトランザクションがロックしている行（注文の途中）は飛ばす。
      */
     @Override
     public int deleteExpiredBefore(Instant expiredBefore, int limit) {

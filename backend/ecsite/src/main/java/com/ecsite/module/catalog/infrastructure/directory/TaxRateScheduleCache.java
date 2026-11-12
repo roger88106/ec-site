@@ -42,7 +42,9 @@ class TaxRateScheduleCache {
     private final AtomicReference<Entry> entry = new AtomicReference<>();
 
     /**
-     * 税率の一覧を返す。有効期間を過ぎていれば、税モジュールから取得し直す。
+     * 税率の一覧を返す。
+     *
+     * <p>有効期間を過ぎていれば、税モジュールから取得し直す。
      *
      * @return 税区分ごとの税率の一覧
      */
@@ -58,7 +60,9 @@ class TaxRateScheduleCache {
     }
 
     /**
-     * キャッシュを捨てる。次の取得で税モジュールから取得し直す。
+     * キャッシュを捨てる。
+     *
+     * <p>次の取得で税モジュールから取得し直す。
      */
     void evict() {
         entry.set(null);

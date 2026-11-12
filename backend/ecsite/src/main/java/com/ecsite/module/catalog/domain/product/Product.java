@@ -154,8 +154,9 @@ public class Product extends AggregateRoot {
      * スナップショットから作る（登録・復元で共通）
      *
      * @param snapshot 商品のスナップショット
-     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）。
-     *                           バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     Product(@NonNull Snapshot snapshot) {
         this.id = snapshot.id();
@@ -177,7 +178,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 商品を作る。登録直後は非公開で、バリアントはない。
+     * 商品を作る。
+     *
+     * <p>登録直後は非公開で、バリアントはない。
      *
      * @param id            商品 ID
      * @param productCode   商品品番
@@ -188,8 +191,9 @@ public class Product extends AggregateRoot {
      * @param categoryIds   所属カテゴリの ID
      * @param axes          バリアント軸の名前（並び順）
      * @return 商品
-     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）。
-     *                           バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     static Product create(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
                           PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {
@@ -203,7 +207,9 @@ public class Product extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
-     * 商品を編集する。税抜価格が変わったら、商品価格変更のイベントを登録する。税区分に有効な税率があるかは確認しない。
+     * 商品を編集する。
+     *
+     * <p>税抜価格が変わったら、商品価格変更のイベントを登録する。税区分に有効な税率があるかは確認しない。
      *
      * @param name          商品名
      * @param description   説明
@@ -211,7 +217,8 @@ public class Product extends AggregateRoot {
      * @param priceExclTax  税抜価格
      * @param categoryIds   所属カテゴリの ID
      * @param now           現在時刻
-     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      */
     public void update(String name, String description, @NonNull UUID taxCategoryId, @NonNull PriceExclTax priceExclTax,
                        @NonNull Collection<UUID> categoryIds, @NonNull Instant now) {
@@ -231,16 +238,18 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを登録する。並びの最後に加える。
+     * バリアントを登録する。
+     *
+     * <p>並びの最後に加える。
      *
      * @param variantCode バリアント品番
      * @param axisValues  軸の値（商品の軸と同じ並び）
      * @param now         現在時刻
      * @return 登録したバリアントの ID
-     * @throws BusinessException 軸の値が正しくない（{@code INVALID_AXIS_VALUES}）。
-     *                           軸を持たない商品に 2 つ目のバリアントを登録しようとした（{@code SINGLE_VARIANT_ONLY}）。
-     *                           バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）。
-     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
+     * @throws BusinessException 軸の値が正しくない（{@code INVALID_AXIS_VALUES}）
+     * @throws BusinessException 軸を持たない商品に 2 つ目のバリアントを登録しようとした（{@code SINGLE_VARIANT_ONLY}）
+     * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      */
     public UUID addVariant(@NonNull VariantCode variantCode, @NonNull List<String> axisValues, @NonNull Instant now) {
         verifyAxisValues(axisValues);
@@ -268,8 +277,9 @@ public class Product extends AggregateRoot {
      *
      * @param variantId バリアント ID
      * @param now       現在時刻
-     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）。C 側に表示されたことのある商品（{@code PRODUCT_ALREADY_SHOWN}）。
-     *                           公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
+     * @throws BusinessException C 側に表示されたことのある商品（{@code PRODUCT_ALREADY_SHOWN}）
+     * @throws BusinessException 公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
     public void deleteVariant(@NonNull UUID variantId, @NonNull Instant now) {
         requireVariant(variantId);
@@ -287,7 +297,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントの並び順を変更する。送られた順に 1 から表示順を振り直す。
+     * バリアントの並び順を変更する。
+     *
+     * <p>送られた順に 1 から表示順を振り直す。
      *
      * @param orderedIds 並べたい順のバリアント ID
      * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）。このときは何も変えない
@@ -298,7 +310,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを販売停止にする。既に販売停止なら何もしない（冪等）。販売終了の商品のバリアントも停止できる。
+     * バリアントを販売停止にする。
+     *
+     * <p>既に販売停止なら何もしない（冪等）。販売終了の商品のバリアントも停止できる。
      *
      * @param variantId バリアント ID
      * @return 変わったら true。既に販売停止なら false
@@ -309,7 +323,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントの販売停止を解除する。販売停止でなければ何もしない（冪等）。
+     * バリアントの販売停止を解除する。
+     *
+     * <p>販売停止でなければ何もしない（冪等）。
      *
      * @param variantId バリアント ID
      * @return 変わったら true。販売停止でなければ false
@@ -346,7 +362,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像の並び順を変更する。送られた順に 1 から表示順を振り直す。先頭が代表画像になる。
+     * 画像の並び順を変更する。
+     *
+     * <p>送られた順に 1 から表示順を振り直す。先頭が代表画像になる。
      *
      * @param orderedIds 並べたい順の画像 ID
      * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）。このときは何も変えない
@@ -357,7 +375,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を削除する。その画像を指定していたバリアントの指定は外す（代表画像に戻る）。C 側に表示されたことのある商品の画像も削除できる。
+     * 画像を削除する。
+     *
+     * <p>その画像を指定していたバリアントの指定は外す（代表画像に戻る）。C 側に表示されたことのある商品の画像も削除できる。
      *
      * @param imageId 画像 ID
      * @return 削除した画像のアセット ID
@@ -374,11 +394,14 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントの画像を指定する。指定できるのは、その商品の画像だけ。
+     * バリアントの画像を指定する。
+     *
+     * <p>指定できるのは、その商品の画像だけ。
      *
      * @param variantId バリアント ID
      * @param imageId   画像 ID。null で指定を外す（代表画像を使う）
-     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）。商品にない画像（{@code INVALID_VARIANT_IMAGE}）
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
+     * @throws BusinessException 商品にない画像（{@code INVALID_VARIANT_IMAGE}）
      */
     public void setVariantImage(@NonNull UUID variantId, @Nullable UUID imageId) {
         requireVariant(variantId);
@@ -391,11 +414,14 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開する。既に公開なら何もしない（冪等）。
+     * 公開する。
+     *
+     * <p>既に公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
      * @return 状態が変わったら true。既にその状態なら false
-     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）。バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）
+     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
+     * @throws BusinessException バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
     public boolean publish(@NonNull Instant now) {
         verifyNotDiscontinued();
@@ -414,7 +440,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 非公開にする。既に非公開なら何もしない（冪等）。
+     * 非公開にする。
+     *
+     * <p>既に非公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
      * @return 状態が変わったら true。既にその状態なら false
@@ -434,7 +462,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 販売終了にする。既に販売終了なら何もしない（冪等）。
+     * 販売終了にする。
+     *
+     * <p>既に販売終了なら何もしない（冪等）。
      *
      * @param now 現在時刻
      * @return 状態が変わったら true。既にその状態なら false
@@ -452,7 +482,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開期間を変える。公開中なら、表示前の初回表示日時を計算し直す。表示されて確定した初回表示日時は変わらない。
+     * 公開期間を変える。
+     *
+     * <p>公開中なら、表示前の初回表示日時を計算し直す。表示されて確定した初回表示日時は変わらない。
      *
      * @param period 公開期間
      * @param now    現在時刻
@@ -465,7 +497,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 削除できるかを検証し、商品削除のイベントを登録する。商品のデータは消さない。
+     * 削除できるかを検証し、商品削除のイベントを登録する。
+     *
+     * <p>商品のデータは消さない。
      *
      * @param now 現在時刻
      * @throws BusinessException C 側に表示されたことのある商品（{@code PRODUCT_ALREADY_SHOWN}）
@@ -488,7 +522,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * C 側に表示されたことがあるかを返す。初回表示日時が空か未来なら、まだ表示されていない。
+     * C 側に表示されたことがあるかを返す。
+     *
+     * <p>初回表示日時が空か未来なら、まだ表示されていない。
      *
      * @param now 現在時刻
      * @return 表示されたことがあれば true
@@ -508,7 +544,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * C 側に表示されたことがあるかを返す。初回表示日時が空か未来なら、まだ表示されていない。
+     * C 側に表示されたことがあるかを返す。
+     *
+     * <p>初回表示日時が空か未来なら、まだ表示されていない。
      *
      * @param firstShownAt 初回表示日時。なければ null
      * @param now          現在時刻
@@ -519,7 +557,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを追加できるかを返す。軸を持たない商品のバリアントは 1 つだけ。
+     * バリアントを追加できるかを返す。
+     *
+     * <p>軸を持たない商品のバリアントは 1 つだけ。
      *
      * @param axisCount    バリアント軸の数
      * @param variantCount 今のバリアントの数
@@ -593,7 +633,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 未来（表示予定）の初回表示日時を空に戻す。確定済みなら何もしない。
+     * 未来（表示予定）の初回表示日時を空に戻す。
+     *
+     * <p>確定済みなら何もしない。
      *
      * @param now 現在時刻
      */
@@ -604,7 +646,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 並び替える。送られた順に 1 から表示順を振り直す。
+     * 並び替える。
+     *
+     * <p>送られた順に 1 から表示順を振り直す。
      *
      * @param items            今の要素
      * @param idOf             要素の ID
@@ -644,7 +688,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜50 文字であることを検証する。軸キーの区切り文字は、値に含められない。
+     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜50 文字であることを検証する。
+     *
+     * <p>軸キーの区切り文字は、値に含められない。
      *
      * @param axisValues 軸の値
      * @throws BusinessException 軸の値が正しくない（{@code INVALID_AXIS_VALUES}）
@@ -670,7 +716,9 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 説明が 10,000 文字以内であることを検証する。空でもよい。
+     * 説明が 10,000 文字以内であることを検証する。
+     *
+     * <p>空でもよい。
      *
      * @param description 説明
      * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）

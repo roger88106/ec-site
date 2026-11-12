@@ -31,7 +31,9 @@ class StoreOperationSecurity {
     }
 
     /**
-     * {@code store.yaml} を読み込む。{@code security} のない操作があれば起動を止める。
+     * {@code store.yaml} を読み込む。
+     *
+     * <p>{@code security} のない操作があれば起動を止める。
      *
      * @param resource {@code store.yaml}
      * @return 操作ごとの token の要否

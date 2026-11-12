@@ -1,5 +1,8 @@
 package com.ecsite.module.media.application.port;
 
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.error.exception.SystemException;
+
 /**
  * 画像の変換
  *
@@ -13,8 +16,8 @@ public interface ImageConverter {
      *
      * @param uploadKey アップロードのバケットのキー
      * @return 変換した WebP
-     * @throws com.ecsite.common.error.exception.BusinessException 変換できなかった（壊れたファイル、応答が WebP でない）
-     * @throws com.ecsite.common.error.exception.SystemException 変換のサービスに接続できない、時間の上限を超えた
+     * @throws BusinessException 変換できなかった（壊れたファイル、応答が WebP でない）
+     * @throws SystemException 変換のサービスに接続できない、時間の上限を超えた
      */
     byte[] convertToWebp(String uploadKey);
 }

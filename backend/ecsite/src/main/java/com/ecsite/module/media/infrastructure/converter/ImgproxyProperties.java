@@ -32,7 +32,9 @@ public record ImgproxyProperties(
         @DefaultValue("30s") Duration timeout) {
 
     /**
-     * 文字列表現を返す。署名の鍵とソルトは、ログに出さないため {@code ***} にする。
+     * 文字列表現を返す。
+     *
+     * <p>署名の鍵とソルトは、ログに出さないため {@code ***} にする。
      *
      * @return 文字列表現
      */

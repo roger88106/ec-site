@@ -225,7 +225,9 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 売上確定を拒否された PaymentIntent の状態から、確定の結果を決める。確定済みなら成功、取消済みなら与信期限切れ。
+     * 売上確定を拒否された PaymentIntent の状態から、確定の結果を決める。
+     *
+     * <p>確定済みなら成功、取消済みなら与信期限切れ。
      */
     private CaptureResult capturedState(CaptureRequest request, InvalidRequestException rejected) {
         var status = intentStatus(request.authorizationRef());
@@ -237,7 +239,9 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 取消を拒否された PaymentIntent の状態から、取消の結果を決める。取消済みなら成功、売上確定済みなら返金に進める。
+     * 取消を拒否された PaymentIntent の状態から、取消の結果を決める。
+     *
+     * <p>取消済みなら成功、売上確定済みなら返金に進める。
      */
     private VoidResult voidedState(String authorizationRef, InvalidRequestException rejected) {
         var status = intentStatus(authorizationRef);
@@ -266,7 +270,9 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * Stripe の失敗をシステムのエラーにする。接続できない・Stripe の側の故障・回数の制限は外部サービスのエラーに、
+     * Stripe の失敗をシステムのエラーにする。
+     *
+     * <p>接続できない・Stripe の側の故障・回数の制限は外部サービスのエラーに、
      * それ以外は予期しないエラーにする。
      */
     private static SystemException failure(String message, StripeException e) {

@@ -25,9 +25,9 @@ public interface ProductRepository {
      * 商品を登録する。
      *
      * @param product 商品
-     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）。
-     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）。
-     *                           所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
+     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
+     * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     void add(Product product);
 
@@ -35,10 +35,10 @@ public interface ProductRepository {
      * 商品を更新する（バリアントは差分で更新する）。
      *
      * @param product 商品
-     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）。
-     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）。
-     *                           所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
+     * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     void save(Product product);
 

@@ -71,7 +71,9 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
     }
 
     /**
-     * 指定した時点で開始済みか。開始が空白なら常に開始済み。
+     * 指定した時点で開始済みか。
+     *
+     * <p>開始が空白なら常に開始済み。
      *
      * @param now 時点
      * @return 開始済みなら true
@@ -81,7 +83,9 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
     }
 
     /**
-     * 指定した時点で終了済みか。終了が空白なら終了しない。
+     * 指定した時点で終了済みか。
+     *
+     * <p>終了が空白なら終了しない。
      *
      * @param now 時点
      * @return 終了済みなら true

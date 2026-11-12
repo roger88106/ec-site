@@ -86,17 +86,20 @@ public class CartService {
     }
 
     /**
-     * バリアントを入れる。同じバリアントは数量を合算する。
+     * バリアントを入れる。
+     *
+     * <p>同じバリアントは数量を合算する。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  数量
-     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）。
-     *                           バリアントを選べない（{@code VARIANT_NOT_SELECTABLE}）。
-     *                           数量が範囲の外（{@code INVALID_CART_QUANTITY}）、販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）、
-     *                           品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）。
-     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）
+     * @throws BusinessException バリアントを選べない（{@code VARIANT_NOT_SELECTABLE}）
+     * @throws BusinessException 数量が範囲の外（{@code INVALID_CART_QUANTITY}）
+     * @throws BusinessException 販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）
+     * @throws BusinessException 品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void addItem(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId, int quantity) {
@@ -113,15 +116,18 @@ public class CartService {
     }
 
     /**
-     * 品目の数量を変える。増やすときだけ販売可能数を確認する。
+     * 品目の数量を変える。
+     *
+     * <p>増やすときだけ販売可能数を確認する。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  新しい数量
-     * @throws BusinessException カートがない、持ち主でない、またはカートにない品目（{@code NOT_FOUND}）。
-     *                           数量が範囲の外（{@code INVALID_CART_QUANTITY}）、販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）。
-     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException カートがない、持ち主でない、またはカートにない品目（{@code NOT_FOUND}）
+     * @throws BusinessException 数量が範囲の外（{@code INVALID_CART_QUANTITY}）
+     * @throws BusinessException 販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void changeQuantity(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId, int quantity) {
@@ -136,13 +142,15 @@ public class CartService {
     }
 
     /**
-     * 品目を削除する。品目がカートになければ何もしない。
+     * 品目を削除する。
+     *
+     * <p>品目がカートになければ何もしない。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
-     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）。
-     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public void removeItem(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId) {
@@ -150,7 +158,9 @@ public class CartService {
     }
 
     /**
-     * カートの中身を返す。期限切れのカートは品目が空。
+     * カートの中身を返す。
+     *
+     * <p>期限切れのカートは品目が空。
      *
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空
@@ -162,7 +172,9 @@ public class CartService {
     }
 
     /**
-     * 指定したバリアントの品目を、数量によらず行ごとカートから除く。カートがなければ何もしない。持ち主は確認しない。
+     * 指定したバリアントの品目を、数量によらず行ごとカートから除く。
+     *
+     * <p>カートがなければ何もしない。持ち主は確認しない。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
@@ -179,7 +191,9 @@ public class CartService {
     }
 
     /**
-     * 会員のカートの ID を返す。まだなければ空のカートを作る（会員ごとに 1 つ）。
+     * 会員のカートの ID を返す。
+     *
+     * <p>まだなければ空のカートを作る（会員ごとに 1 つ）。
      *
      * @param memberId 会員 ID
      * @return カート ID
@@ -202,15 +216,17 @@ public class CartService {
     }
 
     /**
-     * ログインせずに使っていたカートの品目を、会員のカートへ移す。移したカートは空になる。
+     * ログインせずに使っていたカートの品目を、会員のカートへ移す。
+     *
+     * <p>移したカートは空になる。
      *
      * <p>商品カタログ・在庫は確認しない。変わったカートごとに、カート変更のイベントを発行する。
      *
      * @param memberId     会員 ID
      * @param sourceCartId 移すカートの ID
      * @return 会員のカートの ID と、移した結果
-     * @throws BusinessException 移すカートがない、または会員のカートである（{@code NOT_FOUND}）。
-     *                           読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 移すカートがない、または会員のカートである（{@code NOT_FOUND}）
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public MergedCart merge(@NonNull UUID memberId, @NonNull UUID sourceCartId) {
@@ -254,7 +270,9 @@ public class CartService {
     }
 
     /**
-     * カートを読み込む。なければ {@code NOT_FOUND}。
+     * カートを読み込む。
+     *
+     * <p>なければ {@code NOT_FOUND}。
      */
     private Cart load(UUID cartId) {
         return cartRepository.findById(cartId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));

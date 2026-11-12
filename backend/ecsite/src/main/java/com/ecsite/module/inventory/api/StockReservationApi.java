@@ -34,7 +34,9 @@ public class StockReservationApi {
     private final StockQueryService queryService;
 
     /**
-     * 販売可能数（在庫数 − 有効な引当の合計）を返す。在庫のないバリアントは 0。
+     * 販売可能数（在庫数 − 有効な引当の合計）を返す。
+     *
+     * <p>在庫のないバリアントは 0。
      *
      * @param variantIds       バリアント ID
      * @param excludedHolderId 数えない引当の持ち主（注文手続き中の自分の引当）。なければ null
@@ -45,7 +47,9 @@ public class StockReservationApi {
     }
 
     /**
-     * 全品目を引き当てる。同じ持ち主の引当は置き換える。
+     * 全品目を引き当てる。
+     *
+     * <p>同じ持ち主の引当は置き換える。
      *
      * @param holderId   持ち主 ID（注文手続き）
      * @param quantities バリアント ID → 数量
@@ -57,7 +61,9 @@ public class StockReservationApi {
     }
 
     /**
-     * 持ち主の引当を解く。なければ何もしない。
+     * 持ち主の引当を解く。
+     *
+     * <p>なければ何もしない。
      *
      * @param holderId 持ち主 ID
      */

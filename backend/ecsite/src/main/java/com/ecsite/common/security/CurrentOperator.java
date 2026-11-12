@@ -19,7 +19,9 @@ import java.util.stream.Stream;
 public class CurrentOperator {
 
     /**
-     * token の運営者を返す。氏名は、token の姓と名を「姓 名」の順に並べる。
+     * token の運営者を返す。
+     *
+     * <p>氏名は、token の姓と名を「姓 名」の順に並べる。
      *
      * @return 運営者
      * @throws BusinessException token がない（{@code UNAUTHENTICATED}）

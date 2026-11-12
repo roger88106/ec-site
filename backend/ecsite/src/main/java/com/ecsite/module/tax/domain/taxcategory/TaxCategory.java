@@ -105,7 +105,9 @@ public class TaxCategory extends AggregateRoot {
     }
 
     /**
-     * 指定した時点の税率を返す。期間は重複しないので、該当は 0 件か 1 件。
+     * 指定した時点の税率を返す。
+     *
+     * <p>期間は重複しないので、該当は 0 件か 1 件。
      *
      * @param instant 時点
      * @return その時点を含む税率。なければ空

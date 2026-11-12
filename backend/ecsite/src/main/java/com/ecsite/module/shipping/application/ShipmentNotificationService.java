@@ -83,7 +83,9 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
     }
 
     /**
-     * 通知の送り状番号を、保存と同じ形にする。形に合わなければ null。
+     * 通知の送り状番号を、保存と同じ形にする。
+     *
+     * <p>形に合わなければ null。
      */
     private static @Nullable TrackingNumber normalize(String trackingNumber) {
         try {

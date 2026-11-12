@@ -44,7 +44,9 @@ public record PageRequest(int page, int size) {
     }
 
     /**
-     * リクエストのパラメータから作る。指定がなければ既定値にする。
+     * リクエストのパラメータから作る。
+     *
+     * <p>指定がなければ既定値にする。
      *
      * @param page ページ番号（1 始まり）。null は 1
      * @param size 1 ページの件数。null は 20

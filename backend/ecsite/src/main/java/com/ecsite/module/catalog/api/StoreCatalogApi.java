@@ -52,7 +52,9 @@ public class StoreCatalogApi {
     }
 
     /**
-     * キーワードで商品を探す。並びは新着順で固定。
+     * キーワードで商品を探す。
+     *
+     * <p>並びは新着順で固定。
      *
      * @param keyword キーワード
      * @param request ページの指定

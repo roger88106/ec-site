@@ -13,7 +13,9 @@ import java.util.UUID;
 public interface StockItemRepository {
 
     /**
-     * 在庫数 0 の在庫を作る。すでにあれば何もしない。
+     * 在庫数 0 の在庫を作る。
+     *
+     * <p>すでにあれば何もしない。
      *
      * @param variantId バリアント ID
      * @param productId 商品 ID
@@ -21,14 +23,18 @@ public interface StockItemRepository {
     void createIfAbsent(UUID variantId, UUID productId);
 
     /**
-     * バリアントの在庫と調整履歴を消す。なければ何もしない。
+     * バリアントの在庫と調整履歴を消す。
+     *
+     * <p>なければ何もしない。
      *
      * @param variantId バリアント ID
      */
     void deleteByVariantId(UUID variantId);
 
     /**
-     * 商品のすべての在庫と調整履歴を消す。なければ何もしない。
+     * 商品のすべての在庫と調整履歴を消す。
+     *
+     * <p>なければ何もしない。
      *
      * @param productId 商品 ID
      */
@@ -42,8 +48,9 @@ public interface StockItemRepository {
      * @param variantId  バリアント ID
      * @param adjustment 在庫調整
      * @return 調整後の在庫数
-     * @throws BusinessException 調整後に負になる（{@code INSUFFICIENT_STOCK}）、運営者の調整で在庫数が上限を超える
-     *                           （{@code STOCK_QUANTITY_EXCEEDED}）、または在庫がない（{@code NOT_FOUND}）
+     * @throws BusinessException 調整後に負になる（{@code INSUFFICIENT_STOCK}）
+     * @throws BusinessException 運営者の調整で在庫数が上限を超える（{@code STOCK_QUANTITY_EXCEEDED}）
+     * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
     int adjust(UUID variantId, StockAdjustment adjustment);
 }

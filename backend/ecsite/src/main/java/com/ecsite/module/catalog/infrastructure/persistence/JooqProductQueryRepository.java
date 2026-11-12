@@ -121,7 +121,9 @@ class JooqProductQueryRepository implements ProductQueryRepository {
     }
 
     /**
-     * レコードから商品の詳細に変換する。商品の一部は別に取得する。
+     * レコードから商品の詳細に変換する。
+     *
+     * <p>商品の一部は別に取得する。
      *
      * @param record 商品のレコード
      * @return 商品の詳細（税込価格は空）

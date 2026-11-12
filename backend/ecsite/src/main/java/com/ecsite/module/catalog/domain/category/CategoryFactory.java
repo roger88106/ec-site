@@ -20,7 +20,8 @@ public class CategoryFactory {
      * @param name         名称
      * @param displayOrder 表示順
      * @return カテゴリ
-     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）。名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
+     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）
+     * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
     public Category create(@Nullable Category parent, String name, int displayOrder) {
         return Category.create(UUID.randomUUID(), parent, name, displayOrder);

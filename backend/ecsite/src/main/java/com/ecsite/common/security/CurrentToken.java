@@ -31,7 +31,9 @@ public final class CurrentToken {
     }
 
     /**
-     * リクエストの token を返す。なければ業務のエラーにする。
+     * リクエストの token を返す。
+     *
+     * <p>なければ業務のエラーにする。
      *
      * @return token
      * @throws BusinessException token で認証していない（{@code UNAUTHENTICATED}）

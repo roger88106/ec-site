@@ -134,7 +134,9 @@ class ImgproxyImageConverterTest {
     }
 
     /**
-     * WebP の画素数（幅、高さ）。VP8X（拡張）、VP8（非可逆）、VP8L（可逆）のボックスから読む
+     * WebP の画素数（幅、高さ）。
+     *
+     * <p>VP8X（拡張）、VP8（非可逆）、VP8L（可逆）のボックスから読む
      */
     private static int[] dimensions(byte[] webp) {
         var buffer = ByteBuffer.wrap(webp).order(ByteOrder.LITTLE_ENDIAN);
@@ -151,7 +153,9 @@ class ImgproxyImageConverterTest {
     }
 
     /**
-     * WebP の EXIF のボックスの中身。なければ空
+     * WebP の EXIF のボックスの中身。
+     *
+     * <p>なければ空
      */
     private static byte[] exifChunk(byte[] webp) {
         var buffer = ByteBuffer.wrap(webp).order(ByteOrder.LITTLE_ENDIAN);

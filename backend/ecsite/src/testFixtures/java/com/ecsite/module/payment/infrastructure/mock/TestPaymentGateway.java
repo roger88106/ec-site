@@ -242,7 +242,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信の成功を通知する。重ねて呼ぶと、重ねて届いた通知になる。
+     * 与信の成功を通知する。
+     *
+     * <p>重ねて呼ぶと、重ねて届いた通知になる。
      *
      * @param pageId 支払画面 ID
      */
@@ -261,7 +263,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信の参照を返す。支払画面ごとに決まる。
+     * 与信の参照を返す。
+     *
+     * <p>支払画面ごとに決まる。
      *
      * @param pageId 支払画面 ID
      * @return 与信の参照
@@ -300,7 +304,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * その支払画面の与信の取得を、予期しないエラーで失敗させ続ける。解除は {@link #reset()}。
+     * その支払画面の与信の取得を、予期しないエラーで失敗させ続ける。
+     *
+     * <p>解除は {@link #reset()}。
      *
      * @param pageId 支払画面 ID
      */
@@ -309,7 +315,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信が切れたことにする。以降、その与信の売上確定は、与信期限切れで断られる。
+     * 与信が切れたことにする。
+     *
+     * <p>以降、その与信の売上確定は、与信期限切れで断られる。
      *
      * @param authorizationRef 与信の参照
      */
@@ -328,7 +336,8 @@ public class TestPaymentGateway implements PaymentGateway {
 
     /**
      * 次の売上確定から指定した回数だけ、決済サービスでは売上を確定するが、応答が届かないようにする。
-     * 呼んだ側には、接続できなかった場合と同じ結果が返る。
+     *
+     * <p>呼んだ側には、接続できなかった場合と同じ結果が返る。
      *
      * @param times 応答を届かなくする回数
      */
@@ -451,7 +460,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * テストだけで使う状態を最初に戻す。本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
+     * テストだけで使う状態を最初に戻す。
+     *
+     * <p>本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
      */
     public void reset() {
         amountCalls.clear();

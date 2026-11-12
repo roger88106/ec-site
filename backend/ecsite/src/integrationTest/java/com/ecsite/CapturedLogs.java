@@ -18,7 +18,9 @@ public final class CapturedLogs {
     }
 
     /**
-     * 今までの出力の長さを返す。確認する処理の前に呼ぶ。
+     * 今までの出力の長さを返す。
+     *
+     * <p>確認する処理の前に呼ぶ。
      *
      * @param output 取り込んだ出力
      * @return 今までの出力の長さ（{@link #since} に渡す位置）

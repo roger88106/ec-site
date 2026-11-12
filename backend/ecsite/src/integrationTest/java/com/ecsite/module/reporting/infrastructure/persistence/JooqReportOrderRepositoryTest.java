@@ -210,7 +210,9 @@ class JooqReportOrderRepositoryTest {
     }
 
     /**
-     * 注文の写し。注文日時は日本時間では翌日になる
+     * 注文の写し。
+     *
+     * <p>注文日時は日本時間では翌日になる
      */
     private static ReportOrder order(UUID orderId, ReportOrderStatus status, List<ReportOrder.Line> lines) {
         return new ReportOrder(orderId, "20261008-000001", UUID.randomUUID(), ORDERED_AT, status, null, null, null, null,

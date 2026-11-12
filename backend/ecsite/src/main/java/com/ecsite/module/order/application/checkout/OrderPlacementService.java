@@ -93,18 +93,22 @@ public class OrderPlacementService {
     private final Clock clock;
 
     /**
-     * 注文する。どこかで失敗すれば、トランザクションごと取り消される。同じ注文手続きでの再送には、作成済みの注文を返す。
+     * 注文する。
+     *
+     * <p>どこかで失敗すれば、トランザクションごと取り消される。同じ注文手続きでの再送には、作成済みの注文を返す。
      *
      * @param command 注文のコマンド
      * @return 注文の結果
-     * @throws BusinessException 注文手続きがない、または始めた会員でない（{@code NOT_FOUND}）。メールアドレスが確認済みでない（{@code EMAIL_NOT_VERIFIED}）。
-     *                           確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
-     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）。
-     *                           カートがない、または注文できない（{@code CART_NOT_ORDERABLE}）。カートが変わった（{@code CART_CHANGED}）。
-     *                           在庫が足りない（{@code OUT_OF_STOCK}）。総額が変わった（{@code TOTAL_AMOUNT_CHANGED}）。
-     *                           入力が正しくない（{@code INVALID_EMAIL}、{@code INVALID_RECIPIENT_NAME}、{@code INVALID_POSTAL_CODE}、
-     *                           {@code INVALID_PREFECTURE}、{@code INVALID_MUNICIPALITY}、{@code INVALID_ADDRESS}、{@code INVALID_PHONE_NUMBER}）。
-     *                           注文番号が同時に使われた（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 注文手続きがない、または始めた会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException メールアドレスが確認済みでない（{@code EMAIL_NOT_VERIFIED}）
+     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
+     * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
+     * @throws BusinessException カートがない、または注文できない（{@code CART_NOT_ORDERABLE}）
+     * @throws BusinessException カートが変わった（{@code CART_CHANGED}）
+     * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）
+     * @throws BusinessException 総額が変わった（{@code TOTAL_AMOUNT_CHANGED}）
+     * @throws BusinessException 入力が正しくない（{@code INVALID_EMAIL}、{@code INVALID_RECIPIENT_NAME}、{@code INVALID_POSTAL_CODE}、{@code INVALID_PREFECTURE}、{@code INVALID_MUNICIPALITY}、{@code INVALID_ADDRESS}、{@code INVALID_PHONE_NUMBER}）
+     * @throws BusinessException 注文番号が同時に使われた（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
     public PlacementResult place(@NonNull PlaceOrderCommand command) {
@@ -171,7 +175,8 @@ public class OrderPlacementService {
      * @param prefectureCode   都道府県のコード
      * @param municipalityCode 市区町村のコード
      * @return 都道府県と市区町村
-     * @throws BusinessException 都道府県がない（{@code INVALID_PREFECTURE}）。市区町村がない、または都道府県に属さない（{@code INVALID_MUNICIPALITY}）
+     * @throws BusinessException 都道府県がない（{@code INVALID_PREFECTURE}）
+     * @throws BusinessException 市区町村がない、または都道府県に属さない（{@code INVALID_MUNICIPALITY}）
      */
     private AddressArea addressArea(String prefectureCode, String municipalityCode) {
         var prefectureName = regionDirectory.findPrefectureName(prefectureCode)

@@ -38,7 +38,9 @@ public class MessageHelper {
     }
 
     /**
-     * エラー明細のメッセージを取得する。パラメータを埋め込む。
+     * エラー明細のメッセージを取得する。
+     *
+     * <p>パラメータを埋め込む。
      *
      * @param errorDetail エラー明細
      * @return メッセージ
@@ -64,7 +66,9 @@ public class MessageHelper {
     }
 
     /**
-     * 差し込む値を文字にする。整数は 3 桁ごとにカンマで区切る。
+     * 差し込む値を文字にする。
+     *
+     * <p>整数は 3 桁ごとにカンマで区切る。
      *
      * @param value 値
      * @return 文字

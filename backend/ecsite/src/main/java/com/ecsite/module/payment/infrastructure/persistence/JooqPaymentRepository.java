@@ -45,7 +45,9 @@ class JooqPaymentRepository implements PaymentRepository {
     private final Clock clock;
 
     /**
-     * 新しい支払を保存する。同じ注文の支払がすでにあれば、例外にせず（トランザクションを壊さず）false を返す。
+     * 新しい支払を保存する。
+     *
+     * <p>同じ注文の支払がすでにあれば、例外にせず（トランザクションを壊さず）false を返す。
      *
      * @param payment 支払
      * @return 保存したら true
@@ -76,7 +78,8 @@ class JooqPaymentRepository implements PaymentRepository {
 
     /**
      * 支払の変更を保存し、登録されたイベント（与信の成功、与信の取消の依頼、返金の依頼など）を発行する。
-     * 金額と期限は変わらないので、変わりうる項目だけを更新する。
+     *
+     * <p>金額と期限は変わらないので、変わりうる項目だけを更新する。
      *
      * @param payment 変更した支払
      */

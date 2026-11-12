@@ -404,7 +404,9 @@ class ProductImageApiTest {
     }
 
     /**
-     * バリアントの画像を指定する。画像 ID は JSON の値（文字列か null）で渡す
+     * バリアントの画像を指定する。
+     *
+     * <p>画像 ID は JSON の値（文字列か null）で渡す
      */
     private ResultActions setVariantImage(UUID productId, String variantId, String imageIdJson, long version)
             throws Exception {

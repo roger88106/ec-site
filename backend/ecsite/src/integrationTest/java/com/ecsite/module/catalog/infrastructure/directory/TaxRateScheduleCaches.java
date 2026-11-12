@@ -15,7 +15,9 @@ public final class TaxRateScheduleCaches {
     }
 
     /**
-     * 税率キャッシュを捨てる。次の取得で税モジュールから取得し直す。
+     * 税率キャッシュを捨てる。
+     *
+     * <p>次の取得で税モジュールから取得し直す。
      *
      * @param context Spring のコンテキスト（テストに注入したもの）
      */

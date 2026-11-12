@@ -187,7 +187,9 @@ class JooqStockItemRepositoryTest {
     // ============================== 補助 ==============================
 
     /**
-     * 調整をコミットするトランザクションで行う。メモは「その他」のときだけ付ける
+     * 調整をコミットするトランザクションで行う。
+     *
+     * <p>メモは「その他」のときだけ付ける
      */
     private int adjust(int delta, StockAdjustmentReason reason) {
         var memo = reason == StockAdjustmentReason.OTHER ? "メモ" : null;

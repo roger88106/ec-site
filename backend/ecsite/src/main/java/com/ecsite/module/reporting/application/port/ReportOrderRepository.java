@@ -13,14 +13,18 @@ import java.util.UUID;
 public interface ReportOrderRepository {
 
     /**
-     * 注文ごとのロックを、トランザクションの終わりまで取る。同じ注文のロックは、先に取ったトランザクションが終わるまで待つ。
+     * 注文ごとのロックを、トランザクションの終わりまで取る。
+     *
+     * <p>同じ注文のロックは、先に取ったトランザクションが終わるまで待つ。
      *
      * @param orderId 注文 ID
      */
     void lock(UUID orderId);
 
     /**
-     * 状態の履歴に 1 行追加する。同じイベント ID の行があれば何もしない。
+     * 状態の履歴に 1 行追加する。
+     *
+     * <p>同じイベント ID の行があれば何もしない。
      *
      * @param entry 履歴の行
      * @return 追加したら true
@@ -44,7 +48,9 @@ public interface ReportOrderRepository {
     Map<Integer, UUID> productIds(UUID orderId);
 
     /**
-     * 写しを上書きする（なければ作る）。明細は消して入れ直す。
+     * 写しを上書きする（なければ作る）。
+     *
+     * <p>明細は消して入れ直す。
      *
      * @param order 写し
      */

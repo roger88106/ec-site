@@ -21,7 +21,9 @@ public final class AssetKeys {
     private static final Pattern SCOPE = Pattern.compile("[A-Za-z0-9-]{1,64}");
 
     /**
-     * アップロードのバケットのキー。範囲を含め、別の範囲のアップロードを確定できないようにする
+     * アップロードのバケットのキー。
+     *
+     * <p>範囲を含め、別の範囲のアップロードを確定できないようにする
      *
      * @param scope    範囲
      * @param uploadId 受付 ID
@@ -36,7 +38,9 @@ public final class AssetKeys {
     }
 
     /**
-     * 配信のバケットのキー。アセット ID で作り、上書きしない
+     * 配信のバケットのキー。
+     *
+     * <p>アセット ID で作り、上書きしない
      *
      * @param assetId アセット ID
      * @param format  形式

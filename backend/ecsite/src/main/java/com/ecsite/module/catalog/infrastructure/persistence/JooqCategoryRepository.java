@@ -166,8 +166,8 @@ class JooqCategoryRepository implements CategoryRepository {
      * カテゴリを登録する。
      *
      * @param category カテゴリ
-     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）。
-     *                           親が削除されている（{@code NOT_FOUND}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     * @throws BusinessException 親が削除されている（{@code NOT_FOUND}）
      */
     @Override
     public void add(Category category) {
@@ -194,11 +194,13 @@ class JooqCategoryRepository implements CategoryRepository {
     }
 
     /**
-     * カテゴリを更新する。親と深さは変わらないので、名称と表示順だけを書き換える。
+     * カテゴリを更新する。
+     *
+     * <p>親と深さは変わらないので、名称と表示順だけを書き換える。
      *
      * @param category カテゴリ
-     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
-     *                           同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     @Override
     public void save(Category category) {
@@ -230,8 +232,9 @@ class JooqCategoryRepository implements CategoryRepository {
      * カテゴリを削除する。
      *
      * @param category カテゴリ
-     * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）。商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）。
-     *                           既に削除されている（{@code NOT_FOUND}）
+     * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）
+     * @throws BusinessException 商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）
+     * @throws BusinessException 既に削除されている（{@code NOT_FOUND}）
      */
     @Override
     public void delete(Category category) {

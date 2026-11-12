@@ -33,7 +33,9 @@ class AdminOperationPermissions {
     }
 
     /**
-     * {@code admin.yaml} を読み込む。権限のない操作があれば起動を止める。
+     * {@code admin.yaml} を読み込む。
+     *
+     * <p>権限のない操作があれば起動を止める。
      *
      * @param resource {@code admin.yaml}
      * @return 操作ごとに必要な権限

@@ -160,7 +160,9 @@ public final class TestTokens {
     }
 
     /**
-     * 会員の token（消費者の realm）。権限は持たない。
+     * 会員の token（消費者の realm）。
+     *
+     * <p>権限は持たない。
      *
      * @return token の組み立て
      */

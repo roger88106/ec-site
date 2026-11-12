@@ -36,7 +36,9 @@ public final class ExpiredDataCleanup {
     }
 
     /**
-     * 消した件数をログに出す。1 件以上なら info、0 件なら debug で出す。ログの文は {@code {}を消した：{} 件}（名詞は引数で渡す）。
+     * 消した件数をログに出す。
+     *
+     * <p>1 件以上なら info、0 件なら debug で出す。ログの文は {@code {}を消した：{} 件}（名詞は引数で渡す）。
      *
      * @param log   ログを出すロガー
      * @param noun  消したものを表す名詞（例：期限切れのカート）

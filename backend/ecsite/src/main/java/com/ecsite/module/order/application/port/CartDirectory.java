@@ -12,7 +12,9 @@ import java.util.UUID;
 public interface CartDirectory {
 
     /**
-     * カートの中身を返す。期限切れのカートは品目が空。
+     * カートの中身を返す。
+     *
+     * <p>期限切れのカートは品目が空。
      *
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空
@@ -20,7 +22,9 @@ public interface CartDirectory {
     Optional<CartSnapshot> find(UUID cartId);
 
     /**
-     * 品目（バリアント）を、数量によらず行ごとカートから除く。カートがなければ何もしない。
+     * 品目（バリアント）を、数量によらず行ごとカートから除く。
+     *
+     * <p>カートがなければ何もしない。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID

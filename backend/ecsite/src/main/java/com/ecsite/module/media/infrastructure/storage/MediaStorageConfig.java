@@ -72,7 +72,9 @@ class MediaStorageConfig {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 資格情報。設定で与えていればそれを使い（ローカル）、なければ既定の連鎖（環境変数、IAM ロールなど）を使う。
+     * 資格情報。
+     *
+     * <p>設定で与えていればそれを使い（ローカル）、なければ既定の連鎖（環境変数、IAM ロールなど）を使う。
      */
     private static AwsCredentialsProvider credentials(MediaStorageProperties properties) {
         if (properties.hasStaticCredentials()) {

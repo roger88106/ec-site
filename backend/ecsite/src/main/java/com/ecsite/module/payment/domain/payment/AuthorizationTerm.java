@@ -25,7 +25,9 @@ public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration wa
     }
 
     /**
-     * 与信期限が近いかを返す。期限を過ぎていても近いとする。
+     * 与信期限が近いかを返す。
+     *
+     * <p>期限を過ぎていても近いとする。
      *
      * @param authorizedAt 与信の時刻
      * @param now          現在時刻
@@ -36,7 +38,9 @@ public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration wa
     }
 
     /**
-     * 与信期限が近い与信の、与信の時刻の上限を返す。この時刻以前に与信を受けたものが近い。
+     * 与信期限が近い与信の、与信の時刻の上限を返す。
+     *
+     * <p>この時刻以前に与信を受けたものが近い。
      *
      * @param now 現在時刻
      * @return 与信の時刻の上限

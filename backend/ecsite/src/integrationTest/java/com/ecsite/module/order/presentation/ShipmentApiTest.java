@@ -43,8 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 出荷の登録の受け入れテスト。<br />
- * 売上確定は mock の決済サービスで行う。テストごとにロールバックする。
+ * 出荷の登録の受け入れテスト
+ *
+ * <p>売上確定は mock の決済サービスで行う。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -235,7 +236,7 @@ class ShipmentApiTest {
         }
 
         /**
-         * 期限を過ぎてから、期限切れのジョブを実行する。<br />
+         * 期限を過ぎてから、期限切れのジョブを実行する。
          * 与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。注文への反映は、リスナーと同じ処理をここで呼ぶ。
          */
         private void recoverByJob() throws Exception {

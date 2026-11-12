@@ -1,6 +1,7 @@
 package com.ecsite.module.order.domain.checkout.port;
 
 import com.ecsite.module.order.domain.checkout.Checkout;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.time.Instant;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.UUID;
 /**
  * 注文手続きのリポジトリ
  */
+@Repository
 public interface CheckoutRepository {
 
     /**
@@ -28,7 +30,7 @@ public interface CheckoutRepository {
     Optional<Checkout> findById(UUID id);
 
     /**
-     * 注文手続きを行ロックして取得する。同じ注文手続きでの注文を 1 つずつ処理するため。トランザクションの中で呼ぶ。
+     * 注文手続きを行ロックして取得する。ロックはトランザクションの終わりまで続く。
      *
      * @param id 注文手続き ID
      * @return 注文手続き。なければ空
@@ -36,7 +38,7 @@ public interface CheckoutRepository {
     Optional<Checkout> lockById(UUID id);
 
     /**
-     * カートの注文手続きの ID を返す（カート変更・進み直しで引当を解くため）。
+     * カートの注文手続きの ID を返す。
      *
      * @param cartId カート ID
      * @return 注文手続き ID
@@ -44,7 +46,7 @@ public interface CheckoutRepository {
     List<UUID> findIdsByCartId(UUID cartId);
 
     /**
-     * カートの最新の注文手続きの ID を返す（カートの表示で、自分の引当を販売可能数から除くため）。
+     * カートの最新の注文手続きの ID を返す。
      *
      * @param cartId カート ID
      * @return 注文手続き ID。なければ空
@@ -52,7 +54,7 @@ public interface CheckoutRepository {
     Optional<UUID> findLatestIdByCartId(UUID cartId);
 
     /**
-     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す（片付け）。注文になったものも消す。
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。注文になったものも消す。
      *
      * @param expiredBefore この時刻より前に期限が切れた注文手続きを消す
      * @param limit         消す件数の上限

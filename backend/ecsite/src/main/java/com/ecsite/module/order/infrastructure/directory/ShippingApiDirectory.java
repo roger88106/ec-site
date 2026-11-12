@@ -1,6 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
-import com.ecsite.module.order.application.model.OrderShipment;
+import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
 import com.ecsite.module.shipping.api.ShippingApi;
@@ -16,7 +16,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 出荷の腐敗防止層の実装。出荷モジュールの API を呼ぶ。
+ * 出荷の腐敗防止層
+ *
+ * <p>出荷モジュールの API を呼ぶ。
  */
 @Component
 @RequiredArgsConstructor

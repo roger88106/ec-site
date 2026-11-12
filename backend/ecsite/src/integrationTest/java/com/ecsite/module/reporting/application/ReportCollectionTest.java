@@ -7,7 +7,7 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.api.ReportCatalogApi;
 import com.ecsite.module.order.api.OrderReportApi;
-import com.ecsite.module.order.api.OrderReportSnapshot;
+import com.ecsite.module.order.api.model.OrderReportSnapshot;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.domain.sales.Basis;

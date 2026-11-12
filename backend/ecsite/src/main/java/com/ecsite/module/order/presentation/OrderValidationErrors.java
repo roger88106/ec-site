@@ -10,8 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 注文のリクエストの形の誤りの、業務のエラーへの対応。<br />
- * お届け先の郵便番号と電話番号は、契約の形の検証で見つかっても、お届け先（ドメイン）の検証と同じ文を返す。
+ * 注文のリクエストの形の誤りの対応
+ *
+ * <p>お届け先の郵便番号と電話番号は、契約の形の検証で見つかっても、お届け先（ドメイン）の検証と同じ文を返す。
  */
 @Component
 class OrderValidationErrors implements ValidationErrorMapping {

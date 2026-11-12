@@ -1,13 +1,14 @@
 package com.ecsite.module.order.domain.quote;
 
 import com.ecsite.common.model.value.Money;
+import org.jmolecules.ddd.annotation.ValueObject;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * 見積もりと注文の写しに使う、バリアントの情報（商品カタログから受け取る）
+ * バリアントの情報
  *
  * @param variantId      バリアント ID
  * @param productId      商品 ID
@@ -21,6 +22,7 @@ import java.util.UUID;
  * @param visible        商品が C 側に表示されるか
  * @param salesSuspended 販売停止か
  */
+@ValueObject
 public record VariantInfo(UUID variantId, UUID productId, String productCode, String variantCode, String productName,
                           List<AxisValue> axisValues, Money priceExclTax, UUID taxCategoryId,
                           @Nullable String imageUrl, boolean visible, boolean salesSuspended) {

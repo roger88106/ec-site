@@ -102,11 +102,11 @@ class JooqCheckoutRepository implements CheckoutRepository {
     }
 
     /**
-     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。<br />
-     * 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行（注文の途中）は飛ばす（次の回で消す）。
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。他のトランザクションがロックしている行（注文の途中）は飛ばす。
      */
     @Override
     public int deleteExpiredBefore(Instant expiredBefore, int limit) {
+        // 選ぶのと消すのを 1 文にする。ロックされた行は、次の回で消す
         return dsl.deleteFrom(CHECKOUT)
                 .where(CHECKOUT.ID.in(dsl.select(CHECKOUT.ID)
                         .from(CHECKOUT)

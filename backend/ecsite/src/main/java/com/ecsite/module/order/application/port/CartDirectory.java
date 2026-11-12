@@ -1,14 +1,13 @@
 package com.ecsite.module.order.application.port;
 
-import org.jspecify.annotations.Nullable;
+import com.ecsite.module.order.application.model.CartSnapshot;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートの腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」）
+ * カートの腐敗防止層の port
  */
 public interface CartDirectory {
 
@@ -21,50 +20,10 @@ public interface CartDirectory {
     Optional<CartSnapshot> find(UUID cartId);
 
     /**
-     * 注文した品目（バリアント）を、数量によらず行ごとカートから除く（与信の成功）。カートがなければ何もしない。
+     * 品目（バリアント）を、数量によらず行ごとカートから除く。カートがなければ何もしない。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
      */
     void removeItems(UUID cartId, Collection<UUID> variantIds);
-
-    /**
-     * カートの中身
-     *
-     * @param cartId   カート ID
-     * @param memberId 会員 ID（ログインせずに作ったカートは null）
-     * @param version  バージョン（注文手続きの後の変更を見つけるため）
-     * @param lines    品目（入れた順）
-     */
-    record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, List<Line> lines) {
-
-        /**
-         * リクエストした会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
-         *
-         * @param requester リクエストした会員の ID（ログインしていなければ null）
-         * @return 使えれば true
-         */
-        public boolean isAccessibleBy(@Nullable UUID requester) {
-            return memberId == null || memberId.equals(requester);
-        }
-
-        /**
-         * 会員のカートで、その会員が持ち主かを返す。
-         *
-         * @param memberId 会員 ID
-         * @return 会員のカートで、その会員が持ち主なら true（注文手続きを始められるカート）
-         */
-        public boolean isOwnedBy(UUID memberId) {
-            return this.memberId != null && this.memberId.equals(memberId);
-        }
-    }
-
-    /**
-     * 品目
-     *
-     * @param variantId バリアント ID
-     * @param quantity  数量
-     */
-    record Line(UUID variantId, int quantity) {
-    }
 }

@@ -36,8 +36,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * キャンセルと在庫の戻しの一貫性の受け入れテスト。<br />
- * 在庫の戻しを失敗させ、注文もキャンセルにならないこと（トランザクションごと取り消されること）を確認する。
+ * キャンセルと在庫の戻しの一貫性の受け入れテスト
+ *
+ * <p>在庫の戻しを失敗させ、注文もキャンセルにならないこと（トランザクションごと取り消されること）を確認する。
  * 取り消しを見るためにコミットが必要だが、作ったデータは消さない。税区分の名称は、ほかのテストと重ならない名前にする。
  */
 @IntegrationTest
@@ -109,7 +110,7 @@ class CancellationAtomicityTest {
     }
 
     /**
-     * 与信の成功のイベントのリスナーが終わるのを待つ。<br />
+     * 与信の成功のイベントのリスナーが終わるのを待つ。
      * このテストはコミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前にキャンセルすると、
      * 楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある。
      */

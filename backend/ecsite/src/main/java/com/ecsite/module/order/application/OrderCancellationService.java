@@ -8,6 +8,7 @@ import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,9 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * キャンセルのサービス（docs/03-機能仕様/order.md「状態の遷移」）。<br />
- * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻し、支払を取り消させる（与信の取消と返金は決済がコミットの後に行う）。<br />
- * 出荷済みの注文は、出荷の配送状態が返送のときだけキャンセルでき、在庫に戻すかは運営者の指定に従う。
+ * キャンセルのサービス
+ *
+ * <p>注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻し、支払を取り消させる。
  */
 @Service
 @RequiredArgsConstructor
@@ -56,18 +57,23 @@ public class OrderCancellationService {
     private final Clock clock;
 
     /**
-     * 会員がキャンセルを申請する。注文した会員でなければ、ないときと同じく 404。
+     * 会員がキャンセルを申請する。
      *
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @param reason   理由（任意）
+     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）。申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）。
+     *                           理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      */
     @Transactional
-    public void request(UUID orderId, UUID memberId, @Nullable String reason) {
+    public void request(@NonNull UUID orderId, @NonNull UUID memberId, @Nullable String reason) {
+        // 注文取得 ※注文した会員でなければ、ないときと同じにする
         var order = lock(orderId);
         if (!order.memberId().equals(memberId)) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
+
+        // キャンセル申請
         order.requestCancellation(reason, clock.instant());
         orderRepository.update(order);
     }
@@ -77,9 +83,10 @@ public class OrderCancellationService {
      *
      * @param orderId  注文 ID
      * @param operator 承認した運営者
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
     @Transactional
-    public void approve(UUID orderId, Operator operator) {
+    public void approve(@NonNull UUID orderId, @NonNull Operator operator) {
         changeAndRestore(orderId, order -> order.approveCancellation(operator, clock.instant()));
     }
 
@@ -88,10 +95,14 @@ public class OrderCancellationService {
      *
      * @param orderId  注文 ID
      * @param operator 却下した運営者
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
     @Transactional
-    public void reject(UUID orderId, Operator operator) {
+    public void reject(@NonNull UUID orderId, @NonNull Operator operator) {
+        // 注文取得
         var order = lock(orderId);
+
+        // 申請の却下
         order.rejectCancellation(operator, clock.instant());
         orderRepository.update(order);
     }
@@ -103,9 +114,13 @@ public class OrderCancellationService {
      * @param reason   理由（必須）
      * @param restock  在庫に戻すか（出荷済みのときは必須。それ以外は使わない）
      * @param operator キャンセルした運営者
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）。理由がない（{@code CANCELLATION_REASON_REQUIRED}）。
+     *                           理由が 500 文字を超える（{@code INVALID_CANCELLATION_REASON}）。支払待ち（{@code AWAITING_PAYMENT}）。
+     *                           出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）。
+     *                           出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
      */
     @Transactional
-    public void cancel(UUID orderId, String reason, @Nullable Boolean restock, Operator operator) {
+    public void cancel(@NonNull UUID orderId, @NonNull String reason, @Nullable Boolean restock, @NonNull Operator operator) {
         changeAndRestore(orderId,
                 order -> order.cancelByOperator(reason, restock, isReturned(order), operator, clock.instant()));
     }
@@ -114,16 +129,19 @@ public class OrderCancellationService {
      * 支払の期限切れでキャンセルにする。支払待ちでなければ何もしない。キャンセルになったら在庫を戻す。
      *
      * @param orderId 注文 ID
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      */
     @Transactional
-    public void expirePayment(UUID orderId) {
+    public void expirePayment(@NonNull UUID orderId) {
         changeAndRestore(orderId, order -> order.expirePayment(clock.instant()));
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 注文を行ロックして取得する。なければ見つからない。
+     * 注文を行ロックして取得する。
+     *
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      */
     private Order lock(UUID orderId) {
         return orderRepository.lockById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
@@ -142,18 +160,20 @@ public class OrderCancellationService {
 
     /**
      * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻し（戻さないと記録したときを除く）、
-     * 支払を取り消させる。<br />
-     * すでにキャンセルなら何もしない。在庫の戻しに失敗すれば、注文の変更ごと取り消される。
+     * 支払を取り消させる。すでにキャンセルなら何もしない。
      *
      * @param orderId 注文 ID
      * @param cancel  キャンセルにする操作。キャンセルにしたら true
      */
     private void changeAndRestore(UUID orderId, Predicate<Order> cancel) {
+        // 注文取得とキャンセル
         var order = lock(orderId);
         if (!cancel.test(order)) {
             return;
         }
         orderRepository.update(order);
+
+        // 在庫の戻しと支払の取消 ※在庫の戻しに失敗すれば、注文の変更ごと取り消される
         if (Objects.requireNonNull(order.cancellation(), "キャンセルした注文にはキャンセルの記録がある").restocked()) {
             stockDirectory.restore(quantities(order), order.id(), order.orderNumber().value());
         }

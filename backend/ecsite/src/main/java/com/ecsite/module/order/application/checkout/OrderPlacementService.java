@@ -3,8 +3,8 @@ package com.ecsite.module.order.application.checkout;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
-import com.ecsite.module.order.application.model.PlaceOrderCommand;
-import com.ecsite.module.order.application.model.PlacementResult;
+import com.ecsite.module.order.application.model.command.PlaceOrderCommand;
+import com.ecsite.module.order.application.model.view.PlacementResult;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.RegionDirectory;
@@ -17,6 +17,7 @@ import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.order.vo.AddressArea;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +29,9 @@ import java.util.UUID;
 import java.util.random.RandomGenerator;
 
 /**
- * 注文の成立のサービス（「注文の成立」）。<br />
- * 在庫の減算、注文の保存（支払待ち）、支払を作ることを、1 つのトランザクションで行う。カートは変えない（与信の成功で品目を除く）。
+ * 注文の成立のサービス
+ *
+ * <p>在庫の減算、注文の保存（支払待ち）、支払を作ることを、1 つのトランザクションで行う。カートは変えない。
  */
 @Service
 @RequiredArgsConstructor
@@ -91,25 +93,29 @@ public class OrderPlacementService {
     private final Clock clock;
 
     /**
-     * 注文する。<br />
-     * 判定（カートの変更、購入できるか、総額、入力）をすべて済ませてから、在庫の減算 → 注文の保存（支払待ち） → 支払を作る、の順に書く。
-     * どこかで失敗すれば、トランザクションごと取り消される。
-     * 注文できるのは注文手続きを始めた会員だけで、メールアドレスは会員の token のもの（確認済み）を写す。
-     * 確認していない支払待ちの注文があれば拒否する（注文の設計の「注文手続きと注文の成立」）。
-     * 確認の後に、支払待ちの注文が上限に達していても拒否する（注文の設計の「同時の注文」）。
+     * 注文する。どこかで失敗すれば、トランザクションごと取り消される。同じ注文手続きでの再送には、作成済みの注文を返す。
      *
      * @param command 注文のコマンド
      * @return 注文の結果
+     * @throws BusinessException 注文手続きがない、または始めた会員でない（{@code NOT_FOUND}）。メールアドレスが確認済みでない（{@code EMAIL_NOT_VERIFIED}）。
+     *                           確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
+     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）。
+     *                           カートがない、または注文できない（{@code CART_NOT_ORDERABLE}）。カートが変わった（{@code CART_CHANGED}）。
+     *                           在庫が足りない（{@code OUT_OF_STOCK}）。総額が変わった（{@code TOTAL_AMOUNT_CHANGED}）。
+     *                           入力が正しくない（{@code INVALID_EMAIL}、{@code INVALID_RECIPIENT_NAME}、{@code INVALID_POSTAL_CODE}、
+     *                           {@code INVALID_PREFECTURE}、{@code INVALID_MUNICIPALITY}、{@code INVALID_ADDRESS}、{@code INVALID_PHONE_NUMBER}）。
+     *                           注文番号が同時に使われた（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public PlacementResult place(PlaceOrderCommand command) {
-        // 同じ会員の注文を 1 つずつ処理する。支払待ちの注文を読む前に取るので、ロックを待った後の読み取りに先の注文が見える（注文の設計の「同時の注文」）
+    public PlacementResult place(@NonNull PlaceOrderCommand command) {
+        // 会員のロック ※同じ会員の注文を 1 つずつ処理する。支払待ちの注文を読む前に取るので、ロックを待った後の読み取りに先の注文が見える
         orderRepository.lockForMember(command.memberId());
         // 時刻はロックを待った後に取る
         var now = clock.instant();
-        // 同じ注文手続きでの送信を 1 つずつ処理する。2 回目以降は作成済みの注文を返す
+
+        // 注文手続き取得 ※同じ注文手続きでの送信を 1 つずつ処理する。2 回目以降は作成済みの注文を返す
         var checkout = checkoutRepository.lockById(command.checkoutId())
-                // 始めた会員だけが注文できる。ほかの会員には 404
+                // 始めた会員だけが注文できる。ほかの会員には、ないときと同じにする
                 .filter(found -> found.isOwnedBy(command.memberId()))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         // 連絡先は確認済みのメールアドレスだけ（IdP の設定で確認前はログインできないが、念のため）
@@ -120,11 +126,12 @@ public class OrderPlacementService {
         if (existing.isPresent()) {
             return new PlacementResult(existing.get(), false);
         }
-        // 再送は注文の状態と上限によらず作成済みの注文を返すので、作成済みの注文があるかの確認の後に行う（確認の判定、上限の判定の順）。
+
+        // 支払待ちの注文の確認 ※再送は注文の状態と上限によらず作成済みの注文を返すので、作成済みの注文があるかの確認の後に行う（確認の判定、上限の判定の順）。
         // 会員のロックの中で判定するので、同時の注文でも支払待ちの注文は上限を超えない
         pendingOrderGuard.verifyAcknowledged(checkout);
 
-        // 判定：カートの変更、購入できるか、確認した総額
+        // 判定：カートの変更、購入できるか、確認した総額 ※書き込みの前に全ての判定を済ませる
         var cart = cartDirectory.find(checkout.cartId())
                 .orElseThrow(() -> BusinessException.of(OrderErrorCode.CART_NOT_ORDERABLE));
         if (checkout.cartChangedSince(cart.version())) {
@@ -135,6 +142,8 @@ public class OrderPlacementService {
         if (!quote.amounts().total().equals(command.expectedTotal())) {
             throw BusinessException.of(OrderErrorCode.TOTAL_AMOUNT_CHANGED);
         }
+
+        // 注文作成 ※メールアドレスは、会員の token のもの（確認済み）を写す
         var address = ShippingAddress.of(command.name(), command.postalCode(),
                 addressArea(command.prefectureCode(), command.municipalityCode()), command.address(), command.phone());
         var order = Order.place(UUID.randomUUID(), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
@@ -162,6 +171,7 @@ public class OrderPlacementService {
      * @param prefectureCode   都道府県のコード
      * @param municipalityCode 市区町村のコード
      * @return 都道府県と市区町村
+     * @throws BusinessException 都道府県がない（{@code INVALID_PREFECTURE}）。市区町村がない、または都道府県に属さない（{@code INVALID_MUNICIPALITY}）
      */
     private AddressArea addressArea(String prefectureCode, String municipalityCode) {
         var prefectureName = regionDirectory.findPrefectureName(prefectureCode)

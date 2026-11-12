@@ -57,8 +57,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文の成立と注文の表示の受け入れテスト。<br />
- * 同時の注文と二重送信は、コミットが必要なので {@code PlaceOrderConcurrencyTest} で確認する。テストごとにロールバックする。
+ * 注文の成立と注文の表示の受け入れテスト
+ *
+ * <p>同時の注文と二重送信は、コミットが必要なので {@code PlaceOrderConcurrencyTest} で確認する。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -729,7 +730,7 @@ class PlaceOrderApiTest {
         }
 
         /**
-         * 支払待ちの注文を上限（3 件）まで作り、それらを全て確認して T シャツ 2 枚の注文手続きを始め、注文手続き ID を返す。<br />
+         * 支払待ちの注文を上限（3 件）まで作り、それらを全て確認して T シャツ 2 枚の注文手続きを始め、注文手続き ID を返す。
          * 開始の時点も上限で拒否するので、開始の間だけ上限を上げる。設定の上限が、開始と注文の間に下がった場合を想定する（最終的な判定は注文の時点）
          */
         private UUID startAcknowledgingAtLimit() throws Exception {

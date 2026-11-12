@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application.model;
+package com.ecsite.module.order.application.model.view;
 
 import org.jspecify.annotations.Nullable;
 
@@ -17,7 +17,7 @@ public record OrderPayment(Status status, Instant deadline, boolean payable,
                            @Nullable Instant authorizationDeadline, boolean authorizationExpiring) {
 
     /**
-     * 支払の状態（docs/03-機能仕様/payment.md「状態の遷移」）
+     * 支払の状態
      */
     public enum Status {
 

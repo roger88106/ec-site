@@ -16,7 +16,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文手続きのリポジトリの統合テスト。テストごとにロールバックする。
+ * 注文手続きのリポジトリの統合テスト
+ *
+ * <p>テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional

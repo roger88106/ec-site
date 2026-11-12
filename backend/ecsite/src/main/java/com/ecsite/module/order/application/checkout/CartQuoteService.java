@@ -1,8 +1,9 @@
 package com.ecsite.module.order.application.checkout;
 
-import com.ecsite.module.order.application.model.CartQuoteView;
+import com.ecsite.module.order.application.model.view.CartQuoteView;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートの見積もりのサービス（店舗のカートの表示）
+ * カートの見積もりのサービス
  */
 @Service
 @RequiredArgsConstructor
@@ -41,19 +42,21 @@ public class CartQuoteService {
 
     /**
      * カートを現在の価格・税率・販売可能数で見積もる。注文手続き中なら、自分の引当を販売可能数から除く。
-     *
-     * 会員のカートは、持ち主の会員にだけ見積もる（ほかの人には、カートがないときと同じく空）。
+     * 会員のカートは、持ち主の会員にだけ見積もる。
      *
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<CartQuoteView> quoteCart(UUID cartId, @Nullable UUID requester) {
+    public Optional<CartQuoteView> quoteCart(@NonNull UUID cartId, @Nullable UUID requester) {
         var now = clock.instant();
         var holderId = checkoutRepository.findLatestIdByCartId(cartId).orElse(null);
-        return cartDirectory.find(cartId)
-                .filter(cart -> cart.isAccessibleBy(requester))
-                .map(cart -> new CartQuoteView(cartId, quoteService.quote(cart.lines(), now, holderId)));
+        // 持ち主でなければ、カートがないときと同じく空にする
+        var cart = cartDirectory.find(cartId).filter(found -> found.isAccessibleBy(requester));
+        if (cart.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new CartQuoteView(cartId, quoteService.quote(cart.get().lines(), now, holderId)));
     }
 }

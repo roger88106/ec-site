@@ -1,6 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
-import com.ecsite.module.order.api.OrderReportSnapshot;
+import com.ecsite.module.order.api.model.OrderReportSnapshot;
 import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;

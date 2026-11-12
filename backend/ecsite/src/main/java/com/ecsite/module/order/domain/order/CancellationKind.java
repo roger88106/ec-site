@@ -1,7 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
 /**
- * キャンセルの種類（docs/03-機能仕様/order.md「状態の遷移」）
+ * キャンセルの種類
  */
 public enum CancellationKind {
 

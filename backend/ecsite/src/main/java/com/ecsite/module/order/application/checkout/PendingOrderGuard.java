@@ -12,8 +12,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 支払待ちの注文の判定（docs/03-機能仕様/order.md「支払待ちの注文の確認」）。<br />
- * 判定は注文の状態で行い、品目を比べない。支払の期限を過ぎ、まだキャンセルされていない注文も対象にする。
+ * 支払待ちの注文の判定
+ *
+ * <p>判定は注文の状態で行い、品目を比べない。支払の期限を過ぎ、まだキャンセルされていない注文も対象にする。
  */
 @Component
 @RequiredArgsConstructor
@@ -30,15 +31,16 @@ class PendingOrderGuard {
     private final OrderProperties properties;
 
     /**
-     * 会員の今の支払待ちの注文が、全て確認した注文に含まれ、上限に達していないことを確認する。<br />
-     * 確認の判定の後に、上限の判定を行う。両方の判定で、同じ支払待ちの注文の ID を使う。
+     * 会員の今の支払待ちの注文が、全て確認した注文に含まれ、上限に達していないことを確認する。
      *
      * @param memberId             会員 ID
      * @param acknowledgedOrderIds 確認した注文の ID
      * @return 今の支払待ちの注文の ID
-     * @throws BusinessException 確認していない支払待ちの注文があるとき、または支払待ちの注文が上限に達しているとき
+     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
+     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      */
     Set<UUID> verifyAcknowledged(UUID memberId, Set<UUID> acknowledgedOrderIds) {
+        // 確認の判定の後に、上限の判定を行う。両方の判定で、同じ支払待ちの注文の ID を使う
         var pendingOrderIds = pendingOrderIds(memberId);
         requireAcknowledged(acknowledgedOrderIds.containsAll(pendingOrderIds));
         requireBelowLimit(pendingOrderIds);
@@ -46,15 +48,16 @@ class PendingOrderGuard {
     }
 
     /**
-     * 今の支払待ちの注文が、全て注文手続きの確認した注文に含まれ、上限に達していないことを確認する。<br />
-     * 注文の時点の判定で、画面の値でなく、注文手続きに保存した集合と比べる。
-     * 確認の判定の後に、上限の判定を行う。両方の判定で、同じ支払待ちの注文の ID を使う（読み取りは 1 回）。
-     * 上限の最終的な判定は注文の時点で、開始の後に上限が下がっても、この判定で拒否する。
+     * 今の支払待ちの注文が、全て注文手続きの確認した注文に含まれ、上限に達していないことを確認する。
+     * 画面の値でなく、注文手続きに保存した集合と比べる。
      *
      * @param checkout 注文手続き
-     * @throws BusinessException 確認していない支払待ちの注文があるとき、または支払待ちの注文が上限に達しているとき
+     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）。
+     *                           支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      */
     void verifyAcknowledged(Checkout checkout) {
+        // 確認の判定の後に、上限の判定を行う。両方の判定で、同じ支払待ちの注文の ID を使う（読み取りは 1 回）。
+        // 上限の最終的な判定は注文の時点で、開始の後に上限が下がっても、この判定で拒否する
         var pendingOrderIds = pendingOrderIds(checkout.memberId());
         requireAcknowledged(checkout.acknowledges(pendingOrderIds));
         requireBelowLimit(pendingOrderIds);
@@ -74,7 +77,7 @@ class PendingOrderGuard {
      * 確認していない支払待ちの注文があれば拒否する。
      *
      * @param acknowledged 全て確認していれば true
-     * @throws BusinessException 確認していない支払待ちの注文があるとき
+     * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
      */
     private static void requireAcknowledged(boolean acknowledged) {
         if (!acknowledged) {
@@ -86,7 +89,7 @@ class PendingOrderGuard {
      * 支払待ちの注文が上限の件数に達していれば拒否する。
      *
      * @param pendingOrderIds 今の支払待ちの注文の ID
-     * @throws BusinessException 支払待ちの注文が上限に達しているとき
+     * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      */
     private void requireBelowLimit(Set<UUID> pendingOrderIds) {
         if (pendingOrderIds.size() >= properties.pendingOrderLimit()) {

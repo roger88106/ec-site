@@ -16,8 +16,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文手続きに確認した注文の列を追加するマイグレーションの受け入れテスト。<br />
- * テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流してから、適用の時点のデータを入れ、残りを流す。
+ * 注文手続きに確認した注文の列を追加するマイグレーションの受け入れテスト
+ *
+ * <p>テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流してから、適用の時点のデータを入れ、残りを流す。
  */
 @IntegrationTest
 class CheckoutAcknowledgedOrdersMigrationTest {

@@ -39,8 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * B 側の注文の一覧・詳細の受け入れテスト。<br />
- * 注文は C 側の API で作る。テストごとにロールバックする。
+ * B 側の注文の一覧・詳細の受け入れテスト
+ *
+ * <p>注文は C 側の API で作る。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

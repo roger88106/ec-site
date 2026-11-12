@@ -2,7 +2,7 @@ package com.ecsite.module.order.application.port;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.order.application.model.OrderSummaryView;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import org.jspecify.annotations.Nullable;
 
@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.UUID;
 
 /**
- * 注文の一覧のクエリリポジトリ（B 側）
+ * 注文の一覧のクエリリポジトリ
  */
 public interface OrderQueryRepository {
 
@@ -25,7 +25,9 @@ public interface OrderQueryRepository {
     PageResult<OrderSummaryView> findOrders(Filter filter, PageRequest request);
 
     /**
-     * 絞り込みの条件。指定しない項目は null
+     * 絞り込みの条件
+     *
+     * <p>指定しない項目は null。
      *
      * @param memberId          会員 ID（会員の注文の一覧）
      * @param orderNumberPrefix 注文番号の前方一致

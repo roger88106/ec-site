@@ -10,7 +10,9 @@ import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
 
 /**
- * 注文番号。注文日（日本時間）の 8 桁、ハイフン、ランダムな数字 6 桁（例：20261008-482915）。<br />
+ * 注文番号
+ *
+ * <p>注文日（日本時間）の 8 桁、ハイフン、ランダムな数字 6 桁（例：20261008-482915）。
  * 識別子ではなく属性。日ごとの注文数を推測させないよう、連番にしない。
  *
  * @param value 注文番号
@@ -56,7 +58,7 @@ public record OrderNumber(String value) {
     }
 
     /**
-     * 注文日時から注文番号を作る。重複したら、呼ぶ側が再作成する。
+     * 注文日時から注文番号を作る。重複しないことは保証しない。
      *
      * @param orderedAt 注文日時
      * @param random    乱数

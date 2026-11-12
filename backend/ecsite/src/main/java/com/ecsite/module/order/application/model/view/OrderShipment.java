@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application.model;
+package com.ecsite.module.order.application.model.view;
 
 import com.ecsite.module.order.domain.order.Carrier;
 
@@ -24,7 +24,7 @@ public record OrderShipment(Carrier carrier, String trackingNumber, Status statu
     }
 
     /**
-     * 配送状態（docs/03-機能仕様/shipping.md）
+     * 配送状態
      */
     public enum Status {
 

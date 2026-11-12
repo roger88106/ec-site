@@ -1,7 +1,8 @@
 package com.ecsite.module.order.application.port;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.order.application.model.OrderPayment;
+import com.ecsite.module.order.application.model.PaymentAuthorization;
+import com.ecsite.module.order.application.model.PaymentSnapshot;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -11,12 +12,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 決済の腐敗防止層（docs/03-機能仕様/order.md「支払」）
+ * 決済の腐敗防止層の port
  */
 public interface PaymentDirectory {
 
     /**
-     * 注文の支払（未払い）を作る。呼び出し元のトランザクションに参加する。
+     * 注文の支払（未払い）を作る。呼んだ側のトランザクションに加わる。
      *
      * @param orderId   注文 ID
      * @param amount    金額（総額）
@@ -25,7 +26,7 @@ public interface PaymentDirectory {
     void create(UUID orderId, Money amount, Instant orderedAt);
 
     /**
-     * 支払画面の URL を返す。決済サービスを呼ぶので、トランザクションの外で呼ぶ。
+     * 決済サービスを呼んで、支払画面の URL を返す。
      *
      * @param orderId 注文 ID
      * @return 支払画面の URL。支払えなければ空
@@ -33,16 +34,16 @@ public interface PaymentDirectory {
     Optional<String> pageUrl(UUID orderId);
 
     /**
-     * 注文の支払の売上を確定する。売上確定済みなら、決済サービスを呼ばずに成功する。決済サービスを呼ぶので、トランザクションの外で呼ぶ。
+     * 売上確定済みでなければ決済サービスを呼んで、注文の支払の売上を確定する。売上確定済みなら、呼ばずに成功する。
      *
      * @param orderId 注文 ID
-     * @throws com.ecsite.common.error.exception.BusinessException 与信の期限が切れている、売上を確定できる状態でない
-     * @throws com.ecsite.common.error.exception.SystemException   決済サービスに接続できない
+     * @throws com.ecsite.common.error.exception.BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）。
+     *                                                             売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
      */
     void capture(UUID orderId);
 
     /**
-     * 注文のキャンセルに合わせて支払を取り消す。呼び出し元のトランザクションに参加し、与信の取消・返金の結果は待たない。
+     * 注文の支払を取り消す。呼んだ側のトランザクションに加わり、与信の取消・返金の結果は待たない。
      *
      * @param orderId 注文 ID
      */
@@ -54,7 +55,7 @@ public interface PaymentDirectory {
      * @param orderIds 注文 ID
      * @return 注文 ID → 支払。支払のない注文（決済を入れる前の注文）は含まない
      */
-    Map<UUID, Payment> find(Collection<UUID> orderIds);
+    Map<UUID, PaymentSnapshot> find(Collection<UUID> orderIds);
 
     /**
      * 注文の与信期限と、期限が近いかをまとめて返す。
@@ -62,7 +63,7 @@ public interface PaymentDirectory {
      * @param orderIds 注文 ID
      * @return 注文 ID → 与信期限。与信を受けていない注文は含まない
      */
-    Map<UUID, Authorization> findAuthorizations(Collection<UUID> orderIds);
+    Map<UUID, PaymentAuthorization> findAuthorizations(Collection<UUID> orderIds);
 
     /**
      * 与信期限が近い注文 ID を返す。期限を過ぎたものを含む。売上確定の前の注文だけが対象。
@@ -70,23 +71,4 @@ public interface PaymentDirectory {
      * @return 注文 ID
      */
     List<UUID> findExpiringOrderIds();
-
-    /**
-     * 注文の支払
-     *
-     * @param status   支払の状態
-     * @param deadline 支払の期限
-     * @param payable  支払えるか（未払いで、支払の期限の前。決済が判定する）
-     */
-    record Payment(OrderPayment.Status status, Instant deadline, boolean payable) {
-    }
-
-    /**
-     * 注文の与信期限
-     *
-     * @param deadline 与信期限
-     * @param expiring 期限が近いか（期限を過ぎたものを含む。売上確定の前だけ）
-     */
-    record Authorization(Instant deadline, boolean expiring) {
-    }
 }

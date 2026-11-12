@@ -1,7 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
 /**
- * 配送業者（出荷の登録で運営者が選ぶ）
+ * 配送業者
  */
 public enum Carrier {
 

@@ -11,7 +11,7 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
-import com.ecsite.module.order.application.model.OrderSummaryView;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.application.shipment.OrderShipmentService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -23,7 +23,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * 注文のコントローラー（B 側。admin.yaml の tag: order）
+ * 管理の注文のコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ order の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -45,7 +47,7 @@ class AdminOrderController implements OrderApi {
     private final OrderShipmentService orderShipmentService;
 
     /**
-     * 管理 API（注文）のマッパー
+     * 管理の注文 API のマッパー
      */
     private final AdminOrderMapper mapper;
 

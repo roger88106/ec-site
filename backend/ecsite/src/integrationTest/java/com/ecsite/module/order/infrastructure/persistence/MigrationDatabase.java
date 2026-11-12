@@ -11,7 +11,9 @@ import java.sql.SQLException;
 import java.util.UUID;
 
 /**
- * マイグレーションのテストの補助。テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流す。
+ * マイグレーションのテストの補助
+ *
+ * <p>テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流す。
  */
 final class MigrationDatabase {
 

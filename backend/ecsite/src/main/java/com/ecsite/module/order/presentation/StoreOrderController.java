@@ -10,7 +10,7 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
-import com.ecsite.module.order.application.model.OrderSummaryView;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.application.payment.OrderPaymentPageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +20,9 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * 注文のコントローラー（C 側。store.yaml の tag: order）
+ * 店舗の注文のコントローラー
+ *
+ * <p>C 側の API のうち、store.yaml のタグ order の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -42,7 +44,7 @@ class StoreOrderController implements OrderApi {
     private final OrderPaymentPageService orderPaymentPageService;
 
     /**
-     * 店舗 API（注文手続き・注文）のマッパー
+     * 店舗の注文 API のマッパー
      */
     private final StoreOrderMapper mapper;
 
@@ -63,7 +65,7 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 自分の支払待ちの注文の一覧（確認の画面に表示する情報）。注文日時の新しい順
+     * 自分の支払待ちの注文の一覧。注文日時の新しい順
      *
      * @return Http 200 : {@link PendingOrderList}
      */

@@ -9,7 +9,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」）。書き込みの操作は、呼び出し元のトランザクションで行われる。
+ * 在庫の腐敗防止層の port
+ *
+ * <p>書き込みの操作は、呼んだ側のトランザクションに加わる。
  */
 public interface StockDirectory {
 
@@ -40,8 +42,7 @@ public interface StockDirectory {
     void release(UUID holderId);
 
     /**
-     * 引当を在庫数の減算に置き換える。<br />
-     * 1 つでも足りなければ在庫数を変えず、足りない品目を返す。引当は解いた状態で返るので、呼び出し元がトランザクションをロールバックして元に戻す。
+     * 引当を在庫数の減算に置き換える。1 つでも足りなければ在庫数を変えず、足りない品目を返す。そのとき引当は解いた状態で返る。
      *
      * @param holderId    持ち主 ID
      * @param quantities  バリアント ID → 数量

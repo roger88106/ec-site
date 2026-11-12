@@ -4,13 +4,13 @@ import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.application.model.view.SalesTrendReport;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.sales.SalesTrend;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 売上の推移（docs/03-機能仕様/reporting.md「売上の推移」）。<br />
- * 日ごとに SQL で集計し、区切りへのまとめは Java で行う。
+ * 売上の推移のクエリサービス
  */
 @Service
 @RequiredArgsConstructor
@@ -33,10 +33,13 @@ public class SalesTrendQueryService {
      * @return 区切りごとの売上
      */
     @Transactional(readOnly = true)
-    public SalesTrendReport trend(SalesTrendQuery query) {
+    public SalesTrendReport trend(@NonNull SalesTrendQuery query) {
+        // 日ごとの集計
         var daily = queryRepository.dailySales(query.period(), query.basis(), query.productId(), query.excludeTax(),
                 query.excludeShipping());
+        // 区切りへのまとめ
         var buckets = query.period().split(query.granularity(), properties.fiscalYearStartMonth());
+        // 商品を選んだときは、指定によらず送料を除いている
         return new SalesTrendReport(SalesTrend.sum(buckets, daily), query.excludeShipping() || query.productId() != null);
     }
 }

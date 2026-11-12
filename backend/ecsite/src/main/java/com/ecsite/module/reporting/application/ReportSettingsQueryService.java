@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * レポートの設定の参照。設定の値の型は、presentation に出さずにここで view に変える。
+ * レポートの設定のクエリサービス
  */
 @Service
 @RequiredArgsConstructor

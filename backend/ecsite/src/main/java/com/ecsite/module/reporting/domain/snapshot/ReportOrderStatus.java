@@ -1,7 +1,9 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
 /**
- * 注文の状態（docs/03-機能仕様/order.md「状態の遷移」の写し）
+ * 注文の状態
+ *
+ * <p>注文モジュールの注文の状態の写し。
  */
 public enum ReportOrderStatus implements HistoryStatus {
 

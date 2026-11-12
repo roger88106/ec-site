@@ -2,6 +2,8 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 
 import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.reporting.application.model.SegmentTotal;
+import com.ecsite.module.reporting.application.model.VariantTotal;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.DailySales;
@@ -11,9 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
-import org.jooq.Record3;
-import org.jooq.Record5;
-import org.jooq.ResultQuery;
+import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
@@ -29,7 +29,7 @@ import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
 
 /**
- * 写しを集計する問い合わせの jOOQ の実装（docs/03-機能仕様/reporting.md「集計」）
+ * 写しを集計する問い合わせの jOOQ の実装
  */
 @Repository
 @RequiredArgsConstructor
@@ -54,25 +54,30 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     public Map<LocalDate, DailySales> dailySales(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
                                                  boolean excludeShipping) {
         var day = dayOf(basis);
-        ResultQuery<Record3<LocalDate, BigDecimal, BigDecimal>> query;
+        var result = new LinkedHashMap<LocalDate, DailySales>();
         if (productId == null) {
             // 注文ごとの販売数量は、明細の数量の合計
-            Field<BigDecimal> quantity = DSL.field(DSL.select(DSL.sum(SALES_ORDER_LINE.QUANTITY))
+            Field<BigDecimal> orderQuantity = DSL.field(DSL.select(DSL.sum(SALES_ORDER_LINE.QUANTITY))
                     .from(SALES_ORDER_LINE)
                     .where(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID)));
-            query = dsl.select(day, DSL.sum(orderAmount(excludeTax, excludeShipping)), DSL.sum(quantity))
+            var amount = DSL.sum(orderAmount(excludeTax, excludeShipping));
+            var quantity = DSL.sum(orderQuantity);
+            dsl.select(day, amount, quantity)
                     .from(SALES_ORDER)
                     .where(counted(period, basis))
-                    .groupBy(day);
-        } else {
-            query = dsl.select(day, DSL.sum(lineAmount(excludeTax)), DSL.sum(SALES_ORDER_LINE.QUANTITY))
-                    .from(SALES_ORDER)
-                    .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
-                    .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
-                    .groupBy(day);
+                    .groupBy(day)
+                    .forEach(row -> result.put(row.get(day), toDailySales(row, amount, quantity)));
+            return result;
         }
-        var result = new LinkedHashMap<LocalDate, DailySales>();
-        query.forEach(row -> result.put(row.value1(), toDailySales(row)));
+        // 商品を選んだら、その商品の明細だけを数える
+        var amount = DSL.sum(lineAmount(excludeTax));
+        var quantity = DSL.sum(SALES_ORDER_LINE.QUANTITY);
+        dsl.select(day, amount, quantity)
+                .from(SALES_ORDER)
+                .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
+                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
+                .groupBy(day)
+                .forEach(row -> result.put(row.get(day), toDailySales(row, amount, quantity)));
         return result;
     }
 
@@ -87,13 +92,16 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      */
     @Override
     public List<VariantTotal> variantSales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax) {
-        return dsl.select(SALES_ORDER_LINE.VARIANT_ID, DSL.max(SALES_ORDER_LINE.VARIANT_CODE),
-                        DSL.sum(SALES_ORDER_LINE.QUANTITY), DSL.sum(lineAmount(excludeTax)))
+        var variantCode = DSL.max(SALES_ORDER_LINE.VARIANT_CODE);
+        var quantity = DSL.sum(SALES_ORDER_LINE.QUANTITY);
+        var amount = DSL.sum(lineAmount(excludeTax));
+        return dsl.select(SALES_ORDER_LINE.VARIANT_ID, variantCode, quantity, amount)
                 .from(SALES_ORDER)
                 .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
                 .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
                 .groupBy(SALES_ORDER_LINE.VARIANT_ID)
-                .fetch(row -> new VariantTotal(row.value1(), row.value2(), count(row.value3()), money(row.value4())));
+                .fetch(row -> new VariantTotal(row.get(SALES_ORDER_LINE.VARIANT_ID), row.get(variantCode),
+                        count(row.get(quantity)), money(row.get(amount))));
     }
 
     /**
@@ -111,37 +119,40 @@ class JooqReportQueryRepository implements ReportQueryRepository {
                                            boolean excludeShipping) {
         var keys = List.<Field<?>>of(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER);
         if (productId == null) {
-            return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER,
-                            DSL.sum(orderAmount(excludeTax, excludeShipping)), DSL.count())
+            var amount = DSL.sum(orderAmount(excludeTax, excludeShipping));
+            var orders = DSL.count();
+            return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER, amount, orders)
                     .from(SALES_ORDER)
                     .where(counted(period, basis))
                     .groupBy(keys)
-                    .fetch(JooqReportQueryRepository::toSegmentTotal);
+                    .fetch(row -> toSegmentTotal(row, amount, orders));
         }
         // 商品を選んだら、その商品の明細を含む注文だけを数え、売上額はその明細の分だけ
-        return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER,
-                        DSL.sum(lineAmount(excludeTax)), DSL.countDistinct(SALES_ORDER.ORDER_ID))
+        var amount = DSL.sum(lineAmount(excludeTax));
+        var orders = DSL.countDistinct(SALES_ORDER.ORDER_ID);
+        return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER, amount, orders)
                 .from(SALES_ORDER)
                 .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
                 .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
                 .groupBy(keys)
-                .fetch(JooqReportQueryRepository::toSegmentTotal);
+                .fetch(row -> toSegmentTotal(row, amount, orders));
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 日ごとの集計の行（日、売上額の合計、数量の合計）を、日の売上にする。
+     * 日ごとの集計の行を、日の売上にする。
      */
-    private static DailySales toDailySales(Record3<LocalDate, BigDecimal, BigDecimal> row) {
-        return new DailySales(money(row.value2()), count(row.value3()));
+    private static DailySales toDailySales(Record row, Field<BigDecimal> amount, Field<BigDecimal> quantity) {
+        return new DailySales(money(row.get(amount)), count(row.get(quantity)));
     }
 
     /**
-     * 組ごとの集計の行（都道府県、年齢、性別、売上額の合計、注文件数）を、組の売上にする。
+     * 組ごとの集計の行を、組の売上にする。
      */
-    private static SegmentTotal toSegmentTotal(Record5<String, Short, String, BigDecimal, Integer> row) {
-        return new SegmentTotal(row.value1(), age(row.value2()), buyerGender(row.value3()), money(row.value4()), row.value5());
+    private static SegmentTotal toSegmentTotal(Record row, Field<BigDecimal> amount, Field<Integer> orders) {
+        return new SegmentTotal(row.get(SALES_ORDER.PREFECTURE_CODE), age(row.get(SALES_ORDER.BUYER_AGE)),
+                buyerGender(row.get(SALES_ORDER.BUYER_GENDER)), money(row.get(amount)), row.get(orders));
     }
 
     /**
@@ -190,7 +201,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     /**
      * 合計の金額（行がなければ 0）
      */
-    private static Money money(BigDecimal sum) {
+    private static Money money(@Nullable BigDecimal sum) {
         return sum == null ? Money.ZERO : Money.of(sum.longValueExact());
     }
 
@@ -204,7 +215,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     /**
      * 合計の数（行がなければ 0）
      */
-    private static long count(BigDecimal sum) {
+    private static long count(@Nullable BigDecimal sum) {
         return sum == null ? 0 : sum.longValueExact();
     }
 }

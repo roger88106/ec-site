@@ -24,8 +24,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * レポートのコントローラー（B 側。admin.yaml の tag: report）。<br />
- * 権限は admin.yaml の {@code x-required-permission} で判定する（Controller には書かない）。
+ * レポートのコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ report の操作を受ける。権限は admin.yaml の {@code x-required-permission} で判定する。
  */
 @RestController
 @RequiredArgsConstructor

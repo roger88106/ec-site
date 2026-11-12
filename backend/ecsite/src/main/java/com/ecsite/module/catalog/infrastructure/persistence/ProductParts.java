@@ -13,7 +13,7 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
 /**
- * 商品の一部（バリアント軸、バリアントの軸の値）の取得。商品の読み込みと、B 側・C 側の商品照会で共通。
+ * 商品の一部の取得
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ProductParts {

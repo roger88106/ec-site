@@ -1,7 +1,7 @@
 package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.module.catalog.api.OrderCatalogApi;
-import com.ecsite.module.catalog.api.OrderableVariant;
+import com.ecsite.module.catalog.api.model.OrderableVariant;
 import com.ecsite.module.order.application.port.CatalogDirectory;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.VariantInfo;

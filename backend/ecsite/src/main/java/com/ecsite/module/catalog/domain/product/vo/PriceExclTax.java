@@ -8,7 +8,9 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.List;
 
 /**
- * 税抜価格。1 円以上 9,999,999 円以下の整数。全バリアント共通。
+ * 税抜価格
+ *
+ * <p>1 円以上 9,999,999 円以下の整数。全バリアント共通。
  *
  * @param yen 税抜価格（円）
  */
@@ -29,6 +31,7 @@ public record PriceExclTax(long yen) {
      * コンストラクタ。
      *
      * @param yen 税抜価格（円）
+     * @throws BusinessException 範囲の外（{@code INVALID_PRICE_EXCL_TAX}）
      */
     public PriceExclTax {
         if (yen < MIN_YEN || yen > MAX_YEN) {
@@ -41,6 +44,7 @@ public record PriceExclTax(long yen) {
      *
      * @param yen 税抜価格（円）
      * @return 税抜価格
+     * @throws BusinessException 範囲の外（{@code INVALID_PRICE_EXCL_TAX}）
      */
     public static PriceExclTax of(long yen) {
         return new PriceExclTax(yen);

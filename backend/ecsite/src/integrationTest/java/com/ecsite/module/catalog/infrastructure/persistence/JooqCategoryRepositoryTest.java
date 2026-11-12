@@ -23,8 +23,9 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * カテゴリのリポジトリの統合テスト。<br />
- * 削除と、子カテゴリの登録・商品への割り当てが同時に起きた場合を、アプリケーション層の確認を通さずにリポジトリを呼んで再現する。
+ * カテゴリのリポジトリの統合テスト
+ *
+ * <p>削除と、子カテゴリの登録・商品への割り当てが同時に起きた場合を、アプリケーション層の確認を通さずにリポジトリを呼んで再現する。
  * テストごとにロールバックする。
  */
 @IntegrationTest

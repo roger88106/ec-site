@@ -36,8 +36,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品 API の受け入れテスト。<br />
- * 現在時刻は {@link MutableClock} で 2026-10-08 00:00（日本時間）に固定する。
+ * 商品 API の受け入れテスト
+ *
+ * <p>現在時刻は {@link MutableClock} で 2026-10-08 00:00（日本時間）に固定する。
  * 税区分（標準 10%、軽減 8%、有効な税率のない税区分）は、テストごとに税区分 API で作る。テストごとにロールバックする。
  */
 @IntegrationTest

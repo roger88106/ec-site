@@ -17,8 +17,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * カテゴリの Aggregate Root。<br />
- * 親カテゴリ、名称、階層の深さ、兄弟の中の表示順を持つ（docs/03-機能仕様/catalog.md）。
+ * カテゴリ
+ *
+ * <p>親カテゴリ、名称、階層の深さ、兄弟の中の表示順を持つ集約のルート。
  */
 @Getter
 @Accessors(fluent = true)
@@ -80,6 +81,7 @@ public class Category extends AggregateRoot {
      * @param depth        階層の深さ
      * @param displayOrder 表示順
      * @param version      バージョン
+     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）。名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
     private Category(@NonNull UUID id, @Nullable UUID parentId, String name, int depth, int displayOrder, long version) {
         if (depth < 1 || depth > MAX_DEPTH) {
@@ -88,9 +90,10 @@ public class Category extends AggregateRoot {
         if ((parentId == null) != (depth == 1)) {
             throw new IllegalArgumentException("最上位のカテゴリだけが深さ 1 になる：parentId=%s, depth=%d".formatted(parentId, depth));
         }
+        verifyName(name);
         this.id = id;
         this.parentId = parentId;
-        this.name = verifyName(name);
+        this.name = name;
         this.depth = depth;
         this.displayOrder = displayOrder;
         this.version = version;
@@ -104,6 +107,7 @@ public class Category extends AggregateRoot {
      * @param name         名称
      * @param displayOrder 表示順
      * @return カテゴリ
+     * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）。名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
     static Category create(UUID id, @Nullable Category parent, String name, int displayOrder) {
         if (parent == null) {
@@ -118,13 +122,15 @@ public class Category extends AggregateRoot {
      * 名称を変更する。
      *
      * @param name 新しい名称
+     * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
     public void rename(String name) {
-        this.name = verifyName(name);
+        verifyName(name);
+        this.name = name;
     }
 
     /**
-     * その深さのカテゴリの下に、子のカテゴリを追加できるかを返す。カテゴリ（集約）を読み込まないクエリでも使う。
+     * その深さのカテゴリの下に、子のカテゴリを追加できるかを返す。
      *
      * @param depth 階層の深さ（最上位が 1）
      * @return いちばん深い階層でなければ true
@@ -134,12 +140,12 @@ public class Category extends AggregateRoot {
     }
 
     /**
-     * 兄弟の並び順を変更する。<br />
-     * 送られた順に 1 から表示順を振り直す。兄弟と過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
+     * 兄弟の並び順を変更する。送られた順に 1 から表示順を振り直す。
      *
-     * @param siblings   同じ親を持つ、今のカテゴリのすべて
+     * @param siblings   同じ親を持つ、今のカテゴリの全て
      * @param orderedIds 並べたい順のカテゴリ ID
      * @return 表示順が変わったカテゴリ
+     * @throws BusinessException 兄弟と過不足なく一致しない（{@code INVALID_CATEGORY_ORDER}）。このときは何も変えない
      */
     public static List<Category> reorder(@NonNull List<Category> siblings, @NonNull List<UUID> orderedIds) {
         var orders = DisplayOrders.assign(siblings.stream().map(Category::id).toList(), orderedIds,
@@ -161,13 +167,12 @@ public class Category extends AggregateRoot {
      * 名称が 1 文字以上 50 文字以内（空白のみは不可）であることを検証する。
      *
      * @param name 名称
-     * @return 名称
+     * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
-    private static String verifyName(String name) {
+    private static void verifyName(String name) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(CategoryErrorCode.INVALID_CATEGORY_NAME, List.of(NAME_MAX_LENGTH));
         }
-        return name;
     }
 
 // ============================== スナップショット関連処理 ==============================

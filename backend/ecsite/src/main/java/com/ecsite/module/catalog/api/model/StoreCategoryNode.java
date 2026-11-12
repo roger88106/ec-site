@@ -1,10 +1,10 @@
-package com.ecsite.module.catalog.api;
+package com.ecsite.module.catalog.api.model;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * C 側のカテゴリの木の節（の絞り込み用）
+ * C 側のカテゴリの木の節
  *
  * @param id       カテゴリ ID
  * @param name     名称

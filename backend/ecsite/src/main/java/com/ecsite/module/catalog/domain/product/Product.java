@@ -35,8 +35,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * 商品の Aggregate Root。<br />
- * バリアントを含む。軸の値の組み合わせが商品内で一意であることは、商品単位の不変条件のため（docs/03-機能仕様/catalog.md）。
+ * 商品
+ *
+ * <p>バリアントを含む集約のルート。バリアントを含めるのは、軸の値の組み合わせが商品の中で一意であることが、商品単位の不変条件であるため。
  */
 @Getter
 @Accessors(fluent = true)
@@ -153,12 +154,16 @@ public class Product extends AggregateRoot {
      * スナップショットから作る（登録・復元で共通）
      *
      * @param snapshot 商品のスナップショット
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）。
+     *                           バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     Product(@NonNull Snapshot snapshot) {
         this.id = snapshot.id();
         this.productCode = snapshot.productCode();
-        this.name = verifyName(snapshot.name());
-        this.description = verifyDescription(snapshot.description());
+        verifyName(snapshot.name());
+        verifyDescription(snapshot.description());
+        this.name = snapshot.name();
+        this.description = snapshot.description();
         this.taxCategoryId = snapshot.taxCategoryId();
         this.priceExclTax = snapshot.priceExclTax();
         this.categoryIds = Set.copyOf(snapshot.categoryIds());
@@ -183,6 +188,8 @@ public class Product extends AggregateRoot {
      * @param categoryIds   所属カテゴリの ID
      * @param axes          バリアント軸の名前（並び順）
      * @return 商品
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）。
+     *                           バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     static Product create(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
                           PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {
@@ -196,8 +203,7 @@ public class Product extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
-     * 商品を編集する。税抜価格が変わったら、商品価格変更のイベントを登録する。<br />
-     * 税区分に有効な税率があることは、税モジュールに確認する必要があるため、アプリケーション層で検証する。
+     * 商品を編集する。税抜価格が変わったら、商品価格変更のイベントを登録する。税区分に有効な税率があるかは確認しない。
      *
      * @param name          商品名
      * @param description   説明
@@ -205,15 +211,16 @@ public class Product extends AggregateRoot {
      * @param priceExclTax  税抜価格
      * @param categoryIds   所属カテゴリの ID
      * @param now           現在時刻
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      */
     public void update(String name, String description, @NonNull UUID taxCategoryId, @NonNull PriceExclTax priceExclTax,
                        @NonNull Collection<UUID> categoryIds, @NonNull Instant now) {
-        var verifiedName = verifyName(name);
-        var verifiedDescription = verifyDescription(description);
+        verifyName(name);
+        verifyDescription(description);
         boolean priceChanged = !this.priceExclTax.equals(priceExclTax);
 
-        this.name = verifiedName;
-        this.description = verifiedDescription;
+        this.name = name;
+        this.description = description;
         this.taxCategoryId = taxCategoryId;
         this.priceExclTax = priceExclTax;
         this.categoryIds = Set.copyOf(categoryIds);
@@ -230,6 +237,10 @@ public class Product extends AggregateRoot {
      * @param axisValues  軸の値（商品の軸と同じ並び）
      * @param now         現在時刻
      * @return 登録したバリアントの ID
+     * @throws BusinessException 軸の値が正しくない（{@code INVALID_AXIS_VALUES}）。
+     *                           軸を持たない商品に 2 つ目のバリアントを登録しようとした（{@code SINGLE_VARIANT_ONLY}）。
+     *                           バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）。
+     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      */
     public UUID addVariant(@NonNull VariantCode variantCode, @NonNull List<String> axisValues, @NonNull Instant now) {
         verifyAxisValues(axisValues);
@@ -253,17 +264,19 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを削除する。C 側に表示されたことのある商品のバリアントは削除できない。<br />
-     * 公開中の商品の最後のバリアントも削除できない（同じ理由）。
+     * バリアントを削除する。
      *
      * @param variantId バリアント ID
      * @param now       現在時刻
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）。C 側に表示されたことのある商品（{@code PRODUCT_ALREADY_SHOWN}）。
+     *                           公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
     public void deleteVariant(@NonNull UUID variantId, @NonNull Instant now) {
         requireVariant(variantId);
         if (hasBeenShown(now)) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_ALREADY_SHOWN);
         }
+        // 公開中の商品を、バリアントのない状態にしない
         if (status == PublicationStatus.PUBLISHED && variants.size() == 1) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_HAS_NO_VARIANTS);
         }
@@ -274,10 +287,10 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントの並び順を変更する。送られた順に 1 から表示順を振り直す。<br />
-     * すべてのバリアントと過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
+     * バリアントの並び順を変更する。送られた順に 1 から表示順を振り直す。
      *
      * @param orderedIds 並べたい順のバリアント ID
+     * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）。このときは何も変えない
      */
     public void reorderVariants(@NonNull List<UUID> orderedIds) {
         this.variants = reorder(variants, Variant::id, Variant::withDisplayOrder, orderedIds,
@@ -285,11 +298,11 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを販売停止にする。すでに販売停止なら何もしない（冪等）。<br />
-     * 販売停止のバリアントも C 側の選択肢に出るが、選べない。販売終了の商品のバリアントも停止できる。
+     * バリアントを販売停止にする。既に販売停止なら何もしない（冪等）。販売終了の商品のバリアントも停止できる。
      *
      * @param variantId バリアント ID
-     * @return 変わったら true。すでに販売停止なら false
+     * @return 変わったら true。既に販売停止なら false
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
     public boolean suspendVariant(@NonNull UUID variantId) {
         return changeSalesSuspended(variantId, true);
@@ -300,14 +313,16 @@ public class Product extends AggregateRoot {
      *
      * @param variantId バリアント ID
      * @return 変わったら true。販売停止でなければ false
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
     public boolean resumeVariant(@NonNull UUID variantId) {
         return changeSalesSuspended(variantId, false);
     }
 
     /**
-     * 画像を加えられるか（上限の 20 枚に達していないか）を確認する。<br />
-     * アップロードの受付の前に呼ぶ。登録のときも {@link #addImage} が確認直す。
+     * 画像を加えられるか（上限の 20 枚に達していないか）を確認する。
+     *
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
     public void verifyCanAddImage() {
         if (images.size() >= MAX_IMAGES) {
@@ -316,10 +331,11 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を並びの最後に加える。ファイルは、呼び出す前にメディアモジュールでアセットとして確定しておく。
+     * 画像を並びの最後に加える。
      *
      * @param imageId 画像 ID
      * @param assetId メディアモジュールのアセット ID
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
     public void addImage(@NonNull UUID imageId, @NonNull UUID assetId) {
         verifyCanAddImage();
@@ -330,10 +346,10 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像の並び順を変更する。送られた順に 1 から表示順を振り直す。先頭が代表画像になる。<br />
-     * すべての画像と過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
+     * 画像の並び順を変更する。送られた順に 1 から表示順を振り直す。先頭が代表画像になる。
      *
      * @param orderedIds 並べたい順の画像 ID
+     * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）。このときは何も変えない
      */
     public void reorderImages(@NonNull List<UUID> orderedIds) {
         this.images = reorder(images, ProductImage::id, ProductImage::withDisplayOrder, orderedIds,
@@ -341,11 +357,11 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を削除する。その画像を指定していたバリアントの指定は外す（代表画像に戻る）。<br />
-     * C 側に表示されたことのある商品の画像も削除できる。呼んだ側は、返したアセットを手放す。
+     * 画像を削除する。その画像を指定していたバリアントの指定は外す（代表画像に戻る）。C 側に表示されたことのある商品の画像も削除できる。
      *
      * @param imageId 画像 ID
      * @return 削除した画像のアセット ID
+     * @throws BusinessException 商品にない画像（{@code NOT_FOUND}）
      */
     public UUID deleteImage(@NonNull UUID imageId) {
         var image = requireImage(imageId);
@@ -362,6 +378,7 @@ public class Product extends AggregateRoot {
      *
      * @param variantId バリアント ID
      * @param imageId   画像 ID。null で指定を外す（代表画像を使う）
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）。商品にない画像（{@code INVALID_VARIANT_IMAGE}）
      */
     public void setVariantImage(@NonNull UUID variantId, @Nullable UUID imageId) {
         requireVariant(variantId);
@@ -374,10 +391,11 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開する。すでに公開なら何もしない（冪等）。
+     * 公開する。既に公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
-     * @return 状態が変わったら true。すでにその状態なら false
+     * @return 状態が変わったら true。既にその状態なら false
+     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）。バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
     public boolean publish(@NonNull Instant now) {
         verifyNotDiscontinued();
@@ -396,10 +414,11 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 非公開にする。すでに非公開なら何もしない（冪等）。
+     * 非公開にする。既に非公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
-     * @return 状態が変わったら true。すでにその状態なら false
+     * @return 状態が変わったら true。既にその状態なら false
+     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
      */
     public boolean unpublish(@NonNull Instant now) {
         verifyNotDiscontinued();
@@ -415,10 +434,10 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 販売終了にする。すでに販売終了なら何もしない（冪等）。
+     * 販売終了にする。既に販売終了なら何もしない（冪等）。
      *
      * @param now 現在時刻
-     * @return 状態が変わったら true。すでにその状態なら false
+     * @return 状態が変わったら true。既にその状態なら false
      */
     public boolean discontinue(@NonNull Instant now) {
         if (status == PublicationStatus.DISCONTINUED) {
@@ -433,8 +452,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開期間を変える。終了が開始より後であることは、公開期間（値オブジェクト）が検証する。<br />
-     * 公開中なら、表示前の初回表示日時を計算し直す（docs/03-機能仕様/catalog.md）。表示されて確定した値は変わらない。
+     * 公開期間を変える。公開中なら、表示前の初回表示日時を計算し直す。表示されて確定した初回表示日時は変わらない。
      *
      * @param period 公開期間
      * @param now    現在時刻
@@ -447,10 +465,10 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 削除する。C 側に表示されたことのある商品は削除できない。<br />
-     * 削除そのものはリポジトリが行う。ここでは削除できるかを検証し、イベントを登録する。
+     * 削除できるかを検証し、商品削除のイベントを登録する。商品のデータは消さない。
      *
      * @param now 現在時刻
+     * @throws BusinessException C 側に表示されたことのある商品（{@code PRODUCT_ALREADY_SHOWN}）
      */
     public void delete(@NonNull Instant now) {
         if (hasBeenShown(now)) {
@@ -480,7 +498,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 今の商品にできる操作を返す（管理画面に返すフラグ）。
+     * 今の商品にできる操作を返す。
      *
      * @param now 現在時刻
      * @return できる操作
@@ -514,11 +532,12 @@ public class Product extends AggregateRoot {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * バリアントの販売停止を変える。商品にないバリアントなら、見つからない業務のエラーを投げる。
+     * バリアントの販売停止を変える。
      *
      * @param variantId      バリアント ID
      * @param salesSuspended 販売停止
-     * @return 変わったら true。すでにその状態なら false
+     * @return 変わったら true。既にその状態なら false
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
     private boolean changeSalesSuspended(UUID variantId, boolean salesSuspended) {
         var variant = requireVariant(variantId);
@@ -532,10 +551,11 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 商品のバリアントを ID で探す。なければ、見つからない業務のエラーを投げる。
+     * 商品のバリアントを ID で探す。
      *
      * @param variantId バリアント ID
      * @return バリアント
+     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
     private Variant requireVariant(UUID variantId) {
         return variants.stream().filter(variant -> variant.id().equals(variantId)).findFirst()
@@ -543,10 +563,11 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 商品の画像を ID で探す。なければ、見つからない業務のエラーを投げる。
+     * 商品の画像を ID で探す。
      *
      * @param imageId 画像 ID
      * @return 画像
+     * @throws BusinessException 商品にない画像（{@code NOT_FOUND}）
      */
     private ProductImage requireImage(UUID imageId) {
         return images.stream().filter(image -> image.id().equals(imageId)).findFirst()
@@ -554,17 +575,17 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開したとき（または公開中に公開期間を変えたとき）の初回表示日時を求める（docs/03-機能仕様/catalog.md）。<br />
-     * 確定済み（過去）ならそのまま。そうでなければ「現在時刻と公開開始日時の遅いほう」。
-     * その日時が公開終了日時以降なら、表示されないので空にする。
+     * 公開したとき（または公開中に公開期間を変えたとき）の初回表示日時を求める。
      *
      * @param now 現在時刻
-     * @return 初回表示日時
+     * @return 初回表示日時。表示されないなら null
      */
     private @Nullable Instant calculateFirstShownAt(Instant now) {
+        // 表示されて確定した値（過去）は変えない
         if (hasBeenShown(now)) {
             return firstShownAt;
         }
+        // 現在時刻と公開開始日時の遅いほう。それが公開終了日時以降なら、表示されないので null にする
         var start = publicationPeriod.publishStart();
         var candidate = start != null && start.isAfter(now) ? start : now;
         var end = publicationPeriod.publishEnd();
@@ -583,8 +604,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 並び替える。送られた順に 1 から表示順を振り直す。<br />
-     * 今の要素と過不足なく一致しなければ（重複・漏れ・ないものを含めば）、何も変えずに業務のエラーを投げる。
+     * 並び替える。送られた順に 1 から表示順を振り直す。
      *
      * @param items            今の要素
      * @param idOf             要素の ID
@@ -593,6 +613,7 @@ public class Product extends AggregateRoot {
      * @param error            一致しないときのエラー
      * @param <T>              要素の型
      * @return 並び替えた要素（変更できない一覧）
+     * @throws BusinessException 今の要素と過不足なく一致しない（重複・漏れ・ないものを含む。{@code error} のエラー）
      */
     private static <T> List<T> reorder(List<T> items, Function<T, UUID> idOf, BiFunction<T, Integer, T> withDisplayOrder,
                                        List<UUID> orderedIds, ProductErrorCode error) {
@@ -606,6 +627,8 @@ public class Product extends AggregateRoot {
 
     /**
      * 販売終了でないことを検証する。
+     *
+     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
      */
     private void verifyNotDiscontinued() {
         if (status == PublicationStatus.DISCONTINUED) {
@@ -614,17 +637,17 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * @return 新しいバリアントの表示順（最大＋1。なければ 1）
+     * 新しいバリアントの表示順（最大＋1。なければ 1）を返す。
      */
     private int nextVariantDisplayOrder() {
         return DisplayOrders.next(variants.stream().mapToInt(Variant::displayOrder));
     }
 
     /**
-     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜50 文字であることを検証する。<br />
-     * 軸キーの区切り文字は、値に含められない。
+     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜50 文字であることを検証する。軸キーの区切り文字は、値に含められない。
      *
      * @param axisValues 軸の値
+     * @throws BusinessException 軸の値が正しくない（{@code INVALID_AXIS_VALUES}）
      */
     private void verifyAxisValues(List<String> axisValues) {
         if (axisValues.size() != axes.size()
@@ -638,26 +661,24 @@ public class Product extends AggregateRoot {
      * 商品名が 1〜200 文字（空白のみは不可）であることを検証する。
      *
      * @param name 商品名
-     * @return 商品名
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
      */
-    private static String verifyName(String name) {
+    private static void verifyName(String name) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_NAME, List.of(NAME_MAX_LENGTH));
         }
-        return name;
     }
 
     /**
      * 説明が 10,000 文字以内であることを検証する。空でもよい。
      *
      * @param description 説明
-     * @return 説明
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      */
-    private static String verifyDescription(String description) {
+    private static void verifyDescription(String description) {
         if (!BoundedText.fitsWithin(description, DESCRIPTION_MAX_LENGTH)) {
             throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_DESCRIPTION, List.of(DESCRIPTION_MAX_LENGTH));
         }
-        return description;
     }
 
     /**
@@ -665,6 +686,7 @@ public class Product extends AggregateRoot {
      *
      * @param axes バリアント軸の名前
      * @return 変更できない一覧
+     * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     private static List<String> verifyAxes(List<String> axes) {
         if (axes.size() > MAX_AXES

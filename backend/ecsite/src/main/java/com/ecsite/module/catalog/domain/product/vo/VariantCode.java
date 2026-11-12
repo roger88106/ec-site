@@ -7,8 +7,9 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.List;
 
 /**
- * バリアント品番。形式は商品品番と同じ。<br />
- * 業務上の番号であり、他のデータからの参照には使わない（バックエンドのアーキテクチャの「永続化」）。
+ * バリアント品番
+ *
+ * <p>形式は商品品番と同じ。業務上の番号であり、他のデータからの参照には使わない。
  *
  * @param value バリアント品番
  */
@@ -19,6 +20,7 @@ public record VariantCode(String value) {
      * コンストラクタ。
      *
      * @param value バリアント品番
+     * @throws BusinessException 形式が正しくない（{@code INVALID_VARIANT_CODE}）
      */
     public VariantCode {
         if (!CodeFormat.matches(value)) {
@@ -31,6 +33,7 @@ public record VariantCode(String value) {
      *
      * @param value バリアント品番
      * @return バリアント品番
+     * @throws BusinessException 形式が正しくない（{@code INVALID_VARIANT_CODE}）
      */
     public static VariantCode of(String value) {
         return new VariantCode(value);

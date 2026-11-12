@@ -6,7 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 商品販売終了（将来の検索インデックス同期用）
+ * 商品販売終了
+ *
+ * <p>商品を販売終了にしたときに発行する。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

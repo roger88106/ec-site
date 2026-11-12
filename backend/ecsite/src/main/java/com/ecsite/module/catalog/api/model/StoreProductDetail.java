@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.api;
+package com.ecsite.module.catalog.api.model;
 
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
@@ -15,7 +15,7 @@ import java.util.UUID;
  * @param priceInclTax 税込価格（円）
  * @param priceExclTax 税抜価格（円）
  * @param axes         バリアント軸の名前（並び順）
- * @param variants     すべてのバリアント（表示順。販売停止中のものも含む）
+ * @param variants     全てのバリアント（表示順。販売停止中のものも含む）
  * @param imageUrls    画像の URL（表示順。先頭が代表画像）
  */
 public record StoreProductDetail(UUID id, String name, String description, Money priceInclTax, Money priceExclTax,

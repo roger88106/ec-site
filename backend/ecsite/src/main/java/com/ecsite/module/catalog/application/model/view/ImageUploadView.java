@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * 画像のアップロードの受付
  *
- * @param uploadId  受付 ID（登録のときに送る）
+ * @param uploadId  受付 ID
  * @param uploadUrl ファイルを PUT する署名付き URL
  * @param headers   PUT に付けるヘッダー
  * @param expiresAt 署名付き URL の期限

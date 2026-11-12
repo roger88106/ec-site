@@ -26,14 +26,14 @@ class JooqCategoryQueryRepository implements CategoryQueryRepository {
     private final DSLContext dsl;
 
     /**
-     * すべてのカテゴリを取得する。<br />
-     * 同時の登録で表示順が同じになった兄弟は、登録の古い順、ID の順に並べる（docs/03-機能仕様/catalog.md）。
+     * 全てのカテゴリを取得する。
      *
      * @return カテゴリの一覧
      */
     @Override
     public List<CategoryView> findAll() {
         return dsl.selectFrom(CATEGORY)
+                // 同時の登録で表示順が同じになった兄弟は、登録日時の古い順、ID の順に並べる
                 .orderBy(CATEGORY.DISPLAY_ORDER, CATEGORY.CREATED_AT, CATEGORY.ID)
                 .fetch(JooqCategoryQueryRepository::toView);
     }

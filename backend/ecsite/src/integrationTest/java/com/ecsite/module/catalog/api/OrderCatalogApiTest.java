@@ -5,7 +5,8 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.api.OrderableVariant.AxisValue;
+import com.ecsite.module.catalog.api.model.OrderableVariant;
+import com.ecsite.module.catalog.api.model.OrderableVariant.AxisValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * カート・注文向けの商品カタログの API の統合テスト。<br />
- * 商品は B 側の API で作る。テストごとにロールバックする。
+ * カート・注文向けの商品カタログの API の統合テスト
+ *
+ * <p>商品は B 側の API で作る。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

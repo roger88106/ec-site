@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * カテゴリ API のリクエスト・レスポンスと、アプリケーション層のモデルの変換
+ * カテゴリ API のマッパー
+ *
+ * <p>カテゴリ API のリクエスト・レスポンスと、アプリケーション層のモデルを変換する。
  */
 @Component
 class CategoryMapper {

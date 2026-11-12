@@ -13,8 +13,9 @@ import java.util.UUID;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
 
 /**
- * C 側に返す商品画像の URL。一覧・検索・詳細で共通。<br />
- * 画像のアセット ID を引き、配信の URL はメディアモジュールからまとめて取得する。
+ * C 側の商品画像の URL
+ *
+ * <p>画像のアセット ID を取得し、配信の URL はメディアモジュールからまとめて取得する。
  */
 @Component
 @RequiredArgsConstructor
@@ -62,7 +63,7 @@ class StoreImageUrls {
                 .from(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(productId))
                 .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
-                .forEach(record -> assetIds.put(record.value1(), record.value2()));
+                .forEach(record -> assetIds.put(record.get(PRODUCT_IMAGE.ID), record.get(PRODUCT_IMAGE.ASSET_ID)));
         return toUrls(assetIds);
     }
 

@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.product;
 
 /**
- * 商品を削除できない理由（管理画面に返す）。画面はこの値で理由を出し、商品の状態から推し量らない。
+ * 商品を削除できない理由
  */
 public enum DeleteBlockedReason {
 

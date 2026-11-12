@@ -1,6 +1,8 @@
 package com.ecsite.module.catalog.domain.category.port;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.domain.category.Category;
+import org.jmolecules.ddd.annotation.Repository;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
@@ -11,6 +13,7 @@ import java.util.UUID;
 /**
  * カテゴリのリポジトリ
  */
+@Repository
 public interface CategoryRepository {
 
     /**
@@ -22,8 +25,7 @@ public interface CategoryRepository {
     Optional<Category> findById(UUID id);
 
     /**
-     * 子カテゴリをすべて取得し、トランザクションの終わりまでロックする。<br />
-     * 並び順の同時の変更を直列にするため、ID の順にロックする（docs/03-機能仕様/catalog.md）。
+     * 子カテゴリを全て取得し、ID の順にロックする。ロックはトランザクションの終わりまで続く。
      *
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 子カテゴリの一覧
@@ -55,36 +57,37 @@ public interface CategoryRepository {
     boolean hasProducts(UUID id);
 
     /**
-     * カテゴリがすべて存在するかを返す。
+     * カテゴリが全て存在するかを返す。
      *
      * @param ids カテゴリ ID
-     * @return すべて存在すれば true。空なら true
+     * @return 全て存在すれば true。空なら true
      */
     boolean existsAll(Collection<UUID> ids);
 
     /**
-     * カテゴリを登録する。<br />
-     * 同じ親の下で名称が重複していれば {@code CATEGORY_NAME_ALREADY_EXISTS}、
-     * 親が削除されていれば {@code NOT_FOUND} の業務のエラーを投げる。
+     * カテゴリを登録する。
      *
      * @param category カテゴリ
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）。
+     *                           親が削除されている（{@code NOT_FOUND}）
      */
     void add(Category category);
 
     /**
-     * カテゴリを更新する。<br />
-     * 取得後に他で更新されていれば {@code CONCURRENT_MODIFICATION}、
-     * 同じ親の下で名称が重複していれば {@code CATEGORY_NAME_ALREADY_EXISTS} の業務のエラーを投げる。
+     * カテゴリを更新する。
      *
      * @param category カテゴリ
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
+     *                           同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     void save(Category category);
 
     /**
-     * カテゴリを削除する。<br />
-     * 子カテゴリを持てば {@code CATEGORY_HAS_CHILDREN}、商品が所属していれば {@code CATEGORY_HAS_PRODUCTS}、すでに削除されていれば {@code NOT_FOUND} の業務のエラーを投げる。
+     * カテゴリを削除する。
      *
      * @param category カテゴリ
+     * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）。商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）。
+     *                           既に削除されている（{@code NOT_FOUND}）
      */
     void delete(Category category);
 }

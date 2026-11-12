@@ -82,9 +82,9 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .limit(request.size())
                 .offset(request.offset())
                 .fetch(record -> new ProductSummaryView(
-                        record.value1(), record.value2(), record.value3(),
-                        AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.value4())),
-                        record.value5()));
+                        record.get(PRODUCT.ID), record.get(PRODUCT.PRODUCT_CODE), record.get(PRODUCT.NAME),
+                        AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.get(PRODUCT.STATUS))),
+                        record.get(variantCount)));
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }
@@ -92,7 +92,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * B 側の商品一覧の絞り込みの条件を作る（docs/03-機能仕様/catalog.md）。
+     * B 側の商品一覧の絞り込みの条件を作る。
      *
      * @param query 絞り込みの条件
      * @return 条件
@@ -172,7 +172,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 record.getPublishEnd(),
                 images,
                 variants,
-                // できる操作は現在時刻で決まるので、クエリサービスが決める
+                // できる操作は現在時刻で決まるので、ここでは決めない
                 null,
                 record.getVersion(),
                 record.getCreatedAt(),

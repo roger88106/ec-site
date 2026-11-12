@@ -20,8 +20,9 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 店舗画面の一覧・検索の税込価格（SQL の式）と、税モジュールの計算（Java）が同じ結果になることの検証。<br />
- * 税込価格の計算は 2 か所にあるので、片方だけを変えると、一覧と詳細・カートで価格が食い違う。
+ * 店舗画面の一覧・検索の税込価格（SQL の式）と、税モジュールの計算（Java）が同じ結果になることの検証
+ *
+ * <p>税込価格の計算は 2 か所にあるので、片方だけを変えると、一覧と詳細・カートで価格が食い違う。
  */
 @IntegrationTest
 @Transactional

@@ -6,6 +6,9 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
+import com.ecsite.module.catalog.api.model.StoreProductQuery;
+import com.ecsite.module.catalog.api.model.StoreProductSort;
+import com.ecsite.module.catalog.api.model.StoreProductSummary;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.tax.api.TaxRateApi;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,8 +33,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * C 側向けの商品照会の統合テスト。<br />
- * 商品は B 側の API で作って公開する。新着順を確認するため、公開するごとに時計を 1 分進める。
+ * C 側向けの商品照会の統合テスト
+ *
+ * <p>商品は B 側の API で作って公開する。新着順を確認するため、公開するごとに時計を 1 分進める。
  * 税率の一覧のキャッシュは、前のテストのものが残らないよう、テストごとに捨てる。テストごとにロールバックする。
  */
 @IntegrationTest

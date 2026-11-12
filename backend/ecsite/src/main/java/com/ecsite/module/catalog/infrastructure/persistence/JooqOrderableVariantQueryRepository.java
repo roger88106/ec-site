@@ -94,6 +94,7 @@ class JooqOrderableVariantQueryRepository implements OrderableVariantQueryReposi
                         .and(PRODUCT_AXIS.POSITION.eq(VARIANT_AXIS_VALUE.POSITION)))
                 .where(VARIANT_AXIS_VALUE.VARIANT_ID.in(variantIds))
                 .orderBy(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.POSITION)
-                .fetchGroups(VARIANT_AXIS_VALUE.VARIANT_ID, row -> new AxisValue(row.value2(), row.value3()));
+                .fetchGroups(VARIANT_AXIS_VALUE.VARIANT_ID,
+                        row -> new AxisValue(row.get(PRODUCT_AXIS.NAME), row.get(VARIANT_AXIS_VALUE.VALUE)));
     }
 }

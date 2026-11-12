@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品のコントローラー（B 側。admin.yaml の tag: product）。
+ * 商品のコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ product の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor

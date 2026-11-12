@@ -10,8 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 商品照会のクエリリポジトリ。<br />
- * 返すビューの税込価格は空のまま。時刻と税率で決まるので、クエリサービスが設定する。
+ * 商品照会のクエリリポジトリ
+ *
+ * <p>返すビューの税込価格とできる操作は空のまま（どちらも時刻で決まるため）。
  */
 public interface ProductQueryRepository {
 
@@ -24,8 +25,7 @@ public interface ProductQueryRepository {
     Optional<ProductDetailView> findDetailById(UUID id);
 
     /**
-     * B 側の商品一覧を取得する。状態に関係なく、すべての商品が対象。<br />
-     * 並びは登録日時の新しい順で、同じなら ID の順。
+     * B 側の商品一覧を取得する。状態に関係なく、全ての商品が対象。並びは登録日時の新しい順で、同じなら ID の順。
      *
      * @param query   絞り込みの条件
      * @param request ページの指定

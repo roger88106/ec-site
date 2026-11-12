@@ -10,8 +10,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * バリアント（商品集約の一部）。<br />
- * 価格は持たず、商品の価格を使う。
+ * バリアント
+ *
+ * <p>商品集約の一部。価格は持たず、商品の価格を使う。
  *
  * @param id             バリアント ID
  * @param variantCode    バリアント品番
@@ -37,7 +38,7 @@ public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCo
     }
 
     /**
-     * 軸キー：軸の値を連結した値。商品内での組み合わせの一意性を DB で守るために使う。軸のない商品では空文字
+     * 軸の値を連結した軸キーを返す。軸キーは、商品の中の軸の値の組み合わせを一意に表す。軸のない商品では空文字。
      *
      * @return 軸キー
      */

@@ -47,8 +47,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品画像 API の受け入れテスト。<br />
- * ファイルは、受付の応答の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。登録のときに imgproxy で WebP に変換するので、本物の画像を使う。
+ * 商品画像 API の受け入れテスト
+ *
+ * <p>ファイルは、受付の応答の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。登録のときに imgproxy で WebP に変換するので、本物の画像を使う。
  * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、作ったデータも消さない（ほかのテストは、一覧の全体ではなく自分のデータだけを確認する）。
  */
 @IntegrationTest

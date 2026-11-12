@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.module.catalog.api.model.StoreProductSort;
 import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;

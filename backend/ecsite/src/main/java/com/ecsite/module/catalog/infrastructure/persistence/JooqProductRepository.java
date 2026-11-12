@@ -38,8 +38,9 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
 /**
- * 商品のリポジトリ。<br />
- * 商品の一部（軸、所属カテゴリ、バリアント、軸の値）は、別のテーブルに保存する。
+ * 商品のリポジトリ
+ *
+ * <p>商品の一部（軸、所属カテゴリ、バリアント、軸の値）は、別のテーブルに保存する。
  */
 @Repository
 @RequiredArgsConstructor
@@ -92,6 +93,9 @@ class JooqProductRepository implements ProductRepository {
      * 商品を登録する。
      *
      * @param product 商品
+     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）。
+     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）。
+     *                           所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     @Override
     public void add(Product product) {
@@ -117,11 +121,12 @@ class JooqProductRepository implements ProductRepository {
                     .execute();
 
             // 軸の登録（登録後は変わらない）
-            for (int i = 0; i < snapshot.axes().size(); i++) {
+            short position = 0;
+            for (var axis : snapshot.axes()) {
                 dsl.insertInto(PRODUCT_AXIS)
                         .set(PRODUCT_AXIS.PRODUCT_ID, snapshot.id())
-                        .set(PRODUCT_AXIS.POSITION, (short) (i + 1))
-                        .set(PRODUCT_AXIS.NAME, snapshot.axes().get(i))
+                        .set(PRODUCT_AXIS.POSITION, ++position)
+                        .set(PRODUCT_AXIS.NAME, axis)
                         .execute();
             }
 
@@ -141,6 +146,10 @@ class JooqProductRepository implements ProductRepository {
      * 商品を更新する。所属カテゴリ、画像、バリアントは差分で更新する。
      *
      * @param product 商品
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
+     *                           品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）。
+     *                           軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）。
+     *                           所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     @Override
     public void save(Product product) {
@@ -167,6 +176,7 @@ class JooqProductRepository implements ProductRepository {
                 throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
             }
 
+            // 所属カテゴリ、画像、バリアントの保存
             saveCategories(snapshot);
             saveImages(snapshot);
             saveVariants(snapshot);
@@ -179,10 +189,10 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 商品を削除する。商品の一部（画像を含む）は外部キーの ON DELETE CASCADE で消える。<br />
-     * 画像のアセットを手放すのは、アプリケーションサービス（メディアモジュールの呼び出し）。
+     * 商品を削除する。商品の一部（画像を含む）は外部キーの ON DELETE CASCADE で消える。画像のアセットは手放さない。
      *
      * @param product 商品
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
     @Override
     public void delete(Product product) {
@@ -222,15 +232,14 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 画像を差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順を更新する。<br />
-     * アセット ID は登録後に変わらないので、更新しない。削除した画像を指すバリアントの指定は、外部キーで外れる。
-     * 削除した画像のアセットを手放すのは、アプリケーションサービス（メディアモジュールの呼び出し）。
+     * 画像を差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順を更新する。削除した画像のアセットは手放さない。
      *
      * @param snapshot 商品のスナップショット
      */
     private void saveImages(Product.Snapshot snapshot) {
         var imageIds = snapshot.images().stream().map(ProductImage::id).toList();
 
+        // なくなった画像の削除 ※削除した画像を指すバリアントの指定は、外部キーで外れる
         dsl.deleteFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
                 .and(PRODUCT_IMAGE.ID.notIn(imageIds))
@@ -243,6 +252,7 @@ class JooqProductRepository implements ProductRepository {
 
         for (var image : snapshot.images()) {
             if (existingIds.contains(image.id())) {
+                // アセット ID は登録の後に変わらないので、表示順だけを更新する
                 dsl.update(PRODUCT_IMAGE)
                         .set(PRODUCT_IMAGE.DISPLAY_ORDER, image.displayOrder())
                         .where(PRODUCT_IMAGE.ID.eq(image.id()))
@@ -260,8 +270,7 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * バリアントを差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順、販売停止、画像を更新する。<br />
-     * 品番と軸の値は登録後に変わらないので、更新しない。
+     * バリアントを差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順、販売停止、画像を更新する。
      *
      * @param snapshot 商品のスナップショット
      */
@@ -281,6 +290,7 @@ class JooqProductRepository implements ProductRepository {
 
         for (var variant : snapshot.variants()) {
             if (existingIds.contains(variant.id())) {
+                // 品番と軸の値は登録の後に変わらないので、更新しない
                 dsl.update(VARIANT)
                         .set(VARIANT.DISPLAY_ORDER, variant.displayOrder())
                         .set(VARIANT.SALES_SUSPENDED, variant.salesSuspended())
@@ -309,11 +319,12 @@ class JooqProductRepository implements ProductRepository {
                 .set(VARIANT.SALES_SUSPENDED, variant.salesSuspended())
                 .set(VARIANT.IMAGE_ID, variant.imageId())
                 .execute();
-        for (int i = 0; i < variant.axisValues().size(); i++) {
+        short position = 0;
+        for (var value : variant.axisValues()) {
             dsl.insertInto(VARIANT_AXIS_VALUE)
                     .set(VARIANT_AXIS_VALUE.VARIANT_ID, variant.id())
-                    .set(VARIANT_AXIS_VALUE.POSITION, (short) (i + 1))
-                    .set(VARIANT_AXIS_VALUE.VALUE, variant.axisValues().get(i))
+                    .set(VARIANT_AXIS_VALUE.POSITION, ++position)
+                    .set(VARIANT_AXIS_VALUE.VALUE, value)
                     .execute();
         }
     }

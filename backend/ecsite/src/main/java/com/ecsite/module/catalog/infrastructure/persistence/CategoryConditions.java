@@ -14,13 +14,15 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
 
 /**
- * カテゴリによる商品の絞り込みの SQL。B 側の一覧と C 側の一覧で共通（子孫のカテゴリを含む）。
+ * カテゴリによる商品の絞り込みの SQL
+ *
+ * <p>子孫のカテゴリに所属する商品も含める。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class CategoryConditions {
 
     /**
-     * カテゴリか、その子孫のカテゴリに所属する商品であること。
+     * カテゴリか、その子孫のカテゴリに所属する商品であることの条件を返す。
      *
      * @param categoryId カテゴリ ID
      * @return 条件
@@ -32,12 +34,13 @@ final class CategoryConditions {
     }
 
     /**
-     * カテゴリと、その子孫のカテゴリの ID を選ぶ。階層は最大 3 なので、子と孫まででよい。
+     * カテゴリと、その子孫のカテゴリの ID を選ぶ。
      *
      * @param categoryId カテゴリ ID
      * @return カテゴリ ID の選択
      */
     private static Select<Record1<UUID>> selfAndDescendants(UUID categoryId) {
+        // 階層は最大 3 なので、子と孫まででよい
         var child = CATEGORY.as("child");
         return DSL.select(CATEGORY.ID)
                 .from(CATEGORY)

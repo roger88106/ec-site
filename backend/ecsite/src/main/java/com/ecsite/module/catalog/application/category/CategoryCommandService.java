@@ -10,6 +10,7 @@ import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.category.Category;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,9 +39,11 @@ public class CategoryCommandService {
      *
      * @param command カテゴリの登録コマンド
      * @return 登録したカテゴリの ID
+     * @throws BusinessException 親カテゴリがない（{@code NOT_FOUND}）。深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）。
+     *                           名称が範囲の外（{@code INVALID_CATEGORY_NAME}）。同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     @Transactional
-    public UUID createCategory(CreateCategoryCommand command) {
+    public UUID createCategory(@NonNull CreateCategoryCommand command) {
         // 親カテゴリ取得 ※深さは親の深さで決まる
         var parent = command.parentId() == null ? null : getCategory(command.parentId());
 
@@ -58,9 +61,11 @@ public class CategoryCommandService {
      * カテゴリ名を変更する。
      *
      * @param command カテゴリ名の変更コマンド
+     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
+     *                           名称が範囲の外（{@code INVALID_CATEGORY_NAME}）。同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     @Transactional
-    public void renameCategory(RenameCategoryCommand command) {
+    public void renameCategory(@NonNull RenameCategoryCommand command) {
         // カテゴリ取得
         var category = getCategory(command.categoryId());
 
@@ -78,9 +83,10 @@ public class CategoryCommandService {
      * 兄弟カテゴリの並び順を変更する。
      *
      * @param command 並び順の変更コマンド
+     * @throws BusinessException 親カテゴリがない（{@code NOT_FOUND}）。兄弟と過不足なく一致しない（{@code INVALID_CATEGORY_ORDER}）
      */
     @Transactional
-    public void reorderCategories(ReorderCategoriesCommand command) {
+    public void reorderCategories(@NonNull ReorderCategoriesCommand command) {
         // 親カテゴリの存在確認
         if (command.parentId() != null) {
             getCategory(command.parentId());
@@ -97,9 +103,11 @@ public class CategoryCommandService {
      * カテゴリを削除する。
      *
      * @param categoryId カテゴリ ID
+     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）。子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）。
+     *                           商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）
      */
     @Transactional
-    public void deleteCategory(UUID categoryId) {
+    public void deleteCategory(@NonNull UUID categoryId) {
         // カテゴリ取得
         var category = getCategory(categoryId);
 
@@ -120,10 +128,11 @@ public class CategoryCommandService {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * カテゴリを取得する。なければ {@code NOT_FOUND} の業務のエラーを投げる。
+     * カテゴリを取得する。
      *
      * @param id カテゴリ ID
      * @return カテゴリ
+     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）
      */
     private Category getCategory(UUID id) {
         return categoryRepository.findById(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));

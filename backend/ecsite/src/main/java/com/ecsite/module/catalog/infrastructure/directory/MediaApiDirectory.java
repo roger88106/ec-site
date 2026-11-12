@@ -1,5 +1,8 @@
 package com.ecsite.module.catalog.infrastructure.directory;
 
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.catalog.application.model.PreparedImage;
+import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.media.api.MediaApi;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +14,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * メディアの腐敗防止層の実装。メディアモジュールの API（{@link MediaApi}）を呼ぶ。
+ * メディアの腐敗防止層
+ *
+ * <p>メディアモジュールの API を呼ぶ。受付の範囲は商品ごとにする。
  */
 @Component
 @RequiredArgsConstructor
@@ -23,17 +28,18 @@ class MediaApiDirectory implements MediaDirectory {
     private final MediaApi mediaApi;
 
     /**
-     * 商品の画像のアップロードの受付を、メディアモジュールに頼む。範囲は商品ごとにする。
+     * 商品の画像のアップロードの受付を、メディアモジュールに依頼する。
      *
      * @param productId     商品 ID
      * @param contentType   ファイルの形式
      * @param contentLength ファイルの大きさ（バイト）
      * @return 受付の情報（アップロードの URL など）
+     * @throws BusinessException 形式が対象外、または大きさが範囲の外
      */
     @Override
-    public ImageUpload requestImageUpload(UUID productId, String contentType, long contentLength) {
+    public ImageUploadView requestImageUpload(UUID productId, String contentType, long contentLength) {
         var upload = mediaApi.requestImageUpload(scope(productId), contentType, contentLength);
-        return new ImageUpload(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
+        return new ImageUploadView(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
     }
 
     /**
@@ -42,6 +48,7 @@ class MediaApiDirectory implements MediaDirectory {
      * @param productId 商品 ID
      * @param uploadId  受付の ID
      * @return 用意した画像
+     * @throws BusinessException 受付がない（別の商品の受付を含む）、大きさが範囲の外、中身が対象の画像でない、変換できない
      */
     @Override
     public PreparedImage prepareImage(UUID productId, UUID uploadId) {
@@ -70,7 +77,7 @@ class MediaApiDirectory implements MediaDirectory {
     }
 
     /**
-     * アセットを手放す。配信のファイルは、コミットの後にメディアモジュールが消す。
+     * アセットを手放す。配信のファイルは、コミットの後に消える。
      *
      * @param assetIds アセット ID
      */
@@ -93,14 +100,14 @@ class MediaApiDirectory implements MediaDirectory {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 受付の範囲。商品 ID にする
+     * 受付の範囲を返す。商品 ID にする。
      */
     private static String scope(UUID productId) {
         return productId.toString();
     }
 
     /**
-     * 用意した画像を、メディアモジュールの型にする
+     * 用意した画像を、メディアモジュールの型に変換する。
      */
     private static com.ecsite.module.media.api.model.PreparedImage toMedia(PreparedImage prepared) {
         return new com.ecsite.module.media.api.model.PreparedImage(prepared.assetId());

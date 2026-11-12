@@ -33,8 +33,9 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 商品のリポジトリの統合テスト。<br />
- * バリアントを含む保存・再構築・差分更新、バージョン不一致、イベントの発行を確認する。テストごとにロールバックする。
+ * 商品のリポジトリの統合テスト
+ *
+ * <p>バリアントを含む保存・再構築・差分更新、バージョン不一致、イベントの発行を確認する。テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional

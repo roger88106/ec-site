@@ -31,8 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 集約の復元に失敗したリクエストのログのテスト。<br />
- * カテゴリのファクトリーを包み、復元の処理を、値を入れたメッセージの例外を投げるものに替える（集約を戻す共通の補助はそのまま通す）。
+ * 集約の復元に失敗したリクエストのログのテスト
+ *
+ * <p>カテゴリのファクトリーを包み、復元の処理を、値を入れたメッセージの例外を投げるものに替える（集約を戻す共通の補助はそのまま通す）。
  * DB の値を直接壊す方法は、カテゴリの表の制約が集約の検証と同じ範囲を守るので使えず、メッセージに任意の値を入れることもできない。
  */
 @IntegrationTest

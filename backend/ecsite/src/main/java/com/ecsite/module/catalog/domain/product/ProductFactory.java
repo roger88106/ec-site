@@ -1,8 +1,10 @@
 package com.ecsite.module.catalog.domain.product;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import org.jmolecules.ddd.annotation.Factory;
 
 import java.util.Collection;
 import java.util.List;
@@ -11,6 +13,7 @@ import java.util.UUID;
 /**
  * 商品のファクトリー
  */
+@Factory
 public class ProductFactory {
 
     /**
@@ -24,6 +27,8 @@ public class ProductFactory {
      * @param categoryIds   所属カテゴリの ID
      * @param axes          バリアント軸の名前（並び順）
      * @return 商品
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）。説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）。
+     *                           バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     public Product create(ProductCode productCode, String name, String description, UUID taxCategoryId,
                           PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {

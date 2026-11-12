@@ -26,8 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 /**
- * 商品の同時登録のテスト。<br />
- * 別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータも消さない。
+ * 商品の同時登録のテスト
+ *
+ * <p>別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータも消さない。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

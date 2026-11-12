@@ -14,7 +14,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税の腐敗防止層の実装。税モジュールの API（{@link TaxRateApi}）を呼ぶ。
+ * 税の腐敗防止層
+ *
+ * <p>税モジュールの API を呼ぶ。税率の一覧はキャッシュから読む。
  */
 @Component
 @RequiredArgsConstructor
@@ -57,7 +59,7 @@ class TaxApiDirectory implements TaxDirectory {
     }
 
     /**
-     * すべての税区分について、指定した時点で有効な率を返す。税率の一覧はキャッシュから取得する。
+     * 全ての税区分について、指定した時点で有効な率を返す。
      *
      * @param instant 時点
      * @return 税区分 ID → 率（%）

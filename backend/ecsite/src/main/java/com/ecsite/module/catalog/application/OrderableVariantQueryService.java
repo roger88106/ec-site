@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application;
 
 import com.ecsite.module.catalog.application.model.view.OrderableVariantView;
 import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,8 +13,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * カートと注文に使うバリアントの情報の参照（docs/02-設計/catalog.md「他のモジュールへの公開」）。<br />
- * 表示されない商品・販売停止のバリアントも返し、判定は呼ぶ側が行う（カートの表示で、入れられない理由を示すため）。
+ * 注文に使うバリアントの情報の参照
+ *
+ * <p>表示されない商品・販売停止のバリアントも返す。
  */
 @Service
 @RequiredArgsConstructor
@@ -36,7 +38,7 @@ public class OrderableVariantQueryService {
      * @param variantIds バリアント ID
      * @return バリアント ID → 情報。存在しないバリアントは含めない
      */
-    public Map<UUID, OrderableVariantView> findVariants(Collection<UUID> variantIds) {
+    public Map<UUID, OrderableVariantView> findVariants(@NonNull Collection<UUID> variantIds) {
         if (variantIds.isEmpty()) {
             return Map.of();
         }

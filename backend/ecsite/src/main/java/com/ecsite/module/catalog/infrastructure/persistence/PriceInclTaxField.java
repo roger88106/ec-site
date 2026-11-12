@@ -14,9 +14,10 @@ import java.util.UUID;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 
 /**
- * 税込価格を計算する SQL の式（docs/03-機能仕様/catalog.md）。<br />
- * 税区分ごとの率を埋め込み、{@code floor(税抜価格 × (100 + 率) ÷ 100)} を計算する。1 円未満は切り捨て。
- * 税モジュール（Java）の計算と同じ結果になることは、統合テストで確認する。
+ * 税込価格の SQL の式
+ *
+ * <p>税区分ごとの率を埋め込み、{@code floor(税抜価格 × (100 + 率) ÷ 100)} を計算する。1 円未満は切り捨て。
+ * 税モジュール（Java）の計算と同じ結果になる。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class PriceInclTaxField {

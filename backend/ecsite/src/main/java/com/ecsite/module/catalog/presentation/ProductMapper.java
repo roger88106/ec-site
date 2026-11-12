@@ -34,14 +34,15 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 商品 API のリクエスト・レスポンスと、アプリケーション層のモデルの変換
+ * 商品 API のマッパー
+ *
+ * <p>商品 API のリクエスト・レスポンスと、アプリケーション層のモデルを変換する。
  */
 @Component
 class ProductMapper {
 
     /**
-     * 商品の登録コマンドに変換する。<br />
-     * 所属カテゴリと軸は LinkedHashSet で受け取るので、送られた順を保つ。
+     * 商品の登録コマンドに変換する。
      *
      * @param request 商品の登録リクエスト
      * @return 商品の登録コマンド
@@ -53,6 +54,7 @@ class ProductMapper {
                 request.getDescription(),
                 request.getTaxCategoryId(),
                 Money.of(request.getPriceExclTax()),
+                // 所属カテゴリと軸は LinkedHashSet で受け取るので、送られた順を保つ
                 List.copyOf(request.getCategoryIds()),
                 List.copyOf(request.getAxes()));
     }
@@ -133,7 +135,7 @@ class ProductMapper {
                 .status(toResponseStatus(view.status()))
                 .images(view.images().stream().map(ProductMapper::toImage).toList())
                 .variants(view.variants().stream().map(ProductMapper::toVariant).toList())
-                .actions(toActions(Objects.requireNonNull(view.actions(), "クエリサービスが操作の可否を決めている")))
+                .actions(toActions(Objects.requireNonNull(view.actions(), "取得した商品の詳細には、できる操作が入っている")))
                 .version(view.version())
                 .createdAt(ApiDateTimes.toOffsetDateTime(view.createdAt()))
                 .updatedAt(ApiDateTimes.toOffsetDateTime(view.updatedAt()))

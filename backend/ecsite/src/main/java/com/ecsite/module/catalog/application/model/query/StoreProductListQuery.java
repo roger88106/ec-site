@@ -6,7 +6,9 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * C 側の商品一覧の条件。null の項目では絞り込まない。
+ * C 側の商品一覧の条件
+ *
+ * <p>null の項目では絞り込まない。
  *
  * @param categoryId カテゴリ ID（子孫のカテゴリを含む）
  * @param minPrice   税込価格の下限（円、この値を含む）
@@ -17,7 +19,9 @@ public record StoreProductListQuery(@Nullable UUID categoryId, @Nullable Money m
                                     Sort sort) {
 
     /**
-     * 並び順。同じ値なら商品 ID の順
+     * 並び順
+     *
+     * <p>同じ値なら商品 ID の順。
      */
     public enum Sort {
 

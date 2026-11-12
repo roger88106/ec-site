@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 注文に使うバリアントの情報のクエリリポジトリ（カート・注文向け）
+ * 注文に使うバリアントの情報のクエリリポジトリ
  */
 public interface OrderableVariantQueryRepository {
 

@@ -33,8 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品画像の登録で、画像のサービスに届かないときの受け入れテスト。<br />
- * 画像の変換（imgproxy）は、待ち受けのないポートに向ける（このクラスだけ。変換が成功するテストは {@link ProductImageApiTest}）。
+ * 商品画像の登録で、画像のサービスに届かないときの受け入れテスト
+ *
+ * <p>画像の変換（imgproxy）は、待ち受けのないポートに向ける（このクラスだけ。変換が成功するテストは {@link ProductImageApiTest}）。
  * ファイル保存（S3）は、本物のクライアントを包み、接続できない失敗を起こす。
  */
 @IntegrationTest

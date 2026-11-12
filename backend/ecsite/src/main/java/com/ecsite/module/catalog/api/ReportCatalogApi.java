@@ -1,8 +1,10 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.module.catalog.api.model.ReportProduct;
 import com.ecsite.module.catalog.application.OrderableVariantQueryService;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.product.ProductQueryService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,8 +17,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * レポートに公開する商品カタログの API（docs/02-設計/catalog.md「他のモジュールへの公開」）。<br />
- * 注文の明細は商品 ID を持たないので、レポートはバリアントから商品を求める。
+ * 商品とバリアントの対応の API
  */
 @Component
 @RequiredArgsConstructor
@@ -38,7 +39,7 @@ public class ReportCatalogApi {
      * @param variantIds バリアント ID
      * @return バリアント ID → 商品 ID。存在しないバリアントは含めない
      */
-    public Map<UUID, UUID> productIdsOf(Collection<UUID> variantIds) {
+    public Map<UUID, UUID> productIdsOf(@NonNull Collection<UUID> variantIds) {
         var result = new LinkedHashMap<UUID, UUID>();
         orderableVariantQueryService.findVariants(variantIds)
                 .forEach((variantId, variant) -> result.put(variantId, variant.productId()));
@@ -51,7 +52,7 @@ public class ReportCatalogApi {
      * @param productId 商品 ID
      * @return 商品。なければ空
      */
-    public Optional<ReportProduct> findProduct(UUID productId) {
+    public Optional<ReportProduct> findProduct(@NonNull UUID productId) {
         return productQueryService.findProduct(productId).map(ReportCatalogApi::toProduct);
     }
 

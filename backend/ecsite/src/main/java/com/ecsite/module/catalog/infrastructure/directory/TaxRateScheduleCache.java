@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 税区分ごとの税率の一覧（予定を含む）の、インスタンス内のキャッシュ（docs/03-機能仕様/catalog.md）。<br />
- * 有効期間は 30 秒。予定を含む一覧を持つので、税率の切り替えは表示時刻で判定でき、
- * キャッシュの影響は税率の登録・変更の反映が最大 30 秒遅れることだけ（バックエンドのアーキテクチャの「水平スケール」）。
- * 有効期間は注入した時計で測る。
+ * 税率の一覧のキャッシュ
+ *
+ * <p>税区分ごとの税率の一覧（予定を含む）を、インスタンスの中に 30 秒保持する。予定を含む一覧を持つので、税率の切り替えは表示時刻で判定でき、
+ * キャッシュの影響は税率の登録・変更の反映が最大 30 秒遅れることだけ。有効期間は注入した時計で測る。
  */
 @Component
 @RequiredArgsConstructor
@@ -42,14 +42,14 @@ class TaxRateScheduleCache {
     private final AtomicReference<Entry> entry = new AtomicReference<>();
 
     /**
-     * 税率の一覧を返す。有効期間を過ぎていれば、税モジュールから取得し直す。<br />
-     * 複数のスレッドが同時に取得し直すことがあるが、結果は同じなので排他しない。
+     * 税率の一覧を返す。有効期間を過ぎていれば、税モジュールから取得し直す。
      *
      * @return 税区分ごとの税率の一覧
      */
     List<TaxRateSchedule> schedules() {
         var now = clock.instant();
         var current = entry.get();
+        // 複数のスレッドが同時に取得し直すことがあるが、結果は同じなので排他しない
         if (current == null || !now.isBefore(current.fetchedAt().plus(TTL))) {
             current = new Entry(taxRateApi.listRateSchedules(), now);
             entry.set(current);
@@ -58,9 +58,7 @@ class TaxRateScheduleCache {
     }
 
     /**
-     * キャッシュを捨てる。次の取得で税モジュールから取得し直す。<br />
-     * テスト用：本番のコードからは呼ばない（キャッシュは有効期間で切れる）。呼ぶのは、統合テストの同じパッケージの補助クラスだけ。
-     * 税率を変えた統合テストが、前のテストのキャッシュを読まないために使う。
+     * キャッシュを捨てる。次の取得で税モジュールから取得し直す。
      */
     void evict() {
         entry.set(null);

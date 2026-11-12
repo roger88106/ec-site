@@ -1,10 +1,10 @@
-package com.ecsite.module.catalog.api;
+package com.ecsite.module.catalog.api.model;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * レポートに公開する、商品とそのバリアントの一覧。
+ * 商品とそのバリアントの一覧
  *
  * @param productId 商品 ID
  * @param name      商品名

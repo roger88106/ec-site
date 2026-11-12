@@ -8,6 +8,7 @@ import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import com.ecsite.module.catalog.application.port.ProductSearch;
 import com.ecsite.module.catalog.application.port.StoreProductQueryRepository;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,8 +18,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * C 側向けの商品照会のクエリサービス。<br />
- * 表示時刻は呼ばれた時点の現在時刻。税率の一覧はキャッシュされる（最大 30 秒）が、商品・価格・公開状態はキャッシュしない。
+ * C 側の商品照会のクエリサービス
+ *
+ * <p>表示時刻は呼ばれた時点の現在時刻。税率の一覧はキャッシュされる（最大 30 秒）が、商品・価格・公開状態はキャッシュしない。
  */
 @Service
 @RequiredArgsConstructor
@@ -26,7 +28,7 @@ import java.util.UUID;
 public class StoreProductQueryService {
 
     /**
-     * C 側向けの商品照会のクエリリポジトリ
+     * C 側の商品照会のクエリリポジトリ
      */
     private final StoreProductQueryRepository storeProductQueryRepository;
 
@@ -52,7 +54,7 @@ public class StoreProductQueryService {
      * @param request ページの指定
      * @return 商品の一覧
      */
-    public PageResult<StoreProductSummaryView> listProducts(StoreProductListQuery query, PageRequest request) {
+    public PageResult<StoreProductSummaryView> listProducts(@NonNull StoreProductListQuery query, @NonNull PageRequest request) {
         var now = clock.instant();
         return storeProductQueryRepository.findVisible(query, request, now, taxDirectory.ratesAt(now));
     }
@@ -64,7 +66,7 @@ public class StoreProductQueryService {
      * @param request ページの指定
      * @return 検索結果（新着順）
      */
-    public PageResult<StoreProductSummaryView> searchProducts(String keyword, PageRequest request) {
+    public PageResult<StoreProductSummaryView> searchProducts(@NonNull String keyword, @NonNull PageRequest request) {
         var now = clock.instant();
         return productSearch.search(keyword, request, now, taxDirectory.ratesAt(now));
     }
@@ -75,7 +77,7 @@ public class StoreProductQueryService {
      * @param id 商品 ID
      * @return 商品の詳細。表示されない商品なら空（存在しない商品と同じ扱い）
      */
-    public Optional<StoreProductDetailView> findProduct(UUID id) {
+    public Optional<StoreProductDetailView> findProduct(@NonNull UUID id) {
         var now = clock.instant();
         return storeProductQueryRepository.findVisibleDetail(id, now, taxDirectory.ratesAt(now));
     }

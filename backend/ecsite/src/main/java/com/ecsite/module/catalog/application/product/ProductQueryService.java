@@ -10,6 +10,7 @@ import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.catalog.domain.product.ProductActions;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,23 +48,24 @@ public class ProductQueryService {
     private final ProductLoader productLoader;
 
     /**
-     * 画像を加えられることを確認する（商品がある、バージョンが一致する、枚数が上限に達していない）。<br />
-     * 画像の追加で、画像を用意する（外部サービスを呼ぶ）前に読む。
+     * 画像を加えられることを確認する（商品がある、バージョンが一致する、枚数が上限に達していない）。
      *
      * @param productId 商品 ID
      * @param version   取得時の商品のバージョン
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
+     *                           画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
-    public void verifyCanAddImage(UUID productId, long version) {
+    public void verifyCanAddImage(@NonNull UUID productId, long version) {
         productLoader.get(productId, version).verifyCanAddImage();
     }
 
     /**
-     * 画像を加えられることを、バージョンなしで確認する（商品がある、枚数が上限に達していない）。<br />
-     * 画像のアップロードのリクエストで、外部サービスを呼ぶ前に読む。
+     * 画像を加えられることを、バージョンなしで確認する（商品がある、枚数が上限に達していない）。
      *
      * @param productId 商品 ID
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
-    public void verifyCanAddImage(UUID productId) {
+    public void verifyCanAddImage(@NonNull UUID productId) {
         productLoader.get(productId).verifyCanAddImage();
     }
 
@@ -72,10 +74,13 @@ public class ProductQueryService {
      *
      * @param id 商品 ID
      * @return 商品の詳細
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      */
-    public ProductDetailView getProduct(UUID id) {
+    public ProductDetailView getProduct(@NonNull UUID id) {
+        // 商品の詳細の取得
         var view = productQueryRepository.findDetailById(id)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        // 今の税込価格と、できる操作の設定
         var now = clock.instant();
         var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), view.priceExclTax(), now).orElse(null);
         var actions = ProductActions.of(view.status(), view.firstShownAt(), view.axes().size(),
@@ -84,12 +89,12 @@ public class ProductQueryService {
     }
 
     /**
-     * 商品の詳細を、今の状態（税込価格、できる操作）なしで探す。他のモジュールに商品とバリアントの一覧を返すときに使う。
+     * 商品の詳細を、今の状態（税込価格、できる操作）なしで探す。
      *
      * @param id 商品 ID
      * @return 商品の詳細。なければ空
      */
-    public Optional<ProductDetailView> findProduct(UUID id) {
+    public Optional<ProductDetailView> findProduct(@NonNull UUID id) {
         return productQueryRepository.findDetailById(id);
     }
 
@@ -100,7 +105,7 @@ public class ProductQueryService {
      * @param request ページの指定
      * @return 商品の一覧
      */
-    public PageResult<ProductSummaryView> listProducts(ProductListQuery query, PageRequest request) {
+    public PageResult<ProductSummaryView> listProducts(@NonNull ProductListQuery query, @NonNull PageRequest request) {
         return productQueryRepository.findSummaries(query, request);
     }
 }

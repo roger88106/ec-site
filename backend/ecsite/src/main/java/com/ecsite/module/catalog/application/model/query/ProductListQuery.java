@@ -6,7 +6,9 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * B 側の商品一覧の絞り込みの条件。null の項目では絞り込まない。
+ * B 側の商品一覧の絞り込みの条件
+ *
+ * <p>null の項目では絞り込まない。
  *
  * @param code       商品品番またはバリアント品番の前方一致
  * @param name       商品名の部分一致

@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品の詳細のビュー（バリアントを含む）
+ * 商品の詳細のビュー
+ *
+ * <p>バリアントを含む。
  *
  * @param id            商品 ID
  * @param productCode   商品品番
@@ -28,7 +30,7 @@ import java.util.UUID;
  * @param publishEnd    公開終了日時
  * @param images        画像（表示順。先頭が代表画像）
  * @param variants      バリアント（表示順）
- * @param actions       できる操作。リポジトリは null で作り、クエリサービスが現在時刻で決める
+ * @param actions       できる操作。現在時刻で決める前は null
  * @param version       バージョン
  * @param createdAt     登録日時
  * @param updatedAt     更新日時

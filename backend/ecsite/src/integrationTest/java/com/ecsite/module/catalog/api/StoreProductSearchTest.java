@@ -6,6 +6,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
+import com.ecsite.module.catalog.api.model.StoreProductSummary;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,8 +25,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * キーワード検索の統合テスト。<br />
- * 商品は B 側の API で作って公開する。公開するごとに時計を 1 分進める（並びは新着順で固定）。テストごとにロールバックする。
+ * キーワード検索の統合テスト
+ *
+ * <p>商品は B 側の API で作って公開する。公開するごとに時計を 1 分進める（並びは新着順で固定）。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

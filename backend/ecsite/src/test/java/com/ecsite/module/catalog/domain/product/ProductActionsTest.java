@@ -20,8 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * 商品にできる操作（画面に返すフラグ）の単体テスト。<br />
- * フラグの値が、集約の規則（操作を受け付けるか、拒むか）と同じになることを確認する。
+ * 商品にできる操作（画面に返すフラグ）の単体テスト
+ *
+ * <p>フラグの値が、集約の規則（操作を受け付けるか、拒むか）と同じになることを確認する。
  */
 class ProductActionsTest {
 

@@ -10,15 +10,15 @@ import java.time.Instant;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 
 /**
- * C 側に表示される条件の SQL。<br />
- * 一覧と検索の両方で、この部品だけを使う。検索だけに非公開の商品が出る事故を防ぐため（docs/03-機能仕様/catalog.md）。
- * ドメインの {@code Product#isVisibleAt} と同じ条件で、両者の一致は統合テストで確認する。
+ * C 側に表示される条件の SQL
+ *
+ * <p>ドメインの {@code Product#isVisibleAt} と同じ条件。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ProductVisibility {
 
     /**
-     * 公開状態が「公開」で、公開期間内（開始を含み、終了を含まない。null は無限）であること。
+     * 公開状態が「公開」で、公開期間内（開始を含み、終了を含まない。null は無限）であることの条件を返す。
      *
      * @param now 表示時刻
      * @return 条件

@@ -96,7 +96,7 @@ class JooqCategoryRepository implements CategoryRepository {
     }
 
     /**
-     * 子カテゴリをすべて取得し、ID の順にロックする（並び替えが同時に起きても、いつも同じ順にロックしてデッドロックを避ける）。
+     * 子カテゴリを全て取得し、ID の順にロックする。
      *
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 子カテゴリの一覧
@@ -105,6 +105,7 @@ class JooqCategoryRepository implements CategoryRepository {
     public List<Category> lockChildren(@Nullable UUID parentId) {
         return dsl.selectFrom(CATEGORY)
                 .where(childOf(parentId))
+                // 並び順の同時の変更を直列にする。いつも同じ順にロックして、デッドロックを避ける
                 .orderBy(CATEGORY.ID)
                 .forUpdate()
                 .fetch(this::toCategory);
@@ -118,11 +119,12 @@ class JooqCategoryRepository implements CategoryRepository {
      */
     @Override
     public int nextDisplayOrder(@Nullable UUID parentId) {
-        return dsl.select(DSL.coalesce(DSL.max(CATEGORY.DISPLAY_ORDER), 0).plus(1))
+        var next = DSL.coalesce(DSL.max(CATEGORY.DISPLAY_ORDER), 0).plus(1);
+        return dsl.select(next)
                 .from(CATEGORY)
                 .where(childOf(parentId))
                 .fetchSingle()
-                .value1();
+                .get(next);
     }
 
     /**
@@ -148,10 +150,10 @@ class JooqCategoryRepository implements CategoryRepository {
     }
 
     /**
-     * カテゴリがすべて存在するかを返す。
+     * カテゴリが全て存在するかを返す。
      *
      * @param ids カテゴリ ID
-     * @return すべて存在すれば true
+     * @return 全て存在すれば true
      */
     @Override
     public boolean existsAll(Collection<UUID> ids) {
@@ -164,6 +166,8 @@ class JooqCategoryRepository implements CategoryRepository {
      * カテゴリを登録する。
      *
      * @param category カテゴリ
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）。
+     *                           親が削除されている（{@code NOT_FOUND}）
      */
     @Override
     public void add(Category category) {
@@ -193,6 +197,8 @@ class JooqCategoryRepository implements CategoryRepository {
      * カテゴリを更新する。親と深さは変わらないので、名称と表示順だけを書き換える。
      *
      * @param category カテゴリ
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
+     *                           同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     @Override
     public void save(Category category) {
@@ -224,6 +230,8 @@ class JooqCategoryRepository implements CategoryRepository {
      * カテゴリを削除する。
      *
      * @param category カテゴリ
+     * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）。商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）。
+     *                           既に削除されている（{@code NOT_FOUND}）
      */
     @Override
     public void delete(Category category) {

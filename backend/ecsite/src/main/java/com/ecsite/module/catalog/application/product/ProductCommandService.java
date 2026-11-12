@@ -12,6 +12,7 @@ import com.ecsite.module.catalog.domain.product.ProductImage;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +23,7 @@ import java.util.Collection;
 import java.util.UUID;
 
 /**
- * 商品のコマンドサービス（登録、更新、削除）。<br />
- * バリアントは {@link VariantCommandService}、公開は {@link ProductPublicationService}、画像は {@link ProductImageService}。
+ * 商品のコマンドサービス
  */
 @Service
 @RequiredArgsConstructor
@@ -60,7 +60,7 @@ public class ProductCommandService {
     private final Clock clock;
 
     /**
-     * 商品の取り出しと状態の切り替え
+     * 商品の取得と状態の切り替え
      */
     private final ProductLoader productLoader;
 
@@ -69,9 +69,12 @@ public class ProductCommandService {
      *
      * @param command 商品の登録コマンド
      * @return 登録した商品の ID
+     * @throws BusinessException 税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）。所属カテゴリがない（{@code INVALID_CATEGORY_ID}）。
+     *                           項目の値が正しくない（{@code INVALID_PRODUCT_CODE}、{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、
+     *                           {@code INVALID_PRODUCT_DESCRIPTION}、{@code INVALID_VARIANT_AXES}）。商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
      */
     @Transactional
-    public UUID createProduct(CreateProductCommand command) {
+    public UUID createProduct(@NonNull CreateProductCommand command) {
         var now = clock.instant();
 
         // 税区分と所属カテゴリの確認
@@ -98,13 +101,18 @@ public class ProductCommandService {
      * 商品を編集する。
      *
      * @param command 商品の編集コマンド
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
+     *                           税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）。所属カテゴリがない（{@code INVALID_CATEGORY_ID}）。
+     *                           項目の値が正しくない（{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}）
      */
     @Transactional
-    public void updateProduct(UpdateProductCommand command) {
+    public void updateProduct(@NonNull UpdateProductCommand command) {
         var now = clock.instant();
+
+        // 商品取得
         var product = productLoader.get(command.productId(), command.version());
 
-        // 税区分は、変えるときだけ確認する
+        // 税区分と所属カテゴリの確認 ※税区分は、変えるときだけ確認する
         if (!product.taxCategoryId().equals(command.taxCategoryId())) {
             verifyTaxCategoryAssignable(command.taxCategoryId(), now);
         }
@@ -114,21 +122,27 @@ public class ProductCommandService {
         product.update(command.name(), command.description(), command.taxCategoryId(),
                 PriceExclTax.of(command.priceExclTax().yen()), command.categoryIds(), now);
 
+        // 商品保存
         productRepository.save(product);
     }
 
     /**
-     * 商品を削除する。画像のアセットも手放す（配信のファイルは、コミットの後にメディアモジュールが消す）。
+     * 商品を削除する。画像のアセットも手放す。
      *
      * @param productId 商品 ID
      * @param version   取得時のバージョン
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）。取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）。
+     *                           C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）
      */
     @Transactional
-    public void deleteProduct(UUID productId, long version) {
+    public void deleteProduct(@NonNull UUID productId, long version) {
+        // 商品取得
         var product = productLoader.get(productId, version);
 
+        // 削除できるかの確認
         product.delete(clock.instant());
 
+        // 商品削除と、画像のアセットの解放
         productRepository.delete(product);
         mediaDirectory.release(product.images().stream().map(ProductImage::assetId).toList());
     }
@@ -140,6 +154,7 @@ public class ProductCommandService {
      *
      * @param taxCategoryId 税区分 ID
      * @param now           現在時刻
+     * @throws BusinessException 有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）
      */
     private void verifyTaxCategoryAssignable(UUID taxCategoryId, Instant now) {
         if (!taxDirectory.hasRateAt(taxCategoryId, now)) {
@@ -148,12 +163,13 @@ public class ProductCommandService {
     }
 
     /**
-     * 所属カテゴリがすべて存在することを確認する。<br />
-     * 確認の後に削除された場合は、保存時に外部キーの違反として検出する。
+     * 所属カテゴリが全て存在することを確認する。
      *
      * @param categoryIds 所属カテゴリの ID
+     * @throws BusinessException 存在しないカテゴリがある（{@code INVALID_CATEGORY_ID}）
      */
     private void verifyCategoriesExist(Collection<UUID> categoryIds) {
+        // 確認の後に削除された場合は、保存のときに外部キーの違反として検出する
         if (!categoryRepository.existsAll(categoryIds)) {
             throw BusinessException.of(ProductErrorCode.INVALID_CATEGORY_ID);
         }

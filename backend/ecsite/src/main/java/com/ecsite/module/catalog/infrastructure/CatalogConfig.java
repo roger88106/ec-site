@@ -6,14 +6,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 商品カタログモジュールの domain の部品を、Spring の部品にする。<br />
- * domain は Spring に依存しないので、注釈を付けずにここで登録する（バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」）。
+ * 商品カタログモジュールの設定
+ *
+ * <p>domain のクラスを Spring の Bean にする。domain は Spring に依存しないので、クラスに注釈を付けずにここで登録する。
  */
 @Configuration(proxyBeanMethods = false)
-class CatalogDomainConfig {
+class CatalogConfig {
 
     /**
-     * カテゴリの生成と復元の部品を返す。
+     * カテゴリの生成と復元のクラスを返す。
      *
      * @return カテゴリの Factory
      */
@@ -23,7 +24,7 @@ class CatalogDomainConfig {
     }
 
     /**
-     * 商品の生成と復元の部品を返す。
+     * 商品の生成と復元のクラスを返す。
      *
      * @return 商品の Factory
      */

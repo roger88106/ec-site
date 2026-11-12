@@ -7,9 +7,11 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * レポートの設定。環境変数で上書きする（例：ECSITE_REPORTING_FISCAL_YEAR_START_MONTH）。
+ * レポートの設定
  *
- * @param fiscalYearStartMonth 会計年度の始まりの月（1〜12）。売上の推移の四半期と年の区切りに使う
+ * <p>環境変数で上書きする（例：ECSITE_REPORTING_FISCAL_YEAR_START_MONTH）。
+ *
+ * @param fiscalYearStartMonth 会計年度の始まりの月（1〜12）。四半期と年の区切りの基準
  */
 @Validated
 @ConfigurationProperties("ecsite.reporting")

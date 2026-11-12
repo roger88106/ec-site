@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface ReportOrderRepository {
 
     /**
-     * 注文ごとのロックを、トランザクションの終わりまで取る。同じ注文のイベントを同時に受けても、1 つずつ処理するため。
+     * 注文ごとのロックを、トランザクションの終わりまで取る。同じ注文のロックは、先に取ったトランザクションが終わるまで待つ。
      *
      * @param orderId 注文 ID
      */

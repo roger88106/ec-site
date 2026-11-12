@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文の腐敗防止層（レポート用の注文の写しの API）
+ * 注文の腐敗防止層の port
  */
 public interface OrderDirectory {
 

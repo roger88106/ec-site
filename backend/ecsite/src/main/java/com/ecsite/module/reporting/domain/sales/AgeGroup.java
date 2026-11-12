@@ -3,7 +3,9 @@ package com.ecsite.module.reporting.domain.sales;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 年齢層。注文時の年齢から、問い合わせのときに求める。並びは若い順で、不明が最後。
+ * 年齢層
+ *
+ * <p>注文時の年齢から求める。並びは若い順で、不明が最後。
  */
 public enum AgeGroup {
 
@@ -59,6 +61,7 @@ public enum AgeGroup {
         if (age >= 60) {
             return SIXTIES_OR_OLDER;
         }
+        // 20〜59 歳は 10 歳ごとの区分で、並びの順（20 代が 2 番目）から引く
         return values()[age / 10 - 1];
     }
 }

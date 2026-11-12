@@ -5,7 +5,7 @@ import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
 import java.util.List;
 
 /**
- * 売上の数え方（注文基準・出荷基準）
+ * 売上の数え方
  */
 public enum Basis {
 
@@ -26,6 +26,8 @@ public enum Basis {
     private final List<ReportOrderStatus> countedStatuses;
 
     /**
+     * 売上の数え方を作る。
+     *
      * @param countedStatuses 数える注文の状態
      */
     Basis(List<ReportOrderStatus> countedStatuses) {

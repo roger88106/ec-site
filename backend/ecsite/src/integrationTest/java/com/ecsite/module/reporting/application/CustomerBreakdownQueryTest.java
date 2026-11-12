@@ -25,8 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * 地域・年齢層・性別の統合テスト。<br />
- * 写しを DB に直接入れて集計する。2031 年の日付を使う。テストごとにロールバックする。
+ * 地域・年齢層・性別の統合テスト
+ *
+ * <p>写しを DB に直接入れて集計する。2031 年の日付を使う。テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional

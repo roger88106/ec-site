@@ -1,8 +1,9 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
 /**
- * 配送状態（docs/03-機能仕様/shipping.md「配送状態」の写し）。<br />
- * 写しの配送状態は、状態の履歴のうち順位の最も高いものにする（イベントの届く順によらないため）。
+ * 配送状態
+ *
+ * <p>出荷モジュールの配送状態の写し。状態ごとに順位を持つ。
  */
 public enum DeliveryStatus implements HistoryStatus {
 
@@ -33,6 +34,8 @@ public enum DeliveryStatus implements HistoryStatus {
     private final int rank;
 
     /**
+     * 配送状態を作る。
+     *
      * @param rank 順位
      */
     DeliveryStatus(int rank) {

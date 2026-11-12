@@ -120,7 +120,8 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .where(SALES_ORDER_LINE.ORDER_ID.eq(orderId), SALES_ORDER_LINE.PRODUCT_ID.isNotNull())
                 .fetch()
                 .stream()
-                .collect(Collectors.toMap(row -> row.value1().intValue(), row -> row.value2()));
+                .collect(Collectors.toMap(row -> row.get(SALES_ORDER_LINE.LINE_NO).intValue(),
+                        row -> row.get(SALES_ORDER_LINE.PRODUCT_ID)));
     }
 
     /**

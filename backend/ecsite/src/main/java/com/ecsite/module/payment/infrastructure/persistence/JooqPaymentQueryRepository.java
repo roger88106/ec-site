@@ -36,8 +36,9 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
         return dsl.select(PAYMENT_.ORDER_ID, PAYMENT_.STATUS, PAYMENT_.DEADLINE)
                 .from(PAYMENT_)
                 .where(PAYMENT_.ORDER_ID.in(orderIds))
-                .fetch(row -> new PaymentSummaryView(row.value1(),
-                        AggregateGuards.restore("payment", () -> PaymentStatus.valueOf(row.value2())), row.value3()));
+                .fetch(r -> new PaymentSummaryView(r.get(PAYMENT_.ORDER_ID),
+                        AggregateGuards.restore("payment", () -> PaymentStatus.valueOf(r.get(PAYMENT_.STATUS))),
+                        r.get(PAYMENT_.DEADLINE)));
     }
 
     @Override

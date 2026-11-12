@@ -5,6 +5,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 売上確定のサービス（docs/03-機能仕様/payment.md「売上確定」）。<br />
- * 決済サービスの応答を待つ間、行ロックを持たないよう、決済サービスの呼び出しはトランザクションの外で行い、
- * 結果の反映だけを {@link PaymentCommandService} のトランザクションで行う。
+ * 売上確定のサービス
+ *
+ * <p>決済サービスはトランザクションの外で呼び、結果の反映だけを支払の更新のサービスのトランザクションで行う。
+ * 決済サービスの応答を待つ間、行ロックを持たないため。
  */
 @Service
 @RequiredArgsConstructor
@@ -39,10 +41,12 @@ public class PaymentCaptureService {
      * 注文の支払の売上を確定する。売上確定済みなら、決済サービスを呼ばずに成功する。
      *
      * @param orderId 注文 ID
-     * @throws BusinessException 支払がない、売上を確定できる状態でない、与信の期限が切れている
-     * @throws SystemException   決済サービスに接続できない（支払は与信済みのまま残る）
+     * @throws BusinessException 支払がない（NOT_FOUND）、売上を確定できる状態でない（PAYMENT_NOT_CAPTURABLE）、
+     *                           与信の期限が切れている（AUTHORIZATION_EXPIRED）
+     * @throws SystemException   決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）。支払は与信済みのまま残る
      */
-    public void capture(UUID orderId) {
+    public void capture(@NonNull UUID orderId) {
+        // 支払取得
         var payment = queryService.findForCapture(orderId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         switch (payment.status()) {
@@ -55,10 +59,14 @@ public class PaymentCaptureService {
             }
             default -> throw BusinessException.of(PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
         }
+
+        // 売上確定
         var result = gateway.capture(
                 new PaymentGateway.CaptureRequest(orderId,
                         Objects.requireNonNull(payment.authorizationRef(), "売上を確定できる支払には与信の参照がある"),
                         payment.amount()));
+
+        // 結果の反映
         switch (result) {
             case CAPTURED -> commandService.markCaptured(payment.id());
             case AUTHORIZATION_EXPIRED -> {

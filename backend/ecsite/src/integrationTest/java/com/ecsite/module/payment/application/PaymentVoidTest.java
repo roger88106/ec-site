@@ -8,7 +8,7 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
-import com.ecsite.module.payment.api.PaymentSummary;
+import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
@@ -34,8 +34,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 与信の取消の統合テスト。<br />
- * 取消はコミットの後に非同期で行われるので、結果を待つ。
+ * 与信の取消の統合テスト
+ *
+ * <p>取消はコミットの後に非同期で行われるので、結果を待つ。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)

@@ -31,7 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 支払のリポジトリの統合テスト。行のロックを確認するテスト以外は、テストごとにロールバックする。
+ * 支払のリポジトリの統合テスト
+ *
+ * <p>行のロックを確認するテスト以外は、テストごとにロールバックする。
  */
 @IntegrationTest
 @RecordApplicationEvents

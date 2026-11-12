@@ -11,14 +11,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 
 /**
- * 決済サービスからの通知を、支払に反映するサービス。<br />
- * 支払を行ロックしてから反映する。重ねて届いた通知・順序の入れ替わった通知は、支払の状態の遷移で無視される。
+ * 決済サービスの通知のサービス
+ *
+ * <p>支払を行ロックしてから反映する。重ねて届いた通知と、順序の入れ替わった通知は、支払の状態の遷移で無視される。
  */
 @Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class PaymentNotificationService implements PaymentNotificationReceiver {
+class PaymentNotificationService implements PaymentNotificationReceiver {
 
     /**
      * 支払のリポジトリ
@@ -50,14 +51,14 @@ public class PaymentNotificationService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 支払画面の期限切れを反映する。支払の期限の後で未払いなら、支払なしにする。<br />
-     * 期限の前の通知（起こらないはず）は無視し、期限切れのジョブに任せる。
+     * 支払画面の期限切れを反映する。支払の期限の後で未払いなら、支払なしにする。
      *
      * @param pageId 支払画面 ID
      */
     @Override
     public void pageExpired(String pageId) {
-        // 期限切れにする処理は、期限切れのジョブと同じ更新の service のメソッドに任せる（同じトランザクションで行ロックし直す）
+        // 支払なしにする処理は、期限切れのジョブと同じ更新のサービスのメソッドで行う
+        // （同じトランザクションで行ロックし直す。期限の前の通知では何もしない）
         paymentRepository.lockByPageId(pageId)
                 .map(Payment::id)
                 .ifPresent(commandService::expire);

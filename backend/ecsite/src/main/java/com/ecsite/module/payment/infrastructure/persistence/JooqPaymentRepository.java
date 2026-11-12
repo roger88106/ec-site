@@ -75,8 +75,8 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     /**
-     * 支払の変更を保存する。金額と期限は変わらないので、変わりうる項目だけを更新する。<br />
-     * 登録されたイベントはすべて発行する（与信の成功、与信の取消の依頼、返金の依頼など）。
+     * 支払の変更を保存し、登録されたイベント（与信の成功、与信の取消の依頼、返金の依頼など）を発行する。
+     * 金額と期限は変わらないので、変わりうる項目だけを更新する。
      *
      * @param payment 変更した支払
      */
@@ -137,6 +137,7 @@ class JooqPaymentRepository implements PaymentRepository {
         return dsl.selectFrom(PAYMENT_)
                 .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
                 .and(PAYMENT_.DEADLINE.le(now))
+                // 与信の反映を待つ支払がたまっても、それより新しい支払を処理できるように除く
                 .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNull())
                 .orderBy(PAYMENT_.DEADLINE)
                 .limit(limit)

@@ -12,8 +12,10 @@ import java.time.Duration;
 import java.util.UUID;
 
 /**
- * 決済の設定。環境変数で上書きする（例：ECSITE_PAYMENT_DEADLINE）。<br />
- * 決済サービスは mock フラグ（{@code ecsite.payment.mock.enabled}）で選び、ここには持たない。
+ * 決済の設定
+ *
+ * <p>環境変数で上書きする（例：ECSITE_PAYMENT_DEADLINE）。決済サービスは mock フラグ（{@code ecsite.payment.mock.enabled}）で選び、
+ * ここには持たない。
  *
  * @param deadline                     支払の期限（注文日時からの時間）。上限は 30 分。支払画面は注文の後に作り、その期限（作ってから 31 分）が
  *                                     支払の期限より前に来ないようにするため

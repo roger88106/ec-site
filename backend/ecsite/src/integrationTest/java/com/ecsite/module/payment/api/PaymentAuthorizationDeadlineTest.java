@@ -4,6 +4,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
+import com.ecsite.module.payment.api.model.AuthorizationDeadline;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,8 +22,9 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 与信期限の統合テスト。<br />
- * 与信の有効期間は 7 日、期限が近いとする長さは 2 日（既定）。支払は保存されて他のテストと共有されるので、
+ * 与信期限の統合テスト
+ *
+ * <p>与信の有効期間は 7 日、期限が近いとする長さは 2 日（既定）。支払は保存されて他のテストと共有されるので、
  * 注文 ID の一覧は、自分の注文を含むか・含まないかで確認する。
  */
 @IntegrationTest

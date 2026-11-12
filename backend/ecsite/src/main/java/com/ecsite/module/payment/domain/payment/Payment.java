@@ -15,8 +15,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 支払の Aggregate Root（docs/03-機能仕様/payment.md「支払（集約）」）。<br />
- * どの操作も冪等で、遷移できないときは何もしない。決済サービスの通知は重ねて届き、順序が入れ替わるため。
+ * 支払
+ *
+ * <p>状態の遷移を持つ集約のルート。どの操作も冪等で、遷移できないときは何もしない（決済サービスの通知は重ねて届き、
+ * 順序が入れ替わるため）。
  */
 @Getter
 @Accessors(fluent = true)
@@ -65,8 +67,8 @@ public class Payment extends AggregateRoot {
     private String authorizationRef;
 
     /**
-     * 与信の時刻（与信期限の起点）。通知で与信済みにした支払は通知を受けた時刻、期限切れのジョブで与信済みにした支払は決済サービスが返す与信の時刻。
-     * 与信がなければ null
+     * 与信の時刻（与信期限の起点）。通知で与信済みにした支払は通知を受けた時刻、決済サービスから取得した与信で
+     * 与信済みにした支払は決済サービスが返す与信の時刻。与信がなければ null
      */
     @Nullable
     @Getter(lombok.AccessLevel.NONE)
@@ -151,10 +153,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信の成功の通知を反映する。与信の時刻は通知を受けた時刻にする。<br />
-     * 未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを登録する。
-     * 支払なし（期限切れかキャンセルの後）なら、取り消すために与信の取消待ちにする。
-     * それ以外（すでに与信がある）なら何もしない。
+     * 与信を反映する。与信の時刻は現在時刻にする。反映の仕方は {@link #authorize(String, Instant, Instant)} と同じ。
      *
      * @param authorizationRef 与信の参照
      * @param now              現在時刻
@@ -164,10 +163,8 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信を反映する。通知の処理と、期限切れのジョブが決済サービスから取得した与信の反映で使う。<br />
-     * 未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを現在時刻で登録する。
-     * 支払なし（期限切れかキャンセルの後）なら、取り消すために与信の取消待ちにする。
-     * それ以外（すでに与信がある）なら何もしない。
+     * 与信を反映する。未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを現在時刻で登録する。
+     * 支払なしなら与信の取消待ちにする。それ以外なら何もしない。
      *
      * @param authorizationRef 与信の参照
      * @param authorizedAt     与信の時刻（与信期限の起点）
@@ -181,6 +178,7 @@ public class Payment extends AggregateRoot {
                 status = PaymentStatus.AUTHORIZED;
                 registerEvent(PaymentAuthorized.of(now, orderId));
             }
+            // 期限切れかキャンセルの後に届いた与信は、取り消す
             case NOT_PAID -> {
                 this.authorizationRef = authorizationRef;
                 requestVoid(now);
@@ -207,14 +205,13 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信の反映を待つ。期限を過ぎたが、決済サービスで支払が済んでいて画面を閉じられなかったとき。<br />
-     * 状態は未払いのまま、待ち始めた時刻を覚える（期限切れのジョブが、期限切れの検索の対象から外すため）。
-     * 未払いでない（通知が先に届いた）か、すでに待っていれば何もしない。
+     * 与信の反映を待つ支払にする。状態は未払いのまま、待ち始めた時刻を覚える。未払いでないか、すでに待っていれば何もしない。
      *
      * @param now 現在時刻
      * @return 待ち始めたら true
      */
     public boolean awaitAuthorization(@NonNull Instant now) {
+        // 未払いでない支払（通知が先に届いて与信済みになったなど）と、すでに待っている支払は変えない
         if (status != PaymentStatus.UNPAID || awaitingAuthorizationSince != null) {
             return false;
         }
@@ -232,33 +229,33 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 注文のキャンセルに合わせて取り消す。<br />
-     * 与信済みなら与信の取消待ちにし、売上確定済みなら返金待ちにする。未払いなら、取り消す与信がないので支払なしにする。
-     * それ以外（与信期限切れを含む）なら何もしない。与信期限切れは、決済サービスで与信が切れていて、取り消すものがない。
+     * 注文のキャンセルに合わせて取り消す。与信済みなら与信の取消待ちに、売上確定済みなら返金待ちに、未払いなら支払なしにする。
+     * それ以外なら何もしない。
      *
      * @param now 現在時刻
      */
     public void cancel(@NonNull Instant now) {
         switch (status) {
             case AUTHORIZED -> requestVoid(now);
+            // 未払いは、取り消す与信がない
             case UNPAID -> status = PaymentStatus.NOT_PAID;
             case CAPTURED -> requestRefund(now);
             case VOID_PENDING, VOIDED, NOT_PAID, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
-                // 取り消すものがない、または取消か返金を始めている
+                // 取り消すものがない（与信期限切れは、決済サービスで与信が切れている）か、取消か返金を始めている
             }
         }
     }
 
     /**
-     * 売上を確定したことを反映する。与信済みなら売上確定済みにする。<br />
-     * 与信の取消待ちなら、決済サービスが確定した後に注文がキャンセルされたので、返金待ちにして返金の依頼を登録する
-     * （確定した与信は取り消せない）。それ以外なら何もしない。
+     * 売上を確定したことを反映する。与信済みなら売上確定済みにする。与信の取消待ちなら、返金待ちにして返金の依頼を登録する。
+     * それ以外なら何もしない。
      *
      * @param now 現在時刻
      */
     public void capture(@NonNull Instant now) {
         switch (status) {
             case AUTHORIZED -> status = PaymentStatus.CAPTURED;
+            // 決済サービスが確定した後に注文がキャンセルされた。確定した与信は取り消せないので、返金で戻す
             case VOID_PENDING -> requestRefund(now);
             case UNPAID, NOT_PAID, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
                 // 確定を反映するものがない
@@ -347,13 +344,13 @@ public class Payment extends AggregateRoot {
     /**
      * 支払のスナップショット
      *
-     * @param id               支払 ID
-     * @param orderId          注文 ID
-     * @param amount           金額
-     * @param deadline         支払の期限
-     * @param status           状態
-     * @param page             支払画面
-     * @param authorizationRef 与信の参照
+     * @param id                         支払 ID
+     * @param orderId                    注文 ID
+     * @param amount                     金額
+     * @param deadline                   支払の期限
+     * @param status                     状態
+     * @param page                       支払画面
+     * @param authorizationRef           与信の参照
      * @param authorizedAt               与信の時刻
      * @param awaitingAuthorizationSince 与信の反映を待ち始めた時刻
      * @param version                    バージョン
@@ -365,7 +362,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * スナップショットを取得する
+     * スナップショットを取得する。
      *
      * @return 支払のスナップショット
      */
@@ -375,7 +372,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * スナップショットから復元する
+     * スナップショットから復元する。
      *
      * @param snapshot 支払のスナップショット
      * @return 支払

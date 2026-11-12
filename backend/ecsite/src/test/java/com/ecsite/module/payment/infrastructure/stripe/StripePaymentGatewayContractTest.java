@@ -15,8 +15,9 @@ import static com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.inte
 import static com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.session;
 
 /**
- * Stripe の実装が、port の振る舞い（{@link PaymentGatewayContractTest}）を守ることの検証。<br />
- * 状態は、手元の HTTP サーバー（{@link StripeApiStub}）が、その状態の Stripe が返す応答（sandbox で記録した形）を返して用意する。
+ * Stripe の実装が、port の振る舞い（{@link PaymentGatewayContractTest}）を守ることの検証
+ *
+ * <p>状態は、手元の HTTP サーバー（{@link StripeApiStub}）が、その状態の Stripe が返す応答（sandbox で記録した形）を返して用意する。
  */
 @DisplayName("Stripe の実装")
 class StripePaymentGatewayContractTest extends PaymentGatewayContractTest {

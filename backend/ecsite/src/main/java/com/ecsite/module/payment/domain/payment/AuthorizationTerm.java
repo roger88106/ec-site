@@ -6,11 +6,12 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * 与信の有効期間と、期限が近いとみなす長さ（docs/03-機能仕様/payment.md「与信期限」）。
+ * 与信の有効期間と、期限が近いとみなす長さ
  *
  * @param validity 与信の有効期間（与信の時刻からの長さ）
  * @param warning  与信期限のどれだけ前から「期限が近い」とするか
  */
+@org.jmolecules.ddd.annotation.ValueObject
 public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration warning) {
 
     /**

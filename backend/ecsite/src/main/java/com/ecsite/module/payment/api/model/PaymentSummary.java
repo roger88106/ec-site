@@ -1,10 +1,10 @@
-package com.ecsite.module.payment.api;
+package com.ecsite.module.payment.api.model;
 
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文の支払の状態（画面の表示用）。
+ * 注文の支払の状態
  *
  * @param orderId  注文 ID
  * @param status   支払の状態
@@ -13,7 +13,7 @@ import java.util.UUID;
 public record PaymentSummary(UUID orderId, Status status, Instant deadline) {
 
     /**
-     * 支払の状態（docs/03-機能仕様/payment.md「状態の遷移」）
+     * 支払の状態
      */
     public enum Status {
 

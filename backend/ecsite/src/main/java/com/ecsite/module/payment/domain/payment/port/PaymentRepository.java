@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.domain.payment.port;
 
 import com.ecsite.module.payment.domain.payment.Payment;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -11,6 +12,7 @@ import java.util.UUID;
 /**
  * 支払のリポジトリ
  */
+@Repository
 public interface PaymentRepository {
 
     /**
@@ -22,14 +24,14 @@ public interface PaymentRepository {
     boolean insertIfAbsent(Payment payment);
 
     /**
-     * 支払の変更（状態、支払画面、与信の参照）を保存し、登録されたイベントを発行する。バージョンを上げる。
+     * 支払の変更を保存し、登録されたイベントを発行する。バージョンを上げる。
      *
      * @param payment 変更した支払
      */
     void update(Payment payment);
 
     /**
-     * 支払を行ロックして取得する。同じ支払への通知と操作を 1 つずつ処理するため。トランザクションの中で呼ぶ。
+     * 支払を行ロックして取得する。ロックは、呼んだ側のトランザクションが終わるまで続く。
      *
      * @param id 支払 ID
      * @return 支払。なければ空
@@ -37,7 +39,7 @@ public interface PaymentRepository {
     Optional<Payment> lockById(UUID id);
 
     /**
-     * 注文の支払を行ロックして取得する。トランザクションの中で呼ぶ。
+     * 注文の支払を行ロックして取得する。ロックは、呼んだ側のトランザクションが終わるまで続く。
      *
      * @param orderId 注文 ID
      * @return 支払。なければ空
@@ -45,7 +47,7 @@ public interface PaymentRepository {
     Optional<Payment> lockByOrderId(UUID orderId);
 
     /**
-     * 支払画面の支払を行ロックして取得する。決済サービスの通知は画面の ID で届く。トランザクションの中で呼ぶ。
+     * 支払画面の支払を行ロックして取得する。ロックは、呼んだ側のトランザクションが終わるまで続く。
      *
      * @param pageId 支払画面 ID
      * @return 支払。なければ空
@@ -77,8 +79,7 @@ public interface PaymentRepository {
     List<Payment> findByOrderIds(Collection<UUID> orderIds);
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の反映を待つ支払は除く
-     * （たまっても、それより新しい支払を処理できるようにするため）。
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の反映を待つ支払は除く。
      *
      * @param now   現在時刻
      * @param limit 取得する数の上限

@@ -8,8 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
 /**
- * 統合テストの決済サービス。<br />
- * 決済の mock を使うときは、mock を包むテスト用の実装（{@link TestPaymentGateway}）を、決済サービスとして使う。
+ * 統合テストの決済サービス
+ *
+ * <p>決済の mock を使うときは、mock を包むテスト用の実装（{@link TestPaymentGateway}）を、決済サービスとして使う。
  * テストは、これを注入して、失敗を起こし、呼ばれた操作を確認する。
  */
 @TestConfiguration(proxyBeanMethods = false)

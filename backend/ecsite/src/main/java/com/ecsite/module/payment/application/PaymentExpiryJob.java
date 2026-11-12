@@ -14,12 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 
 /**
- * 支払の期限切れのジョブ（docs/03-機能仕様/payment.md「支払の期限」）。<br />
- * 期限を過ぎた未払いの支払について、決済サービスの支払画面を閉じてから、支払なしにする。
- * 閉じられなかった（その前に支払が済んでいた）支払は、与信の反映を待つ支払にし、期限切れの検索から外す。
- * 与信の反映を待つ支払は、決済サービスから与信を取得して与信済みにする（通知が届いていなくても進める）。
- * 与信の反映を長く待つ支払があれば、毎回 warn のログに件数を出す（人が扱うまで知らせ続ける）。
- * 間隔は決済の設定 {@code ecsite.payment.expiry-interval}（既定 1 分）で変えられる。
+ * 支払の期限切れのジョブ
  */
 @Slf4j
 @Component
@@ -54,14 +49,15 @@ class PaymentExpiryJob {
     private final PaymentGateway gateway;
 
     /**
-     * 期限を過ぎた未払いの支払を支払なしにし、与信の反映を待つ支払を与信済みにする。<br />
-     * 決済サービスの呼び出しはトランザクションの外で行い、1 つの支払の失敗（例外の種類を問わない）で、ほかの支払を止めない。
+     * 期限を過ぎた未払いの支払を支払なしにし、与信の反映を待つ支払を与信済みにする。
+     * 与信の反映を長く待つ支払があれば、warn のログに件数を出す。決済サービスはトランザクションの外で呼ぶ。
      */
     // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
             + ".expiryInterval()}")
     @SchedulerLock(name = "payment-expiry")
     public void expire() {
+        // 期限切れ ※1 つの支払の失敗（例外の種類を問わない）で、ほかの支払を止めない
         for (var payment : queryService.findPastDeadline(BATCH_SIZE)) {
             try {
                 expire(payment);
@@ -70,15 +66,20 @@ class PaymentExpiryJob {
                 log.warn("支払の期限切れに失敗したので、次の回に回す: paymentId={}", payment.id(), e);
             }
         }
+
+        // 与信の取得 ※通知が届いていなくても進める
         recoverAuthorizations();
+
+        // 長く待つ支払の警告 ※人が扱うまで、毎回知らせ続ける
         warnLongAwaitingAuthorization();
     }
 
     /**
-     * 1 つの支払を期限切れにする。
+     * 1 つの支払を、支払画面を閉じてから支払なしにする。
      */
     private void expire(PastDeadlinePaymentView payment) {
         var page = payment.page();
+        // 閉じる前に支払が済んでいた支払は、支払なしにせず与信の反映を待つ（期限切れの検索から外れる）
         if (page != null && gateway.closePage(page.id()) == PaymentGateway.CloseResult.ALREADY_PAID) {
             log.info("期限の前に支払が済んでいたので、与信の反映を待つ: paymentId={}", payment.id());
             commandService.awaitAuthorization(payment.id());
@@ -88,8 +89,7 @@ class PaymentExpiryJob {
     }
 
     /**
-     * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。<br />
-     * 取得できなかった支払は待つ支払のまま残し、次の回でやり直す。
+     * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。取得できなかった支払は、次の回でやり直す。
      * 決済サービスへの接続の失敗が続いたら、その回の取得を打ち切る。
      */
     private void recoverAuthorizations() {

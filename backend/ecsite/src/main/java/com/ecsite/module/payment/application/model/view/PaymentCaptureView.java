@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * 売上を確定する前の支払
+ * 売上確定に使う、注文の支払
  *
  * @param id               支払 ID
  * @param status           支払の状態

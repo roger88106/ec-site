@@ -27,7 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * mock の支払画面の単体テスト。画面の表示、支払う・カードを拒否させる・やめるの操作と、戻る先を確認する。
+ * mock の支払画面の単体テスト
+ *
+ * <p>画面の表示、支払う・カードを拒否させる・やめるの操作と、戻る先を確認する。
  */
 class MockPaymentPageControllerTest {
 

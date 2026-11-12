@@ -1,10 +1,10 @@
-package com.ecsite.module.payment.api;
+package com.ecsite.module.payment.api.model;
 
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文の与信期限（画面の表示用）。
+ * 注文の与信期限
  *
  * @param orderId  注文 ID
  * @param deadline 与信期限。この時刻を過ぎると、売上を確定できない

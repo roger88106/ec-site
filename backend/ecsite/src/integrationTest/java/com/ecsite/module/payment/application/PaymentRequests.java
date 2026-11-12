@@ -10,7 +10,9 @@ import java.util.function.Predicate;
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 
 /**
- * 支払のテストで、注文の支払への依頼（返金、与信の取消）のイベントを選ぶ補助。{@link com.ecsite.AsyncEvents} の条件に使う。
+ * 支払への依頼のイベントを選ぶ補助
+ *
+ * <p>注文の支払への依頼（返金、与信の取消）のイベントを選ぶ、{@link com.ecsite.AsyncEvents} の条件を作る。
  */
 final class PaymentRequests {
 

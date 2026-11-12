@@ -5,7 +5,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.payment.api.PaymentApi;
-import com.ecsite.module.payment.api.PaymentSummary;
+import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -36,8 +36,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 支払の期限切れのジョブの統合テスト。<br />
- * ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確認する。
+ * 支払の期限切れのジョブの統合テスト
+ *
+ * <p>ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確認する。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)

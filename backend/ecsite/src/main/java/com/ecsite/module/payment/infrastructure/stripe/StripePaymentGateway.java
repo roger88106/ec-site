@@ -23,8 +23,9 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Stripe の決済サービス（docs/02-設計/payment.md「Stripe」）。<br />
- * 支払画面は Checkout Session（与信だけを取る）、与信は PaymentIntent。売上確定は PaymentIntent の capture、返金は Refund。
+ * Stripe の決済サービス
+ *
+ * <p>支払画面は Checkout Session（与信だけを取る）、与信は PaymentIntent。売上確定は PaymentIntent の capture、返金は Refund。
  * Stripe の型とエラーはこのクラスの外に出さない。
  */
 @Slf4j
@@ -265,12 +266,13 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * Stripe の失敗をシステムのエラーにする。Stripe のリクエストの ID を残し、ダッシュボードの記録と照合できるようにする。<br />
-     * 接続できない・Stripe の側の故障・回数の制限は、外部サービスのエラー（やり直せば成功しうる）にする。
-     * 認証・権限・リクエストの誤りは、設定かコードの誤りなので、予期しないエラーのままにする。
+     * Stripe の失敗をシステムのエラーにする。接続できない・Stripe の側の故障・回数の制限は外部サービスのエラーに、
+     * それ以外は予期しないエラーにする。
      */
     private static SystemException failure(String message, StripeException e) {
+        // Stripe のリクエストの ID を残し、ダッシュボードの記録と照合できるようにする
         var debugMessage = "Stripe：" + message + ", requestId=" + e.getRequestId();
+        // やり直せば成功しうる失敗だけを、外部サービスのエラーにする（認証・権限・リクエストの誤りは、設定かコードの誤り）
         if (isUnavailable(e)) {
             return SystemException.of(debugMessage, e, PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }

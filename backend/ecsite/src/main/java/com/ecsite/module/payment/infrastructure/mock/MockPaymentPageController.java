@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import java.net.URI;
 
 /**
- * mock の支払画面（docs/02-設計/payment.md「mock」）。<br />
- * 外部の決済サービスの画面の代わりで、EC の API ではない（OpenAPI に書かない）。決済の mock フラグを立てたときだけ出す。
- * 「支払う」「カードを拒否させる」「やめる」の操作を持ち、支払う・やめるときは店舗の注文の画面に戻す。
+ * mock の決済サービスの画面
+ *
+ * <p>外部の決済サービスの画面の代わりで、EC の API ではないので、OpenAPI に書かない。決済の mock フラグを立てたときだけ出す。
  */
 @Controller
 @ConditionalOnPaymentMock

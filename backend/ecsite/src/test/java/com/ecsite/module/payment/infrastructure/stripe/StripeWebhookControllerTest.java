@@ -15,7 +15,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Stripe の通知のエンドポイントの単体テスト。署名の確認は受け取り（{@link StripeNotificationHandler}）のテストで確認し、
+ * Stripe の通知のエンドポイントの単体テスト
+ *
+ * <p>署名の確認は受け取り（{@link StripeNotificationHandler}）のテストで確認し、
  * ここでは本文と署名を受け取りに渡すことと、確認できないときに 400 を返すことを確認する。
  */
 class StripeWebhookControllerTest {

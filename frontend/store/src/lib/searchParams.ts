@@ -1,3 +1,5 @@
+import { toPageNumber } from '@ec-site/shared/lib/pageNumber'
+
 /** Next.js の searchParams（同じ名前が複数あれば配列） */
 export type SearchParams = Record<string, string | string[] | undefined>
 
@@ -8,6 +10,5 @@ export function firstParam(value: string | string[] | undefined): string | undef
 
 /** 1 以上の整数だけをページ番号として扱い、それ以外（なし、形の違う値）は 1 ページ目にする */
 export function pageParam(value: string | string[] | undefined): number {
-  const page = Number(firstParam(value))
-  return Number.isInteger(page) && page >= 1 ? page : 1
+  return toPageNumber(firstParam(value))
 }

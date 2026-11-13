@@ -18,8 +18,9 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 郵便番号のデータ（日本郵便の「住所の郵便番号（1 レコード 1 行、UTF-8 形式）」）の変換の単体テスト。<br />
- * 入力は、注記の種類ごとに本物の形の行を数行並べたテストのデータ。
+ * 郵便番号のデータの変換の単体テスト
+ *
+ * <p>対象は、日本郵便の「住所の郵便番号（1 レコード 1 行、UTF-8 形式）」のデータ。入力は、注記の種類ごとに本物の形の行を数行並べたテストのデータ。
  */
 class PostalCodeCsvTest {
 

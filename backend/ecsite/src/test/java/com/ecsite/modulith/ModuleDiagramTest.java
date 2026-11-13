@@ -30,9 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 全体構成の文書（docs/02-設計/overview.md）の図とコードの一致の検証。<br />
- * モジュールの依存の図とモジュール間のイベントの図は、Spring Modulith のモジュールの検出結果から作り、文書の生成の範囲と比べる。
- * 図に出すモジュールとイベントの日本語の名前は、用語集（docs/03-機能仕様/glossary.md）から読む。
+ * 全体構成の文書の図とコードの一致の検証
+ *
+ * <p>モジュールの依存の図とモジュール間のイベントの図は、Spring Modulith のモジュールの検出結果から作り、文書の生成の範囲と比べる。
+ * 図に出すモジュールとイベントの日本語の名前は、用語集から読む。
  * 外部システムの図は手で書くので、図に出るモジュールの名前が、コードのモジュールであることだけを確認する。
  * システムプロパティ {@code ecsite.update-docs} が {@code true} なら、比べずに文書の生成の範囲を書き直す。
  */
@@ -519,7 +520,7 @@ class ModuleDiagramTest {
     }
 
     /**
-     * 図に描く内容。
+     * 図に描く内容
      *
      * @param modules      モジュールの名前
      * @param dependencies モジュールから、使うモジュールへの依存（イベント以外）
@@ -568,7 +569,7 @@ class ModuleDiagramTest {
     }
 
     /**
-     * 用語集のモジュールとイベントの名前。
+     * 用語集のモジュールとイベントの名前
      *
      * @param modules モジュールの識別子から、論理名（末尾の「モジュール」を除く）
      * @param events  イベントのクラス名から、論理名

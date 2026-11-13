@@ -22,10 +22,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 認証と認可の統合テスト。<br />
- * token は {@link TestTokens} がテストの鍵で署名したもので、本番と同じ検証（署名・issuer・audience・有効期限）と、
- * {@code admin.yaml} の {@code x-required-permission} による判定を通す。<br />
- * 管理 API のリクエストには既定で管理者の token が付く（{@link TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
+ * 認証と認可の統合テスト
+ *
+ * <p>token は {@link TestTokens} がテストの鍵で署名したもので、本番と同じ検証（署名・issuer・audience・有効期限）と、
+ * {@code admin.yaml} の {@code x-required-permission} による判定を通す。
+ *
+ * <p>管理 API のリクエストには既定で管理者の token が付く（{@link TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
  */
 @IntegrationTest
 @Transactional
@@ -110,7 +112,7 @@ class AuthorizationTest {
     }
 
     @Nested
-    @DisplayName("AC-136 管理 API の権限")
+    @DisplayName("管理 API の権限")
     class Permission {
 
         @Test

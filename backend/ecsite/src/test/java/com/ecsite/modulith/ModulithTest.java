@@ -8,9 +8,10 @@ import org.springframework.modulith.core.ApplicationModules;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの境界の検証（バックエンドのアーキテクチャの「モジュラーモノリス」）。<br />
- * {@code package-info.java} で宣言した依存（{@code allowedDependencies}）以外の依存、内部のパッケージへの参照、
- * モジュール間の循環を検出する。モジュールの依存を変えたら、先に全体構成（docs/02-設計/overview.md）の「モジュールの依存とイベント」を更新する（ModuleDiagramTest が照合する）。
+ * モジュールの境界の検証
+ *
+ * <p>バックエンドのアーキテクチャの「モジュラーモノリス」に沿う。{@code package-info.java} で宣言した依存（{@code allowedDependencies}）以外の依存、内部のパッケージへの参照、
+ * モジュール間の循環を検出する。モジュールの依存を変えたら、先に全体構成の「モジュールの依存とイベント」を更新する（ModuleDiagramTest が照合する）。
  */
 class ModulithTest {
 

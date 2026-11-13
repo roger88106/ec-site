@@ -23,7 +23,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 店舗 API の token の要否が、契約（{@code store.yaml} の {@code security}）と合うことの検査。<br />
+ * 店舗 API の token の要否と契約の一致の検査
+ *
+ * <p>契約は {@code store.yaml} の {@code security}。
  * 操作の一覧はテストに書かず {@code store.yaml} から読むので、操作を追加したときに認可の設定が食い違えば、このテストが失敗する。
  * パスの変数には、どの資源にも当たらない ID を入れる（認可の後の結果は見ない）。
  */
@@ -40,7 +42,7 @@ class StoreApiTokenContractTest {
     MockMvc mockMvc;
 
     @Test
-    @DisplayName("AC-232、AC-234 契約で会員の token だけを受け付ける操作は、どれも token なしで 401")
+    @DisplayName("AC-232、234 契約で会員の token だけを受け付ける操作は、どれも token なしで 401")
     void memberOperationsRejectMissingToken() throws Exception {
         var operations = operations().stream().filter(Operation::requiresToken).toList();
         assertThat(operations).isNotEmpty();
@@ -50,7 +52,7 @@ class StoreApiTokenContractTest {
     }
 
     @Test
-    @DisplayName("AC-233、AC-234 契約で token が必要ない操作は、どれも token なしで 401 にならない")
+    @DisplayName("AC-233、234 契約で token が必要ない操作は、どれも token なしで 401 にならない")
     void publicOperationsAcceptMissingToken() throws Exception {
         var operations = operations().stream().filter(operation -> !operation.requiresToken()).toList();
         assertThat(operations).isNotEmpty();

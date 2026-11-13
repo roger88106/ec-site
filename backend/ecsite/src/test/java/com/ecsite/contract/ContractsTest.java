@@ -9,7 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 契約の補助 {@link Contracts} の単体テスト。置き場所が渡されないとき、既定の場所で読まずに失敗することを確認する。
+ * 契約の補助 {@link Contracts} の単体テスト
+ *
+ * <p>置き場所が渡されないとき、既定の場所で読まずに失敗する。
  */
 class ContractsTest {
 

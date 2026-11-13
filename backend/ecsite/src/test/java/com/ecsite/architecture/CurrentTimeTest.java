@@ -18,7 +18,9 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 現在時刻の取り方の検査（バックエンドの書き方の「現在時刻は Clock から」）。<br />
+ * 現在時刻の取り方の検査
+ *
+ * <p>根拠はバックエンドの書き方の「現在時刻は Clock から」。
  * 本番のクラスは、日時の型の引数なしの {@code now()} を呼ばず、注入した {@link Clock} から現在時刻を取る。
  * {@code now(clock)} のように時計を渡す呼び出しは当たらない。
  */

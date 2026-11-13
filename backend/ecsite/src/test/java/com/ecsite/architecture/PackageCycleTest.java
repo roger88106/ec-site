@@ -23,7 +23,9 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * domain のパッケージの循環の検査（バックエンドの書き方の「標準の構成」）。<br />
+ * domain のパッケージの循環の検査
+ *
+ * <p>根拠はバックエンドの書き方の「標準の構成」。
  * domain の直下、集約のパッケージ、値のパッケージ（vo）を別々の slice とし、slice の間に循環がないことを確認する。
  */
 class PackageCycleTest {
@@ -34,7 +36,9 @@ class PackageCycleTest {
     private static final Pattern DOMAIN_PACKAGE = Pattern.compile(".*\\.domain(\\..*)?");
 
     /**
-     * 集約の port のパッケージの末尾。port は集約の一部（集約のクラスが port を使い、port が集約の型を返す）なので、集約と同じ slice にする
+     * 集約の port のパッケージの末尾
+     *
+     * <p>port は集約の一部（集約のクラスが port を使い、port が集約の型を返す）なので、集約と同じ slice にする。
      */
     private static final Pattern PORT_SUFFIX = Pattern.compile("\\.port$");
 
@@ -86,7 +90,9 @@ class PackageCycleTest {
     }
 
     /**
-     * クラスのパッケージを slice の名前にする割り当て。domain の外のクラスは、どの slice にも入れない。<br />
+     * クラスのパッケージを slice の名前にする割り当て
+     *
+     * <p>domain の外のクラスは、どの slice にも入れない。
      * domain の直下、集約のパッケージ（port を含む）、値のパッケージ（vo）が、それぞれ別の slice になる。
      */
     private static final class ByDomainPackage implements SliceAssignment {

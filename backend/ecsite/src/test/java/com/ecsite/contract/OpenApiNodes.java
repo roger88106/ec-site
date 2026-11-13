@@ -3,7 +3,9 @@ package com.ecsite.contract;
 import java.util.Map;
 
 /**
- * 契約（OpenAPI）の YAML を読んだ Map をたどる補助。契約のテストが同じ処理を重複して書かないために置く。
+ * 契約（OpenAPI）の YAML を読んだ Map をたどる補助
+ *
+ * <p>契約のテストが同じ処理を重複して書かないために置く。
  */
 final class OpenApiNodes {
 

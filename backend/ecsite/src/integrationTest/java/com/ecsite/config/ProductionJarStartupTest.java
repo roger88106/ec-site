@@ -32,7 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 本番の jar の起動の統合テスト（バックエンドのアーキテクチャの「公開ネットワークへのデプロイの前提」）。<br />
+ * 本番の jar の起動の統合テスト
+ *
+ * <p>バックエンドのアーキテクチャの「公開ネットワークへのデプロイの前提」に対応する。
  * 本番の jar には、ローカルの設定ファイルが入らない。ローカルの設定から物流の mock フラグだけを除いて渡し、
  * 本番の jar を別のプロセスで起動して、起動に成功し、物流の mock の画面が見つからないことを確認する。
  * jar の中にローカルの設定が入っていてフラグが読まれれば、画面のエンドポイントができて 404 でなくなり、このテストが失敗する。
@@ -41,7 +43,9 @@ import static org.awaitility.Awaitility.await;
 class ProductionJarStartupTest {
 
     /**
-     * 起動を待つ時間の上限。Spring の起動を別のプロセスで待つので、非同期のリスナーのタイムアウトより長く待つ
+     * 起動を待つ時間の上限
+     *
+     * <p>Spring の起動を別のプロセスで待つので、非同期のリスナーのタイムアウトより長く待つ。
      */
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
 

@@ -29,8 +29,9 @@ import static com.ecsite.config.event.EventPublications.STATUS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 処理の済んだイベントの片付けの統合テスト。<br />
- * イベントはコミットの後に非同期で処理されるので、処理の記録ができるのを待つ。
+ * 処理の済んだイベントの片付けの統合テスト
+ *
+ * <p>イベントはコミットの後に非同期で処理されるので、処理の記録ができるのを待つ。
  * 処理を終えた時刻はアプリの時計で決まるので、時計を決めてから発行する。
  */
 @IntegrationTest
@@ -38,7 +39,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EventCleanupJobTest {
 
     /**
-     * イベントを発行する時刻
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。イベントを発行する時刻になる。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -122,7 +125,7 @@ class EventCleanupJobTest {
     }
 
     /**
-     * テストのリスナーを登録する。
+     * テストのリスナーを登録する設定
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Config {

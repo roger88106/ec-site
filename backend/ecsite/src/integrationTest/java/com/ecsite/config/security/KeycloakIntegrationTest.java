@@ -42,11 +42,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * IdP の設定の統合テスト。<br />
- * Keycloak を Testcontainers で起動して、両 realm の JSON（{@code docker/keycloak/realms/}）を取り込み、
+ * IdP の設定の統合テスト
+ *
+ * <p>Keycloak を Testcontainers で起動して、両 realm の JSON（{@code docker/keycloak/realms/}）を取り込み、
  * Keycloak が発行した token で管理 API を呼ぶ。バックエンドは本番と同じく、issuer の OpenID Connect の設定から公開鍵を取る
- * （テストの鍵に差し替える {@code TestSecurityConfig} は使わないので、{@code @IntegrationTest} とは別の設定で起動する）。<br />
- * token は、パスワードで取る（Direct Access Grant）。realm の JSON では web の client でこれを無効にしているので、
+ * （テストの鍵に差し替える {@code TestSecurityConfig} は使わないので、{@code @IntegrationTest} とは別の設定で起動する）。
+ *
+ * <p>token は、パスワードで取る（Direct Access Grant）。realm の JSON では web の client でこれを無効にしているので、
  * テストの中で有効にする（{@code scripts/dev/keycloak.sh} と同じ）。画面と同じ client の token（audience・scope の対応）で確認するため。
  * 期限切れの token の拒否は、検証の処理が同じなので、テストの鍵の token で確認する（AuthorizationTest）。
  */
@@ -62,23 +64,39 @@ class KeycloakIntegrationTest {
      */
     private static final String IMAGE = "quay.io/keycloak/keycloak:26.8.2";
 
+    /**
+     * Keycloak の HTTP のポート
+     */
     private static final int HTTP_PORT = 8080;
+
+    /**
+     * Keycloak の運用のポート
+     */
     private static final int MANAGEMENT_PORT = 9000;
 
     /**
-     * realm の設定の置き場所。Gradle の integrationTest task が渡す system property を、契約の補助で読む
+     * realm の設定の置き場所
+     *
+     * <p>Gradle の integrationTest task が渡す system property を、契約の補助で読む。
      */
     private static final Path REALMS_DIR = Contracts.realmsDir();
 
     /**
-     * テーマの置き場所。realm の設定と同じく、契約の補助で読む
+     * テーマの置き場所
+     *
+     * <p>realm の設定と同じく、契約の補助で読む。
      */
     private static final Path THEME_DIR = Contracts.themeDir();
 
+    /**
+     * 税区分の管理 API のパス
+     */
     private static final String TAX_CATEGORIES = "/api/admin/tax-categories";
 
     /**
-     * テストのクラスで共有する Keycloak（起動に時間がかかるので 1 つだけ）
+     * テストのクラスで共有する Keycloak
+     *
+     * <p>起動に時間がかかるので 1 つだけ起動する。
      */
     private static final GenericContainer<?> KEYCLOAK = new GenericContainer<>(DockerImageName.parse(IMAGE))
             .withCommand("start-dev", "--import-realm")
@@ -222,7 +240,7 @@ class KeycloakIntegrationTest {
     // ============================== Keycloak ==============================
 
     /**
-     * バックエンドの issuer を、起動した Keycloak に向ける。
+     * 起動した Keycloak に issuer を向ける設定
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class KeycloakConfig {

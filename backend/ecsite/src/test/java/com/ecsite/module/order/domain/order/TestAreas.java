@@ -19,6 +19,9 @@ public final class TestAreas {
      */
     public static final AddressArea SAPPORO_CHUO = new AddressArea("01", "北海道", "01101", "札幌市中央区");
 
+    /**
+     * インスタンスを作らない。
+     */
     private TestAreas() {
     }
 }

@@ -10,6 +10,9 @@ import java.util.List;
  */
 public final class TrackingRequests {
 
+    /**
+     * インスタンスを作らない。
+     */
     private TrackingRequests() {
     }
 

@@ -48,8 +48,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class MemberCartApiTest {
 
+    /**
+     * カートの API のパス
+     */
     private static final String CARTS = "/api/store/carts";
+
+    /**
+     * 会員のカートの API のパス
+     */
     private static final String MEMBER_CART = "/api/store/me/cart";
+
+    /**
+     * カートを移す API のパス
+     */
     private static final String MERGE = "/api/store/me/cart/merge";
 
     /**

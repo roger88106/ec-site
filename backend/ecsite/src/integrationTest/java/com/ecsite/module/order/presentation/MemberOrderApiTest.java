@@ -51,6 +51,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class MemberOrderApiTest {
 
+    /**
+     * 店舗の API のパス
+     */
     private static final String STORE = "/api/store";
 
     /**

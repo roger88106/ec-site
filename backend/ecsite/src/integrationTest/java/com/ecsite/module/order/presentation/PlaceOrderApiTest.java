@@ -987,5 +987,4 @@ class PlaceOrderApiTest {
     private ResultActions placeWith(UUID checkoutId, String body) throws Exception {
         return mockMvc.perform(placeOrderRequest(checkoutId, body));
     }
-
 }

@@ -27,8 +27,14 @@ class CartTest {
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * 白のバリアント ID
+     */
     private static final UUID WHITE = UUID.randomUUID();
 
+    /**
+     * 黒のバリアント ID
+     */
     private static final UUID BLACK = UUID.randomUUID();
 
     @Test

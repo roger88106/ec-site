@@ -280,7 +280,6 @@ class CartApiTest {
         return variantId;
     }
 
-
     /**
      * カートの品目（入れた順）を DB から読む
      */

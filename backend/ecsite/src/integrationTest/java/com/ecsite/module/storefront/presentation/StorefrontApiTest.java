@@ -409,5 +409,4 @@ class StorefrontApiTest {
     private static MockHttpServletRequestBuilder listIn(UUID category) {
         return get(BASE + "/products").param("categoryId", category.toString());
     }
-
 }

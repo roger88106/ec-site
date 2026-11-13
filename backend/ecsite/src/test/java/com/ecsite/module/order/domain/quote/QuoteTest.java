@@ -21,8 +21,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class QuoteTest {
 
+    /**
+     * 標準税率（%）
+     */
     private static final BigDecimal STANDARD = new BigDecimal("10");
 
+    /**
+     * 軽減税率（%）
+     */
     private static final BigDecimal REDUCED = new BigDecimal("8");
 
     /**

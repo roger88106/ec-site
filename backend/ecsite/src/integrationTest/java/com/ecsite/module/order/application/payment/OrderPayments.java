@@ -14,6 +14,9 @@ import java.util.UUID;
  */
 public final class OrderPayments {
 
+    /**
+     * インスタンスを作らない。
+     */
     private OrderPayments() {
     }
 

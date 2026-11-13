@@ -30,8 +30,19 @@ class CartMergeTest {
      */
     private static final Instant EARLIER = NOW.minus(Duration.ofHours(1));
 
+    /**
+     * 白のバリアント ID
+     */
     private static final UUID WHITE = UUID.randomUUID();
+
+    /**
+     * 黒のバリアント ID
+     */
     private static final UUID BLACK = UUID.randomUUID();
+
+    /**
+     * 赤のバリアント ID
+     */
     private static final UUID RED = UUID.randomUUID();
 
     @Test

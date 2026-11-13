@@ -14,7 +14,13 @@ const OperatorContext = createContext<Operator | null>(null)
 /** ログインしている運営者を渡す */
 export const OperatorProvider = OperatorContext.Provider
 
-/** ログインしている運営者を読む。画面の部品は react-oidc-context を直接使わず、これを使う */
+/**
+ * ログインしている運営者を読む。
+ *
+ * 画面の部品は react-oidc-context を直接使わず、これを使う。
+ *
+ * @returns ログインしている運営者
+ */
 export function useOperator(): Operator {
   const operator = useContext(OperatorContext)
   if (operator === null) {

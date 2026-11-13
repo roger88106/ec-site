@@ -13,7 +13,8 @@ import { PublicationStatusBadge } from '@/features/product/components/Publicatio
 import { type ProductFilter, parseFilter, toSearchParams } from '@/features/product/productFilter'
 
 /**
- * 商品の一覧。<br />
+ * 商品の一覧
+ *
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  * 在庫数の合計は、表示中のページの商品について在庫の集計 API を呼んで組み合わせる。
  */

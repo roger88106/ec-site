@@ -23,7 +23,9 @@ type Values = { carrier: Carrier | null; trackingNumber: string }
 const FIELD_NAMES = ['carrier', 'trackingNumber'] as const
 
 /**
- * 注文の出荷。出荷後は配送状態・配送業者・送り状番号・出荷日時を示し、出荷できる注文には登録のフォームを出す。
+ * 注文の出荷
+ *
+ * 出荷後は配送状態・配送業者・送り状番号・出荷日時を示し、出荷できる注文には登録のフォームを出す。
  * どちらでもない注文には何も出さない。
  */
 export function ShipmentCard({ order }: { order: OrderDetail }) {
@@ -70,7 +72,9 @@ function ShipmentDetail({ shipment }: { shipment: Shipment }) {
 }
 
 /**
- * 出荷の登録。売上を確定するので取り消せず、確認してから送る。<br />
+ * 出荷の登録
+ *
+ * 売上を確定するので取り消せず、確認してから送る。
  * 売上確定の失敗（与信期限切れ、決済サービスに接続できない）は、サーバーのメッセージを出す。
  */
 function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {

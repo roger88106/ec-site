@@ -31,11 +31,13 @@ const REQUESTED = orderDetail({
 })
 
 /**
- * 注文の詳細と操作の API に応答する。操作が成功したら、詳細は after を返す。
- * 送ったキャンセルの理由は reasons に取っておく。
+ * 注文の詳細と操作の API に応答する
+ *
+ * 操作が成功したら、詳細は after を返す。送ったキャンセルの理由は reasons に取っておく。
  *
  * @param before 操作の前の注文
  * @param after  操作の後の注文
+ * @returns 今の注文と、送ったキャンセルの理由
  */
 function serveOrder(before: OrderDetail, after: OrderDetail = before) {
   const state = { current: before, reasons: [] as string[] }
@@ -317,12 +319,14 @@ describe('出荷', () => {
   })
 
   /**
-   * 注文の詳細と出荷の登録の API に応答する。登録が成功したら、詳細は after を返し、登録の応答は registered を返す。
-   * 送った内容は requests に取っておく。
+   * 注文の詳細と出荷の登録の API に応答する
+   *
+   * 登録が成功したら、詳細は after を返し、登録の応答は registered を返す。送った内容は requests に取っておく。
    *
    * @param before     登録の前の注文
    * @param after      登録の後の注文
    * @param registered 登録の応答の出荷
+   * @returns 今の注文と、送った内容
    */
   function serveShipment(before: OrderDetail, after: OrderDetail = before, registered: Shipment = REGISTERED) {
     const state = { current: before, requests: [] as ShipOrderRequest[] }

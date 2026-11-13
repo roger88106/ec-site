@@ -27,16 +27,10 @@ export type ReportConditionItems = {
 }
 
 /**
- * レポートの条件の入力（管理画面の構成の「画面の URL」）。「表示する」で URL に反映する。<br />
- * 期間は、選択肢を選ぶと始まりと終わりの日を埋める。日付を直接入れてもよい。
+ * レポートの条件の入力
  *
- * @param condition いまの条件（URL から読んだもの）
- * @param onApply 条件を URL に反映する
- * @param presets 期間の選択肢（売上の推移は会計年度、他は暦）
- * @param fiscalYearStartMonth 会計年度の始まりの月（レポートの設定）
- * @param granularity 区切りを選ぶか（売上の推移だけ）
- * @param excludeShipping 送料を除くかを選ぶか（バリアントの売れ行きは送料を含めないので選ばない）
- * @param productRequired 商品を必ず選ぶか（バリアントの売れ行き）
+ * 「表示する」で URL に反映する（管理画面の構成の「画面の URL」）。
+ * 期間は、選択肢を選ぶと始まりと終わりの日を埋める。日付を直接入れてもよい。
  */
 export function ReportConditionForm({
   condition,
@@ -47,9 +41,13 @@ export function ReportConditionForm({
   excludeShipping = true,
   productRequired = false,
 }: ReportConditionItems & {
+  /** いまの条件（URL から読んだもの） */
   condition: ReportCondition
+  /** 条件を URL に反映する */
   onApply: (condition: ReportCondition) => void
+  /** 期間の選択肢（売上の推移は会計年度、他は暦） */
   presets: readonly PeriodPreset[]
+  /** 会計年度の始まりの月（レポートの設定） */
   fiscalYearStartMonth: number
 }) {
   const t = useTranslations('report.condition')
@@ -59,12 +57,12 @@ export function ReportConditionForm({
   const form = useForm<ReportCondition>({ defaultValues: condition })
   const products = $api.useQuery('get', '/products', { params: { query: { size: PRODUCT_LIMIT } } })
   const productOptions = [
-    ...(productRequired ? [] : [{ value: null, label: t('allProducts') /* 全商品 */ }]),
+    ...(productRequired ? [] : [{ value: null, label: t('allProducts') }]), // 全商品
     ...(products.data?.items ?? []).map((product) => ({ value: product.id, label: product.name })),
   ]
   const presetOptions = [
-    { value: null, label: t('presets.custom') /* 日付で指定 */ },
-    ...presets.map((preset) => ({ value: preset, label: t(`presets.${preset}`) /* 期間の選択肢の名前 */ })),
+    { value: null, label: t('presets.custom') }, // 日付で指定
+    ...presets.map((preset) => ({ value: preset, label: t(`presets.${preset}`) })), // 期間の選択肢の名前
   ]
 
   /** 期間の選択肢を選んだら、始まりと終わりの日を埋める */

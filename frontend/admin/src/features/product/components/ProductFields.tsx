@@ -10,7 +10,11 @@ import { Textarea } from '@/components/ui/textarea'
 import type { ProductFieldsValues } from '@/features/product/product'
 import { formatRate } from '@/lib/rate'
 
-/** 商品の項目の入力の制約（登録と編集で、それぞれのリクエストの制約から引いて渡す） */
+/**
+ * 商品の項目の入力の制約
+ *
+ * 登録と編集で、それぞれのリクエストの制約から引いて渡す。
+ */
 type ProductFieldConstraints = {
   nameMaxLength: number
   descriptionMaxLength: number
@@ -36,8 +40,9 @@ export function productFieldConstraints(schema: {
 }
 
 /**
- * 商品名、説明、税区分、税抜価格、所属カテゴリの入力欄（登録と編集で共通）。<br />
- * 外側の FormProvider のフォームに、これらの項目を持たせる。
+ * 商品名、説明、税区分、税抜価格、所属カテゴリの入力欄
+ *
+ * 登録と編集で共通。外側の FormProvider のフォームに、これらの項目を持たせる。
  */
 export function ProductFields({ constraints }: { constraints: ProductFieldConstraints }) {
   const t = useTranslations('product.fields')
@@ -97,7 +102,11 @@ export function ProductFields({ constraints }: { constraints: ProductFieldConstr
   )
 }
 
-/** 税区分の選択。現時点の率を併記する（率がない税区分は割り当てられない） */
+/**
+ * 税区分の選択
+ *
+ * 現時点の率を併記する（率がない税区分は割り当てられない）。
+ */
 function TaxCategorySelect({
   id,
   value,
@@ -117,7 +126,11 @@ function TaxCategorySelect({
   return <OptionSelect className="w-64" id={id} onChange={onChange} options={options} value={value} />
 }
 
-/** 所属カテゴリの選択。木を字下げして並べる */
+/**
+ * 所属カテゴリの選択
+ *
+ * 木を字下げして並べる。
+ */
 function CategoryCheckboxes({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
   const t = useTranslations('product.fields')
   const query = $api.useQuery('get', '/categories')

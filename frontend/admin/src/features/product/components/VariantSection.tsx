@@ -10,7 +10,8 @@ import { VariantRow, type VariantRowActions } from '@/features/product/component
 import { move } from '@/lib/array'
 
 /**
- * バリアントの一覧、登録、削除、並び替え、販売停止。<br />
+ * バリアントの一覧、登録、削除、並び替え、販売停止
+ *
  * 並び替えと削除は、表示している一覧のバージョンで送る。
  */
 export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {

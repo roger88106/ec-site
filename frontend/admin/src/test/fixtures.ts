@@ -16,7 +16,8 @@ import type {
 type Stock = components['schemas']['Stock']
 
 /**
- * 結合テストで API の応答に使うデータ（フロントのテストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。<br />
+ * 結合テストで API の応答に使うデータ（フロントのテストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。
+ *
  * どれも、テストに関係のない項目にありふれた値を入れたもの。テストで確認する項目は overrides で与える。
  */
 
@@ -186,13 +187,15 @@ export function productSummary(overrides: Partial<ProductSummary> = {}): Product
 }
 
 /**
- * カテゴリの節。ID は `00000000-0000-0000-0000-000000000<id>`。
+ * カテゴリの節。
+ *
+ * ID は `00000000-0000-0000-0000-000000000<id>`。
  *
  * @param id       ID の末尾（3 桁）
  * @param name     名称
  * @param depth    階層（最上位が 1）
  * @param children 子
- * @param addChild 子を足せるか（API が返すフラグ。既定はいちばん深い 3 階層目だけ偽）
+ * @param addChild 子を追加できるか（API が返すフラグ。既定はいちばん深い 3 階層目だけ偽）
  * @returns カテゴリの節
  */
 export function categoryNode(
@@ -216,7 +219,7 @@ export function categoryNode(
 /**
  * バリアントの在庫数の応答。
  *
- * @param quantity 在庫数
+ * @param quantity  在庫数
  * @param variantId バリアントの ID。省略すると {@link variant} の ID
  * @returns 在庫数の応答
  */

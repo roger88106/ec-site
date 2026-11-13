@@ -16,14 +16,17 @@ const withAccessToken: Middleware = {
 }
 
 /**
- * エラーの応答を ApiError にして投げる。画面は ApiError だけを扱う（管理画面の構成の「API の呼び出し」）。<br />
- * 401（token が無効になった）なら、ログインし直す。403 は、ほかのエラーと同じく操作した場所に出す。
+ * エラーの応答を ApiError にして投げる。
+ *
+ * 画面は ApiError だけを扱う（管理画面の構成の「API の呼び出し」）。
  */
 const throwOnError: Middleware = {
   async onResponse({ response }) {
+    // 401 は token が無効になったので、ログインし直す
     if (response.status === 401) {
       handleUnauthorized()
     }
+    // 403 は、ほかのエラーと同じく ApiError にして、操作した場所に出す
     if (!response.ok) {
       const body = await response
         .clone()
@@ -36,7 +39,9 @@ const throwOnError: Middleware = {
 }
 
 /**
- * 管理 API（admin.yaml）の fetch クライアント。開発時は Vite のプロキシがバックエンドに転送する。<br />
+ * 管理 API（admin.yaml）の fetch クライアント。
+ *
+ * 開発時は Vite のプロキシがバックエンドに転送する。
  * 接続先は画面と同じオリジンの /api/admin。絶対 URL にするのは、結合テスト（Node の fetch）が相対 URL を受け付けないため。
  * 配列のクエリは、admin.yaml の定義（style: form、explode: false）どおりカンマ区切りで送る。
  */
@@ -47,8 +52,9 @@ export const fetchClient = createFetchClient<paths>({
 fetchClient.use(withAccessToken, throwOnError)
 
 /**
- * 管理 API の TanStack Query のクライアント。<br />
- * 取得は {@code $api.useQuery('get', '<パス>', ...)}、更新は {@code useApiMutation('<メソッド>', '<パス>', ...)}（useApiMutation.ts）。
+ * 管理 API の TanStack Query のクライアント。
+ *
+ * 取得は `$api.useQuery('get', '<パス>', ...)`、更新は `useApiMutation('<メソッド>', '<パス>', ...)`（useApiMutation.ts）。
  * 失敗したときの error は、型の上はエラーレスポンスだが、実際は ApiError（または通信の失敗）になる。
  */
 export const $api = createClient(fetchClient)

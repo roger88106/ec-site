@@ -19,8 +19,14 @@ const CAP = productSummary({
 })
 
 /**
- * 商品の一覧の画面が使う API に応答する。一覧は 2 ページあるものとし、どの条件でも items を返す。<br />
+ * 商品の一覧の画面が使う API に応答する
+ *
+ * 一覧は 2 ページあるものとし、どの条件でも items を返す。
  * 一覧と在庫の集計のリクエストのクエリは、それぞれ listQueries、summaryQueries に取っておく。
+ *
+ * @param items 返す商品
+ * @param summary 在庫の集計の応答
+ * @returns 受け取ったクエリ
  */
 function serveList(items: ProductSummary[], summary: Reply<'/inventory/stock-summaries', 'get', string>) {
   const state = { listQueries: [] as string[], summaryQueries: [] as string[] }

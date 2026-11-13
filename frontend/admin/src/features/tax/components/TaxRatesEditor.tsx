@@ -45,7 +45,9 @@ function toValues(taxCategory: TaxCategory): Values {
 }
 
 /**
- * 税率の一覧の編集。一覧ごと置き換えて保存する。<br />
+ * 税率の一覧の編集
+ *
+ * 一覧ごと置き換えて保存する。
  * 期間の重複・途切れ、過去の根拠の変更はサーバーが検証し、そのエラーを表示する。
  */
 export function TaxRatesEditor({

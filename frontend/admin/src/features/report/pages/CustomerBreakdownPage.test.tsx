@@ -33,7 +33,14 @@ const BREAKDOWN: CustomerBreakdownReport = {
   shippingExcluded: false,
 }
 
-/** 地域・年齢層・性別の API に応答する。受け取ったクエリは queries に取っておく */
+/**
+ * 地域・年齢層・性別の API に応答する
+ *
+ * 受け取ったクエリは queries に取っておく。
+ *
+ * @param report 返す集計
+ * @returns 受け取ったクエリ
+ */
 function serveBreakdown(report: CustomerBreakdownReport = BREAKDOWN) {
   serveReportBasics()
   const queries: URLSearchParams[] = []

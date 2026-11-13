@@ -34,6 +34,7 @@ export function todayInJapan(now: Date = new Date()): string {
  * @param preset 選択肢
  * @param today 今日（日本時間の日付）
  * @param fiscalYearStartMonth 会計年度の始まりの月（1〜12。レポートの設定）
+ * @returns 選択肢の期間
  */
 export function presetPeriod(preset: PeriodPreset, today: string, fiscalYearStartMonth: number): Period {
   const [year, month] = today.split('-').map(Number)

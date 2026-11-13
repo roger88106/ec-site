@@ -8,8 +8,13 @@ const FORMULA_START = /^[=+\-@]/
 const NEEDS_QUOTE = /[\x22,\r\n]/
 
 /**
- * 表を CSV にする。表計算ソフトで文字化けしないよう UTF-8 の BOM で始め、行は CRLF で区切る。<br />
+ * 表を CSV にする
+ *
+ * 表計算ソフトで文字化けしないよう UTF-8 の BOM で始め、行は CRLF で区切る。
  * 文字の項目が式として読まれないよう、= + - @ で始まるものは前に ' を付ける。数は付けない。
+ *
+ * @param rows 表の行（見出しの行を含む）
+ * @returns CSV の文字列
  */
 export function toCsv(rows: readonly (readonly CsvValue[])[]): string {
   return `\uFEFF${rows.map((row) => `${row.map(field).join(',')}\r\n`).join('')}`

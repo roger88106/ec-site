@@ -4,8 +4,12 @@ import { japanDateTimeFormat } from '@ec-site/shared/lib/format'
 const MINUTE_MS = 60 * 1000
 
 /**
- * 日時の入力欄（datetime-local）の値を、API に送る日時にする。<br />
- * 入力は表示のタイムゾーン（日本時間）とみなし、そのオフセット付きにする。空の入力は空白（null）。
+ * 日時の入力欄（datetime-local）の値を、API に送る日時にする。
+ *
+ * 入力は表示のタイムゾーン（日本時間）とみなし、そのオフセット付きにする。
+ *
+ * @param value 入力欄の値（「yyyy-MM-ddTHH:mm」または空）
+ * @returns オフセット付きの日時。空の入力は空白（null）
  */
 export function fromDateTimeInput(value: string): string | null {
   if (!value) {
@@ -34,7 +38,7 @@ export function toZonedDate(date: Date): string {
   return `${parts.year}-${parts.month}-${parts.day}`
 }
 
-/** 表示のタイムゾーンでの年月日・時分（ゼロ埋め）。ブラウザーのタイムゾーンに依存しない */
+/** 表示のタイムゾーンでの年月日・時分（ゼロ埋め）を、ブラウザーのタイムゾーンに依存せずに返す */
 function zonedParts(date: Date) {
   const parts = Object.fromEntries(japanDateTimeFormat.formatToParts(date).map((part) => [part.type, part.value]))
   return { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute }

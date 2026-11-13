@@ -15,7 +15,11 @@ import { FISCAL_PRESETS } from '@/features/report/period'
 import { formatYenCompact } from '@/features/report/report'
 import type { ReportCondition } from '@/features/report/reportCondition'
 
-/** 売上の推移。期間・区切り・数え方などの条件は URL に持つ */
+/**
+ * 売上の推移
+ *
+ * 期間・区切り・数え方などの条件は URL に持つ。
+ */
 export function SalesTrendPage() {
   return (
     <ReportPage defaultPreset="thisFiscalYear" granularity menuKey="salesTrend" presets={FISCAL_PRESETS}>

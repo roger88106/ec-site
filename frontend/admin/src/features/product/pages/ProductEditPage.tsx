@@ -12,7 +12,11 @@ import { PublicationPeriodCard } from '@/features/product/components/Publication
 import { PublicationStatusBadge } from '@/features/product/components/PublicationStatusBadge'
 import { VariantSection } from '@/features/product/components/VariantSection'
 
-/** 商品の編集。状態、基本情報、バリアントのカードを並べる */
+/**
+ * 商品の編集
+ *
+ * 状態、基本情報、バリアントのカードを並べる。
+ */
 export function ProductEditPage() {
   const tApp = useTranslations('app.common')
   const { productId = '' } = useParams()

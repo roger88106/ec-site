@@ -39,9 +39,13 @@ const MAX_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 const MAX_IMAGES = schemas.ProductDetail.images.maxItems
 
 /**
- * 商品の編集の画面が使う API に応答する。<br />
+ * 商品の編集の画面が使う API に応答する
+ *
  * 基本情報の保存は、送ったバージョンが今のものと違えば 409 にし、同じなら保存してバージョンを上げる。
  * 状態の変更・削除のリクエストは calls に「メソッド パス」で取っておく。
+ *
+ * @param initial 最初の商品
+ * @returns 今の商品と、送ったバージョン、状態の変更・削除のリクエスト
  */
 function serveProduct(initial: ProductDetail) {
   const state = { current: initial, versions: [] as number[], calls: [] as string[] }
@@ -531,7 +535,14 @@ describe('商品の編集', () => {
 })
 
 describe('公開期間', () => {
-  /** 公開期間の設定に応答する。バージョンが今のものと違えば 409、終了が開始以前なら 400 */
+  /**
+   * 公開期間の設定に応答する
+   *
+   * バージョンが今のものと違えば 409、終了が開始以前なら 400 にする。
+   *
+   * @param state 商品の編集の画面が使う API の状態
+   * @returns 送った公開期間の設定
+   */
   function servePeriod(state: ReturnType<typeof serveProduct>) {
     const requests: SetPublicationPeriodRequest[] = []
     server.use(
@@ -655,7 +666,14 @@ describe('商品画像', () => {
     )
   }
 
-  /** 画像のアップロードの受付・ストレージへの PUT・登録に応答する。登録すると、商品の画像の最後に加える */
+  /**
+   * 画像のアップロードの受付・ストレージへの PUT・登録に応答する
+   *
+   * 登録すると、商品の画像の最後に加える。
+   *
+   * @param state 商品の編集の画面が使う API の状態
+   * @returns 受けた呼び出し
+   */
   function serveUpload(state: ReturnType<typeof serveProduct>) {
     const calls: string[] = []
     server.use(

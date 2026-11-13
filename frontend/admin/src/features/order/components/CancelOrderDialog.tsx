@@ -18,11 +18,16 @@ import { Textarea } from '@/components/ui/textarea'
 /** 理由の長さの上限 */
 const REASON_MAX_LENGTH = schemas.CancelOrderRequest.reason.maxLength
 
-/** 入力欄の値。在庫に戻すかは、選ぶまで空（文字列は radio の値） */
+/**
+ * 入力欄の値
+ *
+ * 在庫に戻すかは、選ぶまで空（文字列は radio の値）。
+ */
 type Values = { reason: string; restock: 'true' | 'false' | '' }
 
 /**
- * 運営者の判断によるキャンセルの、理由（必須）を入力するダイアログ。<br />
+ * 運営者の判断によるキャンセルの、理由（必須）を入力するダイアログ
+ *
  * 出荷済み（返送）の注文では、在庫に戻すかも選ばせる（既定を置かない）。送信は onSubmit に任せ、成功したら閉じる。
  */
 export function CancelOrderDialog({

@@ -9,7 +9,14 @@ import { http, problem, type Reply, server } from '@/test/server'
 /** 商品の登録のリクエストの本文（送った内容を確認する） */
 type CreateProductRequest = components['schemas']['CreateProductRequest']
 
-/** 商品の登録の画面が使う API に応答する。登録のリクエストは requests に取っておく */
+/**
+ * 商品の登録の画面が使う API に応答する
+ *
+ * 登録のリクエストは requests に取っておく。
+ *
+ * @param reply 登録の応答
+ * @returns 受け取った登録のリクエスト
+ */
 function serveCreate(reply: Reply<'/products', 'post', CreateProductRequest>) {
   const requests: CreateProductRequest[] = []
   server.use(
@@ -25,8 +32,14 @@ function serveCreate(reply: Reply<'/products', 'post', CreateProductRequest>) {
 }
 
 /**
- * 入力欄に文字を貼り付ける。1 文字ずつ打つと、打つたびにフォームを描き直して遅く、
- * 並べて流すと既定の時間切れを超えることがあるため（打った時点の変換を確認するテストだけは打つ）
+ * 入力欄に文字を貼り付ける
+ *
+ * 1 文字ずつ打つと、打つたびにフォームを描き直して遅く、
+ * 並べて流すと既定の時間切れを超えることがあるため（打った時点の変換を確認するテストだけは打つ）。
+ *
+ * @param user 操作する利用者
+ * @param input 入力欄
+ * @param text 貼り付ける文字
  */
 async function paste(user: UserEvent, input: HTMLElement, text: string) {
   await user.click(input)

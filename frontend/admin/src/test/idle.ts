@@ -8,7 +8,9 @@ export const MINUTE = 60 * 1000
 export const START = Date.UTC(2026, 0, 1)
 
 /**
- * 偽の時計を START から始める。例：`beforeEach(() => startClock())`
+ * 偽の時計を START から始める。
+ *
+ * 例：`beforeEach(() => startClock())`
  *
  * 偽の時計は、テストの後に setup.ts が戻す。
  *
@@ -20,7 +22,9 @@ export function startClock(options: { shouldAdvanceTime?: boolean } = {}): void 
 }
 
 /**
- * 時計とタイマーを進める（タイマーが動く通常の経過）。例：`advanceClock(28 * MINUTE)`
+ * 時計とタイマーを進める（タイマーが動く通常の経過）。
+ *
+ * 例：`advanceClock(28 * MINUTE)`
  *
  * @param ms 進めるミリ秒
  */
@@ -31,7 +35,9 @@ export function advanceClock(ms: number): void {
 }
 
 /**
- * 他のタブがローカルストレージに書いた・削除したことを、storage イベントで知らせる。例：`otherTabWrites(LOGOUT_KEY, String(START))`
+ * 他のタブがローカルストレージに書いた・削除したことを、storage イベントで知らせる。
+ *
+ * 例：`otherTabWrites(LOGOUT_KEY, String(START))`
  *
  * @param key   キー
  * @param value 書いた値。null は削除
@@ -49,7 +55,9 @@ export function otherTabWrites(key: string, value: string | null): void {
 }
 
 /**
- * window で操作のイベントを起こす。例：`operate('keydown')`
+ * window で操作のイベントを起こす。
+ *
+ * 例：`operate('keydown')`
  *
  * @param type イベントの種類
  */
@@ -64,7 +72,9 @@ export function operate(type: string): void {
 export type TabComeBack = 'pageshow' | 'visibilitychange' | 'focus'
 
 /**
- * タブに戻ったことを、ブラウザーが起こすイベントで知らせる。例：`comeBackToTab('pageshow')`
+ * タブに戻ったことを、ブラウザーが起こすイベントで知らせる。
+ *
+ * 例：`comeBackToTab('pageshow')`
  *
  * @param type イベントの種類
  */

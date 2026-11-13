@@ -15,7 +15,11 @@ import { CALENDAR_PRESETS } from '@/features/report/period'
 import { formatYenCompact } from '@/features/report/report'
 import type { ReportCondition } from '@/features/report/reportCondition'
 
-/** 地域・年齢層・性別。条件は URL に持つ */
+/**
+ * 地域・年齢層・性別
+ *
+ * 条件は URL に持つ。
+ */
 export function CustomerBreakdownPage() {
   return (
     <ReportPage defaultPreset="thisMonth" menuKey="customerBreakdown" presets={CALENDAR_PRESETS}>
@@ -49,7 +53,11 @@ function CustomerBreakdown({ condition }: { condition: ReportCondition }) {
 /** 1 つの分け方の行 */
 type SegmentRow = { segment: string; amount: number; orders: number }
 
-/** 3 つの分け方のグラフと表。CSV は 3 つの表を 1 つにまとめる */
+/**
+ * 3 つの分け方のグラフと表
+ *
+ * CSV は 3 つの表を 1 つにまとめる。
+ */
 function BreakdownResult({ condition, report }: { condition: ReportCondition; report: CustomerBreakdownReport }) {
   const t = useTranslations('report.customerBreakdown')
   const dimensions = [
@@ -102,7 +110,11 @@ function BreakdownResult({ condition, report }: { condition: ReportCondition; re
 /** 横の棒の 1 本の高さ（px） */
 const HORIZONTAL_BAR_HEIGHT = 28
 
-/** 1 つの分け方の棒グラフと表。区分の多いもの（都道府県）は、名前が重ならないよう横の棒にする */
+/**
+ * 1 つの分け方の棒グラフと表
+ *
+ * 区分の多いもの（都道府県）は、名前が重ならないよう横の棒にする。
+ */
 function SegmentSection({ name, rows, horizontal }: { name: string; rows: SegmentRow[]; horizontal: boolean }) {
   const t = useTranslations('report.customerBreakdown')
   const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-3)' } } satisfies ChartConfig // 売上額

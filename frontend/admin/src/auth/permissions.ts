@@ -5,13 +5,21 @@ import { lastQueryError } from '@/app/queryClient'
 /** 管理 API の権限（admin.yaml の x-required-permission）のうち、画面で出し分けに使うもの */
 export type Permission = 'report-sales-trend:read' | 'report-variant-sales:read' | 'report-customer:read'
 
-/** 権限の一覧を取得している間の状態。読める項目は status だけ */
+/**
+ * 権限の一覧を取得している間の状態
+ *
+ * 読める項目は status だけ。
+ */
 type PermissionsLoading = {
   /** 取得の状態（取得中） */
   status: 'loading'
 }
 
-/** 権限の一覧の取得に失敗した状態。権限がないのとは区別する（権限がないのは取得済みで has が false） */
+/**
+ * 権限の一覧の取得に失敗した状態
+ *
+ * 権限がないのとは区別する（権限がないのは取得済みで has が false）。
+ */
 type PermissionsFailed = {
   /** 取得の状態（失敗） */
   status: 'failed'
@@ -31,12 +39,19 @@ type PermissionsReady = {
   has: (permission: Permission) => boolean
 }
 
-/** 自分の権限の一覧。status で絞り込んでから、その状態の項目を読む */
+/**
+ * 自分の権限の一覧
+ *
+ * status で絞り込んでから、その状態の項目を読む。
+ */
 type Permissions = PermissionsLoading | PermissionsFailed | PermissionsReady
 
 /**
- * ログインしている運営者の権限を、管理 API の自分の権限の一覧から読む（管理画面の構成の「ログイン」）。<br />
+ * ログインしている運営者の権限を、管理 API の自分の権限の一覧から読む（管理画面の構成の「ログイン」）。
+ *
  * 画面は token を自分で読まない。権限はログインし直すまで変わらないので、取り直さない（失敗したときの再試行は除く）。
+ *
+ * @returns 権限の一覧の状態（取得中、失敗、取得済み）
  */
 export function usePermissions(): Permissions {
   const queryClient = useQueryClient()

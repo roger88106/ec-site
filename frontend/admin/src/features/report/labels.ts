@@ -28,8 +28,14 @@ export function prefectureLabel(name: string | undefined): string {
 }
 
 /**
- * 売上の推移の区切りの表示名。週は期間で切った始まりと終わりの日、月は暦の年と月、四半期と年は会計年度で呼ぶ。<br />
+ * 売上の推移の区切りの表示名を作る
+ *
+ * 週は期間で切った始まりと終わりの日、月は暦の年と月、四半期と年は会計年度で呼ぶ。
  * 例：「2026/04/06〜2026/04/12」「2026 年 4 月」「2026 年度 第 1 四半期」「2026 年度」
+ *
+ * @param point 推移の 1 点
+ * @param granularity 集計の粒度
+ * @returns 区切りの表示名
  */
 export function bucketLabel(point: SalesTrendPoint, granularity: Granularity): string {
   const [year, month] = point.start.split('-').map(Number)

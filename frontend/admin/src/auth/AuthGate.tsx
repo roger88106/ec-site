@@ -10,10 +10,12 @@ import { useSharedLogout } from '@/auth/sharedLogout'
 import { setTokenSource } from '@/auth/token'
 
 /**
- * すべての画面を包み、ログインを求める（管理画面の構成の「ログイン」）。<br />
+ * ログインを求める枠
+ *
+ * すべての画面を包む（管理画面の構成の「ログイン」）。
  * ログインしていなければ、何も表示せずに IdP のログインへ移り、戻ってきたら移る前の画面に戻す。
  * ログインしていれば、運営者（氏名とログアウト）と、API に付ける token を渡してから画面を出す。
- * ログインしている間は、操作がないまま 30 分たつとログアウトする。ログアウトは、同じブラウザーの他のタブにも伝える。
+ * ログインしている間は、操作がないまま IDLE_LIMIT_MS たつとログアウトする。ログアウトは、同じブラウザーの他のタブにも伝える。
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const t = useTranslations('auth.gate')

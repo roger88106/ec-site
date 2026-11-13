@@ -25,7 +25,9 @@ const EMPTY: Values = { delta: '', reason: null, memo: '' }
 const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
 
 /**
- * 在庫の調整。増減量と理由で調整し、在庫数を直接上書きする欄は作らない。<br />
+ * 在庫の調整
+ *
+ * 増減量と理由で調整し、在庫数を直接上書きする欄は作らない。
  * 負になる調整や、「その他」でメモがない調整の拒否は、サーバーのエラーを表示する。
  */
 export function AdjustStockForm({ variantId }: { variantId: string }) {

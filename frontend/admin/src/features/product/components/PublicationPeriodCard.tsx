@@ -9,7 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
-/** 入力欄の値（日時は ISO 8601 の文字列。空は限りがない） */
+/**
+ * 入力欄の値
+ *
+ * 日時は ISO 8601 の文字列。空は限りがない。
+ */
 type Values = { publishStart: string | null; publishEnd: string | null }
 
 /** 商品の公開期間を、入力欄の値にする */
@@ -18,8 +22,9 @@ function toValues(product: ProductDetail): Values {
 }
 
 /**
- * 公開期間の設定。日時は日本時間で、空なら限りがない。<br />
- * 公開中でも期間の外は C 側に表示されず、その時刻で切り替わる。終了が開始より後であることはサーバーが検証する。
+ * 公開期間の設定
+ *
+ * 日時は日本時間で、空なら限りがない。公開中でも期間の外は C 側に表示されず、その時刻で切り替わる。終了が開始より後であることはサーバーが検証する。
  * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
 export function PublicationPeriodCard({

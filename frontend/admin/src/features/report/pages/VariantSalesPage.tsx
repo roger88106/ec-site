@@ -14,7 +14,11 @@ import { variantSalesLabel } from '@/features/report/labels'
 import { CALENDAR_PRESETS } from '@/features/report/period'
 import type { ReportCondition } from '@/features/report/reportCondition'
 
-/** バリアントの売れ行き。商品を選んでから出す。条件は URL に持つ */
+/**
+ * バリアントの売れ行き
+ *
+ * 商品を選んでから出す。条件は URL に持つ。
+ */
 export function VariantSalesPage() {
   return (
     <ReportPage

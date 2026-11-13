@@ -17,7 +17,9 @@ import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBad
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
 
 /**
- * 注文一覧。注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。<br />
+ * 注文一覧
+ *
+ * 注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  */
 export function OrderListPage() {

@@ -17,8 +17,14 @@ const RATE_ID = taxCategory().rates[0].id
 const PAGE_PATH = `/tax-categories/${TAX_CATEGORY_ID}`
 
 /**
- * 税区分の取得と税率の置き換えに応答する。置き換えのリクエストは requests に取っておく。<br />
+ * 税区分の取得と税率の置き換えに応答する。
+ *
+ * 置き換えのリクエストは requests に取っておく。
  * 置き換えの応答は reply で決める。省略すると成功（204）にし、取得の結果も送った一覧に変える。
+ *
+ * @param initial 税区分の初期値
+ * @param reply   置き換えの応答を決める関数
+ * @returns 現在の税区分と置き換えのリクエストの記録
  */
 function serveTaxCategory(
   initial: TaxCategory,

@@ -13,7 +13,11 @@ import { CodeInput } from '@/features/product/components/CodeInput'
 import { publicationStatusLabel } from '@/features/product/labels'
 import { EMPTY_FILTER, type ProductFilter } from '@/features/product/productFilter'
 
-/** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */
+/**
+ * 絞り込みの入力
+ *
+ * 「絞り込む」で URL に反映し、1 ページ目に戻す。
+ */
 export function ProductFilterForm({
   filter,
   onApply,

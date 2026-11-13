@@ -5,7 +5,9 @@ import { translate } from '@/i18n/translate'
 const CONCURRENT_MODIFICATION: ErrorCode = 'CONCURRENT_MODIFICATION'
 
 /**
- * API がエラーを返した（管理画面の構成の「API の呼び出し」）。<br />
+ * API のエラー
+ *
+ * API がエラーを返したときに投げる（管理画面の構成の「API の呼び出し」）。
  * 本文がエラーレスポンス（API の規約）なら {@link problem} に入る。プロキシのエラーなどで本文の形が違えば undefined。
  */
 export class ApiError extends Error {
@@ -41,7 +43,14 @@ export function toApiError(status: number, body: unknown): ApiError {
   return new ApiError(status, asProblem(body))
 }
 
-/** 画面に出すメッセージ。エラーレスポンスの message をそのまま出す */
+/**
+ * 画面に出すメッセージを返す。
+ *
+ * エラーレスポンスの message をそのまま出す。
+ *
+ * @param error 更新・取得が返したエラー
+ * @returns 画面に出すメッセージ
+ */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     // バージョン不一致は、再読み込みを促す案内にする

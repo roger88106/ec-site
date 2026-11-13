@@ -1,6 +1,10 @@
 import type { ProductDetail } from '@/api/types'
 
-/** 商品の基本情報の入力（登録と編集で共通） */
+/**
+ * 商品の基本情報の入力
+ *
+ * 登録と編集で共通。
+ */
 export type ProductFieldsValues = {
   name: string
   description: string
@@ -34,7 +38,14 @@ export function toProductFields(product: ProductDetail): ProductFieldsValues {
   }
 }
 
-/** 基本情報の入力を、API の本文にする。形式の検証はサーバーが行う */
+/**
+ * 基本情報の入力を、API の本文にする
+ *
+ * 形式の検証はサーバーが行う。
+ *
+ * @param values 基本情報の入力
+ * @returns API の本文
+ */
 export function toProductBody(values: ProductFieldsValues) {
   return {
     name: values.name,

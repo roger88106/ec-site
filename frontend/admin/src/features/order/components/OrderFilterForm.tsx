@@ -12,7 +12,11 @@ import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
 
-/** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */
+/**
+ * 絞り込みの入力
+ *
+ * 「絞り込む」で URL に反映し、1 ページ目に戻す。
+ */
 export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onApply: (filter: OrderFilter) => void }) {
   const t = useTranslations('order.filter')
   const tApp = useTranslations('app.common')

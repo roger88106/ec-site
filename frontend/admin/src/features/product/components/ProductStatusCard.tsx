@@ -23,7 +23,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
   /** 状態で在庫の画面の表示も変わるので、在庫も読み直す */
   const invalidate: ApiPathPrefix[] = ['/products', '/inventory']
   const publish = useApiMutation('put', '/products/{productId}/publish', {
-    success: t('published') /* 公開の知らせ */,
+    success: t('published'), // 公開の知らせ
     invalidate,
   })
   const unpublish = useApiMutation('put', '/products/{productId}/unpublish', {

@@ -11,20 +11,25 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { CodeInput } from '@/features/product/components/CodeInput'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
-/** 入力欄の値（軸の値は、商品の軸と同じ並び） */
+/**
+ * 入力欄の値
+ *
+ * 軸の値は、商品の軸と同じ並び。
+ */
 type Values = { variantCode: string; axisValues: { value: string }[] }
 
 /** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['variantCode', 'axisValues'] as const
 
-/** 空の入力。軸の値の欄は、商品の軸の数だけ作る */
+/** 空の入力を作る（軸の値の欄は、商品の軸の数だけ作る） */
 function emptyValues(product: ProductDetail): Values {
   return { variantCode: '', axisValues: product.axes.map(() => ({ value: '' })) }
 }
 
 /**
- * バリアントの登録。品番の英小文字は大文字にする。<br />
- * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
+ * バリアントの登録
+ *
+ * 品番の英小文字は大文字にする。送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
 export function AddVariantForm({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, reloadAfter } = useVersionedForm(product, emptyValues, refetch)

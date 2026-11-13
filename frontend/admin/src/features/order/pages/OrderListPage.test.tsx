@@ -6,9 +6,12 @@ import { renderApp } from '@/test/renderApp'
 import { http, server } from '@/test/server'
 
 /**
- * 注文一覧の API に応答する。受け取ったクエリは queries に取っておく。
+ * 注文一覧の API に応答する
+ *
+ * 受け取ったクエリは queries に取っておく。
  *
  * @param items 返す注文
+ * @returns 受け取ったクエリ
  */
 function serveOrders(items = [orderSummary()]) {
   const queries: URLSearchParams[] = []

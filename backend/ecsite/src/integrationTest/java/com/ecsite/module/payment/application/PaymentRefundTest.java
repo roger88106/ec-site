@@ -14,7 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
@@ -45,8 +44,6 @@ class PaymentRefundTest {
     @Autowired
     TestPaymentGateway gateway;
 
-    @Autowired
-    IncompleteEventPublications incompletePublications;
 
     @Autowired
     MutableClock clock;
@@ -118,9 +115,9 @@ class PaymentRefundTest {
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUND_PENDING);
         assertThat(gateway.refunded()).doesNotContain(orderId);
 
-        // 再発行のジョブ（発行から 5 分より前のもの）と同じ
+        // 再発行のジョブ（発行から 5 分より前のもの）と同じく、このテストのイベントを再発行する
         clock.advance(Duration.ofMinutes(6));
-        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        asyncEvents.resubmit(PaymentRequests.of(dsl, orderId));
 
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
         assertThat(gateway.refunded()).containsOnlyOnce(orderId);
@@ -172,7 +169,7 @@ class PaymentRefundTest {
 
         // 与信の取消の依頼は、再発行で何もせずに終わる
         clock.advance(Duration.ofMinutes(6));
-        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        asyncEvents.resubmit(PaymentRequests.of(dsl, orderId));
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(gateway.voided()).doesNotContain(authorizationRef);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);

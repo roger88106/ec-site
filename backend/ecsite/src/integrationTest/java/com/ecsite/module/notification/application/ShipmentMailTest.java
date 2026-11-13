@@ -11,7 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -42,8 +41,6 @@ class ShipmentMailTest {
     @Autowired
     TransactionTemplate transaction;
 
-    @Autowired
-    IncompleteEventPublications incompletePublications;
 
     @Autowired
     Mailpit mailpit;
@@ -82,14 +79,15 @@ class ShipmentMailTest {
     void retriesFailedSend() {
         doThrow(new IllegalStateException("SMTP に接続できない")).doCallRealMethod().when(mailer).send(any());
 
-        publish(shipped());
+        var event = shipped();
+        publish(event);
 
         verify(mailer, timeout(TIMEOUT.toMillis())).send(any());
         assertThat(mailpit.messagesTo(email)).isEmpty();
 
-        // 再発行のジョブ（発行から 5 分より前のもの）と同じ
+        // 再発行のジョブ（発行から 5 分より前のもの）と同じく、このテストのイベントを再発行する
         clock.advance(Duration.ofMinutes(6));
-        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        asyncEvents.resubmit(event::equals);
 
         await().atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).size() == 1);
     }

@@ -1,8 +1,10 @@
 package com.ecsite;
 
 import org.springframework.modulith.events.EventPublication;
+import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.function.Predicate;
 
@@ -29,15 +31,49 @@ public class AsyncEvents {
     public static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     /**
+     * 再発行のジョブが対象にする、発行からの時間
+     */
+    private static final Duration RESUBMIT_AFTER = Duration.ofMinutes(5);
+
+    /**
      * イベントの発行の記録
      */
     private final EventPublicationRegistry registry;
 
     /**
-     * @param registry イベントの発行の記録
+     * 未完了のイベントの発行の記録
      */
-    public AsyncEvents(EventPublicationRegistry registry) {
+    private final IncompleteEventPublications incompletePublications;
+
+    /**
+     * アプリの時計
+     */
+    private final Clock clock;
+
+    /**
+     * @param registry               イベントの発行の記録
+     * @param incompletePublications 未完了のイベントの発行の記録
+     * @param clock                  アプリの時計
+     */
+    public AsyncEvents(EventPublicationRegistry registry, IncompleteEventPublications incompletePublications, Clock clock) {
         this.registry = registry;
+        this.incompletePublications = incompletePublications;
+        this.clock = clock;
+    }
+
+    /**
+     * 条件に合う未完了のイベントを、再発行のジョブと同じく再発行する。
+     *
+     * <p>対象は、発行から {@link #RESUBMIT_AFTER} を過ぎた記録のうち、条件に合うイベントだけ。
+     * 統合テストは 1 つのコンテキストで DB を共有するので、全件を再発行すると、他のテストが残した失敗も処理される。
+     * 再発行の後のリスナーの処理は待たない。
+     *
+     * @param event 再発行するイベントの条件（テストで作った ID などで、このテストのイベントだけに絞る）
+     */
+    public void resubmit(Predicate<Object> event) {
+        var before = clock.instant().minus(RESUBMIT_AFTER);
+        incompletePublications.resubmitIncompletePublications(publication ->
+                publication.getPublicationDate().isBefore(before) && event.test(publication.getEvent()));
     }
 
     /**

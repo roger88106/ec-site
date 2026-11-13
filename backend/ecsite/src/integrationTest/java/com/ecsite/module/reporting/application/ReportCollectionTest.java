@@ -21,7 +21,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -64,8 +63,6 @@ class ReportCollectionTest {
     @Autowired
     TransactionTemplate transaction;
 
-    @Autowired
-    IncompleteEventPublications incompletePublications;
 
     @Autowired
     MutableClock clock;
@@ -245,9 +242,9 @@ class ReportCollectionTest {
         assertThat(order()).isEmpty();
         assertThat(history()).isEmpty();
 
-        // 再発行のジョブ（発行から 5 分より前のもの）と同じ
+        // 再発行のジョブ（発行から 5 分より前のもの）と同じく、このテストのイベントを再発行する
         clock.advance(Duration.ofMinutes(6));
-        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        asyncEvents.resubmit(event::equals);
 
         awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
         assertThat(history()).hasSize(1);

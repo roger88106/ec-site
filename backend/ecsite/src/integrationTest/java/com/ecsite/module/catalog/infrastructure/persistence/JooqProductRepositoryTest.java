@@ -43,7 +43,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JooqProductRepositoryTest {
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -67,8 +69,14 @@ class JooqProductRepositoryTest {
     @Autowired
     ApplicationEvents events;
 
+    /**
+     * カテゴリ「衣類」の ID
+     */
     private UUID clothing;
 
+    /**
+     * カテゴリ「食品」の ID
+     */
     private UUID food;
 
     @BeforeEach

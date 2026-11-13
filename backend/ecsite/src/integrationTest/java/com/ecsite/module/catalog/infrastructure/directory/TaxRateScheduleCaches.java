@@ -11,6 +11,9 @@ import org.springframework.context.ApplicationContext;
  */
 public final class TaxRateScheduleCaches {
 
+    /**
+     * インスタンスを作らない。
+     */
     private TaxRateScheduleCaches() {
     }
 

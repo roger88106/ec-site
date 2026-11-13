@@ -41,8 +41,14 @@ class SalesTrendQueryTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 商品 A の ID
+     */
     private final UUID productA = UUID.randomUUID();
 
+    /**
+     * 商品 B の ID
+     */
     private final UUID productB = UUID.randomUUID();
 
     @BeforeEach

@@ -36,7 +36,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class ProductTest {
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -55,6 +57,9 @@ class ProductTest {
      */
     private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000001001");
 
+    /**
+     * 商品の生成
+     */
     private final ProductFactory factory = new ProductFactory();
 
     @Nested
@@ -575,15 +580,15 @@ class ProductTest {
             var product = productWithImages(3);
             var ids = product.images().stream().map(ProductImage::id).toList();
 
-            product.reorderImages(List.of(ids.get(2), ids.get(0), ids.get(1)));
+            product.reorderImages(List.of(ids.get(2), ids.getFirst(), ids.get(1)));
 
-            assertThat(product.images()).extracting(ProductImage::id).containsExactly(ids.get(2), ids.get(0), ids.get(1));
+            assertThat(product.images()).extracting(ProductImage::id).containsExactly(ids.get(2), ids.getFirst(), ids.get(1));
             assertThat(product.images()).first().extracting(ProductImage::id).isEqualTo(ids.get(2));
-            assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(1))),
+            assertBusinessError(() -> product.reorderImages(List.of(ids.getFirst(), ids.get(1))),
                     ProductErrorCode.INVALID_IMAGE_ORDER);
-            assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(0), ids.get(1))),
+            assertBusinessError(() -> product.reorderImages(List.of(ids.getFirst(), ids.getFirst(), ids.get(1))),
                     ProductErrorCode.INVALID_IMAGE_ORDER);
-            assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(1), UUID.randomUUID())),
+            assertBusinessError(() -> product.reorderImages(List.of(ids.getFirst(), ids.get(1), UUID.randomUUID())),
                     ProductErrorCode.INVALID_IMAGE_ORDER);
         }
 

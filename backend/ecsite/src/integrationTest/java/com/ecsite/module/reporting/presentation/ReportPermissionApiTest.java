@@ -36,7 +36,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ReportPermissionApiTest {
 
     /**
-     * 2031 年 4 月（写しのないこと）
+     * 2031 年 4 月
+     *
+     * <p>写しのない期間。
      */
     private static final String PERIOD = "from=2031-04-01&to=2031-04-30";
 
@@ -110,7 +112,7 @@ class ReportPermissionApiTest {
     }
 
     @Nested
-    @DisplayName("AC-214 自分の権限の一覧")
+    @DisplayName("自分の権限の一覧")
     class Me {
 
         @Test

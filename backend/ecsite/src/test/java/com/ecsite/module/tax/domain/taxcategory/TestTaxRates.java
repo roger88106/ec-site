@@ -9,7 +9,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 税率のテストで使う、税率と置き換えの要素の作り方。単体テストと統合テストが共有する。
+ * 税率のテストで使う、税率と置き換えの要素の作り方
+ *
+ * <p>単体テストと統合テストが共有する。
  */
 public final class TestTaxRates {
 

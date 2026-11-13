@@ -29,7 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JooqStockReservationRepositoryTest {
 
     /**
-     * 現在時刻
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 

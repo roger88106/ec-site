@@ -43,12 +43,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JooqReportOrderRepositoryTest {
 
     /**
-     * 注文日時。日本時間では翌日の 0 時 30 分
+     * 注文日時
+     *
+     * <p>日本時間の 2026-10-08 00:30。
      */
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
     /**
-     * 出荷日時。日本時間では同じ日の 23 時 30 分
+     * 出荷日時
+     *
+     * <p>日本時間の 2026-10-09 23:30。
      */
     private static final Instant SHIPPED_AT = Instant.parse("2026-10-09T14:30:00Z");
 

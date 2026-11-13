@@ -42,10 +42,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ProductImageTransactionApiTest {
 
     /**
-     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * 配信のファイルの取得に使う HTTP クライアント
+     */
     private final HttpClient http = HttpClient.newHttpClient();
 
     @Autowired
@@ -84,14 +89,17 @@ class ProductImageTransactionApiTest {
      */
     private UUID taxCategoryId;
 
+    /**
+     * テストで画像を登録する商品
+     */
     private CatalogTestData.TestProduct product;
 
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
-        var data = new CatalogTestData(mockMvc, clock);
-        taxCategoryId = data.taxCategory("トランザクションの外 " + UUID.randomUUID(), "10");
-        product = data.product(taxCategoryId, "T シャツ", 1000);
+        var catalog = new CatalogTestData(mockMvc, clock);
+        taxCategoryId = catalog.taxCategory("トランザクションの外 " + UUID.randomUUID(), "10");
+        product = catalog.product(taxCategoryId, "T シャツ", 1000);
         doAnswer(invocation -> {
             transactionActiveOnConvert.add(TransactionSynchronizationManager.isActualTransactionActive());
             return invocation.callRealMethod();

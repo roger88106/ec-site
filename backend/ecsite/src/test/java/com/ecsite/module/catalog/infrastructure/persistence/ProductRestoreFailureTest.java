@@ -23,7 +23,9 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static org.mockito.Mockito.mock;
 
 /**
- * 商品を DB の値から戻すときの失敗の単体テスト。例外の出力に DB の値が出ないことを確認する。
+ * 商品を DB の値から戻すときの失敗の単体テスト
+ *
+ * <p>例外の出力に DB の値が出ないことを確認する。
  */
 class ProductRestoreFailureTest {
 

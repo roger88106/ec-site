@@ -11,7 +11,6 @@ import com.ecsite.module.inventory.application.port.StockQueryRepository;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,13 +35,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 注文による在庫の増減の統合テスト
  *
- * <p>操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
+ * <p>操作ごとにコミットする。ロールバックしない。
  */
 @IntegrationTest
 class StockOrderApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -82,8 +83,14 @@ class StockOrderApiTest {
     @Autowired
     TransactionTemplate transactionTemplate;
 
+    /**
+     * 在庫を作る商品の ID
+     */
     private UUID productId;
 
+    /**
+     * 注文の ID
+     */
     private UUID orderId;
 
     @BeforeEach
@@ -94,15 +101,10 @@ class StockOrderApiTest {
         orderId = UUID.randomUUID();
     }
 
-    @AfterEach
-    void cleanUp() {
-        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(productId)).execute();
-    }
-
     @Test
     @DisplayName("AC-107 引当を減算に置き換えると、在庫数が減り、引当が消え、理由「注文」と注文番号の履歴が残る")
     void commitsReservation() {
-        var variant = stock(5);
+        var variant = inventory.stockNewVariant(productId, 5);
         var holder = UUID.randomUUID();
         api.reserve(holder, Map.of(variant, 2), EXPIRES_AT);
 
@@ -124,7 +126,7 @@ class StockOrderApiTest {
     @Test
     @DisplayName("AC-87 引当の期限が切れていても、足りれば減算できる")
     void commitsAfterExpiryWhenSufficient() {
-        var variant = stock(2);
+        var variant = inventory.stockNewVariant(productId, 2);
         var holder = UUID.randomUUID();
         api.reserve(holder, Map.of(variant, 2), EXPIRES_AT);
         clock.setInstant(EXPIRES_AT.plusSeconds(1));
@@ -136,8 +138,8 @@ class StockOrderApiTest {
     @Test
     @DisplayName("AC-87 期限切れの間にほかの持ち主が引き当てて足りなければ、どの在庫も減らさずに足りない品目を返す")
     void rejectsCommitWhenOthersReservedAfterExpiry() {
-        var plenty = stock(5);
-        var scarce = stock(1);
+        var plenty = inventory.stockNewVariant(productId, 5);
+        var scarce = inventory.stockNewVariant(productId, 1);
         var holder = UUID.randomUUID();
         api.reserve(holder, Map.of(plenty, 1, scarce, 1), EXPIRES_AT);
         clock.setInstant(EXPIRES_AT.plusSeconds(1));
@@ -154,7 +156,7 @@ class StockOrderApiTest {
     @Test
     @DisplayName("AC-87 減算は、持ち主の引当の行をロックしてから在庫の行をロックする（注文手続きの開始と同じ順序で、デッドロックにならない）")
     void locksReservationBeforeStock() throws Exception {
-        var variant = stock(5);
+        var variant = inventory.stockNewVariant(productId, 5);
         var holder = UUID.randomUUID();
         assertThat(api.reserve(holder, Map.of(variant, 2), EXPIRES_AT)).isEmpty();
         var executor = Executors.newSingleThreadExecutor();
@@ -181,7 +183,7 @@ class StockOrderApiTest {
     @Test
     @DisplayName("AC-107 戻すと在庫数が増え、理由「注文のキャンセル」と注文番号の履歴が残る")
     void restoresStock() {
-        var variant = stock(3);
+        var variant = inventory.stockNewVariant(productId, 3);
 
         api.restore(Map.of(variant, 2), orderId, ORDER_NUMBER);
 
@@ -194,15 +196,6 @@ class StockOrderApiTest {
     }
 
     // ============================== 補助 ==============================
-
-    /**
-     * 在庫数を指定してバリアントの在庫を作り、バリアント ID を返す
-     */
-    private UUID stock(int quantity) {
-        var variantId = UUID.randomUUID();
-        inventory.stock(variantId, productId, quantity);
-        return variantId;
-    }
 
     /**
      * バリアントの最新の調整履歴

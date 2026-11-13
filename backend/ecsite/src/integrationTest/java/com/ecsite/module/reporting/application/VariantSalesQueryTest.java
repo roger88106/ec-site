@@ -52,6 +52,9 @@ class VariantSalesQueryTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 売れ行きを見る T シャツ
+     */
     private CatalogTestData.TestProduct shirt;
 
     @BeforeEach
@@ -60,7 +63,7 @@ class VariantSalesQueryTest {
         var catalog = new CatalogTestData(mockMvc, clock);
         shirt = catalog.product(catalog.taxCategory("標準", "10"), "T シャツ", 1000, "色", "サイズ")
                 .variant("白", "M").variant("白", "L").variant("黒", "M");
-        var whiteM = shirt.variantIds.get(0);
+        var whiteM = shirt.variantIds.getFirst();
         var blackM = shirt.variantIds.get(2);
 
         var data = new ReportTestData(dsl);
@@ -80,7 +83,7 @@ class VariantSalesQueryTest {
                 .extracting(VariantSales::variantId, VariantSales::quantity, VariantSales::amount)
                 .containsExactly(
                         tuple(shirt.variantIds.get(2), 5L, Money.of(5500)),
-                        tuple(shirt.variantIds.get(0), 3L, Money.of(3300)),
+                        tuple(shirt.variantIds.getFirst(), 3L, Money.of(3300)),
                         tuple(shirt.variantIds.get(1), 0L, Money.ZERO));
         assertThat(report.variants().getFirst().axisValues())
                 .extracting(VariantSales.AxisValue::name, VariantSales.AxisValue::value)
@@ -105,7 +108,7 @@ class VariantSalesQueryTest {
         assertThat(report.variants()).extracting(VariantSales::variantId, VariantSales::quantity)
                 .containsExactly(
                         tuple(shirt.variantIds.get(2), 5L),
-                        tuple(shirt.variantIds.get(0), 1L),
+                        tuple(shirt.variantIds.getFirst(), 1L),
                         tuple(shirt.variantIds.get(1), 0L));
     }
 

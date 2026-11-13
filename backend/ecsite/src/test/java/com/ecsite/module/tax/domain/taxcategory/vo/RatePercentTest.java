@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class RatePercentTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"0", "8", "10", "8.5", "12.34", "99.99"})
     @DisplayName("AC-7 0 以上 100 未満、小数第 2 位までの率を表せる")
     void acceptsValidRate(String value) {
@@ -25,7 +25,7 @@ class RatePercentTest {
         assertThat(rate.value()).isEqualByComparingTo(value);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"-0.01", "-1", "100", "100.00", "150"})
     @DisplayName("AC-7 0 未満、100 以上の率は拒否される")
     void rejectsOutOfRange(String value) {

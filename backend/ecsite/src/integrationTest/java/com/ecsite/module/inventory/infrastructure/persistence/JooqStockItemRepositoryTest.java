@@ -11,8 +11,6 @@ import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,21 +24,24 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
-import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 在庫の調整の統合テスト
  *
- * <p>並行調整を確認するため、調整ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
+ * <p>並行調整を確認するため、調整ごとにコミットする。ロールバックしない。
  */
 @IntegrationTest
 class JooqStockItemRepositoryTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -53,23 +54,15 @@ class JooqStockItemRepositoryTest {
     @Autowired
     TransactionTemplate transactionTemplate;
 
-    @Autowired
-    DSLContext dsl;
-
-    private UUID productId;
-
+    /**
+     * 調整するバリアントの ID
+     */
     private UUID variantId;
 
     @BeforeEach
     void createStock() {
-        productId = UUID.randomUUID();
         variantId = UUID.randomUUID();
-        repository.createIfAbsent(variantId, productId);
-    }
-
-    @AfterEach
-    void cleanUp() {
-        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(productId)).execute();
+        repository.createIfAbsent(variantId, UUID.randomUUID());
     }
 
     @Test
@@ -114,11 +107,7 @@ class JooqStockItemRepositoryTest {
     void appliesConcurrentAdjustments() throws Exception {
         adjust(10, StockAdjustmentReason.ARRIVAL);
         // +5 と +3 を 10 回ずつ同時に行う：10 + (5 + 3) × 10 = 90
-        var deltas = new ArrayList<Integer>();
-        for (int i = 0; i < 10; i++) {
-            deltas.add(5);
-            deltas.add(3);
-        }
+        var deltas = IntStream.range(0, 10).boxed().flatMap(i -> Stream.of(5, 3)).toList();
 
         var ready = new CountDownLatch(deltas.size());
         var start = new CountDownLatch(1);

@@ -37,6 +37,8 @@ class ProductListApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -56,16 +58,38 @@ class ProductListApiTest {
      */
     private UUID taxCategoryId;
 
+    /**
+     * 衣類のカテゴリ
+     *
+     * <p>最上位。
+     */
     private UUID clothing;
 
+    /**
+     * トップスのカテゴリ
+     *
+     * <p>衣類の子。
+     */
     private UUID tops;
 
+    /**
+     * T シャツのカテゴリ
+     *
+     * <p>トップスの子。
+     */
     private UUID tShirts;
 
+    /**
+     * 食品のカテゴリ
+     *
+     * <p>最上位。
+     */
     private UUID food;
 
     /**
-     * テストごとのカテゴリ（一覧をこのカテゴリで絞って、他のテストの商品が見えないようにする）
+     * テストごとのカテゴリ
+     *
+     * <p>一覧をこのカテゴリで絞って、他のテストの商品が見えないようにする。
      */
     private UUID scope;
 

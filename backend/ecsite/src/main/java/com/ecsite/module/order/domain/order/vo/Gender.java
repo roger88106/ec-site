@@ -1,4 +1,4 @@
-package com.ecsite.module.order.domain.order;
+package com.ecsite.module.order.domain.order.vo;
 
 import org.jspecify.annotations.Nullable;
 

@@ -2,6 +2,8 @@ package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
+import com.ecsite.module.order.domain.order.vo.Cancellation;
+import com.ecsite.module.order.domain.order.vo.CancellationKind;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;

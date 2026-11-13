@@ -308,7 +308,7 @@ class StoreOrderMapper {
     /**
      * キャンセルの種類。
      */
-    private static CancellationKind toKind(com.ecsite.module.order.domain.order.CancellationKind kind) {
+    private static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
         return switch (kind) {
             case REQUEST_APPROVED -> CancellationKind.REQUEST_APPROVED;
             case OPERATOR -> CancellationKind.OPERATOR;

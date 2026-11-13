@@ -4,15 +4,15 @@ import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
-import com.ecsite.module.order.domain.order.BuyerProfile;
-import com.ecsite.module.order.domain.order.Cancellation;
-import com.ecsite.module.order.domain.order.CancellationKind;
-import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.order.vo.AddressArea;
+import com.ecsite.module.order.domain.order.vo.BuyerProfile;
+import com.ecsite.module.order.domain.order.vo.Cancellation;
+import com.ecsite.module.order.domain.order.vo.CancellationKind;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
+import com.ecsite.module.order.domain.order.vo.Gender;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
@@ -102,6 +102,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setShippingFee(snapshot.amounts().shippingFee().yen());
         record.setTotalAmount(snapshot.amounts().total().yen());
         record.setEmail(snapshot.email());
+
         var address = snapshot.shippingAddress();
         record.setRecipientName(address.name());
         record.setPostalCode(address.postalCode());
@@ -111,10 +112,12 @@ class JooqOrderRepository implements OrderRepository {
         record.setMunicipalityName(address.area().municipalityName());
         record.setAddress(address.address());
         record.setPhone(address.phone());
+
         var buyer = snapshot.buyerProfile();
         record.setBuyerAge(buyer.age() == null ? null : buyer.age().shortValue());
         record.setBuyerGender(buyer.gender() == null ? null : buyer.gender().name());
         record.setVersion(snapshot.version());
+
         record.setCreatedAt(now);
         record.setUpdatedAt(now);
 

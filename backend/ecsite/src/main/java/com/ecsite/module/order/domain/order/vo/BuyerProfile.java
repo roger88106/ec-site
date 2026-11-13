@@ -1,4 +1,4 @@
-package com.ecsite.module.order.domain.order;
+package com.ecsite.module.order.domain.order.vo;
 
 import com.ecsite.common.model.value.BusinessTime;
 import lombok.NonNull;

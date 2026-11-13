@@ -243,7 +243,7 @@ class AdminOrderMapper {
     /**
      * キャンセル。
      */
-    private static Cancellation toCancellation(com.ecsite.module.order.domain.order.Cancellation cancellation) {
+    private static Cancellation toCancellation(com.ecsite.module.order.domain.order.vo.Cancellation cancellation) {
         return new Cancellation()
                 .cancelledAt(ApiDateTimes.toOffsetDateTime(cancellation.cancelledAt()))
                 .kind(toKind(cancellation.kind()))
@@ -340,7 +340,7 @@ class AdminOrderMapper {
     /**
      * キャンセルの種類。
      */
-    private static CancellationKind toKind(com.ecsite.module.order.domain.order.CancellationKind kind) {
+    private static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
         return switch (kind) {
             case REQUEST_APPROVED -> CancellationKind.REQUEST_APPROVED;
             case OPERATOR -> CancellationKind.OPERATOR;

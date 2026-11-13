@@ -319,7 +319,8 @@ async function latestIdpLink(to: string): Promise<string> {
 }
 
 /**
- * 運営者の access token を、管理画面と同じ認可コード + PKCE の流れで取る（ブラウザーを使わない）。<br />
+ * 運営者の access token を、管理画面と同じ認可コード + PKCE の流れで取る（ブラウザーを使わない）。
+ *
  * テストのデータを管理 API で直接作るときに使う。web の client はパスワードで token を取る方式を無効にしているため。
  *
  * @param account ログインする運営者のアカウント

@@ -4,12 +4,12 @@ import { translate } from '@/i18n/translate'
 /** 軸ごとの選んだ値（軸と同じ並び）。null は未選択 */
 export type Selection = (string | null)[]
 
-/** 何も選んでいない状態を作る。 */
+/** 何も選んでいない状態を作る */
 export function emptySelection(axes: readonly VariantAxis[]): Selection {
   return axes.map(() => null)
 }
 
-/** 在庫があり、販売停止でない（買える）バリアントかを判定する。 */
+/** 在庫があり、販売停止でない（買える）バリアントかを判定する */
 export function isPurchasable(variant: Variant): boolean {
   return variant.inStock && !variant.salesSuspended
 }

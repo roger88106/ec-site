@@ -81,7 +81,7 @@ export function paymentState(
   return order.actions.pay ? 'PAYABLE' : 'CLOSING'
 }
 
-/** 注文の画面に、支払の欄（見出しを含む）を出すかを判定する（支払待ちのときだけ出す）。 */
+/** 注文の画面に、支払の欄（見出しを含む）を出すかを判定する（支払待ちのときだけ出す） */
 export function showsPaymentSection(state: PaymentState): boolean {
   return state !== 'NONE'
 }

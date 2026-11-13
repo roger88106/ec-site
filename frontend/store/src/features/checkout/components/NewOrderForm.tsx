@@ -7,7 +7,9 @@ import { startCheckout } from '@/actions/cart'
 import { ActionError } from '@/components/ActionError'
 
 /**
- * 「新しく注文する」。確認の画面で表示した全ての支払待ちの注文の ID を送って、注文手続きを始める。
+ * 新しく注文するフォーム
+ *
+ * 確認の画面で表示した全ての支払待ちの注文の ID を送って、注文手続きを始める。
  *
  * 在庫が足りないときは、API のメッセージを出す。
  */

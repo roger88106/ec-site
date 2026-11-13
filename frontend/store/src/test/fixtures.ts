@@ -11,7 +11,8 @@ import type {
 } from '@/api/types'
 
 /**
- * サーバーの処理のテストで API の応答に使うデータ（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * サーバーの処理のテストで API の応答に使うデータ（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
+ *
  * どれも、テストに関係のない項目にありふれた値を入れたもの。テストで確認する項目は overrides で与える。
  */
 
@@ -85,7 +86,9 @@ export const VARIANT_AXES: VariantAxis[] = [
 ]
 
 /**
- * 色とサイズの値を持つバリアント。既定は在庫があり、販売停止でない。
+ * 色とサイズの値を持つバリアント。
+ *
+ * 既定は在庫があり、販売停止でない。
  *
  * @param color     色の値
  * @param size      サイズの値
@@ -131,7 +134,9 @@ export const MUNICIPALITIES: Record<string, Municipality[]> = {
 }
 
 /**
- * 郵便番号の住所。都道府県と市区町村は、PREFECTURES と MUNICIPALITIES から引く。
+ * 郵便番号の住所。
+ *
+ * 都道府県と市区町村は、PREFECTURES と MUNICIPALITIES から引く。
  *
  * @param prefectureCode   都道府県のコード
  * @param municipalityCode 市区町村のコード

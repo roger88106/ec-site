@@ -8,7 +8,7 @@
 export type CartMergeOutcome = 'merged' | 'gone' | 'unauthenticated' | 'failed'
 
 /**
- * 移す API（POST /me/cart/merge）の HTTP ステータスから、結果の区分を返す。例外は呼び出し側で failed にする。
+ * 移す API（POST /me/cart/merge）の HTTP ステータスから、結果の区分を返す。
  *
  * @param status HTTP ステータス
  * @returns 結果の区分

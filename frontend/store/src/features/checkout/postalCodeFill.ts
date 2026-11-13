@@ -1,14 +1,16 @@
 import type { PostalCodeAddress } from '@/api/types'
 
-/** 郵便番号で補うもの。address が null なら住所の欄を変えない */
+/** 郵便番号で補うもの */
 type PostalCodeFill = {
   prefectureCode: string
   municipalityCode: string
+  /** 住所の欄に入れる町域。null なら住所の欄を変えない */
   address: string | null
 }
 
 /**
- * 郵便番号を引いた結果から、補うものを決める（店舗画面の構成の「お届け先の都道府県と市区町村」）。<br />
+ * 郵便番号を引いた結果から、補うものを決める（店舗画面の構成の「お届け先の都道府県と市区町村」）。
+ *
  * 都道府県と市区町村が 1 つに決まるときだけ補い、町域は 1 件で住所の欄が空のときだけ入れる。
  *
  * @param addresses      郵便番号の住所

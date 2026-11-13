@@ -1,4 +1,5 @@
 import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
@@ -22,8 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 使うカート（店舗画面の構成の「使うカートの選び方」）を取得する。数量がすぐ変わるので、キャッシュを使わない。
- * ログインしていれば会員のカート、していなければ Cookie のカート。
+ * 使うカート（店舗画面の構成の「使うカートの選び方」）を取得する。
+ *
+ * 数量がすぐ変わるので、キャッシュを使わない。ログインしていれば会員のカート、していなければ Cookie のカート。
  *
  * @returns カート。Cookie のカートがない、またはもうなければ null（空のカートとして出す）
  */
@@ -43,7 +45,7 @@ async function fetchCart(): Promise<Cart | null> {
 }
 
 /**
- * カートを移す処理の再試行が必要か。
+ * カートを移す処理の再試行が必要かを判定する。
  *
  * @returns 必要なら true（判定は {@link shouldRetryCartMerge}）
  */
@@ -61,7 +63,7 @@ export default async function CartPage() {
   ])
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-semibold">{t('title') /* カート */}</h1>
+      <PageHeader title={t('title') /* カート */} />
       <CartMergeNoticeView notice={mergeNotice} />
       {/* 再試行の結果を再表示の後も示すため、pending によらず同じ位置に置く */}
       <CartMergeRetry pending={retryPending} />

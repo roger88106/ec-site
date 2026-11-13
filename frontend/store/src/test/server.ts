@@ -14,14 +14,16 @@ export const IDP = 'http://localhost:8180/realms/ec-store'
 export const TOKEN_ENDPOINT = `${IDP}/protocol/openid-connect/token`
 
 /**
- * 店舗 API の応答を差し替えるハンドラーを作る（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * 店舗 API の応答を差し替えるハンドラーを作る（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
+ *
  * パス・パラメーター・リクエストとレスポンスの本文は store.yaml の型に合わせる。store.yaml にない応答は型エラーになる。
  * 例：`http.post('/carts', ({ response }) => response(201).json({ id: CART_ID }))`
  */
 export const http = createOpenApiHttp<paths>({ baseUrl: STORE_API })
 
 /**
- * サーバーの処理のテストで、店舗 API と IdP の代わりに応答するサーバー。<br />
+ * サーバーの処理のテストで、店舗 API と IdP の代わりに応答するサーバー。
+ *
  * 既定のハンドラーは持たない。各テストで `server.use(...)` に、そのテストで呼ばれる API の応答を渡す。
  * ハンドラーのない API が呼ばれたら、テストを失敗させる（setup.ts）。
  */
@@ -53,7 +55,9 @@ export function statusError(method: 'get' | 'post' | 'put' | 'patch' | 'delete',
 }
 
 /**
- * エラーレスポンス（Problem）の本文を作る。画面に出るのは message。
+ * エラーレスポンス（Problem）の本文を作る。
+ *
+ * 画面に出るのは message。
  *
  * @param status    HTTP の状態
  * @param errorCode store.yaml の errorCode（例：INSUFFICIENT_STOCK）

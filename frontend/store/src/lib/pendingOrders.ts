@@ -19,6 +19,7 @@ const LIMIT_REACHED = 'reached'
 
 /**
  * 上限に達したことを示す確認の画面の URL（クエリ付き）。
+ *
  * `actions/` は `features/` を import できないので、`lib/` に置く。
  *
  * @returns 上限に達したことを示すクエリを付けた、確認の画面の URL

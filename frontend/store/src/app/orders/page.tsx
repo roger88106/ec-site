@@ -1,3 +1,4 @@
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { formatDateTime, formatYen } from '@ec-site/shared/lib/format'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -16,7 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title') } // ご注文履歴
 }
 
-/** 注文の一覧。ログインを求め、自分の注文を新しい順に出す */
+/**
+ * 注文の一覧
+ *
+ * ログインを求め、自分の注文を新しい順に出す。
+ */
 export default async function OrdersPage({ searchParams }: PageProps<'/orders'>) {
   const t = await getTranslations('order.list')
   const tCommon = await getTranslations('common')
@@ -27,7 +32,7 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-semibold">{t('title') /* ご注文履歴 */}</h1>
+      <PageHeader title={t('title') /* ご注文履歴 */} />
       {orders.items.length === 0 ? (
         <div className="space-y-4">
           <p className="text-muted-foreground">{t('empty') /* まだない */}</p>

@@ -44,7 +44,9 @@ export function input(label: string): HTMLInputElement {
 }
 
 /**
- * 要素が、渡した順に文書の中で出ることを確認する（見える文言の順）。隣り合う要素の組ごとに、後の要素が前の要素より後にある。
+ * 要素が、渡した順に文書の中で出ることを確認する（見える文言の順）。
+ *
+ * 隣り合う要素の組ごとに、後の要素が前の要素より後にある。
  * 定数は要素から読む（テストの環境が Node のままでも使える）。
  * 例：`expectInOrder(view.getByLabelText('郵便番号'), error, view.getByLabelText('都道府県'))`
  *

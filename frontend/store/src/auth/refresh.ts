@@ -29,7 +29,7 @@ const {
  *          他の失敗（IdP に届かない、IdP の障害など）では、今の token
  */
 export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): Promise<MemberJwt | null> {
-  if (!needsTokenRefresh(token.expiresAt, Math.floor(Date.now() / 1000), marginSeconds)) {
+  if (!needsTokenRefresh(token.expiresAt, nowSeconds(), marginSeconds)) {
     return token
   }
   if (!token.refreshToken) {
@@ -62,7 +62,7 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
     return {
       ...token,
       accessToken: refreshed.access_token,
-      expiresAt: Math.floor(Date.now() / 1000) + refreshed.expires_in,
+      expiresAt: nowSeconds() + refreshed.expires_in,
       refreshToken: refreshed.refresh_token ?? token.refreshToken,
       idToken: refreshed.id_token ?? token.idToken,
     }
@@ -70,6 +70,11 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
     // IdP に届かなかった、または応答が読めなかった：ログインの状態は残す（期限が切れていれば、API が 401 を返し、ログインの画面へ移る）
     return token
   }
+}
+
+/** いまの UNIX 時刻（秒） */
+function nowSeconds(): number {
+  return Math.floor(Date.now() / 1000)
 }
 
 /** IdP が refresh token を拒否した（応答の本文の error が invalid_grant）か */

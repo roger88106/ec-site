@@ -9,6 +9,7 @@ import {
   SHOWCASE_STORE_URL as STORE,
 } from '../src/showcase-urls'
 import { addToCart, emptyCart, leaveMockPage, orderCart, orderIdOf, payOnMockPage } from '../src/store'
+import { stockPath } from '../src/urls'
 
 /** 撮った画像の置き場所 */
 const OUT = path.resolve(import.meta.dirname, '../../showcase/img')
@@ -17,8 +18,6 @@ const OUT = path.resolve(import.meta.dirname, '../../showcase/img')
 const shot = makeShot(OUT)
 
 test('機能紹介のページのスクリーンショットを撮る', async ({ page }) => {
-  let paidOrderId = ''
-
   await test.step('店舗画面：トップと商品の詳細', async () => {
     await page.goto(`${STORE}/`)
     await shot(page, 'store-top', page.getByRole('link', { name: /マグカップ/ }))
@@ -27,7 +26,7 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await shot(page, 'store-product', page.getByRole('button', { name: 'カートに入れる', exact: true }))
   })
 
-  await test.step('店舗画面：会員として、税率の違う 2 品目を注文して支払う', async () => {
+  const paidOrderId = await test.step('店舗画面：会員として、税率の違う 2 品目を注文して支払う', async () => {
     await loginStore(page, ACCOUNTS.member, { returnTo: '/cart', storeUrl: STORE })
     // 会員のカートは残るので、前に撮ったときの品目を消す
     await emptyCart(page, { storeUrl: STORE })
@@ -35,9 +34,9 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await addToCart(page, SEED.chocolate, { storeUrl: STORE })
     await orderCart(page, { storeUrl: STORE, name: RECIPIENT })
     // 支払の通知が反映されて「受付」になるまで待つ
-    const orderUrl = await payOnMockPage(page)
-    paidOrderId = orderIdOf(orderUrl)
+    const id = orderIdOf(await payOnMockPage(page))
     await shot(page, 'store-order', page.getByText('受付', { exact: true }))
+    return id
   })
 
   await test.step('店舗画面：支払わずに戻った、支払待ちの注文', async () => {
@@ -55,7 +54,7 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await shot(page, 'admin-products', page.getByRole('link', { name: 'MUG-001' }))
     await page.goto(`${ADMIN}/products/${SEED.mug}`)
     await shot(page, 'admin-product', page.getByRole('cell', { name: 'MUG-001-WH', exact: true }))
-    await page.goto(`${ADMIN}/products/${SEED.mug}/variants/${SEED.mugWhite}/stock`)
+    await page.goto(`${ADMIN}${stockPath(SEED.mug, SEED.mugWhite)}`)
     // 在庫の履歴に注文の行が出てから撮る
     await expect(page.getByRole('cell', { name: '注文', exact: true })).not.toHaveCount(0)
     await shot(page, 'admin-stock', page.getByRole('status', { name: '在庫数' }))

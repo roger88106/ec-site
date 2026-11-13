@@ -9,7 +9,8 @@ import { ASYNC_TIMEOUT } from './waits'
 type AddVariantRequest = components['schemas']['AddVariantRequest']
 
 /**
- * 実行ごとの識別子。テストで作る品番・名称に付け、前の実行や手で作ったデータと混ざらないようにする。<br />
+ * 実行ごとの識別子。テストで作る品番・名称に付け、前の実行や手で作ったデータと混ざらないようにする。
+ *
  * 品番に使えるよう、英大文字と数字だけにする（例：MG3K2J1A）。
  */
 export const RUN_ID = Date.now().toString(36).toUpperCase()
@@ -48,7 +49,8 @@ function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T
 export type TaxCategoryRef = { id: string; name: string }
 
 /**
- * 現時点の率が ratePercent の税区分を返す。E2E の DB の seed（db/seed/base）の「標準」（10%）「軽減」（8%）を使う。<br />
+ * 現時点の率が ratePercent の税区分を返す。E2E の DB の seed（db/seed/base）の「標準」（10%）「軽減」（8%）を使う。
+ *
  * 作らずに、なければ失敗する。作ったばかりの税区分は、バックエンドの税率のキャッシュ（有効期間 30 秒）が切れるまで
  * 率がなく、時間で待つことになるため。
  *

@@ -1,7 +1,7 @@
 import { expect, type Page, type Response, test } from '@playwright/test'
 import { ACCOUNTS } from '../src/auth'
 import { createSimpleProduct } from '../src/data'
-import { addToCart, loginWithCart, proceedToCheckout } from '../src/store'
+import { addToCart, checkoutButton, loginWithCart, proceedToCheckout } from '../src/store'
 import { BACKEND_URL, IDP_URL, IMAGE_ORIGIN, STORE_URL } from '../src/urls'
 
 declare global {
@@ -120,7 +120,7 @@ test('AC-418-1、AC-418-2、AC-418-3、AC-418-4 店舗画面の応答にセキ�
   await test.step('商品の詳細とカート（AC-418-4）', async () => {
     await addToCart(page, productId)
     await page.goto(`${STORE_URL}/cart`)
-    await expect(page.getByRole('button', { name: '注文手続きへ進む', exact: true })).toBeVisible()
+    await expect(checkoutButton(page)).toBeVisible()
   })
 
   await test.step('注文手続き（AC-418-4）', async () => {

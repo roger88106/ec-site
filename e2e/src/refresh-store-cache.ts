@@ -28,7 +28,8 @@ async function expectNoStaleCard(page: Page): Promise<void> {
 }
 
 /**
- * 撮影の前に、DB を再作成する前の商品を店舗画面のキャッシュから除く（Playwright の globalSetup）。<br />
+ * 撮影の前に、DB を再作成する前の商品を店舗画面のキャッシュから除く（Playwright の globalSetup）。
+ *
  * 店舗画面のキャッシュは DB の再作成の後も残り、再作成の前の商品のカードが画像に写り込むことがある。
  * 開き直すうちに新しい内容に更新されるので（`reopenUntil`）、カードが全て今の DB の商品になるまで開き直す。
  */

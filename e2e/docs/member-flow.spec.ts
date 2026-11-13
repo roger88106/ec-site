@@ -8,10 +8,12 @@ import {
   idpPasswordSubmitButton,
   idpSignInButton,
   idpSignupButton,
+  logoutButton,
   openMailLink,
 } from '../src/auth'
 import { makeShot } from '../src/screenshot'
 import { SHOWCASE_BACKEND_URL as BACKEND, SHOWCASE_STORE_URL as STORE } from '../src/showcase-urls'
+import { productCard } from '../src/store'
 import { CHECK_TIMEOUT, reopenUntil, SHOWCASE_CACHE_TIMEOUT } from '../src/waits'
 
 /** 撮った画像の置き場所（docs/01-概要/member.md が載せる） */
@@ -24,7 +26,8 @@ const shot = makeShot(OUT)
 const NAME = { lastName: '山田', firstName: '花子' }
 
 /**
- * トップの新着欄に、DB にある最新の商品が出るまで開き直す。<br />
+ * トップの新着欄に、DB にある最新の商品が出るまで開き直す。
+ *
  * 店舗画面のキャッシュは、期限の切れた後の最初の表示で古い一覧を返す。そのままだと、前の流れで登録した商品が写るかどうかが、撮影のたびに変わる。
  *
  * @param page 使うページ
@@ -32,13 +35,14 @@ const NAME = { lastName: '山田', firstName: '花子' }
 async function openLatestStoreTop(page: Page): Promise<void> {
   const response = await fetch(`${BACKEND}/api/store/products?sort=newest&size=1`)
   if (!response.ok) throw new Error(`新着の商品を取得できない（${response.status}）`)
-  const { items } = (await response.json()) as { items: { id: string }[] }
-  const newestId = items.at(0)?.id
+  const { items } = (await response.json()) as { items: { name: string }[] }
+  const newest = items.at(0)
+  if (newest === undefined) throw new Error('新着の商品がない')
   await reopenUntil(
     page,
     `${STORE}/`,
     async () => {
-      await expect(page.locator(`a[href="/products/${newestId}"]`)).toBeVisible({ timeout: CHECK_TIMEOUT })
+      await expect(productCard(page, newest.name)).toBeVisible({ timeout: CHECK_TIMEOUT })
     },
     { timeout: SHOWCASE_CACHE_TIMEOUT },
   )
@@ -69,8 +73,8 @@ test('会員登録とログインの流れのスクリーンショットを撮�
     await idpPasswordSubmitButton(page).click()
     await shot(page, '05-logged-in', page.getByText(`${NAME.lastName} ${NAME.firstName} 様`))
 
-    await page.getByRole('button', { name: 'ログアウト', exact: true }).click()
-    await page.getByRole('link', { name: 'ログイン' }).click()
+    await logoutButton(page).click()
+    await page.getByRole('link', { name: 'ログイン', exact: true }).click()
     await expect(idpPasswordInput(page)).toBeVisible()
     await shot(page, '06-login', idpSignInButton(page))
   })

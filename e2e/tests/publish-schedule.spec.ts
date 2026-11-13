@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { changePublishStart, createSimpleProduct, RUN_ID } from '../src/data'
+import { expectProductNotFound } from '../src/store'
 import { STORE_URL } from '../src/urls'
 import { ASYNC_TIMEOUT, reopenUntil } from '../src/waits'
 
@@ -20,9 +21,7 @@ test('AC-35 公開開始日時を予約して公開すると、開始前は店�
   })
   const url = `${STORE_URL}/products/${productId}`
 
-  const before = await page.goto(url)
-  expect(before?.status()).toBe(404)
-  await expect(page.getByRole('heading', { name: 'ページが見つかりません' })).toBeVisible()
+  await expectProductNotFound(page, productId)
 
   const publishStart = new Date(Date.now() + RESERVATION_MILLIS)
   await changePublishStart(productId, publishStart)

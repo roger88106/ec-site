@@ -57,10 +57,7 @@ async function expectOpaque(button: Locator): Promise<void> {
 }
 
 test('商品の登録と公開の流れのスクリーンショットを撮る', async ({ page }) => {
-  let productUrl = ''
-  let productId = ''
-
-  await test.step('管理画面：商品を登録する', async () => {
+  const { productUrl, productId } = await test.step('管理画面：商品を登録する', async () => {
     await loginAdmin(page, ACCOUNTS.administrator, { adminUrl: ADMIN, path: '/products/new' })
     await page.getByLabel('商品品番（登録後は変更できません）').fill(PRODUCT.code)
     await page.getByLabel('商品名').fill(PRODUCT.name)
@@ -74,8 +71,8 @@ test('商品の登録と公開の流れのスクリーンショットを撮る',
     await page.getByRole('button', { name: '登録', exact: true }).click()
     await expect(page.getByText('商品を登録しました')).toBeVisible()
     await expect(page.getByRole('heading', { name: PRODUCT.code })).toBeVisible()
-    productUrl = page.url()
-    productId = lastPathSegment(productUrl)
+    const url = page.url()
+    return { productUrl: url, productId: lastPathSegment(url) }
   })
 
   await test.step('管理画面：画像を登録する', async () => {

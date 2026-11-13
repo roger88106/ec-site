@@ -9,7 +9,8 @@ import {
   idpPasswordRejected,
   idpPasswordSubmitButton,
   loginStore,
-  memberEmail,
+  logoutButton,
+  newMemberAccount,
   openMailLink,
   setPasswordFromMail,
   submitIdpLogin,
@@ -17,7 +18,7 @@ import {
 } from '../src/auth'
 import { createSimpleProduct } from '../src/data'
 import { detailValue } from '../src/detail'
-import { addToCart, fillShipping, payOnMockPage, proceedToCheckout, submitOrder } from '../src/store'
+import { addToCart, checkoutButton, fillShipping, payOnMockPage, proceedToCheckout, submitOrder } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開いてパスワードを設定すると、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
@@ -29,7 +30,7 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
     name: productName,
     stock: 5,
   })
-  const account = { email: memberEmail('signup'), password: 'E2e-pass-1234' }
+  const account = newMemberAccount('signup')
 
   await test.step('ログインせずにカートに入れ、会員登録する。確認のメールを送ったと示される（AC-108、111）', async () => {
     await addToCart(page, productId, { quantity: '2' })
@@ -61,14 +62,14 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
   })
 
   await test.step('ログアウトするとカートは空に見え、ログインせずに入れて注文手続きに進むと、ログインの後にカートに戻る（AC-113、124、125）', async () => {
-    await page.getByRole('button', { name: 'ログアウト', exact: true }).click()
-    await expect(page.getByRole('link', { name: 'ログイン' })).toBeVisible()
+    await logoutButton(page).click()
+    await expect(page.getByRole('link', { name: 'ログイン', exact: true })).toBeVisible()
     await page.goto(`${STORE_URL}/cart`)
     await expect(page.getByText('カートに商品がありません。')).toBeVisible()
 
     await addToCart(page, productId, { quantity: '1' })
     await page.goto(`${STORE_URL}/cart`)
-    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
+    await checkoutButton(page).click()
     await submitIdpLogin(page, account)
     await expect(page).toHaveURL(`${STORE_URL}/cart`)
     await expect(page.getByText('会員 登録 様')).toBeVisible()
@@ -76,14 +77,14 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
   })
 
   await test.step('ログアウトすると、パスワードなしではログインし直せない（AC-115）', async () => {
-    await page.getByRole('button', { name: 'ログアウト', exact: true }).click()
-    await page.getByRole('link', { name: 'ログイン' }).click()
+    await logoutButton(page).click()
+    await page.getByRole('link', { name: 'ログイン', exact: true }).click()
     await expect(idpPasswordInput(page)).toBeVisible()
   })
 })
 
 test('AC-110 確認メールのリンク先の画面で、条件を満たさないパスワードの設定は拒否される', async ({ page }) => {
-  const account = { email: memberEmail('weakpass'), password: 'E2e-pass-1234' }
+  const account = newMemberAccount('weakpass')
   await page.goto(STORE_URL)
   await submitSignup(page, account, { lastName: '会員', firstName: '拒否' })
   await openMailLink(page, account)
@@ -92,7 +93,7 @@ test('AC-110 確認メールのリンク先の画面で、条件を満たさな�
     await fillNewPassword(page, { ...account, password: 'Ab1-xyz' })
     await idpPasswordSubmitButton(page).click()
     await expect(idpPasswordRejected(page)).toBeVisible()
-    await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeHidden()
+    await expect(logoutButton(page)).toBeHidden()
   })
 
   await test.step('メールアドレスと同じパスワードは拒否される', async () => {
@@ -109,7 +110,7 @@ test('AC-110 確認メールのリンク先の画面で、条件を満たさな�
 })
 
 test('AC-111 確認メールのリンクでパスワードを設定するまでは、ログインできない', async ({ page, browser }) => {
-  const account = { email: memberEmail('unverified'), password: 'E2e-pass-1234' }
+  const account = newMemberAccount('unverified')
   await page.goto(STORE_URL)
   await submitSignup(page, account, { lastName: '会員', firstName: '未確認' })
 
@@ -135,7 +136,7 @@ test('AC-112 登録を始めたのと別のブラウザーで確認メールの�
   page,
   browser,
 }) => {
-  const account = { email: memberEmail('otherbrowser'), password: 'E2e-pass-1234' }
+  const account = newMemberAccount('otherbrowser')
   await page.goto(STORE_URL)
   await submitSignup(page, account, { lastName: '会員', firstName: '別端末' })
 
@@ -157,7 +158,7 @@ test('AC-112 登録を始めたのと別のブラウザーで確認メールの�
     })
 
     await test.step('店舗ではログインしていないので、ログインする', async () => {
-      await expect(otherPage.getByRole('link', { name: 'ログイン' })).toBeVisible()
+      await expect(otherPage.getByRole('link', { name: 'ログイン', exact: true })).toBeVisible()
       await loginStore(otherPage, account)
       await expect(otherPage.getByText('会員 別端末 様')).toBeVisible()
     })

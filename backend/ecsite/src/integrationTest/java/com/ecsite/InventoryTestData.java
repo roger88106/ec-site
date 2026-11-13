@@ -10,7 +10,9 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 /**
- * 統合テストで、バリアントの在庫を作り、入荷として調整する補助。<br />
+ * 在庫のテストデータ
+ *
+ * <p>統合テストで、バリアントの在庫を作り、入荷として調整する。
  * 在庫の Repository を直接呼ぶ（API は使わない）。調整の操作者は {@link TestTokens#OPERATOR}、時刻は渡された時計から取る。
  */
 public class InventoryTestData {
@@ -61,13 +63,44 @@ public class InventoryTestData {
     /**
      * 在庫を作り（なければ）、在庫数を入荷として調整する。
      *
+     * <p>数量が 0 なら、作るだけで調整しない。
+     *
      * @param variantId バリアント ID
      * @param productId 商品 ID
-     * @param quantity  入荷の数量
+     * @param quantity  入荷の数量（0 以上）
      */
     public void stock(UUID variantId, UUID productId, int quantity) {
         stockItemRepository.createIfAbsent(variantId, productId);
-        stockItemRepository.adjust(variantId,
-                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+        if (quantity > 0) {
+            stockItemRepository.adjust(variantId,
+                    StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+        }
+    }
+
+    /**
+     * 新しい商品 ID で在庫を作り、在庫数を入荷として調整する。
+     *
+     * <p>商品を問わないテストで使う。数量が 0 なら、作るだけで調整しない。
+     *
+     * @param variantId バリアント ID
+     * @param quantity  入荷の数量（0 以上）
+     */
+    public void stock(UUID variantId, int quantity) {
+        stock(variantId, UUID.randomUUID(), quantity);
+    }
+
+    /**
+     * 新しいバリアント ID で在庫を作り、在庫数を入荷として調整する。
+     *
+     * <p>数量が 0 なら、作るだけで調整しない。
+     *
+     * @param productId 商品 ID
+     * @param quantity  入荷の数量（0 以上）
+     * @return 作った在庫のバリアント ID
+     */
+    public UUID stockNewVariant(UUID productId, int quantity) {
+        var variantId = UUID.randomUUID();
+        stock(variantId, productId, quantity);
+        return variantId;
     }
 }

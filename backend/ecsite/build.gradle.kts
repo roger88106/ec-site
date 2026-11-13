@@ -85,13 +85,12 @@ sourceSets {
         compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
         runtimeClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
     }
-}
-
-// tools の郵便番号の CSV を読む処理を単体テストで確認するため、単体テストのクラスパスに tools の出力を加える
-// （カバレッジと mutation の対象は main のままで、tools は含まない）
-sourceSets.test {
-    compileClasspath += sourceSets["tools"].output
-    runtimeClasspath += sourceSets["tools"].output
+    // tools の郵便番号の CSV を読む処理を単体テストで確認するため、単体テストのクラスパスに tools の出力を加える
+    // （カバレッジと mutation の対象は main のままで、tools は含まない）
+    test {
+        compileClasspath += sourceSets["tools"].output
+        runtimeClasspath += sourceSets["tools"].output
+    }
 }
 
 configurations["integrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
@@ -109,8 +108,6 @@ idea {
 // 依存関係
 // -----------------------------------------------------------------------------
 dependencies {
-    // CPD は Java だけ見る。既定の pmd-dist は全ての言語の部品（約 40 個）を引くので、Java の部品だけにする（pmd-core は pmd-java から入る）
-    "cpd"("net.sourceforge.pmd:pmd-java:${libs.versions.pmd.get()}")
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.validation)
@@ -163,6 +160,10 @@ dependencies {
     // test などの classpath にも必要なので、compileOnly でなく implementation にする
     implementation(libs.jspecify)
 
+    // --- テストのコードの重複の検出（PMD の CPD） ---
+    // CPD は Java だけ見る。既定の pmd-dist は全ての言語の部品（約 40 個）を引くので、Java の部品だけにする（pmd-core は pmd-java から入る）
+    "cpd"(libs.pmd.java)
+
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」） ---
     implementation(libs.bundles.jmolecules)
 
@@ -201,17 +202,18 @@ val unitTestMaxHeap = "768m"
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、ModuleStructureTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
-val openApiSourceDir = file("../../api/openapi")
+// API の契約の正本（OpenAPI）の置き場所。テストが読むほか、下の「OpenAPI からのコード生成」でも使う
+val openApiDir = layout.projectDirectory.dir("../../api/openapi")
 val keycloakRealmsDir = file("../../docker/keycloak/realms")
 val unitTestSystemProperties = mapOf(
-    "openapi.dir" to openApiSourceDir.absolutePath,
+    "openapi.dir" to openApiDir.asFile.absolutePath,
     "keycloak.realms.dir" to keycloakRealmsDir.absolutePath,
     "repo.root" to file("../..").absolutePath,
 )
 
 // 単体テストが読む契約・realm の設定・文書を、task の入力に宣言する（変わったときにテストと PIT を再実行するため）
 fun Task.declareUnitTestInputs() {
-    inputs.dir(openApiSourceDir)
+    inputs.dir(openApiDir)
     inputs.dir(keycloakRealmsDir)
     inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
     inputs.file("../../docs/03-機能仕様/glossary.md")
@@ -237,13 +239,13 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     classpath = sourceSets["integrationTest"].runtimeClasspath
     useJUnitPlatform()
     // 契約の補助（Contracts）が読む置き場所：店舗 API の token の契約のテストが読む OpenAPI、IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
-    systemProperty("openapi.dir", openApiSourceDir.absolutePath)
+    systemProperty("openapi.dir", openApiDir.asFile.absolutePath)
     systemProperty("keycloak.realms.dir", keycloakRealmsDir.absolutePath)
     systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
     // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照合する）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
-    inputs.dir(openApiSourceDir)
+    inputs.dir(openApiDir)
     // 本番の jar の起動の統合テスト（ProductionJarStartupTest）が別のプロセスで起動する jar
     val bootJarFile = tasks.bootJar.flatMap { it.archiveFile }
     inputs.file(bootJarFile)
@@ -317,7 +319,7 @@ tasks.register("integrationTestShards") {
 }
 
 // -----------------------------------------------------------------------------
-// 地域の最初のデータ（地域の設計 docs/02-設計/region.md の「最初のデータの作り方」）
+// 地域の最初のデータ（地域の設計の「最初のデータの作り方」）
 //   ./gradlew generateRegionMigration                      → /.local/masterdata/ の郵便番号のデータから作る
 //   ./gradlew generateRegionMigration -PpostalCodeCsv=<CSV> → CSV の置き場所を指定する
 //   郵便番号のデータは Git に入れない。作ったマイグレーションは Git に入れる
@@ -339,7 +341,7 @@ tasks.register<JavaExec>("generateRegionMigration") {
 // -----------------------------------------------------------------------------
 // Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」）
 //   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
-//   ・import：使われていないもの（UnusedImports）と、並び（CustomImportOrder）
+//   ・import：使われていないもの（UnusedImports）、* の import（AvoidStarImport）、並び（CustomImportOrder）
 //   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
 //     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
 //   生成したコード（jOOQ、OpenAPI。build/ の下）は見ない。ほかの規則は入れない。
@@ -521,7 +523,7 @@ class PreferPomLicenses : com.github.jk1.license.filter.DependencyFilter {
     }
 }
 
-val allowedLicensesOutput =layout.buildDirectory.file("license-policy/allowed-licenses.json")
+val allowedLicensesOutput = layout.buildDirectory.file("license-policy/allowed-licenses.json")
 
 licenseReport {
     // 実行時、コンパイル時、テスト、注釈の処理、jOOQ のコード生成。
@@ -651,8 +653,6 @@ tasks.named<JooqGenerate>("generateJooq") {
 //   API 契約の正本はリポジトリのルートの api/openapi/（API の規約）。
 //   Controller が実装するインターフェースとモデルを生成する。生成コードはコミットしない（build/ 配下）。
 // -----------------------------------------------------------------------------
-val openApiDir = rootProject.layout.projectDirectory.dir("../../api/openapi")
-
 // 生成する API：名前 → パッケージ（com.ecsite.api.<名前>）
 val openApiSpecs = listOf("admin", "store")
 
@@ -819,7 +819,7 @@ tasks.withType<JavaCompile>().configureEach {
             // 生成した interface の @Nullable の引数を、実装側が注釈なしで上書きした所と、
             // 生成したモデルの @Nullable の getter の値を、null でないとみなす引数に渡す所
             option("NullAway:AcknowledgeRestrictiveAnnotations", "true")
-            // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
+            // JSpecifyMode は付けない（JDK 22 以上が必要で、ここは JDK 21）
         } else {
             // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
             // 意図して null を渡す

@@ -5,31 +5,12 @@
 # [libraries] : 依存関係。Boot BOM が管理するものは version を持たない
 # [bundles]   : まとめて追加する依存関係のグループ
 # [plugins]   : Gradle プラグイン
-#
-# ※ライブラリは、使うタスクで build.gradle.kts に追加する。バージョンはここで先に決めておく。
 # =============================================================================
 
 # ============================== [versions] ==============================
 
 [versions]
 java = "21"
-jacoco = "0.8.13"
-# Javadoc の書き漏れの検査（コメントの書き方の「Java」）
-checkstyle = "14.3.0"
-# テストの Java のコードの重複の検出（PMD の CPD）。Gradle のプラグインと PMD の本体でバージョンが別
-cpd-plugin = "3.5"
-pmd = "7.28.0"
-# domain の mutation testing（PIT）。PIT の本体、Gradle のプラグイン、JUnit 5 との連携でバージョンが別
-pitest-engine = "1.30.1"
-pitest-gradle-plugin = "1.19.0"
-pitest-junit5-plugin = "1.2.3"
-# 依存のライセンスの検査（依存とライセンス）
-dependency-license-report = "3.1.5"
-# コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体でバージョンが別
-errorprone-plugin = "5.2.0"
-errorprone = "2.51.0"
-# null の検査（Error Prone の検査として動く）
-nullaway = "0.14.3"
 
 # --- フレームワーク ---
 spring-boot = "4.1.2"
@@ -38,6 +19,7 @@ spring-modulith = "2.1.2"
 
 # --- DB ---
 jooq = "3.21.9"
+# jooq-plugin にすると、jooq の値を build.gradle.kts で libs.versions.jooq.asProvider() から取る形に変わるので、camelCase にする
 jooqPlugin = "10.2.1"
 # jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM のバージョンになるので、Boot の管理するバージョンに合わせる
 flyway = "13.12.0"
@@ -45,23 +27,42 @@ postgresql = "42.7.14"
 
 # --- API ---
 openapi-generator = "7.26.0"
-
 jackson-databind-nullable = "0.2.13"
 
-# --- ユーティリティ ---
+# --- DDD ---
 jmolecules = "2025.0.2"
 
 # --- 定期ジョブの分散ロック（バックエンドのアーキテクチャの「水平スケール」） ---
 shedlock = "7.10.1"
 
-# --- 決済サービス（Stripe。docs/02-設計/payment.md の「Stripe」） ---
+# --- 決済サービス（Stripe。決済の設計の「Stripe」） ---
 stripe = "34.1.0"
 
 # --- 画像のファイル（オブジェクトストレージ） ---
 awssdk = "2.57.10"
 
+# --- 静的解析 ---
+# コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体でバージョンが別
+errorprone-plugin = "5.2.0"
+errorprone = "2.51.0"
+# null の検査（Error Prone の検査として動く）
+nullaway = "0.14.3"
+# Javadoc の書き漏れと import の検査（コメントの書き方の「Java」、バックエンドの書き方の「書式」）
+checkstyle = "14.3.0"
+
 # --- テスト ---
 testcontainers = "2.0.5"
+jacoco = "0.8.13"
+# テストの Java のコードの重複の検出（PMD の CPD）。Gradle のプラグインと PMD の本体でバージョンが別
+cpd-plugin = "3.5"
+pmd = "7.28.0"
+# domain の mutation testing（PIT）。PIT の本体、Gradle のプラグイン、JUnit 5 との連携でバージョンが別
+pitest-engine = "1.30.1"
+pitest-gradle-plugin = "1.19.0"
+pitest-junit5-plugin = "1.2.3"
+
+# --- 依存のライセンスの検査（依存とライセンス） ---
+dependency-license-report = "3.1.5"
 
 # ============================== [libraries] ==============================
 
@@ -115,16 +116,20 @@ buildscript-postgresql = { module = "org.postgresql:postgresql", version.ref = "
 # 0.2.12 から Jackson 3 用のモジュール（JsonNullableJackson3Module）を含む
 jackson-databind-nullable = { module = "org.openapitools:jackson-databind-nullable", version.ref = "jackson-databind-nullable" }
 
-# --- ユーティリティ ---
-lombok = { module = "org.projectlombok:lombok" }
-# コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
-errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
-# null を許す型の注釈（Nullable）。NullAway が見る（バージョンは Spring Boot の BOM が管理）
-jspecify = { module = "org.jspecify:jspecify" }
-# null の検査（errorprone の構成に入れる）
-nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
+# --- DDD（jMolecules BOM 管理） ---
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
+
+# --- コード生成（Boot BOM 管理） ---
+lombok = { module = "org.projectlombok:lombok" }
+
+# --- 静的解析 ---
+# コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
+errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+# null の検査（errorprone の構成に入れる）
+nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
+# null を許す型の注釈（Nullable）。NullAway が見る（バージョンは Spring Boot の BOM が管理）
+jspecify = { module = "org.jspecify:jspecify" }
 
 # --- テスト ---
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
@@ -139,6 +144,8 @@ spring-boot-micrometer-tracing-test = { module = "org.springframework.boot:sprin
 spring-boot-micrometer-metrics-test = { module = "org.springframework.boot:spring-boot-micrometer-metrics-test" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+# CPD の Java の言語の部品（cpd の構成に入れる）
+pmd-java = { module = "net.sourceforge.pmd:pmd-java", version.ref = "pmd" }
 
 # ============================== [bundles] ==============================
 

@@ -57,6 +57,8 @@ class CartApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -86,7 +88,7 @@ class CartApiTest {
     /**
      * 税区分・カテゴリ・商品を作る補助
      */
-    private CatalogTestData data;
+    private CatalogTestData catalog;
 
     private UUID standard;
 
@@ -96,8 +98,8 @@ class CartApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
-        data = new CatalogTestData(mockMvc, clock);
-        standard = data.taxCategory("標準", "10");
+        catalog = new CatalogTestData(mockMvc, clock);
+        standard = catalog.taxCategory("標準", "10");
         var body = mockMvc.perform(post(BASE))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
@@ -106,7 +108,7 @@ class CartApiTest {
     }
 
     @Nested
-    @DisplayName("AC-72、74、75、76 カートに入れる")
+    @DisplayName("カートに入れる")
     class AddItem {
 
         @Test
@@ -123,10 +125,10 @@ class CartApiTest {
         @Test
         @DisplayName("AC-72 表示されない商品・販売停止のバリアント・存在しないバリアントは 400 で、入らない")
         void rejectsUnselectableVariants() throws Exception {
-            var unpublished = data.product(standard, "非公開", 1000);
-            stock(unpublished.variantIds.getFirst(), 5);
-            var suspended = data.product(standard, "販売停止", 1000, "色").variant("白").publish().suspend(0);
-            stock(suspended.variantIds.getFirst(), 5);
+            var unpublished = catalog.product(standard, "非公開", 1000);
+            inventory.stock(unpublished.variantIds.getFirst(), 5);
+            var suspended = catalog.product(standard, "販売停止", 1000, "色").variant("白").publish().suspend(0);
+            inventory.stock(suspended.variantIds.getFirst(), 5);
 
             for (var variant : List.of(unpublished.variantIds.getFirst(), suspended.variantIds.getFirst(), UUID.randomUUID())) {
                 add(cartId, variant, 1)
@@ -186,7 +188,7 @@ class CartApiTest {
     }
 
     @Nested
-    @DisplayName("AC-78 数量の変更と削除")
+    @DisplayName("数量の変更と削除")
     class ChangeItem {
 
         @Test
@@ -273,17 +275,11 @@ class CartApiTest {
      * 公開した商品のバリアントを作り、在庫数を設定して、バリアント ID を返す
      */
     private UUID stockedVariant(int quantity) throws Exception {
-        var variantId = data.product(standard, "商品", 1000).publish().variantIds.getFirst();
-        stock(variantId, quantity);
+        var variantId = catalog.product(standard, "商品", 1000).publish().variantIds.getFirst();
+        inventory.stock(variantId, quantity);
         return variantId;
     }
 
-    /**
-     * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
-     */
-    private void stock(UUID variantId, int quantity) {
-        inventory.stock(variantId, UUID.randomUUID(), quantity);
-    }
 
     /**
      * カートの品目（入れた順）を DB から読む
@@ -293,6 +289,6 @@ class CartApiTest {
                 .from(CART_ITEM)
                 .where(CART_ITEM.CART_ID.eq(cartId))
                 .orderBy(CART_ITEM.SEQUENCE_NO)
-                .fetch(row -> Map.entry(row.value1(), row.value2()));
+                .fetch(row -> Map.entry(row.get(CART_ITEM.VARIANT_ID), row.get(CART_ITEM.QUANTITY)));
     }
 }

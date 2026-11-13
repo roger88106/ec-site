@@ -54,6 +54,8 @@ class MemberCartApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -80,7 +82,7 @@ class MemberCartApiTest {
     /**
      * 税区分・カテゴリ・商品を作る補助
      */
-    private CatalogTestData data;
+    private CatalogTestData catalog;
 
     private UUID standard;
 
@@ -98,14 +100,14 @@ class MemberCartApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
-        data = new CatalogTestData(mockMvc, clock);
-        standard = data.taxCategory("標準", "10");
+        catalog = new CatalogTestData(mockMvc, clock);
+        standard = catalog.taxCategory("標準", "10");
         // カートの表示（見積もり）は、送料の税区分を使う
         ShippingTaxCategory.ensure(dsl);
     }
 
     @Nested
-    @DisplayName("AC-121 会員のカート")
+    @DisplayName("会員のカート")
     class MemberCart {
 
         @Test
@@ -171,7 +173,7 @@ class MemberCartApiTest {
     }
 
     @Nested
-    @DisplayName("AC-120 ログインせずに作ったカート")
+    @DisplayName("ログインせずに作ったカート")
     class GuestCart {
 
         @Test
@@ -350,8 +352,8 @@ class MemberCartApiTest {
      * 在庫のある、選べるバリアントを作る
      */
     private UUID stockedVariant(int quantity) throws Exception {
-        var variantId = data.product(standard, "商品", 1000).publish().variantIds.getFirst();
-        inventory.stock(variantId, UUID.randomUUID(), quantity);
+        var variantId = catalog.product(standard, "商品", 1000).publish().variantIds.getFirst();
+        inventory.stock(variantId, quantity);
         return variantId;
     }
 
@@ -363,6 +365,6 @@ class MemberCartApiTest {
                 .from(CART_ITEM)
                 .where(CART_ITEM.CART_ID.eq(cartId))
                 .orderBy(CART_ITEM.SEQUENCE_NO)
-                .fetch(row -> Map.entry(row.value1(), row.value2()));
+                .fetch(row -> Map.entry(row.get(CART_ITEM.VARIANT_ID), row.get(CART_ITEM.QUANTITY)));
     }
 }

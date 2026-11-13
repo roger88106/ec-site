@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 /**
  * 会員の確認の統合テスト
  *
- * <p>初回のリクエストが同時に来る場合を確認するため、リクエストごとにコミットする。ロールバックしないので、作った会員を後で削除する。
+ * <p>初回のリクエストが同時に来る場合を確認するため、リクエストごとにコミットする。ロールバックしないが、作った会員は消さない。IdP のアカウントの ID は、テストごとに新しくする。
  * トランザクションが読み取り専用かは、会員のリポジトリを包み、呼ばれたときの状態を記録して確認する。
  */
 @IntegrationTest
@@ -49,15 +49,9 @@ class MemberConfirmationTest {
     @Autowired
     DSLContext dsl;
 
-    /**
-     * テストで使った IdP のアカウントの ID（後で削除する）
-     */
-    private final List<String> subjects = new ArrayList<>();
-
     @AfterEach
-    void cleanUp() {
+    void clearAuthentication() {
         SecurityContextHolder.clearContext();
-        dsl.deleteFrom(MEMBER_).where(MEMBER_.IDP_SUBJECT.in(subjects)).execute();
     }
 
     @Test
@@ -164,9 +158,7 @@ class MemberConfirmationTest {
     // ============================== 補助 ==============================
 
     private String newSubject() {
-        var subject = UUID.randomUUID().toString();
-        subjects.add(subject);
-        return subject;
+        return UUID.randomUUID().toString();
     }
 
     /**

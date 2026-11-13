@@ -15,7 +15,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * 会員を作れないときの例外の単体テスト。IdP のアカウントの ID は利用者を指すので、メッセージに入れない。
+ * 会員を作れないときの例外の単体テスト
+ *
+ * <p>IdP のアカウントの ID は利用者を指すので、メッセージに入れない。
  */
 class MemberCommandServiceFailureMessageTest {
 

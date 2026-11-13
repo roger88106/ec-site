@@ -48,6 +48,8 @@ class OrderReportApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -93,8 +95,8 @@ class OrderReportApiTest {
         clock.setInstant(NOW);
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        shirt = data.product(data.taxCategory("標準", "10"), "T シャツ", 1000, "色").variant("白").publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        shirt = catalog.product(catalog.taxCategory("標準", "10"), "T シャツ", 1000, "色").variant("白").publish();
         var variantId = shirt.variantIds.getFirst();
         inventory.stock(variantId, shirt.id, 10);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);

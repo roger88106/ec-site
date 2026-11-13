@@ -55,6 +55,8 @@ class MemberOrderApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -102,15 +104,15 @@ class MemberOrderApiTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
+        var catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);
-        var standard = data.taxCategory("標準", "10");
-        variantId = data.product(standard, "T シャツ", 2700).publish().variantIds.getFirst();
-        inventory.stock(variantId, UUID.randomUUID(), 50);
+        var standard = catalog.taxCategory("標準", "10");
+        variantId = catalog.product(standard, "T シャツ", 2700).publish().variantIds.getFirst();
+        inventory.stock(variantId, 50);
     }
 
     @Nested
-    @DisplayName("AC-125、126 注文手続き")
+    @DisplayName("注文手続き")
     class Checkout {
 
         @Test
@@ -164,7 +166,7 @@ class MemberOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-127、128 注文")
+    @DisplayName("注文")
     class PlaceOrder {
 
         @Test
@@ -204,7 +206,7 @@ class MemberOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-130、131 注文の参照とキャンセルの申請")
+    @DisplayName("注文の参照とキャンセルの申請")
     class OrderAccess {
 
         @Test
@@ -235,7 +237,7 @@ class MemberOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-129 自分の注文の一覧")
+    @DisplayName("自分の注文の一覧")
     class MyOrders {
 
         @Test
@@ -284,7 +286,7 @@ class MemberOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-406-4 自分の支払待ちの注文の一覧")
+    @DisplayName("自分の支払待ちの注文の一覧")
     class MyPendingOrders {
 
         @Test

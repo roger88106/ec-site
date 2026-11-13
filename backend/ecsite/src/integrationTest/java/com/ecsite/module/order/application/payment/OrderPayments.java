@@ -6,9 +6,10 @@ import org.springframework.context.ApplicationContext;
 import java.util.UUID;
 
 /**
- * 注文の支払の結果（{@link OrderPaymentService}、{@link OrderCancellationService}）を反映する、統合テストの補助
+ * 注文の支払の結果を反映する、統合テストの補助
  *
- * <p>サービスのクラスは package-private なので、同じパッケージのこのクラスを通して呼ぶ。
+ * <p>{@link OrderPaymentService} と {@link OrderCancellationService} を呼ぶ。
+ * サービスのクラスは package-private なので、同じパッケージのこのクラスを通して呼ぶ。
  * ロールバックするテストは決済のイベントが届かないので、リスナーと同じ処理をここで呼ぶ。
  */
 public final class OrderPayments {

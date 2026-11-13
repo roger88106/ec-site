@@ -3,7 +3,9 @@ package com.ecsite.module.order.domain.order;
 import com.ecsite.module.order.domain.order.vo.AddressArea;
 
 /**
- * テストで使う、お届け先の都道府県と市区町村（地域の最初のデータにあるもの）
+ * テストで使う、お届け先の都道府県と市区町村
+ *
+ * <p>地域の最初のデータにあるもの。
  */
 public final class TestAreas {
 

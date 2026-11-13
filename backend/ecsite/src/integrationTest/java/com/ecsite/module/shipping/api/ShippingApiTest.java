@@ -48,7 +48,9 @@ class ShippingApiTest {
     ShipmentRepository repository;
 
     /**
-     * テスト用の物流サービスの追跡（mock を包む実装。呼ばれた時点のトランザクションの有無を記録するため、spy にする）
+     * テスト用の物流サービスの追跡
+     *
+     * <p>mock を包む実装。呼ばれた時点のトランザクションの有無を記録するため、spy にする。
      */
     @MockitoSpyBean
     TestCarrierTracking tracking;

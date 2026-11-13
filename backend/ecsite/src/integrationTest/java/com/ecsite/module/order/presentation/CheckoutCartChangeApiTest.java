@@ -39,6 +39,8 @@ class CheckoutCartChangeApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -68,7 +70,7 @@ class CheckoutCartChangeApiTest {
     /**
      * 税区分・カテゴリ・商品を作る補助
      */
-    private CatalogTestData data;
+    private CatalogTestData catalog;
 
     /**
      * 注文を作る補助
@@ -83,7 +85,9 @@ class CheckoutCartChangeApiTest {
     private UUID cartId;
 
     /**
-     * このテストの会員（コミットするので、他のテストとカートを共有しないよう、テストごとに変える）
+     * このテストの会員
+     *
+     * <p>コミットするので、他のテストとカートを共有しないよう、テストごとに変える。
      */
     private TestTokens.Builder owner;
 
@@ -92,10 +96,10 @@ class CheckoutCartChangeApiTest {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        data = new CatalogTestData(mockMvc, clock);
+        catalog = new CatalogTestData(mockMvc, clock);
         owner = TestTokens.member().subject(UUID.randomUUID());
         orders = new OrderTestData(mockMvc, null, null, owner.bearer());
-        taxCategoryId = data.taxCategory("カート変更-" + UUID.randomUUID().toString().substring(0, 8), "10");
+        taxCategoryId = catalog.taxCategory("カート変更-" + UUID.randomUUID().toString().substring(0, 8), "10");
         cartId = orders.cart();
     }
 
@@ -132,7 +136,7 @@ class CheckoutCartChangeApiTest {
      * 公開した商品（1,000 円・10%）のバリアントを作り、在庫数を設定して、バリアント ID を返す
      */
     private UUID stockedVariant(int quantity) throws Exception {
-        var product = data.product(taxCategoryId, "商品", 1000).publish();
+        var product = catalog.product(taxCategoryId, "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, quantity);
         return variantId;

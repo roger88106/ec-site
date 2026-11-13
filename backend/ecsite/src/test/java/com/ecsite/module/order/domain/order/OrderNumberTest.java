@@ -27,7 +27,7 @@ class OrderNumberTest {
         assertThat(OrderNumber.generate(orderedAt, fixed(7)).value()).isEqualTo("20261008-000007");
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"2026100-482915", "20261008482915", "20261008-48291", "20261008-48291a"})
     @DisplayName("BR-10 形の違う注文番号は作れない")
     void rejectsInvalidFormat(String value) {

@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,6 +66,8 @@ class PlaceOrderApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -100,7 +103,7 @@ class PlaceOrderApiTest {
     /**
      * 税区分・カテゴリ・商品を作る補助
      */
-    private CatalogTestData data;
+    private CatalogTestData catalog;
 
     /**
      * 注文を作る補助
@@ -118,11 +121,11 @@ class PlaceOrderApiTest {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        data = new CatalogTestData(mockMvc, clock);
+        catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);
-        standard = data.taxCategory("標準", "10");
-        shirt = data.product(standard, "T シャツ", 2700, "色", "サイズ").variant("白", "M").publish();
-        stock(shirt.variantIds.getFirst(), 3);
+        standard = catalog.taxCategory("標準", "10");
+        shirt = catalog.product(standard, "T シャツ", 2700, "色", "サイズ").variant("白", "M").publish();
+        inventory.stock(shirt.variantIds.getFirst(), shirt.id, 3);
         cartId = orders.cart();
         orders.add(cartId, shirt.variantIds.getFirst(), 2);
     }
@@ -335,7 +338,7 @@ class PlaceOrderApiTest {
         void placesOrderWithMaxQuantity() throws Exception {
             var variant = shirt.variantIds.getFirst();
             var max = maxCartQuantity();
-            stock(variant, max + 5);
+            inventory.stock(variant, shirt.id, max + 5);
             mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + variant)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
@@ -376,7 +379,7 @@ class PlaceOrderApiTest {
          */
         @BeforeEach
         void stockEnough() {
-            stock(shirt.variantIds.getFirst(), 7);
+            inventory.stock(shirt.variantIds.getFirst(), shirt.id, 7);
         }
 
         @Test
@@ -572,12 +575,16 @@ class PlaceOrderApiTest {
     class PendingOrderLimit {
 
         /**
-         * 上限を一時的に上げる値（上限を超えた状態を作るために、既定の上限より十分大きくする）
+         * 上限を一時的に上げる値
+         *
+         * <p>上限を超えた状態を作るために、既定の上限より十分大きくする。
          */
         private static final int RAISED_LIMIT = 10;
 
         /**
-         * 注文の設定（上限の既定は 3 件。注文の時点で上限に達した状態を作るテストだけ、上限を差し替える）
+         * 注文の設定
+         *
+         * <p>上限の既定は 3 件。注文の時点で上限に達した状態を作るテストだけ、上限を差し替える。
          */
         @MockitoSpyBean
         OrderProperties properties;
@@ -783,7 +790,7 @@ class PlaceOrderApiTest {
         private List<UUID> stockedVariants(int count) throws Exception {
             var variants = new ArrayList<UUID>();
             for (int i = 0; i < count; i++) {
-                var product = data.product(standard, "商品", 1000).publish();
+                var product = catalog.product(standard, "商品", 1000).publish();
                 var variantId = product.variantIds.getFirst();
                 inventory.stock(variantId, product.id, 3);
                 variants.add(variantId);
@@ -793,7 +800,7 @@ class PlaceOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-92、93、94 注文の表示")
+    @DisplayName("注文の表示")
     class Show {
 
         @Test
@@ -849,7 +856,7 @@ class PlaceOrderApiTest {
     // ============================== 補助 ==============================
 
     @Nested
-    @DisplayName("AC-212、222 注文時の年齢と性別")
+    @DisplayName("注文時の年齢と性別")
     class BuyerProfile {
 
         @Test
@@ -857,7 +864,7 @@ class PlaceOrderApiTest {
         void recordsAgeAndGenderAtPlacement() throws Exception {
             // NOW は日本時間の 2026-10-08 00:00。1990-10-08 生まれは、この日に 36 歳になる
             var first = placeAs(TestTokens.member().birthdate("1990-10-08").gender("female"));
-            stock(shirt.variantIds.getFirst(), 2);
+            inventory.stock(shirt.variantIds.getFirst(), shirt.id, 2);
 
             var changed = TestTokens.member().birthdate("2000-01-01").gender("male");
             mockMvc.perform(get("/api/store/orders/" + first).with(changed.bearer())).andExpect(status().isOk());
@@ -907,7 +914,7 @@ class PlaceOrderApiTest {
         private List<Object> buyer(UUID orderId) {
             var record = dsl.select(SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER).from(SALES_ORDER)
                     .where(SALES_ORDER.ID.eq(orderId)).fetchSingle();
-            return java.util.Arrays.asList(record.value1(), record.value2());
+            return Arrays.asList(record.get(SALES_ORDER.BUYER_AGE), record.get(SALES_ORDER.BUYER_GENDER));
         }
     }
 
@@ -981,10 +988,4 @@ class PlaceOrderApiTest {
         return mockMvc.perform(placeOrderRequest(checkoutId, body));
     }
 
-    /**
-     * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
-     */
-    private void stock(UUID variantId, int quantity) {
-        inventory.stock(variantId, shirt.id, quantity);
-    }
 }

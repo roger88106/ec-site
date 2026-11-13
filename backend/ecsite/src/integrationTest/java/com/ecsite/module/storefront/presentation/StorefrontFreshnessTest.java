@@ -45,6 +45,8 @@ class StorefrontFreshnessTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -101,7 +103,7 @@ class StorefrontFreshnessTest {
     }
 
     @Test
-    @DisplayName("NFR-1、AC-26 価格の変更は、直後の照会に反映される")
+    @DisplayName("AC-26、NFR-1 価格の変更は、直後の照会に反映される")
     void reflectsPriceChange() throws Exception {
         mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
 
@@ -117,7 +119,7 @@ class StorefrontFreshnessTest {
     }
 
     @Test
-    @DisplayName("NFR-1、AC-29、30 公開状態の変更は、直後の照会に反映される")
+    @DisplayName("AC-29、30、NFR-1 公開状態の変更は、直後の照会に反映される")
     void reflectsPublicationChange() throws Exception {
         mockMvc.perform(put("/api/admin/products/" + productId + "/unpublish")).andExpect(status().isNoContent());
         mockMvc.perform(list()).andExpect(jsonPath("$.items").isEmpty());

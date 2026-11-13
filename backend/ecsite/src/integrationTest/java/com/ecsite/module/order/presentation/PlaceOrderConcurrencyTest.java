@@ -56,6 +56,8 @@ class PlaceOrderConcurrencyTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -109,10 +111,10 @@ class PlaceOrderConcurrencyTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
+        var catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);
-        taxCategoryId = data.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
-        product = data.product(taxCategoryId, "並行の商品", 1000).publish();
+        taxCategoryId = catalog.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
+        product = catalog.product(taxCategoryId, "並行の商品", 1000).publish();
     }
 
     @Test
@@ -213,7 +215,7 @@ class PlaceOrderConcurrencyTest {
                 LockWaits.awaitMemberLockWaiter(dsl, memberOf(later));
             });
 
-            var placed = placing.get(0).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            var placed = placing.getFirst().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             var rejected = placing.get(1).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             assertThat(placed.getStatus()).isEqualTo(201);
             expectOnePlacedAndOneRejected(List.of(placed, rejected), List.of(earlier, later));

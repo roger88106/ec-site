@@ -55,7 +55,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrderPaymentApiTest {
 
     /**
-     * テストの現在時刻（商品を公開するたびに 1 分進むので、注文日時はこれより後になる）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。商品を公開するたびに 1 分進むので、注文日時はこれより後になる。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -91,7 +93,9 @@ class OrderPaymentApiTest {
     private OrderTestData orders;
 
     /**
-     * このテストの会員（巻き戻さないので、他のテストとカートを共有しないよう、テストごとに変える）
+     * このテストの会員
+     *
+     * <p>巻き戻さないので、他のテストとカートを共有しないよう、テストごとに変える。
      */
     private TestTokens.Builder owner;
 
@@ -407,8 +411,8 @@ class OrderPaymentApiTest {
      * @return バリアント ID
      */
     private UUID stockedVariant(String name) throws Exception {
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(taxCategoryId, name, 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(taxCategoryId, name, 1000).publish();
         var id = product.variantIds.getFirst();
         inventory.stock(id, product.id, 5);
         return id;

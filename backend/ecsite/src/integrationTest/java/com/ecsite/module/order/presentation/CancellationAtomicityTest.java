@@ -43,6 +43,8 @@ class CancellationAtomicityTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -85,7 +87,9 @@ class CancellationAtomicityTest {
     private UUID orderId;
 
     /**
-     * このテストの会員（コミットするので、他のテストとカートを共有しないよう、テストごとに変える）
+     * このテストの会員
+     *
+     * <p>コミットするので、他のテストとカートを共有しないよう、テストごとに変える。
      */
     private TestTokens.Builder owner;
 
@@ -95,9 +99,9 @@ class CancellationAtomicityTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        taxCategoryId = data.taxCategory("一貫性-" + UUID.randomUUID().toString().substring(0, 8), "10");
-        product = data.product(taxCategoryId, "一貫性の商品", 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        taxCategoryId = catalog.taxCategory("一貫性-" + UUID.randomUUID().toString().substring(0, 8), "10");
+        product = catalog.product(taxCategoryId, "一貫性の商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
         orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, 2);

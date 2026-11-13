@@ -38,6 +38,8 @@ class DeliveryStatusChangedEventTest {
 
     /**
      * 出荷日時
+     *
+     * <p>日本時間の 2026-10-15 11:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-15T02:00:00Z");
 

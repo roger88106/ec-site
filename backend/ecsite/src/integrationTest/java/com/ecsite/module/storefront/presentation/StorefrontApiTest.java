@@ -50,6 +50,8 @@ class StorefrontApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -97,7 +99,7 @@ class StorefrontApiTest {
     class ListProducts {
 
         @Test
-        @DisplayName("AC-51、29、30、32 表示される商品だけが出る（非公開・販売終了の商品は出ない）")
+        @DisplayName("AC-29、30、32、51 表示される商品だけが出る（非公開・販売終了の商品は出ない）")
         void listsOnlyVisibleProducts() throws Exception {
             var category = newCategory();
             var visible = catalog.product(standard, "公開の商品", 1000, List.of(category)).publish();
@@ -125,7 +127,7 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("AC-55、37 代表画像は、商品の画像の並びの先頭の URL")
+        @DisplayName("AC-37、55 代表画像は、商品の画像の並びの先頭の URL")
         void returnsRepresentativeImage() throws Exception {
             var category = newCategory();
             var mark = newMark();
@@ -168,10 +170,10 @@ class StorefrontApiTest {
         void marksOutOfStock() throws Exception {
             var category = newCategory();
             var inStock = catalog.product(standard, "在庫あり", 1000, List.of(category), "色").variant("白").variant("黒").publish();
-            stock(inStock.variantIds.getFirst(), 0);
-            stock(inStock.variantIds.get(1), 3);
+            inventory.stock(inStock.variantIds.getFirst(), 0);
+            inventory.stock(inStock.variantIds.get(1), 3);
             var soldOut = catalog.product(standard, "在庫なし", 1000, List.of(category), "色").variant("白").variant("黒").publish();
-            stock(soldOut.variantIds.getFirst(), 0);
+            inventory.stock(soldOut.variantIds.getFirst(), 0);
             // 2 つ目のバリアントの在庫は、まだない
 
             mockMvc.perform(listIn(category))
@@ -180,12 +182,12 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("AC-56、28 販売停止のバリアントだけに在庫がある商品は、在庫なしと示される")
+        @DisplayName("AC-28、56 販売停止のバリアントだけに在庫がある商品は、在庫なしと示される")
         void ignoresSuspendedVariantsForStock() throws Exception {
             var category = newCategory();
             var product = catalog.product(standard, "販売停止", 1000, List.of(category), "色").variant("白").variant("黒").publish();
-            stock(product.variantIds.getFirst(), 5);
-            stock(product.variantIds.get(1), 0);
+            inventory.stock(product.variantIds.getFirst(), 5);
+            inventory.stock(product.variantIds.get(1), 0);
             product.suspend(0);
 
             mockMvc.perform(listIn(category))
@@ -233,7 +235,7 @@ class StorefrontApiTest {
     }
 
     @Nested
-    @DisplayName("AC-58、59、61 キーワード検索")
+    @DisplayName("キーワード検索")
     class Search {
 
         @Test
@@ -275,17 +277,17 @@ class StorefrontApiTest {
     }
 
     @Nested
-    @DisplayName("AC-62、63、64、65、66 商品の詳細")
+    @DisplayName("商品の詳細")
     class Detail {
 
         @Test
-        @DisplayName("AC-62、63、64、28 価格、軸と選択肢、バリアントごとの在庫の有無が返る。販売停止・在庫切れのバリアントも返る")
+        @DisplayName("AC-28、62、63、64 価格、軸と選択肢、バリアントごとの在庫の有無が返る。販売停止・在庫切れのバリアントも返る")
         void returnsDetail() throws Exception {
             var product = catalog.product(standard, "T シャツ", 1800, "色", "サイズ")
                     .variant("白", "M").variant("白", "L").variant("黒", "M").publish();
-            stock(product.variantIds.getFirst(), 2);
-            stock(product.variantIds.get(1), 0);
-            stock(product.variantIds.get(2), 4);
+            inventory.stock(product.variantIds.getFirst(), 2);
+            inventory.stock(product.variantIds.get(1), 0);
+            inventory.stock(product.variantIds.get(2), 4);
             product.suspend(2);
 
             mockMvc.perform(get(BASE + "/products/" + product.id))
@@ -312,8 +314,8 @@ class StorefrontApiTest {
         @DisplayName("BR-11 在庫数がすべて引き当てられたバリアントは在庫なしと示される")
         void treatsReservedStockAsOutOfStock() throws Exception {
             var product = catalog.product(standard, "T シャツ", 1800, "色").variant("白").variant("黒").publish();
-            stock(product.variantIds.getFirst(), 1);
-            stock(product.variantIds.get(1), 1);
+            inventory.stock(product.variantIds.getFirst(), 1);
+            inventory.stock(product.variantIds.get(1), 1);
             stockReservationApi.reserve(UUID.randomUUID(), Map.of(product.variantIds.getFirst(), 1),
                     clock.instant().plus(Duration.ofMinutes(15)));
 
@@ -408,15 +410,4 @@ class StorefrontApiTest {
         return get(BASE + "/products").param("categoryId", category.toString());
     }
 
-    /**
-     * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
-     */
-    private void stock(UUID id, int quantity) {
-        var productId = UUID.randomUUID();
-        if (quantity > 0) {
-            inventory.stock(id, productId, quantity);
-        } else {
-            inventory.create(id, productId);
-        }
-    }
 }

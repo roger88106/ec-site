@@ -44,6 +44,8 @@ class ReturnedOrderCancellationApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -94,8 +96,8 @@ class ReturnedOrderCancellationApiTest {
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         shipping = new ShippingTestData(mockMvc, mockCarrier);
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
         orderId = new OrderTestData(mockMvc, gateway, applicationContext).placeOrder(variantId, 2);

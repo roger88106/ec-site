@@ -60,6 +60,8 @@ class CheckoutApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -92,7 +94,7 @@ class CheckoutApiTest {
     /**
      * 税区分・カテゴリ・商品を作る補助
      */
-    private CatalogTestData data;
+    private CatalogTestData catalog;
 
     /**
      * 注文を作る補助
@@ -108,9 +110,9 @@ class CheckoutApiTest {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        data = new CatalogTestData(mockMvc, clock);
+        catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);
-        standard = data.taxCategory("標準", "10");
+        standard = catalog.taxCategory("標準", "10");
         cartId = orders.cart();
     }
 
@@ -160,7 +162,7 @@ class CheckoutApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
 
-        var product = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
+        var product = catalog.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
         inventory.stock(product.variantIds.getFirst(), product.id, 3);
         orders.add(cartId, product.variantIds.getFirst(), 1);
         product.suspend(0);
@@ -209,9 +211,9 @@ class CheckoutApiTest {
     @Test
     @DisplayName("AC-85 注文手続きの表示：税率ごとの消費税額を返す（税率の高い順。送料は 10% の対象）")
     void showsTaxAmountPerRate() throws Exception {
-        var reduced = data.taxCategory("軽減", "8");
+        var reduced = catalog.taxCategory("軽減", "8");
         var standardVariant = stockedVariant(1);
-        var reducedProduct = data.product(reduced, "軽減の商品", 1000).publish();
+        var reducedProduct = catalog.product(reduced, "軽減の商品", 1000).publish();
         var reducedVariant = reducedProduct.variantIds.getFirst();
         inventory.stock(reducedVariant, reducedProduct.id, 1);
         orders.add(cartId, standardVariant, 1);
@@ -459,12 +461,16 @@ class CheckoutApiTest {
     class PendingOrderLimit {
 
         /**
-         * 上限を一時的に上げる値（上限を超えた状態を作るために、既定の上限より十分大きくする）
+         * 上限を一時的に上げる値
+         *
+         * <p>上限を超えた状態を作るために、既定の上限より十分大きくする。
          */
         private static final int RAISED_LIMIT = 10;
 
         /**
-         * 注文の設定（上限の既定は 3 件。上限を超えた状態を作るテストだけ、上限を差し替える）
+         * 注文の設定
+         *
+         * <p>上限の既定は 3 件。上限を超えた状態を作るテストだけ、上限を差し替える。
          */
         @MockitoSpyBean
         OrderProperties properties;
@@ -627,7 +633,7 @@ class CheckoutApiTest {
      * 商品を注文した後に販売停止にして、注文 ID を返す（カートには購入できない品目が残る）
      */
     private UUID orderThenSuspend() throws Exception {
-        var product = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
+        var product = catalog.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
         var variant = product.variantIds.getFirst();
         inventory.stock(variant, product.id, 3);
         var pending = orders.placePendingOrder(variant, 1);
@@ -668,7 +674,7 @@ class CheckoutApiTest {
      * 公開した商品（1,000 円・10%）のバリアントを作り、在庫数を設定して、バリアント ID を返す
      */
     private UUID stockedVariant(int quantity) throws Exception {
-        var product = data.product(standard, "商品", 1000).publish();
+        var product = catalog.product(standard, "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, quantity);
         return variantId;

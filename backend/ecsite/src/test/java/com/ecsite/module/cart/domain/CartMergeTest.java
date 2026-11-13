@@ -20,6 +20,8 @@ class CartMergeTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-12 12:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-12T03:00:00Z");
 

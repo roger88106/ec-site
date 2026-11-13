@@ -27,10 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
@@ -54,6 +54,8 @@ class CheckoutCleanupJobTest {
 
     /**
      * 注文する時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -106,8 +108,8 @@ class CheckoutCleanupJobTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 10);
     }
@@ -168,10 +170,7 @@ class CheckoutCleanupJobTest {
     @Test
     @DisplayName("NFR-24 件数の上限を超える注文手続きは、上限ずつ分けて、残りがなくなるまで消す")
     void deletesInBatchesUntilNoneLeft() {
-        var checkouts = new ArrayList<UUID>();
-        for (int i = 0; i < 5; i++) {
-            checkouts.add(insertCheckout(NOW));
-        }
+        var checkouts = IntStream.range(0, 5).mapToObj(i -> insertCheckout(NOW)).toList();
         var smallBatch = new CheckoutCleanupJob(service,
                 new CheckoutCleanupProperties(Duration.ofHours(1), Duration.ofDays(1), 2), clock);
 
@@ -186,10 +185,7 @@ class CheckoutCleanupJobTest {
     void deletesUpToLimitAtOnce() {
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 3 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
-        var checkouts = new ArrayList<UUID>();
-        for (int i = 0; i < 3; i++) {
-            checkouts.add(insertCheckout(longAgo));
-        }
+        var checkouts = IntStream.range(0, 3).mapToObj(i -> insertCheckout(longAgo)).toList();
 
         var deleted = service.deleteExpired(longAgo.plus(TTL).plusSeconds(1), 2);
 
@@ -202,10 +198,7 @@ class CheckoutCleanupJobTest {
     void logsDeletedCount(CapturedOutput output) {
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
-        var checkouts = new ArrayList<UUID>();
-        for (int i = 0; i < 5; i++) {
-            checkouts.add(insertCheckout(longAgo));
-        }
+        var checkouts = IntStream.range(0, 5).mapToObj(i -> insertCheckout(longAgo)).toList();
         var smallBatch = new CheckoutCleanupJob(service,
                 new CheckoutCleanupProperties(Duration.ofHours(1), Duration.ofDays(1), 2), clock);
 

@@ -23,7 +23,7 @@ class ShippingApiCarrierNameKeyTest {
 
     private final ShippingApi api = new ShippingApi(mock(ShipmentService.class));
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @EnumSource(ShipmentSummary.Carrier.class)
     @DisplayName("配送業者の表示名のキーは、全ての配送業者で文言のファイルにある")
     void carrierNameKeyExistsInMessages(ShipmentSummary.Carrier carrier) throws IOException {

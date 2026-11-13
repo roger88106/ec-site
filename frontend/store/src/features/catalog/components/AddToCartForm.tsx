@@ -14,7 +14,8 @@ import type { ActionResult } from '@/lib/actionResult'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
 /**
- * 数量を選んでカートに入れる。<br />
+ * 数量を選んでカートに入れる。
+ *
  * サーバーアクションの状態（結果、送信中か）を持ち、表示は {@link AddToCartFormView} に任せる。
  *
  * @param variant 選んだバリアント（決まっていなければ null）
@@ -25,7 +26,8 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
 }
 
 /**
- * カートに入れるフォームの表示。サーバーアクションの結果を props で受ける。<br />
+ * カートに入れるフォームの表示。サーバーアクションの結果を props で受ける。
+ *
  * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
  *
  * @param variant    選んだバリアント（決まっていなければ null）

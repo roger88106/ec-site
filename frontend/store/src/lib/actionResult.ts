@@ -7,7 +7,8 @@ export function connectionFailedMessage(): string {
 }
 
 /**
- * サーバーアクションの結果（店舗画面の構成の「結果の知らせ方」）。<br />
+ * サーバーアクションの結果（店舗画面の構成の「結果の知らせ方」）。
+ *
  * 失敗は、画面に出す message と、エラーコード、入力欄ごとのメッセージ（項目名 → メッセージ）を持つ。
  */
 export type ActionResult =

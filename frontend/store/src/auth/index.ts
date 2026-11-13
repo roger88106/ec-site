@@ -16,7 +16,8 @@ import { fetchWithTimeout } from '@/lib/server/timeout'
 
 /**
  * ログイン（店舗画面の構成の「ログイン」）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
- * （ライブラリを替えるときの範囲を狭くするため）。<br />
+ * （ライブラリを替えるときの範囲を狭くするため）。
+ *
  * 接続先と secret は環境変数（`config.ts`。本番で値がなければ起動に失敗する）。token の取り直しは `refresh.ts`、
  * ログアウトの URL は `logout.ts`。外からは `@/auth` だけを import する。
  */
@@ -157,8 +158,6 @@ export async function idpLogoutUrl(): Promise<string> {
 
 /** IdP のアカウントの画面 */
 export const ACCOUNT_URL = `${ISSUER}/account`
-
-// ============================== プライベート ==============================
 
 /** セッションの Cookie を復号して読む */
 async function readToken(): Promise<MemberJwt | null> {

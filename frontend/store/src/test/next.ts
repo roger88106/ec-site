@@ -1,5 +1,6 @@
 /**
- * Next.js のリクエストを扱うモジュール（next/headers、next/cache）を置き換える、テスト用の Cookie・ヘッダー・再表示の記録。サーバーの処理のテストで使う（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * Next.js のリクエストを扱うモジュール（next/headers、next/cache）を置き換える、テスト用の Cookie・ヘッダー・再表示の記録。サーバーの処理のテストで使う（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
+ *
  * setup.ts が next/headers・next/cache をこれに置き換える。next/navigation（redirect、notFound、unstable_rethrow）は
  * 置き換えず、本物を使う（redirect が例外で移動を知らせ、unstable_rethrow がそれを通すことまで確認するため）。
  */
@@ -72,7 +73,8 @@ export function cookieOptions(name: string): Record<string, unknown> | undefined
 }
 
 /**
- * 処理が投げた例外と、その digest を返す。<br />
+ * 処理が投げた例外と、その digest を返す。
+ *
  * Next.js の redirect・notFound は、種類と移動先を digest に持つ例外を投げる。
  *
  * @param run 処理
@@ -90,7 +92,8 @@ async function thrown(run: () => Promise<unknown>): Promise<{ error: unknown; di
 }
 
 /**
- * 処理が redirect したことを確認し、移動先を返す。<br />
+ * 処理が redirect したことを確認し、移動先を返す。
+ *
  * Next.js の redirect は、移動先を digest（`NEXT_REDIRECT;<種類>;<URL>;<状態>;`）に持つ例外を投げる。
  *
  * @param run 処理
@@ -106,7 +109,8 @@ export async function redirectedTo(run: () => Promise<unknown>): Promise<string>
 }
 
 /**
- * 処理が notFound() で見つからないことを知らせたことを確認する。<br />
+ * 処理が notFound() で見つからないことを知らせたことを確認する。
+ *
  * Next.js の notFound は、digest が `NEXT_HTTP_ERROR_FALLBACK;404` の例外を投げる。
  *
  * @param run 処理

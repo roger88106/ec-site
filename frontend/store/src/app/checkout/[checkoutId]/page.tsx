@@ -1,4 +1,5 @@
 import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { formatYen } from '@ec-site/shared/lib/format'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
@@ -18,7 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 注文手続き。注文が成立済みなら、注文の画面へ移る。<br />
+ * 注文手続き。注文が成立済みなら、注文の画面へ移る。
+ *
  * ログインを求め、始めた会員のものでなければ「見つかりません」にする。
  */
 export default async function CheckoutPage({ params }: PageProps<'/checkout/[checkoutId]'>) {
@@ -38,7 +40,7 @@ export default async function CheckoutPage({ params }: PageProps<'/checkout/[che
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-semibold">{t('title') /* ご注文手続き */}</h1>
+      <PageHeader title={t('title') /* ご注文手続き */} />
       <RemainingTime expiresAt={checkout.expiresAt} />
       <div className="grid gap-8 md:grid-cols-[1fr_22rem]">
         <section className="space-y-4">

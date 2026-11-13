@@ -6,7 +6,8 @@ import { payOrder } from '@/actions/order'
 import { ActionError } from '@/components/ActionError'
 
 /**
- * 支払うボタン。決済サービスの支払画面に移る。<br />
+ * 支払うボタン。決済サービスの支払画面に移る。
+ *
  * 文言は呼び出し元の画面の翻訳を受け取る。
  *
  * @param orderId      注文 ID

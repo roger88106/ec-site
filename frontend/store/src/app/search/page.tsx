@@ -1,3 +1,4 @@
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import type { Metadata } from 'next'
@@ -17,7 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 検索結果。商品名または説明にキーワードを含む商品を、新着順で出す。<br />
+ * 検索結果。商品名または説明にキーワードを含む商品を、新着順で出す。
+ *
  * キーワードが空なら API を呼ばず、入力を促す。
  */
 export default async function SearchPage({ searchParams }: PageProps<'/search'>) {
@@ -25,9 +27,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
   const query = parseSearchQuery(await searchParams)
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-semibold">
-        {query.q ? t('heading', { q: query.q }) : t('prompt') /* 検索結果か、入力を促す */}
-      </h1>
+      <PageHeader title={query.q ? t('heading', { q: query.q }) : t('prompt') /* 検索結果か、入力を促す */} />
       <form action="/search" className="flex max-w-md gap-2">
         <Input
           aria-label={t('keyword') /* キーワード */}

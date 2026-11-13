@@ -1,5 +1,6 @@
 /**
- * 店舗画面のセキュリティヘッダーの値（店舗画面の構成の「セキュリティヘッダー」）。<br />
+ * 店舗画面のセキュリティヘッダーの値（店舗画面の構成の「セキュリティヘッダー」）。
+ *
  * `next.config.ts` からも読むので、`server-only` は import しない。
  */
 
@@ -43,7 +44,8 @@ export function fixedSecurityHeaders(production: boolean): SecurityHeader[] {
 }
 
 /**
- * CSP の値。<br />
+ * CSP の値。
+ *
  * 許すオリジンを追加するときは、この関数の入力と `proxy.ts` の呼び出しを変える。環境変数から取るなら、あわせて次も変える。
  * <ul>
  * <li>`auth/config.ts`、環境変数の文書、E2E の起動の設定、テストの期待値</li>

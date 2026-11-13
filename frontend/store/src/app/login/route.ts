@@ -3,7 +3,8 @@ import { signIn } from '@/auth'
 import { safeReturnTo } from '@/lib/login'
 
 /**
- * IdP のログインの画面へ移る口（店舗画面の構成の「画面の URL」と店舗画面の構成の「ログイン」）。<br />
+ * IdP のログインの画面へ移る口（店舗画面の構成の「画面の URL」と店舗画面の構成の「ログイン」）。
+ *
  * クエリ：returnTo（ログインの後に戻る画面）、register=1（会員登録の画面にする）。
  */
 export async function GET(request: NextRequest) {

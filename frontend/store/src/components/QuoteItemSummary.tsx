@@ -9,7 +9,8 @@ import { ProductImage } from '@/components/ProductImage'
 import { unpurchasableReasonLabel } from '@/lib/labels'
 
 /**
- * カート・注文手続きの品目。画像、商品名、軸の値、単価を出し、購入できなければ理由を示す。<br />
+ * カート・注文手続きの品目。画像、商品名、軸の値、単価を出し、購入できなければ理由を示す。
+ *
  * 数量と小計は、使う画面が children に出す（カートは数量を変えられる）。
  */
 export function QuoteItemSummary({ item, children }: { item: QuoteItem; children?: ReactNode }) {

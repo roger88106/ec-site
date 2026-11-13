@@ -5,7 +5,8 @@ import { PayForm } from '@/components/PayForm'
 import { paymentState } from '@/features/order/orderState'
 
 /**
- * 注文の支払。出すかどうかは呼び出し側が `showsPaymentSection` で決める（支払待ちのときだけ出す）。<br />
+ * 注文の支払。出すかどうかは呼び出し側が `showsPaymentSection` で決める（支払待ちのときだけ出す）。
+ *
  * 支払えるなら支払の期限と「支払う」を、支払画面から戻った直後なら「確認中」を、期限を過ぎたらまもなくキャンセルになることを示す。
  *
  * @param order    注文

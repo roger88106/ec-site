@@ -7,7 +7,8 @@ import { startCheckout } from '@/actions/cart'
 import { ActionError } from '@/components/ActionError'
 
 /**
- * 注文手続きに進む。<br />
+ * 注文手続きに進む。
+ *
  * 購入できない品目を含むカートは進めない。在庫が足りず引き当てられなければ、API のメッセージを出す
  * （カートは表示し直され、足りない品目に理由が付く）。
  */

@@ -3,7 +3,8 @@ import { schemas } from '@/api/generated/constraints'
 import type { CartMergeNotice } from '@/lib/cartMergeNotice'
 
 /**
- * カートを移した結果の知らせの中身。切り詰めた品目と移せなかった品目を示す（状態を持たない）。<br />
+ * カートを移した結果の知らせの中身。切り詰めた品目と移せなかった品目を示す（状態を持たない）。
+ *
  * 読み上げの役割（`alert`、`status`）は持たない。ログインの直後の知らせ（CartMergeNoticeView）は `Alert` で包み、
  * カートの画面での再試行の結果（CartMergeRetryView）は `status` の領域の中に入れる。
  */

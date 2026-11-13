@@ -7,7 +7,8 @@ import { PriceText } from '@/components/PriceText'
 import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
 
 /**
- * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする。<br />
+ * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする。
+ *
  * 非公開にした直後から見つからなくなるよう、キャッシュを使わない（UNCACHED）。
  */
 async function fetchProduct(productId: string) {

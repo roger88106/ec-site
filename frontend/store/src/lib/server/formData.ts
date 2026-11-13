@@ -13,7 +13,8 @@ export function readString(formData: FormData, name: string): string {
 }
 
 /**
- * フォームの整数の項目を、整数か NaN で取り出す。範囲は確認しない（API の契約が確認する）。<br />
+ * フォームの整数の項目を、整数か NaN で取り出す。範囲は確認しない（API の契約が確認する）。
+ *
  * 数でない値を無視せず、NaN のまま API に送って入力の検証の 400 で拒否させる。
  *
  * @param formData フォーム

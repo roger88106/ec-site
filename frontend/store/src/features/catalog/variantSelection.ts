@@ -15,7 +15,8 @@ export function isPurchasable(variant: Variant): boolean {
 }
 
 /**
- * 軸の値が選べるか。<br />
+ * 軸の値が選べるか。
+ *
  * その値と、他の軸で選んでいる値の組み合わせに、買えるバリアントが 1 つ以上あれば選べる。
  * 選ぼうとしている軸自身の選択は判断に使わない（選んだ後も、同じ軸の他の値に替えられるようにする）。
  */
@@ -38,7 +39,8 @@ export function isValueSelectable(
 }
 
 /**
- * 選んだバリアント。すべての軸を選んだときだけ決まる。<br />
+ * 選んだバリアント。すべての軸を選んだときだけ決まる。
+ *
  * 軸のない商品は、ただ 1 つのバリアントを返す。
  */
 export function selectedVariant(

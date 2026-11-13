@@ -10,7 +10,8 @@ import { PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
 import { readString } from '@/lib/server/formData'
 
 /**
- * 注文のキャンセルを申請する。成功したら、注文の画面を表示し直す。<br />
+ * 注文のキャンセルを申請する。成功したら、注文の画面を表示し直す。
+ *
  * フォームの項目：orderId、reason（任意、500 文字まで）。
  */
 export async function requestCancellation(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -29,7 +30,8 @@ export async function requestCancellation(_previous: ActionResult | null, formDa
 }
 
 /**
- * 支払う：決済サービスの支払画面に移る。<br />
+ * 支払う：決済サービスの支払画面に移る。
+ *
  * 支払えなければ（支払済み、期限の後）API のメッセージを返し、注文の画面と確認の画面を表示し直す。
  * フォームの項目：orderId。
  */

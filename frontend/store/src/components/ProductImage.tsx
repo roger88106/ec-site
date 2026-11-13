@@ -4,7 +4,8 @@ import { ImageIcon } from 'lucide-react'
 const ICON_SIZES = { sm: 'size-8', md: 'size-10', lg: 'size-16' } as const
 
 /**
- * 商品の画像。画像がなければ、代わりの図を出す。<br />
+ * 商品の画像。画像がなければ、代わりの図を出す。
+ *
  * 枠（大きさ、背景、角の丸み）は使う側が持つ。
  *
  * @param src      画像の URL。なければ代わりの図

@@ -1,4 +1,5 @@
 import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
@@ -61,7 +62,7 @@ export default async function CartPage() {
   ])
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-semibold">{t('title') /* カート */}</h1>
+      <PageHeader title={t('title') /* カート */} />
       <CartMergeNoticeView notice={mergeNotice} />
       {/* 再試行の結果を再表示の後も示すため、pending によらず同じ位置に置く */}
       <CartMergeRetry pending={retryPending} />

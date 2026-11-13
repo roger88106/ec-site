@@ -23,7 +23,8 @@ import {
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
 /**
- * カートに入れる。<br />
+ * カートに入れる。
+ *
  * ログインしていれば会員のカートに入れる。していなければ Cookie のカートに入れ、カートがなければ作って
  * Cookie に書く。フォームの項目：variantId、quantity。
  */
@@ -84,12 +85,16 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
 }
 
 /**
- * 注文手続きに進む。全品目を引き当て、注文手続きの画面へ移る。<br />
+ * 注文手続きに進む。全品目を引き当て、注文手続きの画面へ移る。
+ *
  * ログインしていなければ、ログインの画面へ移し、ログインの後は（カートを移して）カートに戻る。
- * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。<br />
+ * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。
+ *
  * 確認していない支払待ちの注文があれば（409）、確認の画面へ移る。確認の画面の「新しく注文する」は、
- * 表示した注文の ID を送る。<br />
- * 支払待ちの注文の上限による拒否（409）なら、上限に達したことを示す確認の画面へ移る。<br />
+ * 表示した注文の ID を送る。
+ *
+ * 支払待ちの注文の上限による拒否（409）なら、上限に達したことを示す確認の画面へ移る。
+ *
  * フォームの項目：acknowledgedOrderIds（任意、複数）。
  */
 export async function startCheckout(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -132,13 +137,16 @@ export async function dismissCartMergeNotice(): Promise<void> {
 }
 
 /**
- * カートの画面で、ログインの直後に移せなかったカートの移す処理を再試行する。<br />
+ * カートの画面で、ログインの直後に移せなかったカートの移す処理を再試行する。
+ *
  * カートの画面のクライアントコンポーネントが、表示の後に呼ぶ（サーバーコンポーネントは Cookie を書けないため。
  * 結果は知らせの Cookie でなく戻り値で返し、コンポーネントが表示する）。
- * ログインしていないか、Cookie のカートの ID がなければ、API を呼ばずに none を返す。<br />
+ * ログインしていないか、Cookie のカートの ID がなければ、API を呼ばずに none を返す。
+ *
  * 移せたときは ID を削除してカートの画面を再表示し、移すカートがないとき（none）は ID だけを削除する。
  * 一時的な失敗は ID を残して failed を返す。ログインが切れていれば、ID を残してログインの画面へ移す
- * （ログインの後はカートの画面に戻る）。<br />
+ * （ログインの後はカートの画面に戻る）。
+ *
  * Cookie の操作などで例外になったときも、例外にせず failed を返す。
  *
  * @returns 再試行の結果
@@ -169,8 +177,6 @@ export async function retryCartMerge(): Promise<CartMergeRetryResult> {
     { kind: 'failed' },
   )
 }
-
-// ============================== プライベート ==============================
 
 /** カートの変更の API の呼び出し */
 type CartRequest = (

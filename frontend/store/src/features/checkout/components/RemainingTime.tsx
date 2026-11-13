@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react'
 import { remainingTime } from '@/features/checkout/remainingTime'
 
 /**
- * 引当の残り時間。1 秒ごとに数え直す。<br />
+ * 引当の残り時間。1 秒ごとに数え直す。
+ *
  * 期限が切れても注文はできるので、操作は止めずに案内だけを替える。
  * サーバーとブラウザーの時刻の違いで表示が食い違わないよう、ブラウザーで初めて数える。
  */

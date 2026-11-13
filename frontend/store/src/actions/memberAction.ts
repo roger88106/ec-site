@@ -20,7 +20,8 @@ export async function redirectIfUnauthenticated(response: Response, returnTo?: s
 }
 
 /**
- * 処理を `withActionResult` で包み、移動先が得られたらその画面へ移す。失敗の結果はそのまま返す。<br />
+ * 処理を `withActionResult` で包み、移動先が得られたらその画面へ移す。失敗の結果はそのまま返す。
+ *
  * `redirect` は例外で移動を知らせるので、包みの外で呼ぶ（フロントの書き方の「サーバーアクションは withActionResult で包む」）。
  *
  * @param work 処理。成功したら移動先（外部の URL を含む）、失敗したら失敗の結果を返す

@@ -3,7 +3,6 @@ package com.ecsite.module.inventory.api;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -33,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>同時の引当を確認するため、操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class StockReservationApiTest {
 
     /**

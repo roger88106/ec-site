@@ -3,7 +3,6 @@ package com.ecsite.module.payment.api;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.payment.api.model.AuthorizationDeadline;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -28,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 注文 ID の一覧は、自分の注文を含むか・含まないかで確認する。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class PaymentAuthorizationDeadlineTest {
 
     /**

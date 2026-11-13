@@ -3,7 +3,6 @@ package com.ecsite.module.reporting.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.api.admin.model.AgeGroupSales;
 import com.ecsite.api.admin.model.CustomerBreakdownReport;
 import com.ecsite.api.admin.model.GenderSales;
@@ -21,8 +20,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,8 +45,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class ReportApiTest {
 

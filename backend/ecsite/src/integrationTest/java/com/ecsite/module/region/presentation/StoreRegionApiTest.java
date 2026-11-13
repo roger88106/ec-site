@@ -5,7 +5,6 @@ import com.ecsite.TestTokens;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.contains;
@@ -20,7 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 店舗 API の地域の操作の受け入れテスト。3 つとも token なしで使える。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
 class StoreRegionApiTest {
 
     /**

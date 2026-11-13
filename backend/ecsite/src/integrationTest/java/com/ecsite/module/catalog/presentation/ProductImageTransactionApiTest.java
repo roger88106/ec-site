@@ -3,7 +3,6 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import org.jooq.DSLContext;
@@ -11,8 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -20,6 +17,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -41,9 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * テストのトランザクションで包むと変換の時点にトランザクションがあるので、このテストはロールバックせず、作ったデータも消さない。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 class ProductImageTransactionApiTest {
+
+    /**
+     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     */
+    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     private final HttpClient http = HttpClient.newHttpClient();
 
@@ -87,6 +88,7 @@ class ProductImageTransactionApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        clock.setInstant(NOW);
         var data = new CatalogTestData(mockMvc, clock);
         taxCategoryId = data.taxCategory("トランザクションの外 " + UUID.randomUUID(), "10");
         product = data.product(taxCategoryId, "T シャツ", 1000);

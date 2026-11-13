@@ -5,7 +5,6 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.LockWaits;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.port.StockQueryRepository;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
@@ -41,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class StockOrderApiTest {
 
     /**

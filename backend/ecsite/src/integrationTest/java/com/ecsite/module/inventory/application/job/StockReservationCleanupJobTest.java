@@ -4,7 +4,6 @@ import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.application.StockReservationCommandService;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.context.annotation.Import;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -34,7 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>ジョブはテストから呼ぶ。ほかのテストの引当も消えるので、自分の持ち主の引当だけを確認する。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 @ExtendWith(OutputCaptureExtension.class)
 class StockReservationCleanupJobTest {
 

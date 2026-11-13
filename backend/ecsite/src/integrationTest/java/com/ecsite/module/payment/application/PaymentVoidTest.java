@@ -4,7 +4,6 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -41,7 +39,6 @@ import static org.awaitility.Awaitility.await;
  * <p>取消はコミットの後に非同期で行われるので、結果を待つ。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class PaymentVoidTest {
 
     /**

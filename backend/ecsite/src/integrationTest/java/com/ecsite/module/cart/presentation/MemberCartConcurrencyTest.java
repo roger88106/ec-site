@@ -8,7 +8,6 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * テストごとに新しい会員を使い、その会員のカートだけを確認する。作ったデータは消さない。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
 class MemberCartConcurrencyTest {
 
     private static final String MEMBER_CART = "/api/store/me/cart";

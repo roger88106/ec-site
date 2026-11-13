@@ -2,7 +2,6 @@ package com.ecsite.module.tax.api;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.api.model.ConsumptionTaxAmount;
 import com.ecsite.module.tax.api.model.TaxRateSchedule;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -30,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 現在時刻は 2026-10-08 00:00（日本時間）に固定する。テストごとにロールバックする。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 @Transactional
 class TaxRateApiTest {
 

@@ -3,20 +3,19 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +43,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>テストごとにロールバックする。統合テストでは seed を入れないので、カテゴリはテストで作ったものだけになる。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class CategoryApiTest {
 
@@ -59,12 +56,21 @@ class CategoryApiTest {
      */
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
 
+    /**
+     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     */
+    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
     @Autowired
     MockMvc mockMvc;
 
     @Autowired
     MutableClock clock;
 
+    @BeforeEach
+    void setUp() {
+        clock.setInstant(NOW);
+    }
 
     @Nested
     @DisplayName("AC-8、9、10 カテゴリの登録")

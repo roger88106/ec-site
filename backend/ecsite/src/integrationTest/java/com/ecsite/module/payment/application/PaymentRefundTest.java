@@ -4,7 +4,6 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -34,7 +32,6 @@ import static org.awaitility.Awaitility.await;
  * <p>返金はコミットの後に非同期で行われるので、結果を待つ。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class PaymentRefundTest {
 
     /**

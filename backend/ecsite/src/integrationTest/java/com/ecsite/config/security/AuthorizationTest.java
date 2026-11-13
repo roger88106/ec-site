@@ -7,7 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 管理 API のリクエストには既定で管理者の token が付く（{@link TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
 @Transactional
 class AuthorizationTest {
 

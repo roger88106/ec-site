@@ -3,16 +3,14 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,9 +29,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * <p>別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータも消さない。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 class ProductConcurrencyTest {
+
+    /**
+     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     */
+    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     private static final int REQUESTS = 2;
 
@@ -52,6 +53,7 @@ class ProductConcurrencyTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        clock.setInstant(NOW);
         taxCategoryId = new CatalogTestData(mockMvc, clock)
                 .taxCategory("同時登録 " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         productCode = "CONCURRENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);

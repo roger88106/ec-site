@@ -2,12 +2,11 @@ package com.ecsite.config;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -22,8 +21,13 @@ import static org.assertj.core.api.Assertions.within;
  */
 class ClockConfigTest {
 
+    /**
+     * 本番の設定
+     *
+     * <p>統合テストの共通設定はアプリの時計を差し替えるので、本番の {@link ClockConfig} だけを読む。
+     */
     @Nested
-    @IntegrationTest
+    @SpringJUnitConfig(ClockConfig.class)
     @DisplayName("通常の構成")
     class Default {
 
@@ -40,7 +44,6 @@ class ClockConfigTest {
 
     @Nested
     @IntegrationTest
-    @Import(TestClockConfig.class)
     @DisplayName("固定の時計に差し替えた構成")
     class Fixed {
 

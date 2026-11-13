@@ -4,7 +4,6 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,7 +15,6 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -36,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 処理を終えた時刻はアプリの時計で決まるので、時計を決めてから発行する。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 @ExtendWith(OutputCaptureExtension.class)
 class EventCleanupJobTest {
 

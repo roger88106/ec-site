@@ -4,7 +4,6 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.Mailpit;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.order.event.OrderShipped;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -36,7 +34,6 @@ import static org.mockito.Mockito.verify;
  * 送信はコミットの後に非同期で行われるので、結果を待つ。宛先をテストごとに変えて、他のテストのメールと混ぜない。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class ShipmentMailTest {
 
     @Autowired

@@ -1,5 +1,7 @@
 package com.ecsite.module.shipping.domain;
 
+import com.ecsite.module.shipping.event.DeliveryStatusChanged;
+
 /**
  * 配送状態
  *
@@ -52,5 +54,19 @@ public enum DeliveryStatus {
      */
     public boolean canAdvanceTo(DeliveryStatus next) {
         return next.rank > rank;
+    }
+
+    /**
+     * 配送状態を、イベントの配送状態にする。
+     *
+     * @return イベントの配送状態
+     */
+    public DeliveryStatusChanged.Status toEventStatus() {
+        return switch (this) {
+            case SHIPPED -> DeliveryStatusChanged.Status.SHIPPED;
+            case IN_TRANSIT -> DeliveryStatusChanged.Status.IN_TRANSIT;
+            case DELIVERED -> DeliveryStatusChanged.Status.DELIVERED;
+            case RETURNED -> DeliveryStatusChanged.Status.RETURNED;
+        };
     }
 }

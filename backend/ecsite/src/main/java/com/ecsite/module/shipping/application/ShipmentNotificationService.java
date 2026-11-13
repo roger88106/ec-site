@@ -5,6 +5,7 @@ import com.ecsite.module.shipping.application.port.ShipmentNotificationReceiver;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
+import com.ecsite.module.shipping.domain.Shipment;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import lombok.NonNull;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.util.ArrayList;
 
 /**
  * 配送状態の通知のサービス
@@ -56,31 +58,24 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
 
         // 配送状態の更新と、配送状態の変化の発行
         var now = clock.instant();
-        var result = Result.UNCHANGED;
+        var advanced = new ArrayList<Shipment>();
+        var changes = new ArrayList<DeliveryStatusChanged>();
         for (var shipment : shipments) {
             var from = shipment.status();
             if (shipment.advanceTo(status, now)) {
-                shipmentRepository.updateProgress(shipment);
-                events.publishEvent(DeliveryStatusChanged.of(now, shipment.orderId(), toEventStatus(from), toEventStatus(status)));
-                result = Result.ADVANCED;
+                advanced.add(shipment);
+                changes.add(DeliveryStatusChanged.of(now, shipment.orderId(), from.toEventStatus(), status.toEventStatus()));
             }
         }
-        return result;
+        if (advanced.isEmpty()) {
+            return Result.UNCHANGED;
+        }
+        shipmentRepository.updateProgress(advanced);
+        changes.forEach(events::publishEvent);
+        return Result.ADVANCED;
     }
 
 // ============================== プライベートメソッド ==============================
-
-    /**
-     * 配送状態を、イベントの配送状態にする。
-     */
-    private static DeliveryStatusChanged.Status toEventStatus(DeliveryStatus status) {
-        return switch (status) {
-            case SHIPPED -> DeliveryStatusChanged.Status.SHIPPED;
-            case IN_TRANSIT -> DeliveryStatusChanged.Status.IN_TRANSIT;
-            case DELIVERED -> DeliveryStatusChanged.Status.DELIVERED;
-            case RETURNED -> DeliveryStatusChanged.Status.RETURNED;
-        };
-    }
 
     /**
      * 通知の送り状番号を、保存と同じ形にする。

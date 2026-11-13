@@ -78,7 +78,7 @@ cart/
 ├── application/        # カートの操作
 │   ├── model/          # 表示の型
 │   ├── port/           # リポジトリ、他モジュールの port
-│   └── job/            # 期限切れのカートを消すジョブと設定
+│   └── job/            # 期限切れのカートを削除するジョブと設定
 ├── domain/             # カート、品目、移した結果、エラー
 └── infrastructure/
     ├── persistence/    # リポジトリの実装

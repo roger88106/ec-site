@@ -90,7 +90,7 @@ class JooqShipmentRepositoryTest {
         var notifiedAt = Instant.parse("2026-10-15T02:00:00Z");
 
         shipment.advanceTo(DeliveryStatus.DELIVERED, notifiedAt);
-        repository.updateProgress(shipment);
+        repository.updateProgress(List.of(shipment));
 
         assertThat(repository.findAllByOrderIds(List.of(shipment.orderId())))
                 .singleElement()
@@ -111,8 +111,8 @@ class JooqShipmentRepositoryTest {
         repository.insert(shipped);
         returned.advanceTo(DeliveryStatus.RETURNED, SHIPPED_AT);
         delivered.advanceTo(DeliveryStatus.DELIVERED, SHIPPED_AT);
-        repository.updateProgress(returned);
-        repository.updateProgress(delivered);
+        repository.updateProgress(List.of(returned));
+        repository.updateProgress(List.of(delivered));
 
         assertThat(repository.findReturnedOrderIds()).contains(returned.orderId())
                 .doesNotContain(delivered.orderId(), shipped.orderId());

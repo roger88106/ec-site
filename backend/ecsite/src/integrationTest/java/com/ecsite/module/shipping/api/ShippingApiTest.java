@@ -159,6 +159,6 @@ class ShippingApiTest {
     private void advance(UUID orderId, DeliveryStatus status) {
         var shipment = repository.findAllByOrderIds(List.of(orderId)).getFirst();
         shipment.advanceTo(status, SHIPPED_AT);
-        repository.updateProgress(shipment);
+        repository.updateProgress(List.of(shipment));
     }
 }

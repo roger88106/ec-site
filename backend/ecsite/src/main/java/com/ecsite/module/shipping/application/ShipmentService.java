@@ -61,7 +61,7 @@ public class ShipmentService {
         shipmentRepository.insert(shipment);
 
         // 配送状態の変化の発行
-        events.publishEvent(DeliveryStatusChanged.of(shippedAt, orderId, null, DeliveryStatusChanged.Status.SHIPPED));
+        events.publishEvent(DeliveryStatusChanged.of(shippedAt, orderId, null, shipment.status().toEventStatus()));
 
         // 追跡の開始の依頼の発行 ※物流サービスへの追跡の登録は、コミットの後に行う（失敗しても出荷を止めない）
         events.publishEvent(new TrackingRequested(shipment.id(), carrier, shipment.trackingNumber().value()));

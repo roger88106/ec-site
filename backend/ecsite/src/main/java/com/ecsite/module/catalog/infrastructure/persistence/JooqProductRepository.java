@@ -127,7 +127,7 @@ class JooqProductRepository implements ProductRepository {
             // 軸の登録（登録後は変わらない）
             insertAxes(snapshot);
 
-            // 所属カテゴリ、画像、バリアントの登録 ※新しい商品には消すものがないので、削除は実行しない
+            // 所属カテゴリ、画像、バリアントの登録 ※新しい商品には削除するものがないので、削除は実行しない
             writeParts(snapshot);
         } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
             throw CONSTRAINTS.translate(e);

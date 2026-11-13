@@ -12,10 +12,14 @@ import com.ecsite.module.shipping.domain.ShippingErrorCode;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.RowN;
+import org.jooq.SelectField;
+import org.jooq.impl.DSL;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -83,12 +87,24 @@ class JooqShipmentRepository implements ShipmentRepository {
     }
 
     @Override
-    public void updateProgress(Shipment shipment) {
+    public void updateProgress(Collection<Shipment> shipments) {
+        if (shipments.isEmpty()) {
+            return;
+        }
+        var rows = shipments.stream()
+                .map(shipment -> DSL.row(new SelectField<?>[]{
+                        DSL.val(shipment.id(), SHIPMENT.ID),
+                        DSL.val(shipment.status().name(), SHIPMENT.STATUS),
+                        DSL.val(shipment.lastNotifiedAt().orElse(null), SHIPMENT.LAST_NOTIFIED_AT)}))
+                .toArray(RowN[]::new);
+        var changes = DSL.values(rows).as("changes",
+                SHIPMENT.ID.getName(), SHIPMENT.STATUS.getName(), SHIPMENT.LAST_NOTIFIED_AT.getName());
         dsl.update(SHIPMENT)
-                .set(SHIPMENT.STATUS, shipment.status().name())
-                .set(SHIPMENT.LAST_NOTIFIED_AT, shipment.lastNotifiedAt().orElse(null))
+                .set(SHIPMENT.STATUS, DSL.field(DSL.name("changes", SHIPMENT.STATUS.getName()), String.class))
+                .set(SHIPMENT.LAST_NOTIFIED_AT, DSL.field(DSL.name("changes", SHIPMENT.LAST_NOTIFIED_AT.getName()), Instant.class))
                 .set(SHIPMENT.UPDATED_AT, clock.instant())
-                .where(SHIPMENT.ID.eq(shipment.id()))
+                .from(changes)
+                .where(SHIPMENT.ID.eq(DSL.field(DSL.name("changes", SHIPMENT.ID.getName()), UUID.class)))
                 .execute();
     }
 

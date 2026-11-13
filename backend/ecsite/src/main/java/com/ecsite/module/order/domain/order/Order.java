@@ -381,7 +381,7 @@ public class Order extends AggregateRoot {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
         }
         changeStatus(OrderStatus.SHIPPED, now);
-        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, toEventCarrier(carrier),
+        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, carrier.toEventCarrier(),
                 trackingNumber));
     }
 
@@ -451,9 +451,9 @@ public class Order extends AggregateRoot {
         this.cancellation = cancellation;
         var from = status;
         status = OrderStatus.CANCELLED;
-        registerEvent(OrderStatusChanged.of(cancellation.cancelledAt(), id, toEventStatus(from),
+        registerEvent(OrderStatusChanged.of(cancellation.cancelledAt(), id, from.toEventStatus(),
                 OrderStatusChanged.Status.CANCELLED,
-                toEventKind(cancellation.kind()), cancellation.restocked()));
+                cancellation.kind().toEventKind(), cancellation.restocked()));
     }
 
     /**
@@ -462,42 +462,7 @@ public class Order extends AggregateRoot {
     private void changeStatus(OrderStatus to, Instant at) {
         var from = status;
         status = to;
-        registerEvent(OrderStatusChanged.of(at, id, toEventStatus(from), toEventStatus(to), null, null));
-    }
-
-    /**
-     * 注文の状態を、イベントの状態にする。
-     */
-    private static OrderStatusChanged.Status toEventStatus(OrderStatus status) {
-        return switch (status) {
-            case PENDING_PAYMENT -> OrderStatusChanged.Status.PENDING_PAYMENT;
-            case ACCEPTED -> OrderStatusChanged.Status.ACCEPTED;
-            case CANCELLATION_REQUESTED -> OrderStatusChanged.Status.CANCELLATION_REQUESTED;
-            case CANCELLED -> OrderStatusChanged.Status.CANCELLED;
-            case SHIPPED -> OrderStatusChanged.Status.SHIPPED;
-        };
-    }
-
-    /**
-     * キャンセルの種類を、イベントの種類にする。
-     */
-    private static OrderStatusChanged.CancellationKind toEventKind(CancellationKind kind) {
-        return switch (kind) {
-            case REQUEST_APPROVED -> OrderStatusChanged.CancellationKind.REQUEST_APPROVED;
-            case OPERATOR -> OrderStatusChanged.CancellationKind.OPERATOR;
-            case PAYMENT_EXPIRED -> OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED;
-        };
-    }
-
-    /**
-     * 配送業者を、イベントの配送業者にする。
-     */
-    private static OrderShipped.Carrier toEventCarrier(Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> OrderShipped.Carrier.YAMATO;
-            case SAGAWA -> OrderShipped.Carrier.SAGAWA;
-            case JAPAN_POST -> OrderShipped.Carrier.JAPAN_POST;
-        };
+        registerEvent(OrderStatusChanged.of(at, id, from.toEventStatus(), to.toEventStatus(), null, null));
     }
 
     /**

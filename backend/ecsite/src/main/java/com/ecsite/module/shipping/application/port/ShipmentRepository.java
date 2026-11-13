@@ -40,11 +40,11 @@ public interface ShipmentRepository {
     List<Shipment> findAllByTrackingForUpdate(Carrier carrier, TrackingNumber trackingNumber);
 
     /**
-     * 通知で進めた配送状態と、通知を反映した日時を保存する。
+     * 通知で進めた配送状態と、通知を反映した日時を、1 つの文で保存する。
      *
-     * @param shipment 出荷
+     * @param shipments 出荷
      */
-    void updateProgress(Shipment shipment);
+    void updateProgress(Collection<Shipment> shipments);
 
     /**
      * 配送状態が「返送」の出荷の注文 ID を返す。

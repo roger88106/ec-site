@@ -1,8 +1,8 @@
 package com.ecsite.common.model.value;
 
+import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -14,16 +14,5 @@ import java.util.UUID;
  * @param name 氏名（姓 名）
  */
 @ValueObject
-public record Operator(UUID id, String name) {
-
-    /**
-     * コンストラクタ。
-     *
-     * @param id   運営者 ID
-     * @param name 氏名
-     */
-    public Operator {
-        Objects.requireNonNull(id);
-        Objects.requireNonNull(name);
-    }
+public record Operator(@NonNull UUID id, @NonNull String name) {
 }

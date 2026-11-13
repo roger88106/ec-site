@@ -1,16 +1,60 @@
 package com.ecsite.config;
 
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import javax.sql.DataSource;
+
 /**
- * 定期ジョブの起動の設定
+ * 定期ジョブの設定
  *
- * <p>{@code ecsite.scheduling.enabled} が false なら、定期ジョブを自動では動かさない。
+ * <p>{@code @SchedulerLock} を付けたメソッドは、同じ名前のロックを持つ間、ほかのインスタンスでは動かずに飛ばされる。
+ * ロックはスケジューラーからの起動だけでなく、直接の呼び出しにも掛かる。
+ * ロックは無駄な重複を減らすためのもので、業務の正しさは行ロックと冪等な状態の遷移で保つ。
  */
 @Configuration
-@EnableScheduling
-@ConditionalOnBooleanProperty(name = "ecsite.scheduling.enabled", matchIfMissing = true)
+@EnableSchedulerLock(defaultLockAtMostFor = SchedulingConfig.LOCK_AT_MOST_FOR)
 class SchedulingConfig {
+
+    /**
+     * ロックを持つ時間の上限（インスタンスが止まってもロックが残り続けないように）。
+     *
+     * <p>ShedLock の注釈は定数しか取らないので、設定の型にせず定数にする。環境で変えることもない。
+     */
+    static final String LOCK_AT_MOST_FOR = "PT10M";
+
+    /**
+     * ロックの表（common.shedlock）を使うロックの provider。
+     *
+     * <p>ロックの期限は DB の時計で決める。
+     *
+     * @param dataSource データソース
+     * @return ロックの provider
+     */
+    @Bean
+    LockProvider lockProvider(DataSource dataSource) {
+        return new JdbcTemplateLockProvider(JdbcTemplateLockProvider.Configuration.builder()
+                .withJdbcTemplate(new JdbcTemplate(dataSource))
+                .withTableName("common.shedlock")
+                // インスタンスの時計がずれていても、ロックの判定がずれないようにする
+                .usingDbTime()
+                .build());
+    }
+
+    /**
+     * 定期ジョブの起動
+     *
+     * <p>{@code ecsite.scheduling.enabled} が false なら、定期ジョブを自動では動かさない（ロックは直接の呼び出しにも掛かるので、外側のクラスに置く）。
+     */
+    @Configuration
+    @EnableScheduling
+    @ConditionalOnBooleanProperty(name = "ecsite.scheduling.enabled", matchIfMissing = true)
+    static class Startup {
+    }
 }

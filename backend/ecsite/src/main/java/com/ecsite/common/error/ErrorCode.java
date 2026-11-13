@@ -12,8 +12,6 @@ import lombok.NonNull;
  */
 public record ErrorCode(@NonNull String code, @NonNull ErrorType type, @NonNull I18nMessage message) {
 
-    // ============================== ファクトリー ==============================
-
     /**
      * エラーコードを作成するファクトリー
      *

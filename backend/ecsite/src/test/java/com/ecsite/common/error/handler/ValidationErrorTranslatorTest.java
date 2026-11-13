@@ -3,7 +3,7 @@ package com.ecsite.common.error.handler;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorDetail;
 import com.ecsite.common.error.ValidationErrorMapping;
-import com.ecsite.common.message.MessageHelper;
+import com.ecsite.common.message.MessageResolver;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p>制約の種類から ecsite.validation.* の文を選び、制約の値を差し込む。JVM とリクエストのロケールによらず、同じ日本語になる。
  */
-class ValidationMessagesTest {
+class ValidationErrorTranslatorTest {
 
     /**
      * 検証する型（項目ごとに 1 つの制約）
@@ -79,12 +79,12 @@ class ValidationMessagesTest {
     /**
      * テストの対象
      */
-    private ValidationMessages messages;
+    private ValidationErrorTranslator messages;
 
     /**
      * メッセージの取り出し
      */
-    private MessageHelper helper;
+    private MessageResolver resolver;
 
     /**
      * JVM とリクエストのロケールを英語にし、メッセージのファイルを読む部品を作る
@@ -99,8 +99,8 @@ class ValidationMessagesTest {
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setFallbackToSystemLocale(false);
-        helper = new MessageHelper(messageSource);
-        messages = new ValidationMessages(helper, List.of());
+        resolver = new MessageResolver(messageSource);
+        messages = new ValidationErrorTranslator(resolver, List.of());
     }
 
     /**
@@ -159,18 +159,18 @@ class ValidationMessagesTest {
     @Test
     @DisplayName("Bean Validation の違反でない検証エラー（型の変換の失敗など）は「値が正しくありません。」")
     void notConstraintViolation() {
-        assertThat(messages.of(new ObjectError("request", "Failed to convert"))).isEqualTo("値が正しくありません。");
+        assertThat(messages.messageOf(new ObjectError("request", "Failed to convert"))).isEqualTo("値が正しくありません。");
     }
 
     @Test
     @DisplayName("メソッド引数の検証エラーで、Bean Validation の違反でないものは「値が正しくありません。」")
     void parameterErrorWithoutConstraintViolation() throws NoSuchMethodException {
-        var parameter = new MethodParameter(ValidationMessagesTest.class.getDeclaredMethod("messageOf", String.class, Object.class), 0);
+        var parameter = new MethodParameter(ValidationErrorTranslatorTest.class.getDeclaredMethod("messageOf", String.class, Object.class), 0);
         var error = new DefaultMessageSourceResolvable("typeMismatch");
         var result = new ParameterValidationResult(parameter, "x", List.of(error), null, null, null,
                 (resolvable, type) -> null);
 
-        assertThat(messages.of(result, error)).isEqualTo("値が正しくありません。");
+        assertThat(messages.messageOf(result, error)).isEqualTo("値が正しくありません。");
     }
 
     @Test
@@ -180,20 +180,20 @@ class ValidationMessagesTest {
         var errors = new BeanPropertyBindingResult(target, "sample");
         new SpringValidatorAdapter(validator).validate(target, errors);
 
-        assertThat(messages.of(errors.getFieldError("notNull"))).isEqualTo("入力してください。");
+        assertThat(messages.messageOf(errors.getFieldError("notNull"))).isEqualTo("入力してください。");
     }
 
     @Test
     @DisplayName("業務のエラーに対応づけた項目は、制約の種類の文の代わりに業務のエラーの文になる。ほかの項目は種類の文のまま")
     void mappedField() {
         ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
-        var mapped = new ValidationMessages(helper, List.of(mapping));
+        var mapped = new ValidationErrorTranslator(resolver, List.of(mapping));
         var target = new Sample("x", "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "abc", "x", null, List.of("x"), List.of(), new String[]{"x"});
         var errors = new BeanPropertyBindingResult(target, "sample");
         new SpringValidatorAdapter(validator).validate(target, errors);
 
-        assertThat(mapped.of(errors.getFieldError("pattern"))).isEqualTo("金額は 0 円以上にしてください。");
-        assertThat(mapped.of(errors.getFieldError("email"))).isEqualTo("メールアドレスの形式が正しくありません。");
+        assertThat(mapped.messageOf(errors.getFieldError("pattern"))).isEqualTo("金額は 0 円以上にしてください。");
+        assertThat(mapped.messageOf(errors.getFieldError("email"))).isEqualTo("メールアドレスの形式が正しくありません。");
     }
 
     @Test
@@ -201,7 +201,7 @@ class ValidationMessagesTest {
     void duplicateMapping() {
         ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
 
-        assertThatThrownBy(() -> new ValidationMessages(helper, List.of(mapping, mapping)))
+        assertThatThrownBy(() -> new ValidationErrorTranslator(resolver, List.of(mapping, mapping)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("pattern");
     }
@@ -215,6 +215,6 @@ class ValidationMessagesTest {
      */
     private String messageOf(String property, Object value) {
         ConstraintViolation<Sample> violation = validator.validateValue(Sample.class, property, value).iterator().next();
-        return messages.of(violation);
+        return messages.messageOf(violation);
     }
 }

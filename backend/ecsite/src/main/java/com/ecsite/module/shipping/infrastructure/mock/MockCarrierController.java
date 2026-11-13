@@ -1,6 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
-import com.ecsite.common.message.MessageHelper;
+import com.ecsite.common.message.MessageResolver;
 import com.ecsite.common.presentation.MockPageResponses;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
@@ -59,7 +58,7 @@ class MockCarrierController {
     /**
      * メッセージ（配送業者の表示の名前）
      */
-    private final MessageHelper messageHelper;
+    private final MessageResolver messageResolver;
 
     /**
      * 出荷の一覧を出す。
@@ -109,10 +108,13 @@ class MockCarrierController {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * エンドポイントを持つ、このサーバーの URL（リクエストと同じ接続先）を求める。
+     * エンドポイントを持つ、このサーバーの URL を求める。
+     *
+     * <p>宛先は、リクエストを受けたローカルのポートの localhost にする。Host ヘッダーから作ると、
+     * 書き換えたリクエストで、署名した通知を外のホストに送らせられるため。
      */
     private static String baseUrl(HttpServletRequest request) {
-        return ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();
+        return "http://localhost:" + request.getLocalPort() + request.getContextPath();
     }
 
     /**
@@ -129,6 +131,6 @@ class MockCarrierController {
      * 配送業者の表示の名前を、出荷モジュールのメッセージから取る。
      */
     private String carrierName(Carrier carrier) {
-        return messageHelper.getMessage(carrier.nameMessageKey(), Map.of());
+        return messageResolver.getMessage(carrier.nameMessageKey(), Map.of());
     }
 }

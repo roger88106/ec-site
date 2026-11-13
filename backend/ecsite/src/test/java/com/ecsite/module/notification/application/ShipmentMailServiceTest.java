@@ -1,6 +1,6 @@
 package com.ecsite.module.notification.application;
 
-import com.ecsite.common.message.MessageHelper;
+import com.ecsite.common.message.MessageResolver;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.order.event.OrderShipped;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +36,7 @@ class ShipmentMailServiceTest {
         messageSource.setFallbackToSystemLocale(false);
         service = new ShipmentMailService((orderId, kind, recipient, sentAt) -> true, sent::add,
                 Clock.fixed(Instant.parse("2026-10-08T01:00:00Z"), ZoneOffset.UTC),
-                new MessageHelper(messageSource), carrier -> switch (carrier) {
+                new MessageResolver(messageSource), carrier -> switch (carrier) {
                     case YAMATO -> "ecsite.shipping.carrier.yamato";
                     case SAGAWA -> "ecsite.shipping.carrier.sagawa";
                     case JAPAN_POST -> "ecsite.shipping.carrier.japan_post";

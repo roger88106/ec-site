@@ -1,5 +1,7 @@
 package com.ecsite.common.scheduling;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 
 import java.util.function.IntSupplier;
@@ -7,13 +9,8 @@ import java.util.function.IntSupplier;
 /**
  * 期限切れのデータの片付けの共通の処理
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ExpiredDataCleanup {
-
-    /**
-     * 作らせない
-     */
-    private ExpiredDataCleanup() {
-    }
 
     /**
      * 件数の上限ずつ消すのを、消した件数が上限に満たなくなるまで繰り返し、合計の件数をログに出す。

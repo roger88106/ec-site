@@ -49,13 +49,15 @@ class EventResubmissionJob {
     private final EventPublicationMetrics publicationMetrics;
 
     /**
-     * 発行から一定時間（既定 5 分）より前の、未完了のイベントを再発行する。
+     * 発行から一定時間より前の、未完了のイベントを再発行する。
      *
      * <p>リスナーの処理に失敗した、または処理の途中でインスタンスが止まったイベントを、もう一度リスナーに渡す。
-     * 最後の試行から再発行の間隔以上の時間がたっていないイベントと、
-     * 処理の回数（発行の時の 1 回と再発行の回数）が上限（既定 60）に達したイベントは、再発行しない。
-     * 上限に達して最後の処理に失敗したイベントには止めた印を付けてエラーのログに出し、
-     * 終わりに未完了と止めたイベントの件数をメトリクスに置く。
+     * 次のイベントは再発行しない。
+     * <ul>
+     *     <li>最後の試行から、再発行の間隔がたっていない</li>
+     *     <li>処理の回数（発行の時の 1 回と再発行の回数）が上限に達した。最後の処理に失敗していれば、止めた印を付けてエラーのログに出す</li>
+     * </ul>
+     * <p>終わりに、未完了と止めたイベントの件数をメトリクスに記録する。時間と回数は {@link Properties}。
      */
     // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-resubmission-"
@@ -71,12 +73,14 @@ class EventResubmissionJob {
         var now = clock.instant();
         var publishedBefore = now.minus(properties.minAge());
         var lastTriedBy = now.minus(properties.interval());
-        // 再発行の選択肢（ResubmissionOptions）は使わない。状態が FAILED のものだけを、件数の上限で古い順に読んでから絞るので、
-        // 止めたイベントが上限の件数だけ溜まると、新しいイベントが再発行されなくなるため。
-        // 発行から下限の時間がたち（発行の直後はまだ処理中のことがある）、最後の試行から間隔以上の時間がたち、回数が上限より少ないものを選ぶ。
-        // 間隔のタイマーはインスタンスごとにあるので、最後の試行からの時間で見ないと、台数のぶんだけ回数が速く増える。
-        // 再発行の印を付けた後でインスタンスが止まったイベントと、処理の回数が上限に達した試行の途中でインスタンスが止まったイベントは、
-        // この選択の対象にならない。Spring Modulith の監視（spring.modulith.events.staleness）が失敗の状態に変えた後の回で、再発行するか止める
+        // 選ぶ条件：
+        // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
+        // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
+        // - 回数が上限より少ない
+        // 再発行の選択肢（ResubmissionOptions）は使わない。FAILED のものを件数の上限まで古い順に読んでから絞るので、
+        // 止めたイベントが溜まると、新しいイベントが再発行されなくなるため。
+        // 試行の途中でインスタンスが止まったイベントは、Spring Modulith の監視（spring.modulith.events.staleness）が
+        // 失敗の状態に変えた後の回で、再発行するか止める
         incompletePublications.resubmitIncompletePublications(publication ->
                 publication.getPublicationDate().isBefore(publishedBefore)
                         && !publication.getLastPublicationDate().isAfter(lastTriedBy)

@@ -121,11 +121,11 @@ class MessageInterpolationTest {
         var messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
-        var helper = new MessageHelper(messageSource);
+        var resolver = new MessageResolver(messageSource);
 
         List<Object> values = example.values().stream().map(MessageInterpolationTest::valueOf).toList();
 
-        assertThat(helper.getMessage(ErrorDetail.of(example.error().getCode(), values))).isEqualTo(example.expected());
+        assertThat(resolver.getMessage(ErrorDetail.of(example.error().getCode(), values))).isEqualTo(example.expected());
     }
 
     /**

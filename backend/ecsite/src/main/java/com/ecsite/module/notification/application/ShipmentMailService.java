@@ -1,6 +1,6 @@
 package com.ecsite.module.notification.application;
 
-import com.ecsite.common.message.MessageHelper;
+import com.ecsite.common.message.MessageResolver;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.notification.application.port.SentMailRepository;
 import com.ecsite.module.notification.application.port.ShippingDirectory;
@@ -35,9 +35,9 @@ class ShipmentMailService {
     private final Clock clock;
 
     /**
-     * メッセージヘルパー
+     * メッセージの解決
      */
-    private final MessageHelper messageHelper;
+    private final MessageResolver messageResolver;
 
     /**
      * 配送業者の表示名の文言のキーの取得
@@ -68,13 +68,13 @@ class ShipmentMailService {
      * <p>宛先は注文のメールアドレス。件名と本文の雛形は messages.properties の ecsite.notification.shipment.* にある。
      */
     private Mailer.Mail compose(OrderShipped event) {
-        var carrierName = messageHelper.getMessage(shippingDirectory.nameKey(event.carrier()), Map.of());
+        var carrierName = messageResolver.getMessage(shippingDirectory.nameKey(event.carrier()), Map.of());
         var params = Map.of(
                 "orderNumber", event.orderNumber(),
                 "carrier", carrierName,
                 "trackingNumber", event.trackingNumber());
         return new Mailer.Mail(event.email(),
-                messageHelper.getMessage("ecsite.notification.shipment.subject", params),
-                messageHelper.getMessage("ecsite.notification.shipment.body", params));
+                messageResolver.getMessage("ecsite.notification.shipment.subject", params),
+                messageResolver.getMessage("ecsite.notification.shipment.body", params));
     }
 }

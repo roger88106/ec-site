@@ -1,6 +1,6 @@
 package com.ecsite.config;
 
-import com.ecsite.common.message.MessageHelper;
+import com.ecsite.common.message.MessageResolver;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
@@ -62,7 +62,7 @@ class ExternalServiceSelectionTest {
             .withBean(RestClient.Builder.class, RestClient::builder)
             .withBean(ShipmentRepository.class, () -> mock(ShipmentRepository.class))
             .withBean(DSLContext.class, () -> mock(DSLContext.class))
-            .withBean(MessageHelper.class, () -> mock(MessageHelper.class));
+            .withBean(MessageResolver.class, () -> mock(MessageResolver.class));
 
     /**
      * 決済と物流の実装の置き場所を読み込む

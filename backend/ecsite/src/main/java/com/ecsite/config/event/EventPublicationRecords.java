@@ -90,7 +90,7 @@ class EventPublicationRecords {
     }
 
     /**
-     * 未完了のイベントの件数（止めたイベントを含む）
+     * 未完了のイベント（止めたイベントを含む）を数える。
      *
      * @return 件数
      */
@@ -99,7 +99,7 @@ class EventPublicationRecords {
     }
 
     /**
-     * 止めたイベントの件数
+     * 止めたイベントを数える。
      *
      * @param maxAttempts 処理の回数の上限
      * @return 件数

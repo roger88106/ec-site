@@ -67,11 +67,11 @@ public class InventoryTestData {
      *
      * @param variantId バリアント ID
      * @param productId 商品 ID
-     * @param quantity  入荷の数量（0 以上）
+     * @param quantity  入荷の数量
      */
     public void stock(UUID variantId, UUID productId, int quantity) {
         stockItemRepository.createIfAbsent(variantId, productId);
-        if (quantity > 0) {
+        if (quantity != 0) {
             stockItemRepository.adjust(variantId,
                     StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
         }
@@ -83,7 +83,7 @@ public class InventoryTestData {
      * <p>商品を問わないテストで使う。数量が 0 なら、作るだけで調整しない。
      *
      * @param variantId バリアント ID
-     * @param quantity  入荷の数量（0 以上）
+     * @param quantity  入荷の数量
      */
     public void stock(UUID variantId, int quantity) {
         stock(variantId, UUID.randomUUID(), quantity);
@@ -95,7 +95,7 @@ public class InventoryTestData {
      * <p>数量が 0 なら、作るだけで調整しない。
      *
      * @param productId 商品 ID
-     * @param quantity  入荷の数量（0 以上）
+     * @param quantity  入荷の数量
      * @return 作った在庫のバリアント ID
      */
     public UUID stockNewVariant(UUID productId, int quantity) {

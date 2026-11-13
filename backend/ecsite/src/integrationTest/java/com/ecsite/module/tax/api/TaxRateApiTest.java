@@ -33,7 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TaxRateApiTest {
 
     /**
-     * 2027-04-01 00:00（日本時間）
+     * 2027 年 4 月の初め
+     *
+     * <p>日本時間の 2027-04-01 00:00。
      */
     private static final Instant APR_2027 = Instant.parse("2027-03-31T15:00:00Z");
 

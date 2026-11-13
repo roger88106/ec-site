@@ -106,6 +106,8 @@ class SchedulerLockTest {
         }
 
         /**
+         * 動いた回数を返す。
+         *
          * @return 動いた回数
          */
         int runs() {

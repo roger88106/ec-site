@@ -46,7 +46,6 @@ class PaymentRefundTest {
     @Autowired
     TestPaymentGateway gateway;
 
-
     @Autowired
     MutableClock clock;
 

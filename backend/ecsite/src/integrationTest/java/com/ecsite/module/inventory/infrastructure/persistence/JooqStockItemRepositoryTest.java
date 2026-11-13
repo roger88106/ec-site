@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -121,10 +123,10 @@ class JooqStockItemRepositoryTest {
                     return adjust(delta, StockAdjustmentReason.ARRIVAL);
                 }));
             }
-            ready.await();
+            assertThat(ready.await(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isTrue();
             start.countDown();
             for (var result : results) {
-                result.get();
+                result.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             }
         } finally {
             // try-with-resources（close）は全部の処理の終わりを待つので、途中で失敗すると start を待つスレッドが残って止まる。

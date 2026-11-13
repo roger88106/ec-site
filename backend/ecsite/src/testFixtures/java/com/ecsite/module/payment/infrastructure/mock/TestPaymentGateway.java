@@ -156,7 +156,7 @@ public class TestPaymentGateway implements PaymentGateway {
         this.mock = mock;
     }
 
-// ============================== 決済サービス ==============================
+    // ============================== 決済サービス ==============================
 
     @Override
     public PaymentPage openPage(PageRequest request) {
@@ -244,7 +244,7 @@ public class TestPaymentGateway implements PaymentGateway {
         }
     }
 
-// ============================== 支払画面の操作（本番の mock に渡す） ==============================
+    // ============================== 支払画面の操作（本番の mock に渡す） ==============================
 
     /**
      * 支払う：決済サービスで支払を済ませ、与信の成功を通知する。
@@ -297,7 +297,7 @@ public class TestPaymentGateway implements PaymentGateway {
         return mock.authorizationRefOf(pageId);
     }
 
-// ============================== テストだけで使う操作 ==============================
+    // ============================== テストだけで使う操作 ==============================
 
     /**
      * 次の与信の取消を、指定した回数だけ失敗させる。

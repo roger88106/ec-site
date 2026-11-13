@@ -99,7 +99,7 @@ class MoneyTypeTest {
      */
     private static List<JavaClass> publicClasses(JavaClasses classes) {
         return classes.stream()
-                .filter(javaClass -> PUBLIC_PACKAGE.test(javaClass))
+                .filter(PUBLIC_PACKAGE)
                 .toList();
     }
 

@@ -72,18 +72,20 @@ class StorefrontFreshnessTest {
      */
     private String taxCategoryId;
 
+    /**
+     * テストで使う商品の ID
+     */
     private String productId;
 
+    /**
+     * テストで使う商品のバリエーションの ID
+     */
     private String variantId;
 
-    private String categoryId;
-
     /**
-     * このテストのカテゴリで絞った商品の一覧のリクエスト
+     * テストで使うカテゴリの ID
      */
-    private MockHttpServletRequestBuilder list() {
-        return get(STORE + "/products").param("categoryId", categoryId);
-    }
+    private String categoryId;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -165,5 +167,14 @@ class StorefrontFreshnessTest {
         // 30 秒後：一覧を取得し直し、8% になる
         clock.setInstant(NOW.plus(Duration.ofSeconds(30)));
         mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1080));
+    }
+
+    // ============================== 補助 ==============================
+
+    /**
+     * このテストのカテゴリで絞った商品の一覧のリクエスト
+     */
+    private MockHttpServletRequestBuilder list() {
+        return get(STORE + "/products").param("categoryId", categoryId);
     }
 }

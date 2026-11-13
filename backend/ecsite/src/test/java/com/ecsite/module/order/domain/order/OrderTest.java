@@ -32,10 +32,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class OrderTest {
 
     /**
-     * 注文日時：2026-10-08 00:30（日本時間）
+     * 注文日時
+     *
+     * <p>日本時間の 2026-10-08 00:30。
      */
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
+    /**
+     * お届け先
+     */
     private static final ShippingAddress ADDRESS =
             ShippingAddress.of("山田 太郎", "100-0001", TestAreas.CHIYODA, "千代田 1-1", "03-1234-5678");
 

@@ -52,6 +52,8 @@ public class Mailpit implements AutoCloseable {
     }
 
     /**
+     * SMTP のホストを返す。
+     *
      * @return テストの JVM から見た SMTP のホスト
      */
     public String smtpHost() {
@@ -59,6 +61,8 @@ public class Mailpit implements AutoCloseable {
     }
 
     /**
+     * SMTP のポートを返す。
+     *
      * @return テストの JVM から見た SMTP のポート（割り当てられたポート）
      */
     public int smtpPort() {

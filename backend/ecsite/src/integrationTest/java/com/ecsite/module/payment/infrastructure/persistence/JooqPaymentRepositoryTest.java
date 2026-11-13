@@ -249,7 +249,6 @@ class JooqPaymentRepositoryTest {
         repository.update(loaded);
     }
 
-
     /**
      * 指定した注文と期限の未払いの支払を作る
      */

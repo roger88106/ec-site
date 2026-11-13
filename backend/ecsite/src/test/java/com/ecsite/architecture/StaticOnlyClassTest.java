@@ -162,7 +162,7 @@ final class StaticOnlyWithPublicConstructor {
     /**
      * 例のコンストラクタ（規則に合わない）
      */
-    StaticOnlyWithPublicConstructor() {
+    public StaticOnlyWithPublicConstructor() {
     }
 
     /**
@@ -181,7 +181,7 @@ final class StaticOnlyWithPublicConstructor {
 final class StaticOnlyWithPrivateConstructor {
 
     /**
-     * 作らせない
+     * インスタンスを作らない。
      */
     private StaticOnlyWithPrivateConstructor() {
     }
@@ -202,7 +202,7 @@ final class StaticOnlyWithPrivateConstructor {
 class StaticOnlyNotFinal {
 
     /**
-     * 作らせない
+     * インスタンスを作らない。
      */
     private StaticOnlyNotFinal() {
     }
@@ -249,6 +249,8 @@ final class WithInstanceField {
 class ExampleException extends RuntimeException {
 
     /**
+     * 例のコンストラクター。
+     *
      * @param message 例の文
      */
     ExampleException(String message) {

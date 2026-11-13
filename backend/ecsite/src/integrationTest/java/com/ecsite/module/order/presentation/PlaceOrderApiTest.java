@@ -139,7 +139,7 @@ class PlaceOrderApiTest {
         void placesOrder() throws Exception {
             var checkoutId = orders.startCheckout(cartId);
 
-            var orderId = place(checkoutId, 6940)
+            var body = place(checkoutId, 6940)
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"))
                     .andReturn().getResponse().getContentAsString();
@@ -151,19 +151,19 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.items", hasSize(1)))
                     .andExpect(jsonPath("$.items[0].variantId").value(variant.toString()))
                     .andExpect(jsonPath("$.items[0].quantity").value(2));
-            var id = TestJson.createdId(orderId);
-            mockMvc.perform(get("/api/store/orders/" + id))
+            var orderId = TestJson.createdId(body);
+            mockMvc.perform(get("/api/store/orders/" + orderId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
             // 調整履歴に、理由「注文」と注文番号が残る
-            var orderNumber = JsonPath.<String>read(mockMvc.perform(get("/api/store/orders/" + id))
+            var orderNumber = JsonPath.<String>read(mockMvc.perform(get("/api/store/orders/" + orderId))
                     .andReturn().getResponse().getContentAsString(), "$.orderNumber");
             mockMvc.perform(get("/api/admin/inventory/variants/" + variant + "/adjustments"))
                     .andExpect(jsonPath("$.items[0].reason").value("ORDER"))
                     .andExpect(jsonPath("$.items[0].delta").value(-2))
                     .andExpect(jsonPath("$.items[0].orderNumber").value(orderNumber))
-                    .andExpect(jsonPath("$.items[0].orderId").value(id.toString()));
-            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(id);
+                    .andExpect(jsonPath("$.items[0].orderId").value(orderId.toString()));
+            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(orderId);
         }
 
         @Test
@@ -375,7 +375,7 @@ class PlaceOrderApiTest {
     class PendingOrderConfirmation {
 
         /**
-         * 複数の注文ができるように、在庫数を 10 にする
+         * 複数の注文ができるように、7 を足して在庫数を 10 にする
          */
         @BeforeEach
         void stockEnough() {
@@ -853,8 +853,6 @@ class PlaceOrderApiTest {
         }
     }
 
-    // ============================== 補助 ==============================
-
     @Nested
     @DisplayName("注文時の年齢と性別")
     class BuyerProfile {
@@ -917,6 +915,8 @@ class PlaceOrderApiTest {
             return Arrays.asList(record.get(SALES_ORDER.BUYER_AGE), record.get(SALES_ORDER.BUYER_GENDER));
         }
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * T シャツ 2 枚を注文し、注文 ID を返す

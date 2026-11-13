@@ -18,10 +18,10 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,10 +101,7 @@ class StockReservationCleanupJobTest {
     @DisplayName("NFR-24 件数の上限を超える引当は、上限ずつ分けて、残りがなくなるまで消す")
     void deletesInBatchesUntilNoneLeft() {
         var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
-        var holders = new ArrayList<UUID>();
-        for (int i = 0; i < 5; i++) {
-            holders.add(reserve(variant, EXPIRES_AT));
-        }
+        var holders = IntStream.range(0, 5).mapToObj(i -> reserve(variant, EXPIRES_AT)).toList();
         var smallBatch = new StockReservationCleanupJob(service,
                 new StockReservationCleanupProperties(Duration.ofHours(1), Duration.ofDays(1), 2), clock);
 
@@ -120,10 +117,7 @@ class StockReservationCleanupJobTest {
         // ほかのテストが使わない古い期限にし、消す条件に当たるのを自分の 3 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
         var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
-        var holders = new ArrayList<UUID>();
-        for (int i = 0; i < 3; i++) {
-            holders.add(reserve(variant, longAgo));
-        }
+        var holders = IntStream.range(0, 3).mapToObj(i -> reserve(variant, longAgo)).toList();
 
         var deleted = service.deleteExpired(longAgo.plusSeconds(1), 2);
 

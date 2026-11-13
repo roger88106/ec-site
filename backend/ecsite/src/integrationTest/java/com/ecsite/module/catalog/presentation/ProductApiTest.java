@@ -58,7 +58,7 @@ class ProductApiTest {
      *
      * <p>日本時間の 2026-10-08 00:00。
      */
-    private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
+    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
      * 有効な税率がない税区分の税率が有効になる日時

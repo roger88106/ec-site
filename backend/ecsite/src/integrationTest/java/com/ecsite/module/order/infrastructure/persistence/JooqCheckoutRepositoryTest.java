@@ -35,8 +35,10 @@ class JooqCheckoutRepositoryTest {
     private static final Duration TTL = Duration.ofMinutes(30);
 
     /**
-     * 削除の確認で使う注文手続きの開始時刻。ロールバックしない片付けのジョブのテストが残す注文手続き（2000 年）より前にして、
-     * 表の全体を対象にする削除の条件に他のテストのデータが当たらないようにする
+     * 削除の確認で使う注文手続きの開始時刻
+     *
+     * <p>ロールバックしない片付けのジョブのテストが残す注文手続き（2000 年）より前にして、
+     * 表の全体を対象にする削除の条件に他のテストのデータが当たらないようにする。
      */
     private static final Instant OLD_STARTED_AT = Instant.parse("1980-01-01T00:00:00Z");
 

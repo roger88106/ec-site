@@ -175,14 +175,14 @@ class OrderPaymentTest {
     /**
      * 「支払待ち」の注文（成立のイベントは取り出し済み）
      */
-    static Order pendingOrder() {
+    private static Order pendingOrder() {
         return TestOrders.pending(ORDERED_AT);
     }
 
     /**
      * 「受付」の注文（与信の成功の後）
      */
-    static Order acceptedOrder() {
+    private static Order acceptedOrder() {
         var order = pendingOrder();
         order.acceptPayment(ORDERED_AT.plusSeconds(60));
         order.pullEvents();

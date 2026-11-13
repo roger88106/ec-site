@@ -145,9 +145,9 @@ class EventResubmissionJobTest {
 
     @Test
     @DisplayName("AC-290 処理に失敗し続けるイベントは、処理の回数が上限に達したら、それ以上再発行しない")
-    // 処理の回数（completion_attempts）は、発行の時点で 1、再発行するたびに 1 つ増える（Spring Modulith 2.1 の動き）。
-    // 上限 3 なら、発行の 1 回と再発行の 2 回で、リスナーは 3 回受ける
     void stopsResubmittingAtMaxAttempts() {
+        // 処理の回数（completion_attempts）は、発行の時点で 1、再発行するたびに 1 つ増える（Spring Modulith 2.1 の動き）。
+        // 上限 3 なら、発行の 1 回と再発行の 2 回で、リスナーは 3 回受ける
         var job = jobWithMaxAttempts(3);
         var event = failedUntil(job, 3);
         var lastResubmission = publicationOf(event).getLastResubmissionDate();

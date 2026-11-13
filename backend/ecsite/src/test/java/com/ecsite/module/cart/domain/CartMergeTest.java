@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -202,6 +201,6 @@ class CartMergeTest {
     }
 
     private static List<UUID> variants(int count) {
-        return new ArrayList<>(IntStream.range(0, count).mapToObj(i -> UUID.randomUUID()).toList());
+        return IntStream.range(0, count).mapToObj(i -> UUID.randomUUID()).toList();
     }
 }

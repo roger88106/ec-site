@@ -91,7 +91,7 @@ class ProductionJarStartupTest {
         businessPort = freePort();
         var managementPort = freePort();
 
-        var command = new ArrayList<>(List.of(javaCommand(), "-jar", System.getProperty("ecsite.boot-jar"),
+        var command = List.of(javaCommand(), "-jar", System.getProperty("ecsite.boot-jar"),
                 "--spring.profiles.active=local",
                 "--spring.config.additional-location=" + dir.toAbsolutePath().toUri(),
                 "--spring.datasource.url=" + postgres.getJdbcUrl(),
@@ -100,7 +100,7 @@ class ProductionJarStartupTest {
                 // 確認する URL は DB を使わないので、マイグレーションと seed は適用しない（起動の時間を短くするため）
                 "--spring.flyway.enabled=false",
                 "--server.port=" + businessPort,
-                "--management.server.port=" + managementPort));
+                "--management.server.port=" + managementPort);
         process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(logFile().toFile()).start();
 
         try {

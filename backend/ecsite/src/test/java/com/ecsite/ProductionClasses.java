@@ -32,8 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public final class ProductionClasses {
 
     /**
-     * モジュールの一覧から除くテストのクラスの条件（名前が Test で終わるクラスと、その入れ子のクラス、
-     * 単体テストと統合テストが共有する testFixtures のクラス）。
+     * モジュールの一覧から除くテストのクラスの条件
+     *
+     * <p>名前が Test で終わるクラスと、その入れ子のクラス、単体テストと統合テストが共有する testFixtures のクラスが当たる。
      *
      * <p>テストは準備のために他のモジュールの内部（リポジトリなど）を直接使うことがあるので、境界の検証から除く。
      * 検証するのは本番のコードの境界。
@@ -269,7 +270,7 @@ public final class ProductionClasses {
     private static final class Holder {
 
         /**
-         * {@code com.ecsite} の本番のクラス。
+         * {@code com.ecsite} の本番のクラス
          *
          * <p>単体テストと統合テストが共有する testFixtures は、テストのコードなので除く。
          * 単体テストの classpath にある tools は、開発のツールなので除く。

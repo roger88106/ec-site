@@ -41,7 +41,6 @@ class ShipmentMailTest {
     @Autowired
     TransactionTemplate transaction;
 
-
     @Autowired
     Mailpit mailpit;
 

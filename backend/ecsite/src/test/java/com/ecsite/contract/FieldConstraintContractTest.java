@@ -43,6 +43,16 @@ class FieldConstraintContractTest {
     private static final Map<String, Map<String, Object>> CONTRACTS = new HashMap<>();
 
     /**
+     * 2 つの API の契約を読む。
+     */
+    @BeforeAll
+    static void loadContracts() {
+        for (String file : List.of("admin.yaml", "store.yaml")) {
+            CONTRACTS.put(file, Contracts.openApi(file));
+        }
+    }
+
+    /**
      * 照合する項目の 1 行
      *
      * @param label    項目の論理名
@@ -135,16 +145,6 @@ class FieldConstraintContractTest {
         assertThat(values).containsExactlyInAnyOrderElementsOf(accepted);
     }
 
-    /**
-     * 2 つの API の契約を読む
-     */
-    @BeforeAll
-    static void loadContracts() {
-        for (String file : List.of("admin.yaml", "store.yaml")) {
-            CONTRACTS.put(file, Contracts.openApi(file));
-        }
-    }
-
     @ParameterizedTest(name = "{0}")
     @MethodSource("fields")
     @DisplayName("AC-272、273 契約の上限、ドメインの上限、DB の列の長さが一致する")
@@ -194,5 +194,4 @@ class FieldConstraintContractTest {
                 : schema.containsKey("maxItems") ? schema.get("maxItems") : schema.get("maximum");
         return limit == null ? null : ((Number) limit).intValue();
     }
-
 }

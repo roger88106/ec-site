@@ -198,10 +198,10 @@ class NamingTest {
     /**
      * 名前か置き場所の合わない、port の実装の名前を返す。
      *
-     * @param classes   調べるクラス
-     * @param suffix    port の名前の終わり（Repository、Directory）
-     * @param prefix    実装の名前の前に付ける語（Jooq）
-     * @param infix     port の名前の suffix の前に入れる語（Api）
+     * @param classes    調べるクラス
+     * @param suffix     port の名前の終わり（Repository、Directory）
+     * @param prefix     実装の名前の前に付ける語（Jooq）
+     * @param infix      port の名前の suffix の前に入れる語（Api）
      * @param packageEnd 実装を置くパッケージの名前の終わり
      * @return 規則に合わない実装のクラスの名前（名前の順）
      */

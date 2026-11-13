@@ -56,7 +56,6 @@ class PaymentVoidTest {
     @Autowired
     TestPaymentGateway gateway;
 
-
     @Autowired
     MutableClock clock;
 

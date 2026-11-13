@@ -36,6 +36,8 @@ public abstract class PaymentGatewayContractTest {
     protected static final Money AMOUNT = Money.of(6940);
 
     /**
+     * 確認する実装を返す。
+     *
      * @return 確認する実装
      */
     protected abstract PaymentGateway gateway();

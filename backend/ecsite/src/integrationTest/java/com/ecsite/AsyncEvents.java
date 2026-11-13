@@ -51,6 +51,8 @@ public class AsyncEvents {
     private final Clock clock;
 
     /**
+     * 待つ対象のイベントの発行の記録と時計を受け取る。
+     *
      * @param registry               イベントの発行の記録
      * @param incompletePublications 未完了のイベントの発行の記録
      * @param clock                  アプリの時計

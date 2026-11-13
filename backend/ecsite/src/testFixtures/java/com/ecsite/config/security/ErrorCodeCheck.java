@@ -114,7 +114,7 @@ public final class ErrorCodeCheck {
                 .map(api -> api.find(method, path))
                 .flatMap(Optional::stream)
                 .findFirst();
-        if (listed.isEmpty() || !listed.get().contains(errorCode)) {
+        if (listed.filter(codes -> codes.contains(errorCode)).isEmpty()) {
             throw new AssertionError("%s %s が返した %s が、契約のその操作の x-error-codes にも共通のエラーにもない（一覧：%s）"
                     .formatted(method, path, errorCode, listed.map(Object::toString).orElse("契約にない操作")));
         }

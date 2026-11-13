@@ -11,6 +11,7 @@ import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,10 +66,14 @@ class OrderRestoreFailureLogTest {
     @Autowired
     DSLContext dsl;
 
+    @BeforeEach
+    void setUp() {
+        clock.setInstant(NOW);
+    }
+
     @Test
     @DisplayName("注文を戻せないリクエストは 500 の共通のシステムエラーを返し、ログには集約の名前と原因の例外の種類が出て、DB の値は出ない")
     void logsWithoutDatabaseValue(CapturedOutput output) throws Exception {
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();

@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -152,10 +154,10 @@ class StockReservationApiTest {
                     return api.reserve(UUID.randomUUID(), Map.of(variant, 1), EXPIRES_AT);
                 }));
             }
-            ready.await();
+            assertThat(ready.await(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isTrue();
             start.countDown();
             for (var future : futures) {
-                results.add(future.get());
+                results.add(future.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS));
             }
         } finally {
             // close は全部の処理の終わりを待つので、途中で失敗すると start を待つスレッドが残る。割り込んで止める

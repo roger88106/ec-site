@@ -19,6 +19,8 @@ public final class TestImages {
     }
 
     /**
+     * PNG の画像を返す。
+     *
      * @return PNG
      */
     public static byte[] png() {
@@ -26,7 +28,11 @@ public final class TestImages {
     }
 
     /**
-     * @return JPEG（向き、位置情報、撮影機器付き）
+     * JPEG の画像を返す。
+     *
+     * <p>向き、位置情報、撮影機器が付いている。
+     *
+     * @return JPEG
      */
     public static byte[] jpeg() {
         return of("source.jpg");

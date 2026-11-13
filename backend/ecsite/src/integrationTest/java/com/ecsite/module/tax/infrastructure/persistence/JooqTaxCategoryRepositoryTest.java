@@ -41,12 +41,16 @@ class JooqTaxCategoryRepositoryTest {
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
-     * 2027-04-01 00:00（日本時間）
+     * 2027 年 4 月の初め
+     *
+     * <p>日本時間の 2027-04-01 00:00。
      */
     private static final Instant APR_2027 = Instant.parse("2027-03-31T15:00:00Z");
 
     /**
-     * 2028-04-01 00:00（日本時間）
+     * 2028 年 4 月の初め
+     *
+     * <p>日本時間の 2028-04-01 00:00。
      */
     private static final Instant APR_2028 = Instant.parse("2028-03-31T15:00:00Z");
 

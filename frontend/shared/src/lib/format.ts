@@ -26,7 +26,8 @@ export function formatYen(amount: number): string {
 }
 
 /**
- * 価格の表示。税込価格を主に、税抜価格を括弧で併記する。<br />
+ * 価格を、税込価格を主に、税抜価格を括弧で併記して表示する。
+ *
  * 例：「1,980 円（税抜 1,800 円）」。有効な税率がなく税込価格がなければ、税抜価格だけを出す。
  */
 export function formatPrice(price: { inclTax?: number | null; exclTax: number }): string {
@@ -65,7 +66,8 @@ export function formatPostalCode(postalCode: string): string {
  * 軸の名前と値を並べる（例：「色：黒　サイズ：M」）。
  *
  * @param axisValues 軸の名前と値
- * @param separator  区切り。画面ごとに違うので、呼ぶ側の文言から渡す
+ * @param separator  区切り（画面ごとの文言）
+ * @returns 並べた表示
  */
 export function axisValuesLabel(axisValues: readonly { name: string; value: string }[], separator: string): string {
   return axisValues.map((axis) => translate('common.axisValue', axis)).join(separator) // 軸の名前：値

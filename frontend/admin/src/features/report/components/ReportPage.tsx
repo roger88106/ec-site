@@ -1,7 +1,7 @@
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { useTranslations } from 'use-intl'
-import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { ReportConditionForm, type ReportConditionItems } from '@/features/report/components/ReportConditionForm'
 import { type PeriodPreset, presetPeriod, todayInJapan } from '@/features/report/period'

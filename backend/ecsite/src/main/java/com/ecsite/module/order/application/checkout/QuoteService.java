@@ -33,6 +33,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 class QuoteService {
 
     /**
@@ -63,7 +64,6 @@ class QuoteService {
      * @param holderId 販売可能数から除く引当の持ち主（自分の注文手続き）。なければ null
      * @return 見積もり。存在しなくなったバリアントは品目に含めず、注文できないものとする
      */
-    @Transactional(readOnly = true)
     public Quote quote(@NonNull List<CartSnapshot.Line> lines, @NonNull Instant at, @Nullable UUID holderId) {
         // バリアントの情報と販売可能数の取得
         var variantIds = lines.stream().map(CartSnapshot.Line::variantId).toList();

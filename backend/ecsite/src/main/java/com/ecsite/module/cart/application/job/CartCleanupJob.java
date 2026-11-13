@@ -1,6 +1,7 @@
-package com.ecsite.module.cart.application;
+package com.ecsite.module.cart.application.job;
 
 import com.ecsite.common.scheduling.ExpiredDataCleanup;
+import com.ecsite.module.cart.application.CartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -39,7 +40,7 @@ class CartCleanupJob {
      */
     // 設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.cart.cleanup-"
-            + "com.ecsite.module.cart.application.CartCleanupProperties'.interval()}")
+            + "com.ecsite.module.cart.application.job.CartCleanupProperties'.interval()}")
     @SchedulerLock(name = "cart-cleanup")
     void cleanUp() {
         var expiredBefore = clock.instant().minus(properties.retention());

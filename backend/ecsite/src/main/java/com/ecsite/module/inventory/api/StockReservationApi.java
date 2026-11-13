@@ -2,7 +2,7 @@ package com.ecsite.module.inventory.api;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.inventory.application.StockQueryService;
-import com.ecsite.module.inventory.application.StockReservationService;
+import com.ecsite.module.inventory.application.StockReservationCommandService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -26,7 +26,7 @@ public class StockReservationApi {
     /**
      * 引当のサービス
      */
-    private final StockReservationService reservationService;
+    private final StockReservationCommandService reservationService;
 
     /**
      * 在庫のクエリサービス

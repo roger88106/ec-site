@@ -1,4 +1,4 @@
-package com.ecsite.module.inventory.application;
+package com.ecsite.module.inventory.application.job;
 
 import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
@@ -6,6 +6,7 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.api.StockReservationApi;
+import com.ecsite.module.inventory.application.StockReservationCommandService;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,7 @@ class StockReservationCleanupJobTest {
     StockReservationCleanupJob job;
 
     @Autowired
-    StockReservationService service;
+    StockReservationCommandService service;
 
     @Autowired
     StockReservationApi api;

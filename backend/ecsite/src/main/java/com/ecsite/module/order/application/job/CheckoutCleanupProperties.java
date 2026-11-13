@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application.checkout;
+package com.ecsite.module.order.application.job;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

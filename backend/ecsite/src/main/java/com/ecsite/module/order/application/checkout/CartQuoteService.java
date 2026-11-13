@@ -18,6 +18,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CartQuoteService {
 
     /**
@@ -50,7 +51,6 @@ public class CartQuoteService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
-    @Transactional(readOnly = true)
     public Optional<CartQuoteView> quoteCart(@NonNull UUID cartId, @Nullable UUID requester) {
         var now = clock.instant();
         var holderId = checkoutRepository.findLatestIdByCartId(cartId).orElse(null);

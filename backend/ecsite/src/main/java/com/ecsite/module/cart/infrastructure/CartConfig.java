@@ -1,6 +1,6 @@
 package com.ecsite.module.cart.infrastructure;
 
-import com.ecsite.module.cart.application.CartCleanupProperties;
+import com.ecsite.module.cart.application.job.CartCleanupProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

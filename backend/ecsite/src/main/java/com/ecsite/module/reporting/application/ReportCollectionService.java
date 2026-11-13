@@ -33,6 +33,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 class ReportCollectionService {
 
     /**
@@ -57,7 +58,6 @@ class ReportCollectionService {
      *
      * @param event 注文の状態の変化
      */
-    @Transactional
     public void record(@NonNull OrderStatusChanged event) {
         recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.ORDER_STATUS,
                 event.from() == null ? null : toOrderStatus(event.from()), toOrderStatus(event.to()),
@@ -73,7 +73,6 @@ class ReportCollectionService {
      *
      * @param event 配送状態の変化
      */
-    @Transactional
     public void record(@NonNull DeliveryStatusChanged event) {
         recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.DELIVERY_STATUS,
                 event.from() == null ? null : toDeliveryStatus(event.from()), toDeliveryStatus(event.to()),

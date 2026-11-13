@@ -252,9 +252,10 @@ sequenceDiagram
 payment/
 ├── api/                    # 注文への公開
 ├── event/                  # 与信の成功、支払の期限切れ
-├── application/            # 支払の処理、ジョブ、リスナー
+├── application/            # 支払の処理、ハンドラー
 │   ├── model/view/         # 表示の型
-│   └── port/               # 決済サービス、通知の受信、参照
+│   ├── port/               # 決済サービス、通知の受信、参照
+│   └── job/                # 支払の期限切れのジョブ
 ├── domain/                 # エラーの定義
 │   └── payment/        # 支払（集約）、状態、依頼
 │       └── port/       # 支払のリポジトリ

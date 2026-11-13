@@ -1,4 +1,4 @@
-package com.ecsite.module.inventory.application;
+package com.ecsite.module.inventory.application.handler;
 
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;

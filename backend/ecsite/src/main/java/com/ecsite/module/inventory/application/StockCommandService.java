@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.util.UUID;
 
 /**
  * 在庫のコマンドサービス
@@ -47,5 +48,39 @@ public class StockCommandService {
 
         return new StockAdjustmentView(adjustment.id(), adjustment.delta(), adjustment.reason(),
                 adjustment.memo(), null, null, quantityAfter, adjustment.adjustedAt(), command.operator().name());
+    }
+
+    /**
+     * 在庫数 0 の在庫を作る。
+     *
+     * <p>すでにあれば何もしない。
+     *
+     * @param variantId バリアント ID
+     * @param productId 商品 ID
+     */
+    public void createIfAbsent(@NonNull UUID variantId, @NonNull UUID productId) {
+        stockItemRepository.createIfAbsent(variantId, productId);
+    }
+
+    /**
+     * バリアントの在庫と調整履歴を消す。
+     *
+     * <p>なければ何もしない。
+     *
+     * @param variantId バリアント ID
+     */
+    public void deleteByVariant(@NonNull UUID variantId) {
+        stockItemRepository.deleteByVariantId(variantId);
+    }
+
+    /**
+     * 商品のすべての在庫と調整履歴を消す。
+     *
+     * <p>なければ何もしない。
+     *
+     * @param productId 商品 ID
+     */
+    public void deleteByProduct(@NonNull UUID productId) {
+        stockItemRepository.deleteByProductId(productId);
     }
 }

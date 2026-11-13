@@ -1,4 +1,4 @@
-package com.ecsite.module.cart.application;
+package com.ecsite.module.cart.application.job;
 
 import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
@@ -9,6 +9,7 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.module.cart.application.CartService;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
 import org.jooq.DSLContext;

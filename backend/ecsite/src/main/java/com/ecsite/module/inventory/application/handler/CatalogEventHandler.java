@@ -1,8 +1,9 @@
-package com.ecsite.module.inventory.application;
+package com.ecsite.module.inventory.application.handler;
 
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import com.ecsite.module.inventory.application.StockCommandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -17,9 +18,9 @@ import org.springframework.stereotype.Component;
 class CatalogEventHandler {
 
     /**
-     * 在庫の作成と削除のサービス
+     * 在庫のコマンドサービス
      */
-    private final StockRegistrationService registrationService;
+    private final StockCommandService commandService;
 
     /**
      * バリアント登録：在庫数 0 の在庫を作る。
@@ -28,7 +29,7 @@ class CatalogEventHandler {
      */
     @ApplicationModuleListener
     void on(VariantRegistered event) {
-        registrationService.createIfAbsent(event.variantId(), event.productId());
+        commandService.createIfAbsent(event.variantId(), event.productId());
     }
 
     /**
@@ -38,7 +39,7 @@ class CatalogEventHandler {
      */
     @ApplicationModuleListener
     void on(VariantDeleted event) {
-        registrationService.deleteByVariant(event.variantId());
+        commandService.deleteByVariant(event.variantId());
     }
 
     /**
@@ -48,6 +49,6 @@ class CatalogEventHandler {
      */
     @ApplicationModuleListener
     void on(ProductDeleted event) {
-        registrationService.deleteByProduct(event.productId());
+        commandService.deleteByProduct(event.productId());
     }
 }

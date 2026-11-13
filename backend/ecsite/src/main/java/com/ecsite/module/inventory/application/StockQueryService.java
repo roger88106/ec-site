@@ -77,7 +77,7 @@ public class StockQueryService {
     }
 
     /**
-     * 販売可能数を返す。
+     * 販売可能数を取得する。
      *
      * <p>在庫のないバリアントは 0。
      *

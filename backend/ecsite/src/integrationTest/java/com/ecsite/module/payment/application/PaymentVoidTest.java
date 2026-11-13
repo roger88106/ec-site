@@ -9,6 +9,7 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
+import com.ecsite.module.payment.application.job.PaymentJobs;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.util.AopTestUtils;
@@ -51,7 +53,7 @@ class PaymentVoidTest {
     PaymentApi paymentApi;
 
     @Autowired
-    PaymentExpiryJob expiryJob;
+    ApplicationContext context;
 
     @Autowired
     TestPaymentGateway gateway;
@@ -163,7 +165,7 @@ class PaymentVoidTest {
         var orderId = payments.created(ORDERED_AT);
         var pageId = payments.openPage(orderId);
         clock.advance(Duration.ofMinutes(30));
-        expiryJob.expire();
+        PaymentJobs.expire(context);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
 
         // 順序の入れ替わった通知

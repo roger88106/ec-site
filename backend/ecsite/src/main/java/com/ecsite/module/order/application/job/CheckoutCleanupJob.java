@@ -1,6 +1,7 @@
-package com.ecsite.module.order.application.checkout;
+package com.ecsite.module.order.application.job;
 
 import com.ecsite.common.scheduling.ExpiredDataCleanup;
+import com.ecsite.module.order.application.checkout.CheckoutService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -41,7 +42,7 @@ class CheckoutCleanupJob {
      */
     // 設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.order.cleanup-"
-            + "com.ecsite.module.order.application.checkout.CheckoutCleanupProperties'.interval()}")
+            + "com.ecsite.module.order.application.job.CheckoutCleanupProperties'.interval()}")
     @SchedulerLock(name = "checkout-cleanup")
     void cleanUp() {
         var expiredBefore = clock.instant().minus(properties.retention());

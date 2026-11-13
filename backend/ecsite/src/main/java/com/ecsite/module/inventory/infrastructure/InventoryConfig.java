@@ -1,6 +1,6 @@
 package com.ecsite.module.inventory.infrastructure;
 
-import com.ecsite.module.inventory.application.StockReservationCleanupProperties;
+import com.ecsite.module.inventory.application.job.StockReservationCleanupProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

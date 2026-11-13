@@ -3,6 +3,7 @@ package com.ecsite.module.inventory.domain.stock.port;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -53,4 +54,17 @@ public interface StockItemRepository {
      * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
     int adjust(UUID variantId, StockAdjustment adjustment);
+
+    /**
+     * 複数のバリアントの在庫数に増減量を加え、調整履歴を記録する。
+     *
+     * <p>1 つの文で更新と記録をする。条件は {@link #adjust} と同じ。1 つでも加えられなければ、例外を投げる（呼んだ側のトランザクションで全てが戻る）。
+     *
+     * @param adjustments バリアント ID → 在庫調整
+     * @return バリアント ID → 調整後の在庫数
+     * @throws BusinessException 調整後に負になる（{@code INSUFFICIENT_STOCK}）
+     * @throws BusinessException 運営者の調整で在庫数が上限を超える（{@code STOCK_QUANTITY_EXCEEDED}）
+     * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
+     */
+    Map<UUID, Integer> adjustAll(Map<UUID, StockAdjustment> adjustments);
 }

@@ -11,7 +11,7 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.payment.application.PaymentJobs;
+import com.ecsite.module.payment.application.job.PaymentJobs;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;

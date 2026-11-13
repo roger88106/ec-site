@@ -18,6 +18,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProductPublicationService {
 
     /**
@@ -46,7 +47,6 @@ public class ProductPublicationService {
      * @throws BusinessException バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
     public void publishProduct(@NonNull UUID productId) {
         productLoader.changeStatus(productId, Product::publish);
     }
@@ -61,7 +61,6 @@ public class ProductPublicationService {
      * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
     public void unpublishProduct(@NonNull UUID productId) {
         productLoader.changeStatus(productId, Product::unpublish);
     }
@@ -75,7 +74,6 @@ public class ProductPublicationService {
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
     public void discontinueProduct(@NonNull UUID productId) {
         productLoader.changeStatus(productId, Product::discontinue);
     }
@@ -88,7 +86,6 @@ public class ProductPublicationService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException 開始が終了より前でない（{@code INVALID_PUBLICATION_PERIOD}）
      */
-    @Transactional
     public void changePublicationPeriod(@NonNull ChangePublicationPeriodCommand command) {
         // 商品取得
         var product = productLoader.get(command.productId(), command.version());

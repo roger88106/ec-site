@@ -1,4 +1,4 @@
-package com.ecsite.module.payment.application;
+package com.ecsite.module.payment.application.job;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -6,6 +6,9 @@ import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
+import com.ecsite.module.payment.application.PaymentCommandService;
+import com.ecsite.module.payment.application.PaymentProperties;
+import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;

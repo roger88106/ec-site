@@ -29,6 +29,7 @@ import java.util.function.Predicate;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class OrderCancellationService {
 
     /**
@@ -66,7 +67,6 @@ public class OrderCancellationService {
      * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
      * @throws BusinessException 理由が上限の文字数を超える（{@code INVALID_CANCELLATION_REASON}）
      */
-    @Transactional
     public void request(@NonNull UUID orderId, @NonNull UUID memberId, @Nullable String reason) {
         // 注文取得 ※注文した会員でなければ、ないときと同じにする
         var order = lock(orderId);
@@ -89,7 +89,6 @@ public class OrderCancellationService {
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
-    @Transactional
     public void approve(@NonNull UUID orderId, @NonNull Operator operator) {
         changeAndRestore(orderId, order -> order.approveCancellation(operator, clock.instant()));
     }
@@ -102,7 +101,6 @@ public class OrderCancellationService {
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
-    @Transactional
     public void reject(@NonNull UUID orderId, @NonNull Operator operator) {
         // 注文取得
         var order = lock(orderId);
@@ -128,7 +126,6 @@ public class OrderCancellationService {
      * @throws BusinessException 出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）
      * @throws BusinessException 出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
      */
-    @Transactional
     public void cancel(@NonNull UUID orderId, @NonNull String reason, @Nullable Boolean restock, @NonNull Operator operator) {
         changeAndRestore(orderId,
                 order -> order.cancelByOperator(reason, restock, isReturned(order), operator, clock.instant()));
@@ -142,7 +139,6 @@ public class OrderCancellationService {
      * @param orderId 注文 ID
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      */
-    @Transactional
     public void expirePayment(@NonNull UUID orderId) {
         changeAndRestore(orderId, order -> order.expirePayment(clock.instant()));
     }

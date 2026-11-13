@@ -127,7 +127,7 @@ class JooqProductRepository implements ProductRepository {
             // 軸の登録（登録後は変わらない）
             insertAxes(snapshot);
 
-            // 所属カテゴリ、画像、バリアントの登録 ※新しい商品なので、なくなったものの削除は要らない
+            // 所属カテゴリ、画像、バリアントの登録 ※新しい商品には消すものがないので、削除は実行しない
             writeParts(snapshot);
         } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
             throw CONSTRAINTS.translate(e);
@@ -220,9 +220,10 @@ class JooqProductRepository implements ProductRepository {
             return;
         }
         var insert = dsl.insertInto(PRODUCT_AXIS, PRODUCT_AXIS.PRODUCT_ID, PRODUCT_AXIS.POSITION, PRODUCT_AXIS.NAME);
-        short position = 0;
+        short position = 1;
         for (var axis : snapshot.axes()) {
-            insert = insert.values(snapshot.id(), ++position, axis);
+            insert = insert.values(snapshot.id(), position, axis);
+            position++;
         }
         insert.execute();
     }
@@ -343,9 +344,10 @@ class JooqProductRepository implements ProductRepository {
                 VARIANT_AXIS_VALUE.VALUE);
         boolean empty = true;
         for (var variant : snapshot.variants()) {
-            short position = 0;
+            short position = 1;
             for (var value : variant.axisValues()) {
-                insert = insert.values(variant.id(), ++position, value);
+                insert = insert.values(variant.id(), position, value);
+                position++;
                 empty = false;
             }
         }

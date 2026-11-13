@@ -28,6 +28,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CheckoutService {
 
     /**
@@ -81,7 +82,6 @@ public class CheckoutService {
      * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）
      * @throws BusinessException 注文できないカート（{@code CART_NOT_ORDERABLE}）
      */
-    @Transactional
     public UUID start(@NonNull UUID cartId, @NonNull UUID memberId, @NonNull Set<UUID> acknowledgedOrderIds) {
         var now = clock.instant();
         // カート取得 ※始められるのは会員の自分のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは、ないときと同じにする
@@ -116,7 +116,6 @@ public class CheckoutService {
      *
      * @param cartId カート ID
      */
-    @Transactional
     public void releaseReservations(@NonNull UUID cartId) {
         for (var checkoutId : checkoutRepository.findIdsByCartId(cartId)) {
             stockDirectory.release(checkoutId);
@@ -132,7 +131,6 @@ public class CheckoutService {
      * @param limit         消す件数の上限
      * @return 消した件数
      */
-    @Transactional
     public int deleteExpired(@NonNull Instant expiredBefore, int limit) {
         return checkoutRepository.deleteExpiredBefore(expiredBefore, limit);
     }

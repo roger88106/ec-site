@@ -35,6 +35,7 @@ import java.util.random.RandomGenerator;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class OrderPlacementService {
 
     /**
@@ -110,7 +111,6 @@ public class OrderPlacementService {
      * @throws BusinessException 入力が正しくない（{@code INVALID_EMAIL}、{@code INVALID_RECIPIENT_NAME}、{@code INVALID_POSTAL_CODE}、{@code INVALID_PREFECTURE}、{@code INVALID_MUNICIPALITY}、{@code INVALID_ADDRESS}、{@code INVALID_PHONE_NUMBER}）
      * @throws BusinessException 注文番号が同時に使われた（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
     public PlacementResult place(@NonNull PlaceOrderCommand command) {
         // 会員のロック ※同じ会員の注文を 1 つずつ処理する。支払待ちの注文を読む前に取るので、ロックを待った後の読み取りに先の注文が見える
         orderRepository.lockForMember(command.memberId());

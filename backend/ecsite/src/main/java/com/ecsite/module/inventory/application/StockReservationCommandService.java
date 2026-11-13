@@ -26,14 +26,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 引当のサービス
+ * 引当のコマンドサービス
  *
  * <p>呼んだ側のトランザクションがあれば、それに加わる。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StockReservationService {
+@Transactional
+public class StockReservationCommandService {
 
     /**
      * 引当リポジトリ
@@ -57,7 +58,6 @@ public class StockReservationService {
      * @param limit         消す件数の上限
      * @return 消した件数
      */
-    @Transactional
     public int deleteExpired(@NonNull Instant expiredBefore, int limit) {
         return reservationRepository.deleteExpiredBefore(expiredBefore, limit);
     }
@@ -72,12 +72,13 @@ public class StockReservationService {
      * @param expiresAt  期限
      * @return 足りないバリアントの ID。引き当てたら空
      */
-    @Transactional
     public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {
         var now = clock.instant();
 
-        // 在庫の行ロックと判定 ※同じ在庫への引当を 1 つずつ判定するため、判定の前にロックする
+        // 在庫の行ロック ※同じ在庫への引当を 1 つずつ判定するため、判定の前にロックする
         var locked = lockStocks(quantities.keySet());
+
+        // 足りるかの判定
         var shortages = StockAllocation.shortages(quantities, sellableOf(locked, holderId, now));
 
         // 引当の置き換え ※全て足りるときだけ
@@ -96,7 +97,6 @@ public class StockReservationService {
      *
      * @param holderId 持ち主 ID
      */
-    @Transactional
     public void release(@NonNull UUID holderId) {
         reservationRepository.deleteByHolder(holderId);
     }
@@ -114,7 +114,6 @@ public class StockReservationService {
      * @return 足りないバリアントの ID。減算したら空
      * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
      */
-    @Transactional
     public Set<UUID> commit(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId,
                             @NonNull String orderNumber) {
         var now = clock.instant();
@@ -123,19 +122,22 @@ public class StockReservationService {
         // 販売可能数は持ち主の引当を数えないので、先に解いても判定は変わらない
         reservationRepository.deleteByHolder(holderId);
 
-        // 在庫の行ロックと判定 ※同じ在庫への減算を 1 つずつ判定するため、判定の前にロックする
+        // 在庫の行ロック ※同じ在庫への減算を 1 つずつ判定するため、判定の前にロックする
         var locked = lockStocks(quantities.keySet());
+
+        // 足りるかの判定
         var shortages = StockAllocation.shortages(quantities, sellableOf(locked, holderId, now));
         if (!shortages.isEmpty()) {
             return shortages;
         }
 
         // 在庫数の減算 ※行ロックの中で足りることを確認したので、必ず成功する
+        var adjustments = new HashMap<UUID, StockAdjustment>();
         for (var variantId : locked.keySet()) {
             var quantity = Objects.requireNonNull(quantities.get(variantId), "ロックした在庫は数量を指定したバリアントのもの");
-            stockItemRepository.adjust(variantId, StockAdjustment.forOrder(
-                    -quantity, StockAdjustmentReason.ORDER, orderId, orderNumber, now));
+            adjustments.put(variantId, StockAdjustment.forOrder(-quantity, StockAdjustmentReason.ORDER, orderId, orderNumber, now));
         }
+        stockItemRepository.adjustAll(adjustments);
         return Set.of();
     }
 
@@ -149,7 +151,6 @@ public class StockReservationService {
      * @param orderNumber 注文番号
      * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
      */
-    @Transactional
     public void restore(@NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId, @NonNull String orderNumber) {
         var now = clock.instant();
 
@@ -157,6 +158,7 @@ public class StockReservationService {
         var locked = lockStocks(quantities.keySet());
 
         // 在庫数の戻し
+        var adjustments = new HashMap<UUID, StockAdjustment>();
         for (var entry : quantities.entrySet()) {
             var variantId = entry.getKey();
             // 削除済みのバリアントは戻せない（C 側に表示された商品のバリアントは削除できないので、通常は起きない）
@@ -164,15 +166,18 @@ public class StockReservationService {
                 log.warn("在庫がないため、注文のキャンセルの数量を戻せません: orderId={}, variantId={}", orderId, variantId);
                 continue;
             }
-            stockItemRepository.adjust(variantId, StockAdjustment.forOrder(
+            adjustments.put(variantId, StockAdjustment.forOrder(
                     entry.getValue(), StockAdjustmentReason.ORDER_CANCELLATION, orderId, orderNumber, now));
         }
+        stockItemRepository.adjustAll(adjustments);
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * バリアントの在庫を行ロックして読み込む。
+     * バリアントの在庫を行ロック（{@code SELECT ... FOR UPDATE}）して読み込む。
+     *
+     * <p>ロックはトランザクションの終わりまで続き、同じ在庫の引当と減算を 1 つずつにする。
      *
      * @return バリアント ID → 在庫。在庫のないバリアントは含まない
      */

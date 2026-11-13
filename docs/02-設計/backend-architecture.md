@@ -61,7 +61,9 @@ module/<モジュール>/
 ├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
 ├── application/        use case（@Transactional はここ）
 │   ├── model/          command・query・view
-│   └── port/           application が使う port（参照の Repository、他のモジュールの Directory）
+│   ├── port/           application が使う port（参照の Repository、他のモジュールの Directory）
+│   ├── handler/        イベントのハンドラー（package-private の service や型を使うハンドラーは、それらと同じパッケージに置く）
+│   └── job/            定期実行のジョブと、その設定の値の型
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
 │   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装

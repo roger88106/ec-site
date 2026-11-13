@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application.checkout;
+package com.ecsite.module.order.application.job;
 
 import com.ecsite.CapturedLogs;
 import com.ecsite.CatalogTestData;
@@ -9,6 +9,7 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.application.checkout.CheckoutService;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;

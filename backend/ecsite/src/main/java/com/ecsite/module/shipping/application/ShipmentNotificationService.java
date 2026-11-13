@@ -23,6 +23,7 @@ import java.time.Clock;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 class ShipmentNotificationService implements ShipmentNotificationReceiver {
 
     /**
@@ -41,7 +42,6 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
     private final ApplicationEventPublisher events;
 
     @Override
-    @Transactional
     public Result receive(@NonNull Carrier carrier, String trackingNumber, @NonNull DeliveryStatus status) {
         // 出荷取得
         var normalized = normalize(trackingNumber);

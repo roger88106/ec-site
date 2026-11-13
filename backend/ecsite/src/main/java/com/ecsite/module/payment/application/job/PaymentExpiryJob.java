@@ -1,6 +1,8 @@
-package com.ecsite.module.payment.application;
+package com.ecsite.module.payment.application.job;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.payment.application.PaymentCommandService;
+import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;

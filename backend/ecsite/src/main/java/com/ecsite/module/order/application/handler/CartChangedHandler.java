@@ -1,6 +1,7 @@
-package com.ecsite.module.order.application.checkout;
+package com.ecsite.module.order.application.handler;
 
 import com.ecsite.module.cart.event.CartChanged;
+import com.ecsite.module.order.application.checkout.CheckoutService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;

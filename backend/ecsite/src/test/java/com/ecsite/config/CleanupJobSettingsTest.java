@@ -1,9 +1,9 @@
 package com.ecsite.config;
 
 import com.ecsite.TestSettings;
-import com.ecsite.module.cart.application.CartCleanupProperties;
-import com.ecsite.module.inventory.application.StockReservationCleanupProperties;
-import com.ecsite.module.order.application.checkout.CheckoutCleanupProperties;
+import com.ecsite.module.cart.application.job.CartCleanupProperties;
+import com.ecsite.module.inventory.application.job.StockReservationCleanupProperties;
+import com.ecsite.module.order.application.job.CheckoutCleanupProperties;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,9 +59,9 @@ class CleanupJobSettingsTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            "com.ecsite.module.inventory.application.StockReservationCleanupJob, stock-reservation-cleanup",
-            "com.ecsite.module.order.application.checkout.CheckoutCleanupJob, checkout-cleanup",
-            "com.ecsite.module.cart.application.CartCleanupJob, cart-cleanup"})
+            "com.ecsite.module.inventory.application.job.StockReservationCleanupJob, stock-reservation-cleanup",
+            "com.ecsite.module.order.application.job.CheckoutCleanupJob, checkout-cleanup",
+            "com.ecsite.module.cart.application.job.CartCleanupJob, cart-cleanup"})
     @DisplayName("AC-287 片付けのジョブは、定期に動き、分散ロックで同時に 1 つのインスタンスだけが動く")
     void runsWithDistributedLock(String jobClass, String lockName) throws Exception {
         var method = Class.forName(jobClass).getDeclaredMethod("cleanUp");

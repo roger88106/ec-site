@@ -75,9 +75,10 @@ cart/
 ├── api/                # 注文に公開するカートの API
 ├── event/              # カート変更
 ├── presentation/       # 店舗 API の実装
-├── application/        # カートの操作、期限切れの片付け
+├── application/        # カートの操作
 │   ├── model/          # 表示の型
-│   └── port/           # リポジトリ、他モジュールの port
+│   ├── port/           # リポジトリ、他モジュールの port
+│   └── job/            # 期限切れのカートを消すジョブと設定
 ├── domain/             # カート、品目、移した結果、エラー
 └── infrastructure/
     ├── persistence/    # リポジトリの実装

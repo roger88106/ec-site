@@ -1,7 +1,7 @@
 package com.ecsite.module.order.infrastructure;
 
 import com.ecsite.module.order.application.OrderProperties;
-import com.ecsite.module.order.application.checkout.CheckoutCleanupProperties;
+import com.ecsite.module.order.application.job.CheckoutCleanupProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

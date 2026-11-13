@@ -1,6 +1,7 @@
-package com.ecsite.module.inventory.application;
+package com.ecsite.module.inventory.application.job;
 
 import com.ecsite.common.scheduling.ExpiredDataCleanup;
+import com.ecsite.module.inventory.application.StockReservationCommandService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -20,7 +21,7 @@ class StockReservationCleanupJob {
     /**
      * 引当のサービス
      */
-    private final StockReservationService service;
+    private final StockReservationCommandService service;
 
     /**
      * 引当の片付けの設定
@@ -39,7 +40,7 @@ class StockReservationCleanupJob {
      */
     // 設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.inventory.cleanup-"
-            + "com.ecsite.module.inventory.application.StockReservationCleanupProperties'.interval()}")
+            + "com.ecsite.module.inventory.application.job.StockReservationCleanupProperties'.interval()}")
     @SchedulerLock(name = "stock-reservation-cleanup")
     void cleanUp() {
         var expiredBefore = clock.instant().minus(properties.retention());

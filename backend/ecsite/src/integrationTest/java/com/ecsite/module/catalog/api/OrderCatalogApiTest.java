@@ -30,6 +30,8 @@ class OrderCatalogApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -42,21 +44,27 @@ class OrderCatalogApiTest {
     @Autowired
     MutableClock clock;
 
-    private CatalogTestData data;
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
+    private CatalogTestData catalog;
 
+    /**
+     * 税区分「標準」の ID
+     */
     private UUID standard;
 
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
-        data = new CatalogTestData(mockMvc, clock);
-        standard = data.taxCategory("標準", "10");
+        catalog = new CatalogTestData(mockMvc, clock);
+        standard = catalog.taxCategory("標準", "10");
     }
 
     @Test
     @DisplayName("AC-92 品番・商品名・軸の名前と値・税抜価格・税区分を返す。表示されるか、販売停止かも返す")
     void returnsVariantInformation() throws Exception {
-        var product = data.product(standard, "T シャツ", 1800, "色", "サイズ")
+        var product = catalog.product(standard, "T シャツ", 1800, "色", "サイズ")
                 .variant("白", "M").variant("黒", "L").publish().suspend(1);
 
         var variants = api.findVariants(product.variantIds);
@@ -81,8 +89,8 @@ class OrderCatalogApiTest {
     @Test
     @DisplayName("AC-80 C 側に表示されない商品のバリアントは、表示されないと返す。軸のない商品の軸の値は空")
     void returnsInvisibleVariants() throws Exception {
-        var unpublished = data.product(standard, "非公開", 1000);
-        var hidden = data.product(standard, "非公開にした", 1000).publish().unpublish();
+        var unpublished = catalog.product(standard, "非公開", 1000);
+        var hidden = catalog.product(standard, "非公開にした", 1000).publish().unpublish();
 
         var variants = api.findVariants(List.of(unpublished.variantIds.getFirst(), hidden.variantIds.getFirst()));
 
@@ -93,7 +101,7 @@ class OrderCatalogApiTest {
     @Test
     @DisplayName("存在しないバリアントは含めない")
     void excludesUnknownVariants() throws Exception {
-        var product = data.product(standard, "商品", 1000).publish();
+        var product = catalog.product(standard, "商品", 1000).publish();
         var unknown = UUID.randomUUID();
 
         var variants = api.findVariants(List.of(product.variantIds.getFirst(), unknown));
@@ -105,7 +113,7 @@ class OrderCatalogApiTest {
     @Test
     @DisplayName("AC-38 画像はバリアントの画像、なければ商品の代表画像の URL")
     void returnsVariantImageOrRepresentative() throws Exception {
-        var product = data.product(standard, "画像あり", 1000, "色")
+        var product = catalog.product(standard, "画像あり", 1000, "色")
                 .variant("白").variant("黒").image().image().variantImage(1, 1).publish();
 
         var variants = api.findVariants(product.variantIds);

@@ -18,13 +18,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * 税区分の単体テスト。<br />
- * 現在時刻は引数で固定する。適用開始の日時は日本時間なので、UTC に直して書く（2027-04-01 00:00 → 2027-03-31T15:00Z）。
+ * 税区分の単体テスト
+ *
+ * <p>現在時刻は引数で固定する。適用開始の日時は日本時間なので、UTC に直して書く（2027-04-01 00:00 → 2027-03-31T15:00Z）。
  */
 class TaxCategoryTest {
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -53,6 +56,9 @@ class TaxCategoryTest {
      */
     private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
+    /**
+     * 税区分の生成
+     */
     private final TaxCategoryFactory factory = new TaxCategoryFactory();
 
     @Nested
@@ -85,7 +91,7 @@ class TaxCategoryTest {
     }
 
     @Nested
-    @DisplayName("AC-3 一覧の形の検証")
+    @DisplayName("一覧の形の検証")
     class ListShape {
 
         @Test
@@ -166,23 +172,22 @@ class TaxCategoryTest {
     }
 
     @Nested
-    @DisplayName("AC-4 期間限定の税率")
+    @DisplayName("期間限定の税率")
     class LimitedTimeRate {
 
         @Test
         @DisplayName("AC-4 期間限定の税率に切り替え、元に戻せる。各時点の税率が正しい")
         void switchesAndRestores() {
-            // Given：「標準」に 10%（開始・終了とも空白）がある。現在は 2026-10-08
+            // 「標準」に 10%（開始・終了とも空白）がある。現在は 2026-10-08
             var base = rate("10", null, null);
             var category = restore(base);
 
-            // When：基本の税率に終了を入れ、期間限定の税率と戻りの税率を追加する
+            // 基本の税率に終了を入れ、期間限定の税率と戻りの税率を追加する
             category.replaceRates(List.of(
                     draft(base.id(), "10", null, APR_2027),
                     newDraft("8", APR_2027, APR_2028),
                     newDraft("10", APR_2028, null)), NOW);
 
-            // Then
             assertThat(rateAt(category, APR_2027.minus(ONE_MINUTE))).isEqualTo("10");
             assertThat(rateAt(category, APR_2027)).isEqualTo("8");
             assertThat(rateAt(category, APR_2028.minus(ONE_MINUTE))).isEqualTo("8");
@@ -209,7 +214,7 @@ class TaxCategoryTest {
     }
 
     @Nested
-    @DisplayName("AC-5 過去の根拠を変えない")
+    @DisplayName("過去の根拠を変えない")
     class PastUnchangeable {
 
         @Test

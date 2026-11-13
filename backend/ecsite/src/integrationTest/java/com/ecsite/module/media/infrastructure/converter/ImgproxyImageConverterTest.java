@@ -2,8 +2,8 @@ package com.ecsite.module.media.infrastructure.converter;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestcontainersConfig;
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.media.application.port.ImageConverter;
+import com.ecsite.module.media.domain.MediaErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,8 +26,8 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
 
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * imgproxy の画像の変換の統合テスト
@@ -85,9 +85,7 @@ class ImgproxyImageConverterTest {
     void failsOnBrokenFile() {
         var uploadKey = uploaded("broken.heic");
 
-        assertThatThrownBy(() -> converter.convertToWebp(uploadKey))
-                .isInstanceOfSatisfying(BusinessException.class, ex ->
-                        assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_CONVERSION_FAILED"));
+        assertBusinessError(() -> converter.convertToWebp(uploadKey), MediaErrorCode.IMAGE_CONVERSION_FAILED);
     }
 
     @Test

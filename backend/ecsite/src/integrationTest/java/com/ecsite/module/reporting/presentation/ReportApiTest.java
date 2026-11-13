@@ -48,6 +48,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ReportApiTest {
 
+    /**
+     * レポートの API のパス
+     */
     private static final String REPORTS = "/api/admin/reports";
 
     @Autowired
@@ -60,21 +63,30 @@ class ReportApiTest {
     DSLContext dsl;
 
     /**
+     * 商品カタログのテストデータ
+     */
+    private CatalogTestData catalog;
+
+    /**
      * テストで使う税区分の ID
      */
     private UUID taxCategoryId;
+
+    /**
+     * 売上のある T シャツ
+     */
     private CatalogTestData.TestProduct shirt;
 
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(Instant.parse("2026-10-07T15:00:00Z"));
-        var catalog = new CatalogTestData(mockMvc, clock);
+        catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準", "10");
         shirt = catalog.product(taxCategoryId, "T シャツ", 1000, "色").variant("白").variant("黒");
 
         var data = new ReportTestData(dsl);
         // 2031 年 4 月 5 日：白 2 枚、東京都、30 歳の女性（税込 2,200 円と送料 1,000 円）
-        data.order("ACCEPTED", "2031-04-05").buyer(30, "FEMALE").line(shirt.id, shirt.variantIds.get(0), 2).insert();
+        data.order("ACCEPTED", "2031-04-05").buyer(30, "FEMALE").line(shirt.id, shirt.variantIds.getFirst(), 2).insert();
     }
 
     @Nested
@@ -177,8 +189,8 @@ class ReportApiTest {
                     .andExpect(jsonPath("$.productId").value(shirt.id.toString()))
                     .andExpect(jsonPath("$.productName").value("T シャツ"))
                     .andExpect(jsonPath("$.variants[*].variantId").value(contains(
-                            shirt.variantIds.get(0).toString(), shirt.variantIds.get(1).toString())))
-                    .andExpect(jsonPath("$.variants[0].variantCode").value(shirt.variantCodes.get(0)))
+                            shirt.variantIds.getFirst().toString(), shirt.variantIds.get(1).toString())))
+                    .andExpect(jsonPath("$.variants[0].variantCode").value(shirt.variantCodes.getFirst()))
                     .andExpect(jsonPath("$.variants[0].axisValues[0].name").value("色"))
                     .andExpect(jsonPath("$.variants[0].axisValues[0].value").value("白"))
                     .andExpect(jsonPath("$.variants[0].quantity").value(2))
@@ -238,11 +250,10 @@ class ReportApiTest {
         @Test
         @DisplayName("AC-207 商品を指定すると、その商品を含む注文だけを数え、売上額はその商品の明細の分だけ")
         void breakdownByProduct() throws Exception {
-            var catalog = new CatalogTestData(mockMvc, clock);
             var socks = catalog.product(taxCategoryId, "靴下", 500, "色").variant("白");
             // 靴下だけの 40 歳の男性の注文
             new ReportTestData(dsl).order("ACCEPTED", "2031-04-07").buyer(40, "MALE")
-                    .line(socks.id, socks.variantIds.get(0), 1).insert();
+                    .line(socks.id, socks.variantIds.getFirst(), 1).insert();
 
             mockMvc.perform(get(REPORTS + "/customer-breakdown?from=2031-04-01&to=2031-04-30"))
                     .andExpect(status().isOk())

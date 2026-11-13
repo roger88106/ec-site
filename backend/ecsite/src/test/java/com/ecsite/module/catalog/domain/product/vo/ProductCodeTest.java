@@ -15,14 +15,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ProductCodeTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"ABC-001", "A", "0", "ABC", "A-B-C", "12345678901234567890123456789012"})
     @DisplayName("AC-15 英大文字・数字と、英数字の間のハイフンで 1〜32 文字なら受け付ける")
     void acceptsValidCode(String value) {
         assertThat(ProductCode.of(value).value()).isEqualTo(value);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @NullAndEmptySource
     @ValueSource(strings = {"-ABC", "ABC-", "ABC--1", "abc-001", "Abc", "ABC 001", "ABC_001", "ＡＢＣ", "123456789012345678901234567890123"})
     @DisplayName("AC-15 形式が違えば拒否される（先頭・末尾・連続のハイフン、英小文字、33 文字以上など）")

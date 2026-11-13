@@ -4,6 +4,8 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.jooq.reporting.tables.records.SalesOrderLineRecord;
+import com.ecsite.jooq.reporting.tables.records.SalesOrderRecord;
 import com.ecsite.module.catalog.api.ReportCatalogApi;
 import com.ecsite.module.order.api.OrderReportApi;
 import com.ecsite.module.order.api.model.OrderReportSnapshot;
@@ -53,7 +55,9 @@ import static org.mockito.Mockito.when;
 class ReportCollectionTest {
 
     /**
-     * 注文日時（日本時間の 2026-10-08 00:30）
+     * 注文日時
+     *
+     * <p>日本時間の 2026-10-08 00:30。
      */
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
@@ -62,7 +66,6 @@ class ReportCollectionTest {
 
     @Autowired
     TransactionTemplate transaction;
-
 
     @Autowired
     MutableClock clock;
@@ -82,10 +85,19 @@ class ReportCollectionTest {
     @MockitoBean
     ReportCatalogApi reportCatalogApi;
 
+    /**
+     * 今のテストの注文 ID
+     */
     private UUID orderId;
 
+    /**
+     * 明細のバリアント ID
+     */
     private UUID variantId;
 
+    /**
+     * 明細の商品 ID
+     */
     private UUID productId;
 
     @BeforeEach
@@ -117,8 +129,9 @@ class ReportCollectionTest {
         assertThat(order.get(SALES_ORDER.SHIPPING_TAX)).isEqualTo(90L);
         assertThat(order.get(SALES_ORDER.SHIPPED_AT)).isNull();
         assertThat(dsl.selectFrom(SALES_ORDER_LINE).where(SALES_ORDER_LINE.ORDER_ID.eq(orderId)).fetch())
-                .extracting(line -> line.getProductId(), line -> line.getVariantId(), line -> line.getQuantity(),
-                        line -> line.getSubtotalInclTax(), line -> line.getSubtotalExclTax())
+                .extracting(SalesOrderLineRecord::getProductId, SalesOrderLineRecord::getVariantId,
+                        SalesOrderLineRecord::getQuantity, SalesOrderLineRecord::getSubtotalInclTax,
+                        SalesOrderLineRecord::getSubtotalExclTax)
                 .containsExactly(tuple(productId, variantId, 2, 2200L, 2000L));
         assertThat(history()).extracting(row -> row.get(STATUS_HISTORY.KIND), row -> row.get(STATUS_HISTORY.TO_STATUS))
                 .containsExactly(tuple("ORDER_STATUS", "PENDING_PAYMENT"));
@@ -179,7 +192,7 @@ class ReportCollectionTest {
 
         // 集めるときは絞らない：3 件とも、その状態のまま写しに入る
         assertThat(dsl.selectFrom(SALES_ORDER).where(SALES_ORDER.ORDER_ID.in(pendingId, acceptedId, cancelledId)).fetch())
-                .extracting(row -> row.getOrderId(), row -> row.getStatus())
+                .extracting(SalesOrderRecord::getOrderId, SalesOrderRecord::getStatus)
                 .containsExactlyInAnyOrder(tuple(pendingId, "PENDING_PAYMENT"), tuple(acceptedId, "ACCEPTED"),
                         tuple(cancelledId, "CANCELLED"));
         // どれを数えるかは集計で決まる：注文基準の売上の推移は、受付の 1 件（2 個、2,200 円）だけを数える
@@ -217,8 +230,7 @@ class ReportCollectionTest {
         await().atMost(TIMEOUT).until(() -> "DELIVERED".equals(order().map(row -> row.get(SALES_ORDER.DELIVERY_STATUS)).orElse(null)));
         publish(DeliveryStatusChanged.of(shippedAt, orderId, null, DeliveryStatusChanged.Status.SHIPPED));
 
-        await().atMost(TIMEOUT).until(() -> order().map(row -> row.get(SALES_ORDER.SHIPPED_AT)).isPresent()
-                && order().get().get(SALES_ORDER.SHIPPED_AT) != null);
+        await().atMost(TIMEOUT).until(() -> order().map(row -> row.get(SALES_ORDER.SHIPPED_AT)).isPresent());
         var order = order().orElseThrow();
         assertThat(order.get(SALES_ORDER.SHIPPED_AT)).isEqualTo(shippedAt);
         // 日本時間の 2026-10-09 00:30

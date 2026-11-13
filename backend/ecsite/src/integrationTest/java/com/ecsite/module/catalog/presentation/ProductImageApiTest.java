@@ -69,6 +69,8 @@ class ProductImageApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
 
@@ -77,12 +79,24 @@ class ProductImageApiTest {
      */
     private static final int MAX_BYTES = 10 * 1024 * 1024;
 
+    /**
+     * PNG の画像
+     */
     private static final byte[] PNG = TestImages.png();
 
+    /**
+     * JPEG の画像
+     */
     private static final byte[] JPEG = TestImages.jpeg();
 
+    /**
+     * WebP の画像
+     */
     private static final byte[] WEBP = TestImages.of("source.webp");
 
+    /**
+     * 配信の URL を取得する HTTP クライアント
+     */
     private final HttpClient http = HttpClient.newHttpClient();
 
     @Autowired
@@ -112,7 +126,7 @@ class ProductImageApiTest {
     }
 
     @Nested
-    @DisplayName("AC-37、39 受付と登録")
+    @DisplayName("受付と登録")
     class Upload {
 
         @Test
@@ -260,7 +274,7 @@ class ProductImageApiTest {
     }
 
     @Nested
-    @DisplayName("AC-40 枚数の上限")
+    @DisplayName("枚数の上限")
     class Limit {
 
         @Test
@@ -286,7 +300,7 @@ class ProductImageApiTest {
     }
 
     @Nested
-    @DisplayName("AC-37、38 並び替え・削除・バリアントの画像")
+    @DisplayName("並び替え・削除・バリアントの画像")
     class Manage {
 
         @Test
@@ -295,14 +309,14 @@ class ProductImageApiTest {
             var productId = productWithVariant();
             var ids = registerImages(productId, 3);
 
-            reorder(productId, 4, ids.get(2), ids.get(0), ids.get(1)).andExpect(status().isNoContent());
+            reorder(productId, 4, ids.get(2), ids.getFirst(), ids.get(1)).andExpect(status().isNoContent());
             mockMvc.perform(get(BASE + "/" + productId))
-                    .andExpect(jsonPath("$.images[*].id", contains(ids.get(2), ids.get(0), ids.get(1))));
+                    .andExpect(jsonPath("$.images[*].id", contains(ids.get(2), ids.getFirst(), ids.get(1))));
 
-            reorder(productId, 5, ids.get(0), ids.get(1))
+            reorder(productId, 5, ids.getFirst(), ids.get(1))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_IMAGE_ORDER"));
-            reorder(productId, 4, ids.get(0), ids.get(1), ids.get(2)).andExpect(status().isConflict());
+            reorder(productId, 4, ids.getFirst(), ids.get(1), ids.get(2)).andExpect(status().isConflict());
         }
 
         @Test
@@ -331,10 +345,10 @@ class ProductImageApiTest {
             var productId = productWithVariant();
             var ids = registerImages(productId, 2);
             var variantId = JsonPath.<String>read(detail(productId), "$.variants[0].id");
-            setVariantImage(productId, variantId, "\"" + ids.get(0) + "\"", 3).andExpect(status().isNoContent());
+            setVariantImage(productId, variantId, "\"" + ids.getFirst() + "\"", 3).andExpect(status().isNoContent());
             var url = JsonPath.<String>read(detail(productId), "$.images[0].url");
 
-            deleteImage(productId, ids.get(0), 4).andExpect(status().isNoContent());
+            deleteImage(productId, ids.getFirst(), 4).andExpect(status().isNoContent());
 
             mockMvc.perform(get(BASE + "/" + productId))
                     .andExpect(jsonPath("$.images", hasSize(1)))

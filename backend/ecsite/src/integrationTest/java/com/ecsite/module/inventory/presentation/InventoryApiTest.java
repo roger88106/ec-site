@@ -46,6 +46,8 @@ class InventoryApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -66,8 +68,14 @@ class InventoryApiTest {
      */
     private InventoryTestData inventory;
 
+    /**
+     * 在庫を作る商品の ID
+     */
     private UUID productId;
 
+    /**
+     * 調整するバリアントの ID
+     */
     private UUID variantId;
 
     @BeforeEach
@@ -102,7 +110,7 @@ class InventoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-42、43、46 在庫の調整")
+    @DisplayName("在庫の調整")
     class Adjust {
 
         @Test
@@ -208,7 +216,7 @@ class InventoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-45 調整履歴")
+    @DisplayName("調整履歴")
     class History {
 
         @Test
@@ -273,7 +281,7 @@ class InventoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-142 操作した運営者")
+    @DisplayName("操作した運営者")
     class Operator {
 
         @Test

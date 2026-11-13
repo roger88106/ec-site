@@ -1,6 +1,6 @@
 package com.ecsite.module.media.infrastructure.storage;
 
-import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.media.domain.MediaErrorCode;
 import com.sun.net.httpserver.HttpServer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.AfterEach;
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static com.ecsite.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -36,8 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 class S3ObjectStorageFailureTest {
 
     /**
-     * 正常に応答するサーバーを使うテストの、1 回の試行を待つ時間の上限。
-     * 負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
+     * 正常に応答するサーバーを使うテストの、1 回の試行を待つ時間の上限
+     *
+     * <p>負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
      */
     private static final Duration ATTEMPT_TIMEOUT = Duration.ofSeconds(5);
 
@@ -180,8 +182,7 @@ class S3ObjectStorageFailureTest {
      * 外部サービスのエラー（画像のサービスが使えない）になることを確認する。
      */
     private static void assertServiceUnavailable(ThrowingCallable call) {
-        assertThatThrownBy(call).isInstanceOfSatisfying(SystemException.class, ex ->
-                assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_SERVICE_UNAVAILABLE"));
+        assertSystemError(call, MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
     }
 
     /**

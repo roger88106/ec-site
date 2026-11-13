@@ -3,7 +3,7 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.jayway.jsonpath.JsonPath;
+import com.ecsite.TestJson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,15 +51,19 @@ class ProductApiTest {
     /**
      * 存在しない ID
      */
-    private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
+    private static final UUID UNKNOWN_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
 
     /**
-     * 有効な税率がない税区分の税率が有効になる日時：2027-04-01 00:00（日本時間）
+     * 有効な税率がない税区分の税率が有効になる日時
+     *
+     * <p>日本時間の 2027-04-01 00:00。
      */
     private static final Instant NOT_YET_EFFECTIVE_FROM = OffsetDateTime.parse("2027-04-01T00:00:00+09:00").toInstant();
 
@@ -69,20 +74,29 @@ class ProductApiTest {
     MutableClock clock;
 
     /**
-     * 標準（10%）
+     * 標準
+     *
+     * <p>税率は 10%。
      */
     private String standard;
 
     /**
-     * 軽減（8%）
+     * 軽減
+     *
+     * <p>税率は 8%。
      */
     private String reduced;
 
     /**
-     * 有効な税率がない（2027-04-01 から 10%）
+     * 有効な税率がまだない税区分
+     *
+     * <p>2027-04-01 から 10%。
      */
     private String notYetEffective;
 
+    /**
+     * 衣類のカテゴリ
+     */
     private String clothing;
 
     /**
@@ -101,7 +115,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-6、13、14、15、16、17、25 商品の登録")
+    @DisplayName("商品の登録")
     class Create {
 
         @Test
@@ -114,11 +128,11 @@ class ProductApiTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string(HttpHeaders.LOCATION, matchesPattern(".*" + BASE + "/[0-9a-f-]{36}")))
                     .andReturn();
-            String id = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+            var id = TestJson.createdId(result.getResponse().getContentAsString());
 
             mockMvc.perform(get(result.getResponse().getHeader(HttpHeaders.LOCATION)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(id))
+                    .andExpect(jsonPath("$.id").value(id.toString()))
                     .andExpect(jsonPath("$.productCode").value("ABC-001"))
                     .andExpect(jsonPath("$.name").value("T シャツ"))
                     .andExpect(jsonPath("$.description").value("綿 100%"))
@@ -180,7 +194,7 @@ class ProductApiTest {
             createProduct(productJson("ABC-001", notYetEffective, 1000))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
-            createProduct(productJson("ABC-001", UNKNOWN_ID, 1000))
+            createProduct(productJson("ABC-001", UNKNOWN_ID.toString(), 1000))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
         }
@@ -239,7 +253,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-6、18、19、25、26 商品の編集")
+    @DisplayName("商品の編集")
     class Update {
 
         @Test
@@ -324,7 +338,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-20、21、22、23、24、27、71 バリアント")
+    @DisplayName("バリアント")
     class Variants {
 
         @Test
@@ -335,12 +349,12 @@ class ProductApiTest {
             var result = addVariant(id, "ABC-001-WH-M", 0, "白", "M")
                     .andExpect(status().isCreated())
                     .andReturn();
-            String variantId = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+            var variantId = TestJson.createdId(result.getResponse().getContentAsString());
             assertThat(result.getResponse().getHeader(HttpHeaders.LOCATION))
                     .endsWith("/api/admin/products/" + id + "/variants/" + variantId);
 
             getProduct(id)
-                    .andExpect(jsonPath("$.variants[0].id").value(variantId))
+                    .andExpect(jsonPath("$.variants[0].id").value(variantId.toString()))
                     .andExpect(jsonPath("$.variants[0].variantCode").value("ABC-001-WH-M"))
                     .andExpect(jsonPath("$.variants[0].axisValues", contains("白", "M")))
                     .andExpect(jsonPath("$.variants[0].salesSuspended").value(false))
@@ -410,7 +424,7 @@ class ProductApiTest {
 
             reorderVariants(id, 2, black, white).andExpect(status().isNoContent());
             getProduct(id)
-                    .andExpect(jsonPath("$.variants[*].id", contains(black, white)))
+                    .andExpect(jsonPath("$.variants[*].id", contains(black.toString(), white.toString())))
                     .andExpect(jsonPath("$.version").value(3));
 
             reorderVariants(id, 3, black)
@@ -496,7 +510,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-29、30、31、32、33 公開・非公開・販売終了・削除")
+    @DisplayName("公開・非公開・販売終了・削除")
     class Status {
 
         @Test
@@ -654,14 +668,14 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-28 バリアントの販売停止")
+    @DisplayName("バリアントの販売停止")
     class SalesSuspension {
 
         @Test
         @DisplayName("AC-28 販売停止・解除でき、バージョンが上がる。同じ状態への切り替えは 204 で、何も変わらない")
         void suspendsAndResumes() throws Exception {
             var id = productWithVariant("ABC-001");
-            var variantId = JsonPath.<String>read(getProduct(id).andReturn().getResponse().getContentAsString(),
+            var variantId = TestJson.uuid(getProduct(id).andReturn().getResponse().getContentAsString(),
                     "$.variants[0].id");
 
             suspend(id, variantId).andExpect(status().isNoContent());
@@ -692,15 +706,15 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-12 商品が所属しているカテゴリ")
+    @DisplayName("商品が所属しているカテゴリ")
     class AssignedCategory {
 
         @Test
         @DisplayName("AC-12 商品が所属しているカテゴリは削除できず 400。所属を外せば削除できる")
         void rejectsDeletingCategoryWithProducts() throws Exception {
-            var id = createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
+            var id = createdProductId("""
                     {"productCode": "ABC-001", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                     "priceExclTax": 1000, "categoryIds": ["%s"]}""".formatted(standard, clothing)));
+                     "priceExclTax": 1000, "categoryIds": ["%s"]}""".formatted(standard, clothing));
 
             mockMvc.perform(delete("/api/admin/categories/" + clothing))
                     .andExpect(status().isBadRequest())
@@ -715,11 +729,11 @@ class ProductApiTest {
     // 商品とバリアントの登録は、このテストが確認する API なので、品番・本文・応答をここで扱う。税区分とカテゴリは CatalogTestData で作る
 
     /**
-     * リクエストを送って 201 を確認し、応答の本文の ID を返す
+     * 商品を登録して 201 を確認し、応答の本文の ID を返す
      */
-    private String createdId(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
-        var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+    private UUID createdProductId(String json) throws Exception {
+        var body = createProduct(json).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return TestJson.createdId(body);
     }
 
     /**
@@ -750,17 +764,17 @@ class ProductApiTest {
     /**
      * 標準の税区分で商品を登録して、その ID を返す
      */
-    private String productId(String code, String... axes) throws Exception {
+    private UUID productId(String code, String... axes) throws Exception {
         var axesJson = Arrays.stream(axes).map("\"%s\""::formatted).collect(Collectors.joining(", "));
-        return createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
+        return createdProductId("""
                 {"productCode": "%s", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                 "priceExclTax": 1000, "axes": [%s]}""".formatted(code, standard, axesJson)));
+                 "priceExclTax": 1000, "axes": [%s]}""".formatted(code, standard, axesJson));
     }
 
     /**
      * 軸がなく、バリアントを 1 つ持つ非公開の商品（バージョン 1）
      */
-    private String productWithVariant(String code) throws Exception {
+    private UUID productWithVariant(String code) throws Exception {
         var id = productId(code);
         addVariant(id, code + "-V", 0).andExpect(status().isCreated());
         return id;
@@ -769,28 +783,28 @@ class ProductApiTest {
     /**
      * 商品の詳細を取得する
      */
-    private ResultActions getProduct(String id) throws Exception {
+    private ResultActions getProduct(UUID id) throws Exception {
         return mockMvc.perform(get(BASE + "/" + id));
     }
 
     /**
      * 商品を編集する
      */
-    private ResultActions updateProduct(String id, String json) throws Exception {
+    private ResultActions updateProduct(UUID id, String json) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 
     /**
      * 商品を削除する
      */
-    private ResultActions deleteProduct(String id, long version) throws Exception {
+    private ResultActions deleteProduct(UUID id, long version) throws Exception {
         return mockMvc.perform(delete(BASE + "/" + id).param("version", String.valueOf(version)));
     }
 
     /**
      * バリアントを登録する
      */
-    private ResultActions addVariant(String productId, String code, long version, String... axisValues) throws Exception {
+    private ResultActions addVariant(UUID productId, String code, long version, String... axisValues) throws Exception {
         var values = Arrays.stream(axisValues).map("\"%s\""::formatted).collect(Collectors.joining(", "));
         return mockMvc.perform(post(BASE + "/" + productId + "/variants")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -801,16 +815,16 @@ class ProductApiTest {
     /**
      * バリアントを登録して、その ID を返す
      */
-    private String variantId(String productId, String code, long version, String... axisValues) throws Exception {
+    private UUID variantId(UUID productId, String code, long version, String... axisValues) throws Exception {
         var body = addVariant(productId, code, version, axisValues)
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+        return TestJson.createdId(body);
     }
 
     /**
      * バリアントを、指定した順に並び替える
      */
-    private ResultActions reorderVariants(String productId, long version, String... variantIds) throws Exception {
+    private ResultActions reorderVariants(UUID productId, long version, UUID... variantIds) throws Exception {
         var ids = Arrays.stream(variantIds).map("\"%s\""::formatted).collect(Collectors.joining(", "));
         return mockMvc.perform(put(BASE + "/" + productId + "/variants/order")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -821,7 +835,7 @@ class ProductApiTest {
     /**
      * バリアントを削除する
      */
-    private ResultActions deleteVariant(String productId, String variantId, long version) throws Exception {
+    private ResultActions deleteVariant(UUID productId, UUID variantId, long version) throws Exception {
         return mockMvc.perform(delete(BASE + "/" + productId + "/variants/" + variantId)
                 .param("version", String.valueOf(version)));
     }
@@ -829,21 +843,21 @@ class ProductApiTest {
     /**
      * 商品を公開する
      */
-    private ResultActions publish(String id) throws Exception {
+    private ResultActions publish(UUID id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/publish"));
     }
 
     /**
      * 商品を非公開にする
      */
-    private ResultActions unpublish(String id) throws Exception {
+    private ResultActions unpublish(UUID id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/unpublish"));
     }
 
     /**
      * 商品を販売終了にする
      */
-    private ResultActions discontinue(String id) throws Exception {
+    private ResultActions discontinue(UUID id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/discontinue"));
     }
 
@@ -852,7 +866,7 @@ class ProductApiTest {
      *
      * <p>日時は JSON の値（文字列か null）で渡す
      */
-    private ResultActions setPeriod(String id, String publishStart, String publishEnd, long version) throws Exception {
+    private ResultActions setPeriod(UUID id, String publishStart, String publishEnd, long version) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/publication-period")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -862,14 +876,14 @@ class ProductApiTest {
     /**
      * バリアントを販売停止にする
      */
-    private ResultActions suspend(String productId, String variantId) throws Exception {
+    private ResultActions suspend(UUID productId, UUID variantId) throws Exception {
         return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/suspend"));
     }
 
     /**
      * バリアントの販売停止を解除する
      */
-    private ResultActions resume(String productId, String variantId) throws Exception {
+    private ResultActions resume(UUID productId, UUID variantId) throws Exception {
         return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/resume"));
     }
 }

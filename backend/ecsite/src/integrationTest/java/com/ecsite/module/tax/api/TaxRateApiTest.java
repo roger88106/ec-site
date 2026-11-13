@@ -24,8 +24,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 商品カタログ・注文向けの税 API の統合テスト。<br />
- * 現在時刻は 2026-10-08 00:00（日本時間）に固定する。テストごとにロールバックする。
+ * 商品カタログ・注文向けの税 API の統合テスト
+ *
+ * <p>現在時刻は 2026-10-08 00:00（日本時間）に固定する。テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional
@@ -37,7 +38,9 @@ class TaxRateApiTest {
     private static final Instant APR_2027 = Instant.parse("2027-03-31T15:00:00Z");
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 

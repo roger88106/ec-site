@@ -92,11 +92,7 @@ class JooqProductRepository implements ProductRepository {
                 .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
                 .fetchOptional();
-        if (found.isEmpty()) {
-            return Optional.empty();
-        }
-        var row = found.get();
-        return Optional.of(toProduct(row.into(PRODUCT), List.of(row.get(axes)), Set.of(row.get(categoryIds))));
+        return found.map(row -> toProduct(row.into(PRODUCT), List.of(row.get(axes)), Set.of(row.get(categoryIds))));
     }
 
     /**

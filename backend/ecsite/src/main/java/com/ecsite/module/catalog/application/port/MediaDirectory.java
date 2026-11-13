@@ -23,8 +23,8 @@ public interface MediaDirectory {
      * @param contentType   ファイルの形式（申告）
      * @param contentLength ファイルの大きさ（申告）
      * @return 受付
-     * @throws BusinessException 形式が対象外
-     * @throws BusinessException 大きさが範囲の外
+     * @throws BusinessException 形式が対象外（{@code UNSUPPORTED_IMAGE_FORMAT}）
+     * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      */
     ImageUploadView requestImageUpload(UUID productId, String contentType, long contentLength);
 
@@ -36,10 +36,10 @@ public interface MediaDirectory {
      * @param productId 商品 ID
      * @param uploadId  受付 ID
      * @return 用意した画像
-     * @throws BusinessException 受付がない（別の商品の受付を含む）
-     * @throws BusinessException 大きさが範囲の外
-     * @throws BusinessException 中身が対象の画像でない
-     * @throws BusinessException 変換できない
+     * @throws BusinessException 受付がない（別の商品の受付を含む。{@code IMAGE_UPLOAD_NOT_FOUND}）
+     * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
+     * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
+     * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
     PreparedImage prepareImage(UUID productId, UUID uploadId);
 

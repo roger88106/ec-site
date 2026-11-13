@@ -188,7 +188,7 @@ public enum ImageFormat {
     /**
      * ファイルの先頭のバイトから形式を判定する。
      *
-     * @param head ファイルの先頭（{@link #SIGNATURE_LENGTH} バイトまで読めば判定できる）
+     * @param head ファイルの先頭（{@value #SIGNATURE_LENGTH} バイトまで読めば判定できる）
      * @return 形式。受け付ける形式のどれでもなければ空
      */
     public static Optional<ImageFormat> detect(byte @NonNull [] head) {

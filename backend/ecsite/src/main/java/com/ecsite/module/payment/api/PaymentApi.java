@@ -65,7 +65,7 @@ public class PaymentApi {
      *
      * @param orderId 注文 ID
      * @return 支払画面の URL。支払がない、未払いでない、期限の後なら空
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     public Optional<String> pageUrl(@NonNull UUID orderId) {
         return gatewayService.pageUrl(orderId);
@@ -91,10 +91,10 @@ public class PaymentApi {
      * トランザクションの外で呼ばれる前提で、読み取りと更新を別々のトランザクションで行い、その間で決済サービスを呼ぶ。
      *
      * @param orderId 注文 ID
-     * @throws BusinessException 支払がない（NOT_FOUND）
-     * @throws BusinessException 売上を確定できる状態でない（PAYMENT_NOT_CAPTURABLE）
-     * @throws BusinessException 与信の期限が切れている（AUTHORIZATION_EXPIRED）
-     * @throws SystemException   決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）。支払は与信済みのまま残る
+     * @throws BusinessException 支払がない（{@code NOT_FOUND}）
+     * @throws BusinessException 売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
+     * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
+     * @throws SystemException   決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）。支払は与信済みのまま残る
      */
     public void capture(@NonNull UUID orderId) {
         gatewayService.capture(orderId);

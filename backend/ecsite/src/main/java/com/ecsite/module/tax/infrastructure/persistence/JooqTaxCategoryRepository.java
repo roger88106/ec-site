@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.tax.Keys;
+import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
@@ -77,23 +78,10 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      */
     @Override
     public Optional<TaxCategory> findById(UUID id) {
-        // 税区分の取得
-        var found = dsl.selectFrom(TAX_CATEGORY)
+        return dsl.selectFrom(TAX_CATEGORY)
                 .where(TAX_CATEGORY.ID.eq(id))
-                .fetchOptional();
-        if (found.isEmpty()) {
-            return Optional.empty();
-        }
-        var category = found.get();
-
-        // 税率の取得
-        var rates = dsl.selectFrom(TAX_RATE)
-                .where(TAX_RATE.TAX_CATEGORY_ID.eq(id))
-                .fetch(JooqTaxCategoryRepository::toTaxRate);
-
-        // スナップショットからドメインに変換する
-        var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
-        return Optional.of(factory.restore(snapshot));
+                .fetchOptional()
+                .map(this::toTaxCategory);
     }
 
     /**
@@ -160,6 +148,20 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 税区分のレコードと、その税率から、税区分を復元する。
+     */
+    private TaxCategory toTaxCategory(TaxCategoryRecord category) {
+        // 税率の取得
+        var rates = dsl.selectFrom(TAX_RATE)
+                .where(TAX_RATE.TAX_CATEGORY_ID.eq(category.getId()))
+                .fetch(JooqTaxCategoryRepository::toTaxRate);
+
+        // スナップショットからドメインに変換する
+        var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
+        return factory.restore(snapshot);
+    }
 
     /**
      * 書き込みを実行し、制約の違反を業務のエラーに変える。

@@ -56,7 +56,7 @@ public class PaymentGatewayService {
      *
      * @param orderId 注文 ID
      * @return 支払画面の URL。支払がない、支払えない（未払いでない、期限の後）なら空
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     public Optional<String> pageUrl(@NonNull UUID orderId) {
         // 支払取得
@@ -88,10 +88,10 @@ public class PaymentGatewayService {
      * <p>売上確定済みなら、決済サービスを呼ばずに成功する。
      *
      * @param orderId 注文 ID
-     * @throws BusinessException 支払がない（NOT_FOUND）
-     * @throws BusinessException 売上を確定できる状態でない（PAYMENT_NOT_CAPTURABLE）
-     * @throws BusinessException 与信の期限が切れている（AUTHORIZATION_EXPIRED）
-     * @throws SystemException   決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）。支払は与信済みのまま残る
+     * @throws BusinessException 支払がない（{@code NOT_FOUND}）
+     * @throws BusinessException 売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
+     * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
+     * @throws SystemException   決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）。支払は与信済みのまま残る
      */
     public void capture(@NonNull UUID orderId) {
         // 支払取得
@@ -131,7 +131,7 @@ public class PaymentGatewayService {
      * <p>閉じる前に支払が済んでいたら、支払なしにせず、与信の反映を待つ支払にする（期限切れの検索から外れる）。
      *
      * @param payment 期限を過ぎた支払
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     public void expire(@NonNull PastDeadlinePaymentView payment) {
         // 支払画面を閉じる ※閉じる前に支払が済んでいたら、与信の反映を待つ支払にする
@@ -150,7 +150,7 @@ public class PaymentGatewayService {
      * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。
      *
      * @param payment 与信の反映を待つ支払
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     public void recoverAuthorization(@NonNull AwaitingAuthorizationPaymentView payment) {
         // 与信取得

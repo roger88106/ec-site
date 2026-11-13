@@ -340,10 +340,10 @@ public class Order extends AggregateRoot {
      *
      * <p>「受付」から「キャンセル申請中」にする。申請中なら何もしない（冪等）。
      *
-     * @param reason 理由（任意、{@link #REASON_MAX_LENGTH} 文字まで）。空白だけなら理由なし
+     * @param reason 理由（任意、{@value #REASON_MAX_LENGTH} 文字まで）。空白だけなら理由なし
      * @param now    現在時刻
      * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
-     * @throws BusinessException 理由が {@link #REASON_MAX_LENGTH} 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 理由が {@value #REASON_MAX_LENGTH} 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      */
     public void requestCancellation(@Nullable String reason, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
@@ -403,14 +403,14 @@ public class Order extends AggregateRoot {
      * <p>申請中なら、申請は承認されたものとする。キャンセル済みなら何もせず、理由も変えない。
      * 出荷済みでなければ、指定によらず在庫に戻す。
      *
-     * @param reason   理由（必須、{@link #REASON_MAX_LENGTH} 文字まで）
+     * @param reason   理由（必須、{@value #REASON_MAX_LENGTH} 文字まで）
      * @param restock  在庫に戻すか（出荷済みのときは必須。それ以外は使わない）
      * @param returned 配送状態が返送か（出荷済みのときだけ使う）
      * @param operator キャンセルした運営者。申請中なら、判断した運営者にもなる
      * @param now      現在時刻
      * @return キャンセルにしたら true。すでにキャンセルなら false
      * @throws BusinessException 理由がない（{@code CANCELLATION_REASON_REQUIRED}）
-     * @throws BusinessException 理由が {@link #REASON_MAX_LENGTH} 文字を超える（{@code INVALID_CANCELLATION_REASON}）
+     * @throws BusinessException 理由が {@value #REASON_MAX_LENGTH} 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      * @throws BusinessException 支払待ち（{@code AWAITING_PAYMENT}）
      * @throws BusinessException 出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）
      * @throws BusinessException 出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
@@ -489,7 +489,7 @@ public class Order extends AggregateRoot {
     /**
      * 理由を検証する。
      *
-     * <p>空白だけなら理由なし（null）とし、{@link #REASON_MAX_LENGTH} 文字を超えれば拒否する。
+     * <p>空白だけなら理由なし（null）とし、{@value #REASON_MAX_LENGTH} 文字を超えれば拒否する。
      */
     private static @Nullable String optionalReason(@Nullable String reason) {
         if (reason == null || reason.isBlank()) {

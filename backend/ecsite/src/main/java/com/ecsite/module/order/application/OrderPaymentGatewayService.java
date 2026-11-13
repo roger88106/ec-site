@@ -67,8 +67,7 @@ public class OrderPaymentGatewayService {
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号
      * @return 作った出荷
-     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
-     * @throws BusinessException 支払がない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文がない、または支払がない（{@code NOT_FOUND}）
      * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}）
      * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
      * @throws BusinessException 売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）

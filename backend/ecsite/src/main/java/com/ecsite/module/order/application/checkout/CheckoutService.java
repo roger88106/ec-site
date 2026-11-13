@@ -76,8 +76,7 @@ public class CheckoutService {
      * @param memberId             会員 ID
      * @param acknowledgedOrderIds 確認した注文の ID（確認の画面で表示した注文。確認していなければ空）
      * @return 注文手続き ID
-     * @throws BusinessException カートがない（{@code NOT_FOUND}）
-     * @throws BusinessException 会員の自分のカートでない（{@code NOT_FOUND}）
+     * @throws BusinessException カートがない、または会員の自分のカートでない（{@code NOT_FOUND}）
      * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
      * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）

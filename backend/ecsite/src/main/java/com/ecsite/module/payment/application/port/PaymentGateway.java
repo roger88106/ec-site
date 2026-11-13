@@ -12,7 +12,7 @@ import java.util.UUID;
  *
  * <p>決済サービスの型とエラーは、この port の実装（infrastructure）の外に出さない。
  * 決済サービスに接続できない（時間内に応えない、決済サービスの側の故障、回数の制限）ことは、
- * 外部サービスのエラー（PAYMENT_GATEWAY_UNAVAILABLE）で示す。
+ * 外部サービスのエラー（{@code PAYMENT_GATEWAY_UNAVAILABLE}）で示す。
  */
 public interface PaymentGateway {
 
@@ -23,7 +23,7 @@ public interface PaymentGateway {
      *
      * @param request 支払画面のリクエスト
      * @return 作った支払画面
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     PaymentPage openPage(PageRequest request);
 
@@ -34,7 +34,7 @@ public interface PaymentGateway {
      *
      * @param pageId 支払画面 ID
      * @return 閉じた結果
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     CloseResult closePage(String pageId);
 
@@ -43,7 +43,7 @@ public interface PaymentGateway {
      *
      * @param pageId 支払画面 ID（支払の済んだ画面）
      * @return 取得した与信
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     Authorization fetchAuthorization(String pageId);
 
@@ -54,7 +54,7 @@ public interface PaymentGateway {
      *
      * @param authorizationRef 与信の参照
      * @return 与信の取消の結果
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     VoidResult voidAuthorization(String authorizationRef);
 
@@ -76,7 +76,7 @@ public interface PaymentGateway {
      * すでに返金済みなら成功とする。
      *
      * @param request 返金のリクエスト
-     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     void refund(RefundRequest request);
 

@@ -42,7 +42,7 @@ public class CurrentMemberIds {
      * <p>初めてなら会員を作る。
      *
      * @return 会員 ID
-     * @throws BusinessException ログインしていない（401）
+     * @throws BusinessException ログインしていない（{@code UNAUTHENTICATED}）
      */
     public UUID require() {
         return memberIdOf(currentMember.require().subject());

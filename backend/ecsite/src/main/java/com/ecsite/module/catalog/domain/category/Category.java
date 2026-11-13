@@ -172,7 +172,7 @@ public class Category extends AggregateRoot {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 名称が 1 文字以上 {@link #NAME_MAX_LENGTH} 文字以内（空白のみは不可）であることを検証する。
+     * 名称が 1 文字以上 {@value #NAME_MAX_LENGTH} 文字以内（空白のみは不可）であることを検証する。
      *
      * @param name 名称
      * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）

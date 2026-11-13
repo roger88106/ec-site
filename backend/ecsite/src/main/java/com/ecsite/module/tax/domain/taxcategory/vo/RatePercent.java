@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 率（%）
  *
- * <p>{@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満、小数第 {@link #MAX_SCALE} 位まで。値は末尾の 0 を除いた形にそろえ、
+ * <p>{@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満、小数第 {@value #MAX_SCALE} 位まで。値は末尾の 0 を除いた形にそろえ、
  * 書き方（{@code 10} と {@code 10.00}）が違っても、同じ値なら等しい。
  *
  * @param value 率（%）
@@ -39,7 +39,7 @@ public record RatePercent(BigDecimal value) {
      * コンストラクタ。
      *
      * @param value 率（%）
-     * @throws BusinessException 率が {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が第 {@link #MAX_SCALE} 位を超える（{@code INVALID_RATE_PERCENT}）
+     * @throws BusinessException 率が {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が第 {@value #MAX_SCALE} 位を超える（{@code INVALID_RATE_PERCENT}）
      */
     public RatePercent(@NonNull BigDecimal value) {
         var normalized = normalize(value);
@@ -55,7 +55,7 @@ public record RatePercent(BigDecimal value) {
      *
      * @param value 率（%）
      * @return 率
-     * @throws BusinessException 率が {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が第 {@link #MAX_SCALE} 位を超える（{@code INVALID_RATE_PERCENT}）
+     * @throws BusinessException 率が {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が第 {@value #MAX_SCALE} 位を超える（{@code INVALID_RATE_PERCENT}）
      */
     public static RatePercent of(BigDecimal value) {
         return new RatePercent(value);

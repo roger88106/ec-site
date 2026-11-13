@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
  * LIKE の検索パターン
  *
  * <p>利用者が入力した文字列の中のワイルドカード文字（{@code %}、{@code _}）を、通常の文字として扱うためにエスケープする。
- * エスケープ文字は {@link #ESCAPE}。
+ * エスケープ文字は {@value #ESCAPE}。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class LikePatterns {

@@ -58,11 +58,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
                 .fetchOptional();
-        if (found.isEmpty()) {
-            return Optional.empty();
-        }
-        var row = found.get();
-        return Optional.of(toDetail(row.into(PRODUCT), List.of(row.get(axes)), List.of(row.get(categoryIds))));
+        return found.map(row -> toDetail(row.into(PRODUCT), List.of(row.get(axes)), List.of(row.get(categoryIds))));
     }
 
     /**

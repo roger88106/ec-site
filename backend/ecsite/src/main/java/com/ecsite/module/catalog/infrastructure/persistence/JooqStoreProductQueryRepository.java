@@ -99,14 +99,12 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .and(ProductVisibility.visibleAt(now))
                 .and(priceInclTax.isNotNull())
                 .fetchOptional();
-        if (found.isEmpty()) {
-            return Optional.empty();
-        }
-        var row = found.get();
-        var images = storeImageUrls.ofProduct(id);
-        return Optional.of(new StoreProductDetailView(row.get(PRODUCT.ID), row.get(PRODUCT.NAME), row.get(PRODUCT.DESCRIPTION),
-                Money.of(row.get(priceInclTax)), Money.of(row.get(PRODUCT.PRICE_EXCL_TAX)),
-                List.of(row.get(axes)), variants(id, images), List.copyOf(images.values())));
+        return found.map(row -> {
+            var images = storeImageUrls.ofProduct(id);
+            return new StoreProductDetailView(row.get(PRODUCT.ID), row.get(PRODUCT.NAME), row.get(PRODUCT.DESCRIPTION),
+                    Money.of(row.get(priceInclTax)), Money.of(row.get(PRODUCT.PRICE_EXCL_TAX)),
+                    List.of(row.get(axes)), variants(id, images), List.copyOf(images.values()));
+        });
     }
 
 // ============================== プライベートメソッド ==============================

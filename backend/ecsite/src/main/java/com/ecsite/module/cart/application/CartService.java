@@ -94,8 +94,7 @@ public class CartService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  数量
-     * @throws BusinessException カートがない（{@code NOT_FOUND}）
-     * @throws BusinessException カートの持ち主でない（{@code NOT_FOUND}）
+     * @throws BusinessException カートがない、またはカートの持ち主でない（{@code NOT_FOUND}）
      * @throws BusinessException バリアントを選べない（{@code VARIANT_NOT_SELECTABLE}）
      * @throws BusinessException 数量が範囲の外（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException 販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）
@@ -125,9 +124,7 @@ public class CartService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  新しい数量
-     * @throws BusinessException カートがない（{@code NOT_FOUND}）
-     * @throws BusinessException カートの持ち主でない（{@code NOT_FOUND}）
-     * @throws BusinessException カートにない品目（{@code NOT_FOUND}）
+     * @throws BusinessException カートがない、カートの持ち主でない、またはカートにない品目を指定した（{@code NOT_FOUND}）
      * @throws BusinessException 数量が範囲の外（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException 販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）

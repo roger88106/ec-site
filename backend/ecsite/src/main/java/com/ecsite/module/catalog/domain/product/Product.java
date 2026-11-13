@@ -304,7 +304,7 @@ public class Product extends AggregateRoot {
     /**
      * 画像を加えられるかを確認する。
      *
-     * <p>上限の {@link #MAX_IMAGES} 枚に達していなければ加えられる。
+     * <p>上限の {@value #MAX_IMAGES} 枚に達していなければ加えられる。
      *
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
@@ -727,7 +727,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜{@link #AXIS_VALUE_MAX_LENGTH} 文字であることを検証する。
+     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜{@value #AXIS_VALUE_MAX_LENGTH} 文字であることを検証する。
      *
      * <p>軸キーの区切り文字は、値に含められない。
      *
@@ -743,7 +743,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 商品名が 1〜{@link #NAME_MAX_LENGTH} 文字（空白のみは不可）であることを検証する。
+     * 商品名が 1〜{@value #NAME_MAX_LENGTH} 文字（空白のみは不可）であることを検証する。
      *
      * @param name 商品名
      * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
@@ -755,7 +755,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 説明が {@link #DESCRIPTION_MAX_LENGTH} 文字以内であることを検証する。
+     * 説明が {@value #DESCRIPTION_MAX_LENGTH} 文字以内であることを検証する。
      *
      * <p>空でもよい。
      *
@@ -769,7 +769,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアント軸が 0〜{@link #MAX_AXES} つで、名前が 1〜{@link #AXIS_NAME_MAX_LENGTH} 文字、重複がないことを検証する。
+     * バリアント軸が 0〜{@value #MAX_AXES} つで、名前が 1〜{@value #AXIS_NAME_MAX_LENGTH} 文字、重複がないことを検証する。
      *
      * @param axes バリアント軸の名前
      * @return 変更できない一覧

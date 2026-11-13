@@ -89,7 +89,7 @@ public class TaxCategory extends AggregateRoot {
      * @param id   税区分 ID
      * @param name 名称
      * @return 税区分
-     * @throws BusinessException 名称が 1 文字以上 {@link #NAME_MAX_LENGTH} 文字以内でない（{@code INVALID_TAX_CATEGORY_NAME}）
+     * @throws BusinessException 名称が 1 文字以上 {@value #NAME_MAX_LENGTH} 文字以内でない（{@code INVALID_TAX_CATEGORY_NAME}）
      */
     static TaxCategory create(UUID id, String name) {
         return new TaxCategory(id, name, List.of(), 0);

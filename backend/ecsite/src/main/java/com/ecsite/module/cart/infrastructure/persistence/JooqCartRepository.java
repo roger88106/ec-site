@@ -2,6 +2,7 @@ package com.ecsite.module.cart.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.jooq.cart.tables.records.CartRecord;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
 import com.ecsite.module.cart.domain.CartItem;
@@ -78,16 +79,7 @@ class JooqCartRepository implements CartRepository {
      */
     @Override
     public Optional<Cart> findById(UUID id) {
-        var found = dsl.selectFrom(CART_).where(CART_.ID.eq(id)).fetchOptional();
-        if (found.isEmpty()) {
-            return Optional.empty();
-        }
-        var cart = found.get();
-        var items = dsl.selectFrom(CART_ITEM)
-                .where(CART_ITEM.CART_ID.eq(id))
-                .orderBy(CART_ITEM.SEQUENCE_NO)
-                .fetch(item -> new CartItem(item.getVariantId(), item.getQuantity(), item.getAddedAt()));
-        return Optional.of(new Cart(cart.getId(), cart.getMemberId(), items, cart.getVersion(), cart.getUpdatedAt()));
+        return dsl.selectFrom(CART_).where(CART_.ID.eq(id)).fetchOptional().map(this::toCart);
     }
 
     /**
@@ -140,5 +132,18 @@ class JooqCartRepository implements CartRepository {
                         .forUpdate()
                         .skipLocked()))
                 .execute();
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * カートのレコードと、その品目から、カートを復元する。
+     */
+    private Cart toCart(CartRecord cart) {
+        var items = dsl.selectFrom(CART_ITEM)
+                .where(CART_ITEM.CART_ID.eq(cart.getId()))
+                .orderBy(CART_ITEM.SEQUENCE_NO)
+                .fetch(item -> new CartItem(item.getVariantId(), item.getQuantity(), item.getAddedAt()));
+        return new Cart(cart.getId(), cart.getMemberId(), items, cart.getVersion(), cart.getUpdatedAt());
     }
 }

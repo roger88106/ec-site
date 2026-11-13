@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * ページの指定
  *
- * <p>ページは 1 始まり、件数は既定 {@link #DEFAULT_SIZE}・最大 {@link #MAX_SIZE}。MVP はオフセット方式。
+ * <p>ページは 1 始まり、件数は既定 {@value #DEFAULT_SIZE}・最大 {@value #MAX_SIZE}。MVP はオフセット方式。
  *
  * @param page ページ番号（1 始まり）
  * @param size 1 ページの件数
@@ -35,7 +35,7 @@ public record PageRequest(int page, int size) {
      * @param page ページ番号（1 始まり）
      * @param size 1 ページの件数
      * @throws BusinessException ページ番号が 1 未満（{@code INVALID_REQUEST}）
-     * @throws BusinessException 件数が 1〜{@link #MAX_SIZE} の外（{@code INVALID_REQUEST}）
+     * @throws BusinessException 件数が 1〜{@value #MAX_SIZE} の外（{@code INVALID_REQUEST}）
      */
     public PageRequest {
         // ページ番号と件数は 1 以上、件数は上限まで
@@ -49,11 +49,11 @@ public record PageRequest(int page, int size) {
      *
      * <p>指定がなければ既定値にする。
      *
-     * @param page ページ番号（1 始まり）。null は {@link #DEFAULT_PAGE}
-     * @param size 1 ページの件数。null は {@link #DEFAULT_SIZE}
+     * @param page ページ番号（1 始まり）。null は {@value #DEFAULT_PAGE}
+     * @param size 1 ページの件数。null は {@value #DEFAULT_SIZE}
      * @return ページの指定
      * @throws BusinessException ページ番号が 1 未満（{@code INVALID_REQUEST}）
-     * @throws BusinessException 件数が 1〜{@link #MAX_SIZE} の外（{@code INVALID_REQUEST}）
+     * @throws BusinessException 件数が 1〜{@value #MAX_SIZE} の外（{@code INVALID_REQUEST}）
      */
     public static PageRequest of(@Nullable Integer page, @Nullable Integer size) {
         return new PageRequest(

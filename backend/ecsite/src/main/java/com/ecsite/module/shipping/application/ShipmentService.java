@@ -51,8 +51,8 @@ public class ShipmentService {
      * @param trackingNumber 送り状番号の入力。null のときは TRACKING_NUMBER_INVALID の業務のエラーにする
      * @param shippedAt      出荷日時
      * @return 作った出荷
-     * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）
-     * @throws BusinessException 同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
+     * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
+     * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
     @Transactional
     public Shipment create(@NonNull UUID orderId, @NonNull Carrier carrier, @Nullable String trackingNumber,

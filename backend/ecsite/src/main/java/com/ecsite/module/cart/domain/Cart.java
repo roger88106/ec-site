@@ -198,7 +198,7 @@ public class Cart {
      * @param variantId バリアント ID
      * @param quantity  入れる数量
      * @param now       現在時刻
-     * @throws BusinessException 数量か合算した数量が 1〜{@link #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
+     * @throws BusinessException 数量か合算した数量が 1〜{@value #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException 品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）
      */
     public void add(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
@@ -224,7 +224,7 @@ public class Cart {
      * @param variantId バリアント ID
      * @param quantity  新しい数量
      * @param now       現在時刻
-     * @throws BusinessException 数量が 1〜{@link #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
+     * @throws BusinessException 数量が 1〜{@value #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException カートにない品目（{@code NOT_FOUND}）
      */
     public void changeQuantity(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
@@ -272,7 +272,7 @@ public class Cart {
     /**
      * 別のカートの品目を、このカートへ移し、移したカートを空にする。
      *
-     * <p>品目を入れた順に後ろへ入れ、同じバリアントは数量を合算して {@link #MAX_QUANTITY} で切り詰める。品目が {@link #MAX_ITEMS} に達したら、残りの新しいバリアントは移さない。
+     * <p>品目を入れた順に後ろへ入れ、同じバリアントは数量を合算して {@value #MAX_QUANTITY} で切り詰める。品目が {@value #MAX_ITEMS} に達したら、残りの新しいバリアントは移さない。
      * 商品カタログ・在庫は確認しない。移すカートが空なら、どちらも変えない。
      *
      * @param source 移すカート
@@ -339,7 +339,7 @@ public class Cart {
     }
 
     /**
-     * 数量が 1〜{@link #MAX_QUANTITY} であることを確認する。
+     * 数量が 1〜{@value #MAX_QUANTITY} であることを確認する。
      */
     private static void verifyQuantity(int quantity) {
         if (quantity < 1 || quantity > MAX_QUANTITY) {

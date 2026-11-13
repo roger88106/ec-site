@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 税抜価格
  *
- * <p>{@link #MIN_YEN} 円以上 {@link #MAX_YEN} 円以下の整数。全バリアント共通。
+ * <p>{@value #MIN_YEN} 円以上 {@value #MAX_YEN} 円以下の整数。全バリアント共通。
  *
  * @param yen 税抜価格（円）
  */

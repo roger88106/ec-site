@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 /**
  * 品番の形式
  *
- * <p>商品品番とバリアント品番で共通。半角の英大文字・数字とハイフンで 1〜{@link #MAX_LENGTH} 文字。ハイフンは英数字の間にだけ置ける。
+ * <p>商品品番とバリアント品番で共通。半角の英大文字・数字とハイフンで 1〜{@value #MAX_LENGTH} 文字。ハイフンは英数字の間にだけ置ける。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class CodeFormat {

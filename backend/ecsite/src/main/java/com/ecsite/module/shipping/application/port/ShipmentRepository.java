@@ -18,7 +18,7 @@ public interface ShipmentRepository {
      * 出荷を保存する。
      *
      * @param shipment 出荷
-     * @throws BusinessException 同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
+     * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
     void insert(Shipment shipment);
 

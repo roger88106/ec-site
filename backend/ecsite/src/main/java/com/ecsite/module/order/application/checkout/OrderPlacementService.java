@@ -102,13 +102,11 @@ public class OrderPlacementService {
      *
      * @param command 注文のコマンド
      * @return 注文の結果
-     * @throws BusinessException 注文手続きがない（{@code NOT_FOUND}）
-     * @throws BusinessException 注文手続きを始めた会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文手続きがない、または注文手続きを始めた会員でない（{@code NOT_FOUND}）
      * @throws BusinessException メールアドレスが確認済みでない（{@code EMAIL_NOT_VERIFIED}）
      * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
      * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
-     * @throws BusinessException カートがない（{@code CART_NOT_ORDERABLE}）
-     * @throws BusinessException カートが注文できない（{@code CART_NOT_ORDERABLE}）
+     * @throws BusinessException カートがない、またはカートが注文できない（{@code CART_NOT_ORDERABLE}）
      * @throws BusinessException カートが変わった（{@code CART_CHANGED}）
      * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）
      * @throws BusinessException 総額が変わった（{@code TOTAL_AMOUNT_CHANGED}）

@@ -26,7 +26,7 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
      *
      * @param effectiveFrom 適用開始日時
      * @param effectiveTo   適用終了日時
-     * @throws BusinessException 開始と終了の両方があり、開始が終了より前でない
+     * @throws BusinessException 開始と終了の両方があり、開始が終了より前でない（{@code INVALID_EFFECTIVE_PERIOD}）
      */
     public EffectivePeriod {
         // 開始と終了の両方があるときだけ、開始が終了より前であることを求める
@@ -41,7 +41,7 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
      * @param effectiveFrom 適用開始日時。null は過去すべて
      * @param effectiveTo   適用終了日時。null は無期限
      * @return 適用期間
-     * @throws BusinessException 開始と終了の両方があり、開始が終了より前でない
+     * @throws BusinessException 開始と終了の両方があり、開始が終了より前でない（{@code INVALID_EFFECTIVE_PERIOD}）
      */
     public static EffectivePeriod of(@Nullable Instant effectiveFrom, @Nullable Instant effectiveTo) {
         return new EffectivePeriod(effectiveFrom, effectiveTo);

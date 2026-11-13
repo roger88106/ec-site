@@ -52,15 +52,10 @@ public class RegionQueryService {
      * @return 都道府県と、コードの順の市区町村。都道府県がなければ空
      */
     public Optional<PrefectureMunicipalitiesView> municipalitiesOf(@NonNull String prefectureCode) {
-        // 都道府県の取得
-        var prefecture = repository.findPrefecture(prefectureCode);
-        if (prefecture.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // 市区町村の取得
-        var municipalities = repository.findMunicipalities(prefectureCode);
-        return Optional.of(new PrefectureMunicipalitiesView(prefecture.get(), municipalities));
+        // 都道府県の取得と、その市区町村の取得
+        return repository.findPrefecture(prefectureCode)
+                .map(prefecture -> new PrefectureMunicipalitiesView(prefecture,
+                        repository.findMunicipalities(prefectureCode)));
     }
 
     /**

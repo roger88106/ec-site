@@ -4,7 +4,6 @@ import com.ecsite.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>問い合わせ先は、統合テストの設定の値を返す。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
 class StorefrontShopTest {
 
     /**

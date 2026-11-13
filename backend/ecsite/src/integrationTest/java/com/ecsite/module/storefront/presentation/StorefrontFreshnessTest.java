@@ -4,7 +4,6 @@ import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
@@ -12,9 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -38,8 +35,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 税率の一覧だけはインスタンス内で 30 秒キャッシュする。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class StorefrontFreshnessTest {
 

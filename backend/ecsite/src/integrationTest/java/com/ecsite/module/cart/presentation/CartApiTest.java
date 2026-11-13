@@ -4,7 +4,6 @@ import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
@@ -18,8 +17,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -49,8 +46,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 在庫モジュールのリポジトリで直接作る。カートの中身は DB で確認する。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @RecordApplicationEvents
 @Transactional
 class CartApiTest {

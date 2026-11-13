@@ -11,12 +11,14 @@ import com.ecsite.module.shipping.infrastructure.mock.MockCarrier.SignedNotifica
 public final class TestCarrierNotifications {
 
     /**
-     * 誤った署名に使う鍵（mock の鍵と違うもの）
+     * 誤った署名に使う鍵
+     *
+     * <p>mock の鍵と違うもの。
      */
     private static final String WRONG_SECRET = "mock-carrier-wrong-secret";
 
     /**
-     * 作らせない
+     * インスタンスを作らない。
      */
     private TestCarrierNotifications() {
     }

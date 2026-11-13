@@ -31,7 +31,9 @@ public class TestPaymentGateway implements PaymentGateway {
     private final MockPaymentGateway mock;
 
     /**
-     * 呼ばれた金額のある操作（呼ばれた順。失敗と重複を含む）
+     * 呼ばれた金額のある操作
+     *
+     * <p>呼ばれた順。失敗と重複を含む。
      */
     private final List<AmountCall> amountCalls = new CopyOnWriteArrayList<>();
 
@@ -46,7 +48,9 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger openFailures = new AtomicInteger();
 
     /**
-     * 与信の取得を呼ばれた回数（失敗を含む）
+     * 与信の取得を呼ばれた回数
+     *
+     * <p>失敗を含む。
      */
     private final AtomicInteger authorizationFetchCalls = new AtomicInteger();
 
@@ -61,7 +65,9 @@ public class TestPaymentGateway implements PaymentGateway {
     private final Set<String> rejectedAuthorizationFetches = ConcurrentHashMap.newKeySet();
 
     /**
-     * 取り消した与信の参照（取り消した順）
+     * 取り消した与信の参照
+     *
+     * <p>取り消した順。
      */
     private final List<String> voided = new CopyOnWriteArrayList<>();
 
@@ -71,27 +77,37 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger voidFailures = new AtomicInteger();
 
     /**
-     * 与信が切れたことにした与信の参照。売上確定が与信期限切れで断られる
+     * 与信が切れたことにした与信の参照
+     *
+     * <p>売上確定が与信期限切れで断られる。
      */
     private final Set<String> expiredAuthorizations = ConcurrentHashMap.newKeySet();
 
     /**
-     * 売上を確定した注文 ID（確定した順）
+     * 売上を確定した注文 ID
+     *
+     * <p>確定した順。
      */
     private final List<UUID> captured = new CopyOnWriteArrayList<>();
 
     /**
-     * 売上確定に渡された与信の参照（注文 ID ごとに、最後に渡されたもの）
+     * 売上確定に渡された与信の参照
+     *
+     * <p>注文 ID ごとに、最後に渡されたもの。
      */
     private final Map<UUID, String> capturedAuthorizationRefs = new ConcurrentHashMap<>();
 
     /**
-     * 次の売上確定の最中に行う処理（売上確定と注文のキャンセルが重なったときのテスト用）。なければ null
+     * 次の売上確定の最中に行う処理
+     *
+     * <p>売上確定と注文のキャンセルが重なったときのテスト用。なければ null。
      */
     private final AtomicReference<Runnable> duringNextCapture = new AtomicReference<>();
 
     /**
-     * 売上確定を呼ばれた回数（失敗と重複を含む）
+     * 売上確定を呼ばれた回数
+     *
+     * <p>失敗と重複を含む。
      */
     private final AtomicInteger captureCalls = new AtomicInteger();
 
@@ -106,7 +122,9 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger captureResponseLosses = new AtomicInteger();
 
     /**
-     * 返金した注文 ID（返金した順）
+     * 返金した注文 ID
+     *
+     * <p>返金した順。
      */
     private final List<UUID> refunded = new CopyOnWriteArrayList<>();
 
@@ -116,12 +134,16 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger refundFailures = new AtomicInteger();
 
     /**
-     * 返金と与信の取消を呼ばれた時点で行う処理（呼ばれた時点の状態を記録するテスト用）。なければ null
+     * 返金と与信の取消を呼ばれた時点で行う処理
+     *
+     * <p>呼ばれた時点の状態を記録するテスト用。なければ null。
      */
     private final AtomicReference<Runnable> onRefundOrVoid = new AtomicReference<>();
 
     /**
-     * 与信の取得を呼ばれた時点で行う処理（呼ばれた時点の状態を記録するテスト用）。なければ null
+     * 与信の取得を呼ばれた時点で行う処理
+     *
+     * <p>呼ばれた時点の状態を記録するテスト用。なければ null。
      */
     private final AtomicReference<Runnable> onFetchAuthorization = new AtomicReference<>();
 

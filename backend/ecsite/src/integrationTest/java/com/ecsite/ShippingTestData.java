@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 出荷の統合テストの補助
+ * 出荷のテストデータ
  *
  * <p>B 側の API で出荷を登録し、mock の物流サービスから配送状態の通知を送る。注文は、呼ぶ側が先に用意する。
  */

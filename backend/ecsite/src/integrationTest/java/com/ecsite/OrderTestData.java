@@ -27,7 +27,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 統合テストで、C 側の API でカートに入れて注文し、mock の決済サービスで支払う補助（キャンセル・B 側の注文・支払のテストで使う）。<br />
+ * 注文のテストデータ
+ *
+ * <p>統合テストで、C 側の API でカートに入れて注文し、mock の決済サービスで支払う。
  * 既定の会員（{@link TestSecurityConfig}）として、会員のカートで注文する。
  * 商品と在庫は、呼ぶ側が先に用意する。
  */
@@ -44,17 +46,23 @@ public class OrderTestData {
     private final TestPaymentGateway gateway;
 
     /**
-     * Spring のコンテキスト（注文の支払の結果を反映するために使う）
+     * Spring のコンテキスト
+     *
+     * <p>注文の支払の結果を反映するために使う。
      */
     private final ApplicationContext applicationContext;
 
     /**
-     * 注文 ID → 支払った支払画面 ID（支払の後は画面の URL を引けないため、覚えておく）
+     * 注文 ID → 支払った支払画面 ID
+     *
+     * <p>支払の後は画面の URL を引けないため、覚えておく。
      */
     private final Map<UUID, String> paidPageIds = new HashMap<>();
 
     /**
-     * 補助が会員として行うリクエストに付ける後処理（既定の会員なら何も付けない）
+     * 会員のリクエストの後処理
+     *
+     * <p>補助が会員として行うリクエストに付ける。既定の会員なら何も付けない。
      */
     private final RequestPostProcessor member;
 

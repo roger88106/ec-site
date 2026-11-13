@@ -7,7 +7,6 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -21,9 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -55,8 +52,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 決済サービスは mock。支払の期限は、時計を進めて期限切れのジョブを呼んで確認する。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 class OrderPaymentApiTest {
 
     /**

@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.micrometer.metrics.test.autoconfigure.AutoConfigureMetrics;
 import org.springframework.boot.micrometer.tracing.test.autoconfigure.AutoConfigureTracing;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * テストでは通常トレーシングとメトリクスが無効なので、このテストでは有効にする（送信はしない）。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
 @AutoConfigureTracing
 @AutoConfigureMetrics
 @TestPropertySource(properties = {

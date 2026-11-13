@@ -11,8 +11,11 @@ import java.nio.file.Path;
 import java.util.Map;
 
 /**
- * テストが使う、Gradle が system property で渡す置き場所の補助。契約（OpenAPI）、realm の設定、Keycloak のテーマの置き場所の取得、設計書などの任意の置き場所の取得（{@link #path(String)}）、契約の読み込みを、各テストに重複して書かないために置く。<br />
- * 単体テストと統合テストが共有する。置き場所は Gradle の設定が system property で渡す。渡されないときに既定の相対パスで読むと、Gradle の設定の誤りに気づけないので、失敗させる。
+ * テストが読むファイルの置き場所
+ *
+ * <p>Gradle が system property で渡す置き場所を読む。契約（OpenAPI）、realm の設定、Keycloak のテーマの置き場所の取得、設計書などの任意の置き場所の取得（{@link #path(String)}）、契約の読み込みを、各テストに重複して書かないために置く。
+ *
+ * <p>単体テストと統合テストが共有する。置き場所は Gradle の設定が system property で渡す。渡されないときに既定の相対パスで読むと、Gradle の設定の誤りに気づけないので、失敗させる。
  */
 public final class Contracts {
 
@@ -75,8 +78,9 @@ public final class Contracts {
     /**
      * リポジトリのルートからの相対パスで、ファイルまたはディレクトリの置き場所を返す。
      *
-     * <p>契約、realm、テーマ以外の文書などの置き場所を、テストが読むために使う。<br />
-     * system property ではリポジトリのルートだけを受け取り、相対パスは Java のソースに書く。Windows では、system property の値の日本語がシステムの文字コードに変換されて文字化けし、日本語を含む文書のパスを渡せないため。
+     * <p>契約、realm、テーマ以外の文書などの置き場所を、テストが読むために使う。
+     *
+     * <p>system property ではリポジトリのルートだけを受け取り、相対パスは Java のソースに書く。Windows では、system property の値の日本語がシステムの文字コードに変換されて文字化けし、日本語を含む文書のパスを渡せないため。
      *
      * @param relative リポジトリのルートからの相対パス（例：{@code docs/02-設計/overview.md}）
      * @return system property {@code repo.root} の値に、相対パスをつないだ置き場所

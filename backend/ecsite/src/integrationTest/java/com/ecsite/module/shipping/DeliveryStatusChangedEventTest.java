@@ -3,7 +3,6 @@ package com.ecsite.module.shipping;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -14,8 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,8 +32,6 @@ import static org.assertj.core.api.Assertions.tuple;
  * テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @RecordApplicationEvents
 @Transactional
 class DeliveryStatusChangedEventTest {

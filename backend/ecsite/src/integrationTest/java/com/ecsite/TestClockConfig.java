@@ -8,8 +8,11 @@ import java.time.Clock;
 import java.time.Instant;
 
 /**
- * アプリの時計を、テストから時刻を決められる時計に差し替える。<br />
- * 時刻に依存するテストで {@code @Import(TestClockConfig.class)} し、{@link MutableClock} を注入して時刻を決める。
+ * テストの時計の設定
+ *
+ * <p>アプリの時計を、テストから時刻を決められる時計に差し替える。
+ * {@link IntegrationTest} が取り込む。時刻に依存するテストは、{@link MutableClock} を注入し、{@code @BeforeEach} で時刻を決める。
+ * 時計は同じコンテキストのテストで共有するので、決めないと前のテストの時刻が残る。
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestClockConfig {

@@ -8,7 +8,6 @@ import com.ecsite.LockWaits;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestClockConfig;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -18,8 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -55,8 +52,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * 税区分の名称は一意なので、ほかのテストと重ならない名前にする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 class PlaceOrderConcurrencyTest {
 
     /**

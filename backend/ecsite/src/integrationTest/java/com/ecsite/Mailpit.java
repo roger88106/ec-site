@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 統合テストのメールの受け手（Mailpit のコンテナ）。docker/compose.yaml と同じイメージを使う。<br />
+ * 統合テストのメールの受け手
+ *
+ * <p>Mailpit のコンテナ。docker/compose.yaml と同じイメージを使う。
  * SMTP で受けたメールを、Mailpit の API で読む。テストは宛先を毎回変えて、他のテストのメールと混ぜない。
  */
 public class Mailpit implements AutoCloseable {

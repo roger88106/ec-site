@@ -3,15 +3,12 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,8 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 税区分（標準 10%、軽減 8%、有効な税率のない税区分）は、テストごとに税区分 API で作る。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class ProductApiTest {
 

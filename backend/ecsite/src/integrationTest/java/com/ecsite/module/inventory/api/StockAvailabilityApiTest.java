@@ -2,6 +2,7 @@ package com.ecsite.module.inventory.api;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.MutableClock;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,9 @@ class StockAvailabilityApiTest {
     @Autowired
     StockReservationApi reservationApi;
 
+    @Autowired
+    MutableClock clock;
+
     /**
      * 在庫を作る補助
      */
@@ -47,6 +51,7 @@ class StockAvailabilityApiTest {
 
     @BeforeEach
     void setUp() {
+        clock.setInstant(NOW);
         inventory = new InventoryTestData(stockItemRepository, NOW);
     }
 
@@ -76,8 +81,7 @@ class StockAvailabilityApiTest {
         var partlyReserved = UUID.randomUUID();
         inventory.stock(reserved, productId, 1);
         inventory.stock(partlyReserved, productId, 2);
-        // 期限は実際の時計より十分先にする
-        var expiresAt = Instant.now().plus(Duration.ofHours(1));
+        var expiresAt = NOW.plus(Duration.ofHours(1));
         reservationApi.reserve(UUID.randomUUID(), Map.of(reserved, 1, partlyReserved, 1), expiresAt);
 
         var availability = api.availabilityOf(List.of(reserved, partlyReserved));

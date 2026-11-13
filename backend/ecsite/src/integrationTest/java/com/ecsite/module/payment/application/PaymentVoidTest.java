@@ -4,7 +4,6 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
@@ -18,8 +17,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
-import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -41,7 +38,6 @@ import static org.awaitility.Awaitility.await;
  * <p>取消はコミットの後に非同期で行われるので、結果を待つ。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class PaymentVoidTest {
 
     /**
@@ -58,8 +54,6 @@ class PaymentVoidTest {
     @Autowired
     TestPaymentGateway gateway;
 
-    @Autowired
-    IncompleteEventPublications incompletePublications;
 
     @Autowired
     MutableClock clock;
@@ -124,9 +118,9 @@ class PaymentVoidTest {
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOID_PENDING);
         assertThat(gateway.voided()).doesNotContain(authorizationRef);
 
-        // 再発行のジョブ（発行から 5 分より前のもの）と同じ
+        // 再発行のジョブ（発行から 5 分より前のもの）と同じく、このテストのイベントを再発行する
         clock.advance(Duration.ofMinutes(6));
-        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        asyncEvents.resubmit(PaymentRequests.of(dsl, orderId));
 
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.VOIDED);
         assertThat(gateway.voided()).containsOnlyOnce(authorizationRef);

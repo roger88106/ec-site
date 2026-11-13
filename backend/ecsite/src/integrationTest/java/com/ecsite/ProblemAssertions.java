@@ -9,12 +9,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 /**
- * エラーレスポンス（Problem Details）の形を検証する補助。
+ * エラーレスポンスの確認の補助
+ *
+ * <p>エラーレスポンス（Problem Details）の形を検証する。
  */
 public final class ProblemAssertions {
 
     /**
-     * 補助の関数だけを持つので、作らせない。
+     * インスタンスを作らない。
      */
     private ProblemAssertions() {
     }

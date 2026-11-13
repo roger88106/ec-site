@@ -3,7 +3,6 @@ package com.ecsite.module.reporting.application;
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.api.ReportCatalogApi;
 import com.ecsite.module.order.api.OrderReportApi;
@@ -22,8 +21,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Import;
-import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -53,7 +50,6 @@ import static org.mockito.Mockito.when;
  * 注文の今の写しをテストで決める。受けるのはコミットの後で非同期なので、結果を待つ。注文 ID はテストごとに変える。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class ReportCollectionTest {
 
     /**
@@ -67,8 +63,6 @@ class ReportCollectionTest {
     @Autowired
     TransactionTemplate transaction;
 
-    @Autowired
-    IncompleteEventPublications incompletePublications;
 
     @Autowired
     MutableClock clock;
@@ -248,9 +242,9 @@ class ReportCollectionTest {
         assertThat(order()).isEmpty();
         assertThat(history()).isEmpty();
 
-        // 再発行のジョブ（発行から 5 分より前のもの）と同じ
+        // 再発行のジョブ（発行から 5 分より前のもの）と同じく、このテストのイベントを再発行する
         clock.advance(Duration.ofMinutes(6));
-        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        asyncEvents.resubmit(event::equals);
 
         awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
         assertThat(history()).hasSize(1);

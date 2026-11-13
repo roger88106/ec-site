@@ -19,7 +19,9 @@ public class TestCarrierTracking implements CarrierTracking {
     private final MockCarrierTracking mock;
 
     /**
-     * 追跡を始めた送り状番号（始めた順）
+     * 追跡を始めた送り状番号
+     *
+     * <p>始めた順。
      */
     private final List<Started> started = new CopyOnWriteArrayList<>();
 

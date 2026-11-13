@@ -3,7 +3,6 @@ package com.ecsite.module.payment.application.job;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.PaymentCommandService;
@@ -23,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -44,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確認する。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 @RecordApplicationEvents
 class PaymentExpiryJobTest {
 

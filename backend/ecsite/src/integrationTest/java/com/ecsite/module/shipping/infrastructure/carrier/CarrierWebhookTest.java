@@ -3,7 +3,6 @@ package com.ecsite.module.shipping.infrastructure.carrier;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
@@ -15,8 +14,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -43,8 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 class CarrierWebhookTest {
 
     /**

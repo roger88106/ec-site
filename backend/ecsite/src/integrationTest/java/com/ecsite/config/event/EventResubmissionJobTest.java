@@ -4,7 +4,6 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +19,6 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.events.config.StalenessProperties;
@@ -50,7 +48,6 @@ import static org.awaitility.Awaitility.await;
  * イベントはコミット後に非同期で処理されるので、処理を待つ。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 @ExtendWith(OutputCaptureExtension.class)
 class EventResubmissionJobTest {
 

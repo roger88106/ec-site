@@ -3,14 +3,11 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.media.infrastructure.converter.ImgproxyProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -39,10 +37,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * ファイル保存（S3）は、本物のクライアントを包み、接続できない失敗を起こす。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class ProductImageServiceErrorApiTest {
+
+    /**
+     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     */
+    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired
     MockMvc mockMvc;
@@ -82,6 +83,7 @@ class ProductImageServiceErrorApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        clock.setInstant(NOW);
         var data = new CatalogTestData(mockMvc, clock);
         product = data.product(data.taxCategory("画像のサービス " + UUID.randomUUID(), "10"), "T シャツ", 1000);
     }

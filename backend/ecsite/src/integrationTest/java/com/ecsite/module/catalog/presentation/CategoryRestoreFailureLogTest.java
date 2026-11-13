@@ -4,23 +4,22 @@ import com.ecsite.CapturedLogs;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.module.catalog.domain.category.Category;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,11 +36,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * DB の値を直接壊す方法は、カテゴリの表の制約が集約の検証と同じ範囲を守るので使えず、メッセージに任意の値を入れることもできない。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 @ExtendWith(OutputCaptureExtension.class)
 class CategoryRestoreFailureLogTest {
+
+    /**
+     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     */
+    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
      * API を呼ぶ MockMvc
@@ -60,6 +62,11 @@ class CategoryRestoreFailureLogTest {
      */
     @MockitoSpyBean
     CategoryFactory categoryFactory;
+
+    @BeforeEach
+    void setUp() {
+        clock.setInstant(NOW);
+    }
 
     @Test
     @DisplayName("復元に失敗したリクエストは 500 の共通のシステムエラーを返し、ログには集約の名前と原因の例外の種類が出て、原因の例外のメッセージの値は出ない")

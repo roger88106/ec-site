@@ -3,7 +3,6 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.TestImages;
 import com.ecsite.TestJson;
 import com.ecsite.TestcontainersConfig;
@@ -13,8 +12,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -53,8 +50,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、作ったデータも消さない（ほかのテストは、一覧の全体ではなく自分のデータだけを確認する）。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 class ProductImageApiTest {
 
     /**

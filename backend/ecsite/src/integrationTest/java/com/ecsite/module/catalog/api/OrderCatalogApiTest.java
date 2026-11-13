@@ -3,7 +3,6 @@ package com.ecsite.module.catalog.api;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.api.model.OrderableVariant;
 import com.ecsite.module.catalog.api.model.OrderableVariant.AxisValue;
@@ -11,8 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>商品は B 側の API で作る。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class OrderCatalogApiTest {
 

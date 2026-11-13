@@ -4,7 +4,6 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.Mailpit;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.order.event.OrderShipped;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,8 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Import;
-import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -36,7 +33,6 @@ import static org.mockito.Mockito.verify;
  * 送信はコミットの後に非同期で行われるので、結果を待つ。宛先をテストごとに変えて、他のテストのメールと混ぜない。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 class ShipmentMailTest {
 
     @Autowired
@@ -45,8 +41,6 @@ class ShipmentMailTest {
     @Autowired
     TransactionTemplate transaction;
 
-    @Autowired
-    IncompleteEventPublications incompletePublications;
 
     @Autowired
     Mailpit mailpit;
@@ -85,14 +79,15 @@ class ShipmentMailTest {
     void retriesFailedSend() {
         doThrow(new IllegalStateException("SMTP に接続できない")).doCallRealMethod().when(mailer).send(any());
 
-        publish(shipped());
+        var event = shipped();
+        publish(event);
 
         verify(mailer, timeout(TIMEOUT.toMillis())).send(any());
         assertThat(mailpit.messagesTo(email)).isEmpty();
 
-        // 再発行のジョブ（発行から 5 分より前のもの）と同じ
+        // 再発行のジョブ（発行から 5 分より前のもの）と同じく、このテストのイベントを再発行する
         clock.advance(Duration.ofMinutes(6));
-        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        asyncEvents.resubmit(event::equals);
 
         await().atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).size() == 1);
     }

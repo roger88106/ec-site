@@ -2,6 +2,7 @@ package com.ecsite;
 
 import com.ecsite.config.security.ErrorCodeCheckConfig;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -15,6 +16,8 @@ import java.lang.annotation.Target;
  * 統合テストの共通設定
  *
  * <p>Spring コンテキストを起動し、Testcontainers の PostgreSQL に Flyway のマイグレーションを適用する。
+ * API は MockMvc で呼ぶ。
+ * アプリの時計は、テストから時刻を決められる時計に差し替える（{@link TestClockConfig}）。
  * 認証は、IdP を起動せずにテストの鍵で確認する（{@link TestTokens}）。
  * 非同期の処理を待つ補助（{@link AsyncEvents}）を登録する。
  * 決済の mock は、テスト用の操作を追加した実装で包む（{@link TestPaymentGatewayConfig}）。
@@ -25,8 +28,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @SpringBootTest
-@Import({TestcontainersConfig.class, TestSecurityConfig.class, AsyncEvents.class, TestPaymentGatewayConfig.class,
-        TestCarrierTrackingConfig.class, ErrorCodeCheckConfig.class})
+@AutoConfigureMockMvc
+@Import({TestcontainersConfig.class, TestSecurityConfig.class, TestClockConfig.class, AsyncEvents.class,
+        TestPaymentGatewayConfig.class, TestCarrierTrackingConfig.class, ErrorCodeCheckConfig.class})
 @ActiveProfiles("integration-test")
 public @interface IntegrationTest {
 }

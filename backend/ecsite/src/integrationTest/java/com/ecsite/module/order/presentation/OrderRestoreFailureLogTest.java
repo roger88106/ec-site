@@ -7,7 +7,6 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
@@ -18,9 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,8 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>列挙の列は制約が壊れた値を入れさせないので、制約のない明細の軸の値（jsonb）を壊す。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 @ExtendWith(OutputCaptureExtension.class)
 class OrderRestoreFailureLogTest {

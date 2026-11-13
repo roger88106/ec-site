@@ -3,7 +3,6 @@ package com.ecsite.module.payment.api;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.event.PaymentAuthorized;
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
@@ -32,7 +30,6 @@ import static org.assertj.core.api.Assertions.tuple;
  * <p>決済サービスは mock。支払はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest
-@Import(TestClockConfig.class)
 @RecordApplicationEvents
 class PaymentApiTest {
 

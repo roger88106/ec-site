@@ -1,12 +1,14 @@
 package com.ecsite;
 
 /**
- * ドメインの定数をテストから読む補助。package-private の定数を読むため、反射を使う。
+ * ドメインの定数の読み取り
+ *
+ * <p>ドメインの定数をテストから読む。package-private の定数を読むため、反射を使う。
  */
 public final class DomainConstants {
 
     /**
-     * 補助の関数だけを持つので、作らせない。
+     * インスタンスを作らない。
      */
     private DomainConstants() {
     }

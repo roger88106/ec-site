@@ -3,7 +3,6 @@ package com.ecsite.module.reporting.application;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.ReportTestData;
@@ -16,8 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +32,6 @@ import static org.assertj.core.api.Assertions.tuple;
  * <p>商品とバリアントは商品カタログの API で作り、写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class VariantSalesQueryTest {
 

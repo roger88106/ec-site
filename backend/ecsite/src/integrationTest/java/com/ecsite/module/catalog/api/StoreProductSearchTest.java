@@ -3,7 +3,6 @@ package com.ecsite.module.catalog.api;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.api.model.StoreProductSummary;
@@ -12,9 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>商品は B 側の API で作って公開する。公開するごとに時計を 1 分進める（並びは新着順で固定）。テストごとにロールバックする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class StoreProductSearchTest {
 

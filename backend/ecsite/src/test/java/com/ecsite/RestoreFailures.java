@@ -20,13 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
- * DB の値を戻すときの失敗の単体テストの補助。<br />
+ * 復元の失敗のテストの補助
+ *
+ * <p>DB の値を戻すときの失敗の単体テストで使う。
  * 列の制約が壊れた値を入れさせないので、Repository に、表ごとの行を返す jOOQ の mock を渡して失敗させる。
  */
 public final class RestoreFailures {
 
     /**
-     * 行を作る jOOQ の文脈（DB に接続しない）
+     * 行を作る jOOQ の文脈
+     *
+     * <p>DB に接続しない。
      */
     public static final DSLContext RECORDS = DSL.using(SQLDialect.POSTGRES);
 

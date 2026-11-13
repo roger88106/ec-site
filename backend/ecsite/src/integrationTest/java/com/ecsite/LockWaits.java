@@ -9,11 +9,16 @@ import java.util.UUID;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 別のセッションがロックを待ち始めるのを待つ補助。同時の処理のテストで、待ちが現れたことを確認してから次に進むために使う。<br />
+ * ロックの待ちの確認
+ *
+ * <p>別のセッションがロックを待ち始めるのを待つ。同時の処理のテストで、待ちが現れたことを確認してから次に進むために使う。
  * 決まった時間だけ待つ代わりに、PostgreSQL のロックの状態（pg_locks）を見る。
  */
 public final class LockWaits {
 
+    /**
+     * インスタンスを作らない。
+     */
     private LockWaits() {
     }
 

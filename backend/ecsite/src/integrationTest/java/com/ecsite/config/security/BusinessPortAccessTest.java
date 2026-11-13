@@ -5,7 +5,6 @@ import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,7 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 既定で拒み、決めた口（通知の口、mock の口、運用の口）だけを許す。統合テストの設定は mock フラグを立てている。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
 class BusinessPortAccessTest {
 
     @Autowired

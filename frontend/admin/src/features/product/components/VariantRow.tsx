@@ -8,7 +8,11 @@ import { OptionSelect } from '@/components/OptionSelect'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { StockLink } from '@/features/product/components/StockLink'
 
-/** バリアントの 1 行の操作。送る値（商品のバージョンなど）は一覧の側で決める */
+/**
+ * バリアントの 1 行の操作
+ *
+ * 送る値（商品のバージョンなど）は一覧の側で決める。
+ */
 export type VariantRowActions = {
   moveUp: () => void
   moveDown: () => void
@@ -20,15 +24,9 @@ export type VariantRowActions = {
 }
 
 /**
- * バリアントの一覧の 1 行。画像の選択、販売の停止・再開、並べ替え、削除。
+ * バリアントの一覧の 1 行
  *
- * @param productId    商品の ID（在庫の画面へのリンク）
- * @param axes         商品のバリアント軸（軸の値の列）
- * @param imageOptions 選べる画像（代表画像と、商品の画像）
- * @param first        先頭の行（上へ移せない）
- * @param last         最後の行（下へ移せない）
- * @param deletable    削除できる（C 側に表示されたことのない商品）
- * @param pending      ほかの操作を待っている
+ * 画像の選択、販売の停止・再開、並べ替え、削除ができる。
  */
 export function VariantRow({
   productId,
@@ -41,13 +39,20 @@ export function VariantRow({
   pending,
   actions,
 }: {
+  /** 商品の ID（在庫の画面へのリンク） */
   productId: string
   variant: Variant
+  /** 商品のバリアント軸（軸の値の列） */
   axes: string[]
+  /** 選べる画像（代表画像と、商品の画像） */
   imageOptions: { value: string | null; label: string }[]
+  /** 先頭の行（上へ移せない） */
   first: boolean
+  /** 最後の行（下へ移せない） */
   last: boolean
+  /** 削除できる（C 側に表示されたことのない商品） */
   deletable: boolean
+  /** ほかの操作を待っている */
   pending: boolean
   actions: VariantRowActions
 }) {

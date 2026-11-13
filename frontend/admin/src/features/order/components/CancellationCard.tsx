@@ -12,7 +12,9 @@ const TRIGGERS = {
 } as const satisfies Record<CancellationKind, string>
 
 /**
- * キャンセルの申請と、キャンセルの内容。どちらもなければ「ありません」と出す。
+ * キャンセルの申請と内容
+ *
+ * どちらもなければ「ありません」と出す。
  */
 export function CancellationCard({
   request,

@@ -1,3 +1,4 @@
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { formatYen } from '@ec-site/shared/lib/format'
 import { shipmentStatusLabel } from '@ec-site/shared/lib/orderLabels'
 import { keepPreviousData } from '@tanstack/react-query'
@@ -6,7 +7,6 @@ import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
 import { DateTime } from '@/components/DateTime'
-import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -17,7 +17,9 @@ import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBad
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
 
 /**
- * 注文一覧。注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。<br />
+ * 注文一覧
+ *
+ * 注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  */
 export function OrderListPage() {
@@ -45,7 +47,7 @@ export function OrderListPage() {
     // ページを移る間、前のページを表示したままにする
     { placeholderData: keepPreviousData },
   )
-  /** 絞り込みを URL に反映する（URL が絞り込みの正本） */
+  /** 絞り込みを URL に反映する（URL が絞り込みの正本）。 */
   const apply = (next: OrderFilter) => setSearchParams(toSearchParams(next))
 
   return (

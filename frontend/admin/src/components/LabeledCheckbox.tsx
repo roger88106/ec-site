@@ -2,11 +2,9 @@ import type { ReactNode } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 
 /**
- * ラベル付きのチェックボックス。ラベルを押しても切り替わる。
+ * ラベル付きのチェックボックス
  *
- * @param checked         選んでいるか
- * @param onCheckedChange 切り替えたとき
- * @param children        ラベル
+ * ラベルを押しても切り替わる。
  */
 export function LabeledCheckbox({
   checked,

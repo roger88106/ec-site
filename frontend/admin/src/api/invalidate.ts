@@ -4,8 +4,11 @@ import { useQueryClient } from '@tanstack/react-query'
 export type ApiPathPrefix = '/tax-categories' | '/categories' | '/products' | '/inventory' | '/orders'
 
 /**
- * 指定したパスで始まる取得を、すべて取り直す関数を返す。<br />
+ * 指定したパスで始まる取得を、すべて取り直す関数を返す。
+ *
  * openapi-react-query のキャッシュのキーは [メソッド, パス, 引数] なので、パスの前方一致で選ぶ。
+ *
+ * @returns パスの前方一致を渡すと、該当する取得を取り直す関数
  */
 export function useInvalidate() {
   const queryClient = useQueryClient()

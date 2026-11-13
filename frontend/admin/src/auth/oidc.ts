@@ -1,7 +1,8 @@
 import { InMemoryWebStorage, type UserManagerSettings, WebStorageStateStore } from 'oidc-client-ts'
 
 /**
- * IdP（運営者の realm）の設定（管理画面の構成の「ログイン」）。<br />
+ * IdP（運営者の realm）の設定（管理画面の構成の「ログイン」）。
+ *
  * 接続先は環境変数 VITE_OIDC_AUTHORITY・VITE_OIDC_CLIENT_ID。既定はローカルの Keycloak。
  * token はメモリーにだけ持つ（userStore）。IdP へ移る間の state と PKCE の値は、sessionStorage に置く（既定は localStorage）。
  */

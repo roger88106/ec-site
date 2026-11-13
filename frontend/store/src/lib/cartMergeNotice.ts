@@ -57,7 +57,8 @@ export function serializeCartMergeNotice(notice: CartMergeNotice): string {
 /**
  * Cookie の値を知らせにする。
  *
- * @returns Cookie がない・形の違う値なら null
+ * @param value Cookie の値
+ * @returns 知らせ。Cookie がない・形の違う値なら null
  */
 export function parseCartMergeNotice(value: string | undefined): CartMergeNotice | null {
   if (value === undefined) {
@@ -70,8 +71,6 @@ export function parseCartMergeNotice(value: string | undefined): CartMergeNotice
     return null
   }
 }
-
-// ============================== プライベート ==============================
 
 /** 品目の名前（「商品名（軸：値）」） */
 function itemLabel(item: SourceItem): string {

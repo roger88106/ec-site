@@ -5,7 +5,8 @@ import { type DefaultValues, type FieldValues, type UseFormReturn, useForm } fro
 type Versioned = { version: number }
 
 /**
- * 同時に編集されうるリソースのフォーム（管理画面の構成の「フォーム」）。<br />
+ * 同時に編集されうるリソースのフォームを作る（管理画面の構成の「フォーム」）。
+ *
  * 送るバージョン（{@link baseVersion}）は、フォームを作ったときのリソースのもの。
  * <ul>
  *   <li>入力を変える前にリソースが変わったら（自分の別の操作など）、フォームを最新の値で再作成する。</li>
@@ -16,7 +17,8 @@ type Versioned = { version: number }
  *
  * @param resource 取得したリソース
  * @param toValues リソースからフォームの値を作る
- * @param refetch リソースを取得し直す
+ * @param refetch  リソースを取得し直す
+ * @returns フォームと、送るバージョン、保存の後と 409 の後に呼ぶ関数
  */
 export function useVersionedForm<R extends Versioned, T extends FieldValues>(
   resource: R,

@@ -4,7 +4,8 @@ import { type ActionResult, connectionFailedMessage } from '@/lib/actionResult'
 import { log } from '@/lib/server/log'
 
 /**
- * サーバーアクションの処理を包み、例外を結果にする（フロントの書き方の「店舗画面のサーバーアクション」）。<br />
+ * サーバーアクションの処理を包み、例外を結果にする（フロントの書き方の「店舗画面のサーバーアクション」）。
+ *
  * 画面の移動（`redirect`）と not found は例外で知らせるので、そのまま通す。それ以外の例外（接続の失敗など）は、
  * 操作した部品の近くに出せるよう、接続できなかったことを示す失敗の結果にし、error のログに出す。
  *
@@ -33,7 +34,9 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
 }
 
 /**
- * 読むだけの処理を包み、例外なら代わりの値を返す。例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
+ * 読むだけの処理を包み、例外なら代わりの値を返す。
+ *
+ * 例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
  *
  * @param work 処理
  * @param fallback 例外で失敗したときに返す値

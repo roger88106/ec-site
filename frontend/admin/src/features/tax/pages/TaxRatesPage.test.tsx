@@ -17,8 +17,14 @@ const RATE_ID = taxCategory().rates[0].id
 const PAGE_PATH = `/tax-categories/${TAX_CATEGORY_ID}`
 
 /**
- * 税区分の取得と税率の置き換えに応答する。置き換えのリクエストは requests に取っておく。<br />
+ * 税区分の取得と税率の置き換えに応答する。
+ *
+ * 置き換えのリクエストは requests に取っておく。
  * 置き換えの応答は reply で決める。省略すると成功（204）にし、取得の結果も送った一覧に変える。
+ *
+ * @param initial 税区分の初期値
+ * @param reply   置き換えの応答を決める関数
+ * @returns 現在の税区分と置き換えのリクエストの記録
  */
 function serveTaxCategory(
   initial: TaxCategory,
@@ -51,7 +57,14 @@ function serveTaxCategory(
   return state
 }
 
-/** n 行目（0 始まり）の入力欄。行の名前で行を探し、その中で入力欄を探す */
+/**
+ * n 行目の入力欄を返す。
+ *
+ * 行の名前で行を探し、その中で入力欄を探す。
+ *
+ * @param index 行の位置（0 始まり）
+ * @returns 率・適用開始・適用終了の入力欄
+ */
 function rowInputs(index: number) {
   const row = within(getRow(`${index + 1} 行目の税率`))
   return {
@@ -114,7 +127,7 @@ describe('税率の一覧の編集', () => {
   })
 
   describe('入力中に他の人が更新したとき', () => {
-    /** 率を 9 に入力した後で、他の人が 8% に変えたのを、画面が取得し直した状態にする */
+    /** 率を 9 に入力した後で、他の人が 8% に変えたのを、画面が取得し直した状態にする。 */
     async function editThenRefetch() {
       const state = serveTaxCategory(taxCategory(), (body, response) =>
         body.version === state.current.version ? undefined : conflict(response),
@@ -133,7 +146,7 @@ describe('税率の一覧の編集', () => {
       return { state, user }
     }
 
-    /** 保存して 409 の表示を出し、その表示を返す */
+    /** 保存して 409 の表示を出し、その表示を返す。 */
     async function saveToConflict(user: Awaited<ReturnType<typeof editThenRefetch>>['user']) {
       await user.click(screen.getByRole('button', { name: '保存' }))
       return screen.findByRole('alert')

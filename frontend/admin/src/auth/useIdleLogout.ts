@@ -12,7 +12,11 @@ import {
   writeLastActivity,
 } from '@/auth/idle'
 
-/** 操作のたびに共有の時刻を書く最短の間隔（ミリ秒）。キーの入力のたびにローカルストレージへ書かないため */
+/**
+ * 操作のたびに共有の時刻を書く最短の間隔（ミリ秒）
+ *
+ * キーの入力のたびにローカルストレージへ書かないため。
+ */
 const SHARE_INTERVAL_MS = 1000
 
 /** スリープなどでタイマーが止まった後に、window で受けて判定し直すイベント（前面に戻った、ページが表示された） */
@@ -24,12 +28,13 @@ type IdleLogoutState = {
   warning: boolean
   /** ログアウトする時刻（ミリ秒）。最後に判定したときの値で、警告の間は正しい */
   logoutAt: number
-  /** 警告を閉じ、30 分の計測を最初から始める（「操作を続ける」） */
+  /** 警告を閉じ、無操作の計測を最初から始める（「操作を続ける」） */
   keepWorking: () => void
 }
 
 /**
- * 無操作が続いたら onExpire を 1 回だけ呼ぶ。警告の状態を返す。<br />
+ * 無操作が続いたら onExpire を 1 回だけ呼び、警告の状態を返す。
+ *
  * 最後に操作した時刻をローカルストレージでタブの間に共有し、現在の時刻との比較で判定する。
  * 判定は、次に状態が変わる時刻のタイマー、短い間隔の繰り返し、タブが再び見えた・前面に戻ったときに行う。
  *
@@ -55,14 +60,27 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
     let expired = false
     let timer: ReturnType<typeof setTimeout> | undefined
 
-    /** 他のタブの操作の時刻を取り込む。今の値より古ければ戻さない。未来の時刻は、判定のときに現在の時刻にする */
+    /**
+     * 他のタブの操作の時刻を取り込む。
+     *
+     * 今の値より古ければ戻さない。未来の時刻は、判定のときに現在の時刻にする。
+     *
+     * @param at 他のタブの操作の時刻（ミリ秒）。null なら何もしない
+     */
     const adopt = (at: number | null) => {
       if (at !== null) {
         lastActivityAt = Math.max(lastActivityAt, at)
       }
     }
 
-    /** 自分のタブの操作の時刻を共有する。force でなければ、間隔が短いときは書かない */
+    /**
+     * 自分のタブの操作の時刻を共有する。
+     *
+     * force でなければ、間隔が短いときは書かない。
+     *
+     * @param at    自分のタブの操作の時刻（ミリ秒）
+     * @param force 間隔にかかわらず書くか
+     */
     const share = (at: number, force: boolean) => {
       if (force || at - sharedAt >= SHARE_INTERVAL_MS) {
         writeLastActivity(at)
@@ -70,7 +88,7 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
       }
     }
 
-    /** 共有した時刻を取り込んで判定し、次に状態が変わる時刻にタイマーを置く */
+    /** 共有した時刻を取り込んで判定し、次に状態が変わる時刻にタイマーを置く。 */
     const evaluate = () => {
       if (expired) {
         return
@@ -97,7 +115,13 @@ export function useIdleLogout({ onExpire }: { onExpire: () => void }): IdleLogou
       timer = setTimeout(evaluate, nextAt - now)
     }
 
-    /** 操作を記録する。警告の間なら閉じる */
+    /**
+     * 操作を記録する。
+     *
+     * 警告の間なら閉じる。
+     *
+     * @param force 共有の時刻を、間隔を待たずに書き、判定し直すか
+     */
     const record = (force: boolean) => {
       if (expired) {
         return

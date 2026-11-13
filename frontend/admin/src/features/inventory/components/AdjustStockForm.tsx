@@ -12,8 +12,8 @@ import { OptionSelect } from '@/components/OptionSelect'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
+import { formatDelta } from '@/features/inventory/delta'
 import { stockAdjustmentReasonLabel } from '@/features/inventory/labels'
-import { formatDelta } from '@/lib/delta'
 
 /** 入力欄の値（増減量は入力中の文字列のまま持ち、送るときに数にする） */
 type Values = { delta: string; reason: ManualStockAdjustmentReason | null; memo: string }
@@ -25,7 +25,9 @@ const EMPTY: Values = { delta: '', reason: null, memo: '' }
 const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
 
 /**
- * 在庫の調整。増減量と理由で調整し、在庫数を直接上書きする欄は作らない。<br />
+ * 在庫の調整
+ *
+ * 増減量と理由で調整し、在庫数を直接上書きする欄は作らない。
  * 負になる調整や、「その他」でメモがない調整の拒否は、サーバーのエラーを表示する。
  */
 export function AdjustStockForm({ variantId }: { variantId: string }) {

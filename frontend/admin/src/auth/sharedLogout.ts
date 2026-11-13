@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { clearLastActivity, readStoredTime, writeStoredTime } from '@/auth/idle'
 
-/** ログアウトの印（ログアウトした時刻のミリ秒の数値）を書くローカルストレージのキー。タブの間で共有する */
+/**
+ * ログアウトの印（ログアウトした時刻のミリ秒の数値）を書くローカルストレージのキー
+ *
+ * タブの間で共有する。
+ */
 export const LOGOUT_KEY = 'ec-admin.loggedOutAt'
 
 /**
- * 印の時刻（ブラウザーの時計）と auth_time（IdP の時計）を比べるときに許す、時計のずれ（ミリ秒）。<br />
+ * 印の時刻（ブラウザーの時計）と auth_time（IdP の時計）を比べるときに許す、時計のずれ（ミリ秒）。
+ *
  * ブラウザーの時計が進んでいると、印の後にパスワードでログインし直しても auth_time が印より古くなり、
  * ログインし直すたびにログアウトするため。
  */
@@ -20,12 +25,11 @@ type SharedLogout = {
 }
 
 /**
- * ログアウトを、同じブラウザーの他のタブに伝え、他のタブのログアウトを受ける（管理画面の構成の「ログイン」）。<br />
- * 他のタブのログアウトの印を受け取ったら、このタブも IdP のログアウトへ移る。token を捨てるだけにしないのは、
- * 他のタブが IdP のログインへ移り、残っている IdP のセッションでパスワードなしに再ログインしないため。
+ * ログアウトを、同じブラウザーの他のタブに伝え、他のタブのログアウトを受ける（管理画面の構成の「ログイン」）。
+ *
+ * 他のタブのログアウトの印を受け取ったら、このタブも IdP のログアウトへ移る。
  * 印は storage イベントで受けるほか、このタブが画面を出した時刻か、ログインの時刻（auth_time に時計のずれの幅を加える）より
  * 新しい印があるかを、ログインしたとき、ページが表示されたとき、タブが再び見えた・前面に戻ったときにも確認する。
- * 戻る・進むのキャッシュから戻ったタブや、印が書かれたときに読み込み中だったタブには、storage イベントが届かないため。
  * IdP のログアウトへ移るのは 1 回だけ。
  *
  * @param options.enabled    ログインしているときだけ true（ログインしていないタブでは、印を受けても何もしない）
@@ -52,7 +56,11 @@ export function useSharedLogout({
     signoutRef.current = signout
   }, [signout])
 
-  /** IdP のログアウトへ移る。最後に操作した時刻を削除し、無操作の判定を止める（印より後に時刻を書かないため） */
+  /**
+   * IdP のログアウトへ移る。
+   *
+   * 最後に操作した時刻を削除し、無操作の判定を止める。印より後に時刻を書かないため。
+   */
   const leave = useCallback(() => {
     if (leaving.current) {
       return
@@ -60,6 +68,7 @@ export function useSharedLogout({
     leaving.current = true
     clearLastActivity()
     setLoggingOut(true)
+    // token を捨てるだけにしないのは、他のタブが IdP のログインへ移り、残っている IdP のセッションでパスワードなしに再ログインしないため
     // 移り始めに失敗したら（IdP に届かないなど）、このタブに留まるので、ログアウトをやり直せるようにし、無操作の判定を再び動かす
     signoutRef.current().catch(() => {
       leaving.current = false
@@ -79,7 +88,7 @@ export function useSharedLogout({
       return
     }
     const enabledAt = Date.now()
-    /** このタブのログインより後に書かれた印があれば、IdP のログアウトへ移る */
+    /** このタブのログインより後に書かれた印があれば、IdP のログアウトへ移る。 */
     const check = () => {
       const at = readStoredTime(LOGOUT_KEY)
       if (at === null) {
@@ -103,6 +112,8 @@ export function useSharedLogout({
       }
     }
     window.addEventListener('storage', onStorage)
+    // 戻る・進むのキャッシュから戻ったタブや、印が書かれたときに読み込み中だったタブには、storage イベントが届かないので、
+    // ページが表示されたとき、タブが再び見えた・前面に戻ったときにも確認する
     window.addEventListener('pageshow', check)
     window.addEventListener('focus', check)
     document.addEventListener('visibilitychange', onVisibilityChange)

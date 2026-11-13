@@ -1,3 +1,4 @@
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
@@ -8,12 +9,15 @@ import type { CategoryNode } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { useMutationGroup } from '@/api/useMutationGroup'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { CategoryNameDialog } from '@/features/category/components/CategoryNameDialog'
 import { type CategoryActions, CategoryTreeList } from '@/features/category/components/CategoryTreeList'
 
-/** 開いているダイアログ。登録は親（null は最上位）、名称の変更は対象のカテゴリを持つ */
+/**
+ * 開いているダイアログ
+ *
+ * 登録は親（null は最上位）、名称の変更は対象のカテゴリを持つ。
+ */
 type DialogState = { kind: 'create'; parent: CategoryNode | null } | { kind: 'rename'; category: CategoryNode } | null
 
 /** カテゴリの木の表示、登録、名称の変更、並び替え、削除 */
@@ -85,7 +89,11 @@ function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClos
   )
 }
 
-/** カテゴリ名の変更。送るバージョンは、ダイアログを開いたときのもの */
+/**
+ * カテゴリ名の変更
+ *
+ * 送るバージョンは、ダイアログを開いたときのもの。
+ */
 function RenameDialog({ category, onClose }: { category: CategoryNode; onClose: () => void }) {
   const t = useTranslations('category.page')
   const invalidate = useInvalidate()

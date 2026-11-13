@@ -10,6 +10,7 @@ const MALFORMED_ID = 'not-a-uuid'
  * 注文手続きの画面を、指定の ID で開く。
  *
  * @param checkoutId URL の注文手続きの ID
+ * @returns 画面
  */
 function openCheckoutPage(checkoutId: string) {
   return CheckoutPage({

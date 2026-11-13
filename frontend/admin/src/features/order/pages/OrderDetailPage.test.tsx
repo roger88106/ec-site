@@ -31,11 +31,13 @@ const REQUESTED = orderDetail({
 })
 
 /**
- * 注文の詳細と操作の API に応答する。操作が成功したら、詳細は after を返す。
- * 送ったキャンセルの理由は reasons に取っておく。
+ * 注文の詳細と操作の API に応答する。
+ *
+ * 操作が成功したら、詳細は after を返す。送ったキャンセルの理由は reasons に取っておく。
  *
  * @param before 操作の前の注文
  * @param after  操作の後の注文
+ * @returns 今の注文と、送ったキャンセルの理由
  */
 function serveOrder(before: OrderDetail, after: OrderDetail = before) {
   const state = { current: before, reasons: [] as string[] }
@@ -58,12 +60,12 @@ function serveOrder(before: OrderDetail, after: OrderDetail = before) {
   return state
 }
 
-/** 状態のバッジ（見出しの下の「状態」） */
+/** 状態のバッジ（見出しの下の「状態」）を返す。 */
 async function shownStatus(label: string) {
   return within(await screen.findByRole('group', { name: '状態' })).findByText(label)
 }
 
-/** 支払の状態の欄（見出しの下の「支払」） */
+/** 支払の状態の欄（見出しの下の「支払」）を返す。 */
 async function shownPayment() {
   return findDetailValue('支払')
 }
@@ -317,12 +319,14 @@ describe('出荷', () => {
   })
 
   /**
-   * 注文の詳細と出荷の登録の API に応答する。登録が成功したら、詳細は after を返し、登録の応答は registered を返す。
-   * 送った内容は requests に取っておく。
+   * 注文の詳細と出荷の登録の API に応答する。
+   *
+   * 登録が成功したら、詳細は after を返し、登録の応答は registered を返す。送った内容は requests に取っておく。
    *
    * @param before     登録の前の注文
    * @param after      登録の後の注文
    * @param registered 登録の応答の出荷
+   * @returns 今の注文と、送った内容
    */
   function serveShipment(before: OrderDetail, after: OrderDetail = before, registered: Shipment = REGISTERED) {
     const state = { current: before, requests: [] as ShipOrderRequest[] }
@@ -337,7 +341,7 @@ describe('出荷', () => {
     return state
   }
 
-  /** 配送業者と送り状番号を入れて、確認して登録する */
+  /** 配送業者と送り状番号を入れて、確認して登録する。 */
   async function ship(user: ReturnType<typeof renderApp>['user'], carrier: string, trackingNumber: string) {
     await user.click(await screen.findByRole('combobox', { name: '配送業者' }))
     await user.click(await screen.findByRole('option', { name: carrier }))
@@ -460,7 +464,7 @@ describe('返送の注文のキャンセル', () => {
     },
   })
 
-  /** キャンセルの API に応答し、送った内容を取っておく */
+  /** キャンセルの API に応答し、送った内容を取っておく。 */
   function serveCancel() {
     const bodies: CancelOrderRequest[] = []
     server.use(
@@ -493,7 +497,11 @@ describe('返送の注文のキャンセル', () => {
     expect(bodies).toEqual([{ reason: '受取拒否', restock }])
   })
 
-  /** フラグが偽でも聞かない注文。出荷済みでも、出荷前でも */
+  /**
+   * フラグが偽でも聞かない注文
+   *
+   * 出荷済みでも、出荷前でも聞かない。
+   */
   const NO_RESTOCK_CASES = [
     [
       '出荷済みの注文でも',

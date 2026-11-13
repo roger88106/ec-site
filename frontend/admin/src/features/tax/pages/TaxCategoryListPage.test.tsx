@@ -22,8 +22,14 @@ const REDUCED = taxCategory({
 })
 
 /**
- * 税区分の一覧と登録に応答する。登録のリクエストは requests に取っておく。<br />
+ * 税区分の一覧と登録に応答する。
+ *
+ * 登録のリクエストは requests に取っておく。
  * 登録の応答は reply で決める。省略すると成功（201）にし、一覧に追加する。
+ *
+ * @param initial 一覧の初期値
+ * @param reply   登録の応答を決める関数
+ * @returns 一覧と登録のリクエストの記録
  */
 function serveTaxCategories(
   initial: TaxCategory[],

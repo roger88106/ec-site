@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { formatDelta } from '@/lib/delta'
+import { formatDelta } from '@/features/inventory/delta'
 
 describe('在庫の増減量の表示', () => {
   test('AC-42 増加は + を付け、減少は - を付ける', () => {

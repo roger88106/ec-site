@@ -1,6 +1,10 @@
 import type { ProductDetail } from '@/api/types'
 
-/** 商品の基本情報の入力（登録と編集で共通） */
+/**
+ * 商品の基本情報の入力
+ *
+ * 登録と編集で共通。
+ */
 export type ProductFieldsValues = {
   name: string
   description: string
@@ -23,7 +27,7 @@ export const EMPTY_PRODUCT_FIELDS: ProductFieldsValues = {
   categoryIds: [],
 }
 
-/** 商品の詳細から、基本情報の入力を作る */
+/** 商品の詳細から、基本情報の入力を作る。 */
 export function toProductFields(product: ProductDetail): ProductFieldsValues {
   return {
     name: product.name,
@@ -34,7 +38,14 @@ export function toProductFields(product: ProductDetail): ProductFieldsValues {
   }
 }
 
-/** 基本情報の入力を、API の本文にする。形式の検証はサーバーが行う */
+/**
+ * 基本情報の入力を、API の本文にする。
+ *
+ * 形式の検証はサーバーが行う。
+ *
+ * @param values 基本情報の入力
+ * @returns API の本文
+ */
 export function toProductBody(values: ProductFieldsValues) {
   return {
     name: values.name,
@@ -45,7 +56,7 @@ export function toProductBody(values: ProductFieldsValues) {
   }
 }
 
-/** 基本情報の入力が送れる状態か（必須の未入力だけを見る） */
+/** 基本情報の入力が送れる状態か（必須の未入力だけを見る）。 */
 export function isProductFieldsFilled(values: ProductFieldsValues): boolean {
   return values.name.trim() !== '' && values.taxCategoryId !== null && values.priceExclTax.trim() !== ''
 }

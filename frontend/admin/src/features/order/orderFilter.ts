@@ -3,7 +3,11 @@ import type { OrderStatus } from '@/api/types'
 import { isDateString } from '@/lib/date'
 import { enumParam, pageParam } from '@/lib/searchParams'
 
-/** 注文一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成の「画面の URL」） */
+/**
+ * 注文一覧の絞り込みとページ
+ *
+ * URL のクエリに持つ（管理画面の構成の「画面の URL」）。
+ */
 export type OrderFilter = {
   /** 注文番号（前方一致） */
   orderNumber: string
@@ -31,7 +35,14 @@ export const EMPTY_FILTER: OrderFilter = {
   page: 1,
 }
 
-/** URL のクエリから絞り込みを読む。不正な値は無視する */
+/**
+ * URL のクエリから絞り込みを読む。
+ *
+ * 不正な値は無視する。
+ *
+ * @param params URL のクエリ
+ * @returns 絞り込み
+ */
 export function parseFilter(params: URLSearchParams): OrderFilter {
   const status = params.get('status')
   return {
@@ -45,20 +56,41 @@ export function parseFilter(params: URLSearchParams): OrderFilter {
   }
 }
 
-/** 絞り込みを URL のクエリにする。空の条件、立っていないフラグ、1 ページ目は書かない */
+/**
+ * 絞り込みを URL のクエリにする。
+ *
+ * 空の条件、立っていないフラグ、1 ページ目は書かない。
+ *
+ * @param filter 絞り込み
+ * @returns URL のクエリ
+ */
 export function toSearchParams(filter: OrderFilter): URLSearchParams {
   const params = new URLSearchParams()
-  if (filter.orderNumber) params.set('orderNumber', filter.orderNumber)
-  if (filter.status) params.set('status', filter.status)
-  if (filter.orderedFrom) params.set('orderedFrom', filter.orderedFrom)
-  if (filter.orderedTo) params.set('orderedTo', filter.orderedTo)
-  if (filter.authorizationExpiring) params.set('authorizationExpiring', 'true')
-  if (filter.returned) params.set('returned', 'true')
-  if (filter.page > 1) params.set('page', String(filter.page))
+  if (filter.orderNumber) {
+    params.set('orderNumber', filter.orderNumber)
+  }
+  if (filter.status) {
+    params.set('status', filter.status)
+  }
+  if (filter.orderedFrom) {
+    params.set('orderedFrom', filter.orderedFrom)
+  }
+  if (filter.orderedTo) {
+    params.set('orderedTo', filter.orderedTo)
+  }
+  if (filter.authorizationExpiring) {
+    params.set('authorizationExpiring', 'true')
+  }
+  if (filter.returned) {
+    params.set('returned', 'true')
+  }
+  if (filter.page > 1) {
+    params.set('page', String(filter.page))
+  }
   return params
 }
 
-/** 日付の形なら、その値。そうでなければ空 */
+/** 日付の形ならその値、そうでなければ空にする。 */
 function date(value: string | null): string {
   return value !== null && isDateString(value) ? value : ''
 }

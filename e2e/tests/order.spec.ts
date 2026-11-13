@@ -11,7 +11,7 @@ import {
   proceedToCheckout,
   submitOrder,
 } from '../src/store'
-import { ADMIN_URL } from '../src/urls'
+import { ADMIN_URL, stockPath } from '../src/urls'
 
 test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-1 店舗画面でカートに入れ、郵便番号でお届け先を補って注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
   page,
@@ -23,7 +23,6 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-
     stock: 3,
   })
   const [variantId] = await variantIds(productId)
-  let orderUrl = ''
 
   await test.step('店舗画面：会員としてログインし、商品の詳細から 2 つカートに入れ、カートで金額の内訳を確認する', async () => {
     await loginStore(page, ACCOUNTS.member)
@@ -31,7 +30,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-
     await addToCart(page, productId, { quantity: '2' })
     await page.getByRole('link', { name: 'カートを見る' }).click()
 
-    await expect(page.getByRole('heading', { name: 'カート' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'カート', exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: productName })).toBeVisible()
     await expect(
       page
@@ -43,25 +42,27 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-
     await expect(page.getByText('10% 対象 3,200 円（内消費税 290 円）')).toBeVisible()
   })
 
-  await test.step('注文手続き：郵便番号の形の誤りは欄の下に出て入力が残り、直すと都道府県と市区町村が補われて注文でき、支払うと受付になる', async () => {
-    await proceedToCheckout(page)
-    await expect(page.getByText(/在庫を確保しています。残り/)).toBeVisible()
-    await expect(page.getByText(ACCOUNTS.member.email)).toBeVisible()
+  const orderUrl =
+    await test.step('注文手続き：郵便番号の形の誤りは欄の下に出て入力が残り、直すと都道府県と市区町村が補われて注文でき、支払うと受付になる', async () => {
+      await proceedToCheckout(page)
+      await expect(page.getByText(/在庫を確保しています。残り/)).toBeVisible()
+      await expect(page.getByText(ACCOUNTS.member.email)).toBeVisible()
 
-    await fillShipping(page, '12')
-    await placeOrderButton(page).click()
-    await expect(page.getByText('郵便番号は数字 7 桁で入力してください。')).toBeVisible()
-    await expect(page.getByLabel('氏名')).toHaveValue('E2E 太郎')
-    await expect(page.getByLabel('郵便番号')).toBeFocused()
+      await fillShipping(page, '12')
+      await placeOrderButton(page).click()
+      await expect(page.getByText('郵便番号は数字 7 桁で入力してください。')).toBeVisible()
+      await expect(page.getByLabel('氏名')).toHaveValue('E2E 太郎')
+      await expect(page.getByLabel('郵便番号')).toBeFocused()
 
-    // 直した郵便番号で都道府県と市区町村が補われ、入力済みの住所は変わらない
-    await page.getByLabel('郵便番号').fill('100-0001')
-    await expect(page.getByLabel('市区町村')).toHaveValue('13101')
-    await expect(page.getByLabel('住所')).toHaveValue('千代田 1-1')
-    await submitOrder(page)
-    orderUrl = await payOnMockPage(page)
-    await expect(page.getByText('〒100-0001 東京都千代田区千代田 1-1')).toBeVisible()
-  })
+      // 直した郵便番号で都道府県と市区町村が補われ、入力済みの住所は変わらない
+      await page.getByLabel('郵便番号').fill('100-0001')
+      await expect(page.getByLabel('市区町村')).toHaveValue('13101')
+      await expect(page.getByLabel('住所')).toHaveValue('千代田 1-1')
+      await submitOrder(page)
+      const url = await payOnMockPage(page)
+      await expect(page.getByText('〒100-0001 東京都千代田区千代田 1-1')).toBeVisible()
+      return url
+    })
 
   await test.step('注文の画面：キャンセルを申請すると「キャンセル申請中」になる', async () => {
     page.once('dialog', (dialog) => dialog.accept())
@@ -79,7 +80,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-
     await expect(page.getByText('申請を承認し、キャンセルしました')).toBeVisible()
     await expect(page.getByText('お客様の申請の承認')).toBeVisible()
 
-    await page.goto(`${ADMIN_URL}/products/${productId}/variants/${variantId}/stock`)
+    await page.goto(`${ADMIN_URL}${stockPath(productId, variantId)}`)
     await expect(page.getByRole('status', { name: '在庫数' })).toHaveText('3')
     await expect(page.getByRole('cell', { name: '注文のキャンセル' })).toBeVisible()
     await expect(page.getByRole('cell', { name: '注文', exact: true })).toBeVisible()

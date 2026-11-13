@@ -4,7 +4,11 @@ import type { Granularity, ReportBasis } from '@/api/types'
 import { isDate } from '@/features/report/period'
 import { enumParam } from '@/lib/searchParams'
 
-/** レポートの条件。URL のクエリに持つ（再読込とリンクの共有のため。管理画面の構成の「画面の URL」） */
+/**
+ * レポートの条件
+ *
+ * URL のクエリに持つ（再読込とリンクの共有のため。管理画面の構成の「画面の URL」）。
+ */
 export type ReportCondition = {
   /** 期間（日本時間の日付。両端を含む） */
   from: string
@@ -21,7 +25,15 @@ export type ReportCondition = {
   excludeShipping: boolean
 }
 
-/** URL のクエリから条件を読む。不正な値は無視し、期間は与えた既定にする */
+/**
+ * URL のクエリから条件を読む。
+ *
+ * 不正な値は無視し、期間は与えた既定にする。
+ *
+ * @param params        URL のクエリ
+ * @param defaultPeriod 既定の期間
+ * @returns レポートの条件
+ */
 export function parseCondition(params: URLSearchParams, defaultPeriod: { from: string; to: string }): ReportCondition {
   const granularity = params.get('granularity')
   const basis = params.get('basis')
@@ -39,13 +51,30 @@ export function parseCondition(params: URLSearchParams, defaultPeriod: { from: s
   }
 }
 
-/** 条件を URL のクエリにする。期間は必ず書き、既定の条件（月、注文基準、全商品、含む）は書かない */
+/**
+ * 条件を URL のクエリにする。
+ *
+ * 期間は必ず書き、既定の条件（月、注文基準、全商品、含む）は書かない。
+ *
+ * @param condition レポートの条件
+ * @returns URL のクエリ
+ */
 export function toSearchParams(condition: ReportCondition): URLSearchParams {
   const params = new URLSearchParams({ from: condition.from, to: condition.to })
-  if (condition.granularity !== 'MONTH') params.set('granularity', condition.granularity)
-  if (condition.basis !== 'ORDER') params.set('basis', condition.basis)
-  if (condition.productId) params.set('productId', condition.productId)
-  if (condition.excludeTax) params.set('excludeTax', 'true')
-  if (condition.excludeShipping) params.set('excludeShipping', 'true')
+  if (condition.granularity !== 'MONTH') {
+    params.set('granularity', condition.granularity)
+  }
+  if (condition.basis !== 'ORDER') {
+    params.set('basis', condition.basis)
+  }
+  if (condition.productId) {
+    params.set('productId', condition.productId)
+  }
+  if (condition.excludeTax) {
+    params.set('excludeTax', 'true')
+  }
+  if (condition.excludeShipping) {
+    params.set('excludeShipping', 'true')
+  }
   return params
 }

@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { expect } from 'vitest'
 
 /**
- * 役割と名前で探したボタン（押せるかどうかと、押している状態を見る。フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
+ * 役割と名前でボタンを探す（押せるかどうかと、押している状態を見る。フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
  *
  * @param name ボタンの名前
  * @returns ボタン。ボタンでなければ、テストを失敗させる
@@ -16,7 +16,7 @@ export function button(name: string): HTMLButtonElement {
 }
 
 /**
- * 見出しで探した選択欄。
+ * 見出しで選択欄を探す。
  *
  * @param label 欄の見出し
  * @returns 選択欄。選択欄でなければ、テストを失敗させる
@@ -30,7 +30,7 @@ export function select(label: string): HTMLSelectElement {
 }
 
 /**
- * 見出しで探した入力欄。
+ * 見出しで入力欄を探す。
  *
  * @param label 欄の見出し
  * @returns 入力欄。入力欄でなければ、テストを失敗させる
@@ -44,7 +44,9 @@ export function input(label: string): HTMLInputElement {
 }
 
 /**
- * 要素が、渡した順に文書の中で出ることを確認する（見える文言の順）。隣り合う要素の組ごとに、後の要素が前の要素より後にある。
+ * 要素が、渡した順に文書の中で出ることを確認する（見える文言の順）。
+ *
+ * 隣り合う要素の組ごとに、後の要素が前の要素より後にある。
  * 定数は要素から読む（テストの環境が Node のままでも使える）。
  * 例：`expectInOrder(view.getByLabelText('郵便番号'), error, view.getByLabelText('都道府県'))`
  *

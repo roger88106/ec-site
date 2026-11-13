@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 /**
- * 明細と金額の内訳。明細は注文時点の写しで、今の商品の内容ではない。
+ * 明細と金額の内訳
+ *
+ * 明細は注文時点の写しで、今の商品の内容ではない。
  */
 export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts: OrderAmounts }) {
   const t = useTranslations('order.lines')

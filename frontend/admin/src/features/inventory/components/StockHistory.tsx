@@ -7,8 +7,8 @@ import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatDelta } from '@/features/inventory/delta'
 import { stockAdjustmentReasonLabel } from '@/features/inventory/labels'
-import { formatDelta } from '@/lib/delta'
 
 /** 調整の履歴（新しい順） */
 export function StockHistory({ variantId }: { variantId: string }) {

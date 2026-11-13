@@ -11,7 +11,8 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 type Values = { name: string }
 
 /**
- * カテゴリの名称を入力するダイアログ（登録・名称の変更）。<br />
+ * カテゴリの名称を入力するダイアログ（登録・名称の変更）
+ *
  * 送信は onSubmit に任せ、成功したら閉じる。
  */
 export function CategoryNameDialog({

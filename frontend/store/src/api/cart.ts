@@ -10,14 +10,21 @@ import { log } from '@/lib/server/log'
 
 /**
  * 使うカートを選ぶ（店舗画面の構成の「使うカートの選び方」）。
+ *
  * ログインしていれば会員のカート、していなければ Cookie のカート。
+ *
+ * @returns 使うカート
  */
 export async function currentCartChoice(): Promise<CartChoice> {
   return chooseCart((await currentMember()) !== null, await readCartId())
 }
 
 /**
- * 会員のカートの ID（GET /me/cart。なければ API が作る）。401 なら、ログインの画面へ移す。
+ * 会員のカートの ID を取得する（GET /me/cart。なければ API が作る）。
+ *
+ * 401 なら、ログインの画面へ移す。
+ *
+ * @returns 会員のカートの ID
  */
 export async function memberCartId(): Promise<string> {
   const api = await getMemberApi()
@@ -36,13 +43,14 @@ export type CartMergeResult =
   | { kind: 'unauthenticated' }
 
 /**
- * Cookie のカートを会員のカートへ移す（POST /me/cart/merge）。<br />
+ * Cookie のカートを会員のカートへ移す（POST /me/cart/merge）。
+ *
  * 移す前にカートの内容を取っておき、切り詰めた品目と移せなかった品目の名前を、結果の知らせに入れる。
  * 例外は failed にする。移せなかったときは警告のログを書く。
  *
  * @param cartId  Cookie のカート ID
  * @param headers 認証のヘッダー。なければセッションの token を使う
- * @returns 移した結果。Cookie の操作は呼び出し側が行う
+ * @returns 移した結果（Cookie は変えない）
  */
 export async function mergeCart(cartId: string, headers?: Record<string, string>): Promise<CartMergeResult> {
   try {
@@ -65,7 +73,10 @@ export async function mergeCart(cartId: string, headers?: Record<string, string>
 }
 
 /**
- * ログインの直後に、Cookie のカートを会員のカートへ移す。Auth.js の signIn のイベントから呼ぶ。<br />
+ * ログインの直後に、Cookie のカートを会員のカートへ移す。
+ *
+ * Auth.js の signIn のイベントから呼ぶ。
+ *
  * 移せたときと、移すカートがないときは、Cookie のカート ID を消す（移せたときは移すカートが空になり、移すカートがないときは再試行しても結果が変わらないため）。
  * 移せたときは、切り詰めた品目と移せなかった品目の名前を、知らせの Cookie に書く。
  * 一時的な失敗とログインが切れているときは、カート ID を残し、知らせの Cookie も書かない（カートの画面を開くと、移す処理を再試行する）。

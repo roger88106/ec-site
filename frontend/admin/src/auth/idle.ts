@@ -1,26 +1,44 @@
-/** 無操作でログアウトするまでの時間（ミリ秒）。運営者の realm のアイドルタイムアウト（1800 秒）と同じにする */
+/**
+ * 無操作でログアウトするまでの時間（ミリ秒）
+ *
+ * 運営者の realm のアイドルタイムアウトと同じにする。
+ */
 export const IDLE_LIMIT_MS = 30 * 60 * 1000
 
 /** ログアウトの何ミリ秒前に警告を出すか */
 export const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000
 
 /**
- * 状態が変わる時刻に置くタイマーとは別に、判定を繰り返す間隔（ミリ秒）。<br />
+ * 状態が変わる時刻に置くタイマーとは別に、判定を繰り返す間隔（ミリ秒）。
+ *
  * タブを前面に表示したままスリープから再開し、visibilitychange が起きないときも、ログアウトの遅れをこの間隔に抑える
  */
 export const IDLE_CHECK_INTERVAL_MS = 15 * 1000
 
-/** 操作に数えるイベント。ポインターの移動と API の呼び出しは数えない */
+/**
+ * 操作に数えるイベント
+ *
+ * ポインターの移動と API の呼び出しは数えない。
+ */
 export const ACTIVITY_EVENTS = ['keydown', 'pointerdown', 'wheel'] as const
 
-/** 最後に操作した時刻（ミリ秒の数値）を置くローカルストレージのキー。タブの間で共有する */
+/**
+ * 最後に操作した時刻（ミリ秒の数値）を置くローカルストレージのキー
+ *
+ * タブの間で共有する。
+ */
 export const LAST_ACTIVITY_KEY = 'ec-admin.lastActivityAt'
 
-/** 無操作の状態。操作中、警告を出す間、期限切れ */
+/**
+ * 無操作の状態
+ *
+ * 操作中、警告を出す間、期限切れのどれか。
+ */
 type IdleStatus = 'active' | 'warning' | 'expired'
 
 /**
- * 最後に操作した時刻と現在の時刻から、無操作の状態を求める。<br />
+ * 最後に操作した時刻と現在の時刻から、無操作の状態を求める。
+ *
  * 経過時間を数えずに時刻を比べるので、スリープでタイマーが止まっても正しく判定できる。
  *
  * @param lastActivityAt 最後に操作した時刻（ミリ秒）
@@ -29,7 +47,7 @@ type IdleStatus = 'active' | 'warning' | 'expired'
  */
 export function idleStatus(lastActivityAt: number, now: number): IdleStatus {
   const idle = now - lastActivityAt
-  // 30 分を過ぎたら期限切れ、その 2 分前からは警告、それより前は操作中
+  // IDLE_LIMIT_MS を過ぎたら期限切れ、その IDLE_WARNING_BEFORE_MS 前からは警告、それより前は操作中
   if (idle >= IDLE_LIMIT_MS) {
     return 'expired'
   }
@@ -80,7 +98,9 @@ export function readStoredTime(key: string): number | null {
 }
 
 /**
- * ローカルストレージのキーに時刻を置き、タブの間で共有する。置くのは時刻だけで、token は置かない。
+ * ローカルストレージのキーに時刻を置き、タブの間で共有する。
+ *
+ * 置くのは時刻だけで、token は置かない。
  *
  * @param key キー
  * @param at  時刻（ミリ秒）
@@ -103,9 +123,9 @@ export function readLastActivity(): number | null {
 }
 
 /**
- * 計測を始める時刻を求める。共有した時刻が操作中の範囲（28 分より前）ならそれを取り込み、ないか、
- * 警告の範囲か、30 分を過ぎていれば現在の時刻にする。<br />
- * 再マウントで計測を延ばさないため。新しいタブを開くこと自体が運営者の操作なので、開いた直後に警告を出してすぐにはログアウトしない。
+ * 計測を始める時刻を求める。
+ *
+ * 共有した時刻が操作中の範囲ならそれを取り込み、ないか、警告の範囲か、期限切れなら現在の時刻にする。
  * 前のログインの時刻は、ログアウトのときに削除してある。
  *
  * @param now 現在の時刻（ミリ秒）
@@ -113,11 +133,17 @@ export function readLastActivity(): number | null {
  */
 export function startingActivity(now: number): number {
   const shared = readLastActivity()
+  // 再マウントで計測を延ばさないため、操作中の時刻だけ取り込む。新しいタブを開くこと自体が運営者の操作なので、
+  // 警告の範囲や期限切れなら現在の時刻にし、開いた直後に警告を出してすぐにはログアウトしない。
   // 未来の時刻は、判定のときに現在の時刻にするので、ここでは取り込む
   return shared !== null && idleStatus(shared, now) === 'active' ? shared : now
 }
 
-/** 共有した最後に操作した時刻を削除する（ログアウトのとき。次のログインで前のログインの時刻を取り込まないため） */
+/**
+ * 共有した最後に操作した時刻を削除する。
+ *
+ * 次のログインで前のログインの時刻を取り込まないために削除する。
+ */
 export function clearLastActivity(): void {
   try {
     localStorage.removeItem(LAST_ACTIVITY_KEY)

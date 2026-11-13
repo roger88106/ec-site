@@ -1,6 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
 import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
@@ -101,7 +101,7 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         return dsl.selectFrom(STATUS_HISTORY)
                 .where(STATUS_HISTORY.ORDER_ID.eq(orderId))
                 .orderBy(STATUS_HISTORY.OCCURRED_AT, STATUS_HISTORY.EVENT_ID)
-                .fetch(row -> AggregateGuards.restore("status history", () -> {
+                .fetch(row -> RestoreGuard.restore("status history", () -> {
                     var kind = HistoryKind.valueOf(row.getKind());
                     return new StatusHistoryEntry(row.getEventId(), row.getOrderId(), kind,
                             row.getFromStatus() == null ? null : historyStatus(kind, row.getFromStatus()),

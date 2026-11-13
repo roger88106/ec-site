@@ -1,6 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
@@ -314,18 +314,18 @@ class JooqOrderRepository implements OrderRepository {
                 record.getPhone());
         return Order.restore(new Order.Snapshot(
                 record.getId(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderNumber.of(record.getOrderNumber())),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> OrderNumber.of(record.getOrderNumber())),
                 record.getCheckoutId(),
                 record.getMemberId(),
                 record.getOrderedAt(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderStatus.valueOf(record.getStatus())),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> OrderStatus.valueOf(record.getStatus())),
                 lines,
                 amounts,
                 record.getEmail(),
                 address,
                 new BuyerProfile(record.getBuyerAge() == null ? null : record.getBuyerAge().intValue(),
                         record.getBuyerGender() == null ? null
-                                : AggregateGuards.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()))),
+                                : RestoreGuard.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()))),
                 restoreRequest(record),
                 restoreCancellation(record),
                 record.getVersion()));
@@ -344,7 +344,7 @@ class JooqOrderRepository implements OrderRepository {
                         line.getProductCode(),
                         line.getVariantCode(),
                         line.getProductName(),
-                        AggregateGuards.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES)),
+                        RestoreGuard.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES)),
                         Money.of(line.getUnitPriceExclTax()),
                         normalize(line.getRatePercent()),
                         Money.of(line.getUnitPriceInclTax()),
@@ -378,7 +378,7 @@ class JooqOrderRepository implements OrderRepository {
         }
         return new CancellationRequest(
                 record.getCancellationRequestedAt(), record.getCancellationRequestReason(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
                 record.getCancellationDecidedAt(),
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
     }
@@ -393,7 +393,7 @@ class JooqOrderRepository implements OrderRepository {
             return null;
         }
         return new Cancellation(record.getCancelledAt(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())), record.getCancellationReason(),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())), record.getCancellationReason(),
                 operatorOf(record.getCancelledById(), record.getCancelledByName()), record.getCancellationRestocked());
     }
 

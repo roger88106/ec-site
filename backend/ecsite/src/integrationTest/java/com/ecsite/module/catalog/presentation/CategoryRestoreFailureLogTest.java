@@ -5,7 +5,7 @@ import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.module.catalog.domain.category.Category;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
 import org.junit.jupiter.api.DisplayName;
@@ -66,7 +66,7 @@ class CategoryRestoreFailureLogTest {
     void logsWithoutCauseMessages(CapturedOutput output) throws Exception {
         var id = new CatalogTestData(mockMvc, clock).category("衣類", null);
         var secret = "secret-" + UUID.randomUUID();
-        doAnswer(invocation -> AggregateGuards.<Category>restore("category", () -> {
+        doAnswer(invocation -> RestoreGuard.<Category>restore("category", () -> {
             throw failureWithChain(secret);
         })).when(categoryFactory).restore(any());
 

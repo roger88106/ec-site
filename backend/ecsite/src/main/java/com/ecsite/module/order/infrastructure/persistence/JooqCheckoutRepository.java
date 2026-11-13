@@ -1,6 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.jooq.ordering.tables.records.CheckoutRecord;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
@@ -127,6 +127,6 @@ class JooqCheckoutRepository implements CheckoutRepository {
     private Checkout toCheckout(CheckoutRecord record) {
         return new Checkout(record.getId(), record.getMemberId(), record.getCartId(), record.getCartVersion(), record.getExpiresAt(),
                 record.getCreatedAt(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(record.getAcknowledgedOrderIds().data(), ORDER_IDS)));
+                RestoreGuard.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(record.getAcknowledgedOrderIds().data(), ORDER_IDS)));
     }
 }

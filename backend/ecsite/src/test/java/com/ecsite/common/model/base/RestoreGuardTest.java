@@ -13,33 +13,14 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
- * 集約のバージョンの比べ方と、集約を戻すときの失敗の扱いの単体テスト
+ * 保存した値の復元の失敗の扱いの単体テスト
  */
-class AggregateGuardsTest {
-
-    @Nested
-    @DisplayName("バージョンの比べ方")
-    class Versions {
-
-        @Test
-        @DisplayName("読んだ時点のバージョンと今のバージョンが同じなら、何もしない")
-        void acceptsSameVersion() {
-            assertThatCode(() -> AggregateGuards.requireVersion(3, 3)).doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("バージョンが違えば、更新の競合の業務のエラー")
-        void rejectsDifferentVersion() {
-            assertBusinessError(() -> AggregateGuards.requireVersion(4, 3), CommonErrorCode.CONCURRENT_MODIFICATION);
-        }
-    }
+class RestoreGuardTest {
 
     @Nested
     @DisplayName("集約を戻す")
@@ -48,7 +29,7 @@ class AggregateGuardsTest {
         @Test
         @DisplayName("戻せれば、戻した集約を返す")
         void returnsRestored() {
-            assertThat(AggregateGuards.restore("category", () -> "restored")).isEqualTo("restored");
+            assertThat(RestoreGuard.restore("category", () -> "restored")).isEqualTo("restored");
         }
 
         @Test
@@ -56,7 +37,7 @@ class AggregateGuardsTest {
         void wrapsFailure() {
             var cause = new IllegalArgumentException("壊れた状態");
 
-            assertThatThrownBy(() -> AggregateGuards.restore("tax category", () -> {
+            assertThatThrownBy(() -> RestoreGuard.restore("tax category", () -> {
                 throw cause;
             }))
                     .isInstanceOfSatisfying(SystemException.class, ex -> {
@@ -73,7 +54,7 @@ class AggregateGuardsTest {
             var secret = "secret-" + UUID.randomUUID();
             var failure = failureWithChain(secret);
 
-            var thrown = catchThrowable(() -> AggregateGuards.restore("category", () -> {
+            var thrown = catchThrowable(() -> RestoreGuard.restore("category", () -> {
                 throw failure;
             }));
 
@@ -91,7 +72,7 @@ class AggregateGuardsTest {
             var rootCause = failure.getCause();
             var suppressed = failure.getSuppressed()[0];
 
-            var thrown = catchThrowable(() -> AggregateGuards.restore("category", () -> {
+            var thrown = catchThrowable(() -> RestoreGuard.restore("category", () -> {
                 throw failure;
             }));
 
@@ -118,7 +99,7 @@ class AggregateGuardsTest {
             var second = new IllegalStateException("second", first);
             first.initCause(second);
 
-            var thrown = catchThrowable(() -> AggregateGuards.restore("category", () -> {
+            var thrown = catchThrowable(() -> RestoreGuard.restore("category", () -> {
                 throw first;
             }));
 

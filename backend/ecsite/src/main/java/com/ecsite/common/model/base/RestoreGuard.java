@@ -1,7 +1,6 @@
 package com.ecsite.common.model.base;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -14,25 +13,13 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * 集約の検査
+ * 保存した値の復元の失敗の扱い
+ *
+ * <p>集約と、DB の値から作る値（列挙、値オブジェクト、JSON、読み取りのモデル）を戻すときに使う。
+ * 戻すときの例外を、値を含まない、復元の失敗を表すシステムの例外にする。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class AggregateGuards {
-
-    /**
-     * 読んだ時点のバージョンと今のバージョンを比べる。
-     *
-     * <p>違えば、他の人が先に更新している。
-     *
-     * @param current  今のバージョン
-     * @param expected 読んだ時点のバージョン（リクエストのバージョン）
-     * @throws BusinessException バージョンが違う（{@code CONCURRENT_MODIFICATION}）
-     */
-    public static void requireVersion(long current, long expected) {
-        if (current != expected) {
-            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
-        }
-    }
+public final class RestoreGuard {
 
     /**
      * 保存した状態から集約を戻す。

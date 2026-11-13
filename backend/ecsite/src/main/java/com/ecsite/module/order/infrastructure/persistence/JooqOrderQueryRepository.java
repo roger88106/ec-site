@@ -1,6 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -48,7 +48,7 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
                 .fetch(row -> new OrderSummaryView(row.get(SALES_ORDER.ID), row.get(SALES_ORDER.ORDER_NUMBER),
                         row.get(SALES_ORDER.ORDERED_AT), row.get(SALES_ORDER.RECIPIENT_NAME),
                         Money.of(row.get(SALES_ORDER.TOTAL_AMOUNT)),
-                        AggregateGuards.restore("order", () -> OrderStatus.valueOf(row.get(SALES_ORDER.STATUS)))));
+                        RestoreGuard.restore("order", () -> OrderStatus.valueOf(row.get(SALES_ORDER.STATUS)))));
         return PageResult.of(items, request, dsl.fetchCount(SALES_ORDER, where));
     }
 

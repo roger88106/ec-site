@@ -1,6 +1,6 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
@@ -77,7 +77,7 @@ class JooqStockQueryRepository implements StockQueryRepository {
                 .fetch(record -> new StockAdjustmentView(
                         record.getId(),
                         record.getDelta(),
-                        AggregateGuards.restore("stock adjustment", () -> StockAdjustmentReason.valueOf(record.getReason())),
+                        RestoreGuard.restore("stock adjustment", () -> StockAdjustmentReason.valueOf(record.getReason())),
                         record.getMemo(),
                         record.getOrderId(),
                         record.getOrderNumber(),

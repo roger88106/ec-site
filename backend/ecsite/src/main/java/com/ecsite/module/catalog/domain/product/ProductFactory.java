@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import org.jmolecules.ddd.annotation.Factory;
@@ -47,6 +47,6 @@ public class ProductFactory {
      */
     public Product restore(Product.Snapshot snapshot) {
         // 復元失敗の場合、復元エラーに変換してスローする
-        return AggregateGuards.restore("product", () -> new Product(snapshot));
+        return RestoreGuard.restore("product", () -> new Product(snapshot));
     }
 }

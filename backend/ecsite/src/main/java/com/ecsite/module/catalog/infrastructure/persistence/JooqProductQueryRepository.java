@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -85,7 +85,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .offset(request.offset())
                 .fetch(record -> new ProductSummaryView(
                         record.get(PRODUCT.ID), record.get(PRODUCT.PRODUCT_CODE), record.get(PRODUCT.NAME),
-                        AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.get(PRODUCT.STATUS))),
+                        RestoreGuard.restore("product", () -> PublicationStatus.valueOf(record.get(PRODUCT.STATUS))),
                         record.get(variantCount)));
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
@@ -164,7 +164,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 null,
                 categoryIds,
                 axes,
-                AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
+                RestoreGuard.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
                 record.getFirstShownAt(),
                 record.getPublishStart(),
                 record.getPublishEnd(),

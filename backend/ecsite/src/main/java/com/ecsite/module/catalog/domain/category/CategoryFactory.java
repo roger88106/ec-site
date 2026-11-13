@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.category;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import org.jmolecules.ddd.annotation.Factory;
 import org.jspecify.annotations.Nullable;
 
@@ -35,6 +35,6 @@ public class CategoryFactory {
      */
     public Category restore(Category.Snapshot snapshot) {
         // 復元失敗の場合、復元エラーに変換してスローする
-        return AggregateGuards.restore("category", () -> new Category(snapshot));
+        return RestoreGuard.restore("category", () -> new Category(snapshot));
     }
 }

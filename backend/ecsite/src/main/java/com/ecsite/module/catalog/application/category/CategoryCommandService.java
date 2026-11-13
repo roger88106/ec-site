@@ -2,7 +2,6 @@ package com.ecsite.module.catalog.application.category;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.module.catalog.application.model.command.CreateCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.RenameCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderCategoriesCommand;
@@ -75,7 +74,7 @@ public class CategoryCommandService {
         var category = getCategory(command.categoryId());
 
         // 取得時のバージョンと一致しなければ、他の人が先に更新している（保存のときにもリポジトリが比べる）
-        AggregateGuards.requireVersion(category.version(), command.version());
+        category.requireVersion(command.version());
 
         // 名称変更
         category.rename(command.name());

@@ -2,7 +2,6 @@ package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +44,7 @@ class ProductLoader {
         var product = get(productId);
 
         // 取得時のバージョンと一致しなければ、他の人が先に更新している（保存のときにもリポジトリが比べる）
-        AggregateGuards.requireVersion(product.version(), version);
+        product.requireVersion(version);
         return product;
     }
 

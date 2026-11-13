@@ -2,7 +2,6 @@ package com.ecsite.module.tax.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
@@ -69,7 +68,7 @@ public class TaxCategoryCommandService {
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
 
         // 取得時のバージョンと一致しなければ、他の人が先に更新している（保存のときにもリポジトリが比べる）
-        AggregateGuards.requireVersion(taxCategory.version(), command.version());
+        taxCategory.requireVersion(command.version());
 
         // 税率の一覧の置き換え
         var drafts = command.rates().stream()

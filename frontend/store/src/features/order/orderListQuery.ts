@@ -12,13 +12,16 @@ export function parseOrderListPage(params: SearchParams): number {
 }
 
 /**
- * 注文の一覧のページの URL。
+ * 注文の一覧のページの URL を作る。
  *
  * @param page ページ（1 から）
+ * @returns 注文の一覧の URL（1 ページ目はページを書かない）
  */
 export function orderListHref(page: number): Route {
   const params = new URLSearchParams()
-  if (page > 1) params.set('page', String(page))
+  if (page > 1) {
+    params.set('page', String(page))
+  }
   const search = params.toString()
   return search ? `/orders?${search}` : '/orders'
 }

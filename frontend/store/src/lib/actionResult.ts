@@ -1,3 +1,4 @@
+import { asProblem } from '@/api/problem'
 import type { ErrorCode } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
@@ -19,16 +20,19 @@ export type ActionResult =
 export const SUCCESS: ActionResult = { ok: true }
 
 /**
- * API のエラーの応答を、失敗の結果にする。message はエラーレスポンスのもの（画面にそのまま出せる）。
+ * API のエラーの応答を、失敗の結果にする。
+ *
+ * message はエラーレスポンスのもの（画面にそのまま出せる）。
  *
  * @param status HTTP の状態
  * @param body   エラーの応答の本文
+ * @returns 失敗の結果
  */
 export function toFailure(status: number, body: unknown): Extract<ActionResult, { ok: false }> {
-  if (typeof body !== 'object' || body === null || !('message' in body) || typeof body.message !== 'string') {
+  const problem = asProblem(body)
+  if (problem === undefined) {
     return { ok: false, message: translate('common.httpFailed', { status }) } // 通信の失敗（HTTP の状態付き）
   }
-  const problem = body as { message: string; errorCode?: ErrorCode; errors?: { field: string; message: string }[] }
   const fieldErrors = Object.fromEntries((problem.errors ?? []).map((error) => [error.field, error.message]))
   return {
     ok: false,

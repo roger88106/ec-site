@@ -9,7 +9,7 @@ import { VariantPicker } from '@/features/catalog/components/VariantPicker'
 import { emptySelection, imageForVariant, selectedVariant } from '@/features/catalog/variantSelection'
 
 /**
- * 商品の詳細の、画像とバリアントの選択と、カートに入れる操作。
+ * 商品の詳細の、画像とバリアントの選択と、カートに入れる操作
  *
  * 大きな画像は代表画像から始め、バリアントを選ぶとその画像（指定がなければ代表画像）に、小さな画像を押すとその画像に替える。
  * カートに入れるのは、選んだバリアント（軸のない商品は、ただ 1 つのバリアント）。

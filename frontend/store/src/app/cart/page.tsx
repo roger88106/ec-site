@@ -23,8 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 使うカート（店舗画面の構成の「使うカートの選び方」）を取得する。数量がすぐ変わるので、キャッシュを使わない。
- * ログインしていれば会員のカート、していなければ Cookie のカート。
+ * 使うカート（店舗画面の構成の「使うカートの選び方」）を取得する。
+ *
+ * 数量がすぐ変わるので、キャッシュを使わない。ログインしていれば会員のカート、していなければ Cookie のカート。
  *
  * @returns カート。Cookie のカートがない、またはもうなければ null（空のカートとして出す）
  */
@@ -44,7 +45,7 @@ async function fetchCart(): Promise<Cart | null> {
 }
 
 /**
- * カートを移す処理の再試行が必要か。
+ * カートを移す処理の再試行が必要かを判定する。
  *
  * @returns 必要なら true（判定は {@link shouldRetryCartMerge}）
  */

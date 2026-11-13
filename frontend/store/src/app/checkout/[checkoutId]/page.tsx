@@ -19,8 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 注文手続き。注文が成立済みなら、注文の画面へ移る。
+ * 注文手続き
  *
+ * 注文が成立済みなら、注文の画面へ移る。
  * ログインを求め、始めた会員のものでなければ「見つかりません」にする。
  */
 export default async function CheckoutPage({ params }: PageProps<'/checkout/[checkoutId]'>) {

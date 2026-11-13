@@ -7,9 +7,13 @@ import { PriceText } from '@/components/PriceText'
 import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
 
 /**
- * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする。
+ * 商品を取得する。
  *
+ * 表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする。
  * 非公開にした直後から見つからなくなるよう、キャッシュを使わない（UNCACHED）。
+ *
+ * @param productId 商品 ID（URL の値）
+ * @returns 商品
  */
 async function fetchProduct(productId: string) {
   if (!isUuid(productId)) {
@@ -25,7 +29,11 @@ export async function generateMetadata({ params }: PageProps<'/products/[product
   return { title: product.name }
 }
 
-/** 商品の詳細。URL は商品 ID で、品番が変わっても変わらない */
+/**
+ * 商品の詳細
+ *
+ * URL は商品 ID で、品番が変わっても変わらない。
+ */
 export default async function ProductDetailPage({ params }: PageProps<'/products/[productId]'>) {
   const product = await fetchProduct((await params).productId)
   return (

@@ -12,9 +12,9 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
 /**
- * カートの品目の数量の変更と削除、小計（購入できない品目は打ち消し線）。
+ * カートの品目の数量の変更と削除、小計
  *
- * 数量は選んだときに送る。在庫を超えるなどの拒否は、API のメッセージを品目の下に出す。
+ * 購入できない品目の小計は打ち消し線で出す。数量は選んだときに送る。在庫を超えるなどの拒否は、API のメッセージを品目の下に出す。
  */
 export function CartItemControls({ item }: { item: QuoteItem }) {
   const t = useTranslations('cart.controls')

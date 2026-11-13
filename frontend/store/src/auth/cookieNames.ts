@@ -32,7 +32,9 @@ export function cookieName(prefix: string, name: string): string {
 }
 
 /**
- * Auth.js の設定 `cookies`。名前だけを渡し、属性は Auth.js の既定（開発のモードと本番で変わる）のままにする。
+ * Auth.js の設定 `cookies`。
+ *
+ * 名前だけを渡し、属性は Auth.js の既定（開発のモードと本番で変わる）のままにする。
  *
  * @param prefix 接頭辞
  * @param secure HTTPS だけで送るか（Auth.js の `useSecureCookies`）
@@ -47,7 +49,9 @@ export function authCookies(prefix: string, secure: boolean): NextAuthConfig['co
 }
 
 /**
- * セッションの Cookie の名前。`getToken` で読むときに渡す（Auth.js は名前を JWT の暗号化の salt にも使うので、
+ * セッションの Cookie の名前。
+ *
+ * `getToken` で読むときに渡す（Auth.js は名前を JWT の暗号化の salt にも使うので、
  * 名前を変えたら読むときも同じ名前を渡す）。
  *
  * @param prefix 接頭辞
@@ -58,7 +62,9 @@ export function sessionCookieName(prefix: string, secure: boolean): string {
 }
 
 /**
- * Auth.js の Cookie の名前。`__Secure-`・`__Host-` は、ブラウザーが名前の先頭で見るので先頭に残し、
+ * Auth.js の Cookie の名前。
+ *
+ * `__Secure-`・`__Host-` は、ブラウザーが名前の先頭で見るので先頭に残し、
  * その後ろに接頭辞を付ける。HTTPS のときだけ付き、CSRF の Cookie だけが `__Host-`、ほかは `__Secure-`。
  */
 function authCookieName(prefix: string, kind: AuthCookieKind, secure: boolean): string {

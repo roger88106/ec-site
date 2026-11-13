@@ -13,7 +13,9 @@ import { type Mock, vi } from 'vitest'
 export const ACCESS_TOKEN = 'member-access-token'
 
 /**
- * 現在の時刻を UNIX 時刻の秒にする（token の `expiresAt` と同じ単位）。偽の時計を使っていれば、その時刻。
+ * 現在の時刻を UNIX 時刻の秒にする（token の `expiresAt` と同じ単位）。
+ *
+ * 偽の時計を使っていれば、その時刻。
  * 例：`signInAs({ expiresAt: nowSeconds() - 10 })`
  *
  * @returns 現在の UNIX 時刻の秒。秒に満たない分は切り捨てる

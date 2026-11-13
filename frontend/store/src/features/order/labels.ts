@@ -11,8 +11,12 @@ const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'> = {
 }
 
 /**
- * 注文の状態の欄に出す表示名と見た目。出荷済みの注文は、注文状態の代わりに配送状態を出す
- * （注文状態と配送状態の「出荷済み」が並ばないようにする）。
+ * 注文の状態の欄に出す表示名と見た目を返す。
+ *
+ * 出荷済みの注文は、注文状態の代わりに配送状態を出す（注文状態と配送状態の「出荷済み」が並ばないようにする）。
+ *
+ * @param order 注文の状態と配送状態
+ * @returns 表示名と見た目（Badge の variant）
  */
 export function orderStatusBadge(order: { status: OrderStatus; shipmentStatus?: ShipmentStatus }): {
   label: string

@@ -42,6 +42,7 @@ const REFRESH_MARGIN_SECONDS = 60
 /** proxy が、いまの画面のパス（クエリを含む）を知らせるリクエストのヘッダー */
 export const PATHNAME_HEADER = 'x-pathname'
 
+/** Auth.js の口（handlers）、セッションの確認（auth）、ログイン（signIn）、ログアウト（signOut） */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Keycloak({
@@ -113,7 +114,9 @@ export const currentMember = cache(async (): Promise<CurrentMember | null> => {
 })
 
 /**
- * ログインしている会員。ログインしていなければ、ログインの画面へ移す（ログインを求める画面から呼ぶ）。
+ * ログインしている会員。
+ *
+ * ログインしていなければ、ログインの画面へ移す（ログインを求める画面から呼ぶ）。
  *
  * @returns ログインしている会員
  */
@@ -137,7 +140,9 @@ export const getAccessToken = cache(async (): Promise<string | null> => {
 })
 
 /**
- * ログインの画面へ移す（店舗画面の構成の「ログイン」）。ログインの後は、指定の画面（なければいまの画面）に戻る。
+ * ログインの画面へ移す（店舗画面の構成の「ログイン」）。
+ *
+ * ログインの後は、指定の画面（なければいまの画面）に戻る。
  *
  * @param returnTo ログインの後に戻る画面
  */
@@ -147,7 +152,9 @@ export async function redirectToLogin(returnTo?: string): Promise<never> {
 }
 
 /**
- * IdP のログアウト（RP-Initiated Logout）の URL。ログアウトの後は店舗のトップに戻る。
+ * IdP のログアウト（RP-Initiated Logout）の URL。
+ *
+ * ログアウトの後は店舗のトップに戻る。
  * セッションの Cookie を消す前に呼ぶ（ID token を添えるため）。
  */
 export async function idpLogoutUrl(): Promise<string> {

@@ -20,7 +20,9 @@ import { readIntOrNaN, readString } from '@/lib/server/formData'
 const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
 
 /**
- * 注文する。成立したら、決済サービスの支払画面へ移る。支払画面の URL を得られなければ、注文の画面へ移る（そこから支払える）。
+ * 注文する。
+ *
+ * 成立したら、決済サービスの支払画面へ移る。支払画面の URL を得られなければ、注文の画面へ移る（そこから支払える）。
  *
  * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、name、postalCode、prefectureCode、municipalityCode、address、phone。
  * 郵便番号と電話番号は、全角の数字とハイフンの類を半角にして API に送る（氏名と住所は入力のまま）。
@@ -68,7 +70,9 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
 }
 
 /**
- * 注文の支払画面の URL を求める。得られなければ（決済サービスが応えないなど）null。
+ * 注文の支払画面の URL を求める。
+ *
+ * 得られなければ（決済サービスが応えないなど）null。
  */
 async function paymentPageUrl(orderId: string): Promise<string | null> {
   // 接続の失敗も、URL を得られなかったときと同じに扱う

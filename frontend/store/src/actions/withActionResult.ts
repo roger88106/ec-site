@@ -34,7 +34,9 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
 }
 
 /**
- * 読むだけの処理を包み、例外なら代わりの値を返す。例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
+ * 読むだけの処理を包み、例外なら代わりの値を返す。
+ *
+ * 例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
  *
  * @param work 処理
  * @param fallback 例外で失敗したときに返す値

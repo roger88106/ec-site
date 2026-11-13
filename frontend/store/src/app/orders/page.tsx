@@ -17,7 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title') } // ご注文履歴
 }
 
-/** 注文の一覧。ログインを求め、自分の注文を新しい順に出す */
+/**
+ * 注文の一覧
+ *
+ * ログインを求め、自分の注文を新しい順に出す。
+ */
 export default async function OrdersPage({ searchParams }: PageProps<'/orders'>) {
   const t = await getTranslations('order.list')
   const tCommon = await getTranslations('common')

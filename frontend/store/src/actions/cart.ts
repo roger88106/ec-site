@@ -6,8 +6,8 @@ import { withActionResult, withFallback } from '@/actions/withActionResult'
 import { currentCartChoice, memberCartId, mergeCart } from '@/api/cart'
 import { deleteCartId, deleteCartMergeNotice, readCartId, writeCartId } from '@/api/cartCookie'
 import { getApi, getMemberApi } from '@/api/client'
+import { asProblem } from '@/api/problem'
 import { ApiError } from '@/api/result'
-import type { Problem } from '@/api/types'
 import { currentMember, redirectToLogin } from '@/auth'
 import { translate } from '@/i18n/translate'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
@@ -61,7 +61,9 @@ export async function addToCart(_previous: ActionResult | null, formData: FormDa
 }
 
 /**
- * 品目の数量を変える。フォームの項目：variantId、quantity。
+ * 品目の数量を変える。
+ *
+ * フォームの項目：variantId、quantity。
  */
 export async function changeCartItemQuantity(
   _previous: ActionResult | null,
@@ -75,7 +77,9 @@ export async function changeCartItemQuantity(
 }
 
 /**
- * 品目を削除する。フォームの項目：variantId。
+ * 品目を削除する。
+ *
+ * フォームの項目：variantId。
  */
 export async function removeCartItem(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const variantId = readString(formData, 'variantId')
@@ -85,7 +89,9 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
 }
 
 /**
- * 注文手続きに進む。全品目を引き当て、注文手続きの画面へ移る。
+ * 注文手続きに進む。
+ *
+ * 全品目を引き当て、注文手続きの画面へ移る。
  *
  * ログインしていなければ、ログインの画面へ移し、ログインの後は（カートを移して）カートに戻る。
  * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。
@@ -186,6 +192,7 @@ type CartRequest = (
 
 /**
  * カートの変更を行い、成功したらカートの画面を表示し直す。
+ *
  * ログインしていれば会員のカート、していなければ Cookie のカート（Cookie の有効期限も延ばす）を変える。
  *
  * @param request API の呼び出し
@@ -210,7 +217,9 @@ async function updateCart(request: CartRequest): Promise<ActionResult> {
 }
 
 /**
- * 会員のカートの変更を、会員の口で行う。401 なら、ログインの画面へ移す。
+ * 会員のカートの変更を、会員の口で行う。
+ *
+ * 401 なら、ログインの画面へ移す。
  *
  * @param request API の呼び出し
  */
@@ -227,7 +236,7 @@ async function createCart(): Promise<string> {
   const api = await getApi()
   const { data, error, response } = await api.POST('/carts')
   if (!data) {
-    throw new ApiError(response.status, error as Partial<Problem> | undefined)
+    throw new ApiError(response.status, asProblem(error))
   }
   return data.id
 }

@@ -10,9 +10,11 @@ import { PENDING_ORDERS_PATH } from '@/lib/pendingOrders'
 import { readString } from '@/lib/server/formData'
 
 /**
- * 注文のキャンセルを申請する。成功したら、注文の画面を表示し直す。
+ * 注文のキャンセルを申請する。
  *
- * フォームの項目：orderId、reason（任意、500 文字まで）。
+ * 成功したら、注文の画面を表示し直す。
+ *
+ * フォームの項目：orderId、reason（任意）。
  */
 export async function requestCancellation(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const orderId = readString(formData, 'orderId')

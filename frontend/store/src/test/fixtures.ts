@@ -86,7 +86,9 @@ export const VARIANT_AXES: VariantAxis[] = [
 ]
 
 /**
- * 色とサイズの値を持つバリアント。既定は在庫があり、販売停止でない。
+ * 色とサイズの値を持つバリアント。
+ *
+ * 既定は在庫があり、販売停止でない。
  *
  * @param color     色の値
  * @param size      サイズの値
@@ -132,7 +134,9 @@ export const MUNICIPALITIES: Record<string, Municipality[]> = {
 }
 
 /**
- * 郵便番号の住所。都道府県と市区町村は、PREFECTURES と MUNICIPALITIES から引く。
+ * 郵便番号の住所。
+ *
+ * 都道府県と市区町村は、PREFECTURES と MUNICIPALITIES から引く。
  *
  * @param prefectureCode   都道府県のコード
  * @param municipalityCode 市区町村のコード

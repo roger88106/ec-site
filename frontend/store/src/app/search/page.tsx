@@ -18,8 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 検索結果。商品名または説明にキーワードを含む商品を、新着順で出す。
+ * 検索結果
  *
+ * 商品名または説明にキーワードを含む商品を、新着順で出す。
  * キーワードが空なら API を呼ばず、入力を促す。
  */
 export default async function SearchPage({ searchParams }: PageProps<'/search'>) {

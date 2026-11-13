@@ -14,26 +14,25 @@ import type { ActionResult } from '@/lib/actionResult'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
 /**
- * 数量を選んでカートに入れる。
+ * カートに入れるフォーム
  *
- * サーバーアクションの状態（結果、送信中か）を持ち、表示は {@link AddToCartFormView} に任せる。
- *
- * @param variant 選んだバリアント（決まっていなければ null）
+ * 数量を選んでカートに入れる。サーバーアクションの状態（結果、送信中か）を持ち、表示は {@link AddToCartFormView} に任せる。
  */
-export function AddToCartForm({ variant }: { variant: Variant | null }) {
+export function AddToCartForm({
+  variant,
+}: {
+  /** 選んだバリアント（決まっていなければ null） */
+  variant: Variant | null
+}) {
   const [result, formAction, pending] = useActionState(addToCart, null)
   return <AddToCartFormView formAction={formAction} pending={pending} result={result} variant={variant} />
 }
 
 /**
- * カートに入れるフォームの表示。サーバーアクションの結果を props で受ける。
+ * カートに入れるフォームの表示
  *
+ * サーバーアクションの結果を props で受ける。
  * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
- *
- * @param variant    選んだバリアント（決まっていなければ null）
- * @param result     サーバーアクションの結果（送る前は null）
- * @param formAction フォームを送ったときに呼ぶ関数
- * @param pending    送信中か
  */
 export function AddToCartFormView({
   variant,
@@ -41,9 +40,13 @@ export function AddToCartFormView({
   formAction,
   pending,
 }: {
+  /** 選んだバリアント（決まっていなければ null） */
   variant: Variant | null
+  /** サーバーアクションの結果（送る前は null） */
   result: ActionResult | null
+  /** フォームを送ったときに呼ぶ関数 */
   formAction: (formData: FormData) => void
+  /** 送信中か */
   pending: boolean
 }) {
   const t = useTranslations('catalog.addToCart')

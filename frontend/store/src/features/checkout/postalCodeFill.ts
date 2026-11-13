@@ -1,9 +1,10 @@
 import type { PostalCodeAddress } from '@/api/types'
 
-/** 郵便番号で補うもの。address が null なら住所の欄を変えない */
+/** 郵便番号で補うもの */
 type PostalCodeFill = {
   prefectureCode: string
   municipalityCode: string
+  /** 住所の欄に入れる町域。null なら住所の欄を変えない */
   address: string | null
 }
 

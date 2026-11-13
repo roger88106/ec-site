@@ -19,8 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 商品一覧。カテゴリ（子孫を含む）と税込の価格帯で絞り込み、並べ替え、ページで送る。
+ * 商品一覧
  *
+ * カテゴリ（子孫を含む）と税込の価格帯で絞り込み、並べ替え、ページで送る。
  * 入力の誤り（URL のクエリの形が違うなど）は、API のエラーの message をこの画面に出す。
  */
 export default async function ProductListPage({ searchParams }: PageProps<'/products'>) {

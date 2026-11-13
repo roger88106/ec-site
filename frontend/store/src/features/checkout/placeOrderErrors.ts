@@ -1,11 +1,16 @@
 import type { ErrorCode } from '@/api/types'
 import type { ActionResult } from '@/lib/actionResult'
 
-/** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない） */
+/**
+ * 注文のフォームの入力欄
+ *
+ * メールアドレスは会員のものを使い、入力しない。
+ */
 export type OrderField = 'name' | 'postalCode' | 'prefecture' | 'municipality' | 'address' | 'phone'
 
-/** 注文のフォームに出すエラー。入力欄ごとのメッセージ、フォームの下のメッセージ、カートへのリンクを添えるか */
+/** 注文のフォームに出すエラー */
 type PlaceOrderErrors = {
+  /** 入力欄ごとのメッセージ */
   fields: Partial<Record<OrderField, string>>
   /** フォームの下に出すメッセージ。null は出さない */
   message: string | null
@@ -40,6 +45,9 @@ const BACK_TO_CART_ERROR_CODES = new Set<ErrorCode>(['OUT_OF_STOCK', 'CART_CHANG
  * 注文のサーバーアクションの結果を、フォームに出すエラーにする（店舗画面の構成の「結果の知らせ方」）。
  *
  * 入力欄に対応するエラーはその欄に、それ以外はフォームの下に出す。
+ *
+ * @param result 注文のサーバーアクションの結果（送る前は null）
+ * @returns フォームに出すエラー
  */
 export function placeOrderErrors(result: ActionResult | null): PlaceOrderErrors {
   if (result === null || result.ok) {

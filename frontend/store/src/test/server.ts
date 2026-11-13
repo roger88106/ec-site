@@ -55,7 +55,9 @@ export function statusError(method: 'get' | 'post' | 'put' | 'patch' | 'delete',
 }
 
 /**
- * エラーレスポンス（Problem）の本文を作る。画面に出るのは message。
+ * エラーレスポンス（Problem）の本文を作る。
+ *
+ * 画面に出るのは message。
  *
  * @param status    HTTP の状態
  * @param errorCode store.yaml の errorCode（例：INSUFFICIENT_STOCK）

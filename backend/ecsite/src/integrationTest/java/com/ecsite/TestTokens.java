@@ -22,8 +22,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * テスト用の access token。<br />
- * IdP（Keycloak）を起動せず、realm ごとのテストの鍵で署名した token を作る。バックエンドは、
+ * テスト用の access token
+ *
+ * <p>IdP（Keycloak）を起動せず、realm ごとのテストの鍵で署名した token を作る。バックエンドは、
  * {@link TestSecurityConfig} が差し替えた公開鍵で署名を確認し、本番と同じ issuer・audience・有効期限・権限の処理を通す。
  * token の中身は Keycloak が発行するものに合わせる（権限は {@code resource_access.ec-admin-api.roles}）。
  * <pre>{@code
@@ -33,12 +34,16 @@ import java.util.UUID;
 public final class TestTokens {
 
     /**
-     * 運営者の realm の issuer（application-integration-test.yml と同じ）
+     * 運営者の realm の issuer
+     *
+     * <p>application-integration-test.yml と同じ。
      */
     public static final String ADMIN_ISSUER = "http://idp.test/realms/ec-admin";
 
     /**
-     * 消費者の realm の issuer（application-integration-test.yml と同じ）
+     * 消費者の realm の issuer
+     *
+     * <p>application-integration-test.yml と同じ。
      */
     public static final String STORE_ISSUER = "http://idp.test/realms/ec-store";
 
@@ -58,7 +63,9 @@ public final class TestTokens {
     public static final UUID OPERATOR_SUBJECT = UUID.fromString("00000000-0000-0000-0000-0000000a0001");
 
     /**
-     * {@link #operator} の token の運営者（氏名は「姓 名」）。テストのデータを運営者の操作として作るときに使う
+     * 既定の運営者
+     *
+     * <p>{@link #operator} の token の運営者。氏名は「姓 名」。テストのデータを運営者の操作として作るときに使う。
      */
     public static final Operator OPERATOR = new Operator(OPERATOR_SUBJECT, "管理 花子");
 
@@ -68,7 +75,9 @@ public final class TestTokens {
     public static final UUID MEMBER_SUBJECT = UUID.fromString("00000000-0000-0000-0000-0000000c0001");
 
     /**
-     * すべての権限（運営者の realm の {@code ec-admin-api} の client role。職務の「管理者」と同じ）
+     * すべての権限
+     *
+     * <p>運営者の realm の {@code ec-admin-api} の client role。職務の「管理者」と同じ。
      */
     public static final List<String> ALL_PERMISSIONS = List.of(
             "tax:read", "tax:write",
@@ -79,7 +88,9 @@ public final class TestTokens {
             "report-sales-trend:read", "report-variant-sales:read", "report-customer:read");
 
     /**
-     * 参照の権限（運営者の realm の職務の「閲覧者」と同じ。レポートは含まない）
+     * 参照の権限
+     *
+     * <p>運営者の realm の職務の「閲覧者」と同じ。レポートは含まない。
      */
     public static final List<String> READ_PERMISSIONS = List.of(
             "tax:read", "category:read", "product:read", "inventory:read", "order:read");
@@ -95,10 +106,15 @@ public final class TestTokens {
     private static final RSAKey STORE_KEY = generateKey();
 
     /**
-     * どの realm のものでもない鍵（署名の不正を確認するため）
+     * どの realm のものでもない鍵
+     *
+     * <p>署名の不正を確認するため。
      */
     private static final RSAKey UNKNOWN_KEY = generateKey();
 
+    /**
+     * インスタンスを作らない。
+     */
     private TestTokens() {
     }
 
@@ -210,7 +226,9 @@ public final class TestTokens {
     }
 
     /**
-     * token の組み立て。既定は、有効な token（発行は今、有効期間 5 分）。
+     * token の組み立て
+     *
+     * <p>既定は、有効な token（発行は今、有効期間 5 分）。
      */
     public static final class Builder {
 

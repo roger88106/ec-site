@@ -9,13 +9,16 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
- * 設定のテストが使う補助。設定ファイルの読み込みと、設定の型への値の当てはめを、各テストに重複して書かないために置く。
+ * 設定のテストの補助
+ *
+ * <p>設定ファイルの読み込みと、設定の型への値の当てはめを、各テストに重複して書かないために置く。
  */
 public final class TestSettings {
 
@@ -36,10 +39,8 @@ public final class TestSettings {
      * @throws UncheckedIOException 設定ファイルを読めないとき
      */
     public static Map<String, String> load(String... profiles) {
-        List<String> files = new ArrayList<>(List.of("application.yml"));
-        for (String profile : profiles) {
-            files.add("application-" + profile + ".yml");
-        }
+        List<String> files = Stream.concat(Stream.of("application.yml"),
+                Arrays.stream(profiles).map(profile -> "application-" + profile + ".yml")).toList();
         Map<String, String> values = new HashMap<>();
         try {
             for (String file : files) {

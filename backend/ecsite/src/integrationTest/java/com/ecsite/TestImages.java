@@ -4,12 +4,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 /**
- * テスト用の画像（{@code resources/images}。作り方は {@code generate.sh}）。<br />
+ * テスト用の画像
+ *
+ * <p>{@code resources/images} の画像を読む。作り方は {@code generate.sh}。
  * 左が赤、右が青の 64x32。JPEG・HEIC・AVIF には、向き（時計回りに 90 度）、位置情報、撮影機器（TestCam）が付いている。
  * 確定のときに imgproxy で変換するので、受付から登録までを通すテストは本物の画像を使う。
  */
 public final class TestImages {
 
+    /**
+     * インスタンスを作らない。
+     */
     private TestImages() {
     }
 

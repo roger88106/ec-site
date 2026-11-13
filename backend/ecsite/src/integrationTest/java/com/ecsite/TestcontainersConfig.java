@@ -19,8 +19,9 @@ import java.net.URI;
 import java.util.Map;
 
 /**
- * 統合テスト用の Testcontainers 設定。<br />
- * PostgreSQL を使い捨てコンテナで起動し、{@code @ServiceConnection} で Spring Boot の接続設定を差し替える。
+ * 統合テストのコンテナの設定
+ *
+ * <p>PostgreSQL を使い捨てコンテナで起動し、{@code @ServiceConnection} で Spring Boot の接続設定を差し替える。
  * 画像の置き場所（S3 互換）は SeaweedFS で起動し、受付・配信のバケットを作って接続設定を与える。
  * 画像の変換は imgproxy で起動し、同じネットワークから SeaweedFS を読ませる。
  * メールは Mailpit で受ける。
@@ -41,24 +42,35 @@ public class TestcontainersConfig {
     public static final String PUBLIC_BUCKET = "images";
 
     /**
-     * SeaweedFS の資格情報（テスト専用。resources/seaweedfs/s3.json）
+     * SeaweedFS の資格情報
+     *
+     * <p>テスト専用。resources/seaweedfs/s3.json。
      */
     private static final String ACCESS_KEY_ID = "integration-test";
 
     /**
-     * SeaweedFS の資格情報のシークレット（テスト専用）
+     * SeaweedFS の資格情報のシークレット
+     *
+     * <p>テスト専用。
      */
     private static final String SECRET_ACCESS_KEY = "integration-test-secret";
 
+    /**
+     * SeaweedFS の S3 のポート
+     */
     private static final int S3_PORT = 8333;
 
     /**
-     * SeaweedFS のボリュームの大きさ（MB）。docker/compose.yaml と同じ
+     * SeaweedFS のボリュームの大きさ
+     *
+     * <p>単位は MB。docker/compose.yaml と同じ。
      */
     private static final int VOLUME_SIZE_LIMIT_MB = 100;
 
     /**
-     * PostgreSQL のイメージ。docker/compose.yaml と同じ
+     * PostgreSQL のイメージ
+     *
+     * <p>docker/compose.yaml と同じ。
      */
     public static final String POSTGRES_IMAGE = "postgres:18-alpine";
 
@@ -67,15 +79,22 @@ public class TestcontainersConfig {
      */
     private static final String SEAWEEDFS_ALIAS = "seaweedfs";
 
+    /**
+     * imgproxy のポート
+     */
     private static final int IMGPROXY_PORT = 8080;
 
     /**
-     * imgproxy の URL の署名の鍵（16 進。テスト専用）
+     * imgproxy の URL の署名の鍵
+     *
+     * <p>16 進。テスト専用。
      */
     private static final String IMGPROXY_KEY = "696e746567726174696f6e2d746573742d6b6579";
 
     /**
-     * imgproxy の URL の署名のソルト（16 進。テスト専用）
+     * imgproxy の URL の署名のソルト
+     *
+     * <p>16 進。テスト専用。
      */
     private static final String IMGPROXY_SALT = "696e746567726174696f6e2d746573742d73616c74";
 
@@ -95,8 +114,9 @@ public class TestcontainersConfig {
     /**
      * SeaweedFS コンテナ。
      *
-     * <p>docker/compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確認するため）。<br />
-     * 起動したら、受付・配信のバケットを作り、配信のバケットをだれでも読めるようにする。
+     * <p>docker/compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確認するため）。
+     *
+     * <p>起動したら、受付・配信のバケットを作り、配信のバケットをだれでも読めるようにする。
      *
      * @param network コンテナ同士のネットワーク
      * @return SeaweedFS コンテナ
@@ -179,8 +199,9 @@ public class TestcontainersConfig {
     /**
      * imgproxy コンテナ（画像の変換）。
      *
-     * <p>docker/compose.yaml と同じイメージと設定を使う。<br />
-     * アップロードのバケットを、読むだけの資格情報で、SeaweedFS のネットワークの中の名前で読む。
+     * <p>docker/compose.yaml と同じイメージと設定を使う。
+     *
+     * <p>アップロードのバケットを、読むだけの資格情報で、SeaweedFS のネットワークの中の名前で読む。
      *
      * @param network   コンテナ同士のネットワーク
      * @param seaweedfs SeaweedFS コンテナ（先に起動しておく）

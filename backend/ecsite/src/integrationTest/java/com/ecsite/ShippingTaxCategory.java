@@ -10,7 +10,9 @@ import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 
 /**
- * 送料に適用する税区分（10%）を、統合テストの設定（{@code ecsite.order.shipping-tax-category-id}）の ID で作る補助。<br />
+ * 送料の税区分
+ *
+ * <p>送料に適用する税区分（10%）を、統合テストの設定（{@code ecsite.order.shipping-tax-category-id}）の ID で作る。
  * すでにあれば何もしないので、ロールバックするテストでも、コミットするテストでも呼べる。
  */
 public final class ShippingTaxCategory {
@@ -20,6 +22,9 @@ public final class ShippingTaxCategory {
      */
     public static final UUID ID = UUID.fromString("00000000-0000-0000-0000-00000000f001");
 
+    /**
+     * インスタンスを作らない。
+     */
     private ShippingTaxCategory() {
     }
 

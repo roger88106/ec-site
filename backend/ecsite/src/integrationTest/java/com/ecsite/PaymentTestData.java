@@ -12,9 +12,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 支払を進める統合テストの補助
+ * 支払のテストデータ
  *
- * <p>支払の API とテスト用の決済サービスを使い、支払を作り、与信済み・売上確定済みにし、状態を読む。支払の金額は 6,940 円で固定する。支払は注文ごとに別の ID で作る。
+ * <p>支払の API とテスト用の決済サービスを使い、支払を作り、与信済み・売上確定済みにし、状態を読む。
+ * 支払の金額は固定する（{@link #AMOUNT}）。支払は注文ごとに別の ID で作る。
  */
 public class PaymentTestData {
 
@@ -34,7 +35,9 @@ public class PaymentTestData {
     private final TestPaymentGateway gateway;
 
     /**
-     * 注文 ID → 支払画面 ID（支払の後は画面の URL を引けないため、覚えておく）
+     * 注文 ID → 支払画面 ID
+     *
+     * <p>支払の後は画面の URL を引けないため、覚えておく。
      */
     private final Map<UUID, String> pageIds = new HashMap<>();
 

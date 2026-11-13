@@ -8,14 +8,17 @@ import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * テスト用の、時刻を決められる時計。<br />
- * 時刻で切り替わる振る舞い（期間付きの税率、予約公開など）を、テストから時刻を動かして確認するために使う。
+ * 時刻を決められる時計
+ *
+ * <p>テスト用の時計。時刻で切り替わる振る舞い（期間付きの税率、予約公開など）を、テストから時刻を動かして確認するために使う。
  * 統合テストでは {@code TestClockConfig} でアプリの {@link Clock} と差し替える。
  */
 public final class MutableClock extends Clock {
 
     /**
-     * 現在の時刻。テストとアプリのスレッドの両方から読み書きするので、原子的に更新する
+     * 現在の時刻
+     *
+     * <p>テストとアプリのスレッドの両方から読み書きするので、原子的に更新する。
      */
     private final AtomicReference<Instant> instant;
 

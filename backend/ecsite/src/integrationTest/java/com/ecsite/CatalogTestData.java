@@ -26,18 +26,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 統合テストで、税区分・カテゴリ・商品を B 側の API で作る補助（カート・注文・店舗のテストで使う）。<br />
+ * 商品のテストデータ
+ *
+ * <p>統合テストで、税区分・カテゴリ・商品を B 側の API で作る。
  * 公開するごとに時計を 1 分進める（新着順が決まるように）。品番は呼ぶたびに振り直す。
  */
 public class CatalogTestData {
 
     /**
-     * PNG（登録のときに imgproxy で変換するので、本物の画像）
+     * PNG
+     *
+     * <p>登録のときに imgproxy で変換するので、本物の画像を使う。
      */
     private static final byte[] PNG = TestImages.png();
 
     /**
-     * 品番の連番（テストの中で重ならないように、乱数から始める）
+     * 品番の連番
+     *
+     * <p>テストの中で重ならないように、乱数から始める。
      */
     private int sequence = (int) (Math.random() * 1_000_000);
 
@@ -284,7 +290,9 @@ public class CatalogTestData {
     }
 
     /**
-     * テストで作った商品。バリアントの登録・画像・状態の切り替えを続けて書けるようにする
+     * テストで作った商品
+     *
+     * <p>バリアントの登録・画像・状態の切り替えを続けて書けるようにする。
      */
     public class TestProduct {
 
@@ -299,22 +307,30 @@ public class CatalogTestData {
         public final String productCode;
 
         /**
-         * バリアント ID（登録順）
+         * バリアント ID
+         *
+         * <p>登録順。
          */
         public final List<UUID> variantIds = new ArrayList<>();
 
         /**
-         * バリアント品番（登録順）
+         * バリアント品番
+         *
+         * <p>登録順。
          */
         public final List<String> variantCodes = new ArrayList<>();
 
         /**
-         * 画像 ID（表示順）
+         * 画像 ID
+         *
+         * <p>表示順。
          */
         public final List<UUID> imageIds = new ArrayList<>();
 
         /**
-         * 画像の URL（表示順）
+         * 画像の URL
+         *
+         * <p>表示順。
          */
         public final List<String> imageUrls = new ArrayList<>();
 

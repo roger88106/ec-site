@@ -5,12 +5,14 @@ import com.jayway.jsonpath.JsonPath;
 import java.util.UUID;
 
 /**
- * 応答の本文（JSON）から値を読む補助。
+ * 応答の本文の読み取り
+ *
+ * <p>応答の本文（JSON）から値を読む。
  */
 public final class TestJson {
 
     /**
-     * 補助の関数だけを持つので、作らせない。
+     * インスタンスを作らない。
      */
     private TestJson() {
     }

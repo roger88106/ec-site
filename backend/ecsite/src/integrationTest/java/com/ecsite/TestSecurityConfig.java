@@ -15,7 +15,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
- * 統合テストの認証の設定。IdP を起動せず、realm の署名の鍵を {@link TestTokens} の鍵に差し替える。
+ * 統合テストの認証の設定
+ *
+ * <p>IdP を起動せず、realm の署名の鍵を {@link TestTokens} の鍵に差し替える。
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestSecurityConfig {
@@ -63,8 +65,9 @@ public class TestSecurityConfig {
      * MockMvc のリクエストに、既定の token を付ける。
      *
      * <p>管理 API には管理者（すべての権限）の token、
-     * 店舗 API には既定の会員（{@link TestTokens#MEMBER_SUBJECT}）の token。<br />
-     * 認証と認可・持ち主を確認するテスト以外は、ログインを前提に業務の振る舞いを確認するので、リクエストごとに token を書かない。
+     * 店舗 API には既定の会員（{@link TestTokens#MEMBER_SUBJECT}）の token。
+     *
+     * <p>認証と認可・持ち主を確認するテスト以外は、ログインを前提に業務の振る舞いを確認するので、リクエストごとに token を書かない。
      * 店舗 API の会員を持たないカートは、token があっても今までどおり使える。
      * リクエストに {@code Authorization} があれば付けない。リクエストの {@code with(...)} で
      * {@link TestTokens.Builder#bearer()} を付ければ置き換わり、{@link TestTokens#none()} を付ければ token なしになる

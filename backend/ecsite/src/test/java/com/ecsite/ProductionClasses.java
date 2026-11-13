@@ -21,7 +21,9 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 構成の検査が読む、本番のクラスの補助。<br />
+ * 本番のクラス
+ *
+ * <p>構成の検査が読む、本番のクラスとモジュールの一覧。
  * クラスファイルの読み込みは重いので、JVM ごとに 1 回だけ行い、各検査はここから絞り込んだ結果を受け取る。
  * 検査ごとに読み込むと、同じクラスの複製がテストの JVM のメモリに重ねて残る。
  * モジュールの一覧も JVM ごとに 1 回だけ作るが、Spring Modulith は自分でもクラスを読み込むので、{@link #all()} とは別の読み込みになる。
@@ -31,16 +33,18 @@ public final class ProductionClasses {
 
     /**
      * モジュールの一覧から除くテストのクラスの条件（名前が Test で終わるクラスと、その入れ子のクラス、
-     * 単体テストと統合テストが共有する testFixtures のクラス）。<br />
-     * テストは準備のために他のモジュールの内部（リポジトリなど）を直接使うことがあるので、境界の検証から除く。
+     * 単体テストと統合テストが共有する testFixtures のクラス）。
+     *
+     * <p>テストは準備のために他のモジュールの内部（リポジトリなど）を直接使うことがあるので、境界の検証から除く。
      * 検証するのは本番のコードの境界。
      */
     private static final DescribedPredicate<JavaClass> TEST_CLASSES = DescribedPredicate.describe(
             "test classes", javaClass -> javaClass.getName().matches(".*Test(\\$.*)?") || isTestFixture(javaClass));
 
     /**
-     * レベル A のモジュール（バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」）。<br />
-     * docs/02-設計 の各モジュールの設計書の「レベル」と一致することは、{@code ProductionClassesTest} が確認する。
+     * レベル A のモジュール
+     *
+     * <p>各モジュールの設計書の「レベル」と一致することは、{@code ProductionClassesTest} が確認する。
      */
     public static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order", "payment");
 
@@ -55,12 +59,16 @@ public final class ProductionClasses {
     public static final String JOOQ_PACKAGE = "com.ecsite.jooq";
 
     /**
-     * モジュールのパッケージ（モジュールの名前を除く）
+     * モジュールのパッケージ
+     *
+     * <p>モジュールの名前を除く。
      */
     public static final String MODULE_PACKAGE = "com.ecsite.module";
 
     /**
-     * モジュールのパッケージの接頭辞（モジュールの名前の前の区切りの点を含む）
+     * モジュールのパッケージの接頭辞
+     *
+     * <p>モジュールの名前の前の区切りの点を含む。
      */
     public static final String MODULE_PACKAGE_PREFIX = MODULE_PACKAGE + ".";
 
@@ -70,7 +78,9 @@ public final class ProductionClasses {
     private static final Pattern MODULE_SUBPACKAGE = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)\\.([^.]+)");
 
     /**
-     * パッケージの名前から、モジュールの名前を取り出す形（モジュールの直下のパッケージも含む）
+     * パッケージの名前から、モジュールの名前を取り出す形
+     *
+     * <p>モジュールの直下のパッケージも含む。
      */
     private static final Pattern MODULE_NAME = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)");
 
@@ -94,8 +104,9 @@ public final class ProductionClasses {
     /**
      * 手書きの本番のクラスを返す。
      *
-     * <p>{@link #all()} から生成したコードを除いたもの。<br />
-     * 生成したコードのクラスも依存先としては読み込まれているので、生成したコードへの依存は見える。
+     * <p>{@link #all()} から生成したコードを除いたもの。
+     *
+     * <p>生成したコードのクラスも依存先としては読み込まれているので、生成したコードへの依存は見える。
      *
      * @return 生成したコードを除いた本番のクラス
      */
@@ -251,14 +262,16 @@ public final class ProductionClasses {
     }
 
     /**
-     * 本番のクラスを、遅延の static で JVM ごとに 1 回だけ読み込む入れ物。<br />
-     * 外側のクラスを読み込んだだけでは、クラスファイルを読まない。
+     * 本番のクラスを、遅延の static で JVM ごとに 1 回だけ読み込む入れ物。
+     *
+     * <p>外側のクラスを読み込んだだけでは、クラスファイルを読まない。
      */
     private static final class Holder {
 
         /**
-         * {@code com.ecsite} の本番のクラス。<br />
-         * 単体テストと統合テストが共有する testFixtures は、テストのコードなので除く。
+         * {@code com.ecsite} の本番のクラス。
+         *
+         * <p>単体テストと統合テストが共有する testFixtures は、テストのコードなので除く。
          * 単体テストの classpath にある tools は、開発のツールなので除く。
          */
         private static final JavaClasses ALL = new ClassFileImporter()
@@ -281,8 +294,9 @@ public final class ProductionClasses {
     }
 
     /**
-     * Spring Modulith のモジュールの一覧を、遅延の static で 1 回だけ作る入れ物。<br />
-     * クラスファイルの読み込みと分けるのは、モジュールの一覧を使わない検査で作らないため。
+     * Spring Modulith のモジュールの一覧を、遅延の static で 1 回だけ作る入れ物。
+     *
+     * <p>クラスファイルの読み込みと分けるのは、モジュールの一覧を使わない検査で作らないため。
      */
     private static final class ModulesHolder {
 

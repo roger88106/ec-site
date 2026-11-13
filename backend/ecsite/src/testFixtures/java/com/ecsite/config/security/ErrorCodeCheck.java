@@ -16,13 +16,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
- * エラーの応答の確認（API の規約の「エラーの本文」）。<br />
+ * エラーの応答の確認
+ *
+ * <p>API の規約の「エラーの本文」を確認する。
  * 応答（MockMvc のすべての結果）で、エラーの本文の {@code errorCode} が、その操作の一覧（{@code x-error-codes}）か
- * 共通のエラー（{@code x-common-error-codes}）にあることを確認する。操作は、認可と同じく契約から照合する。<br />
- * 統合テストでは {@code ErrorCodeCheckConfig} が MockMvc に接続して全ての応答を確認し、検査そのものは単体テストでも確認する。
+ * 共通のエラー（{@code x-common-error-codes}）にあることを確認する。操作は、認可と同じく契約から照合する。
+ *
+ * <p>統合テストでは {@code ErrorCodeCheckConfig} が MockMvc に接続して全ての応答を確認し、検査そのものは単体テストでも確認する。
  */
 public final class ErrorCodeCheck {
 
@@ -37,7 +40,9 @@ public final class ErrorCodeCheck {
     private final List<OpenApiOperations<Set<String>>> apis;
 
     /**
-     * 共通のエラー（2 つの API の和）
+     * 共通のエラー
+     *
+     * <p>2 つの API の和。
      */
     private final Set<String> common;
 
@@ -59,14 +64,13 @@ public final class ErrorCodeCheck {
      */
     public static ErrorCodeCheck load() {
         var resources = List.<Resource>of(new ClassPathResource("openapi/admin.yaml"), new ClassPathResource("openapi/store.yaml"));
-        var common = new TreeSet<String>();
-        for (Resource resource : resources) {
-            common.addAll(commonCodes(resource));
-        }
+        var common = resources.stream()
+                .flatMap(resource -> commonCodes(resource).stream())
+                .collect(Collectors.toUnmodifiableSet());
         var apis = resources.stream()
                 .map(resource -> OpenApiOperations.load(resource, (name, operation) -> codes(operation.get("x-error-codes"))))
                 .toList();
-        return new ErrorCodeCheck(apis, Set.copyOf(common));
+        return new ErrorCodeCheck(apis, common);
     }
 
     /**

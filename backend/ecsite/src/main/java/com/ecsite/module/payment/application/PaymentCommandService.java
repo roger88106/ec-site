@@ -1,7 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.payment.application.port.PaymentGateway;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
@@ -105,7 +105,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param authorization 取得した与信
      * @return 未払いから与信済みにしたら true（先に通知が届いていれば false）
      */
-    public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull PaymentGateway.Authorization authorization) {
+    public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull Authorization authorization) {
         var now = clock.instant();
         return paymentRepository.lockById(paymentId).map(payment -> {
             var authorized = payment.authorize(authorization.authorizationRef(), authorization.authorizedAt(), now);

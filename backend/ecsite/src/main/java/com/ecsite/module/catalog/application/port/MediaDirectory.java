@@ -49,9 +49,8 @@ public interface MediaDirectory {
      * <p>呼んだ側のトランザクションに加わる。
      *
      * @param prepared 用意した画像
-     * @return アセット ID
      */
-    UUID registerImage(PreparedImage prepared);
+    void registerImage(PreparedImage prepared);
 
     /**
      * 用意した画像の配信のファイルを消す。

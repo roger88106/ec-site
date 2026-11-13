@@ -19,7 +19,7 @@ class StorefrontShopController implements ShopApi {
     /**
      * 店舗のサービス
      */
-    private final StorefrontService service;
+    private final StorefrontService storefrontService;
 
     /**
      * 店舗 API のマッパー
@@ -33,6 +33,6 @@ class StorefrontShopController implements ShopApi {
      */
     @Override
     public ResponseEntity<Shop> getShop() {
-        return ResponseEntity.ok(mapper.toShop(service.getShop()));
+        return ResponseEntity.ok(mapper.toShop(storefrontService.getShop()));
     }
 }

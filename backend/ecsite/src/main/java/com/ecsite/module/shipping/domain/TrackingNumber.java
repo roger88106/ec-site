@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.domain;
 
 import com.ecsite.common.error.exception.BusinessException;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -38,7 +39,7 @@ public record TrackingNumber(String value) {
      * @throws BusinessException 数字がない（{@code TRACKING_NUMBER_INVALID}）
      * @throws BusinessException {@link #MAX_LENGTH} 文字を超える（{@code TRACKING_NUMBER_INVALID}）
      */
-    public static TrackingNumber of(String input) {
+    public static TrackingNumber of(@Nullable String input) {
         var trimmed = input == null ? "" : input.strip();
         var digits = trimmed.replace("-", "");
         if (digits.isEmpty() || trimmed.length() > MAX_LENGTH || !FORM.matcher(trimmed).matches()) {

@@ -8,6 +8,7 @@ import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -34,13 +35,13 @@ public class ShippingApi {
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
-     * @param trackingNumber 送り状番号（前後の空白とハイフンは除いて保存する）
+     * @param trackingNumber 送り状番号（前後の空白とハイフンは除いて保存する）。null のときは TRACKING_NUMBER_INVALID の業務のエラーにする
      * @param shippedAt      出荷日時
      * @return 作った出荷
      * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）
      * @throws BusinessException 同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
      */
-    public ShipmentSummary create(@NonNull UUID orderId, @NonNull ShipmentSummary.Carrier carrier, String trackingNumber,
+    public ShipmentSummary create(@NonNull UUID orderId, @NonNull ShipmentSummary.Carrier carrier, @Nullable String trackingNumber,
                                   @NonNull Instant shippedAt) {
         return toSummary(shipmentService.create(orderId, toCarrier(carrier), trackingNumber, shippedAt));
     }

@@ -54,11 +54,14 @@ class OrderPaymentService {
     public void accept(@NonNull UUID orderId) {
         // 注文の受付
         var now = clock.instant();
-        var accepted = orderRepository.lockById(orderId).filter(order -> order.acceptPayment(now));
-        if (accepted.isEmpty()) {
+        var found = orderRepository.lockById(orderId);
+        if (found.isEmpty()) {
             return;
         }
-        var order = accepted.get();
+        var order = found.get();
+        if (!order.acceptPayment(now)) {
+            return;
+        }
         orderRepository.update(order);
 
         // 注文した品目をカートから除く

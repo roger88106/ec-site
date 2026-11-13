@@ -2,6 +2,7 @@ package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;

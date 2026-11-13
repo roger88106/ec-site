@@ -71,11 +71,9 @@ public class MediaApi {
      * <p>呼んだ側のトランザクションに加わる。呼んだ側の保存が失敗すると、アセットの記録も取り消される（配信のファイルは残る）。
      *
      * @param prepared 用意した画像
-     * @return アセット ID
      */
-    public UUID registerImage(@NonNull PreparedImage prepared) {
+    public void registerImage(@NonNull PreparedImage prepared) {
         mediaService.registerImage(prepared.assetId());
-        return prepared.assetId();
     }
 
     /**

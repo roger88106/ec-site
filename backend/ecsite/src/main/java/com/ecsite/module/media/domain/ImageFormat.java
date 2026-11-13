@@ -19,19 +19,27 @@ import java.util.stream.Collectors;
 public enum ImageFormat {
 
     /**
-     * JPEG（FF D8 FF で始まる）
+     * JPEG
+     *
+     * <p>FF D8 FF で始まる。
      */
     JPEG("JPEG", "jpg", "image/jpeg"),
     /**
-     * PNG（89 50 4E 47 0D 0A 1A 0A で始まる）
+     * PNG
+     *
+     * <p>89 50 4E 47 0D 0A 1A 0A で始まる。
      */
     PNG("PNG", "png", "image/png"),
     /**
-     * WebP（"RIFF" + 4 バイトの長さ + "WEBP" で始まる）
+     * WebP
+     *
+     * <p>"RIFF" + 4 バイトの長さ + "WEBP" で始まる。
      */
     WEBP("WebP", "webp", "image/webp"),
     /**
-     * BMP（"BM" + 4 バイトの大きさ + 0 の予約の 4 バイトで始まる）
+     * BMP
+     *
+     * <p>"BM" + 4 バイトの大きさ + 0 の予約の 4 バイトで始まる。
      */
     BMP("BMP", "bmp", "image/bmp"),
     /**
@@ -41,7 +49,9 @@ public enum ImageFormat {
      */
     HEIF("HEIC / HEIF", "heic", "image/heic", "image/heif"),
     /**
-     * AVIF（ftyp のボックスのブランドが avif・avis）
+     * AVIF
+     *
+     * <p>ftyp のボックスのブランドが avif・avis。
      */
     AVIF("AVIF", "avif", "image/avif");
 

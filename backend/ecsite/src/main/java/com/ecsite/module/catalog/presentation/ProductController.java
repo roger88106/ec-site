@@ -18,6 +18,7 @@ import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.catalog.application.product.ProductCommandService;
+import com.ecsite.module.catalog.application.product.ProductImageCommandService;
 import com.ecsite.module.catalog.application.product.ProductImageService;
 import com.ecsite.module.catalog.application.product.ProductPublicationService;
 import com.ecsite.module.catalog.application.product.ProductQueryService;
@@ -64,6 +65,11 @@ class ProductController implements ProductApi {
      * 商品画像のアプリケーションサービス
      */
     private final ProductImageService imageService;
+
+    /**
+     * 商品画像のコマンドサービス
+     */
+    private final ProductImageCommandService imageCommandService;
 
     /**
      * 商品マッパー
@@ -288,7 +294,7 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<Void> reorderProductImages(UUID productId, ReorderProductImagesRequest request) {
         // imageIds は LinkedHashSet で受け取るので、送られた順を保つ
-        imageService.reorderImages(productId, List.copyOf(request.getImageIds()), request.getVersion());
+        imageCommandService.reorderImages(productId, List.copyOf(request.getImageIds()), request.getVersion());
         return ResponseEntity.noContent().build();
     }
 
@@ -302,7 +308,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> deleteProductImage(UUID productId, UUID imageId, Long version) {
-        imageService.deleteImage(productId, imageId, version);
+        imageCommandService.deleteImage(productId, imageId, version);
         return ResponseEntity.noContent().build();
     }
 
@@ -316,7 +322,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> setVariantImage(UUID productId, UUID variantId, SetVariantImageRequest request) {
-        imageService.setVariantImage(productId, variantId, request.getImageId().orElse(null), request.getVersion());
+        imageCommandService.setVariantImage(productId, variantId, request.getImageId().orElse(null), request.getVersion());
         return ResponseEntity.noContent().build();
     }
 

@@ -63,11 +63,10 @@ class MediaApiDirectory implements MediaDirectory {
      * 用意した画像を、メディアモジュールで登録する。
      *
      * @param prepared 用意した画像
-     * @return アセット ID
      */
     @Override
-    public UUID registerImage(PreparedImage prepared) {
-        return mediaApi.registerImage(toMedia(prepared));
+    public void registerImage(PreparedImage prepared) {
+        mediaApi.registerImage(toMedia(prepared));
     }
 
     /**

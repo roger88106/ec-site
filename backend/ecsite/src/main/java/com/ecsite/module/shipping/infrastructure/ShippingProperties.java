@@ -9,7 +9,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * <p>物流サービスは mock のフラグ（{@code ecsite.shipping.mock.enabled}）で選び、ここには持たない。
  *
- * @param webhookSecret 物流サービスの通知の署名の鍵。Git に入れず、環境変数 {@code CARRIER_WEBHOOK_SECRET} で渡す（application.yml）
+ * @param webhookSecret 物流サービスの通知の署名の鍵。Git に入れず、環境変数 {@code CARRIER_WEBHOOK_SECRET} で渡す
  */
 @Validated
 @ConfigurationProperties("ecsite.shipping")

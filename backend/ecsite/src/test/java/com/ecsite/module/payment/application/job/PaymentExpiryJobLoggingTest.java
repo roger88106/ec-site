@@ -6,6 +6,7 @@ import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.PaymentQueryService;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
@@ -74,8 +75,8 @@ class PaymentExpiryJobLoggingTest {
     /**
      * 決済サービスから取得した与信
      */
-    private static final PaymentGateway.Authorization AUTHORIZATION =
-            new PaymentGateway.Authorization("pi_test_awaiting", Instant.parse("2026-11-06T01:00:00Z"));
+    private static final Authorization AUTHORIZATION =
+            new Authorization("pi_test_awaiting", Instant.parse("2026-11-06T01:00:00Z"));
 
     private final PaymentCommandService commandService = mock(PaymentCommandService.class);
 

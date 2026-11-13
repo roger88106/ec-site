@@ -27,7 +27,7 @@ final class PriceInclTaxField {
      *
      * <p>率のない税区分の商品は null になる。
      *
-     * @param rates 税区分 ID → 率（%）。空でないこと
+     * @param rates 税区分 ID → 率（%）
      * @return 税込価格（円）の式
      */
     static Field<Long> of(Map<UUID, BigDecimal> rates) {

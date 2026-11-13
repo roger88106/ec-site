@@ -26,11 +26,7 @@ class OrderApiDirectory implements OrderDirectory {
     private final OrderQuoteApi orderQuoteApi;
 
     /**
-     * カートを見積もり、表示の形にする。
-     *
-     * @param cartId    カート ID
-     * @param requester リクエストした会員の ID（ログインしていなければ null）
-     * @return カートの表示。カートがない、または会員のカートで持ち主でなければ空
+     * {@inheritDoc}
      */
     @Override
     public Optional<CartView> findCart(UUID cartId, @Nullable UUID requester) {

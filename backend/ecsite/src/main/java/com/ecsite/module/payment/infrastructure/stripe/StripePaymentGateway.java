@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;

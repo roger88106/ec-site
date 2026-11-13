@@ -5,7 +5,7 @@ import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.PaymentProperties;
-import com.ecsite.module.payment.application.port.PaymentGateway.Authorization;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;

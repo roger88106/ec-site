@@ -47,7 +47,7 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
      * {@inheritDoc}
      */
     @Override
-    public Result receive(@NonNull Carrier carrier, String trackingNumber, @NonNull DeliveryStatus status) {
+    public Result receive(@NonNull Carrier carrier, @Nullable String trackingNumber, @NonNull DeliveryStatus status) {
         // 出荷取得
         var normalized = normalize(trackingNumber);
         if (normalized == null) {
@@ -85,7 +85,7 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
      *
      * <p>形に合わなければ null。
      */
-    private static @Nullable TrackingNumber normalize(String trackingNumber) {
+    private static @Nullable TrackingNumber normalize(@Nullable String trackingNumber) {
         try {
             return TrackingNumber.of(trackingNumber);
         } catch (BusinessException e) {

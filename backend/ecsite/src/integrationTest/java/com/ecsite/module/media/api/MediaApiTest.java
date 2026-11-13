@@ -443,7 +443,8 @@ class MediaApiTest {
      */
     private UUID confirm(String scope, UUID uploadId) {
         var prepared = media.prepareImage(scope, uploadId);
-        var assetId = transactionTemplate.execute(status -> media.registerImage(prepared));
+        transactionTemplate.executeWithoutResult(status -> media.registerImage(prepared));
+        var assetId = prepared.assetId();
         assetIds.add(assetId);
         return assetId;
     }

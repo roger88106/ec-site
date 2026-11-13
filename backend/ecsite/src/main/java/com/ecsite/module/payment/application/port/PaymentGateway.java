@@ -2,9 +2,9 @@ package com.ecsite.module.payment.application.port;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 
-import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -89,15 +89,6 @@ public interface PaymentGateway {
      * @param returnUrl 支払を終える・やめるときに戻る URL
      */
     record PageRequest(UUID paymentId, UUID orderId, Money amount, String returnUrl) {
-    }
-
-    /**
-     * 取得した与信
-     *
-     * @param authorizationRef 与信の参照
-     * @param authorizedAt     与信の時刻（決済サービスが返す時刻。実際の与信より早いことがある）
-     */
-    record Authorization(String authorizationRef, Instant authorizedAt) {
     }
 
     /**

@@ -35,11 +35,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     private final StoreCatalogApi storeCatalogApi;
 
     /**
-     * 商品一覧を取得する。
-     *
-     * @param condition 絞り込みと並び順
-     * @param request   ページの指定
-     * @return 商品の一覧
+     * {@inheritDoc}
      */
     @Override
     public PageResult<CatalogProduct> listProducts(ProductCondition condition, PageRequest request) {
@@ -49,11 +45,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     }
 
     /**
-     * キーワードで商品を探す。
-     *
-     * @param keyword キーワード
-     * @param request ページの指定
-     * @return 検索結果
+     * {@inheritDoc}
      */
     @Override
     public PageResult<CatalogProduct> searchProducts(String keyword, PageRequest request) {
@@ -61,10 +53,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     }
 
     /**
-     * 商品の詳細を取得する。
-     *
-     * @param productId 商品 ID
-     * @return 商品の詳細。表示されない商品なら空
+     * {@inheritDoc}
      */
     @Override
     public Optional<CatalogProductDetail> findProduct(UUID productId) {
@@ -72,9 +61,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     }
 
     /**
-     * カテゴリの木を取得する。
-     *
-     * @return 最上位カテゴリの一覧（子孫を含む）
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogCategory> categoryTree() {

@@ -9,6 +9,7 @@ import com.ecsite.module.shipping.domain.TrackingNumber;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,14 +48,14 @@ public class ShipmentService {
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
-     * @param trackingNumber 送り状番号の入力
+     * @param trackingNumber 送り状番号の入力。null のときは TRACKING_NUMBER_INVALID の業務のエラーにする
      * @param shippedAt      出荷日時
      * @return 作った出荷
      * @throws BusinessException 送り状番号が形に合わない（TRACKING_NUMBER_INVALID）
      * @throws BusinessException 同じ注文にすでに出荷がある（SHIPMENT_ALREADY_EXISTS）
      */
     @Transactional
-    public Shipment create(@NonNull UUID orderId, @NonNull Carrier carrier, String trackingNumber,
+    public Shipment create(@NonNull UUID orderId, @NonNull Carrier carrier, @Nullable String trackingNumber,
                            @NonNull Instant shippedAt) {
         // 出荷登録
         var shipment = Shipment.create(UUID.randomUUID(), orderId, carrier, TrackingNumber.of(trackingNumber), shippedAt);

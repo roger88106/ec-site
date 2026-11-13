@@ -3,7 +3,7 @@ package com.ecsite.module.notification.application.port;
 import com.ecsite.module.order.event.OrderShipped;
 
 /**
- * 配送業者の表示名の文言のキーの取得
+ * 出荷の腐敗防止層の port
  */
 public interface ShippingDirectory {
 

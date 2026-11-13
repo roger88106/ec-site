@@ -170,6 +170,24 @@ class StoreOrderMapper {
                 .taxes(amounts.taxes().stream().map(StoreOrderMapper::toTaxAmount).toList());
     }
 
+    /**
+     * 自分の注文の一覧のレスポンスに変換する。
+     *
+     * @param page      注文の一覧
+     * @param payments  注文 ID → 支払
+     * @param shipments 注文 ID → 出荷
+     * @return 注文の一覧のレスポンス
+     */
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
+                                        Map<UUID, OrderShipment> shipments) {
+        return new OrderSummaryPage()
+                .page(page.page())
+                .size(page.size())
+                .totalItems(page.totalItems())
+                .totalPages(page.totalPages())
+                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
@@ -250,24 +268,6 @@ class StoreOrderMapper {
         return new AxisValue()
                 .name(axis.name())
                 .value(axis.value());
-    }
-
-    /**
-     * 自分の注文の一覧のレスポンスに変換する。
-     *
-     * @param page      注文の一覧
-     * @param payments  注文 ID → 支払
-     * @param shipments 注文 ID → 出荷
-     * @return 注文の一覧のレスポンス
-     */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
-                                        Map<UUID, OrderShipment> shipments) {
-        return new OrderSummaryPage()
-                .page(page.page())
-                .size(page.size())
-                .totalItems(page.totalItems())
-                .totalPages(page.totalPages())
-                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
     }
 
     /**

@@ -134,12 +134,15 @@ public class PaymentGatewayService {
      * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     public void expire(@NonNull PastDeadlinePaymentView payment) {
+        // 支払画面を閉じる ※閉じる前に支払が済んでいたら、与信の反映を待つ支払にする
         var page = payment.page();
         if (page != null && gateway.closePage(page.id()) == PaymentGateway.CloseResult.ALREADY_PAID) {
             log.info("期限の前に支払が済んでいたので、与信の反映を待つ: paymentId={}", payment.id());
             commandService.awaitAuthorization(payment.id());
             return;
         }
+
+        // 支払なしにする
         commandService.expire(payment.id());
     }
 
@@ -150,8 +153,11 @@ public class PaymentGatewayService {
      * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     public void recoverAuthorization(@NonNull AwaitingAuthorizationPaymentView payment) {
+        // 与信取得
         var pageId = Objects.requireNonNull(payment.pageId(), "与信の反映を待つ支払には支払画面がある");
         var authorization = gateway.fetchAuthorization(pageId);
+
+        // 与信の反映
         if (commandService.authorizeFromGateway(payment.id(), authorization)) {
             log.warn("通知より先に、決済サービスから与信を取得して反映した: paymentId={}", payment.id());
         }

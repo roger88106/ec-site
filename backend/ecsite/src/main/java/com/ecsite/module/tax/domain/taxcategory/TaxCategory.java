@@ -59,7 +59,7 @@ public class TaxCategory extends AggregateRoot {
     /**
      * バージョン
      *
-     * <p>楽観ロックに使う。リポジトリが保存するときに上げる。
+     * <p>楽観ロックに使う。
      */
     private final long version;
 

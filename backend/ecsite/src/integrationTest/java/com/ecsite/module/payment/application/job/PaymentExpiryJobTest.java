@@ -9,7 +9,7 @@ import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.PaymentQueryService;
-import com.ecsite.module.payment.application.port.PaymentGateway;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -245,7 +245,7 @@ class PaymentExpiryJobTest {
         job.expire();
         // 取得の後に、行ロックの時点で通知が先に届いていた形（取得した与信は反映しない）
         var reflected = commandService.authorizeFromGateway(paymentOf(orderId).id(),
-                new PaymentGateway.Authorization("pi_other", DEADLINE.plus(Duration.ofHours(1))));
+                new Authorization("pi_other", DEADLINE.plus(Duration.ofHours(1))));
 
         assertThat(reflected).isFalse();
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);

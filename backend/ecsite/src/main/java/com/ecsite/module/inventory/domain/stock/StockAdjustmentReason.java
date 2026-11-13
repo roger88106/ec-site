@@ -23,17 +23,23 @@ public enum StockAdjustmentReason {
     DAMAGE_OR_LOSS,
 
     /**
-     * その他。メモが必須
+     * その他
+     *
+     * <p>メモが必須。
      */
     OTHER,
 
     /**
-     * 注文（注文の成立による減算）
+     * 注文
+     *
+     * <p>注文の成立による減算。
      */
     ORDER,
 
     /**
-     * 注文のキャンセル（キャンセルによる戻し）
+     * 注文のキャンセル
+     *
+     * <p>キャンセルによる戻し。
      */
     ORDER_CANCELLATION,
     ;

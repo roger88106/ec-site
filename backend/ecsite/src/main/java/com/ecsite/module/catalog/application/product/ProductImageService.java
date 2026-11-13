@@ -3,29 +3,21 @@ package com.ecsite.module.catalog.application.product;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
-import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
  * 商品画像のサービス
  *
  * <p>ファイルの受け付け・検証・配信・削除はメディアモジュールが行い、ここでは商品の規則を扱う。
+ * メディアの呼び出しをトランザクションの外で行う受付と追加を受け持ち、保存は {@link ProductImageCommandService} に任せる。
  */
 @Service
 @RequiredArgsConstructor
 public class ProductImageService {
-
-    /**
-     * 商品リポジトリ
-     */
-    private final ProductRepository productRepository;
 
     /**
      * メディアの腐敗防止層
@@ -33,17 +25,12 @@ public class ProductImageService {
     private final MediaDirectory mediaDirectory;
 
     /**
-     * 商品の取得と状態の切り替え
-     */
-    private final ProductLoader productLoader;
-
-    /**
      * 商品の参照のサービス（画像を加えられることの確認）
      */
     private final ProductQueryService queryService;
 
     /**
-     * 商品画像の追加の、トランザクションの中の処理
+     * 商品画像のコマンドサービス（追加の、トランザクションの中の処理）
      */
     private final ProductImageCommandService commandService;
 
@@ -100,74 +87,4 @@ public class ProductImageService {
             throw e;
         }
     }
-
-    /**
-     * 画像の並び順を変更する。
-     *
-     * @param productId 商品 ID
-     * @param imageIds  並べたい順の画像 ID（全て）
-     * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
-     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
-     * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）
-     */
-    @Transactional
-    public void reorderImages(@NonNull UUID productId, @NonNull List<UUID> imageIds, long version) {
-        // 商品取得
-        var product = productLoader.get(productId, version);
-
-        // 並び順変更
-        product.reorderImages(imageIds);
-
-        // 商品保存
-        productRepository.save(product);
-    }
-
-    /**
-     * 画像を削除する。
-     *
-     * <p>同じトランザクションの中でアセットを手放す。
-     *
-     * @param productId 商品 ID
-     * @param imageId   画像 ID
-     * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品か画像がない（{@code NOT_FOUND}）
-     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
-     */
-    @Transactional
-    public void deleteImage(@NonNull UUID productId, @NonNull UUID imageId, long version) {
-        // 商品取得
-        var product = productLoader.get(productId, version);
-
-        // 画像削除
-        var assetId = product.deleteImage(imageId);
-
-        // 商品保存と、画像のアセットの解放
-        productRepository.save(product);
-        mediaDirectory.release(List.of(assetId));
-    }
-
-    /**
-     * バリアントの画像を指定する。
-     *
-     * @param productId 商品 ID
-     * @param variantId バリアント ID
-     * @param imageId   画像 ID。null で指定を外す
-     * @param version   取得時の商品のバージョン
-     * @throws BusinessException 商品かバリアントがない（{@code NOT_FOUND}）
-     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
-     * @throws BusinessException 商品にない画像（{@code INVALID_VARIANT_IMAGE}）
-     */
-    @Transactional
-    public void setVariantImage(@NonNull UUID productId, @NonNull UUID variantId, @Nullable UUID imageId, long version) {
-        // 商品取得
-        var product = productLoader.get(productId, version);
-
-        // バリアントの画像の指定
-        product.setVariantImage(variantId, imageId);
-
-        // 商品保存
-        productRepository.save(product);
-    }
-
 }

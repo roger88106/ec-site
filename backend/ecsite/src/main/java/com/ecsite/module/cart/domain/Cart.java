@@ -120,6 +120,18 @@ public class Cart {
     }
 
     /**
+     * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限を求める。
+     *
+     * <p>最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
+     *
+     * @param expiredBefore 期限が切れた時刻の上限
+     * @return 最後の変更の時刻の上限
+     */
+    public static Instant lastUpdateExpiredBefore(@NonNull Instant expiredBefore) {
+        return expiredBefore.minus(LIFETIME);
+    }
+
+    /**
      * カートの持ち主の会員 ID を返す。
      *
      * @return 会員 ID。ログインせずに作ったカートは空
@@ -176,18 +188,6 @@ public class Cart {
                 .filter(item -> item.variantId().equals(variantId))
                 .mapToInt(CartItem::quantity)
                 .findFirst();
-    }
-
-    /**
-     * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限を求める。
-     *
-     * <p>最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
-     *
-     * @param expiredBefore 期限が切れた時刻の上限
-     * @return 最後の変更の時刻の上限
-     */
-    public static Instant lastUpdateExpiredBefore(@NonNull Instant expiredBefore) {
-        return expiredBefore.minus(LIFETIME);
     }
 
     /**

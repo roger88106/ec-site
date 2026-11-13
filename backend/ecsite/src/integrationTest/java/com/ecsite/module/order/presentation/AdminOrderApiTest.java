@@ -55,12 +55,16 @@ class AdminOrderApiTest {
     private static final ZoneId JST = ZoneId.of("Asia/Tokyo");
 
     /**
-     * 2026-12-08 23:59（日本時間）。日付をまたぐ境界の確認に使う
+     * 日付をまたぐ境界の確認に使う日時
+     *
+     * <p>日本時間の 2026-12-08 23:59。
      */
     private static final Instant DEC_8_LATE = Instant.parse("2026-12-08T14:59:00Z");
 
     /**
-     * 2026-12-09 00:00（日本時間）
+     * 日付をまたいだ後の日時
+     *
+     * <p>日本時間の 2026-12-09 00:00。
      */
     private static final Instant DEC_9 = Instant.parse("2026-12-08T15:00:00Z");
 
@@ -103,6 +107,7 @@ class AdminOrderApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(DEC_8_LATE.minusSeconds(3600));
+        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "T シャツ", 2700, "色").variant("白").publish();

@@ -136,9 +136,6 @@ class CheckoutCartChangeApiTest {
      * 公開した商品（1,000 円・10%）のバリアントを作り、在庫数を設定して、バリアント ID を返す
      */
     private UUID stockedVariant(int quantity) throws Exception {
-        var product = catalog.product(taxCategoryId, "商品", 1000).publish();
-        var variantId = product.variantIds.getFirst();
-        inventory.stock(variantId, product.id, quantity);
-        return variantId;
+        return inventory.stockedVariant(catalog, taxCategoryId, "商品", quantity);
     }
 }

@@ -411,11 +411,7 @@ class OrderPaymentApiTest {
      * @return バリアント ID
      */
     private UUID stockedVariant(String name) throws Exception {
-        var catalog = new CatalogTestData(mockMvc, clock);
-        var product = catalog.product(taxCategoryId, name, 1000).publish();
-        var id = product.variantIds.getFirst();
-        inventory.stock(id, product.id, 5);
-        return id;
+        return inventory.stockedVariant(new CatalogTestData(mockMvc, clock), taxCategoryId, name, 5);
     }
 
     /**
@@ -490,6 +486,6 @@ class OrderPaymentApiTest {
     }
 
     private void expectQuantity(UUID variant, int quantity) throws Exception {
-        mockMvc.perform(get("/api/admin/inventory/variants/" + variant)).andExpect(jsonPath("$.quantity").value(quantity));
+        InventoryTestData.expectQuantity(mockMvc, variant, quantity);
     }
 }

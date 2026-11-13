@@ -1,6 +1,6 @@
 package com.ecsite.module.cart.presentation;
 
-import com.ecsite.AsyncEvents;
+import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
@@ -10,14 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,36 +40,17 @@ class MemberCartConcurrencyTest {
     void createsOnlyOneCartOnConcurrentFirstRequests() throws Exception {
         var member = TestTokens.member().subject(UUID.randomUUID());
         var threads = 8;
-        var ready = new CountDownLatch(threads);
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(threads);
-        try {
-            List<Future<UUID>> futures = new ArrayList<>();
-            for (int i = 0; i < threads; i++) {
-                futures.add(executor.submit(() -> {
-                    ready.countDown();
-                    start.await();
-                    var body = mockMvc.perform(get(MEMBER_CART).with(member.bearer()))
-                            .andExpect(status().isOk())
-                            .andReturn().getResponse().getContentAsString();
-                    return TestJson.uuid(body, "$.cartId");
-                }));
-            }
-            assertThat(ready.await(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isTrue();
-            start.countDown();
+        var cartIds = new HashSet<UUID>(Concurrently.run(threads, i -> {
+            var body = mockMvc.perform(get(MEMBER_CART).with(member.bearer()))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            return TestJson.uuid(body, "$.cartId");
+        }));
 
-            var cartIds = new HashSet<UUID>();
-            for (var future : futures) {
-                cartIds.add(future.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS));
-            }
-
-            assertThat(cartIds).hasSize(1);
-            var memberId = dsl.select(CART_.MEMBER_ID).from(CART_).where(CART_.ID.eq(cartIds.iterator().next()))
-                    .fetchOne(CART_.MEMBER_ID);
-            assertThat(memberId).isNotNull();
-            assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId))).isEqualTo(1);
-        } finally {
-            executor.shutdownNow();
-        }
+        assertThat(cartIds).hasSize(1);
+        var memberId = dsl.select(CART_.MEMBER_ID).from(CART_).where(CART_.ID.eq(cartIds.iterator().next()))
+                .fetchOne(CART_.MEMBER_ID);
+        assertThat(memberId).isNotNull();
+        assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId))).isEqualTo(1);
     }
 }

@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
+import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
@@ -18,12 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -109,28 +105,7 @@ class JooqStockItemRepositoryTest {
         // +5 と +3 を 10 回ずつ同時に行う：10 + (5 + 3) × 10 = 90
         var deltas = IntStream.range(0, 10).boxed().flatMap(i -> Stream.of(5, 3)).toList();
 
-        var ready = new CountDownLatch(deltas.size());
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(deltas.size());
-        try {
-            List<Future<Integer>> results = new ArrayList<>();
-            for (var delta : deltas) {
-                results.add(executor.submit(() -> {
-                    ready.countDown();
-                    start.await();
-                    return adjust(delta, StockAdjustmentReason.ARRIVAL);
-                }));
-            }
-            ready.await();
-            start.countDown();
-            for (var result : results) {
-                result.get();
-            }
-        } finally {
-            // try-with-resources（close）は全部の処理の終わりを待つので、途中で失敗すると start を待つスレッドが残って止まる。
-            // 割り込んで止める shutdownNow を使う
-            executor.shutdownNow();
-        }
+        Concurrently.run(deltas.size(), i -> adjust(deltas.get(i), StockAdjustmentReason.ARRIVAL));
 
         assertThat(queryRepository.findQuantity(variantId)).contains(90);
         // 各調整の調整後の在庫数は、重ならずに 1 回ずつ記録される

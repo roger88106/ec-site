@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -61,7 +62,7 @@ class StripeWebhookControllerTest {
         verify(handler).handle(PAYLOAD, null);
     }
 
-    private org.springframework.test.web.servlet.ResultActions receive(String signature) throws Exception {
+    private ResultActions receive(String signature) throws Exception {
         return mockMvc.perform(post("/api/webhooks/stripe")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Stripe-Signature", signature)

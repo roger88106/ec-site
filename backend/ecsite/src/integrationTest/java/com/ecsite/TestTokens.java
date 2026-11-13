@@ -255,6 +255,8 @@ public final class TestTokens {
         }
 
         /**
+         * アカウントの ID を設定する。
+         *
          * @param subject IdP のアカウントの ID
          * @return this
          */
@@ -264,6 +266,8 @@ public final class TestTokens {
         }
 
         /**
+         * 姓と名を設定する。
+         *
          * @param familyName 姓
          * @param givenName  名
          * @return this
@@ -275,6 +279,8 @@ public final class TestTokens {
         }
 
         /**
+         * メールアドレスを設定する。
+         *
          * @param email メールアドレス
          * @return this
          */
@@ -284,6 +290,8 @@ public final class TestTokens {
         }
 
         /**
+         * メールアドレスが確認済みかを設定する。
+         *
          * @param emailVerified メールアドレスが確認済みか
          * @return this
          */
@@ -293,6 +301,8 @@ public final class TestTokens {
         }
 
         /**
+         * 生年月日を設定する。
+         *
          * @param birthdate 生年月日（会員の任意の属性。null なら載せない）
          * @return this
          */
@@ -302,6 +312,8 @@ public final class TestTokens {
         }
 
         /**
+         * 性別を設定する。
+         *
          * @param gender 性別（会員の任意の属性。null なら載せない）
          * @return this
          */
@@ -311,6 +323,8 @@ public final class TestTokens {
         }
 
         /**
+         * 権限を設定する。
+         *
          * @param permissions 権限（{@code resource:action}）
          * @return this
          */
@@ -320,6 +334,8 @@ public final class TestTokens {
         }
 
         /**
+         * issuer を設定する。
+         *
          * @param issuer issuer（別の realm・知らない IdP の token を作るため）
          * @return this
          */
@@ -329,6 +345,8 @@ public final class TestTokens {
         }
 
         /**
+         * audience を設定する。
+         *
          * @param audience audience
          * @return this
          */
@@ -338,6 +356,8 @@ public final class TestTokens {
         }
 
         /**
+         * 有効期限を設定する。
+         *
          * @param expiresAt 有効期限
          * @return this
          */

@@ -53,22 +53,27 @@ class ModuleDiagramTest {
      * モジュールの依存の図の、文書の生成の範囲の始まりの印
      */
     private static final String DEPENDENCIES_START = "<!-- generated:module-dependencies -->";
+
     /**
      * モジュールの依存の図の、文書の生成の範囲の終わりの印
      */
     private static final String DEPENDENCIES_END = "<!-- /generated:module-dependencies -->";
+
     /**
      * モジュール間のイベントの図の、文書の生成の範囲の始まりの印
      */
     private static final String EVENTS_START = "<!-- generated:module-events -->";
+
     /**
      * モジュール間のイベントの図の、文書の生成の範囲の終わりの印
      */
     private static final String EVENTS_END = "<!-- /generated:module-events -->";
+
     /**
      * 文書の手書きの外部システムの図（2 つ）をまとめて囲む始まりの印
      */
     private static final String EXTERNAL_START = "<!-- external-systems -->";
+
     /**
      * 文書の手書きの外部システムの図（2 つ）をまとめて囲む終わりの印
      */
@@ -579,6 +584,9 @@ class ModuleDiagramTest {
 
     /**
      * イベントの流れの 1 本
+     *
+     * @param publisher 発行するモジュールの名前
+     * @param listener  受け取るモジュールの名前
      */
     private record EventEdge(String publisher, String listener) implements Comparable<EventEdge> {
 

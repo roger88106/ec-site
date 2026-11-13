@@ -33,6 +33,8 @@ public class ReportTestData {
     private final DSLContext dsl;
 
     /**
+     * jOOQ DSL Context を受け取る。
+     *
      * @param dsl jOOQ DSL Context
      */
     public ReportTestData(DSLContext dsl) {
@@ -71,6 +73,8 @@ public class ReportTestData {
         }
 
         /**
+         * 出荷日を設定する。
+         *
          * @param date 出荷日（日本時間の正午に出荷したものとする）
          * @return this
          */
@@ -80,6 +84,8 @@ public class ReportTestData {
         }
 
         /**
+         * 都道府県を設定する。
+         *
          * @param code 全国地方公共団体コードの上 2 桁。null なら不明
          * @return this
          */
@@ -89,6 +95,8 @@ public class ReportTestData {
         }
 
         /**
+         * 買い手の年齢と性別を設定する。
+         *
          * @param age    注文時の年齢。null なら不明
          * @param gender 注文時の性別。null なら不明
          * @return this
@@ -100,6 +108,8 @@ public class ReportTestData {
         }
 
         /**
+         * 送料を設定する。
+         *
          * @param fee 送料（税込）。消費税は 10% の内税
          * @return this
          */

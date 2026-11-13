@@ -77,7 +77,7 @@ class PaymentCaptureTest {
         paymentApi.capture(orderId);
 
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
-        assertThat(gateway.captureCalls()).isEqualTo(1);
+        assertThat(gateway.captureCallsOf(orderId)).isEqualTo(1);
     }
 
     @Test
@@ -101,7 +101,7 @@ class PaymentCaptureTest {
 
         assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
-        assertThat(gateway.captureCalls()).isEqualTo(1);
+        assertThat(gateway.captureCallsOf(orderId)).isEqualTo(1);
     }
 
     @Test
@@ -126,14 +126,16 @@ class PaymentCaptureTest {
         assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
 
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
-        assertThat(gateway.captureCalls()).isZero();
+        assertThat(gateway.captureCallsOf(orderId)).isZero();
     }
 
     @Test
     @DisplayName("BR-21 支払のない注文は確定できない")
     void rejectsCaptureOfUnknownOrder() {
-        assertBusinessError(() -> paymentApi.capture(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+        var orderId = UUID.randomUUID();
 
-        assertThat(gateway.captureCalls()).isZero();
+        assertBusinessError(() -> paymentApi.capture(orderId), CommonErrorCode.NOT_FOUND);
+
+        assertThat(gateway.captureCallsOf(orderId)).isZero();
     }
 }

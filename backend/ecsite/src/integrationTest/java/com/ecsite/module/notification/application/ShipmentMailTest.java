@@ -41,7 +41,6 @@ class ShipmentMailTest {
     @Autowired
     TransactionTemplate transaction;
 
-
     @Autowired
     Mailpit mailpit;
 
@@ -84,6 +83,8 @@ class ShipmentMailTest {
 
         verify(mailer, timeout(TIMEOUT.toMillis())).send(any());
         assertThat(mailpit.messagesTo(email)).isEmpty();
+        // 失敗が記録されてから再発行する（記録の前に再発行すると、対象にならない）
+        asyncEvents.awaitFailed(event::equals);
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じく、このテストのイベントを再発行する
         clock.advance(Duration.ofMinutes(6));

@@ -56,7 +56,6 @@ class PaymentVoidTest {
     @Autowired
     TestPaymentGateway gateway;
 
-
     @Autowired
     MutableClock clock;
 
@@ -139,7 +138,7 @@ class PaymentVoidTest {
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-        assertThat(gateway.voided()).hasSize(1);
+        assertThat(gateway.voidsOf(gateway.authorizationRefOf(payments.pageIdOf(orderId)))).isEqualTo(1);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOIDED);
     }
 
@@ -180,7 +179,7 @@ class PaymentVoidTest {
 
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-        assertThat(gateway.voided()).isEmpty();
+        assertThat(gateway.voidsOf(gateway.authorizationRefOf(payments.pageIdOf(orderId)))).isZero();
         assertThat(gateway.refunded()).containsExactly(orderId);
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).containsExactly(Money.of(6940));
     }
@@ -207,7 +206,7 @@ class PaymentVoidTest {
         assertThat(duplicated).isTrue();
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
-        assertThat(gateway.voided()).isEmpty();
+        assertThat(gateway.voidsOf(gateway.authorizationRefOf(payments.pageIdOf(orderId)))).isZero();
     }
 
     @Test
@@ -224,7 +223,7 @@ class PaymentVoidTest {
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
-        assertThat(gateway.voided()).isEmpty();
+        assertThat(gateway.voidsOf(gateway.authorizationRefOf(payments.pageIdOf(orderId)))).isZero();
     }
 
     // ============================== 補助 ==============================

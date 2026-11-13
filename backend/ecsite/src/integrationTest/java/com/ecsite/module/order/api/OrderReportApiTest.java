@@ -100,6 +100,7 @@ class OrderReportApiTest {
         var variantId = shirt.variantIds.getFirst();
         inventory.stock(variantId, shirt.id, 10);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
+        // 商品の準備で時計が進むので戻す
         clock.setInstant(NOW);
     }
 

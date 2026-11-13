@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-
 /**
  * イベントの記録（Spring Modulith の表）のテーブルの定義と、イベントを発行して処理を待つ補助
  *

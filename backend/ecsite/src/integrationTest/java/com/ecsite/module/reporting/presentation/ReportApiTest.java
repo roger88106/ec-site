@@ -81,7 +81,7 @@ class ReportApiTest {
     void setUp() throws Exception {
         clock.setInstant(Instant.parse("2026-10-07T15:00:00Z"));
         catalog = new CatalogTestData(mockMvc, clock);
-        taxCategoryId = catalog.taxCategory("標準", "10");
+        taxCategoryId = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10");
         shirt = catalog.product(taxCategoryId, "T シャツ", 1000, "色").variant("白").variant("黒");
 
         var data = new ReportTestData(dsl);

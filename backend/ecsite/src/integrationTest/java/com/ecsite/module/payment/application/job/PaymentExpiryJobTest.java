@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -92,6 +94,9 @@ class PaymentExpiryJobTest {
     @Autowired
     ConfigurableListableBeanFactory beanFactory;
 
+    @Autowired
+    ApplicationContext context;
+
     @BeforeEach
     void setUp() {
         payments = new PaymentTestData(paymentApi, gateway);
@@ -106,7 +111,7 @@ class PaymentExpiryJobTest {
         var pageId = payments.openPage(orderId);
 
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> settled(orderId));
 
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.CLOSED);
@@ -119,7 +124,7 @@ class PaymentExpiryJobTest {
         var orderId = payments.created(ORDERED_AT);
 
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> settled(orderId));
 
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(expiredEvents(orderId)).isEqualTo(1);
@@ -145,7 +150,7 @@ class PaymentExpiryJobTest {
         gateway.markPaid(payments.openPage(orderId));
 
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> settled(orderId));
 
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         assertThat(expiredEvents(orderId)).isZero();
@@ -159,7 +164,7 @@ class PaymentExpiryJobTest {
         gateway.markPaid(pageId);
 
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> settled(orderId));
 
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         assertThat(paymentOf(orderId).authorizationRef()).isEqualTo(gateway.authorizationRefOf(pageId));
@@ -177,7 +182,7 @@ class PaymentExpiryJobTest {
         var jobTime = DEADLINE.plus(Duration.ofHours(3));
 
         clock.setInstant(jobTime);
-        job.expire();
+        expireUntil(() -> settled(orderId));
 
         var payment = paymentOf(orderId);
         var term = properties.authorizationTerm();
@@ -196,7 +201,7 @@ class PaymentExpiryJobTest {
         gateway.markPaid(pageId);
         gateway.rejectAuthorizationFetch(pageId);
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> processed(orderId));
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
         assertThat(paymentOf(orderId).awaitingAuthorizationSince()).isPresent();
         gateway.reset();
@@ -214,7 +219,7 @@ class PaymentExpiryJobTest {
         var pageId = payments.openPage(orderId);
         gateway.markPaid(pageId);
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> settled(orderId));
         var authorizedAt = paymentOf(orderId).authorizedAt();
 
         clock.setInstant(DEADLINE.plusSeconds(600));
@@ -233,7 +238,7 @@ class PaymentExpiryJobTest {
         gateway.markPaid(pageId);
         gateway.failNextAuthorizationFetches(1);
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> processed(orderId));
         assertThat(paymentOf(orderId).awaitingAuthorizationSince()).isPresent();
         var notifiedAt = DEADLINE.plusSeconds(120);
         clock.setInstant(notifiedAt);
@@ -264,7 +269,7 @@ class PaymentExpiryJobTest {
         gateway.rejectAuthorizationFetch(failingPage);
 
         clock.setInstant(DEADLINE.plusSeconds(60));
-        job.expire();
+        expireUntil(() -> processed(failing) && settled(other));
 
         assertThat(payments.statusOf(failing)).isEqualTo(PaymentSummary.Status.UNPAID);
         assertThat(paymentOf(failing).awaitingAuthorizationSince()).isPresent();
@@ -281,10 +286,7 @@ class PaymentExpiryJobTest {
     void stopsAfterConsecutiveUnavailableAndRetriesNextRun() {
         // 他のテストが残した、与信の反映を待つ支払を先に解消して、取得の呼び出しの回数に影響しないようにする
         clock.setInstant(DEADLINE);
-        int maxRuns = queryService.findAwaitingAuthorization(Integer.MAX_VALUE).size() / 100 + 2;
-        for (int run = 0; run < maxRuns && !queryService.findAwaitingAuthorization(1).isEmpty(); run++) {
-            job.expire();
-        }
+        expireUntil(() -> queryService.findAwaitingAuthorization(1).isEmpty());
         gateway.reset();
         clock.setInstant(ORDERED_AT);
         var orderIds = new ArrayList<UUID>();
@@ -317,7 +319,7 @@ class PaymentExpiryJobTest {
         gateway.onFetchAuthorization(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
 
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> settled(orderId));
 
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         assertThat(transactionActive).isNotEmpty().containsOnly(false);
@@ -337,13 +339,8 @@ class PaymentExpiryJobTest {
         }
         try {
             clock.setInstant(DEADLINE);
-            // 自分の支払が全て与信の反映を待つ支払になるまで実行する（他のテストが残した期限切れの支払も、同じ回で処理される）。
-            // 1 回に少なくとも 1 件は処理するので、回数の上限は、未処理の支払の数に 1 を加えたもの
-            int pending = queryService.findPastDeadline(Integer.MAX_VALUE).size();
-            int maxRuns = pending + 1;
-            for (int run = 0; run < maxRuns && !allAwaitingAuthorization(awaiting); run++) {
-                job.expire();
-            }
+            // 自分の支払が全て与信の反映を待つ支払になるまで実行する（他のテストが残した期限切れの支払も、同じ回で処理される）
+            expireUntil(() -> allAwaitingAuthorization(awaiting));
             assertThat(allAwaitingAuthorization(awaiting)).as("上限の回数で、自分の支払が全て処理される").isTrue();
 
             // それより新しい支払が、期限を過ぎる
@@ -358,10 +355,7 @@ class PaymentExpiryJobTest {
         } finally {
             // 与信の反映を待つ支払を残すと、100 件の上限で他のテストに影響する。取得できるようにして、自分の支払が全て与信済みになるまで実行する
             gateway.reset();
-            int maxRuns = queryService.findAwaitingAuthorization(Integer.MAX_VALUE).size() / 100 + 2;
-            for (int run = 0; run < maxRuns && !allAuthorized(awaiting); run++) {
-                job.expire();
-            }
+            expireUntil(() -> allAuthorized(awaiting));
         }
         assertThat(allAuthorized(awaiting)).as("待つ支払を残さない").isTrue();
     }
@@ -373,7 +367,7 @@ class PaymentExpiryJobTest {
         payments.openPage(orderId);
 
         clock.setInstant(DEADLINE);
-        job.expire();
+        expireUntil(() -> settled(orderId));
         job.expire();
 
         assertThat(expiredEvents(orderId)).isEqualTo(1);
@@ -390,6 +384,27 @@ class PaymentExpiryJobTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * テストの支払が処理されるまで、ジョブを繰り返し実行する（上限つき）。
+     */
+    private void expireUntil(BooleanSupplier done) {
+        PaymentJobs.expireUntil(context, done);
+    }
+
+    /**
+     * 指定の注文の支払が、未払いでなくなったか（支払なしか与信済みになったか）。
+     */
+    private boolean settled(UUID orderId) {
+        return paymentOf(orderId).status() != PaymentStatus.UNPAID;
+    }
+
+    /**
+     * 指定の注文の支払を、期限切れの処理が扱ったか（未払いでなくなったか、与信の反映を待つ支払になったか）。
+     */
+    private boolean processed(UUID orderId) {
+        return settled(orderId) || paymentOf(orderId).awaitingAuthorizationSince().isPresent();
+    }
 
     /**
      * 指定の注文の支払が、全て与信の反映を待つ支払になっているか。

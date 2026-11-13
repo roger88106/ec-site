@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BuyerProfileTest {
 
     /**
-     * 2026-10-07 15:30 UTC は、日本時間では 2026-10-08 00:30
+     * 注文日時
+     *
+     * <p>2026-10-07 15:30 UTC は、日本時間では 2026-10-08 00:30。
      */
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 

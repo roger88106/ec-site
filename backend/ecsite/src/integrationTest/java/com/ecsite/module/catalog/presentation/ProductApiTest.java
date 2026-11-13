@@ -58,7 +58,7 @@ class ProductApiTest {
      *
      * <p>日本時間の 2026-10-08 00:00。
      */
-    private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
+    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
      * 有効な税率がない税区分の税率が有効になる日時
@@ -108,10 +108,10 @@ class ProductApiTest {
     void setUp() throws Exception {
         clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
-        standard = catalog.taxCategory("標準", "10").toString();
+        standard = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         reduced = catalog.taxCategory("軽減", "8").toString();
         notYetEffective = catalog.taxCategory("将来", "10", NOT_YET_EFFECTIVE_FROM).toString();
-        clothing = catalog.category("衣類", null).toString();
+        clothing = catalog.category("衣類 " + UUID.randomUUID(), null).toString();
     }
 
     @Nested

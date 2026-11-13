@@ -41,7 +41,14 @@ class AdminRealmPermissionContractTest {
      */
     private static final String REPORT_PREFIX = "report-";
 
+    /**
+     * 契約で宣言した権限の一覧
+     */
     private static Set<String> declaredPermissions;
+
+    /**
+     * 読み込んだ realm の定義
+     */
     private static String realm;
 
     // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む

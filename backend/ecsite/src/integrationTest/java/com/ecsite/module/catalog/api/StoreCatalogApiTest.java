@@ -22,10 +22,10 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -86,7 +86,7 @@ class StoreCatalogApiTest {
         clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         TaxRateScheduleCaches.evict(applicationContext);
-        standard = catalog.taxCategory("標準", "10");
+        standard = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10");
         reduced = catalog.taxCategory("軽減", "8");
         category = catalog.category("カテゴリ " + UUID.randomUUID(), null);
     }
@@ -108,8 +108,7 @@ class StoreCatalogApiTest {
         var page = api.listProducts(query(category, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 100));
 
         // 新着順なので、公開した順の逆
-        var actual = new ArrayList<>(page.items().stream().map(summary -> summary.priceInclTax().yen()).toList());
-        Collections.reverse(actual);
+        var actual = page.items().stream().map(summary -> summary.priceInclTax().yen()).toList().reversed();
         assertThat(actual).containsExactlyElementsOf(expected);
     }
 
@@ -161,11 +160,10 @@ class StoreCatalogApiTest {
             ids.add(catalog.product(standard, "商品", 1000, List.of(category)).publish().id);
         }
 
-        var collected = new ArrayList<UUID>();
-        for (int page = 1; page <= 3; page++) {
-            api.listProducts(query(category, null, null, StoreProductSort.PRICE_ASC), PageRequest.of(page, 3)).items()
-                    .forEach(item -> collected.add(item.id()));
-        }
+        var collected = IntStream.rangeClosed(1, 3).boxed()
+                .flatMap(page -> api.listProducts(query(category, null, null, StoreProductSort.PRICE_ASC), PageRequest.of(page, 3)).items().stream())
+                .map(StoreProductSummary::id)
+                .toList();
 
         // PostgreSQL の uuid の順は文字列の辞書順（Java の UUID#compareTo は符号付きで比べるので使えない）
         assertThat(collected).doesNotHaveDuplicates()
@@ -190,10 +188,10 @@ class StoreCatalogApiTest {
     @Test
     @DisplayName("AC-52 カテゴリで絞り込める。子孫のカテゴリの商品も含む")
     void filtersByCategoryIncludingDescendants() throws Exception {
-        var clothing = catalog.category("衣類", null);
+        var clothing = catalog.category("衣類 " + UUID.randomUUID(), null);
         var tops = catalog.category("トップス", clothing);
         var tShirts = catalog.category("T シャツ", tops);
-        var food = catalog.category("食品", null);
+        var food = catalog.category("食品 " + UUID.randomUUID(), null);
         var inClothing = catalog.product(standard, "商品", "", 1000, List.of(clothing)).publish().id;
         var inTShirts = catalog.product(standard, "商品", "", 1000, List.of(tShirts)).publish().id;
         catalog.product(standard, "商品", "", 1000, List.of(food)).publish();

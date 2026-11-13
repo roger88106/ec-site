@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
+import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -176,15 +178,14 @@ class JooqStockReservationRepositoryTest {
         } else {
             inventory.create(variantId, productId);
         }
-        return dsl.resultQuery("select id from inventory.stock_item where variant_id = ?", variantId)
-                .fetchSingle(0, UUID.class);
+        return dsl.select(STOCK_ITEM.ID).from(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId))
+                .fetchSingle(STOCK_ITEM.ID);
     }
 
     /**
      * 在庫の引当の行数を数える
      */
     private Long countReservations(UUID stockItemId) {
-        return dsl.resultQuery("select count(*) from inventory.stock_reservation where stock_item_id = ?", stockItemId)
-                .fetchSingle(0, Long.class);
+        return (long) dsl.fetchCount(STOCK_RESERVATION, STOCK_RESERVATION.STOCK_ITEM_ID.eq(stockItemId));
     }
 }

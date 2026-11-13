@@ -1,6 +1,11 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
+import com.ecsite.architecture.apiuse.module.sample.api.AllowedTargetApi;
+import com.ecsite.architecture.apiuse.module.sample.api.TargetApi;
+import com.ecsite.architecture.apiuse.module.user.application.ApplicationUsesAllowedApi;
+import com.ecsite.architecture.apiuse.module.user.application.ApplicationUsesTargetApi;
+import com.ecsite.architecture.apiuse.module.user.presentation.PresentationUsesAllowedApi;
 import com.ecsite.architecture.commondeps.sample.common.CommonToConfig;
 import com.ecsite.architecture.commondeps.sample.config.SampleConfig;
 import com.ecsite.architecture.layerdeps.module.sample.api.ApiToApplication;
@@ -417,6 +422,22 @@ class ModuleStructureTest {
     }
 
     @Test
+    @DisplayName("他のモジュールの api の規則は、許可の一覧にない型と層の使い方に当たり、許可の一覧の使い方には当たらない")
+    void apiUseRuleMatchesUnlistedUsesOnly() {
+        JavaClasses examples = new ClassFileImporter().importClasses(ApplicationUsesTargetApi.class,
+                ApplicationUsesAllowedApi.class, PresentationUsesAllowedApi.class);
+        var allowedUses = List.of(new AllowedApiUse(AllowedTargetApi.class.getName(),
+                "com.ecsite.architecture.apiuse.module.*.presentation.."));
+
+        List<String> details = classes().should(new NotUseApiCondition("com.ecsite.architecture.apiuse.module", "sample", allowedUses))
+                .evaluate(examples).getFailureReport().getDetails();
+
+        assertViolation(details, ApplicationUsesTargetApi.class, TargetApi.class);
+        assertViolation(details, ApplicationUsesAllowedApi.class, AllowedTargetApi.class);
+        assertThat(details).noneMatch(detail -> detail.contains(PresentationUsesAllowedApi.class.getName()));
+    }
+
+    @Test
     @DisplayName("api を使う許可の一覧は、全て本番のクラスで使われている")
     void everyAllowedApiUseIsUsed() {
         for (AllowedApiUse allowed : ALLOWED_API_USES) {
@@ -682,7 +703,7 @@ class ModuleStructureTest {
      * @return 条件
      */
     private static ArchCondition<JavaClass> notUseApiOf(String module) {
-        return new NotUseApiCondition(module);
+        return new NotUseApiCondition(ProductionClasses.MODULE_PACKAGE, module, ALLOWED_API_USES);
     }
 
     /**
@@ -730,13 +751,21 @@ class ModuleStructureTest {
         private final String apiPackage;
 
         /**
+         * api を使ってよい組の一覧
+         */
+        private final List<AllowedApiUse> allowedUses;
+
+        /**
          * 条件を作る。
          *
-         * @param module api を持つモジュールの名前
+         * @param modulePackage モジュールを置くパッケージ（本番は {@link ProductionClasses#MODULE_PACKAGE}。検査の例は例のパッケージ）
+         * @param module        api を持つモジュールの名前
+         * @param allowedUses   api を使ってよい組の一覧
          */
-        NotUseApiCondition(String module) {
+        NotUseApiCondition(String modulePackage, String module, List<AllowedApiUse> allowedUses) {
             super("%s の api を、許可の一覧にない使い方で使わない".formatted(module));
-            this.apiPackage = "%s.%s.api".formatted(ProductionClasses.MODULE_PACKAGE, module);
+            this.apiPackage = "%s.%s.api".formatted(modulePackage, module);
+            this.allowedUses = allowedUses;
         }
 
         /**
@@ -749,7 +778,7 @@ class ModuleStructureTest {
         public void check(JavaClass javaClass, ConditionEvents events) {
             for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
                 JavaClass target = dependency.getTargetClass();
-                if (ProductionClasses.isInPackage(target.getPackageName(), apiPackage) && !isAllowed(javaClass, target)) {
+                if (ProductionClasses.isInPackage(target.getPackageName(), apiPackage) && !isAllowed(javaClass, target, allowedUses)) {
                     events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
                 }
             }
@@ -759,12 +788,13 @@ class ModuleStructureTest {
     /**
      * api の型の使い方が、許可の一覧にあるかを返す。
      *
-     * @param user   使う側のクラス
-     * @param target 使われる api の型
+     * @param user        使う側のクラス
+     * @param target      使われる api の型
+     * @param allowedUses api を使ってよい組の一覧
      * @return 許可の一覧にあれば true
      */
-    private static boolean isAllowed(JavaClass user, JavaClass target) {
-        return ALLOWED_API_USES.stream().anyMatch(allowed ->
+    private static boolean isAllowed(JavaClass user, JavaClass target, List<AllowedApiUse> allowedUses) {
+        return allowedUses.stream().anyMatch(allowed ->
                 allowed.apiType().equals(target.getName())
                         && PackageMatcher.of(allowed.userPackage()).matches(user.getPackageName()));
     }

@@ -81,6 +81,7 @@ class CancellationApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
+        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
@@ -329,6 +330,6 @@ class CancellationApiTest {
      * 在庫数を確認する
      */
     private void expectQuantity(int quantity) throws Exception {
-        mockMvc.perform(get("/api/admin/inventory/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(quantity));
+        InventoryTestData.expectQuantity(mockMvc, variantId, quantity);
     }
 }

@@ -194,7 +194,9 @@ class ExternalServiceSelectionTest {
     }
 
     /**
-     * 追跡を使う Bean（本番では、出荷のアプリケーション層が実装の置き場所より先に作られる）
+     * 追跡を使う Bean
+     *
+     * <p>本番では、出荷のアプリケーション層が実装の置き場所より先に作られる。
      *
      * @param tracking 追跡
      */

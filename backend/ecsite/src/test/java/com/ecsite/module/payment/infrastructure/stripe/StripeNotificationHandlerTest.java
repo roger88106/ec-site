@@ -150,7 +150,7 @@ class StripeNotificationHandlerTest {
         assertThat(receiver.received).containsExactly("pageExpired " + EXPIRED_SESSION_ID);
     }
 
-// ============================== プライベート ==============================
+    // ============================== 補助 ==============================
 
     /**
      * 記録した通知の本文を読む。

@@ -102,6 +102,7 @@ class StoreOrderShipmentApiTest {
         var orders = new OrderTestData(mockMvc, gateway, applicationContext);
         accepted = orders.placeOrder(variantId, 1);
         shipped = orders.placeOrder(variantId, 1);
+        // ハイフン付きで出荷し、送り状番号をハイフンなしにそろえる処理も通す
         new ShippingTestData(mockMvc, mockCarrier).ship(shipped, Carrier.YAMATO, "1234-5678-9012");
     }
 

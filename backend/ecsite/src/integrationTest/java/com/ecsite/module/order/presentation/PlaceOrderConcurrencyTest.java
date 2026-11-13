@@ -2,6 +2,7 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
+import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.LockWaits;
@@ -10,6 +11,7 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
+import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -28,13 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
@@ -77,6 +76,9 @@ class PlaceOrderConcurrencyTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    AsyncEvents asyncEvents;
 
     /**
      * テストの側でトランザクションを開いて、在庫の行をロックする TransactionTemplate
@@ -124,7 +126,7 @@ class PlaceOrderConcurrencyTest {
         var cartId = cartWith(2);
         var checkoutId = startCheckout(cartId);
 
-        var responses = concurrently(5, () -> place(checkoutId));
+        var responses = Concurrently.run(5, i -> place(checkoutId));
 
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsOnly(201, 200)
                 .filteredOn(status -> status == 201).hasSize(1);
@@ -274,41 +276,10 @@ class PlaceOrderConcurrencyTest {
     }
 
     /**
-     * 同じ処理を、複数のスレッドで同時に始める
-     */
-    private List<MockHttpServletResponse> concurrently(int threads, Callable<MockHttpServletResponse> task)
-            throws Exception {
-        var ready = new CountDownLatch(threads);
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(threads);
-        try {
-            List<Future<MockHttpServletResponse>> futures = new ArrayList<>();
-            for (int i = 0; i < threads; i++) {
-                futures.add(executor.submit(() -> {
-                    ready.countDown();
-                    start.await();
-                    return task.call();
-                }));
-            }
-            ready.await();
-            start.countDown();
-            var responses = new ArrayList<MockHttpServletResponse>();
-            for (var future : futures) {
-                responses.add(future.get());
-            }
-            return responses;
-        } finally {
-            // close は全部の処理の終わりを待つので、途中で失敗すると start を待つスレッドが残る。割り込んで止める
-            executor.shutdownNow();
-        }
-    }
-
-    /**
      * 注文手続きごとに 1 つのスレッドで、同時に注文する
      */
     private List<MockHttpServletResponse> placeAll(List<UUID> checkouts) throws Exception {
-        var index = new AtomicInteger();
-        return concurrently(checkouts.size(), () -> place(checkouts.get(index.getAndIncrement())));
+        return Concurrently.run(checkouts.size(), i -> place(checkouts.get(i)));
     }
 
     /**
@@ -342,6 +313,8 @@ class PlaceOrderConcurrencyTest {
         var cartId = orders.cart(owner.bearer());
         owners.put(cartId, owner);
         orders.add(cartId, product.variantIds.getFirst(), quantity, owner.bearer());
+        // カートの変更の処理が、注文手続きや注文と重ならないように待つ
+        asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.cartId().equals(cartId));
         return cartId;
     }
 

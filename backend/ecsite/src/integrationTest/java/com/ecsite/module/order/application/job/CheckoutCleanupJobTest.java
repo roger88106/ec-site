@@ -12,6 +12,7 @@ import com.ecsite.module.order.application.checkout.CheckoutService;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -107,6 +108,7 @@ class CheckoutCleanupJobTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
+        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
@@ -143,8 +145,10 @@ class CheckoutCleanupJobTest {
         mockMvc.perform(get("/api/store/me/orders"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id", hasItem(orderId.toString())));
-        mockMvc.perform(get("/api/admin/orders/" + orderId)).andExpect(status().isOk());
-        mockMvc.perform(get("/api/admin/orders"))
+        var adminOrder = mockMvc.perform(get("/api/admin/orders/" + orderId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        // 他のテストの注文が多いと 1 ページ目に入らないので、自分の注文の注文番号で絞る
+        mockMvc.perform(get("/api/admin/orders").param("orderNumber", JsonPath.<String>read(adminOrder, "$.orderNumber")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id", hasItem(orderId.toString())));
         mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")

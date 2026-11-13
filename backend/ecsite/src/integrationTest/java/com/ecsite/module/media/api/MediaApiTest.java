@@ -33,6 +33,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -110,7 +111,7 @@ class MediaApiTest {
 
                 assertThat(upload.uploadId()).isNotNull();
                 assertThat(upload.headers()).containsEntry("Content-Type", contentType);
-                assertThat(upload.expiresAt()).isAfter(java.time.Instant.now());
+                assertThat(upload.expiresAt()).isAfter(Instant.now());
             }
             var png = TestImages.png();
             var upload = media.requestImageUpload(scope(), "image/png", png.length);

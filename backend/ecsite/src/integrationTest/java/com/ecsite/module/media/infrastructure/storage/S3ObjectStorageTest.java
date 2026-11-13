@@ -25,6 +25,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,7 +66,7 @@ class S3ObjectStorageTest {
 
         assertThat(put(upload, PNG)).isEqualTo(200);
         assertThat(upload.headers()).containsEntry("Content-Type", "image/png");
-        assertThat(upload.expiresAt()).isAfter(java.time.Instant.now());
+        assertThat(upload.expiresAt()).isAfter(Instant.now());
         assertThat(storage.findUploadSize(key)).contains((long) PNG.length);
         assertThat(storage.readUploadHead(key, 4)).containsExactly((byte) 0x89, 'P', 'N', 'G');
         assertThat(storage.readUploadHead(key, 100)).containsExactly(PNG);

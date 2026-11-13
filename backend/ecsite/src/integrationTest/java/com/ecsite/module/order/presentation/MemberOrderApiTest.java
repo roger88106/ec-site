@@ -91,10 +91,13 @@ class MemberOrderApiTest {
     private UUID variantId;
 
     /**
-     * 会員（持ち主）
+     * 持ち主の IdP のアカウントの ID
      */
     private final UUID ownerSubject = UUID.randomUUID();
 
+    /**
+     * 会員（持ち主）
+     */
     private final TestTokens.Builder owner = TestTokens.member().subject(ownerSubject).email("owner@example.com");
 
     /**

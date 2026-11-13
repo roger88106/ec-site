@@ -72,6 +72,8 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
+     * 受けたリクエストを返す。
+     *
      * @return 受けたリクエスト（受けた順）
      */
     List<Request> requests() {
@@ -79,6 +81,8 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
+     * このサーバーを宛先にした Stripe の API を作る。
+     *
      * @return このサーバーを API の宛先にした Stripe の API
      */
     StripeClient client() {
@@ -101,6 +105,8 @@ final class StripeApiStub implements AutoCloseable {
     }
 
     /**
+     * 使われていないポートを探す。
+     *
      * @return 使われていないポート（つないでも誰も受けない）
      * @throws IOException ポートを探せない
      */

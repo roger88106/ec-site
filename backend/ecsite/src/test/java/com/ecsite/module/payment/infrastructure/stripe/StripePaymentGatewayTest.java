@@ -49,16 +49,34 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class StripePaymentGatewayTest {
 
+    /**
+     * 注文の ID
+     */
     private static final UUID ORDER_ID = UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0001");
 
+    /**
+     * Stripe の PaymentIntent の ID
+     */
     private static final String INTENT_ID = "pi_test_capture";
 
+    /**
+     * 支払の ID
+     */
     private static final UUID PAYMENT_ID = UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0002");
 
+    /**
+     * Stripe の支払画面（Checkout Session）の ID
+     */
     private static final String SESSION_ID = "cs_test_page";
 
+    /**
+     * Stripe の支払画面の URL
+     */
     private static final String SESSION_URL = "https://checkout.stripe.com/c/pay/cs_test_page";
 
+    /**
+     * 支払の後に利用者を戻す URL
+     */
     private static final String RETURN_URL = "http://localhost:3000/orders/" + ORDER_ID + "?payment=returned";
 
     /**

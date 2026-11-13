@@ -33,7 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TaxRateApiTest {
 
     /**
-     * 2027-04-01 00:00（日本時間）
+     * 2027 年 4 月の初め
+     *
+     * <p>日本時間の 2027-04-01 00:00。
      */
     private static final Instant APR_2027 = Instant.parse("2027-03-31T15:00:00Z");
 
@@ -125,7 +127,7 @@ class TaxRateApiTest {
      * 税区分を登録し、税率の一覧を設定して、その ID を返す
      */
     private UUID createWithRates(Rate... rates) {
-        var id = commandService.createTaxCategory(new CreateTaxCategoryCommand("標準"));
+        var id = commandService.createTaxCategory(new CreateTaxCategoryCommand("標準 " + UUID.randomUUID().toString().substring(0, 8)));
         commandService.replaceTaxRates(new ReplaceTaxRatesCommand(id, 0, List.of(rates)));
         return id;
     }

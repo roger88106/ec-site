@@ -5,8 +5,9 @@ import com.ecsite.architecture.layerdeps.module.sample.application.port.SamplePo
 import com.ecsite.architecture.layerdeps.module.sample.domain.SampleDomain;
 
 /**
- * 層の依存の検査の例：infrastructure から application の port と設定の値の型と domain を使う（表にある組なので規則に合う）。<br />
- * 構成の検査が違反を見つけられることを確認するための例であり、本番のコードではない。
+ * 層の依存の検査の例：infrastructure から application の port と設定の値の型と domain を使う（表にある組なので規則に合う）
+ *
+ * <p>構成の検査が違反を見つけられることを確認するための例であり、本番のコードではない。
  */
 public class InfrastructureToPort {
 

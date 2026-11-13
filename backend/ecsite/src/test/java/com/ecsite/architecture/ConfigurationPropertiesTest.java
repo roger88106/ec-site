@@ -31,17 +31,23 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 設定の値の型と設定のクラスの検査（バックエンドの書き方の「設定の値の型」）。
+ * 設定の値の型と設定のクラスの検査
+ *
+ * <p>根拠はバックエンドの書き方の「設定の値の型」。
  */
 class ConfigurationPropertiesTest {
 
     /**
-     * 秘密の値の項目の名前に含まれる語（小文字）。名前が key で終わる項目も秘密の値とみなす。
+     * 秘密の値の項目の名前に含まれる語
+     *
+     * <p>小文字で持つ。名前が key で終わる項目も秘密の値とみなす。
      */
     private static final List<String> SECRET_WORDS = List.of("secret", "password", "salt", "token", "credential");
 
     /**
-     * 設定の型の項目からたどる型のパッケージ（自分のコードの型だけをたどる）
+     * 設定の型の項目からたどる型のパッケージ
+     *
+     * <p>自分のコードの型だけをたどる。
      */
     private static final String OWN_PACKAGE_PREFIX = "com.ecsite.";
 

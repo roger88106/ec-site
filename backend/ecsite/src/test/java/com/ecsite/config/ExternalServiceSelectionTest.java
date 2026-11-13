@@ -50,7 +50,9 @@ class ExternalServiceSelectionTest {
             "ecsite.payment.stripe.secret-key=sk_test_dummy", "ecsite.payment.stripe.webhook-secret=whsec_test_dummy"};
 
     /**
-     * 依存する Bean の代わりの物と、決済の mock の設定だけを持つ。読み込む実装の置き場所は、テストごとに追加する
+     * 依存する Bean の代わりの物と、決済の mock の設定だけを持つ基本の設定
+     *
+     * <p>読み込む実装の置き場所は、テストごとに追加する。
      */
     private final ApplicationContextRunner base = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))

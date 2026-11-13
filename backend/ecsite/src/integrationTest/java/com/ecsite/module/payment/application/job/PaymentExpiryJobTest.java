@@ -47,6 +47,8 @@ class PaymentExpiryJobTest {
 
     /**
      * 注文日時
+     *
+     * <p>日本時間の 2026-10-08 00:30。
      */
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
@@ -54,7 +56,6 @@ class PaymentExpiryJobTest {
      * 支払の期限（注文日時 ＋ 30 分）
      */
     private static final Instant DEADLINE = ORDERED_AT.plus(Duration.ofMinutes(30));
-
 
     @Autowired
     PaymentExpiryJob job;

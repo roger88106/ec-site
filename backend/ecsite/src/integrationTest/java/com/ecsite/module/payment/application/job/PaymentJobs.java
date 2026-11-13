@@ -9,6 +9,9 @@ import org.springframework.context.ApplicationContext;
  */
 public final class PaymentJobs {
 
+    /**
+     * インスタンスを作らない。
+     */
     private PaymentJobs() {
     }
 

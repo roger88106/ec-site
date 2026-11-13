@@ -42,6 +42,8 @@ class JooqPaymentRepositoryTest {
 
     /**
      * 支払の期限
+     *
+     * <p>日本時間の 2026-10-09 00:30。
      */
     private static final Instant DEADLINE = Instant.parse("2026-10-08T15:30:00Z");
 

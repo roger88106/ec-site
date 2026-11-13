@@ -21,8 +21,9 @@ import static com.ecsite.contract.OpenApiNodes.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * エラーのコードの契約テスト（API の規約の「エラーの本文」）。<br />
- * API ごとに、全体の列挙（{@code ErrorCode}）が、操作ごとの一覧（{@code x-error-codes}）と共通のエラー
+ * エラーのコードの契約テスト
+ *
+ * <p>API の規約の「エラーの本文」に沿う。API ごとに、全体の列挙（{@code ErrorCode}）が、操作ごとの一覧（{@code x-error-codes}）と共通のエラー
  * （{@code x-common-error-codes}）の和と一致し、バックエンドのエラーのコードと過不足なく一致することを確認する。
  */
 class ErrorCodeContractTest {

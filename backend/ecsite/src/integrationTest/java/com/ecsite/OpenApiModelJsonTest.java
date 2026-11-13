@@ -9,8 +9,9 @@ import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * OpenAPI の生成モデルが、アプリの JSON 変換で正しく扱えることの検証。<br />
- * nullable の項目は {@code JsonNullable} で生成されるため、そのモジュールが登録されている必要がある。
+ * OpenAPI の生成モデルの JSON 変換の検証
+ *
+ * <p>nullable の項目は {@code JsonNullable} で生成されるため、そのモジュールが登録されている必要がある。
  */
 @IntegrationTest
 class OpenApiModelJsonTest {

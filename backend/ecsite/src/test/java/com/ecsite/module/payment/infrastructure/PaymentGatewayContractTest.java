@@ -1,7 +1,6 @@
 package com.ecsite.module.payment.infrastructure;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
@@ -14,9 +13,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static com.ecsite.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 決済サービスの port（{@link PaymentGateway}）の、実装によらない振る舞い
@@ -171,9 +170,7 @@ public abstract class PaymentGatewayContractTest {
     @Test
     @DisplayName("閉じた画面の与信の取得は、予期しないエラーの例外")
     void fetchesNothingFromClosedPage() {
-        assertThatThrownBy(() -> gateway().fetchAuthorization(closedPage()))
-                .isInstanceOfSatisfying(SystemException.class,
-                        e -> assertThat(e.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode()));
+        assertSystemError(() -> gateway().fetchAuthorization(closedPage()), CommonErrorCode.SYSTEM_ERROR);
     }
 
     @Test

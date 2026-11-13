@@ -38,7 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 例外とエラーレスポンスの統合テスト（API の規約）。<br />
+ * 例外とエラーレスポンスの統合テスト
+ *
+ * <p>API の規約に対応する。
  * テスト用の Controller から各種の例外を発生させ、エラーレスポンスの形を確認する。
  */
 @IntegrationTest
@@ -51,15 +53,36 @@ class ErrorResponseTest {
     private static final String BASE = "/api/test-errors";
 
     /**
-     * {@code @Validated} の Controller のパス。生成インターフェースは {@code @Validated} 付きなので、検証は Controller の AOP で行われる
+     * {@code @Validated} の Controller のパス
+     *
+     * <p>生成インターフェースは {@code @Validated} 付きなので、検証は Controller の AOP で行われる。
      */
     private static final String VALIDATED_BASE = "/api/test-validated";
 
     // 期待するメッセージ（messages.properties）。メッセージを変えたら、ここも合わせる
+    /**
+     * 入力の誤りのメッセージ
+     */
     private static final String INVALID_REQUEST = "入力内容に誤りがあります。";
+
+    /**
+     * 見つからないときのメッセージ
+     */
     private static final String NOT_FOUND = "見つかりませんでした。";
+
+    /**
+     * 同時更新のメッセージ
+     */
     private static final String CONCURRENT_MODIFICATION = "他の人が先に更新しました。再読み込みしてください。";
+
+    /**
+     * 許可されていないメソッドのメッセージ
+     */
     private static final String METHOD_NOT_ALLOWED = "この操作は許可されていません。";
+
+    /**
+     * システムエラーのメッセージ
+     */
     private static final String SYSTEM_ERROR = "予期しないエラーが発生しました。";
 
     /**
@@ -293,7 +316,9 @@ class ErrorResponseTest {
     }
 
     /**
-     * {@code @Validated} の Controller（生成インターフェースと同じく、メソッド引数の検証が AOP で行われる）
+     * {@code @Validated} の Controller
+     *
+     * <p>生成インターフェースと同じく、メソッド引数の検証が AOP で行われる。
      */
     @RestController
     @RequestMapping(VALIDATED_BASE)

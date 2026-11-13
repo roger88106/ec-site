@@ -16,8 +16,9 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * B 側 API の権限の記載漏れを検出する契約テスト（バックエンドのアーキテクチャの「認証・認可」）。<br />
- * {@code admin.yaml} のすべての操作に {@code x-required-permission} があり、{@code resource:action} の形か、
+ * B 側 API の権限の記載漏れを検出する契約テスト
+ *
+ * <p>バックエンドのアーキテクチャの「認証・認可」に沿う。{@code admin.yaml} のすべての操作に {@code x-required-permission} があり、{@code resource:action} の形か、
  * ログインしていればよい操作を表す {@code authenticated} であることを確認する。
  * 認証の導入時に、この記載から認可を組み立てる。
  */
@@ -29,7 +30,9 @@ class AdminApiPermissionContractTest {
     private static final String PERMISSION_KEY = "x-required-permission";
 
     /**
-     * 権限の形：resource:action（どちらも英小文字。単語の区切りはハイフン）
+     * 権限の形
+     *
+     * <p>resource:action の形で、どちらも英小文字。単語の区切りはハイフン。
      */
     private static final Pattern PERMISSION_FORMAT = Pattern.compile("^[a-z]+(-[a-z]+)*:[a-z]+(-[a-z]+)*$");
 

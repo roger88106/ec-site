@@ -17,7 +17,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの公開の API（{@code api/}）の型の検査（バックエンドの書き方の「標準の構成」）。<br />
+ * モジュールの公開の API（{@code api/}）の型の検査
+ *
+ * <p>根拠はバックエンドの書き方の「標準の構成」。
  * {@code api/} は interface を持たないクラスで、{@code api/} の型を {@code api/} の外が実装・継承しない。
  * record と列挙は interface でないので対象にならない。
  */
@@ -29,7 +31,9 @@ class ApiTypeTest {
     private static final DescribedPredicate<JavaClass> API_PACKAGE = JavaClass.Predicates.resideInAPackage("..module.*.api..");
 
     /**
-     * package-info.java から作られるクラスの名前。コンパイラが interface として作るので、interface の数から除く
+     * package-info.java から作られるクラスの名前
+     *
+     * <p>コンパイラが interface として作るので、interface の数から除く。
      */
     private static final String PACKAGE_INFO = "package-info";
 

@@ -43,7 +43,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 未完了のイベントの再発行と、止めたイベントの統合テスト（バックエンドのアーキテクチャの「水平スケール」）。<br />
+ * 未完了のイベントの再発行と、止めたイベントの統合テスト
+ *
+ * <p>バックエンドのアーキテクチャの「水平スケール」に対応する。
  * 1 回目だけ失敗するリスナーと、いつも失敗するリスナーで未完了のイベントを作り、時計を進めてから再発行のジョブを呼ぶ。
  * イベントはコミット後に非同期で処理されるので、処理を待つ。
  */
@@ -52,7 +54,9 @@ import static org.awaitility.Awaitility.await;
 class EventResubmissionJobTest {
 
     /**
-     * テストの現在時刻（イベントの発行日時になる）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。イベントの発行日時になる。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -300,7 +304,7 @@ class EventResubmissionJobTest {
                 .isEqualTo("RESUBMITTED");
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
     @DisplayName("AC-291 処理の回数が上限に達したイベントが、結果の出ないまま最後の試行から 5 分たつと、止めてエラーのログに出力する")
     void stopsEventStuckAtMaxAttempts(String status, CapturedOutput output) {
@@ -428,7 +432,7 @@ class EventResubmissionJobTest {
     }
 
     /**
-     * テストのリスナーを登録する。
+     * テストのリスナーを登録する設定
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Config {
@@ -445,7 +449,7 @@ class EventResubmissionJobTest {
     }
 
     /**
-     * いつも失敗するリスナー。
+     * いつも失敗するリスナー
      */
     static class FailingListener {
 

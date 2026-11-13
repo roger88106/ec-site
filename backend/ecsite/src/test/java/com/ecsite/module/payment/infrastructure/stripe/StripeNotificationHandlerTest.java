@@ -32,7 +32,9 @@ class StripeNotificationHandlerTest {
     private static final String WEBHOOK_SECRET = "whsec_test_secret";
 
     /**
-     * 今の時刻
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-14 10:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-14T01:00:00Z");
 

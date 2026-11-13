@@ -18,10 +18,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * {@link ProductionClasses}（構成の検査が読む本番のクラスの補助）の検証。
+ * 本番のクラスの補助 {@link ProductionClasses} の検証
+ *
+ * <p>構成の検査が読む本番のクラスの補助を対象にする。
  */
 class ProductionClassesTest {
 
@@ -31,12 +34,16 @@ class ProductionClassesTest {
     private static final Path MODULE_DESIGNS = Contracts.path("docs/02-設計");
 
     /**
-     * バックエンドのモジュールのディレクトリ（テストの作業ディレクトリ {@code backend/ecsite} から）。名前がモジュールの設計書のファイル名になる
+     * バックエンドのモジュールのディレクトリ
+     *
+     * <p>テストの作業ディレクトリ {@code backend/ecsite} から見た場所。名前がモジュールの設計書のファイル名になる。
      */
     private static final String MODULE_SOURCES = "src/main/java/com/ecsite/module";
 
     /**
-     * モジュールの設計書の表の「レベル」の行。値の最初の文字がレベルを表し、A、B、C のどれかでなければ一致しない（{@code **A**} などは一致しない）
+     * モジュールの設計書の表の「レベル」の行
+     *
+     * <p>値の最初の文字がレベルを表し、A、B、C のどれかでなければ一致しない（{@code **A**} などは一致しない）。
      */
     private static final Pattern LEVEL_ROW = Pattern.compile("^\\| レベル \\| ([ABC])", Pattern.MULTILINE);
 
@@ -172,7 +179,7 @@ class ProductionClassesTest {
     @Test
     @DisplayName("対象が 1 件以上なら、通る")
     void requireNotEmptyPassesWhenNotEmpty() {
-        ProductionClasses.requireNotEmpty(List.of("a"), "検査の対象のクラス");
+        assertThatCode(() -> ProductionClasses.requireNotEmpty(List.of("a"), "検査の対象のクラス")).doesNotThrowAnyException();
     }
 
     @Test

@@ -17,8 +17,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 店舗 API・管理 API 以外の URL の認可の検査。<br />
- * 既定で拒み、決めた口（通知の口、mock の口、運用の口）だけを許す。統合テストの設定は mock フラグを立てている。
+ * 店舗 API・管理 API 以外の URL の認可の検査
+ *
+ * <p>既定で拒み、決めた口（通知の口、mock の口、運用の口）だけを許す。統合テストの設定は mock フラグを立てている。
  */
 @IntegrationTest
 class BusinessPortAccessTest {

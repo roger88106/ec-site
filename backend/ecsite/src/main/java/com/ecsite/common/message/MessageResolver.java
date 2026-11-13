@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 public class MessageResolver {
 
     /**
-     * 文の中の差し込む位置（{@code {名前}}）
+     * メッセージの中の差し込む位置（{@code {名前}}）
      */
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{([^{}]+)}");
 
@@ -56,7 +56,7 @@ public class MessageResolver {
     }
 
     /**
-     * コードの文を取り出し、値を名前で差し込む。
+     * コードのメッセージを取り出し、値を名前で差し込む。
      *
      * <p>整数は 3 桁ごとにカンマで区切る（例：10,000）。
      *
@@ -71,14 +71,14 @@ public class MessageResolver {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 文に値を差し込む。
+     * メッセージの雛形に値を差し込む。
      *
      * <p>差し込む位置を 1 回だけ走査して置き換えるので、差し込んだ値の中の {@code {名前}} は置き換えない。
      * 値のない名前の位置は、そのまま残す。
      *
-     * @param template 文
+     * @param template メッセージの雛形
      * @param params   差し込む値の名前 → 値
-     * @return 値を差し込んだ文
+     * @return 値を差し込んだメッセージ
      */
     private static String formatMessage(String template, Map<String, ?> params) {
         if (params.isEmpty()) {
@@ -107,10 +107,10 @@ public class MessageResolver {
     }
 
     /**
-     * メッセージの文を取得する。
+     * メッセージの雛形を取得する。
      *
      * @param code メッセージのコード
-     * @return 文。未設定の場合はコードをそのまま返す
+     * @return 雛形。未設定の場合はコードをそのまま返す
      */
     private String getMessageTemplate(String code) {
         try {

@@ -24,7 +24,7 @@ public class BusinessException extends BaseException {
     }
 
     /**
-     * 文に差し込む値を持つビジネス例外を作る。
+     * メッセージに差し込む値を持つビジネス例外を作る。
      *
      * @param errorCodeProvider エラーコードプロバイダー
      * @param messageParams     メッセージパラメータ

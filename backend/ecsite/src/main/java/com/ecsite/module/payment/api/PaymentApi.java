@@ -5,9 +5,8 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.model.AuthorizationDeadline;
 import com.ecsite.module.payment.api.model.PaymentSummary;
-import com.ecsite.module.payment.application.PaymentCaptureService;
 import com.ecsite.module.payment.application.PaymentCommandService;
-import com.ecsite.module.payment.application.PaymentPageService;
+import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -35,14 +34,9 @@ public class PaymentApi {
     private final PaymentCommandService commandService;
 
     /**
-     * 支払画面のサービス
+     * 決済サービスを呼ぶ操作のサービス
      */
-    private final PaymentPageService pageService;
-
-    /**
-     * 売上確定のサービス
-     */
-    private final PaymentCaptureService captureService;
+    private final PaymentGatewayService gatewayService;
 
     /**
      * 支払の参照のサービス
@@ -74,7 +68,7 @@ public class PaymentApi {
      * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
      */
     public Optional<String> pageUrl(@NonNull UUID orderId) {
-        return pageService.pageUrl(orderId);
+        return gatewayService.pageUrl(orderId);
     }
 
     /**
@@ -103,7 +97,7 @@ public class PaymentApi {
      * @throws SystemException   決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）。支払は与信済みのまま残る
      */
     public void capture(@NonNull UUID orderId) {
-        captureService.capture(orderId);
+        gatewayService.capture(orderId);
     }
 
     /**

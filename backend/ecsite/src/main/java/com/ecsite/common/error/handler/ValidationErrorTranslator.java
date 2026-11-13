@@ -25,10 +25,10 @@ import java.util.Set;
 /**
  * 入力検証のエラーメッセージ
  *
- * <p>入力検証のエラーを、応答の {@code errors}（項目と文の一覧）にする。
- * 文は、制約の種類から決めたキー {@code ecsite.validation.<種類の小文字>} で messages.properties から取る
- * （フレームワークの既定の文は JVM のロケールで言語が変わるので使わない）。
- * 業務のエラーに対応づけた項目（{@link ValidationErrorMapping}）は、その業務のエラーの文にする。
+ * <p>入力検証のエラーを、応答の {@code errors}（項目とメッセージの一覧）にする。
+ * メッセージは messages.properties から取る。キーは {@code ecsite.validation.<制約の種類の小文字>}。
+ * フレームワークの既定のメッセージは、JVM のロケールで言語が変わるので使わない。
+ * 業務のエラーに対応づけた項目（{@link ValidationErrorMapping}）は、その業務のエラーのメッセージにする。
  */
 @Component
 public class ValidationErrorTranslator {
@@ -39,12 +39,12 @@ public class ValidationErrorTranslator {
     private static final String PREFIX = "ecsite.validation.";
 
     /**
-     * 文を用意していない種類（共通の文）
+     * メッセージを用意していない種類（共通のメッセージ）
      */
     private static final String INVALID = "invalid";
 
     /**
-     * 文を用意している制約の種類（小文字）
+     * メッセージを用意している制約の種類（小文字）
      */
     private static final Set<String> KNOWN = Set.of(
             "notnull", "notblank", "size", "min", "max", "decimalmin", "decimalmax", "pattern", "email");
@@ -136,10 +136,10 @@ public class ValidationErrorTranslator {
     }
 
     /**
-     * 制約の違反から文を作る。
+     * 制約の違反からメッセージを作る。
      *
      * @param violation 制約の違反
-     * @return 文
+     * @return メッセージ
      */
     public String messageOf(ConstraintViolation<?> violation) {
         var descriptor = violation.getConstraintDescriptor();
@@ -148,13 +148,13 @@ public class ValidationErrorTranslator {
     }
 
     /**
-     * 検証エラーの文を作る。
+     * 検証エラーのメッセージを作る。
      *
-     * <p>業務のエラーに対応づけた項目ならその文、Bean Validation の違反なら制約の種類から作り、
-     * そうでなければ（型の変換の失敗など）入力の検証の共通の文にする。
+     * <p>業務のエラーに対応づけた項目ならそのメッセージ、Bean Validation の違反なら制約の種類から作り、
+     * そうでなければ（型の変換の失敗など）入力の検証の共通のメッセージにする。
      *
      * @param error 検証エラー
-     * @return 文
+     * @return メッセージ
      */
     public String messageOf(ObjectError error) {
         if (error instanceof FieldError fieldError && errorsByField.containsKey(fieldError.getField())) {
@@ -167,13 +167,13 @@ public class ValidationErrorTranslator {
     }
 
     /**
-     * メソッド引数の検証エラーの文を作る。
+     * メソッド引数の検証エラーのメッセージを作る。
      *
-     * <p>Bean Validation の違反でなければ、入力の検証の共通の文にする。
+     * <p>Bean Validation の違反でなければ、入力の検証の共通のメッセージにする。
      *
      * @param result 引数の検証の結果
      * @param error  検証エラー
-     * @return 文
+     * @return メッセージ
      */
     public String messageOf(ParameterValidationResult result, MessageSourceResolvable error) {
         // 元が Bean Validation の違反でなければ、取り出せない（null）
@@ -182,11 +182,11 @@ public class ValidationErrorTranslator {
     }
 
     /**
-     * 制約の種類と属性から文を作る。
+     * 制約の種類と属性からメッセージを作る。
      *
      * @param constraint 制約の種類（注釈の単純名。例：Size）
      * @param attributes 制約の属性（min、max、value など）
-     * @return 文
+     * @return メッセージ
      */
     public String messageOf(String constraint, Map<String, Object> attributes) {
         return messageOf(constraint, attributes, false);
@@ -195,14 +195,14 @@ public class ValidationErrorTranslator {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 制約の種類と属性から文を作る。
+     * 制約の種類と属性からメッセージを作る。
      *
-     * <p>配列・一覧の長さは、文字数ではなく件数の文にする。
+     * <p>配列・一覧の長さは、文字数ではなく件数のメッセージにする。
      *
      * @param constraint 制約の種類（注釈の単純名。例：Size）
      * @param attributes 制約の属性（min、max、value など）
      * @param items      値が配列・一覧か
-     * @return 文
+     * @return メッセージ
      */
     private String messageOf(String constraint, Map<String, Object> attributes, boolean items) {
         String type = constraint.toLowerCase(Locale.ROOT);
@@ -211,7 +211,7 @@ public class ValidationErrorTranslator {
         }
         if (type.equals("size")) {
             String key = items ? "size_items" : "size";
-            // 下限が 0 なら上限だけの文、上限がなければ（件数のとき）下限だけの文にする
+            // 下限が 0 なら上限だけのメッセージ、上限がなければ（件数のとき）下限だけのメッセージにする
             if (attributes.get("min") instanceof Integer min && min == 0) {
                 return messageResolver.getMessage(PREFIX + key + "_max", attributes);
             }

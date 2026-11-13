@@ -62,28 +62,36 @@ public class Payment extends AggregateRoot {
     private PaymentStatus status;
 
     /**
-     * 開いている支払画面。まだ開いていなければ null
+     * 開いている支払画面
+     *
+     * <p>まだ開いていなければ null。
      */
     @Nullable
     @Getter(AccessLevel.NONE)
     private PaymentPage page;
 
     /**
-     * 与信の参照（決済サービスでの与信の ID）。与信がなければ null
+     * 与信の参照
+     *
+     * <p>決済サービスでの与信の ID。与信がなければ null。
      */
     @Nullable
     private String authorizationRef;
 
     /**
-     * 与信の時刻（与信期限の起点）。通知で与信済みにした支払は通知を受けた時刻、決済サービスから取得した与信で
-     * 与信済みにした支払は決済サービスが返す与信の時刻。与信がなければ null
+     * 与信の時刻
+     *
+     * <p>与信期限の起点。与信がなければ null。
+     * 通知で与信済みにした支払は、通知を受けた時刻。決済サービスから取得した与信で与信済みにした支払は、決済サービスが返す与信の時刻。
      */
     @Nullable
     @Getter(AccessLevel.NONE)
     private Instant authorizedAt;
 
     /**
-     * 与信の反映を待ち始めた時刻（期限切れにしようとして、決済サービスで支払済みと知った時刻）。待っていなければ null
+     * 与信の反映を待ち始めた時刻
+     *
+     * <p>期限切れにしようとして、決済サービスで支払済みと知った時刻。待っていなければ null。
      */
     @Nullable
     @Getter(AccessLevel.NONE)

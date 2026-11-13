@@ -10,10 +10,10 @@ import java.util.Map;
 /**
  * エラー詳細情報
  *
- * <p>差し込む値は、文にするとき（{@link com.ecsite.common.message.MessageResolver}）に文字にする。
+ * <p>差し込む値は、メッセージにするとき（{@link com.ecsite.common.message.MessageResolver}）に文字にする。
  *
  * @param errorCode エラーコード
- * @param params    文に差し込む値（値の名前 → 値）
+ * @param params    メッセージに差し込む値（値の名前 → 値）
  */
 public record ErrorDetail(@NonNull ErrorCode errorCode, @NonNull Map<String, Object> params) {
 
@@ -21,7 +21,7 @@ public record ErrorDetail(@NonNull ErrorCode errorCode, @NonNull Map<String, Obj
      * エラー詳細情報を生成する。
      *
      * @param errorCode     エラーコード
-     * @param messageParams 文に差し込む値（エラーコードの値の名前と同じ順）
+     * @param messageParams メッセージに差し込む値（エラーコードの値の名前と同じ順）
      * @return {@link ErrorDetail}
      * @throws IllegalArgumentException 値の数が、エラーコードの値の名前の数と合わない
      */

@@ -27,7 +27,7 @@ public interface ErrorCodeProvider {
      * @param module    モジュールの名前（モジュールでない共通のものは common）
      * @param name      定数の名前
      * @param type      エラーの種類
-     * @param paramKeys 文に差し込む値の名前（文の {@code {名前}} と同じ順で、例外を投げるときに値を渡す）
+     * @param paramKeys メッセージに差し込む値の名前（メッセージの {@code {名前}} と同じ順で、例外を投げるときに値を渡す）
      * @return エラーコード
      */
     static ErrorCode errorCode(String module, String name, ErrorType type, String... paramKeys) {

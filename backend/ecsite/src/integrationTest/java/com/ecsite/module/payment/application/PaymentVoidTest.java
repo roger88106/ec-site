@@ -73,7 +73,7 @@ class PaymentVoidTest {
     AsyncEvents asyncEvents;
 
     @Autowired
-    VoidRequestedHandler voidRequestedHandler;
+    PaymentReversalHandler reversalHandler;
 
     @Autowired
     DSLContext dsl;
@@ -198,7 +198,7 @@ class PaymentVoidTest {
         // 1 回目の取消の呼び出しの中で、重複した依頼を、支払が返金済みになるまで処理する。どちらの処理も、与信の取消待ちの状態の支払を読み込む
         gateway.onRefundOrVoid(() -> {
             if (duplicated.compareAndSet(false, true)) {
-                AopTestUtils.<VoidRequestedHandler>getTargetObject(voidRequestedHandler)
+                AopTestUtils.<PaymentReversalHandler>getTargetObject(reversalHandler)
                         .on(VoidRequested.of(clock.instant(), paymentId));
                 await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
             }

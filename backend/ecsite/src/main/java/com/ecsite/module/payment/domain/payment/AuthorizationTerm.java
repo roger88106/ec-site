@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.domain.payment;
 
 import lombok.NonNull;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -11,7 +12,7 @@ import java.time.Instant;
  * @param validity 与信の有効期間（与信の時刻からの長さ）
  * @param warning  与信期限のどれだけ前から「期限が近い」とするか
  */
-@org.jmolecules.ddd.annotation.ValueObject
+@ValueObject
 public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration warning) {
 
     /**

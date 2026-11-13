@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.domain.payment;
 
 import lombok.NonNull;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
  * 支払画面
@@ -10,6 +11,6 @@ import lombok.NonNull;
  * @param id  決済サービスでの画面の ID
  * @param url 画面の URL
  */
-@org.jmolecules.ddd.annotation.ValueObject
+@ValueObject
 public record PaymentPage(@NonNull String id, @NonNull String url) {
 }

@@ -2,6 +2,7 @@ package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
+import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -22,12 +23,13 @@ import java.util.function.Consumer;
  * 支払の更新のサービス
  *
  * <p>決済サービスを呼ばず、DB の中の操作だけを行う。外部の応答を待つ間に、行ロックを持たないため。
+ * 決済サービスの通知も、支払を行ロックしてから反映する。重ねて届いた通知と、順序の入れ替わった通知は、支払の状態の遷移で無視される。
  */
 @Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class PaymentCommandService {
+public class PaymentCommandService implements PaymentNotificationReceiver {
 
     /**
      * 支払のリポジトリ
@@ -180,6 +182,37 @@ public class PaymentCommandService {
                     paymentRepository.update(payment);
                     return opened;
                 });
+    }
+
+    /**
+     * 決済サービスの通知で、与信の成功を反映する。
+     *
+     * <p>知らない支払画面なら、ログに残して無視する。
+     *
+     * @param pageId           支払画面 ID
+     * @param authorizationRef 与信の参照
+     */
+    @Override
+    public void authorized(String pageId, String authorizationRef) {
+        paymentRepository.lockByPageId(pageId).ifPresentOrElse(payment -> {
+            payment.authorize(authorizationRef, clock.instant());
+            paymentRepository.update(payment);
+        }, () -> log.warn("知らない支払画面の与信の成功を無視する: pageId={}", pageId));
+    }
+
+    /**
+     * 決済サービスの通知で、支払画面の期限切れを反映する。
+     *
+     * <p>支払の期限の後で未払いなら、支払なしにする。
+     *
+     * @param pageId 支払画面 ID
+     */
+    @Override
+    public void pageExpired(String pageId) {
+        // 支払なしにする処理は、期限切れのジョブと同じメソッドで行う（同じトランザクションで行ロックし直す。期限の前の通知では何もしない）
+        paymentRepository.lockByPageId(pageId)
+                .map(Payment::id)
+                .ifPresent(this::expire);
     }
 
 // ============================== プライベートメソッド ==============================

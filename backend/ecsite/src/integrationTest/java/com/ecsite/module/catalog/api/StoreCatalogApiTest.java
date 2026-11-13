@@ -41,6 +41,8 @@ class StoreCatalogApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -64,8 +66,14 @@ class StoreCatalogApiTest {
      */
     private CatalogTestData catalog;
 
+    /**
+     * 税区分「標準」の ID
+     */
     private UUID standard;
 
+    /**
+     * 税区分「軽減」の ID
+     */
     private UUID reduced;
 
     /**

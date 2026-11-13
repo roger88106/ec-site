@@ -6,7 +6,6 @@ import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
 import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +13,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
@@ -28,13 +25,15 @@ import static org.awaitility.Awaitility.await;
  * 商品カタログのイベントによる在庫の作成・削除の統合テスト
  *
  * <p>イベントはコミット後に非同期で処理されるので、コミットするトランザクションで発行し、処理を待つ。
- * ロールバックしないので、作ったデータを後で消す。
+ * ロールバックしない。
  */
 @IntegrationTest
 class CatalogEventHandlerTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -50,20 +49,10 @@ class CatalogEventHandlerTest {
     @Autowired
     AsyncEvents asyncEvents;
 
-    /**
-     * このテストで作った商品の ID（後で在庫を消す）
-     */
-    private final List<UUID> productIds = new ArrayList<>();
-
-    @AfterEach
-    void cleanUp() {
-        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.in(productIds)).execute();
-    }
-
     @Test
     @DisplayName("AC-41 バリアントが登録されると、在庫数 0 の在庫ができる")
     void createsStockOnVariantRegistered() {
-        var productId = newProductId();
+        var productId = UUID.randomUUID();
         var variantId = UUID.randomUUID();
 
         publish(VariantRegistered.of(NOW, productId, variantId));
@@ -79,7 +68,7 @@ class CatalogEventHandlerTest {
     @Test
     @DisplayName("同じバリアント登録のイベントを 2 回受けても、在庫は 1 つ")
     void createsStockOnlyOnce() {
-        var productId = newProductId();
+        var productId = UUID.randomUUID();
         var variantId = UUID.randomUUID();
         var event = VariantRegistered.of(NOW, productId, variantId);
 
@@ -96,7 +85,7 @@ class CatalogEventHandlerTest {
     @Test
     @DisplayName("バリアントが削除されると、その在庫と調整履歴が消える")
     void deletesStockOnVariantDeleted() {
-        var productId = newProductId();
+        var productId = UUID.randomUUID();
         var deleted = UUID.randomUUID();
         var kept = UUID.randomUUID();
         publish(VariantRegistered.of(NOW, productId, deleted));
@@ -114,8 +103,8 @@ class CatalogEventHandlerTest {
     @Test
     @DisplayName("商品が削除されると、その商品のすべての在庫と調整履歴が消える")
     void deletesStocksOnProductDeleted() {
-        var productId = newProductId();
-        var otherProductId = newProductId();
+        var productId = UUID.randomUUID();
+        var otherProductId = UUID.randomUUID();
         var first = UUID.randomUUID();
         var second = UUID.randomUUID();
         var other = UUID.randomUUID();
@@ -133,15 +122,6 @@ class CatalogEventHandlerTest {
     }
 
     // ============================== 補助 ==============================
-
-    /**
-     * 新しい商品 ID を作り、テストの後に在庫を消すために覚えておく
-     */
-    private UUID newProductId() {
-        var productId = UUID.randomUUID();
-        productIds.add(productId);
-        return productId;
-    }
 
     /**
      * コミットするトランザクションでイベントを発行する（リスナーはコミット後に動く）

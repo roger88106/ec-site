@@ -57,7 +57,9 @@ class CategoryApiTest {
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
 
     /**
-     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -67,13 +69,19 @@ class CategoryApiTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * カテゴリを作る補助
+     */
+    private CatalogTestData catalog;
+
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);
+        catalog = new CatalogTestData(mockMvc, clock);
     }
 
     @Nested
-    @DisplayName("AC-8、9、10 カテゴリの登録")
+    @DisplayName("カテゴリの登録")
     class Create {
 
         @Test
@@ -240,7 +248,7 @@ class CategoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-11 名称の変更")
+    @DisplayName("名称の変更")
     class Rename {
 
         @Test
@@ -287,7 +295,7 @@ class CategoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-11 並び順の変更")
+    @DisplayName("並び順の変更")
     class Reorder {
 
         @Test
@@ -370,7 +378,7 @@ class CategoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-12 カテゴリの削除")
+    @DisplayName("カテゴリの削除")
     class Delete {
 
         @Test
@@ -470,7 +478,7 @@ class CategoryApiTest {
      */
     private String createdId(String name, String parentId) throws Exception {
         var parent = parentId == null ? null : UUID.fromString(parentId);
-        return new CatalogTestData(mockMvc, clock).category(name, parent).toString();
+        return catalog.category(name, parent).toString();
     }
 
     /**

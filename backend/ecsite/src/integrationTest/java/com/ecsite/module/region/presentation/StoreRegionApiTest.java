@@ -16,7 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 店舗 API の地域の操作の受け入れテスト。3 つとも token なしで使える。
+ * 店舗 API の地域の操作の受け入れテスト
+ *
+ * <p>3 つとも token なしで使える。
  */
 @IntegrationTest
 class StoreRegionApiTest {

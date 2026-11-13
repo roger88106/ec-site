@@ -28,7 +28,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class ProductActionsTest {
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -37,6 +39,9 @@ class ProductActionsTest {
      */
     private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
+    /**
+     * 商品の生成
+     */
     private final ProductFactory factory = new ProductFactory();
 
     @Nested
@@ -64,7 +69,7 @@ class ProductActionsTest {
     }
 
     @Nested
-    @DisplayName("AC-33、71 削除")
+    @DisplayName("削除")
     class Delete {
 
         @Test
@@ -99,7 +104,7 @@ class ProductActionsTest {
     }
 
     @Nested
-    @DisplayName("AC-24 バリアントの追加")
+    @DisplayName("バリアントの追加")
     class AddVariant {
 
         @Test

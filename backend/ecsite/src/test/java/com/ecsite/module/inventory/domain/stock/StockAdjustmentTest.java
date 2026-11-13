@@ -22,7 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class StockAdjustmentTest {
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -57,14 +59,14 @@ class StockAdjustmentTest {
                 InventoryErrorCode.INVALID_STOCK_DELTA);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(ints = {1_000_000, -1_000_000})
     @DisplayName("AC-42 運営者の 1 回の増減量は ±1,000,000 まで")
     void acceptsDeltaUpToOneMillion(int delta) {
         assertThat(StockAdjustment.create(delta, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW).delta()).isEqualTo(delta);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(ints = {1_000_001, -1_000_001, Integer.MAX_VALUE, Integer.MIN_VALUE})
     @DisplayName("AC-42 運営者の 1 回の増減量が ±1,000,000 を超えれば拒否される")
     void rejectsDeltaOverOneMillion(int delta) {
@@ -72,7 +74,7 @@ class StockAdjustmentTest {
                 InventoryErrorCode.INVALID_STOCK_DELTA);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @EnumSource(value = StockAdjustmentReason.class, names = {"OTHER", "ORDER", "ORDER_CANCELLATION"},
             mode = EnumSource.Mode.EXCLUDE)
     @DisplayName("AC-46 その他以外の理由では、メモは省略できる")
@@ -80,7 +82,7 @@ class StockAdjustmentTest {
         assertThatCode(() -> StockAdjustment.create(1, reason, null, OPERATOR, NOW)).doesNotThrowAnyException();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @NullAndEmptySource
     @ValueSource(strings = " ")
     @DisplayName("AC-46 理由がその他なら、メモは必須")
@@ -110,7 +112,7 @@ class StockAdjustmentTest {
         assertThat(StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, " ", OPERATOR, NOW).memo()).isNull();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @EnumSource(value = StockAdjustmentReason.class, names = {"ORDER", "ORDER_CANCELLATION"})
     @DisplayName("AC-107 運営者の調整では、注文に由来する理由を選べない")
     void rejectsOrderReasonsForManualAdjustment(StockAdjustmentReason reason) {

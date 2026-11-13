@@ -2,8 +2,8 @@ package com.ecsite.module.tax.presentation;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.TestJson;
 import com.jayway.jsonpath.JsonPath;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -29,8 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 税区分 API の受け入れテスト。<br />
- * 現在時刻は {@link MutableClock} で 2026-10-08 00:00（日本時間）に固定する。
+ * 税区分 API の受け入れテスト
+ *
+ * <p>現在時刻は {@link MutableClock} で 2026-10-08 00:00（日本時間）に固定する。
  * 適用開始の日時は日本時間のオフセット付きで送る。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -43,7 +46,9 @@ class TaxCategoryApiTest {
     private static final String BASE = "/api/admin/tax-categories";
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
 
@@ -58,13 +63,8 @@ class TaxCategoryApiTest {
         clock.setInstant(NOW);
     }
 
-    @AfterEach
-    void resetClock() {
-        clock.setInstant(NOW);
-    }
-
     @Nested
-    @DisplayName("AC-1 税区分の登録")
+    @DisplayName("税区分の登録")
     class Create {
 
         @Test
@@ -76,11 +76,11 @@ class TaxCategoryApiTest {
                     .andExpect(header().string(HttpHeaders.LOCATION, matchesPattern(".*" + BASE + "/[0-9a-f-]{36}")))
                     .andExpect(jsonPath("$.id").isString())
                     .andReturn();
-            String id = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+            var id = TestJson.createdId(result.getResponse().getContentAsString());
 
             mockMvc.perform(get(result.getResponse().getHeader(HttpHeaders.LOCATION)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(id))
+                    .andExpect(jsonPath("$.id").value(id.toString()))
                     // CPD-ON
                     .andExpect(jsonPath("$.name").value("標準"))
                     .andExpect(jsonPath("$.rates").isEmpty())
@@ -130,10 +130,10 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("一覧で、各税区分の現時点の率が返る")
         void listsWithCurrentRate() throws Exception {
-            var standard = createdId("標準");
+            var standard = createdCategoryId("標準");
             replaceRates(standard, 0, """
                     [{"ratePercent": 10}]""").andExpect(status().isNoContent());
-            var reduced = createdId("軽減");
+            var reduced = createdCategoryId("軽減");
             replaceRates(reduced, 0, """
                     [{"ratePercent": 8}]""").andExpect(status().isNoContent());
 
@@ -151,13 +151,13 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-4 期間限定の税率に切り替え、元に戻せる。各時点の現時点の率が正しい")
         void switchesToLimitedTimeRateAndBack() throws Exception {
-            // Given：「標準」に 10%（開始・終了とも空白）がある。現在は 2026-10-08
-            var id = createdId("標準");
+            // 「標準」に 10%（開始・終了とも空白）がある。現在は 2026-10-08
+            var id = createdCategoryId("標準");
             replaceRates(id, 0, """
                     [{"ratePercent": 10}]""").andExpect(status().isNoContent());
             var baseRateId = rateIds(id)[0];
 
-            // When：一覧を「10%（〜2027-04-01 00:00）」「8%（2027-04-01 00:00〜2028-04-01 00:00）」「10%（2028-04-01 00:00〜）」に更新する
+            // 一覧を「10%（〜2027-04-01 00:00）」「8%（2027-04-01 00:00〜2028-04-01 00:00）」「10%（2028-04-01 00:00〜）」に更新する
             replaceRates(id, 1, """
                     [
                       {"id": "%s", "ratePercent": 10, "effectiveTo": "2027-04-01T00:00:00+09:00"},
@@ -176,7 +176,7 @@ class TaxCategoryApiTest {
                     .andExpect(jsonPath("$.rates[1].ratePercent").value(8))
                     .andExpect(jsonPath("$.rates[2].effectiveTo").value(nullValue()));
 
-            // Then：2027-03-31 23:59 は 10%、2027-04-01 00:00 から 2028-03-31 23:59 は 8%、2028-04-01 00:00 以降は 10%
+            // 2027-03-31 23:59 は 10%、2027-04-01 00:00 から 2028-03-31 23:59 は 8%、2028-04-01 00:00 以降は 10%
             assertCurrentRateAt(id, "2027-03-31T23:59:00+09:00", 10);
             assertCurrentRateAt(id, "2027-04-01T00:00:00+09:00", 8);
             assertCurrentRateAt(id, "2028-03-31T23:59:00+09:00", 8);
@@ -186,7 +186,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-2 開始が終了より後の税率は 400")
         void rejectsInvalidPeriod() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [{"ratePercent": 10, "effectiveFrom": "2028-04-01T00:00:00+09:00", "effectiveTo": "2027-04-01T00:00:00+09:00"}]""")
@@ -197,7 +197,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-3 期間が重複する一覧は 400。全体が拒否される")
         void rejectsOverlap() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [
@@ -215,7 +215,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-3 期間の間に途切れがある一覧は 400")
         void rejectsGap() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [
@@ -229,7 +229,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-3 最後の税率の終了が空白でない一覧は 400")
         void rejectsBoundedLast() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [{"ratePercent": 10, "effectiveTo": "2027-04-01T00:00:00+09:00"}]""")
@@ -240,7 +240,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-5 現在より前の日時を設定する一覧は 400")
         void rejectsPastDateTime() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [{"ratePercent": 10, "effectiveFrom": "2026-10-07T23:59:00+09:00"}]""")
@@ -251,7 +251,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-5 開始済みの税率の率を変える一覧は 400")
         void rejectsChangingStartedRate() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
             replaceRates(id, 0, """
                     [{"ratePercent": 10}]""").andExpect(status().isNoContent());
 
@@ -264,7 +264,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-5 開始済みの税率を削除する一覧は 400")
         void rejectsDeletingStartedRate() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
             replaceRates(id, 0, """
                     [{"ratePercent": 10}]""").andExpect(status().isNoContent());
 
@@ -277,7 +277,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-5 終了済みの税率を変える一覧は 400")
         void rejectsChangingEndedRate() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
             replaceRates(id, 0, """
                     [
                       {"ratePercent": 8, "effectiveTo": "2026-10-09T00:00:00+09:00"},
@@ -299,7 +299,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-7 率が 100% 以上なら 400")
         void rejectsRateOf100() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [{"ratePercent": 100}]""")
@@ -310,7 +310,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-7 率が 0% 未満なら 400")
         void rejectsNegativeRate() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [{"ratePercent": -1}]""")
@@ -321,7 +321,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-7 率が小数第 3 位以下を持つなら 400")
         void rejectsRateWithThreeDecimals() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
 
             replaceRates(id, 0, """
                     [{"ratePercent": 8.125}]""")
@@ -332,7 +332,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("取得時のバージョンと一致しなければ 409")
         void rejectsVersionMismatch() throws Exception {
-            var id = createdId("標準");
+            var id = createdCategoryId("標準");
             replaceRates(id, 0, """
                     [{"ratePercent": 10}]""").andExpect(status().isNoContent());
 
@@ -346,7 +346,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("存在しない税区分は 404")
         void rejectsUnknownCategory() throws Exception {
-            replaceRates("00000000-0000-0000-0000-000000000000", 0, """
+            replaceRates(new UUID(0, 0), 0, """
                     [{"ratePercent": 10}]""")
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
@@ -368,15 +368,15 @@ class TaxCategoryApiTest {
     /**
      * 税区分を登録して、その ID を返す
      */
-    private String createdId(String name) throws Exception {
+    private UUID createdCategoryId(String name) throws Exception {
         var body = createCategory(name).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+        return TestJson.createdId(body);
     }
 
     /**
      * 税率の一覧（JSON）を置き換える
      */
-    private ResultActions replaceRates(String id, long version, String rates) throws Exception {
+    private ResultActions replaceRates(UUID id, long version, String rates) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/rates")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -386,15 +386,15 @@ class TaxCategoryApiTest {
     /**
      * 税区分の税率の ID を、一覧の順に返す
      */
-    private String[] rateIds(String id) throws Exception {
+    private String[] rateIds(UUID id) throws Exception {
         var body = mockMvc.perform(get(BASE + "/" + id)).andReturn().getResponse().getContentAsString();
-        return JsonPath.<java.util.List<String>>read(body, "$.rates[*].id").toArray(String[]::new);
+        return JsonPath.<List<String>>read(body, "$.rates[*].id").toArray(String[]::new);
     }
 
     /**
      * 時計を指定した時刻にして、その時点の税率が期待どおりかを確認する
      */
-    private void assertCurrentRateAt(String id, String at, int expectedRatePercent) throws Exception {
+    private void assertCurrentRateAt(UUID id, String at, int expectedRatePercent) throws Exception {
         clock.setInstant(OffsetDateTime.parse(at).toInstant());
         mockMvc.perform(get(BASE + "/" + id))
                 .andExpect(status().isOk())

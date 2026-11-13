@@ -4,13 +4,11 @@ import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestImages;
 import com.ecsite.TestcontainersConfig;
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.port.ObjectStorage;
-import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import com.ecsite.module.media.domain.MediaErrorCode;
 import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,13 +33,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static com.ecsite.jooq.media.Tables.ASSET;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,8 +56,7 @@ import static org.mockito.Mockito.doThrow;
  *
  * <p>用意では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
  * ファイルは、受付の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
- * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったアセットを消す。
- * エラーコードは、商品画像 API の契約と同じ文字列であることを確認する。
+ * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックしない。
  */
 @IntegrationTest
 @ExtendWith(OutputCaptureExtension.class)
@@ -70,8 +67,16 @@ class MediaApiTest {
      */
     private static final int MAX_BYTES = 10 * 1024 * 1024;
 
+    /**
+     * 対象外の形式のファイルの先頭
+     *
+     * <p>GIF。
+     */
     private static final byte[] GIF = {'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, 0, 0};
 
+    /**
+     * 署名付き URL や配信の URL を呼ぶ HttpClient
+     */
     private final HttpClient http = HttpClient.newHttpClient();
 
     @Autowired
@@ -91,16 +96,6 @@ class MediaApiTest {
      */
     @MockitoSpyBean
     ObjectStorage storage;
-
-    /**
-     * このテストで登録したアセットの ID（後で記録を消す）
-     */
-    private final List<UUID> assetIds = new ArrayList<>();
-
-    @AfterEach
-    void cleanUp() {
-        dsl.deleteFrom(ASSET).where(ASSET.ID.in(assetIds)).execute();
-    }
 
     @Nested
     @DisplayName("受付")
@@ -125,14 +120,14 @@ class MediaApiTest {
         @Test
         @DisplayName("AC-39 対象外の形式は拒否する")
         void rejectsUnsupportedFormat() {
-            assertErrorCode(() -> media.requestImageUpload(scope(), "image/gif", 100), "UNSUPPORTED_IMAGE_FORMAT");
+            assertBusinessError(() -> media.requestImageUpload(scope(), "image/gif", 100), MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT);
         }
 
         @Test
         @DisplayName("AC-39 0 バイトと、10MB を超える大きさは拒否する")
         void rejectsInvalidSize() {
-            assertErrorCode(() -> media.requestImageUpload(scope(), "image/png", 0), "IMAGE_TOO_LARGE");
-            assertErrorCode(() -> media.requestImageUpload(scope(), "image/png", MAX_BYTES + 1), "IMAGE_TOO_LARGE");
+            assertBusinessError(() -> media.requestImageUpload(scope(), "image/png", 0), MediaErrorCode.IMAGE_TOO_LARGE);
+            assertBusinessError(() -> media.requestImageUpload(scope(), "image/png", MAX_BYTES + 1), MediaErrorCode.IMAGE_TOO_LARGE);
             assertThatCode(() -> media.requestImageUpload(scope(), "image/png", MAX_BYTES)).doesNotThrowAnyException();
         }
 
@@ -204,7 +199,7 @@ class MediaApiTest {
             var scope = scope();
             var upload = uploaded(scope, "image/heic", TestImages.of("broken.heic"));
 
-            assertErrorCode(() -> media.prepareImage(scope, upload.uploadId()), "IMAGE_CONVERSION_FAILED");
+            assertBusinessError(() -> media.prepareImage(scope, upload.uploadId()), MediaErrorCode.IMAGE_CONVERSION_FAILED);
         }
 
         @Test
@@ -224,7 +219,7 @@ class MediaApiTest {
             var scope = scope();
             var upload = uploaded(scope, "image/png", GIF);
 
-            assertErrorCode(() -> media.prepareImage(scope, upload.uploadId()), "INVALID_IMAGE_FILE");
+            assertBusinessError(() -> media.prepareImage(scope, upload.uploadId()), MediaErrorCode.INVALID_IMAGE_FILE);
         }
 
         @Test
@@ -238,7 +233,7 @@ class MediaApiTest {
             s3.putObject(request -> request.bucket(TestcontainersConfig.INCOMING_BUCKET).key(scope + "/" + uploadId),
                     RequestBody.fromBytes(body));
 
-            assertErrorCode(() -> media.prepareImage(scope, uploadId), "IMAGE_TOO_LARGE");
+            assertBusinessError(() -> media.prepareImage(scope, uploadId), MediaErrorCode.IMAGE_TOO_LARGE);
         }
 
         @Test
@@ -246,8 +241,8 @@ class MediaApiTest {
         void rejectsMissingUpload() throws Exception {
             var upload = uploaded(scope(), "image/png", TestImages.png());
 
-            assertErrorCode(() -> media.prepareImage(scope(), UUID.randomUUID()), "IMAGE_UPLOAD_NOT_FOUND");
-            assertErrorCode(() -> media.prepareImage(scope(), upload.uploadId()), "IMAGE_UPLOAD_NOT_FOUND");
+            assertBusinessError(() -> media.prepareImage(scope(), UUID.randomUUID()), MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND);
+            assertBusinessError(() -> media.prepareImage(scope(), upload.uploadId()), MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND);
         }
     }
 
@@ -437,16 +432,12 @@ class MediaApiTest {
     }
 
     /**
-     * 受け付けた画像を用意し、トランザクションの中で登録する。
-     *
-     * <p>テストの後に消すためにアセット ID を覚えておく
+     * 受け付けた画像を用意し、トランザクションの中で登録する
      */
     private UUID confirm(String scope, UUID uploadId) {
         var prepared = media.prepareImage(scope, uploadId);
         transactionTemplate.executeWithoutResult(status -> media.registerImage(prepared));
-        var assetId = prepared.assetId();
-        assetIds.add(assetId);
-        return assetId;
+        return prepared.assetId();
     }
 
     /**
@@ -455,14 +446,6 @@ class MediaApiTest {
     private UUID confirmed() throws Exception {
         var scope = scope();
         return confirm(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
-    }
-
-    /**
-     * 処理が、指定したエラーコード（文字列）の業務のエラーで失敗することを確認する
-     */
-    private static void assertErrorCode(ThrowingCallable callable, String errorCode) {
-        assertThatThrownBy(callable).isInstanceOfSatisfying(BusinessException.class, ex ->
-                assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo(errorCode));
     }
 
     /**

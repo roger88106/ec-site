@@ -41,7 +41,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ProductImageServiceErrorApiTest {
 
     /**
-     * テストの現在時刻（日本時間の 2026-10-08 00:00）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -63,6 +65,9 @@ class ProductImageServiceErrorApiTest {
     @TestBean
     ImgproxyProperties converterProperties;
 
+    /**
+     * テストで画像を登録する商品
+     */
     private CatalogTestData.TestProduct product;
 
     /**
@@ -84,8 +89,8 @@ class ProductImageServiceErrorApiTest {
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
-        var data = new CatalogTestData(mockMvc, clock);
-        product = data.product(data.taxCategory("画像のサービス " + UUID.randomUUID(), "10"), "T シャツ", 1000);
+        var catalog = new CatalogTestData(mockMvc, clock);
+        product = catalog.product(catalog.taxCategory("画像のサービス " + UUID.randomUUID(), "10"), "T シャツ", 1000);
     }
 
     @Test

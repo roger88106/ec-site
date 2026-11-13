@@ -22,7 +22,7 @@ class PriceExclTaxTest {
         assertThat(PriceExclTax.of(1_000_000).yen()).isEqualTo(1_000_000);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(longs = {0, -1})
     @DisplayName("AC-25 1 円未満なら拒否される")
     void rejectsLessThanOneYen(long yen) {
@@ -35,7 +35,7 @@ class PriceExclTaxTest {
         assertThat(PriceExclTax.of(9_999_999).yen()).isEqualTo(9_999_999);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(longs = {10_000_000, Long.MAX_VALUE})
     @DisplayName("AC-25 9,999,999 円を超えれば拒否される")
     void rejectsOverMaximum(long yen) {

@@ -37,6 +37,8 @@ class StockReservationCleanupJobTest {
 
     /**
      * 引当を作る時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -77,7 +79,7 @@ class StockReservationCleanupJobTest {
     @Test
     @DisplayName("AC-284 期限から保存期間（1 日）より前の引当は消え、その後の引当と有効な引当は残る。消した件数をログに出す（AC-288）")
     void deletesReservationsExpiredBeforeRetention(CapturedOutput output) {
-        var variant = stock(10);
+        var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
         var old = reserve(variant, EXPIRES_AT);
         var recent = reserve(variant, EXPIRES_AT.plus(Duration.ofHours(2)));
         var active = reserve(variant, EXPIRES_AT.plus(Duration.ofDays(2)));
@@ -98,7 +100,7 @@ class StockReservationCleanupJobTest {
     @Test
     @DisplayName("NFR-24 件数の上限を超える引当は、上限ずつ分けて、残りがなくなるまで消す")
     void deletesInBatchesUntilNoneLeft() {
-        var variant = stock(10);
+        var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
         var holders = new ArrayList<UUID>();
         for (int i = 0; i < 5; i++) {
             holders.add(reserve(variant, EXPIRES_AT));
@@ -117,7 +119,7 @@ class StockReservationCleanupJobTest {
     void deletesUpToLimitAtOnce() {
         // ほかのテストが使わない古い期限にし、消す条件に当たるのを自分の 3 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
-        var variant = stock(10);
+        var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
         var holders = new ArrayList<UUID>();
         for (int i = 0; i < 3; i++) {
             holders.add(reserve(variant, longAgo));
@@ -148,16 +150,5 @@ class StockReservationCleanupJobTest {
                 .from(STOCK_RESERVATION)
                 .where(STOCK_RESERVATION.HOLDER_ID.in(holders))
                 .fetch(STOCK_RESERVATION.HOLDER_ID);
-    }
-
-    /**
-     * 在庫を作る。
-     *
-     * @return バリアント ID
-     */
-    private UUID stock(int quantity) {
-        var variantId = UUID.randomUUID();
-        inventory.stock(variantId, UUID.randomUUID(), quantity);
-        return variantId;
     }
 }

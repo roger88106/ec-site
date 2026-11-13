@@ -14,14 +14,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class VariantCodeTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"ABC-001-WH-M", "A", "12345678901234567890123456789012"})
     @DisplayName("AC-21 形式は商品品番と同じ。正しい形式なら受け付ける")
     void acceptsValidCode(String value) {
         assertThat(VariantCode.of(value).value()).isEqualTo(value);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @NullAndEmptySource
     @ValueSource(strings = {"-WH", "WH-", "WH--M", "wh-m", "123456789012345678901234567890123"})
     @DisplayName("AC-21 形式が違えば拒否される")

@@ -1,7 +1,6 @@
 package com.ecsite.module.media.infrastructure.converter;
 
-import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.media.domain.MediaErrorCode;
 import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -27,8 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * imgproxy の画像の変換の、失敗のときの振る舞いのテスト
@@ -40,8 +40,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ImgproxyImageConverterFailureTest {
 
     /**
-     * 正常に応答するサーバーを使うテストの、変換を待つ時間の上限。
-     * 負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
+     * 正常に応答するサーバーを使うテストの、変換を待つ時間の上限
+     *
+     * <p>負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
      */
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
@@ -217,9 +218,7 @@ class ImgproxyImageConverterFailureTest {
      * @param converter 変換の実装
      */
     private static void assertConversionFailed(ImgproxyImageConverter converter) {
-        assertThatThrownBy(() -> converter.convertToWebp("scope/upload"))
-                .isInstanceOfSatisfying(BusinessException.class, ex ->
-                        assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_CONVERSION_FAILED"));
+        assertBusinessError(() -> converter.convertToWebp("scope/upload"), MediaErrorCode.IMAGE_CONVERSION_FAILED);
     }
 
     /**
@@ -228,9 +227,7 @@ class ImgproxyImageConverterFailureTest {
      * @param converter 変換の実装
      */
     private static void assertServiceUnavailable(ImgproxyImageConverter converter) {
-        assertThatThrownBy(() -> converter.convertToWebp("scope/upload"))
-                .isInstanceOfSatisfying(SystemException.class, ex ->
-                        assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_SERVICE_UNAVAILABLE"));
+        assertSystemError(() -> converter.convertToWebp("scope/upload"), MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
     }
 
     /**

@@ -25,15 +25,18 @@ import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 税区分のリポジトリの統合テスト。<br />
- * テストごとにロールバックする。
+ * 税区分のリポジトリの統合テスト
+ *
+ * <p>テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional
 class JooqTaxCategoryRepositoryTest {
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 

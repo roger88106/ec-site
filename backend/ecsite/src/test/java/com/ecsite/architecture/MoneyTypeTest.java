@@ -23,14 +23,18 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 金額を整数で持つ項目の検査（バックエンドの書き方の「共通の型」）。<br />
+ * 金額を整数で持つ項目の検査
+ *
+ * <p>根拠はバックエンドの書き方の「共通の型」。
  * モジュールの間の公開の型（api・event）と、command・表示用（view）の型の金額は {@code Money} にする。
  * 整数で持つのは presentation（API の型との変換）と infrastructure（DB）だけ。
  */
 class MoneyTypeTest {
 
     /**
-     * 金額の項目の名前（価格、金額、手数料、合計）。{@code totalQuantity} のような数量は含めない
+     * 金額の項目の名前
+     *
+     * <p>価格、金額、手数料、合計を指す。{@code totalQuantity} のような数量は含めない。
      */
     private static final Pattern MONEY_NAME = Pattern.compile("(?i).*(price|amount|fee)(InclTax|ExclTax)?|total|.*Total");
 

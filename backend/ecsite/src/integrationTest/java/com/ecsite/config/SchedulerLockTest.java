@@ -17,7 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 定期ジョブの分散ロックの統合テスト（バックエンドのアーキテクチャの「水平スケール」）。<br />
+ * 定期ジョブの分散ロックの統合テスト
+ *
+ * <p>バックエンドのアーキテクチャの「水平スケール」に対応する。
  * 別々のインスタンスの代わりに 2 つのスレッドから同じジョブを同時に呼び、DB のロックで 1 回だけ動くことを確認する。
  */
 @IntegrationTest
@@ -42,7 +44,7 @@ class SchedulerLockTest {
     }
 
     /**
-     * テストのジョブを登録する。
+     * テストのジョブを登録する設定
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Config {
@@ -54,7 +56,9 @@ class SchedulerLockTest {
     }
 
     /**
-     * 動いた回数を数え、テストが終わらせるまで終わらないジョブ（時間で待たずに、2 回目を 1 回目の最中に呼ぶ）。
+     * 動いた回数を数え、テストが終わらせるまで終わらないジョブ
+     *
+     * <p>時間で待たずに、2 回目を 1 回目の最中に呼ぶ。
      */
     static class LockedJob {
 

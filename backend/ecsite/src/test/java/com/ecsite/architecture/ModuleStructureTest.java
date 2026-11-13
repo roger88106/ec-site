@@ -63,19 +63,25 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの標準の構成の検査（バックエンドの書き方の「層とパッケージ」、バックエンドのアーキテクチャの「層とパッケージ」）。<br />
+ * モジュールの標準の構成の検査
+ *
+ * <p>根拠はバックエンドの書き方の「層とパッケージ」、バックエンドのアーキテクチャの「層とパッケージ」。
  * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
 class ModuleStructureTest {
 
     /**
-     * クラスのパッケージを、モジュールのパッケージ、層、層の下のパッケージに分ける形（層の下のパッケージはなくてもよい）
+     * クラスのパッケージを、モジュールのパッケージ、層、層の下のパッケージに分ける形
+     *
+     * <p>層の下のパッケージはなくてもよい。
      */
     private static final Pattern LAYERED_PACKAGE = Pattern.compile("^(.*\\.module\\.[^.]+)\\.([^.]+)(?:\\.(.*))?$");
 
     /**
-     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドのアーキテクチャの「層とパッケージ」の依存の表）。<br />
+     * 層ごとの、同じモジュールの中で依存してよい先
+     *
+     * <p>根拠はバックエンドのアーキテクチャの「層とパッケージ」の依存の表。
      * 層の中の自分自身への依存は、表に書かなくても許す。他のモジュールと共通コードへの依存は、この表の対象でない
      * （モジュールの間は {@code ModulithTest} と {@code otherModulesApiIsUsedOnlyByDirectories} が確認する）。
      * presentation の domain への依存は、エラーの定義と値の型に限るが、集約に依存しないことは
@@ -119,38 +125,51 @@ class ModuleStructureTest {
     private static final int MAX_CLASSES_PER_PACKAGE = 20;
 
     /**
-     * 1 つのパッケージの直下のクラスの数の目安。超えて分けないパッケージは、バックエンドの書き方の「パッケージの大きさ」の表に理由を書く
+     * 1 つのパッケージの直下のクラスの数の目安
+     *
+     * <p>超えて分けないパッケージは、バックエンドの書き方の「パッケージの大きさ」の表に理由を書く。
      */
     private static final int GUIDELINE_CLASSES_PER_PACKAGE = 10;
 
     /**
-     * バックエンドの書き方（Gradle が system property で渡すリポジトリのルートから）
+     * バックエンドの書き方
+     *
+     * <p>Gradle が system property で渡すリポジトリのルートから読む。
      */
     private static final Path RULES_BACKEND_CODING = Contracts.path("docs/05-開発規則/backend-coding.md");
 
     /**
-     * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの名前（見出しの番号は問わない）
+     * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの名前
+     *
+     * <p>見出しの番号は問わない。
      */
     private static final String PACKAGE_SIZE_TITLE = "パッケージの大きさ";
 
     /**
-     * パッケージの大きさの表がある節の見出しの行（{@code ### } の後に、あれば番号、続けて見出しの名前）
+     * パッケージの大きさの表がある節の見出しの行
+     *
+     * <p>{@code ### } の後に、あれば番号、続けて見出しの名前が付く。
      */
     private static final Pattern PACKAGE_SIZE_HEADING = Pattern.compile("^### (?:[\\d.]+\\s+)?" + PACKAGE_SIZE_TITLE + "\\s*$");
 
     /**
-     * パッケージの大きさの表の行（1 列目がバッククォートで囲んだパッケージの名前）
+     * パッケージの大きさの表の行
+     *
+     * <p>1 列目がバッククォートで囲んだパッケージの名前。
      */
     private static final Pattern TABLE_ROW = Pattern.compile("^\\|\\s*`([^`]+)`\\s*\\|.*$");
 
     /**
-     * presentation の外に置く例外の {@code @RestController}（どのモジュールにも属さない GET /me）
+     * presentation の外に置く例外の {@code @RestController}
+     *
+     * <p>どのモジュールにも属さない GET /me。
      */
     private static final String ME_CONTROLLER = "com.ecsite.config.security.MeController";
 
     /**
-     * 他のモジュールの api を、infrastructure.directory の外から使ってよい組。<br />
-     * 組を追加するときは、理由をコメントに書き、バックエンドの書き方の「他のモジュールは腐敗防止層で包む」の例外にも書く。
+     * 他のモジュールの api を、infrastructure.directory の外から使ってよい組
+     *
+     * <p>組を追加するときは、理由をコメントに書き、バックエンドの書き方の「他のモジュールは腐敗防止層で包む」の例外にも書く。
      */
     private static final List<AllowedApiUse> ALLOWED_API_USES = List.of(
             // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。
@@ -158,7 +177,9 @@ class ModuleStructureTest {
             new AllowedApiUse(CurrentMemberIds.class.getName(), ProductionClasses.MODULE_PACKAGE + ".*.presentation.."));
 
     /**
-     * token の取り出し（token、会員、運営者、会員 ID）のクラスの名前。<br />
+     * token の取り出しのクラスの名前
+     *
+     * <p>token、会員、運営者、会員 ID の取り出しを指す。
      * 会員 ID の取り出し（CurrentMemberIds）を含める。他のモジュールの api の規則は infrastructure.directory からの利用を除くので、
      * それだけでは directory を経て application 層がリクエストの会員 ID を得る形を防げないため。
      */
@@ -167,8 +188,9 @@ class ModuleStructureTest {
             CurrentMemberIds.class.getName());
 
     /**
-     * token の取り出しを、presentation 層と common.security の外から使ってよいクラス。<br />
-     * 追加するときは、理由をコメントに書き、バックエンドの書き方の「標準の構成」の例外の表にも書く。
+     * token の取り出しを、presentation 層と common.security の外から使ってよいクラス
+     *
+     * <p>追加するときは、理由をコメントに書き、バックエンドの書き方の「標準の構成」の例外の表にも書く。
      */
     private static final Set<String> TOKEN_ACCESS_EXCEPTIONS = Set.of(
             // 他のモジュールの presentation に会員の ID を渡す公開の API。自身も取り出しの対象（TOKEN_ACCESSORS）で、呼び出し元は presentation に限る
@@ -664,7 +686,9 @@ class ModuleStructureTest {
     }
 
     /**
-     * 層のクラスの、同じモジュールの中への依存が、依存の表にあるという条件。表にない層のクラスは、層の名前を付けて違反にする。
+     * 層のクラスの、同じモジュールの中への依存が、依存の表にあるという条件
+     *
+     * <p>表にない層のクラスは、層の名前を付けて違反にする。
      */
     private static final class DependOnlyOnTableCondition extends ArchCondition<JavaClass> {
 
@@ -696,7 +720,7 @@ class ModuleStructureTest {
     }
 
     /**
-     * 他のモジュールの api を、許可の一覧にない使い方で使わないという条件。
+     * 他のモジュールの api を、許可の一覧にない使い方で使わないという条件
      */
     private static final class NotUseApiCondition extends ArchCondition<JavaClass> {
 
@@ -757,8 +781,9 @@ class ModuleStructureTest {
     }
 
     /**
-     * 層が依存してよい、同じモジュールの中の先。<br />
-     * 先はモジュールからの相対のパッケージで決め、クラスの注釈で絞ることもある。
+     * 層が依存してよい、同じモジュールの中の先
+     *
+     * <p>先はモジュールからの相対のパッケージで決め、クラスの注釈で絞ることもある。
      *
      * @param matches 相対のパッケージの名前と、依存先のクラスから、依存してよいかを返す関数
      */

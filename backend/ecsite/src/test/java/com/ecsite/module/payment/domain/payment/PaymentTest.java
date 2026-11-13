@@ -20,6 +20,8 @@ class PaymentTest {
 
     /**
      * 注文日時
+     *
+     * <p>日本時間の 2026-10-08 00:30。
      */
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
@@ -532,6 +534,8 @@ class PaymentTest {
 
         /**
          * 与信の時刻
+         *
+         * <p>日本時間の 2026-10-08 09:00。
          */
         private static final Instant AUTHORIZED_AT = Instant.parse("2026-10-08T00:00:00Z");
 

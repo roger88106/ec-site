@@ -35,13 +35,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
- * 列挙を文字で持つ列の制約と列挙の一致の検証。
+ * 列挙を文字で持つ列の制約と列挙の一致の検証
  */
 @IntegrationTest
 class EnumColumnConstraintTest {
 
     /**
-     * 列挙を文字で持つ列（schema.テーブル.列）→ 取りうる値の列挙。複数の列挙のどれかの値を持つ列は、すべてを並べる
+     * 列挙を文字で持つ列と、取りうる値の列挙の対応
+     *
+     * <p>キーは schema.テーブル.列。複数の列挙のどれかの値を持つ列は、すべてを並べる。
      */
     private static final Map<String, List<Class<? extends Enum<?>>>> ENUM_COLUMNS = Map.ofEntries(
             entry("catalog.product.status", List.of(PublicationStatus.class)),
@@ -66,7 +68,9 @@ class EnumColumnConstraintTest {
             entry("shipping.shipment.status", List.of(com.ecsite.module.shipping.domain.DeliveryStatus.class)));
 
     /**
-     * 名前で列挙とわかる列の名前の形（状態、種類、配送業者、性別、結果、形式、理由）
+     * 名前で列挙とわかる列の名前の形
+     *
+     * <p>状態、種類、配送業者、性別、結果、形式、理由。
      */
     private static final Pattern ENUM_LIKE_NAME = Pattern.compile("(^|_)(status|kind|carrier|gender|result|format|reason)$");
 
@@ -81,7 +85,9 @@ class EnumColumnConstraintTest {
             "common.event_publication.status");
 
     /**
-     * 値を並べる形の制約（{@code IN (...)} と {@code = '...'}）
+     * 値を並べる形の制約
+     *
+     * <p>{@code IN (...)} と {@code = '...'} の形。
      */
     private static final Pattern VALUE_LIST = Pattern.compile("= ANY \\(\\(?ARRAY\\[|::text = '");
 

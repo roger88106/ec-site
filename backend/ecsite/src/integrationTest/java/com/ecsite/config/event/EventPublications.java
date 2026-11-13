@@ -17,13 +17,16 @@ import java.util.UUID;
 
 
 /**
- * イベントの記録（Spring Modulith の表）のテーブルの定義と、イベントを発行して処理を待つ補助。<br />
- * イベントの片付けと再発行のテストが使う。処理は非同期なので、リスナーが終わるのを待つ処理は {@link AsyncEvents} に任せる。
+ * イベントの記録（Spring Modulith の表）のテーブルの定義と、イベントを発行して処理を待つ補助
+ *
+ * <p>イベントの片付けと再発行のテストが使う。処理は非同期なので、リスナーが終わるのを待つ処理は {@link AsyncEvents} に任せる。
  */
 class EventPublications {
 
     /**
-     * イベントの記録のテーブル（jOOQ の生成クラスはモジュールの外では使わない）
+     * イベントの記録のテーブル
+     *
+     * <p>jOOQ の生成クラスはモジュールの外では使わない。
      */
     static final Table<?> EVENT_PUBLICATION = DSL.table(DSL.name("common", "event_publication"));
 
@@ -78,7 +81,9 @@ class EventPublications {
     private final AsyncEvents asyncEvents;
 
     /**
-     * テスト用の時計（再発行の対象になる時間まで進める）
+     * テスト用の時計
+     *
+     * <p>再発行の対象になる時間まで進める。
      */
     private final MutableClock clock;
 

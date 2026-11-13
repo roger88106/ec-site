@@ -24,7 +24,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 可観測性の検証（バックエンドのアーキテクチャの「水平スケール」）。<br />
+ * 可観測性の検証
+ *
+ * <p>バックエンドのアーキテクチャの「水平スケール」に対応する。
  * テストでは通常トレーシングとメトリクスが無効なので、このテストでは有効にする（送信はしない）。
  */
 @IntegrationTest

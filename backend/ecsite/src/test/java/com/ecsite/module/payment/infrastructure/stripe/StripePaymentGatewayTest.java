@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static com.ecsite.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -61,7 +62,9 @@ class StripePaymentGatewayTest {
     private static final String RETURN_URL = "http://localhost:3000/orders/" + ORDER_ID + "?payment=returned";
 
     /**
-     * テストの今の時刻（支払画面の期限の基準）
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-14 10:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-14T01:00:00Z");
 
@@ -313,8 +316,7 @@ class StripePaymentGatewayTest {
         void rejectsIncompleteSession() {
             respond("GET /v1/checkout/sessions/" + SESSION_ID, 200, session("expired"));
 
-            assertThatThrownBy(() -> gateway.fetchAuthorization(SESSION_ID)).isInstanceOfSatisfying(SystemException.class,
-                    e -> assertThat(e.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode()));
+            assertSystemError(() -> gateway.fetchAuthorization(SESSION_ID), CommonErrorCode.SYSTEM_ERROR);
         }
 
         @Test
@@ -322,8 +324,7 @@ class StripePaymentGatewayTest {
         void rejectsSessionWithoutIntent() {
             respond("GET /v1/checkout/sessions/" + SESSION_ID, 200, session("complete"));
 
-            assertThatThrownBy(() -> gateway.fetchAuthorization(SESSION_ID)).isInstanceOfSatisfying(SystemException.class,
-                    e -> assertThat(e.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode()));
+            assertSystemError(() -> gateway.fetchAuthorization(SESSION_ID), CommonErrorCode.SYSTEM_ERROR);
         }
 
         @Test
@@ -331,9 +332,7 @@ class StripePaymentGatewayTest {
         void serverError() {
             respond("GET /v1/checkout/sessions/" + SESSION_ID, 500, StripeApiStub.error("api_error", null));
 
-            assertThatThrownBy(() -> gateway.fetchAuthorization(SESSION_ID)).isInstanceOfSatisfying(SystemException.class,
-                    e -> assertThat(e.getErrorDetail().errorCode())
-                            .isEqualTo(PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE.getCode()));
+            assertSystemError(() -> gateway.fetchAuthorization(SESSION_ID), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
     }
 

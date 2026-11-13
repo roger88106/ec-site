@@ -13,7 +13,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * インスタンスを作らないクラスの検査（バックエンドの書き方の「インスタンスを作らないクラス」）。<br />
+ * インスタンスを作らないクラスの検査
+ *
+ * <p>根拠はバックエンドの書き方の「インスタンスを作らないクラス」。
  * static でないメンバーを持たない最上位のクラスは、final にし、コンストラクタをすべて private にする。
  * コンパイルした後のクラスを読むので、Lombok で作ったコンストラクタも見える。
  */

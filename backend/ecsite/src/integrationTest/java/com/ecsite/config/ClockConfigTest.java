@@ -17,7 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * 現在時刻（{@link Clock}）の検証（バックエンドのアーキテクチャの「水平スケール」）
+ * 現在時刻（{@link Clock}）の検証
+ *
+ * <p>バックエンドのアーキテクチャの「水平スケール」に対応する。
  */
 class ClockConfigTest {
 

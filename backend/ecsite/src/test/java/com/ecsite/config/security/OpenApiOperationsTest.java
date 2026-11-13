@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 class OpenApiOperationsTest {
 
     /**
-     * 操作の一覧。具体的なパスと、変数を含むパスが重なる
+     * 操作の一覧
+     *
+     * <p>具体的なパスと、変数を含むパスが重なる。
      */
     private static final String SPEC = """
             servers:
@@ -71,7 +73,7 @@ class OpenApiOperationsTest {
         assertThat(operations.find("GET", "/api/admin/unknown")).isEmpty();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"GET", "Get"})
     @DisplayName("パスの下に小文字でない HTTP メソッドがあると、契約のファイル、パス、キーを示して読み込みに失敗する")
     void rejectsNonLowercaseMethod(String key) {
@@ -80,7 +82,7 @@ class OpenApiOperationsTest {
                 .withMessageContainingAll("admin.yaml", "/categories", key);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"gett", "requestBody", "security"})
     @DisplayName("パスの下に HTTP メソッドと OpenAPI の Path Item の項目の外のキーがあると、契約のファイル、パス、キーを示して読み込みに失敗する")
     void rejectsUnknownKey(String key) {

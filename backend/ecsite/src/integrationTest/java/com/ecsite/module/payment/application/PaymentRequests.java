@@ -17,6 +17,9 @@ import static com.ecsite.jooq.payment.Tables.PAYMENT_;
  */
 final class PaymentRequests {
 
+    /**
+     * インスタンスを作らない。
+     */
     private PaymentRequests() {
     }
 

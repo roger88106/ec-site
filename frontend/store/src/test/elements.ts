@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { expect } from 'vitest'
 
 /**
- * 役割と名前で探したボタン（押せるかどうかと、押している状態を見る。フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
+ * 役割と名前でボタンを探す（押せるかどうかと、押している状態を見る。フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
  *
  * @param name ボタンの名前
  * @returns ボタン。ボタンでなければ、テストを失敗させる
@@ -16,7 +16,7 @@ export function button(name: string): HTMLButtonElement {
 }
 
 /**
- * 見出しで探した選択欄。
+ * 見出しで選択欄を探す。
  *
  * @param label 欄の見出し
  * @returns 選択欄。選択欄でなければ、テストを失敗させる
@@ -30,7 +30,7 @@ export function select(label: string): HTMLSelectElement {
 }
 
 /**
- * 見出しで探した入力欄。
+ * 見出しで入力欄を探す。
  *
  * @param label 欄の見出し
  * @returns 入力欄。入力欄でなければ、テストを失敗させる

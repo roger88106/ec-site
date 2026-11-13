@@ -28,6 +28,10 @@ const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
  * 郵便番号と電話番号は、全角の数字とハイフンの類を半角にして API に送る（氏名と住所は入力のまま）。
  * 連絡先のメールアドレスは、API が会員の token から取る。
  * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す。
+ *
+ * @param _previous 前の結果（使わない）
+ * @param formData  フォームの値
+ * @returns 結果
  */
 export async function placeOrder(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const checkoutId = readString(formData, 'checkoutId')
@@ -72,7 +76,8 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
 /**
  * 注文の支払画面の URL を求める。
  *
- * 得られなければ（決済サービスが応えないなど）null。
+ * @param orderId 注文の ID
+ * @returns 支払画面の URL。得られなければ（決済サービスが応えないなど）null
  */
 async function paymentPageUrl(orderId: string): Promise<string | null> {
   // 接続の失敗も、URL を得られなかったときと同じに扱う

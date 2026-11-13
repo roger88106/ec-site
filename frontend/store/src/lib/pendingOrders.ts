@@ -18,7 +18,7 @@ const LIMIT_PARAM = 'limit'
 const LIMIT_REACHED = 'reached'
 
 /**
- * 上限に達したことを示す確認の画面の URL（クエリ付き）。
+ * 上限に達したことを示す確認の画面の URL（クエリ付き）を返す。
  *
  * `actions/` は `features/` を import できないので、`lib/` に置く。
  *

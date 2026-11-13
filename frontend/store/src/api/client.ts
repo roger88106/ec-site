@@ -10,7 +10,7 @@ import { timeoutSignal } from '@/lib/server/timeout'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 
 /**
- * 店舗 API の接続先と、結果をキャッシュする秒数。
+ * 店舗 API の接続先と、結果をキャッシュする秒数
  *
  * 秒数は環境変数 STORE_API_REVALIDATE_SECONDS で短くできる（E2E で、既定の秒数を待たずに一覧への反映を確認するため）。
  */
@@ -21,7 +21,7 @@ const {
 } = readServerConfig()
 
 /**
- * 店舗 API の応答を待つ時間の上限を、リクエストに付ける（店舗画面の構成の「エラー」）。
+ * 店舗 API の応答を待つ時間の上限を、リクエストに付けるミドルウェア（店舗画面の構成の「エラー」）
  *
  * 上限を過ぎたリクエストは例外で失敗し、サーバーアクションでは「接続できない」の結果になる。
  * 呼ぶときに fetch を替えても（{@link UNCACHED}）有効になる。
@@ -33,7 +33,7 @@ const timeout: Middleware = {
 }
 
 /**
- * 画面のリクエストと同じ追跡の ID（traceparent）を、店舗 API のリクエストに付ける（店舗画面の構成の「エラー」）。
+ * 画面のリクエストと同じ追跡の ID（traceparent）を、店舗 API のリクエストに付けるミドルウェア（店舗画面の構成の「エラー」）
  *
  * バックエンドのログを、画面のリクエストから辿れるようにする。
  * Next.js はキャッシュの鍵から traceparent を除くので、キャッシュするリクエストに付けてもキャッシュは使われる。
@@ -50,7 +50,7 @@ const trace: Middleware = {
 }
 
 /**
- * 店舗 API の 5xx の応答を、warn のログに出す（店舗画面の構成の「エラー」）。
+ * 店舗 API の 5xx の応答を、warn のログに出すミドルウェア（店舗画面の構成の「エラー」）
  *
  * 出すのは状態コード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）だけ。
  * token、Cookie、リクエストの本文、クエリ（メールアドレスなどを含みうる）は出さない。
@@ -88,9 +88,9 @@ async function errorCodeOf(response: Response): Promise<string | null> {
 }
 
 /**
- * 店舗 API（store.yaml）の公開の口（店舗画面の構成の「API の呼び出し」）。token を付けない。
+ * 店舗 API（store.yaml）の公開の口（店舗画面の構成の「API の呼び出し」）
  *
- * 接続先は環境変数 STORE_API_BASE_URL。結果は Next.js の fetch のキャッシュで REVALIDATE_SECONDS の秒数まで使い回す。
+ * token を付けない。接続先は環境変数 STORE_API_BASE_URL。結果は Next.js の fetch のキャッシュで REVALIDATE_SECONDS の秒数まで使い回す。
  */
 const api = createClient<paths>({
   baseUrl: BASE_URL,
@@ -99,7 +99,7 @@ const api = createClient<paths>({
 api.use(timeout, trace, serverErrorLog)
 
 /**
- * キャッシュを使わずに呼ぶときの、リクエストのオプション（店舗画面の構成の「API の呼び出し」）。
+ * キャッシュを使わずに呼ぶときの、リクエストのオプション（店舗画面の構成の「API の呼び出し」）
  *
  * 1 件を取る API（商品の詳細）と会員の口に使う。商品の詳細では、Next.js のキャッシュは、取得し直した応答が 404 だと古い 200 を
  * 置き換えないので、非公開・販売終了にした商品がいつまでも表示されてしまうため。
@@ -109,7 +109,7 @@ export const UNCACHED = {
 }
 
 /**
- * 店舗 API の会員の口（店舗画面の構成の「会員の token を付けて呼ぶ」）。
+ * 店舗 API の会員の口（店舗画面の構成の「会員の token を付けて呼ぶ」）
  *
  * 会員の access token を付け、キャッシュを使わない（会員ごとに違う結果を、共有のキャッシュに載せないため）。
  * ログインしていなければ token を付けない。
@@ -131,10 +131,12 @@ memberApi.use({
 })
 
 /**
- * サーバーコンポーネントから API を呼ぶときに使う。
+ * 画面をリクエストのたびに作るようにしてから（connection）、店舗 API の公開の口のクライアントを返す。
  *
- * 画面をリクエストのたびに作るようにしてから（connection）、クライアントを返す。
+ * サーバーコンポーネントから API を呼ぶときに使う。
  * ビルドのときに画面を作って API を呼ぶ（バックエンドが必要だ）のを避けるため。API の結果のキャッシュは別に有効になる。
+ *
+ * @returns 公開の口のクライアント
  */
 export async function getApi() {
   await connection()
@@ -142,9 +144,12 @@ export async function getApi() {
 }
 
 /**
- * 会員の操作（/me/**、会員のカート、注文手続き、注文）を呼ぶときに使う（店舗画面の構成の「会員の token を付けて呼ぶ」）。
+ * 画面をリクエストのたびに作るようにしてから（connection）、店舗 API の会員の口のクライアントを返す。
  *
+ * 会員の操作（/me/**、会員のカート、注文手続き、注文）を呼ぶときに使う（店舗画面の構成の「会員の token を付けて呼ぶ」）。
  * 401 は、会員の口の結果を受け取る所でログインの画面へ移す（取得は result.ts の unwrapMember、操作は auth.ts の redirectToLogin）。
+ *
+ * @returns 会員の口のクライアント
  */
 export async function getMemberApi() {
   await connection()

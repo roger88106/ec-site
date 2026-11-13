@@ -47,6 +47,7 @@ const LIMIT_TEXT = /お支払い待ちのご注文が上限に達しているた
  * 画面の関数に渡す引数（クエリ付き）を作る。
  *
  * @param query URL のクエリ
+ * @returns 画面の関数の引数
  */
 function pageProps(query: Record<string, string> = {}) {
   return { params: Promise.resolve({}), searchParams: Promise.resolve(query) }
@@ -57,6 +58,7 @@ function pageProps(query: Record<string, string> = {}) {
  *
  * @param items 支払待ちの注文の API の応答
  * @param query URL のクエリ
+ * @returns 読み込んだ画面
  */
 async function renderPage(items: (typeof PAYABLE)[], query: Record<string, string> = {}) {
   signInAs()

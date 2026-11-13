@@ -101,9 +101,11 @@ type CurrentMember = {
 }
 
 /**
- * ログインしている会員。サーバーコンポーネントとサーバーアクションから呼ぶ。リクエストの中では 1 回だけ読む。
+ * ログインしている会員を返す。
  *
- * @returns ログインしていなければ（IdP のログインの状態が切れて token を取り直せないときも）null
+ * サーバーコンポーネントとサーバーアクションから呼ぶ。リクエストの中では 1 回だけ読む。
+ *
+ * @returns ログインしている会員。ログインしていなければ（IdP のログインの状態が切れて token を取り直せないときも）null
  */
 export const currentMember = cache(async (): Promise<CurrentMember | null> => {
   const session = await auth()
@@ -114,7 +116,7 @@ export const currentMember = cache(async (): Promise<CurrentMember | null> => {
 })
 
 /**
- * ログインしている会員。
+ * ログインしている会員を返す。
  *
  * ログインしていなければ、ログインの画面へ移す（ログインを求める画面から呼ぶ）。
  *
@@ -126,10 +128,12 @@ export async function requireMember(): Promise<CurrentMember> {
 }
 
 /**
- * 会員の access token（サーバー専用）。期限が切れていれば、その場で取り直して使う（Cookie には書かない。
- * 次のリクエストで proxy が書く）。リクエストの中では 1 回だけ読む。
+ * 会員の access token を返す（サーバー専用）。
  *
- * @returns ログインしていない、または取り直せなければ null
+ * 期限が切れていれば、その場で取り直して使う（Cookie には書かない。次のリクエストで proxy が書く）。
+ * リクエストの中では 1 回だけ読む。
+ *
+ * @returns access token。ログインしていない、または取り直せなければ null
  */
 export const getAccessToken = cache(async (): Promise<string | null> => {
   const token = await readToken()
@@ -152,10 +156,12 @@ export async function redirectToLogin(returnTo?: string): Promise<never> {
 }
 
 /**
- * IdP のログアウト（RP-Initiated Logout）の URL。
+ * IdP のログアウト（RP-Initiated Logout）の URL を作る。
  *
  * ログアウトの後は店舗のトップに戻る。
  * セッションの Cookie を消す前に呼ぶ（ID token を添えるため）。
+ *
+ * @returns ログアウトの URL
  */
 export async function idpLogoutUrl(): Promise<string> {
   const token = await readToken()

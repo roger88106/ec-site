@@ -27,6 +27,10 @@ import { readIntOrNaN, readString } from '@/lib/server/formData'
  *
  * ログインしていれば会員のカートに入れる。していなければ Cookie のカートに入れ、カートがなければ作って
  * Cookie に書く。フォームの項目：variantId、quantity。
+ *
+ * @param _previous 前の結果（使わない）
+ * @param formData  フォームの値
+ * @returns 結果
  */
 export async function addToCart(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const variantId = readString(formData, 'variantId')
@@ -64,6 +68,10 @@ export async function addToCart(_previous: ActionResult | null, formData: FormDa
  * 品目の数量を変える。
  *
  * フォームの項目：variantId、quantity。
+ *
+ * @param _previous 前の結果（使わない）
+ * @param formData  フォームの値
+ * @returns 結果
  */
 export async function changeCartItemQuantity(
   _previous: ActionResult | null,
@@ -80,6 +88,10 @@ export async function changeCartItemQuantity(
  * 品目を削除する。
  *
  * フォームの項目：variantId。
+ *
+ * @param _previous 前の結果（使わない）
+ * @param formData  フォームの値
+ * @returns 結果
  */
 export async function removeCartItem(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const variantId = readString(formData, 'variantId')
@@ -102,6 +114,10 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
  * 支払待ちの注文の上限による拒否（409）なら、上限に達したことを示す確認の画面へ移る。
  *
  * フォームの項目：acknowledgedOrderIds（任意、複数）。
+ *
+ * @param _previous 前の結果（使わない）
+ * @param formData  フォームの値
+ * @returns 結果
  */
 export async function startCheckout(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const acknowledgedOrderIds = formData
@@ -196,6 +212,7 @@ type CartRequest = (
  * ログインしていれば会員のカート、していなければ Cookie のカート（Cookie の有効期限も延ばす）を変える。
  *
  * @param request API の呼び出し
+ * @returns 結果
  */
 async function updateCart(request: CartRequest): Promise<ActionResult> {
   return withActionResult(async () => {
@@ -222,6 +239,7 @@ async function updateCart(request: CartRequest): Promise<ActionResult> {
  * 401 なら、ログインの画面へ移す。
  *
  * @param request API の呼び出し
+ * @returns 結果
  */
 async function updateMemberCart(request: CartRequest): Promise<ActionResult> {
   const cartId = await memberCartId()

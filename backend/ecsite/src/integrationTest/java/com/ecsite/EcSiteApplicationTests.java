@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * アプリケーションコンテキストが起動し、マイグレーションが適用されることの検証。
+ * アプリケーションコンテキストの起動とマイグレーションの検証
  */
 @IntegrationTest
 class EcSiteApplicationTests {

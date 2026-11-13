@@ -16,20 +16,26 @@ import static com.ecsite.contract.OpenApiNodes.resolve;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * API の契約のリクエストの制約の漏れを検出する契約テスト（バックエンドの書き方の「形の検証は presentation、業務の規則は domain」）。<br />
- * リクエスト（パス・クエリの引数と本文）の数値の項目に範囲（下限と上限。上限を求めない項目は理由を付けて除く）があり、
+ * API の契約のリクエストの制約の漏れを検出する契約テスト
+ *
+ * <p>バックエンドの書き方の「形の検証は presentation、業務の規則は domain」に沿う。
+ *
+ * <p>リクエスト（パス・クエリの引数と本文）の数値の項目に範囲（下限と上限。上限を求めない項目は理由を付けて除く）があり、
  * 文字の項目に長さか形式（{@code maxLength}・{@code pattern}・{@code format}・{@code enum}）があることを確認する。
  */
 class OpenApiRequestConstraintTest {
 
     /**
-     * 操作を表すキー（パスの項目のうち、操作でないもの（parameters など）を除くため）
+     * 操作を表すキー
+     *
+     * <p>パスの項目のうち、操作でないもの（parameters など）を除くために使う。
      */
     private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch");
 
     /**
-     * 数値の項目のうち、上限を求めないもの（項目の名前と理由）。<br />
-     * 上限を求めるのは、値を計算に使うと桁あふれや DB の範囲の超過で 500 になるため。計算に使わない項目だけをここに置く
+     * 数値の項目のうち、上限を求めないもの
+     *
+     * <p>項目の名前と理由を持つ。上限を求めるのは、値を計算に使うと桁あふれや DB の範囲の超過で 500 になるため。計算に使わない項目だけをここに置く
      */
     private static final Map<String, String> NO_MAXIMUM = Map.of(
             "version", "楽観ロックのバージョン。サーバーが返した値を送り返すだけで、合わなければ 409 になる",
@@ -38,7 +44,7 @@ class OpenApiRequestConstraintTest {
             "maxPrice", "絞り込みの値。税込価格と比べるだけで計算に使わない",
             "expectedTotal", "画面に表示した総額。サーバーが計算した総額と比べるだけで計算に使わない");
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"admin.yaml", "store.yaml"})
     @DisplayName("リクエストの数値の項目に下限と上限、文字の項目に長さか形式がある")
     void requestFieldsAreConstrained(String file) {

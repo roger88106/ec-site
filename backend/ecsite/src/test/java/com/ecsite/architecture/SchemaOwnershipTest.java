@@ -22,7 +22,9 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * schema の持ち主の検査（バックエンドのアーキテクチャの「永続化」）。<br />
+ * schema の持ち主の検査
+ *
+ * <p>根拠はバックエンドのアーキテクチャの「永続化」。
  * 各モジュールが自分の schema の jOOQ の生成クラスだけを使うことを、本番のクラスファイルから確認する。
  * jOOQ の生成コード（{@code com.ecsite.jooq.<schema>}）はモジュールのパッケージの外にあるので、
  * {@code ModulithTest} では他のモジュールのテーブルの読み書きを検出できない。
@@ -30,8 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SchemaOwnershipTest {
 
     /**
-     * jOOQ を、infrastructure/persistence の外から使ってよいクラス。<br />
-     * 追加するときは、理由をコメントに書き、バックエンドの書き方の「標準の構成」の例外の表にも書く。
+     * jOOQ を、infrastructure/persistence の外から使ってよいクラス
+     *
+     * <p>追加するときは、理由をコメントに書き、バックエンドの書き方の「標準の構成」の例外の表にも書く。
      */
     private static final List<String> JOOQ_EXCEPTIONS = List.of(
             // mock の物流サービスの画面だけが使う問い合わせで、mock を無効にすると Bean が作られない。
@@ -39,8 +42,9 @@ class SchemaOwnershipTest {
             ProductionClasses.MODULE_PACKAGE_PREFIX + "shipping.infrastructure.mock.MockShipmentQuery");
 
     /**
-     * モジュールの名前から、そのモジュールが持つ schema の名前への対応。
-     * schema を持たないモジュールは空にする。
+     * モジュールの名前から、そのモジュールが持つ schema の名前への対応
+     *
+     * <p>schema を持たないモジュールは空にする。
      * common の schema（イベントの永続化の表）は Spring Modulith が JDBC で使うので、どのモジュールにも割り当てない。
      */
     private static final Map<String, Optional<String>> SCHEMA_BY_MODULE = Map.ofEntries(

@@ -234,7 +234,7 @@ class PaymentExpiryJobLoggingTest {
     void resetsCountOnSuccess() {
         var payments = awaitingPayments(5);
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(payments);
-        when(gateway.fetchAuthorization(payments.get(0).pageId())).thenThrow(unavailable());
+        when(gateway.fetchAuthorization(payments.getFirst().pageId())).thenThrow(unavailable());
         when(gateway.fetchAuthorization(payments.get(1).pageId())).thenThrow(unavailable());
         when(gateway.fetchAuthorization(payments.get(2).pageId())).thenReturn(AUTHORIZATION);
         when(gateway.fetchAuthorization(payments.get(3).pageId())).thenThrow(unavailable());
@@ -250,7 +250,7 @@ class PaymentExpiryJobLoggingTest {
     void resetsCountOnOtherFailure() {
         var payments = awaitingPayments(5);
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(payments);
-        when(gateway.fetchAuthorization(payments.get(0).pageId())).thenThrow(unavailable());
+        when(gateway.fetchAuthorization(payments.getFirst().pageId())).thenThrow(unavailable());
         when(gateway.fetchAuthorization(payments.get(1).pageId())).thenThrow(unavailable());
         when(gateway.fetchAuthorization(payments.get(2).pageId())).thenThrow(SystemException.of("予期しない応答", null));
         when(gateway.fetchAuthorization(payments.get(3).pageId())).thenThrow(unavailable());

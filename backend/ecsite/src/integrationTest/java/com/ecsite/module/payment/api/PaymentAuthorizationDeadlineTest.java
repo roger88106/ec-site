@@ -29,7 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PaymentAuthorizationDeadlineTest {
 
     /**
-     * 与信の時刻（注文と同時に支払う）
+     * 与信の時刻
+     *
+     * <p>注文と同時に支払う。日本時間の 2026-10-08 00:30。
      */
     private static final Instant AUTHORIZED_AT = Instant.parse("2026-10-07T15:30:00Z");
 

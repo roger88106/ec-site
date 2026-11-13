@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BoundedTextTest {
 
     /**
-     * サロゲートペアの文字（𠮷）。char では 2、code point では 1 と数える
+     * サロゲートペアの文字（𠮷）
+     *
+     * <p>char では 2、code point では 1 と数える。
      */
     private static final String SURROGATE = "𠮷";
 

@@ -29,17 +29,26 @@ class ShippingApiDirectory implements ShippingDirectory {
      */
     private final ShippingApi shippingApi;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
         return toShipment(shippingApi.create(orderId, toShippingCarrier(carrier), trackingNumber, shippedAt));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<UUID, OrderShipment> find(Collection<UUID> orderIds) {
         return shippingApi.find(orderIds).stream()
                 .collect(Collectors.toMap(ShipmentSummary::orderId, ShippingApiDirectory::toShipment));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<UUID> returnedOrderIds() {
         return shippingApi.returnedOrderIds();

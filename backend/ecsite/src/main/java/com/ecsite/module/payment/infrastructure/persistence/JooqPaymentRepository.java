@@ -94,21 +94,33 @@ class JooqPaymentRepository implements PaymentRepository {
         payment.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> lockById(UUID id) {
         return lock(PAYMENT_.ID.eq(id));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> lockByOrderId(UUID orderId) {
         return lock(PAYMENT_.ORDER_ID.eq(orderId));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> lockByPageId(String pageId) {
         return lock(PAYMENT_.PAGE_ID.eq(pageId));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> findById(UUID id) {
         return dsl.selectFrom(PAYMENT_)
@@ -117,6 +129,9 @@ class JooqPaymentRepository implements PaymentRepository {
                 .map(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> findByOrderId(UUID orderId) {
         return dsl.selectFrom(PAYMENT_)
@@ -125,6 +140,9 @@ class JooqPaymentRepository implements PaymentRepository {
                 .map(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Payment> findByOrderIds(Collection<UUID> orderIds) {
         if (orderIds.isEmpty()) {
@@ -135,6 +153,9 @@ class JooqPaymentRepository implements PaymentRepository {
                 .fetch(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Payment> findUnpaidPastDeadline(Instant now, int limit) {
         return dsl.selectFrom(PAYMENT_)
@@ -147,6 +168,9 @@ class JooqPaymentRepository implements PaymentRepository {
                 .fetch(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Payment> findUnpaidAwaitingAuthorization(int limit) {
         return dsl.selectFrom(PAYMENT_)

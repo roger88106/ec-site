@@ -25,6 +25,9 @@ public class UnconnectedCarrierTracking implements CarrierTracking {
         log.warn("物流サービスに接続していない。追跡を始めず、配送状態は進まない。mock を使うときは ecsite.shipping.mock.enabled=true を指定する");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void startTracking(Carrier carrier, String trackingNumber) {
         // 接続先がないので、何も送らない

@@ -25,6 +25,9 @@ public record StripeProperties(@NotBlank String secretKey, @NotBlank String webh
                                @DefaultValue("5s") @NotNull Duration connectTimeout,
                                @DefaultValue("20s") @NotNull Duration readTimeout) {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         // 秘密の値をログに出さない

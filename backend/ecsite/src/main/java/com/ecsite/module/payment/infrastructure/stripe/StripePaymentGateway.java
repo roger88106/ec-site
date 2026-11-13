@@ -118,6 +118,9 @@ class StripePaymentGateway implements PaymentGateway {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CloseResult closePage(String pageId) {
         try {
@@ -131,6 +134,9 @@ class StripePaymentGateway implements PaymentGateway {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Authorization fetchAuthorization(String pageId) {
         var params = SessionRetrieveParams.builder().addExpand("payment_intent").build();
@@ -147,6 +153,9 @@ class StripePaymentGateway implements PaymentGateway {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public VoidResult voidAuthorization(String authorizationRef) {
         try {
@@ -192,6 +201,9 @@ class StripePaymentGateway implements PaymentGateway {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void refund(RefundRequest request) {
         var params = RefundCreateParams.builder()

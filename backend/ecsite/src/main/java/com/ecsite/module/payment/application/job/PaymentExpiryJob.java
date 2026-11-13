@@ -40,7 +40,7 @@ class PaymentExpiryJob {
     private final PaymentQueryService queryService;
 
     /**
-     * 決済サービスを呼ぶ操作のサービス
+     * 決済ゲートウェイサービス
      */
     private final PaymentGatewayService gatewayService;
 

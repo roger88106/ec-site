@@ -17,6 +17,9 @@ import java.util.Map;
 @Component
 class OrderValidationErrors implements ValidationErrorMapping {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<String, ErrorDetail> errorsByField() {
         return Map.of(

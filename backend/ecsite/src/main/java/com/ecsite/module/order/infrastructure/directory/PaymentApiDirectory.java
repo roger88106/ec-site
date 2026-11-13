@@ -33,26 +33,41 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     private final PaymentApi paymentApi;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void create(UUID orderId, Money amount, Instant orderedAt) {
         paymentApi.create(orderId, amount, orderedAt);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<String> pageUrl(UUID orderId) {
         return paymentApi.pageUrl(orderId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void capture(UUID orderId) {
         paymentApi.capture(orderId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void cancel(UUID orderId) {
         paymentApi.cancel(orderId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<UUID, PaymentSnapshot> find(Collection<UUID> orderIds) {
         var payable = paymentApi.findPayableOrderIds(orderIds);
@@ -61,12 +76,18 @@ class PaymentApiDirectory implements PaymentDirectory {
                         payable.contains(summary.orderId()))));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<UUID, PaymentAuthorization> findAuthorizations(Collection<UUID> orderIds) {
         return paymentApi.findAuthorizationDeadlines(orderIds).stream().collect(Collectors.toMap(AuthorizationDeadline::orderId,
                 deadline -> new PaymentAuthorization(deadline.deadline(), deadline.expiring())));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<UUID> findExpiringOrderIds() {
         return paymentApi.findExpiringOrderIds();

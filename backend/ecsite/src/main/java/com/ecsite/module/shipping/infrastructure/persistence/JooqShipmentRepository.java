@@ -50,6 +50,9 @@ class JooqShipmentRepository implements ShipmentRepository {
      */
     private final Clock clock;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void insert(Shipment shipment) {
         var now = clock.instant();
@@ -70,6 +73,9 @@ class JooqShipmentRepository implements ShipmentRepository {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Shipment> findAllByOrderIds(Collection<UUID> orderIds) {
         if (orderIds.isEmpty()) {
@@ -78,6 +84,9 @@ class JooqShipmentRepository implements ShipmentRepository {
         return dsl.selectFrom(SHIPMENT).where(SHIPMENT.ORDER_ID.in(orderIds)).fetch(JooqShipmentRepository::toShipment);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Shipment> findAllByTrackingForUpdate(Carrier carrier, TrackingNumber trackingNumber) {
         return dsl.selectFrom(SHIPMENT)
@@ -86,6 +95,9 @@ class JooqShipmentRepository implements ShipmentRepository {
                 .fetch(JooqShipmentRepository::toShipment);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void updateProgress(Collection<Shipment> shipments) {
         if (shipments.isEmpty()) {
@@ -108,6 +120,9 @@ class JooqShipmentRepository implements ShipmentRepository {
                 .execute();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<UUID> findReturnedOrderIds() {
         return dsl.select(SHIPMENT.ORDER_ID)

@@ -14,6 +14,9 @@ import org.springframework.stereotype.Component;
 @ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
 public class MockCarrierTracking implements CarrierTracking {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void startTracking(Carrier carrier, String trackingNumber) {
         // 何も送らない

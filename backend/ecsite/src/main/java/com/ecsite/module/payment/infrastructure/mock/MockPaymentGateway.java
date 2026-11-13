@@ -69,6 +69,9 @@ public class MockPaymentGateway implements PaymentGateway {
 
 // ============================== 決済サービス ==============================
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public PaymentPage openPage(PageRequest request) {
         var id = PAGE_ID_PREFIX + UUID.randomUUID();
@@ -76,6 +79,9 @@ public class MockPaymentGateway implements PaymentGateway {
         return new PaymentPage(id, properties.baseUrl() + "/mock-payment/" + id);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CloseResult closePage(String pageId) {
         var page = pages.computeIfPresent(pageId,
@@ -83,6 +89,9 @@ public class MockPaymentGateway implements PaymentGateway {
         return page != null && page.status() == PageStatus.PAID ? CloseResult.ALREADY_PAID : CloseResult.CLOSED;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Authorization fetchAuthorization(String pageId) {
         var page = pages.get(pageId);
@@ -92,18 +101,27 @@ public class MockPaymentGateway implements PaymentGateway {
         return new Authorization(authorizationRefOf(pageId), page.paidAt());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public VoidResult voidAuthorization(String authorizationRef) {
         // 売上を確定した与信は取り消せない（返金で戻す）
         return capturedAuthorizations.contains(authorizationRef) ? VoidResult.ALREADY_CAPTURED : VoidResult.VOIDED;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CaptureResult capture(CaptureRequest request) {
         capturedAuthorizations.add(request.authorizationRef());
         return CaptureResult.CAPTURED;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void refund(RefundRequest request) {
         // mock は返金を受け付けるだけ（冪等キーが同じでも、何度でも受け付ける）

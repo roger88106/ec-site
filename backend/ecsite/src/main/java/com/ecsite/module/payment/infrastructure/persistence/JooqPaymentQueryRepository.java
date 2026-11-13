@@ -28,6 +28,9 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
      */
     private final DSLContext dsl;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<PaymentSummaryView> findSummaries(Collection<UUID> orderIds) {
         if (orderIds.isEmpty()) {
@@ -41,6 +44,9 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                         r.get(PAYMENT_.DEADLINE)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<UUID> findOrderIdsAuthorizedUntil(Instant latestAuthorizedAt) {
         // 与信期限を気にする状態の名前（部分インデックスの条件と同じ）
@@ -56,6 +62,9 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .fetch(PAYMENT_.ORDER_ID);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long countUnpaidAwaitingAuthorizationUntil(Instant latestAwaitingSince) {
         return dsl.fetchCount(PAYMENT_, PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name())

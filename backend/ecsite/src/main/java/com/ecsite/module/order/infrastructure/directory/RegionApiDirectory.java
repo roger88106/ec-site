@@ -23,11 +23,17 @@ class RegionApiDirectory implements RegionDirectory {
      */
     private final RegionLookupApi regionLookupApi;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<String> findPrefectureName(String prefectureCode) {
         return regionLookupApi.findPrefecture(prefectureCode).map(RegionPrefecture::name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Municipality> findMunicipality(String municipalityCode) {
         return regionLookupApi.findMunicipality(municipalityCode)

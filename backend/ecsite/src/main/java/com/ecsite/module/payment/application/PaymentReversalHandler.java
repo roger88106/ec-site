@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Propagation;
 class PaymentReversalHandler {
 
     /**
-     * 決済サービスを呼ぶ操作のサービス
+     * 決済ゲートウェイサービス
      */
     private final PaymentGatewayService gatewayService;
 

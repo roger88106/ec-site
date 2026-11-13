@@ -15,6 +15,9 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("ecsite.shipping")
 public record ShippingProperties(@NotBlank String webhookSecret) {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         // 秘密の値をログに出さない

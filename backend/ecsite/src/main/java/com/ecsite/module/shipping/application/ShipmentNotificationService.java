@@ -43,6 +43,9 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
      */
     private final ApplicationEventPublisher events;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Result receive(@NonNull Carrier carrier, String trackingNumber, @NonNull DeliveryStatus status) {
         // 出荷取得

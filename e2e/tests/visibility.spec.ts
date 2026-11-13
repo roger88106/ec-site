@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
 import {
   createCategory,
@@ -9,26 +9,19 @@ import {
   taxCategoryWithRate,
   unpublish,
 } from '../src/data'
-import { productCard } from '../src/store'
+import { expectProductNotFound, productCard } from '../src/store'
 import { STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
-/** 店舗画面の詳細が「見つかりません」であることを確認する */
-async function expectNotFound(page: Page, productId: string) {
-  const response = await page.goto(`${STORE_URL}/products/${productId}`)
-  expect(response?.status()).toBe(404)
-  await expect(page.getByRole('heading', { name: 'ページが見つかりません' })).toBeVisible()
-}
-
-for (const [label, change, button, toast] of [
-  ['AC-30 非公開', unpublish, '非公開にする', '非公開にしました'],
-  ['AC-32 販売終了', discontinue, '販売終了にする', '販売終了にしました'],
+for (const [label, code, change, button, toast] of [
+  ['AC-30 非公開', 'HIDE', unpublish, '非公開にする', '非公開にしました'],
+  ['AC-32 販売終了', 'END', discontinue, '販売終了にする', '販売終了にしました'],
 ] as const) {
   test(`${label}にすると、店舗画面の詳細はすぐ「見つかりません」になり、一覧から消える`, async ({ page }) => {
     const { id: categoryId } = await createCategory('E2E カテゴリ')
     const productName = `E2E ${label} ${RUN_ID}`
     const productId = await createSimpleProduct({
-      code: change === unpublish ? 'HIDE' : 'END',
+      code,
       name: productName,
       categoryIds: [categoryId],
       stock: 1,
@@ -50,7 +43,7 @@ for (const [label, change, button, toast] of [
     await expect(page.getByText(toast)).toBeVisible()
 
     // 詳細はキャッシュを使わないので、すぐ「見つかりません」になる
-    await expectNotFound(page, productId)
+    await expectProductNotFound(page, productId)
     await reopenUntil(page, listUrl, async () => {
       await expect(page.getByText('条件に合う商品はありません。')).toBeVisible({ timeout: CHECK_TIMEOUT })
     })

@@ -49,7 +49,7 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 
 | 区分 | モデル | モデルの ID | 既定の effort |
 |------|--------|-------------|---------------|
-| 最上位 | Claude Fable 5.1 | `claude-fable-5-1` | `high` |
+| 最上位 | Claude Fable 5.2 | `claude-fable-5-2` | `high` |
 | 高性能 | Claude Opus 5.5 | `claude-opus-5-5` | `medium` |
 | 汎用 | Claude Sonnet 5.5 | `claude-sonnet-5-5` | `medium` |
 | 軽量 | Claude Haiku 5.5 ※1 | `claude-haiku-5-5` | `medium` |

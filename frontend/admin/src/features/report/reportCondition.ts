@@ -26,11 +26,11 @@ export type ReportCondition = {
 }
 
 /**
- * URL のクエリから条件を読む
+ * URL のクエリから条件を読む。
  *
  * 不正な値は無視し、期間は与えた既定にする。
  *
- * @param params URL のクエリ
+ * @param params        URL のクエリ
  * @param defaultPeriod 既定の期間
  * @returns レポートの条件
  */
@@ -52,7 +52,7 @@ export function parseCondition(params: URLSearchParams, defaultPeriod: { from: s
 }
 
 /**
- * 条件を URL のクエリにする
+ * 条件を URL のクエリにする。
  *
  * 期間は必ず書き、既定の条件（月、注文基準、全商品、含む）は書かない。
  *

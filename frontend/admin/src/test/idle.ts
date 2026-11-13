@@ -4,7 +4,11 @@ import { vi } from 'vitest'
 /** 1 分（ミリ秒） */
 export const MINUTE = 60 * 1000
 
-/** 無操作のテストで時計を始める時刻。日本時間の 2026/01/01 09:00:00 */
+/**
+ * 無操作のテストで時計を始める時刻
+ *
+ * 日本時間の 2026/01/01 09:00:00。
+ */
 export const START = Date.UTC(2026, 0, 1)
 
 /**
@@ -68,7 +72,11 @@ export function operate(type: string): void {
   })
 }
 
-/** タブに戻ったことを知らせるイベント。pageshow は戻る・進むのキャッシュから戻った、visibilitychange は再び見えた、focus は前面に戻った */
+/**
+ * タブに戻ったことを知らせるイベント
+ *
+ * pageshow は戻る・進むのキャッシュから戻った、visibilitychange は再び見えた、focus は前面に戻った。
+ */
 export type TabComeBack = 'pageshow' | 'visibilitychange' | 'focus'
 
 /**

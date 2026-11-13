@@ -8,7 +8,7 @@ import { useApiMutation } from '@/api/useApiMutation'
 import { createQueryClient } from '@/app/queryClient'
 import { http, problem, server } from '@/test/server'
 
-/** テストごとに新しいキャッシュで hook を描画する */
+/** テストごとに新しいキャッシュで hook を描画する。 */
 function renderWithClient<T>(hook: () => T) {
   const queryClient = createQueryClient()
   const wrapper = ({ children }: { children: ReactNode }) => (

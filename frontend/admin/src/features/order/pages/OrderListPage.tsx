@@ -47,7 +47,7 @@ export function OrderListPage() {
     // ページを移る間、前のページを表示したままにする
     { placeholderData: keepPreviousData },
   )
-  /** 絞り込みを URL に反映する（URL が絞り込みの正本） */
+  /** 絞り込みを URL に反映する（URL が絞り込みの正本）。 */
   const apply = (next: OrderFilter) => setSearchParams(toSearchParams(next))
 
   return (

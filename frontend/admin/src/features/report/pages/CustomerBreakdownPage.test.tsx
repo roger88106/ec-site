@@ -8,7 +8,11 @@ import { renderApp } from '@/test/renderApp'
 import { serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
-/** 東京都・大阪府・不明の 3 つの都道府県と、すべての年齢層と性別。大阪府は、マスターデータで名前が変わった場合として別の名前にする */
+/**
+ * 東京都・大阪府・不明の 3 つの都道府県と、すべての年齢層と性別
+ *
+ * 大阪府は、マスターデータで名前が変わった場合として別の名前にする。
+ */
 const BREAKDOWN: CustomerBreakdownReport = {
   prefectures: [
     { prefectureCode: '13', prefectureName: '東京都', amount: 52000, orders: 12 },
@@ -34,7 +38,7 @@ const BREAKDOWN: CustomerBreakdownReport = {
 }
 
 /**
- * 地域・年齢層・性別の API に応答する
+ * 地域・年齢層・性別の API に応答する。
  *
  * 受け取ったクエリは queries に取っておく。
  *
@@ -53,12 +57,12 @@ function serveBreakdown(report: CustomerBreakdownReport = BREAKDOWN) {
   return queries
 }
 
-/** 分け方の表の範囲 */
+/** 分け方の表の範囲を返す。 */
 function sectionOf(dimension: string) {
   return within(screen.getByRole('region', { name: `${dimension}ごとの売上額` }))
 }
 
-/** 分け方の表のデータの行が、指定した区分の行の順に並んでいる */
+/** 分け方の表のデータの行が、指定した区分の行の順に並んでいる。 */
 function expectSegmentsInOrder(dimension: string, segments: string[]) {
   const section = sectionOf(dimension)
   expect(section.getAllByRole('row').slice(1)).toEqual(segments.map((segment) => getRow(segment, section)))

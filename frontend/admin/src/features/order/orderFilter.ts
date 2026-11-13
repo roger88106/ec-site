@@ -36,7 +36,7 @@ export const EMPTY_FILTER: OrderFilter = {
 }
 
 /**
- * URL のクエリから絞り込みを読む
+ * URL のクエリから絞り込みを読む。
  *
  * 不正な値は無視する。
  *
@@ -57,7 +57,7 @@ export function parseFilter(params: URLSearchParams): OrderFilter {
 }
 
 /**
- * 絞り込みを URL のクエリにする
+ * 絞り込みを URL のクエリにする。
  *
  * 空の条件、立っていないフラグ、1 ページ目は書かない。
  *
@@ -90,7 +90,7 @@ export function toSearchParams(filter: OrderFilter): URLSearchParams {
   return params
 }
 
-/** 日付の形ならその値、そうでなければ空にする */
+/** 日付の形ならその値、そうでなければ空にする。 */
 function date(value: string | null): string {
   return value !== null && isDateString(value) ? value : ''
 }

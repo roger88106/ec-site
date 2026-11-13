@@ -42,7 +42,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
   const ids = product.variants.map((variant) => variant.id)
   // 別の操作を始めたら、前の操作のエラーを消す
   const { pending, error, resetErrors } = useMutationGroup(reorder, remove, suspend, resume, setImage)
-  /** 表示している商品のバージョンで、バリアントの並びを送る */
+  /** 表示している商品のバージョンで、バリアントの並びを送る。 */
   const reorderTo = (variantIds: string[]) => {
     resetErrors()
     reorder.mutate({
@@ -50,7 +50,15 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
       body: { variantIds, version: product.version },
     })
   }
-  /** バリアントの 1 行の操作。どれも前の操作のエラーを消してから送る */
+  /**
+   * バリアントの 1 行の操作を作る。
+   *
+   * どれも前の操作のエラーを消してから送る。
+   *
+   * @param variantId 対象のバリアントの ID
+   * @param index     バリアントの並びの中の位置
+   * @returns 行の操作
+   */
   const rowActions = (variantId: string, index: number): VariantRowActions => {
     const path = { productId: product.id, variantId }
     const run = (action: () => void) => () => {

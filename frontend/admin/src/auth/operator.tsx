@@ -8,7 +8,11 @@ export type Operator = {
   logout: () => void
 }
 
-/** ログインしている運営者。AuthGate が渡し、結合テストでは renderApp が差し替える */
+/**
+ * ログインしている運営者
+ *
+ * AuthGate が渡し、結合テストでは renderApp が差し替える。
+ */
 const OperatorContext = createContext<Operator | null>(null)
 
 /** ログインしている運営者を渡す */

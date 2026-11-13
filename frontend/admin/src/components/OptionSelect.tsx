@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type Option<V extends string> = { value: V | null; label: string }
 
 /**
- * 選択肢の選択
+ * 選択肢から選ぶ入力欄
  *
  * 決まった選択肢から 1 つ選ぶ。
  * 選択肢を Select の items に渡し、選んだ値の表示名を出す。

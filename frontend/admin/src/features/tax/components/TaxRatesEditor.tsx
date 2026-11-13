@@ -11,7 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { rateState } from '@/features/tax/rates'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
-/** 編集中の税率の 1 行。rateId がなければ新しい税率 */
+/**
+ * 編集中の税率の 1 行
+ *
+ * rateId がなければ新しい税率。
+ */
 type RateRow = {
   /** 保存済みの税率の ID。null は新しい税率 */
   rateId: string | null
@@ -26,13 +30,17 @@ type RateRow = {
 /** 率の刻み（小数第 2 位まで） */
 const RATE_STEP = 0.01
 
-/** 率の上限。契約の上限はその値を含まない（exclusiveMaximum）ので、1 刻み下にする */
+/**
+ * 率の上限
+ *
+ * 契約の上限はその値を含まない（exclusiveMaximum）ので、1 刻み下にする。
+ */
 const RATE_MAX = schemas.RatePercent.maximum - RATE_STEP
 
 /** 入力欄の値（税率の一覧） */
 type Values = { rates: RateRow[] }
 
-/** 税区分の税率の一覧を、入力欄の行にする（率は入力中の文字列として持つ） */
+/** 税区分の税率の一覧を、入力欄の行にする（率は入力中の文字列として持つ）。 */
 function toValues(taxCategory: TaxCategory): Values {
   return {
     rates: taxCategory.rates.map((rate) => ({

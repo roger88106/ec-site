@@ -26,7 +26,7 @@ const throwOnError: Middleware = {
     if (response.status === 401) {
       handleUnauthorized()
     }
-    // 403 は、ほかのエラーと同じく ApiError にして、操作した場所に出す
+    // エラーの応答は ApiError にして投げる（403 も、ほかのエラーと同じく操作した場所に出す）
     if (!response.ok) {
       const body = await response
         .clone()

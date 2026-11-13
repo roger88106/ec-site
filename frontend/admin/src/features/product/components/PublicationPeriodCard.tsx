@@ -16,7 +16,7 @@ import { useVersionedForm } from '@/hooks/useVersionedForm'
  */
 type Values = { publishStart: string | null; publishEnd: string | null }
 
-/** 商品の公開期間を、入力欄の値にする */
+/** 商品の公開期間を、入力欄の値にする。 */
 function toValues(product: ProductDetail): Values {
   return { publishStart: product.publishStart ?? null, publishEnd: product.publishEnd ?? null }
 }

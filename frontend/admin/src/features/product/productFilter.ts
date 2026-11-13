@@ -24,7 +24,7 @@ export type ProductFilter = {
 export const EMPTY_FILTER: ProductFilter = { code: '', name: '', status: null, categoryId: null, page: 1 }
 
 /**
- * URL のクエリから絞り込みを読む
+ * URL のクエリから絞り込みを読む。
  *
  * 不正な値は無視する。
  *
@@ -43,7 +43,7 @@ export function parseFilter(params: URLSearchParams): ProductFilter {
 }
 
 /**
- * 絞り込みを URL のクエリにする
+ * 絞り込みを URL のクエリにする。
  *
  * 空の条件と 1 ページ目は書かない。
  *

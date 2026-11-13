@@ -1,14 +1,18 @@
 import { type BoundFunctions, type queries, screen, within } from '@testing-library/react'
 
-/** 探す範囲。省略すると画面全体。`within(要素)` の結果を渡すと、その要素の中だけを探す */
+/**
+ * 探す範囲
+ *
+ * 省略すると画面全体。`within(要素)` の結果を渡すと、その要素の中だけを探す。
+ */
 type Scope = BoundFunctions<typeof queries>
 
-/** 正規表現の記号をそのままの文字として扱えるようにする */
+/** 正規表現の記号をそのままの文字として扱えるようにする。 */
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/** 行の名前が、渡した文字で始まる行に当たる正規表現 */
+/** 行の名前が、渡した文字で始まる行に当たる正規表現を返す。 */
 function rowNamePattern(name: string): RegExp {
   return new RegExp(`^${escapeRegExp(name)}`)
 }

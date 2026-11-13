@@ -63,7 +63,7 @@ export function problem(status: number, errorCode: ErrorCode, message: string, e
   return { type: 'about:blank', status, errorCode, message, traceId: 'test-trace', errors }
 }
 
-/** 更新の競合（409、CONCURRENT_MODIFICATION）の本文 */
+/** 更新の競合（409、CONCURRENT_MODIFICATION）の本文を返す。 */
 function concurrentModification(): Problem {
   return problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。')
 }

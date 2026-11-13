@@ -30,7 +30,7 @@ export const SHIRT_ID = '00000000-0000-0000-0000-000000002001'
 /** 他の人に先に更新されたとき（409）に画面が出す、競合の知らせ */
 export const CONFLICT_MESSAGE = '他の人が先に更新しました。再読み込みしてください'
 
-/** 「標準」に 10%（開始・終了とも空白）だけがある税区分 */
+/** 「標準」に 10%（開始・終了とも空白）だけがある税区分を作る。 */
 export function taxCategory(overrides: Partial<TaxCategory> = {}): TaxCategory {
   return {
     id: TAX_CATEGORY_ID,
@@ -42,7 +42,7 @@ export function taxCategory(overrides: Partial<TaxCategory> = {}): TaxCategory {
   }
 }
 
-/** 色の軸を持ち、バリアントのない、非公開の商品（C 側に表示されたことはない） */
+/** 色の軸を持ち、バリアントのない、非公開の商品（C 側に表示されたことはない）を作る。 */
 export function productDetail(overrides: Partial<ProductDetail> = {}): ProductDetail {
   return {
     id: PRODUCT_ID,
@@ -68,7 +68,7 @@ export function productDetail(overrides: Partial<ProductDetail> = {}): ProductDe
   }
 }
 
-/** 非公開で、C 側に表示されたことのない商品にできる操作（API が返すフラグ） */
+/** 非公開で、C 側に表示されたことのない商品にできる操作（API が返すフラグ）を作る。 */
 export function productActions(overrides: Partial<ProductActions> = {}): ProductActions {
   return {
     publish: true,
@@ -81,7 +81,7 @@ export function productActions(overrides: Partial<ProductActions> = {}): Product
   }
 }
 
-/** 販売中のバリアント */
+/** 販売中のバリアントを作る。 */
 export function variant(overrides: Partial<Variant> = {}): Variant {
   return {
     id: '00000000-0000-0000-0000-000000000201',
@@ -95,7 +95,7 @@ export function variant(overrides: Partial<Variant> = {}): Variant {
 /** テストのデータの注文の ID */
 export const ORDER_ID = '00000000-0000-0000-0000-000000000501'
 
-/** 「受付」の注文にできる操作（API が返すフラグ） */
+/** 「受付」の注文にできる操作（API が返すフラグ）を作る。 */
 export function orderActions(overrides: Partial<OrderActions> = {}): OrderActions {
   return {
     approveCancellation: false,
@@ -107,17 +107,31 @@ export function orderActions(overrides: Partial<OrderActions> = {}): OrderAction
   }
 }
 
-/** 注文の支払。期限は 2026-10-10T01:30:00Z で、与信期限は近くない */
+/**
+ * 注文の支払を作る。
+ *
+ * 期限は 2026-10-10T01:30:00Z で、与信期限は近くない。
+ *
+ * @param status 支払の状態
+ * @returns 注文の支払
+ */
 export function payment(status: PaymentStatus): NonNullable<OrderDetail['payment']> {
   return { status, deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false }
 }
 
-/** キャンセル済みの注文（操作のフラグは、キャンセルを出さない）。キャンセルの内容は overrides で与える */
+/**
+ * キャンセル済みの注文を作る。
+ *
+ * 操作のフラグは、キャンセルを出さない。
+ *
+ * @param overrides キャンセルの内容など、上書きする項目
+ * @returns キャンセル済みの注文
+ */
 export function cancelledOrder(overrides: Partial<OrderDetail> = {}): OrderDetail {
   return orderDetail({ status: 'CANCELLED', actions: orderActions({ cancel: false }), ...overrides })
 }
 
-/** 一覧の「受付」の注文 1 件 */
+/** 一覧の「受付」の注文 1 件を作る。 */
 export function orderSummary(overrides: Partial<OrderSummary> = {}): OrderSummary {
   return {
     id: ORDER_ID,
@@ -131,7 +145,14 @@ export function orderSummary(overrides: Partial<OrderSummary> = {}): OrderSummar
   }
 }
 
-/** 10% の商品 1 品目（税込 1,100 円 × 3）と送料の、「受付」の注文。申請・キャンセルはない */
+/**
+ * 「受付」の注文を作る。
+ *
+ * 10% の商品 1 品目（税込 1,100 円 × 3）と送料がある。申請・キャンセルはない。
+ *
+ * @param overrides 上書きする項目
+ * @returns 注文の詳細
+ */
 export function orderDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
   return {
     id: ORDER_ID,
@@ -174,7 +195,7 @@ export function orderDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
   }
 }
 
-/** 一覧の公開中の商品 1 件（バリアント 2 つ） */
+/** 一覧の公開中の商品 1 件（バリアント 2 つ）を作る。 */
 export function productSummary(overrides: Partial<ProductSummary> = {}): ProductSummary {
   return {
     id: PRODUCT_ID,

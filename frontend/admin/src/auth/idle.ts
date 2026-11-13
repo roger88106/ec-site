@@ -1,4 +1,8 @@
-/** 無操作でログアウトするまでの時間（ミリ秒）。運営者の realm のアイドルタイムアウトと同じにする */
+/**
+ * 無操作でログアウトするまでの時間（ミリ秒）
+ *
+ * 運営者の realm のアイドルタイムアウトと同じにする。
+ */
 export const IDLE_LIMIT_MS = 30 * 60 * 1000
 
 /** ログアウトの何ミリ秒前に警告を出すか */
@@ -11,13 +15,25 @@ export const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000
  */
 export const IDLE_CHECK_INTERVAL_MS = 15 * 1000
 
-/** 操作に数えるイベント。ポインターの移動と API の呼び出しは数えない */
+/**
+ * 操作に数えるイベント
+ *
+ * ポインターの移動と API の呼び出しは数えない。
+ */
 export const ACTIVITY_EVENTS = ['keydown', 'pointerdown', 'wheel'] as const
 
-/** 最後に操作した時刻（ミリ秒の数値）を置くローカルストレージのキー。タブの間で共有する */
+/**
+ * 最後に操作した時刻（ミリ秒の数値）を置くローカルストレージのキー
+ *
+ * タブの間で共有する。
+ */
 export const LAST_ACTIVITY_KEY = 'ec-admin.lastActivityAt'
 
-/** 無操作の状態。操作中、警告を出す間、期限切れ */
+/**
+ * 無操作の状態
+ *
+ * 操作中、警告を出す間、期限切れのどれか。
+ */
 type IdleStatus = 'active' | 'warning' | 'expired'
 
 /**
@@ -123,7 +139,11 @@ export function startingActivity(now: number): number {
   return shared !== null && idleStatus(shared, now) === 'active' ? shared : now
 }
 
-/** 共有した最後に操作した時刻を削除する（ログアウトのとき。次のログインで前のログインの時刻を取り込まないため） */
+/**
+ * 共有した最後に操作した時刻を削除する。
+ *
+ * 次のログインで前のログインの時刻を取り込まないために削除する。
+ */
 export function clearLastActivity(): void {
   try {
     localStorage.removeItem(LAST_ACTIVITY_KEY)

@@ -118,7 +118,11 @@ function TaxCategorySelect({
 }) {
   const query = $api.useQuery('get', '/tax-categories')
   const t = useTranslations('product.fields')
-  /** 税区分の選択肢。選ぶときの目安に、現時点の率を名前に添える */
+  /**
+   * 税区分の選択肢
+   *
+   * 選ぶときの目安に、現時点の率を名前に添える。
+   */
   const options = (query.data?.items ?? []).map((taxCategory) => ({
     value: taxCategory.id,
     label: t('taxCategoryOption', { name: taxCategory.name, rate: formatRate(taxCategory.currentRatePercent) }), // 名前と現時点の率

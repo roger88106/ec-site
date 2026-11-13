@@ -27,7 +27,11 @@ const ALL_PERMISSIONS = [
   'report-customer:read',
 ] as const
 
-/** 結合テストでログインしている運営者（IdP を使わずに差し替える。管理画面の構成の「ログイン」） */
+/**
+ * 結合テストでログインしている運営者
+ *
+ * IdP を使わずに差し替える（管理画面の構成の「ログイン」）。
+ */
 export const TEST_OPERATOR_NAME = '管理 花子'
 
 /**

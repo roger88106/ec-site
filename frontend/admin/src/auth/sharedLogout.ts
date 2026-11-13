@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { clearLastActivity, readStoredTime, writeStoredTime } from '@/auth/idle'
 
-/** ログアウトの印（ログアウトした時刻のミリ秒の数値）を書くローカルストレージのキー。タブの間で共有する */
+/**
+ * ログアウトの印（ログアウトした時刻のミリ秒の数値）を書くローカルストレージのキー
+ *
+ * タブの間で共有する。
+ */
 export const LOGOUT_KEY = 'ec-admin.loggedOutAt'
 
 /**
@@ -52,7 +56,11 @@ export function useSharedLogout({
     signoutRef.current = signout
   }, [signout])
 
-  /** IdP のログアウトへ移る。最後に操作した時刻を削除し、無操作の判定を止める（印より後に時刻を書かないため） */
+  /**
+   * IdP のログアウトへ移る。
+   *
+   * 最後に操作した時刻を削除し、無操作の判定を止める。印より後に時刻を書かないため。
+   */
   const leave = useCallback(() => {
     if (leaving.current) {
       return
@@ -60,7 +68,7 @@ export function useSharedLogout({
     leaving.current = true
     clearLastActivity()
     setLoggingOut(true)
-    // token を捨てるだけにしないのは、他のタブが IdP のログインへ移り、残っている IdP のセッションでパスワードなしに再ログインしないため。
+    // token を捨てるだけにしないのは、他のタブが IdP のログインへ移り、残っている IdP のセッションでパスワードなしに再ログインしないため
     // 移り始めに失敗したら（IdP に届かないなど）、このタブに留まるので、ログアウトをやり直せるようにし、無操作の判定を再び動かす
     signoutRef.current().catch(() => {
       leaving.current = false
@@ -80,7 +88,7 @@ export function useSharedLogout({
       return
     }
     const enabledAt = Date.now()
-    /** このタブのログインより後に書かれた印があれば、IdP のログアウトへ移る */
+    /** このタブのログインより後に書かれた印があれば、IdP のログアウトへ移る。 */
     const check = () => {
       const at = readStoredTime(LOGOUT_KEY)
       if (at === null) {

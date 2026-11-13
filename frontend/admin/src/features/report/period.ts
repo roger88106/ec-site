@@ -10,10 +10,14 @@ export const FISCAL_PRESETS = ['thisFiscalYear', 'lastFiscalYear'] as const sati
 /** バリアントの売れ行き、地域・年齢層・性別の期間の選択肢（暦） */
 export const CALENDAR_PRESETS = ['thisMonth', 'lastMonth', 'thisYear', 'lastYear'] as const satisfies PeriodPreset[]
 
-/** 期間（日本時間の日付。両端を含む） */
+/**
+ * 期間（日本時間の日付）
+ *
+ * 両端を含む。
+ */
 type Period = { from: string; to: string }
 
-/** 実在する日付（yyyy-MM-dd）か */
+/** 実在する日付（yyyy-MM-dd）かを返す。 */
 export function isDate(value: string): boolean {
   if (!isDateString(value)) {
     return false
@@ -23,16 +27,18 @@ export function isDate(value: string): boolean {
   return date.getUTCMonth() === month - 1 && date.getUTCDate() === day
 }
 
-/** いまの日本時間の日付（yyyy-MM-dd） */
+/** いまの日本時間の日付（yyyy-MM-dd）を返す。 */
 export function todayInJapan(now: Date = new Date()): string {
   return toZonedDate(now)
 }
 
 /**
- * 選択肢の期間を求める。年度は会計年度の始まりの月から、月と年は暦で求める。
+ * 選択肢の期間を求める。
  *
- * @param preset 選択肢
- * @param today 今日（日本時間の日付）
+ * 年度は会計年度の始まりの月から、月と年は暦で求める。
+ *
+ * @param preset               選択肢
+ * @param today                今日（日本時間の日付）
  * @param fiscalYearStartMonth 会計年度の始まりの月（1〜12。レポートの設定）
  * @returns 選択肢の期間
  */
@@ -56,17 +62,33 @@ export function presetPeriod(preset: PeriodPreset, today: string, fiscalYearStar
   }
 }
 
-/** 月の初日。月は 0 や 13 でもよい（前後の年に繰る） */
+/**
+ * 月の初日を返す。
+ *
+ * 月は 0 や 13 でもよい（前後の年に繰る）。
+ *
+ * @param year  年
+ * @param month 月（1〜12）
+ * @returns 月の初日（yyyy-MM-dd）
+ */
 function firstDay(year: number, month: number): string {
   return format(new Date(Date.UTC(year, month - 1, 1)))
 }
 
-/** 月の末日。月は 0 や 13 でもよい（前後の年に繰る） */
+/**
+ * 月の末日を返す。
+ *
+ * 月は 0 や 13 でもよい（前後の年に繰る）。
+ *
+ * @param year  年
+ * @param month 月（1〜12）
+ * @returns 月の末日（yyyy-MM-dd）
+ */
 function lastDay(year: number, month: number): string {
   return format(new Date(Date.UTC(year, month, 0)))
 }
 
-/** UTC の日付を yyyy-MM-dd にする */
+/** UTC の日付を yyyy-MM-dd にする。 */
 function format(date: Date): string {
   return date.toISOString().slice(0, 10)
 }

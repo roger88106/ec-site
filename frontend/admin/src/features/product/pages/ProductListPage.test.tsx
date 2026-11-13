@@ -19,12 +19,12 @@ const CAP = productSummary({
 })
 
 /**
- * 商品の一覧の画面が使う API に応答する
+ * 商品の一覧の画面が使う API に応答する。
  *
  * 一覧は 2 ページあるものとし、どの条件でも items を返す。
  * 一覧と在庫の集計のリクエストのクエリは、それぞれ listQueries、summaryQueries に取っておく。
  *
- * @param items 返す商品
+ * @param items   返す商品
  * @param summary 在庫の集計の応答
  * @returns 受け取ったクエリ
  */
@@ -45,7 +45,14 @@ function serveList(items: ProductSummary[], summary: Reply<'/inventory/stock-sum
   return state
 }
 
-/** 商品品番の行の、在庫数の合計の欄。列は見出し「在庫数の合計」で選ぶ */
+/**
+ * 商品品番の行の、在庫数の合計の欄を返す。
+ *
+ * 列は見出し「在庫数の合計」で選ぶ。
+ *
+ * @param productCode 商品品番
+ * @returns 在庫数の合計の欄
+ */
 function totalOf(productCode: string): HTMLElement {
   return getCell(productCode, '在庫数の合計')
 }

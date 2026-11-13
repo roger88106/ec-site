@@ -19,7 +19,7 @@ const QUARTER_BY_MONTH: SalesTrendReport = {
 }
 
 /**
- * 売上の推移の API に応答する
+ * 売上の推移の API に応答する。
  *
  * 受け取ったクエリは queries に取っておく。
  *

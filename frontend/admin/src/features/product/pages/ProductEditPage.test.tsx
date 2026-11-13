@@ -39,7 +39,7 @@ const MAX_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 const MAX_IMAGES = schemas.ProductDetail.images.maxItems
 
 /**
- * 商品の編集の画面が使う API に応答する
+ * 商品の編集の画面が使う API に応答する。
  *
  * 基本情報の保存は、送ったバージョンが今のものと違えば 409 にし、同じなら保存してバージョンを上げる。
  * 状態の変更・削除のリクエストは calls に「メソッド パス」で取っておく。
@@ -86,7 +86,7 @@ function serveProduct(initial: ProductDetail) {
 
 describe('商品の編集', () => {
   describe('基本情報の入力中に他の人が更新した（409）', () => {
-    /** 商品名を入力し、他の人が商品名と価格を変えた後に、画面が取得し直した状態にする */
+    /** 商品名を入力し、他の人が商品名と価格を変えた後に、画面が取得し直した状態にする。 */
     async function editNameAfterOthersUpdate() {
       const state = serveProduct(productDetail())
       const { user } = renderApp(PAGE_PATH)
@@ -99,7 +99,7 @@ describe('商品の編集', () => {
       return { state, user }
     }
 
-    /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする */
+    /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする。 */
     async function saveIntoConflict() {
       const context = await editNameAfterOthersUpdate()
       await context.user.click(screen.getByRole('button', { name: '保存' }))
@@ -325,7 +325,7 @@ describe('商品の編集', () => {
   })
 
   describe('バリアントの追加の入力中に他の人が商品を更新した（409）', () => {
-    /** 品番と軸の値を入力し、他の人が価格を変えた後に、画面が取得し直した状態にする */
+    /** 品番と軸の値を入力し、他の人が価格を変えた後に、画面が取得し直した状態にする。 */
     async function fillVariantAfterOthersUpdate() {
       const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
       const versions: number[] = []
@@ -356,7 +356,7 @@ describe('商品の編集', () => {
       return { user, versions }
     }
 
-    /** 取得し直した後に追加して 409 にし、競合の知らせが出た状態にする */
+    /** 取得し直した後に追加して 409 にし、競合の知らせが出た状態にする。 */
     async function addIntoConflict() {
       const context = await fillVariantAfterOthersUpdate()
       await context.user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
@@ -536,7 +536,7 @@ describe('商品の編集', () => {
 
 describe('公開期間', () => {
   /**
-   * 公開期間の設定に応答する
+   * 公開期間の設定に応答する。
    *
    * バージョンが今のものと違えば 409、終了が開始以前なら 400 にする。
    *
@@ -597,7 +597,7 @@ describe('公開期間', () => {
   })
 
   describe('入力中に他の人が更新した（409）', () => {
-    /** 公開開始を入力し、他の人が商品名と公開終了を変えた後に、画面が取得し直した状態にする */
+    /** 公開開始を入力し、他の人が商品名と公開終了を変えた後に、画面が取得し直した状態にする。 */
     async function inputStartAfterOthersUpdate() {
       const state = serveProduct(productDetail())
       const requests = servePeriod(state)
@@ -609,7 +609,7 @@ describe('公開期間', () => {
       return { user, requests }
     }
 
-    /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする */
+    /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする。 */
     async function saveIntoConflict() {
       const context = await inputStartAfterOthersUpdate()
       await context.user.click(screen.getByRole('button', { name: '公開期間を保存' }))
@@ -658,7 +658,7 @@ describe('公開期間', () => {
 describe('商品画像', () => {
   const UPLOAD_URL = 'http://storage.test/images-incoming/upload-1?X-Amz-Signature=test'
 
-  /** 画像のファイルの欄に、PNG のファイルを選ぶ */
+  /** 画像のファイルの欄に、PNG のファイルを選ぶ。 */
   async function uploadPng(user: UserEvent) {
     await user.upload(
       await screen.findByLabelText('画像のファイル'),
@@ -667,7 +667,7 @@ describe('商品画像', () => {
   }
 
   /**
-   * 画像のアップロードの受付・ストレージへの PUT・登録に応答する
+   * 画像のアップロードの受付・ストレージへの PUT・登録に応答する。
    *
    * 登録すると、商品の画像の最後に加える。
    *

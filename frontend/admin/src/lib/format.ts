@@ -23,7 +23,7 @@ export function fromDateTimeInput(value: string): string | null {
   return `${value}:00${offsetText(offsetMinutes(new Date(asUtc)))}`
 }
 
-/** API の日時を、日時の入力欄（datetime-local）の日本時間の値「yyyy-MM-ddTHH:mm」にする */
+/** API の日時を、日時の入力欄（datetime-local）の日本時間の値「yyyy-MM-ddTHH:mm」にする。 */
 export function toDateTimeInput(iso: string | null | undefined): string {
   if (!iso) {
     return ''
@@ -32,19 +32,19 @@ export function toDateTimeInput(iso: string | null | undefined): string {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`
 }
 
-/** 表示のタイムゾーン（日本時間）の日付「yyyy-MM-dd」 */
+/** 表示のタイムゾーン（日本時間）の日付「yyyy-MM-dd」を返す。 */
 export function toZonedDate(date: Date): string {
   const parts = zonedParts(date)
   return `${parts.year}-${parts.month}-${parts.day}`
 }
 
-/** 表示のタイムゾーンでの年月日・時分（ゼロ埋め）を、ブラウザーのタイムゾーンに依存せずに返す */
+/** 表示のタイムゾーンでの年月日・時分（ゼロ埋め）を、ブラウザーのタイムゾーンに依存せずに返す。 */
 function zonedParts(date: Date) {
   const parts = Object.fromEntries(japanDateTimeFormat.formatToParts(date).map((part) => [part.type, part.value]))
   return { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute }
 }
 
-/** その時点の、表示のタイムゾーンの UTC からのずれ（分） */
+/** その時点の、表示のタイムゾーンの UTC からのずれ（分）を返す。 */
 function offsetMinutes(date: Date): number {
   const parts = zonedParts(date)
   const zonedAsUtc = Date.UTC(
@@ -57,11 +57,11 @@ function offsetMinutes(date: Date): number {
   return Math.round((zonedAsUtc - Math.floor(date.getTime() / MINUTE_MS) * MINUTE_MS) / MINUTE_MS)
 }
 
-/** ずれ（分）を、日時のオフセットの文字（例：「+09:00」）にする */
+/** ずれ（分）を、日時のオフセットの文字（例：「+09:00」）にする。 */
 function offsetText(minutes: number): string {
   const sign = minutes < 0 ? '-' : '+'
   const absolute = Math.abs(minutes)
-  /** 2 桁にゼロ埋めする */
+  /** 2 桁にゼロ埋めする。 */
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${sign}${pad(Math.floor(absolute / 60))}:${pad(absolute % 60)}`
 }

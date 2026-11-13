@@ -8,7 +8,11 @@ import { renderApp } from '@/test/renderApp'
 import { serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
-/** T シャツの売れ行き（販売数量の多い順。黒の L は売れなかった） */
+/**
+ * T シャツの売れ行き
+ *
+ * 販売数量の多い順。黒の L は売れなかった。
+ */
 const SHIRT_SALES: VariantSalesReport = {
   productId: SHIRT_ID,
   productName: 'ベーシック T シャツ',
@@ -38,7 +42,7 @@ const SHIRT_SALES: VariantSalesReport = {
 }
 
 /**
- * バリアントの売れ行きの API に応答する
+ * バリアントの売れ行きの API に応答する。
  *
  * 受け取ったクエリは queries に取っておく。
  *

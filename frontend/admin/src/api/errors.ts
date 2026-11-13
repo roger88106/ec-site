@@ -38,7 +38,7 @@ export class ApiError extends Error {
   }
 }
 
-/** エラーの応答の本文から {@link ApiError} を作る */
+/** エラーの応答の本文から {@link ApiError} を作る。 */
 export function toApiError(status: number, body: unknown): ApiError {
   return new ApiError(status, asProblem(body))
 }
@@ -46,7 +46,7 @@ export function toApiError(status: number, body: unknown): ApiError {
 /**
  * 画面に出すメッセージを返す。
  *
- * エラーレスポンスの message をそのまま出す。
+ * エラーレスポンスの message をそのまま出す。バージョン不一致（409）と通信の失敗は、案内の文にする。
  *
  * @param error 更新・取得が返したエラー
  * @returns 画面に出すメッセージ
@@ -62,12 +62,12 @@ export function errorMessage(error: unknown): string {
   return translate('common.connectionFailed') // サーバーに接続できない案内
 }
 
-/** 入力検証エラーの項目ごとのメッセージ */
+/** 入力検証エラーの項目ごとのメッセージを返す。 */
 export function fieldErrors(error: unknown): { field: string; message: string }[] {
   return error instanceof ApiError ? (error.problem?.errors ?? []) : []
 }
 
-/** 応答の本文が Problem Details の形（message を持つ）なら、その型で返す */
+/** 応答の本文が Problem Details の形（message を持つ）なら、その型で返す。 */
 function asProblem(body: unknown): Problem | undefined {
   if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
     return body as Problem

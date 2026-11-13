@@ -65,7 +65,7 @@ export function ReportConditionForm({
     ...presets.map((preset) => ({ value: preset, label: t(`presets.${preset}`) })), // 期間の選択肢の名前
   ]
 
-  /** 期間の選択肢を選んだら、始まりと終わりの日を埋める */
+  /** 期間の選択肢を選んだら、始まりと終わりの日を埋める。 */
   const choosePreset = (preset: PeriodPreset | null) => {
     if (preset === null) {
       return

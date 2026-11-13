@@ -72,7 +72,7 @@ function ReportBody({
 }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const condition = parseCondition(searchParams, presetPeriod(defaultPreset, todayInJapan(), fiscalYearStartMonth))
-  /** 条件を URL に反映する（URL が条件の正本） */
+  /** 条件を URL に反映する（URL が条件の正本）。 */
   const apply = (next: ReportCondition) => setSearchParams(toSearchParams(next))
   return (
     <div className="space-y-6">

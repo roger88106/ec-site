@@ -59,7 +59,7 @@ function serveStock(quantity: number, history: StockAdjustment[] = []) {
   return state
 }
 
-/** 在庫数（名前「在庫数」の status）が expected になるまで待つ */
+/** 在庫数（名前「在庫数」の status）が expected になるまで待つ。 */
 async function shownQuantity(expected: number) {
   const quantity = await screen.findByRole('status', { name: '在庫数' })
   await waitFor(() => expect(quantity).toHaveTextContent(new RegExp(`^${expected}$`)))

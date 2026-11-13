@@ -2,12 +2,12 @@ import { renderHook } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { useMutationGroup } from '@/api/useMutationGroup'
 
-/** 操作の状態の代わり */
+/** 操作の状態の代わりを作る。 */
 function mutation(state: { isPending?: boolean; error?: Error | null } = {}) {
   return { isPending: state.isPending ?? false, error: state.error ?? null, reset: vi.fn() }
 }
 
-/** hook を呼んで、まとめた結果を返す */
+/** hook を呼んで、まとめた結果を返す。 */
 function group(...mutations: ReturnType<typeof mutation>[]) {
   return renderHook(() => useMutationGroup(...mutations)).result.current
 }

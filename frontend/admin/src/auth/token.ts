@@ -6,7 +6,11 @@ type TokenSource = {
   onUnauthorized: () => void
 }
 
-/** ログインを求める枠（AuthGate）が渡す。結合テストでは渡さない（token を付けず、401 でも何もしない） */
+/**
+ * ログインの情報の出どころ
+ *
+ * ログインを求める枠（AuthGate）が渡す。結合テストでは渡さない（token を付けず、401 でも何もしない）。
+ */
 let source: TokenSource | null = null
 
 /**
@@ -27,7 +31,7 @@ export function currentAccessToken(): string | undefined {
   return source?.accessToken()
 }
 
-/** API が 401（token が無効になった）を返したとき、ログインし直す */
+/** API が 401（token が無効になった）を返したとき、ログインし直す。 */
 export function handleUnauthorized(): void {
   source?.onUnauthorized()
 }

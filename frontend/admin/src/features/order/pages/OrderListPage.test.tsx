@@ -6,7 +6,7 @@ import { renderApp } from '@/test/renderApp'
 import { http, server } from '@/test/server'
 
 /**
- * 注文一覧の API に応答する
+ * 注文一覧の API に応答する。
  *
  * 受け取ったクエリは queries に取っておく。
  *

@@ -8,7 +8,11 @@ type Download = {
   text: string
 }
 
-/** ダウンロードの記録。{@link recordDownloads} が返す */
+/**
+ * ダウンロードの記録
+ *
+ * {@link recordDownloads} が返す。
+ */
 export type DownloadRecorder = {
   /** これまでのダウンロードを、起きた順に返す */
   downloads(): Promise<Download[]>

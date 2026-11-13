@@ -21,7 +21,7 @@ type Values = { variantCode: string; axisValues: { value: string }[] }
 /** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['variantCode', 'axisValues'] as const
 
-/** 空の入力を作る（軸の値の欄は、商品の軸の数だけ作る） */
+/** 空の入力を作る（軸の値の欄は、商品の軸の数だけ作る）。 */
 function emptyValues(product: ProductDetail): Values {
   return { variantCode: '', axisValues: product.axes.map(() => ({ value: '' })) }
 }

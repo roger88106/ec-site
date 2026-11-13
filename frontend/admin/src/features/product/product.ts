@@ -27,7 +27,7 @@ export const EMPTY_PRODUCT_FIELDS: ProductFieldsValues = {
   categoryIds: [],
 }
 
-/** 商品の詳細から、基本情報の入力を作る */
+/** 商品の詳細から、基本情報の入力を作る。 */
 export function toProductFields(product: ProductDetail): ProductFieldsValues {
   return {
     name: product.name,
@@ -39,7 +39,7 @@ export function toProductFields(product: ProductDetail): ProductFieldsValues {
 }
 
 /**
- * 基本情報の入力を、API の本文にする
+ * 基本情報の入力を、API の本文にする。
  *
  * 形式の検証はサーバーが行う。
  *
@@ -56,7 +56,7 @@ export function toProductBody(values: ProductFieldsValues) {
   }
 }
 
-/** 基本情報の入力が送れる状態か（必須の未入力だけを見る） */
+/** 基本情報の入力が送れる状態か（必須の未入力だけを見る）。 */
 export function isProductFieldsFilled(values: ProductFieldsValues): boolean {
   return values.name.trim() !== '' && values.taxCategoryId !== null && values.priceExclTax.trim() !== ''
 }

@@ -1,30 +1,29 @@
-import { expect, type Page, test } from '@playwright/test'
-import { ACCOUNTS, loginStore } from '../src/auth'
+import { expect, type Locator, type Page, test } from '@playwright/test'
+import { ACCOUNTS, loginStore, logoutButton } from '../src/auth'
 import { STORE_URL } from '../src/urls'
 
 // このファイルは、幅 375px の project（narrow）だけで実行する（playwright.config.ts）
 
-/** ヘッダーの中の、メニューを開くボタン */
-function menuButton(page: Page) {
-  return page.getByRole('banner').getByRole('button', { name: 'メニュー', exact: true })
-}
-
 /** ヘッダーの中の項目を探す起点 */
-function header(page: Page) {
+function header(page: Page): Locator {
   return page.getByRole('banner')
 }
 
-/** ページ全体の幅が、画面の幅に収まっている（横スクロールが出ない）ことを確認する */
-async function expectNoHorizontalScroll(page: Page) {
-  const fits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
-  expect(fits).toBe(true)
+/** ヘッダーの中の、メニューを開くボタン */
+function menuButton(page: Page): Locator {
+  return header(page).getByRole('button', { name: 'メニュー', exact: true })
+}
+
+/** ページ全体の幅が、画面の幅に収まっている（横スクロールが出ない）ことを確認する。描画が終わるまで待つ */
+async function expectNoHorizontalScroll(page: Page): Promise<void> {
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 }
 
 /**
  * 会員としてログインする。狭い幅ではログアウトのボタンがメニューの中にあり見えないので、
  * ログインが済んだことは、メニューのボタンが見え、かつヘッダーに「ログイン」のリンクがない（見えないものも含めて）ことで待つ。
  */
-async function loginNarrow(page: Page) {
+async function loginNarrow(page: Page): Promise<void> {
   await loginStore(page, ACCOUNTS.member, {
     waitForLoggedIn: async () => {
       await expect(menuButton(page)).toBeVisible()
@@ -48,11 +47,11 @@ test('AC-417-1、AC-417-3 ログインしていない消費者がトップと商
 
   await test.step('メニューを開く前は、ログインの項目が見えない。開くと、商品一覧、ログイン、会員登録が見える', async () => {
     await expect(menuButton(page)).toHaveAttribute('aria-expanded', 'false')
-    await expect(header(page).getByRole('link', { name: 'ログイン' })).toBeHidden()
+    await expect(header(page).getByRole('link', { name: 'ログイン', exact: true })).toBeHidden()
     await menuButton(page).click()
     await expect(menuButton(page)).toHaveAttribute('aria-expanded', 'true')
     await expect(header(page).getByRole('link', { name: '商品一覧' })).toBeVisible()
-    await expect(header(page).getByRole('link', { name: 'ログイン' })).toBeVisible()
+    await expect(header(page).getByRole('link', { name: 'ログイン', exact: true })).toBeVisible()
     await expect(header(page).getByRole('link', { name: '会員登録' })).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
@@ -77,7 +76,7 @@ test('AC-417-2、AC-417-3 ログインした会員が開いても横スクロー
     await expect(header(page).getByRole('link', { name: '商品一覧' })).toBeVisible()
     await expect(header(page).getByRole('link', { name: 'ご注文履歴' })).toBeVisible()
     await expect(header(page).getByRole('link', { name: 'アカウント' })).toBeVisible()
-    await expect(header(page).getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+    await expect(logoutButton(header(page))).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -132,7 +131,7 @@ test('幅 1024px 以上では、メニューを開くボタンが出ず、商品
   await test.step('幅 1024px では、メニューを開くボタンが見えず、横スクロールが出ない', async () => {
     await page.setViewportSize({ width: 1024, height: 800 })
     await expect(menuButton(page)).toBeHidden()
-    await expect(header(page).getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+    await expect(logoutButton(header(page))).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -141,18 +140,23 @@ test('幅 1024px 以上では、メニューを開くボタンが出ず、商品
     await expect(menuButton(page)).toBeHidden()
     await expect(header(page).getByRole('link', { name: '商品一覧' })).toBeVisible()
     await expect(header(page).getByRole('link', { name: 'ご注文履歴' })).toBeVisible()
-    const logout = header(page).getByRole('button', { name: 'ログアウト', exact: true })
+    const logout = logoutButton(header(page))
     await expect(logout).toBeVisible()
-    // 1 行であることは、店名とログアウトのボタンの縦の中心が近いことで確認する
-    const siteName = await header(page).getByRole('link', { name: 'EC Site' }).boundingBox()
-    const logoutBox = await logout.boundingBox()
-    if (siteName === null || logoutBox === null) throw new Error('店名かログアウトのボタンの位置が取れない')
-    expect(Math.abs(siteName.y + siteName.height / 2 - (logoutBox.y + logoutBox.height / 2))).toBeLessThan(8)
+    // 1 行であることは、店名とログアウトのボタンの縦の中心が近いことで確認する。幅を変えた後の描画が終わるまで待つ
+    const siteName = header(page).getByRole('link', { name: 'EC Site' })
+    await expect
+      .poll(async () => {
+        const siteNameBox = await siteName.boundingBox()
+        const logoutBox = await logout.boundingBox()
+        if (siteNameBox === null || logoutBox === null) throw new Error('店名かログアウトのボタンの位置が取れない')
+        return Math.abs(siteNameBox.y + siteNameBox.height / 2 - (logoutBox.y + logoutBox.height / 2))
+      })
+      .toBeLessThan(8)
   })
 
   await test.step('ログアウトすると、ログインしていない状態でも、メニューを開くボタンが見えず「ログイン」が見える', async () => {
-    await header(page).getByRole('button', { name: 'ログアウト', exact: true }).click()
-    await expect(header(page).getByRole('link', { name: 'ログイン' })).toBeVisible()
+    await logoutButton(header(page)).click()
+    await expect(header(page).getByRole('link', { name: 'ログイン', exact: true })).toBeVisible()
     await expect(menuButton(page)).toBeHidden()
     await expect(header(page).getByRole('link', { name: '商品一覧' })).toBeVisible()
   })

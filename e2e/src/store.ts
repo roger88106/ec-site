@@ -1,5 +1,4 @@
 import { expect, type Locator, type Page } from '@playwright/test'
-import messages from '../../frontend/store/messages/ja.json' with { type: 'json' }
 import { type Account, loginStore } from './auth'
 import { STORE_URL } from './urls'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from './waits'
@@ -26,8 +25,8 @@ export function placeOrderButton(page: Page): Locator {
 }
 
 /**
- * ログインしている会員のカートを空にする。会員のカートは会員ごとに 1 つで実行をまたいで残るので、
- * 共用のアカウントで注文するテストは、前の実行の品目を消してから始める。
+ * ログインしている会員のカートを空にする。会員のカートは会員ごとに 1 つで、同じ実行の前のテスト（撮影では前の撮影）の品目が残るので、
+ * 共用のアカウントで注文するテストは、残った品目を消してから始める。
  *
  * @param page 店舗画面のページ（会員としてログインしている）
  * @param options 省けば既定の値を使う
@@ -89,7 +88,7 @@ export async function addToCart(
 }
 
 /**
- * 会員としてログインし、カートを空にして、商品を 1 つずつ入れる。会員のカートは実行をまたいで残るので、
+ * 会員としてログインし、カートを空にして、商品を 1 つずつ入れる。会員のカートには同じ実行の前のテストの品目が残るので、
  * 共用のアカウントで注文するテストは、これで始める。
  *
  * @param page 店舗画面のページ
@@ -150,7 +149,7 @@ export function orderIdOf(orderUrl: string): string {
  * @param postalCode 郵便番号
  * @param name お届け先の氏名
  */
-export async function fillShipping(page: Page, postalCode: string, name = 'E2E 太郎') {
+export async function fillShipping(page: Page, postalCode: string, name = 'E2E 太郎'): Promise<void> {
   await page.getByLabel('氏名').fill(name)
   await page.getByLabel('郵便番号').fill(postalCode)
   if (/^[0-9]{3}-?[0-9]{4}$/.test(postalCode)) {
@@ -166,8 +165,17 @@ export async function fillShipping(page: Page, postalCode: string, name = 'E2E �
   await page.getByLabel('電話番号').fill('03-1234-5678')
 }
 
-/** 支払待ちの注文の確認の画面の文言（店舗画面の文言の定義から読む） */
-export const PENDING_ORDERS_TEXT = messages.checkout.pendingOrders
+/** 支払待ちの注文の確認の画面の文言 */
+export const PENDING_ORDERS_TEXT = {
+  /** 見出し */
+  title: 'お支払い待ちのご注文があります',
+  /** 支払待ちの注文の支払に進むボタン */
+  pay: '支払へ進む',
+  /** 支払待ちの注文を残して、新しく注文するボタン */
+  newOrder: '新しく注文する',
+  /** カートに戻るリンク */
+  back: '戻る',
+}
 
 /**
  * 支払待ちの注文の確認の画面の見出し。
@@ -185,8 +193,8 @@ export function pendingOrdersHeading(page: Page): Locator {
  *
  * @param page カートを開いている店舗画面のページ
  */
-export async function proceedToCheckout(page: Page) {
-  await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
+export async function proceedToCheckout(page: Page): Promise<void> {
+  await checkoutButton(page).click()
   const checkout = page.getByRole('heading', { name: 'ご注文手続き' })
   await expect(checkout.or(pendingOrdersHeading(page))).toBeVisible()
   if (await pendingOrdersHeading(page).isVisible()) {
@@ -200,9 +208,9 @@ export async function proceedToCheckout(page: Page) {
  *
  * @param page お届け先を入れた注文手続きのページ
  */
-export async function submitOrder(page: Page) {
+export async function submitOrder(page: Page): Promise<void> {
   await placeOrderButton(page).click()
-  await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+  await expect(mockPaymentHeading(page)).toBeVisible()
 }
 
 /**
@@ -213,7 +221,10 @@ export async function submitOrder(page: Page) {
  * @param options.storeUrl 店舗画面の URL（既定は E2E の店舗画面）
  * @param options.name お届け先の氏名（既定は fillShipping の既定）
  */
-export async function orderCart(page: Page, { storeUrl = STORE_URL, name }: { storeUrl?: string; name?: string } = {}) {
+export async function orderCart(
+  page: Page,
+  { storeUrl = STORE_URL, name }: { storeUrl?: string; name?: string } = {},
+): Promise<void> {
   await page.goto(`${storeUrl}/cart`)
   await proceedToCheckout(page)
   await fillShipping(page, '100-0001', name)
@@ -255,6 +266,43 @@ export async function payOnMockPage(page: Page): Promise<string> {
  * @param shown 出るのを待つ表示
  * @param timeout 待つ時間
  */
-export async function expectOrderPage(page: Page, orderUrl: string, shown: Locator, timeout = ASYNC_TIMEOUT) {
+export async function expectOrderPage(
+  page: Page,
+  orderUrl: string,
+  shown: Locator,
+  timeout = ASYNC_TIMEOUT,
+): Promise<void> {
   await reopenUntil(page, orderUrl, () => expect(shown).toBeVisible({ timeout: CHECK_TIMEOUT }), { timeout })
+}
+
+/**
+ * カートの画面の、注文手続きへ進むボタン。
+ *
+ * @param page カートを開いている店舗画面のページ
+ * @returns 注文手続きへ進むボタン
+ */
+export function checkoutButton(page: Page): Locator {
+  return page.getByRole('button', { name: '注文手続きへ進む', exact: true })
+}
+
+/**
+ * mock の支払画面の見出し。
+ *
+ * @param page mock の支払画面を開いているページ
+ * @returns 支払画面の見出し
+ */
+export function mockPaymentHeading(page: Page): Locator {
+  return page.getByRole('heading', { name: 'mock の支払' })
+}
+
+/**
+ * 店舗画面の商品の詳細を開き、「見つかりません」（HTTP の 404 と、その画面の見出し）であることを確認する。
+ *
+ * @param page 店舗画面のページ
+ * @param productId 商品 ID
+ */
+export async function expectProductNotFound(page: Page, productId: string): Promise<void> {
+  const response = await page.goto(`${STORE_URL}/products/${productId}`)
+  expect(response?.status()).toBe(404)
+  await expect(page.getByRole('heading', { name: 'ページが見つかりません' })).toBeVisible()
 }

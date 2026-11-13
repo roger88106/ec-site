@@ -4,7 +4,7 @@ import { createSimpleProduct, variantIds } from '../src/data'
 import { detailValue } from '../src/detail'
 import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
 import { orderAsMember, orderIdOf, payOnMockPage } from '../src/store'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { ADMIN_URL, STORE_URL, stockPath } from '../src/urls'
 import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
 // 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
@@ -43,22 +43,25 @@ test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock �
 }) => {
   const order = await acceptedOrder(page, 'SHIP')
   const trackingNumber = '1234-5678-9012'
-  let orderNumber = ''
+  // 送り状番号は、ハイフンを除いて保存し、表示する
+  const storedTrackingNumber = trackingNumber.replaceAll('-', '')
 
-  await test.step('管理画面：受付の注文に、配送業者と送り状番号を入れて出荷を登録する（AC-167）', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, { path: `/orders/${order.orderId}` })
-    orderNumber = await orderNumberOnAdmin(page)
-    await shipOnAdmin(page, trackingNumber)
-    await expect(detailValue(page, '状態')).toHaveText('出荷済み')
-    await expect(page.getByText('売上確定済み')).toBeVisible()
-  })
+  const orderNumber =
+    await test.step('管理画面：受付の注文に、配送業者と送り状番号を入れて出荷を登録する（AC-167）', async () => {
+      await loginAdmin(page, ACCOUNTS.administrator, { path: `/orders/${order.orderId}` })
+      const number = await orderNumberOnAdmin(page)
+      await shipOnAdmin(page, trackingNumber)
+      await expect(detailValue(page, '状態')).toHaveText('出荷済み')
+      await expect(page.getByText('売上確定済み')).toBeVisible()
+      return number
+    })
 
   await test.step('出荷通知メールが、注文のメールアドレスに、注文番号・配送業者・送り状番号を書いて届く（AC-183）', async () => {
     const mail = await shipmentMail(orderNumber)
     expect(mail.to).toEqual([ACCOUNTS.member.email])
     expect(mail.text).toContain(orderNumber)
     expect(mail.text).toContain('ヤマト運輸')
-    expect(mail.text).toContain(trackingNumber.replaceAll('-', ''))
+    expect(mail.text).toContain(storedTrackingNumber)
   })
 
   for (const carrierStatus of ['配送中', '配達完了'] as const) {
@@ -68,7 +71,7 @@ test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock �
       await page.goto(order.orderUrl)
       await expect(detailValue(page, '状態')).toHaveText(carrierStatus)
       await expect(detailValue(page, '配送業者')).toHaveText('ヤマト運輸')
-      await expect(detailValue(page, '送り状番号')).toHaveText(trackingNumber.replaceAll('-', ''))
+      await expect(detailValue(page, '送り状番号')).toHaveText(storedTrackingNumber)
 
       await page.goto(`${STORE_URL}/orders`)
       const row = page.getByRole('row').filter({ hasText: orderNumber })
@@ -81,13 +84,13 @@ test('AC-189、190、191、192 返送の注文を、管理画面で絞り込ん�
   page,
 }) => {
   const order = await acceptedOrder(page, 'RETURN')
-  let orderNumber = ''
 
-  await test.step('管理画面で出荷を登録し、mock の物流で返送を通知する', async () => {
+  const orderNumber = await test.step('管理画面で出荷を登録し、mock の物流で返送を通知する', async () => {
     await loginAdmin(page, ACCOUNTS.administrator, { path: `/orders/${order.orderId}` })
-    orderNumber = await orderNumberOnAdmin(page)
+    const number = await orderNumberOnAdmin(page)
     await shipOnAdmin(page, '9876-5432-1098')
     await notifyCarrier(page, order.orderId, '返送')
+    return number
   })
 
   await test.step('管理画面：返送の注文で絞り込むと、その注文が出る（AC-189）', async () => {
@@ -111,7 +114,7 @@ test('AC-189、190、191、192 返送の注文を、管理画面で絞り込ん�
   })
 
   await test.step('管理画面：在庫数が注文の前（3）に戻る（AC-191）', async () => {
-    await page.goto(`${ADMIN_URL}/products/${order.productId}/variants/${order.variantId}/stock`)
+    await page.goto(`${ADMIN_URL}${stockPath(order.productId, order.variantId)}`)
     await expect(page.getByRole('status', { name: '在庫数' })).toHaveText('3')
   })
 

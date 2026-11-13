@@ -10,8 +10,8 @@ import { paths } from '@/app/paths'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DateTime } from '@/components/DateTime'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Price } from '@/components/Price'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Price } from '@/features/product/components/Price'
 
 /** 価格・日時の表示と、公開・非公開・販売終了・削除 */
 export function ProductStatusCard({ product }: { product: ProductDetail }) {

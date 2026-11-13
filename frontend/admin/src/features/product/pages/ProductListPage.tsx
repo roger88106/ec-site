@@ -9,7 +9,7 @@ import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductFilterForm } from '@/features/product/components/ProductFilterForm'
-import { StatusBadge } from '@/features/product/components/StatusBadge'
+import { PublicationStatusBadge } from '@/features/product/components/PublicationStatusBadge'
 import { type ProductFilter, parseFilter, toSearchParams } from '@/features/product/productFilter'
 
 /**
@@ -83,7 +83,7 @@ export function ProductListPage() {
                       </TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell>
-                        <StatusBadge status={item.status} />
+                        <PublicationStatusBadge status={item.status} />
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{item.variantCount}</TableCell>
                       <TableCell className="text-right tabular-nums">

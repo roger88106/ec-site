@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { normalizeCode } from '@/lib/code'
+import { normalizeCode } from '@/features/product/code'
 
 describe('品番の入力', () => {
   test('AC-15 半角の英小文字は大文字にする', () => {

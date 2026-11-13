@@ -9,7 +9,7 @@ import { BasicInfoCard } from '@/features/product/components/BasicInfoCard'
 import { ProductImagesCard } from '@/features/product/components/ProductImagesCard'
 import { ProductStatusCard } from '@/features/product/components/ProductStatusCard'
 import { PublicationPeriodCard } from '@/features/product/components/PublicationPeriodCard'
-import { StatusBadge } from '@/features/product/components/StatusBadge'
+import { PublicationStatusBadge } from '@/features/product/components/PublicationStatusBadge'
 import { VariantSection } from '@/features/product/components/VariantSection'
 
 /** 商品の編集。状態、基本情報、バリアントのカードを並べる */
@@ -25,7 +25,7 @@ export function ProductEditPage() {
             title={
               <span className="flex items-center gap-3">
                 <span className="font-mono">{product.productCode}</span>
-                <StatusBadge status={product.status} />
+                <PublicationStatusBadge status={product.status} />
               </span>
             }
           >

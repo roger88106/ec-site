@@ -6,9 +6,9 @@ import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
-import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { CodeInput } from '@/features/product/components/CodeInput'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
 /** 入力欄の値（軸の値は、商品の軸と同じ並び） */

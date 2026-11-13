@@ -9,10 +9,10 @@ import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import { useApiMutation } from '@/api/useApiMutation'
 import { paths } from '@/app/paths'
-import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import { CodeInput } from '@/features/product/components/CodeInput'
 import { ProductFields, productFieldConstraints } from '@/features/product/components/ProductFields'
 import {
   EMPTY_PRODUCT_FIELDS,

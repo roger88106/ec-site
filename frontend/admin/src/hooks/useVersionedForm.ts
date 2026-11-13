@@ -30,7 +30,7 @@ export function useVersionedForm<R extends Versioned, T extends FieldValues>(
   markSaved: () => void
   reloadAfter: (mutation: { reset: () => void }) => Promise<void>
 } {
-  // 呼び出し側が毎回新しい関数を渡しても、再作成の effect が走り直さないよう、最新の関数を ref に持つ
+  // 呼ぶ側が毎回新しい関数を渡しても、再作成の effect が走り直さないよう、最新の関数を ref に持つ
   const toValuesRef = useRef(toValues)
   toValuesRef.current = toValues
   const form = useForm<T>({ defaultValues: toValues(resource) as DefaultValues<T> })

@@ -6,7 +6,9 @@ import { errorMessage } from '@/api/errors'
 import { type Permission, usePermissions } from '@/auth/permissions'
 
 /**
- * 権限のある運営者にだけ画面を出す。権限がなければ、URL で開いても「権限がない」を示す（API も呼ばない）。<br />
+ * 権限のある運営者にだけ出す枠
+ *
+ * 権限がなければ、URL で開いても「権限がない」を示す（API も呼ばない）。
  * 権限の一覧を読み込む間は何も出さない。取得に失敗したら、権限がないとは区別して、エラーと再試行のボタンを示す（取得し直す間はボタンを押せない）。
  */
 export function RequirePermission({ permission, children }: { permission: Permission; children: ReactNode }) {

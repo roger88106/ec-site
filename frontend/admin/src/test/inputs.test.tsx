@@ -3,7 +3,11 @@ import { useState } from 'react'
 import { describe, expect, test } from 'vitest'
 import { returnToTab, typeDateTime } from '@/test/inputs'
 
-/** 日時の入力。入力を受けた値を、下に文字で出す */
+/**
+ * 日時の入力
+ *
+ * 入力を受けた値を、下に文字で出す。
+ */
 function DateTimeField() {
   const [value, setValue] = useState('')
   return (

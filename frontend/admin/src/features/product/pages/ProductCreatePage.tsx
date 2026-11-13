@@ -9,10 +9,10 @@ import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import { useApiMutation } from '@/api/useApiMutation'
 import { paths } from '@/app/paths'
-import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import { CodeInput } from '@/features/product/components/CodeInput'
 import { ProductFields, productFieldConstraints } from '@/features/product/components/ProductFields'
 import {
   EMPTY_PRODUCT_FIELDS,
@@ -28,7 +28,11 @@ const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.CreateProductR
 /** バリアント軸の上限 */
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
 
-/** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を追加したもの） */
+/**
+ * 入力欄の値
+ *
+ * 基本情報に、登録のときだけ入れる品番と軸を追加したもの。
+ */
 type Values = ProductFieldsValues & {
   productCode: string
   axes: { name: string }[]
@@ -38,7 +42,8 @@ type Values = ProductFieldsValues & {
 const FIELD_NAMES = [...PRODUCT_FIELD_NAMES, 'productCode', 'axes'] as const
 
 /**
- * 商品の登録。<br />
+ * 商品の登録
+ *
  * 商品品番とバリアント軸は登録後に変更できないので、この画面でだけ入力する。登録後は編集の画面に移る。
  */
 export function ProductCreatePage() {

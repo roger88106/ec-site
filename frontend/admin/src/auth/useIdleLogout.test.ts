@@ -7,14 +7,20 @@ import { advanceClock, MINUTE, operate, otherTabWrites, START, startClock } from
 /** 1 日（ミリ秒） */
 const DAY = 24 * 60 * MINUTE
 
-/** タイマーを進めずに時刻だけ進める（PC のスリープ。偽の時計は、登録したタイマーの実行時刻も同じだけ動かす） */
+/**
+ * タイマーを進めずに時刻だけ進める。
+ *
+ * PC のスリープを表す。偽の時計は、登録したタイマーの実行時刻も同じだけ動かす。
+ *
+ * @param ms 進める時間（ミリ秒）
+ */
 function sleep(ms: number) {
   act(() => {
     vi.setSystemTime(Date.now() + ms)
   })
 }
 
-/** タイマーを進めずに時刻だけ進め、タブが再び見えた・前面に戻ったことを知らせる（PC のスリープからの再開） */
+/** タイマーを進めずに時刻だけ進め、タブが再び見えた・前面に戻ったことを知らせる（PC のスリープからの再開）。 */
 function sleepAndWake(ms: number, wake: 'visibilitychange' | 'focus' | 'pageshow' = 'visibilitychange') {
   act(() => {
     vi.setSystemTime(Date.now() + ms)
@@ -23,12 +29,12 @@ function sleepAndWake(ms: number, wake: 'visibilitychange' | 'focus' | 'pageshow
   })
 }
 
-/** 他のタブが最後に操作した時刻を書いたことを、storage イベントで知らせる */
+/** 他のタブが最後に操作した時刻を書いたことを、storage イベントで知らせる。 */
 function otherTabOperatesAt(at: number) {
   otherTabWrites(LAST_ACTIVITY_KEY, String(at))
 }
 
-/** addEventListener・removeEventListener の呼び出しから、イベントの種類とリスナーの組だけを取り出す（順は問わない） */
+/** addEventListener・removeEventListener の呼び出しから、イベントの種類とリスナーの組だけを取り出す（順は問わない）。 */
 function listeners(calls: unknown[][]) {
   return new Set(calls.map(([type, listener]) => [type, listener]))
 }
@@ -162,7 +168,7 @@ describe('無操作のログアウト（フック）', () => {
 
     expect(result.current.warning).toBe(false)
 
-    // 取り込んだ時刻の 30 分後（現在の時刻から 2 分と 1 ミリ秒の後）にログアウトする
+    // 取り込んだ時刻から IDLE_LIMIT_MS の時間がたった時刻（現在の時刻から IDLE_WARNING_BEFORE_MS と 1 ミリ秒の後）にログアウトする
     advanceClock(2 * MINUTE)
 
     expect(onExpire).not.toHaveBeenCalled()

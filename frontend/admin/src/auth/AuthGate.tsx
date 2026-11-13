@@ -10,10 +10,12 @@ import { useSharedLogout } from '@/auth/sharedLogout'
 import { setTokenSource } from '@/auth/token'
 
 /**
- * すべての画面を包み、ログインを求める（管理画面の構成の「ログイン」）。<br />
+ * ログインを求める枠
+ *
+ * すべての画面を包む（管理画面の構成の「ログイン」）。
  * ログインしていなければ、何も表示せずに IdP のログインへ移り、戻ってきたら移る前の画面に戻す。
  * ログインしていれば、運営者（氏名とログアウト）と、API に付ける token を渡してから画面を出す。
- * ログインしている間は、操作がないまま 30 分たつとログアウトする。ログアウトは、同じブラウザーの他のタブにも伝える。
+ * ログインしている間は、操作がないまま IDLE_LIMIT_MS の時間がたつとログアウトする。ログアウトは、同じブラウザーの他のタブにも伝える。
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const t = useTranslations('auth.gate')
@@ -90,17 +92,17 @@ const RELOGIN_AT_KEY = 'ec-admin.reloginAt'
 /** 401 でログインし直してから、もう一度ログインし直さない時間（ミリ秒） */
 const RELOGIN_GUARD_MS = 30_000
 
-/** 401 でログインし直してから、間もないか */
+/** 401 でログインし直してから、間もないかを返す。 */
 function recentlyReloggedIn(): boolean {
   return Date.now() - Number(sessionStorage.getItem(RELOGIN_AT_KEY) ?? 0) < RELOGIN_GUARD_MS
 }
 
-/** 401 でログインし直す時刻を残す */
+/** 401 でログインし直す時刻を残す。 */
 function markRelogin(): void {
   sessionStorage.setItem(RELOGIN_AT_KEY, String(Date.now()))
 }
 
-/** いまの画面のパスとクエリ（ログインの後に戻る） */
+/** いまの画面のパスとクエリ（ログインの後に戻る）を返す。 */
 function currentPath(): string {
   return window.location.pathname + window.location.search
 }

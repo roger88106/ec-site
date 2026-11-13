@@ -19,9 +19,12 @@ const QUARTER_BY_MONTH: SalesTrendReport = {
 }
 
 /**
- * 売上の推移の API に応答する。受け取ったクエリは queries に取っておく。
+ * 売上の推移の API に応答する。
+ *
+ * 受け取ったクエリは queries に取っておく。
  *
  * @param report 返す推移
+ * @returns 受け取ったクエリ
  */
 function serveTrend(report: SalesTrendReport = QUARTER_BY_MONTH) {
   serveReportBasics()

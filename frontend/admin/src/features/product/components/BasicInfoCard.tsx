@@ -15,8 +15,9 @@ import { useVersionedForm } from '@/hooks/useVersionedForm'
 const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.UpdateProductRequest)
 
 /**
- * 基本情報の編集。商品品番とバリアント軸は表示だけ。<br />
- * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
+ * 基本情報の編集
+ *
+ * 商品品番とバリアント軸は表示だけ。送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(product, toProductFields, refetch)

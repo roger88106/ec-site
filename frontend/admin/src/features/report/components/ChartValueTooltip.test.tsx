@@ -1,8 +1,8 @@
 import { formatNumber, formatYen } from '@ec-site/shared/lib/format'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-import { ChartValueTooltip } from '@/components/ChartValueTooltip'
 import { type ChartConfig, ChartContainer } from '@/components/ui/chart'
+import { ChartValueTooltip } from '@/features/report/components/ChartValueTooltip'
 
 const chartConfig = {
   amount: { label: '売上金額', color: 'var(--chart-1)' },

@@ -15,7 +15,9 @@ export function typeDateTime(input: HTMLElement, value: string): void {
 }
 
 /**
- * 利用者が別のタブから戻ったことを表す。画面は表示中の情報を取得し直す。
+ * 利用者が別のタブから戻ったことを表す。
+ *
+ * 画面は表示中の情報を取得し直す。
  *
  * window の `visibilitychange` を発火する。
  */

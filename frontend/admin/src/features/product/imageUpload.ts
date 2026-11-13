@@ -3,7 +3,11 @@ import { createImageUploadRequestContentTypeValues } from '@/api/generated/admin
 import { schemas } from '@/api/generated/constraints'
 import { translate } from '@/i18n/translate'
 
-/** 受け付ける画像の形式（契約の形式の一覧）。登録のときに WebP に変換される */
+/**
+ * 受け付ける画像の形式（契約の形式の一覧）
+ *
+ * 登録のときに WebP に変換される。
+ */
 const IMAGE_CONTENT_TYPES = createImageUploadRequestContentTypeValues
 
 /** 受け付ける画像の形式 */
@@ -21,7 +25,9 @@ const FORMAT_LABELS: Readonly<Record<ImageContentType, string>> = {
 }
 
 /**
- * 拡張子からの形式。ブラウザーが HEIC などの形式を空で渡すことがあるため（Windows の Chrome など）、拡張子で補う
+ * 拡張子からの形式
+ *
+ * ブラウザーが HEIC などの形式を空で渡すことがあるため（Windows の Chrome など）、拡張子で補う。
  */
 const CONTENT_TYPES_BY_EXTENSION: Readonly<Record<string, ImageContentType>> = {
   jpg: 'image/jpeg',
@@ -34,16 +40,28 @@ const CONTENT_TYPES_BY_EXTENSION: Readonly<Record<string, ImageContentType>> = {
   avif: 'image/avif',
 }
 
-/** ファイルの選択で出す形式（MIME タイプと拡張子。拡張子がないと HEIC を選べない OS がある） */
+/**
+ * ファイルの選択で出す形式（MIME タイプと拡張子）
+ *
+ * 拡張子がないと HEIC を選べない OS がある。
+ */
 export const IMAGE_ACCEPT = [
   ...IMAGE_CONTENT_TYPES,
   ...Object.keys(CONTENT_TYPES_BY_EXTENSION).map((ext) => `.${ext}`),
 ].join(',')
 
-/** 1 ファイルの大きさの上限（バイト。契約の値） */
+/**
+ * 1 ファイルの大きさの上限（バイト）
+ *
+ * 契約の値。
+ */
 const MAX_IMAGE_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 
-/** 1 ファイルの大きさの上限（MB。文に差し込む） */
+/**
+ * 1 ファイルの大きさの上限（MB）
+ *
+ * 文に差し込む。
+ */
 export const MAX_IMAGE_MEGABYTES = MAX_IMAGE_BYTES / (1024 * 1024)
 
 /** 1 商品あたりの画像の上限（契約の値） */
@@ -60,12 +78,19 @@ export function imageFormatsLabel(): string {
   )
 }
 
-/** 管理 API の外（ストレージへの PUT など）で起きた、画像のアップロードの失敗。メッセージをそのまま出す */
+/**
+ * 画像のアップロードの失敗
+ *
+ * 管理 API の外（ストレージへの PUT など）で起きた失敗で、メッセージをそのまま出す。
+ */
 export class ImageUploadError extends Error {}
 
 /**
- * 受付に申告する画像の形式。ブラウザーの形式が空（または汎用のもの）なら、拡張子で補う。
+ * 受付に申告する画像の形式を決める。
  *
+ * ブラウザーの形式が空（または汎用のもの）なら、拡張子で補う。
+ *
+ * @param file 画像のファイル
  * @returns 形式。受け付けない形式なら null
  */
 export function imageContentType(file: Pick<File, 'type' | 'name'>): ImageContentType | null {
@@ -82,8 +107,11 @@ export function imageContentType(file: Pick<File, 'type' | 'name'>): ImageConten
 }
 
 /**
- * 送る前に確認できる、画像のファイルの誤り（形式と大きさ）。サーバーも同じ検証をする。
+ * 画像のファイルの誤り（形式と大きさ）を、送る前に確認する。
  *
+ * サーバーも同じ検証をする。
+ *
+ * @param file 画像のファイル
  * @returns 誤りのメッセージ。なければ null
  */
 export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): string | null {
@@ -97,7 +125,8 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
 }
 
 /**
- * 画像を 1 枚アップロードして登録する。<br />
+ * 画像を 1 枚アップロードして登録する。
+ *
  * 受付で署名付き URL を受け取り、ファイルをストレージへ直接 PUT してから、受付 ID で登録する。
  * API のエラーは ApiError として投げる。
  *
@@ -106,7 +135,7 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
  * @param version   登録のときに送る商品のバージョン
  */
 export async function uploadProductImage(productId: string, file: File, version: number): Promise<void> {
-  // 形式は imageFileError で確認してから呼ぶ（受け付けない形式は送らない）
+  // 受け付けない形式は送らずに失敗にする
   const contentType = imageContentType(file)
   if (contentType === null) {
     throw new ImageUploadError(translate('product.images.invalidType', { formats: imageFormatsLabel() })) // 形式の誤り

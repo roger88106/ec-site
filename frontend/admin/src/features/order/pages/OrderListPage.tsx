@@ -17,7 +17,9 @@ import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBad
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
 
 /**
- * 注文一覧。注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。<br />
+ * 注文一覧
+ *
+ * 注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  */
 export function OrderListPage() {
@@ -45,7 +47,7 @@ export function OrderListPage() {
     // ページを移る間、前のページを表示したままにする
     { placeholderData: keepPreviousData },
   )
-  /** 絞り込みを URL に反映する（URL が絞り込みの正本） */
+  /** 絞り込みを URL に反映する（URL が絞り込みの正本）。 */
   const apply = (next: OrderFilter) => setSearchParams(toSearchParams(next))
 
   return (

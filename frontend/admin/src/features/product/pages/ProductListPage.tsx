@@ -9,11 +9,12 @@ import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductFilterForm } from '@/features/product/components/ProductFilterForm'
-import { StatusBadge } from '@/features/product/components/StatusBadge'
+import { PublicationStatusBadge } from '@/features/product/components/PublicationStatusBadge'
 import { type ProductFilter, parseFilter, toSearchParams } from '@/features/product/productFilter'
 
 /**
- * 商品の一覧。<br />
+ * 商品の一覧
+ *
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  * 在庫数の合計は、表示中のページの商品について在庫の集計 API を呼んで組み合わせる。
  */
@@ -48,7 +49,13 @@ export function ProductListPage() {
   )
   /** 商品 ID → 在庫数の合計（在庫の API の結果を、一覧の行に合わせる） */
   const totals = new Map(stocks.data?.items.map((item) => [item.productId, item.totalQuantity]))
-  /** 絞り込みを URL に反映する（URL が絞り込みの正本。再読み込み・共有しても同じ一覧になる） */
+  /**
+   * 絞り込みを URL に反映する。
+   *
+   * URL が絞り込みの正本なので、再読み込み・共有しても同じ一覧になる。
+   *
+   * @param next 新しい絞り込み
+   */
   const apply = (next: ProductFilter) => setSearchParams(toSearchParams(next))
 
   return (
@@ -83,7 +90,7 @@ export function ProductListPage() {
                       </TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell>
-                        <StatusBadge status={item.status} />
+                        <PublicationStatusBadge status={item.status} />
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{item.variantCount}</TableCell>
                       <TableCell className="text-right tabular-nums">

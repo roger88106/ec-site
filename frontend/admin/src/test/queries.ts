@@ -1,14 +1,18 @@
 import { type BoundFunctions, type queries, screen, within } from '@testing-library/react'
 
-/** 探す範囲。省略すると画面全体。`within(要素)` の結果を渡すと、その要素の中だけを探す */
+/**
+ * 探す範囲
+ *
+ * 省略すると画面全体。`within(要素)` の結果を渡すと、その要素の中だけを探す。
+ */
 type Scope = BoundFunctions<typeof queries>
 
-/** 正規表現の記号をそのままの文字として扱えるようにする */
+/** 正規表現の記号をそのままの文字として扱えるようにする。 */
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/** 行の名前が、渡した文字で始まる行に当たる正規表現 */
+/** 行の名前が、渡した文字で始まる行に当たる正規表現を返す。 */
 function rowNamePattern(name: string): RegExp {
   return new RegExp(`^${escapeRegExp(name)}`)
 }
@@ -29,10 +33,12 @@ function detailValueOf(term: HTMLElement): HTMLElement {
 }
 
 /**
- * 詳細の項目の値（`dd`）を返す。見つからなければ失敗する。
+ * 詳細の項目の値（`dd`）を返す。
+ *
+ * 見つからなければ失敗する。
  * 例：`expect(getDetailValue('与信期限')).toHaveTextContent('2026/10/20')`
  *
- * @param name 項目名（`dt` の文字）
+ * @param name  項目名（`dt` の文字）
  * @param scope 探す範囲。省略すると画面全体
  * @returns 項目名の次の `dd`
  */
@@ -43,7 +49,7 @@ export function getDetailValue(name: string, scope: Scope = screen): HTMLElement
 /**
  * 項目が現れるまで待つ {@link getDetailValue}。
  *
- * @param name 項目名（`dt` の文字）
+ * @param name  項目名（`dt` の文字）
  * @param scope 探す範囲。省略すると画面全体
  * @returns 項目名の次の `dd`
  */
@@ -52,11 +58,13 @@ export async function findDetailValue(name: string, scope: Scope = screen): Prom
 }
 
 /**
- * 一覧の行を、名前の始まりの文字で返す。行の名前は、行の中のセルの文字をつないだもの。見つからなければ失敗する。
+ * 一覧の行を、名前の始まりの文字で返す。
+ *
+ * 行の名前は、行の中のセルの文字をつないだもの。見つからなければ失敗する。
  * 「標準」と「標準（旧）」のような似た名前は、後者の全体を渡して区別する。
  * 例：`within(getRow('標準税率')).getByRole('cell', { name: '10%' })`
  *
- * @param name 行の名前の始まりの文字
+ * @param name  行の名前の始まりの文字
  * @param scope 探す範囲。省略すると画面全体
  * @returns 名前が渡した文字で始まる行
  */
@@ -67,7 +75,7 @@ export function getRow(name: string, scope: Scope = screen): HTMLElement {
 /**
  * 行が現れるまで待つ {@link getRow}。
  *
- * @param name 行の名前の始まりの文字
+ * @param name  行の名前の始まりの文字
  * @param scope 探す範囲。省略すると画面全体
  * @returns 名前が渡した文字で始まる行
  */
@@ -76,14 +84,16 @@ export function findRow(name: string, scope: Scope = screen): Promise<HTMLElemen
 }
 
 /**
- * 一覧のセルを、行の名前と列の見出しの名前で返す。セルの並びの位置を、テストのファイルに書かない。
+ * 一覧のセルを、行の名前と列の見出しの名前で返す。
+ *
+ * セルの並びの位置を、テストのファイルに書かない。
  * 見出しは、行のある表の `columnheader`。見つからなければ失敗する。
  * 行の見出しのセル（`th scope="row"`、`rowheader`）も 1 つの列に数える。入れ子の表の見出しとセルは、外の表の列に数えない。
  * 例：`expect(getCell('ABC-001', '在庫数の合計')).toHaveTextContent('12')`
  *
- * @param rowName 行の名前の始まりの文字（{@link getRow} と同じ）
+ * @param rowName    行の名前の始まりの文字（{@link getRow} と同じ）
  * @param columnName 列の見出しの文字
- * @param scope 探す範囲。省略すると画面全体
+ * @param scope      探す範囲。省略すると画面全体
  * @returns 行と列が交わる `cell`
  * @throws 列の見出しがないとき、または行にその列のセルがないとき
  */
@@ -111,11 +121,13 @@ export function getCell(rowName: string, columnName: string, scope: Scope = scre
 }
 
 /**
- * 渡した要素を含む `listitem` を返す。入れ子の一覧では、一番外の項目（子の項目も中に入る）を返す。含む項目がなければ失敗する。
+ * 渡した要素を含む `listitem` を返す。
+ *
+ * 入れ子の一覧では、一番外の項目（子の項目も中に入る）を返す。含む項目がなければ失敗する。
  * 例：`within(getListItemContaining(await findGroup('衣類'))).getByText('トップス')`
  *
  * @param element 項目の中にある要素
- * @param scope 探す範囲。省略すると画面全体
+ * @param scope   探す範囲。省略すると画面全体
  * @returns 渡した要素を含む `listitem`
  * @throws 含む `listitem` がないとき
  */
@@ -128,10 +140,12 @@ export function getListItemContaining(element: HTMLElement, scope: Scope = scree
 }
 
 /**
- * 名前を持つ `group` を、名前の全体が一致するもので返す。現れるまで待つ。
+ * 名前を持つ `group` を、名前の全体が一致するもので返す。
+ *
+ * 現れるまで待つ。
  * 例：`within(await findGroup('衣類')).getByRole('button', { name: '子を追加' })`
  *
- * @param name `group` の名前（aria-label など）
+ * @param name  `group` の名前（aria-label など）
  * @param scope 探す範囲。省略すると画面全体
  * @returns 名前が一致する `group`
  */

@@ -47,7 +47,7 @@ function operatorUser(loggedInAt?: number): User {
 /** ログインした運営者（ID token に auth_time がない） */
 const USER = operatorUser()
 
-/** ログインしていない状態 */
+/** ログインしていない状態を返す。 */
 function signedOut(): Partial<AuthContextProps> {
   return {
     isLoading: false,
@@ -60,13 +60,13 @@ function signedOut(): Partial<AuthContextProps> {
   }
 }
 
-/** ログインした状態 */
+/** ログインした状態を返す。 */
 function signedIn(): Partial<AuthContextProps> {
   return { ...signedOut(), isAuthenticated: true, user: USER }
 }
 
 /**
- * IdP でパスワードを入れてログインした状態（ID token に auth_time がある）
+ * IdP でパスワードを入れてログインした状態（ID token に auth_time がある）を返す。
  *
  * @param loggedInAt パスワードを入れた時刻（ミリ秒）
  * @returns ログインした状態
@@ -75,7 +75,13 @@ function signedInSince(loggedInAt: number): Partial<AuthContextProps> {
   return { ...signedOut(), isAuthenticated: true, user: operatorUser(loggedInAt) }
 }
 
-/** ログインした状態。IdP のログアウトへ移り始めるのに、1 回目だけ失敗する */
+/**
+ * ログインした状態を返す。
+ *
+ * IdP のログアウトへ移り始めるのに、1 回目だけ失敗する。
+ *
+ * @returns ログインした状態
+ */
 function signedInFailingSignoutOnce(): Partial<AuthContextProps> {
   return {
     ...signedIn(),
@@ -83,12 +89,16 @@ function signedInFailingSignoutOnce(): Partial<AuthContextProps> {
   }
 }
 
-/** IdP のログアウトの失敗（reject）を、門が受け取るまで待つ */
+/** IdP のログアウトの失敗（reject）を、門が受け取るまで待つ。 */
 async function settleSignout(): Promise<void> {
   await act(async () => {})
 }
 
-/** 門の中に置く画面。運営者の名前とログアウトを出す */
+/**
+ * 門の中に置く画面
+ *
+ * 運営者の名前とログアウトを出す。
+ */
 function Screen() {
   const operator = useOperator()
   return (
@@ -284,7 +294,7 @@ describe('ログインの門の、無操作のログアウト', () => {
   })
 })
 
-/** ローカルストレージの中身（キーと値） */
+/** ローカルストレージの中身（キーと値）を返す。 */
 function storageEntries(): Record<string, string | null> {
   const entries: Record<string, string | null> = {}
   for (let i = 0; i < localStorage.length; i++) {
@@ -296,7 +306,13 @@ function storageEntries(): Record<string, string | null> {
   return entries
 }
 
-/** ログインした状態。IdP のログアウトへ移るたびに、そのときのローカルストレージの中身を atSignout に残す */
+/**
+ * ログインした状態を返す。
+ *
+ * IdP のログアウトへ移るたびに、そのときのローカルストレージの中身を atSignout に残す。
+ *
+ * @returns ログインした状態（state）と、ログアウトのたびの中身（atSignout）
+ */
 function signedInRecordingStorage() {
   const atSignout: Record<string, string | null>[] = []
   const state: Partial<AuthContextProps> = {
@@ -359,7 +375,7 @@ describe('ログインの門の、タブの間のログアウト', () => {
     expect(auth.signoutRedirect).toHaveBeenCalledTimes(1)
     expect(auth.signoutRedirect).toHaveBeenCalledWith({ id_token_hint: 'id-token-1' })
 
-    // 2 つ目の印と、無操作の 30 分では、もう移らない
+    // 2 つ目の印と、無操作の IDLE_LIMIT_MS の時間では、もう移らない
     otherTabWrites(LOGOUT_KEY, String(START + 2 * MINUTE))
     advanceClock(30 * MINUTE)
 

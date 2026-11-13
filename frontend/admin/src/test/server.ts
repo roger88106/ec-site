@@ -9,7 +9,8 @@ import { stock } from '@/test/fixtures'
 const ADMIN_API = `${window.location.origin}/api/admin`
 
 /**
- * 管理 API の応答を差し替えるハンドラーを作る（フロントのテストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。<br />
+ * 管理 API の応答を差し替えるハンドラーを作る（フロントのテストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。
+ *
  * パス・パラメーター・リクエストとレスポンスの本文は admin.yaml の型に合わせる。admin.yaml にない応答は型エラーになる。
  * 例：`http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))`
  */
@@ -40,33 +41,37 @@ export function getServerError(path: string) {
 }
 
 /**
- * 結合テストで API の代わりに応答するサーバー。<br />
+ * 結合テストで API の代わりに応答するサーバー。
+ *
  * 既定のハンドラーは持たない。各テストで `server.use(...)` に、そのテストで呼ばれる API の応答を渡す。
  * ハンドラーのない API が呼ばれたら、テストを失敗させる（setup.ts）。
  */
 export const server = setupServer()
 
 /**
- * エラーレスポンス（Problem）の本文を作る。画面に出るのは message。
+ * エラーレスポンス（Problem）の本文を作る。
  *
- * @param status HTTP の状態
+ * 画面に出るのは message。
+ *
+ * @param status    HTTP の状態
  * @param errorCode admin.yaml の errorCode（例：PRODUCT_CODE_ALREADY_EXISTS）
- * @param message 画面にそのまま出すメッセージ
- * @param errors 入力検証エラーの項目ごとのメッセージ
+ * @param message   画面にそのまま出すメッセージ
+ * @param errors    入力検証エラーの項目ごとのメッセージ
  * @returns Problem の本文
  */
 export function problem(status: number, errorCode: ErrorCode, message: string, errors?: Problem['errors']): Problem {
   return { type: 'about:blank', status, errorCode, message, traceId: 'test-trace', errors }
 }
 
-/** 更新の競合（409、CONCURRENT_MODIFICATION）の本文 */
+/** 更新の競合（409、CONCURRENT_MODIFICATION）の本文を返す。 */
 function concurrentModification(): Problem {
   return problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。')
 }
 
 /**
- * 更新の競合（409）の応答を作る。ハンドラーに渡される `response` を渡す。<br />
- * 409 が契約にない API では、型エラーになる。
+ * 更新の競合（409）の応答を作る。
+ *
+ * ハンドラーに渡される `response` を渡す。409 が契約にない API では、型エラーになる。
  * 例：`http.put('/products/{productId}', ({ response }) => conflict(response))`
  *
  * @param response ハンドラーに渡される `response`
@@ -79,13 +84,15 @@ export function conflict<Result>(
 }
 
 /**
- * 条件で応答を変える関数の型。第 2 引数の `response` で、契約に合った応答を作る（`Response` を返さない）。<br />
+ * 条件で応答を変える関数の型
+ *
+ * 第 2 引数の `response` で、契約に合った応答を作る（`Response` を返さない）。
  * 例：`reply: Reply<'/tax-categories', 'post', CreateTaxCategoryRequest>`、
  * `(body, response) => response(409).json(problem(...))`
  *
- * @typeParam Path admin.yaml のパス
+ * @typeParam Path   admin.yaml のパス
  * @typeParam Method HTTP のメソッド（小文字）
- * @typeParam Arg 関数に渡す値（リクエストの本文など）
+ * @typeParam Arg    関数に渡す値（リクエストの本文など）
  */
 export type Reply<Path extends keyof paths, Method extends HttpMethod, Arg> = (
   arg: Arg,
@@ -93,7 +100,9 @@ export type Reply<Path extends keyof paths, Method extends HttpMethod, Arg> = (
 ) => ReturnType<ResponseResolver<paths, Path, Method>>
 
 /**
- * バリアントの在庫数の取得（GET /inventory/variants/{variantId}）に応答するハンドラーを作る。どのバリアントにも同じ数で応答する。<br />
+ * バリアントの在庫数の取得（GET /inventory/variants/{variantId}）に応答するハンドラーを作る。
+ *
+ * どのバリアントにも同じ数で応答する。
  * 例：`server.use(stockHandler(5))`、`server.use(stockHandler(() => state.quantity))`
  *
  * @param quantity 在庫数。関数を渡すと、取得のたびに呼んで今の値を返す

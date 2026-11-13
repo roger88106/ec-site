@@ -6,11 +6,13 @@ type MutationState = {
 }
 
 /**
- * 1 つの場所で行う複数の更新の操作をまとめる（管理画面の構成の「API の呼び出し」）。<br />
+ * 1 つの場所で行う複数の更新の操作をまとめる（管理画面の構成の「API の呼び出し」）。
+ *
  * どれかが待っている間はほかの操作も止め、エラーは最初に失敗している操作のものを 1 つだけ出す。
  * 別の操作を始めるときは、前の操作のエラーを消す（resetErrors）。
  *
  * @param mutations まとめる操作
+ * @returns 待っているか、最初のエラー、エラーを消す関数
  */
 export function useMutationGroup(...mutations: MutationState[]) {
   return {

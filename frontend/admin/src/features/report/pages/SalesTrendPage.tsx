@@ -4,10 +4,10 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import type { SalesTrendReport } from '@/api/types'
-import { ChartValueTooltip } from '@/components/ChartValueTooltip'
 import { QueryState } from '@/components/QueryState'
 import { type ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ChartValueTooltip } from '@/features/report/components/ChartValueTooltip'
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportPage } from '@/features/report/components/ReportPage'
 import { bucketLabel } from '@/features/report/labels'
@@ -15,7 +15,11 @@ import { FISCAL_PRESETS } from '@/features/report/period'
 import { formatYenCompact } from '@/features/report/report'
 import type { ReportCondition } from '@/features/report/reportCondition'
 
-/** 売上の推移。期間・区切り・数え方などの条件は URL に持つ */
+/**
+ * 売上の推移
+ *
+ * 期間・区切り・数え方などの条件は URL に持つ。
+ */
 export function SalesTrendPage() {
   return (
     <ReportPage defaultPreset="thisFiscalYear" granularity menuKey="salesTrend" presets={FISCAL_PRESETS}>

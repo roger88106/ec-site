@@ -5,7 +5,7 @@
 #   - IntelliJ：実行構成 → Active profiles に local
 #   - Gradle  ：./gradlew bootRun --args='--spring.profiles.active=local'
 #
-# 接続先はdocker/compose.yaml に合わせている。
+# 接続先は docker/compose.yaml に合わせている。
 # ============================================================================
 
 spring:
@@ -21,7 +21,7 @@ spring:
   mail:
     # compose の Mailpit（届いたメールは http://localhost:8025 で見る）
     host: localhost
-    # 2525 を他のプログラムが使っていれば、MAILPIT_SMTP_PORT で compose と合わせて変える（docs/06-手順書/setup.md）
+    # 2525 を他のプログラムが使っていれば、MAILPIT_SMTP_PORT で compose と合わせて変える（開発環境の起動の「起動」）
     port: ${MAILPIT_SMTP_PORT:2525}
 
 logging:

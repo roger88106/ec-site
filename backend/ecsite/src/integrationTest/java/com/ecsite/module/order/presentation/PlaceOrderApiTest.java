@@ -970,8 +970,7 @@ class PlaceOrderApiTest {
      * T シャツの在庫数を確認する
      */
     private void expectQuantity(int quantity) throws Exception {
-        mockMvc.perform(get("/api/admin/inventory/variants/" + shirt.variantIds.getFirst()))
-                .andExpect(jsonPath("$.quantity").value(quantity));
+        InventoryTestData.expectQuantity(mockMvc, shirt.variantIds.getFirst(), quantity);
     }
 
     /**

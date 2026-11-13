@@ -1,5 +1,6 @@
 package com.ecsite.module.member.api;
 
+import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.module.member.application.port.MemberRepository;
 import org.jooq.DSLContext;
@@ -13,14 +14,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static com.ecsite.jooq.member.Tables.MEMBER_;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,35 +88,16 @@ class MemberConfirmationTest {
     void createsOnlyOneMemberOnConcurrentFirstRequests() throws Exception {
         var subject = newSubject();
         var threads = 8;
-        var ready = new CountDownLatch(threads);
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(threads);
-        try {
-            List<Future<UUID>> futures = new ArrayList<>();
-            for (int i = 0; i < threads; i++) {
-                futures.add(executor.submit(() -> {
-                    ready.countDown();
-                    start.await();
-                    try {
-                        return memberIdOf(subject);
-                    } finally {
-                        SecurityContextHolder.clearContext();
-                    }
-                }));
+        var memberIds = new HashSet<UUID>(Concurrently.run(threads, i -> {
+            try {
+                return memberIdOf(subject);
+            } finally {
+                SecurityContextHolder.clearContext();
             }
-            ready.await();
-            start.countDown();
+        }));
 
-            var memberIds = new HashSet<UUID>();
-            for (var future : futures) {
-                memberIds.add(future.get());
-            }
-
-            assertThat(memberIds).hasSize(1);
-            assertThat(dsl.fetchCount(MEMBER_, MEMBER_.IDP_SUBJECT.eq(subject))).isEqualTo(1);
-        } finally {
-            executor.shutdownNow();
-        }
+        assertThat(memberIds).hasSize(1);
+        assertThat(dsl.fetchCount(MEMBER_, MEMBER_.IDP_SUBJECT.eq(subject))).isEqualTo(1);
     }
 
     @Test

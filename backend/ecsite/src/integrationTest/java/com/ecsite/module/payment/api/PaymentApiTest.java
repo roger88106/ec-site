@@ -119,7 +119,7 @@ class PaymentApiTest {
         gateway.pay(pageId);
 
         assertThat(paymentApi.find(List.of(orderId)).getFirst().status()).isEqualTo(PaymentSummary.Status.AUTHORIZED);
-        assertThat(events.stream(PaymentAuthorized.class)).singleElement()
+        assertThat(authorizedEvents(orderId)).singleElement()
                 .satisfies(event -> assertThat(event.orderId()).isEqualTo(orderId));
     }
 
@@ -132,7 +132,7 @@ class PaymentApiTest {
         gateway.pay(pageId);
         gateway.notifyAuthorized(pageId);
 
-        assertThat(events.stream(PaymentAuthorized.class)).hasSize(1);
+        assertThat(authorizedEvents(orderId)).hasSize(1);
     }
 
     @Test
@@ -147,5 +147,12 @@ class PaymentApiTest {
         assertThat(summaries).extracting(PaymentSummary::orderId, PaymentSummary::status).containsExactlyInAnyOrder(
                 tuple(unpaid, PaymentSummary.Status.UNPAID),
                 tuple(authorized, PaymentSummary.Status.AUTHORIZED));
+    }
+
+    /**
+     * 注文の与信の成功のイベントを返す（他のテストのイベントを含めないように、注文 ID で絞る）。
+     */
+    private List<PaymentAuthorized> authorizedEvents(UUID orderId) {
+        return events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(orderId)).toList();
     }
 }

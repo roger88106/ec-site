@@ -88,7 +88,7 @@ public class TestPaymentGateway implements PaymentGateway {
      *
      * <p>確定した順。
      */
-    private final List<UUID> captured = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<UUID> captured = new CopyOnWriteArrayList<>();
 
     /**
      * 売上確定に渡された与信の参照
@@ -126,7 +126,7 @@ public class TestPaymentGateway implements PaymentGateway {
      *
      * <p>返金した順。
      */
-    private final List<UUID> refunded = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<UUID> refunded = new CopyOnWriteArrayList<>();
 
     /**
      * これから失敗させる返金の回数
@@ -217,9 +217,7 @@ public class TestPaymentGateway implements PaymentGateway {
         var result = mock.capture(request);
         capturedAuthorizationRefs.put(request.orderId(), request.authorizationRef());
         // 冪等キー（注文 ID）が同じなら、確定は 1 回だけ
-        if (!captured.contains(request.orderId())) {
-            captured.add(request.orderId());
-        }
+        captured.addIfAbsent(request.orderId());
         var during = duringNextCapture.getAndSet(null);
         if (during != null) {
             during.run();
@@ -239,9 +237,7 @@ public class TestPaymentGateway implements PaymentGateway {
         }
         mock.refund(request);
         // 冪等キー（注文 ID）が同じなら、返金は 1 回だけ
-        if (!refunded.contains(request.orderId())) {
-            refunded.add(request.orderId());
-        }
+        refunded.addIfAbsent(request.orderId());
     }
 
     // ============================== 支払画面の操作（本番の mock に渡す） ==============================
@@ -423,6 +419,18 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 注文について、売上確定を呼ばれた回数を返す。
+     *
+     * <p>他のテストの注文の呼び出しを数えないように、注文で絞る。
+     *
+     * @param orderId 注文 ID
+     * @return 売上確定を呼ばれた回数（失敗と重複を含む）
+     */
+    public int captureCallsOf(UUID orderId) {
+        return amountsOf(Operation.CAPTURE, orderId).size();
+    }
+
+    /**
      * 注文の売上確定に渡された与信の参照を返す。
      *
      * @param orderId 注文 ID
@@ -451,12 +459,36 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 注文について、返金した回数を返す。
+     *
+     * <p>他のテストの注文の返金を数えないように、注文で絞る。
+     *
+     * @param orderId 注文 ID
+     * @return 返金した回数（同じ注文は 1 回）
+     */
+    public int refundsOf(UUID orderId) {
+        return (int) refunded.stream().filter(orderId::equals).count();
+    }
+
+    /**
      * 取り消した与信の参照を返す。
      *
      * @return 取り消した与信の参照（取り消した順）
      */
     public List<String> voided() {
         return List.copyOf(voided);
+    }
+
+    /**
+     * 与信について、取り消した回数を返す。
+     *
+     * <p>他のテストの与信の取消を数えないように、与信の参照で絞る。
+     *
+     * @param authorizationRef 与信の参照
+     * @return 取り消した回数
+     */
+    public int voidsOf(String authorizationRef) {
+        return (int) voided.stream().filter(authorizationRef::equals).count();
     }
 
     /**

@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,9 +44,9 @@ public class CatalogTestData {
     /**
      * 品番の連番
      *
-     * <p>テストの中で重ならないように、乱数から始める。
+     * <p>JVM の全てのテストで 1 つの連番にして、別のインスタンスが作った品番と重ならないようにする。
      */
-    private int sequence = (int) (Math.random() * 1_000_000);
+    private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
     /**
      * MockMvc
@@ -124,8 +125,7 @@ public class CatalogTestData {
      * @return 商品
      */
     public TestProduct product(UUID taxCategoryId, String name, long priceExclTax, String... axes) throws Exception {
-        sequence++;
-        return product("TD-" + sequence, taxCategoryId, name, priceExclTax, axes);
+        return product("TD-" + SEQUENCE.incrementAndGet(), taxCategoryId, name, priceExclTax, axes);
     }
 
     /**
@@ -163,8 +163,7 @@ public class CatalogTestData {
      */
     public TestProduct product(UUID taxCategoryId, String name, long priceExclTax, List<UUID> categoryIds,
                                String... axes) throws Exception {
-        sequence++;
-        var product = register("TD-" + sequence, taxCategoryId, name, "説明", priceExclTax, categoryIds, axes);
+        var product = register("TD-" + SEQUENCE.incrementAndGet(), taxCategoryId, name, "説明", priceExclTax, categoryIds, axes);
         if (axes.length == 0) {
             product.variant();
         }
@@ -185,8 +184,7 @@ public class CatalogTestData {
      */
     public TestProduct product(UUID taxCategoryId, String name, String description, long priceExclTax,
                                List<UUID> categoryIds) throws Exception {
-        sequence++;
-        return register("TD-" + sequence, taxCategoryId, name, description, priceExclTax, categoryIds).variant();
+        return register("TD-" + SEQUENCE.incrementAndGet(), taxCategoryId, name, description, priceExclTax, categoryIds).variant();
     }
 
     /**

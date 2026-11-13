@@ -97,11 +97,11 @@ class ProductListApiTest {
     void setUp() throws Exception {
         clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
-        taxCategoryId = catalog.taxCategory("標準", "10");
-        clothing = catalog.category("衣類", null);
+        taxCategoryId = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10");
+        clothing = catalog.category("衣類 " + UUID.randomUUID(), null);
         tops = catalog.category("トップス", clothing);
         tShirts = catalog.category("T シャツ", tops);
-        food = catalog.category("食品", null);
+        food = catalog.category("食品 " + UUID.randomUUID(), null);
         scope = catalog.category("範囲 " + UUID.randomUUID(), null);
     }
 

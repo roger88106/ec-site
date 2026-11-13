@@ -47,7 +47,7 @@ class JooqCategoryRepositoryTest {
     @Test
     @DisplayName("AC-12 子カテゴリを持つカテゴリを削除すると、外部キーの違反が業務のエラーになる（500 にならない）")
     void rejectsDeletingParentByForeignKey() {
-        var parent = added(null, "衣類");
+        var parent = added(null, "衣類 " + UUID.randomUUID());
         added(parent, "トップス");
 
         assertBusinessError(() -> repository.delete(parent), CategoryErrorCode.CATEGORY_HAS_CHILDREN);
@@ -56,7 +56,7 @@ class JooqCategoryRepositoryTest {
     @Test
     @DisplayName("AC-12 商品が所属しているカテゴリを削除すると、外部キーの違反が業務のエラーになる（500 にならない）")
     void rejectsDeletingCategoryWithProductsByForeignKey() {
-        var category = added(null, "衣類");
+        var category = added(null, "衣類 " + UUID.randomUUID());
         var product = productFactory.create(ProductCode.of("ABC-001"), "T シャツ", "",
                 UUID.fromString("00000000-0000-0000-0000-000000000001"), PriceExclTax.of(1000), Set.of(category.id()), List.of());
         productRepository.add(product);
@@ -68,7 +68,7 @@ class JooqCategoryRepositoryTest {
     @Test
     @DisplayName("親が削除されていれば、子カテゴリの登録は外部キーの違反で見つからないエラーになる（500 にならない）")
     void rejectsAddingChildOfDeletedParent() {
-        var parent = added(null, "衣類");
+        var parent = added(null, "衣類 " + UUID.randomUUID());
         repository.delete(parent);
 
         assertBusinessError(() -> repository.add(factory.create(parent, "トップス", 1)), CommonErrorCode.NOT_FOUND);

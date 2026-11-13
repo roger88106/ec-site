@@ -1,6 +1,6 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.AsyncEvents;
+import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
@@ -12,15 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -141,28 +136,7 @@ class StockReservationApiTest {
         var variant = inventory.stockNewVariant(productId, 1);
         int holders = 10;
 
-        var ready = new CountDownLatch(holders);
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(holders);
-        List<Set<UUID>> results = new ArrayList<>();
-        try {
-            List<Future<Set<UUID>>> futures = new ArrayList<>();
-            for (int i = 0; i < holders; i++) {
-                futures.add(executor.submit(() -> {
-                    ready.countDown();
-                    start.await();
-                    return api.reserve(UUID.randomUUID(), Map.of(variant, 1), EXPIRES_AT);
-                }));
-            }
-            assertThat(ready.await(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isTrue();
-            start.countDown();
-            for (var future : futures) {
-                results.add(future.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS));
-            }
-        } finally {
-            // close は全部の処理の終わりを待つので、途中で失敗すると start を待つスレッドが残る。割り込んで止める
-            executor.shutdownNow();
-        }
+        var results = Concurrently.run(holders, i -> api.reserve(UUID.randomUUID(), Map.of(variant, 1), EXPIRES_AT));
 
         assertThat(results).filteredOn(Set::isEmpty).hasSize(1);
         assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 0);

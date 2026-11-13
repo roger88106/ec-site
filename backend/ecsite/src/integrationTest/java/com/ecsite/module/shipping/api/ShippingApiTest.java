@@ -25,7 +25,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 
 /**
@@ -135,7 +135,7 @@ class ShippingApiTest {
         assertBusinessError(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "8884-5556", SHIPPED_AT),
                 ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
 
-        asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of("88812223", "88845556")));
+        asyncEvents.awaitPublishedThenHandled(event -> TrackingRequests.isFor(event, List.of("88812223", "88845556")));
         assertThat(tracking.started()).contains(new TestCarrierTracking.Started(Carrier.YAMATO, "88812223"))
                 .doesNotContain(new TestCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
     }
@@ -147,7 +147,7 @@ class ShippingApiTest {
         doAnswer(invocation -> {
             transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
             return invocation.callRealMethod();
-        }).when(tracking).startTracking(any(), anyString());
+        }).when(tracking).startTracking(any(), eq("88912223"));
 
         shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, "8891-2223", SHIPPED_AT);
 

@@ -1,5 +1,6 @@
 package com.ecsite;
 
+import org.springframework.modulith.events.CompletedEventPublications;
 import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
@@ -7,6 +8,7 @@ import org.springframework.modulith.events.core.EventPublicationRegistry;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static org.awaitility.Awaitility.await;
 
@@ -46,6 +48,11 @@ public class AsyncEvents {
     private final IncompleteEventPublications incompletePublications;
 
     /**
+     * 完了したイベントの発行の記録
+     */
+    private final CompletedEventPublications completedPublications;
+
+    /**
      * アプリの時計
      */
     private final Clock clock;
@@ -55,11 +62,14 @@ public class AsyncEvents {
      *
      * @param registry               イベントの発行の記録
      * @param incompletePublications 未完了のイベントの発行の記録
+     * @param completedPublications  完了したイベントの発行の記録
      * @param clock                  アプリの時計
      */
-    public AsyncEvents(EventPublicationRegistry registry, IncompleteEventPublications incompletePublications, Clock clock) {
+    public AsyncEvents(EventPublicationRegistry registry, IncompleteEventPublications incompletePublications,
+                       CompletedEventPublications completedPublications, Clock clock) {
         this.registry = registry;
         this.incompletePublications = incompletePublications;
+        this.completedPublications = completedPublications;
         this.clock = clock;
     }
 
@@ -91,6 +101,22 @@ public class AsyncEvents {
     public void awaitHandled(Predicate<Object> event) {
         await().atMost(TIMEOUT).until(() -> registry.findIncompletePublications().stream()
                 .noneMatch(publication -> event.test(publication.getEvent())));
+    }
+
+    /**
+     * 条件に合うイベントの発行の記録が 1 件以上あることを確認してから、そのリスナーが全て終わるまで待つ。
+     *
+     * <p>{@link #awaitHandled} は、条件に合うイベントがなければすぐに戻るので、条件の誤りやイベントの発行の漏れでも通る。
+     * 「起きないこと」を確認するテストで、発行されたイベントを待ったことを保証するために使う。
+     * 発行の記録は、完了したものも含めて探す。
+     *
+     * @param event 待つイベントの条件（テストで作った ID などで、このテストのイベントだけに絞る）
+     */
+    public void awaitPublishedThenHandled(Predicate<Object> event) {
+        await().atMost(TIMEOUT).until(() -> Stream.concat(
+                        registry.findIncompletePublications().stream(), completedPublications.findAll().stream())
+                .anyMatch(publication -> event.test(publication.getEvent())));
+        awaitHandled(event);
     }
 
     /**

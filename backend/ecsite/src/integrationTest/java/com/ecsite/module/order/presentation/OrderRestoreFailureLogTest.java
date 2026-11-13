@@ -69,6 +69,7 @@ class OrderRestoreFailureLogTest {
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);
+        gateway.reset();
     }
 
     @Test

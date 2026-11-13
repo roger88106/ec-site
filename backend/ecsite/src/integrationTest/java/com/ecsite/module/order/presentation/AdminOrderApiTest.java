@@ -107,6 +107,7 @@ class AdminOrderApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(DEC_8_LATE.minusSeconds(3600));
+        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "T シャツ", 2700, "色").variant("白").publish();

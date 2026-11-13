@@ -3,11 +3,15 @@ package com.ecsite;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 /**
  * 在庫のテストデータ
@@ -102,5 +106,34 @@ public class InventoryTestData {
         var variantId = UUID.randomUUID();
         stock(variantId, productId, quantity);
         return variantId;
+    }
+
+    /**
+     * 商品（1,000 円）を作って公開し、そのバリアントの在庫を作って、在庫数を入荷として調整する。
+     *
+     * @param catalog       商品を作る補助
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param quantity      入荷の数量
+     * @return バリアント ID
+     * @throws Exception 商品の API の呼び出しに失敗したとき
+     */
+    public UUID stockedVariant(CatalogTestData catalog, UUID taxCategoryId, String name, int quantity) throws Exception {
+        var product = catalog.product(taxCategoryId, name, 1000).publish();
+        var variantId = product.variantIds.getFirst();
+        stock(variantId, product.id, quantity);
+        return variantId;
+    }
+
+    /**
+     * バリアントの在庫数を、管理の API で確認する。
+     *
+     * @param mockMvc   API を呼ぶ MockMvc
+     * @param variantId バリアント ID
+     * @param quantity  期待する在庫数
+     * @throws Exception API の呼び出しに失敗したとき、または在庫数が違うとき
+     */
+    public static void expectQuantity(MockMvc mockMvc, UUID variantId, int quantity) throws Exception {
+        mockMvc.perform(get("/api/admin/inventory/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(quantity));
     }
 }

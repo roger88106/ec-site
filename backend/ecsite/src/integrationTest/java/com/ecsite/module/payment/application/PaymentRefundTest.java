@@ -134,7 +134,7 @@ class PaymentRefundTest {
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-        assertThat(gateway.refunded()).hasSize(1);
+        assertThat(gateway.refundsOf(orderId)).isEqualTo(1);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
     }
 
@@ -142,14 +142,15 @@ class PaymentRefundTest {
     @DisplayName("AC-188 与信期限切れの支払を取り消しても、何もしない。返金も与信の取消も呼ばない")
     void cancelsAuthorizationExpiredWithoutRefund() {
         var orderId = payments.authorized(ORDERED_AT);
-        gateway.expireAuthorization(gateway.authorizationRefOf(payments.pageIdOf(orderId)));
+        var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
+        gateway.expireAuthorization(authorizationRef);
         assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-        assertThat(gateway.refunded()).isEmpty();
-        assertThat(gateway.voided()).isEmpty();
+        assertThat(gateway.refundsOf(orderId)).isZero();
+        assertThat(gateway.voidsOf(authorizationRef)).isZero();
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
     }
 

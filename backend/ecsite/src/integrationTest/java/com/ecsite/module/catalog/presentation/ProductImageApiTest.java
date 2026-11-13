@@ -6,6 +6,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestImages;
 import com.ecsite.TestJson;
 import com.ecsite.TestcontainersConfig;
+import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -106,6 +108,12 @@ class ProductImageApiTest {
 
     @Autowired
     S3Client s3;
+
+    @Autowired
+    ProductRepository productRepository;
+
+    @Autowired
+    TransactionTemplate transaction;
 
     /**
      * テストで使う税区分の ID
@@ -280,19 +288,23 @@ class ProductImageApiTest {
         @DisplayName("AC-40 20 枚登録した商品は、受付も登録も 400")
         void rejectsTwentyFirstImage() throws Exception {
             var productId = productWithVariant();
-            String pending = null;
-            for (int i = 1; i <= 20; i++) {
-                if (i == 20) {
-                    // 20 枚目を登録する前に受け付けておいたものは、登録のときに確認し直す
-                    pending = catalog.upload(productId, "image/png", PNG);
+            // 上限の手前の 19 枚は、ファイルを使わないので Repository から入れる（API で 19 回送ると遅い）
+            transaction.executeWithoutResult(status -> {
+                var product = productRepository.findById(productId).orElseThrow();
+                for (int i = 1; i <= 19; i++) {
+                    product.addImage(UUID.randomUUID(), UUID.randomUUID());
                 }
-                catalog.addImage(productId, catalog.upload(productId, "image/png", PNG), i).andExpect(status().isCreated());
-            }
+                productRepository.save(product);
+            });
+            var version = productRepository.findById(productId).orElseThrow().version();
+            // 20 枚目を登録する前に受け付けておいたものは、登録のときに確認し直す
+            var pending = catalog.upload(productId, "image/png", PNG);
+            catalog.addImage(productId, catalog.upload(productId, "image/png", PNG), version).andExpect(status().isCreated());
 
             catalog.createUpload(productId, "image/png", PNG.length)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("TOO_MANY_PRODUCT_IMAGES"));
-            catalog.addImage(productId, pending, 21)
+            catalog.addImage(productId, pending, version + 1)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("TOO_MANY_PRODUCT_IMAGES"));
         }

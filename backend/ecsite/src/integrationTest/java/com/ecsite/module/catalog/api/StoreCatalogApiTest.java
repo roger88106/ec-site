@@ -86,7 +86,7 @@ class StoreCatalogApiTest {
         clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         TaxRateScheduleCaches.evict(applicationContext);
-        standard = catalog.taxCategory("標準", "10");
+        standard = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10");
         reduced = catalog.taxCategory("軽減", "8");
         category = catalog.category("カテゴリ " + UUID.randomUUID(), null);
     }
@@ -188,10 +188,10 @@ class StoreCatalogApiTest {
     @Test
     @DisplayName("AC-52 カテゴリで絞り込める。子孫のカテゴリの商品も含む")
     void filtersByCategoryIncludingDescendants() throws Exception {
-        var clothing = catalog.category("衣類", null);
+        var clothing = catalog.category("衣類 " + UUID.randomUUID(), null);
         var tops = catalog.category("トップス", clothing);
         var tShirts = catalog.category("T シャツ", tops);
-        var food = catalog.category("食品", null);
+        var food = catalog.category("食品 " + UUID.randomUUID(), null);
         var inClothing = catalog.product(standard, "商品", "", 1000, List.of(clothing)).publish().id;
         var inTShirts = catalog.product(standard, "商品", "", 1000, List.of(tShirts)).publish().id;
         catalog.product(standard, "商品", "", 1000, List.of(food)).publish();

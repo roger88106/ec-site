@@ -215,6 +215,6 @@ class ReturnedOrderCancellationApiTest {
      * 在庫数を確認する
      */
     private void expectQuantity(int quantity) throws Exception {
-        mockMvc.perform(get("/api/admin/inventory/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(quantity));
+        InventoryTestData.expectQuantity(mockMvc, variantId, quantity);
     }
 }

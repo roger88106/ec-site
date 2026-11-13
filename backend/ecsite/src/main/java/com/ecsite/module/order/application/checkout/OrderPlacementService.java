@@ -39,7 +39,9 @@ import java.util.random.RandomGenerator;
 public class OrderPlacementService {
 
     /**
-     * 空いている注文番号を探す回数の上限（ランダムな 6 桁が 1 日に重なる確率は小さいので、通常は 1 回で済む）
+     * 空いている注文番号を探す回数の上限
+     *
+     * <p>ランダムな 6 桁が 1 日に重なる確率は小さいので、通常は 1 回で済む。
      */
     private static final int ORDER_NUMBER_ATTEMPTS = 10;
 
@@ -100,15 +102,23 @@ public class OrderPlacementService {
      *
      * @param command 注文のコマンド
      * @return 注文の結果
-     * @throws BusinessException 注文手続きがない、または始めた会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文手続きがない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文手続きを始めた会員でない（{@code NOT_FOUND}）
      * @throws BusinessException メールアドレスが確認済みでない（{@code EMAIL_NOT_VERIFIED}）
      * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
      * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
-     * @throws BusinessException カートがない、または注文できない（{@code CART_NOT_ORDERABLE}）
+     * @throws BusinessException カートがない（{@code CART_NOT_ORDERABLE}）
+     * @throws BusinessException カートが注文できない（{@code CART_NOT_ORDERABLE}）
      * @throws BusinessException カートが変わった（{@code CART_CHANGED}）
      * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）
      * @throws BusinessException 総額が変わった（{@code TOTAL_AMOUNT_CHANGED}）
-     * @throws BusinessException 入力が正しくない（{@code INVALID_EMAIL}、{@code INVALID_RECIPIENT_NAME}、{@code INVALID_POSTAL_CODE}、{@code INVALID_PREFECTURE}、{@code INVALID_MUNICIPALITY}、{@code INVALID_ADDRESS}、{@code INVALID_PHONE_NUMBER}）
+     * @throws BusinessException メールアドレスが正しくない（{@code INVALID_EMAIL}）
+     * @throws BusinessException 氏名が正しくない（{@code INVALID_RECIPIENT_NAME}）
+     * @throws BusinessException 郵便番号が正しくない（{@code INVALID_POSTAL_CODE}）
+     * @throws BusinessException 都道府県が正しくない（{@code INVALID_PREFECTURE}）
+     * @throws BusinessException 市区町村が正しくない（{@code INVALID_MUNICIPALITY}）
+     * @throws BusinessException 住所が正しくない（{@code INVALID_ADDRESS}）
+     * @throws BusinessException 電話番号が正しくない（{@code INVALID_PHONE_NUMBER}）
      * @throws BusinessException 注文番号が同時に使われた（{@code CONCURRENT_MODIFICATION}）
      */
     public PlacementResult place(@NonNull PlaceOrderCommand command) {
@@ -176,7 +186,8 @@ public class OrderPlacementService {
      * @param municipalityCode 市区町村のコード
      * @return 都道府県と市区町村
      * @throws BusinessException 都道府県がない（{@code INVALID_PREFECTURE}）
-     * @throws BusinessException 市区町村がない、または都道府県に属さない（{@code INVALID_MUNICIPALITY}）
+     * @throws BusinessException 市区町村がない（{@code INVALID_MUNICIPALITY}）
+     * @throws BusinessException 市区町村が都道府県に属さない（{@code INVALID_MUNICIPALITY}）
      */
     private AddressArea addressArea(String prefectureCode, String municipalityCode) {
         var prefectureName = regionDirectory.findPrefectureName(prefectureCode)
@@ -194,6 +205,7 @@ public class OrderPlacementService {
      * @return 注文番号
      */
     private OrderNumber unusedOrderNumber(Instant orderedAt) {
+        // 乱数で作った番号を 1 つずつ確認する ※空いていればそこで止めるので、まとめて確認しない
         for (int i = 0; i < ORDER_NUMBER_ATTEMPTS; i++) {
             var number = OrderNumber.generate(orderedAt, random);
             if (!orderRepository.existsByOrderNumber(number)) {

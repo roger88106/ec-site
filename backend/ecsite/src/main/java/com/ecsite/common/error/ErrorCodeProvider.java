@@ -13,7 +13,7 @@ import java.util.Locale;
 public interface ErrorCodeProvider {
 
     /**
-     * エラーコード取得
+     * エラーコードを返す。
      *
      * @return {@link ErrorCode}
      */

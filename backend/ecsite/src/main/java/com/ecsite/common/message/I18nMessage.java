@@ -13,7 +13,9 @@ import java.util.List;
 public record I18nMessage(@NonNull String code, @NonNull List<String> paramKeys) {
 
     /**
-     * コンストラクタ。paramKeys を変更できない一覧にする。
+     * コンストラクタ。
+     *
+     * <p>paramKeys を変更できない一覧にする。
      */
     public I18nMessage {
         paramKeys = List.copyOf(paramKeys);
@@ -26,7 +28,7 @@ public record I18nMessage(@NonNull String code, @NonNull List<String> paramKeys)
      * @param paramKeys メッセージパラメータリスト
      * @return {@link I18nMessage}
      */
-    public static I18nMessage of(@NonNull String code, @NonNull List<String> paramKeys) {
+    public static I18nMessage of(String code, List<String> paramKeys) {
         return new I18nMessage(code, paramKeys);
     }
 }

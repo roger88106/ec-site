@@ -24,7 +24,9 @@ import java.time.format.ResolverStyle;
 public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
 
     /**
-     * 年齢を記録する上限。これより前の生年月日は、ありえないものとして不明にする
+     * 年齢を記録する上限
+     *
+     * <p>これより前の生年月日は、ありえないものとして不明にする。
      */
     static final int MAX_AGE = 120;
 
@@ -34,7 +36,9 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
     public static final BuyerProfile UNKNOWN = new BuyerProfile(null, null);
 
     /**
-     * 生年月日の形（{@code YYYY-MM-DD}。2 月 30 日のような、ない日は拒む）
+     * 生年月日の形
+     *
+     * <p>{@code YYYY-MM-DD}。2 月 30 日のような、ない日は拒む。
      */
     private static final DateTimeFormatter BIRTHDATE = DateTimeFormatter.ofPattern("uuuu-MM-dd")
             .withResolverStyle(ResolverStyle.STRICT);

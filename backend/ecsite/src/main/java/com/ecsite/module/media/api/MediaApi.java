@@ -7,7 +7,6 @@ import com.ecsite.module.media.application.MediaService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.IllegalTransactionStateException;
 
 import java.net.URI;
 import java.util.Collection;
@@ -39,7 +38,8 @@ public class MediaApi {
      * @param contentType   ファイルの形式（申告）
      * @param contentLength ファイルの大きさ（申告。バイト）
      * @return 受付
-     * @throws BusinessException 形式が対象外、または大きさが範囲の外
+     * @throws BusinessException 形式が対象外（{@code UNSUPPORTED_IMAGE_FORMAT}）
+     * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      */
     public ImageUpload requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
         var view = mediaService.requestImageUpload(scope, contentType, contentLength);
@@ -56,7 +56,10 @@ public class MediaApi {
      * @param scope    受付のときの範囲。範囲の違う受付は見つからない
      * @param uploadId 受付 ID
      * @return 用意した画像
-     * @throws BusinessException 受付がない（範囲の違うものを含む）、大きさが範囲の外、中身が対象の画像でない、変換できない
+     * @throws BusinessException 受付がない（範囲の違うものを含む。{@code IMAGE_UPLOAD_NOT_FOUND}）
+     * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
+     * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
+     * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
     public PreparedImage prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
         return new PreparedImage(mediaService.prepareImage(scope, uploadId));
@@ -69,7 +72,6 @@ public class MediaApi {
      *
      * @param prepared 用意した画像
      * @return アセット ID
-     * @throws IllegalTransactionStateException トランザクションの外で呼んだ
      */
     public UUID registerImage(@NonNull PreparedImage prepared) {
         mediaService.registerImage(prepared.assetId());
@@ -79,7 +81,7 @@ public class MediaApi {
     /**
      * 用意した画像の配信のファイルを消す。
      *
-     * <p>消すのに失敗しても例外を投げない（警告のログに保存先のキーを出す）。呼んだ側の元の失敗を隠さないため。
+     * <p>消すのに失敗しても例外を投げない（警告のログに保存先のキーを出す）。
      *
      * @param prepared 用意した画像
      */

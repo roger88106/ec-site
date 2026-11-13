@@ -129,9 +129,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 写しを上書きする（なければ作る）。
+     * 写しを上書きする。
      *
-     * <p>明細は消して入れ直す。注文日・出荷日は日本時間の日付にする。
+     * <p>なければ作る。明細は消して入れ直す。注文日・出荷日は日本時間の日付にする。
      *
      * @param order 写し
      */
@@ -142,7 +142,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 注文の行を上書きする（なければ作る）。
+     * 注文の行を上書きする。
+     *
+     * <p>なければ作る。
      */
     private void saveOrder(ReportOrder order) {
         var now = clock.instant();
@@ -150,24 +152,30 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         record.setOrderId(order.orderId());
         record.setOrderNumber(order.orderNumber());
         record.setMemberId(order.memberId());
+
         record.setOrderedAt(order.orderedAt());
         record.setOrderedOn(dateOf(order.orderedAt()));
         record.setStatus(order.status().name());
         record.setShippedAt(order.shippedAt());
         record.setShippedOn(order.shippedAt() == null ? null : dateOf(order.shippedAt()));
         record.setDeliveryStatus(order.deliveryStatus() == null ? null : order.deliveryStatus().name());
+
         record.setCancelledAt(order.cancelledAt());
         record.setCancellationKind(order.cancellationKind() == null ? null : order.cancellationKind().name());
         record.setRestocked(order.restocked());
+
         record.setPostalCode(order.postalCode());
         record.setPrefectureCode(order.prefectureCode());
         record.setBuyerAge(order.buyerAge() == null ? null : order.buyerAge().shortValue());
         record.setBuyerGender(order.buyerGender() == null ? null : order.buyerGender().name());
+
         record.setTotalAmount(order.total().yen());
         record.setShippingFee(order.shippingFee().yen());
         record.setTaxTotal(order.taxTotal().yen());
         record.setShippingTax(order.shippingTax().yen());
+
         record.setRefreshedAt(now);
+
         dsl.insertInto(SALES_ORDER).set(record)
                 .onConflict(SALES_ORDER.ORDER_ID)
                 .doUpdate()
@@ -198,7 +206,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 履歴の列の状態の値を、出来事に合う列挙にする（注文の状態の変化なら注文の状態、配送状態の変化なら配送状態）。
+     * 履歴の列の状態の値を、出来事に合う列挙にする。
+     *
+     * <p>注文の状態の変化なら注文の状態、配送状態の変化なら配送状態にする。
      */
     private static HistoryStatus historyStatus(HistoryKind kind, String value) {
         return switch (kind) {

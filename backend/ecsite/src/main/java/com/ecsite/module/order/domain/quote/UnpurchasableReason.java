@@ -6,7 +6,9 @@ package com.ecsite.module.order.domain.quote;
 public enum UnpurchasableReason {
 
     /**
-     * 商品が C 側に表示されない。有効な税率がない場合も含む
+     * 商品が C 側に表示されない
+     *
+     * <p>有効な税率がない場合も含む。
      */
     NOT_SHOWN,
 

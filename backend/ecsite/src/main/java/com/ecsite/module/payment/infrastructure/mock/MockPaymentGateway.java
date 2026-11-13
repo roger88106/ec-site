@@ -53,7 +53,9 @@ public class MockPaymentGateway implements PaymentGateway {
     private final MockPaymentProperties properties;
 
     /**
-     * 時計（支払を済ませた時刻を記録する）
+     * 時計
+     *
+     * <p>支払を済ませた時刻を記録する。
      */
     private final Clock clock;
 
@@ -63,7 +65,9 @@ public class MockPaymentGateway implements PaymentGateway {
     private final Map<String, Page> pages = new ConcurrentHashMap<>();
 
     /**
-     * 売上を確定した与信の参照。確定した与信は取り消せない
+     * 売上を確定した与信の参照
+     *
+     * <p>確定した与信は取り消せない。
      */
     private final Set<String> capturedAuthorizations = ConcurrentHashMap.newKeySet();
 

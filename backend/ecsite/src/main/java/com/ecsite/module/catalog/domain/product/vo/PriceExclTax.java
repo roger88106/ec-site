@@ -23,7 +23,9 @@ public record PriceExclTax(long yen) {
     private static final long MIN_YEN = 1;
 
     /**
-     * 税抜価格の上限（円）。税込価格と、カートの品目の小計の計算が long と DB の bigint の範囲に収まる大きさにする
+     * 税抜価格の上限（円）
+     *
+     * <p>税込価格と、カートの品目の小計の計算が long と DB の bigint の範囲に収まる大きさにする。
      */
     private static final long MAX_YEN = 9_999_999;
 

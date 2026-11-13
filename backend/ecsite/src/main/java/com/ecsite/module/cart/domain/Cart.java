@@ -41,7 +41,9 @@ public class Cart {
     static final int MAX_ITEMS = 30;
 
     /**
-     * 最後の変更からこの期間がたったら、空として扱う
+     * 有効期間
+     *
+     * <p>最後の変更からこの期間がたったら、空として扱う。
      */
     static final Duration LIFETIME = Duration.ofDays(30);
 
@@ -51,7 +53,9 @@ public class Cart {
     private final UUID id;
 
     /**
-     * 会員 ID。ログインせずに作ったカートは null
+     * 会員 ID
+     *
+     * <p>ログインせずに作ったカートは null。
      */
     @Getter(AccessLevel.NONE)
     @Nullable
@@ -64,7 +68,9 @@ public class Cart {
     private final List<CartItem> items;
 
     /**
-     * バージョン。変更のたびに上がる
+     * バージョン
+     *
+     * <p>変更のたびに上がる。
      */
     private long version;
 
@@ -173,12 +179,24 @@ public class Cart {
     }
 
     /**
+     * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限を求める。
+     *
+     * <p>最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
+     *
+     * @param expiredBefore 期限が切れた時刻の上限
+     * @return 最後の変更の時刻の上限
+     */
+    public static Instant lastUpdateExpiredBefore(@NonNull Instant expiredBefore) {
+        return expiredBefore.minus(LIFETIME);
+    }
+
+    /**
      * バリアントを入れる。
      *
      * <p>カートにあれば数量を合算する。
      *
      * @param variantId バリアント ID
-     * @param quantity  入れる数量（1〜10）
+     * @param quantity  入れる数量
      * @param now       現在時刻
      * @throws BusinessException 数量か合算した数量が 1〜{@link #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException 品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）
@@ -204,7 +222,7 @@ public class Cart {
      * 品目の数量を変える。
      *
      * @param variantId バリアント ID
-     * @param quantity  新しい数量（1〜10）
+     * @param quantity  新しい数量
      * @param now       現在時刻
      * @throws BusinessException 数量が 1〜{@link #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException カートにない品目（{@code NOT_FOUND}）
@@ -298,18 +316,6 @@ public class Cart {
     public void clear(@NonNull Instant now) {
         items.clear();
         touch(now);
-    }
-
-    /**
-     * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限を求める。
-     *
-     * <p>最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
-     *
-     * @param expiredBefore 期限が切れた時刻の上限
-     * @return 最後の変更の時刻の上限
-     */
-    public static Instant lastUpdateExpiredBefore(@NonNull Instant expiredBefore) {
-        return expiredBefore.minus(LIFETIME);
     }
 
 // ============================== プライベートメソッド ==============================

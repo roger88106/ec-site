@@ -27,7 +27,7 @@ public class RegionLookupApi {
     private final RegionQueryService queryService;
 
     /**
-     * 都道府県の一覧
+     * 都道府県の一覧を返す。
      *
      * @return コードの順の都道府県
      */
@@ -36,7 +36,7 @@ public class RegionLookupApi {
     }
 
     /**
-     * 都道府県をコードで引く
+     * 都道府県をコードで引く。
      *
      * @param code 都道府県のコード
      * @return 都道府県。なければ空
@@ -46,7 +46,7 @@ public class RegionLookupApi {
     }
 
     /**
-     * 市区町村をコードで引く
+     * 市区町村をコードで引く。
      *
      * @param code 市区町村のコード
      * @return 市区町村と、属する都道府県。なければ空

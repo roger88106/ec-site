@@ -37,7 +37,9 @@ public class CurrentMemberIds {
     private final MemberCommandService commandService;
 
     /**
-     * ログインが必要な操作の、会員 ID を返す（初めてなら会員を作る）。
+     * ログインが必要な操作の、会員 ID を返す。
+     *
+     * <p>初めてなら会員を作る。
      *
      * @return 会員 ID
      * @throws BusinessException ログインしていない（401）
@@ -47,7 +49,9 @@ public class CurrentMemberIds {
     }
 
     /**
-     * ログインが任意の操作の、会員 ID を返す（初めてなら会員を作る）。
+     * ログインが任意の操作の、会員 ID を返す。
+     *
+     * <p>初めてなら会員を作る。
      *
      * @return 会員 ID。ログインしていなければ空
      */
@@ -57,11 +61,10 @@ public class CurrentMemberIds {
 
     /**
      * IdP のアカウントの ID から会員 ID を求める。
-     *
-     * <p>まず読み取り専用のトランザクションで探し、いなければ（初めてのリクエスト）作る。
      */
     private UUID memberIdOf(@Nullable String subject) {
         var idpSubject = Objects.requireNonNull(subject, "token に subject がある");
+        // まず読み取り専用のトランザクションで探し、いなければ（初めてのリクエスト）作る
         return queryService.findMemberId(idpSubject).orElseGet(() -> commandService.create(idpSubject));
     }
 }

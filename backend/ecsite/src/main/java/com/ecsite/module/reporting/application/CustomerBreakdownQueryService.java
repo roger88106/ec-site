@@ -34,7 +34,9 @@ import java.util.stream.Collectors;
 public class CustomerBreakdownQueryService {
 
     /**
-     * 都道府県が不明な組をまとめるキー（都道府県のコードは空にならないので、他のコードと重ならない）
+     * 都道府県が不明な組をまとめるキー
+     *
+     * <p>都道府県のコードは空にならないので、他のコードと重ならない。
      */
     private static final String UNKNOWN_PREFECTURE = "";
 

@@ -24,7 +24,9 @@ import java.util.stream.Collectors;
 record TaxRates(List<TaxRate> list) {
 
     /**
-     * 税率の並び順：適用開始日時の古い順（空白が先頭）
+     * 税率の並び順
+     *
+     * <p>適用開始日時の古い順（空白が先頭）。
      */
     private static final Comparator<TaxRate> BY_EFFECTIVE_FROM = Comparator.comparing(
             (TaxRate rate) -> rate.period().effectiveFrom(), Comparator.nullsFirst(Comparator.naturalOrder()));
@@ -47,7 +49,9 @@ record TaxRates(List<TaxRate> list) {
      *
      * @param rates 税率の一覧（1 件以上）
      * @return 税率の一覧
-     * @throws BusinessException 期間が重複している、途切れている、または最後の税率の終了が空白でない
+     * @throws BusinessException 期間が重複している（{@code TAX_RATE_PERIODS_OVERLAP}）
+     * @throws BusinessException 期間が途切れている（{@code TAX_RATE_PERIODS_GAP}）
+     * @throws BusinessException 最後の税率の終了が空白でない（{@code TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED}）
      */
     static TaxRates continuous(List<TaxRate> rates) {
         var sorted = new TaxRates(rates);

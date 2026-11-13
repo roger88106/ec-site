@@ -33,7 +33,9 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 class JooqStockItemRepository implements StockItemRepository {
 
     /**
-     * 調整の一覧（VALUES）の列の名前。調整履歴の列と同じ名前にして、履歴の列で参照する
+     * 調整の一覧の列の名前
+     *
+     * <p>調整の一覧は VALUES で作る表である。調整履歴の列と同じ名前にして、履歴の列で参照する。
      */
     private static final String[] CHANGE_COLUMNS = {
             STOCK_ITEM.VARIANT_ID.getName(), STOCK_ADJUSTMENT.ID.getName(), STOCK_ADJUSTMENT.DELTA.getName(), "limited",
@@ -148,14 +150,18 @@ class JooqStockItemRepository implements StockItemRepository {
                 .fetchMap(STOCK_ADJUSTMENT.ID, STOCK_ADJUSTMENT.QUANTITY_AFTER);
 
         // 更新されなかった在庫があれば、増減量と今の在庫数で例外を分ける
+        var notUpdated = adjustments.entrySet().stream()
+                .filter(entry -> quantityAfterById.get(entry.getValue().id()) == null)
+                .findFirst();
+        if (notUpdated.isPresent()) {
+            var variantId = notUpdated.get().getKey();
+            var adjustment = notUpdated.get().getValue();
+            throw failureOf(adjustment.delta(), adjustment.operator() != null, () -> currentQuantity(variantId));
+        }
+
         var quantityAfterByVariant = new HashMap<UUID, Integer>();
-        adjustments.forEach((variantId, adjustment) -> {
-            var quantityAfter = quantityAfterById.get(adjustment.id());
-            if (quantityAfter == null) {
-                throw failureOf(adjustment.delta(), adjustment.operator() != null, () -> currentQuantity(variantId));
-            }
-            quantityAfterByVariant.put(variantId, quantityAfter);
-        });
+        adjustments.forEach((variantId, adjustment) ->
+                quantityAfterByVariant.put(variantId, quantityAfterById.get(adjustment.id())));
         return quantityAfterByVariant;
     }
 

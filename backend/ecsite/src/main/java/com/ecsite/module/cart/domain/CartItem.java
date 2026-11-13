@@ -7,7 +7,7 @@ import java.util.UUID;
  * カートの品目
  *
  * @param variantId バリアント ID
- * @param quantity  数量（1〜10）
+ * @param quantity  数量
  * @param addedAt   入れた日時
  */
 public record CartItem(UUID variantId, int quantity, Instant addedAt) {

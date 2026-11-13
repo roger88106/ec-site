@@ -48,9 +48,9 @@ public interface ReportOrderRepository {
     Map<Integer, UUID> productIds(UUID orderId);
 
     /**
-     * 写しを上書きする（なければ作る）。
+     * 写しを上書きする。
      *
-     * <p>明細は消して入れ直す。
+     * <p>なければ作る。明細は消して入れ直す。
      *
      * @param order 写し
      */

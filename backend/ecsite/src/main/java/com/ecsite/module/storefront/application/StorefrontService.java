@@ -84,13 +84,16 @@ public class StorefrontService {
      *
      * @param productId 商品 ID
      * @return 商品の詳細（バリアントごとの在庫の有無を含む）
-     * @throws BusinessException 商品がない、または C 側に表示されない（NOT_FOUND）
+     * @throws BusinessException 商品がない（{@code NOT_FOUND}）
+     * @throws BusinessException 商品が C 側に表示されない（{@code NOT_FOUND}）
      */
     public ProductDetailView getProduct(@NonNull UUID productId) {
+        // 商品と在庫の取得
         var detail = catalogDirectory.findProduct(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         var inStock = stockDirectory.inStock(detail.variants().stream().map(CatalogProductDetail.Variant::id).toList());
 
+        // 詳細の組み立て
         var variants = detail.variants().stream()
                 .map(variant -> new ProductDetailView.VariantView(variant.id(), variant.axisValues(),
                         inStock.contains(variant.id()), variant.salesSuspended(), variant.imageUrl()))
@@ -105,7 +108,8 @@ public class StorefrontService {
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return カートの表示
-     * @throws BusinessException カートがない、または会員のカートで持ち主でない（NOT_FOUND）
+     * @throws BusinessException カートがない（{@code NOT_FOUND}）
+     * @throws BusinessException 会員のカートで持ち主でない（{@code NOT_FOUND}）
      */
     public CartView getCart(@NonNull UUID cartId, @Nullable UUID requester) {
         return orderDirectory.findCart(cartId, requester).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
@@ -163,6 +167,7 @@ public class StorefrontService {
      * @return バリアント軸と値
      */
     private static List<ProductDetailView.AxisView> axes(CatalogProductDetail detail) {
+        // バリアントの軸の値は、軸の並びと位置で対応する（名前で引けない）ので、軸の位置で回す
         return IntStream.range(0, detail.axes().size())
                 .mapToObj(position -> {
                     // その軸の位置の値を、バリアントの表示順に、重複を除いて集める

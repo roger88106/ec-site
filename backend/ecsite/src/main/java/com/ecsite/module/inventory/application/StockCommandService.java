@@ -36,7 +36,13 @@ public class StockCommandService {
      *
      * @param command 在庫の調整コマンド
      * @return 記録した在庫調整
-     * @throws BusinessException 増減量・調整理由・メモが検証に合わない、調整後の在庫数が負になるか上限を超える、または在庫がない（{@code NOT_FOUND}）
+     * @throws BusinessException 増減量が 0 か範囲の外（{@code INVALID_STOCK_DELTA}）
+     * @throws BusinessException 調整理由が注文に由来する（{@code ORDER_REASON_NOT_SELECTABLE}）
+     * @throws BusinessException 調整理由が「その他」でメモがない（{@code STOCK_MEMO_REQUIRED}）
+     * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
+     * @throws BusinessException 調整後の在庫数が負になる（{@code INSUFFICIENT_STOCK}）
+     * @throws BusinessException 調整後の在庫数が上限を超える（{@code STOCK_QUANTITY_EXCEEDED}）
+     * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
     public StockAdjustmentView adjustStock(@NonNull AdjustStockCommand command) {
         // 在庫調整作成 ※増減量とメモの検証

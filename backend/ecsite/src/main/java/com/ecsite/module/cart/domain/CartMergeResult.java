@@ -7,17 +7,21 @@ import java.util.UUID;
  * カートを移した結果
  *
  * @param truncatedItems 数量を上限に切り詰めた品目（切り詰めた後の数量）
- * @param skippedItems   品目の上限（30）を超えたので移さなかった品目（移す元の数量）
+ * @param skippedItems   品目の上限を超えたので移さなかった品目（移す元の数量）
  */
 public record CartMergeResult(List<Item> truncatedItems, List<Item> skippedItems) {
 
     /**
-     * 何も切り詰めず、移さなかった品目もない
+     * 空の結果
+     *
+     * <p>何も切り詰めず、移さなかった品目もない。
      */
     static final CartMergeResult EMPTY = new CartMergeResult(List.of(), List.of());
 
     /**
-     * コンストラクタ。一覧は変えられない写しにする。
+     * コンストラクタ
+     *
+     * <p>一覧は変えられない写しにする。
      *
      * @param truncatedItems 数量を切り詰めた品目
      * @param skippedItems   移さなかった品目

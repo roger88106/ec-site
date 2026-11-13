@@ -72,7 +72,11 @@ public class ProductCommandService {
      * @return 登録した商品の ID
      * @throws BusinessException 税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）
      * @throws BusinessException 所属カテゴリがない（{@code INVALID_CATEGORY_ID}）
-     * @throws BusinessException 項目の値が正しくない（{@code INVALID_PRODUCT_CODE}、{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}、{@code INVALID_VARIANT_AXES}）
+     * @throws BusinessException 商品品番の形式が正しくない（{@code INVALID_PRODUCT_CODE}）
+     * @throws BusinessException 税抜価格が範囲の外（{@code INVALID_PRICE_EXCL_TAX}）
+     * @throws BusinessException 商品名の長さが範囲の外（{@code INVALID_PRODUCT_NAME}）
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
      */
     public UUID createProduct(@NonNull CreateProductCommand command) {
@@ -106,7 +110,9 @@ public class ProductCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException 税区分に有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）
      * @throws BusinessException 所属カテゴリがない（{@code INVALID_CATEGORY_ID}）
-     * @throws BusinessException 項目の値が正しくない（{@code INVALID_PRICE_EXCL_TAX}、{@code INVALID_PRODUCT_NAME}、{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException 税抜価格が範囲の外（{@code INVALID_PRICE_EXCL_TAX}）
+     * @throws BusinessException 商品名の長さが範囲の外（{@code INVALID_PRODUCT_NAME}）
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      */
     public void updateProduct(@NonNull UpdateProductCommand command) {
         var now = clock.instant();

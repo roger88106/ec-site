@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,6 +70,8 @@ public class MediaService {
      * @param contentType   ファイルの形式
      * @param contentLength ファイルの大きさ（バイト）
      * @return 受付の情報
+     * @throws BusinessException 形式が対象外（{@code UNSUPPORTED_IMAGE_FORMAT}）
+     * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      */
     public ImageUploadView requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
         // 受付のキー作成
@@ -99,7 +100,10 @@ public class MediaService {
      * @param scope    受付の範囲
      * @param uploadId 受付 ID
      * @return 配信のバケットに置いた画像のアセット ID（まだ記録していない）
-     * @throws BusinessException 受付がない、大きさが範囲の外、中身が対象の画像でない、変換できない
+     * @throws BusinessException 受付がない（{@code IMAGE_UPLOAD_NOT_FOUND}）
+     * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
+     * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
+     * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
     public UUID prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
         // 受付の大きさの確認
@@ -128,7 +132,6 @@ public class MediaService {
      * <p>呼んだ側のトランザクションの中で記録する。
      *
      * @param assetId 用意した画像のアセット ID
-     * @throws IllegalTransactionStateException トランザクションの外で呼んだ
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerImage(@NonNull UUID assetId) {
@@ -146,6 +149,7 @@ public class MediaService {
      */
     public void discardImage(@NonNull UUID assetId) {
         var storageKey = storageKey(assetId);
+        // 呼んだ側の元の失敗を隠さないため、消すのに失敗しても例外を投げない
         try {
             storage.deletePublished(storageKey);
         } catch (RuntimeException e) {
@@ -210,7 +214,9 @@ public class MediaService {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 用意した画像の、配信のバケットでのキー（アセット ID と WebP で決まる）。
+     * 用意した画像の、配信のバケットでのキーを返す。
+     *
+     * <p>アセット ID と WebP で決まる。
      */
     private static String storageKey(UUID assetId) {
         return AssetKeys.published(assetId, ImageFormat.WEBP);

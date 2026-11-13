@@ -33,7 +33,9 @@ import java.time.Instant;
 class StripePaymentGateway implements PaymentGateway {
 
     /**
-     * 支払画面の期限（作ってから）。Stripe の最短の 30 分に、時計のずれの余裕を追加する。支払の期限の上限（30 分）は、この値を前提にする
+     * 支払画面の期限
+     *
+     * <p>作ってからの時間。Stripe の最短の 30 分に、時計のずれの余裕を追加する。支払の期限の上限は、この値を前提にする。
      */
     private static final Duration PAGE_LIFETIME = Duration.ofMinutes(31);
 
@@ -43,7 +45,9 @@ class StripePaymentGateway implements PaymentGateway {
     private static final String CURRENCY = "jpy";
 
     /**
-     * 支払画面の明細の名前（金額は注文の総額の 1 行にする）
+     * 支払画面の明細の名前
+     *
+     * <p>金額は注文の総額の 1 行にする。
      */
     private static final String LINE_ITEM_NAME = "ご注文";
 
@@ -58,7 +62,9 @@ class StripePaymentGateway implements PaymentGateway {
     private static final String SESSION_EXPIRED = "expired";
 
     /**
-     * PaymentIntent の状態：取消済み（与信の期限切れでも、Stripe が取り消す）
+     * PaymentIntent の状態：取消済み
+     *
+     * <p>与信の期限切れでも、Stripe が取り消す。
      */
     private static final String INTENT_CANCELED = "canceled";
 
@@ -91,7 +97,6 @@ class StripePaymentGateway implements PaymentGateway {
      * {@inheritDoc}
      *
      * <p>Stripe の冪等の鍵は付けない。同じ鍵では、期限の切れた Session も 24 時間返り続けるため。
-     * 重ねて作った画面は、呼んだ側が閉じる。
      */
     @Override
     public PaymentPage openPage(PageRequest request) {

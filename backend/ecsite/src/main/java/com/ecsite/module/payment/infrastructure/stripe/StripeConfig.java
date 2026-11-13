@@ -21,7 +21,9 @@ import java.time.Clock;
 class StripeConfig {
 
     /**
-     * 通信の失敗を自動でやり直す回数。やり直しには同じ冪等の鍵が付き、Stripe で二重に作られない
+     * 通信の失敗を自動でやり直す回数
+     *
+     * <p>やり直しには同じ冪等の鍵が付き、Stripe で二重に作られない。
      */
     private static final int MAX_NETWORK_RETRIES = 2;
 

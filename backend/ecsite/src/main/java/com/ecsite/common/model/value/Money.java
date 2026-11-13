@@ -11,7 +11,7 @@ import java.util.List;
  *
  * <p>通貨は日本円だけなので、円単位の整数で表す。
  *
- * @param yen 金額（円）。0 以上
+ * @param yen 金額（円）
  */
 @ValueObject
 public record Money(long yen) {
@@ -41,7 +41,7 @@ public record Money(long yen) {
     /**
      * 金額を作る。
      *
-     * @param yen 金額（円）。0 以上
+     * @param yen 金額（円）
      * @return 金額
      * @throws BusinessException 金額が負（{@code INVALID_MONEY}）
      */
@@ -61,8 +61,6 @@ public record Money(long yen) {
 
     /**
      * 数量を掛ける。
-     *
-     * <p>桁あふれは {@link ArithmeticException} を投げる。
      *
      * @param quantity 数量
      * @return 数量を掛けた金額

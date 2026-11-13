@@ -20,8 +20,6 @@ import java.util.UUID;
 
 /**
  * 税モジュールの公開の API
- *
- * <p>税率の一覧、指定した時点の率、税込価格と税率ごとの消費税額の計算を提供する。
  */
 @Component
 @RequiredArgsConstructor

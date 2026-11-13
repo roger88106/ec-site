@@ -35,7 +35,7 @@ public record PageResult<T>(List<T> items, int page, int size, long totalItems) 
     }
 
     /**
-     * 総ページ数。
+     * 総ページ数を返す。
      *
      * <p>0 件なら 0。
      *

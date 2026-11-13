@@ -19,7 +19,7 @@ import java.time.Duration;
  * @param baseUrl imgproxy の URL（内部のネットワークだけで公開する）
  * @param key     URL の署名の鍵（16 進。imgproxy の IMGPROXY_KEY と同じ値）
  * @param salt    URL の署名のソルト（16 進。imgproxy の IMGPROXY_SALT と同じ値）
- * @param quality WebP の品質（1〜100）
+ * @param quality WebP の品質
  * @param timeout 変換を待つ時間の上限
  */
 @Validated

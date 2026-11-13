@@ -8,8 +8,6 @@ import org.springframework.stereotype.Component;
 
 /**
  * 注文と出荷のイベントのハンドラー
- *
- * <p>コミットの後に非同期で、別のトランザクションで受ける。処理に失敗したら、未完了のイベントの再発行でやり直す。
  */
 @Component
 @RequiredArgsConstructor
@@ -23,6 +21,8 @@ class ReportEventHandler {
     /**
      * 注文の状態の変化：履歴に追加し、注文の写しを再作成する。
      *
+     * <p>コミットの後に非同期で、別のトランザクションで受ける。処理に失敗したら、未完了のイベントの再発行でやり直す。
+     *
      * @param event 注文の状態の変化
      */
     @ApplicationModuleListener
@@ -32,6 +32,8 @@ class ReportEventHandler {
 
     /**
      * 配送状態の変化：履歴に追加し、注文の写しを再作成する。
+     *
+     * <p>コミットの後に非同期で、別のトランザクションで受ける。処理に失敗したら、未完了のイベントの再発行でやり直す。
      *
      * @param event 配送状態の変化
      */

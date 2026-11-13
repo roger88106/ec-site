@@ -31,7 +31,7 @@ import java.util.Set;
  * 業務のエラーに対応づけた項目（{@link ValidationErrorMapping}）は、その業務のエラーのメッセージにする。
  */
 @Component
-public class ValidationErrorTranslator {
+class ValidationErrorTranslator {
 
     /**
      * キーの接頭辞
@@ -66,9 +66,8 @@ public class ValidationErrorTranslator {
      *
      * @param messageResolver メッセージの解決
      * @param mappings        各モジュールが、形の検証の誤りを業務のエラーに対応づけたもの
-     * @throws IllegalStateException 同じ項目のパスに、複数の業務のエラーが対応づけられている
      */
-    public ValidationErrorTranslator(MessageResolver messageResolver, List<ValidationErrorMapping> mappings) {
+    ValidationErrorTranslator(MessageResolver messageResolver, List<ValidationErrorMapping> mappings) {
         this.messageResolver = messageResolver;
         var merged = new HashMap<String, ErrorDetail>();
         mappings.forEach(mapping -> mapping.errorsByField().forEach((field, detail) -> {
@@ -141,7 +140,7 @@ public class ValidationErrorTranslator {
      * @param violation 制約の違反
      * @return メッセージ
      */
-    public String messageOf(ConstraintViolation<?> violation) {
+    String messageOf(ConstraintViolation<?> violation) {
         var descriptor = violation.getConstraintDescriptor();
         return messageOf(descriptor.getAnnotation().annotationType().getSimpleName(), descriptor.getAttributes(),
                 isItems(violation.getInvalidValue()));
@@ -156,7 +155,7 @@ public class ValidationErrorTranslator {
      * @param error 検証エラー
      * @return メッセージ
      */
-    public String messageOf(ObjectError error) {
+    String messageOf(ObjectError error) {
         if (error instanceof FieldError fieldError && errorsByField.containsKey(fieldError.getField())) {
             return messageResolver.getMessage(errorsByField.get(fieldError.getField()));
         }
@@ -175,7 +174,7 @@ public class ValidationErrorTranslator {
      * @param error  検証エラー
      * @return メッセージ
      */
-    public String messageOf(ParameterValidationResult result, MessageSourceResolvable error) {
+    String messageOf(ParameterValidationResult result, MessageSourceResolvable error) {
         // 元が Bean Validation の違反でなければ、取り出せない（null）
         ConstraintViolation<?> violation = result.unwrap(error, ConstraintViolation.class);
         return violation == null ? messageOf(INVALID, Map.of()) : messageOf(violation);
@@ -188,7 +187,7 @@ public class ValidationErrorTranslator {
      * @param attributes 制約の属性（min、max、value など）
      * @return メッセージ
      */
-    public String messageOf(String constraint, Map<String, Object> attributes) {
+    String messageOf(String constraint, Map<String, Object> attributes) {
         return messageOf(constraint, attributes, false);
     }
 

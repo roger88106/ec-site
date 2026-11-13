@@ -4,6 +4,8 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -17,24 +19,21 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  * <p>ほかのエラーと同じ Problem Details で返す。filter で起きた失敗を、業務の例外（エラーコード {@code UNAUTHENTICATED}、{@code FORBIDDEN}）に置き換えて、
  * Controller と同じエラーハンドラーに渡す。Spring Security の型は、ここより先（common）に出さない。
  */
+@RequiredArgsConstructor
 class SecurityProblemResponder implements AuthenticationEntryPoint, AccessDeniedHandler {
 
     /**
      * Controller のエラーハンドラー（{@code @RestControllerAdvice}）に例外を渡す、Spring MVC の例外の解決
      */
+    @NonNull
     private final HandlerExceptionResolver resolver;
 
     /**
-     * コンストラクタ。
+     * 認証がない・無効なときに 401 を返す。
      *
-     * @param resolver Spring MVC の例外の解決
-     */
-    SecurityProblemResponder(HandlerExceptionResolver resolver) {
-        this.resolver = resolver;
-    }
-
-    /**
-     * 認証がない・無効：401
+     * @param request       リクエスト
+     * @param response      応答
+     * @param authException 認証の失敗
      */
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) {
@@ -44,7 +43,11 @@ class SecurityProblemResponder implements AuthenticationEntryPoint, AccessDenied
     }
 
     /**
-     * 権限がない：403
+     * 権限がないときに 403 を返す。
+     *
+     * @param request               リクエスト
+     * @param response              応答
+     * @param accessDeniedException 認可の失敗
      */
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) {

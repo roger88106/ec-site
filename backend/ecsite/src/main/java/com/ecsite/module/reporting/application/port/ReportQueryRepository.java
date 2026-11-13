@@ -33,7 +33,9 @@ public interface ReportQueryRepository {
                                           boolean excludeShipping);
 
     /**
-     * 商品のバリアントごとの販売数量と売上額を求める（送料は含めない）。
+     * 商品のバリアントごとの販売数量と売上額を求める。
+     *
+     * <p>送料は含めない。
      *
      * @param period     期間
      * @param basis      売上の数え方

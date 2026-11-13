@@ -21,8 +21,6 @@ import java.util.UUID;
 
 /**
  * 注文手続きの参照のサービス
- *
- * <p>注文手続きの表示と、カートの見積もりを扱う。
  */
 @Service
 @RequiredArgsConstructor
@@ -62,7 +60,8 @@ public class CheckoutQueryService {
      * @param checkoutId 注文手続き ID
      * @param memberId   リクエストした会員の ID
      * @return 注文手続きの表示
-     * @throws BusinessException 注文手続きがない、または始めた会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文手続きがない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文手続きを始めた会員でない（{@code NOT_FOUND}）
      */
     public CheckoutView get(@NonNull UUID checkoutId, @NonNull UUID memberId) {
         var now = clock.instant();

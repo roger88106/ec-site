@@ -94,7 +94,8 @@ public class CartService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  数量
-     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）
+     * @throws BusinessException カートがない（{@code NOT_FOUND}）
+     * @throws BusinessException カートの持ち主でない（{@code NOT_FOUND}）
      * @throws BusinessException バリアントを選べない（{@code VARIANT_NOT_SELECTABLE}）
      * @throws BusinessException 数量が範囲の外（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException 販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）
@@ -124,7 +125,9 @@ public class CartService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
      * @param quantity  新しい数量
-     * @throws BusinessException カートがない、持ち主でない、またはカートにない品目（{@code NOT_FOUND}）
+     * @throws BusinessException カートがない（{@code NOT_FOUND}）
+     * @throws BusinessException カートの持ち主でない（{@code NOT_FOUND}）
+     * @throws BusinessException カートにない品目（{@code NOT_FOUND}）
      * @throws BusinessException 数量が範囲の外（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException 販売可能数を超える（{@code QUANTITY_EXCEEDS_STOCK}）
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
@@ -149,7 +152,8 @@ public class CartService {
      * @param cartId    カート ID
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param variantId バリアント ID
-     * @throws BusinessException カートがない、または持ち主でない（{@code NOT_FOUND}）
+     * @throws BusinessException カートがない（{@code NOT_FOUND}）
+     * @throws BusinessException カートの持ち主でない（{@code NOT_FOUND}）
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
@@ -225,7 +229,8 @@ public class CartService {
      * @param memberId     会員 ID
      * @param sourceCartId 移すカートの ID
      * @return 会員のカートの ID と、移した結果
-     * @throws BusinessException 移すカートがない、または会員のカートである（{@code NOT_FOUND}）
+     * @throws BusinessException 移すカートがない（{@code NOT_FOUND}）
+     * @throws BusinessException 移すカートが会員のカートである（{@code NOT_FOUND}）
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional

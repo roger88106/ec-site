@@ -48,7 +48,9 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 class JooqProductRepository implements ProductRepository {
 
     /**
-     * 制約名 → 業務のエラー。所属カテゴリの外部キーの違反は、存在しないカテゴリか、同時に削除されたカテゴリ
+     * 制約名 → 業務のエラー
+     *
+     * <p>所属カテゴリの外部キーの違反は、存在しないカテゴリか、同時に削除されたカテゴリ。
      */
     private static final ConstraintViolationTranslator CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
             Keys.PRODUCT_PRODUCT_CODE_KEY.getName(), () -> BusinessException.of(ProductErrorCode.PRODUCT_CODE_ALREADY_EXISTS),
@@ -86,18 +88,23 @@ class JooqProductRepository implements ProductRepository {
     public Optional<Product> findById(UUID id) {
         var axes = ProductParts.axes(PRODUCT.ID);
         var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
-        return dsl.select(PRODUCT.asterisk(), axes, categoryIds)
+        var found = dsl.select(PRODUCT.asterisk(), axes, categoryIds)
                 .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
-                .fetchOptional()
-                .map(row -> toProduct(row.into(PRODUCT), List.of(row.get(axes)), Set.of(row.get(categoryIds))));
+                .fetchOptional();
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        var row = found.get();
+        return Optional.of(toProduct(row.into(PRODUCT), List.of(row.get(axes)), Set.of(row.get(categoryIds))));
     }
 
     /**
      * 商品を登録する。
      *
      * @param product 商品
-     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
      * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
@@ -144,7 +151,8 @@ class JooqProductRepository implements ProductRepository {
      *
      * @param product 商品
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
-     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
      * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
@@ -269,7 +277,9 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 所属カテゴリを追加する。すでにあるものは変えない。
+     * 所属カテゴリを追加する。
+     *
+     * <p>すでにあるものは変えない。
      *
      * @param snapshot 商品のスナップショット
      */
@@ -285,9 +295,9 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 画像を追加する。すでにあるものは表示順を更新する。
+     * 画像を追加する。
      *
-     * <p>アセット ID と登録日時は、登録の後に変わらないので更新しない。
+     * <p>すでにあるものは表示順を更新する。アセット ID と登録日時は、登録の後に変わらないので更新しない。
      *
      * @param snapshot 商品のスナップショット
      */
@@ -309,9 +319,9 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * バリアントを追加する。すでにあるものは表示順、販売停止、画像を更新する。
+     * バリアントを追加する。
      *
-     * <p>品番と軸の値は、登録の後に変わらないので更新しない。
+     * <p>すでにあるものは表示順、販売停止、画像を更新する。品番と軸の値は、登録の後に変わらないので更新しない。
      *
      * @param snapshot 商品のスナップショット
      */
@@ -335,7 +345,9 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * バリアントの軸の値を追加する。すでにあるものは変えない（登録の後に変わらない）。
+     * バリアントの軸の値を追加する。
+     *
+     * <p>すでにあるものは変えない（登録の後に変わらない）。
      *
      * @param snapshot 商品のスナップショット
      */

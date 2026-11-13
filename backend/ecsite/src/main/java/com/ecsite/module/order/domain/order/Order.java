@@ -53,7 +53,9 @@ public class Order extends AggregateRoot {
     static final int REASON_MAX_LENGTH = 500;
 
     /**
-     * メールアドレスの形（ローカル部 @ ドメイン。細かな規則は問わない）
+     * メールアドレスの形
+     *
+     * <p>ローカル部 @ ドメイン。細かな規則は問わない。
      */
     private static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s]+");
 
@@ -116,19 +118,25 @@ public class Order extends AggregateRoot {
     private final BuyerProfile buyerProfile;
 
     /**
-     * キャンセルの申請。なければ null
+     * キャンセルの申請
+     *
+     * <p>なければ null。
      */
     @Nullable
     private CancellationRequest cancellationRequest;
 
     /**
-     * キャンセル。キャンセルでなければ null
+     * キャンセル
+     *
+     * <p>キャンセルでなければ null。
      */
     @Nullable
     private Cancellation cancellation;
 
     /**
-     * バージョン（リポジトリが保存するときに上げる）
+     * バージョン
+     *
+     * <p>リポジトリが保存するときに上げる。
      */
     private final long version;
 
@@ -334,13 +342,14 @@ public class Order extends AggregateRoot {
      *
      * @param reason 理由（任意、{@link #REASON_MAX_LENGTH} 文字まで）。空白だけなら理由なし
      * @param now    現在時刻
-     * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}。申請は 1 回だけで、却下済み・キャンセル済みも含む）
+     * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
      * @throws BusinessException 理由が {@link #REASON_MAX_LENGTH} 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      */
     public void requestCancellation(@Nullable String reason, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
             return;
         }
+        // 申請は 1 回だけ ※却下済み・キャンセル済みも申請できない
         if (!isCancellationRequestable()) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
         }
@@ -467,7 +476,9 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 状態を変え、状態の変化のイベントを登録する（キャンセルは {@link #cancel} で行う）。
+     * 状態を変え、状態の変化のイベントを登録する。
+     *
+     * <p>キャンセルは {@link #cancel} で行う。
      */
     private void changeStatus(OrderStatus to, Instant at) {
         var from = status;

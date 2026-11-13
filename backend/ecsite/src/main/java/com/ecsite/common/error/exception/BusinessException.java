@@ -30,7 +30,7 @@ public class BusinessException extends BaseException {
      * @param messageParams     メッセージパラメータ
      * @return ビジネス例外
      */
-    public static BusinessException of(@NonNull ErrorCodeProvider errorCodeProvider, List<Object> messageParams) {
+    public static BusinessException of(@NonNull ErrorCodeProvider errorCodeProvider, @NonNull List<Object> messageParams) {
         return new BusinessException(ErrorDetail.of(errorCodeProvider.getCode(), messageParams));
     }
 

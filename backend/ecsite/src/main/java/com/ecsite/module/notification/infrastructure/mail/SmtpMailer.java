@@ -2,7 +2,6 @@ package com.ecsite.module.notification.infrastructure.mail;
 
 import com.ecsite.module.notification.application.port.Mailer;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -32,7 +31,6 @@ class SmtpMailer implements Mailer {
      * <p>送信元は設定の値。
      *
      * @param mail メール
-     * @throws MailException 送れなかったとき
      */
     @Override
     public void send(Mail mail) {

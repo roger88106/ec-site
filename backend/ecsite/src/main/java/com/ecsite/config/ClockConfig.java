@@ -8,14 +8,13 @@ import java.time.Clock;
 /**
  * 現在時刻の設定
  *
- * <p>現在時刻は必ずこの {@link Clock} から取る（{@code Instant.now()} などを直接呼ばない）。
- * ドメインには、ここから得た {@code Instant} を引数で渡す。
+ * <p>現在時刻を取る {@link Clock} の Bean を定義する。
  */
 @Configuration
 class ClockConfig {
 
     /**
-     * UTC のシステム時計。
+     * UTC のシステム時計を作る。
      *
      * <p>時刻は UTC で扱う。
      *

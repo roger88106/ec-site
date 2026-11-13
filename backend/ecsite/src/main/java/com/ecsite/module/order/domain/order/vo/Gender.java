@@ -1,5 +1,7 @@
 package com.ecsite.module.order.domain.order.vo;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
@@ -9,6 +11,7 @@ import java.util.Arrays;
  *
  * <p>会員が IdP で選んだ値の写し。「回答しない」は不明（記録しない）と分けて持つ。
  */
+@RequiredArgsConstructor
 public enum Gender {
 
     /**
@@ -35,14 +38,8 @@ public enum Gender {
     /**
      * IdP の属性の値
      */
+    @NonNull
     private final String claim;
-
-    /**
-     * @param claim IdP の属性の値
-     */
-    Gender(String claim) {
-        this.claim = claim;
-    }
 
     /**
      * IdP の属性の値から性別を求める。

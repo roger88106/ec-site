@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * エラーレスポンスのファクトリー
  *
- * <p>RFC 9457（Problem Details）に次の項目を加えた応答を作る。ログは出さない（呼ぶ側の handler が出す）。
+ * <p>RFC 9457（Problem Details）に次の項目を加えた応答を作る。ログは出さない。
  * <ul>
  *     <li>{@code errorCode}：分岐に使うコード</li>
  *     <li>{@code message}：画面にそのまま出せる日本語の文字列</li>

@@ -100,7 +100,9 @@ public interface PaymentRepository {
     List<Payment> findUnpaidPastDeadline(Instant now, int limit);
 
     /**
-     * 与信の反映を待つ支払（未払いで、待ち始めた時刻がある支払）を、待ち始めた時刻の古い順に取得する。
+     * 与信の反映を待つ支払を、待ち始めた時刻の古い順に取得する。
+     *
+     * <p>与信の反映を待つ支払は、未払いで、待ち始めた時刻がある支払である。
      *
      * @param limit 取得する数の上限
      * @return 支払

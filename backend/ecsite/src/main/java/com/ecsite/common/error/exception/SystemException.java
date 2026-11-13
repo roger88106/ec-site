@@ -26,7 +26,7 @@ public class SystemException extends BaseException {
      * @param errorCodeProvider エラーコードプロバイダー
      * @return システム例外
      */
-    public static SystemException of(String debugMessage, @Nullable Throwable cause, @NonNull ErrorCodeProvider errorCodeProvider) {
+    public static SystemException of(@NonNull String debugMessage, @Nullable Throwable cause, @NonNull ErrorCodeProvider errorCodeProvider) {
         return new SystemException(debugMessage, cause, ErrorDetail.of(errorCodeProvider.getCode()));
     }
 
@@ -37,7 +37,7 @@ public class SystemException extends BaseException {
      * @param cause        原因となった例外
      * @return システム例外
      */
-    public static SystemException of(String debugMessage, @Nullable Throwable cause) {
+    public static SystemException of(@NonNull String debugMessage, @Nullable Throwable cause) {
         return new SystemException(debugMessage, cause, SYSTEM_ERROR_DETAIL);
     }
 

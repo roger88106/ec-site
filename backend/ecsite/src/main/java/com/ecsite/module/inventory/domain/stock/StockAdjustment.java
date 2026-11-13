@@ -43,7 +43,9 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
     static final int MAX_MANUAL_DELTA = 1_000_000;
 
     /**
-     * 運営者の調整の後の在庫数の上限。注文のキャンセルで戻す調整には当てない（引き当てた分を戻すだけなので）
+     * 運営者の調整の後の在庫数の上限
+     *
+     * <p>注文のキャンセルで戻す調整には当てない（引き当てた分を戻すだけなので）。
      */
     public static final int MAX_MANUAL_QUANTITY = 1_000_000;
 
@@ -58,7 +60,10 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      * @param operator 調整した運営者
      * @param now      現在時刻
      * @return 在庫調整
-     * @throws BusinessException 増減量が 0 か範囲の外、理由が注文に由来する、理由が「その他」でメモがない、またはメモが長すぎる
+     * @throws BusinessException 増減量が 0 か範囲の外（{@code INVALID_STOCK_DELTA}）
+     * @throws BusinessException 理由が注文に由来する（{@code ORDER_REASON_NOT_SELECTABLE}）
+     * @throws BusinessException 理由が「その他」でメモがない（{@code STOCK_MEMO_REQUIRED}）
+     * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
      */
     public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
@@ -88,7 +93,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      * @param orderNumber 注文番号
      * @param now         現在時刻
      * @return 在庫調整
-     * @throws BusinessException 増減量が 0
+     * @throws BusinessException 増減量が 0（{@code INVALID_STOCK_DELTA}）
      */
     public static StockAdjustment forOrder(int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
                                            @NonNull String orderNumber, @NonNull Instant now) {

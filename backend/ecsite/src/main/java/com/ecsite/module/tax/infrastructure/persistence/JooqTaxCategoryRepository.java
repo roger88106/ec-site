@@ -97,9 +97,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     }
 
     /**
-     * 税区分を登録する。
-     *
-     * @param taxCategory 税区分
+     * {@inheritDoc}
      */
     @Override
     public void add(TaxCategory taxCategory) {
@@ -125,11 +123,9 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     }
 
     /**
-     * 税区分を更新する。
+     * {@inheritDoc}
      *
      * <p>税率は差分で更新する：なくなった税率を削除し、残りを追加または更新する。
-     *
-     * @param taxCategory 税区分
      */
     @Override
     public void save(TaxCategory taxCategory) {
@@ -168,8 +164,6 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     /**
      * 書き込みを実行し、制約の違反を業務のエラーに変える。
      *
-     * <p>業務のエラーはそのまま投げる。
-     *
      * @param write 書き込み
      */
     private static void translatingConstraintViolations(Runnable write) {
@@ -183,12 +177,11 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     /**
      * 税率を追加または更新し、遅らせていた排他制約を検査させる。
      *
-     * <p>途中で一時的に期間が重なってもよいので、排他制約は最後に検査する。
-     *
      * @param snapshot 税区分のスナップショット
      */
     private void writeRates(TaxCategory.Snapshot snapshot) {
         upsertRates(snapshot);
+        // 途中で一時的に期間が重なってもよいので、排他制約は最後に検査する
         checkDeferredConstraints();
     }
 
@@ -218,12 +211,11 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
 
     /**
      * 遅らせていた排他制約（適用期間の重複）を、この時点で検査させる。
-     *
-     * <p>コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため。
-     * 検査の後は遅らせる設定に戻し、同じトランザクションの後続の書き込みでも途中の重なりを許す。
      */
     private void checkDeferredConstraints() {
+        // コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため、ここで検査する
         dsl.execute("SET CONSTRAINTS {0} IMMEDIATE", PERIOD_NO_OVERLAP);
+        // 遅らせる設定に戻し、同じトランザクションの後続の書き込みでも途中の重なりを許す
         dsl.execute("SET CONSTRAINTS {0} DEFERRED", PERIOD_NO_OVERLAP);
     }
 

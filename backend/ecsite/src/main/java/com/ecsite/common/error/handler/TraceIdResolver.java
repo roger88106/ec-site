@@ -21,7 +21,9 @@ import java.util.UUID;
 class TraceIdResolver {
 
     /**
-     * トレーサー（トレーシングが構成されていない場合は無い）
+     * トレーサー
+     *
+     * <p>トレーシングが構成されていない場合は無い。
      */
     private final ObjectProvider<Tracer> tracer;
 

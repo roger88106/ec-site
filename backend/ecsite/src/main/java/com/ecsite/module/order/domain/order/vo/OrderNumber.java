@@ -31,7 +31,7 @@ public record OrderNumber(String value) {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(BusinessTime.ZONE);
 
     /**
-     * ランダムな部分の値の数（000000〜999999）
+     * ランダムな部分の値の数
      */
     private static final int RANDOM_BOUND = 1_000_000;
 

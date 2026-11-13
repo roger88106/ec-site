@@ -1,5 +1,8 @@
 package com.ecsite.config.security;
 
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 
 import java.util.List;
@@ -14,21 +17,14 @@ import java.util.Optional;
  * {@code security} のない操作があれば起動を止める（書き忘れを公開として扱わない）。
  * token の要否は契約だけから読むので、操作を追加しても契約と食い違わない。対応にないリクエストには要否を返さない。
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class StoreOperationSecurity {
 
     /**
      * 操作ごとの token の要否
      */
+    @NonNull
     private final OpenApiOperations<Boolean> operations;
-
-    /**
-     * コンストラクタ。
-     *
-     * @param operations 操作ごとの token の要否
-     */
-    private StoreOperationSecurity(OpenApiOperations<Boolean> operations) {
-        this.operations = operations;
-    }
 
     /**
      * {@code store.yaml} を読み込む。

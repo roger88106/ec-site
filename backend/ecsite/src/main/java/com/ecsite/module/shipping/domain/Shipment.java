@@ -58,7 +58,9 @@ public class Shipment {
     private final Instant shippedAt;
 
     /**
-     * 最後に通知を反映した日時。まだ通知を反映していなければ null
+     * 最後に通知を反映した日時
+     *
+     * <p>まだ通知を反映していなければ null。
      */
     @Nullable
     @Getter(AccessLevel.NONE)

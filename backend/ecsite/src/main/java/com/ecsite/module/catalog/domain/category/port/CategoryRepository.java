@@ -35,7 +35,9 @@ public interface CategoryRepository {
     List<Category> lockChildren(@Nullable UUID parentId);
 
     /**
-     * 新しい子カテゴリの表示順（兄弟の最大＋1。兄弟がなければ 1）を返す。
+     * 新しい子カテゴリの表示順を返す。
+     *
+     * <p>兄弟の最大＋1。兄弟がなければ 1。
      *
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 表示順

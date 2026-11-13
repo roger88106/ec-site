@@ -14,7 +14,7 @@ import java.time.Duration;
  * <p>環境変数で上書きする（例：ECSITE_CART_CLEANUP_RETENTION）。
  *
  * @param interval  片付けのジョブの間隔
- * @param retention 保存期間（カートの期限から、消すまでの時間。既定は 0 で、期限で消す）
+ * @param retention 保存期間（カートの期限から、消すまでの時間）
  * @param batchSize 1 回の削除で消す件数の上限
  */
 @Validated

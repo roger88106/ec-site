@@ -83,13 +83,13 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(OrderErrorCode.INVALID_RECIPIENT_NAME, List.of(NAME_MAX_LENGTH));
         }
-        if (postalCode == null || !POSTAL_CODE.matcher(postalCode).matches()) {
+        if (!POSTAL_CODE.matcher(postalCode).matches()) {
             throw BusinessException.of(OrderErrorCode.INVALID_POSTAL_CODE, List.of(POSTAL_CODE_DIGITS));
         }
         if (!BoundedText.isFilledWithin(address, ADDRESS_MAX_LENGTH)) {
             throw BusinessException.of(OrderErrorCode.INVALID_ADDRESS, List.of(ADDRESS_MAX_LENGTH));
         }
-        var phoneDigits = phone == null ? "" : phone.replace("-", "");
+        var phoneDigits = phone.replace("-", "");
         if (!PHONE_DIGITS.matcher(phoneDigits).matches()) {
             throw BusinessException.of(OrderErrorCode.INVALID_PHONE_NUMBER, List.of(PHONE_MIN_DIGITS, PHONE_MAX_DIGITS));
         }

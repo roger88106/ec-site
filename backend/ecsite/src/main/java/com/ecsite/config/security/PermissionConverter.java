@@ -1,5 +1,7 @@
 package com.ecsite.config.security;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,6 +18,7 @@ import java.util.Map;
  * 名前（{@code resource:action}）をそのまま Spring Security の権限にする。
  * ほかの client の role と realm の role（職務の名前）は権限にしない。
  */
+@RequiredArgsConstructor
 class PermissionConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
 
     /**
@@ -31,21 +34,16 @@ class PermissionConverter implements Converter<Jwt, Collection<GrantedAuthority>
     /**
      * 権限の role を持つ client（管理 API の audience）
      */
+    @NonNull
     private final String clientId;
-
-    /**
-     * コンストラクタ。
-     *
-     * @param clientId 権限の role を持つ client ID
-     */
-    PermissionConverter(String clientId) {
-        this.clientId = clientId;
-    }
 
     /**
      * 管理 API の client role を権限にする。
      *
      * <p>client role がなければ、権限なし。
+     *
+     * @param jwt token
+     * @return 権限
      */
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {

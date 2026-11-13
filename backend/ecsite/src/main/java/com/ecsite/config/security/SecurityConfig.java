@@ -34,12 +34,7 @@ import java.util.List;
  * 認証と認可の設定
  *
  * <p>パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
- * <ul>
- *     <li>{@code /api/admin/**}：運営者の realm の token が必須。権限は {@code admin.yaml} で決める</li>
- *     <li>{@code /api/store/**}：消費者の realm の token。token の要否は {@code store.yaml} で決める</li>
- *     <li>そのほか：既定で拒み、通知のパス・mock の画面のパス・運用のパスだけを許す</li>
- * </ul>
- * <p>契約にない操作と、決めていない URL は拒む（認証がなければ 401）。
+ * 契約にない操作と、決めていない URL は拒む（認証がなければ 401）。
  * token はステートレスに検証する。Cookie を使わない（token をヘッダーで受ける）ので、CSRF の対策は無効にする。
  */
 @Configuration(proxyBeanMethods = false)
@@ -47,7 +42,7 @@ import java.util.List;
 class SecurityConfig {
 
     /**
-     * realm の署名の鍵。
+     * realm の署名の鍵を作る。
      *
      * <p>issuer の OpenID Connect の設定から公開鍵の URL を求める（最初の検証のときに IdP から取る）。
      *
@@ -59,7 +54,7 @@ class SecurityConfig {
     }
 
     /**
-     * 管理 API の操作ごとに必要な権限。
+     * 管理 API の操作ごとに必要な権限を読み込む。
      *
      * <p>ビルドのときにリソースに写した {@code admin.yaml} を、起動時に読む。
      *
@@ -72,7 +67,7 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API の操作ごとの token の要否。
+     * 店舗 API の操作ごとの token の要否を読み込む。
      *
      * <p>ビルドのときにリソースに写した {@code store.yaml} を、起動時に読む。
      *
@@ -96,7 +91,16 @@ class SecurityConfig {
     }
 
     /**
-     * 管理 API：運営者の realm の token と、{@code admin.yaml} の権限が必須。
+     * 管理 API の filter chain を作る。
+     *
+     * <p>運営者の realm の token と、{@code admin.yaml} の権限が必須。
+     *
+     * @param http        HttpSecurity
+     * @param properties  認証の設定
+     * @param keys        realm の署名の鍵
+     * @param permissions 操作ごとに必要な権限
+     * @param responder   認証・認可の失敗の応答
+     * @return filter chain
      */
     @Bean
     @Order(1)
@@ -107,9 +111,16 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API：消費者の realm の token を受け付ける。
+     * 店舗 API の filter chain を作る。
      *
-     * <p>会員の token には権限を載せない。token の要否は {@code store.yaml} で決める。
+     * <p>消費者の realm の token を受け付ける。会員の token には権限を載せない。token の要否は {@code store.yaml} で決める。
+     *
+     * @param http       HttpSecurity
+     * @param properties 認証の設定
+     * @param keys       realm の署名の鍵
+     * @param security   操作ごとの token の要否
+     * @param responder  認証・認可の失敗の応答
+     * @return filter chain
      */
     @Bean
     @Order(2)
@@ -120,7 +131,13 @@ class SecurityConfig {
     }
 
     /**
-     * そのほか：既定で拒み、決めたパスだけを許す。
+     * 管理 API と店舗 API 以外のパスの filter chain を作る。
+     *
+     * <p>既定で拒み、決めたパスだけを許す。
+     *
+     * @param http      HttpSecurity
+     * @param responder 認証・認可の失敗の応答
+     * @return filter chain
      */
     @Bean
     @Order(3)
@@ -150,7 +167,9 @@ class SecurityConfig {
     }
 
     /**
-     * realm の token を受ける filter chain：{@link #stateless} の共通の設定に、realm の token の検証と認可を追加する。
+     * realm の token を受ける filter chain を作る。
+     *
+     * <p>{@link #stateless} の共通の設定に、realm の token の検証と認可を追加する。
      *
      * @param http                 HttpSecurity
      * @param responder            認証・認可の失敗の応答
@@ -181,7 +200,7 @@ class SecurityConfig {
     }
 
     /**
-     * realm の token の decoder。
+     * realm の token の decoder を作る。
      *
      * <p>署名に加え、issuer・audience・有効期限を確認する。鍵は最初の検証のときに取る。
      *

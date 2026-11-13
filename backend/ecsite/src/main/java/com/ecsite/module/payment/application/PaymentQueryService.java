@@ -136,7 +136,7 @@ public class PaymentQueryService {
      * 与信の反映を長く待つ未払いの支払の数を返す。
      *
      * <p>待ち始めてから決済の設定
-     * {@code ecsite.payment.awaiting-authorization-warning}（既定 1 時間）を過ぎたものを数える。
+     * {@code ecsite.payment.awaiting-authorization-warning} を過ぎたものを数える。
      *
      * @return 支払の数
      */

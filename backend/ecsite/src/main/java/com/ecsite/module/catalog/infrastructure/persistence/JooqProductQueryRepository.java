@@ -54,11 +54,15 @@ class JooqProductQueryRepository implements ProductQueryRepository {
     public Optional<ProductDetailView> findDetailById(UUID id) {
         var axes = ProductParts.axes(PRODUCT.ID);
         var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
-        return dsl.select(PRODUCT.asterisk(), axes, categoryIds)
+        var found = dsl.select(PRODUCT.asterisk(), axes, categoryIds)
                 .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
-                .fetchOptional()
-                .map(row -> toDetail(row.into(PRODUCT), List.of(row.get(axes)), List.of(row.get(categoryIds))));
+                .fetchOptional();
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        var row = found.get();
+        return Optional.of(toDetail(row.into(PRODUCT), List.of(row.get(axes)), List.of(row.get(categoryIds))));
     }
 
     /**

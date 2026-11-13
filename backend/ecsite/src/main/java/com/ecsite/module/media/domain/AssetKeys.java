@@ -16,19 +16,20 @@ import java.util.regex.Pattern;
 public final class AssetKeys {
 
     /**
-     * 範囲に使える文字。キーの区切り（/）を含めさせない
+     * 範囲に使える文字
+     *
+     * <p>キーの区切り（/）を含めさせない。
      */
     private static final Pattern SCOPE = Pattern.compile("[A-Za-z0-9-]{1,64}");
 
     /**
-     * アップロードのバケットのキー。
+     * アップロードのバケットのキーを作る。
      *
      * <p>範囲を含め、別の範囲のアップロードを確定できないようにする
      *
      * @param scope    範囲
      * @param uploadId 受付 ID
      * @return {範囲}/{uploadId}
-     * @throws IllegalArgumentException 範囲に使えない文字がある
      */
     public static String upload(@NonNull String scope, @NonNull UUID uploadId) {
         if (!SCOPE.matcher(scope).matches()) {
@@ -38,7 +39,7 @@ public final class AssetKeys {
     }
 
     /**
-     * 配信のバケットのキー。
+     * 配信のバケットのキーを作る。
      *
      * <p>アセット ID で作り、上書きしない
      *

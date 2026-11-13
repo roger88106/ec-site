@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 注文モジュールの設定
  *
- * <p>注文の設定（送料、引当の期限、支払待ちの注文の上限）と、注文手続きの片付けの設定を有効にする。
+ * <p>注文の設定と、注文手続きの片付けの設定を有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({OrderProperties.class, CheckoutCleanupProperties.class})

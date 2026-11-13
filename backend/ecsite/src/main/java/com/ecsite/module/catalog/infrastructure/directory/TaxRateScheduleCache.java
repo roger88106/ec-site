@@ -37,7 +37,9 @@ class TaxRateScheduleCache {
     private final Clock clock;
 
     /**
-     * キャッシュの中身。まだ取得していなければ null
+     * キャッシュの中身
+     *
+     * <p>まだ取得していなければ null。
      */
     private final AtomicReference<Entry> entry = new AtomicReference<>();
 

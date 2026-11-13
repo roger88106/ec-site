@@ -23,16 +23,17 @@ import javax.sql.DataSource;
 class SchedulingConfig {
 
     /**
-     * ロックを持つ時間の上限（インスタンスが止まってもロックが残り続けないように）。
+     * ロックを持つ時間の上限
      *
-     * <p>ShedLock の注釈は定数しか取らないので、設定の型にせず定数にする。環境で変えることもない。
+     * <p>インスタンスが止まってもロックが残り続けないように、上限を置く。
+     * ShedLock の注釈は定数しか取らないので、設定の型にせず定数にする。環境で変えることもない。
      */
     static final String LOCK_AT_MOST_FOR = "PT10M";
 
     /**
-     * ロックの表（common.shedlock）を使うロックの provider。
+     * ロックの provider を作る。
      *
-     * <p>ロックの期限は DB の時計で決める。
+     * <p>ロックの表（common.shedlock）を使う。ロックの期限は DB の時計で決める。
      *
      * @param dataSource データソース
      * @return ロックの provider

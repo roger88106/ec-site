@@ -29,7 +29,7 @@ class ImgproxyConfig {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
     /**
-     * imgproxy を呼ぶ HTTP クライアント。
+     * imgproxy を呼ぶ HTTP クライアントを作る。
      *
      * @param restClientBuilder HTTP クライアントのビルダー（トレースとメトリクスが付く）
      * @param properties        画像の変換の設定

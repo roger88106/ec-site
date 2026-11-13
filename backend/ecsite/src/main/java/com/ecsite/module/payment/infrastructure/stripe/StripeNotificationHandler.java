@@ -8,6 +8,9 @@ import com.stripe.model.Event;
 import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 
@@ -19,10 +22,13 @@ import java.time.Clock;
  * <p>署名を確認してから、通知を決済サービスの型から直して、port へ渡す。
  */
 @Slf4j
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class StripeNotificationHandler {
 
     /**
-     * 署名を受け付ける時間（秒）。これより前に署名した通知は、盗んだ通知の再送とみなして拒否する（Stripe の既定）
+     * 署名を受け付ける時間（秒）
+     *
+     * <p>これより前に署名した通知は、盗んだ通知の再送とみなして拒否する（Stripe の既定）。
      */
     private static final long TOLERANCE_SECONDS = Webhook.DEFAULT_TOLERANCE;
 
@@ -39,30 +45,22 @@ class StripeNotificationHandler {
     /**
      * 通知の port
      */
+    @NonNull
     private final PaymentNotificationReceiver receiver;
 
     /**
      * 通知の署名の鍵
      */
+    @NonNull
     private final String webhookSecret;
 
     /**
-     * 時計（署名の古さを判定する）
-     */
-    private final Clock clock;
-
-    /**
-     * 通知の受け取りを作る。
+     * 時計
      *
-     * @param receiver      通知の port
-     * @param webhookSecret 通知の署名の鍵
-     * @param clock         時計
+     * <p>署名の古さを判定する。
      */
-    StripeNotificationHandler(PaymentNotificationReceiver receiver, String webhookSecret, Clock clock) {
-        this.receiver = receiver;
-        this.webhookSecret = webhookSecret;
-        this.clock = clock;
-    }
+    @NonNull
+    private final Clock clock;
 
     /**
      * 通知を受け取る。
@@ -72,7 +70,9 @@ class StripeNotificationHandler {
      *
      * @param payload         通知の本文（受け取ったまま。署名は本文のバイト列に対して付いている）
      * @param signatureHeader ヘッダー {@code Stripe-Signature}
-     * @throws InvalidStripeNotificationException 署名がない・合わない・古いとき
+     * @throws InvalidStripeNotificationException 署名がないとき
+     * @throws InvalidStripeNotificationException 署名が合わないとき
+     * @throws InvalidStripeNotificationException 署名が古いとき
      */
     void handle(String payload, @Nullable String signatureHeader) {
         var event = verify(payload, signatureHeader);

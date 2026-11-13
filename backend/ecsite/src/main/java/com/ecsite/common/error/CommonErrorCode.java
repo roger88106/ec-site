@@ -20,7 +20,9 @@ public enum CommonErrorCode implements ErrorCodeProvider {
      */
     INVALID_REQUEST(ErrorType.VALIDATION_ERROR),
     /**
-     * 許可されていない HTTP メソッド。HTTP ステータス（405）は Spring MVC の例外が決める
+     * 許可されていない HTTP メソッド
+     *
+     * <p>HTTP ステータス（405）は Spring MVC の例外が決める。
      */
     METHOD_NOT_ALLOWED(ErrorType.VALIDATION_ERROR),
     /**

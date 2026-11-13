@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * 注文の決済ゲートウェイサービス
  *
- * <p>決済サービスを呼ぶ注文の操作（支払画面、出荷の登録の売上確定）を扱う。
+ * <p>決済サービスを呼ぶ注文の操作を扱う。
  *
  * <p>トランザクションを持たない。決済サービスの応答を待つ間に、注文の行ロックと DB の接続を持たないため。
  * 注文の読み取りと変更は、参照と更新のサービスのトランザクションで行う。
@@ -45,8 +45,10 @@ public class OrderPaymentGatewayService {
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @return 支払画面の URL
-     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
-     * @throws BusinessException 支払待ちでない、支払の期限の後（{@code ORDER_NOT_PAYABLE}）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文した会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 支払待ちでない（{@code ORDER_NOT_PAYABLE}）
+     * @throws BusinessException 支払の期限の後（{@code ORDER_NOT_PAYABLE}）
      */
     public String pageUrl(@NonNull UUID orderId, @NonNull UUID memberId) {
         var order = orderQueryService.getForMember(orderId, memberId);
@@ -65,8 +67,9 @@ public class OrderPaymentGatewayService {
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号
      * @return 作った出荷
-     * @throws BusinessException 注文または支払がない（{@code NOT_FOUND}）
-     * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}。売上確定の後に変わった場合を含み、そのとき支払は売上確定済みのまま残る）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException 支払がない（{@code NOT_FOUND}）
+     * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}）
      * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
      * @throws BusinessException 売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
      * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
@@ -78,7 +81,7 @@ public class OrderPaymentGatewayService {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
         }
 
-        // 売上確定と出荷登録
+        // 売上確定と出荷登録 ※売上確定の後に受付でなくなったときは、支払は売上確定済みのまま残る
         paymentDirectory.capture(orderId);
         return shipmentCommandService.ship(orderId, carrier, trackingNumber);
     }

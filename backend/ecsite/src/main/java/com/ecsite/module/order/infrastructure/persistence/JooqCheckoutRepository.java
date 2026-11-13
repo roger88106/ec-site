@@ -27,7 +27,9 @@ import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 class JooqCheckoutRepository implements CheckoutRepository {
 
     /**
-     * 集約の名前（戻すときの失敗のメッセージに書く）
+     * 集約の名前
+     *
+     * <p>戻すときの失敗のメッセージに書く。
      */
     private static final String AGGREGATE_NAME = "checkout";
 

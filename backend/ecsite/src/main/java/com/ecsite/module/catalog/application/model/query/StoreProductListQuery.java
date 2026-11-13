@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.application.model.query;
 
 import com.ecsite.common.model.value.Money;
+import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
@@ -16,7 +17,7 @@ import java.util.UUID;
  * @param sort       並び順
  */
 public record StoreProductListQuery(@Nullable UUID categoryId, @Nullable Money minPrice, @Nullable Money maxPrice,
-                                    Sort sort) {
+                                    @NonNull Sort sort) {
 
     /**
      * 並び順

@@ -50,7 +50,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // ============================== アプリの例外 ==============================
 
     /**
-     * ビジネス例外のハンドラー。
+     * ビジネス例外を応答にする。
      *
      * @param ex      ビジネス例外
      * @param request リクエスト
@@ -64,9 +64,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * システム例外のハンドラー。
+     * システム例外を応答にする。
      *
-     * <p>外部のサービスに接続できないエラーだけは、やり直せることを示すため、エラーコードとメッセージを返す（502）。
+     * <p>外部のサービスに接続できないエラーは、エラーコードとメッセージを返す（502）。
      * それ以外は想定外のエラーにする。
      *
      * @param ex      システム例外
@@ -75,6 +75,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(SystemException.class)
     public ResponseEntity<Object> handleSystemException(SystemException ex, WebRequest request) {
+        // 外部のサービスに接続できないエラーだけは、やり直せることを示すため、エラーコードとメッセージを返す
         if (ex.getErrorDetail().errorCode().type() != ErrorType.EXTERNAL_SERVICE_ERROR) {
             return handleUnexpected(ex, request);
         }
@@ -84,7 +85,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * 全ての例外のハンドラー。
+     * 全ての例外を応答にする。
      *
      * @param ex      その他の例外
      * @param request リクエスト
@@ -98,9 +99,15 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // ============================== 入力検証 ==============================
 
     /**
-     * リクエスト本文の検証例外のハンドラー。
+     * リクエスト本文の検証例外を応答にする。
      *
      * <p>{@code @Valid} で拒否された項目ごとのメッセージを {@code errors} に列挙する。
+     *
+     * @param ex      検証例外
+     * @param headers 応答のヘッダー
+     * @param status  応答の HTTP ステータス
+     * @param request リクエスト
+     * @return 400 + エラー詳細
      */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -110,9 +117,15 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * メソッド引数の検証例外のハンドラー。
+     * メソッド引数の検証例外を応答にする。
      *
      * <p>{@code @RequestParam} などに付いた制約（生成インターフェースの {@code @Max} など）で拒否された場合に発生する。
+     *
+     * @param ex      検証例外
+     * @param headers 応答のヘッダー
+     * @param status  応答の HTTP ステータス
+     * @param request リクエスト
+     * @return 400 + エラー詳細
      */
     @Override
     protected ResponseEntity<Object> handleHandlerMethodValidationException(
@@ -122,9 +135,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * メソッド引数の検証例外のハンドラー（{@code @Validated} の Controller）。
+     * メソッド引数の制約違反を応答にする。
      *
-     * <p>生成インターフェースは {@code @Validated} 付きなので、{@code @RequestParam} の制約は Spring MVC ではなく
+     * <p>{@code @Validated} の Controller で発生する。生成インターフェースは {@code @Validated} 付きなので、{@code @RequestParam} の制約は Spring MVC ではなく
      * メソッド検証の AOP で検査され、{@link HandlerMethodValidationException} ではなくこの例外になる。
      *
      * @param ex      制約違反
@@ -143,6 +156,13 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      *
      * <p>{@link ResponseEntityExceptionHandler} が扱う例外（型の不一致、必須パラメータの欠落、存在しないパス、
      * 許可されていないメソッドなど）は、全てここを通る。HTTP ステータスとヘッダーは Spring MVC の決めたものを使う。
+     *
+     * @param ex         例外
+     * @param body       応答の本文（使わない）
+     * @param headers    応答のヘッダー
+     * @param statusCode 応答の HTTP ステータス
+     * @param request    リクエスト
+     * @return 4xx または 500 + エラー詳細
      */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(

@@ -1,5 +1,6 @@
 package com.ecsite.common.error;
 
+import com.ecsite.common.message.MessageResolver;
 import lombok.NonNull;
 
 import java.util.Collections;
@@ -10,7 +11,7 @@ import java.util.Map;
 /**
  * エラー詳細情報
  *
- * <p>差し込む値は、メッセージにするとき（{@link com.ecsite.common.message.MessageResolver}）に文字にする。
+ * <p>差し込む値は、メッセージにするとき（{@link MessageResolver}）に文字にする。
  *
  * @param errorCode エラーコード
  * @param params    メッセージに差し込む値（値の名前 → 値）
@@ -23,7 +24,6 @@ public record ErrorDetail(@NonNull ErrorCode errorCode, @NonNull Map<String, Obj
      * @param errorCode     エラーコード
      * @param messageParams メッセージに差し込む値（エラーコードの値の名前と同じ順）
      * @return {@link ErrorDetail}
-     * @throws IllegalArgumentException 値の数が、エラーコードの値の名前の数と合わない
      */
     public static ErrorDetail of(ErrorCode errorCode, List<Object> messageParams) {
         var keys = errorCode.message().paramKeys();
@@ -43,7 +43,6 @@ public record ErrorDetail(@NonNull ErrorCode errorCode, @NonNull Map<String, Obj
      *
      * @param errorCode エラーコード
      * @return {@link ErrorDetail}
-     * @throws IllegalArgumentException エラーコードが差し込む値の名前を持つ
      */
     public static ErrorDetail of(ErrorCode errorCode) {
         return of(errorCode, List.of());

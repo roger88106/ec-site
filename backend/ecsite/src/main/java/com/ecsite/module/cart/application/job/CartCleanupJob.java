@@ -36,7 +36,9 @@ class CartCleanupJob {
     private final Clock clock;
 
     /**
-     * 期限から保存期間を過ぎたカートを、件数の上限ずつ、残りがなくなるまで消す（1 回ごとに別のトランザクション）。
+     * 期限から保存期間を過ぎたカートを消す。
+     *
+     * <p>件数の上限ずつ、残りがなくなるまで消す。1 回ごとに別のトランザクションにする。
      */
     // 設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.cart.cleanup-"

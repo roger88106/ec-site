@@ -20,7 +20,9 @@ public record TrackingNumber(String value) {
     public static final int MAX_LENGTH = 30;
 
     /**
-     * 入力の形。半角の数字とハイフンだけ
+     * 入力の形
+     *
+     * <p>半角の数字とハイフンだけ。
      */
     private static final Pattern FORM = Pattern.compile("[0-9-]+");
 
@@ -31,7 +33,10 @@ public record TrackingNumber(String value) {
      *
      * @param input 入力（半角の数字とハイフン、前後の空白を除いて {@link #MAX_LENGTH} 文字まで）
      * @return 送り状番号
-     * @throws BusinessException 入力がない、半角の数字とハイフン以外を含む、数字がない、{@link #MAX_LENGTH} 文字を超える（TRACKING_NUMBER_INVALID）
+     * @throws BusinessException 入力がない（{@code TRACKING_NUMBER_INVALID}）
+     * @throws BusinessException 半角の数字とハイフン以外を含む（{@code TRACKING_NUMBER_INVALID}）
+     * @throws BusinessException 数字がない（{@code TRACKING_NUMBER_INVALID}）
+     * @throws BusinessException {@link #MAX_LENGTH} 文字を超える（{@code TRACKING_NUMBER_INVALID}）
      */
     public static TrackingNumber of(String input) {
         var trimmed = input == null ? "" : input.strip();

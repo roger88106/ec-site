@@ -28,7 +28,7 @@ class MockCarrierConfig {
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     /**
-     * 通知のエンドポイントを呼ぶ HTTP クライアント。
+     * 通知のエンドポイントを呼ぶ HTTP クライアントを作る。
      *
      * @param restClientBuilder HTTP クライアントのビルダー（トレースとメトリクスが付く）
      * @return 時間の上限を設定した HTTP クライアント

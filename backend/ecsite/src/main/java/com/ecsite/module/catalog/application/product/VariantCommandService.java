@@ -43,9 +43,11 @@ public class VariantCommandService {
      * @return 登録したバリアントの ID
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
-     * @throws BusinessException 項目の値が正しくない（{@code INVALID_VARIANT_CODE}、{@code INVALID_AXIS_VALUES}）
+     * @throws BusinessException バリアント品番の形式が正しくない（{@code INVALID_VARIANT_CODE}）
+     * @throws BusinessException 軸の値が正しくない（{@code INVALID_AXIS_VALUES}）
      * @throws BusinessException 軸を持たない商品に 2 つ目のバリアントを登録しようとした（{@code SINGLE_VARIANT_ONLY}）
-     * @throws BusinessException 品番か軸の値の組み合わせが重複している（{@code VARIANT_CODE_ALREADY_EXISTS}、{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
+     * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      */
     public UUID addVariant(@NonNull AddVariantCommand command) {
         // 商品取得

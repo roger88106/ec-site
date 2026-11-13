@@ -7,7 +7,9 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * 支払える支払（未払いで期限の前）
+ * 支払える支払
+ *
+ * <p>未払いで、支払の期限の前の支払。
  *
  * @param id     支払 ID
  * @param amount 金額

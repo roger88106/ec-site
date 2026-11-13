@@ -31,7 +31,9 @@ public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCo
     public static final String AXIS_KEY_SEPARATOR = "\u001F";
 
     /**
-     * コンストラクタ。軸の値は変更できない一覧にする。
+     * コンストラクタ
+     *
+     * <p>軸の値は変更できない一覧にする。
      */
     public Variant {
         axisValues = List.copyOf(axisValues);

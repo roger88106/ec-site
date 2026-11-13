@@ -17,6 +17,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 class ShipmentMailService {
 
     /**
@@ -50,13 +51,13 @@ class ShipmentMailService {
      * <p>同じ注文には 1 通だけ送る。送ったメールの記録と送信を同じトランザクションで行う。
      *
      * @param event 注文の出荷
-     * @throws RuntimeException 送れなかったとき（送ったメールの記録は巻き戻る）
      */
-    @Transactional
     void send(OrderShipped event) {
+        // 送信記録 ※記録済みなら送らない
         if (!sentMails.recordIfAbsent(event.orderId(), SentMailRepository.Kind.SHIPMENT, event.email(), clock.instant())) {
             return;
         }
+        // メール送信
         mailer.send(compose(event));
     }
 

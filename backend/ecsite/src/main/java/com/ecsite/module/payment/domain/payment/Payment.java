@@ -98,7 +98,9 @@ public class Payment extends AggregateRoot {
     private Instant awaitingAuthorizationSince;
 
     /**
-     * バージョン（リポジトリが保存するときに上げる）
+     * バージョン
+     *
+     * <p>リポジトリが保存するときに上げる。
      */
     private final long version;
 

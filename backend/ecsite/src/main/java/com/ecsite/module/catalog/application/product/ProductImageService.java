@@ -58,7 +58,8 @@ public class ProductImageService {
      * @return 受付
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
-     * @throws BusinessException 形式が対象外、または大きさが範囲の外
+     * @throws BusinessException 形式が対象外
+     * @throws BusinessException 大きさが範囲の外
      */
     public ImageUploadView createUpload(@NonNull UUID productId, @NonNull String contentType, long contentLength) {
         // 枚数の確認
@@ -78,7 +79,10 @@ public class ProductImageService {
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
-     * @throws BusinessException 受付がない、大きさが範囲の外、中身が対象の画像でない、または変換できない
+     * @throws BusinessException 受付がない
+     * @throws BusinessException 大きさが範囲の外
+     * @throws BusinessException 中身が対象の画像でない
+     * @throws BusinessException 変換できない
      */
     public UUID addImage(@NonNull UUID productId, @NonNull UUID uploadId, long version) {
         // 加えられることの確認 ※画像の変換と保存の間に DB の接続を持たないよう、確認・用意・保存でトランザクションを分ける

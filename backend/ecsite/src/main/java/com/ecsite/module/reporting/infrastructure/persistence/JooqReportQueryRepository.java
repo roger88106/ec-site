@@ -82,7 +82,9 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     }
 
     /**
-     * 商品のバリアントごとの販売数量と売上額を求める（送料は含めない）。
+     * 商品のバリアントごとの販売数量と売上額を求める。
+     *
+     * <p>送料は含めない。
      *
      * @param period     期間
      * @param basis      売上の数え方
@@ -163,14 +165,18 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     }
 
     /**
-     * 数える日：注文基準は注文日、出荷基準は出荷日
+     * 売上の数え方で数える日の列を返す。
+     *
+     * <p>注文基準は注文日、出荷基準は出荷日。
      */
     private static Field<LocalDate> dayOf(Basis basis) {
         return basis == Basis.ORDER ? SALES_ORDER.ORDERED_ON : SALES_ORDER.SHIPPED_ON;
     }
 
     /**
-     * 数える注文：売上の数え方の状態で、数える日が期間に入るもの
+     * 数える注文の条件を返す。
+     *
+     * <p>売上の数え方の状態で、数える日が期間に入る注文。
      */
     private static Condition counted(ReportPeriod period, Basis basis) {
         return SALES_ORDER.STATUS.in(basis.countedStatuses().stream().map(Enum::name).toList())
@@ -178,7 +184,9 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     }
 
     /**
-     * 注文の売上額：総額から、消費税を除くなら消費税の合計を、送料を除くなら送料（消費税を除くなら税抜の送料）を引く
+     * 注文の売上額の式を返す。
+     *
+     * <p>総額から、消費税を除くなら消費税の合計を、送料を除くなら送料（消費税を除くなら税抜の送料）を引く。
      */
     private static Field<Long> orderAmount(boolean excludeTax, boolean excludeShipping) {
         Field<Long> amount = SALES_ORDER.TOTAL_AMOUNT;
@@ -192,7 +200,9 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     }
 
     /**
-     * 明細の売上額：税込小計か、消費税を除くなら税抜小計
+     * 明細の売上額の列を返す。
+     *
+     * <p>税込小計か、消費税を除くなら税抜小計。
      */
     private static Field<Long> lineAmount(boolean excludeTax) {
         return excludeTax ? SALES_ORDER_LINE.SUBTOTAL_EXCL_TAX : SALES_ORDER_LINE.SUBTOTAL_INCL_TAX;

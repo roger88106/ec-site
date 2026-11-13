@@ -57,7 +57,9 @@ public class TaxCategory extends AggregateRoot {
     private TaxRates rates;
 
     /**
-     * バージョン（楽観ロック）。リポジトリが保存するときに上げる
+     * バージョン
+     *
+     * <p>楽観ロックに使う。リポジトリが保存するときに上げる。
      */
     private final long version;
 
@@ -87,7 +89,7 @@ public class TaxCategory extends AggregateRoot {
      * @param id   税区分 ID
      * @param name 名称
      * @return 税区分
-     * @throws BusinessException 名称が空、または長すぎる
+     * @throws BusinessException 名称が 1 文字以上 {@link #NAME_MAX_LENGTH} 文字以内でない（{@code INVALID_TAX_CATEGORY_NAME}）
      */
     static TaxCategory create(UUID id, String name) {
         return new TaxCategory(id, name, List.of(), 0);
@@ -119,9 +121,18 @@ public class TaxCategory extends AggregateRoot {
     /**
      * 税率の一覧を置き換える。
      *
+     * <p>検証に合わないときは、一覧を変えない。
+     *
      * @param drafts 置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する
      * @param now    現在時刻
-     * @throws BusinessException 置き換え後の一覧が検証に合わない。一覧は変えない
+     * @throws BusinessException 置き換え後の一覧が空（{@code TAX_RATES_REQUIRED}）
+     * @throws BusinessException 税区分にない税率、または重複した税率を指定した（{@code INVALID_TAX_RATE_ID}）
+     * @throws BusinessException 終了済みの税率を変更、または削除しようとした（{@code TAX_RATE_ENDED_UNCHANGEABLE}）
+     * @throws BusinessException 開始済みの税率の率・適用開始日時を変更、または削除しようとした（{@code TAX_RATE_STARTED_UNCHANGEABLE}）
+     * @throws BusinessException 現在より前の日時を新たに設定しようとした（{@code TAX_RATE_PAST_DATETIME}）
+     * @throws BusinessException 適用期間が重複している（{@code TAX_RATE_PERIODS_OVERLAP}）
+     * @throws BusinessException 適用期間の間に途切れがある（{@code TAX_RATE_PERIODS_GAP}）
+     * @throws BusinessException 最後の税率の適用終了日時が空白でない（{@code TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED}）
      */
     public void replaceRates(@NonNull List<TaxRateDraft> drafts, @NonNull Instant now) {
         if (drafts.isEmpty()) {
@@ -166,6 +177,8 @@ public class TaxCategory extends AggregateRoot {
 
     /**
      * 既存の税率を、置き換え後の内容に変更できるかを検証する。
+     *
+     * <p>次の規則で判定する。
      * <ul>
      *     <li>終了済み：変更も削除もできない</li>
      *     <li>開始済み（開始が空白のものを含む）：率と開始は変更できず、削除もできない。終了は変更できる</li>

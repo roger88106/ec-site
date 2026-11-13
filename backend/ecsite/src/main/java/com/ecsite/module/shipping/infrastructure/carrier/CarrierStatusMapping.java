@@ -16,7 +16,9 @@ import java.util.Optional;
 class CarrierStatusMapping {
 
     /**
-     * 配送業者 → （状態の名前 → 配送状態）。佐川急便と日本郵便は、表示を確認していないので表がない
+     * 配送業者 → （状態の名前 → 配送状態）
+     *
+     * <p>佐川急便と日本郵便は、表示を確認していないので表がない。
      */
     private static final Map<Carrier, Map<String, DeliveryStatus>> TABLE = Map.of(
             Carrier.YAMATO, Map.ofEntries(

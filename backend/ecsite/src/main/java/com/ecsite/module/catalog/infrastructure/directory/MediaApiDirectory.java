@@ -34,7 +34,8 @@ class MediaApiDirectory implements MediaDirectory {
      * @param contentType   ファイルの形式
      * @param contentLength ファイルの大きさ（バイト）
      * @return 受付の情報（アップロードの URL など）
-     * @throws BusinessException 形式が対象外、または大きさが範囲の外
+     * @throws BusinessException 形式が対象外
+     * @throws BusinessException 大きさが範囲の外
      */
     @Override
     public ImageUploadView requestImageUpload(UUID productId, String contentType, long contentLength) {
@@ -48,7 +49,10 @@ class MediaApiDirectory implements MediaDirectory {
      * @param productId 商品 ID
      * @param uploadId  受付の ID
      * @return 用意した画像
-     * @throws BusinessException 受付がない（別の商品の受付を含む）、大きさが範囲の外、中身が対象の画像でない、変換できない
+     * @throws BusinessException 受付がない（別の商品の受付を含む）
+     * @throws BusinessException 大きさが範囲の外
+     * @throws BusinessException 中身が対象の画像でない
+     * @throws BusinessException 変換できない
      */
     @Override
     public PreparedImage prepareImage(UUID productId, UUID uploadId) {

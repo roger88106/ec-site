@@ -85,7 +85,9 @@ public class Product extends AggregateRoot {
     private final UUID id;
 
     /**
-     * 商品品番。登録後は変更できない
+     * 商品品番
+     *
+     * <p>登録後は変更できない。
      */
     private final ProductCode productCode;
 
@@ -115,7 +117,9 @@ public class Product extends AggregateRoot {
     private Set<UUID> categoryIds;
 
     /**
-     * バリアント軸の名前（並び順。変更できない一覧）。登録後は変わらない
+     * バリアント軸の名前
+     *
+     * <p>並び順に並んだ、変更できない一覧。登録後は変わらない。
      */
     private final List<String> axes;
 
@@ -125,7 +129,9 @@ public class Product extends AggregateRoot {
     private PublicationStatus status;
 
     /**
-     * 初回表示日時。null は一度も表示されていない（表示の予定もない）
+     * 初回表示日時
+     *
+     * <p>null は一度も表示されていない（表示の予定もない）。
      */
     @Nullable
     private Instant firstShownAt;
@@ -136,17 +142,23 @@ public class Product extends AggregateRoot {
     private PublicationPeriod publicationPeriod;
 
     /**
-     * 画像（表示順。先頭が代表画像。変更できない一覧）
+     * 画像
+     *
+     * <p>表示順に並んだ、変更できない一覧。先頭が代表画像。
      */
     private List<ProductImage> images;
 
     /**
-     * バリアント（表示順。変更できない一覧）
+     * バリアント
+     *
+     * <p>表示順に並んだ、変更できない一覧。
      */
     private List<Variant> variants;
 
     /**
-     * バージョン（楽観ロック）。リポジトリが保存するときに上げる
+     * バージョン（楽観ロック）
+     *
+     * <p>リポジトリが保存するときに上げる。
      */
     private final long version;
 
@@ -205,6 +217,102 @@ public class Product extends AggregateRoot {
     }
 
 // ============================== ドメインの振る舞い ==============================
+
+    /**
+     * C 側に表示される条件を満たすかを返す。
+     *
+     * <p>条件は、公開状態が「公開」で、公開期間内であること。
+     *
+     * @param now 時点
+     * @return 表示されるなら true
+     */
+    public boolean isVisibleAt(@NonNull Instant now) {
+        return status == PublicationStatus.PUBLISHED && publicationPeriod.contains(now);
+    }
+
+    /**
+     * C 側に表示されたことがあるかを返す。
+     *
+     * <p>初回表示日時が空か未来なら、まだ表示されていない。
+     *
+     * @param now 現在時刻
+     * @return 表示されたことがあれば true
+     */
+    public boolean hasBeenShown(@NonNull Instant now) {
+        return hasBeenShown(firstShownAt, now);
+    }
+
+    /**
+     * 今の商品にできる操作を返す。
+     *
+     * @param now 現在時刻
+     * @return できる操作
+     */
+    public ProductActions actions(@NonNull Instant now) {
+        return actionsOf(status, firstShownAt, axes.size(), variants.size(), now);
+    }
+
+    /**
+     * 商品の状態から、できる操作を決める。
+     *
+     * @param status       公開状態
+     * @param firstShownAt 初回表示日時。なければ null
+     * @param axisCount    バリアント軸の数
+     * @param variantCount バリアントの数
+     * @param now          現在時刻
+     * @return できる操作
+     */
+    public static ProductActions actionsOf(@NonNull PublicationStatus status, @Nullable Instant firstShownAt,
+                                           int axisCount, int variantCount, @NonNull Instant now) {
+        var neverShown = !hasBeenShown(firstShownAt, now);
+        return new ProductActions(
+                status == PublicationStatus.UNPUBLISHED,
+                status == PublicationStatus.PUBLISHED,
+                status != PublicationStatus.DISCONTINUED,
+                neverShown,
+                neverShown,
+                canAddVariant(axisCount, variantCount),
+                neverShown ? null : DeleteBlockedReason.ALREADY_SHOWN);
+    }
+
+    /**
+     * C 側に表示されたことがあるかを返す。
+     *
+     * <p>初回表示日時が空か未来なら、まだ表示されていない。
+     *
+     * @param firstShownAt 初回表示日時。なければ null
+     * @param now          現在時刻
+     * @return 表示されたことがあれば true
+     */
+    static boolean hasBeenShown(@Nullable Instant firstShownAt, @NonNull Instant now) {
+        return firstShownAt != null && !firstShownAt.isAfter(now);
+    }
+
+    /**
+     * バリアントを追加できるかを返す。
+     *
+     * <p>軸を持たない商品のバリアントは 1 つだけ。
+     *
+     * @param axisCount    バリアント軸の数
+     * @param variantCount 今のバリアントの数
+     * @return 追加できれば true
+     */
+    static boolean canAddVariant(int axisCount, int variantCount) {
+        return axisCount > 0 || variantCount == 0;
+    }
+
+    /**
+     * 画像を加えられるかを確認する。
+     *
+     * <p>上限の {@link #MAX_IMAGES} 枚に達していなければ加えられる。
+     *
+     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
+     */
+    public void verifyCanAddImage() {
+        if (images.size() >= MAX_IMAGES) {
+            throw BusinessException.of(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES, List.of(MAX_IMAGES));
+        }
+    }
 
     /**
      * 商品を編集する。
@@ -333,17 +441,6 @@ public class Product extends AggregateRoot {
      */
     public boolean resumeVariant(@NonNull UUID variantId) {
         return changeSalesSuspended(variantId, false);
-    }
-
-    /**
-     * 画像を加えられるか（上限の {@link #MAX_IMAGES} 枚に達していないか）を確認する。
-     *
-     * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
-     */
-    public void verifyCanAddImage() {
-        if (images.size() >= MAX_IMAGES) {
-            throw BusinessException.of(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES, List.of(MAX_IMAGES));
-        }
     }
 
     /**
@@ -509,87 +606,6 @@ public class Product extends AggregateRoot {
             throw BusinessException.of(ProductErrorCode.PRODUCT_ALREADY_SHOWN);
         }
         registerEvent(ProductDeleted.of(now, id));
-    }
-
-    /**
-     * C 側に表示される条件（公開状態が「公開」で、公開期間内）を満たすかを返す。
-     *
-     * @param now 時点
-     * @return 表示されるなら true
-     */
-    public boolean isVisibleAt(@NonNull Instant now) {
-        return status == PublicationStatus.PUBLISHED && publicationPeriod.contains(now);
-    }
-
-    /**
-     * C 側に表示されたことがあるかを返す。
-     *
-     * <p>初回表示日時が空か未来なら、まだ表示されていない。
-     *
-     * @param now 現在時刻
-     * @return 表示されたことがあれば true
-     */
-    public boolean hasBeenShown(@NonNull Instant now) {
-        return hasBeenShown(firstShownAt, now);
-    }
-
-    /**
-     * 今の商品にできる操作を返す。
-     *
-     * @param now 現在時刻
-     * @return できる操作
-     */
-    public ProductActions actions(@NonNull Instant now) {
-        return actionsOf(status, firstShownAt, axes.size(), variants.size(), now);
-    }
-
-    /**
-     * 商品の状態から、できる操作を決める。
-     *
-     * @param status       公開状態
-     * @param firstShownAt 初回表示日時。なければ null
-     * @param axisCount    バリアント軸の数
-     * @param variantCount バリアントの数
-     * @param now          現在時刻
-     * @return できる操作
-     */
-    public static ProductActions actionsOf(@NonNull PublicationStatus status, @Nullable Instant firstShownAt,
-                                           int axisCount, int variantCount, @NonNull Instant now) {
-        var neverShown = !hasBeenShown(firstShownAt, now);
-        return new ProductActions(
-                status == PublicationStatus.UNPUBLISHED,
-                status == PublicationStatus.PUBLISHED,
-                status != PublicationStatus.DISCONTINUED,
-                neverShown,
-                neverShown,
-                canAddVariant(axisCount, variantCount),
-                neverShown ? null : DeleteBlockedReason.ALREADY_SHOWN);
-    }
-
-    /**
-     * C 側に表示されたことがあるかを返す。
-     *
-     * <p>初回表示日時が空か未来なら、まだ表示されていない。
-     *
-     * @param firstShownAt 初回表示日時。なければ null
-     * @param now          現在時刻
-     * @return 表示されたことがあれば true
-     */
-    static boolean hasBeenShown(@Nullable Instant firstShownAt, @NonNull Instant now) {
-        return firstShownAt != null && !firstShownAt.isAfter(now);
-    }
-
-    /**
-     * バリアントを追加できるかを返す。
-     *
-     * <p>軸を持たない商品のバリアントは 1 つだけ。
-     *
-     * @param axisCount    バリアント軸の数
-     * @param variantCount 今のバリアントの数
-     * @return 追加できれば true
-     */
-    static boolean canAddVariant(int axisCount, int variantCount) {
-        return axisCount > 0 || variantCount == 0;
     }
 
 // ============================== プライベートメソッド ==============================

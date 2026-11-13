@@ -1,8 +1,8 @@
 package com.ecsite.module.media.application.port;
 
+import com.ecsite.module.media.application.model.PresignedUpload;
+
 import java.net.URI;
-import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -32,7 +32,7 @@ public interface ObjectStorage {
     Optional<Long> findUploadSize(String uploadKey);
 
     /**
-     * アップロードのバケットのファイルの先頭を読む（形式の判定に使う）。
+     * アップロードのバケットのファイルの先頭を読む。
      *
      * @param uploadKey アップロードのバケットのキー
      * @param length    読む長さ（バイト）
@@ -67,14 +67,4 @@ public interface ObjectStorage {
      * @return 配信の URL
      */
     URI publicUrl(String publicKey);
-
-    /**
-     * 署名付きのアップロード
-     *
-     * @param url       PUT する URL
-     * @param headers   PUT に付けるヘッダー
-     * @param expiresAt URL の期限
-     */
-    record PresignedUpload(URI url, Map<String, String> headers, Instant expiresAt) {
-    }
 }

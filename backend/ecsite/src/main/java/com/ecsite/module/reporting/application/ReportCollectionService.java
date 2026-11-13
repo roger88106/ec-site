@@ -142,12 +142,14 @@ class ReportCollectionService {
      * 注文の写しを再作成する。
      */
     private void refresh(UUID orderId) {
+        // 注文の写しの取得
         var found = orderDirectory.find(orderId);
         if (found.isEmpty()) {
             // 注文の API がない注文のイベントは来ないはずだが、来たら履歴だけ残す
             log.warn("写しを作れない注文のイベントを受けた: {}", orderId);
             return;
         }
+        // 履歴を反映した写しの保存
         var order = found.get();
         var history = repository.history(orderId);
         repository.save(order.withProductIds(productIds(order)).withShipment(shippedAt(history), deliveryStatus(history)));

@@ -21,7 +21,9 @@ import java.util.UUID;
 class EventPublicationRecords {
 
     /**
-     * イベントの記録のテーブル（Spring Modulith の表。モジュールの外なので、jOOQ の生成クラスでなく名前で指す）
+     * イベントの記録のテーブル
+     *
+     * <p>Spring Modulith の表。モジュールの外なので、jOOQ の生成クラスでなく名前で指す。
      */
     private static final Table<?> EVENT_PUBLICATION = DSL.table(DSL.name("common", "event_publication"));
 

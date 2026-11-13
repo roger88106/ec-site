@@ -9,7 +9,6 @@ public interface Mailer {
      * メールを送る。
      *
      * @param mail メール
-     * @throws RuntimeException 送れなかったとき
      */
     void send(Mail mail);
 

@@ -63,7 +63,8 @@ public class OrderCancellationService {
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @param reason   理由（任意）
-     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文した会員でない（{@code NOT_FOUND}）
      * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
      * @throws BusinessException 理由が上限の文字数を超える（{@code INVALID_CANCELLATION_REASON}）
      */

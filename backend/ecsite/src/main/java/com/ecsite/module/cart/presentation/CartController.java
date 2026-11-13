@@ -19,7 +19,7 @@ import java.util.UUID;
 /**
  * カートのコントローラー
  *
- * <p>C 側の API のうち、store.yaml のタグ cart の操作を受ける。認証は任意で、token があれば会員として扱う。
+ * <p>C 側の API のうち、store.yaml のタグ cart の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -95,9 +95,9 @@ class CartController implements CartApi {
     }
 
     /**
-     * 会員のカート。
+     * 会員のカート
      *
-     * <p>なければ作る
+     * <p>なければ作る。
      *
      * @return Http 200 : {@link MemberCart}
      */

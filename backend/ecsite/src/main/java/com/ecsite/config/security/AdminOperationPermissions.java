@@ -1,5 +1,8 @@
 package com.ecsite.config.security;
 
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 
 import java.util.Optional;
@@ -11,6 +14,7 @@ import java.util.Optional;
  * 権限は契約だけから読むので、契約と食い違わず、書き漏れで公開されることもない。
  * 対応にないリクエストには権限を返さない。
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class AdminOperationPermissions {
 
     /**
@@ -21,16 +25,8 @@ class AdminOperationPermissions {
     /**
      * 操作ごとの権限
      */
+    @NonNull
     private final OpenApiOperations<String> operations;
-
-    /**
-     * コンストラクタ。
-     *
-     * @param operations 操作ごとの権限
-     */
-    private AdminOperationPermissions(OpenApiOperations<String> operations) {
-        this.operations = operations;
-    }
 
     /**
      * {@code admin.yaml} を読み込む。

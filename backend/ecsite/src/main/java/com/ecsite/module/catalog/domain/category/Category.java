@@ -45,7 +45,9 @@ public class Category extends AggregateRoot {
     private final UUID id;
 
     /**
-     * 親カテゴリ ID。最上位なら null
+     * 親カテゴリ ID
+     *
+     * <p>最上位なら null。
      */
     @Nullable
     private final UUID parentId;
@@ -66,7 +68,9 @@ public class Category extends AggregateRoot {
     private int displayOrder;
 
     /**
-     * バージョン（楽観ロック）。リポジトリが保存するときに上げる
+     * バージョン（楽観ロック）
+     *
+     * <p>リポジトリが保存するときに上げる。
      */
     private final long version;
 
@@ -121,6 +125,16 @@ public class Category extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
+     * その深さのカテゴリの下に、子のカテゴリを追加できるかを返す。
+     *
+     * @param depth 階層の深さ（最上位が 1）
+     * @return いちばん深い階層でなければ true
+     */
+    public static boolean canHaveChildren(int depth) {
+        return depth < MAX_DEPTH;
+    }
+
+    /**
      * 名称を変更する。
      *
      * @param name 新しい名称
@@ -129,16 +143,6 @@ public class Category extends AggregateRoot {
     public void rename(String name) {
         verifyName(name);
         this.name = name;
-    }
-
-    /**
-     * その深さのカテゴリの下に、子のカテゴリを追加できるかを返す。
-     *
-     * @param depth 階層の深さ（最上位が 1）
-     * @return いちばん深い階層でなければ true
-     */
-    public static boolean canHaveChildren(int depth) {
-        return depth < MAX_DEPTH;
     }
 
     /**

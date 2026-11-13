@@ -81,7 +81,8 @@ public class OrderQueryService {
      * @param orderId  注文 ID
      * @param memberId リクエストした会員の ID
      * @return 注文の詳細
-     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文がない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文した会員でない（{@code NOT_FOUND}）
      */
     public OrderDetailView getForMember(@NonNull UUID orderId, @NonNull UUID memberId) {
         // 注文した会員でなければ、ないときと同じにする

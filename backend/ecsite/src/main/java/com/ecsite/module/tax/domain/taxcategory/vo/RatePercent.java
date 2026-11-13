@@ -39,11 +39,11 @@ public record RatePercent(BigDecimal value) {
      * コンストラクタ。
      *
      * @param value 率（%）
-     * @throws BusinessException {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が {@link #MAX_SCALE} 桁を超える
+     * @throws BusinessException 率が {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が第 {@link #MAX_SCALE} 位を超える（{@code INVALID_RATE_PERCENT}）
      */
     public RatePercent(@NonNull BigDecimal value) {
         var normalized = normalize(value);
-        // 率は 0 以上 100 未満で、小数の桁が上限以内
+        // 率は下限以上・上限未満で、小数の桁が上限以内
         if (normalized.compareTo(LOWER_BOUND) < 0 || normalized.compareTo(UPPER_BOUND) >= 0 || normalized.scale() > MAX_SCALE) {
             throw BusinessException.of(TaxErrorCode.INVALID_RATE_PERCENT, List.of(LOWER_BOUND, UPPER_BOUND, MAX_SCALE));
         }
@@ -55,7 +55,7 @@ public record RatePercent(BigDecimal value) {
      *
      * @param value 率（%）
      * @return 率
-     * @throws BusinessException {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が {@link #MAX_SCALE} 桁を超える
+     * @throws BusinessException 率が {@link #LOWER_BOUND} 以上 {@link #UPPER_BOUND} 未満でない、または小数が第 {@link #MAX_SCALE} 位を超える（{@code INVALID_RATE_PERCENT}）
      */
     public static RatePercent of(BigDecimal value) {
         return new RatePercent(value);

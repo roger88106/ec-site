@@ -36,12 +36,16 @@ import javax.crypto.spec.SecretKeySpec;
 class ImgproxyImageConverter implements ImageConverter {
 
     /**
-     * imgproxy に届いていないことを示す HTTP の状態（imgproxy の手前の代理が返す）
+     * imgproxy に届いていないことを示す HTTP の状態
+     *
+     * <p>imgproxy の手前の代理が返す。
      */
     private static final Set<Integer> UNREACHABLE_STATUSES = Set.of(502, 503, 504);
 
     /**
-     * URL に入れる base64（URL セーフ、パディングなし。imgproxy の決まり）
+     * URL に入れる base64
+     *
+     * <p>URL セーフ、パディングなし。imgproxy の決まり。
      */
     private static final Base64.Encoder BASE64_URL = Base64.getUrlEncoder().withoutPadding();
 
@@ -66,8 +70,8 @@ class ImgproxyImageConverter implements ImageConverter {
      *
      * @param uploadKey アップロードのバケットのキー
      * @return 変換した WebP
-     * @throws BusinessException imgproxy が変換できなかった、応答が WebP でない
-     * @throws SystemException   imgproxy に接続できない、届かない、時間の上限を超えた
+     * @throws BusinessException imgproxy が変換できなかった（{@code IMAGE_CONVERSION_FAILED}）
+     * @throws BusinessException imgproxy の応答が WebP でない（{@code IMAGE_CONVERSION_FAILED}）
      */
     @Override
     public byte[] convertToWebp(String uploadKey) {
@@ -114,7 +118,7 @@ class ImgproxyImageConverter implements ImageConverter {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 処理の指定と元のファイルの URL（base64url）。
+     * 処理の指定と元のファイルの URL（base64url）からなるパスを作る。
      *
      * <p>/q:{品質}/f:webp/{元の URL}
      */
@@ -124,7 +128,7 @@ class ImgproxyImageConverter implements ImageConverter {
     }
 
     /**
-     * URL の署名。
+     * URL の署名を作る。
      *
      * <p>base64url(HMAC-SHA256(鍵, ソルト + パス))
      */

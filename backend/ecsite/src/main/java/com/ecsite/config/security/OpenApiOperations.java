@@ -1,5 +1,8 @@
 package com.ecsite.config.security;
 
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.server.PathContainer;
 import org.springframework.web.util.pattern.PathPattern;
@@ -29,6 +32,7 @@ import java.util.function.BiFunction;
  *
  * @param <T> 操作ごとの値
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 final class OpenApiOperations<T> {
 
     /**
@@ -37,7 +41,9 @@ final class OpenApiOperations<T> {
     private static final Set<String> HTTP_METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "trace");
 
     /**
-     * OpenAPI の Path Item の項目のうち、操作でないもの。拡張（{@code x-} で始まるもの）も認める
+     * OpenAPI の Path Item の項目のうち、操作でないもの
+     *
+     * <p>拡張（{@code x-} で始まるもの）も認める。
      */
     private static final Set<String> PATH_ITEM_FIELDS = Set.of("summary", "description", "servers", "parameters", "$ref");
 
@@ -60,16 +66,8 @@ final class OpenApiOperations<T> {
     /**
      * 操作の一覧（パスの具体的なものが先）
      */
+    @NonNull
     private final List<Operation<T>> operations;
-
-    /**
-     * コンストラクタ。
-     *
-     * @param operations 操作の一覧（パスの具体的なものが先）
-     */
-    private OpenApiOperations(List<Operation<T>> operations) {
-        this.operations = operations;
-    }
 
     /**
      * 契約を読み込む。

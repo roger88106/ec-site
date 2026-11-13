@@ -25,25 +25,31 @@ public interface ProductRepository {
      * 商品を登録する。
      *
      * @param product 商品
-     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
      * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     void add(Product product);
 
     /**
-     * 商品を更新する（バリアントは差分で更新する）。
+     * 商品を更新する。
+     *
+     * <p>バリアントは差分で更新する。
      *
      * @param product 商品
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
-     * @throws BusinessException 品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}、{@code VARIANT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
+     * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
      * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      * @throws BusinessException 所属カテゴリが存在しない（{@code INVALID_CATEGORY_ID}）
      */
     void save(Product product);
 
     /**
-     * 商品を削除する（バリアントなど商品の一部も消える）。
+     * 商品を削除する。
+     *
+     * <p>バリアントなど商品の一部も消える。
      *
      * @param product 商品
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）

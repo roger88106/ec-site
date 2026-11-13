@@ -19,7 +19,7 @@ public interface PaymentGateway {
     /**
      * 与信だけを取る支払画面を作る。
      *
-     * <p>呼ぶたびに新しい画面を作る。同時のリクエストで重ねて作った画面は、呼んだ側が閉じる。
+     * <p>呼ぶたびに新しい画面を作る。
      *
      * @param request 支払画面のリクエスト
      * @return 作った支払画面
@@ -136,7 +136,9 @@ public interface PaymentGateway {
         AUTHORIZATION_EXPIRED,
 
         /**
-         * 決済サービスに接続できない。売上を確定したかは分からないので、重ねて呼んでよい
+         * 決済サービスに接続できない
+         *
+         * <p>売上を確定したかは分からない。
          */
         UNREACHABLE,
     }

@@ -15,7 +15,6 @@ class ValidationConfig {
      * バリデーターを作る。
      *
      * <p>制約アノテーションの {@code {key}} 形式のメッセージを messages.properties から解決する。
-     * API の応答の検証のエラーの文には使わない（{@code ValidationErrorTranslator} が作る）。
      *
      * @param messageSource メッセージソース
      * @return バリデーター

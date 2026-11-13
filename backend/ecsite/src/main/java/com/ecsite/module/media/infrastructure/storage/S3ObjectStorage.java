@@ -1,6 +1,7 @@
 package com.ecsite.module.media.infrastructure.storage;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.media.application.model.PresignedUpload;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,9 @@ import java.util.function.Supplier;
 class S3ObjectStorage implements ObjectStorage {
 
     /**
-     * 配信のファイルのキャッシュの指定。キーを上書きしないので、長くキャッシュさせる
+     * 配信のファイルのキャッシュの指定
+     *
+     * <p>キーを上書きしないので、長くキャッシュさせる。
      */
     static final String PUBLIC_CACHE_CONTROL = "public, max-age=31536000, immutable";
 

@@ -15,7 +15,7 @@ import java.time.Clock;
  *
  * <p>期限から保存期間を過ぎた注文手続きを、件数の上限ずつ、残りがなくなるまで消す（1 回ごとに別のトランザクション）。
  * 注文になった注文手続きも消す。
- * 間隔と保存期間は注文手続きの片付けの設定 {@code ecsite.order.cleanup}（既定 1 時間、1 日）で変えられる。
+ * 間隔と保存期間は注文手続きの片付けの設定 {@code ecsite.order.cleanup} で変えられる。
  */
 @Slf4j
 @Component

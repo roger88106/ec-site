@@ -98,8 +98,6 @@ class MockPaymentPageController {
 
     /**
      * 戻る先に移す（POST の後なので 303）。
-     *
-     * <p>戻る先が URL として正しくなければ、例外になる。
      */
     private static ResponseEntity<String> redirect(String url) {
         return MockPageResponses.redirect(URI.create(url));

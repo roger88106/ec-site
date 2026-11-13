@@ -37,10 +37,11 @@ public class MemberCommandService {
      *
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID
-     * @throws SystemException 作った後に再取得しても、会員がいない
      */
     public UUID create(@NonNull String idpSubject) {
+        // 会員登録 ※同じアカウントの会員がいれば作らない
         memberRepository.insertIfAbsent(new Member(UUID.randomUUID(), idpSubject, clock.instant()));
+        // 会員 ID 取得 ※同時に作られたときは、先に作られた会員を読み直す
         return memberRepository.findIdByIdpSubject(idpSubject)
                 .orElseThrow(() -> SystemException.of("会員作成失敗", null));
     }

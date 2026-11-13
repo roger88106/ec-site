@@ -22,7 +22,9 @@ public final class BoundedText {
     }
 
     /**
-     * 必須の項目として正しいか（null・空・空白だけのどれでもなく、上限以内か）を返す。
+     * 必須の項目として正しいかを返す。
+     *
+     * <p>null・空・空白だけのどれでもなく、上限以内なら正しい。
      *
      * @param text      文字列
      * @param maxLength 上限の文字の数

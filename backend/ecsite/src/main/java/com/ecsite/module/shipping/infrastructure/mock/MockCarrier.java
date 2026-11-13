@@ -20,9 +20,6 @@ import java.time.Instant;
  * mock の物流サービス
  *
  * <p>署名付きの通知を作り、HTTP で通知のエンドポイントに送る。本物の物流サービスと同じ道（署名の検証を含む）を通す。
- * 通知の重複は同じ通知を重ねて送り、順序の入れ替わりと途中の欠けは送る順序と内容を選んで作る。
- * 合わない送り状番号の通知は、登録していない番号を渡して作る。署名の誤りは、テストで共有するソースの
- * {@code TestCarrierNotifications} で作る。
  */
 @Component
 @ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")

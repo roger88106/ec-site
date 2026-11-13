@@ -18,7 +18,9 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 final class ProductVisibility {
 
     /**
-     * 公開状態が「公開」で、公開期間内（開始を含み、終了を含まない。null は無限）であることの条件を返す。
+     * 公開状態が「公開」で、公開期間内であることの条件を返す。
+     *
+     * <p>公開期間は、開始を含み、終了を含まない。null は無限。
      *
      * @param now 表示時刻
      * @return 条件

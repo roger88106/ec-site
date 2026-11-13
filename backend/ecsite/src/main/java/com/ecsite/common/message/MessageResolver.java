@@ -1,6 +1,7 @@
 package com.ecsite.common.message;
 
 import com.ecsite.common.error.ErrorDetail;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -39,7 +40,7 @@ public class MessageResolver {
      * @param message I18n メッセージ（差し込む値なし）
      * @return メッセージ
      */
-    public String getMessage(I18nMessage message) {
+    public String getMessage(@NonNull I18nMessage message) {
         return getMessageTemplate(message.code());
     }
 
@@ -51,7 +52,7 @@ public class MessageResolver {
      * @param errorDetail エラー詳細
      * @return メッセージ
      */
-    public String getMessage(ErrorDetail errorDetail) {
+    public String getMessage(@NonNull ErrorDetail errorDetail) {
         return formatMessage(getMessageTemplate(errorDetail.errorCode().message().code()), errorDetail.params());
     }
 
@@ -64,7 +65,7 @@ public class MessageResolver {
      * @param params 差し込む値の名前 → 値
      * @return メッセージ
      */
-    public String getMessage(String code, Map<String, ?> params) {
+    public String getMessage(@NonNull String code, @NonNull Map<String, ?> params) {
         return formatMessage(getMessageTemplate(code), params);
     }
 

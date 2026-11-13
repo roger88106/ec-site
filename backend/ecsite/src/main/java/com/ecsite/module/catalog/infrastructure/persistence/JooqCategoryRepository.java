@@ -48,14 +48,18 @@ class JooqCategoryRepository implements CategoryRepository {
     private static final String PARENT_FKEY = Keys.CATEGORY__CATEGORY_PARENT_ID_FKEY.getName();
 
     /**
-     * 登録・更新時の制約名 → 業務のエラー。登録時の外部キーの違反は、親が同時に削除された場合
+     * 登録・更新時の制約名 → 業務のエラー
+     *
+     * <p>登録時の外部キーの違反は、親が同時に削除された場合。
      */
     private static final ConstraintViolationTranslator WRITE_CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
             NAME_KEY, () -> BusinessException.of(CategoryErrorCode.CATEGORY_NAME_ALREADY_EXISTS),
             PARENT_FKEY, () -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
 
     /**
-     * 削除時の制約名 → 業務のエラー。外部キーの違反は、子カテゴリの登録や商品への割り当てが同時に起きた場合
+     * 削除時の制約名 → 業務のエラー
+     *
+     * <p>外部キーの違反は、子カテゴリの登録や商品への割り当てが同時に起きた場合。
      */
     private static final ConstraintViolationTranslator DELETE_CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
             PARENT_FKEY, () -> BusinessException.of(CategoryErrorCode.CATEGORY_HAS_CHILDREN),

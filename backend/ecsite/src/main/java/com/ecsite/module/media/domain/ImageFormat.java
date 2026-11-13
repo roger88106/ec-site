@@ -35,7 +35,9 @@ public enum ImageFormat {
      */
     BMP("BMP", "bmp", "image/bmp"),
     /**
-     * HEIC / HEIF（ftyp のボックスのブランドが HEIC の系統。スマートフォンの写真）
+     * HEIC / HEIF
+     *
+     * <p>ftyp のボックスのブランドが HEIC の系統。スマートフォンの写真。
      */
     HEIF("HEIC / HEIF", "heic", "image/heic", "image/heif"),
     /**
@@ -49,7 +51,9 @@ public enum ImageFormat {
     public static final long MAX_BYTES = 10L * 1024 * 1024;
 
     /**
-     * 形式の判定に読む先頭の長さ（バイト）。ftyp のボックスの互換のブランドを、いくつか読める長さにする
+     * 形式の判定に読む先頭の長さ（バイト）
+     *
+     * <p>ftyp のボックスの互換のブランドを、いくつか読める長さにする。
      */
     public static final int SIGNATURE_LENGTH = 32;
 
@@ -69,7 +73,9 @@ public enum ImageFormat {
     private static final byte[] RIFF = {'R', 'I', 'F', 'F'};
 
     /**
-     * WebP の形式の名前（RIFF の入れ物の 8〜11 バイト目）
+     * WebP の形式の名前
+     *
+     * <p>RIFF の入れ物の 8〜11 バイト目。
      */
     private static final byte[] WEBP_FOURCC = {'W', 'E', 'B', 'P'};
 
@@ -79,7 +85,9 @@ public enum ImageFormat {
     private static final byte[] BMP_SIGNATURE = {'B', 'M'};
 
     /**
-     * BMP の予約の領域（6〜9 バイト目。必ず 0）
+     * BMP の予約の領域
+     *
+     * <p>6〜9 バイト目。必ず 0。
      */
     private static final byte[] BMP_RESERVED = {0, 0, 0, 0};
 
@@ -89,7 +97,9 @@ public enum ImageFormat {
     private static final byte[] FTYP = {'f', 't', 'y', 'p'};
 
     /**
-     * HEIC の系統のブランド（HEVC で符号化した画像・画像の列）
+     * HEIC の系統のブランド
+     *
+     * <p>HEVC で符号化した画像・画像の列。
      */
     private static final Set<String> HEIF_BRANDS = Set.of("heic", "heix", "heim", "heis", "hevc", "hevx");
 
@@ -99,7 +109,9 @@ public enum ImageFormat {
     private static final Set<String> AVIF_BRANDS = Set.of("avif", "avis");
 
     /**
-     * HEIF の汎用のブランド。中身の符号化は互換のブランドで分かる
+     * HEIF の汎用のブランド
+     *
+     * <p>中身の符号化は互換のブランドで分かる。
      */
     private static final Set<String> GENERIC_BRANDS = Set.of("mif1", "msf1");
 

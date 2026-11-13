@@ -1,6 +1,7 @@
 package com.ecsite.module.media.infrastructure.storage;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.module.media.application.model.PresignedUpload;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,10 +85,10 @@ class S3ObjectStorageTest {
         var url = upload.url().toString();
 
         var tampered = url.replaceFirst("X-Amz-Signature=[0-9a-f]{4}", "X-Amz-Signature=0000");
-        assertThat(put(new ObjectStorage.PresignedUpload(URI.create(tampered), upload.headers(), upload.expiresAt()), PNG))
+        assertThat(put(new PresignedUpload(URI.create(tampered), upload.headers(), upload.expiresAt()), PNG))
                 .isEqualTo(403);
         var otherKey = url.replace(key, uploadKey());
-        assertThat(put(new ObjectStorage.PresignedUpload(URI.create(otherKey), upload.headers(), upload.expiresAt()), PNG))
+        assertThat(put(new PresignedUpload(URI.create(otherKey), upload.headers(), upload.expiresAt()), PNG))
                 .isEqualTo(403);
         assertThat(storage.findUploadSize(key)).isEmpty();
     }
@@ -197,7 +198,7 @@ class S3ObjectStorageTest {
     /**
      * 署名付き URL へ、指定のヘッダーを付けてファイルを PUT し、HTTP ステータスを返す
      */
-    private int put(ObjectStorage.PresignedUpload upload, byte[] body) throws IOException, InterruptedException {
+    private int put(PresignedUpload upload, byte[] body) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(upload.url()).PUT(HttpRequest.BodyPublishers.ofByteArray(body));
         upload.headers().forEach(request::header);
         return http.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode();

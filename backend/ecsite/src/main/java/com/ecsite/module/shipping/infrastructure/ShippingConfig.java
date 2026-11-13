@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 出荷モジュールの設定
  *
- * <p>出荷の設定を有効にし、物流サービスの通知の署名を作る。
+ * <p>出荷の設定を有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ShippingProperties.class)

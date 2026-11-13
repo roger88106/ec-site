@@ -23,7 +23,9 @@ class CatalogApiDirectory implements CatalogDirectory {
     private final OrderCatalogApi orderCatalogApi;
 
     /**
-     * バリアントを選べるか（C 側に表示される商品の、販売停止でないバリアントか）。
+     * バリアントを選べるか。
+     *
+     * <p>選べるのは、C 側に表示される商品の、販売停止でないバリアントである。
      *
      * @param variantId バリアント ID
      * @return 選べれば true。存在しないバリアントは false

@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * 税区分のコントローラー（B 側。admin.yaml の tag: tax）
+ * 税区分のコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ tax の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor

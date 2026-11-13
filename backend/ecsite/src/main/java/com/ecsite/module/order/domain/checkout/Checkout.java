@@ -41,7 +41,7 @@ public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartV
      * @param cartId               カート ID
      * @param cartVersion          カートのバージョン
      * @param now                  現在時刻
-     * @param reservationTtl       引当の期限までの時間（15 分）
+     * @param reservationTtl       引当の期限までの時間
      * @param acknowledgedOrderIds 確認した注文の ID の集合
      * @return 注文手続き
      */

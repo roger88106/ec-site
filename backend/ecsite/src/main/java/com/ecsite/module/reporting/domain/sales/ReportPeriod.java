@@ -31,7 +31,8 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
      * @param from 始まりの日
      * @param to   終わりの日
      * @return 期間
-     * @throws BusinessException 始まりが終わりより後、または {@value #MAX_YEARS} 年を超える（{@code INVALID_PERIOD}）
+     * @throws BusinessException 始まりが終わりより後（{@code INVALID_PERIOD}）
+     * @throws BusinessException {@value #MAX_YEARS} 年を超える（{@code INVALID_PERIOD}）
      */
     public static ReportPeriod of(@NonNull LocalDate from, @NonNull LocalDate to) {
         if (from.isAfter(to) || !to.isBefore(from.plusYears(MAX_YEARS))) {

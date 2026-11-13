@@ -11,7 +11,7 @@ import java.util.Map;
 public interface ValidationErrorMapping {
 
     /**
-     * 項目のパスごとの業務のエラー。
+     * 項目のパスごとの業務のエラーを返す。
      *
      * @return リクエストの本文の項目のパス（例：{@code shippingAddress.postalCode}）から、業務のエラー（差し込む値を含む）への対応
      */

@@ -14,7 +14,7 @@ import java.time.ZoneId;
 public final class BusinessTime {
 
     /**
-     * 業務の時間帯（日本時間）
+     * 業務の時間帯
      */
     public static final ZoneId ZONE = ZoneId.of("Asia/Tokyo");
 }

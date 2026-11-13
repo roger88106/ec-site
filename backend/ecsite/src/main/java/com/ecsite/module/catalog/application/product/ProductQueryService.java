@@ -48,7 +48,9 @@ public class ProductQueryService {
     private final ProductLoader productLoader;
 
     /**
-     * 画像を加えられることを確認する（商品がある、バージョンが一致する、枚数が上限に達していない）。
+     * 画像を加えられることを確認する。
+     *
+     * <p>商品がある、バージョンが一致する、枚数が上限に達していないことを確認する。
      *
      * @param productId 商品 ID
      * @param version   取得時の商品のバージョン
@@ -61,7 +63,9 @@ public class ProductQueryService {
     }
 
     /**
-     * 画像を加えられることを、バージョンなしで確認する（商品がある、枚数が上限に達していない）。
+     * 画像を加えられることを、バージョンなしで確認する。
+     *
+     * <p>商品がある、枚数が上限に達していないことを確認する。
      *
      * @param productId 商品 ID
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）

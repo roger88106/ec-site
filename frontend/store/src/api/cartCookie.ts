@@ -12,7 +12,9 @@ const { cookiePrefix: COOKIE_PREFIX } = readServerConfig()
 const cartCookie = () => cookieName(COOKIE_PREFIX, 'cart_id')
 
 /**
- * Cookie のカート ID を読む（店舗画面の構成の「カート ID の Cookie」）。サーバーコンポーネントとサーバーアクションから呼ぶ。
+ * Cookie のカート ID を読む（店舗画面の構成の「カート ID の Cookie」）。
+ *
+ * サーバーコンポーネントとサーバーアクションから呼ぶ。
  *
  * @returns カート ID。Cookie がない・形の違う値なら null
  */
@@ -21,7 +23,9 @@ export async function readCartId(): Promise<string | null> {
 }
 
 /**
- * カート ID を Cookie に書く。有効期限も 30 日に延びる。サーバーアクションからだけ呼べる。
+ * カート ID を Cookie に書く。
+ *
+ * Cookie の有効期限も延びる。サーバーアクションからだけ呼べる。
  *
  * @param cartId カート ID
  */
@@ -30,8 +34,9 @@ export async function writeCartId(cartId: string): Promise<void> {
 }
 
 /**
- * カート ID の Cookie を消す（ログアウト・カートを移した後。店舗画面の構成の「カート ID の Cookie」）。サーバーアクションと
- * ルートハンドラーからだけ呼べる。
+ * カート ID の Cookie を消す（ログアウト・カートを移した後。店舗画面の構成の「カート ID の Cookie」）。
+ *
+ * サーバーアクションとルートハンドラーからだけ呼べる。
  */
 export async function deleteCartId(): Promise<void> {
   ;(await cookies()).delete(cartCookie())
@@ -41,7 +46,9 @@ export async function deleteCartId(): Promise<void> {
 const cartMergeNoticeCookie = () => cookieName(COOKIE_PREFIX, 'cart_merge_notice')
 
 /**
- * カートを移した結果の知らせを読む。サーバーコンポーネントから呼ぶ。
+ * カートを移した結果の知らせを読む。
+ *
+ * サーバーコンポーネントから呼ぶ。
  *
  * @returns 知らせ。なければ null
  */
@@ -50,7 +57,9 @@ export async function readCartMergeNotice(): Promise<CartMergeNotice | null> {
 }
 
 /**
- * カートを移した結果の知らせを書く（ブラウザーを閉じるまで。表示したら消す）。ルートハンドラーからだけ呼べる。
+ * カートを移した結果の知らせを書く（ブラウザーを閉じるまで。表示したら消す）。
+ *
+ * ルートハンドラーからだけ呼べる。
  *
  * @param notice 知らせ
  */

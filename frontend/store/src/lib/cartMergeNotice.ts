@@ -71,8 +71,6 @@ export function parseCartMergeNotice(value: string | undefined): CartMergeNotice
   }
 }
 
-// ============================== プライベート ==============================
-
 /** 品目の名前（「商品名（軸：値）」） */
 function itemLabel(item: SourceItem): string {
   return item.axisValues.length === 0

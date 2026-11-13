@@ -21,7 +21,7 @@ describe('画面の見出し', () => {
     expect(header.getByRole('heading', { level: 1, name: 'カート' })).toBeInTheDocument()
   })
 
-  test('操作を渡すと、見出しと並べて出す', () => {
+  test('操作を渡すと、見出しと一緒に出す', () => {
     const header = render(
       <PageHeader title="商品">
         <button type="button">登録</button>

@@ -5,7 +5,11 @@ import type { ProductSummary } from '@/api/types'
 import { PriceText } from '@/components/PriceText'
 import { ProductImage } from '@/components/ProductImage'
 
-/** 一覧の商品。商品名、代表画像、価格を出し、在庫がなければ「在庫なし」と示す */
+/**
+ * 一覧の商品
+ *
+ * 商品名、代表画像、価格を出し、在庫がなければ「在庫なし」と示す。
+ */
 export function ProductCard({ product }: { product: ProductSummary }) {
   const t = useTranslations('catalog.stock')
   const tShowcase = useTranslations('catalog.showcase')
@@ -25,8 +29,15 @@ export function ProductCard({ product }: { product: ProductSummary }) {
   )
 }
 
-/** 商品の並び。商品がなければ message を出す */
-export function ProductGrid({ products, emptyMessage }: { products: ProductSummary[]; emptyMessage: string }) {
+/** 商品の並び */
+export function ProductGrid({
+  products,
+  emptyMessage,
+}: {
+  products: ProductSummary[]
+  /** 商品がないときに出す文 */
+  emptyMessage: string
+}) {
   if (products.length === 0) {
     return <p className="text-muted-foreground">{emptyMessage}</p>
   }

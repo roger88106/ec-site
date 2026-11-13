@@ -3,7 +3,8 @@ import type { JWT } from 'next-auth/jwt'
 import { type Mock, vi } from 'vitest'
 
 /**
- * サーバーの処理のテストで、Auth.js（next-auth）の代わりに使うログインの状態（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * サーバーの処理のテストで、Auth.js（next-auth）の代わりに使うログインの状態（フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
+ *
  * setup.ts が next-auth・next-auth/jwt をこれに置き換える。auth.ts は本物を使うので、auth.ts が Auth.js に渡した設定
  * （コールバック、イベント）は config から呼んで確認する。
  */
@@ -12,7 +13,9 @@ import { type Mock, vi } from 'vitest'
 export const ACCESS_TOKEN = 'member-access-token'
 
 /**
- * 現在の時刻を UNIX 時刻の秒にする（token の `expiresAt` と同じ単位）。偽の時計を使っていれば、その時刻。
+ * 現在の時刻を UNIX 時刻の秒にする（token の `expiresAt` と同じ単位）。
+ *
+ * 偽の時計を使っていれば、その時刻。
  * 例：`signInAs({ expiresAt: nowSeconds() - 10 })`
  *
  * @returns 現在の UNIX 時刻の秒。秒に満たない分は切り捨てる

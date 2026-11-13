@@ -1,7 +1,8 @@
 import type { NextAuthConfig } from 'next-auth'
 
 /**
- * 店舗画面の Cookie の名前に付ける接頭辞（環境変数 `STORE_COOKIE_PREFIX`）。<br />
+ * 店舗画面の Cookie の名前に付ける接頭辞（環境変数 `STORE_COOKIE_PREFIX`）。
+ *
  * Cookie はポートで分かれないので、同じ localhost で複数の店舗画面を動かすと、互いの Cookie を読み合う。
  * 並行の作業ツリーごとに接頭辞を変えて、これを避ける。空なら今の名前のまま（本番と CI）。
  */
@@ -31,7 +32,9 @@ export function cookieName(prefix: string, name: string): string {
 }
 
 /**
- * Auth.js の設定 `cookies`。名前だけを渡し、属性は Auth.js の既定（開発のモードと本番で変わる）のままにする。
+ * Auth.js の設定 `cookies`。
+ *
+ * 名前だけを渡し、属性は Auth.js の既定（開発のモードと本番で変わる）のままにする。
  *
  * @param prefix 接頭辞
  * @param secure HTTPS だけで送るか（Auth.js の `useSecureCookies`）
@@ -46,7 +49,9 @@ export function authCookies(prefix: string, secure: boolean): NextAuthConfig['co
 }
 
 /**
- * セッションの Cookie の名前。`getToken` で読むときに渡す（Auth.js は名前を JWT の暗号化の salt にも使うので、
+ * セッションの Cookie の名前。
+ *
+ * `getToken` で読むときに渡す（Auth.js は名前を JWT の暗号化の salt にも使うので、
  * 名前を変えたら読むときも同じ名前を渡す）。
  *
  * @param prefix 接頭辞
@@ -56,10 +61,10 @@ export function sessionCookieName(prefix: string, secure: boolean): string {
   return authCookieName(prefix, 'sessionToken', secure)
 }
 
-// ============================== プライベート ==============================
-
 /**
- * Auth.js の Cookie の名前。`__Secure-`・`__Host-` は、ブラウザーが名前の先頭で見るので先頭に残し、
+ * Auth.js の Cookie の名前。
+ *
+ * `__Secure-`・`__Host-` は、ブラウザーが名前の先頭で見るので先頭に残し、
  * その後ろに接頭辞を付ける。HTTPS のときだけ付き、CSRF の Cookie だけが `__Host-`、ほかは `__Secure-`。
  */
 function authCookieName(prefix: string, kind: AuthCookieKind, secure: boolean): string {

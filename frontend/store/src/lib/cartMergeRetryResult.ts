@@ -2,7 +2,8 @@ import type { CartMergeNotice } from '@/lib/cartMergeNotice'
 
 /**
  * カートの画面での、カートを移す処理の再試行の結果。サーバーアクション retryCartMerge が返し、
- * カートの画面のクライアントコンポーネントが表示する。<br />
+ * カートの画面のクライアントコンポーネントが表示する。
+ *
  * 'use server' のファイルは非同期の関数しかエクスポートできないので、型はここに置く。
  */
 export type CartMergeRetryResult =

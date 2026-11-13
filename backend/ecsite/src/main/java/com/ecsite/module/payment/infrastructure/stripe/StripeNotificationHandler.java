@@ -110,9 +110,8 @@ class StripeNotificationHandler {
         try {
             // 通知の API のバージョンがライブラリと違うと安全な読み方では読めないので、そのときは項目の名前で読む
             // （使う項目は ID と PaymentIntent の ID だけで、バージョンで変わらない）
-            StripeObject object = deserializer.getObject().isPresent()
-                    ? deserializer.getObject().get()
-                    : deserializer.deserializeUnsafe();
+            var safe = deserializer.getObject();
+            StripeObject object = safe.isPresent() ? safe.get() : deserializer.deserializeUnsafe();
             return (Session) object;
         } catch (EventDataObjectDeserializationException | ClassCastException e) {
             // 再送でも直らないが、例外で返して Stripe の通知の記録に残す

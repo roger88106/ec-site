@@ -86,8 +86,9 @@ class PaymentTest {
         void authorizesUnpaid() {
             var payment = unpaid();
 
-            payment.authorize(AUTHORIZATION_REF, ORDERED_AT);
+            var authorized = payment.authorize(AUTHORIZATION_REF, ORDERED_AT);
 
+            assertThat(authorized).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
             assertThat(payment.authorizationRef()).isEqualTo(AUTHORIZATION_REF);
             assertThat(payment.pullEvents()).singleElement().isInstanceOfSatisfying(PaymentAuthorized.class,
@@ -99,8 +100,9 @@ class PaymentTest {
         void ignoresDuplicate() {
             var payment = authorized();
 
-            payment.authorize("pi_test_other", ORDERED_AT);
+            var authorized = payment.authorize("pi_test_other", ORDERED_AT);
 
+            assertThat(authorized).isFalse();
             assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
             assertThat(payment.authorizationRef()).isEqualTo(AUTHORIZATION_REF);
             assertThat(payment.pullEvents()).isEmpty();
@@ -111,8 +113,9 @@ class PaymentTest {
         void voidsLateAuthorization() {
             var payment = expired();
 
-            payment.authorize(AUTHORIZATION_REF, ORDERED_AT);
+            var authorized = payment.authorize(AUTHORIZATION_REF, ORDERED_AT);
 
+            assertThat(authorized).isFalse();
             assertThat(payment.status()).isEqualTo(PaymentStatus.VOID_PENDING);
             assertThat(payment.authorizationRef()).isEqualTo(AUTHORIZATION_REF);
             assertThat(payment.pullEvents()).singleElement().isInstanceOf(VoidRequested.class);

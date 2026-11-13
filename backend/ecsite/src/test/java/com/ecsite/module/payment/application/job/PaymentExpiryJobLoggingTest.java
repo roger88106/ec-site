@@ -3,6 +3,7 @@ package com.ecsite.module.payment.application.job;
 import com.ecsite.TestSettings;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.PaymentCommandService;
+import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
@@ -82,7 +83,8 @@ class PaymentExpiryJobLoggingTest {
 
     private final PaymentGateway gateway = mock(PaymentGateway.class);
 
-    private final PaymentExpiryJob job = new PaymentExpiryJob(commandService, queryService, gateway);
+    private final PaymentExpiryJob job = new PaymentExpiryJob(queryService,
+            new PaymentGatewayService(commandService, queryService, gateway, bind(Map.of())));
 
     @BeforeEach
     void setUp() {

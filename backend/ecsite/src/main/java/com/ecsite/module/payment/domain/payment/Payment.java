@@ -141,6 +141,48 @@ public class Payment extends AggregateRoot {
     }
 
     /**
+     * 与信の時刻を返す。
+     *
+     * @return 与信の時刻。与信がなければ空
+     */
+    public Optional<Instant> authorizedAt() {
+        return Optional.ofNullable(authorizedAt);
+    }
+
+    /**
+     * 与信期限を返す。
+     *
+     * @param term 与信の有効期間
+     * @return 与信期限。与信の時刻がなければ空
+     */
+    public Optional<Instant> authorizationDeadline(@NonNull AuthorizationTerm term) {
+        return authorizedAt().map(term::deadlineOf);
+    }
+
+    /**
+     * 与信期限が近いかを返す。
+     *
+     * <p>与信済みと与信期限切れの支払だけが対象で、期限を過ぎていても近いとする。
+     *
+     * @param term 与信の有効期間と、近いとする長さ
+     * @param now  現在時刻
+     * @return 近ければ true
+     */
+    public boolean isAuthorizationExpiring(@NonNull AuthorizationTerm term, @NonNull Instant now) {
+        return status.watchesAuthorizationDeadline()
+                && authorizedAt().map(at -> term.isExpiring(at, now)).orElse(false);
+    }
+
+    /**
+     * 与信の反映を待ち始めた時刻を返す。
+     *
+     * @return 待ち始めた時刻。待っていなければ空
+     */
+    public Optional<Instant> awaitingAuthorizationSince() {
+        return Optional.ofNullable(awaitingAuthorizationSince);
+    }
+
+    /**
      * 開いた支払画面を覚える。
      *
      * <p>次からは同じ画面を使う。
@@ -161,9 +203,10 @@ public class Payment extends AggregateRoot {
      *
      * @param authorizationRef 与信の参照
      * @param now              現在時刻
+     * @return 未払いから与信済みにしたら true
      */
-    public void authorize(@NonNull String authorizationRef, @NonNull Instant now) {
-        authorize(authorizationRef, now, now);
+    public boolean authorize(@NonNull String authorizationRef, @NonNull Instant now) {
+        return authorize(authorizationRef, now, now);
     }
 
     /**
@@ -175,24 +218,26 @@ public class Payment extends AggregateRoot {
      * @param authorizationRef 与信の参照
      * @param authorizedAt     与信の時刻（与信期限の起点）
      * @param now              現在時刻（イベントの発生時刻）
+     * @return 未払いから与信済みにしたら true
      */
-    public void authorize(@NonNull String authorizationRef, @NonNull Instant authorizedAt, @NonNull Instant now) {
-        switch (status) {
+    public boolean authorize(@NonNull String authorizationRef, @NonNull Instant authorizedAt, @NonNull Instant now) {
+        return switch (status) {
             case UNPAID -> {
                 this.authorizationRef = authorizationRef;
                 this.authorizedAt = authorizedAt;
                 status = PaymentStatus.AUTHORIZED;
                 registerEvent(PaymentAuthorized.of(now, orderId));
+                yield true;
             }
             // 期限切れかキャンセルの後に届いた与信は、取り消す
             case NOT_PAID -> {
                 this.authorizationRef = authorizationRef;
                 requestVoid(now);
+                yield false;
             }
-            case AUTHORIZED, VOID_PENDING, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
-                // すでに与信がある（重ねて届いた通知、または順序が入れ替わった通知）
-            }
-        }
+            // すでに与信がある（重ねて届いた通知、または順序が入れ替わった通知）
+            case AUTHORIZED, VOID_PENDING, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> false;
+        };
     }
 
     /**
@@ -230,35 +275,6 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 与信の反映を待ち始めた時刻を返す。
-     *
-     * @return 待ち始めた時刻。待っていなければ空
-     */
-    public Optional<Instant> awaitingAuthorizationSince() {
-        return Optional.ofNullable(awaitingAuthorizationSince);
-    }
-
-    /**
-     * 注文のキャンセルに合わせて取り消す。
-     *
-     * <p>与信済みなら与信の取消待ちに、売上確定済みなら返金待ちに、未払いなら支払なしにする。
-     * それ以外なら何もしない。
-     *
-     * @param now 現在時刻
-     */
-    public void cancel(@NonNull Instant now) {
-        switch (status) {
-            case AUTHORIZED -> requestVoid(now);
-            // 未払いは、取り消す与信がない
-            case UNPAID -> status = PaymentStatus.NOT_PAID;
-            case CAPTURED -> requestRefund(now);
-            case VOID_PENDING, VOIDED, NOT_PAID, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
-                // 取り消すものがない（与信期限切れは、決済サービスで与信が切れている）か、取消か返金を始めている
-            }
-        }
-    }
-
-    /**
      * 売上を確定したことを反映する。
      *
      * <p>与信済みなら売上確定済みにする。与信の取消待ちなら、返金待ちにして返金の依頼を登録する。
@@ -289,47 +305,23 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 決済サービスで返金したことを反映する。
+     * 注文のキャンセルに合わせて取り消す。
      *
-     * <p>返金待ちでなければ何もしない。
+     * <p>与信済みなら与信の取消待ちに、売上確定済みなら返金待ちに、未払いなら支払なしにする。
+     * それ以外なら何もしない。
+     *
+     * @param now 現在時刻
      */
-    public void markRefunded() {
-        if (status == PaymentStatus.REFUND_PENDING) {
-            status = PaymentStatus.REFUNDED;
+    public void cancel(@NonNull Instant now) {
+        switch (status) {
+            case AUTHORIZED -> requestVoid(now);
+            // 未払いは、取り消す与信がない
+            case UNPAID -> status = PaymentStatus.NOT_PAID;
+            case CAPTURED -> requestRefund(now);
+            case VOID_PENDING, VOIDED, NOT_PAID, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
+                // 取り消すものがない（与信期限切れは、決済サービスで与信が切れている）か、取消か返金を始めている
+            }
         }
-    }
-
-    /**
-     * 与信の時刻を返す。
-     *
-     * @return 与信の時刻。与信がなければ空
-     */
-    public Optional<Instant> authorizedAt() {
-        return Optional.ofNullable(authorizedAt);
-    }
-
-    /**
-     * 与信期限を返す。
-     *
-     * @param term 与信の有効期間
-     * @return 与信期限。与信の時刻がなければ空
-     */
-    public Optional<Instant> authorizationDeadline(@NonNull AuthorizationTerm term) {
-        return authorizedAt().map(term::deadlineOf);
-    }
-
-    /**
-     * 与信期限が近いかを返す。
-     *
-     * <p>与信済みと与信期限切れの支払だけが対象で、期限を過ぎていても近いとする。
-     *
-     * @param term 与信の有効期間と、近いとする長さ
-     * @param now  現在時刻
-     * @return 近ければ true
-     */
-    public boolean isAuthorizationExpiring(@NonNull AuthorizationTerm term, @NonNull Instant now) {
-        return status.watchesAuthorizationDeadline()
-                && authorizedAt().map(at -> term.isExpiring(at, now)).orElse(false);
     }
 
     /**
@@ -340,6 +332,17 @@ public class Payment extends AggregateRoot {
     public void markVoided() {
         if (status == PaymentStatus.VOID_PENDING) {
             status = PaymentStatus.VOIDED;
+        }
+    }
+
+    /**
+     * 決済サービスで返金したことを反映する。
+     *
+     * <p>返金待ちでなければ何もしない。
+     */
+    public void markRefunded() {
+        if (status == PaymentStatus.REFUND_PENDING) {
+            status = PaymentStatus.REFUNDED;
         }
     }
 

@@ -1,11 +1,8 @@
 package com.ecsite.module.payment.application.job;
 
 import com.ecsite.common.error.exception.SystemException;
-import com.ecsite.module.payment.application.PaymentCommandService;
+import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentQueryService;
-import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
-import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
-import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +10,10 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-
 /**
  * 支払の期限切れのジョブ
+ *
+ * <p>1 件ずつの処理は {@link PaymentGatewayService} に任せ、ここでは対象の取得、失敗の切り分け、打ち切りを行う。
  */
 @Slf4j
 @Component
@@ -29,16 +26,13 @@ class PaymentExpiryJob {
     private static final int BATCH_SIZE = 100;
 
     /**
-     * 決済サービスへの接続の失敗が続いたら、その回の与信の取得を打ち切る件数。
-     * 応答がないと 1 件で最大約 75 秒かかるので、応答のない状態が続くときは、この件数（約 225 秒）で与信の取得を止める。
-     * 接続の失敗が断続的に起きるときの取得の時間と、支払画面を閉じる処理の時間は制限しない（業務の正しさは行ロックと冪等な遷移で保つ）
+     * 与信の取得を打ち切る、決済サービスへの接続に続けて失敗した回数
+     *
+     * <p>応答がないと 1 件で最大約 75 秒かかるので、3 件（約 225 秒）続いたらその回の取得を止める。
+     *
+     * <p>断続的な失敗での取得の時間と、支払画面を閉じる処理の時間は制限しない。業務の正しさは、行ロックと冪等な遷移で保つ。
      */
     private static final int MAX_CONSECUTIVE_UNAVAILABLE = 3;
-
-    /**
-     * 支払の更新のサービス
-     */
-    private final PaymentCommandService commandService;
 
     /**
      * 支払の参照のサービス
@@ -46,14 +40,14 @@ class PaymentExpiryJob {
     private final PaymentQueryService queryService;
 
     /**
-     * 決済サービス
+     * 決済サービスを呼ぶ操作のサービス
      */
-    private final PaymentGateway gateway;
+    private final PaymentGatewayService gatewayService;
 
     /**
      * 期限を過ぎた未払いの支払を支払なしにし、与信の反映を待つ支払を与信済みにする。
      *
-     * <p>与信の反映を長く待つ支払があれば、warn のログに件数を出す。決済サービスはトランザクションの外で呼ぶ。
+     * <p>与信の反映を長く待つ支払があれば、warn のログに件数を出す。
      */
     // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
@@ -63,7 +57,7 @@ class PaymentExpiryJob {
         // 期限切れ ※1 つの支払の失敗（例外の種類を問わない）で、ほかの支払を止めない
         for (var payment : queryService.findPastDeadline(BATCH_SIZE)) {
             try {
-                expire(payment);
+                gatewayService.expire(payment);
             } catch (RuntimeException e) {
                 // 決済サービスの応答、保存の失敗、DB の値の破損のどれでも、次の回でやり直す
                 log.warn("支払の期限切れに失敗したので、次の回に回す: paymentId={}", payment.id(), e);
@@ -78,20 +72,6 @@ class PaymentExpiryJob {
     }
 
     /**
-     * 1 つの支払を、支払画面を閉じてから支払なしにする。
-     */
-    private void expire(PastDeadlinePaymentView payment) {
-        var page = payment.page();
-        // 閉じる前に支払が済んでいた支払は、支払なしにせず与信の反映を待つ（期限切れの検索から外れる）
-        if (page != null && gateway.closePage(page.id()) == PaymentGateway.CloseResult.ALREADY_PAID) {
-            log.info("期限の前に支払が済んでいたので、与信の反映を待つ: paymentId={}", payment.id());
-            commandService.awaitAuthorization(payment.id());
-            return;
-        }
-        commandService.expire(payment.id());
-    }
-
-    /**
      * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。
      *
      * <p>取得できなかった支払は、次の回でやり直す。
@@ -101,7 +81,7 @@ class PaymentExpiryJob {
         int unavailable = 0;
         for (var payment : queryService.findAwaitingAuthorization(BATCH_SIZE)) {
             try {
-                recoverAuthorization(payment);
+                gatewayService.recoverAuthorization(payment);
                 unavailable = 0;
             } catch (RuntimeException e) {
                 log.warn("与信を取得できないので、次の回で再試行する: paymentId={}", payment.id(), e);
@@ -111,17 +91,6 @@ class PaymentExpiryJob {
                     return;
                 }
             }
-        }
-    }
-
-    /**
-     * 1 つの支払の与信を取得して反映する。
-     */
-    private void recoverAuthorization(AwaitingAuthorizationPaymentView payment) {
-        var pageId = Objects.requireNonNull(payment.pageId(), "与信の反映を待つ支払には支払画面がある");
-        var authorization = gateway.fetchAuthorization(pageId);
-        if (commandService.authorizeFromGateway(payment.id(), authorization)) {
-            log.warn("通知より先に、決済サービスから与信を取得して反映した: paymentId={}", payment.id());
         }
     }
 

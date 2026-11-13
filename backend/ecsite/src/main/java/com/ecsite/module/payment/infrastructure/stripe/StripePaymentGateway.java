@@ -87,31 +87,27 @@ class StripePaymentGateway implements PaymentGateway {
      */
     private final Clock clock;
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Stripe の冪等の鍵は付けない。同じ鍵では、期限の切れた Session も 24 時間返り続けるため。
+     * 重ねて作った画面は、呼んだ側が閉じる。
+     */
     @Override
     public PaymentPage openPage(PageRequest request) {
         var params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .addLineItem(SessionCreateParams.LineItem.builder()
-                        .setQuantity(1L)
-                        .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
-                                .setCurrency(CURRENCY)
-                                .setUnitAmount(request.amount().yen())
-                                .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                        .setName(LINE_ITEM_NAME)
-                                        .build())
-                                .build())
-                        .build())
-                // 与信だけを取り、売上の確定（capture）はしない
-                .setPaymentIntentData(SessionCreateParams.PaymentIntentData.builder()
-                        .setCaptureMethod(SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL)
-                        .putMetadata("orderId", request.orderId().toString())
-                        .putMetadata("paymentId", request.paymentId().toString())
-                        .build())
+                // 明細：注文の総額の 1 行
+                .addLineItem(totalLineItem(request))
+                // 与信だけを取る PaymentIntent
+                .setPaymentIntentData(authorizationOnly(request))
+                // Stripe のダッシュボードで、Session を注文と支払に照合するための ID
                 .setClientReferenceId(request.orderId().toString())
                 .putMetadata("paymentId", request.paymentId().toString())
-                // 支払を終えても、やめても、店舗の注文の画面に戻す（結果は通知で受け取る）
+                // 戻る先：支払を終えても、やめても、店舗の注文の画面に戻す（結果は通知で受け取る）
                 .setSuccessUrl(request.returnUrl())
                 .setCancelUrl(request.returnUrl())
+                // 期限：過ぎると Stripe が画面を閉じ、期限切れを通知する
                 .setExpiresAt(clock.instant().plus(PAGE_LIFETIME).getEpochSecond())
                 .build();
         try {
@@ -129,7 +125,7 @@ class StripePaymentGateway implements PaymentGateway {
             return CloseResult.CLOSED;
         } catch (InvalidRequestException e) {
             // 開いていない Session は閉じられない。読み直して、支払が済んでいたか、もう閉じていたかを決める
-            return closedState(pageId, e);
+            return closeResultOf(pageId, e);
         } catch (StripeException e) {
             throw failure("支払画面を閉じられない: pageId=" + pageId, e);
         }
@@ -158,12 +154,22 @@ class StripePaymentGateway implements PaymentGateway {
             return VoidResult.VOIDED;
         } catch (InvalidRequestException e) {
             // 取消済みと売上確定済みの与信は取り消せない。状態を再取得して見分ける
-            return voidedState(authorizationRef, e);
+            return voidResultOf(authorizationRef, e);
         } catch (StripeException e) {
             throw failure("与信を取り消せない: authorizationRef=" + authorizationRef, e);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Stripe の失敗は、次のように結果に変える。
+     * <ul>
+     *   <li>今の状態ではできない（確定済み、与信の期限切れ）：PaymentIntent を読み直して、確定済みか期限切れかを決める</li>
+     *   <li>Stripe が使えない（接続できない、Stripe の側の故障、回数の制限）：接続できない</li>
+     *   <li>それ以外：例外</li>
+     * </ul>
+     */
     @Override
     public CaptureResult capture(CaptureRequest request) {
         var params = PaymentIntentCaptureParams.builder().setAmountToCapture(request.amount().yen()).build();
@@ -172,15 +178,16 @@ class StripePaymentGateway implements PaymentGateway {
             client.v1().paymentIntents().capture(request.authorizationRef(), params, options);
             return CaptureResult.CAPTURED;
         } catch (InvalidRequestException e) {
-            // 確定済みと与信の期限切れ（Stripe が取り消している）は、同じ理由で拒否される。読み直して見分ける
-            if (!UNEXPECTED_STATE.equals(e.getCode())) {
-                throw failure("売上を確定できない: orderId=" + request.orderId(), e);
+            // 確定済みと与信の期限切れ（Stripe が取り消している）は、同じ理由で拒否される
+            if (UNEXPECTED_STATE.equals(e.getCode())) {
+                return captureResultOf(request, e);
             }
-            return capturedState(request, e);
-        } catch (ApiConnectionException | ApiException | RateLimitException e) {
-            log.warn("Stripe に接続できず、売上を確定できない: orderId={}, requestId={}", request.orderId(), e.getRequestId(), e);
-            return CaptureResult.UNREACHABLE;
+            throw failure("売上を確定できない: orderId=" + request.orderId(), e);
         } catch (StripeException e) {
+            if (isUnavailable(e)) {
+                log.warn("Stripe に接続できず、売上を確定できない: orderId={}, requestId={}", request.orderId(), e.getRequestId(), e);
+                return CaptureResult.UNREACHABLE;
+            }
             throw failure("売上を確定できない: orderId=" + request.orderId(), e);
         }
     }
@@ -208,9 +215,40 @@ class StripePaymentGateway implements PaymentGateway {
 // ============================== プライベート ==============================
 
     /**
+     * 支払画面の明細（注文の総額の 1 行）を作る。
+     */
+    private static SessionCreateParams.LineItem totalLineItem(PageRequest request) {
+        var product = SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                .setName(LINE_ITEM_NAME)
+                .build();
+        var price = SessionCreateParams.LineItem.PriceData.builder()
+                .setCurrency(CURRENCY)
+                .setUnitAmount(request.amount().yen())
+                .setProductData(product)
+                .build();
+        return SessionCreateParams.LineItem.builder()
+                .setQuantity(1L)
+                .setPriceData(price)
+                .build();
+    }
+
+    /**
+     * 与信だけを取り、売上を確定（capture）しない PaymentIntent の設定を作る。
+     *
+     * <p>Session の metadata は PaymentIntent に引き継がれないので、PaymentIntent にも注文と支払の ID を付ける。
+     */
+    private static SessionCreateParams.PaymentIntentData authorizationOnly(PageRequest request) {
+        return SessionCreateParams.PaymentIntentData.builder()
+                .setCaptureMethod(SessionCreateParams.PaymentIntentData.CaptureMethod.MANUAL)
+                .putMetadata("orderId", request.orderId().toString())
+                .putMetadata("paymentId", request.paymentId().toString())
+                .build();
+    }
+
+    /**
      * 閉じられなかった Session の状態から、閉じた結果を決める。
      */
-    private CloseResult closedState(String pageId, InvalidRequestException rejected) {
+    private CloseResult closeResultOf(String pageId, InvalidRequestException rejected) {
         String status;
         try {
             status = client.v1().checkout().sessions().retrieve(pageId).getStatus();
@@ -229,7 +267,7 @@ class StripePaymentGateway implements PaymentGateway {
      *
      * <p>確定済みなら成功、取消済みなら与信期限切れ。
      */
-    private CaptureResult capturedState(CaptureRequest request, InvalidRequestException rejected) {
+    private CaptureResult captureResultOf(CaptureRequest request, InvalidRequestException rejected) {
         var status = intentStatus(request.authorizationRef());
         return switch (status) {
             case INTENT_SUCCEEDED -> CaptureResult.CAPTURED;
@@ -243,7 +281,7 @@ class StripePaymentGateway implements PaymentGateway {
      *
      * <p>取消済みなら成功、売上確定済みなら返金に進める。
      */
-    private VoidResult voidedState(String authorizationRef, InvalidRequestException rejected) {
+    private VoidResult voidResultOf(String authorizationRef, InvalidRequestException rejected) {
         var status = intentStatus(authorizationRef);
         return switch (status) {
             case INTENT_CANCELED -> {

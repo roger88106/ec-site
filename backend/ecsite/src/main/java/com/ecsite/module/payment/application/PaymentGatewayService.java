@@ -3,11 +3,14 @@ package com.ecsite.module.payment.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
+import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -17,10 +20,13 @@ import java.util.UUID;
 /**
  * 決済サービスを呼ぶ操作のサービス
  *
- * <p>支払画面、売上確定、与信の取消、返金を扱う。決済サービスはトランザクションの外で呼び、
- * 支払の読み取りと結果の反映は、参照と更新のサービスのトランザクションで行う。決済サービスの応答を待つ間に、
+ * <p>支払画面、売上確定、支払の期限切れ、与信の取得、与信の取消、返金を扱う。
+ *
+ * <p>決済サービスはトランザクションの外で呼び、支払の読み取りと結果の反映は、
+ * 参照と更新のサービスのトランザクションで行う。決済サービスの応答を待つ間に、
  * 行ロックと DB の接続を持たないため。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentGatewayService {
@@ -105,10 +111,9 @@ public class PaymentGatewayService {
         }
 
         // 売上確定
-        var result = gateway.capture(
-                new PaymentGateway.CaptureRequest(orderId,
-                        Objects.requireNonNull(payment.authorizationRef(), "売上を確定できる支払には与信の参照がある"),
-                        payment.amount()));
+        var result = gateway.capture(new PaymentGateway.CaptureRequest(orderId,
+                Objects.requireNonNull(payment.authorizationRef(), "売上を確定できる支払には与信の参照がある"),
+                payment.amount()));
 
         // 結果の反映
         switch (result) {
@@ -119,6 +124,38 @@ public class PaymentGatewayService {
             }
             case UNREACHABLE -> throw SystemException.of("決済サービスに接続できず、売上を確定できない: orderId=" + orderId, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        }
+    }
+
+    /**
+     * 期限を過ぎた未払いの支払を、支払画面を閉じてから支払なしにする。
+     *
+     * <p>閉じる前に支払が済んでいたら、支払なしにせず、与信の反映を待つ支払にする（期限切れの検索から外れる）。
+     *
+     * @param payment 期限を過ぎた支払
+     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     */
+    public void expire(@NonNull PastDeadlinePaymentView payment) {
+        var page = payment.page();
+        if (page != null && gateway.closePage(page.id()) == PaymentGateway.CloseResult.ALREADY_PAID) {
+            log.info("期限の前に支払が済んでいたので、与信の反映を待つ: paymentId={}", payment.id());
+            commandService.awaitAuthorization(payment.id());
+            return;
+        }
+        commandService.expire(payment.id());
+    }
+
+    /**
+     * 与信の反映を待つ支払について、決済サービスから与信を取得して与信済みにする。
+     *
+     * @param payment 与信の反映を待つ支払
+     * @throws SystemException 決済サービスに接続できない（PAYMENT_GATEWAY_UNAVAILABLE）
+     */
+    public void recoverAuthorization(@NonNull AwaitingAuthorizationPaymentView payment) {
+        var pageId = Objects.requireNonNull(payment.pageId(), "与信の反映を待つ支払には支払画面がある");
+        var authorization = gateway.fetchAuthorization(pageId);
+        if (commandService.authorizeFromGateway(payment.id(), authorization)) {
+            log.warn("通知より先に、決済サービスから与信を取得して反映した: paymentId={}", payment.id());
         }
     }
 

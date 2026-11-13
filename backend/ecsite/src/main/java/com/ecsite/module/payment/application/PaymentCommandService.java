@@ -5,7 +5,6 @@ import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
-import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -61,21 +60,58 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 決済サービスで売上を確定したことを反映する。
+     * 決済サービスで開いた支払画面を覚える。
      *
-     * @param paymentId 支払 ID
+     * <p>先に覚えた画面があれば、その画面を返す。
+     *
+     * @param orderId 注文 ID
+     * @param opened  開いた支払画面
+     * @return 使う支払画面。支払えなければ空
      */
-    public void markCaptured(@NonNull UUID paymentId) {
-        modify(paymentId, payment -> payment.capture(clock.instant()));
+    public Optional<PaymentPage> recordPage(@NonNull UUID orderId, @NonNull PaymentPage opened) {
+        var now = clock.instant();
+        return paymentRepository.lockByOrderId(orderId)
+                .filter(payment -> payment.isPayable(now))
+                // 同時のリクエストが先に覚えた画面があれば、それを使う
+                .map(payment -> payment.page().orElseGet(() -> {
+                    payment.openPage(opened);
+                    paymentRepository.update(payment);
+                    return opened;
+                }));
     }
 
     /**
-     * 売上確定が与信の期限切れで断られたことを反映する。
+     * 決済サービスの通知で、与信の成功を反映する。
      *
-     * @param paymentId 支払 ID
+     * <p>知らない支払画面なら、ログに残して無視する。
+     *
+     * @param pageId           支払画面 ID
+     * @param authorizationRef 与信の参照
      */
-    public void markAuthorizationExpired(@NonNull UUID paymentId) {
-        modify(paymentId, Payment::expireAuthorization);
+    @Override
+    public void authorized(String pageId, String authorizationRef) {
+        paymentRepository.lockByPageId(pageId).ifPresentOrElse(payment -> {
+            payment.authorize(authorizationRef, clock.instant());
+            paymentRepository.update(payment);
+        }, () -> log.warn("知らない支払画面の与信の成功を無視する: pageId={}", pageId));
+    }
+
+    /**
+     * 決済サービスから取得した与信を反映する。
+     *
+     * <p>行ロックの後に確認し直す。
+     *
+     * @param paymentId     支払 ID
+     * @param authorization 取得した与信
+     * @return 未払いから与信済みにしたら true（先に通知が届いていれば false）
+     */
+    public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull PaymentGateway.Authorization authorization) {
+        var now = clock.instant();
+        return paymentRepository.lockById(paymentId).map(payment -> {
+            var authorized = payment.authorize(authorization.authorizationRef(), authorization.authorizedAt(), now);
+            paymentRepository.update(payment);
+            return authorized;
+        }).orElse(false);
     }
 
     /**
@@ -87,11 +123,20 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      */
     public void expire(@NonNull UUID paymentId) {
         var now = clock.instant();
-        // 行ロックの後に確認し直し、読んでから与信済みになった支払を変えない
-        paymentRepository.lockById(paymentId)
-                .filter(payment -> !payment.isPayable(now))
-                .filter(payment -> payment.expire(now))
-                .ifPresent(paymentRepository::update);
+        paymentRepository.lockById(paymentId).ifPresent(payment -> expireIfPastDeadline(payment, now));
+    }
+
+    /**
+     * 決済サービスの通知で、支払画面の期限切れを反映する。
+     *
+     * <p>支払の期限の後で未払いなら、支払なしにする。期限の前の通知では何もしない。
+     *
+     * @param pageId 支払画面 ID
+     */
+    @Override
+    public void pageExpired(String pageId) {
+        var now = clock.instant();
+        paymentRepository.lockByPageId(pageId).ifPresent(payment -> expireIfPastDeadline(payment, now));
     }
 
     /**
@@ -108,22 +153,21 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 決済サービスから取得した与信を反映する。
+     * 決済サービスで売上を確定したことを反映する。
      *
-     * <p>行ロックの後に確認し直す。
-     *
-     * @param paymentId     支払 ID
-     * @param authorization 取得した与信
-     * @return 未払いから与信済みにしたら true（先に通知が届いていれば false）
+     * @param paymentId 支払 ID
      */
-    public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull PaymentGateway.Authorization authorization) {
-        var now = clock.instant();
-        return paymentRepository.lockById(paymentId).map(payment -> {
-            var wasUnpaid = payment.status() == PaymentStatus.UNPAID;
-            payment.authorize(authorization.authorizationRef(), authorization.authorizedAt(), now);
-            paymentRepository.update(payment);
-            return wasUnpaid;
-        }).orElse(false);
+    public void markCaptured(@NonNull UUID paymentId) {
+        modify(paymentId, payment -> payment.capture(clock.instant()));
+    }
+
+    /**
+     * 売上確定が与信の期限切れで断られたことを反映する。
+     *
+     * @param paymentId 支払 ID
+     */
+    public void markAuthorizationExpired(@NonNull UUID paymentId) {
+        modify(paymentId, Payment::expireAuthorization);
     }
 
     /**
@@ -160,62 +204,21 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
         modify(paymentId, Payment::markRefunded);
     }
 
-    /**
-     * 決済サービスで開いた支払画面を覚える。
-     *
-     * <p>先に覚えた画面があれば、その画面を返す。
-     *
-     * @param orderId 注文 ID
-     * @param opened  開いた支払画面
-     * @return 使う支払画面。支払えなければ空
-     */
-    public Optional<PaymentPage> recordPage(@NonNull UUID orderId, @NonNull PaymentPage opened) {
-        var now = clock.instant();
-        return paymentRepository.lockByOrderId(orderId)
-                .filter(payment -> payment.isPayable(now))
-                .map(payment -> {
-                    // 同時のリクエストが先に覚えた画面を使う
-                    if (payment.page().isPresent()) {
-                        return payment.page().get();
-                    }
-                    payment.openPage(opened);
-                    paymentRepository.update(payment);
-                    return opened;
-                });
-    }
-
-    /**
-     * 決済サービスの通知で、与信の成功を反映する。
-     *
-     * <p>知らない支払画面なら、ログに残して無視する。
-     *
-     * @param pageId           支払画面 ID
-     * @param authorizationRef 与信の参照
-     */
-    @Override
-    public void authorized(String pageId, String authorizationRef) {
-        paymentRepository.lockByPageId(pageId).ifPresentOrElse(payment -> {
-            payment.authorize(authorizationRef, clock.instant());
-            paymentRepository.update(payment);
-        }, () -> log.warn("知らない支払画面の与信の成功を無視する: pageId={}", pageId));
-    }
-
-    /**
-     * 決済サービスの通知で、支払画面の期限切れを反映する。
-     *
-     * <p>支払の期限の後で未払いなら、支払なしにする。
-     *
-     * @param pageId 支払画面 ID
-     */
-    @Override
-    public void pageExpired(String pageId) {
-        // 支払なしにする処理は、期限切れのジョブと同じメソッドで行う（同じトランザクションで行ロックし直す。期限の前の通知では何もしない）
-        paymentRepository.lockByPageId(pageId)
-                .map(Payment::id)
-                .ifPresent(this::expire);
-    }
-
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 行ロックした支払が期限を過ぎた未払いなら、支払なしにして保存する。
+     *
+     * <p>行ロックの後に確認し直し、読んでから与信済みになった支払と、期限の前の支払を変えない。
+     *
+     * @param payment 行ロックした支払
+     * @param now     現在時刻
+     */
+    private void expireIfPastDeadline(Payment payment, Instant now) {
+        if (!payment.isPayable(now) && payment.expire(now)) {
+            paymentRepository.update(payment);
+        }
+    }
 
     /**
      * 支払を行ロックして操作を 1 つ呼び、保存する。

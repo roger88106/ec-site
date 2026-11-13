@@ -19,7 +19,7 @@ public interface PaymentGateway {
     /**
      * 与信だけを取る支払画面を作る。
      *
-     * <p>同じリクエストで重ねて呼ばれても、決済サービスで支払は 1 つになるようにする。
+     * <p>呼ぶたびに新しい画面を作る。同時のリクエストで重ねて作った画面は、呼んだ側が閉じる。
      *
      * @param request 支払画面のリクエスト
      * @return 作った支払画面
@@ -83,7 +83,7 @@ public interface PaymentGateway {
     /**
      * 支払画面のリクエスト
      *
-     * @param paymentId 支払 ID（決済サービスでの重複を防ぐ鍵に使う）
+     * @param paymentId 支払 ID（決済サービスの記録と照合するために付ける）
      * @param orderId   注文 ID
      * @param amount    金額（与信を取る額）
      * @param returnUrl 支払を終える・やめるときに戻る URL

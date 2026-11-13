@@ -229,9 +229,11 @@ function useFocusFirstErrorField(formRef: RefObject<HTMLFormElement | null>, res
 }
 
 /**
- * お届け先の都道府県・市区町村・住所の入力の状態（店舗画面の構成の「お届け先の都道府県と市区町村」）。
+ * お届け先の都道府県・市区町村・住所の入力の状態を持つ（店舗画面の構成の「お届け先の都道府県と市区町村」）。
  *
  * 引いている間に都道府県や郵便番号を変えたら、古い応答は捨てる。
+ *
+ * @returns 入力の値と、値を変える関数
  */
 function useAddressArea() {
   const [prefectureCode, setPrefectureCode] = useState('')

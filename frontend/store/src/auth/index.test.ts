@@ -40,6 +40,9 @@ function jwtParams(overrides: Partial<JwtParams> & Pick<JwtParams, 'token'>): Jw
  *
  * Auth.js の型は、データベースのセッションの形（session が AdapterSession、user が AdapterUser）との合併で、
  * JWT のセッションの形だけを型に書けないので、ここで 1 回だけ型を合わせる。
+ *
+ * @param params session と token
+ * @returns session コールバックの引数
  */
 function sessionParams(params: { session: Session; token: JWT }): SessionParams {
   return params as SessionParams

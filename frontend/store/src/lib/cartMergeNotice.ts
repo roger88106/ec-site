@@ -57,7 +57,8 @@ export function serializeCartMergeNotice(notice: CartMergeNotice): string {
 /**
  * Cookie の値を知らせにする。
  *
- * @returns Cookie がない・形の違う値なら null
+ * @param value Cookie の値
+ * @returns 知らせ。Cookie がない・形の違う値なら null
  */
 export function parseCartMergeNotice(value: string | undefined): CartMergeNotice | null {
   if (value === undefined) {

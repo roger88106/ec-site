@@ -12,15 +12,19 @@ import { log } from '@/lib/server/log'
  * 使うカートを選ぶ（店舗画面の構成の「使うカートの選び方」）。
  *
  * ログインしていれば会員のカート、していなければ Cookie のカート。
+ *
+ * @returns 使うカート
  */
 export async function currentCartChoice(): Promise<CartChoice> {
   return chooseCart((await currentMember()) !== null, await readCartId())
 }
 
 /**
- * 会員のカートの ID（GET /me/cart。なければ API が作る）。
+ * 会員のカートの ID を取得する（GET /me/cart。なければ API が作る）。
  *
  * 401 なら、ログインの画面へ移す。
+ *
+ * @returns 会員のカートの ID
  */
 export async function memberCartId(): Promise<string> {
   const api = await getMemberApi()

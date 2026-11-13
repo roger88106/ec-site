@@ -26,7 +26,7 @@ const STRIPE_CHECKOUT_ORIGIN = 'https://checkout.stripe.com'
 const HSTS_VALUE = 'max-age=31536000'
 
 /**
- * 値が固定のヘッダー。
+ * 値が固定のヘッダーを返す。
  *
  * @param production 本番のモードか（本番のときだけ HSTS を含める）
  * @returns ヘッダーの一覧
@@ -44,7 +44,7 @@ export function fixedSecurityHeaders(production: boolean): SecurityHeader[] {
 }
 
 /**
- * CSP の値。
+ * CSP の値を作る。
  *
  * 許すオリジンを追加するときは、この関数の入力と `proxy.ts` の呼び出しを変える。環境変数から取るなら、あわせて次も変える。
  * <ul>

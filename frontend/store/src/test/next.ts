@@ -53,7 +53,7 @@ export function resetRequest(init: { cookies?: Record<string, string>; headers?:
 }
 
 /**
- * Cookie の値（テストで確認する）。
+ * Cookie の値を返す（テストで確認する）。
  *
  * @param name Cookie の名前
  * @returns 値。なければ undefined
@@ -63,7 +63,7 @@ export function cookieValue(name: string): string | undefined {
 }
 
 /**
- * Cookie の属性（テストで確認する）。
+ * Cookie の属性を返す（テストで確認する）。
  *
  * @param name Cookie の名前
  * @returns 属性。なければ undefined

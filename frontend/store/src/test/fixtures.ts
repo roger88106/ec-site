@@ -86,7 +86,7 @@ export const VARIANT_AXES: VariantAxis[] = [
 ]
 
 /**
- * 色とサイズの値を持つバリアント。
+ * 色とサイズの値を持つバリアントを作る。
  *
  * 既定は在庫があり、販売停止でない。
  *
@@ -134,7 +134,7 @@ export const MUNICIPALITIES: Record<string, Municipality[]> = {
 }
 
 /**
- * 郵便番号の住所。
+ * 郵便番号の住所を作る。
  *
  * 都道府県と市区町村は、PREFECTURES と MUNICIPALITIES から引く。
  *
@@ -160,6 +160,7 @@ export function postalCodeAddress(
  * フォームの値を作る。
  *
  * @param fields 項目の名前 → 値
+ * @returns フォームの値
  */
 export function form(fields: Record<string, string>): FormData {
   const data = new FormData()

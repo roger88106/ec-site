@@ -5,7 +5,7 @@ import type { Route } from 'next'
 const HOME: Route = '/'
 
 /**
- * ログインの後に戻る画面（店舗画面の構成の「ログイン」）。
+ * ログインの後に戻る画面を決める（店舗画面の構成の「ログイン」）。
  *
  * 店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。
  *
@@ -17,10 +17,11 @@ export function safeReturnTo(value: string | null | undefined): string {
 }
 
 /**
- * ログインの口（/login）のパス。
+ * ログインの口（/login）のパスを作る。
  *
  * @param returnTo ログインの後に戻る画面
  * @param options  register：会員登録の画面にする
+ * @returns ログインの口のパス（クエリ付き）
  */
 export function loginPath(returnTo: string, options: { register?: boolean } = {}): Route {
   const query = new URLSearchParams({ returnTo })
@@ -31,11 +32,12 @@ export function loginPath(returnTo: string, options: { register?: boolean } = {}
 }
 
 /**
- * access token を取り直すか（店舗画面の構成の「ログイン」）。
+ * access token を取り直すかを判定する（店舗画面の構成の「ログイン」）。
  *
  * @param expiresAt     access token の期限（UNIX 時刻の秒）。分からなければ undefined
  * @param nowSeconds    今の時刻（UNIX 時刻の秒）
  * @param marginSeconds 期限までの残りがこれ以下なら取り直す
+ * @returns 取り直すなら true
  */
 export function needsTokenRefresh(expiresAt: number | undefined, nowSeconds: number, marginSeconds: number): boolean {
   return expiresAt === undefined || expiresAt - nowSeconds <= marginSeconds

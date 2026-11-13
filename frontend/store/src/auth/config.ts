@@ -51,7 +51,7 @@ const URL_SETTINGS = [
 const LOCAL_MOCK_PAYMENT_ORIGIN = 'http://localhost:8080'
 
 /**
- * `http:` か `https:` の URL として解析できるか。
+ * `http:` か `https:` の URL として解析できるかを判定する。
  *
  * @param value 確認する値
  * @returns 解析できて、スキームが `http:` か `https:` なら true

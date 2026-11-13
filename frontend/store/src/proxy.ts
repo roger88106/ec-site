@@ -6,7 +6,7 @@ import { newTraceparent, TRACEPARENT_HEADER, traceIdOf } from '@/lib/server/trac
 
 const { issuer, mockPaymentOrigin, imageOrigin } = readServerConfig()
 /**
- * CSP の値（店舗画面の構成の「セキュリティヘッダー」）。
+ * CSP の値（店舗画面の構成の「セキュリティヘッダー」）
  *
  * 環境変数から作るので、モジュールの読み込みのときに 1 回だけ作り、設定ファイルではなく proxy で応答に付ける。
  */

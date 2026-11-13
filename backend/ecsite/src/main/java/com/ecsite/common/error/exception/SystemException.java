@@ -25,9 +25,14 @@ public class SystemException extends BaseException {
      * @param cause             原因となった例外
      * @param errorCodeProvider エラーコードプロバイダー
      * @return システム例外
+     * @throws IllegalArgumentException 業務の区分のエラーコード（プログラムの誤り）
      */
     public static SystemException of(@NonNull String debugMessage, @Nullable Throwable cause, @NonNull ErrorCodeProvider errorCodeProvider) {
-        return new SystemException(debugMessage, cause, ErrorDetail.of(errorCodeProvider.getCode()));
+        var code = errorCodeProvider.getCode();
+        if (!code.type().system()) {
+            throw new IllegalArgumentException("業務の区分のエラーコードは、BusinessException で投げる：" + code.code());
+        }
+        return new SystemException(debugMessage, cause, ErrorDetail.of(code));
     }
 
     /**

@@ -4,6 +4,8 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
+import com.ecsite.common.persistence.AdvisoryLockSpace;
+import com.ecsite.common.persistence.AdvisoryLocks;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -237,10 +239,10 @@ class JooqOrderRepositoryTest {
      * 別のトランザクションで、会員のロックを待たずに取れるかを返す
      */
     private boolean tryLockInOtherTransaction(ExecutorService executor, UUID memberId) {
-        var key = memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits();
         try {
             return executor.submit(() -> transactionTemplate.execute(inner ->
-                            dsl.fetchValue("select pg_try_advisory_xact_lock(?)", key)))
+                            dsl.fetchValue("select pg_try_advisory_xact_lock(?, ?)",
+                                    AdvisoryLockSpace.ORDER.key(), AdvisoryLocks.hash(memberId))))
                     .get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)
                     .equals(true);
         } catch (Exception e) {

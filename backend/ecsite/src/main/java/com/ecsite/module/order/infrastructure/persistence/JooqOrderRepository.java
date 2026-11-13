@@ -1,8 +1,13 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.DomainEvents;
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
+import com.ecsite.common.persistence.AdvisoryLockSpace;
+import com.ecsite.common.persistence.AdvisoryLocks;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
@@ -22,7 +27,6 @@ import com.ecsite.module.order.domain.quote.TaxAmount;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
@@ -132,16 +136,18 @@ class JooqOrderRepository implements OrderRepository {
             return false;
         }
         insertLines(snapshot);
-        order.pullEvents().forEach(eventPublisher::publishEvent);
+        DomainEvents.publish(eventPublisher, order);
         return true;
     }
 
     /**
      * 注文の状態の変更を保存する。
      *
-     * <p>注文の行だけを更新する。
+     * <p>バージョンが読んだときと同じ場合に、注文の行だけを更新する。
+     * 行ロックして読んだ注文を保存するので競合は起きないが、ロックを取らずに保存したときの安全網にする。
      *
      * @param order 変更した注文
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Override
     public void update(Order order) {
@@ -151,8 +157,14 @@ class JooqOrderRepository implements OrderRepository {
         writeState(record, snapshot);
         record.setVersion(snapshot.version() + 1);
         record.setUpdatedAt(clock.instant());
-        dsl.update(SALES_ORDER).set(record).where(SALES_ORDER.ID.eq(snapshot.id())).execute();
-        order.pullEvents().forEach(eventPublisher::publishEvent);
+        int updated = dsl.update(SALES_ORDER).set(record)
+                .where(SALES_ORDER.ID.eq(snapshot.id()))
+                .and(SALES_ORDER.VERSION.eq(snapshot.version()))
+                .execute();
+        if (updated == 0) {
+            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
+        DomainEvents.publish(eventPublisher, order);
     }
 
     /**
@@ -221,8 +233,7 @@ class JooqOrderRepository implements OrderRepository {
     @Override
     public void lockForMember(UUID memberId) {
         // 複数の支払待ちの注文を認めるので一意索引では防げない。トランザクションの終わりで解放される、会員 ID の advisory lock を使う
-        dsl.select(DSL.function("pg_advisory_xact_lock", Object.class,
-                DSL.val(memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits()))).fetch();
+        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.ORDER, memberId);
     }
 
     /**

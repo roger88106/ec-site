@@ -18,10 +18,10 @@
 |------------|----------|
 | `common/error/` | エラーの定義の基底と、例外から Problem Details への変換（`error/exception/`、`error/handler/`） |
 | `common/message/` | メッセージのコードとパラメータから日本語の文を作るクラス |
-| `common/model/base/` | 集約とドメインイベントの基底 |
+| `common/model/base/` | 集約とドメインイベントの基底と、集約の登録したイベントを送り出す部品 |
 | `common/model/value/` | 規則を持つ共通の値（金額、文字の項目、業務の日付、操作した運営者）。業務の日付の時間帯（日本時間）は 1 か所で決める |
 | `common/paging/` | ページ指定と一覧の結果 |
-| `common/persistence/` | DB の制約の違反を業務のエラーに変えるクラス |
+| `common/persistence/` | DB の制約の違反を業務のエラーに変えるクラスと、用途ごとの名前空間で advisory lock を取る部品 |
 | `common/presentation/` | API の日時の変換、作成の応答、店舗 API の価格など、Controller と応答への変換の共通のクラス |
 | `common/scheduling/` | 期限切れのデータの片付けの共通の処理。`@Scheduled` と `@SchedulerLock` は各ジョブに残す |
 | `common/security/` | 認証情報から、店舗 API の会員と管理 API の運営者を取り出すクラス。Spring Security の型は application・domain に出さない（[バックエンドのアーキテクチャ](backend-architecture.md)の「業務のコードとの境界」） |

@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.DomainEvents;
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.catalog.Keys;
@@ -21,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
@@ -109,7 +109,7 @@ class JooqProductRepository implements ProductRepository {
         var snapshot = product.toSnapshot();
         var now = clock.instant();
 
-        try {
+        CONSTRAINTS.run(() -> {
             // 商品の登録
             dsl.insertInto(PRODUCT)
                     .set(PRODUCT.ID, snapshot.id())
@@ -132,12 +132,10 @@ class JooqProductRepository implements ProductRepository {
 
             // 所属カテゴリ、画像、バリアントの登録 ※新しい商品には削除するものがないので、削除は実行しない
             writeParts(snapshot);
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw CONSTRAINTS.translate(e);
-        }
+        });
 
         // イベント発行
-        product.pullEvents().forEach(eventPublisher::publishEvent);
+        DomainEvents.publish(eventPublisher, product);
     }
 
     /**
@@ -156,7 +154,7 @@ class JooqProductRepository implements ProductRepository {
     public void save(Product product) {
         var snapshot = product.toSnapshot();
 
-        try {
+        CONSTRAINTS.run(() -> {
             // 商品の更新 ※バージョンが一致しなければ、取得後に他で更新されている。
             // 商品の行を先にロックするので、同じ商品の一部の書き換えは直列になる
             int affected = dsl.update(PRODUCT)
@@ -180,12 +178,10 @@ class JooqProductRepository implements ProductRepository {
             // 所属カテゴリ、画像、バリアントの保存
             deleteRemovedParts(snapshot);
             writeParts(snapshot);
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw CONSTRAINTS.translate(e);
-        }
+        });
 
         // イベント発行
-        product.pullEvents().forEach(eventPublisher::publishEvent);
+        DomainEvents.publish(eventPublisher, product);
     }
 
     /**
@@ -209,7 +205,7 @@ class JooqProductRepository implements ProductRepository {
         }
 
         // イベント発行
-        product.pullEvents().forEach(eventPublisher::publishEvent);
+        DomainEvents.publish(eventPublisher, product);
     }
 
 // ============================== プライベートメソッド ==============================

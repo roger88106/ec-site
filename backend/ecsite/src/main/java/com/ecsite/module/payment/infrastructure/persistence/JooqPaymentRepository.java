@@ -1,5 +1,8 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.DomainEvents;
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.payment.tables.records.PaymentRecord;
@@ -72,16 +75,18 @@ class JooqPaymentRepository implements PaymentRepository {
         if (inserted == 0) {
             return false;
         }
-        payment.pullEvents().forEach(eventPublisher::publishEvent);
+        DomainEvents.publish(eventPublisher, payment);
         return true;
     }
 
     /**
      * 支払の変更を保存し、登録されたイベント（与信の成功、与信の取消の依頼、返金の依頼など）を発行する。
      *
-     * <p>金額と期限は変わらないので、変わりうる項目だけを更新する。
+     * <p>金額と期限は変わらないので、バージョンが読んだときと同じ場合に、変わりうる項目だけを更新する。
+     * 行ロックして読んだ支払を保存するので競合は起きないが、ロックを取らずに保存したときの安全網にする。
      *
      * @param payment 変更した支払
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Override
     public void update(Payment payment) {
@@ -90,8 +95,14 @@ class JooqPaymentRepository implements PaymentRepository {
         writeState(record, snapshot);
         record.setVersion(snapshot.version() + 1);
         record.setUpdatedAt(clock.instant());
-        dsl.update(PAYMENT_).set(record).where(PAYMENT_.ID.eq(snapshot.id())).execute();
-        payment.pullEvents().forEach(eventPublisher::publishEvent);
+        int updated = dsl.update(PAYMENT_).set(record)
+                .where(PAYMENT_.ID.eq(snapshot.id()))
+                .and(PAYMENT_.VERSION.eq(snapshot.version()))
+                .execute();
+        if (updated == 0) {
+            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
+        DomainEvents.publish(eventPublisher, payment);
     }
 
     /**

@@ -2,6 +2,8 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.BusinessTime;
+import com.ecsite.common.persistence.AdvisoryLockSpace;
+import com.ecsite.common.persistence.AdvisoryLocks;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
 import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
 import com.ecsite.module.reporting.domain.snapshot.HistoryKind;
@@ -13,7 +15,6 @@ import com.ecsite.module.reporting.domain.snapshot.StatusHistoryEntry;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -59,8 +60,7 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     @Override
     public void lock(UUID orderId) {
         // トランザクションの終わりで外れる、注文 ID のロック（PostgreSQL の advisory lock）
-        dsl.select(DSL.function("pg_advisory_xact_lock", Object.class,
-                DSL.val(orderId.getMostSignificantBits() ^ orderId.getLeastSignificantBits()))).fetch();
+        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.REPORTING, orderId);
     }
 
     /**

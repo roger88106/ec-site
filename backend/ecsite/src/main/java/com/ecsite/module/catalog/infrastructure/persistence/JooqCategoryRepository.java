@@ -15,8 +15,6 @@ import org.jooq.DSLContext;
 import org.jooq.RowN;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
@@ -70,11 +68,6 @@ class JooqCategoryRepository implements CategoryRepository {
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
-
-    /**
-     * Spring イベントパブリッシャー
-     */
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * カテゴリファクトリ
@@ -179,23 +172,16 @@ class JooqCategoryRepository implements CategoryRepository {
         var snapshot = category.toSnapshot();
         var now = clock.instant();
 
-        try {
-            dsl.insertInto(CATEGORY)
-                    .set(CATEGORY.ID, snapshot.id())
-                    .set(CATEGORY.PARENT_ID, snapshot.parentId())
-                    .set(CATEGORY.NAME, snapshot.name())
-                    .set(CATEGORY.DEPTH, (short) snapshot.depth())
-                    .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
-                    .set(CATEGORY.VERSION, snapshot.version())
-                    .set(CATEGORY.CREATED_AT, now)
-                    .set(CATEGORY.UPDATED_AT, now)
-                    .execute();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw WRITE_CONSTRAINTS.translate(e);
-        }
-
-        // イベント発行
-        category.pullEvents().forEach(eventPublisher::publishEvent);
+        WRITE_CONSTRAINTS.run(() -> dsl.insertInto(CATEGORY)
+                .set(CATEGORY.ID, snapshot.id())
+                .set(CATEGORY.PARENT_ID, snapshot.parentId())
+                .set(CATEGORY.NAME, snapshot.name())
+                .set(CATEGORY.DEPTH, (short) snapshot.depth())
+                .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
+                .set(CATEGORY.VERSION, snapshot.version())
+                .set(CATEGORY.CREATED_AT, now)
+                .set(CATEGORY.UPDATED_AT, now)
+                .execute());
     }
 
     /**
@@ -211,26 +197,18 @@ class JooqCategoryRepository implements CategoryRepository {
     public void save(Category category) {
         var snapshot = category.toSnapshot();
 
-        int affected;
-        try {
-            // バージョンが一致しなければ、取得後に他で更新されている
-            affected = dsl.update(CATEGORY)
-                    .set(CATEGORY.NAME, snapshot.name())
-                    .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
-                    .set(CATEGORY.VERSION, snapshot.version() + 1)
-                    .set(CATEGORY.UPDATED_AT, clock.instant())
-                    .where(CATEGORY.ID.eq(snapshot.id()))
-                    .and(CATEGORY.VERSION.eq(snapshot.version()))
-                    .execute();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw WRITE_CONSTRAINTS.translate(e);
-        }
+        // バージョンが一致しなければ、取得後に他で更新されている
+        int affected = WRITE_CONSTRAINTS.call(() -> dsl.update(CATEGORY)
+                .set(CATEGORY.NAME, snapshot.name())
+                .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
+                .set(CATEGORY.VERSION, snapshot.version() + 1)
+                .set(CATEGORY.UPDATED_AT, clock.instant())
+                .where(CATEGORY.ID.eq(snapshot.id()))
+                .and(CATEGORY.VERSION.eq(snapshot.version()))
+                .execute());
         if (affected == 0) {
             throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
         }
-
-        // イベント発行
-        category.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
     /**
@@ -255,27 +233,19 @@ class JooqCategoryRepository implements CategoryRepository {
         var id = changes.field("id", UUID.class);
         var version = changes.field("version", Long.class);
 
-        int affected;
-        try {
-            // バージョンが一致しなければ、取得後に他で更新されている
-            affected = dsl.update(CATEGORY)
-                    .set(CATEGORY.NAME, changes.field("name", String.class))
-                    .set(CATEGORY.DISPLAY_ORDER, changes.field("display_order", Integer.class))
-                    .set(CATEGORY.VERSION, CATEGORY.VERSION.plus(1))
-                    .set(CATEGORY.UPDATED_AT, clock.instant())
-                    .from(changes)
-                    .where(CATEGORY.ID.eq(id))
-                    .and(CATEGORY.VERSION.eq(version))
-                    .execute();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw WRITE_CONSTRAINTS.translate(e);
-        }
+        // バージョンが一致しなければ、取得後に他で更新されている
+        int affected = WRITE_CONSTRAINTS.call(() -> dsl.update(CATEGORY)
+                .set(CATEGORY.NAME, changes.field("name", String.class))
+                .set(CATEGORY.DISPLAY_ORDER, changes.field("display_order", Integer.class))
+                .set(CATEGORY.VERSION, CATEGORY.VERSION.plus(1))
+                .set(CATEGORY.UPDATED_AT, clock.instant())
+                .from(changes)
+                .where(CATEGORY.ID.eq(id))
+                .and(CATEGORY.VERSION.eq(version))
+                .execute());
         if (affected != categories.size()) {
             throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
         }
-
-        // イベント発行
-        categories.forEach(category -> category.pullEvents().forEach(eventPublisher::publishEvent));
     }
 
     /**
@@ -288,20 +258,12 @@ class JooqCategoryRepository implements CategoryRepository {
      */
     @Override
     public void delete(Category category) {
-        int affected;
-        try {
-            affected = dsl.deleteFrom(CATEGORY)
-                    .where(CATEGORY.ID.eq(category.id()))
-                    .execute();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw DELETE_CONSTRAINTS.translate(e);
-        }
+        int affected = DELETE_CONSTRAINTS.call(() -> dsl.deleteFrom(CATEGORY)
+                .where(CATEGORY.ID.eq(category.id()))
+                .execute());
         if (affected == 0) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
-
-        // イベント発行
-        category.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
 // ============================== プライベートメソッド ==============================

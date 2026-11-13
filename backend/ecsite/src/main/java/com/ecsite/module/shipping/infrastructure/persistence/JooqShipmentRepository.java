@@ -15,7 +15,6 @@ import org.jooq.DSLContext;
 import org.jooq.RowN;
 import org.jooq.SelectField;
 import org.jooq.impl.DSL;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
@@ -56,21 +55,17 @@ class JooqShipmentRepository implements ShipmentRepository {
     @Override
     public void insert(Shipment shipment) {
         var now = clock.instant();
-        try {
-            dsl.insertInto(SHIPMENT)
-                    .set(SHIPMENT.ID, shipment.id())
-                    .set(SHIPMENT.ORDER_ID, shipment.orderId())
-                    .set(SHIPMENT.CARRIER, shipment.carrier().name())
-                    .set(SHIPMENT.TRACKING_NUMBER, shipment.trackingNumber().value())
-                    .set(SHIPMENT.STATUS, shipment.status().name())
-                    .set(SHIPMENT.SHIPPED_AT, shipment.shippedAt())
-                    .set(SHIPMENT.LAST_NOTIFIED_AT, shipment.lastNotifiedAt().orElse(null))
-                    .set(SHIPMENT.CREATED_AT, now)
-                    .set(SHIPMENT.UPDATED_AT, now)
-                    .execute();
-        } catch (DataAccessException e) {
-            throw CONSTRAINTS.translate(e);
-        }
+        CONSTRAINTS.run(() -> dsl.insertInto(SHIPMENT)
+                .set(SHIPMENT.ID, shipment.id())
+                .set(SHIPMENT.ORDER_ID, shipment.orderId())
+                .set(SHIPMENT.CARRIER, shipment.carrier().name())
+                .set(SHIPMENT.TRACKING_NUMBER, shipment.trackingNumber().value())
+                .set(SHIPMENT.STATUS, shipment.status().name())
+                .set(SHIPMENT.SHIPPED_AT, shipment.shippedAt())
+                .set(SHIPMENT.LAST_NOTIFIED_AT, shipment.lastNotifiedAt().orElse(null))
+                .set(SHIPMENT.CREATED_AT, now)
+                .set(SHIPMENT.UPDATED_AT, now)
+                .execute());
     }
 
     /**

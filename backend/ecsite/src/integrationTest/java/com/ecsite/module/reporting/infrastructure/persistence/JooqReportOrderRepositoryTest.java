@@ -3,6 +3,8 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.common.persistence.AdvisoryLockSpace;
+import com.ecsite.common.persistence.AdvisoryLocks;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
 import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
 import com.ecsite.module.reporting.domain.snapshot.HistoryKind;
@@ -198,10 +200,10 @@ class JooqReportOrderRepositoryTest {
      * 別のトランザクションで、注文のロックを待たずに取れるかを返す
      */
     private boolean tryLockInOtherTransaction(ExecutorService executor, UUID orderId) {
-        var key = orderId.getMostSignificantBits() ^ orderId.getLeastSignificantBits();
         try {
             return executor.submit(() -> transactionTemplate.execute(inner ->
-                            dsl.fetchValue("select pg_try_advisory_xact_lock(?)", key)))
+                            dsl.fetchValue("select pg_try_advisory_xact_lock(?, ?)",
+                                    AdvisoryLockSpace.REPORTING.key(), AdvisoryLocks.hash(orderId))))
                     .get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)
                     .equals(true);
         } catch (Exception e) {

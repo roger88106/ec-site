@@ -17,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Name;
 import org.jooq.impl.DSL;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
@@ -56,11 +54,6 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     private final DSLContext dsl;
 
     /**
-     * Spring イベントパブリッシャー
-     */
-    private final ApplicationEventPublisher eventPublisher;
-
-    /**
      * 税区分ファクトリ
      */
     private final TaxCategoryFactory factory;
@@ -92,7 +85,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
         var snapshot = taxCategory.toSnapshot();
         var now = clock.instant();
 
-        translatingConstraintViolations(() -> {
+        CONSTRAINTS.run(() -> {
             // 税区分の登録
             dsl.insertInto(TAX_CATEGORY)
                     .set(TAX_CATEGORY.ID, snapshot.id())
@@ -105,9 +98,6 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
             // 税率の登録
             writeRates(snapshot);
         });
-
-        // イベント発行
-        taxCategory.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
     /**
@@ -119,7 +109,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     public void save(TaxCategory taxCategory) {
         var snapshot = taxCategory.toSnapshot();
 
-        translatingConstraintViolations(() -> {
+        CONSTRAINTS.run(() -> {
             // 税区分の更新 ※バージョンが一致しなければ、取得後に他で更新されている。
             // 税区分の行を先にロックするので、同じ税区分の税率の書き換えは直列になる
             int affected = dsl.update(TAX_CATEGORY)
@@ -142,9 +132,6 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
             // 税率の追加・更新
             writeRates(snapshot);
         });
-
-        // イベント発行
-        taxCategory.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
 // ============================== プライベートメソッド ==============================
@@ -161,19 +148,6 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
         // スナップショットからドメインに変換する
         var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
         return factory.restore(snapshot);
-    }
-
-    /**
-     * 書き込みを実行し、制約の違反を業務のエラーに変える。
-     *
-     * @param write 書き込み
-     */
-    private static void translatingConstraintViolations(Runnable write) {
-        try {
-            write.run();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw CONSTRAINTS.translate(e);
-        }
     }
 
     /**

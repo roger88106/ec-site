@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.domain.payment.port;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.payment.domain.payment.Payment;
 import org.jmolecules.ddd.annotation.Repository;
 
@@ -31,6 +32,7 @@ public interface PaymentRepository {
      * <p>バージョンを上げる。
      *
      * @param payment 変更した支払
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     void update(Payment payment);
 

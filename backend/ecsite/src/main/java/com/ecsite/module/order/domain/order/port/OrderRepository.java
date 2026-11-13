@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order.port;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import org.jmolecules.ddd.annotation.Repository;
@@ -30,6 +31,7 @@ public interface OrderRepository {
      * <p>バージョンを上げる。
      *
      * @param order 変更した注文
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     void update(Order order);
 

@@ -1,5 +1,7 @@
 package com.ecsite;
 
+import com.ecsite.common.persistence.AdvisoryLockSpace;
+import com.ecsite.common.persistence.AdvisoryLocks;
 import org.jooq.DSLContext;
 
 import java.util.UUID;
@@ -33,8 +35,11 @@ public final class LockWaits {
      * @param memberId 会員 ID
      */
     public static void awaitMemberLockWaiter(DSLContext dsl, UUID memberId) {
-        var key = memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits();
+        // 2 つの int のキーは、classid と objid に符号なしで入る（objsubid は 2）
+        var space = Integer.toUnsignedLong(AdvisoryLockSpace.ORDER.key());
+        var hash = Integer.toUnsignedLong(AdvisoryLocks.hash(memberId));
         await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchExists(dsl.selectOne().from("pg_locks")
-                .where("locktype = 'advisory' and not granted and ((classid::bigint << 32) | objid::bigint) = ?", key)));
+                .where("locktype = 'advisory' and not granted and objsubid = 2 and classid::bigint = ? and objid::bigint = ?",
+                        space, hash)));
     }
 }

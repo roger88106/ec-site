@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
  * エラータイプ
  *
  * <p>エラーの種類ごとに、応答の HTTP ステータスを持つ。
- * {@link #RESTORE_ERROR} より前は {@link BusinessException}、それ以降は {@link SystemException} で投げる。
+ * 応答が 5xx の種類（{@link #system()} が true）は {@link SystemException}、それ以外は {@link BusinessException} で投げる。
  */
 @Getter
 @Accessors(fluent = true)
@@ -84,4 +84,15 @@ public enum ErrorType {
      * 応答の HTTP ステータス
      */
     private final HttpStatus status;
+
+    /**
+     * システムの区分かを返す。
+     *
+     * <p>応答が 5xx ならシステムの区分（{@link SystemException} で投げる）、それ以外は業務の区分（{@link BusinessException} で投げる）。
+     *
+     * @return システムの区分なら true
+     */
+    public boolean system() {
+        return status.is5xxServerError();
+    }
 }

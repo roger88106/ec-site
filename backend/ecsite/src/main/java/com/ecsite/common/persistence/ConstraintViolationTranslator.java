@@ -4,6 +4,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.ServerErrorMessage;
+import org.springframework.dao.DataAccessException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -18,11 +19,8 @@ import java.util.function.Supplier;
  * private static final ConstraintViolationTranslator CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
  *         "product_product_code_key", () -> BusinessException.of(ProductErrorCode.PRODUCT_CODE_ALREADY_EXISTS)));
  *
- * try {
- *     dsl.insertInto(PRODUCT)...execute();
- * } catch (DataAccessException e) {
- *     throw CONSTRAINTS.translate(e);
- * }
+ * CONSTRAINTS.run(() -> dsl.insertInto(PRODUCT)...execute());
+ * int affected = CONSTRAINTS.call(() -> dsl.update(PRODUCT)...execute());
  * }</pre>
  */
 public final class ConstraintViolationTranslator {
@@ -51,6 +49,38 @@ public final class ConstraintViolationTranslator {
      */
     public static ConstraintViolationTranslator of(Map<String, Supplier<? extends BusinessException>> errorsByConstraint) {
         return new ConstraintViolationTranslator(errorsByConstraint);
+    }
+
+    /**
+     * 書き込みを実行し、DB アクセスの例外を変換する。
+     *
+     * <p>Spring と jOOQ の DB アクセスの例外を、{@link #translate} で変換して投げる。それ以外の例外はそのまま投げる。
+     *
+     * @param write 書き込み
+     */
+    public void run(Runnable write) {
+        try {
+            write.run();
+        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
+            throw translate(e);
+        }
+    }
+
+    /**
+     * 書き込みを実行して結果を返し、DB アクセスの例外を変換する。
+     *
+     * <p>Spring と jOOQ の DB アクセスの例外を、{@link #translate} で変換して投げる。それ以外の例外はそのまま投げる。
+     *
+     * @param write 書き込み
+     * @param <T>   結果の型
+     * @return 書き込みの結果（更新した件数など）
+     */
+    public <T> T call(Supplier<T> write) {
+        try {
+            return write.get();
+        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
+            throw translate(e);
+        }
     }
 
     /**

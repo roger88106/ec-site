@@ -1,7 +1,7 @@
 package com.ecsite.module.order.api;
 
 import com.ecsite.module.order.api.model.CartQuote;
-import com.ecsite.module.order.application.checkout.CartQuoteService;
+import com.ecsite.module.order.application.checkout.CheckoutQueryService;
 import com.ecsite.module.order.application.model.view.CartQuoteView;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.QuoteItem;
@@ -23,9 +23,9 @@ import java.util.UUID;
 public class OrderQuoteApi {
 
     /**
-     * カートの見積もりのサービス
+     * 注文手続きの参照のサービス
      */
-    private final CartQuoteService cartQuoteService;
+    private final CheckoutQueryService checkoutQueryService;
 
     /**
      * カートを現在の価格・税率・販売可能数で見積もる。
@@ -37,7 +37,7 @@ public class OrderQuoteApi {
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
     public Optional<CartQuote> quoteCart(@NonNull UUID cartId, @Nullable UUID requester) {
-        return cartQuoteService.quoteCart(cartId, requester).map(OrderQuoteApi::toCartQuote);
+        return checkoutQueryService.quoteCart(cartId, requester).map(OrderQuoteApi::toCartQuote);
     }
 
     /**

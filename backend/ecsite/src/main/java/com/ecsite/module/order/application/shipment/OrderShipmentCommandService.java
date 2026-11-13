@@ -23,7 +23,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
-class OrderShipmentCommandService {
+public class OrderShipmentCommandService {
 
     /**
      * 注文リポジトリ

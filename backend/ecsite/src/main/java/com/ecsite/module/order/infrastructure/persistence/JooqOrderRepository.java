@@ -326,9 +326,7 @@ class JooqOrderRepository implements OrderRepository {
                 amounts,
                 record.getEmail(),
                 address,
-                new BuyerProfile(record.getBuyerAge() == null ? null : record.getBuyerAge().intValue(),
-                        record.getBuyerGender() == null ? null
-                                : RestoreGuard.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()))),
+                restoreBuyer(record),
                 restoreRequest(record),
                 restoreCancellation(record),
                 record.getVersion()));
@@ -371,6 +369,18 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
+     * 注文時の年齢と性別を読む。
+     *
+     * <p>分からない項目は null。
+     */
+    private static BuyerProfile restoreBuyer(SalesOrderRecord record) {
+        var age = record.getBuyerAge() == null ? null : record.getBuyerAge().intValue();
+        var gender = record.getBuyerGender() == null ? null
+                : RestoreGuard.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()));
+        return new BuyerProfile(age, gender);
+    }
+
+    /**
      * キャンセルの申請を読む。
      *
      * <p>申請がなければ null。
@@ -380,7 +390,8 @@ class JooqOrderRepository implements OrderRepository {
             return null;
         }
         return new CancellationRequest(
-                record.getCancellationRequestedAt(), record.getCancellationRequestReason(),
+                record.getCancellationRequestedAt(),
+                record.getCancellationRequestReason(),
                 RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
                 record.getCancellationDecidedAt(),
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
@@ -395,9 +406,12 @@ class JooqOrderRepository implements OrderRepository {
         if (record.getCancelledAt() == null) {
             return null;
         }
-        return new Cancellation(record.getCancelledAt(),
-                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())), record.getCancellationReason(),
-                operatorOf(record.getCancelledById(), record.getCancelledByName()), record.getCancellationRestocked());
+        return new Cancellation(
+                record.getCancelledAt(),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())),
+                record.getCancellationReason(),
+                operatorOf(record.getCancelledById(), record.getCancelledByName()),
+                record.getCancellationRestocked());
     }
 
     /**

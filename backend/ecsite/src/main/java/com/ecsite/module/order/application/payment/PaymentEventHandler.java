@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.payment;
 
+import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,11 @@ class PaymentEventHandler {
     private final OrderPaymentService orderPaymentService;
 
     /**
+     * キャンセルのサービス
+     */
+    private final OrderCancellationService cancellationService;
+
+    /**
      * 与信の成功：注文を受付にし、注文した品目をカートから除く。
      *
      * @param event 与信の成功
@@ -37,6 +43,6 @@ class PaymentEventHandler {
      */
     @ApplicationModuleListener
     void on(PaymentExpired event) {
-        orderPaymentService.expire(event.orderId());
+        cancellationService.expirePayment(event.orderId());
     }
 }

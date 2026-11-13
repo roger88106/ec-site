@@ -208,65 +208,6 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 与信の成功を受けて、「支払待ち」から「受付」にする。
-     *
-     * <p>支払待ちでなければ何もしない。
-     *
-     * @param now 現在時刻
-     * @return 受付にしたら true。支払待ちでなければ false
-     */
-    public boolean acceptPayment(@NonNull Instant now) {
-        if (status != OrderStatus.PENDING_PAYMENT) {
-            return false;
-        }
-        changeStatus(OrderStatus.ACCEPTED, now);
-        return true;
-    }
-
-    /**
-     * 支払の期限切れを受けて、「支払待ち」からキャンセル（支払期限切れ）にする。
-     *
-     * <p>支払待ちでなければ何もしない。
-     *
-     * @param now 現在時刻
-     * @return キャンセルにしたら true。支払待ちでなければ false
-     */
-    public boolean expirePayment(@NonNull Instant now) {
-        if (status != OrderStatus.PENDING_PAYMENT) {
-            return false;
-        }
-        cancel(new Cancellation(now, CancellationKind.PAYMENT_EXPIRED, null, null));
-        return true;
-    }
-
-    /**
-     * 運営者がキャンセルできるかを返す。
-     *
-     * <p>「受付」と「キャンセル申請中」、出荷済みなら配送状態が返送のときだけ。
-     *
-     * @param returned 配送状態が返送か（出荷済みのときだけ使う）
-     * @return キャンセルできれば true
-     */
-    public boolean isCancellableByOperator(boolean returned) {
-        // 支払待ちは支払の期限で自動でキャンセルになり、キャンセル済みは何もしないので、できる操作に出さない
-        return status == OrderStatus.ACCEPTED || status == OrderStatus.CANCELLATION_REQUESTED
-                || (status == OrderStatus.SHIPPED && returned);
-    }
-
-    /**
-     * 運営者のキャンセルで、在庫に戻すかを聞くかを返す。
-     *
-     * <p>出荷済みで返送の注文だけ。
-     *
-     * @param returned 配送状態が返送か（出荷済みのときだけ使う）
-     * @return 在庫に戻すかを聞くなら true
-     */
-    public boolean asksRestockOnCancel(boolean returned) {
-        // 返送では商品が戻るので、戻すかを選ぶ。出荷の前の注文は、在庫に必ず戻す
-        return status == OrderStatus.SHIPPED && returned;
-    }
-
-    /**
      * 出荷できるかを返す。
      *
      * <p>「受付」だけ。
@@ -306,6 +247,84 @@ public class Order extends AggregateRoot {
      */
     public boolean isCancellationPending() {
         return status == OrderStatus.CANCELLATION_REQUESTED;
+    }
+
+    /**
+     * 運営者がキャンセルできるかを返す。
+     *
+     * <p>「受付」と「キャンセル申請中」、出荷済みなら配送状態が返送のときだけ。
+     *
+     * @param returned 配送状態が返送か（出荷済みのときだけ使う）
+     * @return キャンセルできれば true
+     */
+    public boolean isCancellableByOperator(boolean returned) {
+        // 支払待ちは支払の期限で自動でキャンセルになり、キャンセル済みは何もしないので、できる操作に出さない
+        return status == OrderStatus.ACCEPTED || status == OrderStatus.CANCELLATION_REQUESTED
+                || (status == OrderStatus.SHIPPED && returned);
+    }
+
+    /**
+     * 運営者のキャンセルで、在庫に戻すかを聞くかを返す。
+     *
+     * <p>出荷済みで返送の注文だけ。
+     *
+     * @param returned 配送状態が返送か（出荷済みのときだけ使う）
+     * @return 在庫に戻すかを聞くなら true
+     */
+    public boolean asksRestockOnCancel(boolean returned) {
+        // 返送では商品が戻るので、戻すかを選ぶ。出荷の前の注文は、在庫に必ず戻す
+        return status == OrderStatus.SHIPPED && returned;
+    }
+
+    /**
+     * 与信の成功を受けて、「支払待ち」から「受付」にする。
+     *
+     * <p>支払待ちでなければ何もしない。
+     *
+     * @param now 現在時刻
+     * @return 受付にしたら true。支払待ちでなければ false
+     */
+    public boolean acceptPayment(@NonNull Instant now) {
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            return false;
+        }
+        changeStatus(OrderStatus.ACCEPTED, now);
+        return true;
+    }
+
+    /**
+     * 支払の期限切れを受けて、「支払待ち」からキャンセル（支払期限切れ）にする。
+     *
+     * <p>支払待ちでなければ何もしない。
+     *
+     * @param now 現在時刻
+     * @return キャンセルにしたら true。支払待ちでなければ false
+     */
+    public boolean expirePayment(@NonNull Instant now) {
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            return false;
+        }
+        cancel(new Cancellation(now, CancellationKind.PAYMENT_EXPIRED, null, null));
+        return true;
+    }
+
+    /**
+     * 出荷する。
+     *
+     * <p>「受付」から「出荷済み」にし、注文の出荷のイベントを登録する。
+     *
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号（ハイフンを除いた数字）
+     * @param now            現在時刻（出荷日時）
+     * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}）
+     */
+    public void ship(@NonNull Carrier carrier, @NonNull String trackingNumber, @NonNull Instant now) {
+        if (!isShippable()) {
+            throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
+        }
+        changeStatus(OrderStatus.SHIPPED, now);
+        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, carrier.toEventCarrier(),
+                trackingNumber));
     }
 
     /**
@@ -370,25 +389,6 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 出荷する。
-     *
-     * <p>「受付」から「出荷済み」にし、注文の出荷のイベントを登録する。
-     *
-     * @param carrier        配送業者
-     * @param trackingNumber 送り状番号（ハイフンを除いた数字）
-     * @param now            現在時刻（出荷日時）
-     * @throws BusinessException 受付でない（{@code ORDER_NOT_SHIPPABLE}）
-     */
-    public void ship(@NonNull Carrier carrier, @NonNull String trackingNumber, @NonNull Instant now) {
-        if (!isShippable()) {
-            throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
-        }
-        changeStatus(OrderStatus.SHIPPED, now);
-        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, carrier.toEventCarrier(),
-                trackingNumber));
-    }
-
-    /**
      * 運営者の判断でキャンセルする。
      *
      * <p>申請中なら、申請は承認されたものとする。キャンセル済みなら何もせず、理由も変えない。
@@ -406,12 +406,15 @@ public class Order extends AggregateRoot {
      * @throws BusinessException 出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）
      * @throws BusinessException 出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
      */
-    public boolean cancelByOperator(@Nullable String reason, @Nullable Boolean restock, boolean returned, @NonNull Operator operator,
-                                    @NonNull Instant now) {
+    public boolean cancelByOperator(@Nullable String reason, @Nullable Boolean restock, boolean returned,
+                                    @NonNull Operator operator, @NonNull Instant now) {
+        // 理由の確認
         var required = optionalReason(reason);
         if (required == null) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_REASON_REQUIRED);
         }
+
+        // 状態の確認
         if (status == OrderStatus.CANCELLED) {
             return false;
         }
@@ -419,6 +422,8 @@ public class Order extends AggregateRoot {
         if (status == OrderStatus.PENDING_PAYMENT) {
             throw BusinessException.of(OrderErrorCode.AWAITING_PAYMENT);
         }
+
+        // 在庫に戻すかの決定
         var restocked = true;
         // 出荷済みは、配送状態が返送のときだけキャンセルでき、在庫に戻すかの指定が必要だ
         if (status == OrderStatus.SHIPPED) {
@@ -430,6 +435,8 @@ public class Order extends AggregateRoot {
             }
             restocked = restock;
         }
+
+        // キャンセル ※申請中なら、申請も承認したことにする
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
             decideRequest(CancellationRequest.Result.APPROVED, operator, now);
         }

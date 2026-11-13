@@ -9,9 +9,9 @@ import com.ecsite.api.store.model.RequestOrderCancellationRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.model.view.OrderSummaryView;
-import com.ecsite.module.order.application.payment.OrderPaymentPageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,9 +39,9 @@ class StoreOrderController implements OrderApi {
     private final OrderCancellationService orderCancellationService;
 
     /**
-     * 支払画面のサービス
+     * 注文の決済ゲートウェイサービス
      */
-    private final OrderPaymentPageService orderPaymentPageService;
+    private final OrderPaymentGatewayService paymentGatewayService;
 
     /**
      * 店舗の注文 API のマッパー
@@ -101,7 +101,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<PaymentPage> openOrderPaymentPage(UUID orderId) {
-        var url = orderPaymentPageService.pageUrl(orderId, currentMemberIds.require());
+        var url = paymentGatewayService.pageUrl(orderId, currentMemberIds.require());
         return ResponseEntity.ok(new PaymentPage().url(URI.create(url)));
     }
 

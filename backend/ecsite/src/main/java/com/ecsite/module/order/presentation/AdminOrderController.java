@@ -10,9 +10,9 @@ import com.ecsite.api.admin.model.Shipment;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.model.view.OrderSummaryView;
-import com.ecsite.module.order.application.shipment.OrderShipmentService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -42,9 +42,9 @@ class AdminOrderController implements OrderApi {
     private final OrderQueryService orderQueryService;
 
     /**
-     * 出荷の登録のサービス
+     * 注文の決済ゲートウェイサービス
      */
-    private final OrderShipmentService orderShipmentService;
+    private final OrderPaymentGatewayService paymentGatewayService;
 
     /**
      * 管理の注文 API のマッパー
@@ -105,7 +105,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Shipment> shipOrder(UUID orderId, ShipOrderRequest request) {
-        var shipment = orderShipmentService.ship(orderId, mapper.toDomainCarrier(request.getCarrier()),
+        var shipment = paymentGatewayService.ship(orderId, mapper.toDomainCarrier(request.getCarrier()),
                 request.getTrackingNumber());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toShipment(shipment));
     }

@@ -1,9 +1,9 @@
-package com.ecsite.module.order.application.shipment;
+package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
+import com.ecsite.module.order.application.shipment.OrderShipmentCommandService;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.Carrier;
 import lombok.NonNull;
@@ -13,19 +13,26 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * 出荷の登録のサービス
+ * 注文の決済ゲートウェイサービス
  *
- * <p>売上確定は決済サービスを呼ぶので、トランザクションを持たずに先に行い、注文と出荷の変更だけを別のトランザクションで行う
- * （決済サービスの応答を待つ間、注文の行ロックを持たない）。
+ * <p>決済サービスを呼ぶ注文の操作（支払画面、出荷の登録の売上確定）を扱う。
+ *
+ * <p>トランザクションを持たない。決済サービスの応答を待つ間に、注文の行ロックと DB の接続を持たないため。
+ * 注文の読み取りと変更は、参照と更新のサービスのトランザクションで行う。
  */
 @Service
 @RequiredArgsConstructor
-public class OrderShipmentService {
+public class OrderPaymentGatewayService {
 
     /**
-     * 注文の照会のサービス（出荷できるかは、詳細の操作の可否で判定する）
+     * 注文の照会のサービス
      */
     private final OrderQueryService orderQueryService;
+
+    /**
+     * 出荷の登録の更新のサービス
+     */
+    private final OrderShipmentCommandService shipmentCommandService;
 
     /**
      * 決済の腐敗防止層
@@ -33,9 +40,21 @@ public class OrderShipmentService {
     private final PaymentDirectory paymentDirectory;
 
     /**
-     * 出荷の登録の更新のサービス
+     * 会員の注文の支払画面の URL を返す。
+     *
+     * @param orderId  注文 ID
+     * @param memberId リクエストした会員の ID
+     * @return 支払画面の URL
+     * @throws BusinessException 注文がない、または注文した会員でない（{@code NOT_FOUND}）
+     * @throws BusinessException 支払待ちでない、支払の期限の後（{@code ORDER_NOT_PAYABLE}）
      */
-    private final OrderShipmentCommandService commandService;
+    public String pageUrl(@NonNull UUID orderId, @NonNull UUID memberId) {
+        var order = orderQueryService.getForMember(orderId, memberId);
+        if (!order.awaitingPayment()) {
+            throw BusinessException.of(OrderErrorCode.ORDER_NOT_PAYABLE);
+        }
+        return paymentDirectory.pageUrl(orderId).orElseThrow(() -> BusinessException.of(OrderErrorCode.ORDER_NOT_PAYABLE));
+    }
 
     /**
      * 出荷を登録する。
@@ -61,6 +80,6 @@ public class OrderShipmentService {
 
         // 売上確定と出荷登録
         paymentDirectory.capture(orderId);
-        return commandService.ship(orderId, carrier, trackingNumber);
+        return shipmentCommandService.ship(orderId, carrier, trackingNumber);
     }
 }

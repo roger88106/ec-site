@@ -104,8 +104,8 @@ class AdminOrderApiTest {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(DEC_8_LATE.minusSeconds(3600));
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(data.taxCategory("標準", "10"), "T シャツ", 2700, "色").variant("白").publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "T シャツ", 2700, "色").variant("白").publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 50);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
@@ -113,7 +113,7 @@ class AdminOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-97、98、99、106 注文一覧")
+    @DisplayName("注文一覧")
     class ListOrders {
 
         @Test

@@ -18,6 +18,8 @@ class CheckoutTest {
 
     /**
      * 注文手続きを始める時刻
+     *
+     * <p>日本時間の 2026-11-01 09:00。
      */
     private static final Instant NOW = Instant.parse("2026-11-01T00:00:00Z");
 

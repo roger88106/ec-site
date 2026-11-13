@@ -50,6 +50,8 @@ class ShipmentApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -91,8 +93,8 @@ class ShipmentApiTest {
         clock.setInstant(NOW);
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
@@ -100,7 +102,7 @@ class ShipmentApiTest {
     }
 
     @Nested
-    @DisplayName("AC-167、168 出荷の登録")
+    @DisplayName("出荷の登録")
     class Ship {
 
         @Test
@@ -147,7 +149,7 @@ class ShipmentApiTest {
     }
 
     @Nested
-    @DisplayName("AC-169、188 売上確定の失敗")
+    @DisplayName("売上確定の失敗")
     class CaptureFailure {
 
         @Test
@@ -184,7 +186,7 @@ class ShipmentApiTest {
     }
 
     @Nested
-    @DisplayName("AC-409-7、8 与信の通知が届かず、期限切れのジョブが与信済みにした注文")
+    @DisplayName("与信の通知が届かず、期限切れのジョブが与信済みにした注文")
     class RecoveredByJob {
 
         private String pageId;
@@ -246,7 +248,7 @@ class ShipmentApiTest {
     }
 
     @Nested
-    @DisplayName("AC-170、172 登録できない注文と、重ねた登録")
+    @DisplayName("登録できない注文と、重ねた登録")
     class Conflict {
 
         @Test
@@ -303,7 +305,7 @@ class ShipmentApiTest {
     }
 
     @Nested
-    @DisplayName("AC-173 入力")
+    @DisplayName("入力")
     class Input {
 
         /**

@@ -39,7 +39,7 @@ class OrderCancellationTest {
     private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
 
     @Nested
-    @DisplayName("AC-95、96 キャンセルの申請")
+    @DisplayName("キャンセルの申請")
     class Request {
 
         @Test
@@ -91,7 +91,7 @@ class OrderCancellationTest {
     }
 
     @Nested
-    @DisplayName("AC-101、102、105 申請の承認・却下")
+    @DisplayName("申請の承認・却下")
     class Decide {
 
         @Test
@@ -146,7 +146,7 @@ class OrderCancellationTest {
     }
 
     @Nested
-    @DisplayName("AC-103、105 運営者の判断によるキャンセル")
+    @DisplayName("運営者の判断によるキャンセル")
     class CancelByOperator {
 
         @Test

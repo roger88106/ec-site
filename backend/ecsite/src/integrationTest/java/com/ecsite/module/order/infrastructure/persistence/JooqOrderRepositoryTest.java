@@ -65,7 +65,9 @@ class JooqOrderRepositoryTest {
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
     /**
-     * 注文番号の日付（ロールバックしないテストが作る注文と、他のテストの注文番号が重ならない日付）
+     * 注文番号の日付
+     *
+     * <p>ロールバックしないテストが作る注文と、他のテストの注文番号が重ならない日付。
      */
     private static final String ORDER_NUMBER_DATE = "19991231";
 

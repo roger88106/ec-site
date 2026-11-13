@@ -50,7 +50,9 @@ class AdminOrderShipmentViewApiTest {
     private static final String BASE = "/api/admin/orders";
 
     /**
-     * 注文・与信の時刻（日本時間の 2026-11-20 00:00）
+     * 注文・与信の時刻
+     *
+     * <p>日本時間の 2026-11-20 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-11-19T15:00:00Z");
 
@@ -121,8 +123,8 @@ class AdminOrderShipmentViewApiTest {
         clock.setInstant(NOW);
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 10);
         // 商品の公開で時計が進むので、注文と与信の時刻をそろえる
@@ -139,7 +141,7 @@ class AdminOrderShipmentViewApiTest {
     }
 
     @Nested
-    @DisplayName("AC-181、186、194 注文の詳細")
+    @DisplayName("注文の詳細")
     class Detail {
 
         @Test
@@ -212,7 +214,7 @@ class AdminOrderShipmentViewApiTest {
     }
 
     @Nested
-    @DisplayName("AC-182、186、187、189 注文一覧")
+    @DisplayName("注文一覧")
     class ListOrders {
 
         @Test

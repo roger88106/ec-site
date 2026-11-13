@@ -25,9 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.OrderTestData.startCheckoutRequest;
@@ -50,6 +50,8 @@ class CartCleanupJobTest {
 
     /**
      * カートを変える時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -144,10 +146,7 @@ class CartCleanupJobTest {
     @Test
     @DisplayName("NFR-24 件数の上限を超えるカートは、上限ずつ分けて、残りがなくなるまで消す")
     void deletesInBatchesUntilNoneLeft() {
-        var carts = new ArrayList<UUID>();
-        for (int i = 0; i < 5; i++) {
-            carts.add(cartWithItem(NOW));
-        }
+        var carts = IntStream.range(0, 5).mapToObj(i -> cartWithItem(NOW)).toList();
         var smallBatch = new CartCleanupJob(service, new CartCleanupProperties(Duration.ofHours(1), Duration.ZERO, 2), clock);
 
         clock.setInstant(AFTER_EXPIRY);
@@ -161,10 +160,7 @@ class CartCleanupJobTest {
     void deletesUpToLimitAtOnce() {
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 3 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
-        var carts = new ArrayList<UUID>();
-        for (int i = 0; i < 3; i++) {
-            carts.add(cartWithItem(longAgo));
-        }
+        var carts = IntStream.range(0, 3).mapToObj(i -> cartWithItem(longAgo)).toList();
 
         var deleted = service.deleteExpired(longAgo.plus(Duration.ofDays(30)).plusSeconds(1), 2);
 
@@ -177,10 +173,7 @@ class CartCleanupJobTest {
     void logsDeletedCount(CapturedOutput output) {
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
-        var carts = new ArrayList<UUID>();
-        for (int i = 0; i < 5; i++) {
-            carts.add(cartWithItem(longAgo));
-        }
+        var carts = IntStream.range(0, 5).mapToObj(i -> cartWithItem(longAgo)).toList();
         var smallBatch = new CartCleanupJob(service, new CartCleanupProperties(Duration.ofHours(1), Duration.ZERO, 2), clock);
 
         clock.setInstant(longAgo.plus(Duration.ofDays(30)).plusSeconds(1));

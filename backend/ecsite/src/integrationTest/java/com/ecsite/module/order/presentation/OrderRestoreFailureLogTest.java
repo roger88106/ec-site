@@ -42,6 +42,8 @@ class OrderRestoreFailureLogTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -68,8 +70,8 @@ class OrderRestoreFailureLogTest {
     void logsWithoutDatabaseValue(CapturedOutput output) throws Exception {
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         new InventoryTestData(stockItemRepository, NOW).stock(variantId, product.id, 5);
         var orderId = new OrderTestData(mockMvc, gateway, applicationContext).placeOrder(variantId, 1);

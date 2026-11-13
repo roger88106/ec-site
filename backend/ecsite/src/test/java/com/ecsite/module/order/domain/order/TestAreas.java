@@ -3,7 +3,9 @@ package com.ecsite.module.order.domain.order;
 import com.ecsite.module.order.domain.order.vo.AddressArea;
 
 /**
- * テストで使う、お届け先の都道府県と市区町村（地域の最初のデータにあるもの）
+ * テストで使う、お届け先の都道府県と市区町村
+ *
+ * <p>地域の最初のデータにあるもの。
  */
 public final class TestAreas {
 
@@ -17,6 +19,9 @@ public final class TestAreas {
      */
     public static final AddressArea SAPPORO_CHUO = new AddressArea("01", "北海道", "01101", "札幌市中央区");
 
+    /**
+     * インスタンスを作らない。
+     */
     private TestAreas() {
     }
 }

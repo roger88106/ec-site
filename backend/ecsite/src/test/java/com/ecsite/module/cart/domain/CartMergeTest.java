@@ -20,6 +20,8 @@ class CartMergeTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-12 12:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-12T03:00:00Z");
 
@@ -28,8 +30,19 @@ class CartMergeTest {
      */
     private static final Instant EARLIER = NOW.minus(Duration.ofHours(1));
 
+    /**
+     * 白のバリアント ID
+     */
     private static final UUID WHITE = UUID.randomUUID();
+
+    /**
+     * 黒のバリアント ID
+     */
     private static final UUID BLACK = UUID.randomUUID();
+
+    /**
+     * 赤のバリアント ID
+     */
     private static final UUID RED = UUID.randomUUID();
 
     @Test

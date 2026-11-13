@@ -44,6 +44,8 @@ class CarrierWebhookTest {
 
     /**
      * 通知を受け付ける時刻
+     *
+     * <p>日本時間の 2026-10-15 11:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-15T02:00:00Z");
 
@@ -229,7 +231,9 @@ class CarrierWebhookTest {
 // ============================== 補助 ==============================
 
     /**
-     * 署名付きのリクエスト（本文と、ヘッダーに入れる署名）
+     * 署名付きのリクエスト
+     *
+     * <p>本文と、ヘッダーに入れる署名。
      */
     private record Request(String body, String signature) {
     }

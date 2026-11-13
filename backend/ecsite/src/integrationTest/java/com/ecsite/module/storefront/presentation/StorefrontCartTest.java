@@ -42,6 +42,8 @@ class StorefrontCartTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -65,7 +67,7 @@ class StorefrontCartTest {
     /**
      * 税区分・カテゴリ・商品を作る補助
      */
-    private CatalogTestData data;
+    private CatalogTestData catalog;
 
     private UUID standard;
 
@@ -78,9 +80,9 @@ class StorefrontCartTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        data = new CatalogTestData(mockMvc, clock);
-        standard = data.taxCategory("標準", "10");
-        reduced = data.taxCategory("軽減", "8");
+        catalog = new CatalogTestData(mockMvc, clock);
+        standard = catalog.taxCategory("標準", "10");
+        reduced = catalog.taxCategory("軽減", "8");
         var body = mockMvc.perform(post("/api/store/carts")).andReturn().getResponse().getContentAsString();
         cartId = TestJson.createdId(body);
     }
@@ -88,10 +90,10 @@ class StorefrontCartTest {
     @Test
     @DisplayName("AC-77 品目ごとの商品名・軸の値・単価・数量・小計と、商品の合計・送料・総額・税率ごとの消費税額が返る")
     void returnsCartWithAmounts() throws Exception {
-        var shirt = data.product(standard, "T シャツ", 2700, "色", "サイズ").variant("白", "M").publish();
-        var tea = data.product(reduced, "お茶", 1234).publish();
-        inventory.stock(shirt.variantIds.getFirst(), UUID.randomUUID(), 5);
-        inventory.stock(tea.variantIds.getFirst(), UUID.randomUUID(), 5);
+        var shirt = catalog.product(standard, "T シャツ", 2700, "色", "サイズ").variant("白", "M").publish();
+        var tea = catalog.product(reduced, "お茶", 1234).publish();
+        inventory.stock(shirt.variantIds.getFirst(), 5);
+        inventory.stock(tea.variantIds.getFirst(), 5);
         add(shirt.variantIds.getFirst(), 1);
         add(tea.variantIds.getFirst(), 1);
 
@@ -123,23 +125,23 @@ class StorefrontCartTest {
     @Test
     @DisplayName("AC-77 品目の画像は、バリアントの画像があればそれを、なければ商品の代表画像（先頭）の URL を返す")
     void returnsImageUrlOfVariantOrRepresentative() throws Exception {
-        var shirt = data.product(standard, "T シャツ", 2700, "色").variant("白").variant("黒")
+        var shirt = catalog.product(standard, "T シャツ", 2700, "色").variant("白").variant("黒")
                 .image().image().variantImage(0, 1).publish();
-        inventory.stock(shirt.variantIds.get(0), UUID.randomUUID(), 5);
-        inventory.stock(shirt.variantIds.get(1), UUID.randomUUID(), 5);
-        add(shirt.variantIds.get(0), 1);
+        inventory.stock(shirt.variantIds.getFirst(), 5);
+        inventory.stock(shirt.variantIds.get(1), 5);
+        add(shirt.variantIds.getFirst(), 1);
         add(shirt.variantIds.get(1), 1);
 
         mockMvc.perform(get("/api/store/carts/" + cartId))
                 .andExpect(jsonPath("$.items[0].imageUrl").value(shirt.imageUrls.get(1)))
-                .andExpect(jsonPath("$.items[1].imageUrl").value(shirt.imageUrls.get(0)));
+                .andExpect(jsonPath("$.items[1].imageUrl").value(shirt.imageUrls.getFirst()));
     }
 
     @Test
     @DisplayName("AC-79 単価は常に現在の価格で表示する")
     void showsCurrentPrice() throws Exception {
-        var product = data.product(standard, "商品", 1000).publish();
-        inventory.stock(product.variantIds.getFirst(), UUID.randomUUID(), 5);
+        var product = catalog.product(standard, "商品", 1000).publish();
+        inventory.stock(product.variantIds.getFirst(), 5);
         add(product.variantIds.getFirst(), 2);
 
         product.changePrice(standard, 2000);
@@ -152,13 +154,13 @@ class StorefrontCartTest {
     @Test
     @DisplayName("AC-80 購入できなくなった品目は理由とともに示し、合計に含めない。注文はできない")
     void marksUnpurchasableItems() throws Exception {
-        var hidden = data.product(standard, "非公開にする", 1000).publish();
-        var suspended = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
-        var soldOut = data.product(standard, "売り切れる", 1000).publish();
-        var short_ = data.product(standard, "足りなくなる", 1000).publish();
-        var ok = data.product(standard, "買える", 1000).publish();
+        var hidden = catalog.product(standard, "非公開にする", 1000).publish();
+        var suspended = catalog.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
+        var soldOut = catalog.product(standard, "売り切れる", 1000).publish();
+        var short_ = catalog.product(standard, "足りなくなる", 1000).publish();
+        var ok = catalog.product(standard, "買える", 1000).publish();
         for (var product : new CatalogTestData.TestProduct[]{hidden, suspended, soldOut, short_, ok}) {
-            inventory.stock(product.variantIds.getFirst(), UUID.randomUUID(), 3);
+            inventory.stock(product.variantIds.getFirst(), 3);
             add(product.variantIds.getFirst(), 2);
         }
         hidden.unpublish();
@@ -178,8 +180,8 @@ class StorefrontCartTest {
     @Test
     @DisplayName("AC-81 最後の変更から 30 日たったカートは空として返す。空のカートは送料 0 で注文できない")
     void returnsExpiredCartAsEmpty() throws Exception {
-        var product = data.product(standard, "商品", 1000).publish();
-        inventory.stock(product.variantIds.getFirst(), UUID.randomUUID(), 5);
+        var product = catalog.product(standard, "商品", 1000).publish();
+        inventory.stock(product.variantIds.getFirst(), 5);
         var changedAt = clock.instant();
         add(product.variantIds.getFirst(), 1);
 

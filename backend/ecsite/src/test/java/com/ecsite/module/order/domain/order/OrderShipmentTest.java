@@ -75,7 +75,7 @@ class OrderShipmentTest {
     }
 
     @Nested
-    @DisplayName("AC-171、190、191 出荷済みの注文のキャンセル")
+    @DisplayName("出荷済みの注文のキャンセル")
     class CancelShipped {
 
         @Test

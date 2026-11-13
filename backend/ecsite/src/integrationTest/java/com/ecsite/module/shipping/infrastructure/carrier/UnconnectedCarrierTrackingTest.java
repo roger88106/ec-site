@@ -44,7 +44,9 @@ class UnconnectedCarrierTrackingTest {
     AsyncEvents asyncEvents;
 
     /**
-     * 物流サービスの追跡（追跡の開始の依頼が届いたことを確認するため、spy にする）
+     * 物流サービスの追跡
+     *
+     * <p>追跡の開始の依頼が届いたことを確認するため、spy にする。
      */
     @MockitoSpyBean
     CarrierTracking tracking;

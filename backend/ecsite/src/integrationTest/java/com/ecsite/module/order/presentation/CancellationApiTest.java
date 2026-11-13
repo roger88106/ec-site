@@ -45,6 +45,8 @@ class CancellationApiTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
@@ -80,15 +82,15 @@ class CancellationApiTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
-        var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
+        var catalog = new CatalogTestData(mockMvc, clock);
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
         orderId = new OrderTestData(mockMvc, gateway, applicationContext).placeOrder(variantId, 2);
     }
 
     @Nested
-    @DisplayName("AC-95、96 キャンセルの申請（C 側）")
+    @DisplayName("キャンセルの申請（C 側）")
     class Request {
 
         @Test
@@ -133,7 +135,7 @@ class CancellationApiTest {
     }
 
     @Nested
-    @DisplayName("AC-101、102、103、105 承認・却下・運営者のキャンセル（B 側）")
+    @DisplayName("承認・却下・運営者のキャンセル（B 側）")
     class Decide {
 
         @Test
@@ -217,7 +219,7 @@ class CancellationApiTest {
     }
 
     @Nested
-    @DisplayName("AC-142 操作した運営者")
+    @DisplayName("操作した運営者")
     class Operator {
 
         /**
@@ -289,8 +291,8 @@ class CancellationApiTest {
                     .from(SALES_ORDER)
                     .where(SALES_ORDER.ID.eq(orderId))
                     .fetchSingle();
-            assertThat(order.value1()).isEqualTo(decidedBy);
-            assertThat(order.value2()).isEqualTo(cancelledBy);
+            assertThat(order.get(SALES_ORDER.CANCELLATION_DECIDED_BY_ID)).isEqualTo(decidedBy);
+            assertThat(order.get(SALES_ORDER.CANCELLED_BY_ID)).isEqualTo(cancelledBy);
         }
     }
 

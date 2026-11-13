@@ -22,11 +22,19 @@ class CartTest {
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * 白のバリアント ID
+     */
     private static final UUID WHITE = UUID.randomUUID();
 
+    /**
+     * 黒のバリアント ID
+     */
     private static final UUID BLACK = UUID.randomUUID();
 
     @Test
@@ -69,7 +77,7 @@ class CartTest {
         assertThat(cart.quantityAfterAdding(BLACK, 3, NOW)).isEqualTo(3);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @ValueSource(ints = {0, -1, 11})
     @DisplayName("AC-75 1 品目の数量は 1〜10。範囲外は拒否される")
     void rejectsQuantityOutOfRange(int quantity) {

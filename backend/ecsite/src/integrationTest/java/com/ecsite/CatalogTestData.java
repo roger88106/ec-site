@@ -101,6 +101,42 @@ public class CatalogTestData {
     }
 
     /**
+     * 税率を 1 つ持つ税区分の税率を、指定した日時から別の率に変える。<br />
+     * 今の税率の終了をその日時にし、その日時から始まる新しい税率を加える（開始済みの税率の率は変えられないため）。
+     * {@link #taxCategory} で作った、税率が 1 つの税区分だけを受ける。
+     * 商品の表示などに反映させるには、その日時より後まで時計を進め、税率のキャッシュを捨てる（{@code TaxRateScheduleCaches.evict}）。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param ratePercent   新しい率（%）
+     * @param effectiveFrom 新しい率が有効になる日時（今より後）
+     * @throws IllegalStateException 税区分の税率が 1 つでないとき
+     */
+    public void changeRate(UUID taxCategoryId, String ratePercent, Instant effectiveFrom) throws Exception {
+        var category = mockMvc.perform(get("/api/admin/tax-categories/" + taxCategoryId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        if (JsonPath.<Integer>read(category, "$.rates.length()") != 1) {
+            throw new IllegalStateException("税率が 1 つの税区分だけを変えられる: " + taxCategoryId);
+        }
+        String currentFrom = JsonPath.read(category, "$.rates[0].effectiveFrom");
+        mockMvc.perform(put("/api/admin/tax-categories/" + taxCategoryId + "/rates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"version": %s, "rates": [
+                                  {"id": "%s", "ratePercent": %s, "effectiveFrom": %s, "effectiveTo": %s},
+                                  {"ratePercent": %s, "effectiveFrom": %s}
+                                ]}""".formatted(
+                                JsonPath.<Object>read(category, "$.version"),
+                                JsonPath.<String>read(category, "$.rates[0].id"),
+                                JsonPath.<Object>read(category, "$.rates[0].ratePercent"),
+                                jsonInstant(currentFrom == null ? null : Instant.parse(currentFrom)),
+                                jsonInstant(effectiveFrom),
+                                ratePercent,
+                                jsonInstant(effectiveFrom))))
+                .andExpect(status().isNoContent());
+    }
+
+    /**
      * カテゴリを登録する。
      *
      * @param name     名称

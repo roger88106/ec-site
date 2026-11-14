@@ -1,11 +1,11 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
-import com.ecsite.architecture.money.module.sample.api.PricedApi;
-import com.ecsite.architecture.money.module.sample.application.model.PricedCommand;
-import com.ecsite.architecture.money.module.sample.application.model.PricedRow;
-import com.ecsite.architecture.money.module.sample.application.model.PricedView;
-import com.ecsite.architecture.money.module.sample.application.model.view.PricedReport;
+import com.ecsite.architecture.sample.money.module.sample.api.PricedApi;
+import com.ecsite.architecture.sample.money.module.sample.application.model.PricedCommand;
+import com.ecsite.architecture.sample.money.module.sample.application.model.PricedRow;
+import com.ecsite.architecture.sample.money.module.sample.application.model.PricedView;
+import com.ecsite.architecture.sample.money.module.sample.application.model.view.PricedReport;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;

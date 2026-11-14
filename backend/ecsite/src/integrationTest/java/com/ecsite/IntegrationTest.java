@@ -1,6 +1,7 @@
 package com.ecsite;
 
 import com.ecsite.config.security.ErrorCodeCheckConfig;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
@@ -18,6 +19,7 @@ import java.lang.annotation.Target;
  * <p>Spring コンテキストを起動し、Testcontainers の PostgreSQL に Flyway のマイグレーションを適用する。
  * API は MockMvc で呼ぶ。
  * アプリの時計は、テストから時刻を決められる時計に差し替える（{@link TestClockConfig}）。
+ * 共有する変えられる部品（時計、決済の mock、税率のキャッシュ）は、毎回のテストの前に最初の状態に戻す（{@link SharedStateReset}）。
  * 認証は、IdP を起動せずにテストの鍵で確認する（{@link TestTokens}）。
  * 非同期の処理を待つ補助（{@link AsyncEvents}）を登録する。
  * 決済の mock は、テスト用の操作を追加した実装で包む（{@link TestPaymentGatewayConfig}）。
@@ -28,6 +30,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @SpringBootTest
+@ExtendWith(SharedStateReset.class)
 @AutoConfigureMockMvc
 @Import({TestcontainersConfig.class, TestSecurityConfig.class, TestClockConfig.class, AsyncEvents.class,
         TestPaymentGatewayConfig.class, TestCarrierTrackingConfig.class, ErrorCodeCheckConfig.class})

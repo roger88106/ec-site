@@ -1,29 +1,29 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
-import com.ecsite.architecture.apiuse.module.sample.api.AllowedTargetApi;
-import com.ecsite.architecture.apiuse.module.sample.api.TargetApi;
-import com.ecsite.architecture.apiuse.module.user.application.ApplicationUsesAllowedApi;
-import com.ecsite.architecture.apiuse.module.user.application.ApplicationUsesTargetApi;
-import com.ecsite.architecture.apiuse.module.user.presentation.PresentationUsesAllowedApi;
-import com.ecsite.architecture.commondeps.sample.common.CommonToConfig;
-import com.ecsite.architecture.commondeps.sample.config.SampleConfig;
-import com.ecsite.architecture.layerdeps.module.sample.api.ApiToApplication;
-import com.ecsite.architecture.layerdeps.module.sample.api.ApiToPresentation;
-import com.ecsite.architecture.layerdeps.module.sample.application.ApplicationToApi;
-import com.ecsite.architecture.layerdeps.module.sample.application.SampleProperties;
-import com.ecsite.architecture.layerdeps.module.sample.application.SampleService;
-import com.ecsite.architecture.layerdeps.module.sample.application.port.SamplePort;
-import com.ecsite.architecture.layerdeps.module.sample.domain.DomainToApplication;
-import com.ecsite.architecture.layerdeps.module.sample.domain.SampleDomain;
-import com.ecsite.architecture.layerdeps.module.sample.extra.ExtraLayerClass;
-import com.ecsite.architecture.layerdeps.module.sample.infrastructure.InfrastructureToPort;
-import com.ecsite.architecture.layerdeps.module.sample.infrastructure.InfrastructureToService;
-import com.ecsite.architecture.layerdeps.module.sample.presentation.PresentationToPort;
-import com.ecsite.architecture.layerdeps.module.sample.presentation.SamplePresentation;
-import com.ecsite.architecture.tokenaccess.sample.application.ApplicationUsesCurrentMember;
-import com.ecsite.architecture.tokenaccess.sample.infrastructure.directory.DirectoryUsesCurrentMemberIds;
-import com.ecsite.architecture.tokenaccess.sample.presentation.PresentationUsesCurrentMember;
+import com.ecsite.architecture.sample.apiuse.module.sample.api.AllowedTargetApi;
+import com.ecsite.architecture.sample.apiuse.module.sample.api.TargetApi;
+import com.ecsite.architecture.sample.apiuse.module.user.application.ApplicationUsesAllowedApi;
+import com.ecsite.architecture.sample.apiuse.module.user.application.ApplicationUsesTargetApi;
+import com.ecsite.architecture.sample.apiuse.module.user.presentation.PresentationUsesAllowedApi;
+import com.ecsite.architecture.sample.commondeps.sample.common.CommonToConfig;
+import com.ecsite.architecture.sample.commondeps.sample.config.SampleConfig;
+import com.ecsite.architecture.sample.layerdeps.module.sample.api.ApiToApplication;
+import com.ecsite.architecture.sample.layerdeps.module.sample.api.ApiToPresentation;
+import com.ecsite.architecture.sample.layerdeps.module.sample.application.ApplicationToApi;
+import com.ecsite.architecture.sample.layerdeps.module.sample.application.SampleProperties;
+import com.ecsite.architecture.sample.layerdeps.module.sample.application.SampleService;
+import com.ecsite.architecture.sample.layerdeps.module.sample.application.port.SamplePort;
+import com.ecsite.architecture.sample.layerdeps.module.sample.domain.DomainToApplication;
+import com.ecsite.architecture.sample.layerdeps.module.sample.domain.SampleDomain;
+import com.ecsite.architecture.sample.layerdeps.module.sample.extra.ExtraLayerClass;
+import com.ecsite.architecture.sample.layerdeps.module.sample.infrastructure.InfrastructureToPort;
+import com.ecsite.architecture.sample.layerdeps.module.sample.infrastructure.InfrastructureToService;
+import com.ecsite.architecture.sample.layerdeps.module.sample.presentation.PresentationToPort;
+import com.ecsite.architecture.sample.layerdeps.module.sample.presentation.SamplePresentation;
+import com.ecsite.architecture.sample.tokenaccess.sample.application.ApplicationUsesCurrentMember;
+import com.ecsite.architecture.sample.tokenaccess.sample.infrastructure.directory.DirectoryUsesCurrentMemberIds;
+import com.ecsite.architecture.sample.tokenaccess.sample.presentation.PresentationUsesCurrentMember;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.common.security.CurrentToken;
@@ -304,8 +304,8 @@ class ModuleStructureTest {
     void commonDependencyRuleMatchesClassDependingOnConfig() {
         JavaClasses examples = new ClassFileImporter().importClasses(CommonToConfig.class, SampleConfig.class);
 
-        List<String> details = dependsOnNoPackage("com.ecsite.architecture.commondeps.sample.common..",
-                "com.ecsite.architecture.commondeps.sample.config..")
+        List<String> details = dependsOnNoPackage("com.ecsite.architecture.sample.commondeps.sample.common..",
+                "com.ecsite.architecture.sample.commondeps.sample.config..")
                 .evaluate(examples).getFailureReport().getDetails();
 
         assertViolation(details, CommonToConfig.class, SampleConfig.class);
@@ -427,9 +427,9 @@ class ModuleStructureTest {
         JavaClasses examples = new ClassFileImporter().importClasses(ApplicationUsesTargetApi.class,
                 ApplicationUsesAllowedApi.class, PresentationUsesAllowedApi.class);
         var allowedUses = List.of(new AllowedApiUse(AllowedTargetApi.class.getName(),
-                "com.ecsite.architecture.apiuse.module.*.presentation.."));
+                "com.ecsite.architecture.sample.apiuse.module.*.presentation.."));
 
-        List<String> details = classes().should(new NotUseApiCondition("com.ecsite.architecture.apiuse.module", "sample", allowedUses))
+        List<String> details = classes().should(new NotUseApiCondition("com.ecsite.architecture.sample.apiuse.module", "sample", allowedUses))
                 .evaluate(examples).getFailureReport().getDetails();
 
         assertViolation(details, ApplicationUsesTargetApi.class, TargetApi.class);
@@ -461,7 +461,7 @@ class ModuleStructureTest {
         JavaClasses examples = new ClassFileImporter().importClasses(
                 ApplicationUsesCurrentMember.class, PresentationUsesCurrentMember.class);
 
-        List<String> details = tokenAccessRule("com.ecsite.architecture.tokenaccess.sample.presentation..")
+        List<String> details = tokenAccessRule("com.ecsite.architecture.sample.tokenaccess.sample.presentation..")
                 .evaluate(examples).getFailureReport().getDetails();
 
         assertViolation(details, ApplicationUsesCurrentMember.class, CurrentMember.class);
@@ -473,7 +473,7 @@ class ModuleStructureTest {
     void tokenAccessRuleMatchesDirectoryUsingCurrentMemberIds() {
         JavaClasses examples = new ClassFileImporter().importClasses(DirectoryUsesCurrentMemberIds.class);
 
-        List<String> details = tokenAccessRule("com.ecsite.architecture.tokenaccess.sample.presentation..")
+        List<String> details = tokenAccessRule("com.ecsite.architecture.sample.tokenaccess.sample.presentation..")
                 .evaluate(examples).getFailureReport().getDetails();
 
         assertViolation(details, DirectoryUsesCurrentMemberIds.class, CurrentMemberIds.class);

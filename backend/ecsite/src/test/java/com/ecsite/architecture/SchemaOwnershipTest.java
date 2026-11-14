@@ -1,8 +1,8 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
-import com.ecsite.architecture.jooquse.module.sample.application.ApplicationUsesJooq;
-import com.ecsite.architecture.jooquse.module.sample.infrastructure.persistence.PersistenceUsesJooq;
+import com.ecsite.architecture.sample.jooquse.module.sample.application.ApplicationUsesJooq;
+import com.ecsite.architecture.sample.jooquse.module.sample.infrastructure.persistence.PersistenceUsesJooq;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -108,8 +108,8 @@ class SchemaOwnershipTest {
     void jooqPlacementRuleMatchesApplicationExampleOnly() {
         var examples = new ClassFileImporter().importClasses(ApplicationUsesJooq.class, PersistenceUsesJooq.class);
 
-        var details = jooqPlacementRule("com.ecsite.architecture.jooquse.module..",
-                "com.ecsite.architecture.jooquse.module.*.infrastructure.persistence..")
+        var details = jooqPlacementRule("com.ecsite.architecture.sample.jooquse.module..",
+                "com.ecsite.architecture.sample.jooquse.module.*.infrastructure.persistence..")
                 .evaluate(examples).getFailureReport().getDetails();
 
         assertThat(details).anyMatch(detail -> detail.contains(ApplicationUsesJooq.class.getName()));

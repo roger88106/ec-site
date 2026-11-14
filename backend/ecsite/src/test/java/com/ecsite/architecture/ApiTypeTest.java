@@ -1,10 +1,10 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
-import com.ecsite.architecture.apitype.module.sample.api.ExampleApi;
-import com.ecsite.architecture.apitype.module.sample.api.ExampleApiInterface;
-import com.ecsite.architecture.apitype.module.sample.application.ExtendsExampleApi;
-import com.ecsite.architecture.apitype.module.sample.application.PlainService;
+import com.ecsite.architecture.sample.apitype.module.sample.api.ExampleApi;
+import com.ecsite.architecture.sample.apitype.module.sample.api.ExampleApiInterface;
+import com.ecsite.architecture.sample.apitype.module.sample.application.ExtendsExampleApi;
+import com.ecsite.architecture.sample.apitype.module.sample.application.PlainService;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;

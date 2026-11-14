@@ -11,6 +11,8 @@ import org.springframework.boot.test.system.CapturedOutput;
  * ただし、テストの外で出た出力（Spring の起動のログ、前のテストの非同期の処理が後から出したログ）と、
  * 同じテストの中で確認の前に出た出力（準備の処理が出したログ）は残りうる。
  * 確認する処理の前に {@link #mark} で位置を覚え、確認では {@link #since} でその後の出力だけを読む。
+ *
+ * <p>ログの確認は {@link LogCapture} にそろえる。この補助は、まだ移していないテストのために残す（移し終えたら消す）。
  */
 public final class CapturedLogs {
 

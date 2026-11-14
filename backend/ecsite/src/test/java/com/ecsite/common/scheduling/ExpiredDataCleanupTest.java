@@ -1,24 +1,24 @@
 package com.ecsite.common.scheduling;
 
+import com.ecsite.LogCapture;
+import com.ecsite.LogCapture.LogEntry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * 期限切れのデータの片付けの共通の処理の単体テスト
  *
- * <p>削除の処理とロガーは差し替えて、繰り返しの回数とログの出し方を確認する。
+ * <p>削除の処理は差し替え、ロガーはテストのものを渡して、繰り返しの回数とログの出し方を確認する。
  */
 class ExpiredDataCleanupTest {
 
@@ -27,7 +27,16 @@ class ExpiredDataCleanupTest {
      */
     private static final int BATCH_SIZE = 3;
 
-    private final Logger log = mock(Logger.class);
+    /**
+     * 処理に渡すロガー
+     */
+    private final Logger log = LoggerFactory.getLogger(ExpiredDataCleanupTest.class);
+
+    /**
+     * 渡したロガーに出たログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(ExpiredDataCleanupTest.class);
 
     @Test
     @DisplayName("削除した件数が上限と等しい間は繰り返し、上限に満たなくなったら止める")
@@ -63,9 +72,7 @@ class ExpiredDataCleanupTest {
 
         ExpiredDataCleanup.run(log, "期限切れのカート", BATCH_SIZE, results::removeFirst);
 
-        verify(log).info("{}を消した：{} 件", "期限切れのカート", 8L);
-        verify(log, never()).debug(anyString());
-        verifyNoMoreInteractions(log);
+        assertThat(logs.entries()).containsExactly(new LogEntry(Level.INFO, "期限切れのカートを消した：8 件", ""));
     }
 
     @Test
@@ -73,7 +80,6 @@ class ExpiredDataCleanupTest {
     void logsZeroAtDebugWhenNothingWasDeleted() {
         ExpiredDataCleanup.run(log, "期限切れの引当", BATCH_SIZE, () -> 0);
 
-        verify(log).debug("{}を消した：0 件", "期限切れの引当");
-        verifyNoMoreInteractions(log);
+        assertThat(logs.entries()).containsExactly(new LogEntry(Level.DEBUG, "期限切れの引当を消した：0 件", ""));
     }
 }

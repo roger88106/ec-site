@@ -1,9 +1,9 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
-import com.ecsite.architecture.modelconstructor.sample.api.SampleModel;
-import com.ecsite.architecture.modelconstructor.sample.presentation.PresentationUsesFluent;
-import com.ecsite.architecture.modelconstructor.sample.presentation.PresentationUsesPositional;
+import com.ecsite.architecture.sample.modelconstructor.sample.api.SampleModel;
+import com.ecsite.architecture.sample.modelconstructor.sample.presentation.PresentationUsesFluent;
+import com.ecsite.architecture.sample.modelconstructor.sample.presentation.PresentationUsesPositional;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaConstructorCall;
@@ -66,8 +66,8 @@ class ModuleRoleTest {
         JavaClasses examples = new ClassFileImporter().importClasses(
                 PresentationUsesPositional.class, PresentationUsesFluent.class, SampleModel.class);
 
-        List<String> details = positionalConstructorRule("com.ecsite.architecture.modelconstructor.sample.api",
-                "com.ecsite.architecture.modelconstructor.sample.presentation..")
+        List<String> details = positionalConstructorRule("com.ecsite.architecture.sample.modelconstructor.sample.api",
+                "com.ecsite.architecture.sample.modelconstructor.sample.presentation..")
                 .evaluate(examples).getFailureReport().getDetails();
 
         assertThat(details).filteredOn(detail -> detail.contains(PresentationUsesPositional.class.getName())).hasSize(1);

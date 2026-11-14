@@ -1,12 +1,12 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
-import com.ecsite.architecture.cycle.domain.aggregate.OrderLike;
-import com.ecsite.architecture.cycle.domain.aggregate.vo.AmountLike;
-import com.ecsite.architecture.cycle.domain.oneway.OneWayOrder;
-import com.ecsite.architecture.cycle.domain.oneway.vo.PlainAmount;
-import com.ecsite.architecture.cycle.domain.withport.PortOwner;
-import com.ecsite.architecture.cycle.domain.withport.port.OwnerPort;
+import com.ecsite.architecture.sample.cycle.domain.aggregate.OrderLike;
+import com.ecsite.architecture.sample.cycle.domain.aggregate.vo.AmountLike;
+import com.ecsite.architecture.sample.cycle.domain.oneway.OneWayOrder;
+import com.ecsite.architecture.sample.cycle.domain.oneway.vo.PlainAmount;
+import com.ecsite.architecture.sample.cycle.domain.withport.PortOwner;
+import com.ecsite.architecture.sample.cycle.domain.withport.port.OwnerPort;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;

@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application.job;
 
+import com.ecsite.LogCapture;
 import com.ecsite.TestSettings;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.PaymentCommandService;
@@ -15,9 +16,8 @@ import com.ecsite.module.payment.domain.payment.PaymentPage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.dao.CannotAcquireLockException;
 
 import java.time.Duration;
@@ -45,7 +45,6 @@ import static org.mockito.Mockito.when;
  *
  * <p>支払の参照・更新のサービスと決済サービスは mock にする。与信の反映を待つ支払の検索は、統合テスト（PaymentExpiryJobTest）で確認する。
  */
-@ExtendWith(OutputCaptureExtension.class)
 class PaymentExpiryJobLoggingTest {
 
     /**
@@ -84,6 +83,12 @@ class PaymentExpiryJobLoggingTest {
 
     private final PaymentGateway gateway = mock(PaymentGateway.class);
 
+    /**
+     * ジョブと、ジョブが呼ぶ決済サービスの処理が出したログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(PaymentExpiryJob.class, PaymentGatewayService.class);
+
     private final PaymentExpiryJob job = new PaymentExpiryJob(queryService,
             new PaymentGatewayService(commandService, queryService, gateway, bind(Map.of())));
 
@@ -96,35 +101,35 @@ class PaymentExpiryJobLoggingTest {
 
     @Test
     @DisplayName("AC-310 決済サービスで予期しない例外が起きても、warn のログに支払 ID を出して、残りの支払を期限切れにする")
-    void continuesAfterUnexpectedGatewayException(CapturedOutput output) {
+    void continuesAfterUnexpectedGatewayException() {
         when(gateway.closePage("page-first")).thenThrow(new IllegalStateException("予期しない応答"));
 
         job.expire();
 
         verify(commandService).expire(SECOND.id());
-        assertThat(warnLinesOf(output, FIRST.id())).hasSize(1);
+        assertThat(warnLinesOf(FIRST.id())).hasSize(1);
     }
 
     @Test
     @DisplayName("AC-310 支払の保存で例外が起きても、warn のログに支払 ID を出して、残りの支払を期限切れにする")
-    void continuesAfterSaveException(CapturedOutput output) {
+    void continuesAfterSaveException() {
         doThrow(new CannotAcquireLockException("ロックを取れない")).when(commandService).expire(FIRST.id());
 
         job.expire();
 
         verify(commandService).expire(SECOND.id());
-        assertThat(warnLinesOf(output, FIRST.id())).hasSize(1);
+        assertThat(warnLinesOf(FIRST.id())).hasSize(1);
     }
 
     @Test
     @DisplayName("AC-310 決済サービスが応えないときも、今までどおり warn のログに支払 ID を出して、残りの支払を期限切れにする")
-    void continuesAfterSystemException(CapturedOutput output) {
+    void continuesAfterSystemException() {
         when(gateway.closePage("page-first")).thenThrow(SystemException.of("決済サービスが応えない", null));
 
         job.expire();
 
         verify(commandService).expire(SECOND.id());
-        assertThat(warnLinesOf(output, FIRST.id())).hasSize(1);
+        assertThat(warnLinesOf(FIRST.id())).hasSize(1);
     }
 
     @Test
@@ -140,29 +145,29 @@ class PaymentExpiryJobLoggingTest {
 
     @Test
     @DisplayName("AC-312 与信の反映を長く待つ未払いの支払があれば、warn のログに件数を出す")
-    void warnsLongAwaitingCount(CapturedOutput output) {
+    void warnsLongAwaitingCount() {
         when(queryService.countLongAwaitingAuthorization()).thenReturn(3L);
 
         job.expire();
 
-        assertThat(output.getAll().lines()
-                .filter(line -> line.contains("WARN") && line.contains("与信の反映を長く待つ支払") && line.contains("count=3")))
+        assertThat(logs.messages(Level.WARN).stream()
+                .filter(line -> line.contains("与信の反映を長く待つ支払") && line.contains("count=3")))
                 .hasSize(1);
     }
 
     @Test
     @DisplayName("AC-312 与信の反映を長く待つ支払がなければ、ログに出さない")
-    void doesNotWarnWithoutLongAwaiting(CapturedOutput output) {
+    void doesNotWarnWithoutLongAwaiting() {
         when(queryService.countLongAwaitingAuthorization()).thenReturn(0L);
 
         job.expire();
 
-        assertThat(output.getAll()).doesNotContain("与信の反映を長く待つ支払");
+        assertThat(logs.text()).doesNotContain("与信の反映を長く待つ支払");
     }
 
     @Test
     @DisplayName("AC-409-6 与信を取得できない支払は、warn のログに支払 ID を出して待つ支払のまま残し、残りの支払を処理する")
-    void continuesAfterFetchFailure(CapturedOutput output) {
+    void continuesAfterFetchFailure() {
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(AWAITING_FIRST, AWAITING_SECOND));
         when(gateway.fetchAuthorization("page-awaiting-first")).thenThrow(SystemException.of("予期しない応答", null));
         when(gateway.fetchAuthorization("page-awaiting-second")).thenReturn(AUTHORIZATION);
@@ -171,12 +176,12 @@ class PaymentExpiryJobLoggingTest {
 
         verify(commandService, never()).authorizeFromGateway(eq(AWAITING_FIRST.id()), any());
         verify(commandService).authorizeFromGateway(AWAITING_SECOND.id(), AUTHORIZATION);
-        assertThat(warnLinesOf(output, AWAITING_FIRST.id())).hasSize(1);
+        assertThat(warnLinesOf(AWAITING_FIRST.id())).hasSize(1);
     }
 
     @Test
     @DisplayName("AC-409-6 支払画面のない行があっても、warn のログに支払 ID を出して、残りの支払を処理する")
-    void continuesAfterRowWithoutPage(CapturedOutput output) {
+    void continuesAfterRowWithoutPage() {
         var broken = new AwaitingAuthorizationPaymentView(UUID.randomUUID(), null);
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(broken, AWAITING_SECOND));
         when(gateway.fetchAuthorization("page-awaiting-second")).thenReturn(AUTHORIZATION);
@@ -185,37 +190,37 @@ class PaymentExpiryJobLoggingTest {
 
         verify(commandService, never()).authorizeFromGateway(eq(broken.id()), any());
         verify(commandService).authorizeFromGateway(AWAITING_SECOND.id(), AUTHORIZATION);
-        assertThat(warnLinesOf(output, broken.id())).hasSize(1);
+        assertThat(warnLinesOf(broken.id())).hasSize(1);
     }
 
     @Test
     @DisplayName("AC-409-9 ジョブの取得で与信済みにしたら、warn のログに支払 ID を出す")
-    void warnsWhenAuthorizedFromGateway(CapturedOutput output) {
+    void warnsWhenAuthorizedFromGateway() {
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(AWAITING_FIRST));
         when(gateway.fetchAuthorization("page-awaiting-first")).thenReturn(AUTHORIZATION);
         when(commandService.authorizeFromGateway(AWAITING_FIRST.id(), AUTHORIZATION)).thenReturn(true);
 
         job.expire();
 
-        assertThat(warnLinesOf(output, AWAITING_FIRST.id())).singleElement()
+        assertThat(warnLinesOf(AWAITING_FIRST.id())).singleElement()
                 .satisfies(line -> assertThat(line).contains("通知より先に、決済サービスから与信を取得して反映した"));
     }
 
     @Test
     @DisplayName("AC-409-9 先に通知が届いていて与信済みにしなかったら、warn のログに出さない")
-    void doesNotWarnWhenAlreadyAuthorized(CapturedOutput output) {
+    void doesNotWarnWhenAlreadyAuthorized() {
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(AWAITING_FIRST));
         when(gateway.fetchAuthorization("page-awaiting-first")).thenReturn(AUTHORIZATION);
         when(commandService.authorizeFromGateway(AWAITING_FIRST.id(), AUTHORIZATION)).thenReturn(false);
 
         job.expire();
 
-        assertThat(warnLinesOf(output, AWAITING_FIRST.id())).isEmpty();
+        assertThat(warnLinesOf(AWAITING_FIRST.id())).isEmpty();
     }
 
     @Test
     @DisplayName("AC-409-10 決済サービスへの接続の失敗が 3 件続いたら、4 件目以降を取得せず、打ち切ったことを warn のログに出す")
-    void stopsAfterConsecutiveUnavailable(CapturedOutput output) {
+    void stopsAfterConsecutiveUnavailable() {
         var payments = awaitingPayments(5);
         when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(payments);
         payments.forEach(payment -> when(gateway.fetchAuthorization(payment.pageId())).thenThrow(unavailable()));
@@ -224,8 +229,8 @@ class PaymentExpiryJobLoggingTest {
 
         verify(gateway, times(3)).fetchAuthorization(anyString());
         verify(gateway, never()).fetchAuthorization(payments.get(3).pageId());
-        assertThat(output.getAll().lines()
-                .filter(line -> line.contains("WARN") && line.contains("この回の与信の取得を打ち切る") && line.contains("count=3")))
+        assertThat(logs.messages(Level.WARN).stream()
+                .filter(line -> line.contains("この回の与信の取得を打ち切る") && line.contains("count=3")))
                 .hasSize(1);
     }
 
@@ -288,11 +293,11 @@ class PaymentExpiryJobLoggingTest {
     }
 
     /**
-     * 支払 ID を含む warn のログの行
+     * 支払 ID を含む warn のログの文
      */
-    private static List<String> warnLinesOf(CapturedOutput output, UUID paymentId) {
-        return output.getAll().lines()
-                .filter(line -> line.contains("WARN") && line.contains(paymentId.toString()))
+    private List<String> warnLinesOf(UUID paymentId) {
+        return logs.messages(Level.WARN).stream()
+                .filter(line -> line.contains(paymentId.toString()))
                 .toList();
     }
 

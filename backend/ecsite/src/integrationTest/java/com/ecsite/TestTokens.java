@@ -75,6 +75,11 @@ public final class TestTokens {
     public static final UUID MEMBER_SUBJECT = UUID.fromString("00000000-0000-0000-0000-0000000c0001");
 
     /**
+     * 既定の会員のメールアドレス（token の email。注文の連絡先になる）
+     */
+    public static final String MEMBER_EMAIL = "member@example.com";
+
+    /**
      * すべての権限
      *
      * <p>運営者の realm の {@code ec-admin-api} の client role。職務の「管理者」と同じ。
@@ -184,7 +189,7 @@ public final class TestTokens {
      */
     public static Builder member() {
         return new Builder(STORE_ISSUER, STORE_AUDIENCE, STORE_KEY, MEMBER_SUBJECT, "会員", "太郎")
-                .email("member@example.com");
+                .email(MEMBER_EMAIL);
     }
 
     /**

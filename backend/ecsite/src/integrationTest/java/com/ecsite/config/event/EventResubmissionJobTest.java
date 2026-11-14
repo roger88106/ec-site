@@ -1,8 +1,8 @@
 package com.ecsite.config.event;
 
 import com.ecsite.AsyncEvents;
-import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
+import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.jooq.DSLContext;
@@ -10,13 +10,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -50,8 +49,13 @@ import static org.awaitility.Awaitility.await;
  * イベントはコミット後に非同期で処理されるので、処理を待つ。
  */
 @IntegrationTest
-@ExtendWith(OutputCaptureExtension.class)
 class EventResubmissionJobTest {
+
+    /**
+     * 全てのロガーのログ（ログにイベントの中身が出ないことを、どのロガーについても確認するため）
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.all();
 
     /**
      * テストの現在時刻
@@ -163,22 +167,25 @@ class EventResubmissionJobTest {
 
     @Test
     @DisplayName("AC-291 最後の再発行が失敗したイベントは、次の回で止め、種類・イベント ID・リスナー・処理の回数をエラーのログに 1 回だけ出す。中身は出さない")
-    void logsStoppedEventOnce(CapturedOutput output) {
+    void logsStoppedEventOnce() {
         var job = jobWithMaxAttempts(2);
         var event = failedUntil(job, 2);
         var publication = publicationOf(event);
 
         clock.advance(Duration.ofMinutes(1));
-        var logStart = CapturedLogs.mark(output);
+        logs.clear();
         job.resubmit();
         clock.advance(Duration.ofMinutes(1));
         job.resubmit();
 
-        var logLines = CapturedLogs.since(output, logStart).lines().filter(line -> line.contains(publication.getIdentifier().toString())).toList();
-        assertThat(logLines).singleElement().satisfies(line -> assertThat(line)
-                .contains("ERROR", FailingEvent.class.getName(), publication.getTargetIdentifier().getValue(), "処理の回数 2")
-                .doesNotContain(event.email()));
-        assertThat(CapturedLogs.since(output, logStart)).doesNotContain(event.email());
+        var logLines = logs.entries().stream().filter(entry -> entry.text().contains(publication.getIdentifier().toString())).toList();
+        assertThat(logLines).singleElement().satisfies(entry -> {
+            assertThat(entry.level()).isEqualTo(Level.ERROR);
+            assertThat(entry.text())
+                    .contains(FailingEvent.class.getName(), publication.getTargetIdentifier().getValue(), "処理の回数 2")
+                    .doesNotContain(event.email());
+        });
+        assertThat(logs.text()).doesNotContain(event.email());
     }
 
     @Test
@@ -198,7 +205,7 @@ class EventResubmissionJobTest {
 
     @Test
     @DisplayName("AC-291 最後の再発行が処理中（失敗も完了もしていない）のイベントは、止めない")
-    void doesNotStopEventInProcess(CapturedOutput output) {
+    void doesNotStopEventInProcess() {
         var job = jobWithMaxAttempts(2);
         var event = failedUntil(job, 2);
         var publication = publicationOf(event);
@@ -206,11 +213,11 @@ class EventResubmissionJobTest {
         markStatus(event, "RESUBMITTED");
 
         clock.advance(Duration.ofMinutes(1));
-        var logStart = CapturedLogs.mark(output);
+        logs.clear();
         job.resubmit();
 
         assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
-        assertThat(CapturedLogs.since(output, logStart)).doesNotContain(publication.getIdentifier().toString());
+        assertThat(logs.text()).doesNotContain(publication.getIdentifier().toString());
     }
 
     @Test
@@ -307,20 +314,20 @@ class EventResubmissionJobTest {
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
     @DisplayName("AC-291 処理の回数が上限に達したイベントが、結果の出ないまま最後の試行から 5 分たつと、止めてエラーのログに出力する")
-    void stopsEventStuckAtMaxAttempts(String status, CapturedOutput output) {
+    void stopsEventStuckAtMaxAttempts(String status) {
         var job = jobWithMaxAttempts(2);
         var event = failedUntil(job, 2);
         var publication = publicationOf(event);
         markStatus(event, status);
 
         clock.advance(Duration.ofMinutes(6));
-        var logStart = CapturedLogs.mark(output);
+        logs.clear();
         registry.markStalePublicationsFailed(staleness);
         job.resubmit();
 
         assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(3);
-        assertThat(CapturedLogs.since(output, logStart).lines()
-                .filter(line -> line.contains("ERROR") && line.contains(publication.getIdentifier().toString())))
+        assertThat(logs.entries().stream()
+                .filter(entry -> entry.level() == Level.ERROR && entry.text().contains(publication.getIdentifier().toString())))
                 .hasSize(1);
     }
 

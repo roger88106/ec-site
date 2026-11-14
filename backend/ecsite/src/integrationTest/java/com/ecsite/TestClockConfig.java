@@ -12,22 +12,27 @@ import java.time.Instant;
  *
  * <p>アプリの時計を、テストから時刻を決められる時計に差し替える。
  * {@link IntegrationTest} が取り込む。時刻に依存するテストは、{@link MutableClock} を注入し、{@code @BeforeEach} で時刻を決める。
- * 時計は同じコンテキストのテストで共有するので、決めないと前のテストの時刻が残る。
+ * 時計は同じコンテキストのテストで共有するので、毎回のテストの前に {@link SharedStateReset} が初期値に戻す。
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestClockConfig {
 
     /**
+     * 時計の初期値。テストの例で使う日付（2026-10-08 00:00 日本時間）
+     */
+    public static final Instant INITIAL_INSTANT = Instant.parse("2026-10-07T15:00:00Z");
+
+    /**
      * テスト用の時計。
      *
      * <p>アプリの {@link Clock} より優先して注入される。
-     * 初期値は、テストの例で使う日付（2026-10-08 00:00 日本時間）。
+     * 初期値は {@link #INITIAL_INSTANT}。
      *
      * @return 時計
      */
     @Bean
     @Primary
     MutableClock testClock() {
-        return new MutableClock(Instant.parse("2026-10-07T15:00:00Z"));
+        return new MutableClock(INITIAL_INSTANT);
     }
 }

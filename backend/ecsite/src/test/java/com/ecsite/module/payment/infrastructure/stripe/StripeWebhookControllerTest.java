@@ -23,13 +23,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class StripeWebhookControllerTest {
 
+    // ============================== 定数 ==============================
+
+    /**
+     * 通知の本文
+     */
     private static final String PAYLOAD = """
             {"id": "evt_test", "type": "checkout.session.completed"}""";
 
+    /**
+     * 署名のヘッダーの値
+     */
     private static final String SIGNATURE = "t=1,v1=signature";
 
+    // ============================== 対象 ==============================
+
+    /**
+     * 通知の受け取り
+     */
     private final StripeNotificationHandler handler = mock(StripeNotificationHandler.class);
 
+    /**
+     * エンドポイントを呼ぶ MockMvc
+     */
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -37,31 +53,52 @@ class StripeWebhookControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(new StripeWebhookController(handler)).build();
     }
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("通知の本文と署名を、文字列のまま受け取りに渡し、200 を返す")
     void passesPayloadAndSignature() throws Exception {
-        receive(SIGNATURE).andExpect(status().isOk());
+        // 操作：署名付きの通知を受ける
+        var result = receive(SIGNATURE);
 
+        // 確認：200 で、本文と署名をそのまま渡した
+        result.andExpect(status().isOk());
         verify(handler).handle(PAYLOAD, SIGNATURE);
     }
 
     @Test
     @DisplayName("署名を確認できなければ、400 を返す")
     void rejectsInvalidSignature() throws Exception {
+        // 準備：受け取りが署名を確認できない
         doThrow(new InvalidStripeNotificationException("署名が合わない", null)).when(handler).handle(anyString(), anyString());
 
-        receive(SIGNATURE).andExpect(status().isBadRequest());
+        // 操作：通知を受ける
+        var result = receive(SIGNATURE);
+
+        // 確認：400
+        result.andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("署名のヘッダーがなくても受け取りに渡し、受け取りが確認する")
     void passesMissingSignature() throws Exception {
-        mockMvc.perform(post("/api/webhooks/stripe").contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
-                .andExpect(status().isOk());
+        // 操作：署名のヘッダーのない通知を受ける
+        var result = mockMvc.perform(post("/api/webhooks/stripe").contentType(MediaType.APPLICATION_JSON).content(PAYLOAD));
 
+        // 確認：200 で、署名なしとして渡した
+        result.andExpect(status().isOk());
         verify(handler).handle(PAYLOAD, null);
     }
 
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * 署名付きの通知を受ける。
+     *
+     * @param signature 署名のヘッダーの値
+     * @return 応答
+     * @throws Exception 呼び出しに失敗したとき
+     */
     private ResultActions receive(String signature) throws Exception {
         return mockMvc.perform(post("/api/webhooks/stripe")
                 .contentType(MediaType.APPLICATION_JSON)

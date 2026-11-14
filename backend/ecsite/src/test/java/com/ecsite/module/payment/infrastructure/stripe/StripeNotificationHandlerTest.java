@@ -3,7 +3,10 @@ package com.ecsite.module.payment.infrastructure.stripe;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.stripe.net.Webhook;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>通知の中身は、sandbox で記録したもの（{@code src/test/resources/stripe/}）を使い、テストの鍵で署名する。
  */
 class StripeNotificationHandlerTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * テストの署名の鍵
@@ -53,6 +58,8 @@ class StripeNotificationHandlerTest {
      */
     private static final String EXPIRED_SESSION_ID = "cs_test_a1zewRjUghE0UY9BsbiwwxGmd9XVfiSll2NRfTbJcHbzBjHVBYFqfbZO2N";
 
+    // ============================== 対象 ==============================
+
     /**
      * 受け取った通知
      */
@@ -64,93 +71,137 @@ class StripeNotificationHandlerTest {
     private final StripeNotificationHandler handler =
             new StripeNotificationHandler(receiver, WEBHOOK_SECRET, Clock.fixed(NOW, ZoneOffset.UTC));
 
-    @Test
-    @DisplayName("BR-17 署名の合う与信の成功の通知を、支払画面 ID と与信の参照に直して渡す")
-    void passesAuthorization() {
-        var payload = recorded("checkout-session-completed.json");
+    // ============================== テスト ==============================
 
-        handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
+    @Nested
+    @DisplayName("受け付ける通知")
+    class Accepted {
 
-        assertThat(receiver.received).containsExactly("authorized " + SESSION_ID + " " + PAYMENT_INTENT_ID);
+        @Test
+        @DisplayName("BR-17 署名の合う与信の成功の通知を、支払画面 ID と与信の参照に直して渡す")
+        void passesAuthorization() {
+            // 準備：記録した与信の成功の通知
+            var payload = recorded("checkout-session-completed.json");
+
+            // 操作：正しい鍵の署名で受け取る
+            handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
+
+            // 確認：支払画面 ID と与信の参照を渡した
+            assertThat(receiver.received).containsExactly("authorized " + SESSION_ID + " " + PAYMENT_INTENT_ID);
+        }
+
+        @Test
+        @DisplayName("BR-17 署名の合う期限切れの通知を、支払画面の期限切れとして渡す")
+        void passesPageExpiry() {
+            // 準備：記録した期限切れの通知
+            var payload = recorded("checkout-session-expired.json");
+
+            // 操作：正しい鍵の署名で受け取る
+            handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
+
+            // 確認：支払画面の期限切れを渡した
+            assertThat(receiver.received).containsExactly("pageExpired " + EXPIRED_SESSION_ID);
+        }
+
+        @Test
+        @DisplayName("BR-17 扱わない種類の通知は、受け付けて何もしない")
+        void ignoresOtherTypes() {
+            // 準備：記録した PaymentIntent の取消の通知（扱わない種類）
+            var payload = recorded("payment-intent-canceled.json");
+
+            // 操作：正しい鍵の署名で受け取る
+            handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
+
+            // 確認：何も渡さない
+            assertThat(receiver.received).isEmpty();
+        }
+
+        @Test
+        @DisplayName("BR-17 5 分以内に署名した通知は受け付ける（Stripe の再送も署名し直される）")
+        void acceptsRecentSignature() {
+            // 準備：5 分より 1 秒新しい署名の通知
+            var payload = recorded("checkout-session-expired.json");
+            var signedAt = NOW.minus(Duration.ofMinutes(5)).plusSeconds(1);
+
+            // 操作：受け取る
+            handler.handle(payload, sign(payload, WEBHOOK_SECRET, signedAt));
+
+            // 確認：渡した
+            assertThat(receiver.received).containsExactly("pageExpired " + EXPIRED_SESSION_ID);
+        }
     }
 
-    @Test
-    @DisplayName("BR-17 署名の合う期限切れの通知を、支払画面の期限切れとして渡す")
-    void passesPageExpiry() {
-        var payload = recorded("checkout-session-expired.json");
+    @Nested
+    @DisplayName("拒否する通知")
+    class Rejected {
 
-        handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
+        @Test
+        @DisplayName("BR-17 別の鍵で署名した通知は拒否し、何も渡さない")
+        void rejectsWrongSecret() {
+            // 準備：別の鍵で署名した通知
+            var payload = recorded("checkout-session-completed.json");
+            var signature = sign(payload, "whsec_other", NOW);
 
-        assertThat(receiver.received).containsExactly("pageExpired " + EXPIRED_SESSION_ID);
+            // 操作と確認：拒否し、何も渡さない
+            assertRejected(payload, signature);
+        }
+
+        @Test
+        @DisplayName("BR-17 署名の後に書き換えた通知は拒否する")
+        void rejectsTamperedPayload() {
+            // 準備：署名の後に与信の参照を書き換えた通知
+            var payload = recorded("checkout-session-completed.json");
+            var signature = sign(payload, WEBHOOK_SECRET, NOW);
+            var tampered = payload.replace(PAYMENT_INTENT_ID, "pi_attacker");
+
+            // 操作と確認：拒否し、何も渡さない
+            assertRejected(tampered, signature);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @NullAndEmptySource
+        @DisplayName("BR-17 署名のない通知は拒否する")
+        void rejectsMissingSignature(String signature) {
+            // 準備：記録した与信の成功の通知
+            var payload = recorded("checkout-session-completed.json");
+
+            // 操作と確認：拒否し、何も渡さない
+            assertRejected(payload, signature);
+        }
+
+        @Test
+        @DisplayName("BR-17 5 分より前に署名した古い通知は拒否する（盗んだ通知の再送を防ぐ）")
+        void rejectsStaleSignature() {
+            // 準備：5 分より 1 秒古い署名の通知
+            var payload = recorded("checkout-session-completed.json");
+            var signature = sign(payload, WEBHOOK_SECRET, NOW.minus(Duration.ofMinutes(5)).minusSeconds(1));
+
+            // 操作と確認：拒否し、何も渡さない
+            assertRejected(payload, signature);
+        }
     }
 
-    @Test
-    @DisplayName("BR-17 扱わない種類の通知は、受け付けて何もしない")
-    void ignoresOtherTypes() {
-        var payload = recorded("payment-intent-canceled.json");
+    // ============================== 確認の補助 ==============================
 
-        handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
-
-        assertThat(receiver.received).isEmpty();
-    }
-
-    @Test
-    @DisplayName("BR-17 別の鍵で署名した通知は拒否し、何も渡さない")
-    void rejectsWrongSecret() {
-        var payload = recorded("checkout-session-completed.json");
-
-        assertThatThrownBy(() -> handler.handle(payload, sign(payload, "whsec_other", NOW)))
+    /**
+     * 通知を拒否し、何も渡さないことを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>不正な通知の例外になる</li>
+     *   <li>port に何も渡さない</li>
+     * </ul>
+     *
+     * @param payload   通知の本文
+     * @param signature 署名のヘッダーの値
+     */
+    private void assertRejected(String payload, String signature) {
+        assertThatThrownBy(() -> handler.handle(payload, signature))
                 .isInstanceOf(InvalidStripeNotificationException.class);
         assertThat(receiver.received).isEmpty();
     }
 
-    @Test
-    @DisplayName("BR-17 署名の後に書き換えた通知は拒否する")
-    void rejectsTamperedPayload() {
-        var payload = recorded("checkout-session-completed.json");
-        var signature = sign(payload, WEBHOOK_SECRET, NOW);
-        var tampered = payload.replace(PAYMENT_INTENT_ID, "pi_attacker");
-
-        assertThatThrownBy(() -> handler.handle(tampered, signature))
-                .isInstanceOf(InvalidStripeNotificationException.class);
-        assertThat(receiver.received).isEmpty();
-    }
-
-    @Test
-    @DisplayName("BR-17 署名のない通知は拒否する")
-    void rejectsMissingSignature() {
-        var payload = recorded("checkout-session-completed.json");
-
-        assertThatThrownBy(() -> handler.handle(payload, null))
-                .isInstanceOf(InvalidStripeNotificationException.class);
-        assertThatThrownBy(() -> handler.handle(payload, ""))
-                .isInstanceOf(InvalidStripeNotificationException.class);
-        assertThat(receiver.received).isEmpty();
-    }
-
-    @Test
-    @DisplayName("BR-17 5 分より前に署名した古い通知は拒否する（盗んだ通知の再送を防ぐ）")
-    void rejectsStaleSignature() {
-        var payload = recorded("checkout-session-completed.json");
-        var signedAt = NOW.minus(Duration.ofMinutes(5)).minusSeconds(1);
-
-        assertThatThrownBy(() -> handler.handle(payload, sign(payload, WEBHOOK_SECRET, signedAt)))
-                .isInstanceOf(InvalidStripeNotificationException.class);
-        assertThat(receiver.received).isEmpty();
-    }
-
-    @Test
-    @DisplayName("BR-17 5 分以内に署名した通知は受け付ける（Stripe の再送も署名し直される）")
-    void acceptsRecentSignature() {
-        var payload = recorded("checkout-session-expired.json");
-        var signedAt = NOW.minus(Duration.ofMinutes(5)).plusSeconds(1);
-
-        handler.handle(payload, sign(payload, WEBHOOK_SECRET, signedAt));
-
-        assertThat(receiver.received).containsExactly("pageExpired " + EXPIRED_SESSION_ID);
-    }
-
-    // ============================== 補助 ==============================
+    // ============================== 準備の補助 ==============================
 
     /**
      * 記録した通知の本文を読む。

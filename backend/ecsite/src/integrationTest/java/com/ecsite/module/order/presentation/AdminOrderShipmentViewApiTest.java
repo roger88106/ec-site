@@ -274,7 +274,7 @@ class AdminOrderShipmentViewApiTest {
     class ListColumns {
 
         @Test
-        @DisplayName("AC-182 各行に配送状態を返す。出荷していなければ null")
+        @DisplayName("AC-189 各行に配送状態を返す。出荷していなければ null")
         void showsShipmentStatus() throws Exception {
             // 操作：一覧を取得する
             var items = lists.listAll();

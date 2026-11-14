@@ -443,7 +443,7 @@ class CartTest {
         }
 
         @Test
-        @DisplayName("AC-81、284 ある時刻より前に期限が切れたカートは、最後の変更がその時刻の 30 日前より前のもの")
+        @DisplayName("AC-81 ある時刻より前に期限が切れたカートは、最後の変更がその時刻の 30 日前より前のもの")
         void findsLastUpdateOfCartsExpiredBefore() {
             // 操作と確認：30 日後より前に切れたカートは、最後の変更が今より前
             assertThat(Cart.lastUpdateExpiredBefore(NOW.plus(EXPIRY))).isEqualTo(NOW);

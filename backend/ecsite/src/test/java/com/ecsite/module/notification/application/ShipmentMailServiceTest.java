@@ -85,7 +85,7 @@ class ShipmentMailServiceTest {
     class Header {
 
         @Test
-        @DisplayName("US-38 宛先は、注文のメールアドレス")
+        @DisplayName("AC-183、US-38 宛先は、注文のメールアドレス")
         void sendsToOrderEmail() {
             // 操作：ヤマト運輸の出荷を渡す
             var mail = sentMailOf(yamatoShipment());
@@ -95,7 +95,7 @@ class ShipmentMailServiceTest {
         }
 
         @Test
-        @DisplayName("US-38 件名に、注文番号が入る")
+        @DisplayName("AC-183、US-38 件名に、注文番号が入る")
         void subjectHasOrderNumber() {
             // 操作：ヤマト運輸の出荷を渡す
             var mail = sentMailOf(yamatoShipment());
@@ -110,7 +110,7 @@ class ShipmentMailServiceTest {
     class Body {
 
         @Test
-        @DisplayName("US-38 本文に、注文番号と配送業者の表示名と送り状番号が入る")
+        @DisplayName("AC-183、US-38 本文に、注文番号と配送業者の表示名と送り状番号が入る")
         void bodyHasShipment() {
             // 操作：ヤマト運輸の出荷を渡す
             var mail = sentMailOf(yamatoShipment());
@@ -124,7 +124,7 @@ class ShipmentMailServiceTest {
                 "SAGAWA, 佐川急便",
                 "JAPAN_POST, 日本郵便",
         })
-        @DisplayName("US-38 本文の配送業者は、配送業者ごとの表示名")
+        @DisplayName("AC-183、US-38 本文の配送業者は、配送業者ごとの表示名")
         void usesCarrierName(OrderShipped.Carrier carrier, String name) {
             // 準備：配送業者の出荷
             var event = OrderShipped.of(SHIPPED_AT, UUID.randomUUID(), ORDER_NUMBER, EMAIL, carrier, TRACKING_NUMBER);

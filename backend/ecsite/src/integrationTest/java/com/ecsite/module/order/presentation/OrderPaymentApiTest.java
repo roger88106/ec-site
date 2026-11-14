@@ -391,7 +391,7 @@ class OrderPaymentApiTest {
     class Expire {
 
         @Test
-        @DisplayName("AC-153、154 支払の期限の前は、期限切れのジョブを動かしても「支払待ち」のまま")
+        @DisplayName("AC-153 支払の期限の前は、期限切れのジョブを動かしても「支払待ち」のまま")
         void keepsOrderBeforeDeadline() throws Exception {
             // 準備：支払の期限の 1 秒前にする
             var orderId = pending(2);
@@ -405,7 +405,7 @@ class OrderPaymentApiTest {
         }
 
         @Test
-        @DisplayName("AC-153、154 支払の期限を過ぎると、期限切れのジョブでキャンセルになる")
+        @DisplayName("AC-153 支払の期限を過ぎると、期限切れのジョブでキャンセルになる")
         void cancelsAtDeadline() throws Exception {
             // 準備：支払わずに注文する
             var orderId = pending(2);

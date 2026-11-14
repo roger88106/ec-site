@@ -137,7 +137,7 @@ class CartCleanupJobTest {
     class DeleteExpired {
 
         @Test
-        @DisplayName("AC-284 最後の変更から 30 日（期限）と保存期間（0）がたったカートは消える")
+        @DisplayName("AC-81 最後の変更から 30 日（期限）と保存期間（0）がたったカートは消える")
         void deletesExpiredCart() {
             // 準備：NOW に変えたカート
             var old = cartWithItem(NOW);
@@ -151,7 +151,7 @@ class CartCleanupJobTest {
         }
 
         @Test
-        @DisplayName("AC-284 カートを消すと、その品目も消える")
+        @DisplayName("AC-81 カートを消すと、その品目も消える")
         void deletesItemsWithCart() {
             // 準備：品目を 1 つ入れて NOW に変えたカート
             var old = cartWithItem(NOW);
@@ -165,7 +165,7 @@ class CartCleanupJobTest {
         }
 
         @Test
-        @DisplayName("AC-284 期限の切れていないカートは、品目と共に残る")
+        @DisplayName("AC-81 期限の切れていないカートは、品目と共に残る")
         void keepsCartBeforeExpiry() {
             // 準備：期限の切れたカートと、その 2 日後に変えたカート
             var old = cartWithItem(NOW);

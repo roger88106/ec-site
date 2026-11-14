@@ -4,6 +4,7 @@ import { useTranslations } from 'use-intl'
 import type { OrderAmounts, OrderLine } from '@/api/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatRate } from '@/lib/rate'
 
 /**
  * 明細と金額の内訳
@@ -47,7 +48,7 @@ export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts
                   )}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{formatYen(line.unitPriceExclTax)}</TableCell>
-                <TableCell className="text-right tabular-nums">{line.ratePercent}%</TableCell>
+                <TableCell className="text-right tabular-nums">{formatRate(line.ratePercent)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatYen(line.unitPriceInclTax)}</TableCell>
                 <TableCell className="text-right tabular-nums">{line.quantity}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatYen(line.subtotal)}</TableCell>

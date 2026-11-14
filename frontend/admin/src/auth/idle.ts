@@ -9,9 +9,10 @@ export const IDLE_LIMIT_MS = 30 * 60 * 1000
 export const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000
 
 /**
- * 状態が変わる時刻に置くタイマーとは別に、判定を繰り返す間隔（ミリ秒）。
+ * 判定を繰り返す間隔（ミリ秒）
  *
- * タブを前面に表示したままスリープから再開し、visibilitychange が起きないときも、ログアウトの遅れをこの間隔に抑える
+ * 状態が変わる時刻に置くタイマーとは別に繰り返す。
+ * タブを前面に表示したままスリープから再開し、visibilitychange が起きないときも、ログアウトの遅れをこの間隔に抑える。
  */
 export const IDLE_CHECK_INTERVAL_MS = 15 * 1000
 

@@ -39,6 +39,7 @@ function listeners(calls: unknown[][]) {
   return new Set(calls.map(([type, listener]) => [type, listener]))
 }
 
+/** 無操作のログアウトのフックを描画し、ログアウトの関数の代わりと描画の結果を返す。 */
 function renderIdle() {
   const onExpire = vi.fn()
   const view = renderHook(() => useIdleLogout({ onExpire }))
@@ -199,11 +200,7 @@ describe('無操作のログアウト（フック）', () => {
     const { onExpire } = renderIdle()
     advanceClock(29 * MINUTE)
 
-    act(() => {
-      window.dispatchEvent(
-        new StorageEvent('storage', { key: 'ec-admin.other', newValue: String(START + 29 * MINUTE) }),
-      )
-    })
+    otherTabWrites('ec-admin.other', String(START + 29 * MINUTE))
     advanceClock(MINUTE)
 
     expect(onExpire).toHaveBeenCalledTimes(1)

@@ -151,9 +151,7 @@ export async function startCheckout(_previous: ActionResult | null, formData: Fo
   })
 }
 
-/**
- * カートを移した結果の知らせを消す（カートの画面で一度示した後）。
- */
+/** カートを移した結果の知らせを消す（カートの画面で一度示した後）。 */
 export async function dismissCartMergeNotice(): Promise<void> {
   await deleteCartMergeNotice()
 }
@@ -249,7 +247,7 @@ async function updateMemberCart(request: CartRequest): Promise<ActionResult> {
   return response.ok ? SUCCESS : toFailure(response.status, error)
 }
 
-/** カートを作り、その ID を返す */
+/** カートを作り、その ID を返す。 */
 async function createCart(): Promise<string> {
   const api = await getApi()
   const { data, error, response } = await api.POST('/carts')

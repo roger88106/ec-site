@@ -10,7 +10,7 @@ import { expect } from 'vitest'
 export function button(name: string): HTMLButtonElement {
   const element = screen.getByRole('button', { name })
   if (!(element instanceof HTMLButtonElement)) {
-    throw new Error(`button でない要素です: ${name}`)
+    throw new Error(`ボタンではない：${name}`)
   }
   return element
 }

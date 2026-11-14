@@ -38,7 +38,7 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
  *
  * 例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
  *
- * @param work 処理
+ * @param work     処理
  * @param fallback 例外で失敗したときに返す値
  * @returns 処理の値。例外なら fallback
  */

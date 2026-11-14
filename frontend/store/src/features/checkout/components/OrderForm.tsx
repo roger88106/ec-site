@@ -194,7 +194,11 @@ export function OrderFormView({
         )}
       </ActionError>
       <Button className="w-full" disabled={pending} size="lg" type="submit">
-        {pending ? t('placing') : t('submit', { total: formatYen(expectedTotal) }) /* 注文中か、総額を添えて注文する */}
+        {
+          pending
+            ? t('placing') /* 注文中 */
+            : t('submit', { total: formatYen(expectedTotal) }) /* 総額を添えて注文する */
+        }
       </Button>
     </form>
   )

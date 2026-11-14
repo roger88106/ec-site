@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { contentSecurityPolicy, fixedSecurityHeaders } from '@/lib/server/securityHeaders'
 
+/** CSP の値を作る入力（本番のモード） */
 const INPUT = {
   production: true,
   issuer: 'https://idp.example/realms/ec-store',

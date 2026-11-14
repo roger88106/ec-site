@@ -1,13 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginStore, logoutButton } from '../src/auth'
+import { header } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 // このファイルは、幅 375px の project（narrow）だけで実行する（playwright.config.ts）
-
-/** ヘッダーの中の項目を探す起点 */
-function header(page: Page): Locator {
-  return page.getByRole('banner')
-}
 
 /** ヘッダーの中の、メニューを開くボタン */
 function menuButton(page: Page): Locator {

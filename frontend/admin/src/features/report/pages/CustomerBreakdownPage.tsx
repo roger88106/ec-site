@@ -28,7 +28,7 @@ export function CustomerBreakdownPage() {
   )
 }
 
-/** 条件で取得して、3 つの分け方のグラフと表を出す */
+/** 条件で取得した、3 つの分け方のグラフと表 */
 function CustomerBreakdown({ condition }: { condition: ReportCondition }) {
   const query = $api.useQuery(
     'get',

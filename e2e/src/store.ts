@@ -161,6 +161,7 @@ export async function fillShipping(page: Page, postalCode: string, name = 'E2E �
     await page.getByLabel('市区町村').selectOption('千代田区')
     await page.getByLabel('住所').fill('千代田')
   }
+  // 町域の後ろに番地を続けて入れるので、fill で置き換えずに 1 文字ずつ打つ
   await page.getByLabel('住所').pressSequentially(' 1-1')
   await page.getByLabel('電話番号').fill('03-1234-5678')
 }
@@ -188,6 +189,36 @@ export function pendingOrdersHeading(page: Page): Locator {
 }
 
 /**
+ * 注文手続きの画面の見出し。
+ *
+ * @param page 店舗画面のページ
+ * @returns 注文手続きの画面の見出し
+ */
+export function checkoutHeading(page: Page): Locator {
+  return page.getByRole('heading', { name: 'ご注文手続き' })
+}
+
+/**
+ * ヘッダーの中の項目を探す起点。
+ *
+ * @param page 店舗画面のページ
+ * @returns ヘッダー
+ */
+export function header(page: Page): Locator {
+  return page.getByRole('banner')
+}
+
+/**
+ * 注文の画面の「支払う」ボタン。
+ *
+ * @param page 注文の画面を開いている店舗画面のページ
+ * @returns 支払うボタン
+ */
+export function payButton(page: Page): Locator {
+  return page.getByRole('button', { name: '支払う', exact: true })
+}
+
+/**
  * カートの「注文手続きへ進む」を押し、注文手続きの画面か、支払待ちの注文の確認の画面のどちらかが出るのを待つ。
  * 会員の支払待ちの注文が残っていると確認の画面になるので、出たら「新しく注文する」を選ぶ。
  *
@@ -195,11 +226,10 @@ export function pendingOrdersHeading(page: Page): Locator {
  */
 export async function proceedToCheckout(page: Page): Promise<void> {
   await checkoutButton(page).click()
-  const checkout = page.getByRole('heading', { name: 'ご注文手続き' })
-  await expect(checkout.or(pendingOrdersHeading(page))).toBeVisible()
+  await expect(checkoutHeading(page).or(pendingOrdersHeading(page))).toBeVisible()
   if (await pendingOrdersHeading(page).isVisible()) {
     await page.getByRole('button', { name: PENDING_ORDERS_TEXT.newOrder, exact: true }).click()
-    await expect(checkout).toBeVisible()
+    await expect(checkoutHeading(page)).toBeVisible()
   }
 }
 

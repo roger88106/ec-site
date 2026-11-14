@@ -82,13 +82,13 @@ type ServerConfig = {
   publicUrl: string
   /** 商品の画像の配信元のオリジン（CSP の img-src に使う） */
   imageOrigin: string
-  /** mock の支払画面のオリジン（CSP の form-action に使う。任意。本番のモードでなければ既定 `http://localhost:8080`、本番のモードでは設定したときだけ） */
+  /** mock の支払画面のオリジン（CSP の form-action に使う。任意。本番のモードでなければ既定は `LOCAL_MOCK_PAYMENT_ORIGIN`、本番のモードでは設定したときだけ） */
   mockPaymentOrigin: string | undefined
-  /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定 60） */
+  /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定は `DEFAULT_REVALIDATE_SECONDS`） */
   apiRevalidateSeconds: number
-  /** 店舗 API の応答を待つ秒数（任意。既定 30） */
+  /** 店舗 API の応答を待つ秒数（任意。既定は `DEFAULT_API_TIMEOUT_SECONDS`） */
   apiTimeoutSeconds: number
-  /** IdP（ログイン、token の更新）の応答を待つ秒数（任意。既定 10） */
+  /** IdP（ログイン、token の更新）の応答を待つ秒数（任意。既定は `DEFAULT_IDP_TIMEOUT_SECONDS`） */
   idpTimeoutSeconds: number
   /** 店舗画面の全ての Cookie の名前の前に付ける接頭辞（任意。既定は空で、今の名前のまま） */
   cookiePrefix: string

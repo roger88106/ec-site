@@ -4,11 +4,13 @@ import { describe, expect, test } from 'vitest'
 import { type ChartConfig, ChartContainer } from '@/components/ui/chart'
 import { ChartValueTooltip } from '@/features/report/components/ChartValueTooltip'
 
+/** 吹き出しの系列の設定（売上金額と販売数量） */
 const chartConfig = {
   amount: { label: '売上金額', color: 'var(--chart-1)' },
   quantity: { label: '販売数量', color: 'var(--chart-2)' },
 } satisfies ChartConfig
 
+/** 値の整形を渡して、吹き出しを描画する。 */
 function renderTooltip(dataKey: 'amount' | 'quantity', formatValue: (value: number) => string) {
   render(
     <ChartContainer config={chartConfig}>

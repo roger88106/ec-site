@@ -147,7 +147,7 @@ export async function getApi() {
  * 画面をリクエストのたびに作るようにしてから（connection）、店舗 API の会員の口のクライアントを返す。
  *
  * 会員の操作（/me/**、会員のカート、注文手続き、注文）を呼ぶときに使う（店舗画面の構成の「会員の token を付けて呼ぶ」）。
- * 401 は、会員の口の結果を受け取る所でログインの画面へ移す（取得は result.ts の unwrapMember、操作は auth.ts の redirectToLogin）。
+ * 401 は、会員の口の結果を受け取る所でログインの画面へ移す（取得は result.ts の unwrapMember、操作は `@/auth` の redirectToLogin）。
  *
  * @returns 会員の口のクライアント
  */

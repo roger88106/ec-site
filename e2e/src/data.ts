@@ -90,6 +90,7 @@ export type PublishedProduct = {
   taxCategoryId: string
   priceExclTax: number
   categoryIds?: string[]
+  /** 軸の名称（例：色）。省略すると軸なし */
   axes?: string[]
   /** バリアント。code は品番の後ろの部分で、商品品番の後ろに付ける */
   variants: { code: string; axisValues?: string[]; stock: number }[]

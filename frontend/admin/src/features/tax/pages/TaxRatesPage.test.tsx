@@ -13,6 +13,7 @@ type ReplaceTaxRatesRequest = components['schemas']['ReplaceTaxRatesRequest']
 
 /** 既存の税率の ID（fixtures の taxCategory() の税率） */
 const RATE_ID = taxCategory().rates[0].id
+
 /** 税率の画面のパス */
 const PAGE_PATH = `/tax-categories/${TAX_CATEGORY_ID}`
 

@@ -2,13 +2,13 @@ import type { Route } from 'next'
 import type { ErrorCode } from '@/api/types'
 import type { SearchParams } from '@/lib/searchParams'
 
-/** 注文手続きに進む前に、支払待ちの注文の確認が必要なときのエラーコード（409） */
+/** 注文手続きに進む前に、支払待ちの注文の確認が必要なときのエラーコード */
 export const PENDING_ORDER_CONFIRMATION_REQUIRED: ErrorCode = 'PENDING_ORDER_CONFIRMATION_REQUIRED'
 
 /** 支払待ちの注文の確認の画面 */
 export const PENDING_ORDERS_PATH = '/checkout/pending-orders'
 
-/** 支払待ちの注文が上限に達しているため、注文できないときのエラーコード（409） */
+/** 支払待ちの注文が上限に達しているため、注文できないときのエラーコード */
 export const PENDING_ORDER_LIMIT_EXCEEDED: ErrorCode = 'PENDING_ORDER_LIMIT_EXCEEDED'
 
 /** 上限に達したことを示すクエリパラメーターの名前 */

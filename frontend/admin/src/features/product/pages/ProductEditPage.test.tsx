@@ -726,7 +726,7 @@ describe('商品画像', () => {
     serveProduct(productDetail())
     renderApp(PAGE_PATH)
     // user.upload は、既定では入力の accept に合わないファイルを選べない（捨てる）ので、受け付けない形式は applyAccept を切って渡す
-    const user = userEvent.setup({ applyAccept: false })
+    const user = userEvent.setup({ delay: null, applyAccept: false })
 
     await user.upload(
       await screen.findByLabelText('画像のファイル'),

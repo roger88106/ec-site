@@ -43,7 +43,7 @@ function VariantSalesView({ condition }: { condition: ReportCondition }) {
   )
 }
 
-/** 選んだ商品のバリアントの売れ行きを取得して出す */
+/** 選んだ商品のバリアントの売れ行き（取得したグラフと表） */
 function VariantSalesQuery({ condition, productId }: { condition: ReportCondition; productId: string }) {
   const query = $api.useQuery(
     'get',

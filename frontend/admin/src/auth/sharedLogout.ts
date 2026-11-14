@@ -9,7 +9,9 @@ import { clearLastActivity, readStoredTime, writeStoredTime } from '@/auth/idle'
 export const LOGOUT_KEY = 'ec-admin.loggedOutAt'
 
 /**
- * 印の時刻（ブラウザーの時計）と auth_time（IdP の時計）を比べるときに許す、時計のずれ（ミリ秒）。
+ * 許す時計のずれ（ミリ秒）
+ *
+ * 印の時刻（ブラウザーの時計）と auth_time（IdP の時計）を比べるときに使う。
  *
  * ブラウザーの時計が進んでいると、印の後にパスワードでログインし直しても auth_time が印より古くなり、
  * ログインし直すたびにログアウトするため。

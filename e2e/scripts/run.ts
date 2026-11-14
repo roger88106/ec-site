@@ -56,6 +56,10 @@ function git(...args: string[]): string {
  * ロックを取る。取れなければ、所有者とロックのファイルのパスを示して終了コード 1 で終了する。
  * 所有者のプロセスが実行中なら待たない。プロセスがなければ古いロックとして取得し直す。
  * 取得は scripts/dev/lib/slot-lock.mjs の手順で、中身を書いた一時のファイルを link で置くので、空のロックを他方に読まれない。
+ *
+ * @param io    ロックのファイルの読み書き
+ * @param file  ロックのファイルのパス（取れないときの表示に使う）
+ * @param owner 自分（所有者として書く内容）
  */
 async function acquireLockOrExit(io: LockIo, file: string, owner: LockOwner): Promise<void> {
   const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: 0 })

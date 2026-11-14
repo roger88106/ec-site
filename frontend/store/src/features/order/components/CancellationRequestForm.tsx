@@ -44,7 +44,7 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
         <p className="text-muted-foreground text-xs">{t('maxLength', { max: REASON_MAX_LENGTH }) /* 長さの上限 */}</p>
       </div>
       <Button disabled={pending} type="submit" variant="outline">
-        {pending ? t('requesting') : t('submit') /* 申請中か、申請する */}
+        {pending ? t('requesting') /* 申請中 */ : t('submit') /* 申請する */}
       </Button>
       <ActionError result={result} />
     </form>

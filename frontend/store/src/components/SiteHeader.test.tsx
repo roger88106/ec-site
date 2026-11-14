@@ -47,7 +47,7 @@ describe('ヘッダーのメニュー', () => {
     expect(view.getByRole('button', { name: 'メニュー' })).toBeInTheDocument()
   })
 
-  test('決定 6：ログイン中も、メニューの中の項目（商品一覧、ご注文履歴、アカウント）は 1 組だけ描画される', async () => {
+  test('ログイン中も、メニューの中の項目（商品一覧、ご注文履歴、アカウント）は 1 組だけ描画される', async () => {
     signInAs()
 
     const view = await renderHeader()
@@ -58,7 +58,7 @@ describe('ヘッダーのメニュー', () => {
     expect(view.getAllByRole('button', { name: 'ログアウト' })).toHaveLength(1)
   })
 
-  test('決定 6：ログインなしでも、メニューの中の商品一覧は 1 組だけ描画される', async () => {
+  test('ログインなしでも、メニューの中の商品一覧は 1 組だけ描画される', async () => {
     const view = await renderHeader()
 
     expect(view.getAllByRole('link', { name: '商品一覧' })).toHaveLength(1)

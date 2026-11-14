@@ -36,6 +36,7 @@ function detailValueOf(term: HTMLElement): HTMLElement {
  * 詳細の項目の値（`dd`）を返す。
  *
  * 見つからなければ失敗する。
+ *
  * 例：`expect(getDetailValue('与信期限')).toHaveTextContent('2026/10/20')`
  *
  * @param name  項目名（`dt` の文字）
@@ -62,6 +63,7 @@ export async function findDetailValue(name: string, scope: Scope = screen): Prom
  *
  * 行の名前は、行の中のセルの文字をつないだもの。見つからなければ失敗する。
  * 「標準」と「標準（旧）」のような似た名前は、後者の全体を渡して区別する。
+ *
  * 例：`within(getRow('標準税率')).getByRole('cell', { name: '10%' })`
  *
  * @param name  行の名前の始まりの文字
@@ -89,6 +91,7 @@ export function findRow(name: string, scope: Scope = screen): Promise<HTMLElemen
  * セルの並びの位置を、テストのファイルに書かない。
  * 見出しは、行のある表の `columnheader`。見つからなければ失敗する。
  * 行の見出しのセル（`th scope="row"`、`rowheader`）も 1 つの列に数える。入れ子の表の見出しとセルは、外の表の列に数えない。
+ *
  * 例：`expect(getCell('ABC-001', '在庫数の合計')).toHaveTextContent('12')`
  *
  * @param rowName    行の名前の始まりの文字（{@link getRow} と同じ）
@@ -124,6 +127,7 @@ export function getCell(rowName: string, columnName: string, scope: Scope = scre
  * 渡した要素を含む `listitem` を返す。
  *
  * 入れ子の一覧では、一番外の項目（子の項目も中に入る）を返す。含む項目がなければ失敗する。
+ *
  * 例：`within(getListItemContaining(await findGroup('衣類'))).getByText('トップス')`
  *
  * @param element 項目の中にある要素
@@ -143,6 +147,7 @@ export function getListItemContaining(element: HTMLElement, scope: Scope = scree
  * 名前を持つ `group` を、名前の全体が一致するもので返す。
  *
  * 現れるまで待つ。
+ *
  * 例：`within(await findGroup('衣類')).getByRole('button', { name: '子を追加' })`
  *
  * @param name  `group` の名前（aria-label など）

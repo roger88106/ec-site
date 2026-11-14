@@ -6,7 +6,7 @@ import { SHOWCASE_ADMIN_URL as ADMIN, SHOWCASE_STORE_URL as STORE } from '../src
 import { lastPathSegment, productCard } from '../src/store'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil, SHOWCASE_CACHE_TIMEOUT } from '../src/waits'
 
-/** 撮った画像の置き場所（docs/01-概要/catalog.md が載せる） */
+/** 撮った画像の置き場所（概要の商品の登録と公開の流れの文書が載せる） */
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/catalog')
 
 /** 画面を撮って OUT に置く */

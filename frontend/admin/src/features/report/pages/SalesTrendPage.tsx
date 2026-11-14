@@ -28,7 +28,7 @@ export function SalesTrendPage() {
   )
 }
 
-/** 条件で取得して、グラフと表を出す */
+/** 条件で取得した、売上の推移のグラフと表 */
 function SalesTrend({ condition }: { condition: ReportCondition }) {
   const query = $api.useQuery(
     'get',

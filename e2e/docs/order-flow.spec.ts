@@ -20,7 +20,7 @@ import {
   proceedToCheckout,
 } from '../src/store'
 
-/** 撮った画像の置き場所（docs/01-概要/order.md が載せる） */
+/** 撮った画像の置き場所（概要の注文の流れの文書が載せる） */
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/order')
 
 /** 画面を撮って OUT に置く */

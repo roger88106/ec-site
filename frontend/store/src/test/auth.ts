@@ -78,7 +78,7 @@ export const nextAuthMock = {
     authState.config = config
     return {
       handlers: {},
-      // proxy.ts の auth(処理) は、セッションを確認しずに処理をそのまま返す
+      // proxy.ts の auth(処理) は、セッションを確認せずに処理をそのまま返す
       auth: (handler?: unknown) => (typeof handler === 'function' ? handler : Promise.resolve(authState.session)),
       signIn: (...args: unknown[]) => authState.signIn(...args),
       signOut: (...args: unknown[]) => authState.signOut(...args),

@@ -70,7 +70,7 @@ export const MAX_IMAGES = schemas.ProductDetail.images.maxItems
 /**
  * 受け付ける形式の表示の名前の一覧（文に差し込む）。
  *
- * @returns 例：「JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF」
+ * @returns 形式の表示の名前を、区切りでつないだもの
  */
 export function imageFormatsLabel(): string {
   return [...new Set(IMAGE_CONTENT_TYPES.map((type) => FORMAT_LABELS[type]))].join(

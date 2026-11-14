@@ -74,6 +74,8 @@ class JooqProductRepositoryTest {
      */
     private static final PriceExclTax UPDATED_PRICE = PriceExclTax.of(2000);
 
+    // ============================== Bean ==============================
+
     @Autowired
     ProductRepository repository;
 

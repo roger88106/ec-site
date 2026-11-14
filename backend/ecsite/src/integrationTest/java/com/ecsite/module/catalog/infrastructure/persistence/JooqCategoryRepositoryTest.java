@@ -44,6 +44,8 @@ class JooqCategoryRepositoryTest {
      */
     private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
+    // ============================== Bean ==============================
+
     @Autowired
     CategoryRepository repository;
 
@@ -117,6 +119,12 @@ class JooqCategoryRepositoryTest {
             assertThat(roots).extracting(Category::id).contains(clothing.id(), food.id()).doesNotContain(tops.id());
         }
 
+        /**
+         * 次の表示順が、兄弟の表示順の最大 ＋ 1 になることを確認する。
+         *
+         * <p>最上位の期待値は、準備で最後に登録した「食品」の表示順から作る。
+         * DB には他のテストの最上位カテゴリが残り、最上位の表示順の最大は実行ごとに変わるため、定数にできない。
+         */
         @Test
         @DisplayName("次の表示順は、兄弟の表示順の最大 ＋ 1")
         void nextDisplayOrderFollowsLastSibling() {
@@ -125,7 +133,7 @@ class JooqCategoryRepositoryTest {
             added(clothing, "トップス");
             var food = added(null, "食品 " + UUID.randomUUID());
 
-            // 操作と確認：「衣類」の下は 2。最上位は他のテストのカテゴリもあるので、最後に登録した「食品」の次
+            // 操作と確認：「衣類」の下は 2。最上位は、最後に登録した「食品」の次
             assertThat(repository.nextDisplayOrder(clothing.id())).isEqualTo(2);
             assertThat(repository.nextDisplayOrder(null)).isEqualTo(food.displayOrder() + 1);
         }

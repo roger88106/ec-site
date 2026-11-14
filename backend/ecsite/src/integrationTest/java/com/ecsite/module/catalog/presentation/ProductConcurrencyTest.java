@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,18 +34,13 @@ class ProductConcurrencyTest {
     // ============================== 定数 ==============================
 
     /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
      * 同時に登録するリクエストの数
      *
      * <p>2 本では重ならないことがあるので、重なりやすい数にする。
      */
     private static final int REQUESTS = 10;
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -66,7 +60,6 @@ class ProductConcurrencyTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         taxCategoryId = new CatalogTestData(mockMvc, clock)
                 .taxCategory("同時登録 " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         productCode = "CONCURRENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);

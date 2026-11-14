@@ -164,7 +164,7 @@ class CategoryTest {
         @ParameterizedTest(name = "「{0}」")
         @NullSource
         @ValueSource(strings = " ")
-        @DisplayName("名称がなければ拒否される")
+        @DisplayName("名称に空白以外の文字がなければ拒否される")
         void rejectsBlankName(String name) {
             // 操作と確認：業務のエラー INVALID_CATEGORY_NAME で拒否される
             assertBusinessError(() -> factory.create(null, name, 1), CategoryErrorCode.INVALID_CATEGORY_NAME);
@@ -224,8 +224,9 @@ class CategoryTest {
             // 準備：登録したカテゴリ
             var category = factory.create(null, ROOT_NAME, 1);
 
-            // 確認（前提）：51 文字の名称が拒否される
+            // 確認（前提）：51 文字の名称と、空の名称が拒否される
             assertBusinessError(() -> category.rename("あ".repeat(NAME_MAX_LENGTH + 1)), CategoryErrorCode.INVALID_CATEGORY_NAME);
+            assertBusinessError(() -> category.rename(""), CategoryErrorCode.INVALID_CATEGORY_NAME);
 
             // 確認：元の名称のまま
             assertThat(category.name()).isEqualTo(ROOT_NAME);

@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
@@ -43,13 +42,6 @@ class ProductListApiTest {
      * API のパス
      */
     private static final String BASE = "/api/admin/products";
-
-    /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
      * 非公開の商品の品番
@@ -80,6 +72,8 @@ class ProductListApiTest {
      * 販売終了の商品の商品名
      */
     private static final String DISCONTINUED_NAME = "販売終了の商品";
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -134,7 +128,6 @@ class ProductListApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10");
         clothing = catalog.category("衣類 " + UUID.randomUUID(), null);

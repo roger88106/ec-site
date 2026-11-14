@@ -1,26 +1,23 @@
 package com.ecsite.module.catalog.presentation;
 
-import com.ecsite.CapturedLogs;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.module.catalog.domain.category.Category;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,17 +37,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @Transactional
-@ExtendWith(OutputCaptureExtension.class)
 class CategoryRestoreFailureLogTest {
 
-    // ============================== 定数 ==============================
+    /**
+     * 例外の処理が出したログ
+     *
+     * <p>例外の処理のクラスはパッケージの外から見えないので、ロガーの名前で指定する。
+     */
+    @RegisterExtension
+    final LogCapture handlerLogs = LogCapture.of("com.ecsite.common.error.handler.GlobalExceptionHandler");
 
     /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
+     * 全てのロガーのログ（メッセージの値が、どのロガーにも出ないことを確認するため）
      */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+    @RegisterExtension
+    final LogCapture allLogs = LogCapture.all();
+
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc
@@ -70,11 +73,6 @@ class CategoryRestoreFailureLogTest {
     @MockitoSpyBean
     CategoryFactory categoryFactory;
 
-    @BeforeEach
-    void setUp() {
-        clock.setInstant(NOW);
-    }
-
     // ============================== テスト ==============================
 
     @Test
@@ -91,16 +89,16 @@ class CategoryRestoreFailureLogTest {
 
     @Test
     @DisplayName("復元に失敗したリクエストのログには、集約の名前と、原因の例外の種類が出る")
-    void logsAggregateAndCauseTypes(CapturedOutput output) throws Exception {
+    void logsAggregateAndCauseTypes() throws Exception {
         // 準備：カテゴリの復元が、原因の原因と抑制した例外を持つ例外で失敗するようにする
         var id = categoryFailingToRestore("secret-" + UUID.randomUUID());
 
         // 操作：名称を変える
-        var logStart = CapturedLogs.mark(output);
+        handlerLogs.clear();
         rename(id).andExpect(status().isInternalServerError());
 
-        // 確認：集約の名前と、投げた例外・原因・抑制した例外の種類が出る
-        assertThat(CapturedLogs.since(output, logStart))
+        // 確認：エラーのログに、集約の名前と、投げた例外・原因・抑制した例外の種類が出る
+        assertThat(errorLogText())
                 .contains("category restore error: " + IllegalArgumentException.class.getName())
                 .contains(IllegalStateException.class.getName())
                 .contains(UnsupportedOperationException.class.getName());
@@ -108,17 +106,31 @@ class CategoryRestoreFailureLogTest {
 
     @Test
     @DisplayName("復元に失敗したリクエストのログには、原因の例外のメッセージの値が出ない")
-    void logsWithoutCauseMessages(CapturedOutput output) throws Exception {
+    void logsWithoutCauseMessages() throws Exception {
         // 準備：カテゴリの復元が、メッセージに値を入れた例外で失敗するようにする
         var secret = "secret-" + UUID.randomUUID();
         var id = categoryFailingToRestore(secret);
 
         // 操作：名称を変える
-        var logStart = CapturedLogs.mark(output);
+        allLogs.clear();
         rename(id).andExpect(status().isInternalServerError());
 
-        // 確認：メッセージに入れた値が出ない
-        assertThat(CapturedLogs.since(output, logStart)).doesNotContain(secret);
+        // 確認：メッセージに入れた値が、どのログにも出ない
+        assertThat(allLogs.text()).doesNotContain(secret);
+    }
+
+    // ============================== 確認の補助 ==============================
+
+    /**
+     * 例外の処理が出したエラーのログを、例外の出力を含めて 1 つの文字列にする。
+     *
+     * @return エラーのログを改行でつないだ文字列
+     */
+    private String errorLogText() {
+        return String.join("\n", handlerLogs.entries().stream()
+                .filter(entry -> entry.level() == Level.ERROR)
+                .map(LogCapture.LogEntry::text)
+                .toList());
     }
 
     // ============================== 準備の補助 ==============================

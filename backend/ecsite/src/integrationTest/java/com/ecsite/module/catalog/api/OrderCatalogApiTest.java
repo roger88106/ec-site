@@ -87,6 +87,8 @@ class OrderCatalogApiTest {
      */
     private static final String LARGE = "L";
 
+    // ============================== Bean ==============================
+
     @Autowired
     OrderCatalogApi api;
 
@@ -108,7 +110,6 @@ class OrderCatalogApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         standard = catalog.taxCategory("標準", STANDARD_RATE);
     }

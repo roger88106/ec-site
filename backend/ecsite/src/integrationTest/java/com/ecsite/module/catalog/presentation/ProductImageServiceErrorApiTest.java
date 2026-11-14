@@ -21,7 +21,6 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -42,14 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ProductImageServiceErrorApiTest {
 
-    // ============================== 定数 ==============================
-
-    /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -99,7 +91,6 @@ class ProductImageServiceErrorApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         product = catalog.product(catalog.taxCategory("画像のサービス " + UUID.randomUUID(), "10"), "T シャツ", 1000);
     }

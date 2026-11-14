@@ -77,6 +77,8 @@ class ProductStatusApiTest {
      */
     private static final String PUBLISH_END_UTC = "2026-10-19T15:00:00Z";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -90,7 +92,6 @@ class ProductStatusApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         var standard = new CatalogTestData(mockMvc, clock)
                 .taxCategory("状態 " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         products = new ProductRequests(mockMvc, standard);
@@ -401,7 +402,7 @@ class ProductStatusApiTest {
         }
 
         @Test
-        @DisplayName("公開中に開始日時が未来なら、初回表示日時は開始日時になる")
+        @DisplayName("開始日時が未来の商品を公開すると、初回表示日時は開始日時になる")
         void reschedulesFirstShownAt() throws Exception {
             // 準備：開始日時を未来にした商品
             var id = products.productWithVariant(PRODUCT_CODE);

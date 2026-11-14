@@ -109,8 +109,8 @@ class ProductImageTest {
         }
 
         @Test
-        @DisplayName("画像がなければ代表画像もない")
-        void hasNoRepresentativeImageWithoutImages() {
+        @DisplayName("画像を加える前の商品は、画像を持たない")
+        void hasNoImagesBeforeAdding() {
             // 操作：画像のない商品を作る
             var product = productWithVariant();
 

@@ -55,13 +55,6 @@ class ProductApiTest {
     private static final UUID UNKNOWN_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
      * 有効な税率がない税区分の税率が有効になる日時
      *
      * <p>日本時間の 2027-04-01 00:00。
@@ -139,6 +132,8 @@ class ProductApiTest {
      */
     private static final int REDUCED_PRICE_INCL_TAX = 1080;
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -183,7 +178,6 @@ class ProductApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         standard = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         reduced = catalog.taxCategory("軽減", "8").toString();
@@ -225,13 +219,35 @@ class ProductApiTest {
         }
 
         @Test
-        @DisplayName("登録直後の商品は、バリアントを持たず、バージョンが 0 で、登録日時と更新日時を持つ")
-        void startsWithoutVariantsAtVersionZero() throws Exception {
+        @DisplayName("登録直後の商品は、バリアントを持たない")
+        void startsWithoutVariants() throws Exception {
             // 操作：商品を登録する
             var id = products.createdId(fullProductJson());
 
-            // 確認：登録直後の初期の値
-            assertInitialState(products.getProduct(id));
+            // 確認：バリアントがない
+            products.getProduct(id).andExpect(jsonPath("$.variants").isEmpty());
+        }
+
+        @Test
+        @DisplayName("登録直後の商品は、バージョンが 0")
+        void startsAtVersionZero() throws Exception {
+            // 操作：商品を登録する
+            var id = products.createdId(fullProductJson());
+
+            // 確認：バージョンが 0
+            products.getProduct(id).andExpect(jsonPath("$.version").value(0));
+        }
+
+        @Test
+        @DisplayName("登録直後の商品は、登録日時と更新日時を持つ")
+        void startsWithTimestamps() throws Exception {
+            // 操作：商品を登録する
+            var id = products.createdId(fullProductJson());
+
+            // 確認：登録日時と更新日時がある
+            products.getProduct(id)
+                    .andExpect(jsonPath("$.createdAt").isString())
+                    .andExpect(jsonPath("$.updatedAt").isString());
         }
 
         @Test
@@ -609,26 +625,6 @@ class ProductApiTest {
                 .andExpect(jsonPath("$.priceInclTax").value(PRICE_INCL_TAX))
                 .andExpect(jsonPath("$.categoryIds", contains(categoryId)))
                 .andExpect(jsonPath("$.axes", contains(AXIS_COLOR, AXIS_SIZE)));
-    }
-
-    /**
-     * 詳細が、登録直後の初期の値であることを確認する。
-     *
-     * <p>確認すること：
-     * <ul>
-     *   <li>バリアントがない</li>
-     *   <li>バージョンが 0</li>
-     *   <li>登録日時がある</li>
-     *   <li>更新日時がある</li>
-     * </ul>
-     *
-     * @param detail 商品の詳細の応答
-     */
-    private static void assertInitialState(ResultActions detail) throws Exception {
-        detail.andExpect(jsonPath("$.variants").isEmpty())
-                .andExpect(jsonPath("$.version").value(0))
-                .andExpect(jsonPath("$.createdAt").isString())
-                .andExpect(jsonPath("$.updatedAt").isString());
     }
 
     /**

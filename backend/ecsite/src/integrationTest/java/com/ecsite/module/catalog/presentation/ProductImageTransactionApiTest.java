@@ -19,7 +19,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -48,16 +47,11 @@ class ProductImageTransactionApiTest {
     // ============================== 定数 ==============================
 
     /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
      * 配信のファイルの取得に使う HTTP クライアント
      */
     private final HttpClient http = HttpClient.newHttpClient();
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -107,7 +101,6 @@ class ProductImageTransactionApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         var catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("トランザクションの外 " + UUID.randomUUID(), "10");
         product = catalog.product(taxCategoryId, "T シャツ", 1000);

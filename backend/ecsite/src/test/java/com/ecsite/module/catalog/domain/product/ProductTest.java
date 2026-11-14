@@ -350,12 +350,13 @@ class ProductTest {
             // 準備：登録した商品
             var product = registered();
 
-            // 確認（前提）：空白の商品名で、税抜価格も変える編集が拒否される
-            assertBusinessError(() -> product.update(" ", "", TAX_CATEGORY_ID, PriceExclTax.of(NEW_PRICE_YEN), Set.of(), NOW),
+            // 確認（前提）：空白の商品名で、ほかの全ての項目も変える編集が拒否される
+            assertBusinessError(() -> product.update(" ", NEW_DESCRIPTION, NEW_TAX_CATEGORY_ID, PriceExclTax.of(NEW_PRICE_YEN),
+                            Set.of(NEW_CATEGORY_ID), NOW),
                     ProductErrorCode.INVALID_PRODUCT_NAME);
 
-            // 確認：税抜価格が元のまま
-            assertThat(product.priceExclTax()).isEqualTo(PriceExclTax.of(PRICE_YEN));
+            // 確認：全ての項目が登録したときのまま
+            assertRegisteredAsSpecified(product);
         }
 
         @Test

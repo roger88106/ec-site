@@ -14,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static com.ecsite.module.catalog.presentation.ProductRequests.BASE;
@@ -42,13 +41,6 @@ class ProductVariantApiTest {
      * 存在しない ID
      */
     private static final UUID UNKNOWN_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
-
-    /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
      * 商品の品番
@@ -90,6 +82,8 @@ class ProductVariantApiTest {
      */
     private static final String SIZE_M = "M";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -103,7 +97,6 @@ class ProductVariantApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         var standard = new CatalogTestData(mockMvc, clock)
                 .taxCategory("バリアント " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         products = new ProductRequests(mockMvc, standard);
@@ -339,6 +332,20 @@ class ProductVariantApiTest {
             products.deleteVariant(id, white, 4)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("PRODUCT_ALREADY_SHOWN"));
+        }
+
+        @Test
+        @DisplayName("バリアントを削除すると、商品のバージョンが上がる")
+        void incrementsVersion() throws Exception {
+            // 準備：白のバリアントを持ち、バージョンが 1 の商品
+            var id = products.product(PRODUCT_CODE, AXIS_COLOR);
+            var white = products.variantId(id, "V-WH", 0, WHITE);
+
+            // 操作：白のバリアントを削除する
+            products.deleteVariant(id, white, 1).andExpect(status().isNoContent());
+
+            // 確認：バージョンが 2
+            products.getProduct(id).andExpect(jsonPath("$.version").value(2));
         }
 
         @Test

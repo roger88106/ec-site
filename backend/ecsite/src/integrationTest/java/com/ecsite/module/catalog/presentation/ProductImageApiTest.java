@@ -27,7 +27,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -73,13 +72,6 @@ class ProductImageApiTest {
     private static final String CODE_PREFIX = "IMG-";
 
     /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
      * 画像の大きさの上限
      *
      * <p>10MB。
@@ -105,6 +97,8 @@ class ProductImageApiTest {
      * 配信の URL を取得する HTTP クライアント
      */
     private final HttpClient http = HttpClient.newHttpClient();
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -133,7 +127,6 @@ class ProductImageApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("画像の標準 " + UUID.randomUUID(), "10");
     }
@@ -456,6 +449,20 @@ class ProductImageApiTest {
         }
 
         @Test
+        @DisplayName("並べ替えると、商品のバージョンが上がる")
+        void incrementsVersion() throws Exception {
+            // 準備：画像 3 枚の商品（バージョン 4）
+            var productId = productWithVariant();
+            var ids = registerImages(productId, 3);
+
+            // 操作：並べ替える
+            reorder(productId, 4, ids.get(2), ids.getFirst(), ids.get(1)).andExpect(status().isNoContent());
+
+            // 確認：バージョンが 5
+            assertThat(JsonPath.<Integer>read(detail(productId), "$.version")).isEqualTo(5);
+        }
+
+        @Test
         @DisplayName("並べ替えで、取得時のバージョンと一致しなければ 409")
         void rejectsStaleVersion() throws Exception {
             // 準備：画像 3 枚の商品（バージョン 4）
@@ -518,6 +525,18 @@ class ProductImageApiTest {
         }
 
         @Test
+        @DisplayName("バリアントの画像の指定で、取得時のバージョンと一致しなければ 409")
+        void rejectsStaleVersion() throws Exception {
+            // 準備：画像 1 枚の商品（バージョン 2）
+            var productId = productWithVariant();
+            var imageId = registerImages(productId, 1).getFirst();
+            var variantId = variantIdOf(productId);
+
+            // 操作と確認：古いバージョン 1 で送ると 409
+            setVariantImage(productId, variantId, "\"" + imageId + "\"", 1).andExpect(status().isConflict());
+        }
+
+        @Test
         @DisplayName("存在しないバリアントへの画像の指定は 404")
         void rejectsUnknownVariant() throws Exception {
             // 準備：画像 1 枚の商品（バージョン 2）
@@ -577,6 +596,20 @@ class ProductImageApiTest {
 
             // 確認：配信の URL で取得できなくなる
             assertEventuallyGone(url);
+        }
+
+        @Test
+        @DisplayName("画像を削除すると、商品のバージョンが上がる")
+        void incrementsVersion() throws Exception {
+            // 準備：画像 2 枚の商品（バージョン 3）
+            var productId = productWithVariant();
+            var ids = registerImages(productId, 2);
+
+            // 操作：1 枚目を削除する
+            deleteImage(productId, ids.getFirst(), 3).andExpect(status().isNoContent());
+
+            // 確認：バージョンが 4
+            assertThat(JsonPath.<Integer>read(detail(productId), "$.version")).isEqualTo(4);
         }
 
         @Test

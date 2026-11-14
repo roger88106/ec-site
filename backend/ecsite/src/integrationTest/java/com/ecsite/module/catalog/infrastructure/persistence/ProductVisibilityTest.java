@@ -50,6 +50,8 @@ class ProductVisibilityTest {
      */
     private static final Duration ONE_DAY = Duration.ofDays(1);
 
+    // ============================== Bean ==============================
+
     @Autowired
     ProductRepository repository;
 

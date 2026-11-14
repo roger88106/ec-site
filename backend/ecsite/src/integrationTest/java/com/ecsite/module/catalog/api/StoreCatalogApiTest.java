@@ -8,14 +8,12 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.api.model.StoreProductQuery;
 import com.ecsite.module.catalog.api.model.StoreProductSort;
 import com.ecsite.module.catalog.api.model.StoreProductSummary;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.tax.api.TaxRateApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,14 +83,13 @@ class StoreCatalogApiTest {
      */
     private static final PageRequest FIRST_PAGE = PageRequest.of(1, 20);
 
+    // ============================== Bean ==============================
+
     @Autowired
     StoreCatalogApi api;
 
     @Autowired
     TaxRateApi taxRateApi;
-
-    @Autowired
-    ApplicationContext applicationContext;
 
     @Autowired
     MockMvc mockMvc;
@@ -124,9 +121,7 @@ class StoreCatalogApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
-        TaxRateScheduleCaches.evict(applicationContext);
         standard = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), STANDARD_RATE);
         reduced = catalog.taxCategory("軽減", REDUCED_RATE);
         category = catalog.category("カテゴリ " + UUID.randomUUID(), null);
@@ -177,9 +172,53 @@ class StoreCatalogApiTest {
             // 操作：税込 1,100〜2,160 円で絞り、安い順に取得する
             var page = api.listProducts(query(Money.of(1100), Money.of(2160), StoreProductSort.PRICE_ASC), FIRST_PAGE);
 
-            // 確認：下限ちょうど・上限ちょうどの商品だけが含まれ、税抜価格は同じ 2,000 円でも税込で判定される
+            // 確認：下限ちょうど・上限ちょうどの商品だけが含まれる
             assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(lower.id, upper.id);
             assertThat(page.items()).extracting(StoreProductSummary::priceExclTax).containsExactly(Money.of(1000), Money.of(2000));
+        }
+
+        @Test
+        @DisplayName("AC-53 税抜価格が同じ商品でも、税込価格で範囲に入るかが決まる")
+        void filtersByPriceInclTax() throws Exception {
+            // 準備：税抜 2,000 円で、税込 2,160 円（軽減）と 2,200 円（標準）の商品
+            var reducedProduct = published(reduced, 2000);
+            published(standard, 2000);
+
+            // 操作：税込 1,100〜2,160 円で絞る
+            var page = api.listProducts(query(Money.of(1100), Money.of(2160), StoreProductSort.PRICE_ASC), FIRST_PAGE);
+
+            // 確認：税込 2,160 円の商品だけが含まれる
+            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(reducedProduct.id);
+        }
+
+        @Test
+        @DisplayName("AC-53 下限だけを指定すると、税込価格が下限以上の商品が含まれる")
+        void filtersByMinPriceOnly() throws Exception {
+            // 準備：税込 990・1,100・2,200 円の商品
+            published(standard, 900);
+            var atMin = published(standard, 1000);
+            var aboveMin = published(standard, 2000);
+
+            // 操作：税込 1,100 円以上で絞り、安い順に取得する
+            var page = api.listProducts(query(Money.of(1100), null, StoreProductSort.PRICE_ASC), FIRST_PAGE);
+
+            // 確認：税込 1,100 円以上の商品が含まれる
+            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(atMin.id, aboveMin.id);
+        }
+
+        @Test
+        @DisplayName("AC-53 上限だけを指定すると、税込価格が上限以下の商品が含まれる")
+        void filtersByMaxPriceOnly() throws Exception {
+            // 準備：税込 990・1,100・2,200 円の商品
+            var belowMax = published(standard, 900);
+            var atMax = published(standard, 1000);
+            published(standard, 2000);
+
+            // 操作：税込 1,100 円以下で絞り、安い順に取得する
+            var page = api.listProducts(query(null, Money.of(1100), StoreProductSort.PRICE_ASC), FIRST_PAGE);
+
+            // 確認：税込 1,100 円以下の商品が含まれる
+            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(belowMax.id, atMax.id);
         }
     }
 

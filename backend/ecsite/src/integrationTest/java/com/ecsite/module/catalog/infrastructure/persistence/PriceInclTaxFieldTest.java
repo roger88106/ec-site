@@ -28,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class PriceInclTaxFieldTest {
 
+    // ============================== Bean ==============================
+
     @Autowired
     DSLContext dsl;
 

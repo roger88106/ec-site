@@ -368,8 +368,20 @@ class ProductPublicationTest {
             // 操作：今日公開する
             product.publish(NOW);
 
-            // 確認：今日は表示されず、公開開始日時から表示される
+            // 確認：今日は表示されない
             assertThat(product.isVisibleAt(NOW)).isFalse();
+        }
+
+        @Test
+        @DisplayName("公開開始日時が未来の商品を公開すると、公開開始日時から表示される")
+        void isVisibleFromPublishStart() {
+            // 準備：公開開始日時が明日の商品
+            var product = productWithPeriod(PublicationPeriod.of(TOMORROW, null));
+
+            // 操作：今日公開する
+            product.publish(NOW);
+
+            // 確認：公開開始日時には表示される
             assertThat(product.isVisibleAt(TOMORROW)).isTrue();
         }
 
@@ -654,7 +666,7 @@ class ProductPublicationTest {
     class Delete {
 
         @Test
-        @DisplayName("AC-33 C 側に一度も表示されていない商品は削除でき、削除のイベントが登録される")
+        @DisplayName("AC-33 C 側に一度も表示されていない商品を削除すると、削除のイベントが登録される")
         void deletesNeverShownProduct() {
             // 準備：非公開の商品
             var product = productWithVariant();

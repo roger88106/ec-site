@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -60,13 +59,6 @@ class CategoryApiTest {
      * 存在しない ID
      */
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
-
-    /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
      * カテゴリ「衣類」の名称
@@ -118,6 +110,8 @@ class CategoryApiTest {
      */
     private static final String FASHION = "ファッション";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -131,7 +125,6 @@ class CategoryApiTest {
 
     @BeforeEach
     void setUp() {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
     }
 
@@ -336,7 +329,7 @@ class CategoryApiTest {
         @Test
         @DisplayName("木は、各階層を並び順どおりに返す")
         void listsTreeInDisplayOrder() throws Exception {
-            // 準備：各階層を並べ替えた木
+            // 準備：並べ替えの API で、各階層を並べ替えた木
             var tree = sortedTree();
 
             // 確認：最上位は、他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序が並び順どおり

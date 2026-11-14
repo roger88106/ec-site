@@ -90,7 +90,7 @@ class StorefrontCartTest {
      */
     private static final int SHIPPING_FEE = 1000;
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc
@@ -144,7 +144,6 @@ class StorefrontCartTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         catalog = new CatalogTestData(mockMvc, clock);
         standard = catalog.taxCategory("標準", "10");
@@ -179,7 +178,7 @@ class StorefrontCartTest {
         @Test
         @DisplayName("AC-77 品目は、税込・税抜の単価、数量、小計を持つ")
         void returnsItemAmounts() throws Exception {
-            // 準備：T シャツを 1 つ入れたカート
+            // 準備：T シャツとお茶を 1 つずつ入れたカート（先頭の品目が T シャツ）
             shirtAndTea();
 
             // 操作と確認：税込 2,970 円・税抜 2,700 円で 1 つ、小計 2,970 円
@@ -193,7 +192,7 @@ class StorefrontCartTest {
         @Test
         @DisplayName("AC-77 購入できる品目は、購入できると示され、理由を持たない")
         void marksPurchasableItem() throws Exception {
-            // 準備：在庫のある T シャツを入れたカート
+            // 準備：在庫のある T シャツとお茶を 1 つずつ入れたカート（先頭の品目が T シャツ）
             shirtAndTea();
 
             // 操作と確認：購入でき、理由は null
@@ -276,7 +275,7 @@ class StorefrontCartTest {
         @Test
         @DisplayName("AC-77 商品に画像がなければ、品目の画像は null")
         void returnsNullWithoutImages() throws Exception {
-            // 準備：画像のない T シャツを入れたカート
+            // 準備：画像のない T シャツとお茶を 1 つずつ入れたカート（先頭の品目が T シャツ）
             shirtAndTea();
 
             // 操作と確認：null

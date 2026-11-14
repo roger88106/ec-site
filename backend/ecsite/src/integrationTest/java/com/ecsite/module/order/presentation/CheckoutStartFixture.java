@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -30,16 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 注文手続きの開始の受け入れテスト（{@code Checkout*ApiTest}）が共有する準備と確認の補助
  *
  * <p>作るたびに、送料の税区分を用意し、標準の税区分（10%）と、テストの会員のカートを作る。
- * テストのクラスは、時計を {@link #NOW} に合わせてから作る。
+ * 時計は、テストごとに戻る初期値（{@code TestClockConfig.INITIAL_INSTANT}、日本時間の 2026-10-08 00:00）のまま作る。
  */
-final class CheckoutStartSupport {
-
-    /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+final class CheckoutStartFixture {
 
     /**
      * 注文手続きの引当の期限までの時間
@@ -98,7 +90,7 @@ final class CheckoutStartSupport {
      *
      * @param context テストのコンテキスト
      */
-    CheckoutStartSupport(ApplicationContext context) throws Exception {
+    CheckoutStartFixture(ApplicationContext context) throws Exception {
         var clock = context.getBean(MutableClock.class);
         this.mockMvc = context.getBean(MockMvc.class);
         this.stockReservationApi = context.getBean(StockReservationApi.class);

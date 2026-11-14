@@ -1,7 +1,7 @@
 package com.ecsite.module.cart.application.job;
 
-import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
+import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
@@ -16,10 +16,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +48,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @Transactional
-@ExtendWith(OutputCaptureExtension.class)
 class CartCleanupJobTest {
 
     // ============================== 定数 ==============================
@@ -62,9 +60,14 @@ class CartCleanupJobTest {
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
+     * カートの期限（最後の変更から 30 日）
+     */
+    private static final Duration CART_LIFETIME = Duration.ofDays(30);
+
+    /**
      * NOW に変えたカートの期限（30 日後）から 1 時間後
      */
-    private static final Instant AFTER_EXPIRY = NOW.plus(Duration.ofDays(30)).plus(Duration.ofHours(1));
+    private static final Instant AFTER_EXPIRY = NOW.plus(CART_LIFETIME).plus(Duration.ofHours(1));
 
     /**
      * NOW の 2 日後（AFTER_EXPIRY では、まだ期限が切れていない）
@@ -79,14 +82,14 @@ class CartCleanupJobTest {
     /**
      * LONG_AGO に変えたカートの期限（30 日後）を過ぎた時刻
      */
-    private static final Instant LONG_AGO_EXPIRED = LONG_AGO.plus(Duration.ofDays(30)).plusSeconds(1);
+    private static final Instant LONG_AGO_EXPIRED = LONG_AGO.plus(CART_LIFETIME).plusSeconds(1);
 
     /**
      * 小さくした件数の上限
      */
     private static final int SMALL_LIMIT = 2;
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * テストするジョブ（設定の既定の件数の上限）
@@ -124,9 +127,14 @@ class CartCleanupJobTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * ジョブが出したログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(CartCleanupJob.class);
+
     @BeforeEach
     void setUp() {
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
     }
 
@@ -293,21 +301,27 @@ class CartCleanupJobTest {
 
         @Test
         @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
-        void logsDeletedCount(CapturedOutput output) {
+        void logsDeletedCount() {
             // 準備：ほかのテストが使わない古い時刻に変えた 5 つのカートと、件数の上限を 2 にしたジョブ
             var carts = cartsWithItem(5, LONG_AGO);
             var smallBatch = jobWithLimit(SMALL_LIMIT);
             clock.setInstant(LONG_AGO_EXPIRED);
-            var logStart = CapturedLogs.mark(output);
+
+            // 準備：消す対象（期限の切れた全てのカート）を数える（他のテストがコミットしたカートも対象になりうる）
+            var targets = dsl.fetchCount(CART_, CART_.UPDATED_AT.lt(LONG_AGO_EXPIRED.minus(CART_LIFETIME)));
+
+            // 確認（前提）：このテストの 5 つのカートが対象に入る
+            assertThat(targets).isGreaterThanOrEqualTo(carts.size());
 
             // 操作：片付ける
+            logs.clear();
             smallBatch.cleanUp();
 
             // 確認（前提）：5 つとも消えている
             assertThat(remaining(carts)).isEmpty();
 
-            // 確認：合計の 5 件をログに出している
-            assertThat(CapturedLogs.since(output, logStart)).contains("期限切れのカートを消した：5 件");
+            // 確認：消した合計（数えた対象の数）を INFO のログに 1 回出している
+            assertThat(logs.messages(Level.INFO)).containsExactly("期限切れのカートを消した：" + targets + " 件");
         }
     }
 

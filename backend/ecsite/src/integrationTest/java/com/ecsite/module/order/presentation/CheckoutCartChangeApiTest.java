@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,14 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @IntegrationTest
 class CheckoutCartChangeApiTest {
 
-    // ============================== 定数 ==============================
-
-    /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -102,7 +94,6 @@ class CheckoutCartChangeApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, clock);
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         catalog = new CatalogTestData(mockMvc, clock);
         owner = TestTokens.member().subject(UUID.randomUUID());

@@ -62,6 +62,8 @@ class PlaceOrderPendingLimitApiTest {
      */
     private static final int LIMIT = 3;
 
+    // ============================== Bean ==============================
+
     @Autowired
     MutableClock clock;
 
@@ -86,7 +88,6 @@ class PlaceOrderPendingLimitApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(PlaceOrderFixture.NOW);
         fixture = PlaceOrderFixture.prepare(applicationContext);
         fixture.mockMvc.perform(delete("/api/store/carts/" + fixture.cartId + "/items/" + fixture.shirtVariant()))
                 .andExpect(status().isNoContent());

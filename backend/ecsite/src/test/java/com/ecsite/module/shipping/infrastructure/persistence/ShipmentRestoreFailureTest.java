@@ -22,7 +22,7 @@ import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
  */
 class ShipmentRestoreFailureTest {
 
-    // ============================== 定数 ==============================
+    // ============================== Bean ==============================
 
     /**
      * 例外のメッセージに入ると分かる値

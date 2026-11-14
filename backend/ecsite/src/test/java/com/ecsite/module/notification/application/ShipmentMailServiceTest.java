@@ -50,6 +50,8 @@ class ShipmentMailServiceTest {
      */
     private static final String TRACKING_NUMBER = "123456789012";
 
+    // ============================== Bean ==============================
+
     /**
      * 送ったメール
      */
@@ -59,8 +61,6 @@ class ShipmentMailServiceTest {
      * 出荷通知メールのサービス
      */
     private ShipmentMailService service;
-
-    // ============================== テスト ==============================
 
     /**
      * 文言のファイルを読み、配送業者の表示名のキーを返すサービスを作る。
@@ -79,6 +79,8 @@ class ShipmentMailServiceTest {
                     case JAPAN_POST -> "ecsite.shipping.carrier.japan_post";
                 });
     }
+
+    // ============================== テスト ==============================
 
     @Nested
     @DisplayName("宛先と件名")

@@ -73,7 +73,7 @@ class CancellationApiTest {
      */
     private static final int AFTER_ORDER = STOCKED - ORDERED;
 
-    // ============================== テストの準備 ==============================
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -111,8 +111,6 @@ class CancellationApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
@@ -128,7 +126,17 @@ class CancellationApiTest {
     class Request {
 
         @Test
-        @DisplayName("AC-95 「受付」の注文を申請すると「キャンセル申請中」になり、申請の理由が残る")
+        @DisplayName("AC-267 申請していない注文の店舗の応答は、キャンセルの申請を持たない")
+        void hasNoRequestBeforeRequesting() throws Exception {
+            // 操作と確認：申請していない受付の注文の応答に、キャンセルの申請がない
+            store()
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"))
+                    .andExpect(jsonPath("$.cancellationRequest").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("AC-95、267 「受付」の注文を申請すると「キャンセル申請中」になり、店舗の応答の申請は判断待ちで、申請の理由が残る")
         void requests() throws Exception {
             // 操作：理由を付けて申請する
             request("サイズを間違えました").andExpect(status().isNoContent());
@@ -180,7 +188,7 @@ class CancellationApiTest {
         }
 
         @Test
-        @DisplayName("AC-96 却下された注文は、もう一度申請できず、受付のまま")
+        @DisplayName("AC-96、267 却下された注文は、もう一度申請できず、受付のままで、店舗の応答の申請は却下")
         void rejectsRequestAfterRejection() throws Exception {
             // 準備：申請して却下する
             request("最初").andExpect(status().isNoContent());
@@ -289,7 +297,7 @@ class CancellationApiTest {
         }
 
         @Test
-        @DisplayName("AC-103 申請中の注文も、運営者の判断でキャンセルでき、申請は承認になる")
+        @DisplayName("AC-103、267 申請中の注文も、運営者の判断でキャンセルでき、店舗の応答の申請は承認になる")
         void cancelsRequestedOrder() throws Exception {
             // 準備：申請する
             request(null).andExpect(status().isNoContent());

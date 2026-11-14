@@ -1,7 +1,6 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -42,8 +41,7 @@ class PlaceOrderConflictApiTest {
      */
     private static final long CHANGED_TOTAL = 7600;
 
-    @Autowired
-    MutableClock clock;
+    // ============================== Bean ==============================
 
     @Autowired
     ApplicationContext applicationContext;
@@ -55,7 +53,6 @@ class PlaceOrderConflictApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(PlaceOrderFixture.NOW);
         fixture = PlaceOrderFixture.prepare(applicationContext);
     }
 

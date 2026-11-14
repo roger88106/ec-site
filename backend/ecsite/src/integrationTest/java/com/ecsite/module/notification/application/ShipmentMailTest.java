@@ -133,7 +133,9 @@ class ShipmentMailTest {
             publish(shipped());
 
             // 確認：送信は、発行したスレッドとは別のスレッドで行われる
+            // （送信の呼び出しを記録するまで待ってから比べる）
             verify(mailer, timeout(TIMEOUT.toMillis())).send(any());
+            await().atMost(TIMEOUT).until(() -> !sendingThreads.isEmpty());
             assertThat(sendingThreads).singleElement().isNotSameAs(Thread.currentThread());
         }
     }

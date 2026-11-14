@@ -1,9 +1,9 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.CapturedLogs;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
@@ -11,13 +11,10 @@ import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +38,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @Transactional
-@ExtendWith(OutputCaptureExtension.class)
 class OrderRestoreFailureLogTest {
 
     // ============================== 定数 ==============================
@@ -60,7 +56,7 @@ class OrderRestoreFailureLogTest {
      */
     private static final String RESTORE_ERROR_LOG = "order restore error: [a-z][\\w.]*\\.[A-Z][\\w$]*";
 
-    // ============================== テストの準備 ==============================
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -80,11 +76,11 @@ class OrderRestoreFailureLogTest {
     @Autowired
     DSLContext dsl;
 
-    @BeforeEach
-    void setUp() {
-        clock.setInstant(NOW);
-        gateway.reset();
-    }
+    /**
+     * 全てのロガーに出たログ（壊した値がどのロガーにも出ないことを確認する）
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.all();
 
     // ============================== テスト ==============================
 
@@ -102,17 +98,17 @@ class OrderRestoreFailureLogTest {
 
     @Test
     @DisplayName("注文を戻せないとき、ログには集約の名前と原因の例外の種類が出て、DB の値は出ない")
-    void logsWithoutDatabaseValue(CapturedOutput output) throws Exception {
+    void logsWithoutDatabaseValue() throws Exception {
         // 準備：明細の軸の値を、テストごとの値で壊した注文
         var value = "secret-" + UUID.randomUUID();
         var orderId = orderWithBrokenLine(value);
 
-        // 操作：注文を読む
-        var logStart = CapturedLogs.mark(output);
+        // 操作：準備のログを捨ててから、注文を読む
+        logs.clear();
         mockMvc.perform(get("/api/store/orders/" + orderId)).andExpect(status().isInternalServerError());
 
         // 確認：この要求のログに、集約の名前と例外のクラス名が出て、壊した値は出ない
-        assertThat(CapturedLogs.since(output, logStart))
+        assertThat(logs.text())
                 .containsPattern(RESTORE_ERROR_LOG)
                 .doesNotContain(value);
     }

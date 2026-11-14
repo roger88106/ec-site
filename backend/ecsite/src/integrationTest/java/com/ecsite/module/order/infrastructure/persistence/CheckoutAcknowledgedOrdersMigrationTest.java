@@ -33,6 +33,8 @@ class CheckoutAcknowledgedOrdersMigrationTest {
      */
     private static final String BEFORE_MIGRATION = "202610211600";
 
+    // ============================== Bean ==============================
+
     /**
      * 統合テストの PostgreSQL
      */

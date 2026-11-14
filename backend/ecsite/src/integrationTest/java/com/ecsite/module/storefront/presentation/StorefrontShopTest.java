@@ -25,7 +25,7 @@ class StorefrontShopTest {
      */
     private static final String CONTACT_EMAIL = "contact@shop.example";
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc

@@ -4,6 +4,7 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.Mailpit;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
@@ -11,6 +12,7 @@ import com.ecsite.ShippingTestData;
 import com.ecsite.TestTokens;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.payment.domain.payment.RefundRequested;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -39,10 +41,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 返送された注文のキャンセルの、返金の受け入れテスト
+ * 返送された注文のキャンセルの、返金とメールの受け入れテスト
  *
- * <p>返金はコミットの後に非同期で行うので、このテストはコミットし、返金の依頼のリスナーを待つ。
- * 作ったデータは消さないので、税区分の名前、会員、送り状番号はテストごとに変え、確認は自分の注文だけにする。
+ * <p>返金とメールの送信はコミットの後に非同期で行うので、このテストはコミットし、リスナーを待つ。
+ * 作ったデータは消さないので、税区分の名前、会員とそのメールアドレス、送り状番号はテストごとに変え、確認は自分の注文だけにする。
  * キャンセルの成立と在庫の戻しは、ロールバックする {@code ReturnedOrderCancellationApiTest} が確認する。
  *
  * <p>準備のデータと確認の期待値は、同じ定数から作る。
@@ -82,7 +84,7 @@ class ReturnedOrderRefundTest {
     private static final String CANCEL_BODY = """
             {"reason": "返送された", "restock": true}""";
 
-    // ============================== テストの準備 ==============================
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -108,6 +110,14 @@ class ReturnedOrderRefundTest {
     @Autowired
     AsyncEvents asyncEvents;
 
+    @Autowired
+    Mailpit mailpit;
+
+    /**
+     * 注文した会員のメールアドレス（注文の連絡先。他のテストのメールと混ぜないよう、テストごとに変える）
+     */
+    private String email;
+
     /**
      * 返送された注文の ID
      */
@@ -116,8 +126,6 @@ class ReturnedOrderRefundTest {
     @BeforeEach
     void setUp() throws Exception {
         var inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var taxCategoryId = catalog.taxCategory("返金-" + UUID.randomUUID().toString().substring(0, 8), "10");
@@ -125,7 +133,8 @@ class ReturnedOrderRefundTest {
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
         // コミットするので、他のテストとカートを共有しないよう、テストごとの会員で注文する
-        var owner = TestTokens.member().subject(UUID.randomUUID());
+        email = "returned-" + UUID.randomUUID() + "@example.com";
+        var owner = TestTokens.member().subject(UUID.randomUUID()).email(email);
         orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, ORDERED);
         awaitAuthorizedHandled();
         var trackingNumber = ShippingTestData.trackingNumber();
@@ -165,6 +174,22 @@ class ReturnedOrderRefundTest {
 
         // 確認：決済サービスに渡した返金の額が、送料を含む総額
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).containsExactly(ORDER_TOTAL);
+    }
+
+    @Test
+    @DisplayName("AC-196 返送の注文をキャンセルしても、消費者にメールを送らない")
+    void sendsNoMailOnCancellation() throws Exception {
+        // 準備：出荷通知メールが 1 通届くのを待つ
+        await().atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).size() == 1);
+
+        // 操作：キャンセルし、キャンセルのイベントのリスナーと返金が終わるのを待つ
+        cancel();
+        asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
+                && changed.orderId().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
+        await().atMost(TIMEOUT).until(() -> paymentStatus().equals("REFUNDED"));
+
+        // 確認：キャンセルのリスナーが終わった後も、この注文の連絡先へのメールは出荷通知の 1 通のまま
+        assertThat(mailpit.messagesTo(email)).hasSize(1);
     }
 
     // ============================== 準備の補助 ==============================

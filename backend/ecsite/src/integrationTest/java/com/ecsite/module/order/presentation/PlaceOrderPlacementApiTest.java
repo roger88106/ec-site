@@ -1,7 +1,6 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import com.ecsite.TestJson;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.order.event.OrderStatusChanged;
@@ -52,8 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class PlaceOrderPlacementApiTest {
 
-    @Autowired
-    MutableClock clock;
+    // ============================== Bean ==============================
 
     @Autowired
     ApplicationContext applicationContext;
@@ -71,7 +69,6 @@ class PlaceOrderPlacementApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(PlaceOrderFixture.NOW);
         fixture = PlaceOrderFixture.prepare(applicationContext);
     }
 

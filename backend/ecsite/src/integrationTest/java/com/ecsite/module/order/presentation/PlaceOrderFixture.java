@@ -30,18 +30,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 注文の成立の受け入れテスト（{@code PlaceOrder*ApiTest}）が共有する準備と確認の補助
  *
  * <p>標準の税区分（10%）、公開した T シャツ（白・M、税抜 2,700 円、在庫数 3）、T シャツ 2 枚を入れた会員のカートを作る。
- * 時計は各テストのクラスが {@link #NOW} に合わせてから {@link #prepare} を呼ぶ。
+ * 時計は、テストごとに戻る初期値（{@code TestClockConfig.INITIAL_INSTANT}、日本時間の 2026-10-08 00:00）のまま {@link #prepare} を呼ぶ。
  */
 final class PlaceOrderFixture {
 
     // ============================== 定数 ==============================
-
-    /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
      * T シャツの税抜単価

@@ -75,7 +75,7 @@ class CartApiTest {
      */
     private static final String EXCEEDS_STOCK_MESSAGE = "在庫が足りないため、この数量ではカートに入れられません。";
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc
@@ -136,7 +136,6 @@ class CartApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         standard = catalog.taxCategory("標準", "10");
         cartId = newCart();

@@ -93,7 +93,7 @@ class MemberCartApiTest {
      */
     private static final String ANONYMOUS = "ログインしていない人";
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc
@@ -153,7 +153,6 @@ class MemberCartApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         standard = catalog.taxCategory("標準", "10");
         // カートの表示（見積もり）は、送料の税区分を使う

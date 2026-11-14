@@ -71,7 +71,7 @@ class JooqCartRepositoryTest {
      */
     private static final long VERSION_AFTER_ONE_CHANGE = 1;
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * テストするリポジトリ

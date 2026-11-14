@@ -39,6 +39,8 @@ class CurrentMemberIdsTest {
      */
     private static final String SUBJECT = "subject-1";
 
+    // ============================== Bean ==============================
+
     /**
      * 会員の記録（IdP の subject → 会員 ID）を持つだけのリポジトリの中身
      */
@@ -65,8 +67,6 @@ class CurrentMemberIdsTest {
     private final CurrentMemberIds currentMemberIds = new CurrentMemberIds(new CurrentMember(),
             new MemberQueryService(repository), new MemberCommandService(repository, Clock.systemUTC()));
 
-    // ============================== テスト ==============================
-
     /**
      * ログインの状態を消す
      */
@@ -74,6 +74,8 @@ class CurrentMemberIdsTest {
     void clearAuthentication() {
         SecurityContextHolder.clearContext();
     }
+
+    // ============================== テスト ==============================
 
     @Nested
     @DisplayName("ログインしているとき")

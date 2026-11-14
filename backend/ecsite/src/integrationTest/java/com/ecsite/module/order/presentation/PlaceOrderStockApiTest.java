@@ -48,6 +48,8 @@ class PlaceOrderStockApiTest {
      */
     private static final Duration PAST_EXPIRY = Duration.ofMinutes(20);
 
+    // ============================== Bean ==============================
+
     @Autowired
     MutableClock clock;
 
@@ -64,7 +66,6 @@ class PlaceOrderStockApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(PlaceOrderFixture.NOW);
         fixture = PlaceOrderFixture.prepare(applicationContext);
     }
 

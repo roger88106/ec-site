@@ -43,6 +43,8 @@ class ShippingAreaMigrationTest {
      */
     private static final String ORDER_NUMBER = "20261001-000001";
 
+    // ============================== Bean ==============================
+
     /**
      * 統合テストの PostgreSQL
      */

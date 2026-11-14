@@ -52,6 +52,8 @@ class JooqCheckoutRepositoryTest {
      */
     private static final long CART_VERSION = 7;
 
+    // ============================== Bean ==============================
+
     @Autowired
     CheckoutRepository repository;
 

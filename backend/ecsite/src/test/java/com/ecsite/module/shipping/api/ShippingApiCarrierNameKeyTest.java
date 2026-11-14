@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
  */
 class ShippingApiCarrierNameKeyTest {
 
-    // ============================== 定数 ==============================
+    // ============================== Bean ==============================
 
     /**
      * テストの対象

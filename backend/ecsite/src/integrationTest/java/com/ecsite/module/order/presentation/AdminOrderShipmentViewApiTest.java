@@ -80,6 +80,8 @@ class AdminOrderShipmentViewApiTest {
      */
     private static final String RETURNED_TRACKING_NUMBER = "222222222222";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -140,7 +142,6 @@ class AdminOrderShipmentViewApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();

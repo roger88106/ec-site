@@ -78,6 +78,8 @@ class MemberOrderApiTest {
      */
     private static final String OWNER_EMAIL = "owner@example.com";
 
+    // ============================== Bean ==============================
+
     @Autowired
     ApplicationContext applicationContext;
 
@@ -126,7 +128,6 @@ class MemberOrderApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);

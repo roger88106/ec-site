@@ -88,6 +88,8 @@ class ShipmentApiTest {
      */
     private static final String TRACKING_NUMBER_WITH_HYPHENS = "1234-5678-9012";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -129,8 +131,6 @@ class ShipmentApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", UNIT_PRICE_EXCL_TAX).publish();

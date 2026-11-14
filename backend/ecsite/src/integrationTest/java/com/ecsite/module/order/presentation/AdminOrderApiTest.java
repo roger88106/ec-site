@@ -21,9 +21,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -74,6 +76,38 @@ class AdminOrderApiTest {
      * <p>日本時間の 2026-12-09 00:00。
      */
     private static final Instant DEC_9 = Instant.parse("2026-12-08T15:00:00Z");
+
+    /**
+     * ページの確認で注文する日（他のテストが注文を作らない日。一覧をこの日で絞り、他のテストの注文を除く）
+     */
+    private static final LocalDate PAGED_DAY = LocalDate.of(2032, 3, 10);
+
+    /**
+     * ページの確認で、最初に注文する日時
+     *
+     * <p>日本時間の 2032-03-10 10:00。
+     */
+    private static final Instant PAGED_DAY_START = Instant.parse("2032-03-10T01:00:00Z");
+
+    /**
+     * ページの確認で注文する数
+     */
+    private static final int PAGED_ORDERS = 5;
+
+    /**
+     * ページの確認の、1 ページの件数
+     */
+    private static final int PAGE_SIZE = 2;
+
+    /**
+     * ページの確認で取得するページの番号
+     */
+    private static final int PAGE = 2;
+
+    /**
+     * ページの確認の、全体のページ数（5 件を 2 件ずつ）
+     */
+    private static final int PAGED_TOTAL_PAGES = 3;
 
     /**
      * 商品名
@@ -130,6 +164,8 @@ class AdminOrderApiTest {
      */
     private static final String CANCEL_REASON = "在庫の不備";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -172,7 +208,6 @@ class AdminOrderApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(DEC_8_LATE.minusSeconds(3600));
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", String.valueOf(RATE_PERCENT)), PRODUCT_NAME,
@@ -236,23 +271,26 @@ class AdminOrderApiTest {
         @Test
         @DisplayName("AC-99 ページ単位で取得できる")
         void pages() throws Exception {
-            // 準備：3 件を注文し、全てのページから一覧を集める
-            for (int i = 0; i < 3; i++) {
-                orders.placeOrder(variantId, 1);
+            // 準備：他のテストが使わない日に、1 分ずつずらして 5 件を注文する（古い順に並べて持つ）
+            var placed = new ArrayList<UUID>();
+            for (int i = 0; i < PAGED_ORDERS; i++) {
+                clock.setInstant(PAGED_DAY_START.plus(Duration.ofMinutes(i)));
+                placed.add(orders.placeOrder(variantId, 1));
             }
-            var all = lists.listAll();
 
-            // 操作：1 ページ 2 件の、2 ページ目を取得する
-            var body = mockMvc.perform(get(BASE).param("page", "2").param("size", "2"))
+            // 操作：その日の注文だけに絞り、1 ページ 2 件の 2 ページ目を取得する
+            var body = mockMvc.perform(get(BASE)
+                            .param("orderedFrom", PAGED_DAY.toString()).param("orderedTo", PAGED_DAY.toString())
+                            .param("page", String.valueOf(PAGE)).param("size", String.valueOf(PAGE_SIZE)))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-            // 確認：全体の一覧の 3、4 件目が並び、ページの情報が全体の件数と合う
+            // 確認：新しい順で 3、4 件目（古い方から 3、2 件目）が並び、ページの情報がその日の 5 件と合う
             List<Map<String, Object>> pageItems = JsonPath.read(body, "$.items");
-            var expectedIds = all.subList(2, Math.min(4, all.size())).stream().map(item -> item.get("id")).toList();
-            assertThat(pageItems).extracting(item -> item.get("id")).containsExactlyElementsOf(expectedIds);
-            assertThat((int) JsonPath.read(body, "$.page")).isEqualTo(2);
-            assertThat((int) JsonPath.read(body, "$.totalItems")).isEqualTo(all.size());
-            assertThat((int) JsonPath.read(body, "$.totalPages")).isEqualTo((all.size() + 1) / 2);
+            assertThat(pageItems).extracting(item -> item.get("id"))
+                    .containsExactly(placed.get(2).toString(), placed.get(1).toString());
+            assertThat((int) JsonPath.read(body, "$.page")).isEqualTo(PAGE);
+            assertThat((int) JsonPath.read(body, "$.totalItems")).isEqualTo(PAGED_ORDERS);
+            assertThat((int) JsonPath.read(body, "$.totalPages")).isEqualTo(PAGED_TOTAL_PAGES);
         }
 
         @Test

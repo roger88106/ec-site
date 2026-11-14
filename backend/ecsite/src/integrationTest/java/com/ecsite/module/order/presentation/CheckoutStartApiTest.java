@@ -19,8 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.ecsite.module.order.presentation.CheckoutStartSupport.NOW;
-import static com.ecsite.module.order.presentation.CheckoutStartSupport.RESERVATION_TTL;
+import static com.ecsite.module.order.presentation.CheckoutStartFixture.RESERVATION_TTL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,6 +48,8 @@ class CheckoutStartApiTest {
      */
     private static final Duration RESTART_AFTER = Duration.ofMinutes(10);
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -64,7 +65,7 @@ class CheckoutStartApiTest {
     /**
      * 注文手続きの開始の準備と確認の補助
      */
-    private CheckoutStartSupport support;
+    private CheckoutStartFixture fixture;
 
     /**
      * 注文を作る補助
@@ -78,10 +79,9 @@ class CheckoutStartApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
-        support = new CheckoutStartSupport(applicationContext);
-        orders = support.orders();
-        cartId = support.cartId();
+        fixture = new CheckoutStartFixture(applicationContext);
+        orders = fixture.orders();
+        cartId = fixture.cartId();
     }
 
     // ============================== テスト ==============================
@@ -94,13 +94,13 @@ class CheckoutStartApiTest {
         @DisplayName("AC-82 注文手続きに進むと、全品目をカートの数量だけ引き当てる")
         void reservesAllItems() throws Exception {
             // 準備：在庫 3 の品目を 2 個、在庫 5 の品目を 1 個カートに入れる
-            var shirt = support.stockedVariant(3);
-            var cap = support.stockedVariant(5);
+            var shirt = fixture.stockedVariant(3);
+            var cap = fixture.stockedVariant(5);
             orders.add(cartId, shirt, 2);
             orders.add(cartId, cap, 1);
 
             // 操作：注文手続きに進む
-            support.startCheckout(cartId);
+            fixture.startCheckout(cartId);
 
             // 確認：販売可能数が、カートの数量だけ減っている
             assertThat(stockReservationApi.sellableQuantities(List.of(shirt, cap), null))
@@ -111,12 +111,12 @@ class CheckoutStartApiTest {
         @DisplayName("AC-82 注文手続きの期限は、進んだ時点から 15 分後になる")
         void expiresInFifteenMinutes() throws Exception {
             // 準備：在庫のある品目をカートに入れる
-            orders.add(cartId, support.stockedVariant(3), 2);
+            orders.add(cartId, fixture.stockedVariant(3), 2);
             // 商品の公開が時計を進めるので、進む時点の時刻を読む
             var startedAt = clock.instant();
 
             // 操作：注文手続きに進む
-            var checkoutId = support.startCheckout(cartId);
+            var checkoutId = fixture.startCheckout(cartId);
 
             // 確認：期限が進んだ時点から 15 分後で、まだ注文になっていない
             assertCheckoutExpiresAt(checkoutId, startedAt.plus(RESERVATION_TTL));
@@ -126,7 +126,7 @@ class CheckoutStartApiTest {
         @DisplayName("AC-82 1 品目でも引き当てられなければ 409 で、どれも引き当てない")
         void reservesNothingWhenShort() throws Exception {
             // 準備：足りる品目と、ほかの消費者の引当で足りなくなる品目をカートに入れる
-            var plenty = support.stockedVariant(5);
+            var plenty = fixture.stockedVariant(5);
             reserveShortCart(plenty);
 
             // 操作と確認：在庫の不足で拒否される
@@ -135,14 +135,14 @@ class CheckoutStartApiTest {
                     .andExpect(jsonPath("$.errorCode").value("OUT_OF_STOCK"));
 
             // 確認：足りる品目も引き当てていない
-            assertThat(support.sellable(plenty)).isEqualTo(5);
+            assertThat(fixture.sellable(plenty)).isEqualTo(5);
         }
 
         @Test
         @DisplayName("AC-82 引き当てられなかった品目は、カートの表示で示す")
         void showsShortItemInCart() throws Exception {
             // 準備：2 番目の品目が足りないカートで、注文手続きに進んで拒否される
-            reserveShortCart(support.stockedVariant(5));
+            reserveShortCart(fixture.stockedVariant(5));
             mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts")).andExpect(status().isConflict());
 
             // 操作と確認：カートの表示で、2 番目の品目が在庫不足と示される
@@ -159,29 +159,29 @@ class CheckoutStartApiTest {
         @DisplayName("AC-84 進み直すと、前の注文手続きの引当を解いて、その時点のカートで引き当て直す")
         void replacesReservationOnRestart() throws Exception {
             // 準備：在庫 3 の品目を 2 個入れて注文手続きに進み、10 分後にする
-            var variant = support.stockedVariant(3);
+            var variant = fixture.stockedVariant(3);
             orders.add(cartId, variant, 2);
-            support.startCheckout(cartId);
+            fixture.startCheckout(cartId);
             clock.setInstant(clock.instant().plus(RESTART_AFTER));
 
             // 操作：進み直す
-            support.startCheckout(cartId);
+            fixture.startCheckout(cartId);
 
             // 確認：引当は、今の注文手続きの 2 個だけ
-            assertThat(support.sellable(variant)).isEqualTo(1);
+            assertThat(fixture.sellable(variant)).isEqualTo(1);
         }
 
         @Test
         @DisplayName("AC-84 進み直すと、期限は進み直した時点から 15 分後になる")
         void resetsExpiryOnRestart() throws Exception {
             // 準備：注文手続きに進み、10 分後にする
-            orders.add(cartId, support.stockedVariant(3), 2);
-            support.startCheckout(cartId);
+            orders.add(cartId, fixture.stockedVariant(3), 2);
+            fixture.startCheckout(cartId);
             var restartedAt = clock.instant().plus(RESTART_AFTER);
             clock.setInstant(restartedAt);
 
             // 操作：進み直す
-            var second = support.startCheckout(cartId);
+            var second = fixture.startCheckout(cartId);
 
             // 確認：期限が進み直した時点から 15 分後
             mockMvc.perform(get("/api/store/checkouts/" + second))
@@ -197,21 +197,21 @@ class CheckoutStartApiTest {
         @DisplayName("AC-84 進んでから 15 分が経過すると、注文手続きの引当は解ける")
         void releasesReservationAfterFifteenMinutes() throws Exception {
             // 準備：在庫 3 の品目を 2 個入れて注文手続きに進む
-            var variant = support.stockedVariant(3);
+            var variant = fixture.stockedVariant(3);
             orders.add(cartId, variant, 2);
             // 商品の公開が時計を進めるので、進む時点の時刻を読む
             var startedAt = clock.instant();
-            support.startCheckout(cartId);
+            fixture.startCheckout(cartId);
 
             // 確認（前提）：期限の 1 秒前は、2 個を引き当てている
             clock.setInstant(startedAt.plus(RESERVATION_TTL).minusSeconds(1));
-            assertThat(support.sellable(variant)).isEqualTo(1);
+            assertThat(fixture.sellable(variant)).isEqualTo(1);
 
             // 操作：期限の時刻にする
             clock.setInstant(startedAt.plus(RESERVATION_TTL));
 
             // 確認：引当は数えず、販売可能数が在庫数に戻る
-            assertThat(support.sellable(variant)).isEqualTo(3);
+            assertThat(fixture.sellable(variant)).isEqualTo(3);
         }
     }
 
@@ -230,8 +230,8 @@ class CheckoutStartApiTest {
         @DisplayName("AC-88 購入できない品目（販売停止）を含むカートは 400 で注文手続きに進めない")
         void rejectsCartWithUnpurchasableItem() throws Exception {
             // 準備：カートに入れた後に販売停止にした品目
-            var product = support.catalog().product(support.standard(), "販売停止にする", 1000, "色").variant("白").publish();
-            support.inventory().stock(product.variantIds.getFirst(), product.id, 3);
+            var product = fixture.catalog().product(fixture.standard(), "販売停止にする", 1000, "色").variant("白").publish();
+            fixture.inventory().stock(product.variantIds.getFirst(), product.id, 3);
             orders.add(cartId, product.variantIds.getFirst(), 1);
             product.suspend(0);
 
@@ -248,9 +248,9 @@ class CheckoutStartApiTest {
         @DisplayName("AC-85 注文手続きの表示は、カートの品目と、品目の合計・送料・総額を返す")
         void showsItemsAndAmounts() throws Exception {
             // 準備：1,100 円（税込）の品目 1 個で注文手続きに進む
-            var variant = support.stockedVariant(1);
+            var variant = fixture.stockedVariant(1);
             orders.add(cartId, variant, 1);
-            var checkoutId = support.startCheckout(cartId);
+            var checkoutId = fixture.startCheckout(cartId);
 
             // 操作と確認：品目と、送料 1,000 円を足した総額を返す
             mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
@@ -264,8 +264,8 @@ class CheckoutStartApiTest {
         @DisplayName("AC-85 注文手続きの表示は、自分の引当を販売可能数から除くので、在庫の全てを引き当てた品目も購入できる")
         void excludesOwnReservationInCheckout() throws Exception {
             // 準備：在庫 1 の品目を 1 個入れて注文手続きに進む（在庫の全てを自分が引き当てる）
-            orders.add(cartId, support.stockedVariant(1), 1);
-            var checkoutId = support.startCheckout(cartId);
+            orders.add(cartId, fixture.stockedVariant(1), 1);
+            var checkoutId = fixture.startCheckout(cartId);
 
             // 操作と確認：品目は購入できる
             mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
@@ -276,8 +276,8 @@ class CheckoutStartApiTest {
         @DisplayName("AC-85 カートの表示でも、注文手続き中の自分の引当を除いて判定する")
         void excludesOwnReservationInCart() throws Exception {
             // 準備：在庫 1 の品目を 1 個入れて注文手続きに進む（在庫の全てを自分が引き当てる）
-            orders.add(cartId, support.stockedVariant(1), 1);
-            support.startCheckout(cartId);
+            orders.add(cartId, fixture.stockedVariant(1), 1);
+            fixture.startCheckout(cartId);
 
             // 操作と確認：カートの品目は購入でき、カートは注文できる
             mockMvc.perform(get("/api/store/carts/" + cartId))
@@ -289,14 +289,14 @@ class CheckoutStartApiTest {
         @DisplayName("AC-85 注文手続きの表示は、税率ごとの消費税額を、税率の高い順に返す（送料は 10% の対象）")
         void showsTaxAmountPerRate() throws Exception {
             // 準備：10% の品目（1,100 円）と 8% の品目（1,080 円）を 1 個ずつ入れて注文手続きに進む
-            var reduced = support.catalog().taxCategory("軽減", "8");
-            var standardVariant = support.stockedVariant(1);
-            var reducedProduct = support.catalog().product(reduced, "軽減の商品", 1000).publish();
+            var reduced = fixture.catalog().taxCategory("軽減", "8");
+            var standardVariant = fixture.stockedVariant(1);
+            var reducedProduct = fixture.catalog().product(reduced, "軽減の商品", 1000).publish();
             var reducedVariant = reducedProduct.variantIds.getFirst();
-            support.inventory().stock(reducedVariant, reducedProduct.id, 1);
+            fixture.inventory().stock(reducedVariant, reducedProduct.id, 1);
             orders.add(cartId, standardVariant, 1);
             orders.add(cartId, reducedVariant, 1);
-            var checkoutId = support.startCheckout(cartId);
+            var checkoutId = fixture.startCheckout(cartId);
 
             // 操作と確認：税率ごとの対象額と消費税額
             // 10%：1,100 円 + 送料 1,000 円 = 2,100 円 → 2,100 × 10 ÷ 110 = 190.9 → 190 円
@@ -382,7 +382,7 @@ class CheckoutStartApiTest {
      * @param plenty 足りる品目のバリアント ID（在庫は呼ぶ側で用意する）
      */
     private void reserveShortCart(UUID plenty) throws Exception {
-        var scarce = support.stockedVariant(2);
+        var scarce = fixture.stockedVariant(2);
         orders.add(cartId, plenty, 1);
         orders.add(cartId, scarce, 2);
         stockReservationApi.reserve(UUID.randomUUID(), Map.of(scarce, 1), clock.instant().plus(RESERVATION_TTL));

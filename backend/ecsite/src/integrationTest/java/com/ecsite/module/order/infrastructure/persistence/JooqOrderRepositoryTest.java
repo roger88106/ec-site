@@ -96,6 +96,8 @@ class JooqOrderRepositoryTest {
      */
     private static final Instant DECIDED_AT = ORDERED_AT.plusSeconds(7200);
 
+    // ============================== Bean ==============================
+
     @Autowired
     OrderRepository repository;
 

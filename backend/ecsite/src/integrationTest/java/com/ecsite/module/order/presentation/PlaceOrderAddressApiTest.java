@@ -1,7 +1,6 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -44,8 +43,7 @@ class PlaceOrderAddressApiTest {
      */
     private static final String CHIYODA = "13101";
 
-    @Autowired
-    MutableClock clock;
+    // ============================== Bean ==============================
 
     @Autowired
     ApplicationContext applicationContext;
@@ -62,7 +60,6 @@ class PlaceOrderAddressApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(PlaceOrderFixture.NOW);
         fixture = PlaceOrderFixture.prepare(applicationContext);
         checkoutId = fixture.orders.startCheckout(fixture.cartId);
     }
@@ -140,7 +137,7 @@ class PlaceOrderAddressApiTest {
         @Test
         @DisplayName("AC-251 マスターデータにない市区町村は、市区町村の誤りを示す 400")
         void rejectsUnknownMunicipality() throws Exception {
-            // 操作と確認：東京都にない市区町村のコードは 400 で、エラーコードが INVALID_MUNICIPALITY
+            // 操作と確認：マスターデータにない市区町村のコードは 400 で、エラーコードが INVALID_MUNICIPALITY
             fixture.placeWith(checkoutId, body(POSTAL_CODE, TOKYO, "13999"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_MUNICIPALITY"));

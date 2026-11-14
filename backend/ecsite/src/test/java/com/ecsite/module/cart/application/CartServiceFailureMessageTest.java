@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
  */
 class CartServiceFailureMessageTest {
 
-    // ============================== 定数 ==============================
+    // ============================== Bean ==============================
 
     /**
      * カートのリポジトリ（保存しない mock）
@@ -42,8 +42,6 @@ class CartServiceFailureMessageTest {
      */
     private CartService service;
 
-    // ============================== テスト ==============================
-
     /**
      * カートを保存できないリポジトリで、サービスを作る。
      */
@@ -53,6 +51,8 @@ class CartServiceFailureMessageTest {
                 mock(ApplicationEventPublisher.class), Clock.systemUTC());
         when(cartRepository.create(any())).thenReturn(false);
     }
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("ゲストのカートを保存できないとき、例外のメッセージにカートの ID が出ない")

@@ -88,7 +88,7 @@ class OrderPaymentApiTest {
      */
     private static final Money TOTAL_OF_TWO = Money.of(3200);
 
-    // ============================== テストの準備 ==============================
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -141,8 +141,6 @@ class OrderPaymentApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         taxCategoryId = new CatalogTestData(mockMvc, clock).taxCategory("支払-" + UUID.randomUUID().toString().substring(0, 8), "10");
         variantId = stockedVariant("支払の商品");

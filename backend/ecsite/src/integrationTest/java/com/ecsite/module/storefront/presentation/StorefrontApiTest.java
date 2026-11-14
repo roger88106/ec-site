@@ -5,7 +5,6 @@ import com.ecsite.CatalogTestData.TestProduct;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -96,7 +94,7 @@ class StorefrontApiTest {
      */
     private static final String DEFAULT_DESCRIPTION = "説明";
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc
@@ -109,12 +107,6 @@ class StorefrontApiTest {
      */
     @Autowired
     MutableClock clock;
-
-    /**
-     * 税率のキャッシュを捨てるのに使うコンテキスト
-     */
-    @Autowired
-    ApplicationContext applicationContext;
 
     /**
      * 在庫のリポジトリ
@@ -152,8 +144,6 @@ class StorefrontApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        TaxRateScheduleCaches.evict(applicationContext);
         catalog = new CatalogTestData(mockMvc, clock);
         standard = catalog.taxCategory("標準", "10");
     }
@@ -467,7 +457,7 @@ class StorefrontApiTest {
             var category = newCategory();
             var ids = fiveProductIds(category);
 
-            // 操作と確認：2 件ずつの 2 ページ目は、4 番目と 3 番目
+            // 操作と確認：2 件ずつの 2 ページ目は、新着順で 3 番目と 4 番目（作った順で 3 番目と 2 番目）
             mockMvc.perform(listIn(category).param("page", "2").param("size", "2"))
                     .andExpect(jsonPath("$.items[*].id", contains(ids.get(2), ids.get(1))));
         }
@@ -801,6 +791,7 @@ class StorefrontApiTest {
      *
      * <p>確認すること：
      * <ul>
+     *   <li>応答が 200</li>
      *   <li>一覧の商品 ID が、指定した商品だけ</li>
      *   <li>全件数が 1</li>
      * </ul>

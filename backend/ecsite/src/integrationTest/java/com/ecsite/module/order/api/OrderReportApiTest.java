@@ -83,6 +83,8 @@ class OrderReportApiTest {
      */
     private static final int QUANTITY = 2;
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -125,8 +127,6 @@ class OrderReportApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         shirt = catalog.product(catalog.taxCategory("標準", "10"), PRODUCT_NAME, UNIT_PRICE_EXCL_TAX, AXIS_NAME)

@@ -49,6 +49,8 @@ class PlaceOrderPendingConfirmationApiTest {
      */
     private static final int ADDED_STOCK = 7;
 
+    // ============================== Bean ==============================
+
     @Autowired
     MutableClock clock;
 
@@ -62,7 +64,6 @@ class PlaceOrderPendingConfirmationApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(PlaceOrderFixture.NOW);
         fixture = PlaceOrderFixture.prepare(applicationContext);
         fixture.inventory.stock(fixture.shirtVariant(), fixture.shirt.id, ADDED_STOCK);
     }

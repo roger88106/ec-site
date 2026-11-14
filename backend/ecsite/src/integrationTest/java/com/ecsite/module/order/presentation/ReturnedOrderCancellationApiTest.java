@@ -81,7 +81,7 @@ class ReturnedOrderCancellationApiTest {
      */
     private static final String REASON = "返送された";
 
-    // ============================== テストの準備 ==============================
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -127,8 +127,6 @@ class ReturnedOrderCancellationApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         shipping = new ShippingTestData(mockMvc, mockCarrier);
         var catalog = new CatalogTestData(mockMvc, clock);
@@ -174,6 +172,26 @@ class ReturnedOrderCancellationApiTest {
                     .andExpect(jsonPath("$.status").value("CANCELLED"))
                     .andExpect(jsonPath("$.cancellation.reason").value(REASON))
                     .andExpect(jsonPath("$.shipment.status").value("RETURNED"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({"理由なし,,INVALID_REQUEST", "空,'',INVALID_REQUEST", "空白,'   ',CANCELLATION_REASON_REQUIRED"})
+        @DisplayName("AC-190 返送の注文も、理由がなければキャンセルできず 400 で、出荷済みのまま")
+        void requiresReason(String label, String reason, String errorCode) throws Exception {
+            // 準備：返送にする
+            notifyStatus("返品");
+
+            // 操作と確認：理由がない・空・空白の本文は 400 で、理由の誤りを示すエラーコード
+            mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(reason == null ? """
+                                    {"restock": true}""" : """
+                                    {"reason": "%s", "restock": true}""".formatted(reason)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value(errorCode));
+
+            // 確認：出荷済みのまま
+            admin().andExpect(jsonPath("$.status").value("SHIPPED"));
         }
 
         @Test

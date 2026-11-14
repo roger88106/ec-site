@@ -1,7 +1,6 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import com.ecsite.TestTokens;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,8 +71,7 @@ class PlaceOrderViewApiTest {
      */
     private static final String EMAIL = "member@example.com";
 
-    @Autowired
-    MutableClock clock;
+    // ============================== Bean ==============================
 
     @Autowired
     ApplicationContext applicationContext;
@@ -85,7 +83,6 @@ class PlaceOrderViewApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(PlaceOrderFixture.NOW);
         fixture = PlaceOrderFixture.prepare(applicationContext);
     }
 

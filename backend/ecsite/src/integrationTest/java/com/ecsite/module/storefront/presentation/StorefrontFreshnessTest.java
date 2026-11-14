@@ -4,7 +4,6 @@ import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -86,7 +84,7 @@ class StorefrontFreshnessTest {
      */
     private static final Instant RATE_SWITCH_AT = NOW.plusSeconds(10);
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc
@@ -99,12 +97,6 @@ class StorefrontFreshnessTest {
      */
     @Autowired
     MutableClock clock;
-
-    /**
-     * 税率のキャッシュを捨てるのに使うコンテキスト
-     */
-    @Autowired
-    ApplicationContext applicationContext;
 
     /**
      * 在庫のリポジトリ
@@ -140,8 +132,6 @@ class StorefrontFreshnessTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        TaxRateScheduleCaches.evict(applicationContext);
         var catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準", "10").toString();
         // 巻き戻さないテストの商品が見えても影響しないよう、一覧はこのテストのカテゴリで絞る

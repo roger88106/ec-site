@@ -63,7 +63,7 @@ class CancellationAtomicityTest {
      */
     private static final int ORDERED = 2;
 
-    // ============================== テストの準備 ==============================
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -120,8 +120,6 @@ class CancellationAtomicityTest {
     void setUp() throws Exception {
         owner = TestTokens.member().subject(UUID.randomUUID());
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("一貫性-" + UUID.randomUUID().toString().substring(0, 8), "10");

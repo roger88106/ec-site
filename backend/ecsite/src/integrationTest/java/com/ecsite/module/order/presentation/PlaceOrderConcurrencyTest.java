@@ -53,12 +53,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @IntegrationTest
 class PlaceOrderConcurrencyTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * テストの現在時刻
      *
      * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -111,13 +115,14 @@ class PlaceOrderConcurrencyTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);
         taxCategoryId = catalog.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
         product = catalog.product(taxCategoryId, "並行の商品", 1000).publish();
     }
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("AC-91 同じ注文手続きで同時に何度送っても、注文は 1 件だけで、どの応答も同じ注文 ID")

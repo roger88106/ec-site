@@ -22,9 +22,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.startCheckoutRequest;
-import static com.ecsite.module.order.presentation.CheckoutStartSupport.NOW;
-import static com.ecsite.module.order.presentation.CheckoutStartSupport.expectConfirmationRequired;
-import static com.ecsite.module.order.presentation.CheckoutStartSupport.expectLimitExceeded;
+import static com.ecsite.module.order.presentation.CheckoutStartFixture.expectConfirmationRequired;
+import static com.ecsite.module.order.presentation.CheckoutStartFixture.expectLimitExceeded;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
@@ -52,6 +51,8 @@ class CheckoutPendingOrderLimitApiTest {
      */
     private static final int RAISED_LIMIT = 10;
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -72,7 +73,7 @@ class CheckoutPendingOrderLimitApiTest {
     /**
      * 注文手続きの開始の準備と確認の補助
      */
-    private CheckoutStartSupport support;
+    private CheckoutStartFixture fixture;
 
     /**
      * 注文を作る補助
@@ -86,10 +87,9 @@ class CheckoutPendingOrderLimitApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
-        support = new CheckoutStartSupport(applicationContext);
-        orders = support.orders();
-        cartId = support.cartId();
+        fixture = new CheckoutStartFixture(applicationContext);
+        orders = fixture.orders();
+        cartId = fixture.cartId();
     }
 
     // ============================== テスト ==============================
@@ -102,19 +102,19 @@ class CheckoutPendingOrderLimitApiTest {
         @DisplayName("AC-411-3 支払待ちの注文が上限（3 件）に達していると、全て確認していても開始は 409 で拒否し、注文手続きも引当も変えない")
         void rejectsStartAtLimit() throws Exception {
             // 準備：2 件の支払待ちの注文の後、在庫 5 の品目をカートに残したまま 3 件目を作る（注文で 1 個減る）
-            var variant = support.stockedVariant(5);
+            var variant = fixture.stockedVariant(5);
             var pendingIds = placePendingOrdersOfNewVariants(2);
             orders.add(cartId, variant, 1);
             pendingIds.add(orders.placeFromCheckout(orders.startCheckout(cartId, pendingIds)));
-            assertThat(support.sellable(variant)).isEqualTo(4);
-            var checkouts = support.checkoutCount();
+            assertThat(fixture.sellable(variant)).isEqualTo(4);
+            var checkouts = fixture.checkoutCount();
 
             // 操作と確認：3 件を確認して始めても、上限で拒否される
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
 
             // 確認：カートに残った品目を新たに引き当てず、注文手続きも増えていない
-            assertThat(support.sellable(variant)).isEqualTo(4);
-            assertThat(support.checkoutCount()).isEqualTo(checkouts);
+            assertThat(fixture.sellable(variant)).isEqualTo(4);
+            assertThat(fixture.checkoutCount()).isEqualTo(checkouts);
         }
 
         @Test
@@ -122,21 +122,21 @@ class CheckoutPendingOrderLimitApiTest {
         void keepsPreviousReservationWhenRejected() throws Exception {
             // 準備：3 件の支払待ちの注文と、前の注文手続きの引当（在庫 5 のうち 1 個）
             var pendingIds = placePendingOrdersOfNewVariants(3);
-            var variant = support.stockedVariant(5);
+            var variant = fixture.stockedVariant(5);
             orders.add(cartId, variant, 1);
             // 前の注文手続きの引当を残すため、その開始の間だけ上限を上げる
             raiseLimit();
             orders.startCheckout(cartId, pendingIds);
             restoreLimit();
-            assertThat(support.sellable(variant)).isEqualTo(4);
-            var checkouts = support.checkoutCount();
+            assertThat(fixture.sellable(variant)).isEqualTo(4);
+            var checkouts = fixture.checkoutCount();
 
             // 操作と確認：上限で拒否される
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
 
             // 確認：前の引当が残り、注文手続きも増えていない
-            assertThat(support.sellable(variant)).isEqualTo(4);
-            assertThat(support.checkoutCount()).isEqualTo(checkouts);
+            assertThat(fixture.sellable(variant)).isEqualTo(4);
+            assertThat(fixture.checkoutCount()).isEqualTo(checkouts);
         }
 
         @Test
@@ -144,7 +144,7 @@ class CheckoutPendingOrderLimitApiTest {
         void countsOverdueOrderUntilCancelled() throws Exception {
             // 準備：3 件の支払待ちの注文のうち、最後の注文の支払の期限の 1 秒後にする（キャンセルはしない）
             var pendingIds = placePendingOrdersOfNewVariants(3);
-            orders.add(cartId, support.stockedVariant(3), 1);
+            orders.add(cartId, fixture.stockedVariant(3), 1);
             var order = mockMvc.perform(get("/api/store/orders/" + pendingIds.getLast())).andReturn().getResponse().getContentAsString();
             clock.setInstant(Instant.parse(JsonPath.read(order, "$.paymentDeadline")).plusSeconds(1));
 
@@ -159,7 +159,7 @@ class CheckoutPendingOrderLimitApiTest {
             raiseLimit();
             var pendingIds = placePendingOrdersOfNewVariants(4);
             restoreLimit();
-            orders.add(cartId, support.stockedVariant(3), 1);
+            orders.add(cartId, fixture.stockedVariant(3), 1);
 
             // 操作と確認：上限で拒否される
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
@@ -175,7 +175,7 @@ class CheckoutPendingOrderLimitApiTest {
         void requiresConfirmationWithoutList() throws Exception {
             // 準備：上限の 3 件の支払待ちの注文
             placePendingOrdersOfNewVariants(3);
-            orders.add(cartId, support.stockedVariant(3), 1);
+            orders.add(cartId, fixture.stockedVariant(3), 1);
 
             // 操作と確認：確認を求められる
             expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId)));
@@ -186,7 +186,7 @@ class CheckoutPendingOrderLimitApiTest {
         void requiresConfirmationWithPartialList() throws Exception {
             // 準備：上限の 3 件の支払待ちの注文
             var pendingIds = placePendingOrdersOfNewVariants(3);
-            orders.add(cartId, support.stockedVariant(3), 1);
+            orders.add(cartId, fixture.stockedVariant(3), 1);
 
             // 操作と確認：2 件だけを確認して送ると、確認を求められる
             expectConfirmationRequired(mockMvc.perform(startCheckoutRequest(cartId, pendingIds.subList(0, 2))));
@@ -202,10 +202,10 @@ class CheckoutPendingOrderLimitApiTest {
         void startsBelowLimit() throws Exception {
             // 準備：2 件の支払待ちの注文
             var pendingIds = placePendingOrdersOfNewVariants(2);
-            orders.add(cartId, support.stockedVariant(3), 1);
+            orders.add(cartId, fixture.stockedVariant(3), 1);
 
             // 操作と確認：確認して始められ、2 件を確認したと保存する
-            assertThat(support.acknowledgedOrderIds(orders.startCheckout(cartId, pendingIds)))
+            assertThat(fixture.acknowledgedOrderIds(orders.startCheckout(cartId, pendingIds)))
                     .containsExactlyInAnyOrderElementsOf(pendingIds);
         }
 
@@ -214,12 +214,12 @@ class CheckoutPendingOrderLimitApiTest {
         void startsAfterExpiry() throws Exception {
             // 準備：上限で拒否された後に、1 件を期限切れでキャンセルする
             var pendingIds = placePendingOrdersOfNewVariants(3);
-            orders.add(cartId, support.stockedVariant(3), 1);
+            orders.add(cartId, fixture.stockedVariant(3), 1);
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
             OrderPayments.expire(applicationContext, pendingIds.removeFirst());
 
             // 操作と確認：残りの 2 件を確認して始められる
-            assertThat(support.acknowledgedOrderIds(orders.startCheckout(cartId, pendingIds)))
+            assertThat(fixture.acknowledgedOrderIds(orders.startCheckout(cartId, pendingIds)))
                     .containsExactlyInAnyOrderElementsOf(pendingIds);
         }
 
@@ -228,12 +228,12 @@ class CheckoutPendingOrderLimitApiTest {
         void startsAfterAcceptance() throws Exception {
             // 準備：上限で拒否された後に、1 件を受付にする
             var pendingIds = placePendingOrdersOfNewVariants(3);
-            orders.add(cartId, support.stockedVariant(3), 1);
+            orders.add(cartId, fixture.stockedVariant(3), 1);
             expectLimitExceeded(mockMvc.perform(startCheckoutRequest(cartId, pendingIds)));
             OrderPayments.accept(applicationContext, pendingIds.removeFirst());
 
             // 操作と確認：残りの 2 件を確認して始められる
-            assertThat(support.acknowledgedOrderIds(orders.startCheckout(cartId, pendingIds)))
+            assertThat(fixture.acknowledgedOrderIds(orders.startCheckout(cartId, pendingIds)))
                     .containsExactlyInAnyOrderElementsOf(pendingIds);
         }
     }
@@ -263,7 +263,7 @@ class CheckoutPendingOrderLimitApiTest {
     private List<UUID> placePendingOrdersOfNewVariants(int count) throws Exception {
         var variants = new ArrayList<UUID>();
         for (int i = 0; i < count; i++) {
-            variants.add(support.stockedVariant(3));
+            variants.add(fixture.stockedVariant(3));
         }
         return orders.placePendingOrders(cartId, variants);
     }

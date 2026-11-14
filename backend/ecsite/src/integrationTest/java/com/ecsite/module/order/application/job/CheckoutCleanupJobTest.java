@@ -1,9 +1,9 @@
 package com.ecsite.module.order.application.job;
 
-import com.ecsite.CapturedLogs;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
@@ -18,10 +18,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -54,7 +53,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @Transactional
-@ExtendWith(OutputCaptureExtension.class)
 class CheckoutCleanupJobTest {
 
     // ============================== 定数 ==============================
@@ -94,6 +92,8 @@ class CheckoutCleanupJobTest {
      */
     private static final int DELETED_COUNT = 5;
 
+    // ============================== Bean ==============================
+
     @Autowired
     CheckoutCleanupJob job;
 
@@ -131,11 +131,15 @@ class CheckoutCleanupJobTest {
      */
     private UUID variantId;
 
+    /**
+     * ジョブが出したログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(CheckoutCleanupJob.class);
+
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
@@ -303,21 +307,21 @@ class CheckoutCleanupJobTest {
 
         @Test
         @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
-        void logsDeletedCount(CapturedOutput output) {
+        void logsDeletedCount() {
             // 準備：消す条件に当たる 5 件の注文手続きと、上限 2 件のジョブ
             var checkouts = IntStream.range(0, DELETED_COUNT).mapToObj(i -> insertCheckout(LONG_AGO)).toList();
             var smallBatch = new CheckoutCleanupJob(service, SMALL_BATCH, clock);
             clock.setInstant(LONG_AGO.plus(TTL).plus(Duration.ofDays(1)).plusSeconds(1));
-            var logStart = CapturedLogs.mark(output);
 
             // 操作：片付ける
+            logs.clear();
             smallBatch.cleanUp();
 
             // 確認（前提）：5 件の全てが消えている
             assertThat(remaining(checkouts)).isEmpty();
 
-            // 確認：合計の 5 件をログに出す
-            assertThat(CapturedLogs.since(output, logStart)).contains("期限切れの注文手続きを消した：" + DELETED_COUNT + " 件");
+            // 確認：合計の 5 件を INFO のログに出す
+            assertThat(logs.messages(Level.INFO)).contains("期限切れの注文手続きを消した：" + DELETED_COUNT + " 件");
         }
     }
 

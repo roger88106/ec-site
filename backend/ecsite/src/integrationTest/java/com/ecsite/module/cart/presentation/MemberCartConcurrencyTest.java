@@ -44,7 +44,7 @@ class MemberCartConcurrencyTest {
      */
     private static final int THREADS = 8;
 
-    // ============================== 部品 ==============================
+    // ============================== Bean ==============================
 
     /**
      * API を呼ぶ MockMvc

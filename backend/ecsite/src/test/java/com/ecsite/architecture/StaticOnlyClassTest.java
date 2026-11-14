@@ -21,37 +21,46 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class StaticOnlyClassTest {
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは、コンストラクタがすべて private")
     void staticOnlyClassesHavePrivateConstructors() {
+        // 準備：対象のクラスが 1 件以上ある
         ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
 
+        // 操作と確認：本番のクラスに、private でないコンストラクタを持つものがない
         assertThat(violations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは final")
     void staticOnlyClassesAreFinal() {
+        // 準備：対象のクラスが 1 件以上ある
         ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
 
+        // 操作と確認：本番のクラスに、final でないものがない
         assertThat(nonFinal(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
-    @DisplayName("final の規則は、final でない static のメンバーだけのクラスに当たり、ほかには当たらない")
+    @DisplayName("final の規則は、final でない static のメンバーだけのクラスだけに当たる")
     void finalRuleMatchesOnlyNonFinalStaticOnlyClasses() {
+        // 準備：final でない例と、規則に合う例・対象でない例
         var examples = new ClassFileImporter().importClasses(
                 StaticOnlyNotFinal.class,
                 StaticOnlyWithPrivateConstructor.class,
                 WithInstanceMethod.class,
                 ExampleException.class);
 
+        // 操作と確認：final でない例だけが違反になる
         assertThat(nonFinal(examples)).containsExactly(StaticOnlyNotFinal.class.getName());
     }
 
     @Test
-    @DisplayName("規則は、private でないコンストラクタを持つ static のメンバーだけのクラスに当たり、ほかには当たらない")
+    @DisplayName("コンストラクタの規則は、private でないコンストラクタを持つ static のメンバーだけのクラスだけに当たる")
     void ruleMatchesOnlyStaticOnlyClassesWithOpenConstructors() {
+        // 準備：public のコンストラクタを持つ例と、規則に合う例・対象でない例（インスタンスのメンバー、継承、enum、record）
         var examples = new ClassFileImporter().importClasses(
                 StaticOnlyWithPublicConstructor.class,
                 StaticOnlyWithPrivateConstructor.class,
@@ -61,8 +70,11 @@ class StaticOnlyClassTest {
                 ExampleKind.class,
                 ExampleRecord.class);
 
+        // 操作と確認：public のコンストラクタを持つ例だけが違反になる
         assertThat(violations(examples)).containsExactly(StaticOnlyWithPublicConstructor.class.getName());
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * 規則に合わないクラスの名前を返す。

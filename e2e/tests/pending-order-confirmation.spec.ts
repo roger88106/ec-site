@@ -5,6 +5,7 @@ import { detailValue } from '../src/detail'
 import {
   addToCart,
   checkoutButton,
+  checkoutHeading,
   fillShipping,
   leaveMockPage,
   mockPaymentHeading,
@@ -64,7 +65,7 @@ test('AC-406-4、AC-406-5、AC-406-7、AC-406-8、AC-406-9 支払待ちの注文
     await proceed.click()
     await expect(pendingOrdersHeading(page)).toBeVisible()
     await page.getByRole('button', { name: PENDING_ORDERS_TEXT.newOrder, exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
+    await expect(checkoutHeading(page)).toBeVisible()
     await fillShipping(page, '100-0001')
     await submitOrder(page)
   })

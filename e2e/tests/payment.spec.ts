@@ -10,6 +10,7 @@ import {
   mockPaymentHeading,
   orderCart,
   orderIdOf,
+  payButton,
   payOnMockPage,
   proceedToCheckout,
   submitOrder,
@@ -78,7 +79,7 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
   })
 
   await test.step('注文の画面から支払画面を開き直して支払うと、受付になる', async () => {
-    await page.getByRole('button', { name: '支払う', exact: true }).click()
+    await payButton(page).click()
     await expect(mockPaymentHeading(page)).toBeVisible()
     await payOnMockPage(page)
   })
@@ -94,7 +95,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
     const url = await leaveMockPage(page, 'やめる')
     await page.goto(url)
     await expect(page.getByText('支払待ち', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: '支払う', exact: true })).toBeVisible()
+    await expect(payButton(page)).toBeVisible()
     return url
   })
 
@@ -106,7 +107,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
       PAYMENT_EXPIRY_TIMEOUT,
     )
     await expect(detailValue(page, '状態')).toHaveText('キャンセル')
-    await expect(page.getByRole('button', { name: '支払う', exact: true })).toHaveCount(0)
+    await expect(payButton(page)).toHaveCount(0)
   })
 })
 

@@ -4,7 +4,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { startTransition, useActionState, useId } from 'react'
+import { useActionState, useId } from 'react'
 import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
 import { ActionError } from '@/components/ActionError'
@@ -12,6 +12,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { isPurchasable } from '@/features/catalog/variantSelection'
 import type { ActionResult } from '@/lib/actionResult'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
+import { useKeepInputsSubmit } from '@/lib/useKeepInputsSubmit'
 
 /**
  * カートに入れるフォーム
@@ -52,18 +53,10 @@ export function AddToCartFormView({
   const t = useTranslations('catalog.addToCart')
   const selectable = variant !== null && isPurchasable(variant)
   const quantityId = useId()
+  const submit = useKeepInputsSubmit(formAction)
 
   return (
-    <form
-      action={formAction}
-      className="space-y-3"
-      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを初期値に戻し、数量が 1 になる）
-      onSubmit={(event) => {
-        event.preventDefault()
-        const formData = new FormData(event.currentTarget)
-        startTransition(() => formAction(formData))
-      }}
-    >
+    <form {...submit} className="space-y-3">
       <input name="variantId" type="hidden" value={variant?.id ?? ''} />
       <div className="flex items-center gap-3">
         <Label htmlFor={quantityId}>{t('quantity') /* 数量 */}</Label>

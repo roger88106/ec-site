@@ -43,7 +43,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
       queryClient.removeQueries({ queryKey: ['get', '/products/{productId}'] })
     },
   })
-  const { pending, error } = useMutationGroup(publish, unpublish, discontinue, remove)
+  const { pending, error } = useMutationGroup([publish, unpublish, discontinue, remove])
 
   return (
     <Card>
@@ -115,7 +115,9 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
           <p className="text-muted-foreground text-sm">{t('discontinuedNote') /* 公開に戻せない */}</p>
         )}
         {product.actions.deleteBlockedReason && (
-          <p className="text-muted-foreground text-sm">{t(`deleteBlocked.${product.actions.deleteBlockedReason}`)}</p>
+          <p className="text-muted-foreground text-sm">
+            {t(`deleteBlocked.${product.actions.deleteBlockedReason}`) /* 削除できない理由 */}
+          </p>
         )}
         <ErrorMessage error={error} />
       </CardContent>

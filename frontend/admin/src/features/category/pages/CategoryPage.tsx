@@ -30,18 +30,12 @@ export function CategoryPage() {
     success: t('deleted'), // 削除の知らせ
     invalidate: ['/categories'],
   })
-  const { pending, error, resetErrors } = useMutationGroup(reorder, remove)
+  const { pending, error, run } = useMutationGroup([reorder, remove])
 
   const actions: CategoryActions = {
     pending,
-    reorder: (parentId, categoryIds) => {
-      resetErrors()
-      reorder.mutate({ body: { parentId, categoryIds } })
-    },
-    remove: (category) => {
-      resetErrors()
-      remove.mutate({ params: { path: { categoryId: category.id } } })
-    },
+    reorder: (parentId, categoryIds) => run(() => reorder.mutate({ body: { parentId, categoryIds } })),
+    remove: (category) => run(() => remove.mutate({ params: { path: { categoryId: category.id } } })),
     rename: (category) => setDialog({ kind: 'rename', category }),
     createChild: (parent) => setDialog({ kind: 'create', parent }),
   }

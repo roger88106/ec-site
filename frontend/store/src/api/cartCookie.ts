@@ -68,7 +68,11 @@ export async function writeCartMergeNotice(notice: CartMergeNotice): Promise<voi
   ;(await cookies()).set(cartMergeNoticeCookie(), serializeCartMergeNotice(notice), options)
 }
 
-/** カートを移した結果の知らせを消す（表示した後）。サーバーアクションからだけ呼べる */
+/**
+ * カートを移した結果の知らせを消す（表示した後）。
+ *
+ * サーバーアクションからだけ呼べる。
+ */
 export async function deleteCartMergeNotice(): Promise<void> {
   ;(await cookies()).delete(cartMergeNoticeCookie())
 }

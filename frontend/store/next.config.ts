@@ -6,7 +6,8 @@ import { fixedSecurityHeaders } from './src/lib/server/securityHeaders'
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 /**
- * Next.js の設定。<br />
+ * Next.js の設定
+ *
  * API の結果のキャッシュは、fetch の revalidate で扱う（店舗画面の構成の「API の呼び出し」）。
  * Cache Components（'use cache'）は使わない。
  */

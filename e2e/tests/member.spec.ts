@@ -18,7 +18,15 @@ import {
 } from '../src/auth'
 import { createSimpleProduct } from '../src/data'
 import { detailValue } from '../src/detail'
-import { addToCart, checkoutButton, fillShipping, payOnMockPage, proceedToCheckout, submitOrder } from '../src/store'
+import {
+  addToCart,
+  checkoutButton,
+  fillShipping,
+  header,
+  payOnMockPage,
+  proceedToCheckout,
+  submitOrder,
+} from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開いてパスワードを設定すると、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
@@ -57,7 +65,7 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
     await payOnMockPage(page)
     const orderNumber = (await detailValue(page, '注文番号').textContent()) ?? ''
 
-    await page.getByRole('banner').getByRole('link', { name: 'ご注文履歴' }).click()
+    await header(page).getByRole('link', { name: 'ご注文履歴' }).click()
     await expect(page.getByRole('link', { name: orderNumber })).toBeVisible()
   })
 

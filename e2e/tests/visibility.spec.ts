@@ -75,12 +75,12 @@ test('AC-54 価格の安い順は、税込の価格で並べる', async ({ page 
   })
 
   await reopenUntil(page, `${STORE_URL}/products?categoryId=${categoryId}&sort=price_asc`, async () => {
-    await expect(page.getByRole('link').filter({ hasText: RUN_ID })).toHaveText([new RegExp(b), new RegExp(a)], {
+    await expect(productCard(page, RUN_ID)).toHaveText([new RegExp(b), new RegExp(a)], {
       timeout: CHECK_TIMEOUT,
     })
   })
   await reopenUntil(page, `${STORE_URL}/products?categoryId=${categoryId}&sort=price_desc`, async () => {
-    await expect(page.getByRole('link').filter({ hasText: RUN_ID })).toHaveText([new RegExp(a), new RegExp(b)], {
+    await expect(productCard(page, RUN_ID)).toHaveText([new RegExp(a), new RegExp(b)], {
       timeout: CHECK_TIMEOUT,
     })
   })

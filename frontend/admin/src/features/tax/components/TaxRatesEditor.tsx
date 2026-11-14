@@ -1,6 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { Controller, useFieldArray } from 'react-hook-form'
+import { Controller, useFieldArray, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { schemas } from '@/api/generated/constraints'
 import type { TaxCategory } from '@/api/types'
@@ -74,7 +74,7 @@ export function TaxRatesEditor({
     invalidate: ['/tax-categories'],
     onSuccess: markSaved,
   })
-  const rows = form.watch('rates')
+  const rows = useWatch({ control: form.control, name: 'rates' })
   const incomplete = rows.length === 0 || rows.some((row) => row.ratePercent.trim() === '')
 
   const save = form.handleSubmit((values) =>

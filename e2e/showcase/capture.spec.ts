@@ -8,7 +8,7 @@ import {
   SHOWCASE_BACKEND_URL as BACKEND,
   SHOWCASE_STORE_URL as STORE,
 } from '../src/showcase-urls'
-import { addToCart, emptyCart, leaveMockPage, orderCart, orderIdOf, payOnMockPage } from '../src/store'
+import { addToCart, emptyCart, leaveMockPage, orderCart, orderIdOf, payButton, payOnMockPage } from '../src/store'
 import { stockPath } from '../src/urls'
 
 /** 撮った画像の置き場所 */
@@ -44,7 +44,7 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await orderCart(page, { storeUrl: STORE, name: RECIPIENT })
     const orderUrl = await leaveMockPage(page, 'やめる')
     await page.goto(orderUrl)
-    await shot(page, 'store-payment', page.getByRole('button', { name: '支払う', exact: true }))
+    await shot(page, 'store-payment', payButton(page))
   })
 
   await test.step('管理画面：商品、在庫、税率、注文', async () => {

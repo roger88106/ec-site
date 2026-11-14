@@ -1,11 +1,11 @@
-import { axisValuesLabel, formatDateTime, formatYen } from '@ec-site/shared/lib/format'
+import { formatDateTime, formatYen } from '@ec-site/shared/lib/format'
 import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
 import { buttonVariants } from '@ec-site/shared/ui/button'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import type { Order } from '@/api/types'
+import { OrderLineList } from '@/components/OrderLineList'
 import { PayForm } from '@/components/PayForm'
-import { PriceText } from '@/components/PriceText'
 import { NewOrderForm } from '@/features/checkout/components/NewOrderForm'
 
 /**
@@ -29,7 +29,6 @@ export function PendingOrdersConfirmation({
 }) {
   const t = useTranslations('checkout.pendingOrders')
   const tCommon = useTranslations('common')
-  const tLabels = useTranslations('labels')
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -58,25 +57,12 @@ export function PendingOrdersConfirmation({
                 </>
               )}
             </dl>
-            <ul className="divide-y rounded-md border">
-              {order.lines.map((line) => (
-                <li className="flex justify-between gap-4 p-3 text-sm" key={line.variantCode}>
-                  <div className="space-y-1">
-                    <p className="font-medium">{line.productName}</p>
-                    {line.axisValues.length > 0 && (
-                      <p className="text-muted-foreground">
-                        {axisValuesLabel(line.axisValues, tLabels('axisSeparator') /* 軸の区切り */)}
-                      </p>
-                    )}
-                    <PriceText price={line.unitPrice} />
-                  </div>
-                  <div className="text-right">
-                    <p>{t('quantity', { quantity: line.quantity }) /* 数量 */}</p>
-                    <p className="font-semibold tabular-nums">{formatYen(line.subtotal)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <OrderLineList
+              className="rounded-md"
+              itemClassName="p-3"
+              lines={order.lines}
+              quantityLabel={(quantity) => t('quantity', { quantity }) /* 数量 */}
+            />
             <p className="text-right font-semibold tabular-nums">
               {t('total', { total: formatYen(order.amounts.total) }) /* 総額 */}
             </p>

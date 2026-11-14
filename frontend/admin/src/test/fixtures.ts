@@ -15,11 +15,8 @@ import type {
 /** 在庫数の応答（バリアントの在庫数） */
 type Stock = components['schemas']['Stock']
 
-/**
- * 結合テストで API の応答に使うデータ（フロントのテストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。
- *
- * どれも、テストに関係のない項目にありふれた値を入れたもの。テストで確認する項目は overrides で与える。
- */
+// 結合テストで API の応答に使うデータ（フロントのテストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。
+// どれも、テストに関係のない項目にありふれた値を入れたもの。テストで確認する項目は overrides で与える。
 
 /** テストのデータの税区分の ID */
 export const TAX_CATEGORY_ID = '00000000-0000-0000-0000-000000000001'
@@ -208,7 +205,7 @@ export function productSummary(overrides: Partial<ProductSummary> = {}): Product
 }
 
 /**
- * カテゴリの節。
+ * カテゴリの節を作る。
  *
  * ID は `00000000-0000-0000-0000-000000000<id>`。
  *
@@ -238,7 +235,7 @@ export function categoryNode(
 }
 
 /**
- * バリアントの在庫数の応答。
+ * バリアントの在庫数の応答を作る。
  *
  * @param quantity  在庫数
  * @param variantId バリアントの ID。省略すると {@link variant} の ID

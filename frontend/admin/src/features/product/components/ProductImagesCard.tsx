@@ -53,33 +53,33 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
     success: t('deleted'), // 削除の知らせ
     invalidate: ['/products'],
   })
-  const group = useMutationGroup(upload, reorder, remove)
+  const group = useMutationGroup([upload, reorder, remove])
   const { pending, error } = group
   // 画面で確認した誤りと、管理 API の外での失敗は、メッセージをそのまま出す
   const localError = fileError ?? (error instanceof ImageUploadError ? error.message : null)
-  /** 前の操作の誤りを消す（次の操作を始めるとき）。 */
-  const resetErrors = () => {
+  /** 前の操作の誤りを消してから、次の操作を実行する。 */
+  const run = (action: () => void) => {
     setFileError(null)
-    group.resetErrors()
+    group.run(action)
   }
 
   /** 選んだファイルを、形式・大きさ・枚数を確認してから登録する（誤りがあれば 1 枚も送らない）。 */
-  const selectFiles = (files: File[]) => {
-    resetErrors()
-    const invalid = files.map(imageFileError).find((error) => error !== null)
-    if (invalid) {
-      setFileError(invalid)
-    } else if (images.length + files.length > MAX_IMAGES) {
-      setFileError(t('tooMany', { max: MAX_IMAGES })) // 枚数の上限
-    } else if (files.length > 0) {
-      upload.mutate(files)
-    }
-  }
+  const selectFiles = (files: File[]) =>
+    run(() => {
+      const invalid = files.map(imageFileError).find((error) => error !== null)
+      if (invalid) {
+        setFileError(invalid)
+      } else if (images.length + files.length > MAX_IMAGES) {
+        setFileError(t('tooMany', { max: MAX_IMAGES })) // 枚数の上限
+      } else if (files.length > 0) {
+        upload.mutate(files)
+      }
+    })
   /** 表示している商品のバージョンで、画像の並びを送る。 */
-  const reorderTo = (imageIds: string[]) => {
-    resetErrors()
-    reorder.mutate({ params: { path: { productId: product.id } }, body: { imageIds, version: product.version } })
-  }
+  const reorderTo = (imageIds: string[]) =>
+    run(() =>
+      reorder.mutate({ params: { path: { productId: product.id } }, body: { imageIds, version: product.version } }),
+    )
 
   return (
     <Card>
@@ -133,15 +133,16 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
                     <ConfirmDialog
                       confirmLabel={tApp('deleteConfirm') /* 削除する */}
                       description={t('deleteDescription') /* 削除の影響 */}
-                      onConfirm={() => {
-                        resetErrors()
-                        remove.mutate({
-                          params: {
-                            path: { productId: product.id, imageId: image.id },
-                            query: { version: product.version },
-                          },
-                        })
-                      }}
+                      onConfirm={() =>
+                        run(() =>
+                          remove.mutate({
+                            params: {
+                              path: { productId: product.id, imageId: image.id },
+                              query: { version: product.version },
+                            },
+                          }),
+                        )
+                      }
                       title={t('deleteTitle', { number: index + 1 }) /* 削除の確認 */}
                       trigger={
                         <Button

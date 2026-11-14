@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { DateTime } from '@/components/DateTime'
+import { EmptyRow } from '@/components/EmptyRow'
 import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,13 +62,7 @@ export function StockHistory({ variantId }: { variantId: string }) {
                       <TableCell>{item.operatorName}</TableCell>
                     </TableRow>
                   ))}
-                  {result.items.length === 0 && (
-                    <TableRow>
-                      <TableCell className="text-muted-foreground text-center" colSpan={6}>
-                        {t('empty') /* まだない */}
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  {result.items.length === 0 && <EmptyRow colSpan={6}>{t('empty') /* まだない */}</EmptyRow>}
                 </TableBody>
               </Table>
               <Pagination

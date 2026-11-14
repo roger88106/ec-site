@@ -2,11 +2,12 @@ import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { formatYen } from '@ec-site/shared/lib/format'
 import { shipmentStatusLabel } from '@ec-site/shared/lib/orderLabels'
 import { keepPreviousData } from '@tanstack/react-query'
-import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
 import { DateTime } from '@/components/DateTime'
+import { EmptyRow } from '@/components/EmptyRow'
+import { LinkRow, RowLink } from '@/components/LinkRow'
 import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -14,7 +15,8 @@ import { AuthorizationExpiringBadge } from '@/features/order/components/Authoriz
 import { OrderFilterForm } from '@/features/order/components/OrderFilterForm'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
-import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
+import { parseFilter, toSearchParams } from '@/features/order/orderFilter'
+import { useUrlState } from '@/hooks/useUrlState'
 
 /**
  * 注文一覧
@@ -25,9 +27,7 @@ import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/
 export function OrderListPage() {
   const t = useTranslations('order.list')
   const tCommon = useTranslations('common')
-  const [searchParams, setSearchParams] = useSearchParams()
-  const filter = parseFilter(searchParams)
-  const navigate = useNavigate()
+  const { value: filter, apply, key } = useUrlState(parseFilter, toSearchParams)
   const query = $api.useQuery(
     'get',
     '/orders',
@@ -47,15 +47,13 @@ export function OrderListPage() {
     // ページを移る間、前のページを表示したままにする
     { placeholderData: keepPreviousData },
   )
-  /** 絞り込みを URL に反映する（URL が絞り込みの正本）。 */
-  const apply = (next: OrderFilter) => setSearchParams(toSearchParams(next))
 
   return (
     <>
       <PageHeader title={t('title') /* 注文 */} />
       <div className="space-y-4">
         {/* 絞り込みを変えたら（URL が変わったら）入力欄を再作成する */}
-        <OrderFilterForm filter={filter} key={searchParams.toString()} onApply={apply} />
+        <OrderFilterForm filter={filter} key={key} onApply={apply} />
         <QueryState query={query}>
           {(result) => (
             <>
@@ -73,12 +71,9 @@ export function OrderListPage() {
                 </TableHeader>
                 <TableBody>
                   {result.items.map((item) => (
-                    <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(paths.order(item.id))}>
+                    <LinkRow key={item.id} to={paths.order(item.id)}>
                       <TableCell className="font-mono">
-                        {/* 行のクリックでも同じ画面へ移るので、リンクのクリックを行に伝えない（二重に移らない） */}
-                        <Link onClick={(event) => event.stopPropagation()} to={paths.order(item.id)}>
-                          {item.orderNumber}
-                        </Link>
+                        <RowLink to={paths.order(item.id)}>{item.orderNumber}</RowLink>
                       </TableCell>
                       <TableCell>
                         <DateTime value={item.orderedAt} />
@@ -99,15 +94,9 @@ export function OrderListPage() {
                         {/* 出荷の前は、配送状態を持たない */}
                         {item.shipmentStatus && shipmentStatusLabel(item.shipmentStatus)}
                       </TableCell>
-                    </TableRow>
+                    </LinkRow>
                   ))}
-                  {result.items.length === 0 && (
-                    <TableRow>
-                      <TableCell className="text-muted-foreground text-center" colSpan={7}>
-                        {t('empty') /* 該当なし */}
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  {result.items.length === 0 && <EmptyRow colSpan={7}>{t('empty') /* 該当なし */}</EmptyRow>}
                 </TableBody>
               </Table>
               <Pagination

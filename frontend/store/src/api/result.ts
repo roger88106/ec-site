@@ -4,7 +4,11 @@ import type { Problem } from '@/api/types'
 import { redirectToLogin } from '@/auth'
 import { translate } from '@/i18n/translate'
 
-/** API がエラーを返した（404 以外）。message はエラーレスポンスのもの（画面にそのまま出せる） */
+/**
+ * API のエラー（404 以外）
+ *
+ * message はエラーレスポンスのもの（画面にそのまま出せる）。
+ */
 export class ApiError extends Error {
   readonly status: number
 
@@ -18,7 +22,14 @@ export class ApiError extends Error {
 /** openapi-fetch の結果 */
 type FetchResult<T> = { data?: T; error?: unknown; response: Response }
 
-/** 成功なら本文を返す。404 は「見つかりません」の画面にし、それ以外の失敗は {@link ApiError} を投げる */
+/**
+ * 成功なら本文を返す。
+ *
+ * 404 は「見つかりません」の画面にし、それ以外の失敗は {@link ApiError} を投げる。
+ *
+ * @param result 取得の結果
+ * @returns 本文
+ */
 export function unwrap<T>(result: FetchResult<T>): T {
   if (result.response.ok && result.data !== undefined) {
     return result.data

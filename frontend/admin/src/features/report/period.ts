@@ -15,7 +15,7 @@ export const CALENDAR_PRESETS = ['thisMonth', 'lastMonth', 'thisYear', 'lastYear
  *
  * 両端を含む。
  */
-type Period = { from: string; to: string }
+export type Period = { from: string; to: string }
 
 /** 実在する日付（yyyy-MM-dd）かを返す。 */
 export function isDate(value: string): boolean {

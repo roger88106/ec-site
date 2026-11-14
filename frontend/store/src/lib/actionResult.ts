@@ -2,7 +2,7 @@ import { asProblem } from '@/api/problem'
 import type { ErrorCode } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
-/** 通信の失敗（バックエンドが止まっているなど）のときの案内（店舗画面の構成の「結果の知らせ方」） */
+/** 通信の失敗（バックエンドが止まっているなど）のときの案内を返す（店舗画面の構成の「結果の知らせ方」）。 */
 export function connectionFailedMessage(): string {
   return translate('common.connectionFailed') // サーバーに接続できない案内
 }

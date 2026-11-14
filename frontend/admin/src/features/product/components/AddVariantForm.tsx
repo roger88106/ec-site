@@ -1,6 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { Controller } from 'react-hook-form'
+import { Controller, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
@@ -41,8 +41,8 @@ export function AddVariantForm({ product, refetch }: { product: ProductDetail; r
     onSuccess: () => form.reset(emptyValues(product)),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
-  const values = form.watch()
-  const filled = values.variantCode !== '' && values.axisValues.every((axis) => axis.value.trim() !== '')
+  const [variantCode, axisValues] = useWatch({ control: form.control, name: ['variantCode', 'axisValues'] })
+  const filled = variantCode !== '' && axisValues.every((axis) => axis.value.trim() !== '')
 
   return (
     <form

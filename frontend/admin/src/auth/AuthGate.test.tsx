@@ -111,6 +111,7 @@ function Screen() {
   )
 }
 
+/** ログインの門を、StrictMode と文言の提供者で包んで描画する。 */
 function renderGate() {
   return render(
     <StrictMode>

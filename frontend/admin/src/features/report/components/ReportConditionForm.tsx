@@ -11,7 +11,7 @@ import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { granularityLabel, reportBasisLabel } from '@/features/report/labels'
 import { type PeriodPreset, presetPeriod, todayInJapan } from '@/features/report/period'
-import type { ReportCondition } from '@/features/report/reportCondition'
+import { DEFAULT_BASIS, DEFAULT_GRANULARITY, type ReportCondition } from '@/features/report/reportCondition'
 
 /** 商品の選択肢に出す商品の数（商品の一覧の API の 1 ページの上限） */
 const PRODUCT_LIMIT = parameters.listProducts.size.maximum
@@ -105,7 +105,7 @@ export function ReportConditionForm({
               <OptionSelect<Granularity>
                 className="w-28"
                 id="report-granularity"
-                onChange={(value) => field.onChange(value ?? 'MONTH')}
+                onChange={(value) => field.onChange(value ?? DEFAULT_GRANULARITY)}
                 options={granularityOptions}
                 value={field.value}
               />
@@ -122,7 +122,7 @@ export function ReportConditionForm({
             <OptionSelect<ReportBasis>
               className="w-32"
               id="report-basis"
-              onChange={(value) => field.onChange(value ?? 'ORDER')}
+              onChange={(value) => field.onChange(value ?? DEFAULT_BASIS)}
               options={basisOptions}
               value={field.value}
             />

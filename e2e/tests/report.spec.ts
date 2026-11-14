@@ -7,6 +7,7 @@ import { CHECK_TIMEOUT, REPORT_WAIT, reopenUntil } from '../src/waits'
 
 /** 今日の日本時間の年と月 */
 function thisMonthInJapan(): { year: number; month: number } {
+  // sv-SE は yyyy-MM-dd の形で返すので、日本時間の年と月に分けられる
   const [year, month] = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }).split('-').map(Number)
   return { year, month }
 }

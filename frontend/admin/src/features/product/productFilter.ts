@@ -1,6 +1,6 @@
 import { publicationStatusValues } from '@/api/generated/admin'
 import type { PublicationStatus } from '@/api/types'
-import { enumParam, pageParam } from '@/lib/searchParams'
+import { enumParam, pageParam, writeParams } from '@/lib/searchParams'
 
 /**
  * 商品の一覧の絞り込みとページ
@@ -51,21 +51,5 @@ export function parseFilter(params: URLSearchParams): ProductFilter {
  * @returns URL のクエリ
  */
 export function toSearchParams(filter: ProductFilter): URLSearchParams {
-  const params = new URLSearchParams()
-  if (filter.code) {
-    params.set('code', filter.code)
-  }
-  if (filter.name) {
-    params.set('name', filter.name)
-  }
-  if (filter.status) {
-    params.set('status', filter.status)
-  }
-  if (filter.categoryId) {
-    params.set('categoryId', filter.categoryId)
-  }
-  if (filter.page > 1) {
-    params.set('page', String(filter.page))
-  }
-  return params
+  return writeParams(filter, { page: EMPTY_FILTER.page })
 }

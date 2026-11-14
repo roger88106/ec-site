@@ -12,6 +12,7 @@ const ADMIN_API = `${window.location.origin}/api/admin`
  * 管理 API の応答を差し替えるハンドラーを作る（フロントのテストの書き方の「管理画面の結合テストは、本物の描画で、API だけを差し替える」）。
  *
  * パス・パラメーター・リクエストとレスポンスの本文は admin.yaml の型に合わせる。admin.yaml にない応答は型エラーになる。
+ *
  * 例：`http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))`
  */
 export const http = createOpenApiHttp<paths>({ baseUrl: ADMIN_API })
@@ -72,6 +73,7 @@ function concurrentModification(): Problem {
  * 更新の競合（409）の応答を作る。
  *
  * ハンドラーに渡される `response` を渡す。409 が契約にない API では、型エラーになる。
+ *
  * 例：`http.put('/products/{productId}', ({ response }) => conflict(response))`
  *
  * @param response ハンドラーに渡される `response`
@@ -87,6 +89,7 @@ export function conflict<Result>(
  * 条件で応答を変える関数の型
  *
  * 第 2 引数の `response` で、契約に合った応答を作る（`Response` を返さない）。
+ *
  * 例：`reply: Reply<'/tax-categories', 'post', CreateTaxCategoryRequest>`、
  * `(body, response) => response(409).json(problem(...))`
  *
@@ -103,6 +106,7 @@ export type Reply<Path extends keyof paths, Method extends HttpMethod, Arg> = (
  * バリアントの在庫数の取得（GET /inventory/variants/{variantId}）に応答するハンドラーを作る。
  *
  * どのバリアントにも同じ数で応答する。
+ *
  * 例：`server.use(stockHandler(5))`、`server.use(stockHandler(() => state.quantity))`
  *
  * @param quantity 在庫数。関数を渡すと、取得のたびに呼んで今の値を返す

@@ -16,7 +16,7 @@ import { SHOWCASE_BACKEND_URL as BACKEND, SHOWCASE_STORE_URL as STORE } from '..
 import { productCard } from '../src/store'
 import { CHECK_TIMEOUT, reopenUntil, SHOWCASE_CACHE_TIMEOUT } from '../src/waits'
 
-/** 撮った画像の置き場所（docs/01-概要/member.md が載せる） */
+/** 撮った画像の置き場所（概要の会員登録とログインの流れの文書が載せる） */
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/member')
 
 /** 画面を撮って OUT に置く */

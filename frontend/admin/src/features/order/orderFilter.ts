@@ -1,7 +1,7 @@
 import { orderStatusValues } from '@/api/generated/admin'
 import type { OrderStatus } from '@/api/types'
 import { isDateString } from '@/lib/date'
-import { enumParam, pageParam } from '@/lib/searchParams'
+import { enumParam, pageParam, writeParams } from '@/lib/searchParams'
 
 /**
  * 注文一覧の絞り込みとページ
@@ -65,29 +65,7 @@ export function parseFilter(params: URLSearchParams): OrderFilter {
  * @returns URL のクエリ
  */
 export function toSearchParams(filter: OrderFilter): URLSearchParams {
-  const params = new URLSearchParams()
-  if (filter.orderNumber) {
-    params.set('orderNumber', filter.orderNumber)
-  }
-  if (filter.status) {
-    params.set('status', filter.status)
-  }
-  if (filter.orderedFrom) {
-    params.set('orderedFrom', filter.orderedFrom)
-  }
-  if (filter.orderedTo) {
-    params.set('orderedTo', filter.orderedTo)
-  }
-  if (filter.authorizationExpiring) {
-    params.set('authorizationExpiring', 'true')
-  }
-  if (filter.returned) {
-    params.set('returned', 'true')
-  }
-  if (filter.page > 1) {
-    params.set('page', String(filter.page))
-  }
-  return params
+  return writeParams(filter, { page: EMPTY_FILTER.page })
 }
 
 /** 日付の形ならその値、そうでなければ空にする。 */

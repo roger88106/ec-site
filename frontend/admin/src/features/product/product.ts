@@ -57,6 +57,8 @@ export function toProductBody(values: ProductFieldsValues) {
 }
 
 /** 基本情報の入力が送れる状態か（必須の未入力だけを見る）。 */
-export function isProductFieldsFilled(values: ProductFieldsValues): boolean {
+export function isProductFieldsFilled(
+  values: Pick<ProductFieldsValues, 'name' | 'taxCategoryId' | 'priceExclTax'>,
+): boolean {
   return values.name.trim() !== '' && values.taxCategoryId !== null && values.priceExclTax.trim() !== ''
 }

@@ -12,6 +12,33 @@ export function pageParam(params: URLSearchParams): number {
   return toPageNumber(params.get('page'))
 }
 
+/** URL のクエリに書ける値。空の文字列、null、undefined、false は空として書かない */
+type ParamValue = string | number | boolean | null | undefined
+
+/**
+ * 値を URL のクエリにする。
+ *
+ * 空の値と、既定と同じ値は書かない（URL を短く保つ）。true は `true` と書く。
+ *
+ * @param values   書く値（書く順に並べる）
+ * @param defaults 書かない既定の値
+ * @returns URL のクエリ
+ */
+export function writeParams<T extends Record<string, ParamValue>>(
+  values: T,
+  defaults: Partial<T> = {},
+): URLSearchParams {
+  const params = new URLSearchParams()
+  // クエリの並びは、渡したオブジェクトの項目の順になる
+  for (const [name, value] of Object.entries(values)) {
+    if (value === undefined || value === null || value === '' || value === false || value === defaults[name]) {
+      continue
+    }
+    params.set(name, String(value))
+  }
+  return params
+}
+
 /**
  * URL のクエリの値を、列挙の値として読む。
  *

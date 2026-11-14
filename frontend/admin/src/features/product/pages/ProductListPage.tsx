@@ -1,16 +1,19 @@
 import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { keepPreviousData } from '@tanstack/react-query'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
+import { EmptyRow } from '@/components/EmptyRow'
+import { LinkRow, RowLink } from '@/components/LinkRow'
 import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ProductFilterForm } from '@/features/product/components/ProductFilterForm'
 import { PublicationStatusBadge } from '@/features/product/components/PublicationStatusBadge'
-import { type ProductFilter, parseFilter, toSearchParams } from '@/features/product/productFilter'
+import { parseFilter, toSearchParams } from '@/features/product/productFilter'
+import { useUrlState } from '@/hooks/useUrlState'
 
 /**
  * 商品の一覧
@@ -20,9 +23,7 @@ import { type ProductFilter, parseFilter, toSearchParams } from '@/features/prod
  */
 export function ProductListPage() {
   const t = useTranslations('product.list')
-  const [searchParams, setSearchParams] = useSearchParams()
-  const filter = parseFilter(searchParams)
-  const navigate = useNavigate()
+  const { value: filter, apply, key } = useUrlState(parseFilter, toSearchParams)
   const query = $api.useQuery(
     'get',
     '/products',
@@ -49,14 +50,6 @@ export function ProductListPage() {
   )
   /** 商品 ID → 在庫数の合計（在庫の API の結果を、一覧の行に合わせる） */
   const totals = new Map(stocks.data?.items.map((item) => [item.productId, item.totalQuantity]))
-  /**
-   * 絞り込みを URL に反映する。
-   *
-   * URL が絞り込みの正本なので、再読み込み・共有しても同じ一覧になる。
-   *
-   * @param next 新しい絞り込み
-   */
-  const apply = (next: ProductFilter) => setSearchParams(toSearchParams(next))
 
   return (
     <>
@@ -65,7 +58,7 @@ export function ProductListPage() {
       </PageHeader>
       <div className="space-y-4">
         {/* 絞り込みを変えたら（URL が変わったら）入力欄を再作成する */}
-        <ProductFilterForm filter={filter} key={searchParams.toString()} onApply={apply} />
+        <ProductFilterForm filter={filter} key={key} onApply={apply} />
         <QueryState query={query}>
           {(result) => (
             <>
@@ -81,12 +74,9 @@ export function ProductListPage() {
                 </TableHeader>
                 <TableBody>
                   {result.items.map((item) => (
-                    <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(paths.product(item.id))}>
+                    <LinkRow key={item.id} to={paths.product(item.id)}>
                       <TableCell className="font-mono">
-                        {/* 行のクリックでも同じ画面へ移るので、リンクのクリックを行に伝えない（二重に移らない） */}
-                        <Link onClick={(event) => event.stopPropagation()} to={paths.product(item.id)}>
-                          {item.productCode}
-                        </Link>
+                        <RowLink to={paths.product(item.id)}>{item.productCode}</RowLink>
                       </TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell>
@@ -97,15 +87,9 @@ export function ProductListPage() {
                         {/* 集計の取得に失敗しても、一覧は出す */}
                         {totals.get(item.id) ?? (stocks.isError ? t('stockUnavailable') /* 取得できない */ : '…')}
                       </TableCell>
-                    </TableRow>
+                    </LinkRow>
                   ))}
-                  {result.items.length === 0 && (
-                    <TableRow>
-                      <TableCell className="text-muted-foreground text-center" colSpan={5}>
-                        {t('empty') /* 該当なし */}
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  {result.items.length === 0 && <EmptyRow colSpan={5}>{t('empty') /* 該当なし */}</EmptyRow>}
                 </TableBody>
               </Table>
               <Pagination

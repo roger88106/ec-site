@@ -27,7 +27,9 @@ export function exportConstraints(doc) {
   const schemas = {}
   for (const [name, schema] of Object.entries(doc.components?.schemas ?? {})) {
     const constraints = schemaConstraints(doc, schema)
-    if (constraints) schemas[name] = constraints
+    if (constraints) {
+      schemas[name] = constraints
+    }
   }
   const parameters = {}
   for (const operations of Object.values(doc.paths ?? {})) {
@@ -36,38 +38,56 @@ export function exportConstraints(doc) {
       for (const parameter of operation.parameters ?? []) {
         const resolved = resolve(doc, parameter)
         const constraints = schemaConstraints(doc, resolved.schema ?? {})
-        if (constraints) found[resolved.name] = constraints
+        if (constraints) {
+          found[resolved.name] = constraints
+        }
       }
-      if (Object.keys(found).length > 0) parameters[operation.operationId] = found
+      if (Object.keys(found).length > 0) {
+        parameters[operation.operationId] = found
+      }
     }
   }
   return { schemas, parameters }
 }
 
 /**
- * スキーマの制約。値のスキーマはキーワードを、オブジェクトは項目ごとの制約を、配列は要素の制約（items）を返す。
- * 項目の参照の先がオブジェクトなら写さない（そのスキーマの名前で引く）。制約がなければ undefined。
+ * スキーマの制約を取り出す。
+ *
+ * 値のスキーマはキーワードを、オブジェクトは項目ごとの制約を、配列は要素の制約（items）を返す。
+ * 項目の参照の先がオブジェクトなら写さない（そのスキーマの名前で引く）。
+ *
+ * @param {object} doc    OpenAPI の文書
+ * @param {object} schema スキーマ
+ * @returns {object | undefined} 制約。制約がなければ undefined
  */
 function schemaConstraints(doc, schema) {
   if (isObjectSchema(schema)) {
     const properties = {}
     for (const [name, property] of Object.entries(schema.properties ?? {})) {
       const target = resolve(doc, property)
-      if (property.$ref && isObjectSchema(target)) continue
+      if (property.$ref && isObjectSchema(target)) {
+        continue
+      }
       const constraints = schemaConstraints(doc, target)
-      if (constraints) properties[name] = constraints
+      if (constraints) {
+        properties[name] = constraints
+      }
     }
     return nonEmpty(properties)
   }
   const constraints = {}
   for (const keyword of KEYWORDS) {
-    if (schema[keyword] !== undefined) constraints[keyword] = schema[keyword]
+    if (schema[keyword] !== undefined) {
+      constraints[keyword] = schema[keyword]
+    }
   }
   if (schema.type === 'array' && schema.items) {
     const items = resolve(doc, schema.items)
     if (!(schema.items.$ref && isObjectSchema(items))) {
       const itemConstraints = schemaConstraints(doc, items)
-      if (itemConstraints) constraints.items = itemConstraints
+      if (itemConstraints) {
+        constraints.items = itemConstraints
+      }
     }
   }
   return nonEmpty(constraints)
@@ -80,12 +100,16 @@ function isObjectSchema(schema) {
 
 /** 参照（#/components/...）なら、その先を返す */
 function resolve(doc, node) {
-  if (!node.$ref) return node
+  if (!node.$ref) {
+    return node
+  }
   const target = node.$ref
     .replace(/^#\//, '')
     .split('/')
     .reduce((current, key) => current?.[key], doc)
-  if (!target) throw new Error(`参照の先がない：${node.$ref}`)
+  if (!target) {
+    throw new Error(`参照の先がない：${node.$ref}`)
+  }
   return resolve(doc, target)
 }
 

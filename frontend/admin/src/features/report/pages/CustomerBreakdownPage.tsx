@@ -13,7 +13,7 @@ import { ReportPage } from '@/features/report/components/ReportPage'
 import { ageGroupLabel, prefectureLabel, reportGenderLabel } from '@/features/report/labels'
 import { CALENDAR_PRESETS } from '@/features/report/period'
 import { formatYenCompact } from '@/features/report/report'
-import type { ReportCondition } from '@/features/report/reportCondition'
+import { type ReportCondition, toReportQuery } from '@/features/report/reportCondition'
 
 /**
  * 地域・年齢層・性別
@@ -28,7 +28,7 @@ export function CustomerBreakdownPage() {
   )
 }
 
-/** 条件で取得して、3 つの分け方のグラフと表を出す */
+/** 条件で取得した、3 つの分け方のグラフと表 */
 function CustomerBreakdown({ condition }: { condition: ReportCondition }) {
   const query = $api.useQuery(
     'get',
@@ -36,11 +36,8 @@ function CustomerBreakdown({ condition }: { condition: ReportCondition }) {
     {
       params: {
         query: {
-          from: condition.from,
-          to: condition.to,
-          basis: condition.basis,
+          ...toReportQuery(condition),
           productId: condition.productId,
-          excludeTax: condition.excludeTax,
           excludeShipping: condition.excludeShipping,
         },
       },

@@ -1,18 +1,17 @@
 package com.ecsite.config.event;
 
 import com.ecsite.AsyncEvents;
-import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
+import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -35,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 処理を終えた時刻はアプリの時計で決まるので、時計を決めてから発行する。
  */
 @IntegrationTest
-@ExtendWith(OutputCaptureExtension.class)
 class EventCleanupJobTest {
 
     /**
@@ -44,6 +42,12 @@ class EventCleanupJobTest {
      * <p>日本時間の 2026-10-08 00:00。イベントを発行する時刻になる。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    /**
+     * 片付けのジョブが出したログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(EventCleanupJob.class);
 
     @Autowired
     EventCleanupJob job;
@@ -79,7 +83,7 @@ class EventCleanupJobTest {
 
     @Test
     @DisplayName("AC-284 処理を終えてから保存期間（7 日）より前のイベントは消え、その後のものと未完了のイベントは残る（AC-286）。消した件数をログに出す（AC-288）")
-    void deletesEventsCompletedBeforeRetention(CapturedOutput output) {
+    void deletesEventsCompletedBeforeRetention() {
         var old = publish(new CleanupEvent(UUID.randomUUID(), false));
         var incomplete = publish(new CleanupEvent(UUID.randomUUID(), true));
         clock.setInstant(NOW.plus(Duration.ofDays(2)));
@@ -89,14 +93,14 @@ class EventCleanupJobTest {
         // 巻き戻せないので、ほかのテストの処理の済んだ古いイベントも消える。消す前に数えて、ログの件数と比べる
         var expectedDeleted = dsl.fetchCount(EVENT_PUBLICATION,
                 COMPLETION_DATE.lt(clock.instant().minus(Duration.ofDays(7))).and(STATUS.eq("COMPLETED").or(STATUS.isNull())));
-        var logStart = CapturedLogs.mark(output);
+        logs.clear();
         job.cleanUp();
 
         assertThat(publicationCount(old)).isZero();
         assertThat(publicationCount(recent)).isEqualTo(1);
         assertThat(publicationCount(incomplete)).isEqualTo(1);
         assertThat(expectedDeleted).isPositive();
-        assertThat(CapturedLogs.since(output, logStart)).contains("処理の済んだイベントを消した：" + expectedDeleted + " 件");
+        assertThat(logs.messages(Level.INFO)).contains("処理の済んだイベントを消した：" + expectedDeleted + " 件");
     }
 
     /**

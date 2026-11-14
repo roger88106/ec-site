@@ -5,6 +5,7 @@ import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.ImageFormat;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -27,70 +28,140 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class JooqAssetRepositoryTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * アセットの作成日時
+     *
+     * <p>日本時間の 2026-10-08 00:30。
      */
     private static final Instant CREATED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
     @Autowired
     AssetRepository repository;
 
-    @Test
-    @DisplayName("アセットを記録すると、形式・保存先のキー・作成日時を含めて ID から取得できる")
-    void insertsAndFindsAsset() {
-        var asset = asset(ImageFormat.PNG);
+    // ============================== テスト ==============================
 
-        repository.insert(asset);
+    @Nested
+    @DisplayName("記録")
+    class Insert {
 
-        assertThat(repository.findAllById(List.of(asset.id()))).containsExactly(asset);
+        @Test
+        @DisplayName("アセットを記録すると、形式・保存先のキー・作成日時を含めて ID から取得できる")
+        void insertsAndFindsAsset() {
+            // 準備：PNG のアセット
+            var asset = asset(ImageFormat.PNG);
+
+            // 操作：記録する
+            repository.insert(asset);
+
+            // 確認：全ての項目が同じアセットを取得できる
+            assertThat(repository.findAllById(List.of(asset.id()))).containsExactly(asset);
+        }
+
+        @Test
+        @DisplayName("同じ保存先のキーのアセットは記録できない")
+        void rejectsDuplicateStorageKey() {
+            // 準備：記録したアセット
+            var first = asset(ImageFormat.PNG);
+            repository.insert(first);
+
+            // 操作と確認：ID が違っても、保存先のキーが同じなら一意の制約で拒否される
+            assertThatThrownBy(() -> repository.insert(new Asset(UUID.randomUUID(), ImageFormat.PNG, first.storageKey(), CREATED_AT)))
+                    .isInstanceOf(DuplicateKeyException.class);
+        }
     }
 
-    @Test
-    @DisplayName("アセットをまとめて取得でき、ないアセットは含めない。ID がなければ空")
-    void findsAssetsByIds() {
-        var first = asset(ImageFormat.JPEG);
-        var second = asset(ImageFormat.WEBP);
-        var other = asset(ImageFormat.PNG);
-        repository.insert(first);
-        repository.insert(second);
-        repository.insert(other);
+    @Nested
+    @DisplayName("まとめての取得")
+    class FindAll {
 
-        var found = repository.findAllById(List.of(first.id(), second.id(), UUID.randomUUID()));
+        @Test
+        @DisplayName("指定した ID のアセットだけを取得し、ないアセットは含めない")
+        void findsAssetsByIds() {
+            // 準備：3 つのアセットを記録する
+            var first = asset(ImageFormat.JPEG);
+            var second = asset(ImageFormat.WEBP);
+            var other = asset(ImageFormat.PNG);
+            repository.insert(first);
+            repository.insert(second);
+            repository.insert(other);
 
-        assertThat(found).containsExactlyInAnyOrder(first, second);
-        assertThat(repository.findAllById(List.of())).isEmpty();
+            // 操作：2 つと、ない ID を指定して取得する
+            var found = repository.findAllById(List.of(first.id(), second.id(), UUID.randomUUID()));
+
+            // 確認：指定した 2 つだけ
+            assertThat(found).containsExactlyInAnyOrder(first, second);
+        }
+
+        @Test
+        @DisplayName("ID がなければ、空を返す")
+        void returnsEmptyForNoIds() {
+            // 操作と確認：空
+            assertThat(repository.findAllById(List.of())).isEmpty();
+        }
     }
 
-    @Test
-    @DisplayName("アセットの記録をまとめて消すと、指定したものだけが消える。ないアセットは無視する。ID がなくても何も起きない")
-    void deletesAssetsByIds() {
-        var first = asset(ImageFormat.JPEG);
-        var second = asset(ImageFormat.PNG);
-        var kept = asset(ImageFormat.WEBP);
-        repository.insert(first);
-        repository.insert(second);
-        repository.insert(kept);
+    @Nested
+    @DisplayName("まとめての削除")
+    class DeleteAll {
 
-        repository.deleteAllById(Set.of(first.id(), second.id(), UUID.randomUUID()));
-        repository.deleteAllById(List.of());
+        @Test
+        @DisplayName("指定した ID のアセットの記録だけが消える")
+        void deletesOnlySpecifiedAssets() {
+            // 準備：3 つのアセットを記録する
+            var first = asset(ImageFormat.JPEG);
+            var second = asset(ImageFormat.PNG);
+            var kept = asset(ImageFormat.WEBP);
+            repository.insert(first);
+            repository.insert(second);
+            repository.insert(kept);
 
-        assertThat(repository.findAllById(List.of(first.id(), second.id(), kept.id()))).containsExactly(kept);
+            // 操作：2 つを消す
+            repository.deleteAllById(Set.of(first.id(), second.id()));
+
+            // 確認：指定しなかった 1 つだけが残る
+            assertThat(repository.findAllById(List.of(first.id(), second.id(), kept.id()))).containsExactly(kept);
+        }
+
+        @Test
+        @DisplayName("ないアセットの ID を含めても、ある分だけを消す")
+        void ignoresMissingIds() {
+            // 準備：1 つのアセットを記録する
+            var asset = asset(ImageFormat.PNG);
+            repository.insert(asset);
+
+            // 操作：記録した ID と、ない ID を指定して消す
+            repository.deleteAllById(Set.of(asset.id(), UUID.randomUUID()));
+
+            // 確認：記録した分が消えている
+            assertThat(repository.findAllById(List.of(asset.id()))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("ID がなければ、何も消さない")
+        void deletesNothingForNoIds() {
+            // 準備：1 つのアセットを記録する
+            var kept = asset(ImageFormat.WEBP);
+            repository.insert(kept);
+
+            // 操作：空の ID で消す
+            repository.deleteAllById(List.of());
+
+            // 確認：記録が残る
+            assertThat(repository.findAllById(List.of(kept.id()))).containsExactly(kept);
+        }
     }
 
-    @Test
-    @DisplayName("同じ保存先のキーのアセットは記録できない")
-    void rejectsDuplicateStorageKey() {
-        var first = asset(ImageFormat.PNG);
-        repository.insert(first);
-
-        assertThatThrownBy(() -> repository.insert(new Asset(UUID.randomUUID(), ImageFormat.PNG, first.storageKey(), CREATED_AT)))
-                .isInstanceOf(DuplicateKeyException.class);
-    }
-
-    // ============================== 補助 ==============================
+    // ============================== 準備の補助 ==============================
 
     /**
-     * 指定した形式の画像のアセットを作る
+     * 指定した形式の画像のアセットを作る。
+     *
+     * <p>保存先のキーは、ID ごとに別にする。
+     *
+     * @param format 形式
+     * @return アセット
      */
     private static Asset asset(ImageFormat format) {
         var id = UUID.randomUUID();

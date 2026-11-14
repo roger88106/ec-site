@@ -1,24 +1,24 @@
 package com.ecsite.module.media.api;
 
-import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
+import com.ecsite.LogCapture;
 import com.ecsite.TestImages;
 import com.ecsite.TestcontainersConfig;
 import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
+import com.ecsite.module.media.application.MediaService;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -62,7 +62,6 @@ import static org.mockito.Mockito.doThrow;
  * データはテストごとの範囲（UUID）で分け、確認するのは自分のデータだけにする。
  */
 @IntegrationTest
-@ExtendWith(OutputCaptureExtension.class)
 class MediaApiTest {
 
     // ============================== 定数 ==============================
@@ -93,6 +92,14 @@ class MediaApiTest {
      * 署名付き URL や配信の URL を呼ぶ HttpClient
      */
     private final HttpClient http = HttpClient.newHttpClient();
+
+    /**
+     * メディアのサービスが出したログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(MediaService.class);
+
+    // ============================== Bean ==============================
 
     @Autowired
     MediaApi media;
@@ -458,18 +465,18 @@ class MediaApiTest {
 
         @Test
         @DisplayName("AC-305 消すのに失敗したら、警告のログに保存先のキーを出す")
-        void logsWhenDeleteFails(CapturedOutput output) throws Exception {
+        void logsWhenDeleteFails() throws Exception {
             // 準備：PNG を用意し、配信のファイルの削除を失敗させる
             var scope = scope();
             var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
             doThrow(SdkClientException.create("connection refused")).when(storage).deletePublished(anyString());
 
             // 操作：破棄する
-            var logStart = CapturedLogs.mark(output);
+            logs.clear();
             media.discardImage(prepared);
 
             // 確認：この破棄の後に、保存先のキーを含む警告のログが出ている
-            assertThat(CapturedLogs.since(output, logStart)).containsPattern("WARN.*assets/" + prepared.assetId() + "\\.webp");
+            assertThat(logs.messages(Level.WARN)).anyMatch(message -> message.contains("assets/" + prepared.assetId() + ".webp"));
         }
     }
 

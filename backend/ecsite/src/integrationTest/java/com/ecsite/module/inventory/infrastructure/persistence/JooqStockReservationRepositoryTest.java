@@ -47,6 +47,8 @@ class JooqStockReservationRepositoryTest {
      */
     private static final Instant LONG_AGO = Instant.parse("1980-01-01T00:00:00Z");
 
+    // ============================== Bean ==============================
+
     @Autowired
     StockReservationRepository repository;
 

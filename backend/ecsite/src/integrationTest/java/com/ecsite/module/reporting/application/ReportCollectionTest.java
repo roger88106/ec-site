@@ -136,6 +136,8 @@ class ReportCollectionTest {
      */
     private static final long SHIPPING_TAX = 90;
 
+    // ============================== Bean ==============================
+
     @Autowired
     ApplicationEventPublisher events;
 
@@ -246,13 +248,14 @@ class ReportCollectionTest {
         @Test
         @DisplayName("AC-223 支払待ちのまま期限切れでキャンセルになった注文も、キャンセルの日時・種類・在庫に戻したかを写しに持つ")
         void collectsExpiredOrder() {
-            // 準備：支払待ちの注文が、30 分後に期限切れでキャンセルになる
-            var expiredAt = collectExpiredOrder();
+            // 準備：支払待ちの注文を集めた後、注文の API が 30 分後の期限切れのキャンセルを返す
+            var expiredAt = collectPendingOrderThatExpires();
 
-            // 操作：写しを読む
+            // 操作：期限切れのキャンセルの変化を届ける
+            publish(expired(expiredAt));
+
+            // 確認：キャンセルの写しになり、キャンセルの項目が注文の API の値のまま
             var order = awaitOrder(OrderReportSnapshot.Status.CANCELLED);
-
-            // 確認：キャンセルの項目が、注文の API の値のまま
             assertThat(order.get(SALES_ORDER.CANCELLED_AT)).isEqualTo(expiredAt);
             assertThat(order.get(SALES_ORDER.CANCELLATION_KIND)).isEqualTo("PAYMENT_EXPIRED");
             assertThat(order.get(SALES_ORDER.RESTOCKED)).isTrue();
@@ -261,13 +264,14 @@ class ReportCollectionTest {
         @Test
         @DisplayName("AC-223、224 支払待ちのまま期限切れでキャンセルになった注文も、状態の変化を履歴に持つ")
         void collectsExpiredOrderHistory() {
-            // 準備：支払待ちの注文が、30 分後に期限切れでキャンセルになる
-            collectExpiredOrder();
+            // 準備：支払待ちの注文を集めた後、注文の API が 30 分後の期限切れのキャンセルを返す
+            var expiredAt = collectPendingOrderThatExpires();
 
-            // 操作：履歴が 2 行になるのを待つ
+            // 操作：期限切れのキャンセルの変化を届ける
+            publish(expired(expiredAt));
+
+            // 確認：履歴が 2 行になり、成立と期限切れのキャンセルの 2 行で、キャンセルの種類と在庫に戻したかを持つ
             await().atMost(TIMEOUT).until(() -> history().size() == 2);
-
-            // 確認：成立と期限切れのキャンセルの 2 行で、キャンセルの種類と在庫に戻したかを持つ
             assertThat(history()).extracting(row -> row.get(STATUS_HISTORY.FROM_STATUS), row -> row.get(STATUS_HISTORY.TO_STATUS),
                             row -> row.get(STATUS_HISTORY.CANCELLATION_KIND), row -> row.get(STATUS_HISTORY.RESTOCKED))
                     .containsExactly(
@@ -329,27 +333,30 @@ class ReportCollectionTest {
         @Test
         @DisplayName("AC-224 キャンセルが受付より先に届いても、写しは注文の今の状態（キャンセル）になる")
         void snapshotIsCurrentRegardlessOfOrder() {
-            // 準備：キャンセル、受付の順に届ける
-            var cancelledAt = collectCancellationBeforeAcceptance();
+            // 準備：注文の API が、今の状態として 1 時間後のキャンセルを返す
+            var cancelledAt = ORDERED_AT.plus(Duration.ofHours(1));
+            orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, cancelledAt, OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED));
 
-            // 操作：写しを読む
+            // 操作：キャンセル、受付の順に届ける
+            deliverCancellationBeforeAcceptance(cancelledAt);
+
+            // 確認：写しはキャンセルで、キャンセルの日時が注文の API の値
             var order = awaitOrder(OrderReportSnapshot.Status.CANCELLED);
-
-            // 確認：キャンセルの日時が、注文の API の値
             assertThat(order.get(SALES_ORDER.CANCELLED_AT)).isEqualTo(cancelledAt);
         }
 
         @Test
         @DisplayName("AC-224 キャンセルが受付より先に届いても、履歴は発生日時の順に読める")
         void historyInOccurredOrder() {
-            // 準備：キャンセル、受付の順に届ける
-            collectCancellationBeforeAcceptance();
+            // 準備：注文の API が、今の状態として 1 時間後のキャンセルを返す
+            var cancelledAt = ORDERED_AT.plus(Duration.ofHours(1));
+            orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, cancelledAt, OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED));
 
-            // 操作：履歴を発生日時の順に読む
-            var history = history();
+            // 操作：キャンセル、受付の順に届ける
+            deliverCancellationBeforeAcceptance(cancelledAt);
 
-            // 確認：受付、キャンセルの順
-            assertThat(history).extracting(row -> row.get(STATUS_HISTORY.TO_STATUS)).containsExactly("ACCEPTED", "CANCELLED");
+            // 確認：発生日時の順に読むと、受付、キャンセルの順
+            assertThat(history()).extracting(row -> row.get(STATUS_HISTORY.TO_STATUS)).containsExactly("ACCEPTED", "CANCELLED");
         }
 
         @Test
@@ -380,14 +387,15 @@ class ReportCollectionTest {
         @Test
         @DisplayName("AC-224 配達完了が出荷済みより先に届いても、出荷日時と出荷日を、履歴の出荷済みの変化から求める")
         void shippedAtFromHistory() {
-            // 準備：配達完了、出荷済みの順に届ける
-            var shippedAt = collectDeliveredBeforeShipped();
+            // 準備：注文の API が、出荷済みの注文を返す
+            orderIs(snapshot(OrderReportSnapshot.Status.SHIPPED, null, null));
 
-            // 操作：出荷日時が入るのを待って、写しを読む
+            // 操作：配達完了、出荷済みの順に届ける
+            var shippedAt = deliverDeliveredBeforeShipped();
+
+            // 確認：出荷日時が入り、出荷済みの変化の日時になる。出荷日はその日本時間の日付（2026-10-09 00:30）
             await().atMost(TIMEOUT).until(() -> order().map(row -> row.get(SALES_ORDER.SHIPPED_AT)).isPresent());
             var order = order().orElseThrow();
-
-            // 確認：出荷日時は出荷済みの変化の日時、出荷日はその日本時間の日付（2026-10-09 00:30）
             assertThat(order.get(SALES_ORDER.SHIPPED_AT)).isEqualTo(shippedAt);
             assertThat(order.get(SALES_ORDER.SHIPPED_ON)).isEqualTo(LocalDate.of(2026, 10, 9));
         }
@@ -395,27 +403,28 @@ class ReportCollectionTest {
         @Test
         @DisplayName("AC-224 配達完了が出荷済みより先に届いても、配送状態は履歴の最も進んだ状態（配達完了）")
         void deliveryStatusFromHistory() {
-            // 準備：配達完了、出荷済みの順に届ける
-            collectDeliveredBeforeShipped();
+            // 準備：注文の API が、出荷済みの注文を返す
+            orderIs(snapshot(OrderReportSnapshot.Status.SHIPPED, null, null));
 
-            // 操作：出荷日時が入る（後に届いた出荷済みを処理した）のを待って、写しを読む
+            // 操作：配達完了、出荷済みの順に届ける
+            deliverDeliveredBeforeShipped();
+
+            // 確認：出荷日時が入った（後に届いた出荷済みを処理した）後も、出荷済みでなく、配達完了のまま
             await().atMost(TIMEOUT).until(() -> order().map(row -> row.get(SALES_ORDER.SHIPPED_AT)).isPresent());
-            var order = order().orElseThrow();
-
-            // 確認：後に届いた出荷済みでなく、配達完了のまま
-            assertThat(order.get(SALES_ORDER.DELIVERY_STATUS)).isEqualTo("DELIVERED");
+            assertThat(order().orElseThrow().get(SALES_ORDER.DELIVERY_STATUS)).isEqualTo("DELIVERED");
         }
 
         @Test
         @DisplayName("AC-224 配送状態の変化も、発生日時の順に履歴に入る")
         void deliveryHistoryInOccurredOrder() {
-            // 準備：配達完了、出荷済みの順に届ける
-            collectDeliveredBeforeShipped();
+            // 準備：注文の API が、出荷済みの注文を返す
+            orderIs(snapshot(OrderReportSnapshot.Status.SHIPPED, null, null));
 
-            // 操作：出荷日時が入る（後に届いた出荷済みを処理した）のを待つ
+            // 操作：配達完了、出荷済みの順に届ける
+            deliverDeliveredBeforeShipped();
+
+            // 確認：出荷日時が入った（後に届いた出荷済みを処理した）後、配送状態の変化が、出荷済み、配達完了の順
             await().atMost(TIMEOUT).until(() -> order().map(row -> row.get(SALES_ORDER.SHIPPED_AT)).isPresent());
-
-            // 確認：配送状態の変化が、出荷済み、配達完了の順
             assertThat(history()).extracting(row -> row.get(STATUS_HISTORY.KIND), row -> row.get(STATUS_HISTORY.TO_STATUS))
                     .containsExactly(tuple("DELIVERY_STATUS", "SHIPPED"), tuple("DELIVERY_STATUS", "DELIVERED"));
         }
@@ -452,7 +461,7 @@ class ReportCollectionTest {
     /**
      * 注文の写しが、注文の API の写し（{@link #snapshot}）の値のままであることを確認する。
      *
-     * <p>確認すること（期待値は定数）：
+     * <p>確認すること（期待値は定数。性別は、列に入る文字列で書く）：
      * <ul>
      *   <li>注文番号</li>
      *   <li>注文日（注文日時の日本時間の日付）</li>
@@ -481,40 +490,45 @@ class ReportCollectionTest {
     // ============================== 準備の補助 ==============================
 
     /**
-     * 支払待ちの注文を集めた後、30 分後に期限切れでキャンセルになった変化を届ける。
+     * 支払待ちの注文を集め、その後は注文の API が、30 分後に期限切れでキャンセルになった注文を返すようにする。
      *
      * @return 期限切れの日時
      */
-    private Instant collectExpiredOrder() {
+    private Instant collectPendingOrderThatExpires() {
         orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
         publish(placed());
         awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
 
         var expiredAt = ORDERED_AT.plus(Duration.ofMinutes(30));
         orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, expiredAt, OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED));
-        publish(OrderStatusChanged.of(expiredAt, orderId, OrderStatusChanged.Status.PENDING_PAYMENT,
-                OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED, true));
         return expiredAt;
     }
 
     /**
-     * 1 時間後のキャンセルの変化を、30 秒後の受付の変化より先に届け、両方が履歴に入るのを待つ。
+     * 支払待ちから期限切れでキャンセル（在庫に戻した）になった変化のイベントを作る。
      *
-     * <p>注文の API は、今の状態としてキャンセルを返す。
-     *
-     * @return キャンセルの日時
+     * @param expiredAt 期限切れの日時
+     * @return イベント
      */
-    private Instant collectCancellationBeforeAcceptance() {
-        var cancelledAt = ORDERED_AT.plus(Duration.ofHours(1));
-        orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, cancelledAt, OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED));
+    private OrderStatusChanged expired(Instant expiredAt) {
+        return OrderStatusChanged.of(expiredAt, orderId, OrderStatusChanged.Status.PENDING_PAYMENT,
+                OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED, true);
+    }
 
+    /**
+     * キャンセルの変化を、30 秒後の受付の変化より先に届け、両方が履歴に入るのを待つ。
+     *
+     * <p>キャンセルが写しに入るのを待ってから、受付を届ける。
+     *
+     * @param cancelledAt キャンセルの日時
+     */
+    private void deliverCancellationBeforeAcceptance(Instant cancelledAt) {
         publish(OrderStatusChanged.of(cancelledAt, orderId, OrderStatusChanged.Status.ACCEPTED,
                 OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true));
         awaitOrder(OrderReportSnapshot.Status.CANCELLED);
         publish(OrderStatusChanged.of(ORDERED_AT.plusSeconds(30), orderId, OrderStatusChanged.Status.PENDING_PAYMENT,
                 OrderStatusChanged.Status.ACCEPTED, null, null));
         await().atMost(TIMEOUT).until(() -> history().size() == 2);
-        return cancelledAt;
     }
 
     /**
@@ -532,16 +546,15 @@ class ReportCollectionTest {
     }
 
     /**
-     * 出荷済みの注文の、2 日後の配達完了の変化を、1 日後の出荷済みの変化より先に届ける。
+     * 2 日後の配達完了の変化を、1 日後の出荷済みの変化より先に届ける。
      *
      * <p>配達完了が写しに入るのを待ってから、出荷済みを届ける。出荷済みの処理は待たない。
      *
      * @return 出荷済みの日時
      */
-    private Instant collectDeliveredBeforeShipped() {
+    private Instant deliverDeliveredBeforeShipped() {
         var shippedAt = ORDERED_AT.plus(Duration.ofDays(1));
         var deliveredAt = shippedAt.plus(Duration.ofDays(1));
-        orderIs(snapshot(OrderReportSnapshot.Status.SHIPPED, null, null));
 
         publish(DeliveryStatusChanged.of(deliveredAt, orderId, DeliveryStatusChanged.Status.SHIPPED,
                 DeliveryStatusChanged.Status.DELIVERED));

@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -52,6 +51,8 @@ class VariantSalesQueryTest {
      */
     private static final String PRODUCT_NAME = "T シャツ";
 
+    // ============================== Bean ==============================
+
     @Autowired
     VariantSalesQueryService service;
 
@@ -73,7 +74,6 @@ class VariantSalesQueryTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(Instant.parse("2026-10-07T15:00:00Z"));
         var catalog = new CatalogTestData(mockMvc, clock);
         shirt = catalog.product(catalog.taxCategory("標準", "10"), PRODUCT_NAME, 1000, "色", "サイズ")
                 .variant("白", "M").variant("白", "L").variant("黒", "M");

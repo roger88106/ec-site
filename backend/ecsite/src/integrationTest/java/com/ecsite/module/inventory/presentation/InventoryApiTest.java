@@ -38,7 +38,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>在庫はバリアント登録のイベントで作られるが、イベントはコミット後に動くので、ここではリポジトリで直接作る。
  * テストごとにロールバックする。
  *
- * <p>準備のデータと確認の期待値は、同じ定数から作る（準備した物から期待値を取り出さない）。
+ * <p>確認の期待値は、準備した物から取り出さない。複数のテストで使う値は定数にし、1 つのテストの中だけで使う在庫数などは、
+ * 準備と確認に同じ数を書く。
  */
 @IntegrationTest
 @Transactional
@@ -110,6 +111,8 @@ class InventoryApiTest {
      */
     private static final String ORDER_NUMBER = "20261008-000001";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -139,7 +142,6 @@ class InventoryApiTest {
 
     @BeforeEach
     void setUp() {
-        clock.setInstant(NOW);
         productId = UUID.randomUUID();
         variantId = UUID.randomUUID();
         inventory = new InventoryTestData(stockItemRepository, clock);
@@ -319,24 +321,22 @@ class InventoryApiTest {
     @DisplayName("運営者の調整の上限")
     class ManualLimits {
 
-        @Test
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {MANUAL_LIMIT + 1, -(MANUAL_LIMIT + 1), Integer.MAX_VALUE, Integer.MIN_VALUE})
         @DisplayName("AC-42 1 回の増減量が ±1,000,000 を超えれば 400")
-        void rejectsDeltaOverOneMillion() throws Exception {
-            // 操作と確認：上限を 1 超える増減量は INVALID_REQUEST
-            adjust(variantId, MANUAL_LIMIT + 1, "ARRIVAL", null)
+        void rejectsDeltaOverOneMillion(int delta) throws Exception {
+            // 操作と確認：上限を超える増減量は INVALID_REQUEST
+            adjust(variantId, delta, "ARRIVAL", null)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
-
-            // 操作と確認：int の最大値の増減量も 400
-            adjust(variantId, Integer.MAX_VALUE, "ARRIVAL", null).andExpect(status().isBadRequest());
         }
 
-        @Test
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {MANUAL_LIMIT + 1, -(MANUAL_LIMIT + 1), Integer.MAX_VALUE, Integer.MIN_VALUE})
         @DisplayName("AC-42 1 回の増減量が ±1,000,000 を超える調整では、在庫数は変わらない")
-        void keepsQuantityWhenDeltaOverOneMillion() throws Exception {
+        void keepsQuantityWhenDeltaOverOneMillion(int delta) throws Exception {
             // 操作：上限を超える増減量の調整を送る
-            adjust(variantId, MANUAL_LIMIT + 1, "ARRIVAL", null);
-            adjust(variantId, Integer.MAX_VALUE, "ARRIVAL", null);
+            adjust(variantId, delta, "ARRIVAL", null);
 
             // 確認：在庫数が 0 のまま
             expectQuantity(mockMvc, variantId, 0);

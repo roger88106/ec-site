@@ -27,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -75,6 +74,8 @@ class ReportApiTest {
      */
     private static final String PRODUCT_NAME = "T シャツ";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -103,7 +104,6 @@ class ReportApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(Instant.parse("2026-10-07T15:00:00Z"));
         catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10");
         shirt = catalog.product(taxCategoryId, PRODUCT_NAME, 1000, "色").variant("白").variant("黒");
@@ -120,9 +120,9 @@ class ReportApiTest {
     class SalesTrend {
 
         @Test
-        @DisplayName("AC-197 区切りごとの売上額と販売数量を返し、四半期には会計年度と四半期の番号を付ける")
+        @DisplayName("AC-197 区切りごとの販売数量を返し、売れない区切りの売上額は 0。四半期には会計年度と四半期の番号を付ける")
         void quarters() throws Exception {
-            // 操作と確認：上半期の 2 つの四半期。売れた第 1 四半期に、2031 年度の 1 と 2 枚
+            // 操作と確認：上半期の 2 つの四半期。売れた第 1 四半期に、2031 年度の 1 と 2 枚。売れない第 2 四半期は 0 円
             mockMvc.perform(get(REPORTS + "/sales-trend?" + FIRST_HALF + "&granularity=QUARTER"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.points", hasSize(2)))
@@ -294,10 +294,10 @@ class ReportApiTest {
     class Customers {
 
         @Test
-        @DisplayName("AC-205、220、262 都道府県は、売れたものだけを、コードの順に地域の名前を添えて返し、コードのない注文は名前なしで最後")
+        @DisplayName("AC-205、220、262 都道府県は、売れたものだけを、地域の名前を添えて返し、コードのない注文は名前なしで最後")
         void prefectures() throws Exception {
             // 準備：都道府県のない注文を追加する
-            insertOrderWithoutPrefectureAndAge();
+            insertOrderWithoutBuyerAttributes();
 
             // 操作と確認：東京都（3,200 円、1 件）と、コードも名前もない不明の 2 行
             mockMvc.perform(get(REPORTS + "/customer-breakdown?" + APRIL))
@@ -315,7 +315,7 @@ class ReportApiTest {
         @DisplayName("AC-206、208 年齢層は、全ての層を返し、年齢のない注文は不明に数える")
         void ageGroups() throws Exception {
             // 準備：年齢のない注文を追加する
-            insertOrderWithoutPrefectureAndAge();
+            insertOrderWithoutBuyerAttributes();
 
             // 操作と確認：全ての層が若い順。30 代に 3,200 円の 1 件、不明に 2,100 円（税込 1,100 円 ＋ 送料 1,000 円）の 1 件
             mockMvc.perform(get(REPORTS + "/customer-breakdown?" + APRIL))
@@ -333,7 +333,7 @@ class ReportApiTest {
         @DisplayName("AC-219 性別は、全ての区分を返し、性別のない注文は不明に数える")
         void genders() throws Exception {
             // 準備：性別のない注文を追加する
-            insertOrderWithoutPrefectureAndAge();
+            insertOrderWithoutBuyerAttributes();
 
             // 操作と確認：男性・女性・その他・不明の順。女性に 1 件、不明に 1 件
             mockMvc.perform(get(REPORTS + "/customer-breakdown?" + APRIL))
@@ -394,7 +394,7 @@ class ReportApiTest {
         /**
          * 都道府県・年齢・性別のない、T シャツ（黒）1 枚の注文の写しを入れる。
          */
-        private void insertOrderWithoutPrefectureAndAge() {
+        private void insertOrderWithoutBuyerAttributes() {
             new ReportTestData(dsl).order("ACCEPTED", "2031-04-06").prefecture(null)
                     .line(shirt.id, shirt.variantIds.get(1), 1).insert();
         }

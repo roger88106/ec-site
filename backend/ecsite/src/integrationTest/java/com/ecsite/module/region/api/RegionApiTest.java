@@ -39,6 +39,8 @@ class RegionApiTest {
      */
     private static final int MUNICIPALITIES = 1892;
 
+    // ============================== Bean ==============================
+
     /**
      * 地域の api
      */

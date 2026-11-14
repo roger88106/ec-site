@@ -49,6 +49,8 @@ class JooqStockItemRepositoryTest {
      */
     private static final String MEMO = "メモ";
 
+    // ============================== Bean ==============================
+
     @Autowired
     StockItemRepository repository;
 
@@ -138,8 +140,8 @@ class JooqStockItemRepositoryTest {
             // 準備：在庫数 5
             adjust(5, StockAdjustmentReason.ARRIVAL);
 
-            // 操作：6 減らす調整を試みる
-            tryAdjust(-6);
+            // 操作と確認：6 減らす調整を試みると、INSUFFICIENT_STOCK で拒否される
+            assertBusinessError(() -> adjust(-6, StockAdjustmentReason.STOCKTAKE), InventoryErrorCode.INSUFFICIENT_STOCK);
 
             // 確認：在庫数が 5 のまま
             assertThat(queryRepository.findQuantity(variantId)).contains(5);
@@ -151,8 +153,8 @@ class JooqStockItemRepositoryTest {
             // 準備：在庫数 5
             adjust(5, StockAdjustmentReason.ARRIVAL);
 
-            // 操作：6 減らす調整を試みる
-            tryAdjust(-6);
+            // 操作と確認：6 減らす調整を試みると、INSUFFICIENT_STOCK で拒否される
+            assertBusinessError(() -> adjust(-6, StockAdjustmentReason.STOCKTAKE), InventoryErrorCode.INSUFFICIENT_STOCK);
 
             // 確認：履歴が準備の 1 件のまま
             assertThat(history().items()).hasSize(1);
@@ -300,15 +302,6 @@ class JooqStockItemRepositoryTest {
     private void adjustAt(int delta, Instant adjustedAt) {
         var adjustment = StockAdjustment.create(delta, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, adjustedAt);
         transactionTemplate.execute(status -> repository.adjust(variantId, adjustment));
-    }
-
-    /**
-     * 棚卸差異の調整を試み、業務のエラーで拒否されたことを確認する。
-     *
-     * @param delta 増減量
-     */
-    private void tryAdjust(int delta) {
-        assertBusinessError(() -> adjust(delta, StockAdjustmentReason.STOCKTAKE), InventoryErrorCode.INSUFFICIENT_STOCK);
     }
 
     /**

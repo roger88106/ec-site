@@ -37,6 +37,8 @@ class JooqAssetRepositoryTest {
      */
     private static final Instant CREATED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
+    // ============================== Bean ==============================
+
     @Autowired
     AssetRepository repository;
 

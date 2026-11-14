@@ -24,6 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @IntegrationTest
 class StoreRegionApiTest {
 
+    // ============================== Bean ==============================
+
     /**
      * API を呼ぶ MockMvc
      */

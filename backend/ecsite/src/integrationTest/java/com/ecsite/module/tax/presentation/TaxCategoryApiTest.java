@@ -4,7 +4,6 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestJson;
 import com.jayway.jsonpath.JsonPath;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -50,27 +48,17 @@ class TaxCategoryApiTest {
     private static final String BASE = "/api/admin/tax-categories";
 
     /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
      * 税区分の名称
      */
     private static final String NAME = "標準";
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
 
     @Autowired
     MutableClock clock;
-
-    @BeforeEach
-    void setClock() {
-        clock.setInstant(NOW);
-    }
 
     // ============================== テスト ==============================
 

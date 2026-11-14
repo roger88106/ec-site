@@ -104,6 +104,22 @@ class ConsumptionTaxCalculationTest {
             // 確認：10% の 1 件に合計される
             assertThat(taxes).containsExactly(new ConsumptionTax(rate("10"), Money.of(330), Money.of(30)));
         }
+
+        @Test
+        @DisplayName("BR-8 別の率を挟んで離れた同じ率も、1 つの税率にまとめて高い順に並べる")
+        void mergesSameRateSeparatedByOtherRates() {
+            // 準備：10.00% と 10% の間に 0% があり、先頭が 8% の入力
+            var taxables = List.of(taxable("8", 108), taxable("10.00", 110), taxable("0", 500), taxable("10", 220));
+
+            // 操作：消費税額を計算する
+            var taxes = TaxCalculator.consumptionTaxes(taxables);
+
+            // 確認：10% の 1 件に合計され、10%、8%、0% の順
+            assertThat(taxes).containsExactly(
+                    new ConsumptionTax(rate("10"), Money.of(330), Money.of(30)),
+                    new ConsumptionTax(rate("8"), Money.of(108), Money.of(8)),
+                    new ConsumptionTax(rate("0"), Money.of(500), Money.ZERO));
+        }
     }
 
     // ============================== 準備の補助 ==============================

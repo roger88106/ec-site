@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -44,6 +43,8 @@ class ReportPermissionApiTest {
      */
     private static final String PERIOD = "from=2031-04-01&to=2031-04-30";
 
+    // ============================== Bean ==============================
+
     @Autowired
     MockMvc mockMvc;
 
@@ -57,7 +58,6 @@ class ReportPermissionApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(Instant.parse("2026-10-07T15:00:00Z"));
         var catalog = new CatalogTestData(mockMvc, clock);
         productId = catalog.product(catalog.taxCategory("標準", "10"), "T シャツ", 1000, "色").variant("白").id;
     }

@@ -63,6 +63,8 @@ class JooqTaxCategoryRepositoryTest {
      */
     private static final String NAME = "標準";
 
+    // ============================== Bean ==============================
+
     @Autowired
     TaxCategoryRepository repository;
 

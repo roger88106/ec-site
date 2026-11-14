@@ -53,6 +53,8 @@ class ImgproxyImageConverterTest {
      */
     private final HttpClient http = HttpClient.newHttpClient();
 
+    // ============================== Bean ==============================
+
     @Autowired
     ImageConverter converter;
 

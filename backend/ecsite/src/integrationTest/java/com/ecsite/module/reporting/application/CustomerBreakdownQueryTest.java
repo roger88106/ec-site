@@ -45,6 +45,8 @@ class CustomerBreakdownQueryTest {
      */
     private static final ReportPeriod PERIOD = ReportPeriod.of(LocalDate.parse("2031-04-01"), LocalDate.parse("2031-04-30"));
 
+    // ============================== Bean ==============================
+
     @Autowired
     CustomerBreakdownQueryService service;
 

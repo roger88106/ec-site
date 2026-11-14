@@ -38,7 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>操作ごとにコミットする。ロールバックしない。
  *
- * <p>準備のデータと確認の期待値は、同じ定数から作る（準備した物から期待値を取り出さない）。
+ * <p>確認の期待値は、準備した物から取り出さない。複数のテストで使う値は定数にし、1 つのテストの中だけで使う在庫数などは、
+ * 準備と確認に同じ数を書く。
  */
 @IntegrationTest
 class StockOrderApiTest {
@@ -73,6 +74,8 @@ class StockOrderApiTest {
      * 注文数
      */
     private static final int ORDER_QUANTITY = 2;
+
+    // ============================== Bean ==============================
 
     @Autowired
     StockReservationApi api;
@@ -113,7 +116,6 @@ class StockOrderApiTest {
     @BeforeEach
     void setUp() {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         productId = UUID.randomUUID();
         orderId = UUID.randomUUID();
     }

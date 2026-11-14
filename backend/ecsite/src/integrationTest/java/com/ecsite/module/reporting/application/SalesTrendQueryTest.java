@@ -42,6 +42,8 @@ class SalesTrendQueryTest {
      */
     private static final ReportPeriod PERIOD = ReportPeriod.of(LocalDate.parse("2031-04-01"), LocalDate.parse("2031-06-30"));
 
+    // ============================== Bean ==============================
+
     @Autowired
     SalesTrendQueryService service;
 

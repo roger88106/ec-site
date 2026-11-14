@@ -41,6 +41,8 @@ class CatalogEventHandlerTest {
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    // ============================== Bean ==============================
+
     @Autowired
     ApplicationEventPublisher eventPublisher;
 

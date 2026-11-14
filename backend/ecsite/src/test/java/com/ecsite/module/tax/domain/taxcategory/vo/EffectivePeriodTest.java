@@ -100,14 +100,15 @@ class EffectivePeriodTest {
         @Test
         @DisplayName("AC-2 終了ちょうどは含まない")
         void excludesEnd() {
-            // 準備：終了のある期間
-            var period = EffectivePeriod.of(T1, T2);
+            // 操作と確認：終了の時点を含まない
+            assertThat(EffectivePeriod.of(T1, T2).contains(T2)).isFalse();
+        }
 
-            // 確認：終了の時点を含まない
-            assertThat(period.contains(T2)).isFalse();
-
-            // 確認：終了の直前までは含む
-            assertThat(period.contains(T2.minusNanos(1))).isTrue();
+        @Test
+        @DisplayName("AC-2 終了の直前までは含む")
+        void includesJustBeforeEnd() {
+            // 操作と確認：終了の直前を含む
+            assertThat(EffectivePeriod.of(T1, T2).contains(T2.minusNanos(1))).isTrue();
         }
 
         @Test

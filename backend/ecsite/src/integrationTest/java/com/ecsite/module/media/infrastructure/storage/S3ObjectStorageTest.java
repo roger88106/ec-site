@@ -83,6 +83,8 @@ class S3ObjectStorageTest {
      */
     private final HttpClient http = HttpClient.newHttpClient();
 
+    // ============================== Bean ==============================
+
     @Autowired
     ObjectStorage storage;
 

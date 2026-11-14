@@ -49,6 +49,8 @@ class StockReservationApiTest {
      */
     private static final int CONCURRENT_HOLDERS = 10;
 
+    // ============================== Bean ==============================
+
     @Autowired
     StockReservationApi api;
 
@@ -71,7 +73,6 @@ class StockReservationApiTest {
     @BeforeEach
     void setUp() {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         productId = UUID.randomUUID();
     }
 

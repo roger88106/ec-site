@@ -1,8 +1,8 @@
 package com.ecsite.module.inventory.application.job;
 
-import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.application.StockReservationCommandService;
@@ -12,10 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -33,7 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>ジョブはテストから呼ぶ。ほかのテストの引当も消えるので、自分の持ち主の引当だけを確認する。
  */
 @IntegrationTest
-@ExtendWith(OutputCaptureExtension.class)
 class StockReservationCleanupJobTest {
 
     // ============================== 定数 ==============================
@@ -66,6 +64,14 @@ class StockReservationCleanupJobTest {
      */
     private static final Instant EXPIRED_BEFORE = EXPIRES_AT.plus(Duration.ofHours(1));
 
+    /**
+     * 片付けのジョブが出したログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(StockReservationCleanupJob.class);
+
+    // ============================== Bean ==============================
+
     @Autowired
     StockReservationCleanupJob job;
 
@@ -92,7 +98,6 @@ class StockReservationCleanupJobTest {
     @BeforeEach
     void setUp() {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
     }
 
     // ============================== テスト ==============================
@@ -120,23 +125,23 @@ class StockReservationCleanupJobTest {
 
         @Test
         @DisplayName("AC-288 消した件数をログに出す")
-        void logsDeletedCount(CapturedOutput output) {
+        void logsDeletedCount() {
             // 準備：保存期間を過ぎる引当
             var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
             reserve(variant, EXPIRES_AT);
             clock.setInstant(CLEANUP_AT);
             // 巻き戻せないので、ほかのテストの期限の古い引当も消える。消す前に数えて、ログの件数と比べる
             var expectedDeleted = dsl.fetchCount(STOCK_RESERVATION, STOCK_RESERVATION.EXPIRES_AT.lt(EXPIRED_BEFORE));
-            var logStart = CapturedLogs.mark(output);
 
             // 操作：片付けを動かす
+            logs.clear();
             job.cleanUp();
 
             // 確認（前提）：消す引当がある
             assertThat(expectedDeleted).isPositive();
 
             // 確認：消す前に数えた件数がログに出る
-            assertThat(CapturedLogs.since(output, logStart)).contains("期限切れの引当を消した：" + expectedDeleted + " 件");
+            assertThat(logs.messages(Level.INFO)).contains("期限切れの引当を消した：" + expectedDeleted + " 件");
         }
     }
 

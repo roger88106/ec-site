@@ -2,7 +2,6 @@ package com.ecsite.module.inventory.api;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
-import com.ecsite.MutableClock;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +35,8 @@ class StockAvailabilityApiTest {
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    // ============================== Bean ==============================
+
     @Autowired
     StockAvailabilityApi api;
 
@@ -45,9 +46,6 @@ class StockAvailabilityApiTest {
     @Autowired
     StockReservationApi reservationApi;
 
-    @Autowired
-    MutableClock clock;
-
     /**
      * 在庫を作る補助
      */
@@ -55,7 +53,6 @@ class StockAvailabilityApiTest {
 
     @BeforeEach
     void setUp() {
-        clock.setInstant(NOW);
         inventory = new InventoryTestData(stockItemRepository, NOW);
     }
 

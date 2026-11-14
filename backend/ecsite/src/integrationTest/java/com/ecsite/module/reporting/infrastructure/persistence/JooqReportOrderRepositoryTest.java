@@ -58,9 +58,9 @@ class JooqReportOrderRepositoryTest {
     /**
      * 出荷日時
      *
-     * <p>日本時間の 2026-10-09 23:30。
+     * <p>日本時間の 2026-10-10 00:30（UTC では 2026-10-09）。
      */
-    private static final Instant SHIPPED_AT = Instant.parse("2026-10-09T14:30:00Z");
+    private static final Instant SHIPPED_AT = Instant.parse("2026-10-09T15:30:00Z");
 
     /**
      * 注文番号
@@ -103,6 +103,8 @@ class JooqReportOrderRepositoryTest {
      * 送料の消費税
      */
     private static final long SHIPPING_TAX = 91;
+
+    // ============================== Bean ==============================
 
     @Autowired
     ReportOrderRepository repository;
@@ -147,10 +149,10 @@ class JooqReportOrderRepositoryTest {
             // 操作：保存する
             repository.save(order);
 
-            // 確認：日本時間の 2026-10-08 と 2026-10-09
+            // 確認：UTC の日付（2026-10-07 と 2026-10-09）でなく、日本時間の 2026-10-08 と 2026-10-10
             var row = orderRow(order.orderId());
             assertThat(row.get("ordered_on", LocalDate.class)).isEqualTo(LocalDate.of(2026, 10, 8));
-            assertThat(row.get("shipped_on", LocalDate.class)).isEqualTo(LocalDate.of(2026, 10, 9));
+            assertThat(row.get("shipped_on", LocalDate.class)).isEqualTo(LocalDate.of(2026, 10, 10));
         }
 
         @Test
@@ -399,7 +401,7 @@ class JooqReportOrderRepositoryTest {
     /**
      * 注文の行が、{@link #order} で作った写しの値のまま保存されていることを確認する。
      *
-     * <p>確認すること（期待値は定数）：
+     * <p>確認すること（期待値は定数。状態・配送状態・性別は、列に入る文字列で書く）：
      * <ul>
      *   <li>注文番号</li>
      *   <li>会員 ID</li>

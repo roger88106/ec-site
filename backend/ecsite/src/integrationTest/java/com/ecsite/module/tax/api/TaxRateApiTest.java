@@ -1,7 +1,6 @@
 package com.ecsite.module.tax.api;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.api.model.ConsumptionTaxAmount;
 import com.ecsite.module.tax.api.model.TaxRateSchedule;
@@ -10,7 +9,6 @@ import com.ecsite.module.tax.application.TaxCategoryCommandService;
 import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand.Rate;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,13 +41,6 @@ class TaxRateApiTest {
     private static final Instant APR_2027 = Instant.parse("2027-03-31T15:00:00Z");
 
     /**
-     * テストの現在時刻
-     *
-     * <p>日本時間の 2026-10-08 00:00。
-     */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
      * 2027-04-01 より前の税率（%）
      */
     private static final BigDecimal BEFORE_RATE = new BigDecimal("10");
@@ -59,20 +50,13 @@ class TaxRateApiTest {
      */
     private static final BigDecimal AFTER_RATE = new BigDecimal("8");
 
+    // ============================== Bean ==============================
+
     @Autowired
     TaxRateApi taxRateApi;
 
     @Autowired
     TaxCategoryCommandService commandService;
-
-    @Autowired
-    MutableClock clock;
-
-    @BeforeEach
-    void setClock() {
-        // 同じ構成の他のテストが時計を動かしていても、現在時刻を決めてから始める
-        clock.setInstant(NOW);
-    }
 
     // ============================== テスト ==============================
 

@@ -33,20 +33,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class StoreApiTokenContractTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * OpenAPI で操作を表す HTTP メソッド
      */
     private static final Set<String> HTTP_METHODS = Set.of("get", "put", "post", "delete", "patch");
 
+    // ============================== Bean ==============================
+
+    /**
+     * API を呼ぶ MockMvc
+     */
     @Autowired
     MockMvc mockMvc;
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("AC-232、234 契約で会員の token だけを受け付ける操作は、どれも token なしで 401")
     void memberOperationsRejectMissingToken() throws Exception {
+        // 準備：契約で token が必要な操作
         var operations = operations().stream().filter(Operation::requiresToken).toList();
         assertThat(operations).isNotEmpty();
 
+        // 操作と確認：どの操作も、token なしで 401
         assertThat(statusesWithoutToken(operations)).allSatisfy((name, code) ->
                 assertThat(code).as(name).isEqualTo(401));
     }
@@ -54,9 +65,11 @@ class StoreApiTokenContractTest {
     @Test
     @DisplayName("AC-233、234 契約で token が必要ない操作は、どれも token なしで 401 にならない")
     void publicOperationsAcceptMissingToken() throws Exception {
+        // 準備：契約で token が必要ない操作
         var operations = operations().stream().filter(operation -> !operation.requiresToken()).toList();
         assertThat(operations).isNotEmpty();
 
+        // 操作と確認：どの操作も、token なしで 401 にならない
         assertThat(statusesWithoutToken(operations)).allSatisfy((name, code) ->
                 assertThat(code).as(name).isNotEqualTo(401));
     }
@@ -64,6 +77,7 @@ class StoreApiTokenContractTest {
     @Test
     @DisplayName("契約にない店舗 API の操作は、token なしで 401")
     void unknownOperationRejected() throws Exception {
+        // 操作と確認：契約にない商品の一覧の DELETE を token なしで呼ぶと 401
         mockMvc.perform(request(HttpMethod.DELETE, "/api/store/products").with(TestTokens.none()))
                 .andExpect(status().isUnauthorized());
     }
@@ -71,11 +85,12 @@ class StoreApiTokenContractTest {
     @Test
     @DisplayName("契約にない店舗 API の操作は、会員の token があっても 403")
     void unknownOperationForbiddenWithToken() throws Exception {
+        // 操作と確認：契約にない商品の一覧の DELETE を会員の token で呼ぶと 403
         mockMvc.perform(request(HttpMethod.DELETE, "/api/store/products").with(TestTokens.member().bearer()))
                 .andExpect(status().isForbidden());
     }
 
-    // ============================== 部品 ==============================
+    // ============================== 準備の補助 ==============================
 
     /**
      * 店舗 API の操作

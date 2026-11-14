@@ -4,6 +4,7 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.LogCapture;
 import com.ecsite.MutableClock;
+import com.ecsite.TestClockConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,12 +37,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 class EventCleanupJobTest {
 
+    // ============================== 定数 ==============================
+
     /**
-     * テストの現在時刻
+     * イベントを発行する時刻（統合テストの時計の初期値）
      *
-     * <p>日本時間の 2026-10-08 00:00。イベントを発行する時刻になる。
+     * <p>日本時間の 2026-10-08 00:00。
      */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+    private static final Instant NOW = TestClockConfig.INITIAL_INSTANT;
+
+    /**
+     * 処理の済んだイベントの保存期間（設定の既定）
+     */
+    private static final Duration RETENTION = Duration.ofDays(7);
+
+    /**
+     * 保存期間の内に処理を終えたイベントの発行の時刻（NOW の 2 日後）
+     */
+    private static final Instant RECENT = NOW.plus(Duration.ofDays(2));
+
+    /**
+     * 片付けの時刻（NOW に処理を終えたイベントの保存期間を、1 時間過ぎた時刻）
+     */
+    private static final Instant CLEANUP_AT = NOW.plus(RETENTION).plus(Duration.ofHours(1));
+
+    // ============================== Bean ==============================
 
     /**
      * 片付けのジョブが出したログ
@@ -49,24 +69,45 @@ class EventCleanupJobTest {
     @RegisterExtension
     final LogCapture logs = LogCapture.of(EventCleanupJob.class);
 
+    /**
+     * テストするジョブ（設定の既定の保存期間）
+     */
     @Autowired
     EventCleanupJob job;
 
+    /**
+     * テストの時計
+     */
     @Autowired
     MutableClock clock;
 
+    /**
+     * イベントの発行
+     */
     @Autowired
     ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 発行をコミットするトランザクション
+     */
     @Autowired
     TransactionTemplate transactionTemplate;
 
+    /**
+     * DB を読む jOOQ
+     */
     @Autowired
     DSLContext dsl;
 
+    /**
+     * イベントの発行の記録
+     */
     @Autowired
     EventPublicationRegistry registry;
 
+    /**
+     * 非同期のリスナーを待つ補助
+     */
     @Autowired
     AsyncEvents asyncEvents;
 
@@ -77,35 +118,80 @@ class EventCleanupJobTest {
 
     @BeforeEach
     void setUp() {
-        clock.setInstant(NOW);
         publications = new EventPublications(dsl, transactionTemplate, eventPublisher, registry, asyncEvents, clock);
     }
 
+    // ============================== テスト ==============================
+
     @Test
-    @DisplayName("AC-284 処理を終えてから保存期間（7 日）より前のイベントは消え、その後のものと未完了のイベントは残る（AC-286）。消した件数をログに出す（AC-288）")
-    void deletesEventsCompletedBeforeRetention() {
+    @DisplayName("AC-284 処理を終えてから保存期間（7 日）を過ぎたイベントは消える")
+    void deletesEventCompletedBeforeRetention() {
+        // 準備：NOW に処理を終えたイベント
         var old = publish(new CleanupEvent(UUID.randomUUID(), false));
-        var incomplete = publish(new CleanupEvent(UUID.randomUUID(), true));
-        clock.setInstant(NOW.plus(Duration.ofDays(2)));
+
+        // 操作：保存期間を過ぎてから片付ける
+        clock.setInstant(CLEANUP_AT);
+        job.cleanUp();
+
+        // 確認：イベントの記録がない
+        assertThat(publicationCount(old)).isZero();
+    }
+
+    @Test
+    @DisplayName("AC-284 処理を終えてから保存期間（7 日）を過ぎていないイベントは残る")
+    void keepsEventCompletedWithinRetention() {
+        // 準備：NOW の 2 日後に処理を終えたイベント
+        clock.setInstant(RECENT);
         var recent = publish(new CleanupEvent(UUID.randomUUID(), false));
 
-        clock.setInstant(NOW.plus(Duration.ofDays(7)).plus(Duration.ofHours(1)));
-        // 巻き戻せないので、ほかのテストの処理の済んだ古いイベントも消える。消す前に数えて、ログの件数と比べる
+        // 操作：NOW に処理を終えたものの保存期間を過ぎた時刻に片付ける
+        clock.setInstant(CLEANUP_AT);
+        job.cleanUp();
+
+        // 確認：イベントの記録が残る
+        assertThat(publicationCount(recent)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("AC-286 処理を終えていないイベントは、保存期間を過ぎても残る")
+    void keepsIncompleteEvent() {
+        // 準備：NOW にリスナーが失敗したイベント
+        var incomplete = publish(new CleanupEvent(UUID.randomUUID(), true));
+
+        // 操作：保存期間を過ぎてから片付ける
+        clock.setInstant(CLEANUP_AT);
+        job.cleanUp();
+
+        // 確認：イベントの記録が残る
+        assertThat(publicationCount(incomplete)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("AC-288 消した件数をログに出す")
+    void logsDeletedCount() {
+        // 準備：NOW に処理を終えたイベント
+        publish(new CleanupEvent(UUID.randomUUID(), false));
+
+        // 準備：巻き戻せないので、ほかのテストの処理の済んだ古いイベントも消える。消す前に数えて、ログの件数と比べる
+        clock.setInstant(CLEANUP_AT);
         var expectedDeleted = dsl.fetchCount(EVENT_PUBLICATION,
-                COMPLETION_DATE.lt(clock.instant().minus(Duration.ofDays(7))).and(STATUS.eq("COMPLETED").or(STATUS.isNull())));
+                COMPLETION_DATE.lt(CLEANUP_AT.minus(RETENTION)).and(STATUS.eq("COMPLETED").or(STATUS.isNull())));
+
+        // 操作：片付ける
         logs.clear();
         job.cleanUp();
 
-        assertThat(publicationCount(old)).isZero();
-        assertThat(publicationCount(recent)).isEqualTo(1);
-        assertThat(publicationCount(incomplete)).isEqualTo(1);
+        // 確認：消す前に数えた件数（このテストのイベントを含むので 1 件以上）をログに出す
         assertThat(expectedDeleted).isPositive();
         assertThat(logs.messages(Level.INFO)).contains("処理の済んだイベントを消した：" + expectedDeleted + " 件");
     }
 
+    // ============================== 準備の補助 ==============================
+
     /**
      * イベントをコミットするトランザクションで発行し、リスナーの処理が終わるのを待つ。
      *
+     * @param event 発行するイベント
      * @return イベント ID
      */
     private UUID publish(CleanupEvent event) {
@@ -113,7 +199,10 @@ class EventCleanupJobTest {
     }
 
     /**
-     * イベントの記録の数
+     * イベントの記録の数を返す。
+     *
+     * @param eventId イベント ID
+     * @return 記録の数
      */
     private int publicationCount(UUID eventId) {
         return publications.count(eventId);

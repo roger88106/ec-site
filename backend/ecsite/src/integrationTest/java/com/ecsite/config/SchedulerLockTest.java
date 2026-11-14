@@ -25,23 +25,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 class SchedulerLockTest {
 
+    // ============================== Bean ==============================
+
+    /**
+     * 分散ロックを取るテストのジョブ
+     */
     @Autowired
     LockedJob job;
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("同じジョブが動いている間にもう 1 回起動しても、飛ばされ、1 回だけ動く")
     void runsOnlyOnceAtTheSameTime() throws Exception {
         try (var executor = Executors.newSingleThreadExecutor()) {
+            // 準備：別のスレッドで 1 回目を動かし、動き始めるのを待つ
             var first = CompletableFuture.runAsync(job::run, executor);
             job.awaitRunning();
 
+            // 操作：1 回目の最中に 2 回目を呼び、その後で 1 回目を終わらせる
             job.run();
             job.finish();
             first.get(30, TimeUnit.SECONDS);
         }
 
+        // 確認：動いたのは 1 回だけ
         assertThat(job.runs()).isEqualTo(1);
     }
+
+    // ============================== 準備の補助 ==============================
 
     /**
      * テストのジョブを登録する設定
@@ -49,6 +61,11 @@ class SchedulerLockTest {
     @TestConfiguration(proxyBeanMethods = false)
     static class Config {
 
+        /**
+         * テストのジョブを登録する。
+         *
+         * @return テストのジョブ
+         */
         @Bean
         LockedJob lockedJob() {
             return new LockedJob();

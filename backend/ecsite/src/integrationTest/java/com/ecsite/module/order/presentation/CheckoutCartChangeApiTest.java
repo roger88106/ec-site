@@ -30,12 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 注文手続きと、カートの変更のイベントの受け入れテスト
  *
+ * <p>カートの変更のイベントで、そのカートの注文手続きの引当が解けることだけを確認する。
+ * 進み直しと期限の経過による引当の解除は {@link CheckoutStartApiTest} が確認する。
+ *
  * <p>カートの変更のイベントはコミットの後に非同期で届くので、テストはトランザクションにせず、コミットして処理を待つ。
  *
  * <p>作ったデータは消さない。他のテストは、一覧の全体ではなく自分のデータだけを確認する。
  */
 @IntegrationTest
 class CheckoutCartChangeApiTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * テストの現在時刻
@@ -82,6 +87,9 @@ class CheckoutCartChangeApiTest {
      */
     private UUID taxCategoryId;
 
+    /**
+     * このテストの会員のカート ID
+     */
     private UUID cartId;
 
     /**
@@ -103,16 +111,22 @@ class CheckoutCartChangeApiTest {
         cartId = orders.cart();
     }
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("AC-84 カートを変更すると（カート変更のイベント）、そのカートの注文手続きの引当が解かれる")
     void releasesReservationOnCartChange() throws Exception {
+        // 準備：在庫 3 の品目を 2 個入れて、注文手続きに進む
         var variant = stockedVariant(3);
         orders.add(cartId, variant, 2);
         // 追加のイベントのリスナーが、次の注文手続きの引当を解かないように、先に処理を待つ
         awaitCartChanged();
         orders.startCheckout(cartId);
+
+        // 確認（前提）：2 個を引き当てている
         assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
 
+        // 操作：カートの数量を変え、変更のイベントの処理を待つ
         mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + variant).with(owner.bearer())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -120,20 +134,24 @@ class CheckoutCartChangeApiTest {
                 .andExpect(status().isNoContent());
         awaitCartChanged();
 
+        // 確認：引当が解け、販売可能数が在庫数に戻っている
         assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
     }
 
-    // ============================== 補助 ==============================
+    // ============================== 準備の補助 ==============================
 
     /**
-     * このカートの変更のイベントの処理が終わるのを待つ
+     * このカートの変更のイベントの処理が終わるのを待つ。
      */
     private void awaitCartChanged() {
         asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.cartId().equals(cartId));
     }
 
     /**
-     * 公開した商品（1,000 円・10%）のバリアントを作り、在庫数を設定して、バリアント ID を返す
+     * 公開した商品（1,000 円・10%）のバリアントを作り、在庫数を設定して、バリアント ID を返す。
+     *
+     * @param quantity 在庫数
+     * @return バリアント ID
      */
     private UUID stockedVariant(int quantity) throws Exception {
         return inventory.stockedVariant(catalog, taxCategoryId, "商品", quantity);

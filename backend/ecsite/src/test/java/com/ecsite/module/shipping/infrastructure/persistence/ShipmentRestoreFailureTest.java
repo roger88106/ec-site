@@ -17,26 +17,35 @@ import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 /**
  * 出荷を DB の値から戻すときの失敗の単体テスト
  *
- * <p>例外の出力に DB の値が出ないことを確認する。
+ * <p>DB の値を戻せないときに、例外の出力に DB の値が出ないことだけを確認する。値を正しく戻すことは、Repository の
+ * 統合テストが確認する。
  */
 class ShipmentRestoreFailureTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * 例外のメッセージに入ると分かる値
      */
     private final String value = RestoreFailures.value();
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("配送業者が列挙にないとき、例外の出力に値が出ない")
     void hidesCarrier() {
+        // 操作と確認：配送業者を列挙にない値にした行を読む
         assertFindHides(shipment -> shipment.setCarrier(value));
     }
 
     @Test
     @DisplayName("配送状態が列挙にないとき、例外の出力に値が出ない")
     void hidesStatus() {
+        // 操作と確認：配送状態を列挙にない値にした行を読む
         assertFindHides(shipment -> shipment.setStatus(value));
     }
+
+    // ============================== 確認の補助 ==============================
 
     /**
      * 行の一部を壊して出荷を読み、例外の出力に値が出ないことを確認する。

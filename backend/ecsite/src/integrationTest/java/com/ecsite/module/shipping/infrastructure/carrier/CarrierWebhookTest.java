@@ -9,9 +9,11 @@ import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -36,11 +38,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 物流サービスの通知のエンドポイントの統合テスト
  *
+ * <p>通知で配送状態が進むこと、重ねて届いた通知・順序の入れ替わり・途中の欠けの扱い、署名の誤りと合わない通知の扱いを確認する。
+ * 配送状態の変化のイベントは {@code DeliveryStatusChangedEventTest} が確認する。
+ *
  * <p>HTTP（MockMvc）を通し、署名はエンドポイントの実装を使わずにテストで作る。
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */
 @IntegrationTest
 class CarrierWebhookTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * 通知を受け付ける時刻
@@ -48,6 +55,13 @@ class CarrierWebhookTest {
      * <p>日本時間の 2026-10-15 11:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-15T02:00:00Z");
+
+    /**
+     * 正しくない署名（形は合うが、値がどの本文の署名とも合わない）
+     */
+    private static final String ZERO_SIGNATURE = "sha256=" + "0".repeat(64);
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -72,174 +86,291 @@ class CarrierWebhookTest {
         clock.setInstant(NOW);
     }
 
-    @ParameterizedTest(name = "ヤマト運輸の「{0}」は {1} になる")
-    @CsvSource({
-            "荷物受付, IN_TRANSIT",
-            "発送, IN_TRANSIT",
-            "作業店通過, IN_TRANSIT",
-            "配達中, IN_TRANSIT",
-            "持戻, IN_TRANSIT",
-            "保管中, IN_TRANSIT",
-            "配達完了, DELIVERED",
-            "返品, RETURNED",
-    })
-    @DisplayName("AC-174 署名の正しい通知を受けると、状態の名前に応じて配送状態が進み、通知を反映した日時が入る")
-    void advancesByNotification(String name, DeliveryStatus expected) throws Exception {
-        var shipment = shipped();
+    // ============================== テスト ==============================
 
-        sendStatus(shipment, name).andExpect(status().isOk());
+    @Nested
+    @DisplayName("通知による配送状態の遷移")
+    class Advance {
 
-        assertThat(statusOf(shipment)).isEqualTo(expected);
-        assertThat(lastNotifiedAtOf(shipment)).contains(NOW);
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "荷物受付, IN_TRANSIT",
+                "発送, IN_TRANSIT",
+                "作業店通過, IN_TRANSIT",
+                "配達中, IN_TRANSIT",
+                "持戻, IN_TRANSIT",
+                "保管中, IN_TRANSIT",
+                "配達完了, DELIVERED",
+                "返品, RETURNED",
+        })
+        @DisplayName("AC-174 署名の正しい通知を受けると、ヤマト運輸の状態の名前に応じた配送状態に進み、通知を反映した日時が入る")
+        void advancesByNotification(String name, DeliveryStatus expected) throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：状態の名前の通知を送る
+            sendStatus(shipment, name).andExpect(status().isOk());
+
+            // 確認：対応の表の配送状態と、受け付けた時刻
+            assertThat(statusOf(shipment)).isEqualTo(expected);
+            assertThat(lastNotifiedAtOf(shipment)).contains(NOW);
+        }
+
+        @Test
+        @DisplayName("AC-174 ハイフン入りの送り状番号の通知でも、同じ出荷に反映される")
+        void matchesHyphenatedTrackingNumber() throws Exception {
+            // 準備：出荷済みの出荷と、その送り状番号にハイフンを入れた番号
+            var shipment = shipped();
+            var hyphenated = shipment.trackingNumber().substring(0, 4) + "-" + shipment.trackingNumber().substring(4);
+
+            // 操作：ハイフン入りの番号で配達中を送る
+            send(signed(body("YAMATO", hyphenated, "配達中"))).andExpect(status().isOk());
+
+            // 確認：配送中になる
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+        }
     }
 
-    @Test
-    @DisplayName("AC-174 ハイフン入りの送り状番号の通知でも、同じ出荷に反映される")
-    void matchesHyphenatedTrackingNumber() throws Exception {
-        var shipment = shipped();
-        var hyphenated = shipment.trackingNumber().substring(0, 4) + "-" + shipment.trackingNumber().substring(4);
+    @Nested
+    @DisplayName("重複・順序の入れ替わり・途中の欠け")
+    class Disorder {
 
-        send(signed(body("YAMATO", hyphenated, "配達中"))).andExpect(status().isOk());
+        @Test
+        @DisplayName("AC-175 同じ通知が重ねて届いても、1 回だけ反映され、通知を反映した日時は最初のまま")
+        void appliesDuplicateOnce() throws Exception {
+            // 準備：出荷済みの出荷と、配達中の通知
+            var shipment = shipped();
+            var notification = signed(body("YAMATO", shipment.trackingNumber(), "配達中"));
 
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+            // 操作：同じ通知を、10 分空けて 2 回送る
+            send(notification).andExpect(status().isOk());
+            clock.advance(Duration.ofMinutes(10));
+            send(notification).andExpect(status().isOk());
+
+            // 確認：配送中で、反映した日時は 1 回目
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+            assertThat(lastNotifiedAtOf(shipment)).contains(NOW);
+        }
+
+        @Test
+        @DisplayName("AC-176 配達完了の後に、配達中や荷物受付の通知が届いても、配達完了のまま")
+        void doesNotGoBackWhenOutOfOrder() throws Exception {
+            // 準備：配達完了にした出荷
+            var shipment = shipped();
+            sendStatus(shipment, "配達完了").andExpect(status().isOk());
+            clock.advance(Duration.ofMinutes(10));
+
+            // 操作：10 分後に、順位の低い通知を送る
+            sendStatus(shipment, "配達中").andExpect(status().isOk());
+            sendStatus(shipment, "荷物受付").andExpect(status().isOk());
+
+            // 確認：配達完了のままで、反映した日時も配達完了のとき
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.DELIVERED);
+            assertThat(lastNotifiedAtOf(shipment)).contains(NOW);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({"配達完了, 返品, DELIVERED", "返品, 配達完了, RETURNED"})
+        @DisplayName("AC-176 配達完了と返送の通知が入れ替わって届いても、先に反映した状態のまま")
+        void deliveredAndReturnedDoNotSwap(String first, String second, DeliveryStatus expected) throws Exception {
+            // 準備：先の通知を反映した出荷
+            var shipment = shipped();
+            sendStatus(shipment, first).andExpect(status().isOk());
+
+            // 操作：同じ順位の、もう一方の通知を送る
+            sendStatus(shipment, second).andExpect(status().isOk());
+
+            // 確認：先に反映した状態のまま
+            assertThat(statusOf(shipment)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("AC-177 途中の通知が届かなくても、出荷済みから配達完了へ進む")
+        void skipsToDelivered() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：配送中を経ずに、配達完了を送る
+            sendStatus(shipment, "配達完了").andExpect(status().isOk());
+
+            // 確認：配達完了になる
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.DELIVERED);
+        }
+
+        @Test
+        @DisplayName("AC-177 途中の通知が届かなくても、出荷済みから返送へ進む")
+        void skipsToReturned() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：配送中を経ずに、返品を送る
+            sendStatus(shipment, "返品").andExpect(status().isOk());
+
+            // 確認：返送になる
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.RETURNED);
+        }
     }
 
-    @Test
-    @DisplayName("AC-175 同じ通知が重ねて届いても、1 回だけ反映され、通知を反映した日時は最初のまま")
-    void appliesDuplicateOnce() throws Exception {
-        var shipment = shipped();
-        var notification = signed(body("YAMATO", shipment.trackingNumber(), "配達中"));
+    @Nested
+    @DisplayName("署名を確認できない通知")
+    class Signature {
 
-        send(notification).andExpect(status().isOk());
-        clock.advance(Duration.ofMinutes(10));
-        send(notification).andExpect(status().isOk());
+        @Test
+        @DisplayName("AC-178 署名の値が合わない通知は 401 で処理せず、配送状態を変えない")
+        void rejectsWrongSignatureValue() throws Exception {
+            // 準備：出荷済みの出荷と、配達完了の本文
+            var shipment = shipped();
+            var body = body("YAMATO", shipment.trackingNumber(), "配達完了");
 
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.IN_TRANSIT);
-        assertThat(lastNotifiedAtOf(shipment)).contains(NOW);
+            // 操作と確認：形だけ合う署名で送ると 401
+            send(new Request(body, ZERO_SIGNATURE)).andExpect(status().isUnauthorized());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("AC-178 別の鍵で署名した通知は 401 で処理せず、配送状態を変えない")
+        void rejectsSignatureWithOtherKey() throws Exception {
+            // 準備：出荷済みの出荷と、配達完了の本文
+            var shipment = shipped();
+            var body = body("YAMATO", shipment.trackingNumber(), "配達完了");
+
+            // 操作と確認：別の鍵の署名で送ると 401
+            send(new Request(body, sign(body, "別の鍵"))).andExpect(status().isUnauthorized());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("AC-178 署名のない通知は 401 で処理せず、配送状態を変えない")
+        void rejectsMissingSignature() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作と確認：署名のヘッダーなしで送ると 401
+            send(new Request(body("YAMATO", shipment.trackingNumber(), "配達中"), null)).andExpect(status().isUnauthorized());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("AC-178 署名の後に本文を書き換えた通知は 401 で処理せず、配送状態を変えない")
+        void rejectsTamperedBody() throws Exception {
+            // 準備：出荷済みの出荷と、配達中の本文の署名を付けた、配達完了の本文
+            var shipment = shipped();
+            var signed = signed(body("YAMATO", shipment.trackingNumber(), "配達中"));
+            var tampered = new Request(body("YAMATO", shipment.trackingNumber(), "配達完了"), signed.signature());
+
+            // 操作と確認：401
+            send(tampered).andExpect(status().isUnauthorized());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
     }
 
-    @Test
-    @DisplayName("AC-176 配達完了の後に配達中の通知が届いても、配達完了のまま")
-    void doesNotGoBackWhenOutOfOrder() throws Exception {
-        var shipment = shipped();
-        sendStatus(shipment, "配達完了").andExpect(status().isOk());
-        clock.advance(Duration.ofMinutes(10));
+    @Nested
+    @DisplayName("どの出荷とも合わない通知")
+    class Unmatched {
 
-        sendStatus(shipment, "配達中").andExpect(status().isOk());
-        sendStatus(shipment, "荷物受付").andExpect(status().isOk());
+        @Test
+        @DisplayName("AC-178 登録済みのどの出荷とも合わない送り状番号の通知は、200 で何も変えない")
+        void ignoresUnknownTrackingNumber() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
 
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.DELIVERED);
-        assertThat(lastNotifiedAtOf(shipment)).contains(NOW);
+            // 操作と確認：別の送り状番号の通知は 200
+            send(signed(body("YAMATO", ShippingTestData.trackingNumber(), "配達完了"))).andExpect(status().isOk());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("AC-178 送り状番号が同じでも、配送業者が違う通知は、200 で何も変えない")
+        void ignoresDifferentCarrier() throws Exception {
+            // 準備：ヤマト運輸の出荷
+            var shipment = shipped();
+
+            // 操作と確認：同じ番号の佐川急便の通知は 200
+            send(signed(body("SAGAWA", shipment.trackingNumber(), "配達完了"))).andExpect(status().isOk());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("AC-178 対応の表にない状態の名前の通知は、200 で何も変えない")
+        void ignoresUnknownStatusName() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作と確認：表にない名前の通知は 200
+            sendStatus(shipment, "宇宙を移動中").andExpect(status().isOk());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
     }
 
-    @Test
-    @DisplayName("AC-177 途中の通知が届かなくても、出荷済みから配達完了へ進む")
-    void skipsMissingNotifications() throws Exception {
-        var shipment = shipped();
+    @Nested
+    @DisplayName("読めない本文")
+    class UnreadableBody {
 
-        sendStatus(shipment, "配達完了").andExpect(status().isOk());
-
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.DELIVERED);
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {
+                "これは JSON ではない",
+                "{\"carrier\":\"YAMATO\"}",
+                "{\"carrier\":\"UNKNOWN\",\"trackingNumber\":\"1\",\"status\":\"配達中\",\"occurredAt\":\"2026-10-15T01:00:00Z\"}",
+        })
+        @DisplayName("BR-22 署名が合っても、本文が読めない通知は 400")
+        void rejectsUnreadableBody(String body) throws Exception {
+            // 操作と確認：正しい鍵で署名して送ると 400
+            send(signed(body)).andExpect(status().isBadRequest());
+        }
     }
 
-    @Test
-    @DisplayName("AC-177 途中の通知が届かなくても、出荷済みから返送へ進む")
-    void skipsToReturned() throws Exception {
-        var shipment = shipped();
+    // ============================== 確認の補助 ==============================
 
-        sendStatus(shipment, "返品").andExpect(status().isOk());
-
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.RETURNED);
+    /**
+     * 出荷の配送状態を読む。
+     *
+     * @param shipment 出荷
+     * @return 配送状態
+     */
+    private DeliveryStatus statusOf(Created shipment) {
+        return repository.findAllByOrderIds(List.of(shipment.orderId())).getFirst().status();
     }
 
-    @ParameterizedTest(name = "{0} の後に {1} の通知が届いても {2} のまま")
-    @CsvSource({"配達完了, 返品, DELIVERED", "返品, 配達完了, RETURNED"})
-    @DisplayName("AC-176 配達完了と返送の通知が入れ替わっても、先に反映した状態のまま")
-    void deliveredAndReturnedDoNotSwap(String first, String second, DeliveryStatus expected) throws Exception {
-        var shipment = shipped();
-        sendStatus(shipment, first).andExpect(status().isOk());
-
-        sendStatus(shipment, second).andExpect(status().isOk());
-
-        assertThat(statusOf(shipment)).isEqualTo(expected);
+    /**
+     * 出荷の、最後に通知を反映した日時を読む。
+     *
+     * @param shipment 出荷
+     * @return 日時。まだ反映していなければ空
+     */
+    private Optional<Instant> lastNotifiedAtOf(Created shipment) {
+        return repository.findAllByOrderIds(List.of(shipment.orderId())).getFirst().lastNotifiedAt();
     }
 
-    @Test
-    @DisplayName("AC-178 署名が合わない通知は 401 で処理せず、配送状態を変えない")
-    void rejectsWrongSignature() throws Exception {
-        var shipment = shipped();
-        var body = body("YAMATO", shipment.trackingNumber(), "配達完了");
-
-        send(new Request(body, "sha256=" + "0".repeat(64))).andExpect(status().isUnauthorized());
-        send(new Request(body, sign(body, "別の鍵"))).andExpect(status().isUnauthorized());
-
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
-    }
-
-    @Test
-    @DisplayName("AC-178 署名のない通知と、署名の後に本文を書き換えた通知は 401")
-    void rejectsMissingOrTamperedSignature() throws Exception {
-        var shipment = shipped();
-        var signed = signed(body("YAMATO", shipment.trackingNumber(), "配達中"));
-        var tampered = new Request(body("YAMATO", shipment.trackingNumber(), "配達完了"), signed.signature());
-
-        send(new Request(signed.body(), null)).andExpect(status().isUnauthorized());
-        send(tampered).andExpect(status().isUnauthorized());
-
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
-    }
-
-    @Test
-    @DisplayName("AC-178 登録済みのどの出荷とも合わない送り状番号の通知は、200 で何も変えない")
-    void ignoresUnknownTrackingNumber() throws Exception {
-        var shipment = shipped();
-
-        send(signed(body("YAMATO", ShippingTestData.trackingNumber(), "配達完了"))).andExpect(status().isOk());
-
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
-    }
-
-    @Test
-    @DisplayName("AC-178 送り状番号が同じでも、配送業者が違う通知は、200 で何も変えない")
-    void ignoresDifferentCarrier() throws Exception {
-        var shipment = shipped();
-
-        send(signed(body("SAGAWA", shipment.trackingNumber(), "配達完了"))).andExpect(status().isOk());
-
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
-    }
-
-    @Test
-    @DisplayName("AC-178 対応の表にない状態の名前の通知は、200 で何も変えない")
-    void ignoresUnknownStatusName() throws Exception {
-        var shipment = shipped();
-
-        sendStatus(shipment, "宇宙を移動中").andExpect(status().isOk());
-
-        assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
-    }
-
-    @Test
-    @DisplayName("BR-22 署名が合っても、本文が読めない通知は 400")
-    void rejectsUnreadableBody() throws Exception {
-        send(signed("これは JSON ではない")).andExpect(status().isBadRequest());
-        send(signed("{\"carrier\":\"YAMATO\"}")).andExpect(status().isBadRequest());
-        send(signed("{\"carrier\":\"UNKNOWN\",\"trackingNumber\":\"1\",\"status\":\"配達中\","
-                + "\"occurredAt\":\"2026-10-15T01:00:00Z\"}")).andExpect(status().isBadRequest());
-    }
-
-    // ============================== 補助 ==============================
+    // ============================== 準備の補助 ==============================
 
     /**
      * 署名付きのリクエスト
      *
-     * <p>本文と、ヘッダーに入れる署名。
+     * @param body      本文
+     * @param signature ヘッダーに入れる署名（入れないときは null）
      */
     private record Request(String body, String signature) {
     }
 
     /**
      * 作った出荷
+     *
+     * @param orderId        注文 ID
+     * @param trackingNumber 送り状番号
      */
     private record Created(UUID orderId, String trackingNumber) {
     }
@@ -248,6 +379,8 @@ class CarrierWebhookTest {
      * ヤマト運輸の出荷を作る。
      *
      * <p>送り状番号は、ほかのテストが確定した出荷と重ならない。
+     *
+     * @return 作った出荷
      */
     private Created shipped() {
         var orderId = UUID.randomUUID();
@@ -258,6 +391,11 @@ class CarrierWebhookTest {
 
     /**
      * 出荷の送り状番号と状態の名前で、署名付きの通知を送る。
+     *
+     * @param shipment   出荷
+     * @param statusName 物流サービスの状態の名前
+     * @return 応答
+     * @throws Exception 送れなかったとき
      */
     private ResultActions sendStatus(Created shipment, String statusName) throws Exception {
         return send(signed(body("YAMATO", shipment.trackingNumber(), statusName)));
@@ -265,6 +403,11 @@ class CarrierWebhookTest {
 
     /**
      * 通知の本文を作る。
+     *
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @param statusName     物流サービスの状態の名前
+     * @return 本文の JSON
      */
     private static String body(String carrier, String trackingNumber, String statusName) {
         return "{\"carrier\":\"%s\",\"trackingNumber\":\"%s\",\"status\":\"%s\",\"occurredAt\":\"2026-10-15T01:30:00Z\"}"
@@ -273,6 +416,9 @@ class CarrierWebhookTest {
 
     /**
      * 本文に正しい鍵で署名する。
+     *
+     * @param body 本文
+     * @return 署名付きのリクエスト
      */
     private Request signed(String body) {
         return new Request(body, sign(body, secret));
@@ -280,6 +426,10 @@ class CarrierWebhookTest {
 
     /**
      * 本文の HMAC-SHA256（16 進、小文字）を、ヘッダーの値の形にする。
+     *
+     * @param body 本文
+     * @param key  鍵
+     * @return ヘッダーの値
      */
     private static String sign(String body, String key) {
         try {
@@ -293,6 +443,10 @@ class CarrierWebhookTest {
 
     /**
      * 通知のエンドポイントへ送る。
+     *
+     * @param request 署名付きのリクエスト
+     * @return 応答
+     * @throws Exception 送れなかったとき
      */
     private ResultActions send(Request request) throws Exception {
         var builder = post("/api/webhooks/carrier")
@@ -302,19 +456,5 @@ class CarrierWebhookTest {
             builder.header("X-Carrier-Signature", request.signature());
         }
         return mockMvc.perform(builder);
-    }
-
-    /**
-     * 出荷の配送状態を読む。
-     */
-    private DeliveryStatus statusOf(Created shipment) {
-        return repository.findAllByOrderIds(List.of(shipment.orderId())).getFirst().status();
-    }
-
-    /**
-     * 出荷の、最後に通知を反映した日時を読む。
-     */
-    private Optional<Instant> lastNotifiedAtOf(Created shipment) {
-        return repository.findAllByOrderIds(List.of(shipment.orderId())).getFirst().lastNotifiedAt();
     }
 }

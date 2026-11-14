@@ -36,10 +36,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * キャンセルと在庫の戻しの一貫性の受け入れテスト
  *
  * <p>在庫の戻しを失敗させ、注文もキャンセルにならないこと（トランザクションごと取り消されること）を確認する。
- * 取り消しを見るためにコミットが必要だが、作ったデータは消さない。税区分の名称は、ほかのテストと重ならない名前にする。
+ * キャンセルが成功するときに在庫が戻ることは、{@code CancellationApiTest} が確認する。
+ *
+ * <p>取り消しを見るためにコミットが必要だが、作ったデータは消さない。税区分の名前と会員はテストごとに変え、
+ * 確認は自分の注文と在庫だけにする。
  */
 @IntegrationTest
 class CancellationAtomicityTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * テストの現在時刻
@@ -47,6 +52,18 @@ class CancellationAtomicityTest {
      * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    /**
+     * 準備で入荷する在庫数
+     */
+    private static final int STOCKED = 5;
+
+    /**
+     * 注文の数量
+     */
+    private static final int ORDERED = 2;
+
+    // ============================== テストの準備 ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -82,8 +99,14 @@ class CancellationAtomicityTest {
      */
     private UUID taxCategoryId;
 
-    private CatalogTestData.TestProduct product;
+    /**
+     * 注文した商品のバリアント ID
+     */
+    private UUID variantId;
 
+    /**
+     * 受付の注文の ID
+     */
     private UUID orderId;
 
     /**
@@ -102,12 +125,35 @@ class CancellationAtomicityTest {
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("一貫性-" + UUID.randomUUID().toString().substring(0, 8), "10");
-        product = catalog.product(taxCategoryId, "一貫性の商品", 1000).publish();
-        var variantId = product.variantIds.getFirst();
-        inventory.stock(variantId, product.id, 5);
-        orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, 2);
+        var product = catalog.product(taxCategoryId, "一貫性の商品", 1000).publish();
+        variantId = product.variantIds.getFirst();
+        inventory.stock(variantId, product.id, STOCKED);
+        orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, ORDERED);
         awaitAuthorizedHandled();
     }
+
+    // ============================== テスト ==============================
+
+    @Test
+    @DisplayName("AC-104 在庫の戻しに失敗すると、注文もキャンセルにならず、在庫も変わらない")
+    void keepsOrderWhenRestoreFails() throws Exception {
+        // 準備：在庫の戻しが失敗する
+        doThrow(new IllegalStateException("在庫の戻しの失敗")).when(stockDirectory).restore(any(), any(), any());
+
+        // 操作と確認：キャンセルは 500 になる
+        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason": "在庫の不備"}"""))
+                .andExpect(status().isInternalServerError());
+
+        // 確認：注文は受付のまま、在庫数は注文の後のまま
+        mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(jsonPath("$.status").value("ACCEPTED"));
+        mockMvc.perform(get("/api/admin/inventory/variants/" + variantId))
+                .andExpect(jsonPath("$.quantity").value(STOCKED - ORDERED));
+    }
+
+    // ============================== 準備の補助 ==============================
 
     /**
      * 与信の成功のイベントのリスナーが終わるのを待つ。
@@ -118,21 +164,5 @@ class CancellationAtomicityTest {
     private void awaitAuthorizedHandled() {
         asyncEvents.awaitHandled(event -> event instanceof PaymentAuthorized authorized
                 && authorized.orderId().equals(orderId));
-    }
-
-    @Test
-    @DisplayName("AC-104 在庫の戻しに失敗すると、注文もキャンセルにならず、在庫も変わらない")
-    void keepsOrderWhenRestoreFails() throws Exception {
-        doThrow(new IllegalStateException("在庫の戻しの失敗")).when(stockDirectory).restore(any(), any(), any());
-
-        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"reason": "在庫の不備"}"""))
-                .andExpect(status().isInternalServerError());
-
-        mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(jsonPath("$.status").value("ACCEPTED"));
-        mockMvc.perform(get("/api/admin/inventory/variants/" + product.variantIds.getFirst()))
-                .andExpect(jsonPath("$.quantity").value(3));
     }
 }

@@ -149,6 +149,8 @@ class PlaceOrderConcurrencyTest {
         var responses = placeAll(List.of(first, second));
 
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsExactlyInAnyOrder(201, 409);
+        var rejected = responses.stream().filter(response -> response.getStatus() == 409).findFirst().orElseThrow();
+        assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");
         assertThat(quantity()).isZero();
     }
 
@@ -192,7 +194,7 @@ class PlaceOrderConcurrencyTest {
 
         // 確認するのは、同時の注文でも支払待ちが上限を超えない結果である。
         // 後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される
-        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderApiTest で確認する）
+        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderPendingLimitApiTest で確認する）
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(2);
         assertThat(OrderTestData.pendingOrderCount(dsl, memberOf(checkouts.getFirst()))).isEqualTo(3);

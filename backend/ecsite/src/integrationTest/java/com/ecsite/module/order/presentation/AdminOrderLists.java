@@ -31,7 +31,7 @@ final class AdminOrderLists {
     private final MockMvc mockMvc;
 
     /**
-     * コンストラクタ
+     * 補助を作る。
      *
      * @param mockMvc API を呼ぶ MockMvc
      */
@@ -40,10 +40,13 @@ final class AdminOrderLists {
     }
 
     /**
-     * 条件に合う注文を、全てのページから集めて、一覧の順に返す
+     * 条件に合う注文を、全てのページから集めて、一覧の順に返す。
+     *
+     * <p>1 ページ 100 件で、最後のページまで取得する。各ページの応答が 200 であることも確認する。
      *
      * @param params 条件の名前と値を交互に並べたもの
      * @return 条件に合う注文の行（一覧の順）
+     * @throws Exception 一覧の取得に失敗したとき
      */
     List<Map<String, Object>> listAll(String... params) throws Exception {
         var items = new ArrayList<Map<String, Object>>();
@@ -62,7 +65,9 @@ final class AdminOrderLists {
     }
 
     /**
-     * 行のうち、指定した注文のものの ID を、行の順に返す
+     * 行のうち、指定した注文のものの ID を、行の順に返す。
+     *
+     * <p>他のテストの注文を除き、自分の注文の並びだけを確認するのに使う。
      *
      * @param items    一覧の行
      * @param orderIds 探す注文の ID
@@ -74,11 +79,12 @@ final class AdminOrderLists {
     }
 
     /**
-     * 指定した注文の行を返す
+     * 指定した注文の行を返す。
      *
      * @param items   一覧の行
      * @param orderId 注文 ID
      * @return 注文の行
+     * @throws java.util.NoSuchElementException 行に注文がないとき
      */
     static Map<String, Object> itemOf(List<Map<String, Object>> items, UUID orderId) {
         return items.stream().filter(item -> orderId.toString().equals(item.get("id"))).findFirst().orElseThrow();

@@ -467,7 +467,7 @@ class ProductApiTest {
         }
 
         @Test
-        @DisplayName("AC-26 税抜価格を変えると、税込価格が変わる")
+        @DisplayName("税抜価格を変えると、税込価格が変わる")
         void recalculatesPriceInclTax() throws Exception {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);

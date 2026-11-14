@@ -98,7 +98,7 @@ class ProductPublicationTest {
         }
 
         @Test
-        @DisplayName("AC-29 公開すると、公開した時刻が初回表示日時になる")
+        @DisplayName("AC-54 公開すると、公開した時刻が初回表示日時になる")
         void recordsFirstShownAt() {
             // 準備：バリアントを持つ非公開の商品
             var product = productWithVariant();
@@ -111,7 +111,7 @@ class ProductPublicationTest {
         }
 
         @Test
-        @DisplayName("AC-29 公開すると、公開のイベントが登録される")
+        @DisplayName("公開すると、公開のイベントが登録される")
         void registersPublishedEvent() {
             // 準備：バリアントを持つ非公開の商品
             var product = productWithVariant();
@@ -207,7 +207,7 @@ class ProductPublicationTest {
         }
 
         @Test
-        @DisplayName("AC-30 非公開にすると、非公開のイベントが登録される")
+        @DisplayName("非公開にすると、非公開のイベントが登録される")
         void registersUnpublishedEvent() {
             // 準備：公開中の商品（公開のイベントは捨てる）
             var product = publishedProduct();
@@ -264,7 +264,7 @@ class ProductPublicationTest {
         }
 
         @Test
-        @DisplayName("AC-32 販売終了にすると、販売終了のイベントが登録される")
+        @DisplayName("販売終了にすると、販売終了のイベントが登録される")
         void registersDiscontinuedEvent() {
             // 準備：公開中の商品（公開のイベントは捨てる）
             var product = publishedProduct();
@@ -347,7 +347,7 @@ class ProductPublicationTest {
         }
 
         @Test
-        @DisplayName("公開開始日時が未来なら、初回表示日時は公開開始日時になる")
+        @DisplayName("AC-54 公開開始日時が未来なら、初回表示日時は公開開始日時になる")
         void usesFuturePublishStart() {
             // 準備：公開開始日時が明日の商品
             var product = productWithPeriod(PublicationPeriod.of(TOMORROW, null));

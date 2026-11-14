@@ -127,7 +127,7 @@ class ProductVariantTest {
         }
 
         @Test
-        @DisplayName("AC-20 登録すると、バリアント登録のイベントが登録される")
+        @DisplayName("登録すると、バリアント登録のイベントが登録される")
         void registersVariantRegisteredEvent() {
             // 準備：軸が色・サイズの商品
             var product = productWithAxes("色", "サイズ");
@@ -504,7 +504,7 @@ class ProductVariantTest {
         }
 
         @Test
-        @DisplayName("AC-71 バリアントを削除すると、バリアント削除のイベントが登録される")
+        @DisplayName("バリアントを削除すると、バリアント削除のイベントが登録される")
         void registersVariantDeletedEvent() {
             // 準備：非公開の商品のバリアント（登録のイベントは捨てる）
             var product = productWithAxes("色");

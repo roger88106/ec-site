@@ -117,7 +117,7 @@ class ProductStatusApiTest {
         }
 
         @Test
-        @DisplayName("AC-29 公開すると、公開した時刻が初回表示日時として記録される")
+        @DisplayName("AC-54 公開すると、公開した時刻が初回表示日時として記録される")
         void recordsFirstShownAt() throws Exception {
             // 準備：バリアントを持つ非公開の商品
             var id = products.productWithVariant(PRODUCT_CODE);

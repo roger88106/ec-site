@@ -479,14 +479,14 @@ class InventoryApiTest {
     class Operator {
 
         @Test
-        @DisplayName("AC-142 運営者の調整は、token の運営者の氏名の写しを応答に出す")
+        @DisplayName("運営者の調整は、token の運営者の氏名の写しを応答に出す")
         void returnsOperatorName() throws Exception {
             // 操作と確認：応答に運営者の氏名が出る
             adjustAsNamedOperator().andExpect(jsonPath("$.operatorName").value(operatorName()));
         }
 
         @Test
-        @DisplayName("AC-142 運営者の調整は、token の運営者の氏名の写しを残し、履歴に出す")
+        @DisplayName("運営者の調整は、token の運営者の氏名の写しを残し、履歴に出す")
         void recordsOperatorName() throws Exception {
             // 準備：氏名のある運営者が調整する
             adjustAsNamedOperator();
@@ -497,7 +497,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("AC-142 注文に由来する調整は、運営者の操作でないので空")
+        @DisplayName("注文に由来する調整は、運営者の操作でないので空")
         void leavesOrderAdjustmentEmpty() throws Exception {
             // 準備：注文のキャンセルで在庫を戻す
             stockReservationApi.restore(Map.of(variantId, 2), UUID.randomUUID(), ORDER_NUMBER);

@@ -1,6 +1,7 @@
 package com.ecsite;
 
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
@@ -34,6 +36,42 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 商品と在庫は、呼ぶ側が先に用意する。
  */
 public class OrderTestData {
+
+    /**
+     * 既定のお届け先の氏名
+     */
+    public static final String RECIPIENT_NAME = "山田 太郎";
+
+    /**
+     * 既定のお届け先の郵便番号
+     */
+    public static final String POSTAL_CODE = "100-0001";
+
+    /**
+     * 既定のお届け先の都道府県コード（東京都）
+     */
+    public static final String PREFECTURE_CODE = "13";
+
+    /**
+     * 既定のお届け先の市区町村コード（千代田区）
+     */
+    public static final String MUNICIPALITY_CODE = "13101";
+
+    /**
+     * 既定のお届け先の住所（市区町村より後）
+     */
+    public static final String ADDRESS = "千代田 1-1";
+
+    /**
+     * 既定のお届け先の電話番号
+     */
+    public static final String PHONE = "03-1234-5678";
+
+    /**
+     * 送料（税込、円）<br />
+     * 注文の設定（{@code OrderProperties.shippingFee}）の既定値。{@code application.yml} と統合テストの設定は上書きしない。
+     */
+    public static final long SHIPPING_FEE = 1000L;
 
     /**
      * MockMvc
@@ -217,7 +255,7 @@ public class OrderTestData {
      * @return 注文 ID
      */
     public UUID placeFromCheckout(UUID checkoutId, RequestPostProcessor requester) throws Exception {
-        return placeFromCheckout(checkoutId, requester, "山田 太郎");
+        return placeFromCheckout(checkoutId, requester, RECIPIENT_NAME);
     }
 
     /**
@@ -228,7 +266,7 @@ public class OrderTestData {
      * @return 注文 ID
      */
     public UUID placeOrder(UUID variantId, int quantity) throws Exception {
-        return placeOrder(variantId, quantity, "山田 太郎");
+        return placeOrder(variantId, quantity, RECIPIENT_NAME);
     }
 
     /**
@@ -257,7 +295,7 @@ public class OrderTestData {
      * @return 注文 ID
      */
     public UUID placePendingOrder(UUID variantId, int quantity) throws Exception {
-        return placePendingOrder(variantId, quantity, "山田 太郎");
+        return placePendingOrder(variantId, quantity, RECIPIENT_NAME);
     }
 
     /**
@@ -366,7 +404,20 @@ public class OrderTestData {
     }
 
     /**
-     * 決まったお届け先で注文する本文（郵便番号は {@code 100-0001}）。
+     * 注文の与信の成功のイベント（{@link PaymentAuthorized}）を選ぶ条件を返す。<br />
+     * コミットするテストで、支払った後に、与信の成功のリスナーが注文を受け付け直すのを待つときに、
+     * {@code asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId))} のように使う。
+     * 待たずに出荷やキャンセルをすると、リスナーの更新と楽観ロックで衝突することがある。
+     *
+     * @param orderId 注文 ID
+     * @return イベントの条件
+     */
+    public static Predicate<Object> paymentAuthorized(UUID orderId) {
+        return event -> event instanceof PaymentAuthorized authorized && authorized.orderId().equals(orderId);
+    }
+
+    /**
+     * 決まったお届け先（{@link #RECIPIENT_NAME} などの定数）で注文する本文。
      *
      * <p>お届け先の項目を確認するテストは、確認する項目を変えた本文をテストの中で書く。
      *
@@ -374,7 +425,7 @@ public class OrderTestData {
      * @return 注文のリクエストの本文
      */
     public static String orderBody(long expectedTotal) {
-        return orderBody(expectedTotal, "山田 太郎");
+        return orderBody(expectedTotal, RECIPIENT_NAME);
     }
 
     /**
@@ -386,9 +437,9 @@ public class OrderTestData {
      */
     public static String orderBody(long expectedTotal, String name) {
         return """
-                {"expectedTotal": %d, "shippingAddress": {"name": "%s", "postalCode": "100-0001",
-                 "prefectureCode": "13", "municipalityCode": "13101", "address": "千代田 1-1", "phone": "03-1234-5678"}}"""
-                .formatted(expectedTotal, name);
+                {"expectedTotal": %d, "shippingAddress": {"name": "%s", "postalCode": "%s",
+                 "prefectureCode": "%s", "municipalityCode": "%s", "address": "%s", "phone": "%s"}}"""
+                .formatted(expectedTotal, name, POSTAL_CODE, PREFECTURE_CODE, MUNICIPALITY_CODE, ADDRESS, PHONE);
     }
 
     /**

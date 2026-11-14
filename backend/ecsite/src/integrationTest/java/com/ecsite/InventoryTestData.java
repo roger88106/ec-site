@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 在庫のテストデータ
  *
- * <p>統合テストで、バリアントの在庫を作り、入荷として調整する。
+ * <p>統合テストで、バリアントの在庫を作り、入荷として調整する。在庫数の増減もする。
  * 在庫の Repository を直接呼ぶ（API は使わない）。調整の操作者は {@link TestTokens#OPERATOR}、時刻は渡された時計から取る。
  */
 public class InventoryTestData {
@@ -79,6 +79,18 @@ public class InventoryTestData {
             stockItemRepository.adjust(variantId,
                     StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
         }
+    }
+
+    /**
+     * 在庫数を増減する。<br />
+     * 増やすときは入荷、減らすときは破損・紛失として調整する。在庫は先に作っておく。
+     *
+     * @param variantId バリアント ID
+     * @param delta     増減の数（0 は不可）
+     */
+    public void adjust(UUID variantId, int delta) {
+        var reason = delta > 0 ? StockAdjustmentReason.ARRIVAL : StockAdjustmentReason.DAMAGE_OR_LOSS;
+        stockItemRepository.adjust(variantId, StockAdjustment.create(delta, reason, null, TestTokens.OPERATOR, clock.instant()));
     }
 
     /**

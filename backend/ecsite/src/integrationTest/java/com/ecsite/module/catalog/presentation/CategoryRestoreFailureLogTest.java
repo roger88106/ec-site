@@ -17,6 +17,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -34,11 +35,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>カテゴリのファクトリーを包み、復元の処理を、値を入れたメッセージの例外を投げるものに替える（集約を戻す共通の補助はそのまま通す）。
  * DB の値を直接壊す方法は、カテゴリの表の制約が集約の検証と同じ範囲を守るので使えず、メッセージに任意の値を入れることもできない。
+ *
+ * <p>メッセージに入れる値は、ほかのログと混ざらないよう実行ごとに作る。
  */
 @IntegrationTest
 @Transactional
 @ExtendWith(OutputCaptureExtension.class)
 class CategoryRestoreFailureLogTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * テストの現在時刻
@@ -70,29 +75,79 @@ class CategoryRestoreFailureLogTest {
         clock.setInstant(NOW);
     }
 
+    // ============================== テスト ==============================
+
     @Test
-    @DisplayName("復元に失敗したリクエストは 500 の共通のシステムエラーを返し、ログには集約の名前と原因の例外の種類が出て、原因の例外のメッセージの値は出ない")
+    @DisplayName("復元に失敗したリクエストは、500 の共通のシステムエラーを返す")
+    void returnsSystemError() throws Exception {
+        // 準備：カテゴリの復元が失敗するようにする
+        var id = categoryFailingToRestore("secret-" + UUID.randomUUID());
+
+        // 操作と確認：名称の変更は 500 の SYSTEM_ERROR
+        rename(id)
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.errorCode").value("SYSTEM_ERROR"));
+    }
+
+    @Test
+    @DisplayName("復元に失敗したリクエストのログには、集約の名前と、原因の例外の種類が出る")
+    void logsAggregateAndCauseTypes(CapturedOutput output) throws Exception {
+        // 準備：カテゴリの復元が、原因の原因と抑制した例外を持つ例外で失敗するようにする
+        var id = categoryFailingToRestore("secret-" + UUID.randomUUID());
+
+        // 操作：名称を変える
+        var logStart = CapturedLogs.mark(output);
+        rename(id).andExpect(status().isInternalServerError());
+
+        // 確認：集約の名前と、投げた例外・原因・抑制した例外の種類が出る
+        assertThat(CapturedLogs.since(output, logStart))
+                .contains("category restore error: " + IllegalArgumentException.class.getName())
+                .contains(IllegalStateException.class.getName())
+                .contains(UnsupportedOperationException.class.getName());
+    }
+
+    @Test
+    @DisplayName("復元に失敗したリクエストのログには、原因の例外のメッセージの値が出ない")
     void logsWithoutCauseMessages(CapturedOutput output) throws Exception {
-        var id = new CatalogTestData(mockMvc, clock).category("衣類", null);
+        // 準備：カテゴリの復元が、メッセージに値を入れた例外で失敗するようにする
         var secret = "secret-" + UUID.randomUUID();
+        var id = categoryFailingToRestore(secret);
+
+        // 操作：名称を変える
+        var logStart = CapturedLogs.mark(output);
+        rename(id).andExpect(status().isInternalServerError());
+
+        // 確認：メッセージに入れた値が出ない
+        assertThat(CapturedLogs.since(output, logStart)).doesNotContain(secret);
+    }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * カテゴリを登録し、その後の復元が失敗するようにする。
+     *
+     * @param secret 復元で投げる例外のメッセージに入れる値（ログに出ないことを確認するので、実行ごとに作る）
+     * @return カテゴリ ID
+     */
+    private UUID categoryFailingToRestore(String secret) throws Exception {
+        var id = new CatalogTestData(mockMvc, clock).category("衣類", null);
         doAnswer(invocation -> RestoreGuard.<Category>restore("category", () -> {
             throw failureWithChain(secret);
         })).when(categoryFactory).restore(any());
+        return id;
+    }
 
-        var logStart = CapturedLogs.mark(output);
-        mockMvc.perform(put("/api/admin/categories/" + id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name": "ファッション", "version": 0}"""))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.errorCode").value("SYSTEM_ERROR"));
-
-        var logs = CapturedLogs.since(output, logStart);
-        assertThat(logs)
-                .contains("category restore error: " + IllegalArgumentException.class.getName())
-                .contains(IllegalStateException.class.getName())
-                .contains(UnsupportedOperationException.class.getName())
-                .doesNotContain(secret);
+    /**
+     * カテゴリの名称を変える（変更の前にカテゴリを復元する）。
+     *
+     * @param id カテゴリ ID
+     * @return 応答
+     */
+    private ResultActions rename(UUID id) throws Exception {
+        return mockMvc.perform(put("/api/admin/categories/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"name": "ファッション", "version": 0}"""));
     }
 
     /**

@@ -13,10 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class StoreCatalogApiSortTest {
 
-    @ParameterizedTest(name = "{0}")
+    @ParameterizedTest(name = "「{0}」")
     @EnumSource(StoreProductSort.class)
     @DisplayName("AC-277 公開の並び順の全ての値を、application の同じ名前の値に写す")
     void mapsEverySort(StoreProductSort sort) {
+        // 操作と確認：同じ名前の値になる
         assertThat(StoreCatalogApi.toSort(sort)).isEqualTo(StoreProductListQuery.Sort.valueOf(sort.name()));
     }
 }

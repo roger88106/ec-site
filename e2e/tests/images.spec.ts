@@ -32,11 +32,11 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
     await expect(page.getByRole('img', { name: '画像 2' })).toBeVisible()
   })
 
-  const firstUrl = await page.getByRole('img', { name: '画像 1' }).getAttribute('src')
-  const secondUrl = await page.getByRole('img', { name: '画像 2' }).getAttribute('src')
   // 配信するのは、変換した WebP。2 枚は別の画像として登録される
   await expect(page.getByRole('img', { name: '画像 1' })).toHaveAttribute('src', /\.webp$/)
   await expect(page.getByRole('img', { name: '画像 2' })).toHaveAttribute('src', /\.webp$/)
+  const firstUrl = await page.getByRole('img', { name: '画像 1' }).getAttribute('src')
+  const secondUrl = await page.getByRole('img', { name: '画像 2' }).getAttribute('src')
   expect(secondUrl).not.toBe(firstUrl)
 
   await test.step('管理画面：2 枚目を前へ動かすと、並びが入れ替わり、先頭（代表画像）が替わる（AC-37）', async () => {

@@ -12,7 +12,7 @@ import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportPage } from '@/features/report/components/ReportPage'
 import { variantSalesLabel } from '@/features/report/labels'
 import { CALENDAR_PRESETS } from '@/features/report/period'
-import type { ReportCondition } from '@/features/report/reportCondition'
+import { type ReportCondition, toReportQuery } from '@/features/report/reportCondition'
 
 /**
  * バリアントの売れ行き
@@ -50,13 +50,7 @@ function VariantSalesQuery({ condition, productId }: { condition: ReportConditio
     '/reports/variant-sales',
     {
       params: {
-        query: {
-          productId,
-          from: condition.from,
-          to: condition.to,
-          basis: condition.basis,
-          excludeTax: condition.excludeTax,
-        },
+        query: { ...toReportQuery(condition), productId },
       },
     },
     { placeholderData: keepPreviousData },

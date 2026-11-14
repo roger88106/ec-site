@@ -33,9 +33,7 @@ export function OrderActions({ order }: { order: OrderDetail }) {
     invalidate,
   })
   const { actions } = order
-  const { pending } = useMutationGroup(approve, reject, cancel)
-  // キャンセルの失敗はダイアログの中に出す
-  const { error } = useMutationGroup(approve, reject)
+  const { pending, error } = useMutationGroup([approve, reject, cancel], { errorsShownElsewhere: [cancel] })
 
   if (!actions.approveCancellation && !actions.rejectCancellation && !actions.cancel) {
     return null

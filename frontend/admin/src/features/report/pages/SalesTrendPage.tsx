@@ -13,7 +13,7 @@ import { ReportPage } from '@/features/report/components/ReportPage'
 import { bucketLabel } from '@/features/report/labels'
 import { FISCAL_PRESETS } from '@/features/report/period'
 import { formatYenCompact } from '@/features/report/report'
-import type { ReportCondition } from '@/features/report/reportCondition'
+import { type ReportCondition, toReportQuery } from '@/features/report/reportCondition'
 
 /**
  * 売上の推移
@@ -36,12 +36,9 @@ function SalesTrend({ condition }: { condition: ReportCondition }) {
     {
       params: {
         query: {
-          from: condition.from,
-          to: condition.to,
+          ...toReportQuery(condition),
           granularity: condition.granularity,
-          basis: condition.basis,
           productId: condition.productId,
-          excludeTax: condition.excludeTax,
           excludeShipping: condition.excludeShipping,
         },
       },

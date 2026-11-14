@@ -2,7 +2,7 @@ import { carrierLabel, shipmentStatusLabel } from '@ec-site/shared/lib/orderLabe
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { useId } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { carrierValues } from '@/api/generated/admin'
@@ -88,8 +88,8 @@ function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: stri
     invalidate: ['/orders'],
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
-  const values = form.watch()
-  const filled = values.carrier !== null && values.trackingNumber.trim() !== ''
+  const [carrier, trackingNumber] = useWatch({ control: form.control, name: ['carrier', 'trackingNumber'] })
+  const filled = carrier !== null && trackingNumber.trim() !== ''
   const submit = form.handleSubmit((submitted) =>
     mutation.mutate({
       params: { path: { orderId } },

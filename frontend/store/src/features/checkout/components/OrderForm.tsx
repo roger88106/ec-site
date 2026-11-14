@@ -6,7 +6,7 @@ import { Input } from '@ec-site/shared/ui/input'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { type ReactNode, type RefObject, startTransition, useActionState, useEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useActionState, useEffect, useRef, useState } from 'react'
 import { placeOrder } from '@/actions/checkout'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { schemas } from '@/api/generated/constraints'
@@ -17,6 +17,7 @@ import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrde
 import { postalCodeFill } from '@/features/checkout/postalCodeFill'
 import type { ActionResult } from '@/lib/actionResult'
 import { normalizePostalCode } from '@/lib/postalCode'
+import { useKeepInputsSubmit } from '@/lib/useKeepInputsSubmit'
 
 /**
  * 注文のフォームの props
@@ -49,9 +50,7 @@ export function OrderForm(props: OrderFormProps) {
  *
  * 連絡先のメールアドレスは会員のものを示すだけで、入力しない。
  * 都道府県と市区町村は一覧から選び、郵便番号が 7 桁になったら補う（店舗画面の構成の「お届け先の都道府県と市区町村」）。
- * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
- * 読み込み後は onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。
- * action は、JavaScript の読み込み前の送信に使う（ないと、ブラウザーが入力を今の URL のクエリに載せて送る）。
+ * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さない（{@link useKeepInputsSubmit}）。
  *
  * サーバーアクションの結果を props で受けるので、結果ごとの表示をテストで確認できる。
  */
@@ -76,20 +75,10 @@ export function OrderFormView({
   const area = useAddressArea()
   const formRef = useRef<HTMLFormElement>(null)
   useFocusFirstErrorField(formRef, result)
+  const submit = useKeepInputsSubmit(formAction)
 
   return (
-    <form
-      action={formAction}
-      className="space-y-4"
-      ref={formRef}
-      noValidate
-      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを空にし、誤りのときに入力が消える）
-      onSubmit={(event) => {
-        event.preventDefault()
-        const formData = new FormData(event.currentTarget)
-        startTransition(() => formAction(formData))
-      }}
-    >
+    <form {...submit} className="space-y-4" ref={formRef} noValidate>
       <input name="checkoutId" type="hidden" value={checkoutId} />
       <input name="expectedTotal" type="hidden" value={expectedTotal} />
       <div className="space-y-1.5 text-sm">

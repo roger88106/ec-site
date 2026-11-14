@@ -2,7 +2,7 @@ import { isUuid } from '@ec-site/shared/lib/patterns'
 import { granularityValues, reportBasisValues } from '@/api/generated/admin'
 import type { Granularity, ReportBasis } from '@/api/types'
 import { isDate, type Period } from '@/features/report/period'
-import { enumParam } from '@/lib/searchParams'
+import { enumParam, writeParams } from '@/lib/searchParams'
 
 /** 集計の粒度の既定（月） */
 export const DEFAULT_GRANULARITY: Granularity = 'MONTH'
@@ -58,6 +58,23 @@ export function parseCondition(params: URLSearchParams, defaultPeriod: Period): 
 }
 
 /**
+ * 条件を、どのレポートの API にも共通の query にする。
+ *
+ * 粒度・商品・送料は、レポートごとに使い方が違うので、呼び出す側で追加する。
+ *
+ * @param condition レポートの条件
+ * @returns 期間・数え方・消費税の query
+ */
+export function toReportQuery(condition: ReportCondition) {
+  return {
+    from: condition.from,
+    to: condition.to,
+    basis: condition.basis,
+    excludeTax: condition.excludeTax,
+  }
+}
+
+/**
  * 条件を URL のクエリにする。
  *
  * 期間は必ず書き、既定の条件（月、注文基準、全商品、含む）は書かない。
@@ -66,21 +83,11 @@ export function parseCondition(params: URLSearchParams, defaultPeriod: Period): 
  * @returns URL のクエリ
  */
 export function toSearchParams(condition: ReportCondition): URLSearchParams {
-  const params = new URLSearchParams({ from: condition.from, to: condition.to })
-  if (condition.granularity !== DEFAULT_GRANULARITY) {
-    params.set('granularity', condition.granularity)
-  }
-  if (condition.basis !== DEFAULT_BASIS) {
-    params.set('basis', condition.basis)
-  }
-  if (condition.productId) {
-    params.set('productId', condition.productId)
-  }
-  if (condition.excludeTax) {
-    params.set('excludeTax', 'true')
-  }
-  if (condition.excludeShipping) {
-    params.set('excludeShipping', 'true')
+  const { from, to, ...rest } = condition
+  // 期間は空でも書く（他の項目は空と既定を書かない）
+  const params = new URLSearchParams({ from, to })
+  for (const [name, value] of writeParams(rest, { granularity: DEFAULT_GRANULARITY, basis: DEFAULT_BASIS })) {
+    params.set(name, value)
   }
   return params
 }

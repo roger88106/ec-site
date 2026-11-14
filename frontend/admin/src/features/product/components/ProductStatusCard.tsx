@@ -43,7 +43,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
       queryClient.removeQueries({ queryKey: ['get', '/products/{productId}'] })
     },
   })
-  const { pending, error } = useMutationGroup(publish, unpublish, discontinue, remove)
+  const { pending, error } = useMutationGroup([publish, unpublish, discontinue, remove])
 
   return (
     <Card>

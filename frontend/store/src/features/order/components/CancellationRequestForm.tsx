@@ -3,10 +3,11 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import { useTranslations } from 'next-intl'
-import { startTransition, useActionState } from 'react'
+import { useActionState } from 'react'
 import { requestCancellation } from '@/actions/order'
 import { schemas } from '@/api/generated/constraints'
 import { ActionError } from '@/components/ActionError'
+import { useKeepInputsSubmit } from '@/lib/useKeepInputsSubmit'
 
 /** 理由の長さの上限 */
 const REASON_MAX_LENGTH = schemas.RequestOrderCancellationRequest.reason.maxLength
@@ -19,19 +20,9 @@ const REASON_MAX_LENGTH = schemas.RequestOrderCancellationRequest.reason.maxLeng
 export function CancellationRequestForm({ orderId }: { orderId: string }) {
   const t = useTranslations('order.requestForm')
   const [result, formAction, pending] = useActionState(requestCancellation, null)
+  const submit = useKeepInputsSubmit(formAction, () => window.confirm(t('confirm') /* 申請の確認 */))
   return (
-    <form
-      action={formAction}
-      className="flex flex-col items-start gap-3"
-      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを初期値に戻し、失敗したときに理由が消える）
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (window.confirm(t('confirm') /* 申請の確認 */)) {
-          const formData = new FormData(event.currentTarget)
-          startTransition(() => formAction(formData))
-        }
-      }}
-    >
+    <form {...submit} className="flex flex-col items-start gap-3">
       <input name="orderId" type="hidden" value={orderId} />
       <div className="w-full space-y-1.5">
         <Label htmlFor="cancellation-reason">{t('reason') /* 理由 */}</Label>

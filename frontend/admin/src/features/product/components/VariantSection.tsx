@@ -41,15 +41,15 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
   ]
   const ids = product.variants.map((variant) => variant.id)
   // 別の操作を始めたら、前の操作のエラーを消す
-  const { pending, error, resetErrors } = useMutationGroup(reorder, remove, suspend, resume, setImage)
+  const { pending, error, run } = useMutationGroup([reorder, remove, suspend, resume, setImage])
   /** 表示している商品のバージョンで、バリアントの並びを送る。 */
-  const reorderTo = (variantIds: string[]) => {
-    resetErrors()
-    reorder.mutate({
-      params: { path: { productId: product.id } },
-      body: { variantIds, version: product.version },
-    })
-  }
+  const reorderTo = (variantIds: string[]) =>
+    run(() =>
+      reorder.mutate({
+        params: { path: { productId: product.id } },
+        body: { variantIds, version: product.version },
+      }),
+    )
   /**
    * バリアントの 1 行の操作を作る。
    *
@@ -61,20 +61,14 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
    */
   const rowActions = (variantId: string, index: number): VariantRowActions => {
     const path = { productId: product.id, variantId }
-    const run = (action: () => void) => () => {
-      resetErrors()
-      action()
-    }
     return {
       moveUp: () => reorderTo(move(ids, index, index - 1)),
       moveDown: () => reorderTo(move(ids, index, index + 1)),
-      setImage: (imageId) => {
-        resetErrors()
-        setImage.mutate({ params: { path }, body: { imageId, version: product.version } })
-      },
-      suspend: run(() => suspend.mutate({ params: { path } })),
-      resume: run(() => resume.mutate({ params: { path } })),
-      remove: run(() => remove.mutate({ params: { path, query: { version: product.version } } })),
+      setImage: (imageId) =>
+        run(() => setImage.mutate({ params: { path }, body: { imageId, version: product.version } })),
+      suspend: () => run(() => suspend.mutate({ params: { path } })),
+      resume: () => run(() => resume.mutate({ params: { path } })),
+      remove: () => run(() => remove.mutate({ params: { path, query: { version: product.version } } })),
     }
   }
 

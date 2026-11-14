@@ -1,6 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { manualStockAdjustmentReasonValues } from '@/api/generated/admin'
@@ -44,8 +44,8 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
     onSuccess: () => form.reset(EMPTY),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
-  const values = form.watch()
-  const filled = values.delta.trim() !== '' && values.reason !== null
+  const [delta, reason] = useWatch({ control: form.control, name: ['delta', 'reason'] })
+  const filled = delta.trim() !== '' && reason !== null
 
   return (
     <Card>
@@ -92,7 +92,7 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
           </div>
           <Field>
             <FieldLabel htmlFor="stock-memo">
-              {values.reason === 'OTHER' ? t('memoRequired') : t('memoOptional') /* メモ（必須か任意） */}
+              {reason === 'OTHER' ? t('memoRequired') : t('memoOptional') /* メモ（必須か任意） */}
             </FieldLabel>
             <Textarea
               id="stock-memo"

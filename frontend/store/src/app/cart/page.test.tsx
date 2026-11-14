@@ -4,7 +4,7 @@ import { signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { resetRequest } from '@/test/next'
 import { renderStatic } from '@/test/render'
-import { http, server } from '@/test/server'
+import { http, STORE_API, server, statusError } from '@/test/server'
 
 const RETRYING = 'ログインする前のカートを移しています。'
 
@@ -44,5 +44,23 @@ describe('カートの画面の、カートを移す再試行', () => {
     const view = await renderCartPage(true, null)
 
     expect(view.queryByText(RETRYING)).toBeNull()
+  })
+})
+
+describe('カートの画面の表示', () => {
+  test('カートに商品がなければ、空であることと商品を探すリンクを示す', async () => {
+    const view = await renderCartPage(false, COOKIE_CART_ID)
+
+    expect(view.getByText('カートに商品がありません。')).toBeInTheDocument()
+    expect(view.getByRole('link', { name: '商品を探す' })).toHaveAttribute('href', '/products')
+  })
+
+  test('Cookie のカートが見つからなければ（404）、空のカートとして示す', async () => {
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    server.use(statusError('get', `${STORE_API}/carts/:cartId`, 404))
+
+    const view = renderStatic(await CartPage())
+
+    expect(view.getByText('カートに商品がありません。')).toBeInTheDocument()
   })
 })

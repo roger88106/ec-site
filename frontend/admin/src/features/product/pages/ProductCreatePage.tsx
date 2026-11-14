@@ -2,7 +2,7 @@ import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
+import { Controller, FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
@@ -58,9 +58,14 @@ export function ProductCreatePage() {
     onSuccess: (created) => navigate(paths.product(created.id)),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
-  const values = form.watch()
+  const [productCode, name, taxCategoryId, priceExclTax, axisNames] = useWatch({
+    control: form.control,
+    name: ['productCode', 'name', 'taxCategoryId', 'priceExclTax', 'axes'],
+  })
   const filled =
-    values.productCode !== '' && isProductFieldsFilled(values) && values.axes.every((axis) => axis.name.trim() !== '')
+    productCode !== '' &&
+    isProductFieldsFilled({ name, taxCategoryId, priceExclTax }) &&
+    axisNames.every((axis) => axis.name.trim() !== '')
 
   return (
     <>

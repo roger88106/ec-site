@@ -1,12 +1,12 @@
 import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import type { ReactNode } from 'react'
-import { useSearchParams } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { QueryState } from '@/components/QueryState'
 import { ReportConditionForm, type ReportConditionItems } from '@/features/report/components/ReportConditionForm'
 import { type PeriodPreset, presetPeriod, todayInJapan } from '@/features/report/period'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
+import { useUrlState } from '@/hooks/useUrlState'
 
 /**
  * レポートの画面の共通の骨格
@@ -70,10 +70,12 @@ function ReportBody({
   fiscalYearStartMonth: number
   children: (condition: ReportCondition) => ReactNode
 }) {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const condition = parseCondition(searchParams, presetPeriod(defaultPreset, todayInJapan(), fiscalYearStartMonth))
-  /** 条件を URL に反映する（URL が条件の正本）。 */
-  const apply = (next: ReportCondition) => setSearchParams(toSearchParams(next))
+  const defaultPeriod = presetPeriod(defaultPreset, todayInJapan(), fiscalYearStartMonth)
+  const {
+    value: condition,
+    apply,
+    key,
+  } = useUrlState((params) => parseCondition(params, defaultPeriod), toSearchParams)
   return (
     <div className="space-y-6">
       <ReportConditionForm
@@ -81,7 +83,7 @@ function ReportBody({
         excludeShipping={excludeShipping}
         fiscalYearStartMonth={fiscalYearStartMonth}
         granularity={granularity}
-        key={searchParams.toString()}
+        key={key}
         onApply={apply}
         presets={presets}
         productRequired={productRequired}

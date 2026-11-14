@@ -1,6 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -38,6 +38,7 @@ export function CategoryNameDialog({
 }) {
   const tApp = useTranslations('app.common')
   const form = useForm<Values>({ defaultValues: { name: initialName } })
+  const name = useWatch({ control: form.control, name: 'name' })
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
       <DialogContent>
@@ -65,7 +66,7 @@ export function CategoryNameDialog({
           </Field>
           <ErrorMessage error={error} onReload={onReload} shownFields={['name']} />
           <DialogFooter>
-            <Button disabled={pending || !form.watch('name').trim()} type="submit">
+            <Button disabled={pending || !name.trim()} type="submit">
               {tApp('save') /* 保存 */}
             </Button>
           </DialogFooter>

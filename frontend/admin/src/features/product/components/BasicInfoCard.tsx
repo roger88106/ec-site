@@ -1,5 +1,5 @@
 import { Button } from '@ec-site/shared/ui/button'
-import { FormProvider } from 'react-hook-form'
+import { FormProvider, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
@@ -21,6 +21,10 @@ const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.UpdateProductR
  */
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(product, toProductFields, refetch)
+  const [name, taxCategoryId, priceExclTax] = useWatch({
+    control: form.control,
+    name: ['name', 'taxCategoryId', 'priceExclTax'],
+  })
   const t = useTranslations('product.basicInfo')
   const tApp = useTranslations('app.common')
   const mutation = useApiMutation('put', '/products/{productId}', {
@@ -65,7 +69,10 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
               shownFields={PRODUCT_FIELD_NAMES}
             />
             <div>
-              <Button disabled={mutation.isPending || !isProductFieldsFilled(form.watch())} type="submit">
+              <Button
+                disabled={mutation.isPending || !isProductFieldsFilled({ name, taxCategoryId, priceExclTax })}
+                type="submit"
+              >
                 {tApp('save') /* 保存 */}
               </Button>
             </div>

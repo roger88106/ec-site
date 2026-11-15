@@ -13,18 +13,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class InventoryMapperTest {
 
-    @ParameterizedTest(name = "{0}")
+    @ParameterizedTest(name = "「{0}」")
     @EnumSource(ManualStockAdjustmentReason.class)
     @DisplayName("AC-277 リクエストの調整理由の全ての値を、ドメインの同じ名前の値に写す")
     void mapsEveryRequestReason(ManualStockAdjustmentReason reason) {
+        // 操作と確認：同じ名前のドメインの値になる
         assertThat(InventoryMapper.toDomainReason(reason))
                 .isEqualTo(com.ecsite.module.inventory.domain.stock.StockAdjustmentReason.valueOf(reason.name()));
     }
 
-    @ParameterizedTest(name = "{0}")
+    @ParameterizedTest(name = "「{0}」")
     @EnumSource(com.ecsite.module.inventory.domain.stock.StockAdjustmentReason.class)
     @DisplayName("AC-277 ドメインの調整理由の全ての値を、レスポンスの同じ名前の値に写す")
     void mapsEveryDomainReason(com.ecsite.module.inventory.domain.stock.StockAdjustmentReason reason) {
+        // 操作と確認：同じ名前のレスポンスの値になる
         assertThat(InventoryMapper.toResponseReason(reason)).isEqualTo(StockAdjustmentReason.valueOf(reason.name()));
     }
 }

@@ -28,8 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class PriceInclTaxFieldTest {
 
+    // ============================== Bean ==============================
+
     @Autowired
     DSLContext dsl;
+
+    // ============================== テスト ==============================
 
     @ParameterizedTest(name = "税抜 {0} 円、率 {1}%")
     @CsvSource({
@@ -38,18 +42,29 @@ class PriceInclTaxFieldTest {
     })
     @DisplayName("税込価格の SQL の式は、税モジュールの計算と同じ結果になる（1 円未満を切り捨てる）")
     void matchesTaxCalculator(long priceExclTax, BigDecimal ratePercent) {
+        // 準備：税抜価格の商品を DB に入れる
         var taxCategoryId = UUID.randomUUID();
         var productId = insertProduct(taxCategoryId, priceExclTax);
 
+        // 操作：その税区分の率を埋め込んだ SQL の式で、税込価格を求める
         var sql = dsl.select(PriceInclTaxField.of(Map.of(taxCategoryId, ratePercent)))
                 .from(PRODUCT).where(PRODUCT.ID.eq(productId))
                 .fetchOne().value1();
 
+        // 確認：税モジュールの計算と同じ
         assertThat(sql).isEqualTo(TaxCalculator.priceInclTax(Money.of(priceExclTax), RatePercent.of(ratePercent)).yen());
     }
 
+    // ============================== 準備の補助 ==============================
+
     /**
-     * 税区分と税抜価格だけを決めた商品を、DB に直接入れる（式が商品の表の列を読むため）。
+     * 税区分と税抜価格だけを決めた商品を、DB に直接入れる。
+     *
+     * <p>式が商品の表の列を読むため、表に行を入れる。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param priceExclTax  税抜価格
+     * @return 商品 ID
      */
     private UUID insertProduct(UUID taxCategoryId, long priceExclTax) {
         var id = UUID.randomUUID();

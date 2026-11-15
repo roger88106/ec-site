@@ -9,24 +9,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 売上の数え方の単体テスト
+ *
+ * <p>数える注文の状態は、注文の状態の列挙で決める（文字列で比べない）。
  */
 class BasisTest {
 
-    @ParameterizedTest(name = "{0} の {1} は数える：{2}")
+    @ParameterizedTest(name = "「{0}」を数える：{1}")
     @CsvSource({
-            "ORDER, PENDING_PAYMENT, false",
-            "ORDER, ACCEPTED, true",
-            "ORDER, CANCELLATION_REQUESTED, true",
-            "ORDER, SHIPPED, true",
-            "ORDER, CANCELLED, false",
-            "SHIPMENT, PENDING_PAYMENT, false",
-            "SHIPMENT, ACCEPTED, false",
-            "SHIPMENT, CANCELLATION_REQUESTED, false",
-            "SHIPMENT, SHIPPED, true",
-            "SHIPMENT, CANCELLED, false",
+            "PENDING_PAYMENT, false",
+            "ACCEPTED, true",
+            "CANCELLATION_REQUESTED, true",
+            "SHIPPED, true",
+            "CANCELLED, false",
     })
-    @DisplayName("AC-278 数える注文の状態を、注文の状態の列挙で決める")
-    void countsByStatus(Basis basis, ReportOrderStatus status, boolean counted) {
-        assertThat(basis.countedStatuses().contains(status)).isEqualTo(counted);
+    @DisplayName("AC-278、BR-25 注文基準は、受付・キャンセル申請中・出荷済みの注文を数える")
+    void orderBasisCountsAcceptedToShipped(ReportOrderStatus status, boolean counted) {
+        // 操作と確認：数える状態に入るかが、期待のとおり
+        assertThat(Basis.ORDER.countedStatuses().contains(status)).isEqualTo(counted);
+    }
+
+    @ParameterizedTest(name = "「{0}」を数える：{1}")
+    @CsvSource({
+            "PENDING_PAYMENT, false",
+            "ACCEPTED, false",
+            "CANCELLATION_REQUESTED, false",
+            "SHIPPED, true",
+            "CANCELLED, false",
+    })
+    @DisplayName("AC-278、BR-25 出荷基準は、出荷済みの注文だけを数える")
+    void shipmentBasisCountsShippedOnly(ReportOrderStatus status, boolean counted) {
+        // 操作と確認：数える状態に入るかが、期待のとおり
+        assertThat(Basis.SHIPMENT.countedStatuses().contains(status)).isEqualTo(counted);
     }
 }

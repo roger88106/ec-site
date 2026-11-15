@@ -29,40 +29,54 @@ import static org.mockito.Mockito.mock;
  */
 class ProductRestoreFailureTest {
 
+    // ============================== テストのデータ ==============================
+
     /**
      * 例外のメッセージに入ると分かる値
+     *
+     * <p>公開の状態の列に入れる。
      */
     private final String value = RestoreFailures.value();
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("公開の状態が列挙にないとき、例外の出力に値が出ない")
     void hidesStatus() {
+        // 準備：公開の状態を壊した商品の行を返す Repository
         var dsl = new RestoreFailures().with("product", brokenProduct()).dsl();
         var repository = new JooqProductRepository(dsl, mock(ApplicationEventPublisher.class), mock(ProductFactory.class), Clock.systemUTC());
 
+        // 操作と確認：商品を読むと復元の失敗になり、例外の出力に値が出ない
         assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
     }
 
     @Test
     @DisplayName("商品の詳細で公開の状態が列挙にないとき、例外の出力に値が出ない")
     void hidesStatusInDetail() {
+        // 準備：公開の状態を壊した商品の行を返す、参照用の Repository
         var dsl = new RestoreFailures().with("product", brokenProduct()).dsl();
         var repository = new JooqProductQueryRepository(dsl, mock(MediaDirectory.class));
 
+        // 操作と確認：商品の詳細を読むと復元の失敗になり、例外の出力に値が出ない
         assertValueIsHidden(() -> repository.findDetailById(UUID.randomUUID()), value);
     }
 
     @Test
     @DisplayName("商品の一覧で公開の状態が列挙にないとき、例外の出力に値が出ない")
     void hidesStatusInSummaries() {
+        // 準備：公開の状態を壊した、一覧の行を返す参照用の Repository
         var row = RECORDS.newRecord(PRODUCT.ID, PRODUCT.PRODUCT_CODE, PRODUCT.NAME, PRODUCT.STATUS, DSL.field("variant_count", Integer.class))
                 .values(UUID.randomUUID(), "P-1", "商品", value, 1);
         var dsl = new RestoreFailures().with("product", row).dsl();
         var repository = new JooqProductQueryRepository(dsl, mock(MediaDirectory.class));
         var query = new ProductListQuery(null, null, null, null);
 
+        // 操作と確認：一覧を読むと復元の失敗になり、例外の出力に値が出ない
         assertValueIsHidden(() -> repository.findSummaries(query, new PageRequest(1, 20)), value);
     }
+
+    // ============================== 準備の補助 ==============================
 
     /**
      * 公開の状態を壊した商品の行を作る。

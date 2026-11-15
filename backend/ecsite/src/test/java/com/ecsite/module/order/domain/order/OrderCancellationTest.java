@@ -10,6 +10,9 @@ import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -20,8 +23,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 注文のキャンセルの状態遷移の単体テスト
+ *
+ * <p>「受付」と「キャンセル申請中」の注文の、申請・承認・却下・運営者のキャンセルと、画面に返す操作のフラグだけを確認する。
+ * 支払待ちの注文は {@code OrderPaymentTest}、出荷済みの注文は {@code OrderShipmentTest}、在庫を戻すことと API を通した
+ * 流れは {@code CancellationApiTest} が確認する。
  */
 class OrderCancellationTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * 注文日時
@@ -38,109 +47,276 @@ class OrderCancellationTest {
      */
     private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
 
+    /**
+     * 消費者の申請の理由
+     */
+    private static final String REQUEST_REASON = "サイズを間違えました";
+
+    /**
+     * 運営者のキャンセルの理由
+     */
+    private static final String OPERATOR_REASON = "在庫の不備";
+
+    // ============================== テスト ==============================
+
     @Nested
     @DisplayName("キャンセルの申請")
     class Request {
 
         @Test
-        @DisplayName("AC-95 「受付」の注文を申請すると「キャンセル申請中」になる。理由を添えられる")
-        void requests() {
+        @DisplayName("AC-95 「受付」の注文を申請すると「キャンセル申請中」になる")
+        void becomesRequested() {
+            // 準備：受付の注文
             var order = acceptedOrder();
 
-            order.requestCancellation("サイズを間違えました", LATER);
+            // 操作：理由を添えて申請する
+            order.requestCancellation(REQUEST_REASON, LATER);
 
+            // 確認：キャンセル申請中
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
+        }
+
+        @Test
+        @DisplayName("AC-95 申請は、日時と添えた理由を記録し、判断を待つ")
+        void recordsRequest() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：理由を添えて申請する
+            order.requestCancellation(REQUEST_REASON, LATER);
+
+            // 確認：判断を待つ申請
             assertThat(order.cancellationRequest())
-                    .isEqualTo(new CancellationRequest(LATER, "サイズを間違えました", Result.PENDING, null, null));
+                    .isEqualTo(new CancellationRequest(LATER, REQUEST_REASON, Result.PENDING, null, null));
+        }
+
+        @Test
+        @DisplayName("AC-95 理由を添えずに申請できる")
+        void requestsWithoutReason() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：理由なしで申請する
+            order.requestCancellation(null, LATER);
+
+            // 確認：理由のない申請で、キャンセル申請中
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
+            assertThat(order.cancellationRequest().reason()).isNull();
+        }
+
+        @Test
+        @DisplayName("AC-95 空白だけの理由は、理由なしとして扱う")
+        void treatsBlankReasonAsNone() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：空白だけの理由で申請する
+            order.requestCancellation(" ", LATER);
+
+            // 確認：理由がない
+            assertThat(order.cancellationRequest().reason()).isNull();
+        }
+
+        @Test
+        @DisplayName("AC-95 500 文字の理由は受け付ける")
+        void acceptsLongestReason() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：500 文字の理由で申請する
+            order.requestCancellation("あ".repeat(500), LATER);
+
+            // 確認：切り詰めずに記録する
+            assertThat(order.cancellationRequest().reason()).hasSize(500);
+        }
+
+        @Test
+        @DisplayName("AC-95 501 文字の理由は拒否される")
+        void rejectsTooLongReason() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作と確認：業務のエラー INVALID_CANCELLATION_REASON で拒否される
+            assertBusinessError(() -> order.requestCancellation("あ".repeat(501), LATER), OrderErrorCode.INVALID_CANCELLATION_REASON);
         }
 
         @Test
         @DisplayName("AC-96 申請中の注文にもう一度申請しても、何も変わらない")
         void ignoresRepeatedRequest() {
+            // 準備：最初の理由で申請した注文
             var order = acceptedOrder();
             order.requestCancellation("最初の理由", LATER);
 
+            // 操作：別の理由で、後からもう一度申請する
             order.requestCancellation("次の理由", LATER.plusSeconds(60));
 
+            // 確認：最初の申請のまま
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
             assertThat(order.cancellationRequest().reason()).isEqualTo("最初の理由");
             assertThat(order.cancellationRequest().requestedAt()).isEqualTo(LATER);
         }
 
         @Test
-        @DisplayName("AC-96 却下された注文、キャンセル済みの注文は申請できない（申請は 1 回だけ）")
-        void rejectsSecondRequest() {
-            var rejected = acceptedOrder();
-            rejected.requestCancellation(null, LATER);
-            rejected.rejectCancellation(OPERATOR, LATER);
-            var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
+        @DisplayName("AC-96 却下された注文は、もう一度申請できない")
+        void rejectsRequestAfterRejection() {
+            // 準備：申請が却下された注文
+            var rejected = rejectedOrder();
 
+            // 操作と確認：業務のエラー CANCELLATION_NOT_REQUESTABLE で拒否される
             assertBusinessError(() -> rejected.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
-            assertBusinessError(() -> cancelled.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
         }
 
         @Test
-        @DisplayName("AC-95 理由は 500 文字まで。空白だけの理由は理由なしとして扱う")
-        void validatesReason() {
-            assertBusinessError(() -> acceptedOrder().requestCancellation("あ".repeat(501), LATER),
-                    OrderErrorCode.INVALID_CANCELLATION_REASON);
-            var order = acceptedOrder();
-            order.requestCancellation(" ", LATER);
-            assertThat(order.cancellationRequest().reason()).isNull();
+        @DisplayName("AC-95 運営者がキャンセルした注文は、申請できない")
+        void rejectsRequestForCancelledOrder() {
+            // 準備：運営者がキャンセルした注文
+            var cancelled = cancelledByOperatorOrder();
+
+            // 操作と確認：業務のエラー CANCELLATION_NOT_REQUESTABLE で拒否される
+            assertBusinessError(() -> cancelled.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
         }
     }
 
     @Nested
-    @DisplayName("申請の承認・却下")
-    class Decide {
+    @DisplayName("申請の承認")
+    class Approve {
 
         @Test
-        @DisplayName("AC-101 申請を承認するとキャンセルになり、在庫を戻すべきことと、注文キャンセルのイベントを返す")
-        void approves() {
+        @DisplayName("AC-101 申請を承認すると、キャンセルになる")
+        void becomesCancelled() {
+            // 準備：キャンセル申請中の注文
             var order = requestedOrder();
 
+            // 操作：承認する
             var cancelled = order.approveCancellation(OPERATOR, LATER);
 
+            // 確認：キャンセル
             assertThat(cancelled).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
-            assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
-            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.REQUEST_APPROVED, null, OPERATOR));
-            assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
-                    event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
         }
 
         @Test
-        @DisplayName("AC-102 申請を却下すると「受付」に戻る")
-        void rejects() {
+        @DisplayName("AC-101 承認すると、申請に承認の結果と判断の日時を記録する")
+        void recordsApproval() {
+            // 準備：キャンセル申請中の注文
             var order = requestedOrder();
 
+            // 操作：承認する
+            order.approveCancellation(OPERATOR, LATER);
+
+            // 確認：承認の結果と日時
+            assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
+            assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
+        }
+
+        @Test
+        @DisplayName("AC-101 承認によるキャンセルは、種類が申請の承認で、承認した運営者を記録する")
+        void recordsApprovedCancellation() {
+            // 準備：キャンセル申請中の注文
+            var order = requestedOrder();
+
+            // 操作：承認する
+            order.approveCancellation(OPERATOR, LATER);
+
+            // 確認：申請の承認のキャンセルの記録
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.REQUEST_APPROVED, null, OPERATOR));
+        }
+
+        @Test
+        @DisplayName("AC-101 承認すると、在庫を戻すための注文キャンセルのイベントが登録される")
+        void registersCancelledEvent() {
+            // 準備：キャンセル申請中の注文
+            var order = requestedOrder();
+
+            // 操作：承認する
+            order.approveCancellation(OPERATOR, LATER);
+
+            // 確認：キャンセルへの状態の変化のイベントだけ
+            assertCancelledEventOnly(order);
+        }
+
+        @Test
+        @DisplayName("AC-105 キャンセル済みの注文の承認は、成功し、キャンセルの記録を変えない")
+        void ignoresApprovalOfCancelledOrder() {
+            // 準備：承認でキャンセルになった注文
+            var order = approvedOrder();
+
+            // 操作：後からもう一度承認する
+            var cancelled = order.approveCancellation(OPERATOR, LATER.plusSeconds(60));
+
+            // 確認：何もせず、最初のキャンセルのまま
+            assertThat(cancelled).isFalse();
+            assertThat(order.cancellation().cancelledAt()).isEqualTo(LATER);
+        }
+
+        @Test
+        @DisplayName("AC-105 キャンセル済みの注文の承認では、在庫を戻すイベントを登録しない")
+        void registersNoEventForCancelledOrder() {
+            // 準備：承認でキャンセルになった注文
+            var order = approvedOrder();
+
+            // 操作：後からもう一度承認する
+            order.approveCancellation(OPERATOR, LATER.plusSeconds(60));
+
+            // 確認：イベントがない
+            assertThat(order.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("申請のない「受付」の注文は、承認できない")
+        void rejectsApprovalWithoutRequest() {
+            // 操作と確認：業務のエラー CANCELLATION_NOT_PENDING で拒否される
+            assertBusinessError(() -> acceptedOrder().approveCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
+        }
+    }
+
+    @Nested
+    @DisplayName("申請の却下")
+    class Reject {
+
+        @Test
+        @DisplayName("AC-102 申請を却下すると「受付」に戻り、キャンセルの記録はない")
+        void returnsToAccepted() {
+            // 準備：キャンセル申請中の注文
+            var order = requestedOrder();
+
+            // 操作：却下する
             order.rejectCancellation(OPERATOR, LATER);
 
+            // 確認：受付で、キャンセルしていない
             assertThat(order.status()).isEqualTo(OrderStatus.ACCEPTED);
-            assertThat(order.cancellationRequest().result()).isEqualTo(Result.REJECTED);
-            assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
-            assertThat(order.cancellationRequest().decidedBy()).isEqualTo(OPERATOR);
             assertThat(order.cancellation()).isNull();
         }
 
         @Test
-        @DisplayName("AC-105 キャンセル済みの注文の承認は何もせず、在庫も戻さない。却下はできない")
-        void handlesCancelledOrder() {
+        @DisplayName("AC-102 却下すると、申請に却下の結果と、判断の日時と運営者を記録する")
+        void recordsRejection() {
+            // 準備：キャンセル申請中の注文
             var order = requestedOrder();
-            order.approveCancellation(OPERATOR, LATER);
-            order.pullEvents();
 
-            assertThat(order.approveCancellation(OPERATOR, LATER.plusSeconds(60))).isFalse();
-            assertThat(order.cancellation().cancelledAt()).isEqualTo(LATER);
-            assertThat(order.pullEvents()).isEmpty();
+            // 操作：却下する
+            order.rejectCancellation(OPERATOR, LATER);
+
+            // 確認：却下の結果、日時、運営者
+            assertThat(order.cancellationRequest().result()).isEqualTo(Result.REJECTED);
+            assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
+            assertThat(order.cancellationRequest().decidedBy()).isEqualTo(OPERATOR);
+        }
+
+        @Test
+        @DisplayName("AC-105 キャンセル済みの注文の申請は、却下できない")
+        void rejectsRejectionOfCancelledOrder() {
+            // 準備：承認でキャンセルになった注文
+            var order = approvedOrder();
+
+            // 操作と確認：業務のエラー CANCELLATION_NOT_PENDING で拒否される
             assertBusinessError(() -> order.rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
 
         @Test
-        @DisplayName("申請のない「受付」の注文は、承認も却下もできない")
-        void rejectsDecisionWithoutRequest() {
-            assertBusinessError(() -> acceptedOrder().approveCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
+        @DisplayName("申請のない「受付」の注文は、却下できない")
+        void rejectsRejectionWithoutRequest() {
+            // 操作と確認：業務のエラー CANCELLATION_NOT_PENDING で拒否される
             assertBusinessError(() -> acceptedOrder().rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
     }
@@ -150,102 +326,271 @@ class OrderCancellationTest {
     class CancelByOperator {
 
         @Test
-        @DisplayName("AC-103 「受付」の注文を、理由を記録してキャンセルできる")
+        @DisplayName("AC-103 運営者は「受付」の注文をキャンセルできる")
         void cancelsAcceptedOrder() {
+            // 準備：受付の注文
             var order = acceptedOrder();
 
-            assertThat(order.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER)).isTrue();
+            // 操作：理由を記録してキャンセルする
+            var cancelled = order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
 
+            // 確認：キャンセル
+            assertThat(cancelled).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, "在庫の不備", OPERATOR));
-            assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
-                    event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
         }
 
         @Test
-        @DisplayName("AC-103 「キャンセル申請中」の注文もキャンセルでき、申請は承認されたものとする")
+        @DisplayName("AC-103 運営者のキャンセルは、種類が運営者で、理由と運営者を記録する")
+        void recordsOperatorCancellation() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：理由を記録してキャンセルする
+            order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
+
+            // 確認：運営者のキャンセルの記録
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, OPERATOR_REASON, OPERATOR));
+        }
+
+        @Test
+        @DisplayName("AC-103 運営者のキャンセルで、在庫を戻すための注文キャンセルのイベントが登録される")
+        void registersCancelledEvent() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：理由を記録してキャンセルする
+            order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
+
+            // 確認：キャンセルへの状態の変化のイベントだけ
+            assertCancelledEventOnly(order);
+        }
+
+        @Test
+        @DisplayName("AC-103 運営者は「キャンセル申請中」の注文もキャンセルできる")
         void cancelsRequestedOrder() {
+            // 準備：キャンセル申請中の注文
             var order = requestedOrder();
 
+            // 操作：理由を記録してキャンセルする
             order.cancelByOperator("お客様の申請による", true, false, OPERATOR, LATER);
 
+            // 確認：運営者のキャンセル
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
             assertThat(order.cancellation().kind()).isEqualTo(CancellationKind.OPERATOR);
         }
 
         @Test
-        @DisplayName("AC-103 理由は必須で 500 文字まで")
-        void requiresReason() {
-            assertBusinessError(() -> acceptedOrder().cancelByOperator(" ", true, false, OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
-            assertBusinessError(() -> acceptedOrder().cancelByOperator(null, true, false, OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
-            assertBusinessError(() -> acceptedOrder().cancelByOperator("あ".repeat(501), true, false, OPERATOR, LATER),
+        @DisplayName("AC-103 「キャンセル申請中」の注文を運営者がキャンセルすると、申請は承認されたものとする")
+        void approvesPendingRequest() {
+            // 準備：キャンセル申請中の注文
+            var order = requestedOrder();
+
+            // 操作：理由を記録してキャンセルする
+            order.cancelByOperator("お客様の申請による", true, false, OPERATOR, LATER);
+
+            // 確認：申請が承認
+            assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @NullAndEmptySource
+        @ValueSource(strings = {" "})
+        @DisplayName("AC-103 理由のない運営者のキャンセルは拒否される")
+        void requiresReason(String reason) {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作と確認：業務のエラー CANCELLATION_REASON_REQUIRED で拒否される
+            assertBusinessError(() -> order.cancelByOperator(reason, true, false, OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
+        }
+
+        @Test
+        @DisplayName("AC-103 運営者のキャンセルの 500 文字の理由は受け付ける")
+        void acceptsLongestReason() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：500 文字の理由でキャンセルする
+            order.cancelByOperator("あ".repeat(500), true, false, OPERATOR, LATER);
+
+            // 確認：切り詰めずに記録する
+            assertThat(order.cancellation().reason()).hasSize(500);
+        }
+
+        @Test
+        @DisplayName("AC-103 運営者のキャンセルの 501 文字の理由は拒否される")
+        void rejectsTooLongReason() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作と確認：業務のエラー INVALID_CANCELLATION_REASON で拒否される
+            assertBusinessError(() -> order.cancelByOperator("あ".repeat(501), true, false, OPERATOR, LATER),
                     OrderErrorCode.INVALID_CANCELLATION_REASON);
         }
 
         @Test
-        @DisplayName("AC-105 キャンセル済みの注文へのキャンセルは何もせず、理由も変えない")
+        @DisplayName("AC-105 キャンセル済みの注文への運営者のキャンセルは、成功し、理由を変えない")
         void ignoresCancelledOrder() {
+            // 準備：最初の理由で運営者がキャンセルした注文
             var order = acceptedOrder();
             order.cancelByOperator("最初の理由", true, false, OPERATOR, LATER);
 
-            assertThat(order.cancelByOperator("次の理由", true, false, OPERATOR, LATER.plusSeconds(60))).isFalse();
+            // 操作：別の理由で、後からもう一度キャンセルする
+            var cancelled = order.cancelByOperator("次の理由", true, false, OPERATOR, LATER.plusSeconds(60));
 
+            // 確認：何もせず、最初の理由のまま
+            assertThat(cancelled).isFalse();
             assertThat(order.cancellation().reason()).isEqualTo("最初の理由");
         }
     }
 
     @Nested
-    @DisplayName("できる操作（画面に返すフラグ）")
-    class Actions {
+    @DisplayName("申請できるかのフラグ")
+    class RequestableFlag {
 
         @Test
-        @DisplayName("AC-95 「受付」でまだ申請していない注文だけ、キャンセルを申請できる")
-        void requestable() {
-            var accepted = acceptedOrder();
-            var requested = requestedOrder();
-            var rejected = requestedOrder();
-            rejected.rejectCancellation(OPERATOR, LATER);
-            var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
+        @DisplayName("AC-95 「受付」でまだ申請していない注文は、キャンセルを申請できる")
+        void acceptedIsRequestable() {
+            // 操作と確認：申請できる
+            assertThat(acceptedOrder().isCancellationRequestable()).isTrue();
+        }
 
-            assertThat(accepted.isCancellationRequestable()).isTrue();
-            assertThat(requested.isCancellationRequestable()).isFalse();
+        @Test
+        @DisplayName("AC-96 申請中の注文は、申請できる操作に出さない")
+        void requestedIsNotRequestable() {
+            // 操作と確認：申請できない
+            assertThat(requestedOrder().isCancellationRequestable()).isFalse();
+        }
+
+        @Test
+        @DisplayName("AC-96 却下された注文は、申請できる操作に出さず、集約も申請を拒む")
+        void rejectedIsNotRequestable() {
+            // 準備：申請が却下された注文
+            var rejected = rejectedOrder();
+
+            // 確認：申請できない
             assertThat(rejected.isCancellationRequestable()).isFalse();
-            assertThat(cancelled.isCancellationRequestable()).isFalse();
-            // 申請できないとした注文は、集約も申請を拒む（申請中は何もしないので出さない）
+
+            // 操作と確認：フラグのとおり、業務のエラー CANCELLATION_NOT_REQUESTABLE で拒否される
             assertBusinessError(() -> rejected.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
+        }
+
+        @Test
+        @DisplayName("AC-95 運営者がキャンセルした注文は、申請できる操作に出さず、集約も申請を拒む")
+        void cancelledIsNotRequestable() {
+            // 準備：運営者がキャンセルした注文
+            var cancelled = cancelledByOperatorOrder();
+
+            // 確認：申請できない
+            assertThat(cancelled.isCancellationRequestable()).isFalse();
+
+            // 操作と確認：フラグのとおり、業務のエラー CANCELLATION_NOT_REQUESTABLE で拒否される
             assertBusinessError(() -> cancelled.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
-        }
-
-        @Test
-        @DisplayName("AC-101、102 申請の承認・却下は「キャンセル申請中」の注文だけ")
-        void pending() {
-            var rejected = requestedOrder();
-            rejected.rejectCancellation(OPERATOR, LATER);
-
-            assertThat(requestedOrder().isCancellationPending()).isTrue();
-            assertThat(acceptedOrder().isCancellationPending()).isFalse();
-            assertThat(rejected.isCancellationPending()).isFalse();
-            assertBusinessError(() -> acceptedOrder().rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
-        }
-
-        @Test
-        @DisplayName("AC-103 運営者のキャンセルは「キャンセル」でない注文だけ（キャンセル済みは何もしないので出さない）")
-        void cancellable() {
-            var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
-
-            assertThat(acceptedOrder().status()).isNotEqualTo(OrderStatus.CANCELLED);
-            assertThat(requestedOrder().status()).isNotEqualTo(OrderStatus.CANCELLED);
-            assertThat(cancelled.status()).isEqualTo(OrderStatus.CANCELLED);
         }
     }
 
-    // ============================== 補助 ==============================
+    @Nested
+    @DisplayName("承認・却下できるかのフラグ")
+    class PendingFlag {
+
+        @Test
+        @DisplayName("AC-101、102 「キャンセル申請中」の注文は、承認・却下できる")
+        void requestedIsPending() {
+            // 操作と確認：承認・却下できる
+            assertThat(requestedOrder().isCancellationPending()).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-101、102 申請のない「受付」の注文は、承認・却下できる操作に出さず、集約も却下を拒む")
+        void acceptedIsNotPending() {
+            // 準備：申請のない受付の注文
+            var accepted = acceptedOrder();
+
+            // 確認：承認・却下できない
+            assertThat(accepted.isCancellationPending()).isFalse();
+
+            // 操作と確認：フラグのとおり、業務のエラー CANCELLATION_NOT_PENDING で拒否される
+            assertBusinessError(() -> accepted.rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
+        }
+
+        @Test
+        @DisplayName("AC-102 却下された注文は、承認・却下できる操作に出さない")
+        void rejectedIsNotPending() {
+            // 操作と確認：承認・却下できない
+            assertThat(rejectedOrder().isCancellationPending()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("運営者がキャンセルできるかのフラグ")
+    class OperatorCancellableFlag {
+
+        @Test
+        @DisplayName("AC-103 「受付」の注文は、運営者がキャンセルできる")
+        void acceptedIsCancellable() {
+            // 準備：受付の注文
+            var accepted = acceptedOrder();
+
+            // 確認（前提）：受付
+            assertThat(accepted.status()).isEqualTo(OrderStatus.ACCEPTED);
+
+            // 操作と確認：キャンセルできる
+            assertThat(accepted.isCancellableByOperator(false)).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-103 「キャンセル申請中」の注文は、運営者がキャンセルできる")
+        void requestedIsCancellable() {
+            // 準備：キャンセル申請中の注文
+            var requested = requestedOrder();
+
+            // 確認（前提）：キャンセル申請中
+            assertThat(requested.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
+
+            // 操作と確認：キャンセルできる
+            assertThat(requested.isCancellableByOperator(false)).isTrue();
+        }
+
+        @Test
+        @DisplayName("キャンセル済みの注文は、キャンセルしても何もしないので、運営者がキャンセルできる操作に出さない")
+        void cancelledIsNotCancellable() {
+            // 準備：運営者がキャンセルした注文
+            var cancelled = cancelledByOperatorOrder();
+
+            // 確認（前提）：キャンセル
+            assertThat(cancelled.status()).isEqualTo(OrderStatus.CANCELLED);
+
+            // 操作と確認：キャンセルできない
+            assertThat(cancelled.isCancellableByOperator(false)).isFalse();
+        }
+    }
+
+    // ============================== 確認の補助 ==============================
 
     /**
-     * 「受付」の注文（与信の成功の後。成立のイベントは取り出し済み）
+     * キャンセルへの状態の変化のイベントだけが登録されていることを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>登録されたイベントが 1 件だけで、種類が {@link OrderStatusChanged}</li>
+     *   <li>後の状態がキャンセル</li>
+     * </ul>
+     *
+     * @param order 確認する注文
+     */
+    private static void assertCancelledEventOnly(Order order) {
+        assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
+                event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
+    }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * 「受付」の注文を作る。
+     *
+     * <p>与信の成功の後で、成立と状態の変化のイベントは取り出してある。
+     *
+     * @return 受付の注文
      */
     private static Order acceptedOrder() {
         var order = TestOrders.pending(ORDERED_AT);
@@ -255,12 +600,52 @@ class OrderCancellationTest {
     }
 
     /**
-     * 「キャンセル申請中」の注文（状態の変化のイベントは取り出し済み）
+     * 「キャンセル申請中」の注文を作る。
+     *
+     * <p>状態の変化のイベントは取り出してある。
+     *
+     * @return キャンセル申請中の注文
      */
     private static Order requestedOrder() {
         var order = acceptedOrder();
         order.requestCancellation("理由", ORDERED_AT.plusSeconds(60));
         order.pullEvents();
+        return order;
+    }
+
+    /**
+     * 申請を {@link #LATER} に却下され、「受付」に戻った注文を作る。
+     *
+     * @return 却下された注文
+     */
+    private static Order rejectedOrder() {
+        var order = requestedOrder();
+        order.rejectCancellation(OPERATOR, LATER);
+        return order;
+    }
+
+    /**
+     * 申請を {@link #LATER} に承認され、キャンセルになった注文を作る。
+     *
+     * <p>キャンセルのイベントは取り出してある。
+     *
+     * @return 承認でキャンセルになった注文
+     */
+    private static Order approvedOrder() {
+        var order = requestedOrder();
+        order.approveCancellation(OPERATOR, LATER);
+        order.pullEvents();
+        return order;
+    }
+
+    /**
+     * 運営者が {@link #LATER} にキャンセルした注文を作る。
+     *
+     * @return 運営者がキャンセルした注文
+     */
+    private static Order cancelledByOperatorOrder() {
+        var order = acceptedOrder();
+        order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
         return order;
     }
 }

@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
@@ -20,8 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 注文の出荷と、出荷済みの注文のキャンセルの単体テスト
+ *
+ * <p>出荷による遷移と、出荷済みの注文の運営者のキャンセルと、画面に返す操作のフラグだけを確認する。売上の確定と
+ * API を通した流れは {@code ShipmentApiTest}、在庫に戻すことは {@code ReturnedOrderCancellationApiTest} が確認する。
  */
 class OrderShipmentTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * 注文日時
@@ -38,39 +42,93 @@ class OrderShipmentTest {
      */
     private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
 
+    /**
+     * 送り状番号
+     */
+    private static final String TRACKING_NUMBER = "123456789012";
+
+    /**
+     * {@link TestOrders#pending} が作る注文の、注文番号
+     */
+    private static final String ORDER_NUMBER = "20261008-000001";
+
+    /**
+     * {@link TestOrders#pending} が作る注文の、メールアドレス
+     */
+    private static final String EMAIL = "taro@example.com";
+
+    /**
+     * 返送された注文のキャンセルの理由
+     */
+    private static final String RETURNED_REASON = "返送された";
+
+    // ============================== テスト ==============================
+
     @Nested
     @DisplayName("出荷")
     class Ship {
 
         @Test
-        @DisplayName("AC-168 「受付」の注文を出荷すると「出荷済み」になり、注文の出荷のイベントを登録する")
-        void shipsAcceptedOrder() {
+        @DisplayName("AC-168 「受付」の注文を出荷すると「出荷済み」になる")
+        void becomesShipped() {
+            // 準備：受付の注文
             var order = acceptedOrder();
 
-            order.ship(Carrier.YAMATO, "123456789012", LATER);
+            // 操作：出荷する
+            order.ship(Carrier.YAMATO, TRACKING_NUMBER, LATER);
 
+            // 確認：出荷済み
             assertThat(order.status()).isEqualTo(OrderStatus.SHIPPED);
-            assertThat(order.pullEvents()).filteredOn(OrderShipped.class::isInstance).singleElement().isInstanceOfSatisfying(OrderShipped.class, event -> {
-                assertThat(event.orderId()).isEqualTo(order.id());
-                assertThat(event.occurredAt()).isEqualTo(LATER);
-                assertThat(event.orderNumber()).isEqualTo("20261008-000001");
-                assertThat(event.email()).isEqualTo("taro@example.com");
-                assertThat(event.carrier()).isEqualTo(OrderShipped.Carrier.YAMATO);
-                assertThat(event.trackingNumber()).isEqualTo("123456789012");
-            });
         }
 
         @Test
-        @DisplayName("AC-170 「受付」でない注文（支払待ち、キャンセル申請中、キャンセル、出荷済み）は出荷できない")
-        void rejectsOthers() {
-            var requested = acceptedOrder();
-            requested.requestCancellation(null, LATER);
+        @DisplayName("AC-168 出荷すると、出荷通知に使う注文の出荷のイベントが登録される")
+        void registersShippedEvent() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：出荷する
+            order.ship(Carrier.YAMATO, TRACKING_NUMBER, LATER);
+
+            // 確認：この注文の出荷の内容を持つイベントが 1 件
+            assertShippedEvent(order);
+        }
+    }
+
+    @Nested
+    @DisplayName("「受付」でない注文の出荷")
+    class ShipRejected {
+
+        @Test
+        @DisplayName("AC-170 「支払待ち」の注文は出荷できない")
+        void rejectsPending() {
+            // 操作と確認：業務のエラー ORDER_NOT_SHIPPABLE で拒否される
+            assertNotShippable(pendingOrder());
+        }
+
+        @Test
+        @DisplayName("AC-170 「キャンセル申請中」の注文は出荷できない")
+        void rejectsRequested() {
+            // 操作と確認：業務のエラー ORDER_NOT_SHIPPABLE で拒否される
+            assertNotShippable(requestedOrder());
+        }
+
+        @Test
+        @DisplayName("AC-170 キャンセルになった注文は出荷できない")
+        void rejectsCancelled() {
+            // 準備：運営者がキャンセルした注文
             var cancelled = acceptedOrder();
             cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
 
-            for (var order : List.of(pendingOrder(), requested, cancelled, shippedOrder())) {
-                assertBusinessError(() -> order.ship(Carrier.YAMATO, "123456789012", LATER), OrderErrorCode.ORDER_NOT_SHIPPABLE);
-            }
+            // 操作と確認：業務のエラー ORDER_NOT_SHIPPABLE で拒否される
+            assertNotShippable(cancelled);
+        }
+
+        @Test
+        @DisplayName("AC-170 「出荷済み」の注文は、もう一度出荷できない")
+        void rejectsShipped() {
+            // 操作と確認：業務のエラー ORDER_NOT_SHIPPABLE で拒否される
+            assertNotShippable(shippedOrder());
         }
     }
 
@@ -79,25 +137,65 @@ class OrderShipmentTest {
     class CancelShipped {
 
         @Test
-        @DisplayName("AC-190、191 返送された注文はキャンセルでき、在庫に戻すかを記録する")
+        @DisplayName("AC-190 返送された出荷済みの注文は、運営者がキャンセルできる")
         void cancelsReturnedOrder() {
-            var restocked = shippedOrder();
-            var notRestocked = shippedOrder();
+            // 準備：出荷済みの注文
+            var order = shippedOrder();
 
-            assertThat(restocked.cancelByOperator("返送された", true, true, OPERATOR, LATER)).isTrue();
-            assertThat(notRestocked.cancelByOperator("返送された", false, true, OPERATOR, LATER)).isTrue();
+            // 操作：返送されたので、在庫に戻してキャンセルする
+            var cancelled = order.cancelByOperator(RETURNED_REASON, true, true, OPERATOR, LATER);
 
-            assertThat(restocked.status()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(restocked.cancellation())
-                    .isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, "返送された", OPERATOR, true));
-            assertThat(notRestocked.cancellation().restocked()).isFalse();
-            assertThat(restocked.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
+            // 確認：キャンセル
+            assertThat(cancelled).isTrue();
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+        }
+
+        @Test
+        @DisplayName("AC-190、191 返送された注文のキャンセルは、理由と運営者と、在庫に戻すことを記録する")
+        void recordsRestocked() {
+            // 準備：出荷済みの注文
+            var order = shippedOrder();
+
+            // 操作：返送されたので、在庫に戻してキャンセルする
+            order.cancelByOperator(RETURNED_REASON, true, true, OPERATOR, LATER);
+
+            // 確認：運営者のキャンセルで、在庫に戻す
+            assertThat(order.cancellation())
+                    .isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, RETURNED_REASON, OPERATOR, true));
+        }
+
+        @Test
+        @DisplayName("AC-191 返送された注文を在庫に戻さずにキャンセルすると、戻さないことを記録する")
+        void recordsNotRestocked() {
+            // 準備：出荷済みの注文
+            var order = shippedOrder();
+
+            // 操作：返送されたので、在庫に戻さずにキャンセルする
+            var cancelled = order.cancelByOperator(RETURNED_REASON, false, true, OPERATOR, LATER);
+
+            // 確認：キャンセルし、在庫に戻さない
+            assertThat(cancelled).isTrue();
+            assertThat(order.cancellation().restocked()).isFalse();
+        }
+
+        @Test
+        @DisplayName("AC-190 返送された注文のキャンセルで、注文キャンセルのイベントが登録される")
+        void registersCancelledEvent() {
+            // 準備：出荷済みの注文
+            var order = shippedOrder();
+
+            // 操作：返送されたので、在庫に戻してキャンセルする
+            order.cancelByOperator(RETURNED_REASON, true, true, OPERATOR, LATER);
+
+            // 確認：キャンセルへの状態の変化のイベントだけ
+            assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
                     event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
         }
 
         @Test
-        @DisplayName("AC-171 返送でない出荷済みの注文はキャンセルできない")
+        @DisplayName("AC-171 返送でない出荷済みの注文は、運営者もキャンセルできない")
         void rejectsNotReturned() {
+            // 操作と確認：業務のエラー SHIPPED_ORDER_NOT_RETURNED で拒否される
             assertBusinessError(() -> shippedOrder().cancelByOperator("理由", true, false, OPERATOR, LATER),
                     OrderErrorCode.SHIPPED_ORDER_NOT_RETURNED);
         }
@@ -105,58 +203,149 @@ class OrderShipmentTest {
         @Test
         @DisplayName("AC-191 出荷済みの注文のキャンセルでは、在庫に戻すかの指定が必須")
         void requiresRestockChoice() {
+            // 操作と確認：業務のエラー RESTOCK_CHOICE_REQUIRED で拒否される
             assertBusinessError(() -> shippedOrder().cancelByOperator("理由", null, true, OPERATOR, LATER),
                     OrderErrorCode.RESTOCK_CHOICE_REQUIRED);
         }
 
         @Test
-        @DisplayName("AC-191 出荷済みでない注文は、指定によらず在庫に戻す")
+        @DisplayName("AC-191 出荷済みでない注文のキャンセルは、指定によらず在庫に戻す")
         void alwaysRestocksNotShipped() {
+            // 準備：受付の注文
             var order = acceptedOrder();
 
+            // 操作：在庫に戻さない指定でキャンセルする
             order.cancelByOperator("在庫の不備", false, false, OPERATOR, LATER);
 
+            // 確認：在庫に戻す
             assertThat(order.cancellation().restocked()).isTrue();
         }
     }
 
     @Nested
-    @DisplayName("できる操作（画面に返すフラグ）")
-    class Actions {
+    @DisplayName("出荷できるかのフラグ")
+    class ShippableFlag {
 
         @Test
-        @DisplayName("AC-167、170 出荷の登録は「受付」の注文だけ")
-        void shippable() {
-            var requested = acceptedOrder();
-            requested.requestCancellation(null, LATER);
-
+        @DisplayName("AC-167 「受付」の注文は、出荷を登録できる")
+        void acceptedIsShippable() {
+            // 操作と確認：出荷できる
             assertThat(acceptedOrder().isShippable()).isTrue();
-            assertThat(pendingOrder().isShippable()).isFalse();
-            assertThat(requested.isShippable()).isFalse();
-            assertThat(shippedOrder().isShippable()).isFalse();
         }
 
         @Test
-        @DisplayName("AC-171、190 出荷済みの注文の運営者のキャンセルは、返送のときだけ")
-        void cancellableWhenReturned() {
+        @DisplayName("AC-170 「支払待ち」の注文は、出荷を登録できる操作に出さない")
+        void pendingIsNotShippable() {
+            // 操作と確認：出荷できない
+            assertThat(pendingOrder().isShippable()).isFalse();
+        }
+
+        @Test
+        @DisplayName("AC-170 「キャンセル申請中」の注文は、出荷を登録できる操作に出さない")
+        void requestedIsNotShippable() {
+            // 操作と確認：出荷できない
+            assertThat(requestedOrder().isShippable()).isFalse();
+        }
+
+        @Test
+        @DisplayName("AC-170 「出荷済み」の注文は、出荷を登録できる操作に出さない")
+        void shippedIsNotShippable() {
+            // 操作と確認：出荷できない
+            assertThat(shippedOrder().isShippable()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("運営者がキャンセルできるかのフラグ")
+    class OperatorCancellableFlag {
+
+        @Test
+        @DisplayName("AC-171、190 返送された出荷済みの注文は、運営者がキャンセルできる")
+        void returnedIsCancellable() {
+            // 操作と確認：配送状態が返送ならキャンセルできる
             assertThat(shippedOrder().isCancellableByOperator(true)).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-171 返送でない出荷済みの注文は、運営者がキャンセルできる操作に出さない")
+        void notReturnedIsNotCancellable() {
+            // 操作と確認：配送状態が返送でなければキャンセルできない
             assertThat(shippedOrder().isCancellableByOperator(false)).isFalse();
+        }
+
+        @Test
+        @DisplayName("AC-103 出荷していない「受付」の注文は、返送でなくても運営者がキャンセルできる")
+        void acceptedIsCancellable() {
+            // 操作と確認：キャンセルできる
             assertThat(acceptedOrder().isCancellableByOperator(false)).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-158 「支払待ち」の注文は、返送の指定があっても運営者がキャンセルできる操作に出さない")
+        void pendingIsNotCancellable() {
+            // 操作と確認：キャンセルできない
             assertThat(pendingOrder().isCancellableByOperator(true)).isFalse();
         }
     }
 
-    // ============================== 補助 ==============================
+    // ============================== 確認の補助 ==============================
 
     /**
-     * 「支払待ち」の注文（成立のイベントは取り出し済み）
+     * 注文の出荷のイベントが、この注文と出荷の内容で 1 件だけ登録されていることを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>注文の出荷のイベントが 1 件だけ</li>
+     *   <li>注文 ID がこの注文</li>
+     *   <li>出荷の日時</li>
+     *   <li>注文番号</li>
+     *   <li>メールアドレス</li>
+     *   <li>配送業者</li>
+     *   <li>送り状番号</li>
+     * </ul>
+     *
+     * @param order 確認する注文
+     */
+    private static void assertShippedEvent(Order order) {
+        assertThat(order.pullEvents()).filteredOn(OrderShipped.class::isInstance).singleElement()
+                .isInstanceOfSatisfying(OrderShipped.class, event -> {
+                    assertThat(event.orderId()).isEqualTo(order.id());
+                    assertThat(event.occurredAt()).isEqualTo(LATER);
+                    assertThat(event.orderNumber()).isEqualTo(ORDER_NUMBER);
+                    assertThat(event.email()).isEqualTo(EMAIL);
+                    assertThat(event.carrier()).isEqualTo(OrderShipped.Carrier.YAMATO);
+                    assertThat(event.trackingNumber()).isEqualTo(TRACKING_NUMBER);
+                });
+    }
+
+    /**
+     * 注文が出荷できないことを確認する。
+     *
+     * @param order 確認する注文
+     */
+    private static void assertNotShippable(Order order) {
+        assertBusinessError(() -> order.ship(Carrier.YAMATO, TRACKING_NUMBER, LATER), OrderErrorCode.ORDER_NOT_SHIPPABLE);
+    }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * 「支払待ち」の注文を作る。
+     *
+     * <p>成立のイベントは取り出してある。
+     *
+     * @return 支払待ちの注文
      */
     private static Order pendingOrder() {
         return TestOrders.pending(ORDERED_AT);
     }
 
     /**
-     * 「受付」の注文（状態の変化のイベントは取り出し済み）
+     * 「受付」の注文を作る。
+     *
+     * <p>状態の変化のイベントは取り出してある。
+     *
+     * @return 受付の注文
      */
     private static Order acceptedOrder() {
         var order = pendingOrder();
@@ -166,11 +355,26 @@ class OrderShipmentTest {
     }
 
     /**
-     * 「出荷済み」の注文（出荷のイベントは取り出し済み）
+     * 「キャンセル申請中」の注文を作る。
+     *
+     * @return キャンセル申請中の注文
+     */
+    private static Order requestedOrder() {
+        var order = acceptedOrder();
+        order.requestCancellation(null, LATER);
+        return order;
+    }
+
+    /**
+     * 「出荷済み」の注文を作る。
+     *
+     * <p>出荷のイベントは取り出してある。
+     *
+     * @return 出荷済みの注文
      */
     private static Order shippedOrder() {
         var order = acceptedOrder();
-        order.ship(Carrier.YAMATO, "123456789012", ORDERED_AT.plus(Duration.ofHours(1)));
+        order.ship(Carrier.YAMATO, TRACKING_NUMBER, ORDERED_AT.plus(Duration.ofHours(1)));
         order.pullEvents();
         return order;
     }

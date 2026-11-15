@@ -5,7 +5,7 @@ import com.ecsite.module.order.domain.order.vo.AddressArea;
 /**
  * テストで使う、お届け先の都道府県と市区町村
  *
- * <p>地域の最初のデータにあるもの。
+ * <p>地域の最初のデータにある都道府県と市区町村で、コードと名前は最初のデータと同じ。
  */
 public final class TestAreas {
 

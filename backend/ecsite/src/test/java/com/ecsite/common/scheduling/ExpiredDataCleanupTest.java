@@ -34,6 +34,13 @@ class ExpiredDataCleanupTest {
      */
     private static final String NOUN = "期限切れのカート";
 
+    /**
+     * ログの文に入れる、片付けるデータの別の名詞
+     *
+     * <p>名詞を固定の文にしていないことを、2 通りの名詞で確認する。
+     */
+    private static final String OTHER_NOUN = "期限切れの引当";
+
     // ============================== 対象 ==============================
 
     /**
@@ -99,9 +106,9 @@ class ExpiredDataCleanupTest {
     @DisplayName("削除した件数が 0 件なら、debug で出す")
     void logsZeroAtDebugWhenNothingWasDeleted() {
         // 操作：何も消さない削除で片付ける
-        ExpiredDataCleanup.run(log, NOUN, BATCH_SIZE, () -> 0);
+        ExpiredDataCleanup.run(log, OTHER_NOUN, BATCH_SIZE, () -> 0);
 
-        // 確認：0 件を書いた debug のログが 1 件だけ
-        assertThat(logs.entries()).containsExactly(new LogEntry(Level.DEBUG, NOUN + "を消した：0 件", ""));
+        // 確認：渡した名詞と 0 件を書いた debug のログが 1 件だけ
+        assertThat(logs.entries()).containsExactly(new LogEntry(Level.DEBUG, OTHER_NOUN + "を消した：0 件", ""));
     }
 }

@@ -116,7 +116,7 @@ class StoreOperationSecurityTest {
         }
 
         @Test
-        @DisplayName("security が値のない（明示の null の）操作があれば、読み込みに失敗する")
+        @DisplayName("security が値のない（明示の null の）操作があれば、読み込みに失敗し、操作のメソッドとパスを伝える")
         void operationWithNullSecurityFailsToLoad() {
             // 準備：security の値のない操作を含む契約
             var resource = new ByteArrayResource("""

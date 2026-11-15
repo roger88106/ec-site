@@ -92,7 +92,7 @@ class AdminRealmPermissionContractTest {
         @Test
         @DisplayName("BR-12 admin.yaml の権限と、管理 API の client role が一致する")
         void clientRolesMatchDeclaredPermissions() {
-            // 操作：
+            // 操作：管理 API の client role を読む
             List<String> roles = read("$.roles.client['" + API_CLIENT + "'][*].name");
 
             // 確認：契約の権限が空でなく、client role と同じ
@@ -108,17 +108,17 @@ class AdminRealmPermissionContractTest {
         @Test
         @DisplayName("BR-12 職務の管理者（administrator）は、すべての権限を含む")
         void administratorHasAllPermissions() {
-            // 操作と確認：
+            // 操作と確認：管理者の職務の権限が、契約の全ての権限と同じ
             assertThat(new TreeSet<>(compositePermissions("administrator"))).isEqualTo(declaredPermissions);
         }
 
         @Test
         @DisplayName("BR-12 職務の閲覧者（viewer）は、レポートを除く参照（:read）の権限すべてを含み、ほかは含まない")
         void viewerHasAllReadPermissions() {
-            // 準備：
+            // 準備：レポートを除く参照の権限
             var readPermissions = readPermissionsWithoutReports();
 
-            // 操作：
+            // 操作：閲覧者の職務の権限を読む
             var viewer = compositePermissions("viewer");
 
             // 確認：参照の権限が空でなく、閲覧者の権限と同じ
@@ -129,22 +129,22 @@ class AdminRealmPermissionContractTest {
         @Test
         @DisplayName("BR-28 管理職（manager）は、閲覧者の権限と、3 つのレポートの権限を含む")
         void managerHasAllReports() {
-            // 準備：
+            // 準備：レポートを除く参照の権限と、3 つのレポートの権限
             var expected = readPermissionsWithoutReports();
             expected.addAll(List.of(SALES_TREND, VARIANT_SALES, CUSTOMER));
 
-            // 操作と確認：
+            // 操作と確認：管理職の職務の権限が、用意した権限と同じ
             assertThat(new TreeSet<>(compositePermissions("manager"))).isEqualTo(expected);
         }
 
         @Test
         @DisplayName("BR-28 営業（sales）は、閲覧者の権限と、売上の推移を除くレポートの権限を含む")
         void salesHasReportsExceptSalesTrend() {
-            // 準備：
+            // 準備：レポートを除く参照の権限と、売上の推移を除く 2 つのレポートの権限
             var expected = readPermissionsWithoutReports();
             expected.addAll(List.of(VARIANT_SALES, CUSTOMER));
 
-            // 操作と確認：
+            // 操作と確認：営業の職務の権限が、用意した権限と同じ
             assertThat(new TreeSet<>(compositePermissions("sales"))).isEqualTo(expected);
         }
     }
@@ -156,11 +156,13 @@ class AdminRealmPermissionContractTest {
         @Test
         @DisplayName("token に、すべての権限が載りうる（client の scope の対応）")
         void webClientScopeIncludesAllPermissions() {
-            // 準備：ec-admin-web は fullScopeAllowed が false なので、scope の対応にない role は token に載らない
+            // 準備：運営者がログインする client の fullScopeAllowed を読む
             List<Boolean> fullScopeAllowed = read("$.clients[?(@.clientId == '" + WEB_CLIENT + "')].fullScopeAllowed");
+
+            // 確認（前提）：fullScopeAllowed が false なので、scope の対応にない role は token に載らない
             assertThat(fullScopeAllowed).containsExactly(false);
 
-            // 操作：
+            // 操作：運営者がログインする client に対応する、管理 API の client role を読む
             List<List<String>> mapped = read("$.clientScopeMappings['" + API_CLIENT + "'][?(@.client == '" + WEB_CLIENT + "')].roles");
 
             // 確認：scope の対応が 1 つあり、全ての権限を含む

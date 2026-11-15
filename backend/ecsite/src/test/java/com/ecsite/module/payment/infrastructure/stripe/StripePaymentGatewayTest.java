@@ -249,7 +249,7 @@ class StripePaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("他の失敗は、システムのエラー（再発行でやり直す）")
+        @DisplayName("他の失敗は、外部サービスのエラー（再発行でやり直す）")
         void failure() {
             // 準備：Stripe の側の故障
             respond("POST /v1/refunds", 500, StripeApiStub.error("api_error", null));
@@ -311,7 +311,7 @@ class StripePaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("作れなければ、システムのエラー")
+        @DisplayName("作れなければ、外部サービスのエラー")
         void failure() {
             // 準備：Stripe の側の故障
             respond("POST /v1/checkout/sessions", 500, StripeApiStub.error("api_error", null));
@@ -360,7 +360,7 @@ class StripePaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("Stripe の 5xx は、システムのエラー")
+        @DisplayName("Stripe の 5xx は、外部サービスのエラー")
         void failure() {
             // 準備：Stripe の側の故障
             respond("POST /v1/checkout/sessions/" + SESSION_ID + "/expire", 500, StripeApiStub.error("api_error", null));
@@ -496,7 +496,7 @@ class StripePaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("Stripe の 5xx は、システムのエラー（再発行でやり直す）")
+        @DisplayName("Stripe の 5xx は、外部サービスのエラー（再発行でやり直す）")
         void failure() {
             // 準備：Stripe の側の故障
             respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 500, StripeApiStub.error("api_error", null));

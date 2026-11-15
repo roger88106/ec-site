@@ -18,15 +18,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
  */
 class AnnotationPlacementTest {
 
-    // ============================== 定数 ==============================
-
-    /**
-     * presentation の外に置く例外の {@code @RestController}
-     *
-     * <p>どのモジュールにも属さない GET /me。
-     */
-    private static final String ME_CONTROLLER = "com.ecsite.config.security.MeController";
-
     // ============================== テスト ==============================
 
     @Nested
@@ -61,7 +52,7 @@ class AnnotationPlacementTest {
         // 操作と確認：本番のクラスに規則を当てる
         classes().that().areAnnotatedWith(RestController.class)
                 .and().resideInAPackage("com.ecsite..")
-                .and().doNotHaveFullyQualifiedName(ME_CONTROLLER)
+                .and().doNotHaveFullyQualifiedName(ArchitectureExceptions.ME_CONTROLLER)
                 .should().resideInAPackage(ProductionClasses.MODULE_PACKAGE + ".*.presentation..")
                 .check(ProductionClasses.all());
     }

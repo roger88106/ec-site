@@ -234,7 +234,7 @@ class MockPaymentPageControllerTest {
      * <p>確認すること：
      * <ul>
      *   <li>200</li>
-     *   <li>金額（{@link #AMOUNT}）</li>
+     *   <li>金額（{@link #AMOUNT} の 6,940 円）</li>
      *   <li>支払うボタン</li>
      *   <li>カードを拒否させるボタン</li>
      *   <li>やめるボタン</li>

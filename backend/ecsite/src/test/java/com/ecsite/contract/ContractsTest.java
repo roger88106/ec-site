@@ -32,7 +32,7 @@ class ContractsTest {
         @Test
         @DisplayName("ルートが渡されないとき、property の名前と設定の場所を示して失敗する")
         void pathFailsWithoutRoot() {
-            // 操作と確認：
+            // 操作と確認：property の名前と設定の場所を示す失敗
             assertThatThrownBy(() -> Contracts.resolve("repo.root", null, DOCUMENT))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("repo.root")
@@ -42,7 +42,7 @@ class ContractsTest {
         @Test
         @DisplayName("ルートが空のとき、失敗する")
         void pathFailsWithBlankRoot() {
-            // 操作と確認：
+            // 操作と確認：property の名前を示す失敗
             assertThatThrownBy(() -> Contracts.resolve("repo.root", " ", DOCUMENT))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("repo.root");
@@ -51,7 +51,7 @@ class ContractsTest {
         @Test
         @DisplayName("ルートが渡されたとき、ルートに相対パスをつないだ置き場所を返す")
         void pathResolvesUnderRoot() {
-            // 操作と確認：
+            // 操作と確認：ルートの下の置き場所
             assertThat(Contracts.resolve("repo.root", "/repo", DOCUMENT))
                     .isEqualTo(Path.of("/repo", "docs", "02-設計", "overview.md"));
         }
@@ -72,7 +72,7 @@ class ContractsTest {
         @Test
         @DisplayName("渡されないとき、property の名前を示して失敗する")
         void failsWithoutProperty() {
-            // 操作と確認：
+            // 操作と確認：property の名前を示す失敗
             assertThatThrownBy(() -> Contracts.directory("openapi.dir", null))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("openapi.dir");
@@ -81,7 +81,7 @@ class ContractsTest {
         @Test
         @DisplayName("空のとき、失敗する")
         void failsWithBlankProperty() {
-            // 操作と確認：
+            // 操作と確認：property の名前を示す失敗
             assertThatThrownBy(() -> Contracts.directory("keycloak.realms.dir", " "))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("keycloak.realms.dir");
@@ -90,7 +90,7 @@ class ContractsTest {
         @Test
         @DisplayName("渡されたとき、その値を返す")
         void returnsGivenPath() {
-            // 操作と確認：
+            // 操作と確認：渡した値の置き場所
             assertThat(Contracts.directory("openapi.dir", "/contracts")).isEqualTo(Path.of("/contracts"));
         }
 

@@ -172,10 +172,10 @@ class PaymentApiTest {
             var orderId = payments.created(ORDERED_AT);
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：支払画面の URL を求める
             var url = paymentApi.pageUrl(orderId);
 
-            // 確認：
+            // 確認：URL を返さず、決済サービスで画面を作らない
             assertThat(url).isEmpty();
             assertThat(gateway.openedPages()).isZero();
         }
@@ -183,7 +183,7 @@ class PaymentApiTest {
         @Test
         @DisplayName("支払のない注文には、支払画面の URL を返さない")
         void noPageForUnknownOrder() {
-            // 操作と確認：
+            // 操作と確認：支払のない注文の URL を求めると、ない
             assertThat(paymentApi.pageUrl(UUID.randomUUID())).isEmpty();
         }
     }
@@ -195,28 +195,28 @@ class PaymentApiTest {
         @Test
         @DisplayName("AC-146 与信の成功の通知で、支払は与信済みになる")
         void authorizesOnNotification() {
-            // 準備：支払のない注文
+            // 準備：支払画面を開いた未払いの支払
             var orderId = payments.created(ORDERED_AT);
             var pageId = payments.openPage(orderId);
 
             // 操作：支払う（決済サービスから通知が届く）
             gateway.pay(pageId);
 
-            // 確認：
+            // 確認：与信済み
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         }
 
         @Test
         @DisplayName("AC-146 与信の成功の通知で、この注文の与信の成功のイベントが 1 件出る")
         void publishesAuthorizedEvent() {
-            // 準備：支払のない注文
+            // 準備：支払画面を開いた未払いの支払
             var orderId = payments.created(ORDERED_AT);
             var pageId = payments.openPage(orderId);
 
-            // 操作：
+            // 操作：支払う（決済サービスから通知が届く）
             gateway.pay(pageId);
 
-            // 確認：
+            // 確認：与信の成功のイベントが、この注文に 1 件
             assertThat(authorizedEvents(orderId)).singleElement()
                     .satisfies(event -> assertThat(event.orderId()).isEqualTo(orderId));
         }
@@ -224,11 +224,11 @@ class PaymentApiTest {
         @Test
         @DisplayName("AC-146 与信の成功の通知では、売上を確定しない")
         void doesNotCaptureOnNotification() {
-            // 準備：支払のない注文
+            // 準備：支払画面を開いた未払いの支払
             var orderId = payments.created(ORDERED_AT);
             var pageId = payments.openPage(orderId);
 
-            // 操作：
+            // 操作：支払う（決済サービスから通知が届く）
             gateway.pay(pageId);
 
             // 確認：決済サービスの売上確定を呼ばない
@@ -246,7 +246,7 @@ class PaymentApiTest {
             // 操作：同じ通知がもう一度届く
             gateway.notifyAuthorized(pageId);
 
-            // 確認：
+            // 確認：与信の成功のイベントは 1 件のまま
             assertThat(authorizedEvents(orderId)).hasSize(1);
         }
     }

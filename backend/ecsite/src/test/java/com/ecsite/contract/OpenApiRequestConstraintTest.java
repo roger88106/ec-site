@@ -94,10 +94,10 @@ class OpenApiRequestConstraintTest {
         @ValueSource(strings = {"admin.yaml", "store.yaml"})
         @DisplayName("リクエストの数値の項目に下限と上限、文字の項目に長さか形式がある")
         void requestFieldsAreConstrained(String file) {
-            // 操作：
+            // 操作：契約の数値と文字の項目を検査する
             var scan = scan(Contracts.openApi(file), NO_MAXIMUM);
 
-            // 確認：
+            // 確認：制約のない項目がない
             assertThat(scan.missing()).as("制約のない項目").isEmpty();
         }
 
@@ -105,7 +105,7 @@ class OpenApiRequestConstraintTest {
         @ValueSource(strings = {"admin.yaml", "store.yaml"})
         @DisplayName("検査は契約の数値と文字の項目を 1 件以上たどる（たどり方の誤りで、何も調べずに通らない）")
         void scansFields(String file) {
-            // 操作と確認：
+            // 操作と確認：たどった項目が 1 件以上ある
             assertThat(scan(Contracts.openApi(file), NO_MAXIMUM).scanned()).isPositive();
         }
 
@@ -118,7 +118,7 @@ class OpenApiRequestConstraintTest {
                 exempted.addAll(scan(Contracts.openApi(file), NO_MAXIMUM).exempted());
             }
 
-            // 確認：
+            // 確認：集めた項目が、一覧の項目と同じ
             assertThat(exempted).isEqualTo(new TreeSet<>(NO_MAXIMUM.keySet()));
         }
     }
@@ -156,7 +156,7 @@ class OpenApiRequestConstraintTest {
                             tags: {type: array, items: {type: string}}
                     """);
 
-            // 操作：
+            // 操作：1 つの項目を除いて検査する
             var scan = scan(document, Map.of("PUT /items/{id} query:page", PAGE));
 
             // 確認：制約のない 4 つだけを見つけ、8 つの項目をたどる
@@ -187,7 +187,7 @@ class OpenApiRequestConstraintTest {
             // 操作：片方の操作の項目だけを除く
             var scan = scan(document, Map.of("GET /items query:page", PAGE));
 
-            // 確認：
+            // 確認：除くのは、指定した操作の項目だけ
             assertThat(scan.missing()).containsExactly("GET /orders query:page（integer：下限か上限がない）");
             assertThat(scan.exempted()).containsExactly("GET /items query:page");
         }

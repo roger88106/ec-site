@@ -50,10 +50,10 @@ class AdminApiPermissionContractTest {
         @Test
         @DisplayName("全ての操作に、resource:action の形の権限か authenticated が書かれている")
         void allAdminOperationsDeclarePermission() {
-            // 準備：
+            // 準備：管理 API の契約
             var document = Contracts.openApi("admin.yaml");
 
-            // 操作：
+            // 操作：全ての操作をたどる
             var operations = OpenApiNodes.operations(document);
 
             // 確認：たどった操作があり、誤りがない
@@ -64,7 +64,7 @@ class AdminApiPermissionContractTest {
         @Test
         @DisplayName("AC-216 レポートの権限は、レポートの操作ごとに 1 つずつで、条件ごとの操作や権限はない")
         void onePermissionPerReport() {
-            // 準備：
+            // 準備：管理 API の契約
             var document = Contracts.openApi("admin.yaml");
 
             // 操作：レポートの権限を持つ操作を取り出す
@@ -72,7 +72,7 @@ class AdminApiPermissionContractTest {
                     .filter(operation -> String.valueOf(operation.node().get(PERMISSION_KEY)).startsWith("report-"))
                     .toList();
 
-            // 確認：
+            // 確認：3 つのレポートの操作に、それぞれ別の権限が 1 つずつ
             assertThat(reports).extracting(operation -> operation.name() + " " + operation.node().get(PERMISSION_KEY))
                     .containsExactlyInAnyOrder(
                             "GET /reports/sales-trend report-sales-trend:read",
@@ -99,10 +99,10 @@ class AdminApiPermissionContractTest {
                           operationId: createProduct
                     """);
 
-            // 操作：
+            // 操作：権限の書き方を検査する
             var violations = violations(OpenApiNodes.operations(document));
 
-            // 確認：
+            // 確認：権限のない POST だけを誤りにする
             assertThat(violations).containsExactly("POST /products: x-required-permission がない");
         }
 
@@ -122,7 +122,7 @@ class AdminApiPermissionContractTest {
                           x-required-permission: authenticated
                     """);
 
-            // 操作：
+            // 操作：権限の書き方を検査する
             var violations = violations(OpenApiNodes.operations(document));
 
             // 確認：authenticated は誤りにしない

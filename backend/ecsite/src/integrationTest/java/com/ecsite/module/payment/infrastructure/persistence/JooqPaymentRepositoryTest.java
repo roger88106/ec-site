@@ -121,7 +121,7 @@ class JooqPaymentRepositoryTest {
             // 準備：新しい注文の未払いの支払
             var payment = payment(UUID.randomUUID(), DEADLINE);
 
-            // 操作と確認：
+            // 操作と確認：保存すると true
             assertThat(repository.insertIfAbsent(payment)).isTrue();
         }
 
@@ -132,10 +132,10 @@ class JooqPaymentRepositoryTest {
             var payment = payment(UUID.randomUUID(), DEADLINE);
             repository.insertIfAbsent(payment);
 
-            // 操作：
+            // 操作：ID から再構築する
             var restored = repository.findById(payment.id()).orElseThrow();
 
-            // 確認：
+            // 確認：保存した支払と同じ内容
             assertThat(restored.toSnapshot()).isEqualTo(payment.toSnapshot());
         }
 
@@ -146,17 +146,17 @@ class JooqPaymentRepositoryTest {
             var payment = payment(UUID.randomUUID(), DEADLINE);
             repository.insertIfAbsent(payment);
 
-            // 操作：
+            // 操作：注文 ID から再構築する
             var restored = repository.findByOrderId(payment.orderId()).orElseThrow();
 
-            // 確認：
+            // 確認：保存した支払と同じ内容
             assertThat(restored.toSnapshot()).isEqualTo(payment.toSnapshot());
         }
 
         @Test
         @DisplayName("ない ID・注文 ID には、空を返す")
         void returnsEmptyForUnknown() {
-            // 操作と確認：
+            // 操作と確認：ない ID とない注文 ID の、どちらも空
             assertThat(repository.findById(UUID.randomUUID())).isEmpty();
             assertThat(repository.findByOrderId(UUID.randomUUID())).isEmpty();
         }
@@ -174,7 +174,7 @@ class JooqPaymentRepositoryTest {
             repository.insertIfAbsent(payment(orderId, DEADLINE));
             var second = payment(orderId, DEADLINE.plusSeconds(60));
 
-            // 操作と確認：
+            // 操作と確認：2 つ目の支払を保存すると false
             assertThat(repository.insertIfAbsent(second)).isFalse();
         }
 
@@ -187,10 +187,10 @@ class JooqPaymentRepositoryTest {
             repository.insertIfAbsent(first);
             var second = payment(orderId, DEADLINE.plusSeconds(60));
 
-            // 操作：
+            // 操作：2 つ目の支払を保存する
             repository.insertIfAbsent(second);
 
-            // 確認：
+            // 確認：2 つ目の支払はなく、注文の支払は先の支払
             assertThat(repository.findById(second.id())).isEmpty();
             assertThat(repository.findByOrderId(orderId).orElseThrow().id()).isEqualTo(first.id());
         }
@@ -206,10 +206,10 @@ class JooqPaymentRepositoryTest {
             // 準備：保存した未払いの支払
             var payment = savedPayment();
 
-            // 操作：
+            // 操作：与信を受けた支払で更新する
             repository.update(authorized(payment));
 
-            // 確認：
+            // 確認：再取得した支払に、与信を受けた内容が保存されている
             assertAuthorizationSaved(repository.findById(payment.id()).orElseThrow());
         }
 
@@ -219,10 +219,10 @@ class JooqPaymentRepositoryTest {
             // 準備：保存した未払いの支払
             var payment = savedPayment();
 
-            // 操作：
+            // 操作：与信を受けた支払で更新する
             repository.update(authorized(payment));
 
-            // 確認：
+            // 確認：再取得した支払のバージョンが 1 上がっている
             assertThat(repository.findById(payment.id()).orElseThrow().toSnapshot().version()).isEqualTo(VERSION_AFTER_UPDATE);
         }
 
@@ -232,10 +232,10 @@ class JooqPaymentRepositoryTest {
             // 準備：保存した未払いの支払
             var payment = savedPayment();
 
-            // 操作：
+            // 操作：与信を受けた支払で更新する
             repository.update(authorized(payment));
 
-            // 確認：
+            // 確認：与信の成功のイベントは、この注文のものだけ
             assertThat(events.stream(PaymentAuthorized.class)).extracting(PaymentAuthorized::orderId)
                     .containsExactly(payment.orderId());
         }
@@ -246,10 +246,10 @@ class JooqPaymentRepositoryTest {
             // 準備：保存した未払いの支払
             var payment = savedPayment();
 
-            // 操作：
+            // 操作：期限切れにした支払で更新する
             repository.update(expired(payment));
 
-            // 確認：
+            // 確認：再取得した支払が支払なし
             assertThat(repository.findById(payment.id()).orElseThrow().status()).isEqualTo(PaymentStatus.NOT_PAID);
         }
 
@@ -259,10 +259,10 @@ class JooqPaymentRepositoryTest {
             // 準備：保存した未払いの支払
             var payment = savedPayment();
 
-            // 操作：
+            // 操作：期限切れにした支払で更新する
             repository.update(expired(payment));
 
-            // 確認：
+            // 確認：この注文の期限切れのイベントだけ
             assertThat(events.stream(PaymentExpired.class)).extracting(PaymentExpired::orderId)
                     .containsExactly(payment.orderId());
         }
@@ -278,7 +278,7 @@ class JooqPaymentRepositoryTest {
             // 準備：支払画面を開いて保存した支払
             var payment = savedPaymentWithPage();
 
-            // 操作と確認：
+            // 操作と確認：ID で行ロックすると、保存した支払
             assertThat(repository.lockById(payment.id()).orElseThrow().id()).isEqualTo(payment.id());
         }
 
@@ -288,7 +288,7 @@ class JooqPaymentRepositoryTest {
             // 準備：支払画面を開いて保存した支払
             var payment = savedPaymentWithPage();
 
-            // 操作と確認：
+            // 操作と確認：注文 ID で行ロックすると、保存した支払
             assertThat(repository.lockByOrderId(payment.orderId()).orElseThrow().id()).isEqualTo(payment.id());
         }
 
@@ -298,14 +298,14 @@ class JooqPaymentRepositoryTest {
             // 準備：支払画面を開いて保存した支払
             var payment = savedPaymentWithPage();
 
-            // 操作と確認：
+            // 操作と確認：支払画面の ID で行ロックすると、保存した支払
             assertThat(repository.lockByPageId(PAGE.id()).orElseThrow().id()).isEqualTo(payment.id());
         }
 
         @Test
         @DisplayName("ない ID・注文 ID・支払画面の ID で行ロックすると、空を返す")
         void returnsEmptyForUnknown() {
-            // 操作と確認：
+            // 操作と確認：ない ID、ない注文 ID、ない支払画面の ID の、どれも空
             assertThat(repository.lockById(UUID.randomUUID())).isEmpty();
             assertThat(repository.lockByOrderId(UUID.randomUUID())).isEmpty();
             assertThat(repository.lockByPageId("page-none")).isEmpty();
@@ -354,14 +354,14 @@ class JooqPaymentRepositoryTest {
             // 操作：支払のない注文を加えて取得する
             var found = repository.findByOrderIds(List.of(first.orderId(), second.orderId(), UUID.randomUUID()));
 
-            // 確認：
+            // 確認：取得する 2 件だけ
             assertThat(found).extracting(Payment::id).containsExactlyInAnyOrder(first.id(), second.id());
         }
 
         @Test
         @DisplayName("注文 ID がなければ、空を返す")
         void returnsEmptyForNoOrders() {
-            // 操作と確認：
+            // 操作と確認：注文 ID の空の一覧で取得すると、空
             assertThat(repository.findByOrderIds(List.of())).isEmpty();
         }
     }
@@ -379,7 +379,7 @@ class JooqPaymentRepositoryTest {
             var onDeadline = payment(UUID.randomUUID(), SEARCH_NOW);
             insertAll(older, onDeadline, oldest);
 
-            // 操作と確認：
+            // 操作と確認：3 件が期限の古い順に並ぶ
             assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
                     .containsExactly(oldest.id(), older.id(), onDeadline.id());
         }
@@ -404,7 +404,7 @@ class JooqPaymentRepositoryTest {
             var past = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(100));
             insertAll(past, payment(UUID.randomUUID(), SEARCH_NOW.plusSeconds(1)));
 
-            // 操作と確認：
+            // 操作と確認：期限を過ぎた 1 件だけ
             assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
                     .containsExactly(past.id());
         }
@@ -418,7 +418,7 @@ class JooqPaymentRepositoryTest {
             insertAll(past, expired);
             repository.update(expired(expired, SEARCH_NOW));
 
-            // 操作と確認：
+            // 操作と確認：期限切れにしていない 1 件だけ
             assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
                     .containsExactly(past.id());
         }
@@ -452,7 +452,7 @@ class JooqPaymentRepositoryTest {
             // 準備：待つ 2 件、待っていない 1 件、待った後に与信済みになった 1 件
             var waiting = awaitingPayments();
 
-            // 操作：
+            // 操作：待つ支払を、上限なしで取得する
             var found = repository.findUnpaidAwaitingAuthorization(Integer.MAX_VALUE);
 
             // 確認：このテストの支払のうち、待つ 2 件だけが古い順に
@@ -466,7 +466,7 @@ class JooqPaymentRepositoryTest {
             // 準備：待つ 2 件（最も古いのは、他のテストの支払より古い 1980 年から待つ）
             var waiting = awaitingPayments();
 
-            // 操作と確認：
+            // 操作と確認：上限 1 件で取得すると、最も古くから待つ 1 件
             assertThat(repository.findUnpaidAwaitingAuthorization(1)).extracting(Payment::id)
                     .containsExactly(waiting.oldest().id());
         }

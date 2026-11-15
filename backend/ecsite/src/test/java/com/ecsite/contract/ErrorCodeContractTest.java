@@ -63,7 +63,7 @@ class ErrorCodeContractTest {
                 union.addAll(strings(operation.node().get("x-error-codes")));
             }
 
-            // 操作と確認：
+            // 操作と確認：全体の列挙が、用意した和と同じ
             assertThat(enumOf(file)).as("全体の列挙").isEqualTo(union);
         }
 
@@ -71,11 +71,11 @@ class ErrorCodeContractTest {
         @ValueSource(strings = {"admin.yaml", "store.yaml"})
         @DisplayName("AC-274 共通のエラーは、バックエンドの共通のエラーと同じ")
         void commonIsBackendCommon(String file) {
-            // 準備：
+            // 準備：バックエンドの共通のエラーのコード
             Set<String> backend = Arrays.stream(CommonErrorCode.values())
                     .map(code -> code.getCode().code()).collect(Collectors.toCollection(TreeSet::new));
 
-            // 操作と確認：
+            // 操作と確認：契約の共通のエラーが、バックエンドの共通のエラーと同じ
             assertThat(commonOf(file)).as("共通のエラー").isEqualTo(backend);
         }
     }
@@ -87,16 +87,16 @@ class ErrorCodeContractTest {
         @Test
         @DisplayName("AC-275 バックエンドのすべてのエラーのコードが、どちらかの API の全体の列挙にあり、列挙のすべての値がバックエンドにある")
         void backendCodesAgreeWithContracts() {
-            // 準備：
+            // 準備：バックエンドの全てのエラーのコード
             Set<String> backend = ProductionClasses.errorCodes().stream()
                     .map(constant -> ((ErrorCodeProvider) constant).getCode().code())
                     .collect(Collectors.toCollection(TreeSet::new));
 
-            // 操作：
+            // 操作：2 つの API の全体の列挙を合わせる
             Set<String> contracts = new TreeSet<>(enumOf("admin.yaml"));
             contracts.addAll(enumOf("store.yaml"));
 
-            // 確認：
+            // 確認：合わせた列挙が、バックエンドのエラーのコードと同じ
             assertThat(contracts).as("契約の全体の列挙（2 つの API の和）").isEqualTo(backend);
         }
     }

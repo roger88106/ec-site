@@ -132,7 +132,7 @@ class PaymentVoidTest {
             var orderId = payments.created(ORDERED_AT);
             var pageId = payments.pay(orderId);
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
             // 確認：この支払の与信が取り消された
@@ -149,10 +149,10 @@ class PaymentVoidTest {
             var transactionActive = new CopyOnWriteArrayList<Boolean>();
             gateway.onRefundOrVoid(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：与信の取消済みになり、取消の呼び出しはトランザクションの外の 1 回
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
             assertThat(transactionActive).containsExactly(false);
         }
@@ -163,10 +163,10 @@ class PaymentVoidTest {
             // 準備：未払いの支払
             var orderId = payments.created(ORDERED_AT);
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：支払なしになり、決済サービスの与信の取消を呼ばない
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             assertThat(gateway.voided()).isEmpty();
@@ -185,7 +185,7 @@ class PaymentVoidTest {
             // 操作：順序の入れ替わった与信の成功の通知が届く
             gateway.notifyAuthorized(pageId);
 
-            // 確認：
+            // 確認：与信の取消済みになり、届いた与信が取り消された
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
             assertThat(gateway.voided()).containsExactly(gateway.authorizationRefOf(pageId));
         }
@@ -203,7 +203,7 @@ class PaymentVoidTest {
             var authorizationRef = gateway.authorizationRefOf(payments.pay(orderId));
             gateway.failNextVoids(1);
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
             // 確認：与信の取消の依頼の処理が失敗し、与信の取消待ちのまま
@@ -243,7 +243,7 @@ class PaymentVoidTest {
             // 操作：もう一度取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：取消は 1 回のまま、取消済みのまま
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             assertThat(gateway.voidsOf(authorizationRef)).isEqualTo(1);
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOIDED);
@@ -260,10 +260,10 @@ class PaymentVoidTest {
             // 準備：売上確定の応答が届かなかった支払
             var orderId = capturedWithLostResponse();
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：返金済みになり、総額が 1 回だけ返金された
             awaitStatus(orderId, PaymentSummary.Status.REFUNDED);
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             assertThat(gateway.refunded()).containsExactly(orderId);
@@ -276,10 +276,10 @@ class PaymentVoidTest {
             // 準備：売上確定の応答が届かなかった支払
             var orderId = capturedWithLostResponse();
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：返金済みになり、決済サービスで与信を取り消していない
             awaitStatus(orderId, PaymentSummary.Status.REFUNDED);
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             assertThat(gateway.voidsOf(gateway.authorizationRefOf(payments.pageIdOf(orderId)))).isZero();
@@ -300,7 +300,7 @@ class PaymentVoidTest {
                 }
             });
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
             // 確認：重複した依頼を処理し、返金は 1 回で、与信は取り消さない
@@ -322,7 +322,7 @@ class PaymentVoidTest {
                 awaitStatus(orderId, PaymentSummary.Status.REFUNDED);
             });
 
-            // 操作：
+            // 操作：売上を確定する
             paymentApi.capture(orderId);
 
             // 確認：返金は 1 回で、与信は取り消さない

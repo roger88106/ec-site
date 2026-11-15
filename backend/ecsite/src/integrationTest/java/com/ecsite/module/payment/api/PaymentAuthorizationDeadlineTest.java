@@ -96,7 +96,7 @@ class PaymentAuthorizationDeadlineTest {
             // 準備：与信済みの支払
             var authorized = payments.authorized(AUTHORIZED_AT);
 
-            // 操作：
+            // 操作：与信期限を読む
             var deadlines = paymentApi.findAuthorizationDeadlines(List.of(authorized));
 
             // 確認：期限は 7 日後で、まだ近くない
@@ -129,7 +129,7 @@ class PaymentAuthorizationDeadlineTest {
             var orderId = payments.authorized(AUTHORIZED_AT);
             clock.setInstant(EXPIRING_FROM.minusSeconds(1));
 
-            // 操作と確認：
+            // 操作と確認：期限が近くない
             assertThat(expiringOf(orderId)).isFalse();
         }
 
@@ -140,7 +140,7 @@ class PaymentAuthorizationDeadlineTest {
             var orderId = payments.authorized(AUTHORIZED_AT);
             clock.setInstant(EXPIRING_FROM);
 
-            // 操作と確認：
+            // 操作と確認：期限が近い
             assertThat(expiringOf(orderId)).isTrue();
         }
 
@@ -151,7 +151,7 @@ class PaymentAuthorizationDeadlineTest {
             var orderId = payments.authorized(AUTHORIZED_AT);
             clock.setInstant(PAST_DEADLINE);
 
-            // 操作と確認：
+            // 操作と確認：期限が近い
             assertThat(expiringOf(orderId)).isTrue();
         }
 
@@ -161,7 +161,7 @@ class PaymentAuthorizationDeadlineTest {
             // 準備：与信期限切れの支払
             var orderId = authorizationExpired();
 
-            // 操作と確認：
+            // 操作と確認：期限が近い
             assertThat(expiringOf(orderId)).isTrue();
         }
 
@@ -173,7 +173,7 @@ class PaymentAuthorizationDeadlineTest {
             paymentApi.capture(orderId);
             clock.setInstant(PAST_DEADLINE);
 
-            // 操作と確認：
+            // 操作と確認：期限が近くない
             assertThat(expiringOf(orderId)).isFalse();
         }
     }
@@ -189,7 +189,7 @@ class PaymentAuthorizationDeadlineTest {
             var orderId = payments.authorized(AUTHORIZED_AT);
             clock.setInstant(EXPIRING_FROM.minusSeconds(1));
 
-            // 操作と確認：
+            // 操作と確認：期限が近い注文の一覧に出ない
             assertThat(paymentApi.findExpiringOrderIds()).doesNotContain(orderId);
         }
 
@@ -200,7 +200,7 @@ class PaymentAuthorizationDeadlineTest {
             var orderId = payments.authorized(AUTHORIZED_AT);
             clock.setInstant(EXPIRING_FROM);
 
-            // 操作と確認：
+            // 操作と確認：期限が近い注文の一覧に出る
             assertThat(paymentApi.findExpiringOrderIds()).contains(orderId);
         }
 
@@ -211,7 +211,7 @@ class PaymentAuthorizationDeadlineTest {
             var orderId = payments.authorized(AUTHORIZED_AT);
             clock.setInstant(PAST_DEADLINE);
 
-            // 操作と確認：
+            // 操作と確認：期限が近い注文の一覧に出る
             assertThat(paymentApi.findExpiringOrderIds()).contains(orderId);
         }
 
@@ -221,7 +221,7 @@ class PaymentAuthorizationDeadlineTest {
             // 準備：与信期限切れの支払
             var orderId = authorizationExpired();
 
-            // 操作と確認：
+            // 操作と確認：期限が近い注文の一覧に出る
             assertThat(paymentApi.findExpiringOrderIds()).contains(orderId);
         }
 
@@ -233,7 +233,7 @@ class PaymentAuthorizationDeadlineTest {
             paymentApi.capture(orderId);
             clock.setInstant(PAST_DEADLINE);
 
-            // 操作と確認：
+            // 操作と確認：期限が近い注文の一覧に出ない
             assertThat(paymentApi.findExpiringOrderIds()).doesNotContain(orderId);
         }
     }

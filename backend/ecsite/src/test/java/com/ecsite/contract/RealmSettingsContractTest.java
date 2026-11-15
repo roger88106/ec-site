@@ -73,14 +73,14 @@ class RealmSettingsContractTest {
         @Test
         @DisplayName("AC-108 会員の realm は、会員登録ができる")
         void storeAllowsRegistration() {
-            // 操作と確認：
+            // 操作と確認：会員の realm が会員の登録を許可している
             assertThat((Boolean) read(STORE, "$.registrationAllowed")).isTrue();
         }
 
         @Test
         @DisplayName("AC-134 運営者の realm は、自分で登録できない")
         void adminDisallowsRegistration() {
-            // 操作と確認：
+            // 操作と確認：運営者の realm が登録を許可していない
             assertThat((Boolean) read(ADMIN, "$.registrationAllowed")).isFalse();
         }
 
@@ -88,7 +88,7 @@ class RealmSettingsContractTest {
         @ValueSource(strings = {STORE, ADMIN})
         @DisplayName("AC-109 登録済みのメールアドレスは使えない")
         void emailIsUnique(String realm) {
-            // 操作と確認：
+            // 操作と確認：同じメールアドレスの重複を許していない
             assertThat((Boolean) read(realm, "$.duplicateEmailsAllowed")).isFalse();
         }
 
@@ -96,21 +96,21 @@ class RealmSettingsContractTest {
         @ValueSource(strings = {STORE, ADMIN})
         @DisplayName("AC-113 ログイン ID はメールアドレス")
         void emailIsLoginId(String realm) {
-            // 操作と確認：
+            // 操作と確認：メールアドレスをログイン ID にしている
             assertThat((Boolean) read(realm, "$.registrationEmailAsUsername")).isTrue();
         }
 
         @Test
         @DisplayName("AC-111、112 会員はメールアドレスの確認が必須")
         void storeRequiresEmailVerification() {
-            // 操作と確認：
+            // 操作と確認：会員の realm がメールアドレスの確認を求めている
             assertThat((Boolean) read(STORE, "$.verifyEmail")).isTrue();
         }
 
         @Test
         @DisplayName("AC-134 運営者はメールアドレスの確認が不要（IdP の管理の画面で作るため）")
         void adminSkipsEmailVerification() {
-            // 操作と確認：
+            // 操作と確認：運営者の realm がメールアドレスの確認を求めていない
             assertThat((Boolean) read(ADMIN, "$.verifyEmail")).isFalse();
         }
     }
@@ -123,10 +123,10 @@ class RealmSettingsContractTest {
         @ValueSource(strings = {STORE, ADMIN})
         @DisplayName("AC-110 パスワードは 8 文字以上、64 文字以下で、メールアドレスと同じものは不可")
         void passwordPolicy(String realm) {
-            // 操作：
+            // 操作：パスワードの規則を読む
             String policy = read(realm, "$.passwordPolicy");
 
-            // 確認：
+            // 確認：長さの下限、長さの上限、メールアドレスと同じものの禁止の 3 つだけ
             assertThat(policy.split(" and ")).containsExactlyInAnyOrder("length(8)", "maxLength(64)", "notEmail");
         }
 
@@ -134,7 +134,7 @@ class RealmSettingsContractTest {
         @ValueSource(strings = {STORE, ADMIN})
         @DisplayName("AC-116 5 回続けてログインに失敗すると 15 分止め、ずっと止めはしない")
         void bruteForceProtection(String realm) {
-            // 操作と確認：
+            // 操作と確認：5 回の失敗から 15 分止める設定
             assertLocksFor15MinutesAfter5Failures(realm);
         }
 
@@ -142,7 +142,7 @@ class RealmSettingsContractTest {
         @ValueSource(strings = {STORE, ADMIN})
         @DisplayName("AC-118 パスワードを忘れたときの再設定が使える")
         void resetPassword(String realm) {
-            // 操作と確認：
+            // 操作と確認：パスワードの再設定を許可している
             assertThat((Boolean) read(realm, "$.resetPasswordAllowed")).isTrue();
         }
     }
@@ -154,7 +154,7 @@ class RealmSettingsContractTest {
         @Test
         @DisplayName("AC-117 会員のログインの状態は、最後の操作から 7 日、最長 30 日")
         void storeSsoSession() {
-            // 操作と確認：
+            // 操作と確認：会員の realm で、ログインの状態の期限が 7 日と 30 日
             assertThat(number(STORE, "$.ssoSessionIdleTimeout")).isEqualTo(7 * DAY);
             assertThat(number(STORE, "$.ssoSessionMaxLifespan")).isEqualTo(30 * DAY);
         }
@@ -162,7 +162,7 @@ class RealmSettingsContractTest {
         @Test
         @DisplayName("AC-117 運営者のログインの状態は、最後の操作から 30 分、最長 8 時間")
         void adminSsoSession() {
-            // 操作と確認：
+            // 操作と確認：運営者の realm で、ログインの状態の期限が 30 分と 8 時間
             assertThat(number(ADMIN, "$.ssoSessionIdleTimeout")).isEqualTo(30 * MINUTE);
             assertThat(number(ADMIN, "$.ssoSessionMaxLifespan")).isEqualTo(8 * HOUR);
         }
@@ -171,7 +171,7 @@ class RealmSettingsContractTest {
         @ValueSource(strings = {STORE, ADMIN})
         @DisplayName("AC-140 access token の有効期間は 5 分")
         void accessTokenLifespan(String realm) {
-            // 操作と確認：
+            // 操作と確認：access token の有効期間が 5 分
             assertThat(number(realm, "$.accessTokenLifespan")).isEqualTo(5 * MINUTE);
         }
     }
@@ -183,52 +183,52 @@ class RealmSettingsContractTest {
         @Test
         @DisplayName("AC-209 生年月日は日付の形で入れる")
         void birthdateIsDate() {
-            // 操作：
+            // 操作：生年月日の属性の、日付の形の検査を読む
             List<Object> validations = memberProfile().read("$.attributes[?(@.name == 'birthdate')].validations.iso-date");
 
-            // 確認：
+            // 確認：日付の形の検査が 1 つある
             assertThat(validations).hasSize(1);
         }
 
         @Test
         @DisplayName("AC-221 性別は 4 つの値から選ぶ")
         void genderHasFourOptions() {
-            // 操作：
+            // 操作：性別の属性の選択肢を読む
             List<List<String>> options = memberProfile().read("$.attributes[?(@.name == 'gender')].validations.options.options");
 
-            // 確認：
+            // 確認：選択肢が 4 つの値
             assertThat(options.getFirst()).containsExactly("male", "female", "other", "undisclosed");
         }
 
         @Test
         @DisplayName("AC-210、221 生年月日と性別は任意")
         void attributesAreOptional() {
-            // 操作：
+            // 操作：生年月日と性別の属性の必須の設定を読む
             List<Object> required = memberProfile().read("$.attributes[?(@.name in ['birthdate', 'gender'])].required");
 
-            // 確認：
+            // 確認：どちらにも必須の設定がない
             assertThat(required).isEmpty();
         }
 
         @Test
         @DisplayName("AC-211、221 生年月日と性別は、会員が後から直せる")
         void attributesAreEditableByMember() {
-            // 操作：
+            // 操作：生年月日と性別の属性を編集できる role を読む
             List<List<String>> edit = memberProfile().read("$.attributes[?(@.name in ['birthdate', 'gender'])].permissions.edit");
 
-            // 確認：
+            // 確認：どちらも会員（user）が編集できる
             assertThat(edit).allSatisfy(roles -> assertThat(roles).contains("user"));
         }
 
         @Test
         @DisplayName("AC-212、222 店舗画面の access token に、生年月日と性別を載せる")
         void memberAttributeClaims() {
-            // 操作：
+            // 操作：店舗画面の client が access token に載せる属性の claim を読む
             List<String> claims = read(STORE, "$.clients[?(@.clientId == 'ec-store-web')].protocolMappers"
                     + "[?(@.protocolMapper == 'oidc-usermodel-attribute-mapper' && @.config['access.token.claim'] == 'true')]"
                     + ".config['claim.name']");
 
-            // 確認：
+            // 確認：生年月日と性別の 2 つだけ
             assertThat(claims).containsExactlyInAnyOrder("birthdate", "gender");
         }
     }

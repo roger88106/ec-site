@@ -48,10 +48,10 @@ class OpenApiNodesTest {
             // 準備：8 つのメソッドの操作を持つ契約
             var document = OpenApiNodes.parse(ALL_METHODS);
 
-            // 操作：
+            // 操作：操作を取り出す
             var operations = OpenApiNodes.operations(document);
 
-            // 確認：
+            // 確認：8 つのメソッドの操作が、契約の順に並ぶ
             assertThat(operations).extracting(OpenApiNodes.Operation::name).containsExactly(
                     "GET /items", "PUT /items", "POST /items", "DELETE /items",
                     "OPTIONS /items", "HEAD /items", "PATCH /items", "TRACE /items");
@@ -63,7 +63,7 @@ class OpenApiNodesTest {
             // 準備：8 つのメソッドの操作のほかに、summary と parameters を持つパスの契約
             var document = OpenApiNodes.parse(ALL_METHODS);
 
-            // 操作：
+            // 操作：操作を取り出す
             var operations = OpenApiNodes.operations(document);
 
             // 確認：取り出した操作は、全て operationId を持つ操作の定義
@@ -77,10 +77,10 @@ class OpenApiNodesTest {
             // 準備：パス共通の引数を持つ契約
             var document = OpenApiNodes.parse(ALL_METHODS);
 
-            // 操作：
+            // 操作：最初の操作を取り出す
             var operation = OpenApiNodes.operations(document).getFirst();
 
-            // 確認：
+            // 確認：操作の持つパスの項目から、パス共通の引数が 1 つ読める
             assertThat(OpenApiNodes.list(operation.pathItem().get("parameters"))).hasSize(1);
         }
     }
@@ -101,10 +101,10 @@ class OpenApiNodesTest {
                         C: {type: string, maxLength: 10}
                     """);
 
-            // 操作：
+            // 操作：A の参照をたどる
             var resolved = OpenApiNodes.resolve(document, Map.of("$ref", "#/components/schemas/A"));
 
-            // 確認：
+            // 確認：実体の C の上限が読める
             assertThat(resolved).containsEntry("maxLength", 10);
         }
     }

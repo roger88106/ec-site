@@ -111,10 +111,10 @@ class PaymentRefundTest {
             // 準備：売上確定済みの支払
             var orderId = payments.captured(ORDERED_AT);
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：返金済みになり、決済サービスでこの注文が返金された
             awaitRefunded(orderId);
             assertThat(gateway.refunded()).containsExactly(orderId);
         }
@@ -125,7 +125,7 @@ class PaymentRefundTest {
             // 準備：売上確定済みの支払
             var orderId = payments.captured(ORDERED_AT);
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
             // 確認：売上確定も返金も総額
@@ -142,7 +142,7 @@ class PaymentRefundTest {
             var refundAllowed = new CountDownLatch(1);
             gateway.onRefundOrVoid(() -> awaitQuietly(refundAllowed));
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
             // 確認：返金の前に取消が終わり、返金待ち
@@ -164,10 +164,10 @@ class PaymentRefundTest {
             var transactionActive = new CopyOnWriteArrayList<Boolean>();
             gateway.onRefundOrVoid(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：返金済みになり、返金の呼び出しはトランザクションの外の 1 回
             awaitRefunded(orderId);
             assertThat(transactionActive).containsExactly(false);
         }
@@ -184,7 +184,7 @@ class PaymentRefundTest {
             var orderId = payments.captured(ORDERED_AT);
             gateway.failNextRefunds(1);
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
             // 確認：返金の依頼の処理が失敗し、返金待ちのまま
@@ -227,7 +227,7 @@ class PaymentRefundTest {
             // 操作：もう一度取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：返金は 1 回のまま、返金済みのまま
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             assertThat(gateway.refundsOf(orderId)).isEqualTo(1);
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
@@ -242,10 +242,10 @@ class PaymentRefundTest {
             gateway.expireAuthorization(authorizationRef);
             assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
-            // 操作：
+            // 操作：注文の支払を取り消す
             paymentApi.cancel(orderId);
 
-            // 確認：
+            // 確認：返金も与信の取消も呼ばず、与信期限切れのまま
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             assertThat(gateway.refundsOf(orderId)).isZero();
             assertThat(gateway.voidsOf(authorizationRef)).isZero();
@@ -263,7 +263,7 @@ class PaymentRefundTest {
             // 準備：確定の最中にキャンセルされる
             var orderId = cancelledDuringCapture();
 
-            // 操作：
+            // 操作：売上を確定する
             paymentApi.capture(orderId);
 
             // 確認：返金は 1 回

@@ -104,11 +104,31 @@ class PagingTest {
             var mapped = result.map(String::valueOf);
 
             // 確認：中身だけが変わる
-            assertThat(mapped.items()).containsExactly("1", "2");
-            assertThat(mapped.page()).isEqualTo(2);
-            assertThat(mapped.size()).isEqualTo(2);
-            assertThat(mapped.totalItems()).isEqualTo(5);
-            assertThat(mapped.totalPages()).isEqualTo(3);
+            assertMappedKeepingPageInfo(mapped);
         }
+    }
+
+    // ============================== 確認の補助 ==============================
+
+    /**
+     * 2 ページ目、2 件ずつ、総件数 5 件の結果を文字に変換した結果を確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>中身が文字に変わっている</li>
+     *   <li>ページ番号が 2 のまま</li>
+     *   <li>1 ページの件数が 2 のまま</li>
+     *   <li>総件数が 5 のまま</li>
+     *   <li>総ページ数が 3 のまま</li>
+     * </ul>
+     *
+     * @param mapped 変換した結果
+     */
+    private static void assertMappedKeepingPageInfo(PageResult<String> mapped) {
+        assertThat(mapped.items()).containsExactly("1", "2");
+        assertThat(mapped.page()).isEqualTo(2);
+        assertThat(mapped.size()).isEqualTo(2);
+        assertThat(mapped.totalItems()).isEqualTo(5);
+        assertThat(mapped.totalPages()).isEqualTo(3);
     }
 }

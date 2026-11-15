@@ -176,28 +176,28 @@ class FieldConstraintContractTest {
         @MethodSource("com.ecsite.contract.FieldConstraintContractTest#fields")
         @DisplayName("契約の上限、ドメインの上限、DB の列の長さが一致する")
         void limitsAgree(Row row) throws ReflectiveOperationException {
-            // 操作と確認：
+            // 操作と確認：表の項目の、3 か所の上限が一致する
             assertLimitsAgree(row);
         }
 
         @Test
         @DisplayName("AC-272 画像の大きさの上限が、契約の型の制約にあり、ドメインの上限と一致する")
         void imageBytesAgree() throws ReflectiveOperationException {
-            // 操作と確認：
+            // 操作と確認：画像の大きさの上限が一致する
             assertLimitsAgree(IMAGE_BYTES);
         }
 
         @Test
         @DisplayName("AC-272 商品の画像の枚数の上限が、契約の型の制約にあり、ドメインの上限と一致する")
         void imageCountAgrees() throws ReflectiveOperationException {
-            // 操作と確認：
+            // 操作と確認：画像の枚数の上限が一致する
             assertLimitsAgree(IMAGE_COUNT);
         }
 
         @Test
         @DisplayName("AC-273 カテゴリの深さの上限が、契約にあり、ドメインの上限と一致する")
         void categoryDepthAgrees() throws ReflectiveOperationException {
-            // 操作と確認：
+            // 操作と確認：カテゴリの深さの上限が一致する
             assertLimitsAgree(CATEGORY_DEPTH);
         }
     }
@@ -257,7 +257,7 @@ class FieldConstraintContractTest {
             Set<String> limited = new TreeSet<>();
             CONTRACTS.forEach((file, document) -> limited.addAll(lengthLimitedLocations(file, document)));
 
-            // 確認：
+            // 確認：除外の全ての場所が、集めた場所にある
             assertThat(limited).containsAll(NOT_COMPARED.keySet());
         }
 
@@ -286,10 +286,10 @@ class FieldConstraintContractTest {
                             tags: {type: array, maxItems: 3, items: {type: string, maxLength: 30}}
                     """);
 
-            // 操作：
+            // 操作：上限のある場所を集める
             var locations = lengthLimitedLocations("x.yaml", document);
 
-            // 確認：
+            // 確認：上限を書いた 6 か所だけ（参照する Code の上限は、Code の場所で 1 回だけ数える）
             assertThat(locations).containsExactlyInAnyOrder(
                     "x.yaml#GET /items query:q",
                     "x.yaml#parameters/Size",

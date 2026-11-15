@@ -73,6 +73,8 @@ class ModuleApiUseTest {
                 .map(JavaClass::getPackageName)
                 .filter(name -> name.startsWith(ProductionClasses.MODULE_PACKAGE))
                 .toList();
+
+        // 確認（前提）：パッケージが 1 つ以上ある
         ProductionClasses.requireNotEmpty(modulePackages, "モジュールのクラスのパッケージ");
 
         // 操作：名前が dir で終わるパッケージを集める
@@ -93,6 +95,8 @@ class ModuleApiUseTest {
         void otherModulesApiIsUsedOnlyByDirectories() {
             // 準備：api を持つモジュール
             Set<String> modulesWithApi = ProductionClasses.modulesWith("api");
+
+            // 確認（前提）：api を持つモジュールが 1 つ以上ある
             ProductionClasses.requireNotEmpty(modulesWithApi, "api を持つモジュール");
 
             // 操作と確認：モジュールごとに、本番のクラスに規則を当てる

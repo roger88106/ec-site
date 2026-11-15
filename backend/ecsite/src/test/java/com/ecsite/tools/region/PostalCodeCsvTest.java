@@ -73,11 +73,12 @@ class PostalCodeCsvTest {
     @DisplayName("町域名の注記")
     class TownNameNotes {
 
+        // 1 列目（original）は、データの元の町域名で、表示名だけに使う（検査には使わない）
         @ParameterizedTest(name = "「{0}」")
         @CsvSource({"北一条西（１〜１９丁目）, 0600001, 北一条西", "大手町ＪＡビル（地階・階層不明）, 1006890, 大手町ＪＡビル"})
         @DisplayName("AC-283 町域名の括弧の中の補足を除く")
         void removesNotes(String original, String postalCode, String townName) {
-            // 確認：データの町域名（original）から、括弧の中の補足を除いた町域名になる
+            // 確認：括弧の中の補足を除いた町域名になる
             assertThat(townsOf(postalCode)).containsExactly(townName);
         }
 
@@ -89,14 +90,16 @@ class PostalCodeCsvTest {
             assertThat(townsOf(postalCode)).containsExactly(townName);
         }
 
+        // 1 列目（original）は、データの元の町域名で、表示名だけに使う（検査には使わない）
         @ParameterizedTest(name = "「{0}」")
         @CsvSource({"以下に掲載がない場合, 0600000", "利島村一円, 1000301", "名古屋市中村区の次に番地がくる場合, 4530000"})
         @DisplayName("AC-283 注記だけの町域名は空にする")
         void emptiesNoteOnlyTownNames(String original, String postalCode) {
-            // 確認：データの町域名（original）が注記だけなので、町域名が空になる
+            // 確認：注記だけの町域名が空になる
             assertThat(townsOf(postalCode)).containsExactly("");
         }
 
+        // 1 列目（original）は、データの元の町域名で、表示名だけに使う（検査には使わない）
         @ParameterizedTest(name = "「{0}」")
         @CsvSource({"以下に掲載がない場合, 0600000, 01101", "利島村一円, 1000301, 13362", "名古屋市中村区の次に番地がくる場合, 4530000, 23105"})
         @DisplayName("AC-283 町域名が注記だけの郵便番号も、市区町村のコードを残す")

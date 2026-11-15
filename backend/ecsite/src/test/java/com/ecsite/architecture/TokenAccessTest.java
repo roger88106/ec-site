@@ -37,13 +37,6 @@ class TokenAccessTest {
     // ============================== 定数 ==============================
 
     /**
-     * presentation の外に置く例外の {@code @RestController}
-     *
-     * <p>どのモジュールにも属さない GET /me。
-     */
-    private static final String ME_CONTROLLER = "com.ecsite.config.security.MeController";
-
-    /**
      * token の取り出しのクラスの名前
      *
      * <p>token、会員、運営者、会員 ID の取り出しを指す。
@@ -63,7 +56,7 @@ class TokenAccessTest {
             // 他のモジュールの presentation に会員の ID を渡す公開の API。自身も取り出しの対象（TOKEN_ACCESSORS）で、呼び出し元は presentation に限る
             CurrentMemberIds.class.getName(),
             // モジュールに属さない API の入口で、役割は presentation 層と同じ
-            ME_CONTROLLER);
+            ArchitectureExceptions.ME_CONTROLLER);
 
     /**
      * 違反の例の presentation 層のパッケージ

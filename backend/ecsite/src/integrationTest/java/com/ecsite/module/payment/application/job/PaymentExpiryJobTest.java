@@ -193,10 +193,10 @@ class PaymentExpiryJobTest {
             payments.openPage(orderId);
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
-            // 確認：
+            // 確認：支払なし
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         }
 
@@ -208,10 +208,10 @@ class PaymentExpiryJobTest {
             var pageId = payments.openPage(orderId);
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
-            // 確認：
+            // 確認：支払画面が閉じている
             assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.CLOSED);
         }
 
@@ -223,10 +223,10 @@ class PaymentExpiryJobTest {
             payments.openPage(orderId);
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
-            // 確認：
+            // 確認：期限切れのイベントが 1 件
             assertThat(expiredEvents(orderId)).isEqualTo(1);
         }
 
@@ -237,10 +237,10 @@ class PaymentExpiryJobTest {
             var orderId = payments.created(ORDERED_AT);
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
-            // 確認：
+            // 確認：支払なしで、期限切れのイベントが 1 件
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
             assertThat(expiredEvents(orderId)).isEqualTo(1);
         }
@@ -253,7 +253,8 @@ class PaymentExpiryJobTest {
             payments.openPage(orderId);
             clock.setInstant(DEADLINE.minusSeconds(1));
 
-            // 操作：期限を過ぎた支払がなくなるまでジョブを動かす
+            // 操作：ジョブを動かし、期限を過ぎた支払がなくなるまで続ける
+            job.expire();
             expireUntil(() -> queryService.findPastDeadline(1).isEmpty());
 
             // 確認：未払いのままで、イベントもない
@@ -273,7 +274,7 @@ class PaymentExpiryJobTest {
             // 操作：もう一度ジョブを動かす
             job.expire();
 
-            // 確認：
+            // 確認：期限切れのイベントは 1 件のまま
             assertThat(expiredEvents(orderId)).isEqualTo(1);
         }
 
@@ -287,7 +288,7 @@ class PaymentExpiryJobTest {
             var interval = Duration.parse(String.valueOf(beanFactory.getBeanExpressionResolver().evaluate(
                     beanFactory.resolveEmbeddedValue(scheduled.fixedDelayString()), new BeanExpressionContext(beanFactory, null))));
 
-            // 確認：
+            // 確認：5 分以内
             assertThat(interval).isLessThanOrEqualTo(MAX_INTERVAL);
         }
     }
@@ -303,7 +304,7 @@ class PaymentExpiryJobTest {
             var orderId = paidWithoutNotification();
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
             // 確認：期限切れのイベントがない
@@ -317,7 +318,7 @@ class PaymentExpiryJobTest {
             var orderId = paidWithoutNotification();
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
             // 確認：決済サービスの与信の参照を持つ
@@ -332,10 +333,10 @@ class PaymentExpiryJobTest {
             var orderId = paidWithoutNotification();
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
-            // 確認：
+            // 確認：与信の成功のイベントが 1 件
             assertThat(authorizedEvents(orderId)).isEqualTo(1);
         }
 
@@ -346,10 +347,10 @@ class PaymentExpiryJobTest {
             var orderId = paidAt(PAID_AT);
             clock.setInstant(JOB_TIME);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
-            // 確認：
+            // 確認：与信の時刻が、支払を済ませた時刻
             assertThat(paymentOf(orderId).authorizedAt()).contains(PAID_AT);
         }
 
@@ -360,7 +361,7 @@ class PaymentExpiryJobTest {
             var orderId = paidAt(PAID_AT);
             clock.setInstant(JOB_TIME);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
             // 確認：支払を済ませた時刻の 7 日後で、ジョブの時刻の 7 日後ではない
@@ -370,16 +371,16 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("AC-409-1 期限切れのジョブで与信済みにしたときの、与信の成功のイベントの時刻は、ジョブの時刻")
+        @DisplayName("AC-409-2 期限切れのジョブで与信済みにしたときの、与信の成功のイベントの時刻は、ジョブの時刻")
         void eventOccursAtJobTime() {
             // 準備：期限の 1 分前に支払い、期限の 3 時間後にジョブが動く
             var orderId = paidAt(PAID_AT);
             clock.setInstant(JOB_TIME);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
-            // 確認：
+            // 確認：与信の成功のイベントがこの支払に 1 件で、時刻がジョブの時刻
             assertThat(events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(orderId)))
                     .singleElement().satisfies(event -> assertThat(event.occurredAt()).isEqualTo(JOB_TIME));
         }
@@ -393,7 +394,7 @@ class PaymentExpiryJobTest {
             gateway.onFetchAuthorization(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
             clock.setInstant(DEADLINE);
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> settled(orderId));
 
             // 確認：与信済みになり、取得は全てトランザクションの外
@@ -419,7 +420,7 @@ class PaymentExpiryJobTest {
             clock.setInstant(DEADLINE.plusSeconds(600));
             gateway.notifyAuthorized(pageIds.get(orderId));
 
-            // 確認：
+            // 確認：与信済みのままで、与信の時刻はジョブで与信済みにした時刻のまま
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
             assertThat(paymentOf(orderId).authorizedAt()).isEqualTo(authorizedAt);
         }
@@ -436,7 +437,7 @@ class PaymentExpiryJobTest {
             clock.setInstant(DEADLINE.plusSeconds(600));
             gateway.notifyAuthorized(pageIds.get(orderId));
 
-            // 確認：
+            // 確認：与信の成功のイベントは 1 件のまま
             assertThat(authorizedEvents(orderId)).isEqualTo(1);
         }
 
@@ -465,11 +466,16 @@ class PaymentExpiryJobTest {
             // 準備：通知で与信済みになった、待つ支払
             var orderId = notifiedWhileAwaiting();
 
-            // 操作：次のジョブを動かす
+            // 操作：次のジョブの後、行ロックの時点で通知が先に届いていた形で、取得した与信を反映する
             clock.setInstant(DEADLINE.plus(Duration.ofHours(1)));
             job.expire();
+            var reflected = commandService.authorizeFromGateway(paymentOf(orderId).id(),
+                    new Authorization("pi_other", DEADLINE.plus(Duration.ofHours(1))));
 
-            // 確認：
+            // 確認（前提）：取得した与信は反映しない
+            assertThat(reflected).isFalse();
+
+            // 確認：与信の成功のイベントは、通知の 1 件だけ
             assertThat(authorizedEvents(orderId)).isEqualTo(1);
         }
     }
@@ -488,7 +494,7 @@ class PaymentExpiryJobTest {
             gateway.reset();
             job.expire();
 
-            // 確認：
+            // 確認：与信済み
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         }
 
@@ -502,7 +508,7 @@ class PaymentExpiryJobTest {
             gateway.reset();
             job.expire();
 
-            // 確認：
+            // 確認：与信の成功のイベントが 1 件
             assertThat(authorizedEvents(orderId)).isEqualTo(1);
         }
 
@@ -513,10 +519,10 @@ class PaymentExpiryJobTest {
             var failing = paidWithRejectedFetch();
             clock.setInstant(DEADLINE.plusSeconds(60));
 
-            // 操作：
+            // 操作：この支払を処理するまでジョブを動かす
             expireUntil(() -> processed(failing));
 
-            // 確認：
+            // 確認：未払いで、待つ支払のまま
             assertThat(payments.statusOf(failing)).isEqualTo(PaymentSummary.Status.UNPAID);
             assertThat(paymentOf(failing).awaitingAuthorizationSince()).isPresent();
         }
@@ -529,10 +535,10 @@ class PaymentExpiryJobTest {
             var other = paidWithoutNotification(ORDERED_AT.plusSeconds(1));
             clock.setInstant(DEADLINE.plusSeconds(60));
 
-            // 操作：
+            // 操作：2 つの支払を処理するまでジョブを動かす
             expireUntil(() -> processed(failing) && settled(other));
 
-            // 確認：
+            // 確認：取得できる支払は与信済み
             assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         }
 
@@ -548,7 +554,7 @@ class PaymentExpiryJobTest {
             gateway.reset();
             job.expire();
 
-            // 確認：
+            // 確認：与信済み
             assertThat(payments.statusOf(failing)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         }
 
@@ -558,7 +564,7 @@ class PaymentExpiryJobTest {
             // 準備：支払済みの 4 件のうち、初めの 3 件の取得で接続できない
             var orderIds = fourPaidWithUnavailableFetches();
 
-            // 操作：
+            // 操作：ジョブを 1 回動かす
             job.expire();
 
             // 確認：取得の呼び出しは 3 回で、4 件とも待つ支払
@@ -578,7 +584,7 @@ class PaymentExpiryJobTest {
             // 操作：次のジョブを動かす
             job.expire();
 
-            // 確認：
+            // 確認：4 件とも与信済み
             assertThat(allAuthorized(orderIds)).isTrue();
         }
     }

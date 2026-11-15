@@ -15,23 +15,51 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ImgproxyPropertiesTest {
 
+    // ============================== 定数 ==============================
+
+    /**
+     * imgproxy の URL
+     */
+    private static final String BASE_URL = "http://imgproxy.internal:8080";
+
+    /**
+     * 署名の鍵
+     */
+    private static final String KEY = "aabbccddeeff0011";
+
+    /**
+     * 署名のソルト
+     */
+    private static final String SALT = "1122334455667788";
+
+    /**
+     * WebP の品質
+     */
+    private static final int QUALITY = 82;
+
+    /**
+     * 確認する設定
+     */
     private final ImgproxyProperties properties = new ImgproxyProperties(
-            URI.create("http://imgproxy.internal:8080"), "aabbccddeeff0011", "1122334455667788", 82,
-            Duration.ofSeconds(30));
+            URI.create(BASE_URL), KEY, SALT, QUALITY, Duration.ofSeconds(30));
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("文字列表現に、署名の鍵とソルトを含まない")
     void toStringHidesSecrets() {
+        // 操作と確認：秘密の値が出ない
         assertThat(properties.toString())
-                .doesNotContain("aabbccddeeff0011")
-                .doesNotContain("1122334455667788");
+                .doesNotContain(KEY)
+                .doesNotContain(SALT);
     }
 
     @Test
     @DisplayName("文字列表現に、秘密でない値（URL など）を含む")
     void toStringKeepsNonSecrets() {
+        // 操作と確認：URL と品質が出る
         assertThat(properties.toString())
-                .contains("http://imgproxy.internal:8080")
-                .contains("82");
+                .contains(BASE_URL)
+                .contains(String.valueOf(QUALITY));
     }
 }

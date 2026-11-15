@@ -6,6 +6,7 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -36,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
  */
 class S3ObjectStorageFailureTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * 正常に応答するサーバーを使うテストの、1 回の試行を待つ時間の上限
      *
@@ -49,14 +52,38 @@ class S3ObjectStorageFailureTest {
     private static final Duration CALL_TIMEOUT = Duration.ofSeconds(15);
 
     /**
-     * 時間の上限を確認するテストの、1 回の試行を待つ時間の上限（応答しないサーバーを待つので短くする）
+     * 時間の上限を確認するテストの、1 回の試行を待つ時間の上限
+     *
+     * <p>応答しないサーバーを待つので短くする。
      */
     private static final Duration SHORT_ATTEMPT_TIMEOUT = Duration.ofMillis(300);
 
     /**
-     * 時間の上限を確認するテストの、呼び出しの全体を待つ時間の上限（短くする）
+     * 時間の上限を確認するテストの、呼び出しの全体を待つ時間の上限
+     *
+     * <p>応答しないサーバーを待つので短くする。
      */
     private static final Duration SHORT_CALL_TIMEOUT = Duration.ofSeconds(1);
+
+    /**
+     * 時間の上限を確認するテストが、止まったままにならないための上限
+     */
+    private static final Duration TEST_TIMEOUT = Duration.ofSeconds(10);
+
+    /**
+     * アップロードのバケット
+     */
+    private static final String INCOMING_BUCKET = "incoming";
+
+    /**
+     * アップロードのキー
+     */
+    private static final String UPLOAD_KEY = "scope/upload";
+
+    /**
+     * 配信のキー
+     */
+    private static final String PUBLIC_KEY = "assets/a.webp";
 
     /**
      * S3 の代わりの HTTP サーバー
@@ -64,7 +91,9 @@ class S3ObjectStorageFailureTest {
     private HttpServer server;
 
     /**
-     * サーバーが返す HTTP の状態（テストごとに決める）
+     * サーバーが返す HTTP の状態
+     *
+     * <p>テストごとに決める。
      */
     private final AtomicInteger status = new AtomicInteger();
 
@@ -83,74 +112,133 @@ class S3ObjectStorageFailureTest {
         server.stop(0);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("operations")
-    @DisplayName("AC-298 S3 の側の故障（5xx）は、外部サービスのエラー")
-    void serverErrorIsUnavailable(String name, Consumer<S3ObjectStorage> operation) {
-        status.set(500);
+    // ============================== テスト ==============================
 
-        assertServiceUnavailable(() -> operation.accept(storage(baseUrl())));
-    }
+    @Nested
+    @DisplayName("S3 が使えない（外部サービスのエラー）")
+    class Unavailable {
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("operations")
-    @DisplayName("AC-298 S3 に接続できなければ、外部サービスのエラー")
-    void unreachableIsUnavailable(String name, Consumer<S3ObjectStorage> operation) throws IOException {
-        URI unreachable;
-        try (var socket = new ServerSocket(0)) {
-            // 使っていないポート（閉じた後は、だれも待ち受けていない）
-            unreachable = URI.create("http://127.0.0.1:" + socket.getLocalPort());
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.ecsite.module.media.infrastructure.storage.S3ObjectStorageFailureTest#operations")
+        @DisplayName("AC-298 S3 の側の故障（5xx）は、外部サービスのエラー")
+        void serverErrorIsUnavailable(String name, Consumer<S3ObjectStorage> operation) {
+            // 準備：500 を返す
+            status.set(500);
+
+            // 操作と確認：外部サービスのエラー
+            assertServiceUnavailable(() -> operation.accept(storage(baseUrl())));
         }
 
-        assertServiceUnavailable(() -> operation.accept(storage(unreachable)));
-    }
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.ecsite.module.media.infrastructure.storage.S3ObjectStorageFailureTest#operations")
+        @DisplayName("AC-298 S3 に接続できなければ、外部サービスのエラー")
+        void unreachableIsUnavailable(String name, Consumer<S3ObjectStorage> operation) throws IOException {
+            // 準備：使っていないポート（閉じた後は、だれも待ち受けていない）
+            URI unreachable;
+            try (var socket = new ServerSocket(0)) {
+                unreachable = URI.create("http://127.0.0.1:" + socket.getLocalPort());
+            }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("operations")
-    @DisplayName("AC-301、303 応答しない S3 は、待つ時間の上限で外部サービスのエラーになる")
-    void silentServerTimesOut(String name, Consumer<S3ObjectStorage> operation) throws IOException {
-        // 接続は受け付けるが、何も返さない（受け付けの待ち行列に入るだけ）
-        try (var silent = new ServerSocket(0)) {
-            var storage = storage(URI.create("http://127.0.0.1:" + silent.getLocalPort()),
-                    SHORT_ATTEMPT_TIMEOUT, SHORT_CALL_TIMEOUT);
+            // 操作と確認：外部サービスのエラー
+            assertServiceUnavailable(() -> operation.accept(storage(unreachable)));
+        }
 
-            assertTimeoutPreemptively(Duration.ofSeconds(10),
-                    () -> assertServiceUnavailable(() -> operation.accept(storage)));
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.ecsite.module.media.infrastructure.storage.S3ObjectStorageFailureTest#operations")
+        @DisplayName("AC-301、303 応答しない S3 は、待つ時間の上限で外部サービスのエラーになる")
+        void silentServerTimesOut(String name, Consumer<S3ObjectStorage> operation) throws IOException {
+            // 準備：接続は受け付けるが、何も返さない（受け付けの待ち行列に入るだけ）
+            try (var silent = new ServerSocket(0)) {
+                var storage = storage(URI.create("http://127.0.0.1:" + silent.getLocalPort()),
+                        SHORT_ATTEMPT_TIMEOUT, SHORT_CALL_TIMEOUT);
+
+                // 操作と確認：短い上限で、外部サービスのエラー（テストが止まったままにならないよう、テストにも上限を置く）
+                assertTimeoutPreemptively(TEST_TIMEOUT,
+                        () -> assertServiceUnavailable(() -> operation.accept(storage)));
+            }
         }
     }
 
-    @Test
-    @DisplayName("アップロードしたファイルがなければ（404）、今どおり大きさが空になる")
-    void notFoundIsEmpty() {
-        status.set(404);
+    @Nested
+    @DisplayName("5xx でない応答")
+    class OtherResponses {
 
-        assertThat(storage(baseUrl()).findUploadSize("scope/upload")).isEmpty();
+        @Test
+        @DisplayName("アップロードしたファイルがなければ（404）、大きさが空になる")
+        void notFoundIsEmpty() {
+            // 準備：404 を返す
+            status.set(404);
+
+            // 操作と確認：大きさが空
+            assertThat(storage(baseUrl()).findUploadSize(UPLOAD_KEY)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("5xx でないその他の失敗（権限がないなど）は、S3 の例外のまま（予期しないエラー）")
+        void forbiddenIsNotUnavailable() {
+            // 準備：403 を返す
+            status.set(403);
+
+            // 操作と確認：403 の S3 の例外のまま
+            assertThatThrownBy(() -> storage(baseUrl()).putPublished(PUBLIC_KEY, new byte[]{1}, "image/webp"))
+                    .isInstanceOfSatisfying(S3Exception.class, e -> assertThat(e.statusCode()).isEqualTo(403));
+        }
     }
 
-    @Test
-    @DisplayName("5xx でないその他の失敗（権限がないなど）は、S3 の例外のまま（予期しないエラー）")
-    void forbiddenIsNotUnavailable() {
-        status.set(403);
+    @Nested
+    @DisplayName("アップロードの受付の署名付き URL")
+    class PresignUpload {
 
-        assertThatThrownBy(() -> storage(baseUrl()).putPublished("assets/a.webp", new byte[]{1}, "image/webp"))
-                .isInstanceOfSatisfying(S3Exception.class, e -> assertThat(e.statusCode()).isEqualTo(403));
+        @Test
+        @DisplayName("AC-298 署名付き URL は S3 を呼ばずに作るので、S3 に接続できなくても発行できる")
+        void presignsWithoutCallingS3() throws IOException {
+            // 準備：使っていないポート（閉じた後は、だれも待ち受けていない）
+            URI unreachable;
+            try (var socket = new ServerSocket(0)) {
+                unreachable = URI.create("http://127.0.0.1:" + socket.getLocalPort());
+            }
+            var properties = properties(unreachable, ATTEMPT_TIMEOUT, CALL_TIMEOUT);
+            var config = new MediaStorageConfig();
+            try (var client = config.mediaS3Client(properties); var presigner = config.mediaS3Presigner(properties)) {
+                var storage = new S3ObjectStorage(client, presigner, properties);
+
+                // 操作：署名付き URL を発行する
+                var upload = storage.presignUpload(UPLOAD_KEY, "image/png", 100);
+
+                // 確認：アップロードのバケットのキーを指す URL ができる
+                assertThat(upload.url().toString()).startsWith(unreachable + "/" + INCOMING_BUCKET + "/" + UPLOAD_KEY + "?");
+            }
+        }
     }
+
+    // ============================== 確認の補助 ==============================
 
     /**
-     * 失敗の分類を確認する操作（名前、呼び出し）。
+     * 外部サービスのエラー（画像のサービスが使えない）になることを確認する。
      *
-     * <p>署名付き URL の発行は S3 を呼ばないので除く
+     * @param call 確認する呼び出し
+     */
+    private static void assertServiceUnavailable(ThrowingCallable call) {
+        assertSystemError(call, MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
+    }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * 失敗の分類を確認する操作を返す。
+     *
+     * <p>署名付き URL の発行は S3 を呼ばないので除く。
+     *
+     * @return 操作の名前と、呼び出し
      */
     static Stream<Arguments> operations() {
         return Stream.of(
-                Arguments.of("受付の大きさを読む", (Consumer<S3ObjectStorage>) s -> s.findUploadSize("scope/upload")),
-                Arguments.of("受付の先頭を読む", (Consumer<S3ObjectStorage>) s -> s.readUploadHead("scope/upload", 16)),
+                Arguments.of("受付の大きさを読む", (Consumer<S3ObjectStorage>) s -> s.findUploadSize(UPLOAD_KEY)),
+                Arguments.of("受付の先頭を読む", (Consumer<S3ObjectStorage>) s -> s.readUploadHead(UPLOAD_KEY, 16)),
                 Arguments.of("配信のバケットに書く",
-                        (Consumer<S3ObjectStorage>) s -> s.putPublished("assets/a.webp", new byte[]{1}, "image/webp")),
-                Arguments.of("配信のファイルを消す", (Consumer<S3ObjectStorage>) s -> s.deletePublished("assets/a.webp")));
+                        (Consumer<S3ObjectStorage>) s -> s.putPublished(PUBLIC_KEY, new byte[]{1}, "image/webp")),
+                Arguments.of("配信のファイルを消す", (Consumer<S3ObjectStorage>) s -> s.deletePublished(PUBLIC_KEY)));
     }
-
-    // ============================== 補助 ==============================
 
     /**
      * 指定の S3 を呼ぶ実装を、アプリと同じ設定のクライアントで作る（署名付き URL は使わない）。
@@ -163,7 +251,7 @@ class S3ObjectStorageFailureTest {
     }
 
     /**
-     * 待つ時間の上限を指定して、指定の S3 を呼ぶ実装を作る。
+     * 待つ時間の上限を指定して、指定の S3 を呼ぶ実装を作る（署名付き URL は使わない）。
      *
      * @param endpoint       S3 の URL
      * @param attemptTimeout 1 回の試行を待つ時間の上限
@@ -171,22 +259,29 @@ class S3ObjectStorageFailureTest {
      * @return S3 を呼ぶ実装
      */
     private static S3ObjectStorage storage(URI endpoint, Duration attemptTimeout, Duration callTimeout) {
-        var properties = new MediaStorageProperties(endpoint, "us-east-1", true, "test-key", "test-secret",
-                "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
-                attemptTimeout, callTimeout);
+        var properties = properties(endpoint, attemptTimeout, callTimeout);
         S3Client client = new MediaStorageConfig().mediaS3Client(properties);
         return new S3ObjectStorage(client, null, properties);
     }
 
     /**
-     * 外部サービスのエラー（画像のサービスが使えない）になることを確認する。
+     * 指定の S3 と待つ時間の上限で、ファイルの置き場所の設定を作る。
+     *
+     * @param endpoint       S3 の URL
+     * @param attemptTimeout 1 回の試行を待つ時間の上限
+     * @param callTimeout    呼び出し全体を待つ時間の上限
+     * @return 設定
      */
-    private static void assertServiceUnavailable(ThrowingCallable call) {
-        assertSystemError(call, MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
+    private static MediaStorageProperties properties(URI endpoint, Duration attemptTimeout, Duration callTimeout) {
+        return new MediaStorageProperties(endpoint, "us-east-1", true, "test-key", "test-secret",
+                INCOMING_BUCKET, "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
+                attemptTimeout, callTimeout);
     }
 
     /**
-     * テストのサーバーの URL
+     * テストのサーバーの URL を返す。
+     *
+     * @return URL
      */
     private URI baseUrl() {
         return URI.create("http://127.0.0.1:" + server.getAddress().getPort());

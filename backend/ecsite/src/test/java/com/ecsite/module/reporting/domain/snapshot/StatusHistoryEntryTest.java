@@ -1,6 +1,7 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -16,73 +17,132 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class StatusHistoryEntryTest {
 
-    @ParameterizedTest(name = "後の状態が注文の状態 {0}")
-    @EnumSource(ReportOrderStatus.class)
-    @DisplayName("AC-277、278 出荷の判定は、後の状態が注文の状態のときは、出荷済みだけを出荷とみなす")
-    void marksShipmentByOrderStatus(ReportOrderStatus to) {
-        var entry = entry(HistoryKind.ORDER_STATUS, to);
+    // ============================== テスト ==============================
 
-        assertThat(entry.marksShipment()).isEqualTo(to == ReportOrderStatus.SHIPPED);
+    @Nested
+    @DisplayName("出荷の判定")
+    class MarksShipment {
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(ReportOrderStatus.class)
+        @DisplayName("AC-277、278 後の状態が注文の状態のときは、出荷済みだけを出荷とみなす")
+        void byOrderStatus(ReportOrderStatus to) {
+            // 準備：後の状態が注文の状態の行
+            var entry = entry(HistoryKind.ORDER_STATUS, to);
+
+            // 操作と確認：出荷済みのときだけ出荷とみなす
+            assertThat(entry.marksShipment()).isEqualTo(to == ReportOrderStatus.SHIPPED);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(DeliveryStatus.class)
+        @DisplayName("AC-277、278 後の状態が配送状態のときは、出荷済みだけを出荷とみなす")
+        void byDeliveryStatus(DeliveryStatus to) {
+            // 準備：後の状態が配送状態の行
+            var entry = entry(HistoryKind.DELIVERY_STATUS, to);
+
+            // 操作と確認：出荷済みのときだけ出荷とみなす
+            assertThat(entry.marksShipment()).isEqualTo(to == DeliveryStatus.SHIPPED);
+        }
     }
 
-    @ParameterizedTest(name = "後の状態が配送状態 {0}")
-    @EnumSource(DeliveryStatus.class)
-    @DisplayName("AC-277、278 出荷の判定は、後の状態が配送状態のときは、出荷済みだけを出荷とみなす")
-    void marksShipmentByDeliveryStatus(DeliveryStatus to) {
-        var entry = entry(HistoryKind.DELIVERY_STATUS, to);
+    @Nested
+    @DisplayName("配送状態")
+    class DeliveryStatusOfEntry {
 
-        assertThat(entry.marksShipment()).isEqualTo(to == DeliveryStatus.SHIPPED);
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(DeliveryStatus.class)
+        @DisplayName("AC-277、278 配送状態の変化は、後の状態を配送状態の列挙で返す")
+        void returnsDeliveryStatus(DeliveryStatus to) {
+            // 準備：後の状態が配送状態の行
+            var entry = entry(HistoryKind.DELIVERY_STATUS, to);
+
+            // 操作と確認：後の状態のまま
+            assertThat(entry.deliveryStatus()).isEqualTo(to);
+        }
+
+        @Test
+        @DisplayName("AC-277、278 後の状態が配送状態でなければ、配送状態を求めると失敗する")
+        void failsForOrderStatus() {
+            // 準備：後の状態が注文の状態の行
+            var entry = entry(HistoryKind.ORDER_STATUS, ReportOrderStatus.SHIPPED);
+
+            // 操作と確認：プログラムの誤りとして失敗する
+            assertThatThrownBy(entry::deliveryStatus).isInstanceOf(IllegalStateException.class);
+        }
     }
 
-    @ParameterizedTest(name = "後の状態が配送状態 {0}")
-    @EnumSource(DeliveryStatus.class)
-    @DisplayName("AC-277、278 配送状態の変化は、後の状態を配送状態の列挙で返す")
-    void deliveryStatus(DeliveryStatus to) {
-        var entry = entry(HistoryKind.DELIVERY_STATUS, to);
+    @Nested
+    @DisplayName("作成")
+    class Creation {
 
-        assertThat(entry.deliveryStatus()).isEqualTo(to);
+        @Test
+        @DisplayName("AC-277、278 注文の状態の出来事は、前と後が注文の状態なら作れる")
+        void acceptsOrderStatuses() {
+            // 操作：前と後が注文の状態の行を作る
+            var entry = new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+                    ReportOrderStatus.PENDING_PAYMENT, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null);
+
+            // 確認：作れる
+            assertThat(entry).isNotNull();
+        }
+
+        @Test
+        @DisplayName("AC-277、278 配送状態の出来事は、前と後が配送状態なら作れる")
+        void acceptsDeliveryStatuses() {
+            // 操作：前と後が配送状態の行を作る
+            var entry = new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.DELIVERY_STATUS,
+                    DeliveryStatus.SHIPPED, DeliveryStatus.IN_TRANSIT, Instant.EPOCH, null, null);
+
+            // 確認：作れる
+            assertThat(entry).isNotNull();
+        }
+
+        @Test
+        @DisplayName("AC-277、278 前の状態は null でもよい")
+        void acceptsMissingFrom() {
+            // 操作：前の状態のない行を作る
+            var entry = entry(HistoryKind.DELIVERY_STATUS, DeliveryStatus.SHIPPED);
+
+            // 確認：前の状態がないまま
+            assertThat(entry.from()).isNull();
+        }
+
+        @Test
+        @DisplayName("AC-277、278 注文の状態の出来事に配送状態を入れると作れない")
+        void rejectsDeliveryStatusForOrderKind() {
+            // 操作と確認：プログラムの誤りとして拒否される
+            assertThatThrownBy(() -> entry(HistoryKind.ORDER_STATUS, DeliveryStatus.SHIPPED))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("AC-277、278 配送状態の出来事に注文の状態を入れると作れない")
+        void rejectsOrderStatusForDeliveryKind() {
+            // 操作と確認：プログラムの誤りとして拒否される
+            assertThatThrownBy(() -> entry(HistoryKind.DELIVERY_STATUS, ReportOrderStatus.SHIPPED))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("AC-277、278 前の状態が出来事に合わない型だと作れない")
+        void rejectsMismatchedFrom() {
+            // 操作と確認：前だけが配送状態の、注文の状態の出来事は、プログラムの誤りとして拒否される
+            assertThatThrownBy(() -> new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+                    DeliveryStatus.SHIPPED, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
-    @Test
-    @DisplayName("AC-277、278 後の状態が配送状態でなければ、配送状態を求めると失敗する")
-    void deliveryStatusFailsForOrderStatus() {
-        var entry = entry(HistoryKind.ORDER_STATUS, ReportOrderStatus.SHIPPED);
+    // ============================== 準備の補助 ==============================
 
-        assertThatThrownBy(entry::deliveryStatus).isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    @DisplayName("AC-277、278 出来事に合う型の状態なら作れる。前の状態は null でもよい")
-    void acceptsMatchingStatus() {
-        assertThat(new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
-                ReportOrderStatus.PENDING_PAYMENT, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null)).isNotNull();
-        assertThat(new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.DELIVERY_STATUS,
-                DeliveryStatus.SHIPPED, DeliveryStatus.IN_TRANSIT, Instant.EPOCH, null, null)).isNotNull();
-        assertThat(entry(HistoryKind.DELIVERY_STATUS, DeliveryStatus.SHIPPED).from()).isNull();
-    }
-
-    @Test
-    @DisplayName("AC-277、278 注文の状態の出来事に配送状態を入れると作れない")
-    void rejectsDeliveryStatusForOrderKind() {
-        assertThatThrownBy(() -> entry(HistoryKind.ORDER_STATUS, DeliveryStatus.SHIPPED))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    @DisplayName("AC-277、278 配送状態の出来事に注文の状態を入れると作れない")
-    void rejectsOrderStatusForDeliveryKind() {
-        assertThatThrownBy(() -> entry(HistoryKind.DELIVERY_STATUS, ReportOrderStatus.SHIPPED))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    @DisplayName("AC-277、278 前の状態が出来事に合わない型だと作れない")
-    void rejectsMismatchedFrom() {
-        assertThatThrownBy(() -> new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
-                DeliveryStatus.SHIPPED, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
+    /**
+     * 前の状態のない、状態の履歴の 1 行を作る。
+     *
+     * @param kind 出来事
+     * @param to   後の状態
+     * @return 履歴の 1 行
+     */
     private static StatusHistoryEntry entry(HistoryKind kind, HistoryStatus to) {
         return new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), kind, null, to, Instant.EPOCH, null, null);
     }

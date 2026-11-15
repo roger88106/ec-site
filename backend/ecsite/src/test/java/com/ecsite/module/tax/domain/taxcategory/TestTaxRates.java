@@ -24,7 +24,7 @@ public final class TestTaxRates {
     /**
      * 税率を作る（ID は新しく振る）。
      *
-     * <p>期間の端の null は無限
+     * <p>期間の端の null は無限。
      *
      * @param percent 税率（%）
      * @param from    適用の開始
@@ -36,7 +36,7 @@ public final class TestTaxRates {
     }
 
     /**
-     * 新しい税率（ID なし）の置き換えの要素を作る
+     * 新しい税率（ID なし）の置き換えの要素を作る。
      *
      * @param percent 税率（%）
      * @param from    適用の開始
@@ -50,7 +50,7 @@ public final class TestTaxRates {
     /**
      * 置き換えの要素を作る。
      *
-     * <p>既存の税率を残すなら、その ID を渡す
+     * <p>既存の税率を残すなら、その ID を渡す。
      *
      * @param id      既存の税率の ID（新しい税率なら null）
      * @param percent 税率（%）

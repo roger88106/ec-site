@@ -42,11 +42,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 出荷の登録の受け入れテスト
  *
+ * <p>管理 API で出荷を登録したときの、売上確定と注文の状態、失敗と重ねた登録、入力の検証を確認する。
+ * 出荷の可否の判定そのものは {@code OrderShipmentTest}、店舗の注文の出荷の表示は {@code StoreOrderShipmentApiTest} が確認する。
+ *
  * <p>売上確定は mock の決済サービスで行う。テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional
 class ShipmentApiTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * テストの現在時刻
@@ -54,6 +59,36 @@ class ShipmentApiTest {
      * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    /**
+     * 商品の税抜単価（税率 10%、税込 1,100 円）
+     */
+    private static final int UNIT_PRICE_EXCL_TAX = 1000;
+
+    /**
+     * 注文の数量
+     */
+    private static final int QUANTITY = 2;
+
+    /**
+     * 注文の総額（売上確定の額）
+     *
+     * <p>税込単価 1,100 円 × 数量 2 の 2,200 円に、送料 1,000 円（注文の設定 {@code ecsite.order.shipping-fee} の既定。
+     * 統合テストの設定は上書きしない）を加えた額。
+     */
+    private static final long ORDER_TOTAL = 3200;
+
+    /**
+     * 送り状番号（ハイフンなし）
+     */
+    private static final String TRACKING_NUMBER = "123456789012";
+
+    /**
+     * 送り状番号（ハイフン付き。登録するとハイフンを除いた {@link #TRACKING_NUMBER} になる）
+     */
+    private static final String TRACKING_NUMBER_WITH_HYPHENS = "1234-5678-9012";
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -83,66 +118,105 @@ class ShipmentApiTest {
      */
     private OrderTestData orders;
 
+    /**
+     * 商品のバリアント ID
+     */
     private UUID variantId;
 
+    /**
+     * 出荷を登録する注文の ID（「受付」）
+     */
     private UUID orderId;
 
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
-        gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
-        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
+        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", UNIT_PRICE_EXCL_TAX).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
-        orderId = orders.placeOrder(variantId, 2);
+        orderId = orders.placeOrder(variantId, QUANTITY);
     }
+
+    // ============================== テスト ==============================
 
     @Nested
     @DisplayName("出荷の登録")
     class Ship {
 
         @Test
-        @DisplayName("AC-167、168 「受付」の注文に登録すると、売上を確定し、注文は出荷済みになり、出荷ができる")
-        void ships() throws Exception {
+        @DisplayName("AC-167 「受付」の注文に出荷を登録すると 201 で、配送業者・送り状番号・状態・出荷日時を返す")
+        void returnsShipment() throws Exception {
+            // 準備：注文の 1 時間後に登録する
             clock.setInstant(NOW.plusSeconds(3600));
 
-            ship("YAMATO", "1234-5678-9012").andExpect(status().isCreated())
+            // 操作と確認：送り状番号はハイフンを除いて返り、出荷日時は登録の時刻
+            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated())
                     .andExpect(jsonPath("$.carrier").value("YAMATO"))
-                    .andExpect(jsonPath("$.trackingNumber").value("123456789012"))
+                    .andExpect(jsonPath("$.trackingNumber").value(TRACKING_NUMBER))
                     .andExpect(jsonPath("$.status").value("SHIPPED"))
                     .andExpect(jsonPath("$.shippedAt").value("2026-10-07T16:00:00Z"));
+        }
 
+        @Test
+        @DisplayName("AC-168 出荷を登録すると、売上を確定し、注文は「出荷済み」になる")
+        void capturesAndMarksShipped() throws Exception {
+            // 操作：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated());
+
+            // 確認：注文は出荷済みで、支払は売上確定済み、出荷が付いている
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("SHIPPED"))
                     .andExpect(jsonPath("$.payment.status").value("CAPTURED"))
-                    .andExpect(jsonPath("$.shipment.trackingNumber").value("123456789012"))
-                    .andExpect(jsonPath("$.actions.ship").value(false))
-                    .andExpect(jsonPath("$.actions.cancel").value(false));
+                    .andExpect(jsonPath("$.shipment.trackingNumber").value(TRACKING_NUMBER));
+
+            // 確認：決済サービスで売上を確定したのは、この注文だけ
             assertThat(gateway.captured()).containsExactly(orderId);
         }
 
         @Test
         @DisplayName("AC-168 出荷を登録すると、決済サービスに、注文の総額（送料を含む）を売上確定の額として渡す")
         void capturesOrderTotal() throws Exception {
-            ship("YAMATO", "1234-5678-9012").andExpect(status().isCreated());
+            // 操作：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated());
 
+            // 確認（前提）：注文の総額は、商品の税込の小計に送料を加えた額
             var total = dsl.select(SALES_ORDER.TOTAL_AMOUNT).from(SALES_ORDER).where(SALES_ORDER.ID.eq(orderId))
                     .fetchOne(SALES_ORDER.TOTAL_AMOUNT);
-            // 商品 1,000 円（税抜）× 2 個の税込 2,200 円に、送料が加わる
-            assertThat(total).isGreaterThan(2200L);
+            assertThat(total).isEqualTo(ORDER_TOTAL);
+
+            // 確認：売上確定の額は、注文の総額
             assertThat(gateway.amountsOf(TestPaymentGateway.Operation.CAPTURE, orderId))
-                    .containsExactly(Money.of(total));
+                    .containsExactly(Money.of(ORDER_TOTAL));
         }
 
         @Test
-        @DisplayName("AC-167、268 「受付」の注文の詳細は、出荷を登録できる。キャンセルの時に在庫に戻すかは聞かない")
-        void shippableAction() throws Exception {
+        @DisplayName("AC-170、171 出荷済みの注文の詳細は、出荷の登録もキャンセルもできないことを示す")
+        void shippedOrderHasNoActions() throws Exception {
+            // 準備：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated());
+
+            // 操作と確認：出荷の登録とキャンセルの操作が、どちらもできない
             mockMvc.perform(get("/api/admin/orders/" + orderId))
-                    .andExpect(jsonPath("$.actions.ship").value(true))
+                    .andExpect(jsonPath("$.actions.ship").value(false))
+                    .andExpect(jsonPath("$.actions.cancel").value(false));
+        }
+
+        @Test
+        @DisplayName("AC-167 「受付」の注文の詳細は、出荷を登録できることを示す")
+        void acceptedOrderIsShippable() throws Exception {
+            // 操作と確認：出荷の登録ができる
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.actions.ship").value(true));
+        }
+
+        @Test
+        @DisplayName("AC-268 「受付」の注文の詳細は、キャンセルできることを示し、在庫に戻すかは聞かない")
+        void acceptedOrderCancelDoesNotAskRestock() throws Exception {
+            // 操作と確認：キャンセルはできるが、在庫に戻すかを聞かない
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.actions.cancel").value(true))
                     .andExpect(jsonPath("$.actions.cancelAsksRestock").value(false));
         }
@@ -153,35 +227,80 @@ class ShipmentApiTest {
     class CaptureFailure {
 
         @Test
-        @DisplayName("AC-169、188 与信期限切れなら 409 で、出荷は作られず受付のまま。支払は与信期限切れになる")
-        void authorizationExpired() throws Exception {
+        @DisplayName("AC-169、188 与信期限切れなら 409 で、失敗の理由に与信期限切れを示す")
+        void rejectsExpiredAuthorization() throws Exception {
+            // 準備：決済サービスで与信を切らす
             gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(orderId)));
 
-            ship("YAMATO", "123456789012").andExpect(status().isConflict())
+            // 操作と確認：409 の AUTHORIZATION_EXPIRED
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("AUTHORIZATION_EXPIRED"));
+        }
 
+        @Test
+        @DisplayName("AC-169、188 与信期限切れで失敗すると、出荷は作られず「受付」のままで、支払は与信期限切れになる")
+        void keepsAcceptedWhenAuthorizationExpired() throws Exception {
+            // 準備：決済サービスで与信を切らす
+            gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(orderId)));
+
+            // 操作：出荷を登録して失敗する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+
+            // 確認：受付のまま、出荷はなく、支払は与信期限切れ
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("ACCEPTED"))
                     .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"))
-                    .andExpect(jsonPath("$.shipment").doesNotExist())
+                    .andExpect(jsonPath("$.shipment").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("AC-188 与信期限切れで出荷できなかった注文は、運営者がキャンセルできることを示す")
+        void expiredOrderIsCancellable() throws Exception {
+            // 準備：与信を切らし、出荷の登録に失敗する
+            gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(orderId)));
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+
+            // 操作と確認：キャンセルの操作ができる
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.actions.cancel").value(true));
         }
 
         @Test
-        @DisplayName("AC-169 決済サービスに接続できなければ 502 で、出荷は作られず受付のまま。支払は与信済みのまま")
-        void gatewayUnavailable() throws Exception {
+        @DisplayName("AC-169 決済サービスに接続できなければ 502 で、失敗の理由に接続の失敗を示す")
+        void rejectsWhenGatewayUnavailable() throws Exception {
+            // 準備：次の売上確定を接続の失敗にする
             gateway.failNextCaptures(1);
 
-            ship("YAMATO", "123456789012").andExpect(status().isBadGateway())
+            // 操作と確認：502 の PAYMENT_GATEWAY_UNAVAILABLE
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isBadGateway())
                     .andExpect(jsonPath("$.errorCode").value("PAYMENT_GATEWAY_UNAVAILABLE"));
+        }
 
+        @Test
+        @DisplayName("AC-169 決済サービスに接続できずに失敗すると、出荷は作られず「受付」のままで、支払は与信済みのまま")
+        void keepsAcceptedWhenGatewayUnavailable() throws Exception {
+            // 準備：次の売上確定を接続の失敗にする
+            gateway.failNextCaptures(1);
+
+            // 操作：出荷を登録して失敗する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isBadGateway());
+
+            // 確認：受付のまま、支払は与信済み、出荷はない
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("ACCEPTED"))
                     .andExpect(jsonPath("$.payment.status").value("AUTHORIZED"))
                     .andExpect(jsonPath("$.shipment").doesNotExist());
+        }
 
-            // やり直せば出荷できる
-            ship("YAMATO", "123456789012").andExpect(status().isCreated());
+        @Test
+        @DisplayName("AC-169 決済サービスに接続できずに失敗した後、登録し直すと出荷できる")
+        void shipsOnRetryAfterGatewayUnavailable() throws Exception {
+            // 準備：1 回目の売上確定を接続の失敗にし、出荷の登録に失敗する
+            gateway.failNextCaptures(1);
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isBadGateway());
+
+            // 操作と確認：登録し直すと 201
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
         }
     }
 
@@ -189,6 +308,9 @@ class ShipmentApiTest {
     @DisplayName("与信の通知が届かず、期限切れのジョブが与信済みにした注文")
     class RecoveredByJob {
 
+        /**
+         * 支払った注文の支払画面 ID
+         */
         private String pageId;
 
         @BeforeEach
@@ -200,42 +322,80 @@ class ShipmentApiTest {
         }
 
         @Test
-        @DisplayName("AC-409-7 ジョブで受付になった注文は、出荷を登録でき、売上確定には取得した与信の参照を渡す")
+        @DisplayName("AC-409-7 ジョブで受付になった注文は、出荷を登録できる")
         void shipsRecoveredOrder() throws Exception {
+            // 準備：ジョブで受付にする
             recoverByJob();
 
-            ship("YAMATO", "123456789012").andExpect(status().isCreated())
+            // 操作と確認：出荷済みになる
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated())
                     .andExpect(jsonPath("$.status").value("SHIPPED"));
+        }
 
+        @Test
+        @DisplayName("AC-409-7 ジョブで受付になった注文の売上確定には、ジョブが取得した与信の参照を渡す")
+        void capturesWithFetchedAuthorization() throws Exception {
+            // 準備：ジョブで受付にする
+            recoverByJob();
+
+            // 操作：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+
+            // 確認：この注文だけを、支払画面の与信の参照で売上確定した
             assertThat(gateway.captured()).containsExactly(orderId);
             assertThat(gateway.capturedAuthorizationRef(orderId)).contains(gateway.authorizationRefOf(pageId));
         }
 
         @Test
-        @DisplayName("AC-409-8 決済サービスで与信が切れていた注文も受付になり、出荷は与信期限切れで失敗し、運営者がキャンセルできる")
-        void cancelsRecoveredOrderWithExpiredAuthorization() throws Exception {
+        @DisplayName("AC-409-8 決済サービスで与信が切れていた注文も受付になり、出荷の登録は与信期限切れの 409 で失敗する")
+        void failsToShipRecoveredOrderWithExpiredAuthorization() throws Exception {
+            // 準備：与信を切らしてから、ジョブで受付にする
             gateway.expireAuthorization(gateway.authorizationRefOf(pageId));
             recoverByJob();
 
-            ship("YAMATO", "123456789012").andExpect(status().isConflict())
+            // 操作：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("AUTHORIZATION_EXPIRED"));
+
+            // 確認：受付のまま、支払は与信期限切れ
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("ACCEPTED"))
-                    .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"))
+                    .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"));
+        }
+
+        @Test
+        @DisplayName("AC-409-8 与信が切れていて出荷できなかった注文は、運営者がキャンセルできる")
+        void cancelsRecoveredOrderWithExpiredAuthorization() throws Exception {
+            // 準備：与信を切らしてからジョブで受付にし、出荷の登録に失敗する
+            gateway.expireAuthorization(gateway.authorizationRefOf(pageId));
+            recoverByJob();
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+
+            // 確認（前提）：キャンセルの操作ができる
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.actions.cancel").value(true));
 
+            // 操作：運営者がキャンセルする
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
                             .contentType(MediaType.APPLICATION_JSON).content("""
                                     {"reason": "在庫の不備"}"""))
                     .andExpect(status().isNoContent());
+
+            // 確認：キャンセルになる
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("CANCELLED"));
         }
 
         /**
-         * 期限を過ぎてから、期限切れのジョブを実行する。
+         * 期限を過ぎてから、期限切れのジョブを実行し、注文が受付になったことを確認する。
          *
          * <p>与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。注文への反映は、リスナーと同じ処理をここで呼ぶ。
+         *
+         * <p>確認すること（前提）：
+         * <ul>
+         *   <li>注文が「受付」</li>
+         *   <li>支払が与信済み</li>
+         * </ul>
          */
         private void recoverByJob() throws Exception {
             clock.setInstant(NOW.plus(Duration.ofHours(2)));
@@ -252,54 +412,88 @@ class ShipmentApiTest {
     class Conflict {
 
         @Test
-        @DisplayName("AC-170 「キャンセル申請中」の注文は 409 で、売上を確定しない。却下すると出荷できる")
+        @DisplayName("AC-170 「キャンセル申請中」の注文は 409 で、売上を確定しない")
         void rejectsCancellationRequested() throws Exception {
+            // 準備：消費者がキャンセルを申請する
             requestCancellation();
 
-            ship("YAMATO", "123456789012").andExpect(status().isConflict())
+            // 操作：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_SHIPPABLE"));
-            assertThat(gateway.captureCalls()).isZero();
 
-            mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject"))
-                    .andExpect(status().isNoContent());
-            ship("YAMATO", "123456789012").andExpect(status().isCreated());
+            // 確認：売上確定を呼ばない
+            assertThat(gateway.captureCalls()).isZero();
         }
 
         @Test
-        @DisplayName("AC-172 出荷済みの注文に重ねて登録すると 409 で、売上確定は 1 回だけ")
-        void rejectsShippedOrder() throws Exception {
-            ship("YAMATO", "123456789012").andExpect(status().isCreated());
+        @DisplayName("AC-170 「キャンセル申請中」の注文は、申請を却下すると出荷できる")
+        void shipsAfterRejectingRequest() throws Exception {
+            // 準備：申請中に出荷の登録に失敗してから、申請を却下する
+            requestCancellation();
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+            mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject"))
+                    .andExpect(status().isNoContent());
 
+            // 操作と確認：201
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("AC-172 出荷済みの注文に重ねて登録すると 409")
+        void rejectsShippedOrder() throws Exception {
+            // 準備：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+
+            // 操作と確認：別の配送業者で重ねると、409 の ORDER_NOT_SHIPPABLE
             ship("SAGAWA", "999999999999").andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_SHIPPABLE"));
+        }
 
+        @Test
+        @DisplayName("AC-172 出荷済みの注文に重ねて登録しても、売上確定は 1 回だけで、最初の出荷が残る")
+        void keepsFirstShipment() throws Exception {
+            // 準備：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+
+            // 操作：別の配送業者で重ねて登録する
+            ship("SAGAWA", "999999999999").andExpect(status().isConflict());
+
+            // 確認：売上確定は 1 回で、出荷は最初の配送業者のまま
             assertThat(gateway.captureCalls()).isEqualTo(1);
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.shipment.carrier").value("YAMATO"));
         }
 
         @Test
-        @DisplayName("AC-172 売上確定の後に注文が受付でなくなっていたら 409。売上確定済みのまま残り、登録し直すと確定せずに進む")
-        void orderChangedDuringCapture() throws Exception {
-            gateway.duringNextCapture(() -> {
-                try {
-                    requestCancellation();
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            });
+        @DisplayName("AC-172 売上確定の後に注文が受付でなくなっていたら 409 で、売上確定済みのまま、出荷は作られない")
+        void rejectsOrderChangedDuringCapture() throws Exception {
+            // 準備：売上確定の最中に、消費者がキャンセルを申請する
+            requestCancellationDuringNextCapture();
 
-            ship("YAMATO", "123456789012").andExpect(status().isConflict())
+            // 操作：出荷を登録する
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_SHIPPABLE"));
+
+            // 確認：申請中で、支払は売上確定済み、出荷はない
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("CANCELLATION_REQUESTED"))
                     .andExpect(jsonPath("$.payment.status").value("CAPTURED"))
                     .andExpect(jsonPath("$.shipment").doesNotExist());
+        }
 
+        @Test
+        @DisplayName("AC-172 売上確定の後に受付でなくなった注文は、却下の後に登録し直すと、売上を確定し直さずに出荷できる")
+        void shipsWithoutSecondCapture() throws Exception {
+            // 準備：売上確定の最中に申請され、出荷の登録に失敗した後、申請を却下する
+            requestCancellationDuringNextCapture();
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject"))
                     .andExpect(status().isNoContent());
-            ship("YAMATO", "123456789012").andExpect(status().isCreated());
 
+            // 操作：出荷を登録し直す
+            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+
+            // 確認：売上確定は最初の 1 回だけ
             assertThat(gateway.captureCalls()).isEqualTo(1);
         }
     }
@@ -310,24 +504,28 @@ class ShipmentApiTest {
 
         /**
          * 入力の検証で拒否される組。
+         *
+         * @return 場合の名前、配送業者、送り状番号、誤りの項目（項目ごとの誤りが付かないときは null）
          */
         static Stream<Arguments> invalidInputs() {
             return Stream.of(
-                    Arguments.of("一覧にない配送業者", "KURONEKO", "123456789012", null),
+                    Arguments.of("一覧にない配送業者", "KURONEKO", TRACKING_NUMBER, null),
                     Arguments.of("空の送り状番号", "YAMATO", "", "trackingNumber"),
                     Arguments.of("欠けている送り状番号", "YAMATO", null, "trackingNumber"));
         }
 
-        @ParameterizedTest(name = "{0}")
+        @ParameterizedTest(name = "「{0}」")
         @MethodSource("invalidInputs")
-        @DisplayName("AC-173 配送業者は一覧から選び、送り状番号は必須。誤りは 400 で項目を示し、売上を確定しない")
+        @DisplayName("AC-173 配送業者と送り状番号の誤りは 400 で項目を示し、売上を確定しない")
         void validates(String name, String carrier, String trackingNumber, String field) throws Exception {
+            // 操作と確認：400 で拒否され、売上を確定しない
             assertRejected(carrier, trackingNumber, field);
         }
 
         @Test
         @DisplayName("存在しない注文は 404")
         void notFound() throws Exception {
+            // 操作と確認：ない注文 ID には 404
             mockMvc.perform(post("/api/admin/orders/" + UUID.randomUUID() + "/shipment")
                             .contentType(MediaType.APPLICATION_JSON).content("""
                                     {"carrier": "YAMATO", "trackingNumber": "123456789012"}"""))
@@ -341,6 +539,8 @@ class ShipmentApiTest {
 
         /**
          * 送り状番号の形の誤り。
+         *
+         * @return 場合の名前と送り状番号
          */
         static Stream<Arguments> malformedTrackingNumbers() {
             return Stream.of(
@@ -349,20 +549,31 @@ class ShipmentApiTest {
                     Arguments.of("数字を含まない送り状番号", "---"));
         }
 
-        @ParameterizedTest(name = "{0}")
+        @ParameterizedTest(name = "「{0}」")
         @MethodSource("malformedTrackingNumbers")
-        @DisplayName("送り状番号は数字とハイフンの 30 文字まで（数字が 1 つ以上）。形の誤りは 400 で項目を示し、売上を確定しない")
+        @DisplayName("送り状番号が、数字を 1 つ以上含む、数字とハイフンの 30 文字までの形でなければ 400 で項目を示し、売上を確定しない")
         void rejectsMalformedTrackingNumber(String name, String trackingNumber) throws Exception {
+            // 操作と確認：400 で送り状番号の誤りを示し、売上を確定しない
             assertRejected("YAMATO", trackingNumber, "trackingNumber");
         }
     }
 
-    // ============================== 補助 ==============================
+    // ============================== 確認の補助 ==============================
 
     /**
-     * 400 で項目を示し、売上を確定しないことを確認する。
+     * 出荷の登録が入力の誤りで拒否されることを確認する。
      *
-     * <p>項目が null のときは、項目ごとの誤りが付かないことを確認する
+     * <p>確認すること：
+     * <ul>
+     *   <li>400</li>
+     *   <li>エラーコードが INVALID_REQUEST</li>
+     *   <li>項目を指定したときは、最初の項目ごとの誤りがその項目。null のときは、項目ごとの誤りが付かない</li>
+     *   <li>売上確定を呼ばない</li>
+     * </ul>
+     *
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号（null なら本文に含めない）
+     * @param field          誤りの項目（null なら項目ごとの誤りが付かない）
      */
     private void assertRejected(String carrier, String trackingNumber, String field) throws Exception {
         var body = trackingNumber == null
@@ -385,8 +596,14 @@ class ShipmentApiTest {
         assertThat(gateway.captureCalls()).isZero();
     }
 
+    // ============================== 準備の補助 ==============================
+
     /**
-     * 出荷を登録する
+     * 出荷を登録する。
+     *
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @return 応答
      */
     private ResultActions ship(String carrier, String trackingNumber) throws Exception {
         return mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
@@ -396,11 +613,24 @@ class ShipmentApiTest {
     }
 
     /**
-     * 消費者がキャンセルを申請する
+     * 消費者がキャンセルを申請する。
      */
     private void requestCancellation() throws Exception {
         mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNoContent());
+    }
+
+    /**
+     * 次の売上確定の最中に、消費者がキャンセルを申請するようにする。
+     */
+    private void requestCancellationDuringNextCapture() {
+        gateway.duringNextCapture(() -> {
+            try {
+                requestCancellation();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        });
     }
 }

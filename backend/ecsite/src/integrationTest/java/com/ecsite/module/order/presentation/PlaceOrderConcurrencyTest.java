@@ -53,12 +53,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @IntegrationTest
 class PlaceOrderConcurrencyTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * テストの現在時刻
      *
      * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -111,13 +115,14 @@ class PlaceOrderConcurrencyTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);
         taxCategoryId = catalog.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
         product = catalog.product(taxCategoryId, "並行の商品", 1000).publish();
     }
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("AC-91 同じ注文手続きで同時に何度送っても、注文は 1 件だけで、どの応答も同じ注文 ID")
@@ -149,6 +154,8 @@ class PlaceOrderConcurrencyTest {
         var responses = placeAll(List.of(first, second));
 
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsExactlyInAnyOrder(201, 409);
+        var rejected = responses.stream().filter(response -> response.getStatus() == 409).findFirst().orElseThrow();
+        assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");
         assertThat(quantity()).isZero();
     }
 
@@ -192,7 +199,7 @@ class PlaceOrderConcurrencyTest {
 
         // 確認するのは、同時の注文でも支払待ちが上限を超えない結果である。
         // 後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される
-        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderApiTest で確認する）
+        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderPendingLimitApiTest で確認する）
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(2);
         assertThat(OrderTestData.pendingOrderCount(dsl, memberOf(checkouts.getFirst()))).isEqualTo(3);

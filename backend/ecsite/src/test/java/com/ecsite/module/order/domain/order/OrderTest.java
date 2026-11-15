@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 注文の単体テスト
  *
  * <p>注文の成立（{@link Order#place}）だけを確認する。見積もりが注文できるかの判定（{@code orderable}）は
- * {@code QuoteTest}、API を通した流れは {@code CheckoutApiTest}・{@code PlaceOrderApiTest} が確認する。
+ * {@code QuoteTest}、API を通した流れは {@code CheckoutStartApiTest}・{@code PlaceOrderPlacementApiTest} などが確認する。
  *
  * <p>準備のデータと確認の期待値は、同じ定数から作る（準備した物から期待値を取り出さない）。
  */

@@ -21,9 +21,11 @@ public final class OrderPayments {
     }
 
     /**
-     * 与信の成功を注文に反映する（支払待ちの注文を受付にする）。
+     * 与信の成功を注文に反映する。
      *
-     * @param context Spring のコンテキスト（テストに注入したもの）
+     * <p>支払待ちの注文を受付にする。与信の成功のリスナーと同じ処理なので、すでに受付なら何も変えない。
+     *
+     * @param context テストに注入した Spring のコンテキスト
      * @param orderId 注文 ID
      */
     public static void accept(ApplicationContext context, UUID orderId) {
@@ -31,9 +33,11 @@ public final class OrderPayments {
     }
 
     /**
-     * 支払の期限切れを注文に反映する（支払待ちの注文をキャンセルにする）。
+     * 支払の期限切れを注文に反映する。
      *
-     * @param context Spring のコンテキスト（テストに注入したもの）
+     * <p>支払待ちの注文を、支払期限切れのキャンセルにする。
+     *
+     * @param context テストに注入した Spring のコンテキスト
      * @param orderId 注文 ID
      */
     public static void expire(ApplicationContext context, UUID orderId) {

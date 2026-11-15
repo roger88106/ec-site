@@ -10,13 +10,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 注文モジュールの型を、店舗モジュールの型に変換するときの、列挙の変換の単体テスト
+ *
+ * <p>列挙の値の対応だけを確認する。カートの見積もりを店舗の画面に返す流れは、店舗の API の統合テストが確認する。
  */
 class OrderApiDirectoryTest {
 
-    @ParameterizedTest(name = "{0}")
+    // ============================== テスト ==============================
+
+    @ParameterizedTest(name = "「{0}」")
     @EnumSource(CartQuote.UnpurchasableReason.class)
     @DisplayName("AC-277 注文の API の購入できない理由の全ての値を、店舗の購入できない理由の同じ名前の値に写す")
     void mapsEveryReason(CartQuote.UnpurchasableReason reason) {
+        // 操作と確認：同じ名前の値
         assertThat(OrderApiDirectory.toReason(reason)).isEqualTo(CartView.UnpurchasableReason.valueOf(reason.name()));
     }
 }

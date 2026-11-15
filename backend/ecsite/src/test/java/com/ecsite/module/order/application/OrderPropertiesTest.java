@@ -35,6 +35,13 @@ class OrderPropertiesTest {
     private static final String TAX_CATEGORY_ID = "ecsite.order.shipping-tax-category-id=00000000-0000-0000-0000-000000000001";
 
     /**
+     * 既定の値を読む設定ファイルの profile
+     *
+     * <p>{@code application.yml} だけでは、必須の送料の税区分がなく検証に失敗するので、それを書く profile を重ねる。
+     */
+    private static final String SETTINGS_PROFILE = "local";
+
+    /**
      * 検証つきで注文の設定を読み込む、Spring のコンテキストの起動
      */
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
@@ -50,8 +57,8 @@ class OrderPropertiesTest {
         @Test
         @DisplayName("NFR-411-2 支払待ちの注文の上限は、設定がなければ 3 件である")
         void defaultsPendingOrderLimitToThree() {
-            // 操作：上限を設定せずに読み込む
-            var properties = TestSettings.bind(PREFIX, OrderProperties.class, Map.of());
+            // 操作：設定ファイルの値で読み込む（設定ファイルは上限を書かない。送料の税区分を書く local の profile を重ねる）
+            var properties = TestSettings.loadAndBind(PREFIX, OrderProperties.class, SETTINGS_PROFILE);
 
             // 確認：3 件
             assertThat(properties.pendingOrderLimit()).isEqualTo(3);

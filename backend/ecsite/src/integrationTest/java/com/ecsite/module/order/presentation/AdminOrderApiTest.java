@@ -6,6 +6,7 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
+import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
@@ -142,17 +143,17 @@ class AdminOrderApiTest {
     /**
      * 送料（注文の設定 {@code ecsite.order.shipping-fee} の既定）
      */
-    private static final int SHIPPING_FEE = 1000;
+    private static final int SHIPPING_FEE = Math.toIntExact(OrderTestData.SHIPPING_FEE);
 
     /**
      * お届け先の氏名（注文の補助の既定）
      */
-    private static final String RECIPIENT_NAME = "山田 太郎";
+    private static final String RECIPIENT_NAME = OrderTestData.RECIPIENT_NAME;
 
     /**
      * 注文のメールアドレス（既定の会員の token のメールアドレス）
      */
-    private static final String MEMBER_EMAIL = "member@example.com";
+    private static final String MEMBER_EMAIL = TestTokens.MEMBER_EMAIL;
 
     /**
      * 消費者のキャンセルの申請の理由
@@ -589,11 +590,11 @@ class AdminOrderApiTest {
     private static void assertEmailAndAddress(ResultActions detail) throws Exception {
         detail.andExpect(jsonPath("$.email").value(MEMBER_EMAIL))
                 .andExpect(jsonPath("$.shippingAddress.name").value(RECIPIENT_NAME))
-                .andExpect(jsonPath("$.shippingAddress.prefectureCode").value("13"))
+                .andExpect(jsonPath("$.shippingAddress.prefectureCode").value(OrderTestData.PREFECTURE_CODE))
                 .andExpect(jsonPath("$.shippingAddress.prefectureName").value("東京都"))
-                .andExpect(jsonPath("$.shippingAddress.municipalityCode").value("13101"))
+                .andExpect(jsonPath("$.shippingAddress.municipalityCode").value(OrderTestData.MUNICIPALITY_CODE))
                 .andExpect(jsonPath("$.shippingAddress.municipalityName").value("千代田区"))
-                .andExpect(jsonPath("$.shippingAddress.address").value("千代田 1-1"));
+                .andExpect(jsonPath("$.shippingAddress.address").value(OrderTestData.ADDRESS));
     }
 
     // ============================== 準備の補助 ==============================

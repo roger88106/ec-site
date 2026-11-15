@@ -10,8 +10,8 @@ import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestTokens;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.payment.application.PaymentRequests;
 import com.ecsite.module.payment.application.job.PaymentJobs;
-import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -32,7 +32,6 @@ import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
-import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.containsString;
@@ -693,7 +692,7 @@ class OrderPaymentApiTest {
             store(orderId).andExpect(jsonPath("$.status").value("CANCELLED"));
 
             // 確認：取消が失敗した後もキャンセルのまま
-            awaitVoidFailed(orderId);
+            asyncEvents.awaitFailed(PaymentRequests.voidAuthorization(dsl, orderId));
             store(orderId).andExpect(jsonPath("$.status").value("CANCELLED"));
         }
 
@@ -706,7 +705,7 @@ class OrderPaymentApiTest {
 
             // 操作：運営者がキャンセルし、取消の依頼のリスナーが失敗するのを待つ
             cancelByOperator(orderId).andExpect(status().isNoContent());
-            awaitVoidFailed(orderId);
+            asyncEvents.awaitFailed(PaymentRequests.voidAuthorization(dsl, orderId));
 
             // 確認：支払の状態が与信の取消待ち
             assertThat(paymentStatus(orderId)).isEqualTo("VOID_PENDING");
@@ -820,15 +819,6 @@ class OrderPaymentApiTest {
         await().atMost(TIMEOUT).until(() -> paymentStatus(orderId).equals(expected));
     }
 
-    /**
-     * 注文の与信の取消の依頼のリスナーが、失敗するのを待つ。
-     *
-     * @param orderId 注文 ID
-     */
-    private void awaitVoidFailed(UUID orderId) {
-        var paymentId = dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchOne(PAYMENT_.ID);
-        asyncEvents.awaitFailed(event -> event instanceof VoidRequested requested && requested.paymentId().equals(paymentId));
-    }
 
     /**
      * バリアントの在庫数を確認する。

@@ -256,8 +256,8 @@ class CheckoutStartApiTest {
             mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
                     .andExpect(jsonPath("$.items[0].variantId").value(variant.toString()))
                     .andExpect(jsonPath("$.amounts.itemsTotal").value(1100))
-                    .andExpect(jsonPath("$.amounts.shippingFee").value(1000))
-                    .andExpect(jsonPath("$.amounts.total").value(2100));
+                    .andExpect(jsonPath("$.amounts.shippingFee").value(OrderTestData.SHIPPING_FEE))
+                    .andExpect(jsonPath("$.amounts.total").value(1100 + OrderTestData.SHIPPING_FEE));
         }
 
         @Test

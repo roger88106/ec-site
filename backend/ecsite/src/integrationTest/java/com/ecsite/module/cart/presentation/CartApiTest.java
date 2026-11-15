@@ -5,11 +5,8 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestJson;
-import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -341,7 +338,7 @@ class CartApiTest {
             // 準備：在庫 3 を全てカートに入れた後、在庫が 0 になる
             var variant = stockedVariant(3);
             add(cartId, variant, 3).andExpect(status().isNoContent());
-            adjust(variant, -3);
+            inventory.adjust(variant, -3);
 
             // 操作：2 個に減らす
             var result = change(cartId, variant, 2);
@@ -357,7 +354,7 @@ class CartApiTest {
             // 準備：在庫 3 のうち 2 をカートに入れた後、在庫が 2 になる
             var variant = stockedVariant(3);
             add(cartId, variant, 2).andExpect(status().isNoContent());
-            adjust(variant, -1);
+            inventory.adjust(variant, -1);
 
             // 操作：3 個に増やす
             var result = change(cartId, variant, 3);
@@ -440,7 +437,7 @@ class CartApiTest {
             // 準備：在庫 3 を全てカートに入れた後、在庫が 0 になる
             var variant = stockedVariant(3);
             add(cartId, variant, 3).andExpect(status().isNoContent());
-            adjust(variant, -3);
+            inventory.adjust(variant, -3);
 
             // 操作：削除する
             var result = remove(cartId, variant);
@@ -559,17 +556,6 @@ class CartApiTest {
      */
     private UUID stockedVariant(int quantity) throws Exception {
         return inventory.stockedVariant(catalog, standard, "商品", quantity);
-    }
-
-    /**
-     * 在庫数を増減する。
-     *
-     * @param variantId バリアント ID
-     * @param delta     増減の数（正は入荷、負は破損・紛失）
-     */
-    private void adjust(UUID variantId, int delta) {
-        var reason = delta > 0 ? StockAdjustmentReason.ARRIVAL : StockAdjustmentReason.DAMAGE_OR_LOSS;
-        stockItemRepository.adjust(variantId, StockAdjustment.create(delta, reason, null, TestTokens.OPERATOR, NOW));
     }
 
     /**

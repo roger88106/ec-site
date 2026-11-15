@@ -1,7 +1,10 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.MutableClock;
+import com.ecsite.OrderTestData;
 import com.ecsite.TestTokens;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,6 +14,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import static com.ecsite.module.order.presentation.PlaceOrderFixture.SHIRT_PRICE_EXCL_TAX;
@@ -57,24 +61,34 @@ class PlaceOrderViewApiTest {
     private static final long SUBTOTAL = 5940;
 
     /**
-     * 送料
-     */
-    private static final long SHIPPING_FEE = 1000;
-
-    /**
      * 総額に含まれる消費税
      */
     private static final long TAX_AMOUNT = 630;
 
     /**
-     * 既定の会員のメールアドレス（注文の連絡先に写す）
+     * 注文の後に変える、T シャツの税区分の税率（%）
      */
-    private static final String EMAIL = "member@example.com";
+    private static final String CHANGED_RATE_PERCENT = "20";
+
+    /**
+     * 税率を変えた後の、T シャツの税込単価
+     *
+     * <p>税抜単価 2,700 円に税率 20% を加えた額。
+     */
+    private static final long CHANGED_RATE_SHIRT_PRICE_INCL_TAX = 3240;
+
+    /**
+     * 注文の後に、変えた税率が有効になるまでの時間
+     */
+    private static final Duration RATE_CHANGE_DELAY = Duration.ofHours(1);
 
     // ============================== Bean ==============================
 
     @Autowired
     ApplicationContext applicationContext;
+
+    @Autowired
+    MutableClock clock;
 
     /**
      * 共有の準備
@@ -119,6 +133,40 @@ class PlaceOrderViewApiTest {
             // 確認：金額の内訳が注文時点のまま
             assertAmountsAsPlaced(result);
         }
+
+        @Test
+        @DisplayName("AC-92 明細の税率と税込単価は注文時点の写しで、後で税率が変わっても変わらない")
+        void keepsLineAsPlacedAfterRateChange() throws Exception {
+            // 準備：注文した後に、T シャツの税区分の税率が変わる
+            var orderId = fixture.placeOrder();
+            changeStandardRate();
+
+            // 確認（前提）：変わった税率が、今の商品の税込価格に反映されている
+            expectShirtPriceInclTax(CHANGED_RATE_SHIRT_PRICE_INCL_TAX);
+
+            // 操作：注文を表示する
+            var result = show(orderId);
+
+            // 確認：明細が注文時点の写しのまま
+            assertLineAsPlaced(result, fixture.shirt.productCode, fixture.shirt.variantCodes.getFirst());
+        }
+
+        @Test
+        @DisplayName("AC-92 金額の内訳は注文時点のままで、後で税率が変わっても変わらない")
+        void keepsAmountsAsPlacedAfterRateChange() throws Exception {
+            // 準備：注文した後に、T シャツの税区分の税率が変わる
+            var orderId = fixture.placeOrder();
+            changeStandardRate();
+
+            // 確認（前提）：変わった税率が、今の商品の税込価格に反映されている
+            expectShirtPriceInclTax(CHANGED_RATE_SHIRT_PRICE_INCL_TAX);
+
+            // 操作：注文を表示する
+            var result = show(orderId);
+
+            // 確認：金額の内訳が注文時点のまま
+            assertAmountsAsPlaced(result);
+        }
     }
 
     @Nested
@@ -147,11 +195,11 @@ class PlaceOrderViewApiTest {
             // 操作と確認：コードと名前と住所を返す
             show(orderId)
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.shippingAddress.prefectureCode").value("13"))
+                    .andExpect(jsonPath("$.shippingAddress.prefectureCode").value(OrderTestData.PREFECTURE_CODE))
                     .andExpect(jsonPath("$.shippingAddress.prefectureName").value("東京都"))
-                    .andExpect(jsonPath("$.shippingAddress.municipalityCode").value("13101"))
+                    .andExpect(jsonPath("$.shippingAddress.municipalityCode").value(OrderTestData.MUNICIPALITY_CODE))
                     .andExpect(jsonPath("$.shippingAddress.municipalityName").value("千代田区"))
-                    .andExpect(jsonPath("$.shippingAddress.address").value("千代田 1-1"));
+                    .andExpect(jsonPath("$.shippingAddress.address").value(OrderTestData.ADDRESS));
         }
     }
 
@@ -226,7 +274,7 @@ class PlaceOrderViewApiTest {
      */
     private static void assertAmountsAsPlaced(ResultActions result) throws Exception {
         result.andExpect(jsonPath("$.amounts.itemsTotal").value(SUBTOTAL))
-                .andExpect(jsonPath("$.amounts.shippingFee").value(SHIPPING_FEE))
+                .andExpect(jsonPath("$.amounts.shippingFee").value(OrderTestData.SHIPPING_FEE))
                 .andExpect(jsonPath("$.amounts.total").value(TOTAL))
                 .andExpect(jsonPath("$.amounts.taxes[0].taxAmount").value(TAX_AMOUNT));
     }
@@ -254,13 +302,39 @@ class PlaceOrderViewApiTest {
                 .andExpect(jsonPath("$.id").value(orderId.toString()))
                 .andExpect(jsonPath("$.orderNumber").exists())
                 .andExpect(jsonPath("$.orderedAt").exists())
-                .andExpect(jsonPath("$.email").value(EMAIL))
-                .andExpect(jsonPath("$.shippingAddress.postalCode").value("1000001"))
-                .andExpect(jsonPath("$.shippingAddress.phone").value("0312345678"))
+                .andExpect(jsonPath("$.email").value(TestTokens.MEMBER_EMAIL))
+                .andExpect(jsonPath("$.shippingAddress.postalCode").value(OrderTestData.POSTAL_CODE.replace("-", "")))
+                .andExpect(jsonPath("$.shippingAddress.phone").value(OrderTestData.PHONE.replace("-", "")))
                 .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
     }
 
+    /**
+     * 店舗の商品の詳細で、T シャツの税込価格を確認する。
+     *
+     * @param priceInclTax 期待する税込価格
+     * @throws Exception API の呼び出しに失敗したとき、または確認が通らないとき
+     */
+    private void expectShirtPriceInclTax(long priceInclTax) throws Exception {
+        fixture.mockMvc.perform(get("/api/store/products/" + fixture.shirt.id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price.inclTax").value(priceInclTax));
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 標準の税区分（T シャツの税区分）の税率を {@link #CHANGED_RATE_PERCENT} に変え、変えた税率が有効になる時刻まで時計を進める。
+     *
+     * <p>前の税率を読んだ税率のキャッシュを捨て、次の取得で変えた税率を読むようにする。
+     *
+     * @throws Exception API の呼び出しに失敗したとき
+     */
+    private void changeStandardRate() throws Exception {
+        var effectiveFrom = clock.instant().plus(RATE_CHANGE_DELAY);
+        fixture.catalog.changeRate(fixture.standard, CHANGED_RATE_PERCENT, effectiveFrom);
+        clock.setInstant(effectiveFrom);
+        TaxRateScheduleCaches.evict(applicationContext);
+    }
 
     /**
      * 既定の会員で注文を表示する。

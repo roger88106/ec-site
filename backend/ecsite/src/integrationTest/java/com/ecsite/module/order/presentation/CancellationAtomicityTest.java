@@ -10,7 +10,6 @@ import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.port.StockDirectory;
-import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,7 +126,9 @@ class CancellationAtomicityTest {
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, STOCKED);
         orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, ORDERED);
-        awaitAuthorizedHandled();
+        // コミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前にキャンセルすると、
+        // 楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある
+        asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId));
     }
 
     // ============================== テスト ==============================
@@ -149,18 +150,5 @@ class CancellationAtomicityTest {
         mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(jsonPath("$.status").value("ACCEPTED"));
         mockMvc.perform(get("/api/admin/inventory/variants/" + variantId))
                 .andExpect(jsonPath("$.quantity").value(STOCKED - ORDERED));
-    }
-
-    // ============================== 準備の補助 ==============================
-
-    /**
-     * 与信の成功のイベントのリスナーが終わるのを待つ。
-     *
-     * <p>このテストはコミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前にキャンセルすると、
-     * 楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある。
-     */
-    private void awaitAuthorizedHandled() {
-        asyncEvents.awaitHandled(event -> event instanceof PaymentAuthorized authorized
-                && authorized.orderId().equals(orderId));
     }
 }

@@ -13,8 +13,7 @@ import com.ecsite.TestTokens;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.event.OrderStatusChanged;
-import com.ecsite.module.payment.domain.payment.RefundRequested;
-import com.ecsite.module.payment.event.PaymentAuthorized;
+import com.ecsite.module.payment.application.PaymentRequests;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
@@ -32,7 +31,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
-import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -136,7 +134,9 @@ class ReturnedOrderRefundTest {
         email = "returned-" + UUID.randomUUID() + "@example.com";
         var owner = TestTokens.member().subject(UUID.randomUUID()).email(email);
         orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, ORDERED);
-        awaitAuthorizedHandled();
+        // コミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前に出荷やキャンセルをすると、
+        // 楽観ロックで衝突することがある
+        asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId));
         var trackingNumber = ShippingTestData.trackingNumber();
         var shipping = new ShippingTestData(mockMvc, mockCarrier);
         shipping.ship(orderId, Carrier.YAMATO, trackingNumber);
@@ -150,11 +150,10 @@ class ReturnedOrderRefundTest {
     void cancelsEvenIfRefundFails() throws Exception {
         // 準備：決済サービスが次の返金に失敗する
         gateway.failNextRefunds(1);
-        var paymentId = paymentId();
 
         // 操作：キャンセルし、この注文の返金の依頼のリスナーが失敗するのを待つ
         cancel();
-        asyncEvents.awaitFailed(event -> event instanceof RefundRequested requested && requested.paymentId().equals(paymentId));
+        asyncEvents.awaitFailed(PaymentRequests.refund(dsl, orderId));
 
         // 確認（前提）：返金されていない
         assertThat(gateway.refunded()).doesNotContain(orderId);
@@ -195,17 +194,6 @@ class ReturnedOrderRefundTest {
     // ============================== 準備の補助 ==============================
 
     /**
-     * 与信の成功のイベントのリスナーが終わるのを待つ。
-     *
-     * <p>このテストはコミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前に出荷やキャンセルをすると、
-     * 楽観ロックで衝突することがある。
-     */
-    private void awaitAuthorizedHandled() {
-        asyncEvents.awaitHandled(event -> event instanceof PaymentAuthorized authorized
-                && authorized.orderId().equals(orderId));
-    }
-
-    /**
      * 在庫に戻して、運営者のキャンセルを送り、204 を確認する。
      */
     private void cancel() throws Exception {
@@ -213,15 +201,6 @@ class ReturnedOrderRefundTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CANCEL_BODY))
                 .andExpect(status().isNoContent());
-    }
-
-    /**
-     * 注文の支払の ID を読む（返金の依頼のイベントを、この注文のものに絞るのに使う）。
-     *
-     * @return 支払 ID
-     */
-    private UUID paymentId() {
-        return dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchOne(PAYMENT_.ID);
     }
 
     // ============================== 確認の補助 ==============================

@@ -5,11 +5,9 @@ import com.ecsite.CatalogTestData.TestProduct;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
+import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestJson;
-import com.ecsite.TestTokens;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,7 +86,7 @@ class StorefrontCartTest {
     /**
      * 送料
      */
-    private static final int SHIPPING_FEE = 1000;
+    private static final int SHIPPING_FEE = Math.toIntExact(OrderTestData.SHIPPING_FEE);
 
     // ============================== Bean ==============================
 
@@ -471,8 +469,8 @@ class StorefrontCartTest {
         }
         hidden.unpublish();
         suspended.suspend(0);
-        adjust(soldOut.variantIds.getFirst(), -3);
-        adjust(short_.variantIds.getFirst(), -2);
+        inventory.adjust(soldOut.variantIds.getFirst(), -3);
+        inventory.adjust(short_.variantIds.getFirst(), -2);
     }
 
     /**
@@ -502,16 +500,6 @@ class StorefrontCartTest {
                 .andExpect(status().isNoContent());
     }
 
-    /**
-     * 在庫数を増減する。
-     *
-     * @param variantId バリアント ID
-     * @param delta     増減の数（正は入荷、負は破損・紛失）
-     */
-    private void adjust(UUID variantId, int delta) {
-        var reason = delta > 0 ? StockAdjustmentReason.ARRIVAL : StockAdjustmentReason.DAMAGE_OR_LOSS;
-        stockItemRepository.adjust(variantId, StockAdjustment.create(delta, reason, null, TestTokens.OPERATOR, clock.instant()));
-    }
 
     /**
      * テストのカートを表示し、200 であることを確認する。

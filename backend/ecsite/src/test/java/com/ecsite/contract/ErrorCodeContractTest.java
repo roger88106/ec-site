@@ -5,6 +5,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -17,6 +18,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static com.ecsite.contract.OpenApiNodes.list;
 import static com.ecsite.contract.OpenApiNodes.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,10 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ErrorCodeContractTest {
 
-    /**
-     * 操作の HTTP メソッド
-     */
-    private static final Set<String> METHODS = Set.of("get", "post", "put", "delete", "patch");
+    // ============================== 定数 ==============================
 
     /**
      * 契約のファイルの名前 → 読み込んだ契約
@@ -39,7 +38,7 @@ class ErrorCodeContractTest {
     private static final Map<String, Map<String, Object>> CONTRACTS = new HashMap<>();
 
     /**
-     * 2 つの API の契約を読む
+     * 2 つの API の契約を読む。
      */
     @BeforeAll
     static void loadContracts() {
@@ -48,36 +47,61 @@ class ErrorCodeContractTest {
         }
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"admin.yaml", "store.yaml"})
-    @DisplayName("AC-274 全体の列挙が、操作ごとの一覧と共通のエラーの和と一致し、共通のエラーはバックエンドの共通のエラーと同じ")
-    void enumIsUnionOfOperationsAndCommon(String file) {
-        Set<String> operations = new TreeSet<>();
-        map(CONTRACTS.get(file).get("paths")).values().forEach(path -> map(path).forEach((method, operation) -> {
-            if (METHODS.contains(method)) {
-                operations.addAll(strings(map(operation).get("x-error-codes")));
+    // ============================== テスト ==============================
+
+    @Nested
+    @DisplayName("API ごとの全体の列挙")
+    class PerApi {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"admin.yaml", "store.yaml"})
+        @DisplayName("AC-274 全体の列挙が、操作ごとの一覧と共通のエラーの和と一致する")
+        void enumIsUnionOfOperationsAndCommon(String file) {
+            // 準備：操作ごとの一覧と共通のエラーの和
+            Set<String> union = new TreeSet<>(commonOf(file));
+            for (var operation : OpenApiNodes.operations(CONTRACTS.get(file))) {
+                union.addAll(strings(operation.node().get("x-error-codes")));
             }
-        }));
-        Set<String> common = new TreeSet<>(strings(errorCodeSchema(file).get("x-common-error-codes")));
-        Set<String> union = new TreeSet<>(operations);
-        union.addAll(common);
 
-        assertThat(common).as("共通のエラー").isEqualTo(Arrays.stream(CommonErrorCode.values())
-                .map(code -> code.getCode().code()).collect(Collectors.toCollection(TreeSet::new)));
-        assertThat(enumOf(file)).as("全体の列挙").isEqualTo(union);
+            // 操作と確認：
+            assertThat(enumOf(file)).as("全体の列挙").isEqualTo(union);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"admin.yaml", "store.yaml"})
+        @DisplayName("AC-274 共通のエラーは、バックエンドの共通のエラーと同じ")
+        void commonIsBackendCommon(String file) {
+            // 準備：
+            Set<String> backend = Arrays.stream(CommonErrorCode.values())
+                    .map(code -> code.getCode().code()).collect(Collectors.toCollection(TreeSet::new));
+
+            // 操作と確認：
+            assertThat(commonOf(file)).as("共通のエラー").isEqualTo(backend);
+        }
     }
 
-    @Test
-    @DisplayName("AC-275 バックエンドのすべてのエラーのコードが、どちらかの API の全体の列挙にあり、列挙のすべての値がバックエンドにある")
-    void backendCodesAgreeWithContracts() {
-        Set<String> backend = ProductionClasses.errorCodes().stream()
-                .map(constant -> ((ErrorCodeProvider) constant).getCode().code())
-                .collect(Collectors.toCollection(TreeSet::new));
-        Set<String> contracts = new TreeSet<>(enumOf("admin.yaml"));
-        contracts.addAll(enumOf("store.yaml"));
+    @Nested
+    @DisplayName("バックエンドとの一致")
+    class Backend {
 
-        assertThat(contracts).as("契約の全体の列挙（2 つの API の和）").isEqualTo(backend);
+        @Test
+        @DisplayName("AC-275 バックエンドのすべてのエラーのコードが、どちらかの API の全体の列挙にあり、列挙のすべての値がバックエンドにある")
+        void backendCodesAgreeWithContracts() {
+            // 準備：
+            Set<String> backend = ProductionClasses.errorCodes().stream()
+                    .map(constant -> ((ErrorCodeProvider) constant).getCode().code())
+                    .collect(Collectors.toCollection(TreeSet::new));
+
+            // 操作：
+            Set<String> contracts = new TreeSet<>(enumOf("admin.yaml"));
+            contracts.addAll(enumOf("store.yaml"));
+
+            // 確認：
+            assertThat(contracts).as("契約の全体の列挙（2 つの API の和）").isEqualTo(backend);
+        }
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * API の全体の列挙を返す。
@@ -87,6 +111,16 @@ class ErrorCodeContractTest {
      */
     private static Set<String> enumOf(String file) {
         return new TreeSet<>(strings(errorCodeSchema(file).get("enum")));
+    }
+
+    /**
+     * API の共通のエラーを返す。
+     *
+     * @param file 契約のファイルの名前
+     * @return 共通のエラーのコード
+     */
+    private static Set<String> commonOf(String file) {
+        return new TreeSet<>(strings(errorCodeSchema(file).get("x-common-error-codes")));
     }
 
     /**
@@ -106,6 +140,6 @@ class ErrorCodeContractTest {
      * @return 文字の一覧。null なら空
      */
     private static List<String> strings(Object value) {
-        return value == null ? List.of() : ((List<?>) value).stream().map(String::valueOf).toList();
+        return list(value).stream().map(String::valueOf).toList();
     }
 }

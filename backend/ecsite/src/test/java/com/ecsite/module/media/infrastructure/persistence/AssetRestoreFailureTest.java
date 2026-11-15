@@ -18,14 +18,18 @@ import static com.ecsite.jooq.media.Tables.ASSET;
  */
 class AssetRestoreFailureTest {
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("画像の形式が列挙にないとき、例外の出力に値が出ない")
     void hidesFormat() {
+        // 準備：形式の列に、列挙にない値を持つアセットの行を返すリポジトリ
         var value = RestoreFailures.value();
         var asset = RECORDS.newRecord(ASSET);
         asset.setFormat(value);
         var repository = new JooqAssetRepository(new RestoreFailures().with("asset", asset).dsl());
 
+        // 操作と確認：戻すのに失敗し、例外の出力にその値が出ない
         assertValueIsHidden(() -> repository.findAllById(List.of(UUID.randomUUID())), value);
     }
 }

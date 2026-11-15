@@ -15,16 +15,39 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ImgproxyImageConverterSourceUrlTest {
 
+    // ============================== 定数 ==============================
+
+    /**
+     * アップロードのバケット
+     */
+    private static final String INCOMING_BUCKET = "incoming-x";
+
+    /**
+     * 配信のバケット
+     *
+     * <p>アップロードのバケットと違う名前にし、取り違えれば分かるようにする。
+     */
+    private static final String PUBLIC_BUCKET = "public-y";
+
+    /**
+     * 変換するファイルの、アップロードのバケットのキー
+     */
+    private static final String UPLOAD_KEY = "scope/upload";
+
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("変換元の場所は、アップロードのバケットとキーを指す（配信のバケットではない）")
     void pointsToUploadedFileInIncomingBucket() {
+        // 準備：アップロードと配信のバケットの名前が違う設定の変換
         var storageProperties = new MediaStorageProperties(null, "us-east-1", true, null, null,
-                "incoming-x", "public-y", URI.create("http://cdn.test"), Duration.ofMinutes(5),
+                INCOMING_BUCKET, PUBLIC_BUCKET, URI.create("http://cdn.test"), Duration.ofMinutes(5),
                 Duration.ofSeconds(10), Duration.ofSeconds(30));
         var properties = new ImgproxyProperties(URI.create("http://imgproxy.test"), "0123456789abcdef",
                 "fedcba9876543210", 82, Duration.ofSeconds(5));
         var converter = new ImgproxyImageConverter(RestClient.create(), properties, storageProperties);
 
-        assertThat(converter.uploadSourceUrl("scope/upload")).isEqualTo("s3://incoming-x/scope/upload");
+        // 操作と確認：アップロードのバケットのキーを指す
+        assertThat(converter.uploadSourceUrl(UPLOAD_KEY)).isEqualTo("s3://" + INCOMING_BUCKET + "/" + UPLOAD_KEY);
     }
 }

@@ -18,6 +18,7 @@ import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
@@ -42,6 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RecordApplicationEvents
 class JooqProductRepositoryTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * テストの現在時刻
      *
@@ -50,9 +53,28 @@ class JooqProductRepositoryTest {
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
-     * 税区分 ID（税モジュールの ID なので、存在しなくてよい）
+     * 税区分 ID
+     *
+     * <p>税モジュールの ID なので、存在しなくてよい。
      */
     private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    /**
+     * 変更後の商品名
+     */
+    private static final String UPDATED_NAME = "ポロシャツ";
+
+    /**
+     * 変更後の説明
+     */
+    private static final String UPDATED_DESCRIPTION = "綿 50%";
+
+    /**
+     * 変更後の税抜価格
+     */
+    private static final PriceExclTax UPDATED_PRICE = PriceExclTax.of(2000);
+
+    // ============================== Bean ==============================
 
     @Autowired
     ProductRepository repository;
@@ -89,172 +111,365 @@ class JooqProductRepositoryTest {
         food = foodCategory.id();
     }
 
-    @Test
-    @DisplayName("軸・所属カテゴリ・バリアントを含めて保存し、再構築できる")
-    void addsAndRestores() {
-        var product = newProduct("ABC-001", "色", "サイズ");
-        product.addVariant(VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
-        product.addVariant(VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), NOW);
+    // ============================== テスト ==============================
 
-        repository.add(product);
+    @Nested
+    @DisplayName("保存と再構築")
+    class AddAndRestore {
 
-        var restored = repository.findById(product.id()).orElseThrow();
-        assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+        @Test
+        @DisplayName("軸・所属カテゴリ・バリアントを含めて保存し、再構築できる")
+        void addsAndRestores() {
+            // 準備：軸 2 つとバリアント 2 つを持つ商品
+            var product = newProduct("ABC-001", "色", "サイズ");
+            product.addVariant(VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
+            product.addVariant(VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), NOW);
+
+            // 操作：保存する
+            repository.add(product);
+
+            // 確認：再構築した商品が、保存した商品と同じ
+            var restored = repository.findById(product.id()).orElseThrow();
+            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+        }
+
+        @Test
+        @DisplayName("存在しない商品は見つからない")
+        void returnsEmptyForUnknownId() {
+            // 操作と確認：空
+            assertThat(repository.findById(UUID.randomUUID())).isEmpty();
+        }
     }
 
-    @Test
-    @DisplayName("存在しない商品は見つからない")
-    void returnsEmptyForUnknownId() {
-        assertThat(repository.findById(UUID.randomUUID())).isEmpty();
+    @Nested
+    @DisplayName("差分の更新")
+    class SaveDifferences {
+
+        @Test
+        @DisplayName("基本情報の変更を保存できる")
+        void savesBasicInformation() {
+            // 準備：保存した商品を読み、商品名・説明・税抜価格を変える
+            var product = newProduct("ABC-001");
+            repository.add(product);
+            var loaded = repository.findById(product.id()).orElseThrow();
+            loaded.update(UPDATED_NAME, UPDATED_DESCRIPTION, TAX_CATEGORY_ID, UPDATED_PRICE, Set.of(clothing), NOW);
+
+            // 操作：保存する
+            repository.save(loaded);
+
+            // 確認：変えた値で再構築される
+            var restored = repository.findById(product.id()).orElseThrow();
+            assertThat(restored.name()).isEqualTo(UPDATED_NAME);
+            assertThat(restored.description()).isEqualTo(UPDATED_DESCRIPTION);
+            assertThat(restored.priceExclTax()).isEqualTo(UPDATED_PRICE);
+        }
+
+        @Test
+        @DisplayName("所属カテゴリの変更を保存できる")
+        void savesCategories() {
+            // 準備：「衣類」に所属する商品を読み、所属を「食品」に変える
+            var product = newProduct("ABC-001");
+            repository.add(product);
+            var loaded = repository.findById(product.id()).orElseThrow();
+            loaded.update(UPDATED_NAME, UPDATED_DESCRIPTION, TAX_CATEGORY_ID, UPDATED_PRICE, Set.of(food), NOW);
+
+            // 操作：保存する
+            repository.save(loaded);
+
+            // 確認：所属は「食品」だけ
+            assertThat(repository.findById(product.id()).orElseThrow().categoryIds()).containsExactly(food);
+        }
+
+        @Test
+        @DisplayName("バリアントの追加・削除・並び替えを、まとめて差分で保存できる")
+        void savesVariantChanges() {
+            // 準備：白・黒のバリアントを持つ商品を読み、白を削除し、赤を加え、赤・黒の順に並べ替える
+            var product = newProduct("ABC-001", "色");
+            var white = product.addVariant(VariantCode.of("V-WH"), List.of("白"), NOW);
+            var black = product.addVariant(VariantCode.of("V-BK"), List.of("黒"), NOW);
+            repository.add(product);
+            var loaded = repository.findById(product.id()).orElseThrow();
+            loaded.deleteVariant(white, NOW);
+            var red = loaded.addVariant(VariantCode.of("V-RD"), List.of("赤"), NOW);
+            loaded.reorderVariants(List.of(red, black));
+
+            // 操作：保存する
+            repository.save(loaded);
+
+            // 確認：赤・黒の順に再構築され、加えた赤の軸の値も保存されている
+            var restored = repository.findById(product.id()).orElseThrow();
+            assertThat(restored.variants()).extracting(Variant::id).containsExactly(red, black);
+            assertThat(restored.variants().getFirst().axisValues()).containsExactly("赤");
+        }
+
+        @Test
+        @DisplayName("公開の状態と初回表示日時を保存できる")
+        void savesPublication() {
+            // 準備：バリアントを持つ非公開の商品を読み、公開する
+            var product = newProduct("ABC-001");
+            product.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            repository.add(product);
+            var loaded = repository.findById(product.id()).orElseThrow();
+            loaded.publish(NOW);
+
+            // 操作：保存する
+            repository.save(loaded);
+
+            // 確認：公開で、初回表示日時は公開した時刻
+            var restored = repository.findById(product.id()).orElseThrow();
+            assertThat(restored.status()).isEqualTo(PublicationStatus.PUBLISHED);
+            assertThat(restored.firstShownAt()).isEqualTo(NOW);
+        }
+
+        @Test
+        @DisplayName("基本情報とバリアントと公開を変えても、1 回の保存でバージョンが 1 だけ上がる")
+        void incrementsVersion() {
+            // 準備：保存した商品（バージョン 0）を読み、基本情報を変え、バリアントを入れ替えて、公開する
+            var product = newProduct("ABC-001", "色");
+            var white = product.addVariant(VariantCode.of("V-WH"), List.of("白"), NOW);
+            repository.add(product);
+            var loaded = repository.findById(product.id()).orElseThrow();
+            loaded.update(UPDATED_NAME, UPDATED_DESCRIPTION, TAX_CATEGORY_ID, UPDATED_PRICE, Set.of(food), NOW);
+            loaded.addVariant(VariantCode.of("V-RD"), List.of("赤"), NOW);
+            loaded.deleteVariant(white, NOW);
+            loaded.publish(NOW);
+
+            // 操作：保存する
+            repository.save(loaded);
+
+            // 確認：バージョンが 1
+            assertThat(repository.findById(product.id()).orElseThrow().version()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("取得後に他で更新されていたら、バージョン不一致で保存できない")
+        void detectsVersionMismatch() {
+            // 準備：同じ商品を 2 回読み、片方を先に保存する
+            var product = newProduct("ABC-001");
+            repository.add(product);
+            var mine = repository.findById(product.id()).orElseThrow();
+            var theirs = repository.findById(product.id()).orElseThrow();
+            theirs.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            repository.save(theirs);
+            mine.update(UPDATED_NAME, "", TAX_CATEGORY_ID, UPDATED_PRICE, Set.of(), NOW);
+
+            // 操作と確認：古いバージョンの保存は、業務のエラー CONCURRENT_MODIFICATION で拒否される
+            assertBusinessError(() -> repository.save(mine), CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
     }
 
-    @Test
-    @DisplayName("差分で更新する：バリアントの追加・削除・並び替え、項目と所属カテゴリの変更。保存するとバージョンが上がる")
-    void savesDifferences() {
-        var product = newProduct("ABC-001", "色");
-        var white = product.addVariant(VariantCode.of("V-WH"), List.of("白"), NOW);
-        var black = product.addVariant(VariantCode.of("V-BK"), List.of("黒"), NOW);
-        repository.add(product);
+    @Nested
+    @DisplayName("制約の違反")
+    class ConstraintViolations {
 
-        var loaded = repository.findById(product.id()).orElseThrow();
-        loaded.update("ポロシャツ", "綿 50%", TAX_CATEGORY_ID, PriceExclTax.of(2000), Set.of(food), NOW);
-        loaded.deleteVariant(white, NOW);
-        var red = loaded.addVariant(VariantCode.of("V-RD"), List.of("赤"), NOW);
-        loaded.reorderVariants(List.of(red, black));
-        loaded.publish(NOW);
-        repository.save(loaded);
+        @Test
+        @DisplayName("AC-14 商品品番が重複すれば、一意制約の違反が業務のエラーになる")
+        void rejectsDuplicatedProductCode() {
+            // 準備：商品品番 ABC-001 の商品を保存する
+            repository.add(newProduct("ABC-001"));
 
-        var restored = repository.findById(product.id()).orElseThrow();
-        assertThat(restored.name()).isEqualTo("ポロシャツ");
-        assertThat(restored.priceExclTax()).isEqualTo(PriceExclTax.of(2000));
-        assertThat(restored.categoryIds()).containsExactly(food);
-        assertThat(restored.variants()).extracting(Variant::id).containsExactly(red, black);
-        assertThat(restored.variants().getFirst().axisValues()).containsExactly("赤");
-        assertThat(restored.status()).isEqualTo(PublicationStatus.PUBLISHED);
-        assertThat(restored.firstShownAt()).isEqualTo(NOW);
-        assertThat(restored.version()).isEqualTo(1);
+            // 操作と確認：同じ品番の商品の保存は、業務のエラー PRODUCT_CODE_ALREADY_EXISTS で拒否される
+            assertBusinessError(() -> repository.add(newProduct("ABC-001")), ProductErrorCode.PRODUCT_CODE_ALREADY_EXISTS);
+        }
+
+        @Test
+        @DisplayName("AC-21 別の商品とバリアント品番が重複すれば、一意制約の違反が業務のエラーになる")
+        void rejectsDuplicatedVariantCodeAcrossProducts() {
+            // 準備：バリアント品番 V1 を持つ商品と、別の商品に同じ品番のバリアントを加えたもの
+            var first = newProduct("ABC-001");
+            first.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            repository.add(first);
+            var second = newProduct("ABC-002");
+            repository.add(second);
+            second.addVariant(VariantCode.of("V1"), List.of(), NOW);
+
+            // 操作と確認：業務のエラー VARIANT_CODE_ALREADY_EXISTS で拒否される
+            assertBusinessError(() -> repository.save(second), ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
+        }
+
+        @Test
+        @DisplayName("存在しないカテゴリへの所属は、外部キーの違反が業務のエラーになる")
+        void rejectsUnknownCategory() {
+            // 準備：存在しないカテゴリに所属する商品
+            var product = factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+                    Set.of(UUID.randomUUID()), List.of());
+
+            // 操作と確認：業務のエラー INVALID_CATEGORY_ID で拒否される
+            assertBusinessError(() -> repository.add(product), ProductErrorCode.INVALID_CATEGORY_ID);
+        }
     }
 
-    @Test
-    @DisplayName("取得後に他で更新されていたら、バージョン不一致で保存できない")
-    void detectsVersionMismatch() {
-        var product = newProduct("ABC-001");
-        repository.add(product);
-        var mine = repository.findById(product.id()).orElseThrow();
-        var theirs = repository.findById(product.id()).orElseThrow();
+    @Nested
+    @DisplayName("削除")
+    class Delete {
 
-        theirs.addVariant(VariantCode.of("V1"), List.of(), NOW);
-        repository.save(theirs);
+        @Test
+        @DisplayName("削除した商品は見つからない")
+        void deletesProduct() {
+            // 準備：バリアントを持つ商品を保存し、削除の操作をする
+            var product = newProduct("ABC-001", "色");
+            product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            repository.add(product);
+            product.delete(NOW);
 
-        mine.update("ポロシャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(2000), Set.of(), NOW);
-        assertBusinessError(() -> repository.save(mine), CommonErrorCode.CONCURRENT_MODIFICATION);
+            // 操作：削除する
+            repository.delete(product);
+
+            // 確認：見つからない
+            assertThat(repository.findById(product.id())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("削除すると、バリアントなど商品の一部も消える")
+        void deletesParts() {
+            // 準備：バリアント品番 V1 を持つ商品を保存して削除する
+            var product = newProduct("ABC-001", "色");
+            product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            repository.add(product);
+            product.delete(NOW);
+            repository.delete(product);
+
+            // 操作：同じバリアント品番を持つ、別の商品を保存する
+            var other = newProduct("ABC-002", "色");
+            other.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            repository.add(other);
+
+            // 確認：一意制約の違反にならず、保存されている
+            assertThat(repository.findById(other.id())).isPresent();
+        }
     }
 
-    @Test
-    @DisplayName("AC-14 商品品番が重複すれば、一意制約の違反が業務のエラーになる")
-    void rejectsDuplicatedProductCode() {
-        repository.add(newProduct("ABC-001"));
+    @Nested
+    @DisplayName("画像")
+    class Images {
 
-        assertBusinessError(() -> repository.add(newProduct("ABC-001")), ProductErrorCode.PRODUCT_CODE_ALREADY_EXISTS);
+        @Test
+        @DisplayName("画像とバリアントの画像の指定を含めて保存し、再構築できる")
+        void addsAndRestoresImages() {
+            // 準備：画像 2 枚を持ち、バリアントに 2 枚目を指定した商品
+            var product = withVariantImage(UUID.randomUUID());
+
+            // 操作：保存する
+            repository.add(product);
+
+            // 確認：再構築した商品が、保存した商品と同じ
+            assertThat(repository.findById(product.id()).orElseThrow().toSnapshot()).isEqualTo(product.toSnapshot());
+        }
+
+        @Test
+        @DisplayName("画像の追加・並び替え・削除を、まとめて差分で保存できる")
+        void savesImageChanges() {
+            // 準備：画像 2 枚を持つ商品を保存して読み、3 枚目を加え、3・2・1 枚目の順に並べ替え、2 枚目を削除する
+            var product = newProduct("ABC-001", "色");
+            product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            var first = UUID.randomUUID();
+            var firstAsset = UUID.randomUUID();
+            var second = UUID.randomUUID();
+            product.addImage(first, firstAsset);
+            product.addImage(second, UUID.randomUUID());
+            repository.add(product);
+            var loaded = repository.findById(product.id()).orElseThrow();
+            var third = UUID.randomUUID();
+            var thirdAsset = UUID.randomUUID();
+            loaded.addImage(third, thirdAsset);
+            loaded.reorderImages(List.of(third, second, first));
+            loaded.deleteImage(second);
+
+            // 操作：保存する
+            repository.save(loaded);
+
+            // 確認：3 枚目・1 枚目の順に、それぞれのアセットとともに再構築される
+            var restored = repository.findById(product.id()).orElseThrow();
+            assertThat(restored.images()).extracting(ProductImage::id).containsExactly(third, first);
+            assertThat(restored.images()).extracting(ProductImage::assetId).containsExactly(thirdAsset, firstAsset);
+        }
+
+        @Test
+        @DisplayName("削除した画像を指定していたバリアントは、指定が外れる")
+        void clearsVariantImageOfDeletedImage() {
+            // 準備：バリアントに 2 枚目の画像を指定した商品を保存して読み、2 枚目を削除する
+            var second = UUID.randomUUID();
+            var product = withVariantImage(second);
+            repository.add(product);
+            var loaded = repository.findById(product.id()).orElseThrow();
+            loaded.deleteImage(second);
+
+            // 操作：保存する
+            repository.save(loaded);
+
+            // 確認：バリアントの画像の指定がない
+            assertThat(repository.findById(product.id()).orElseThrow().variants().getFirst().imageId()).isNull();
+        }
     }
 
-    @Test
-    @DisplayName("AC-21 別の商品とバリアント品番が重複すれば、一意制約の違反が業務のエラーになる")
-    void rejectsDuplicatedVariantCodeAcrossProducts() {
-        var first = newProduct("ABC-001");
-        first.addVariant(VariantCode.of("V1"), List.of(), NOW);
-        repository.add(first);
+    @Nested
+    @DisplayName("イベントの発行")
+    class Events {
 
-        var second = newProduct("ABC-002");
-        repository.add(second);
-        second.addVariant(VariantCode.of("V1"), List.of(), NOW);
+        @Test
+        @DisplayName("保存の後に、集約が登録したバリアントの登録のイベントを発行する")
+        void publishesVariantRegistered() {
+            // 準備：バリアントを加えた商品
+            var product = newProduct("ABC-001");
+            var variantId = product.addVariant(VariantCode.of("V1"), List.of(), NOW);
 
-        assertBusinessError(() -> repository.save(second), ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
+            // 操作：保存する
+            repository.add(product);
+
+            // 確認：この商品とバリアントの、登録のイベントが 1 件
+            assertThat(events.stream(VariantRegistered.class))
+                    .singleElement()
+                    .satisfies(event -> {
+                        assertThat(event.productId()).isEqualTo(product.id());
+                        assertThat(event.variantId()).isEqualTo(variantId);
+                    });
+        }
+
+        @Test
+        @DisplayName("削除の後に、集約が登録した商品の削除のイベントを発行する")
+        void publishesProductDeleted() {
+            // 準備：保存した商品に、削除の操作をする
+            var product = newProduct("ABC-001");
+            product.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            repository.add(product);
+            product.delete(NOW);
+
+            // 操作：削除する
+            repository.delete(product);
+
+            // 確認：この商品の、削除のイベントが 1 件
+            assertThat(events.stream(ProductDeleted.class))
+                    .singleElement()
+                    .satisfies(event -> assertThat(event.productId()).isEqualTo(product.id()));
+        }
     }
 
-    @Test
-    @DisplayName("存在しないカテゴリへの所属は、外部キーの違反が業務のエラーになる")
-    void rejectsUnknownCategory() {
-        var product = factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
-                Set.of(UUID.randomUUID()), List.of());
-
-        assertBusinessError(() -> repository.add(product), ProductErrorCode.INVALID_CATEGORY_ID);
-    }
-
-    @Test
-    @DisplayName("削除すると、バリアントなど商品の一部も消える")
-    void deletesWithParts() {
-        var product = newProduct("ABC-001", "色");
-        product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
-        repository.add(product);
-
-        product.delete(NOW);
-        repository.delete(product);
-
-        assertThat(repository.findById(product.id())).isEmpty();
-        // 同じバリアント品番を、別の商品で使える
-        var other = newProduct("ABC-002", "色");
-        other.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
-        repository.add(other);
-    }
-
-    @Test
-    @DisplayName("画像を差分で保存する：追加・並び替え・削除、バリアントの画像の指定。削除した画像の指定は外れる")
-    void savesImages() {
-        var product = newProduct("ABC-001", "色");
-        var variantId = product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
-        var first = UUID.randomUUID();
-        var second = UUID.randomUUID();
-        var firstAsset = UUID.randomUUID();
-        product.addImage(first, firstAsset);
-        product.addImage(second, UUID.randomUUID());
-        product.setVariantImage(variantId, second);
-        repository.add(product);
-
-        var added = repository.findById(product.id()).orElseThrow();
-        assertThat(added.toSnapshot()).isEqualTo(product.toSnapshot());
-
-        var third = UUID.randomUUID();
-        var thirdAsset = UUID.randomUUID();
-        added.addImage(third, thirdAsset);
-        added.reorderImages(List.of(third, second, first));
-        added.deleteImage(second);
-        repository.save(added);
-
-        var restored = repository.findById(product.id()).orElseThrow();
-        assertThat(restored.images()).extracting(ProductImage::id).containsExactly(third, first);
-        assertThat(restored.images()).extracting(ProductImage::assetId).containsExactly(thirdAsset, firstAsset);
-        assertThat(restored.variants().getFirst().imageId()).isNull();
-    }
-
-    @Test
-    @DisplayName("保存・削除の後に、集約が登録したイベントを発行する")
-    void publishesEvents() {
-        var product = newProduct("ABC-001");
-        var variantId = product.addVariant(VariantCode.of("V1"), List.of(), NOW);
-        repository.add(product);
-
-        product.delete(NOW);
-        repository.delete(product);
-
-        assertThat(events.stream(VariantRegistered.class))
-                .singleElement()
-                .satisfies(event -> {
-                    assertThat(event.productId()).isEqualTo(product.id());
-                    assertThat(event.variantId()).isEqualTo(variantId);
-                });
-        assertThat(events.stream(ProductDeleted.class))
-                .singleElement()
-                .satisfies(event -> assertThat(event.productId()).isEqualTo(product.id()));
-    }
-
-    // ============================== 補助 ==============================
+    // ============================== 準備の補助 ==============================
 
     /**
-     * 所属カテゴリが 1 つの、非公開の商品を作る（保存はしない）
+     * 「衣類」に所属する、非公開の商品を作る（保存はしない）。
+     *
+     * @param code 商品品番
+     * @param axes 軸の名前
+     * @return 商品
      */
     private Product newProduct(String code, String... axes) {
         return factory.create(ProductCode.of(code), "T シャツ", "綿 100%", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(clothing), List.of(axes));
+    }
+
+    /**
+     * 色の軸とバリアント 1 つ、画像 2 枚を持ち、バリアントに 2 枚目の画像を指定した商品を作る（保存はしない）。
+     *
+     * @param secondImageId 2 枚目の画像の ID（バリアントに指定する）
+     * @return 商品
+     */
+    private Product withVariantImage(UUID secondImageId) {
+        var product = newProduct("ABC-001", "色");
+        var variantId = product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+        product.addImage(UUID.randomUUID(), UUID.randomUUID());
+        product.addImage(secondImageId, UUID.randomUUID());
+        product.setVariantImage(variantId, secondImageId);
+        return product;
     }
 }

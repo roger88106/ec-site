@@ -22,6 +22,7 @@ class StockAdjustmentRestoreFailureTest {
     @Test
     @DisplayName("調整の理由が列挙にないとき、例外の出力に値が出ない")
     void hidesReason() {
+        // 準備：列挙にない理由の調整履歴を返す DB
         var value = RestoreFailures.value();
         var adjustment = RECORDS.newRecord(STOCK_ADJUSTMENT);
         adjustment.setDelta(1);
@@ -32,6 +33,7 @@ class StockAdjustmentRestoreFailureTest {
                 .dsl();
         var repository = new JooqStockQueryRepository(dsl);
 
+        // 操作と確認：履歴の取得が失敗し、例外の出力に理由の値が出ない
         assertValueIsHidden(() -> repository.findAdjustments(UUID.randomUUID(), new PageRequest(1, 20)), value);
     }
 }

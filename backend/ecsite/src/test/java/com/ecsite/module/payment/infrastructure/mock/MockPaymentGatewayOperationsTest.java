@@ -21,22 +21,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("本番の mock の決済サービスの公開の操作")
 class MockPaymentGatewayOperationsTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * 支払画面の操作（画面の Controller と、画面の操作を真似るテストから呼ぶ）
      */
     private static final Set<String> PAGE_OPERATIONS = Set.of("pay", "markPaid", "notifyAuthorized", "page", "authorizationRefOf");
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("AC-246 本番の mock の決済サービスは、port と支払画面の操作のほかに公開の操作を持たない")
     void hasNoTestOnlyOperations() {
+        // 準備：持ってよい操作は、port の操作と支払画面の操作
         var allowed = Stream.concat(Arrays.stream(PaymentGateway.class.getMethods()).map(Method::getName), PAGE_OPERATIONS.stream())
                 .collect(Collectors.toSet());
 
+        // 操作：本番の mock が宣言する公開の操作を読む
         var publicOperations = Arrays.stream(MockPaymentGateway.class.getDeclaredMethods())
                 .filter(method -> Modifier.isPublic(method.getModifiers()) && !method.isSynthetic())
                 .map(Method::getName)
                 .toList();
 
+        // 確認：持ってよい操作のほかにない
         assertThat(publicOperations).isSubsetOf(allowed);
     }
 }

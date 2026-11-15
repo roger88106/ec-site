@@ -5,6 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -15,21 +17,34 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ModulithTest {
 
+    // ============================== 定数 ==============================
+
+    /**
+     * 設計の 13 のモジュールの識別子
+     */
+    private static final List<String> DESIGNED_MODULES = List.of(
+            "tax", "catalog", "media", "inventory", "cart", "order", "storefront", "member", "payment", "shipping",
+            "notification", "reporting", "region");
+
     /**
      * Spring Modulith のモジュールの一覧（テストのクラスを除く）
      */
     private final ApplicationModules modules = ProductionClasses.applicationModules();
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("モジュール間の依存が宣言のとおりである")
     void verifiesModuleDependencies() {
+        // 操作と確認：宣言の外の依存、内部のパッケージへの参照、循環があれば失敗する
         modules.verify();
     }
 
     @Test
-    @DisplayName("税・商品カタログ・メディア・在庫・カート・注文・店舗・会員・決済・出荷・通知・レポート・地域の 13 モジュールがある")
+    @DisplayName("Spring Modulith が検出するモジュールは、設計の 13 のモジュールと一致する")
     void detectsAllModules() {
+        // 操作と確認：検出したモジュールの識別子が、設計のモジュールと過不足なく一致する
         assertThat(modules.stream().map(module -> module.getIdentifier().toString()))
-                .containsExactlyInAnyOrder("tax", "catalog", "media", "inventory", "cart", "order", "storefront", "member", "payment", "shipping", "notification", "reporting", "region");
+                .containsExactlyInAnyOrderElementsOf(DESIGNED_MODULES);
     }
 }

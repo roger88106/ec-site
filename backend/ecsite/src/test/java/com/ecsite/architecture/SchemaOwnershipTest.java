@@ -31,6 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SchemaOwnershipTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * jOOQ を、infrastructure/persistence の外から使ってよいクラス
      *
@@ -62,21 +64,26 @@ class SchemaOwnershipTest {
             Map.entry("storefront", Optional.empty()),
             Map.entry("tax", Optional.of("tax")));
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("すべてのモジュールが、schema の対応の表にある")
     void everyModuleHasSchemaEntry() {
+        // 準備：本番のクラスのモジュールの名前
         Set<String> modules = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
                 .map(ProductionClasses::moduleName)
                 .flatMap(Optional::stream)
                 .collect(Collectors.toCollection(TreeSet::new));
 
+        // 確認：表のモジュールと過不足がない
         assertThat(SCHEMA_BY_MODULE.keySet()).containsExactlyInAnyOrderElementsOf(modules);
     }
 
     @Test
     @DisplayName("モジュールは、自分の schema 以外の jOOQ の生成クラスに依存しない")
     void modulesUseOnlyOwnSchema() {
+        // 操作と確認：モジュールごとに、本番のクラスに規則を当てる
         SCHEMA_BY_MODULE.forEach((module, schema) -> {
             DescribedPredicate<JavaClass> otherSchema = schema
                     .map(name -> resideInAPackage(ProductionClasses.JOOQ_PACKAGE + "..")
@@ -91,6 +98,7 @@ class SchemaOwnershipTest {
     @Test
     @DisplayName("モジュールの外の手書きのクラスは、jOOQ の生成クラスに依存しない")
     void nonModuleClassesUseNoSchema() {
+        // 操作と確認：本番のクラスに規則を当てる
         noClasses().that().resideOutsideOfPackages(ProductionClasses.MODULE_PACKAGE + "..", ProductionClasses.JOOQ_PACKAGE + "..")
                 .should().dependOnClassesThat().resideInAPackage(ProductionClasses.JOOQ_PACKAGE + "..")
                 .check(ProductionClasses.all());
@@ -99,26 +107,35 @@ class SchemaOwnershipTest {
     @Test
     @DisplayName("モジュールの jOOQ は、infrastructure/persistence だけが使う（mock の出荷の問い合わせを除く）")
     void jooqIsUsedOnlyInPersistence() {
+        // 操作と確認：本番のクラスに規則を当てる
         jooqPlacementRule(ProductionClasses.MODULE_PACKAGE + "..", ProductionClasses.MODULE_PACKAGE + ".*.infrastructure.persistence..")
                 .check(ProductionClasses.all());
     }
 
     @Test
-    @DisplayName("jOOQ の置き場所の規則は、application 層で jOOQ を使う例に当たり、persistence で使う例には当たらない")
-    void jooqPlacementRuleMatchesApplicationExampleOnly() {
-        var examples = new ClassFileImporter().importClasses(ApplicationUsesJooq.class, PersistenceUsesJooq.class);
+    @DisplayName("jOOQ の置き場所の規則は、application 層で jOOQ を使う例に当たる")
+    void jooqPlacementRuleMatchesApplicationExample() {
+        // 操作：application 層と persistence で jOOQ を使う例に、規則を当てる
+        List<String> details = jooqExampleDetails();
 
-        var details = jooqPlacementRule("com.ecsite.architecture.sample.jooquse.module..",
-                "com.ecsite.architecture.sample.jooquse.module.*.infrastructure.persistence..")
-                .evaluate(examples).getFailureReport().getDetails();
-
+        // 確認：application 層の例が違反になる
         assertThat(details).anyMatch(detail -> detail.contains(ApplicationUsesJooq.class.getName()));
-        assertThat(details).noneMatch(detail -> detail.contains(PersistenceUsesJooq.class.getName()));
+    }
+
+    @Test
+    @DisplayName("jOOQ の置き場所の規則は、persistence で jOOQ を使う例には当たらない")
+    void jooqPlacementRuleDoesNotMatchPersistenceExample() {
+        // 操作：application 層と persistence で jOOQ を使う例に、規則を当てる
+        List<String> details = jooqExampleDetails();
+
+        // 確認：persistence の例は違反にならない
+        ArchRuleViolations.assertNoViolation(details, PersistenceUsesJooq.class);
     }
 
     @Test
     @DisplayName("jOOQ の置き場所の例外は、本番のクラスで jOOQ を使っている")
     void jooqExceptionsAreUsed() {
+        // 操作と確認：例外のクラスごとに、本番のクラスが jOOQ に依存している
         for (String exception : JOOQ_EXCEPTIONS) {
             boolean used = ProductionClasses.all().stream()
                     .filter(javaClass -> isExceptionClass(javaClass, exception))
@@ -127,6 +144,22 @@ class SchemaOwnershipTest {
             assertThat(used).as(exception).isTrue();
         }
     }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * application 層と persistence で jOOQ を使う例に、例のパッケージに置き換えた置き場所の規則を当てた違反の詳細を返す。
+     *
+     * @return 違反の詳細
+     */
+    private static List<String> jooqExampleDetails() {
+        var examples = new ClassFileImporter().importClasses(ApplicationUsesJooq.class, PersistenceUsesJooq.class);
+        return jooqPlacementRule("com.ecsite.architecture.sample.jooquse.module..",
+                "com.ecsite.architecture.sample.jooquse.module.*.infrastructure.persistence..")
+                .evaluate(examples).getFailureReport().getDetails();
+    }
+
+    // ============================== 規則の補助 ==============================
 
     /**
      * jOOQ（{@code org.jooq} と生成したコード）を使えるクラスを、persistence のパッケージと例外の一覧のクラスだけにする規則を作る。

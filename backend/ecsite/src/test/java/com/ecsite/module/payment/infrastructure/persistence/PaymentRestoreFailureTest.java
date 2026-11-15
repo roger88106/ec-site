@@ -22,9 +22,12 @@ import static org.mockito.Mockito.mock;
  */
 class PaymentRestoreFailureTest {
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("支払の状態が列挙にないとき、例外の出力に値が出ない")
     void hidesStatus() {
+        // 準備：状態が列挙にない支払の行
         var value = RestoreFailures.value();
         var payment = RECORDS.newRecord(PAYMENT_);
         payment.setId(UUID.randomUUID());
@@ -33,16 +36,19 @@ class PaymentRestoreFailureTest {
         var dsl = new RestoreFailures().with("payment", payment).dsl();
         var repository = new JooqPaymentRepository(dsl, mock(ApplicationEventPublisher.class), Clock.systemUTC());
 
+        // 操作と確認：支払を読むと失敗し、出力に値がない
         assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
     }
 
     @Test
     @DisplayName("支払の概要で状態が列挙にないとき、例外の出力に値が出ない")
     void hidesStatusInSummary() {
+        // 準備：状態が列挙にない概要の行
         var value = RestoreFailures.value();
         var row = RECORDS.newRecord(PAYMENT_.ORDER_ID, PAYMENT_.STATUS, PAYMENT_.DEADLINE).values(UUID.randomUUID(), value, Instant.EPOCH);
         var dsl = new RestoreFailures().with("payment", row).dsl();
 
+        // 操作と確認：概要を読むと失敗し、出力に値がない
         assertValueIsHidden(() -> new JooqPaymentQueryRepository(dsl).findSummaries(List.of(UUID.randomUUID())), value);
     }
 }

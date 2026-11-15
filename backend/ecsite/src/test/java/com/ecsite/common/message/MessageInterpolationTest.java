@@ -114,18 +114,34 @@ class MessageInterpolationTest {
                         "キャンセルの理由は 500 文字以内で入力してください。"));
     }
 
-    @ParameterizedTest(name = "{0}")
+    // ============================== テスト ==============================
+
+    @ParameterizedTest(name = "「{0}」")
     @MethodSource("cases")
     @DisplayName("AC-266 ドメインの定数を差し込んだ文が、整理の前の文と同じになる")
     void interpolatesDomainConstants(Case example) {
+        // 準備：差し込む値を、ドメインの定数から読む
+        List<Object> values = example.values().stream().map(MessageInterpolationTest::valueOf).toList();
+
+        // 操作：メッセージのファイルの文に差し込む
+        var message = resolver().getMessage(ErrorDetail.of(example.error().getCode(), values));
+
+        // 確認：整理の前の文と同じ
+        assertThat(message).isEqualTo(example.expected());
+    }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * メッセージのファイルから文を取り出す {@link MessageResolver} を作る。
+     *
+     * @return メッセージの取り出し
+     */
+    private static MessageResolver resolver() {
         var messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
-        var resolver = new MessageResolver(messageSource);
-
-        List<Object> values = example.values().stream().map(MessageInterpolationTest::valueOf).toList();
-
-        assertThat(resolver.getMessage(ErrorDetail.of(example.error().getCode(), values))).isEqualTo(example.expected());
+        return new MessageResolver(messageSource);
     }
 
     /**

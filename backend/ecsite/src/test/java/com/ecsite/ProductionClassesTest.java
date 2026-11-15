@@ -3,13 +3,21 @@ package com.ecsite;
 import com.ecsite.contract.Contracts;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -27,6 +35,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>構成の検査が読む本番のクラスの補助を対象にする。
  */
 class ProductionClassesTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * モジュールの設計書のディレクトリ（Gradle が system property で渡すリポジトリのルートから）
@@ -59,84 +69,236 @@ class ProductionClassesTest {
             "importPackages" + "(", "importPackagesOf" + "(", "importClasspath" + "(", "importPath" + "(", "importLocations" + "(",
             "ApplicationModules" + ".of(", "@Analyze" + "Classes");
 
-    @Test
-    @DisplayName("手書きのクラスの一覧は、生成したコードを含まない")
-    void handwrittenExcludesGeneratedCode() {
-        var packages = packageNames(ProductionClasses.handwritten());
+    /**
+     * 検査の対象の説明（失敗のメッセージに含める）
+     */
+    private static final String DESCRIPTION = "検査の対象のクラス";
 
-        assertThat(packages).isNotEmpty();
-        assertThat(packages).noneMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + ".") || name.startsWith(ProductionClasses.JOOQ_PACKAGE));
-        assertThat(packageNames(ProductionClasses.all()))
-                .anyMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + "."))
-                .anyMatch(name -> name.startsWith(ProductionClasses.JOOQ_PACKAGE));
+    // ============================== テスト ==============================
+
+    @Nested
+    @DisplayName("本番のクラスの一覧")
+    class ClassLists {
+
+        @Test
+        @DisplayName("手書きのクラスの一覧は、生成したコードを含まない")
+        void handwrittenExcludesGeneratedCode() {
+            // 確認（前提）：全ての本番のクラスには、生成したコード（OpenAPI と jOOQ）がある
+            assertThat(packageNames(ProductionClasses.all()))
+                    .anyMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + "."))
+                    .anyMatch(name -> name.startsWith(ProductionClasses.JOOQ_PACKAGE));
+
+            // 操作：手書きのクラスのパッケージを読む
+            var packages = packageNames(ProductionClasses.handwritten());
+
+            // 確認：1 つ以上あり、生成したコードのパッケージがない
+            assertThat(packages).isNotEmpty();
+            assertThat(packages).noneMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + ".") || name.startsWith(ProductionClasses.JOOQ_PACKAGE));
+        }
+
+        @Test
+        @DisplayName("モジュールのクラスの一覧は、モジュールの外のクラスを含まない")
+        void modulesExcludeClassesOutsideModules() {
+            // 確認（前提）：全ての本番のクラスには、モジュールの外の設定のクラスがある
+            assertThat(packageNames(ProductionClasses.all())).anyMatch(name -> name.startsWith("com.ecsite.config"));
+
+            // 操作：モジュールのクラスのパッケージを読む
+            var packages = packageNames(ProductionClasses.modules());
+
+            // 確認：1 つ以上あり、全てモジュールのパッケージ
+            assertThat(packages).isNotEmpty();
+            assertThat(packages).allMatch(name -> name.startsWith(ProductionClasses.MODULE_PACKAGE_PREFIX));
+        }
+
+        @Test
+        @DisplayName("本番のクラスの一覧は、テストのクラスを含まない")
+        void allExcludesTestClasses() {
+            // 操作と確認：このテストのクラスがない
+            assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
+                    .doesNotContain(ProductionClassesTest.class.getName());
+        }
+
+        @Test
+        @DisplayName("本番のクラスの一覧は、testFixtures のクラスを含まない（testFixtures は単体テストの classpath にある）")
+        void allExcludesTestFixtures() throws ClassNotFoundException {
+            // 準備：testFixtures のクラスが単体テストの classpath にある
+            Class<?> errorCodeCheck = Class.forName("com.ecsite.config.security.ErrorCodeCheck");
+            Class<?> paymentGateway = Class.forName("com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway");
+
+            // 操作と確認：本番のクラスの一覧に、どちらもない
+            assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
+                    .isNotEmpty()
+                    .doesNotContain(errorCodeCheck.getName(), paymentGateway.getName());
+        }
+
+        @Test
+        @DisplayName("モジュールの一覧は、testFixtures のクラスを含まない")
+        void applicationModulesExcludeTestFixtures() throws ClassNotFoundException {
+            // 準備：testFixtures の決済サービスの mock が単体テストの classpath にある
+            Class<?> paymentGateway = Class.forName("com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway");
+
+            // 操作と確認：どのモジュールにも含まれない
+            assertThat(ProductionClasses.applicationModules().stream())
+                    .noneMatch(module -> module.contains(paymentGateway));
+        }
+
+        @Test
+        @DisplayName("本番のクラスの一覧は、tools のクラスを含まない（tools は単体テストの classpath にある）")
+        void allExcludesTools() throws ClassNotFoundException {
+            // 準備：tools のクラスが単体テストの classpath にある
+            Class<?> tools = Class.forName("com.ecsite.tools.region.PostalCodeCsv");
+
+            // 操作と確認：tools のパッケージのクラスがない
+            assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
+                    .isNotEmpty()
+                    .noneMatch(name -> name.startsWith("com.ecsite.tools."))
+                    .doesNotContain(tools.getName());
+        }
     }
 
-    @Test
-    @DisplayName("モジュールのクラスの一覧は、モジュールの外のクラスを含まない")
-    void modulesExcludeClassesOutsideModules() {
-        var packages = packageNames(ProductionClasses.modules());
+    @Nested
+    @DisplayName("パッケージの名前の判定")
+    class PackageNames {
 
-        assertThat(packages).isNotEmpty();
-        assertThat(packages).allMatch(name -> name.startsWith(ProductionClasses.MODULE_PACKAGE_PREFIX));
-        assertThat(packageNames(ProductionClasses.all())).anyMatch(name -> name.startsWith("com.ecsite.config"));
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "com.ecsite.module.order.domain.order.vo, order",
+                "com.ecsite.module.tax.api, tax",
+                "com.ecsite.module.tax, tax"})
+        @DisplayName("モジュールのパッケージ（直下を含む）の名前から、モジュールの名前を取り出す")
+        void extractsModuleNameFromPackageName(String packageName, String moduleName) {
+            // 操作と確認：モジュールの名前が取り出せる
+            assertThat(ProductionClasses.moduleName(packageName)).contains(moduleName);
+        }
+
+        @Test
+        @DisplayName("モジュールの外のパッケージの名前からは、モジュールの名前を取り出さない")
+        void extractsNothingOutsideModules() {
+            // 操作と確認：空
+            assertThat(ProductionClasses.moduleName("com.ecsite.config.security")).isEmpty();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"com.ecsite.api.store", "com.ecsite.jooq", "com.ecsite.jooq.tables"})
+        @DisplayName("生成したコードのパッケージを、生成したコードと判定する")
+        void detectsGeneratedPackages(String packageName) {
+            // 操作と確認：生成したコード
+            assertThat(ProductionClasses.isGenerated(packageName)).isTrue();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"com.ecsite.module.catalog.api", "com.ecsite.config", "com.ecsite.jooqx", "com.ecsite.apix"})
+        @DisplayName("生成したコードの外のパッケージは、名前の先頭が同じでも、生成したコードと判定しない")
+        void doesNotDetectHandwrittenPackages(String packageName) {
+            // 操作と確認：生成したコードでない
+            assertThat(ProductionClasses.isGenerated(packageName)).isFalse();
+        }
     }
 
-    @Test
-    @DisplayName("本番のクラスの一覧は、テストのクラスを含まない")
-    void allExcludesTestClasses() {
-        assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
-                .doesNotContain(ProductionClassesTest.class.getName());
+    @Nested
+    @DisplayName("層を持つモジュール")
+    class ModulesWithLayer {
+
+        @Test
+        @DisplayName("層を指定すると、その層に本番のクラスがあるモジュールを返す")
+        void returnsModulesHavingTheLayer() {
+            // 操作と確認：domain を持つ注文と商品を返す
+            assertThat(ProductionClasses.modulesWith("domain")).contains("order", "catalog");
+        }
+
+        @Test
+        @DisplayName("指定した層を持たないモジュールは返さない")
+        void excludesModulesWithoutTheLayer() {
+            // 操作と確認：presentation を持たない支払を返さない
+            assertThat(ProductionClasses.modulesWith("presentation")).contains("order").doesNotContain("payment");
+        }
+
+        @Test
+        @DisplayName("複数の層を指定すると、どれかの層に本番のクラスがあるモジュールを返す")
+        void returnsModulesHavingAnyOfTheLayers() {
+            // 操作と確認：presentation を持たないが infrastructure を持つ支払を返す
+            assertThat(ProductionClasses.modulesWith("presentation", "infrastructure")).contains("payment");
+        }
+
+        @Test
+        @DisplayName("どのモジュールも持たない層を指定すると、空")
+        void returnsNothingForUnknownLayer() {
+            // 操作と確認：空
+            assertThat(ProductionClasses.modulesWith("no-such-layer")).isEmpty();
+        }
     }
 
-    @Test
-    @DisplayName("本番のクラスの一覧とモジュールの一覧は、testFixtures のクラスを含まない（testFixtures は単体テストの classpath にある）")
-    void productionClassesExcludeTestFixtures() throws ClassNotFoundException {
-        Class<?> errorCodeCheck = Class.forName("com.ecsite.config.security.ErrorCodeCheck");
-        Class<?> paymentGateway = Class.forName("com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway");
+    @Nested
+    @DisplayName("検査の対象が 0 件でないことの確認")
+    class RequireNotEmpty {
 
-        assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
-                .isNotEmpty()
-                .doesNotContain(errorCodeCheck.getName(), paymentGateway.getName());
-        assertThat(ProductionClasses.applicationModules().stream())
-                .noneMatch(module -> module.contains(paymentGateway));
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("com.ecsite.ProductionClassesTest#emptyTargets")
+        @DisplayName("対象が 0 件なら、集まりの種類によらず、規則が常に通る状態であることと対象の説明を書いて失敗する")
+        void failsWithDescriptionWhenEmpty(String kind, Collection<?> targets) {
+            // 操作と確認：対象の説明を含む失敗
+            assertThatThrownBy(() -> ProductionClasses.requireNotEmpty(targets, DESCRIPTION))
+                    .isInstanceOf(AssertionError.class)
+                    .hasMessageContaining("検査の対象が 0 件で、規則が常に通る状態になっている: " + DESCRIPTION);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("com.ecsite.ProductionClassesTest#nonEmptyTargets")
+        @DisplayName("対象が 1 件以上なら、集まりの種類によらず失敗しない")
+        void passesWhenNotEmpty(String kind, Collection<?> targets) {
+            // 確認（前提）：対象が 1 件以上ある
+            assertThat(targets).isNotEmpty();
+
+            // 操作と確認：失敗しない
+            assertThatCode(() -> ProductionClasses.requireNotEmpty(targets, DESCRIPTION)).doesNotThrowAnyException();
+        }
     }
 
-    @Test
-    @DisplayName("本番のクラスの一覧は、tools のクラスを含まない（tools は単体テストの classpath にある）")
-    void productionClassesExcludeTools() throws ClassNotFoundException {
-        Class<?> tools = Class.forName("com.ecsite.tools.region.PostalCodeCsv");
+    @Nested
+    @DisplayName("モジュールのレベル")
+    class Levels {
 
-        assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
-                .isNotEmpty()
-                .noneMatch(name -> name.startsWith("com.ecsite.tools."))
-                .doesNotContain(tools.getName());
-    }
+        @Test
+        @DisplayName("レベル A のモジュールの一覧は、モジュールの設計書の「レベル」の行が A のモジュールと一致する")
+        void levelAModulesMatchDesignDocuments() throws IOException {
+            // 準備：設計書のレベルが A のモジュールを集める
+            var documented = new TreeSet<String>();
+            for (String module : moduleDirectories()) {
+                if (levelOf(module).equals("A")) {
+                    documented.add(module);
+                }
+            }
 
-    @Test
-    @DisplayName("パッケージの名前から、モジュールの名前を取り出す")
-    void extractsModuleNameFromPackageName() {
-        assertThat(ProductionClasses.moduleName("com.ecsite.module.order.domain.order.vo")).contains("order");
-        assertThat(ProductionClasses.moduleName("com.ecsite.module.tax.api")).contains("tax");
-        assertThat(ProductionClasses.moduleName("com.ecsite.module.tax")).contains("tax");
-        assertThat(ProductionClasses.moduleName("com.ecsite.config.security")).isEmpty();
-    }
+            // 確認（前提）：1 つ以上ある
+            assertThat(documented).isNotEmpty();
 
-    @Test
-    @DisplayName("生成したコードのパッケージだけを、生成したコードと判定する")
-    void detectsGeneratedPackages() {
-        assertThat(ProductionClasses.isGenerated("com.ecsite.api.store")).isTrue();
-        assertThat(ProductionClasses.isGenerated("com.ecsite.jooq")).isTrue();
-        assertThat(ProductionClasses.isGenerated("com.ecsite.jooq.tables")).isTrue();
-        assertThat(ProductionClasses.isGenerated("com.ecsite.module.catalog.api")).isFalse();
-        assertThat(ProductionClasses.isGenerated("com.ecsite.config")).isFalse();
-        assertThat(ProductionClasses.isGenerated("com.ecsite.jooqx")).isFalse();
-        assertThat(ProductionClasses.isGenerated("com.ecsite.apix")).isFalse();
+            // 操作と確認：補助のレベル A の一覧と同じ
+            assertThat(ProductionClasses.LEVEL_A_MODULES).containsExactlyInAnyOrderElementsOf(documented);
+        }
+
+        @Test
+        @DisplayName("バックエンドのモジュールごとに、モジュールの設計書にレベルの行がある（共通の設計書は読まない）")
+        void everyModuleDesignHasLevelRow() throws IOException {
+            // 準備：バックエンドのモジュール
+            var modules = moduleDirectories();
+
+            // 確認（前提）：1 つ以上ある
+            assertThat(modules).isNotEmpty();
+
+            // 操作と確認：どのモジュールの設計書にも、A、B、C のどれかのレベルの行がある
+            for (String module : modules) {
+                assertThat(levelOf(module)).as("docs/02-設計/%s.md のレベルの行", module).isIn("A", "B", "C");
+            }
+        }
     }
 
     @Test
     @DisplayName("構成の検査は、本番のクラスを補助の外で読み込まない")
     void testsDoNotLoadProductionClassesOutsideHelper() throws IOException {
+        // 準備：補助のファイル
         var helper = Path.of("src/test/java/com/ecsite/ProductionClasses.java").toAbsolutePath().normalize();
+
+        // 操作：補助の外のテストのファイルから、本番のクラスを読み込む呼び出しを探す
         var violations = new TreeSet<String>();
         for (String root : List.of("src/test/java", "src/integrationTest/java", "src/testFixtures/java")) {
             try (Stream<Path> files = Files.walk(Path.of(root))) {
@@ -154,57 +316,38 @@ class ProductionClassesTest {
             }
         }
 
+        // 確認：ない
         assertThat(violations)
                 .as("本番のクラスの読み込みは、補助 ProductionClasses から行う")
                 .isEmpty();
     }
 
-    @Test
-    @DisplayName("層を指定すると、その層に本番のクラスがあるモジュールだけを返す（層を持たないモジュールを返さない）")
-    void modulesWithReturnsOnlyModulesHavingTheLayer() {
-        assertThat(ProductionClasses.modulesWith("domain")).contains("order", "catalog");
-        assertThat(ProductionClasses.modulesWith("presentation")).contains("order").doesNotContain("payment");
-        assertThat(ProductionClasses.modulesWith("presentation", "infrastructure")).contains("payment");
-        assertThat(ProductionClasses.modulesWith("no-such-layer")).isEmpty();
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * 0 件の検査の対象を、集まりの種類ごとに返す。
+     *
+     * @return 集まりの種類の名前と、検査の対象
+     */
+    static Stream<Arguments> emptyTargets() {
+        return Stream.of(
+                Arguments.of("一覧", List.of()),
+                Arguments.of("集合", Set.of()),
+                Arguments.of("表の項目", Map.of().entrySet()));
     }
 
-    @Test
-    @DisplayName("対象が 0 件なら、説明を付けて失敗する")
-    void requireNotEmptyFailsWithDescriptionWhenEmpty() {
-        assertThatThrownBy(() -> ProductionClasses.requireNotEmpty(List.of(), "検査の対象のクラス"))
-                .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("検査の対象のクラス");
-    }
-
-    @Test
-    @DisplayName("対象が 1 件以上なら、通る")
-    void requireNotEmptyPassesWhenNotEmpty() {
-        assertThatCode(() -> ProductionClasses.requireNotEmpty(List.of("a"), "検査の対象のクラス")).doesNotThrowAnyException();
-    }
-
-    @Test
-    @DisplayName("レベル A のモジュールの一覧は、モジュールの設計書の「レベル」の行が A のモジュールと一致する")
-    void levelAModulesMatchDesignDocuments() throws IOException {
-        var documented = new TreeSet<String>();
-        for (String module : moduleDirectories()) {
-            if (levelOf(module).equals("A")) {
-                documented.add(module);
-            }
-        }
-
-        assertThat(documented).isNotEmpty();
-        assertThat(ProductionClasses.LEVEL_A_MODULES).containsExactlyInAnyOrderElementsOf(documented);
-    }
-
-    @Test
-    @DisplayName("バックエンドのモジュールごとに、モジュールの設計書にレベルの行がある（共通の設計書は読まない）")
-    void everyModuleDesignHasLevelRow() throws IOException {
-        var modules = moduleDirectories();
-
-        assertThat(modules).isNotEmpty();
-        for (String module : modules) {
-            assertThat(levelOf(module)).as("docs/02-設計/%s.md のレベルの行", module).isIn("A", "B", "C");
-        }
+    /**
+     * 1 件以上の検査の対象を、集まりの種類ごとに返す。
+     *
+     * <p>構成の検査が渡す集まり（一覧、集合、表の項目）の形をそろえる。
+     *
+     * @return 集まりの種類の名前と、検査の対象
+     */
+    static Stream<Arguments> nonEmptyTargets() {
+        return Stream.of(
+                Arguments.of("1 件の一覧", List.of("a")),
+                Arguments.of("複数件の集合", Set.of("a", "b")),
+                Arguments.of("表の項目", Map.of("a", 1).entrySet()));
     }
 
     /**

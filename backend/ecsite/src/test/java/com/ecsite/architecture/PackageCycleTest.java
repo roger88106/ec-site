@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class PackageCycleTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * domain のパッケージ（domain の直下と、その下のパッケージ）の形
      */
@@ -48,25 +50,32 @@ class PackageCycleTest {
     private static final ArchRule NO_CYCLES = SlicesRuleDefinition.slices()
             .assignedFrom(new ByDomainPackage()).should().beFreeOfCycles();
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("モジュールの domain の下のパッケージの間に、循環がない")
     void domainPackagesAreFreeOfCycles() {
+        // 準備：対象の domain の下のクラスが 1 件以上ある
         ProductionClasses.requireNotEmpty(
                 ProductionClasses.modules().stream()
                         .filter(javaClass -> DOMAIN_PACKAGE.matcher(javaClass.getPackageName()).matches())
                         .toList(),
                 "モジュールの domain の下のクラス");
 
+        // 操作と確認：本番のモジュールのクラスに規則を当てる
         NO_CYCLES.check(ProductionClasses.modules());
     }
 
     @Test
     @DisplayName("規則は、集約のパッケージと vo が互いに依存する例に当たる")
     void ruleMatchesCycleBetweenAggregateAndValuePackage() {
+        // 準備：集約のパッケージと vo が互いに依存する例
         JavaClasses examples = new ClassFileImporter().importClasses(OrderLike.class, AmountLike.class);
 
+        // 操作：規則を当てる
         List<String> details = NO_CYCLES.evaluate(examples).getFailureReport().getDetails();
 
+        // 確認：2 つのクラスの間の循環が違反になる
         assertThat(details).isNotEmpty().allSatisfy(detail -> assertThat(detail).contains("Cycle detected"));
         assertThat(String.join("\n", details))
                 .contains(OrderLike.class.getName())
@@ -76,18 +85,24 @@ class PackageCycleTest {
     @Test
     @DisplayName("規則は、集約のパッケージから vo への一方向の依存には当たらない")
     void ruleDoesNotMatchOneWayDependency() {
+        // 準備：集約のパッケージから vo へ一方向に依存する例
         JavaClasses examples = new ClassFileImporter().importClasses(OneWayOrder.class, PlainAmount.class);
 
+        // 操作と確認：違反にならない
         assertThat(NO_CYCLES.evaluate(examples).hasViolation()).isFalse();
     }
 
     @Test
-    @DisplayName("規則は、集約のパッケージと、その port が互いに依存する例には当たらない（port は集約と同じ slice）")
+    @DisplayName("規則は、集約のパッケージと、その port が互いに依存する例には当たらない")
     void ruleDoesNotMatchAggregateAndItsPort() {
+        // 準備：集約のパッケージと、その port が互いに依存する例（port は集約と同じ slice）
         JavaClasses examples = new ClassFileImporter().importClasses(PortOwner.class, OwnerPort.class);
 
+        // 操作と確認：違反にならない
         assertThat(NO_CYCLES.evaluate(examples).hasViolation()).isFalse();
     }
+
+    // ============================== 規則の補助 ==============================
 
     /**
      * クラスのパッケージを slice の名前にする割り当て

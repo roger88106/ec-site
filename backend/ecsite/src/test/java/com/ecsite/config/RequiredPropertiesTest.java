@@ -26,6 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class RequiredPropertiesTest {
 
+    // ============================== テスト ==============================
+
     /**
      * 設定の値の型を有効にする設定、渡す値（必須の 1 つを除く）、除いた値の名前を返す。
      *
@@ -45,10 +47,11 @@ class RequiredPropertiesTest {
                 Arguments.of(Shop.class, new String[]{}, "contactEmail"));
     }
 
-    @ParameterizedTest(name = "{0}")
+    @ParameterizedTest(name = "「{0}」")
     @MethodSource("cases")
     @DisplayName("必須の値がなければ、起動に失敗し、足りない値の名前が知らされる")
     void failsWithoutRequiredValue(Class<?> configuration, String[] values, String missing) {
+        // 操作と確認：必須の 1 つを除いて起動すると失敗し、原因に除いた値の名前がある
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
                 .withUserConfiguration(configuration)
@@ -58,6 +61,8 @@ class RequiredPropertiesTest {
                     assertThat(context.getStartupFailure()).rootCause().hasMessageContaining(missing);
                 });
     }
+
+    // ============================== 準備の補助 ==============================
 
     /**
      * 認証の設定を有効にする

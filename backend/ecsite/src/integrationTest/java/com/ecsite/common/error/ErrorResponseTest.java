@@ -47,6 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ErrorResponseTest.ErrorTestController.class, ErrorResponseTest.ValidatedTestController.class})
 class ErrorResponseTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * エラーを起こすテスト用の Controller のパス
      */
@@ -90,8 +92,15 @@ class ErrorResponseTest {
      */
     private static final String JAPANESE = "(?s).*[\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}].*";
 
+    // ============================== Bean ==============================
+
+    /**
+     * API を呼ぶ MockMvc
+     */
     @Autowired
     MockMvc mockMvc;
+
+    // ============================== テスト ==============================
 
     @Nested
     @DisplayName("アプリが投げる例外")
@@ -100,6 +109,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("業務ルール違反は 400。メッセージのパラメータが埋め込まれる")
         void businessRuleViolation() throws Exception {
+            // 操作と確認：値「標準」を差し込んだ業務ルール違反の 400
             mockMvc.perform(get(BASE + "/business-rule"))
                     .andExpect(status().isBadRequest())
                     .andExpectAll(problem("TEST_BUSINESS_RULE", "テスト用の業務ルールに違反しました（標準）。"));
@@ -108,6 +118,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("見つからない場合は 404")
         void notFound() throws Exception {
+            // 操作と確認：NOT_FOUND の 404
             mockMvc.perform(get(BASE + "/not-found"))
                     .andExpect(status().isNotFound())
                     .andExpectAll(problem("NOT_FOUND", NOT_FOUND));
@@ -116,6 +127,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("バージョン不一致は 409（CONCURRENT_MODIFICATION）")
         void concurrentModification() throws Exception {
+            // 操作と確認：CONCURRENT_MODIFICATION の 409
             mockMvc.perform(get(BASE + "/conflict"))
                     .andExpect(status().isConflict())
                     .andExpectAll(problem("CONCURRENT_MODIFICATION", CONCURRENT_MODIFICATION));
@@ -124,6 +136,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("システム例外は 500")
         void systemException() throws Exception {
+            // 操作と確認：SYSTEM_ERROR の 500
             mockMvc.perform(get(BASE + "/system"))
                     .andExpect(status().isInternalServerError())
                     .andExpectAll(problem("SYSTEM_ERROR", SYSTEM_ERROR));
@@ -132,6 +145,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("想定外の例外は 500")
         void unexpectedException() throws Exception {
+            // 操作と確認：SYSTEM_ERROR の 500
             mockMvc.perform(get(BASE + "/unexpected"))
                     .andExpect(status().isInternalServerError())
                     .andExpectAll(problem("SYSTEM_ERROR", SYSTEM_ERROR));
@@ -145,12 +159,15 @@ class ErrorResponseTest {
         @Test
         @DisplayName("リクエスト本文の検証エラーは 400。errors にフィールドごとの日本語のメッセージが入る")
         void requestBodyValidation() throws Exception {
-            mockMvc.perform(post(BASE + "/validation")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"name": " ", "size": 101}
-                                    """))
-                    .andExpect(status().isBadRequest())
+            // 操作：name が空白、size が上限超えの本文を送る
+            var result = mockMvc.perform(post(BASE + "/validation")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"name": " ", "size": 101}
+                            """));
+
+            // 確認：INVALID_REQUEST の 400 で、2 つの項目に日本語のメッセージ
+            result.andExpect(status().isBadRequest())
                     .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST))
                     .andExpect(jsonPath("$.errors", hasSize(2)))
                     // フィルター式の結果は配列になる
@@ -161,21 +178,21 @@ class ErrorResponseTest {
         @Test
         @DisplayName("メソッド引数の検証エラー（size の上限超え）は 400。errors が入る")
         void methodParameterValidation() throws Exception {
-            mockMvc.perform(get(BASE + "/method-validation").param("size", "101"))
-                    .andExpect(status().isBadRequest())
-                    .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST))
-                    .andExpect(jsonPath("$.errors[0].field").value("size"))
-                    .andExpect(jsonPath("$.errors[0].message").value(matchesPattern(JAPANESE)));
+            // 操作：size に上限を超える値を送る
+            var result = mockMvc.perform(get(BASE + "/method-validation").param("size", "101"));
+
+            // 確認：INVALID_REQUEST の 400 で、size に日本語のメッセージ
+            assertSizeError(result);
         }
 
         @Test
         @DisplayName("@Validated の Controller（生成インターフェース）でのメソッド引数の検証エラーも 400。errors が入る")
         void methodParameterValidationOnValidatedController() throws Exception {
-            mockMvc.perform(get(VALIDATED_BASE + "/method-validation").param("size", "101"))
-                    .andExpect(status().isBadRequest())
-                    .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST))
-                    .andExpect(jsonPath("$.errors[0].field").value("size"))
-                    .andExpect(jsonPath("$.errors[0].message").value(matchesPattern(JAPANESE)));
+            // 操作：@Validated の Controller の size に上限を超える値を送る
+            var result = mockMvc.perform(get(VALIDATED_BASE + "/method-validation").param("size", "101"));
+
+            // 確認：INVALID_REQUEST の 400 で、size に日本語のメッセージ
+            assertSizeError(result);
         }
     }
 
@@ -186,6 +203,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("パスの UUID の形式誤りは 400")
         void malformedUuidInPath() throws Exception {
+            // 操作と確認：INVALID_REQUEST の 400
             mockMvc.perform(get(BASE + "/items/not-a-uuid"))
                     .andExpect(status().isBadRequest())
                     .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST));
@@ -194,6 +212,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("必須パラメータの欠落は 400")
         void missingRequiredParameter() throws Exception {
+            // 操作と確認：INVALID_REQUEST の 400
             mockMvc.perform(get(BASE + "/required-param"))
                     .andExpect(status().isBadRequest())
                     .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST));
@@ -202,6 +221,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("パラメータの型の不一致は 400")
         void typeMismatch() throws Exception {
+            // 操作と確認：数値の size に文字を送ると INVALID_REQUEST の 400
             mockMvc.perform(get(BASE + "/method-validation").param("size", "abc"))
                     .andExpect(status().isBadRequest())
                     .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST));
@@ -210,6 +230,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("JSON の構文誤りは 400")
         void malformedJson() throws Exception {
+            // 操作と確認：途中で切れた JSON を送ると INVALID_REQUEST の 400
             mockMvc.perform(post(BASE + "/validation")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"name\": "))
@@ -220,6 +241,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("存在しないパスは 404")
         void unknownPath() throws Exception {
+            // 操作と確認：NOT_FOUND の 404
             mockMvc.perform(get(BASE + "/does-not-exist"))
                     .andExpect(status().isNotFound())
                     .andExpectAll(problem("NOT_FOUND", NOT_FOUND));
@@ -228,6 +250,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("許可されていないメソッドは 405")
         void methodNotAllowed() throws Exception {
+            // 操作と確認：GET だけのパスに DELETE を送ると METHOD_NOT_ALLOWED の 405
             mockMvc.perform(delete(BASE + "/not-found"))
                     .andExpect(status().isMethodNotAllowed())
                     .andExpectAll(problem("METHOD_NOT_ALLOWED", METHOD_NOT_ALLOWED));
@@ -237,9 +260,34 @@ class ErrorResponseTest {
     @Test
     @DisplayName("トレースの span がない状態でも traceId を返す（テストではトレーシングが無効）")
     void returnsTraceIdWithoutSpan() throws Exception {
+        // 操作：エラーになるパスを呼ぶ
         ResultActions result = mockMvc.perform(get(BASE + "/not-found"));
 
+        // 確認：32 桁の 16 進数の traceId
         result.andExpect(jsonPath("$.traceId").value(matchesPattern("[0-9a-f]{32}")));
+    }
+
+    // ============================== 確認の補助 ==============================
+
+    /**
+     * size の上限超えの検証エラーの応答であることを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>状態が 400</li>
+     *   <li>エラーコードとメッセージが入力の誤り</li>
+     *   <li>errors の最初の項目が size</li>
+     *   <li>その項目のメッセージが日本語</li>
+     * </ul>
+     *
+     * @param result 応答
+     * @throws Exception 応答を読めないとき
+     */
+    private static void assertSizeError(ResultActions result) throws Exception {
+        result.andExpect(status().isBadRequest())
+                .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST))
+                .andExpect(jsonPath("$.errors[0].field").value("size"))
+                .andExpect(jsonPath("$.errors[0].message").value(matchesPattern(JAPANESE)));
     }
 
     // ============================== テスト用の Controller ==============================

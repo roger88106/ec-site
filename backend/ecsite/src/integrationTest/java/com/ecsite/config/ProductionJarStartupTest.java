@@ -42,6 +42,8 @@ import static org.awaitility.Awaitility.await;
  */
 class ProductionJarStartupTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * 起動を待つ時間の上限
      *
@@ -58,6 +60,8 @@ class ProductionJarStartupTest {
      * リダイレクトを追わない HTTP クライアント
      */
     private static final HttpClient HTTP = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+
+    // ============================== 起動した本番の jar ==============================
 
     /**
      * ローカルの設定とログを置くディレクトリ
@@ -126,21 +130,32 @@ class ProductionJarStartupTest {
         }
     }
 
-    @Test
-    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の画面の GET と通知の操作の POST は 404 になる")
-    void mockCarrierPageIsNotFound() throws Exception {
-        assertThat(send(HttpRequest.newBuilder(businessUri("/mock-carrier")).GET()).statusCode())
-                .as("画面の GET").isEqualTo(404);
+    // ============================== テスト ==============================
 
+    @Test
+    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の画面の GET は 404 になる")
+    void mockCarrierPageIsNotFound() throws Exception {
+        // 操作と確認：画面を開くと、見つからない
+        assertThat(send(HttpRequest.newBuilder(businessUri("/mock-carrier")).GET()).statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の通知の操作の POST は 404 になる")
+    void mockCarrierNotifyIsNotFound() throws Exception {
+        // 準備：通知の操作のリクエスト
         var notify = HttpRequest.newBuilder(businessUri("/mock-carrier/orders/" + UUID.randomUUID() + "/notify"))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString("status=RETURNED"));
-        assertThat(send(notify).statusCode()).as("通知の操作の POST").isEqualTo(404);
+
+        // 操作と確認：送ると、見つからない
+        assertThat(send(notify).statusCode()).isEqualTo(404);
     }
 
     @Test
     @DisplayName("AC-410-2 物流のフラグを立てずに起動すると、物流サービスに接続していないことを、フラグの名前と一緒に警告のログに 1 回出力する")
     void warnsOnceAboutUnconnectedCarrier() throws IOException {
+        // 確認：起動の出力のうち、フラグの名前を含む警告が 1 行だけで、接続していないことを伝える
+        // （本番の jar は別のプロセスで動くので、ログはプロセスの出力から読む）
         assertThat(readLog().lines())
                 .filteredOn(line -> line.contains("WARN") && line.contains(SHIPPING_MOCK_FLAG))
                 .singleElement()
@@ -151,14 +166,17 @@ class ProductionJarStartupTest {
     @Test
     @DisplayName("物流のフラグを立てないときも、通知のエンドポイントは残り、署名のない POST を 401 で拒否する")
     void carrierWebhookRejectsUnsignedPost() throws Exception {
+        // 操作：署名のない通知を送る
         var response = send(HttpRequest.newBuilder(businessUri("/api/webhooks/carrier"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{}")));
 
+        // 確認：401 で、本文が空。認可で拒否された 401 は本文（Problem Details）を持つので、本文が空なら、エンドポイントの署名の確認で拒否された
         assertThat(response.statusCode()).isEqualTo(401);
-        // 認可で拒否された 401 は本文（Problem Details）を持つ。本文が空なら、エンドポイントの署名の確認で拒否された
         assertThat(response.body()).isEmpty();
     }
+
+    // ============================== 準備の補助 ==============================
 
     /**
      * 運用ポートの準備の完了を確認する。

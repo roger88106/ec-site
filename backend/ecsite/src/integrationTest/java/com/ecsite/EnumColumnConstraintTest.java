@@ -40,6 +40,8 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 @IntegrationTest
 class EnumColumnConstraintTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * 列挙を文字で持つ列と、取りうる値の列挙の対応
      *
@@ -96,15 +98,23 @@ class EnumColumnConstraintTest {
      */
     private static final Pattern LITERAL = Pattern.compile("'([^']*)'");
 
+    // ============================== Bean ==============================
+
+    /**
+     * DB の定義を読む JdbcTemplate
+     */
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("AC-279 列挙の列の制約の値が、列挙の値と一致する")
     void constraintValuesMatchEnums() {
+        // 操作：値を並べる形の制約の値を、列ごとに読む
         var constrained = constrainedValues();
 
-        // 食い違う列をすべて出す
+        // 確認：対応の表の全ての列で、制約の値が列挙の値と同じ（食い違う列をすべて出す）
         assertSoftly(softly -> ENUM_COLUMNS.forEach((column, enums) -> {
             var expected = enums.stream()
                     .flatMap(type -> Arrays.stream(type.getEnumConstants()).map(Enum::name))
@@ -116,6 +126,7 @@ class EnumColumnConstraintTest {
     @Test
     @DisplayName("AC-279 値を並べる制約の列と、名前で列挙とわかる列が、すべて対応の表にある")
     void everyEnumColumnIsListed() {
+        // 操作：名前で列挙とわかる文字の列と、値を並べる制約の列を集める（列挙でない列を除く）
         var enumLike = jdbcTemplate.queryForList("""
                 SELECT table_schema || '.' || table_name || '.' || column_name
                   FROM information_schema.columns
@@ -127,8 +138,11 @@ class EnumColumnConstraintTest {
                 .filter(column -> !NOT_ENUM_COLUMNS.contains(column))
                 .collect(Collectors.toCollection(TreeSet::new));
 
+        // 確認：全て対応の表にある
         assertThat(columns).isSubsetOf(ENUM_COLUMNS.keySet());
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * 1 つの列の、値を並べる形の制約の値を読む。

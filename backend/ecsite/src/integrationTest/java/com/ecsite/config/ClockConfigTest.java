@@ -23,6 +23,17 @@ import static org.assertj.core.api.Assertions.within;
  */
 class ClockConfigTest {
 
+    // ============================== 定数 ==============================
+
+    /**
+     * テストから決める時刻
+     *
+     * <p>日本時間の 2026-11-01 09:00。統合テストの時計の初期値と違う時刻にする。
+     */
+    private static final Instant TIME = Instant.parse("2026-11-01T00:00:00Z");
+
+    // ============================== テスト ==============================
+
     /**
      * 本番の設定
      *
@@ -33,12 +44,18 @@ class ClockConfigTest {
     @DisplayName("通常の構成")
     class Default {
 
+        // ============================== Bean ==============================
+
+        /**
+         * 注入される時計
+         */
         @Autowired
         Clock clock;
 
         @Test
         @DisplayName("UTC のシステム時計が注入される")
         void systemClockInUtc() {
+            // 確認：時間帯が UTC で、今の時刻を指す
             assertThat(clock.getZone()).isEqualTo(ZoneOffset.UTC);
             assertThat(clock.instant()).isCloseTo(Instant.now(), within(Duration.ofSeconds(5)));
         }
@@ -49,22 +66,41 @@ class ClockConfigTest {
     @DisplayName("固定の時計に差し替えた構成")
     class Fixed {
 
+        // ============================== Bean ==============================
+
+        /**
+         * 注入される時計
+         */
         @Autowired
         Clock clock;
 
+        /**
+         * テストから操作する時計
+         */
         @Autowired
         MutableClock testClock;
 
         @Test
-        @DisplayName("注入される時計を、テストから決めた時刻にでき、進められる")
-        void replacedByTestClock() {
-            var time = Instant.parse("2026-10-07T15:00:00Z");
+        @DisplayName("注入される時計を、テストから決めた時刻にできる")
+        void setsInstant() {
+            // 操作：テストの時計を決めた時刻にする
+            testClock.setInstant(TIME);
 
-            testClock.setInstant(time);
-            assertThat(clock.instant()).isEqualTo(time);
+            // 確認：注入される時計がその時刻になる
+            assertThat(clock.instant()).isEqualTo(TIME);
+        }
 
+        @Test
+        @DisplayName("注入される時計を、テストから進められる")
+        void advances() {
+            // 準備：テストの時計を決めた時刻にする
+            testClock.setInstant(TIME);
+
+            // 操作：1 日進める
             testClock.advance(Duration.ofDays(1));
-            assertThat(clock.instant()).isEqualTo(time.plus(Duration.ofDays(1)));
+
+            // 確認：注入される時計が 1 日後になる
+            assertThat(clock.instant()).isEqualTo(TIME.plus(Duration.ofDays(1)));
         }
     }
 }

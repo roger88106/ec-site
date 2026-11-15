@@ -20,12 +20,17 @@ import jakarta.validation.constraints.Size;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.MethodParameter;
 import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.Errors;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import org.springframework.validation.method.ParameterValidationResult;
@@ -35,6 +40,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,6 +51,34 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>制約の種類から ecsite.validation.* の文を選び、制約の値を差し込む。JVM とリクエストのロケールによらず、同じ日本語になる。
  */
 class ValidationErrorTranslatorTest {
+
+    // ============================== 定数 ==============================
+
+    /**
+     * 必須の項目の文
+     */
+    private static final String REQUIRED = "入力してください。";
+
+    /**
+     * 文を用意していない誤りの文
+     */
+    private static final String INVALID_VALUE = "値が正しくありません。";
+
+    /**
+     * メールアドレスの形の誤りの文
+     */
+    private static final String INVALID_EMAIL = "メールアドレスの形式が正しくありません。";
+
+    /**
+     * 業務のエラーに対応づける項目
+     */
+    private static final String MAPPED_PROPERTY = "pattern";
+
+    /**
+     * 項目を業務のエラー（金額が負）に対応づける対応
+     */
+    private static final ValidationErrorMapping MAPPING =
+            () -> Map.of(MAPPED_PROPERTY, ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
 
     /**
      * 検証する型（項目ごとに 1 つの制約）
@@ -65,6 +99,8 @@ class ValidationErrorTranslatorTest {
             @Size(max = 3) List<String> fewItems,
             @Size(min = 1, max = 3) String[] someItems) {
     }
+
+    // ============================== 対象 ==============================
 
     /**
      * 検証の部品（Hibernate Validator）
@@ -112,98 +148,197 @@ class ValidationErrorTranslatorTest {
         LocaleContextHolder.resetLocaleContext();
     }
 
-    @Test
-    @DisplayName("必須（NotNull・NotBlank）は「入力してください。」")
-    void required() {
-        assertThat(messageOf("notNull", null)).isEqualTo("入力してください。");
-        assertThat(messageOf("notBlank", " ")).isEqualTo("入力してください。");
+    // ============================== テスト ==============================
+
+    @Nested
+    @DisplayName("制約の種類ごとの文")
+    class ByConstraint {
+
+        @Test
+        @DisplayName("NotNull の違反は「入力してください。」")
+        void notNull() {
+            // 操作と確認：null の違反の文
+            assertThat(messageOf("notNull", null)).isEqualTo(REQUIRED);
+        }
+
+        @Test
+        @DisplayName("NotBlank の違反は「入力してください。」")
+        void notBlank() {
+            // 操作と確認：空白だけの値の違反の文
+            assertThat(messageOf("notBlank", " ")).isEqualTo(REQUIRED);
+        }
+
+        @Test
+        @DisplayName("下限が 1 以上の長さは、下限と上限を差し込む")
+        void sizeWithMin() {
+            // 操作と確認：1〜50 文字の項目に 51 文字の違反の文
+            assertThat(messageOf("sized", "x".repeat(51))).isEqualTo("1 文字以上 50 文字以内にしてください。");
+        }
+
+        @Test
+        @DisplayName("下限のない長さは、上限だけを差し込み、数は 3 桁ごとに区切る")
+        void sizeWithoutMin() {
+            // 操作と確認：10,000 文字以内の項目に 10,001 文字の違反の文
+            assertThat(messageOf("maxSized", "x".repeat(10001))).isEqualTo("10,000 文字以内にしてください。");
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("com.ecsite.common.error.handler.ValidationErrorTranslatorTest#itemSizes")
+        @DisplayName("配列・一覧の長さは、文字数ではなく件数の文にする")
+        void sizeOfItems(String property, Object value, String expected) {
+            // 操作と確認：件数の文
+            assertThat(messageOf(property, value)).isEqualTo(expected);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("com.ecsite.common.error.handler.ValidationErrorTranslatorTest#ranges")
+        @DisplayName("範囲は、下限・上限の値を差し込む")
+        void range(String property, Object value, String expected) {
+            // 操作と確認：下限か上限の値を差し込んだ文
+            assertThat(messageOf(property, value)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("Pattern の違反は、形式が正しくないことを示す")
+        void pattern() {
+            // 操作と確認：形式の誤りの文
+            assertThat(messageOf("pattern", "abc")).isEqualTo("形式が正しくありません。");
+        }
+
+        @Test
+        @DisplayName("Email の違反は、メールアドレスの形式が正しくないことを示す")
+        void email() {
+            // 操作と確認：メールアドレスの形式の誤りの文
+            assertThat(messageOf("email", "not-an-email")).isEqualTo(INVALID_EMAIL);
+        }
+
+        @Test
+        @DisplayName("文を用意していない種類の制約は「値が正しくありません。」")
+        void unknownConstraint() {
+            // 操作と確認：Future の違反は、文を用意していない種類
+            assertThat(messageOf("future", LocalDate.of(2000, 1, 1))).isEqualTo(INVALID_VALUE);
+        }
     }
 
-    @Test
-    @DisplayName("長さは、上限と（1 以上なら）下限を差し込む。数は 3 桁ごとに区切る")
-    void size() {
-        assertThat(messageOf("sized", "x".repeat(51))).isEqualTo("1 文字以上 50 文字以内にしてください。");
-        assertThat(messageOf("maxSized", "x".repeat(10001))).isEqualTo("10,000 文字以内にしてください。");
+    @Nested
+    @DisplayName("Bean Validation の違反でない検証エラー")
+    class NotConstraintViolation {
+
+        @Test
+        @DisplayName("Bean Validation の違反でない検証エラー（型の変換の失敗など）は「値が正しくありません。」")
+        void notConstraintViolation() {
+            // 操作と確認：型の変換の失敗の文
+            assertThat(messages.messageOf(new ObjectError("request", "Failed to convert"))).isEqualTo(INVALID_VALUE);
+        }
+
+        @Test
+        @DisplayName("メソッド引数の検証エラーで、Bean Validation の違反でないものは「値が正しくありません。」")
+        void parameterErrorWithoutConstraintViolation() throws NoSuchMethodException {
+            // 準備：型の不一致のメソッド引数の検証エラー
+            var parameter = new MethodParameter(ValidationErrorTranslatorTest.class.getDeclaredMethod("messageOf", String.class, Object.class), 0);
+            var error = new DefaultMessageSourceResolvable("typeMismatch");
+            var result = new ParameterValidationResult(parameter, "x", List.of(error), null, null, null,
+                    (resolvable, type) -> null);
+
+            // 操作と確認：文を用意していない誤りの文
+            assertThat(messages.messageOf(result, error)).isEqualTo(INVALID_VALUE);
+        }
     }
 
-    @Test
-    @DisplayName("配列・一覧の長さは、文字数ではなく件数の文にする")
-    void sizeOfItems() {
-        assertThat(messageOf("items", List.of())).isEqualTo("1 件以上にしてください。");
-        assertThat(messageOf("fewItems", List.of("a", "b", "c", "d"))).isEqualTo("3 件以内にしてください。");
-        assertThat(messageOf("someItems", new String[0])).isEqualTo("1 件以上 3 件以内にしてください。");
+    @Nested
+    @DisplayName("Spring の検証の結果")
+    class SpringValidation {
+
+        @Test
+        @DisplayName("Bean Validation の違反から作った検証エラーは、制約の種類の文になる")
+        void fromSpringValidator() {
+            // 準備：notNull だけが違反する値を、Spring の検証（SpringValidatorAdapter）で検証する
+            var errors = validate(new Sample(null, "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "A", "a@b.jp", null,
+                    List.of("x"), List.of(), new String[]{"x"}));
+
+            // 操作と確認：NotNull の文
+            assertThat(messages.messageOf(errors.getFieldError("notNull"))).isEqualTo(REQUIRED);
+        }
+
+        @Test
+        @DisplayName("業務のエラーに対応づけた項目は、制約の種類の文の代わりに業務のエラーの文になる")
+        void mappedField() {
+            // 準備：対応づけた項目と email が違反する値を検証する
+            var mapped = new ValidationErrorTranslator(resolver, List.of(MAPPING));
+            var errors = validate(sampleWithMappedAndEmailViolations());
+
+            // 操作と確認：業務のエラー（金額が負）の文
+            assertThat(mapped.messageOf(errors.getFieldError(MAPPED_PROPERTY))).isEqualTo("金額は 0 円以上にしてください。");
+        }
+
+        @Test
+        @DisplayName("業務のエラーに対応づけていない項目は、制約の種類の文のまま")
+        void unmappedField() {
+            // 準備：対応づけた項目と email が違反する値を検証する
+            var mapped = new ValidationErrorTranslator(resolver, List.of(MAPPING));
+            var errors = validate(sampleWithMappedAndEmailViolations());
+
+            // 操作と確認：Email の文
+            assertThat(mapped.messageOf(errors.getFieldError("email"))).isEqualTo(INVALID_EMAIL);
+        }
+
+        @Test
+        @DisplayName("同じ項目のパスを複数の対応が対応づけていれば、作るときに失敗する")
+        void duplicateMapping() {
+            // 操作と確認：項目のパスを書いた IllegalStateException
+            assertThatThrownBy(() -> new ValidationErrorTranslator(resolver, List.of(MAPPING, MAPPING)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(MAPPED_PROPERTY);
+        }
     }
 
-    @Test
-    @DisplayName("範囲は、下限・上限の値を差し込む")
-    void range() {
-        assertThat(messageOf("min", -1L)).isEqualTo("0 以上にしてください。");
-        assertThat(messageOf("max", 101)).isEqualTo("100 以下にしてください。");
-        assertThat(messageOf("decimalMin", new BigDecimal("0.1"))).isEqualTo("0.5 以上にしてください。");
-        assertThat(messageOf("decimalMax", new BigDecimal("100"))).isEqualTo("99.9 以下にしてください。");
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * 配列・一覧の長さの見本を返す。
+     *
+     * @return 項目の名前、違反する値、期待する文
+     */
+    static Stream<Arguments> itemSizes() {
+        return Stream.of(
+                Arguments.of("items", List.of(), "1 件以上にしてください。"),
+                Arguments.of("fewItems", List.of("a", "b", "c", "d"), "3 件以内にしてください。"),
+                Arguments.of("someItems", new String[0], "1 件以上 3 件以内にしてください。"));
     }
 
-    @Test
-    @DisplayName("形式（Pattern・Email）は、形式が正しくないことを示す")
-    void format() {
-        assertThat(messageOf("pattern", "abc")).isEqualTo("形式が正しくありません。");
-        assertThat(messageOf("email", "not-an-email")).isEqualTo("メールアドレスの形式が正しくありません。");
+    /**
+     * 範囲の見本を返す。
+     *
+     * @return 項目の名前、違反する値、期待する文
+     */
+    static Stream<Arguments> ranges() {
+        return Stream.of(
+                Arguments.of("min", -1L, "0 以上にしてください。"),
+                Arguments.of("max", 101, "100 以下にしてください。"),
+                Arguments.of("decimalMin", new BigDecimal("0.1"), "0.5 以上にしてください。"),
+                Arguments.of("decimalMax", new BigDecimal("100"), "99.9 以下にしてください。"));
     }
 
-    @Test
-    @DisplayName("文を用意していない種類の制約は「値が正しくありません。」")
-    void unknownConstraint() {
-        assertThat(messageOf("future", LocalDate.of(2000, 1, 1))).isEqualTo("値が正しくありません。");
+    /**
+     * 対応づけた項目（pattern）と email だけが違反する見本を作る。
+     *
+     * @return 見本
+     */
+    private static Sample sampleWithMappedAndEmailViolations() {
+        return new Sample("x", "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "abc", "x", null,
+                List.of("x"), List.of(), new String[]{"x"});
     }
 
-    @Test
-    @DisplayName("Bean Validation の違反でない検証エラー（型の変換の失敗など）は「値が正しくありません。」")
-    void notConstraintViolation() {
-        assertThat(messages.messageOf(new ObjectError("request", "Failed to convert"))).isEqualTo("値が正しくありません。");
-    }
-
-    @Test
-    @DisplayName("メソッド引数の検証エラーで、Bean Validation の違反でないものは「値が正しくありません。」")
-    void parameterErrorWithoutConstraintViolation() throws NoSuchMethodException {
-        var parameter = new MethodParameter(ValidationErrorTranslatorTest.class.getDeclaredMethod("messageOf", String.class, Object.class), 0);
-        var error = new DefaultMessageSourceResolvable("typeMismatch");
-        var result = new ParameterValidationResult(parameter, "x", List.of(error), null, null, null,
-                (resolvable, type) -> null);
-
-        assertThat(messages.messageOf(result, error)).isEqualTo("値が正しくありません。");
-    }
-
-    @Test
-    @DisplayName("Bean Validation の違反から作った検証エラーは、制約の種類の文になる")
-    void fromSpringValidator() {
-        var target = new Sample(null, "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "A", "a@b.jp", null, List.of("x"), List.of(), new String[]{"x"});
+    /**
+     * 見本を Spring の検証（SpringValidatorAdapter）で検証する。
+     *
+     * @param target 見本
+     * @return 検証の結果
+     */
+    private Errors validate(Sample target) {
         var errors = new BeanPropertyBindingResult(target, "sample");
         new SpringValidatorAdapter(validator).validate(target, errors);
-
-        assertThat(messages.messageOf(errors.getFieldError("notNull"))).isEqualTo("入力してください。");
-    }
-
-    @Test
-    @DisplayName("業務のエラーに対応づけた項目は、制約の種類の文の代わりに業務のエラーの文になる。ほかの項目は種類の文のまま")
-    void mappedField() {
-        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
-        var mapped = new ValidationErrorTranslator(resolver, List.of(mapping));
-        var target = new Sample("x", "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "abc", "x", null, List.of("x"), List.of(), new String[]{"x"});
-        var errors = new BeanPropertyBindingResult(target, "sample");
-        new SpringValidatorAdapter(validator).validate(target, errors);
-
-        assertThat(mapped.messageOf(errors.getFieldError("pattern"))).isEqualTo("金額は 0 円以上にしてください。");
-        assertThat(mapped.messageOf(errors.getFieldError("email"))).isEqualTo("メールアドレスの形式が正しくありません。");
-    }
-
-    @Test
-    @DisplayName("同じ項目のパスを複数の対応が対応づけていれば、作るときに失敗する")
-    void duplicateMapping() {
-        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
-
-        assertThatThrownBy(() -> new ValidationErrorTranslator(resolver, List.of(mapping, mapping)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("pattern");
+        return errors;
     }
 
     /**

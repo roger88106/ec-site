@@ -31,6 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MoneyTypeTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * 金額の項目の名前
      *
@@ -58,28 +60,36 @@ class MoneyTypeTest {
      */
     private static final DescribedPredicate<JavaClass> VIEW_PACKAGE = JavaClass.Predicates.resideInAPackage("..module.*.application.model.view..");
 
+    // ============================== テスト ==============================
+
     @Test
-    @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない（対象は、それぞれ 1 件以上ある）")
+    @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない")
     void moneyIsNotAnInteger() {
+        // 準備：対象の api・event のクラスと、command・view のクラスが、それぞれ 1 件以上ある
         ProductionClasses.requireNotEmpty(publicClasses(ProductionClasses.modules()), "api・event のクラス");
         ProductionClasses.requireNotEmpty(modelClasses(ProductionClasses.modules()), "application.model の view のパッケージと、View・Command のクラス");
 
+        // 操作と確認：本番のモジュールのクラスに、整数の金額の項目がない
         assertThat(violations(ProductionClasses.modules())).isEmpty();
     }
 
     @Test
-    @DisplayName("規則は、api、View・Command（入れ子を含む）、view のパッケージにある整数の金額に当たり、対象でないクラスには当たらない")
+    @DisplayName("規則は、検査の対象のクラスにある整数の金額だけに当たる")
     void ruleMatchesIntegerMoneyInCheckedClasses() {
+        // 準備：整数の金額を持つ例。対象は api、View・Command（入れ子を含む）、view のパッケージ。PricedRow は対象でない
         JavaClasses examples = new ClassFileImporter().importClasses(
                 PricedView.class, PricedRow.class, PricedCommand.class, PricedCommand.Line.class,
                 PricedReport.class, PricedApi.class);
 
+        // 操作と確認：対象の例の項目だけが違反になる
         assertThat(violations(examples)).containsExactlyInAnyOrder(
                 PricedApi.class.getName() + ".fee",
                 PricedCommand.Line.class.getName() + ".unitPrice",
                 PricedReport.class.getName() + ".amount",
                 PricedView.class.getName() + ".price");
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * 金額の検査の対象のクラスを返す。

@@ -29,6 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MessageContractTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * 業務のエラーのキーの形：ecsite.<モジュール>.<名前>（入力の検証のキー ecsite.validation.* は別に確認する）
      */
@@ -62,43 +64,52 @@ class MessageContractTest {
         ProductionClasses.requireNotEmpty(ERROR_CODES, "エラーの定義の定数");
     }
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("エラーの定義のキーは、モジュールの名前と定数の名前から決まる")
     void keyIsDerivedFromName() {
+        // 操作：キーが規則から決まるキーと違う定数を集める
         List<String> mismatched = ERROR_CODES.stream()
                 .filter(constant -> !keyOf(constant).equals(expectedKey(constant)))
                 .map(constant -> constant.getDeclaringClass().getSimpleName() + "." + constant.name() + " → " + keyOf(constant))
                 .toList();
 
+        // 確認：ない
         assertThat(mismatched).isEmpty();
     }
 
     @Test
     @DisplayName("すべてのエラーの定義に、メッセージのファイルの文がある")
     void everyErrorHasMessage() {
+        // 操作：メッセージのファイルにないキーを集める
         List<String> missing = ERROR_CODES.stream()
                 .map(MessageContractTest::keyOf)
                 .filter(key -> !MESSAGES.containsKey(key))
                 .toList();
 
+        // 確認：ない
         assertThat(missing).isEmpty();
     }
 
     @Test
     @DisplayName("メッセージのファイルの業務のエラーのキーに、エラーの定義がある")
     void everyMessageHasError() {
+        // 操作：業務のエラーの形のキーのうち、エラーの定義がないものを集める
         Set<String> defined = ERROR_CODES.stream().map(MessageContractTest::keyOf).collect(Collectors.toSet());
         Set<String> orphans = MESSAGES.stringPropertyNames().stream()
                 .filter(key -> ERROR_KEY.matcher(key).matches())
                 .filter(key -> !defined.contains(key))
                 .collect(Collectors.toCollection(TreeSet::new));
 
+        // 確認：ない
         assertThat(orphans).isEmpty();
     }
 
     @Test
     @DisplayName("文の差し込みの名前と、エラーの定義に書いた値の名前が一致する")
     void placeholdersMatchParameters() {
+        // 操作：文の差し込みの名前と、定義の値の名前が違う定数を集める（文のない定数は別のテストが見る）
         List<String> mismatched = new ArrayList<>();
         for (Enum<?> constant : ERROR_CODES) {
             String text = MESSAGES.getProperty(keyOf(constant));
@@ -116,8 +127,11 @@ class MessageContractTest {
             }
         }
 
+        // 確認：ない
         assertThat(mismatched).isEmpty();
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * エラーの定義の定数が持つメッセージのキーを返す。

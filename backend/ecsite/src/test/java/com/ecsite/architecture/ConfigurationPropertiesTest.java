@@ -11,7 +11,10 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ConfigurationPropertiesTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * 秘密の値の項目の名前に含まれる語
      *
@@ -51,9 +56,12 @@ class ConfigurationPropertiesTest {
      */
     private static final String OWN_PACKAGE_PREFIX = "com.ecsite.";
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("@EnableConfigurationProperties を付けるクラスは、設定のクラス（@Configuration）")
     void enableConfigurationPropertiesIsOnConfiguration() {
+        // 操作と確認：本番の手書きのクラスに規則を当てる
         ArchRule rule = classes().that().areAnnotatedWith(EnableConfigurationProperties.class)
                 .should().beMetaAnnotatedWith(Configuration.class);
         rule.check(ProductionClasses.handwritten());
@@ -62,16 +70,20 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("モジュールの設定のクラス（@Configuration）は、infrastructure に置く")
     void moduleConfigurationResidesInInfrastructure() {
+        // 操作と確認：本番の手書きのクラスに規則を当てる
         moduleConfigurationRule(ProductionClasses.MODULE_PACKAGE + "..").check(ProductionClasses.handwritten());
     }
 
     @Test
     @DisplayName("設定のクラスの規則は、infrastructure の外に置いた例に当たる")
     void configurationRuleMatchesMisplacedExample() {
+        // 準備：infrastructure の外の設定のクラスの例
         var examples = new ClassFileImporter().importClasses(MisplacedExampleConfig.class);
 
+        // 操作：例のパッケージに置き換えた規則を当てる
         var result = moduleConfigurationRule("com.ecsite.architecture..").evaluate(examples);
 
+        // 確認：例が違反になる
         assertThat(result.hasViolation()).isTrue();
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(detail -> detail.contains(MisplacedExampleConfig.class.getName()));
@@ -80,16 +92,20 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("presentation は、設定の値の型（@ConfigurationProperties）に依存しない")
     void presentationDoesNotDependOnConfigurationProperties() {
+        // 操作と確認：本番の手書きのクラスに規則を当てる
         presentationRule(ProductionClasses.MODULE_PACKAGE + ".*.presentation..").check(ProductionClasses.handwritten());
     }
 
     @Test
     @DisplayName("presentation の規則は、設定の値の型を使う例に当たる")
     void presentationRuleMatchesExampleUsingProperties() {
+        // 準備：設定の値の型と、それを受け取るコントローラーの例
         var examples = new ClassFileImporter().importClasses(ExampleProperties.class, PresentationExampleController.class);
 
+        // 操作：例のパッケージに置き換えた規則を当てる
         var result = presentationRule("com.ecsite.architecture..").evaluate(examples);
 
+        // 確認：コントローラーの例が違反になる
         assertThat(result.hasViolation()).isTrue();
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(detail -> detail.contains(PresentationExampleController.class.getName()));
@@ -98,16 +114,20 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("設定の値の型と、その項目からたどれる型のうち、秘密の値の項目を持つものは、toString を宣言する")
     void secretPropertiesDeclareToString() {
+        // 操作と確認：本番の手書きのクラスに規則を当てる
         secretPropertiesRule(ProductionClasses.handwritten()).check(ProductionClasses.handwritten());
     }
 
     @Test
     @DisplayName("toString の規則は、秘密の値の項目を持ち toString を宣言しない例に当たる")
     void toStringRuleMatchesExampleWithoutToString() {
+        // 準備：秘密の値の項目を持ち、toString を宣言しない例
         var examples = new ClassFileImporter().importClasses(SecretWithoutToStringProperties.class);
 
+        // 操作：規則を当てる
         var result = secretPropertiesRule(examples).evaluate(examples);
 
+        // 確認：例が違反になる
         assertThat(result.hasViolation()).isTrue();
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(detail -> detail.contains(SecretWithoutToStringProperties.class.getName()));
@@ -116,11 +136,14 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("toString の規則は、入れ子の型が秘密の値の項目を持ち toString を宣言しない例に当たる")
     void toStringRuleMatchesNestedExampleWithoutToString() {
+        // 準備：入れ子の型が秘密の値の項目を持ち、toString を宣言しない例
         var examples = new ClassFileImporter().importClasses(
                 NestedSecretProperties.class, NestedSecretProperties.Credentials.class);
 
+        // 操作：規則を当てる
         var result = secretPropertiesRule(examples).evaluate(examples);
 
+        // 確認：入れ子の型が違反になる
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(detail -> detail.contains(NestedSecretProperties.Credentials.class.getName()));
     }
@@ -128,33 +151,52 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("toString の規則は、Map の値の型が秘密の値の項目を持ち toString を宣言しない例に当たる")
     void toStringRuleMatchesMapValueExampleWithoutToString() {
+        // 準備：Map の値の型が秘密の値の項目を持ち、toString を宣言しない例
         var examples = new ClassFileImporter().importClasses(
                 MappedSecretProperties.class, MappedSecretProperties.Endpoint.class);
 
+        // 操作：規則を当てる
         var result = secretPropertiesRule(examples).evaluate(examples);
 
+        // 確認：Map の値の型が違反になる
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(detail -> detail.contains(MappedSecretProperties.Endpoint.class.getName()));
     }
 
     @Test
-    @DisplayName("toString の規則は、toString を宣言する例と、秘密の値の項目を持たない例に当たらない")
+    @DisplayName("toString の規則は、規則に合う例に当たらない")
     void toStringRuleDoesNotMatchCompliantExamples() {
+        // 準備：toString を宣言する例（入れ子を含む）と、秘密の値の項目を持たない例（static の定数、enum の定数の名前だけが当たる例を含む）
         var examples = new ClassFileImporter().importClasses(SecretWithToStringProperties.class, ExampleProperties.class,
                 NestedSecretSafeProperties.class, NestedSecretSafeProperties.MaskedCredentials.class,
                 StaticConstantProperties.class, EnumFieldProperties.class, EnumFieldProperties.Kind.class);
 
+        // 操作と確認：違反にならない
         assertThat(secretPropertiesRule(examples).evaluate(examples).hasViolation()).isFalse();
     }
 
-    @Test
-    @DisplayName("秘密の値の項目の名前は、secret、password、salt、token、credential を含むか、key で終わる")
-    void detectsSecretFieldNames() {
-        assertThat(List.of("secretAccessKey", "webhookSecret", "salt", "key", "secretKey", "apiPassword", "accessToken", "credentials"))
-                .allMatch(ConfigurationPropertiesTest::isSecretFieldName);
-        assertThat(List.of("accessKeyId", "value", "endpoint", "keyId", "monkeyBusiness"))
-                .noneMatch(ConfigurationPropertiesTest::isSecretFieldName);
+    @Nested
+    @DisplayName("秘密の値の項目の名前")
+    class SecretFieldNames {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"secretAccessKey", "webhookSecret", "salt", "key", "secretKey", "apiPassword", "accessToken", "credentials"})
+        @DisplayName("secret、password、salt、token、credential を含むか、key で終わる名前は、秘密の値の項目の名前")
+        void detectsSecretFieldName(String name) {
+            // 操作と確認：秘密の値の項目の名前と判定する
+            assertThat(isSecretFieldName(name)).isTrue();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"accessKeyId", "value", "endpoint", "keyId", "monkeyBusiness"})
+        @DisplayName("秘密の語を含まず、key で終わらない名前は、秘密の値の項目の名前でない")
+        void ignoresOtherFieldName(String name) {
+            // 操作と確認：秘密の値の項目の名前と判定しない
+            assertThat(isSecretFieldName(name)).isFalse();
+        }
     }
+
+    // ============================== 規則の補助 ==============================
 
     /**
      * 設定の型のうち、秘密の値の項目を自分で持つものが toString を宣言する規則を作る。

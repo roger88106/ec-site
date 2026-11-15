@@ -22,10 +22,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ExpiredDataCleanupTest {
 
+    // ============================== 定数 ==============================
+
     /**
-     * 件数の上限
+     * 1 回に削除する件数の上限
      */
     private static final int BATCH_SIZE = 3;
+
+    /**
+     * ログの文に入れる、片付けるデータの名詞
+     */
+    private static final String NOUN = "期限切れのカート";
+
+    // ============================== 対象 ==============================
 
     /**
      * 処理に渡すロガー
@@ -38,48 +47,61 @@ class ExpiredDataCleanupTest {
     @RegisterExtension
     final LogCapture logs = LogCapture.of(ExpiredDataCleanupTest.class);
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("削除した件数が上限と等しい間は繰り返し、上限に満たなくなったら止める")
     void repeatsWhileDeletedCountEqualsBatchSize() {
-        var results = new ArrayDeque<>(List.of(3, 3, 2));
+        // 準備：上限ちょうどを 2 回、上限に満たない件数を 1 回返す削除
+        var results = new ArrayDeque<>(List.of(BATCH_SIZE, BATCH_SIZE, BATCH_SIZE - 1));
         var calls = new AtomicInteger();
 
-        ExpiredDataCleanup.run(log, "期限切れのカート", BATCH_SIZE, () -> {
+        // 操作：片付ける
+        ExpiredDataCleanup.run(log, NOUN, BATCH_SIZE, () -> {
             calls.incrementAndGet();
             return results.removeFirst();
         });
 
+        // 確認：上限に満たなかった 3 回目で止まる
         assertThat(calls).hasValue(3);
     }
 
     @Test
     @DisplayName("1 回目に上限に満たなければ、1 回で止める")
     void stopsAfterFirstCallWhenBelowBatchSize() {
+        // 準備：毎回 1 件だけ削除する処理
         var calls = new AtomicInteger();
 
-        ExpiredDataCleanup.run(log, "期限切れのカート", BATCH_SIZE, () -> {
+        // 操作：片付ける
+        ExpiredDataCleanup.run(log, NOUN, BATCH_SIZE, () -> {
             calls.incrementAndGet();
             return 1;
         });
 
+        // 確認：1 回だけ呼ばれる
         assertThat(calls).hasValue(1);
     }
 
     @Test
     @DisplayName("削除した件数の合計が 1 件以上なら、渡した名詞からログの文を作り、info で渡したロガーに出す")
     void logsTotalAtInfoWhenSomethingWasDeleted() {
+        // 準備：3 件、3 件、2 件を削除する処理
         var results = new ArrayDeque<>(List.of(3, 3, 2));
 
-        ExpiredDataCleanup.run(log, "期限切れのカート", BATCH_SIZE, results::removeFirst);
+        // 操作：片付ける
+        ExpiredDataCleanup.run(log, NOUN, BATCH_SIZE, results::removeFirst);
 
-        assertThat(logs.entries()).containsExactly(new LogEntry(Level.INFO, "期限切れのカートを消した：8 件", ""));
+        // 確認：合計の 8 件を書いた info のログが 1 件だけ
+        assertThat(logs.entries()).containsExactly(new LogEntry(Level.INFO, NOUN + "を消した：8 件", ""));
     }
 
     @Test
     @DisplayName("削除した件数が 0 件なら、debug で出す")
     void logsZeroAtDebugWhenNothingWasDeleted() {
-        ExpiredDataCleanup.run(log, "期限切れの引当", BATCH_SIZE, () -> 0);
+        // 操作：何も消さない削除で片付ける
+        ExpiredDataCleanup.run(log, NOUN, BATCH_SIZE, () -> 0);
 
-        assertThat(logs.entries()).containsExactly(new LogEntry(Level.DEBUG, "期限切れの引当を消した：0 件", ""));
+        // 確認：0 件を書いた debug のログが 1 件だけ
+        assertThat(logs.entries()).containsExactly(new LogEntry(Level.DEBUG, NOUN + "を消した：0 件", ""));
     }
 }

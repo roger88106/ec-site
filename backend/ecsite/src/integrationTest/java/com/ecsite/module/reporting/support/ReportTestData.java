@@ -18,9 +18,25 @@ import static com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
 /**
  * レポートの写しのテストデータ
  *
- * <p>写し（注文と明細）を DB に直接入れる。明細は税込単価 1,100 円（税抜 1,000 円、税率 10%）。送料は 1,000 円（消費税 90 円）。
+ * <p>写し（注文と明細）を DB に直接入れる。明細の単価と送料は、公開の定数（{@link #UNIT_PRICE_INCL_TAX} など）。
+ * 期待値は、この定数と、定数から額を求める関数（{@link #total} など）で作る。
  */
 public class ReportTestData {
+
+    /**
+     * 明細の税込単価（円。税率 10%）
+     */
+    public static final long UNIT_PRICE_INCL_TAX = 1100;
+
+    /**
+     * 明細の税抜単価（円）
+     */
+    public static final long UNIT_PRICE_EXCL_TAX = 1000;
+
+    /**
+     * 送料の既定（円。税込で、消費税は 10% の内税）
+     */
+    public static final long SHIPPING_FEE = 1000;
 
     /**
      * 日本時間
@@ -64,7 +80,7 @@ public class ReportTestData {
         private String prefectureCode = "13";
         private Integer age;
         private String gender;
-        private long shippingFee = 1000;
+        private long shippingFee = SHIPPING_FEE;
         private final List<Line> lines = new ArrayList<>();
 
         private OrderBuilder(String status, LocalDate orderedOn) {
@@ -139,10 +155,10 @@ public class ReportTestData {
          * @return 注文 ID
          */
         public UUID insert() {
-            long items = lines.stream().mapToLong(line -> 1100L * line.quantity()).sum();
+            long items = lineInclTax(lines.stream().mapToInt(Line::quantity).sum());
             long total = items + shippingFee;
-            long shippingTax = shippingFee * 10 / 110;
-            long taxTotal = total * 10 / 110;
+            long shippingTax = taxOf(shippingFee);
+            long taxTotal = taxOf(total);
             var orderedAt = noon(orderedOn);
             var shippedAt = shippedOn == null ? null : noon(shippedOn);
             dsl.insertInto(SALES_ORDER)
@@ -179,12 +195,59 @@ public class ReportTestData {
                         .set(SALES_ORDER_LINE.AXIS_VALUES, JSONB.valueOf("[]"))
                         .set(SALES_ORDER_LINE.QUANTITY, line.quantity())
                         .set(SALES_ORDER_LINE.RATE_PERCENT, BigDecimal.TEN)
-                        .set(SALES_ORDER_LINE.SUBTOTAL_INCL_TAX, 1100L * line.quantity())
-                        .set(SALES_ORDER_LINE.SUBTOTAL_EXCL_TAX, 1000L * line.quantity())
+                        .set(SALES_ORDER_LINE.SUBTOTAL_INCL_TAX, lineInclTax(line.quantity()))
+                        .set(SALES_ORDER_LINE.SUBTOTAL_EXCL_TAX, lineExclTax(line.quantity()))
                         .execute();
             }
             return orderId;
         }
+    }
+
+    /**
+     * 明細の税込小計を返す。
+     *
+     * @param quantity 数量（複数の明細なら、その合計）
+     * @return 税込小計（円）
+     */
+    public static long lineInclTax(int quantity) {
+        return UNIT_PRICE_INCL_TAX * quantity;
+    }
+
+    /**
+     * 明細の税抜小計を返す。
+     *
+     * @param quantity 数量（複数の明細なら、その合計）
+     * @return 税抜小計（円）
+     */
+    public static long lineExclTax(int quantity) {
+        return UNIT_PRICE_EXCL_TAX * quantity;
+    }
+
+    /**
+     * 既定の送料の注文の総額を返す。
+     *
+     * @param quantity 明細の数量の合計
+     * @return 総額（明細の税込小計 ＋ 送料。円）
+     */
+    public static long total(int quantity) {
+        return lineInclTax(quantity) + SHIPPING_FEE;
+    }
+
+    /**
+     * 既定の送料の注文の、総額から消費税の合計を引いた額を返す。
+     *
+     * @param quantity 明細の数量の合計
+     * @return 総額 − 消費税の合計（円）
+     */
+    public static long totalExclTax(int quantity) {
+        return total(quantity) - taxOf(total(quantity));
+    }
+
+    /**
+     * 税込の額に含まれる消費税（10% の内税、切り捨て）を返す。
+     */
+    private static long taxOf(long amountInclTax) {
+        return amountInclTax * 10 / 110;
     }
 
     /**

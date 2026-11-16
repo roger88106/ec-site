@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static com.ecsite.module.reporting.support.ReportTestData.lineExclTax;
+import static com.ecsite.module.reporting.support.ReportTestData.lineInclTax;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -103,8 +105,8 @@ class VariantSalesQueryTest {
             assertThat(report.variants())
                     .extracting(VariantSales::variantId, VariantSales::quantity, VariantSales::amount)
                     .containsExactlyInAnyOrder(
-                            tuple(blackM(), 5L, Money.of(5500)),
-                            tuple(whiteM(), 3L, Money.of(3300)),
+                            tuple(blackM(), 5L, Money.of(lineInclTax(5))),
+                            tuple(whiteM(), 3L, Money.of(lineInclTax(3))),
                             tuple(whiteL(), 0L, Money.ZERO));
         }
 
@@ -155,7 +157,7 @@ class VariantSalesQueryTest {
 
             // 確認：黒・M、白・M、白・L の税抜小計
             assertThat(report.variants()).extracting(VariantSales::amount)
-                    .containsExactly(Money.of(5000), Money.of(3000), Money.ZERO);
+                    .containsExactly(Money.of(lineExclTax(5)), Money.of(lineExclTax(3)), Money.ZERO);
         }
 
         @Test

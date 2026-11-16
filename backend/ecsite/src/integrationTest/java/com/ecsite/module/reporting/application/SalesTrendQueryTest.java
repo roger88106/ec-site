@@ -19,6 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static com.ecsite.module.reporting.support.ReportTestData.lineExclTax;
+import static com.ecsite.module.reporting.support.ReportTestData.lineInclTax;
+import static com.ecsite.module.reporting.support.ReportTestData.total;
+import static com.ecsite.module.reporting.support.ReportTestData.totalExclTax;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -27,7 +31,7 @@ import static org.assertj.core.api.Assertions.tuple;
  *
  * <p>写しを DB に直接入れて集計する。他のテストの写しと重ならないよう、2031 年の日付を使う。テストごとにロールバックする。
  *
- * <p>金額は {@link ReportTestData} の明細（1 個 1,100 円、税抜 1,000 円）と送料 1,000 円（消費税 90 円）から決まる。
+ * <p>金額の期待値は {@link ReportTestData} の単価と送料の定数から、関数（{@code total} など）で作る。
  */
 @IntegrationTest
 @Transactional
@@ -90,8 +94,8 @@ class SalesTrendQueryTest {
             // 確認：4 月は受付と出荷済み、5 月はキャンセル申請中、6 月は 0
             assertThat(report.points()).extracting(point -> point.bucket().start(), TrendPoint::amount, TrendPoint::quantity)
                     .containsExactly(
-                            tuple(LocalDate.parse("2031-04-01"), Money.of(5300), 3L),
-                            tuple(LocalDate.parse("2031-05-01"), Money.of(4300), 3L),
+                            tuple(LocalDate.parse("2031-04-01"), Money.of(total(2) + total(1)), 3L),
+                            tuple(LocalDate.parse("2031-05-01"), Money.of(total(3)), 3L),
                             tuple(LocalDate.parse("2031-06-01"), Money.ZERO, 0L));
         }
 
@@ -103,7 +107,7 @@ class SalesTrendQueryTest {
 
             // 確認：出荷日の 5 月に、出荷済みの 1 件だけ
             assertThat(report.points()).extracting(TrendPoint::amount, TrendPoint::quantity)
-                    .containsExactly(tuple(Money.ZERO, 0L), tuple(Money.of(2100), 1L), tuple(Money.ZERO, 0L));
+                    .containsExactly(tuple(Money.ZERO, 0L), tuple(Money.of(total(1)), 1L), tuple(Money.ZERO, 0L));
         }
     }
 
@@ -128,7 +132,7 @@ class SalesTrendQueryTest {
             var april = service.trend(query(Basis.ORDER, null, true, false)).points().getFirst();
 
             // 確認：4 月の 2 件の、総額から消費税を引いた額の合計
-            assertThat(april.amount()).isEqualTo(Money.of((3200 - 290) + (2100 - 190)));
+            assertThat(april.amount()).isEqualTo(Money.of(totalExclTax(2) + totalExclTax(1)));
         }
 
         @Test
@@ -138,7 +142,7 @@ class SalesTrendQueryTest {
             var april = service.trend(query(Basis.ORDER, null, false, true)).points().getFirst();
 
             // 確認：4 月の 2 件の、明細の税込小計の合計
-            assertThat(april.amount()).isEqualTo(Money.of(2200 + 1100));
+            assertThat(april.amount()).isEqualTo(Money.of(lineInclTax(2) + lineInclTax(1)));
         }
 
         @Test
@@ -148,7 +152,7 @@ class SalesTrendQueryTest {
             var april = service.trend(query(Basis.ORDER, null, true, true)).points().getFirst();
 
             // 確認：4 月の 2 件の、明細の税抜小計の合計
-            assertThat(april.amount()).isEqualTo(Money.of(2000 + 1000));
+            assertThat(april.amount()).isEqualTo(Money.of(lineExclTax(2) + lineExclTax(1)));
         }
     }
 
@@ -164,7 +168,7 @@ class SalesTrendQueryTest {
 
             // 確認：商品 B だけの 5 月の注文も数える
             assertThat(report.points().get(1)).extracting(TrendPoint::amount, TrendPoint::quantity)
-                    .containsExactly(Money.of(4300), 3L);
+                    .containsExactly(Money.of(total(3)), 3L);
         }
 
         @Test
@@ -175,7 +179,7 @@ class SalesTrendQueryTest {
 
             // 確認：4 月の商品 A の明細の税込小計だけ。商品 B の 5 月は 0
             assertThat(report.points()).extracting(TrendPoint::amount, TrendPoint::quantity)
-                    .containsExactly(tuple(Money.of(3300), 3L), tuple(Money.ZERO, 0L), tuple(Money.ZERO, 0L));
+                    .containsExactly(tuple(Money.of(lineInclTax(3)), 3L), tuple(Money.ZERO, 0L), tuple(Money.ZERO, 0L));
         }
 
         @Test
@@ -195,7 +199,7 @@ class SalesTrendQueryTest {
             var april = service.trend(query(Basis.ORDER, productA, true, false)).points().getFirst();
 
             // 確認：4 月の商品 A の明細の税抜小計
-            assertThat(april.amount()).isEqualTo(Money.of(3000));
+            assertThat(april.amount()).isEqualTo(Money.of(lineExclTax(3)));
         }
     }
 
@@ -252,7 +256,7 @@ class SalesTrendQueryTest {
         // 確認：4〜6 月が 2031 年度の第 1 四半期の 1 行
         assertThat(report.points()).extracting(point -> point.bucket().fiscalYear(), point -> point.bucket().quarter(),
                         TrendPoint::amount)
-                .containsExactly(tuple(2031, 1, Money.of(9600)));
+                .containsExactly(tuple(2031, 1, Money.of(total(2) + total(1) + total(3))));
     }
 
     // ============================== 準備の補助 ==============================

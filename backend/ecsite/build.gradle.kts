@@ -409,6 +409,8 @@ pitest {
     threads = 4
     outputFormats = listOf("HTML", "XML")
     timestampedReports = false
+    // mutation score（%）が下回ると失敗する。今の値（91.02%）を整数に切り捨てて、さらに 1 下げた値
+    mutationThreshold = 90
 }
 
 // jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）
@@ -417,10 +419,11 @@ tasks.named("pitest") {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
+// カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
-//   報告：build/reports/jacoco/coverageReport/（html、xml）
-//   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：
+//   coverageReport：報告を作る。build/reports/jacoco/coverageReport/（html、xml）
+//   coverageVerification：全体の行と分岐の割合が基準を下回ると失敗する。CI が報告を保存した後に流す
+//   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡す（テストもコンパイルも流さない）：
 //   ./gradlew coverageReport -PcoverageExecDir=<*.exec を探すディレクトリ> -PcoverageClassesDir=<build/classes/java/main の写し>
 //   各ジョブは別々にコンパイルするが、javac の出力は同じ入力なら同じなので、JaCoCo のクラスの ID は一致する
 // -----------------------------------------------------------------------------
@@ -431,9 +434,8 @@ jacoco {
 /** 生成したコード（jOOQ、OpenAPI）は数えない */
 val coverageExcludes = listOf("com/ecsite/jooq/**", "com/ecsite/api/**")
 
-val coverageReport = tasks.register<JacocoReport>("coverageReport") {
-    description = "単体と統合のテストを合わせたカバレッジの報告を作る"
-    group = "verification"
+/** 報告と基準の検査が読む、実行データとクラス。-PcoverageExecDir と -PcoverageClassesDir があれば、そちらを使う */
+fun JacocoReportBase.useCoverageInputs() {
     val execDir = providers.gradleProperty("coverageExecDir").orNull
     val classesDir = providers.gradleProperty("coverageClassesDir").orNull
     if (execDir != null) {
@@ -455,6 +457,12 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
             exclude(coverageExcludes)
         })
     }
+}
+
+val coverageReport = tasks.register<JacocoReport>("coverageReport") {
+    description = "単体と統合のテストを合わせたカバレッジの報告を作る"
+    group = "verification"
+    useCoverageInputs()
     reports {
         xml.required = true
         html.required = true
@@ -462,6 +470,25 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
 }
 
 tasks.check { finalizedBy(coverageReport) }
+
+// 基準は、今の値（行 98.4%、分岐 79.17%）を整数に切り捨てて、さらに 1 下げた値。書き方の変更（引数の null の検査など）で少し下がっても止めないため
+tasks.register<JacocoCoverageVerification>("coverageVerification") {
+    description = "単体と統合のテストを合わせたカバレッジが、基準を下回らないことを確認する"
+    group = "verification"
+    useCoverageInputs()
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                minimum = "0.97".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                minimum = "0.78".toBigDecimal()
+            }
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // 依存のライセンスの検査（依存とライセンス）

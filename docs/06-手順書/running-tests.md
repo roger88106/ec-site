@@ -117,39 +117,30 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 ## カバレッジと mutation score の基準の検査
 
-カバレッジ（行・分岐）と、domain の mutation score（PIT で測る、テストが検出できた変異の割合）が基準の値（許容の幅を含む）を下回ると、CI が失敗する。理由：テストの量や強さが下がったことに気づくため。
+カバレッジ（行・分岐）と、domain の mutation score（PIT で測る、テストが検出できた変異の割合）が基準の値を下回ると、CI が失敗する。理由：テストの量や強さが下がったことに気づくため。
 
-- 基準は `scripts/ci/report/quality-baseline.json` にある、対象ごとの合計の値と許容の幅（`tolerance`）。ファイルごとの基準はない。
-- `backend` の許容の幅は、行 0.10、分岐 0.30。理由：統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつくため（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）。
+基準は、各ツールの閾値に置く。対象ごとの合計の値で、ファイルごとの基準はない。
 
-`scripts/ci/report/coverage-baseline.mjs` が基準と比べて失敗にし（対象と結果は冒頭のコメント）、`coverage-summary.mjs` と `mutation-report.mjs` が低い箇所の一覧を job の summary に書く。
+| 対象 | 基準の置き場所 | 失敗する task・コマンド |
+|------|----------------|------------------------|
+| バックエンド（単体と統合を合わせたカバレッジ） | `backend/ecsite/build.gradle.kts` の `coverageVerification` | `./gradlew coverageVerification` |
+| domain の mutation score | `backend/ecsite/build.gradle.kts` の `pitest` の `mutationThreshold` | `./gradlew pitest` |
+| 管理画面、店舗画面、共有のパッケージ | 各ディレクトリの `vite.config.ts`・`vitest.config.ts` の `coverage.thresholds` | `pnpm test` |
+
+- 基準は、決めたときの値を整数に切り捨て、さらに 1 下げた値にしている。理由：書き方の変更（引数の null の検査など）や、統合テストの同時実行の競合でだけ実行される分岐のばらつき（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）で止めないため。
+- `scripts/ci/report/coverage-summary.mjs` が、合計と低い箇所の一覧を job の summary に書く（失敗にしない）。
 
 ### CI での手順の位置
 
-手順は `.github/workflows/ci.yml` にある。検査は報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブの、単体テストの後で実行し、ジョブの時間が約 2 分増える（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
+手順は `.github/workflows/ci.yml` にある。バックエンドのカバレッジの検査は、報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブの、単体テストの後で実行し、ジョブの時間が約 2 分増える（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
 
 ### 手元での実行
 
-CI と同じ検査を、手元で実行できる。先に、対象のテストを実行して報告を作る。
+上の表のコマンドで、CI と同じ検査が手元で流れる。バックエンドのカバレッジは、先に `backend/ecsite/` で `./gradlew check`（統合テストを含む）を実行して実行データを作り、`./gradlew coverageVerification` を実行する。
 
-```bash
-# ルートで：node scripts/ci/report/coverage-baseline.mjs <対象> <報告のパス> [--write]
-node scripts/ci/report/coverage-baseline.mjs backend backend/ecsite/build/reports/jacoco/coverageReport/coverageReport.xml
-```
-
-| 対象 | 報告を作るコマンド | 報告のパス |
-|------|--------------------|------------|
-| `backend` | `backend/ecsite/` で `./gradlew check`（統合テストを含む。`coverageReport` を実行する） | `backend/ecsite/build/reports/jacoco/coverageReport/coverageReport.xml` |
-| `admin`、`store`、`shared` | 各ディレクトリで `pnpm test` | `frontend/<対象>/coverage/coverage-summary.json` |
-| `backend-domain` | `backend/ecsite/` で `./gradlew pitest` | `backend/ecsite/build/reports/pitest/mutations.xml` |
-
-- 手元でバックエンドの一部のテストだけを実行すると、報告の値が基準より低くなり、検査が失敗する。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
+- バックエンドの一部のテストだけを実行すると、値が基準より低くなり、検査が失敗する。CI と同じ範囲（`./gradlew check`）の実行データを使う。
+- フロントの 1 つのファイルのテストは、カバレッジを取らない `npx vitest run <ファイル>` で実行する（`pnpm test` はカバレッジを取り、全体の基準と比べる）。
 
 ### 失敗したとき
 
-ログと summary の対象・基準・今回の値・差を見て、低い箇所を summary の一覧で見つけ、テストを追加して値を基準以上に戻す。正当な理由で下げるときは、「基準を変える手順」のとおりにする。
-
-### 基準を変える手順
-
-- `--write` で基準のファイルの値を報告の値に書き換え、同じ pull request に含める（基準を下げるときと、上回った値に更新するとき）。下げるときは、pull request に理由を書く。
-- バックエンドの `--write` は、CI の summary の値、または `./gradlew check --rerun-tasks` などでテストを実際に実行した報告の値で行う。ビルドのキャッシュから読んだ報告は、実行した報告と分岐が 1 つ違うことがある（[CI の実測](../07-記録/ci-results.md)の「キャッシュから読んだ値と実行した値」）。
+ログの今回の値と基準を見て、低い箇所を summary の一覧（JaCoCo と Vitest の HTML の報告でもよい）で見つけ、テストを追加して値を基準以上に戻す。正当な理由で下げるときは、基準の置き場所の値を変え、pull request に理由を書く。

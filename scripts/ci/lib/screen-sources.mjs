@@ -1,4 +1,4 @@
-// 画面の本番のソースの定義。画面のソースを読む検査は、ここで決めた対象を読む。
+// 画面の本番のソースと、画面のテスト・E2E のファイルの定義。画面のソースを読む検査は、ここで決めた対象を読む。
 // 対象は、店舗画面・管理画面・共有パッケージの src の .ts と .tsx。
 // 除くものは、テスト（.test.ts(x)、src/test/ のテストの補助）、生成物（generated/）、shadcn/ui の部品（components/ui/）、共有の ui（src/ui/）。
 // 定義と違う対象を読む検査は、その理由を検査の中に書く。
@@ -15,6 +15,15 @@ const SCREEN_SOURCE = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/.*\
 
 /** 本番のソースでないもの（テスト、テストの補助、生成物、shadcn/ui の部品、共有の ui） */
 const NOT_PRODUCTION = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/components\/ui\//, /\/src\/ui\//]
+
+/** 画面の単体・結合テストのファイル */
+export const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
+
+/** 画面のテストの補助のファイル（src の下の test/ ディレクトリの下） */
+export const FRONTEND_TEST_SUPPORT = /^frontend\/(?:store|admin|shared)\/src\/(?:.*\/)?test\/.*\.tsx?$/
+
+/** E2E のファイル */
+export const E2E_FILE = /^e2e\/.*\.tsx?$/
 
 /**
  * 画面の本番のソースかを返す。

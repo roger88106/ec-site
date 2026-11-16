@@ -1,6 +1,6 @@
 // frontend-rules が規則を当てるファイルの種類と、種類ごとの振り分け。
-// 画面のテストのファイルの場所は、spec-numbers と共有する lib/frontend-paths.mjs にある
-import { FRONTEND_TEST } from '../lib/frontend-paths.mjs'
+// 画面のテストのファイルの場所は、spec-numbers と共有する lib/screen-sources.mjs にある
+import { FRONTEND_TEST } from '../lib/screen-sources.mjs'
 
 /** 画面のソース（テスト、生成物、shadcn/ui のコンポーネント、共有の ui、テストの補助を含む） */
 const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/

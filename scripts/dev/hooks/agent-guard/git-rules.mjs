@@ -46,10 +46,18 @@ const COMMIT_OPTIONS = {
   valueLong: ['message', 'file', 'reuse-message', 'reedit-message', 'fixup', 'squash', 'template', 'author', 'date', 'cleanup', 'trailer', 'pathspec-from-file'],
 }
 
+/** force push を通す、push の先のブランチの接頭辞（作業ブランチ） */
+const FORCE_ALLOWED_PREFIX = 'agent/'
+
+/** push の先を 1 つに決められない、全てのブランチや参照を送る長いオプション */
+const PUSH_ALL_OPTIONS = ['all', 'branches', 'mirror']
+
 /** force push を拒否する理由と代わりの手順 */
 const FORCE_REASON =
-  'push 済みの履歴を書き換えないため、force push（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ で始まる refspec）は使えない（AGENTS.md の Git の表）。' +
-  'push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
+  'agent/ で始まる作業ブランチ以外（develop、main、release/**、hotfix/** など）の push 済みの履歴は書き換えないため、' +
+  'force push（-f、--force、--force-with-lease、--force-if-includes、+ で始まる refspec）は、push の先が全て agent/ で始まるときだけ使える。--mirror・--all・--branches の force は使えない（AGENTS.md の Git の表）。' +
+  'push の先を決められないときも拒否する（refspec がなく、今のブランチを読めないか、push.default が matching か、remote.<名前>.push を設定してあるとき）。' +
+  'agent/ のブランチなら refspec で先を書いて（例：git push --force-with-lease origin HEAD:agent/<名前>）実行し直す。それ以外のブランチの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
 
 /** 検査の省略を拒否する理由と代わりの手順 */
 const NO_VERIFY_REASON =
@@ -182,16 +190,79 @@ function pushRefspecs(longs, positionals) {
 }
 
 /**
- * git push の force を拒否する。dry-run（-n）は通す。
+ * 対象のリポジトリの今のブランチと、push の先に関わる設定を読む。
  *
  * @param {GitInvocation} git git の呼び出し
+ * @param {Deps} deps 外部の処理
+ * @returns {{ branch: string | null, config: Map<string, string[]> | null }} 今のブランチ（読めないか detached なら null）と、
+ *   push.default・remote.*.push・branch.*.merge の設定（読めなければ null）
+ */
+function readPushState(git, deps) {
+  const head = deps.runGit([...git.pathOptions, 'symbolic-ref', '--quiet', '--short', 'HEAD'], git.dir, git.env)
+  const branch = head?.status === 0 ? head.stdout.trim() || null : null
+  const result = deps.runGit([...git.pathOptions, 'config', '--get-regexp', '^(push\\.default|remote\\..+\\.push|branch\\..+\\.merge)$'], git.dir, git.env)
+  // 終了コード 1 は、当たる設定がないこと
+  if (result?.status !== 0 && result?.status !== 1) return { branch, config: null }
+  const config = new Map()
+  for (const line of (result.status === 0 ? result.stdout : '').split('\n')) {
+    const match = /^(\S+)\s+(.*)$/.exec(line.trim())
+    if (match) config.set(match[1], [...(config.get(match[1]) ?? []), match[2]])
+  }
+  return { branch, config }
+}
+
+/**
+ * ブランチの名前か参照が、force push を通すブランチ（agent/ で始まる）を指すか。
+ *
+ * @param {string} ref ブランチの名前か refs/heads/ の参照
+ * @returns {boolean} 通すブランチなら true
+ */
+function isForceAllowedBranch(ref) {
+  const name = ref.startsWith('refs/heads/') ? ref.slice('refs/heads/'.length) : ref
+  return !name.startsWith('refs/') && name.startsWith(FORCE_ALLOWED_PREFIX)
+}
+
+/**
+ * force push の先のブランチが、全て agent/ で始まるかを調べる。
+ * refspec があれば、それぞれの先（: の後。: がなければ前の名前で、HEAD は今のブランチ）を見る。
+ * refspec がなければ、今のブランチとその上流（branch.<名前>.merge）を見る。
+ * push.default が matching か、remote.<名前>.push を設定してあるときは、送る先が設定で変わるので、決められないとする。
+ *
+ * @param {GitInvocation} git git の呼び出し
+ * @param {string[]} refspecs refspec
+ * @param {Deps} deps 外部の処理
+ * @returns {boolean} 先を全て決められ、どれも agent/ で始まれば true
+ */
+function forceTargetsAllowed(git, refspecs, deps) {
+  const { branch, config } = readPushState(git, deps)
+  if (config === null) return false
+  const pushDefault = config.get('push.default')?.at(-1)?.toLowerCase()
+  if (pushDefault === 'matching' || [...config.keys()].some((key) => /^remote\..+\.push$/i.test(key))) return false
+  // 上流を設定したブランチは、push.default が upstream のとき上流へ送られるので、上流も agent/ で始まることを求める
+  const upstreamAllowed = (name) => (config.get(`branch.${name}.merge`) ?? []).every(isForceAllowedBranch)
+  if (refspecs.length === 0) return branch !== null && isForceAllowedBranch(branch) && upstreamAllowed(branch)
+  return refspecs.every((refspec) => {
+    const [source, destination] = refspec.replace(/^\+/, '').split(':')
+    if (destination !== undefined) return destination === 'HEAD' ? branch !== null && isForceAllowedBranch(branch) : isForceAllowedBranch(destination)
+    const name = source === 'HEAD' ? branch : source
+    return name !== null && isForceAllowedBranch(name) && upstreamAllowed(name.replace(/^refs\/heads\//, ''))
+  })
+}
+
+/**
+ * git push の force を、push の先が全て agent/ で始まるとき以外は拒否する。dry-run（-n）は通す。
+ *
+ * @param {GitInvocation} git git の呼び出し
+ * @param {Deps} deps 外部の処理
  * @returns {Decision | null} 判定
  */
-function judgePush(git) {
+function judgePush(git, deps) {
   if (git.subcommand !== 'push') return null
   const { longs, shorts, positionals } = scanOptions(git.args, PUSH_OPTIONS)
   const forced = longs.some((name) => matchesLong(name, FORCE_OPTIONS)) || shorts.includes('f') || positionals.some((p) => p.startsWith('+'))
-  return forced ? deny(FORCE_REASON) : null
+  if (!forced) return null
+  if (longs.some((name) => matchesLong(name, PUSH_ALL_OPTIONS))) return deny(FORCE_REASON)
+  return forceTargetsAllowed(git, pushRefspecs(longs, positionals), deps) ? null : deny(FORCE_REASON)
 }
 
 /**

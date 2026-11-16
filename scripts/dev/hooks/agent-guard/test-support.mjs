@@ -13,12 +13,15 @@ export const CWD = path.resolve(tmpdir(), 'agent-guard-cwd')
 /**
  * git と gh の呼び出しと、ファイルの読み込みを差し替えた依存を作る。
  * rev-parse は `.git/hooks/pre-commit` を返し、show-ref は `tags` にある tag だけを見つける。ファイルは `files`（絶対パスをキー）から読む。
+ * symbolic-ref は今のブランチ `branch`（null は detached）を、config --get-regexp は `config`（`キー 値` の行。null は失敗）を返す。
  * gh は `gh`（結果か、引数とオプションから結果を返す関数）を返す。既定は失敗。
  */
 export function fakeDeps({
   files = { [path.join(CWD, '.git/hooks/pre-commit')]: INSTALLED_HOOK },
   revParse = { status: 0, stdout: '.git/hooks/pre-commit\n' },
   tags = [],
+  branch = 'develop',
+  config = [],
   gh = { status: 1, stdout: '', stderr: 'テストの gh は、この例では呼ばれない想定' },
 } = {}) {
   const calls = []
@@ -29,6 +32,11 @@ export function fakeDeps({
     runGit: (args, cwd, env = {}) => {
       calls.push({ args, cwd, env })
       if (args[0] === 'show-ref') return { status: tags.some((tag) => args.includes(`refs/tags/${tag}`)) ? 0 : 1, stdout: '' }
+      if (args[0] === 'symbolic-ref') return branch === null ? { status: 1, stdout: '' } : { status: 0, stdout: `${branch}\n` }
+      if (args[0] === 'config') {
+        if (config === null) return { status: null, stdout: '' }
+        return config.length === 0 ? { status: 1, stdout: '' } : { status: 0, stdout: `${config.join('\n')}\n` }
+      }
       return revParse
     },
     readText: (file) => files[path.resolve(file)] ?? null,

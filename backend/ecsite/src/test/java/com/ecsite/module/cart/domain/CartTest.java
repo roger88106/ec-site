@@ -39,6 +39,11 @@ class CartTest {
     private static final Duration EXPIRY = Duration.ofDays(30);
 
     /**
+     * カートの品目の数の上限
+     */
+    private static final int MAX_ITEMS = 30;
+
+    /**
      * 白のバリアント ID
      */
     private static final UUID WHITE = UUID.randomUUID();
@@ -133,6 +138,20 @@ class CartTest {
             assertBusinessError(() -> cart.add(WHITE, quantity, NOW), CartErrorCode.INVALID_CART_QUANTITY);
         }
 
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, 10})
+        @DisplayName("AC-75 範囲の端の数量は入れられる")
+        void acceptsQuantityAtBoundary(int quantity) {
+            // 準備：空のカート
+            var cart = newCart();
+
+            // 操作：白を入れる
+            cart.add(WHITE, quantity, NOW);
+
+            // 確認：入れた数量になる
+            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(quantity);
+        }
+
         @Test
         @DisplayName("AC-75 合算して 10 を超える追加は拒否される")
         void rejectsMergedQuantityOverTen() {
@@ -176,6 +195,20 @@ class CartTest {
     @Nested
     @DisplayName("品目の数の上限")
     class ItemLimit {
+
+        @Test
+        @DisplayName("AC-75 29 品目のカートに、30 品目めは入れられる")
+        void accepts30thItem() {
+            // 準備：29 品目のカート
+            var cart = newCart();
+            addDistinct(cart, MAX_ITEMS - 1);
+
+            // 操作：別のバリアントを入れる
+            cart.add(WHITE, 1, NOW);
+
+            // 確認：30 品目
+            assertThat(cart.itemsAt(NOW)).hasSize(MAX_ITEMS);
+        }
 
         @Test
         @DisplayName("AC-75 30 品目のカートに、31 品目めは入れられない")
@@ -271,6 +304,21 @@ class CartTest {
 
             // 操作と確認：業務のエラー INVALID_CART_QUANTITY で拒否される
             assertBusinessError(() -> cart.changeQuantity(WHITE, quantity, NOW), CartErrorCode.INVALID_CART_QUANTITY);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, 10})
+        @DisplayName("AC-78 範囲の端の数量へは変更できる")
+        void changesToQuantityAtBoundary(int quantity) {
+            // 準備：白 2 個、黒 1 個のカート
+            var cart = whiteAndBlack();
+
+            // 操作：白の数量を変える
+            cart.changeQuantity(WHITE, quantity, NOW);
+
+            // 確認：白が変えた数量になる
+            assertThat(cart.itemsAt(NOW)).filteredOn(item -> item.variantId().equals(WHITE))
+                    .singleElement().extracting(CartItem::quantity).isEqualTo(quantity);
         }
     }
 
@@ -523,7 +571,17 @@ class CartTest {
      */
     private static void fill(Cart cart, UUID first) {
         cart.add(first, 1, NOW);
-        for (int i = 1; i < 30; i++) {
+        addDistinct(cart, MAX_ITEMS - 1);
+    }
+
+    /**
+     * 別々のバリアントを 1 個ずつ、指定した品目の数だけ入れる。
+     *
+     * @param cart  入れるカート
+     * @param count 品目の数
+     */
+    private static void addDistinct(Cart cart, int count) {
+        for (int i = 0; i < count; i++) {
             cart.add(UUID.randomUUID(), 1, NOW);
         }
     }

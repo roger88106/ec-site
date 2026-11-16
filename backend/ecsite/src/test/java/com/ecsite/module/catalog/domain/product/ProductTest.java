@@ -246,6 +246,13 @@ class ProductTest {
         }
 
         @Test
+        @DisplayName("軸の名前は 1 文字でも指定できる")
+        void acceptsOneCharacterAxisName() {
+            // 操作と確認：1 文字の軸の名前で登録できる
+            assertThatCode(() -> productWithAxes("あ")).doesNotThrowAnyException();
+        }
+
+        @Test
         @DisplayName("軸の名前は 30 文字まで指定できる")
         void acceptsAxisNameUpTo30Characters() {
             // 操作と確認：30 文字の軸の名前で登録できる
@@ -277,6 +284,13 @@ class ProductTest {
     @Nested
     @DisplayName("商品名と説明")
     class NameAndDescription {
+
+        @Test
+        @DisplayName("商品名は 1 文字でも指定できる")
+        void acceptsOneCharacterName() {
+            // 操作と確認：1 文字の商品名で登録できる
+            assertThatCode(() -> productNamed("あ")).doesNotThrowAnyException();
+        }
 
         @Test
         @DisplayName("商品名は 200 文字まで指定できる")
@@ -402,6 +416,46 @@ class ProductTest {
 
             // 確認：変えた商品名になる
             assertThat(product.name()).isEqualTo(NEW_NAME);
+        }
+
+        @Test
+        @DisplayName("変更後の商品名も 200 文字まで指定できる")
+        void acceptsNameUpTo200Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：200 文字の商品名に変えられる
+            assertThatCode(() -> updateName(product, "あ".repeat(200))).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("変更後の商品名が 201 文字以上なら拒否される")
+        void rejectsNameOver200Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：業務のエラー INVALID_PRODUCT_NAME で拒否される
+            assertBusinessError(() -> updateName(product, "あ".repeat(201)), ProductErrorCode.INVALID_PRODUCT_NAME);
+        }
+
+        @Test
+        @DisplayName("変更後の説明も 10,000 文字まで指定できる")
+        void acceptsDescriptionUpTo10000Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：10,000 文字の説明に変えられる
+            assertThatCode(() -> updateDescription(product, "あ".repeat(10_000))).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("変更後の説明が 10,001 文字以上なら拒否される")
+        void rejectsDescriptionOver10000Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：業務のエラー INVALID_PRODUCT_DESCRIPTION で拒否される
+            assertBusinessError(() -> updateDescription(product, "あ".repeat(10_001)), ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
         }
     }
 
@@ -574,6 +628,26 @@ class ProductTest {
      */
     private static void updateAll(Product product) {
         product.update(NEW_NAME, NEW_DESCRIPTION, NEW_TAX_CATEGORY_ID, PriceExclTax.of(NEW_PRICE_YEN), Set.of(NEW_CATEGORY_ID), NOW);
+    }
+
+    /**
+     * 商品名だけを変える編集をする（ほかの項目は登録したときのまま）。
+     *
+     * @param product 編集する商品
+     * @param name    変更後の商品名
+     */
+    private static void updateName(Product product, String name) {
+        product.update(name, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID), NOW);
+    }
+
+    /**
+     * 説明だけを変える編集をする（ほかの項目は登録したときのまま）。
+     *
+     * @param product     編集する商品
+     * @param description 変更後の説明
+     */
+    private static void updateDescription(Product product, String description) {
+        product.update(NAME, description, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID), NOW);
     }
 
     /**

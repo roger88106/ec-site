@@ -13,6 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -436,6 +438,24 @@ class StorefrontApiTest {
                     .andExpect(jsonPath("$.items[*].id", contains(products.get(2).id.toString(), products.get(1).id.toString())));
         }
 
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"minPrice", "maxPrice"})
+        @DisplayName("価格の範囲の端に 0 円を指定できる")
+        void acceptsZeroPrice(String param) throws Exception {
+            // 操作と確認：取得できる
+            mockMvc.perform(get(BASE + "/products").param(param, "0")).andExpect(status().isOk());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"minPrice", "maxPrice"})
+        @DisplayName("価格の範囲の端が負なら、リクエストの誤り")
+        void rejectsNegativePrice(String param) throws Exception {
+            // 操作と確認：-1 円は 400
+            mockMvc.perform(get(BASE + "/products").param(param, "-1"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
         @Test
         @DisplayName("並び順が決められた値でなければ、リクエストの誤り")
         void rejectsUnknownSort() throws Exception {
@@ -475,6 +495,40 @@ class StorefrontApiTest {
                     .andExpect(jsonPath("$.size").value(2))
                     .andExpect(jsonPath("$.totalItems").value(5))
                     .andExpect(jsonPath("$.totalPages").value(3));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, 100})
+        @DisplayName("1 ページの大きさが範囲の端なら取得できる")
+        void acceptsPageSizeAtBoundary(int size) throws Exception {
+            // 操作と確認：取得できる
+            mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(size))).andExpect(status().isOk());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, 101})
+        @DisplayName("1 ページの大きさが範囲の外なら、リクエストの誤り")
+        void rejectsPageSizeOutOfRange(int size) throws Exception {
+            // 操作と確認：400
+            mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(size)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
+        @DisplayName("ページの番号は 1 から指定できる")
+        void acceptsFirstPage() throws Exception {
+            // 操作と確認：取得できる
+            mockMvc.perform(get(BASE + "/products").param("page", "1")).andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("ページの番号が 0 なら、リクエストの誤り")
+        void rejectsZeroPage() throws Exception {
+            // 操作と確認：400
+            mockMvc.perform(get(BASE + "/products").param("page", "0"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
     }
 
@@ -556,6 +610,24 @@ class StorefrontApiTest {
         void requiresKeyword() throws Exception {
             // 操作と確認：400
             mockMvc.perform(get(BASE + "/products/search"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, 100})
+        @DisplayName("キーワードが範囲の端の文字数なら検索できる")
+        void acceptsKeywordAtBoundary(int length) throws Exception {
+            // 操作と確認：検索できる
+            mockMvc.perform(search("あ".repeat(length))).andExpect(status().isOk());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, 101})
+        @DisplayName("キーワードが範囲の外の文字数なら、リクエストの誤り")
+        void rejectsKeywordOutOfRange(int length) throws Exception {
+            // 操作と確認：400
+            mockMvc.perform(search("あ".repeat(length)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }

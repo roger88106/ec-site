@@ -173,6 +173,13 @@ class CategoryTest {
         }
 
         @Test
+        @DisplayName("名称は 1 文字でも指定できる")
+        void acceptsOneCharacterName() {
+            // 操作と確認：1 文字の名称で登録できる
+            assertThatCode(() -> factory.create(null, "あ", 1)).doesNotThrowAnyException();
+        }
+
+        @Test
         @DisplayName("名称は 50 文字まで指定できる")
         void acceptsNameUpTo50Characters() {
             // 操作と確認：50 文字の名称で登録できる
@@ -230,6 +237,16 @@ class CategoryTest {
 
             // 確認：変えた名称になる
             assertThat(category.name()).isEqualTo(NEW_NAME);
+        }
+
+        @Test
+        @DisplayName("変更後の名称は 1 文字でも指定できる")
+        void acceptsOneCharacterName() {
+            // 準備：登録したカテゴリ
+            var category = factory.create(null, ROOT_NAME, 1);
+
+            // 操作と確認：1 文字の名称に変えられる
+            assertThatCode(() -> category.rename("あ")).doesNotThrowAnyException();
         }
 
         @Test

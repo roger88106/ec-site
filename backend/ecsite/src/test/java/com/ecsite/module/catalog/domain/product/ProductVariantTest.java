@@ -177,6 +177,16 @@ class ProductVariantTest {
         }
 
         @Test
+        @DisplayName("軸の値は 1 文字でも指定できる")
+        void acceptsOneCharacterAxisValue() {
+            // 準備：軸が色の商品
+            var product = productWithAxes("色");
+
+            // 操作と確認：1 文字の値で登録できる
+            assertThatCode(() -> product.addVariant(VariantCode.of("V1"), List.of("あ"), NOW)).doesNotThrowAnyException();
+        }
+
+        @Test
         @DisplayName("軸の値は 50 文字まで指定できる")
         void acceptsAxisValueUpTo50Characters() {
             // 準備：軸が色の商品

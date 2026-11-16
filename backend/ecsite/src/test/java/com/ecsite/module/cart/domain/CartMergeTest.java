@@ -234,6 +234,27 @@ class CartMergeTest {
         }
 
         @Test
+        @DisplayName("AC-123 合算して上限を 1 超えた品目も、10 に切り詰めて、切り詰めた品目として返す")
+        void truncatesQuantityOfEleven() {
+            // 準備：合算で白が 11 個になるカート
+            var member = memberCart();
+            var guest = guestCart();
+            member.add(WHITE, 6, EARLIER);
+            guest.add(WHITE, 5, EARLIER);
+
+            // 操作：移す
+            var result = member.mergeFrom(guest, NOW);
+
+            // 確認：白は 10 個
+            assertThat(member.itemsAt(NOW)).extracting(CartItem::variantId, CartItem::quantity)
+                    .containsExactly(tuple(WHITE, 10));
+
+            // 確認：切り詰めた品目として返る
+            assertThat(result.truncatedItems()).extracting(CartMergeResult.Item::variantId, CartMergeResult.Item::quantity)
+                    .containsExactly(tuple(WHITE, 10));
+        }
+
+        @Test
         @DisplayName("AC-123 数量を切り詰めた品目は、移さなかった品目にしない")
         void doesNotSkipTruncatedItems() {
             // 準備：合算で白は 12 個、黒はちょうど 10 個になるカート

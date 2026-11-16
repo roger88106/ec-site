@@ -23,11 +23,11 @@
 //     雛形の側が読めないときは失敗にする：見出しがない・2 つある、コードブロックが 1 つでない・閉じていない、`##` が 0 件・同じ名前が 2 回、雛形のファイルを読めない
 //   - 見出しは、ATX（閉じの `#` は名前に含めない）と Setext（段落の行の直後の `---` は `##`、`===` は `#`）を読む
 //   - コードブロック、HTML のコメント、1 行のコードの中は読まない。閉じていないコードブロックは失敗にする（後ろを読めないため）
-// 検査の対象：次の 4 つ。アーカイブは見ない（当時の記録で、形が古いため）。
+// 検査の対象：次の 3 つ。アーカイブは見ない（当時の記録で、形が古いため）。
 //   - docs/08-spec/ の直下の進行中の spec。直下のディレクトリ（archive と templates を除く）の名前が `<番号>-<名前>` でなければ失敗にする（対象から外れるため）
 //   - 雛形の見本（docs/08-spec/templates/examples/ の下）
-//   - 雛形（`<…>` を仮の値に置き換えて検査する）
 //   - 固定の節に書き換えた機能仕様
+//   雛形（docs/08-spec/templates/ の spec-*.md など）そのものは見ない。見本が同じ形を確認し、雛形の誤りは次の spec の最初の commit で失敗になるため
 // 失敗したとき：示された文書の節の名前と順、ID の定義と参照を、雛形（docs/08-spec/templates/）に合わせて修正する。
 //   機能仕様は docs/03-機能仕様/template.md の骨組みに合わせる。
 //   本文で ID の書き方を例に挙げるときは、1 行のコード（`…`）の中に書く。理由：コードの中は参照として読まないため。
@@ -233,10 +233,10 @@ export function checkFunctionalSpec(text, sections) {
  * @param {Record<string, string>} files 文書の組（`spec.md`、`plan.md`、`tasks/NN-<名前>.md`）
  * @param {string} number spec の番号
  * @param {Set<string>} known 既知の spec の番号
- * @param {{ resolve: boolean, meta: { kind: string } | null }} options resolve：同じ spec の ID の定義を求めるか。meta：spec の 3 行目の値
+ * @param {{ kind: string } | null} meta spec の 3 行目の値
  * @returns {string[]} 問題の文（ファイルを前に付ける）
  */
-function checkIds(files, number, known, { resolve, meta }) {
+function checkIds(files, number, known, meta) {
   const problems = []
   const defined = new Set()
   for (const [file, text] of Object.entries(files)) {
@@ -263,7 +263,7 @@ function checkIds(files, number, known, { resolve, meta }) {
     for (const reference of references) {
       let problem = null
       if (!known.has(reference.number) && reference.number !== number) problem = `${reference.text} の spec（番号 ${reference.number}）がない（まだ作業ブランチにない spec は「spec <番号>」と書く）`
-      else if (resolve && reference.number === number && !defined.has(reference.id)) problem = `${reference.id} が定義されていない`
+      else if (reference.number === number && !defined.has(reference.id)) problem = `${reference.id} が定義されていない`
       const message = problem && `${file}：${reference.line} 行：${problem}`
       if (message && !reported.has(message)) {
         reported.add(message)
@@ -280,17 +280,16 @@ function checkIds(files, number, known, { resolve, meta }) {
  * @param {Record<string, string>} files 文書の組。キーは `spec.md`、`plan.md`、`tasks/NN-<名前>.md`
  * @param {string} number spec の番号
  * @param {Set<string>} known 既知の spec の番号
- * @param {{ resolve?: boolean }} [options] resolve：同じ spec の ID の定義を求めるか（既定は true。雛形は定義を持たないので false）
  * @returns {string[]} 問題の文（ファイルを前に付ける）
  */
-export function checkSpecFiles(files, number, known, { resolve = true } = {}) {
+export function checkSpecFiles(files, number, known) {
   if (files['spec.md'] === undefined) return ['spec.md：spec.md がない']
   const problems = []
   const add = (file, list) => problems.push(...list.map((problem) => `${file}：${problem}`))
   add('spec.md', checkSpec(files['spec.md'], number))
   if (files['plan.md'] !== undefined) add('plan.md', checkPlan(files['plan.md'], number))
   for (const file of Object.keys(files).filter((name) => name.startsWith('tasks/')).sort()) add(file, checkStage(files[file], file, number))
-  problems.push(...checkIds(files, number, known, { resolve, meta: readSpecMeta(files['spec.md']) }))
+  problems.push(...checkIds(files, number, known, readSpecMeta(files['spec.md'])))
   return problems
 }
 
@@ -315,76 +314,6 @@ export function checkSpecDir(dir, number, known) {
   }
   const prefix = dir.replaceAll('\\', '/')
   return checkSpecFiles(files, number, known).map((problem) => `${prefix}/${problem}`)
-}
-
-/**
- * HTML のタグの形（`<br/>`、`</details>`、`<a href="…">`）。名前は英字で始まり、属性の名前は英字で始まる。
- * 属性の形まで見る理由：`<plan へのリンク>` のような、英字で始まる雛形の `<…>` をタグと読まないため
- */
-const HTML_TAG = /^\/?[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][\w:.-]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?$/
-
-/**
- * 雛形の `<…>` の中身を、仮の値にする。
- *
- * @param {string} content `<` と `>` の間の文字
- * @returns {string | null} 仮の値。HTML のタグなら null（置き換えない）
- */
-function placeholderValue(content) {
-  const options = content.split(/\s*または\s*/)
-  const first = options[0].replace(/など$/, '')
-  // 「A または B」と「A など」は、最初の A にする（雛形の選択肢の最初は、検査を通る値にしてある）
-  if (options.length > 1 || content.endsWith('など')) return first
-  if (content === 'N' || content === 'n') return '1'
-  if (content === 'm') return '2'
-  // ID の形（接頭辞、番号、連番）は、中身を残す
-  if (/^[A-Z]{1,3}-\d/.test(content)) return content
-  // 上の雛形の形（`<n>` など）は、タグの形にも合うので、先に決める
-  if (HTML_TAG.test(content)) return null
-  return '仮'
-}
-
-/**
- * 雛形の `<…>` を、仮の値に置き換える。番号は見本の番号、段階と連番は 2 桁にする。HTML の注釈（`<!-- … -->`）とタグ（`<br/>`、`<details>`）は置き換えない。
- *
- * @param {string} text 雛形の内容
- * @returns {string} 置き換えた内容
- */
-export function fillTemplate(text) {
-  let filled = text.replaceAll('<番号>', EXAMPLE_NUMBER).replaceAll('<段階 2 桁>', '01')
-  // タスクの連番の `<n>`、`<n+1>` は、2 桁にする（先のタスクの番号の 01〜03 と重ならない 04 から）
-  filled = filled.replace(new RegExp(`(T${EXAMPLE_NUMBER}-01-)<n(?:\\+(\\d+))?>`, 'g'), (_, head, plus) => `${head}${String(4 + Number(plus ?? 0)).padStart(2, '0')}`)
-  // 入れ子は、内側から順に置き換える
-  for (;;) {
-    const next = filled.replace(/<(?!!--)([^<>]*)>/g, (tag, content) => placeholderValue(content) ?? tag)
-    if (next === filled) return filled
-    filled = next
-  }
-}
-
-/** 雛形のファイルと、検査の名前（spec.md、plan.md、tasks/NN-<名前>.md）の対応 */
-const TEMPLATE_FILES = { 'spec-feature.md': 'spec.md', 'plan.md': 'plan.md', 'tasks-stage.md': 'tasks/01-template.md' }
-
-/**
- * 雛形を、`<…>` を仮の値に置き換えて検査する。機能の spec の雛形、plan、段階のファイルを 1 組、整理の spec の雛形を別に検査する。
- *
- * @param {string} dir 雛形のディレクトリ
- * @param {{ transform?: (name: string, text: string) => string }} [options] transform：`<…>` を置き換える前の雛形を書き換える関数（テストで雛形に誤りを入れるため）
- * @returns {string[]} 問題の文（雛形のファイル名を前に付ける）
- */
-export function checkTemplates(dir, { transform = (_name, text) => text } = {}) {
-  if (!existsSync(dir)) return [`${dir.replaceAll('\\', '/')}：雛形のディレクトリがない`]
-  const read = (name) => fillTemplate(transform(name, readFileSync(path.join(dir, name), 'utf8')))
-  const known = new Set([EXAMPLE_NUMBER])
-  const feature = Object.fromEntries(Object.entries(TEMPLATE_FILES).map(([name, key]) => [key, read(name)]))
-  const relabel = (problems, labels) => problems.map((problem) => {
-    const key = Object.keys(labels).find((item) => problem.startsWith(`${item}：`))
-    return key ? `${labels[key]}${problem.slice(key.length)}` : problem
-  })
-  const labels = Object.fromEntries(Object.entries(TEMPLATE_FILES).map(([name, key]) => [key, name]))
-  return [
-    ...relabel(checkSpecFiles(feature, EXAMPLE_NUMBER, known, { resolve: false }), labels),
-    ...relabel(checkSpecFiles({ 'spec.md': read('spec-refactor.md') }, EXAMPLE_NUMBER, known, { resolve: false }), { 'spec.md': 'spec-refactor.md' }),
-  ]
 }
 
 /**
@@ -424,10 +353,9 @@ function main() {
   for (const target of targets) problems.push(...checkSpecDir(target.dir, target.number, known))
   const examples = existsSync(EXAMPLES_DIR) ? readdirSync(EXAMPLES_DIR, { withFileTypes: true }).filter((entry) => entry.isDirectory()) : []
   for (const entry of examples) problems.push(...checkSpecDir(path.join(EXAMPLES_DIR, entry.name), EXAMPLE_NUMBER, known))
-  problems.push(...checkTemplates(TEMPLATES_DIR))
   problems.push(...checkFunctionalDocs({ templateFile: FUNCTIONAL_TEMPLATE, specs: FUNCTIONAL_SPECS }))
   for (const problem of problems) console.log(problem)
-  console.log(`構造の問題：${problems.length}（spec ${targets.length}、見本 ${examples.length}、雛形 ${Object.keys(TEMPLATE_FILES).length + 1}、機能仕様 ${FUNCTIONAL_SPECS.length}）`)
+  console.log(`構造の問題：${problems.length}（spec ${targets.length}、見本 ${examples.length}、機能仕様 ${FUNCTIONAL_SPECS.length}）`)
   process.exit(problems.length > 0 ? 1 : 0)
 }
 

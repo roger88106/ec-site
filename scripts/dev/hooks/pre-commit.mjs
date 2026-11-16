@@ -123,6 +123,20 @@ export function checkShell(env) {
 }
 
 /**
+ * 検査の前後の手順（一覧や差分の取得）の失敗を、commit を失敗にした理由の文にする。
+ *
+ * @param {string} step 失敗した手順
+ * @param {{ status: number | null, stderr?: string }} result 手順の終了コードと標準エラー出力
+ * @param {string} action 利用者が次にすること
+ * @returns {string} 表示する理由。子のプロセスの標準エラー出力があれば、後ろに付ける
+ */
+export function stepFailure(step, result, action) {
+  const status = result.status === null ? 'シグナルなどで終了した' : `終了コード ${result.status}`
+  const stderr = (result.stderr ?? '').trim()
+  return `commit の前の検査：${step}に失敗した（${status}）。${action}${stderr === '' ? '' : `\n${stderr}`}`
+}
+
+/**
  * ステージした内容を一時ディレクトリに取り出し、ステージしたファイルに関係する CI の検査を実行して、hook の終了コードを返す。
  *
  * 今のブランチが develop か main なら、何もせずに失敗にする。一時ディレクトリは、成功でも失敗でも消す。
@@ -133,12 +147,12 @@ export function checkShell(env) {
  * @param {string | null} deps.branch 今のブランチの名前。detached HEAD か読めなければ null
  * @param {Record<string, string | undefined>} deps.env 環境変数
  * @param {(prefix: string, env: Record<string, string | undefined>) => number | null} deps.checkout ステージした内容を prefix の下に取り出す。終了コードを返す
- * @param {(env: Record<string, string | undefined>) => { status: number | null, files: string[] }} deps.listStaged ステージしたファイル（削除と改名の元を含む）を返す
+ * @param {(env: Record<string, string | undefined>) => { status: number | null, files: string[], stderr?: string }} deps.listStaged ステージしたファイル（削除と改名の元を含む）を返す
  * @param {(files: string[], staged: string) => { all: boolean, checks: string[], tests: string[] }} deps.select 取り出した先で、実行する検査とテストを選ぶ
  * @param {(staged: string) => void} deps.linkModules 取り出した先に、元のリポジトリの node_modules へのリンクを置く
  * @param {(script: string, env: Record<string, string | undefined>) => number | null} deps.runCheck 検査の script を実行する。終了コードを返す
- * @param {(env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.diffAdded ステージした差分（-U0）を返す
- * @param {(staged: string, env: Record<string, string | undefined>, diff: string) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で、差分（diff）の追加行の warning の一覧を出力する（ja-text --warning --added）
+ * @param {(env: Record<string, string | undefined>) => { status: number | null, stdout: string, stderr?: string }} deps.diffAdded ステージした差分（-U0）を返す
+ * @param {(staged: string, env: Record<string, string | undefined>, diff: string) => { status: number | null, stdout: string, stderr?: string }} deps.listWarnings 取り出した先で、差分（diff）の追加行の warning の一覧を出力する（ja-text --warning --added）
  * @param {(text: string) => void} deps.print warning を表示する
  * @param {(text: string) => void} deps.printError commit を失敗にした理由を表示する
  * @param {() => string} deps.makeTemp 一時ディレクトリを作る
@@ -158,7 +172,10 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, listStaged, 
   try {
     if (checkout(`${staged}/`, baseEnv) !== 0) return CHECKOUT_FAILED
     const stagedFiles = listStaged(baseEnv)
-    if (stagedFiles.status !== 0) return CHECKOUT_FAILED
+    if (stagedFiles.status !== 0) {
+      printError(stepFailure('ステージしたファイルの一覧（git diff --cached）の取得', stagedFiles, 'git status で index を確かめてから、commit し直す。'))
+      return CHECKOUT_FAILED
+    }
     linkModules(staged)
     const selection = select(stagedFiles.files, staged)
     if (!selection.all) print(`commit の前の検査：ステージしたファイルに関係する検査 ${selection.checks.length} 件とテストのファイル ${selection.tests.length} 件を実行する（CI は全てを実行する）`)
@@ -174,9 +191,15 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, listStaged, 
     // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする。
     // 追加行の選び方（文のどれかの行が追加行）は ja-text が持つ。ここでは選び直さず、一覧の行をそのまま表示する
     const diff = diffAdded(baseEnv)
-    if (diff.status !== 0) return WARNING_FAILED
+    if (diff.status !== 0) {
+      printError(stepFailure('追加行の差分（git diff --cached）の取得', diff, 'git status で index を確かめてから、commit し直す。'))
+      return WARNING_FAILED
+    }
     const warnings = listWarnings(staged, checkEnv, diff.stdout)
-    if (warnings.status !== 0) return WARNING_FAILED
+    if (warnings.status !== 0) {
+      printError(stepFailure('追加行の warning の一覧（ja-text --warning --added）の出力', warnings, 'node scripts/ci/ja/ja-text.mjs --changed を実行して原因を確かめる。'))
+      return WARNING_FAILED
+    }
     const lines = selectWarningLines(warnings.stdout)
     if (lines.length > 0) print(`警告：追加した行に warning が ${lines.length} 件ある（読んで、直すかを決める）\n${lines.join('\n')}`)
     return 0
@@ -207,7 +230,7 @@ export function main() {
     listStaged: (env) => {
       // 改名は、元と先の両方のパスで選ぶ（元を参照していた検査も実行するため）
       const result = spawnSync('git', ['-c', 'core.quotePath=false', 'diff', '--cached', '--name-only', '--no-renames', '-z'], { env, encoding: 'utf8' })
-      return { status: result.status, files: (result.stdout ?? '').split('\0').filter((file) => file !== '') }
+      return { status: result.status, stderr: result.stderr ?? '', files: (result.stdout ?? '').split('\0').filter((file) => file !== '') }
     },
     select: (files, staged) => {
       const { checks, files: checkFiles, tests } = listChecksAndTests(staged)
@@ -222,12 +245,12 @@ export function main() {
       // --changed と同じ引数（scripts/ci/lib/git/added-diff）。CI の注釈と同じ判定にする
       const args = [...ADDED_DIFF_ARGS, '--cached', '--']
       const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
-      return { status: result.status, stdout: result.stdout ?? '' }
+      return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
     },
     listWarnings: (staged, env, diff) => {
       // 追加行の差分を標準入力で渡し、ja-text が --changed と同じ選び方（文のどれかの行が追加行）で選ぶ
       const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja/ja-text.mjs`, '--warning', '--added'], { cwd: staged, env, input: diff, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
-      return { status: result.status, stdout: result.stdout ?? '' }
+      return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
     },
     print: (text) => console.log(text),
     printError: (text) => console.error(text),

@@ -205,10 +205,12 @@ describe('検査の実行と終了コード', () => {
     assert.equal('CHECK_TESTS' in calls.runCheck[0].env, false)
   })
 
-  test('ステージしたファイルの一覧を読めなければ、検査を実行せずに 2 を返す', () => {
-    const { deps, calls } = fakeDeps({ staged: { status: 128, files: [] } })
+  test('ステージしたファイルの一覧を読めなければ、検査を実行せずに 2 を返し、git の標準エラー出力を付けて理由を表示する', () => {
+    const { deps, calls } = fakeDeps({ staged: { status: 128, files: [], stderr: 'fatal: index file corrupt' } })
     assert.equal(runPreCommit(deps), CHECKOUT_FAILED)
     assert.equal(calls.runCheck.length, 0)
+    assert.equal(calls.errors.length, 1)
+    assert.match(calls.errors[0], /ステージしたファイルの一覧.*終了コード 128.*\nfatal: index file corrupt$/s)
   })
 
   test('GIT_INDEX_FILE がなければ、環境変数に加えない', () => {
@@ -257,6 +259,18 @@ describe('検査が通った後の warning', () => {
     assert.equal(runPreCommit(fakeDeps({ diff, warnings: { status: null, stdout: '' } }).deps), WARNING_FAILED)
     assert.equal(runPreCommit(fakeDeps({ diff: { status: 128, stdout: '' }, warnings: { status: 0, stdout: list } }).deps), WARNING_FAILED)
   })
+
+  test('warning の一覧か差分を取得できないときは、失敗した手順と子のプロセスの標準エラー出力を表示する', () => {
+    const failedList = fakeDeps({ diff, warnings: { status: 1, stdout: '', stderr: 'Error: 壊れた ja-text' } })
+    runPreCommit(failedList.deps)
+    assert.match(failedList.calls.errors.join('\n'), /warning の一覧.*終了コード 1.*\nError: 壊れた ja-text$/s)
+    const killed = fakeDeps({ diff, warnings: { status: null, stdout: '' } })
+    runPreCommit(killed.deps)
+    assert.match(killed.calls.errors.join('\n'), /warning の一覧.*シグナル/)
+    const failedDiff = fakeDeps({ diff: { status: 128, stdout: '', stderr: 'fatal: bad object' } })
+    runPreCommit(failedDiff.deps)
+    assert.match(failedDiff.calls.errors.join('\n'), /追加行の差分.*\nfatal: bad object$/s)
+  })
 })
 
 describe('commit のメッセージの検査', () => {
@@ -289,10 +303,13 @@ describe('commit のメッセージの検査', () => {
     assert.equal(runCommitMsg({ file: 'm', run: fakeRun({ 'ja-text': null }).run }), 1)
   })
 
-  test('メッセージのファイルがなければ、検査を実行せずに失敗にする', () => {
+  test('メッセージのファイルがなければ、検査を実行せずに失敗にし、理由を表示する', () => {
     const { calls, run } = fakeRun({ 'ja-text': 0 })
-    assert.equal(runCommitMsg({ file: undefined, run }), COMMIT_MSG_FAILED)
+    const logs = []
+    assert.equal(runCommitMsg({ file: undefined, run, log: (text) => logs.push(text) }), COMMIT_MSG_FAILED)
     assert.equal(calls.length, 0)
+    assert.equal(logs.length, 1)
+    assert.match(logs[0], /メッセージのファイルが渡されていない/)
   })
 })
 

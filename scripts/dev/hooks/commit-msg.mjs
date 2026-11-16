@@ -21,7 +21,10 @@ export const COMMIT_MSG_FAILED = 2
  * @returns {number} hook の終了コード
  */
 export function runCommitMsg({ file, run, log = console.log }) {
-  if (!file) return COMMIT_MSG_FAILED
+  if (!file) {
+    log('commit のメッセージのファイルが渡されていない（.git/hooks/commit-msg が "$1" を渡しているか確かめる）')
+    return COMMIT_MSG_FAILED
+  }
   const { status, output } = run('ja-text', ['--message', file])
   if (status === null) return 1
   const result = judgeCheck({ status, output, mode: 'summary' })

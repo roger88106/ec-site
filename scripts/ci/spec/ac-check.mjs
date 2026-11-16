@@ -5,9 +5,9 @@
 //   AC の内容を得るために、アーカイブの spec は読まない。
 //
 // 読み方と失敗の条件は、モジュールごとの先頭のコメントにある。
-//   - ac/ac-list.mjs：AC 一覧、③ の表、進行中の spec の読み書き
-//   - ac/match.mjs：照合（失敗にする条件）
-//   - ac/test-names.mjs：テスト名と AC の番号の読み方
+//   - lib/ac/ac-list.mjs：AC 一覧、③ の表、進行中の spec の読み書き
+//   - lib/ac/match.mjs：照合（失敗にする条件）
+//   - lib/ac/test-names.mjs：テスト名と AC の番号の読み方
 //
 // テスト名に出ない有効・変更の AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。

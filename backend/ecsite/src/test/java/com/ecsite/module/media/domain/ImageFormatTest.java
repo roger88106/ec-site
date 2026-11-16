@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,6 +133,27 @@ class ImageFormatTest {
         void rejectsOthers(String name, byte[] head) {
             // 操作と確認：どの形式とも判定しない
             assertThat(ImageFormat.detect(head)).isEmpty();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {8, 11})
+        @DisplayName("AC-67 ftyp まであってもメジャーブランドの途中で切れていれば（12 バイト未満）、判定できない")
+        void rejectsFtypShorterThanMajorBrand(int length) {
+            // 準備：HEIC の ftyp を、メジャーブランドの途中で切ったもの
+            var head = Arrays.copyOf(ftyp("heic", "mif1", "heic"), length);
+
+            // 操作と確認：どの形式とも判定しない（範囲外の読み取りの例外にならない）
+            assertThat(ImageFormat.detect(head)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-67 ftyp のメジャーブランドまでちょうど 12 バイトあれば、メジャーブランドで判定する")
+        void detectsFtypWithMajorBrandOnly() {
+            // 準備：HEIC の ftyp の、メジャーブランドまでの 12 バイト
+            var head = Arrays.copyOf(ftyp("heic", "mif1", "heic"), 12);
+
+            // 操作と確認：HEIF と判定する
+            assertThat(ImageFormat.detect(head)).contains(ImageFormat.HEIF);
         }
 
         @Test

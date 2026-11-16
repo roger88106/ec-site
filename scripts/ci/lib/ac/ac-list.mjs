@@ -49,7 +49,11 @@ const LIST_COLUMNS = ['AC', 'モジュール', '状態', '元の spec', '変え�
 export const MODULE_COLUMNS = ['AC', '今の内容', '元の spec']
 
 /** ③ に生成する表の、見出しと区切りの行 */
-const MODULE_TABLE_HEAD = ['| AC | 今の内容 | 元の spec |', '|----|----------|-----------|']
+const MODULE_TABLE_HEAD = [
+  `| ${MODULE_COLUMNS.join(' | ')} |`,
+  // 区切りの - の数は、見出しのセルの表示の幅（全角は 2）と前後の空白に合わせる
+  `|${MODULE_COLUMNS.map((column) => '-'.repeat([...column].reduce((width, char) => width + (char.codePointAt(0) > 0xff ? 2 : 1), 2))).join('|')}|`,
+]
 
 /** 対応する AC が 0 件のモジュールの、マーカーの範囲の中の行 */
 const NO_ACS = 'なし。'
@@ -64,7 +68,7 @@ export const LIST_MARK = 'ac-list'
 export const MODULE_MARK = 'module-ac'
 
 /** 生成のマーカーの形（開きは `<!-- generated:<名前> -->`、閉じは `<!-- /generated:<名前> -->`） */
-const MARK = /^(\/?)generated:(ac-list|module-ac)$/
+const MARK = new RegExp(`^(/?)generated:(${LIST_MARK}|${MODULE_MARK})$`)
 
 /** 表の区切りの行 */
 const SEPARATOR_ROW = /^\|(?:\s*:?-+:?\s*\|)+$/

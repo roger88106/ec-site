@@ -381,17 +381,32 @@ export function baseFileReader(base, cwd = process.cwd()) {
 }
 
 if (import.meta.main) {
-  const { values } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      base: { type: 'string', default: DEFAULT_BASE },
-      'body-file': { type: 'string' },
-      author: { type: 'string' },
-      title: { type: 'string' },
-      'skip-path-check': { type: 'boolean', default: false },
-    },
-  })
-  const config = parseRiskConfig(readFileSync(CONFIG_FILE, 'utf8'))
+  let values
+  try {
+    ;({ values } = parseArgs({
+      args: process.argv.slice(2),
+      options: {
+        base: { type: 'string', default: DEFAULT_BASE },
+        'body-file': { type: 'string' },
+        author: { type: 'string' },
+        title: { type: 'string' },
+        'skip-path-check': { type: 'boolean', default: false },
+      },
+    }))
+  } catch (e) {
+    console.log(`引数を読めない：${e.message}`)
+    process.exit(2)
+  }
+  /** 読むファイルがなければ、理由を出して終了コード 2 で終わる */
+  const readRequired = (file) => {
+    try {
+      return readFileSync(file, 'utf8')
+    } catch (e) {
+      console.log(`${file} を読めない：${e.code ?? e.message}`)
+      process.exit(2)
+    }
+  }
+  const config = parseRiskConfig(readRequired(CONFIG_FILE))
   const gitFiles = listGitFiles()
   const missing = values['skip-path-check'] ? [] : findMissingPaths(config, gitFiles)
   if (missing.length > 0) {
@@ -402,7 +417,7 @@ if (import.meta.main) {
   const changed = listChangedFiles(values.base, gitFiles)
   if ('error' in changed) {
     console.log(changed.error)
-    process.exit(1)
+    process.exit(2)
   }
   const judged = judgeRisk(changed.files, config, (file) => (existsSync(file) ? readFileSync(file, 'utf8') : null), baseFileReader(changed.base))
   const result = isDependabot(values) ? applyDependabotTitle(judged, values.title) : judged
@@ -411,7 +426,7 @@ if (import.meta.main) {
   for (const item of result.unreadable) console.log(describeUnreadableLine(item))
   // - は標準入力（CI は本文を環境変数から標準入力に渡す）
   const bodyFile = values['body-file']
-  const body = bodyFile === undefined ? undefined : readFileSync(bodyFile === '-' ? 0 : bodyFile, 'utf8')
+  const body = bodyFile === undefined ? undefined : readRequired(bodyFile === '-' ? 0 : bodyFile)
   const checked = checkPullRequest({ level: result.level, body, author: values.author })
   if (checked.message !== null) console.log(checked.message)
   console.log(lines.at(-1))

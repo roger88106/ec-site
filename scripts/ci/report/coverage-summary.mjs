@@ -169,5 +169,10 @@ function main() {
 }
 
 if (import.meta.main) {
-  main()
+  try {
+    main()
+  } catch (e) {
+    console.error(`報告を読めない：${e.message.split('\n')[0]}`)
+    process.exit(2)
+  }
 }

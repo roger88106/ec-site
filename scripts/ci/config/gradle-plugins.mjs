@@ -117,13 +117,22 @@ export function findPluginProblems(used, listed) {
 if (import.meta.main) {
   const buildFiles = listGitFiles(BUILD_PATHS).filter((path) => /\.gradle\.kts$/.test(path))
   exitIfNoFiles(buildFiles, 'Gradle のファイル')
+  /** 読むファイルがなければ、理由を出して終了コード 2 で終わる */
+  const readRequired = (file) => {
+    try {
+      return readFileSync(file, 'utf8')
+    } catch (e) {
+      console.log(`${file} を読めない：${e.code ?? e.message}`)
+      process.exit(2)
+    }
+  }
   const used = []
   const unknownLines = []
-  const catalog = readCatalogPlugins(readFileSync(CATALOG_FILE, 'utf8'))
+  const catalog = readCatalogPlugins(readRequired(CATALOG_FILE))
   used.push(...catalog.ids)
   unknownLines.push(...catalog.unknown.map((name) => `${CATALOG_FILE} の plugins.${name}（id を読めない。id を書く）`))
   for (const file of buildFiles) {
-    const direct = findDirectPlugins(readFileSync(file, 'utf8'))
+    const direct = findDirectPlugins(readRequired(file))
     unknownLines.push(...direct.map((item) => describeUnreadableLine({ file, line: item.line, text: item.text, reason: DIRECT_REASON })))
   }
   let listed
@@ -131,7 +140,7 @@ if (import.meta.main) {
     listed = readPolicyPluginIds(JSON.parse(readFileSync(POLICY_FILE, 'utf8')))
   } catch (e) {
     console.log(e.message)
-    process.exit(1)
+    process.exit(2)
   }
   const problems = [...unknownLines, ...findPluginProblems(used, listed)]
   if (used.filter(isExternal).length === 0) {

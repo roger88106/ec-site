@@ -133,8 +133,7 @@ if (import.meta.main) {
   const metadata = process.argv[2] ?? METADATA
   if (!existsSync(metadata)) {
     console.log(`設定の一覧（${metadata}）がない。先に backend/ecsite/ で ./gradlew compileJava を実行する`)
-    console.log('設定の既定値の食い違い：1')
-    process.exit(1)
+    process.exit(2)
   }
   const code = readMetadata(readFileSync(metadata, 'utf8'))
   const doc = parseEnvTable(readFileSync(ENV_DOC, 'utf8'), new Set(code.map((row) => row.env)))

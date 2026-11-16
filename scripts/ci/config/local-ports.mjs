@@ -297,7 +297,7 @@ if (import.meta.main) {
   }
   exitIfNoFiles(files.filter((file) => existsSync(file)), '照合するファイル')
   if (missing.length) {
-    process.exit(1)
+    process.exit(2)
   }
   const read = (file) => readFileSync(file, 'utf8')
   const list = JSON.parse(read(LIST_FILE))

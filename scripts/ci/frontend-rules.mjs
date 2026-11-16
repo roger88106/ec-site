@@ -4,11 +4,9 @@
 // - 店舗画面と管理画面：同じ相対パスで同じ内容のファイルを置かない。共有のパッケージが公開する名前と同じ名前を定義しない（フロントの書き方の「入れるもの・入れないもの」）
 // - 画面のテスト：要素のプロパティ・属性を toBe・toEqual で比べない（フロントのテストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」）
 // - 画面のテストと E2E：複数の結果を並びのインデックスで選ばない（フロントのテストの書き方の「画面に見えるもので探す」）
-// - 画面のテストと補助と E2E：テストの間に空行を置く（フロントのテストの書き方の「テストとテストの間に空行を置く」）。
-//   組み込みの名前と同じ名前の const・let を宣言しない（フロントのテストの書き方の「組み込みの名前をシャドーイングしない」）。
-//   名前の一覧 globals/lib-globals.json は、lib-globals.mjs --write が TypeScript の lib から作る
+// - 画面のテストと補助と E2E：テストの間に空行を置く（フロントのテストの書き方の「テストとテストの間に空行を置く」）
 //
-// 失敗したとき：報告の括弧の中の書き方に直す。同じファイルは共有のパッケージに移す。TypeScript を上げて lib の名前が変わったときは、lib-globals.mjs --write で一覧を書き換える。
+// 失敗したとき：報告の括弧の中の書き方に直す。同じファイルは共有のパッケージに移す。
 // 除外：frontend-rules-exclusions.json に {キー: 理由}。キーは src からの相対パス（同じ内容のファイル）か <画面>:<名前>（共有と同じ名前の定義。例：store:translate）。不要になった除外は失敗にする。
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -19,12 +17,12 @@ import { isScreenSource } from './lib/screen-sources.mjs'
 import { groupTargets } from './frontend-rules/files.mjs'
 import { findIndexedMultiples, findPropertyComparisons } from './frontend-rules/screen-tests.mjs'
 import { duplicatedFiles, findDefinitions, sharedPublicNames } from './frontend-rules/shared-names.mjs'
-import { BUILTIN_NAMES_FILE, findBuiltinShadowing, findMissingTestSpacing } from './frontend-rules/test-style.mjs'
+import { findMissingTestSpacing } from './frontend-rules/test-style.mjs'
 
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
 if (isMain(import.meta.url)) {
-  // E2E（e2e/）には、並びのインデックス、テストの間の空行と組み込みの名前のシャドーイングだけを当てる
+  // E2E（e2e/）には、並びのインデックスとテストの間の空行だけを当てる
   const files = listGitFiles(['frontend', 'e2e'])
   exitIfNoFiles(files, 'フロントのファイル')
   const exclusions = readExclusions(exclusionsPath('frontend-rules-exclusions.json'))
@@ -70,12 +68,6 @@ if (isMain(import.meta.url)) {
   for (const file of targets.testsWithSupportAndE2e) {
     for (const hit of findMissingTestSpacing(readFileSync(file, 'utf8'))) {
       report(`${file}:${hit.line} テストの間に空行がない（}) の直後に test・it・describe を続けず、空行を置く。フロントのテストの書き方の「テストとテストの間に空行を置く」）：${hit.text}`)
-    }
-  }
-  const builtinNames = new Set(JSON.parse(readFileSync(BUILTIN_NAMES_FILE, 'utf8')))
-  for (const file of targets.testsWithSupportAndE2e) {
-    for (const hit of findBuiltinShadowing(readFileSync(file, 'utf8'), builtinNames)) {
-      report(`${file}:${hit.line} 組み込みの名前 ${hit.name} と同じ名前の const・let（意味の分かる名前にする。フロントのテストの書き方の「組み込みの名前をシャドーイングしない」）：${hit.text}`)
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))

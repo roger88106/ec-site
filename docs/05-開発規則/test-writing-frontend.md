@@ -97,13 +97,13 @@ E2E で作るデータの品番・名称に、実行ごとの識別子（`E2E-<�
 
 確認方法：レビュー
 
-## 組み込みの名前をシャドーイングしない
+## 宣言していないグローバルの名前を使わない
 
-フロントのテスト・テストの補助・E2E（`e2e/` の下の全ての TypeScript）では、定数・変数（`const`・`let`）の名前を、グローバルの名前と同じにしない。対象は、TypeScript の lib（ES と DOM）が宣言する名前（`URL`、`screen`、`location`、`name`、`status` など）。関数の引数は対象外。
+フロントのテスト・テストの補助・E2E（`e2e/` の下の全ての TypeScript）では、変数に付けやすい名前のグローバル（`name`、`status`、`location`、`screen`、`top` など。一覧は `frontend/biome.test-globals.jsonc`）を、宣言せずに使わない。ブラウザーの値を使うときは `window.` を付ける（`window.location.origin`）。宣言した変数・引数・import の名前は対象外で、同じ名前を付けてよい。
 
 理由：変数の宣言を忘れたときに、エラーにならずにグローバルの値が使われ、意図しない値でテストが通るため。
 
-確認方法：自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：自動（Biome の `noRestrictedGlobals`）
 
 ## テストとテストの間に空行を置く
 

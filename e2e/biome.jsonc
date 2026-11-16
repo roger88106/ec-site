@@ -1,8 +1,8 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "root": true,
-  // 共通の設定（整形、lint の規則）
-  "extends": ["../frontend/biome.base.jsonc"],
+  // 共通の設定（整形、lint の規則）と、テストで使わないグローバルの名前
+  "extends": ["../frontend/biome.base.jsonc", "../frontend/biome.test-globals.jsonc"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",

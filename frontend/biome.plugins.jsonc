@@ -5,6 +5,11 @@
 {
   "overrides": [
     {
+      // テストとテストの補助（src の下の test/）の外では、biome.test-globals.jsonc のグローバルの名前の制限を止める
+      "includes": ["**", "!src/**/*.test.ts", "!src/**/*.test.tsx", "!src/**/test/**"],
+      "linter": { "rules": { "style": { "noRestrictedGlobals": "off" } } }
+    },
+    {
       // 画面のソースとテストの補助（テストを除く）
       "includes": ["src/**/*.ts", "src/**/*.tsx", "!**/*.test.ts", "!**/*.test.tsx", "!src/lib/locale.ts"],
       "plugins": ["../biome-plugins/no-locale-literal.grit"]

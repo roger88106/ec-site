@@ -32,8 +32,8 @@ if (import.meta.main) {
   let sharedNames
   try {
     sharedNames = sharedPublicNames(sharedExports, files, (file) => readFileSync(file, 'utf8'))
-  } catch (error) {
-    console.log(error.message)
+  } catch (e) {
+    console.log(e.message)
     process.exit(1)
   }
   const targets = groupTargets(files)

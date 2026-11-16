@@ -27,8 +27,8 @@ export function readExclusions(file) {
   let parsed
   try {
     parsed = JSON.parse(readFileSync(file, 'utf8'))
-  } catch (error) {
-    throw new Error(`${file}：除外の一覧を読めない（${error.message}）`, { cause: error })
+  } catch (e) {
+    throw new Error(`${file}：除外の一覧を読めない（${e.message}）`, { cause: e })
   }
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error(`${file}：除外の一覧は {キー: 理由} の形で書く`)

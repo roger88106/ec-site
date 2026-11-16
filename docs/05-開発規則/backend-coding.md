@@ -324,7 +324,7 @@ public record SignedNotification(byte[] body, String signature) {
 
 ※5：前のリリースのアプリは既定値を前提に列を指定せずに INSERT するので、NOT NULL の列では失敗し、NULL を許す列では値が NULL に変わるため。既定値の削除は段 1 がなく、段 2 でアプリが列に値を必ず書くようにし、段 3 で既定値を削除する。IDENTITY の解除と生成列の解除も、列が自動で値を持たなくなるので、同じ扱いにする。
 
-※6：段 3 の削除（既定値の削除を含む）は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置き、理由に、どのリリースで使わなくなったかを書く。書き方は `scripts/ci/migrations.mjs` の先頭のコメント。
+※6：段 3 の削除（既定値の削除を含む）は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`。なければ作る）に置き、理由に、どのリリースで使わなくなったかを書く。書き方は `scripts/ci/migrations.mjs` の先頭のコメント。
 
 理由：前のバージョンのアプリが、新しいスキーマで失敗しないため。
 

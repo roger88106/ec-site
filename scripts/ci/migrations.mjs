@@ -16,13 +16,14 @@
 //   - 既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL、IDENTITY の解除 DROP IDENTITY、生成列の解除 DROP EXPRESSION。SET DEFAULT 0 のような既定値の変更は含まない）
 // 対象外は、今あるマイグレーションのファイル名の一覧（LEGACY_MIGRATIONS）に入っているものだけ（本番に適用していないので互換性を問わない）。それ以外は番号が小さくても全て対象にする。一覧にあって実在しない名前は失敗にする。
 // 失敗したとき：適用済みのマイグレーションは元に戻し、変更は新しいマイグレーションで加える。互換性のない変更は 3 段に分ける。
-// 除外：互換性のない変更だけ、migrations-exclusions.json に {キー: 理由} を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値。例：V202611010900__x.sql:列の削除）で、同じファイルの同じ種類の変更全てに適用される。
+// 除外：互換性のない変更だけ、migrations-exclusions.json（なければ作る）に {キー: 理由} を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値。例：V202611010900__x.sql:列の削除）で、同じファイルの同じ種類の変更全てに適用される。
 // 理由には、どのリリースで使わなくなったかを書く。理由のない除外と、当たる変更がなくなった除外は失敗にする。
 // SQL の字面で探すので、読み落としより、誤検出が出る側にする（コメントと文字列の中は読まない。誤検出は除外で理由を残す）。
 // ドル引用（DO ブロックなど）の中は、EXECUTE の文字列とコメントも含め全て字面で探す。
 // 閉じていない文字列・コメント・ドル引用は読めないので、失敗にする（除外できない）。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { emptyListReason, splitNulList } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
@@ -429,7 +430,8 @@ if (isMain(import.meta.url)) {
     const readBlob = (blob) => git(['cat-file', 'blob', blob])
     findChangedMigrations(differing, (file) => readBlob(base.get(file)), (file) => readBlob(current.get(file))).forEach((file) => changed.add(file))
   }
-  const exclusions = readExclusions(exclusionsPath('migrations-exclusions.json'))
+  // 除外がないときは、一覧のファイルを置かない（加えるときに作る）
+  const exclusions = existsSync(exclusionsPath('migrations-exclusions.json')) ? readExclusions(exclusionsPath('migrations-exclusions.json')) : {}
   const scan = scanMigrations(files, (file) => git(['cat-file', 'blob', current.get(file)]), exclusions)
   const exclusionProblems = checkExclusions('migrations-exclusions.json', exclusions, (key) => scan.used.has(key))
   for (const file of removed) {

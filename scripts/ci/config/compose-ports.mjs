@@ -5,7 +5,9 @@
 // local-ports が、読めたポートを一覧と照合するため。
 //
 // 失敗したとき：ポートの前に ${LOCAL_BIND_ADDRESS:-127.0.0.1}: を書き、ホスト側のポートは数字か ${変数:-数字} で 1 つずつ書く。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/config/compose-ports.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
@@ -17,7 +19,8 @@ const COMPOSE_FILE = 'docker/compose.yaml'
 export const BIND_PREFIX = '${LOCAL_BIND_ADDRESS:-127.0.0.1}:'
 
 /**
- * `ports` の項目から、ホスト側のポートを読む。<br />
+ * `ports` の項目から、ホスト側のポートを読む。
+ *
  * 待ち受けるアドレスの後ろ（アドレスのない項目は先頭）が、数字か `${変数:-数字}` で、その後に `:` とコンテナの側が続くものだけを読む。
  *
  * @param {string} entry 項目
@@ -30,7 +33,8 @@ export function readHostPort(entry) {
 }
 
 /**
- * compose の各サービスに書いた `ports` の項目を読む。<br />
+ * compose の各サービスに書いた `ports` の項目を読む。
+ *
  * 文字列でない項目（長い書き方の対応表など）は、`entry` を JSON の文字列にする。待ち受けるアドレスで始まらないので、問題の項目になる。
  *
  * @param {string} text compose のファイル

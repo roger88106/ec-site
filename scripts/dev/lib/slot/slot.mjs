@@ -1,6 +1,5 @@
 // スロット（作業ツリーごとの手元の環境）の値、空きの選び方、環境変数の組み立て。
 // docker と git を呼ばない純粋な関数だけを置く（割り当ての手順は、ロック・git・ファイル・docker の操作を引数で受ける）。
-// 呼ぶのは scripts/dev/slot.mjs。
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -40,7 +39,8 @@ function assertSlot(slot) {
 }
 
 /**
- * スロットのポートと名前を返す。<br />
+ * スロットのポートと名前を返す。
+ *
  * ポートは「スロット 0 の値 + 10000 × 番号」、データベースとバケットは名前の末尾に番号を付ける（0 は付けない）。
  *
  * @param {number} slot スロットの番号（0〜3）
@@ -112,7 +112,8 @@ export function parseSlotRecord(content) {
 }
 
 /**
- * 記録で使用中のスロットと、使っている作業ツリーを返す。<br />
+ * 記録で使用中のスロットと、使っている作業ツリーを返す。
+ *
  * メインの作業ツリーと prunable のものは除く。一覧にない作業ツリーは数えない。
  *
  * @param {string} porcelain `git worktree list --porcelain` の出力
@@ -248,7 +249,8 @@ export function checkShared(running, mainPath) {
 }
 
 /**
- * 死活監視の fetch の誤りから、バックエンドが止まっているかを判定する。<br />
+ * 死活監視の fetch の誤りから、バックエンドが止まっているかを判定する。
+ *
  * 待ち受けがない（接続が拒まれた：ECONNREFUSED）ときだけ止まっているとし、タイムアウトなどは動いているとみなす（安全な側）。
  *
  * @param {unknown} error fetch が投げた誤り（Node の undici では `cause.code` に原因が入る）
@@ -274,7 +276,8 @@ export function checkBackendStopped({ slot, running, action }) {
 }
 
 /**
- * バケットを削除する sh の script（SeaweedFS の aws cli のコンテナで流す）。<br />
+ * バケットを削除する sh の script（SeaweedFS の aws cli のコンテナで流す）。
+ *
  * バケットがない誤り（NoSuchBucket）だけを無視し、権限や接続の誤りは出力して失敗にする。
  *
  * @param {string[]} buckets バケットの名前
@@ -305,7 +308,8 @@ function readRecords(deps) {
 }
 
 /**
- * 空きのスロットを仮押さえして選び、記録を書く。<br />
+ * 空きのスロットを仮押さえして選び、記録を書く。
+ *
  * 仮押さえ（claim）は、git の共通のディレクトリにスロットごとのファイルを排他で作ることで、2 つの割り当てが同じ番号を同時に選ばない。
  * 仮押さえの後に記録を再読込し、他の作業ツリーが先に記録を書いた番号は使わない。記録を書いたら仮押さえを外す（以後は記録が使用中を示す）。
  *
@@ -341,7 +345,8 @@ function claimSlot(deps) {
 }
 
 /**
- * スロットを割り当てる手順。<br />
+ * スロットを割り当てる手順。
+ *
  * 空きを仮押さえして記録を書く（claimSlot）。データベースとバケットの再作成は長くかかるので、仮押さえを外した後に実行する。
  * 記録を先に書くので、再作成の間に他の作業ツリーが同じ番号を選ばない。再作成に失敗しても記録は残す（reset で再作成する）。
  *

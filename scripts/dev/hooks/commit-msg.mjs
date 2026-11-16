@@ -11,6 +11,7 @@ export const COMMIT_MSG_FAILED = 2
 
 /**
  * 日本語の文の検査を実行して、hook の終了コードを返す。終了コードを返さなかった検査（シグナルでの終了など）は失敗の 1 にする。
+ *
  * 終了コードが 0 でも、出力の最後の行が要約の行でなければ、理由を表示して失敗の 1 にする。
  *
  * @param {object} deps 外部の処理（テストで差し替える）
@@ -32,6 +33,7 @@ export function runCommitMsg({ file, run, log = console.log }) {
 
 /**
  * 実際の検査の script で runCommitMsg を実行する。
+ *
  * 直接実行の判定に頼らず、入口（commit-msg-main.mjs）が必ず呼ぶ。判定が外れて hook が何もせず成功するのを防ぐため。
  *
  * @param {string | undefined} file コミットメッセージのファイル

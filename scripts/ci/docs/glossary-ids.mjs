@@ -5,10 +5,14 @@
 //   - docker/、e2e/、scripts/
 // scripts/ci/ のテスト、testdata/、ja-text.json、除外の一覧は根拠にしない。kebab-case の設定の名前は camelCase の語でもよい。
 // 名前の形の例（XxxRepository など、Xxx、<…>、* を含むもの）は調べない。
+//
 // 表の形：見出しの行（区切りの行の直前）に「用語」か「識別子」がある表は、見出しの行が「用語、識別子、…」の順でなければ失敗にする。
 //   識別子を 1 つも取り出せない用語集も失敗にする（列を入れ替えると、読まずに通るため）
+//
 // 失敗したとき：用語集の識別子を、今のコードの名前に修正する。表の形は、列を 用語、識別子、… の順にする。
+//
 // 除外：glossary-ids-exclusions.json に {キー: 理由}。キーは識別子。コードにない語でよいものを書く。用語集にない識別子の除外は失敗にする（コードに偶然の一致があっても除外は残す）
+//
 // 使い方：node scripts/ci/docs/glossary-ids.mjs（リポジトリのルートで）
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
 import { readFileSync } from 'node:fs'
@@ -22,6 +26,7 @@ const SEARCH_ROOTS = ['backend', 'frontend', 'api', 'docker', 'e2e', 'scripts']
 
 /**
  * 検査の script 自身のファイル（テスト、テストのデータ、除外の一覧、使わない語の一覧）。
+ *
  * 検査の script のテストと例の文字を根拠にすると、コードにない識別子が通るため、調べない。
  * scripts/ci/ の本番の script（.mjs）と scripts/dev/ は、調べる。
  */
@@ -66,7 +71,8 @@ export function parseGlossaryIds(markdown) {
 }
 
 /**
- * 用語集の表の形を調べる。parseGlossaryIds は 3 列以上の行の 2 列目だけを読み、見出しを見ないので、列を入れ替えると識別子が 0 件になり、検査が通ってしまう。<br />
+ * 用語集の表の形を調べる。parseGlossaryIds は 3 列以上の行の 2 列目だけを読み、見出しを見ないので、列を入れ替えると識別子が 0 件になり、検査が通ってしまう。
+ *
  * 見出しの行（区切りの行の直前）に「用語」か「識別子」があるときは、1 列目が「用語」、2 列目が「識別子」でなければならない。
  * 他の見出しの表（配送業者の一覧など）は見ない。識別子を 1 つも取り出せない用語集も問題にする。
  *
@@ -114,6 +120,7 @@ export function findMissing(ids, tokens, content) {
 
 /**
  * 除外が今も必要かを返す。
+ *
  * 不要とするのは、用語集になくなった名前だけ。コードに見つかったことでは不要としない
  * （ブランチの名前や tasks の記号は、型の paths[P]、テストのデータ、sourceSets.main などに偶然一致し、機械で見分けられないため）。
  *

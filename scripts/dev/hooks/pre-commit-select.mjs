@@ -24,7 +24,8 @@ const CHECK_TEST = new RegExp(`^scripts/ci/(?:${CHECK_GROUPS.join('|')})/[^/]+\\
 const ALWAYS = 'always'
 
 /**
- * 検査ごとの、読むファイルのパスの正規表現。import と、ソースの中のパス・名前から分からないもの（Git のファイルの一覧から選ぶもの）を書く。<br />
+ * 検査ごとの、読むファイルのパスの正規表現。import と、ソースの中のパス・名前から分からないもの（Git のファイルの一覧から選ぶもの）を書く。
+ *
  * 表にない検査は、常に実行する（選び漏れで検査が実行されないことを避けるため）。
  */
 export const CHECK_INPUTS = {

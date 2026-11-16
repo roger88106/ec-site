@@ -5,7 +5,9 @@
 // token が要らない店舗 API の操作は、security: [] で明示する（書き忘れを「不要」と読まないため）。
 //
 // 失敗したとき：リポジトリのルートで --write を付けて実行して表を再生成し、差分を確認する。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/config/role-permissions.mjs（リポジトリのルートで。--write で文書の表を書き直す）
 import { readFileSync, writeFileSync } from 'node:fs'
 import { load } from 'js-yaml'
@@ -28,7 +30,8 @@ const END = '<!-- /generated:role-permissions -->'
 const METHODS = ['get', 'post', 'put', 'patch', 'delete']
 
 /**
- * OpenAPI の契約から操作を読む。<br />
+ * OpenAPI の契約から操作を読む。
+ *
  * 項目のない `security:`（YAML では null）は、認証が不要（`[]`）と同じでないので、書いていないもの（null）として読む。
  *
  * @param {string} text OpenAPI の契約

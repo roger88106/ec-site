@@ -2,18 +2,16 @@
 // 手で rebase -i を操作すると、途中で止まったまま残ったり、内容を変えてしまったりする。
 // この script は、条件を確認してから書き換え、tree（内容）が元と同じことを確認し、失敗したら元に戻す。
 //
+// 条件（進行中の操作がない、未 commit の変更がない、対象が HEAD の祖先で push 済みでない、範囲にマージの commit がない）は reword が確認する。
+// 各 commit の書き換えは commit の hook（commit-msg など）を通す。hook が拒否して rebase が止まったら、元の HEAD に戻す。
+//
 // 使い方：node scripts/dev/tools/reword.mjs <対応表の JSON>
 //   JSON は [{ "commit": "<SHA か短い SHA>", "message": "<新しいメッセージのファイル>" }]。
 //   メッセージのファイルの相対パスは、対応表のファイルのある場所から解決する。
-// 出力：書き換えた commit（元の短い SHA → 新しい短い SHA と 1 行目）、件数、tree が一致したこと。
-// 終了コード：0 成功、1 書き換えなかった（条件に合わない、途中で失敗して戻した）、2 使い方の誤り。
 //
-// 書き換える前に確認すること：rebase・merge・cherry-pick・revert・bisect が進行中でない、追跡しているファイルに未 commit の変更がない、対応表が読める、
-// 対象が HEAD の祖先である、重複がない、push 済み（refs/remotes/ のどれかから届く）でない、
-// 範囲（最も古い対象の親から HEAD まで）にマージの commit がない（rebase で平らになるため）。
-// どれかに当たれば、状態を変えずに 1 で終わる。
-// 各 commit の書き換えは commit の hook（commit-msg など）を通す。hook が拒否すると rebase が途中で止まるので、
-// git rebase --abort で戻し、HEAD が元の commit であることを確認する。
+// 出力：書き換えた commit（元の短い SHA → 新しい短い SHA と 1 行目）、件数、tree が一致したこと。
+//
+// 終了コード：0 成功、1 書き換えなかった（条件に合わない、途中で失敗して戻した）、2 使い方の誤り。
 //
 // 失敗したときの見方：標準エラー出力の最初の行に理由が出る。途中で止まったときは git の出力も続く。
 // 元に戻せなかったときは、その旨と元の HEAD の SHA が出るので、git reset --hard <SHA> で手で戻す。
@@ -30,6 +28,7 @@ class Refusal extends Error {}
 
 /**
  * rebase の todo を書き換える。対象の commit の pick の行の後に、メッセージを差し替える exec の行を入れる。
+ *
  * entries は { commit: 完全な SHA, message: メッセージのファイルの絶対パス }。
  * todo の SHA は、rebase を core.abbrev=no で実行して完全な形にしてあるので、完全な SHA の一致で照合する
  * （短縮形の前方一致だと、前方が同じ 2 つの対象で、最初の対象のメッセージが両方に当たる）

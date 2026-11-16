@@ -31,7 +31,9 @@ const CALL_PREFIX = String.raw`(?:\s|\(|await\b|\[\s*\.\.\.|Array\s*\.\s*from\s*
 
 /**
  * 変数に入れる文（const items = await screen.getAllByRole(…)、const items: T[] = …、let の後の items = … など）の、呼び出しの前の部分。
- * 1 つ目が const・let・var の名前、2 つ目が配列の分割代入、3 つ目がオブジェクトの分割代入、4 つ目が宣言のない代入の名前
+ *
+ * 1 つ目が const・let・var の名前、2 つ目が配列の分割代入、3 つ目がオブジェクトの分割代入、4 つ目が宣言のない代入の名前。
+ * = の後に挟んでよいもの：改行・await・括弧・as の型の変換・型の注釈・受け手（screen.、within(…).）・スプレッド（[...x]）・Array.from(x)
  */
 const ASSIGNMENT_BEFORE = new RegExp(
   String.raw`(?:\b(?:const|let|var)\s+(?:([\w$]+)|(\[[^\]]*\])|(\{[^}]*\}))(?:\s*:[^=;]+?)?|(?<![.\w$])([\w$]+))\s*=(?![=>])${CALL_PREFIX}$`,
@@ -77,14 +79,10 @@ function blockEnd(code, from) {
 }
 
 /**
- * getAllBy…・findAllBy…・queryAllBy… の結果を、並びのインデックスで選ぶ所を探す。
- * 規則は、フロントのテストの書き方の「画面に見えるもので探す」。並びの 1 つ目は使わない。
- * 呼び出しの直後の [数字]・.at(数字) と、変数に入れて（配列の分割代入を含む）から [数字]・.at(数字) で選ぶ所を見つける。
- * 変数に入れる形：const・let・var の宣言と、宣言のない代入。= の後の改行、await、括弧、as の型の変換、型の注釈、
- * 受け手（screen.、within(…).）、スプレッド（[...x]）、Array.from(x) をはさんでもよい。
- * 変数の使用は、宣言した所より後で、同じ名前が別の宣言（const・let・var、分割代入、引数）で上書きされるまで、
- * const・let・var の宣言ならそのブロックが閉じるまでの範囲だけ見る（別のテストの同じ名前の普通の配列は見ない）。
- * 見つけない形：変数に入れる前に map・filter などをつなぐもの、関数の引数や戻り値で渡して選ぶもの
+ * getAllBy…・findAllBy…・queryAllBy… の結果を、並びのインデックス（[数字]・.at(数字)）で選ぶ所を探す。
+ *
+ * 呼び出しの直後と、変数に入れてから選ぶ所を見つける。
+ * 変数に入れる前に map・filter などをつなぐものと、関数の引数や戻り値で渡して選ぶものは見つけない。
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行
@@ -103,6 +101,7 @@ export function findIndexedMultiples(text) {
       continue
     }
     if (CONTINUES.test(wrapped)) continue
+    // 変数に入れる形：const・let・var の宣言と、宣言のない代入（配列の分割代入を含む）。間に挟めるものは ASSIGNMENT_BEFORE
     const windowStart = Math.max(0, match.index - ASSIGNMENT_LOOKBEHIND)
     const assignment = ASSIGNMENT_BEFORE.exec(code.slice(windowStart, match.index))
     if (!assignment) continue
@@ -112,6 +111,7 @@ export function findIndexedMultiples(text) {
     }
     const name = assignment[1] ?? assignment[4]
     if (name === undefined) continue
+    // 変数の使用は、同じ名前の別の宣言で上書きされるまでと、宣言ならそのブロックが閉じるまで見る（別のテストの同じ名前の配列を見ないため）
     const limit = assignment[1] === undefined ? code.length : blockEnd(code, close + 1)
     const scope = code.slice(close + 1, limit)
     const shadow = shadowingPattern(name).exec(scope)

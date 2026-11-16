@@ -1,12 +1,12 @@
 // 子のプロセスの停止と、停止のシグナルを受けたときの止め方。
-// scripts/dev/slot.mjs、e2e/scripts/run.ts、scripts/dev/tools/break-check.mjs が共有する。
 import { spawnSync } from 'node:child_process'
 
 /** 受けたら子を停止するシグナル */
 export const STOP_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP']
 
 /**
- * 子のプロセスとその子孫を停止する。<br />
+ * 子のプロセスとその子孫を停止する。
+ *
  * Windows ではシグナルが子孫に届かないので、taskkill でツリーごと強制終了する。それ以外では受けたシグナルを子に送る。
  * pid がない（起動できなかった）子には何もしない。
  *
@@ -24,7 +24,8 @@ export function stopChild(child, signal, deps = { platform: process.platform, sp
 }
 
 /**
- * Windows で、プロセスとその子孫を taskkill で強制終了する。<br />
+ * Windows で、プロセスとその子孫を taskkill で強制終了する。
+ *
  * spawnSync は終了コードが 0 以外でも例外を投げないので、プロセスがすでに終わっていて taskkill が失敗しても止まらない。
  *
  * @param {number} pid プロセスの ID
@@ -35,7 +36,8 @@ export function killTreeOnWindows(pid, run = spawnSync) {
 }
 
 /**
- * 停止のシグナルを受けたときの止め方を登録する。<br />
+ * 停止のシグナルを受けたときの止め方を登録する。
+ *
  * 1 回目は実行中の子を停止し、終了せずに子が終わるのを待つ（呼び出し側が子の終わりを受けて終了する）。
  * 2 回目か、実行中の子がないときは、終了コード 1 で終了する。
  *

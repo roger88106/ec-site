@@ -1,5 +1,6 @@
 // AC 一覧（docs/03-機能仕様/acceptance-criteria.md）を、③ の表、進行中の spec、テスト名と照合する。
 // AC 一覧は AC の正本で、③ の表は「今有効な AC」の節の表。テスト名の規則は、テストの書き方の「AC 番号を入れる」。
+//
 // 目的：AC の今の内容を AC 一覧の 1 か所に置き、③ の表とテストとの対応を、AC 一覧と食い違わせない。
 //   AC の内容を得るために、アーカイブの spec は読まない。
 //
@@ -7,6 +8,7 @@
 //   - ac/ac-list.mjs：AC 一覧、③ の表、進行中の spec の読み書き
 //   - ac/match.mjs：照合（失敗にする条件）
 //   - ac/test-names.mjs：テスト名と AC の番号の読み方
+//
 // テスト名に出ない有効・変更の AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/spec/ac-check.mjs
@@ -18,8 +20,10 @@
 //     マーカーと節の誤りは手動で修正する（そのとき --write は何も書かずに失敗する）
 //   - テストを追加するか、テスト名に AC を書く。AC は読点で 1 つずつ書く（AC-n、AC-m）。
 //     読めない呼び出しは ファイル:行 を示すので、テスト名を文字列で書く
+//
 // 除外：ac-exclusions.json に {キー: 理由}。キーは AC 一覧の有効・変更の AC（AC-n）。
 //   テストがある AC、AC 一覧にない AC、廃止の AC の除外は失敗にする
+//
 // 使い方（リポジトリのルートで）：
 //   - node scripts/ci/spec/ac-check.mjs：照合する
 //   - node scripts/ci/spec/ac-check.mjs --write：AC 一覧にない進行中の spec の AC を転記し、③ のマーカーの範囲を書き換える。
@@ -39,7 +43,8 @@ import { readTests } from '../lib/ac/test-names.mjs'
 const EXCLUSIONS_NAME = 'ac-exclusions.json'
 
 /**
- * テスト名に出ない AC を失敗にするかを、環境から決める。CI では失敗にし、手元では警告にする。<br />
+ * テスト名に出ない AC を失敗にするかを、環境から決める。CI では失敗にし、手元では警告にする。
+ *
  * 理由：spec を書いてからテストを書くまでの間も、手元で commit できるようにするため。
  * テストの漏れは、CI（push と pull request）で止める。
  *

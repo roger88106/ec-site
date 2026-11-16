@@ -5,6 +5,7 @@
 //
 // 使い方：node scripts/dev/tools/break-check.mjs <ファイル> <置き換える文字列> <置き換え後> <ディレクトリ> <テストのコマンド>
 //   例：node scripts/dev/tools/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false && <p" frontend/store "npx vitest run src/x.test.tsx"
+//
 // 出力：失敗したテストの名前（×、FAILED）と件数の行だけ。終了コードは、テストが失敗すれば 0（壊すと失敗する＝壊すと検出できる）、
 // 通れば 1、置き換えが 1 か所に当たらない・ファイルが読めない・bash を起動できない・コマンドが見つからない（127）か実行できない（126）ときは 2。
 // 停止のシグナルを受けたときは、元に戻してから 130（SIGINT）か 143（SIGTERM）で終わる。

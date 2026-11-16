@@ -21,6 +21,7 @@ const PUSH_OPTIONS = { valueShort: 'o', optionalShort: '', valueLong: ['repo', '
 
 /**
  * git tag のオプションのうち、値を次の語（または同じ語の続き）に取るもの。
+ *
  * -n は値を同じ語の続きにだけ取るが、一覧の形かを見分けるためにオプションとして数えたいので、optionalShort に入れない（続きの数字もオプションの文字として読むが、判定に使わない）。
  */
 const TAG_OPTIONS = {
@@ -224,6 +225,7 @@ function isForceAllowedBranch(ref) {
 
 /**
  * force push の先のブランチが、全て agent/ で始まるかを調べる。
+ *
  * refspec があれば、それぞれの先（: の後。: がなければ前の名前で、HEAD は今のブランチ）を見る。
  * refspec がなければ、今のブランチとその上流（branch.<名前>.merge）を見る。
  * push.default が matching か、remote.<名前>.push を設定してあるときは、送る先が設定で変わるので、決められないとする。
@@ -279,6 +281,7 @@ function judgeCommitOptions(git) {
 
 /**
  * git commit のとき、対象のリポジトリに pre-commit hook が置かれていなければ拒否する。
+ *
  * 置き場所は git rev-parse --git-path で求める（作業ツリーでは共通の .git の hooks になる）。
  * 対象のリポジトリを決められないときも拒否する（hook のないリポジトリの commit を通さないため。commit 自体も失敗する見込みが高い）。
  *
@@ -307,7 +310,9 @@ function judgePreCommitHook(git, deps) {
 }
 
 /**
- * git tag の、tag の作成で確認を求める。一覧（引数なし、-l、--contains など）、削除（-d）、検証（-v）は通す
+ * git tag の、tag の作成で確認を求める。
+ *
+ * 一覧（引数なし、-l、--contains など）、削除（-d）、検証（-v）は通す
  * （削除はローカルの tag だけを消し、リモートの tag の削除は push の判定で見る）。
  *
  * @param {GitInvocation} git git の呼び出し

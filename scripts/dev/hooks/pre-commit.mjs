@@ -23,6 +23,7 @@ export const BRANCH_REJECTED = 4
 
 /**
  * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
+ *
  * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリースの「名前」、ブランチとリリースの「緊急の修正」）。それ以外の変更は、develop から作業ブランチを作る
  */
 const REJECTIONS = new Map([
@@ -55,6 +56,7 @@ const REJECTIONS = new Map([
 
 /**
  * 今のブランチに commit してよいかを判定し、だめなら表示する手順を返す。
+ *
  * detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。判定を誤って全ての commit を失敗にしないため。
  *
  * @param {string | null} branch 今のブランチの名前。detached HEAD か読めなければ null
@@ -79,6 +81,7 @@ export function branchOfHead({ status, stdout }) {
 
 /**
  * warning の一覧（ja-text の --warning --added の出力）から、warning の行を取り出す。
+ *
  * 追加行の選び方は ja-text が持つ（--changed と同じ）ので、ここでは選び直さない。
  * 一覧の行は「<ファイル>:<行> <内容>」の形。ほかの行（件数の行など）は除く。
  *
@@ -94,6 +97,7 @@ export function selectWarningLines(output) {
 
 /**
  * git が GIT_INDEX_FILE に相対パスを渡したときに、リポジトリのルートからの絶対パスにする。
+ *
  * git commit -a などは、一時の index をこの環境変数で渡す。
  *
  * @param {string | undefined} indexFile GIT_INDEX_FILE の値
@@ -108,6 +112,7 @@ export function resolveIndexFile(indexFile, root) {
 
 /**
  * 検査の script を実行する bash を返す。hook の shell script が、自分を実行している bash のパスを PRE_COMMIT_BASH で渡す。
+ *
  * Windows の素の PATH では、名前の bash が WSL の bash.exe を指すことがあり、C:/ のパスを渡した検査が失敗するため。
  *
  * @param {Record<string, string | undefined>} env 環境変数
@@ -118,10 +123,9 @@ export function checkShell(env) {
 }
 
 /**
- * 今のブランチが develop か main なら、何もせずに 4 を返す。
- * そうでなければ、ステージした内容を一時ディレクトリに取り出し、そこでステージしたファイルに関係する CI の検査を実行して、hook の終了コードを返す。
- * 取り出しかステージしたファイルの一覧に失敗したら 2、そうでなければ検査の終了コード（検査が終了コードを返さなければ 1）。
- * 一時ディレクトリは、成功でも失敗でも消す。
+ * ステージした内容を一時ディレクトリに取り出し、ステージしたファイルに関係する CI の検査を実行して、hook の終了コードを返す。
+ *
+ * 今のブランチが develop か main なら、何もせずに失敗にする。一時ディレクトリは、成功でも失敗でも消す。
  *
  * @param {object} deps 外部の処理（テストで差し替える）
  * @param {string} deps.root リポジトリのルート
@@ -183,6 +187,7 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, listStaged, 
 
 /**
  * 実際の git と一時ディレクトリで runPreCommit を実行する。
+ *
  * 直接実行の判定に頼らず、入口（pre-commit-main.mjs）が必ず呼ぶ。判定が外れて hook が何もせず成功するのを防ぐため。
  *
  * @returns {number} hook の終了コード
@@ -214,7 +219,7 @@ export function main() {
     },
     runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     diffAdded: (env) => {
-      // --changed と同じ引数（lib/added-diff）。CI の注釈と同じ判定にする
+      // --changed と同じ引数（scripts/ci/lib/git/added-diff）。CI の注釈と同じ判定にする
       const args = [...ADDED_DIFF_ARGS, '--cached', '--']
       const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
       return { status: result.status, stdout: result.stdout ?? '' }

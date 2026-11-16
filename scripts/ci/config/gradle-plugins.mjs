@@ -6,7 +6,9 @@
 // カタログを通さない書き方（Gradle のファイルの `id("…")`、`kotlin("…")`、`apply(plugin = "…")`）と、カタログの id のない項目は、照合から漏れるので失敗にする。
 //
 // 失敗したとき：プラグインを加える・外すときは、gradlePlugins にライセンスを確認して加える・削除する。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/config/gradle-plugins.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { parse } from 'smol-toml'
@@ -26,7 +28,8 @@ const POLICY_FILE = 'scripts/ci/licenses/policy.json'
 const BUILD_PATHS = ['backend/ecsite']
 
 /**
- * 照合の対象にするプラグインの id か。<br />
+ * 照合の対象にするプラグインの id か。
+ *
  * `java`、`jacoco` のように `.` のない id は Gradle に組み込みで、別の成果物として入らず、ライセンスの確認の対象にならないので外す。
  *
  * @param {string} id プラグインの id
@@ -35,7 +38,8 @@ const BUILD_PATHS = ['backend/ecsite']
 const isExternal = (id) => id.includes('.')
 
 /**
- * バージョンカタログの `[plugins]` の id を読む。<br />
+ * バージョンカタログの `[plugins]` の id を読む。
+ *
  * 値は、表の `id` か、文字列（`"id:バージョン"`）の `:` の前。id を読めない項目は、読み飛ばすとライセンスを確認しないプラグインが通るので、`unknown` に集める。
  *
  * @param {string} text libs.versions.toml の内容
@@ -59,7 +63,8 @@ export function readCatalogPlugins(text) {
 const DIRECT_PLUGIN = /\b(?:id|kotlin)\s*\(\s*"|\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/
 
 /**
- * Gradle のファイルで、カタログを通さずにプラグインを入れる行を探す。行コメントの中は読まない。<br />
+ * Gradle のファイルで、カタログを通さずにプラグインを入れる行を探す。行コメントの中は読まない。
+ *
  * 外部のプラグインは `plugins {}` に `alias(libs.plugins.…)` で書く。カタログの `[plugins]` だけを照合するので、他の書き方はライセンスの確認から漏れる。
  *
  * @param {string} text Gradle のファイルの内容

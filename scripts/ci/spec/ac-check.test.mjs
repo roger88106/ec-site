@@ -367,6 +367,7 @@ const MODULES = new Set(['order', 'cart'])
 
 /**
  * spec のディレクトリ（テスト用。listSpecDirs の結果の name と rel）。
+ *
  * 999 のディレクトリはない。8 は、進行中とアーカイブに同じ番号のディレクトリが 2 つある。227 は 3 桁だが、MVP の外にある
  */
 const SPEC_DIRS = [
@@ -821,7 +822,7 @@ describe('③ の文書の名前と構造の検査の対象の一覧', () => {
   test('モジュールの ③ が構造の検査の対象の一覧（FUNCTIONAL_SPECS）になければ、追加し忘れとして失敗にする', () => {
     const problems = checkModuleDocNames({ docs: [doc('order', true), doc('wishlist', false)], modules })
     assert.equal(problems.length, 1)
-    assert.match(problems[0], /^docs\/03-機能仕様\/wishlist\.md：モジュールの ③ が構造の検査の対象の一覧（lib\/functional-specs\.mjs の FUNCTIONAL_SPECS）にない/)
+    assert.match(problems[0], /^docs\/03-機能仕様\/wishlist\.md：モジュールの ③ が構造の検査の対象の一覧（scripts\/ci\/lib\/docs\/functional-specs\.mjs の FUNCTIONAL_SPECS）にない/)
   })
 
   test('一覧にある ③ にバックエンドのモジュールのディレクトリがなければ失敗にする', () => {

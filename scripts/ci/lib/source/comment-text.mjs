@@ -3,7 +3,7 @@
 // - TypeScript・JavaScript（.ts、.tsx、.mjs、.cjs）：コメントと、describe・it・test（test.describe、it.each(表)('…')、test.skip などを含む）の名前の文字列
 // - テンプレートで書いたテスト名：外側のバッククォートは文字列の区切りなので " に替え、埋め込み（${…}）は X に替えて取り出す
 // - シェル（.sh）：# のコメント（1 行目の #! を除く）
-// 走査（コメント・文字列の読み分け）は scan-code が行う。ja-text が使う
+// 走査（コメント・文字列の読み分け）は scan-code が行う。
 import { scanCode, templateEnd } from './scan-code.mjs'
 import { skipModifiers } from './test-files.mjs'
 
@@ -71,6 +71,7 @@ function javaTestNameRanges(text) {
 
 /**
  * TypeScript・JavaScript の describe・it・test の名前の文字列の区間を返す。
+ *
  * 修飾（.only、.skip、.each(表) など）は読み飛ばし、名前が文字列でもテンプレートでもない呼び出しは取り出さない。
  *
  * @param {string} text ソース
@@ -96,7 +97,9 @@ function tsTestNameRanges(text) {
 }
 
 /**
- * テンプレートで書いたテスト名を、文字列の名前と同じ形にする。外側のバッククォートは文字列の区切りなので " に替え
+ * テンプレートで書いたテスト名を、文字列の名前と同じ形にする。
+ *
+ * 外側のバッククォートは文字列の区切りなので " に替え
  * （ja-text が名前の全体をインラインコードと読まないように）、`\``（エスケープしたバッククォート）は ` に戻す（名前の中のインラインコード）。
  * 埋め込み（`${…}`）は、中の式がコードなので X の 1 字に替える（インラインコードと同じ数え方）。式の中の改行は残し、行の数を変えない。
  *
@@ -150,6 +153,7 @@ function embeddedEnd(text, start) {
 
 /**
  * シェルの # のコメントの区間を返す。引用符の中、$# や ${#x}、1 行目の #! は含めない。
+ *
  * 限界：ヒアドキュメントの中は読み分けない（# で始まる行はコメントと読む）。
  *
  * @param {string} text ソース
@@ -231,6 +235,7 @@ export function extractCommentLines(text, kind) {
 
 /**
  * 行末のコメント（同じ行のコメントの前にコードがあるもの）が始まる行を返す。
+ *
  * commentText はコメントの位置を残さないので、行頭のコメントと見分けるのに使う（ja-text が、前後の行とつながないために使う）。
  * テスト名と、ブロックコメントの 2 行目からの行は含めない。
  *

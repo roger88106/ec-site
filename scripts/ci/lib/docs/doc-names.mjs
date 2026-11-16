@@ -55,7 +55,7 @@ export function readHeadings(text) {
   const stack = []
   const seen = {}
   let title = null
-  // 見出しの読み方（ATX と Setext、コードブロックと HTML のコメントの外）は、spec-structure と同じ lib/doc-structure の readHeadings
+  // 見出しの読み方（ATX と Setext、コードブロックと HTML のコメントの外）は、spec-structure と同じ doc-structure の readHeadings
   for (const { level, title: name } of readStructureHeadings(text.replace(/^﻿/, ''))) {
     if (level === 1 && title === null) title = name.trim()
     let key = slug(name)
@@ -92,6 +92,7 @@ export function referenceName(title) {
 
 /**
  * 参照の前の文字から、指す先の文書を決める。見出しの参照と節の番号の参照で同じ読み方にする。
+ *
  * 直前のリンク、constitution、パス（`docs/06-手順書/ci.md`、`notification.md`）、文書の名前の順に当てる。
  * 名前の後の「の」、パスや名前の印（`` ` ``、「」」）、閉じ括弧（`（docs/06-手順書/ci.md）の`）は除いて読む。
  * 当たらず、末尾が括弧の補足（`店舗画面の構成（補足）の`）なら、補足の前で読み直す。
@@ -150,6 +151,7 @@ function resolveEnd(file, text, names, basenames, exists, existingPath) {
 
 /**
  * 参照に書いたパスから、文書のパスを決める。
+ *
  *   - Markdown は参照のあるファイルからの相対を先に（リンクと同じ読み方。`README.md` は隣のファイル）、コードはルートからを先に見る（コメントはルートからのパスで書くため）
  *   - どちらにもなく、ディレクトリのないファイル名だけ（`notification.md`）なら、docs/ の下の同じ名前の文書（1 つだけのとき）にする
  *   - ディレクトリまで書いてファイルがないもの（外のリポジトリの `docs/setup.md` など）は、同じ名前の文書に当てない
@@ -179,6 +181,7 @@ const SKILL_PATH = /skill\s+`([^`\s]+)`\s*の\s*`?([^\s`'"（(「」<>[\]/]+\.md
 
 /**
  * docs/ の下の文書と skill の、名前とファイル名からパスへの対応を作る。
+ *
  * docs/ の下の文書の名前は 1 行目の見出し、skill の名前は `skill `<名前>``（`.claude/skills/<名前>/SKILL.md` を指す）。
  *
  * @param {string[]} files 調べるファイル

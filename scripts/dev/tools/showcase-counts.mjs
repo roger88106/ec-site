@@ -4,6 +4,7 @@
 //   テスト：Java は、./gradlew check の結果（build/test-results/ の XML）があれば実行した件数（パラメーターの組ごと）、
 //          なければソースの @Test・@ParameterizedTest の数。Vitest・Playwright は、ソースの test・it の数
 //          （*.test.ts(x)、*.spec.ts。test.describe などのまとまりは数えない）。ページの数字は実行した件数で書く
+//
 // 使い方：node scripts/dev/tools/showcase-counts.mjs（どこから流してもよい）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'

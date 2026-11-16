@@ -1,4 +1,7 @@
 // gh pr merge の規則。pull request を gh で読み、利用者の許可なしにマージしてよい条件（マージと後片付けの「マージの許可と後片付け」）を調べる。
+//
+// 条件を満たさないときと、pull request を読めないときは、確認を求める。未解決の指摘が 0 かは読めないので見ない（文書の規則のまま守る）。
+// 向き先が agent/ で始まる pull request は、開いていることと head の commit だけを見て通す。
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, readBodyRisk } from '../../../ci/config/risk.mjs'
@@ -16,7 +19,9 @@ import { GH_PR_OPTIONS, flagEnabled, optionValue, parseGhArgs } from './gh-rules
 const GH_TIMEOUT_MS = 10000
 
 /**
- * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。hook 全体のタイムアウト（.claude/settings.json の timeout）から、
+ * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。
+ *
+ * hook 全体のタイムアウト（.claude/settings.json の timeout）から、
  * node の起動と git の呼び出しの分（約 10 秒）を残す。使い切った後のマージは、読まずに確認を求める。
  */
 export const GH_BUDGET_MS = 20000
@@ -37,7 +42,9 @@ const RISK_CHECK = '危険度の照合'
 const FEATURE_LABEL = '種類:機能'
 
 /**
- * 通ったとみなす check run の結論。neutral は、GitHub が必須の検査で成功と同じに扱う結論で、
+ * 通ったとみなす check run の結論。
+ *
+ * neutral は、GitHub が必須の検査で成功と同じに扱う結論で、
  * Dependabot の pull request の CodeQL が警告なしで返すので、成功に含める。
  */
 const PASSING_CONCLUSIONS = ['SUCCESS', 'SKIPPED', 'NEUTRAL']
@@ -47,6 +54,7 @@ const PENDING_STATES = ['PENDING', 'EXPECTED']
 
 /**
  * マージの条件を読む GraphQL の問い合わせ。1 回のリクエストで、pull request、変更のファイル、閉じる issue のラベル、head の commit の検査を読む。
+ *
  * 一覧はどれも 1 ページ（100 件）だけ読み、続きがあれば条件を確認できないとする。
  */
 const PULL_REQUEST_QUERY = `query($owner: String!, $name: String!, $number: Int!) {
@@ -172,6 +180,7 @@ function readPullRequest(target, dir, deps, timeout) {
 
 /**
  * head の commit の検査を、同じ検査（check run は workflow と名前の組、commit status は context）ごとに、最も新しい実行だけにする。
+ *
  * GitHub は再実行の前の実行も同じ commit に残すので、古い失敗で判定しないため（gh pr checks も名前ごとに新しいものだけを見る）。
  * 同じ検査が重なり、時刻を読めない実行があるときは、どれが新しいか決められないので、その検査の実行を全て残す。
  *
@@ -315,6 +324,7 @@ function authorName(author) {
 
 /**
  * pull request が、利用者の許可なしにマージしてよい条件（未解決の指摘が 0 であることを除く）を満たすかを調べる。
+ *
  * 向き先が agent/ で始まるものは、開いていることと head の commit だけを見る（途中のブランチの履歴は、最後の pull request で利用者が確認するため）。
  *
  * @param {object} pullRequest pull request（GraphQL の形）
@@ -338,6 +348,7 @@ export function mergeProblems(pullRequest, headCommit) {
 
 /**
  * gh pr merge の判定。--match-head-commit のない形は拒否し、pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
+ *
  * --admin と --auto は見ない。ruleset の除外の対象が空で、リポジトリの設定で自動のマージを無効にしてあるので、GitHub が受け付けないため。
  *
  * @param {string[]} args pr の後の語（merge を含む）

@@ -6,7 +6,9 @@
 // .node-version と engines.node（ルートの package.json）のずれは、pnpm の engineStrict がインストールで失敗にする。
 //
 // 失敗したとき：yml の setup の入力を、バージョンのファイルを参照する形にする。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/config/runtime-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
@@ -39,7 +41,8 @@ function walkKeys(node, visit, where = '') {
 }
 
 /**
- * workflow と action の yml の、バージョンの指定がバージョンのファイルを参照しているかを調べる。<br />
+ * workflow と action の yml の、バージョンの指定がバージョンのファイルを参照しているかを調べる。
+ *
  * `java-version` と `node-version` は許す値がないので、常に失敗にする。
  *
  * @param {{ path: string, text: string }[]} files yml のパスと内容

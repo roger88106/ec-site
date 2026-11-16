@@ -5,7 +5,9 @@
 // - 画面のテスト：複数の結果を並びのインデックスで選ばない（フロントのテストの書き方の「画面に見えるもので探す」）
 //
 // 失敗したとき：報告の括弧の中の書き方に直す。同じファイルは共有のパッケージに移す。
+//
 // 除外：frontend-rules-exclusions.json に {キー: 理由}。キーは src からの相対パス（同じ内容のファイル）か <画面>:<名前>（共有と同じ名前の定義。例：store:translate）。不要になった除外は失敗にする。
+//
 // 使い方：node scripts/ci/frontend/frontend-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'

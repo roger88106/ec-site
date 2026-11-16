@@ -9,12 +9,12 @@
 //     （手順は docs/05-開発規則/issues.md「AC 一覧の操作」）
 //   - 元の spec・変えた spec の値：MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（227）。
 //     変えた spec が 2 つ以上なら読点で区切る。
-//     spec のディレクトリは lib/spec-dirs.mjs で探す。MVP-<番号> は docs/08-spec/archive/mvp/ の下と照合する。
+//     spec のディレクトリは lib/docs/spec-dirs.mjs で探す。MVP-<番号> は docs/08-spec/archive/mvp/ の下と照合する。
 //     番号だけの値は、docs/08-spec/ の直下と、MVP 以外のまとまりの下と照合する。
 //     番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（007 と 7 は別の番号）
 //   - ③ のモジュールの名前：次の 2 つが両方ある名前と、common（共通。③ の表に生成しない）。
 //     backend/ecsite/src/main/java/com/ecsite/module/<名前>/ と docs/03-機能仕様/<名前>.md
-//   - ③ の表：構造の検査の対象の一覧（lib/functional-specs.mjs の FUNCTIONAL_SPECS）にある ③ の、マーカーの範囲。
+//   - ③ の表：構造の検査の対象の一覧（lib/docs/functional-specs.mjs の FUNCTIONAL_SPECS）にある ③ の、マーカーの範囲。
 //     マーカーは「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ
 //   - ③ の表の中身：AC 一覧から作る。列は AC、今の内容、元の spec。0 件なら「なし。」の 1 行。
 //     状態が有効か変更で、列「モジュール」がその ③ の名前の AC を、AC の順に置く
@@ -84,6 +84,7 @@ export const MVP_AC_LIMIT = 312
 
 /**
  * AC の番号の後に文が続く形。文の先頭が一覧の助詞か記号なら、文の中で番号に触れただけの行なので一致しない。
+ *
  * 開きのかぎかっこ、[ で始まるリンク、* の強調は、文の先頭に書くので記号から除く。助詞の一覧は語の先頭で比べる
  */
 const AC_SENTENCE = '\\s+(?!(?:の|に|は|を|が|で|と|も|へ|や|か|まで|より|など|だけ|および|または|(?![「『\\[*])[\\p{P}\\p{S}]))\\S'
@@ -124,6 +125,7 @@ export const SPEC_ONLY_REFS = [/※[0-9]/, /事実\s*[0-9]/, /US-[0-9]/, /spec\s
 
 /**
  * 今の内容の根拠の形：リンク（[<文書の名前>](<パス>)）と、その直後の「の「<見出し>」」。リンクのない「…の「…」」は当たらない。
+ *
  * 理由：doc-refs が見出しの実在を確認できるのは、リンクの後の「の「…」」だけのため
  */
 export const BASIS = /\[[^\]]+\]\([^()\s]+\)の「[^「」]+」/
@@ -175,6 +177,7 @@ export function splitRow(line) {
 
 /**
  * 文書から、生成のマーカーを読む。コードブロックと 1 行のコードの中は読まない。
+ *
  * `generated:` を含むコメントで、既知のマーカーの形でないもの（綴りの誤り）と、行に単独で書いていないマーカーは問題にする。
  *
  * @param {string} text 文書（LF）
@@ -298,6 +301,7 @@ export function specNumberOf(nameOrRel) {
 
 /**
  * spec の本文から、AC の定義を読む。コードブロック・HTML のコメント・1 行のコードの中は読まない。
+ *
  * 今の内容は定義の文にし、定義の下の箇条は「：」の後に読点でつなぐ。
  *
  * @param {string} markdown spec.md の本文

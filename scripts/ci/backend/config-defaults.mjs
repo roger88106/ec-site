@@ -8,7 +8,9 @@
 // 時間は、書き方によらず同じ長さなら同じ値とみなす（1m と PT1M）。
 //
 // 失敗したとき：文書の表の行か値を修正する。一覧がないときは、先に backend/ecsite/ で ./gradlew compileJava を実行する。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/backend/config-defaults.mjs [設定の一覧の JSON]（リポジトリのルートで。既定は METADATA）
 import { existsSync, readFileSync } from 'node:fs'
 

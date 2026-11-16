@@ -1,10 +1,14 @@
 // 語に分けたコマンドから、前に付けたコマンド（timeout、env など）と環境変数を外し、cd・pushd・git -C などで実行するディレクトリを決める。
+//
+// ディレクトリは、hook の入力の cwd を起点にする。$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない。
+// cd・pushd・git -C の先が変数かコマンドの置き換えを含めば、ディレクトリを変えない。
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { splitCommands } from './shell-words.mjs'
 
 /**
  * 前に付けて、後ろの語を別のコマンドとして実行させるコマンドと、そのオプション。
+ *
  * valueShort・valueLong は値を次の語（短いオプションは同じ語の続きも）に取るもの、optionalShort は値を同じ語の続きにだけ取るもの、
  * operands はオプションの後に読む値の数（timeout の時間）。
  */
@@ -27,6 +31,7 @@ const PREFIX_COMMANDS = {
 
 /**
  * コマンドの前に来て、後ろの語をコマンドとして実行させるシェルの予約語（if・for・while の本体や条件、{ } の中、! の否定）。
+ *
  * `;` で区切った後の `do git push -f` のような形で、git・gh を語の先頭から見分けるために外す。
  */
 const SHELL_KEYWORDS = ['if', 'then', 'else', 'elif', 'do', 'while', 'until', '!', '{']
@@ -45,6 +50,7 @@ const GH_REPOSITORY_ENV = 'GH_REPO'
 
 /**
  * cd の先などのパスを、ディレクトリの絶対パスにする。
+ *
  * Windows では、Git Bash の `/c/…` の形をドライブのパスにする。`~` はホームにする。
  *
  * @param {string} base 起点のディレクトリ
@@ -110,6 +116,7 @@ function skipPrefixOptions(words, start, { valueShort, optionalShort = '', value
 
 /**
  * コマンドの前に付けた環境変数の設定、シェルの予約語（do、then など）、後ろの語を実行させるコマンド（env、timeout など）を外す。
+ *
  * env -C はディレクトリを、env -S は語を替える。
  *
  * @param {string[]} raw コマンドの語
@@ -161,6 +168,7 @@ function stripPrefixes(raw, dir, options) {
 
 /**
  * cd・pushd・popd を実行した後のディレクトリを返す。それ以外のコマンドでは、今のディレクトリを返す。
+ *
  * pushd は前のディレクトリを `stack` に積み（先がなければ、積んだ最後のディレクトリと入れ替え）、popd は積んだ最後のディレクトリに戻す。
  *
  * @param {string[]} words コマンドの語
@@ -192,6 +200,7 @@ function changeDir(words, dir, stack, options) {
 
 /**
  * コマンドの全文を、コマンドごとの語と、実行するディレクトリに分ける。
+ *
  * ディレクトリは入力の cwd から始め、cd・pushd・popd の後のコマンドでは、移った先にする。
  *
  * @param {string} command コマンドの全文

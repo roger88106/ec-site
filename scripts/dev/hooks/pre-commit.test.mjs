@@ -298,6 +298,7 @@ describe('commit のメッセージの検査', () => {
 
 /**
  * 実際の hook のテストが使う、日本語の文の検査の一覧。
+ *
  * 本物の一覧は、許容用語が使われていないと失敗にする（小さな一時のリポジトリでは使われない）ので、試す語だけの一覧にする。
  */
 const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }], warning: [{ word: '要求', use: 'リクエスト' }], style: { no: 4, length: 100, comma: 5, cell: 80 } })
@@ -325,6 +326,7 @@ describe('実際の hook', () => {
 
   /**
    * 一時のリポジトリを作り、hook とその script をコピーして、元の内容を作業ブランチに commit する（本物のリポジトリには触れない）。
+   *
    * GIT_ で始まる環境変数は外す（commit の hook の中で試すと、本物のリポジトリの設定を書き換えるため）。
    * 最初のブランチは、既定のブランチ名（init.defaultBranch）によらず作業ブランチにする（hook は develop と main の commit を失敗にするため）。
    *

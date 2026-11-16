@@ -8,7 +8,9 @@
 // compose の待ち受けるアドレスは compose-ports が確認する。テストのコードの中のポートは見ない（URL の例で、一覧と同じである必要がない）。
 //
 // 失敗したとき：一覧と、食い違う所のどちらかを修正する。ポートを加えるときは、一覧と、上の読めない所を同時に修正する。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/config/local-ports.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { exitIfNoFiles } from '../lib/git/git-files.mjs'
@@ -71,7 +73,8 @@ export function expandedPorts(list) {
 }
 
 /**
- * compose の `ports` の項目から、ホスト側のポートを読む（読み方は compose-ports の readHostPort）。<br />
+ * compose の `ports` の項目から、ホスト側のポートを読む（読み方は compose-ports の readHostPort）。
+ *
  * `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` の後ろが、数字か `${変数:-数字}` の書き方のもの。
  * それ以外の書き方の項目（既定値のない変数、範囲など）は、読み飛ばすと一覧にないポートを見逃すので、`unreadable` に入れる。
  *
@@ -93,7 +96,8 @@ export function readComposeHostPorts(text) {
 }
 
 /**
- * 文書や設定の中の、`:ポート` の書き方（`localhost:8080`、`:8090`）と `--port ポート` から、ポートを読む。<br />
+ * 文書や設定の中の、`:ポート` の書き方（`localhost:8080`、`:8090`）と `--port ポート` から、ポートを読む。
+ *
  * 数字だけの書き方（カード番号など）は、ポートか分からないので読まない。
  *
  * @param {string} text 文書や設定
@@ -104,7 +108,9 @@ export function readDocPorts(text) {
 }
 
 /**
- * 設定とスクリプトのポートを読む。`:ポート`（URL、`${変数:-ポート}`）と `--port ポート` に加え、
+ * 設定とスクリプトのポートを読む。
+ *
+ * `:ポート`（URL、`${変数:-ポート}`）と `--port ポート` に加え、
  * yml の `port: ポート`・`port: ${変数:ポート}`、JSON の `"port": ポート`、起動の引数の `"--port", "ポート"` を読む。
  *
  * @param {string} text 設定やスクリプト

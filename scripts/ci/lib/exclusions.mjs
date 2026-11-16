@@ -1,7 +1,7 @@
 // 検査の除外の一覧（<検査>-exclusions.json）を読み、理由のない除外と不要になった除外を見つける。
 // 除外の一覧の形は、全ての検査で {キー: 理由}。キーが何を指すか（AC 番号、ファイルのパス、識別子など）は検査が決める。
-// 使う検査：ac-check、frontend-rules、glossary-ids、hardcoded-text。
-// message-numbers、migrations、time-waits、rule-sections、ja-text も使う。
+// 使う検査：ac-check、frontend-rules、glossary-ids。
+// message-numbers、migrations、rule-sections、ja-text も使う。
 // ja-text は、ja-text.json の許容用語の誤りの文だけに使う。
 // パスは exclusionsPath で求め、誤りの文は checkExclusions などで作る（検査が文を直接組み立てない）
 import { readFileSync } from 'node:fs'
@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 /**
  * 検査の除外の一覧のパスを返す。除外の一覧は scripts/ci/ の直下に置くので、どの検査も実行する場所に関わらず同じパスを得る。
  *
- * @param {string} name 除外の一覧のファイルの名前（例：time-waits-exclusions.json）
+ * @param {string} name 除外の一覧のファイルの名前（例：migrations-exclusions.json）
  * @returns {string} 絶対パス
  */
 export function exclusionsPath(name) {

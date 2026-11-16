@@ -81,6 +81,11 @@ jobs:
       - name: ライセンスの検査、ビルドと単体テスト
         run: ./gradlew check -x integrationTest -x coverageReport
 
+      # 環境変数の文書の既定値を、コンパイルで書き出した設定の一覧と照合する（コンパイルの出力を読むので、check-all.sh でなくここで流す）
+      - name: 環境変数の文書の既定値の検査
+        working-directory: .
+        run: node scripts/ci/backend/config-defaults.mjs
+
       # 合わせるジョブ（backend）が、コンパイルなしでカバレッジの報告を作るために使う。
       # クラスは、各ジョブが別々にコンパイルしたものと中身が同じ（JaCoCo のクラスの ID が一致する）
       - name: カバレッジの実行データ（単体テスト）を保存
@@ -100,7 +105,7 @@ jobs:
           retention-days: 1
 
       # domain の mutation testing（PIT。backend/ecsite/build.gradle.kts の pitest）。単体テストで domain の変異を検出できるかを測る。
-      # check には入れていないので、ここで流す。報告（build/reports/pitest/）を保存した後に、基準の検査を行う
+      # check には入れていないので、ここで流す。mutation score が基準（build.gradle.kts の mutationThreshold）を下回ると失敗する
       - name: domain の mutation testing（PIT）
         run: ./gradlew pitest
 
@@ -113,10 +118,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # 基準（scripts/ci/report/quality-baseline.json の backend-domain）を下回ると失敗にする。
-      # summary に、mutation score と、生き残った変異が多いクラスの上位 10 件を書く
-      - name: mutation score の基準の検査
-        run: node ../../scripts/ci/report/coverage-baseline.mjs backend-domain build/reports/pitest/mutations.xml
+      # summary に、mutation score と、生き残った変異が多いクラスの上位 10 件を書く。PIT が基準で失敗したときも書く
+      - name: mutation score を summary に書く
+        if: ${{ !cancelled() }}
+        run: node ../../scripts/ci/report/coverage-summary.mjs バックエンドの domain build/reports/pitest/mutations.xml
 
       - name: テストレポートを保存（失敗時）
         if: failure()
@@ -257,9 +262,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # 基準（scripts/ci/report/quality-baseline.json）を下回ると失敗にする。報告の保存の後に置き、失敗しても報告を残す
+      # 基準（build.gradle.kts の coverageVerification）を下回ると失敗にする。報告の保存の後に置き、失敗しても報告を残す
       - name: カバレッジの基準の検査
-        run: node ../../scripts/ci/report/coverage-baseline.mjs backend build/reports/jacoco/coverageReport/coverageReport.xml
+        run: |
+          ./gradlew coverageVerification \
+            -PcoverageExecDir=${{ runner.temp }}/backend \
+            -PcoverageClassesDir=${{ runner.temp }}/backend/backend-classes
 
   admin:
     name: 管理画面
@@ -289,7 +297,7 @@ jobs:
       - name: テスト
         run: pnpm test
 
-      # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準の検査は、ジョブの最後の手順で行う
+      # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準を下回るとテストが失敗する（vite.config.ts の thresholds）。テストが失敗しても書く
       - name: カバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/report/coverage-summary.mjs 管理画面 coverage/coverage-summary.json
@@ -309,11 +317,6 @@ jobs:
           # 本番ビルドは IdP の設定がなければ失敗する。CI はローカルの IdP の値で確認する（realm の JSON と同じ）
           VITE_OIDC_AUTHORITY: http://localhost:8180/realms/ec-admin
           VITE_OIDC_CLIENT_ID: ec-admin-web
-
-      # 基準（scripts/ci/report/quality-baseline.json）を下回ると失敗にする。ビルドが失敗したときも流して、両方の失敗を見えるようにする
-      - name: カバレッジの基準の検査
-        if: always()
-        run: node ../../scripts/ci/report/coverage-baseline.mjs admin coverage/coverage-summary.json
 
   store:
     name: 店舗画面
@@ -355,7 +358,7 @@ jobs:
         working-directory: frontend/shared
         run: pnpm lint && pnpm typecheck && pnpm test
 
-      # 共有のパッケージのカバレッジ（管理画面・店舗画面と同じ v8 の設定）。基準の検査は、ジョブの最後の手順で行う
+      # 共有のパッケージのカバレッジ（管理画面・店舗画面と同じ v8 の設定）。基準を下回るとテストが失敗する（vitest.config.ts の thresholds）
       - name: 共有のパッケージのカバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/report/coverage-summary.mjs 共有パッケージ coverage/coverage-summary.json
@@ -380,7 +383,7 @@ jobs:
       - name: テスト
         run: pnpm test
 
-      # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準の検査は、ジョブの最後の手順で行う
+      # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準を下回るとテストが失敗する（vitest.config.ts の thresholds）。テストが失敗しても書く
       - name: カバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/report/coverage-summary.mjs 店舗画面 coverage/coverage-summary.json
@@ -397,16 +400,6 @@ jobs:
       # 画面はリクエストのたびに作るので、ビルドにバックエンドは必要ない
       - name: ビルド
         run: pnpm build
-
-      # 基準（scripts/ci/report/quality-baseline.json）を下回ると失敗にする。ビルドが失敗したときも流して、両方の失敗を見えるようにする
-      - name: カバレッジの基準の検査
-        if: always()
-        run: node ../../scripts/ci/report/coverage-baseline.mjs store coverage/coverage-summary.json
-
-      # 1 つの手順にまとめると、店舗画面が失敗したときに共有のパッケージが流れないので、手順を分ける
-      - name: 共有のパッケージのカバレッジの基準の検査
-        if: always()
-        run: node ../../scripts/ci/report/coverage-baseline.mjs shared ../shared/coverage/coverage-summary.json
 
   # CI の検査の script（scripts/ci/check-all.sh）は、文書だけの push でも実行するため docs.yml で実行する
 

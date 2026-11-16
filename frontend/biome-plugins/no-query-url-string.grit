@@ -1,0 +1,20 @@
+// クエリ付きの URL を文字列で組み立てず、機能の *Query.ts で URLSearchParams を使う（フロントの書き方の「画面の URL」）。
+// 文字列の中の ?名前= か &名前=（名前は ${…} でもよい）と、? か & で終わる文字列に 名前= で始まる文字列を + でつなぐ形を見る。
+language js
+
+or {
+  or {
+    JsStringLiteralExpression(),
+    JsTemplateExpression()
+  } as $hit where { $hit <: r"(?s).*[?&](?:[\w-]+|\$\{[^}]*\})=.*" },
+  JsBinaryExpression(left=$left, right=$right) as $hit where {
+    $right <: JsStringLiteralExpression(),
+    $right <: r"['\"](?:[\w-]+|\$\{[^}]*\})=.*",
+    $left <: or {
+      r"['\"].*[?&]['\"]",
+      JsBinaryExpression(right=r"['\"].*[?&]['\"]")
+    }
+  }
+} where {
+  register_diagnostic(span=$hit, message="クエリ付きの URL を文字列で組み立てず、機能の *Query.ts で URLSearchParams を使う（フロントの書き方の「画面の URL」）。", severity="error")
+}

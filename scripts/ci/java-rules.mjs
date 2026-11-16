@@ -1,15 +1,12 @@
-// バックエンドの書き方の規則のうち、ソースの文字で確認できるものを確認する。
-// 根拠は、バックエンドの書き方の「他のモジュールは腐敗防止層で包む」「Lombok は main だけ」「null の扱い」「検査を抑えるとき」。
-// コメント（行、ブロック、Javadoc）の中は、どの規則でも読まない。
-// - テストのソース（test、integrationTest、testFixtures）で Lombok を使わない。Lombok の注釈はクラスファイルに残らず、ArchUnit で見えないため
-// - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())。改行やコメントを挟んだ書き方も見る）。値を追加したときの写し忘れをコンパイルで見つけられないため
-// - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない。
-//   対象は valueOf(文字列リテラル以外)、fromValue(文字列リテラル以外)。
-//   モジュールやレイヤーの間で列挙を文字列で受け渡すと、相手に値を追加したときに気づけないため。
-// - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため。Nullable を含むパッケージのワイルドカード import（jakarta.annotation.* など）も同じ
-// - 全てのソースセットで、@SuppressWarnings の直前の行に、理由を // のコメントで書く。なぜ検査を抑えてよいかを残すため
-//   間にある他の注釈の行は飛ばす。Javadoc だけでは違反にする。
-// 失敗したとき：テストでは定型コードを手動で書く。列挙型は switch 式で変換する。Nullable は org.jspecify.annotations.Nullable に替える。@SuppressWarnings の直前の行に、なぜ抑えてよいかを // で書く。
+// バックエンドの書き方の規則のうち、ソースの文字で確認できるものを確認する（バックエンドの書き方の「他のモジュールは腐敗防止層で包む」「検査を抑えるとき」）。
+// - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())）。値を追加したときの写し忘れを、コンパイルで見つけられないため
+// - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない（文字列リテラル以外を渡す valueOf・fromValue）。
+//   モジュールやレイヤーの間で列挙を文字列で受け渡すと、相手に値を追加したときに気づけないため
+// - 全てのソースセットで、@SuppressWarnings の直前の行に、理由を // のコメントで書く。間にある他の注釈の行は飛ばし、Javadoc だけでは違反にする
+//
+// コメントの中は、どの規則でも読まない。Lombok と JSpecify 以外の Nullable は、Checkstyle が確認する。
+//
+// 失敗したとき：列挙型は switch 式で変換する。@SuppressWarnings の直前の行に、なぜ抑えてよいかを // で書く。
 // 除外：なし
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -19,14 +16,11 @@ import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 import { stripJavaComments } from './lib/strip-comments.mjs'
 
-/** テストのソース */
-const TEST_SOURCE = /^backend\/ecsite\/src\/(?:test|integrationTest|testFixtures)\/.*\.java$/
-
 /** 本番のソース */
 const MAIN_SOURCE = /^backend\/ecsite\/src\/main\/.*\.java$/
 
-/** Lombok の import と、完全修飾名で書いた注釈 */
-const LOMBOK = /^\s*import\s+(?:static\s+)?lombok\.|@lombok\./
+/** 手で書いた全てのソース：本番、テスト、tools（生成したコードは含まない） */
+const JAVA_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFixtures|tools)\/.*\.java$/
 
 /** 列挙型の変換の呼び出しの開き括弧まで */
 const ENUM_CALL = /\b(?:valueOf|fromValue)\(/g
@@ -34,17 +28,11 @@ const ENUM_CALL = /\b(?:valueOf|fromValue)\(/g
 /** 引数（コメントを空白にしたもの）が name() で終わる */
 const ENDS_WITH_NAME = /\.\s*name\(\s*\)\s*$/
 
-/** 他の Nullable：JSpecify 以外の Nullable の import（static import も）と、完全修飾名で書いた注釈 */
-const OTHER_NULLABLE = /^\s*import\s+(?:static\s+)?(?!org\.jspecify\.annotations\.)[\w.]+\.Nullable\b|@(?!org\.jspecify\.annotations\.)(?:[a-z]\w*\.)+Nullable\b|^\s*import\s+(?:static\s+)?(?:jakarta\.annotation|javax\.annotation|org\.springframework\.lang)\.\*\s*;/
-
 /** @SuppressWarnings の注釈の始まり（行の途中も。@java.lang.SuppressWarnings も） */
 const SUPPRESS_WARNINGS = /@\s*(?:java\s*\.\s*lang\s*\.\s*)?SuppressWarnings\b/g
 
 /** 注釈の始まりと名前（@interface は注釈の宣言なので含まない） */
 const ANNOTATION_NAME = /@\s*(?!interface\b)[A-Za-z_][\w.]*/g
-
-/** 他の Nullable を検査するソース：本番、テスト、tools（生成したコードは含まない） */
-const NULLABLE_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFixtures|tools)\/.*\.java$/
 
 /** 検査から除く型：列挙でない値の型と、型を実行時に受ける汎用の Enum.valueOf（型ごとの switch 式は書けない） */
 const NON_ENUM_TYPES = 'String|Integer|Long|Boolean|BigDecimal|BigInteger|Double|Float|Short|Byte|Character|Enum'
@@ -72,17 +60,9 @@ function findLines(text, pattern) {
 }
 
 /**
- * Lombok を使う行を探す。
+ * 列挙型の変換に name() を渡す呼び出しを探す。
  *
- * @param {string} text ソース
- * @returns {{ line: number, text: string }[]} 見つけた行
- */
-export function findLombok(text) {
-  return findLines(text, LOMBOK)
-}
-
-/**
- * 列挙型の変換に name() を渡す呼び出しを探す。改行を挟んだ呼び出しも見つけ、呼び出しの始まりの行を返す。
+ * 改行やコメントを挟んだ呼び出しも見つけ、呼び出しの始まりの行を返す。
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行
@@ -111,16 +91,6 @@ export function findEnumNameConversions(text) {
  */
 export function findEnumStringConversions(text) {
   return findLines(text, ENUM_STRING)
-}
-
-/**
- * JSpecify 以外の Nullable を使う行を探す。
- *
- * @param {string} text ソース
- * @returns {{ line: number, text: string }[]} 見つけた行
- */
-export function findOtherNullable(text) {
-  return findLines(text, OTHER_NULLABLE)
 }
 
 /**
@@ -223,7 +193,6 @@ function annotationMask(code) {
   }
   return mask
 }
-
 /**
  * @SuppressWarnings の理由を求める場所か。
  *
@@ -231,17 +200,17 @@ function annotationMask(code) {
  * @returns {boolean} 本番、テスト、tools のソースなら true（生成したコードは含まない）
  */
 export function isSuppressWarningsTarget(file) {
-  return NULLABLE_SOURCE.test(file)
+  return JAVA_SOURCE.test(file)
 }
 
 /**
- * 他の Nullable を禁じる場所か。
+ * 列挙型の変換に name() を渡すことを禁じる場所か。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 本番、テスト、tools のソースなら true
+ * @returns {boolean} 本番のソースなら true
  */
-export function isNullableTarget(file) {
-  return NULLABLE_SOURCE.test(file)
+export function isEnumNameTarget(file) {
+  return MAIN_SOURCE.test(file)
 }
 
 /**
@@ -254,50 +223,27 @@ export function isStringConversionTarget(file) {
   return MAIN_SOURCE.test(file) && !STRING_CONVERSION_ALLOWED.test(file)
 }
 
-/**
- * ファイルに当てる規則を返す。
- *
- * @param {string} file リポジトリのルートからのパス
- * @returns {'lombok' | 'enum-name' | null} テストのソースなら Lombok、本番のソースなら name() の変換、ほかは null
- */
-export function ruleFor(file) {
-  if (TEST_SOURCE.test(file)) return 'lombok'
-  if (MAIN_SOURCE.test(file)) return 'enum-name'
-  return null
-}
-
 if (isMain(import.meta.url)) {
-  const files = listGitFiles().filter((file) => ruleFor(file) || isNullableTarget(file) || isSuppressWarningsTarget(file))
+  const files = listGitFiles().filter((file) => isSuppressWarningsTarget(file))
   exitIfNoFiles(files, 'Java の規則の対象のファイル')
-  const messages = { lombok: 'テストで Lombok を使う', 'enum-name': '列挙型の変換に name() を渡す' }
   let count = 0
-  for (const file of files) {
-    const rule = ruleFor(file)
-    const text = readFileSync(file, 'utf8')
-    if (isNullableTarget(file)) {
-      for (const hit of findOtherNullable(text)) {
-        console.log(`${file}:${hit.line} JSpecify 以外の Nullable を使う（org.jspecify.annotations.Nullable を使う）：${hit.text}`)
-        count += 1
-      }
-    }
-    if (isSuppressWarningsTarget(file)) {
-      for (const hit of findUnexplainedSuppressWarnings(text)) {
-        console.log(`${file}:${hit.line} @SuppressWarnings の直前の行に、理由の // のコメントを書く：${hit.text}`)
-        count += 1
-      }
-    }
-    if (!rule) continue
-    const hits = rule === 'lombok' ? findLombok(text) : findEnumNameConversions(text)
+  const report = (file, hits, message) => {
     for (const hit of hits) {
-      console.log(`${file}:${hit.line} ${messages[rule]}：${hit.text}`)
+      console.log(`${file}:${hit.line} ${message}：${hit.text}`)
       count += 1
     }
+  }
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8')
+    report(file, findUnexplainedSuppressWarnings(text), '@SuppressWarnings の直前の行に、理由の // のコメントを書く')
+    if (!isEnumNameTarget(file)) continue
+    const nameHits = findEnumNameConversions(text)
+    report(file, nameHits, '列挙型の変換に name() を渡す')
     if (isStringConversionTarget(file)) {
-      const reported = new Set(hits.map((hit) => hit.line))
-      for (const hit of findEnumStringConversions(text).filter((found) => !reported.has(found.line))) {
-        console.log(`${file}:${hit.line} 列挙型を名前の文字列から変換する（switch 式で変換する）：${hit.text}`)
-        count += 1
-      }
+      // name() の変換で報告した行は、文字列からの変換として重ねて報告しない
+      const reported = new Set(nameHits.map((hit) => hit.line))
+      const stringHits = findEnumStringConversions(text).filter((found) => !reported.has(found.line))
+      report(file, stringHits, '列挙型を名前の文字列から変換する（switch 式で変換する）')
     }
   }
   console.log(`バックエンドの書き方の違反：${count}`)

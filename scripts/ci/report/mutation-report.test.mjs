@@ -3,18 +3,16 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { percent2 } from './coverage-baseline.mjs'
 import { readMutations } from './mutation-report.mjs'
 
 /** 実際の mutations.xml から切り出した 7 件（検出 4、生き残り 3：Order 2、Product 1）。57.14% */
 const PIT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'testdata', 'pit-mutations.xml')
 
 describe('mutation score（PIT の XML）', () => {
-  test('検出した変異（detected が true）の数を、全変異で割って、小数第 2 位にする', () => {
+  test('全変異の数と、検出した変異（detected が true）の数を数える', () => {
     const result = readMutations(readFileSync(PIT, 'utf8'))
     assert.equal(result.total, 7)
     assert.equal(result.detected, 4)
-    assert.equal(percent2(result.detected, result.total), 57.14)
   })
 
   test('生き残った変異（SURVIVED と NO_COVERAGE）が多いクラスを、多い順に返す', () => {

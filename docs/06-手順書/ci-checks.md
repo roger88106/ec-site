@@ -15,17 +15,15 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないことを確認する |
 | `doc-shape` | 表のセルの長さ、設計と機能仕様の観測の語と Stripe の語、Mermaid の sequenceDiagram の大きさを warning として示す（失敗にしない） |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
-| `env-defaults` | 環境変数の文書の既定値と設定の型の @DefaultValue の一致と、管理画面の IdP の既定値の一致を確認する |
-| `frontend-rules` | フロントとテストの書き方の規則のうち、ソースの文字で確認できるものを確認する |
+| `env-defaults` | 管理画面の IdP の既定値が、全ての置き場所で一致することを確認する（設定の型の既定値と文書の照合は `backend/config-defaults`。CI のビルドのジョブだけで動き、commit の前の hook では動かない） |
+| `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
 | `gradle-plugins` | Gradle のプラグインの id が、policy.json の gradlePlugins と過不足なく一致することを確認する |
-| `hardcoded-text` | 画面のコードに、表示の文言（日本語の文字）を直接書いていないことを確認する |
 | `image-versions` | compose と、Gradle・統合テストのイメージのバージョンの一致と、patch までの固定を確認する |
-| `input-constraints` | 画面の入力の制約に、API の契約から書き出した定数を使っていることを確認する |
 | `integration-shards` | 統合テストを分ける数が、`build.gradle.kts` と CI の matrix で一致することを確認する |
 | `ja-text` | 使わない語（error。規則の本文に書いた、AI のサービス固有の名前も含む）がないことを確認し、文脈で決める語と文体の型を warning として示す |
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |
-| `java-rules` | バックエンドのソースに、禁止した書き方（Lombok、列挙型の変換など）がないことを確認する |
+| `java-rules` | バックエンドのソースに、禁止した書き方（列挙型の変換、理由のない @SuppressWarnings）がないことを確認する |
 | `license-policy` | `licenses.md` の方針の表が、`policy.json` から作った表と同じことを確認する（`--write` で再生成する） |
 | `local-ports` | ローカルのポートの一覧（`ports.json`）と、compose・script・文書・設定のポートが食い違わないことを確認する |
 | `main-entry` | script の直接実行の判定が、共通の関数 `isMain(import.meta.url)` だけであることを確認する |
@@ -41,8 +39,6 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `spec-numbers` | 本番のコード（コメントの外を含む）と、テスト・設定のファイル・script のコメントに、spec・plan・tasks の番号がないことを確認する |
 | `spec-structure` | spec・plan・tasks と機能仕様の構造と ID を確認する。失敗したら、雛形（`docs/08-spec/templates/`、`docs/03-機能仕様/template.md`）に合わせる |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する |
-| `test-names` | バックエンドの全てのテストに、表示の名前（`@DisplayName`）があることを確認する |
-| `time-waits` | テストが、決まった時間だけ待つ書き方をしていないことを確認する |
 
 ※1：表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。
 

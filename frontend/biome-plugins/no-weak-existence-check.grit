@@ -1,0 +1,8 @@
+// toBeTruthy・toBeDefined で確認しない（フロントのテストの書き方の「画面に見えるもので探す」）。
+// 探した要素かどうかは区別しないので、全ての呼び出しを見る。
+language js
+
+JsStaticMemberExpression(member=$member) as $call where {
+  $member <: r"toBeTruthy|toBeDefined",
+  register_diagnostic(span=$call, message="toBeTruthy・toBeDefined で確認しない。toBeInTheDocument か、値の形で確認する（フロントのテストの書き方の「画面に見えるもので探す」）。", severity="error")
+}

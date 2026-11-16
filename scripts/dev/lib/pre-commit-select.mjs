@@ -32,9 +32,7 @@ export const CHECK_INPUTS = {
   'frontend-rules': [/^frontend\//, /^e2e\//],
   'glossary-ids': ALWAYS,
   'gradle-plugins': [/^backend\/ecsite\/.*\.gradle\.kts$/],
-  'hardcoded-text': [/^frontend\//],
   'image-versions': [/^backend\/ecsite\/src\/integrationTest\//],
-  'input-constraints': [/^frontend\//],
   'integration-shards': [],
   'ja-text': ALWAYS,
   'java-rules': [/^backend\/ecsite\/src\//],
@@ -52,9 +50,6 @@ export const CHECK_INPUTS = {
   'runtime-versions': [/^\.github\//, /(?:^|\/)package\.json$/],
   'spec-numbers': ALWAYS,
   'spec-structure': [/^docs\/03-機能仕様\//, /^docs\/08-spec\//],
-  'test-helpers': [/^backend\/ecsite\/src\/(?:test|integrationTest)\//],
-  'test-names': [/^backend\/ecsite\/src\/(?:test|integrationTest)\//],
-  'time-waits': [/^backend\//, /^frontend\//, /^e2e\//],
 }
 
 /** テストごとの、読むファイルのパスの正規表現（import と名前の検査で分からないもの）。script の一覧を走査するテストと、文書を読むテスト */

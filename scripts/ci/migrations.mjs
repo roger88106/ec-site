@@ -1,26 +1,20 @@
-// 適用済みのマイグレーション（バージョン付きの V*.sql）を、追加した後に変えていないことを確認する。
-// Flyway は適用済みのマイグレーションの checksum を確認するので、コメントだけの変更でも、
-// 既に適用した DB で起動に失敗する（バックエンドの書き方、コメントの書き方の「何を書くか」）。
-// 新しい DB で動くテストと CI では見つからないので、ここで確認する。
-// 基準は、HEAD と develop・main（origin/ の方を先に見る）のそれぞれとの分岐点の tree。基準にあるものが今の index（commit の前の hook では次の commit）にない（削除、改名）か、中身が違えば失敗にする。
-// commit の履歴は比べず、tree（ファイルの中身）だけを比べるので、自分のブランチの追加と改名を merge commit でマージした後も成功のままになる。hotfix のように main にだけあるものも対象にする。
-// 分岐点が HEAD 自身（develop の上、push の CI）のときは、HEAD と、HEAD の 1 つ目の親（マージの前）を基準にする。片方の ref だけがあるときはある方で判定し、どちらもなければ HEAD の 1 つ目の親を基準にして警告を出力する。
-// まだ develop にも main にも入っていない自分のブランチで加えたもの（分岐の後に加えたもの）は、番号の振り直しも中身の変更も通す。どの DB にも適用されておらず、checksum が残っていないため。
-// マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
-// もう 1 つ、新しいマイグレーションに、前のリリースのアプリが動き続けられない変更があると失敗にする。バックエンドの書き方の「前のリリースのアプリが動き続けられる変更だけにする」が根拠。変更は次のとおり。
-//   - 表・列の削除（DROP SCHEMA を含む）
-//   - 改名（ALTER SCHEMA … RENAME TO を含む）とスキーマの移動（SET SCHEMA）
-//   - 列の型の変更
-//   - 既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）
-//   - 既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む。IDENTITY は既定値があるので除く）
-//   - 既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL、IDENTITY の解除 DROP IDENTITY、生成列の解除 DROP EXPRESSION。SET DEFAULT 0 のような既定値の変更は含まない）
-// 対象外は、今あるマイグレーションのファイル名の一覧（LEGACY_MIGRATIONS）に入っているものだけ（本番に適用していないので互換性を問わない）。それ以外は番号が小さくても全て対象にする。一覧にあって実在しない名前は失敗にする。
+// マイグレーション（バージョン付きの V*.sql）の、適用済みのものの変更と、前のリリースのアプリを止める変更がないことを確認する。
+// 根拠は、バックエンドの書き方の「前のリリースのアプリが動き続けられる変更だけにする」と、コメントの書き方の「何を書くか」。
+//
+// 適用済みのもの：Flyway は checksum を確認するので、コメントだけの変更でも、適用した DB で起動に失敗する。
+// 新しい DB で動くテストと CI では見つからないので、ここで確認する。どこかの DB に適用されうる状態（基準）は resolveBaseRevisions が決める。
+// 基準にあるものが今の index（commit の前の hook では次の commit）にない（削除、改名）か、中身が違えば失敗にする。
+//
+// 前のリリースを止める変更：互換性のない変更（INCOMPATIBLE_KINDS）を、SQL の字面で探す。
+// 読み落としより誤検出が出る側にし、誤検出は除外で理由を残す。コメントと文字列の中は読まず、ドル引用の中は全て読む。
+// 今あるマイグレーション（LEGACY_MIGRATIONS）は対象にしない。
+//
+// 読めないもの（マイグレーションが 0 件、閉じていない文字列・コメント・ドル引用）も失敗にする。分岐点を求めるので、shallow clone では失敗する。
+//
 // 失敗したとき：適用済みのマイグレーションは元に戻し、変更は新しいマイグレーションで加える。互換性のない変更は 3 段に分ける。
-// 除外：互換性のない変更だけ、migrations-exclusions.json（なければ作る）に {キー: 理由} を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値。例：V202611010900__x.sql:列の削除）で、同じファイルの同じ種類の変更全てに適用される。
+// 除外：互換性のない変更だけ、migrations-exclusions.json（なければ作る）に {キー: 理由} を書く。
+// キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値。例：V202611010900__x.sql:列の削除）で、同じファイルの同じ種類の変更全てに当たる。
 // 理由には、どのリリースで使わなくなったかを書く。理由のない除外と、当たる変更がなくなった除外は失敗にする。
-// SQL の字面で探すので、読み落としより、誤検出が出る側にする（コメントと文字列の中は読まない。誤検出は除外で理由を残す）。
-// ドル引用（DO ブロックなど）の中は、EXECUTE の文字列とコメントも含め全て字面で探す。
-// 閉じていない文字列・コメント・ドル引用は読めないので、失敗にする（除外できない）。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -142,7 +136,14 @@ export function isCheckedForCompatibility(file) {
   return !LEGACY_MIGRATIONS.includes(file.split('/').at(-1))
 }
 
-/** 互換性のない変更の種類。除外のキーの後ろに使う */
+/**
+ * 互換性のない変更の種類。除外のキーの後ろに使う。
+ *
+ * 表の削除は DROP SCHEMA を、改名は ALTER SCHEMA … RENAME TO とスキーマの移動（SET SCHEMA）を含む。
+ * NOT NULL にする変更は、主キーの追加（ADD PRIMARY KEY）を含む。
+ * 既定値のない NOT NULL の列の追加は、主キーの列と DEFAULT NULL を含み、IDENTITY（既定値がある）を含まない。
+ * 既定値の削除は、DROP DEFAULT、SET DEFAULT NULL、DROP IDENTITY、DROP EXPRESSION（生成列の解除）。SET DEFAULT 0 のような既定値の変更は含まない。
+ */
 export const INCOMPATIBLE_KINDS = {
   dropTable: '表の削除',
   dropColumn: '列の削除',
@@ -360,7 +361,8 @@ export function scanMigrations(files, read, exclusions) {
 }
 
 /**
- * 守る基準（どこかの DB に適用されうる状態）の commit を決める。<br />
+ * 守る基準（どこかの DB に適用されうる状態）の commit を決める。
+ *
  * まだ develop にも main にも入っていない自分のブランチのマイグレーションは、どの DB にも適用されていないので、振り直してよい。
  * main に入ったもの（hotfix を含む）は、リリースに出るので、develop に入っていなくても守る。
  * そのため、HEAD と develop・main のそれぞれ（CI の origin/ の方を先に見る）との merge-base を基準にする。

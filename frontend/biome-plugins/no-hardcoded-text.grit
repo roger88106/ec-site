@@ -1,0 +1,19 @@
+// 画面のコードに表示の文言（日本語の文字）を直接書かず、各画面の messages/ja.json に置いてキーで引く（フロントの書き方の「表示の文言は文言ファイルに置く」）。
+// 開発者だけが見る文（log・console の debug・info・warn・error の引数、throw new Error の引数）は見ない。
+// 文言でない値（API に送る値など）は、直前の行に biome-ignore lint/plugin/no-hardcoded-text と理由を書く。
+language js
+
+or {
+  JsStringLiteralExpression(),
+  JsTemplateExpression(),
+  JsxText(),
+  JsxString(),
+  TsStringLiteralType(),
+  JsLiteralMemberName(),
+  JsRegexLiteralExpression()
+} as $text where {
+  $text <: r"(?s).*[　-ヿ㐀-鿿＀-￯].*",
+  not $text <: within JsCallExpression(callee=JsStaticMemberExpression(object=r"(?s)(?:.*\.)?(?:log|console)", member=r"debug|info|warn|error")),
+  not $text <: within JsThrowStatement(argument=JsNewExpression(callee=r"Error")),
+  register_diagnostic(span=$text, message="表示の文言を直接書かず、messages/ja.json に置いてキーで引く（フロントの書き方の「表示の文言は文言ファイルに置く」）。", severity="error")
+}

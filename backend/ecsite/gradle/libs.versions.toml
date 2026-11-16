@@ -122,6 +122,7 @@ jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 
 # --- コード生成（Boot BOM 管理） ---
 lombok = { module = "org.projectlombok:lombok" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
 
 # --- 静的解析 ---
 # コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）

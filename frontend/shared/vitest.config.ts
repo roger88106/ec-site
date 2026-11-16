@@ -11,6 +11,8 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/ui/**', '**/*.test.{ts,tsx}'],
       reporter: ['text-summary', 'json-summary', 'html'],
+      // 全体の行と分岐の割合（%）が下回ると、テストが失敗する
+      thresholds: { lines: 96, branches: 99 },
     },
   },
 })

@@ -22,10 +22,10 @@
 // 除外：なし。
 //
 // 使い方：リポジトリのルートで node scripts/ci/config/risk.mjs [--base <ref>] [--body-file <ファイル。- は標準入力>] [--author <作成者>] [--title <題>] [--skip-path-check]
-import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { listGitFiles, splitNulList } from '../lib/git/git-files.mjs'
+import { tryGit } from '../lib/git/merge-base.mjs'
 import { isShallowRepository, SHALLOW_CLONE_MESSAGE } from '../lib/git/shallow-clone.mjs'
 import { describeUnreadableLine } from '../lib/source/unreadable-line.mjs'
 
@@ -274,7 +274,7 @@ function stripHtmlComments(text) {
  * @param {string} body pull request の本文
  * @returns {{ value: '高' | '低' } | { error: string }} 値か、読めない理由
  */
-export function readBodyRisk(body) {
+export function parseBodyRisk(body) {
   const lines = stripHtmlComments(body).split('\n').map((line) => line.replace(/\r$/, ''))
   const start = lines.findIndex((line) => BODY_HEADING.test(line))
   if (start === -1) return { error: '「## 危険度」の節がない' }
@@ -300,7 +300,7 @@ export function readBodyRisk(body) {
  * @returns {{ ok: boolean, message: string }} 成功か、と出力する 1 行
  */
 export function compareBody(level, body) {
-  const read = readBodyRisk(body)
+  const read = parseBodyRisk(body)
   if ('error' in read) return { ok: false, message: `本文の危険度を読めない：${read.error}（この script の出力を「## 危険度」の節に貼る）` }
   if (read.value === level) return { ok: true, message: `本文の危険度は ${read.value} で、判定と一致する` }
   if (read.value === '高') return { ok: true, message: '本文の危険度は高で、判定は低（本文で高にした変更として扱う）' }
@@ -330,21 +330,6 @@ export function checkPullRequest({ level, body, author }) {
 }
 
 /**
- * git を実行し、出力をそのまま返す（前後の空白を除かない。lib/git/merge-base の tryGit と違う）。失敗したら null を返す。
- *
- * @param {string[]} args git の引数
- * @param {string} cwd 実行する場所
- * @returns {string | null} 出力。失敗したら null
- */
-function gitOutputOrNull(args, cwd) {
-  try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] })
-  } catch {
-    return null
-  }
-}
-
-/**
  * 差分のファイルを返す。基準は HEAD と ref の分岐点。改名は、元と先の両方のパスにする（危険度が高い経路から出す改名も当てるため）。
  *
  * 手元で commit の前に確認できるよう、作業ツリーの変更と、追跡していない無視されないファイルも含める。
@@ -355,13 +340,14 @@ function gitOutputOrNull(args, cwd) {
  * @returns {{ files: string[], base: string } | { error: string }} 差分のファイル（名前の順）と分岐点の commit か、求められない理由
  */
 export function listChangedFiles(ref, gitFiles, cwd = process.cwd()) {
-  const base = gitOutputOrNull(['merge-base', 'HEAD', ref], cwd)?.trim()
+  const base = tryGit(['merge-base', 'HEAD', ref], cwd)
   if (!base) {
     if (isShallowRepository(cwd)) return { error: SHALLOW_CLONE_MESSAGE }
     return { error: `HEAD と ${ref} の分岐点を求められない（ref があるか、git fetch したかを確認する）` }
   }
-  const changed = gitOutputOrNull(['diff', '--name-only', '-z', '--no-renames', base], cwd)
-  const committed = gitOutputOrNull(['ls-tree', '-r', '-z', '--name-only', 'HEAD'], cwd)
+  // NUL 区切りの一覧は、先頭のファイル名の空白を除かないよう、そのまま受け取る
+  const changed = tryGit(['diff', '--name-only', '-z', '--no-renames', base], cwd, { trim: false })
+  const committed = tryGit(['ls-tree', '-r', '-z', '--name-only', 'HEAD'], cwd, { trim: false })
   if (changed === null || committed === null) return { error: `${ref} との差分を読めない` }
   // HEAD にないファイルは、git add したもの（diff に入る）か、追跡していないもの
   const inHead = new Set(splitNulList(committed))
@@ -377,7 +363,7 @@ export function listChangedFiles(ref, gitFiles, cwd = process.cwd()) {
  * @returns {(file: string) => string | null} 中身を返す関数（基準にないファイルは null）
  */
 export function baseFileReader(base, cwd = process.cwd()) {
-  return (file) => gitOutputOrNull(['show', `${base}:${file}`], cwd)
+  return (file) => tryGit(['show', `${base}:${file}`], cwd, { trim: false })
 }
 
 if (import.meta.main) {

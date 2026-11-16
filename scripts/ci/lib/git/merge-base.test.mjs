@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { removeGitEnv } from './git-env.mjs'
-import { mergeBaseWith, resolveDiffBase } from './merge-base.mjs'
+import { mergeBaseWith, resolveDiffBase, tryGit } from './merge-base.mjs'
 
 // Git の hook の中で実行されても別のリポジトリを見ないよう、Git を呼ぶ前に GIT_ の環境変数を外す
 removeGitEnv()
@@ -32,6 +32,20 @@ function createRepo() {
   }
   return { repo, git, commit }
 }
+
+describe('git の実行（tryGit）', () => {
+  test('出力の前後の空白を除いて返し、trim を false にすればそのまま返す', () => {
+    const r = createRepo()
+    const head = r.commit()
+    assert.equal(tryGit(['rev-parse', 'HEAD'], r.repo), head)
+    assert.equal(tryGit(['rev-parse', 'HEAD'], r.repo, { trim: false }), `${head}\n`)
+  })
+
+  test('git が失敗したら null を返す', () => {
+    const r = createRepo()
+    assert.equal(tryGit(['rev-parse', '--verify', '-q', 'refs/heads/none'], r.repo), null)
+  })
+})
 
 describe('差分の基準（develop との分岐点）', () => {
   test('作業ブランチでは、develop との merge-base を基準にする', () => {

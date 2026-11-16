@@ -6,14 +6,17 @@ import { execFileSync } from 'node:child_process'
  * git を実行し、出力の前後の空白を除いて返す。失敗したら null を返す。
  *
  * 出力の上限は 64 MiB にする（差分のファイルの一覧など、既定の 1 MiB を超える出力も読むため）。
+ * ファイルの中身や NUL 区切りの一覧を読むときは、trim を false にして出力をそのまま受け取る。
  *
  * @param {string[]} args 引数
  * @param {string} cwd 実行する場所
+ * @param {{ trim?: boolean }} [options] trim：前後の空白を除くか（既定は true）
  * @returns {string | null} 出力。失敗したら null
  */
-export function tryGit(args, cwd) {
+export function tryGit(args, cwd, { trim = true } = {}) {
   try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    const output = execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] })
+    return trim ? output.trim() : output
   } catch {
     return null
   }

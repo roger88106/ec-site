@@ -25,7 +25,6 @@ export const CHECK_INPUTS = {
   'ci-docs': [/^scripts\/ci\//],
   'compose-ports': [],
   'doc-refs': ALWAYS,
-  'doc-shape': [/\.md$/],
   'docs-folders': [/^docs\//],
   'frontend-rules': [/^frontend\//, /^e2e\//],
   'glossary-ids': ALWAYS,

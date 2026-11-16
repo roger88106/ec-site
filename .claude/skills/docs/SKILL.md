@@ -31,7 +31,6 @@ description: ec-site の文書を書いて検査するまでの手順。docs/・
    - `node scripts/ci/note-numbers.mjs`
    - `node scripts/ci/ja-text.mjs`（error は失敗になるので修正する）
    - `node scripts/ci/ja-text.mjs --warning`（終了コードは 0）。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する
-   - `node scripts/ci/doc-shape.mjs --list`（文書の形の warning。終了コードは 0）。変えた文書の行に出たものを読み、修正するかを 1 件ずつ決める
 
    各検査の内容は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)。
    - コードのコメントを修正したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`

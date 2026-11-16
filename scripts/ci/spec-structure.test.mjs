@@ -13,11 +13,9 @@ import {
   checkSpecDirNames,
   checkSpecFiles,
   checkStage,
-  checkTemplates,
   EXAMPLE_NUMBER,
   FEATURE_SECTIONS,
   findTargets,
-  fillTemplate,
   readSkeleton,
   REFACTOR_SECTIONS,
 } from './spec-structure.mjs'
@@ -123,8 +121,8 @@ function edit(files, file, from, to) {
 }
 
 /** 文書の組を検査する */
-function check(files, options) {
-  return checkSpecFiles(files, '321', KNOWN, options)
+function check(files) {
+  return checkSpecFiles(files, '321', KNOWN)
 }
 
 /** 問題が 1 件で、その文が期待の正規表現に合うことを確認する */
@@ -472,12 +470,6 @@ describe('ID の定義と参照（DC-321-20）', () => {
     const spec = specText({ size: 'M' }).replace('- [ ] **T321-01-01** 内容（DC-321-1）。', '- [ ] **T321-01-01** 内容（DC-321-1）。\n- [ ] **T321-01-02** T321-01-01 の次（DC-321-2）。')
     assert.deepEqual(check({ 'spec.md': spec }), [])
   })
-
-  test('resolve を false にすると、定義のない ID を許し、形と既知の番号だけを見る（雛形用）', () => {
-    const files = edit(baseFiles(), 'plan.md', '前提：文。', '前提：DC-321-99 と AC-312-1。')
-    const problems = check(files, { resolve: false })
-    assertOne(problems, /AC-312-1 の spec（番号 312）がない/)
-  })
 })
 
 describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
@@ -694,48 +686,7 @@ describe('③ の節の名前を雛形の骨組みから読む（DC-326-3、#325
   })
 })
 
-describe('雛形（DC-321-18、DC-321-19）', () => {
-  test('<…> を、仮の値に置き換える（番号は 900、選択肢は最初、など は削る、ID の形は残す）', () => {
-    const filled = fillTemplate('# Spec <番号>：<題>\n種類：機能　規模：<L または M>　ステータス：<草案 または 確定>\n<承認済み（tasks 作成済み）など> <AC-<番号>-<n>> DC-<番号>-<n>〜<m> T<番号>-<段階 2 桁>-<n+1> # 段階 <N>')
-    assert.equal(filled, '# Spec 900：仮\n種類：機能　規模：L　ステータス：草案\n承認済み（tasks 作成済み） AC-900-1 DC-900-1〜2 T900-01-05 # 段階 1')
-  })
-
-  test('入れ子の <…> と、「または」で選ぶ見出しの末尾を置き換える', () => {
-    assert.equal(fillTemplate('## <名前>（<DS-<番号>-<n>：DC-<番号>-<n>〜<m> または US-<番号>-<n>：AC-<番号>-<n>〜<m>>）'), '## 仮（DS-900-1：DC-900-1〜2）')
-  })
-
-  test('HTML の注釈は置き換えない', () => {
-    assert.equal(fillTemplate('<!-- 注釈 `x` -->'), '<!-- 注釈 `x` -->')
-  })
-
-  test('HTML のタグ（<br/>、<details>、</details>、属性のあるタグ）は置き換えない', () => {
-    const tags = '<br/> <br> <details> <summary>要約</summary> </details> <a href="x.md" title="説明">a</a> <img src="a.png" />'
-    assert.equal(fillTemplate(tags), tags)
-  })
-
-  test('英字で始まる <…> でも、HTML のタグの形でないもの（<plan へのリンク>・<ID の範囲>・<n>・<m>・<N>）は置き換える', () => {
-    assert.equal(fillTemplate('<plan へのリンク> <ID の範囲> <n> <m> <N> <spec または作業>'), '仮 仮 1 2 1 spec')
-  })
-
-  test('リポジトリの雛形は、置き換えた後の構造の検査を通る', () => {
-    assert.deepEqual(checkTemplates(path.join(ROOT, 'docs/08-spec/templates')), [])
-  })
-
-  test('雛形の節の名前を変えれば失敗にする', () => {
-    const problems = checkTemplates(path.join(ROOT, 'docs/08-spec/templates'), {
-      transform: (name, text) => (name === 'spec-feature.md' ? text.replace('## 業務ルール', '## 業務規則') : text),
-    })
-    assert.ok(problems.some((problem) => /^spec-feature\.md：.*「業務規則」/.test(problem)), problems.join('\n'))
-    assert.ok(problems.some((problem) => /^spec-feature\.md：節「業務ルール」がない/.test(problem)), problems.join('\n'))
-  })
-
-  test('雛形の ID の連番を 0 で埋めれば失敗にする', () => {
-    const problems = checkTemplates(path.join(ROOT, 'docs/08-spec/templates'), {
-      transform: (name, text) => (name === 'plan.md' ? text.replace('| 段階と変えるファイル | 全て |', '| 段階と変えるファイル | DC-<番号>-01 |') : text),
-    })
-    assert.ok(problems.some((problem) => /^plan\.md：.*0 で埋めている/.test(problem)), problems.join('\n'))
-  })
-
+describe('雛形の見本', () => {
   test('リポジトリの見本は、構造の検査を通る', () => {
     const examples = path.join(ROOT, 'docs/08-spec/templates/examples')
     const known = new Set([EXAMPLE_NUMBER])

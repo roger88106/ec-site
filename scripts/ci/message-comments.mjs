@@ -11,6 +11,7 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
+import { keepTsComments } from './lib/strip-comments.mjs'
 
 /** 文言の関数（t、tCommon、translate など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
 const MESSAGE_CALL = /(?<![\w.$])(?:t(?:[A-Z]\w*)?|translate)\(\s*(['"])([^'"]+)\1/g
@@ -78,7 +79,7 @@ function enclosingJsxExpression(text, index) {
   return null
 }
 
-/** 範囲にコメント（/* *\/ か //）があるか */
+/** 範囲にコメント（/* *\/ か //）があるか。範囲は、コメントの外を空白にしたソース（keepTsComments）から取る */
 function hasComment(range) {
   return range.includes('/*') || range.includes('//')
 }
@@ -91,6 +92,8 @@ function hasComment(range) {
  */
 export function findMissingComments(text) {
   const lineOf = createLineLocator(text)
+  // 文字列の中の // や /*（URL など）をコメントにしないよう、コメントの有無はコメントだけを残したソースで見る（位置は元と同じ）
+  const comments = keepTsComments(text)
   const missing = []
   for (const match of text.matchAll(MESSAGE_CALL)) {
     const close = closingParen(text, match.index + match[0].indexOf('('))
@@ -98,9 +101,9 @@ export function findMissingComments(text) {
     // 同じ行の別の JSX の式のコメントを、この呼び出しのコメントにしない。
     // 三元演算子の両方の枝を 1 つのコメントで書く形（{a ? t('x') : t('y') /* … */}）は通す
     const end = jsxExpressionEnd(text, close, lineEnd === -1 ? text.length : lineEnd)
-    if (hasComment(text.slice(match.index, end))) continue
+    if (hasComment(comments.slice(match.index, end))) continue
     const expression = enclosingJsxExpression(text, match.index)
-    if (expression && hasComment(text.slice(match.index, expression.close))) continue
+    if (expression && hasComment(comments.slice(match.index, expression.close))) continue
     missing.push({ line: lineOf(match.index), key: match[2] })
   }
   return missing

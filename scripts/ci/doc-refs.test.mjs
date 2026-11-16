@@ -46,6 +46,12 @@ describe('文書の参照の検査', () => {
     assert.deepEqual([...sections.keys()], ['1', '1.4'])
   })
 
+  test('Setext の見出しと、閉じの # のある見出しも読み、HTML のコメントの中は読まない', () => {
+    const { title, anchors } = readHeadings(['題', '===', '', '節', '---', '', '## 閉じ ##', '', '<!--', '## 隠れた節', '-->'].join('\n'))
+    assert.equal(title, '題')
+    assert.deepEqual([...anchors], ['題', '節', '閉じ'])
+  })
+
   test('文書の名前は括弧の中を除く', () => {
     assert.equal(referenceName('店舗画面（`frontend/store`）の構成'), '店舗画面の構成')
   })
@@ -67,6 +73,12 @@ describe('文書の参照の検査', () => {
     assert.equal(problems.length, 2)
     assert.match(problems[0], /^見出しがない/)
     assert.match(problems[1], /^ファイルがない/)
+  })
+
+  test('title の付いたリンクも、先のファイルを確認する', () => {
+    const problems = check('docs/dev/setup.md', '[c](../process/none.md "説明")')
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /^ファイルがない/)
   })
 })
 

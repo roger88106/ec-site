@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -20,6 +20,26 @@ const BATCH = '\u6279'
 
 /** 「〜し直す」の動詞の連用形に「修正」が続く、崩れと確定している複合動詞の 15 語（「〜し直す」の崩れを調べた spec の「背景と目的」） */
 const BROKEN_VERBS = ['書き', '作り', '置き', '読み', 'やり', '考え', '組み', '問い', '洗い', '貼り', '撮り', '練り', '言い', '数え', '測り']
+
+/**
+ * コマンドを非同期に実行する。git の一時リポジトリを使うテストを並べて実行するため（Windows では起動が遅い）。
+ *
+ * @param {string} command コマンド
+ * @param {string[]} args 引数
+ * @param {{ cwd: string, env: Record<string, string | undefined> }} options 実行する場所と環境変数
+ * @returns {Promise<{ status: number | null, stdout: string, stderr: string }>} 終了コードと出力
+ */
+function runAsync(command, args, { cwd, env }) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
+    let stdout = ''
+    let stderr = ''
+    child.stdout.setEncoding('utf8').on('data', (chunk) => (stdout += chunk))
+    child.stderr.setEncoding('utf8').on('data', (chunk) => (stderr += chunk))
+    child.on('error', reject)
+    child.on('close', (status) => resolve({ status, stdout, stderr }))
+  })
+}
 
 /**
  * コミットメッセージのファイルを調べる入口を実行する。
@@ -747,9 +767,10 @@ describe('日本語の文の検査（warning と終了コード）', () => {
    *
    * @param {Record<string, string>} files パスと内容
    * @param {string[]} args 引数
+   * @param {string} [input] 標準入力
    * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
    */
-  function runIn(files, args) {
+  function runIn(files, args, input = '') {
     const dir = mkdtempSync(path.join(tmpdir(), 'ja-text-repo-'))
     try {
       spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv() })
@@ -758,7 +779,7 @@ describe('日本語の文の検査（warning と終了コード）', () => {
         mkdirSync(path.dirname(full), { recursive: true })
         writeFileSync(full, content)
       }
-      return spawnSync(process.execPath, [SCRIPT, ...args], { cwd: dir, encoding: 'utf8', env: withoutGitEnv() })
+      return spawnSync(process.execPath, [SCRIPT, ...args], { cwd: dir, encoding: 'utf8', env: withoutGitEnv(), input })
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -767,15 +788,22 @@ describe('日本語の文の検査（warning と終了コード）', () => {
   const longSentence = `${'あ'.repeat(200)}である。要求を送る。少し修正する。\n`
   const files = { 'docs/a.md': longSentence, 'src/a.mjs': `// ${'い'.repeat(200)}である。\n` }
 
-  test('warning だけのとき、既定の実行は成功し、最後の行は要約の行である', () => {
+  test('warning だけのとき、既定の実行は成功し、warning を数えない。最後の行は要約の行である', () => {
     // 許容用語が使われなくなったという error を出さないよう、一覧の全ての許容用語を 1 行ずつ書く。
     // リポジトリ本体では実行しない（commit の hook は、Git のない一時の場所で検査を実行するため）
     const allowWords = [...list.error, ...list.warning].flatMap((item) => Object.keys(item.allow ?? {}))
     const result = runIn({ ...files, 'docs/allow.md': `${allowWords.join('\n')}\n` }, [])
     assert.equal(result.status, 0)
-    assert.match(result.stdout, /^警告：warning が \d+ 件/m)
-    const last = result.stdout.trimEnd().split('\n').at(-1)
-    assert.match(last, /^[^：]+：.*\d/)
+    assert.doesNotMatch(result.stdout, /警告|要求|字数/)
+    assert.equal(result.stdout.trimEnd().split('\n').at(-1), '使わない語：0')
+  })
+
+  test('--warning --added は、標準入力の差分の追加行だけを一覧にする', () => {
+    const diff = ['diff --git a/docs/a.md b/docs/a.md', '--- a/docs/a.md', '+++ b/docs/a.md', '@@ -0,0 +1 @@', `+${longSentence}`].join('\n')
+    const result = runIn({ ...files, 'docs/b.md': '要求を送る。\n' }, ['--warning', '--added'], diff)
+    assert.equal(result.status, 0)
+    assert.match(result.stdout, /docs\/a\.md:1 .*字数/)
+    assert.doesNotMatch(result.stdout, /docs\/b\.md|src\/a\.mjs/)
   })
 
   test('--warning は文体・崩れの疑い・「要求」を一覧にし、成功する。最後の行は要約の行である', () => {
@@ -803,12 +831,19 @@ describe('日本語の文の検査（warning と終了コード）', () => {
   })
 })
 
-describe('日本語の文の検査（差分の追加行の文体：--changed）', () => {
+describe('日本語の文の検査（差分の追加行の文体：--changed）', { concurrency: true }, () => {
   // CI の push のイベントの変数があると基準の選び方が変わるので外す（手元と CI で同じ結果にする）
   const env = withoutGitEnv()
   delete env.GITHUB_ACTIONS
   delete env.GITHUB_EVENT_NAME
   delete env.GITHUB_REF_NAME
+  // git の設定は、git config を実行せずに環境変数で渡す（テストごとの git の起動を減らす。Windows では 1 回が遅い）
+  const config = { 'user.email': 'test@example.com', 'user.name': 'test', 'commit.gpgsign': 'false', 'core.autocrlf': 'false' }
+  Object.entries(config).forEach(([key, value], index) => {
+    env[`GIT_CONFIG_KEY_${index}`] = key
+    env[`GIT_CONFIG_VALUE_${index}`] = value
+  })
+  env.GIT_CONFIG_COUNT = String(Object.keys(config).length)
   const repos = []
   after(() => repos.forEach((repo) => rmSync(repo, { recursive: true, force: true })))
 
@@ -825,29 +860,31 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
    * @param {Record<string, string>} files develop にあるファイル
    * @param {{ developRef?: string }} [options] develop を置く ref
    */
-  function createRepo(files, { developRef = 'refs/heads/develop' } = {}) {
+  async function createRepo(files, { developRef = 'refs/heads/develop' } = {}) {
     const repo = mkdtempSync(path.join(tmpdir(), 'ja-text-changed-'))
     repos.push(repo)
-    const git = (...args) => execFileSync('git', args, { cwd: repo, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-    git('init', '-q', '-b', 'main')
-    git('config', 'user.email', 'test@example.com')
-    git('config', 'user.name', 'test')
-    git('config', 'commit.gpgsign', 'false')
-    git('config', 'core.autocrlf', 'false')
+    const git = async (...args) => {
+      const result = await runAsync('git', args, { cwd: repo, env })
+      if (result.status !== 0) throw new Error(`git ${args.join(' ')}: ${result.stderr}`)
+      return result.stdout
+    }
+    // develop を refs/heads/develop に置くときは、初めのブランチを develop にして update-ref を省く
+    const localDevelop = developRef === 'refs/heads/develop'
+    await git('init', '-q', '--template=', '-b', localDevelop ? 'develop' : 'main')
     const write = (name, content) => {
       const full = path.join(repo, name)
       mkdirSync(path.dirname(full), { recursive: true })
       writeFileSync(full, content)
     }
-    const commit = (message) => {
-      git('add', '-A')
-      git('commit', '-q', '--allow-empty', '-m', message)
+    const commit = async (message) => {
+      await git('add', '-A')
+      await git('commit', '-q', '--allow-empty', '-m', message)
     }
     for (const [name, content] of Object.entries(files)) write(name, content)
-    commit('base')
-    git('update-ref', developRef, 'HEAD')
-    git('checkout', '-q', '-b', 'feature')
-    const run = (cwd = repo, extraEnv = {}) => spawnSync(process.execPath, [SCRIPT, '--changed'], { cwd, env: { ...env, ...extraEnv }, encoding: 'utf8' })
+    await commit('base')
+    if (!localDevelop) await git('update-ref', developRef, 'HEAD')
+    await git('checkout', '-q', '-b', 'feature')
+    const run = (cwd = repo, extraEnv = {}) => runAsync(process.execPath, [SCRIPT, '--changed'], { cwd, env: { ...env, ...extraEnv } })
     return { repo, git, write, commit, run }
   }
 
@@ -861,11 +898,11 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     return [...stdout.matchAll(/^::warning file=([^,]+),line=(\d+)::.+$/gm)].map((match) => `${match[1]}:${match[2]}`)
   }
 
-  test('追加行の長い文、読点の多い文、長いセルに、注釈の形の警告を 1 件 1 行で出す。終了コードは 0 で、最後の行は件数である', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+  test('追加行の長い文、読点の多い文、長いセルに、注釈の形の警告を 1 件 1 行で出す。終了コードは 0 で、最後の行は件数である', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\n' })
     r.write('docs/a.md', `短い文である。\n${LONG}\n${COMMAS}\n${LONG_CELL}\n`)
-    r.commit('追加')
-    const result = r.run()
+    await r.commit('追加')
+    const result = await r.run()
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:2', 'docs/a.md:3', 'docs/a.md:4'])
     assert.match(result.stdout, /^::warning file=docs\/a\.md,line=2::.*字数が 103 字/m)
@@ -874,138 +911,138 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     assert.match(result.stdout.trimEnd().split('\n').at(-1), /：3/)
   })
 
-  test('既存の行（追加行でない行）には警告を出さない', () => {
-    const r = createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n${COMMAS}\n${LONG_CELL}\n` })
+  test('既存の行（追加行でない行）には警告を出さない', async () => {
+    const r = await createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n${COMMAS}\n${LONG_CELL}\n` })
     r.write('docs/a.md', `${LONG}\n短い文を変えた。\n${COMMAS}\n${LONG_CELL}\n${LONG}\n`)
-    r.commit('変更')
-    const result = r.run()
+    await r.commit('変更')
+    const result = await r.run()
     assert.equal(result.status, 0)
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:5'])
   })
 
-  test('複数の行にまたがる文：既存の行だけでできた文には出さず、1 行を足して長くなった文には、足した行に出す', () => {
+  test('複数の行にまたがる文：既存の行だけでできた文には出さず、1 行を足して長くなった文には、足した行に出す', async () => {
     const head = 'あ'.repeat(60)
     const tail = `${'い'.repeat(57)}である。`
     // 足した行（95 字）は、1 行では閾値（100）に届かない。前後の行とつなぐと閾値を超える
-    const r = createRepo({ 'docs/a.md': `${head}\n${tail}\n\nこれは\n短い文である。\n`, 'src/a.mjs': `// 短い\n// 文である。\n` })
+    const r = await createRepo({ 'docs/a.md': `${head}\n${tail}\n\nこれは\n短い文である。\n`, 'src/a.mjs': `// 短い\n// 文である。\n` })
     r.write('docs/a.md', `${head}\n${tail}\n\nこれは\n${'う'.repeat(95)}\n短い文である。\n`)
     r.write('src/a.mjs', `// 短い\n// ${'え'.repeat(95)}\n// 文である。\n`)
-    r.commit('変更')
-    const result = r.run()
+    await r.commit('変更')
+    const result = await r.run()
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:5', 'src/a.mjs:2'])
   })
 
-  test('行末のコメントは、次の行のコメントとつながない（短い注だけの追加行に警告を出さない）', () => {
-    const r = createRepo({ 'src/b.mjs': `const a = 1 // ${'え'.repeat(60)}\n` })
+  test('行末のコメントは、次の行のコメントとつながない（短い注だけの追加行に警告を出さない）', async () => {
+    const r = await createRepo({ 'src/b.mjs': `const a = 1 // ${'え'.repeat(60)}\n` })
     r.write('src/b.mjs', `const a = 1 // ${'え'.repeat(60)}\n// ${'お'.repeat(57)}である。\n`)
-    r.commit('追加')
-    const result = r.run()
+    await r.commit('追加')
+    const result = await r.run()
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.deepEqual(annotated(result.stdout), [])
   })
 
-  test('改行コードだけを変えた既存の行（LF から CRLF）は追加行にしない。足した行だけに警告を出す', () => {
-    const r = createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n` })
+  test('改行コードだけを変えた既存の行（LF から CRLF）は追加行にしない。足した行だけに警告を出す', async () => {
+    const r = await createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n` })
     r.write('docs/a.md', `${LONG}\r\n短い文である。\r\n${COMMAS}\r\n`)
-    r.commit('改行コードの変更と追加')
-    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:3'])
+    await r.commit('改行コードの変更と追加')
+    assert.deepEqual(annotated((await r.run()).stdout), ['docs/a.md:3'])
   })
 
-  test('develop から分けたばかりで commit がない作業ブランチでは、HEAD との差分（作業ツリーの変更）だけを見る', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+  test('develop から分けたばかりで commit がない作業ブランチでは、HEAD との差分（作業ツリーの変更）だけを見る', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\n' })
     r.write('docs/a.md', `短い文である。\n${LONG}\n`)
-    r.commit('develop の最後の commit')
-    r.git('update-ref', 'refs/heads/develop', 'HEAD')
+    await r.commit('develop の最後の commit')
+    await r.git('update-ref', 'refs/heads/develop', 'HEAD')
     r.write('docs/a.md', `短い文である。\n${LONG}\n${COMMAS}\n`)
-    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:3'])
+    assert.deepEqual(annotated((await r.run()).stdout), ['docs/a.md:3'])
   })
 
-  test('commit していない変更と、追跡していない新しい文書の行も、追加行として見る', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+  test('commit していない変更と、追跡していない新しい文書の行も、追加行として見る', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\n' })
     r.write('docs/a.md', `短い文である。\n${LONG}\n`)
     r.write('docs/new.md', `${COMMAS}\n`)
-    const result = r.run()
+    const result = await r.run()
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:2', 'docs/new.md:1'])
   })
 
-  test('「の」の連なり、否定、複合動詞の崩れ、語の検査は出さない', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+  test('「の」の連なり、否定、複合動詞の崩れ、語の検査は出さない', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\n' })
     r.write('docs/a.md', '短い文である。\n本日の会議の資料の変更の履歴を見る。\n原因は分からなく修正もできない。\n少し修正する。\n道具を使う。要求を送る。\n')
-    r.commit('追加')
-    const result = r.run()
+    await r.commit('追加')
+    const result = await r.run()
     assert.equal(result.status, 0)
     assert.deepEqual(annotated(result.stdout), [])
   })
 
-  test('表の区切り行、コードブロック、インラインコード、URL は数えない', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+  test('表の区切り行、コードブロック、インラインコード、URL は数えない', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\n' })
     const fenced = ['```', LONG, COMMAS, '```'].join('\n')
     const inline = `ここは \`${'の'.repeat(120)}\` と https://example.com/${'あ'.repeat(120)} と [リンク](https://example.com/${'い'.repeat(120)}) だ。`
     r.write('docs/a.md', `短い文である。\n${fenced}\n|${'-'.repeat(120)}|\n${inline}\n`)
-    r.commit('追加')
-    assert.deepEqual(annotated(r.run().stdout), [])
+    await r.commit('追加')
+    assert.deepEqual(annotated((await r.run()).stdout), [])
   })
 
-  test('対象は既定の実行と同じファイルで、コードはコメントとテスト名だけを見る。削除したファイルは見ない', () => {
-    const r = createRepo({ 'docs/gone.md': '短い文である。\n' })
+  test('対象は既定の実行と同じファイルで、コードはコメントとテスト名だけを見る。削除したファイルは見ない', async () => {
+    const r = await createRepo({ 'docs/gone.md': '短い文である。\n' })
     r.write('docs/08-spec/archive/old.md', `${LONG}\n`)
     r.write('notes.txt', `${LONG}\n`)
     r.write('src/a.mjs', `const s = '${LONG}'\n// ${LONG}\n`)
     rmSync(path.join(r.repo, 'docs/gone.md'))
-    r.commit('追加と削除')
-    const result = r.run()
+    await r.commit('追加と削除')
+    const result = await r.run()
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.deepEqual(annotated(result.stdout), ['src/a.mjs:2'])
   })
 
-  test('名前を変えたファイルは、変えていない行を追加行として数えない', () => {
+  test('名前を変えたファイルは、変えていない行を追加行として数えない', async () => {
     const body = Array.from({ length: 20 }, (_, index) => `${index}${LONG}`).join('\n')
-    const r = createRepo({ 'docs/old.md': `${body}\n` })
-    r.git('mv', 'docs/old.md', 'docs/new.md')
+    const r = await createRepo({ 'docs/old.md': `${body}\n` })
+    await r.git('mv', 'docs/old.md', 'docs/new.md')
     r.write('docs/new.md', `${body}\n${COMMAS}\n`)
-    r.commit('移動')
-    assert.deepEqual(annotated(r.run().stdout), ['docs/new.md:21'])
+    await r.commit('移動')
+    assert.deepEqual(annotated((await r.run()).stdout), ['docs/new.md:21'])
   })
 
-  test('改行コードが CRLF のファイルでも、行番号は元の行である', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\r\n次の文である。\r\n' })
+  test('改行コードが CRLF のファイルでも、行番号は元の行である', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\r\n次の文である。\r\n' })
     r.write('docs/a.md', `短い文である。\r\n次の文である。\r\n${LONG}\r\n${LONG_CELL}\r\n`)
     r.write('src/a.mjs', `// 短い文である。\r\n// ${COMMAS}\r\n`)
-    r.commit('追加')
-    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:3', 'docs/a.md:4', 'src/a.mjs:2'])
+    await r.commit('追加')
+    assert.deepEqual(annotated((await r.run()).stdout), ['docs/a.md:3', 'docs/a.md:4', 'src/a.mjs:2'])
   })
 
-  test('CI の develop への push（merge-base が HEAD 自身）では、1 つ目の親との差分を見る。手元の develop では見ない', () => {
-    const r = createRepo({ 'docs/a.md': `${LONG}\n` }, { developRef: 'refs/remotes/origin/develop' })
-    r.git('checkout', '-q', '-B', 'develop')
+  test('CI の develop への push（merge-base が HEAD 自身）では、1 つ目の親との差分を見る。手元の develop では見ない', async () => {
+    const r = await createRepo({ 'docs/a.md': `${LONG}\n` }, { developRef: 'refs/remotes/origin/develop' })
+    await r.git('checkout', '-q', '-B', 'develop')
     r.write('docs/a.md', `${LONG}\n${COMMAS}\n`)
-    r.commit('push')
-    r.git('update-ref', 'refs/remotes/origin/develop', 'HEAD')
-    const result = r.run(r.repo, { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', GITHUB_REF_NAME: 'develop' })
+    await r.commit('push')
+    await r.git('update-ref', 'refs/remotes/origin/develop', 'HEAD')
+    const result = await r.run(r.repo, { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', GITHUB_REF_NAME: 'develop' })
     assert.equal(result.status, 0)
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:2'])
     // 手元（GITHUB_ACTIONS がない）では HEAD を基準にし、前のマージ（push の commit）の行を追加行にしない
-    const local = r.run()
+    const local = await r.run()
     assert.equal(local.status, 0)
     assert.deepEqual(annotated(local.stdout), [])
   })
 
-  test('origin/develop があれば、その分岐点からの差分を見る（CI の checkout）', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\n' }, { developRef: 'refs/remotes/origin/develop' })
+  test('origin/develop があれば、その分岐点からの差分を見る（CI の checkout）', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\n' }, { developRef: 'refs/remotes/origin/develop' })
     r.write('docs/a.md', `短い文である。\n${LONG}\n`)
-    r.commit('追加')
-    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:2'])
+    await r.commit('追加')
+    assert.deepEqual(annotated((await r.run()).stdout), ['docs/a.md:2'])
   })
 
-  test('shallow clone では差分を求められないので失敗にする', () => {
-    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+  test('shallow clone では差分を求められないので失敗にする', async () => {
+    const r = await createRepo({ 'docs/a.md': '短い文である。\n' })
     r.write('docs/a.md', `短い文である。\n${LONG}\n`)
-    r.commit('追加')
+    await r.commit('追加')
     const shallow = mkdtempSync(path.join(tmpdir(), 'ja-text-shallow-'))
     repos.push(shallow)
-    execFileSync('git', ['clone', '-q', '--depth', '1', '--no-local', pathToFileURL(r.repo).href, path.join(shallow, 'clone')], { env, stdio: 'ignore' })
-    const result = r.run(path.join(shallow, 'clone'))
+    await runAsync('git', ['clone', '-q', '--depth', '1', '--no-local', pathToFileURL(r.repo).href, path.join(shallow, 'clone')], { env })
+    const result = await r.run(path.join(shallow, 'clone'))
     assert.notEqual(result.status, 0)
     assert.ok(result.stdout.includes(SHALLOW_CLONE_MESSAGE), result.stdout)
   })

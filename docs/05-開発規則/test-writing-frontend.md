@@ -19,10 +19,10 @@
 確認方法：
 
 - CSS のクラスの確認と `toBeTruthy`・`toBeDefined`：フロントのテストと E2E で自動（Biome の plugin `no-css-class-check`・`no-weak-existence-check`）
-- `getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと：フロントのテストと E2E で自動（`scripts/ci/frontend-rules.mjs`）
+- `getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと：フロントのテストで自動（`scripts/ci/frontend-rules.mjs`。E2E の Playwright には `getAllBy…` がない）
 - 画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現：自動（Biome の plugin `no-internal-selector`・`no-markup-text-check`）
 - E2E の位置で選ぶメソッド：自動（Biome の plugin `no-position-selector`）
-- E2E のボタンの名前の完全一致：自動（`scripts/ci/frontend-rules.mjs`）
+- E2E のボタンの名前の完全一致：自動（Biome の plugin `no-partial-button-name`）
 - その他の探し方：レビュー
 
 ## API の差し替えは型付きの MSW
@@ -79,7 +79,7 @@ E2E で作るデータの品番・名称に、実行ごとの識別子（`E2E-<�
 
 理由：失敗したときの表示が分かりやすく、支援技術から見える状態で確認するため。
 
-確認方法：受け手が要素のもの（`getBy…` の結果やそれを入れた変数など）のプロパティ・属性は自動（`scripts/ci/frontend-rules.mjs`）、ほかはレビュー
+確認方法：レビュー
 
 ## `fireEvent` を直接使わない
 
@@ -97,13 +97,13 @@ E2E で作るデータの品番・名称に、実行ごとの識別子（`E2E-<�
 
 確認方法：レビュー
 
-## 組み込みの名前をシャドーイングしない
+## 宣言していないグローバルの名前を使わない
 
-フロントのテスト・テストの補助・E2E（`e2e/` の下の全ての TypeScript）では、定数・変数（`const`・`let`）の名前を、グローバルの名前と同じにしない。対象は、TypeScript の lib（ES と DOM）が宣言する名前（`URL`、`screen`、`location`、`name`、`status` など）。関数の引数は対象外。
+フロントのテスト・テストの補助・E2E（`e2e/` の下の全ての TypeScript）では、変数に付けやすい名前のグローバル（`name`、`status`、`location`、`screen`、`top` など。一覧は `frontend/biome.test-globals.jsonc`）を、宣言せずに使わない。ブラウザーの値を使うときは `window.` を付ける（`window.location.origin`）。宣言した変数・引数・import の名前は対象外で、同じ名前を付けてよい。
 
 理由：変数の宣言を忘れたときに、エラーにならずにグローバルの値が使われ、意図しない値でテストが通るため。
 
-確認方法：自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：自動（Biome の `noRestrictedGlobals`）
 
 ## テストとテストの間に空行を置く
 
@@ -111,7 +111,7 @@ E2E で作るデータの品番・名称に、実行ごとの識別子（`E2E-<�
 
 理由：テストの境目を、一目で分かるようにするため。
 
-確認方法：自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：レビュー
 
 ## キーとキーの間で待たない
 

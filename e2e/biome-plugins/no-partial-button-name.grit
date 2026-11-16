@@ -1,0 +1,25 @@
+// E2E でボタンを名前で探すときは、完全一致で探す（フロントのテストの書き方の「画面に見えるもので探す」）。
+// 役割が button の getByRole の、オプションを文字で読む。name が正規表現なら、先頭の ^ と末尾の $ で固定していること（最上位の | と、エスケープした末尾の \$ は固定でない）。
+// それ以外の name（文字列、変数、テンプレート文字列、{ name } の省略）には exact: true が要る。
+// オプションがオブジェクトのリテラルでないときと、name がなく展開（...）があるときは、名前を読めないので見つける。
+language js
+
+JsCallExpression(callee=JsStaticMemberExpression(member=r"getByRole"), arguments=$args) as $hit where {
+  $args <: r"(?s)\(\s*['\"`]button['\"`]\s*,(.*)\)"($options),
+  or {
+    not $options <: r"(?s)\s*\{.*\}\s*,?\s*",
+    and {
+      $options <: r"(?s).*[{,]\s*(?:name|['\"`]name['\"`]|\[\s*['\"`]name['\"`]\s*\])\s*:\s*(/.*)"($regex),
+      not $regex <: r"(?s)/\^(?:\\.|\[(?:\\.|[^\]\\])*\]|\((?:\\.|\[(?:\\.|[^\]\\])*\]|\((?:\\.|\[(?:\\.|[^\]\\])*\]|[^()\\\[])*\)|[^()\\\[])*\)|[^|\\\[(/])*\$/[a-z]*\s*[,}].*"
+    },
+    and {
+      $options <: r"(?s).*[{,]\s*(?:name|['\"`]name['\"`]|\[\s*['\"`]name['\"`]\s*\])\s*(?:[,}]|:\s*[^/\s]).*",
+      not $options <: r"(?s).*[{,]\s*exact\s*:\s*true\s*[,}].*"
+    },
+    and {
+      not $options <: r"(?s).*[{,]\s*(?:name|['\"`]name['\"`]|\[\s*['\"`]name['\"`]\s*\])\s*[:,}].*",
+      $options <: r"(?s).*[{,]\s*\.\.\..*"
+    }
+  },
+  register_diagnostic(span=$hit, message="ボタンの名前を完全一致で探す。文字列は exact: true を付け、正規表現は先頭の ^ と末尾の $ で固定する（フロントのテストの書き方の「画面に見えるもので探す」）。", severity="error")
+}

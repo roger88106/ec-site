@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkCommentLines, checkFirstLines, checkTableColumns, checkTableNames, compareChecks, listChecks, listCommentTargets, readTableChecks } from './ci-docs.mjs'
+import { checkCommentLines, checkFirstLines, compareChecks, listChecks, listCommentTargets, readTableChecks } from './ci-docs.mjs'
 
 const DOC = [
   '# CI の検査',
@@ -59,103 +59,15 @@ describe('CI の検査の文書の表の検査', () => {
     assert.equal(compareChecks(['a', 'a'], ['a']).length, 1)
   })
 
-  test('表が 2 列なら列の検査が通る', () => {
-    assert.deepEqual(checkTableColumns(DOC), [])
+  test('名前の形（| `名前` |）でない行は名前として数えない（その検査は「表にない検査」になる）', () => {
+    const doc = ['## 検査の一覧', '| script | 目的 |', '|---|---|', '| `a` | x |', '| old-check | x |', '|`b`| x |'].join('\n')
+    assert.deepEqual(readTableChecks(doc), ['a'])
+    assert.match(compareChecks(readTableChecks(doc), ['a', 'b']).join(), /表にない検査：b/)
   })
 
-  test('表が 3 列と 4 列の行を、行の番号つきで失敗にする', () => {
-    const doc = ['## 検査の一覧', '| script | 確認すること | 失敗したとき |', '|---|---|---|', '| `a` | x | y | z |', '## カバレッジ', '| `b` | x | y |'].join('\n')
-    const problems = checkTableColumns(doc)
-    assert.equal(problems.length, 3)
-    assert.match(problems[0], /ci-checks.md:2 .*3 列/)
-    assert.match(problems[2], /ci-checks.md:4 .*4 列/)
-  })
-
-  test('バッククォートの中の縦線と、エスケープした縦線は、列の区切りに数えない', () => {
-    const doc = ['## 検査の一覧', '| `a` | 例 `x | y` と \\| |'].join('\n')
-    assert.deepEqual(checkTableColumns(doc), [])
-  })
-
-  test('2 つのバッククォートで囲んだ中にあるバッククォートを、後ろのコードスパンと組にせず、3 列の行を失敗にする', () => {
-    const doc = ['## 検査の一覧', '| `a` | ``x`y`` | 説明 `z` |'].join('\n')
-    const problems = checkTableColumns(doc)
-    assert.equal(problems.length, 1)
-    assert.match(problems[0], /ci-checks.md:2 .*3 列/)
-  })
-
-  test('2 つのバッククォートで囲んだ中にある縦線は、列の区切りに数えない', () => {
-    const doc = ['## 検査の一覧', '| `a` | 例 ``x`|`y`` |'].join('\n')
-    assert.deepEqual(checkTableColumns(doc), [])
-  })
-
-  test('組にならないバッククォートが残る行は、読み飛ばさずに失敗にする', () => {
-    const doc = ['## 検査の一覧', '| `a` | 例 ``x` |'].join('\n')
-    const problems = checkTableColumns(doc)
-    assert.equal(problems.length, 1)
-    assert.match(problems[0], /ci-checks.md:2 .*バッククォート/)
-  })
-
-  test('表の途中の、前に空白のある行と、最初の縦線のない行は、読み飛ばさずに失敗にする', () => {
-    const doc = ['## 検査の一覧', '| script | 目的 |', '|---|---|', '| `a` | x |', ' | `old-check` | x |', '`old-check` | x | y |', '', '本文の行'].join('\n')
-    const problems = checkTableColumns(doc)
-    assert.equal(problems.length, 2)
-    assert.match(problems[0], /ci-checks.md:5 .*縦線で始める/)
-    assert.match(problems[1], /ci-checks.md:6 .*縦線で始める/)
-  })
-
-  test('表の後の空行より後ろの、縦線で始まらない行は、表の行とみなさない', () => {
-    const doc = ['## 検査の一覧', '本文の行', '| `a` | x |', '', '本文の行', ' 字下げした本文'].join('\n')
-    assert.deepEqual(checkTableColumns(doc), [])
-  })
-
-  test('末尾の縦線がない表の行は、読み飛ばさずに失敗にする', () => {
-    const doc = ['## 検査の一覧', '| `a` | x'].join('\n')
-    const problems = checkTableColumns(doc)
-    assert.equal(problems.length, 1)
-    assert.match(problems[0], /ci-checks.md:2 /)
-  })
-
-  test('見出しの行と区切りの行を除き、1 列目が名前の形の表は、名前の検査が通る', () => {
-    assert.deepEqual(checkTableNames(DOC), [])
-  })
-
-  test('1 列目が名前の形（`| `名前` |`）でない行を、行の番号つきで失敗にする', () => {
-    const doc = [
-      '## 検査の一覧',
-      '| script | 目的 |',
-      '|--------|------|',
-      '| `a` | x |',
-      '| old-check | x |',
-      '|`old-check`| x |',
-      '| `old-check`（廃止） | x |',
-      '| `old-check` 廃止 | x |',
-    ].join('\n')
-    const problems = checkTableNames(doc)
-    assert.equal(problems.length, 4)
-    assert.match(problems[0], /ci-checks.md:5 /)
-    assert.match(problems[1], /ci-checks.md:6 /)
-    assert.match(problems[2], /ci-checks.md:7 /)
-    assert.match(problems[3], /ci-checks.md:8 /)
-  })
-
-  test('表の途中で区切りの行の前に置いた行は、見出しの行とみなさず、名前の形でなければ失敗にする', () => {
-    const doc = ['## 検査の一覧', '| script | 目的 |', '|---|---|', '| `a` | x |', '| old-check | x |', '|---|---|'].join('\n')
-    const problems = checkTableNames(doc)
-    assert.equal(problems.length, 1)
-    assert.match(problems[0], /ci-checks.md:5 /)
-  })
-
-  test('名前の後に（`引数`）を書いた行は、同じ名前の行があれば通り、名前としては数えない', () => {
+  test('名前の後に（`引数`）を書いた行は、名前として数えない', () => {
     const doc = ['## 検査の一覧', '| script | 目的 |', '|---|---|', '| `ja-text` | x |', '| `ja-text`（`--changed`） | y |'].join('\n')
-    assert.deepEqual(checkTableNames(doc), [])
     assert.deepEqual(readTableChecks(doc), ['ja-text'])
-  })
-
-  test('名前の後に（`引数`）を書いた行で、同じ名前の行がなければ失敗にする', () => {
-    const doc = ['## 検査の一覧', '| script | 目的 |', '|---|---|', '| `a` | x |', '| `old-check`（`--x`） | y |'].join('\n')
-    const problems = checkTableNames(doc)
-    assert.equal(problems.length, 1)
-    assert.match(problems[0], /ci-checks.md:5 .*old-check/)
   })
 
   test('先頭のコメントの検査の対象は、直下の検査と lib の各ファイルで、テストと他の拡張子を除く', () => {

@@ -18,7 +18,7 @@
 // - 一覧にないポートが書かれている
 // - 一覧のポートが書かれていない
 // - 一覧の中でポートが重なる
-// - compose のホスト側のポートを読めない項目（既定値のない変数、範囲）がある（ファイルと行を出力する）
+// - compose のホスト側のポートを読めない項目（既定値のない変数、範囲）がある（ファイルとサービスを出力する）
 // 対象外：テストコードの中のポート（単体テストの URL の例で、一覧のポートと同じである必要がない）、
 // 開発の文書のうち DOC_FILES 以外（ポートの一覧を書く文書ではない）。
 // compose の待ち受けるアドレス（LOCAL_BIND_ADDRESS）は compose-ports が確認する。この検査は、ポートの番号だけを照合する。
@@ -95,7 +95,7 @@ export function expandedPorts(list) {
  * それ以外の書き方の項目（既定値のない変数、範囲など）は、読み飛ばすと一覧にないポートを見逃すので、`unreadable` に入れる。
  *
  * @param {string} text compose のファイル
- * @returns {{ ports: number[], unreadable: { line: number, entry: string }[] }} ホスト側のポートと、読めない項目（行の順）
+ * @returns {{ ports: number[], unreadable: { service: string, entry: string }[] }} ホスト側のポートと、読めない項目（書いた順）
  */
 export function readComposeHostPorts(text) {
   const ports = []

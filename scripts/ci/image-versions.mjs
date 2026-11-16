@@ -4,14 +4,14 @@
 // compose の全てのイメージは patch まで固定する。latest、バージョンなし、3 や 3.6 は失敗にする。
 //   patch のないタグの付け方が正しい postgres（major だけ）と chrislusf/seaweedfs（major.minor だけ）は許す。
 // compose にないイメージを統合テストが使うときは、照合する相手がないので「警告：」で報告するだけにする。
-// 既定値のない変数を差し込んだ `image:` の行は、バージョンを決められないので、ファイルと行を出して失敗にする。
+// 既定値のない変数を差し込んだ `image` は、バージョンを決められないので、ファイルとサービスを出して失敗にする。
 // 失敗したとき：統合テストと Gradle のバージョンを compose のバージョンにそろえる。compose のバージョンは patch まで書く。
 // 除外：なし
 // 使い方：node scripts/ci/image-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { load } from 'js-yaml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
-import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -40,27 +40,25 @@ const PINNED = /^v?\d+\.\d+\.\d+/
 const UNREADABLE_IMAGE_REASON = '変数の差し込みを読めない。既定値 ${NAME:-名前:バージョン} の形だけを扱う'
 
 /**
- * compose の `image:` から、イメージの名前ごとのバージョンの集合と、読めない行を読む。<br />
- * YAML のライブラリを使わず、`image:` で始まる行を読む（コメントの行は読まない）。
- * 変数の差し込みは既定値（`${NAME:-既定値}`）を読み、既定値のない書き方はバージョンを決められないので、読めない行に集める。
+ * compose の各サービスの `image` から、イメージの名前ごとのバージョンの集合と、読めない項目を読む。<br />
+ * 変数の差し込みは既定値（`${NAME:-既定値}`）を読み、既定値のない書き方はバージョンを決められないので、読めない項目に集める。
  *
  * @param {string} text compose のファイル
- * @returns {{ images: Map<string, Set<string | undefined>>, unreadable: { line: number, text: string, reason: string }[] }}
- *   イメージの名前からバージョンの集合（バージョンのない書き方は undefined）と、読めない行（1 始まりの行番号と内容、行の順）
+ * @returns {{ images: Map<string, Set<string | undefined>>, unreadable: { service: string, image: string }[] }}
+ *   イメージの名前からバージョンの集合（バージョンのない書き方は undefined）と、読めない項目（書いた順）
  */
 export function parseComposeImages(text) {
   const images = new Map()
   const unreadable = []
-  for (const [index, raw] of text.split('\n').entries()) {
-    const match = /^\s*image:\s*["']?([^"'\s#]+)/.exec(raw)
-    if (!match) {
+  for (const [service, definition] of Object.entries(load(text)?.services ?? {})) {
+    if (typeof definition?.image !== 'string') {
       continue
     }
-    let reference = match[1]
+    let reference = definition.image
     if (reference.includes('$')) {
       const fallback = /^\$\{[A-Za-z_]\w*:?-([^${}]+)\}$/.exec(reference)?.[1]
       if (fallback === undefined) {
-        unreadable.push({ line: index + 1, text: raw, reason: UNREADABLE_IMAGE_REASON })
+        unreadable.push({ service, image: reference })
         continue
       }
       reference = fallback
@@ -78,14 +76,14 @@ export function parseComposeImages(text) {
 }
 
 /**
- * 読めない `image:` の行を、失敗の文にする。
+ * 読めない `image` の項目を、失敗の文にする。
  *
  * @param {string} file compose のファイルのパス
- * @param {{ line: number, text: string, reason: string }[]} unreadable parseComposeImages が返した、読めない行
- * @returns {string[]} `ファイル:行 内容（理由）`（行の順）
+ * @param {{ service: string, image: string }[]} unreadable parseComposeImages が返した、読めない項目
+ * @returns {string[]} `ファイル サービス：イメージ（理由）`（書いた順）
  */
 export function describeUnreadableImages(file, unreadable) {
-  return unreadable.map((item) => describeUnreadableLine({ file, ...item }))
+  return unreadable.map((item) => `${file} ${item.service}：${item.image}（${UNREADABLE_IMAGE_REASON}）`)
 }
 
 /** 正規表現の特別な文字を、そのままの文字として書く */
@@ -201,7 +199,7 @@ if (isMain(import.meta.url)) {
   const problems = mismatches.length + unpinned.length + unreadableLines.length
   console.log(
     `イメージ：${images.size} 件（compose）、読んだファイル：${files.length} 件、` +
-      `食い違い：${mismatches.length} 件、固定されていない：${unpinned.length} 件、読めない行：${unreadableLines.length} 件`,
+      `食い違い：${mismatches.length} 件、固定されていない：${unpinned.length} 件、読めない項目：${unreadableLines.length} 件`,
   )
   process.exit(problems || images.size === 0 || files.length === 0 ? 1 : 0)
 }

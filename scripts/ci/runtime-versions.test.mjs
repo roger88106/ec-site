@@ -82,26 +82,20 @@ describe('バージョンの一致の検査', () => {
 })
 
 describe('workflow と action のバージョンの参照の検査', () => {
-  const ok = [
-    '      - uses: actions/setup-java@v6',
-    '        with:',
-    '          distribution: temurin',
-    '          java-version: ${{ env.JAVA_VERSION }}',
-    '      - uses: actions/setup-node@v7',
-    '        with:',
-    '          node-version-file: .node-version',
-  ].join('\n')
+  /** 1 つの step の with を、workflow の形にする */
+  const withOf = (lines) => ['jobs:', '  a:', '    steps:', '      - uses: actions/setup@v1', '        with:', ...lines.map((line) => `          ${line}`)].join('\n')
 
   test('決めた 1 か所を参照する形は通る', () => {
-    assert.deepEqual(findVersionLiteralProblems([{ path: '.github/workflows/ci.yml', text: ok }]), [])
+    const text = withOf(['distribution: temurin', 'java-version: ${{ env.JAVA_VERSION }}', 'node-version-file: .node-version'])
+    assert.deepEqual(findVersionLiteralProblems([{ path: '.github/workflows/ci.yml', text }]), [])
   })
 
-  test('新しい job に java-version や node-version を直接書けば、ファイルと行を出して失敗にする', () => {
+  test('新しい job に java-version や node-version を直接書けば、ファイルと場所を出して失敗にする', () => {
     const text = ['jobs:', '  new-job:', '    steps:', '      - uses: actions/setup-java@v6', '        with:', '          java-version: 21', '      - uses: actions/setup-node@v7', '        with:', "          node-version: '24'"].join('\n')
-    const problems = findVersionLiteralProblems([{ path: '.github/workflows/new.yml', text }])
-    assert.equal(problems.length, 2)
-    assert.match(problems[0], /new\.yml:6/)
-    assert.match(problems[1], /new\.yml:9/)
+    assert.deepEqual(findVersionLiteralProblems([{ path: '.github/workflows/new.yml', text }]), [
+      '.github/workflows/new.yml の jobs.new-job.steps[0].with：java-version に 21 を直接書いている。${{ env.JAVA_VERSION }} と書く',
+      '.github/workflows/new.yml の jobs.new-job.steps[1].with：node-version に 24 を直接書いている。この入力は使わない（Node は node-version-file: .node-version）',
+    ])
   })
 
   test('参照の形でない値（別のファイル、行列、引用符つきの直書き）も失敗にする', () => {
@@ -114,39 +108,16 @@ describe('workflow と action のバージョンの参照の検査', () => {
       'java-version: [17, 21]',
     ]
     for (const line of lines) {
-      assert.equal(findVersionLiteralProblems([{ path: 'a.yml', text: `          ${line}` }]).length, 1, line)
+      assert.equal(findVersionLiteralProblems([{ path: 'a.yml', text: withOf([line]) }]).length, 1, line)
     }
   })
 
-  test('リストの項目の先頭（- ）にあっても検出し、コメントの中は見ない', () => {
-    assert.equal(findVersionLiteralProblems([{ path: 'a.yml', text: '      - java-version: 21' }]).length, 1)
-    const text = '# java-version: 21\n          java-version: ${{ env.JAVA_VERSION }} # 21'
-    assert.deepEqual(findVersionLiteralProblems([{ path: 'a.yml', text }]), [])
-  })
-})
-
-describe('フロー形式のバージョンの指定の検査', () => {
-  test('with: { ... } の中に直接書いたバージョンを、ファイルと行を出して失敗にする', () => {
-    const lines = [
-      '        with: { node-version: 20 }',
-      '        with: { distribution: temurin, java-version: 21 }',
-      "        with: {distribution: temurin,java-version: '21'}",
-      '      - { uses: actions/setup-node@v7, with: { node-version-file: package.json } }',
-    ]
-    for (const line of lines) {
-      const problems = findVersionLiteralProblems([{ path: 'a.yml', text: `jobs:\n${line}` }])
-      assert.equal(problems.length, 1, line)
-      assert.match(problems[0], /a\.yml:2/, line)
-    }
-  })
-
-  test('with: { ... } の中でも、決めた 1 か所を参照する形は通る', () => {
-    const text = [
-      "        with: { distribution: temurin, java-version: '${{ env.JAVA_VERSION }}' }",
-      '        with: { java-version: ${{ env.JAVA_VERSION }}, cache: gradle }',
-      '        with: { node-version-file: .node-version }',
-    ].join('\n')
-    assert.deepEqual(findVersionLiteralProblems([{ path: 'a.yml', text }]), [])
+  test('フロー形式（with: { ... }）の中も読み、コメントの中は見ない', () => {
+    const flow = ['jobs:', '  a:', '    steps:', '      - { uses: actions/setup-node@v7, with: { node-version-file: package.json } }'].join('\n')
+    assert.equal(findVersionLiteralProblems([{ path: 'a.yml', text: flow }]).length, 1)
+    const reference = "jobs:\n  a:\n    steps:\n      - with: { distribution: temurin, java-version: '${{ env.JAVA_VERSION }}' }"
+    assert.deepEqual(findVersionLiteralProblems([{ path: 'a.yml', text: reference }]), [])
+    assert.deepEqual(findVersionLiteralProblems([{ path: 'a.yml', text: withOf(['# java-version: 21', 'node-version-file: .node-version # 24']) }]), [])
   })
 })
 
@@ -157,36 +128,25 @@ describe('JAVA_VERSION の定義の場所の検査', () => {
     assert.deepEqual(findJavaVersionDefinitionProblems([{ path: '.github/workflows/ci.yml', text: ci }]), [])
   })
 
-  test('job の env（ブロック形式とフロー形式）で上書きすれば、ファイルと行を出して失敗にする', () => {
+  test('job の env（ブロック形式とフロー形式）で上書きすれば、ファイルと場所を出して失敗にする', () => {
     const text = `${ci}  b:\n    env:\n      JAVA_VERSION: '17'\n  c:\n    env: { JAVA_VERSION: 17 }\n`
     const problems = findJavaVersionDefinitionProblems([{ path: '.github/workflows/ci.yml', text }])
     assert.equal(problems.length, 2)
-    assert.match(problems[0], /ci\.yml:10/)
-    assert.match(problems[1], /ci\.yml:12/)
+    assert.match(problems[0], /ci\.yml の jobs\.b\.env：/)
+    assert.match(problems[1], /ci\.yml の jobs\.c\.env：/)
   })
 
-  test('別の workflow・action のファイルに書いたものと、最上位の env に 2 度書いたものも失敗にする', () => {
+  test('別の workflow・action のファイルに書いたものも失敗にする', () => {
     const other = findJavaVersionDefinitionProblems([
       { path: '.github/workflows/ci.yml', text: ci },
       { path: '.github/workflows/other.yml', text: "env:\n  JAVA_VERSION: '17'\n" },
     ])
     assert.equal(other.length, 1)
-    assert.match(other[0], /other\.yml:2/)
-    const twice = findJavaVersionDefinitionProblems([{ path: '.github/workflows/ci.yml', text: ci.replace('jobs:', "  JAVA_VERSION: '17'\njobs:") }])
-    assert.equal(twice.length, 1)
-    assert.match(twice[0], /ci\.yml:5/)
-  })
-
-  test('引用符で囲んだ最上位のキー（"jobs":）の下の JAVA_VERSION を、最上位の env の中と誤って許さない', () => {
-    const path = '.github/workflows/ci.yml'
-    for (const key of ['"jobs":', "'jobs':", '? jobs\n:']) {
-      const problems = findJavaVersionDefinitionProblems([{ path, text: `env:\n  A: 1\n${key}\n  JAVA_VERSION: '17'\n` }])
-      assert.equal(problems.length, 1, key)
-    }
+    assert.match(other[0], /other\.yml の env：/)
   })
 
   test('参照（${{ env.JAVA_VERSION }}）とコメントは定義と読まない', () => {
-    const text = `${ci}    # JAVA_VERSION: 17\n    with:\n      java-version: \${{ env.JAVA_VERSION }}\n`
+    const text = `${ci}    # JAVA_VERSION: 17\n  b:\n    with:\n      java-version: \${{ env.JAVA_VERSION }}\n`
     assert.deepEqual(findJavaVersionDefinitionProblems([{ path: '.github/workflows/ci.yml', text }]), [])
   })
 })

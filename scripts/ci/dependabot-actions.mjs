@@ -1,126 +1,31 @@
 // 複合の action（action.yml）を置いたディレクトリが、Dependabot の github-actions の対象に入っていることを確認する。
-// 対象は .github/dependabot.yml の directories。
-// Dependabot の `/` は .github/workflows とルートの action.yml だけを見る。
-// そのため `.github/actions/<名前>/` の中の `uses:` は、
-// そのディレクトリを `directories` に加えなければ更新されない。加え忘れると、action のバージョンが古いまま残る。`*` は 1 つの階層として読む。
-// `directory`・`directories` の節に、対応している書き方に当たらない行があるときも失敗にする。
-// 読み飛ばすと、対象を見落として通るため。ファイルと行を表示する。
-//   - 対応している書き方：`directory: 値` と、字下げのそろった `- 値` の項目
-//   - 当たらない行の例：`directories: [...]` のフロー形式、値のない `directory:`、字下げのそろわない行
-// 失敗したとき：新しい複合の action のディレクトリを directories に加える。対応していない書き方の行は、directories の下に 1 行ずつ `- 値` で書くか、検査の読み方を追加する。
+// Dependabot の `/` は .github/workflows とルートの action.yml だけを見るので、`.github/actions/<名前>/` は
+// .github/dependabot.yml の directories に加えなければ更新されず、action のバージョンが古いまま残る。
+// 対象の `*` は 1 つの階層として読む。
+//
+// 失敗したとき：新しい複合の action のディレクトリを directories に加える。
 // 除外：なし
 // 使い方：node scripts/ci/dependabot-actions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { load } from 'js-yaml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
-import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** Dependabot の設定 */
 const DEPENDABOT_FILE = '.github/dependabot.yml'
 
-/** 値の前後の引用符と、行末のコメントを外す */
-const cleanValue = (text) =>
-  text
-    .replace(/\s+#.*$/, '')
-    .trim()
-    .replace(/^["']|["']$/g, '')
-
 /**
- * dependabot.yml の github-actions の節（`- package-ecosystem: github-actions` から次の `- package-ecosystem:` まで）を読む。<br />
- * YAML のライブラリを使わず、`directory: 値` と、`directories:` の下の字下げのそろった `- 値` の項目だけを読む。
- * 読む節（`directory` と `directories` の行と、その下の行）の中の、フロー形式の `directories: [...]`・値のない `directory:`・項目でない行・字下げのそろわない項目など、
- * 対応していない書き方の行は、読み飛ばさずに `unknown` に入れる。
- * 空行とコメントは除く。
- *
- * @param {string} text dependabot.yml の内容
- * @returns {{ directories: string[], unknown: { line: number, text: string }[] }} 対象のディレクトリ（書いた順）と、知らない書き方の行
- */
-function parseActionsBlock(text) {
-  const directories = []
-  const unknown = []
-  let inBlock = false
-  let listIndent = null
-  let itemIndent = null
-  text.split('\n').forEach((raw, index) => {
-    const line = raw.replace(/\r$/, '')
-    if (line.trim() === '' || /^\s*#/.test(line)) {
-      return
-    }
-    const ecosystem = /^\s*-\s+package-ecosystem:\s*(.+)$/.exec(line)
-    if (ecosystem) {
-      inBlock = cleanValue(ecosystem[1]) === 'github-actions'
-      listIndent = null
-      return
-    }
-    if (!inBlock) {
-      return
-    }
-    const lineIndent = /^\s*/.exec(line)[0].length
-    if (listIndent !== null) {
-      const item = /^(\s*)-\s+(.+)$/.exec(line)
-      if (item && item[1].length >= listIndent && (itemIndent === null || item[1].length === itemIndent)) {
-        itemIndent = item[1].length
-        directories.push(cleanValue(item[2]))
-        return
-      }
-      if (lineIndent > listIndent || (item && item[1].length >= listIndent)) {
-        unknown.push({ line: index + 1, text: line })
-        return
-      }
-      listIndent = null
-    }
-    const single = /^\s+directory:\s*(.*)$/.exec(line)
-    if (single) {
-      const value = cleanValue(single[1])
-      if (value === '') {
-        unknown.push({ line: index + 1, text: line })
-      } else {
-        directories.push(value)
-      }
-      return
-    }
-    const list = /^(\s+)directories:(.*)$/.exec(line)
-    if (list) {
-      if (cleanValue(list[2]) === '') {
-        listIndent = list[1].length
-        itemIndent = null
-      } else {
-        unknown.push({ line: index + 1, text: line })
-      }
-    }
-  })
-  return { directories, unknown }
-}
-
-/**
- * dependabot.yml の github-actions の `directory` と `directories` を読む。
+ * dependabot.yml の github-actions の項目の `directory` と `directories` を読む。
  *
  * @param {string} text dependabot.yml の内容
  * @returns {string[]} 対象のディレクトリ（書いた順）
  */
 export function readActionsDirectories(text) {
-  return parseActionsBlock(text).directories
-}
-
-/**
- * dependabot.yml の github-actions の節で、対応している書き方に当たらない行を探す。
- *
- * @param {string} text dependabot.yml の内容
- * @returns {{ line: number, text: string }[]} 知らない書き方の行（行の順）
- */
-export function findUnknownActionLines(text) {
-  return parseActionsBlock(text).unknown
-}
-
-/**
- * 知らない書き方の行を、失敗の文にする。
- *
- * @param {string} file 表示する dependabot.yml のパス
- * @param {{ line: number, text: string }} entry `findUnknownActionLines` が見つけた行
- * @returns {string} `ファイル:行 内容（理由）`
- */
-export function describeUnknownActionLine(file, entry) {
-  return describeUnreadableLine({ file, line: entry.line, text: entry.text, reason: '知らない書き方。検査の読み方を追加するか、directories を 1 行ずつの項目で書く' })
+  const updates = load(text)?.updates ?? []
+  return updates
+    .filter((update) => update?.['package-ecosystem'] === 'github-actions')
+    .flatMap((update) => [update.directory, ...(update.directories ?? [])])
+    .filter((directory) => typeof directory === 'string' && directory !== '')
 }
 
 /**
@@ -170,12 +75,8 @@ if (isMain(import.meta.url)) {
   exitIfNoFiles(files, 'Git のファイル')
   exitIfNoFiles(files.filter((file) => file === DEPENDABOT_FILE), 'Dependabot の設定')
   const actionDirectories = findActionDirectories(files)
-  const dependabot = readFileSync(DEPENDABOT_FILE, 'utf8')
-  const targets = readActionsDirectories(dependabot)
-  const problems = [
-    ...findUnknownActionLines(dependabot).map((entry) => describeUnknownActionLine(DEPENDABOT_FILE, entry)),
-    ...findUncoveredActions(actionDirectories, targets),
-  ]
+  const targets = readActionsDirectories(readFileSync(DEPENDABOT_FILE, 'utf8'))
+  const problems = findUncoveredActions(actionDirectories, targets)
   if (targets.length === 0) {
     problems.push(`${DEPENDABOT_FILE} に github-actions の対象がない`)
   }

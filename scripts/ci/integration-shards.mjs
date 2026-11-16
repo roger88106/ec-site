@@ -1,53 +1,44 @@
 // 統合テストを分ける数が、手元の既定と CI で一致していることを確認する。
-// 手元の既定：`backend/ecsite/build.gradle.kts` の `integrationTestShardCount` の `.orElse(N)`（`integrationTestShards` が各側のクラスを示すときの数）。
-// CI：`.github/workflows/ci.yml` の統合テストの job の matrix の `shard` の一覧の数（総数は `strategy.job-total` で読むので、一覧の数が正）。
-// ずれると、手元で見る分け方（./gradlew integrationTestShards）と、CI が実際に分ける分け方が変わる。
-// `shard` の一覧は、`[1, 2]` の形か、`- 1` の行の並びだけを読む。ほかの書き方（式、空の一覧、複数の定義）と、数でない `.orElse` は、読み飛ばさず失敗にする。
-// 失敗したとき：分ける数を、ci.yml の `shard` の一覧と `.orElse(N)` で合わせる。
+// ずれると、手元で見る分け方（./gradlew integrationTestShards）と、CI が実際に分ける分け方が変わるため。
+//
+// 手元の既定は、build.gradle.kts の integrationTestShardCount の `.orElse(N)`。
+// CI は、ci.yml の統合テストの job の matrix の shard の一覧の数（総数は strategy.job-total で読むので、一覧の数が正）。
+// shard の一覧が数の一覧でないとき（式、空の一覧、複数の job）と、`.orElse` が数でないときも失敗にする。
+//
+// 失敗したとき：分ける数を、ci.yml の shard の一覧と `.orElse(N)` で合わせる。
 // 除外：なし
 // 使い方：node scripts/ci/integration-shards.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { load } from 'js-yaml'
 import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 const CI_FILE = '.github/workflows/ci.yml'
 const GRADLE_FILE = 'backend/ecsite/build.gradle.kts'
 
-/** @typedef {{ count: number, line: number, text: string } | { reason: string, line?: number, text?: string }} ShardCount */
-
 /**
- * ci.yml の matrix の `shard` の一覧の数を読む。
+ * ci.yml の matrix の shard の一覧の数を読む。
  *
  * @param {string} text ci.yml の内容
- * @returns {ShardCount} 数と行。読めないときは理由（読めない行が分かるときは、その行も）
+ * @returns {{ count: number, job: string } | { reason: string }} 数と job の名前。読めないときは理由
  */
 export function readCiShardCount(text) {
-  const lines = text.split('\n').map((raw) => raw.replace(/\r$/, ''))
-  const keys = lines.map((line, index) => ({ line, index })).filter(({ line }) => /^\s*shard\s*:/.test(line))
-  if (keys.length === 0) return { reason: 'matrix の shard の一覧が見つからない' }
-  if (keys.length > 1) return { reason: 'shard の一覧が複数ある（統合テストの job の matrix の 1 か所だけに書く）', line: keys[1].index + 1, text: keys[1].line }
-  const { line, index } = keys[0]
-  const unreadable = (reason) => ({ reason, line: index + 1, text: line })
-  const value = line.replace(/^\s*shard\s*:/, '').replace(/\s+#.*$/, '').trim()
-  if (value === '') {
-    const indent = line.match(/^\s*/)[0].length
-    let count = 0
-    for (const next of lines.slice(index + 1)) {
-      if (/^\s*(#.*)?$/.test(next)) continue
-      if (next.match(/^\s*/)[0].length < indent || !/^\s*-\s+\d+\s*(#.*)?$/.test(next)) break
-      count += 1
-    }
-    return count > 0 ? { count, line: index + 1, text: line } : unreadable('読めない書き方（数の並びの `- 1` の行にする）')
+  const jobs = Object.entries(load(text)?.jobs ?? {}).filter(([, job]) => job?.strategy?.matrix?.shard !== undefined)
+  if (jobs.length === 0) return { reason: 'matrix の shard の一覧が見つからない' }
+  if (jobs.length > 1) return { reason: `shard の一覧が複数の job（${jobs.map(([name]) => name).join('、')}）にある（統合テストの job の 1 か所だけに書く）` }
+  const [job, { strategy }] = jobs[0]
+  const shards = strategy.matrix.shard
+  if (!Array.isArray(shards) || shards.length === 0 || !shards.every(Number.isInteger)) {
+    return { reason: `${job} の shard を読めない（[1, 2] のような数の一覧で書く）：${JSON.stringify(shards)}` }
   }
-  if (!/^\[\s*\d+(?:\s*,\s*\d+)*\s*,?\s*\]$/.test(value)) return unreadable('読めない書き方（[1, 2] の形か、`- 1` の行の並びだけを読む）')
-  return { count: value.slice(1, -1).split(',').filter((item) => item.trim() !== '').length, line: index + 1, text: line }
+  return { count: shards.length, job }
 }
 
 /**
  * build.gradle.kts の `integrationTestShardCount` の既定の数を読む。
  *
  * @param {string} text build.gradle.kts の内容
- * @returns {ShardCount} 数と行。読めないときは理由
+ * @returns {{ count: number, line: number } | { reason: string, line?: number, text?: string }} 数と行。読めないときは理由（読めない行が分かるときは、その行も）
  */
 export function readGradleShardCount(text) {
   const lines = text.split('\n').map((raw) => raw.replace(/\r$/, ''))
@@ -56,7 +47,7 @@ export function readGradleShardCount(text) {
   const line = lines[index]
   const value = /\.orElse\(\s*(\d+)\s*\)/.exec(line)?.[1]
   if (value === undefined) return { reason: '読めない書き方（.orElse(N) の N は数だけを読む）', line: index + 1, text: line }
-  return { count: Number(value), line: index + 1, text: line }
+  return { count: Number(value), line: index + 1 }
 }
 
 /**
@@ -64,22 +55,19 @@ export function readGradleShardCount(text) {
  *
  * @param {string} ciText ci.yml の内容
  * @param {string} gradleText build.gradle.kts の内容
- * @returns {string[]} 問題の説明（読めない行は `ファイル:行 内容（理由）`。なければ空）
+ * @returns {string[]} 問題の説明（なければ空）
  */
 export function findShardCountProblems(ciText, gradleText) {
-  const sources = [
-    { file: CI_FILE, result: readCiShardCount(ciText) },
-    { file: GRADLE_FILE, result: readGradleShardCount(gradleText) },
-  ]
+  const ci = readCiShardCount(ciText)
+  const gradle = readGradleShardCount(gradleText)
   const problems = []
-  for (const { file, result } of sources) {
-    if ('count' in result) continue
-    problems.push(result.line === undefined ? `${file}：${result.reason}` : describeUnreadableLine({ file, line: result.line, text: result.text, reason: result.reason }))
+  if ('reason' in ci) problems.push(`${CI_FILE}：${ci.reason}`)
+  if ('reason' in gradle) {
+    problems.push(gradle.line === undefined ? `${GRADLE_FILE}：${gradle.reason}` : describeUnreadableLine({ file: GRADLE_FILE, line: gradle.line, text: gradle.text, reason: gradle.reason }))
   }
-  const [ci, gradle] = sources.map(({ result }) => result)
   if ('count' in ci && 'count' in gradle && ci.count !== gradle.count) {
     problems.push(
-      `統合テストを分ける数が違う：${CI_FILE} の shard の一覧は ${ci.count}（${ci.line} 行）、${GRADLE_FILE} の integrationTestShardCount の既定は ${gradle.count}（${gradle.line} 行）。どちらかに合わせる`,
+      `統合テストを分ける数が違う：${CI_FILE} の ${ci.job} の shard の一覧は ${ci.count}、${GRADLE_FILE} の integrationTestShardCount の既定は ${gradle.count}（${gradle.line} 行）。どちらかに合わせる`,
     )
   }
   return problems

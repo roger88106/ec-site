@@ -1,19 +1,19 @@
 // 実行環境（JDK と Node）のバージョンが、複数の置き場所で一致していることを確認する。
-// JDK：`.github/workflows/ci.yml` の `env.JAVA_VERSION` と `backend/ecsite/gradle/libs.versions.toml` の `java` が同じ値。
-// Node：`.node-version` の値が、ルートの `package.json` の `engines.node`（`>=N` の形だけを扱う）の範囲を満たす。
-// workflow と action の yml は、バージョンを直接書かず、この置き場所を参照する。
-//   - java-version は env.JAVA_VERSION を参照する
-//   - Node は node-version-file: .node-version の形で参照する
-//   この形でなければ失敗にする。新しい job に直接書いたバージョンを見つける。フロー形式の `with: { ... }` も読む。yml が 1 件もなければ失敗にする。
-// `JAVA_VERSION` は `ci.yml` の最上位の `env` の 1 か所だけで定義する（job の `env` や別のファイルでの上書きを失敗にする）。
-// 3 つの package.json（管理画面、店舗画面、共有）の dependencies と devDependencies にある React の指定は、書き方をそろえる。
-//   対象は `react`、`react-dom`、`@types/react`、`@types/react-dom`。全て `^1.2.3` の範囲の書き方にする。
+// 1 か所から読めないバージョンがずれると、手元と CI で別のバージョンを動かすため。
+//
+// JDK は、ci.yml の env.JAVA_VERSION と libs.versions.toml の java が同じ値。JAVA_VERSION は ci.yml の最上位の env の 1 か所だけで定義する。
+// Node は、.node-version の値が、ルートの package.json の engines.node（`>=N` の形だけを扱う）の範囲を満たす。
+// workflow と action の yml は、java-version に ${{ env.JAVA_VERSION }}、Node に node-version-file: .node-version を書き、バージョンを直接書かない。
+//
+// 3 つの package.json（管理画面、店舗画面、共有）の dependencies と devDependencies の React の指定は、全て `^1.2.3` の範囲の書き方にそろえる。
 // peerDependencies は使う側に許す範囲を書くので対象にしない。
-// 1 か所から読めないバージョンは、置き場所の間の一致を検査で確認する。ずれると、手元と CI で別のバージョンを動かす。
-// 失敗したとき：置き場所のバージョンをそろえる。新しい job は、バージョンを直接書かずこの形で参照する。Node のバージョンを上げるときは .node-version と engines.node を合わせる。
-// 除外：なし。
+//
+// 失敗したとき：置き場所のバージョンをそろえる。Node のバージョンを上げるときは .node-version と engines.node を合わせる。
+// 除外：なし
 // 使い方：node scripts/ci/runtime-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { load } from 'js-yaml'
+import { parse } from 'smol-toml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
@@ -31,7 +31,8 @@ const PACKAGE_JSON_FILE = 'package.json'
  * @returns {string | undefined} バージョン。なければ undefined
  */
 export function readJavaFromWorkflow(text) {
-  return /^\s*JAVA_VERSION:\s*["']?([0-9][0-9.]*)["']?/m.exec(text)?.[1]
+  const value = load(text)?.env?.JAVA_VERSION
+  return value === undefined ? undefined : String(value)
 }
 
 /**
@@ -41,7 +42,8 @@ export function readJavaFromWorkflow(text) {
  * @returns {string | undefined} バージョン。なければ undefined
  */
 export function readJavaFromToml(text) {
-  return /^java\s*=\s*"([^"]+)"/m.exec(text)?.[1]
+  const value = parse(text).versions?.java
+  return typeof value === 'string' ? value : undefined
 }
 
 /**
@@ -110,38 +112,41 @@ const ALLOWED_VERSION_INPUTS = {
   'java-version-file': undefined,
 }
 
-/** バージョンを指定する入力の名前 */
-const VERSION_INPUT_NAME = '(java-version|node-version-file|node-version|java-version-file)'
-
-/** ブロック形式の行（`java-version: 21`、`- java-version: 21`）。値は行の終わりまで */
-const BLOCK_VERSION_INPUT = new RegExp(`^\\s*(?:-\\s+)?${VERSION_INPUT_NAME}\\s*:\\s*(.*)$`)
-
-/** フロー形式の中のキー（`with: { node-version: 20 }`）。値は次の , か } まで（引用符と `${{ ... }}` の中は区切りにしない） */
-const FLOW_VERSION_INPUT = new RegExp(`[{,]\\s*${VERSION_INPUT_NAME}\\s*:\\s*((?:'[^']*'|"[^"]*"|\\$\\{\\{[^}]*\\}\\}|[^,}])*)`, 'g')
+/**
+ * YAML を読んだ値の全ての対応表のキーを、場所（`jobs.a.steps[0].with` の形）とともにたどる。
+ *
+ * @param {unknown} node 読んだ値
+ * @param {(key: string, value: unknown, where: string) => void} visit キーごとに呼ぶ処理。where はキーを持つ対応表の場所（最上位は空）
+ * @param {string} [where] node の場所
+ */
+function walkKeys(node, visit, where = '') {
+  if (Array.isArray(node)) {
+    node.forEach((item, index) => walkKeys(item, visit, `${where}[${index}]`))
+  } else if (node !== null && typeof node === 'object') {
+    for (const [key, value] of Object.entries(node)) {
+      visit(key, value, where)
+      walkKeys(value, visit, where === '' ? key : `${where}.${key}`)
+    }
+  }
+}
 
 /**
- * workflow と action の yml の、バージョンの指定が決めた 1 か所を参照しているかを調べる。
- * ブロック形式の行と、フロー形式（`with: { ... }`）の中のキーを読む。
- * 値は、前後の引用符と行末のコメントを外して比べる。`node-version` と `java-version-file` は許す値がないので、常に失敗にする。
+ * workflow と action の yml の、バージョンの指定が決めた 1 か所を参照しているかを調べる。<br />
+ * `node-version` と `java-version-file` は許す値がないので、常に失敗にする。
  *
  * @param {{ path: string, text: string }[]} files yml のパスと内容
- * @returns {string[]} 問題の説明（`パス:行` つき。なければ空）
+ * @returns {string[]} 問題の説明（ファイルと場所つき。なければ空）
  */
 export function findVersionLiteralProblems(files) {
   const problems = []
   for (const { path, text } of files) {
-    text.split('\n').forEach((raw, index) => {
-      const line = raw.replace(/\r$/, '')
-      if (/^\s*#/.test(line)) return
-      const block = BLOCK_VERSION_INPUT.exec(line)
-      const found = block ? [block] : [...line.replace(/\s+#.*$/, '').matchAll(FLOW_VERSION_INPUT)]
-      for (const [, name, rawValue] of found) {
-        const value = rawValue.replace(/\s+#.*$/, '').trim().replace(/^(["'])(.*)\1$/, '$2')
-        const expected = ALLOWED_VERSION_INPUTS[name]
-        if (value !== expected) {
-          const hint = expected === undefined ? 'この入力は使わない（Node は node-version-file: .node-version）' : `${expected} と書く`
-          problems.push(`${path}:${index + 1}: ${name} に ${value} を直接書いている。${hint}`)
-        }
+    walkKeys(load(text), (key, value, where) => {
+      if (!Object.hasOwn(ALLOWED_VERSION_INPUTS, key)) return
+      const expected = ALLOWED_VERSION_INPUTS[key]
+      const written = typeof value === 'string' ? value : JSON.stringify(value)
+      if (written !== expected) {
+        const hint = expected === undefined ? 'この入力は使わない（Node は node-version-file: .node-version）' : `${expected} と書く`
+        problems.push(`${path} の ${where}：${key} に ${written} を直接書いている。${hint}`)
       }
     })
   }
@@ -152,31 +157,18 @@ export function findVersionLiteralProblems(files) {
 const JAVA_VERSION_HOME = '.github/workflows/ci.yml'
 
 /**
- * `JAVA_VERSION` の定義が、`ci.yml` の最上位の `env` の 1 か所だけにあるかを調べる。
- * job や step の `env`（ブロック形式とフロー形式）や、別のファイルで定義すると、そこで別のバージョンを使えてしまうので失敗にする。
- * 参照（`${{ env.JAVA_VERSION }}`）とコメントは定義と読まない。
+ * `JAVA_VERSION` の定義が、`ci.yml` の最上位の `env` の 1 か所だけにあるかを調べる。<br />
+ * job や step の `env` や、別のファイルで定義すると、そこで別のバージョンを使えてしまうので失敗にする。
  *
  * @param {{ path: string, text: string }[]} files yml のパスと内容
- * @returns {string[]} 問題の説明（`パス:行` つき。なければ空）
+ * @returns {string[]} 問題の説明（ファイルと場所つき。なければ空）
  */
 export function findJavaVersionDefinitionProblems(files) {
   const problems = []
-  let allowed = 0
   for (const { path, text } of files) {
-    let topKey = null
-    text.split('\n').forEach((raw, index) => {
-      const line = raw.replace(/\r$/, '')
-      if (/^\s*(#|$)/.test(line)) return
-      // 字下げのない行は最上位のキー（引用符で囲んだものも）。キーと読めない行（? jobs など）は null にして、前の env を引きずらない
-      if (/^\S/.test(line)) topKey = /^(?:"([^"]*)"|'([^']*)'|([\w-]+))\s*:/.exec(line)?.slice(1).find(Boolean) ?? null
-      const code = line.replace(/\s+#.*$/, '')
-      if (!/(?:^\s*(?:-\s+)?|[{,]\s*)JAVA_VERSION\s*:/.test(code)) return
-      const inTopEnv = path === JAVA_VERSION_HOME && topKey === 'env' && /^\s+JAVA_VERSION\s*:/.test(code)
-      if (inTopEnv && allowed === 0) {
-        allowed += 1
-        return
-      }
-      problems.push(`${path}:${index + 1}: JAVA_VERSION を定義している。${JAVA_VERSION_HOME} の最上位の env の 1 か所だけに書き、他は \${{ env.JAVA_VERSION }} で参照する`)
+    walkKeys(load(text), (key, _value, where) => {
+      if (key !== 'JAVA_VERSION' || (path === JAVA_VERSION_HOME && where === 'env')) return
+      problems.push(`${path} の ${where}：JAVA_VERSION を定義している。${JAVA_VERSION_HOME} の最上位の env の 1 か所だけに書き、他は \${{ env.JAVA_VERSION }} で参照する`)
     })
   }
   return problems

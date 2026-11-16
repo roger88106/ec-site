@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.carrier;
 
+import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTestData;
@@ -7,6 +8,7 @@ import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
+import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,6 +19,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -32,6 +36,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -45,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */
 @IntegrationTest
+@RecordApplicationEvents
 class CarrierWebhookTest {
 
     // ============================== 定数 ==============================
@@ -74,6 +80,12 @@ class CarrierWebhookTest {
 
     @Autowired
     MutableClock clock;
+
+    /**
+     * 発行されたイベント
+     */
+    @Autowired
+    ApplicationEvents events;
 
     /**
      * 通知の署名の鍵（統合テストの設定）
@@ -185,6 +197,24 @@ class CarrierWebhookTest {
         }
 
         @Test
+        @DisplayName("AC-176 同じ出荷へ配達中と配達完了の通知が同時に届いても、順位の高い配達完了が残る")
+        void keepsHigherStatusWhenNotifiedConcurrently() throws Exception {
+            // 準備：出荷済みの出荷と、配達中・配達完了の通知
+            var shipment = shipped();
+            var notifications = List.of(
+                    signed(body("YAMATO", shipment.trackingNumber(), "配達中")),
+                    signed(body("YAMATO", shipment.trackingNumber(), "配達完了")));
+
+            // 操作：2 つの通知を同時に送る
+            var statuses = Concurrently.run(notifications.size(),
+                    i -> send(notifications.get(i)).andReturn().getResponse().getStatus());
+
+            // 確認：どちらも受け付け、配達完了で終わる
+            assertThat(statuses).containsOnly(200);
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.DELIVERED);
+        }
+
+        @Test
         @DisplayName("AC-177 途中の通知が届かなくても、出荷済みから配達完了へ進む")
         void skipsToDelivered() throws Exception {
             // 準備：出荷済みの出荷
@@ -208,6 +238,33 @@ class CarrierWebhookTest {
 
             // 確認：返送になる
             assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.RETURNED);
+        }
+    }
+
+    @Nested
+    @DisplayName("同じ送り状番号の複数の出荷")
+    class SharedTrackingNumber {
+
+        @Test
+        @DisplayName("AC-174 同じ配送業者・送り状番号の出荷が 2 つあれば、1 回の通知で両方が進み、注文ごとに配送状態の変化のイベントが出る")
+        void advancesAllShipmentsWithSameTrackingNumber() throws Exception {
+            // 準備：同じ送り状番号の、別の注文の出荷を 2 つ
+            var first = shipped();
+            var second = new Created(UUID.randomUUID(), first.trackingNumber());
+            shippingApi.create(second.orderId(), ShipmentSummary.Carrier.YAMATO, second.trackingNumber(), NOW);
+
+            // 操作：配達中を 1 回送る
+            sendStatus(first, "配達中").andExpect(status().isOk());
+
+            // 確認：両方が配送中になり、注文ごとに出荷済みから配送中へのイベントが 1 件ずつ
+            assertThat(statusOf(first)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+            assertThat(statusOf(second)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+            assertThat(events.stream(DeliveryStatusChanged.class)
+                    .filter(event -> event.to() == DeliveryStatusChanged.Status.IN_TRANSIT))
+                    .extracting(DeliveryStatusChanged::orderId, DeliveryStatusChanged::from)
+                    .containsExactlyInAnyOrder(
+                            tuple(first.orderId(), DeliveryStatusChanged.Status.SHIPPED),
+                            tuple(second.orderId(), DeliveryStatusChanged.Status.SHIPPED));
         }
     }
 
@@ -287,6 +344,21 @@ class CarrierWebhookTest {
 
             // 確認：出荷済みのまま
             assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"ABC", "１２３４５６７８９０１２", "1234/5678"})
+        @DisplayName("AC-178 送り状番号の形に合わない（英字・全角・記号）通知は、200 で何も変えない")
+        void ignoresMalformedTrackingNumber(String trackingNumber) throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作と確認：形に合わない番号の通知は 200
+            send(signed(body("YAMATO", trackingNumber, "配達完了"))).andExpect(status().isOk());
+
+            // 確認：出荷済みのまま、配送状態の変化のイベントも出ない
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+            assertThat(events.stream(DeliveryStatusChanged.class)).noneMatch(event -> event.to() == DeliveryStatusChanged.Status.DELIVERED);
         }
 
         @Test

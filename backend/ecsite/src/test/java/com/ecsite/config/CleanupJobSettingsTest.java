@@ -10,12 +10,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 片付けのジョブの設定と分散ロックの単体テスト
@@ -145,6 +147,43 @@ class CleanupJobSettingsTest {
             // 確認：渡した値になる
             assertThat(properties.interval()).isEqualTo(OVERRIDDEN_INTERVAL);
             assertThat(properties.retention()).isEqualTo(OVERRIDDEN_RETENTION);
+        }
+    }
+
+    @Nested
+    @DisplayName("1 回に消す件数の下限")
+    class BatchSizeMinimum {
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("1 回に消す件数が下限の 1 なら、検証を通り、1 件になる")
+        void acceptsBatchSizeAtMinimum(String prefix, String propertiesClass) throws Exception {
+            // 準備：設定の型
+            var type = Class.forName(propertiesClass);
+
+            // 操作：1 件を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(prefix, type, Map.of("batch-size", "1"));
+
+            // 確認：1 件
+            assertThat(properties).extracting("batchSize").isEqualTo(1);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("1 回に消す件数が下限より 1 小さい 0 なら、値の検証で拒否される")
+        void rejectsBatchSizeBelowMinimum(String prefix, String propertiesClass) throws Exception {
+            // 準備：設定の型
+            var type = Class.forName(propertiesClass);
+
+            // 操作と確認：0 件は拒否される
+            assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("batch-size", "0")))
+                    .isInstanceOf(BindException.class);
         }
     }
 

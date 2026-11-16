@@ -68,6 +68,12 @@ describe('文書の参照の検査', () => {
     assert.match(problems[0], /^見出しがない/)
     assert.match(problems[1], /^ファイルがない/)
   })
+
+  test('title の付いたリンクも、先のファイルを確認する', () => {
+    const problems = check('docs/dev/setup.md', '[c](../process/none.md "説明")')
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /^ファイルがない/)
+  })
 })
 
 /**

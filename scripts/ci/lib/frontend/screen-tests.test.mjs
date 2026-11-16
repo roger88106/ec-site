@@ -46,6 +46,26 @@ describe('テストの書き方の検査', () => {
     assert.deepEqual(lines(findIndexedMultiples("const [a, b] =\n  within(x).getAllByRole('row')")), [2])
   })
 
+  test('オブジェクトの分割代入で番号のキーを取り出す形（const { 0: first }）を見つける', () => {
+    assert.deepEqual(lines(findIndexedMultiples("const { 0: first } = screen.getAllByRole('row')")), [1])
+  })
+
+  test('?. と ! を挟んだインデックスも見つける', () => {
+    const text = ["screen.getAllByRole('row')?.[0]", "const rows = screen.getAllByRole('row')", 'rows?.[1]', 'rows![2]'].join('\n')
+    assert.deepEqual(lines(findIndexedMultiples(text)), [1, 3, 4])
+  })
+
+  test('括弧が閉じない呼び出しは、読み飛ばす', () => {
+    assert.deepEqual(lines(findIndexedMultiples("screen.getAllByRole('row'\n[0]")), [])
+  })
+
+  test('変数の名前と = は、呼び出しから遡って 600 字の中にあるときだけ見る', () => {
+    // 'const rows =' の後に空白を挟み、'rows' の先頭が呼び出しの 600 字前に入るか、1 字はみ出すかで分ける
+    const source = (pad) => [`const rows =${' '.repeat(pad)}screen.getAllByRole('row')`, 'rows[0]'].join('\n')
+    assert.deepEqual(lines(findIndexedMultiples(source(587))), [2])
+    assert.deepEqual(lines(findIndexedMultiples(source(588))), [])
+  })
+
   test('変数に入れる前に変換するもの、関数の引数に渡すものは見つけない', () => {
     const text = [
       "const names = screen.getAllByRole('row').map((row) => row)",

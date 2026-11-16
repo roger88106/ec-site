@@ -39,6 +39,15 @@ describe('コメントの除去', () => {
     assert.equal(stripComments('x = /* c */ /a\\/\\/b/.test(a) // 後ろ', { keepRegex: true }).includes('後ろ'), false)
   })
 
+  test('blankStrings を指定すると、文字列とテンプレートの文字の部分も空白にし、${...} の中のコードは残す', () => {
+    const text = "f('a', \"b\", `c${d}e`) // 注"
+    assert.equal(stripComments(text, { blankStrings: true }), `f(   ,    , ${' '.repeat(4)}d${' '.repeat(3)}) ${' '.repeat(4)}`)
+  })
+
+  test('CRLF の改行は、コメントを空白にしても \\r を残す', () => {
+    assert.equal(stripComments('a // 注\r\nb /* x\r\ny */ c'), 'a     \r\nb     \r\n     c')
+  })
+
   test('keepRegex でも、正規表現の中の // をコメントにしない', () => {
     const text = 'const a = /\\/\\//.test(x) // 後ろ'
     assert.equal(stripComments(text, { keepRegex: true }).includes('後ろ'), false)

@@ -14,9 +14,9 @@ export function isShallowRepository(cwd = process.cwd()) {
   return execFileSync('git', ['rev-parse', '--is-shallow-repository'], { cwd, encoding: 'utf8' }).trim() === 'true'
 }
 
-/** shallow clone なら、失敗の文を出して終了コード 1 で終わる。 */
+/** shallow clone なら、失敗の文を出して終了コード 2（環境の誤り）で終わる。 */
 export function exitIfShallow() {
   if (!isShallowRepository()) return
   console.log(SHALLOW_CLONE_MESSAGE)
-  process.exit(1)
+  process.exit(2)
 }

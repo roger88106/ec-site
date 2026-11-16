@@ -9,6 +9,9 @@
  */
 const BEFORE_REGEX_CHARS = '(,=:[!&|?{;'
 
+/** Java と Kotlin の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */
+export const JAVA_SCAN = Object.freeze({ regex: false, templates: false, textBlocks: true })
+
 /** 正規表現のリテラルの前に来る語 */
 const BEFORE_REGEX_WORD = /\b(?:return|typeof|case|in|of|delete|void|throw|new|instanceof|yield|await)$/
 
@@ -19,12 +22,14 @@ const REGEX_LOOKBEHIND = 200
  * ここまでのコードの後の / が、正規表現のリテラルの始まりかを返す。
  *
  * 直前の意味のある字（空白と改行を飛ばす）で決める。行頭の / も、前の行の終わりが識別子や ) なら割り算と読む（式を改行して演算子を行頭に置く書き方）。
- * 簡易の判定のため、if (a) の後の行頭の正規表現は割り算と読む
+ * 簡易の判定のため、if (a) の後の行頭の正規表現は割り算と読む。
+ * 呼ぶ側は / の前の REGEX_LOOKBEHIND 字だけを渡すので、その範囲が空白とコメントだけなら、ソースの始まりと同じく正規表現と読む
+ * （割られる数の後に、この字数より長いコメントを挟んで、行頭に / を置いた割り算など）。
  *
  * @param {string} before ここまでのコード（コメントは空白にしたもの。呼ぶ側が置き換えて渡す）
  * @returns {boolean} ソースの始まりか、式の始まりになる記号・語の後か、改行を挟んだ } の後なら true（それ以外は割り算）
  */
-export function startsRegex(before) {
+function startsRegex(before) {
   const trimmed = before.replace(/\s+$/, '')
   const last = trimmed.at(-1)
   if (last === undefined || BEFORE_REGEX_CHARS.includes(last) || BEFORE_REGEX_WORD.test(trimmed)) return true
@@ -38,7 +43,7 @@ export function startsRegex(before) {
  * @param {number} start 始まりの / の位置
  * @returns {number} フラグの次の位置（行の終わりまでに閉じなければ、行の終わり）
  */
-export function regexEnd(text, start) {
+function regexEnd(text, start) {
   let index = start + 1
   let inClass = false
   while (index < text.length && text[index] !== '\n') {

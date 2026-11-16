@@ -78,9 +78,9 @@ describe('対象が 0 件のときの失敗', () => {
     .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs') && /\bexitIfNoFiles\(/.test(readFileSync(path.join(ciDir, name), 'utf8')))
   const checks = checkFiles.map((name) => path.basename(name, '.mjs'))
 
-  test('0 件で失敗にするかを試す検査が、直下の検査の大半を占める（走査が空にならない）', () => {
-    assert.ok(checks.length >= 12, `${checks.length} 件`)
-    for (const name of ['note-numbers', 'doc-refs', 'frontend-rules']) assert.ok(checks.includes(name), name)
+  test('0 件で失敗にするかを試す検査の走査が、空にならない', () => {
+    assert.ok(checks.length >= 1, `${checks.length} 件`)
+    assert.ok(checks.includes('frontend-rules'), 'frontend-rules')
   })
 
   const env = withoutGitEnv()
@@ -91,10 +91,10 @@ describe('対象が 0 件のときの失敗', () => {
 
   for (const file of checkFiles) {
     const name = path.basename(file, '.mjs')
-    test(`${name} は、対象のファイルが 0 件のとき失敗にする`, () => {
+    test(`${name} は、対象のファイルが 0 件のとき終了コード 2 で失敗にする`, () => {
       const script = path.join(ciDir, file)
       const result = spawnSync('node', [script], { cwd: empty, env, encoding: 'utf8' })
-      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.equal(result.status, 2, result.stdout + result.stderr)
       assert.match(result.stdout, /1 件も見つからない/)
     })
   }

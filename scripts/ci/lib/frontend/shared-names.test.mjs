@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 import { duplicatedFiles, findDefinitions, findExportedNames, sharedPublicNames } from './shared-names.mjs'
 
 describe('店舗画面と管理画面の同じ内容のファイル', () => {
-  test('店舗画面と管理画面で、同じ相対パスに同じ内容のファイルを見つける。除外の一覧のパスは見ない', () => {
+  test('店舗画面と管理画面で、同じ相対パスに同じ内容のファイルを、名前の順に見つける', () => {
     const files = {
       'frontend/store/src/lib/utils.ts': 'export const cn = shared',
       'frontend/admin/src/lib/utils.ts': 'export const cn = shared',
@@ -13,18 +13,7 @@ describe('店舗画面と管理画面の同じ内容のファイル', () => {
       'frontend/admin/src/lib/date.ts': 'admin',
       'frontend/store/src/lib/only-store.ts': 'x',
     }
-    const read = (file) => files[file]
-    assert.deepEqual(duplicatedFiles(Object.keys(files), read, ['lib/utils.ts']), ['lib/price.ts'])
-  })
-
-  test('除外を外した同じ内容のファイルの一覧に、除外がまだ必要なファイルが出る', () => {
-    const files = {
-      'frontend/store/src/lib/utils.ts': 'same',
-      'frontend/admin/src/lib/utils.ts': 'same',
-      'frontend/store/src/lib/price.ts': 'store',
-      'frontend/admin/src/lib/price.ts': 'admin',
-    }
-    assert.deepEqual(duplicatedFiles(Object.keys(files), (file) => files[file], []), ['lib/utils.ts'])
+    assert.deepEqual(duplicatedFiles(Object.keys(files), (file) => files[file]), ['lib/price.ts', 'lib/utils.ts'])
   })
 })
 

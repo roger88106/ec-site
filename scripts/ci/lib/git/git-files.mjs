@@ -5,6 +5,7 @@
 //
 // 手元と CI の違い：CI の作業ツリーには追跡していないファイルがない。手元にだけある commit しないファイルで、手元だけ失敗することがある（.gitignore に書くか /.local/ に置いて避ける）。
 // commit し忘れたファイルを指す参照は、手元で通り CI で失敗することがある。
+//
 // Git の一覧を読む検査は、対象が 0 件のとき失敗にする（exitIfNoFiles。文は emptyListReason）。
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -32,7 +33,7 @@ export function listGitFiles(pathspecs = [], cwd = process.cwd()) {
 }
 
 /**
- * 追跡していない、無視されないファイルの一覧を返す（差分に出ない新しいファイルを、全ての行を追加行として見る検査が使う。ja-text の --changed）。
+ * 追跡していない、無視されないファイルの一覧を返す。git diff に出ない新しいファイルである。
  *
  * @param {string[]} [pathspecs] 探すパス。なければリポジトリの全体
  * @param {string} [cwd] 実行する場所（リポジトリの中）。なければ今のディレクトリ
@@ -67,7 +68,7 @@ export function emptyListReason(files, label) {
 }
 
 /**
- * 対象のファイルが 0 件なら、理由を出して終了コード 1 で終わる。
+ * 対象のファイルが 0 件なら、理由を出して終了コード 2（環境の誤り）で終わる。
  *
  * @param {string[]} files 検査の対象のファイル
  * @param {string} label 対象の呼び名
@@ -76,5 +77,5 @@ export function exitIfNoFiles(files, label) {
   const reason = emptyListReason(files, label)
   if (!reason) return
   console.log(reason)
-  process.exit(1)
+  process.exit(2)
 }

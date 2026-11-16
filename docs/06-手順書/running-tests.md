@@ -127,7 +127,8 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 | domain の mutation score | `backend/ecsite/build.gradle.kts` の `pitest` の `mutationThreshold` | `./gradlew pitest` |
 | 管理画面、店舗画面、共有のパッケージ | 各ディレクトリの `vite.config.ts`・`vitest.config.ts` の `coverage.thresholds` | `pnpm test` |
 
-- 基準は、決めたときの値を整数に切り捨て、さらに 1 下げた値にしている。理由：書き方の変更（引数の null の検査など）や、統合テストの同時実行の競合でだけ実行される分岐のばらつき（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）で止めないため。
+- 基準は、決めたときの CI の値を整数に切り捨て、さらに 1 下げた値にしている。理由：書き方の変更（引数の null の検査など）や、統合テストの同時実行の競合でだけ実行される分岐のばらつき（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）で止めないため。
+- CI の値が基準より 2 以上高くなったら、同じ決め方で基準を上げる（自動では上がらない）。
 - `scripts/ci/report/coverage-summary.mjs` が、合計と低い箇所の一覧を job の summary に書く（失敗にしない）。
 
 ### CI での手順の位置

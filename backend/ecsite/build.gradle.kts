@@ -429,8 +429,8 @@ pitest {
     threads = 4
     outputFormats = listOf("HTML", "XML")
     timestampedReports = false
-    // mutation score（%）が下回ると失敗する。今の値（91.02%）を整数に切り捨てて、さらに 1 下げた値
-    mutationThreshold = 90
+    // mutation score（%）が下回ると失敗する。CI の値（94.66%。656 件中 621 件を検出）を整数に切り捨てて、さらに 1 下げた値
+    mutationThreshold = 93
 }
 
 // jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）

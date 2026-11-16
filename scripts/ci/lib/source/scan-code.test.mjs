@@ -55,6 +55,27 @@ describe('コード・コメント・文字列・正規表現の走査', () => {
     assert.equal(segments('x = <br />').some((s) => s.type === 'regex'), false)
   })
 
+  test('式の始まりになる語（return など）の後の / は正規表現と読み、語の一部（myreturn）の後は割り算と読む', () => {
+    assert.deepEqual(segments('return /a/.test(x)').filter((s) => s.type === 'regex').map((s) => s.text), ['/a/'])
+    assert.deepEqual(segments('typeof /a/').filter((s) => s.type === 'regex').map((s) => s.text), ['/a/'])
+    assert.equal(segments('myreturn / 2 / 3').some((s) => s.type === 'regex'), false)
+  })
+
+  test('行の終わりまでに閉じない正規表現は、行の終わりまでにする', () => {
+    assert.deepEqual(segments('x = /ab\nc'), [
+      { type: 'code', text: 'x = ' },
+      { type: 'regex', text: '/ab' },
+      { type: 'code', text: '\nc' },
+    ])
+  })
+
+  test('/ の前に遡る 200 字が空白とコメントだけなら、割り算の行頭の / も正規表現と読む（判定の限界）', () => {
+    // 割られる数 a の後のコメントの長さで、a が遡る範囲に入るか（割り算）、はみ出すか（正規表現）が分かれる
+    const source = (length) => `a\n/*${'c'.repeat(length)}*/\n/ 2 /`
+    assert.equal(segments(source(193)).some((s) => s.type === 'regex'), false)
+    assert.equal(segments(source(194)).some((s) => s.type === 'regex'), true)
+  })
+
   test('正規表現かの判定は、コメントを除いた直前のコードで決める（コメントの最後の字で決めない）', () => {
     // コメントの後の行頭の / は、前のコードで決める。コメントの最後の字が ( や , でも割り算
     const division = segments('const a = b // 割る(\n/ 2 + c')

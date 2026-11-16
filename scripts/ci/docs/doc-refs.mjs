@@ -23,7 +23,7 @@ import { basename, dirname, join, normalize } from 'node:path/posix'
 import { codeBlockLines } from '../lib/docs/code-block.mjs'
 import { maskCodeSpans } from '../lib/source/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
-import { documentIndex, headingKey, readHeadings, referenceName, resolveDocument } from '../lib/docs/doc-names.mjs'
+import { documentIndex, headingKey, readHeadingIndex, referenceName, resolveDocument } from '../lib/docs/doc-names.mjs'
 
 /**
  * 見ないファイル（当時の記録、直せないもの、この検査と ja-text のテストの例）。
@@ -229,7 +229,7 @@ function findReferences(file, text, names, basenames, exists = existsSync) {
  * 節の番号で参照したときの、失敗のメッセージを作る。指す先の文書に、その番号の見出しがあれば示す。
  *
  * @param {{ target: string | null, sections: string[], unknown?: boolean }} ref 節の番号の参照
- * @param {(file: string) => ReturnType<typeof readHeadings>} headingsOf 文書の見出しを返す関数
+ * @param {(file: string) => ReturnType<typeof readHeadingIndex>} headingsOf 文書の見出しを返す関数
  * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
  * @param {string} where 参照の場所（ファイル:行 参照の文字）
  * @returns {string} 失敗のメッセージ
@@ -261,7 +261,7 @@ function sectionNumberProblem(ref, headingsOf, exists, where) {
 export function checkReferences(files, read, exists) {
   const headings = new Map()
   const headingsOf = (file) => {
-    if (!headings.has(file)) headings.set(file, readHeadings(read(file)))
+    if (!headings.has(file)) headings.set(file, readHeadingIndex(read(file)))
     return headings.get(file)
   }
   const { names: sortedNames, basenames } = documentIndex(files, (file) => headingsOf(file).title)

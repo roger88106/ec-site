@@ -6,7 +6,7 @@
 // 直前の印（`` ` ``、「」」、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
 import { existsSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
-import { readHeadings as readStructureHeadings } from './doc-structure.mjs'
+import { readHeadings } from './doc-structure.mjs'
 
 /** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない）。docs/08-spec/ の見出しを指す参照で除く */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*\.|\d+(?:\.\d+)+)\s+/
@@ -51,7 +51,7 @@ export function headingKey(text) {
  *   - sections：節の番号から、番号を除いた見出しへの対応
  *   - headings：番号を除いた見出し。exact は比べる形、keys はそれと末尾の括弧の補足を除いた形、ancestors は親から順の上の見出しの keys
  */
-export function readHeadings(text) {
+export function readHeadingIndex(text) {
   const anchors = new Set()
   const sections = new Map()
   const headings = []
@@ -60,7 +60,7 @@ export function readHeadings(text) {
   const seen = {}
   let title = null
   // 見出しの読み方（ATX と Setext、コードブロックと HTML のコメントの外）は、spec-structure と同じ doc-structure の readHeadings
-  for (const { level, title: name } of readStructureHeadings(text.replace(/^﻿/, ''))) {
+  for (const { level, title: name } of readHeadings(text.replace(/^﻿/, ''))) {
     if (level === 1 && title === null) title = name.trim()
     let key = slug(name)
     if (seen[key] !== undefined) {

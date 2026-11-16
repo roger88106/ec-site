@@ -13,7 +13,7 @@
 //
 // 使い方：node scripts/ci/docs/note-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { documentIndex, readHeadings, resolveDocument } from '../lib/docs/doc-names.mjs'
+import { documentIndex, readHeadingIndex, resolveDocument } from '../lib/docs/doc-names.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
 import { codeBlockLines } from '../lib/docs/code-block.mjs'
 import { maskCodeSpans } from '../lib/source/code-span.mjs'
@@ -111,7 +111,7 @@ if (import.meta.main) {
     if (!texts.has(file)) texts.set(file, readFileSync(file, 'utf8'))
     return texts.get(file)
   }
-  const { names, basenames } = documentIndex(allFiles, (file) => readHeadings(read(file)).title)
+  const { names, basenames } = documentIndex(allFiles, (file) => readHeadingIndex(read(file)).title)
   let count = 0
   for (const file of files) {
     for (const problem of findNoteProblems(read(file), names, file, basenames)) {

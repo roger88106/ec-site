@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { readHeadings, referenceName, slug } from './doc-names.mjs'
+import { readHeadingIndex, referenceName, slug } from './doc-names.mjs'
 
 describe('文書の名前と見出しの読み取り', () => {
   test('見出しの slug は GitHub と同じ作り方（記号を除き、空白をハイフンに）', () => {
@@ -9,19 +9,19 @@ describe('文書の名前と見出しの読み取り', () => {
   })
 
   test('節の番号は見出しの先頭から取り、コードブロックの中は見ない', () => {
-    const { title, sections } = readHeadings('# 開発の進め方\n## 1. SDD\n### 1.4 spec と plan の書き方\n```\n## 9. コードの中\n```\n')
+    const { title, sections } = readHeadingIndex('# 開発の進め方\n## 1. SDD\n### 1.4 spec と plan の書き方\n```\n## 9. コードの中\n```\n')
     assert.equal(title, '開発の進め方')
     assert.deepEqual([...sections.keys()], ['1', '1.4'])
   })
 
   test('Setext の見出しと、閉じの # のある見出しも読み、HTML のコメントの中は読まない', () => {
-    const { title, anchors } = readHeadings(['題', '===', '', '節', '---', '', '## 閉じ ##', '', '<!--', '## 隠れた節', '-->'].join('\n'))
+    const { title, anchors } = readHeadingIndex(['題', '===', '', '節', '---', '', '## 閉じ ##', '', '<!--', '## 隠れた節', '-->'].join('\n'))
     assert.equal(title, '題')
     assert.deepEqual([...anchors], ['題', '節', '閉じ'])
   })
 
   test('見出しは、閉じの # を除き、Setext と字下げした見出しも読む（spec-structure・rule-sections と同じ読み方）', () => {
-    const { title, anchors } = readHeadings('題\n===\n\n## 依存 ##\n\n   ## 字下げ\n\n段落\n---\n')
+    const { title, anchors } = readHeadingIndex('題\n===\n\n## 依存 ##\n\n   ## 字下げ\n\n段落\n---\n')
     assert.equal(title, '題')
     assert.deepEqual([...anchors], ['題', '依存', '字下げ', '段落'])
   })

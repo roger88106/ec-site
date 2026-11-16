@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, splitSectionNumbers } from './doc-refs.mjs'
-import { readHeadings } from '../lib/docs/doc-names.mjs'
+import { readHeadingIndex } from '../lib/docs/doc-names.mjs'
 
 /** 調べる文書の組。キーがパス、値が中身 */
 const DOCS = {
@@ -498,7 +498,7 @@ describe('番号のある見出しの検査', () => {
 
 describe('見出しの番号と、見出しの参照の先', () => {
   test('見出しの番号は「1.」か「4.1」の形だけを除く（「1 通だけ送る」の 1 は見出しの一部）', () => {
-    const { sections, headings } = readHeadings('# 通知\n## 1. 送る\n### 1 通だけ送る\n### 1.2 再送\n')
+    const { sections, headings } = readHeadingIndex('# 通知\n## 1. 送る\n### 1 通だけ送る\n### 1.2 再送\n')
     assert.deepEqual([...sections.keys()], ['1', '1.2'])
     assert.equal(countHeadingMatches(headings, ['1 通だけ送る']), 1)
     assert.equal(countHeadingMatches(headings, ['通だけ送る']), 0)

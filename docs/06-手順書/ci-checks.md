@@ -17,7 +17,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
 | `gradle-plugins` | Gradle のプラグインの id が、policy.json の gradlePlugins と過不足なく一致することを確認する |
 | `ja-text` | 使わない語（error）がないことを確認する。文脈で決める語と文体の型は、`--warning` で一覧にする |
-| `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |
+| `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文、読点の多い文、長い表のセルを、注釈の形で示す（失敗にしない） |
 | `java-rules` | バックエンドのソースに、禁止した書き方（列挙型の変換に name() を渡すこと、理由のない @SuppressWarnings）がないことを確認する |
 | `local-ports` | ローカルのポートの一覧（`ports.json`）と、compose・script・文書・設定のポートが食い違わないことを確認する |
 | `message-comments` | 文言をキーで引く呼び出しに、表示する内容のコメントがあることを確認する |

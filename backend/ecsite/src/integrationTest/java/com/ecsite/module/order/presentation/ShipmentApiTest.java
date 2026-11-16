@@ -591,6 +591,14 @@ class ShipmentApiTest {
                     Arguments.of("数字を含まない送り状番号", "---"));
         }
 
+        @Test
+        @DisplayName("AC-167 上限の 30 文字の送り状番号で出荷を登録できる")
+        void acceptsTrackingNumberAtMax() throws Exception {
+            // 操作と確認：30 文字の送り状番号は 201
+            ship("YAMATO", "1".repeat(30)).andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.trackingNumber").value("1".repeat(30)));
+        }
+
         @ParameterizedTest(name = "「{0}」")
         @MethodSource("malformedTrackingNumbers")
         @DisplayName("送り状番号が、数字を 1 つ以上含む、数字とハイフンの 30 文字までの形でなければ 400 で項目を示し、売上を確定しない")

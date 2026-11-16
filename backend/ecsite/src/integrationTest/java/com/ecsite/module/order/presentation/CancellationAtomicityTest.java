@@ -2,6 +2,7 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.port.StockDirectory;
+import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -34,7 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * キャンセルと在庫の戻しの一貫性の受け入れテスト
  *
- * <p>在庫の戻しを失敗させ、注文もキャンセルにならないこと（トランザクションごと取り消されること）を確認する。
+ * <p>在庫の戻しを失敗させ、注文もキャンセルにならないこと（トランザクションごと取り消されること）と、逆に注文の保存を
+ * 失敗させ、在庫も戻らないことを確認する。
  * キャンセルが成功するときに在庫が戻ることは、{@code CancellationApiTest} が確認する。
  *
  * <p>取り消しを見るためにコミットが必要だが、作ったデータは消さない。税区分の名前と会員はテストごとに変え、
@@ -94,6 +96,14 @@ class CancellationAtomicityTest {
     StockDirectory stockDirectory;
 
     /**
+     * 注文のリポジトリ
+     *
+     * <p>準備の注文の成立と受付では本物の処理を呼び、テストの中でだけ保存を失敗させる。
+     */
+    @MockitoSpyBean
+    OrderRepository orderRepository;
+
+    /**
      * テストで使う税区分の ID
      */
     private UUID taxCategoryId;
@@ -150,5 +160,24 @@ class CancellationAtomicityTest {
         mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(jsonPath("$.status").value("ACCEPTED"));
         mockMvc.perform(get("/api/admin/inventory/variants/" + variantId))
                 .andExpect(jsonPath("$.quantity").value(STOCKED - ORDERED));
+    }
+
+    @Test
+    @DisplayName("AC-104 キャンセルの保存に失敗すると、在庫も戻らず、注文はキャンセルにならない")
+    void keepsStockWhenSaveFails() throws Exception {
+        // 準備：注文の保存が失敗する
+        doThrow(new IllegalStateException("注文の保存の失敗")).when(orderRepository).update(any());
+
+        // 操作と確認：キャンセルは 500 になる
+        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason": "在庫の不備"}"""))
+                .andExpect(status().isInternalServerError());
+
+        // 確認：在庫数は注文の後のまま、注文は受付のまま
+        mockMvc.perform(get("/api/admin/inventory/variants/" + variantId))
+                .andExpect(jsonPath("$.quantity").value(STOCKED - ORDERED));
+        mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(jsonPath("$.status").value("ACCEPTED"));
     }
 }

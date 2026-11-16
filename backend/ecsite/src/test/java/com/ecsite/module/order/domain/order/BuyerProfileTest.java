@@ -99,6 +99,13 @@ class BuyerProfileTest {
         }
 
         @Test
+        @DisplayName("AC-213 注文日と同じ日の生年月日は、0 歳として記録する")
+        void keepsBirthdateOnOrderDate() {
+            // 操作と確認：注文日（日本時間の 2026-10-08）の生年月日では、0 歳
+            assertThat(BuyerProfile.of("2026-10-08", null, ORDERED_AT).age()).isZero();
+        }
+
+        @Test
         @DisplayName("AC-213 注文日の 120 年より前の生年月日は、年齢を不明にする")
         void unknownForTooOld() {
             // 操作と確認：120 年と 1 日前の生年月日では、年齢がない

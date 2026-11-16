@@ -127,12 +127,15 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-91 同じ注文手続きで同時に何度送っても、注文は 1 件だけで、どの応答も同じ注文 ID")
     void placesOnceForConcurrentResends() throws Exception {
+        // 準備：在庫数 3 に 2 個のカートで注文手続きに進む
         stock(3);
         var cartId = cartWith(2);
         var checkoutId = startCheckout(cartId);
 
+        // 操作：同じ注文手続きで 5 回同時に注文する
         var responses = Concurrently.run(5, i -> place(checkoutId));
 
+        // 確認：201 は 1 回だけで、全ての応答が同じ注文 ID、注文は 1 件で、在庫は 1 回分だけ減る
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsOnly(201, 200)
                 .filteredOn(status -> status == 201).hasSize(1);
         assertThat(responses).extracting(response -> JsonPath.<String>read(response.getContentAsString(), "$.id"))
@@ -144,15 +147,17 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-87 引当の期限が切れた 2 人が、販売可能数 1 の在庫を同時に注文すると、1 件だけ成立する")
     void placesOnlyOneForLastItem() throws Exception {
+        // 準備：在庫数 1 で、1 人目の引当の期限が切れてから 2 人目が引き当て、2 人目の期限も切らす
         stock(1);
         var first = startCheckout(cartWith(1));
-        // 1 人目の引当の期限が切れてから、2 人目が引き当てる
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(20)));
         var second = startCheckout(cartWith(1));
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(20)));
 
+        // 操作：2 人が同時に注文する
         var responses = placeAll(List.of(first, second));
 
+        // 確認：201 と在庫不足の 409 が 1 つずつで、在庫数は 0
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsExactlyInAnyOrder(201, 409);
         var rejected = responses.stream().filter(response -> response.getStatus() == 409).findFirst().orElseThrow();
         assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");
@@ -162,12 +167,15 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-406-14 同じ会員の確認していない 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 件分だけ減り、他方は確認を求められる")
     void placesOnlyOneForSameMember() throws Exception {
+        // 準備：同じ会員のカートから、確認していない注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var checkouts = List.of(startCheckout(cartId), startCheckout(cartId));
 
+        // 操作：2 つの注文手続きから同時に注文する
         var responses = placeAll(checkouts);
 
+        // 確認：一方だけ成立し、他方は確認を求められ、在庫は 1 個分だけ減る
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(4);
     }
@@ -175,13 +183,16 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-406-12、AC-406-14 同じ支払待ちの注文を確認した 2 つの注文手続きから同時に注文すると、先に成立した注文を確認していないので、一方だけ成立する")
     void placesOnlyOneWhenBothAcknowledged() throws Exception {
+        // 準備：支払待ちの注文を 1 件作り、それを確認した注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var pending = TestJson.createdId(place(startCheckout(cartId)).getContentAsString());
         var checkouts = List.of(startAcknowledging(cartId, pending), startAcknowledging(cartId, pending));
 
+        // 操作：2 つの注文手続きから同時に注文する
         var responses = placeAll(checkouts);
 
+        // 確認：一方だけ成立し、他方は確認を求められ、在庫は 2 件分（先の注文と成立した 1 件）だけ減る
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(3);
     }
@@ -189,17 +200,19 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-411-5、NFR-411-1 支払待ちの 2 件を全て確認した 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 個分だけ減り、支払待ちは上限（3 件）を超えない（後の注文は確認の判定で拒否される）")
     void placesOnlyOneBelowLimit() throws Exception {
+        // 準備：支払待ちの注文を 2 件作り、その 2 件を確認した注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var first = TestJson.createdId(place(startCheckout(cartId)).getContentAsString());
         var second = TestJson.createdId(place(startAcknowledging(cartId, first)).getContentAsString());
         var checkouts = List.of(startAcknowledging(cartId, first, second), startAcknowledging(cartId, first, second));
 
+        // 操作：2 つの注文手続きから同時に注文する
         var responses = placeAll(checkouts);
 
-        // 確認するのは、同時の注文でも支払待ちが上限を超えない結果である。
-        // 後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される
-        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderPendingLimitApiTest で確認する）
+        // 確認：一方だけ成立し、在庫は 1 個分だけ減り、支払待ちは上限の 3 件を超えない
+        // ※後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される。
+        //   開始で上限を判定しており、同時の注文では上限の判定に届かない。注文の時点の上限の判定は PlaceOrderPendingLimitApiTest で確認する
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(2);
         assertThat(OrderTestData.pendingOrderCount(dsl, memberOf(checkouts.getFirst()))).isEqualTo(3);
@@ -208,22 +221,25 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-406-14 先の注文のトランザクションが終わるまで、同じ会員の後の注文は会員のロックを待ち、先の注文の成立の後に判定されて、確認を求められる")
     void waitsForMemberLockAndRejectsLater() throws Exception {
+        // 準備：同じ会員のカートから、確認していない注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var earlier = startCheckout(cartId);
         var later = startCheckout(cartId);
         var executor = Executors.newFixedThreadPool(2);
         try {
+            // 操作：在庫の行をロックしている間に、先の注文と後の注文を送る
+            // ※先の注文は、会員のロックを持ったまま、在庫の行で待つ（トランザクションはコミットしない）。
+            //   後の注文は、先の注文が持つ会員のロックを待つ。ロックがなければ、この待ちは現れない
             var placing = new ArrayList<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
-                // 先の注文は、会員のロックを持ったまま、在庫の行で待つ。トランザクションはコミットしない
                 placing.add(executor.submit(() -> place(earlier)));
                 LockWaits.awaitBlockedByThisTransaction(dsl);
-                // 後の注文は、先の注文が持つ会員のロックを待つ。ロックがなければ、この待ちは現れない
                 placing.add(executor.submit(() -> place(later)));
                 LockWaits.awaitMemberLockWaiter(dsl, memberOf(later));
             });
 
+            // 確認：先の注文が成立し、後の注文は確認を求める 409 で、在庫は 1 個分だけ減る
             var placed = placing.getFirst().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             var rejected = placing.get(1).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             assertThat(placed.getStatus()).isEqualTo(201);
@@ -238,19 +254,22 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-87 在庫の行を待つ間に在庫がなくなると、どの在庫も減らさずに拒否し、先に解いた引当は取り消しで元に戻る")
     void keepsReservationWhenRejectedAfterRelease() throws Exception {
+        // 準備：在庫数 1 に 1 個で注文手続きに進む
         stock(1);
         var checkoutId = startCheckout(cartWith(1));
         var executor = Executors.newSingleThreadExecutor();
         try {
+            // 操作：在庫の行をロックしている間に注文を送り、減算が待っている間に在庫数を 0 にする
+            // ※注文の判定は終わっているので、在庫の行を読む減算で足りないと分かる
             var placing = new AtomicReference<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
                 placing.set(executor.submit(() -> place(checkoutId)));
                 LockWaits.awaitBlockedByThisTransaction(dsl);
-                // 注文の判定は終わっているので、在庫の行を読む減算で足りないと分かる
                 dsl.update(STOCK_ITEM).set(STOCK_ITEM.QUANTITY, 0)
                         .where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).execute();
             });
 
+            // 確認：在庫不足の 409 で、注文手続きの引当は残り、注文は作られない
             var rejected = placing.get().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             assertThat(rejected.getStatus()).isEqualTo(409);
             assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");

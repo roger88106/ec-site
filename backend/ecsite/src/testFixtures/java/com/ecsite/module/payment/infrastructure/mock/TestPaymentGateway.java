@@ -43,6 +43,20 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger openedPages = new AtomicInteger();
 
     /**
+     * 作った支払画面の ID
+     *
+     * <p>作った順。
+     */
+    private final List<String> openedPageIds = new CopyOnWriteArrayList<>();
+
+    /**
+     * 次の支払画面の作成の最中に行う処理
+     *
+     * <p>画面を作った後、応答を返す前に行う。同時のリクエストや、作っている間の期限切れのテスト用。なければ null。
+     */
+    private final AtomicReference<Runnable> duringNextOpen = new AtomicReference<>();
+
+    /**
      * これから接続できないことにする支払画面の作成の回数
      */
     private final AtomicInteger openFailures = new AtomicInteger();
@@ -166,7 +180,13 @@ public class TestPaymentGateway implements PaymentGateway {
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
         openedPages.incrementAndGet();
-        return mock.openPage(request);
+        var page = mock.openPage(request);
+        openedPageIds.add(page.id());
+        var during = duringNextOpen.getAndSet(null);
+        if (during != null) {
+            during.run();
+        }
+        return page;
     }
 
     @Override
@@ -365,6 +385,15 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 次の支払画面の作成で、決済サービスが画面を作った後、応答を返す前に処理を行う。
+     *
+     * @param action 行う処理（同じ注文の支払画面のリクエスト、時計を進めるなど）
+     */
+    public void duringNextOpen(Runnable action) {
+        duringNextOpen.set(action);
+    }
+
+    /**
      * 次の売上確定で、決済サービスが確定した後、応答を返す前に処理を行う。
      *
      * @param action 行う処理（注文のキャンセルなど）
@@ -515,6 +544,15 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 作った支払画面の ID を返す。
+     *
+     * @return 作った順の支払画面 ID（最後に状態を消してから）
+     */
+    public List<String> openedPageIds() {
+        return List.copyOf(openedPageIds);
+    }
+
+    /**
      * テストだけで使う状態を最初に戻す。
      *
      * <p>本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
@@ -522,6 +560,8 @@ public class TestPaymentGateway implements PaymentGateway {
     public void reset() {
         amountCalls.clear();
         openedPages.set(0);
+        openedPageIds.clear();
+        duringNextOpen.set(null);
         openFailures.set(0);
         voided.clear();
         voidFailures.set(0);

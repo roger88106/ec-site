@@ -176,4 +176,14 @@ class EventPublications {
     int count(UUID eventId) {
         return dsl.fetchCount(EVENT_PUBLICATION, SERIALIZED_EVENT.contains(eventId.toString()));
     }
+
+    /**
+     * イベント ID を含む記録の状態の列を空にする（状態の列のない、古い形式の記録に見せる）。
+     *
+     * @param eventId イベントを見分ける ID
+     */
+    void clearStatus(UUID eventId) {
+        dsl.update(EVENT_PUBLICATION).set(STATUS, (String) null)
+                .where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
+    }
 }

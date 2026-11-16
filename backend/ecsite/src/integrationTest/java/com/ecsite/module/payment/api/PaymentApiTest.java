@@ -5,7 +5,10 @@ import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.model.PaymentSummary;
+import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.event.PaymentAuthorized;
+import com.ecsite.module.payment.event.PaymentExpired;
+import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +21,9 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,6 +70,12 @@ class PaymentApiTest {
      */
     @Autowired
     TestPaymentGateway gateway;
+
+    /**
+     * 決済サービスの通知を受ける口
+     */
+    @Autowired
+    PaymentNotificationReceiver receiver;
 
     /**
      * テストの時計
@@ -181,6 +192,42 @@ class PaymentApiTest {
         }
 
         @Test
+        @DisplayName("AC-152 画面を作っている間に同じ注文の画面が先に開かれたら、先の画面を返し、作った画面を閉じる")
+        void closesPageLostToConcurrentRequest() {
+            // 準備：未払いの支払と、画面の作成の最中に同じ注文の画面を求めるリクエスト
+            var orderId = payments.created(ORDERED_AT);
+            var concurrent = new AtomicReference<Optional<String>>();
+            gateway.duringNextOpen(() -> concurrent.set(paymentApi.pageUrl(orderId)));
+
+            // 操作：支払画面の URL を求める
+            var url = paymentApi.pageUrl(orderId);
+
+            // 確認：両方が先に覚えた画面を返し、後から覚えようとした画面は閉じている
+            var lost = gateway.openedPageIds().getFirst();
+            var used = gateway.openedPageIds().getLast();
+            assertThat(url).isPresent().isEqualTo(concurrent.get());
+            assertThat(url.orElseThrow()).endsWith(used);
+            assertThat(gateway.page(lost)).map(MockPaymentGateway.Page::status).contains(MockPaymentGateway.PageStatus.CLOSED);
+            assertThat(gateway.page(used)).map(MockPaymentGateway.Page::status).contains(MockPaymentGateway.PageStatus.OPEN);
+        }
+
+        @Test
+        @DisplayName("BR-16 画面を作っている間に支払の期限を過ぎたら、URL を返さず、作った画面を閉じる")
+        void closesPageWhenDeadlinePassesDuringOpen() {
+            // 準備：未払いの支払と、画面の作成の最中に期限になる時計
+            var orderId = payments.created(ORDERED_AT);
+            gateway.duringNextOpen(() -> clock.setInstant(DEADLINE));
+
+            // 操作：支払画面の URL を求める
+            var url = paymentApi.pageUrl(orderId);
+
+            // 確認：URL を返さず、作った画面は閉じている
+            assertThat(url).isEmpty();
+            assertThat(gateway.page(gateway.openedPageIds().getFirst())).map(MockPaymentGateway.Page::status)
+                    .contains(MockPaymentGateway.PageStatus.CLOSED);
+        }
+
+        @Test
         @DisplayName("支払のない注文には、支払画面の URL を返さない")
         void noPageForUnknownOrder() {
             // 操作と確認：支払のない注文の URL を求めると、ない
@@ -252,6 +299,92 @@ class PaymentApiTest {
     }
 
     @Nested
+    @DisplayName("支払画面の期限切れの通知")
+    class PageExpiredNotification {
+
+        @Test
+        @DisplayName("支払の期限ちょうどに未払いの支払の期限切れが届いたら、支払なしになり、期限切れのイベントが 1 件出る")
+        void expiresUnpaidAtDeadline() {
+            // 準備：支払画面を開いた未払いの支払と、期限ちょうどの時計
+            var orderId = payments.created(ORDERED_AT);
+            var pageId = payments.openPage(orderId);
+            clock.setInstant(DEADLINE);
+
+            // 操作：支払画面の期限切れが届く
+            receiver.pageExpired(pageId);
+
+            // 確認：支払なしで、この注文の期限切れのイベントが 1 件
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+            assertThat(expiredEvents(orderId)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("支払の期限の前に期限切れが届いても、未払いのまま、イベントも出ない（期限切れのジョブに任せる）")
+        void ignoresBeforeDeadline() {
+            // 準備：支払画面を開いた未払いの支払と、期限の 1 秒前の時計
+            var orderId = payments.created(ORDERED_AT);
+            var pageId = payments.openPage(orderId);
+            clock.setInstant(DEADLINE.minusSeconds(1));
+
+            // 操作：支払画面の期限切れが届く
+            receiver.pageExpired(pageId);
+
+            // 確認：未払いのまま、イベントもない
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
+            assertThat(expiredEvents(orderId)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("BR-17 期限切れが重ねて届いても、期限切れのイベントは 1 回だけ")
+        void ignoresDuplicate() {
+            // 準備：期限の後に期限切れが 1 回届いた支払
+            var orderId = payments.created(ORDERED_AT);
+            var pageId = payments.openPage(orderId);
+            clock.setInstant(DEADLINE);
+            receiver.pageExpired(pageId);
+
+            // 操作：同じ通知がもう一度届く
+            receiver.pageExpired(pageId);
+
+            // 確認：支払なしのまま、イベントは 1 件のまま
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+            assertThat(expiredEvents(orderId)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("BR-17 与信済みの支払に期限切れが届いても（順序の入れ替わり）、与信済みのまま、イベントも出ない")
+        void ignoresAfterAuthorized() {
+            // 準備：期限の前に与信済みにした支払と、期限の後の時計
+            var orderId = payments.created(ORDERED_AT);
+            var pageId = payments.pay(orderId);
+            clock.setInstant(DEADLINE);
+
+            // 操作：支払画面の期限切れが届く
+            receiver.pageExpired(pageId);
+
+            // 確認：与信済みのまま、期限切れのイベントはない
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            assertThat(expiredEvents(orderId)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("登録にない支払画面の期限切れは、どの支払も変えずに無視する")
+        void ignoresUnknownPage() {
+            // 準備：支払画面を開いた未払いの支払と、期限の後の時計
+            var orderId = payments.created(ORDERED_AT);
+            payments.openPage(orderId);
+            clock.setInstant(DEADLINE);
+
+            // 操作：知らない支払画面の期限切れが届く
+            receiver.pageExpired("cs_unknown_" + UUID.randomUUID());
+
+            // 確認：開いた支払は未払いのまま、イベントもない
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
+            assertThat(expiredEvents(orderId)).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("支払の状態の読み取り")
     class Summaries {
 
@@ -284,5 +417,16 @@ class PaymentApiTest {
      */
     private List<PaymentAuthorized> authorizedEvents(UUID orderId) {
         return events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(orderId)).toList();
+    }
+
+    /**
+     * 注文の支払の期限切れのイベントを返す。<br />
+     * 他のテストのイベントを含めないように、注文 ID で絞る。
+     *
+     * @param orderId 注文 ID
+     * @return イベント
+     */
+    private List<PaymentExpired> expiredEvents(UUID orderId) {
+        return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(orderId)).toList();
     }
 }

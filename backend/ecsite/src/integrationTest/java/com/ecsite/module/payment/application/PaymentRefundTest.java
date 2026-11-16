@@ -8,6 +8,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
+import com.ecsite.module.payment.domain.payment.RefundRequested;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,6 +82,12 @@ class PaymentRefundTest {
      */
     @Autowired
     AsyncEvents asyncEvents;
+
+    /**
+     * 返金の依頼を受けるリスナー
+     */
+    @Autowired
+    PaymentReversalHandler reversalHandler;
 
     /**
      * 支払 ID を読む DB
@@ -209,6 +216,22 @@ class PaymentRefundTest {
             // 確認：返金は 1 回
             awaitRefunded(orderId);
             assertThat(gateway.refunded()).containsOnlyOnce(orderId);
+        }
+
+        @Test
+        @DisplayName("AC-195 返金済みの後に同じ返金の依頼が再び処理されても、決済サービスの返金を呼ばず、返金済みのまま")
+        void ignoresRefundRequestAfterRefunded() {
+            // 準備：返金済みの支払
+            var orderId = payments.captured(ORDERED_AT);
+            paymentApi.cancel(orderId);
+            awaitRefunded(orderId);
+
+            // 操作：完了の記録より先に再発行されたときと同じく、返金の依頼をもう一度処理する
+            reversalHandler.on(RefundRequested.of(clock.instant(), PaymentRequests.paymentIdOf(dsl, orderId)));
+
+            // 確認：返金の呼び出しは 1 回のまま、返金済みのまま
+            assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
         }
     }
 

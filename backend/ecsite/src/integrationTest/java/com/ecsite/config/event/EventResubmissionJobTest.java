@@ -197,6 +197,38 @@ class EventResubmissionJobTest {
         }
 
         @Test
+        @DisplayName("処理に失敗してからちょうど 5 分のイベントは、まだ再発行しない")
+        void doesNotResubmitAtExactlyMinAge() {
+            // 準備：1 回目の処理に失敗したイベント
+            var event = failedOnce();
+
+            // 操作：ちょうど 5 分後に再発行する
+            clock.advance(Duration.ofMinutes(5));
+            job.resubmit();
+
+            // 確認：再発行の日時が発行の日時のままで、リスナーは 1 回だけ受けた
+            var publication = publicationOf(event);
+            assertThat(publication.getLastResubmissionDate()).isEqualTo(publication.getPublicationDate());
+            assertThat(listener.attempts(event)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("処理に失敗してから 5 分を 1 ミリ秒でも過ぎたイベントは、再発行され、リスナーで処理される")
+        void resubmitsJustAfterMinAge() {
+            // 準備：1 回目の処理に失敗したイベント
+            var event = failedOnce();
+
+            // 操作：5 分と 1 ミリ秒後に再発行する
+            clock.advance(Duration.ofMinutes(5).plusMillis(1));
+            job.resubmit();
+
+            // 確認：2 回目の処理で成功する
+            asyncEvents.awaitHandled(event::equals);
+            assertThat(listener.attempts(event)).isEqualTo(2);
+            assertThat(listener.succeeded(event)).isTrue();
+        }
+
+        @Test
         @DisplayName("AC-290 処理の回数が上限に達する前に処理できたイベントは、処理を終える")
         void completesBeforeMaxAttempts() {
             // 準備：処理の回数の上限 3 のジョブと、1 回目の処理に失敗したイベント

@@ -249,6 +249,16 @@ class StripePaymentGatewayTest {
         }
 
         @Test
+        @DisplayName("返金済み以外の理由の 400 は、成功とせず、予期しないエラーにする")
+        void otherInvalidRequest() {
+            // 準備：返金済みでない理由で断られる
+            respond("POST /v1/refunds", 400, StripeApiStub.error("invalid_request_error", "amount_too_large"));
+
+            // 操作と確認：予期しないエラー
+            assertSystemError(() -> gateway.refund(refundRequest()), CommonErrorCode.SYSTEM_ERROR);
+        }
+
+        @Test
         @DisplayName("他の失敗は、外部サービスのエラー（再発行でやり直す）")
         void failure() {
             // 準備：Stripe の側の故障

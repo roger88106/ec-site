@@ -224,6 +224,40 @@ class ReportCollectionTest {
         }
 
         @Test
+        @DisplayName("AC-223 商品カタログで商品 ID を求められなくなっても、写しを再作成するときは、前の写しの商品 ID を残す")
+        void keepsPreviousProductIdWhenCatalogMisses() {
+            // 準備：商品 ID を求めて作った写しと、その後に商品 ID を返さなくなった商品カタログ（商品の削除など）
+            orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+            publish(placed());
+            awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+            when(reportCatalogApi.productIdsOf(anyCollection())).thenReturn(Map.of());
+            orderIs(snapshot(OrderReportSnapshot.Status.ACCEPTED, null, null));
+
+            // 操作：受付のイベントを届ける
+            publish(OrderStatusChanged.of(ORDERED_AT.plusSeconds(60), orderId, OrderStatusChanged.Status.PENDING_PAYMENT,
+                    OrderStatusChanged.Status.ACCEPTED, null, null));
+            awaitOrder(OrderReportSnapshot.Status.ACCEPTED);
+
+            // 確認：明細の商品 ID は前の写しのまま
+            assertThat(lineProductIds()).containsExactly(productId);
+        }
+
+        @Test
+        @DisplayName("AC-223 初めて写しを作るときに商品カタログで商品 ID を求められなければ、明細の商品 ID は空")
+        void leavesProductIdEmptyWhenCatalogMissesFirst() {
+            // 準備：商品 ID を返さない商品カタログ
+            when(reportCatalogApi.productIdsOf(anyCollection())).thenReturn(Map.of());
+            orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+
+            // 操作：注文の成立のイベントを届ける
+            publish(placed());
+            awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+
+            // 確認：明細は 1 行で、商品 ID は空
+            assertThat(lineProductIds()).containsExactly((UUID) null);
+        }
+
+        @Test
         @DisplayName("AC-224 状態の変化を受けると、出来事・発生日時・前と後の状態を、履歴に 1 行追加する")
         void appendsHistoryRow() {
             // 準備：注文の API が、支払待ちの注文を返す
@@ -668,6 +702,18 @@ class ReportCollectionTest {
     private Record awaitOrder(OrderReportSnapshot.Status status) {
         await().atMost(TIMEOUT).until(() -> order().map(row -> status.name().equals(row.get(SALES_ORDER.STATUS))).orElse(false));
         return order().orElseThrow();
+    }
+
+    /**
+     * このテストの注文の、明細の商品 ID を行の番号の順に読む。
+     *
+     * @return 商品 ID（求められていなければ null）
+     */
+    private List<UUID> lineProductIds() {
+        return dsl.select(SALES_ORDER_LINE.PRODUCT_ID).from(SALES_ORDER_LINE)
+                .where(SALES_ORDER_LINE.ORDER_ID.eq(orderId))
+                .orderBy(SALES_ORDER_LINE.LINE_NO)
+                .fetch(SALES_ORDER_LINE.PRODUCT_ID);
     }
 
     /**

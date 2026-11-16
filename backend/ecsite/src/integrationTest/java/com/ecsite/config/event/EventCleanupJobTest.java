@@ -153,6 +153,49 @@ class EventCleanupJobTest {
     }
 
     @Test
+    @DisplayName("AC-284 処理を終えてからちょうど保存期間（7 日）のイベントは、まだ残る")
+    void keepsEventCompletedExactlyRetentionAgo() {
+        // 準備：NOW に処理を終えたイベント
+        var event = publish(new CleanupEvent(UUID.randomUUID(), false));
+
+        // 操作：ちょうど 7 日後に片付ける
+        clock.setInstant(NOW.plus(RETENTION));
+        job.cleanUp();
+
+        // 確認：イベントの記録が残る
+        assertThat(publicationCount(event)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("AC-284 処理を終えてから保存期間（7 日）を 1 ミリ秒でも過ぎたイベントは消える")
+    void deletesEventJustAfterRetention() {
+        // 準備：NOW に処理を終えたイベント
+        var event = publish(new CleanupEvent(UUID.randomUUID(), false));
+
+        // 操作：7 日と 1 ミリ秒後に片付ける
+        clock.setInstant(NOW.plus(RETENTION).plusMillis(1));
+        job.cleanUp();
+
+        // 確認：イベントの記録がない
+        assertThat(publicationCount(event)).isZero();
+    }
+
+    @Test
+    @DisplayName("AC-284 状態の列のない（古い形式の）処理を終えたイベントも、保存期間を過ぎたら消える")
+    void deletesCompletedEventWithoutStatus() {
+        // 準備：NOW に処理を終え、状態の列を空にしたイベント
+        var event = publish(new CleanupEvent(UUID.randomUUID(), false));
+        publications.clearStatus(event);
+
+        // 操作：保存期間を過ぎてから片付ける
+        clock.setInstant(CLEANUP_AT);
+        job.cleanUp();
+
+        // 確認：イベントの記録がない
+        assertThat(publicationCount(event)).isZero();
+    }
+
+    @Test
     @DisplayName("AC-286 処理を終えていないイベントは、保存期間を過ぎても残る")
     void keepsIncompleteEvent() {
         // 準備：NOW にリスナーが失敗したイベント

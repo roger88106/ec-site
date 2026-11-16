@@ -6,12 +6,15 @@ import com.ecsite.module.payment.event.PaymentExpired;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 支払の単体テスト
@@ -824,7 +827,169 @@ class PaymentTest {
         }
     }
 
+    @Nested
+    @DisplayName("遷移できない操作（状態 × 操作の表の残り）")
+    class NoTransition {
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"UNPAID", "NOT_PAID"})
+        @DisplayName("BR-17 未払い・支払なし以外に与信の成功が届いても（重複・順序の入れ替わり）、何も変わらず、イベントも出ない")
+        void authorizeChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：別の与信を、別の時刻で反映する
+            var authorized = payment.authorize(OTHER_AUTHORIZATION_REF, DEADLINE, DEADLINE);
+
+            // 確認：反映せず、状態・与信の参照・与信の時刻が元のまま、イベントもない
+            assertThat(authorized).isFalse();
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "UNPAID")
+        @DisplayName("BR-17 未払い以外は、期限切れにせず、イベントも出ない")
+        void expireChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：期限切れにする
+            var changed = payment.expire(DEADLINE);
+
+            // 確認：変わらず、イベントもない
+            assertThat(changed).isFalse();
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "UNPAID")
+        @DisplayName("AC-311 未払い以外は、与信の反映を待つ支払にしない")
+        void awaitAuthorizationChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：与信の反映を待つ
+            var changed = payment.awaitAuthorization(DEADLINE);
+
+            // 確認：待ち始めた時刻を持たず、変わらない
+            assertThat(changed).isFalse();
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"AUTHORIZED", "VOID_PENDING"})
+        @DisplayName("BR-21 与信済み・与信の取消待ち以外は、売上確定を反映しても何も変わらず、イベントも出ない")
+        void captureChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：売上確定を反映する
+            payment.capture(DEADLINE);
+
+            // 確認：変わらず、返金の依頼も出ない
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "AUTHORIZED")
+        @DisplayName("BR-21 与信済み以外は、与信期限切れにしない（確定の最中に取り消された与信の取消待ちを含む）")
+        void expireAuthorizationChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：与信期限切れにする
+            payment.expireAuthorization();
+
+            // 確認：変わらない
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"UNPAID", "AUTHORIZED", "CAPTURED"})
+        @DisplayName("BR-21 未払い・与信済み・売上確定済み以外は、取り消しても何も変わらず、取消も返金の依頼も出ない")
+        void cancelChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：取り消す
+            payment.cancel(DEADLINE);
+
+            // 確認：変わらず、依頼も出ない
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "VOID_PENDING")
+        @DisplayName("AC-166 与信の取消待ち以外は、取消済みにしない")
+        void markVoidedChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：取消済みにする
+            payment.markVoided();
+
+            // 確認：変わらない
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "REFUND_PENDING")
+        @DisplayName("AC-195 返金待ち以外は、返金済みにしない")
+        void markRefundedChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：返金済みにする
+            payment.markRefunded();
+
+            // 確認：変わらない
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "UNPAID")
+        @DisplayName("未払い以外は、支払画面を開けず、画面も変わらない")
+        void openPageRejected(PaymentStatus status) {
+            // 準備：その状態の支払と、開こうとする画面
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+            var page = new PaymentPage("cs_test_1", "https://pay.example/cs_test_1");
+
+            // 操作と確認：例外になる
+            assertThatThrownBy(() -> payment.openPage(page)).isInstanceOf(IllegalStateException.class);
+
+            // 確認：画面を覚えず、変わらない
+            assertThat(payment.page()).isEmpty();
+            assertUnchanged(payment, before);
+        }
+    }
+
     // ============================== 確認の補助 ==============================
+
+    /**
+     * 操作の前から何も変わっていないことを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>スナップショット（状態、支払画面、与信の参照、与信の時刻、待ち始めた時刻）が操作の前と同じ</li>
+     *   <li>イベントがない</li>
+     * </ul>
+     *
+     * @param payment 確認する支払
+     * @param before  操作の前のスナップショット（状態ごとに作るので、定数にできない）
+     */
+    private static void assertUnchanged(Payment payment, Payment.Snapshot before) {
+        assertThat(payment.toSnapshot()).isEqualTo(before);
+        assertThat(payment.pullEvents()).isEmpty();
+    }
 
     /**
      * 作ったばかりの、未払いの支払であることを確認する。
@@ -954,10 +1119,51 @@ class PaymentTest {
      * @return 支払
      */
     private static Payment voided() {
+        var payment = voidPending();
+        payment.markVoided();
+        return payment;
+    }
+
+    /**
+     * 与信の取消待ちの支払を作る（イベントは取り出し済み）。
+     *
+     * @return 支払
+     */
+    private static Payment voidPending() {
         var payment = authorized();
         payment.cancel(ORDERED_AT);
-        payment.markVoided();
         payment.pullEvents();
         return payment;
+    }
+
+    /**
+     * 返金済みの支払を作る（イベントは取り出し済み）。
+     *
+     * @return 支払
+     */
+    private static Payment refunded() {
+        var payment = refundPending();
+        payment.markRefunded();
+        return payment;
+    }
+
+    /**
+     * 指定の状態の支払を、図の遷移をたどって作る（イベントは取り出し済み）。
+     *
+     * @param status 状態
+     * @return 支払
+     */
+    private static Payment inState(PaymentStatus status) {
+        return switch (status) {
+            case UNPAID -> unpaid();
+            case AUTHORIZED -> authorized();
+            case VOID_PENDING -> voidPending();
+            case VOIDED -> voided();
+            case NOT_PAID -> expired();
+            case CAPTURED -> captured();
+            case AUTHORIZATION_EXPIRED -> authorizationExpired();
+            case REFUND_PENDING -> refundPending();
+            case REFUNDED -> refunded();
+        };
     }
 }

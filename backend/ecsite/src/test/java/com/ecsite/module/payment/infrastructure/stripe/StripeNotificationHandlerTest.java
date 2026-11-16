@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
+import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.stripe.net.Webhook;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static com.ecsite.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -128,6 +130,49 @@ class StripeNotificationHandlerTest {
 
             // 確認：渡した
             assertThat(receiver.received).containsExactly("pageExpired " + EXPIRED_SESSION_ID);
+        }
+    }
+
+    @Nested
+    @DisplayName("通知の中身の読み方")
+    class Payload {
+
+        /**
+         * 記録した通知の API のバージョン
+         */
+        private static final String RECORDED_API_VERSION = "\"api_version\": \"2026-09-30.endive\"";
+
+        /**
+         * ライブラリと違う、古い API のバージョン
+         */
+        private static final String OLD_API_VERSION = "\"api_version\": \"2020-08-27\"";
+
+        @Test
+        @DisplayName("BR-17 ライブラリと違う API のバージョンの通知からも、支払画面 ID と与信の参照を読んで渡す")
+        void readsOtherApiVersion() {
+            // 準備：記録した与信の成功の通知を、古い API のバージョンにしたもの
+            var payload = recorded("checkout-session-completed.json").replace(RECORDED_API_VERSION, OLD_API_VERSION);
+
+            // 操作：正しい鍵の署名で受け取る
+            handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
+
+            // 確認：支払画面 ID と与信の参照を渡した
+            assertThat(payload).contains(OLD_API_VERSION);
+            assertThat(receiver.received).containsExactly("authorized " + SESSION_ID + " " + PAYMENT_INTENT_ID);
+        }
+
+        @Test
+        @DisplayName("BR-17 与信の成功の種類なのに Checkout Session でない通知は、システムのエラーにし、何も渡さない")
+        void rejectsNonSessionObject() {
+            // 準備：PaymentIntent の通知の種類だけを、与信の成功（Checkout Session の完了）にしたもの
+            var payload = recorded("payment-intent-canceled.json")
+                    .replace("\"type\": \"payment_intent.canceled\"", "\"type\": \"checkout.session.completed\"");
+            var signature = sign(payload, WEBHOOK_SECRET, NOW);
+
+            // 操作と確認：システムのエラーになり、何も渡さない
+            assertThat(payload).contains("checkout.session.completed");
+            assertSystemError(() -> handler.handle(payload, signature), CommonErrorCode.SYSTEM_ERROR);
+            assertThat(receiver.received).isEmpty();
         }
     }
 

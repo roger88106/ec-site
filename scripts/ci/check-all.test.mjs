@@ -9,11 +9,11 @@ import { fileURLToPath } from 'node:url'
 /** scripts/ci/ のディレクトリ */
 const CI_DIR = path.dirname(fileURLToPath(import.meta.url))
 
-/** check-all.sh と判定の script を写し、替わりの検査を置くリポジトリ */
+/** check-all.sh と判定の script を写し、代わりの検査を置くリポジトリ */
 const root = mkdtempSync(path.join(tmpdir(), 'check-all-'))
 after(() => rmSync(root, { recursive: true, force: true }))
 
-/** 替わりの検査（検査のフォルダの直下に置く）。名前 → 中身 */
+/** 代わりの検査（検査のフォルダの直下に置く）。名前 → 中身 */
 const CHECKS = {
   pass: "console.log('違反：0')",
   'no-summary': "console.log('終わった')",

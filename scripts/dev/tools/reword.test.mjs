@@ -187,45 +187,88 @@ describe('拒否', () => {
     git(dir, 'add', 'a.txt')
     const result = run(dir, [{ commit: shas[0], message: 'one2\n' }])
     assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /未 commit/)
   })
 
-  test('解決できない commit は、終了コード 1 で止まる', () => {
-    const { dir } = makeRepo(['one', 'two'])
-    const head = git(dir, 'rev-parse', 'HEAD')
-    const result = run(dir, [{ commit: 'deadbeefdeadbeef', message: 'x\n' }])
-    assert.equal(result.status, 1, result.stdout + result.stderr)
-    assertUntouched(dir, head, 'one\ntwo')
-  })
+  describe('対応表とメッセージの誤り（リポジトリを変えないので、1 つのリポジトリで試す）', () => {
+    let repo
+    let head
 
-  test('メッセージのファイルがないと、終了コード 1 で止まる', () => {
-    const { dir, shas } = makeRepo(['one', 'two'])
-    const head = git(dir, 'rev-parse', 'HEAD')
-    const work = path.join(root, `work-${counter++}`)
-    mkdirSync(work)
-    const mapFile = path.join(work, 'map.json')
-    writeFileSync(mapFile, JSON.stringify([{ commit: shas[0], message: 'no-such.txt' }]))
-    const result = spawnSync('node', [script, mapFile], { cwd: dir, encoding: 'utf8', env })
-    assert.equal(result.status, 1, result.stdout + result.stderr)
-    assertUntouched(dir, head, 'one\ntwo')
-  })
+    before(() => {
+      repo = makeRepo(['one', 'two'])
+      head = git(repo.dir, 'rev-parse', 'HEAD')
+    })
 
-  test('メッセージのファイルが空だと、終了コード 1 で止まる', () => {
-    const { dir, shas } = makeRepo(['one', 'two'])
-    const head = git(dir, 'rev-parse', 'HEAD')
-    const result = run(dir, [{ commit: shas[0], message: '  \n' }])
-    assert.equal(result.status, 1, result.stdout + result.stderr)
-    assertUntouched(dir, head, 'one\ntwo')
-  })
+    /** 対応表のファイルに `content` をそのまま書いて script を実行する */
+    function runRaw(content) {
+      const work = path.join(root, `work-${counter++}`)
+      mkdirSync(work)
+      const mapFile = path.join(work, 'map.json')
+      writeFileSync(mapFile, content)
+      return spawnSync('node', [script, mapFile], { cwd: repo.dir, encoding: 'utf8', env })
+    }
 
-  test('同じ commit が重複していると、終了コード 1 で止まる', () => {
-    const { dir, shas } = makeRepo(['one', 'two'])
-    const head = git(dir, 'rev-parse', 'HEAD')
-    const result = run(dir, [
-      { commit: shas[0], message: 'a\n' },
-      { commit: shas[0].slice(0, 10), message: 'b\n' },
-    ])
-    assert.equal(result.status, 1, result.stdout + result.stderr)
-    assertUntouched(dir, head, 'one\ntwo')
+    test('解決できない commit は、終了コード 1 で止まる', () => {
+      const result = run(repo.dir, [{ commit: 'deadbeefdeadbeef', message: 'x\n' }])
+      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.match(result.stderr, /commit を解決できない/)
+      assertUntouched(repo.dir, head, 'one\ntwo')
+    })
+
+    test('メッセージのファイルがないと、終了コード 1 で止まる', () => {
+      const result = runRaw(JSON.stringify([{ commit: repo.shas[0], message: 'no-such.txt' }]))
+      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.match(result.stderr, /メッセージのファイルが読めない/)
+      assertUntouched(repo.dir, head, 'one\ntwo')
+    })
+
+    test('メッセージのファイルが空だと、終了コード 1 で止まる', () => {
+      const result = run(repo.dir, [{ commit: repo.shas[0], message: '  \n' }])
+      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.match(result.stderr, /メッセージのファイルが空/)
+      assertUntouched(repo.dir, head, 'one\ntwo')
+    })
+
+    test('同じ commit が重複していると、終了コード 1 で止まる', () => {
+      const result = run(repo.dir, [
+        { commit: repo.shas[0], message: 'a\n' },
+        { commit: repo.shas[0].slice(0, 10), message: 'b\n' },
+      ])
+      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.match(result.stderr, /重複/)
+      assertUntouched(repo.dir, head, 'one\ntwo')
+    })
+
+    test('対応表が JSON として読めないと、終了コード 1 で止まる', () => {
+      const result = runRaw('[{')
+      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.match(result.stderr, /対応表が読めない/)
+      assertUntouched(repo.dir, head, 'one\ntwo')
+    })
+
+    test('対応表が配列でないか空だと、終了コード 1 で止まる', () => {
+      for (const content of ['{}', '[]']) {
+        const result = runRaw(content)
+        assert.equal(result.status, 1, `${content}：${result.stdout}${result.stderr}`)
+        assert.match(result.stderr, /1 件以上の配列/, content)
+      }
+      assertUntouched(repo.dir, head, 'one\ntwo')
+    })
+
+    test('対応表の要素に文字列の commit と message がないと、終了コード 1 で止まる', () => {
+      for (const item of [{ commit: repo.shas[0] }, { message: 'm.txt' }, { commit: 1, message: 'm.txt' }, null]) {
+        const result = runRaw(JSON.stringify([item]))
+        assert.equal(result.status, 1, `${JSON.stringify(item)}：${result.stdout}${result.stderr}`)
+        assert.match(result.stderr, /文字列の commit と message/, JSON.stringify(item))
+      }
+      assertUntouched(repo.dir, head, 'one\ntwo')
+    })
+
+    test('使い方の誤り（引数なし）は終了コード 2', () => {
+      const result = spawnSync('node', [script], { cwd: repo.dir, encoding: 'utf8', env })
+      assert.equal(result.status, 2, result.stdout + result.stderr)
+      assert.match(result.stderr, /使い方/)
+    })
   })
 
   test('HEAD の祖先でない commit は、終了コード 1 で止まる', () => {
@@ -239,10 +282,12 @@ describe('拒否', () => {
     const head = git(dir, 'rev-parse', 'HEAD')
     const result = run(dir, [{ commit: otherSha, message: 'x\n' }])
     assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /HEAD の祖先でない/)
     assertUntouched(dir, head, 'one\ntwo')
   })
 
   test('範囲にマージの commit があると、終了コード 1 で止まる', () => {
+    // 準備：main と side に 1 つずつ commit を積み、side を main にマージする
     const { dir, shas } = makeRepo(['one', 'two'])
     git(dir, 'checkout', '-q', '-b', 'side')
     writeFileSync(path.join(dir, 'b.txt'), 'b\n')
@@ -255,15 +300,19 @@ describe('拒否', () => {
     git(dir, 'merge', '-q', '--no-ff', '-m', 'merge', 'side')
     const head = git(dir, 'rev-parse', 'HEAD')
     const before = subjects(dir)
+
+    // 操作：マージより前の commit を書き換える
     const result = run(dir, [{ commit: shas[1], message: 'two2\n' }])
+
+    // 確認：書き換えずに止まり、リポジトリは変わらない
     assert.equal(result.status, 1, result.stdout + result.stderr)
     assert.match(result.stderr, /マージ/)
     assertUntouched(dir, head, before)
   })
 
   test('rebase が進行中なら、状態を変えず、進行中の rebase を残して終了コード 1 で止まる', () => {
+    // 準備：最初の commit を edit にした rebase を始めて、途中で止める
     const { dir } = makeRepo(['one', 'two', 'three'])
-    // 最初の commit を edit にして止める
     const editor = path.join(root, `seq-editor-${counter++}.mjs`)
     writeFileSync(
       editor,
@@ -278,8 +327,10 @@ describe('拒否', () => {
     assert.equal(existsSync(rebaseDir), true)
     const head = git(dir, 'rev-parse', 'HEAD')
 
+    // 操作
     const result = run(dir, [{ commit: head, message: 'one2\n' }])
 
+    // 確認：進行中の rebase と HEAD をそのまま残す
     assert.equal(result.status, 1, result.stdout + result.stderr)
     assert.match(result.stderr, /進行中/)
     assert.equal(existsSync(rebaseDir), true, '進行中の rebase を中止してはいけない')
@@ -287,24 +338,24 @@ describe('拒否', () => {
     assert.equal(git(dir, 'log', '-1', '--format=%s'), 'one')
   })
 
-  test('使い方の誤り（引数なし）は終了コード 2', () => {
-    const { dir } = makeRepo(['one'])
-    const result = spawnSync('node', [script], { cwd: dir, encoding: 'utf8', env })
-    assert.equal(result.status, 2, result.stdout + result.stderr)
-  })
 })
 
 describe('途中の失敗', () => {
   test('commit-msg の hook が拒否すると、元の HEAD とメッセージに戻り、終了コード 1', () => {
+    // 準備：FORBIDDEN を含むメッセージを拒否する commit-msg の hook を置く
     const { dir, shas } = makeRepo(['one', 'two', 'three'])
     const hook = path.join(dir, '.git', 'hooks', 'commit-msg')
     writeFileSync(hook, '#!/bin/sh\nif grep -q FORBIDDEN "$1"; then exit 1; fi\nexit 0\n')
     chmodSync(hook, 0o755)
     const head = git(dir, 'rev-parse', 'HEAD')
+
+    // 操作：2 つ目の書き換えを hook が拒否する
     const result = run(dir, [
       { commit: shas[0], message: 'one2\n' },
       { commit: shas[1], message: 'FORBIDDEN two\n' },
     ])
+
+    // 確認：1 つ目の書き換えも含めて元に戻り、rebase は残らない
     assert.equal(result.status, 1, result.stdout + result.stderr)
     assert.equal(git(dir, 'rev-parse', 'HEAD'), head)
     assert.equal(subjects(dir), 'one\ntwo\nthree')

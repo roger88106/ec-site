@@ -202,6 +202,7 @@ val unitTestMaxHeap = "768m"
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、ModuleStructureTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
+//   test-classes.dirs：単体テストと統合テストのクラスの置き場所。テストの書き方の検査（TestNameTest など）が読む（TestCodeClasses）
 // API の契約の正本（OpenAPI）の置き場所。テストが読むほか、下の「OpenAPI からのコード生成」でも使う
 val openApiDir = layout.projectDirectory.dir("../../api/openapi")
 val keycloakRealmsDir = file("../../docker/keycloak/realms")
@@ -209,10 +210,14 @@ val unitTestSystemProperties = mapOf(
     "openapi.dir" to openApiDir.asFile.absolutePath,
     "keycloak.realms.dir" to keycloakRealmsDir.absolutePath,
     "repo.root" to file("../..").absolutePath,
+    "test-classes.dirs" to (sourceSets.test.get().output.classesDirs + sourceSets["integrationTest"].output.classesDirs).asPath,
 )
 
-// 単体テストが読む契約・realm の設定・文書を、task の入力に宣言する（変わったときにテストと PIT を再実行するため）
+// 単体テストが読む契約・realm の設定・文書・統合テストのクラスを、task の入力に宣言する（変わったときにテストと PIT を再実行するため）。
+// 統合テストのクラスは、テストの書き方の検査が読むので、そのコンパイルに依存する
 fun Task.declareUnitTestInputs() {
+    dependsOn("integrationTestClasses")
+    inputs.files(sourceSets["integrationTest"].output.classesDirs)
     inputs.dir(openApiDir)
     inputs.dir(keycloakRealmsDir)
     inputs.files(fileTree("../../docs/02-設計") { include("*.md") })

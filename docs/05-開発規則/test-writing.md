@@ -47,7 +47,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 理由：失敗したときに、どの振る舞いが壊れたかが名前だけで分かるようにするため。
 
-確認方法：レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：レビュー（`@DisplayName` があることは自動。`TestNameTest`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`）
 
 
 ## 待ち方

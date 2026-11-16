@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
-import { acquireLock, busyLockMessage, formatLock, isE2eRunningIn, isProcessRunning, ownsLock, parseLock, readLock } from './lock.mjs'
+import { acquireLock, busyLockMessage, e2eLockFile, formatLock, isE2eRunningIn, isProcessRunning, ownsLock, parseLock, readLock } from './lock.mjs'
 
 const dir = mkdtempSync(path.join(tmpdir(), 'lock-'))
 after(() => rmSync(dir, { recursive: true, force: true }))
@@ -43,6 +43,10 @@ describe('ロックの中身', () => {
 })
 
 describe('ロックのファイルの読み取り', () => {
+  test('E2E のロックのファイルは、git の共通のディレクトリの ec-site-e2e.lock', () => {
+    assert.equal(e2eLockFile(path.join('repo', '.git')), path.join('repo', '.git', 'ec-site-e2e.lock'))
+  })
+
   test('ロックがなければ readLock は null を返す', () => {
     assert.equal(readLock(newLock()), null)
   })

@@ -1,6 +1,7 @@
 // lock.mjs の型（e2e/scripts/run.ts が TypeScript から読むため）
 export type LockOwner = { worktree: string; pid: number; startedAt: string }
 
+export function e2eLockFile(commonDir: string): string
 export function isProcessRunning(pid: number): boolean
 export function readLock(file: string): string | null
 export function acquireLock(input: {

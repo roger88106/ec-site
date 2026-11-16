@@ -4,8 +4,22 @@
 // ロックの中身は所有者（作業ツリーのパス、PID、開始の時刻）。所有者の PID のプロセスがなければ古いロックとして再取得する。
 import { randomUUID } from 'node:crypto'
 import { linkSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 
 /** @typedef {{ worktree: string, pid: number, startedAt: string }} LockOwner */
+
+/** E2E のロックのファイルの名前。全ての作業ツリーで共有するため、git の共通のディレクトリに置く */
+const E2E_LOCK_NAME = 'ec-site-e2e.lock'
+
+/**
+ * E2E のロックのファイルのパス。
+ *
+ * @param {string} commonDir git の共通のディレクトリ（`git rev-parse --git-common-dir` の絶対パス）
+ * @returns {string} ロックのファイルのパス
+ */
+export function e2eLockFile(commonDir) {
+  return path.join(commonDir, E2E_LOCK_NAME)
+}
 
 /**
  * プロセスが実行中か。権限がなくて信号を送れない（EPERM）プロセスも実行中とみなす。

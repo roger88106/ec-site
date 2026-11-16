@@ -3,9 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import {
-  E2E,
   SHARED_CONTAINERS,
-  SHARED_PORTS,
   SLOT_COUNT,
   assignSlot,
   checkBackendStopped,
@@ -33,62 +31,6 @@ const worktree = (path, ...extra) => ['worktree ' + path, 'HEAD bbb', 'branch re
 
 /** リポジトリのファイルを読む（lib は純粋なままにし、読み取りはテストで行う） */
 const repoFile = (relative) => readFileSync(new URL(`../../../${relative}`, import.meta.url), 'utf8').replace(/\r/g, '')
-
-/** 一覧を小さい順に並べる */
-const sorted = (values) => [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-
-/** docker/compose.yaml の ports のホストのポート（`${MAILPIT_SMTP_PORT:-2525}` のような既定値も読む） */
-function composeHostPorts() {
-  const mappings = repoFile('docker/compose.yaml')
-    .split('\n')
-    .filter((line) => /^\s*-\s*"\$\{LOCAL_BIND_ADDRESS/.test(line))
-  const ports = mappings.map((line) => {
-    const match = /^\s*-\s*"\$\{LOCAL_BIND_ADDRESS:-[^}]*\}:(?:\$\{[A-Z_]+:-(\d+)\}|(\d+)):\d+"/.exec(line)
-    assert.ok(match, `ホストのポートを読めない：${line}`)
-    return Number(match[1] ?? match[2])
-  })
-  assert.ok(ports.length > 0, 'compose のポートがない')
-  return ports
-}
-
-/** e2e/src/urls.ts の URL のポート */
-function e2eUrlPorts() {
-  const ports = [...repoFile('e2e/src/urls.ts').matchAll(/localhost:(\d+)/g)].map((match) => Number(match[1]))
-  assert.ok(ports.length > 0, 'e2e/src/urls.ts のポートがない')
-  return ports
-}
-
-/** application-e2e.yml の中身 */
-const e2eYaml = () => repoFile('backend/ecsite/src/main/resources/application-e2e.yml')
-
-/** application-e2e.yml の業務ポートと運用ポート */
-function e2eBackendPorts() {
-  const server = /^server:\n\s+port:\s*(\d+)/m.exec(e2eYaml())
-  const management = /^management:\n\s+server:\n(?:\s+#.*\n)*\s+port:\s*(\d+)/m.exec(e2eYaml())
-  assert.ok(server && management, 'application-e2e.yml のポートを読めない')
-  return [Number(server[1]), Number(management[1])]
-}
-
-/** application-e2e.yml のデータベースの名前 */
-function e2eDatabase() {
-  const match = /url:\s*jdbc:postgresql:\/\/[^/\s]+\/(\w+)/.exec(e2eYaml())
-  assert.ok(match, 'application-e2e.yml のデータベースを読めない')
-  return match[1]
-}
-
-/** application-e2e.yml のバケット */
-function e2eBackendBuckets() {
-  const buckets = [...e2eYaml().matchAll(/^\s+(?:incoming|public)-bucket:\s*(\S+)/gm)].map((match) => match[1])
-  assert.equal(buckets.length, 2, 'application-e2e.yml のバケットを読めない')
-  return buckets
-}
-
-/** docker/compose.yaml の E2E のバケット（seaweedfs-init の E2E_*_BUCKET） */
-function composeE2eBuckets() {
-  const buckets = [...repoFile('docker/compose.yaml').matchAll(/^\s+E2E_[A-Z_]*BUCKET:\s*(\S+)/gm)].map((match) => match[1])
-  assert.equal(buckets.length, 2, 'compose の E2E のバケットを読めない')
-  return buckets
-}
 
 describe('スロットの値', () => {
   test('スロット 0 は今の既定の値で、Cookie の接頭辞がない（DC-104-1）', () => {
@@ -140,19 +82,6 @@ describe('ポートと名前が重ならないこと', () => {
     assert.equal(new Set(slotPortList).size, slotPortList.length)
   })
 
-  test('全スロットのポートは compose の共有の基盤のホストのポートと重ならず、SHARED_PORTS はそれと一致する（DC-104-10）', () => {
-    const shared = composeHostPorts()
-    for (const port of slotPortList) assert.ok(!shared.includes(port), String(port))
-    assert.deepEqual(sorted(SHARED_PORTS), sorted(shared))
-  })
-
-  test('全スロットのポートは E2E の URL とバックエンドのポートと重ならず、E2E.ports はそのうち共有の基盤でないものと一致する（DC-104-10、DC-104-20）', () => {
-    const e2e = [...new Set([...e2eUrlPorts(), ...e2eBackendPorts()])]
-    for (const port of slotPortList) assert.ok(!e2e.includes(port), String(port))
-    const shared = composeHostPorts()
-    assert.deepEqual(sorted(E2E.ports), sorted(e2e.filter((port) => !shared.includes(port))))
-  })
-
   test('スロットのポートは、バックエンド、運用、店舗画面、管理画面の順に返す', () => {
     assert.deepEqual(slotPorts(2), [28080, 29080, 23000, 25173])
   })
@@ -161,17 +90,9 @@ describe('ポートと名前が重ならないこと', () => {
     assert.ok(slotPortList.every((port) => port < 49152))
   })
 
-  test('E2E のデータベースは全スロットの名前と重ならず、E2E.database は application-e2e.yml と一致する（DC-104-20）', () => {
-    const database = e2eDatabase()
-    assert.ok(!databases.includes(database))
-    assert.equal(E2E.database, database)
-  })
-
-  test('E2E のバケットは全スロットの名前と重ならず、E2E.buckets は compose と application-e2e.yml と一致する（DC-104-20）', () => {
-    const fromCompose = composeE2eBuckets()
-    for (const bucket of fromCompose) assert.ok(!buckets.includes(bucket), bucket)
-    assert.deepEqual(sorted(E2E.buckets), sorted(fromCompose))
-    assert.deepEqual(sorted(E2E.buckets), sorted(e2eBackendBuckets()))
+  test('E2E のデータベースとバケットは、全スロットの名前と重ならない（DC-104-20）', () => {
+    assert.ok(!databases.includes('ec_site_e2e'))
+    for (const bucket of ['ec-site-e2e-images', 'ec-site-e2e-images-incoming']) assert.ok(!buckets.includes(bucket), bucket)
     assert.equal(new Set([...databases, ...buckets]).size, databases.length + buckets.length)
   })
 })

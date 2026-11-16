@@ -22,16 +22,6 @@ function portOf(key) {
 /** スロットの数。0 がメインの作業ツリー、1〜3 が作業ツリー */
 export const SLOT_COUNT = PORT_LIST.slotCount
 
-/** 共有の基盤（compose）のホストのポート。スロットのポートと重ならない */
-export const SHARED_PORTS = PORT_LIST.ports.filter((item) => item.group === 'shared').map((item) => item.port)
-
-/** E2E のポート、データベース、バケット。スロットの値と重ならない */
-export const E2E = {
-  ports: PORT_LIST.ports.filter((item) => item.group === 'e2e').map((item) => item.port),
-  database: 'ec_site_e2e',
-  buckets: ['ec-site-e2e-images', 'ec-site-e2e-images-incoming'],
-}
-
 /** 共有の SeaweedFS（S3 互換）の URL。配信の基準 URL の前半 */
 const STORAGE_ORIGIN = `http://localhost:${portOf('seaweedfs')}`
 

@@ -7,12 +7,13 @@
 //   語の検査（error と warning の語、allow の照合）は、インラインコードの中を見ない。許容用語がインラインコードの中にしか出ないときは、使われていないと見る。
 //
 // warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
-//   既定の実行は warning を数えない（全体の件数は常に数千件で、読まれないため）。
+//   既定の実行は warning を数えない（全体の件数が多く、読まれないため）。
 //   文体の型と閾値（ja-text.json の style）は findStyleWarnings、文の取り出し方は proseSentences、読点の数え方は countCommas に書いてある。
 //
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 //
-// コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
+// コードも見る：アーカイブの外のコードの、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
+//   見るコードは、codeKind が読める種類のファイル（lib/source/comment-text）。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/source/comment-text。
 //   テンプレートで書いたテスト名（it(`…`)）の外側のバッククォートは文字列の区切りで、インラインコードとして隠さない（埋め込みの ${…} は X の 1 字にする）。
 // コミットメッセージは、commit の hook が --message で調べる。
@@ -22,8 +23,7 @@
 // 失敗したとき：error の語を言い換える。warning は --warning で一覧を出力し（終了コードは 0）、示された文を読んで修正するかを決める。
 //
 // 除外：部分の一致が誤検出になる語は、項目を word の代わりに pattern（正規表現）で書き、examples の hit（当たる例）と miss（当たらない例）を必ず書く。
-//   examples がない、正規表現が読めない、例が合わない項目は失敗にする。
-//   使わない語を含む正しい語は、error の項目の allow に書く（上の error の段落）。
+//   examples がない、正規表現が読めない、例が合わない項目は失敗にする。allow は上の error の段落。
 //
 // 使い方：node scripts/ci/ja/ja-text.mjs [--warning [--added] | --changed]（リポジトリのルートで）
 //   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。

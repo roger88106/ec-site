@@ -1,8 +1,6 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -68,11 +66,11 @@ class PlaceOrderConflictApiTest {
     @Autowired
     ApplicationContext applicationContext;
 
+    /**
+     * 在庫の引当の API（拒否の後に、注文手続きの引当が残ることを販売可能数で確認する）
+     */
     @Autowired
     StockReservationApi stockReservationApi;
-
-    @Autowired
-    MutableClock clock;
 
     /**
      * 共有の準備
@@ -206,7 +204,7 @@ class PlaceOrderConflictApiTest {
     class PurchasabilityChanged {
 
         @Test
-        @DisplayName("AC-88 注文手続きの後にバリアントが販売停止になると、注文は購入できない品目を示す 400 で、注文も支払も作らず、在庫とカートが変わらない")
+        @DisplayName("AC-88 注文手続きの後にバリアントが販売停止になると、注文は購入できない品目を示す 400 で、注文を作らず、在庫とカートが変わらない")
         void rejectsSuspendedAfterCheckout() throws Exception {
             // 準備：T シャツ 2 枚で注文手続きに進み、その後に運営者が T シャツを販売停止にする
             var checkoutId = fixture.orders.startCheckout(fixture.cartId);
@@ -217,7 +215,7 @@ class PlaceOrderConflictApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
 
-            // 確認：注文（と、注文に付く支払）がなく、在庫数が注文の前のまま
+            // 確認：注文がなく、在庫数が注文の前のまま
             assertNotWritten(checkoutId);
 
             // 確認：注文手続きの引当は残る（販売可能数は、在庫数からカートの数量を除いた数）
@@ -265,15 +263,12 @@ class PlaceOrderConflictApiTest {
         @DisplayName("AC-88 注文の時点で商品の税区分に有効な税率がなければ、注文は購入できない品目を示す 400")
         void rejectsWithoutRateAtOrder() throws Exception {
             // 準備：税率の開始の時刻に帽子を登録してカートに入れ、注文手続きに進んだ後、時計を税率の開始の前に戻す
-            var startAt = clock.instant().plus(RATE_START_AFTER);
-            var notYetEffective = fixture.catalog.taxCategory("将来の税区分", "10", startAt);
-            clock.setInstant(startAt);
-            var cap = fixture.catalog.product(notYetEffective, "帽子", 1000, "色").variant("黒").publish();
+            var rateStart = fixture.catalog.taxCategoryStartingAfter("10", RATE_START_AFTER);
+            var cap = fixture.catalog.product(rateStart.taxCategoryId(), "帽子", 1000, "色").variant("黒").publish();
             fixture.inventory.stock(cap.variantIds.getFirst(), cap.id, 1);
             fixture.orders.add(fixture.cartId, cap.variantIds.getFirst(), 1);
             var checkoutId = fixture.orders.startCheckout(fixture.cartId);
-            clock.setInstant(startAt.minusSeconds(1));
-            TaxRateScheduleCaches.evict(applicationContext);
+            fixture.catalog.rewindBeforeRateStart(rateStart.startAt(), applicationContext);
 
             // 操作と確認：400 で、エラーコードが CART_NOT_ORDERABLE
             fixture.place(checkoutId, TOTAL_WITH_CAP)

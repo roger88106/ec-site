@@ -124,7 +124,7 @@ class StockReservationCleanupJobTest {
         }
 
         @Test
-        @DisplayName("AC-284 期限からちょうど保存期間（1 日）の引当は、まだ消さない")
+        @DisplayName("期限からちょうど保存期間（1 日）の引当は、まだ消さない")
         void keepsReservationAtRetention() {
             // 準備：引当と、その期限からちょうど 1 日の時刻
             var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
@@ -139,7 +139,7 @@ class StockReservationCleanupJobTest {
         }
 
         @Test
-        @DisplayName("AC-284 期限から保存期間（1 日）を 1 マイクロ秒（DB の時刻の精度）でも過ぎた引当は消す")
+        @DisplayName("期限から保存期間（1 日）を 1 マイクロ秒（DB の時刻の精度）でも過ぎた引当は消す")
         void deletesReservationJustAfterRetention() {
             // 準備：引当と、その期限から 1 日と 1 マイクロ秒の時刻
             var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);

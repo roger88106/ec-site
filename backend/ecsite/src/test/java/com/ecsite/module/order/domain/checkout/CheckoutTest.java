@@ -133,8 +133,17 @@ class CheckoutTest {
             // 操作：注文手続きを始める
             var checkout = start(Set.of());
 
-            // 確認：期限が開始の 15 分後で、作成の時刻が開始の時刻
+            // 確認：期限が開始の 15 分後
             assertThat(checkout.expiresAt()).isEqualTo(Instant.parse("2026-11-01T00:15:00Z"));
+        }
+
+        @Test
+        @DisplayName("注文手続きの作成の時刻は、始めた時刻")
+        void recordsCreatedAt() {
+            // 操作：注文手続きを始める
+            var checkout = start(Set.of());
+
+            // 確認：作成の時刻が開始の時刻
             assertThat(checkout.createdAt()).isEqualTo(NOW);
         }
     }

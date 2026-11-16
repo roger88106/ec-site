@@ -118,6 +118,9 @@ class ShipmentApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * テストの中で発行されたイベント（出荷のイベントの配送業者を確認する）
+     */
     @Autowired
     ApplicationEvents events;
 
@@ -251,7 +254,7 @@ class ShipmentApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"YAMATO", "SAGAWA", "JAPAN_POST"})
-        @DisplayName("AC-168 出荷通知に使う注文の出荷のイベントに、登録した配送業者を載せる")
+        @DisplayName("AC-183 出荷通知に使う注文の出荷のイベントに、登録した配送業者を載せる")
         void publishesSameCarrier(String carrier) throws Exception {
             // 操作：配送業者を指定して出荷を登録する
             ship(carrier, TRACKING_NUMBER).andExpect(status().isCreated());

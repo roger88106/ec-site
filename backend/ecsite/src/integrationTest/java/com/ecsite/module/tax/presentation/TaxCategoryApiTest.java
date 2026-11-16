@@ -126,10 +126,13 @@ class TaxCategoryApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, NAME_MAX_LENGTH})
-        @DisplayName("名称が範囲の端の文字数なら登録できる")
+        @DisplayName("名称が範囲の端の文字数なら、その値で登録できる")
         void acceptsNameAtBoundary(int length) throws Exception {
-            // 操作と確認：201 が返る
-            createCategory("あ".repeat(length)).andExpect(status().isCreated());
+            // 操作：登録する
+            var id = createdCategoryId("あ".repeat(length));
+
+            // 確認：送った名称で保存される
+            mockMvc.perform(get(BASE + "/" + id)).andExpect(jsonPath("$.name").value("あ".repeat(length)));
         }
 
         @Test

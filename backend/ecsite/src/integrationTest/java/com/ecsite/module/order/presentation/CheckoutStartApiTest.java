@@ -1,6 +1,5 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -262,14 +261,11 @@ class CheckoutStartApiTest {
         @DisplayName("AC-88 税区分に有効な税率のない品目を含むカートは 400 で注文手続きに進めない")
         void rejectsCartWithItemWithoutRate() throws Exception {
             // 準備：税率の開始の時刻に商品を登録してカートに入れた後、時計を税率の開始の前に戻す
-            var startAt = clock.instant().plus(RATE_START_AFTER);
-            var notYetEffective = fixture.catalog().taxCategory("将来の税区分", "10", startAt);
-            clock.setInstant(startAt);
-            var product = fixture.catalog().product(notYetEffective, "税率の前の商品", 1000).publish();
+            var rateStart = fixture.catalog().taxCategoryStartingAfter("10", RATE_START_AFTER);
+            var product = fixture.catalog().product(rateStart.taxCategoryId(), "税率の前の商品", 1000).publish();
             fixture.inventory().stock(product.variantIds.getFirst(), product.id, 3);
             orders.add(cartId, product.variantIds.getFirst(), 1);
-            clock.setInstant(startAt.minusSeconds(1));
-            TaxRateScheduleCaches.evict(applicationContext);
+            fixture.catalog().rewindBeforeRateStart(rateStart.startAt(), applicationContext);
 
             // 操作と確認：購入できない品目を含むカートは拒否される
             expectCartNotOrderable();

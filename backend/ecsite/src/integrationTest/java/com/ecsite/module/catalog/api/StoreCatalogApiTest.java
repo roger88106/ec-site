@@ -114,6 +114,9 @@ class StoreCatalogApiTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 税率のキャッシュを捨てるときに渡す、アプリのコンテキスト
+     */
     @Autowired
     ApplicationContext context;
 
@@ -379,7 +382,7 @@ class StoreCatalogApiTest {
     class RateSwitch {
 
         @Test
-        @DisplayName("切り替えの直前は、旧い税率の税込価格")
+        @DisplayName("切り替えの直前は、前の税率の税込価格")
         void usesOldRateJustBeforeSwitch() throws Exception {
             // 準備：税区分「標準」の税率を、1 時間後から軽減と同じ率に切り替える予定にし、キャッシュを捨てる
             published(standard, PRICE_EXCL_TAX);
@@ -389,7 +392,7 @@ class StoreCatalogApiTest {
             clock.setInstant(switchAt.minusNanos(1));
             var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
 
-            // 確認：旧い税率の税込価格
+            // 確認：切り替えの前の税率の税込価格
             assertThat(item.priceInclTax()).isEqualTo(Money.of(PRICE_INCL_STANDARD));
         }
 
@@ -527,19 +530,15 @@ class StoreCatalogApiTest {
     /**
      * 税区分に今は有効な税率がない商品を、テストのカテゴリに作って公開する。
      *
-     * <p>最後の税率は無期限なので、商品を登録した後に有効な税率がなくなるのは、最初の税率の開始より前の時刻だけ。
-     * そこで、今から {@link #RATE_CHANGE_AFTER} 後に税率が始まる税区分を作り、その時刻に商品を登録して公開した後、
-     * 時計を税率の開始の 1 秒前に戻して、税率のキャッシュを捨てる。
+     * <p>今から {@link #RATE_CHANGE_AFTER} 後に税率が始まる税区分で、その時刻に商品を登録して公開した後、時計を税率の開始の前に戻す
+     * （{@link CatalogTestData#taxCategoryStartingAfter}）。
      *
      * @return 商品
      */
     private CatalogTestData.TestProduct publishedBeforeRateStarts() throws Exception {
-        var startAt = clock.instant().plus(RATE_CHANGE_AFTER);
-        var notYetEffective = catalog.taxCategory("将来", STANDARD_RATE, startAt);
-        clock.setInstant(startAt);
-        var product = published(notYetEffective, PRICE_EXCL_TAX);
-        clock.setInstant(startAt.minusSeconds(1));
-        TaxRateScheduleCaches.evict(context);
+        var rateStart = catalog.taxCategoryStartingAfter(STANDARD_RATE, RATE_CHANGE_AFTER);
+        var product = published(rateStart.taxCategoryId(), PRICE_EXCL_TAX);
+        catalog.rewindBeforeRateStart(rateStart.startAt(), context);
         return product;
     }
 

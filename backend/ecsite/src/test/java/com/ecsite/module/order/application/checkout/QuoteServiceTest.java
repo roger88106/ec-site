@@ -124,8 +124,11 @@ class QuoteServiceTest {
         // 操作：見積もる
         var quote = service.quote(lines, NOW, null);
 
-        // 確認：残りの品目は購入できるが、注文できない
+        // 確認（前提）：残っているバリアントの品目があり、購入できる
+        assertThat(quote.items()).extracting(item -> item.variant().variantCode()).containsExactly(REMAINING_CODE);
         assertThat(quote.items()).allMatch(QuoteItem::purchasable);
+
+        // 確認：注文できない
         assertThat(quote.orderable()).isFalse();
     }
 }

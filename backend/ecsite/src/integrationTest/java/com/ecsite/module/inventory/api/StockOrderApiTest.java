@@ -331,7 +331,7 @@ class StockOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-107 注文のキャンセルの戻しには在庫数の上限を当てず、上限の 1,000,000 を超えて戻せる")
+        @DisplayName("AC-42 注文のキャンセルの戻しには在庫数の上限を当てず、上限の 1,000,000 を超えて戻せる")
         void restoresBeyondManualLimit() {
             // 準備：在庫数が運営者の調整の上限の 1,000,000
             var variant = inventory.stockNewVariant(productId, 1_000_000);

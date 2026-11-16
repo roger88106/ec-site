@@ -63,9 +63,15 @@ class CatalogEventHandlerTest {
     @Autowired
     AsyncEvents asyncEvents;
 
+    /**
+     * 管理の API を呼ぶ MockMvc（商品の登録・削除と、在庫の取得）
+     */
     @Autowired
     MockMvc mockMvc;
 
+    /**
+     * 商品の補助が公開のたびに進める時計
+     */
     @Autowired
     MutableClock clock;
 

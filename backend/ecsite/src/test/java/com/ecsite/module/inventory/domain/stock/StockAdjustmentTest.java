@@ -208,19 +208,21 @@ class StockAdjustmentTest {
             var adjustment = StockAdjustment.forOrder(ORDER_DELTA, StockAdjustmentReason.ORDER, orderId, ORDER_NUMBER, NOW);
 
             // 確認：注文の写しを持ち、メモを持たない
-            assertOrderAdjustment(adjustment, orderId);
+            assertOrderAdjustment(adjustment, orderId, ORDER_DELTA, StockAdjustmentReason.ORDER);
         }
 
         @Test
         @DisplayName("AC-107 注文のキャンセルによる戻しの調整を、理由「注文のキャンセル」で作れる")
         void createsCancellationAdjustment() {
+            // 準備：注文
+            var orderId = UUID.randomUUID();
+
             // 操作：注文のキャンセルで 2 個戻す調整を作る
-            var adjustment = StockAdjustment.forOrder(-ORDER_DELTA, StockAdjustmentReason.ORDER_CANCELLATION, UUID.randomUUID(),
+            var adjustment = StockAdjustment.forOrder(-ORDER_DELTA, StockAdjustmentReason.ORDER_CANCELLATION, orderId,
                     ORDER_NUMBER, NOW);
 
-            // 確認：増える調整で、理由が注文のキャンセル
-            assertThat(adjustment.delta()).isEqualTo(-ORDER_DELTA);
-            assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER_CANCELLATION);
+            // 確認：増える調整で、理由が注文のキャンセルで、注文の写しを持ち、メモを持たない
+            assertOrderAdjustment(adjustment, orderId, -ORDER_DELTA, StockAdjustmentReason.ORDER_CANCELLATION);
         }
 
         @Test
@@ -268,23 +270,25 @@ class StockAdjustmentTest {
     }
 
     /**
-     * 注文による減算の調整が、注文の写しを持つことを確認する。
+     * 注文による調整（減算、またはキャンセルの戻し）が、注文の写しを持つことを確認する。
      *
-     * <p>確認すること（期待値は定数）：
+     * <p>確認すること：
      * <ul>
      *   <li>増減量</li>
-     *   <li>理由が「注文」</li>
+     *   <li>理由</li>
      *   <li>メモがない</li>
      *   <li>注文 ID</li>
-     *   <li>注文番号</li>
+     *   <li>注文番号（定数）</li>
      * </ul>
      *
      * @param adjustment 確認する調整
      * @param orderId    注文 ID（実行ごとに作るので、定数にできない）
+     * @param delta      期待する増減量
+     * @param reason     期待する理由
      */
-    private static void assertOrderAdjustment(StockAdjustment adjustment, UUID orderId) {
-        assertThat(adjustment.delta()).isEqualTo(ORDER_DELTA);
-        assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER);
+    private static void assertOrderAdjustment(StockAdjustment adjustment, UUID orderId, int delta, StockAdjustmentReason reason) {
+        assertThat(adjustment.delta()).isEqualTo(delta);
+        assertThat(adjustment.reason()).isEqualTo(reason);
         assertThat(adjustment.memo()).isNull();
         assertThat(adjustment.orderId()).isEqualTo(orderId);
         assertThat(adjustment.orderNumber()).isEqualTo(ORDER_NUMBER);

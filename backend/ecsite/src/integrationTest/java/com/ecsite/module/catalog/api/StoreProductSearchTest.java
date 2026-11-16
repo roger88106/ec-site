@@ -3,7 +3,6 @@ package com.ecsite.module.catalog.api;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.api.model.StoreProductSummary;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;
@@ -75,6 +74,9 @@ class StoreProductSearchTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 税率のキャッシュを捨てるときに渡す、アプリのコンテキスト
+     */
     @Autowired
     ApplicationContext context;
 
@@ -242,15 +244,11 @@ class StoreProductSearchTest {
         @Test
         @DisplayName("有効な税率のない税区分の商品は検索されない")
         void excludesProductWithoutTaxRate() throws Exception {
-            // 準備：表示される商品と、税区分に今は有効な税率がない商品。後者は、1 時間後に税率が始まる税区分で
-            // その時刻に公開し、時計を税率の開始の 1 秒前に戻す（最後の税率は無期限なので、税率がないのは開始の前だけ）
+            // 準備：表示される商品と、税区分に今は有効な税率がない商品
             var visible = published(mark + "綿のシャツ", "");
-            var startAt = clock.instant().plus(Duration.ofHours(1));
-            var notYetEffective = catalog.taxCategory("将来", STANDARD_RATE, startAt);
-            clock.setInstant(startAt);
-            catalog.product(notYetEffective, mark + "綿の手袋", "", PRICE_EXCL_TAX, List.of()).publish();
-            clock.setInstant(startAt.minusSeconds(1));
-            TaxRateScheduleCaches.evict(context);
+            var rateStart = catalog.taxCategoryStartingAfter(STANDARD_RATE, Duration.ofHours(1));
+            catalog.product(rateStart.taxCategoryId(), mark + "綿の手袋", "", PRICE_EXCL_TAX, List.of()).publish();
+            catalog.rewindBeforeRateStart(rateStart.startAt(), context);
 
             // 操作と確認：表示される商品だけが返る
             assertOnlyVisibleFound(visible.id);

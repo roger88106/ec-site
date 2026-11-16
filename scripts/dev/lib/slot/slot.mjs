@@ -18,6 +18,9 @@ function portOf(key) {
   return entry.port
 }
 
+/** スロットの環境で起動する対象 */
+export const TARGETS = /** @type {const} */ (['backend', 'store', 'admin'])
+
 /** スロットの数（ports.json の slotCount）。0 がメインの作業ツリー、1 から後が追加の作業ツリー */
 export const SLOT_COUNT = PORT_LIST.slotCount
 
@@ -166,7 +169,7 @@ export function generateApiDir(target) {
  */
 export function slotEnv(slot, target) {
   const values = slotValues(slot)
-  if (!['backend', 'store', 'admin'].includes(target)) throw new Error(`知らない対象: ${target}`)
+  if (!TARGETS.includes(target)) throw new Error(`知らない対象: ${target}`)
   if (slot === 0) return {}
   const backendOrigin = `http://localhost:${values.backendPort}`
   if (target === 'backend') {

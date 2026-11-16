@@ -41,13 +41,11 @@ import {
   slotValues,
   SHARED_CONTAINERS,
   SLOT_COUNT,
+  TARGETS,
 } from './lib/slot/slot.mjs'
 
 /** 共有の PostgreSQL のコンテナ */
 const POSTGRES = 'ec-site-postgres'
-
-/** 起動できる対象 */
-const TARGETS = ['backend', 'store', 'admin']
 
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
   assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
@@ -499,7 +497,7 @@ function env(ctx) {
  */
 async function run(ctx, args) {
   const [target, number] = args
-  if (!TARGETS.includes(target)) throw new Exit(2, `起動する対象は backend、store、admin のどれか：${target ?? ''}`)
+  if (!TARGETS.includes(target)) throw new Exit(2, `起動する対象は ${TARGETS.join('、')} のどれか：${target ?? ''}`)
   const slot = currentSlot(ctx)
   if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
   if (number !== undefined && Number(number) !== slot) {

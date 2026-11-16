@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,6 +50,26 @@ class ProductImageTest {
      * 1 商品あたりの画像の上限（枚）
      */
     private static final int MAX_IMAGES = 20;
+
+    /**
+     * 復元する 1 枚目の画像の ID
+     */
+    private static final UUID FIRST_IMAGE_ID = UUID.fromString("00000000-0000-0000-0000-000000004001");
+
+    /**
+     * 復元する 1 枚目の画像のアセット ID
+     */
+    private static final UUID FIRST_ASSET_ID = UUID.fromString("00000000-0000-0000-0000-000000005001");
+
+    /**
+     * 復元する 2 枚目の画像の ID
+     */
+    private static final UUID SECOND_IMAGE_ID = UUID.fromString("00000000-0000-0000-0000-000000004002");
+
+    /**
+     * 復元する 2 枚目の画像のアセット ID
+     */
+    private static final UUID SECOND_ASSET_ID = UUID.fromString("00000000-0000-0000-0000-000000005002");
 
     /**
      * 商品の生成
@@ -145,7 +166,7 @@ class ProductImageTest {
             // 準備：20 枚の画像を持つ商品
             var product = productWithImages(imageIds(MAX_IMAGES));
 
-            // 確認（前提）：21 枚目が拒否される
+            // 操作と確認（前提）：21 枚目が拒否される
             assertBusinessError(() -> product.addImage(UUID.randomUUID(), UUID.randomUUID()),
                     ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
 
@@ -395,16 +416,18 @@ class ProductImageTest {
         @Test
         @DisplayName("画像とバリアントの画像の指定も、スナップショットから復元できる")
         void restoresImages() {
-            // 準備：2 枚目をバリアントに指定した商品
-            var ids = imageIds(2);
-            var product = productWithImages(ids);
-            product.setVariantImage(product.variants().getFirst().id(), ids.get(1));
+            // 準備：2 枚目をバリアントに指定し、画像を並びの逆に持つスナップショット
+            var snapshot = snapshotWithImages(
+                    List.of(new ProductImage(SECOND_IMAGE_ID, SECOND_ASSET_ID, 2), new ProductImage(FIRST_IMAGE_ID, FIRST_ASSET_ID, 1)),
+                    SECOND_IMAGE_ID);
 
             // 操作：スナップショットから復元する
-            var restored = factory.restore(product.toSnapshot());
+            var restored = factory.restore(snapshot);
 
-            // 確認：スナップショットが元の商品と同じ
-            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+            // 確認：画像は並び順どおりで、バリアントは 2 枚目を指す
+            assertThat(restored.images()).containsExactly(
+                    new ProductImage(FIRST_IMAGE_ID, FIRST_ASSET_ID, 1), new ProductImage(SECOND_IMAGE_ID, SECOND_ASSET_ID, 2));
+            assertThat(restored.variants().getFirst().imageId()).isEqualTo(SECOND_IMAGE_ID);
         }
     }
 
@@ -447,5 +470,20 @@ class ProductImageTest {
         var product = productWithVariant();
         imageIds.forEach(imageId -> product.addImage(imageId, UUID.randomUUID()));
         return product;
+    }
+
+    /**
+     * 画像と、バリアントの画像を指定して、軸のない非公開の商品のスナップショットを作る。
+     *
+     * @param images         画像（スナップショットに入れる順）
+     * @param variantImageId バリアントに指定する画像の ID
+     * @return 商品のスナップショット
+     */
+    private static Product.Snapshot snapshotWithImages(List<ProductImage> images, UUID variantImageId) {
+        var variant = new Variant(UUID.fromString("00000000-0000-0000-0000-000000003001"), VariantCode.of("ABC-001"), List.of(), 1,
+                false, variantImageId);
+        return new Product.Snapshot(UUID.fromString("00000000-0000-0000-0000-000000002001"), ProductCode.of("ABC-001"), "T シャツ",
+                "", TAX_CATEGORY_ID, PriceExclTax.of(1000), Set.of(), List.of(), PublicationStatus.UNPUBLISHED, null,
+                PublicationPeriod.UNLIMITED, images, List.of(variant), 0);
     }
 }

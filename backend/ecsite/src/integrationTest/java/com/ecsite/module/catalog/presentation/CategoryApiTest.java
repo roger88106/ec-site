@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -109,6 +111,11 @@ class CategoryApiTest {
      * 変更した後の名称
      */
     private static final String FASHION = "ファッション";
+
+    /**
+     * 名称の上限（文字）
+     */
+    private static final int NAME_MAX_LENGTH = 50;
 
     // ============================== Bean ==============================
 
@@ -311,6 +318,26 @@ class CategoryApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_NAME"));
         }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, NAME_MAX_LENGTH})
+        @DisplayName("名称が範囲の端の文字数なら登録できる")
+        void acceptsNameAtBoundary(int length) throws Exception {
+            // 準備：親のカテゴリ「衣類」
+            var parent = createdId(CLOTHING, null);
+
+            // 操作と確認：登録できる
+            createCategory("あ".repeat(length), parent).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("名称が上限を 1 文字超えれば 400")
+        void rejectsNameOverMaximum() throws Exception {
+            // 操作と確認：リクエストの検証で 400
+            createCategory("あ".repeat(NAME_MAX_LENGTH + 1), null)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
     }
 
     @Nested
@@ -332,11 +359,11 @@ class CategoryApiTest {
             // 準備：並べ替えの API で、各階層を並べ替えた木
             var tree = sortedTree();
 
-            // 確認：最上位は、他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序が並び順どおり
+            // 操作と確認：最上位は、他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序が並び順どおり
             assertThat(rootsOf(tree.clothingId(), tree.foodId())).extracting(r -> r.get("id"))
                     .containsExactly(tree.foodId(), tree.clothingId());
 
-            // 確認：子と孫は並び順どおり
+            // 操作と確認：子と孫は並び順どおり
             var node = nodeOf(tree.rootName());
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())
@@ -453,6 +480,30 @@ class CategoryApiTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
         }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, NAME_MAX_LENGTH})
+        @DisplayName("変更後の名称が範囲の端の文字数なら変更できる")
+        void acceptsNameAtBoundary(int length) throws Exception {
+            // 準備：カテゴリ「衣類」の子「トップス」
+            var id = createdId(TOPS, createdId(CLOTHING, null));
+
+            // 操作と確認：変更できる
+            rename(id, "あ".repeat(length), 0).andExpect(status().isNoContent());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, NAME_MAX_LENGTH + 1})
+        @DisplayName("変更後の名称が範囲の外の文字数なら 400")
+        void rejectsNameOutOfRange(int length) throws Exception {
+            // 準備：カテゴリ「衣類」
+            var id = createdId(CLOTHING, null);
+
+            // 操作と確認：リクエストの検証で 400
+            rename(id, "あ".repeat(length), 0)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
     }
 
     @Nested
@@ -546,6 +597,30 @@ class CategoryApiTest {
             reorder(null, withOthers(others, a))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ORDER"));
+        }
+
+        @Test
+        @DisplayName("兄弟が 1 つだけなら、その 1 つの並びで並べ替えられる")
+        void reordersSingleChild() throws Exception {
+            // 準備：子が「トップス」だけの「衣類」
+            var parent = createdId(CLOTHING, null);
+            var tops = createdId(TOPS, parent);
+
+            // 操作と確認：並べ替えられる
+            reorder(parent, tops).andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("空の並びは 400")
+        void rejectsEmptyOrder() throws Exception {
+            // 準備：子が「トップス」だけの「衣類」
+            var parent = createdId(CLOTHING, null);
+            createdId(TOPS, parent);
+
+            // 操作と確認：リクエストの検証で 400
+            reorder(parent)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test

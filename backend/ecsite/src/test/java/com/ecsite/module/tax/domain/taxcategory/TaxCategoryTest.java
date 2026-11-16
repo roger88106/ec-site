@@ -127,6 +127,13 @@ class TaxCategoryTest {
         }
 
         @Test
+        @DisplayName("名称は 1 文字でも登録できる")
+        void acceptsOneCharacterName() {
+            // 操作と確認：1 文字の名称は拒否されない
+            assertThatCode(() -> factory.create("あ")).doesNotThrowAnyException();
+        }
+
+        @Test
         @DisplayName("名称は 50 文字まで登録できる")
         void acceptsNameUpToMaxLength() {
             // 操作と確認：50 文字の名称は拒否されない

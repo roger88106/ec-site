@@ -134,6 +134,26 @@ class ProductApiTest {
      */
     private static final int REDUCED_PRICE_INCL_TAX = 1080;
 
+    /**
+     * 商品名の上限（文字）
+     */
+    private static final int NAME_MAX_LENGTH = 200;
+
+    /**
+     * 説明の上限（文字）
+     */
+    private static final int DESCRIPTION_MAX_LENGTH = 10_000;
+
+    /**
+     * 軸の名前の上限（文字）
+     */
+    private static final int AXIS_NAME_MAX_LENGTH = 30;
+
+    /**
+     * 商品品番の上限（文字）
+     */
+    private static final int CODE_MAX_LENGTH = 32;
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -411,6 +431,145 @@ class ProductApiTest {
                             .formatted(PRODUCT_CODE, NAME, standard, PRICE_EXCL_TAX, UNKNOWN_ID))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ID"));
+        }
+    }
+
+    @Nested
+    @DisplayName("登録の入力の範囲")
+    class CreateRanges {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, NAME_MAX_LENGTH})
+        @DisplayName("商品名が範囲の端の文字数なら登録できる")
+        void acceptsNameAtBoundary(int length) throws Exception {
+            // 操作と確認：登録できる
+            products.create(createJson(PRODUCT_CODE, "あ".repeat(length), "", AXIS_COLOR)).andExpect(status().isCreated());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, NAME_MAX_LENGTH + 1})
+        @DisplayName("商品名が範囲の外の文字数なら 400")
+        void rejectsNameOutOfRange(int length) throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson(PRODUCT_CODE, "あ".repeat(length), "", AXIS_COLOR))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, DESCRIPTION_MAX_LENGTH})
+        @DisplayName("説明が範囲の端の文字数なら登録できる")
+        void acceptsDescriptionAtBoundary(int length) throws Exception {
+            // 操作と確認：登録できる
+            products.create(createJson(PRODUCT_CODE, NAME, "あ".repeat(length), AXIS_COLOR)).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("説明が上限を 1 文字超えれば 400")
+        void rejectsDescriptionOverMaximum() throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson(PRODUCT_CODE, NAME, "あ".repeat(DESCRIPTION_MAX_LENGTH + 1), AXIS_COLOR))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, AXIS_NAME_MAX_LENGTH})
+        @DisplayName("軸の名前が範囲の端の文字数なら登録できる")
+        void acceptsAxisNameAtBoundary(int length) throws Exception {
+            // 操作と確認：登録できる
+            products.create(createJson(PRODUCT_CODE, NAME, "", "あ".repeat(length))).andExpect(status().isCreated());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, AXIS_NAME_MAX_LENGTH + 1})
+        @DisplayName("軸の名前が範囲の外の文字数なら 400")
+        void rejectsAxisNameOutOfRange(int length) throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson(PRODUCT_CODE, NAME, "", "あ".repeat(length)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, CODE_MAX_LENGTH})
+        @DisplayName("商品品番が範囲の端の文字数なら登録できる")
+        void acceptsProductCodeAtBoundary(int length) throws Exception {
+            // 操作と確認：登録できる
+            products.create(createJson("A".repeat(length), NAME, "", AXIS_COLOR)).andExpect(status().isCreated());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, CODE_MAX_LENGTH + 1})
+        @DisplayName("商品品番が範囲の外の文字数なら 400")
+        void rejectsProductCodeOutOfRange(int length) throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson("A".repeat(length), NAME, "", AXIS_COLOR))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+    }
+
+    @Nested
+    @DisplayName("編集の入力の範囲")
+    class UpdateRanges {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, NAME_MAX_LENGTH})
+        @DisplayName("商品名が範囲の端の文字数なら編集できる")
+        void acceptsNameAtBoundary(int length) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：編集できる
+            products.update(id, nameAndDescriptionJson("あ".repeat(length), "")).andExpect(status().isNoContent());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, NAME_MAX_LENGTH + 1})
+        @DisplayName("商品名が範囲の外の文字数なら 400")
+        void rejectsNameOutOfRange(int length) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.update(id, nameAndDescriptionJson("あ".repeat(length), ""))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, DESCRIPTION_MAX_LENGTH})
+        @DisplayName("説明が範囲の端の文字数なら編集できる")
+        void acceptsDescriptionAtBoundary(int length) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：編集できる
+            products.update(id, nameAndDescriptionJson(NAME, "あ".repeat(length))).andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("説明が上限を 1 文字超えれば 400")
+        void rejectsDescriptionOverMaximum() throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.update(id, nameAndDescriptionJson(NAME, "あ".repeat(DESCRIPTION_MAX_LENGTH + 1)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(longs = {1, 9_999_999})
+        @DisplayName("AC-25 税抜価格が範囲の端なら編集できる")
+        void acceptsPriceAtBoundary(long price) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：編集できる
+            products.update(id, updateJson(standard, price, 0)).andExpect(status().isNoContent());
         }
     }
 
@@ -729,6 +888,35 @@ class ProductApiTest {
                 {"productCode": "%s", "name": "%s", "description": "%s", "taxCategoryId": "%s", "priceExclTax": %d,
                  "categoryIds": ["%s"], "axes": ["%s", "%s"]}"""
                 .formatted(PRODUCT_CODE, NAME, DESCRIPTION, standard, PRICE_EXCL_TAX, clothing, AXIS_COLOR, AXIS_SIZE);
+    }
+
+    /**
+     * 品番・商品名・説明・軸を指定した、商品の登録の本文を作る（標準の税区分、所属カテゴリなし）。
+     *
+     * @param code        商品品番
+     * @param name        商品名
+     * @param description 説明
+     * @param axis        軸の名前（1 つ）
+     * @return 本文
+     */
+    private String createJson(String code, String name, String description, String axis) {
+        return """
+                {"productCode": "%s", "name": "%s", "description": "%s", "taxCategoryId": "%s", "priceExclTax": %d,
+                 "axes": ["%s"]}"""
+                .formatted(code, name, description, standard, PRICE_EXCL_TAX, axis);
+    }
+
+    /**
+     * バージョン 0 の商品の、商品名と説明を指定した編集の本文を作る（標準の税区分、所属カテゴリなし）。
+     *
+     * @param name        商品名
+     * @param description 説明
+     * @return 本文
+     */
+    private String nameAndDescriptionJson(String name, String description) {
+        return """
+                {"name": "%s", "description": "%s", "taxCategoryId": "%s", "priceExclTax": %d,
+                 "categoryIds": [], "version": 0}""".formatted(name, description, standard, PRICE_EXCL_TAX);
     }
 
     /**

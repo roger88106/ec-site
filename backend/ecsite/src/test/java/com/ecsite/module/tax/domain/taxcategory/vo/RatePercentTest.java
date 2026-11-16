@@ -71,7 +71,7 @@ class RatePercentTest {
             var rate = RatePercent.of(new BigDecimal("10"));
             var sameValue = RatePercent.of(new BigDecimal("10.00"));
 
-            // 確認：等しく、ハッシュ値も同じ
+            // 操作と確認：等しく、ハッシュ値も同じ
             assertThat(rate).isEqualTo(sameValue).hasSameHashCodeAs(sameValue);
         }
 

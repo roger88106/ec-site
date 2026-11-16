@@ -5,6 +5,7 @@
 // - シェル（.sh）：# のコメント（1 行目の #! を除く）
 //
 // 走査（コメント・文字列の読み分け）は scan-code が行う。
+import { createLineLocator } from './line-number.mjs'
 import { JAVA_SCAN, scanCode, templateEnd } from './scan-code.mjs'
 import { skipModifiers, skipSpaces } from './test-files.mjs'
 
@@ -28,33 +29,39 @@ export function codeKind(file) {
 }
 
 /**
- * コメントの区間を返す。
+ * @typedef {object} Scanned 1 回の走査で集めた区間
+ * @property {{ from: number, to: number }[]} comments コメントの区間
+ * @property {Map<number, number>} strings 文字列の始まり → 終わりの次の位置
+ * @property {Uint8Array} code コードの字の位置なら 1
+ */
+
+/**
+ * ソースを 1 回だけ走査し、コメント・文字列・コードの区間を集める。
  *
  * @param {string} text ソース
  * @param {Parameters<typeof scanCode>[1]} options 走査の選択肢
- * @returns {{ from: number, to: number }[]} コメントの区間
+ * @returns {Scanned} 集めた区間
  */
-function commentRanges(text, options) {
-  const ranges = []
+function scanRanges(text, options) {
+  const comments = []
+  const strings = new Map()
+  const code = new Uint8Array(text.length)
   scanCode(text, options, (type, from, to) => {
-    if (type === 'comment') ranges.push({ from, to })
+    if (type === 'comment') comments.push({ from, to })
+    else if (type === 'string') strings.set(from, to)
+    else if (type === 'code') code.fill(1, from, to)
   })
-  return ranges
+  return { comments, strings, code }
 }
 
 /**
  * Java の @DisplayName("…") の文字列の区間を返す（メソッドにもクラスにも付いたもの）。
  *
  * @param {string} text ソース
+ * @param {Scanned} scanned text を JAVA_SCAN で走査した結果
  * @returns {{ from: number, to: number }[]} 文字列の区間（引用符を含む）
  */
-function javaTestNameRanges(text) {
-  const strings = new Map()
-  const code = new Uint8Array(text.length)
-  scanCode(text, JAVA_SCAN, (type, from, to) => {
-    if (type === 'string') strings.set(from, to)
-    if (type === 'code') code.fill(1, from, to)
-  })
+function javaTestNameRanges(text, { strings, code }) {
   const ranges = []
   for (const match of text.matchAll(/@DisplayName\(\s*(?=")/g)) {
     if (!code[match.index]) continue
@@ -70,15 +77,10 @@ function javaTestNameRanges(text) {
  * 修飾（.only、.skip、.each(表) など）は読み飛ばし、名前が文字列でもテンプレートでもない呼び出しは取り出さない。
  *
  * @param {string} text ソース
+ * @param {Scanned} scanned text を TypeScript の既定の選択肢で走査した結果
  * @returns {{ from: number, to: number, template?: boolean }[]} 名前の区間（引用符を含む）。template はテンプレートで書いた名前
  */
-function tsTestNameRanges(text) {
-  const strings = new Map()
-  const code = new Uint8Array(text.length)
-  scanCode(text, {}, (type, from, to) => {
-    if (type === 'string') strings.set(from, to)
-    if (type === 'code') code.fill(1, from, to)
-  })
+function tsTestNameRanges(text, { strings, code }) {
   const ranges = []
   for (const match of text.matchAll(TS_TEST_CALL)) {
     if (!code[match.index]) continue
@@ -199,10 +201,11 @@ function lineEnd(text, from) {
  * @returns {{ from: number, to: number }[]} 区間
  */
 function textRanges(text, kind) {
-  if (kind === 'java') return [...commentRanges(text, JAVA_SCAN), ...javaTestNameRanges(text)]
-  if (kind === 'kts') return commentRanges(text, JAVA_SCAN)
-  if (kind === 'ts') return [...commentRanges(text, {}), ...tsTestNameRanges(text)]
-  return shellCommentRanges(text)
+  if (kind === 'sh') return shellCommentRanges(text)
+  const scanned = scanRanges(text, kind === 'ts' ? {} : JAVA_SCAN)
+  if (kind === 'java') return [...scanned.comments, ...javaTestNameRanges(text, scanned)]
+  if (kind === 'ts') return [...scanned.comments, ...tsTestNameRanges(text, scanned)]
+  return scanned.comments
 }
 
 /**
@@ -214,15 +217,14 @@ function textRanges(text, kind) {
  */
 export function extractCommentLines(text, kind) {
   const ranges = textRanges(text, kind).sort((a, b) => a.from - b.from)
-  const lineStarts = [0]
-  for (let i = text.indexOf('\n'); i !== -1; i = text.indexOf('\n', i + 1)) lineStarts.push(i + 1)
+  const lineOf = createLineLocator(text)
   const byLine = new Map()
   for (const { from, to, template } of ranges) {
-    const line = lineStarts.findLastIndex((start) => start <= from)
+    const line = lineOf(from)
     const segment = template ? templateName(text, from, to) : text.slice(from, to)
     segment.split('\n').forEach((raw, offset) => {
       const part = raw.replace(/\r$/, '')
-      if (part.trim()) byLine.set(line + offset + 1, [...(byLine.get(line + offset + 1) ?? []), part])
+      if (part.trim()) byLine.set(line + offset, [...(byLine.get(line + offset) ?? []), part])
     })
   }
   return [...byLine].map(([line, parts]) => ({ line, text: parts.join(' ') }))
@@ -239,11 +241,12 @@ export function extractCommentLines(text, kind) {
  * @returns {Set<number>} 行番号（1 から）
  */
 export function trailingCommentLines(text, kind) {
-  const ranges = kind === 'sh' ? shellCommentRanges(text) : commentRanges(text, kind === 'ts' ? {} : JAVA_SCAN)
+  const ranges = kind === 'sh' ? shellCommentRanges(text) : scanRanges(text, kind === 'ts' ? {} : JAVA_SCAN).comments
+  const lineOf = createLineLocator(text)
   const lines = new Set()
   for (const { from } of ranges) {
     const start = text.lastIndexOf('\n', from - 1) + 1
-    if (text.slice(start, from).trim()) lines.add(text.slice(0, start).split('\n').length)
+    if (text.slice(start, from).trim()) lines.add(lineOf(from))
   }
   return lines
 }

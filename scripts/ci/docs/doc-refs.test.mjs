@@ -35,6 +35,12 @@ describe('文書の参照の検査', () => {
     assert.equal(isExcluded('backend/ecsite/src/main/resources/db/migration/V1__a.sql'), true)
   })
 
+  test('切れた参照をわざと書く、この検査と ja-text のテストは見ない', () => {
+    assert.equal(isExcluded('scripts/ci/docs/doc-refs.test.mjs'), true)
+    assert.equal(isExcluded('scripts/ci/ja/ja-text.test.mjs'), true)
+    assert.equal(isExcluded('scripts/ci/docs/doc-refs.mjs'), false)
+  })
+
   test('Gradle の設定（.kts）と、xml・json・jsonc・grit・ps1 も見る（ファイルの全体を読むので、コメントの読み方は要らない）', () => {
     assert.equal(isTargetFile('backend/ecsite/build.gradle.kts'), true)
     assert.equal(isTargetFile('docs/a.md'), true)

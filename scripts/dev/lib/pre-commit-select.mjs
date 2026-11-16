@@ -28,7 +28,8 @@ export const CHECK_INPUTS = {
   'doc-refs': ALWAYS,
   'docs-folders': [/^docs\//],
   'frontend-rules': [/^frontend\//, /^e2e\//],
-  'glossary-ids': ALWAYS,
+  // 用語集は名前で選ぶ。コードの名前を探す場所（SEARCH_ROOTS）のうち scripts/ は全てを実行する形に含まれる
+  'glossary-ids': [/^(?:backend|frontend|api|docker|e2e)\//],
   'gradle-plugins': [/^backend\/ecsite\/.*\.gradle\.kts$/],
   'ja-text': ALWAYS,
   'java-rules': [/^backend\/ecsite\/src\//],

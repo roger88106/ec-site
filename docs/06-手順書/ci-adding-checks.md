@@ -20,6 +20,7 @@ CI の検査の script を加える手順と、補助の script の置き場所�
   - `report/` の下の `coverage-summary.mjs`、`mutation-report.mjs`：引数が必要（[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」）。
   - `licenses/`：画面の依存が必要な検査。
   - `globals/` の下の `lib-globals.mjs`：TypeScript の依存が必要な、組み込みの名前の一覧の生成と確認。
+  - `backend/` の下の `config-defaults.mjs`：バックエンドのコンパイルの出力（設定の一覧）が必要な、環境変数の文書の既定値の照合。CI のビルドのジョブだけで実行し、commit の前の hook では実行しない。
   - `workflow/` の下の `main-source.mjs`：workflow から呼ぶ判定（元のブランチの名前が引数）。
   - `review/` の下の `test-diff.mjs`：レビューで手動で使う補助（[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）。
   - `mermaid/` の下の `mermaid-check.mjs`：Chrome とネットワークが必要な検査（[CI の検査の script](ci-checks.md)の「Mermaid の図の描画の検査」）。

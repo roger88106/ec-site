@@ -81,6 +81,11 @@ jobs:
       - name: ライセンスの検査、ビルドと単体テスト
         run: ./gradlew check -x integrationTest -x coverageReport
 
+      # 環境変数の文書の既定値を、コンパイルで書き出した設定の一覧と照合する（コンパイルの出力を読むので、check-all.sh でなくここで流す）
+      - name: 環境変数の文書の既定値の検査
+        working-directory: .
+        run: node scripts/ci/backend/config-defaults.mjs
+
       # 合わせるジョブ（backend）が、コンパイルなしでカバレッジの報告を作るために使う。
       # クラスは、各ジョブが別々にコンパイルしたものと中身が同じ（JaCoCo のクラスの ID が一致する）
       - name: カバレッジの実行データ（単体テスト）を保存

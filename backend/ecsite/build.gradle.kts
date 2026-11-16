@@ -153,6 +153,10 @@ dependencies {
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
+    // --- 設定の値の型の一覧（META-INF/spring-configuration-metadata.json。@DefaultValue の既定値を含む） ---
+    // 環境変数の文書の既定値との照合（scripts/ci/backend/config-defaults.mjs）が読む
+    annotationProcessor(libs.spring.boot.configuration.processor)
+
     // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
     errorprone(libs.errorprone.core)
     errorprone(libs.nullaway)

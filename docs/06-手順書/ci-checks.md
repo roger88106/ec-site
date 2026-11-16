@@ -15,7 +15,6 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないことを確認する |
 | `doc-shape` | 表のセルの長さ、設計と機能仕様の観測の語と Stripe の語、Mermaid の sequenceDiagram の大きさを warning として示す（失敗にしない） |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
-| `env-defaults` | 管理画面の IdP の既定値が、全ての置き場所で一致することを確認する（設定の型の既定値と文書の照合は `backend/config-defaults`。CI のビルドのジョブだけで動き、commit の前の hook では動かない） |
 | `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
 | `gradle-plugins` | Gradle のプラグインの id が、policy.json の gradlePlugins と過不足なく一致することを確認する |
@@ -41,6 +40,8 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する |
 
 ※1：表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。
+
+`backend/config-defaults`（設定の型の既定値を環境変数の文書と照合する）は、表に入れていない。CI のビルドのジョブだけで動き、commit の前の hook では動かない（[CI の検査の追加](ci-adding-checks.md)の「補助の script の置き場所」）。
 
 ## commit の前の hook
 

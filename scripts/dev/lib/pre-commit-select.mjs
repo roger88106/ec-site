@@ -28,7 +28,6 @@ export const CHECK_INPUTS = {
   'doc-refs': ALWAYS,
   'doc-shape': [/\.md$/],
   'docs-folders': [/^docs\//],
-  'env-defaults': [/^backend\/ecsite\/src\/main\//],
   'frontend-rules': [/^frontend\//, /^e2e\//],
   'glossary-ids': ALWAYS,
   'gradle-plugins': [/^backend\/ecsite\/.*\.gradle\.kts$/],

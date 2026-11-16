@@ -14,7 +14,7 @@
 // 使い方：node scripts/ci/config/local-ports.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { exitIfNoFiles } from '../lib/git/git-files.mjs'
-import { describeUnreadableHostPort, findPortProblems, readHostPort } from './compose-ports.mjs'
+import { describeUnreadableHostPort, findPortProblems, parseHostPort } from './compose-ports.mjs'
 
 /** ポートの一覧 */
 const LIST_FILE = 'scripts/dev/ports.json'
@@ -62,14 +62,19 @@ const REALM_FILES = {
  * @returns {Set<number>} 全てのポート
  */
 export function expandedPorts(list) {
-  const result = new Set()
-  for (const entry of list.ports) {
-    const slots = entry.slotted ? list.slotCount : 1
-    for (let slot = 0; slot < slots; slot++) {
-      result.add(entry.port + list.slotOffset * slot)
-    }
-  }
-  return result
+  return new Set(list.ports.flatMap((entry) => slotPorts(entry, list)))
+}
+
+/**
+ * 一覧の 1 つの項目のポートを、スロットごとにずらした分も含めて返す（スロットのない項目は 1 つ）。
+ *
+ * @param {{ port: number, slotted: boolean }} entry 一覧の項目
+ * @param {{ slotCount: number, slotOffset: number }} list ポートの一覧
+ * @returns {number[]} スロットの順のポート
+ */
+function slotPorts(entry, list) {
+  const slots = entry.slotted ? list.slotCount : 1
+  return Array.from({ length: slots }, (_, slot) => entry.port + list.slotOffset * slot)
 }
 
 /**
@@ -81,11 +86,11 @@ export function expandedPorts(list) {
  * @param {string} text compose のファイル
  * @returns {{ ports: number[], unreadable: { service: string, entry: string }[] }} ホスト側のポートと、読めない項目（書いた順）
  */
-export function readComposeHostPorts(text) {
+export function parseComposeHostPorts(text) {
   const ports = []
   const unreadable = []
   for (const port of findPortProblems(text).ports) {
-    const host = readHostPort(port.entry)
+    const host = parseHostPort(port.entry)
     if (host === null) {
       unreadable.push(port)
     } else {
@@ -103,7 +108,7 @@ export function readComposeHostPorts(text) {
  * @param {string} text 文書や設定
  * @returns {number[]} ポート（出てくる順）
  */
-export function readDocPorts(text) {
+export function parseDocPorts(text) {
   return [...text.matchAll(/(?::|--port\s+)(\d{4,5})(?!\d)/g)].map((match) => Number(match[1]))
 }
 
@@ -116,9 +121,9 @@ export function readDocPorts(text) {
  * @param {string} text 設定やスクリプト
  * @returns {number[]} ポート（種類ごとに出てくる順。重複は除く）
  */
-export function readConfigPorts(text) {
+export function parseConfigPorts(text) {
   const found = [
-    ...readDocPorts(text),
+    ...parseDocPorts(text),
     ...[...text.matchAll(/^\s*port:\s*(?:\$\{\w+:)?(\d{4,5})(?!\d)/gm)].map((match) => Number(match[1])),
     ...[...text.matchAll(/"port"\s*:\s*(\d{4,5})(?!\d)/g)].map((match) => Number(match[1])),
     ...[...text.matchAll(/"--port"\s*,\s*"(\d{4,5})"/g)].map((match) => Number(match[1])),
@@ -132,7 +137,7 @@ export function readConfigPorts(text) {
  * @param {string} text 文書
  * @returns {{ slot: number, ports: number[] }[]} 行ごとの、スロットの番号と、続く数字だけのセル
  */
-function readSlotRows(text) {
+function parseSlotRows(text) {
   const rows = []
   for (const line of text.split('\n')) {
     const cells = line.split('|').slice(1, -1).map((cell) => cell.replace(/（.*?）/g, '').trim())
@@ -182,7 +187,8 @@ function diffProblems(actual, expected, where, place) {
  * 一覧と、一覧を読めない所のポートの食い違いを探す。
  *
  * @param {{ list: { slotCount: number, slotOffset: number, ports: { key: string, port: number, group: string, slotted: boolean }[] },
- *   compose: string, docs: Record<string, string>, sources: Record<string, string> }} input
+ *   compose: string, docs: Record<string, string>, sources: Record<string, string>, configs?: Record<string, string>,
+ *   realms?: Record<string, { text: string, keys: string[] }> }} input
  *   docs・sources・configs は、ファイルのパス → 内容。realms は、ファイルのパス → { text: 内容, keys: redirect URI に全て書く画面の一覧の key }
  * @returns {string[]} 問題の文
  */
@@ -191,9 +197,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
 
   const used = new Map()
   for (const entry of list.ports) {
-    const slots = entry.slotted ? list.slotCount : 1
-    for (let slot = 0; slot < slots; slot++) {
-      const port = entry.port + list.slotOffset * slot
+    for (const port of slotPorts(entry, list)) {
       if (used.has(port)) {
         problems.push(`${LIST_FILE} でポート ${port} が重なる（${used.get(port)} と ${entry.key}）`)
       }
@@ -202,7 +206,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
   }
 
   const shared = new Set(list.ports.filter((entry) => entry.group === 'shared').map((entry) => entry.port))
-  const composePorts = readComposeHostPorts(compose)
+  const composePorts = parseComposeHostPorts(compose)
   for (const port of composePorts.unreadable) {
     problems.push(describeUnreadableHostPort(COMPOSE_FILE, port))
   }
@@ -211,7 +215,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
   const all = expandedPorts(list)
   const docsText = Object.values(docs).join('\n')
   for (const [file, text] of Object.entries(docs)) {
-    for (const port of new Set(readDocPorts(text))) {
+    for (const port of new Set(parseDocPorts(text))) {
       if (!all.has(port)) {
         problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、文書を修正する）`)
       }
@@ -224,7 +228,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
   }
 
   const slotted = list.ports.filter((entry) => entry.slotted)
-  const rows = Object.entries(docs).flatMap(([file, text]) => readSlotRows(text).map((row) => ({ ...row, file })))
+  const rows = Object.entries(docs).flatMap(([file, text]) => parseSlotRows(text).map((row) => ({ ...row, file })))
   if (rows.length === 0) {
     problems.push('文書にスロットのポートの表が見つからない')
   }
@@ -241,11 +245,11 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
   }
 
   const e2e = new Set(list.ports.filter((entry) => entry.group === 'e2e').map((entry) => entry.port))
-  // E2E の設定が書いてよいのは、E2E のポートと、E2E が使う共有のサービス（IdP・Mailpit）だけ。開発の画面のポートなどに替えても、一覧にあるだけで通さない
+  // E2E の設定が書いてよいのは、E2E のポートと、E2E が使う共有のサービス（E2E_SHARED_KEYS）だけ。開発の画面のポートなどに替えても、一覧にあるだけで通さない
   const allowed = new Set([...e2e, ...list.ports.filter((entry) => E2E_SHARED_KEYS.includes(entry.key)).map((entry) => entry.port)])
   const sourcePorts = new Set()
   for (const [file, text] of Object.entries(sources)) {
-    for (const port of readConfigPorts(text)) {
+    for (const port of parseConfigPorts(text)) {
       sourcePorts.add(port)
       if (!all.has(port)) {
         problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、設定を修正する）`)
@@ -261,23 +265,22 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
   }
 
   for (const [file, text] of Object.entries(configs)) {
-    for (const port of readConfigPorts(text)) {
+    for (const port of parseConfigPorts(text)) {
       if (!all.has(port)) {
         problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、${file} を修正する）`)
       }
     }
   }
   for (const [file, { text, keys }] of Object.entries(realms)) {
-    const written = new Set(readConfigPorts(text))
-    for (const port of readConfigPorts(text)) {
+    const ports = parseConfigPorts(text)
+    const written = new Set(ports)
+    for (const port of ports) {
       if (!all.has(port)) {
         problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、${file} を修正する）`)
       }
     }
     for (const entry of list.ports.filter((item) => keys.includes(item.key))) {
-      const slots = entry.slotted ? list.slotCount : 1
-      for (let slot = 0; slot < slots; slot++) {
-        const port = entry.port + list.slotOffset * slot
+      for (const port of slotPorts(entry, list)) {
         if (!written.has(port)) {
           problems.push(`一覧のポート ${port}（${entry.key}）が ${file} の redirect URI にない（${file} に加える）`)
         }
@@ -295,7 +298,7 @@ if (import.meta.main) {
   }
   exitIfNoFiles(files.filter((file) => existsSync(file)), '照合するファイル')
   if (missing.length) {
-    process.exit(1)
+    process.exit(2)
   }
   const read = (file) => readFileSync(file, 'utf8')
   const list = JSON.parse(read(LIST_FILE))

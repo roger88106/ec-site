@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { withoutGitEnv } from '../lib/git/git-env.mjs'
 import {
   findEnumNameConversions,
   findUnexplainedSuppressWarnings,
@@ -172,6 +178,11 @@ describe('@SuppressWarnings の理由の検査', () => {
     assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
   })
 
+  test('@interface は注釈として飛ばさないので、その前の // は @SuppressWarnings の理由にならない', () => {
+    const text = ['// 理由', '@interface', '@SuppressWarnings("unchecked")', 'Map a() {}'].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text).map((hit) => hit.line), [3])
+  })
+
   test('全てのソースセット（main、test、integrationTest、testFixtures、tools）を見て、生成したコードは見ない', () => {
     const base = 'backend/ecsite/src'
     for (const set of ['main', 'test', 'integrationTest', 'testFixtures', 'tools']) {
@@ -206,5 +217,57 @@ describe('name() の変換の検査の境界', () => {
       'String url = "http://x"; Status.valueOf(a.name());',
     ].join('\n')
     assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [3])
+  })
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./java-rules.mjs', import.meta.url))
+  const main = 'backend/ecsite/src/main/java/com/ecsite/Foo.java'
+
+  /**
+   * 一時の Git のリポジトリにファイルを置いて、script を実行する。
+   *
+   * @param {Record<string, string>} files リポジトリのルートからのパスと内容
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function run(files) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'java-rules-'))
+    const env = withoutGitEnv()
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: dir, env })
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      return spawnSync(process.execPath, [script], { cwd: dir, env, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('違反がなければ、終了コード 0 で、違反の数を出して終わる', () => {
+    const result = run({ [main]: '// 理由\n@SuppressWarnings("unchecked")\nMap a() {}\n' })
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /バックエンドの書き方の違反：0/)
+  })
+
+  test('違反があれば、ファイルと行を出し、終了コード 1 で終わる', () => {
+    const result = run({ [main]: 'int x;\n@SuppressWarnings("unchecked")\nMap a() {}\nStatus s = Status.valueOf(a.name());\n' })
+    assert.equal(result.status, 1, result.stdout)
+    assert.ok(result.stdout.includes(`${main}:2 @SuppressWarnings の直前の行に`), result.stdout)
+    assert.ok(result.stdout.includes(`${main}:4 列挙型の変換に name() を渡す`), result.stdout)
+    assert.match(result.stdout, /バックエンドの書き方の違反：2/)
+  })
+
+  test('name() の変換は本番のソースだけを見るので、テストのソースは @SuppressWarnings だけを見る', () => {
+    const result = run({ 'backend/ecsite/src/test/java/com/ecsite/FooTest.java': 'Status s = Status.valueOf(a.name());\n' })
+    assert.equal(result.status, 0, result.stdout)
+  })
+
+  test('対象のファイルが 0 件なら、理由を出して終了コード 2 で終わる（lib の exitIfNoFiles）', () => {
+    const result = run({ 'README.md': '@SuppressWarnings\n' })
+    assert.equal(result.status, 2, result.stdout)
+    assert.match(result.stdout, /1 件も見つからない/)
+    assert.doesNotMatch(result.stdout, /違反：/)
   })
 })

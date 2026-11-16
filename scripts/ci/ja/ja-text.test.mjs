@@ -104,8 +104,12 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
     }
   })
 
-  test('許容用語が使われている場合は問題にならない', () => {
-    assert.deepEqual(findAllowProblems(['\u6279\u5224と\u6279\u8a55'], list.error.filter((item) => item.word === BATCH)), [])
+  test('一覧の許容用語が全て使われている場合は問題にならない', () => {
+    const items = list.error.filter((item) => item.word === '版')
+    assert.equal(items.length, 1)
+    const allows = Object.keys(items[0].allow)
+    assert.ok(allows.length > 0)
+    assert.deepEqual(findAllowProblems([allows.join('と')], items), [])
   })
 })
 
@@ -121,7 +125,7 @@ describe('日本語の文の検査（校閲の評価の一覧の語）', () => {
   })
 })
 
-/** 和語の「足す」。ファイルに使わない語を書かないよう、エスケープで組み立てる */
+/** 和語の「足す」 */
 const ADD = '足す'
 
 describe('日本語の文の検査（pattern と examples の項目）', () => {
@@ -149,6 +153,10 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
     }
   })
 
+  test('files の正規表現が読めない項目は、項目の名前と files を示す設定の誤りになる', () => {
+    assert.throws(() => validateTerms([{ word: '道具', use: 'ツール', files: '(' }]), /「道具」の files「\(」：正規表現として不正/)
+  })
+
   test('hit に当たらない例と、miss に当たる例を誤りとして示す', () => {
     const wrong = { pattern: 'a', use: 'x', examples: { hit: ['b'], miss: ['a'] } }
     assert.equal(jaText.findPatternProblems([wrong]).length, 2)
@@ -167,7 +175,7 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
     assert.equal(hit.word, '12')
   })
 
-  test('word の項目は今まで通りで、pattern と同じ一覧に混ぜられる', () => {
+  test('word の項目と pattern の項目を、同じ一覧に混ぜられる', () => {
     const terms = [{ word: '道具', use: 'ツール' }, { pattern: '\\d', use: 'u', examples: { hit: ['1'], miss: ['a'] } }]
     assert.deepEqual(findTerms('道具と1', terms).map((hit) => hit.word), ['道具', '1'])
   })
@@ -210,6 +218,39 @@ describe('日本語の文の検査（コミットメッセージ）', () => {
   })
 })
 
+describe('日本語の文の検査（使い方の誤り）', () => {
+  /**
+   * 引数を付けて入口を実行する。
+   *
+   * @param {string[]} args 引数
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  const run = (args) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', env: withoutGitEnv() })
+
+  test('知らない引数と、--warning のない --added は、終了コード 2 で理由を示す', () => {
+    const typo = run(['--waning'])
+    assert.equal(typo.status, 2)
+    assert.match(typo.stderr, /知らない引数：--waning/)
+    const added = run(['--added'])
+    assert.equal(added.status, 2)
+    assert.match(added.stderr, /--added は --warning と合わせて使う/)
+  })
+
+  test('--message のファイルがないとき、ファイルを指定しないときは、終了コード 2 にする', () => {
+    const missing = run(['--message', path.join(tmpdir(), 'ja-text-no-such-file')])
+    assert.equal(missing.status, 2)
+    assert.match(missing.stderr, /--message のファイルがない/)
+    assert.equal(run(['--message']).status, 2)
+  })
+
+  test('引数の誤りは、知る印と --message のファイルを誤りにしない', () => {
+    assert.equal(jaText.findArgumentProblem(['--warning', '--added']), null)
+    assert.equal(jaText.findArgumentProblem(['--message', 'COMMIT_EDITMSG']), null)
+    assert.equal(jaText.findArgumentProblem(['--changed']), null)
+    assert.equal(jaText.findArgumentProblem([]), null)
+  })
+})
+
 describe('日本語の文の検査（git commit -v の差分）', () => {
   const SCISSORS = '# ------------------------ >8 ------------------------'
   const verbose = `docs: 文書を直す\n\n本文\n${SCISSORS}\n# Do not modify or remove the line above.\ndiff --git a/docs/a.md b/docs/a.md\n@@ -1 +1 @@\n-道具を使う\n+ツールを使う\n`
@@ -225,7 +266,7 @@ describe('日本語の文の検査（git commit -v の差分）', () => {
     assert.equal(runMessage(verbose.replace('道具', '書き修正')).status, 0)
   })
 
-  test('切り取り線の行の上の使わない語は、これまで通り見つける', () => {
+  test('切り取り線の行の上の使わない語は見つける', () => {
     assert.equal(runMessage(verbose.replace('本文', '書き修正した')).status, 1)
   })
 })
@@ -262,7 +303,7 @@ describe('文書の用語の検査', () => {
     )
   })
 
-  test('許容用語の一覧がない語は、これまで通り部分一致で数える', () => {
+  test('許容用語の一覧がない語は、部分一致で数える', () => {
     assert.equal(findTerms('道具箱', [{ word: '道具', use: 'ツール' }]).length, 1)
   })
 
@@ -439,6 +480,11 @@ describe('日本語の文の検査（文体の warning）', () => {
     const long = 'あ'.repeat(30)
     assert.deepEqual(lines(`短い文である。\n${long}である。`, 'length'), [2])
     assert.deepEqual(lines('あ'.repeat(10) + 'である。', 'length'), [])
+  })
+
+  test('字数がちょうど閾値の文は示し、閾値より 1 字少ない文は示さない（「。」は数えない）', () => {
+    assert.deepEqual(lines(`${'あ'.repeat(LIMITS.length - 3)}である。`, 'length'), [1])
+    assert.deepEqual(lines(`${'あ'.repeat(LIMITS.length - 4)}である。`, 'length'), [])
   })
 
   test('読点が閾値以上の文を示す', () => {
@@ -728,7 +774,7 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
     assert.deepEqual(commaCounts('一、二、三、四とする。'), [3])
   })
 
-  test('インラインコードの読点そのものは数えない。字数と「の」は今のとおり', () => {
+  test('インラインコードの中の読点は数えず、インラインコードは字数では 1 字に数える。コードのない文の「の」は数える', () => {
     assert.deepEqual(commaCounts('`a、b、c` を使う。'), [])
     assert.equal(findStyleWarnings('本日の会議の資料の変更の履歴を見る。', { no: 4 }).length, 1)
     assert.equal(findStyleWarnings('範囲：`a`、`b` を直す。', { length: 10 }).length, 1)
@@ -847,7 +893,7 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
   const repos = []
   after(() => repos.forEach((repo) => rmSync(repo, { recursive: true, force: true })))
 
-  /** 字数が閾値（100）以上の文 */
+  /** 字数が閾値（100）より多い文（103 字） */
   const LONG = `${'あ'.repeat(100)}である。`
   /** 読点が閾値（5）以上の文 */
   const COMMAS = '一、二、三、四、五、六とする。'

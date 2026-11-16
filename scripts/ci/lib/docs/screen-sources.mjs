@@ -2,9 +2,6 @@
 // 対象は、店舗画面・管理画面・共有パッケージの src の .ts と .tsx。
 // 除くものは、テスト（.test.ts(x)、src/test/ のテストの補助）、生成物（generated/）、shadcn/ui の部品（components/ui/）、共有の ui（src/ui/）。
 // 定義と違う対象を読む検査は、その理由を検査の中に書く。
-//   frontend-rules：共有の名前の定義は本番のソースに当てる。テストの確認は、画面のテスト・テストの補助・E2E を読む（E2E は e2e/ の下の全ての TypeScript）
-//   spec-numbers：バックエンドも読み、画面の共有の ui と shadcn/ui の部品も読む。画面のテスト・テストの補助・E2E は、コメントだけを読む（keepTsComments）
-//   message-comments：定義に加えて、店舗画面・管理画面の src/test/ のテストの補助と generated/ の .tsx を読む
 // frontend/biome.plugins.jsonc で、Biome の plugin を本番のソースに当てる対象も、この定義に合わせる
 
 /** 画面のパッケージ（frontend/ の下のディレクトリ） */
@@ -17,10 +14,10 @@ const SCREEN_SOURCE = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/.*\
 const NOT_PRODUCTION = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/components\/ui\//, /\/src\/ui\//]
 
 /** 画面の単体・結合テストのファイル */
-export const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
+export const FRONTEND_TEST = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/.*\\.test\\.tsx?$`)
 
 /** 画面のテストの補助のファイル（src の下の test/ ディレクトリの下） */
-export const FRONTEND_TEST_SUPPORT = /^frontend\/(?:store|admin|shared)\/src\/(?:.*\/)?test\/.*\.tsx?$/
+export const FRONTEND_TEST_SUPPORT = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/(?:.*/)?test/.*\\.tsx?$`)
 
 /** E2E のファイル */
 export const E2E_FILE = /^e2e\/.*\.tsx?$/

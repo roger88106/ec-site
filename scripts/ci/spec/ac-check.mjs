@@ -5,9 +5,9 @@
 //   AC の内容を得るために、アーカイブの spec は読まない。
 //
 // 読み方と失敗の条件は、モジュールごとの先頭のコメントにある。
-//   - ac/ac-list.mjs：AC 一覧、③ の表、進行中の spec の読み書き
-//   - ac/match.mjs：照合（失敗にする条件）
-//   - ac/test-names.mjs：テスト名と AC の番号の読み方
+//   - lib/ac/ac-list.mjs：AC 一覧、③ の表、進行中の spec の読み書き
+//   - lib/ac/match.mjs：照合（失敗にする条件）
+//   - lib/ac/test-names.mjs：テスト名と AC の番号の読み方
 //
 // テスト名に出ない有効・変更の AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。
@@ -34,8 +34,8 @@ import path from 'node:path'
 import { describeEmptyReason, describeStaleExclusion, exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'
 import { FUNCTIONAL_SPECS } from '../lib/docs/functional-specs.mjs'
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
-import { listSpecDirs } from '../lib/docs/spec-dirs.mjs'
-import { AC_LIST, BACKEND_MODULES_DIR, MODULE_DOCS_DIR, SPECS_DIR, addAcsToList, listModuleNames, readAcList, readInProgressSpecs } from '../lib/ac/ac-list.mjs'
+import { listSpecDirs, SPECS_DIR } from '../lib/docs/spec-dirs.mjs'
+import { AC_LIST, BACKEND_MODULES_DIR, MODULE_DOCS_DIR, addAcsToList, listModuleNames, parseAcList, readInProgressSpecs } from '../lib/ac/ac-list.mjs'
 import { check, checkAcRows, checkInProgress, checkModuleDoc, checkModuleDocNames, renderTestMap } from '../lib/ac/match.mjs'
 import { readTests } from '../lib/ac/test-names.mjs'
 
@@ -118,7 +118,7 @@ function main() {
   const { tests, unreadable, testFiles } = writing ? { tests: [], unreadable: [], testFiles: new Map() } : readTests(root, gitFiles)
   const listFile = path.join(root, AC_LIST)
   const document = existsSync(listFile) ? readFileSync(listFile, 'utf8') : ''
-  let list = readAcList(document)
+  let list = parseAcList(document)
   const exclusions = readExclusions(exclusionsPath(`spec/${EXCLUSIONS_NAME}`))
 
   if (process.argv.includes('--tests')) {
@@ -141,7 +141,7 @@ function main() {
       process.exit(1)
     }
     const written = addAcsToList(document, inProgress.specs.flatMap((spec) => spec.definitions))
-    if (written !== document) list = readAcList(written)
+    if (written !== document) list = parseAcList(written)
     const results = docs.map((doc) => ({ doc, result: checkModuleDoc({ text: doc.text, module: doc.module, rows: list.rows, required: doc.required }) }))
     const blocking = results.flatMap(({ doc, result }) => (result.stale ? [] : result.problems.map((problem) => `${doc.file}：${problem}`)))
     if (blocking.length > 0) {

@@ -13,7 +13,7 @@
 //
 // 使い方：node scripts/ci/docs/note-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { documentIndex, readHeadings, resolveDocument } from '../lib/docs/doc-names.mjs'
+import { documentIndex, readHeadingIndex, resolveDocument } from '../lib/docs/doc-names.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
 import { codeBlockLines } from '../lib/docs/code-block.mjs'
 import { maskCodeSpans } from '../lib/source/code-span.mjs'
@@ -26,7 +26,7 @@ const DEFINITION = /^\s*※(\d+[a-z]?)：/
 const REFERENCE = /※(\d+[a-z]?)/g
 
 /**
- * 見出しの後の注の参照（`の「…」 ※N`・`の「…」の ※N`）。前がリンク（外のリンクを含む）か文書の名前かパス（doc-refs の resolveDocument で決める）で、他の文書を指すときだけ、この文書の参照に数えない。
+ * 見出しの後の注の参照（`の「…」 ※N`・`の「…」の ※N`）。前がリンク（外のリンクを含む）か文書の名前かパス（lib/docs/doc-names の resolveDocument で決める）で、他の文書を指すときだけ、この文書の参照に数えない。
  *
  * 文書の名前を付けない `「…」 ※N` と、`この文書の「…」 ※N`・`表の「…」 ※N` は、同じ文書の注を指すので数える。
  */
@@ -47,9 +47,9 @@ function order(id) {
  * 1 つの文書の注の番号の問題を探す。
  *
  * @param {string} text 文書
- * @param {Map<string, string>} [names] 文書の名前からパスへの対応（doc-refs の documentIndex。長い名前から順）
+ * @param {Map<string, string>} [names] 文書の名前からパスへの対応（lib/docs/doc-names の documentIndex。長い名前から順）
  * @param {string} [file] 文書のパス（リンクの先を決めるため）
- * @param {Map<string, string>} [basenames] ファイル名からパスへの対応（doc-refs の documentIndex）
+ * @param {Map<string, string>} [basenames] ファイル名からパスへの対応（lib/docs/doc-names の documentIndex）
  * @returns {{ line: number, message: string }[]} 問題の行と内容
  */
 export function findNoteProblems(text, names = new Map(), file = '', basenames = new Map()) {
@@ -59,7 +59,7 @@ export function findNoteProblems(text, names = new Map(), file = '', basenames =
    * 見出しの後の注の前の文書は、インラインコードを残した元の行で決める（`` `docs/x.md` の「…」 ※3 `` のパスを読むため）。
    */
   const countedPart = (line) => {
-    const blank = (text) => ' '.repeat(text.length)
+    const blank = (part) => ' '.repeat(part.length)
     return maskCodeSpans(line).replace(HEADING_NOTE, (match, offset) => {
       const before = line.slice(0, offset)
       // 外のリンク（`[x](https://…)の「Y」`）は、doc-refs は先を見ないが、他の文書なので除く
@@ -105,10 +105,16 @@ if (import.meta.main) {
   const allFiles = listGitFiles()
   const files = allFiles.filter((file) => isTargetDoc(file))
   exitIfNoFiles(files, '注の番号を調べる文書')
-  const { names, basenames } = documentIndex(allFiles, (file) => readHeadings(readFileSync(file, 'utf8')).title)
+  // 見る文書の多くは、名前を読む docs/ の文書でもあるので、1 回だけ読む
+  const texts = new Map()
+  const read = (file) => {
+    if (!texts.has(file)) texts.set(file, readFileSync(file, 'utf8'))
+    return texts.get(file)
+  }
+  const { names, basenames } = documentIndex(allFiles, (file) => readHeadingIndex(read(file)).title)
   let count = 0
   for (const file of files) {
-    for (const problem of findNoteProblems(readFileSync(file, 'utf8'), names, file, basenames)) {
+    for (const problem of findNoteProblems(read(file), names, file, basenames)) {
       console.log(`${file}:${problem.line} ${problem.message}`)
       count += 1
     }

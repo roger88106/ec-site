@@ -58,8 +58,8 @@ describe('注の番号の検査', () => {
   })
 
   test('「この節 ※1」「この節の ※1」は、この文書の参照に数える', () => {
-    assert.equal(findNoteProblems(['a ※2', 'この節 ※1', '※1：1', '※2：2'].join('\n')).length, 1)
-    assert.equal(findNoteProblems(['a ※2', 'この節の ※1', '※1：1', '※2：2'].join('\n')).length, 1)
+    assert.deepEqual(findNoteProblems(['a ※2', 'この節 ※1', '※1：1', '※2：2'].join('\n')).map((problem) => problem.line), [2])
+    assert.deepEqual(findNoteProblems(['a ※2', 'この節の ※1', '※1：1', '※2：2'].join('\n')).map((problem) => problem.line), [2])
   })
 
   test('リンクか文書の名前の後の「の「…」 ※N」「の「…」の ※N」は、他の文書の見出しの注を指すので、この文書の参照に数えない', () => {
@@ -117,11 +117,6 @@ describe('注の番号の検査', () => {
     assert.deepEqual(reference.map((problem) => problem.line), [2])
     const definition = findNoteProblems(['a ※2', 'b ※2a', '※2a：y', '※2：x'].join('\n'))
     assert.deepEqual(definition.map((problem) => problem.line), [4])
-  })
-
-  test('同じ文書の「この節 ※1」は参照として数える', () => {
-    const text = ['x ※3', 'この節 ※1 を見る', '※1：1', '※3：3'].join('\n')
-    assert.deepEqual(findNoteProblems(text).map((problem) => problem.line), [2])
   })
 
   test('番号が飛んでいても、順に並んでいれば問題にしない', () => {

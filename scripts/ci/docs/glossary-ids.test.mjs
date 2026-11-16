@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { GLOSSARIES, checkGlossary, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryIds } from './glossary-ids.mjs'
+import { GLOSSARIES, checkGlossary, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryEntries, parseGlossaryIds } from './glossary-ids.mjs'
 
 const GLOSSARY = [
   '| 用語 | 識別子 | 意味 |',
@@ -27,8 +27,22 @@ describe('用語集の識別子の検査', () => {
     ])
   })
 
+  test('識別子ごとに、最初に書いた行を読む', () => {
+    const entries = parseGlossaryEntries(GLOSSARY)
+    assert.deepEqual(entries.slice(0, 3), [
+      { id: 'Order', line: 3 },
+      { id: 'ordering.sales_order', line: 3 },
+      { id: 'common/model/value/', line: 4 },
+    ])
+    assert.deepEqual(entries.at(-1), { id: 'cancelled_by_name', line: 7 })
+  })
+
   test('kebab-case の設定の名前は、camelCase の語があればコードにあるとみなす', () => {
     assert.deepEqual(findMissing(['fiscal-year-start-month', 'no-such-name'], new Set(['fiscalYearStartMonth']), ''), ['no-such-name'])
+  })
+
+  test('kebab-case の名前は、camelCase の語がなくても、コードの中身に同じ形で書いてあればコードにあるとみなす', () => {
+    assert.deepEqual(findMissing(['pre-commit', 'no-such-name'], new Set(), 'scripts/dev/hooks/pre-commit'), ['no-such-name'])
   })
 
   test('コードの語にも、コードの中身にもない識別子を返す', () => {
@@ -45,11 +59,14 @@ describe('用語集の識別子の検査', () => {
     assert.equal(isExclusionNeeded('removed-name', ids), false)
   })
 
-  test('検査の script のテストと例の文字、使わない語の一覧、除外の一覧は、コードの根拠にしない', () => {
+  test('検査の script のテストと例の文字、使わない語の一覧、scripts/ci/ の全ての除外の一覧は、コードの根拠にしない', () => {
     assert.equal(isSearchedFile('scripts/ci/docs/glossary-ids.test.mjs'), false)
     assert.equal(isSearchedFile('scripts/ci/report/testdata/pit-mutations.xml'), false)
     assert.equal(isSearchedFile('scripts/ci/ja/ja-text.json'), false)
     assert.equal(isSearchedFile('scripts/ci/docs/glossary-ids-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/spec/ac-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/frontend/frontend-rules-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/dev/lib/x-exclusions.json'), true)
     assert.equal(isSearchedFile('scripts/ci/docs/glossary-ids.mjs'), true)
     assert.equal(isSearchedFile('scripts/dev/lib/slot/slot.test.mjs'), true)
     assert.equal(isSearchedFile('backend/ecsite/src/Foo.java'), true)
@@ -70,14 +87,15 @@ describe('用語集の表の見出し', () => {
     for (const markdown of [swapped, identifierFirst, twoColumns]) {
       const problems = checkGlossary([GLOSSARY, '', markdown].join('\n'))
       assert.equal(problems.length, 1, markdown)
-      assert.match(problems[0], /^[0-9]+ 行：表の見出しの行の 2 列目が「識別子」でない/)
+      assert.equal(problems[0].line, 11)
+      assert.match(problems[0].message, /^表の見出しの行の 2 列目が「識別子」でない/)
     }
   })
 
   test('識別子を 1 つも取り出せない用語集（列を入れ替えた表だけ、表がない）を問題にする', () => {
     const swapped = ['| 用語 | 意味 | 識別子 |', '|------|------|--------|', '| 注文 | 注文 | `Order` |'].join('\n')
     for (const markdown of [swapped, '# 用語集\n\n説明だけ。\n']) {
-      assert.ok(checkGlossary(markdown).some((problem) => /識別子を 1 つも取り出せない/.test(problem)), markdown)
+      assert.ok(checkGlossary(markdown).some((problem) => /識別子を 1 つも取り出せない/.test(problem.message)), markdown)
     }
   })
 })
@@ -85,16 +103,5 @@ describe('用語集の表の見出し', () => {
 describe('調べる用語集', () => {
   test('業務の用語集と開発の用語集の両方を読む', () => {
     assert.deepEqual(GLOSSARIES, ['docs/03-機能仕様/glossary.md', 'docs/05-開発規則/glossary.md'])
-  })
-})
-
-describe('除外の一覧は根拠にしない', () => {
-  test('scripts/ci/ の全ての *-exclusions.json を調べない', () => {
-    assert.equal(isSearchedFile('scripts/ci/migrations-exclusions.json'), false)
-    assert.equal(isSearchedFile('scripts/ci/spec/ac-exclusions.json'), false)
-    assert.equal(isSearchedFile('scripts/ci/frontend/frontend-rules-exclusions.json'), false)
-    assert.equal(isSearchedFile('scripts/ci/hardcoded-text-exclusions.json'), false)
-    assert.equal(isSearchedFile('scripts/ci/message-numbers-exclusions.json'), false)
-    assert.equal(isSearchedFile('scripts/dev/lib/x-exclusions.json'), true)
   })
 })

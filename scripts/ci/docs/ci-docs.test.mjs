@@ -22,11 +22,15 @@ describe('CI の検査の文書の表の検査', () => {
     assert.deepEqual(readTableChecks(DOC), ['ac-check', 'doc-refs'])
   })
 
-  test('表を探す節は、見出しの番号でなく名前で決める（番号つきでも、番号がなくても読み、名前の違う節の表は読まない）', () => {
-    const numbered = ['## 別の節', '| `x` | y |', '## 検査の一覧', '| `a` | b |', '## 次の節', '| `z` | y |'].join('\n')
-    assert.deepEqual(readTableChecks(numbered), ['a'])
+  test('表を探す節は、見出しの名前が「検査の一覧」と完全に一致する節だけで、名前の違う節の表は読まない', () => {
+    const sections = ['## 別の節', '| `x` | y |', '## 検査の一覧', '| `a` | b |', '## 次の節', '| `z` | y |'].join('\n')
+    assert.deepEqual(readTableChecks(sections), ['a'])
     assert.deepEqual(readTableChecks(['## 検査の一覧', '| `a` | b |'].join('\n')), ['a'])
     assert.deepEqual(readTableChecks(['## 検査の一覧s', '| `a` | b |'].join('\n')), [])
+  })
+
+  test('改行が CRLF の文書でも、節の見出しと表の名前を読む', () => {
+    assert.deepEqual(readTableChecks(['## 検査の一覧', '| `a` | b |', '## 次の節', '| `z` | y |'].join('\r\n')), ['a'])
   })
 
   test('節の中の表の前にコードブロックがあり、その中に `# コメント` の行があっても、節は終わらず表を読む', () => {
@@ -44,6 +48,11 @@ describe('CI の検査の文書の表の検査', () => {
     assert.deepEqual(listChecks(files), ['ac-check', 'doc-refs'])
   })
 
+  test('scripts/ci/ の直下、検査のフォルダの下のフォルダ、補助のフォルダの .mjs は、検査として選ばない', () => {
+    const files = ['scripts/ci/x.mjs', 'scripts/ci/docs/sub/x.mjs', 'scripts/ci/mermaid/mermaid-check.mjs', 'scripts/ci/docs/doc-refs.mjs']
+    assert.deepEqual(listChecks(files), ['doc-refs'])
+  })
+
   test('一致していれば問題がない', () => {
     assert.deepEqual(compareChecks(['a', 'b'], ['b', 'a']), [])
   })
@@ -56,7 +65,10 @@ describe('CI の検査の文書の表の検査', () => {
   })
 
   test('表に同じ名前が 2 回あれば失敗にする', () => {
-    assert.equal(compareChecks(['a', 'a'], ['a']).length, 1)
+    const problems = compareChecks(['a', 'a', 'a', 'b', 'b'], ['a', 'b'])
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /同じ名前の行.*：a$/)
+    assert.match(problems[1], /同じ名前の行.*：b$/)
   })
 
   test('名前の形（| `名前` |）でない行は名前として数えない（その検査は「表にない検査」になる）', () => {
@@ -73,6 +85,10 @@ describe('CI の検査の文書の表の検査', () => {
   test('先頭のコメントの検査の対象は、直下の検査と lib の各ファイルで、テストと他の拡張子を除く', () => {
     const files = ['scripts/ci/spec/ac-check.mjs', 'scripts/ci/spec/ac-check.test.mjs', 'scripts/ci/lib/x.mjs', 'scripts/ci/lib/x.test.mjs', 'scripts/ci/lib/deep/y.mjs', 'scripts/ci/check-all.sh', 'scripts/ci/ja/ja-text.json']
     assert.deepEqual(listCommentTargets(files), ['scripts/ci/lib/deep/y.mjs', 'scripts/ci/lib/x.mjs', 'scripts/ci/spec/ac-check.mjs'])
+  })
+
+  test('scripts/ci/ の直下と補助のフォルダの .mjs は、先頭のコメントの検査の対象にしない', () => {
+    assert.deepEqual(listCommentTargets(['scripts/ci/x.mjs', 'scripts/ci/mermaid/mermaid-check.mjs']), [])
   })
 
   test('全ての script の 1 行目がコメントなら、先頭のコメントの検査が通る', () => {

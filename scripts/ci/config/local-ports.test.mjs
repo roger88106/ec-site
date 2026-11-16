@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { expandedPorts, findPortMismatches, readComposeHostPorts, readConfigPorts, readDocPorts } from './local-ports.mjs'
+import { expandedPorts, findPortMismatches, parseComposeHostPorts, parseConfigPorts, parseDocPorts } from './local-ports.mjs'
 
 /** 小さな一覧（共有 2 件、スロットでずらす 1 件、E2E 1 件、スロット 3 つ） */
 const LIST = {
@@ -50,7 +50,7 @@ describe('ローカルのポートの一覧の検査', () => {
   })
 
   test('compose の既定値付きの変数のポートを読む', () => {
-    assert.deepEqual(readComposeHostPorts(COMPOSE), { ports: [5432, 2525], unreadable: [] })
+    assert.deepEqual(parseComposeHostPorts(COMPOSE), { ports: [5432, 2525], unreadable: [] })
   })
 
   test('compose のホスト側のポートを読めない項目（既定値のない変数、範囲）は、ファイルとサービスを出して失敗にする', () => {
@@ -62,7 +62,7 @@ describe('ローカルのポートの一覧の検査', () => {
   })
 
   test('文書のポートは、コロンの後の数字だけを読む（カード番号などは読まない）', () => {
-    assert.deepEqual(readDocPorts('http://localhost:8080/api と :8090、4242 4242、12:3456'), [8080, 8090, 3456])
+    assert.deepEqual(parseDocPorts('http://localhost:8080/api と :8090、4242 4242、12:3456'), [8080, 8090, 3456])
   })
 
   test('一覧にないポートが compose にあれば失敗にする', () => {
@@ -89,6 +89,55 @@ describe('ローカルのポートの一覧の検査', () => {
   test('スロットの表の行が、スロットごとの値と違えば失敗にする', () => {
     const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC.replace('| 1 | 18080 |', '| 1 | 18081 |') } })
     assert.ok(problems.some((problem) => /18081/.test(problem)))
+  })
+
+  test('文書にスロットのポートの表がなければ、表が見つからないことと、全てのスロットの行がないことを失敗にする', () => {
+    const doc = DOC.split('\n').filter((line) => !/^\| \d \|/.test(line)).join('\n')
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': doc } })
+    assert.ok(problems.some((problem) => /スロットのポートの表が見つからない/.test(problem)), problems.join(' / '))
+    for (let slot = 0; slot < LIST.slotCount; slot++) {
+      assert.ok(problems.some((problem) => problem.includes(`スロット ${slot} の行がない`)), problems.join(' / '))
+    }
+  })
+
+  test('スロットの表に、あるスロットの行がなければ、そのスロットの行がないことを失敗にする', () => {
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC.replace('| 1 | 18080 |\n', '') } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /スロット 1 の行がない/)
+  })
+
+  test('スロットの表の行の番号は、スロットの数より 1 小さい番号まで通り、スロットの数以上なら失敗にする', () => {
+    const last = LIST.slotCount - 1
+    assert.deepEqual(findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC } }), [])
+    assert.ok(DOC.includes(`| ${last} |`))
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': `${DOC}\n| ${LIST.slotCount} | 38080 |` } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], new RegExp(`スロット ${LIST.slotCount} の行のポート（38080）`))
+  })
+
+  test('realm に一覧にないポートがあれば失敗にする', () => {
+    const text = [8080, 18080, 28080, 8090, 9999].map((port) => `http://localhost:${port}/*`).join(' ')
+    const problems = findPortMismatches({ ...INPUT, realms: { 'docker/r.json': { text, keys: ['backend', 'backend-e2e'] } } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /r\.json に一覧にないポート 9999/)
+  })
+
+  test('E2E の設定は、E2E が使う共有のサービス（E2E 用の IdP、Mailpit の画面）のポートなら通し、他の共有のサービスのポートなら失敗にする', () => {
+    const list = {
+      ...LIST,
+      ports: [
+        ...LIST.ports,
+        { key: 'keycloak-e2e', port: 8180, name: 'E2E 用の IdP', group: 'shared', slotted: false },
+        { key: 'mailpit-ui', port: 8025, name: 'Mailpit の画面', group: 'shared', slotted: false },
+      ],
+    }
+    const compose = [COMPOSE, '  idp:', '    ports:', '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8180:8080"', '  ui:', '    ports:', '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8025:8025"'].join('\n')
+    const docs = { 'docs/06-手順書/setup.md': `${DOC}\n:8180 :8025` }
+    const base = "'http://localhost:8090' 'http://localhost:8180' 'http://localhost:8025'"
+    assert.deepEqual(findPortMismatches({ list, compose, docs, sources: { 'e2e/src/urls.ts': base } }), [])
+    const problems = findPortMismatches({ list, compose, docs, sources: { 'e2e/src/urls.ts': `${base} 'http://localhost:5432'` } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /urls\.ts のポート 5432.*E2E/)
   })
 
   test('一覧のポートがどの文書にも書かれていなければ失敗にする', () => {
@@ -119,8 +168,8 @@ describe('ローカルのポートの一覧の検査', () => {
 
   test('設定のポートは、yml の port、JSON の port、起動の引数の --port から読む', () => {
     const yml = 'server:\n  port: 8090\nmanagement:\n  server:\n    port: ${MANAGEMENT_SERVER_PORT:9080}\nurl: http://localhost:5432/x'
-    assert.deepEqual(readConfigPorts(yml), [5432, 8090, 9080])
-    assert.deepEqual(readConfigPorts('{ "port": 5173, "args": ["--port", "3000"] }'), [3000, 5173])
+    assert.deepEqual(parseConfigPorts(yml), [5432, 8090, 9080])
+    assert.deepEqual(parseConfigPorts('{ "port": 5173, "args": ["--port", "3000"] }'), [3000, 5173])
   })
 
   test('設定（realm、yml、起動の設定）に一覧にないポートがあれば失敗にする', () => {

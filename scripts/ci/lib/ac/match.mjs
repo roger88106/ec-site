@@ -32,7 +32,8 @@
 import { findEmptyReasons } from '../output/exclusions.mjs'
 import { readDocument, readHeadings } from '../docs/doc-structure.mjs'
 import { AC_NUMBER_ONLY, compareAc, findAmbiguousAcLists, findSpacedAcLists, parseAcRefs, toAcKey } from './test-names.mjs'
-import { BASIS, COMMON, LIST_MARK, MODULE_AC_SECTION, MODULE_COLUMNS, MODULE_MARK, MVP_AC_LIMIT, MVP_ARCHIVE_PREFIX, PLACEHOLDER, SPEC_NUMBER, SPEC_NUMBER_SEPARATOR, SPEC_ONLY_REFS, SPECS_DIR, STATUSES, findMarks, readPair, renderModuleTable, specNumberOf, splitKeepingEol, toLf } from './ac-list.mjs'
+import { BASIS, COMMON, LIST_MARK, MODULE_AC_SECTION, MODULE_COLUMNS, MODULE_MARK, MVP_AC_LIMIT, MVP_ARCHIVE_PREFIX, PLACEHOLDER, SPEC_NUMBER, SPEC_NUMBER_SEPARATOR, SPEC_ONLY_REFS, STATUSES, findMarks, readPair, renderModuleTable, specNumberOf, splitKeepingEol, toLf } from './ac-list.mjs'
+import { SPECS_DIR } from '../docs/spec-dirs.mjs'
 
 /**
  * AC とテスト名を照合する。
@@ -132,7 +133,7 @@ function checkSpecNumber(value, specDirs, column) {
  * AC 一覧の行の、重複・状態・モジュール・変えた spec・元の spec・今の内容を調べる。
  *
  * @param {object} input
- * @param {ReturnType<typeof readAcList>['rows']} input.rows AC 一覧の行
+ * @param {ReturnType<typeof parseAcList>['rows']} input.rows AC 一覧の行
  * @param {Set<string>} input.modules ③ のモジュールの名前
  * @param {{ name: string, rel: string }[]} input.specDirs spec のディレクトリ（listSpecDirs の結果）
  * @returns {string[]} 問題（行を付ける）
@@ -201,7 +202,7 @@ export function checkAcRows({ rows, modules, specDirs }) {
  * AC の本文は比べない（転記の後は AC 一覧を手動で修正する）。
  *
  * @param {object} input
- * @param {ReturnType<typeof readAcList>['rows']} input.rows AC 一覧の行
+ * @param {ReturnType<typeof parseAcList>['rows']} input.rows AC 一覧の行
  * @param {{ rel: string, definitions: { ac: number | string }[] }[]} input.specs 進行中の spec（docs/08-spec からのパスと AC の定義）
  * @returns {string[]} 問題
  */
@@ -254,7 +255,7 @@ export function checkModuleDocNames({ docs, modules }) {
  * @param {object} input
  * @param {string} input.text ③ の文書（改行は LF でも CRLF でもよい）
  * @param {string} input.module モジュールの名前
- * @param {ReturnType<typeof readAcList>['rows']} input.rows AC 一覧の行
+ * @param {ReturnType<typeof parseAcList>['rows']} input.rows AC 一覧の行
  * @param {boolean} input.required 構造の検査の対象の一覧にあるか
  * @returns {{ problems: string[], stale: boolean, updated: string | null }}
  *   problems：問題（行を付ける）。stale：表が古いだけか（--write で修正できる）。updated：範囲の中を書き換えた文書（書き換えられないときは null。古くなければ元のまま）
@@ -307,7 +308,7 @@ export function checkModuleDoc({ text, module, rows, required }) {
  * AC とテストの対応を、表示する行にする（--tests）。
  *
  * @param {object} input
- * @param {ReturnType<typeof readAcList>} input.list AC 一覧を読んだ結果
+ * @param {ReturnType<typeof parseAcList>} input.list AC 一覧を読んだ結果
  * @param {Map<number | string, string[]>} input.testFiles AC → その AC をテスト名に持つテストのファイル（リポジトリのルートからのパス）
  * @param {Record<string, unknown>} input.exclusions 除外の一覧（"AC-n" → 理由）
  * @returns {{ lines: string[], ok: boolean }} 表示する行（最後は要約の行）。AC 一覧を読めなければ ok が false で、行は問題

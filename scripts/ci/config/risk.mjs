@@ -13,10 +13,9 @@
 // 引数なし（check-all.sh から）は、本文と比べずに判定だけを表示する。分岐点を求められないとき（shallow clone を含む）と、
 // risk.json の経路に当たるファイルがないとき（書き間違い、置き場所の移動。--skip-path-check で外す）は失敗にする。
 //
-// CI（.github/workflows/risk.yml）は、基準の側の risk.mjs と risk.json でも同じ引数で実行し、どちらかが失敗すれば失敗にする
-// （経路の一覧や script を変える変更が、変えた後の一覧で自分を低と判定するのを防ぐため）。基準の側には --skip-path-check を付ける
-// （一覧の経路に当たるファイルがあるかは変えた後のバージョンで確認すればよく、基準の一覧の経路を消した変更で失敗にしないため）。
-// risk.yml そのものを書き換える変更は、この仕組みでは防げない。
+// CI（.github/workflows/risk.yml）は、基準の側の risk.mjs と risk.json でも実行する（理由は risk.yml の冒頭）。基準の側には --skip-path-check を付ける。
+//   一覧の経路に当たるファイルがあるかは変えた後のバージョンで確認すればよく、基準の一覧の経路を消した変更で失敗にしないため。
+// risk.yml そのものを書き換える変更は、基準の側でも実行する仕組みでは防げない。
 //
 // 失敗したとき：本文の「判定：」を script の出力に合わせて修正する（出力を貼り替える）。経路の誤りは risk.json を修正する。
 //
@@ -37,7 +36,7 @@ const CONFIG_FILE = new URL('./risk.json', import.meta.url)
 const DEFAULT_BASE = 'origin/develop'
 
 /** 1 つのまとまりについて、出力に名前を出すファイルの数（残りは件数だけ） */
-const SHOWN_FILES = 5
+export const SHOWN_FILES = 5
 
 /** spec の宣言の行 */
 const DECLARATION = '危険度：高'
@@ -188,7 +187,7 @@ function parseVersion(version) {
  * Dependabot の pull request の題から、更新の種類で高にするかを決める。
  *
  * - 「from <バージョン> to <バージョン>」の形で、major が違うか、major が 0 で minor が違えば高（major の更新）
- * - group の更新で、group の名前が -minor-patch で終われば、経路の判定のまま（major を含まない group）
+ * - group の更新で、group の名前が MINOR_PATCH_GROUP で終われば、経路の判定のまま（major を含まない group）
  * - それ以外（読めない題、major を含む github-actions-all などの group）は高
  *
  * @param {string | undefined} title pull request の題
@@ -319,7 +318,7 @@ export function isDependabot({ author }) {
 }
 
 /**
- * pull request の本文と判定を比べるかを決め、比べる。Dependabot は比べない。本文を渡さなければ（check-all.sh）比べない。
+ * pull request の本文と判定を比べるかを決め、比べる。Dependabot は比べない。本文を渡さなければ比べない。
  *
  * @param {{ level: '高' | '低', body?: string, author?: string }} pullRequest 判定、本文、作成者
  * @returns {{ ok: boolean, message: string | null }} 成功か、と出力する 1 行（比べないときは Dependabot の行か null）
@@ -330,8 +329,14 @@ export function checkPullRequest({ level, body, author }) {
   return compareBody(level, body)
 }
 
-/** git を実行し、失敗したら null を返す */
-function tryGit(args, cwd) {
+/**
+ * git を実行し、出力をそのまま返す（前後の空白を除かない。lib/git/merge-base の tryGit と違う）。失敗したら null を返す。
+ *
+ * @param {string[]} args git の引数
+ * @param {string} cwd 実行する場所
+ * @returns {string | null} 出力。失敗したら null
+ */
+function gitOutputOrNull(args, cwd) {
   try {
     return execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] })
   } catch {
@@ -350,13 +355,13 @@ function tryGit(args, cwd) {
  * @returns {{ files: string[], base: string } | { error: string }} 差分のファイル（名前の順）と分岐点の commit か、求められない理由
  */
 export function listChangedFiles(ref, gitFiles, cwd = process.cwd()) {
-  const base = tryGit(['merge-base', 'HEAD', ref], cwd)?.trim()
+  const base = gitOutputOrNull(['merge-base', 'HEAD', ref], cwd)?.trim()
   if (!base) {
     if (isShallowRepository(cwd)) return { error: SHALLOW_CLONE_MESSAGE }
     return { error: `HEAD と ${ref} の分岐点を求められない（ref があるか、git fetch したかを確認する）` }
   }
-  const changed = tryGit(['diff', '--name-only', '-z', '--no-renames', base], cwd)
-  const committed = tryGit(['ls-tree', '-r', '-z', '--name-only', 'HEAD'], cwd)
+  const changed = gitOutputOrNull(['diff', '--name-only', '-z', '--no-renames', base], cwd)
+  const committed = gitOutputOrNull(['ls-tree', '-r', '-z', '--name-only', 'HEAD'], cwd)
   if (changed === null || committed === null) return { error: `${ref} との差分を読めない` }
   // HEAD にないファイルは、git add したもの（diff に入る）か、追跡していないもの
   const inHead = new Set(splitNulList(committed))
@@ -372,21 +377,36 @@ export function listChangedFiles(ref, gitFiles, cwd = process.cwd()) {
  * @returns {(file: string) => string | null} 中身を返す関数（基準にないファイルは null）
  */
 export function baseFileReader(base, cwd = process.cwd()) {
-  return (file) => tryGit(['show', `${base}:${file}`], cwd)
+  return (file) => gitOutputOrNull(['show', `${base}:${file}`], cwd)
 }
 
 if (import.meta.main) {
-  const { values } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      base: { type: 'string', default: DEFAULT_BASE },
-      'body-file': { type: 'string' },
-      author: { type: 'string' },
-      title: { type: 'string' },
-      'skip-path-check': { type: 'boolean', default: false },
-    },
-  })
-  const config = parseRiskConfig(readFileSync(CONFIG_FILE, 'utf8'))
+  let values
+  try {
+    ;({ values } = parseArgs({
+      args: process.argv.slice(2),
+      options: {
+        base: { type: 'string', default: DEFAULT_BASE },
+        'body-file': { type: 'string' },
+        author: { type: 'string' },
+        title: { type: 'string' },
+        'skip-path-check': { type: 'boolean', default: false },
+      },
+    }))
+  } catch (e) {
+    console.log(`引数を読めない：${e.message}`)
+    process.exit(2)
+  }
+  /** 読むファイルがなければ、理由を出して終了コード 2 で終わる */
+  const readRequired = (file) => {
+    try {
+      return readFileSync(file, 'utf8')
+    } catch (e) {
+      console.log(`${file} を読めない：${e.code ?? e.message}`)
+      process.exit(2)
+    }
+  }
+  const config = parseRiskConfig(readRequired(CONFIG_FILE))
   const gitFiles = listGitFiles()
   const missing = values['skip-path-check'] ? [] : findMissingPaths(config, gitFiles)
   if (missing.length > 0) {
@@ -397,7 +417,7 @@ if (import.meta.main) {
   const changed = listChangedFiles(values.base, gitFiles)
   if ('error' in changed) {
     console.log(changed.error)
-    process.exit(1)
+    process.exit(2)
   }
   const judged = judgeRisk(changed.files, config, (file) => (existsSync(file) ? readFileSync(file, 'utf8') : null), baseFileReader(changed.base))
   const result = isDependabot(values) ? applyDependabotTitle(judged, values.title) : judged
@@ -406,7 +426,7 @@ if (import.meta.main) {
   for (const item of result.unreadable) console.log(describeUnreadableLine(item))
   // - は標準入力（CI は本文を環境変数から標準入力に渡す）
   const bodyFile = values['body-file']
-  const body = bodyFile === undefined ? undefined : readFileSync(bodyFile === '-' ? 0 : bodyFile, 'utf8')
+  const body = bodyFile === undefined ? undefined : readRequired(bodyFile === '-' ? 0 : bodyFile)
   const checked = checkPullRequest({ level: result.level, body, author: values.author })
   if (checked.message !== null) console.log(checked.message)
   console.log(lines.at(-1))

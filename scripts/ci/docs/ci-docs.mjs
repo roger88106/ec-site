@@ -6,6 +6,7 @@
 // 2. 直下の検査と lib/ の各ファイル（テストを除く）の 1 行目が `//` で始まらない。先頭のコメントのない script を残さないため
 // 3. 直下の検査の先頭のコメント（1 行目から続く `//` の行）に、「失敗したとき：」の行と「除外：」の行がない。書き漏らしを防ぐため
 //    - 行は、`//` の後に空白と箇条書きの `-` を置いてよい。lib/ のファイルは、役割だけを書くので対象にしない
+//
 // 表の列の数と書き方は確認しない（レビューで見る）。
 //
 // 失敗したとき：表に行を加えるか、不要な行を削除する。先頭のコメントのない script には、先頭のコメントを書く。
@@ -14,7 +15,7 @@
 // 除外：なし
 //
 // 使い方：node scripts/ci/docs/ci-docs.mjs（リポジトリのルートで）
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
 import { describeUnreadableLine } from '../lib/source/unreadable-line.mjs'
 
@@ -30,11 +31,14 @@ const HEADING = /^#{2,3} (.*)$/
 /** 検査を置くディレクトリ */
 const CHECK_DIR = 'scripts/ci/'
 
+/** 検査のフォルダ（CHECK_DIR の下）。正規表現の選択肢の形 */
+const CHECK_FOLDERS = ['docs', 'spec', 'ja', 'java', 'config', 'frontend'].join('|')
+
 /** 検査のファイル（CHECK_DIR からの相対パス）。検査のフォルダの直下の .mjs（テストを除くのは呼ぶ側） */
-const CHECK_FILE = /^(?:docs|spec|ja|java|config|frontend)\/[^/]+\.mjs$/
+const CHECK_FILE = new RegExp(`^(?:${CHECK_FOLDERS})/[^/]+\\.mjs$`)
 
 /** 先頭のコメントを確認するファイル：検査と、lib の下の各ファイル */
-const COMMENT_FILE = /^(?:(?:docs|spec|ja|java|config|frontend)\/[^/]+|lib\/(?:.+\/)?[^/]+)\.mjs$/
+const COMMENT_FILE = new RegExp(`^(?:(?:${CHECK_FOLDERS})/[^/]+|lib/(?:.+/)?[^/]+)\\.mjs$`)
 
 /** 1 列目が名前の行（名前と、名前の後の（`引数`）） */
 const NAME_ROW = /^\| `([^`\s]+)`(（`[^`]+`）)? \|/
@@ -48,7 +52,7 @@ const NAME_ROW = /^\| `([^`\s]+)`(（`[^`]+`）)? \|/
 export function readTableChecks(markdown) {
   const names = []
   let inSection = false
-  for (const line of markdown.split('\n')) {
+  for (const line of markdown.split(/\r?\n/)) {
     const heading = line.match(HEADING)
     if (heading) inSection = heading[1] === TABLE_SECTION
     const match = inSection ? line.match(NAME_ROW) : null
@@ -87,7 +91,8 @@ export function compareChecks(tableNames, checkNames) {
   for (const name of table) {
     if (!checks.has(name)) problems.push(`検査のない表の行：${name}（${CHECK_DIR} の検査のフォルダの直下に ${name}.mjs がない）`)
   }
-  if (table.size !== tableNames.length) problems.push('表に同じ名前の行が 2 つ以上ある')
+  const duplicates = [...new Set(tableNames.filter((name, index) => tableNames.indexOf(name) !== index))]
+  for (const name of duplicates) problems.push(`表に同じ名前の行が 2 つ以上ある：${name}`)
   return problems
 }
 
@@ -118,6 +123,9 @@ export function checkFirstLines(sources) {
 /** 直下の検査が先頭のコメントに書く、必須の行の接頭辞 */
 const REQUIRED_COMMENT_LINES = ['失敗したとき：', '除外：']
 
+/** 必須の行の接頭辞ごとの、その行の形（`//` の後の空白と箇条書きの `-` を許す） */
+const REQUIRED_LINE_PATTERNS = REQUIRED_COMMENT_LINES.map((label) => ({ label, pattern: new RegExp(`^//\\s*(?:-\\s*)?${label}`) }))
+
 /**
  * 直下の検査の先頭のコメント（1 行目から続く `//` の行）に、「失敗したとき：」か「除外：」の行がない script を見つける。
  *
@@ -132,7 +140,7 @@ export function checkCommentLines(sources) {
     const lines = text.split('\n')
     const end = lines.findIndex((line) => !line.startsWith('//'))
     const comment = end === -1 ? lines : lines.slice(0, end)
-    const missing = REQUIRED_COMMENT_LINES.filter((label) => !comment.some((line) => new RegExp(`^//\\s*(?:-\\s*)?${label}`).test(line)))
+    const missing = REQUIRED_LINE_PATTERNS.filter(({ pattern }) => !comment.some((line) => pattern.test(line))).map(({ label }) => label)
     if (!missing.length) continue
     const hint = missing.includes('除外：') ? '。除外がなければ「除外：なし」' : ''
     problems.push(`先頭のコメントに行がない：${file}（${missing.map((label) => `「${label}」`).join('、')}の行を書く${hint}）`)
@@ -143,6 +151,10 @@ export function checkCommentLines(sources) {
 if (import.meta.main) {
   const checkFiles = listGitFiles([CHECK_DIR])
   exitIfNoFiles(checkFiles, `検査（${CHECK_DIR}）`)
+  if (!existsSync(DOC)) {
+    console.log(`${DOC} がない（DOC を、CI の検査の文書の今の名前に合わせる）`)
+    process.exit(1)
+  }
   const doc = readFileSync(DOC, 'utf8')
   const sources = listCommentTargets(checkFiles).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
   const problems = [...compareChecks(readTableChecks(doc), listChecks(checkFiles)), ...checkFirstLines(sources), ...checkCommentLines(sources.filter(({ file }) => !file.startsWith(`${CHECK_DIR}lib/`)))]

@@ -1,8 +1,11 @@
 // Chrome とネットワークは使わない。描画は偽の関数に替える。
 import assert from 'node:assert/strict'
-import { describe, test } from 'node:test'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { after, describe, test } from 'node:test'
 import { emptyListReason } from '../lib/git/git-files.mjs'
-import { buildCommand, checkDocs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, puppeteerConfig, quoteArg, runCheck, summaryLine, toMarkdown } from './mermaid-check.mjs'
+import { buildCommand, checkDocs, countOutputs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, puppeteerConfig, quoteArg, runCheck, summaryLine, toMarkdown } from './mermaid-check.mjs'
 
 const FENCE = '```'
 
@@ -94,10 +97,6 @@ describe('Mermaid の図の読み取り：取り出さない', () => {
   test('markdown・md の ~~~ に入った ```mermaid と、markdown・md の ``` に入った ~~~mermaid（雛形の骨組み）', () => {
     assert.deepEqual(extractMermaidBlocks('~~~markdown\n```mermaid\nA\n```\n~~~\n'), { diagrams: [], unclosed: [], misplaced: [] })
     assert.deepEqual(extractMermaidBlocks('```md\n~~~mermaid\nA\n~~~\n```\n'), { diagrams: [], unclosed: [], misplaced: [] })
-  })
-
-  test('markdown の ```` に入った ```mermaid（外側より短い）は失敗にしない', () => {
-    assert.deepEqual(extractMermaidBlocks('````markdown\n```mermaid\nA\n```\n````\n').misplaced, [])
   })
 
   test('mermaid の図の本文の中の ```mermaid の行は、閉じていない疑いにしない（描画の検査に任せる）', () => {
@@ -212,6 +211,32 @@ describe('描画の結果の判定', () => {
   test('エラーの出力があれば、スタックの行を除いて先頭の数行を返す', () => {
     const message = describeFailure({ stderr: 'Parse error on line 2\n  at foo (x.js:1)\n\nExpecting X\n' })
     assert.equal(message, 'Parse error on line 2\nExpecting X')
+  })
+})
+
+describe('できた SVG の数', () => {
+  const work = mkdtempSync(path.join(tmpdir(), 'mermaid-outputs-'))
+  after(() => rmSync(work, { recursive: true, force: true }))
+  for (const [name, content] of [
+    ['out-1-1.svg', '<svg/>'],
+    ['out-1-2.svg', '<svg/>'],
+    ['out-1-3.svg', ''],
+    ['out-1-x.svg', '<svg/>'],
+    ['out-10-1.svg', '<svg/>'],
+    ['out-2.svg', '<svg/>'],
+    ['out-3.svg', ''],
+  ]) {
+    writeFileSync(path.join(work, name), content)
+  }
+
+  test('Markdown の入力は、<出力の名前>-<n>.svg の形で、中身のある SVG だけを数える', () => {
+    assert.equal(countOutputs(work, 'out-1', 'markdown'), 2)
+  })
+
+  test('図の本文の入力は、<出力の名前>.svg に中身があれば 1、なければ 0', () => {
+    assert.equal(countOutputs(work, 'out-2', 'diagram'), 1)
+    assert.equal(countOutputs(work, 'out-3', 'diagram'), 0)
+    assert.equal(countOutputs(work, 'out-4', 'diagram'), 0)
   })
 })
 

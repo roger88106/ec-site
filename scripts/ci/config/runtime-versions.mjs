@@ -22,6 +22,12 @@ const ALLOWED_VERSION_INPUTS = {
   'node-version': undefined,
 }
 
+/** 使う入力と値（`java-version-file: .java-version` の形を読点でつなぐ）。直書きの入力の直し方に示す */
+const FILE_INPUTS = Object.entries(ALLOWED_VERSION_INPUTS)
+  .filter(([, value]) => value !== undefined)
+  .map(([key, value]) => `${key}: ${value}`)
+  .join('、')
+
 /**
  * YAML を読んだ値の全ての対応表のキーを、場所（`jobs.a.steps[0].with` の形）とともにたどる。
  *
@@ -56,7 +62,7 @@ export function findVersionLiteralProblems(files) {
       const expected = ALLOWED_VERSION_INPUTS[key]
       const written = typeof value === 'string' ? value : JSON.stringify(value)
       if (written !== expected) {
-        const hint = expected === undefined ? 'この入力は使わない（java-version-file: .java-version、node-version-file: .node-version と書く）' : `${expected} と書く`
+        const hint = expected === undefined ? `この入力は使わない（${FILE_INPUTS} と書く）` : `${expected} と書く`
         problems.push(`${path} の ${where}：${key} に ${written} を直接書いている。${hint}`)
       }
     })

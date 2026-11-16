@@ -23,7 +23,7 @@ import { basename, dirname, join, normalize } from 'node:path/posix'
 import { codeBlockLines } from '../lib/docs/code-block.mjs'
 import { maskCodeSpans } from '../lib/source/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
-import { documentIndex, headingKey, readHeadings, referenceName, resolveDocument } from '../lib/docs/doc-names.mjs'
+import { documentIndex, headingKey, readHeadingIndex, referenceName, resolveDocument } from '../lib/docs/doc-names.mjs'
 
 /**
  * 見ないファイル（当時の記録、直せないもの、この検査と ja-text のテストの例）。
@@ -122,7 +122,7 @@ const SPEC_RECORD = /^docs\/08-spec\/(?:.+\/)?(?:(?:spec|plan)\.md|tasks\/[^/]+\
  * @param {string} title リンク先の文書の 1 行目の見出し
  * @returns {boolean} 許可する形なら true
  */
-export function isAllowedLinkLabel(file, ref, title) {
+function isAllowedLinkLabel(file, ref, title) {
   // 文書の名前は、両方から全角と半角の括弧の補足を除いて比べる
   const nameKey = (text) => headingKey(referenceName(text).replace(/\([^()]*\)/g, ''))
   if (nameKey(ref.label) === nameKey(title)) return true
@@ -157,12 +157,17 @@ export function splitSectionNumbers(numbers) {
  * @param {Map<string, string>} names 文書の名前からファイルのパスへの対応
  * @param {Map<string, string>} basenames ファイル名（`admin.md` など）からファイルのパスへの対応（同じ名前が 2 つ以上あるものは除く）
  * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
- * @returns {{ line: number, target: string | null, anchor?: string, headings?: string[], sections?: string[], unknown?: boolean, text: string }[]} 参照（anchor はリンクの #、headings は見出しの参照の「」の中、sections は節の番号の参照の番号。target は、Markdown の節の番号の参照で先が決まらなければ null。unknown は、直前が「（」などで先の文書が決まらないもの）
+ * @returns {{ line: number, target: string | null, anchor?: string, headings?: string[], sections?: string[], unknown?: boolean, text: string }[]} 参照
+ *   - target：先のファイル。Markdown の節の番号の参照で先が決まらなければ null
+ *   - anchor：リンクの #
+ *   - headings：見出しの参照の「」の中（親から順）
+ *   - sections：節の番号の参照の番号
+ *   - unknown：直前が「（」などで、先の文書が決まらない
  */
-export function findReferences(file, text, names, basenames, exists = existsSync) {
+function findReferences(file, text, names, basenames, exists = existsSync) {
   const refs = []
   const isMarkdown = file.endsWith('.md')
-  const lines = text.split('\n')
+  const lines = text.split(/\r?\n/)
   const codeLines = isMarkdown ? codeBlockLines(text) : []
   lines.forEach((line, index) => {
     const inCode = Boolean(codeLines[index])
@@ -188,17 +193,17 @@ export function findReferences(file, text, names, basenames, exists = existsSync
       // 最初の「」は、「の」を挟むか、パスかリンクの直後（NO_PARTICLE_BEFORE）に書いたものだけを読む。読まないときは、続く「の「」から読む
       for (const match of line.matchAll(/(\s?の)?(「[^「」\n]*」)(?:\s?の「[^「」\n]*」)*/g)) {
         let start = match.index
-        let text = match[0]
+        let refText = match[0]
         if (!match[1] && !NO_PARTICLE_BEFORE.test(line.slice(0, start))) {
           const first = match[2]
           start += first.length
-          text = text.slice(first.length)
-          if (!text) continue
+          refText = refText.slice(first.length)
+          if (!refText) continue
         }
         const target = resolveDocument(file, line.slice(0, start), names, basenames, exists, true)
         if (!target) continue
-        const path = [...text.matchAll(/「([^「」]*)」/g)].map((quote) => quote[1])
-        refs.push({ line: lineNumber, target, headings: path, text: text.trim() })
+        const path = [...refText.matchAll(/「([^「」]*)」/g)].map((quote) => quote[1])
+        refs.push({ line: lineNumber, target, headings: path, text: refText.trim() })
       }
     }
     if (isMarkdown && inCode) return
@@ -224,7 +229,7 @@ export function findReferences(file, text, names, basenames, exists = existsSync
  * 節の番号で参照したときの、失敗のメッセージを作る。指す先の文書に、その番号の見出しがあれば示す。
  *
  * @param {{ target: string | null, sections: string[], unknown?: boolean }} ref 節の番号の参照
- * @param {(file: string) => ReturnType<typeof readHeadings>} headingsOf 文書の見出しを返す関数
+ * @param {(file: string) => ReturnType<typeof readHeadingIndex>} headingsOf 文書の見出しを返す関数
  * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
  * @param {string} where 参照の場所（ファイル:行 参照の文字）
  * @returns {string} 失敗のメッセージ
@@ -256,7 +261,7 @@ function sectionNumberProblem(ref, headingsOf, exists, where) {
 export function checkReferences(files, read, exists) {
   const headings = new Map()
   const headingsOf = (file) => {
-    if (!headings.has(file)) headings.set(file, readHeadings(read(file)))
+    if (!headings.has(file)) headings.set(file, readHeadingIndex(read(file)))
     return headings.get(file)
   }
   const { names: sortedNames, basenames } = documentIndex(files, (file) => headingsOf(file).title)
@@ -320,7 +325,12 @@ export function findNumberedHeadings(files, read) {
 if (import.meta.main) {
   const files = listGitFiles().filter((file) => isTargetFile(file) && !isExcluded(file))
   exitIfNoFiles(files, '参照を調べる文書')
-  const read = (file) => readFileSync(file, 'utf8')
+  // docs/ の文書は、見出しを読むときと参照を探すときの 2 回読むので、中身を覚えておく
+  const texts = new Map()
+  const read = (file) => {
+    if (!texts.has(file)) texts.set(file, readFileSync(file, 'utf8'))
+    return texts.get(file)
+  }
   const problems = [...checkReferences(files, read, existsSync), ...findNumberedHeadings(files, read)]
   for (const problem of problems) console.log(problem)
   console.log(`切れた参照と番号のある見出し：${problems.length}`)

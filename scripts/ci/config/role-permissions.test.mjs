@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
-import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import {
   checkDocument,
   parseRealmRoles,
-  readOperations,
+  parseOperations,
   renderTables,
   replaceGenerated,
 } from './role-permissions.mjs'
@@ -86,31 +90,25 @@ const REALM = {
 
 describe('ロールと権限の対応表', () => {
   test('OpenAPI の操作から、メソッド、パス、要約、権限、security を読む。components の後は読まない', () => {
-    assert.deepEqual(readOperations(ADMIN), [
+    assert.deepEqual(parseOperations(ADMIN), [
       { method: 'GET', path: '/tax-categories', summary: '税区分の一覧（税率を含む）', permission: 'tax:read', security: null },
       { method: 'POST', path: '/tax-categories', summary: '税区分の登録', permission: 'tax:write', security: null },
       { method: 'GET', path: '/me', summary: 'ログインしている運営者', permission: 'authenticated', security: null },
     ])
     assert.deepEqual(
-      readOperations(STORE).map((operation) => operation.security),
+      parseOperations(STORE).map((operation) => operation.security),
       [[], ['', 'memberToken'], ['memberToken']],
     )
   })
 
   test('項目のない security: は、認証が不要（[]）と読まずに、書いていないもの（null）として読む', () => {
-    const [operation] = readOperations(['paths:', '  /a:', '    get:', '      security:', '      summary: x'].join('\n'))
+    const [operation] = parseOperations(['paths:', '  /a:', '    get:', '      security:', '      summary: x'].join('\n'))
     assert.equal(operation.security, null)
   })
 
   test('フロー形式と引用符で囲んだパスも読み、パスの parameters と知らないメソッドは操作にしない', () => {
     const text = ['paths:', "  '/a': {get: {summary: a, x-required-permission: tax:read}}", '  /b:', '    parameters: []', '    head: {summary: b}'].join('\n')
-    assert.deepEqual(readOperations(text), [{ method: 'GET', path: '/a', summary: 'a', permission: 'tax:read', security: null }])
-  })
-
-  test('リポジトリの管理 API と店舗 API の契約から、操作を読める', () => {
-    for (const file of ['api/openapi/admin.yaml', 'api/openapi/store.yaml']) {
-      assert.ok(readOperations(readFileSync(file, 'utf8')).length > 0, file)
-    }
+    assert.deepEqual(parseOperations(text), [{ method: 'GET', path: '/a', summary: 'a', permission: 'tax:read', security: null }])
   })
 
   test('realm から、管理 API の権限を持つロールと、その権限を読む（権限のないロールは除く）', () => {
@@ -125,8 +123,8 @@ describe('ロールと権限の対応表', () => {
 
   test('ロールの表はロールと説明の 2 列、権限の表はロールを列にして権限を行にする。管理 API の表は 3 列', () => {
     const { markdown, problems } = renderTables({
-      admin: readOperations(ADMIN),
-      store: readOperations(STORE),
+      admin: parseOperations(ADMIN),
+      store: parseOperations(STORE),
       realm: parseRealmRoles(REALM),
     })
     assert.deepEqual(problems, [])
@@ -157,7 +155,7 @@ describe('ロールと権限の対応表', () => {
   })
 
   test('security のない店舗 API の操作は、「不要」にせず問題にする。security: [] は token 不要を明示した操作で、「不要」になる', () => {
-    const store = readOperations(
+    const store = parseOperations(
       [
         'paths:',
         '  /open:',
@@ -191,5 +189,77 @@ describe('ロールと権限の対応表', () => {
       replaceGenerated(doc, '新しい表\n'),
       '# 表\n\n<!-- generated:role-permissions -->\n新しい表\n<!-- /generated:role-permissions -->\n',
     )
+  })
+
+  test('生成の範囲の終わりが開きより前にあれば、範囲がないものとして失敗にし、書き直しでは例外にする', () => {
+    const doc = '<!-- /generated:role-permissions -->\n表\n<!-- generated:role-permissions -->\n'
+    assert.deepEqual(checkDocument(doc, '表\n'), ['文書に <!-- generated:role-permissions --> の範囲がない'])
+    assert.throws(() => replaceGenerated(doc, '表\n'), /範囲がない/)
+  })
+
+  test('生成の範囲の開きだけがあって、終わりがなければ、書き直しでは例外にする', () => {
+    assert.throws(() => replaceGenerated('<!-- generated:role-permissions -->\n表\n', '表\n'), /範囲がない/)
+  })
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./role-permissions.mjs', import.meta.url))
+  const forgotten = `${STORE}\n  /forgotten:\n    get:\n      summary: 書き忘れ`
+
+  /**
+   * 一時のディレクトリに契約と realm と文書を置いて、script を実行する。
+   *
+   * @param {string} store 店舗 API の契約
+   * @param {string[]} args script の引数
+   * @param {string} [table] 文書の生成の範囲に置く表
+   * @returns {{ result: import('node:child_process').SpawnSyncReturns<string>, document: string }} 実行の結果と、実行の後の文書
+   */
+  function run(store, args, table = '古い表\n') {
+    const dir = mkdtempSync(path.join(tmpdir(), 'role-permissions-'))
+    try {
+      const files = {
+        'api/openapi/admin.yaml': ADMIN,
+        'api/openapi/store.yaml': store,
+        'docker/keycloak/realms/ec-admin-realm.json': JSON.stringify(REALM),
+        'docs/02-設計/role-permissions.md': `# 表\n\n<!-- generated:role-permissions -->\n${table}<!-- /generated:role-permissions -->\n`,
+      }
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      const result = spawnSync(process.execPath, [script, ...args], { cwd: dir, encoding: 'utf8' })
+      return { result, document: readFileSync(path.join(dir, 'docs/02-設計/role-permissions.md'), 'utf8') }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  const current = renderTables({ admin: parseOperations(ADMIN), store: parseOperations(STORE), realm: parseRealmRoles(REALM) }).markdown
+
+  test('文書の表が契約と realm から作った表と同じなら、終了コード 0 で、食い違いの数を出して終わる', () => {
+    const { result } = run(STORE, [], current)
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /対応表の食い違い：0/)
+  })
+
+  test('文書の表が違えば、書き直し方を出し、終了コード 1 で終わる', () => {
+    const { result } = run(STORE, [])
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /--write で書き直し/)
+  })
+
+  test('--write は、問題がなければ表を書き直し、終了コード 0 で終わる', () => {
+    const { result, document } = run(STORE, ['--write'])
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /書き直した：/)
+    assert.ok(document.includes(current), document)
+  })
+
+  test('--write は、契約に問題があれば、表を書かず、書かなかったことを出して終了コード 1 で終わる', () => {
+    const { result, document } = run(forgotten, ['--write'])
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /GET \/forgotten：security がない/)
+    assert.match(result.stdout, /書き直さなかった/)
+    assert.ok(document.includes('古い表'), document)
   })
 })

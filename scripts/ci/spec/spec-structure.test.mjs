@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -16,7 +17,7 @@ import {
   EXAMPLE_NUMBER,
   FEATURE_SECTIONS,
   findTargets,
-  readSkeleton,
+  parseSkeleton,
   REFACTOR_SECTIONS,
 } from './spec-structure.mjs'
 import { FUNCTIONAL_SPECS } from '../lib/docs/functional-specs.mjs'
@@ -524,15 +525,15 @@ describe('③ の節の名前を雛形の骨組みから読む（DC-326-3、#325
     return `# 機能仕様の雛形\n\n${before}${HEADING}\n\n${open}\n${body.join('\n')}\n${close}\n\n${after}`
   }
 
-  const sectionsOf = (text) => readSkeleton(text).sections
-  const problemsOf = (text) => readSkeleton(text).problems
+  const sectionsOf = (text) => parseSkeleton(text).sections
+  const problemsOf = (text) => parseSkeleton(text).problems
 
   test('骨組みの ## を、出る順に読む', () => {
-    assert.deepEqual(readSkeleton(template()), { sections: SECTIONS, problems: [] })
+    assert.deepEqual(parseSkeleton(template()), { sections: SECTIONS, problems: [] })
   })
 
   test('リポジトリの雛形から、固定の 4 つの節を読む', () => {
-    assert.deepEqual(readSkeleton(readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8')), { sections: SECTIONS, problems: [] })
+    assert.deepEqual(parseSkeleton(readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8')), { sections: SECTIONS, problems: [] })
   })
 
   test('検出する：雛形の ## の順を入れ替えると、古い順の ③ が失敗になる', () => {
@@ -619,12 +620,12 @@ describe('③ の節の名前を雛形の骨組みから読む（DC-326-3、#325
     ['3 個の空白で字下げした開き', '   ````markdown', '   ````'],
   ]) {
     test(`検出しない：骨組みを ${label} で囲んでも読む`, () => {
-      assert.deepEqual(readSkeleton(template({ open, close })), { sections: SECTIONS, problems: [] })
+      assert.deepEqual(parseSkeleton(template({ open, close })), { sections: SECTIONS, problems: [] })
     })
   }
 
   test('検出しない：CRLF の雛形でも、名前に CR が残らない', () => {
-    assert.deepEqual(readSkeleton(template().replaceAll('\n', '\r\n')), { sections: SECTIONS, problems: [] })
+    assert.deepEqual(parseSkeleton(template().replaceAll('\n', '\r\n')), { sections: SECTIONS, problems: [] })
   })
 
   test('検出しない：骨組みの ## の末尾にある閉じの # と空白', () => {
@@ -641,7 +642,7 @@ describe('③ の節の名前を雛形の骨組みから読む（DC-326-3、#325
       '## 業務規則', '<!--', '## コメント', '-->', '`## 1 行のコード`', '```', '## 入れ子', '```',
       '## 状態の遷移', '## データモデル', '## 今有効な AC',
     ]
-    assert.deepEqual(readSkeleton(template({ body })), { sections: SECTIONS, problems: [] })
+    assert.deepEqual(parseSkeleton(template({ body })), { sections: SECTIONS, problems: [] })
   })
 
   test('検出しない：骨組みの <…> の注が、文の途中で ## に言及している', () => {
@@ -651,11 +652,11 @@ describe('③ の節の名前を雛形の骨組みから読む（DC-326-3、#325
 
   test('検出しない：骨組みの外にある、使い方の表や箇条での ## の言及', () => {
     const before = '## この雛形の使い方\n\n| 項目 | 内容 |\n|---|---|\n| 節 | ## 余分 を足す |\n\n- 節は ## 余分 の形\n\n'
-    assert.deepEqual(readSkeleton(template({ before })), { sections: SECTIONS, problems: [] })
+    assert.deepEqual(parseSkeleton(template({ before })), { sections: SECTIONS, problems: [] })
   })
 
   test('検出しない：骨組みの後ろに別の ## の節を加えても、読むコードブロックは 1 つだけ', () => {
-    assert.deepEqual(readSkeleton(template({ after: '## 補足\n\n```\n例\n```\n' })), { sections: SECTIONS, problems: [] })
+    assert.deepEqual(parseSkeleton(template({ after: '## 補足\n\n```\n例\n```\n' })), { sections: SECTIONS, problems: [] })
   })
 
   test('検出しない：③ の本文のコードブロックにある ##', () => {
@@ -760,5 +761,47 @@ describe('検査の対象（DC-321-19）', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./spec-structure.mjs', import.meta.url))
+
+  /**
+   * 一時のディレクトリに、機能仕様と進行中の spec を置いて script を実行する。
+   *
+   * @param {(files: Record<string, string>) => Record<string, string>} [change] 進行中の spec の文書の組を変える関数
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function run(change = (files) => files) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'spec-structure-run-'))
+    try {
+      const specs = Object.fromEntries(Object.entries(change(baseFiles())).map(([file, text]) => [`docs/08-spec/321-new/${file}`, text]))
+      const files = {
+        'docs/03-機能仕様/template.md': readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8'),
+        ...Object.fromEntries(FUNCTIONAL_SPECS.map((file) => [file, functionalText(SECTIONS)])),
+        ...specs,
+      }
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      return spawnSync(process.execPath, [script], { cwd: dir, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('問題がなければ、終了コード 0 で、構造の問題の数を出して終わる', () => {
+    const result = run()
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /構造の問題：0（spec 1、見本 0、機能仕様 \d+）/)
+  })
+
+  test('問題があれば、ファイルと理由を出し、終了コード 1 で終わる', () => {
+    const result = run((files) => edit(files, 'spec.md', '# Spec 321：', '# Spec 1：'))
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /docs\/08-spec\/321-new\/spec\.md：1 行目が「# Spec 321：…」でない/)
+    assert.match(result.stdout, /構造の問題：1（/)
   })
 })

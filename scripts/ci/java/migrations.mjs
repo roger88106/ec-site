@@ -46,17 +46,6 @@ export function findChangedMigrations(files, readBase, readNow) {
 }
 
 /**
- * マイグレーションが 1 件もないときの失敗の理由を返す。文は他の検査と同じ共通の関数（emptyListReason）で作り、置き場所を添える。
- *
- * @param {string[]} files 今あるバージョン付きのマイグレーション
- * @param {string} dir マイグレーションの置き場所
- * @returns {string | null} 0 件なら失敗の理由、あれば null
- */
-export function migrationsEmptyReason(files, dir) {
-  return emptyListReason(files, `マイグレーション（${dir}）`)
-}
-
-/**
  * 基準にあって、今はないマイグレーション（削除と改名。改名は古い名前が消える）を返す。
  *
  * @param {Iterable<string>} baseFiles 基準にあるマイグレーション
@@ -75,8 +64,6 @@ export function findRemovedMigrations(baseFiles, currentFiles) {
  * main に入ったもの（hotfix を含む）は、リリースに出るので、develop に入っていなくても守る。
  * そのため、HEAD と develop・main のそれぞれ（CI の origin/ の方を先に見る）との merge-base を基準にする。
  * 履歴の commit（追加と改名）でなく tree を比べるので、自分のブランチの追加と改名が merge commit で develop の履歴に入っても、失敗にならない。
- * merge-base が HEAD 自身（develop の上で実行する、push の CI）のときは、HEAD と、HEAD の 1 つ目の親（マージの前の develop）を基準にする。
- * どの基準も求められないとき（ref がない、履歴が繋がらない）は、HEAD の 1 つ目の親を基準にし、警告を出す。
  *
  * @param {string} [cwd] 実行する場所（リポジトリの中）。なければ今のディレクトリ
  * @returns {{ revisions: string[], bases: string[] }} 基準の commit（重複なし。初めの commit で親がなければ空）と、使った ref（なければ空）
@@ -91,9 +78,11 @@ export function resolveBaseRevisions(cwd = process.cwd()) {
     const found = mergeBaseWith(branch, cwd)
     if (!found) continue
     revisions.add(found.revision)
+    // merge-base が HEAD 自身（develop の上で実行する、push の CI）のときは、HEAD の 1 つ目の親（マージの前の develop）も基準にする
     if (found.revision === head && parent) revisions.add(parent)
     bases.push(found.base)
   }
+  // どの基準も求められないとき（ref がない、履歴が繋がらない）は、HEAD の 1 つ目の親を基準にする（呼ぶ側が警告を出す）
   if (bases.length === 0 && parent) revisions.add(parent)
   return { revisions: [...revisions], bases }
 }
@@ -120,7 +109,7 @@ if (import.meta.main) {
   // 今の index（commit の前の hook では次の commit。ステージした削除・改名・変更を含む）
   const current = parseBlobList(git(['ls-files', '-s', '-z', '--', MIGRATIONS]), 1)
   const files = [...current.keys()].filter(isVersionedMigration)
-  const emptyReason = migrationsEmptyReason(files, MIGRATIONS)
+  const emptyReason = emptyListReason(files, `マイグレーション（${MIGRATIONS}）`)
   if (emptyReason) {
     console.log(emptyReason)
     process.exit(1)

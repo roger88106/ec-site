@@ -47,8 +47,8 @@ const CUTTING_LINE = /(`{3}|:{3})[^\S\n]*$/m
 /** 図の開きの形（囲みの記号と、先頭の語が mermaid の info string）。` の囲みの info string には ` を含めない（1 行のコードの範囲になるため） */
 const MERMAID_OPEN = /^(?:`{3,}(?:\s*mermaid)(?:\s[^`]*)?|~{3,}\s*mermaid(?:\s.*)?)$/i
 
-/** 0〜3 個の空白で字下げした、図の開きの形の行（コードブロックの本文の中で、閉じていない疑いを見る） */
-const INDENTED_MERMAID_OPEN = /^ {0,3}(\S.*)$/
+/** 0〜3 個の空白の字下げと、その後の文字（図の開きの形かは isMermaidOpen が MERMAID_OPEN で見る） */
+const UP_TO_3_INDENT = /^ {0,3}(\S.*)$/
 
 /** 行頭の空白・`>`・箇条の記号（`-`、`*`、`+`、`1.`、`1)`）の並び */
 const LINE_PREFIX = /^(?:[ \t]|>|[-*+][ \t]|\d{1,9}[.)][ \t])*/
@@ -73,7 +73,7 @@ export function isMermaidTargetDoc(file) {
  * @returns {boolean} 図の開きの形なら true
  */
 function isMermaidOpen(line) {
-  const match = INDENTED_MERMAID_OPEN.exec(line)
+  const match = UP_TO_3_INDENT.exec(line)
   return match !== null && MERMAID_OPEN.test(match[1].trimEnd())
 }
 
@@ -158,7 +158,7 @@ export function describeFailure(error) {
  * @param {number} expected 渡した図の数
  * @returns {string | null} 全ての図が描画されたら null、そうでなければ空でない理由
  */
-export function renderFailure(result, expected) {
+function renderFailure(result, expected) {
   if (result.error !== null) return result.error
   if (result.outputs !== expected) {
     return `描画された図が足りない（${expected} 個のうち ${result.outputs} 個。図の本文に、行末の \`\`\` か ::: がないか確認する）`
@@ -261,14 +261,14 @@ export function buildCommand(command, args) {
 /**
  * できた SVG の数を数える。
  *
- * mermaid-cli 12.0.0 は、Markdown の入力では `<出力の名前>-<n>.svg`（n は 1 から）、図の本文だけの入力では `<出力の名前>.svg` を作る。
+ * MERMAID_CLI のバージョンは、Markdown の入力では `<出力の名前>-<n>.svg`（n は 1 から）、図の本文だけの入力では `<出力の名前>.svg` を作る。
  *
  * @param {string} work 作業のディレクトリ
  * @param {string} stem 出力の名前（拡張子を除く）
  * @param {'markdown' | 'diagram'} kind 入力の種類
  * @returns {number} 中身のある SVG の数
  */
-function countOutputs(work, stem, kind) {
+export function countOutputs(work, stem, kind) {
   const names = kind === 'markdown'
     ? readdirSync(work).filter((name) => name.startsWith(stem) && /^-\d+\.svg$/.test(name.slice(stem.length)))
     : [`${stem}.svg`].filter((name) => existsSync(path.join(work, name)))
@@ -283,7 +283,7 @@ function countOutputs(work, stem, kind) {
  * @returns {(input: string, kind: 'markdown' | 'diagram') => { error: string | null, outputs: number }}
  *   描画する関数。プロセスが失敗したら error に空でない誤りの文を入れる
  */
-export function createRenderer(work, config) {
+function createRenderer(work, config) {
   let serial = 0
   return (content, kind) => {
     serial++
@@ -298,8 +298,8 @@ export function createRenderer(work, config) {
       // Windows の npx は npx.cmd で、shell を通さないと起動できない。引用符で囲んだ 1 つのコマンドにして、空白のあるパスが 1 つの引数になるようにする
       if (process.platform === 'win32') execSync(buildCommand('npx', args), options)
       else execFileSync('npx', args, options)
-    } catch (error) {
-      return { error: describeFailure(error), outputs: 0 }
+    } catch (e) {
+      return { error: describeFailure(e), outputs: 0 }
     }
     return { error: null, outputs: countOutputs(work, stem, kind) }
   }

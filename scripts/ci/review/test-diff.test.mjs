@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
-import { findViolations, parseRenames } from './test-diff.mjs'
+import { fileURLToPath } from 'node:url'
+import { findRenameProblems, findViolations, parseRenames } from './test-diff.mjs'
 
 /** 1 つのファイルの差分（git diff -M の形）を作る */
 function fileDiff({ from, to = from, removed = [], added = [], newFile = false }) {
@@ -24,6 +29,37 @@ describe('名前の対応の読み込み', () => {
       ['ProductDirectory', 'CatalogDirectory'],
       ['com.a.Foo', 'com.b.Foo'],
     ])
+  })
+
+  test('= のない行、= が 2 つ以上の行、旧か新が空の行を、行の番号つきで返す', () => {
+    const text = ['# 説明', 'A=B', 'NoEquals', 'A=B=C', '=New', 'Old=', ''].join('\n')
+    assert.deepEqual(findRenameProblems(text).map(({ line }) => line), [3, 4, 5, 6])
+    assert.deepEqual(findRenameProblems(''), [])
+  })
+})
+
+describe('入口の使い方の誤り', () => {
+  const SCRIPT = fileURLToPath(new URL('./test-diff.mjs', import.meta.url))
+  const run = (args) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' })
+
+  test('元の commit がない、対応のファイルがない、対応のファイルの形が崩れているときは、終了コード 2 で理由を示す', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'test-diff-'))
+    try {
+      const broken = path.join(dir, 'renames.txt')
+      writeFileSync(broken, 'A=B\nNoEquals\n')
+      assert.equal(run([]).status, 2)
+      const missing = run(['HEAD', path.join(dir, 'none.txt')])
+      assert.equal(missing.status, 2)
+      assert.match(missing.stderr, /名前の対応のファイルがない/)
+      const shape = run(['HEAD', broken])
+      assert.equal(shape.status, 2)
+      assert.match(shape.stderr, /renames\.txt:2 「旧=新」の形でない：NoEquals/)
+      const commit = run(['no-such-commit-xyz'])
+      assert.equal(commit.status, 2)
+      assert.match(commit.stderr, /git diff を実行できない/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
 
@@ -72,16 +108,38 @@ describe('テストの差分の検査', () => {
       added: ['        assertThat(total).isEqualTo(200);'],
     })
     assert.deepEqual(findViolations(diff, []), [
-      { file: TEST, kind: 'removed', line: '        assertThat(total).isEqualTo(100);' },
-      { file: TEST, kind: 'added', line: '        assertThat(total).isEqualTo(200);' },
+      { file: TEST, kind: 'removed', line: '        assertThat(total).isEqualTo(100);', location: `${TEST}:1` },
+      { file: TEST, kind: 'added', line: '        assertThat(total).isEqualTo(200);', location: `${TEST}:1` },
     ])
   })
 
   test('行を追加するだけ・消すだけの変更も失敗する', () => {
     const diff = fileDiff({ from: TEST, added: ['        verify(mock).call();'] })
     assert.deepEqual(findViolations(diff, []), [
-      { file: TEST, kind: 'added', line: '        verify(mock).call();' },
+      { file: TEST, kind: 'added', line: '        verify(mock).call();', location: `${TEST}:1` },
     ])
+  })
+
+  test('説明できない行の場所は、@@ の行と文脈の行から数え、消した行は変更の前のファイルの行にする', () => {
+    const diff = [
+      `diff --git a/${TEST} b/${TEST}`,
+      `--- a/${TEST}`,
+      `+++ b/${TEST}`,
+      '@@ -10,4 +20,4 @@',
+      ' class FooTest {',
+      '-    int a = 1;',
+      '+    int a = 2;',
+      '     int b = 3;',
+      '+    int c = 4;',
+    ].join('\n')
+    assert.deepEqual(
+      findViolations(diff, []).map(({ kind, location }) => [kind, location]),
+      [
+        ['removed', `${TEST}:11`],
+        ['added', `${TEST}:21`],
+        ['added', `${TEST}:23`],
+      ],
+    )
   })
 
   test('新しく追加したテストのファイルは見ない', () => {
@@ -129,7 +187,7 @@ describe('ファイルをまたぐテストの移動（中身を変えない移�
       fileDiff({ from: FROM, removed: MOVED }),
       fileDiff({ from: TO, newFile: true, added: changed }),
     ].join('\n')
-    assert.deepEqual(findViolations(diff, []), [{ file: FROM, kind: 'removed', line: MOVED[1] }])
+    assert.deepEqual(findViolations(diff, []), [{ file: FROM, kind: 'removed', line: MOVED[1], location: `${FROM}:2` }])
   })
 
   test('字下げだけが変わった行は通る', () => {

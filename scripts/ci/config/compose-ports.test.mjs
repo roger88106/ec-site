@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
-import { describeUnreadableHostPort, findPortProblems, readHostPort } from './compose-ports.mjs'
+import { fileURLToPath } from 'node:url'
+import { describeUnreadableHostPort, findPortProblems, parseHostPort } from './compose-ports.mjs'
 
 /** サービスの ports を compose の形にする */
 const compose = (services) =>
@@ -38,11 +42,11 @@ describe('compose のポートの検査', () => {
   })
 
   test('ホスト側のポートは、数字か既定値付きの変数から読み、それ以外（既定値のない変数、範囲）は読めない', () => {
-    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432'), 5432)
-    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025'), 2525)
-    assert.equal(readHostPort('5432:5432'), 5432)
+    assert.equal(parseHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432'), 5432)
+    assert.equal(parseHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025'), 2525)
+    assert.equal(parseHostPort('5432:5432'), 5432)
     for (const entry of ['${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:80']) {
-      assert.equal(readHostPort(entry), null, entry)
+      assert.equal(parseHostPort(entry), null, entry)
     }
   })
 
@@ -60,11 +64,40 @@ describe('compose のポートの検査', () => {
       ],
     )
   })
+})
 
-  test('リポジトリの compose のすべてのポートが、決まった形で書いてある', () => {
-    const { ports, problems, unreadable } = findPortProblems(readFileSync('docker/compose.yaml', 'utf8'))
-    assert.ok(ports.length > 0)
-    assert.deepEqual(problems, [])
-    assert.deepEqual(unreadable, [])
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./compose-ports.mjs', import.meta.url))
+
+  /** 一時のディレクトリに docker/compose.yaml を置いて、script を実行する */
+  function run(text) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'compose-ports-'))
+    try {
+      mkdirSync(path.join(dir, 'docker'), { recursive: true })
+      writeFileSync(path.join(dir, 'docker/compose.yaml'), text)
+      return spawnSync(process.execPath, [script], { cwd: dir, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('全てのポートが決まった形なら、終了コード 0 で、ポートの数を出して終わる', () => {
+    const result = run(compose({ app: ['"${LOCAL_BIND_ADDRESS:-127.0.0.1}:8080:8080"'] }))
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /compose のポート：1 件、決まった形でないもの：0 件、ホスト側のポートを読めないもの：0 件/)
+  })
+
+  test('決まった形でないポートと、ホスト側を読めないポートがあれば、サービスと項目を出し、終了コード 1 で終わる', () => {
+    const result = run(compose({ app: ['"8080:8080"'], extra: ['"${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80"'] }))
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /docker\/compose\.yaml app：8080:8080/)
+    assert.match(result.stdout, /docker\/compose\.yaml extra：.*9000-9001:80（ホスト側のポートを読めない/)
+  })
+
+  test('ポートが 0 件なら、何も見ずに通らず、原因を出して終了コード 1 で終わる', () => {
+    const result = run('services:\n  app:\n    image: x\n')
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /docker\/compose\.yaml にポートが 1 件も見つからない/)
+    assert.match(result.stdout, /compose のポート：0 件/)
   })
 })

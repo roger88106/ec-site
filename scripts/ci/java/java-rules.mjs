@@ -98,7 +98,7 @@ export function findUnexplainedSuppressWarnings(text) {
 }
 
 /**
- * コメント、文字列、文字、テキストブロックの中を空白にする（改行は残すので、位置と行番号は変わらない）。この規則だけが使う。
+ * コメント、文字列、文字、テキストブロックの中を空白にする（改行は残すので、位置と行番号は変わらない）。
  *
  * @param {string} text ソース
  * @returns {string} コードだけを残したソース
@@ -158,6 +158,7 @@ function annotationMask(code) {
   }
   return mask
 }
+
 /**
  * @SuppressWarnings の理由を求める場所か。
  *

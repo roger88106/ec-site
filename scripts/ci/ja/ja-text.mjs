@@ -7,12 +7,13 @@
 //   語の検査（error と warning の語、allow の照合）は、インラインコードの中を見ない。許容用語がインラインコードの中にしか出ないときは、使われていないと見る。
 //
 // warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
-//   既定の実行は warning を数えない（全体の件数は常に数千件で、読まれないため）。
+//   既定の実行は warning を数えない（全体の件数が多く、読まれないため）。
 //   文体の型と閾値（ja-text.json の style）は findStyleWarnings、文の取り出し方は proseSentences、読点の数え方は countCommas に書いてある。
 //
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 //
-// コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
+// コードも見る：アーカイブの外のコードの、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
+//   見るコードは、codeKind が読める種類のファイル（lib/source/comment-text）。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/source/comment-text。
 //   テンプレートで書いたテスト名（it(`…`)）の外側のバッククォートは文字列の区切りで、インラインコードとして隠さない（埋め込みの ${…} は X の 1 字にする）。
 // コミットメッセージは、commit の hook が --message で調べる。
@@ -22,8 +23,7 @@
 // 失敗したとき：error の語を言い換える。warning は --warning で一覧を出力し（終了コードは 0）、示された文を読んで修正するかを決める。
 //
 // 除外：部分の一致が誤検出になる語は、項目を word の代わりに pattern（正規表現）で書き、examples の hit（当たる例）と miss（当たらない例）を必ず書く。
-//   examples がない、正規表現が読めない、例が合わない項目は失敗にする。
-//   使わない語を含む正しい語は、error の項目の allow に書く（上の error の段落）。
+//   examples がない、正規表現が読めない、例が合わない項目は失敗にする。allow は上の error の段落。
 //
 // 使い方：node scripts/ci/ja/ja-text.mjs [--warning [--added] | --changed]（リポジトリのルートで）
 //   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。
@@ -118,18 +118,20 @@ function compiled(term) {
  */
 function disallowedMatch(line, term) {
   const { regExp, allows } = compiled(term)
-  const allowed = []
-  for (const allow of allows) {
-    for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
-      allowed.push([at, at + allow.length])
-    }
-  }
   const matches = []
   if (regExp !== null) {
     for (const match of line.matchAll(regExp)) matches.push({ at: match.index, text: match[0] })
   } else {
     for (let at = line.indexOf(term.word); at !== -1; at = line.indexOf(term.word, at + 1)) {
       matches.push({ at, text: term.word })
+    }
+  }
+  // 大半の行は一致がないので、許容用語の範囲は一致があるときだけ求める
+  if (matches.length === 0) return null
+  const allowed = []
+  for (const allow of allows) {
+    for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
+      allowed.push([at, at + allow.length])
     }
   }
   for (const { at, text } of matches) {
@@ -158,8 +160,8 @@ export function findPatternProblems(terms) {
     }
     try {
       patternRegExp(term)
-    } catch (error) {
-      problems.push(`${name}：正規表現として不正：${error.message}`)
+    } catch (e) {
+      problems.push(`${name}：正規表現として不正：${e.message}`)
       continue
     }
     const { hit, miss } = term.examples ?? {}
@@ -191,7 +193,13 @@ export function validateTerms(terms) {
     if (Array.isArray(term.allow)) {
       throw new Error(`「${termName(term)}」の allow は {許容用語: 理由} の形で書く（ja-text.json）`)
     }
-    if (term.files !== undefined) new RegExp(term.files, 'u')
+    if (term.files !== undefined) {
+      try {
+        new RegExp(term.files, 'u')
+      } catch (e) {
+        throw new Error(`ja-text.json の「${termName(term)}」の files「${term.files}」：正規表現として不正：${e.message}`)
+      }
+    }
     if (term.word === undefined) continue
     for (const allow of Object.keys(term.allow ?? {})) {
       if (!allow.includes(term.word)) {
@@ -217,13 +225,14 @@ export function termsFor(terms, file) {
  *
  * @param {string} text 文書
  * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許容用語（許容用語は {許容用語: 理由}）
+ * @param {{ masked?: boolean }} [options] masked は、text のインラインコードを除いてあるか（withoutInlineCode の結果）
  * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語
  */
-export function findTerms(text, terms) {
+export function findTerms(text, terms, { masked = false } = {}) {
   const hits = []
   text.split('\n').forEach((raw, index) => {
     // インラインコードは、行ごとに 1 回だけ除く
-    const line = maskCodeSpans(raw)
+    const line = masked ? raw : maskCodeSpans(raw)
     for (const term of terms) {
       const matched = disallowedMatch(line, term)
       if (matched !== null) hits.push({ ...term, line: index + 1, word: matched })
@@ -239,12 +248,13 @@ export function findTerms(text, terms) {
  *
  * @param {string[]} texts 調べる文書の内容（全て）
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 語（または正規表現）と許容用語
+ * @param {{ masked?: boolean }} [options] masked は、texts のインラインコードを除いてあるか（withoutInlineCode の結果）
  * @returns {string[]} 誤りの文
  */
-export function findAllowProblems(texts, terms) {
-  const masked = texts.map(withoutInlineCode)
+export function findAllowProblems(texts, terms, { masked = false } = {}) {
+  const plain = masked ? texts : texts.map(withoutInlineCode)
   return terms.flatMap((term) =>
-    checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => masked.some((text) => text.includes(allow))),
+    checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => plain.some((text) => text.includes(allow))),
   )
 }
 
@@ -322,6 +332,22 @@ const LABEL = /^[^\s：:、。（）()]{1,24}：\s*\S/
 /** 日本語の字（かな・漢字）。コメントで日本語の字のない行は、コードや型、コマンドの例として、前後の行とつながない */
 const JAPANESE = /[ぁ-んァ-ヶ一-龠]/
 
+/** ひらがな。かなを含む文だけを、文体を測る文にする */
+const KANA = /[ぁ-ん]/
+
+/** 表の区切りの行（`|---|:--:|` など。`-` を 1 つ以上含む） */
+const TABLE_SEPARATOR = /^\s*\|?[\s:|-]+\|?\s*$/
+
+/**
+ * 表の区切りの行かを返す。
+ *
+ * @param {string} line 行
+ * @returns {boolean} 区切りの行なら true
+ */
+function isTableSeparator(line) {
+  return TABLE_SEPARATOR.test(line) && line.includes('-')
+}
+
 /** テスト名の行（commentText では、名前の文字列が引用符から始まる） */
 const TEST_NAME = /^\s*['"`]/
 
@@ -387,13 +413,13 @@ function joinPieces(pieces) {
  * @returns {{ line: number, lines: number[], sentence: string }[]} 文の最初の行（1 から）、文の全ての行、文。
  *   リンクの表示文字列は LINK_START と LINK_END で囲む（measureSentence が読点の数に使い、plainSentence で除く）
  */
-export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
+function proseSentences(text, kind = 'markdown', trailing = new Set()) {
   const result = []
   let pending = []
   const flush = () => {
     const joined = joinPieces(pending.map((piece) => piece.text))
     const sentence = kind === 'code' ? withoutTagType(joined) : joined
-    if (/[ぁ-ん]/.test(sentence)) {
+    if (KANA.test(sentence)) {
       const lines = [...new Set(pending.map((piece) => piece.line))]
       result.push({ line: lines[0], lines, sentence })
     }
@@ -438,7 +464,7 @@ export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
     const plain = plainLine(raw)
     const body = plain.trim()
     // 空行（code ではコメントでない行も空になる）、罫線、表の区切りの行は、段落の境目
-    if (!body || RULE_LINE.test(body) || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) {
+    if (!body || RULE_LINE.test(body) || isTableSeparator(raw)) {
       flush()
       itemIndent = null
       return
@@ -534,12 +560,12 @@ function proseCells(text) {
   const result = []
   const inCode = codeBlockLines(text)
   text.split('\n').forEach((raw, index) => {
-    if (inCode[index] || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) return
+    if (inCode[index] || isTableSeparator(raw)) return
     const plain = plainLine(raw)
     const table = plain.trimStart().startsWith('|')
     const cells = table ? plain.split('|') : [plain]
     for (const cell of cells) {
-      const sentences = cell.split('。').filter((sentence) => /[ぁ-ん]/.test(sentence)).map((sentence) => sentence.trim())
+      const sentences = cell.split('。').filter((sentence) => KANA.test(sentence)).map((sentence) => sentence.trim())
       result.push({ line: index + 1, table, sentences })
     }
   })
@@ -552,7 +578,7 @@ function proseCells(text) {
  * @param {string} sentence 文
  * @returns {{ no: number, length: number, comma: number }} 1 区間の「の」の最大の数、字数、読点の数
  */
-export function measureSentence(sentence) {
+function measureSentence(sentence) {
   const plain = plainSentence(sentence)
   return {
     no: Math.max(...plain.split(CLAUSE_SEPARATOR).map((part) => (part.match(/の/g) ?? []).length)),
@@ -638,7 +664,7 @@ export function findStyleWarnings(text, limits, { kind = 'markdown', added = nul
     const sentence = plainSentence(marked)
     const excerpt = sentence.length > 30 ? `${sentence.slice(0, 30)}…` : sentence
     const measured = measureSentence(marked)
-    const add = (kind, word, detail) => hits.push({ line, kind, word, use: `${detail}：「${excerpt}」` })
+    const add = (hitKind, word, detail) => hits.push({ line, kind: hitKind, word, use: `${detail}：「${excerpt}」` })
     if (limits.no !== undefined && measured.no >= limits.no) add('no', '「の」の連なり', `1 区間に「の」が ${measured.no} 個`)
     if (limits.length !== undefined && measured.length >= limits.length) add('length', '長い文', `字数が ${measured.length} 字`)
     if (limits.comma !== undefined && measured.comma >= limits.comma) add('comma', '読点が多い文', `読点が ${measured.comma} 個`)
@@ -748,8 +774,12 @@ function printChangedWarnings(list) {
  * @returns {number} 終了コード（error の語があれば 1。ファイルがなければ 2）
  */
 function checkMessage(file, terms, warning) {
-  if (!file) {
+  if (!file || file.startsWith('--')) {
     console.error('--message にはコミットメッセージのファイルを指定する')
+    return 2
+  }
+  if (!existsSync(file)) {
+    console.error(`--message のファイルがない：${file}`)
     return 2
   }
   const hits = findTerms(stripMessageComments(readFileSync(file, 'utf8')), termsFor(terms, null))
@@ -763,7 +793,10 @@ function checkMessage(file, terms, warning) {
  *
  * @param {Map<string, Set<number> | null> | null} addedMap ファイルごとの追加行（--warning）。null なら全てのファイルを読む
  * @param {boolean} style 文体を測るか。測るときだけ、コードの行末のコメントの行を求める
- * @returns {{ docs: { file: string, text: string }[], code: { file: string, comments: string, trailing: Set<number> }[] }} 文書とコード（コードはコメントとテスト名と、行末のコメントの行）
+ * @returns {{ docs: { file: string, text: string, masked: string }[], code: { file: string, comments: string, masked: string, trailing: Set<number> }[] }} 文書とコード
+ *   - text・comments：文書と、コードのコメントとテスト名
+ *   - masked：text・comments のインラインコードを除いたもの（語の一致と許容用語の照合で共に使う）
+ *   - trailing：コードの行末のコメントの行
  */
 function readTargets(addedMap, style) {
   const gitFiles = listGitFiles()
@@ -771,10 +804,14 @@ function readTargets(addedMap, style) {
   exitIfNoFiles(allDocs, '語を調べる文書')
   const allCode = gitFiles.filter((file) => isTargetCode(file))
   exitIfNoFiles(allCode, '語を調べるコード')
-  const docs = filesToMeasure(allDocs, addedMap).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
+  const docs = filesToMeasure(allDocs, addedMap).map((file) => {
+    const text = readFileSync(file, 'utf8')
+    return { file, text, masked: withoutInlineCode(text) }
+  })
   const code = filesToMeasure(allCode, addedMap).map((file) => {
     const text = readFileSync(file, 'utf8')
-    return { file, comments: commentText(text, codeKind(file)), trailing: style ? trailingCommentLines(text, codeKind(file)) : new Set() }
+    const comments = commentText(text, codeKind(file))
+    return { file, comments, masked: withoutInlineCode(comments), trailing: style ? trailingCommentLines(text, codeKind(file)) : new Set() }
   })
   return { docs, code }
 }
@@ -782,15 +819,12 @@ function readTargets(addedMap, style) {
 /**
  * 文書とコードの語の一致を集める。コードは、コメントとテスト名だけを見る。
  *
- * @param {{ docs: { file: string, text: string }[], code: { file: string, comments: string }[] }} targets 調べる文書とコード
+ * @param {{ docs: { file: string, masked: string }[], code: { file: string, masked: string }[] }} targets 調べる文書とコード（インラインコードを除いたもの）
  * @param {object[]} terms 語の一覧
  * @returns {{ file: string, line: number, word: string, use: string }[]} 見つけた行と語
  */
 function collectTermHits({ docs, code }, terms) {
-  return [
-    ...docs.flatMap(({ file, text }) => findTerms(text, termsFor(terms, file)).map((hit) => ({ file, ...hit }))),
-    ...code.flatMap(({ file, comments }) => findTerms(comments, termsFor(terms, file)).map((hit) => ({ file, ...hit }))),
-  ]
+  return [...docs, ...code].flatMap(({ file, masked }) => findTerms(masked, termsFor(terms, file), { masked: true }).map((hit) => ({ file, ...hit })))
 }
 
 /**
@@ -826,7 +860,7 @@ function checkFiles(list, { warning, added }) {
     return lines === null || lines.has(line)
   }
   const targets = readTargets(addedMap, warning)
-  const allowProblems = warning ? [] : findAllowProblems([...targets.docs.map(({ text }) => text), ...targets.code.map(({ comments }) => comments)], terms)
+  const allowProblems = warning ? [] : findAllowProblems([...targets.docs, ...targets.code].map(({ masked }) => masked), terms, { masked: true })
   for (const problem of allowProblems) console.log(problem)
   const termHits = collectTermHits(targets, terms).filter(({ file, line }) => isAdded(file, line))
   for (const hit of termHits) console.log(`${hit.file}:${hit.line} ${hit.word} → ${hit.use}`)
@@ -840,13 +874,40 @@ function checkFiles(list, { warning, added }) {
   return !warning && count ? 1 : 0
 }
 
+/** 引数として受け付ける印。--message の次の引数はファイル */
+const OPTIONS = new Set(['--warning', '--added', '--changed', '--message'])
+
+/**
+ * 引数の誤り（知らない印、--warning のない --added）を返す。
+ *
+ * @param {string[]} args コマンドの引数
+ * @returns {string | null} 誤りの文。なければ null
+ */
+export function findArgumentProblem(args) {
+  const unknown = args.filter((arg, index) => !OPTIONS.has(arg) && args[index - 1] !== '--message')
+  if (unknown.length) return `知らない引数：${unknown.join(' ')}`
+  if (args.includes('--added') && !args.includes('--warning')) return '--added は --warning と合わせて使う'
+  return null
+}
 
 if (import.meta.main) {
   const args = process.argv.slice(2)
+  const argumentProblem = findArgumentProblem(args)
+  if (argumentProblem) {
+    console.error(`${argumentProblem}（使い方は ja-text.mjs の冒頭のコメント）`)
+    process.exit(2)
+  }
   const warning = args.includes('--warning')
-  const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
-  validateTerms(list.error)
-  validateTerms(list.warning)
+  let list
+  // ja-text.json が読めないのは、文書の違反でなく設定の誤りなので、終了コードを 2 にする
+  try {
+    list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
+    validateTerms(list.error)
+    validateTerms(list.warning)
+  } catch (e) {
+    console.error(`ja-text.json の設定の誤り：${e.message}`)
+    process.exit(2)
+  }
   if (args.includes('--message')) {
     process.exit(checkMessage(args[args.indexOf('--message') + 1], warning ? list.warning : list.error, warning))
   }

@@ -7,17 +7,11 @@
 //     手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容。
 //     転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは手動で修正する
 //     （手順は docs/05-開発規則/issues.md「AC 一覧の操作」）
-//   - 元の spec・変えた spec の値：MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（227）。
-//     変えた spec が 2 つ以上なら読点で区切る。
-//     spec のディレクトリは lib/docs/spec-dirs.mjs で探す。MVP-<番号> は docs/08-spec/archive/mvp/ の下と照合する。
-//     番号だけの値は、docs/08-spec/ の直下と、MVP 以外のまとまりの下と照合する。
-//     番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（007 と 7 は別の番号）
-//   - ③ のモジュールの名前：次の 2 つが両方ある名前と、common（共通。③ の表に生成しない）。
-//     backend/ecsite/src/main/java/com/ecsite/module/<名前>/ と docs/03-機能仕様/<名前>.md
+//   - 元の spec・変えた spec の値：形は SPEC_NUMBER。変えた spec が 2 つ以上なら SPEC_NUMBER_SEPARATOR で区切る。
+//     spec のディレクトリとの照合は match.mjs
+//   - ③ のモジュールの名前：listModuleNames と、common（共通。③ の表に生成しない）
 //   - ③ の表：構造の検査の対象の一覧（lib/docs/functional-specs.mjs の FUNCTIONAL_SPECS）にある ③ の、マーカーの範囲。
-//     マーカーは「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ
-//   - ③ の表の中身：AC 一覧から作る。列は AC、今の内容、元の spec。0 件なら「なし。」の 1 行。
-//     状態が有効か変更で、列「モジュール」がその ③ の名前の AC を、AC の順に置く
+//     マーカーは「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ。中身は renderModuleTable で作る
 //   - ③ の表の比べ方：範囲の先頭と末尾の空行を除き、改行コードを LF にそろえて、完全一致で比べる。
 //     全角と半角などは正規化しない
 //   - 進行中の spec：docs/08-spec/ の直下の spec.md の、定義の行（- **AC-…**）。spec.md のないディレクトリは飛ばす。
@@ -27,7 +21,7 @@ import path from 'node:path'
 import { readCodeBlocks } from '../docs/code-block.mjs'
 import { readCodeSpans, replaceCodeSpans } from '../source/code-span.mjs'
 import { readDocument } from '../docs/doc-structure.mjs'
-import { ARCHIVE, listSpecDirs } from '../docs/spec-dirs.mjs'
+import { ARCHIVE, listSpecDirs, SPECS_DIR } from '../docs/spec-dirs.mjs'
 import { AC_NUMBER, compareAc, toAcKey } from './test-names.mjs'
 
 /** AC 一覧の状態 */
@@ -48,9 +42,6 @@ export const MODULE_DOCS_DIR = 'docs/03-機能仕様'
 /** バックエンドのモジュールのディレクトリの置き場所（リポジトリのルートから） */
 export const BACKEND_MODULES_DIR = 'backend/ecsite/src/main/java/com/ecsite/module'
 
-/** spec の置き場所（リポジトリのルートから） */
-export const SPECS_DIR = 'docs/08-spec'
-
 /** AC 一覧の表の列 */
 const LIST_COLUMNS = ['AC', 'モジュール', '状態', '元の spec', '変えた spec', '今の内容']
 
@@ -58,7 +49,11 @@ const LIST_COLUMNS = ['AC', 'モジュール', '状態', '元の spec', '変え�
 export const MODULE_COLUMNS = ['AC', '今の内容', '元の spec']
 
 /** ③ に生成する表の、見出しと区切りの行 */
-const MODULE_TABLE_HEAD = ['| AC | 今の内容 | 元の spec |', '|----|----------|-----------|']
+const MODULE_TABLE_HEAD = [
+  `| ${MODULE_COLUMNS.join(' | ')} |`,
+  // 区切りの - の数は、見出しのセルの表示の幅（全角は 2）と前後の空白に合わせる
+  `|${MODULE_COLUMNS.map((column) => '-'.repeat([...column].reduce((width, char) => width + (char.codePointAt(0) > 0xff ? 2 : 1), 2))).join('|')}|`,
+]
 
 /** 対応する AC が 0 件のモジュールの、マーカーの範囲の中の行 */
 const NO_ACS = 'なし。'
@@ -66,12 +61,14 @@ const NO_ACS = 'なし。'
 /** ③ の生成の表を置く節。雛形の骨組みの ## にあることを、テストで確認する */
 export const MODULE_AC_SECTION = '今有効な AC'
 
-/** 生成のマーカーの名前（AC 一覧の表と、③ の表） */
+/** AC 一覧の表の、生成のマーカーの名前 */
 export const LIST_MARK = 'ac-list'
+
+/** ③ の表の、生成のマーカーの名前 */
 export const MODULE_MARK = 'module-ac'
 
 /** 生成のマーカーの形（開きは `<!-- generated:<名前> -->`、閉じは `<!-- /generated:<名前> -->`） */
-const MARK = /^(\/?)generated:(ac-list|module-ac)$/
+const MARK = new RegExp(`^(/?)generated:(${LIST_MARK}|${MODULE_MARK})$`)
 
 /** 表の区切りの行 */
 const SEPARATOR_ROW = /^\|(?:\s*:?-+:?\s*\|)+$/
@@ -111,7 +108,12 @@ const DEFINITION_ATTEMPTS = [
   new RegExp(`^\\s*\\|\\s*${AC_LABEL}\\s*\\|`, 'u'),
 ]
 
-/** 元の spec・変えた spec の列の、spec の番号の形。MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（0 埋めの有無は変えずに、そのまま比べる） */
+/**
+ * 元の spec・変えた spec の列の、spec の番号の形。MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（227）。
+ *
+ * MVP-<番号> は MVP_ARCHIVE_PREFIX の下と、番号だけの値は docs/08-spec/ の直下と MVP 以外のまとまりの下と照合する。
+ * 番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（0 埋めの有無は変えない。007 と 7 は別の番号）
+ */
 export const SPEC_NUMBER = /^(?:MVP-(?<mvp>[0-9]{3})|(?<plain>[0-9]+))$/
 
 /** MVP の spec のディレクトリの置き場所（docs/08-spec/ から） */
@@ -231,17 +233,17 @@ export function readPair(marks, name) {
  * AC 一覧の文書から、生成のマーカーの範囲の表を読む。行を読み飛ばさず、読めない行は問題にする。
  *
  * @param {string} document AC 一覧の文書（改行は LF でも CRLF でもよい）
- * @returns {{ rows: { ac: number | string, label: string, module: string, status: string, origin: string, changedBy: string, content: string, line: number }[], problems: string[], pair: { open: number, close: number } | null }}
- *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：マーカーの範囲（読めなければ null）
+ * @returns {{ rows: { ac: number | string, label: string, module: string, status: string, origin: string, changedBy: string, content: string, line: number }[], problems: string[], pair: { open: number, close: number } | null, lastLine: number }}
+ *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：マーカーの範囲（読めなければ null）。lastLine：表の最後の行（1 から。行がなければ 0）
  */
-export function readAcList(document) {
+export function parseAcList(document) {
   const text = toLf(document)
   const { marks, problems } = findMarks(text)
   if (marks.some((mark) => mark.name === MODULE_MARK)) problems.push(`AC 一覧に ③ の生成の印（generated:${MODULE_MARK}）がある`)
   const { pair, problems: pairProblems } = readPair(marks, LIST_MARK)
   problems.push(...pairProblems)
   if (!pair && pairProblems.length === 0) problems.push(`<!-- generated:${LIST_MARK} --> と <!-- /generated:${LIST_MARK} --> の範囲がない`)
-  if (!pair) return { rows: [], problems, pair: null }
+  if (!pair) return { rows: [], problems, pair: null, lastLine: 0 }
   const lines = text.split('\n')
   const rows = []
   let tableLine = 0
@@ -374,7 +376,7 @@ function renderListRow({ ac, specRel, content }) {
  * @throws {Error} AC 一覧を読めないとき
  */
 export function addAcsToList(document, definitions) {
-  const { rows, problems, pair, lastLine } = readAcList(document)
+  const { rows, problems, pair, lastLine } = parseAcList(document)
   if (problems.length > 0) throw new Error(`AC 一覧を読めないので転記しない：${problems.join(' / ')}`)
   const known = new Set(rows.map((row) => String(row.ac)))
   const added = []
@@ -410,7 +412,7 @@ export function listModuleNames({ backendDirs, docFiles }) {
 /**
  * ③ の「今有効な AC」の表を、AC 一覧から作る。有効・変更の、そのモジュールの AC を AC の順に置く。
  *
- * @param {ReturnType<typeof readAcList>['rows']} rows AC 一覧の行
+ * @param {ReturnType<typeof parseAcList>['rows']} rows AC 一覧の行
  * @param {string} module モジュールの名前
  * @returns {string} マーカーの範囲の中に置く行（LF。末尾に改行を付けない）。0 件なら「なし。」
  */

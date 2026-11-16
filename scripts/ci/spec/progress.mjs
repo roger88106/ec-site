@@ -1,4 +1,5 @@
-// docs/08-spec/archive/1to10/ の spec（番号を 0 で埋めない）の tasks が、全て済んでいることを確認する（AGENTS.md「完了の基準」）。進行中の spec（docs/08-spec/ の直下）と MVP の spec は見ない。
+// docs/08-spec/archive/1to10/ の spec（番号を 0 で埋めない）の tasks が、全て済んでいることを確認する（AGENTS.md「完了の基準」）。
+//
 // - tasks のディレクトリがあればその中のタスクを数える。なければ（規模 M）spec.md の中のタスクの行を数える
 // - タスクが 1 つもない spec、済んでいないタスクがある spec は、食い違いとして報告する
 // - docs/08-spec/archive/1to10/ の下の spec が 0 件なら、食い違いとして報告する（何も見ずに通らないため）
@@ -6,23 +7,28 @@
 //   1→10 の spec を別の場所に移すと、この検査が読まずに通るため
 // - docs/08-spec/archive/mvp/ の下のディレクトリの名前が、MVP の形（0 で始まる 3 桁の番号）でなければ、食い違いとして報告する。
 //   1→10 の spec を誤って mvp に移すと、この検査が読まずに通るため
+//
+// 進行中の spec（docs/08-spec/ の直下）と MVP の spec は見ない。
 // MVP の進捗（README の進捗の表、MVP の完成までの一覧、MVP の spec の tasks の照合）は見ない。MVP の spec は完了してアーカイブに移した。
 //
 // 失敗したとき：アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを [x] にする。
-// アーカイブの後、マージの前に追加するタスクは、アーカイブのタスクの後に、済ませる commit で [x] の行として追加する（起票と記録の操作の「アーカイブの操作」）。
+//   アーカイブの後、マージの前に追加するタスクは、アーカイブのタスクの後に、済ませる commit で [x] の行として追加する（起票と記録の操作の「アーカイブの操作」）。
 //
 // 除外：なし。
 //
 // 使い方：node scripts/ci/spec/progress.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { ARCHIVE, listSpecDirs } from '../lib/docs/spec-dirs.mjs'
+import { ARCHIVE, listSpecDirs, SPECS_DIR } from '../lib/docs/spec-dirs.mjs'
 
 /** 1→10 の spec をアーカイブしたディレクトリ（docs/08-spec/ から） */
 const ARCHIVE_1TO10 = `${ARCHIVE}/1to10`
 
 /** アーカイブの下に置いてよいまとまり（MVP と 1→10） */
 const ARCHIVE_GROUPS = ['mvp', '1to10']
+
+/** MVP の spec のディレクトリの名前（0 で始まる 3 桁の番号。1→10 の spec は 0 で埋めない） */
+const MVP_SPEC_DIR = /^0\d{2}-/
 
 /** tasks のタスクの行（字下げした補足の箇条書きは数えない） */
 const TASK_LINE = /^- \[( |x)\] \*\*T/
@@ -75,9 +81,6 @@ export function readArchivedTasks(specsDir) {
   return tasks
 }
 
-/** MVP の spec のディレクトリの名前（0 で始まる 3 桁の番号。1→10 の spec は 0 で埋めない） */
-const MVP_SPEC_DIR = /^0\d{2}-/
-
 /**
  * アーカイブの下のまとまり（ディレクトリ）が、mvp と 1to10 だけかを確認し、mvp の下に MVP の形でない spec がないかを確認する。
  *
@@ -124,7 +127,7 @@ export function checkArchivedTasks(tasks) {
 }
 
 if (import.meta.main) {
-  const problems = [...checkArchiveGroups('docs/08-spec'), ...checkArchivedTasks(readArchivedTasks('docs/08-spec'))]
+  const problems = [...checkArchiveGroups(SPECS_DIR), ...checkArchivedTasks(readArchivedTasks(SPECS_DIR))]
   for (const problem of problems) console.log(problem)
   console.log(`進捗の食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

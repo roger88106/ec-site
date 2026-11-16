@@ -39,7 +39,7 @@ import path from 'node:path'
 import { readCodeBlocks } from '../lib/docs/code-block.mjs'
 import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from '../lib/docs/doc-structure.mjs'
 import { FUNCTIONAL_SPECS } from '../lib/docs/functional-specs.mjs'
-import { ARCHIVE, isSpecDirName, listSpecDirs } from '../lib/docs/spec-dirs.mjs'
+import { ARCHIVE, isSpecDirName, listSpecDirs, SPECS_DIR } from '../lib/docs/spec-dirs.mjs'
 
 /** 機能の spec の `##` の節 */
 export const FEATURE_SECTIONS = ['背景と目的', 'スコープ', 'User stories', '受け入れ条件', '業務ルール', '非機能要件', '依存', 'Non-goals', 'Open questions']
@@ -55,9 +55,6 @@ const FUNCTIONAL_TEMPLATE = 'docs/03-機能仕様/template.md'
 
 /** 機能仕様の雛形で、骨組みのコードブロックを置く節の見出し */
 const SKELETON_HEADING = '写して使う骨組み'
-
-/** 進行中の spec の置き場所 */
-const SPECS_DIR = 'docs/08-spec'
 
 /** 雛形の置き場所 */
 const TEMPLATES_DIR = 'docs/08-spec/templates'
@@ -80,7 +77,7 @@ const REFACTOR_FORBIDDEN = ['US', 'AC', 'BR', 'NFR']
  * @param {string} text spec.md の内容
  * @returns {{ kind: string, size: string, status: string } | null} 3 行目の形が合えば値。合わなければ null
  */
-export function readSpecMeta(text) {
+export function parseSpecMeta(text) {
   const match = /^種類：(機能|整理)　規模：(L|M)　ステータス：(草案|確定)$/.exec(text.split(/\r?\n/)[2] ?? '')
   return match ? { kind: match[1], size: match[2], status: match[3] } : null
 }
@@ -96,7 +93,7 @@ export function checkSpec(text, number) {
   const problems = []
   if (!new RegExp(`^# Spec ${number}：`).test(text.split(/\r?\n/)[0])) problems.push(`1 行目が「# Spec ${number}：…」でない`)
   problems.push(...checkUnclosedCodeBlocks(text))
-  const meta = readSpecMeta(text)
+  const meta = parseSpecMeta(text)
   if (!meta) {
     problems.push('3 行目が「種類：機能（整理）　規模：L（M）　ステータス：草案（確定）」の形でない（区切りは全角の空白、コロンは全角）')
     return problems
@@ -173,7 +170,7 @@ export function checkStage(text, fileName, number) {
  * @param {string} text 機能仕様の雛形の内容
  * @returns {{ sections: string[], problems: string[] }} sections：節の名前（出る順）。problems：読めない理由（あれば sections は空）
  */
-export function readSkeleton(text) {
+export function parseSkeleton(text) {
   const fail = (problem) => ({ sections: [], problems: [problem] })
   const unclosed = checkUnclosedCodeBlocks(text)
   if (unclosed.length > 0) return { sections: [], problems: unclosed }
@@ -204,7 +201,7 @@ export function checkFunctionalDocs({ templateFile, specs }) {
   } catch {
     return [`${templateFile.replaceAll('\\', '/')}：雛形を読めない`]
   }
-  const { sections, problems } = readSkeleton(template)
+  const { sections, problems } = parseSkeleton(template)
   if (problems.length > 0) return problems.map((problem) => `${templateFile.replaceAll('\\', '/')}：${problem}`)
   return specs.flatMap((file) => {
     let text
@@ -290,7 +287,7 @@ export function checkSpecFiles(files, number, known) {
   add('spec.md', checkSpec(files['spec.md'], number))
   if (files['plan.md'] !== undefined) add('plan.md', checkPlan(files['plan.md'], number))
   for (const file of Object.keys(files).filter((name) => name.startsWith('tasks/')).sort()) add(file, checkStage(files[file], file, number))
-  problems.push(...checkIds(files, number, known, readSpecMeta(files['spec.md'])))
+  problems.push(...checkIds(files, number, known, parseSpecMeta(files['spec.md'])))
   return problems
 }
 
@@ -328,7 +325,7 @@ export function findTargets(specsDir) {
   const all = listSpecDirs(specsDir)
   const numberOf = (spec) => spec.name.split('-')[0]
   return {
-    targets: all.filter((spec) => !spec.rel.startsWith('archive/')).map((spec) => ({ dir: spec.dir, number: numberOf(spec) })),
+    targets: all.filter((spec) => !spec.rel.startsWith(`${ARCHIVE}/`)).map((spec) => ({ dir: spec.dir, number: numberOf(spec) })),
     known: new Set([...all.map(numberOf), EXAMPLE_NUMBER]),
   }
 }

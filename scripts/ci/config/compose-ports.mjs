@@ -26,7 +26,7 @@ export const BIND_PREFIX = '${LOCAL_BIND_ADDRESS:-127.0.0.1}:'
  * @param {string} entry 項目
  * @returns {number | null} ホスト側のポート。それ以外の書き方（既定値のない変数、範囲、コンテナの側だけ）は null
  */
-export function readHostPort(entry) {
+export function parseHostPort(entry) {
   const rest = entry.startsWith(BIND_PREFIX) ? entry.slice(BIND_PREFIX.length) : entry
   const match = /^(?:\$\{[A-Z_]+:-(\d+)\}|(\d+)):[^:]+$/.exec(rest)
   return match ? Number(match[1] ?? match[2]) : null
@@ -40,7 +40,7 @@ export function readHostPort(entry) {
  * @param {string} text compose のファイル
  * @returns {{ service: string, entry: string }[]} サービスの名前と項目（書いた順）
  */
-export function readComposePorts(text) {
+export function parseComposePorts(text) {
   const services = load(text)?.services ?? {}
   return Object.entries(services).flatMap(([service, definition]) =>
     (definition?.ports ?? []).map((entry) => ({ service, entry: typeof entry === 'string' ? entry : JSON.stringify(entry) })),
@@ -55,14 +55,14 @@ export function readComposePorts(text) {
  *   全ての項目と、決まった形でない項目と、決まった形だがホスト側のポートを読めない項目
  */
 export function findPortProblems(text) {
-  const ports = readComposePorts(text)
+  const ports = parseComposePorts(text)
   const problems = ports.filter((port) => !port.entry.startsWith(BIND_PREFIX))
-  const unreadable = ports.filter((port) => port.entry.startsWith(BIND_PREFIX) && readHostPort(port.entry) === null)
+  const unreadable = ports.filter((port) => port.entry.startsWith(BIND_PREFIX) && parseHostPort(port.entry) === null)
   return { ports, problems, unreadable }
 }
 
 /**
- * ホスト側のポートを読めない項目を、失敗の文にする（local-ports も使う）。
+ * ホスト側のポートを読めない項目を、失敗の文にする。
  *
  * @param {string} file 表示する compose のパス
  * @param {{ service: string, entry: string }} port 読めなかった項目
@@ -79,6 +79,9 @@ if (import.meta.main) {
   }
   for (const port of unreadable) {
     console.log(describeUnreadableHostPort(COMPOSE_FILE, port))
+  }
+  if (ports.length === 0) {
+    console.log(`${COMPOSE_FILE} にポートが 1 件も見つからない（services の ports の書き方か、検査の読み方が変わっていないか確認する）`)
   }
   console.log(`compose のポート：${ports.length} 件、決まった形でないもの：${problems.length} 件、ホスト側のポートを読めないもの：${unreadable.length} 件`)
   process.exit(problems.length || unreadable.length || ports.length === 0 ? 1 : 0)

@@ -1,5 +1,5 @@
 // 文書の構造（見出しの名前と順）と、ID（US・DS・AC・BR・NFR・DC・DN・T）の定義と参照を読む。
-// 見出しと ID は、コードブロックと HTML のコメント（lib/code-block）と、1 行のコード（lib/code-span）の中を読まない。
+// 見出しと ID は、コードブロックと HTML のコメント（lib/docs/code-block）と、1 行のコード（lib/source/code-span）の中を読まない。
 import { readBlocks } from './code-block.mjs'
 import { replaceCodeSpans } from '../source/code-span.mjs'
 
@@ -40,14 +40,11 @@ const TASK_HEAD = new RegExp(`${NOT_AFTER_WORD}T(\\d+)-(\\d+)-(\\d+)`, 'g')
 /** 列挙の要素の後ろの「の前半」（「の」とそれに続く語）。次の要素へ読み進めるため飛ばす */
 const POSSESSIVE = /^\s*の[^\s、〜～~）)。：]*/
 
-/** spec の ID の列挙の要素（`、3` と `、3〜5`）。範囲の端は、数字・`-`・`.` が続かないときだけ読む */
+/** ID の列挙の要素（`、3` と `、3〜5`。タスクの `、02` と `、02〜03` も）。範囲の端は、数字・`-`・`.` が続かないときだけ読む */
 const LIST_ELEMENT = new RegExp(`^(、(\\d+))(?:${RANGE_MARK}(\\d+)${NUMBER_END})?`)
 
 /** spec の番号を付けた列挙の要素（`、7-32` と `、7-32〜35`）。spec の番号が直前の ID と同じときだけ読む */
 const LIST_ELEMENT_WITH_NUMBER = new RegExp(`^(、(\\d+)-(\\d+))(?:${RANGE_MARK}(\\d+)${NUMBER_END})?`)
-
-/** タスクの ID の列挙の要素（`、02` と `、02〜03`）。2 桁でない数も要素として読み、2 桁でない問題にする */
-const TASK_LIST_ELEMENT = new RegExp(`^(、(\\d+))(?:${RANGE_MARK}(\\d+)${NUMBER_END})?`)
 
 /** Setext の見出しの下線（`---` は `##`、`===` は `#`） */
 export const SETEXT_UNDERLINE = /^ {0,3}(-+|=+)[ \t]*$/
@@ -266,7 +263,8 @@ export function collectReferences(text) {
       for (const seq of numbers) references.push({ id: `${match[1]}-${match[2]}-${seq}`, number: match[2], line: lineNumber, text: written })
     }
     for (const match of line.matchAll(TASK_HEAD)) {
-      const options = { head: `T${match[1]}-${match[2]}-`, number: null, listElement: TASK_LIST_ELEMENT }
+      // タスクの ID は、2 桁でない数も要素として読み、2 桁でない問題にする
+      const options = { head: `T${match[1]}-${match[2]}-`, number: null, listElement: LIST_ELEMENT }
       const { elements, end } = readTail(line, match.index + match[0].length, match[3], options)
       const written = line.slice(match.index, end)
       const wide = match[2].length !== 2 || elements.some((element) => element.from.length !== 2 || (element.to !== null && element.to.length !== 2))

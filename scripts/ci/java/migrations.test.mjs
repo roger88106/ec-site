@@ -6,8 +6,7 @@ import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../lib/git/git-env.mjs'
-import { emptyListReason } from '../lib/git/git-files.mjs'
-import { findChangedMigrations, findRemovedMigrations, isVersionedMigration, migrationsEmptyReason, parseBlobList } from './migrations.mjs'
+import { findChangedMigrations, findRemovedMigrations, isVersionedMigration, parseBlobList } from './migrations.mjs'
 
 describe('適用済みのマイグレーションの検査', () => {
   test('バージョン付きのマイグレーション（V*.sql）だけを見る。繰り返しのもの（R__*.sql）は見ない', () => {
@@ -55,12 +54,6 @@ describe('適用済みのマイグレーションの検査', () => {
 })
 
 describe('マイグレーションの検査の判定', () => {
-  test('マイグレーションが 0 件のときの理由は、他の検査と同じ共通の関数の文で、置き場所を添える', () => {
-    assert.equal(migrationsEmptyReason([], 'db/migration/'), emptyListReason([], 'マイグレーション（db/migration/）'))
-    assert.match(migrationsEmptyReason([], 'db/migration/'), /db\/migration\/.*1 件も見つからない/)
-    assert.equal(migrationsEmptyReason(['V1__a.sql'], 'db/migration/'), null)
-  })
-
   test('git ls-tree と git ls-files -s の出力から、パスごとの blob を読む', () => {
     const tree = ['100644 blob aaa\tdb/V1__a.sql', '100644 blob bbb\tdb/V2__日本語.sql', ''].join('\0')
     assert.deepEqual([...parseBlobList(tree, 2)], [['db/V1__a.sql', 'aaa'], ['db/V2__日本語.sql', 'bbb']])
@@ -97,7 +90,7 @@ describe('develop・main との分岐点の tree を基準にした判定（一�
     commit('V1')
     if (developRef) git('update-ref', developRef, 'HEAD')
     git('checkout', '-q', '-b', 'feature')
-    const run = () => spawnSync('node', [script], { cwd: repo, env, encoding: 'utf8' })
+    const run = () => spawnSync(process.execPath, [script], { cwd: repo, env, encoding: 'utf8' })
     return { git, write, commit, run, remove: (name) => rmSync(path.join(repo, dir, name)) }
   }
 
@@ -219,6 +212,16 @@ describe('develop・main との分岐点の tree を基準にした判定（一�
     const result = r.run()
     assert.equal(result.status, 1)
     assert.match(result.stdout, /変わった.*V1__a\.sql/)
+  })
+
+  test('マイグレーションが 0 件なら、他の検査と同じ文で置き場所を添えて、終了コード 1 で終わる', () => {
+    const r = createRepo()
+    r.remove('V1__a.sql')
+    r.commit('全て削除')
+    const result = r.run()
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, new RegExp(`マイグレーション（${dir}/）が 1 件も見つからない`))
+    assert.doesNotMatch(result.stdout, /変わったマイグレーション：/)
   })
 
   test('初めの commit だけで develop も main もなければ、全てを新しいものとみなして通る（警告を出す）', () => {

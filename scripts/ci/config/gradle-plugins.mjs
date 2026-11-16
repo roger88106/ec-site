@@ -27,6 +27,9 @@ const POLICY_FILE = 'scripts/ci/licenses/policy.json'
 /** プラグインの `id("…")` を探す Gradle のファイルの置き場所 */
 const BUILD_PATHS = ['backend/ecsite']
 
+/** カタログを通さずにプラグインを入れる書き方（`id("…")`、`kotlin("…")`、`apply(plugin = "…")`、`apply plugin:`） */
+const DIRECT_PLUGIN = /\b(?:id|kotlin)\s*\(\s*"|\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/
+
 /**
  * 照合の対象にするプラグインの id か。
  *
@@ -45,7 +48,7 @@ const isExternal = (id) => id.includes('.')
  * @param {string} text libs.versions.toml の内容
  * @returns {{ ids: string[], unknown: string[] }} id（書いた順）と、id を読めない項目の名前
  */
-export function readCatalogPlugins(text) {
+export function parseCatalogPlugins(text) {
   const ids = []
   const unknown = []
   for (const [name, value] of Object.entries(parse(text).plugins ?? {})) {
@@ -58,9 +61,6 @@ export function readCatalogPlugins(text) {
   }
   return { ids, unknown }
 }
-
-/** カタログを通さずにプラグインを入れる書き方（`id("…")`、`kotlin("…")`、`apply(plugin = "…")`、`apply plugin:`） */
-const DIRECT_PLUGIN = /\b(?:id|kotlin)\s*\(\s*"|\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/
 
 /**
  * Gradle のファイルで、カタログを通さずにプラグインを入れる行を探す。行コメントの中は読まない。
@@ -117,21 +117,30 @@ export function findPluginProblems(used, listed) {
 if (import.meta.main) {
   const buildFiles = listGitFiles(BUILD_PATHS).filter((path) => /\.gradle\.kts$/.test(path))
   exitIfNoFiles(buildFiles, 'Gradle のファイル')
+  /** 読むファイルがなければ、理由を出して終了コード 2 で終わる */
+  const readRequired = (file) => {
+    try {
+      return readFileSync(file, 'utf8')
+    } catch (e) {
+      console.log(`${file} を読めない：${e.code ?? e.message}`)
+      process.exit(2)
+    }
+  }
   const used = []
   const unknownLines = []
-  const catalog = readCatalogPlugins(readFileSync(CATALOG_FILE, 'utf8'))
+  const catalog = parseCatalogPlugins(readRequired(CATALOG_FILE))
   used.push(...catalog.ids)
   unknownLines.push(...catalog.unknown.map((name) => `${CATALOG_FILE} の plugins.${name}（id を読めない。id を書く）`))
   for (const file of buildFiles) {
-    const direct = findDirectPlugins(readFileSync(file, 'utf8'))
+    const direct = findDirectPlugins(readRequired(file))
     unknownLines.push(...direct.map((item) => describeUnreadableLine({ file, line: item.line, text: item.text, reason: DIRECT_REASON })))
   }
   let listed
   try {
     listed = readPolicyPluginIds(JSON.parse(readFileSync(POLICY_FILE, 'utf8')))
-  } catch (error) {
-    console.log(error.message)
-    process.exit(1)
+  } catch (e) {
+    console.log(e.message)
+    process.exit(2)
   }
   const problems = [...unknownLines, ...findPluginProblems(used, listed)]
   if (used.filter(isExternal).length === 0) {

@@ -24,7 +24,7 @@ const ALLOWED_DOCS_FILE = 'constitution.md'
  * @param {string} file リポジトリのルートからのパス（/ 区切り）
  * @returns {boolean} Docs/、DOCS/ などの下ならば true
  */
-export function isWrongCaseDocs(file) {
+function isWrongCaseDocs(file) {
   const first = file.split('/')[0]
   return file.includes('/') && first !== 'docs' && first.toLowerCase() === 'docs'
 }

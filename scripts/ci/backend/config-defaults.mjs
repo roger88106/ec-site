@@ -1,4 +1,4 @@
-// 環境変数の文書（docs/06-手順書/environment.md）の既定値が、設定の値の型の既定値と一致することを確認する（バックエンドの書き方の「設定の値の型」）。
+// 環境変数の文書（docs/06-手順書/environment.md）の既定値が、設定の値の型の既定値と一致することを確認する（文書の書き方の「言い回しと論理」にある「事実」の検査。既定値の決め方は、バックエンドの書き方の「設定の値の型」）。
 // - コードの既定値（@ConfigurationProperties の record の @DefaultValue）は、文書に同じ値である
 // - 文書に既定値（時間、数、真偽）を書いた設定は、コードも既定値を持つ
 //
@@ -30,7 +30,7 @@ const UNIT_SECONDS = { ms: 0.001, s: 1, m: 60, h: 3600, d: 86400 }
  * @returns {{ env: string, value: string | null }[]} 環境変数の名前と既定値（既定値がなければ null）
  * @throws {Error} プロパティが 0 件のとき
  */
-export function readMetadata(json) {
+export function parseMetadata(json) {
   const { properties = [] } = JSON.parse(json)
   if (properties.length === 0) throw new Error('設定の一覧に、プロパティが 1 つもない')
   return properties.map((property) => ({
@@ -133,10 +133,9 @@ if (import.meta.main) {
   const metadata = process.argv[2] ?? METADATA
   if (!existsSync(metadata)) {
     console.log(`設定の一覧（${metadata}）がない。先に backend/ecsite/ で ./gradlew compileJava を実行する`)
-    console.log('設定の既定値の食い違い：1')
-    process.exit(1)
+    process.exit(2)
   }
-  const code = readMetadata(readFileSync(metadata, 'utf8'))
+  const code = parseMetadata(readFileSync(metadata, 'utf8'))
   const doc = parseEnvTable(readFileSync(ENV_DOC, 'utf8'), new Set(code.map((row) => row.env)))
   const problems = compareDefaults(code, doc)
   for (const problem of problems) console.log(problem)

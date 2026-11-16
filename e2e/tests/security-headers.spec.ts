@@ -40,7 +40,7 @@ async function recordViolations(page: Page): Promise<string[]> {
     violations.push(violation)
   })
   await page.addInitScript((origin) => {
-    if (location.origin !== origin) {
+    if (window.location.origin !== origin) {
       return
     }
     document.addEventListener('securitypolicyviolation', (event) => {

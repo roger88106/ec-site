@@ -9,7 +9,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | script | 目的 |
 |--------|------|
 | `ac-check` | 進行中の spec の AC、③ の「今有効な AC」の表、有効・変更の AC のテスト名を、AC 一覧と照合する |
-| `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査の先頭のコメントを確認する |
+| `ci-docs` | この表と検査の 1 対 1 の対応と、検査の先頭のコメントを確認する |
 | `compose-ports` | compose の全ての ports が `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action のディレクトリが、Dependabot の directories に入っていることを確認する |
 | `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないことを確認する |

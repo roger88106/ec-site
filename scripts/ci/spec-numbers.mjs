@@ -15,7 +15,7 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { codeKind, commentText } from './lib/comment-text.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { keepJavaComments, keepTsComments } from './lib/strip-comments.mjs'
-import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from './frontend-rules.mjs'
+import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from './lib/frontend-paths.mjs'
 
 /**
  * 本番のコードの置き場所。バックエンドも見るので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。

@@ -1,4 +1,4 @@
-// 1 行の中のインラインのコードスパン（`...`、``...``）を読む。ci-docs（表の列の数え方）、service-names（名前を書いてよい形）、lib/code-block.mjs、lib/doc-structure.mjs が使う。
+// 1 行の中のインラインのコードスパン（`...`、``...``）を読む。
 // CommonMark と同じく、開きのバッククォートの並びと同じ数の並びで閉じる（中の短い並び・長い並びでは閉じない）。
 // 閉じる並びのない開きは文字として残し、組にならないバッククォートがあったことを unmatched で返す（読めない行として失敗にするかは呼ぶ側が決める）。
 
@@ -36,6 +36,18 @@ export function readCodeSpans(line) {
     run.lastIndex = end
   }
   return { spans, unmatched }
+}
+
+/**
+ * 行の中のコードスパンを、囲みのバッククォートを含めて同じ長さの空白に替える。位置を変えずに、中の文字を読まないために使う。
+ *
+ * @param {string} line 1 行
+ * @returns {string} コードスパンを空白にした行
+ */
+export function maskCodeSpans(line) {
+  let result = line
+  for (const { start, end } of readCodeSpans(line).spans) result = result.slice(0, start) + ' '.repeat(end - start) + result.slice(end)
+  return result
 }
 
 /**

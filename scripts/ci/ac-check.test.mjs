@@ -6,26 +6,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import {
-  addAcsToList,
-  check,
-  checkAcRows,
-  checkInProgress,
-  checkModuleDoc,
-  checkModuleDocNames,
-  describeUnreadableTests,
-  isStrict,
-  listModuleNames,
-  MODULE_AC_SECTION,
-  parseAcRefs,
-  findAmbiguousAcLists,
-  findSpacedAcLists,
-  parseSpecAcDefinitions,
-  readAcList,
-  readInProgressSpecs,
-  renderModuleTable,
-  renderTestMap,
-} from './ac-check.mjs'
+import { isStrict } from './ac-check.mjs'
+import { addAcsToList, listModuleNames, MODULE_AC_SECTION, parseSpecAcDefinitions, readAcList, readInProgressSpecs, renderModuleTable } from './ac/ac-list.mjs'
+import { check, checkAcRows, checkInProgress, checkModuleDoc, checkModuleDocNames, renderTestMap } from './ac/match.mjs'
+import { describeUnreadableTests, findAmbiguousAcLists, findSpacedAcLists, parseAcRefs } from './ac/test-names.mjs'
 import { withoutGitEnv } from './lib/git-env.mjs'
 import { extractTestNames, findTestFiles, scanTsTests } from './lib/test-files.mjs'
 import { readSkeleton } from './spec-structure.mjs'
@@ -837,7 +821,7 @@ describe('③ の文書の名前と構造の検査の対象の一覧', () => {
   test('モジュールの ③ が構造の検査の対象の一覧（FUNCTIONAL_SPECS）になければ、追加し忘れとして失敗にする', () => {
     const problems = checkModuleDocNames({ docs: [doc('order', true), doc('wishlist', false)], modules })
     assert.equal(problems.length, 1)
-    assert.match(problems[0], /^docs\/03-機能仕様\/wishlist\.md：モジュールの ③ が構造の検査の対象の一覧（spec-structure\.mjs の FUNCTIONAL_SPECS）にない/)
+    assert.match(problems[0], /^docs\/03-機能仕様\/wishlist\.md：モジュールの ③ が構造の検査の対象の一覧（lib\/functional-specs\.mjs の FUNCTIONAL_SPECS）にない/)
   })
 
   test('一覧にある ③ にバックエンドのモジュールのディレクトリがなければ失敗にする', () => {

@@ -4,7 +4,6 @@
 // 使い方：node scripts/ci/lib/check-result.mjs <終了コード> <出力のファイル> <summary|tests>
 // 成功なら OK の 1 行を、失敗なら理由を標準出力に出す。呼ぶ側は、OK の行が出たときだけ成功にする（この script が動かなかったときに成功にしないため）
 import { readFileSync } from 'node:fs'
-import { isMain } from './is-main.mjs'
 
 /** 要約の行：「<何>：<件数>」。「：」の前が空でなく、「：」の後に数字がある */
 const SUMMARY_LINE = /^[^\s：][^：]*：.*\d/
@@ -55,7 +54,7 @@ export function judgeCheck({ status, output, mode }) {
   return { ok: false, reason: `知らない判定の種類：${mode}（summary か tests）` }
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const [status, file, mode] = process.argv.slice(2)
   const result = judgeCheck({ status: Number(status), output: readFileSync(file, 'utf8'), mode })
   if (!result.ok) {

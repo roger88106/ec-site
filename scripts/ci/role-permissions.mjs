@@ -9,7 +9,6 @@
 // 使い方：node scripts/ci/role-permissions.mjs（リポジトリのルートで。--write で文書の表を書き直す）
 import { readFileSync, writeFileSync } from 'node:fs'
 import { load } from 'js-yaml'
-import { isMain } from './lib/is-main.mjs'
 
 /** 対応表の文書 */
 const DOCUMENT = 'docs/02-設計/role-permissions.md'
@@ -168,7 +167,7 @@ export function replaceGenerated(document, markdown) {
   return `${document.slice(0, from + START.length)}\n${markdown}${document.slice(to)}`
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const { markdown, problems } = renderTables({
     admin: readOperations(readFileSync(ADMIN_API, 'utf8')),
     store: readOperations(readFileSync(STORE_API, 'utf8')),

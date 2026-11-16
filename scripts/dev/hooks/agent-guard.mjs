@@ -37,7 +37,6 @@
 // ============================================================================
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { isMain } from '../../ci/lib/is-main.mjs'
 import { parseCommands } from './agent-guard/commands.mjs'
 import { TAG_REASON, ask, deny } from './agent-guard/decision.mjs'
 import { GH_PR_OPTIONS, GH_RELEASE_OPTIONS, judgeGhApi, parseGhArgs, parseGhInvocation } from './agent-guard/gh-rules.mjs'
@@ -220,7 +219,7 @@ async function main() {
   if (output !== '') process.stdout.write(output)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   // 標準入力を読めないなどの失敗では、判定できるコマンドがないので通す（終了コードを 0 以外にしない）
   main().catch(() => {
     process.exitCode = 0

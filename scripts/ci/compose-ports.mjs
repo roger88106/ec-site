@@ -9,7 +9,6 @@
 // 使い方：node scripts/ci/compose-ports.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
-import { isMain } from './lib/is-main.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -69,7 +68,7 @@ export function describeUnreadableHostPort(file, port) {
   return `${file} ${port.service}：${port.entry}（ホスト側のポートを読めない。数字か \${変数:-数字} で 1 つのポートを書く）`
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const { ports, problems, unreadable } = findPortProblems(readFileSync(COMPOSE_FILE, 'utf8'))
   for (const problem of problems) {
     console.log(`${COMPOSE_FILE} ${problem.service}：${problem.entry}（${BIND_PREFIX} で始める）`)

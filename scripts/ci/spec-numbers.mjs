@@ -13,7 +13,6 @@
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { codeKind, commentText } from './lib/comment-text.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { keepJavaComments, keepTsComments } from './lib/strip-comments.mjs'
 import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from './lib/frontend-paths.mjs'
 
@@ -125,7 +124,7 @@ export function commentsOf(file, text) {
   return keepJavaComments(text)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles().filter((file) => isProductionFile(file) || isBackendTestFile(file) || isCommentOnlyTsFile(file) || isConfigFile(file) || isScriptFile(file))
   exitIfNoFiles(files, '本番のコードとテストと設定のファイルと script')
   let count = 0

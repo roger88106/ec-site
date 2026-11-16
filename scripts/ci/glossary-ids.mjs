@@ -13,7 +13,6 @@
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 調べる用語集（業務の用語集と、開発の用語集） */
 export const GLOSSARIES = ['docs/03-機能仕様/glossary.md', 'docs/05-開発規則/glossary.md']
@@ -126,7 +125,7 @@ export function isExclusionNeeded(id, ids) {
   return ids.includes(id)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const exclusions = readExclusions(exclusionsPath('glossary-ids-exclusions.json'))
   const files = listGitFiles(SEARCH_ROOTS).filter((file) => isSearchedFile(file))
   exitIfNoFiles(files, '用語の ID を探すファイル')

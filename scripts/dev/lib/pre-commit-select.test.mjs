@@ -9,11 +9,11 @@ const reader = (files) => (file) => files[file] ?? null
 
 /** 小さなリポジトリ：compose-ports は compose を読み、java-rules は共有の部品を import する */
 const FILES = {
-  'scripts/ci/compose-ports.mjs': "import { isMain } from './lib/is-main.mjs'\nconst COMPOSE_FILE = 'docker/compose.yaml'",
+  'scripts/ci/compose-ports.mjs': "import { lineNumber } from './lib/line-number.mjs'\nconst COMPOSE_FILE = 'docker/compose.yaml'",
   'scripts/ci/java-rules.mjs': "import { listGitFiles } from './lib/git-files.mjs'\nimport { RULES } from '../../config/rules.mjs'",
   'config/rules.mjs': "import { x } from './shared.mjs'",
   'config/shared.mjs': '',
-  'scripts/ci/lib/is-main.mjs': '',
+  'scripts/ci/lib/line-number.mjs': '',
   'scripts/ci/lib/git-files.mjs': "import { x } from './git-env.mjs'",
   'scripts/ci/lib/git-env.mjs': '',
   'scripts/ci/new-check.mjs': '',

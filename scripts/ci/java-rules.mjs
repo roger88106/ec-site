@@ -12,7 +12,6 @@
 import { readFileSync } from 'node:fs'
 import { closingParen } from './lib/closing-paren.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 import { stripJavaComments } from './lib/strip-comments.mjs'
 
@@ -223,7 +222,7 @@ export function isStringConversionTarget(file) {
   return MAIN_SOURCE.test(file) && !STRING_CONVERSION_ALLOWED.test(file)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles().filter((file) => isSuppressWarningsTarget(file))
   exitIfNoFiles(files, 'Java の規則の対象のファイル')
   let count = 0

@@ -11,7 +11,6 @@
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -178,7 +177,7 @@ function readSourceFiles() {
   return paths.map((path) => ({ path, text: readFileSync(path, 'utf8') }))
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = readSourceFiles()
   const { images, unreadable } = parseComposeImages(readFileSync(COMPOSE_FILE, 'utf8'))
   const { mismatches, unknown } = findImageProblems(images, files)

@@ -22,7 +22,6 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isMain } from '../ci/lib/is-main.mjs'
 
 const self = fileURLToPath(import.meta.url)
 
@@ -229,6 +228,6 @@ function main(argv) {
   }
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   process.exit(main(process.argv.slice(2)))
 }

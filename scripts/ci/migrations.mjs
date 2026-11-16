@@ -20,7 +20,6 @@ import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { emptyListReason, splitNulList } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 import { mergeBaseWith, tryGit } from './lib/merge-base.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
@@ -406,7 +405,7 @@ export function parseBlobList(output, column) {
   return blobs
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   exitIfShallow()
   const git = (args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
   // 今の index（commit の前の hook では次の commit。ステージした削除・改名・変更を含む）

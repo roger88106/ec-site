@@ -38,7 +38,6 @@ import path from 'node:path'
 import { readCodeBlocks } from './lib/code-block.mjs'
 import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from './lib/doc-structure.mjs'
 import { FUNCTIONAL_SPECS } from './lib/functional-specs.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { ARCHIVE, isSpecDirName, listSpecDirs } from './lib/spec-dirs.mjs'
 
 /** 機能の spec の `##` の節 */
@@ -431,4 +430,4 @@ function main() {
   process.exit(problems.length > 0 ? 1 : 0)
 }
 
-if (isMain(import.meta.url)) main()
+if (import.meta.main) main()

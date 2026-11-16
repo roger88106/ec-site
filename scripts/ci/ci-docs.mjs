@@ -18,7 +18,6 @@
 // 使い方：node scripts/ci/ci-docs.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { readCodeSpans, replaceCodeSpans } from './lib/code-span.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
@@ -234,7 +233,7 @@ export function checkCommentLines(sources) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const checkFiles = listGitFiles([CHECK_DIR])
   exitIfNoFiles(checkFiles, `検査（${CHECK_DIR}）`)
   const doc = readFileSync(DOC, 'utf8')

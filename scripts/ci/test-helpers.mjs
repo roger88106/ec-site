@@ -9,7 +9,6 @@
 // 使い方：node scripts/ci/test-helpers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 import { stripJavaComments } from './lib/strip-comments.mjs'
 
@@ -243,7 +242,7 @@ export function findHelperViolations(file, source, rules = loadRules()) {
   return hits.sort((a, b) => a.line - b.line)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles().filter((file) => TARGET_FILE.test(file))
   exitIfNoFiles(files, '統合テストのファイル')
   let count = 0

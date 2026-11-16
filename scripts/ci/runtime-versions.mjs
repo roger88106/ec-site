@@ -15,7 +15,6 @@ import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
 import { parse } from 'smol-toml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** Node のバージョンを書いたファイル */
@@ -210,7 +209,7 @@ export function findReactSpecifierProblems(files) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const read = (path) => readFileSync(path, 'utf8')
   const ymls = listGitFiles(['.github/workflows', '.github/actions']).filter((file) => /\.ya?ml$/.test(file))
   exitIfNoFiles(ymls, 'workflow と action の yml のファイル')

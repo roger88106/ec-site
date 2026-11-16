@@ -9,7 +9,6 @@ import { readFileSync } from 'node:fs'
 import { closingParen } from './lib/closing-paren.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 import { keepTsComments } from './lib/strip-comments.mjs'
 
@@ -124,7 +123,7 @@ export function isTargetFile(file) {
   return isScreenSource(file) || (SCREEN_TSX.test(file) && !file.endsWith('.test.tsx') && !file.includes('/components/ui/'))
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles().filter((file) => isTargetFile(file))
   exitIfNoFiles(files, '文言を読むファイル')
   let count = 0

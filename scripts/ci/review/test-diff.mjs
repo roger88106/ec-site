@@ -15,7 +15,6 @@
 // ============================================================================
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { isMain } from '../lib/is-main.mjs'
 
 /** 名前の対応のファイルの中身を、[旧, 新] の並びにする */
 export function parseRenames(text) {
@@ -163,6 +162,6 @@ function main() {
   process.exit(violations.length === 0 ? 0 : 1)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   main()
 }

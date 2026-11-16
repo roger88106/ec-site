@@ -15,7 +15,6 @@
 import { readFileSync } from 'node:fs'
 import { codeBlockLines } from './lib/code-block.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 表のセルの上限（バイト）。これを超えたら warning */
 const CELL_BYTES = 300
@@ -225,7 +224,7 @@ export function findShapeWarnings(file, text) {
   return found.sort((a, b) => a.line - b.line)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles().filter((file) => isShapeTarget(file))
   exitIfNoFiles(files, '文書の形を調べる Markdown')
   const all = files.flatMap((file) => findShapeWarnings(file, readFileSync(file, 'utf8')).map((warning) => ({ file, ...warning })))

@@ -9,7 +9,6 @@
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** Dependabot の設定 */
 const DEPENDABOT_FILE = '.github/dependabot.yml'
@@ -70,7 +69,7 @@ export function findUncoveredActions(actionDirectories, targets) {
     .map((directory) => `${DEPENDABOT_FILE} の github-actions の directories にない（加える）：${directory}`)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles()
   exitIfNoFiles(files, 'Git のファイル')
   exitIfNoFiles(files.filter((file) => file === DEPENDABOT_FILE), 'Dependabot の設定')

@@ -6,7 +6,6 @@
 // 除外：なし
 // 使い方：node scripts/ci/license-policy.mjs [--write]（リポジトリのルートで。--write で文書の表を再生成する）
 import { readFileSync, writeFileSync } from 'node:fs'
-import { isMain } from './lib/is-main.mjs'
 
 /** ライセンスの方針の文書 */
 const DOC_FILE = 'docs/05-開発規則/licenses.md'
@@ -91,7 +90,7 @@ export function replaceGenerated(document, table) {
   return `${document.slice(0, generated.from)}\n${table}${document.slice(generated.to)}`
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const document = readFileSync(DOC_FILE, 'utf8')
   const table = renderTable(JSON.parse(readFileSync(POLICY_FILE, 'utf8')))
   if (process.argv.includes('--write')) {

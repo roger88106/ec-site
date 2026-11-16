@@ -7,7 +7,6 @@
 // 使い方：node scripts/ci/message-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** エラーの文のファイル */
 const MESSAGES = 'backend/ecsite/src/main/resources/messages.properties'
@@ -76,7 +75,7 @@ export function findExclusionsWithoutNumbers(text, exclusions) {
   return Object.keys(exclusions).filter((key) => !values.has(key) || !DIGIT.test(values.get(key).replace(PLACEHOLDER, '')))
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const text = readFileSync(MESSAGES, 'utf8')
   const exclusions = readExclusions(exclusionsPath(EXCLUSIONS))
   const hits = findNumbers(text, exclusions)

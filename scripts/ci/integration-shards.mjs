@@ -10,7 +10,6 @@
 // 使い方：node scripts/ci/integration-shards.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
-import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 const CI_FILE = '.github/workflows/ci.yml'
@@ -73,7 +72,7 @@ export function findShardCountProblems(ciText, gradleText) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const problems = findShardCountProblems(readFileSync(CI_FILE, 'utf8'), readFileSync(GRADLE_FILE, 'utf8'))
   for (const problem of problems) console.log(problem)
   console.log(`統合テストを分ける数の問題：${problems.length}`)

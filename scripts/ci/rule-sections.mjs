@@ -22,7 +22,6 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { readBlocks } from './lib/code-block.mjs'
 import { readDocument, readHeadings, SETEXT_UNDERLINE } from './lib/doc-structure.mjs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 書き方の規則とレビューの文書 */
 const REVIEW_DOC = 'docs/05-開発規則/review.md'
@@ -237,7 +236,7 @@ export function findUnlistedDocs(allDocs, names) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const exclusions = readExclusions(exclusionsPath(EXCLUSIONS_NAME))
   const reviewText = readFileSync(REVIEW_DOC, 'utf8')
   const { docs, problems: loadProblems } = loadDocuments(reviewText, (file) => readFileSync(`${RULE_DIR}/${file}`, 'utf8'))

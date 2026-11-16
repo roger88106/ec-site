@@ -9,7 +9,6 @@
 // 除外：なし
 // 使い方：node scripts/ci/env-defaults.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 管理画面の IdP の環境変数（認可サーバーの URL とクライアント ID） */
 const ADMIN_IDP_VARS = ['VITE_OIDC_AUTHORITY', 'VITE_OIDC_CLIENT_ID']
@@ -95,7 +94,7 @@ export function compareAdminIdp(texts) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const texts = Object.fromEntries(ADMIN_IDP_FILES.map((file) => [file, readFileSync(file, 'utf8')]))
   const problems = compareAdminIdp(texts)
   for (const problem of problems) console.log(problem)

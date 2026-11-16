@@ -1,6 +1,8 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.api.StockReservationApi;
+import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 注文手続きの後の変化で注文を拒否する受け入れテスト
  *
  * <p>確認した総額と注文時点の総額の違い、注文手続きの後のカートの変更、注文手続きの後に品目が購入できなくなること
- * （販売停止・非公開）を確認する。在庫だけが足りないときの 409 は {@code PlaceOrderStockApiTest} が確認する。
+ * （販売停止・非公開・税率なし）を確認する。在庫だけが足りないときの 409 は {@code PlaceOrderStockApiTest} が確認する。
  * 支払待ちの注文の確認がカートの変更の判定より先であることは {@code PlaceOrderPendingConfirmationApiTest} が確認する。
  *
  * <p>準備は {@link PlaceOrderFixture}（T シャツ 2 枚のカート）。テストごとにロールバックする。
@@ -55,6 +58,11 @@ class PlaceOrderConflictApiTest {
      */
     private static final long TOTAL_WITH_CAP = 8040;
 
+    /**
+     * 今から、将来の税区分の税率が始まるまでの時間
+     */
+    private static final Duration RATE_START_AFTER = Duration.ofHours(1);
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -62,6 +70,9 @@ class PlaceOrderConflictApiTest {
 
     @Autowired
     StockReservationApi stockReservationApi;
+
+    @Autowired
+    MutableClock clock;
 
     /**
      * 共有の準備
@@ -215,6 +226,26 @@ class PlaceOrderConflictApiTest {
             var checkoutId = fixture.orders.startCheckout(fixture.cartId);
             fixture.inventory.adjust(fixture.shirtVariant(), -SHIRT_STOCK);
             cap.suspend(0);
+
+            // 操作と確認：400 で、エラーコードが CART_NOT_ORDERABLE
+            fixture.place(checkoutId, TOTAL_WITH_CAP)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
+        }
+
+        @Test
+        @DisplayName("AC-88 注文の時点で商品の税区分に有効な税率がなければ、注文は購入できない品目を示す 400")
+        void rejectsWithoutRateAtOrder() throws Exception {
+            // 準備：税率の開始の時刻に帽子を登録してカートに入れ、注文手続きに進んだ後、時計を税率の開始の前に戻す
+            var startAt = clock.instant().plus(RATE_START_AFTER);
+            var notYetEffective = fixture.catalog.taxCategory("将来の税区分", "10", startAt);
+            clock.setInstant(startAt);
+            var cap = fixture.catalog.product(notYetEffective, "帽子", 1000, "色").variant("黒").publish();
+            fixture.inventory.stock(cap.variantIds.getFirst(), cap.id, 1);
+            fixture.orders.add(fixture.cartId, cap.variantIds.getFirst(), 1);
+            var checkoutId = fixture.orders.startCheckout(fixture.cartId);
+            clock.setInstant(startAt.minusSeconds(1));
+            TaxRateScheduleCaches.evict(applicationContext);
 
             // 操作と確認：400 で、エラーコードが CART_NOT_ORDERABLE
             fixture.place(checkoutId, TOTAL_WITH_CAP)

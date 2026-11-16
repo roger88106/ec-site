@@ -1,10 +1,12 @@
 package com.ecsite.module.inventory.api;
 
 import com.ecsite.AsyncEvents;
+import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.LockWaits;
 import com.ecsite.MutableClock;
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.port.StockQueryRepository;
@@ -32,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * 注文による在庫の増減の統合テスト
@@ -325,6 +328,111 @@ class StockOrderApiTest {
                 assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER_CANCELLATION);
                 assertThat(adjustment.orderNumber()).isEqualTo(ORDER_NUMBER);
             });
+        }
+
+        @Test
+        @DisplayName("AC-107 注文のキャンセルの戻しには在庫数の上限を当てず、上限の 1,000,000 を超えて戻せる")
+        void restoresBeyondManualLimit() {
+            // 準備：在庫数が運営者の調整の上限の 1,000,000
+            var variant = inventory.stockNewVariant(productId, 1_000_000);
+
+            // 操作：1 個戻す
+            api.restore(Map.of(variant, 1), orderId, ORDER_NUMBER);
+
+            // 確認：在庫数が 1,000,001 で、最新の履歴がこの戻し
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(1_000_001);
+            assertThat(latestAdjustment(variant).quantityAfter()).isEqualTo(1_000_001);
+        }
+
+        @Test
+        @DisplayName("在庫のなくなったバリアントの戻しは飛ばし、残りのバリアントだけを戻す")
+        void skipsVariantWithoutStock() {
+            // 準備：在庫数 3 のバリアントと、在庫のないバリアント
+            var variant = inventory.stockNewVariant(productId, 3);
+            var removed = UUID.randomUUID();
+
+            // 操作：両方を戻す
+            api.restore(Map.of(variant, ORDER_QUANTITY, removed, 1), orderId, ORDER_NUMBER);
+
+            // 確認：在庫のあるバリアントだけが増える
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(3 + ORDER_QUANTITY);
+            assertThat(stockQueryRepository.findQuantity(removed)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("全てのバリアントの在庫がなくても、戻しは失敗しない")
+        void ignoresWhenNoStockRemains() {
+            // 準備：在庫のないバリアント
+            var removed = UUID.randomUUID();
+
+            // 操作と確認：例外にならず、在庫も作らない
+            assertThatCode(() -> api.restore(Map.of(removed, 1), orderId, ORDER_NUMBER)).doesNotThrowAnyException();
+            assertThat(stockQueryRepository.findQuantity(removed)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("引当の後の在庫の削除")
+    class DeletedAfterReservation {
+
+        @Test
+        @DisplayName("AC-87 引き当てた後に商品が削除されて在庫がなくなると、減算は全ての品目を足りないとして返す")
+        void returnsAllWhenStockDeleted() {
+            // 準備：引き当てた後に、商品の在庫を削除する
+            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var holder = reserve(variant);
+            stockItemRepository.deleteByProductId(productId);
+
+            // 操作：減算に置き換える
+            var shortages = commit(holder, variant);
+
+            // 確認：その品目を足りないとして返し、在庫は作らない
+            assertThat(shortages).containsExactly(variant);
+            assertThat(stockQueryRepository.findQuantity(variant)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("同時の減算")
+    class ConcurrentCommit {
+
+        @Test
+        @DisplayName("AC-87 在庫数 1 に 2 人が同時に減算しても、1 人だけが減らし、在庫数は負にならない")
+        void commitsOnlyOneOfTwo() throws Exception {
+            // 準備：在庫数 1（どちらも引き当てていない）
+            var variant = inventory.stockNewVariant(productId, 1);
+
+            // 操作：2 人が 1 個ずつ同時に減算する
+            var results = Concurrently.run(2, i -> api.commit(UUID.randomUUID(), Map.of(variant, 1), UUID.randomUUID(), ORDER_NUMBER));
+
+            // 確認：1 人は足りない品目がなく、もう 1 人はその品目が足りず、在庫数は 0
+            assertThat(results).filteredOn(Set::isEmpty).hasSize(1);
+            assertThat(results).filteredOn(shortages -> shortages.contains(variant)).hasSize(1);
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(0);
+        }
+
+        @Test
+        @DisplayName("AC-43、87 在庫数 1 に注文の減算と運営者の減算が同時に来ても、1 つだけが減らし、在庫数は負にならない")
+        void commitAndManualDecrementDoNotGoNegative() throws Exception {
+            // 準備：在庫数 1
+            var variant = inventory.stockNewVariant(productId, 1);
+
+            // 操作：注文の減算と運営者の 1 個の減算を同時に行い、成功を数える
+            var results = Concurrently.run(2, i -> {
+                if (i == 0) {
+                    return api.commit(UUID.randomUUID(), Map.of(variant, 1), UUID.randomUUID(), ORDER_NUMBER).isEmpty();
+                }
+                try {
+                    inventory.adjust(variant, -1);
+                    return true;
+                } catch (BusinessException e) {
+                    return false;
+                }
+            });
+
+            // 確認：成功は 1 つだけで、在庫数は 0
+            assertThat(results).containsOnlyOnce(true);
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(0);
         }
     }
 

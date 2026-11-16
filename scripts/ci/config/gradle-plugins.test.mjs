@@ -76,7 +76,6 @@ describe('policy の読み取り', () => {
     assert.deepEqual(readPolicyPluginIds(policy), ['a.b', 'c.d'])
   })
 
-
   test('gradlePlugins がなければ失敗にする', () => {
     assert.throws(() => readPolicyPluginIds({}), /gradlePlugins/)
   })

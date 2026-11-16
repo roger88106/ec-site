@@ -27,6 +27,9 @@ const POLICY_FILE = 'scripts/ci/licenses/policy.json'
 /** プラグインの `id("…")` を探す Gradle のファイルの置き場所 */
 const BUILD_PATHS = ['backend/ecsite']
 
+/** カタログを通さずにプラグインを入れる書き方（`id("…")`、`kotlin("…")`、`apply(plugin = "…")`、`apply plugin:`） */
+const DIRECT_PLUGIN = /\b(?:id|kotlin)\s*\(\s*"|\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/
+
 /**
  * 照合の対象にするプラグインの id か。
  *
@@ -58,9 +61,6 @@ export function readCatalogPlugins(text) {
   }
   return { ids, unknown }
 }
-
-/** カタログを通さずにプラグインを入れる書き方（`id("…")`、`kotlin("…")`、`apply(plugin = "…")`、`apply plugin:`） */
-const DIRECT_PLUGIN = /\b(?:id|kotlin)\s*\(\s*"|\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/
 
 /**
  * Gradle のファイルで、カタログを通さずにプラグインを入れる行を探す。行コメントの中は読まない。

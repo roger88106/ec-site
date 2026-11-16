@@ -52,8 +52,18 @@ export function isSearchedFile(file) {
  * @returns {string[]} 識別子（書いた順、重ねない）。名前の形の例（Xxx を含む）は除く
  */
 export function parseGlossaryIds(markdown) {
-  const ids = []
-  for (const line of markdown.split(/\r?\n/)) {
+  return parseGlossaryEntries(markdown).map((entry) => entry.id)
+}
+
+/**
+ * 用語集の表の識別子の列から、バッククォートの中の名前と、その行を読む。
+ *
+ * @param {string} markdown 用語集
+ * @returns {{ id: string, line: number }[]} 識別子と、最初に書いた行（1 から。書いた順、重ねない）。名前の形の例（Xxx を含む）は除く
+ */
+export function parseGlossaryEntries(markdown) {
+  const entries = []
+  for (const [index, line] of markdown.split(/\r?\n/).entries()) {
     const cells = line.split('|').slice(1, -1)
     if (cells.length < 3) continue
     let previous = ''
@@ -63,11 +73,11 @@ export function parseGlossaryIds(markdown) {
       if (id.startsWith('_') && previous.includes('_')) id = previous.slice(0, previous.lastIndexOf('_')) + id
       previous = id
       // 名前の形の例（Xxx、<モジュール>、*）は調べない
-      if (/Xxx|[<*]/.test(id) || ids.includes(id)) continue
-      ids.push(id)
+      if (/Xxx|[<*]/.test(id) || entries.some((entry) => entry.id === id)) continue
+      entries.push({ id, line: index + 1 })
     }
   }
-  return ids
+  return entries
 }
 
 /**
@@ -77,7 +87,7 @@ export function parseGlossaryIds(markdown) {
  * 他の見出しの表（配送業者の一覧など）は見ない。識別子を 1 つも取り出せない用語集も問題にする。
  *
  * @param {string} markdown 用語集
- * @returns {string[]} 問題（行を付ける）
+ * @returns {{ line: number, message: string }[]} 問題（識別子を 1 つも取り出せないときの行は 1）
  */
 export function checkGlossary(markdown) {
   const problems = []
@@ -86,9 +96,9 @@ export function checkGlossary(markdown) {
     if (!/^\|(?:\s*:?-+:?\s*\|)+$/.test((lines[index + 1] ?? '').trim()) || !line.trim().startsWith('|')) return
     const cells = line.split('|').slice(1, -1).map((cell) => cell.trim())
     if (!cells.includes('識別子') && cells[0] !== '用語') return
-    if (cells[0] !== '用語' || cells[1] !== '識別子') problems.push(`${index + 1} 行：表の見出しの行の 2 列目が「識別子」でない（列は 用語、識別子、… の順にする）`)
+    if (cells[0] !== '用語' || cells[1] !== '識別子') problems.push({ line: index + 1, message: '表の見出しの行の 2 列目が「識別子」でない（列は 用語、識別子、… の順にする）' })
   })
-  if (parseGlossaryIds(markdown).length === 0) problems.push('識別子を 1 つも取り出せない（表の 2 列目に、バッククォートで囲んだ識別子を書く）')
+  if (parseGlossaryIds(markdown).length === 0) problems.push({ line: 1, message: '識別子を 1 つも取り出せない（表の 2 列目に、バッククォートで囲んだ識別子を書く）' })
   return problems
 }
 
@@ -148,14 +158,15 @@ if (import.meta.main) {
     const markdown = readFileSync(glossary, 'utf8')
     for (const problem of checkGlossary(markdown)) {
       shapeProblems.push(problem)
-      console.log(`${glossary}：${problem}`)
+      console.log(`${glossary}:${problem.line} ${problem.message}`)
     }
-    const glossaryIds = parseGlossaryIds(markdown)
+    const entries = parseGlossaryEntries(markdown)
+    const glossaryIds = entries.map((entry) => entry.id)
     ids.push(...glossaryIds)
-    const absent = findMissing(glossaryIds, tokens, content)
-    for (const id of absent.filter((name) => !(name in exclusions))) {
+    const absent = new Set(findMissing(glossaryIds, tokens, content))
+    for (const { id, line } of entries.filter((entry) => absent.has(entry.id) && !(entry.id in exclusions))) {
       missing.push(id)
-      console.log(`${glossary}：識別子 \`${id}\` がコードにない`)
+      console.log(`${glossary}:${line} 識別子 \`${id}\` がコードにない`)
     }
   }
   const problems = checkExclusions('glossary-ids-exclusions.json', exclusions, (id) => isExclusionNeeded(id, ids))

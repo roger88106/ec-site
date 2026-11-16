@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { GLOSSARIES, checkGlossary, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryIds } from './glossary-ids.mjs'
+import { GLOSSARIES, checkGlossary, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryEntries, parseGlossaryIds } from './glossary-ids.mjs'
 
 const GLOSSARY = [
   '| 用語 | 識別子 | 意味 |',
@@ -25,6 +25,16 @@ describe('用語集の識別子の検査', () => {
       'cancelled_by_id',
       'cancelled_by_name',
     ])
+  })
+
+  test('識別子ごとに、最初に書いた行を読む', () => {
+    const entries = parseGlossaryEntries(GLOSSARY)
+    assert.deepEqual(entries.slice(0, 3), [
+      { id: 'Order', line: 3 },
+      { id: 'ordering.sales_order', line: 3 },
+      { id: 'common/model/value/', line: 4 },
+    ])
+    assert.deepEqual(entries.at(-1), { id: 'cancelled_by_name', line: 7 })
   })
 
   test('kebab-case の設定の名前は、camelCase の語があればコードにあるとみなす', () => {
@@ -70,14 +80,15 @@ describe('用語集の表の見出し', () => {
     for (const markdown of [swapped, identifierFirst, twoColumns]) {
       const problems = checkGlossary([GLOSSARY, '', markdown].join('\n'))
       assert.equal(problems.length, 1, markdown)
-      assert.match(problems[0], /^[0-9]+ 行：表の見出しの行の 2 列目が「識別子」でない/)
+      assert.equal(problems[0].line, 11)
+      assert.match(problems[0].message, /^表の見出しの行の 2 列目が「識別子」でない/)
     }
   })
 
   test('識別子を 1 つも取り出せない用語集（列を入れ替えた表だけ、表がない）を問題にする', () => {
     const swapped = ['| 用語 | 意味 | 識別子 |', '|------|------|--------|', '| 注文 | 注文 | `Order` |'].join('\n')
     for (const markdown of [swapped, '# 用語集\n\n説明だけ。\n']) {
-      assert.ok(checkGlossary(markdown).some((problem) => /識別子を 1 つも取り出せない/.test(problem)), markdown)
+      assert.ok(checkGlossary(markdown).some((problem) => /識別子を 1 つも取り出せない/.test(problem.message)), markdown)
     }
   })
 })

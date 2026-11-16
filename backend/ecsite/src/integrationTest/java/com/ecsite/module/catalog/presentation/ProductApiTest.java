@@ -4,6 +4,7 @@ import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestJson;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -139,6 +141,9 @@ class ProductApiTest {
 
     @Autowired
     MutableClock clock;
+
+    @Autowired
+    ApplicationContext context;
 
     /**
      * 標準
@@ -421,6 +426,19 @@ class ProductApiTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
         }
+
+        @Test
+        @DisplayName("有効な税率のない税区分の商品も取得でき、税込価格は空")
+        void returnsNoPriceInclTaxWithoutTaxRate() throws Exception {
+            // 準備：税区分に今は有効な税率がない商品
+            var id = productBeforeRateStarts();
+
+            // 操作と確認：200 で、税抜価格はあり、税込価格は空
+            products.getProduct(id)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.priceExclTax").value(PRICE_EXCL_TAX))
+                    .andExpect(jsonPath("$.priceInclTax").value(nullValue()));
+        }
     }
 
     @Nested
@@ -518,6 +536,39 @@ class ProductApiTest {
             products.update(id, updateJson(notYetEffective, PRICE_EXCL_TAX, 0))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
+        }
+
+        @Test
+        @DisplayName("AC-6 税区分に今は有効な税率がなくても、税区分を変えない編集はできる")
+        void updatesWithoutChangingTaxCategoryWithoutCurrentRate() throws Exception {
+            // 準備：税区分に今は有効な税率がない商品
+            var id = productBeforeRateStarts();
+
+            // 操作：税区分を変えずに、税抜価格を変えて編集する
+            products.update(id, updateJson(notYetEffective, NEW_PRICE_EXCL_TAX, 0)).andExpect(status().isNoContent());
+
+            // 確認：税抜価格が変わる
+            products.getProduct(id).andExpect(jsonPath("$.priceExclTax").value(NEW_PRICE_EXCL_TAX));
+        }
+
+        @Test
+        @DisplayName("存在しないカテゴリを指定すると 400 で、商品は変わらない")
+        void rejectsUnknownCategoryOnUpdate() throws Exception {
+            // 準備：所属カテゴリのない商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：カテゴリの誤りで拒否される
+            products.update(id, """
+                            {"name": "%s", "description": "", "taxCategoryId": "%s", "priceExclTax": %d,
+                             "categoryIds": ["%s"], "version": 0}""".formatted(NEW_NAME, standard, NEW_PRICE_EXCL_TAX, UNKNOWN_ID))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ID"));
+
+            // 確認：商品名・所属カテゴリ・バージョンは変わらない
+            products.getProduct(id)
+                    .andExpect(jsonPath("$.name").value(ProductRequests.DEFAULT_NAME))
+                    .andExpect(jsonPath("$.categoryIds").isEmpty())
+                    .andExpect(jsonPath("$.version").value(0));
         }
 
         @Test
@@ -649,6 +700,22 @@ class ProductApiTest {
     }
 
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 有効な税率がまだない税区分の商品を登録し、その税区分に今は有効な税率がない状態にする。
+     *
+     * <p>最後の税率は無期限なので、商品を登録した後に有効な税率がなくなるのは、最初の税率の開始より前の時刻だけ。
+     * そこで、税率の開始の時刻に商品を登録した後、時計を開始の 1 秒前に戻して、税率のキャッシュを捨てる。
+     *
+     * @return 商品 ID
+     */
+    private UUID productBeforeRateStarts() throws Exception {
+        clock.setInstant(NOT_YET_EFFECTIVE_FROM);
+        var id = products.createdId(productJson(PRODUCT_CODE, notYetEffective, PRICE_EXCL_TAX));
+        clock.setInstant(NOT_YET_EFFECTIVE_FROM.minusSeconds(1));
+        TaxRateScheduleCaches.evict(context);
+        return id;
+    }
 
     /**
      * 全ての項目を指定した、商品の登録の本文を作る。

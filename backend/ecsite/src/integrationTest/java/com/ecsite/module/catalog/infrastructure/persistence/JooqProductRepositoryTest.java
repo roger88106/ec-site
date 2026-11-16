@@ -74,6 +74,36 @@ class JooqProductRepositoryTest {
      */
     private static final PriceExclTax UPDATED_PRICE = PriceExclTax.of(2000);
 
+    /**
+     * 商品名の上限（文字）
+     */
+    private static final int NAME_MAX_LENGTH = 200;
+
+    /**
+     * 説明の上限（文字）
+     */
+    private static final int DESCRIPTION_MAX_LENGTH = 10_000;
+
+    /**
+     * 軸名の上限（文字）
+     */
+    private static final int AXIS_NAME_MAX_LENGTH = 30;
+
+    /**
+     * 軸の値の上限（文字）
+     */
+    private static final int AXIS_VALUE_MAX_LENGTH = 50;
+
+    /**
+     * 上限の 32 文字の商品品番
+     */
+    private static final String MAX_PRODUCT_CODE = "P".repeat(32);
+
+    /**
+     * 上限の 32 文字のバリアント品番
+     */
+    private static final String MAX_VARIANT_CODE = "V".repeat(32);
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -336,6 +366,47 @@ class JooqProductRepositoryTest {
 
             // 確認：一意制約の違反にならず、保存されている
             assertThat(repository.findById(other.id())).isPresent();
+        }
+
+        @Test
+        @DisplayName("取得した後に他で更新された商品の削除は、競合のエラーになり、商品は残る")
+        void rejectsDeletingStaleProduct() {
+            // 準備：同じ商品を 2 回読み、片方で更新して保存する
+            var product = newProduct("ABC-001");
+            repository.add(product);
+            var mine = repository.findById(product.id()).orElseThrow();
+            var theirs = repository.findById(product.id()).orElseThrow();
+            theirs.update(UPDATED_NAME, "", TAX_CATEGORY_ID, UPDATED_PRICE, Set.of(), NOW);
+            repository.save(theirs);
+            mine.delete(NOW);
+
+            // 操作と確認：古い方の削除は、業務のエラー CONCURRENT_MODIFICATION で拒否される
+            assertBusinessError(() -> repository.delete(mine), CommonErrorCode.CONCURRENT_MODIFICATION);
+
+            // 確認：商品は残る
+            assertThat(repository.findById(product.id())).isPresent();
+        }
+    }
+
+    @Nested
+    @DisplayName("上限の値の保存")
+    class MaxValues {
+
+        @Test
+        @DisplayName("文字数と品番の上限の値（サロゲートペアを含む）を保存して、同じ値で読み戻せる")
+        void savesMaxValues() {
+            // 準備：商品名・説明・軸名・軸の値・商品品番・バリアント品番が、どれも上限ちょうどの商品
+            var product = factory.create(ProductCode.of(MAX_PRODUCT_CODE), "𩸽".repeat(NAME_MAX_LENGTH),
+                    "𩸽".repeat(DESCRIPTION_MAX_LENGTH), TAX_CATEGORY_ID, PriceExclTax.of(1000), Set.of(clothing),
+                    List.of("𩸽".repeat(AXIS_NAME_MAX_LENGTH)));
+            product.addVariant(VariantCode.of(MAX_VARIANT_CODE), List.of("𩸽".repeat(AXIS_VALUE_MAX_LENGTH)), NOW);
+
+            // 操作：保存して再構築する
+            repository.add(product);
+            var restored = repository.findById(product.id()).orElseThrow();
+
+            // 確認：再構築した商品が、保存した商品と同じ
+            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
         }
     }
 

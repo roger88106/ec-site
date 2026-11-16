@@ -44,6 +44,11 @@ class JooqCategoryRepositoryTest {
      */
     private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
+    /**
+     * カテゴリの名称の上限（文字）
+     */
+    private static final int NAME_MAX_LENGTH = 50;
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -97,6 +102,74 @@ class JooqCategoryRepositoryTest {
 
             // 操作と確認：その子の登録は、業務のエラー NOT_FOUND で拒否される
             assertBusinessError(() -> repository.add(factory.create(parent, "トップス", 1)), CommonErrorCode.NOT_FOUND);
+        }
+    }
+
+    @Nested
+    @DisplayName("取得した後の他の変更")
+    class StaleCategory {
+
+        @Test
+        @DisplayName("取得した後に他で名称を変えられたカテゴリは、保存すると競合のエラーになる")
+        void rejectsSavingStaleCategory() {
+            // 準備：同じカテゴリを 2 回取得し、先の 1 つで名称を変えて保存する
+            var category = added(null, "衣類 " + UUID.randomUUID());
+            var first = repository.findById(category.id()).orElseThrow();
+            var stale = repository.findById(category.id()).orElseThrow();
+            first.rename("ファッション " + UUID.randomUUID());
+            repository.save(first);
+
+            // 操作と確認：古い方の保存は、業務のエラー CONCURRENT_MODIFICATION で拒否される
+            stale.rename("服飾 " + UUID.randomUUID());
+            assertBusinessError(() -> repository.save(stale), CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
+
+        @Test
+        @DisplayName("一括の保存で 1 つでも取得した後に他で変えられていれば、競合のエラーになる")
+        void rejectsSavingAllWithStaleCategory() {
+            // 準備：子の「トップス」「ボトムス」を取得した後、「トップス」だけを他で名称を変えて保存する
+            var parent = added(null, "衣類 " + UUID.randomUUID());
+            added(parent, "トップス");
+            added(parent, "ボトムス");
+            var siblings = repository.lockChildren(parent.id());
+            var other = repository.findById(siblings.getFirst().id()).orElseThrow();
+            other.rename("シャツ");
+            repository.save(other);
+
+            // 操作と確認：古い「トップス」を含む一括の保存は、業務のエラー CONCURRENT_MODIFICATION で拒否される
+            siblings.forEach(sibling -> sibling.rename(sibling.name() + "（変更）"));
+            assertBusinessError(() -> repository.saveAll(siblings), CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
+
+        @Test
+        @DisplayName("既に削除されたカテゴリの削除は、見つからないエラーになる")
+        void rejectsDeletingDeletedCategory() {
+            // 準備：削除したカテゴリ
+            var category = added(null, "衣類 " + UUID.randomUUID());
+            repository.delete(category);
+
+            // 操作と確認：もう一度の削除は、業務のエラー NOT_FOUND で拒否される
+            assertBusinessError(() -> repository.delete(category), CommonErrorCode.NOT_FOUND);
+        }
+    }
+
+    @Nested
+    @DisplayName("上限の値の保存")
+    class MaxValues {
+
+        @Test
+        @DisplayName("名称の上限の 50 文字（サロゲートペア）を保存して、同じ値で読み戻せる")
+        void savesMaxLengthName() {
+            // 準備：サロゲートペアの文字だけの、50 文字の名称のカテゴリ
+            var name = "𩸽".repeat(NAME_MAX_LENGTH);
+            var category = factory.create(null, name, repository.nextDisplayOrder(null));
+
+            // 操作：登録して読み戻す
+            repository.add(category);
+            var restored = repository.findById(category.id()).orElseThrow();
+
+            // 確認：名称が同じ
+            assertThat(restored.name()).isEqualTo(name);
         }
     }
 

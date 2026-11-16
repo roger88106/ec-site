@@ -21,9 +21,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
 | `gradle-plugins` | Gradle のプラグインの id が、policy.json の gradlePlugins と過不足なく一致することを確認する |
-| `hardcoded-text` | 画面のコードに、表示の文言（日本語の文字）を直接書いていないことを確認する |
 | `image-versions` | compose と、Gradle・統合テストのイメージのバージョンの一致と、patch までの固定を確認する |
-| `input-constraints` | 画面の入力の制約に、API の契約から書き出した定数を使っていることを確認する |
 | `integration-shards` | 統合テストを分ける数が、`build.gradle.kts` と CI の matrix で一致することを確認する |
 | `java-rules` | バックエンドのソースに、禁止した書き方（Lombok、列挙型の変換など）がないことを確認する |
 | `license-policy` | 許可するライセンスの一覧が、`licenses.md` と `policy.json` で一致することを確認する |

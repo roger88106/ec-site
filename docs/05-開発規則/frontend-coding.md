@@ -50,7 +50,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 理由：契約の制約を変えたら、画面の制約も一緒に変わるようにするため。
 
-確認方法：自動（`input-constraints.mjs`）
+確認方法：自動（Biome の plugin `no-literal-input-constraint`）
 
 ### API の列挙の値ごとの表示は、全ての値を書く
 
@@ -153,11 +153,11 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 - 数は整形してから渡し（`{amount}` は数を整形しない）、値は名前で差し込む（`{code}を上へ`）。コードで組み立てる表示名（`画像 ${n}` など）も文言にする。
 - 例外：テストの中の文字、開発者だけが見るログ、アイコンの代わりの記号、API の応答の文 ※1、言語に依らない入力例（`+10 / -3` など）。地域で形の変わる入力例（電話番号など）も、今は日本だけを扱うので直接書いてよい。地域を追加するときに文言に移す。
 
-※1：API に送る値など文言でないものは、理由と一緒に `scripts/ci/hardcoded-text-exclusions.json` に書く。
+※1：API に送る値など文言でないものは、直前の行の `// biome-ignore lint/plugin/no-hardcoded-text: <理由>` に理由を書く。
 
 理由：文言を 1 か所で管理し、2 つ目の言語を追加できるようにするため。
 
-確認方法：自動（`hardcoded-text.mjs`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー
+確認方法：自動（Biome の plugin `no-hardcoded-text`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー
 
 ### 文言キーの形
 

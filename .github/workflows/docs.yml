@@ -35,9 +35,8 @@ jobs:
           # 全ての branch を取得する。migrations、ja-text の --changed、risk が、origin/develop と origin/main との分岐点を求めるため
           fetch-depth: 0
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .node-version
+      # pnpm と Node の準備、workspace の依存のインストール（YAML・TOML を読む検査が、ルートの js-yaml・smol-toml を読むため）
+      - uses: ./.github/actions/setup-frontend
 
       # script のテストと、scripts/ci/ の直下の検査の全て（CI では、テスト名に出ない AC も失敗にする）
       - name: CI の検査の script

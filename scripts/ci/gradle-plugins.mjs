@@ -1,13 +1,16 @@
 // Gradle のプラグインの id が、ライセンスの検査の一覧（scripts/ci/licenses/policy.json の gradlePlugins）と過不足なく一致することを確認する。
 // Gradle のプラグインは依存の構成（licenseReport が読む構成）に出ないので、ライセンスは policy.json に手動で書いている。
 // プラグインを追加・削除して一覧を修正し忘れると、ライセンスを確認しないプラグインが入る、または使わないものが残るため、過不足を失敗にする。
-// プラグインの id は、`gradle/libs.versions.toml` の `[plugins]`（1 行の表と文字列）と、`build.gradle.kts` の `plugins {}` に直接書いた `id("…")`・`kotlin("…")` から読む。
+//
+// プラグインの id は、`gradle/libs.versions.toml` の `[plugins]` と、`build.gradle.kts` の `plugins {}` に直接書いた `id("…")`・`kotlin("…")` から読む。
 // java、jacoco のように `.` のない id は Gradle の組み込みで、別の成果物として入らないので対象にしない。
-// 読めない書き方（`[plugins.名前]` の表、複数行の表、`plugins {}` の中の知らない行、`apply(plugin = "…")`）は、読み飛ばすと誤って通るので、ファイル:行を出して失敗にする。
+// id を読めない書き方（カタログの id のない項目、`plugins {}` の中の知らない行、`apply(plugin = "…")`）は、読み飛ばすと誤って通るので失敗にする。
+//
 // 失敗したとき：プラグインを加える・外すときは、gradlePlugins にライセンスを確認して加える・削除する。
 // 除外：なし
 // 使い方：node scripts/ci/gradle-plugins.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { parse } from 'smol-toml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
@@ -35,40 +38,22 @@ const isExternal = (id) => id.includes('.')
 
 /**
  * バージョンカタログの `[plugins]` の id を読む。<br />
- * 読める書き方は、1 行の表（`foo = { id = "…", version.ref = "…" }`）と、文字列（`foo = "id:バージョン"`）。
- * それ以外の行（`[plugins.名前]` の表、複数行の表、id のない表）は読めないので、`unknown` に集める（読み飛ばすと、ライセンスを確認しないプラグインが通る）。
+ * 値は、表の `id` か、文字列（`"id:バージョン"`）の `:` の前。id を読めない項目は、読み飛ばすとライセンスを確認しないプラグインが通るので、`unknown` に集める。
  *
  * @param {string} text libs.versions.toml の内容
- * @returns {{ ids: string[], unknown: { line: number, text: string }[] }} id（書いた順）と、読めない行（1 始まりの行番号と内容）
+ * @returns {{ ids: string[], unknown: string[] }} id（書いた順）と、id を読めない項目の名前
  */
 export function readCatalogPlugins(text) {
   const ids = []
   const unknown = []
-  let inPlugins = false
-  text.split('\n').forEach((raw, index) => {
-    const line = raw.replace(/\r$/, '').replace(/(^|\s)#.*$/, '').trim()
-    if (line === '') {
-      return
-    }
-    const section = /^\[([^\]]+)\]/.exec(line)
-    if (section) {
-      inPlugins = section[1].trim() === 'plugins'
-      if (section[1].trim().startsWith('plugins.')) {
-        unknown.push({ line: index + 1, text: line })
-      }
-      return
-    }
-    if (!inPlugins) {
-      return
-    }
-    const id =
-      /^[\w.-]+\s*=\s*\{[^}]*\bid\s*=\s*"([^"]+)"[^}]*\}$/.exec(line)?.[1] ?? /^[\w.-]+\s*=\s*"([^":]+)(?::[^"]*)?"$/.exec(line)?.[1]
-    if (id) {
+  for (const [name, value] of Object.entries(parse(text).plugins ?? {})) {
+    const id = typeof value === 'string' ? value.split(':')[0] : value?.id
+    if (typeof id === 'string' && id !== '') {
       ids.push(id)
     } else {
-      unknown.push({ line: index + 1, text: line })
+      unknown.push(name)
     }
-  })
+  }
   return { ids, unknown }
 }
 
@@ -169,7 +154,7 @@ if (isMain(import.meta.url)) {
   const unknownLines = []
   const catalog = readCatalogPlugins(readFileSync(CATALOG_FILE, 'utf8'))
   used.push(...catalog.ids)
-  unknownLines.push(...catalog.unknown.map((item) => describeUnreadableLine({ file: CATALOG_FILE, line: item.line, text: item.text, reason: UNREADABLE_REASON })))
+  unknownLines.push(...catalog.unknown.map((name) => `${CATALOG_FILE} の plugins.${name}（id を読めない。id を書く）`))
   for (const file of buildFiles) {
     const build = readBuildPlugins(readFileSync(file, 'utf8'))
     used.push(...build.ids)

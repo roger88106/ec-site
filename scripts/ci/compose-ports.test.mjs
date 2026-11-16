@@ -1,104 +1,40 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
-import { findPortProblems, readHostPort } from './compose-ports.mjs'
+import { describeUnreadableHostPort, findPortProblems, readHostPort } from './compose-ports.mjs'
 
-/** 知らない書き方の行を「行 内容」で並べる */
-const unknownOf = (text) => findPortProblems(text).unknown.map((entry) => `${entry.line} ${entry.text}`)
+/** サービスの ports を compose の形にする */
+const compose = (services) =>
+  ['services:', ...Object.entries(services).flatMap(([name, ports]) => [`  ${name}:`, '    ports:', ...ports.map((port) => `      - ${port}`)])].join('\n')
 
-/** 問題の項目を「行 項目」で並べる */
-const problemsOf = (text) => findPortProblems(text).problems.map((port) => `${port.line} ${port.entry}`)
+/** 問題の項目を「サービス 項目」で並べる */
+const problemsOf = (text) => findPortProblems(text).problems.map((port) => `${port.service} ${port.entry}`)
 
 describe('compose のポートの検査', () => {
   test('待ち受けるアドレスのないポートと、変数を使わずに書いたアドレスを見つける', () => {
-    const text = [
-      'services:',
-      '  postgres:',
-      '    ports:',
-      '      - "5432:5432"',
-      '      - "0.0.0.0:9411:9411"',
-      '      - "127.0.0.1:8333:8333"',
-    ].join('\n')
-    assert.deepEqual(problemsOf(text), ['4 5432:5432', '5 0.0.0.0:9411:9411', '6 127.0.0.1:8333:8333'])
+    const text = compose({ postgres: ['"5432:5432"', '"0.0.0.0:9411:9411"', '"127.0.0.1:8333:8333"'] })
+    assert.deepEqual(problemsOf(text), ['postgres 5432:5432', 'postgres 0.0.0.0:9411:9411', 'postgres 127.0.0.1:8333:8333'])
   })
 
   test('既定が 127.0.0.1 でないもの、別の変数を使うものを見つける', () => {
-    const text = [
-      '    ports:',
-      '      - "${LOCAL_BIND_ADDRESS:-0.0.0.0}:5432:5432"',
-      '      - "${BIND_ADDRESS:-127.0.0.1}:8025:8025"',
-    ].join('\n')
-    assert.deepEqual(problemsOf(text), [
-      '2 ${LOCAL_BIND_ADDRESS:-0.0.0.0}:5432:5432',
-      '3 ${BIND_ADDRESS:-127.0.0.1}:8025:8025',
-    ])
+    const text = compose({ app: ['"${LOCAL_BIND_ADDRESS:-0.0.0.0}:5432:5432"', '"${BIND_ADDRESS:-127.0.0.1}:8025:8025"'] })
+    assert.deepEqual(problemsOf(text), ['app ${LOCAL_BIND_ADDRESS:-0.0.0.0}:5432:5432', 'app ${BIND_ADDRESS:-127.0.0.1}:8025:8025'])
   })
 
-  test('決まった変数で書いたポートは、ホストのポートが変数でも通す', () => {
-    const text = [
-      '    ports:',
-      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"',
-      "      - '${LOCAL_BIND_ADDRESS:-127.0.0.1}:8025:8025'",
-    ].join('\n')
+  test('決まった変数で書いたポートは、ホストのポートが変数でも、引用符がなくても通す', () => {
+    const text = compose({ mailpit: ['"${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:8025:8025'] })
     assert.deepEqual(problemsOf(text), [])
     assert.equal(findPortProblems(text).ports.length, 2)
   })
 
-  test('ports の外のリスト（volumes、environment など）は見ない', () => {
-    const text = [
-      '    ports:',
-      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432"',
-      '    volumes:',
-      '      - postgres_data:/var/lib/postgresql/data',
-      '    command:',
-      '      - "8080:8080"',
-    ].join('\n')
-    assert.deepEqual(problemsOf(text), [])
-  })
-
-  test('ports の中のコメントと空行は飛ばす', () => {
-    const text = ['    ports:', '      # SMTP', '', '      - "5432:5432"', '    restart: always'].join('\n')
-    assert.deepEqual(problemsOf(text), ['4 5432:5432'])
-  })
-
-  test('1 行で書いたポート（フロー形式）は、読み飛ばさずに知らない書き方として失敗にする', () => {
+  test('1 行で書いた ports（フロー形式）も読む', () => {
     const text = ['services:', '  app:', '    ports: ["8080:8080"]'].join('\n')
-    assert.deepEqual(unknownOf(text), ['3     ports: ["8080:8080"]'])
+    assert.deepEqual(problemsOf(text), ['app 8080:8080'])
   })
 
-  test('字下げが 2 でも 4 でも、ports と同じ字下げの項目も読む', () => {
-    const two = ['services:', '  app:', '    ports:', '      - "5432:5432"']
-    const four = ['services:', '    app:', '        ports:', '            - "5432:5432"']
-    const sameLevel = ['  app:', '    ports:', '    - "5432:5432"']
-    for (const lines of [two, four, sameLevel]) {
-      const text = lines.join('\n')
-      assert.deepEqual(problemsOf(text), [`${lines.length} 5432:5432`])
-      assert.deepEqual(unknownOf(text), [])
-    }
-  })
-
-  test('項目の字下げがそろわない行と、項目でない行は、知らない書き方として失敗にする', () => {
-    const text = [
-      '    ports:',
-      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432"',
-      '          - "8080:8080"',
-      '      target: 80',
-      '      -"8081:8081"',
-    ].join('\n')
-    assert.deepEqual(unknownOf(text), ['3           - "8080:8080"', '4       target: 80', '5       -"8081:8081"'])
-  })
-
-  test('引用符のない項目、ports の行末のコメント、コメントと空行は読み、兄弟のキーで節が終わる', () => {
-    const text = [
-      '    ports: # 公開',
-      '      # SMTP',
-      '',
-      '      - ${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432',
-      '    restart: always',
-      '    other: 1',
-    ].join('\n')
-    assert.deepEqual(unknownOf(text), [])
-    assert.equal(findPortProblems(text).ports.length, 1)
+  test('文字列でない項目（長い書き方、数字）は、決まった形でない項目にする', () => {
+    const text = ['services:', '  app:', '    ports:', '      - target: 80', '        published: 8080', '      - 8081'].join('\n')
+    assert.deepEqual(problemsOf(text), ['app {"target":80,"published":8080}', 'app 8081'])
   })
 
   test('ホスト側のポートは、数字か既定値付きの変数から読み、それ以外（既定値のない変数、範囲）は読めない', () => {
@@ -110,26 +46,25 @@ describe('compose のポートの検査', () => {
     }
   })
 
-  test('ホスト側のポートを読めない項目は、読み飛ばさずに失敗にする', () => {
-    const text = [
-      '    ports:',
-      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80"',
-      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80"',
-      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"',
-    ].join('\n')
-    assert.deepEqual(problemsOf(text), [])
+  test('ホスト側のポートを読めない項目は、サービスの名前を付けて失敗にする', () => {
+    const text = compose({
+      extra: ['"${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80"', '"${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80"', '"${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"'],
+    })
+    const { problems, unreadable } = findPortProblems(text)
+    assert.deepEqual(problems, [])
     assert.deepEqual(
-      findPortProblems(text).unreadable.map((port) => `${port.line} ${port.entry}`),
-      ['2 ${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80', '3 ${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80'],
+      unreadable.map((port) => describeUnreadableHostPort('docker/compose.yaml', port)),
+      [
+        'docker/compose.yaml extra：${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80（ホスト側のポートを読めない。数字か ${変数:-数字} で 1 つのポートを書く）',
+        'docker/compose.yaml extra：${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80（ホスト側のポートを読めない。数字か ${変数:-数字} で 1 つのポートを書く）',
+      ],
     )
   })
 
   test('リポジトリの compose のすべてのポートが、決まった形で書いてある', () => {
-    const text = readFileSync('docker/compose.yaml', 'utf8')
-    const { ports, problems, unreadable } = findPortProblems(text)
+    const { ports, problems, unreadable } = findPortProblems(readFileSync('docker/compose.yaml', 'utf8'))
     assert.ok(ports.length > 0)
     assert.deepEqual(problems, [])
     assert.deepEqual(unreadable, [])
-    assert.deepEqual(unknownOf(text), [])
   })
 })

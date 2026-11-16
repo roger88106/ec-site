@@ -2,8 +2,11 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { describeUnreadableImages, findImageProblems, findUnpinned, parseComposeImages, readSourceImages } from './image-versions.mjs'
 
-/** compose の image: の一覧だけを読む（読めない行は見ない） */
+/** compose の image の一覧だけを読む（読めない項目は見ない） */
 const readComposeImages = (text) => parseComposeImages(text).images
+
+/** イメージを、s0・s1… の名前のサービスに 1 つずつ書いた compose にする */
+const services = (images) => ['services:', ...images.flatMap((image, index) => [`  s${index}:`, `    image: ${image}`])].join('\n')
 
 const compose = [
   'services:',
@@ -29,35 +32,30 @@ describe('compose のイメージの読み取り', () => {
   })
 
   test('変数の差し込みは、既定値（:- の後）を読む', () => {
-    const images = readComposeImages('    image: ${PG_IMAGE:-postgres:18}\n    image: "${KC:-quay.io/keycloak/keycloak:26.8.1}"')
+    const images = readComposeImages(services(['${PG_IMAGE:-postgres:18}', '"${KC:-quay.io/keycloak/keycloak:26.8.1}"']))
     assert.deepEqual([...images.get('postgres')], ['18'])
     assert.deepEqual([...images.get('quay.io/keycloak/keycloak')], ['26.8.1'])
   })
 
-  test('既定値のない差し込みは、読めない行として行番号と内容を集める（読み飛ばさない）', () => {
-    const text = ['services:', '    image: ${PG_IMAGE}', '    image: ${PG_IMAGE:?必須}', '    image: postgres:${PG_VERSION}', '    image: a/b:1.0.0'].join('\n')
-    const { images, unreadable } = parseComposeImages(text)
-    assert.deepEqual(
-      unreadable.map(({ line, text: content }) => [line, content.trim()]),
-      [
-        [2, 'image: ${PG_IMAGE}'],
-        [3, 'image: ${PG_IMAGE:?必須}'],
-        [4, 'image: postgres:${PG_VERSION}'],
-      ],
-    )
-    assert.match(unreadable[0].reason, /変数/)
+  test('既定値のない差し込みは、読めない項目としてサービスとイメージを集める（読み飛ばさない）', () => {
+    const { images, unreadable } = parseComposeImages(services(['${PG_IMAGE}', '${PG_IMAGE:?必須}', 'postgres:${PG_VERSION}', 'a/b:1.0.0']))
+    assert.deepEqual(unreadable, [
+      { service: 's0', image: '${PG_IMAGE}' },
+      { service: 's1', image: '${PG_IMAGE:?必須}' },
+      { service: 's2', image: 'postgres:${PG_VERSION}' },
+    ])
     assert.deepEqual([...images.keys()], ['a/b'])
   })
 
-  test('読めない行は、ファイル:行 内容（理由）の形の文にして失敗にする', () => {
-    const { unreadable } = parseComposeImages('    image: ${PG_IMAGE}')
+  test('読めない項目は、ファイル サービス：イメージ（理由）の形の文にして失敗にする', () => {
+    const { unreadable } = parseComposeImages(services(['${PG_IMAGE}']))
     assert.deepEqual(describeUnreadableImages('docker/compose.yaml', unreadable), [
-      `docker/compose.yaml:1 image: \${PG_IMAGE}（${unreadable[0].reason}）`,
+      'docker/compose.yaml s0：${PG_IMAGE}（変数の差し込みを読めない。既定値 ${NAME:-名前:バージョン} の形だけを扱う）',
     ])
   })
 
   test('同じ名前に別のバージョンがあれば、両方を残す', () => {
-    const images = readComposeImages(['    image: a/b:1.0.0', '    image: a/b:1.0.1'].join('\n'))
+    const images = readComposeImages(services(['a/b:1.0.0', 'a/b:1.0.1']))
     assert.deepEqual([...images.get('a/b')], ['1.0.0', '1.0.1'])
   })
 })
@@ -80,7 +78,7 @@ describe('ソースのイメージの読み取り', () => {
   })
 
   test('名前の前後が続く別の名前（部分一致）は読まない', () => {
-    const images = readComposeImages('    image: postgres:18-alpine')
+    const images = readComposeImages(services(['postgres:18-alpine']))
     const source = '"my-postgres:1.0.0" "postgres-extra:2.0.0"'
     assert.deepEqual(readSourceImages(source, images).known, [])
   })
@@ -106,24 +104,22 @@ describe('バージョンの食い違い', () => {
 
 describe('バージョンの固定', () => {
   test('latest、バージョンのないもの、patch のないバージョンを見つける', () => {
-    const images = readComposeImages(
-      ['    image: a/b:latest', '    image: a/c', '    image: a/d:3', '    image: a/e:3.6', '    image: a/f:v1.2.3'].join('\n'),
-    )
+    const images = readComposeImages(services(['a/b:latest', 'a/c', 'a/d:3', 'a/e:3.6', 'a/f:v1.2.3']))
     assert.deepEqual(findUnpinned(images), ['a/b:latest', 'a/c（バージョンがない）', 'a/d:3', 'a/e:3.6'])
   })
 
   test('公式の postgres は major だけのバージョン（18-alpine）を許す', () => {
-    const images = readComposeImages('    image: postgres:18-alpine')
+    const images = readComposeImages(services(['postgres:18-alpine']))
     assert.deepEqual(findUnpinned(images), [])
   })
 
   test('postgres 以外の major だけのバージョンは許さない', () => {
-    const images = readComposeImages('    image: mysql:8-alpine')
+    const images = readComposeImages(services(['mysql:8-alpine']))
     assert.deepEqual(findUnpinned(images), ['mysql:8-alpine'])
   })
 
   test('patch のないバージョンを使う seaweedfs は major.minor のバージョンを許す。他のイメージは許さない', () => {
-    const images = readComposeImages(['    image: chrislusf/seaweedfs:4.48', '    image: a/g:4.48'].join('\n'))
+    const images = readComposeImages(services(['chrislusf/seaweedfs:4.48', 'a/g:4.48']))
     assert.deepEqual(findUnpinned(images), ['a/g:4.48'])
   })
 })

@@ -3,6 +3,7 @@
 # CI の検査の script を、手元と CI で同じようにまとめて流す（CI の検査）
 #
 #   使い方：scripts/ci/check-all.sh（どこから流してもよい）
+#   commit の前の hook は、環境変数 CHECK_TESTS・CHECK_SCRIPTS で実行するものを絞る（実行する所のコメント）。
 #
 # 流すもの：
 #   1. script のテスト（scripts/ci/ と scripts/dev/ の下のすべての *.test.mjs と、skill（.claude/skills/）の下のすべての *.test.cjs）
@@ -70,14 +71,30 @@ run_check() {
 
 # script のテストは node --test の出力で、要約の行の形ではないので、テストの数（tests N）が 1 件以上かで判定する（tests）。
 # glob が 1 件も一致しないと、node --test は tests 0 で終了コード 0 になるため
-run_check "script のテスト" tests node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
+# commit の前の hook は、選んだテストと検査だけを CHECK_TESTS・CHECK_SCRIPTS（空白で区切る）で渡す。渡さなければ全てを実行する。
+# 選んだものが空なら実行しない（hook の選び方は scripts/dev/lib/pre-commit-select.mjs）
+if [ -z "${CHECK_TESTS+set}" ]; then
+  run_check "script のテスト" tests node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
+elif [ -n "$CHECK_TESTS" ]; then
+  # shellcheck disable=SC2086 # 空白で区切った一覧を、ファイルごとの引数にする
+  run_check "script のテスト" tests node --test $CHECK_TESTS
+fi
 
 for script in scripts/ci/*.mjs; do
   case "$script" in
     *.test.mjs) continue ;;
   esac
-  run_check "$(basename "$script" .mjs)" summary node "$script"
+  name="$(basename "$script" .mjs)"
+  if [ -n "${CHECK_SCRIPTS+set}" ] && [[ " $CHECK_SCRIPTS " != *" $name "* ]]; then
+    continue
+  fi
+  run_check "$name" summary node "$script"
 done
+
+# commit の前の hook は、追加行の warning を自分で表示するので、差分の文体の検査を実行しない
+if [ -n "${CHECK_SCRIPTS+set}" ]; then
+  exit $failed
+fi
 
 # 差分の追加行の文体の検査は、引数（--changed）が必要なので、直下の検査とは別に実行する。
 # 警告は GitHub Actions の注釈の行（「::warning file=<ファイル>,line=<行>::<内容>」）で出る。通ったときの出し方は、実行する所で分ける。

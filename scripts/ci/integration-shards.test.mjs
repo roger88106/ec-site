@@ -23,7 +23,7 @@ describe('統合テストを分ける数の読み取り', () => {
   test('ci.yml の matrix の shard の一覧の数を読む', () => {
     assert.equal(readCiShardCount(CI).count, 2)
     assert.equal(readCiShardCount(CI.replace('[1, 2]', '[1, 2, 3]')).count, 3)
-    assert.equal(readCiShardCount(CI).line, 6)
+    assert.equal(readCiShardCount(CI).job, 'backend-integration')
   })
 
   test('ブロック形式の shard の一覧も読む', () => {
@@ -37,9 +37,9 @@ describe('統合テストを分ける数の読み取り', () => {
     assert.match(readCiShardCount(CI.replace('[1, 2]', '[]')).reason, /読めない/)
   })
 
-  test('shard の一覧が複数あると読めない', () => {
-    const two = `${CI}\n        shard: [1]`
-    assert.match(readCiShardCount(two).reason, /複数/)
+  test('shard の一覧が複数の job にあると読めない', () => {
+    const two = `${CI}\n  other:\n    strategy:\n      matrix:\n        shard: [1]`
+    assert.match(readCiShardCount(two).reason, /複数の job（backend-integration、other）/)
   })
 
   test('build.gradle.kts の既定の数を読む', () => {
@@ -67,10 +67,15 @@ describe('統合テストを分ける数の食い違い', () => {
     assert.match(problems[0], /2/)
   })
 
-  test('読めない書き方は、ファイル:行 内容（理由）の形で失敗にする', () => {
+  test('読めない書き方は、ファイルと job と値を示して失敗にする', () => {
     const problems = findShardCountProblems(CI.replace('[1, 2]', '${{ fromJSON(vars.SHARDS) }}'), GRADLE)
     assert.equal(problems.length, 1)
-    assert.match(problems[0], /^\.github\/workflows\/ci\.yml:6 shard: \$\{\{ fromJSON\(vars\.SHARDS\) \}\}（/)
+    assert.match(problems[0], /^\.github\/workflows\/ci\.yml：backend-integration の shard を読めない.*fromJSON/)
+  })
+
+  test('.orElse が数でないときは、ファイル:行 内容（理由）の形で失敗にする', () => {
+    const problems = findShardCountProblems(CI, GRADLE.replace('orElse(2)', 'orElse(n)'))
+    assert.match(problems[0], /^backend\/ecsite\/build\.gradle\.kts:2 val shardCount/)
   })
 
   test('どちらかが見つからないときも失敗にする', () => {

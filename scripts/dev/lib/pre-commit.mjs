@@ -1,13 +1,16 @@
-// commit の前の hook（scripts/dev/hooks/pre-commit）の処理。ステージした内容を取り出して、CI の検査を実行する。
+// commit の前の hook（scripts/dev/hooks/pre-commit）の処理。ステージした内容を取り出して、ステージしたファイルに関係する CI の検査を実行する。
+// 選び方は pre-commit-select.mjs。取り出した先には、元のリポジトリの node_modules へのリンクを置き、検査が依存を読めるようにする。
+//
 // 今のブランチが develop か main なら、検査の前に commit を失敗にする（直接 commit しない規則。AGENTS.md の Git の表）。
 // detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。
-// CI の検査には日本語の文の検査（ja-text）が含まれ、ステージした内容の error は失敗にする。
+//
 // 検査が通ったら、ステージした追加行の warning だけを表示する（追加していない既存の行の warning は表示しない。warning は失敗にしない）
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, symlinkSync, unlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { ADDED_DIFF_ARGS } from '../../ci/lib/added-diff.mjs'
+import { fileReader, listChecksAndTests, selectChecks } from './pre-commit-select.mjs'
 
 /** 取り出しに失敗したときの終了コード（検査の失敗の 1 と区別する） */
 export const CHECKOUT_FAILED = 2
@@ -116,8 +119,8 @@ export function checkShell(env) {
 
 /**
  * 今のブランチが develop か main なら、何もせずに 4 を返す。
- * そうでなければ、ステージした内容を一時ディレクトリに取り出し、そこで CI の検査を実行して、hook の終了コードを返す。
- * 取り出しに失敗したら 2、そうでなければ検査の終了コード（検査が終了コードを返さなければ 1）。
+ * そうでなければ、ステージした内容を一時ディレクトリに取り出し、そこでステージしたファイルに関係する CI の検査を実行して、hook の終了コードを返す。
+ * 取り出しかステージしたファイルの一覧に失敗したら 2、そうでなければ検査の終了コード（検査が終了コードを返さなければ 1）。
  * 一時ディレクトリは、成功でも失敗でも消す。
  *
  * @param {object} deps 外部の処理（テストで差し替える）
@@ -126,6 +129,9 @@ export function checkShell(env) {
  * @param {string | null} deps.branch 今のブランチの名前。detached HEAD か読めなければ null
  * @param {Record<string, string | undefined>} deps.env 環境変数
  * @param {(prefix: string, env: Record<string, string | undefined>) => number | null} deps.checkout ステージした内容を prefix の下に取り出す。終了コードを返す
+ * @param {(env: Record<string, string | undefined>) => { status: number | null, files: string[] }} deps.listStaged ステージしたファイル（削除と改名の元を含む）を返す
+ * @param {(files: string[], staged: string) => { all: boolean, checks: string[], tests: string[] }} deps.select 取り出した先で、実行する検査とテストを選ぶ
+ * @param {(staged: string) => void} deps.linkModules 取り出した先に、元のリポジトリの node_modules へのリンクを置く
  * @param {(script: string, env: Record<string, string | undefined>) => number | null} deps.runCheck 検査の script を実行する。終了コードを返す
  * @param {(env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.diffAdded ステージした差分（-U0）を返す
  * @param {(staged: string, env: Record<string, string | undefined>, diff: string) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で、差分（diff）の追加行の warning の一覧を出力する（ja-text --warning --added）
@@ -135,7 +141,7 @@ export function checkShell(env) {
  * @param {(dir: string) => void} deps.removeTemp 一時ディレクトリを消す
  * @returns {number} hook の終了コード
  */
-export function runPreCommit({ root, gitDir, branch, env, checkout, runCheck, diffAdded, listWarnings, print, printError, makeTemp, removeTemp }) {
+export function runPreCommit({ root, gitDir, branch, env, checkout, listStaged, select, linkModules, runCheck, diffAdded, listWarnings, print, printError, makeTemp, removeTemp }) {
   // ブランチの誤りは、時間のかかる検査の前に知らせる
   const rejection = branchRejection(branch)
   if (rejection !== null) {
@@ -147,8 +153,18 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, runCheck, di
   const staged = makeTemp()
   try {
     if (checkout(`${staged}/`, baseEnv) !== 0) return CHECKOUT_FAILED
+    const stagedFiles = listStaged(baseEnv)
+    if (stagedFiles.status !== 0) return CHECKOUT_FAILED
+    linkModules(staged)
+    const selection = select(stagedFiles.files, staged)
+    if (!selection.all) print(`commit の前の検査：ステージしたファイルに関係する検査 ${selection.checks.length} 件とテストのファイル ${selection.tests.length} 件を実行する（CI は全てを実行する）`)
     // 検査の script は git（ls-files、log など）を呼ぶ。リポジトリは元のものを使い、作業ツリーだけを取り出した先にする
-    const checkEnv = { ...baseEnv, GIT_DIR: gitDir, GIT_WORK_TREE: staged }
+    const checkEnv = {
+      ...baseEnv,
+      GIT_DIR: gitDir,
+      GIT_WORK_TREE: staged,
+      ...(selection.all ? {} : { CHECK_TESTS: selection.tests.join(' '), CHECK_SCRIPTS: selection.checks.join(' ') }),
+    }
     const status = runCheck(`${staged}/scripts/ci/check-all.sh`, checkEnv)
     if (status !== 0) return status ?? 1
     // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする。
@@ -183,6 +199,19 @@ export function main() {
     env: process.env,
     checkout: (prefix, env) =>
       spawnSync('git', ['-c', 'core.longpaths=true', 'checkout-index', '-a', `--prefix=${toSlash(prefix)}`], { env, stdio: 'inherit' }).status,
+    listStaged: (env) => {
+      // 改名は、元と先の両方のパスで選ぶ（元を参照していた検査も実行するため）
+      const result = spawnSync('git', ['-c', 'core.quotePath=false', 'diff', '--cached', '--name-only', '--no-renames', '-z'], { env, encoding: 'utf8' })
+      return { status: result.status, files: (result.stdout ?? '').split('\0').filter((file) => file !== '') }
+    },
+    select: (files, staged) => {
+      const { checks, tests } = listChecksAndTests(staged)
+      return selectChecks({ staged: files, checks, tests, read: fileReader(staged) })
+    },
+    linkModules: (staged) => {
+      // Windows でも管理者の権限なしで作れる junction にする（Windows 以外では、ふつうのリンクになる）
+      if (existsSync(path.join(root, 'node_modules'))) symlinkSync(path.join(root, 'node_modules'), path.join(staged, 'node_modules'), 'junction')
+    },
     runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     diffAdded: (env) => {
       // --changed と同じ引数（lib/added-diff）。CI の注釈と同じ判定にする
@@ -198,6 +227,10 @@ export function main() {
     print: (text) => console.log(text),
     printError: (text) => console.error(text),
     makeTemp: () => toSlash(mkdtempSync(path.join(tmpdir(), 'pre-commit.'))),
-    removeTemp: (dir) => rmSync(dir, { recursive: true, force: true }),
+    removeTemp: (dir) => {
+      // リンクを先に外す。リンクの先（元のリポジトリの node_modules）を消さないため
+      if (existsSync(path.join(dir, 'node_modules'))) unlinkSync(path.join(dir, 'node_modules'))
+      rmSync(dir, { recursive: true, force: true })
+    },
   })
 }

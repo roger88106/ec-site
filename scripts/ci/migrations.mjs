@@ -12,11 +12,12 @@
 // 読めないもの（マイグレーションが 0 件、閉じていない文字列・コメント・ドル引用）も失敗にする。分岐点を求めるので、shallow clone では失敗する。
 //
 // 失敗したとき：適用済みのマイグレーションは元に戻し、変更は新しいマイグレーションで加える。互換性のない変更は 3 段に分ける。
-// 除外：互換性のない変更だけ、migrations-exclusions.json に {キー: 理由} を書く。
+// 除外：互換性のない変更だけ、migrations-exclusions.json（なければ作る）に {キー: 理由} を書く。
 // キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値。例：V202611010900__x.sql:列の削除）で、同じファイルの同じ種類の変更全てに当たる。
 // 理由には、どのリリースで使わなくなったかを書く。理由のない除外と、当たる変更がなくなった除外は失敗にする。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { emptyListReason, splitNulList } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
@@ -431,7 +432,8 @@ if (isMain(import.meta.url)) {
     const readBlob = (blob) => git(['cat-file', 'blob', blob])
     findChangedMigrations(differing, (file) => readBlob(base.get(file)), (file) => readBlob(current.get(file))).forEach((file) => changed.add(file))
   }
-  const exclusions = readExclusions(exclusionsPath('migrations-exclusions.json'))
+  // 除外がないときは、一覧のファイルを置かない（加えるときに作る）
+  const exclusions = existsSync(exclusionsPath('migrations-exclusions.json')) ? readExclusions(exclusionsPath('migrations-exclusions.json')) : {}
   const scan = scanMigrations(files, (file) => git(['cat-file', 'blob', current.get(file)]), exclusions)
   const exclusionProblems = checkExclusions('migrations-exclusions.json', exclusions, (key) => scan.used.has(key))
   for (const file of removed) {

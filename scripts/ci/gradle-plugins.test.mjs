@@ -28,25 +28,17 @@ describe('カタログのプラグインの読み取り', () => {
     assert.deepEqual(readCatalogPlugins('[plugins]\nfoo = "org.foo.bar:1.0"\n'), { ids: ['org.foo.bar'], unknown: [] })
   })
 
-  test('[plugins.名前] の表は読めないので、行を出す', () => {
+  test('[plugins.名前] の表の id も読む', () => {
     const result = readCatalogPlugins('[plugins]\na = { id = "a.b" }\n[plugins.baz]\nid = "org.baz"\nversion = "1"\n')
-    assert.deepEqual(result.ids, ['a.b'])
-    assert.equal(result.unknown[0].line, 3)
+    assert.deepEqual(result, { ids: ['a.b', 'org.baz'], unknown: [] })
   })
 
-  test('複数行の表は読めないので、行を出す', () => {
-    const result = readCatalogPlugins('[plugins]\nfoo = {\n  id = "a.b",\n  version = "1"\n}\n')
-    assert.equal(result.unknown[0].line, 2)
-    assert.ok(result.unknown.length >= 1)
+  test('id のない表は読めないので、項目の名前を出す', () => {
+    assert.deepEqual(readCatalogPlugins('[plugins]\nfoo = { version = "1" }\n'), { ids: [], unknown: ['foo'] })
   })
 
-  test('id のない表と、知らない行は読めないので、行を出す', () => {
-    const result = readCatalogPlugins('[plugins]\nfoo = { version = "1" }\nbar\n')
-    assert.deepEqual(result.unknown.map((item) => item.line), [2, 3])
-  })
-
-  test('[plugins] の外の知らない行は読まない', () => {
-    assert.deepEqual(readCatalogPlugins('[versions]\nfoo = {\n[bundles]\nx\n'), { ids: [], unknown: [] })
+  test('TOML として読めないときは例外にする（検査が失敗する）', () => {
+    assert.throws(() => readCatalogPlugins('[plugins]\nbar\n'))
   })
 })
 

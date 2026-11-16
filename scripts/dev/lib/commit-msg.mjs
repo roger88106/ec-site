@@ -1,6 +1,6 @@
 // commit-msg の hook（scripts/dev/hooks/commit-msg）の処理。メッセージのファイルに、日本語の文の検査（scripts/ci/ja-text.mjs --message <ファイル>）を実行する。
 // error があれば、hook は失敗にする。検査の出力は hook の利用者のために表示する。
-// 判定は check-all と同じ judgeCheck（scripts/ci/lib/check-result.mjs）の summary で行う。終了コードが 0 でも、出力の最後の行が要約の行でなければ失敗にする（検査が何も調べずに終わったときに成功にしないため）。
+// 判定は check-all と同じ judgeCheck の summary で行う（検査が何も調べずに終わったときに成功にしないため）。
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'

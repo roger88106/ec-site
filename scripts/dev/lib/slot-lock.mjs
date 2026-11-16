@@ -1,6 +1,6 @@
 // ロックの取得の手順。スロットの割り当てのロック（scripts/dev/slot.mjs）と E2E のロック（e2e/scripts/run.ts）が使う。
-// ロックの中身と古さの判定は E2E のロック（e2e-lock.mjs）と同じ：所有者の PID のプロセスがなければ古い。
-// ファイルの操作とプロセスの確認は、呼ぶ側（scripts/dev/slot.mjs）が io と isRunning で渡す。
+// ロックの中身と古さの判定は e2e-lock.mjs。
+// ファイルの操作とプロセスの確認は、呼ぶ側（scripts/dev/slot.mjs、e2e/scripts/run.ts）が io と isRunning で渡す。
 import { decideLock, decideTakeover, formatLock, parseLock } from './e2e-lock.mjs'
 
 /** 判定のやり直しが続くときに、waitMs が短くても待つ最低の時間（ミリ秒） */

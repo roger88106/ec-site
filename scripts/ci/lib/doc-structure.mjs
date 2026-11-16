@@ -1,10 +1,5 @@
-// 文書の構造（見出しの名前と順）と、ID（US・DS・AC・BR・NFR・DC・DN・T）の定義と参照を読む関数。
-// spec・plan・tasks の構造の検査（spec-structure）と、固定の節に書き換えた機能仕様の検査が使う。Mermaid の検査（mermaid/mermaid-check）は、readDocument を使う。規則の文書の節の検査（rule-sections）は、readDocument、readHeadings、SETEXT_UNDERLINE を使う。
+// 文書の構造（見出しの名前と順）と、ID（US・DS・AC・BR・NFR・DC・DN・T）の定義と参照を読む。
 // 見出しと ID は、コードブロックと HTML のコメント（lib/code-block）と、1 行のコード（lib/code-span）の中を読まない。
-//   - 見出し：ATX の見出し（`## 名前`。閉じの `#` は名前に含めない）と、Setext の見出し（段落の行の直後の `---` は `##`、`===` は `#`。段落の前は空行・ATX の見出し・区切り線・文書の始めだけで、箇条・引用・HTML のブロックの続きの行や、4 個以上字下げした行は見出しにしない）
-//   - ID の定義は 3 つ：字下げしない箇条の先頭の太字、見出しの先頭の US・DS、タスクの行の先頭の太字。他の太字は参照として読む
-//   - ID の参照：範囲（`〜`、`～`、`~`。前後の空白を許す）と列挙（`、`）を展開する。列挙に読むのは、許可する形（ENUM_END、同じ spec の `、7-32`）だけ。
-//     タスクの ID の列挙は、2 桁の連番（`、02`、`、02〜03`）を読む。2 桁でない数（`、3`）は、列挙の終わりが続くなら、2 桁でない問題にする。範囲の端には、同じ接頭辞と同じ番号の ID（`DS-<番号>-2〜DS-<番号>-8`）も書ける
 import { readBlocks } from './code-block.mjs'
 import { replaceCodeSpans } from './code-span.mjs'
 
@@ -109,7 +104,9 @@ export function checkUnclosedCodeBlocks(text) {
 }
 
 /**
- * 見出し（ATX と Setext）を読む。コードブロックと HTML のコメントの中は読まない。
+ * 見出し（ATX と Setext）を読む。コードブロックと HTML のコメントの中は読まない。<br />
+ * ATX の見出し（`## 名前`）の閉じの `#` は名前に含めない。Setext の見出しは、段落の行の直後の `---`（`##`）と `===`（`#`）。
+ * 段落の前は空行・ATX の見出し・区切り線・文書の始めだけで、箇条・引用・HTML のブロックの続きの行や、4 個以上字下げした行は見出しにしない。
  *
  * @param {string} text 文書の内容
  * @returns {{ level: number, title: string, line: number }[]} 見出しの深さ、名前、行（1 から。Setext の見出しは段落の最初の行）。出る順
@@ -174,7 +171,8 @@ export function checkSections(headings, level, required, { extra = () => false }
 }
 
 /**
- * ID の定義を集める。
+ * ID の定義を集める。<br />
+ * 定義は 3 つ：字下げしない箇条の先頭の太字、見出しの先頭の US・DS、タスクの行の先頭の太字。他の太字は参照として読む。
  *
  * @param {string} text 文書の内容
  * @returns {{ id: string, kind: 'bold' | 'heading' | 'task', prefix: string, number: string, stage?: string, seq: string, line: number }[]}
@@ -242,7 +240,10 @@ function readTail(line, position, first, { head, number, listElement }) {
 }
 
 /**
- * ID の参照を集める。全ての spec の番号の参照を返す（どの spec の番号を調べるかは呼ぶ側が決める）。
+ * ID の参照を集める。全ての spec の番号の参照を返す（どの spec の番号を調べるかは呼ぶ側が決める）。<br />
+ * 範囲（`〜`、`～`、`~`。前後の空白を許す）と列挙（`、`）を展開する。列挙に読むのは、許可する形（ENUM_END、同じ spec の `、7-32`）だけ。
+ * タスクの ID の列挙は、2 桁の連番（`、02`、`、02〜03`）を読み、2 桁でない数（`、3`）は、列挙の終わりが続くなら問題にする。
+ * 範囲の端には、同じ接頭辞と同じ番号の ID（`DS-<番号>-2〜DS-<番号>-8`）も書ける。
  *
  * @param {string} text 文書の内容
  * @returns {{ references: { id: string, number: string, line: number, text: string }[], problems: string[] }}

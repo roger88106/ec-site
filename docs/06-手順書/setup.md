@@ -54,7 +54,7 @@ pnpm dev
 
   | hook | 書く 1 行 | 実行するもの |
   |------|-----------|--------------|
-  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh`。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める。今のブランチが `develop` か `main` なら、検査の前に commit を失敗にし、作業ブランチの作り方を示す（detached HEAD は通す）※1。pre-commit hook を置いていないときは ※2 |
+  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh` のうち、ステージしたファイルに関係する検査とテスト（選び方は [CI の検査の script](ci-checks.md)の「commit の前の hook」）。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める。今のブランチが `develop` か `main` なら、検査の前に commit を失敗にし、作業ブランチの作り方を示す（detached HEAD は通す）※1。pre-commit hook を置いていないときは ※2 |
   | `.git/hooks/commit-msg` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/commit-msg" "$1" \|\| exit 1` | `ja-text --message` で、メッセージの error（使わない語）を調べ、あれば commit は失敗する |
 
   ※1：git が pre-commit hook を実行しない `git merge`・`git cherry-pick`・`git revert`・`git am` は、`develop`・`main` の上でも失敗にならない。

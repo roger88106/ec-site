@@ -8,7 +8,11 @@ import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
-import { createDeps, GH_BUDGET_MS, GIT_TIMEOUT_MS, handleInput, judgeCommand, parseCommands, parseGitInvocation, resolveDir, splitCommands } from './agent-guard.mjs'
+import { createDeps, GIT_TIMEOUT_MS, handleInput, judgeCommand } from './agent-guard.mjs'
+import { parseCommands, resolveDir } from './agent-guard/commands.mjs'
+import { parseGitInvocation } from './agent-guard/git-rules.mjs'
+import { GH_BUDGET_MS } from './agent-guard/merge-rules.mjs'
+import { splitCommands } from './agent-guard/shell-words.mjs'
 
 /** リポジトリ（作業ツリー）の根 */
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')

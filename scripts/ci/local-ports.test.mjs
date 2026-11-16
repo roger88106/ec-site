@@ -53,12 +53,12 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.deepEqual(readComposeHostPorts(COMPOSE), { ports: [5432, 2525], unreadable: [] })
   })
 
-  test('compose のホスト側のポートを読めない項目（既定値のない変数、範囲）は、ファイルと行を出して失敗にする', () => {
+  test('compose のホスト側のポートを読めない項目（既定値のない変数、範囲）は、ファイルとサービスを出して失敗にする', () => {
     const extra = ['  extra:', '    ports:', '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80"', '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80"']
     const problems = findPortMismatches({ ...INPUT, compose: [COMPOSE, ...extra].join('\n') })
     assert.equal(problems.length, 2)
-    assert.match(problems[0], /docker\/compose\.yaml:10 .*NEW_PORT/)
-    assert.match(problems[1], /docker\/compose\.yaml:11 .*9000-9001/)
+    assert.match(problems[0], /docker\/compose\.yaml extra：.*NEW_PORT/)
+    assert.match(problems[1], /docker\/compose\.yaml extra：.*9000-9001/)
   })
 
   test('文書のポートは、コロンの後の数字だけを読む（カード番号などは読まない）', () => {

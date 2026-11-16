@@ -85,8 +85,17 @@ describe('commit するブランチ', () => {
 })
 
 /** 呼び出しを記録する外部の処理を作る */
-function fakeDeps({ branch = '1-work', checkout = 0, check = 0, env = {}, diff = { status: 0, stdout: '' }, warnings = { status: 0, stdout: '' } } = {}) {
-  const calls = { checkout: [], runCheck: [], removed: [], diff: 0, warnings: 0, printed: [], errors: [], temps: 0 }
+function fakeDeps({
+  branch = '1-work',
+  checkout = 0,
+  check = 0,
+  env = {},
+  diff = { status: 0, stdout: '' },
+  warnings = { status: 0, stdout: '' },
+  staged = { status: 0, files: ['docs/a.md'] },
+  selection = { all: true, checks: [], tests: [] },
+} = {}) {
+  const calls = { checkout: [], runCheck: [], removed: [], linked: [], selected: [], diff: 0, warnings: 0, printed: [], errors: [], temps: 0 }
   return {
     calls,
     deps: {
@@ -95,6 +104,9 @@ function fakeDeps({ branch = '1-work', checkout = 0, check = 0, env = {}, diff =
       branch,
       env,
       checkout: (prefix, e) => (calls.checkout.push({ prefix, env: e }), checkout),
+      listStaged: () => staged,
+      select: (files, dir) => (calls.selected.push({ files, dir }), selection),
+      linkModules: (dir) => calls.linked.push(dir),
       runCheck: (script, e) => (calls.runCheck.push({ script, env: e }), check),
       diffAdded: () => (calls.diff++, diff),
       listWarnings: () => (calls.warnings++, warnings),
@@ -169,6 +181,34 @@ describe('検査の実行と終了コード', () => {
     const expected = path.join('/repo', '.git/next-index')
     assert.equal(calls.checkout[0].env.GIT_INDEX_FILE, expected)
     assert.equal(calls.runCheck[0].env.GIT_INDEX_FILE, expected)
+  })
+
+  test('取り出した先に node_modules のリンクを置き、ステージしたファイルから検査を選ぶ', () => {
+    const { deps, calls } = fakeDeps()
+    runPreCommit(deps)
+    assert.deepEqual(calls.linked, ['/tmp/staged'])
+    assert.deepEqual(calls.selected, [{ files: ['docs/a.md'], dir: '/tmp/staged' }])
+  })
+
+  test('選んだ検査とテストを CHECK_SCRIPTS・CHECK_TESTS で渡し、件数を表示する', () => {
+    const { deps, calls } = fakeDeps({ selection: { all: false, checks: ['doc-refs', 'ja-text'], tests: ['scripts/ci/ja-text.test.mjs'] } })
+    assert.equal(runPreCommit(deps), 0)
+    assert.equal(calls.runCheck[0].env.CHECK_SCRIPTS, 'doc-refs ja-text')
+    assert.equal(calls.runCheck[0].env.CHECK_TESTS, 'scripts/ci/ja-text.test.mjs')
+    assert.match(calls.printed[0], /検査 2 件とテストのファイル 1 件/)
+  })
+
+  test('全てを実行するときは、CHECK_SCRIPTS・CHECK_TESTS を渡さない', () => {
+    const { deps, calls } = fakeDeps()
+    runPreCommit(deps)
+    assert.equal('CHECK_SCRIPTS' in calls.runCheck[0].env, false)
+    assert.equal('CHECK_TESTS' in calls.runCheck[0].env, false)
+  })
+
+  test('ステージしたファイルの一覧を読めなければ、検査を実行せずに 2 を返す', () => {
+    const { deps, calls } = fakeDeps({ staged: { status: 128, files: [] } })
+    assert.equal(runPreCommit(deps), CHECKOUT_FAILED)
+    assert.equal(calls.runCheck.length, 0)
   })
 
   test('GIT_INDEX_FILE がなければ、環境変数に加えない', () => {
@@ -270,6 +310,7 @@ describe('実際の hook', () => {
     'scripts/dev/hooks/commit-msg',
     'scripts/dev/lib/pre-commit.mjs',
     'scripts/dev/lib/pre-commit-main.mjs',
+    'scripts/dev/lib/pre-commit-select.mjs',
     'scripts/dev/lib/commit-msg.mjs',
     'scripts/dev/lib/commit-msg-main.mjs',
     'scripts/ci/ja-text.mjs',

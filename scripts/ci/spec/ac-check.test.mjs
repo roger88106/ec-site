@@ -449,35 +449,44 @@ describe('AC 一覧の読み取り', () => {
   test('マーカーの範囲の中の、表の行でない行（セルの中の改行の続き）を問題にする', () => {
     const { problems } = readAcList(listDoc('| AC-1 | order | 有効 | ' + ORIGIN + ' | — | 一行目', '二行目 |'))
     assert.ok(problems.length > 0)
+    assert.match(problems[0], /表の行でない行がある/)
   })
 
   test('AC の番号を読めない行（0 埋め、小文字、空白の区切り）を問題にする', () => {
     for (const ac of ['AC-07-1', 'ac-7-1', 'AC 7-1']) {
-      assert.equal(readAcList(listDoc(listRow({ ac }))).problems.length, 1, ac)
+      const { problems } = readAcList(listDoc(listRow({ ac })))
+      assert.equal(problems.length, 1, ac)
+      assert.match(problems[0], /AC の番号の形が違う/, ac)
     }
   })
 
   test('表の見出しが AC・モジュール・状態・元の spec・変えた spec・今の内容でなければ問題にする', () => {
     const document = listDoc(listRow()).replace('| AC | モジュール | 状態 |', '| AC | 状態 | モジュール |')
-    assert.equal(readAcList(document).problems.length, 1)
+    const { problems } = readAcList(document)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /AC 一覧の列が .* でない/)
   })
 
   test('AC 一覧のマーカーの範囲がない、重複している、閉じが前にあるときは失敗にする', () => {
     const body = [...LIST_HEADER, listRow()]
     const cases = [
-      ['# AC 一覧', ...body].join('\n'),
-      ['<!-- generated:ac-list -->', ...body, '<!-- /generated:ac-list -->', '<!-- generated:ac-list -->', '<!-- /generated:ac-list -->'].join('\n'),
-      ['<!-- /generated:ac-list -->', ...body, '<!-- generated:ac-list -->'].join('\n'),
-      ['<!-- generated:ac-list -->', ...body].join('\n'),
+      [['# AC 一覧', ...body].join('\n'), /範囲がない/],
+      [['<!-- generated:ac-list -->', ...body, '<!-- /generated:ac-list -->', '<!-- generated:ac-list -->', '<!-- /generated:ac-list -->'].join('\n'), /開きが 2 個、閉じが 2 個/],
+      [['<!-- /generated:ac-list -->', ...body, '<!-- generated:ac-list -->'].join('\n'), /より前にある/],
+      [['<!-- generated:ac-list -->', ...body].join('\n'), /開きが 1 個、閉じが 0 個/],
     ]
-    for (const document of cases) {
-      assert.ok(readAcList(document).problems.length > 0, document)
+    for (const [document, reason] of cases) {
+      const { problems } = readAcList(document)
+      assert.ok(problems.length > 0, document)
+      assert.match(problems[0], reason, document)
     }
   })
 
   test('既知のマーカーのどれとも一致しない generated: のコメント（綴りの誤り）を失敗にする', () => {
     const document = listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n<!-- generated:modul-ac -->')
-    assert.equal(readAcList(document).problems.length, 1)
+    const { problems } = readAcList(document)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /知らない生成の印/)
   })
 
   test('表の途中（AC の行の間）に空行があれば、表がそこで切れるので失敗にする', () => {
@@ -524,29 +533,40 @@ describe('AC 一覧の行の検査', () => {
   })
 
   test('同じ AC の行が 2 つあれば問題にする', () => {
-    assert.equal(listProblems(listRow(), listRow()).length, 1)
+    const problems = listProblems(listRow(), listRow())
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /同じ AC の行が/)
   })
 
   test('状態が有効・変更・廃止のどれでもなければ問題にする', () => {
-    assert.equal(listProblems(listRow({ status: '有功' })).length, 1)
-    assert.equal(listProblems(listRow({ status: '' })).length, 1)
+    for (const status of ['有功', '']) {
+      const problems = listProblems(listRow({ status }))
+      assert.equal(problems.length, 1, status)
+      assert.match(problems[0], /状態が有効・変更・廃止のどれでもない/, status)
+    }
   })
 
   test('有効・変更の AC のモジュールが、空白だけ・「—」・「-」なら問題にする', () => {
     for (const module of ['', '—', '-']) {
-      assert.equal(listProblems(listRow({ module })).length, 1, module)
+      const problems = listProblems(listRow({ module }))
+      assert.equal(problems.length, 1, module)
+      assert.match(problems[0], /モジュールが、③ の名前か common の 1 つでない/, module)
     }
   })
 
   test('モジュールのセルに 2 つ書くと問題にする', () => {
     for (const module of ['order、cart', 'order, cart', 'order/cart']) {
-      assert.equal(listProblems(listRow({ module })).length, 1, module)
+      const problems = listProblems(listRow({ module }))
+      assert.equal(problems.length, 1, module)
+      assert.match(problems[0], /モジュールが、③ の名前か common の 1 つでない/, module)
     }
   })
 
   test('モジュールの名前の大文字小文字・全角半角の違い、.md やパスを付けた名前を問題にする', () => {
     for (const module of ['Order', 'ｏｒｄｅｒ', 'order.md', 'docs/03-機能仕様/order.md']) {
-      assert.equal(listProblems(listRow({ module })).length, 1, module)
+      const problems = listProblems(listRow({ module }))
+      assert.equal(problems.length, 1, module)
+      assert.match(problems[0], /モジュールが、③ の名前か common の 1 つでない/, module)
     }
   })
 
@@ -554,19 +574,25 @@ describe('AC 一覧の行の検査', () => {
     const deprecated = (module) => listRow({ module, status: '廃止', changedBy: 'MVP-019', content: '' })
     assert.deepEqual(listProblems(deprecated('')), [])
     assert.deepEqual(listProblems(deprecated('order')), [])
-    assert.equal(listProblems(deprecated('Order')).length, 1)
+    const problems = listProblems(deprecated('Order'))
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /廃止の AC のモジュールが、空でも ③ の名前でも common でもない/)
   })
 
   test('変更の AC の変えた spec が、空か「—」なら問題にする', () => {
     for (const changedBy of ['', '—']) {
       const row = listRow({ status: '変更', changedBy, content: '根拠は[注文モジュール](../../../docs/03-機能仕様/order.md)の「注文（集約）」。' })
-      assert.equal(listProblems(row).length, 1, changedBy)
+      const problems = listProblems(row)
+      assert.equal(problems.length, 1, changedBy)
+      assert.match(problems[0], /変更の AC の変えた spec がない/, changedBy)
     }
   })
 
   test('有効の AC の変えた spec が「—」以外なら問題にする', () => {
     for (const changedBy of ['', 'MVP-019', '-']) {
-      assert.equal(listProblems(listRow({ changedBy })).length, 1, changedBy)
+      const problems = listProblems(listRow({ changedBy }))
+      assert.equal(problems.length, 1, changedBy)
+      assert.match(problems[0], /有効の AC の変えた spec は「—」にする/, changedBy)
     }
   })
 
@@ -769,33 +795,47 @@ describe('AC 一覧の行の検査', () => {
 
   test('今の内容に、spec の中だけで通じる参照（※1、事実 2、US の番号、spec の節）があれば問題にする', () => {
     for (const content of ['注文できる※1。', '事実 2 のとおり。', 'US-4-1 の画面で注文できる。', 'spec の「スコープ」のとおり。']) {
-      assert.equal(listProblems(listRow({ content })).length, 1, content)
+      const problems = listProblems(listRow({ content }))
+      assert.equal(problems.length, 1, content)
+      assert.match(problems[0], /spec の中だけで通じる参照/, content)
     }
   })
 
   test('有効・変更の AC の今の内容が、空白だけ・「—」・「なし」・<…> の仮の値なら問題にする', () => {
     for (const content of ['', '—', 'なし', '<今の内容>']) {
-      assert.equal(listProblems(listRow({ content })).length, 1, content)
+      const problems = listProblems(listRow({ content }))
+      assert.equal(problems.length, 1, content)
+      assert.match(problems[0], /今の内容が空か仮の値/, content)
     }
   })
 
   test('今の内容が複数行（<br />）なら問題にする', () => {
-    assert.equal(listProblems(listRow({ content: '一行目。<br />二行目。' })).length, 1)
+    const problems = listProblems(listRow({ content: '一行目。<br />二行目。' }))
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /今の内容を複数行にしない/)
   })
 
   test('変更の AC の今の内容に、「<文書の名前>の「<見出し>」」の形がなければ問題にする', () => {
     const row = listRow({ status: '変更', changedBy: 'MVP-019', content: '1 円以上。' })
-    assert.equal(listProblems(row).length, 1)
+    const problems = listProblems(row)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /今の内容に、根拠を/)
   })
 
   test('common の AC の今の内容に、根拠の「<文書の名前>の「<見出し>」」の形がなければ問題にする', () => {
-    assert.equal(listProblems(listRow({ module: 'common', content: 'ポートは 8080。' })).length, 1)
+    const problems = listProblems(listRow({ module: 'common', content: 'ポートは 8080。' }))
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /今の内容に、根拠を/)
   })
 
   test('変更と common の AC の根拠が、リンクのない「…の「…」」なら問題にする（doc-refs が見出しを確認できない）', () => {
     const changed = listRow({ status: '変更', changedBy: 'MVP-019', content: '1 円以上。業務規則の「注文の成立」' })
-    assert.equal(listProblems(changed).length, 1)
-    assert.equal(listProblems(listRow({ module: 'common', content: 'ポートは 8080。根拠は構成の文書の「ポート」。' })).length, 1)
+    const changedProblems = listProblems(changed)
+    assert.equal(changedProblems.length, 1)
+    assert.match(changedProblems[0], /今の内容に、根拠を/)
+    const commonProblems = listProblems(listRow({ module: 'common', content: 'ポートは 8080。根拠は構成の文書の「ポート」。' }))
+    assert.equal(commonProblems.length, 1)
+    assert.match(commonProblems[0], /今の内容に、根拠を/)
   })
 
   test('廃止の AC は、今の内容が空でよい', () => {
@@ -926,32 +966,36 @@ describe('③ の「今有効な AC」の表の照合', () => {
     test(`表が古い：${name}`, () => {
       const checked = result(moduleDoc(inner))
       assert.equal(checked.problems.length, 1)
+      assert.match(checked.problems[0], /「今有効な AC」の表が AC 一覧と違う/)
       assert.equal(checked.stale, true)
     })
   }
 
   test('0 件のモジュールの範囲が「なし。」の 1 行以外（空の表、空欄）なら失敗にする', () => {
     for (const inner of [[...MODULE_HEADER], [], ['なし']]) {
-      assert.equal(checkModuleDoc({ text: moduleDoc(inner), module: 'cart', rows, required: true }).problems.length, 1, inner.join('/'))
+      const { problems } = checkModuleDoc({ text: moduleDoc(inner), module: 'cart', rows, required: true })
+      assert.equal(problems.length, 1, inner.join('/'))
+      assert.match(problems[0], /「今有効な AC」の表が AC 一覧と違う/, inner.join('/'))
     }
   })
 
   const broken = [
-    ['開きのマーカーだけがある', moduleDoc(table).replace('<!-- /generated:module-ac -->', '')],
-    ['閉じが開きより前にある', moduleDoc(table).replace('<!-- generated:module-ac -->', '@@').replace('<!-- /generated:module-ac -->', '<!-- generated:module-ac -->').replace('@@', '<!-- /generated:module-ac -->')],
-    ['同じマーカーの組が 2 組ある', moduleDoc(table, { after: ['', '<!-- generated:module-ac -->', 'なし。', '<!-- /generated:module-ac -->'] })],
-    ['マーカーが「今有効な AC」の節の外にある', moduleDoc(table).replace('<!-- generated:module-ac -->', '').replace('<!-- /generated:module-ac -->', '').replace('なし\n', 'なし\n\n<!-- generated:module-ac -->\nなし。\n<!-- /generated:module-ac -->\n')],
-    ['マーカーの範囲が「今有効な AC」の節をまたぐ', moduleDoc(table).replace('<!-- /generated:module-ac -->', '\n## 次の節\n\n<!-- /generated:module-ac -->')],
-    ['マーカーがあるのに「今有効な AC」の節がない', moduleDoc(table).replace('## 今有効な AC', '## 今の AC')],
-    ['既知のマーカーと一致しない generated: のコメント', moduleDoc(table, { after: ['', '<!-- generated:module-acs -->'] })],
-    ['AC 一覧のマーカーが ③ にある', moduleDoc(table, { after: ['', '<!-- generated:ac-list -->'] })],
-    ['構造の検査の対象の一覧にある ③ に、マーカーがない', moduleDoc(table).replace('<!-- generated:module-ac -->', '').replace('<!-- /generated:module-ac -->', '')],
-    ['マーカーをコードブロックや 1 行のコードの中にだけ書いた', moduleDoc(table).replace('<!-- generated:module-ac -->', '`<!-- generated:module-ac -->`').replace('<!-- /generated:module-ac -->', '```\n<!-- /generated:module-ac -->\n```')],
+    ['開きのマーカーだけがある', moduleDoc(table).replace('<!-- /generated:module-ac -->', ''), /開きが 1 個、閉じが 0 個/],
+    ['閉じが開きより前にある', moduleDoc(table).replace('<!-- generated:module-ac -->', '@@').replace('<!-- /generated:module-ac -->', '<!-- generated:module-ac -->').replace('@@', '<!-- /generated:module-ac -->'), /より前にある/],
+    ['同じマーカーの組が 2 組ある', moduleDoc(table, { after: ['', '<!-- generated:module-ac -->', 'なし。', '<!-- /generated:module-ac -->'] }), /開きが 2 個、閉じが 2 個/],
+    ['マーカーが「今有効な AC」の節の外にある', moduleDoc(table).replace('<!-- generated:module-ac -->', '').replace('<!-- /generated:module-ac -->', '').replace('なし\n', 'なし\n\n<!-- generated:module-ac -->\nなし。\n<!-- /generated:module-ac -->\n'), /節の外にあるか、節をまたぐ/],
+    ['マーカーの範囲が「今有効な AC」の節をまたぐ', moduleDoc(table).replace('<!-- /generated:module-ac -->', '\n## 次の節\n\n<!-- /generated:module-ac -->'), /節の外にあるか、節をまたぐ/],
+    ['マーカーがあるのに「今有効な AC」の節がない', moduleDoc(table).replace('## 今有効な AC', '## 今の AC'), /「今有効な AC」の節が 0 個ある/],
+    ['既知のマーカーと一致しない generated: のコメント', moduleDoc(table, { after: ['', '<!-- generated:module-acs -->'] }), /知らない生成の印/],
+    ['AC 一覧のマーカーが ③ にある', moduleDoc(table, { after: ['', '<!-- generated:ac-list -->'] }), /③ に AC 一覧の生成の印/],
+    ['構造の検査の対象の一覧にある ③ に、マーカーがない', moduleDoc(table).replace('<!-- generated:module-ac -->', '').replace('<!-- /generated:module-ac -->', ''), /の組がない/],
+    ['マーカーをコードブロックや 1 行のコードの中にだけ書いた', moduleDoc(table).replace('<!-- generated:module-ac -->', '`<!-- generated:module-ac -->`').replace('<!-- /generated:module-ac -->', '```\n<!-- /generated:module-ac -->\n```'), /の組がない/],
   ]
-  for (const [name, text] of broken) {
+  for (const [name, text, reason] of broken) {
     test(`失敗にし、--write もしない：${name}`, () => {
       const checked = result(text)
       assert.ok(checked.problems.length > 0)
+      assert.match(checked.problems[0], reason)
       assert.equal(checked.stale, false)
       assert.equal(checked.updated, null)
     })
@@ -979,6 +1023,7 @@ describe('③ の「今有効な AC」の表の照合', () => {
   test('構造の検査の対象の一覧にない ③ にマーカーがあれば失敗にする', () => {
     const checked = result(moduleDoc(table), false)
     assert.equal(checked.problems.length, 1)
+    assert.match(checked.problems[0], /にない ③ に、生成の印がある/)
     assert.equal(checked.updated, null)
   })
 
@@ -1059,7 +1104,9 @@ describe('進行中の spec の AC と AC 一覧', () => {
   })
 
   test('進行中の spec の AC が AC 一覧になければ、草案でも確定でも失敗にする', () => {
-    assert.equal(checkInProgress({ rows: rowsOf(listRow()), specs: spec('- **AC-5-1** 一つ目。') }).length, 1)
+    const problems = checkInProgress({ rows: rowsOf(listRow()), specs: spec('- **AC-5-1** 一つ目。') })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /AC-5-1 が AC 一覧にない/)
   })
 
   test('転記の後に spec から AC を消したのに、AC 一覧に有効のまま残れば失敗にする', () => {
@@ -1071,17 +1118,23 @@ describe('進行中の spec の AC と AC 一覧', () => {
 
   test('進行中の spec の AC の番号が、元の spec が別の既存の AC と重なれば失敗にする', () => {
     const rows = rowsOf(listRow({ ac: 'AC-12', origin: 'MVP-003' }))
-    assert.equal(checkInProgress({ rows, specs: spec('- **AC-12** 一つ目。') }).length, 1)
+    const problems = checkInProgress({ rows, specs: spec('- **AC-12** 一つ目。') })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /AC-12 の元の spec が、その AC を定義する進行中の spec/)
   })
 
   test('AC 一覧の元の spec がその進行中の spec かを、番号で比べる（別の番号、リンクの形、0 埋めの違いは失敗）', () => {
     for (const origin of ['6', '[5](../../08-spec/5-x/spec.md)', '05', '5-x', 'MVP-5', 'MVP-005']) {
       const rows = rowsOf(listRow({ ac: 'AC-5-1', origin }))
-      assert.equal(checkInProgress({ rows, specs: spec('- **AC-5-1** 一つ目。') }).length, 1, origin)
+      const problems = checkInProgress({ rows, specs: spec('- **AC-5-1** 一つ目。') })
+      assert.equal(problems.length, 1, origin)
+      assert.match(problems[0], /AC-5-1 の元の spec が、その AC を定義する進行中の spec/, origin)
     }
     const dev = [{ rel: '7-dev-process', ...parseSpecAcDefinitions('- **AC-7-1** 一つ目。', '7-dev-process') }]
     assert.deepEqual(checkInProgress({ rows: rowsOf(listRow({ ac: 'AC-7-1', origin: '7' })), specs: dev }), [])
-    assert.equal(checkInProgress({ rows: rowsOf(listRow({ ac: 'AC-7-1', origin: '007' })), specs: dev }).length, 1)
+    const zeroPadded = checkInProgress({ rows: rowsOf(listRow({ ac: 'AC-7-1', origin: '007' })), specs: dev })
+    assert.equal(zeroPadded.length, 1)
+    assert.match(zeroPadded[0], /AC-7-1 の元の spec が、その AC を定義する進行中の spec/)
   })
 
   test('spec から消した AC は、元の spec の番号がその spec の番号の行だけを問題にする', () => {

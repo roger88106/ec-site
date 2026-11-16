@@ -41,6 +41,10 @@ describe('用語集の識別子の検査', () => {
     assert.deepEqual(findMissing(['fiscal-year-start-month', 'no-such-name'], new Set(['fiscalYearStartMonth']), ''), ['no-such-name'])
   })
 
+  test('kebab-case の名前は、camelCase の語がなくても、コードの中身に同じ形で書いてあればコードにあるとみなす', () => {
+    assert.deepEqual(findMissing(['pre-commit', 'no-such-name'], new Set(), 'scripts/dev/hooks/pre-commit'), ['no-such-name'])
+  })
+
   test('コードの語にも、コードの中身にもない識別子を返す', () => {
     const tokens = new Set(['Order', 'occurredAt', 'sales_order'])
     const content = 'select * from ordering.sales_order; // com/ecsite/common/model/value/Money.java'

@@ -1,10 +1,10 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.RestoreFailures;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
+import com.ecsite.support.RestoreFailures;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
@@ -17,9 +17,9 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static com.ecsite.RestoreFailures.RECORDS;
-import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
+import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 import static org.mockito.Mockito.mock;
 
 /**

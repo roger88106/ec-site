@@ -1,9 +1,9 @@
 package com.ecsite.common.error;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.message.I18nMessage;
+import com.ecsite.support.config.IntegrationTest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.ProblemAssertions.problem;
+import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;

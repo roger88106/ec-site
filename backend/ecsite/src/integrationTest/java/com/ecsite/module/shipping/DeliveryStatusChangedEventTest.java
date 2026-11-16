@@ -1,14 +1,14 @@
 package com.ecsite.module.shipping;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.ShippingTestData;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged.Status;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.ShippingTestData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

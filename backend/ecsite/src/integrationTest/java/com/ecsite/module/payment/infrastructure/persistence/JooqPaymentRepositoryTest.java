@@ -1,7 +1,5 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
@@ -10,6 +8,8 @@ import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

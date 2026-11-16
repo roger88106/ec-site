@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
-import static com.ecsite.BusinessErrorAssertions.assertSystemError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

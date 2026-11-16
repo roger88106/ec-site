@@ -1,6 +1,5 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
@@ -16,6 +15,7 @@ import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

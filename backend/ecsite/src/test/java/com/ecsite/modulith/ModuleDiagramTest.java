@@ -1,7 +1,7 @@
 package com.ecsite.modulith;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.contract.Contracts;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

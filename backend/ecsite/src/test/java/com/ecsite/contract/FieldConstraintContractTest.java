@@ -1,7 +1,7 @@
 package com.ecsite.contract;
 
-import com.ecsite.DomainConstants;
 import com.ecsite.module.media.domain.ImageFormat;
+import com.ecsite.support.DomainConstants;
 import org.jooq.Field;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;

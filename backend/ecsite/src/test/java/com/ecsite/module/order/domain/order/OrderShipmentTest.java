@@ -14,8 +14,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertStatusChangedEventOnly;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

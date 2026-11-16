@@ -1,17 +1,17 @@
 package com.ecsite.module.order.application.job;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.LogCapture;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.checkout.CheckoutService;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.LogCapture;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,9 +33,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
+import static com.ecsite.support.data.OrderTestData.placeOrderRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

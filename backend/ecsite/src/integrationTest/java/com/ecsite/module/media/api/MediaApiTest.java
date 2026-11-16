@@ -1,14 +1,14 @@
 package com.ecsite.module.media.api;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.LogCapture;
-import com.ecsite.TestImages;
-import com.ecsite.TestcontainersConfig;
 import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.MediaService;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.MediaErrorCode;
+import com.ecsite.support.LogCapture;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.config.TestcontainersConfig;
+import com.ecsite.support.data.TestImages;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,10 +40,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static com.ecsite.jooq.media.Tables.ASSET;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

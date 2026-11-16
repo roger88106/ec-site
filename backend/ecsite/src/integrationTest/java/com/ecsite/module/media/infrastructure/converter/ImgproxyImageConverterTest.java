@@ -1,9 +1,9 @@
 package com.ecsite.module.media.infrastructure.converter;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.TestcontainersConfig;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.domain.MediaErrorCode;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.config.TestcontainersConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

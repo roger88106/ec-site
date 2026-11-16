@@ -1,6 +1,6 @@
 package com.ecsite.module.storefront.presentation;
 
-import com.ecsite.IntegrationTest;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

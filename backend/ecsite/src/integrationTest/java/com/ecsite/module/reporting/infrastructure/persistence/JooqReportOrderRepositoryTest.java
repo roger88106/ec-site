@@ -1,7 +1,5 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
 import com.ecsite.common.persistence.AdvisoryLocks;
@@ -13,6 +11,8 @@ import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrder;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
 import com.ecsite.module.reporting.domain.snapshot.StatusHistoryEntry;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.junit.jupiter.api.DisplayName;

@@ -1,10 +1,10 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.OrderTestData;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.module.order.presentation.CheckoutStartFixture.expectConfirmationRequired;
 import static com.ecsite.module.order.presentation.CheckoutStartFixture.expectLimitExceeded;
+import static com.ecsite.support.data.OrderTestData.startCheckoutRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;

@@ -1,8 +1,6 @@
 package com.ecsite.module.reporting.application;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.reporting.ReportTestData;
 import com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuery;
 import com.ecsite.module.reporting.application.model.view.AgeGroupSales;
 import com.ecsite.module.reporting.application.model.view.GenderSales;
@@ -11,6 +9,8 @@ import com.ecsite.module.reporting.domain.sales.AgeGroup;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportGender;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.support.ReportTestData;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

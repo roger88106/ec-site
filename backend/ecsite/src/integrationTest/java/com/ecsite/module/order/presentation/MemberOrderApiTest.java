@@ -1,15 +1,15 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestJson;
-import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.http.TestJson;
+import com.ecsite.support.security.TestTokens;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,10 +29,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.OrderTestData.orderBody;
-import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.member.Tables.MEMBER_;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
+import static com.ecsite.support.data.OrderTestData.orderBody;
+import static com.ecsite.support.data.OrderTestData.startCheckoutRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;

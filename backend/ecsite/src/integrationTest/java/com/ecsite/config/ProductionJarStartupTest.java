@@ -1,7 +1,7 @@
 package com.ecsite.config;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.TestcontainersConfig;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.TestcontainersConfig;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
 import org.junit.jupiter.api.AfterAll;

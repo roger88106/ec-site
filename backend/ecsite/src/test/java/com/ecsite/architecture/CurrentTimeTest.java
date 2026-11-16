@@ -1,6 +1,5 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.architecture.sample.currenttime.CallsCalendarGetInstance;
 import com.ecsite.architecture.sample.currenttime.CallsCurrentTimeMillis;
 import com.ecsite.architecture.sample.currenttime.CallsNowWithClock;
@@ -12,6 +11,7 @@ import com.ecsite.architecture.sample.currenttime.CreatesDefaultZoneClock;
 import com.ecsite.architecture.sample.currenttime.CreatesSystemClock;
 import com.ecsite.architecture.sample.currenttime.CreatesSystemUtcClock;
 import com.ecsite.architecture.sample.currenttime.ExampleClockConfig;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethodCall;

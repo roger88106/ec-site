@@ -1,14 +1,14 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.LogCapture;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.LogCapture;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.DisplayName;

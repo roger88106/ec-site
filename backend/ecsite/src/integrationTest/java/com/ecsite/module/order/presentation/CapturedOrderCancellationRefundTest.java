@@ -1,17 +1,17 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
-import com.ecsite.ShippingTestData;
-import com.ecsite.TestTokens;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.data.ShippingTestData;
+import com.ecsite.support.security.TestTokens;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

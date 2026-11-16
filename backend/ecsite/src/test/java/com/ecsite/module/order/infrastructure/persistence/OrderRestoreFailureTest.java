@@ -1,9 +1,9 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.RestoreFailures;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
+import com.ecsite.support.RestoreFailures;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,10 +17,10 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static com.ecsite.RestoreFailures.RECORDS;
-import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_LINE;
+import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 import static org.mockito.Mockito.mock;
 
 /**

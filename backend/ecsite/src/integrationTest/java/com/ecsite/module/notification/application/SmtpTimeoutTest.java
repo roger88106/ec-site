@@ -1,9 +1,9 @@
 package com.ecsite.module.notification.application;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.order.event.OrderShipped;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;

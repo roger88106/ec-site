@@ -1,8 +1,8 @@
 package com.ecsite.module.tax.presentation;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.TestJson;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.http.TestJson;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,6 +1,5 @@
 package com.ecsite.module.tax.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
@@ -8,6 +7,7 @@ import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
 import com.ecsite.module.tax.domain.taxcategory.TaxRate;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.junit.jupiter.api.DisplayName;
@@ -20,10 +20,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.draft;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.newDraft;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

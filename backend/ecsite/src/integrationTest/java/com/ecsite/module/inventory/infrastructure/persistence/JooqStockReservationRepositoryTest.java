@@ -1,10 +1,10 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.InventoryTestData;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

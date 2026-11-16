@@ -1,7 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.persistence;
 
-import com.ecsite.RestoreFailures;
 import com.ecsite.jooq.shipping.tables.records.ShipmentRecord;
+import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static com.ecsite.RestoreFailures.RECORDS;
-import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
+import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 
 /**
  * 出荷を DB の値から戻すときの失敗の単体テスト

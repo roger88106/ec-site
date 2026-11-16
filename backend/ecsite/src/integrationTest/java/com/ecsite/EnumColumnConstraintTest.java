@@ -15,6 +15,7 @@ import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

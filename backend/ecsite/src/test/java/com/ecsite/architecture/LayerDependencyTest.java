@@ -1,6 +1,5 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.architecture.sample.layerdeps.module.sample.api.ApiToApplication;
 import com.ecsite.architecture.sample.layerdeps.module.sample.api.ApiToPresentation;
 import com.ecsite.architecture.sample.layerdeps.module.sample.application.ApplicationToApi;
@@ -14,6 +13,7 @@ import com.ecsite.architecture.sample.layerdeps.module.sample.infrastructure.Inf
 import com.ecsite.architecture.sample.layerdeps.module.sample.infrastructure.InfrastructureToService;
 import com.ecsite.architecture.sample.layerdeps.module.sample.presentation.PresentationToPort;
 import com.ecsite.architecture.sample.layerdeps.module.sample.presentation.SamplePresentation;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;

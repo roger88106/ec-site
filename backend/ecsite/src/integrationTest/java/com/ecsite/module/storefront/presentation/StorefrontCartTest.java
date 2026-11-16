@@ -1,14 +1,14 @@
 package com.ecsite.module.storefront.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.CatalogTestData.TestProduct;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestJson;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.CatalogTestData.TestProduct;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.http.TestJson;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

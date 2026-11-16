@@ -1,9 +1,9 @@
 package com.ecsite.config;
 
-import com.ecsite.TestSettings;
 import com.ecsite.module.cart.application.job.CartCleanupProperties;
 import com.ecsite.module.inventory.application.job.StockReservationCleanupProperties;
 import com.ecsite.module.order.application.job.CheckoutCleanupProperties;
+import com.ecsite.support.TestSettings;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

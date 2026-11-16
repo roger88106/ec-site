@@ -1,7 +1,7 @@
 package com.ecsite.config;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -22,7 +22,7 @@ export const TARGET_FILE = /^backend\/ecsite\/src\/integrationTest\/java\/com\/e
 
 /** イベントの発行の記録を読んでよい、非同期のイベントの補助 */
 export const ASYNC_EVENT_HELPERS = [
-  'backend/ecsite/src/integrationTest/java/com/ecsite/AsyncEvents.java',
+  'backend/ecsite/src/integrationTest/java/com/ecsite/support/async/AsyncEvents.java',
   'backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventPublications.java',
 ]
 

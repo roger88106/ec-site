@@ -1,8 +1,5 @@
 package com.ecsite.module.reporting.application;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderRecord;
@@ -16,6 +13,9 @@ import com.ecsite.module.reporting.domain.sales.Granularity;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
 import com.ecsite.module.reporting.domain.sales.TrendPoint;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,10 +36,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
 import static com.ecsite.jooq.reporting.Tables.STATUS_HISTORY;
+import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;

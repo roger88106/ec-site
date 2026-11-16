@@ -1,18 +1,18 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.CatalogTestData;
-import com.ecsite.Concurrently;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.LockWaits;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestJson;
-import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.async.Concurrently;
+import com.ecsite.support.async.LockWaits;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.http.TestJson;
+import com.ecsite.support.security.TestTokens;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,11 +36,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
+import static com.ecsite.support.data.OrderTestData.placeOrderRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 

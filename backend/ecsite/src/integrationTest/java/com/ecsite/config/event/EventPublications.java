@@ -1,7 +1,7 @@
 package com.ecsite.config.event;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.MutableClock;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;

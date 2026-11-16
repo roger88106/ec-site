@@ -1,12 +1,12 @@
 package com.ecsite.module.catalog.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.TestImages;
-import com.ecsite.TestJson;
-import com.ecsite.TestcontainersConfig;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.config.TestcontainersConfig;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.TestImages;
+import com.ecsite.support.http.TestJson;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;

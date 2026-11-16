@@ -1,13 +1,13 @@
 package com.ecsite.module.shipping.infrastructure.carrier;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
-import com.ecsite.ShippingTestData;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.TrackingRequests;
 import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.ShippingTestData;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

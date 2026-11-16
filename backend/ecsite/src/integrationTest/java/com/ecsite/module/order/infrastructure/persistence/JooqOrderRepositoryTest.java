@@ -1,7 +1,5 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
@@ -25,6 +23,8 @@ import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -47,8 +47,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

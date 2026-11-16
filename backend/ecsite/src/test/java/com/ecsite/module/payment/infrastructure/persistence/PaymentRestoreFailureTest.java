@@ -1,6 +1,6 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
-import com.ecsite.RestoreFailures;
+import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -10,9 +10,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.RestoreFailures.RECORDS;
-import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
+import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 import static org.mockito.Mockito.mock;
 
 /**

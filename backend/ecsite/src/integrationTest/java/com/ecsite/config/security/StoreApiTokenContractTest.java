@@ -1,8 +1,8 @@
 package com.ecsite.config.security;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.TestTokens;
 import com.ecsite.contract.Contracts;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

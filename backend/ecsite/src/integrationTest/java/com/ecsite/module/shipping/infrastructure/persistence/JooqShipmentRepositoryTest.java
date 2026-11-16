@@ -1,13 +1,13 @@
 package com.ecsite.module.shipping.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.ShippingTestData;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
 import com.ecsite.module.shipping.domain.ShippingErrorCode;
 import com.ecsite.module.shipping.domain.TrackingNumber;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.ShippingTestData;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

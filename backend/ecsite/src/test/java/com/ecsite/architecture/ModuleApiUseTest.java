@@ -1,12 +1,12 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.architecture.sample.apiuse.module.sample.api.AllowedTargetApi;
 import com.ecsite.architecture.sample.apiuse.module.sample.api.TargetApi;
 import com.ecsite.architecture.sample.apiuse.module.user.application.ApplicationUsesAllowedApi;
 import com.ecsite.architecture.sample.apiuse.module.user.application.ApplicationUsesTargetApi;
 import com.ecsite.architecture.sample.apiuse.module.user.presentation.PresentationUsesAllowedApi;
 import com.ecsite.module.member.api.CurrentMemberIds;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;

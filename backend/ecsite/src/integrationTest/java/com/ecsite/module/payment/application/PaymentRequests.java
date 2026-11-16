@@ -1,8 +1,8 @@
 package com.ecsite.module.payment.application;
 
-import com.ecsite.AsyncEvents;
 import com.ecsite.module.payment.domain.payment.RefundRequested;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
+import com.ecsite.support.async.AsyncEvents;
 import org.jooq.DSLContext;
 
 import java.util.UUID;

@@ -2,6 +2,7 @@
 //
 // 文書の名前は、docs/ の下の各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたものと、skill の `skill `<名前>``（.claude/skills/<名前>/SKILL.md を指す）。
 // `skill `<名前>` の <ファイル名>`（`skill `review` の prompts.md`）は、その skill のフォルダーのファイルを指す。リポジトリにない skill の参照は見ない。
+//
 // 参照の先は、直前のリンク、文書の名前、パス（`docs/06-手順書/ci.md`、`notification.md` など）で決める。
 // 直前の印（`` ` ``、「」」、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
 import { existsSync } from 'node:fs'

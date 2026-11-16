@@ -47,8 +47,8 @@ const CUTTING_LINE = /(`{3}|:{3})[^\S\n]*$/m
 /** 図の開きの形（囲みの記号と、先頭の語が mermaid の info string）。` の囲みの info string には ` を含めない（1 行のコードの範囲になるため） */
 const MERMAID_OPEN = /^(?:`{3,}(?:\s*mermaid)(?:\s[^`]*)?|~{3,}\s*mermaid(?:\s.*)?)$/i
 
-/** 0〜3 個の空白で字下げした、図の開きの形の行（コードブロックの本文の中で、閉じていない疑いを見る） */
-const INDENTED_MERMAID_OPEN = /^ {0,3}(\S.*)$/
+/** 0〜3 個の空白の字下げと、その後の文字（図の開きの形かは isMermaidOpen が MERMAID_OPEN で見る） */
+const UP_TO_3_INDENT = /^ {0,3}(\S.*)$/
 
 /** 行頭の空白・`>`・箇条の記号（`-`、`*`、`+`、`1.`、`1)`）の並び */
 const LINE_PREFIX = /^(?:[ \t]|>|[-*+][ \t]|\d{1,9}[.)][ \t])*/
@@ -73,7 +73,7 @@ export function isMermaidTargetDoc(file) {
  * @returns {boolean} 図の開きの形なら true
  */
 function isMermaidOpen(line) {
-  const match = INDENTED_MERMAID_OPEN.exec(line)
+  const match = UP_TO_3_INDENT.exec(line)
   return match !== null && MERMAID_OPEN.test(match[1].trimEnd())
 }
 

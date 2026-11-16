@@ -201,7 +201,7 @@ class PlaceOrderConflictApiTest {
     class PurchasabilityChanged {
 
         @Test
-        @DisplayName("AC-88 注文手続きの後にバリアントが販売停止になると、注文は購入できない品目を示す 400 で、注文も支払も作らず、在庫とカートが変わらない")
+        @DisplayName("AC-88 注文手続きの後にバリアントが販売停止になると、注文は購入できない品目を示す 400 で、注文を作らず、在庫とカートが変わらない")
         void rejectsSuspendedAfterCheckout() throws Exception {
             // 準備：T シャツ 2 枚で注文手続きに進み、その後に運営者が T シャツを販売停止にする
             var checkoutId = fixture.orders.startCheckout(fixture.cartId);
@@ -212,7 +212,7 @@ class PlaceOrderConflictApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
 
-            // 確認：注文（と、注文に付く支払）がなく、在庫数が注文の前のまま
+            // 確認：注文がなく、在庫数が注文の前のまま
             assertNotWritten(checkoutId);
 
             // 確認：注文手続きの引当は残る（販売可能数は、在庫数からカートの数量を除いた数）

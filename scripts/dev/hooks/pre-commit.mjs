@@ -132,7 +132,7 @@ export function resolveIndexFile(indexFile, root) {
  * @param {Record<string, string | undefined>} env 環境変数
  * @returns {string} bash のパス。渡されていなければ、PATH の bash
  */
-export function checkShell(env) {
+export function shellForChecks(env) {
   return env.PRE_COMMIT_BASH || 'bash'
 }
 
@@ -254,7 +254,7 @@ export function main() {
       // Windows でも管理者の権限なしで作れる junction にする（Windows 以外では、ふつうのリンクになる）
       if (existsSync(path.join(root, 'node_modules'))) symlinkSync(path.join(root, 'node_modules'), path.join(staged, 'node_modules'), 'junction')
     },
-    runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
+    runCheck: (script, env) => spawnSync(shellForChecks(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     diffAdded: (env) => {
       // --changed と同じ引数（scripts/ci/lib/git/added-diff）。CI の注釈と同じ判定にする
       const args = [...ADDED_DIFF_ARGS, '--cached', '--']

@@ -86,7 +86,7 @@ function git(args) {
  * @returns {{ root: string, commonDir: string, main: boolean, porcelain: string, mainPath: string }}
  *   root は作業ツリーのルート、commonDir は git の共通のディレクトリ、mainPath はメインの作業ツリー
  */
-function context() {
+function readContext() {
   const root = git(['rev-parse', '--show-toplevel'])
   const gitDir = git(['rev-parse', '--path-format=absolute', '--git-dir'])
   const commonDir = git(['rev-parse', '--path-format=absolute', '--git-common-dir'])
@@ -319,7 +319,7 @@ function claim(ctx, slot) {
 /**
  * assign：スロットを割り当てる。記録を書いて仮押さえを外してから、データベースとバケットを再作成する。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 async function assign(ctx) {
   if (!ctx.main) requireShared(ctx)
@@ -357,7 +357,7 @@ async function assign(ctx) {
 /**
  * release：スロットのポートで待ち受けるプロセスを停止してから、割り当てを解く。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 async function release(ctx) {
   if (ctx.main) return console.log('メインの作業ツリーはスロット 0。解くものはない')
@@ -385,7 +385,7 @@ async function release(ctx) {
 /**
  * stop：自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  * @param {string[]} args 対象（backend、store、admin のどれか 1 つ。省略は全て）
  */
 function stop(ctx, args) {
@@ -423,7 +423,7 @@ async function backendRunning(slot) {
 /**
  * reset：割り当てを変えずに、データベースとバケットを再作成する。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 async function reset(ctx) {
   if (ctx.main) return console.log('メインの作業ツリーはスロット 0。scripts/dev/reset.sh を使う')
@@ -440,7 +440,7 @@ async function reset(ctx) {
 /**
  * show：スロットの値と、作業ツリーの一覧を示す。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 function show(ctx) {
   const slot = currentSlot(ctx)
@@ -478,7 +478,7 @@ function shellQuote(value) {
 /**
  * env：スロットの環境変数を export の形で出す。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 function env(ctx) {
   const slot = currentSlot(ctx)
@@ -491,7 +491,7 @@ function env(ctx) {
 /**
  * run：スロットの環境変数を付けて対象を起動する。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  * @param {string[]} args 対象と、あれば番号
  * @returns {Promise<number>} 子の終了コード
  */
@@ -576,7 +576,7 @@ async function main(argv) {
   }
   let ctx
   try {
-    ctx = context()
+    ctx = readContext()
   } catch {
     throw new Exit(2, 'git の作業ツリーの中で流す')
   }

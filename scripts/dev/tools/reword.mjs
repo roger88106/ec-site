@@ -187,15 +187,15 @@ function reword(mapPath, cwd = process.cwd()) {
 /** rebase を中止し、HEAD を元の commit に戻す。戻せなければ Refusal で SHA を知らせる */
 function restore(cwd, head) {
   git(cwd, ['rebase', '--abort'])
-  if (gitOrThrowSafe(cwd, ['rev-parse', 'HEAD']) !== head) {
+  if (gitOutput(cwd, ['rev-parse', 'HEAD']) !== head) {
     git(cwd, ['reset', '--hard', head])
   }
-  if (gitOrThrowSafe(cwd, ['rev-parse', 'HEAD']) !== head) {
+  if (gitOutput(cwd, ['rev-parse', 'HEAD']) !== head) {
     throw new Refusal(`元に戻せなかった。git reset --hard ${head} で手で戻す`)
   }
 }
 
-function gitOrThrowSafe(cwd, args) {
+function gitOutput(cwd, args) {
   return git(cwd, args).stdout
 }
 

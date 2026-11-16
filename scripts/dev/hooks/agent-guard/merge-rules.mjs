@@ -256,7 +256,7 @@ function checkProblems({ nodes, undated, truncated }) {
  *
  * @returns {{ groups: { name: string, paths: string[] }[] }} 危険度が高い経路の一覧
  */
-function loadRiskConfig() {
+function readRiskConfig() {
   return parseRiskConfig(readFileSync(RISK_CONFIG_FILE, 'utf8'))
 }
 
@@ -273,7 +273,7 @@ function dependabotProblems(pullRequest) {
   }
   let config
   try {
-    config = loadRiskConfig()
+    config = readRiskConfig()
   } catch (error) {
     return [`危険度が高い経路の一覧（scripts/ci/config/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
   }

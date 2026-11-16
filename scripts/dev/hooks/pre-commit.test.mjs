@@ -7,7 +7,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
-import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, checkShell, resolveIndexFile, runPreCommit, selectWarningLines } from './pre-commit.mjs'
+import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, shellForChecks, resolveIndexFile, runPreCommit, selectWarningLines } from './pre-commit.mjs'
 import { COMMIT_MSG_FILES, JA_TEXT_FILES, MINI_LIST, copyFromRepo } from './test-support.mjs'
 
 describe('一時の index のパス', () => {
@@ -29,12 +29,12 @@ describe('一時の index のパス', () => {
 
 describe('検査を実行する bash', () => {
   test('hook が渡した bash のパス（PRE_COMMIT_BASH）があれば、それを使う', () => {
-    assert.equal(checkShell({ PRE_COMMIT_BASH: 'C:/Program Files/Git/usr/bin/bash.exe' }), 'C:/Program Files/Git/usr/bin/bash.exe')
+    assert.equal(shellForChecks({ PRE_COMMIT_BASH: 'C:/Program Files/Git/usr/bin/bash.exe' }), 'C:/Program Files/Git/usr/bin/bash.exe')
   })
 
   test('なければ、PATH の bash を使う', () => {
-    assert.equal(checkShell({}), 'bash')
-    assert.equal(checkShell({ PRE_COMMIT_BASH: '' }), 'bash')
+    assert.equal(shellForChecks({}), 'bash')
+    assert.equal(shellForChecks({ PRE_COMMIT_BASH: '' }), 'bash')
   })
 })
 

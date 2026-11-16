@@ -1,6 +1,6 @@
 // スロットのポートを使うプロセスの扱い：解除で止めてからデータを消す判断と、停止（stop）と、バックエンドの起動の前の確認。
 // 問い合わせ・停止・データの削除の実体は、引数で受け取る。
-import { portBusyMessage, queryFailedMessage, stopFailedMessage, stopLeftMessage, stoppedMessage } from '../port-stop.mjs'
+import { portBusyMessage, queryFailedMessage, releaseBlockedMessage, stopLeftMessage, stoppedMessage } from '../port-stop.mjs'
 import { checkBackendStopped, slotPorts, TARGETS } from './slot.mjs'
 
 /**
@@ -83,7 +83,7 @@ export async function releaseSlot({ slot, ports, platform, find, stop, backendRu
     // 止まったことを、ポートの待ち受けがなくなったかで確認する
     const left = find(ports)
     if (!left.ok) return queryFailed(left.reason)
-    if (left.listeners.length > 0) return { code: 1, message: stopFailedMessage(left.listeners, platform) }
+    if (left.listeners.length > 0) return { code: 1, message: releaseBlockedMessage(left.listeners, platform) }
   }
   // 問い合わせと別の経路でも、バックエンドが応答しないことを確認してからデータを消す
   const problem = checkBackendStopped({ slot, running: await backendRunning(), action: '解く' })

@@ -245,7 +245,7 @@ export function portBusyMessage(listeners, { platform }) {
  * @param {NodeJS.Platform} platform OS
  * @returns {string} 示す文
  */
-export function stopFailedMessage(listeners, platform) {
+export function releaseBlockedMessage(listeners, platform) {
   return (
     `スロットのポートで待ち受けるプロセスが残ったので、解かない。待ち受けるプロセス：${describeListeners(listeners)}\n` +
     `${manualStopCommand(listeners, platform)} で止めてから、もう一度 node scripts/dev/slot.mjs release を流す`

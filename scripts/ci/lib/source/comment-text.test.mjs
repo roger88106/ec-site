@@ -137,6 +137,17 @@ describe('シェルのコメント', () => {
     const source = ['#!/usr/bin/env bash', '# 先頭の説明', 'echo "$#個" # 行の後ろ', 'echo "# 文字列の中"', "echo '#' ${#x}"].join('\n')
     assert.deepEqual(lines(source, 'sh'), ['2:# 先頭の説明', '3:# 行の後ろ'])
   })
+
+  test('逃がした \\#、二重引用符の中の \\"、語の途中の # は、コメントの始まりにしない', () => {
+    const source = ['echo \\# 逃がした', 'echo "a\\"# 中" # 後ろ', 'echo a#b # 末尾'].join('\n')
+    assert.deepEqual(lines(source, 'sh'), ['2:# 後ろ', '3:# 末尾'])
+  })
+})
+
+describe('CRLF の改行', () => {
+  test('行の終わりの \\r を除いて取り出し、行番号は変えない', () => {
+    assert.deepEqual(lines('// 一\r\nconst a = 1\r\n/* 二\r\n三 */\r\n', 'ts'), ['1:// 一', '3:/* 二', '4:三 */'])
+  })
 })
 
 describe('取り出した文書', () => {

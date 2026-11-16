@@ -9,7 +9,8 @@ import { withoutGitEnv } from './lib/git-env.mjs'
 import { commentText, trailingCommentLines } from './lib/comment-text.mjs'
 import { SHALLOW_CLONE_MESSAGE } from './lib/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
-import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments, validateTerms } from './ja-text.mjs'
+import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, stripMessageComments, validateTerms } from './ja-text.mjs'
+import { isTargetDoc } from './lib/ja-docs.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
 const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
@@ -149,6 +150,20 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
   test('word の項目は今まで通りで、pattern と同じ一覧に混ぜられる', () => {
     const terms = [{ word: '道具', use: 'ツール' }, { pattern: '\\d', use: 'u', examples: { hit: ['1'], miss: ['a'] } }]
     assert.deepEqual(findTerms('道具と1', terms).map((hit) => hit.word), ['道具', '1'])
+  })
+
+  test('files を書いた項目は、当たるファイルにだけ当て、コミットメッセージには当てない', () => {
+    const terms = [{ word: '道具', use: 'ツール' }, { word: 'X', use: 'Y', files: '^docs/05-' }]
+    assert.equal(jaText.termsFor(terms, 'docs/05-開発規則/a.md').length, 2)
+    assert.equal(jaText.termsFor(terms, 'docs/06-手順書/a.md').length, 1)
+    assert.equal(jaText.termsFor(terms, null).length, 1)
+  })
+
+  test('規則の本文の AI のサービス固有の名前は、規則の文書（constitution と 05-開発規則）でだけ error にする', () => {
+    const term = list.error.find((item) => item.files !== undefined && item.pattern.includes('claude'))
+    for (const file of ['docs/constitution.md', 'docs/05-開発規則/writing.md']) assert.deepEqual(jaText.termsFor([term], file), [term], file)
+    for (const file of ['docs/06-手順書/setup.md', 'AGENTS.md', '.claude/skills/sessions/SKILL.md']) assert.deepEqual(jaText.termsFor([term], file), [], file)
+    assert.equal(findTerms('[規則](../../CLAUDE.md) と Gemini', [term]).map((hit) => hit.word).join(), 'Gemini')
   })
 
   test('--message でも pattern の項目が働き、漢字の後の形は成功する', () => {
@@ -993,34 +1008,6 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     const result = r.run(path.join(shallow, 'clone'))
     assert.notEqual(result.status, 0)
     assert.ok(result.stdout.includes(SHALLOW_CLONE_MESSAGE), result.stdout)
-  })
-
-  test('差分の本文の「+++」で始まる追加行を、ファイルの見出しと取り違えない。引用符で囲んだパスと、空白のあるパスを読む', () => {
-    const diff = [
-      'diff --git a/docs/a.md b/docs/a.md',
-      '--- a/docs/a.md',
-      '+++ b/docs/a.md',
-      '@@ -1,0 +2,2 @@',
-      '+++ b/docs/x.md',
-      '+次の行',
-      '@@ -5 +7 @@',
-      '-古い行',
-      '+新しい行',
-      'diff --git "a/docs/q\\"\\346\\227\\245.md" "b/docs/q\\"\\346\\227\\245.md"',
-      '+++ "b/docs/q\\"\\346\\227\\245.md"',
-      '@@ -0,0 +1 @@',
-      '+あ',
-      '\\ No newline at end of file',
-      '+++ b/docs/a b.md\t',
-      '@@ -3,2 +3,0 @@',
-      '-消した行',
-      '-消した行',
-      '',
-    ].join('\n')
-    assert.deepEqual(
-      [...jaText.parseAddedLines(diff)].map(([file, lines]) => [file, [...lines]]),
-      [['docs/a.md', [2, 3, 7]], ['docs/q"日.md', [1]], ['docs/a b.md', []]],
-    )
   })
 
   test('注釈の内容とパスの、GitHub Actions が区切りに使う字を逃がす', () => {

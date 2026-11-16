@@ -6,7 +6,7 @@
 
 結合テストと E2E は、役割と名前で要素を探す（`getByRole('button', { name: '保存' })`、`getByLabel('名称')`）。CSS のクラス、`data-testid`、内部の状態、xpath、並びの 1 つ目は使わない。名前がなければ、画面に支援技術向けの名前を追加する。
 
-- E2E は、位置で選ぶメソッド（`.first()`・`.nth()`・`.last()`）と、`locator` のセレクターの中の位置（`nth=` など。一覧は `scripts/ci/frontend-rules.mjs`）を使わない。名前や親の要素（行・領域）で絞る。
+- E2E は、位置で選ぶメソッド（`.first()`・`.nth()`・`.last()`）と、`locator` のセレクターの中の位置（`nth=` など。一覧は `e2e/biome-plugins/no-position-selector.grit`）を使わない。名前や親の要素（行・領域）で絞る。
 - E2E でボタンを名前で探すときは、`exact: true` を付けた文字列か、`^` と `$` で固定した正規表現（金額のように変わる値を含む名前）で書く（`getByRole('button', { name: /^注文する（[\d,]+ 円）$/ })`）。名前を変数で渡すときは文字列にして `exact: true` を付ける（正規表現の変数は部分一致になる）。
 - 自分たちで作っていない画面（IdP）の要素の選び方は、`e2e/src/auth.ts` だけに置く。
 - 詳細の項目の値（`dd`）は Biome の検査が名前を認めないので、E2E では `e2e/src/detail.ts` だけに、結合テストでは補助だけに（一覧の行を探す書き方も）置く。テストのファイルは補助を呼ぶ。
@@ -18,9 +18,11 @@
 
 確認方法：
 
-- CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと：フロントのテストと E2E で自動
-- 画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現：自動（`scripts/ci/frontend-rules.mjs`）
-- E2E の位置で選ぶメソッドとボタンの名前の完全一致：自動（同じ script）
+- CSS のクラスの確認と `toBeTruthy`・`toBeDefined`：フロントのテストと E2E で自動（Biome の plugin `no-css-class-check`・`no-weak-existence-check`）
+- `getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと：フロントのテストと E2E で自動（`scripts/ci/frontend-rules.mjs`）
+- 画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現：自動（Biome の plugin `no-internal-selector`・`no-markup-text-check`）
+- E2E の位置で選ぶメソッド：自動（Biome の plugin `no-position-selector`）
+- E2E のボタンの名前の完全一致：自動（`scripts/ci/frontend-rules.mjs`）
 - その他の探し方：レビュー
 
 ## API の差し替えは型付きの MSW
@@ -65,11 +67,11 @@ E2E で作るデータの品番・名称に、実行ごとの識別子（`E2E-<�
 
 ## 型を回避する変換を使わない
 
-テストは型を回避する変換（`as never`、`as unknown as`）を使わず、型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、理由をコメントに書いて使う。
+テストは型を回避する変換（`as never`、`as unknown as`）を使わず、型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、直前の行の `// biome-ignore lint/plugin/no-type-cast-escape: <理由>` に理由を書いて使う。
 
 理由：「API の差し替えは型付きの MSW」が禁じる契約にない応答を、型付きの `http` を通さずに作れてしまうため。
 
-確認方法：理由のコメントのない `as never`・`as unknown as` は自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー
+確認方法：理由のない `as never`・`as unknown as` は自動（Biome の plugin `no-type-cast-escape`）、理由が妥当かはレビュー
 
 ## 要素のプロパティ・属性・状態を jest-dom で確認する
 
@@ -81,11 +83,11 @@ E2E で作るデータの品番・名称に、実行ごとの識別子（`E2E-<�
 
 ## `fireEvent` を直接使わない
 
-テストのファイルで `fireEvent` を直接使わず、`userEvent` で操作する。`userEvent` で起こせないイベント（入力できない種類の入力欄への値の設定、ブラウザーが起こすイベントなど）だけは使ってよく、理由を呼び出しごとに、同じ行か直前の行のコメントに書く。
+テストのファイルで `fireEvent` を直接使わず、`userEvent` で操作する。`userEvent` で起こせないイベント（入力できない種類の入力欄への値の設定、ブラウザーが起こすイベントなど）だけは使ってよく、理由を呼び出しごとに、直前の行の `// biome-ignore lint/plugin/no-fire-event: <理由>` に書く。`fireEvent` を別名で import しない。
 
 理由：`fireEvent` は利用者の操作の一連のイベント（フォーカス、キー入力など）を再現せず、実際には起きない状態でも成功することがあるため。
 
-確認方法：理由のコメントのないものは自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー
+確認方法：理由のないものと別名の import は自動（Biome の plugin `no-fire-event`）、理由が妥当かはレビュー
 
 ## 環境変数は `vi.stubEnv` で変える
 

@@ -13,6 +13,7 @@
 //   既定：種類ごとの件数を「警告：…」の行で示し、最後に合計を示す。
 //   --list：1 件 1 行（`パス:行 種類 → 説明`）で一覧にする。
 import { readFileSync } from 'node:fs'
+import { codeBlockLines } from './lib/code-block.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
@@ -51,9 +52,6 @@ export const KIND = {
   otherArrow: 'Mermaid の他の矢印',
 }
 
-/** コードブロックの開き・閉じの行 */
-const FENCE = /^\s*(`{3,}|~{3,})(.*)$/
-
 /** 参加者の宣言 */
 const DECLARATION = /^\s*(?:create\s+)?(?:participant|actor)\s+(\S+)/
 
@@ -88,26 +86,19 @@ function splitCells(row) {
  * @returns {{ line: number, text: string, fence: string | null, block: number }[]} 行。fence はコードブロックの中なら情報文字列（なければ空文字）、外なら null。block はコードブロックごとの番号（外は 0）。開きと閉じの行は含めない
  */
 function readLines(text) {
+  const body = text.replace(/^﻿/, '')
+  const inCode = codeBlockLines(body)
+  const blockNumbers = new Map()
   const rows = []
-  let open = null
-  let blocks = 0
-  text
-    .replace(/^﻿/, '')
-    .split(/\r?\n/)
-    .forEach((raw, index) => {
-      const match = raw.match(FENCE)
-      if (open) {
-        if (match && match[1][0] === open.char && match[1].length >= open.length && match[2].trim() === '') open = null
-        else rows.push({ line: index + 1, text: raw, fence: open.info, block: blocks })
-        return
-      }
-      if (match && !(match[1][0] === '`' && match[2].includes('`'))) {
-        blocks += 1
-        open = { char: match[1][0], length: match[1].length, info: match[2].trim().split(/\s+/)[0] }
-        return
-      }
+  body.split(/\r?\n/).forEach((raw, index) => {
+    const code = inCode[index]
+    if (!code) {
       rows.push({ line: index + 1, text: raw, fence: null, block: 0 })
-    })
+      return
+    }
+    if (!blockNumbers.has(code.block)) blockNumbers.set(code.block, blockNumbers.size + 1)
+    if (code.part === 'body') rows.push({ line: index + 1, text: raw, fence: code.block.info.split(/\s+/)[0], block: blockNumbers.get(code.block) })
+  })
   return rows
 }
 

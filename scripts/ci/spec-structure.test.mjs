@@ -18,10 +18,10 @@ import {
   FEATURE_SECTIONS,
   findTargets,
   fillTemplate,
-  FUNCTIONAL_SPECS,
   readSkeleton,
   REFACTOR_SECTIONS,
 } from './spec-structure.mjs'
+import { FUNCTIONAL_SPECS } from './lib/functional-specs.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 

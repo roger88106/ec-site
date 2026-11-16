@@ -1,0 +1,18 @@
+// E2E で、位置で要素を選ばず、名前や親の要素で絞る（フロントのテストの書き方の「画面に見えるもので探す」）。
+// .first()・.last()・.nth(…) と、locator のセレクターの中の位置（nth=、:nth-child( など）を見る。
+language js
+
+or {
+  JsCallExpression(callee=JsStaticMemberExpression(member=r"first|last"), arguments=r"\(\s*\)") as $hit,
+  JsCallExpression(callee=JsStaticMemberExpression(member=r"nth")) as $hit,
+  JsCallExpression(callee=$callee, arguments=$args) as $hit where {
+    $callee <: r"(?s)(?:.*\.)?locator",
+    $args <: contains or {
+      JsStringLiteralExpression(),
+      JsTemplateExpression()
+    } as $selector,
+    $selector <: r"(?s).*(?:[^\w-]nth=|:nth-(?:match|child|last-child|of-type|last-of-type)\(|:(?:first|last)-(?:child|of-type)\b).*"
+  }
+} where {
+  register_diagnostic(span=$hit, message="位置で要素を選ばない。.first()・.nth()・.last() とセレクターの中の位置を使わず、名前や親の要素で絞る（フロントのテストの書き方の「画面に見えるもので探す」）。", severity="error")
+}

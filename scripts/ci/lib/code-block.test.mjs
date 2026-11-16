@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { readBlocks, readCodeBlocks } from './code-block.mjs'
+import { codeBlockLines, readBlocks, readCodeBlocks } from './code-block.mjs'
 
 describe('囲みのコードブロックの読み方', () => {
   test('開き・閉じ・info string・行・中身を返す', () => {
@@ -99,6 +99,11 @@ describe('囲みのコードブロックの読み方', () => {
   test('複数のコードブロックを出る順に返す', () => {
     const blocks = readCodeBlocks('```a\n```\n\n```b\nx\n```')
     assert.deepEqual(blocks.map((block) => [block.info, block.line]), [['a', 1], ['b', 4]])
+  })
+
+  test('行ごとに、開き・中身・閉じのどれかと、外を返す', () => {
+    const parts = codeBlockLines('a\n````md\n```x\n```\n````\nb\n~~~\nc').map((line) => line?.part ?? null)
+    assert.deepEqual(parts, [null, 'open', 'body', 'body', 'close', null, 'open', 'body'])
   })
 })
 

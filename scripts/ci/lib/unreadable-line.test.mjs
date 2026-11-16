@@ -20,7 +20,6 @@ describe('検査の script が文を直接組み立てない', () => {
         forbidden: /(?:throw new Error|\.push|console\.log)\([^\n]*読めない[^\n]*（/,
         // 行を持たない（ファイル全体）読めない物を自前の文で出す script と、その理由
         exceptions: {
-          'ci/frontend-rules.mjs': '共有のパッケージの exports は、package.json の全体を読む',
           'ci/lib/exclusions.mjs': '除外の一覧の JSON は、ファイル全体を読む',
         },
       },

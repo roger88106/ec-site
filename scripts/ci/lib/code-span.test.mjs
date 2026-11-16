@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { readCodeSpans, replaceCodeSpans } from './code-span.mjs'
+import { maskCodeSpans, readCodeSpans, replaceCodeSpans } from './code-span.mjs'
 
 describe('インラインのコードスパンの読み方', () => {
   test('1 つのバッククォートで囲んだ中身と位置を返す', () => {
@@ -35,5 +35,9 @@ describe('インラインのコードスパンの読み方', () => {
 
   test('コードスパンを、中身を受け取る関数の戻り値に替える', () => {
     assert.equal(replaceCodeSpans('a ``x`y`` b `z` c', (content) => `[${content}]`), 'a [x`y] b [z] c')
+  })
+
+  test('コードスパンを、位置を変えずに空白に替える。組にならないバッククォートは残す', () => {
+    assert.equal(maskCodeSpans('a ``x`y`` b ` c'), `a ${' '.repeat(7)} b \` c`)
   })
 })

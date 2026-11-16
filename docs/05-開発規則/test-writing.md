@@ -47,7 +47,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 理由：失敗したときに、どの振る舞いが壊れたかが名前だけで分かるようにするため。
 
-確認方法：レビュー（`@DisplayName` があることは自動。`TestNameTest`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：レビュー（`@DisplayName` があることは自動。`TestNameTest`）。フロントの `describe` の名前が識別子だけでないことは自動（Biome の plugin `no-identifier-describe`）
 
 
 ## 待ち方
@@ -62,4 +62,4 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 理由：処理が遅い環境では失敗し、速い環境では待ち時間が無駄になるため。決まった時間だけ見ると、遅い環境では、処理が終わる前に確認が終わり、誤って通るため。
 
-確認方法：時間で待つことは自動（Java は `TimeWaitTest`、ほかは `scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：時間で待つことは自動（バックエンドは `TimeWaitTest`、フロントと E2E は Biome の plugin `no-time-wait`）、`networkidle` は自動（Biome の plugin `no-network-idle`）、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`）

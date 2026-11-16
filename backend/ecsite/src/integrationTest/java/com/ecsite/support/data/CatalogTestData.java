@@ -1,8 +1,10 @@
 package com.ecsite.support.data;
 
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.http.TestJson;
 import com.jayway.jsonpath.JsonPath;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -136,6 +138,44 @@ public class CatalogTestData {
                                 ratePercent,
                                 jsonInstant(effectiveFrom))))
                 .andExpect(status().isNoContent());
+    }
+
+    /**
+     * 今から指定した時間の後に税率が始まる税区分を作り、時計を税率の開始の時刻に進める。<br />
+     * 最後の税率は無期限なので、有効な税率がないのは、最初の税率の開始より前の時刻だけ。この税区分で商品を登録・公開し、
+     * カートに入れるなどした後、{@link #rewindBeforeRateStart} で時計を開始の前に戻すと、その商品の税区分に今は有効な税率がない。
+     * 税区分の名前は、コミットするテストでも重ならないよう実行ごとに変える。
+     *
+     * @param ratePercent 率（%）
+     * @param after       今から税率が始まるまでの時間
+     * @return 税区分 ID と税率の開始の時刻
+     */
+    public RateStart taxCategoryStartingAfter(String ratePercent, Duration after) throws Exception {
+        var startAt = clock.instant().plus(after);
+        var taxCategoryId = taxCategory("将来 " + UUID.randomUUID().toString().substring(0, 8), ratePercent, startAt);
+        clock.setInstant(startAt);
+        return new RateStart(taxCategoryId, startAt);
+    }
+
+    /**
+     * 時計を税率の開始の 1 秒前に戻し、税率のキャッシュを捨てる。<br />
+     * {@link #taxCategoryStartingAfter} の税区分（または開始の時刻に登録した商品の税区分）に、今は有効な税率がない状態にする。
+     *
+     * @param startAt 税率の開始の時刻
+     * @param context テストのコンテキスト（税率のキャッシュを取り出す）
+     */
+    public void rewindBeforeRateStart(Instant startAt, ApplicationContext context) {
+        clock.setInstant(startAt.minusSeconds(1));
+        TaxRateScheduleCaches.evict(context);
+    }
+
+    /**
+     * 税率がまだ始まっていない税区分
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param startAt       税率の開始の時刻
+     */
+    public record RateStart(UUID taxCategoryId, Instant startAt) {
     }
 
     /**

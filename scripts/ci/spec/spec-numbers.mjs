@@ -159,6 +159,7 @@ if (import.meta.main) {
       count += 1
     }
   }
+  if (count) console.log('  番号を削除し、規則を言葉で書く。spec との対応はテストの名前に書く（コメントの書き方の「何を書くか」）')
   console.log(`spec の番号：${count}`)
   process.exit(count ? 1 : 0)
 }

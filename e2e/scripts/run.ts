@@ -16,6 +16,7 @@ import { stopOnSignals } from '../../scripts/dev/lib/child-stop.mjs'
 import {
   acquireLock,
   busyLockMessage,
+  e2eLockFile,
   isProcessRunning,
   type LockOwner,
   ownsLock,
@@ -87,7 +88,7 @@ function runStep(step: (typeof STEPS)[number]): Promise<number> {
 /** 実行中の子のプロセス */
 let runningChild: ChildProcess | null = null
 
-const lockFile = path.join(path.resolve(E2E_DIR, git('rev-parse', '--git-common-dir')), 'ec-site-e2e.lock')
+const lockFile = e2eLockFile(path.resolve(E2E_DIR, git('rev-parse', '--git-common-dir')))
 const lockOwner: LockOwner = {
   worktree: path.resolve(git('rev-parse', '--show-toplevel')),
   pid: process.pid,

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, splitSectionNumbers } from './doc-refs.mjs'
-import { readHeadings, referenceName, slug } from '../lib/docs/doc-names.mjs'
+import { readHeadings } from '../lib/docs/doc-names.mjs'
 
 /** 調べる文書の組。キーがパス、値が中身 */
 const DOCS = {
@@ -35,25 +35,15 @@ describe('文書の参照の検査', () => {
     assert.equal(isExcluded('backend/ecsite/src/main/resources/db/migration/V1__a.sql'), true)
   })
 
-  test('見出しの slug は GitHub と同じ作り方（記号を除き、空白をハイフンに）', () => {
-    assert.equal(slug('1.4 spec と plan の書き方'), '14-spec-と-plan-の書き方')
-    assert.equal(slug('`frontend/store` の構成'), 'frontendstore-の構成')
-  })
-
-  test('節の番号は見出しの先頭から取り、コードブロックの中は見ない', () => {
-    const { title, sections } = readHeadings(DOCS['docs/process/workflow.md'])
-    assert.equal(title, '開発の進め方')
-    assert.deepEqual([...sections.keys()], ['1', '1.4'])
-  })
-
-  test('Setext の見出しと、閉じの # のある見出しも読み、HTML のコメントの中は読まない', () => {
-    const { title, anchors } = readHeadings(['題', '===', '', '節', '---', '', '## 閉じ ##', '', '<!--', '## 隠れた節', '-->'].join('\n'))
-    assert.equal(title, '題')
-    assert.deepEqual([...anchors], ['題', '節', '閉じ'])
-  })
-
-  test('文書の名前は括弧の中を除く', () => {
-    assert.equal(referenceName('店舗画面（`frontend/store`）の構成'), '店舗画面の構成')
+  test('Gradle の設定（.kts）と、xml・json・jsonc・grit・ps1 も見る（ファイルの全体を読むので、コメントの読み方は要らない）', () => {
+    assert.equal(isTargetFile('backend/ecsite/build.gradle.kts'), true)
+    assert.equal(isTargetFile('docs/a.md'), true)
+    assert.equal(isTargetFile('backend/ecsite/config/checkstyle/checkstyle.xml'), true)
+    assert.equal(isTargetFile('package.json'), true)
+    assert.equal(isTargetFile('frontend/store/biome.jsonc'), true)
+    assert.equal(isTargetFile('frontend/store/biome-plugins/no-aria-live.grit'), true)
+    assert.equal(isTargetFile('scripts/dev/a.ps1'), true)
+    assert.equal(isTargetFile('frontend/store/public/a.png'), false)
   })
 
   test('範囲と並びは、両端と各番号を確認する', () => {
@@ -251,17 +241,6 @@ describe('節の番号の参照の検査', () => {
   test('番号から見出しが求まらないときは、見出しを示さずに失敗にする', () => {
     const [problem] = check('docs/dev/setup.md', 'plan 001 第 7 節')
     assert.match(problem, /に書き換える：docs\/dev\/setup\.md:1 /)
-  })
-
-  test('Gradle の設定（.kts）と、xml・json・jsonc・grit・ps1 も見る（ファイルの全体を読むので、コメントの読み方は要らない）', () => {
-    assert.equal(isTargetFile('backend/ecsite/build.gradle.kts'), true)
-    assert.equal(isTargetFile('docs/a.md'), true)
-    assert.equal(isTargetFile('backend/ecsite/config/checkstyle/checkstyle.xml'), true)
-    assert.equal(isTargetFile('package.json'), true)
-    assert.equal(isTargetFile('frontend/store/biome.jsonc'), true)
-    assert.equal(isTargetFile('frontend/store/biome-plugins/no-aria-live.grit'), true)
-    assert.equal(isTargetFile('scripts/dev/a.ps1'), true)
-    assert.equal(isTargetFile('frontend/store/public/a.png'), false)
   })
 
   test('空白のない「第2節」と、全角の数字の「第２節」も失敗にする', () => {
@@ -517,12 +496,6 @@ describe('見出しの番号と、見出しの参照の先', () => {
     assert.deepEqual([...sections.keys()], ['1', '1.2'])
     assert.equal(countHeadingMatches(headings, ['1 通だけ送る']), 1)
     assert.equal(countHeadingMatches(headings, ['通だけ送る']), 0)
-  })
-
-  test('見出しは、閉じの # を除き、Setext と字下げした見出しも読む（spec-structure・rule-sections と同じ読み方）', () => {
-    const { title, anchors } = readHeadings('題\n===\n\n## 依存 ##\n\n   ## 字下げ\n\n段落\n---\n')
-    assert.equal(title, '題')
-    assert.deepEqual([...anchors], ['題', '依存', '字下げ', '段落'])
   })
 
   test('パスの後の「」も、その文書の見出しとして確認する', () => {

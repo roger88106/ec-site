@@ -45,7 +45,11 @@ export function headingKey(text) {
  * Markdown の見出しを読み、リンクの先にできる slug と、節の番号と、見出しの参照の先を集める。
  *
  * @param {string} text Markdown
- * @returns {{ title: string | null, anchors: Set<string>, sections: Map<string, string>, headings: { exact: string, keys: Set<string>, ancestors: Set<string>[] }[] }} 1 行目の見出し、slug、節の番号から見出し（番号を除いたもの）への対応、番号を除いた見出し（exact は比べる形、keys はそれと末尾の括弧の補足を除いた形。ancestors は親から順の上の見出しの keys）
+ * @returns {{ title: string | null, anchors: Set<string>, sections: Map<string, string>, headings: { exact: string, keys: Set<string>, ancestors: Set<string>[] }[] }} 見出しの読み取りの結果
+ *   - title：1 行目の見出し
+ *   - anchors：slug
+ *   - sections：節の番号から、番号を除いた見出しへの対応
+ *   - headings：番号を除いた見出し。exact は比べる形、keys はそれと末尾の括弧の補足を除いた形、ancestors は親から順の上の見出しの keys
  */
 export function readHeadings(text) {
   const anchors = new Set()

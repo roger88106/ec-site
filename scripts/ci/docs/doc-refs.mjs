@@ -157,7 +157,12 @@ export function splitSectionNumbers(numbers) {
  * @param {Map<string, string>} names 文書の名前からファイルのパスへの対応
  * @param {Map<string, string>} basenames ファイル名（`admin.md` など）からファイルのパスへの対応（同じ名前が 2 つ以上あるものは除く）
  * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
- * @returns {{ line: number, target: string | null, anchor?: string, headings?: string[], sections?: string[], unknown?: boolean, text: string }[]} 参照（anchor はリンクの #、headings は見出しの参照の「」の中、sections は節の番号の参照の番号。target は、Markdown の節の番号の参照で先が決まらなければ null。unknown は、直前が「（」などで先の文書が決まらないもの）
+ * @returns {{ line: number, target: string | null, anchor?: string, headings?: string[], sections?: string[], unknown?: boolean, text: string }[]} 参照
+ *   - target：先のファイル。Markdown の節の番号の参照で先が決まらなければ null
+ *   - anchor：リンクの #
+ *   - headings：見出しの参照の「」の中（親から順）
+ *   - sections：節の番号の参照の番号
+ *   - unknown：直前が「（」などで、先の文書が決まらない
  */
 export function findReferences(file, text, names, basenames, exists = existsSync) {
   const refs = []

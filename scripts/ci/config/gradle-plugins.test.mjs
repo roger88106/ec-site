@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { withoutGitEnv } from '../lib/git/git-env.mjs'
 import { findDirectPlugins, findPluginProblems, readCatalogPlugins, readPolicyPluginIds } from './gradle-plugins.mjs'
 
 const toml = [
@@ -94,5 +100,71 @@ describe('一覧の照合', () => {
 
   test('同じ id が重なっても 1 つとして数える', () => {
     assert.deepEqual(findPluginProblems(['a.b', 'a.b'], ['a.b']), [])
+  })
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./gradle-plugins.mjs', import.meta.url))
+  const catalog = 'backend/ecsite/gradle/libs.versions.toml'
+  const build = 'backend/ecsite/build.gradle.kts'
+  const policy = 'scripts/ci/licenses/policy.json'
+  const baseFiles = {
+    [catalog]: '[plugins]\nfoo = { id = "org.foo.bar" }\n',
+    [build]: 'plugins {\n    alias(libs.plugins.foo)\n}\n',
+    [policy]: JSON.stringify({ gradlePlugins: { 'org.foo.bar': 'MIT' } }),
+  }
+
+  /**
+   * 一時の Git のリポジトリにファイルを置いて、script を実行する。
+   *
+   * @param {Record<string, string | null>} changes 基本のファイルを置き換える内容（null は置かない）
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function run(changes = {}) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'gradle-plugins-'))
+    const env = withoutGitEnv()
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: dir, env })
+      for (const [file, text] of Object.entries({ ...baseFiles, ...changes })) {
+        if (text === null) continue
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      return spawnSync(process.execPath, [script], { cwd: dir, env, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('プラグインの過不足がなければ、終了コード 0 で、要約の行を出して終わる', () => {
+    const result = run()
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /Gradle のプラグイン：1 件、読んだファイル：1 件、問題：0 件/)
+  })
+
+  test('カタログを通さない書き方があれば、ファイルと行を出し、終了コード 1 で終わる', () => {
+    const result = run({ [build]: 'plugins {\n    alias(libs.plugins.foo)\n    id("com.example.direct")\n}\n' })
+    assert.equal(result.status, 1, result.stdout)
+    assert.ok(result.stdout.includes(`${build}:3 id("com.example.direct")`), result.stdout)
+  })
+
+  test('外部のプラグインが 1 件も見つからなければ、何も見ずに通らず、終了コード 1 で終わる', () => {
+    const result = run({ [catalog]: '[versions]\na = "1"\n', [policy]: JSON.stringify({ gradlePlugins: {} }) })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /Gradle のプラグインが 1 件も見つからない/)
+  })
+
+  test('方針の gradlePlugins がなければ、終了コード 2 で終わる', () => {
+    const result = run({ [policy]: '{}' })
+    assert.equal(result.status, 2, result.stdout)
+    assert.match(result.stdout, /gradlePlugins がない/)
+    assert.doesNotMatch(result.stdout, /問題：/)
+  })
+
+  test('方針かカタログのファイルがなければ、終了コード 2 で終わる', () => {
+    assert.equal(run({ [policy]: null }).status, 2)
+    const noCatalog = run({ [catalog]: null })
+    assert.equal(noCatalog.status, 2, noCatalog.stdout)
+    assert.match(noCatalog.stdout, /libs\.versions\.toml を読めない/)
   })
 })

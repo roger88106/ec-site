@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -760,5 +761,47 @@ describe('検査の対象（DC-321-19）', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./spec-structure.mjs', import.meta.url))
+
+  /**
+   * 一時のディレクトリに、機能仕様と進行中の spec を置いて script を実行する。
+   *
+   * @param {(files: Record<string, string>) => Record<string, string>} [change] 進行中の spec の文書の組を変える関数
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function run(change = (files) => files) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'spec-structure-run-'))
+    try {
+      const specs = Object.fromEntries(Object.entries(change(baseFiles())).map(([file, text]) => [`docs/08-spec/321-new/${file}`, text]))
+      const files = {
+        'docs/03-機能仕様/template.md': readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8'),
+        ...Object.fromEntries(FUNCTIONAL_SPECS.map((file) => [file, functionalText(SECTIONS)])),
+        ...specs,
+      }
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      return spawnSync(process.execPath, [script], { cwd: dir, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('問題がなければ、終了コード 0 で、構造の問題の数を出して終わる', () => {
+    const result = run()
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /構造の問題：0（spec 1、見本 0、機能仕様 \d+）/)
+  })
+
+  test('問題があれば、ファイルと理由を出し、終了コード 1 で終わる', () => {
+    const result = run((files) => edit(files, 'spec.md', '# Spec 321：', '# Spec 1：'))
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /docs\/08-spec\/321-new\/spec\.md：1 行目が「# Spec 321：…」でない/)
+    assert.match(result.stdout, /構造の問題：1（/)
   })
 })

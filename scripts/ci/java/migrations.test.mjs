@@ -214,6 +214,16 @@ describe('develop・main との分岐点の tree を基準にした判定（一�
     assert.match(result.stdout, /変わった.*V1__a\.sql/)
   })
 
+  test('マイグレーションが 0 件なら、他の検査と同じ文で置き場所を添えて、終了コード 1 で終わる', () => {
+    const r = createRepo()
+    r.remove('V1__a.sql')
+    r.commit('全て削除')
+    const result = r.run()
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, new RegExp(`マイグレーション（${dir}/）が 1 件も見つからない`))
+    assert.doesNotMatch(result.stdout, /変わったマイグレーション：/)
+  })
+
   test('初めの commit だけで develop も main もなければ、全てを新しいものとみなして通る（警告を出す）', () => {
     const r = createRepo({ developRef: null })
     r.git('branch', '-D', 'main')

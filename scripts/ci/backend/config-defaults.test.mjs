@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { compareDefaults, normalizeValue, parseEnvTable, readMetadata } from './config-defaults.mjs'
 
 /** spring-configuration-metadata.json の小さな例（入れ子の record の項目を含む） */
@@ -78,5 +83,55 @@ describe('環境変数の文書と既定値の照合', () => {
       'ECSITE_PAYMENT_LIMIT：コードの既定「10」が、文書にない',
       'ECSITE_PAYMENT_RETURN_URL：文書の既定「5s」が、コードにない（コードは既定を持たない）',
     ])
+  })
+
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./config-defaults.mjs', import.meta.url))
+  const metadata = JSON.stringify({
+    properties: [
+      { name: 'ecsite.payment.deadline', defaultValue: '30m' },
+      { name: 'ecsite.payment.return-url' },
+    ],
+  })
+  const doc = ['| 環境変数 | 内容 | 既定 |', '|----------|------|------|', '| `ECSITE_PAYMENT_DEADLINE` | 期限 | 30m |', '| `ECSITE_PAYMENT_RETURN_URL` | 戻り先 | 必須 |'].join('\n')
+
+  /**
+   * 一時のディレクトリに文書と設定の一覧を置いて、script を実行する。
+   *
+   * @param {{ doc?: string, metadata?: string | null }} [options] 文書と設定の一覧（null は一覧を置かない）
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function run({ doc: docText = doc, metadata: metadataText = metadata } = {}) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'config-defaults-'))
+    try {
+      mkdirSync(path.join(dir, 'docs/06-手順書'), { recursive: true })
+      writeFileSync(path.join(dir, 'docs/06-手順書/environment.md'), docText)
+      if (metadataText !== null) writeFileSync(path.join(dir, 'metadata.json'), metadataText)
+      return spawnSync(process.execPath, [script, 'metadata.json'], { cwd: dir, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('既定値が一致していれば、終了コード 0 で、食い違いの数を出して終わる', () => {
+    const result = run()
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /設定の既定値の食い違い：0/)
+  })
+
+  test('既定値が食い違っていれば、その環境変数を出し、終了コード 1 で終わる', () => {
+    const result = run({ doc: doc.replace('30m', '20m') })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /ECSITE_PAYMENT_DEADLINE：文書の既定「20m」が、コードの既定「30m」と違う/)
+    assert.match(result.stdout, /設定の既定値の食い違い：1/)
+  })
+
+  test('設定の一覧がなければ、原因を出して終了コード 2 で終わり、食い違いの要約の行は出さない', () => {
+    const result = run({ metadata: null })
+    assert.equal(result.status, 2, result.stdout)
+    assert.match(result.stdout, /設定の一覧（metadata\.json）がない/)
+    assert.doesNotMatch(result.stdout, /食い違い：/)
   })
 })

@@ -1,6 +1,11 @@
 // check-frontend.mjs のテスト（node --test "scripts/ci/**/*.test.mjs"）
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { check, evaluate } from './check-frontend.mjs'
 
 /** テストの方針（policy.json の形の一部） */
@@ -146,4 +151,22 @@ describe('解析できない式', () => {
       assert.match(result.reason, message)
     })
   }
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./check-frontend.mjs', import.meta.url))
+
+  test('pnpm を実行できなければ、理由を 1 行出して、終了コード 2 で終わる', () => {
+    const emptyBin = mkdtempSync(path.join(tmpdir(), 'check-frontend-'))
+    try {
+      // PATH を空のディレクトリだけにして、pnpm の実行を失敗させる（Windows の Path の大文字小文字の違いは、先に除く）
+      const env = { ...Object.fromEntries(Object.entries(process.env).filter(([name]) => name.toUpperCase() !== 'PATH')), PATH: emptyBin }
+      const result = spawnSync(process.execPath, [script], { encoding: 'utf8', env })
+      assert.equal(result.status, 2, result.stdout)
+      assert.match(result.stdout, /^依存の一覧を取得できない/)
+      assert.equal(result.stdout.trim().split('\n').length, 1, result.stdout)
+    } finally {
+      rmSync(emptyBin, { recursive: true, force: true })
+    }
+  })
 })

@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { lowest, readTotals } from './coverage-summary.mjs'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { lowest, mutationMarkdown, readTotals } from './coverage-summary.mjs'
+
+/** 実際の mutations.xml から切り出した 7 件（検出 4、生き残り 3：Order 2、Product 1） */
+const PIT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'testdata', 'pit-mutations.xml')
 
 /** JaCoCo の XML の小さな例。パッケージの counter は、最後の sourcefile の後に並ぶ */
 const JACOCO = [
@@ -52,5 +58,20 @@ describe('カバレッジの報告', () => {
       { name: 'src/c.ts', covered: 6, total: 10 },
       { name: 'src/b.tsx', covered: 6, total: 6 },
     ])
+  })
+})
+
+describe('mutation score の報告', () => {
+  test('割合と、生き残った変異が多いクラスを、多い順に書く', () => {
+    const markdown = mutationMarkdown('domain', readFileSync(PIT, 'utf8'))
+    assert.match(markdown, /### mutation score（domain）/)
+    assert.match(markdown, /57[.]1% [|] 4 [/] 7/)
+    const order = markdown.indexOf('domain.order.Order`')
+    const product = markdown.indexOf('domain.product.Product`')
+    assert.ok(order > 0 && order < product, markdown)
+  })
+
+  test('読めない PIT の XML は、失敗にする', () => {
+    assert.throws(() => mutationMarkdown('domain', '<mutations>'), /途中で切れ/)
   })
 })

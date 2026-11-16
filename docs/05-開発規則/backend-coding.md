@@ -194,7 +194,7 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 理由：テストのクラスは、JUnit でコンストラクターの注入に設定が必要なのでフィールドの注入を使い、定型コードもほとんどないため。
 
-確認方法：自動（`scripts/ci/java-rules.mjs`）
+確認方法：自動（Checkstyle）
 
 ### 名前の形
 
@@ -284,7 +284,7 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 
 理由：null の誤りを、Spring の API の注釈（同じ JSpecify）も含めて、実行より前のコンパイルで見つけるため。
 
-確認方法：自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー
+確認方法：自動（NullAway、JSpecify 以外の Nullable は Checkstyle）、`@Nullable` と `Optional` の選び方はレビュー
 
 ### 検査を抑えるとき
 

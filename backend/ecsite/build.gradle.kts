@@ -153,6 +153,10 @@ dependencies {
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
+    // --- 設定の値の型の一覧（META-INF/spring-configuration-metadata.json。@DefaultValue の既定値を含む） ---
+    // 環境変数の文書の既定値との照合（scripts/ci/backend/config-defaults.mjs）が読む
+    annotationProcessor(libs.spring.boot.configuration.processor)
+
     // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
     errorprone(libs.errorprone.core)
     errorprone(libs.nullaway)
@@ -202,6 +206,7 @@ val unitTestMaxHeap = "768m"
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、ModuleStructureTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
+//   test-classes.dirs：単体テストと統合テストのクラスの置き場所。テストの書き方の検査（TestNameTest など）が読む（TestCodeClasses）
 // API の契約の正本（OpenAPI）の置き場所。テストが読むほか、下の「OpenAPI からのコード生成」でも使う
 val openApiDir = layout.projectDirectory.dir("../../api/openapi")
 val keycloakRealmsDir = file("../../docker/keycloak/realms")
@@ -209,10 +214,14 @@ val unitTestSystemProperties = mapOf(
     "openapi.dir" to openApiDir.asFile.absolutePath,
     "keycloak.realms.dir" to keycloakRealmsDir.absolutePath,
     "repo.root" to file("../..").absolutePath,
+    "test-classes.dirs" to (sourceSets.test.get().output.classesDirs + sourceSets["integrationTest"].output.classesDirs).asPath,
 )
 
-// 単体テストが読む契約・realm の設定・文書を、task の入力に宣言する（変わったときにテストと PIT を再実行するため）
+// 単体テストが読む契約・realm の設定・文書・統合テストのクラスを、task の入力に宣言する（変わったときにテストと PIT を再実行するため）。
+// 統合テストのクラスは、テストの書き方の検査が読むので、そのコンパイルに依存する
 fun Task.declareUnitTestInputs() {
+    dependsOn("integrationTestClasses")
+    inputs.files(sourceSets["integrationTest"].output.classesDirs)
     inputs.dir(openApiDir)
     inputs.dir(keycloakRealmsDir)
     inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
@@ -339,11 +348,12 @@ tasks.register<JavaExec>("generateRegionMigration") {
 }
 
 // -----------------------------------------------------------------------------
-// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」）
+// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」、使わない注釈：「Lombok は main だけ」「null の扱い」）
 //   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
 //   ・import：使われていないもの（UnusedImports）、* の import（AvoidStarImport）、並び（CustomImportOrder）
 //   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
 //     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
+//   ・使わない注釈：Lombok（テストのソースセットだけ）と、JSpecify 以外の Nullable。import と完全修飾名の注釈を見る
 //   生成したコード（jOOQ、OpenAPI。build/ の下）は見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
 //   Checkstyle はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない
@@ -403,6 +413,8 @@ pitest {
     threads = 4
     outputFormats = listOf("HTML", "XML")
     timestampedReports = false
+    // mutation score（%）が下回ると失敗する。今の値（91.02%）を整数に切り捨てて、さらに 1 下げた値
+    mutationThreshold = 90
 }
 
 // jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）
@@ -411,10 +423,11 @@ tasks.named("pitest") {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
+// カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
-//   報告：build/reports/jacoco/coverageReport/（html、xml）
-//   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：
+//   coverageReport：報告を作る。build/reports/jacoco/coverageReport/（html、xml）
+//   coverageVerification：全体の行と分岐の割合が基準を下回ると失敗する。CI が報告を保存した後に流す
+//   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡す（テストもコンパイルも流さない）：
 //   ./gradlew coverageReport -PcoverageExecDir=<*.exec を探すディレクトリ> -PcoverageClassesDir=<build/classes/java/main の写し>
 //   各ジョブは別々にコンパイルするが、javac の出力は同じ入力なら同じなので、JaCoCo のクラスの ID は一致する
 // -----------------------------------------------------------------------------
@@ -425,9 +438,8 @@ jacoco {
 /** 生成したコード（jOOQ、OpenAPI）は数えない */
 val coverageExcludes = listOf("com/ecsite/jooq/**", "com/ecsite/api/**")
 
-val coverageReport = tasks.register<JacocoReport>("coverageReport") {
-    description = "単体と統合のテストを合わせたカバレッジの報告を作る"
-    group = "verification"
+/** 報告と基準の検査が読む、実行データとクラス。-PcoverageExecDir と -PcoverageClassesDir があれば、そちらを使う */
+fun JacocoReportBase.useCoverageInputs() {
     val execDir = providers.gradleProperty("coverageExecDir").orNull
     val classesDir = providers.gradleProperty("coverageClassesDir").orNull
     if (execDir != null) {
@@ -449,6 +461,12 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
             exclude(coverageExcludes)
         })
     }
+}
+
+val coverageReport = tasks.register<JacocoReport>("coverageReport") {
+    description = "単体と統合のテストを合わせたカバレッジの報告を作る"
+    group = "verification"
+    useCoverageInputs()
     reports {
         xml.required = true
         html.required = true
@@ -456,6 +474,25 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
 }
 
 tasks.check { finalizedBy(coverageReport) }
+
+// 基準は、今の値（行 98.4%、分岐 79.17%）を整数に切り捨てて、さらに 1 下げた値。書き方の変更（引数の null の検査など）で少し下がっても止めないため
+tasks.register<JacocoCoverageVerification>("coverageVerification") {
+    description = "単体と統合のテストを合わせたカバレッジが、基準を下回らないことを確認する"
+    group = "verification"
+    useCoverageInputs()
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                minimum = "0.97".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                minimum = "0.78".toBigDecimal()
+            }
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // 依存のライセンスの検査（依存とライセンス）

@@ -44,13 +44,13 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 - 作った後に変更する呼び出し（店舗の鮮度のテストで税率を変えるなど）
 - 一覧の応答から複数の ID を読む処理（画像の並び、税率の一覧など）
 
-イベントの発行の記録（`EventPublicationRegistry`）を読む操作は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く（`scripts/ci/test-helpers.mjs` の冒頭のコメント）。
+イベントの発行の記録（`EventPublicationRegistry`）を読む操作は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。補助を作るために記録を注入して渡すだけなら、補助の外でもよい。
 
 理由：テストの本文に、確認する項目だけを残すため。
 
 package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、同じパッケージの `src/integrationTest` に public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。テストのために可視性を広げない。
 
-確認方法：レビュー（記録を読む操作と、手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
+確認方法：レビュー（記録を読む操作は自動。`EventPublicationReadTest`。手順を補助の外で書かないことも自動。`scripts/ci/test-helpers.mjs`）
 
 ## テストの置き場所
 

@@ -14,10 +14,10 @@ const SCREEN_SOURCE = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/.*\
 const NOT_PRODUCTION = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/components\/ui\//, /\/src\/ui\//]
 
 /** 画面の単体・結合テストのファイル */
-export const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
+export const FRONTEND_TEST = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/.*\\.test\\.tsx?$`)
 
 /** 画面のテストの補助のファイル（src の下の test/ ディレクトリの下） */
-export const FRONTEND_TEST_SUPPORT = /^frontend\/(?:store|admin|shared)\/src\/(?:.*\/)?test\/.*\.tsx?$/
+export const FRONTEND_TEST_SUPPORT = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/(?:.*/)?test/.*\\.tsx?$`)
 
 /** E2E のファイル */
 export const E2E_FILE = /^e2e\/.*\.tsx?$/

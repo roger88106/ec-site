@@ -1,0 +1,19 @@
+// describe の名前を、関数名やコンポーネント名だけにせず、振る舞いを書く（テストの書き方の「名前は振る舞いを書く」）。
+// 識別子だけの名前は、英数字と _ $ . < > / ( ) - : # @ だけの名前と、<Foo /> の形。
+// describe.each(表)・describe.for(表) の名前の $名前 は表の値に置き換わるので、識別子だけの名前にしない。
+language js
+
+JsCallExpression(callee=$callee, arguments=$args) as $call where {
+  or {
+    and {
+      or { $callee <: r"describe(?:\.\w+)*", $callee <: JsCallExpression(callee=r"describe(?:\.\w+)*\.\w+") },
+      not $callee <: JsCallExpression(callee=r"describe(?:\.\w+)*\.(?:each|for)"),
+      $args <: r"(?s)\(\s*(?:'(?:[A-Za-z0-9_$.<>/()\-:#@]+|<[A-Za-z0-9_$.]+\s*/?>)'|\"(?:[A-Za-z0-9_$.<>/()\-:#@]+|<[A-Za-z0-9_$.]+\s*/?>)\"|`(?:[A-Za-z0-9_$.<>/()\-:#@]+|<[A-Za-z0-9_$.]+\s*/?>)`)\s*(?:,.*)?\)"
+    },
+    and {
+      $callee <: JsCallExpression(callee=r"describe(?:\.\w+)*\.(?:each|for)"),
+      $args <: r"(?s)\(\s*(?:'(?:[A-Za-z0-9_.<>/()\-:#@]|\$[0-9.<>/()\-:#@])+'|\"(?:[A-Za-z0-9_.<>/()\-:#@]|\$[0-9.<>/()\-:#@])+\"|`(?:[A-Za-z0-9_.<>/()\-:#@]|\$[0-9.<>/()\-:#@])+`|'<[A-Za-z0-9_$.]+\s*/?>'|\"<[A-Za-z0-9_$.]+\s*/?>\"|`<[A-Za-z0-9_$.]+\s*/?>`)\s*(?:,.*)?\)"
+    }
+  },
+  register_diagnostic(span=$call, message="describe の名前を識別子だけにせず、振る舞いを書く（テストの書き方の「名前は振る舞いを書く」）。", severity="error")
+}

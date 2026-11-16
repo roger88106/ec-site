@@ -1,0 +1,12 @@
+// fireEvent を直接使わず、userEvent で操作する（フロントのテストの書き方の「fireEvent を直接使わない」）。
+// userEvent で起こせない出来事だけは、直前の行に biome-ignore lint/plugin/no-fire-event と理由を書く。
+// 別名で import すると呼び出しを追えないので、別名も禁じる。
+language js
+
+or {
+  JsReferenceIdentifier() as $use where { $use <: r"fireEvent" },
+  JsStaticMemberExpression(member=$member) as $use where { $member <: r"fireEvent" },
+  JsNamedImportSpecifier(name=$name) as $use where { $name <: r"fireEvent" }
+} where {
+  register_diagnostic(span=$use, message="fireEvent を直接使わず、userEvent で操作する。起こせない出来事だけは、直前の行の biome-ignore に理由を書く。別名で import しない（フロントのテストの書き方の「fireEvent を直接使わない」）。", severity="error")
+}

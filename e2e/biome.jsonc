@@ -13,5 +13,17 @@
   "files": {
     // 生成物（admin.yaml の型）は対象にしない
     "includes": ["**", "!src/generated"]
-  }
+  },
+  // 書き方の規則の plugin。画面と共通の規則は frontend/biome-plugins/、E2E だけの規則は biome-plugins/ にある
+  "overrides": [
+    {
+      "includes": ["**/*.ts", "**/*.tsx"],
+      "plugins": [
+        "../frontend/biome-plugins/no-css-class-check.grit",
+        "../frontend/biome-plugins/no-weak-existence-check.grit",
+        "./biome-plugins/no-position-selector.grit",
+        "./biome-plugins/no-network-idle.grit"
+      ]
+    }
+  ]
 }

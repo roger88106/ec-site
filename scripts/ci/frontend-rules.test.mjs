@@ -4,30 +4,15 @@ import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
   duplicatedFiles,
-  featureOf,
-  findFireEvents,
-  findIdentifierDescribes,
   findIndexedMultiples,
-  findMarkupTextChecks,
   findPropertyComparisons,
-  findTypeCasts,
-  findWeakExistenceChecks,
-  findCrossFeatureImports,
   findBuiltinShadowing,
   findButtonNameChecks,
-  findCssClassChecks,
-  findInternalSelectors,
-  findLineThrough,
-  findLocaleLiterals,
   findMissingTestSpacing,
-  findNetworkIdleWaits,
-  findPositionSelectors,
-  findQueryUrlStrings,
   findTimeoutLiterals,
   findDefinitions,
   findExportedNames,
   groupTargets,
-  isCommonFile,
   sharedPublicNames,
   timeoutTargets,
 } from './frontend-rules.mjs'
@@ -83,54 +68,6 @@ describe('検査の対象のファイルの振り分け', () => {
 })
 
 describe('フロントの書き方の検査', () => {
-  test('機能のファイルの、ほかの機能の import を見つける', () => {
-    const text = [
-      "import { CartLine } from '@/features/cart/components/CartLine'",
-      "import { formatPrice } from '@/lib/format'",
-      "import { OrderSummary } from '@/features/order/components/OrderSummary'",
-      "import { checkoutQuery } from '../checkoutQuery'",
-    ].join('\n')
-    assert.deepEqual(findCrossFeatureImports(text, 'cart').map((hit) => hit.line), [3])
-    const commented = ["// moved from '@/features/orders'", "/* import { x } from '@/features/orders' */", "import { y } from '@/features/orders'"].join('\n')
-    assert.deepEqual(findCrossFeatureImports(commented, 'cart').map((hit) => hit.line), [3])
-  })
-
-  test('相対パス、export from、import() の書き方でも、ほかの機能の import を見つける', () => {
-    const file = 'frontend/store/src/features/cart/components/CartLine.tsx'
-    const text = [
-      "import { OrderSummary } from '../../order/components/OrderSummary'",
-      "export { OrderSummary } from '../../order/components/OrderSummary'",
-      "const Lazy = lazy(() => import('../../order/pages/OrderPage'))",
-      "import '../../order/styles'",
-      "import { checkoutQuery } from '../checkoutQuery'",
-      "import { CartTotal } from '../../cart/components/CartTotal'",
-      "import { formatPrice } from '../../../lib/format'",
-      "export * from '@/features/order/index'",
-      'import {',
-      "  Foo,",
-      "} from '../../order/foo'",
-    ].join('\n')
-    assert.deepEqual(findCrossFeatureImports(text, 'cart', file).map((hit) => hit.line), [1, 2, 3, 4, 8, 11])
-  })
-
-  test('機能のファイルかどうかと、その機能の名前を返す', () => {
-    assert.deepEqual(featureOf('frontend/store/src/features/cart/components/CartLine.tsx'), { app: 'store', feature: 'cart' })
-    assert.deepEqual(featureOf('frontend/admin/src/features/order/pages/OrderListPage.tsx'), { app: 'admin', feature: 'order' })
-    assert.equal(featureOf('frontend/admin/src/lib/format.ts'), null)
-  })
-
-  test('Intl と toLocaleString に直接書いたロケールと、ロケール・タイムゾーンの文字を見つける', () => {
-    const text = [
-      "const yen = new Intl.NumberFormat('ja-JP')",
-      'const yen2 = new Intl.NumberFormat(LOCALE)',
-      "value.toLocaleString('ja-JP')",
-      "const zone = 'Asia/Tokyo'",
-      "const lang = \"ja\"",
-      "const label = 'japan'",
-    ].join('\n')
-    assert.deepEqual(findLocaleLiterals(text).map((hit) => hit.line), [1, 3, 4, 5])
-  })
-
   test('店舗画面と管理画面で、同じ相対パスに同じ内容のファイルを見つける。除外の一覧のパスは見ない', () => {
     const files = {
       'frontend/store/src/lib/utils.ts': 'export const cn = shared',
@@ -160,138 +97,6 @@ describe('フロントの書き方の検査', () => {
     const code = source.replace(/^\s*\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
     const calls = [...code.matchAll(/\bduplicatedFiles\(/g)].length - [...code.matchAll(/function duplicatedFiles\(/g)].length
     assert.equal(calls, 1)
-  })
-})
-
-describe('ほかの機能の import の境界', () => {
-  test('括弧の後ろの改行、from と指定子の間の改行を挟んだ import も、始まりの行で見つける', () => {
-    const text = [
-      'const a = await import(',
-      "  '@/features/cart/x')",
-      'import {',
-      '  X,',
-      '} from',
-      "  '@/features/order/y'",
-      "import { Z } from '@/features/order/z'",
-    ].join('\n')
-    assert.deepEqual(findCrossFeatureImports(text, 'order').map((hit) => hit.line), [1])
-    assert.deepEqual(findCrossFeatureImports(text, 'cart').map((hit) => hit.line), [5, 7])
-  })
-
-  test('テンプレート文字列の動的 import は、${ を含まない固定の文字列だけを見る', () => {
-    const text = ['import(`@/features/cart/x`)', 'import(`@/features/${name}/x`)'].join('\n')
-    assert.deepEqual(findCrossFeatureImports(text, 'order').map((hit) => hit.line), [1])
-  })
-})
-
-describe('店舗画面の書き方の規則', () => {
-  test('クエリ付きの URL を文字列で組み立てる行を見つける', () => {
-    const text = [
-      "return page > 1 ? `/orders?page=${page}` : '/orders'",
-      "const a = '/orders?page=' + page",
-      "const b = '/orders' + '&page=' + page",
-      'const c = `/products?sort=newest&page=${page}`',
-      "const d = '/orders?page=1'",
-      'const e = new URLSearchParams({ page: String(page) })',
-      'const f = `/orders/${id}`',
-    ].join('\n')
-    assert.deepEqual(findQueryUrlStrings(text).map((hit) => hit.line), [1, 2, 3, 4, 5])
-  })
-
-  test('固定の文字列、連結、${} の名前のテンプレートでも、クエリ付きの URL を見つける', () => {
-    const text = [
-      "const a = '/x?a=1'",
-      "const b = '/x?' + 'page=' + p",
-      "const c = '/x?page=' + p",
-      'const d = `${b}?${k}=${v}`',
-      "const e = '/x&' + 'page=' + p",
-      "const f = cond ? a : b",
-      "const g = new URL('/x', base)",
-      "g.searchParams.set('page', String(p))",
-      "const h = a && b === c",
-      "const i = '/x?'",
-    ].join('\n')
-    assert.deepEqual(findQueryUrlStrings(text).map((hit) => hit.line), [1, 2, 3, 4, 5])
-  })
-
-  test('コメントの中のクエリ付きの URL、line-through、CSS のクラスは違反にしない', () => {
-    const text = [
-      "// 例：'/orders?page=' + page",
-      '/* const a = `/x?page=${p}`',
-      " * line-through で .className を読む */",
-      "const ok = 1 // expect(el).toHaveClass('a') と line-through",
-    ].join('\n')
-    assert.deepEqual(findQueryUrlStrings(text), [])
-    assert.deepEqual(findLineThrough(text), [])
-    assert.deepEqual(findCssClassChecks(text), [])
-  })
-
-  test('CSS のクラスの確認の書き方（属性、描画した HTML の class=、クラスのセレクター）を広く見つける', () => {
-    const text = [
-      "expect(el).toHaveAttribute('class', 'a')",
-      "expect(html).toContain('<p class=\"line-through\">')",
-      'expect(html).toMatch(/<p class="[^"]*line-through">/)',
-      "await page.locator('.cart-line').click()",
-      "document.querySelector('.a')",
-      "document.querySelectorAll('div.a')",
-      "await page.$('.a')",
-      "await page.$$('.a')",
-      "await page.locator('button.primary').click()",
-      "await page.locator('[data-testid=\"x\"]').click()",
-      "await page.locator('a[href=\"/x.html\"]').click()",
-      "await page.locator('text=a.b').click()",
-      "expect(el).toHaveAttribute('aria-pressed', 'true')",
-      '<div className="a" />',
-    ].join('\n')
-    assert.deepEqual(findCssClassChecks(text).map((hit) => hit.line), [1, 2, 3, 4, 5, 6, 7, 8, 9])
-  })
-
-  test('CSS のクラスを確認する行を見つける', () => {
-    const text = [
-      "expect(button).toHaveClass('active')",
-      "expect(el.className).toContain('a')",
-      "el.classList.contains('a')",
-      "el.getAttribute('class')",
-      "expect(button).toHaveAttribute('aria-pressed', 'true')",
-    ].join('\n')
-    assert.deepEqual(findCssClassChecks(text).map((hit) => hit.line), [1, 2, 3, 4])
-  })
-
-  test('コンポーネントの内部の属性（data-slot）と querySelector で探す行を見つける', () => {
-    const text = [
-      `const card = container.querySelector('[data-slot="card"]')`,
-      `container.querySelectorAll('li')`,
-      `screen.getByText('a').closest('[data-slot="field"]')`,
-      `expect(el).toHaveAttribute('data-slot', 'card')`,
-      `document.querySelector('#a')`,
-      `const el = screen.getByRole('button', { name: '保存' })`,
-      `expect(el).toHaveAttribute('aria-pressed', 'true')`,
-      `// container.querySelector('[data-slot]')`,
-    ].join('\n')
-    assert.deepEqual(findInternalSelectors(text).map((hit) => hit.line), [1, 2, 3, 4, 5])
-  })
-
-  test('line-through の直書きの行を見つける', () => {
-    const text = ['<span className="line-through">x</span>', '<s>x</s>'].join('\n')
-    assert.deepEqual(findLineThrough(text).map((hit) => hit.line), [1])
-  })
-
-  test('actions・lib・api のファイルから features への import を、相対パスも含めて見つける', () => {
-    const file = 'frontend/store/src/actions/cart.ts'
-    const text = [
-      "import { x } from '@/features/cart/x'",
-      "import { y } from '../features/order/y'",
-      "import { z } from '@/lib/z'",
-    ].join('\n')
-    assert.deepEqual(findCrossFeatureImports(text, null, file).map((hit) => hit.line), [1, 2])
-  })
-
-  test('店舗画面と管理画面の actions・lib・api のファイルだけを共通の置き場所とする', () => {
-    assert.equal(isCommonFile('frontend/store/src/actions/cart.ts'), true)
-    assert.equal(isCommonFile('frontend/admin/src/lib/format.ts'), true)
-    assert.equal(isCommonFile('frontend/admin/src/api/client.ts'), true)
-    assert.equal(isCommonFile('frontend/shared/src/lib/locale.ts'), false)
-    assert.equal(isCommonFile('frontend/store/src/features/cart/lib/x.ts'), false)
   })
 })
 
@@ -371,64 +176,6 @@ describe('共有のパッケージと同じ名前の定義', () => {
 describe('テストの書き方の検査', () => {
   const lines = (hits) => hits.map((hit) => hit.line)
 
-  test('理由のコメントのない型を回避する変換を見つける（同じ行か直前の行のコメントは理由とみなす）', () => {
-    const text = [
-      'const a = value as never',
-      'const b = value as unknown as Foo // ライブラリの型が合わない',
-      '// ライブラリの型が合わない',
-      'const c = value as unknown as Foo',
-      'const d = value as never /* 理由 */',
-      'const e = value as unknown as Foo',
-      "const f = 'as never'",
-      '// value as never',
-      'const g = value as Foo',
-    ].join('\n')
-    assert.deepEqual(lines(findTypeCasts(text)), [1, 6])
-  })
-
-  test('改行をまたぐ型の変換も見つける（開始の行の直前のコメントか、またぐ行のコメントは理由）', () => {
-    const text = [
-      'const a = value as',
-      '  never',
-      'const b = value as unknown',
-      '  as Foo',
-      '// 理由',
-      'const c = value as unknown',
-      '  as Foo',
-      'const d = value as',
-      '  never // 理由',
-    ].join('\n')
-    assert.deepEqual(lines(findTypeCasts(text)), [1, 3])
-  })
-
-  test('同じ行に正規表現のリテラルがあっても、理由のコメントがなければ型の回避を見つける', () => {
-    const text = [
-      'foo(/x/, y as never)',
-      'foo(/x/, y as never) // 理由',
-      '// 理由',
-      'foo(/x/, y as unknown as Z)',
-      'const w = /a/.test(s) ? (v as never) : 1',
-    ].join('\n')
-    assert.deepEqual(lines(findTypeCasts(text)), [1, 5])
-  })
-
-  test('toBeTruthy と toBeDefined は、名前と括弧の間に空白があっても見つける', () => {
-    const text = ['expect(el).toBeTruthy ()', 'expect(el).toBeDefined  ()', 'expect(el).toBeInTheDocument ()'].join('\n')
-    assert.deepEqual(lines(findWeakExistenceChecks(text)), [1, 2])
-  })
-
-  test('toBeTruthy と toBeDefined の呼び出しを見つける（コメントと文字列の中は数えない）', () => {
-    const text = [
-      'expect(el).toBeTruthy()',
-      'expect.poll(() => x)',
-      '  .toBeDefined()',
-      "test('toBeTruthy() で確かめない', () => {})",
-      '// expect(el).toBeDefined()',
-      'expect(el).toBeInTheDocument()',
-    ].join('\n')
-    assert.deepEqual(lines(findWeakExistenceChecks(text)), [1, 3])
-  })
-
   test('getAllBy・findAllBy・queryAllBy の結果を、並びのインデックスで選ぶ所を見つける', () => {
     const text = [
       "screen.getAllByRole('link')[0]",
@@ -504,62 +251,6 @@ describe('テストの書き方の検査', () => {
     assert.deepEqual(lines(findIndexedMultiples(afterBlock)), [3])
   })
 
-  test('描画した HTML の文字を、要素や属性の並びで確認する所を見つける（空の描画の確認は除く）', () => {
-    const text = [
-      "expect(html).toContain('<a href=\"/x\">')",
-      'expect(html).toMatch(/<ul[^>]*>/)',
-      "expect(html).toContain('href=\"/cart\"')",
-      "expect(html).toMatch(/aria-label=\"x\"/)",
-      "expect(renderMarkup(<Foo />)).toBe('')",
-      "expect(text).toContain('カートに入れる')",
-      "expect(header).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/)",
-      "expect(query).toContain('a < b')",
-      "expect(html).toBe('<p>x</p>')",
-      "// expect(html).toContain('<a>')",
-    ].join('\n')
-    assert.deepEqual(lines(findMarkupTextChecks(text)), [1, 2, 3, 4, 9])
-  })
-
-  test('型引数の < は HTML のタグと読まない（期待値の文字列・テンプレート・正規表現の中だけ見る）', () => {
-    const text = [
-      'expect(new Map<string, number>()).toEqual(expected)',
-      'expect(list).toEqual(Array<string>())',
-      'expect(value).toBe(fn<A>(1))',
-      "expect(html).toBe(`<p>${x}</p>`)",
-      'expect(items).toStrictEqual<Foo[]>([])',
-    ].join('\n')
-    assert.deepEqual(lines(findMarkupTextChecks(text)), [4])
-  })
-
-  test('識別子だけの describe の名前を見つける（修飾と each も読む）', () => {
-    const text = [
-      "describe('ProductCard', () => {})",
-      "describe('商品カード', () => {})",
-      "describe('formatYen()', () => {})",
-      "describe('<OrderForm />', () => {})",
-      "describe.each(cases)('%s', () => {})",
-      "describe.each([['a', 1]])('lib/format', () => {})",
-      'describe.skip(`useCart`, () => {})',
-      "describe('日本時間の整形', () => {})",
-      "describe('shows the total', () => {})",
-      "// describe('Commented', () => {})",
-      "test('describe(\"InString\")', () => {})",
-    ].join('\n')
-    assert.deepEqual(lines(findIdentifierDescribes(text)), [1, 3, 4, 6, 7])
-  })
-
-  test('describe.each の置き換えの記号（$名前、%s など）を含む名前は、識別子だけの名前にしない', () => {
-    const text = [
-      "describe.each(cases)('$name', () => {})",
-      "describe.each(cases)('%s', () => {})",
-      "describe.each(cases)('%d', () => {})",
-      "describe.each(cases)('$a.b', () => {})",
-      "describe.each(cases)('plain', () => {})",
-      "describe('$store', () => {})",
-    ].join('\n')
-    assert.deepEqual(lines(findIdentifierDescribes(text)), [5, 6])
-  })
-
   test('.disabled・.checked・.value・getAttribute を toBe・toEqual で比べる所を見つける', () => {
     const text = [
       "const button = screen.getByRole('button')",
@@ -602,98 +293,10 @@ describe('テストの書き方の検査', () => {
     ]
     for (const text of misses) assert.deepEqual(findPropertyComparisons(text), [], text)
   })
-
-  test('理由のコメントのない fireEvent の使用を見つける（import とコメントと文字列の中は除く。同じ行か直前のコメントだけの行は理由）', () => {
-    const text = [
-      "import { fireEvent } from '@testing-library/react'",
-      'import {',
-      '  fireEvent,',
-      "} from '@testing-library/react'",
-      '',
-      '// fireEvent は使わない',
-      'export function typeDateTime(input: HTMLElement, value: string): void {',
-      '  fireEvent.change(input, { target: { value } })',
-      '}',
-      '',
-      'export const returnToTab = (): void => {',
-      '  // 対応する userEvent の操作がない',
-      "  fireEvent(window, new Event('visibilitychange'))",
-      '}',
-      "test('fireEvent で起こさない', () => {})",
-      'fireEvent.click(x) // 理由',
-      '',
-      'fireEvent.click(y)',
-    ].join('\n')
-    assert.deepEqual(findFireEvents(text).map((hit) => hit.line), [8, 18])
-  })
-
-  test('同じ行に正規表現のリテラルがあっても、理由のコメントがなければ fireEvent を見つける', () => {
-    const text = [
-      "fireEvent.click(screen.getByRole('button', { name: /送信/ }))",
-      "fireEvent.click(screen.getByRole('button', { name: /送信/ })) // 理由",
-      '// 理由',
-      'fireEvent.change(screen.getByLabelText(/名前/), { target: { value: 1 } })',
-      'if (/a/.test(s)) fireEvent.click(b)',
-    ].join('\n')
-    assert.deepEqual(findFireEvents(text).map((hit) => hit.line), [1, 5])
-  })
-
-  test('fireEvent を別名で import した呼び出しと、名前空間の import の呼び出しも見つける', () => {
-    const alias = ["import { fireEvent as fe, render } from '@testing-library/react'", 'fe.click(x)', 'fe(window, new Event("a"))', 'const fee = 1'].join('\n')
-    assert.deepEqual(findFireEvents(alias).map((hit) => hit.line), [2, 3])
-    const namespace = ["import * as rtl from '@testing-library/react'", 'rtl.fireEvent.click(x)', 'rtl.render(y)'].join('\n')
-    assert.deepEqual(findFireEvents(namespace).map((hit) => hit.line), [2])
-    const crlf = "import { fireEvent as fe } from 'x'\r\n// 理由\r\nfe.click(a)\r\nfe.click(b)\r\n"
-    assert.deepEqual(findFireEvents(crlf).map((hit) => hit.line), [4])
-  })
 })
 
 describe('E2E の書き方の検査', () => {
   const lines = (hits) => hits.map((hit) => hit.line)
-
-  test('位置で選ぶメソッド（.first()・.nth()・.last()）を見つける（?. と空白と改行を含む。コメントと文字列の中は除く）', () => {
-    const text = [
-      "await page.getByRole('row').first().click()",
-      "await page.getByRole('row').nth(2).click()",
-      "await page.getByRole('row').last().click()",
-      "await page.getByRole('row')?.first ( ).click()",
-      "await page.getByRole('row')",
-      '  .nth(',
-      '    0).click()',
-      "// page.getByRole('row').first()",
-      "const message = '.first() は使わない'",
-      "await page.getByRole('row', { name: 'a', exact: true }).click()",
-      'const firstName = first',
-    ].join('\n')
-    assert.deepEqual(lines(findPositionSelectors(text)), [1, 2, 3, 4, 6])
-  })
-
-  test('locator の文字列のセレクターの中の位置（nth=、:nth-match(、:nth-child(、:first-child、:last-child）を見つける', () => {
-    const text = [
-      "await page.locator('tr >> nth=0').click()",
-      'await page.locator("li:nth-match(:visible, 2)").click()',
-      "await page.locator('ul > li:nth-child(2)').click()",
-      "await page.locator('li:first-child').click()",
-      "await page.locator('li:last-child').click()",
-      "await page.getByRole('row').locator('td:first-child').click()",
-      "await page.locator('table', { has: page.locator('li:nth-child(3)') }).click()",
-      "await page.locator('li').click()",
-      "test('li:first-child は使わない', () => {})",
-      "// page.locator('li:first-child')",
-      "const message = 'li:last-child'",
-    ].join('\n')
-    assert.deepEqual(lines(findPositionSelectors(text)), [1, 2, 3, 4, 5, 6, 7])
-  })
-
-  test('networkidle で待つ箇所を見つける（コメントの中は除く）', () => {
-    const text = [
-      "await page.goto(url, { waitUntil: 'networkidle' })",
-      'await page.waitForLoadState("networkidle")',
-      '// networkidle では待たない',
-      "await page.goto(url, { waitUntil: 'load' })",
-    ].join('\n')
-    assert.deepEqual(lines(findNetworkIdleWaits(text)), [1, 2])
-  })
 
   test('ボタンを文字列の名前で探すとき、exact: true がない箇所を見つける（連鎖の途中、複数の行、変数、テンプレート文字列を含む）', () => {
     const text = [
@@ -868,7 +471,7 @@ describe('E2E の書き方の検査', () => {
   })
 
   test('報告に行の番号と元の行の文字を含む', () => {
-    assert.deepEqual(findPositionSelectors("x\n  page.getByRole('row').first()  "), [{ line: 2, text: "page.getByRole('row').first()" }])
+    assert.deepEqual(findTimeoutLiterals('x\n  page.click(a, { timeout: 5000 })  '), [{ line: 2, text: 'page.click(a, { timeout: 5000 })' }])
   })
 
   test('タイムアウトの数字の検査は、タイムアウトの定数を定義する waits.ts を対象にしない', () => {

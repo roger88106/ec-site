@@ -18,7 +18,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `ja-text` | 使わない語（error）がないことを確認し、文脈で決める語と文体の型を warning として示す |
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |
 | `env-defaults` | 環境変数の文書の既定値と設定の型の @DefaultValue の一致と、管理画面の IdP の既定値の一致を確認する |
-| `frontend-rules` | フロントとテストの書き方の規則のうち、ソースの文字で確認できるものを確認する |
+| `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
 | `gradle-plugins` | Gradle のプラグインの id が、policy.json の gradlePlugins と過不足なく一致することを確認する |
 | `hardcoded-text` | 画面のコードに、表示の文言（日本語の文字）を直接書いていないことを確認する |

@@ -24,7 +24,7 @@
 
 理由：機能の追加・削除で触るファイルを 1 か所にまとめ、機能を削除しても共通の置き場所が壊れないようにするため。
 
-確認方法：機能の間と、共通の置き場所から機能への import は自動（`scripts/ci/frontend-rules.mjs`）、置き場所はレビュー
+確認方法：機能の間の import は自動（Biome の plugin `no-cross-feature-import`）、共通の置き場所から機能への import は自動（Biome の `noRestrictedImports`）、置き場所はレビュー
 
 ## API
 
@@ -139,7 +139,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 確認方法：
 
 - 型の付く URL：自動（型チェック）
-- クエリ付きの URL の文字列の組み立て：自動（`scripts/ci/frontend-rules.mjs`）
+- クエリ付きの URL の文字列の組み立て：自動（Biome の plugin `no-query-url-string`）
 - 型の付かない他の URL：レビュー（管理画面は `git grep` でパスの直書きを、店舗画面は `as Route`、`revalidatePath()`、`<form action>` を見る）
 
 ## 表示の文言とロケール
@@ -173,7 +173,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 理由：言語を追加するときに、変える所を 1 か所にするため。
 
-確認方法：自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：自動（Biome の plugin `no-locale-literal`）
 
 ## 店舗画面のサーバーの設定とログ
 
@@ -213,7 +213,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 理由：見た目だけの線は支援技術に伝わらず、テストもクラスでしか確認できなくなるため（[フロントのテストの書き方](test-writing-frontend.md)の「画面に見えるもので探す」）。
 
-確認方法：`line-through` の直書きは自動（`scripts/ci/frontend-rules.mjs`）、他の書き方はレビュー
+確認方法：`line-through` の直書きは自動（Biome の plugin `no-line-through`）、他の書き方はレビュー
 
 ### 店舗画面の読み上げの領域は status の役割で作る
 

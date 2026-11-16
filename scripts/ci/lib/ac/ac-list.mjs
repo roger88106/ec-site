@@ -7,17 +7,11 @@
 //     手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容。
 //     転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは手動で修正する
 //     （手順は docs/05-開発規則/issues.md「AC 一覧の操作」）
-//   - 元の spec・変えた spec の値：MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（227）。
-//     変えた spec が 2 つ以上なら読点で区切る。
-//     spec のディレクトリは lib/docs/spec-dirs.mjs で探す。MVP-<番号> は docs/08-spec/archive/mvp/ の下と照合する。
-//     番号だけの値は、docs/08-spec/ の直下と、MVP 以外のまとまりの下と照合する。
-//     番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（007 と 7 は別の番号）
-//   - ③ のモジュールの名前：次の 2 つが両方ある名前と、common（共通。③ の表に生成しない）。
-//     backend/ecsite/src/main/java/com/ecsite/module/<名前>/ と docs/03-機能仕様/<名前>.md
+//   - 元の spec・変えた spec の値：形は SPEC_NUMBER。変えた spec が 2 つ以上なら SPEC_NUMBER_SEPARATOR で区切る。
+//     spec のディレクトリとの照合は match.mjs
+//   - ③ のモジュールの名前：listModuleNames と、common（共通。③ の表に生成しない）
 //   - ③ の表：構造の検査の対象の一覧（lib/docs/functional-specs.mjs の FUNCTIONAL_SPECS）にある ③ の、マーカーの範囲。
-//     マーカーは「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ
-//   - ③ の表の中身：AC 一覧から作る。列は AC、今の内容、元の spec。0 件なら「なし。」の 1 行。
-//     状態が有効か変更で、列「モジュール」がその ③ の名前の AC を、AC の順に置く
+//     マーカーは「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ。中身は renderModuleTable で作る
 //   - ③ の表の比べ方：範囲の先頭と末尾の空行を除き、改行コードを LF にそろえて、完全一致で比べる。
 //     全角と半角などは正規化しない
 //   - 進行中の spec：docs/08-spec/ の直下の spec.md の、定義の行（- **AC-…**）。spec.md のないディレクトリは飛ばす。
@@ -111,7 +105,12 @@ const DEFINITION_ATTEMPTS = [
   new RegExp(`^\\s*\\|\\s*${AC_LABEL}\\s*\\|`, 'u'),
 ]
 
-/** 元の spec・変えた spec の列の、spec の番号の形。MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（0 埋めの有無は変えずに、そのまま比べる） */
+/**
+ * 元の spec・変えた spec の列の、spec の番号の形。MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（227）。
+ *
+ * MVP-<番号> は MVP_ARCHIVE_PREFIX の下と、番号だけの値は docs/08-spec/ の直下と MVP 以外のまとまりの下と照合する。
+ * 番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（0 埋めの有無は変えない。007 と 7 は別の番号）
+ */
 export const SPEC_NUMBER = /^(?:MVP-(?<mvp>[0-9]{3})|(?<plain>[0-9]+))$/
 
 /** MVP の spec のディレクトリの置き場所（docs/08-spec/ から） */

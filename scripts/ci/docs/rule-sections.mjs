@@ -17,7 +17,7 @@
 //   除外するのは、行の有無だけ。理由のない除外と、今の文書にない節の除外は失敗にする。
 //
 // 使い方：node scripts/ci/docs/rule-sections.mjs（リポジトリのルートで）
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { readDocument, readHeadings, SETEXT_UNDERLINE } from '../lib/docs/doc-structure.mjs'
 import { checkExclusions, exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'
 
@@ -124,6 +124,11 @@ export function checkDocuments(docs, exclusions) {
 }
 
 if (import.meta.main) {
+  const missing = RULE_DOCS.filter((file) => !existsSync(file))
+  if (missing.length) {
+    for (const file of missing) console.log(`${file} がない（RULE_DOCS を、書き方の規則の文書の今の名前に合わせる）`)
+    process.exit(1)
+  }
   const exclusions = readExclusions(exclusionsPath(`docs/${EXCLUSIONS_NAME}`))
   const { problems, exclusionProblems } = checkDocuments(
     RULE_DOCS.map((file) => ({ file, text: readFileSync(file, 'utf8') })),

@@ -14,7 +14,7 @@
 // 除外：なし
 //
 // 使い方：node scripts/ci/docs/ci-docs.mjs（リポジトリのルートで）
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
 import { describeUnreadableLine } from '../lib/source/unreadable-line.mjs'
 
@@ -150,6 +150,10 @@ export function checkCommentLines(sources) {
 if (import.meta.main) {
   const checkFiles = listGitFiles([CHECK_DIR])
   exitIfNoFiles(checkFiles, `検査（${CHECK_DIR}）`)
+  if (!existsSync(DOC)) {
+    console.log(`${DOC} がない（DOC を、CI の検査の文書の今の名前に合わせる）`)
+    process.exit(1)
+  }
   const doc = readFileSync(DOC, 'utf8')
   const sources = listCommentTargets(checkFiles).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
   const problems = [...compareChecks(readTableChecks(doc), listChecks(checkFiles)), ...checkFirstLines(sources), ...checkCommentLines(sources.filter(({ file }) => !file.startsWith(`${CHECK_DIR}lib/`)))]

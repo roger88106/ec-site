@@ -41,7 +41,7 @@ export const CHECK_INPUTS = {
   risk: ALWAYS,
   'role-permissions': [/^api\/openapi\//],
   'rule-sections': [/^docs\/05-開発規則\//],
-  'runtime-versions': [/^\.github\//, /(?:^|\/)package\.json$/],
+  'runtime-versions': [/^\.github\//],
   'spec-numbers': ALWAYS,
   'spec-structure': [/^docs\/03-機能仕様\//, /^docs\/08-spec\//],
 }

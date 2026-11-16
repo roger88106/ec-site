@@ -34,11 +34,6 @@ on:
 
 permissions: {}
 
-# 全ての job の JDK のバージョン。バックエンドの toolchain のバージョン（backend/ecsite/gradle/libs.versions.toml の java）と同じにする。
-# setup-java は libs.versions.toml を読めないので、ここに 1 か所だけ書き、各 job が参照する
-env:
-  JAVA_VERSION: '21'
-
 # develop と main は全ての commit を検査し、前の実行を中止しない。作業ブランチは、同じ ref で新しい実行が始まったら、古い実行を中止する。
 # 作業ブランチの push と pull request を同じ group にしない（docs/06-手順書/ci.md の「CI のジョブ」）
 concurrency:
@@ -68,7 +63,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       # Gradle のキャッシュと、wrapper の検証
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
@@ -136,7 +131,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
@@ -182,7 +177,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
@@ -252,7 +247,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       # 報告を作る Gradle の呼び出しだけに使う（テストもコンパイルも流さない）
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
@@ -447,7 +442,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 

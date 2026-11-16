@@ -53,7 +53,8 @@ extra["jooq.version"] = libs.versions.jooq.get()
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get()))
+        // JDK のバージョンは、リポジトリのルートの .java-version の 1 か所に書く（CI の setup-java も読む）
+        languageVersion.set(JavaLanguageVersion.of(file("../../.java-version").readText().trim()))
     }
 }
 

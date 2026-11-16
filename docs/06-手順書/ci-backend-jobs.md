@@ -17,7 +17,7 @@
   - この文書の、`integrationTestShards` の例の数。
 - 統合テストのフォークの数（`maxParallelForks`）は 1。CI で測って 10% 以上短くなれば、`-PintegrationTestForks=2` にする。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「統合テストのフォークの数」。
 - E2E は、ブラウザーの OS の依存を apt で入れない（理由は `ci.yml` のコメント）。失敗時の画面の撮影の文字が四角になって読めないときは、手元の `scripts/dev/e2e.sh` で再現する。
-- Node のバージョンは `.node-version`、JDK のバージョンは `ci.yml` の `JAVA_VERSION` と `libs.versions.toml` の `java` に書く。1 か所にできない組は、検査 `runtime-versions`（[CI の検査の script](ci-checks.md)）が一致を確認する。
+- Node のバージョンは `.node-version`、JDK のバージョンは `.java-version`（Gradle の toolchain と setup-java が読む）の 1 か所に書く。workflow がバージョンを直接書かないことは、検査 `runtime-versions`（[CI の検査の script](ci-checks.md)）が確認する。`.node-version` とルートの `package.json` の `engines.node` のずれは、pnpm の `engineStrict` がインストールを失敗にする。
 
 ## docs.yml を分ける理由
 

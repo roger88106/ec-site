@@ -274,7 +274,7 @@ function stripHtmlComments(text) {
  * @param {string} body pull request の本文
  * @returns {{ value: '高' | '低' } | { error: string }} 値か、読めない理由
  */
-export function readBodyRisk(body) {
+export function parseBodyRisk(body) {
   const lines = stripHtmlComments(body).split('\n').map((line) => line.replace(/\r$/, ''))
   const start = lines.findIndex((line) => BODY_HEADING.test(line))
   if (start === -1) return { error: '「## 危険度」の節がない' }
@@ -300,7 +300,7 @@ export function readBodyRisk(body) {
  * @returns {{ ok: boolean, message: string }} 成功か、と出力する 1 行
  */
 export function compareBody(level, body) {
-  const read = readBodyRisk(body)
+  const read = parseBodyRisk(body)
   if ('error' in read) return { ok: false, message: `本文の危険度を読めない：${read.error}（この script の出力を「## 危険度」の節に貼る）` }
   if (read.value === level) return { ok: true, message: `本文の危険度は ${read.value} で、判定と一致する` }
   if (read.value === '高') return { ok: true, message: '本文の危険度は高で、判定は低（本文で高にした変更として扱う）' }

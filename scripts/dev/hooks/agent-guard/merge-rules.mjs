@@ -4,7 +4,7 @@
 // 向き先が agent/ で始まる pull request は、開いていることと head の commit だけを見て通す。
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, readBodyRisk } from '../../../ci/config/risk.mjs'
+import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, parseBodyRisk } from '../../../ci/config/risk.mjs'
 import { APPROVE_ONLY_IF_ALLOWED, ask, deny } from './decision.mjs'
 import { GH_PR_OPTIONS, flagEnabled, optionValue, parseGhArgs } from './gh-rules.mjs'
 
@@ -293,7 +293,7 @@ function dependabotProblems(pullRequest) {
  */
 function authoredProblems(pullRequest, checks) {
   const problems = []
-  const bodyRisk = readBodyRisk(pullRequest.body ?? '')
+  const bodyRisk = parseBodyRisk(pullRequest.body ?? '')
   if ('error' in bodyRisk) problems.push(`本文の危険度を読めない（${bodyRisk.error}）`)
   else if (bodyRisk.value !== '低') problems.push(`本文の危険度の判定が「低」でない（判定：${bodyRisk.value}）`)
   const riskChecks = checks.filter((node) => node.__typename === 'CheckRun' && node.name === RISK_CHECK)

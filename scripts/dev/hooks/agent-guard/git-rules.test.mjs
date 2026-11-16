@@ -29,6 +29,13 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
+  test('長いオプションの略記は 3 文字から当て、2 文字以下は当てない', () => {
+    assertDenied('git push --for origin x', /force push/)
+    assertPassed('git push --fo origin x')
+    assertDenied('git commit --no- -m x', /--no-verify/)
+    assertPassed('git commit --no -m x')
+  })
+
   test('cd を前に付けた形、つないだ形、git -C、フルパスの git でも拒否する', () => {
     for (const command of [
       'cd sub && git push --force',

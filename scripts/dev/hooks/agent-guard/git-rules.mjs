@@ -158,14 +158,23 @@ function scanOptions(args, { valueShort, optionalShort, valueLong }) {
 }
 
 /**
- * 長いオプションの名前が、対象のオプションのどれかか。git は一意な前方の一致の略記も受け付けるので、3 文字以上の略記も当てる。
+ * 長いオプションの略記として当てる、最も短い文字数。
+ *
+ * 2 文字以下の略記は当てない（既知の限り。--fo のような短い略記を git が受け付けるかは見分けない）。
+ */
+const MIN_ABBREVIATION = 3
+
+/**
+ * 長いオプションの名前が、対象のオプションのどれかか。
+ *
+ * git は一意な前方の一致の略記も受け付けるので、MIN_ABBREVIATION 文字以上の略記も当てる。
  *
  * @param {string} name オプションの名前
  * @param {string[]} targets 対象のオプションの名前
  * @returns {boolean} 当たれば true
  */
 function matchesLong(name, targets) {
-  return targets.some((target) => name === target || (name.length >= 3 && target.startsWith(name)))
+  return targets.some((target) => name === target || (name.length >= MIN_ABBREVIATION && target.startsWith(name)))
 }
 
 /**

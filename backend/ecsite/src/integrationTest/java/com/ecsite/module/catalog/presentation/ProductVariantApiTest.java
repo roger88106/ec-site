@@ -239,13 +239,16 @@ class ProductVariantApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, CODE_MAX_LENGTH})
-        @DisplayName("バリアント品番が範囲の端の文字数なら登録できる")
+        @DisplayName("バリアント品番が範囲の端の文字数なら、その値で登録できる")
         void acceptsVariantCodeAtBoundary(int length) throws Exception {
             // 準備：軸のない商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：登録できる
+            // 操作：登録する
             products.addVariant(id, "V".repeat(length), 0).andExpect(status().isCreated());
+
+            // 確認：送った品番で保存される
+            products.getProduct(id).andExpect(jsonPath("$.variants[0].variantCode").value("V".repeat(length)));
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -263,13 +266,16 @@ class ProductVariantApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, AXIS_VALUE_MAX_LENGTH})
-        @DisplayName("軸の値が範囲の端の文字数なら登録できる")
+        @DisplayName("軸の値が範囲の端の文字数なら、その値で登録できる")
         void acceptsAxisValueAtBoundary(int length) throws Exception {
             // 準備：色の軸を持つ商品
             var id = products.product(PRODUCT_CODE, AXIS_COLOR);
 
-            // 操作と確認：登録できる
+            // 操作：登録する
             products.addVariant(id, "V1", 0, "あ".repeat(length)).andExpect(status().isCreated());
+
+            // 確認：送った軸の値で保存される
+            products.getProduct(id).andExpect(jsonPath("$.variants[0].axisValues", contains("あ".repeat(length))));
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -291,8 +297,11 @@ class ProductVariantApiTest {
             // 準備：軸が 3 つの商品
             var id = products.product(PRODUCT_CODE, AXIS_COLOR, AXIS_SIZE, AXIS_MATERIAL);
 
-            // 操作と確認：登録できる
+            // 操作：登録する
             products.addVariant(id, "V1", 0, WHITE, SIZE_M, COTTON).andExpect(status().isCreated());
+
+            // 確認：3 つの軸の値を、送った順に持つ
+            products.getProduct(id).andExpect(jsonPath("$.variants[0].axisValues", contains(WHITE, SIZE_M, COTTON)));
         }
 
         @Test

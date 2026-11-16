@@ -321,13 +321,16 @@ class CategoryApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, NAME_MAX_LENGTH})
-        @DisplayName("名称が範囲の端の文字数なら登録できる")
+        @DisplayName("名称が範囲の端の文字数なら、その値で登録できる")
         void acceptsNameAtBoundary(int length) throws Exception {
             // 準備：親のカテゴリ「衣類」
             var parent = createdId(CLOTHING, null);
 
-            // 操作と確認：登録できる
-            createCategory("あ".repeat(length), parent).andExpect(status().isCreated());
+            // 操作：登録する
+            var id = createdId("あ".repeat(length), parent);
+
+            // 確認：送った名称で保存される
+            mockMvc.perform(get(BASE + "/" + id)).andExpect(jsonPath("$.name").value("あ".repeat(length)));
         }
 
         @Test
@@ -483,13 +486,16 @@ class CategoryApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, NAME_MAX_LENGTH})
-        @DisplayName("変更後の名称が範囲の端の文字数なら変更できる")
+        @DisplayName("変更後の名称が範囲の端の文字数なら、その値に変更できる")
         void acceptsNameAtBoundary(int length) throws Exception {
             // 準備：カテゴリ「衣類」の子「トップス」
             var id = createdId(TOPS, createdId(CLOTHING, null));
 
-            // 操作と確認：変更できる
+            // 操作：変更する
             rename(id, "あ".repeat(length), 0).andExpect(status().isNoContent());
+
+            // 確認：送った名称で保存される
+            mockMvc.perform(get(BASE + "/" + id)).andExpect(jsonPath("$.name").value("あ".repeat(length)));
         }
 
         @ParameterizedTest(name = "「{0}」")

@@ -5,7 +5,7 @@ CI の検査の script を加える手順と、補助の script の置き場所�
 ## 検査を追加する手順
 
 - 引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
-- 処理は `if (isMain(import.meta.url)) { … }`（`lib/is-main.mjs`）の中に書き、テストが import しても動かないようにする。
+- 処理は `if (import.meta.main) { … }`（Node の標準の判定）の中に書き、テストが import しても動かないようにする。
 - 違反は標準出力に出し、最後の行に要約の行（`<何>：<件数>`。例：`切れた参照：0`）を出して、違反があれば終了コード 1 にする。
 - 先頭のコメント（1 行目から `//`）に、確認すること、失敗したとき、除外を書く。
 - [CI の検査の script](ci-checks.md)の表に行を加える（`ci-docs` の検査が対応を確認する）。
@@ -20,7 +20,6 @@ CI の検査の script を加える手順と、補助の script の置き場所�
   - `report/` の下の `coverage-summary.mjs`、`mutation-report.mjs`：引数が必要（[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」）。
   - `licenses/`：画面の依存が必要な検査。
   - `backend/` の下の `config-defaults.mjs`：バックエンドのコンパイルの出力（設定の一覧）が必要な、環境変数の文書の既定値の照合。CI のビルドのジョブだけで実行し、commit の前の hook では実行しない。
-  - `workflow/` の下の `main-source.mjs`：workflow から呼ぶ判定（元のブランチの名前が引数）。
   - `review/` の下の `test-diff.mjs`：レビューで手動で使う補助（[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）。
   - `mermaid/` の下の `mermaid-check.mjs`：Chrome とネットワークが必要な検査（[CI の検査の script](ci-checks.md)の「Mermaid の図の描画の検査」）。
 - 複数の検査が使う関数は `lib/` に置き（テストは `*.test.mjs`）、役割は各ファイルの先頭のコメントに書く。

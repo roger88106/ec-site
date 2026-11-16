@@ -1,4 +1,4 @@
-// git の呼び出しの規則：force push、リモートのブランチの削除、検査の省略、pre-commit hook の有無、tag。
+// git の呼び出しの規則：force push、検査の省略、pre-commit hook の有無、tag。
 import path from 'node:path'
 import { resolveDir } from './commands.mjs'
 import { TAG_REASON, ask, deny } from './decision.mjs'
@@ -51,18 +51,9 @@ const FORCE_REASON =
   'push 済みの履歴を書き換えないため、force push（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ で始まる refspec）は使えない（AGENTS.md の Git の表）。' +
   'push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
 
-/** 削除を通す作業ブランチの名前（refs/heads/ を付けた形を含む） */
-const WORK_BRANCH = /^(refs\/heads\/)?agent\//
-
-/** リモートのブランチの削除を拒否する理由と代わりの手順 */
-const DELETE_BRANCH_REASON =
-  'push 済みのブランチを削除して push し直すことも、履歴の書き換えになる。そのため、git push の --delete（-d）と : で始まる refspec で、作業ブランチ（agent/ で始まるもの）以外のリモートのブランチは削除できない（AGENTS.md の Git の表）。' +
-  'マージした作業ブランチはリモートで自動で削除されるので消さない。push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。' +
-  'tag を消すときは `refs/tags/<名前>` で指定する（確認を求める）。'
-
 /** 検査の省略を拒否する理由と代わりの手順 */
 const NO_VERIFY_REASON =
-  'commit の前の検査を省略しないため、--no-verify（git commit の -n を含む）は使えない（開発環境の起動の「起動」の hook。docs/06-手順書/setup.md）。' +
+  'commit の前の検査を省略しないため、git commit の --no-verify と -n は使えない（開発環境の起動の「起動」の hook。docs/06-手順書/setup.md）。' +
   'hook で止まったときは、表示された問題を直して、--no-verify を付けずに実行し直す。'
 
 /** hook の置き場所の変更を拒否する理由と代わりの手順 */
@@ -98,7 +89,9 @@ export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
   for (; i < words.length && words[i].startsWith('-'); i++) {
     const word = words[i]
     if (word === '-C') {
-      current = resolveDir(current, words[++i] ?? '', options)
+      // 先が変数かコマンドの置き換えを含むときは、cd と同じく値を読めないので、今のディレクトリのままにする
+      const target = words[++i] ?? ''
+      if (!/[$`]/.test(target)) current = resolveDir(current, target, options)
     } else if (word === '-c' || word === '--config-env') {
       configs.push(words[++i] ?? '')
     } else if (word.startsWith('--config-env=')) {
@@ -189,38 +182,16 @@ function pushRefspecs(longs, positionals) {
 }
 
 /**
- * git push が、tag でも作業ブランチ（agent/ で始まるもの）でもないリモートの参照を削除するか。--delete（-d）の引数と、: で始まる refspec の削除する参照を見る（: だけの refspec は、一致するブランチの push で、削除ではない）。
- * tag か、tag かを git で調べられない名前は、ここでは見ない（tag の push の判定で確認を求める）。
+ * git push の force を拒否する。dry-run（-n）は通す。
  *
  * @param {GitInvocation} git git の呼び出し
- * @param {Deps} deps 外部の処理
- * @param {{ longs: string[], shorts: string[], positionals: string[] }} scanned push のオプションと位置引数
- * @returns {boolean} tag でも作業ブランチでもない参照を削除するなら true
- */
-function deletesBranch(git, deps, { longs, shorts, positionals }) {
-  const deleting = longs.some((name) => matchesLong(name, ['delete'])) || shorts.includes('d')
-  const targets = pushRefspecs(longs, positionals)
-    .map((refspec) => (deleting ? refspec : refspec.startsWith(':') && refspec !== ':' ? refspec.slice(1) : null))
-    .filter((name) => name !== null && name !== '')
-  return targets.some((name) => !WORK_BRANCH.test(name) && refTagState(name, git, deps) === null)
-}
-
-/**
- * git push の force、リモートのブランチの削除、--no-verify を拒否する。dry-run（-n）は通す。
- *
- * @param {GitInvocation} git git の呼び出し
- * @param {Deps} deps 外部の処理
  * @returns {Decision | null} 判定
  */
-function judgePush(git, deps) {
+function judgePush(git) {
   if (git.subcommand !== 'push') return null
-  const scanned = scanOptions(git.args, PUSH_OPTIONS)
-  const { longs, shorts, positionals } = scanned
-  if (longs.some((name) => matchesLong(name, FORCE_OPTIONS)) || shorts.includes('f') || positionals.some((p) => p.startsWith('+'))) {
-    return deny(FORCE_REASON)
-  }
-  if (deletesBranch(git, deps, scanned)) return deny(DELETE_BRANCH_REASON)
-  return longs.some((name) => matchesLong(name, NO_VERIFY_OPTIONS)) ? deny(NO_VERIFY_REASON) : null
+  const { longs, shorts, positionals } = scanOptions(git.args, PUSH_OPTIONS)
+  const forced = longs.some((name) => matchesLong(name, FORCE_OPTIONS)) || shorts.includes('f') || positionals.some((p) => p.startsWith('+'))
+  return forced ? deny(FORCE_REASON) : null
 }
 
 /**

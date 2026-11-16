@@ -10,7 +10,6 @@
 // ============================================================================
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { isMain } from '../lib/is-main.mjs'
 import { isPitReport, readMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'
 
 /** 低い所を出す数 */
@@ -167,6 +166,6 @@ function main() {
   output(kind === 'xml' && isPitReport(text) ? mutationMarkdown(name, text) : coverageMarkdown(name, text, kind))
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   main()
 }

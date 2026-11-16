@@ -14,7 +14,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { ARCHIVE, listSpecDirs } from './lib/spec-dirs.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 1→10 の spec をアーカイブしたディレクトリ（docs/08-spec/ から） */
 const ARCHIVE_1TO10 = `${ARCHIVE}/1to10`
@@ -120,7 +119,7 @@ export function checkArchivedTasks(tasks) {
     )
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const problems = [...checkArchiveGroups('docs/08-spec'), ...checkArchivedTasks(readArchivedTasks('docs/08-spec'))]
   for (const problem of problems) console.log(problem)
   console.log(`進捗の食い違い：${problems.length}`)

@@ -11,7 +11,6 @@
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** バージョンを指定する setup 系の入力の名前と、許す値（バージョンのファイル）。undefined は、その入力を使わない。これ以外の値（直書き、別のファイル、行列）は失敗にする */
 const ALLOWED_VERSION_INPUTS = {
@@ -62,7 +61,7 @@ export function findVersionLiteralProblems(files) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const ymls = listGitFiles(['.github/workflows', '.github/actions']).filter((file) => /\.ya?ml$/.test(file))
   exitIfNoFiles(ymls, 'workflow と action の yml のファイル')
   const problems = findVersionLiteralProblems(ymls.map((file) => ({ path: file, text: readFileSync(file, 'utf8') })))

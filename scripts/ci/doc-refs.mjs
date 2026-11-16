@@ -35,7 +35,6 @@ import { codeBlockLines } from './lib/code-block.mjs'
 import { maskCodeSpans } from './lib/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { documentIndex, headingKey, readHeadings, referenceName, resolveDocument } from './lib/doc-names.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 見ないファイル（当時の記録、直せないもの、この検査のテストの例） */
 const EXCLUDED = [/^docs\/08-spec\/archive\/(?!mvp\/mvp\.md$)/, /\/db\/migration\//, /^scripts\/ci\/(doc-refs|ja-text)\.test\.mjs$/]
@@ -319,7 +318,7 @@ export function findNumberedHeadings(files, read) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles().filter((file) => isTargetFile(file) && !isExcluded(file))
   exitIfNoFiles(files, '参照を調べる文書')
   const read = (file) => readFileSync(file, 'utf8')

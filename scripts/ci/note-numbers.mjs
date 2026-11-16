@@ -16,7 +16,6 @@ import { isTargetDoc } from './lib/ja-docs.mjs'
 import { codeBlockLines } from './lib/code-block.mjs'
 import { maskCodeSpans } from './lib/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 注の定義の行（行頭の `※N：`。リストの中の字下げも可。枝番は `※2a：`） */
 const DEFINITION = /^\s*※(\d+[a-z]?)：/
@@ -98,7 +97,7 @@ export function findNoteProblems(text, names = new Map(), file = '', basenames =
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const allFiles = listGitFiles()
   const files = allFiles.filter((file) => isTargetDoc(file))
   exitIfNoFiles(files, '注の番号を調べる文書')

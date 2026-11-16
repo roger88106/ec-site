@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
+import { readdirSync, readFileSync } from 'node:fs'
+import path from 'node:path'
 import { afterEach, describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { removeGitEnv, withoutGitEnv } from './git-env.mjs'
-import { findRuleViolations, listScanScripts } from './scan-rules.mjs'
+import { stripComments } from './strip-comments.mjs'
+
+/** scripts/ のディレクトリ */
+const SCRIPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 describe('GIT_ の環境変数を外す補助', () => {
   const saved = { ...process.env }
@@ -37,26 +43,15 @@ describe('GIT_ の環境変数を外す補助', () => {
     assert.equal(process.env.KEEP_ME, 'yes')
   })
 
-  test('scripts/ の下の script は、GIT_ で始まる変数を自分で外さず、この補助を使う（外す処理はこの補助だけに置く）', () => {
-    const rules = [
-      {
-        guard: 'withoutGitEnv・removeGitEnv',
-        forbidden: /startsWith\(\s*['"`]GIT_|\/\^GIT_/,
-        target: 'raw',
-        exceptions: {
-          'ci/lib/git-env.mjs': '外す処理を定義する',
-          'ci/lib/git-env.test.mjs': '外す処理を確認するテストが、GIT_ の変数を書く',
-        },
-      },
-    ]
-    assert.deepEqual(findRuleViolations(listScanScripts('all'), rules), [])
-  })
-
   test('テストが git を直接呼ぶ所は、同じ行に env: を渡す（ファイルが removeGitEnv を使う場合を除く）', () => {
     const gitCall = /\b(?:execFileSync|spawnSync|execFile|spawn)\(\s*['"`]git['"`]|\bexecSync\(\s*['"`]git\b/
     const missing = []
-    for (const { name, code } of listScanScripts('all')) {
-      if (!name.endsWith('.test.mjs') || /\bremoveGitEnv\(\)/.test(code)) continue
+    const tests = readdirSync(SCRIPTS_DIR, { recursive: true })
+      .map((file) => String(file).replaceAll(path.sep, '/'))
+      .filter((name) => name.endsWith('.test.mjs') && !name.includes('node_modules/'))
+    for (const name of tests) {
+      const code = stripComments(readFileSync(path.join(SCRIPTS_DIR, name), 'utf8'), { keepRegex: true })
+      if (/\bremoveGitEnv\(\)/.test(code)) continue
       code.split('\n').forEach((line, index) => {
         if (gitCall.test(line) && !/\benv\b/.test(line)) missing.push(`${name}:${index + 1}`)
       })

@@ -11,7 +11,6 @@
 // 除外：なし
 // 使い方：node scripts/ci/local-ports.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
-import { isMain } from './lib/is-main.mjs'
 import { exitIfNoFiles } from './lib/git-files.mjs'
 import { describeUnreadableHostPort, findPortProblems, readHostPort } from './compose-ports.mjs'
 
@@ -282,7 +281,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = [LIST_FILE, COMPOSE_FILE, ...DOC_FILES, ...SOURCE_FILES, ...CONFIG_FILES, ...Object.keys(REALM_FILES)]
   const missing = files.filter((file) => !existsSync(file))
   for (const file of missing) {

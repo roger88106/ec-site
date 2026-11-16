@@ -35,7 +35,6 @@ import { maskCodeSpans, replaceCodeSpans } from './lib/code-span.mjs'
 import { checkExclusions } from './lib/exclusions.mjs'
 import { codeKind, commentText, trailingCommentLines } from './lib/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { isTargetDoc } from './lib/ja-docs.mjs'
 import { resolveDiffBase } from './lib/merge-base.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
@@ -847,7 +846,7 @@ function checkFiles(list, { warning, added }) {
 }
 
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const args = process.argv.slice(2)
   const warning = args.includes('--warning')
   const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))

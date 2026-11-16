@@ -76,10 +76,6 @@ const DISABLE_AUTO_OPTIONS = ['disable-auto', 'repo']
 /** pull request の URL（github.com のもの） */
 const PULL_REQUEST_URL = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:[/?#].*)?$/i
 
-/** --admin を拒否する理由と代わりの手順 */
-const ADMIN_REASON =
-  'gh pr merge の --admin は、ruleset の検査を飛ばしてマージするので使えない。' + '--admin を外し、gh pr merge <番号> --match-head-commit <SHA> で実行し直す。'
-
 /** --match-head-commit のないマージを拒否する理由と代わりの手順 */
 const NO_MATCH_HEAD_REASON =
   'マージは、承認を求めたとき（CI を確認したとき）の head の commit を --match-head-commit で指定して行う（AGENTS.md の Git の表）。' +
@@ -336,8 +332,8 @@ export function mergeProblems(pullRequest, headCommit) {
 }
 
 /**
- * gh pr merge の判定。--admin と --match-head-commit のない形は拒否し、--auto は確認を求め、
- * pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
+ * gh pr merge の判定。--match-head-commit のない形は拒否し、pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
+ * --admin と --auto は見ない。ruleset の除外の対象が空で、リポジトリの設定で自動のマージを無効にしてあるので、GitHub が受け付けないため。
  *
  * @param {string[]} args pr の後の語（merge を含む）
  * @param {GhInvocation} gh gh の呼び出し
@@ -349,12 +345,10 @@ export function judgeMerge(args, gh, deps, budget) {
   const { positionals, options } = parseGhArgs(args, GH_PR_OPTIONS)
   // 自動のマージの解除だけ（マージのオプションを一緒に書かない形）は、マージしないので通す
   if (flagEnabled(options, 'disable-auto') && options.every((option) => DISABLE_AUTO_OPTIONS.includes(option.name))) return null
-  if (flagEnabled(options, 'admin')) return deny(ADMIN_REASON)
   const headCommit = optionValue(options, 'match-head-commit')
   if (headCommit === null || headCommit === '') return deny(NO_MATCH_HEAD_REASON)
   const askMerge = (label, problems) =>
     ask(`利用者の許可なしにマージしてよい条件（マージと後片付けの「マージの許可と後片付け」。docs/05-開発規則/merging.md）を満たさないので、確認を求める。pull request：${label}。満たさない条件：${problems.join('。')}。${APPROVE_ONLY_IF_ALLOWED}`)
-  if (flagEnabled(options, 'auto')) return askMerge(positionals[1] ?? '（今のブランチ）', ['--auto（予約のマージ）は、マージの時点の条件を判定できない'])
   const target = resolveMergeTarget(positionals[1], optionValue(options, 'repo'), gh.ghRepo)
   if ('error' in target) return askMerge(positionals[1] ?? '（今のブランチ）', [target.error])
   const label = target.repository ? `${target.repository.owner}/${target.repository.name}#${target.number}` : `#${target.number}（${gh.dir} のリポジトリ）`

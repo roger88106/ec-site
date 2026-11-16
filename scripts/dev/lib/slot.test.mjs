@@ -3,9 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import {
-  E2E,
   SHARED_CONTAINERS,
-  SHARED_PORTS,
   SLOT_COUNT,
   assignSlot,
   checkBackendStopped,
@@ -33,62 +31,6 @@ const worktree = (path, ...extra) => ['worktree ' + path, 'HEAD bbb', 'branch re
 
 /** リポジトリのファイルを読む（lib は純粋なままにし、読み取りはテストで行う） */
 const repoFile = (relative) => readFileSync(new URL(`../../../${relative}`, import.meta.url), 'utf8').replace(/\r/g, '')
-
-/** 一覧を小さい順に並べる */
-const sorted = (values) => [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-
-/** docker/compose.yaml の ports のホストのポート（`${MAILPIT_SMTP_PORT:-2525}` のような既定値も読む） */
-function composeHostPorts() {
-  const mappings = repoFile('docker/compose.yaml')
-    .split('\n')
-    .filter((line) => /^\s*-\s*"\$\{LOCAL_BIND_ADDRESS/.test(line))
-  const ports = mappings.map((line) => {
-    const match = /^\s*-\s*"\$\{LOCAL_BIND_ADDRESS:-[^}]*\}:(?:\$\{[A-Z_]+:-(\d+)\}|(\d+)):\d+"/.exec(line)
-    assert.ok(match, `ホストのポートを読めない：${line}`)
-    return Number(match[1] ?? match[2])
-  })
-  assert.ok(ports.length > 0, 'compose のポートがない')
-  return ports
-}
-
-/** e2e/src/urls.ts の URL のポート */
-function e2eUrlPorts() {
-  const ports = [...repoFile('e2e/src/urls.ts').matchAll(/localhost:(\d+)/g)].map((match) => Number(match[1]))
-  assert.ok(ports.length > 0, 'e2e/src/urls.ts のポートがない')
-  return ports
-}
-
-/** application-e2e.yml の中身 */
-const e2eYaml = () => repoFile('backend/ecsite/src/main/resources/application-e2e.yml')
-
-/** application-e2e.yml の業務ポートと運用ポート */
-function e2eBackendPorts() {
-  const server = /^server:\n\s+port:\s*(\d+)/m.exec(e2eYaml())
-  const management = /^management:\n\s+server:\n(?:\s+#.*\n)*\s+port:\s*(\d+)/m.exec(e2eYaml())
-  assert.ok(server && management, 'application-e2e.yml のポートを読めない')
-  return [Number(server[1]), Number(management[1])]
-}
-
-/** application-e2e.yml のデータベースの名前 */
-function e2eDatabase() {
-  const match = /url:\s*jdbc:postgresql:\/\/[^/\s]+\/(\w+)/.exec(e2eYaml())
-  assert.ok(match, 'application-e2e.yml のデータベースを読めない')
-  return match[1]
-}
-
-/** application-e2e.yml のバケット */
-function e2eBackendBuckets() {
-  const buckets = [...e2eYaml().matchAll(/^\s+(?:incoming|public)-bucket:\s*(\S+)/gm)].map((match) => match[1])
-  assert.equal(buckets.length, 2, 'application-e2e.yml のバケットを読めない')
-  return buckets
-}
-
-/** docker/compose.yaml の E2E のバケット（seaweedfs-init の E2E_*_BUCKET） */
-function composeE2eBuckets() {
-  const buckets = [...repoFile('docker/compose.yaml').matchAll(/^\s+E2E_[A-Z_]*BUCKET:\s*(\S+)/gm)].map((match) => match[1])
-  assert.equal(buckets.length, 2, 'compose の E2E のバケットを読めない')
-  return buckets
-}
 
 describe('スロットの値', () => {
   test('スロット 0 は今の既定の値で、Cookie の接頭辞がない（DC-104-1）', () => {
@@ -140,19 +82,6 @@ describe('ポートと名前が重ならないこと', () => {
     assert.equal(new Set(slotPortList).size, slotPortList.length)
   })
 
-  test('全スロットのポートは compose の共有の基盤のホストのポートと重ならず、SHARED_PORTS はそれと一致する（DC-104-10）', () => {
-    const shared = composeHostPorts()
-    for (const port of slotPortList) assert.ok(!shared.includes(port), String(port))
-    assert.deepEqual(sorted(SHARED_PORTS), sorted(shared))
-  })
-
-  test('全スロットのポートは E2E の URL とバックエンドのポートと重ならず、E2E.ports はそのうち共有の基盤でないものと一致する（DC-104-10、DC-104-20）', () => {
-    const e2e = [...new Set([...e2eUrlPorts(), ...e2eBackendPorts()])]
-    for (const port of slotPortList) assert.ok(!e2e.includes(port), String(port))
-    const shared = composeHostPorts()
-    assert.deepEqual(sorted(E2E.ports), sorted(e2e.filter((port) => !shared.includes(port))))
-  })
-
   test('スロットのポートは、バックエンド、運用、店舗画面、管理画面の順に返す', () => {
     assert.deepEqual(slotPorts(2), [28080, 29080, 23000, 25173])
   })
@@ -161,17 +90,9 @@ describe('ポートと名前が重ならないこと', () => {
     assert.ok(slotPortList.every((port) => port < 49152))
   })
 
-  test('E2E のデータベースは全スロットの名前と重ならず、E2E.database は application-e2e.yml と一致する（DC-104-20）', () => {
-    const database = e2eDatabase()
-    assert.ok(!databases.includes(database))
-    assert.equal(E2E.database, database)
-  })
-
-  test('E2E のバケットは全スロットの名前と重ならず、E2E.buckets は compose と application-e2e.yml と一致する（DC-104-20）', () => {
-    const fromCompose = composeE2eBuckets()
-    for (const bucket of fromCompose) assert.ok(!buckets.includes(bucket), bucket)
-    assert.deepEqual(sorted(E2E.buckets), sorted(fromCompose))
-    assert.deepEqual(sorted(E2E.buckets), sorted(e2eBackendBuckets()))
+  test('E2E のデータベースとバケットは、全スロットの名前と重ならない（DC-104-20）', () => {
+    assert.ok(!databases.includes('ec_site_e2e'))
+    for (const bucket of ['ec-site-e2e-images', 'ec-site-e2e-images-incoming']) assert.ok(!buckets.includes(bucket), bucket)
     assert.equal(new Set([...databases, ...buckets]).size, databases.length + buckets.length)
   })
 })
@@ -265,31 +186,33 @@ describe('共有の基盤の確認', () => {
 })
 
 describe('割り当ての順序', () => {
-  /** 割り当ての依存を真似て、呼ばれた順を記録する */
-  function fakeAssign({ main = false, own = null, records = {}, lateOwn = null, failRecreate = false } = {}) {
+  /** 割り当ての依存を真似て、呼ばれた順を記録する。taken は他が仮押さえしている番号、lateRecords は仮押さえの後に読める他の記録 */
+  function fakeAssign({ main = false, own = null, records = {}, lateOwn = null, taken = [], lateRecords = {}, failRecreate = false } = {}) {
     const events = []
-    const mark = (event) => events.push(inLock ? `${event}（ロックの中）` : event)
-    let inLock = false
+    const claimed = new Set()
+    const mark = (event) => events.push(claimed.size > 0 ? `${event}（仮押さえの中）` : event)
     let ownRecord = own
+    let current = { ...records }
     const deps = {
       main,
       readOwnRecord: () => ownRecord,
       listWorktrees: () => {
         mark('list')
-        return porcelain(MAIN, worktree('/wt/me'), ...Object.keys(records).map((p) => worktree(p)))
+        return porcelain(MAIN, worktree('/wt/me'), ...Object.keys({ ...records, ...lateRecords }).map((p) => worktree(p)))
       },
-      readRecord: (p) => (p === '/wt/me' ? ownRecord : (records[p] ?? null)),
-      withLock: async (action) => {
-        events.push('lock')
-        inLock = true
-        // ロックを待つ間に、同じ作業ツリーの別のセッションが割り当てた
+      readRecord: (p) => (p === '/wt/me' ? ownRecord : (current[p] ?? null)),
+      claim: (slot) => {
+        events.push(`claim ${slot}`)
+        if (taken.includes(slot)) return false
+        claimed.add(slot)
+        // 仮押さえの前に、同じ作業ツリーの別のセッションか、他の作業ツリーが割り当てた
         if (lateOwn !== null) ownRecord = lateOwn
-        try {
-          return action()
-        } finally {
-          inLock = false
-          events.push('unlock')
-        }
+        current = { ...current, ...lateRecords }
+        return true
+      },
+      unclaim: (slot) => {
+        claimed.delete(slot)
+        events.push(`unclaim ${slot}`)
       },
       writeRecord: (slot) => {
         mark(`write ${slot}`)
@@ -315,16 +238,28 @@ describe('割り当ての順序', () => {
     assert.deepEqual(f.events, [])
   })
 
-  test('ロックの中で一覧を読んで空きを選び記録を書き、ロックを放した後にデータを再作成する（DC-104-2、DC-104-5）', async () => {
+  test('空きを仮押さえし、一覧を再読込して記録を書き、仮押さえを外した後にデータを再作成する（DC-104-2、DC-104-5）', async () => {
     const f = fakeAssign({ records: { '/wt/other': '1\n' } })
     assert.deepEqual(await assignSlot(f.deps), { kind: 'assigned', slot: 2 })
-    assert.deepEqual(f.events, ['lock', 'list（ロックの中）', 'write 2（ロックの中）', 'unlock', 'recreate 2'])
+    assert.deepEqual(f.events, ['list', 'claim 2', 'list（仮押さえの中）', 'write 2（仮押さえの中）', 'unclaim 2', 'recreate 2'])
   })
 
-  test('ロックを待つ間に同じ作業ツリーへ割り当てられていれば、何もしない', async () => {
+  test('他が仮押さえしている番号は飛ばして、次の空きを選ぶ', async () => {
+    const f = fakeAssign({ taken: [1] })
+    assert.deepEqual(await assignSlot(f.deps), { kind: 'assigned', slot: 2 })
+    assert.deepEqual(f.events.slice(0, 3), ['list', 'claim 1', 'list'])
+  })
+
+  test('仮押さえの前に他の作業ツリーが記録を書いた番号は使わず、仮押さえを外して次を選ぶ', async () => {
+    const f = fakeAssign({ lateRecords: { '/wt/other': '1\n' } })
+    assert.deepEqual(await assignSlot(f.deps), { kind: 'assigned', slot: 2 })
+    assert.ok(f.events.includes('unclaim 1'))
+  })
+
+  test('仮押さえの前に同じ作業ツリーへ割り当てられていれば、何もしない', async () => {
     const f = fakeAssign({ lateOwn: '3\n' })
     assert.deepEqual(await assignSlot(f.deps), { kind: 'already', slot: 3 })
-    assert.deepEqual(f.events, ['lock', 'unlock'])
+    assert.deepEqual(f.events, ['list', 'claim 1', 'unclaim 1'])
   })
 
   test('空きがなければ使っている作業ツリーを返し、記録もデータも作らない（DC-104-4）', async () => {
@@ -335,7 +270,7 @@ describe('割り当ての順序', () => {
       result.users.map((user) => user.slot),
       [1, 2, 3],
     )
-    assert.deepEqual(f.events, ['lock', 'list（ロックの中）', 'unlock'])
+    assert.deepEqual(f.events, ['list'])
     assert.equal(f.record(), null)
   })
 

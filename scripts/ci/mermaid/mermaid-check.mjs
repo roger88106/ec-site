@@ -30,7 +30,6 @@ import path from 'node:path'
 import { readCodeBlocks } from '../lib/code-block.mjs'
 import { readDocument } from '../lib/doc-structure.mjs'
 import { emptyListReason, listGitFiles } from '../lib/git-files.mjs'
-import { isMain } from '../lib/is-main.mjs'
 
 /** 使う mermaid-cli のバージョン（上げるときは、GitHub での表示と食い違わないかを確認する） */
 const MERMAID_CLI = '@mermaid-js/mermaid-cli@12.0.0'
@@ -366,4 +365,4 @@ function main() {
   if (code !== 0) process.exit(code)
 }
 
-if (isMain(import.meta.url)) main()
+if (import.meta.main) main()

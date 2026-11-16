@@ -20,9 +20,7 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { stopOnSignals } from './lib/child-stop.mjs'
-import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
 import { findListeners, stopListeners } from './lib/port-stop.mjs'
-import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
 import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './lib/slot-ports.mjs'
 import {
   assignSlot,
@@ -48,9 +46,6 @@ const POSTGRES = 'ec-site-postgres'
 
 /** 起動できる対象 */
 const TARGETS = ['backend', 'store', 'admin']
-
-/** ロックを待つ上限（ミリ秒）。ロックの中は空きの選択と記録の書き込みだけなので、長く待つのは所有者が止まっているとき */
-const LOCK_WAIT_MS = 90_000
 
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
   assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
@@ -275,29 +270,49 @@ function dropData(root, slot) {
 }
 
 /**
- * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
- * ロックは git の共通のディレクトリの ec-site-slot-assign.lock（作業ツリーのパス、PID、開始の時刻）。
- * 所有者の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
- * 2 つのセッションが同時に assign しても、空きの選択から記録の書き込みまでが重ならない。
+ * スロットの仮押さえのファイルのパス。git の共通のディレクトリに置き、全ての作業ツリーで共有する。
  *
- * @template T
- * @param {{ root: string, commonDir: string }} ctx 作業ツリーの状態
- * @param {() => T} action ロックを持って流す処理（短いものだけ）
- * @returns {Promise<T>} action の結果
+ * @param {{ commonDir: string }} ctx 作業ツリーの状態
+ * @param {number} slot スロットの番号
+ * @returns {string} ファイルのパス（中身は仮押さえした作業ツリーのパス）
  */
-async function withLock(ctx, action) {
-  const lock = path.join(ctx.commonDir, 'ec-site-slot-assign.lock')
-  const io = createLockIo(lock)
-  const owner = { worktree: ctx.root, pid: process.pid, startedAt: new Date().toISOString() }
-  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: LOCK_WAIT_MS })
-  if (!result.acquired) {
-    throw new Exit(1, `スロットのロックを取れなかった。${busyLockMessage({ lock, owner: result.owner })}`)
+function claimFile(ctx, slot) {
+  return path.join(ctx.commonDir, `ec-site-slot-${slot}.claim`)
+}
+
+/**
+ * スロットを仮押さえする。ファイルを排他（wx）で作るので、同時に 1 つの割り当てだけが成功する。<br />
+ * 自分の作業ツリーが残した仮押さえは使う。他の作業ツリーの仮押さえは、その作業ツリーが一覧にないか、記録を書き終えていれば
+ * 中断した割り当ての残りとして消し、新しく作る。
+ *
+ * @param {{ root: string, commonDir: string }} ctx 作業ツリーの状態
+ * @param {number} slot スロットの番号
+ * @returns {boolean} 仮押さえできれば true
+ */
+function claim(ctx, slot) {
+  const file = claimFile(ctx, slot)
+  const create = () => {
+    try {
+      writeFileSync(file, ctx.root, { flag: 'wx' })
+      return true
+    } catch (error) {
+      if (error?.code === 'EEXIST') return false
+      throw error
+    }
   }
+  if (create()) return true
+  let holder
   try {
-    return action()
-  } finally {
-    if (ownsLock(io.read(), owner)) rmSync(lock, { force: true })
+    holder = readFileSync(file, 'utf8').trim()
+  } catch {
+    // 読む前に持ち主が外した
+    return create()
   }
+  if (holder === ctx.root) return true
+  const listed = parseWorktrees(git(['worktree', 'list', '--porcelain'])).some((worktree) => worktree.path === holder)
+  if (listed && readRecord(holder) === null) return false
+  rmSync(file, { force: true })
+  return create()
 }
 
 /**
@@ -312,7 +327,8 @@ async function assign(ctx) {
     readOwnRecord: () => readRecord(ctx.root),
     listWorktrees: () => git(['worktree', 'list', '--porcelain']),
     readRecord,
-    withLock: (action) => withLock(ctx, action),
+    claim: (slot) => claim(ctx, slot),
+    unclaim: (slot) => rmSync(claimFile(ctx, slot), { force: true }),
     writeRecord: (slot) => writeRecord(ctx.root, slot),
     recreate: (slot) => recreateData(ctx.root, slot),
   })

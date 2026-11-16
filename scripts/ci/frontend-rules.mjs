@@ -10,7 +10,6 @@
 import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { groupTargets } from './frontend-rules/files.mjs'
 import { findIndexedMultiples } from './frontend-rules/screen-tests.mjs'
@@ -18,7 +17,7 @@ import { duplicatedFiles, findDefinitions, sharedPublicNames } from './frontend-
 
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles(['frontend'])
   exitIfNoFiles(files, 'フロントのファイル')
   const exclusions = readExclusions(exclusionsPath('frontend-rules-exclusions.json'))

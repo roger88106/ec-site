@@ -15,7 +15,6 @@
 // ============================================================================
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { isMain } from '../lib/is-main.mjs'
 
 /** 名前の対応のファイルの中身を、[旧, 新] の並びにする */
 export function parseRenames(text) {
@@ -40,15 +39,11 @@ function isImportLine(line) {
   return /^\s*(import|package)\s/.test(line)
 }
 
-/** 正規表現の特別な文字を逃がす */
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 /** 行に名前の対応を当てる */
 function applyRenames(line, renames) {
   return renames.reduce(
-    (result, [from, to]) => result.replace(new RegExp(`(?<![\\w.])${escapeRegExp(from)}(?!\\w)`, 'g'), to),
+    (result, [from, to]) => result.replace(new RegExp(`(?<![\\w.])${RegExp.escape(from)}(?!\\w)`, 'g'), to),
     line,
   )
 }
@@ -163,6 +158,6 @@ function main() {
   process.exit(violations.length === 0 ? 0 : 1)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   main()
 }

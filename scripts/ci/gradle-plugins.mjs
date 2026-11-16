@@ -11,7 +11,6 @@
 import { readFileSync } from 'node:fs'
 import { parse } from 'smol-toml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** カタログを通さない書き方の理由 */
@@ -110,7 +109,7 @@ export function findPluginProblems(used, listed) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const buildFiles = listGitFiles(BUILD_PATHS).filter((path) => /\.gradle\.kts$/.test(path))
   exitIfNoFiles(buildFiles, 'Gradle のファイル')
   const used = []

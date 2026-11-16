@@ -210,7 +210,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 | PowerShell のツールで実行する `git`・`gh` の commit、push、merge、tag、api など | hook `agent-guard` | Bash のツールで実行する |
 | `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` の「ツールの補足」） |
 | spec やコミットメッセージに写した、利用者の中国語の言葉 | git の hook `commit-msg`・`pre-commit`（中国語の混入の検査） | 日本語に訳して書く（skill `zh-mixing` の「書くときの注意」） |
-| `git -C` と `cd` のパスに変数やコマンドの置き換え（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（`git commit` の対象のリポジトリを決められないとき） | 変数を使わず、絶対パスを直接書く |
+| 作業ディレクトリがリポジトリの外のときの、`git -C` と `cd` のパスに変数やコマンドの置き換えを使った `git commit`（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（変数の先を読まず、作業ディレクトリで対象のリポジトリを決めるので、決められない） | 変数を使わず、絶対パスを直接書く |
 | `cd` で `/.local/` などに移る | 拒否されない。以後のコマンドの作業ディレクトリが意図しない場所になる | `cd` で作業ディレクトリを移さず、`git -C <絶対パス>` と絶対パスを使う |
 
 ## コミットメッセージの書き換え

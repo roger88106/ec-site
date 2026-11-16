@@ -241,7 +241,7 @@ describe('scripts/ の下の script のコメントの spec の番号の検査',
   test('scripts/ の下でも script でないファイルと、scripts/ の外のファイルは対象にしない', () => {
     for (const file of [
       'scripts/ci/ja-text.json',
-      'scripts/dev/lib/slot-lock.d.mts',
+      'scripts/dev/lib/lock.d.mts',
       'scripts/dev/windows/exclude-ports.ps1',
       'scripts/ci/report/testdata/pit-mutations.xml',
       'e2e/scripts/seed.ts',

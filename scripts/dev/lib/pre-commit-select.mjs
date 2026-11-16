@@ -6,12 +6,13 @@
 //   - ステージしたファイルのパスか名前が、たどれるファイルの中に書いてある（読む設定や除外の一覧の名前）
 //   - ステージしたファイルが、CHECK_INPUTS・TEST_INPUTS のパスの正規表現に当たる（ファイルの一覧から読む検査）
 // テストは、名前が同じ検査（X.test.mjs と X.mjs）を実行するときも実行する（リポジトリのファイルを読むテストがあるため）。
-// RUN_ALL に当たるファイル（検査をまとめて実行する仕組みと依存）をステージしたときは、全てを実行する。
+// RUN_ALL に当たるファイル（scripts/ の下の全てと依存）をステージしたときは、全てを実行する。
+// scripts/ の下は、他の script を走査するテストがあり、どの検査に関わるかを表で保つのが難しいため。
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
-/** 全てを実行するファイル：まとめて実行する script、結果の判定、hook の選び方、依存 */
-export const RUN_ALL = [/^scripts\/ci\/check-all\.sh$/, /^scripts\/ci\/lib\/check-result\.mjs$/, /^scripts\/dev\/lib\/pre-commit[\w-]*\.mjs$/, /^package\.json$/, /^pnpm-lock\.yaml$/]
+/** 全てを実行するファイル：scripts/ の下の全てと、依存 */
+export const RUN_ALL = [/^scripts\//, /^package\.json$/, /^pnpm-lock\.yaml$/]
 
 /** 常に実行する検査の印（リポジトリのほぼ全てのファイルを読む検査） */
 const ALWAYS = 'always'
@@ -22,17 +23,17 @@ const ALWAYS = 'always'
  */
 export const CHECK_INPUTS = {
   'ac-check': [/^docs\/03-機能仕様\//, /^docs\/08-spec\//, /^backend\/ecsite\/src\/(?:test|integrationTest)\//, /^frontend\//, /^e2e\//],
-  'ci-docs': [/^scripts\/ci\//],
+  'ci-docs': [],
   'compose-ports': [],
   'doc-refs': ALWAYS,
   'docs-folders': [/^docs\//],
   'frontend-rules': [/^frontend\//, /^e2e\//],
-  'glossary-ids': ALWAYS,
+  // 用語集は名前で選ぶ。コードの名前を探す場所（SEARCH_ROOTS）のうち scripts/ は全てを実行する形に含まれる
+  'glossary-ids': [/^(?:backend|frontend|api|docker|e2e)\//],
   'gradle-plugins': [/^backend\/ecsite\/.*\.gradle\.kts$/],
   'ja-text': ALWAYS,
   'java-rules': [/^backend\/ecsite\/src\//],
   'local-ports': [],
-  'main-entry': [/^scripts\//, /^frontend\/shared\/scripts\//],
   'message-comments': [/^frontend\//],
   migrations: [/^backend\/ecsite\/src\/main\/resources\/db\/migration\//],
   'note-numbers': [/\.md$/, /^\.github\/.*\.ya?ml$/],
@@ -45,11 +46,9 @@ export const CHECK_INPUTS = {
   'spec-structure': [/^docs\/03-機能仕様\//, /^docs\/08-spec\//],
 }
 
-/** テストごとの、読むファイルのパスの正規表現（import と名前の検査で分からないもの）。script の一覧を走査するテストと、文書を読むテスト */
+/** テストごとの、読むファイルのパスの正規表現（import と名前の検査で分からないもの）。scripts/ の外の文書を読むテスト */
 export const TEST_INPUTS = {
-  'scripts/ci/lib/exclusions.test.mjs': [/^scripts\/ci\/.*\.mjs$/],
-  'scripts/ci/lib/unreadable-line.test.mjs': [/^scripts\/ci\/.*\.mjs$/],
-  '.claude/skills/review/checklist.test.cjs': [/^\.claude\/skills\/review\//, /^docs\/05-開発規則\//],
+  '.claude/skills/review/checklist.test.cjs': [/^docs\/05-開発規則\//],
 }
 
 /** import・require の先（相対パスだけ） */

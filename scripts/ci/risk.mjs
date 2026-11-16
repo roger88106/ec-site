@@ -22,7 +22,6 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { listGitFiles, splitNulList } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { isShallowRepository, SHALLOW_CLONE_MESSAGE } from './lib/shallow-clone.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
@@ -366,7 +365,7 @@ export function baseFileReader(base, cwd = process.cwd()) {
   return (file) => tryGit(['show', `${base}:${file}`], cwd)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const { values } = parseArgs({
     args: process.argv.slice(2),
     options: {

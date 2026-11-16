@@ -30,7 +30,6 @@ import path from 'node:path'
 import { describeEmptyReason, describeStaleExclusion, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { FUNCTIONAL_SPECS } from './lib/functional-specs.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
 import { AC_LIST, BACKEND_MODULES_DIR, MODULE_DOCS_DIR, SPECS_DIR, addAcsToList, listModuleNames, readAcList, readInProgressSpecs } from './ac/ac-list.mjs'
 import { check, checkAcRows, checkInProgress, checkModuleDoc, checkModuleDocNames, renderTestMap } from './ac/match.mjs'
@@ -178,6 +177,6 @@ function main() {
   process.exit(ok ? 0 : 1)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   main()
 }

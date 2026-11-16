@@ -7,7 +7,6 @@
 // 除外：なし
 // 使い方：node scripts/ci/docs-folders.mjs（リポジトリのルートで）
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** docs/ の直下に置いてよいフォルダー名 */
 export const ALLOWED_DOCS_FOLDERS = ['01-概要', '02-設計', '03-機能仕様', '04-決定記録', '05-開発規則', '06-手順書', '07-記録', '08-spec']
@@ -43,7 +42,7 @@ export function findDocsFolderProblems(files) {
   })
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const files = listGitFiles()
   exitIfNoFiles(
     files.filter((file) => file.split('/')[0].toLowerCase() === 'docs' && file.includes('/')),

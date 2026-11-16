@@ -16,7 +16,6 @@
 import { readFileSync } from 'node:fs'
 import { readDocument, readHeadings, SETEXT_UNDERLINE } from './lib/doc-structure.mjs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
-import { isMain } from './lib/is-main.mjs'
 
 /** 書き方の規則の文書（ルートからのパス） */
 export const RULE_DOCS = ['backend-coding.md', 'frontend-coding.md', 'test-writing.md', 'test-writing-backend.md', 'test-writing-frontend.md', 'comments.md'].map(
@@ -120,7 +119,7 @@ export function checkDocuments(docs, exclusions) {
   return { problems, exclusionProblems: checkExclusions(EXCLUSIONS_NAME, exclusions, (key) => existing.has(key)) }
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const exclusions = readExclusions(exclusionsPath(EXCLUSIONS_NAME))
   const { problems, exclusionProblems } = checkDocuments(
     RULE_DOCS.map((file) => ({ file, text: readFileSync(file, 'utf8') })),

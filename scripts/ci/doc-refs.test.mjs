@@ -511,6 +511,12 @@ describe('見出しの番号と、見出しの参照の先', () => {
     assert.equal(countHeadingMatches(headings, ['通だけ送る']), 0)
   })
 
+  test('見出しは、閉じの # を除き、Setext と字下げした見出しも読む（spec-structure・rule-sections と同じ読み方）', () => {
+    const { title, anchors } = readHeadings('題\n===\n\n## 依存 ##\n\n   ## 字下げ\n\n段落\n---\n')
+    assert.equal(title, '題')
+    assert.deepEqual([...anchors], ['題', '依存', '字下げ', '段落'])
+  })
+
   test('パスの後の「」も、その文書の見出しとして確認する', () => {
     const code = [
       '// docs/testing/writing.md の「名前」',

@@ -8,7 +8,6 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isMain } from '../lib/is-main.mjs'
 
 /**
  * 部品の名前が、方針の部品の名前の形（* は任意の文字列）に合うか。
@@ -17,7 +16,10 @@ import { isMain } from '../lib/is-main.mjs'
  * @param name    部品の名前
  */
 function matches(pattern, name) {
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*')
+  const escaped = pattern
+    .split('*')
+    .map((part) => RegExp.escape(part))
+    .join('.*')
   return new RegExp(`^${escaped}$`).test(name)
 }
 
@@ -189,6 +191,6 @@ function main() {
   process.exit(failures.length === 0 ? 0 : 1)
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   main()
 }

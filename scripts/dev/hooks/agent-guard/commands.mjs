@@ -1,7 +1,7 @@
 // 語に分けたコマンドから、前に付けたコマンド（timeout、env など）と環境変数を外し、cd・pushd・git -C などで実行するディレクトリを決める。
 import { homedir } from 'node:os'
 import path from 'node:path'
-import { EXPANDED_WORDS, splitCommands } from './shell-words.mjs'
+import { splitCommands } from './shell-words.mjs'
 
 /**
  * 前に付けて、後ろの語を別のコマンドとして実行させるコマンドと、そのオプション。
@@ -197,9 +197,8 @@ function changeDir(words, dir, stack, options) {
  * @param {string} command コマンドの全文
  * @param {string} cwd 入力の cwd
  * @param {PathOptions} [options] パスの解き方
- * @returns {{ words: string[], dir: string, env: Record<string, string>, ghRepo: string | null, expandedWords: Set<string> }[]} コマンドごとの語
- *   （前に付けた環境変数の設定などを除いたもの）、ディレクトリ、対象のリポジトリを替える環境変数、gh の対象のリポジトリ（前に付けた GH_REPO）、
- *   シェルが展開する部分を含む語
+ * @returns {{ words: string[], dir: string, env: Record<string, string>, ghRepo: string | null }[]} コマンドごとの語
+ *   （前に付けた環境変数の設定などを除いたもの）、ディレクトリ、対象のリポジトリを替える環境変数、gh の対象のリポジトリ（前に付けた GH_REPO）
  */
 export function parseCommands(command, cwd, options = {}) {
   let dir = resolveDir(process.cwd(), cwd, options)
@@ -208,7 +207,7 @@ export function parseCommands(command, cwd, options = {}) {
   for (const raw of splitCommands(command)) {
     const { words, dir: commandDir, env, ghRepo } = stripPrefixes(raw, dir, options)
     if (words.length === 0) continue
-    commands.push({ words, dir: commandDir, env, ghRepo, expandedWords: EXPANDED_WORDS.get(raw) ?? new Set() })
+    commands.push({ words, dir: commandDir, env, ghRepo })
     dir = changeDir(words, dir, stack, options)
   }
   return commands

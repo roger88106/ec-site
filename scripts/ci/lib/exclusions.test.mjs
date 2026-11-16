@@ -14,7 +14,6 @@ import {
   findStaleExclusions,
   readExclusions,
 } from './exclusions.mjs'
-import { findRuleViolations, listScanScripts } from './scan-rules.mjs'
 
 /** 除外の一覧の JSON を置く場所 */
 const dir = mkdtempSync(path.join(tmpdir(), 'exclusions-'))
@@ -82,11 +81,6 @@ describe('除外の一覧のパス', () => {
     } finally {
       process.chdir(before)
     }
-  })
-
-  test('検査は、除外の一覧を exclusionsPath で求める（検査ごとにパスを組み立てない）', () => {
-    const rules = [{ guard: 'exclusionsPath', forbidden: /readExclusions\((?!exclusionsPath\()/, target: 'raw', exceptions: {} }]
-    assert.deepEqual(findRuleViolations(listScanScripts('ci'), rules), [])
   })
 })
 

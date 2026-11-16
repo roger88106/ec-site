@@ -20,7 +20,6 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |
 | `java-rules` | バックエンドのソースに、禁止した書き方（列挙型の変換に name() を渡すこと、理由のない @SuppressWarnings）がないことを確認する |
 | `local-ports` | ローカルのポートの一覧（`ports.json`）と、compose・script・文書・設定のポートが食い違わないことを確認する |
-| `main-entry` | script の直接実行の判定が、共通の関数 `isMain(import.meta.url)` だけであることを確認する |
 | `message-comments` | 文言をキーで引く呼び出しに、表示する内容のコメントがあることを確認する |
 | `migrations` | 適用済みのマイグレーションを、変更・削除・改名していないことを確認する |
 | `note-numbers` | 文書の注の番号が、1 つの文書の中で重複せず、出る順に並ぶことを確認する |
@@ -42,12 +41,13 @@ commit の前の hook（[開発環境の起動](setup.md)の「起動」）は�
 
 | ステージしたファイル | 実行するもの |
 |----------------------|----------|
-| `check-all.sh`、結果の判定（`lib/check-result.mjs`）、hook の処理、`package.json`、`pnpm-lock.yaml` | 全ての検査とテスト |
-| 検査・テストが import・require でたどれるファイル（自分を含む） | その検査・テスト |
+| `scripts/` の下の全てのファイル、`package.json`、`pnpm-lock.yaml` | 全ての検査とテスト |
+| `scripts/` の外の、検査・テストが import・require でたどれるファイル | その検査・テスト |
 | 検査・テストのソースに、パスか名前が書いてあるファイル（読む設定、除外の一覧など） | その検査・テスト |
 | 検査ごとの、読むファイルのパスの正規表現（`CHECK_INPUTS`。Git のファイルの一覧から読む検査）に当たるファイル | その検査と、同じ名前のテスト |
-| どれでもよい | `CHECK_INPUTS` で常に実行するとした検査（`doc-refs`、`glossary-ids`、`ja-text`、`risk`、`spec-numbers`）と、表にない検査 |
+| どれでもよい | `CHECK_INPUTS` で常に実行するとした検査（`doc-refs`、`ja-text`、`risk`、`spec-numbers`）と、表にない検査 |
 
+- `scripts/` の下で全てを実行するのは、他の script を走査するテストがあり、どの検査に関わるかを表で保つのが難しいため。
 - 検査を加えたら、Git のファイルの一覧から読むファイルのパスの正規表現を `CHECK_INPUTS` に書く。書かなければ常に実行される。
 - 差分の追加行の文体の検査（`ja-text --changed`）は実行しない。hook が、ステージした追加行の warning を表示するため。
 - 検査は、ステージした内容を取り出した一時ディレクトリで実行する。依存を読めるように、元のリポジトリの `node_modules` へのリンクを置く。

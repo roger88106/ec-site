@@ -9,9 +9,11 @@ const reader = (files) => (file) => files[file] ?? null
 
 /** 小さなリポジトリ：compose-ports は compose を読み、java-rules は共有の部品を import する */
 const FILES = {
-  'scripts/ci/compose-ports.mjs': "import { isMain } from './lib/is-main.mjs'\nconst COMPOSE_FILE = 'docker/compose.yaml'",
-  'scripts/ci/java-rules.mjs': "import { listGitFiles } from './lib/git-files.mjs'",
-  'scripts/ci/lib/is-main.mjs': '',
+  'scripts/ci/compose-ports.mjs': "import { lineNumber } from './lib/line-number.mjs'\nconst COMPOSE_FILE = 'docker/compose.yaml'",
+  'scripts/ci/java-rules.mjs': "import { listGitFiles } from './lib/git-files.mjs'\nimport { RULES } from '../../config/rules.mjs'",
+  'config/rules.mjs': "import { x } from './shared.mjs'",
+  'config/shared.mjs': '',
+  'scripts/ci/lib/line-number.mjs': '',
   'scripts/ci/lib/git-files.mjs': "import { x } from './git-env.mjs'",
   'scripts/ci/lib/git-env.mjs': '',
   'scripts/ci/new-check.mjs': '',
@@ -30,10 +32,10 @@ const select = (staged) =>
   })
 
 describe('commit の前の hook が実行する検査の選び方', () => {
-  test('import でたどれるファイル（入れ子を含む）を変えると、その検査とテストを実行する', () => {
-    const result = select(['scripts/ci/lib/git-env.mjs'])
+  test('scripts/ の外の、import でたどれるファイル（入れ子を含む）を変えると、その検査を実行する', () => {
+    const result = select(['config/shared.mjs'])
+    assert.equal(result.all, false)
     assert.deepEqual(result.checks, ['java-rules', 'new-check'])
-    assert.deepEqual(result.tests, ['scripts/ci/lib/git-files.test.mjs'])
   })
 
   test('検査が名前を書いたファイルを変えると、その検査と同じ名前のテストを実行する', () => {
@@ -55,15 +57,15 @@ describe('commit の前の hook が実行する検査の選び方', () => {
     assert.deepEqual(select(['docs/05-開発規則/review.md']).tests, ['.claude/skills/review/checklist.test.cjs'])
   })
 
-  test('まとめて実行する仕組みか依存を変えると、全てを実行する', () => {
-    for (const file of ['scripts/ci/check-all.sh', 'package.json', 'pnpm-lock.yaml', 'scripts/dev/lib/pre-commit-select.mjs']) {
+  test('scripts/ の下のファイルか依存を変えると、全てを実行する', () => {
+    for (const file of ['scripts/ci/check-all.sh', 'scripts/ci/lib/git-env.mjs', 'scripts/dev/slot.mjs', 'package.json', 'pnpm-lock.yaml']) {
       assert.equal(select([file]).all, true, file)
     }
   })
 
   test('import の先は、相対パスを正規化して読む', () => {
     const closure = importClosure('scripts/ci/java-rules.mjs', reader(FILES))
-    assert.deepEqual([...closure.keys()].sort(), ['scripts/ci/java-rules.mjs', 'scripts/ci/lib/git-env.mjs', 'scripts/ci/lib/git-files.mjs'])
+    assert.deepEqual([...closure.keys()].sort(), ['config/rules.mjs', 'config/shared.mjs', 'scripts/ci/java-rules.mjs', 'scripts/ci/lib/git-env.mjs', 'scripts/ci/lib/git-files.mjs'])
   })
 })
 

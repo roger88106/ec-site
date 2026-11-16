@@ -11,7 +11,6 @@
 // 除外：なし
 // 使い方：node scripts/ci/backend/config-defaults.mjs [設定の一覧の JSON]（リポジトリのルートで。既定は METADATA）
 import { existsSync, readFileSync } from 'node:fs'
-import { isMain } from '../lib/is-main.mjs'
 
 /** 環境変数の文書 */
 const ENV_DOC = 'docs/06-手順書/environment.md'
@@ -128,7 +127,7 @@ export function compareDefaults(code, doc) {
   return problems.sort()
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.main) {
   const metadata = process.argv[2] ?? METADATA
   if (!existsSync(metadata)) {
     console.log(`設定の一覧（${metadata}）がない。先に backend/ecsite/ で ./gradlew compileJava を実行する`)

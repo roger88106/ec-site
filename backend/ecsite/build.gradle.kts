@@ -344,11 +344,12 @@ tasks.register<JavaExec>("generateRegionMigration") {
 }
 
 // -----------------------------------------------------------------------------
-// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」）
+// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」、使わない注釈：「Lombok は main だけ」「null の扱い」）
 //   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
 //   ・import：使われていないもの（UnusedImports）、* の import（AvoidStarImport）、並び（CustomImportOrder）
 //   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
 //     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
+//   ・使わない注釈：Lombok（テストのソースセットだけ）と、JSpecify 以外の Nullable。import と完全修飾名の注釈を見る
 //   生成したコード（jOOQ、OpenAPI。build/ の下）は見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
 //   Checkstyle はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない

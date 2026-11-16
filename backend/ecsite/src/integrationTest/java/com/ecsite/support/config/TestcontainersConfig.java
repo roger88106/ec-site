@@ -22,12 +22,15 @@ import java.util.Map;
 /**
  * 統合テストのコンテナの設定
  *
- * <p>PostgreSQL を使い捨てコンテナで起動し、{@code @ServiceConnection} で Spring Boot の接続設定を差し替える。
- * 画像の置き場所（S3 互換）は SeaweedFS で起動し、受付・配信のバケットを作って接続設定を与える。
- * 画像の変換は imgproxy で起動し、同じネットワークから SeaweedFS を読ませる。
- * メールは Mailpit で受ける。
- * コンテナはテスト JVM 内で一度だけ起動され、全テストクラスで共有される。
- * スキーマは Flyway のマイグレーションで作る（profile {@code integration-test}）。
+ * <p>起動するコンテナ：
+ * <ul>
+ *   <li>PostgreSQL：{@code @ServiceConnection} で Spring Boot の接続設定を差し替える。スキーマは Flyway のマイグレーションで作る（profile {@code integration-test}）</li>
+ *   <li>SeaweedFS（画像の置き場所。S3 互換）：受付・配信のバケットを作って接続設定を与える</li>
+ *   <li>imgproxy（画像の変換）：同じネットワークから SeaweedFS を読ませる</li>
+ *   <li>Mailpit：メールを受ける</li>
+ * </ul>
+ *
+ * <p>コンテナはテスト JVM 内で一度だけ起動され、全テストクラスで共有される。
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfig {

@@ -25,13 +25,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * final LogCapture logs = LogCapture.of(PaymentExpiryJob.class);
  * }</pre>
  *
- * <p>取り込むのは渡したロガーに出たログだけで、出力の書式（JSON など）によらず、レベルと文を読める。
+ * <p>取り込むのは、渡したロガーに出たログだけ。出力の書式（JSON など）によらず、レベルと文を読める。
  * 1 つの処理が複数のクラスのロガーに出すときは、全てのクラスを渡す（ログは出た順に 1 つの一覧に入る）。
- * 取り込む間はロガーのレベルを {@code TRACE} にし、debug のログも取り込む。外すときに元のレベルに戻す。
- * ログに出してはいけない値がどのロガーにも出ないことを確認するときは、{@link #all} で全てのロガーのログを取り込む
- * （このときはレベルを変えず、設定のレベルで出るものだけを取り込む）。
- * 別のスレッド（非同期の処理）が出したログも取り込むので、統合テストでは、確認する処理の前に {@link #clear} で、
- * 準備や前のテストの処理が出したログを捨てる。
+ *
+ * <p>取り込む間はロガーのレベルを {@code TRACE} にして、debug のログも取り込む（外すときに元に戻す）。
+ * 全てのロガーを見るときは {@link #all} を使う。
+ *
+ * <p>別のスレッドのログも取り込むので、統合テストでは、確認する処理の前に {@link #clear} を呼ぶ。
  */
 public final class LogCapture implements BeforeEachCallback, AfterEachCallback {
 
@@ -68,6 +68,7 @@ public final class LogCapture implements BeforeEachCallback, AfterEachCallback {
 
     /**
      * 全てのロガー（root のロガー）のログを取り込む補助を作る。<br />
+     * ログに出してはいけない値が、どのロガーにも出ないことを確認するときに使う。
      * レベルは変えないので、設定のレベルで出力に出るログだけを取り込む。
      *
      * @return 補助

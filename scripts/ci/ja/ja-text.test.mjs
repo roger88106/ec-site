@@ -125,7 +125,7 @@ describe('日本語の文の検査（校閲の評価の一覧の語）', () => {
   })
 })
 
-/** 和語の「足す」。ファイルに使わない語を書かないよう、エスケープで組み立てる */
+/** 和語の「足す」 */
 const ADD = '足す'
 
 describe('日本語の文の検査（pattern と examples の項目）', () => {
@@ -175,7 +175,7 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
     assert.equal(hit.word, '12')
   })
 
-  test('word の項目は今まで通りで、pattern と同じ一覧に混ぜられる', () => {
+  test('word の項目と pattern の項目を、同じ一覧に混ぜられる', () => {
     const terms = [{ word: '道具', use: 'ツール' }, { pattern: '\\d', use: 'u', examples: { hit: ['1'], miss: ['a'] } }]
     assert.deepEqual(findTerms('道具と1', terms).map((hit) => hit.word), ['道具', '1'])
   })
@@ -266,7 +266,7 @@ describe('日本語の文の検査（git commit -v の差分）', () => {
     assert.equal(runMessage(verbose.replace('道具', '書き修正')).status, 0)
   })
 
-  test('切り取り線の行の上の使わない語は、これまで通り見つける', () => {
+  test('切り取り線の行の上の使わない語は見つける', () => {
     assert.equal(runMessage(verbose.replace('本文', '書き修正した')).status, 1)
   })
 })
@@ -303,7 +303,7 @@ describe('文書の用語の検査', () => {
     )
   })
 
-  test('許容用語の一覧がない語は、これまで通り部分一致で数える', () => {
+  test('許容用語の一覧がない語は、部分一致で数える', () => {
     assert.equal(findTerms('道具箱', [{ word: '道具', use: 'ツール' }]).length, 1)
   })
 
@@ -774,7 +774,7 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
     assert.deepEqual(commaCounts('一、二、三、四とする。'), [3])
   })
 
-  test('インラインコードの読点そのものは数えない。字数と「の」は今のとおり', () => {
+  test('インラインコードの中の読点は数えず、インラインコードは字数では 1 字に数える。コードのない文の「の」は数える', () => {
     assert.deepEqual(commaCounts('`a、b、c` を使う。'), [])
     assert.equal(findStyleWarnings('本日の会議の資料の変更の履歴を見る。', { no: 4 }).length, 1)
     assert.equal(findStyleWarnings('範囲：`a`、`b` を直す。', { length: 10 }).length, 1)

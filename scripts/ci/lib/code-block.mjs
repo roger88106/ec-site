@@ -1,5 +1,5 @@
-// Markdown の囲みのコードブロック（```、~~~）を読む。Mermaid の検査（mermaid/mermaid-check）と、文書の構造の検査が使う。文書の構造の検査は、コードブロックの中を除いて見出しを読むために使う。
-// 規則の文書の節の検査（rule-sections）は、閉じていないコメントを見つけるために使う。
+// Markdown の囲みのコードブロック（```、~~~）と HTML のコメントを読む。
+//
 // CommonMark と同じく読む：
 //   - 開き：0〜3 個の空白で字下げした、3 個以上の ` か ~ の並び。後ろは info string。` の並びの開きは、info string に ` を含められない（1 行のコードの範囲になるため）
 //   - 閉じ：0〜3 個の空白で字下げした、開きと同じ字で、開き以上の長さの並び。後ろは空白だけ
@@ -11,7 +11,7 @@
 //     段落の中で行をまたぐコメントは読まない（CommonMark と違う。GitHub が表示しないコメントの中の ID などを読み、正しい文書を失敗にする向きにだけずれる）
 //   - 1 行のコード（`...`）の中の <!-- は、コメントの開きにしない
 // 箇条書き・引用・HTML のブロック・front matter の中のコードブロックは、これらの構造を解釈せず、通常のコードブロックと同じ規則で読む。このリポジトリの文書は、これらの中にコードブロックを書いていないため。
-import { readCodeSpans } from './code-span.mjs'
+import { maskCodeSpans } from './code-span.mjs'
 
 /** 囲みの開きの行（字下げ 0〜3 個、3 個以上の ` か ~、info string） */
 const OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/
@@ -32,6 +32,25 @@ const OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/
  */
 export function readCodeBlocks(text) {
   return readBlocks(text).codeBlocks
+}
+
+/**
+ * 文書の各行が、どのコードブロックのどの部分かを返す。行ごとに内外を決める検査が使う。
+ *
+ * @param {string} text 文書の内容（改行は LF でも CRLF でもよい）
+ * @returns {({ block: object, part: 'open' | 'body' | 'close' } | null)[]}
+ *   i 番目が i + 1 行目。コードブロックの外の行は null。block は readCodeBlocks の要素、part は開き・中身・閉じのどれか
+ */
+export function codeBlockLines(text) {
+  const result = text.split(/\r?\n/).map(() => null)
+  for (const block of readCodeBlocks(text)) {
+    result[block.line - 1] = { block, part: 'open' }
+    block.body.forEach((_, i) => {
+      result[block.line + i] = { block, part: 'body' }
+    })
+    if (block.closeLine !== null) result[block.closeLine - 1] = { block, part: 'close' }
+  }
+  return result
 }
 
 /**
@@ -108,8 +127,7 @@ function scanComment(line, inComment) {
     position = end + 3
   }
   // コメントの外では、1 行のコードの中の <!-- を見ない（同じ長さの空白に替えるので、位置は変わらない）
-  let outside = line
-  for (const { start, end } of readCodeSpans(line).spans) outside = outside.slice(0, start) + ' '.repeat(end - start) + outside.slice(end)
+  const outside = maskCodeSpans(line)
   for (;;) {
     const start = outside.indexOf('<!--', position)
     if (start < 0) return { inComment: false, ranges }

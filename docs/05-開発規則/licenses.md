@@ -10,14 +10,16 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 
 実行時・ビルド時・テスト時の全ての依存に当てはめる。無料で商用に使えて、コピーレフトでない（使う側のコードの公開を求めない）ものだけを使う。ライブラリごとの一覧は `scripts/ci/licenses/` に置き、CI で照合する（新しいライブラリが方針に合わなければ CI が失敗する）。
 
+<!-- generated:license-policy -->
 | 区分 | ライセンス | 扱い |
 |------|------------|------|
 | 許可 | MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、0BSD、BlueOak-1.0.0、CC0-1.0、Zlib、PostgreSQL、Unlicense、Python-2.0、PSF-2.0。他に、改変を禁じるが無料で商用に使えるもの | そのまま使える。改変を禁じるものは改変しない |
-| 条件付き | EPL-1.0・2.0、MPL-2.0、LGPL-2.1・3.0、CDDL、CC-BY-4.0（データ）、OFL-1.1（フォント）、GPL-2.0 with Classpath-exception。他に、規模（売上、利用者数など）が一定以内なら無料のもの | 改変せずに依存として使う場合だけ。規模で無料のものは、その規模以内で使う。ライブラリごとに理由を書いて一覧に載せる |
-| 禁止 | GPL（例外なし）、AGPL、SSPL、BUSL、Commons Clause、非商用限定、有料のもの、ライセンスが分からないもの | 使わない |
+| 条件付き | EPL-1.0、EPL-2.0、EDL-1.0、MPL-2.0、LGPL-2.1-only、LGPL-2.1-or-later、LGPL-3.0-only、LGPL-3.0-or-later、CDDL-1.0、CDDL-1.1、BSD-unspecified、CC-BY-4.0、OFL-1.1、GPL-2.0-with-classpath-exception。他に、規模（売上、利用者数など）が一定以内なら無料のもの | 改変せずに依存として使う場合だけ。規模で無料のものは、その規模以内で使う。ライブラリごとに理由を書いて一覧に載せる |
+| 禁止 | GPL-2.0-only、GPL-2.0-or-later、GPL-3.0-only、GPL-3.0-or-later、AGPL-3.0-only、AGPL-3.0-or-later、SSPL-1.0、BUSL-1.1、Commons-Clause、CC-BY-NC-4.0、UNKNOWN。他に、非商用限定のもの、有料のもの | 使わない |
+<!-- /generated:license-policy -->
 
 - 複数のライセンスから選べるもの（`A OR B`）は、許可のライセンスが 1 つ含まれればよい。全てに従うもの（`A AND B`）は、全てが許可か、条件付きの一覧に載っていること。
-- 依存を追加するときに、方針に合うかを確認する。合わないライブラリが必要なときは、先に本節を修正する。
+- 依存を追加するときに、方針に合うかを確認する。合わないライブラリが必要なときは、先に本節を修正する。表は `scripts/ci/licenses/policy.json` から `node scripts/ci/license-policy.mjs --write` で作る。
 
 ## 使っている依存とライセンス
 

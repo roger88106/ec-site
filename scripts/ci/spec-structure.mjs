@@ -37,6 +37,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { readCodeBlocks } from './lib/code-block.mjs'
 import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from './lib/doc-structure.mjs'
+import { FUNCTIONAL_SPECS } from './lib/functional-specs.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { ARCHIVE, isSpecDirName, listSpecDirs } from './lib/spec-dirs.mjs'
 
@@ -48,23 +49,6 @@ export const REFACTOR_SECTIONS = ['背景と目的', 'スコープ', '目的と�
 
 /** plan の最後の `##` の節 */
 const PLAN_LAST_SECTIONS = ['段階と変えるファイル', '利用者に確認すること']
-
-/** 固定の節に書いた機能仕様。モジュールを追加したら、その ③ をこの一覧に追加する（追加し忘れると、バックエンドのモジュールのディレクトリと ③ の文書の両方がある名前が一覧にないため、ac-check が失敗する） */
-export const FUNCTIONAL_SPECS = [
-  'docs/03-機能仕様/order.md',
-  'docs/03-機能仕様/tax.md',
-  'docs/03-機能仕様/catalog.md',
-  'docs/03-機能仕様/inventory.md',
-  'docs/03-機能仕様/media.md',
-  'docs/03-機能仕様/cart.md',
-  'docs/03-機能仕様/member.md',
-  'docs/03-機能仕様/region.md',
-  'docs/03-機能仕様/storefront.md',
-  'docs/03-機能仕様/payment.md',
-  'docs/03-機能仕様/shipping.md',
-  'docs/03-機能仕様/notification.md',
-  'docs/03-機能仕様/reporting.md',
-]
 
 /** 機能仕様の雛形。`##` の節の名前と順は、この雛形の骨組みから読む */
 const FUNCTIONAL_TEMPLATE = 'docs/03-機能仕様/template.md'

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, readHeadings, referenceName, slug, splitSectionNumbers } from './doc-refs.mjs'
+import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, splitSectionNumbers } from './doc-refs.mjs'
+import { readHeadings, referenceName, slug } from './lib/doc-names.mjs'
 
 /** 調べる文書の組。キーがパス、値が中身 */
 const DOCS = {

@@ -190,6 +190,16 @@ describe('ロールと権限の対応表', () => {
       '# 表\n\n<!-- generated:role-permissions -->\n新しい表\n<!-- /generated:role-permissions -->\n',
     )
   })
+
+  test('生成の範囲の終わりが開きより前にあれば、範囲がないものとして失敗にし、書き直しでは例外にする', () => {
+    const doc = '<!-- /generated:role-permissions -->\n表\n<!-- generated:role-permissions -->\n'
+    assert.deepEqual(checkDocument(doc, '表\n'), ['文書に <!-- generated:role-permissions --> の範囲がない'])
+    assert.throws(() => replaceGenerated(doc, '表\n'), /範囲がない/)
+  })
+
+  test('生成の範囲の開きだけがあって、終わりがなければ、書き直しでは例外にする', () => {
+    assert.throws(() => replaceGenerated('<!-- generated:role-permissions -->\n表\n', '表\n'), /範囲がない/)
+  })
 })
 
 describe('script として実行する', () => {

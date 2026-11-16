@@ -63,6 +63,11 @@ describe('カタログを通さないプラグインの書き方', () => {
     ].join('\n')
     assert.deepEqual(findDirectPlugins(kts).map((item) => item.line), [5, 7, 9])
   })
+
+  test('Groovy の apply plugin: の行も見つけ、コメントの中は見つけない', () => {
+    const groovy = ["apply plugin: 'com.example.applied'", "// apply plugin: 'commented.out'", "apply from: 'other.gradle'"].join('\n')
+    assert.deepEqual(findDirectPlugins(groovy).map((item) => item.line), [1])
+  })
 })
 
 describe('policy の読み取り', () => {

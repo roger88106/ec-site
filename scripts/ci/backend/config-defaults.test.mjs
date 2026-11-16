@@ -85,6 +85,17 @@ describe('環境変数の文書と既定値の照合', () => {
     ])
   })
 
+  test('コードに既定値がなく、文書が「必須」や「—」のような具体的な値でない書き方なら、食い違いにしない', () => {
+    const code = [
+      { env: 'ECSITE_A', value: null },
+      { env: 'ECSITE_B', value: null },
+    ]
+    const doc = [
+      { env: 'ECSITE_A', value: '必須' },
+      { env: 'ECSITE_B', value: '—' },
+    ]
+    assert.deepEqual(compareDefaults(code, doc), [])
+  })
 })
 
 describe('script として実行する', () => {

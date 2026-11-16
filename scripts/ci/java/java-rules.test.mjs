@@ -178,6 +178,11 @@ describe('@SuppressWarnings の理由の検査', () => {
     assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
   })
 
+  test('@interface は注釈として飛ばさないので、その前の // は @SuppressWarnings の理由にならない', () => {
+    const text = ['// 理由', '@interface', '@SuppressWarnings("unchecked")', 'Map a() {}'].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text).map((hit) => hit.line), [3])
+  })
+
   test('全てのソースセット（main、test、integrationTest、testFixtures、tools）を見て、生成したコードは見ない', () => {
     const base = 'backend/ecsite/src'
     for (const set of ['main', 'test', 'integrationTest', 'testFixtures', 'tools']) {

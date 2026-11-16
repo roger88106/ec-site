@@ -187,6 +187,11 @@ describe('変更の危険度の判定', () => {
     assert.throws(() => parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: [] }] })))
     assert.throws(() => parseRiskConfig(JSON.stringify({})))
   })
+
+  test('/ で始まる経路と、空の経路は、リポジトリのルートからの経路でないので、読むときに失敗にする', () => {
+    assert.throws(() => parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: ['/docs/'] }] })), /例/)
+    assert.throws(() => parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: ['docs/', ''] }] })), /例/)
+  })
 })
 
 describe('pull request の本文の危険度との比べ', () => {
@@ -196,6 +201,15 @@ describe('pull request の本文の危険度との比べ', () => {
   test('本文の「## 危険度」の節の「判定：」の行の値を読む', () => {
     assert.deepEqual(readBodyRisk(body('判定：高')), { value: '高' })
     assert.deepEqual(readBodyRisk(body('判定：低').replaceAll('\n', '\r\n')), { value: '低' })
+  })
+
+  test('「判定：」の行は、箇条書きの記号（- と *）が付いていても読む', () => {
+    assert.deepEqual(readBodyRisk(body('- 判定：高')), { value: '高' })
+    assert.deepEqual(readBodyRisk(body('* 判定：低')), { value: '低' })
+  })
+
+  test('「判定：」の値が高か低でないときは、値を読めない理由を返す', () => {
+    assert.match(readBodyRisk(body('判定：中')).error, /高か低でない/)
   })
 
   test('閉じていない <!-- の後ろは、GitHub が表示しないので読まない', () => {

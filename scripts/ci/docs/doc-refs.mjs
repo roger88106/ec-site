@@ -325,7 +325,12 @@ export function findNumberedHeadings(files, read) {
 if (import.meta.main) {
   const files = listGitFiles().filter((file) => isTargetFile(file) && !isExcluded(file))
   exitIfNoFiles(files, '参照を調べる文書')
-  const read = (file) => readFileSync(file, 'utf8')
+  // docs/ の文書は、見出しを読むときと参照を探すときの 2 回読むので、中身を覚えておく
+  const texts = new Map()
+  const read = (file) => {
+    if (!texts.has(file)) texts.set(file, readFileSync(file, 'utf8'))
+    return texts.get(file)
+  }
   const problems = [...checkReferences(files, read, existsSync), ...findNumberedHeadings(files, read)]
   for (const problem of problems) console.log(problem)
   console.log(`切れた参照と番号のある見出し：${problems.length}`)

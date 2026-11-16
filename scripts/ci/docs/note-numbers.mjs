@@ -105,10 +105,16 @@ if (import.meta.main) {
   const allFiles = listGitFiles()
   const files = allFiles.filter((file) => isTargetDoc(file))
   exitIfNoFiles(files, '注の番号を調べる文書')
-  const { names, basenames } = documentIndex(allFiles, (file) => readHeadings(readFileSync(file, 'utf8')).title)
+  // 見る文書の多くは、名前を読む docs/ の文書でもあるので、1 回だけ読む
+  const texts = new Map()
+  const read = (file) => {
+    if (!texts.has(file)) texts.set(file, readFileSync(file, 'utf8'))
+    return texts.get(file)
+  }
+  const { names, basenames } = documentIndex(allFiles, (file) => readHeadings(read(file)).title)
   let count = 0
   for (const file of files) {
-    for (const problem of findNoteProblems(readFileSync(file, 'utf8'), names, file, basenames)) {
+    for (const problem of findNoteProblems(read(file), names, file, basenames)) {
       console.log(`${file}:${problem.line} ${problem.message}`)
       count += 1
     }

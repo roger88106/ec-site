@@ -261,7 +261,7 @@ export function buildCommand(command, args) {
 /**
  * できた SVG の数を数える。
  *
- * mermaid-cli 12.0.0 は、Markdown の入力では `<出力の名前>-<n>.svg`（n は 1 から）、図の本文だけの入力では `<出力の名前>.svg` を作る。
+ * MERMAID_CLI のバージョンは、Markdown の入力では `<出力の名前>-<n>.svg`（n は 1 から）、図の本文だけの入力では `<出力の名前>.svg` を作る。
  *
  * @param {string} work 作業のディレクトリ
  * @param {string} stem 出力の名前（拡張子を除く）

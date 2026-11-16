@@ -119,13 +119,15 @@ function coverageMarkdown(name, text, kind) {
  * @throws {Error} PIT の XML を読めないとき
  */
 export function mutationMarkdown(name, text) {
-  const { total, detected, survivors } = readMutations(text)
+  const { total, detected, statuses, survivors } = readMutations(text)
   return [
     `### mutation score（${name}）`,
     '',
     '| 割合 | 検出した変異 / 全体 |',
     '|------|---------------------|',
     `| ${percent(detected, total)} | ${detected} / ${total} |`,
+    '',
+    `status ごとの数：${statuses.map(({ status, count }) => `${status} ${count}`).join('、')}`,
     '',
     `生き残った変異（テストが検出できなかった変異）が多いクラス（上位 ${SURVIVORS_LIMIT} 件）：`,
     '',

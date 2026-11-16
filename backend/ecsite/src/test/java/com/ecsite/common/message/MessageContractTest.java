@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>エラーの定義（{@link ErrorCodeProvider} の enum の定数）とメッセージのキーが過不足なく対応し、
  * キーが定数の名前から決まり、文の差し込みの名前と定数に書いた値の名前が一致することを確認する。
+ * 文に上限などの値を直接書いていないことも確認する（値が変わったときに、文が取り残されないように）。
  */
 class MessageContractTest {
 
@@ -40,6 +41,21 @@ class MessageContractTest {
      * 文の中の差し込みの名前
      */
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{([A-Za-z]+)}");
+
+    /**
+     * 文の中の数字（半角と全角）
+     */
+    private static final Pattern NUMBER = Pattern.compile("[0-9０-９]+");
+
+    /**
+     * 文に直接書いてよい数字。「1 文字以上」「0 以外」のように、空でないことや数え方を言う 0 と 1 は、変わる規則の値でないため
+     */
+    private static final Pattern COUNTING_WORDS = Pattern.compile("[01０１]");
+
+    /**
+     * 数字の検査で見ないキーの接頭辞（メールの文。エラーの文でない）
+     */
+    private static final String NOTIFICATION_PREFIX = "ecsite.notification.";
 
     /**
      * メッセージのファイル
@@ -129,6 +145,22 @@ class MessageContractTest {
 
         // 確認：ない
         assertThat(mismatched).isEmpty();
+    }
+
+    @Test
+    @DisplayName("エラーの文に、差し込みでない 2 以上の数字を書かない")
+    void noLiteralLimitInMessage() {
+        // 操作：メールの文を除いた文から差し込みを除き、0 と 1 以外の数字を含む文を集める
+        List<String> literal = MESSAGES.stringPropertyNames().stream()
+                .filter(key -> !key.startsWith(NOTIFICATION_PREFIX))
+                .sorted()
+                .filter(key -> NUMBER.matcher(PLACEHOLDER.matcher(MESSAGES.getProperty(key)).replaceAll("")).results()
+                        .anyMatch(number -> !COUNTING_WORDS.matcher(number.group()).matches()))
+                .map(key -> key + "：" + MESSAGES.getProperty(key))
+                .toList();
+
+        // 確認：ない（上限などの値は、ドメインの定数から {名前} で差し込む）
+        assertThat(literal).isEmpty();
     }
 
     // ============================== 補助 ==============================

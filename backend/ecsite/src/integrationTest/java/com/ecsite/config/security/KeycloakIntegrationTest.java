@@ -1,6 +1,7 @@
 package com.ecsite.config.security;
 
 import com.ecsite.contract.Contracts;
+import com.ecsite.support.config.ComposeImages;
 import com.ecsite.support.config.TestcontainersConfig;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeAll;
@@ -64,7 +65,7 @@ class KeycloakIntegrationTest {
     /**
      * docker/compose.yaml と同じイメージ
      */
-    private static final String IMAGE = "quay.io/keycloak/keycloak:26.8.2";
+    private static final String IMAGE = ComposeImages.of("quay.io/keycloak/keycloak");
 
     /**
      * Keycloak の HTTP のポート

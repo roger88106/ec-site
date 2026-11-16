@@ -2,11 +2,9 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import {
   findEnumNameConversions,
-  findEnumStringConversions,
   findUnexplainedSuppressWarnings,
   isEnumNameTarget,
   isSuppressWarningsTarget,
-  isStringConversionTarget,
 } from './java-rules.mjs'
 
 describe('バックエンドの書き方の検査', () => {
@@ -62,42 +60,6 @@ describe('バックエンドの書き方の検査', () => {
 
   test('name() を渡さない valueOf は見つけない', () => {
     assert.deepEqual(findEnumNameConversions('BigDecimal.valueOf(amount.longValue()); String.valueOf(name)'), [])
-  })
-
-  test('列挙型の名前の文字列からの変換（文字列リテラル以外を渡す valueOf・fromValue）を見つける', () => {
-    const text = [
-      '        return Status.valueOf(command.reason());',
-      '        return PublicationStatus.fromValue(view.status());',
-      '        return com.ecsite.Status.valueOf(text);',
-      '        return Status.valueOf("PAID");',
-      '        return Status.fromValue("PAID");',
-      '        return switch (status) { case PAID -> Status.PAID; };',
-    ].join('\n')
-    assert.deepEqual(findEnumStringConversions(text).map((hit) => hit.line), [1, 2, 3])
-  })
-
-  test('列挙でない型の valueOf は、文字列からの変換として見つけない', () => {
-    const text = [
-      'String.valueOf(count);',
-      'Integer.valueOf(text);',
-      'Long.valueOf(text);',
-      'Boolean.valueOf(text);',
-      'BigDecimal.valueOf(amount);',
-      'BigInteger.valueOf(amount);',
-      'Double.valueOf(text);',
-      'java.lang.String.valueOf(chars);',
-      'Enum.valueOf(targetType, text);',
-    ].join('\n')
-    assert.deepEqual(findEnumStringConversions(text), [])
-  })
-
-  test('文字列からの変換は、domain と infrastructure/persistence 以外の本番のソースだけを見る', () => {
-    const base = 'backend/ecsite/src/main/java/com/ecsite/module/inventory'
-    assert.equal(isStringConversionTarget(`${base}/application/StockCommandService.java`), true)
-    assert.equal(isStringConversionTarget(`${base}/presentation/InventoryMapper.java`), true)
-    assert.equal(isStringConversionTarget(`${base}/domain/stock/StockAdjustment.java`), false)
-    assert.equal(isStringConversionTarget(`${base}/infrastructure/persistence/JooqStockQueryRepository.java`), false)
-    assert.equal(isStringConversionTarget('backend/ecsite/src/test/java/com/ecsite/FooTest.java'), false)
   })
 
   test('name() の変換は、本番のソースだけを見る', () => {
@@ -244,18 +206,5 @@ describe('name() の変換の検査の境界', () => {
       'String url = "http://x"; Status.valueOf(a.name());',
     ].join('\n')
     assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [3])
-  })
-})
-
-describe('コメントの中を違反と読まない', () => {
-  test('コメントの中の valueOf（文字列リテラル以外）は見つけず、コードの valueOf は見つける', () => {
-    const text = ['// Status.valueOf(x);', '/* Status.valueOf(x) */', '/** Status.fromValue(x) */', 'Status s = Status.valueOf(x); // ok'].join('\n')
-    assert.deepEqual(findEnumStringConversions(text).map((hit) => hit.line), [4])
-    assert.equal(findEnumStringConversions(text)[0].text, 'Status s = Status.valueOf(x); // ok')
-  })
-
-  test('文字列リテラルの中の // の後ろにある valueOf は、コードとして見つける', () => {
-    const text = 'String u = "http://x"; Status s = Status.valueOf(x);'
-    assert.deepEqual(findEnumStringConversions(text).map((hit) => hit.line), [1])
   })
 })

@@ -1,5 +1,6 @@
 package com.ecsite.support.http;
 
+import com.ecsite.support.config.ComposeImages;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.GenericContainer;
@@ -41,7 +42,7 @@ public class Mailpit implements AutoCloseable {
      * コンテナを起動する。
      */
     public Mailpit() {
-        container = new GenericContainer<>(DockerImageName.parse("axllent/mailpit:v1.33.0"))
+        container = new GenericContainer<>(DockerImageName.parse(ComposeImages.of("axllent/mailpit")))
                 .withExposedPorts(SMTP_PORT, HTTP_PORT)
                 .waitingFor(Wait.forHttp("/livez").forPort(HTTP_PORT));
         container.start();

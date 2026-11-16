@@ -25,9 +25,9 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 | `./gradlew test` | 単体テスト（Spring を起動しない） | 不要 ※2 |
 | `./gradlew integrationTest` | 統合テスト（Spring + Testcontainers の PostgreSQL など） | 必要 |
 | `./gradlew check` | 単体・統合テスト、OpenAPI の構文の検証（CI はジョブに分けて同じものを実行する） | 必要 |
-| `./gradlew integrationTest -PintegrationTestShard=<番号>/<総数>` | 統合テストの一部だけ（クラスの名前の hash で分ける。例 `1/2`）。CI が 2 つのジョブに分けるために使う。手元では通常は使わない | 必要 |
+| `./gradlew integrationTest -PintegrationTestShard=<番号>/<総数>` | 統合テストの一部だけ（クラスの名前の hash で分ける。例 `1/2`）。CI が 3 つのジョブに分けるために使う。手元では通常は使わない | 必要 |
 | `./gradlew integrationTest -PintegrationTestForks=<数>` | 統合テストを実行するフォークの数（既定 1。CI も 1）。手元では通常は使わない | 必要 |
-| `./gradlew integrationTestShards` | 統合テストのジョブ（1/2・2/2）に入るクラスの一覧（`-PintegrationTestShardCount=<数>` で分ける数を変える。既定 2） | 不要 |
+| `./gradlew integrationTestShards -PintegrationTestShardCount=<数>` | 統合テストを <数> に分けたときの、各ジョブに入るクラスの一覧（CI と同じ分け方は 3） | 不要 |
 | `./gradlew coverageReport` | 単体テストと統合テストを合算したカバレッジ（`build/reports/jacoco/coverageReport/`）。`-PcoverageExecDir`・`-PcoverageClassesDir` は CI が使う。手元では通常は使わない | 必要 |
 | `./gradlew pitest` | domain（`com.ecsite.module.*.domain.*`）の mutation testing（PIT）。単体テスト（`src/test`）だけを使う。報告は `build/reports/pitest/`。`check` と `build` には含まれない。時間は ※3 | 不要 ※2 |
 
@@ -51,11 +51,12 @@ Checkstyle（`checkstyleMain`、`checkstyleTest` など）が失敗したとき�
 
 ```bash
 # CI と同じ確認（lint と整形、型チェック、テスト、ビルド）
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build
 ```
 
 - 管理画面の `pnpm build`（本番ビルド）は、環境変数 `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がないと失敗する。ローカルの値で確認するときは、[環境変数](environment.md)の「管理画面」の既定値を付ける。
-- `pnpm test` はカバレッジの報告を `coverage/index.html` と `coverage/coverage-summary.json` に出力する（共有パッケージ `frontend/shared` も同じ）。
+- `pnpm test` はカバレッジを取らない。`pnpm test <ファイル>` で一部のファイルだけを実行できる。
+- `pnpm test:coverage` は、全てのテストを実行してカバレッジを基準と比べ、報告を `coverage/index.html` と `coverage/coverage-summary.json` に出力する（共有パッケージ `frontend/shared` も同じ）。
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる。
 
@@ -125,21 +126,22 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 |------|----------------|------------------------|
 | バックエンド（単体と統合を合わせたカバレッジ） | `backend/ecsite/build.gradle.kts` の `coverageVerification` | `./gradlew coverageVerification` |
 | domain の mutation score | `backend/ecsite/build.gradle.kts` の `pitest` の `mutationThreshold` | `./gradlew pitest` |
-| 管理画面、店舗画面、共有のパッケージ | 各ディレクトリの `vite.config.ts`・`vitest.config.ts` の `coverage.thresholds` | `pnpm test` |
+| 管理画面、店舗画面、共有のパッケージ | 各ディレクトリの `vite.config.ts`・`vitest.config.ts` の `coverage.thresholds` | `pnpm test:coverage` |
 
-- 基準は、決めたときの値を整数に切り捨て、さらに 1 下げた値にしている。理由：書き方の変更（引数の null の検査など）や、統合テストの同時実行の競合でだけ実行される分岐のばらつき（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）で止めないため。
+- 基準は、決めたときの CI の値を整数に切り捨て、さらに 1 下げた値にしている。理由：書き方の変更（引数の null の検査など）や、統合テストの同時実行の競合でだけ実行される分岐のばらつき（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）で止めないため。
+- CI の値が基準より 2 以上高くなったら、同じ決め方で基準を上げる（自動では上がらない）。
 - `scripts/ci/report/coverage-summary.mjs` が、合計と低い箇所の一覧を job の summary に書く（失敗にしない）。
 
 ### CI での手順の位置
 
-手順は `.github/workflows/ci.yml` にある。バックエンドのカバレッジの検査は、報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブの、単体テストの後で実行し、ジョブの時間が約 2 分増える（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
+手順は `.github/workflows/ci.yml` にある。バックエンドのカバレッジの検査は、報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブから分けた別のジョブで、同時に実行する（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
 
 ### 手元での実行
 
 上の表のコマンドで、CI と同じ検査が手元で流れる。バックエンドのカバレッジは、先に `backend/ecsite/` で `./gradlew check`（統合テストを含む）を実行して実行データを作り、`./gradlew coverageVerification` を実行する。
 
 - バックエンドの一部のテストだけを実行すると、値が基準より低くなり、検査が失敗する。CI と同じ範囲（`./gradlew check`）の実行データを使う。
-- フロントの 1 つのファイルのテストは、カバレッジを取らない `npx vitest run <ファイル>` で実行する（`pnpm test` はカバレッジを取り、全体の基準と比べる）。
+- フロントの 1 つのファイルのテストは、カバレッジを取らない `pnpm test <ファイル>` で実行する（`pnpm test:coverage` は、全体の基準と比べる）。
 
 ### 失敗したとき
 

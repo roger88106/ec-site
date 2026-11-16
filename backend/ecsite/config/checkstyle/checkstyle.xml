@@ -9,8 +9,7 @@
     main だけに適用し、test などは suppressions.xml で抑える。
   ・import：使われていないもの、* の import、並び（バックエンドの書き方の「書式」）。全てのソースセットに適用する。
     並びは、java・javax 以外、java・javax、static の順で、まとまりの間は空行 1 行、まとまりの中は文字コードの順。
-  ・使わない注釈（バックエンドの書き方の「Lombok は main だけ」「null の扱い」）。import と、完全修飾名で書いた注釈を見る（コメントの中は見ない）。
-    Lombok はテストのソースセット（test、integrationTest、testFixtures）だけに適用し、main と tools は suppressions.xml で抑える。
+  ・使わない注釈（バックエンドの書き方の「null の扱い」）。import と、完全修飾名で書いた注釈を見る（コメントの中は見ない）。
     JSpecify（org.jspecify.annotations）以外の Nullable は、全てのソースセットに適用する。
 -->
 <module name="Checker">
@@ -35,18 +34,6 @@
             <property name="allowMissingPropertyJavadoc" value="false"/>
         </module>
         <module name="JavadocVariable"/>
-        <!-- Lombok の注釈はクラスファイルに残らず、ArchUnit で見えないため、テストでは定型コードを手で書く -->
-        <module name="IllegalImport">
-            <property name="id" value="lombok"/>
-            <property name="illegalPkgs" value="lombok"/>
-            <message key="import.illegal" value="テストのソースで Lombok を使わない（定型コードを手で書く）: {0}"/>
-        </module>
-        <module name="RegexpSinglelineJava">
-            <property name="id" value="lombok"/>
-            <property name="format" value="@\s*lombok\."/>
-            <property name="ignoreComments" value="true"/>
-            <property name="message" value="テストのソースで Lombok を使わない（定型コードを手で書く）"/>
-        </module>
         <!-- NullAway が見る注釈をそろえる -->
         <module name="IllegalImport">
             <property name="id" value="otherNullable"/>

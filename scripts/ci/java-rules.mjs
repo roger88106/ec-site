@@ -1,10 +1,9 @@
 // バックエンドの書き方の規則のうち、ソースの文字で確認できるものを確認する（バックエンドの書き方の「他のモジュールは腐敗防止層で包む」「検査を抑えるとき」）。
 // - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())）。値を追加したときの写し忘れを、コンパイルで見つけられないため
-// - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない（文字列リテラル以外を渡す valueOf・fromValue）。
-//   モジュールやレイヤーの間で列挙を文字列で受け渡すと、相手に値を追加したときに気づけないため
 // - 全てのソースセットで、@SuppressWarnings の直前の行に、理由を // のコメントで書く。間にある他の注釈の行は飛ばし、Javadoc だけでは違反にする
 //
-// コメントの中は、どの規則でも読まない。Lombok と JSpecify 以外の Nullable は、Checkstyle が確認する。
+// コメントの中は、どの規則でも読まない。どちらの規則も、クラスファイルに残らないもの（引数の式、ソースだけの注釈）を見るので、ArchUnit で書けない。
+// 列挙型を名前の文字列から変換する場所は ArchUnit（EnumStringConversionTest）が、JSpecify 以外の Nullable は Checkstyle が確認する。
 //
 // 失敗したとき：列挙型は switch 式で変換する。@SuppressWarnings の直前の行に、なぜ抑えてよいかを // で書く。
 // 除外：なし
@@ -34,31 +33,6 @@ const SUPPRESS_WARNINGS = /@\s*(?:java\s*\.\s*lang\s*\.\s*)?SuppressWarnings\b/g
 /** 注釈の始まりと名前（@interface は注釈の宣言なので含まない） */
 const ANNOTATION_NAME = /@\s*(?!interface\b)[A-Za-z_][\w.]*/g
 
-/** 検査から除く型：列挙でない値の型と、型を実行時に受ける汎用の Enum.valueOf（型ごとの switch 式は書けない） */
-const NON_ENUM_TYPES = 'String|Integer|Long|Boolean|BigDecimal|BigInteger|Double|Float|Short|Byte|Character|Enum'
-
-/** 文字列リテラル以外を渡す valueOf・fromValue の呼び出し（列挙の名前の文字列からの変換） */
-const ENUM_STRING = new RegExp(`\\b(?!(?:${NON_ENUM_TYPES})\\b)[A-Z]\\w*\\.(?:valueOf|fromValue)\\(\\s*(?!")`)
-
-/** 名前の文字列からの変換を許す場所（ドメインと、DB の文字列を読む永続化） */
-const STRING_CONVERSION_ALLOWED = /\/(?:domain|infrastructure\/persistence)\//
-
-/**
- * 正規表現に合う行を探す。コメントの中は読まない（行番号は変わらない）。
- *
- * @param {string} text ソース
- * @param {RegExp} pattern 行に当てる正規表現
- * @returns {{ line: number, text: string }[]} 見つけた行（行の順）
- */
-function findLines(text, pattern) {
-  const original = text.split('\n')
-  return stripJavaComments(text)
-    .split('\n')
-    .map((line, index) => ({ line: index + 1, code: line.trim(), text: original[index].trim() }))
-    .filter((hit) => pattern.test(hit.code))
-    .map(({ line, text: lineText }) => ({ line, text: lineText }))
-}
-
 /**
  * 列挙型の変換に name() を渡す呼び出しを探す。
  *
@@ -81,16 +55,6 @@ export function findEnumNameConversions(text) {
     hits.push({ line, text: lines[line - 1].trim() })
   }
   return hits
-}
-
-/**
- * 列挙型を名前の文字列から変換する行（文字列リテラル以外を渡す valueOf・fromValue）を探す。
- *
- * @param {string} text ソース
- * @returns {{ line: number, text: string }[]} 見つけた行
- */
-export function findEnumStringConversions(text) {
-  return findLines(text, ENUM_STRING)
 }
 
 /**
@@ -213,16 +177,6 @@ export function isEnumNameTarget(file) {
   return MAIN_SOURCE.test(file)
 }
 
-/**
- * 名前の文字列からの変換を禁じる場所か。
- *
- * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 本番のソースのうち、domain と infrastructure/persistence 以外なら true
- */
-export function isStringConversionTarget(file) {
-  return MAIN_SOURCE.test(file) && !STRING_CONVERSION_ALLOWED.test(file)
-}
-
 if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => isSuppressWarningsTarget(file))
   exitIfNoFiles(files, 'Java の規則の対象のファイル')
@@ -237,14 +191,7 @@ if (isMain(import.meta.url)) {
     const text = readFileSync(file, 'utf8')
     report(file, findUnexplainedSuppressWarnings(text), '@SuppressWarnings の直前の行に、理由の // のコメントを書く')
     if (!isEnumNameTarget(file)) continue
-    const nameHits = findEnumNameConversions(text)
-    report(file, nameHits, '列挙型の変換に name() を渡す')
-    if (isStringConversionTarget(file)) {
-      // name() の変換で報告した行は、文字列からの変換として重ねて報告しない
-      const reported = new Set(nameHits.map((hit) => hit.line))
-      const stringHits = findEnumStringConversions(text).filter((found) => !reported.has(found.line))
-      report(file, stringHits, '列挙型を名前の文字列から変換する（switch 式で変換する）')
-    }
+    report(file, findEnumNameConversions(text), '列挙型の変換に name() を渡す')
   }
   console.log(`バックエンドの書き方の違反：${count}`)
   process.exit(count ? 1 : 0)

@@ -3,6 +3,10 @@ packages:
   - frontend/*
   - e2e
 
+# Node のバージョンが、プロジェクトと依存の engines.node に合わなければ、インストールを失敗にする（既定は警告だけ）。
+# CI は .node-version の Node で入れるので、.node-version とルートの package.json の engines.node のずれも、ここで見つかる
+engineStrict: true
+
 # 間接依存のバージョン固定
 overrides:
   # minimatch の DoS（GHSA-g3hv-75wg-m249）は 11.0.1 で修正された。@ts-morph/common は最新でも ^10 を指定しているので、ここで上げる

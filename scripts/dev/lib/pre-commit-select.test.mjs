@@ -81,7 +81,7 @@ describe('リポジトリの検査とテスト', () => {
   test('compose を変えると、compose を読む検査と、常に実行する検査だけを実行する', () => {
     const result = selectChecks({ staged: ['docker/compose.yaml'], checks, tests, read: fileReader(root) })
     assert.equal(result.all, false)
-    for (const name of ['compose-ports', 'image-versions', 'local-ports']) assert.ok(result.checks.includes(name), name)
+    for (const name of ['compose-ports', 'local-ports']) assert.ok(result.checks.includes(name), name)
     for (const name of ['java-rules', 'frontend-rules', 'migrations']) assert.ok(!result.checks.includes(name), name)
   })
 })

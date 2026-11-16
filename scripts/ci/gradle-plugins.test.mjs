@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findPluginProblems, readBuildPlugins, readCatalogPlugins, readPolicyPluginIds } from './gradle-plugins.mjs'
+import { findDirectPlugins, findPluginProblems, readCatalogPlugins, readPolicyPluginIds } from './gradle-plugins.mjs'
 
 const toml = [
   '[libraries]',
@@ -42,52 +42,20 @@ describe('カタログのプラグインの読み取り', () => {
   })
 })
 
-describe('build.gradle.kts のプラグインの読み取り', () => {
-  test('plugins {} の中の id("…") を読み、alias・組み込み・コメントは読まない', () => {
+describe('カタログを通さないプラグインの書き方', () => {
+  test('id("…")、kotlin("…")、apply(plugin = "…") の行を見つけ、alias・組み込み・コメントは見つけない', () => {
     const kts = [
       'plugins {',
       '    java',
-      '    `java-library`',
+      '    `java-test-fixtures`',
       '    alias(libs.plugins.spring.boot)',
       '    id("com.example.direct") version "1.0"',
       '    // id("commented.out.plugin")',
-      '    jacoco',
+      '    kotlin("jvm") version "2.0"',
       '}',
-      'dependencies { id("outside.block") }',
+      'apply(plugin = "com.example.applied")',
     ].join('\n')
-    assert.deepEqual(readBuildPlugins(kts), { ids: ['com.example.direct'], unknown: [] })
-  })
-
-  test('plugins {} の中の括弧の後の id も読む', () => {
-    const kts = 'plugins {\n    id("a.b") version System.getProperty("x")\n    id("c.d") version "1" apply false\n}\n'
-    assert.deepEqual(readBuildPlugins(kts).ids, ['a.b', 'c.d'])
-    assert.deepEqual(readBuildPlugins(kts).unknown, [])
-  })
-
-  test('plugins { と同じ行の id も読む', () => {
-    assert.deepEqual(readBuildPlugins('plugins { id("a.b") version "1" }\n').ids, ['a.b'])
-    assert.deepEqual(readBuildPlugins('plugins { id("a.b"); id("c.d") }\n').ids, ['a.b', 'c.d'])
-    assert.deepEqual(readBuildPlugins('plugins { id("a.b") }\nid("outside.block")\n').ids, ['a.b'])
-  })
-
-  test('kotlin("名前") は org.jetbrains.kotlin.名前 として読む', () => {
-    assert.deepEqual(readBuildPlugins('plugins {\n    kotlin("jvm") version "2.0"\n}\n'), { ids: ['org.jetbrains.kotlin.jvm'], unknown: [] })
-  })
-
-  test('plugins {} の中の読めない行は、行を出す', () => {
-    const result = readBuildPlugins('plugins {\n    id("a.b")\n    maven-publish(1)\n    foo("x")\n}\n')
-    assert.deepEqual(result.ids, ['a.b'])
-    assert.deepEqual(result.unknown.map((item) => item.line), [3, 4])
-  })
-
-  test('apply(plugin = "…") は読めないので、行を出す', () => {
-    const result = readBuildPlugins('plugins {\n    java\n}\napply(plugin = "com.example.applied")\n')
-    assert.deepEqual(result.ids, [])
-    assert.deepEqual(result.unknown.map((item) => item.line), [4])
-  })
-
-  test('コメントの中の apply は読まない', () => {
-    assert.deepEqual(readBuildPlugins('// apply(plugin = "x.y")\n'), { ids: [], unknown: [] })
+    assert.deepEqual(findDirectPlugins(kts).map((item) => item.line), [5, 7, 9])
   })
 })
 

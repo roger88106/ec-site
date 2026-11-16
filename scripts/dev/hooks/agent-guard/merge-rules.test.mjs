@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { judgeCommand } from '../agent-guard.mjs'
-import { GH_BUDGET_MS } from './merge-rules.mjs'
+import { GH_BUDGET_MS, GH_TIMEOUT_MS, judgeMerge } from './merge-rules.mjs'
 import { CWD, assertAsked, assertDenied, assertPassed, fakeDeps } from './test-support.mjs'
 
 /** マージする pull request の今の head の commit */
@@ -209,16 +209,46 @@ describe('マージのコマンドを判定する', () => {
   })
 
   test('検査・ファイル・閉じる issue・ラベルの一覧が途中までしか読めなければ、確認を求める', () => {
-    const data = pullRequest()
-    data.data.repository.pullRequest.commits.nodes[0].commit.statusCheckRollup.contexts.pageInfo.hasNextPage = true
-    assertAsked(MERGE, /一覧/, fakeDeps({ gh: { status: 0, stdout: JSON.stringify(data), stderr: '' } }))
+    const dependabot = { author: DEPENDABOT, body: '', closing: [], title: 'deps: bump x from 1.0.0 to 1.0.1' }
+    const cases = [
+      [{}, (pr) => (pr.commits.nodes[0].commit.statusCheckRollup.contexts.pageInfo.hasNextPage = true), /CI の検査の一覧/],
+      [dependabot, (pr) => (pr.files.pageInfo.hasNextPage = true), /変更のファイルの一覧/],
+      [dependabot, (pr) => (pr.changedFiles = 101), /変更のファイルの一覧.*101 件/],
+      [{}, (pr) => (pr.closingIssuesReferences.pageInfo.hasNextPage = true), /閉じる issue かそのラベルの一覧/],
+      [{}, (pr) => (pr.closingIssuesReferences.nodes[0].labels.pageInfo.hasNextPage = true), /閉じる issue かそのラベルの一覧/],
+    ]
+    for (const [fields, truncate, pattern] of cases) {
+      const data = pullRequest(fields)
+      truncate(data.data.repository.pullRequest)
+      assertAsked(MERGE, pattern, fakeDeps({ gh: { status: 0, stdout: JSON.stringify(data), stderr: '' } }))
+    }
   })
 
-  test('gh には、1 つのコマンドで gh に使える時間の中のタイムアウトを渡す（hook のタイムアウトとの比較は agent-guard.test.mjs）', () => {
+  test('commit status の失敗と、読めない種類の検査では、確認を求める', () => {
+    assertAsked(MERGE, /成功していない.*外部の検査：FAILURE/, mergeDeps({ checks: [check('危険度の照合'), { __typename: 'StatusContext', context: '外部の検査', state: 'FAILURE' }] }))
+    assertAsked(MERGE, /読めない種類の検査：Unknown/, mergeDeps({ checks: [check('危険度の照合'), { __typename: 'Unknown' }] }))
+  })
+
+  test('-R・--repo の値をリポジトリとして読めなければ、gh を呼ばずに確認を求める', () => {
+    const deps = mergeDeps()
+    assertAsked(`gh pr merge 246 -R a/b/c/d --match-head-commit ${HEAD_SHA}`, /リポジトリの指定（a\/b\/c\/d）を読めない/, deps)
+    assert.deepEqual(deps.ghCalls, [])
+  })
+
+  test('gh に使える時間を使い切っていれば、gh を呼ばずに確認を求める', () => {
+    const deps = mergeDeps()
+    const result = judgeMerge(['merge', '246', '--match-head-commit', HEAD_SHA], { dir: CWD, ghRepo: null, args: [] }, deps, { deadline: Date.now() - 1 })
+    assert.equal(result?.decision, 'ask')
+    assert.match(result.reason, /使い切った/)
+    assert.deepEqual(deps.ghCalls, [])
+  })
+
+  test('gh には、1 回の呼び出しのタイムアウトを超えず、1 つのコマンドで gh に使える時間の中のタイムアウトを渡す（hook のタイムアウトとの比較は agent-guard.test.mjs）', () => {
     const deps = mergeDeps()
     judgeCommand(MERGE, CWD, deps)
     const { timeout } = deps.ghCalls[0]
-    assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout <= GH_BUDGET_MS, `タイムアウト：${timeout}`)
+    assert.ok(GH_TIMEOUT_MS <= GH_BUDGET_MS, `1 回：${GH_TIMEOUT_MS}、合計：${GH_BUDGET_MS}`)
+    assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout <= GH_TIMEOUT_MS, `タイムアウト：${timeout}`)
   })
 
   test('Dependabot は、本文と Closes の代わりに、変更のファイルと題を危険度の判定に渡して、危険度が低いなら通す', () => {

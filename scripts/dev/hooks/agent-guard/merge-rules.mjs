@@ -16,7 +16,7 @@ import { GH_PR_OPTIONS, flagEnabled, optionValue, parseGhArgs } from './gh-rules
 /**
  * gh の 1 回の呼び出しのタイムアウト（ミリ秒）。pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
  */
-const GH_TIMEOUT_MS = 10000
+export const GH_TIMEOUT_MS = 10000
 
 /**
  * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。
@@ -52,23 +52,26 @@ const PASSING_CONCLUSIONS = ['SUCCESS', 'SKIPPED', 'NEUTRAL']
 /** 終わっていないとみなす commit status の状態 */
 const PENDING_STATES = ['PENDING', 'EXPECTED']
 
+/** GraphQL の一覧の 1 ページの件数（GitHub の上限） */
+const PAGE_SIZE = 100
+
 /**
  * マージの条件を読む GraphQL の問い合わせ。1 回のリクエストで、pull request、変更のファイル、閉じる issue のラベル、head の commit の検査を読む。
  *
- * 一覧はどれも 1 ページ（100 件）だけ読み、続きがあれば条件を確認できないとする。
+ * 一覧はどれも 1 ページ（PAGE_SIZE 件）だけ読み、続きがあれば条件を確認できないとする。
  */
 const PULL_REQUEST_QUERY = `query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
       state baseRefName headRefOid title body changedFiles lastEditedAt
       author { __typename login }
-      files(first: 100) { nodes { path } pageInfo { hasNextPage } }
-      closingIssuesReferences(first: 100) {
-        nodes { number labels(first: 100) { nodes { name } pageInfo { hasNextPage } } }
+      files(first: ${PAGE_SIZE}) { nodes { path } pageInfo { hasNextPage } }
+      closingIssuesReferences(first: ${PAGE_SIZE}) {
+        nodes { number labels(first: ${PAGE_SIZE}) { nodes { name } pageInfo { hasNextPage } } }
         pageInfo { hasNextPage }
       }
       commits(last: 1) {
-        nodes { commit { statusCheckRollup { contexts(first: 100) {
+        nodes { commit { statusCheckRollup { contexts(first: ${PAGE_SIZE}) {
           nodes {
             __typename
             ... on CheckRun { name status conclusion startedAt checkSuite { workflowRun { workflow { name } } } }
@@ -235,7 +238,7 @@ function checkProblems({ nodes, undated, truncated }) {
     }
   }
   const problems = []
-  if (truncated) problems.push('CI の検査の一覧を全ては読めない（100 件を超える）')
+  if (truncated) problems.push(`CI の検査の一覧を全ては読めない（${PAGE_SIZE} 件を超える）`)
   if (undated.length > 0) problems.push(`再実行で重なった CI の検査の時刻を読めず、最も新しい実行を決められない（${undated.join('、')}）`)
   if (pending.length > 0) problems.push(`CI の検査が終わっていない（${[...new Set(pending)].join('、')}）`)
   if (failed.length > 0) problems.push(`CI の検査が成功していない（${[...new Set(failed)].join('、')}）`)
@@ -303,7 +306,7 @@ function authoredProblems(pullRequest, checks) {
   const closing = pullRequest.closingIssuesReferences
   const issues = closing?.nodes ?? []
   if (closing?.pageInfo?.hasNextPage || issues.some((issue) => issue.labels?.pageInfo?.hasNextPage)) {
-    problems.push('閉じる issue かそのラベルの一覧を全ては読めない（100 件を超える）')
+    problems.push(`閉じる issue かそのラベルの一覧を全ては読めない（${PAGE_SIZE} 件を超える）`)
   }
   if (issues.length === 0) problems.push('本文の Closes の issue がない（機能の spec でないことを確認できない）')
   const features = issues.filter((issue) => (issue.labels?.nodes ?? []).some((label) => label.name === FEATURE_LABEL))

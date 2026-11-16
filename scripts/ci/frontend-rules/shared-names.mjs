@@ -1,5 +1,4 @@
 // 店舗画面と管理画面のソースの規則：同じ内容のファイルと、共有のパッケージと同じ名前の定義（フロントの書き方の「入れるもの・入れないもの」）
-import { escapeRegExp } from '../lib/reg-exp.mjs'
 import { ANY_TEST_FILE } from './files.mjs'
 
 /**
@@ -63,7 +62,7 @@ export function sharedPublicNames(exportsMap, files, read) {
     .filter((target) => typeof target === 'string')
     .map((target) => {
       const path = target.replace(/^\.\//, 'frontend/shared/')
-      return new RegExp(`^${escapeRegExp(path).replaceAll('\\*', '.*')}$`)
+      return new RegExp(`^${RegExp.escape(path).replaceAll('\\*', '.*')}$`)
     })
   const names = new Set()
   for (const file of files) {

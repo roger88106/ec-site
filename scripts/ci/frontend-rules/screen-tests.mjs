@@ -2,7 +2,6 @@
 // 変数の範囲を追うので、Biome の plugin では書けない
 import { closingParen } from '../lib/closing-paren.mjs'
 import { createLineLocator } from '../lib/line-number.mjs'
-import { escapeRegExp } from '../lib/reg-exp.mjs'
 import { scanCode } from '../lib/scan-code.mjs'
 import { stripComments } from '../lib/strip-comments.mjs'
 
@@ -51,7 +50,7 @@ const CONTINUES = /^(?:\?\.|\.|\(|\[|&&|\|\||\?|:|\+|\*|\/|%|\||&|==|!=)/
  * @returns {RegExp} 上書きの宣言を探す正規表現
  */
 function shadowingPattern(name) {
-  const id = `(?<![\\w$])${escapeRegExp(name)}(?![\\w$])`
+  const id = `(?<![\\w$])${RegExp.escape(name)}(?![\\w$])`
   return new RegExp(
     `\\b(?:const|let|var)\\s+(?:${id}|\\{[^}]*${id}[^}]*\\}|\\[[^\\]]*${id}[^\\]]*\\])|\\bfunction\\b[^(]*\\([^)]*${id}|\\([^()]*${id}[^()]*\\)\\s*(?::[^=()]*)?=>|${id}\\s*=>`,
   )
@@ -117,7 +116,7 @@ export function findIndexedMultiples(text) {
     const scope = code.slice(close + 1, limit)
     const shadow = shadowingPattern(name).exec(scope)
     const range = shadow ? scope.slice(0, shadow.index) : scope
-    const use = new RegExp(`(?<![.\\w$])${escapeRegExp(name)}(?:\\?\\.|!)?(?:\\[\\s*-?\\d+\\s*\\]|\\.at\\(\\s*-?\\d+\\s*\\))`, 'g')
+    const use = new RegExp(`(?<![.\\w$])${RegExp.escape(name)}(?:\\?\\.|!)?(?:\\[\\s*-?\\d+\\s*\\]|\\.at\\(\\s*-?\\d+\\s*\\))`, 'g')
     for (const usage of range.matchAll(use)) lineNumbers.push(lineOf(close + 1 + usage.index))
   }
   return toHits(text, lineNumbers)

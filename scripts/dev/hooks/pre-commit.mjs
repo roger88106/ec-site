@@ -22,6 +22,13 @@ export const WARNING_FAILED = 2
 export const BRANCH_REJECTED = 1
 
 /**
+ * 追加行の差分と warning の一覧を受け取る出力の上限（バイト）。
+ *
+ * spawnSync の既定（1 MB）を超える大きな差分（依存の更新の pnpm-lock.yaml など）でも、取得に失敗しないよう大きくする。
+ */
+const DIFF_MAX_BUFFER = 256 * 1024 * 1024
+
+/**
  * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
  *
  * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリースの「名前」、ブランチとリリースの「緊急の修正」）。それ以外の変更は、develop から作業ブランチを作る
@@ -244,12 +251,12 @@ export function main() {
     diffAdded: (env) => {
       // --changed と同じ引数（scripts/ci/lib/git/added-diff）。CI の注釈と同じ判定にする
       const args = [...ADDED_DIFF_ARGS, '--cached', '--']
-      const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+      const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: DIFF_MAX_BUFFER })
       return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
     },
     listWarnings: (staged, env, diff) => {
       // 追加行の差分を標準入力で渡し、ja-text が --changed と同じ選び方（文のどれかの行が追加行）で選ぶ
-      const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja/ja-text.mjs`, '--warning', '--added'], { cwd: staged, env, input: diff, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+      const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja/ja-text.mjs`, '--warning', '--added'], { cwd: staged, env, input: diff, encoding: 'utf8', maxBuffer: DIFF_MAX_BUFFER })
       return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
     },
     print: (text) => console.log(text),

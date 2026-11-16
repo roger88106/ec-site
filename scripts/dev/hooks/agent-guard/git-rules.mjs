@@ -252,7 +252,9 @@ function forceTargetsAllowed(git, refspecs, deps) {
 }
 
 /**
- * git push の force を、push の先が全て agent/ で始まるとき以外は拒否する。dry-run（-n）は通す。
+ * git push の force を、push の先が全て agent/ で始まるとき以外は拒否する。
+ *
+ * dry-run（-n、--dry-run）も、ほかの push と同じに判定する。
  *
  * @param {GitInvocation} git git の呼び出し
  * @param {Deps} deps 外部の処理

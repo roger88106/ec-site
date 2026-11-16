@@ -7,7 +7,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { isStrict } from './ac-check.mjs'
-import { addAcsToList, listModuleNames, MODULE_AC_SECTION, parseSpecAcDefinitions, readAcList, readInProgressSpecs, renderModuleTable } from '../lib/ac/ac-list.mjs'
+import { addAcsToList, findMarks, listModuleNames, MODULE_AC_SECTION, parseSpecAcDefinitions, readAcList, readInProgressSpecs, renderModuleTable } from '../lib/ac/ac-list.mjs'
 import { check, checkAcRows, checkInProgress, checkModuleDoc, checkModuleDocNames, renderTestMap } from '../lib/ac/match.mjs'
 import { describeUnreadableTests, findAmbiguousAcLists, findSpacedAcLists, parseAcRefs } from '../lib/ac/test-names.mjs'
 import { withoutGitEnv } from '../lib/git/git-env.mjs'
@@ -506,6 +506,41 @@ describe('AC 一覧の読み取り', () => {
     const document = listDoc(listRow()).replace('<!-- generated:ac-list -->\n', '<!-- generated:ac-list -->\n\n').replace('\n<!-- /generated:ac-list -->', '\n\n\n<!-- /generated:ac-list -->')
     assert.deepEqual(readAcList(document).problems, [])
   })
+
+  test('生成の印が、行に単独で書かれていない（前後に文字がある）と問題にし、前後の空白だけなら通す', () => {
+    for (const line of ['説明 <!-- generated:ac-list -->', '<!-- /generated:ac-list --> 説明']) {
+      const { marks, problems } = findMarks(line)
+      assert.deepEqual(marks, [], line)
+      assert.equal(problems.length, 1, line)
+      assert.match(problems[0], /^1 行：生成の印は、1 行に単独で書く/, line)
+    }
+    const { marks, problems } = findMarks('  <!-- generated:ac-list -->  ')
+    assert.deepEqual(problems, [])
+    assert.deepEqual(marks, [{ name: 'ac-list', close: false, line: 1 }])
+  })
+
+  test('AC 一覧に ③ の生成の印（module-ac）があると問題にし、コードの中に引用しただけなら通す', () => {
+    const { problems } = readAcList(listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n<!-- generated:module-ac -->'))
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /AC 一覧に ③ の生成の印（generated:module-ac）がある/)
+    const quoted = listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n印は `<!-- generated:module-ac -->` の形。')
+    assert.deepEqual(readAcList(quoted).problems, [])
+  })
+
+  test('区切りの行は、列が AC 一覧より多くても少なくても、区切りの形でなくても問題にし、揃えの記号と短い線は通す', () => {
+    const documentWith = (separator) => ['<!-- generated:ac-list -->', LIST_HEADER[0], separator, listRow(), '<!-- /generated:ac-list -->'].join('\n')
+    const fewer = '|----|------------|------|-----------|-------------|'
+    const more = `${LIST_HEADER[1]}----|`
+    const notSeparator = '| a | b | c | d | e | f |'
+    for (const separator of [fewer, more, notSeparator]) {
+      const { problems } = readAcList(documentWith(separator))
+      assert.equal(problems.length, 1, separator)
+      assert.match(problems[0], /^3 行：AC 一覧の表の区切りの行が 6 列でない/, separator)
+    }
+    for (const separator of ['|:---|---:|:---:|-|--|---|']) {
+      assert.deepEqual(readAcList(documentWith(separator)).problems, [], separator)
+    }
+  })
 })
 
 describe('AC 一覧の表の見出しの行', () => {
@@ -577,6 +612,15 @@ describe('AC 一覧の行の検査', () => {
     const problems = listProblems(deprecated('Order'))
     assert.equal(problems.length, 1)
     assert.match(problems[0], /廃止の AC のモジュールが、空でも ③ の名前でも common でもない/)
+  })
+
+  test('廃止の AC の変えた spec が、空か「—」なら問題にし、番号があれば通す', () => {
+    for (const changedBy of ['', '—']) {
+      const problems = listProblems(listRow({ module: '', status: '廃止', changedBy, content: '' }))
+      assert.equal(problems.length, 1, changedBy)
+      assert.match(problems[0], /廃止の AC の変えた spec がない/, changedBy)
+    }
+    assert.deepEqual(listProblems(listRow({ module: '', status: '廃止', changedBy: '227', content: '' })), [])
   })
 
   test('変更の AC の変えた spec が、空か「—」なら問題にする', () => {
@@ -809,6 +853,14 @@ describe('AC 一覧の行の検査', () => {
     }
   })
 
+  test('有効の AC の今の内容が「-」だけなら問題にし、「-」や「なし」で始まる文は通す', () => {
+    const problems = listProblems(listRow({ content: '-' }))
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /今の内容が空か仮の値/)
+    assert.deepEqual(listProblems(listRow({ content: '-1 以下は拒否する。' })), [])
+    assert.deepEqual(listProblems(listRow({ content: 'なしにはしない。' })), [])
+  })
+
   test('今の内容が複数行（<br />）なら問題にする', () => {
     const problems = listProblems(listRow({ content: '一行目。<br />二行目。' }))
     assert.equal(problems.length, 1)
@@ -922,6 +974,14 @@ describe('③ の「今有効な AC」の表の照合', () => {
 
   test('生成した表と同じなら通る', () => {
     assert.deepEqual(result(moduleDoc(table)).problems, [])
+  })
+
+  test('「今有効な AC」の節が 2 つあると失敗にし、同じ名前の ### の見出しは節として数えない', () => {
+    const twice = moduleDoc(table).replace('## 今有効な AC', '## 今有効な AC\n\n説明。\n\n## 今有効な AC')
+    const { problems } = result(twice)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /「今有効な AC」の節が 2 個ある/)
+    assert.deepEqual(result(moduleDoc(table, { before: ['### 今有効な AC', '', '選んだ基準は、注文を扱う AC。'] })).problems, [])
   })
 
   test('範囲の外の説明文（選んだ基準）と、範囲の中の先頭と末尾の空行、末尾の改行の有無は問題にしない', () => {
@@ -1253,6 +1313,14 @@ describe('テストとの対応（AC 一覧の AC に対して）', () => {
     const { lines, ok } = renderTestMap({ list: { rows, problems: [] }, testFiles, exclusions: { 'AC-2': '手で確認する' } })
     assert.equal(ok, true)
     assert.deepEqual(lines.slice(0, 3), ['AC-1：backend/a/TaxApiTest.java、e2e/tests/tax.spec.ts', 'AC-2：除外（手で確認する）', 'AC-3：なし'])
+  })
+
+  test('--tests の表示：テストも除外もない廃止の AC は「なし（廃止）」とし、テストか除外があればそれを示す', () => {
+    const deprecated = (ac) => listRow({ ac, module: '', status: '廃止', changedBy: 'MVP-019', content: '' })
+    const rows = rowsOf(deprecated('AC-1'), deprecated('AC-2'), deprecated('AC-3'), listRow({ ac: 'AC-4' }))
+    const testFiles = new Map([[2, ['backend/a/TaxApiTest.java']]])
+    const { lines } = renderTestMap({ list: { rows, problems: [] }, testFiles, exclusions: { 'AC-3': '手で確認する' } })
+    assert.deepEqual(lines.slice(0, 4), ['AC-1：なし（廃止）', 'AC-2：backend/a/TaxApiTest.java', 'AC-3：除外（手で確認する）', 'AC-4：なし'])
   })
 
   test('--tests で、AC 一覧の読み取りに失敗したら失敗にする', () => {

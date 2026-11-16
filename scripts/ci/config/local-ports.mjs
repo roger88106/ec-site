@@ -241,7 +241,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
   }
 
   const e2e = new Set(list.ports.filter((entry) => entry.group === 'e2e').map((entry) => entry.port))
-  // E2E の設定が書いてよいのは、E2E のポートと、E2E が使う共有のサービス（IdP・Mailpit）だけ。開発の画面のポートなどに替えても、一覧にあるだけで通さない
+  // E2E の設定が書いてよいのは、E2E のポートと、E2E が使う共有のサービス（E2E_SHARED_KEYS）だけ。開発の画面のポートなどに替えても、一覧にあるだけで通さない
   const allowed = new Set([...e2e, ...list.ports.filter((entry) => E2E_SHARED_KEYS.includes(entry.key)).map((entry) => entry.port)])
   const sourcePorts = new Set()
   for (const [file, text] of Object.entries(sources)) {

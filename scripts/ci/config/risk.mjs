@@ -187,7 +187,7 @@ function parseVersion(version) {
  * Dependabot の pull request の題から、更新の種類で高にするかを決める。
  *
  * - 「from <バージョン> to <バージョン>」の形で、major が違うか、major が 0 で minor が違えば高（major の更新）
- * - group の更新で、group の名前が -minor-patch で終われば、経路の判定のまま（major を含まない group）
+ * - group の更新で、group の名前が MINOR_PATCH_GROUP で終われば、経路の判定のまま（major を含まない group）
  * - それ以外（読めない題、major を含む github-actions-all などの group）は高
  *
  * @param {string | undefined} title pull request の題

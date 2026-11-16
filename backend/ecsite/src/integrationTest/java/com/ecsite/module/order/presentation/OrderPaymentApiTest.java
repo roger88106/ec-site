@@ -302,6 +302,20 @@ class OrderPaymentApiTest {
         }
 
         @Test
+        @DisplayName("AC-151 「受付」の注文の支払画面を拒否したときは、決済サービスに支払画面を再作成しない")
+        void createsNoPageForAcceptedOrder() throws Exception {
+            // 準備：支払画面を開いて支払い、受付にする（支払画面は 1 回作られる）
+            var orderId = pending(1);
+            orders.pay(orderId);
+
+            // 操作：もう一度支払画面を開いて拒否される
+            openPage(orderId).andExpect(status().isConflict());
+
+            // 確認：決済サービスの支払画面は、支払ったときの 1 回だけ
+            assertThat(gateway.openedPages()).isEqualTo(1);
+        }
+
+        @Test
         @DisplayName("AC-151 支払の期限の後の注文は、支払画面を開けない")
         void expiredOrderIsNotPayable() throws Exception {
             // 準備：支払の期限にする

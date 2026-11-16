@@ -9,6 +9,7 @@ import com.ecsite.ShippingTaxCategory;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.payment.application.job.PaymentJobs;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
@@ -19,9 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @Transactional
+@RecordApplicationEvents
 class ShipmentApiTest {
 
     // ============================== 定数 ==============================
@@ -112,6 +117,9 @@ class ShipmentApiTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    ApplicationEvents events;
 
     /**
      * 注文を作る補助
@@ -219,6 +227,40 @@ class ShipmentApiTest {
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.actions.cancel").value(true))
                     .andExpect(jsonPath("$.actions.cancelAsksRestock").value(false));
+        }
+    }
+
+    @Nested
+    @DisplayName("配送業者")
+    class Carriers {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"YAMATO", "SAGAWA", "JAPAN_POST"})
+        @DisplayName("AC-167 登録した配送業者を、応答と、管理と店舗の注文詳細に同じ業者で返す")
+        void showsSameCarrier(String carrier) throws Exception {
+            // 操作：配送業者を指定して出荷を登録する
+            ship(carrier, TRACKING_NUMBER).andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.carrier").value(carrier));
+
+            // 確認：管理と店舗の注文詳細の出荷が、登録した業者
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.shipment.carrier").value(carrier));
+            mockMvc.perform(get("/api/store/orders/" + orderId))
+                    .andExpect(jsonPath("$.shipment.carrier").value(carrier));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"YAMATO", "SAGAWA", "JAPAN_POST"})
+        @DisplayName("AC-168 出荷通知に使う注文の出荷のイベントに、登録した配送業者を載せる")
+        void publishesSameCarrier(String carrier) throws Exception {
+            // 操作：配送業者を指定して出荷を登録する
+            ship(carrier, TRACKING_NUMBER).andExpect(status().isCreated());
+
+            // 確認：この注文の出荷のイベントが 1 件で、業者が登録した業者
+            assertThat(events.stream(OrderShipped.class).filter(event -> event.orderId().equals(orderId)))
+                    .singleElement()
+                    .extracting(event -> event.carrier().name())
+                    .isEqualTo(carrier);
         }
     }
 

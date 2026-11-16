@@ -238,6 +238,127 @@ class CheckoutStartApiTest {
             // 操作と確認：購入できない品目を含むカートは拒否される
             expectCartNotOrderable();
         }
+
+        @Test
+        @DisplayName("AC-88 購入できない品目（非公開）を含むカートは 400 で注文手続きに進めない")
+        void rejectsCartWithUnpublishedItem() throws Exception {
+            // 準備：カートに入れた後に非公開にした商品
+            var product = fixture.catalog().product(fixture.standard(), "非公開にする", 1000).publish();
+            fixture.inventory().stock(product.variantIds.getFirst(), product.id, 3);
+            orders.add(cartId, product.variantIds.getFirst(), 1);
+            product.unpublish();
+
+            // 操作と確認：購入できない品目を含むカートは拒否される
+            expectCartNotOrderable();
+        }
+
+        @Test
+        @DisplayName("AC-88 購入できない品目があって拒否したときは、注文手続きを作らず、どの品目も引き当てない")
+        void reservesNothingWhenRejected() throws Exception {
+            // 準備：足りる品目と、カートに入れた後に販売停止にした品目
+            var available = fixture.stockedVariant(3);
+            orders.add(cartId, available, 1);
+            var product = fixture.catalog().product(fixture.standard(), "販売停止にする", 1000, "色").variant("白").publish();
+            fixture.inventory().stock(product.variantIds.getFirst(), product.id, 3);
+            orders.add(cartId, product.variantIds.getFirst(), 1);
+            product.suspend(0);
+
+            // 操作：注文手続きに進んで拒否される
+            expectCartNotOrderable();
+
+            // 確認：注文手続きがなく、足りる品目の販売可能数が在庫数のまま
+            assertThat(fixture.checkoutCount()).isZero();
+            assertThat(fixture.sellable(available)).isEqualTo(3);
+        }
+    }
+
+    @Nested
+    @DisplayName("注文手続き中の購入の可否の変化")
+    class PurchasabilityChanged {
+
+        @Test
+        @DisplayName("AC-80、85 注文手続きの後に商品が非公開になると、表示の品目は「表示されない」を理由に購入できない")
+        void showsNotShown() throws Exception {
+            // 準備：品目で注文手続きに進み、その後に商品を非公開にする
+            var product = fixture.catalog().product(fixture.standard(), "非公開にする", 1000).publish();
+            fixture.inventory().stock(product.variantIds.getFirst(), product.id, 3);
+            orders.add(cartId, product.variantIds.getFirst(), 1);
+            var checkoutId = fixture.startCheckout(cartId);
+            product.unpublish();
+
+            // 操作と確認：品目は購入できず、理由が NOT_SHOWN
+            expectUnpurchasable(checkoutId, "NOT_SHOWN");
+        }
+
+        @Test
+        @DisplayName("AC-80、85 注文手続きの後にバリアントが販売停止になると、表示の品目は「販売停止」を理由に購入できない")
+        void showsSalesSuspended() throws Exception {
+            // 準備：品目で注文手続きに進み、その後にバリアントを販売停止にする
+            var product = fixture.catalog().product(fixture.standard(), "販売停止にする", 1000, "色").variant("白").publish();
+            fixture.inventory().stock(product.variantIds.getFirst(), product.id, 3);
+            orders.add(cartId, product.variantIds.getFirst(), 1);
+            var checkoutId = fixture.startCheckout(cartId);
+            product.suspend(0);
+
+            // 操作と確認：品目は購入できず、理由が SALES_SUSPENDED
+            expectUnpurchasable(checkoutId, "SALES_SUSPENDED");
+        }
+
+        @Test
+        @DisplayName("AC-80、85 注文手続きの後に在庫数が 0 になると、表示の品目は「在庫切れ」を理由に購入できない")
+        void showsOutOfStock() throws Exception {
+            // 準備：在庫 1 の品目を 1 個入れて注文手続きに進み、その後に在庫数を 0 にする
+            var variant = fixture.stockedVariant(1);
+            orders.add(cartId, variant, 1);
+            var checkoutId = fixture.startCheckout(cartId);
+            fixture.inventory().adjust(variant, -1);
+
+            // 操作と確認：品目は購入できず、理由が OUT_OF_STOCK
+            expectUnpurchasable(checkoutId, "OUT_OF_STOCK");
+        }
+
+        @Test
+        @DisplayName("AC-80、85 注文手続きの後に購入できなくなった品目は、表示の合計と総額に含めない")
+        void excludesUnpurchasableFromAmounts() throws Exception {
+            // 準備：1,100 円（税込）の品目 2 つで注文手続きに進み、その後に 2 つ目を販売停止にする
+            var available = fixture.stockedVariant(3);
+            orders.add(cartId, available, 1);
+            var product = fixture.catalog().product(fixture.standard(), "販売停止にする", 1000, "色").variant("白").publish();
+            fixture.inventory().stock(product.variantIds.getFirst(), product.id, 3);
+            orders.add(cartId, product.variantIds.getFirst(), 1);
+            var checkoutId = fixture.startCheckout(cartId);
+            product.suspend(0);
+
+            // 操作と確認：合計は購入できる 1 つ目の 1,100 円だけで、総額はそれに送料を足した額
+            mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
+                    .andExpect(jsonPath("$.items.length()").value(2))
+                    .andExpect(jsonPath("$.amounts.itemsTotal").value(1100))
+                    .andExpect(jsonPath("$.amounts.total").value(1100 + OrderTestData.SHIPPING_FEE));
+        }
+
+        /**
+         * 注文手続きの表示で、1 つだけの品目が、指定の理由で購入できないことを確認する。
+         *
+         * <p>確認すること：
+         * <ul>
+         *   <li>品目が 1 つ</li>
+         *   <li>品目が購入できない</li>
+         *   <li>購入できない理由</li>
+         *   <li>商品の合計が 0</li>
+         * </ul>
+         *
+         * @param checkoutId 注文手続き ID
+         * @param reason     購入できない理由
+         * @throws Exception API の呼び出しに失敗したとき、または確認が通らないとき
+         */
+        private void expectUnpurchasable(UUID checkoutId, String reason) throws Exception {
+            mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items.length()").value(1))
+                    .andExpect(jsonPath("$.items[0].purchasable").value(false))
+                    .andExpect(jsonPath("$.items[0].unpurchasableReason").value(reason))
+                    .andExpect(jsonPath("$.amounts.itemsTotal").value(0));
+        }
     }
 
     @Nested

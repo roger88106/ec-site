@@ -2,7 +2,7 @@
 // - .ts・.tsx：画面のソースとテストを読む検査（frontend-rules、globals/lib-globals）が共通で使う（stripComments）。コメントだけを残す keepTsComments は spec-numbers が使う
 // Java は、文字列とテキストブロックの中の // をコメントにしない。
 // 限界：TSX の JSX のテキスト（<p>It's // here</p>）の中の '・"・// を、文字列やコメントと誤って判定する。
-// - .java：Java のソースを読む検査（java-rules、test-helpers）が使う（stripJavaComments）
+// - .java：Java のソースを読む検査（java-rules）が使う（stripJavaComments）
 import { scanCode } from './scan-code.mjs'
 
 /** Java の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */

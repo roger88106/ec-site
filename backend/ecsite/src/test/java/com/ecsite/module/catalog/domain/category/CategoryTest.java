@@ -45,6 +45,31 @@ class CategoryTest {
     private static final int NAME_MAX_LENGTH = 50;
 
     /**
+     * 復元するカテゴリの ID
+     */
+    private static final UUID RESTORED_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
+    /**
+     * 復元するカテゴリの親の ID
+     */
+    private static final UUID RESTORED_PARENT_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    /**
+     * 復元するカテゴリの階層
+     */
+    private static final int RESTORED_DEPTH = 2;
+
+    /**
+     * 復元するカテゴリの並び順
+     */
+    private static final int RESTORED_DISPLAY_ORDER = 3;
+
+    /**
+     * 復元するカテゴリのバージョン
+     */
+    private static final long RESTORED_VERSION = 7;
+
+    /**
      * カテゴリの生成
      */
     private final CategoryFactory factory = new CategoryFactory();
@@ -345,14 +370,39 @@ class CategoryTest {
         @Test
         @DisplayName("スナップショットから、同じ内容のカテゴリに復元できる")
         void restores() {
-            // 準備：2 階層目のカテゴリ
-            var child = factory.create(factory.create(null, ROOT_NAME, 1), CHILD_NAME, 2);
+            // 準備：2 階層目のカテゴリのスナップショット
+            var snapshot = new Category.Snapshot(RESTORED_ID, RESTORED_PARENT_ID, CHILD_NAME, RESTORED_DEPTH,
+                    RESTORED_DISPLAY_ORDER, RESTORED_VERSION);
 
             // 操作：スナップショットから復元する
-            var restored = factory.restore(child.toSnapshot());
+            var restored = factory.restore(snapshot);
 
-            // 確認：スナップショットが元のカテゴリと同じ
-            assertThat(restored.toSnapshot()).isEqualTo(child.toSnapshot());
+            // 確認：全ての項目がスナップショットの値になる
+            assertRestoredCategory(restored);
         }
+    }
+
+    // ============================== 確認の補助 ==============================
+
+    /**
+     * 復元したカテゴリが、復元の定数どおりの値を持つことを確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *     <li>ID と親の ID</li>
+     *     <li>名称</li>
+     *     <li>階層と並び順</li>
+     *     <li>バージョン</li>
+     * </ul>
+     *
+     * @param restored 復元したカテゴリ
+     */
+    private static void assertRestoredCategory(Category restored) {
+        assertThat(restored.id()).isEqualTo(RESTORED_ID);
+        assertThat(restored.parentId()).isEqualTo(RESTORED_PARENT_ID);
+        assertThat(restored.name()).isEqualTo(CHILD_NAME);
+        assertThat(restored.depth()).isEqualTo(RESTORED_DEPTH);
+        assertThat(restored.displayOrder()).isEqualTo(RESTORED_DISPLAY_ORDER);
+        assertThat(restored.version()).isEqualTo(RESTORED_VERSION);
     }
 }

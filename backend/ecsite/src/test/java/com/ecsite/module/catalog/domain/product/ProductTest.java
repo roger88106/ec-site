@@ -4,6 +4,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductPriceChanged;
 import org.junit.jupiter.api.DisplayName;
@@ -104,6 +105,36 @@ class ProductTest {
      * 編集後の税抜価格（円）
      */
     private static final long NEW_PRICE_YEN = 2000;
+
+    /**
+     * 復元する商品の ID
+     */
+    private static final UUID RESTORED_ID = UUID.fromString("00000000-0000-0000-0000-000000002001");
+
+    /**
+     * 復元するバリアントの ID
+     */
+    private static final UUID RESTORED_VARIANT_ID = UUID.fromString("00000000-0000-0000-0000-000000003001");
+
+    /**
+     * 復元するバリアントの品番
+     */
+    private static final String RESTORED_VARIANT_CODE = "ABC-001-WH-M";
+
+    /**
+     * 復元するバリアントの軸の値
+     */
+    private static final List<String> RESTORED_AXIS_VALUES = List.of("白", "M");
+
+    /**
+     * 復元する商品の公開の終了
+     */
+    private static final Instant RESTORED_PUBLISH_END = Instant.parse("2026-12-31T15:00:00Z");
+
+    /**
+     * 復元する商品のバージョン
+     */
+    private static final long RESTORED_VERSION = 5;
 
     /**
      * 商品の生成
@@ -381,14 +412,14 @@ class ProductTest {
         @Test
         @DisplayName("スナップショットから、同じ内容の商品に復元できる")
         void restores() {
-            // 準備：バリアントを持つ公開中の商品
-            var product = publishedWithVariant();
+            // 準備：バリアントを持ち、公開の期間がある公開中の商品のスナップショット
+            var snapshot = restoredSnapshot();
 
             // 操作：スナップショットから復元する
-            var restored = factory.restore(product.toSnapshot());
+            var restored = factory.restore(snapshot);
 
-            // 確認：スナップショットが元の商品と同じ
-            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+            // 確認：全ての項目がスナップショットの値になる
+            assertRestoredProduct(restored);
         }
 
         @Test
@@ -479,7 +510,52 @@ class ProductTest {
         });
     }
 
+    /**
+     * 復元した商品が、{@link #restoredSnapshot()} の値を持つことを確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *   <li>ID</li>
+     *   <li>登録のときに指定する項目（{@link #assertRegisteredAsSpecified(Product)} と同じ）</li>
+     *   <li>公開の状態、初回表示日時、公開の期間</li>
+     *   <li>画像がない</li>
+     *   <li>バリアント（ID、品番、軸の値、並び順、販売の停止、画像）</li>
+     *   <li>バージョン</li>
+     * </ul>
+     *
+     * @param product 確認する商品
+     */
+    private static void assertRestoredProduct(Product product) {
+        assertThat(product.id()).isEqualTo(RESTORED_ID);
+        assertRegisteredAsSpecified(product);
+        assertThat(product.status()).isEqualTo(PublicationStatus.PUBLISHED);
+        assertThat(product.firstShownAt()).isEqualTo(NOW);
+        assertThat(product.publicationPeriod()).isEqualTo(PublicationPeriod.of(NOW, RESTORED_PUBLISH_END));
+        assertThat(product.images()).isEmpty();
+        assertThat(product.variants()).singleElement().satisfies(variant -> {
+            assertThat(variant.id()).isEqualTo(RESTORED_VARIANT_ID);
+            assertThat(variant.variantCode()).isEqualTo(VariantCode.of(RESTORED_VARIANT_CODE));
+            assertThat(variant.axisValues()).containsExactlyElementsOf(RESTORED_AXIS_VALUES);
+            assertThat(variant.displayOrder()).isEqualTo(1);
+            assertThat(variant.salesSuspended()).isFalse();
+            assertThat(variant.imageId()).isNull();
+        });
+        assertThat(product.version()).isEqualTo(RESTORED_VERSION);
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 復元の定数から、バリアントを 1 つ持つ公開中の商品のスナップショットを作る。
+     *
+     * @return 商品のスナップショット
+     */
+    private static Product.Snapshot restoredSnapshot() {
+        var variant = new Variant(RESTORED_VARIANT_ID, VariantCode.of(RESTORED_VARIANT_CODE), RESTORED_AXIS_VALUES, 1, false, null);
+        return new Product.Snapshot(RESTORED_ID, ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
+                PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID), AXES, PublicationStatus.PUBLISHED, NOW,
+                PublicationPeriod.of(NOW, RESTORED_PUBLISH_END), List.of(), List.of(variant), RESTORED_VERSION);
+    }
 
     /**
      * 全ての項目を定数で指定して、商品を登録する。

@@ -12,6 +12,7 @@ import com.ecsite.module.catalog.domain.product.Variant;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
@@ -104,6 +105,38 @@ class JooqProductRepositoryTest {
      */
     private static final String MAX_VARIANT_CODE = "V".repeat(32);
 
+    /**
+     * 商品品番
+     */
+    private static final String PRODUCT_CODE = "ABC-001";
+
+    /**
+     * 商品名
+     */
+    private static final String NAME = "T シャツ";
+
+    /**
+     * 説明
+     */
+    private static final String DESCRIPTION = "綿 100%";
+
+    /**
+     * 税抜価格
+     */
+    private static final PriceExclTax PRICE = PriceExclTax.of(1000);
+
+    /**
+     * 1 枚目の画像のアセット ID
+     *
+     * <p>メディアのモジュールの ID なので、存在しなくてよい。
+     */
+    private static final UUID FIRST_ASSET_ID = UUID.fromString("00000000-0000-0000-0000-000000005001");
+
+    /**
+     * 2 枚目の画像のアセット ID
+     */
+    private static final UUID SECOND_ASSET_ID = UUID.fromString("00000000-0000-0000-0000-000000005002");
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -151,16 +184,15 @@ class JooqProductRepositoryTest {
         @DisplayName("軸・所属カテゴリ・バリアントを含めて保存し、再構築できる")
         void addsAndRestores() {
             // 準備：軸 2 つとバリアント 2 つを持つ商品
-            var product = newProduct("ABC-001", "色", "サイズ");
-            product.addVariant(VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
-            product.addVariant(VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), NOW);
+            var product = newProduct(PRODUCT_CODE, "色", "サイズ");
+            var white = product.addVariant(VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
+            var black = product.addVariant(VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), NOW);
 
             // 操作：保存する
             repository.add(product);
 
-            // 確認：再構築した商品が、保存した商品と同じ
-            var restored = repository.findById(product.id()).orElseThrow();
-            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+            // 確認：再構築した商品が、作った値を全て持つ
+            assertRestoredWithVariants(repository.findById(product.id()).orElseThrow(), product.id(), white, black);
         }
 
         @Test
@@ -405,8 +437,8 @@ class JooqProductRepositoryTest {
             repository.add(product);
             var restored = repository.findById(product.id()).orElseThrow();
 
-            // 確認：再構築した商品が、保存した商品と同じ
-            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+            // 確認：上限ちょうどの値が、全て同じ値で読み戻せる
+            assertMaxValuesRestored(restored);
         }
     }
 
@@ -418,13 +450,18 @@ class JooqProductRepositoryTest {
         @DisplayName("画像とバリアントの画像の指定を含めて保存し、再構築できる")
         void addsAndRestoresImages() {
             // 準備：画像 2 枚を持ち、バリアントに 2 枚目を指定した商品
-            var product = withVariantImage(UUID.randomUUID());
+            var first = UUID.randomUUID();
+            var second = UUID.randomUUID();
+            var product = withVariantImage(first, second);
 
             // 操作：保存する
             repository.add(product);
 
-            // 確認：再構築した商品が、保存した商品と同じ
-            assertThat(repository.findById(product.id()).orElseThrow().toSnapshot()).isEqualTo(product.toSnapshot());
+            // 確認：画像は並び順どおりで、バリアントは 2 枚目を指す
+            var restored = repository.findById(product.id()).orElseThrow();
+            assertThat(restored.images()).containsExactly(
+                    new ProductImage(first, FIRST_ASSET_ID, 1), new ProductImage(second, SECOND_ASSET_ID, 2));
+            assertThat(restored.variants().getFirst().imageId()).isEqualTo(second);
         }
 
         @Test
@@ -460,7 +497,7 @@ class JooqProductRepositoryTest {
         void clearsVariantImageOfDeletedImage() {
             // 準備：バリアントに 2 枚目の画像を指定した商品を保存して読み、2 枚目を削除する
             var second = UUID.randomUUID();
-            var product = withVariantImage(second);
+            var product = withVariantImage(UUID.randomUUID(), second);
             repository.add(product);
             var loaded = repository.findById(product.id()).orElseThrow();
             loaded.deleteImage(second);
@@ -515,6 +552,68 @@ class JooqProductRepositoryTest {
         }
     }
 
+    // ============================== 確認の補助 ==============================
+
+    /**
+     * 再構築した商品が、{@link #newProduct} の値と、色・サイズの 2 つのバリアント（白 M、黒 M）を持つことを確認する。
+     *
+     * <p>ID は保存のたびに作るので引数で受け取る。それ以外の期待値は定数。確認すること：
+     * <ul>
+     *   <li>ID、商品品番、商品名、説明、税区分 ID、税抜価格</li>
+     *   <li>所属カテゴリが「衣類」だけ</li>
+     *   <li>軸（並びを含む）</li>
+     *   <li>非公開で、初回表示日時がなく、公開の期間が無期限</li>
+     *   <li>画像がない</li>
+     *   <li>バリアント（ID、品番、軸の値、並び順、販売中、画像の指定なし）</li>
+     * </ul>
+     *
+     * @param restored  再構築した商品
+     * @param productId 商品 ID
+     * @param white     白 M のバリアントの ID
+     * @param black     黒 M のバリアントの ID
+     */
+    private void assertRestoredWithVariants(Product restored, UUID productId, UUID white, UUID black) {
+        assertThat(restored.id()).isEqualTo(productId);
+        assertThat(restored.productCode()).isEqualTo(ProductCode.of(PRODUCT_CODE));
+        assertThat(restored.name()).isEqualTo(NAME);
+        assertThat(restored.description()).isEqualTo(DESCRIPTION);
+        assertThat(restored.taxCategoryId()).isEqualTo(TAX_CATEGORY_ID);
+        assertThat(restored.priceExclTax()).isEqualTo(PRICE);
+        assertThat(restored.categoryIds()).containsExactly(clothing);
+        assertThat(restored.axes()).containsExactly("色", "サイズ");
+        assertThat(restored.status()).isEqualTo(PublicationStatus.UNPUBLISHED);
+        assertThat(restored.firstShownAt()).isNull();
+        assertThat(restored.publicationPeriod()).isEqualTo(PublicationPeriod.UNLIMITED);
+        assertThat(restored.images()).isEmpty();
+        assertThat(restored.variants()).containsExactly(
+                new Variant(white, VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), 1, false, null),
+                new Variant(black, VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), 2, false, null));
+    }
+
+    /**
+     * 再構築した商品が、上限ちょうどの値を同じ値で持つことを確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *   <li>商品品番</li>
+     *   <li>商品名と説明</li>
+     *   <li>軸名</li>
+     *   <li>バリアント品番と軸の値</li>
+     * </ul>
+     *
+     * @param restored 再構築した商品
+     */
+    private static void assertMaxValuesRestored(Product restored) {
+        assertThat(restored.productCode()).isEqualTo(ProductCode.of(MAX_PRODUCT_CODE));
+        assertThat(restored.name()).isEqualTo("𩸽".repeat(NAME_MAX_LENGTH));
+        assertThat(restored.description()).isEqualTo("𩸽".repeat(DESCRIPTION_MAX_LENGTH));
+        assertThat(restored.axes()).containsExactly("𩸽".repeat(AXIS_NAME_MAX_LENGTH));
+        assertThat(restored.variants()).singleElement().satisfies(variant -> {
+            assertThat(variant.variantCode()).isEqualTo(VariantCode.of(MAX_VARIANT_CODE));
+            assertThat(variant.axisValues()).containsExactly("𩸽".repeat(AXIS_VALUE_MAX_LENGTH));
+        });
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**
@@ -525,21 +624,23 @@ class JooqProductRepositoryTest {
      * @return 商品
      */
     private Product newProduct(String code, String... axes) {
-        return factory.create(ProductCode.of(code), "T シャツ", "綿 100%", TAX_CATEGORY_ID, PriceExclTax.of(1000),
-                Set.of(clothing), List.of(axes));
+        return factory.create(ProductCode.of(code), NAME, DESCRIPTION, TAX_CATEGORY_ID, PRICE, Set.of(clothing), List.of(axes));
     }
 
     /**
      * 色の軸とバリアント 1 つ、画像 2 枚を持ち、バリアントに 2 枚目の画像を指定した商品を作る（保存はしない）。
      *
+     * <p>画像の ID は保存のたびに作るので引数で受け取る。アセット ID は定数。
+     *
+     * @param firstImageId  1 枚目の画像の ID
      * @param secondImageId 2 枚目の画像の ID（バリアントに指定する）
      * @return 商品
      */
-    private Product withVariantImage(UUID secondImageId) {
-        var product = newProduct("ABC-001", "色");
+    private Product withVariantImage(UUID firstImageId, UUID secondImageId) {
+        var product = newProduct(PRODUCT_CODE, "色");
         var variantId = product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
-        product.addImage(UUID.randomUUID(), UUID.randomUUID());
-        product.addImage(secondImageId, UUID.randomUUID());
+        product.addImage(firstImageId, FIRST_ASSET_ID);
+        product.addImage(secondImageId, SECOND_ASSET_ID);
         product.setVariantImage(variantId, secondImageId);
         return product;
     }

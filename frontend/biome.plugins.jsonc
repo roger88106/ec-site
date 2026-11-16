@@ -74,6 +74,11 @@
       // 画面のテストとテストの補助（src/test/）
       "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**"],
       "plugins": ["../biome-plugins/no-type-cast-escape.grit", "../biome-plugins/no-fire-event.grit"]
+    },
+    {
+      // テストとテストを動かす側（テストの補助、Vitest・Vite の設定）
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**", "vite.config.*", "vitest.config.*"],
+      "plugins": ["../biome-plugins/no-time-wait.grit"]
     }
   ]
 }

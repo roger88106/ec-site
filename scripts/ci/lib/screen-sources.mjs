@@ -4,7 +4,6 @@
 // 定義と違う対象を読む検査は、その理由を検査の中に書く。
 //   frontend-rules：共有の名前の定義は本番のソースに当てる。テストの確認は、画面のテスト・テストの補助・E2E を読む（E2E は e2e/ の下の全ての TypeScript）
 //   spec-numbers：バックエンドも読み、画面の共有の ui と shadcn/ui の部品も読む。画面のテスト・テストの補助・E2E は、コメントだけを読む（keepTsComments）
-//   time-waits：本番のソースでなく、テストを読む
 //   message-comments：定義に加えて、店舗画面・管理画面の src/test/ のテストの補助と generated/ の .tsx を読む
 // frontend/biome.plugins.jsonc で、Biome の plugin を本番のソースに当てる対象も、この定義に合わせる
 

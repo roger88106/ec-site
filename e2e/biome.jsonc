@@ -24,6 +24,11 @@
         "./biome-plugins/no-position-selector.grit",
         "./biome-plugins/no-network-idle.grit"
       ]
+    },
+    {
+      // テストと、テストを動かす側（補助、実行の script、Playwright の設定）
+      "includes": ["tests/**", "src/**", "showcase/**", "scripts/**", "playwright*.config.*"],
+      "plugins": ["../frontend/biome-plugins/no-time-wait.grit"]
     }
   ]
 }

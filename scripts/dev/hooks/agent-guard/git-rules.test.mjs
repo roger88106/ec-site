@@ -345,6 +345,10 @@ describe('tag の作成と push で確認を求める', () => {
     }
   })
 
+  test('push の名前が tag かを git で調べられない（show-ref がタイムアウトする）ときは、確認を求める', () => {
+    assertAsked('git push origin v1.0.0', /v1\.0\.0）が tag かを、git で調べられなかった/, fakeDeps({ tags: null }))
+  })
+
   test('push の名前が tag かは、対象のディレクトリで git show-ref で調べる', () => {
     const deps = fakeDeps({ tags: ['v1.0.0'] })
     assertAsked('git -C sub push origin v1.0.0', /tag/, deps)

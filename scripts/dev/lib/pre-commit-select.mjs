@@ -34,7 +34,6 @@ export const CHECK_INPUTS = {
   'integration-shards': [],
   'ja-text': ALWAYS,
   'java-rules': [/^backend\/ecsite\/src\//],
-  'license-policy': [],
   'local-ports': [],
   'main-entry': [/^scripts\//, /^frontend\/shared\/scripts\//],
   'message-comments': [/^frontend\//],

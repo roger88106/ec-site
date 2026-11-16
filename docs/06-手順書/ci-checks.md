@@ -22,7 +22,6 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `ja-text` | 使わない語（error。規則の本文に書いた、AI のサービス固有の名前も含む）がないことを確認し、文脈で決める語と文体の型を warning として示す |
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |
 | `java-rules` | バックエンドのソースに、禁止した書き方（列挙型の変換、理由のない @SuppressWarnings）がないことを確認する |
-| `license-policy` | `licenses.md` の方針の表が、`policy.json` から作った表と同じことを確認する（`--write` で再生成する） |
 | `local-ports` | ローカルのポートの一覧（`ports.json`）と、compose・script・文書・設定のポートが食い違わないことを確認する |
 | `main-entry` | script の直接実行の判定が、共通の関数 `isMain(import.meta.url)` だけであることを確認する |
 | `message-comments` | 文言をキーで引く呼び出しに、表示する内容のコメントがあることを確認する |

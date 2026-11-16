@@ -26,7 +26,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `input-constraints` | 画面の入力の制約に、API の契約から書き出した定数を使っていることを確認する |
 | `integration-shards` | 統合テストを分ける数が、`build.gradle.kts` と CI の matrix で一致することを確認する |
 | `java-rules` | バックエンドのソースに、禁止した書き方（Lombok、列挙型の変換など）がないことを確認する |
-| `license-policy` | 許可するライセンスの一覧が、`licenses.md` と `policy.json` で一致することを確認する |
+| `license-policy` | `licenses.md` の方針の表が、`policy.json` から作った表と同じことを確認する（`--write` で再生成する） |
 | `local-ports` | ローカルのポートの一覧（`ports.json`）と、compose・script・文書・設定のポートが食い違わないことを確認する |
 | `main-entry` | script の直接実行の判定が、共通の関数 `isMain(import.meta.url)` だけであることを確認する |
 | `message-comments` | 文言をキーで引く呼び出しに、表示する内容のコメントがあることを確認する |

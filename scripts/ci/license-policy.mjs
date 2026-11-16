@@ -1,17 +1,12 @@
-// 許可のライセンスの一覧が、文書と policy.json で一致することを確認する。
-// 文書は docs/05-開発規則/licenses.md の「依存のライセンスの方針」の表の「許可」の行（2 列目）。policy.json は scripts/ci/licenses/policy.json の allowed。
-// 片方だけを変えると、文書の方針と CI が確認する方針が食い違うため、過不足を失敗にする。
-// 「許可」の行の 2 列目は、先に「。他に、」から後ろの文（ライセンスの名前でない説明）を除いてから、「、」で分けて読む。
-// 次のときは、照合の対象から外れて誤って通るため、ファイルと行を出して失敗にする。
-// - 「許可」の行がない
-// - 区切りが読めない（空の項目、空白を含む項目）
-// - 「許可」の行が複数ある
-// 失敗したとき：文書の「許可」の行と allowed の片方を修正したら、もう片方も同じに修正する。
+// 依存とライセンスの文書の「依存のライセンスの方針」の表が、policy.json から作った表と同じことを確認する。
+// 表は、文書の <!-- generated:license-policy --> とその閉じの間に置く。
+// 区分ごとのライセンスは、policy.json の allowed・conditional.licenses・forbidden から作る。識別子にない補足と扱いは、この script の ROWS に置く。
+// 片方だけを変えると、文書の方針と CI が確認する方針が食い違うため。
+// 失敗したとき：policy.json を修正してから、--write で表を再生成し、差分を確認する。補足と扱いを変えるときは ROWS を修正する。
 // 除外：なし
-// 使い方：node scripts/ci/license-policy.mjs（リポジトリのルートで）
-import { readFileSync } from 'node:fs'
+// 使い方：node scripts/ci/license-policy.mjs [--write]（リポジトリのルートで。--write で文書の表を再生成する）
+import { readFileSync, writeFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
-import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** ライセンスの方針の文書 */
 const DOC_FILE = 'docs/05-開発規則/licenses.md'
@@ -19,105 +14,93 @@ const DOC_FILE = 'docs/05-開発規則/licenses.md'
 /** ライセンスの検査の方針 */
 const POLICY_FILE = 'scripts/ci/licenses/policy.json'
 
-/** 「許可」の行を読む節の見出し */
-const POLICY_HEADING = '## 依存のライセンスの方針'
+/** 生成の範囲の印 */
+const START = '<!-- generated:license-policy -->'
+const END = '<!-- /generated:license-policy -->'
 
-/** 読めない項目の理由 */
-const UNREADABLE_REASON = 'ライセンスの識別子を「、」で区切った形で読めない'
-
-/** 「許可」の行が複数あるときの理由 */
-const DUPLICATE_ROW_REASON = '「許可」の行が複数ある（最初の行だけを照合するので、1 行にまとめる）'
-
-/** ライセンスの識別子として読める形（空白を含まない） */
-const LICENSE_ID = /^[\w.+-]+$/
+/** 表の行。licenses は policy.json のライセンスの一覧を返す関数、note は一覧の後に続ける補足（識別子で書けないもの） */
+const ROWS = [
+  {
+    label: '許可',
+    licenses: (policy) => policy.allowed,
+    note: '改変を禁じるが無料で商用に使えるもの',
+    handling: 'そのまま使える。改変を禁じるものは改変しない',
+  },
+  {
+    label: '条件付き',
+    licenses: (policy) => policy.conditional.licenses,
+    note: '規模（売上、利用者数など）が一定以内なら無料のもの',
+    handling: '改変せずに依存として使う場合だけ。規模で無料のものは、その規模以内で使う。ライブラリごとに理由を書いて一覧に載せる',
+  },
+  {
+    label: '禁止',
+    licenses: (policy) => policy.forbidden,
+    note: '非商用限定のもの、有料のもの',
+    handling: '使わない',
+  },
+]
 
 /**
- * 文書の「依存のライセンスの方針」の「許可」の行から、ライセンスの一覧を読む。
+ * policy.json から、方針の表を作る。
  *
- * @param {string} text licenses.md の内容
- * @returns {{ licenses: string[] | null, unreadable: { line: number, text: string, reason?: string }[] }} ライセンス（書いた順。最初の行だけ。行がなければ null）と、読めない行（1 始まりの行番号、行の内容、既定と違う理由）
+ * @param {{ allowed: string[], conditional: { licenses: string[] }, forbidden: string[] }} policy policy.json の内容
+ * @returns {string} 表（末尾に改行）
  */
-export function readAllowedRow(text) {
-  let inSection = false
-  let licenses = null
-  const unreadable = []
-  const lines = text.split('\n')
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index].replace(/\r$/, '')
-    if (/^## /.test(line)) {
-      inSection = line.trimEnd() === POLICY_HEADING
-      continue
-    }
-    const cells = line.split('|').map((cell) => cell.trim())
-    if (!inSection || cells[1] !== '許可' || cells.length < 4) {
-      continue
-    }
-    if (licenses !== null) {
-      // 2 つ目以降の行は照合に使わないので、読み飛ばすと、そこにだけ書いたライセンスが誤って通る
-      unreadable.push({ line: index + 1, text: line, reason: DUPLICATE_ROW_REASON })
-      continue
-    }
-    const names = cells[2].replace(/。他に、.*$/, '').split('、').map((name) => name.trim())
-    if (names.some((name) => !LICENSE_ID.test(name))) {
-      unreadable.push({ line: index + 1, text: line })
-    }
-    licenses = names.filter((name) => LICENSE_ID.test(name))
-  }
-  return { licenses, unreadable }
+export function renderTable(policy) {
+  const rows = ROWS.map(({ label, licenses, note, handling }) => `| ${label} | ${licenses(policy).join('、')}。他に、${note} | ${handling} |`)
+  return `${['| 区分 | ライセンス | 扱い |', '|------|------------|------|', ...rows].join('\n')}\n`
 }
 
 /**
- * 文書の一覧と policy.json の一覧を照合する。
+ * 文書の生成の範囲を読む。
  *
- * @param {string[]} documented 文書の「許可」の行のライセンス
- * @param {string[]} listed policy.json の allowed
- * @returns {string[]} 過不足の説明
+ * @param {string} document 文書（改行は LF でも CRLF でもよい）
+ * @returns {{ from: number, to: number, body: string } | null} from は範囲の始め、to は閉じの印の位置、body は中身（前後の空行を除き、末尾に改行）。範囲がなければ null
  */
-export function findLicenseProblems(documented, listed) {
-  const documentedSet = new Set(documented)
-  const listedSet = new Set(listed)
-  const problems = []
-  for (const name of documentedSet) {
-    if (!listedSet.has(name)) {
-      problems.push(`${POLICY_FILE} の allowed にない（${DOC_FILE} の「許可」の行にある）：${name}`)
-    }
-  }
-  for (const name of listedSet) {
-    if (!documentedSet.has(name)) {
-      problems.push(`${DOC_FILE} の「許可」の行にない（${POLICY_FILE} の allowed にある）：${name}`)
-    }
-  }
-  return problems
+function readGenerated(document) {
+  const from = document.indexOf(START)
+  const to = document.indexOf(END)
+  if (from < 0 || to < from || document.indexOf(START, from + 1) >= 0) return null
+  return { from: from + START.length, to, body: `${document.slice(from + START.length, to).replaceAll('\r\n', '\n').trim()}\n` }
 }
 
 /**
- * 文書と policy.json を照合して、問題の文を集める。読めない行、policy.json の allowed の欠落、「許可」の行の欠落、過不足の順。
+ * 文書の生成の範囲と、policy.json から作った表を比べる。
  *
- * @param {string} docText licenses.md の内容
- * @param {{ allowed?: unknown } | null} policy policy.json の内容（JSON.parse の結果。オブジェクトでなくてもよい）
- * @returns {{ problems: string[], documentedCount: number }} 問題の文（なければ空）と、文書の「許可」の行のライセンスの件数（行がなければ 0）
+ * @param {string} document 文書
+ * @param {string} table policy.json から作った表
+ * @returns {string[]} 食い違い（なければ空）
  */
-export function findPolicyProblems(docText, policy) {
-  const row = readAllowedRow(docText)
-  const problems = row.unreadable.map((item) => describeUnreadableLine({ file: DOC_FILE, line: item.line, text: item.text, reason: item.reason ?? UNREADABLE_REASON }))
-  if (!Array.isArray(policy?.allowed)) {
-    problems.push(`${POLICY_FILE} に allowed がない`)
-  }
-  if (row.licenses === null) {
-    problems.push(`${DOC_FILE} の「依存のライセンスの方針」の表に「許可」の行がない`)
-  } else if (Array.isArray(policy?.allowed)) {
-    problems.push(...findLicenseProblems(row.licenses, policy.allowed))
-  }
-  return { problems, documentedCount: row.licenses?.length ?? 0 }
+export function checkDocument(document, table) {
+  const generated = readGenerated(document)
+  if (generated === null) return [`${DOC_FILE} に ${START} と ${END} の範囲が 1 組だけない`]
+  if (generated.body === table) return []
+  return [`${DOC_FILE} の方針の表が、${POLICY_FILE} から作った表と違う。node scripts/ci/license-policy.mjs --write で再生成し、差分を確認する`]
+}
+
+/**
+ * 文書の生成の範囲を、作った表に置き換える。
+ *
+ * @param {string} document 文書
+ * @param {string} table policy.json から作った表
+ * @returns {string} 置き換えた文書
+ */
+export function replaceGenerated(document, table) {
+  const generated = readGenerated(document)
+  if (generated === null) throw new Error(`${DOC_FILE} に ${START} と ${END} の範囲が 1 組だけない`)
+  return `${document.slice(0, generated.from)}\n${table}${document.slice(generated.to)}`
 }
 
 if (isMain(import.meta.url)) {
-  const docText = readFileSync(DOC_FILE, 'utf8')
-  const policy = JSON.parse(readFileSync(POLICY_FILE, 'utf8'))
-  const { problems, documentedCount } = findPolicyProblems(docText, policy)
-  for (const problem of problems) {
-    console.log(problem)
+  const document = readFileSync(DOC_FILE, 'utf8')
+  const table = renderTable(JSON.parse(readFileSync(POLICY_FILE, 'utf8')))
+  if (process.argv.includes('--write')) {
+    writeFileSync(DOC_FILE, replaceGenerated(document, table))
+    console.log(`再生成した：${DOC_FILE}`)
+    process.exit(0)
   }
-  console.log(`許可のライセンス：${documentedCount} 件、policy.json：${Array.isArray(policy?.allowed) ? policy.allowed.length : 0} 件、問題：${problems.length} 件`)
+  const problems = checkDocument(document, table)
+  for (const problem of problems) console.log(problem)
+  console.log(`方針の表の食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)
 }

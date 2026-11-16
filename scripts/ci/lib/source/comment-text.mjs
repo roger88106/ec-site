@@ -6,13 +6,10 @@
 //
 // 走査（コメント・文字列の読み分け）は scan-code が行う。
 import { JAVA_SCAN, scanCode, templateEnd } from './scan-code.mjs'
-import { skipModifiers } from './test-files.mjs'
+import { skipModifiers, skipSpaces } from './test-files.mjs'
 
 /** テストの呼び出しの始まり。前が . や語の文字のもの（/re/.test(...) など）は読まない */
 const TS_TEST_CALL = /(?<![.\w$])(?:describe|it|test)(?![\w$])/g
-
-/** 表や条件を引数に取り、続けて名前を書く修飾 */
-const TS_ARGUMENT_MODIFIERS = new Set(['each', 'for', 'skipIf', 'runIf'])
 
 /**
  * ファイルの種類を返す。
@@ -85,9 +82,9 @@ function tsTestNameRanges(text) {
   const ranges = []
   for (const match of text.matchAll(TS_TEST_CALL)) {
     if (!code[match.index]) continue
-    const { pos } = skipModifiers(text, match.index + match[0].length, TS_ARGUMENT_MODIFIERS)
+    const { pos } = skipModifiers(text, match.index + match[0].length)
     if (text[pos] !== '(') continue
-    const from = pos + 1 + /^\s*/.exec(text.slice(pos + 1))[0].length
+    const from = skipSpaces(text, pos + 1)
     if (text[from] === '`') ranges.push({ from, to: templateEnd(text, from), template: true })
     else if (strings.has(from)) ranges.push({ from, to: strings.get(from) })
   }

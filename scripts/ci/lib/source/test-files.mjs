@@ -42,6 +42,44 @@ const TS_MODIFIERS = new Set(['serial', 'parallel', 'only', 'concurrent', 'seque
 /** 条件を引数に取り、続けて名前を書く修飾（test.skipIf(条件)('名前', ...)） */
 const TS_CONDITIONS = new Set(['skipIf', 'runIf'])
 
+/** 表を引数に取り、続けて名前を書く修飾（test.each(表)('名前', ...)） */
+const TS_TABLES = new Set(['each', 'for'])
+
+/** 表や条件を引数に取り、続けて名前を書く修飾 */
+export const TS_ARGUMENT_MODIFIERS = new Set([...TS_TABLES, ...TS_CONDITIONS])
+
+/** 修飾の 1 つ（.skip など）。位置は lastIndex で指定する（sticky） */
+const TS_MODIFIER = /\.(\w+)/y
+
+/** 空白の並び。位置は lastIndex で指定する（sticky） */
+const SPACES = /\s*/y
+
+/**
+ * 位置から始まる修飾（.名前）を読む。
+ *
+ * @param {string} source ソース
+ * @param {number} pos 読む位置
+ * @returns {{ name: string, end: number } | null} 修飾の名前と、その次の位置。修飾でなければ null
+ */
+function readModifier(source, pos) {
+  TS_MODIFIER.lastIndex = pos
+  const match = TS_MODIFIER.exec(source)
+  return match ? { name: match[1], end: TS_MODIFIER.lastIndex } : null
+}
+
+/**
+ * 位置から空白を読み飛ばした次の位置を返す。
+ *
+ * @param {string} source ソース
+ * @param {number} pos 読む位置
+ * @returns {number} 空白の次の位置
+ */
+export function skipSpaces(source, pos) {
+  SPACES.lastIndex = pos
+  SPACES.exec(source)
+  return SPACES.lastIndex
+}
+
 /** テストの宣言でない test・it の呼び出し（まとまり、フック、設定）。これ以外の知らない修飾は、読めない呼び出しにする */
 const TS_NON_DECLARATIONS = new Set([
   'describe',
@@ -77,17 +115,15 @@ const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescri
  *
  * @param {string} source ソース（コメントの中を読まないものを渡す）
  * @param {number} pos describe・it・test の直後の位置
- * @param {ReadonlySet<string>} argumentModifiers 表や条件を引数に取る修飾の名前
+ * @param {ReadonlySet<string>} [argumentModifiers] 表や条件を引数に取る修飾の名前。なければ TS_ARGUMENT_MODIFIERS
  * @returns {{ pos: number, modifiers: string[] }} 修飾の後の位置と、読んだ修飾の名前
  */
-export function skipModifiers(source, pos, argumentModifiers) {
+export function skipModifiers(source, pos, argumentModifiers = TS_ARGUMENT_MODIFIERS) {
   const modifiers = []
-  while (source[pos] === '.') {
-    const modifier = /^\.(\w+)/.exec(source.slice(pos, pos + 20))
-    if (!modifier) break
-    pos += modifier[0].length
-    modifiers.push(modifier[1])
-    if (!argumentModifiers.has(modifier[1])) continue
+  for (let modifier = readModifier(source, pos); modifier; modifier = readModifier(source, pos)) {
+    pos = modifier.end
+    modifiers.push(modifier.name)
+    if (!argumentModifiers.has(modifier.name)) continue
     if (source[pos] === '(') pos = closingParen(source, pos) + 1
     else if (source[pos] === '`') pos = templateEnd(source, pos)
   }
@@ -108,26 +144,26 @@ function readTsCall(source, start, nameLength) {
   let last = ''
   let afterArgs = false
   while (source[pos] !== '(') {
-    const modifier = /^\.(\w+)/.exec(source.slice(pos, pos + 20))
+    const modifier = readModifier(source, pos)
     if (!modifier) {
       // 表や条件の括弧の後に名前の括弧が続かないものは、読み方の外れか知らない書き方なので、数えずに消えないよう読めない呼び出しにする
       if (afterArgs) return { reason: `${last} の後に、テスト名の括弧が続かない` }
       return null
     }
     afterArgs = false
-    pos += modifier[0].length
-    if (TS_MODIFIERS.has(modifier[1])) {
-      skipped ||= modifier[1] === 'skip' || modifier[1] === 'fixme' || modifier[1] === 'todo'
-      last = modifier[1]
-    } else if (TS_CONDITIONS.has(modifier[1])) {
-      last = modifier[1]
-      if (source[pos] !== '(') return { reason: `${modifier[1]} の条件の括弧がない` }
+    pos = modifier.end
+    if (TS_MODIFIERS.has(modifier.name)) {
+      skipped ||= modifier.name === 'skip' || modifier.name === 'fixme' || modifier.name === 'todo'
+      last = modifier.name
+    } else if (TS_CONDITIONS.has(modifier.name)) {
+      last = modifier.name
+      if (source[pos] !== '(') return { reason: `${modifier.name} の条件の括弧がない` }
       const close = closingParen(source, pos)
-      if (close >= source.length) return { reason: `${modifier[1]} の条件の括弧が閉じない` }
+      if (close >= source.length) return { reason: `${modifier.name} の条件の括弧が閉じない` }
       pos = close + 1
       afterArgs = true
-    } else if (modifier[1] === 'each' || modifier[1] === 'for') {
-      last = modifier[1]
+    } else if (TS_TABLES.has(modifier.name)) {
+      last = modifier.name
       if (source[pos] === '(') {
         const close = closingParen(source, pos)
         if (close >= source.length) return { reason: 'each の表の括弧が閉じない' }
@@ -142,11 +178,11 @@ function readTsCall(source, start, nameLength) {
       }
     } else {
       // describe、step、use、beforeEach などは、テストの宣言でない。知らない修飾は、数えずに消えないよう読めない呼び出しにする
-      if (TS_NON_DECLARATIONS.has(modifier[1])) return null
-      return { reason: `知らない修飾 .${modifier[1]} が付いている（読み方を足すか、テストの宣言でない呼び出しに加える）` }
+      if (TS_NON_DECLARATIONS.has(modifier.name)) return null
+      return { reason: `知らない修飾 .${modifier.name} が付いている（読み方を足すか、テストの宣言でない呼び出しに加える）` }
     }
   }
-  const nameStart = pos + 1 + /^\s*/.exec(source.slice(pos + 1))[0].length
+  const nameStart = skipSpaces(source, pos + 1)
   if (source[nameStart] === '`') {
     // テンプレートの名前は、`${...}` の中の入れ子のテンプレートで切れないよう、テンプレートの終わりまで読む
     const end = templateEnd(source, nameStart)
@@ -226,11 +262,14 @@ export function extractTestNames(source, kind) {
     // クラス（@Nested を含む）に付いたものは、テストのまとまりの名前なので読まない。
     // 後に続く注釈と修飾子を飛ばした次の語が class かで見分ける（構文は解析しない）
     const classAfter =
-      /^(?:\s*@[\w.]+(?![\w.])(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/
+      /(?:\s*@[\w.]+(?![\w.])(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/y
     // コメントアウトしたテストは数えない（位置を保ったままコメントを空白にしてから読む）
     const code = stripJavaComments(source)
     return [...code.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]
-      .filter((match) => !classAfter.test(code.slice(match.index + match[0].length)))
+      .filter((match) => {
+        classAfter.lastIndex = match.index + match[0].length
+        return !classAfter.test(code)
+      })
       .map((match) => match[1].replace(/\\(.)/g, '$1'))
   }
   return readTsTests(source)

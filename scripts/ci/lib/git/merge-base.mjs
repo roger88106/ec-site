@@ -5,13 +5,15 @@ import { execFileSync } from 'node:child_process'
 /**
  * git を実行し、出力の前後の空白を除いて返す。失敗したら null を返す。
  *
+ * 出力の上限は 64 MiB にする（差分のファイルの一覧など、既定の 1 MiB を超える出力も読むため）。
+ *
  * @param {string[]} args 引数
  * @param {string} cwd 実行する場所
  * @returns {string | null} 出力。失敗したら null
  */
 export function tryGit(args, cwd) {
   try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    return execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] }).trim()
   } catch {
     return null
   }

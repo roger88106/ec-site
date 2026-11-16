@@ -4,6 +4,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.message.I18nMessage;
 import com.ecsite.support.config.IntegrationTest;
+import com.jayway.jsonpath.JsonPath;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.support.http.ProblemAssertions.problem;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -91,6 +93,11 @@ class ErrorResponseTest {
      * 日本語（漢字・ひらがな・カタカナ）を含む
      */
     private static final String JAPANESE = "(?s).*[\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}].*";
+
+    /**
+     * 新しく作る traceId の形（W3C のトレース ID と同じ 32 桁の 16 進数）
+     */
+    private static final String TRACE_ID_FORM = "[0-9a-f]{32}";
 
     // ============================== Bean ==============================
 
@@ -267,16 +274,28 @@ class ErrorResponseTest {
     }
 
     @Test
-    @DisplayName("エラーの応答に、リクエストのトレースの traceId（32 桁の 16 進数）を入れる")
-    void returnsTraceId() throws Exception {
-        // 操作：エラーになるパスを呼ぶ
-        ResultActions result = mockMvc.perform(get(BASE + "/not-found"));
+    @DisplayName("トレースの span がない状態では、リクエストごとに新しい 32 桁の 16 進数の traceId を返す")
+    void returnsNewTraceIdWithoutSpan() throws Exception {
+        // 操作：エラーになるパスを 2 回呼ぶ（MockMvc のリクエストにはトレースの span がない）
+        String first = traceIdOf(mockMvc.perform(get(BASE + "/not-found")));
+        String second = traceIdOf(mockMvc.perform(get(BASE + "/not-found")));
 
-        // 確認：32 桁の 16 進数の traceId
-        result.andExpect(jsonPath("$.traceId").value(matchesPattern("[0-9a-f]{32}")));
+        // 確認：どちらも 32 桁の 16 進数で、リクエストごとに違う
+        assertThat(first).matches(TRACE_ID_FORM);
+        assertThat(second).matches(TRACE_ID_FORM).isNotEqualTo(first);
     }
 
     // ============================== 確認の補助 ==============================
+
+    /**
+     * エラーの応答の本文から traceId を読む。
+     *
+     * @param result 応答
+     * @return traceId
+     */
+    private static String traceIdOf(ResultActions result) throws Exception {
+        return JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.traceId");
+    }
 
     /**
      * size の上限超えの検証エラーの応答であることを確認する。

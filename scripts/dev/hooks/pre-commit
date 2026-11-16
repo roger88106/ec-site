@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
-# ============================================================================
-# commit の前に、CI の検査の script（scripts/ci/check-all.sh）のうち、ステージしたファイルに関係するものを実行する（CI の検査）
-# 今のブランチが develop か main なら、検査の前に commit を失敗にする（直接 commit しない規則。AGENTS.md の Git の表）。
-# detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。
+# commit の前に、CI の検査の script（scripts/ci/check-all.sh）のうち、ステージしたファイルに関係するものを実行する。
 #
 # 置き方（開発環境の起動）：.git/hooks/pre-commit に、この script を呼ぶ 1 行を書く。
 # core.hooksPath は使わない（各自が .git/hooks/ に置いた hook と並べられるように）。
-# テスト（バックエンド・画面・E2E）は時間がかかるので流さない。
-# 検査するのは、ステージした内容（次の commit）だけ。ステージした内容を一時ディレクトリに取り出し、そこで検査する。
-# 処理は scripts/dev/hooks/pre-commit.mjs（テストのため）。この script は、入口の pre-commit-main.mjs を呼ぶだけ。
-# 作業ツリーは変えない（stash で退避して戻すと、一部だけをステージしたファイルで戻すときに衝突するため）。
-# ============================================================================
+#
+# 処理（ブランチの判定、検査するもの、作業ツリーを変えないこと）は scripts/dev/hooks/pre-commit.mjs にある。
+# この script は、入口の pre-commit-main.mjs を呼ぶだけ。
 ROOT="$(git rev-parse --show-toplevel)"
 # 検査は、この hook と同じ bash で実行する（node が PATH から bash を探すと、Windows では WSL の bash.exe を引くことがある）。
 # Git Bash の $BASH は /usr/bin/bash の形なので、node が開けるよう cygpath で Windows のパスにする

@@ -14,7 +14,9 @@ import { GH_PR_OPTIONS, flagEnabled, optionValue, parseGhArgs } from './gh-rules
 /** @typedef {import('./gh-rules.mjs').GhInvocation} GhInvocation */
 
 /**
- * gh の 1 回の呼び出しのタイムアウト（ミリ秒）。pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
+ * gh の 1 回の呼び出しのタイムアウト（ミリ秒）。
+ *
+ * pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
  */
 export const GH_TIMEOUT_MS = 10000
 
@@ -56,7 +58,9 @@ const PENDING_STATES = ['PENDING', 'EXPECTED']
 const PAGE_SIZE = 100
 
 /**
- * マージの条件を読む GraphQL の問い合わせ。1 回のリクエストで、pull request、変更のファイル、閉じる issue のラベル、head の commit の検査を読む。
+ * マージの条件を読む GraphQL の問い合わせ。
+ *
+ * 1 回のリクエストで、pull request、変更のファイル、閉じる issue のラベル、head の commit の検査を読む。
  *
  * 一覧はどれも 1 ページ（PAGE_SIZE 件）だけ読み、続きがあれば条件を確認できないとする。
  */
@@ -96,7 +100,9 @@ const NO_MATCH_HEAD_REASON =
   'gh pr merge <番号> --match-head-commit <SHA> で実行し直す。'
 
 /**
- * `[HOST/]OWNER/REPO` の形のリポジトリを読む。github.com 以外のホストは読まない。
+ * `[HOST/]OWNER/REPO` の形のリポジトリを読む。
+ *
+ * github.com 以外のホストは読まない。
  *
  * @param {string} value リポジトリ
  * @returns {{ owner: string, name: string } | null} 所有者と名前。読めなければ null
@@ -315,7 +321,9 @@ function authoredProblems(pullRequest, checks) {
 }
 
 /**
- * gh api graphql の作成者を、risk.mjs の作成者の形にする。GraphQL の Bot の login は `[bot]` を付けないので付ける。
+ * gh api graphql の作成者を、risk.mjs の作成者の形にする。
+ *
+ * GraphQL の Bot の login は `[bot]` を付けないので付ける。
  *
  * @param {{ __typename?: string, login?: string } | null | undefined} author 作成者
  * @returns {string | undefined} 作成者の名前
@@ -350,7 +358,9 @@ function mergeProblems(pullRequest, headCommit) {
 }
 
 /**
- * gh pr merge の判定。--match-head-commit のない形は拒否し、pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
+ * gh pr merge の判定。
+ *
+ * --match-head-commit のない形は拒否し、pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
  *
  * --admin と --auto は見ない。ruleset の除外の対象が空で、リポジトリの設定で自動のマージを無効にしてあるので、GitHub が受け付けないため。
  *

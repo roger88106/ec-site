@@ -492,13 +492,17 @@ describe('実際の hook', () => {
   test('warning の一覧を出力する検査が失敗したら、成功にせず失敗にする', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
+      // 準備：検査は通し、日本語の文の検査（warning の一覧を出力する）を異常終了させる
       const env = withoutGitEnv()
       const git = initRepo(dir, env, { 'scripts/ci/check-all.sh': '#!/usr/bin/env bash\nexit 0\n' })
-      // 日本語の文の検査を壊す（異常終了させる）
       writeFileSync(path.join(dir, 'scripts/ci/ja/ja-text.mjs'), 'process.exit(5)\n')
       writeFileSync(path.join(dir, 'staged.txt'), 'staged')
       git('add', '-A')
+
+      // 操作
       const result = spawnSync(gitBash(), ['scripts/dev/hooks/pre-commit'], { cwd: dir, env, encoding: 'utf8' })
+
+      // 確認
       assert.equal(result.status, WARNING_FAILED)
     } finally {
       rmSync(dir, { recursive: true, force: true })

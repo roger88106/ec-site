@@ -1,8 +1,11 @@
-// commit の前の hook（scripts/dev/hooks/pre-commit）の処理。ステージした内容を取り出して、ステージしたファイルに関係する CI の検査を実行する。
-// 選び方は pre-commit-select.mjs。取り出した先には、元のリポジトリの node_modules へのリンクを置き、検査が依存を読めるようにする。
+// commit の前の hook（scripts/dev/hooks/pre-commit）の処理。
 //
-// 今のブランチが develop か main なら、検査の前に commit を失敗にする（直接 commit しない規則。AGENTS.md の Git の表）。
-// detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。
+// ステージした内容（次の commit）を一時ディレクトリに取り出して、ステージしたファイルに関係する CI の検査を実行する。
+// 選び方は pre-commit-select.mjs。取り出した先には、元のリポジトリの node_modules へのリンクを置き、検査が依存を読めるようにする。
+// テスト（バックエンド・画面・E2E）は時間がかかるので流さない。
+// 作業ツリーは変えない（stash で退避して戻すと、一部だけをステージしたファイルで戻すときに衝突するため）。
+//
+// 今のブランチが develop か main なら、検査の前に commit を失敗にする（branchRejection）。
 //
 // 検査が通ったら、ステージした追加行の warning だけを表示する（追加していない既存の行の warning は表示しない。warning は失敗にしない）
 import { spawnSync } from 'node:child_process'
@@ -29,7 +32,9 @@ export const BRANCH_REJECTED = 1
 const DIFF_MAX_BUFFER = 256 * 1024 * 1024
 
 /**
- * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
+ * 直接 commit しないブランチと、そのときに表示する手順。
+ *
+ * 変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
  *
  * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリースの「名前」、ブランチとリリースの「緊急の修正」）。それ以外の変更は、develop から作業ブランチを作る
  */
@@ -118,7 +123,9 @@ export function resolveIndexFile(indexFile, root) {
 }
 
 /**
- * 検査の script を実行する bash を返す。hook の shell script が、自分を実行している bash のパスを PRE_COMMIT_BASH で渡す。
+ * 検査の script を実行する bash を返す。
+ *
+ * hook の shell script が、自分を実行している bash のパスを PRE_COMMIT_BASH で渡す。
  *
  * Windows の素の PATH では、名前の bash が WSL の bash.exe を指すことがあり、C:/ のパスを渡した検査が失敗するため。
  *

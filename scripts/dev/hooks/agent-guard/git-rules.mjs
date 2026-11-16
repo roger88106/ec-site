@@ -1,4 +1,4 @@
-// git の呼び出しの規則：force push、検査の省略、pre-commit hook の有無、tag。
+// git の呼び出しの規則。規則の一覧は GIT_JUDGES。
 import path from 'node:path'
 import { resolveDir } from './commands.mjs'
 import { TAG_REASON, ask, deny } from './decision.mjs'
@@ -81,7 +81,9 @@ const HOOKS_PATH_REASON =
  */
 
 /**
- * コマンドが git の呼び出しなら、git の前のオプションとサブコマンドを読む。フルパスと git.exe の形も git として読む。
+ * コマンドが git の呼び出しなら、git の前のオプションとサブコマンドを読む。
+ *
+ * フルパスと git.exe の形も git として読む。
  *
  * @param {{ words: string[], dir: string, env?: Record<string, string> }} command コマンドの語、ディレクトリ、対象のリポジトリを替える環境変数
  * @param {PathOptions} [options] パスの解き方
@@ -119,7 +121,9 @@ export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
 }
 
 /**
- * サブコマンドの後の語を、長いオプション・短いオプション・位置引数に分ける。オプションの値は、どれにも含めない。
+ * サブコマンドの後の語を、長いオプション・短いオプション・位置引数に分ける。
+ *
+ * オプションの値は、どれにも含めない。
  *
  * @param {string[]} args サブコマンドの後の語
  * @param {{ valueShort: string, optionalShort: string, valueLong: string[] }} spec 値を取るオプション
@@ -188,7 +192,9 @@ function judgeHooksPath(git) {
 }
 
 /**
- * git push の位置引数のうち、refspec を返す。最初の位置引数はリモート（--repo で指定したときは全てが refspec）。
+ * git push の位置引数のうち、refspec を返す。
+ *
+ * 最初の位置引数はリモート（--repo で指定したときは全てが refspec）。
  *
  * @param {string[]} longs 長いオプションの名前
  * @param {string[]} positionals 位置引数
@@ -337,7 +343,9 @@ function judgeTagCreate(git) {
 }
 
 /**
- * refspec の片側が tag を指すか。refs/tags/ を含めば tag、refs/ で始まらない名前は、対象のリポジトリにその名前の tag があれば tag とする。
+ * refspec の片側が tag を指すか。
+ *
+ * refs/tags/ を含めば tag、refs/ で始まらない名前は、対象のリポジトリにその名前の tag があれば tag とする。
  *
  * @param {string} name refspec の片側
  * @param {GitInvocation} git git の呼び出し

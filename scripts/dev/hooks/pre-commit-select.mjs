@@ -1,5 +1,6 @@
 // commit の前の hook が実行する検査と script のテストを、ステージしたファイルから選ぶ。
-// CI は今までどおり全てを実行するので、選び漏れは CI で見つかる。対応の表と考え方は、CI の検査の script の「commit の前の hook」。
+//
+// CI は全てを実行するので、選び漏れは CI で見つかる。対応の表と考え方は、CI の検査の script の「commit の前の hook」。
 //
 // 検査（scripts/ci/ の検査のフォルダの直下）とテストは、次のどれかに当たれば実行する。
 //   - ステージしたファイルが、検査・テストが import・require でたどれるファイル（自分を含む）である
@@ -24,7 +25,9 @@ const CHECK_TEST = new RegExp(`^scripts/ci/(?:${CHECK_GROUPS.join('|')})/[^/]+\\
 const ALWAYS = 'always'
 
 /**
- * 検査ごとの、読むファイルのパスの正規表現。import と、ソースの中のパス・名前から分からないもの（Git のファイルの一覧から選ぶもの）を書く。
+ * 検査ごとの、読むファイルのパスの正規表現。
+ *
+ * import と、ソースの中のパス・名前から分からないもの（Git のファイルの一覧から選ぶもの）を書く。
  *
  * 表にない検査は、常に実行する（選び漏れで検査が実行されないことを避けるため）。
  */
@@ -105,6 +108,7 @@ function touches(staged, closure, patterns) {
  * @param {object} input
  * @param {string[]} input.staged ステージしたファイル（削除と改名の元を含む。リポジトリのルートからの相対パス）
  * @param {string[]} input.checks 検査の名前（検査のフォルダの直下の、拡張子を除いた名前）
+ * @param {Record<string, string>} input.files 検査の名前から、検査のファイル（リポジトリのルートからの相対パス）
  * @param {string[]} input.tests テストのファイル（リポジトリのルートからの相対パス）
  * @param {(file: string) => string | null} input.read ステージした内容のファイルを読む。ないときは null
  * @returns {{ all: boolean, checks: string[], tests: string[] }} 全てを実行するか、実行する検査、実行するテスト（与えた順）
@@ -125,7 +129,7 @@ export function selectChecks({ staged, checks, files, tests, read }) {
  * 取り出した先から、検査の名前とテストのファイルを集める。
  *
  * @param {string} root 取り出した先のディレクトリ
- * @returns {{ checks: string[], tests: string[] }} 検査の名前と、テストのファイル（名前の順）
+ * @returns {{ checks: string[], files: Record<string, string>, tests: string[] }} 検査の名前（名前の順）、検査の名前から検査のファイル、テストのファイル（名前の順）
  */
 export function listChecksAndTests(root) {
   const list = (dir) => {

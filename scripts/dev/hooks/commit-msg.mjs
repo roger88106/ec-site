@@ -1,4 +1,6 @@
-// commit-msg の hook（scripts/dev/hooks/commit-msg）の処理。メッセージのファイルに、日本語の文の検査（scripts/ci/ja/ja-text.mjs --message <ファイル>）を実行する。
+// commit-msg の hook（scripts/dev/hooks/commit-msg）の処理。
+//
+// メッセージのファイルに、日本語の文の検査（scripts/ci/ja/ja-text.mjs --message <ファイル>）を実行する。
 // error があれば、hook は失敗にする。検査の出力は hook の利用者のために表示する。
 // 判定は check-all と同じ judgeCheck の summary で行う（検査が何も調べずに終わったときに成功にしないため）。
 import { spawnSync } from 'node:child_process'
@@ -10,7 +12,9 @@ import { judgeCheck } from '../../ci/lib/output/check-result.mjs'
 export const COMMIT_MSG_FAILED = 2
 
 /**
- * 日本語の文の検査を実行して、hook の終了コードを返す。終了コードを返さなかった検査（シグナルでの終了など）は失敗の 1 にする。
+ * 日本語の文の検査を実行して、hook の終了コードを返す。
+ *
+ * 終了コードを返さなかった検査（シグナルでの終了など）は失敗の 1 にする。
  *
  * 終了コードが 0 でも、出力の最後の行が要約の行でなければ、理由を表示して失敗の 1 にする。
  *

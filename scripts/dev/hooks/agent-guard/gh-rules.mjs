@@ -1,10 +1,12 @@
-// gh の呼び出しの読み方と、gh api の規則（マージ、tag、ruleset、GraphQL）。gh pr merge の条件は merge-rules.mjs。
+// gh の呼び出しの読み方と、gh api の規則。gh pr merge の条件は merge-rules.mjs。
 import { APPROVE_ONLY_IF_ALLOWED, TAG_REASON, ask, deny } from './decision.mjs'
 
 /** @typedef {import('./decision.mjs').Decision} Decision */
 
 /**
- * gh のオプションの読み方。shortNames は短いオプションを長い名前にする対応、valueLong は値を取る長いオプション（短いオプションも長い名前で書く）。
+ * gh のオプションの読み方。
+ *
+ * shortNames は短いオプションを長い名前にする対応、valueLong は値を取る長いオプション（短いオプションも長い名前で書く）。
  *
  * 値を取らないオプションは、値を "true" として読む。
  */
@@ -34,6 +36,13 @@ const API_MERGE_PATH = /(^|\/)pulls\/[^/]+\/merge\/?(\?|$)/
 /** gh api のパスのうち、Release と tag の参照を作成・変更・削除しうるもの（git/refs は refs/heads/ も含むが、見分けずに確認を求める） */
 const API_TAG_PATHS = [/(^|\/)releases(\/|\?|$)/, /(^|\/)git\/(refs|tags)(\/|\?|$)/]
 
+/**
+ * GraphQL のエンドポイント。
+ *
+ * gh は `graphql`、`/graphql`、`https://<ホスト>/graphql`（`api/` を含む形も）を同じ GraphQL の API に送る
+ */
+const GRAPHQL_ENDPOINT = /^(?:https?:\/\/[^/]+\/(?:api\/)?|\/)?graphql\/?$/i
+
 /** GraphQL の、pull request をマージする mutation */
 const GRAPHQL_MERGE = /\bmergePullRequest\b/
 
@@ -56,7 +65,9 @@ const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は�
  */
 
 /**
- * コマンドが gh の呼び出しなら、gh の後の語を返す。フルパスと gh.exe の形も gh として読む。
+ * コマンドが gh の呼び出しなら、gh の後の語を返す。
+ *
+ * フルパスと gh.exe の形も gh として読む。
  *
  * @param {{ words: string[], dir: string, ghRepo?: string | null }} command コマンドの語、ディレクトリ、前に付けた GH_REPO
  * @returns {GhInvocation | null} gh の呼び出し。gh でなければ null
@@ -68,7 +79,9 @@ export function parseGhInvocation({ words, dir, ghRepo = null }) {
 }
 
 /**
- * gh のオプションと位置引数を読む。長いオプションの略記は読まない（gh は略記を受け付けない）。
+ * gh のオプションと位置引数を読む。
+ *
+ * 長いオプションの略記は読まない（gh は略記を受け付けない）。
  *
  * @param {string[]} args 読む語
  * @param {{ shortNames: Record<string, string>, valueLong: string[] }} spec オプションの読み方
@@ -129,11 +142,10 @@ export function flagEnabled(options, name) {
   return value !== null && value !== 'false'
 }
 
-/** GraphQL のエンドポイント。gh は `graphql`、`/graphql`、`https://<ホスト>/graphql`（`api/` を含む形も）を同じ GraphQL の API に送る */
-const GRAPHQL_ENDPOINT = /^(?:https?:\/\/[^/]+\/(?:api\/)?|\/)?graphql\/?$/i
-
 /**
- * gh api の判定。GraphQL は、語のどれかが mergePullRequest を含めば拒否する（ファイルや標準入力から読む本文と、シェルの展開の後は見ない）。
+ * gh api の判定。
+ *
+ * GraphQL は、語のどれかが mergePullRequest を含めば拒否する（ファイルや標準入力から読む本文と、シェルの展開の後は見ない）。
  *
  * REST は GET 以外のリクエストのうち、マージのパスへのものは拒否し、Release と tag の参照、ruleset とブランチの保護へのものは確認を求める。
  *

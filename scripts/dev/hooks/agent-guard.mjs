@@ -11,13 +11,17 @@
 // GitHub が受け付けない操作（gh pr merge の --admin、自動のマージ）と、意図した回避（bash -c、エイリアス、ファイルから読む GraphQL の本文）は見ない。
 //
 // permission の規則でなく hook で読むのは、permission の規則が git -C やフルパスで書いた git・gh に当たらず、commit のメッセージにある語にも当たるため。
+//
 // .claude/settings.json の if 欄で、コマンドに git か gh を含むときだけこの script を起動する（他のコマンドで node を起動する時間を省く）。
-// 本書は入口と判定のまとめで、コマンドの読み方は shell-words と commands、規則は git-rules・gh-rules・merge-rules にある。
+//
+// このファイルは入口と判定のまとめで、コマンドの読み方は shell-words と commands、規則は git-rules・gh-rules・merge-rules にある。
 //
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash と PowerShell 以外のツールは何もせずに通す。
+//
 // PowerShell のコマンドは書き方を読まず、git・gh のサブコマンドが判定の対象なら拒否し、Bash のツールで実行するよう返す（judgePowerShell）。
 //
 // 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出力する。通すときは何も出力しない。終了コードは常に 0。
+//
 // 判定の中で例外が起きたら、git か gh を含むコマンドは拒否し、含まないコマンドは通す。
 // 判定の不具合で force push や許可のないマージを通さず、かつ git・gh と関係のない Bash まで止めないため。
 import { spawnSync } from 'node:child_process'
@@ -53,7 +57,9 @@ function judgeGh(gh, deps, budget) {
 }
 
 /**
- * コマンドの全文を判定する。拒否があればそれを、なければ最初の確認を返す。
+ * コマンドの全文を判定する。
+ *
+ * 拒否があればそれを、なければ最初の確認を返す。
  *
  * @param {string} command コマンドの全文
  * @param {string} cwd 入力の cwd
@@ -79,7 +85,9 @@ export function judgeCommand(command, cwd, deps, options = {}) {
 }
 
 /**
- * 実際の git・gh とファイルを使う外部の処理を作る。gh は PATH にあるものを使う。
+ * 実際の git・gh とファイルを使う外部の処理を作る。
+ *
+ * gh は PATH にあるものを使う。
  *
  * @param {Record<string, string | undefined>} [env] git と gh に渡す環境変数
  * @returns {Deps} 外部の処理
@@ -109,7 +117,9 @@ const OPERATIONS = ['push', 'commit', 'tag', 'merge', 'api', 'release']
 const GIT_VALUE_OPTIONS = ['-C', '-c', '--config-env', '--git-dir', '--work-tree', '--namespace']
 
 /**
- * PowerShell のコマンドの git・gh が、hook が判定する操作か。git・gh の後のオプションを飛ばした最初の語（gh pr は次の語）を見る。
+ * PowerShell のコマンドの git・gh が、hook が判定する操作か。
+ *
+ * git・gh の後のオプションを飛ばした最初の語（gh pr は次の語）を見る。
  *
  * 前のオプションに hooksPath を含むときも、操作とみなす。
  *
@@ -131,7 +141,9 @@ function isOperation(words) {
 }
 
 /**
- * PowerShell のツールのコマンドを判定する。git・gh のサブコマンドが、hook が判定する操作なら拒否する。
+ * PowerShell のツールのコマンドを判定する。
+ *
+ * git・gh のサブコマンドが、hook が判定する操作なら拒否する。
  *
  * PowerShell の書き方は読まず、空白と引用符と区切り（; | & 括弧）で語に分けるだけにする（判定は Bash の 1 か所に置き、読むだけのコマンドは通すため）。
  *

@@ -45,7 +45,9 @@ const OLDER = '2026-10-28T09:00:00Z'
 const NEWER = '2026-10-28T11:00:00Z'
 
 /**
- * gh api graphql が返す pull request を作る。既定は、許可なしにマージする条件を全て満たすもの。
+ * gh api graphql が返す pull request を作る。
+ *
+ * 既定は、許可なしにマージする条件を全て満たすもの。
  *
  * closing は閉じる issue とそのラベル、files は変更のファイル、checks は CI の検査、ほかの項目は pull request の項目を上書きする。
  */

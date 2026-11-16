@@ -104,8 +104,12 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
     }
   })
 
-  test('許容用語が使われている場合は問題にならない', () => {
-    assert.deepEqual(findAllowProblems(['\u6279\u5224と\u6279\u8a55'], list.error.filter((item) => item.word === BATCH)), [])
+  test('一覧の許容用語が全て使われている場合は問題にならない', () => {
+    const items = list.error.filter((item) => item.word === '版')
+    assert.equal(items.length, 1)
+    const allows = Object.keys(items[0].allow)
+    assert.ok(allows.length > 0)
+    assert.deepEqual(findAllowProblems([allows.join('と')], items), [])
   })
 })
 

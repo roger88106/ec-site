@@ -268,7 +268,7 @@ export function buildCommand(command, args) {
  * @param {'markdown' | 'diagram'} kind 入力の種類
  * @returns {number} 中身のある SVG の数
  */
-function countOutputs(work, stem, kind) {
+export function countOutputs(work, stem, kind) {
   const names = kind === 'markdown'
     ? readdirSync(work).filter((name) => name.startsWith(stem) && /^-\d+\.svg$/.test(name.slice(stem.length)))
     : [`${stem}.svg`].filter((name) => existsSync(path.join(work, name)))

@@ -22,9 +22,9 @@ describe('CI の検査の文書の表の検査', () => {
     assert.deepEqual(readTableChecks(DOC), ['ac-check', 'doc-refs'])
   })
 
-  test('表を探す節は、見出しの番号でなく名前で決める（番号つきでも、番号がなくても読み、名前の違う節の表は読まない）', () => {
-    const numbered = ['## 別の節', '| `x` | y |', '## 検査の一覧', '| `a` | b |', '## 次の節', '| `z` | y |'].join('\n')
-    assert.deepEqual(readTableChecks(numbered), ['a'])
+  test('表を探す節は、見出しの名前が「検査の一覧」と完全に一致する節だけで、名前の違う節の表は読まない', () => {
+    const sections = ['## 別の節', '| `x` | y |', '## 検査の一覧', '| `a` | b |', '## 次の節', '| `z` | y |'].join('\n')
+    assert.deepEqual(readTableChecks(sections), ['a'])
     assert.deepEqual(readTableChecks(['## 検査の一覧', '| `a` | b |'].join('\n')), ['a'])
     assert.deepEqual(readTableChecks(['## 検査の一覧s', '| `a` | b |'].join('\n')), [])
   })

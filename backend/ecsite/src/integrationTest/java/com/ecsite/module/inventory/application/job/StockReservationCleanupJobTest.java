@@ -124,6 +124,36 @@ class StockReservationCleanupJobTest {
         }
 
         @Test
+        @DisplayName("AC-284 期限からちょうど保存期間（1 日）の引当は、まだ消さない")
+        void keepsReservationAtRetention() {
+            // 準備：引当と、その期限からちょうど 1 日の時刻
+            var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
+            var holder = reserve(variant, EXPIRES_AT);
+            clock.setInstant(EXPIRES_AT.plus(Duration.ofDays(1)));
+
+            // 操作：片付けを動かす
+            job.cleanUp();
+
+            // 確認：引当が残る
+            assertThat(holdersWithReservations(List.of(holder))).containsExactly(holder);
+        }
+
+        @Test
+        @DisplayName("AC-284 期限から保存期間（1 日）を 1 マイクロ秒（DB の時刻の精度）でも過ぎた引当は消す")
+        void deletesReservationJustAfterRetention() {
+            // 準備：引当と、その期限から 1 日と 1 マイクロ秒の時刻
+            var variant = inventory.stockNewVariant(UUID.randomUUID(), 10);
+            var holder = reserve(variant, EXPIRES_AT);
+            clock.setInstant(EXPIRES_AT.plus(Duration.ofDays(1)).plus(Duration.ofNanos(1_000)));
+
+            // 操作：片付けを動かす
+            job.cleanUp();
+
+            // 確認：引当が消えている
+            assertThat(holdersWithReservations(List.of(holder))).isEmpty();
+        }
+
+        @Test
         @DisplayName("AC-288 消した件数をログに出す")
         void logsDeletedCount() {
             // 準備：保存期間を過ぎる引当

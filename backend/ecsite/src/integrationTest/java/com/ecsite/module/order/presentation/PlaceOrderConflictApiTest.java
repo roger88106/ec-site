@@ -128,6 +128,34 @@ class PlaceOrderConflictApiTest {
             fixture.place(checkoutId, CHANGED_TOTAL).andExpect(status().isCreated());
         }
 
+        @Test
+        @DisplayName("AC-89 下限の 0 円の確認した総額は、入力として受け付け、総額の変化を示す 409")
+        void acceptsZeroTotalAsInput() throws Exception {
+            // 準備：注文手続きを始める
+            var checkoutId = fixture.orders.startCheckout(fixture.cartId);
+
+            // 操作と確認：0 円は入力の誤りでなく、注文時点の総額と違うので 409
+            fixture.place(checkoutId, 0)
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.errorCode").value("TOTAL_AMOUNT_CHANGED"));
+        }
+
+        @Test
+        @DisplayName("AC-89 下限を 1 円下回る -1 円の確認した総額は、入力の誤りの 400 で総額の欄を示し、注文を作らない")
+        void rejectsNegativeTotal() throws Exception {
+            // 準備：注文手続きを始める
+            var checkoutId = fixture.orders.startCheckout(fixture.cartId);
+
+            // 操作と確認：-1 円は 400 で、確認した総額の欄を示す
+            fixture.place(checkoutId, -1)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("expectedTotal"));
+
+            // 確認：注文がない
+            fixture.expectNotPlaced(checkoutId);
+        }
+
         /**
          * 注文手続きを始めた後に、T シャツの税抜単価を変える。
          *

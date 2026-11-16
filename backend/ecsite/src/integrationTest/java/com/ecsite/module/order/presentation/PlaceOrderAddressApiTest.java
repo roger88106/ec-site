@@ -165,6 +165,71 @@ class PlaceOrderAddressApiTest {
     }
 
     @Nested
+    @DisplayName("氏名と住所の文字数の上限と下限")
+    class TextLength {
+
+        @Test
+        @DisplayName("AC-86 上限の 50 文字の氏名と 200 文字の住所で注文できる")
+        void acceptsMaxLengths() throws Exception {
+            // 操作と確認：50 文字の氏名と 200 文字の住所の注文は 201
+            fixture.placeWith(checkoutId, bodyWith("山".repeat(50), "千".repeat(200))).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("AC-86 上限を 1 文字超える 51 文字の氏名は、入力の誤りの 400 で氏名の欄を示し、注文を作らない")
+        void rejectsNameOverMax() throws Exception {
+            // 操作と確認：51 文字の氏名は 400 で、氏名の欄を示す
+            fixture.placeWith(checkoutId, bodyWith("山".repeat(51), "千代田 1-1"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.name"));
+
+            // 確認：注文がない
+            fixture.expectNotPlaced(checkoutId);
+        }
+
+        @Test
+        @DisplayName("AC-86 上限を 1 文字超える 201 文字の住所は、入力の誤りの 400 で住所の欄を示し、注文を作らない")
+        void rejectsAddressOverMax() throws Exception {
+            // 操作と確認：201 文字の住所は 400 で、住所の欄を示す
+            fixture.placeWith(checkoutId, bodyWith("山田 太郎", "千".repeat(201)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.address"));
+
+            // 確認：注文がない
+            fixture.expectNotPlaced(checkoutId);
+        }
+
+        @Test
+        @DisplayName("AC-86 下限の 1 文字の氏名と住所で注文できる")
+        void acceptsMinLengths() throws Exception {
+            // 操作と確認：1 文字の氏名と住所の注文は 201
+            fixture.placeWith(checkoutId, bodyWith("山", "千")).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("AC-86 下限を 1 文字下回る空の氏名は、入力の誤りの 400 で氏名の欄を示す")
+        void rejectsEmptyName() throws Exception {
+            // 操作と確認：空の氏名は 400 で、氏名の欄を示す
+            fixture.placeWith(checkoutId, bodyWith("", "千代田 1-1"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.name"));
+        }
+
+        @Test
+        @DisplayName("AC-86 下限を 1 文字下回る空の住所は、入力の誤りの 400 で住所の欄を示す")
+        void rejectsEmptyAddress() throws Exception {
+            // 操作と確認：空の住所は 400 で、住所の欄を示す
+            fixture.placeWith(checkoutId, bodyWith("山田 太郎", ""))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.address"));
+        }
+    }
+
+    @Nested
     @DisplayName("空白だけの氏名と住所")
     class Blank {
 

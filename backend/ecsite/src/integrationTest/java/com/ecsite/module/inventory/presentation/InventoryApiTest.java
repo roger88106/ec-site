@@ -267,6 +267,28 @@ class InventoryApiTest {
             adjust(variantId, 1, "OTHER", OTHER_MEMO).andExpect(status().isCreated());
         }
 
+        @Test
+        @DisplayName("AC-46 上限の 500 文字のメモで調整でき、メモが履歴に残る")
+        void acceptsMemoAtMax() throws Exception {
+            // 操作と確認：500 文字のメモの調整は 201 で、メモをそのまま返す
+            adjust(variantId, 1, "OTHER", "あ".repeat(500))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.memo").value("あ".repeat(500)));
+        }
+
+        @Test
+        @DisplayName("AC-46 上限を 1 文字超える 501 文字のメモは、入力の誤りの 400 で、在庫数は変わらない")
+        void rejectsMemoOverMax() throws Exception {
+            // 操作と確認：501 文字のメモの調整は 400 で、メモの欄を示す
+            adjust(variantId, 1, "OTHER", "あ".repeat(501))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("memo"));
+
+            // 確認：在庫数が 0 のまま
+            expectQuantity(mockMvc, variantId, 0);
+        }
+
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"ORDER", "ORDER_CANCELLATION"})
         @DisplayName("AC-107 注文に由来する理由は、運営者の調整では選べず 400")
@@ -347,6 +369,18 @@ class InventoryApiTest {
         void acceptsQuantityUpToOneMillion() throws Exception {
             // 操作と確認：在庫数 0 に上限ちょうどを加えると、調整後の在庫数が上限
             adjust(variantId, MANUAL_LIMIT, "ARRIVAL", null).andExpect(jsonPath("$.quantityAfter").value(MANUAL_LIMIT));
+        }
+
+        @Test
+        @DisplayName("AC-42 1 回の増減量は、下限の -1,000,000 ちょうどまで調整できる")
+        void acceptsDeltaAtNegativeLimit() throws Exception {
+            // 準備：在庫数を上限ちょうどにする
+            adjust(variantId, MANUAL_LIMIT, "ARRIVAL", null).andExpect(status().isCreated());
+
+            // 操作と確認：-1,000,000 の調整は 201 で、調整後の在庫数が 0
+            adjust(variantId, -MANUAL_LIMIT, "STOCKTAKE", null)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.quantityAfter").value(0));
         }
 
         @Test

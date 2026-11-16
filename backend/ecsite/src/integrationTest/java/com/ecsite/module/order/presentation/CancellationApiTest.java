@@ -392,6 +392,51 @@ class CancellationApiTest {
     }
 
     @Nested
+    @DisplayName("理由の文字数の上限")
+    class ReasonLength {
+
+        @Test
+        @DisplayName("AC-95 上限の 500 文字の理由で申請できる")
+        void acceptsRequestReasonAtMax() throws Exception {
+            // 操作と確認：500 文字の理由の申請は 204
+            request("あ".repeat(500)).andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("AC-95 上限を 1 文字超える 501 文字の理由の申請は、入力の誤りの 400 で、受付のまま")
+        void rejectsRequestReasonOverMax() throws Exception {
+            // 操作と確認：501 文字の理由の申請は 400 で、理由の欄を示す
+            request("あ".repeat(501))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("reason"));
+
+            // 確認：受付のまま
+            store().andExpect(jsonPath("$.status").value("ACCEPTED"));
+        }
+
+        @Test
+        @DisplayName("AC-103 運営者は、上限の 500 文字の理由でキャンセルできる")
+        void acceptsOperatorReasonAtMax() throws Exception {
+            // 操作と確認：500 文字の理由のキャンセルは 204
+            cancel("あ".repeat(500)).andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("AC-103 上限を 1 文字超える 501 文字の理由の運営者のキャンセルは、入力の誤りの 400 で、受付のまま")
+        void rejectsOperatorReasonOverMax() throws Exception {
+            // 操作と確認：501 文字の理由のキャンセルは 400 で、理由の欄を示す
+            cancel("あ".repeat(501))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("reason"));
+
+            // 確認：受付のまま
+            store().andExpect(jsonPath("$.status").value("ACCEPTED"));
+        }
+    }
+
+    @Nested
     @DisplayName("操作した運営者")
     class Operator {
 

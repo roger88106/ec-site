@@ -167,6 +167,34 @@ class CheckoutCleanupJobTest {
             // 確認：前者だけが消え、後者は残る
             assertThat(remaining(List.of(old, recent))).containsExactly(recent);
         }
+
+        @Test
+        @DisplayName("AC-284 期限からちょうど保存期間（1 日）の注文手続きは、まだ消さない")
+        void keepsCheckoutAtRetention() {
+            // 準備：今始めた注文手続きと、その期限からちょうど 1 日の時刻
+            var checkout = insertCheckout(NOW);
+            clock.setInstant(NOW.plus(TTL).plus(Duration.ofDays(1)));
+
+            // 操作：片付ける
+            job.cleanUp();
+
+            // 確認：注文手続きが残る
+            assertThat(remaining(List.of(checkout))).containsExactly(checkout);
+        }
+
+        @Test
+        @DisplayName("AC-284 期限から保存期間（1 日）を 1 マイクロ秒（DB の時刻の精度）でも過ぎた注文手続きは消す")
+        void deletesCheckoutJustAfterRetention() {
+            // 準備：今始めた注文手続きと、その期限から 1 日と 1 マイクロ秒の時刻
+            var checkout = insertCheckout(NOW);
+            clock.setInstant(NOW.plus(TTL).plus(Duration.ofDays(1)).plus(Duration.ofNanos(1_000)));
+
+            // 操作：片付ける
+            job.cleanUp();
+
+            // 確認：注文手続きが消えている
+            assertThat(remaining(List.of(checkout))).isEmpty();
+        }
     }
 
     @Nested

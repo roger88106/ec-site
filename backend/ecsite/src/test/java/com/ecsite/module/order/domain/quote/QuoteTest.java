@@ -90,7 +90,7 @@ class QuoteTest {
         @Test
         @DisplayName("BR-7 品目の小計は、税込単価 × 数量")
         void subtotalIsUnitPriceTimesQuantity() {
-            // 準備：シャツ 2 枚の品目
+            // 操作：シャツ 2 枚の品目を作る
             var shirt = item(variant(SHIRT_PRICE_EXCL_TAX, true, false), 2, 10, STANDARD);
 
             // 確認（前提）：税込単価が 1,980 円

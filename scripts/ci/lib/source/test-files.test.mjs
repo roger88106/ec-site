@@ -19,7 +19,7 @@ describe('テストのファイルの種類', () => {
     for (const [file, kind] of cases) assert.equal(testFileKind(file), kind, file)
   })
 
-  test('findTestFiles は、選んだファイルを絶対パスと種類にして、順を保つ', () => {
+  test('選んだテストのファイルを、絶対パスと種類にして、順を保って返す', () => {
     const files = ['backend/ecsite/src/test/java/a/ATest.java', 'frontend/store/src/e.ts', 'frontend/store/src/a.test.ts']
     assert.deepEqual(
       findTestFiles('/r', files).map((entry) => [path.relative('/r', entry.file).split(path.sep).join('/'), entry.kind]),
@@ -31,8 +31,11 @@ describe('テストのファイルの種類', () => {
   })
 })
 
-describe('テストの関数の読み方', () => {
-  test('readTsTests は、skip・fixme のテストとまとまりの中のテストに skipped を付けて、全て返す', () => {
+describe('TypeScript のテストの読み方', () => {
+  /** 読めたテストの名前と、実行されないか */
+  const namesAndSkipped = (source) => readTsTests(source).map(({ name, skipped }) => [name, skipped])
+
+  test('skip・fixme のテストと、まとまりの中のテストを、実行されないものとして全て返す', () => {
     const source = [
       "it('通常', () => {})",
       "test.skip('飛ばす', () => {})",
@@ -43,26 +46,25 @@ describe('テストの関数の読み方', () => {
       "/re/.test('x')",
       "test.describe('グループ', () => { test.only('中の通常', () => {}) })",
     ].join('\n')
-    assert.deepEqual(
-      readTsTests(source).map(({ name, skipped }) => [name, skipped]),
-      [
-        ['通常', false],
-        ['飛ばす', true],
-        ['保留', true],
-        ['中', true],
-        ['中の通常', false],
-      ],
-    )
+    assert.deepEqual(namesAndSkipped(source), [
+      ['通常', false],
+      ['飛ばす', true],
+      ['保留', true],
+      ['中', true],
+      ['中の通常', false],
+    ])
   })
 
-  test('extractTestNames の java は、注釈と修飾子が重なる形でも指数的に遅くならない', () => {
-    const source = `@DisplayName("a")@${'.final @'.repeat(40)}`
-    const start = Date.now()
-    assert.deepEqual(extractTestNames(source, 'java'), ['a'])
-    assert.ok(Date.now() - start < 1000)
+  test('xdescribe と test.describe.fixme のまとまりの中のテストも、実行されないものにする', () => {
+    const source = ["xdescribe('a', () => {", "  it('中 1', () => {})", '})', "test.describe.fixme('b', () => {", "  test('中 2', () => {})", '})', "test('外', () => {})"].join('\n')
+    assert.deepEqual(namesAndSkipped(source), [
+      ['中 1', true],
+      ['中 2', true],
+      ['外', false],
+    ])
   })
 
-  test('extractTestNames の ts は、skipped のテストを除いた名前を返す', () => {
+  test('実行されるテストの名前だけを取り出す', () => {
     const source = "it('a', () => {})\ntest.skip('b', () => {})\ntest.each([1])('c %s', () => {})"
     assert.deepEqual(extractTestNames(source, 'ts'), ['a', 'c %s'])
   })
@@ -79,34 +81,18 @@ describe('テストの関数の読み方', () => {
       "`('AC-5 テンプレートの表 $a', () => {})",
       "test.skip.each([[f(1)]])('AC-6 飛ばす', () => {})",
     ].join('\n')
-    assert.deepEqual(
-      readTsTests(source).map(({ name, skipped }) => [name, skipped]),
-      [
-        ['AC-1 関数 %s', false],
-        ['AC-2 入れ子 %s', false],
-        ['AC-3 文字列 %s', false],
-        ['AC-4 正規表現 %s', false],
-        ['AC-5 テンプレートの表 $a', false],
-        ['AC-6 飛ばす', true],
-      ],
-    )
+    assert.deepEqual(namesAndSkipped(source), [
+      ['AC-1 関数 %s', false],
+      ['AC-2 入れ子 %s', false],
+      ['AC-3 文字列 %s', false],
+      ['AC-4 正規表現 %s', false],
+      ['AC-5 テンプレートの表 $a', false],
+      ['AC-6 飛ばす', true],
+    ])
     assert.deepEqual(scanTsTests(source).unreadable, [])
   })
 
-  test('scanTsTests の unreadable は、名前が文字列でない呼び出しと、括弧が閉じない呼び出しを、位置と理由で返す', () => {
-    const source = ['test(name, () => {})', 'it.each([[1]])(title, () => {})', 'test.each([[1, 2]', "test('閉じない名前"].join('\n')
-    const problems = scanTsTests(source).unreadable
-    assert.deepEqual(
-      problems.map(({ index }) => index),
-      [0, source.indexOf('it.each'), source.indexOf('test.each'), source.indexOf("test('閉")],
-    )
-    assert.match(problems[0].reason, /テスト名/)
-    assert.match(problems[1].reason, /テスト名/)
-    assert.match(problems[2].reason, /括弧/)
-    assert.match(problems[3].reason, /テスト名/)
-  })
-
-  test('readTsTests は、test.for と skipIf・runIf・sequential・fails・todo の付いた呼び出しを読む', () => {
+  test('test.for と skipIf・runIf・sequential・fails・todo の付いた呼び出しを読む', () => {
     const source = [
       "test.for([[1, 2]])('AC-1 表', () => {})",
       "test.skipIf(isCi)('AC-2 条件で飛ばす', () => {})",
@@ -115,43 +101,14 @@ describe('テストの関数の読み方', () => {
       "test.fails('AC-5 失敗する', () => {})",
       "it.todo('AC-6 後で')",
     ].join('\n')
-    assert.deepEqual(
-      readTsTests(source).map(({ name, skipped }) => [name, skipped]),
-      [
-        ['AC-1 表', false],
-        ['AC-2 条件で飛ばす', false],
-        ['AC-3 条件で実行', false],
-        ['AC-4 順に', false],
-        ['AC-5 失敗する', false],
-        ['AC-6 後で', true],
-      ],
-    )
-    assert.deepEqual(scanTsTests(source).unreadable, [])
-  })
-
-  test('scanTsTests の unreadable は、知らない修飾の付いた test・it の呼び出しを失敗にする', () => {
-    const source = "test.shuffle('AC-1 知らない', () => {})\nit.unknown.only('AC-2 知らない', () => {})"
-    const problems = scanTsTests(source).unreadable
-    assert.deepEqual(
-      problems.map(({ index }) => index),
-      [0, source.indexOf('it.unknown')],
-    )
-    assert.match(problems[0].reason, /修飾/)
-  })
-
-  test('scanTsTests の unreadable は、テストの宣言でない呼び出しを失敗にしない', () => {
-    const source = [
-      "test.describe('まとまり', () => {})",
-      'test.use({ locale: "ja" })',
-      'test.step(name, async () => {})',
-      "test.skip(browserName === 'webkit', '理由')",
-      'test.fixme()',
-      'test.setTimeout(10)',
-      'expect(/re/.test(name)).toBe(true)',
-      'pattern.test(name)',
-      '// test(name) はコメント',
-      "const text = 'test(name)'",
-    ].join('\n')
+    assert.deepEqual(namesAndSkipped(source), [
+      ['AC-1 表', false],
+      ['AC-2 条件で飛ばす', false],
+      ['AC-3 条件で実行', false],
+      ['AC-4 順に', false],
+      ['AC-5 失敗する', false],
+      ['AC-6 後で', true],
+    ])
     assert.deepEqual(scanTsTests(source).unreadable, [])
   })
 
@@ -179,27 +136,7 @@ describe('テストの関数の読み方', () => {
     assert.deepEqual(scanTsTests(source).unreadable, [])
   })
 
-  test('each の表の後に、名前の括弧が続かない呼び出しは、読めない呼び出しにする', () => {
-    const source = 'test.each([[1]])`AC-1 名前`'
-    assert.deepEqual(readTsTests(source), [])
-    assert.deepEqual(
-      scanTsTests(source).unreadable.map(({ index }) => index),
-      [0],
-    )
-  })
-
-  test('java は、コメントの中の @DisplayName をテスト名に数えない', () => {
-    const source = [
-      '  // @DisplayName("AC-1 行コメント")',
-      '  /* @DisplayName("AC-2 ブロック") */',
-      '  /** @DisplayName("AC-3 Javadoc") */',
-      '  @DisplayName("AC-4 生きている")',
-      '  void a() {}',
-    ].join('\n')
-    assert.deepEqual(extractTestNames(source, 'java'), ['AC-4 生きている'])
-  })
-
-  test('skip のまとまりの呼び出しがコメントや文字列の中にあっても、後ろのテストを skipped にしない', () => {
+  test('skip のまとまりの呼び出しがコメントや文字列の中にあっても、後ろのテストを実行されないものにしない', () => {
     const source = ['// describe.skip(', "const s = 'describe.skip('", "test('AC-1 a', () => {})", '/* xdescribe( */', "test('AC-2 b', () => {})"].join('\n')
     assert.deepEqual(
       readTsTests(source).map(({ skipped }) => skipped),
@@ -215,7 +152,7 @@ describe('テストの関数の読み方', () => {
     )
   })
 
-  test('scanTsTests は、1 回の走査でテストと読めない呼び出しを返す', () => {
+  test('1 回の走査で、読めたテストと読めない呼び出しを両方返す', () => {
     const source = ["test('AC-1 a', () => {})", 'test(name, () => {})'].join('\n')
     const { tests, unreadable } = scanTsTests(source)
     assert.deepEqual(
@@ -224,9 +161,97 @@ describe('テストの関数の読み方', () => {
     )
     assert.equal(unreadable.length, 1)
   })
+})
 
-  test('extractTestNames の java は、メソッドの @DisplayName を読み、クラスの名前を読まない', () => {
+describe('TypeScript の読めない呼び出し', () => {
+  /** 読めない呼び出しの位置と理由 */
+  const unreadable = (source) => scanTsTests(source).unreadable.map(({ index, reason }) => [index, reason])
+
+  test('名前が文字列でない呼び出しと、括弧が閉じない呼び出しを、位置と理由で返す', () => {
+    const source = ['test(name, () => {})', 'it.each([[1]])(title, () => {})', 'test.each([[1, 2]', "test('閉じない名前"].join('\n')
+    const problems = scanTsTests(source).unreadable
+    assert.deepEqual(
+      problems.map(({ index }) => index),
+      [0, source.indexOf('it.each'), source.indexOf('test.each'), source.indexOf("test('閉")],
+    )
+    assert.match(problems[0].reason, /テスト名/)
+    assert.match(problems[1].reason, /テスト名/)
+    assert.match(problems[2].reason, /括弧/)
+    assert.match(problems[3].reason, /テスト名/)
+  })
+
+  test('条件の修飾の後に括弧がないか、括弧が閉じない呼び出しは、理由を添えて返す', () => {
+    assert.deepEqual(unreadable("test.skipIf.only('a', () => {})"), [[0, 'skipIf の条件の括弧がない']])
+    assert.deepEqual(unreadable('test.runIf(isCi'), [[0, 'runIf の条件の括弧が閉じない']])
+  })
+
+  test('each の表のテンプレートと、テスト名のテンプレートが閉じない呼び出しは、理由を添えて返す', () => {
+    assert.deepEqual(unreadable('test.each`a | b'), [[0, 'each の表のテンプレートが閉じない']])
+    assert.deepEqual(unreadable('test(`名前'), [[0, 'テスト名のテンプレートが閉じない']])
+  })
+
+  test('each の後に表がない呼び出しは、テストでも読めない呼び出しでもない', () => {
+    const source = "test.each.only('a', () => {})"
+    assert.deepEqual(scanTsTests(source), { tests: [], unreadable: [] })
+  })
+
+  test('知らない修飾の付いた test・it の呼び出しを、読めない呼び出しにする', () => {
+    const source = "test.shuffle('AC-1 知らない', () => {})\nit.unknown.only('AC-2 知らない', () => {})"
+    const problems = scanTsTests(source).unreadable
+    assert.deepEqual(
+      problems.map(({ index }) => index),
+      [0, source.indexOf('it.unknown')],
+    )
+    assert.match(problems[0].reason, /修飾/)
+  })
+
+  test('テストの宣言でない呼び出しは、読めない呼び出しにしない', () => {
+    const source = [
+      "test.describe('まとまり', () => {})",
+      'test.use({ locale: "ja" })',
+      'test.step(name, async () => {})',
+      "test.skip(browserName === 'webkit', '理由')",
+      'test.fixme()',
+      'test.setTimeout(10)',
+      'expect(/re/.test(name)).toBe(true)',
+      'pattern.test(name)',
+      '// test(name) はコメント',
+      "const text = 'test(name)'",
+    ].join('\n')
+    assert.deepEqual(scanTsTests(source).unreadable, [])
+  })
+
+  test('each の表の後に、名前の括弧が続かない呼び出しは、読めない呼び出しにする', () => {
+    const source = 'test.each([[1]])`AC-1 名前`'
+    assert.deepEqual(readTsTests(source), [])
+    assert.deepEqual(
+      scanTsTests(source).unreadable.map(({ index }) => index),
+      [0],
+    )
+  })
+})
+
+describe('Java のテストの読み方', () => {
+  test('メソッドの @DisplayName を読み、クラスの名前を読まない', () => {
     const source = ['@DisplayName("まとまり")', 'class A {', '  @Test', '  @DisplayName("AC-1 通る")', '  void a() {}', '}'].join('\n')
     assert.deepEqual(extractTestNames(source, 'java'), ['AC-1 通る'])
+  })
+
+  test('コメントの中の @DisplayName をテスト名に数えない', () => {
+    const source = [
+      '  // @DisplayName("AC-1 行コメント")',
+      '  /* @DisplayName("AC-2 ブロック") */',
+      '  /** @DisplayName("AC-3 Javadoc") */',
+      '  @DisplayName("AC-4 生きている")',
+      '  void a() {}',
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'java'), ['AC-4 生きている'])
+  })
+
+  test('注釈と修飾子が重なる形でも、指数的に遅くならない', () => {
+    const source = `@DisplayName("a")@${'.final @'.repeat(40)}`
+    const start = Date.now()
+    assert.deepEqual(extractTestNames(source, 'java'), ['a'])
+    assert.ok(Date.now() - start < 1000)
   })
 })

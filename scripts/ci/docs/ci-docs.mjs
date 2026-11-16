@@ -90,7 +90,8 @@ export function compareChecks(tableNames, checkNames) {
   for (const name of table) {
     if (!checks.has(name)) problems.push(`検査のない表の行：${name}（${CHECK_DIR} の検査のフォルダの直下に ${name}.mjs がない）`)
   }
-  if (table.size !== tableNames.length) problems.push('表に同じ名前の行が 2 つ以上ある')
+  const duplicates = [...new Set(tableNames.filter((name, index) => tableNames.indexOf(name) !== index))]
+  for (const name of duplicates) problems.push(`表に同じ名前の行が 2 つ以上ある：${name}`)
   return problems
 }
 

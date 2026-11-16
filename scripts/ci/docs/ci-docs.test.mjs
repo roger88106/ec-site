@@ -61,7 +61,10 @@ describe('CI の検査の文書の表の検査', () => {
   })
 
   test('表に同じ名前が 2 回あれば失敗にする', () => {
-    assert.equal(compareChecks(['a', 'a'], ['a']).length, 1)
+    const problems = compareChecks(['a', 'a', 'a', 'b', 'b'], ['a', 'b'])
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /同じ名前の行.*：a$/)
+    assert.match(problems[1], /同じ名前の行.*：b$/)
   })
 
   test('名前の形（| `名前` |）でない行は名前として数えない（その検査は「表にない検査」になる）', () => {

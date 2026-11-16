@@ -129,8 +129,8 @@ if (import.meta.main) {
   let listed
   try {
     listed = readPolicyPluginIds(JSON.parse(readFileSync(POLICY_FILE, 'utf8')))
-  } catch (error) {
-    console.log(error.message)
+  } catch (e) {
+    console.log(e.message)
     process.exit(1)
   }
   const problems = [...unknownLines, ...findPluginProblems(used, listed)]

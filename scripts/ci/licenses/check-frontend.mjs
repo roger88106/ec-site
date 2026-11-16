@@ -142,11 +142,11 @@ export function evaluate(expression, name, policy) {
       return syntaxError(`${tokens[position]?.id ?? tokens[position]} の位置が正しくない`)
     }
     return result
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return { ok: false, reason: `解析できないライセンスの式（${expression.trim() || '空'}）：${error.message}` }
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      return { ok: false, reason: `解析できないライセンスの式（${expression.trim() || '空'}）：${e.message}` }
     }
-    throw error
+    throw e
   }
 }
 

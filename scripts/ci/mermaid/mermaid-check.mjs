@@ -298,8 +298,8 @@ function createRenderer(work, config) {
       // Windows の npx は npx.cmd で、shell を通さないと起動できない。引用符で囲んだ 1 つのコマンドにして、空白のあるパスが 1 つの引数になるようにする
       if (process.platform === 'win32') execSync(buildCommand('npx', args), options)
       else execFileSync('npx', args, options)
-    } catch (error) {
-      return { error: describeFailure(error), outputs: 0 }
+    } catch (e) {
+      return { error: describeFailure(e), outputs: 0 }
     }
     return { error: null, outputs: countOutputs(work, stem, kind) }
   }

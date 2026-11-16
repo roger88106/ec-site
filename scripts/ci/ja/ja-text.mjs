@@ -158,8 +158,8 @@ export function findPatternProblems(terms) {
     }
     try {
       patternRegExp(term)
-    } catch (error) {
-      problems.push(`${name}：正規表現として不正：${error.message}`)
+    } catch (e) {
+      problems.push(`${name}：正規表現として不正：${e.message}`)
       continue
     }
     const { hit, miss } = term.examples ?? {}

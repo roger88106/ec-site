@@ -46,17 +46,6 @@ export function findChangedMigrations(files, readBase, readNow) {
 }
 
 /**
- * マイグレーションが 1 件もないときの失敗の理由を返す。文は他の検査と同じ共通の関数（emptyListReason）で作り、置き場所を添える。
- *
- * @param {string[]} files 今あるバージョン付きのマイグレーション
- * @param {string} dir マイグレーションの置き場所
- * @returns {string | null} 0 件なら失敗の理由、あれば null
- */
-export function migrationsEmptyReason(files, dir) {
-  return emptyListReason(files, `マイグレーション（${dir}）`)
-}
-
-/**
  * 基準にあって、今はないマイグレーション（削除と改名。改名は古い名前が消える）を返す。
  *
  * @param {Iterable<string>} baseFiles 基準にあるマイグレーション
@@ -120,7 +109,7 @@ if (import.meta.main) {
   // 今の index（commit の前の hook では次の commit。ステージした削除・改名・変更を含む）
   const current = parseBlobList(git(['ls-files', '-s', '-z', '--', MIGRATIONS]), 1)
   const files = [...current.keys()].filter(isVersionedMigration)
-  const emptyReason = migrationsEmptyReason(files, MIGRATIONS)
+  const emptyReason = emptyListReason(files, `マイグレーション（${MIGRATIONS}）`)
   if (emptyReason) {
     console.log(emptyReason)
     process.exit(1)

@@ -332,6 +332,22 @@ const LABEL = /^[^\s：:、。（）()]{1,24}：\s*\S/
 /** 日本語の字（かな・漢字）。コメントで日本語の字のない行は、コードや型、コマンドの例として、前後の行とつながない */
 const JAPANESE = /[ぁ-んァ-ヶ一-龠]/
 
+/** ひらがな。かなを含む文だけを、文体を測る文にする */
+const KANA = /[ぁ-ん]/
+
+/** 表の区切りの行（`|---|:--:|` など。`-` を 1 つ以上含む） */
+const TABLE_SEPARATOR = /^\s*\|?[\s:|-]+\|?\s*$/
+
+/**
+ * 表の区切りの行かを返す。
+ *
+ * @param {string} line 行
+ * @returns {boolean} 区切りの行なら true
+ */
+function isTableSeparator(line) {
+  return TABLE_SEPARATOR.test(line) && line.includes('-')
+}
+
 /** テスト名の行（commentText では、名前の文字列が引用符から始まる） */
 const TEST_NAME = /^\s*['"`]/
 
@@ -403,7 +419,7 @@ function proseSentences(text, kind = 'markdown', trailing = new Set()) {
   const flush = () => {
     const joined = joinPieces(pending.map((piece) => piece.text))
     const sentence = kind === 'code' ? withoutTagType(joined) : joined
-    if (/[ぁ-ん]/.test(sentence)) {
+    if (KANA.test(sentence)) {
       const lines = [...new Set(pending.map((piece) => piece.line))]
       result.push({ line: lines[0], lines, sentence })
     }
@@ -448,7 +464,7 @@ function proseSentences(text, kind = 'markdown', trailing = new Set()) {
     const plain = plainLine(raw)
     const body = plain.trim()
     // 空行（code ではコメントでない行も空になる）、罫線、表の区切りの行は、段落の境目
-    if (!body || RULE_LINE.test(body) || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) {
+    if (!body || RULE_LINE.test(body) || isTableSeparator(raw)) {
       flush()
       itemIndent = null
       return
@@ -544,12 +560,12 @@ function proseCells(text) {
   const result = []
   const inCode = codeBlockLines(text)
   text.split('\n').forEach((raw, index) => {
-    if (inCode[index] || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) return
+    if (inCode[index] || isTableSeparator(raw)) return
     const plain = plainLine(raw)
     const table = plain.trimStart().startsWith('|')
     const cells = table ? plain.split('|') : [plain]
     for (const cell of cells) {
-      const sentences = cell.split('。').filter((sentence) => /[ぁ-ん]/.test(sentence)).map((sentence) => sentence.trim())
+      const sentences = cell.split('。').filter((sentence) => KANA.test(sentence)).map((sentence) => sentence.trim())
       result.push({ line: index + 1, table, sentences })
     }
   })

@@ -2,6 +2,7 @@ package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
+import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
@@ -46,6 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -95,6 +97,11 @@ class JooqOrderRepositoryTest {
      * 申請を承認した日時（注文の 2 時間後）
      */
     private static final Instant DECIDED_AT = ORDERED_AT.plusSeconds(7200);
+
+    /**
+     * 上限の 500 文字の理由（絵文字のサロゲートペアを含む）
+     */
+    private static final String MAX_REASON = "理由😀".repeat(166) + "理由";
 
     // ============================== Bean ==============================
 
@@ -290,6 +297,90 @@ class JooqOrderRepositoryTest {
 
             // 確認：キャンセルで、申請の承認とキャンセルの記録が残る
             assertApprovedCancellation(repository.findById(orderId).orElseThrow().toSnapshot(), operator);
+        }
+
+        @Test
+        @DisplayName("同じバージョンを読んだ注文を 2 回更新すると、2 回目は同時の更新のエラーで、状態とイベントを変えない")
+        void rejectsStaleVersion() {
+            // 準備：保存した注文を 2 つの写しで読み、どちらも受付にして、1 つ目を更新する
+            var order = order(UUID.randomUUID(), orderNumber());
+            repository.insert(order);
+            var first = repository.findById(order.id()).orElseThrow();
+            var stale = repository.findById(order.id()).orElseThrow();
+            first.acceptPayment(ACCEPTED_AT);
+            stale.acceptPayment(ACCEPTED_AT);
+            repository.update(first);
+
+            // 操作と確認：古いバージョンの写しの更新は、業務のエラー CONCURRENT_MODIFICATION で拒否される
+            assertBusinessError(() -> repository.update(stale), CommonErrorCode.CONCURRENT_MODIFICATION);
+
+            // 確認：バージョンは 1 回目の更新の 1 のままで、イベントは保存と 1 回目の更新の 2 件だけ
+            assertThat(repository.findById(order.id()).orElseThrow().version()).isEqualTo(1);
+            assertThat(events.stream(OrderStatusChanged.class).filter(event -> event.orderId().equals(order.id()))).hasSize(2);
+        }
+    }
+
+    @Nested
+    @DisplayName("上限の値")
+    class MaxValues {
+
+        @Test
+        @DisplayName("domain の上限の値（氏名・住所・メールアドレス・年齢・数量・単価）の注文を、そのまま保存して再構築できる")
+        void savesMaxValues() {
+            // 準備：各項目が domain の上限の注文
+            var order = maxOrder();
+            var expected = order.toSnapshot();
+
+            // 操作：保存する
+            assertThat(repository.insert(order)).isTrue();
+
+            // 確認：読み直した注文の写しが、保存の前と同じ
+            assertThat(repository.findById(order.id()).orElseThrow().toSnapshot()).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("上限の 500 文字の申請と運営者のキャンセルの理由と、255 文字の運営者名を、そのまま更新して再構築できる")
+        void updatesMaxReasons() {
+            // 準備：上限の注文を受付にし、500 文字の理由で申請し、500 文字の理由と 255 文字の名前の運営者がキャンセルする
+            var order = maxOrder();
+            repository.insert(order);
+            var loaded = repository.findById(order.id()).orElseThrow();
+            loaded.acceptPayment(ACCEPTED_AT);
+            repository.update(loaded);
+            var requested = repository.findById(order.id()).orElseThrow();
+            requested.requestCancellation(MAX_REASON, REQUESTED_AT);
+            repository.update(requested);
+            var cancelled = repository.findById(order.id()).orElseThrow();
+            cancelled.cancelByOperator(MAX_REASON, true, false, new Operator(UUID.randomUUID(), "管".repeat(255)), DECIDED_AT);
+            var expected = cancelled.toSnapshot();
+
+            // 操作：更新する
+            repository.update(cancelled);
+
+            // 確認：読み直した注文の写しが、バージョンの他は更新の前と同じ
+            assertThat(repository.findById(order.id()).orElseThrow().toSnapshot())
+                    .usingRecursiveComparison().ignoringFields("version").isEqualTo(expected);
+        }
+
+        /**
+         * 各項目が domain の上限の注文を作る。
+         *
+         * <p>氏名は絵文字（サロゲートペア）を含む 50 文字、住所は 200 文字、メールアドレスは 254 文字、年齢は 120 歳。
+         * 明細は、税抜単価 9,999,999 円（税込 10,999,998 円）を数量 10 個。
+         *
+         * @return 注文（支払待ち）
+         */
+        private Order maxOrder() {
+            var variant = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "MAX-1", "MAX-1-1", "高価な商品", List.of(),
+                    Money.of(9_999_999), UUID.randomUUID(), null, true, false);
+            var item = QuoteItem.of(variant, 10, 10, BigDecimal.TEN, Money.of(10_999_998));
+            var amounts = new Amounts(Money.of(109_999_980), Money.of(1000), Money.of(110_000_980), List.of(
+                    new TaxAmount(BigDecimal.TEN, Money.of(110_000_980), Money.of(10_000_089))));
+            var email = "a".repeat(254 - "@example.com".length()) + "@example.com";
+            return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber()), UUID.randomUUID(), UUID.randomUUID(), ORDERED_AT,
+                    new Quote(List.of(item), amounts, true), email,
+                    ShippingAddress.of("山田" + "😀".repeat(48), "100-0001", TestAreas.CHIYODA, "千".repeat(200), "03-1234-5678"),
+                    new BuyerProfile(120, Gender.OTHER));
         }
     }
 

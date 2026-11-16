@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertStatusChangedEventOnly;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -88,6 +89,20 @@ class OrderCancellationTest {
             // 確認：判断を待つ申請
             assertThat(order.cancellationRequest())
                     .isEqualTo(new CancellationRequest(LATER, REQUEST_REASON, Result.PENDING, null, null));
+        }
+
+        @Test
+        @DisplayName("AC-95 申請すると、「受付 → キャンセル申請中」の状態の変化のイベントが登録される")
+        void registersRequestedEvent() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：申請する
+            order.requestCancellation(REQUEST_REASON, LATER);
+
+            // 確認：受付からキャンセル申請中へのイベントだけで、キャンセルの項目を持たない
+            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.ACCEPTED,
+                    OrderStatusChanged.Status.CANCELLATION_REQUESTED, null, null);
         }
 
         @Test
@@ -236,6 +251,20 @@ class OrderCancellationTest {
         }
 
         @Test
+        @DisplayName("AC-101 承認のイベントは、前の状態がキャンセル申請中で、種類が申請の承認で、在庫に戻す")
+        void registersApprovedEvent() {
+            // 準備：キャンセル申請中の注文
+            var order = requestedOrder();
+
+            // 操作：承認する
+            order.approveCancellation(OPERATOR, LATER);
+
+            // 確認：イベントの前の状態・種類・在庫に戻すか
+            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
+                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.REQUEST_APPROVED, true);
+        }
+
+        @Test
         @DisplayName("AC-105 キャンセル済みの注文の承認は、成功し、キャンセルの記録を変えない")
         void ignoresApprovalOfCancelledOrder() {
             // 準備：承認でキャンセルになった注文
@@ -304,6 +333,20 @@ class OrderCancellationTest {
         }
 
         @Test
+        @DisplayName("AC-102 却下すると、「キャンセル申請中 → 受付」の状態の変化のイベントが登録される")
+        void registersRejectedEvent() {
+            // 準備：キャンセル申請中の注文
+            var order = requestedOrder();
+
+            // 操作：却下する
+            order.rejectCancellation(OPERATOR, LATER);
+
+            // 確認：キャンセル申請中から受付へのイベントだけで、キャンセルの項目を持たない
+            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
+                    OrderStatusChanged.Status.ACCEPTED, null, null);
+        }
+
+        @Test
         @DisplayName("AC-105 キャンセル済みの注文の申請は、却下できない")
         void rejectsRejectionOfCancelledOrder() {
             // 準備：承認でキャンセルになった注文
@@ -363,6 +406,34 @@ class OrderCancellationTest {
 
             // 確認：キャンセルへの状態の変化のイベントだけ
             assertCancelledEventOnly(order);
+        }
+
+        @Test
+        @DisplayName("AC-103 運営者のキャンセルのイベントは、前の状態が受付で、種類が運営者で、在庫に戻す")
+        void registersOperatorEvent() {
+            // 準備：受付の注文
+            var order = acceptedOrder();
+
+            // 操作：在庫に戻さない指定でキャンセルする（出荷前は指定によらず戻す）
+            order.cancelByOperator(OPERATOR_REASON, false, false, OPERATOR, LATER);
+
+            // 確認：イベントの前の状態・種類・在庫に戻すか
+            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.ACCEPTED,
+                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
+        }
+
+        @Test
+        @DisplayName("AC-103 「キャンセル申請中」の注文を運営者がキャンセルしたイベントは、前の状態がキャンセル申請中で、種類が運営者")
+        void registersOperatorEventFromRequested() {
+            // 準備：キャンセル申請中の注文
+            var order = requestedOrder();
+
+            // 操作：理由を記録してキャンセルする
+            order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
+
+            // 確認：イベントの前の状態・種類・在庫に戻すか
+            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
+                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
         }
 
         @Test

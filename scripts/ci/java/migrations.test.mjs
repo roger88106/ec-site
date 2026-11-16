@@ -97,7 +97,7 @@ describe('develop・main との分岐点の tree を基準にした判定（一�
     commit('V1')
     if (developRef) git('update-ref', developRef, 'HEAD')
     git('checkout', '-q', '-b', 'feature')
-    const run = () => spawnSync('node', [script], { cwd: repo, env, encoding: 'utf8' })
+    const run = () => spawnSync(process.execPath, [script], { cwd: repo, env, encoding: 'utf8' })
     return { git, write, commit, run, remove: (name) => rmSync(path.join(repo, dir, name)) }
   }
 

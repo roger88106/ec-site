@@ -1,5 +1,4 @@
 // bash のコマンドの全文を、コマンドごとの語に分ける（引用符、`$(…)`、バッククォート、ヒアドキュメント、リダイレクトを読む）。
-// シェルが展開する部分を含む語には、EXPANDED_WORDS で印を付ける（gh の判定が、値を読めない語として扱うため）。
 
 /**
  * ヒアドキュメントの本文を読み飛ばす。
@@ -42,17 +41,6 @@ export function splitCommands(command) {
 }
 
 /**
- * splitCommands が返したコマンドの語の並びごとの、シェルが展開する部分（変数、`$(…)`、バッククォート）を含む語。
- * 引用符を外した語では、単一引用符の中の `$` と区別できないので、語を読むときに記録する。
- *
- * @type {WeakMap<string[], Set<string>>}
- */
-export const EXPANDED_WORDS = new WeakMap()
-
-/** 引用符の外と二重引用符の中で、`$` の次にあれば変数の展開（算術式の `$((` を含む）になる文字 */
-const EXPANSION_START = /^[A-Za-z_0-9{@*#?$!(-]/
-
-/**
  * コマンドの文字列を、`start` から、`closer` で閉じるまで（なければ終わりまで）読み、コマンドを `commands` に加える。
  *
  * @param {string} command コマンドの全文
@@ -66,9 +54,6 @@ function tokenize(command, start, closer, commands) {
   let words = []
   let word = ''
   let inWord = false
-  // 今の語が、シェルが展開する部分を含むか
-  let expanded = false
-  let expandedWords = new Set()
   let dropNextWord = false
   let heredocs = []
   // 括弧（サブシェル）の深さ。$( の中では、深さが 0 の ) で閉じる
@@ -81,35 +66,20 @@ function tokenize(command, start, closer, commands) {
     const end = tokenize(command, at, inner, commands)
     word += inner === ')' ? '$(…)' : '`…`'
     inWord = true
-    expanded = true
     return end + 1
-  }
-  /** `$` を語に加え、変数の展開なら記録する */
-  const addDollar = (at) => {
-    if (EXPANSION_START.test(command[at + 1] ?? '')) expanded = true
-    word += '$'
   }
   const endWord = () => {
     if (!inWord) return
-    if (dropNextWord) {
-      dropNextWord = false
-    } else {
-      words.push(word)
-      if (expanded) expandedWords.add(word)
-    }
+    if (dropNextWord) dropNextWord = false
+    else words.push(word)
     word = ''
     inWord = false
-    expanded = false
   }
   const endCommand = () => {
     endWord()
     dropNextWord = false
-    if (words.length > 0) {
-      if (expandedWords.size > 0) EXPANDED_WORDS.set(words, expandedWords)
-      commands.push(words)
-    }
+    if (words.length > 0) commands.push(words)
     words = []
-    expandedWords = new Set()
   }
   // 1 文字ずつ、引用符・区切り・リダイレクト・ヒアドキュメントを見分けて語を作る
   while (i < n) {
@@ -137,9 +107,6 @@ function tokenize(command, start, closer, commands) {
           i = substitute(i + 2, ')')
         } else if (command[i] === '`') {
           i = substitute(i + 1, '`')
-        } else if (command[i] === '$') {
-          addDollar(i)
-          i++
         } else {
           word += command[i]
           i++
@@ -182,7 +149,6 @@ function tokenize(command, start, closer, commands) {
       if (inWord && /^\d+$/.test(word)) {
         word = ''
         inWord = false
-        expanded = false
       } else {
         endWord()
       }
@@ -198,10 +164,6 @@ function tokenize(command, start, closer, commands) {
       if (c === '(') depth++
       else if (c === ')' && depth > 0) depth--
       endCommand()
-      i++
-    } else if (c === '$') {
-      addDollar(i)
-      inWord = true
       i++
     } else {
       word += c

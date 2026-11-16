@@ -387,7 +387,7 @@ describe('シェルの予約語の後の git・gh も判定する', () => {
       ['while git push -f; do :; done', /force push/],
       ['until git push -f; do :; done', /force push/],
       ['{ git push -f; }', /force push/],
-      ['! gh pr merge 1 --admin', /--admin/],
+      ['! gh pr merge 1', /--match-head-commit/],
       ['for n in 1 2; do gh pr merge $n --squash; done', /--match-head-commit/],
       ['function p { git push --force origin x; }; p', /force push/],
       ['function p() { git push --force origin x; }; p', /force push/],
@@ -535,12 +535,11 @@ function mergeDeps(fields = {}) {
 }
 
 describe('マージのコマンドを判定する', () => {
-  test('gh api のマージと --admin は拒否し、gh pr merge --match-head-commit を使うよう返す', () => {
+  test('gh api のマージは拒否し、gh pr merge --match-head-commit を使うよう返す', () => {
     for (const command of [
       `gh api -X PUT repos/roger88106/ec-site/pulls/246/merge`,
       `gh api --method PUT /repos/{owner}/{repo}/pulls/246/merge`,
       `gh api repos/roger88106/ec-site/pulls/246/merge -f merge_method=squash`,
-      `gh pr merge 246 --admin --match-head-commit ${HEAD_SHA}`,
     ]) {
       assertDenied(command, /--match-head-commit/, mergeDeps())
     }
@@ -560,13 +559,11 @@ describe('マージのコマンドを判定する', () => {
     }
     assertDenied('gh pr merge 246 --disable-auto --squash', /--match-head-commit/, mergeDeps())
     assertDenied('gh pr merge 246 --disable-auto --auto', /--match-head-commit/, mergeDeps())
-    assertDenied('gh pr merge 246 --disable-auto --admin', /--admin/, mergeDeps())
-    assertAsked(`gh pr merge 246 --disable-auto --auto --match-head-commit ${HEAD_SHA}`, /--auto/, mergeDeps())
   })
 
-  test('--auto は、マージの時点の条件を判定できないので確認を求める', () => {
-    const deps = mergeDeps()
-    assertAsked(`${MERGE} --auto`, /--auto/, deps)
+  test('--admin と --auto は、ほかのマージと同じ条件で判定する（GitHub の設定が受け付けない）', () => {
+    assertPassed(`${MERGE} --auto`, mergeDeps())
+    assertPassed(`${MERGE} --admin`, mergeDeps())
   })
 
   test('条件を全て満たすマージは通す（skipped と neutral の検査を含む）', () => {
@@ -708,7 +705,7 @@ describe('マージのコマンドを判定する', () => {
   })
 
   test('つないだコマンドでは、拒否を確認より先に返す', () => {
-    assertDenied(`${MERGE} --auto && git push --force`, /force push/, mergeDeps())
+    assertDenied('gh pr merge 1 --match-head-commit abc && git push --force', /force push/, mergeDeps())
   })
 
   test('読むだけの gh と、マージでない gh api graphql は通す', () => {
@@ -730,45 +727,14 @@ describe('マージのコマンドを判定する', () => {
     }
   })
 
-  test('gh api graphql の mergePullRequest は、本文の渡し方によらず拒否し、gh pr merge --match-head-commit を使うよう返す', () => {
-    const deps = fakeDeps({
-      files: {
-        [path.join(CWD, 'merge.graphql')]: MERGE_MUTATION,
-        [path.join(CWD, 'sub', 'merge.graphql')]: MERGE_MUTATION,
-        [path.join(CWD, 'body.json')]: JSON.stringify({ query: MERGE_MUTATION }),
-      },
-    })
+  test('gh api graphql の mergePullRequest は、語のどれかに含めば拒否し、gh pr merge --match-head-commit を使うよう返す', () => {
     for (const command of [
       `gh api graphql -f query='${MERGE_MUTATION}'`,
       `gh api graphql -F query='${MERGE_MUTATION}'`,
       `gh api graphql --raw-field query='${MERGE_MUTATION}'`,
       `gh api graphql --field=query='${MERGE_MUTATION}'`,
-      'gh api graphql -F query=@merge.graphql',
-      'cd sub && gh api graphql -F query=@merge.graphql',
-      'gh api graphql --input body.json',
       `"/c/Program Files/GitHub CLI/gh.exe" api graphql -f query='${MERGE_MUTATION}'`,
-    ]) {
-      assertDenied(command, /mergePullRequest.*--match-head-commit/s, deps)
-    }
-  })
-
-  test('gh api graphql の enablePullRequestAutoMerge と、ファイルや標準入力から読めない本文は、確認を求める', () => {
-    const deps = fakeDeps({ files: { [path.join(CWD, 'auto.graphql')]: AUTO_MERGE_MUTATION } })
-    for (const command of [`gh api graphql -f query='${AUTO_MERGE_MUTATION}'`, 'gh api graphql -F query=@auto.graphql']) {
-      assertAsked(command, /enablePullRequestAutoMerge/, deps)
-    }
-    for (const command of [
-      'gh api graphql -F query=@missing.graphql',
-      'gh api graphql -F query=@-',
-      'gh api graphql --input missing.json',
-      'gh api graphql --input -',
-    ]) {
-      assertAsked(command, /読めない/, deps)
-    }
-  })
-
-  test('エンドポイントが /graphql と GraphQL の URL の gh api も、GraphQL として mergePullRequest を拒否する', () => {
-    for (const command of [
+      'gh api graphql -f query="mutation { mergePullRequest(input: {pullRequestId: \\"$PR_ID\\"}) { clientMutationId } }"',
       `gh api /graphql -f query='${MERGE_MUTATION}'`,
       `gh api https://api.github.com/graphql -f query='${MERGE_MUTATION}'`,
       `gh api https://github.example.com/api/graphql -f query='${MERGE_MUTATION}'`,
@@ -777,62 +743,15 @@ describe('マージのコマンドを判定する', () => {
     }
   })
 
-  test('gh api graphql の本文が $(…)・バッククォート・変数の展開を含むときは、読めない本文として確認を求め、単一引用符の中の GraphQL の変数は通す', () => {
+  test('gh api graphql のファイル・標準入力・シェルの展開から渡す本文は読まずに通す（意図した回避なので見ない）', () => {
     for (const command of [
+      'gh api graphql -F query=@merge.graphql',
+      'gh api graphql --input body.json',
+      'gh api graphql --input -',
       'gh api graphql -f query="$(cat merge.graphql)"',
-      "gh api graphql -f query=\"$(cat <<'EOF'\nmutation { mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId } }\nEOF\n)\"",
-      'gh api graphql -F query="`cat merge.graphql`"',
-      'gh api graphql -f query="$QUERY"',
-      'gh api graphql --raw-field=query=${QUERY}',
-      'gh api /graphql --field query="$QUERY"',
-    ]) {
-      assertAsked(command, /読めない/, fakeDeps())
-    }
-    for (const command of [
-      `gh api graphql -f query='query { viewer { login } }'`,
-      `gh api graphql -f query='query($n: Int!) { viewer { login } }' -F n=1`,
-      `gh api graphql -f query='${SUB_ISSUE_MUTATION}'`,
+      `gh api graphql -f query='${AUTO_MERGE_MUTATION}'`,
     ]) {
       assertPassed(command, fakeDeps())
-    }
-  })
-
-  test('gh api graphql の query の値がシェルの展開を含んでも、mergePullRequest を含めば拒否する', () => {
-    assertDenied(
-      'gh api graphql -f query="mutation { mergePullRequest(input: {pullRequestId: \\"$PR_ID\\"}) { clientMutationId } }"',
-      /mergePullRequest.*--match-head-commit/s,
-      fakeDeps(),
-    )
-  })
-
-  test('gh api graphql の query 以外のキー（GraphQL の変数）の値のシェルの展開は見ず、通す', () => {
-    for (const command of [
-      `gh api graphql -f query='mutation($p: ID!, $c: ID!) { addSubIssue(input: {issueId: $p, subIssueId: $c}) { issue { number } } }' -f p="$PARENT_ID" -f c="$(gh issue view 12 --json id -q .id)"`,
-      `gh api graphql -f query='query($o: String!) { repositoryOwner(login: $o) { id } }' -F o="$OWNER"`,
-    ]) {
-      assertPassed(command, fakeDeps())
-    }
-  })
-
-  test('gh api graphql の -f・-F のキー（最初の = の前）がシェルの展開を含むときは、query かを判定できないので、読めない本文として確認を求める', () => {
-    for (const command of [
-      'gh api graphql -f "$ARG"',
-      `gh api graphql -f "$(printf 'query=%s' "$(cat merge.graphql)")"`,
-      'gh api graphql -f "${K}=$(cat merge.graphql)"',
-      'gh api graphql -F "$K"=@merge.graphql',
-      'gh api graphql --raw-field="$ARG"',
-    ]) {
-      assertAsked(command, /読めない/, fakeDeps())
-    }
-  })
-
-  test('gh api graphql の展開を含む値のキーが GraphQL の変数の名前の形でない（ブレース・グロブを含む）ときは、展開の後のキーが query になりうるので、読めない本文として確認を求める', () => {
-    for (const command of [
-      'gh api graphql -f{query,x}="$(cat merge.graphql)"',
-      `gh api graphql -f 'q*'="$(cat merge.graphql)"`,
-      'gh api graphql -F {query,x}=@"$FILE"',
-    ]) {
-      assertAsked(command, /読めない/, fakeDeps())
     }
   })
 

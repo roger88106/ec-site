@@ -9,18 +9,16 @@
 // - commit の前の検査の省略：git commit の --no-verify と -n、git -c core.hooksPath=…
 // - pre-commit hook を置いていないリポジトリでの git commit（git rev-parse --git-path hooks/pre-commit のファイルが、
 //   scripts/dev/hooks/pre-commit を呼んでいなければ拒否する。作業ツリーでは共通の .git の hooks を見る）
-// - gh api によるマージ（REST の …/pulls/<番号>/merge と GraphQL の mergePullRequest）、gh pr merge の --admin と、
-//   --match-head-commit のない gh pr merge
+// - gh api によるマージ（REST の …/pulls/<番号>/merge と、語に mergePullRequest を含む GraphQL）
+// - --match-head-commit のない gh pr merge
 // 利用者の許可が必要な操作では、確認を求める（利用者に確認の画面を表示させる）。
 // - マージ：gh pr merge のうち、利用者の許可なしにマージしてよい条件（docs/05-開発規則/merging.md「マージの許可と後片付け」）を満たさないもの。
 //   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）。
-//   予約のマージ（gh pr merge --auto、GraphQL の enablePullRequestAutoMerge）でも確認を求める。
-//   GraphQL の本文を読めないとき（ファイルから読む本文、シェルの展開を含む値のうち、キーが query か GraphQL の変数の名前の形でないもの）も、確認を求める。
-//   シェルの展開を含む値も、読める部分に mergePullRequest があれば拒否する。キーが GraphQL の変数の名前の形で query でない値の展開は見ない
 // - tag：git tag での作成、git push の --tags・--follow-tags・tag の refspec（tag の削除を含む）、gh release create、
 //   Release と tag の参照を変える gh api（GET 以外のリクエストで、パスが releases・git/refs・git/tags のもの）
 // - ruleset：ruleset とブランチの保護を変える gh api（GET 以外のリクエスト）
-// permission の規則はコマンドの先頭の語でしか判定できず、フルパスの git・gh や、&& でつないだ後ろのコマンドには適用されないので、hook で全文を読む。
+// GitHub が受け付けない操作（gh pr merge の --admin、自動のマージ）と、意図した回避（bash -c、エイリアス、ファイルから読む GraphQL の本文）は見ない。
+// permission の規則は git -C やフルパスで書いた git・gh に当たらず、commit のメッセージにある語にも当たるので、hook で語を読む。
 //
 // PowerShell のツールのコマンドは書き方を読まず、git か gh と、操作の語（push、commit、tag、merge、api、release、hooksPath）を
 // 語として含めば拒否し、Bash のツールで実行するよう返す。それ以外（git status など）は通す。
@@ -64,7 +62,7 @@ export const GIT_TIMEOUT_MS = 5000
  */
 function judgeGh(gh, deps, budget) {
   const [group, ...rest] = gh.args
-  if (group === 'api') return judgeGhApi(rest, gh, deps)
+  if (group === 'api') return judgeGhApi(rest)
   if (group === 'release') return parseGhArgs(rest, GH_RELEASE_OPTIONS).positionals[0] === 'create' ? ask(TAG_REASON) : null
   if (group === 'pr' && parseGhArgs(rest, GH_PR_OPTIONS).positionals[0] === 'merge') return judgeMerge(rest, gh, deps, budget)
   return null

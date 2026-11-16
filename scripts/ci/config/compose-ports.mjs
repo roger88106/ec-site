@@ -62,7 +62,7 @@ export function findPortProblems(text) {
 }
 
 /**
- * ホスト側のポートを読めない項目を、失敗の文にする（local-ports も使う）。
+ * ホスト側のポートを読めない項目を、失敗の文にする。
  *
  * @param {string} file 表示する compose のパス
  * @param {{ service: string, entry: string }} port 読めなかった項目

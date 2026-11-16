@@ -318,7 +318,7 @@ export function isDependabot({ author }) {
 }
 
 /**
- * pull request の本文と判定を比べるかを決め、比べる。Dependabot は比べない。本文を渡さなければ（check-all.sh）比べない。
+ * pull request の本文と判定を比べるかを決め、比べる。Dependabot は比べない。本文を渡さなければ比べない。
  *
  * @param {{ level: '高' | '低', body?: string, author?: string }} pullRequest 判定、本文、作成者
  * @returns {{ ok: boolean, message: string | null }} 成功か、と出力する 1 行（比べないときは Dependabot の行か null）

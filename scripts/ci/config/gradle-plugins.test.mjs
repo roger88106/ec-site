@@ -6,7 +6,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../lib/git/git-env.mjs'
-import { findDirectPlugins, findPluginProblems, readCatalogPlugins, readPolicyPluginIds } from './gradle-plugins.mjs'
+import { findDirectPlugins, findPluginProblems, parseCatalogPlugins, readPolicyPluginIds } from './gradle-plugins.mjs'
 
 const toml = [
   '[libraries]',
@@ -23,28 +23,28 @@ const toml = [
 
 describe('カタログのプラグインの読み取り', () => {
   test('libs.versions.toml の [plugins] の id だけを読む', () => {
-    assert.deepEqual(readCatalogPlugins(toml), { ids: ['org.springframework.boot', 'nu.studer.jooq'], unknown: [] })
+    assert.deepEqual(parseCatalogPlugins(toml), { ids: ['org.springframework.boot', 'nu.studer.jooq'], unknown: [] })
   })
 
   test('[plugins] がなければ空', () => {
-    assert.deepEqual(readCatalogPlugins('[versions]\na = "1"\n'), { ids: [], unknown: [] })
+    assert.deepEqual(parseCatalogPlugins('[versions]\na = "1"\n'), { ids: [], unknown: [] })
   })
 
   test('文字列の形（id:バージョン）の id を読む', () => {
-    assert.deepEqual(readCatalogPlugins('[plugins]\nfoo = "org.foo.bar:1.0"\n'), { ids: ['org.foo.bar'], unknown: [] })
+    assert.deepEqual(parseCatalogPlugins('[plugins]\nfoo = "org.foo.bar:1.0"\n'), { ids: ['org.foo.bar'], unknown: [] })
   })
 
   test('[plugins.名前] の表の id も読む', () => {
-    const result = readCatalogPlugins('[plugins]\na = { id = "a.b" }\n[plugins.baz]\nid = "org.baz"\nversion = "1"\n')
+    const result = parseCatalogPlugins('[plugins]\na = { id = "a.b" }\n[plugins.baz]\nid = "org.baz"\nversion = "1"\n')
     assert.deepEqual(result, { ids: ['a.b', 'org.baz'], unknown: [] })
   })
 
   test('id のない表は読めないので、項目の名前を出す', () => {
-    assert.deepEqual(readCatalogPlugins('[plugins]\nfoo = { version = "1" }\n'), { ids: [], unknown: ['foo'] })
+    assert.deepEqual(parseCatalogPlugins('[plugins]\nfoo = { version = "1" }\n'), { ids: [], unknown: ['foo'] })
   })
 
   test('TOML として読めないときは例外にする（検査が失敗する）', () => {
-    assert.throws(() => readCatalogPlugins('[plugins]\nbar\n'))
+    assert.throws(() => parseCatalogPlugins('[plugins]\nbar\n'))
   })
 })
 

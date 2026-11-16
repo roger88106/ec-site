@@ -1,7 +1,7 @@
 // lib/ac/match.mjs のテスト（node --test scripts/ci/lib/ac/match.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { addAcsToList, parseSpecAcDefinitions, readAcList } from './ac-list.mjs'
+import { addAcsToList, parseSpecAcDefinitions, parseAcList } from './ac-list.mjs'
 import { check, checkAcRows, checkInProgress, checkModuleDoc, checkModuleDocNames, renderTestMap } from './match.mjs'
 
 /** 照合に渡すテスト（ファイルは共通で、名前だけを変える） */
@@ -46,13 +46,13 @@ const SPEC_DIRS = [
 
 /** AC 一覧を読み、行の検査の問題まで返す */
 function listProblems(...rows) {
-  const read = readAcList(listDoc(...rows))
+  const read = parseAcList(listDoc(...rows))
   return [...read.problems, ...checkAcRows({ rows: read.rows, modules: MODULES, specDirs: SPEC_DIRS })]
 }
 
 /** AC 一覧の行を読む（問題がないことも確認する） */
 function rowsOf(...rows) {
-  const read = readAcList(listDoc(...rows))
+  const read = parseAcList(listDoc(...rows))
   assert.deepEqual(read.problems, [])
   return read.rows
 }
@@ -386,7 +386,7 @@ describe('AC 一覧の行の検査', () => {
 
   test('進行中の spec に AC-n の形で定義した AC は、転記した行が問題になる', () => {
     const { definitions } = parseSpecAcDefinitions('- **AC-400** 文。', '5-x')
-    const read = readAcList(addAcsToList(listDoc(listRow()), definitions))
+    const read = parseAcList(addAcsToList(listDoc(listRow()), definitions))
     assert.deepEqual(read.problems, [])
     const problems = checkAcRows({ rows: read.rows, modules: MODULES, specDirs: SPEC_DIRS })
     assert.ok(problems.some((problem) => problem.includes('AC-400：元の spec（5）が番号だけ')), problems.join('\n'))
@@ -831,7 +831,7 @@ describe('進行中の spec の AC と AC 一覧', () => {
       ),
     )
     // 転記した行はモジュールが空なので、モジュールを書くまで検査が失敗する
-    const read = readAcList(updated)
+    const read = parseAcList(updated)
     assert.equal(checkAcRows({ rows: read.rows, modules: MODULES, specDirs: SPEC_DIRS }).length, 2)
     assert.deepEqual(checkInProgress({ rows: read.rows, specs: [{ rel: '5-x', definitions }] }), [])
   })
@@ -861,7 +861,7 @@ describe('テストとの対応（AC 一覧の AC に対して）', () => {
   })
 
   test('--tests で、AC 一覧の読み取りに失敗したら失敗にする', () => {
-    const { ok } = renderTestMap({ list: readAcList('# 印のない一覧'), testFiles: new Map(), exclusions: {} })
+    const { ok } = renderTestMap({ list: parseAcList('# 印のない一覧'), testFiles: new Map(), exclusions: {} })
     assert.equal(ok, false)
   })
 })

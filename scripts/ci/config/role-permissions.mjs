@@ -48,7 +48,7 @@ const METHODS = ['get', 'post', 'put', 'patch', 'delete']
  * @returns {{ method: string, path: string, summary: string, permission: string | null, security: string[] | null }[]}
  *   操作（契約の順）。security は操作に書いた要件の名前の一覧（`{}` は空の文字）で、書いていなければ null
  */
-export function readOperations(text) {
+export function parseOperations(text) {
   return Object.entries(load(text)?.paths ?? {}).flatMap(([path, item]) =>
     Object.keys(item ?? {}).filter((method) => METHODS.includes(method)).map((method) => {
       const operation = item[method]
@@ -93,7 +93,7 @@ function storeLogin(operation) {
 /**
  * 対応表の Markdown を作る。
  *
- * @param {{ admin: ReturnType<typeof readOperations>, store: ReturnType<typeof readOperations>,
+ * @param {{ admin: ReturnType<typeof parseOperations>, store: ReturnType<typeof parseOperations>,
  *   realm: ReturnType<typeof parseRealmRoles> }} input
  * @returns {{ markdown: string, problems: string[] }} 表と、契約と設定の食い違い
  */
@@ -194,8 +194,8 @@ export function replaceGenerated(document, markdown) {
 
 if (import.meta.main) {
   const { markdown, problems } = renderTables({
-    admin: readOperations(readFileSync(ADMIN_API, 'utf8')),
-    store: readOperations(readFileSync(STORE_API, 'utf8')),
+    admin: parseOperations(readFileSync(ADMIN_API, 'utf8')),
+    store: parseOperations(readFileSync(STORE_API, 'utf8')),
     realm: parseRealmRoles(JSON.parse(readFileSync(ADMIN_REALM, 'utf8'))),
   })
   const document = readFileSync(DOCUMENT, 'utf8')

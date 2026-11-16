@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { readSkeleton } from '../../spec/spec-structure.mjs'
-import { addAcsToList, findMarks, listModuleNames, MODULE_AC_SECTION, parseSpecAcDefinitions, readAcList, readInProgressSpecs, renderModuleTable } from './ac-list.mjs'
+import { parseSkeleton } from '../../spec/spec-structure.mjs'
+import { addAcsToList, findMarks, listModuleNames, MODULE_AC_SECTION, parseSpecAcDefinitions, parseAcList, readInProgressSpecs, renderModuleTable } from './ac-list.mjs'
 
 /** リポジトリのルート */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../')
@@ -29,7 +29,7 @@ function listDoc(...rows) {
 
 /** AC 一覧の行を読む（問題がないことも確認する） */
 function rowsOf(...rows) {
-  const read = readAcList(listDoc(...rows))
+  const read = parseAcList(listDoc(...rows))
   assert.deepEqual(read.problems, [])
   return read.rows
 }
@@ -204,7 +204,7 @@ describe('spec の AC の取り出し', () => {
 
 describe('AC 一覧の読み取り', () => {
   test('6 列の行を読む。改行コードが CRLF でも、今の内容に CR が残らない', () => {
-    const rows = readAcList(listDoc(listRow({ content: '注文できる。' })).replaceAll('\n', '\r\n')).rows
+    const rows = parseAcList(listDoc(listRow({ content: '注文できる。' })).replaceAll('\n', '\r\n')).rows
     assert.deepEqual(rows.map(({ ac, module, status, origin, changedBy, content }) => ({ ac, module, status, origin, changedBy, content })), [
       { ac: 1, module: 'order', status: '有効', origin: ORIGIN, changedBy: '—', content: '注文できる。' },
     ])
@@ -213,7 +213,7 @@ describe('AC 一覧の読み取り', () => {
   test('先頭のセルが AC- の行のセルが足りない・多いと、読み飛ばさず問題にする', () => {
     const short = '| AC-2 | order | 有効 | — | 注文できる。 |'
     const long = `${listRow({ ac: 'AC-3' })} 余り |`
-    const { rows, problems } = readAcList(listDoc(listRow(), short, long))
+    const { rows, problems } = parseAcList(listDoc(listRow(), short, long))
     assert.deepEqual(rows.map((row) => row.ac), [1])
     assert.equal(problems.length, 2)
     assert.match(problems[0], /AC-2/)
@@ -221,14 +221,14 @@ describe('AC 一覧の読み取り', () => {
   })
 
   test('マーカーの範囲の中の、表の行でない行（セルの中の改行の続き）を問題にする', () => {
-    const { problems } = readAcList(listDoc('| AC-1 | order | 有効 | ' + ORIGIN + ' | — | 一行目', '二行目 |'))
+    const { problems } = parseAcList(listDoc('| AC-1 | order | 有効 | ' + ORIGIN + ' | — | 一行目', '二行目 |'))
     assert.ok(problems.length > 0)
     assert.match(problems[0], /表の行でない行がある/)
   })
 
   test('AC の番号を読めない行（0 埋め、小文字、空白の区切り）を問題にする', () => {
     for (const ac of ['AC-07-1', 'ac-7-1', 'AC 7-1']) {
-      const { problems } = readAcList(listDoc(listRow({ ac })))
+      const { problems } = parseAcList(listDoc(listRow({ ac })))
       assert.equal(problems.length, 1, ac)
       assert.match(problems[0], /AC の番号の形が違う/, ac)
     }
@@ -236,7 +236,7 @@ describe('AC 一覧の読み取り', () => {
 
   test('表の見出しが AC・モジュール・状態・元の spec・変えた spec・今の内容でなければ問題にする', () => {
     const document = listDoc(listRow()).replace('| AC | モジュール | 状態 |', '| AC | 状態 | モジュール |')
-    const { problems } = readAcList(document)
+    const { problems } = parseAcList(document)
     assert.equal(problems.length, 1)
     assert.match(problems[0], /AC 一覧の列が .* でない/)
   })
@@ -250,7 +250,7 @@ describe('AC 一覧の読み取り', () => {
       [['<!-- generated:ac-list -->', ...body].join('\n'), /開きが 1 個、閉じが 0 個/],
     ]
     for (const [document, reason] of cases) {
-      const { problems } = readAcList(document)
+      const { problems } = parseAcList(document)
       assert.ok(problems.length > 0, document)
       assert.match(problems[0], reason, document)
     }
@@ -258,27 +258,27 @@ describe('AC 一覧の読み取り', () => {
 
   test('既知のマーカーのどれとも一致しない generated: のコメント（綴りの誤り）を失敗にする', () => {
     const document = listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n<!-- generated:modul-ac -->')
-    const { problems } = readAcList(document)
+    const { problems } = parseAcList(document)
     assert.equal(problems.length, 1)
     assert.match(problems[0], /知らない生成の印/)
   })
 
   test('表の途中（AC の行の間）に空行があれば、表がそこで切れるので失敗にする', () => {
-    const { problems } = readAcList(listDoc(listRow({ ac: 'AC-1' }), '', listRow({ ac: 'AC-2' })))
+    const { problems } = parseAcList(listDoc(listRow({ ac: 'AC-1' }), '', listRow({ ac: 'AC-2' })))
     assert.equal(problems.length, 1)
     assert.match(problems[0], /^9 行：AC 一覧の表の途中に空行がある/)
   })
 
   test('表の見出しと区切りの行の間に空行があれば、失敗にする', () => {
     const document = listDoc(listRow()).replace(`${LIST_HEADER[0]}\n`, `${LIST_HEADER[0]}\n\n`)
-    const { problems } = readAcList(document)
+    const { problems } = parseAcList(document)
     assert.equal(problems.length, 1)
     assert.match(problems[0], /AC 一覧の表の途中に空行がある/)
   })
 
   test('マーカーの範囲で、表より前と表より後にある空行は問題にしない', () => {
     const document = listDoc(listRow()).replace('<!-- generated:ac-list -->\n', '<!-- generated:ac-list -->\n\n').replace('\n<!-- /generated:ac-list -->', '\n\n\n<!-- /generated:ac-list -->')
-    assert.deepEqual(readAcList(document).problems, [])
+    assert.deepEqual(parseAcList(document).problems, [])
   })
 
   test('生成の印が、行に単独で書かれていない（前後に文字がある）と問題にし、前後の空白だけなら通す', () => {
@@ -294,11 +294,11 @@ describe('AC 一覧の読み取り', () => {
   })
 
   test('AC 一覧に ③ の生成の印（module-ac）があると問題にし、コードの中に引用しただけなら通す', () => {
-    const { problems } = readAcList(listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n<!-- generated:module-ac -->'))
+    const { problems } = parseAcList(listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n<!-- generated:module-ac -->'))
     assert.equal(problems.length, 1)
     assert.match(problems[0], /AC 一覧に ③ の生成の印（generated:module-ac）がある/)
     const quoted = listDoc(listRow()).replace('# AC 一覧', '# AC 一覧\n\n印は `<!-- generated:module-ac -->` の形。')
-    assert.deepEqual(readAcList(quoted).problems, [])
+    assert.deepEqual(parseAcList(quoted).problems, [])
   })
 
   test('区切りの行は、列が AC 一覧より多くても少なくても、区切りの形でなくても問題にし、揃えの記号と短い線は通す', () => {
@@ -307,12 +307,12 @@ describe('AC 一覧の読み取り', () => {
     const more = `${LIST_HEADER[1]}----|`
     const notSeparator = '| a | b | c | d | e | f |'
     for (const separator of [fewer, more, notSeparator]) {
-      const { problems } = readAcList(documentWith(separator))
+      const { problems } = parseAcList(documentWith(separator))
       assert.equal(problems.length, 1, separator)
       assert.match(problems[0], /^3 行：AC 一覧の表の区切りの行が 6 列でない/, separator)
     }
     for (const separator of ['|:---|---:|:---:|-|--|---|']) {
-      assert.deepEqual(readAcList(documentWith(separator)).problems, [], separator)
+      assert.deepEqual(parseAcList(documentWith(separator)).problems, [], separator)
     }
   })
 })
@@ -322,14 +322,14 @@ describe('AC 一覧の表の見出しの行', () => {
 
   test('マーカーの範囲が空、または空行だけで、表の見出しの行がなければ問題にする', () => {
     for (const inner of [[], [''], ['', '']]) {
-      const { problems } = readAcList(document(...inner))
+      const { problems } = parseAcList(document(...inner))
       assert.equal(problems.length, 1, JSON.stringify(inner))
       assert.match(problems[0], /表の見出しの行がない/)
     }
   })
 
   test('見出しと区切りの行だけで AC の行が 0 件の範囲は、問題にしない', () => {
-    assert.deepEqual(readAcList(document(...LIST_HEADER)).problems, [])
+    assert.deepEqual(parseAcList(document(...LIST_HEADER)).problems, [])
   })
 })
 
@@ -377,7 +377,7 @@ describe('③ の「今有効な AC」の表の生成', () => {
 
 describe('③ の「今有効な AC」の節の名前', () => {
   test('生成の表を置く節の名前が、リポジトリの雛形の骨組みの ## にある（節の名前の正本は雛形）', () => {
-    const { sections, problems } = readSkeleton(readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8'))
+    const { sections, problems } = parseSkeleton(readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8'))
     assert.deepEqual(problems, [])
     assert.ok(sections.includes(MODULE_AC_SECTION), sections.join('、'))
   })
@@ -425,7 +425,7 @@ describe('AC 一覧への転記', () => {
     assert.match(markdown, /^\| AC-7-1 \| {2}\| 有効 \| 7 \| — \| 二つ目。 \|$/m)
     assert.ok(markdown.indexOf('| AC-12 |') < markdown.indexOf('| AC-7-1 |'))
     assert.ok(markdown.indexOf('| AC-7-1 |') < markdown.indexOf('| AC-7-2 |'))
-    const { rows, problems } = readAcList(markdown)
+    const { rows, problems } = parseAcList(markdown)
     assert.deepEqual(problems, [])
     assert.deepEqual(rows.map((row) => row.ac), [12, '7-1', '7-2'])
   })

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { describeUnreadableHostPort, findPortProblems, readHostPort } from './compose-ports.mjs'
+import { describeUnreadableHostPort, findPortProblems, parseHostPort } from './compose-ports.mjs'
 
 /** サービスの ports を compose の形にする */
 const compose = (services) =>
@@ -42,11 +42,11 @@ describe('compose のポートの検査', () => {
   })
 
   test('ホスト側のポートは、数字か既定値付きの変数から読み、それ以外（既定値のない変数、範囲）は読めない', () => {
-    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432'), 5432)
-    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025'), 2525)
-    assert.equal(readHostPort('5432:5432'), 5432)
+    assert.equal(parseHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432'), 5432)
+    assert.equal(parseHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025'), 2525)
+    assert.equal(parseHostPort('5432:5432'), 5432)
     for (const entry of ['${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:80']) {
-      assert.equal(readHostPort(entry), null, entry)
+      assert.equal(parseHostPort(entry), null, entry)
     }
   })
 

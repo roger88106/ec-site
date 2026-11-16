@@ -35,7 +35,7 @@ import { describeEmptyReason, describeStaleExclusion, exclusionsPath, readExclus
 import { FUNCTIONAL_SPECS } from '../lib/docs/functional-specs.mjs'
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
 import { listSpecDirs, SPECS_DIR } from '../lib/docs/spec-dirs.mjs'
-import { AC_LIST, BACKEND_MODULES_DIR, MODULE_DOCS_DIR, addAcsToList, listModuleNames, readAcList, readInProgressSpecs } from '../lib/ac/ac-list.mjs'
+import { AC_LIST, BACKEND_MODULES_DIR, MODULE_DOCS_DIR, addAcsToList, listModuleNames, parseAcList, readInProgressSpecs } from '../lib/ac/ac-list.mjs'
 import { check, checkAcRows, checkInProgress, checkModuleDoc, checkModuleDocNames, renderTestMap } from '../lib/ac/match.mjs'
 import { readTests } from '../lib/ac/test-names.mjs'
 
@@ -118,7 +118,7 @@ function main() {
   const { tests, unreadable, testFiles } = writing ? { tests: [], unreadable: [], testFiles: new Map() } : readTests(root, gitFiles)
   const listFile = path.join(root, AC_LIST)
   const document = existsSync(listFile) ? readFileSync(listFile, 'utf8') : ''
-  let list = readAcList(document)
+  let list = parseAcList(document)
   const exclusions = readExclusions(exclusionsPath(`spec/${EXCLUSIONS_NAME}`))
 
   if (process.argv.includes('--tests')) {
@@ -141,7 +141,7 @@ function main() {
       process.exit(1)
     }
     const written = addAcsToList(document, inProgress.specs.flatMap((spec) => spec.definitions))
-    if (written !== document) list = readAcList(written)
+    if (written !== document) list = parseAcList(written)
     const results = docs.map((doc) => ({ doc, result: checkModuleDoc({ text: doc.text, module: doc.module, rows: list.rows, required: doc.required }) }))
     const blocking = results.flatMap(({ doc, result }) => (result.stale ? [] : result.problems.map((problem) => `${doc.file}：${problem}`)))
     if (blocking.length > 0) {

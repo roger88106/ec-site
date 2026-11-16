@@ -26,7 +26,7 @@ export const BIND_PREFIX = '${LOCAL_BIND_ADDRESS:-127.0.0.1}:'
  * @param {string} entry 項目
  * @returns {number | null} ホスト側のポート。それ以外の書き方（既定値のない変数、範囲、コンテナの側だけ）は null
  */
-export function readHostPort(entry) {
+export function parseHostPort(entry) {
   const rest = entry.startsWith(BIND_PREFIX) ? entry.slice(BIND_PREFIX.length) : entry
   const match = /^(?:\$\{[A-Z_]+:-(\d+)\}|(\d+)):[^:]+$/.exec(rest)
   return match ? Number(match[1] ?? match[2]) : null
@@ -40,7 +40,7 @@ export function readHostPort(entry) {
  * @param {string} text compose のファイル
  * @returns {{ service: string, entry: string }[]} サービスの名前と項目（書いた順）
  */
-export function readComposePorts(text) {
+export function parseComposePorts(text) {
   const services = load(text)?.services ?? {}
   return Object.entries(services).flatMap(([service, definition]) =>
     (definition?.ports ?? []).map((entry) => ({ service, entry: typeof entry === 'string' ? entry : JSON.stringify(entry) })),
@@ -55,9 +55,9 @@ export function readComposePorts(text) {
  *   全ての項目と、決まった形でない項目と、決まった形だがホスト側のポートを読めない項目
  */
 export function findPortProblems(text) {
-  const ports = readComposePorts(text)
+  const ports = parseComposePorts(text)
   const problems = ports.filter((port) => !port.entry.startsWith(BIND_PREFIX))
-  const unreadable = ports.filter((port) => port.entry.startsWith(BIND_PREFIX) && readHostPort(port.entry) === null)
+  const unreadable = ports.filter((port) => port.entry.startsWith(BIND_PREFIX) && parseHostPort(port.entry) === null)
   return { ports, problems, unreadable }
 }
 

@@ -44,7 +44,7 @@ function attribute(tag, name) {
  *   生き残った変異が多いクラス（多い順。同じ数なら名前順）
  * @throws {Error} 閉じの </mutations> がない（途中で切れた）、または <mutation> の開始タグの数と読めた変異の数が違うとき
  */
-export function readMutations(text, { limit = SURVIVORS_LIMIT } = {}) {
+export function parseMutations(text, { limit = SURVIVORS_LIMIT } = {}) {
   if (!/<\/mutations\s*>/.test(text)) {
     throw new Error('PIT の報告が途中で切れています（閉じの </mutations> がありません）')
   }

@@ -30,7 +30,7 @@ const UNIT_SECONDS = { ms: 0.001, s: 1, m: 60, h: 3600, d: 86400 }
  * @returns {{ env: string, value: string | null }[]} 環境変数の名前と既定値（既定値がなければ null）
  * @throws {Error} プロパティが 0 件のとき
  */
-export function readMetadata(json) {
+export function parseMetadata(json) {
   const { properties = [] } = JSON.parse(json)
   if (properties.length === 0) throw new Error('設定の一覧に、プロパティが 1 つもない')
   return properties.map((property) => ({
@@ -135,7 +135,7 @@ if (import.meta.main) {
     console.log(`設定の一覧（${metadata}）がない。先に backend/ecsite/ で ./gradlew compileJava を実行する`)
     process.exit(2)
   }
-  const code = readMetadata(readFileSync(metadata, 'utf8'))
+  const code = parseMetadata(readFileSync(metadata, 'utf8'))
   const doc = parseEnvTable(readFileSync(ENV_DOC, 'utf8'), new Set(code.map((row) => row.env)))
   const problems = compareDefaults(code, doc)
   for (const problem of problems) console.log(problem)

@@ -236,7 +236,7 @@ export function readPair(marks, name) {
  * @returns {{ rows: { ac: number | string, label: string, module: string, status: string, origin: string, changedBy: string, content: string, line: number }[], problems: string[], pair: { open: number, close: number } | null, lastLine: number }}
  *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：マーカーの範囲（読めなければ null）。lastLine：表の最後の行（1 から。行がなければ 0）
  */
-export function readAcList(document) {
+export function parseAcList(document) {
   const text = toLf(document)
   const { marks, problems } = findMarks(text)
   if (marks.some((mark) => mark.name === MODULE_MARK)) problems.push(`AC 一覧に ③ の生成の印（generated:${MODULE_MARK}）がある`)
@@ -376,7 +376,7 @@ function renderListRow({ ac, specRel, content }) {
  * @throws {Error} AC 一覧を読めないとき
  */
 export function addAcsToList(document, definitions) {
-  const { rows, problems, pair, lastLine } = readAcList(document)
+  const { rows, problems, pair, lastLine } = parseAcList(document)
   if (problems.length > 0) throw new Error(`AC 一覧を読めないので転記しない：${problems.join(' / ')}`)
   const known = new Set(rows.map((row) => String(row.ac)))
   const added = []
@@ -412,7 +412,7 @@ export function listModuleNames({ backendDirs, docFiles }) {
 /**
  * ③ の「今有効な AC」の表を、AC 一覧から作る。有効・変更の、そのモジュールの AC を AC の順に置く。
  *
- * @param {ReturnType<typeof readAcList>['rows']} rows AC 一覧の行
+ * @param {ReturnType<typeof parseAcList>['rows']} rows AC 一覧の行
  * @param {string} module モジュールの名前
  * @returns {string} マーカーの範囲の中に置く行（LF。末尾に改行を付けない）。0 件なら「なし。」
  */

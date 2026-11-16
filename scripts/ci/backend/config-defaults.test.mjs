@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { compareDefaults, normalizeValue, parseEnvTable, readMetadata } from './config-defaults.mjs'
+import { compareDefaults, normalizeValue, parseEnvTable, parseMetadata } from './config-defaults.mjs'
 
 /** spring-configuration-metadata.json の小さな例（入れ子の record の項目を含む） */
 const METADATA = JSON.stringify({
@@ -31,7 +31,7 @@ const DOC = [
 
 describe('設定の一覧の読み方', () => {
   test('プロパティの名前から環境変数の名前を作り、既定値を文字にする（ないものは null）', () => {
-    assert.deepEqual(readMetadata(METADATA), [
+    assert.deepEqual(parseMetadata(METADATA), [
       { env: 'ECSITE_PAYMENT_DEADLINE', value: '30m' },
       { env: 'ECSITE_PAYMENT_EXPIRY_INTERVAL', value: '1m' },
       { env: 'ECSITE_PAYMENT_RETURN_URL', value: null },
@@ -42,7 +42,7 @@ describe('設定の一覧の読み方', () => {
   })
 
   test('プロパティが 1 つもない一覧は、失敗にする', () => {
-    assert.throws(() => readMetadata('{"groups":[]}'), /1 つもない/)
+    assert.throws(() => parseMetadata('{"groups":[]}'), /1 つもない/)
   })
 })
 

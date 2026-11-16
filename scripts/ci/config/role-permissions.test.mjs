@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import {
   checkDocument,
   parseRealmRoles,
-  readOperations,
+  parseOperations,
   renderTables,
   replaceGenerated,
 } from './role-permissions.mjs'
@@ -90,25 +90,25 @@ const REALM = {
 
 describe('ロールと権限の対応表', () => {
   test('OpenAPI の操作から、メソッド、パス、要約、権限、security を読む。components の後は読まない', () => {
-    assert.deepEqual(readOperations(ADMIN), [
+    assert.deepEqual(parseOperations(ADMIN), [
       { method: 'GET', path: '/tax-categories', summary: '税区分の一覧（税率を含む）', permission: 'tax:read', security: null },
       { method: 'POST', path: '/tax-categories', summary: '税区分の登録', permission: 'tax:write', security: null },
       { method: 'GET', path: '/me', summary: 'ログインしている運営者', permission: 'authenticated', security: null },
     ])
     assert.deepEqual(
-      readOperations(STORE).map((operation) => operation.security),
+      parseOperations(STORE).map((operation) => operation.security),
       [[], ['', 'memberToken'], ['memberToken']],
     )
   })
 
   test('項目のない security: は、認証が不要（[]）と読まずに、書いていないもの（null）として読む', () => {
-    const [operation] = readOperations(['paths:', '  /a:', '    get:', '      security:', '      summary: x'].join('\n'))
+    const [operation] = parseOperations(['paths:', '  /a:', '    get:', '      security:', '      summary: x'].join('\n'))
     assert.equal(operation.security, null)
   })
 
   test('フロー形式と引用符で囲んだパスも読み、パスの parameters と知らないメソッドは操作にしない', () => {
     const text = ['paths:', "  '/a': {get: {summary: a, x-required-permission: tax:read}}", '  /b:', '    parameters: []', '    head: {summary: b}'].join('\n')
-    assert.deepEqual(readOperations(text), [{ method: 'GET', path: '/a', summary: 'a', permission: 'tax:read', security: null }])
+    assert.deepEqual(parseOperations(text), [{ method: 'GET', path: '/a', summary: 'a', permission: 'tax:read', security: null }])
   })
 
   test('realm から、管理 API の権限を持つロールと、その権限を読む（権限のないロールは除く）', () => {
@@ -123,8 +123,8 @@ describe('ロールと権限の対応表', () => {
 
   test('ロールの表はロールと説明の 2 列、権限の表はロールを列にして権限を行にする。管理 API の表は 3 列', () => {
     const { markdown, problems } = renderTables({
-      admin: readOperations(ADMIN),
-      store: readOperations(STORE),
+      admin: parseOperations(ADMIN),
+      store: parseOperations(STORE),
       realm: parseRealmRoles(REALM),
     })
     assert.deepEqual(problems, [])
@@ -155,7 +155,7 @@ describe('ロールと権限の対応表', () => {
   })
 
   test('security のない店舗 API の操作は、「不要」にせず問題にする。security: [] は token 不要を明示した操作で、「不要」になる', () => {
-    const store = readOperations(
+    const store = parseOperations(
       [
         'paths:',
         '  /open:',
@@ -234,7 +234,7 @@ describe('script として実行する', () => {
     }
   }
 
-  const current = renderTables({ admin: readOperations(ADMIN), store: readOperations(STORE), realm: parseRealmRoles(REALM) }).markdown
+  const current = renderTables({ admin: parseOperations(ADMIN), store: parseOperations(STORE), realm: parseRealmRoles(REALM) }).markdown
 
   test('文書の表が契約と realm から作った表と同じなら、終了コード 0 で、食い違いの数を出して終わる', () => {
     const { result } = run(STORE, [], current)

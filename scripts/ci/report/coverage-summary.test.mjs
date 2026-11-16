@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { lowest, mutationMarkdown, readTotals } from './coverage-summary.mjs'
+import { lowest, mutationMarkdown, parseTotals } from './coverage-summary.mjs'
 
 /** 実際の mutations.xml から切り出した 7 件（検出 4、生き残り 3：Order 2、Product 1） */
 const PIT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'testdata', 'pit-mutations.xml')
@@ -43,8 +43,8 @@ const VITEST = JSON.stringify({
 
 describe('カバレッジの報告', () => {
   test('合計を読む（JaCoCo、Vitest）', () => {
-    assert.deepEqual(readTotals(JACOCO, 'xml').lines, { covered: 15, total: 30 })
-    assert.deepEqual(readTotals(VITEST, 'json').branches, { covered: 1, total: 2 })
+    assert.deepEqual(parseTotals(JACOCO, 'xml').lines, { covered: 15, total: 30 })
+    assert.deepEqual(parseTotals(VITEST, 'json').branches, { covered: 1, total: 2 })
   })
 
   test('JaCoCo はパッケージを、行のカバレッジの低い順に並べ、行のないものを除く', () => {

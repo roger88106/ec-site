@@ -8,7 +8,7 @@
 //   報告のファイル：JaCoCo の XML、Vitest の json-summary（coverage-summary.json）、PIT の XML（mutations.xml）
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { isPitReport, readMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'
+import { isPitReport, parseMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'
 
 /** 低い所を出す数 */
 const LOWEST_LIMIT = 10
@@ -40,7 +40,7 @@ function counter(text, type) {
  * @param {'xml' | 'json'} kind 報告の種類（JaCoCo の XML、Vitest の json-summary）
  * @returns 行と分岐の、実行した数と全体の数
  */
-export function readTotals(text, kind) {
+export function parseTotals(text, kind) {
   if (kind === 'xml') {
     // 報告の全体の counter は、最後の package の後（</report> の直前）に並ぶ
     const tail = text.slice(text.lastIndexOf('</package>'))
@@ -88,7 +88,7 @@ export function lowest(text, kind, { limit = LOWEST_LIMIT, root = '' } = {}) {
  * @returns {string} Markdown
  */
 function coverageMarkdown(name, text, kind) {
-  const { lines, branches } = readTotals(text, kind)
+  const { lines, branches } = parseTotals(text, kind)
   const unit = kind === 'xml' ? 'パッケージ' : 'ファイル'
   return [
     `### カバレッジ（${name}）`,
@@ -120,7 +120,7 @@ function coverageMarkdown(name, text, kind) {
  * @throws {Error} PIT の XML を読めないとき
  */
 export function mutationMarkdown(name, text) {
-  const { total, detected, statuses, survivors } = readMutations(text)
+  const { total, detected, statuses, survivors } = parseMutations(text)
   return [
     `### mutation score（${name}）`,
     '',

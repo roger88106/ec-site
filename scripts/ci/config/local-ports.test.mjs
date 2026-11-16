@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { expandedPorts, findPortMismatches, readComposeHostPorts, readConfigPorts, readDocPorts } from './local-ports.mjs'
+import { expandedPorts, findPortMismatches, parseComposeHostPorts, parseConfigPorts, parseDocPorts } from './local-ports.mjs'
 
 /** 小さな一覧（共有 2 件、スロットでずらす 1 件、E2E 1 件、スロット 3 つ） */
 const LIST = {
@@ -50,7 +50,7 @@ describe('ローカルのポートの一覧の検査', () => {
   })
 
   test('compose の既定値付きの変数のポートを読む', () => {
-    assert.deepEqual(readComposeHostPorts(COMPOSE), { ports: [5432, 2525], unreadable: [] })
+    assert.deepEqual(parseComposeHostPorts(COMPOSE), { ports: [5432, 2525], unreadable: [] })
   })
 
   test('compose のホスト側のポートを読めない項目（既定値のない変数、範囲）は、ファイルとサービスを出して失敗にする', () => {
@@ -62,7 +62,7 @@ describe('ローカルのポートの一覧の検査', () => {
   })
 
   test('文書のポートは、コロンの後の数字だけを読む（カード番号などは読まない）', () => {
-    assert.deepEqual(readDocPorts('http://localhost:8080/api と :8090、4242 4242、12:3456'), [8080, 8090, 3456])
+    assert.deepEqual(parseDocPorts('http://localhost:8080/api と :8090、4242 4242、12:3456'), [8080, 8090, 3456])
   })
 
   test('一覧にないポートが compose にあれば失敗にする', () => {
@@ -168,8 +168,8 @@ describe('ローカルのポートの一覧の検査', () => {
 
   test('設定のポートは、yml の port、JSON の port、起動の引数の --port から読む', () => {
     const yml = 'server:\n  port: 8090\nmanagement:\n  server:\n    port: ${MANAGEMENT_SERVER_PORT:9080}\nurl: http://localhost:5432/x'
-    assert.deepEqual(readConfigPorts(yml), [5432, 8090, 9080])
-    assert.deepEqual(readConfigPorts('{ "port": 5173, "args": ["--port", "3000"] }'), [3000, 5173])
+    assert.deepEqual(parseConfigPorts(yml), [5432, 8090, 9080])
+    assert.deepEqual(parseConfigPorts('{ "port": 5173, "args": ["--port", "3000"] }'), [3000, 5173])
   })
 
   test('設定（realm、yml、起動の設定）に一覧にないポートがあれば失敗にする', () => {

@@ -48,7 +48,7 @@ const isExternal = (id) => id.includes('.')
  * @param {string} text libs.versions.toml の内容
  * @returns {{ ids: string[], unknown: string[] }} id（書いた順）と、id を読めない項目の名前
  */
-export function readCatalogPlugins(text) {
+export function parseCatalogPlugins(text) {
   const ids = []
   const unknown = []
   for (const [name, value] of Object.entries(parse(text).plugins ?? {})) {
@@ -128,7 +128,7 @@ if (import.meta.main) {
   }
   const used = []
   const unknownLines = []
-  const catalog = readCatalogPlugins(readRequired(CATALOG_FILE))
+  const catalog = parseCatalogPlugins(readRequired(CATALOG_FILE))
   used.push(...catalog.ids)
   unknownLines.push(...catalog.unknown.map((name) => `${CATALOG_FILE} の plugins.${name}（id を読めない。id を書く）`))
   for (const file of buildFiles) {

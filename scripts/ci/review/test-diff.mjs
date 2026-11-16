@@ -97,17 +97,21 @@ function endsImportBlock(line) {
  * それぞれで、前後の行（差分の文脈の行を含む）から中にいるかを辿る。
  *
  * @param {string} diffText git diff -M の出力
- * @returns {{ path: string, newFile: boolean, removed: string[], added: string[] }[]} ファイルごとの差分（path は変更の後のパス）
+ * @returns {{ path: string, oldPath: string, newFile: boolean, removed: { text: string, number: number }[], added: { text: string, number: number }[] }[]}
+ *   ファイルごとの差分。path は変更の後のパス、oldPath は変更の前のパス。number は、消した行は変更の前の、追加した行は変更の後のファイルの行（1 から）
  */
 function parseDiff(diffText) {
   const files = []
   let current = null
   let oldInImport = false
   let newInImport = false
+  let oldNumber = 0
+  let newNumber = 0
   for (const line of diffText.split(/\r?\n/)) {
     const header = line.match(/^diff --git a\/(.+) b\/(.+)$/)
+    const hunk = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
     if (header) {
-      current = { path: header[2], newFile: false, removed: [], added: [] }
+      current = { path: header[2], oldPath: header[1], newFile: false, removed: [], added: [] }
       files.push(current)
       oldInImport = false
       newInImport = false
@@ -115,24 +119,31 @@ function parseDiff(diffText) {
       continue
     } else if (line.startsWith('new file mode')) {
       current.newFile = true
+    } else if (hunk) {
+      oldNumber = Number(hunk[1])
+      newNumber = Number(hunk[2])
     } else if (line.startsWith('+++ ') || line.startsWith('--- ') || line.startsWith('@@')) {
       continue
     } else if (line.startsWith('+')) {
       const text = line.slice(1)
       const inImport = newInImport || startsImportBlock(text)
       newInImport = inImport && !endsImportBlock(text)
-      if (!inImport && !isImportLine(text)) current.added.push(text)
+      if (!inImport && !isImportLine(text)) current.added.push({ text, number: newNumber })
+      newNumber++
     } else if (line.startsWith('-')) {
       const text = line.slice(1)
       const inImport = oldInImport || startsImportBlock(text)
       oldInImport = inImport && !endsImportBlock(text)
-      if (!inImport && !isImportLine(text)) current.removed.push(text)
+      if (!inImport && !isImportLine(text)) current.removed.push({ text, number: oldNumber })
+      oldNumber++
     } else if (line.startsWith(' ')) {
       const text = line.slice(1)
       const oldIn = oldInImport || startsImportBlock(text)
       const newIn = newInImport || startsImportBlock(text)
       oldInImport = oldIn && !endsImportBlock(text)
       newInImport = newIn && !endsImportBlock(text)
+      oldNumber++
+      newNumber++
     }
   }
   return files
@@ -147,17 +158,18 @@ function parseDiff(diffText) {
  *
  * @param {string} diffText git diff -M の出力
  * @param {string[][]} renames [旧, 新] の並び
- * @returns {{ file: string, kind: 'removed' | 'added', line: string }[]} 説明できない行
+ * @returns {{ file: string, kind: 'removed' | 'added', line: string, location: string }[]} 説明できない行。
+ *   location は「ファイル:行」（消した行は変更の前の、追加した行は変更の後のファイルと行）
  */
 export function findViolations(diffText, renames) {
   const files = parseDiff(diffText).filter((file) => isTestPath(file.path))
   const added = files.flatMap((file) =>
-    file.added.map((line) => ({ file, line, key: line.trim(), used: false })),
+    file.added.map(({ text, number }) => ({ file, line: text, number, key: text.trim(), used: false })),
   )
   const violations = []
   const compiled = compileRenames(renames)
   for (const file of files.filter((f) => !f.newFile)) {
-    for (const line of file.removed) {
+    for (const { text: line, number } of file.removed) {
       const key = applyRenames(line, compiled).trim()
       // 同じファイルの行を先に当て、なければ他のファイルの行を当てる
       const match =
@@ -166,13 +178,13 @@ export function findViolations(diffText, renames) {
       if (match) {
         match.used = true
       } else {
-        violations.push({ file: file.path, kind: 'removed', line })
+        violations.push({ file: file.path, kind: 'removed', line, location: `${file.oldPath}:${number}` })
       }
     }
   }
   for (const entry of added) {
     if (!entry.used && !entry.file.newFile) {
-      violations.push({ file: entry.file.path, kind: 'added', line: entry.line })
+      violations.push({ file: entry.file.path, kind: 'added', line: entry.line, location: `${entry.file.path}:${entry.number}` })
     }
   }
   return violations
@@ -192,8 +204,8 @@ function main() {
     maxBuffer: 256 * 1024 * 1024,
   })
   const violations = findViolations(diffText, renames)
-  for (const { file, kind, line } of violations) {
-    console.log(`${file}: ${kind === 'added' ? '+' : '-'}${line}`)
+  for (const { kind, line, location } of violations) {
+    console.log(`${location} ${kind === 'added' ? '+' : '-'}${line}`)
   }
   console.log(`名前の変更と移動で説明できない行：${violations.length}`)
   process.exit(violations.length === 0 ? 0 : 1)

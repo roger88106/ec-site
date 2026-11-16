@@ -72,16 +72,38 @@ describe('テストの差分の検査', () => {
       added: ['        assertThat(total).isEqualTo(200);'],
     })
     assert.deepEqual(findViolations(diff, []), [
-      { file: TEST, kind: 'removed', line: '        assertThat(total).isEqualTo(100);' },
-      { file: TEST, kind: 'added', line: '        assertThat(total).isEqualTo(200);' },
+      { file: TEST, kind: 'removed', line: '        assertThat(total).isEqualTo(100);', location: `${TEST}:1` },
+      { file: TEST, kind: 'added', line: '        assertThat(total).isEqualTo(200);', location: `${TEST}:1` },
     ])
   })
 
   test('行を追加するだけ・消すだけの変更も失敗する', () => {
     const diff = fileDiff({ from: TEST, added: ['        verify(mock).call();'] })
     assert.deepEqual(findViolations(diff, []), [
-      { file: TEST, kind: 'added', line: '        verify(mock).call();' },
+      { file: TEST, kind: 'added', line: '        verify(mock).call();', location: `${TEST}:1` },
     ])
+  })
+
+  test('説明できない行の場所は、@@ の行と文脈の行から数え、消した行は変更の前のファイルの行にする', () => {
+    const diff = [
+      `diff --git a/${TEST} b/${TEST}`,
+      `--- a/${TEST}`,
+      `+++ b/${TEST}`,
+      '@@ -10,4 +20,4 @@',
+      ' class FooTest {',
+      '-    int a = 1;',
+      '+    int a = 2;',
+      '     int b = 3;',
+      '+    int c = 4;',
+    ].join('\n')
+    assert.deepEqual(
+      findViolations(diff, []).map(({ kind, location }) => [kind, location]),
+      [
+        ['removed', `${TEST}:11`],
+        ['added', `${TEST}:21`],
+        ['added', `${TEST}:23`],
+      ],
+    )
   })
 
   test('新しく追加したテストのファイルは見ない', () => {
@@ -129,7 +151,7 @@ describe('ファイルをまたぐテストの移動（中身を変えない移�
       fileDiff({ from: FROM, removed: MOVED }),
       fileDiff({ from: TO, newFile: true, added: changed }),
     ].join('\n')
-    assert.deepEqual(findViolations(diff, []), [{ file: FROM, kind: 'removed', line: MOVED[1] }])
+    assert.deepEqual(findViolations(diff, []), [{ file: FROM, kind: 'removed', line: MOVED[1], location: `${FROM}:2` }])
   })
 
   test('字下げだけが変わった行は通る', () => {

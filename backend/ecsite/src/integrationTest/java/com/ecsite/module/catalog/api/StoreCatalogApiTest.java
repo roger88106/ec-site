@@ -382,7 +382,7 @@ class StoreCatalogApiTest {
     class RateSwitch {
 
         @Test
-        @DisplayName("切り替えの直前は、旧い税率の税込価格")
+        @DisplayName("切り替えの直前は、前の税率の税込価格")
         void usesOldRateJustBeforeSwitch() throws Exception {
             // 準備：税区分「標準」の税率を、1 時間後から軽減と同じ率に切り替える予定にし、キャッシュを捨てる
             published(standard, PRICE_EXCL_TAX);
@@ -392,7 +392,7 @@ class StoreCatalogApiTest {
             clock.setInstant(switchAt.minusNanos(1));
             var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
 
-            // 確認：旧い税率の税込価格
+            // 確認：切り替えの前の税率の税込価格
             assertThat(item.priceInclTax()).isEqualTo(Money.of(PRICE_INCL_STANDARD));
         }
 

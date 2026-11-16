@@ -71,6 +71,7 @@ run_check() {
 
 # script のテストは node --test の出力で、要約の行の形ではないので、テストの数（tests N）が 1 件以上かで判定する（tests）。
 # glob が 1 件も一致しないと、node --test は tests 0 で終了コード 0 になるため
+#
 # commit の前の hook は、選んだテストと検査だけを CHECK_TESTS・CHECK_SCRIPTS（空白で区切る）で渡す。渡さなければ全てを実行する。
 # 選んだものが空なら実行しない（hook の選び方は scripts/dev/hooks/pre-commit-select.mjs）
 if [ -z "${CHECK_TESTS+set}" ]; then

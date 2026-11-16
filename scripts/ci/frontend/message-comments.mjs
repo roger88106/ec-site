@@ -1,6 +1,7 @@
 // 文言をキーで引く所に、表示する内容のコメントがあることを確認する（コメントの書き方の「文言をキーにした所」）。
 // キーだけでは画面に何が出るかを読めないため、`t('…')`・`translate('…')` の呼び出しの始めから、閉じ括弧のある行の終わりまでに、
 // コメント（/* */ か //）を求める。キーを組み立てる呼び出し（t(`…${x}`)）は、表示が値で変わるので見ない。
+//
 // 対象は、店舗画面・管理画面・共有パッケージの本番ソース（.ts、.tsx）と、店舗画面・管理画面の src/test/ 内のテスト補助と、generated/ 内の .tsx。
 //
 // 失敗したとき：呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く。
@@ -113,14 +114,14 @@ export function findMissingComments(text) {
   return missing
 }
 
-/** 2 つの画面の src の .tsx（テストと shadcn/ui の部品を除く）。src/test/ のテストの補助と generated/ の .tsx を含む */
+/** 2 つの画面の src の .tsx */
 const SCREEN_TSX = /^frontend\/(?:admin|store)\/src\/.*\.tsx$/
 
 /**
  * 調べるファイルかを返す。
  *
  * 画面の本番のソースの定義（lib/docs/screen-sources.mjs）に加えて、
- * 2 つの画面の src/test/ のテストの補助と generated/ の .tsx も見る。
+ * 2 つの画面の src/test/ のテストの補助と generated/ の .tsx も見る（テストと shadcn/ui の部品は除く）。
  * 理由：テストの補助や生成物にも画面の文言を書けるので、共通の定義に合わせて対象を狭めない。
  *
  * @param {string} file リポジトリのルートからのパス

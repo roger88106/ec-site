@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 /**
- * 検査の除外の一覧のパスを返す。一覧は検査と同じフォルダに置き、scripts/ci/ からの相対パスで渡す。実行する場所に関わらず同じパスになる。
+ * 検査の除外の一覧のパスを返す。
+ *
+ * 一覧は検査と同じフォルダに置き、scripts/ci/ からの相対パスで渡す。実行する場所に関わらず同じパスになる。
  *
  * @param {string} name scripts/ci/ からの相対パス（例：spec/ac-exclusions.json）
  * @returns {string} 絶対パス

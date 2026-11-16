@@ -144,6 +144,20 @@ function currentSlot(ctx) {
 }
 
 /**
+ * 今の作業ツリーのスロットを返す。
+ *
+ * 割り当てがなければ、assign を案内して終わる（終了コード 1）。
+ *
+ * @param {{ root: string, main: boolean }} ctx 作業ツリーの状態
+ * @returns {number} スロットの番号
+ */
+function requireSlot(ctx) {
+  const slot = currentSlot(ctx)
+  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
+  return slot
+}
+
+/**
  * コンテナが動いているか。
  *
  * @param {string} name コンテナの名前
@@ -390,8 +404,7 @@ async function release(ctx) {
  * @param {string[]} args 対象（backend、store、admin のどれか 1 つ。省略は全て）
  */
 function stop(ctx, args) {
-  const slot = currentSlot(ctx)
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
+  const slot = requireSlot(ctx)
   const target = stopTargetPorts(slot, args)
   if (target.error !== undefined) throw new Exit(2, target.error)
   const result = stopSlot({
@@ -429,8 +442,7 @@ async function backendRunning(slot) {
 async function reset(ctx) {
   if (ctx.main) return console.log('メインの作業ツリーはスロット 0。scripts/dev/reset.sh を使う')
   requireShared(ctx)
-  const slot = parseSlotRecord(readRecord(ctx.root))
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
+  const slot = requireSlot(ctx)
   const values = slotValues(slot)
   const problem = checkBackendStopped({ slot, running: await backendRunning(slot), action: '流し直す' })
   if (problem !== null) throw new Exit(problem.code, problem.message)
@@ -482,8 +494,7 @@ function shellQuote(value) {
  * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 function env(ctx) {
-  const slot = currentSlot(ctx)
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
+  const slot = requireSlot(ctx)
   const merged = {}
   for (const target of TARGETS) Object.assign(merged, slotEnv(slot, target))
   for (const [name, value] of Object.entries(merged)) console.log(`export ${name}=${shellQuote(value)}`)
@@ -499,8 +510,7 @@ function env(ctx) {
 async function run(ctx, args) {
   const [target, number] = args
   if (!TARGETS.includes(target)) throw new Exit(2, `起動する対象は ${TARGETS.join('、')} のどれか：${target ?? ''}`)
-  const slot = currentSlot(ctx)
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
+  const slot = requireSlot(ctx)
   if (number !== undefined && Number(number) !== slot) {
     throw new Exit(1, `この作業ツリーのスロットは ${slot} で、指定の ${number} と違う。起動しない`)
   }

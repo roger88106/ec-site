@@ -264,6 +264,21 @@ class CartApiTest {
             assertThat(items()).isEmpty();
         }
 
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, 10})
+        @DisplayName("AC-75 範囲の端の数量は入れられる")
+        void acceptsQuantityAtBoundary(int quantity) throws Exception {
+            // 準備：在庫が 20 のバリアント
+            var variant = stockedVariant(20);
+
+            // 操作：範囲の端の数量を入れる
+            var result = add(cartId, variant, quantity);
+
+            // 確認：受け付けられ、入れた数量になる
+            result.andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, quantity));
+        }
+
         @Test
         @DisplayName("AC-75 合算して 10 を超える数量は入れられず、数量は変わらない")
         void rejectsMergedQuantityOverLimit() throws Exception {
@@ -448,6 +463,22 @@ class CartApiTest {
             // 確認：拒否され、1 個のまま
             result.andExpect(status().isBadRequest());
             assertThat(items()).containsExactly(Map.entry(variant, 1));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, 10})
+        @DisplayName("AC-78 変更後の数量が範囲の端なら変えられる")
+        void changesToQuantityAtBoundary(int quantity) throws Exception {
+            // 準備：在庫が 20 のバリアントを 5 個入れたカート
+            var variant = stockedVariant(20);
+            add(cartId, variant, 5).andExpect(status().isNoContent());
+
+            // 操作：範囲の端の数量に変える
+            var result = change(cartId, variant, quantity);
+
+            // 確認：受け付けられ、変えた数量になる
+            result.andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, quantity));
         }
     }
 

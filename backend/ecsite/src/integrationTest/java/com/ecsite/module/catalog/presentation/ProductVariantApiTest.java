@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
@@ -81,6 +83,26 @@ class ProductVariantApiTest {
      * M サイズ
      */
     private static final String SIZE_M = "M";
+
+    /**
+     * 素材の軸
+     */
+    private static final String AXIS_MATERIAL = "素材";
+
+    /**
+     * 綿
+     */
+    private static final String COTTON = "綿";
+
+    /**
+     * 品番の上限（文字）
+     */
+    private static final int CODE_MAX_LENGTH = 32;
+
+    /**
+     * 軸の値の上限（文字）
+     */
+    private static final int AXIS_VALUE_MAX_LENGTH = 50;
 
     // ============================== Bean ==============================
 
@@ -215,6 +237,76 @@ class ProductVariantApiTest {
                     .andExpect(jsonPath("$.errorCode").value("SINGLE_VARIANT_ONLY"));
         }
 
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, CODE_MAX_LENGTH})
+        @DisplayName("バリアント品番が範囲の端の文字数なら登録できる")
+        void acceptsVariantCodeAtBoundary(int length) throws Exception {
+            // 準備：軸のない商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：登録できる
+            products.addVariant(id, "V".repeat(length), 0).andExpect(status().isCreated());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, CODE_MAX_LENGTH + 1})
+        @DisplayName("バリアント品番が範囲の外の文字数なら 400")
+        void rejectsVariantCodeOutOfRange(int length) throws Exception {
+            // 準備：軸のない商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.addVariant(id, "V".repeat(length), 0)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, AXIS_VALUE_MAX_LENGTH})
+        @DisplayName("軸の値が範囲の端の文字数なら登録できる")
+        void acceptsAxisValueAtBoundary(int length) throws Exception {
+            // 準備：色の軸を持つ商品
+            var id = products.product(PRODUCT_CODE, AXIS_COLOR);
+
+            // 操作と確認：登録できる
+            products.addVariant(id, "V1", 0, "あ".repeat(length)).andExpect(status().isCreated());
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, AXIS_VALUE_MAX_LENGTH + 1})
+        @DisplayName("軸の値が範囲の外の文字数なら 400")
+        void rejectsAxisValueOutOfRange(int length) throws Exception {
+            // 準備：色の軸を持つ商品
+            var id = products.product(PRODUCT_CODE, AXIS_COLOR);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.addVariant(id, "V1", 0, "あ".repeat(length))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
+        @DisplayName("軸の値は 3 つまで指定できる")
+        void acceptsThreeAxisValues() throws Exception {
+            // 準備：軸が 3 つの商品
+            var id = products.product(PRODUCT_CODE, AXIS_COLOR, AXIS_SIZE, AXIS_MATERIAL);
+
+            // 操作と確認：登録できる
+            products.addVariant(id, "V1", 0, WHITE, SIZE_M, COTTON).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("軸の値が 4 つ以上なら 400")
+        void rejectsFourAxisValues() throws Exception {
+            // 準備：軸が 3 つの商品
+            var id = products.product(PRODUCT_CODE, AXIS_COLOR, AXIS_SIZE, AXIS_MATERIAL);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.addVariant(id, "V1", 0, WHITE, SIZE_M, COTTON, "無地")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
         @Test
         @DisplayName("古いバージョンで登録すると 409")
         void rejectsVersionMismatch() throws Exception {
@@ -284,6 +376,30 @@ class ProductVariantApiTest {
             products.reorderVariants(id, 2, black)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_VARIANT_ORDER"));
+        }
+
+        @Test
+        @DisplayName("1 つだけの並びでも並び替えられる")
+        void reordersSingleVariant() throws Exception {
+            // 準備：軸がなく、バリアントを 1 つ持つ商品（バージョン 1）
+            var id = products.product(PRODUCT_CODE);
+            var only = products.variantId(id, "V1", 0);
+
+            // 操作と確認：並び替えられる
+            products.reorderVariants(id, 1, only).andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("空の並びは 400")
+        void rejectsEmptyOrder() throws Exception {
+            // 準備：軸がなく、バリアントを 1 つ持つ商品（バージョン 1）
+            var id = products.product(PRODUCT_CODE);
+            products.variantId(id, "V1", 0);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.reorderVariants(id, 1)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test

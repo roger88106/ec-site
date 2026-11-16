@@ -167,6 +167,34 @@ class CheckoutCleanupJobTest {
             // 確認：前者だけが消え、後者は残る
             assertThat(remaining(List.of(old, recent))).containsExactly(recent);
         }
+
+        @Test
+        @DisplayName("AC-284 期限からちょうど保存期間（1 日）の注文手続きは、まだ消さない")
+        void keepsCheckoutAtRetention() {
+            // 準備：今始めた注文手続きと、その期限からちょうど 1 日の時刻
+            var checkout = insertCheckout(NOW);
+            clock.setInstant(NOW.plus(TTL).plus(Duration.ofDays(1)));
+
+            // 操作：片付ける
+            job.cleanUp();
+
+            // 確認：注文手続きが残る
+            assertThat(remaining(List.of(checkout))).containsExactly(checkout);
+        }
+
+        @Test
+        @DisplayName("AC-284 期限から保存期間（1 日）を 1 マイクロ秒（DB の時刻の精度）でも過ぎた注文手続きは消す")
+        void deletesCheckoutJustAfterRetention() {
+            // 準備：今始めた注文手続きと、その期限から 1 日と 1 マイクロ秒の時刻
+            var checkout = insertCheckout(NOW);
+            clock.setInstant(NOW.plus(TTL).plus(Duration.ofDays(1)).plus(Duration.ofNanos(1_000)));
+
+            // 操作：片付ける
+            job.cleanUp();
+
+            // 確認：注文手続きが消えている
+            assertThat(remaining(List.of(checkout))).isEmpty();
+        }
     }
 
     @Nested
@@ -311,7 +339,14 @@ class CheckoutCleanupJobTest {
             // 準備：消す条件に当たる 5 件の注文手続きと、上限 2 件のジョブ
             var checkouts = IntStream.range(0, DELETED_COUNT).mapToObj(i -> insertCheckout(LONG_AGO)).toList();
             var smallBatch = new CheckoutCleanupJob(service, SMALL_BATCH, clock);
-            clock.setInstant(LONG_AGO.plus(TTL).plus(Duration.ofDays(1)).plusSeconds(1));
+            var cleanUpAt = LONG_AGO.plus(TTL).plus(SMALL_BATCH.retention()).plusSeconds(1);
+            clock.setInstant(cleanUpAt);
+
+            // 準備：消す対象（保持の期間を過ぎた全ての注文手続き）を数える（他のテストがコミットした注文手続きも対象になりうる）
+            var targets = dsl.fetchCount(CHECKOUT, CHECKOUT.EXPIRES_AT.lt(cleanUpAt.minus(SMALL_BATCH.retention())));
+
+            // 確認（前提）：このテストの 5 件が対象に入る
+            assertThat(targets).isGreaterThanOrEqualTo(DELETED_COUNT);
 
             // 操作：片付ける
             logs.clear();
@@ -320,8 +355,8 @@ class CheckoutCleanupJobTest {
             // 確認（前提）：5 件の全てが消えている
             assertThat(remaining(checkouts)).isEmpty();
 
-            // 確認：合計の 5 件を INFO のログに出す
-            assertThat(logs.messages(Level.INFO)).contains("期限切れの注文手続きを消した：" + DELETED_COUNT + " 件");
+            // 確認：消した合計（数えた対象の数）を INFO のログに 1 回出している
+            assertThat(logs.messages(Level.INFO)).containsExactly("期限切れの注文手続きを消した：" + targets + " 件");
         }
     }
 

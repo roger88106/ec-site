@@ -14,6 +14,7 @@ import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationKind;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.domain.order.vo.Gender;
+import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;
@@ -57,7 +58,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p>保存と再構築、注文番号と注文手続きの一意性、更新、行のロックと会員のロックを確認する。注文の状態の変化の規則は、注文の単体テストが確認する。
  *
- * <p>保存した注文の期待値は、保存の前の注文の写し（{@link Order#toSnapshot()}）と比べる。行のロックを確認するテスト以外は、テストごとにロールバックする。
+ * <p>保存した注文の期待値は、準備に使った定数から作り、項目ごとに確認する（保存の前の注文から取り出さない）。
+ * 行のロックを確認するテスト以外は、テストごとにロールバックする。
  */
 @IntegrationTest
 @RecordApplicationEvents
@@ -103,6 +105,82 @@ class JooqOrderRepositoryTest {
      */
     private static final String MAX_REASON = "理由😀".repeat(166) + "理由";
 
+    /**
+     * 注文した会員の ID（実行ごとに作るが、実行の中では同じ）
+     */
+    private static final UUID MEMBER_ID = UUID.randomUUID();
+
+    /**
+     * T シャツのバリアント ID
+     */
+    private static final UUID SHIRT_VARIANT_ID = UUID.randomUUID();
+
+    /**
+     * お茶のバリアント ID
+     */
+    private static final UUID TEA_VARIANT_ID = UUID.randomUUID();
+
+    /**
+     * 標準の注文のメールアドレス
+     */
+    private static final String EMAIL = "taro@example.com";
+
+    /**
+     * 標準の注文のお届け先
+     */
+    private static final ShippingAddress ADDRESS =
+            ShippingAddress.of("山田 太郎", "100-0001", TestAreas.CHIYODA, "千代田 1-1", "03-1234-5678");
+
+    /**
+     * 標準の注文の、注文時の年齢と性別
+     */
+    private static final BuyerProfile BUYER_PROFILE = new BuyerProfile(36, Gender.FEMALE);
+
+    /**
+     * 標準の注文の明細（T シャツ 1 枚（10%）とお茶 1 個（8%））
+     */
+    private static final List<OrderLine> LINES = List.of(
+            new OrderLine(1, SHIRT_VARIANT_ID, "TS-001", "TS-001-WM", "T シャツ",
+                    List.of(new AxisValue("色", "白"), new AxisValue("サイズ", "M")), Money.of(2700), BigDecimal.TEN,
+                    Money.of(2970), 1, Money.of(2970)),
+            new OrderLine(2, TEA_VARIANT_ID, "TEA-1", "TEA-1", "お茶", List.of(), Money.of(1234), new BigDecimal("8"),
+                    Money.of(1332), 1, Money.of(1332)));
+
+    /**
+     * 標準の注文の金額の内訳
+     */
+    private static final Amounts AMOUNTS = new Amounts(Money.of(4302), Money.of(1000), Money.of(5302), List.of(
+            new TaxAmount(BigDecimal.TEN, Money.of(3970), Money.of(360)),
+            new TaxAmount(new BigDecimal("8"), Money.of(1332), Money.of(98))));
+
+    /**
+     * 上限の注文のメールアドレス（254 文字）
+     */
+    private static final String MAX_EMAIL = "a".repeat(254 - "@example.com".length()) + "@example.com";
+
+    /**
+     * 上限の注文のお届け先（絵文字を含む 50 文字の氏名と、200 文字の住所）
+     */
+    private static final ShippingAddress MAX_ADDRESS =
+            ShippingAddress.of("山田" + "😀".repeat(48), "100-0001", TestAreas.CHIYODA, "千".repeat(200), "03-1234-5678");
+
+    /**
+     * 上限の注文の、注文時の年齢と性別（120 歳）
+     */
+    private static final BuyerProfile MAX_BUYER_PROFILE = new BuyerProfile(120, Gender.OTHER);
+
+    /**
+     * 上限の注文の明細（税抜単価 9,999,999 円（税込 10,999,998 円）を数量 10 個）
+     */
+    private static final OrderLine MAX_LINE = new OrderLine(1, SHIRT_VARIANT_ID, "MAX-1", "MAX-1-1", "高価な商品", List.of(),
+            Money.of(9_999_999), BigDecimal.TEN, Money.of(10_999_998), 10, Money.of(109_999_980));
+
+    /**
+     * 上限の注文の金額の内訳
+     */
+    private static final Amounts MAX_AMOUNTS = new Amounts(Money.of(109_999_980), Money.of(1000), Money.of(110_000_980), List.of(
+            new TaxAmount(BigDecimal.TEN, Money.of(110_000_980), Money.of(10_000_089))));
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -127,15 +205,16 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を保存し、明細・金額・お届け先・注文時の年齢と性別を含めて再構築できる")
         void savesAndRestoresOrder() {
             // 準備：2 つの税率の品目を持つ注文
-            var order = order(UUID.randomUUID(), orderNumber());
-            var expected = order.toSnapshot();
+            var checkoutId = UUID.randomUUID();
+            var orderNumber = orderNumber();
+            var order = order(checkoutId, orderNumber);
 
             // 操作：保存する
             assertThat(repository.insert(order)).isTrue();
 
-            // 確認：読み直した注文の写しが、保存の前と同じ
+            // 確認：読み直した注文の全ての項目が、準備の定数のまま
             var restored = repository.findById(order.id()).orElseThrow();
-            assertThat(restored.toSnapshot()).isEqualTo(expected);
+            assertPlacedStandardOrder(restored.toSnapshot(), order.id(), checkoutId, orderNumber);
         }
 
         @Test
@@ -235,7 +314,9 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を受付に変えて更新すると、状態が受付になり、バージョンが 1 上がり、他の項目は変わらない")
         void updatesStatusAndVersion() {
             // 準備：保存した注文を読み、受付にする
-            var order = order(UUID.randomUUID(), orderNumber());
+            var checkoutId = UUID.randomUUID();
+            var orderNumber = orderNumber();
+            var order = order(checkoutId, orderNumber);
             repository.insert(order);
             var loaded = repository.findById(order.id()).orElseThrow();
             loaded.acceptPayment(ACCEPTED_AT);
@@ -244,7 +325,7 @@ class JooqOrderRepositoryTest {
             repository.update(loaded);
 
             // 確認：状態とバージョンだけが変わる
-            assertAcceptedUpdate(repository.findById(order.id()).orElseThrow().toSnapshot(), order.toSnapshot());
+            assertAcceptedUpdate(repository.findById(order.id()).orElseThrow().toSnapshot(), order.id(), checkoutId, orderNumber);
         }
 
         @Test
@@ -328,21 +409,26 @@ class JooqOrderRepositoryTest {
         @DisplayName("domain の上限の値（氏名・住所・メールアドレス・年齢・数量・単価）の注文を、そのまま保存して再構築できる")
         void savesMaxValues() {
             // 準備：各項目が domain の上限の注文
-            var order = maxOrder();
-            var expected = order.toSnapshot();
+            var checkoutId = UUID.randomUUID();
+            var orderNumber = orderNumber();
+            var order = maxOrder(checkoutId, orderNumber);
 
             // 操作：保存する
             assertThat(repository.insert(order)).isTrue();
 
-            // 確認：読み直した注文の写しが、保存の前と同じ
-            assertThat(repository.findById(order.id()).orElseThrow().toSnapshot()).isEqualTo(expected);
+            // 確認：読み直した注文の全ての項目が、上限の定数のまま
+            var restored = repository.findById(order.id()).orElseThrow().toSnapshot();
+            assertMaxContent(restored, order.id(), checkoutId, orderNumber);
+            assertThat(restored.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         }
 
         @Test
         @DisplayName("上限の 500 文字の申請と運営者のキャンセルの理由と、255 文字の運営者名を、そのまま更新して再構築できる")
         void updatesMaxReasons() {
             // 準備：上限の注文を受付にし、500 文字の理由で申請し、500 文字の理由と 255 文字の名前の運営者がキャンセルする
-            var order = maxOrder();
+            var checkoutId = UUID.randomUUID();
+            var orderNumber = orderNumber();
+            var order = maxOrder(checkoutId, orderNumber);
             repository.insert(order);
             var loaded = repository.findById(order.id()).orElseThrow();
             loaded.acceptPayment(ACCEPTED_AT);
@@ -350,37 +436,21 @@ class JooqOrderRepositoryTest {
             var requested = repository.findById(order.id()).orElseThrow();
             requested.requestCancellation(MAX_REASON, REQUESTED_AT);
             repository.update(requested);
+            var operator = new Operator(UUID.randomUUID(), "管".repeat(255));
             var cancelled = repository.findById(order.id()).orElseThrow();
-            cancelled.cancelByOperator(MAX_REASON, true, false, new Operator(UUID.randomUUID(), "管".repeat(255)), DECIDED_AT);
-            var expected = cancelled.toSnapshot();
+            cancelled.cancelByOperator(MAX_REASON, true, false, operator, DECIDED_AT);
 
             // 操作：更新する
             repository.update(cancelled);
 
-            // 確認：読み直した注文の写しが、バージョンの他は更新の前と同じ
-            assertThat(repository.findById(order.id()).orElseThrow().toSnapshot())
-                    .usingRecursiveComparison().ignoringFields("version").isEqualTo(expected);
-        }
-
-        /**
-         * 各項目が domain の上限の注文を作る。
-         *
-         * <p>氏名は絵文字（サロゲートペア）を含む 50 文字、住所は 200 文字、メールアドレスは 254 文字、年齢は 120 歳。
-         * 明細は、税抜単価 9,999,999 円（税込 10,999,998 円）を数量 10 個。
-         *
-         * @return 注文（支払待ち）
-         */
-        private Order maxOrder() {
-            var variant = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "MAX-1", "MAX-1-1", "高価な商品", List.of(),
-                    Money.of(9_999_999), UUID.randomUUID(), null, true, false);
-            var item = QuoteItem.of(variant, 10, 10, BigDecimal.TEN, Money.of(10_999_998));
-            var amounts = new Amounts(Money.of(109_999_980), Money.of(1000), Money.of(110_000_980), List.of(
-                    new TaxAmount(BigDecimal.TEN, Money.of(110_000_980), Money.of(10_000_089))));
-            var email = "a".repeat(254 - "@example.com".length()) + "@example.com";
-            return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber()), UUID.randomUUID(), UUID.randomUUID(), ORDERED_AT,
-                    new Quote(List.of(item), amounts, true), email,
-                    ShippingAddress.of("山田" + "😀".repeat(48), "100-0001", TestAreas.CHIYODA, "千".repeat(200), "03-1234-5678"),
-                    new BuyerProfile(120, Gender.OTHER));
+            // 確認：成立の時点の項目が上限の定数のままで、申請とキャンセルが 500 文字の理由と 255 文字の運営者名を持つ
+            var restored = repository.findById(order.id()).orElseThrow().toSnapshot();
+            assertMaxContent(restored, order.id(), checkoutId, orderNumber);
+            assertThat(restored.status()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(restored.cancellationRequest()).isEqualTo(new CancellationRequest(REQUESTED_AT, MAX_REASON,
+                    CancellationRequest.Result.APPROVED, DECIDED_AT, operator));
+            assertThat(restored.cancellation())
+                    .isEqualTo(new Cancellation(DECIDED_AT, CancellationKind.OPERATOR, MAX_REASON, operator, true));
         }
     }
 
@@ -392,11 +462,13 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を行ロックして取得すると、保存した注文を再構築して返す")
         void locksOrderById() {
             // 準備：注文を保存する
-            var order = order(UUID.randomUUID(), orderNumber());
+            var checkoutId = UUID.randomUUID();
+            var orderNumber = orderNumber();
+            var order = order(checkoutId, orderNumber);
             repository.insert(order);
 
-            // 操作と確認：保存の前の注文の写しと同じ
-            assertThat(repository.lockById(order.id()).orElseThrow().toSnapshot()).isEqualTo(order.toSnapshot());
+            // 操作と確認：全ての項目が、準備の定数のまま
+            assertPlacedStandardOrder(repository.lockById(order.id()).orElseThrow().toSnapshot(), order.id(), checkoutId, orderNumber);
         }
 
         @Test
@@ -469,18 +541,111 @@ class JooqOrderRepositoryTest {
      * <p>確認すること：
      * <ul>
      *   <li>状態が受付</li>
-     *   <li>バージョンが保存の前より 1 大きい</li>
-     *   <li>状態とバージョンの他の項目が、保存の前と同じ</li>
+     *   <li>バージョンが 1（保存の後の 1 回の更新）</li>
+     *   <li>成立の時点の項目（{@link #assertStandardContent}）</li>
+     *   <li>キャンセルの申請とキャンセルがない</li>
      * </ul>
      *
-     * @param restored 読み直した注文の写し
-     * @param saved    保存の前の注文の写し（明細などを全て比べるので、定数で書かずに写しと比べる）
+     * @param restored    読み直した注文の写し
+     * @param orderId     注文 ID（実行ごとに作るので、定数にできない。以下も同じ）
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
      */
-    private static void assertAcceptedUpdate(Order.Snapshot restored, Order.Snapshot saved) {
+    private static void assertAcceptedUpdate(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
         assertThat(restored.status()).isEqualTo(OrderStatus.ACCEPTED);
-        assertThat(restored.version()).isEqualTo(saved.version() + 1);
-        assertThat(restored).usingRecursiveComparison().ignoringFields("status", "version")
-                .isEqualTo(saved);
+        assertThat(restored.version()).isEqualTo(1);
+        assertStandardContent(restored, orderId, checkoutId, orderNumber);
+        assertThat(restored.cancellationRequest()).isNull();
+        assertThat(restored.cancellation()).isNull();
+    }
+
+    /**
+     * 標準の注文（{@link #order}）を保存したまま、変えていないことを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>状態が支払待ちで、バージョンが 0</li>
+     *   <li>成立の時点の項目（{@link #assertStandardContent}）</li>
+     *   <li>キャンセルの申請とキャンセルがない</li>
+     * </ul>
+     *
+     * @param restored    読み直した注文の写し
+     * @param orderId     注文 ID（実行ごとに作るので、定数にできない。以下も同じ）
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
+     */
+    private static void assertPlacedStandardOrder(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+        assertThat(restored.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(restored.version()).isZero();
+        assertStandardContent(restored, orderId, checkoutId, orderNumber);
+        assertThat(restored.cancellationRequest()).isNull();
+        assertThat(restored.cancellation()).isNull();
+    }
+
+    /**
+     * 標準の注文（{@link #order}）の、成立の時点の項目を確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *   <li>注文 ID、注文番号、注文手続き ID、会員 ID、注文日時</li>
+     *   <li>明細の全ての項目と並び（{@link #LINES}）</li>
+     *   <li>金額の内訳（{@link #AMOUNTS}）</li>
+     *   <li>メールアドレス、お届け先、注文時の年齢と性別</li>
+     * </ul>
+     *
+     * @param restored    読み直した注文の写し
+     * @param orderId     注文 ID（実行ごとに作るので、定数にできない。以下も同じ）
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
+     */
+    private static void assertStandardContent(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+        assertOrderIdentity(restored, orderId, checkoutId, orderNumber);
+        assertThat(restored.lines()).containsExactlyElementsOf(LINES);
+        assertThat(restored.amounts()).isEqualTo(AMOUNTS);
+        assertThat(restored.email()).isEqualTo(EMAIL);
+        assertThat(restored.shippingAddress()).isEqualTo(ADDRESS);
+        assertThat(restored.buyerProfile()).isEqualTo(BUYER_PROFILE);
+    }
+
+    /**
+     * 上限の注文（{@link #maxOrder}）の、成立の時点の項目を確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *   <li>注文 ID、注文番号、注文手続き ID、会員 ID、注文日時</li>
+     *   <li>明細（{@link #MAX_LINE} の 1 行）</li>
+     *   <li>金額の内訳（{@link #MAX_AMOUNTS}）</li>
+     *   <li>254 文字のメールアドレス、上限の長さのお届け先、120 歳の年齢と性別</li>
+     * </ul>
+     *
+     * @param restored    読み直した注文の写し
+     * @param orderId     注文 ID（実行ごとに作るので、定数にできない。以下も同じ）
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
+     */
+    private static void assertMaxContent(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+        assertOrderIdentity(restored, orderId, checkoutId, orderNumber);
+        assertThat(restored.lines()).containsExactly(MAX_LINE);
+        assertThat(restored.amounts()).isEqualTo(MAX_AMOUNTS);
+        assertThat(restored.email()).isEqualTo(MAX_EMAIL);
+        assertThat(restored.shippingAddress()).isEqualTo(MAX_ADDRESS);
+        assertThat(restored.buyerProfile()).isEqualTo(MAX_BUYER_PROFILE);
+    }
+
+    /**
+     * 注文の識別の項目と注文日時を確認する。
+     *
+     * @param restored    読み直した注文の写し
+     * @param orderId     注文 ID（実行ごとに作るので、定数にできない。以下も同じ）
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
+     */
+    private static void assertOrderIdentity(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+        assertThat(restored.id()).isEqualTo(orderId);
+        assertThat(restored.orderNumber()).isEqualTo(OrderNumber.of(orderNumber));
+        assertThat(restored.checkoutId()).isEqualTo(checkoutId);
+        assertThat(restored.memberId()).isEqualTo(MEMBER_ID);
+        assertThat(restored.orderedAt()).isEqualTo(ORDERED_AT);
     }
 
     /**
@@ -569,21 +734,32 @@ class JooqOrderRepositoryTest {
      * @return 注文（支払待ち）
      */
     private static Order order(UUID checkoutId, String orderNumber) {
-        var shirt = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "TS-001", "TS-001-WM", "T シャツ",
+        var shirt = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), "TS-001", "TS-001-WM", "T シャツ",
                 List.of(new AxisValue("色", "白"), new AxisValue("サイズ", "M")), Money.of(2700), UUID.randomUUID(),
                 null, true, false);
-        var tea = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "TEA-1", "TEA-1", "お茶", List.of(),
+        var tea = new VariantInfo(TEA_VARIANT_ID, UUID.randomUUID(), "TEA-1", "TEA-1", "お茶", List.of(),
                 Money.of(1234), UUID.randomUUID(), null, true, false);
         var items = List.of(
                 QuoteItem.of(shirt, 1, 10, BigDecimal.TEN, Money.of(2970)),
                 QuoteItem.of(tea, 1, 10, new BigDecimal("8"), Money.of(1332)));
-        var amounts = new Amounts(Money.of(4302), Money.of(1000), Money.of(5302), List.of(
-                new TaxAmount(BigDecimal.TEN, Money.of(3970), Money.of(360)),
-                new TaxAmount(new BigDecimal("8"), Money.of(1332), Money.of(98))));
-        return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, UUID.randomUUID(), ORDERED_AT,
-                new Quote(items, amounts, true), "taro@example.com",
-                ShippingAddress.of("山田 太郎", "100-0001", TestAreas.CHIYODA, "千代田 1-1",
-                        "03-1234-5678"),
-                new BuyerProfile(36, Gender.FEMALE));
+        return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
+                new Quote(items, AMOUNTS, true), EMAIL, ADDRESS, BUYER_PROFILE);
+    }
+
+    /**
+     * 各項目が domain の上限の注文を作る。
+     *
+     * <p>値は {@link #MAX_LINE}・{@link #MAX_AMOUNTS}・{@link #MAX_EMAIL}・{@link #MAX_ADDRESS}・{@link #MAX_BUYER_PROFILE}。
+     *
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
+     * @return 注文（支払待ち）
+     */
+    private static Order maxOrder(UUID checkoutId, String orderNumber) {
+        var variant = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), "MAX-1", "MAX-1-1", "高価な商品", List.of(),
+                Money.of(9_999_999), UUID.randomUUID(), null, true, false);
+        var item = QuoteItem.of(variant, 10, 10, BigDecimal.TEN, Money.of(10_999_998));
+        return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
+                new Quote(List.of(item), MAX_AMOUNTS, true), MAX_EMAIL, MAX_ADDRESS, MAX_BUYER_PROFILE);
     }
 }

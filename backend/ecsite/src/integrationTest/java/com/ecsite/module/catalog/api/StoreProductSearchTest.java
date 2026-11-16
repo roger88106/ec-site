@@ -6,11 +6,13 @@ import com.ecsite.MutableClock;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.api.model.StoreProductSummary;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +74,9 @@ class StoreProductSearchTest {
 
     @Autowired
     MutableClock clock;
+
+    @Autowired
+    ApplicationContext context;
 
     /**
      * テストで使う税区分の ID
@@ -229,6 +234,23 @@ class StoreProductSearchTest {
             var visible = published(mark + "綿のシャツ", "");
             catalog.product(taxCategoryId, mark + "綿の帽子", "", PRICE_EXCL_TAX, List.of())
                     .period(NOW.plus(Duration.ofDays(1)), null).publish();
+
+            // 操作と確認：表示される商品だけが返る
+            assertOnlyVisibleFound(visible.id);
+        }
+
+        @Test
+        @DisplayName("有効な税率のない税区分の商品は検索されない")
+        void excludesProductWithoutTaxRate() throws Exception {
+            // 準備：表示される商品と、税区分に今は有効な税率がない商品。後者は、1 時間後に税率が始まる税区分で
+            // その時刻に公開し、時計を税率の開始の 1 秒前に戻す（最後の税率は無期限なので、税率がないのは開始の前だけ）
+            var visible = published(mark + "綿のシャツ", "");
+            var startAt = clock.instant().plus(Duration.ofHours(1));
+            var notYetEffective = catalog.taxCategory("将来", STANDARD_RATE, startAt);
+            clock.setInstant(startAt);
+            catalog.product(notYetEffective, mark + "綿の手袋", "", PRICE_EXCL_TAX, List.of()).publish();
+            clock.setInstant(startAt.minusSeconds(1));
+            TaxRateScheduleCaches.evict(context);
 
             // 操作と確認：表示される商品だけが返る
             assertOnlyVisibleFound(visible.id);

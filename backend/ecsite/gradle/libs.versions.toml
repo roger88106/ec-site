@@ -27,7 +27,7 @@ pitest-junit5-plugin = "1.2.3"
 dependency-license-report = "3.1.5"
 # コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体でバージョンが別
 errorprone-plugin = "5.2.0"
-errorprone = "2.51.0"
+errorprone = "2.52.0"
 # null の検査（Error Prone の検査として動く）
 nullaway = "0.14.3"
 
@@ -40,11 +40,11 @@ spring-modulith = "2.1.2"
 jooq = "3.21.9"
 jooqPlugin = "10.2.1"
 # jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM のバージョンになるので、Boot の管理するバージョンに合わせる
-flyway = "13.12.0"
+flyway = "13.12.2"
 postgresql = "42.7.14"
 
 # --- API ---
-openapi-generator = "7.26.0"
+openapi-generator = "7.27.0"
 
 jackson-databind-nullable = "0.2.13"
 
@@ -52,13 +52,13 @@ jackson-databind-nullable = "0.2.13"
 jmolecules = "2025.0.2"
 
 # --- 定期ジョブの分散ロック（バックエンドのアーキテクチャの「水平スケール」） ---
-shedlock = "7.10.1"
+shedlock = "7.11.0"
 
 # --- 決済サービス（Stripe。docs/02-設計/payment.md の「Stripe」） ---
 stripe = "34.1.0"
 
 # --- 画像のファイル（オブジェクトストレージ） ---
-awssdk = "2.57.10"
+awssdk = "2.57.13"
 
 # --- テスト ---
 testcontainers = "2.0.5"

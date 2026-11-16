@@ -122,24 +122,36 @@ export function parseSlotRecord(content) {
 }
 
 /**
- * 使われていない最小のスロットを選ぶ。<br />
- * 使用中は、メインの作業ツリーと prunable のものを除く作業ツリーの記録で決める。一覧にない作業ツリーは数えない。
+ * 記録で使用中のスロットと、使っている作業ツリーを返す。<br />
+ * メインの作業ツリーと prunable のものは除く。一覧にない作業ツリーは数えない。
  *
  * @param {string} porcelain `git worktree list --porcelain` の出力
  * @param {Record<string, string | null | undefined>} records 作業ツリーのパス → `.local/slot` の内容
- * @returns {{ slot: number } | { full: true, users: { slot: number, path: string }[] }}
- *   選んだ番号。全て使われていれば、使っている作業ツリー（番号の順）
+ * @returns {{ slot: number, path: string }[]} 使っている作業ツリー（番号の順）
  */
-export function pickSlot(porcelain, records) {
+export function usedSlots(porcelain, records) {
   const users = []
   for (const worktree of parseWorktrees(porcelain)) {
     if (worktree.main || worktree.prunable) continue
     const slot = parseSlotRecord(records[worktree.path])
     if (slot !== null) users.push({ slot, path: worktree.path })
   }
-  users.sort((a, b) => a.slot - b.slot)
+  return users.sort((a, b) => a.slot - b.slot)
+}
+
+/**
+ * 使われていない最小のスロットを選ぶ。使用中は usedSlots で決める。
+ *
+ * @param {string} porcelain `git worktree list --porcelain` の出力
+ * @param {Record<string, string | null | undefined>} records 作業ツリーのパス → `.local/slot` の内容
+ * @param {Set<number>} [skipped] 選ばない番号（他の割り当てが仮押さえしているもの）
+ * @returns {{ slot: number } | { full: true, users: { slot: number, path: string }[] }}
+ *   選んだ番号。全て使われていれば、使っている作業ツリー（番号の順）
+ */
+export function pickSlot(porcelain, records, skipped = new Set()) {
+  const users = usedSlots(porcelain, records)
   for (let slot = 1; slot < SLOT_COUNT; slot++) {
-    if (!users.some((user) => user.slot === slot)) return { slot }
+    if (!skipped.has(slot) && !users.some((user) => user.slot === slot)) return { slot }
   }
   return { full: true, users }
 }
@@ -288,15 +300,66 @@ export function dropBucketsScript(buckets) {
 }
 
 /**
+ * 作業ツリーの一覧と、各作業ツリーの記録を読む。
+ *
+ * @param {{ listWorktrees: () => string, readRecord: (worktreePath: string) => string | null }} deps 読む処理
+ * @returns {{ porcelain: string, records: Record<string, string | null> }} 一覧と、メインでない作業ツリーの記録
+ */
+function readRecords(deps) {
+  const porcelain = deps.listWorktrees()
+  const records = {}
+  for (const worktree of parseWorktrees(porcelain)) {
+    if (!worktree.main) records[worktree.path] = deps.readRecord(worktree.path)
+  }
+  return { porcelain, records }
+}
+
+/**
+ * 空きのスロットを仮押さえして選び、記録を書く。<br />
+ * 仮押さえ（claim）は、git の共通のディレクトリにスロットごとのファイルを排他で作ることで、2 つの割り当てが同じ番号を同時に選ばない。
+ * 仮押さえの後に記録を再読込し、他の作業ツリーが先に記録を書いた番号は使わない。記録を書いたら仮押さえを外す（以後は記録が使用中を示す）。
+ *
+ * @param {Parameters<typeof assignSlot>[0]} deps 外部の処理
+ * @returns {{ kind: 'picked', slot: number } | { kind: 'already', slot: number } | { kind: 'full', users: { slot: number, path: string }[] }}
+ */
+function claimSlot(deps) {
+  const skipped = new Set()
+  for (;;) {
+    const { porcelain, records } = readRecords(deps)
+    const choice = pickSlot(porcelain, records, skipped)
+    if ('full' in choice) return { kind: 'full', users: choice.users }
+    const slot = choice.slot
+    if (!deps.claim(slot)) {
+      skipped.add(slot)
+      continue
+    }
+    try {
+      // 仮押さえを待つ間に、同じ作業ツリーの別のセッションが割り当てていないかを再確認する
+      const own = parseSlotRecord(deps.readOwnRecord())
+      if (own !== null) return { kind: 'already', slot: own }
+      const again = readRecords(deps)
+      if (usedSlots(again.porcelain, again.records).some((user) => user.slot === slot)) {
+        skipped.add(slot)
+        continue
+      }
+      deps.writeRecord(slot)
+      return { kind: 'picked', slot }
+    } finally {
+      deps.unclaim(slot)
+    }
+  }
+}
+
+/**
  * スロットを割り当てる手順。<br />
- * ロックの中では、作業ツリーの一覧を読み、空きを選び、記録を書くだけにする。
- * データベースとバケットの再作成は長くかかるので、ロックを放した後に流す。
+ * 空きを仮押さえして記録を書く（claimSlot）。データベースとバケットの再作成は長くかかるので、仮押さえを外した後に実行する。
  * 記録を先に書くので、再作成の間に他の作業ツリーが同じ番号を選ばない。再作成に失敗しても記録は残す（reset で再作成する）。
  *
  * @param {{ main: boolean, readOwnRecord: () => string | null, listWorktrees: () => string,
- *   readRecord: (worktreePath: string) => string | null, withLock: <T>(action: () => T) => Promise<T>,
+ *   readRecord: (worktreePath: string) => string | null, claim: (slot: number) => boolean, unclaim: (slot: number) => void,
  *   writeRecord: (slot: number) => void, recreate: (slot: number) => void }} deps
- *   listWorktrees は `git worktree list --porcelain` の出力、readRecord は作業ツリーの `.local/slot` の内容
+ *   listWorktrees は `git worktree list --porcelain` の出力、readRecord は作業ツリーの `.local/slot` の内容。
+ *   claim は仮押さえを作り、他が押さえていれば false を返す
  * @returns {Promise<{ kind: 'main' } | { kind: 'already', slot: number } | { kind: 'assigned', slot: number }
  *   | { kind: 'full', users: { slot: number, path: string }[] } | { kind: 'recreateFailed', slot: number, error: unknown }>}
  */
@@ -304,21 +367,7 @@ export async function assignSlot(deps) {
   if (deps.main) return { kind: 'main' }
   const existing = parseSlotRecord(deps.readOwnRecord())
   if (existing !== null) return { kind: 'already', slot: existing }
-  const picked = await deps.withLock(() => {
-    // ロックを待つ間に、同じ作業ツリーの別のセッションが割り当てていないかを再確認する
-    const again = parseSlotRecord(deps.readOwnRecord())
-    if (again !== null) return { kind: 'already', slot: again }
-    // 一覧もロックの中で読む。待つ間に作られた作業ツリーの割り当ても数えるため
-    const porcelain = deps.listWorktrees()
-    const records = {}
-    for (const worktree of parseWorktrees(porcelain)) {
-      if (!worktree.main) records[worktree.path] = deps.readRecord(worktree.path)
-    }
-    const choice = pickSlot(porcelain, records)
-    if ('full' in choice) return { kind: 'full', users: choice.users }
-    deps.writeRecord(choice.slot)
-    return { kind: 'picked', slot: choice.slot }
-  })
+  const picked = claimSlot(deps)
   if (picked.kind !== 'picked') return picked
   try {
     deps.recreate(picked.slot)

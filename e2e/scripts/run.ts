@@ -13,15 +13,15 @@ import { rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stopOnSignals } from '../../scripts/dev/lib/child-stop.mjs'
-import { createLockIo, isProcessRunning } from '../../scripts/dev/lib/lock-io.mjs'
-import { slotEnvNames } from '../../scripts/dev/lib/slot-env-names.mjs'
 import {
   acquireLock,
   busyLockMessage,
-  type LockIo,
+  isProcessRunning,
   type LockOwner,
   ownsLock,
-} from '../../scripts/dev/lib/slot-lock.mjs'
+  readLock,
+} from '../../scripts/dev/lib/lock.mjs'
+import { slotEnvNames } from '../../scripts/dev/lib/slot-env-names.mjs'
 
 // スロット（scripts/dev/slot.mjs env）の環境変数を shell に export したまま流すと、バックエンドがスロットの DB とバケットにつながる。
 // E2E は常にスロット 0 の固定の環境で流すので、スロットが付ける環境変数は引き継がない
@@ -55,14 +55,13 @@ function git(...args: string[]): string {
 /**
  * ロックを取る。取れなければ、所有者とロックのファイルのパスを示して終了コード 1 で終了する。
  * 所有者のプロセスが実行中なら待たない。プロセスがなければ古いロックとして取得し直す。
- * 取得は scripts/dev/lib/slot-lock.mjs の手順で、中身を書いた一時のファイルを link で置くので、空のロックを他方に読まれない。
+ * 取得は scripts/dev/lib/lock.mjs の手順で、中身を書いた一時のファイルを link で置くので、空のロックを他方に読まれない。
  *
- * @param io    ロックのファイルの読み書き
- * @param file  ロックのファイルのパス（取れないときの表示に使う）
+ * @param file  ロックのファイルのパス
  * @param owner 自分（所有者として書く内容）
  */
-async function acquireLockOrExit(io: LockIo, file: string, owner: LockOwner): Promise<void> {
-  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: 0 })
+function acquireLockOrExit(file: string, owner: LockOwner): void {
+  const result = acquireLock({ file, owner, isRunning: isProcessRunning })
   if (!result.acquired) {
     console.error(`別の E2E が実行中のため、実行しない。${busyLockMessage({ lock: file, owner: result.owner })}`)
     process.exit(1)
@@ -89,17 +88,16 @@ function runStep(step: (typeof STEPS)[number]): Promise<number> {
 let runningChild: ChildProcess | null = null
 
 const lockFile = path.join(path.resolve(E2E_DIR, git('rev-parse', '--git-common-dir')), 'ec-site-e2e.lock')
-const lockIo = createLockIo(lockFile)
 const lockOwner: LockOwner = {
   worktree: path.resolve(git('rev-parse', '--show-toplevel')),
   pid: process.pid,
   startedAt: new Date().toISOString(),
 }
-await acquireLockOrExit(lockIo, lockFile, lockOwner)
+acquireLockOrExit(lockFile, lockOwner)
 
 /** 終了時に、自分のロックだけを削除する */
 function releaseLock(): void {
-  if (ownsLock(lockIo.read(), lockOwner)) {
+  if (ownsLock(readLock(lockFile), lockOwner)) {
     rmSync(lockFile, { force: true })
   }
 }

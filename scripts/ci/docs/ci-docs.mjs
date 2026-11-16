@@ -122,6 +122,9 @@ export function checkFirstLines(sources) {
 /** 直下の検査が先頭のコメントに書く、必須の行の接頭辞 */
 const REQUIRED_COMMENT_LINES = ['失敗したとき：', '除外：']
 
+/** 必須の行の接頭辞ごとの、その行の形（`//` の後の空白と箇条書きの `-` を許す） */
+const REQUIRED_LINE_PATTERNS = REQUIRED_COMMENT_LINES.map((label) => ({ label, pattern: new RegExp(`^//\\s*(?:-\\s*)?${label}`) }))
+
 /**
  * 直下の検査の先頭のコメント（1 行目から続く `//` の行）に、「失敗したとき：」か「除外：」の行がない script を見つける。
  *
@@ -136,7 +139,7 @@ export function checkCommentLines(sources) {
     const lines = text.split('\n')
     const end = lines.findIndex((line) => !line.startsWith('//'))
     const comment = end === -1 ? lines : lines.slice(0, end)
-    const missing = REQUIRED_COMMENT_LINES.filter((label) => !comment.some((line) => new RegExp(`^//\\s*(?:-\\s*)?${label}`).test(line)))
+    const missing = REQUIRED_LINE_PATTERNS.filter(({ pattern }) => !comment.some((line) => pattern.test(line))).map(({ label }) => label)
     if (!missing.length) continue
     const hint = missing.includes('除外：') ? '。除外がなければ「除外：なし」' : ''
     problems.push(`先頭のコメントに行がない：${file}（${missing.map((label) => `「${label}」`).join('、')}の行を書く${hint}）`)

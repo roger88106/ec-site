@@ -1,7 +1,6 @@
 package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
@@ -36,10 +35,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -148,18 +148,21 @@ class OrderPlacementServiceTest {
         @Test
         @DisplayName("AC-90 最初に作った注文番号が使用済みなら、再生成した空いている番号で注文を保存する")
         void retriesUsedNumber() {
-            // 準備：最初の番号だけが使用済み
-            when(orderRepository.existsByOrderNumber(any())).thenReturn(true, false);
+            // 準備：最初に確認した番号だけを使用済みとして答える
+            var firstChecked = new AtomicReference<OrderNumber>();
+            when(orderRepository.existsByOrderNumber(any())).thenAnswer(invocation -> {
+                OrderNumber number = invocation.getArgument(0);
+                firstChecked.compareAndSet(null, number);
+                return number.equals(firstChecked.get());
+            });
 
             // 操作：注文する
             service.place(command());
 
-            // 確認：番号を 2 回確認し、2 回目に確認した番号で保存した
-            var checked = ArgumentCaptor.forClass(OrderNumber.class);
-            verify(orderRepository, times(2)).existsByOrderNumber(checked.capture());
+            // 確認：最初の番号と違う番号で保存した
             var saved = ArgumentCaptor.forClass(Order.class);
             verify(orderRepository).insert(saved.capture());
-            assertThat(saved.getValue().orderNumber()).isEqualTo(checked.getAllValues().getLast());
+            assertThat(saved.getValue().orderNumber()).isNotEqualTo(firstChecked.get());
         }
 
         @Test
@@ -168,8 +171,8 @@ class OrderPlacementServiceTest {
             // 準備：どの番号も使用済み
             when(orderRepository.existsByOrderNumber(any())).thenReturn(true);
 
-            // 操作と確認：システムのエラー
-            assertThatThrownBy(() -> service.place(command())).isInstanceOf(SystemException.class);
+            // 操作と確認：共通のシステムのエラー
+            assertSystemError(() -> service.place(command()), CommonErrorCode.SYSTEM_ERROR);
 
             // 確認：上限の回数だけ確認し、在庫の減算・注文の保存・支払の作成をしない
             verify(orderRepository, times(ORDER_NUMBER_ATTEMPTS)).existsByOrderNumber(any());

@@ -1,6 +1,5 @@
 package com.ecsite.module.catalog.presentation;
 
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;
@@ -898,8 +897,7 @@ class ProductApiTest {
     private UUID productBeforeRateStarts() throws Exception {
         clock.setInstant(NOT_YET_EFFECTIVE_FROM);
         var id = products.createdId(productJson(PRODUCT_CODE, notYetEffective, PRICE_EXCL_TAX));
-        clock.setInstant(NOT_YET_EFFECTIVE_FROM.minusSeconds(1));
-        TaxRateScheduleCaches.evict(context);
+        catalog.rewindBeforeRateStart(NOT_YET_EFFECTIVE_FROM, context);
         return id;
     }
 

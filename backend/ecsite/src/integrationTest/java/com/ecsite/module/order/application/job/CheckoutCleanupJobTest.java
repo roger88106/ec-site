@@ -342,7 +342,7 @@ class CheckoutCleanupJobTest {
             var cleanUpAt = LONG_AGO.plus(TTL).plus(SMALL_BATCH.retention()).plusSeconds(1);
             clock.setInstant(cleanUpAt);
 
-            // 準備：消す対象（保持の期間を過ぎた全ての注文手続き）を数える（他のテストがコミットした注文手続きも対象になりうる）
+            // 準備：他のテストの分も含め、保存期間を過ぎた注文手続きを数える
             var targets = dsl.fetchCount(CHECKOUT, CHECKOUT.EXPIRES_AT.lt(cleanUpAt.minus(SMALL_BATCH.retention())));
 
             // 確認（前提）：このテストの 5 件が対象に入る

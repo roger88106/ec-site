@@ -4,6 +4,7 @@ import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationKind;
+import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -42,6 +43,16 @@ class OrderPaymentTest {
      * 運営者
      */
     private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
+
+    /**
+     * キャンセル申請中の注文の、申請の日時（注文の 2 分後）
+     */
+    private static final Instant REQUESTED_AT = ORDERED_AT.plusSeconds(120);
+
+    /**
+     * キャンセル申請中の注文の、申請の理由
+     */
+    private static final String REQUEST_REASON = "理由";
 
     // ============================== テスト ==============================
 
@@ -249,17 +260,13 @@ class OrderPaymentTest {
         void ignoresWhenCancellationRequested() {
             // 準備：キャンセル申請中の注文
             var order = requestedOrder();
-            var request = order.cancellationRequest();
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
 
-            // 確認：申請中のままで、キャンセルの記録もイベントもない
+            // 確認：何もせず、申請中のままで、キャンセルの記録もイベントもない
             assertThat(changed).isFalse();
-            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
-            assertThat(order.cancellationRequest()).isEqualTo(request);
-            assertThat(order.cancellation()).isNull();
-            assertThat(order.pullEvents()).isEmpty();
+            assertUnchangedRequested(order);
         }
 
         @Test
@@ -370,6 +377,27 @@ class OrderPaymentTest {
     }
 
     /**
+     * 操作の後も、注文が {@link #requestedOrder} の申請中のままであることを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>状態がキャンセル申請中</li>
+     *   <li>申請が、準備の日時と理由で、判断を待つ</li>
+     *   <li>キャンセルの記録がない</li>
+     *   <li>イベントがない</li>
+     * </ul>
+     *
+     * @param order 確認する注文
+     */
+    private static void assertUnchangedRequested(Order order) {
+        assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
+        assertThat(order.cancellationRequest())
+                .isEqualTo(new CancellationRequest(REQUESTED_AT, REQUEST_REASON, CancellationRequest.Result.PENDING, null, null));
+        assertThat(order.cancellation()).isNull();
+        assertThat(order.pullEvents()).isEmpty();
+    }
+
+    /**
      * 拒否された操作の後も、注文が支払待ちのままであることを確認する。
      *
      * <p>確認すること：
@@ -425,7 +453,7 @@ class OrderPaymentTest {
      */
     private static Order requestedOrder() {
         var order = acceptedOrder();
-        order.requestCancellation("理由", ORDERED_AT.plusSeconds(120));
+        order.requestCancellation(REQUEST_REASON, REQUESTED_AT);
         order.pullEvents();
         return order;
     }

@@ -120,7 +120,7 @@ export function parseSlotRecord(content) {
  * @param {Record<string, string | null | undefined>} records 作業ツリーのパス → `.local/slot` の内容
  * @returns {{ slot: number, path: string }[]} 使っている作業ツリー（番号の順）
  */
-export function usedSlots(porcelain, records) {
+function usedSlots(porcelain, records) {
   const users = []
   for (const worktree of parseWorktrees(porcelain)) {
     if (worktree.main || worktree.prunable) continue

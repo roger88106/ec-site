@@ -12,7 +12,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 /** 全てを実行するファイル：scripts/ の下の全てと、依存 */
-export const RUN_ALL = [/^scripts\//, /^package\.json$/, /^pnpm-lock\.yaml$/]
+const RUN_ALL = [/^scripts\//, /^package\.json$/, /^pnpm-lock\.yaml$/]
 
 /** 検査のフォルダ（scripts/ci/ の下。ここの直下の .mjs のうち、テスト以外が検査）。lib と report など引数で動くものは含めない */
 export const CHECK_GROUPS = ['docs', 'spec', 'ja', 'java', 'config', 'frontend']
@@ -54,7 +54,7 @@ export const CHECK_INPUTS = {
 }
 
 /** テストごとの、読むファイルのパスの正規表現（import と名前の検査で分からないもの）。scripts/ の外の文書を読むテスト */
-export const TEST_INPUTS = {
+const TEST_INPUTS = {
   '.claude/skills/review/checklist.test.cjs': [/^docs\/05-開発規則\//],
 }
 

@@ -334,7 +334,7 @@ function authorName(author) {
  * @param {string} headCommit --match-head-commit の値
  * @returns {string[]} 満たさない条件。空なら全て満たす
  */
-export function mergeProblems(pullRequest, headCommit) {
+function mergeProblems(pullRequest, headCommit) {
   const problems = []
   if (pullRequest.state !== 'OPEN') problems.push(`pull request が開いていない（${pullRequest.state}）`)
   if (String(pullRequest.headRefOid).toLowerCase() !== headCommit.toLowerCase()) {

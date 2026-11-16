@@ -116,7 +116,7 @@ function operationInProgress(cwd) {
 }
 
 /** 書き換えを実行する。成功なら { lines }、条件に合わなければ Refusal を投げる */
-export function reword(mapPath, cwd = process.cwd()) {
+function reword(mapPath, cwd = process.cwd()) {
   const inProgress = operationInProgress(cwd)
   if (inProgress !== null) {
     throw new Refusal(`${inProgress}が進行中なので書き換えない（状態は変えていない）。終えるか中止してから、もう一度流す`)

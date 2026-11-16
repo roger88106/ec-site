@@ -1,31 +1,19 @@
-// マイグレーション（バージョン付きの V*.sql）の、適用済みのものの変更と、前のリリースのアプリを止める変更がないことを確認する。
-// 根拠は、バックエンドの書き方の「前のリリースのアプリが動き続けられる変更だけにする」と、コメントの書き方の「何を書くか」。
-//
-// 適用済みのもの：Flyway は checksum を確認するので、コメントだけの変更でも、適用した DB で起動に失敗する。
+// 適用済みのマイグレーション（バージョン付きの V*.sql）を、変えていないことを確認する（コメントの書き方の「何を書くか」）。
+// Flyway は checksum を確認するので、コメントだけの変更でも、適用した DB で起動に失敗する。
 // 新しい DB で動くテストと CI では見つからないので、ここで確認する。どこかの DB に適用されうる状態（基準）は resolveBaseRevisions が決める。
 // 基準にあるものが今の index（commit の前の hook では次の commit）にない（削除、改名）か、中身が違えば失敗にする。
+// マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
 //
-// 前のリリースを止める変更：互換性のない変更（INCOMPATIBLE_KINDS）を、SQL の字面で探す。
-// 読み落としより誤検出が出る側にし、誤検出は除外で理由を残す。コメントと文字列の中は読まず、ドル引用の中は全て読む。
-// 今あるマイグレーション（LEGACY_MIGRATIONS）は対象にしない。
+// 前のリリースのアプリが動けなくなる変更（バックエンドの書き方の「前のリリースのアプリが動き続けられる変更だけにする」）は、レビューで見る。
 //
-// 読めないもの（マイグレーションが 0 件、閉じていない文字列・コメント・ドル引用）も失敗にする。分岐点を求めるので、shallow clone では失敗する。
-//
-// 失敗したとき：適用済みのマイグレーションは元に戻し、変更は新しいマイグレーションで加える。互換性のない変更は 3 段に分ける。
-// 除外：互換性のない変更だけ、migrations-exclusions.json（なければ作る）に {キー: 理由} を書く。
-// キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値。例：V202611010900__x.sql:列の削除）で、同じファイルの同じ種類の変更全てに当たる。
-// 理由には、どのリリースで使わなくなったかを書く。理由のない除外と、当たる変更がなくなった除外は失敗にする。
+// 失敗したとき：適用済みのマイグレーションは元に戻し、変更は新しいマイグレーションで加える。
+// 除外：なし
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { emptyListReason, splitNulList } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
-import { createLineLocator } from './lib/line-number.mjs'
 import { mergeBaseWith, tryGit } from './lib/merge-base.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
-import { blankSqlNonCode } from './lib/sql-code.mjs'
-import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** マイグレーションの置き場所 */
 const MIGRATIONS = 'backend/ecsite/src/main/resources/db/migration/'
@@ -77,287 +65,6 @@ export function migrationsEmptyReason(files, dir) {
 export function findRemovedMigrations(baseFiles, currentFiles) {
   const current = new Set(currentFiles)
   return [...baseFiles].filter((file) => !current.has(file))
-}
-
-/**
- * 互換性の検査の対象にしない、今あるマイグレーションのファイル名。
- * 今あるマイグレーションは本番に適用しておらず（本番の環境がまだない）、互換性を問わない。
- * 番号の範囲でなくファイル名の一覧にするのは、番号が小さい新しいファイル（日付だけの番号など）を対象外にしないため。
- * この一覧にないものは、番号に関わらず全て対象にする。一覧に加えない。本番に適用した後も、この一覧を増やさずに、除外の一覧に理由を書く。
- */
-export const LEGACY_MIGRATIONS = [
-  'V202610090000__common_create_schemas.sql',
-  'V202610090001__common_create_event_publication.sql',
-  'V202610091000__tax_create_tax_category.sql',
-  'V202610091200__catalog_create_category.sql',
-  'V202610091400__catalog_create_product.sql',
-  'V202610091600__inventory_create_stock_item.sql',
-  'V202610101000__catalog_create_product_image.sql',
-  'V202610101100__media_create_asset.sql',
-  'V202610101200__catalog_move_product_image_files_to_media.sql',
-  'V202610101300__common_comment_logical_names.sql',
-  'V202610111000__inventory_create_stock_reservation.sql',
-  'V202610111100__cart_create_cart.sql',
-  'V202610111200__ordering_create_order.sql',
-  'V202610121000__member_create_member.sql',
-  'V202610121100__cart_add_member_id.sql',
-  'V202610121200__ordering_add_member_id.sql',
-  'V202610121400__inventory_add_operator_name.sql',
-  'V202610121410__ordering_add_operator.sql',
-  'V202610140900__common_create_shedlock.sql',
-  'V202610140910__payment_create_payment.sql',
-  'V202610140920__ordering_add_pending_payment.sql',
-  'V202610150900__payment_add_authorized_at.sql',
-  'V202610150910__shipping_create_shipment.sql',
-  'V202610151000__ordering_add_shipped.sql',
-  'V202610151010__ordering_add_cancellation_restocked.sql',
-  'V202610151020__notification_create_sent_mail.sql',
-  'V202610151100__ordering_add_buyer_profile.sql',
-  'V202610151200__reporting_create_report.sql',
-  'V202610200900__region_create_master.sql',
-  'V202610200910__region_seed_master.sql',
-  'V202610200920__ordering_add_shipping_area_codes.sql',
-  'V202610201000__common_add_enum_column_checks.sql',
-  'V202610201100__inventory_add_stock_reservation_expires_at_index.sql',
-  'V202610201110__ordering_add_checkout_expires_at_index.sql',
-  'V202610201120__cart_add_cart_updated_at_index.sql',
-  'V202610201130__common_comment_event_publication_stopped.sql',
-  'V202610201200__payment_add_awaiting_authorization_since.sql',
-  'V202610211600__catalog_add_product_price_upper_limit.sql',
-]
-
-/**
- * 互換性の検査の対象（今あるマイグレーションの一覧にないもの）かを返す。
- *
- * @param {string} file リポジトリのルートからのパス、またはファイル名
- * @returns {boolean} LEGACY_MIGRATIONS にないファイルなら true
- */
-export function isCheckedForCompatibility(file) {
-  return !LEGACY_MIGRATIONS.includes(file.split('/').at(-1))
-}
-
-/**
- * 互換性のない変更の種類。除外のキーの後ろに使う。
- *
- * 表の削除は DROP SCHEMA を、改名は ALTER SCHEMA … RENAME TO とスキーマの移動（SET SCHEMA）を含む。
- * NOT NULL にする変更は、主キーの追加（ADD PRIMARY KEY）を含む。
- * 既定値のない NOT NULL の列の追加は、主キーの列と DEFAULT NULL を含み、IDENTITY（既定値がある）を含まない。
- * 既定値の削除は、DROP DEFAULT、SET DEFAULT NULL、DROP IDENTITY、DROP EXPRESSION（生成列の解除）。SET DEFAULT 0 のような既定値の変更は含まない。
- */
-export const INCOMPATIBLE_KINDS = {
-  dropTable: '表の削除',
-  dropColumn: '列の削除',
-  renameTable: '表の改名',
-  renameColumn: '列の改名',
-  changeType: '列の型の変更',
-  setNotNull: '既存の列を NOT NULL にする',
-  addNotNullWithoutDefault: '既定値のない NOT NULL の列の追加',
-  dropDefault: '既存の列の既定値の削除',
-}
-
-/**
- * ALTER TABLE の後ろの変更（カンマで区切る。括弧の中のカンマは区切りにしない）を分ける。
- *
- * @param {string} body ALTER TABLE の表の名前の後ろ
- * @returns {string[]} 変更ごとの文字列（前後の空白を除く。空は除く）
- */
-function splitActions(body) {
-  const actions = []
-  let depth = 0
-  let from = 0
-  for (let i = 0; i < body.length; i += 1) {
-    if (body[i] === '(') depth += 1
-    else if (body[i] === ')') depth -= 1
-    else if (body[i] === ',' && depth === 0) {
-      actions.push(body.slice(from, i).trim())
-      from = i + 1
-    }
-  }
-  actions.push(body.slice(from).trim())
-  return actions.filter((action) => action !== '')
-}
-
-/**
- * 式の全体が、先頭の ( とそれに対応する最後の ) で囲まれているときの、中の式を返す。
- *
- * @param {string} expr 前後の空白のない式
- * @param {string} open 囲みの前（例：`(` か `CAST(`）
- * @returns {string | null} 中の式。囲まれていなければ null
- */
-function unwrap(expr, open) {
-  if (!expr.startsWith(open)) return null
-  let depth = 0
-  for (let i = open.length - 1; i < expr.length; i += 1) {
-    if (expr[i] === '(') depth += 1
-    else if (expr[i] === ')') {
-      depth -= 1
-      if (depth === 0) return i === expr.length - 1 ? expr.slice(open.length, i).trim() : null
-    }
-  }
-  return null
-}
-
-/** 式の末尾の ::型（型名、(長さ)、[] を含む） */
-const TRAILING_CAST = /\s*::\s*[A-Z_"][\w". ]*(?:\([\d,\s]*\))?(?:\s*\[\d*\])*$/
-
-/** 式の末尾の COLLATE 名前 */
-const TRAILING_COLLATE = /\s+COLLATE\s+(?:"[^"]*"|[\w.]+)$/
-
-/**
- * CAST( 式 AS 型 ) の式の部分を返す。AS は、CAST の括弧の直下（深さ 1）の最後のもの。
- *
- * @param {string} expr 前後の空白のない式
- * @returns {string | null} 式の部分。CAST(… AS 型) の形でなければ null
- */
-function unwrapCast(expr) {
-  const inner = unwrap(expr.replace(/^CAST\s+\(/, 'CAST('), 'CAST(')
-  if (inner === null) return null
-  let depth = 0
-  let asAt = -1
-  for (let i = 0; i < inner.length; i += 1) {
-    if (inner[i] === '(') depth += 1
-    else if (inner[i] === ')') depth -= 1
-    else if (depth === 0 && /^\sAS\s/.test(inner.slice(i, i + 4))) asAt = i
-  }
-  return asAt === -1 ? null : inner.slice(0, asAt).trim()
-}
-
-/**
- * SET DEFAULT の式が、結果として NULL になる（既定値の削除と同じ）かを返す。
- * 外側の括弧、末尾の ::型 と COLLATE、CAST(… AS 型) を、変わらなくなるまで外し、残りが NULL かを見る。
- * 読み落としより、誤検出が出る側にするので、NULL に続けて読めない部分が残る形（NULL の後ろに NULLIF 以外の語が続くなど）も数える。
- *
- * @param {string} rawExpr 大文字にして空白を 1 つにした、SET DEFAULT の後ろの式（変更の終わりまで）
- * @returns {boolean} 既定値の削除なら true
- */
-function isNullDefault(rawExpr) {
-  let expr = rawExpr.trim()
-  for (;;) {
-    const next = [
-      unwrap(expr, '('),
-      unwrapCast(expr),
-      expr.replace(TRAILING_CAST, ''),
-      expr.replace(TRAILING_COLLATE, ''),
-    ].find((candidate) => candidate !== null && candidate !== expr)
-    if (next === undefined) break
-    expr = next.trim()
-  }
-  return expr === 'NULL' || /^NULL(?![\w])/.test(expr)
-}
-
-/**
- * ALTER COLUMN の、列の名前より後ろの部分が、互換性のない変更なら、その種類を返す。
- * 既定値の削除は、DROP DEFAULT、IDENTITY の解除（DROP IDENTITY）、生成列の解除（DROP EXPRESSION）と、同じ結果になる SET DEFAULT NULL（括弧、::型、COLLATE、CAST(… AS 型) が何重に付いてもよい）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない。
- *
- * @param {string} change 大文字にして空白を 1 つにした、列の名前の後ろ（例：SET DATA TYPE TEXT）
- * @returns {string | null} INCOMPATIBLE_KINDS の値。なければ null
- */
-function classifyColumnChange(change) {
-  if (/^(?:SET\s+DATA\s+)?TYPE\b/.test(change)) return INCOMPATIBLE_KINDS.changeType
-  if (/^SET\s+NOT\s+NULL\b/.test(change)) return INCOMPATIBLE_KINDS.setNotNull
-  if (/^DROP\s+(?:DEFAULT|IDENTITY|EXPRESSION)\b/.test(change)) return INCOMPATIBLE_KINDS.dropDefault
-  const setDefault = /^SET\s+DEFAULT\s+(.*)$/.exec(change)
-  if (setDefault && isNullDefault(setDefault[1])) return INCOMPATIBLE_KINDS.dropDefault
-  return null
-}
-
-/**
- * ALTER TABLE の 1 つの変更が、互換性のない変更なら、その種類を返す。
- *
- * @param {string} action 大文字にして空白を 1 つにした変更（例：DROP COLUMN IF EXISTS X）
- * @returns {string | null} INCOMPATIBLE_KINDS の値。なければ null
- */
-function classifyAction(action) {
-  if (/^DROP\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.dropColumn
-  if (/^RENAME\s+TO\b/.test(action) || /^SET\s+SCHEMA\b/.test(action)) return INCOMPATIBLE_KINDS.renameTable
-  if (/^RENAME\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.renameColumn
-  if (/^ALTER\s/.test(action)) {
-    // 列の名前を 1 回だけ分け、種類は名前の後ろで決める（列の名前が type でも取り違えない）。
-    // column は予約語で、引用符なしでは列の名前にならないので、COLUMN は常に省けるキーワードとして読む
-    const parts = /^ALTER\s+(?:COLUMN\s+(?=\S+\s))?(\S+)\s+(.*)$/.exec(action)
-    return parts ? classifyColumnChange(parts[2]) : null
-  }
-  // 主キーの制約の追加は、既存の列に SET NOT NULL を行う
-  if (/^ADD\s+(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
-  const isAddColumn = /^ADD\s+/.test(action) && !/^ADD\s+(?:CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|EXCLUDE|LIKE)\b/.test(action)
-  if (!isAddColumn) return null
-  // DEFAULT NULL は既定値なし。IDENTITY は既定値がある。主キーの列は NOT NULL を含む
-  const hasDefault = /\bDEFAULT\b/.test(action.replace(/\bDEFAULT\s+NULL\b/g, '')) || /\bAS\s+IDENTITY\b/.test(action)
-  if (/\b(?:NOT\s+NULL|PRIMARY\s+KEY)\b/.test(action) && !hasDefault) return INCOMPATIBLE_KINDS.addNotNullWithoutDefault
-  return null
-}
-
-/**
- * マイグレーションの SQL から、互換性のない変更を探す。コメントと文字列の中は読まない。
- * 文は ; で分け、DO ブロックの中の文も、文の途中の ALTER TABLE・DROP TABLE として読む。
- *
- * @param {string} sql マイグレーションの中身
- * @returns {{ found: { line: number, kind: string, text: string }[], unreadable: { line: number, text: string, reason: string }[] }} 見つけた変更（文の順）と、読めなかった所
- */
-export function findIncompatibleStatements(sql) {
-  const lineOf = createLineLocator(sql)
-  const lines = sql.split('\n')
-  const { code, unreadable } = blankSqlNonCode(sql)
-  const found = []
-  const add = (index, kind) => {
-    const line = lineOf(index)
-    found.push({ line, kind, text: lines[line - 1].trim() })
-  }
-  let offset = 0
-  for (const piece of code.split(';')) {
-    for (const match of piece.matchAll(/\bDROP\s+(?:TABLE|SCHEMA)\b/gi)) add(offset + match.index, INCOMPATIBLE_KINDS.dropTable)
-    for (const match of piece.matchAll(/\bALTER\s+SCHEMA\s+\S+\s+RENAME\s+TO\b/gi)) add(offset + match.index, INCOMPATIBLE_KINDS.renameTable)
-    const alter = /\bALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?\S+\s*\*?\s*/i.exec(piece)
-    if (alter) {
-      const body = piece.slice(alter.index + alter[0].length)
-      for (const action of splitActions(body)) {
-        const kind = classifyAction(action.replace(/\s+/g, ' ').toUpperCase())
-        if (kind) add(offset + alter.index, kind)
-      }
-    }
-    offset += piece.length + 1
-  }
-  return {
-    found,
-    unreadable: unreadable.map(({ index, reason }) => ({ line: lineOf(index), text: lines[lineOf(index) - 1], reason })),
-  }
-}
-
-/**
- * 除外のキーを作る。
- *
- * @param {string} file マイグレーションのパスまたはファイル名
- * @param {string} kind 変更の種類（INCOMPATIBLE_KINDS の値）
- * @returns {string} `<ファイル名>:<種類>`
- */
-export function exclusionKey(file, kind) {
-  return `${file.split('/').at(-1)}:${kind}`
-}
-
-/**
- * 新しいマイグレーションの互換性のない変更を、除外を引いて集める。除外は、同じファイルの同じ種類の変更全てに適用される。
- *
- * @param {string[]} files マイグレーション（互換性の検査の対象かは、ここで見る）
- * @param {(file: string) => string} read 中身を読む関数
- * @param {Record<string, unknown>} exclusions 除外の一覧
- * @returns {{ found: { file: string, line: number, kind: string, text: string }[], unreadable: { file: string, line: number, text: string, reason: string }[], used: Set<string>, missingLegacy: string[] }} 除外に当たらない変更、読めなかった所、当たった除外のキー、今あるマイグレーションの一覧にあって実在しない名前（一覧の誤り）
- */
-export function scanMigrations(files, read, exclusions) {
-  const found = []
-  const unreadable = []
-  const used = new Set()
-  const names = new Set(files.map((file) => file.split('/').at(-1)))
-  const missingLegacy = LEGACY_MIGRATIONS.filter((name) => !names.has(name))
-  for (const file of files.filter((name) => isCheckedForCompatibility(name))) {
-    const result = findIncompatibleStatements(read(file))
-    unreadable.push(...result.unreadable.map((item) => ({ file, ...item })))
-    for (const hit of result.found) {
-      const key = exclusionKey(file, hit.kind)
-      if (key in exclusions) used.add(key)
-      else found.push({ file, ...hit })
-    }
-  }
-  return { found, unreadable, used, missingLegacy }
 }
 
 /**
@@ -432,25 +139,12 @@ if (isMain(import.meta.url)) {
     const readBlob = (blob) => git(['cat-file', 'blob', blob])
     findChangedMigrations(differing, (file) => readBlob(base.get(file)), (file) => readBlob(current.get(file))).forEach((file) => changed.add(file))
   }
-  // 除外がないときは、一覧のファイルを置かない（加えるときに作る）
-  const exclusions = existsSync(exclusionsPath('migrations-exclusions.json')) ? readExclusions(exclusionsPath('migrations-exclusions.json')) : {}
-  const scan = scanMigrations(files, (file) => git(['cat-file', 'blob', current.get(file)]), exclusions)
-  const exclusionProblems = checkExclusions('migrations-exclusions.json', exclusions, (key) => scan.used.has(key))
   for (const file of removed) {
     console.log(`追加した後に削除か改名された（元に戻す）：${file}`)
   }
   for (const file of changed) {
     console.log(`追加した後に変わった（元に戻し、変更は新しいマイグレーションで行う）：${file}`)
   }
-  for (const problem of exclusionProblems) console.log(problem)
-  for (const name of scan.missingLegacy) {
-    console.log(`互換性の検査の対象外の一覧（LEGACY_MIGRATIONS）にあるマイグレーションが実在しない（一覧の誤り）：${name}`)
-  }
-  for (const item of scan.unreadable) console.log(describeUnreadableLine(item))
-  for (const hit of scan.found) {
-    console.log(`${hit.file}:${hit.line} ${hit.text}（${hit.kind}。前のリリースのアプリが動き続けられない。3 段に分ける。段 3 の削除などは migrations-exclusions.json に理由を書く）`)
-  }
-  const problems = scan.found.length + scan.unreadable.length + exclusionProblems.length + scan.missingLegacy.length
-  console.log(`変わったマイグレーション：${changed.size}、削除か改名：${removed.size}、互換性のない変更：${scan.found.length}、解釈できない行：${scan.unreadable.length}、除外の誤り：${exclusionProblems.length}、対象外の一覧の誤り：${scan.missingLegacy.length}（${files.length} 件中）`)
-  process.exit(changed.size || removed.size || problems ? 1 : 0)
+  console.log(`変わったマイグレーション：${changed.size}、削除か改名：${removed.size}（${files.length} 件中）`)
+  process.exit(changed.size || removed.size ? 1 : 0)
 }

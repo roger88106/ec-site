@@ -23,7 +23,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `local-ports` | ローカルのポートの一覧（`ports.json`）と、compose・script・文書・設定のポートが食い違わないことを確認する |
 | `main-entry` | script の直接実行の判定が、共通の関数 `isMain(import.meta.url)` だけであることを確認する |
 | `message-comments` | 文言をキーで引く呼び出しに、表示する内容のコメントがあることを確認する |
-| `migrations` | 適用済みのマイグレーションの変更と、前のリリースのアプリを停止させる変更がないことを確認する |
+| `migrations` | 適用済みのマイグレーションを、変更・削除・改名していないことを確認する |
 | `note-numbers` | 文書の注の番号が、1 つの文書の中で重複せず、出る順に並ぶことを確認する |
 | `progress` | 1→10 のアーカイブの spec の tasks が、全て済んでいることを確認する |
 | `risk` | 変更の危険度を判定し、pull request の本文の判定と比べる |

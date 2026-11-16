@@ -31,7 +31,7 @@ class ReportingPropertiesTest {
 
     @ParameterizedTest(name = "「{0}」")
     @ValueSource(ints = {1, 12})
-    @DisplayName("会計年度の始まりの月が下限の 1 か上限の 12 なら、起動でき、その月になる")
+    @DisplayName("会計年度の始まりの月が範囲の端なら、起動でき、その月になる")
     void startsWithMonthAtBounds(int month) {
         // 操作と確認：起動でき、設定した月を持つ
         runner.withPropertyValues("ecsite.reporting.fiscal-year-start-month=" + month)
@@ -43,7 +43,7 @@ class ReportingPropertiesTest {
 
     @ParameterizedTest(name = "「{0}」")
     @ValueSource(ints = {0, 13})
-    @DisplayName("会計年度の始まりの月が 1〜12 の外なら、起動に失敗し、fiscalYearStartMonth が知らされる")
+    @DisplayName("会計年度の始まりの月が範囲の外なら、起動に失敗し、fiscalYearStartMonth が知らされる")
     void failsWithMonthOutOfBounds(int month) {
         // 操作と確認：起動に失敗し、原因に設定の名前がある
         runner.withPropertyValues("ecsite.reporting.fiscal-year-start-month=" + month)

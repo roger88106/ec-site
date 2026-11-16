@@ -153,7 +153,7 @@ class EventCleanupJobTest {
     }
 
     @Test
-    @DisplayName("AC-284 処理を終えてからちょうど保存期間（7 日）のイベントは、まだ残る")
+    @DisplayName("処理を終えてからちょうど保存期間（7 日）のイベントは、まだ残る")
     void keepsEventCompletedExactlyRetentionAgo() {
         // 準備：NOW に処理を終えたイベント
         var event = publish(new CleanupEvent(UUID.randomUUID(), false));
@@ -167,13 +167,13 @@ class EventCleanupJobTest {
     }
 
     @Test
-    @DisplayName("AC-284 処理を終えてから保存期間（7 日）を 1 ミリ秒でも過ぎたイベントは消える")
+    @DisplayName("処理を終えてから保存期間（7 日）を 1 マイクロ秒でも過ぎたイベントは消える")
     void deletesEventJustAfterRetention() {
         // 準備：NOW に処理を終えたイベント
         var event = publish(new CleanupEvent(UUID.randomUUID(), false));
 
-        // 操作：7 日と 1 ミリ秒後に片付ける
-        clock.setInstant(NOW.plus(RETENTION).plusMillis(1));
+        // 操作：7 日と 1 マイクロ秒後に片付ける
+        clock.setInstant(NOW.plus(RETENTION).plus(Duration.ofNanos(1_000)));
         job.cleanUp();
 
         // 確認：イベントの記録がない
@@ -181,7 +181,7 @@ class EventCleanupJobTest {
     }
 
     @Test
-    @DisplayName("AC-284 状態の列のない（古い形式の）処理を終えたイベントも、保存期間を過ぎたら消える")
+    @DisplayName("状態の列のない（古い形式の）処理を終えたイベントも、保存期間を過ぎたら消える")
     void deletesCompletedEventWithoutStatus() {
         // 準備：NOW に処理を終え、状態の列を空にしたイベント
         var event = publish(new CleanupEvent(UUID.randomUUID(), false));

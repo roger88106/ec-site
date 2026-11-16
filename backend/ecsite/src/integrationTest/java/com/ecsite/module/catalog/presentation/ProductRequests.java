@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 管理の商品 API を呼ぶ補助
  *
- * <p>{@link ProductApiTest}、{@link ProductVariantApiTest}、{@link ProductStatusApiTest} が共有する。
+ * <p>{@link ProductApiTest}、{@link ProductVariantApiTest}、{@link ProductStatusApiTest}、{@link SharedParameterMinimumApiTest} が共有する。
  * 商品とバリアントの登録は、これらのテストが確認する API なので、{@code CatalogTestData} でなく、ここで品番・本文・応答を扱う。
  * 税区分とカテゴリは {@code CatalogTestData} で作る。
  */

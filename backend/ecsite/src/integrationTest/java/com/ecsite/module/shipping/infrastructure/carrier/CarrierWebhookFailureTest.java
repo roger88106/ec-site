@@ -54,15 +54,27 @@ class CarrierWebhookFailureTest {
 
     // ============================== Bean ==============================
 
+    /**
+     * 通知のエンドポイントを呼ぶ MockMvc
+     */
     @Autowired
     MockMvc mockMvc;
 
+    /**
+     * 出荷の API（出荷を作るのに使う）
+     */
     @Autowired
     ShippingApi shippingApi;
 
+    /**
+     * mock の物流サービス（署名付きの通知を作るのに使う）
+     */
     @Autowired
     MockCarrier mockCarrier;
 
+    /**
+     * テストの時計
+     */
     @Autowired
     MutableClock clock;
 
@@ -78,6 +90,9 @@ class CarrierWebhookFailureTest {
     @MockitoSpyBean
     ShipmentRepository repository;
 
+    /**
+     * 時計を通知を受け付ける時刻にする。
+     */
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);

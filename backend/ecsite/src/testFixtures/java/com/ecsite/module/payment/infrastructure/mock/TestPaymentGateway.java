@@ -38,11 +38,6 @@ public class TestPaymentGateway implements PaymentGateway {
     private final List<AmountCall> amountCalls = new CopyOnWriteArrayList<>();
 
     /**
-     * 作った支払画面の数
-     */
-    private final AtomicInteger openedPages = new AtomicInteger();
-
-    /**
      * 作った支払画面の ID
      *
      * <p>作った順。
@@ -179,7 +174,6 @@ public class TestPaymentGateway implements PaymentGateway {
             throw SystemException.of("mock：支払画面を作れなくする: " + request.paymentId(), null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
-        openedPages.incrementAndGet();
         var page = mock.openPage(request);
         openedPageIds.add(page.id());
         var during = duringNextOpen.getAndSet(null);
@@ -540,7 +534,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 作った支払画面の数（最後に状態を消してから）
      */
     public int openedPages() {
-        return openedPages.get();
+        return openedPageIds.size();
     }
 
     /**
@@ -559,7 +553,6 @@ public class TestPaymentGateway implements PaymentGateway {
      */
     public void reset() {
         amountCalls.clear();
-        openedPages.set(0);
         openedPageIds.clear();
         duringNextOpen.set(null);
         openFailures.set(0);

@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -31,37 +30,47 @@ class SharedParameterMinimumApiTest {
     // ============================== 定数 ==============================
 
     /**
-     * 商品の API のパス
-     */
-    private static final String PRODUCTS = "/api/admin/products";
-
-    /**
      * 作ったばかりの商品のバージョン（バージョンの下限と同じ 0）
      */
     private static final long NEW_PRODUCT_VERSION = 0;
 
     // ============================== Bean ==============================
 
+    /**
+     * API を呼ぶ MockMvc
+     */
     @Autowired
     MockMvc mockMvc;
 
+    /**
+     * テストの時計
+     */
     @Autowired
     MutableClock clock;
 
     /**
-     * 商品カタログのテストデータ
+     * 商品カタログのテストデータ（税区分・下書きの商品・画像の受付）
      */
     private CatalogTestData catalog;
+
+    /**
+     * 管理の商品 API を呼ぶ補助（商品の削除）
+     */
+    private ProductRequests products;
 
     /**
      * 下書きの商品の ID
      */
     private UUID productId;
 
+    /**
+     * 税区分と、下書きの商品（バージョン 0）を作る。
+     */
     @BeforeEach
     void setUp() throws Exception {
         catalog = new CatalogTestData(mockMvc, clock);
         var taxCategoryId = catalog.taxCategory("下限 " + UUID.randomUUID().toString().substring(0, 8), "10");
+        products = new ProductRequests(mockMvc, taxCategoryId.toString());
         productId = catalog.draft("MIN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT),
                 taxCategoryId, "下限の商品").id;
     }
@@ -72,15 +81,14 @@ class SharedParameterMinimumApiTest {
     @DisplayName("楽観ロックのバージョンが下限の 0 なら、入口の検証を通り、操作が成り立つ")
     void acceptsVersionAtMinimum() throws Exception {
         // 操作と確認：作ったばかりの商品（バージョン 0）を、バージョン 0 で削除できる
-        mockMvc.perform(delete(PRODUCTS + "/" + productId).param("version", String.valueOf(NEW_PRODUCT_VERSION)))
-                .andExpect(status().isNoContent());
+        products.deleteProduct(productId, NEW_PRODUCT_VERSION).andExpect(status().isNoContent());
     }
 
     @Test
     @DisplayName("楽観ロックのバージョンが下限より 1 小さい -1 なら、入力の誤りの 400")
     void rejectsVersionBelowMinimum() throws Exception {
         // 操作と確認：-1 では INVALID_REQUEST の 400
-        mockMvc.perform(delete(PRODUCTS + "/" + productId).param("version", String.valueOf(NEW_PRODUCT_VERSION - 1)))
+        products.deleteProduct(productId, NEW_PRODUCT_VERSION - 1)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
     }

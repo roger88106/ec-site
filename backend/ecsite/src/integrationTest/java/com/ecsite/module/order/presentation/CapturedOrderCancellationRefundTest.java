@@ -2,6 +2,8 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.event.OrderStatusChanged;
+import com.ecsite.module.payment.application.PaymentRequests;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -40,8 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 売上確定の後にキャンセルされた注文の、通しの流れのテスト
  *
  * <p>出荷の登録で売上を確定している最中に、消費者がキャンセルを申請する。出荷の登録は 409 で失敗し、
- * 運営者が申請を承認すると、確定した売上を返金する。
- * 返金はコミットの後に非同期で行うので、このテストはコミットし、結果を待つ。
+ * 運営者が申請を承認すると、確定した売上を返金する。流れの観点（出荷の失敗、キャンセル、返金、在庫）ごとにテストを分け、
+ * 承認までの流れは準備の補助（{@link #approvedAfterCapture()}）で作る。
+ * 返金はコミットの後に非同期で行うので、このテストはコミットし、リスナーの処理を待つ。
  * 作ったデータは消さないので、税区分の名前、会員、送り状番号はテストごとに変え、確認は自分の注文だけにする。
  *
  * <p>準備のデータと確認の期待値は、同じ定数から作る。
@@ -82,24 +85,45 @@ class CapturedOrderCancellationRefundTest {
 
     // ============================== Bean ==============================
 
+    /**
+     * API を呼ぶ MockMvc
+     */
     @Autowired
     MockMvc mockMvc;
 
+    /**
+     * テスト用の決済サービス（売上確定の最中の処理と、返金・与信の取消の記録）
+     */
     @Autowired
     TestPaymentGateway gateway;
 
+    /**
+     * Spring のコンテキスト（注文の補助が支払の結果を反映するのに使う）
+     */
     @Autowired
     ApplicationContext applicationContext;
 
+    /**
+     * テストの時計
+     */
     @Autowired
     MutableClock clock;
 
+    /**
+     * 在庫のリポジトリ（入荷に使う）
+     */
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * DB（送料の税区分の用意と、支払への依頼のイベントの選択に使う）
+     */
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 非同期のリスナーを待つ補助
+     */
     @Autowired
     AsyncEvents asyncEvents;
 
@@ -123,6 +147,9 @@ class CapturedOrderCancellationRefundTest {
      */
     private String authorizationRef;
 
+    /**
+     * 入荷した商品を、テストごとの会員が注文して支払い、受付にする。
+     */
     @BeforeEach
     void setUp() throws Exception {
         var inventory = new InventoryTestData(stockItemRepository, NOW);
@@ -144,32 +171,66 @@ class CapturedOrderCancellationRefundTest {
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("AC-172、192 売上確定の最中に申請されて出荷が 409 になった注文は、承認するとキャンセルになり、総額を 1 回だけ返金し、在庫が戻る")
-    void refundsCapturedOrderAfterApproval() throws Exception {
+    @DisplayName("AC-170 売上確定の最中に消費者がキャンセルを申請すると、出荷の登録は 409 で、出荷は作られない")
+    void rejectsShipmentWhenRequestedDuringCapture() throws Exception {
         // 準備：出荷の登録の売上確定の最中に、消費者がキャンセルを申請する
         gateway.duringNextCapture(this::requestCancellationQuietly);
 
-        // 操作と確認：出荷の登録は、注文が受付でなくなったので 409
+        // 操作と確認：注文が受付でなくなったので 409
         ship().andExpect(status().isConflict()).andExpect(jsonPath("$.errorCode").value("ORDER_NOT_SHIPPABLE"));
 
-        // 操作：運営者が申請を承認し、返金済みになるのを待つ
-        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/approve")).andExpect(status().isNoContent());
-        await().atMost(TIMEOUT).until(() -> "REFUNDED".equals(adminOrder("$.payment.status")));
+        // 確認：出荷はない
+        mockMvc.perform(get("/api/admin/orders/" + orderId)).andExpect(jsonPath("$.shipment").doesNotExist());
+    }
 
-        // 確認：キャンセルで、出荷はない
-        mockMvc.perform(get("/api/admin/orders/" + orderId))
-                .andExpect(jsonPath("$.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.shipment").doesNotExist());
+    @Test
+    @DisplayName("AC-101 出荷の登録が 409 になった後に申請を承認すると、注文はキャンセルになる")
+    void cancelsOrderOnApproval() throws Exception {
+        // 準備と操作：売上確定の最中に申請され、運営者が承認する
+        approvedAfterCapture();
 
-        // 確認：総額を 1 回だけ返金し、確定した与信は取り消さない
+        // 確認：キャンセル
+        mockMvc.perform(get("/api/admin/orders/" + orderId)).andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    @DisplayName("AC-407-1 売上を確定した注文のキャンセルを承認すると、総額を 1 回だけ返金し、確定した与信は取り消さない")
+    void refundsTotalOnceWithoutVoid() throws Exception {
+        // 準備と操作：売上確定の最中に申請され、運営者が承認する
+        approvedAfterCapture();
+
+        // 確認：総額の返金が 1 回だけで、与信の取消はない
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).containsExactly(ORDER_TOTAL);
         assertThat(gateway.voided()).doesNotContain(authorizationRef);
+    }
 
-        // 確認：在庫が注文の前の数に戻る
+    @Test
+    @DisplayName("AC-101 出荷の登録が 409 になった後に申請を承認すると、在庫が注文の前の数に戻る")
+    void restoresStockOnApproval() throws Exception {
+        // 準備と操作：売上確定の最中に申請され、運営者が承認する
+        approvedAfterCapture();
+
+        // 確認：入荷した数に戻る
         InventoryTestData.expectQuantity(mockMvc, variantId, STOCKED);
     }
 
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 売上確定の最中に消費者がキャンセルを申請して出荷の登録が 409 になった注文を、運営者が承認する。
+     *
+     * <p>返金済みになり、キャンセルのイベントと、支払への依頼（返金・与信の取消）のイベントのリスナーが全て終わるまで待つ
+     * （返金と与信の取消が起きないことを、リスナーが終わってから数えるため）。
+     */
+    private void approvedAfterCapture() throws Exception {
+        gateway.duringNextCapture(this::requestCancellationQuietly);
+        ship().andExpect(status().isConflict());
+        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/approve")).andExpect(status().isNoContent());
+        await().atMost(TIMEOUT).until(() -> "REFUNDED".equals(adminOrder("$.payment.status")));
+        asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
+                && changed.orderId().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+    }
 
     /**
      * 出荷を登録する。

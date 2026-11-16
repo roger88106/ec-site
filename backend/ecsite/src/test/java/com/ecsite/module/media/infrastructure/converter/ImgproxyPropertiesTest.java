@@ -86,7 +86,7 @@ class ImgproxyPropertiesTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, 100})
-        @DisplayName("品質が下限の 1 か上限の 100 なら、起動でき、その品質になる")
+        @DisplayName("品質が範囲の端なら、起動でき、その品質になる")
         void startsWithQualityAtBounds(int quality) {
             // 操作と確認：起動でき、設定した品質を持つ
             runner.withPropertyValues("ecsite.media.converter.quality=" + quality)
@@ -98,7 +98,7 @@ class ImgproxyPropertiesTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {0, 101})
-        @DisplayName("品質が 1〜100 の外なら、起動に失敗し、quality が知らされる")
+        @DisplayName("品質が範囲の外なら、起動に失敗し、quality が知らされる")
         void failsWithQualityOutOfBounds(int quality) {
             // 操作と確認：起動に失敗し、原因に設定の名前がある
             runner.withPropertyValues("ecsite.media.converter.quality=" + quality)

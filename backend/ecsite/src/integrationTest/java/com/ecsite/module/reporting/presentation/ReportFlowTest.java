@@ -38,7 +38,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 注文の操作からレポートの集計までの、通しの流れのテスト
  *
- * <p>注文・出荷・配送状態の通知・キャンセルを API で行い、レポートがイベントで集めた写しを、レポートの API で集計する。
+ * <p>注文・出荷・配送状態の通知・キャンセルを API で行い（準備）、レポートがイベントで集めた写しを、レポートの API で集計する。
+ * レポートと数え方ごとにテストを分ける。
  * 写しはコミットの後に非同期で集めるので、このテストはコミットし、イベントの処理を待つ。
  * 作ったデータは消さないので、商品と会員はテストごとに作り、集計はこのテストの商品で絞る。
  *
@@ -93,27 +94,51 @@ class ReportFlowTest {
 
     // ============================== Bean ==============================
 
+    /**
+     * API を呼ぶ MockMvc
+     */
     @Autowired
     MockMvc mockMvc;
 
+    /**
+     * テスト用の決済サービス（注文の支払に使う）
+     */
     @Autowired
     TestPaymentGateway gateway;
 
+    /**
+     * mock の物流サービス（配送状態の通知に使う）
+     */
     @Autowired
     MockCarrier mockCarrier;
 
+    /**
+     * Spring のコンテキスト（注文の補助が支払の結果を反映するのに使う）
+     */
     @Autowired
     ApplicationContext applicationContext;
 
+    /**
+     * テストの時計
+     */
     @Autowired
     MutableClock clock;
 
+    /**
+     * 在庫のリポジトリ（入荷に使う）
+     */
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * DB（送料の税区分の用意に使う）
+     */
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 非同期のリスナーを待つ補助
+     */
     @Autowired
     AsyncEvents asyncEvents;
 
@@ -137,6 +162,10 @@ class ReportFlowTest {
      */
     private ShippingTestData shipping;
 
+    /**
+     * 商品を入荷し、3 つの注文（配達まで済む注文、受付のままキャンセルする注文、出荷の後に返送されてキャンセルする注文）の
+     * 流れを API で行い、レポートが写しを集め終わるのを待つ。
+     */
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
@@ -152,44 +181,53 @@ class ReportFlowTest {
         var owner = TestTokens.member().subject(UUID.randomUUID()).email("report-flow-" + UUID.randomUUID() + "@example.com");
         orders = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer());
         shipping = new ShippingTestData(mockMvc, mockCarrier);
+
+        var delivered = acceptedOrder(DELIVERED_QUANTITY);
+        var cancelled = acceptedOrder(CANCELLED_QUANTITY);
+        var returned = acceptedOrder(RETURNED_QUANTITY);
+        shipping.notifyStatus(Carrier.YAMATO, ship(delivered), "配達完了");
+        cancel(cancelled, """
+                {"reason": "受付のままキャンセル"}""");
+        shipping.notifyStatus(Carrier.YAMATO, ship(returned), "返品");
+        cancel(returned, """
+                {"reason": "返送された", "restock": true}""");
+        awaitCollected(Set.of(delivered, cancelled, returned));
     }
 
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("AC-225 配達まで済んだ注文だけを、注文基準でも出荷基準でも数え、受付のままのキャンセルと、出荷の後に返送されたキャンセルは数えない")
-    void countsOnlyDeliveredOrder() throws Exception {
-        // 準備：配達まで済む注文、受付のままキャンセルする注文、出荷の後に返送されてキャンセルする注文
-        var delivered = acceptedOrder(DELIVERED_QUANTITY);
-        var cancelled = acceptedOrder(CANCELLED_QUANTITY);
-        var returned = acceptedOrder(RETURNED_QUANTITY);
-
-        // 操作：出荷と配達完了、受付のままのキャンセル、出荷と返送の後のキャンセルを行い、レポートが集め終わるのを待つ
-        var deliveredTracking = ship(delivered);
-        shipping.notifyStatus(Carrier.YAMATO, deliveredTracking, "配達完了");
-        cancel(cancelled, """
-                {"reason": "受付のままキャンセル"}""");
-        var returnedTracking = ship(returned);
-        shipping.notifyStatus(Carrier.YAMATO, returnedTracking, "返品");
-        cancel(returned, """
-                {"reason": "返送された", "restock": true}""");
-        awaitCollected(Set.of(delivered, cancelled, returned));
-
-        // 確認：売上の推移は、注文基準でも出荷基準でも、配達まで済んだ注文の数量と税込小計だけ
+    @DisplayName("AC-225 売上の推移の注文基準は、配達まで済んだ注文だけを数え、受付のままのキャンセルと返送の後のキャンセルは数えない")
+    void salesTrendByOrderCountsOnlyDelivered() throws Exception {
+        // 操作と確認：配達まで済んだ注文の数量と税込小計だけ
         salesTrend("ORDER").andExpect(jsonPath("$.points", hasSize(1)))
                 .andExpect(jsonPath("$.points[0].quantity").value(DELIVERED_QUANTITY))
                 .andExpect(jsonPath("$.points[0].amount").value(DELIVERED_QUANTITY * PRICE_INCL_TAX));
+    }
+
+    @Test
+    @DisplayName("AC-225 売上の推移の出荷基準は、配達まで済んだ注文だけを数え、出荷の後に返送されたキャンセルは数えない")
+    void salesTrendByShipmentCountsOnlyDelivered() throws Exception {
+        // 操作と確認：配達まで済んだ注文の数量と税込小計だけ
         salesTrend("SHIPMENT").andExpect(jsonPath("$.points", hasSize(1)))
                 .andExpect(jsonPath("$.points[0].quantity").value(DELIVERED_QUANTITY))
                 .andExpect(jsonPath("$.points[0].amount").value(DELIVERED_QUANTITY * PRICE_INCL_TAX));
+    }
 
-        // 確認：バリアントの売れ行きも、配達まで済んだ注文の数量だけ
+    @Test
+    @DisplayName("AC-225 バリアントの売れ行きは、配達まで済んだ注文の数量だけを数える")
+    void variantSalesCountsOnlyDelivered() throws Exception {
+        // 操作と確認：バリアントの販売数量が、配達まで済んだ注文の数量
         mockMvc.perform(get("/api/admin/reports/variant-sales?" + OCTOBER + "&productId=" + productId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.variants", hasSize(1)))
                 .andExpect(jsonPath("$.variants[0].quantity").value(DELIVERED_QUANTITY));
+    }
 
-        // 確認：地域の内訳も、配達まで済んだ 1 件だけ（お届け先は東京都）
+    @Test
+    @DisplayName("AC-225 地域の内訳は、配達まで済んだ 1 件だけを数える")
+    void customerBreakdownCountsOnlyDelivered() throws Exception {
+        // 操作と確認：お届け先の東京都に 1 件だけ
         mockMvc.perform(get("/api/admin/reports/customer-breakdown?" + OCTOBER + "&productId=" + productId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.prefectures", hasSize(1)))

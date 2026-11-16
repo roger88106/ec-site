@@ -191,7 +191,13 @@ export function validateTerms(terms) {
     if (Array.isArray(term.allow)) {
       throw new Error(`「${termName(term)}」の allow は {許容用語: 理由} の形で書く（ja-text.json）`)
     }
-    if (term.files !== undefined) new RegExp(term.files, 'u')
+    if (term.files !== undefined) {
+      try {
+        new RegExp(term.files, 'u')
+      } catch (e) {
+        throw new Error(`ja-text.json の「${termName(term)}」の files「${term.files}」：正規表現として不正：${e.message}`)
+      }
+    }
     if (term.word === undefined) continue
     for (const allow of Object.keys(term.allow ?? {})) {
       if (!allow.includes(term.word)) {

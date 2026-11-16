@@ -149,6 +149,10 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
     }
   })
 
+  test('files の正規表現が読めない項目は、項目の名前と files を示す設定の誤りになる', () => {
+    assert.throws(() => validateTerms([{ word: '道具', use: 'ツール', files: '(' }]), /「道具」の files「\(」：正規表現として不正/)
+  })
+
   test('hit に当たらない例と、miss に当たる例を誤りとして示す', () => {
     const wrong = { pattern: 'a', use: 'x', examples: { hit: ['b'], miss: ['a'] } }
     assert.equal(jaText.findPatternProblems([wrong]).length, 2)

@@ -147,7 +147,7 @@ class OrderTest {
         }
 
         @Test
-        @DisplayName("AC-92 明細の行番号は、1 から見積もりの品目の並びで振る")
+        @DisplayName("明細の行番号は、1 から見積もりの品目の並びで振る")
         void numbersLinesInQuoteOrder() {
             // 準備：品番 A・B・C の順に並ぶ 3 品目の見積もり
             var quote = quoteOf(List.of("TS-001-A", "TS-001-B", "TS-001-C"));
@@ -241,14 +241,14 @@ class OrderTest {
         }
 
         @Test
-        @DisplayName("AC-86 メールアドレスがなければ拒否される")
+        @DisplayName("メールアドレスがなければ拒否される")
         void rejectsMissingEmail() {
             // 操作と確認：業務のエラー INVALID_EMAIL で拒否される
             assertBusinessError(() -> placeWithEmail(null), OrderErrorCode.INVALID_EMAIL);
         }
 
         @Test
-        @DisplayName("AC-86 上限の 254 文字ちょうどのメールアドレスで注文が成立する")
+        @DisplayName("上限の 254 文字ちょうどのメールアドレスで注文が成立する")
         void acceptsEmailAtMaxLength() {
             // 準備：形が正しく、254 文字のメールアドレス
             var email = emailOfLength(254);
@@ -261,7 +261,7 @@ class OrderTest {
         }
 
         @Test
-        @DisplayName("AC-86 上限を 1 文字超える 255 文字のメールアドレスは拒否される")
+        @DisplayName("上限を 1 文字超える 255 文字のメールアドレスは拒否される")
         void rejectsEmailOverMaxLength() {
             // 準備：形が正しく、255 文字のメールアドレス
             var email = emailOfLength(255);

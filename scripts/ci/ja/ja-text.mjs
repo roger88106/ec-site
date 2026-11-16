@@ -118,18 +118,20 @@ function compiled(term) {
  */
 function disallowedMatch(line, term) {
   const { regExp, allows } = compiled(term)
-  const allowed = []
-  for (const allow of allows) {
-    for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
-      allowed.push([at, at + allow.length])
-    }
-  }
   const matches = []
   if (regExp !== null) {
     for (const match of line.matchAll(regExp)) matches.push({ at: match.index, text: match[0] })
   } else {
     for (let at = line.indexOf(term.word); at !== -1; at = line.indexOf(term.word, at + 1)) {
       matches.push({ at, text: term.word })
+    }
+  }
+  // 大半の行は一致がないので、許容用語の範囲は一致があるときだけ求める
+  if (matches.length === 0) return null
+  const allowed = []
+  for (const allow of allows) {
+    for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
+      allowed.push([at, at + allow.length])
     }
   }
   for (const { at, text } of matches) {
@@ -223,13 +225,14 @@ export function termsFor(terms, file) {
  *
  * @param {string} text 文書
  * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許容用語（許容用語は {許容用語: 理由}）
+ * @param {{ masked?: boolean }} [options] masked は、text のインラインコードを除いてあるか（withoutInlineCode の結果）
  * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語
  */
-export function findTerms(text, terms) {
+export function findTerms(text, terms, { masked = false } = {}) {
   const hits = []
   text.split('\n').forEach((raw, index) => {
     // インラインコードは、行ごとに 1 回だけ除く
-    const line = maskCodeSpans(raw)
+    const line = masked ? raw : maskCodeSpans(raw)
     for (const term of terms) {
       const matched = disallowedMatch(line, term)
       if (matched !== null) hits.push({ ...term, line: index + 1, word: matched })
@@ -245,12 +248,13 @@ export function findTerms(text, terms) {
  *
  * @param {string[]} texts 調べる文書の内容（全て）
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 語（または正規表現）と許容用語
+ * @param {{ masked?: boolean }} [options] masked は、texts のインラインコードを除いてあるか（withoutInlineCode の結果）
  * @returns {string[]} 誤りの文
  */
-export function findAllowProblems(texts, terms) {
-  const masked = texts.map(withoutInlineCode)
+export function findAllowProblems(texts, terms, { masked = false } = {}) {
+  const plain = masked ? texts : texts.map(withoutInlineCode)
   return terms.flatMap((term) =>
-    checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => masked.some((text) => text.includes(allow))),
+    checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => plain.some((text) => text.includes(allow))),
   )
 }
 
@@ -773,7 +777,10 @@ function checkMessage(file, terms, warning) {
  *
  * @param {Map<string, Set<number> | null> | null} addedMap ファイルごとの追加行（--warning）。null なら全てのファイルを読む
  * @param {boolean} style 文体を測るか。測るときだけ、コードの行末のコメントの行を求める
- * @returns {{ docs: { file: string, text: string }[], code: { file: string, comments: string, trailing: Set<number> }[] }} 文書とコード（コードはコメントとテスト名と、行末のコメントの行）
+ * @returns {{ docs: { file: string, text: string, masked: string }[], code: { file: string, comments: string, masked: string, trailing: Set<number> }[] }} 文書とコード
+ *   - text・comments：文書と、コードのコメントとテスト名
+ *   - masked：text・comments のインラインコードを除いたもの（語の一致と許容用語の照合で共に使う）
+ *   - trailing：コードの行末のコメントの行
  */
 function readTargets(addedMap, style) {
   const gitFiles = listGitFiles()
@@ -781,10 +788,14 @@ function readTargets(addedMap, style) {
   exitIfNoFiles(allDocs, '語を調べる文書')
   const allCode = gitFiles.filter((file) => isTargetCode(file))
   exitIfNoFiles(allCode, '語を調べるコード')
-  const docs = filesToMeasure(allDocs, addedMap).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
+  const docs = filesToMeasure(allDocs, addedMap).map((file) => {
+    const text = readFileSync(file, 'utf8')
+    return { file, text, masked: withoutInlineCode(text) }
+  })
   const code = filesToMeasure(allCode, addedMap).map((file) => {
     const text = readFileSync(file, 'utf8')
-    return { file, comments: commentText(text, codeKind(file)), trailing: style ? trailingCommentLines(text, codeKind(file)) : new Set() }
+    const comments = commentText(text, codeKind(file))
+    return { file, comments, masked: withoutInlineCode(comments), trailing: style ? trailingCommentLines(text, codeKind(file)) : new Set() }
   })
   return { docs, code }
 }
@@ -792,15 +803,12 @@ function readTargets(addedMap, style) {
 /**
  * 文書とコードの語の一致を集める。コードは、コメントとテスト名だけを見る。
  *
- * @param {{ docs: { file: string, text: string }[], code: { file: string, comments: string }[] }} targets 調べる文書とコード
+ * @param {{ docs: { file: string, masked: string }[], code: { file: string, masked: string }[] }} targets 調べる文書とコード（インラインコードを除いたもの）
  * @param {object[]} terms 語の一覧
  * @returns {{ file: string, line: number, word: string, use: string }[]} 見つけた行と語
  */
 function collectTermHits({ docs, code }, terms) {
-  return [
-    ...docs.flatMap(({ file, text }) => findTerms(text, termsFor(terms, file)).map((hit) => ({ file, ...hit }))),
-    ...code.flatMap(({ file, comments }) => findTerms(comments, termsFor(terms, file)).map((hit) => ({ file, ...hit }))),
-  ]
+  return [...docs, ...code].flatMap(({ file, masked }) => findTerms(masked, termsFor(terms, file), { masked: true }).map((hit) => ({ file, ...hit })))
 }
 
 /**
@@ -836,7 +844,7 @@ function checkFiles(list, { warning, added }) {
     return lines === null || lines.has(line)
   }
   const targets = readTargets(addedMap, warning)
-  const allowProblems = warning ? [] : findAllowProblems([...targets.docs.map(({ text }) => text), ...targets.code.map(({ comments }) => comments)], terms)
+  const allowProblems = warning ? [] : findAllowProblems([...targets.docs, ...targets.code].map(({ masked }) => masked), terms, { masked: true })
   for (const problem of allowProblems) console.log(problem)
   const termHits = collectTermHits(targets, terms).filter(({ file, line }) => isAdded(file, line))
   for (const hit of termHits) console.log(`${hit.file}:${hit.line} ${hit.word} → ${hit.use}`)

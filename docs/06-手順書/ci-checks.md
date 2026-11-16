@@ -13,7 +13,6 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `compose-ports` | compose の全ての ports が `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action のディレクトリが、Dependabot の directories に入っていることを確認する |
 | `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないことを確認する |
-| `doc-shape` | 表のセルの長さ、設計と機能仕様の観測の語と Stripe の語、Mermaid の sequenceDiagram の大きさを warning として示す（失敗にしない） |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
 | `env-defaults` | 管理画面の IdP の既定値が、全ての置き場所で一致することを確認する（設定の型の既定値と文書の照合は `backend/config-defaults`。CI のビルドのジョブだけで動き、commit の前の hook では動かない） |
 | `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
@@ -69,9 +68,3 @@ commit の前の hook（[開発環境の起動](setup.md)の「起動」）は�
 - CI の `docs.yml` だけで実行し、`check-all.sh` と commit の前の hook では実行しない。理由：Chrome とネットワークが必要で遅いため。
 - 手元では、ルートで `node scripts/ci/mermaid/mermaid-check.mjs` を実行する。
 
-## 文書の形の検査
-
-検査することは、上の表の `doc-shape` の行のとおり。確認すること、対象、warning の扱い、閾値は、`scripts/ci/doc-shape.mjs` の冒頭のコメントにある。
-
-- `check-all.sh` が実行する。対象の Markdown が 0 件のときだけ、他の検査と同じく失敗にする。
-- 手元では、ルートで `node scripts/ci/doc-shape.mjs`（件数）と `node scripts/ci/doc-shape.mjs --list`（1 件 1 行の一覧）を実行する。

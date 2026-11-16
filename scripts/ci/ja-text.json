@@ -49,7 +49,9 @@
     { "word": "許す語", "use": "許容用語" },
     { "word": "判定器", "use": "検査の script（CI を失敗させる script）。文脈で決める" },
     { "word": "護り", "use": "誤りの防止" },
-    { "pattern": "(?<![A-Za-z0-9/._-])(?i:claude code|claude|opus|sonnet|haiku|codex|gemini|copilot|cursor)(?![A-Za-z0-9/._-])", "files": "^docs/(constitution\\.md|05-開発規則/.*\\.md)$", "use": "規則の本文には、AI のサービス固有の名前を書かない。サービスに依存しない言葉（エージェント、高性能の区分など）にするか、skill sessions の「ツールの補足」に移す。パスと識別子はインラインコードにする", "examples": { "hit": ["Claude Code の設定", "Opus で読む", "codexを使う"], "miss": ["`CLAUDE.md`", ".claude/skills/", "claude-opus-5-5", "claudette"] } }
+    { "pattern": "(?<![A-Za-z0-9/._-])(?i:claude code|claude|opus|sonnet|haiku|codex|gemini|copilot|cursor)(?![A-Za-z0-9/._-])", "files": "^docs/(constitution\\.md|05-開発規則/.*\\.md)$", "use": "規則の本文には、AI のサービス固有の名前を書かない。サービスに依存しない言葉（エージェント、高性能の区分など）にするか、skill sessions の「ツールの補足」に移す。パスと識別子はインラインコードにする", "examples": { "hit": ["Claude Code の設定", "Opus で読む", "codexを使う"], "miss": ["`CLAUDE.md`", ".claude/skills/", "claude-opus-5-5", "claudette"] } },
+    { "pattern": "sandbox で(?:動かして)?(?:確認し|確かめ|試し)た|sandbox では[^。]*確認した|ことを確認した|確認した結果|実測では|試したところ|検証したところ|確認したところ|計測では|動かしたところ", "files": "^docs/(02-設計|03-機能仕様)/(?!template\\.md$).*\\.md$", "use": "設計と機能仕様には観測の結果を書かない。決めたことを書き、観測は記録（docs/07-記録/）に置く（各 template.md の表の、置かないもの（観測）の行）", "examples": { "hit": ["sandbox で確認した", "返ることを確認した", "実測では 3 秒"], "miss": ["確認する", "sandbox で動かす"] } },
+    { "pattern": "PaymentIntent|Checkout Session|capture_before|payment_intent|checkout\\.session\\.[a-z_*]+|(?<![A-Za-z0-9_])charge\\.[a-z_*]|charge_already_refunded|capture_method|Stripe-Signature|Refunds API|(?<![A-Za-z0-9_])Refund(?![A-Za-z0-9_])", "files": "^docs/03-機能仕様/(?!template\\.md$).*\\.md$", "use": "機能仕様には Stripe の API の名前を書かない。docs/02-設計/<モジュール>.md に置く（docs/03-機能仕様/template.md の表の、置かないもの（実装の語）の行）。インラインコードの中は見ない", "examples": { "hit": ["PaymentIntent を作る", "Refund を作る", "checkout.session.completed を受ける"], "miss": ["RefundRequested を発行する", "返金する"] } }
   ],
   "warning": [
     { "word": "部品", "use": "React はコンポーネント、Java はクラス、外のものはライブラリ" },

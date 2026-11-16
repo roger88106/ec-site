@@ -186,8 +186,7 @@ class PaymentCaptureTest {
         @DisplayName("AC-169 与信期限切れの支払を重ねて確定しても、同じ業務のエラーを返す")
         void returnsSameErrorAgain() {
             // 準備：与信期限切れの支払
-            var orderId = withExpiredAuthorization();
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+            var orderId = authorizationExpired();
 
             // 操作と確認：もう一度確定すると、同じ与信期限切れの業務のエラー
             assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
@@ -197,8 +196,7 @@ class PaymentCaptureTest {
         @DisplayName("AC-169 与信期限切れの支払を重ねて確定しても、決済サービスを呼ばない")
         void doesNotCallGatewayAgain() {
             // 準備：与信期限切れの支払
-            var orderId = withExpiredAuthorization();
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+            var orderId = authorizationExpired();
 
             // 操作：もう一度確定する（業務のエラーになる）
             assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
@@ -306,6 +304,17 @@ class PaymentCaptureTest {
     private UUID withExpiredAuthorization() {
         var orderId = payments.authorized(ORDERED_AT);
         gateway.expireAuthorization(gateway.authorizationRefOf(payments.pageIdOf(orderId)));
+        return orderId;
+    }
+
+    /**
+     * 売上確定が決済サービスに与信期限切れで断られ、与信期限切れになった支払を作る。
+     *
+     * @return 注文 ID
+     */
+    private UUID authorizationExpired() {
+        var orderId = withExpiredAuthorization();
+        assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
         return orderId;
     }
 }

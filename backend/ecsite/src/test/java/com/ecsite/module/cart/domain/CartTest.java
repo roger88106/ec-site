@@ -147,9 +147,11 @@ class CartTest {
         @Test
         @DisplayName("AC-75 拒否された追加は、数量を変えない")
         void keepsQuantityAfterRejection() {
-            // 準備：白 6 個のカートに、白 5 個を入れて拒否された
+            // 準備：白 6 個のカート
             var cart = newCart();
             cart.add(WHITE, 6, NOW);
+
+            // 操作と確認（前提）：白 5 個の追加が拒否される
             assertBusinessError(() -> cart.add(WHITE, 5, NOW), CartErrorCode.INVALID_CART_QUANTITY);
 
             // 確認：6 個のまま

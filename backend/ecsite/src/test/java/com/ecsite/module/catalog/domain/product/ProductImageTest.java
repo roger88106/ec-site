@@ -145,7 +145,7 @@ class ProductImageTest {
             // 準備：20 枚の画像を持つ商品
             var product = productWithImages(imageIds(MAX_IMAGES));
 
-            // 確認（前提）：21 枚目が拒否される
+            // 操作と確認（前提）：21 枚目が拒否される
             assertBusinessError(() -> product.addImage(UUID.randomUUID(), UUID.randomUUID()),
                     ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
 

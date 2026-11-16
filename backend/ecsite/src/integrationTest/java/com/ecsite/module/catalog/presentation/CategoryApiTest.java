@@ -332,11 +332,11 @@ class CategoryApiTest {
             // 準備：並べ替えの API で、各階層を並べ替えた木
             var tree = sortedTree();
 
-            // 確認：最上位は、他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序が並び順どおり
+            // 操作と確認：最上位は、他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序が並び順どおり
             assertThat(rootsOf(tree.clothingId(), tree.foodId())).extracting(r -> r.get("id"))
                     .containsExactly(tree.foodId(), tree.clothingId());
 
-            // 確認：子と孫は並び順どおり
+            // 操作と確認：子と孫は並び順どおり
             var node = nodeOf(tree.rootName());
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())

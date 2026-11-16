@@ -145,7 +145,7 @@ class EffectivePeriodTest {
             // 準備：開始・終了とも空白の期間
             var period = EffectivePeriod.of(null, null);
 
-            // 確認：古い時点も先の時点も含む
+            // 操作と確認：古い時点も先の時点も含む
             assertThat(period.contains(Instant.EPOCH)).isTrue();
             assertThat(period.contains(T2)).isTrue();
         }
@@ -161,10 +161,10 @@ class EffectivePeriodTest {
             // 準備：開始のある期間
             var period = EffectivePeriod.of(T1, T2);
 
-            // 確認：開始の直前は開始済みでない
+            // 操作と確認：開始の直前は開始済みでない
             assertThat(period.hasStarted(T1.minusNanos(1))).isFalse();
 
-            // 確認：開始の時点で開始済み
+            // 操作と確認：開始の時点で開始済み
             assertThat(period.hasStarted(T1)).isTrue();
         }
 
@@ -181,10 +181,10 @@ class EffectivePeriodTest {
             // 準備：終了のある期間
             var period = EffectivePeriod.of(T1, T2);
 
-            // 確認：終了の直前は終了済みでない
+            // 操作と確認：終了の直前は終了済みでない
             assertThat(period.hasEnded(T2.minusNanos(1))).isFalse();
 
-            // 確認：終了の時点で終了済み
+            // 操作と確認：終了の時点で終了済み
             assertThat(period.hasEnded(T2)).isTrue();
         }
 

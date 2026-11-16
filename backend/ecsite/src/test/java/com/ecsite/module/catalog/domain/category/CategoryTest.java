@@ -243,7 +243,7 @@ class CategoryTest {
             // 準備：登録したカテゴリ
             var category = factory.create(null, ROOT_NAME, 1);
 
-            // 確認（前提）：51 文字の名称と、空の名称が拒否される
+            // 操作と確認（前提）：51 文字の名称と、空の名称が拒否される
             assertBusinessError(() -> category.rename("あ".repeat(NAME_MAX_LENGTH + 1)), CategoryErrorCode.INVALID_CATEGORY_NAME);
             assertBusinessError(() -> category.rename(""), CategoryErrorCode.INVALID_CATEGORY_NAME);
 
@@ -306,7 +306,7 @@ class CategoryTest {
             var a = factory.create(null, "A", 1);
             var b = factory.create(null, "B", 2);
 
-            // 確認（前提）：B だけの並べ替えが拒否される
+            // 操作と確認（前提）：B だけの並べ替えが拒否される
             assertBusinessError(() -> Category.reorder(List.of(a, b), List.of(b.id())), CategoryErrorCode.INVALID_CATEGORY_ORDER);
 
             // 確認：A が 1、B が 2 のまま

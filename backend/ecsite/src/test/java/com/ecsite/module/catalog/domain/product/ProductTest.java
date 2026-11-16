@@ -350,7 +350,7 @@ class ProductTest {
             // 準備：登録した商品
             var product = registered();
 
-            // 確認（前提）：空白の商品名で、ほかの全ての項目も変える編集が拒否される
+            // 操作と確認（前提）：空白の商品名で、ほかの全ての項目も変える編集が拒否される
             assertBusinessError(() -> product.update(" ", NEW_DESCRIPTION, NEW_TAX_CATEGORY_ID, PriceExclTax.of(NEW_PRICE_YEN),
                             Set.of(NEW_CATEGORY_ID), NOW),
                     ProductErrorCode.INVALID_PRODUCT_NAME);

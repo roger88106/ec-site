@@ -39,7 +39,6 @@ export const CHECK_INPUTS = {
   'java-rules': [/^backend\/ecsite\/src\//],
   'license-policy': [],
   'local-ports': [],
-  'main-entry': [/^frontend\/shared\/scripts\//],
   'message-comments': [/^frontend\//],
   'message-numbers': [],
   migrations: [/^backend\/ecsite\/src\/main\/resources\/db\/migration\//],

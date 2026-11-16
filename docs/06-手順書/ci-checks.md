@@ -26,7 +26,6 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `java-rules` | バックエンドのソースに、禁止した書き方（列挙型の変換、理由のない @SuppressWarnings）がないことを確認する |
 | `license-policy` | `licenses.md` の方針の表が、`policy.json` から作った表と同じことを確認する（`--write` で再生成する） |
 | `local-ports` | ローカルのポートの一覧（`ports.json`）と、compose・script・文書・設定のポートが食い違わないことを確認する |
-| `main-entry` | script の直接実行の判定が、共通の関数 `isMain(import.meta.url)` だけであることを確認する |
 | `message-comments` | 文言をキーで引く呼び出しに、表示する内容のコメントがあることを確認する |
 | `message-numbers` | バックエンドのエラーの文に、差し込み以外の数字を直接書いていないことを確認する |
 | `migrations` | 適用済みのマイグレーションの変更と、前のリリースのアプリを停止させる変更がないことを確認する |

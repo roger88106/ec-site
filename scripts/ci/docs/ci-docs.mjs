@@ -30,11 +30,14 @@ const HEADING = /^#{2,3} (.*)$/
 /** 検査を置くディレクトリ */
 const CHECK_DIR = 'scripts/ci/'
 
+/** 検査のフォルダ（CHECK_DIR の下）。正規表現の選択肢の形 */
+const CHECK_FOLDERS = ['docs', 'spec', 'ja', 'java', 'config', 'frontend'].join('|')
+
 /** 検査のファイル（CHECK_DIR からの相対パス）。検査のフォルダの直下の .mjs（テストを除くのは呼ぶ側） */
-const CHECK_FILE = /^(?:docs|spec|ja|java|config|frontend)\/[^/]+\.mjs$/
+const CHECK_FILE = new RegExp(`^(?:${CHECK_FOLDERS})/[^/]+\\.mjs$`)
 
 /** 先頭のコメントを確認するファイル：検査と、lib の下の各ファイル */
-const COMMENT_FILE = /^(?:(?:docs|spec|ja|java|config|frontend)\/[^/]+|lib\/(?:.+\/)?[^/]+)\.mjs$/
+const COMMENT_FILE = new RegExp(`^(?:(?:${CHECK_FOLDERS})/[^/]+|lib/(?:.+/)?[^/]+)\\.mjs$`)
 
 /** 1 列目が名前の行（名前と、名前の後の（`引数`）） */
 const NAME_ROW = /^\| `([^`\s]+)`(（`[^`]+`）)? \|/

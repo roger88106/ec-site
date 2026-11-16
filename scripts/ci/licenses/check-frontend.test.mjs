@@ -23,30 +23,38 @@ describe('1 つの部品のライセンスの判定', () => {
     assert.deepEqual(evaluate('MPL-2.0', 'lightningcss-win32-x64-msvc', policy), { ok: true })
   })
 
-  test('条件付きのライセンスは、一覧にない部品なら失敗する', () => {
-    assert.equal(evaluate('MPL-2.0', 'some-package', policy).ok, false)
+  test('条件付きのライセンスは、一覧にない部品なら、一覧にない部品として失敗する', () => {
+    const result = evaluate('MPL-2.0', 'some-package', policy)
+    assert.equal(result.ok, false)
+    assert.match(result.reason, /条件付きのライセンス（MPL-2\.0）で、一覧にない部品/)
   })
 
-  test('禁止のライセンスは失敗する', () => {
-    assert.equal(evaluate('GPL-3.0-only', 'some-package', policy).ok, false)
+  test('禁止のライセンスは、禁止として失敗する', () => {
+    const result = evaluate('GPL-3.0-only', 'some-package', policy)
+    assert.equal(result.ok, false)
+    assert.match(result.reason, /禁止か分からないライセンス（GPL-3\.0-only）/)
   })
 
-  test('方針にないライセンス・分からないライセンスは失敗する', () => {
-    assert.equal(evaluate('WTFPL', 'some-package', policy).ok, false)
-    assert.equal(evaluate('Unknown', 'some-package', policy).ok, false)
-    assert.equal(evaluate('', 'some-package', policy).ok, false)
+  test('方針にないライセンスは、方針にないものとして失敗する', () => {
+    const result = evaluate('WTFPL', 'some-package', policy)
+    assert.equal(result.ok, false)
+    assert.match(result.reason, /方針にないライセンス（WTFPL）/)
+  })
+
+  test('分からないライセンス（Unknown）は、禁止か分からないものとして失敗する', () => {
+    assert.match(evaluate('Unknown', 'some-package', policy).reason, /禁止か分からないライセンス（Unknown）/)
   })
 
   test('OR は、どれか 1 つが通れば通る', () => {
     assert.equal(evaluate('MIT OR GPL-3.0-only', 'some-package', policy).ok, true)
     assert.equal(evaluate('(GPL-3.0-only OR MIT)', 'some-package', policy).ok, true)
-    assert.equal(evaluate('GPL-3.0-only OR AGPL-3.0-only', 'some-package', policy).ok, false)
+    assert.match(evaluate('GPL-3.0-only OR AGPL-3.0-only', 'some-package', policy).reason, /禁止か分からないライセンス/)
   })
 
   test('AND は、すべてが通るときだけ通る', () => {
     assert.equal(evaluate('Apache-2.0 AND LGPL-3.0-or-later', '@img/sharp-win32-x64', policy).ok, true)
-    assert.equal(evaluate('Apache-2.0 AND LGPL-3.0-or-later', 'other-binary', policy).ok, false)
-    assert.equal(evaluate('MIT AND GPL-3.0-only', 'some-package', policy).ok, false)
+    assert.match(evaluate('Apache-2.0 AND LGPL-3.0-or-later', 'other-binary', policy).reason, /条件付きのライセンス（LGPL-3\.0-or-later）で、一覧にない部品/)
+    assert.match(evaluate('MIT AND GPL-3.0-only', 'some-package', policy).reason, /禁止か分からないライセンス（GPL-3\.0-only）/)
   })
 
   test('表記の揺れは、正規化してから判定する', () => {
@@ -99,7 +107,7 @@ describe('括弧と AND・OR を組み合わせた式の判定', () => {
     assert.equal(ok('((GPL-3.0-only OR ISC) AND MIT) OR GPL-3.0-only'), true)
   })
 
-  test('今の依存に多い式は、今と同じ結果になる', () => {
+  test('単独の識別子と、括弧付きの OR・AND の式を、方針の区分どおりに判定する', () => {
     assert.equal(ok('MIT'), true)
     assert.equal(ok('(MIT OR Apache-2.0)'), true)
     assert.equal(ok('Apache-2.0 AND MIT'), true)
@@ -116,26 +124,26 @@ describe('括弧と AND・OR を組み合わせた式の判定', () => {
 
 describe('解析できない式', () => {
   const invalid = [
-    '(MIT',
-    'MIT)',
-    '((MIT)',
-    'MIT OR',
-    'OR MIT',
-    'MIT AND AND ISC',
-    'MIT OR OR ISC',
-    'MIT AND OR ISC',
-    '()',
-    'MIT ()',
-    '(MIT) (ISC)',
-    '   ',
-    '',
+    ['(MIT', /括弧が閉じていない/],
+    ['MIT)', /\) の位置が正しくない/],
+    ['((MIT)', /括弧が閉じていない/],
+    ['MIT OR', /式が途中で終わっている/],
+    ['OR MIT', /OR の位置が正しくない/],
+    ['MIT AND AND ISC', /AND の位置が正しくない/],
+    ['MIT OR OR ISC', /OR の位置が正しくない/],
+    ['MIT AND OR ISC', /OR の位置が正しくない/],
+    ['()', /\) の位置が正しくない/],
+    ['MIT ()', /\( の位置が正しくない/],
+    ['(MIT) (ISC)', /\( の位置が正しくない/],
+    ['   ', /式が空/],
+    ['', /式が空/],
   ]
-  for (const expression of invalid) {
-    test(`「${expression}」は理由つきで失敗にする`, () => {
+  for (const [expression, message] of invalid) {
+    test(`「${expression}」は、解析できない式として、理由つきで失敗にする`, () => {
       const result = evaluate(expression, 'some-package', policy)
       assert.equal(result.ok, false)
-      assert.equal(typeof result.reason, 'string')
-      assert.notEqual(result.reason, '')
+      assert.match(result.reason, /^解析できないライセンスの式（/)
+      assert.match(result.reason, message)
     })
   }
 })

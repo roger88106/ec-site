@@ -12,14 +12,14 @@ import path from 'node:path'
 import { ADDED_DIFF_ARGS } from '../../ci/lib/git/added-diff.mjs'
 import { fileReader, listChecksAndTests, selectChecks } from './pre-commit-select.mjs'
 
-/** 取り出しに失敗したときの終了コード（検査の失敗の 1 と区別する） */
+/** 取り出しに失敗したときの終了コード（環境の誤りの 2。検査の失敗の 1 と区別する） */
 export const CHECKOUT_FAILED = 2
 
-/** 追加行の差分、または warning の一覧の取得に失敗したときの終了コード。取得できないまま成功にしない */
-export const WARNING_FAILED = 3
+/** 追加行の差分、または warning の一覧の取得に失敗したときの終了コード（環境の誤りの 2）。取得できないまま成功にしない */
+export const WARNING_FAILED = 2
 
-/** develop か main に commit しようとしたときの終了コード（検査の失敗と区別する） */
-export const BRANCH_REJECTED = 4
+/** develop か main に commit しようとしたときの終了コード（検査の失敗と同じく、規則の違反の 1） */
+export const BRANCH_REJECTED = 1
 
 /**
  * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
@@ -173,7 +173,7 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, listStaged, 
     if (checkout(`${staged}/`, baseEnv) !== 0) return CHECKOUT_FAILED
     const stagedFiles = listStaged(baseEnv)
     if (stagedFiles.status !== 0) {
-      printError(stepFailure('ステージしたファイルの一覧（git diff --cached）の取得', stagedFiles, 'git status で index を確かめてから、commit し直す。'))
+      printError(stepFailure('ステージしたファイルの一覧（git diff --cached）の取得', stagedFiles, 'git status で index を確認してから、commit し直す。'))
       return CHECKOUT_FAILED
     }
     linkModules(staged)
@@ -192,12 +192,12 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, listStaged, 
     // 追加行の選び方（文のどれかの行が追加行）は ja-text が持つ。ここでは選び直さず、一覧の行をそのまま表示する
     const diff = diffAdded(baseEnv)
     if (diff.status !== 0) {
-      printError(stepFailure('追加行の差分（git diff --cached）の取得', diff, 'git status で index を確かめてから、commit し直す。'))
+      printError(stepFailure('追加行の差分（git diff --cached）の取得', diff, 'git status で index を確認してから、commit し直す。'))
       return WARNING_FAILED
     }
     const warnings = listWarnings(staged, checkEnv, diff.stdout)
     if (warnings.status !== 0) {
-      printError(stepFailure('追加行の warning の一覧（ja-text --warning --added）の出力', warnings, 'node scripts/ci/ja/ja-text.mjs --changed を実行して原因を確かめる。'))
+      printError(stepFailure('追加行の warning の一覧（ja-text --warning --added）の出力', warnings, 'node scripts/ci/ja/ja-text.mjs --changed を実行して原因を確認する。'))
       return WARNING_FAILED
     }
     const lines = selectWarningLines(warnings.stdout)

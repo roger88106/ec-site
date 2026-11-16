@@ -72,5 +72,5 @@ case "$command" in
   admin) admin "$@" ;;
   token) token "$@" ;;
   access-token) access_token "$@" ;;
-  *) sed -n '2,10p' "$0"; exit 1 ;;
+  *) sed -n '2,10p' "$0"; exit 2 ;;
 esac

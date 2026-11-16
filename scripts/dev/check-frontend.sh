@@ -87,10 +87,18 @@ for app in "${apps[@]}"; do
     if [ "$app" = e2e ] && [ "$step" != lint ] && [ "$step" != typecheck ]; then continue; fi
     if [ "$app" = shared ] && [ "$step" = build ]; then continue; fi
     # E2E の実行中は、画面をビルドし直さない（E2E が配っている dist が入れ替わり、E2E が失敗するため）
-    if [ "$step" = build ] && e2e_running; then
-      failed=1
-      echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
-      continue
+    if [ "$step" = build ]; then
+      e2e_running
+      running=$?
+      if [ $running -eq 0 ]; then
+        failed=1
+        echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
+        continue
+      elif [ $running -ne 1 ]; then
+        failed=1
+        echo "FAIL $app build：E2E が実行中かを調べられない（終了コード $running。理由は上の行）ので、ビルドしない"
+        continue
+      fi
     fi
     # テストは CI と同じく、カバレッジの基準と比べる test:coverage で実行する
     script="$step"

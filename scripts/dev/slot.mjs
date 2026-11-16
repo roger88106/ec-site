@@ -15,7 +15,8 @@
 // メインの作業ツリーはいつもスロット 0。assign・release・reset は何もせずに知らせ、show・env・run・stop はスロット 0 の値で動く。
 // 割り当ては `<作業ツリー>/.local/slot` に番号だけで書く。
 //
-// 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、2 共有の基盤が動いていない。
+// 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、
+// 2 使い方の誤り（知らないコマンドや対象）か、環境の誤り（git の作業ツリーの外、共有の基盤が動いていない）。
 // 共有の基盤（compose）は、メインの作業ツリーで起動する。この script は起動しない。
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -393,7 +394,7 @@ function stop(ctx, args) {
   const slot = currentSlot(ctx)
   if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
   const target = stopTargetPorts(slot, args)
-  if (target.error !== undefined) throw new Exit(1, target.error)
+  if (target.error !== undefined) throw new Exit(2, target.error)
   const result = stopSlot({
     ports: target.ports,
     platform: process.platform,
@@ -498,7 +499,7 @@ function env(ctx) {
  */
 async function run(ctx, args) {
   const [target, number] = args
-  if (!TARGETS.includes(target)) throw new Exit(1, `起動する対象は backend、store、admin のどれか：${target ?? ''}`)
+  if (!TARGETS.includes(target)) throw new Exit(2, `起動する対象は backend、store、admin のどれか：${target ?? ''}`)
   const slot = currentSlot(ctx)
   if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
   if (number !== undefined && Number(number) !== slot) {
@@ -573,13 +574,13 @@ async function main(argv) {
   const known = ['assign', 'release', 'stop', 'reset', 'show', 'env', 'run']
   if (!known.includes(command)) {
     console.error(USAGE)
-    return command === undefined ? 0 : 1
+    return command === undefined ? 0 : 2
   }
   let ctx
   try {
     ctx = context()
   } catch {
-    throw new Exit(1, 'git の作業ツリーの中で流す')
+    throw new Exit(2, 'git の作業ツリーの中で流す')
   }
   if (command === 'assign') await assign(ctx)
   else if (command === 'release') await release(ctx)

@@ -22,7 +22,7 @@ export const COMMIT_MSG_FAILED = 2
  */
 export function runCommitMsg({ file, run, log = console.log }) {
   if (!file) {
-    log('commit のメッセージのファイルが渡されていない（.git/hooks/commit-msg が "$1" を渡しているか確かめる）')
+    log('commit のメッセージのファイルが渡されていない（.git/hooks/commit-msg が "$1" を渡しているかを確認する）')
     return COMMIT_MSG_FAILED
   }
   const { status, output } = run('ja-text', ['--message', file])

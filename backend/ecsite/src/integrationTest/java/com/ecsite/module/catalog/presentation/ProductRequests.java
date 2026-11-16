@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.presentation;
 
-import com.ecsite.TestJson;
+import com.ecsite.support.http.TestJson;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;

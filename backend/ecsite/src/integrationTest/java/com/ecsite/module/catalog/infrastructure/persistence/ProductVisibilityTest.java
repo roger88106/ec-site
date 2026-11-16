@@ -1,6 +1,5 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
 import com.ecsite.module.catalog.domain.product.PublicationStatus;
@@ -8,6 +7,7 @@ import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

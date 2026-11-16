@@ -1,8 +1,8 @@
 package com.ecsite.module.member.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

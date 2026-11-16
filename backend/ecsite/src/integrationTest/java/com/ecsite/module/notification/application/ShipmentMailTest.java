@@ -1,11 +1,11 @@
 package com.ecsite.module.notification.application;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
-import com.ecsite.Mailpit;
-import com.ecsite.MutableClock;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.order.event.OrderShipped;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.http.Mailpit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;

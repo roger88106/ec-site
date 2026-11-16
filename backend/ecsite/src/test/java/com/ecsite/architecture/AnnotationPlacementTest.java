@@ -1,6 +1,6 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
+import com.ecsite.support.ProductionClasses;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

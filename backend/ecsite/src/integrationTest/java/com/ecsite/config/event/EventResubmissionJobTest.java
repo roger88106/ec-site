@@ -1,9 +1,9 @@
 package com.ecsite.config.event;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
-import com.ecsite.LogCapture;
-import com.ecsite.MutableClock;
+import com.ecsite.support.LogCapture;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,12 +34,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.config.event.EventPublications.COMPLETION_ATTEMPTS;
 import static com.ecsite.config.event.EventPublications.COMPLETION_DATE;
 import static com.ecsite.config.event.EventPublications.EVENT_PUBLICATION;
 import static com.ecsite.config.event.EventPublications.ID;
 import static com.ecsite.config.event.EventPublications.STATUS;
+import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 

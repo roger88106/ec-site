@@ -1,6 +1,6 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;

@@ -1,6 +1,6 @@
 package com.ecsite.config.event;
 
-import com.ecsite.TestSettings;
+import com.ecsite.support.TestSettings;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

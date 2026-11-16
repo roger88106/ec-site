@@ -1,11 +1,11 @@
 package com.ecsite.module.inventory.presentation;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.MutableClock;
-import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.ecsite.InventoryTestData.expectQuantity;
+import static com.ecsite.support.data.InventoryTestData.expectQuantity;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

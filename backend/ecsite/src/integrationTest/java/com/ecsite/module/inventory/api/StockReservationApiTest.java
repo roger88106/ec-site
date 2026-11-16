@@ -1,10 +1,10 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.Concurrently;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.MutableClock;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.Concurrently;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.InventoryTestData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

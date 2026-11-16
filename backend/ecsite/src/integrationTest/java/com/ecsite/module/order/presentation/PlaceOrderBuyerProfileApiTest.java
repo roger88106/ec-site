@@ -1,10 +1,10 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.TestJson;
-import com.ecsite.TestTokens;
 import com.ecsite.module.order.api.OrderReportApi;
 import com.ecsite.module.order.api.model.OrderReportSnapshot;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.http.TestJson;
+import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,10 +17,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.module.order.presentation.PlaceOrderFixture.SHIRT_QUANTITY;
 import static com.ecsite.module.order.presentation.PlaceOrderFixture.TOTAL;
+import static com.ecsite.support.data.OrderTestData.placeOrderRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;

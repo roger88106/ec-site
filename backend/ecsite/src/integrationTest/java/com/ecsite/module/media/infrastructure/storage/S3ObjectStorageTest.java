@@ -1,8 +1,8 @@
 package com.ecsite.module.media.infrastructure.storage;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.media.application.model.PresignedUpload;
 import com.ecsite.module.media.application.port.ObjectStorage;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

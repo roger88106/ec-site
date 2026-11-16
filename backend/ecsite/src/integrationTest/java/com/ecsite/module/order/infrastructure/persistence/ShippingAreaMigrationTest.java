@@ -1,6 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
+import com.ecsite.support.config.IntegrationTest;
 import org.flywaydb.core.api.FlywayException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

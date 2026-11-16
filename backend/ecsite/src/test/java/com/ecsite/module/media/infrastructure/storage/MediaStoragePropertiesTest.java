@@ -1,6 +1,6 @@
 package com.ecsite.module.media.infrastructure.storage;
 
-import com.ecsite.TestSettings;
+import com.ecsite.support.TestSettings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

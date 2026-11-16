@@ -1,16 +1,16 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
-import com.ecsite.RestoreFailures;
 import com.ecsite.common.paging.PageRequest;
+import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static com.ecsite.RestoreFailures.RECORDS;
-import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
+import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 
 /**
  * 在庫の調整履歴を DB の値から戻すときの失敗の単体テスト

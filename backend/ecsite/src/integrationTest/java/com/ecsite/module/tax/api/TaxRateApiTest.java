@@ -1,6 +1,5 @@
 package com.ecsite.module.tax.api;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.api.model.ConsumptionTaxAmount;
 import com.ecsite.module.tax.api.model.TaxRateSchedule;
@@ -9,6 +8,7 @@ import com.ecsite.module.tax.application.TaxCategoryCommandService;
 import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand.Rate;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,10 +1,10 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.Shipment;
 import com.ecsite.module.shipping.domain.TrackingNumber;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

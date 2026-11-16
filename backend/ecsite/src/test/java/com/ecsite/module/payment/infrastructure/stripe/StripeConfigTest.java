@@ -1,6 +1,6 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
-import com.ecsite.TestSettings;
+import com.ecsite.support.TestSettings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

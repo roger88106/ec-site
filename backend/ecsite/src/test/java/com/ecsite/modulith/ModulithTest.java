@@ -1,6 +1,6 @@
 package com.ecsite.modulith;
 
-import com.ecsite.ProductionClasses;
+import com.ecsite.support.ProductionClasses;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;

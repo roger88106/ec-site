@@ -1,7 +1,5 @@
 package com.ecsite.module.shipping.api;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.TrackingRequests;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
@@ -9,6 +7,8 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.ShippingErrorCode;
 import com.ecsite.module.shipping.infrastructure.mock.TestCarrierTracking;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;

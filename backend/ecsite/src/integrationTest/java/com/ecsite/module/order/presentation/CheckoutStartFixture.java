@@ -1,14 +1,14 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.InventoryTestData;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestJson;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.http.TestJson;
 import org.jooq.DSLContext;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
+import static com.ecsite.support.data.OrderTestData.startCheckoutRequest;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;

@@ -1,6 +1,5 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.architecture.sample.tokenaccess.sample.application.ApplicationUsesCurrentMember;
 import com.ecsite.architecture.sample.tokenaccess.sample.infrastructure.directory.DirectoryUsesCurrentMemberIds;
 import com.ecsite.architecture.sample.tokenaccess.sample.presentation.PresentationUsesCurrentMember;
@@ -8,6 +7,7 @@ import com.ecsite.common.security.CurrentMember;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.common.security.CurrentToken;
 import com.ecsite.module.member.api.CurrentMemberIds;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
-import static com.ecsite.ProductionClasses.outermostName;
 import static com.ecsite.architecture.ArchRuleViolations.assertNoViolation;
 import static com.ecsite.architecture.ArchRuleViolations.assertViolation;
+import static com.ecsite.support.ProductionClasses.outermostName;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 

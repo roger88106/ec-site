@@ -1,6 +1,5 @@
 package com.ecsite.common.message;
 
-import com.ecsite.DomainConstants;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.ErrorDetail;
@@ -11,6 +10,7 @@ import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.tax.domain.TaxErrorCode;
+import com.ecsite.support.DomainConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

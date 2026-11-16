@@ -1,8 +1,8 @@
 package com.ecsite.contract;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
+import com.ecsite.support.ProductionClasses;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

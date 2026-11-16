@@ -1,6 +1,7 @@
 package com.ecsite;
 
 import com.ecsite.api.admin.model.TaxRateDraft;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,8 +1,8 @@
 package com.ecsite.module.member.api;
 
-import com.ecsite.Concurrently;
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.member.application.port.MemberRepository;
+import com.ecsite.support.async.Concurrently;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;

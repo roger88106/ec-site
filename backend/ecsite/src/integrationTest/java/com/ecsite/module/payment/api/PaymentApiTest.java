@@ -1,8 +1,5 @@
 package com.ecsite.module.payment.api;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.PaymentTestData;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
@@ -10,6 +7,9 @@ import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.PaymentTestData;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -10,10 +10,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.draft;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.newDraft;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 

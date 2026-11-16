@@ -1,9 +1,9 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
-import com.ecsite.RestoreFailures;
 import com.ecsite.jooq.reporting.tables.records.StatusHistoryRecord;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.support.RestoreFailures;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,10 +17,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static com.ecsite.RestoreFailures.RECORDS;
-import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
 import static com.ecsite.jooq.reporting.Tables.STATUS_HISTORY;
+import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 
 /**
  * 集計の写しを DB の値から戻すときの失敗の単体テスト

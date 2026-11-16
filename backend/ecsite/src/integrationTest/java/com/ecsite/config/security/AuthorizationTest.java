@@ -1,8 +1,8 @@
 package com.ecsite.config.security;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.TestSecurityConfig;
-import com.ecsite.TestTokens;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.security.TestSecurityConfig;
+import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.ecsite.ProblemAssertions.problem;
+import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;

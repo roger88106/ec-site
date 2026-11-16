@@ -1,10 +1,10 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.TestTokens;
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,11 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.module.order.presentation.PlaceOrderFixture.SHIRT_QUANTITY;
 import static com.ecsite.module.order.presentation.PlaceOrderFixture.SHIRT_STOCK;
 import static com.ecsite.module.order.presentation.PlaceOrderFixture.TOTAL;
 import static com.ecsite.module.order.presentation.PlaceOrderFixture.expectConfirmationRequired;
+import static com.ecsite.support.data.OrderTestData.placeOrderRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

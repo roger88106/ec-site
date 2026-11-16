@@ -1,6 +1,5 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
-import com.ecsite.MutableClock;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
@@ -8,6 +7,7 @@ import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.infrastructure.PaymentGatewayContractTest;
+import com.ecsite.support.MutableClock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertSystemError;
+import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 

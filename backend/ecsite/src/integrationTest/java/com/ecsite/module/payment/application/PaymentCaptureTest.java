@@ -1,14 +1,14 @@
 package com.ecsite.module.payment.application;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.PaymentTestData;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.PaymentTestData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,8 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
-import static com.ecsite.BusinessErrorAssertions.assertSystemError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

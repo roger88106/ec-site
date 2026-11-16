@@ -1,9 +1,9 @@
 package com.ecsite.observability;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.IntegrationTest;
 import com.jayway.jsonpath.JsonPath;
 import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.DisplayName;

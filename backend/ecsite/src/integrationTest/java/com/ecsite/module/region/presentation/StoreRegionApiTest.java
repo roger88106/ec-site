@@ -1,7 +1,7 @@
 package com.ecsite.module.region.presentation;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.TestTokens;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

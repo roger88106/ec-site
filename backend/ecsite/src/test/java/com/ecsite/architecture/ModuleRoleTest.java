@@ -1,9 +1,9 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.architecture.sample.modelconstructor.sample.api.SampleModel;
 import com.ecsite.architecture.sample.modelconstructor.sample.presentation.PresentationUsesFluent;
 import com.ecsite.architecture.sample.modelconstructor.sample.presentation.PresentationUsesPositional;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaConstructorCall;

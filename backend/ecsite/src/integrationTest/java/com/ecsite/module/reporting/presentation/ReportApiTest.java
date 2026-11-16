@@ -1,8 +1,5 @@
 package com.ecsite.module.reporting.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import com.ecsite.api.admin.model.AgeGroupSales;
 import com.ecsite.api.admin.model.CustomerBreakdownReport;
 import com.ecsite.api.admin.model.GenderSales;
@@ -12,7 +9,10 @@ import com.ecsite.api.admin.model.SalesTrendPoint;
 import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSales;
 import com.ecsite.api.admin.model.VariantSalesReport;
-import com.ecsite.module.reporting.ReportTestData;
+import com.ecsite.module.reporting.support.ReportTestData;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;

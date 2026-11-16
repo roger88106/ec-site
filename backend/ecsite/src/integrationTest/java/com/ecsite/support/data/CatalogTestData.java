@@ -1,0 +1,541 @@
+package com.ecsite.support.data;
+
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.http.TestJson;
+import com.jayway.jsonpath.JsonPath;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * 商品のテストデータ
+ *
+ * <p>統合テストで、税区分・カテゴリ・商品を B 側の API で作る。
+ * 公開するごとに時計を 1 分進める（新着順が決まるように）。品番は呼ぶたびに振り直す。
+ */
+public class CatalogTestData {
+
+    /**
+     * PNG
+     *
+     * <p>登録のときに imgproxy で変換するので、本物の画像を使う。
+     */
+    private static final byte[] PNG = TestImages.png();
+
+    /**
+     * 品番の連番
+     *
+     * <p>JVM の全てのテストで 1 つの連番にして、別のインスタンスが作った品番と重ならないようにする。
+     */
+    private static final AtomicInteger SEQUENCE = new AtomicInteger();
+
+    /**
+     * MockMvc
+     */
+    private final MockMvc mockMvc;
+
+    /**
+     * テスト用の時計
+     */
+    private final MutableClock clock;
+
+    /**
+     * コンストラクタ
+     *
+     * @param mockMvc MockMvc
+     * @param clock   テスト用の時計
+     */
+    public CatalogTestData(MockMvc mockMvc, MutableClock clock) {
+        this.mockMvc = mockMvc;
+        this.clock = clock;
+    }
+
+    /**
+     * 開始・終了とも空白の税率を 1 つ持つ税区分を作る。
+     *
+     * @param name        名称
+     * @param ratePercent 率（%）
+     * @return 税区分 ID
+     */
+    public UUID taxCategory(String name, String ratePercent) throws Exception {
+        return taxCategory(name, ratePercent, null);
+    }
+
+    /**
+     * 指定した日時から有効になる税率を 1 つ持つ税区分を作る（終了は空白）。
+     *
+     * @param name          名称
+     * @param ratePercent   率（%）
+     * @param effectiveFrom 有効になる日時（null なら開始は空白）
+     * @return 税区分 ID
+     */
+    public UUID taxCategory(String name, String ratePercent, Instant effectiveFrom) throws Exception {
+        var id = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
+                {"name": "%s"}""".formatted(name)));
+        mockMvc.perform(put("/api/admin/tax-categories/" + id + "/rates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"version": 0, "rates": [{"ratePercent": %s, "effectiveFrom": %s}]}"""
+                                .formatted(ratePercent, jsonInstant(effectiveFrom))))
+                .andExpect(status().isNoContent());
+        return id;
+    }
+
+    /**
+     * 税率を 1 つ持つ税区分の税率を、指定した日時から別の率に変える。<br />
+     * 今の税率の終了をその日時にし、その日時から始まる新しい税率を加える（開始済みの税率の率は変えられないため）。
+     * {@link #taxCategory} で作った、税率が 1 つの税区分だけを受ける。
+     * 商品の表示などに反映させるには、その日時より後まで時計を進め、税率のキャッシュを捨てる（{@code TaxRateScheduleCaches.evict}）。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param ratePercent   新しい率（%）
+     * @param effectiveFrom 新しい率が有効になる日時（今より後）
+     * @throws IllegalStateException 税区分の税率が 1 つでないとき
+     */
+    public void changeRate(UUID taxCategoryId, String ratePercent, Instant effectiveFrom) throws Exception {
+        var category = mockMvc.perform(get("/api/admin/tax-categories/" + taxCategoryId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        if (JsonPath.<Integer>read(category, "$.rates.length()") != 1) {
+            throw new IllegalStateException("税率が 1 つの税区分だけを変えられる: " + taxCategoryId);
+        }
+        String currentFrom = JsonPath.read(category, "$.rates[0].effectiveFrom");
+        mockMvc.perform(put("/api/admin/tax-categories/" + taxCategoryId + "/rates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"version": %s, "rates": [
+                                  {"id": "%s", "ratePercent": %s, "effectiveFrom": %s, "effectiveTo": %s},
+                                  {"ratePercent": %s, "effectiveFrom": %s}
+                                ]}""".formatted(
+                                JsonPath.<Object>read(category, "$.version"),
+                                JsonPath.<String>read(category, "$.rates[0].id"),
+                                JsonPath.<Object>read(category, "$.rates[0].ratePercent"),
+                                jsonInstant(currentFrom == null ? null : Instant.parse(currentFrom)),
+                                jsonInstant(effectiveFrom),
+                                ratePercent,
+                                jsonInstant(effectiveFrom))))
+                .andExpect(status().isNoContent());
+    }
+
+    /**
+     * カテゴリを登録する。
+     *
+     * @param name     名称
+     * @param parentId 親のカテゴリ ID（最上位なら null）
+     * @return カテゴリ ID
+     */
+    public UUID category(String name, UUID parentId) throws Exception {
+        var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
+        return createdId(post("/api/admin/categories").contentType(MediaType.APPLICATION_JSON).content("""
+                {"name": "%s", "parentId": %s}""".formatted(name, parent)));
+    }
+
+    /**
+     * 軸を指定して商品を登録する。
+     *
+     * <p>軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param priceExclTax  税抜価格
+     * @param axes          軸の名前
+     * @return 商品
+     */
+    public TestProduct product(UUID taxCategoryId, String name, long priceExclTax, String... axes) throws Exception {
+        return product("TD-" + SEQUENCE.incrementAndGet(), taxCategoryId, name, priceExclTax, axes);
+    }
+
+    /**
+     * 品番と軸を指定して商品を登録する。
+     *
+     * <p>軸がなければ、バリアントを 1 つ持つ。
+     *
+     * @param productCode   商品品番
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param priceExclTax  税抜価格
+     * @param axes          軸の名前
+     * @return 商品
+     */
+    public TestProduct product(String productCode, UUID taxCategoryId, String name, long priceExclTax, String... axes)
+            throws Exception {
+        var product = register(productCode, taxCategoryId, name, "説明", priceExclTax, List.of(), axes);
+        if (axes.length == 0) {
+            product.variant();
+        }
+        return product;
+    }
+
+    /**
+     * カテゴリと軸を指定して商品を登録する。
+     *
+     * <p>軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param priceExclTax  税抜価格
+     * @param categoryIds   所属するカテゴリ ID（なければ空）
+     * @param axes          軸の名前
+     * @return 商品
+     */
+    public TestProduct product(UUID taxCategoryId, String name, long priceExclTax, List<UUID> categoryIds,
+                               String... axes) throws Exception {
+        var product = register("TD-" + SEQUENCE.incrementAndGet(), taxCategoryId, name, "説明", priceExclTax, categoryIds, axes);
+        if (axes.length == 0) {
+            product.variant();
+        }
+        return product;
+    }
+
+    /**
+     * 説明とカテゴリを指定して、バリアントを 1 つ持つ商品を登録する。
+     *
+     * <p>品番は呼ぶたびに振り直す。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param description   説明
+     * @param priceExclTax  税抜価格
+     * @param categoryIds   所属するカテゴリ ID（なければ空）
+     * @return 商品
+     */
+    public TestProduct product(UUID taxCategoryId, String name, String description, long priceExclTax,
+                               List<UUID> categoryIds) throws Exception {
+        return register("TD-" + SEQUENCE.incrementAndGet(), taxCategoryId, name, description, priceExclTax, categoryIds).variant();
+    }
+
+    /**
+     * バリアントを持たない商品を、カテゴリを指定して登録し、時計を 1 分進める（登録日時をずらして、一覧の並びが決まるようにする）。
+     *
+     * <p>バリアントは {@link TestProduct#variantCoded} で続けて登録する。
+     *
+     * @param productCode   商品品番
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param categoryIds   所属するカテゴリ ID（なければ空）
+     * @return 商品
+     */
+    public TestProduct draft(String productCode, UUID taxCategoryId, String name, UUID... categoryIds) throws Exception {
+        var product = register(productCode, taxCategoryId, name, "", 1000, List.of(categoryIds));
+        clock.setInstant(clock.instant().plus(Duration.ofMinutes(1)));
+        return product;
+    }
+
+    /**
+     * 画像のアップロードを受け付ける。
+     *
+     * <p>応答は呼び出し側で確認する。
+     *
+     * @param productId     商品 ID
+     * @param contentType   ファイルの Content-Type
+     * @param contentLength ファイルの大きさ（バイト）
+     * @return 応答
+     */
+    public ResultActions createUpload(UUID productId, String contentType, long contentLength) throws Exception {
+        return mockMvc.perform(post("/api/admin/products/" + productId + "/image-uploads")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"contentType": "%s", "contentLength": %d}""".formatted(contentType, contentLength)));
+    }
+
+    /**
+     * 画像のアップロードを受け付け、署名付き URL へファイルを PUT する。
+     *
+     * @param productId   商品 ID
+     * @param contentType ファイルの Content-Type
+     * @param content     ファイルの中身
+     * @return 受付の ID
+     */
+    public String upload(UUID productId, String contentType, byte[] content) throws Exception {
+        var body = createUpload(productId, contentType, content.length)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        var request = HttpRequest.newBuilder(URI.create(JsonPath.read(body, "$.uploadUrl")))
+                .PUT(HttpRequest.BodyPublishers.ofByteArray(content));
+        JsonPath.<Map<String, String>>read(body, "$.headers").forEach(request::header);
+        try (var client = HttpClient.newHttpClient()) {
+            assertThat(client.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode()).isEqualTo(200);
+        }
+        return JsonPath.read(body, "$.uploadId");
+    }
+
+    /**
+     * 受け付けた画像を確定する。
+     *
+     * <p>結果は呼び出し側で確認する（商品のバージョンは進めない）。
+     *
+     * @param productId 商品 ID
+     * @param uploadId  受付の ID
+     * @param version   送るバージョン
+     * @return 応答
+     */
+    public ResultActions addImage(UUID productId, String uploadId, long version) throws Exception {
+        return mockMvc.perform(post("/api/admin/products/" + productId + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"uploadId": "%s", "version": %d}""".formatted(uploadId, version)));
+    }
+
+    /**
+     * 商品を登録する（バリアントは登録しない）。
+     */
+    private TestProduct register(String productCode, UUID taxCategoryId, String name, String description,
+                                 long priceExclTax, List<UUID> categoryIds, String... axes) throws Exception {
+        var axesJson = Arrays.stream(axes).map("\"%s\""::formatted).collect(Collectors.joining(", "));
+        var categoriesJson = categoryIds.stream().map("\"%s\""::formatted).collect(Collectors.joining(", "));
+        var id = createdId(post("/api/admin/products").contentType(MediaType.APPLICATION_JSON).content("""
+                {"productCode": "%s", "name": "%s", "description": "%s", "taxCategoryId": "%s",
+                 "priceExclTax": %d, "axes": [%s], "categoryIds": [%s]}"""
+                .formatted(productCode, name, description, taxCategoryId, priceExclTax, axesJson, categoriesJson)));
+        return new TestProduct(id, productCode);
+    }
+
+    /**
+     * 日時を JSON の値にする（null は null）
+     */
+    private static String jsonInstant(Instant instant) {
+        return instant == null ? "null" : "\"" + instant + "\"";
+    }
+
+    /**
+     * 作成のリクエストを送り、201 を確認して、本文の ID を返す
+     */
+    private UUID createdId(MockHttpServletRequestBuilder request) throws Exception {
+        var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return TestJson.createdId(body);
+    }
+
+    /**
+     * テストで作った商品
+     *
+     * <p>バリアントの登録・画像・状態の切り替えを続けて書けるようにする。
+     */
+    public class TestProduct {
+
+        /**
+         * 商品 ID
+         */
+        public final UUID id;
+
+        /**
+         * 商品品番
+         */
+        public final String productCode;
+
+        /**
+         * バリアント ID
+         *
+         * <p>登録順。
+         */
+        public final List<UUID> variantIds = new ArrayList<>();
+
+        /**
+         * バリアント品番
+         *
+         * <p>登録順。
+         */
+        public final List<String> variantCodes = new ArrayList<>();
+
+        /**
+         * 画像 ID
+         *
+         * <p>表示順。
+         */
+        public final List<UUID> imageIds = new ArrayList<>();
+
+        /**
+         * 画像の URL
+         *
+         * <p>表示順。
+         */
+        public final List<String> imageUrls = new ArrayList<>();
+
+        /**
+         * 商品のバージョン
+         */
+        private long version;
+
+        TestProduct(UUID id, String productCode) {
+            this.id = id;
+            this.productCode = productCode;
+        }
+
+        /**
+         * 軸の値を指定してバリアントを登録する。
+         */
+        public TestProduct variant(String... axisValues) throws Exception {
+            var values = Arrays.stream(axisValues).map("\"%s\""::formatted).collect(Collectors.joining(", "));
+            var code = "%s-%d".formatted(productCode, variantIds.size() + 1);
+            variantIds.add(createdId(post("/api/admin/products/" + id + "/variants")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"variantCode": "%s", "axisValues": [%s], "version": %d}""".formatted(code, values, version))));
+            variantCodes.add(code);
+            version++;
+            return this;
+        }
+
+        /**
+         * 画像のアップロードを受け付け、署名付き URL へ PNG を PUT する。
+         *
+         * @return 受付の ID
+         */
+        public String upload() throws Exception {
+            return upload("image/png", PNG);
+        }
+
+        /**
+         * 画像のアップロードを受け付け、署名付き URL へ指定したファイルを PUT する。
+         *
+         * @param contentType ファイルの Content-Type
+         * @param content     ファイルの中身
+         * @return 受付の ID
+         */
+        public String upload(String contentType, byte[] content) throws Exception {
+            return CatalogTestData.this.upload(id, contentType, content);
+        }
+
+        /**
+         * 受け付けた画像を確定する。
+         *
+         * <p>結果は呼び出し側で確認する（商品のバージョンは進めない）。
+         *
+         * @param uploadId 受付の ID
+         * @param version  送るバージョン
+         * @return 応答
+         */
+        public ResultActions addImage(String uploadId, long version) throws Exception {
+            return CatalogTestData.this.addImage(id, uploadId, version);
+        }
+
+        /**
+         * 品番を指定してバリアントを登録する（軸はなし）。
+         *
+         * @param variantCode バリアント品番
+         * @return この商品
+         */
+        public TestProduct variantCoded(String variantCode) throws Exception {
+            variantIds.add(createdId(post("/api/admin/products/" + id + "/variants")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"variantCode": "%s", "axisValues": [], "version": %d}""".formatted(variantCode, version))));
+            variantCodes.add(variantCode);
+            version++;
+            return this;
+        }
+
+        /**
+         * 画像を 1 枚登録する（受付 → ストレージへの PUT → 確定）。
+         */
+        public TestProduct image() throws Exception {
+            addImage(upload(), version).andExpect(status().isCreated());
+            version++;
+            var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
+            imageUrls.clear();
+            imageUrls.addAll(JsonPath.read(detail, "$.images[*].url"));
+            imageIds.clear();
+            JsonPath.<List<String>>read(detail, "$.images[*].id").forEach(imageId -> imageIds.add(UUID.fromString(imageId)));
+            return this;
+        }
+
+        /**
+         * バリアントに画像を指定する。
+         */
+        public TestProduct variantImage(int variantIndex, int imageIndex) throws Exception {
+            mockMvc.perform(put("/api/admin/products/" + id + "/variants/" + variantIds.get(variantIndex) + "/image")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"imageId": "%s", "version": %d}""".formatted(imageIds.get(imageIndex), version)))
+                    .andExpect(status().isNoContent());
+            version++;
+            return this;
+        }
+
+        /**
+         * 公開し、時計を 1 分進める。
+         */
+        public TestProduct publish() throws Exception {
+            mockMvc.perform(put("/api/admin/products/" + id + "/publish")).andExpect(status().isNoContent());
+            clock.setInstant(clock.instant().plus(Duration.ofMinutes(1)));
+            return this;
+        }
+
+        /**
+         * 非公開にする。
+         */
+        public TestProduct unpublish() throws Exception {
+            mockMvc.perform(put("/api/admin/products/" + id + "/unpublish")).andExpect(status().isNoContent());
+            return this;
+        }
+
+        /**
+         * 販売を終了する。
+         */
+        public TestProduct discontinue() throws Exception {
+            mockMvc.perform(put("/api/admin/products/" + id + "/discontinue")).andExpect(status().isNoContent());
+            return this;
+        }
+
+        /**
+         * 公開期間を設定する（null は制限なし）。
+         */
+        public TestProduct period(Instant publishStart, Instant publishEnd) throws Exception {
+            var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
+            var current = JsonPath.<Integer>read(detail, "$.version");
+            mockMvc.perform(put("/api/admin/products/" + id + "/publication-period")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"publishStart": %s, "publishEnd": %s, "version": %d}"""
+                                    .formatted(jsonInstant(publishStart), jsonInstant(publishEnd), current)))
+                    .andExpect(status().isNoContent());
+            version = current + 1L;
+            return this;
+        }
+
+        /**
+         * バリアントを販売停止にする。
+         */
+        public TestProduct suspend(int variantIndex) throws Exception {
+            mockMvc.perform(put("/api/admin/products/" + id + "/variants/" + variantIds.get(variantIndex) + "/suspend"))
+                    .andExpect(status().isNoContent());
+            return this;
+        }
+
+        /**
+         * 税抜価格を変える。
+         */
+        public TestProduct changePrice(UUID taxCategoryId, long priceExclTax) throws Exception {
+            var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
+            mockMvc.perform(put("/api/admin/products/" + id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"name": "%s", "description": "説明", "taxCategoryId": "%s", "priceExclTax": %d,
+                                     "categoryIds": [], "version": %d}"""
+                                    .formatted(JsonPath.<String>read(detail, "$.name"), taxCategoryId, priceExclTax,
+                                            JsonPath.<Integer>read(detail, "$.version"))))
+                    .andExpect(status().isNoContent());
+            version = JsonPath.<Integer>read(detail, "$.version") + 1L;
+            return this;
+        }
+    }
+}

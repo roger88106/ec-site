@@ -1,9 +1,9 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.domain.taxcategory.TaxCalculator;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;

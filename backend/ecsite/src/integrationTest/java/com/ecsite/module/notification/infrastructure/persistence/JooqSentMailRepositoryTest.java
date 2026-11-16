@@ -1,7 +1,7 @@
 package com.ecsite.module.notification.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.notification.application.port.SentMailRepository;
+import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.junit.jupiter.api.DisplayName;

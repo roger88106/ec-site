@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

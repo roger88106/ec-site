@@ -1,12 +1,12 @@
 package com.ecsite.module.catalog.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.LogCapture;
-import com.ecsite.MutableClock;
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.module.catalog.domain.category.Category;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
+import com.ecsite.support.LogCapture;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

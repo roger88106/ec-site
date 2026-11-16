@@ -1,7 +1,7 @@
 package com.ecsite.common.scheduling;
 
-import com.ecsite.LogCapture;
-import com.ecsite.LogCapture.LogEntry;
+import com.ecsite.support.LogCapture;
+import com.ecsite.support.LogCapture.LogEntry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

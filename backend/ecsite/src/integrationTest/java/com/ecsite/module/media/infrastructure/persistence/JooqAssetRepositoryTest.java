@@ -1,9 +1,9 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.ImageFormat;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

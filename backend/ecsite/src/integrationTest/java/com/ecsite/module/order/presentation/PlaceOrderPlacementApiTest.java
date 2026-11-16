@@ -1,9 +1,9 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.TestJson;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.http.TestJson;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

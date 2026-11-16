@@ -1,7 +1,7 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.IntegrationTest;
 import com.ecsite.module.inventory.api.StockReservationApi;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

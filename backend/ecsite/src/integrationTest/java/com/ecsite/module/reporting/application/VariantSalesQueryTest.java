@@ -1,15 +1,15 @@
 package com.ecsite.module.reporting.application;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.reporting.ReportTestData;
 import com.ecsite.module.reporting.application.model.query.VariantSalesQuery;
 import com.ecsite.module.reporting.application.model.view.VariantSales;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.support.ReportTestData;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 

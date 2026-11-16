@@ -1,10 +1,10 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.ShippingTestData;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.ShippingTestData;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

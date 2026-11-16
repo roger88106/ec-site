@@ -1,7 +1,7 @@
 package com.ecsite.config.security;
 
-import com.ecsite.TestcontainersConfig;
 import com.ecsite.contract.Contracts;
+import com.ecsite.support.config.TestcontainersConfig;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;

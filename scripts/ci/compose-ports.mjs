@@ -31,7 +31,7 @@ export function readHostPort(entry) {
 }
 
 /**
- * compose の全てのサービスの `ports` の項目を読む。<br />
+ * compose の各サービスに書いた `ports` の項目を読む。<br />
  * 文字列でない項目（長い書き方の対応表など）は、`entry` を JSON の文字列にする。待ち受けるアドレスで始まらないので、問題の項目になる。
  *
  * @param {string} text compose のファイル

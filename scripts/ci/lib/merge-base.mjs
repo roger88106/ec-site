@@ -1,5 +1,4 @@
 // 差分と比べる基準の commit（develop・main との分岐点）を求める。
-// マイグレーションの検査（migrations）と、差分の追加行の文体の検査（ja-text --changed）が使う。
 // CI の checkout には origin/ の ref しかないことがあるので、origin/ の方を先に見る。shallow clone の確認は呼ぶ側で行う（lib/shallow-clone）
 import { execFileSync } from 'node:child_process'
 

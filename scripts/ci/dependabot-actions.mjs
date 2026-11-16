@@ -1,6 +1,6 @@
 // 複合の action（action.yml）を置いたディレクトリが、Dependabot の github-actions の対象に入っていることを確認する。
-// Dependabot の `/` は .github/workflows とルートの action.yml だけを見るので、`.github/actions/<名前>/` は
-// .github/dependabot.yml の directories に加えなければ更新されず、action のバージョンが古いまま残る。
+// Dependabot の `/` は、.github/workflows とルートの action.yml だけを見る。
+// `.github/actions/<名前>/` は、.github/dependabot.yml の directories に加えなければ更新されず、action のバージョンが古いまま残る。
 // 対象の `*` は 1 つの階層として読む。
 //
 // 失敗したとき：新しい複合の action のディレクトリを directories に加える。

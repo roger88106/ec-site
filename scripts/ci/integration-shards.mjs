@@ -2,7 +2,7 @@
 // ずれると、手元で見る分け方（./gradlew integrationTestShards）と、CI が実際に分ける分け方が変わるため。
 //
 // 手元の既定は、build.gradle.kts の integrationTestShardCount の `.orElse(N)`。
-// CI は、ci.yml の統合テストの job の matrix の shard の一覧の数（総数は strategy.job-total で読むので、一覧の数が正）。
+// CI は、ci.yml で統合テストの job の matrix に書いた shard の一覧の数（総数は strategy.job-total で読むので、一覧の数が正）。
 // shard の一覧が数の一覧でないとき（式、空の一覧、複数の job）と、`.orElse` が数でないときも失敗にする。
 //
 // 失敗したとき：分ける数を、ci.yml の shard の一覧と `.orElse(N)` で合わせる。
@@ -17,7 +17,7 @@ const CI_FILE = '.github/workflows/ci.yml'
 const GRADLE_FILE = 'backend/ecsite/build.gradle.kts'
 
 /**
- * ci.yml の matrix の shard の一覧の数を読む。
+ * ci.yml の matrix に書いた shard の一覧の数を読む。
  *
  * @param {string} text ci.yml の内容
  * @returns {{ count: number, job: string } | { reason: string }} 数と job の名前。読めないときは理由

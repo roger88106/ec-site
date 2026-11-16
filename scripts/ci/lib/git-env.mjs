@@ -1,7 +1,6 @@
-// Git を呼ぶテストが、環境変数の GIT_ で始まるものを外すための補助。
-// commit の前の hook の中では GIT_DIR などが設定され、試す一時リポジトリでなく commit 中のリポジトリを指す。
-// 関数は withoutGitEnv と removeGitEnv。守っているかは git-env.test.mjs が確認する（scripts/ の下の .mjs が startsWith('GIT_') などで自分で外していると失敗にする）。
-// Git を呼ぶテストは、これを通した環境で git を実行する（外す処理はここだけに置く）
+// Git を呼ぶテストのために、環境変数の GIT_ で始まるものを外す。
+// commit の前の hook の中では GIT_DIR などが設定され、試す一時のリポジトリでなく commit 中のリポジトリを指すため。
+// 外す処理はここだけに置く（git-env.test.mjs が、scripts/ の下で自分で外している所を失敗にする）
 
 /**
  * 環境変数のうち、Git の設定（GIT_ で始まるもの）を外した写しを返す。元の環境は変えない。

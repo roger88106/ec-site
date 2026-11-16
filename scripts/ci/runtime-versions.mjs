@@ -3,7 +3,7 @@
 //
 // JDK は、ci.yml の env.JAVA_VERSION と libs.versions.toml の java が同じ値。JAVA_VERSION は ci.yml の最上位の env の 1 か所だけで定義する。
 // Node は、.node-version の値が、ルートの package.json の engines.node（`>=N` の形だけを扱う）の範囲を満たす。
-// workflow と action の yml は、java-version に ${{ env.JAVA_VERSION }}、Node に node-version-file: .node-version を書き、バージョンを直接書かない。
+// workflow と action の yml は、バージョンを直接書かない。java-version は ${{ env.JAVA_VERSION }}、Node は node-version-file: .node-version と書く。
 //
 // 3 つの package.json（管理画面、店舗画面、共有）の dependencies と devDependencies の React の指定は、全て `^1.2.3` の範囲の書き方にそろえる。
 // peerDependencies は使う側に許す範囲を書くので対象にしない。

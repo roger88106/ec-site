@@ -193,17 +193,17 @@ function findReferences(file, text, names, basenames, exists = existsSync) {
       // 最初の「」は、「の」を挟むか、パスかリンクの直後（NO_PARTICLE_BEFORE）に書いたものだけを読む。読まないときは、続く「の「」から読む
       for (const match of line.matchAll(/(\s?の)?(「[^「」\n]*」)(?:\s?の「[^「」\n]*」)*/g)) {
         let start = match.index
-        let text = match[0]
+        let refText = match[0]
         if (!match[1] && !NO_PARTICLE_BEFORE.test(line.slice(0, start))) {
           const first = match[2]
           start += first.length
-          text = text.slice(first.length)
-          if (!text) continue
+          refText = refText.slice(first.length)
+          if (!refText) continue
         }
         const target = resolveDocument(file, line.slice(0, start), names, basenames, exists, true)
         if (!target) continue
-        const path = [...text.matchAll(/「([^「」]*)」/g)].map((quote) => quote[1])
-        refs.push({ line: lineNumber, target, headings: path, text: text.trim() })
+        const path = [...refText.matchAll(/「([^「」]*)」/g)].map((quote) => quote[1])
+        refs.push({ line: lineNumber, target, headings: path, text: refText.trim() })
       }
     }
     if (isMarkdown && inCode) return

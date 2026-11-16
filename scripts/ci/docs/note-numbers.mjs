@@ -59,7 +59,7 @@ export function findNoteProblems(text, names = new Map(), file = '', basenames =
    * 見出しの後の注の前の文書は、インラインコードを残した元の行で決める（`` `docs/x.md` の「…」 ※3 `` のパスを読むため）。
    */
   const countedPart = (line) => {
-    const blank = (text) => ' '.repeat(text.length)
+    const blank = (part) => ' '.repeat(part.length)
     return maskCodeSpans(line).replace(HEADING_NOTE, (match, offset) => {
       const before = line.slice(0, offset)
       // 外のリンク（`[x](https://…)の「Y」`）は、doc-refs は先を見ないが、他の文書なので除く

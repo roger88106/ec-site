@@ -638,7 +638,7 @@ export function findStyleWarnings(text, limits, { kind = 'markdown', added = nul
     const sentence = plainSentence(marked)
     const excerpt = sentence.length > 30 ? `${sentence.slice(0, 30)}…` : sentence
     const measured = measureSentence(marked)
-    const add = (kind, word, detail) => hits.push({ line, kind, word, use: `${detail}：「${excerpt}」` })
+    const add = (hitKind, word, detail) => hits.push({ line, kind: hitKind, word, use: `${detail}：「${excerpt}」` })
     if (limits.no !== undefined && measured.no >= limits.no) add('no', '「の」の連なり', `1 区間に「の」が ${measured.no} 個`)
     if (limits.length !== undefined && measured.length >= limits.length) add('length', '長い文', `字数が ${measured.length} 字`)
     if (limits.comma !== undefined && measured.comma >= limits.comma) add('comma', '読点が多い文', `読点が ${measured.comma} 個`)

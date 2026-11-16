@@ -68,16 +68,16 @@ export function readHeadings(text) {
       key = `${key}-${seen[key]}`
     } else seen[key] = 0
     anchors.add(key)
-    const text = name.replace(HEADING_NUMBER, '')
+    const heading = name.replace(HEADING_NUMBER, '')
     const number = name.match(HEADING_NUMBER)
     if (number) {
-      const key = number[1].replace(/\.$/, '')
-      if (!sections.has(key)) sections.set(key, text.trim())
+      const sectionKey = number[1].replace(/\.$/, '')
+      if (!sections.has(sectionKey)) sections.set(sectionKey, heading.trim())
     }
     while (stack.length && stack.at(-1).level >= level) stack.pop()
     // 末尾の全角の括弧の補足（`（DS-s-n：DC-s-n〜m）` など）を除いた形でも当たるようにする
-    const exact = headingKey(text)
-    const keys = new Set([exact, headingKey(text.replace(/（[^（）]*）\s*$/, ''))])
+    const exact = headingKey(heading)
+    const keys = new Set([exact, headingKey(heading.replace(/（[^（）]*）\s*$/, ''))])
     headings.push({ exact, keys, ancestors: stack.map((item) => item.keys) })
     stack.push({ level, keys })
   }

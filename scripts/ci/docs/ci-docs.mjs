@@ -51,7 +51,7 @@ const NAME_ROW = /^\| `([^`\s]+)`(（`[^`]+`）)? \|/
 export function readTableChecks(markdown) {
   const names = []
   let inSection = false
-  for (const line of markdown.split('\n')) {
+  for (const line of markdown.split(/\r?\n/)) {
     const heading = line.match(HEADING)
     if (heading) inSection = heading[1] === TABLE_SECTION
     const match = inSection ? line.match(NAME_ROW) : null

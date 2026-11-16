@@ -29,6 +29,10 @@ describe('CI の検査の文書の表の検査', () => {
     assert.deepEqual(readTableChecks(['## 検査の一覧s', '| `a` | b |'].join('\n')), [])
   })
 
+  test('改行が CRLF の文書でも、節の見出しと表の名前を読む', () => {
+    assert.deepEqual(readTableChecks(['## 検査の一覧', '| `a` | b |', '## 次の節', '| `z` | y |'].join('\r\n')), ['a'])
+  })
+
   test('節の中の表の前にコードブロックがあり、その中に `# コメント` の行があっても、節は終わらず表を読む', () => {
     const doc = ['## 検査の一覧', '```bash', '# 手元で実行する', 'node a.mjs', '```', '| script | 目的 |', '|---|---|', '| `a` | x |'].join('\n')
     assert.deepEqual(readTableChecks(doc), ['a'])

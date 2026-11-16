@@ -182,7 +182,8 @@ function diffProblems(actual, expected, where, place) {
  * 一覧と、一覧を読めない所のポートの食い違いを探す。
  *
  * @param {{ list: { slotCount: number, slotOffset: number, ports: { key: string, port: number, group: string, slotted: boolean }[] },
- *   compose: string, docs: Record<string, string>, sources: Record<string, string> }} input
+ *   compose: string, docs: Record<string, string>, sources: Record<string, string>, configs?: Record<string, string>,
+ *   realms?: Record<string, { text: string, keys: string[] }> }} input
  *   docs・sources・configs は、ファイルのパス → 内容。realms は、ファイルのパス → { text: 内容, keys: redirect URI に全て書く画面の一覧の key }
  * @returns {string[]} 問題の文
  */

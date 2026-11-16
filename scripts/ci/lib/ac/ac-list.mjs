@@ -230,8 +230,8 @@ export function readPair(marks, name) {
  * AC 一覧の文書から、生成のマーカーの範囲の表を読む。行を読み飛ばさず、読めない行は問題にする。
  *
  * @param {string} document AC 一覧の文書（改行は LF でも CRLF でもよい）
- * @returns {{ rows: { ac: number | string, label: string, module: string, status: string, origin: string, changedBy: string, content: string, line: number }[], problems: string[], pair: { open: number, close: number } | null }}
- *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：マーカーの範囲（読めなければ null）
+ * @returns {{ rows: { ac: number | string, label: string, module: string, status: string, origin: string, changedBy: string, content: string, line: number }[], problems: string[], pair: { open: number, close: number } | null, lastLine: number }}
+ *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：マーカーの範囲（読めなければ null）。lastLine：表の最後の行（1 から。行がなければ 0）
  */
 export function readAcList(document) {
   const text = toLf(document)
@@ -240,7 +240,7 @@ export function readAcList(document) {
   const { pair, problems: pairProblems } = readPair(marks, LIST_MARK)
   problems.push(...pairProblems)
   if (!pair && pairProblems.length === 0) problems.push(`<!-- generated:${LIST_MARK} --> と <!-- /generated:${LIST_MARK} --> の範囲がない`)
-  if (!pair) return { rows: [], problems, pair: null }
+  if (!pair) return { rows: [], problems, pair: null, lastLine: 0 }
   const lines = text.split('\n')
   const rows = []
   let tableLine = 0

@@ -8,6 +8,7 @@ import com.ecsite.module.tax.domain.taxcategory.TaxRate;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
 import com.ecsite.support.config.IntegrationTest;
+import org.assertj.core.groups.Tuple;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.junit.jupiter.api.DisplayName;
@@ -19,12 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.draft;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.newDraft;
 import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * 税区分のリポジトリの統合テスト
@@ -123,12 +126,16 @@ class JooqTaxCategoryRepositoryTest {
         void savesRates() {
             // 準備：登録済みの税区分の税率の一覧を、連続する 3 件に置き換える
             var category = addedWithContinuousRates();
+            var ids = idsOf(category);
 
             // 操作：保存して再取得する
             var restored = saveAndReload(category);
 
             // 確認：保存した税率の一覧が、同じ順で再構築される
-            assertThat(restored.rates()).containsExactlyElementsOf(category.rates());
+            assertRates(restored,
+                    draft(ids.get(0), "10", null, APR_2027),
+                    draft(ids.get(1), "8", APR_2027, APR_2028),
+                    draft(ids.get(2), "10", APR_2028, null));
         }
 
         @Test
@@ -140,13 +147,13 @@ class JooqTaxCategoryRepositoryTest {
 
             // 操作：1 件目の終了を延ばし、2 件目を外して 12% を加え、保存して再取得する
             category.replaceRates(extendFirstAndReplaceSecond(base.id()), NOW);
+            var added = idsOf(category).get(1);
             var restored = saveAndReload(category);
 
-            // 確認：置き換え後の一覧が再構築される
-            assertThat(restored.rates()).containsExactlyElementsOf(category.rates());
-
-            // 確認：残した税率は ID が変わらない
-            assertThat(restored.rates()).extracting(TaxRate::id).first().isEqualTo(base.id());
+            // 確認：置き換え後の一覧が再構築され、残した税率は ID が変わらない
+            assertRates(restored,
+                    draft(base.id(), "10", null, APR_2028),
+                    draft(added, "12", APR_2028, null));
         }
 
         @Test
@@ -164,7 +171,9 @@ class JooqTaxCategoryRepositoryTest {
             var restored = saveAndReload(category);
 
             // 確認：置き換え後の一覧が再構築される
-            assertThat(restored.rates()).containsExactlyElementsOf(category.rates());
+            assertRates(restored,
+                    draft(first.id(), "10", null, APR_2028),
+                    draft(second.id(), "8", APR_2028, null));
         }
     }
 
@@ -276,6 +285,20 @@ class JooqTaxCategoryRepositoryTest {
         assertThat(constraint.get("condeferred", Boolean.class)).isTrue();
     }
 
+    /**
+     * 再取得した税区分が、期待の税率を同じ順で持つことを確認する。
+     *
+     * <p>期待の率と期間は定数から作る。ID は保存のたびに振られるので、準備で読んだものを要素に入れて渡す。
+     * 確認すること：各税率の ID、率、適用期間と、一覧の順
+     *
+     * @param restored 再取得した税区分
+     * @param expected 期待の税率（並びの順）
+     */
+    private static void assertRates(TaxCategory restored, TaxRateDraft... expected) {
+        assertThat(restored.rates()).extracting(TaxRate::id, TaxRate::ratePercent, TaxRate::period)
+                .containsExactly(Stream.of(expected).map(d -> tuple(d.id(), d.ratePercent(), d.period())).toArray(Tuple[]::new));
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**
@@ -340,5 +363,15 @@ class JooqTaxCategoryRepositoryTest {
     private TaxCategory saveAndReload(TaxCategory category) {
         repository.save(category);
         return repository.findById(category.id()).orElseThrow();
+    }
+
+    /**
+     * 税区分の税率の ID を、並びの順に返す。
+     *
+     * @param category 税区分
+     * @return 税率の ID（保存や置き換えのときに振られるので、定数にできない）
+     */
+    private static List<UUID> idsOf(TaxCategory category) {
+        return category.rates().stream().map(TaxRate::id).toList();
     }
 }

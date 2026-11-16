@@ -4,6 +4,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductPriceChanged;
 import org.junit.jupiter.api.DisplayName;
@@ -104,6 +105,36 @@ class ProductTest {
      * 編集後の税抜価格（円）
      */
     private static final long NEW_PRICE_YEN = 2000;
+
+    /**
+     * 復元する商品の ID
+     */
+    private static final UUID RESTORED_ID = UUID.fromString("00000000-0000-0000-0000-000000002001");
+
+    /**
+     * 復元するバリアントの ID
+     */
+    private static final UUID RESTORED_VARIANT_ID = UUID.fromString("00000000-0000-0000-0000-000000003001");
+
+    /**
+     * 復元するバリアントの品番
+     */
+    private static final String RESTORED_VARIANT_CODE = "ABC-001-WH-M";
+
+    /**
+     * 復元するバリアントの軸の値
+     */
+    private static final List<String> RESTORED_AXIS_VALUES = List.of("白", "M");
+
+    /**
+     * 復元する商品の公開の終了
+     */
+    private static final Instant RESTORED_PUBLISH_END = Instant.parse("2026-12-31T15:00:00Z");
+
+    /**
+     * 復元する商品のバージョン
+     */
+    private static final long RESTORED_VERSION = 5;
 
     /**
      * 商品の生成
@@ -215,6 +246,13 @@ class ProductTest {
         }
 
         @Test
+        @DisplayName("軸の名前は 1 文字でも指定できる")
+        void acceptsOneCharacterAxisName() {
+            // 操作と確認：1 文字の軸の名前で登録できる
+            assertThatCode(() -> productWithAxes("あ")).doesNotThrowAnyException();
+        }
+
+        @Test
         @DisplayName("軸の名前は 30 文字まで指定できる")
         void acceptsAxisNameUpTo30Characters() {
             // 操作と確認：30 文字の軸の名前で登録できる
@@ -246,6 +284,13 @@ class ProductTest {
     @Nested
     @DisplayName("商品名と説明")
     class NameAndDescription {
+
+        @Test
+        @DisplayName("商品名は 1 文字でも指定できる")
+        void acceptsOneCharacterName() {
+            // 操作と確認：1 文字の商品名で登録できる
+            assertThatCode(() -> productNamed("あ")).doesNotThrowAnyException();
+        }
 
         @Test
         @DisplayName("商品名は 200 文字まで指定できる")
@@ -350,7 +395,7 @@ class ProductTest {
             // 準備：登録した商品
             var product = registered();
 
-            // 確認（前提）：空白の商品名で、ほかの全ての項目も変える編集が拒否される
+            // 操作と確認（前提）：空白の商品名で、ほかの全ての項目も変える編集が拒否される
             assertBusinessError(() -> product.update(" ", NEW_DESCRIPTION, NEW_TAX_CATEGORY_ID, PriceExclTax.of(NEW_PRICE_YEN),
                             Set.of(NEW_CATEGORY_ID), NOW),
                     ProductErrorCode.INVALID_PRODUCT_NAME);
@@ -372,6 +417,46 @@ class ProductTest {
             // 確認：変えた商品名になる
             assertThat(product.name()).isEqualTo(NEW_NAME);
         }
+
+        @Test
+        @DisplayName("変更後の商品名も 200 文字まで指定できる")
+        void acceptsNameUpTo200Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：200 文字の商品名に変えられる
+            assertThatCode(() -> updateName(product, "あ".repeat(200))).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("変更後の商品名が 201 文字以上なら拒否される")
+        void rejectsNameOver200Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：業務のエラー INVALID_PRODUCT_NAME で拒否される
+            assertBusinessError(() -> updateName(product, "あ".repeat(201)), ProductErrorCode.INVALID_PRODUCT_NAME);
+        }
+
+        @Test
+        @DisplayName("変更後の説明も 10,000 文字まで指定できる")
+        void acceptsDescriptionUpTo10000Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：10,000 文字の説明に変えられる
+            assertThatCode(() -> updateDescription(product, "あ".repeat(10_000))).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("変更後の説明が 10,001 文字以上なら拒否される")
+        void rejectsDescriptionOver10000Characters() {
+            // 準備：登録した商品
+            var product = registered();
+
+            // 操作と確認：業務のエラー INVALID_PRODUCT_DESCRIPTION で拒否される
+            assertBusinessError(() -> updateDescription(product, "あ".repeat(10_001)), ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
+        }
     }
 
     @Nested
@@ -381,14 +466,14 @@ class ProductTest {
         @Test
         @DisplayName("スナップショットから、同じ内容の商品に復元できる")
         void restores() {
-            // 準備：バリアントを持つ公開中の商品
-            var product = publishedWithVariant();
+            // 準備：バリアントを持ち、公開の期間がある公開中の商品のスナップショット
+            var snapshot = restoredSnapshot();
 
             // 操作：スナップショットから復元する
-            var restored = factory.restore(product.toSnapshot());
+            var restored = factory.restore(snapshot);
 
-            // 確認：スナップショットが元の商品と同じ
-            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+            // 確認：全ての項目がスナップショットの値になる
+            assertRestoredProduct(restored);
         }
 
         @Test
@@ -479,7 +564,52 @@ class ProductTest {
         });
     }
 
+    /**
+     * 復元した商品が、{@link #restoredSnapshot()} の値を持つことを確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *   <li>ID</li>
+     *   <li>登録のときに指定する項目（{@link #assertRegisteredAsSpecified(Product)} と同じ）</li>
+     *   <li>公開の状態、初回表示日時、公開の期間</li>
+     *   <li>画像がない</li>
+     *   <li>バリアント（ID、品番、軸の値、並び順、販売の停止、画像）</li>
+     *   <li>バージョン</li>
+     * </ul>
+     *
+     * @param product 確認する商品
+     */
+    private static void assertRestoredProduct(Product product) {
+        assertThat(product.id()).isEqualTo(RESTORED_ID);
+        assertRegisteredAsSpecified(product);
+        assertThat(product.status()).isEqualTo(PublicationStatus.PUBLISHED);
+        assertThat(product.firstShownAt()).isEqualTo(NOW);
+        assertThat(product.publicationPeriod()).isEqualTo(PublicationPeriod.of(NOW, RESTORED_PUBLISH_END));
+        assertThat(product.images()).isEmpty();
+        assertThat(product.variants()).singleElement().satisfies(variant -> {
+            assertThat(variant.id()).isEqualTo(RESTORED_VARIANT_ID);
+            assertThat(variant.variantCode()).isEqualTo(VariantCode.of(RESTORED_VARIANT_CODE));
+            assertThat(variant.axisValues()).containsExactlyElementsOf(RESTORED_AXIS_VALUES);
+            assertThat(variant.displayOrder()).isEqualTo(1);
+            assertThat(variant.salesSuspended()).isFalse();
+            assertThat(variant.imageId()).isNull();
+        });
+        assertThat(product.version()).isEqualTo(RESTORED_VERSION);
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 復元の定数から、バリアントを 1 つ持つ公開中の商品のスナップショットを作る。
+     *
+     * @return 商品のスナップショット
+     */
+    private static Product.Snapshot restoredSnapshot() {
+        var variant = new Variant(RESTORED_VARIANT_ID, VariantCode.of(RESTORED_VARIANT_CODE), RESTORED_AXIS_VALUES, 1, false, null);
+        return new Product.Snapshot(RESTORED_ID, ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
+                PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID), AXES, PublicationStatus.PUBLISHED, NOW,
+                PublicationPeriod.of(NOW, RESTORED_PUBLISH_END), List.of(), List.of(variant), RESTORED_VERSION);
+    }
 
     /**
      * 全ての項目を定数で指定して、商品を登録する。
@@ -498,6 +628,26 @@ class ProductTest {
      */
     private static void updateAll(Product product) {
         product.update(NEW_NAME, NEW_DESCRIPTION, NEW_TAX_CATEGORY_ID, PriceExclTax.of(NEW_PRICE_YEN), Set.of(NEW_CATEGORY_ID), NOW);
+    }
+
+    /**
+     * 商品名だけを変える編集をする（ほかの項目は登録したときのまま）。
+     *
+     * @param product 編集する商品
+     * @param name    変更後の商品名
+     */
+    private static void updateName(Product product, String name) {
+        product.update(name, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID), NOW);
+    }
+
+    /**
+     * 説明だけを変える編集をする（ほかの項目は登録したときのまま）。
+     *
+     * @param product     編集する商品
+     * @param description 変更後の説明
+     */
+    private static void updateDescription(Product product, String description) {
+        product.update(NAME, description, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID), NOW);
     }
 
     /**

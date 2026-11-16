@@ -139,7 +139,7 @@ class ProductPublicationTest {
             // 準備：バリアントのない商品
             var product = productWithoutVariant();
 
-            // 確認（前提）：公開が拒否される
+            // 操作と確認（前提）：公開が拒否される
             assertBusinessError(() -> product.publish(NOW), ProductErrorCode.PRODUCT_HAS_NO_VARIANTS);
 
             // 確認：非公開のまま

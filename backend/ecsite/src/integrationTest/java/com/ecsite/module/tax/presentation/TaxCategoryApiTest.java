@@ -52,6 +52,11 @@ class TaxCategoryApiTest {
      */
     private static final String NAME = "標準";
 
+    /**
+     * 名称の上限（文字）
+     */
+    private static final int NAME_MAX_LENGTH = 50;
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -117,6 +122,23 @@ class TaxCategoryApiTest {
             createCategory(" ")
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_TAX_CATEGORY_NAME"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, NAME_MAX_LENGTH})
+        @DisplayName("名称が範囲の端の文字数なら登録できる")
+        void acceptsNameAtBoundary(int length) throws Exception {
+            // 操作と確認：201 が返る
+            createCategory("あ".repeat(length)).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("名称が上限を 1 文字超えれば 400")
+        void rejectsNameOverMaximum() throws Exception {
+            // 操作と確認：入力の形の誤りとして、エラーコード INVALID_REQUEST が返る
+            createCategory("あ".repeat(NAME_MAX_LENGTH + 1))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
     }
 
@@ -191,6 +213,18 @@ class TaxCategoryApiTest {
     @Nested
     @DisplayName("一覧の形の検証")
     class ListShape {
+
+        @Test
+        @DisplayName("空の一覧は 400")
+        void rejectsEmptyList() throws Exception {
+            // 準備：税率のない税区分
+            var id = createdCategoryId(NAME);
+
+            // 操作と確認：入力の形の誤りとして、エラーコード INVALID_REQUEST が返る
+            replaceRates(id, 0, "[]")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
 
         @Test
         @DisplayName("AC-2 開始が終了より後の税率は 400")

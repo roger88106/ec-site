@@ -151,6 +151,24 @@ export function pickSlot(porcelain, records, skipped = new Set()) {
 }
 
 /**
+ * 既にある仮押さえのファイルを、どう扱うかを決める。
+ *
+ * 自分の作業ツリーが残した仮押さえは、そのまま使う。
+ * 他の作業ツリーの仮押さえは、その作業ツリーが一覧にあり、まだ記録を書いていなければ、割り当ての途中とみなして使わない。
+ * 一覧にないか、記録を書き終えていれば、中断した割り当ての残りとして消し、新しく作る。
+ *
+ * @param {{ holder: string, own: string, listed: string[], holderRecord: string | null | undefined }} input
+ *   holder は仮押さえのファイルの中身（作業ツリーのパス）、own は自分の作業ツリー、listed は `git worktree list` の作業ツリーのパス、
+ *   holderRecord は持ち主の作業ツリーの `.local/slot` の内容（なければ null）
+ * @returns {'own' | 'busy' | 'stale'} 自分のもの、他の割り当ての途中、残り
+ */
+export function claimState({ holder, own, listed, holderRecord }) {
+  if (holder === own) return 'own'
+  if (listed.includes(holder) && holderRecord == null) return 'busy'
+  return 'stale'
+}
+
+/**
  * 起動の前に API の型（`pnpm generate:api`）を生成するディレクトリ。各アプリの `dev` の script と同じく、生成してから起動する。
  *
  * @param {'backend' | 'store' | 'admin'} target 起動する対象

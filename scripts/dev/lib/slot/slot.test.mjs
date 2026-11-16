@@ -1,3 +1,4 @@
+// slot.mjs のテスト（node --test scripts/dev/lib/slot/slot.test.mjs）
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -8,6 +9,7 @@ import {
   assignSlot,
   checkBackendStopped,
   checkShared,
+  claimState,
   currentSlotOf,
   dropBucketsScript,
   generateApiDir,
@@ -327,6 +329,32 @@ describe('空きのスロットの選び方', () => {
       ],
     })
   })
+
+  test('空きが全て他の割り当てに仮押さえされていれば、使っている作業ツリーのない満杯を返す', () => {
+    const text = porcelain(MAIN, worktree('/wt/a'))
+    const skipped = new Set(Array.from({ length: SLOT_COUNT - 1 }, (_, index) => index + 1))
+    assert.deepEqual(pickSlot(text, {}, skipped), { full: true, users: [] })
+  })
+})
+
+describe('既にある仮押さえの扱い', () => {
+  const listed = ['/repo', '/wt/a', '/wt/b']
+
+  test('自分の作業ツリーの仮押さえは、そのまま使う', () => {
+    assert.equal(claimState({ holder: '/wt/a', own: '/wt/a', listed, holderRecord: null }), 'own')
+  })
+
+  test('一覧にあり、記録をまだ書いていない作業ツリーの仮押さえは、割り当ての途中なので使わない', () => {
+    assert.equal(claimState({ holder: '/wt/b', own: '/wt/a', listed, holderRecord: null }), 'busy')
+  })
+
+  test('記録を書き終えた作業ツリーの仮押さえは、中断した割り当ての残りとして扱う', () => {
+    assert.equal(claimState({ holder: '/wt/b', own: '/wt/a', listed, holderRecord: '2\n' }), 'stale')
+  })
+
+  test('一覧にない作業ツリーの仮押さえは、残りとして扱う', () => {
+    assert.equal(claimState({ holder: '/wt/removed', own: '/wt/a', listed, holderRecord: null }), 'stale')
+  })
 })
 
 describe('環境変数の組み立て', () => {
@@ -471,7 +499,6 @@ describe('スロットの値を書き写したファイル', () => {
     const identity = readJson('docker/seaweedfs/s3.json').identities.find((i) => i.name === 'ec-site-imgproxy')
     for (const slot of [0, ...slots]) assert.ok(identity.actions.includes(`Read:${slotValues(slot).incomingBucket}`), `スロット ${slot}`)
   })
-
 })
 
 describe('バックエンドが止まっているかの判定（fetch の誤りから）', () => {

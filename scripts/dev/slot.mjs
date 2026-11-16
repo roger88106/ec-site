@@ -28,6 +28,7 @@ import {
   assignSlot,
   checkBackendStopped,
   checkShared,
+  claimState,
   currentSlotOf,
   dropBucketsScript,
   formatSlotRecord,
@@ -283,8 +284,7 @@ function claimFile(ctx, slot) {
 /**
  * スロットを仮押さえする。ファイルを排他（wx）で作るので、同時に 1 つの割り当てだけが成功する。
  *
- * 自分の作業ツリーが残した仮押さえは使う。他の作業ツリーの仮押さえは、その作業ツリーが一覧にないか、記録を書き終えていれば
- * 中断した割り当ての残りとして消し、新しく作る。
+ * 既にある仮押さえの扱いは claimState で決める（残りなら消して、新しく作る）。
  *
  * @param {{ root: string, commonDir: string }} ctx 作業ツリーの状態
  * @param {number} slot スロットの番号
@@ -309,9 +309,10 @@ function claim(ctx, slot) {
     // 読む前に持ち主が外した
     return create()
   }
-  if (holder === ctx.root) return true
-  const listed = parseWorktrees(git(['worktree', 'list', '--porcelain'])).some((worktree) => worktree.path === holder)
-  if (listed && readRecord(holder) === null) return false
+  const listed = holder === ctx.root ? [] : parseWorktrees(git(['worktree', 'list', '--porcelain'])).map((worktree) => worktree.path)
+  const state = claimState({ holder, own: ctx.root, listed, holderRecord: listed.includes(holder) ? readRecord(holder) : null })
+  if (state === 'own') return true
+  if (state === 'busy') return false
   rmSync(file, { force: true })
   return create()
 }

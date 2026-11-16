@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // 既存のテストの変更が、名前の変更と移動だけであることを確認する。
 //
 // 元の commit から今の作業ツリーまでの、テストのファイル（バックエンドの src/test・src/integrationTest、画面の *.test.ts(x)、e2e/）の差分を見る。
@@ -49,7 +48,6 @@ function isTestPath(path) {
 function isImportLine(line) {
   return /^\s*(import|package)\s/.test(line)
 }
-
 
 /**
  * 名前の対応を、語の境目で当てる正規表現と新しい名前の並びにする（行ごとに正規表現を作らないため）。

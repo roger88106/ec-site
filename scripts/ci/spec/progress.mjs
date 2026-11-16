@@ -27,6 +27,9 @@ const ARCHIVE_1TO10 = `${ARCHIVE}/1to10`
 /** アーカイブの下に置いてよいまとまり（MVP と 1→10） */
 const ARCHIVE_GROUPS = ['mvp', '1to10']
 
+/** MVP の spec のディレクトリの名前（0 で始まる 3 桁の番号。1→10 の spec は 0 で埋めない） */
+const MVP_SPEC_DIR = /^0\d{2}-/
+
 /** tasks のタスクの行（字下げした補足の箇条書きは数えない） */
 const TASK_LINE = /^- \[( |x)\] \*\*T/
 
@@ -77,9 +80,6 @@ export function readArchivedTasks(specsDir) {
   }
   return tasks
 }
-
-/** MVP の spec のディレクトリの名前（0 で始まる 3 桁の番号。1→10 の spec は 0 で埋めない） */
-const MVP_SPEC_DIR = /^0\d{2}-/
 
 /**
  * アーカイブの下のまとまり（ディレクトリ）が、mvp と 1to10 だけかを確認し、mvp の下に MVP の形でない spec がないかを確認する。

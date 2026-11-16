@@ -106,7 +106,7 @@ export function isBackendTestFile(file) {
  * - 各パッケージ（frontend/admin、frontend/store、frontend/shared、e2e）の直下の *.config.ts・*.config.mjs
  * - バックエンド（backend/ecsite/）の Gradle の設定のファイル（*.gradle.kts）
  */
-const CONFIG_FILES = [/^[^/]+\.(?:ts|mjs|cjs)$/,/^(?:frontend\/(?:admin|store|shared)|e2e)\/[^/]+\.config\.(?:ts|mjs)$/, /^backend\/ecsite\/(?:.+\/)?[^/]+\.gradle\.kts$/]
+const CONFIG_FILES = [/^[^/]+\.(?:ts|mjs|cjs)$/, /^(?:frontend\/(?:admin|store|shared)|e2e)\/[^/]+\.config\.(?:ts|mjs)$/, /^backend\/ecsite\/(?:.+\/)?[^/]+\.gradle\.kts$/]
 
 /**
  * コメントだけを調べる設定のファイルかを返す。

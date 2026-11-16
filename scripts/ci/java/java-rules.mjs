@@ -158,6 +158,7 @@ function annotationMask(code) {
   }
   return mask
 }
+
 /**
  * @SuppressWarnings の理由を求める場所か。
  *

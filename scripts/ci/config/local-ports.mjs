@@ -62,14 +62,19 @@ const REALM_FILES = {
  * @returns {Set<number>} 全てのポート
  */
 export function expandedPorts(list) {
-  const result = new Set()
-  for (const entry of list.ports) {
-    const slots = entry.slotted ? list.slotCount : 1
-    for (let slot = 0; slot < slots; slot++) {
-      result.add(entry.port + list.slotOffset * slot)
-    }
-  }
-  return result
+  return new Set(list.ports.flatMap((entry) => slotPorts(entry, list)))
+}
+
+/**
+ * 一覧の 1 つの項目のポートを、スロットごとにずらした分も含めて返す（スロットのない項目は 1 つ）。
+ *
+ * @param {{ port: number, slotted: boolean }} entry 一覧の項目
+ * @param {{ slotCount: number, slotOffset: number }} list ポートの一覧
+ * @returns {number[]} スロットの順のポート
+ */
+function slotPorts(entry, list) {
+  const slots = entry.slotted ? list.slotCount : 1
+  return Array.from({ length: slots }, (_, slot) => entry.port + list.slotOffset * slot)
 }
 
 /**
@@ -192,9 +197,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
 
   const used = new Map()
   for (const entry of list.ports) {
-    const slots = entry.slotted ? list.slotCount : 1
-    for (let slot = 0; slot < slots; slot++) {
-      const port = entry.port + list.slotOffset * slot
+    for (const port of slotPorts(entry, list)) {
       if (used.has(port)) {
         problems.push(`${LIST_FILE} でポート ${port} が重なる（${used.get(port)} と ${entry.key}）`)
       }
@@ -277,9 +280,7 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
       }
     }
     for (const entry of list.ports.filter((item) => keys.includes(item.key))) {
-      const slots = entry.slotted ? list.slotCount : 1
-      for (let slot = 0; slot < slots; slot++) {
-        const port = entry.port + list.slotOffset * slot
+      for (const port of slotPorts(entry, list)) {
         if (!written.has(port)) {
           problems.push(`一覧のポート ${port}（${entry.key}）が ${file} の redirect URI にない（${file} に加える）`)
         }

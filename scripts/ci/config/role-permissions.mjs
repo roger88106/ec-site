@@ -149,6 +149,18 @@ export function renderTables({ admin, store, realm }) {
 }
 
 /**
+ * 文書の生成の範囲（START と END の位置）を探す。
+ *
+ * @param {string} document 文書
+ * @returns {{ from: number, to: number } | null} START と END の始まりの位置。START がないか、END が START より前なら null
+ */
+function findGeneratedRange(document) {
+  const from = document.indexOf(START)
+  const to = document.indexOf(END)
+  return from < 0 || to < from ? null : { from, to }
+}
+
+/**
  * 文書の生成の範囲と、再作成した表を比べる。
  *
  * @param {string} document 文書
@@ -156,9 +168,9 @@ export function renderTables({ admin, store, realm }) {
  * @returns {string[]} 食い違い（なければ空）
  */
 export function checkDocument(document, markdown) {
-  const from = document.indexOf(START)
-  const to = document.indexOf(END)
-  if (from < 0 || to < from) return [`文書に ${START} の範囲がない`]
+  const range = findGeneratedRange(document)
+  if (range === null) return [`文書に ${START} の範囲がない`]
+  const { from, to } = range
   const current = `${document.slice(from + START.length, to).trim()}\n`
   if (current === markdown) return []
   return [
@@ -174,9 +186,9 @@ export function checkDocument(document, markdown) {
  * @returns {string} 置き換えた文書
  */
 export function replaceGenerated(document, markdown) {
-  const from = document.indexOf(START)
-  const to = document.indexOf(END)
-  if (from < 0 || to < from) throw new Error(`文書に ${START} の範囲がない`)
+  const range = findGeneratedRange(document)
+  if (range === null) throw new Error(`文書に ${START} の範囲がない`)
+  const { from, to } = range
   return `${document.slice(0, from + START.length)}\n${markdown}${document.slice(to)}`
 }
 

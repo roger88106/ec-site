@@ -131,7 +131,9 @@ function writeRecord(root, slot) {
 }
 
 /**
- * 今の作業ツリーのスロットを返す。メインの作業ツリーは 0。
+ * 今の作業ツリーのスロットを返す。
+ *
+ * メインの作業ツリーは 0。
  *
  * @param {{ root: string, main: boolean }} ctx 作業ツリーの状態
  * @returns {number | null} スロットの番号。割り当てがなければ null
@@ -174,7 +176,9 @@ function containerRunning(name) {
 }
 
 /**
- * 共有の基盤が動いていることを確認する。止まっていれば、メインの作業ツリーで起動するよう示して終わる。
+ * 共有の基盤が動いていることを確認する。
+ *
+ * 止まっていれば、メインの作業ツリーで起動するよう示して終わる。
  *
  * @param {{ mainPath: string }} ctx 作業ツリーの状態
  */
@@ -205,7 +209,9 @@ function dropDatabase(slot) {
 }
 
 /**
- * スロットのデータベースを再作成する。マイグレーションと seed は、次のバックエンドの起動で入る。
+ * スロットのデータベースを再作成する。
+ *
+ * マイグレーションと seed は、次のバックエンドの起動で入る。
  *
  * @param {number} slot スロットの番号
  */
@@ -215,7 +221,9 @@ function recreateDatabase(slot) {
 }
 
 /**
- * 一時のコンテナとして seaweedfs-init を流す。共有のコンテナは再作成しない。
+ * 一時のコンテナとして seaweedfs-init を流す。
+ *
+ * 共有のコンテナは再作成しない。
  *
  * @param {string} root 作業ツリーのルート（compose の定義を読む場所）
  * @param {string[]} args `docker compose run` の引数（サービス名の前）
@@ -230,7 +238,9 @@ function runInit(root, args, command = []) {
 }
 
 /**
- * スロットのバケット（受付と配信）を削除する。ないバケット（NoSuchBucket）は無視し、他の誤りは失敗にする。
+ * スロットのバケット（受付と配信）を削除する。
+ *
+ * ないバケット（NoSuchBucket）は無視し、他の誤りは失敗にする。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -282,7 +292,9 @@ function dropData(root, slot) {
 }
 
 /**
- * スロットの仮押さえのファイルのパス。git の共通のディレクトリに置き、全ての作業ツリーで共有する。
+ * スロットの仮押さえのファイルのパス。
+ *
+ * git の共通のディレクトリに置き、全ての作業ツリーで共有する。
  *
  * @param {{ commonDir: string }} ctx 作業ツリーの状態
  * @param {number} slot スロットの番号
@@ -293,7 +305,9 @@ function claimFile(ctx, slot) {
 }
 
 /**
- * スロットを仮押さえする。ファイルを排他（wx）で作るので、同時に 1 つの割り当てだけが成功する。
+ * スロットを仮押さえする。
+ *
+ * ファイルを排他（wx）で作るので、同時に 1 つの割り当てだけが成功する。
  *
  * 既にある仮押さえの扱いは claimState で決める（残りなら消して、新しく作る）。
  *
@@ -329,7 +343,9 @@ function claim(ctx, slot) {
 }
 
 /**
- * assign：スロットを割り当てる。記録を書いて仮押さえを外してから、データベースとバケットを再作成する。
+ * assign：スロットを割り当てる。
+ *
+ * 記録を書いて仮押さえを外してから、データベースとバケットを再作成する。
  *
  * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
@@ -395,7 +411,9 @@ async function release(ctx) {
 }
 
 /**
- * stop：自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。
+ * stop：自分のスロットのポートで待ち受けるプロセスを停止する。
+ *
+ * 割り当てとデータは変えない。
  *
  * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  * @param {string[]} args 対象（backend、store、admin のどれか 1 つ。省略は全て）
@@ -415,7 +433,9 @@ function stop(ctx, args) {
 }
 
 /**
- * スロットのバックエンドが動いているか。運用ポートの死活監視に応答があるかで見る。
+ * スロットのバックエンドが動いているか。
+ *
+ * 運用ポートの死活監視に応答があるかで見る。
  *
  * @param {number} slot スロットの番号
  * @returns {Promise<boolean>} 接続が拒まれた（待ち受けがない）とき以外は true（タイムアウトも動いているとみなす）

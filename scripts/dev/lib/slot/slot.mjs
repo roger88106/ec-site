@@ -134,7 +134,9 @@ function usedSlots(porcelain, records) {
 }
 
 /**
- * 使われていない最小のスロットを選ぶ。使用中は usedSlots で決める。
+ * 使われていない最小のスロットを選ぶ。
+ *
+ * 使用中は usedSlots で決める。
  *
  * @param {string} porcelain `git worktree list --porcelain` の出力
  * @param {Record<string, string | null | undefined>} records 作業ツリーのパス → `.local/slot` の内容
@@ -169,7 +171,9 @@ export function claimState({ holder, own, listed, holderRecord }) {
 }
 
 /**
- * 起動の前に API の型（`pnpm generate:api`）を生成するディレクトリ。各アプリの `dev` の script と同じく、生成してから起動する。
+ * 起動の前に API の型（`pnpm generate:api`）を生成するディレクトリ。
+ *
+ * 各アプリの `dev` の script と同じく、生成してから起動する。
  *
  * @param {'backend' | 'store' | 'admin'} target 起動する対象
  * @returns {string | null} リポジトリのルートからの相対のパス。生成が要らない対象は null
@@ -179,7 +183,9 @@ export function generateApiDir(target) {
 }
 
 /**
- * 対象に付ける環境変数を組み立てる。スロット 0 は何も上書きしない。
+ * 対象に付ける環境変数を組み立てる。
+ *
+ * スロット 0 は何も上書きしない。
  *
  * @param {number} slot スロットの番号
  * @param {'backend' | 'store' | 'admin'} target 起動する対象
@@ -217,7 +223,9 @@ export function slotEnv(slot, target) {
 export const SHARED_CONTAINERS = ['ec-site-postgres', 'ec-site-seaweedfs']
 
 /**
- * メインの作業ツリーかを判定する。git-dir と git-common-dir が同じならメイン（追加の作業ツリーの git-dir は worktrees/ の下）。
+ * メインの作業ツリーかを判定する。
+ *
+ * git-dir と git-common-dir が同じならメイン（追加の作業ツリーの git-dir は worktrees/ の下）。
  *
  * @param {string} gitDir `git rev-parse --path-format=absolute --git-dir` の出力
  * @param {string} commonDir `git rev-parse --path-format=absolute --git-common-dir` の出力
@@ -228,7 +236,9 @@ export function isMainWorktree(gitDir, commonDir) {
 }
 
 /**
- * 作業ツリーのスロットを返す。メインの作業ツリーは記録によらず 0。
+ * 作業ツリーのスロットを返す。
+ *
+ * メインの作業ツリーは記録によらず 0。
  *
  * @param {{ main: boolean, record: string | null | undefined }} input record は `.local/slot` の内容
  * @returns {number | null} 番号。割り当てがなければ null
@@ -283,7 +293,9 @@ export function isBackendDown(error) {
 }
 
 /**
- * バックエンドが動いているときの案内を決める。動いている間にデータベースを削除すると、起動中の処理が失敗する。
+ * バックエンドが動いているときの案内を決める。
+ *
+ * 動いている間にデータベースを削除すると、起動中の処理が失敗する。
  *
  * @param {{ slot: number, running: boolean, action: string }} input action は止めた後にする操作（「流し直す」「解く」）
  * @returns {{ code: 1, message: string } | null} 動いていなければ null

@@ -104,7 +104,9 @@ export function findListeners(ports, deps = { platform: process.platform, spawnS
 }
 
 /**
- * 待ち受けるプロセスを強制終了し、終わるのを {@link STOP_WAIT_MS} まで待つ。プロセスごとに 1 回だけ止める。
+ * 待ち受けるプロセスを強制終了し、終わるのを {@link STOP_WAIT_MS} まで待つ。
+ *
+ * プロセスごとに 1 回だけ止める。
  *
  * 待つのは、止めた直後に問い合わせると、まだ待ち受けが残って見えることがあるため。
  * 上限を過ぎても例外を投げない（残ったかどうかは、呼ぶ側が問い合わせ直して判定する）。
@@ -172,7 +174,9 @@ function defaultStopDeps() {
 }
 
 /**
- * プロセスが生きているか。権限がなく問い合わせられない（EPERM）プロセスは、存在するので生きているとみなす。
+ * プロセスが生きているか。
+ *
+ * 権限がなく問い合わせられない（EPERM）プロセスは、存在するので生きているとみなす。
  *
  * @param {number} pid プロセスの ID
  * @param {StopDeps['kill']} kill シグナルの送り方
@@ -223,7 +227,9 @@ export function stoppedMessage(listeners) {
 }
 
 /**
- * ポートが使われていて起動しないときに示す文。stop backend のコマンドを先に示し、stop が使えないときの代わりに手動の停止のコマンドを示す。
+ * ポートが使われていて起動しないときに示す文。
+ *
+ * stop backend のコマンドを先に示し、stop が使えないときの代わりに手動の停止のコマンドを示す。
  *
  * release はデータベースとバケットも消すので示さない。
  *
@@ -253,7 +259,9 @@ export function releaseBlockedMessage(listeners, platform) {
 }
 
 /**
- * stop コマンドで停止しても待ち受けが残ったときに示す文。割り当てとデータは変えていないので、手動の停止のコマンドだけを示す。
+ * stop コマンドで停止しても待ち受けが残ったときに示す文。
+ *
+ * 割り当てとデータは変えていないので、手動の停止のコマンドだけを示す。
  *
  * @param {Listener[]} listeners 残った待ち受けるプロセス
  * @param {NodeJS.Platform} platform OS
@@ -267,7 +275,9 @@ export function stopLeftMessage(listeners, platform) {
 }
 
 /**
- * ポートの問い合わせが失敗したときに示す文。プロセスの ID が分からないので、ポートで探して止めるコマンドを示す。
+ * ポートの問い合わせが失敗したときに示す文。
+ *
+ * プロセスの ID が分からないので、ポートで探して止めるコマンドを示す。
  *
  * @param {number[]} ports 問い合わせたポート
  * @param {string} reason 失敗の理由

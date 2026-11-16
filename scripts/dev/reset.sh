@@ -3,10 +3,8 @@
 # ローカルのデータを Git の正本から再作成する（開発環境の起動の「データの再作成」）
 #
 #   使い方：scripts/dev/reset.sh [db|keycloak|all]（どこから流してもよい）
-#   作業ツリーでの振る舞い：メインの作業ツリーは下の通り。追加の作業ツリーでは、db（既定）だけを流せる。
-#     `node scripts/dev/slot.mjs reset` を呼び、そのスロットのデータベースとバケットを再作成する
-#     （バックエンドが動いているか、スロットの割り当てがあるかの判定は slot.mjs が行う）。
-#     keycloak と all は共有のコンテナに触れるので、メインの作業ツリーで流すよう示して終了コード 1 で終わる
+#
+#   対象（メインの作業ツリー）：
 #     db（既定）：DB ec_site を消して作る。seed は次のバックエンドの起動で流れる。
 #                 バックエンドが動いていれば、止めるよう求めて何もせずに終わる。
 #                 E2E の DB（ec_site_e2e）、IdP（keycloak の database）、画像には触れない
@@ -15,6 +13,11 @@
 #     all       ：docker compose down -v の後に up -d。DB・IdP・画像を、すべて Git の正本から再作成する
 #                 （DB の seed：backend/ecsite/src/main/resources/db/seed/、画像：docker/seaweedfs/seed/、
 #                 IdP：docker/keycloak/realms/）。E2E の DB は次の E2E の準備で作られる
+#
+#   追加の作業ツリーでは、db（既定）だけを流せる。
+#     `node scripts/dev/slot.mjs reset` を呼び、そのスロットのデータベースとバケットを再作成する
+#     （バックエンドが動いているか、スロットの割り当てがあるかの判定は slot.mjs が行う）。
+#     keycloak と all は共有のコンテナに触れるので、メインの作業ツリーで流すよう示して終了コード 1 で終わる
 # ============================================================================
 set -euo pipefail
 

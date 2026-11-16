@@ -56,6 +56,13 @@ class PagingTest {
         }
 
         @Test
+        @DisplayName("件数は最小 1")
+        void sizeFrom1() {
+            // 操作と確認：1 件は指定できる
+            assertThat(PageRequest.of(VALID_PAGE, 1).size()).isEqualTo(1);
+        }
+
+        @Test
         @DisplayName("件数は最大 100")
         void sizeUpTo100() {
             // 操作と確認：100 件は指定できる

@@ -173,6 +173,13 @@ class MediaApiTest {
         }
 
         @Test
+        @DisplayName("AC-39 下限の 1 バイトは受け付ける")
+        void acceptsMinSize() {
+            // 操作と確認：1 バイトは受け付ける
+            assertThatCode(() -> media.requestImageUpload(scope(), PNG_TYPE, 1)).doesNotThrowAnyException();
+        }
+
+        @Test
         @DisplayName("AC-39 ちょうど 10MB は受け付ける")
         void acceptsMaxSize() {
             // 操作と確認：上限と同じ大きさは受け付ける

@@ -44,6 +44,8 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { ADDED_DIFF_ARGS } from './lib/added-diff.mjs'
+import { codeBlockLines } from './lib/code-block.mjs'
+import { maskCodeSpans, replaceCodeSpans } from './lib/code-span.mjs'
 import { checkExclusions } from './lib/exclusions.mjs'
 import { codeKind, commentText, trailingCommentLines } from './lib/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from './lib/git-files.mjs'
@@ -66,9 +68,6 @@ const EXCLUDED = /^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\//
  */
 const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
 
-/** インラインコード（バッククォートで囲んだ、1 行の中の部分） */
-const INLINE_CODE = /`[^`\n]+`/g
-
 /**
  * インラインコードを、同じ長さの空白に置き換える（語の一致がコードをまたいで作られないように、字数は保つ）。
  *
@@ -76,7 +75,7 @@ const INLINE_CODE = /`[^`\n]+`/g
  * @returns {string} インラインコードを除いたもの
  */
 function withoutInlineCode(text) {
-  return text.replace(INLINE_CODE, (code) => ' '.repeat(code.length))
+  return text.split('\n').map(maskCodeSpans).join('\n')
 }
 
 /**
@@ -310,9 +309,6 @@ const JAPANESE = /[ぁ-んァ-ヶ一-龠]/
 /** テスト名の行（commentText では、名前の文字列が引用符から始まる） */
 const TEST_NAME = /^\s*['"`]/
 
-/** コードブロックの開閉の行 */
-const FENCE = /^\s*(```|~~~)/
-
 /**
  * 調べるファイルの、文の測り方を返す。
  * - markdown：Markdown の文書。「。」で終わらない行を次の行とつなぐ
@@ -334,10 +330,8 @@ export function styleKind(file) {
  * @returns {string} 置き換えた行
  */
 function plainLine(raw) {
-  return raw
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, `${LINK_START}$1${LINK_END}`)
-    .replace(/https?:\/\/\S+/g, 'U')
-    .replace(/`[^`]*`/g, 'X')
+  const linked = raw.replace(/\[([^\]]*)\]\([^)]*\)/g, `${LINK_START}$1${LINK_END}`).replace(/https?:\/\/\S+/g, 'U')
+  return replaceCodeSpans(linked, () => 'X')
 }
 
 /**
@@ -411,21 +405,24 @@ export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
       if (index < parts.length - 1) flush()
     })
   }
-  let fenced = false
   let frontMatter = false
   // 今の項目の記号の字下げ（項目の中でなければ null）
   let itemIndent = null
-  text.split('\n').forEach((source, index) => {
+  // コードはコメントの記号を除いた行で、コードブロックを読む
+  const sources = text.split('\n')
+  const testNames = sources.map((source) => kind === 'code' && TEST_NAME.test(source))
+  const raws = sources.map((source, index) => (kind === 'code' && !testNames[index] ? commentBody(source) : source))
+  const inCode = codeBlockLines(raws.join('\n'))
+  raws.forEach((raw, index) => {
     const line = index + 1
-    const testName = kind === 'code' && TEST_NAME.test(source)
-    const raw = kind === 'code' && !testName ? commentBody(source) : source
-    if (FENCE.test(raw)) {
-      flush()
-      itemIndent = null
-      fenced = !fenced
+    const testName = testNames[index]
+    if (inCode[index]) {
+      if (inCode[index].part !== 'body') {
+        flush()
+        itemIndent = null
+      }
       return
     }
-    if (fenced) return
     if (kind === 'markdown' && index === 0 && raw.trim() === '---') {
       frontMatter = true
       return
@@ -528,13 +525,9 @@ export function tableCellTotals(text) {
  */
 function proseCells(text) {
   const result = []
-  let fenced = false
+  const inCode = codeBlockLines(text)
   text.split('\n').forEach((raw, index) => {
-    if (/^\s*(```|~~~)/.test(raw)) {
-      fenced = !fenced
-      return
-    }
-    if (fenced || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) return
+    if (inCode[index] || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) return
     const plain = plainLine(raw)
     const table = plain.trimStart().startsWith('|')
     const cells = table ? plain.split('|') : [plain]

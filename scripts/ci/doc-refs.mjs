@@ -32,6 +32,8 @@
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
+import { codeBlockLines } from './lib/code-block.mjs'
+import { maskCodeSpans } from './lib/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
@@ -88,15 +90,6 @@ const NO_PARTICLE_BEFORE = /(?:\.md`?|\]\([^)\s]+\))$/
 /** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない）。docs/08-spec/ の見出しを指す参照で除く */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*\.|\d+(?:\.\d+)+)\s+/
 
-/**
- * Markdown のインラインコードを、同じ長さの空白に替える（位置を変えずに、中の文字を読まないため）。
- *
- * @param {string} line 1 行
- * @returns {string} インラインコードを空白にした行
- */
-function maskInlineCode(line) {
-  return line.replace(/(`+)(.+?)\1/g, (code) => ' '.repeat(code.length))
-}
 
 /**
  * 見出しを GitHub と同じ形の slug にする。
@@ -142,10 +135,10 @@ export function readHeadings(text) {
   const stack = []
   const seen = {}
   let title = null
-  let inCode = false
-  for (const line of text.replace(/^﻿/, '').split('\n')) {
-    if (line.startsWith('```')) inCode = !inCode
-    const match = !inCode && line.match(/^(#{1,6})\s+(.*)$/)
+  const body = text.replace(/^﻿/, '')
+  const inCode = codeBlockLines(body)
+  for (const [index, line] of body.split('\n').entries()) {
+    const match = !inCode[index] && line.match(/^(#{1,6})\s+(.*)$/)
     if (!match) continue
     if (match[1] === '#' && title === null) title = match[2].trim()
     let key = slug(match[2])
@@ -260,9 +253,9 @@ export function findReferences(file, text, names, basenames, exists = existsSync
   const refs = []
   const isMarkdown = file.endsWith('.md')
   const lines = text.split('\n')
-  let inCode = false
+  const codeLines = isMarkdown ? codeBlockLines(text) : []
   lines.forEach((line, index) => {
-    if (isMarkdown && line.startsWith('```')) inCode = !inCode
+    const inCode = Boolean(codeLines[index])
     const lineNumber = index + 1
     if (isMarkdown && !inCode) {
       for (const match of line.matchAll(/(?:\[([^[\]]*))?\]\(([^)\s]+)\)/g)) {
@@ -299,7 +292,7 @@ export function findReferences(file, text, names, basenames, exists = existsSync
     }
     if (isMarkdown && inCode) return
     // Markdown はインラインコードの外の全てを、コードは指す先の文書が決まるものだけを、節の番号の参照にする
-    for (const match of (isMarkdown ? maskInlineCode(line) : line).matchAll(SECTION_NUMBER)) {
+    for (const match of (isMarkdown ? maskCodeSpans(line) : line).matchAll(SECTION_NUMBER)) {
       const before = line.slice(0, match.index).trimEnd()
       // spec・plan の節（`plan` の後に番号が続く形と、`spec` の後に番号と `の` が続く形）は、指す先の文書を名前で決められない
       const spec = /(spec|plan|\d{3})(\s*の)?$/.test(before.replace(/[`」]+$/, '').trimEnd())
@@ -517,12 +510,12 @@ export function findNumberedHeadings(files, read) {
   const problems = []
   for (const file of files) {
     if (!file.endsWith('.md') || file.startsWith('docs/08-spec/')) continue
-    let inCode = false
-    read(file)
+    const text = read(file)
+    const inCode = codeBlockLines(text)
+    text
       .split(/\r?\n/)
       .forEach((line, index) => {
-        if (line.startsWith('```')) inCode = !inCode
-        if (!inCode && NUMBERED_HEADING.test(line.normalize('NFKC'))) problems.push(`見出しに番号がある。番号を外す：${file}:${index + 1} ${line.trimEnd()}`)
+        if (!inCode[index] && NUMBERED_HEADING.test(line.normalize('NFKC'))) problems.push(`見出しに番号がある。番号を外す：${file}:${index + 1} ${line.trimEnd()}`)
       })
   }
   return problems

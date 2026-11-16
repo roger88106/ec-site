@@ -3,7 +3,7 @@
 //   - 本文の参照：定義の行以外の `※N`（他の文書の注を指す `第 N 節 ※N`・`第 N 節の ※N` と、リンク・文書の名前・パスの後の `の「…」 ※N`・`の「…」の ※N` は除く。
 //     前の文書は、doc-refs の resolveDocument で、インラインコードを残した元の行から決める（パスの後と同じく、インラインコードで書いたパスの後も除く）。
 //     外のリンクの後も除く（doc-refs は先を見ないが、他の文書を指すため）。「この節 ※1」、文書の名前のない `「…」 ※N`、`この文書の「…」 ※N`・`表の「…」 ※N` は同じ文書の参照）。定義も参照も、先の番号より小さい番号が新しく出たら失敗にする（同じ注を何度参照してもよい）
-// 番号が飛ぶこと、参照だけ・定義だけの注は見ない。コードブロック（CommonMark の囲み：字下げしてよく、開きと同じ字（バッククォートか ~）で、同じ数以上で閉じる）とインラインコードの中は数えない。
+// 番号が飛ぶこと、参照だけ・定義だけの注は見ない。コードブロックとインラインコードの中は数えない（読み方は lib/code-block.mjs と lib/code-span.mjs）。
 // 見る文書は ja-text と同じ（ja-text の isTargetDoc を使う）。
 // 失敗したとき：注の定義を、本文の参照が出る順に並べ、番号を付け替える（枝番を使わない）。その注を指す、本文と他の文書とコードの参照も修正する（git grep '※' で確認する）。
 // 除外：なし。
@@ -11,6 +11,8 @@
 import { readFileSync } from 'node:fs'
 import { documentIndex, readHeadings, resolveDocument } from './doc-refs.mjs'
 import { isTargetDoc } from './ja-text.mjs'
+import { codeBlockLines } from './lib/code-block.mjs'
+import { maskCodeSpans } from './lib/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
@@ -28,12 +30,6 @@ const SECTION_NOTE = /第 ?\d+(?:\.\d+)* ?節(?: ?の)? ?※\d+[a-z]?/g
  * 文書の名前を付けない `「…」 ※N` と、`この文書の「…」 ※N`・`表の「…」 ※N` は、同じ文書の注を指すので数える。
  */
 const HEADING_NOTE = /の「[^「」\n]*」(?:の「[^「」\n]*」)*(?: ?の)? ?※\d+[a-z]?/g
-
-/** 囲みのコードブロックの開き・閉じの行（字下げしてよい。文字は ` か ~ で 3 つ以上） */
-const FENCE = /^\s*(`{3,}|~{3,})(.*)$/
-
-/** インラインコード（同じ数のバッククォートで囲んだ所） */
-const INLINE_CODE = /(`+)(?!`).*?(?<!`)\1(?!`)/g
 
 /**
  * 注の番号を、並びを比べる数に直す（※2 < ※2a < ※3）。
@@ -62,7 +58,7 @@ export function findNoteProblems(text, names = new Map(), file = '', basenames =
    */
   const countedPart = (line) => {
     const blank = (text) => ' '.repeat(text.length)
-    const masked = line.replace(INLINE_CODE, blank).replace(SECTION_NOTE, blank)
+    const masked = maskCodeSpans(line).replace(SECTION_NOTE, blank)
     return masked.replace(HEADING_NOTE, (match, offset) => {
       const before = line.slice(0, offset)
       // 外のリンク（`[x](https://…)の「Y」`）は、doc-refs は先を見ないが、他の文書なので除く
@@ -76,17 +72,9 @@ export function findNoteProblems(text, names = new Map(), file = '', basenames =
   const referenced = new Set()
   let lastDefinition = null
   let lastReference = null
-  let fence = null
+  const inCode = codeBlockLines(text)
   text.split(/\r?\n/).forEach((line, index) => {
-    const fenceMatch = line.match(FENCE)
-    if (fence) {
-      if (fenceMatch && fenceMatch[1][0] === fence.char && fenceMatch[1].length >= fence.length && fenceMatch[2].trim() === '') fence = null
-      return
-    }
-    if (fenceMatch && !(fenceMatch[1][0] === '`' && fenceMatch[2].includes('`'))) {
-      fence = { char: fenceMatch[1][0], length: fenceMatch[1].length }
-      return
-    }
+    if (inCode[index]) return
     const lineNumber = index + 1
     const definition = line.match(DEFINITION)
     if (definition) {

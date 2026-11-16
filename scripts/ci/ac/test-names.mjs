@@ -1,4 +1,12 @@
-// テスト名を読み、AC の番号を取り出す（ac-check のテスト名の読み取り）。
+// テスト名を読み、AC の番号を読む（ac-check のテスト名の読み取り）。
+//
+// 読むもの：
+//   - AC：MVP の AC-n と、1→10 の AC-s-n（s は spec の番号、n は連番）。2 つの形は別の AC として扱う。
+//     AC-s-n を AC-s と読まない。番号は、文書の記号と番号の「spec の番号」
+//   - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）。
+//     Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。Git の対象のファイルだけを読む
+//   - 読まないテスト名：まとまりの名前（describe、クラス）、skip・fixme のテスト、skip・fixme のまとまりの中のテスト。
+//     コメント・文字列の中の呼び出しも読まない
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { exitIfNoFiles } from '../lib/git-files.mjs'

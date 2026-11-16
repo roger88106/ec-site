@@ -1,11 +1,9 @@
-// ============================================================================
-// フロントの依存のライセンスを、方針（policy.json。依存とライセンスの「依存のライセンスの方針」）と照合する
+// フロントの依存のライセンスを、方針（policy.json。依存とライセンスの「依存のライセンスの方針」）と照合する。
+// リポジトリのルートで pnpm licenses list --json --recursive を実行し、workspace の全ての依存（開発用を含む）を見る。
 //
-//   使い方：node scripts/ci/licenses/check-frontend.mjs
-//
-// リポジトリのルートで pnpm licenses list --json --recursive を流し、workspace のすべての部品
-// （開発用を含む）を照合する。方針に合わない部品があれば、一覧を出して失敗する。
-// ============================================================================
+// 失敗したとき：方針に合わない依存の一覧を示すので、方針に合う依存に替えるか、条件付きなら理由を policy.json に追加する。
+// 除外：なし（条件付きのライセンスの依存は、policy.json の conditional.components に理由を書く）
+// 使い方：node scripts/ci/licenses/check-frontend.mjs
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'

@@ -1,4 +1,27 @@
 // AC 一覧と ③ の生成の表を読み書きする（ac-check の一覧の読み書き）。進行中の spec の AC の定義もここで読む。
+//
+// 読むもの：
+//   - AC 一覧：生成のマーカー（<!-- generated:ac-list --> とその閉じ）の範囲の表。改行コードは LF にそろえて読む
+//   - AC 一覧の列：AC・モジュール・状態・元の spec・変えた spec・今の内容。
+//     --write は、進行中の spec の AC について、列 AC・状態（有効）・元の spec・今の内容を転記し、変えた spec を「—」にする。
+//     手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容。
+//     転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは手動で修正する
+//     （手順は docs/05-開発規則/issues.md「AC 一覧の操作」）
+//   - 元の spec・変えた spec の値：MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（227）。
+//     変えた spec が 2 つ以上なら読点で区切る。
+//     spec のディレクトリは lib/spec-dirs.mjs で探す。MVP-<番号> は docs/08-spec/archive/mvp/ の下と照合する。
+//     番号だけの値は、docs/08-spec/ の直下と、MVP 以外のまとまりの下と照合する。
+//     番号は、ディレクトリの名前の先頭の <番号>- と文字列として比べる（007 と 7 は別の番号）
+//   - ③ のモジュールの名前：次の 2 つが両方ある名前と、common（共通。③ の表に生成しない）。
+//     backend/ecsite/src/main/java/com/ecsite/module/<名前>/ と docs/03-機能仕様/<名前>.md
+//   - ③ の表：構造の検査の対象の一覧（lib/functional-specs.mjs の FUNCTIONAL_SPECS）にある ③ の、マーカーの範囲。
+//     マーカーは「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ
+//   - ③ の表の中身：AC 一覧から作る。列は AC、今の内容、元の spec。0 件なら「なし。」の 1 行。
+//     状態が有効か変更で、列「モジュール」がその ③ の名前の AC を、AC の順に置く
+//   - ③ の表の比べ方：範囲の先頭と末尾の空行を除き、改行コードを LF にそろえて、完全一致で比べる。
+//     全角と半角などは正規化しない
+//   - 進行中の spec：docs/08-spec/ の直下の spec.md の、定義の行（- **AC-…**）。spec.md のないディレクトリは飛ばす。
+//     コードブロック・HTML のコメント・1 行のコードの中は読まない
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { readCodeBlocks } from '../lib/code-block.mjs'

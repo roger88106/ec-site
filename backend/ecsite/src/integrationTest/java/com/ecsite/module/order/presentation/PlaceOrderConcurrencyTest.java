@@ -211,8 +211,6 @@ class PlaceOrderConcurrencyTest {
         var responses = placeAll(checkouts);
 
         // 確認：一方だけ成立し、在庫は 1 個分だけ減り、支払待ちは上限の 3 件を超えない
-        // ※後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される。
-        //   開始で上限を判定しており、同時の注文では上限の判定に届かない。注文の時点の上限の判定は PlaceOrderPendingLimitApiTest で確認する
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(2);
         assertThat(OrderTestData.pendingOrderCount(dsl, memberOf(checkouts.getFirst()))).isEqualTo(3);
@@ -229,12 +227,12 @@ class PlaceOrderConcurrencyTest {
         var executor = Executors.newFixedThreadPool(2);
         try {
             // 操作：在庫の行をロックしている間に、先の注文と後の注文を送る
-            // ※先の注文は、会員のロックを持ったまま、在庫の行で待つ（トランザクションはコミットしない）。
-            //   後の注文は、先の注文が持つ会員のロックを待つ。ロックがなければ、この待ちは現れない
             var placing = new ArrayList<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
+                // 先の注文は、会員のロックを持ったまま、在庫の行で待つ（トランザクションはコミットしない）
                 placing.add(executor.submit(() -> place(earlier)));
                 LockWaits.awaitBlockedByThisTransaction(dsl);
+                // 後の注文は、先の注文が持つ会員のロックを待つ（ロックがなければ、この待ちは現れない）
                 placing.add(executor.submit(() -> place(later)));
                 LockWaits.awaitMemberLockWaiter(dsl, memberOf(later));
             });
@@ -260,11 +258,11 @@ class PlaceOrderConcurrencyTest {
         var executor = Executors.newSingleThreadExecutor();
         try {
             // 操作：在庫の行をロックしている間に注文を送り、減算が待っている間に在庫数を 0 にする
-            // ※注文の判定は終わっているので、在庫の行を読む減算で足りないと分かる
             var placing = new AtomicReference<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
                 placing.set(executor.submit(() -> place(checkoutId)));
                 LockWaits.awaitBlockedByThisTransaction(dsl);
+                // 注文の判定は終わっているので、在庫の行を読む減算で足りないと分かる
                 dsl.update(STOCK_ITEM).set(STOCK_ITEM.QUANTITY, 0)
                         .where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).execute();
             });

@@ -28,7 +28,23 @@ describe('ロックの中身', () => {
   })
 
   test('壊れた中身は null になる', () => {
-    for (const content of ['', '{', 'null', '{"worktree":"/a","pid":"1","startedAt":"x"}']) assert.equal(parseLock(content), null, content)
+    for (const content of [
+      '',
+      '{',
+      'null',
+      '1',
+      '{"worktree":"/a","pid":"1","startedAt":"x"}',
+      '{"worktree":1,"pid":1,"startedAt":"x"}',
+      '{"worktree":"/a","pid":1,"startedAt":0}',
+    ]) {
+      assert.equal(parseLock(content), null, content)
+    }
+  })
+})
+
+describe('ロックのファイルの読み取り', () => {
+  test('ロックがなければ readLock は null を返す', () => {
+    assert.equal(readLock(newLock()), null)
   })
 })
 
@@ -57,10 +73,6 @@ describe('ロックの取得', () => {
       assert.deepEqual(acquireLock({ file, owner: ME, isRunning: running() }), { acquired: true })
       assert.deepEqual(parseLock(readLock(file)), ME)
     }
-  })
-
-  test('ロックがなければ readLock は null を返す', () => {
-    assert.equal(readLock(newLock()), null)
   })
 })
 

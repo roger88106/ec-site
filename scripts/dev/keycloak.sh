@@ -12,17 +12,24 @@ set -euo pipefail
 
 KC=${KEYCLOAK_URL:-http://localhost:8180}
 
-# master の管理者の access token
+# master の管理者の access token。取れなければ（Keycloak に接続できないなど）、理由を出して終了コード 2 で終わる
 admin_token() {
-  curl -s -d client_id=admin-cli -d username=admin -d password=admin -d grant_type=password \
-    "$KC/realms/master/protocol/openid-connect/token" | sed -E 's/.*"access_token":"([^"]+)".*/\1/'
+  local token
+  token=$(curl -s -d client_id=admin-cli -d username=admin -d password=admin -d grant_type=password \
+    "$KC/realms/master/protocol/openid-connect/token" | sed -nE 's/.*"access_token":"([^"]+)".*/\1/p') || true
+  if [ -z "$token" ]; then
+    echo "Keycloak（$KC）の管理者の token を取れない。Keycloak が動いているかを確認する（docker compose up -d keycloak）" >&2
+    exit 2
+  fi
+  printf '%s' "$token"
 }
 
 # 管理 API を呼ぶ
 admin() {
-  local method=$1 path=$2
+  local method=$1 path=$2 token
   shift 2
-  curl -s -X "$method" -H "Authorization: Bearer $(admin_token)" -H 'Content-Type: application/json' "$KC$path" "$@"
+  token=$(admin_token) || exit 2
+  curl -s -X "$method" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' "$KC$path" "$@"
 }
 
 # base64url を復号する（パディングを補う）
@@ -38,6 +45,8 @@ access_token() {
   local realm=$1 user=$2 password=$3
   local client=${realm}-web
   local id
+  # 先に接続を確認する（下のパイプでは、admin の終了コード 2 が grep の 1 に隠れるため）
+  admin_token >/dev/null
   id=$(admin GET "/admin/realms/$realm/clients?clientId=$client" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
   admin PUT "/admin/realms/$realm/clients/$id" -d "{\"clientId\":\"$client\",\"directAccessGrantsEnabled\":true}"
   # 終わったら（失敗しても）無効に戻す。EXIT のときには local の変数がないので、値をここで埋め込む

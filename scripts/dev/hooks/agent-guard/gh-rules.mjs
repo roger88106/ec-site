@@ -5,6 +5,7 @@ import { APPROVE_ONLY_IF_ALLOWED, TAG_REASON, ask, deny } from './decision.mjs'
 
 /**
  * gh のオプションの読み方。shortNames は短いオプションを長い名前にする対応、valueLong は値を取る長いオプション（短いオプションも長い名前で書く）。
+ *
  * 値を取らないオプションは、値を "true" として読む。
  */
 export const GH_PR_OPTIONS = {
@@ -133,6 +134,7 @@ const GRAPHQL_ENDPOINT = /^(?:https?:\/\/[^/]+\/(?:api\/)?|\/)?graphql\/?$/i
 
 /**
  * gh api の判定。GraphQL は、語のどれかが mergePullRequest を含めば拒否する（ファイルや標準入力から読む本文と、シェルの展開の後は見ない）。
+ *
  * REST は GET 以外のリクエストのうち、マージのパスへのものは拒否し、Release と tag の参照、ruleset とブランチの保護へのものは確認を求める。
  *
  * @param {string[]} args api の後の語

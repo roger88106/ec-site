@@ -1,4 +1,4 @@
-// この作業ツリーの E2E が実行中かを調べる入口（scripts/dev/check-frontend.sh から呼ぶ）。
+// この作業ツリーの E2E が実行中かを調べる入口。
 // 実行中なら終了コード 0、そうでなければ 1。ロックは E2E の入口（e2e/scripts/run.ts）が git の共通のディレクトリに置く。
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'

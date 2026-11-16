@@ -5,27 +5,32 @@
 //   理由のない許容用語と、どの文書にも使われなくなった許容用語は失敗にする。
 //   files（パスの正規表現）を書いた項目は、当たるファイルにだけ当て、コミットメッセージには当てない（例：規則の文書に書く、AI のサービスの名前）。
 //   語の検査（error と warning の語、allow の照合）は、インラインコードの中を見ない。許容用語がインラインコードの中にしか出ないときは、使われていないと見る。
+//
 // warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
 //   既定の実行は warning を数えない（全体の件数は常に数千件で、読まれないため）。
 //   文体の型と閾値（ja-text.json の style）は findStyleWarnings、文の取り出し方は proseSentences、読点の数え方は countCommas に書いてある。
 //
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
+//
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
-//   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text。
+//   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/source/comment-text。
 //   テンプレートで書いたテスト名（it(`…`)）の外側のバッククォートは文字列の区切りで、インラインコードとして隠さない（埋め込みの ${…} は X の 1 字にする）。
 // コミットメッセージは、commit の hook が --message で調べる。
+//
 // 調べない所：アーカイブした spec、評価の一覧（.claude/skills/review/evals/）、語を例に挙げるファイル（ja-text と comment-text のテスト）。
 //
 // 失敗したとき：error の語を言い換える。warning は --warning で一覧を出力し（終了コードは 0）、示された文を読んで修正するかを決める。
+//
 // 除外：部分の一致が誤検出になる語は、項目を word の代わりに pattern（正規表現）で書き、examples の hit（当たる例）と miss（当たらない例）を必ず書く。
 //   examples がない、正規表現が読めない、例が合わない項目は失敗にする。
 //   使わない語を含む正しい語は、error の項目の allow に書く（上の error の段落）。
+//
 // 使い方：node scripts/ci/ja/ja-text.mjs [--warning [--added] | --changed]（リポジトリのルートで）
 //   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。
 //       文は、どれかの行が追加行なら、最初の追加行で示す（--changed と同じ選び方）。
-//   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものを示す。
-//       文の字数の合計が style.cell（80）以上の表のセルも示す。形は GitHub Actions の注釈（`::warning file=…,line=…::`）。
-//       警告があっても終了コードは 0。差分の基準と追加行の決め方は printChangedWarnings に書いてある。
+//   --changed：差分の追加行の文で、字数が style.length 以上か読点が style.comma 以上のものを示す。
+//       文の字数の合計が style.cell 以上の表のセルも示す。形は GitHub Actions の注釈（`::warning file=…,line=…::`）。
+//       警告があっても終了コードは 0。差分の基準は lib/git/merge-base の resolveDiffBase、追加行の決め方は lib/git/added-diff。
 //   node scripts/ci/ja/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする。
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -41,6 +46,7 @@ import { exitIfShallow } from '../lib/git/shallow-clone.mjs'
 
 /**
  * 調べないコード。
+ *
  * - 生成したコード、依存のパッケージ、ビルドの出力（書き手が直せない）
  * - アーカイブした spec の下（当時の記録）
  * - 評価の一覧の置き場所（使わない語を例として書く）
@@ -102,6 +108,7 @@ function compiled(term) {
 
 /**
  * インラインコードを除いた行の中に、使わない語を、許容用語の外で書いているかを返す。
+ *
  * 日本語に語の境界はないので、使わない語を一部に含む正しい語は、語ごとの許容用語（allow）で救う。
  * word の項目は部分の一致で、pattern の項目は正規表現の一致で見る（漢字の後を除くなどは pattern で書く）。
  *
@@ -134,6 +141,7 @@ function disallowedMatch(line, term) {
 
 /**
  * pattern の項目の誤りを、表示する文にして返す。
+ *
  * examples（hit：当たる例、miss：当たらない例。どちらも 1 つ以上）が必須で、正規表現が読めること、hit が全て当たり miss が当たらないことを確認する。
  *
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string>, examples?: { hit?: string[], miss?: string[] } }[]} terms 一覧の項目（word の項目は見ない）
@@ -171,6 +179,7 @@ export function findPatternProblems(terms) {
 
 /**
  * 一覧の設定の誤り（pattern の誤り、許容用語の形の誤り、許容用語が使わない語を含まない誤り）を、例外にする。
+ *
  * 一覧を読んだ後に 1 回だけ呼ぶ。
  *
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 一覧の項目
@@ -225,6 +234,7 @@ export function findTerms(text, terms) {
 
 /**
  * 許容用語の誤り（理由がない、どの文書にも使われなくなった）を、表示する文にして返す。
+ *
  * インラインコードの中の語は検査しないので、そこにしか出ない許容用語は、使われていない（不要）と見る。
  *
  * @param {string[]} texts 調べる文書の内容（全て）
@@ -269,6 +279,7 @@ const LINK_END = '\uE001'
 
 /**
  * 参照だけの項目。インラインコード（X に置き換え済み）、リンク、skill の名前（`skill X`）か、空白のない文書の名前（`開発の進め方` など）。
+ *
  * 後ろに見出しの参照（`の「起票」`。親の見出しを付けた `の「段階 1」の「タスク」` も）が付いてもよい。文書の名前の項目は、見出しの参照が付いたものだけを参照と見る
  */
 const REFERENCE_ITEM = new RegExp(
@@ -316,6 +327,7 @@ const TEST_NAME = /^\s*['"`]/
 
 /**
  * 調べるファイルの、文の測り方を返す。
+ *
  * - markdown：Markdown の文書。「。」で終わらない行を次の行とつなぐ
  * - lines：.github の yml・yaml。行ごとに測る（キーと値の行をつながない）
  * - code：コードのコメントとテスト名（commentText の結果）。続くコメントの行をつなぐ
@@ -365,31 +377,15 @@ function joinPieces(pieces) {
 /**
  * 文書の文を、行番号つきで取り出す。「。」で文に分け、「。」で終わらない行は次の行とつないで 1 文にする。
  *
- * markdown（文書）では、次の行の前で切る。見出しと表の行は、次の行ともつながない。
- * - 空行、表の行、見出し、コードブロック、区切りの行
- * - 項目の行。項目の続きは、項目の記号より深く字下げした行だけとし、浅い行の前で切る（Markdown の項目の段落）
- * - 文書の最初の front matter（--- で囲んだ行）。この中は行ごとに測る
- *
- * code（commentText の結果）では、コメントの記号を除き、続くコメントの行だけをつなぐ。次の行の前で切る。
- * - コメントでない行（commentText では空の行）と、記号だけの行
- * - 項目の行（続きの決め方は markdown と同じ）と、タグの行（@param など）
- * - Javadoc の段落・項目の要素（<p>、<li>、<br /> など）で始まる行
- * - 語の見出しで始まる行（「対象：」など）。項目の行と同じく、続きは深く字下げした行だけとする
- * - 行末の <br /> の後（<br /> は除いて数える）
- * - テスト名の行、整列のために空白を 2 つ以上続けた行（使い方の一覧など）、日本語の字のない行（コード、型、コマンドの例）
- * - 行末のコメント（コードの後ろのコメント。trailing）の行と、罫線の記号で始まるか終わる行（`--- 見出し ---` などの節の見出し）。
- *   この 2 つと前の項目の 3 つは、次の行ともつながない
- * タグの型（{…}）は、閉じるまで次の行とつなぎ、字数に数えない。
- *
- * どの測り方でも、「：」で終わる行（一覧を導く行）は次の行とつながない。
- * lines では、行ごとに測る。表のセルは、どの測り方でもセルごとの文にする（つながない）。
- * コードブロック、表の区切り行、URL、リンクの宛先は数えず、インラインコードは 1 字に置き換える（かなを含む文だけを返す）。
- * リンクの表示文字列は LINK_START と LINK_END で囲んで返す（measureSentence が読点の数に使う。plainSentence で除く）。
+ * 段落の境目（空行、見出し、表、項目、コードブロックなど）と、「：」で終わる行の後では、行をつながない。
+ * 境目の決め方は測り方ごとに違い、処理の中に書く。
+ * コードブロック、URL、リンクの宛先は数えず、インラインコードは 1 字に置き換え、かなを含む文だけを返す。
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書（commentText の結果）
  * @param {'markdown' | 'lines' | 'code'} [kind] 測り方（styleKind）
  * @param {Set<number>} [trailing] code で、行末のコメント（コードの後ろのコメント）の行（trailingCommentLines）。前後の行とつながない
- * @returns {{ line: number, lines: number[], sentence: string }[]} 文の最初の行（1 から）、文の全ての行、文
+ * @returns {{ line: number, lines: number[], sentence: string }[]} 文の最初の行（1 から）、文の全ての行、文。
+ *   リンクの表示文字列は LINK_START と LINK_END で囲む（measureSentence が読点の数に使い、plainSentence で除く）
  */
 export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
   const result = []
@@ -428,6 +424,7 @@ export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
       }
       return
     }
+    // 文書の最初の front matter（--- で囲んだ行）は、行ごとに測る
     if (kind === 'markdown' && index === 0 && raw.trim() === '---') {
       frontMatter = true
       return
@@ -440,11 +437,13 @@ export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
     }
     const plain = plainLine(raw)
     const body = plain.trim()
+    // 空行（code ではコメントでない行も空になる）、罫線、表の区切りの行は、段落の境目
     if (!body || RULE_LINE.test(body) || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) {
       flush()
       itemIndent = null
       return
     }
+    // 表のセルは、どの測り方でもセルごとの文にする
     if (body.startsWith('|')) {
       flush()
       itemIndent = null
@@ -460,6 +459,8 @@ export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
       return
     }
     const indent = plain.length - plain.trimStart().length
+    // 前後のどちらの行ともつながない行。lines は全ての行。markdown は見出し。
+    // code はテスト名・行末のコメント・罫線で囲んだ節の見出し・整列した行（使い方の一覧など）・日本語の字のない行
     const alone =
       kind === 'lines' ||
       testName ||
@@ -468,6 +469,7 @@ export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
     const item = ITEM.test(plain) || (kind === 'code' && LABEL.test(body))
     // 項目の続きは、項目の記号より深く字下げした行だけ。浅い行は、項目の後の別の段落にする
     const itemEnded = !item && itemIndent !== null && indent <= itemIndent
+    // code は、タグの行（@param など）と、Javadoc の段落・項目の要素（<p>、<li> など）で始まる行の前でも切る
     if (alone || item || itemEnded || (kind === 'code' && (DOC_TAG.test(body) || HTML_BLOCK.test(body)))) flush()
     if (item) itemIndent = indent
     else if (alone || itemEnded) itemIndent = null
@@ -561,6 +563,7 @@ export function measureSentence(sentence) {
 
 /**
  * 文の読点を数える。参照だけの項目（REFERENCE_ITEM。インラインコード、リンク、skill の名前、文書の名前と、その後の見出しの参照）の間の読点は数えない。
+ *
  * 項目は「」の外の読点で分け、最初の項目の「範囲：」のような見出しは、「」の外のコロンまでを除いて見る。「」の中の読点は、項目を分けないが数える。
  * 前後の項目の両方が参照だけのときに、その間の読点を数えない（他の語を含む項目の前後の読点は数える）。
  *
@@ -606,6 +609,7 @@ function plainSentence(sentence) {
 
 /**
  * 文体の warning を探す。閾値を渡した項目だけを見る。warning は失敗にしない。
+ *
  * - no：1 区間の「の」の数、length：字数、comma：読点の数（どれも閾値以上を示す）
  * - negation：「〜なく〜ない」の形の文
  * - compound：かな（動詞の連用形の終わり）の直後に、助詞を挟まず漢語が続く形（複合動詞の崩れの疑い。「少し修正」も示す）
@@ -668,6 +672,7 @@ export function stripMessageComments(message) {
 
 /**
  * 測るファイルを返す（--warning --added）。追加行の差分があれば、差分にあるファイルだけにする。
+ *
  * 差分にないファイルは追加行がないので、測っても示さない（結果は全てのファイルを測るときと同じ）。
  *
  * @param {string[]} files 対象のファイル
@@ -693,26 +698,17 @@ export function formatAnnotation(file, line, message) {
 }
 
 /**
- * 差分の追加行の文体の警告を出力する（--changed）。
+ * 差分の追加行の文体の警告を、GitHub Actions の注釈で出力する（--changed）。
  *
- * 差分の基準は、HEAD と origin/develop（なければ develop）のマージベース（lib/merge-base）。
- * マージベースが HEAD のときは、CI の develop・main への push なら HEAD の 1 つ目の親にし、
- * それ以外（分けたばかりで commit がない作業ブランチなど）なら HEAD にする（作業ツリーの変更だけを見る）。
- * shallow clone では差分を求められないので失敗にする。
- *
- * 対象のファイルは既定の実行と同じで、削除したファイルは見ない。
- * 名前を変えたファイルは -M で見分け、変えていない行を追加行にしない。改行コードだけの違いも追加行にしない。
- * 追跡していない（git add していない）新しいファイルは、全ての行を追加行として見る（CI にはない。手元で commit の前に見るため）。
- * 複数の行にまたがる文は、文の行のどれかが追加行なら示す（行は文の行のうち最初の追加行）。既存の行だけでできた文は示さない。
- *
- * 注釈は 1 件 1 行で出し、最後に件数の行を出す。GitHub は 1 つの step で注釈を 10 件までしか表示しないので、一覧の代わりにしない。
- * 「の」の連なり、否定、複合動詞の崩れと、語の検査は見ない（語は既定の実行が見る）。
+ * 対象のファイルは既定の実行と同じで、削除したファイルは見ない。複数の行にまたがる文は、どれかの行が追加行なら示す。
+ * 注釈は 1 件 1 行で出し、最後に件数の行を出す（GitHub は 1 つの step で注釈を 10 件までしか表示しないので、一覧の代わりにしない）。
  *
  * @param {{ style: { length: number, comma: number, cell: number } }} list 一覧
  */
 function printChangedWarnings(list) {
   exitIfShallow()
   const git = (args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+  // 基準は origin/develop（なければ develop）との分岐点。分岐点が HEAD のときの決め方は resolveDiffBase
   const { revision, base } = resolveDiffBase()
   if (base === null) {
     console.log('警告：develop（と origin/develop）がない（または履歴が繋がらない）ので、HEAD の 1 つ目の親との差分を見る（初めの commit なら全ての行を追加行として見る）')
@@ -720,6 +716,7 @@ function printChangedWarnings(list) {
   const added = revision
     ? parseAddedLines(git([...ADDED_DIFF_ARGS, revision, '--']))
     : new Map()
+  // 追跡していない新しいファイルは、全ての行を追加行として見る（CI にはない。手元で commit の前に見るため）
   const untracked = revision ? listUntrackedFiles() : listGitFiles()
   for (const file of untracked) added.set(file, null)
   // length、comma、cell だけを見る（「の」の連なり、否定、複合動詞の崩れは形だけでは誤りと判定できないので注釈にしない）。
@@ -814,9 +811,7 @@ function collectStyleHits({ docs, code }, style, addedOf) {
 /**
  * 文書とコードを調べ、結果を出力する（既定の実行と --warning）。
  *
- * 既定の実行は error の語と許容用語だけを見る（warning は数えない）。--warning は warning の語と文体を一覧にする。
- * --added は、標準入力の差分（git diff --cached -U0）の追加行だけを --warning の対象にする（commit の前の hook。--changed と同じ選び方）。
- * 差分にないファイルは、追加行がないので測らない。
+ * --added のとき、差分にないファイルは追加行がないので測らない。
  *
  * @param {{ error: object[], warning: object[], style: object }} list 一覧
  * @param {{ warning: boolean, added: boolean }} options --warning と --added を付けたか

@@ -12,6 +12,7 @@ export const CWD = path.resolve(tmpdir(), 'agent-guard-cwd')
 
 /**
  * git と gh の呼び出しと、ファイルの読み込みを差し替えた依存を作る。
+ *
  * rev-parse は `.git/hooks/pre-commit` を返し、show-ref は `tags` にある tag だけを見つける。ファイルは `files`（絶対パスをキー）から読む。
  * symbolic-ref は今のブランチ `branch`（null は detached）を、config --get-regexp は `config`（`キー 値` の行。null は失敗）を返す。
  * gh は `gh`（結果か、引数とオプションから結果を返す関数）を返す。既定は失敗。

@@ -1,13 +1,11 @@
-// ============================================================================
 // カバレッジか mutation score の合計と、低い所を、GitHub Actions の job の summary に書く。
-//
-//   使い方：node scripts/ci/report/coverage-summary.mjs <名前> <報告のファイル>
-//     報告のファイル：JaCoCo の XML、Vitest の json-summary（coverage-summary.json）、PIT の XML（mutations.xml）
-//
-// 低い所は、JaCoCo はパッケージ、Vitest はファイル（流した場所からのパス）、PIT は生き残った変異が多いクラスで、10 件を出す。
 // 報告を書くだけで、失敗にしない。基準を下回ったときに失敗させるのは、各ツールの閾値（テストの実行方法の「カバレッジと mutation score の基準の検査」）。
+//
+// 低い所は、JaCoCo はパッケージ、Vitest はファイル（流した場所からのパス）、PIT は生き残った変異が多いクラスで、LOWEST_LIMIT 件を出す。
 // 報告がなければ、そのことを書いて終わる。GITHUB_STEP_SUMMARY がなければ（ローカル）、標準出力に書く。
-// ============================================================================
+//
+// 使い方：node scripts/ci/report/coverage-summary.mjs <名前> <報告のファイル>
+//   報告のファイル：JaCoCo の XML、Vitest の json-summary（coverage-summary.json）、PIT の XML（mutations.xml）
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { isPitReport, readMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'

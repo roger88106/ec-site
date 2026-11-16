@@ -12,7 +12,7 @@
 //   - 元の spec：変えた spec の各番号と同じ。
 //     AC が AC-s-n の形の行（状態によらない）で、元の spec が s と文字列として一致しない（0 埋めの違いと、MVP- を付けた値も一致しない）。
 //     AC が MVP の形（AC-n）の行（状態によらない）で、元の spec が MVP-<番号> でない。番号と n は比べない
-//   - AC の番号：AC が MVP の形（AC-n）の行（状態によらない）で、n が上限（312）を超える。MVP は終わっていて、AC-n は増えないため
+//   - AC の番号：AC が MVP の形（AC-n）の行（状態によらない）で、n が上限（MVP_AC_LIMIT）を超える。MVP は終わっていて、AC-n は増えないため
 //   - 今の内容：有効・変更の AC で、空か仮の値（—、なし、<…>）。<br /> がある
 //   - 今の内容の参照：spec の中だけで通じる参照（※1、事実 2、US の番号、spec の「…」）がある
 //   - 今の内容の根拠：変更と common の AC で、根拠（リンク [<文書の名前>](<パス>) と、その直後の「の「<見出し>」」）がない。
@@ -23,13 +23,7 @@
 //     バックエンドのモジュールのディレクトリと ③ の文書の両方がある名前の ③ が、一覧にない（追加し忘れ）
 //   - その他のマーカー：一覧にない ③ にマーカーがある。既知のマーカー（generated:ac-list、generated:module-ac）でない generated: のコメントがある
 //   - 進行中の spec：AC が AC 一覧にない、AC 一覧の元の spec がその spec でない（番号の重なり）。
-//     定義の行が崩れている（箇条の先頭の太字の AC が、- **AC-<番号>** <文> の形でない）。
-//     崩れた形には、* や + の箇条、字下げ、番号付きの箇条を含む。
-//     太字のない箇条・箇条のない太字・チェックボックス・見出し・表の行（先頭のセルが番号だけ）の定義も、崩れた行として報告する。
-//     表の行を除く 4 つの形は、番号に続く文が一覧の助詞か記号で始まるなら、文の中で番号に触れただけの行として問題にしない（例：- AC-<番号> の補足）。
-//     開きのかぎかっこ（「 『）、[ で始まるリンク、* の強調、1 行のコードは、文の先頭として扱う（記号に含めない）。
-//     助詞の一覧は語の先頭で比べるので、同じかなで始まる文も問題にしない。
-//     太字のない箇条は、番号だけの行も問題にしない（番号の一覧の箇条のため）。
+//     定義の行が崩れている（- **AC-<番号>** <文> の形でない。見分け方は ac-list.mjs の DEFINITION_ATTEMPTS）。
 //     spec から消した AC が、AC 一覧に有効・変更で残っている
 //   - テスト名の AC：AC 一覧にない AC 番号がある、廃止の AC を参照する
 //   - テスト名の書き方：範囲（AC-n〜m）、新しい形の後の数字だけの番号（AC-s-n、m）、空白の区切り（AC-n AC-m）
@@ -109,6 +103,7 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
 
 /**
  * 元の spec・変えた spec の 1 つの番号を、spec のディレクトリと照合する。
+ *
  * MVP-<番号> は MVP の spec のディレクトリと、番号だけは MVP の外のディレクトリと照合する。
  *
  * @param {string} value 列の値（変えた spec は読点で区切った 1 つ）
@@ -202,6 +197,7 @@ export function checkAcRows({ rows, modules, specDirs }) {
 
 /**
  * 進行中の spec の AC と、AC 一覧を照合する。AC 一覧の元の spec は、spec のディレクトリの名前の先頭の番号と文字列として比べる。
+ *
  * AC の本文は比べない（転記の後は AC 一覧を手動で修正する）。
  *
  * @param {object} input
@@ -230,7 +226,8 @@ export function checkInProgress({ rows, specs }) {
 }
 
 /**
- * ③ の文書の名前を、バックエンドのモジュールのディレクトリと、構造の検査の対象の一覧（FUNCTIONAL_SPECS）に照合する。<br />
+ * ③ の文書の名前を、バックエンドのモジュールのディレクトリと、構造の検査の対象の一覧（FUNCTIONAL_SPECS）に照合する。
+ *
  * 一覧にある ③ にディレクトリがない名前と、ディレクトリがあるモジュールの ③ が一覧にない名前を、問題にする。
  * 後者を許すと、追加し忘れた ③ が、節の構造の検査と「今有効な AC」の表の照合から外れる。
  *
@@ -243,13 +240,14 @@ export function checkModuleDocNames({ docs, modules }) {
   const problems = []
   for (const doc of docs) {
     if (doc.required && !modules.has(doc.module)) problems.push(`${doc.file}：構造の検査の対象の ③ の名前（${doc.module}）に、バックエンドのモジュールのディレクトリがない`)
-    if (!doc.required && modules.has(doc.module)) problems.push(`${doc.file}：モジュールの ③ が構造の検査の対象の一覧（lib/functional-specs.mjs の FUNCTIONAL_SPECS）にない。固定の節に書いて一覧に追加する`)
+    if (!doc.required && modules.has(doc.module)) problems.push(`${doc.file}：モジュールの ③ が構造の検査の対象の一覧（scripts/ci/lib/docs/functional-specs.mjs の FUNCTIONAL_SPECS）にない。固定の節に書いて一覧に追加する`)
   }
   return problems
 }
 
 /**
  * ③ の文書の、生成のマーカーと「今有効な AC」の表を調べる。
+ *
  * 構造の検査の対象の一覧にある ③ は、「今有効な AC」の節の中にマーカーの組が必須で、範囲の中が生成した表と同じでなければならない。
  * 一覧にない ③ は、マーカーを置かない。
  *
@@ -267,7 +265,7 @@ export function checkModuleDoc({ text, module, rows, required }) {
   if (marks.some((mark) => mark.name === LIST_MARK)) problems.push(`③ に AC 一覧の生成の印（generated:${LIST_MARK}）がある`)
   const own = marks.filter((mark) => mark.name === MODULE_MARK)
   if (!required) {
-    if (own.length > 0) problems.push(`${own[0].line} 行：構造の検査の対象の一覧（lib/functional-specs.mjs の FUNCTIONAL_SPECS）にない ③ に、生成の印がある。固定の節に書き換えて一覧に加えてから置く`)
+    if (own.length > 0) problems.push(`${own[0].line} 行：構造の検査の対象の一覧（scripts/ci/lib/docs/functional-specs.mjs の FUNCTIONAL_SPECS）にない ③ に、生成の印がある。固定の節に書き換えて一覧に加えてから置く`)
     return { problems, stale: false, updated: null }
   }
   const { pair, problems: pairProblems } = readPair(marks, MODULE_MARK)

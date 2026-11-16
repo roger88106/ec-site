@@ -6,7 +6,9 @@
 // 列挙型を名前の文字列から変換する場所は ArchUnit（EnumStringConversionTest）が、JSpecify 以外の Nullable は Checkstyle が確認する。
 //
 // 失敗したとき：列挙型は switch 式で変換する。@SuppressWarnings の直前の行に、なぜ抑えてよいかを // で書く。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/java/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { closingParen } from '../lib/source/closing-paren.mjs'

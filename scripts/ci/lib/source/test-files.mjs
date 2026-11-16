@@ -6,7 +6,9 @@ import { scanCode, templateEnd } from './scan-code.mjs'
 import { stripJavaComments } from './strip-comments.mjs'
 
 /**
- * テストのファイルの種類を返す。Java は src/test・src/integrationTest の下の .java、
+ * テストのファイルの種類を返す。
+ *
+ * Java は src/test・src/integrationTest の下の .java、
  * Vitest・Playwright は *.test.ts(x)、*.spec.ts。
  *
  * @param {string} rel リポジトリのルートからの相対パス（/ 区切り）
@@ -70,6 +72,7 @@ const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescri
 
 /**
  * describe・it・test の名前の前にある修飾の連鎖（.skip、.each(表)、.skipIf(条件) など）を読み飛ばす。
+ *
  * 引数を取る修飾は、続く括弧かテンプレートの表も読み飛ばす。閉じない括弧とテンプレートは、読み飛ばした位置が範囲の外になるので、呼び出し側が見る。
  *
  * @param {string} source ソース（コメントの中を読まないものを渡す）
@@ -198,7 +201,9 @@ export function scanTsTests(source) {
 }
 
 /**
- * Vitest・Playwright のソースから、テストの呼び出しを読む。skip・fixme のテストと、
+ * Vitest・Playwright のソースから、テストの呼び出しを読む。
+ *
+ * skip・fixme のテストと、
  * skip・fixme のまとまり（describe.skip、test.describe.fixme、xdescribe）の中のテストは、skipped を true にして返す。
  * まとまりの範囲と each の表の終わりは、呼び出しの括弧の対応で求める（表の中の関数の呼び出しで切れない）。
  *

@@ -8,6 +8,7 @@ import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
 
 /**
  * Git の bash（git が hook を実行するときと同じ bash）の絶対パスを返す。
+ *
  * Windows では git の exec-path から Git for Windows の `bin/bash.exe` を求め、それ以外では PATH の bash の絶対パスを返す。
  * PATH を差し替えても同じ bash を使えるよう、絶対パスで返す。
  *

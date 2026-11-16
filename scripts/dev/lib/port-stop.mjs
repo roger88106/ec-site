@@ -1,5 +1,4 @@
 // スロットのポートで待ち受けるプロセスを探し、停止する。
-// スロットの script（scripts/dev/slot.mjs）の release と stop と run backend が使う。
 // script の node を強制終了すると停止の処理が動かず、Gradle のデーモンの子のバックエンドがポートで待ち受け続けるため。
 import { spawnSync } from 'node:child_process'
 import { killTreeOnWindows } from './child-stop.mjs'
@@ -17,7 +16,8 @@ const POLL_INTERVAL_MS = 100
  */
 
 /**
- * 問い合わせのコマンドの出力から、待ち受けるプロセスを読む。<br />
+ * 問い合わせのコマンドの出力から、待ち受けるプロセスを読む。
+ *
  * Windows は「ポート プロセスの ID 状態」の行（findListeners の PowerShell が出す形）で、状態が Listen の行だけを読む。
  * 状態は .NET の列挙の名前なので、OS の言語で変わらない。
  * それ以外は lsof の -F pn の出力（p の行がプロセス、n の行がアドレス）で、接続（-> を含むアドレス）を読まない。
@@ -65,7 +65,8 @@ function byPortOrder(listeners, ports) {
 }
 
 /**
- * ポートで待ち受けるプロセスを探す。<br />
+ * ポートで待ち受けるプロセスを探す。
+ *
  * Windows は PowerShell の Get-NetTCPConnection、それ以外は lsof で問い合わせる。netstat を使わないのは、状態の列が OS の言語で変わるため。
  * 待ち受けがないことと、問い合わせの失敗（コマンドを流せない、誤りで終わった）を分けて返す。
  * 失敗を待ち受けなしとみなすと、動いているバックエンドのデータベースを解除で消すため。
@@ -103,14 +104,10 @@ export function findListeners(ports, deps = { platform: process.platform, spawnS
 }
 
 /**
- * 待ち受けるプロセスを強制終了する。プロセスごとに 1 回だけ止める。<br />
- * Windows は taskkill でツリーごと止め、終わるまで Wait-Process で待つ。
- * それ以外は SIGKILL を送り、プロセスの生存の問い合わせ（シグナル 0）を、終わるまで繰り返して待つ。
- * どちらも上限は {@link STOP_WAIT_MS}。上限を過ぎても例外を投げず、先へ進む（残ったかどうかは、呼ぶ側の再度の問い合わせで判定する）。
- * 終わるのを待つのは、止めた直後に問い合わせると、まだ待ち受けが残って見えることがあるため。
- * 親が終了状態を回収しないゾンビのプロセスは、シグナル 0 が成功し続けて生きていると判定されるので、上限まで待つ（失敗はしない）。
- * すでに終わっていて kill が失敗しても止まらない（その場合も生存を確認する）。
- * SIGKILL が権限がなく EPERM で失敗したプロセスは、止められず待っても終わらないので、待たずに先へ進む（残ったかどうかは呼ぶ側が判定する）。
+ * 待ち受けるプロセスを強制終了し、終わるのを {@link STOP_WAIT_MS} まで待つ。プロセスごとに 1 回だけ止める。
+ *
+ * 待つのは、止めた直後に問い合わせると、まだ待ち受けが残って見えることがあるため。
+ * 上限を過ぎても例外を投げない（残ったかどうかは、呼ぶ側が問い合わせ直して判定する）。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
  * @param {Partial<StopDeps>} [deps] OS、コマンドの実行、シグナルの送り方、時計と待ち。テストで差し替える。省いた項目は実際のものを使う
@@ -119,6 +116,7 @@ export function stopListeners(listeners, deps = {}) {
   const { platform, spawnSync: run, kill, now, sleep } = { ...defaultStopDeps(), ...deps }
   const pids = uniquePids(listeners)
   if (pids.length === 0) return
+  // Windows は taskkill でツリーごと止め、Wait-Process で待つ
   if (platform === 'win32') {
     for (const pid of pids) killTreeOnWindows(pid, run)
     run(
@@ -138,6 +136,7 @@ export function stopListeners(listeners, deps = {}) {
       if (error?.code !== 'EPERM') waiting.push(pid)
     }
   }
+  // 生存の問い合わせ（シグナル 0）を、終わるまで繰り返す。ゾンビのプロセスは生きていると判定され続けるので、上限まで待つ
   const deadline = now() + STOP_WAIT_MS
   let alive = waiting.filter((pid) => isAlive(pid, kill))
   while (alive.length > 0 && now() < deadline) {
@@ -225,6 +224,7 @@ export function stoppedMessage(listeners) {
 
 /**
  * ポートが使われていて起動しないときに示す文。stop backend のコマンドを先に示し、stop が使えないときの代わりに手動の停止のコマンドを示す。
+ *
  * release はデータベースとバケットも消すので示さない。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス

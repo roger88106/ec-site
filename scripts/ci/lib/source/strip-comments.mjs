@@ -1,8 +1,7 @@
-// ソースのコメントを空白に置き換える。走査（コメント・文字列・正規表現の読み分け）は scan-code が行う。
-// - .ts・.tsx：画面のソースとテストを読む検査（frontend-rules、globals/lib-globals）が共通で使う（stripComments）。コメントだけを残す keepTsComments は spec-numbers が使う
-// Java は、文字列とテキストブロックの中の // をコメントにしない。
+// ソースのコメントを空白に置き換える（.ts・.tsx は stripComments、.java は stripJavaComments）。コメントだけを残す keepTsComments もある。
+// 走査（コメント・文字列・正規表現の読み分け）は scan-code が行う。Java は、文字列とテキストブロックの中の // をコメントにしない。
+//
 // 限界：TSX の JSX のテキスト（<p>It's // here</p>）の中の '・"・// を、文字列やコメントと誤って判定する。
-// - .java：Java のソースを読む検査（java-rules）が使う（stripJavaComments）
 import { scanCode } from './scan-code.mjs'
 
 /** Java の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */
@@ -28,7 +27,8 @@ function blankComments(text, options, keepRegex = true, blankStrings = false) {
 }
 
 /**
- * Java のコメント（行コメント、ブロックコメント、Javadoc）を、同じ長さの空白に置き換える。改行は残すので、位置と行番号は変わらない。<br />
+ * Java のコメント（行コメント、ブロックコメント、Javadoc）を、同じ長さの空白に置き換える。改行は残すので、位置と行番号は変わらない。
+ *
  * 文字列、テキストブロック、文字リテラルの中の // などはコメントにしない。
  *
  * @param {string} text ソース
@@ -39,7 +39,8 @@ export function stripJavaComments(text) {
 }
 
 /**
- * Java のコメントだけを残し、コメントの外（コード、文字列、テキストブロック）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。<br />
+ * Java のコメントだけを残し、コメントの外（コード、文字列、テキストブロック）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。
+ *
  * コメントの判定は stripJavaComments と同じ（元のソースと stripJavaComments の結果を文字ごとに比べ、空白にされた文字だけを残す）。
  *
  * @param {string} text ソース
@@ -50,8 +51,9 @@ export function keepJavaComments(text) {
 }
 
 /**
- * TypeScript のコメントだけを残し、コメントの外（コード、文字列、テンプレートの文字の部分と ${...} の中のコード、正規表現のリテラル）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。<br />
- * コメントの判定は stripComments と同じ。テスト名や test.step の名前などの文字列の中の番号を、コメントの番号と取り違えないために使う。<br />
+ * TypeScript のコメントだけを残し、コメントの外（コード、文字列、テンプレートの文字の部分と ${...} の中のコード、正規表現のリテラル）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。
+ *
+ * コメントの判定は stripComments と同じ。テスト名や test.step の名前などの文字列の中の番号を、コメントの番号と取り違えないために使う。
  * 限界：.tsx の JSX の文字（`<p>It's // here</p>`）は読み分けられない。文字の中の `'`・`"` を文字列の始まりと、`//` をコメントと読み違える。
  *
  * @param {string} text ソース
@@ -79,6 +81,7 @@ function keepBlanked(text, stripped) {
 
 /**
  * コメントを空白に置き換える（行の数は変えない）。文字列の中の // は、URL などなので消さない。
+ *
  * テンプレートの `${...}` の中はコードとして読む（入れ子のテンプレートも数える）。
  *
  * @param {string} text ソース

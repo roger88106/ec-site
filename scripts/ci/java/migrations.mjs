@@ -7,7 +7,9 @@
 // 前のリリースのアプリが動けなくなる変更（バックエンドの書き方の「前のリリースのアプリが動き続けられる変更だけにする」）は、レビューで見る。
 //
 // 失敗したとき：適用済みのマイグレーションは元に戻し、変更は新しいマイグレーションで加える。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/java/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
 import { emptyListReason, splitNulList } from '../lib/git/git-files.mjs'

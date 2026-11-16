@@ -28,6 +28,7 @@ export const AC_NUMBER_ONLY = new RegExp(`^(${AC_NUMBER})$`)
 
 /**
  * AC の番号の文字列を、照合に使う値にする。MVP の `12` は数、1→10 の `7-1` は文字列のまま。
+ *
  * 形で型を分けるので、`AC-s` と `AC-s-n` は別の AC になる。
  *
  * @param text AC- の後の番号（`12`、`7-1`）
@@ -78,7 +79,8 @@ export function parseAcRefs(name) {
 }
 
 /**
- * テスト名から、曖昧な AC の並べ方を取り出す。新しい形（AC-s-n）の後に、読点・カンマと数字だけの番号（AC-s-n、m）が続く書き方。<br />
+ * テスト名から、曖昧な AC の並べ方を取り出す。新しい形（AC-s-n）の後に、読点・カンマと数字だけの番号（AC-s-n、m）が続く書き方。
+ *
  * 理由：MVP の AC-m と読め、MVP 側の抜けを隠すため。新しい形は AC-s-n、AC-s-m と書く。
  *
  * @param name テスト名
@@ -97,7 +99,8 @@ export function findAmbiguousAcLists(name) {
 }
 
 /**
- * テスト名から、空白（半角・全角）で区切った AC の並び（AC-n AC-m）を取り出す。<br />
+ * テスト名から、空白（半角・全角）で区切った AC の並び（AC-n AC-m）を取り出す。
+ *
  * 理由：複数の AC は読点で 1 つずつ並べる決まりで（AC-n、AC-m）、空白の並びは読み方が人によって分かれるため。
  *
  * @param name テスト名

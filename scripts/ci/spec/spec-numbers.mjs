@@ -7,8 +7,11 @@
 // - フロントのテストとテストの補助（*.test.ts(x)、src/test/）と、E2E（e2e/ の下の全ての TypeScript。設定と e2e/scripts/ を含む）：コメントだけを見る（テスト名と test.step の名前などの文字列、テンプレート文字列、正規表現のリテラルは見ない）
 // - scripts/ の下の script（.mjs・.cjs・.sh と、拡張子のない hook の script。テストを含む）：コメントだけを見る（テストの入力の例などの文字列は見ない）
 // 生成物、適用済みのマイグレーションは見ない。
+//
 // 失敗したとき：番号を削除し、規則を言葉で書く。spec との対応はテストの名前に書く。
+//
 // 除外：なし。
+//
 // 使い方：node scripts/ci/spec/spec-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
@@ -17,7 +20,8 @@ import { keepJavaComments, keepTsComments } from '../lib/source/strip-comments.m
 import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from '../lib/docs/screen-sources.mjs'
 
 /**
- * 本番のコードの置き場所。バックエンドも見るので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。
+ * 本番のコードの置き場所。バックエンドも見るので、画面の本番のソースの定義（lib/docs/screen-sources.mjs）は使わない。
+ *
  * 画面は、定義が除く共有の ui（src/ui/）と shadcn/ui の部品（components/ui/）も、番号を書かないものとして見る
  */
 const SOURCE_DIRS = ['backend/ecsite/src/main/', 'frontend/admin/src/', 'frontend/store/src/', 'frontend/shared/src/']
@@ -80,6 +84,7 @@ export function isBackendTestFile(file) {
 
 /**
  * 設定のファイルの置き場所。コメントだけを見る。
+ *
  * - リポジトリのルートの .ts・.mjs・.cjs（knip.ts、.pnpmfile.cjs など）
  * - 各パッケージ（frontend/admin、frontend/store、frontend/shared、e2e）の直下の *.config.ts・*.config.mjs
  * - バックエンド（backend/ecsite/）の Gradle の設定のファイル（*.gradle.kts）
@@ -110,7 +115,9 @@ export function isScriptFile(file) {
 }
 
 /**
- * コメントだけを残す。バックエンドのテストと Gradle の設定のファイル（Kotlin のコメントは Java と同じ書き方）は Java の読み方、
+ * コメントだけを残す。
+ *
+ * バックエンドのテストと Gradle の設定のファイル（Kotlin のコメントは Java と同じ書き方）は Java の読み方、
  * フロントのテスト・テストの補助、E2E、TypeScript・mjs・cjs の設定のファイルと script は TypeScript の読み方、
  * シェルの script（.sh と hook の script）は # のコメントの読み方で読む。
  *

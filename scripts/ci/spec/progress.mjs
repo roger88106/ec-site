@@ -7,9 +7,12 @@
 // - docs/08-spec/archive/mvp/ の下のディレクトリの名前が、MVP の形（0 で始まる 3 桁の番号）でなければ、食い違いとして報告する。
 //   1→10 の spec を誤って mvp に移すと、この検査が読まずに通るため
 // MVP の進捗（README の進捗の表、MVP の完成までの一覧、MVP の spec の tasks の照合）は見ない。MVP の spec は完了してアーカイブに移した。
+//
 // 失敗したとき：アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを [x] にする。
 // アーカイブの後、マージの前に追加するタスクは、アーカイブのタスクの後に、済ませる commit で [x] の行として追加する（起票と記録の操作の「アーカイブの操作」）。
+//
 // 除外：なし。
+//
 // 使い方：node scripts/ci/spec/progress.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -77,6 +80,7 @@ const MVP_SPEC_DIR = /^0\d{2}-/
 
 /**
  * アーカイブの下のまとまり（ディレクトリ）が、mvp と 1to10 だけかを確認し、mvp の下に MVP の形でない spec がないかを確認する。
+ *
  * 理由：1→10 の spec を別のまとまりや mvp に移すと、この検査が読まずに通るため。
  *
  * @param {string} specsDir docs/08-spec のパス

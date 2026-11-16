@@ -28,6 +28,7 @@ const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm
 
 /**
  * ソースが公開する名前を読む。
+ *
  * 読む書き方は、export function・const・class と export { a, b as c }（from 付きも）。型（export type、{ type X }）と default は、値の名前として使い分ける対象ではないので読まない。
  * 今の共有のパッケージはこの書き方だけで公開しているため、export * や再 export の連鎖は追わない
  *
@@ -49,6 +50,7 @@ export function findExportedNames(text) {
 
 /**
  * 共有のパッケージが公開する名前を集める。
+ *
  * package.json の exports の値（./src/lib/*.ts など。* は 1 つ以内）に合うソースのファイルを読む。テストは公開しないので読まない。
  * exports にない src のファイルは、パッケージの外から import できないので読まない
  *
@@ -77,6 +79,7 @@ export function sharedPublicNames(exportsMap, files, read) {
 
 /**
  * 指定した名前の関数・定数・クラスを定義する行を探す（export の有無によらない）。
+ *
  * 行頭から始まる定義だけを見る。関数の中の同じ名前の変数は、共有のものと取り違えないので対象にしない
  *
  * @param {string} text ソース

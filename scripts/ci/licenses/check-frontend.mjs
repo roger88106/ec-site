@@ -2,7 +2,9 @@
 // リポジトリのルートで pnpm licenses list --json --recursive を実行し、workspace の全ての依存（開発用を含む）を見る。
 //
 // 失敗したとき：方針に合わない依存の一覧を示すので、方針に合う依存に替えるか、条件付きなら理由を policy.json に追加する。
+//
 // 除外：なし（条件付きのライセンスの依存は、policy.json の conditional.components に理由を書く）
+//
 // 使い方：node scripts/ci/licenses/check-frontend.mjs
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -77,6 +79,7 @@ function tokenize(expression) {
 
 /**
  * ライセンスの式（SPDX の OR・AND と括弧）を判定する。AND は OR より強く結ぶ。
+ *
  * OR はどれか 1 つ、AND はすべてが通れば通る。解析できない式は通らない。
  *
  * @param expression ライセンスの式

@@ -65,6 +65,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
 
   /**
    * hook のコマンドを Git の bash で、`cwd` を作業ディレクトリにして実行する（hook のコマンドは Git Bash で動く形で書くので、その bash で確認する）。
+   *
    * CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す。git・gh を含むかの絞り込みは Claude Code が if 欄で行うので、ここでは見ない
    */
   function runHook(command, cwd, projectDir) {

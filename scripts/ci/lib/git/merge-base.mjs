@@ -19,6 +19,7 @@ export function tryGit(args, cwd) {
 
 /**
  * HEAD と、ブランチ（origin/ の方を先に見る）との merge-base を返す。
+ *
  * ref があっても履歴が繋がらなければ、次の候補（origin/ のないブランチ）を見る。
  *
  * @param {string} branch ブランチの名前（develop、main）
@@ -40,6 +41,7 @@ const PUSH_BRANCHES = ['develop', 'main']
 
 /**
  * CI（GitHub Actions）の、develop か main への push のイベントかを返す。
+ *
  * 手元（GITHUB_ACTIONS が true でない）では、develop を checkout していても false にする。
  * HEAD が origin/develop と同じときに、前のマージの行を追加行に数えないためである。
  * checkout したブランチの名前は見ない。CI の検査（docs.yml）は push と pull_request のときに実行する。
@@ -54,6 +56,7 @@ function isCiPushToMainline(env) {
 
 /**
  * 差分の基準の commit を返す。HEAD と develop との merge-base である。
+ *
  * merge-base が HEAD 自身で、CI の develop・main への push（isCiPushToMainline）なら、HEAD の 1 つ目の親（マージの前）にする。
  * それ以外で merge-base が HEAD 自身なら、HEAD にする（作業ツリーの変更だけを見る）。
  * develop から分けたばかりで commit がない作業ブランチと、手元の develop で HEAD が origin/develop と同じときである。

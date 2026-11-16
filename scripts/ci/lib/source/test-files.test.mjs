@@ -1,4 +1,4 @@
-// lib/test-files.mjs のテスト（node --test scripts/ci/lib/source/test-files.test.mjs）
+// lib/source/test-files.mjs のテスト（node --test scripts/ci/lib/source/test-files.test.mjs）
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { describe, test } from 'node:test'

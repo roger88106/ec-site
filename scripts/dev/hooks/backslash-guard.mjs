@@ -19,6 +19,7 @@ function heredocBodies(text) {
 
 /**
  * node の script を引数で渡す指定（-e・--eval・-p・--print・-pe・-ep）の引数（引用符で囲んだ文字列）。
+ *
  * `node --input-type=module -e '…'` のように、node と指定の間に別のオプション（- で始まる語）があってもよい
  */
 function nodeEvalArgs(text) {

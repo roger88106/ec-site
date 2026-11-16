@@ -121,7 +121,7 @@ describe('規則を足しやすい形', () => {
     assert.deepEqual(violationsOf(source, [rule]), ['2 試しの規則'])
     assert.deepEqual(violationsOf(source, [rule], `${IT}FooHelper.java`), [])
     // 規則が増えても、補助は規則ごとに決まる
-    assert.deepEqual(violationsOf(source, [EVENT_PUBLICATION_READS, rule], `${IT}AsyncEvents.java`), ['2 試しの規則'])
+    assert.deepEqual(violationsOf(source, [EVENT_PUBLICATION_READS, rule], `${IT}support/async/AsyncEvents.java`), ['2 試しの規則'])
   })
 
   test('違反の報告に、元の行の文字を添える', () => {

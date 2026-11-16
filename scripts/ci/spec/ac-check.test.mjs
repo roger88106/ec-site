@@ -17,6 +17,9 @@ import { readSkeleton } from './spec-structure.mjs'
 /** リポジトリのルート */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../')
 
+/** 照合に渡すテスト（ファイルは共通で、名前だけを変える） */
+const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
+
 describe('spec の AC の取り出し', () => {
   test('AC の定義の行（- **AC-n**）から番号を取り出す', () => {
     const spec = [
@@ -262,8 +265,6 @@ describe('テスト名の AC 番号', () => {
 })
 
 describe('照合', () => {
-  const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
-
   test('すべての AC にテストがあれば通る', () => {
     const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a', 'AC-2 b'), exclusions: {} })
     assert.equal(result.ok, true)
@@ -325,8 +326,6 @@ describe('照合', () => {
 })
 
 describe('廃止した AC', () => {
-  const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
-
   test('廃止した AC は、テストがなくてよい', () => {
     const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a'), exclusions: {}, deprecated: new Set([2]) })
     assert.equal(result.ok, true)
@@ -1189,8 +1188,6 @@ describe('進行中の spec を読む範囲', () => {
 })
 
 describe('テストとの対応（AC 一覧の AC に対して）', () => {
-  const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
-
   test('テスト名が参照する AC が、AC 一覧になければ失敗にする（アーカイブの spec にあっても）', () => {
     const specAcs = new Set(rowsOf(listRow({ ac: 'AC-1' })).map((row) => row.ac))
     const result = check({ specAcs, tests: tests('AC-1 a', 'AC-2 アーカイブにだけある'), exclusions: {} })
@@ -1212,8 +1209,6 @@ describe('テストとの対応（AC 一覧の AC に対して）', () => {
 })
 
 describe('1→10 の AC（AC-n-m）', () => {
-  const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
-
   test('spec の定義の行から、MVP の AC-n と新しい形の AC-n-m の両方を取り出す。別の AC として数える', () => {
     const spec = [
       '- **AC-12** MVP の AC。',
@@ -1335,7 +1330,7 @@ describe('1→10 の AC（AC-n-m）', () => {
 
   test('AC 一覧への転記：MVP の形の行の後に、新しい形（AC-<spec の番号>-<連番>）の行を、spec の番号と連番の順に置き、元の spec は 0 埋めのない番号だけで書く。読み戻せる', () => {
     const { definitions } = parseSpecAcDefinitions('- **AC-12** 一つ目。\n- **AC-7-2** 三つ目。\n- **AC-7-1** 二つ目。', '7-dev-process')
-    const empty = ['<!-- generated:ac-list -->', '| AC | モジュール | 状態 | 元の spec | 変えた spec | 今の内容 |', '|----|------------|------|-----------|-------------|----------|', '<!-- /generated:ac-list -->'].join('\n')
+    const empty = ['<!-- generated:ac-list -->', ...LIST_HEADER, '<!-- /generated:ac-list -->'].join('\n')
     const markdown = addAcsToList(empty, definitions)
     assert.match(markdown, /^\| AC-7-1 \| {2}\| 有効 \| 7 \| — \| 二つ目。 \|$/m)
     assert.ok(markdown.indexOf('| AC-12 |') < markdown.indexOf('| AC-7-1 |'))
@@ -1418,18 +1413,18 @@ describe('--write を script として実行する', () => {
   const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'ac-check.mjs')
   const LIST = 'docs/03-機能仕様/acceptance-criteria.md'
   const ORDER = 'docs/03-機能仕様/order.md'
-  const PAYMENT = 'docs/03-機能仕様/legacy.md'
+  const LEGACY = 'docs/03-機能仕様/legacy.md'
   const SPEC = 'docs/08-spec/5-x/spec.md'
 
   /** 構造の検査の対象の一覧にない ③（マーカーがなく、表は AC 一覧と違う） */
-  const paymentText = ['# 旧モジュール', '', '## 今有効な AC', '', ...MODULE_HEADER, moduleRow('AC-9', '古い。'), ''].join('\n')
+  const legacyText = ['# 旧モジュール', '', '## 今有効な AC', '', ...MODULE_HEADER, moduleRow('AC-9', '古い。'), ''].join('\n')
 
   /** 書き換える前のファイル。AC 一覧にない進行中の spec の AC と、古い注文の ③ の表がある */
   function fixture(overrides = {}) {
     return {
       [LIST]: listDoc(listRow({ ac: 'AC-1', content: '一つ目。' })),
       [ORDER]: moduleDoc([moduleRow('AC-1', '古い。')]),
-      [PAYMENT]: paymentText,
+      [LEGACY]: legacyText,
       [SPEC]: '- **AC-5-1** 転記する。\n',
       ...overrides,
     }
@@ -1472,7 +1467,7 @@ describe('--write を script として実行する', () => {
     assert.equal(status, 0, stdout)
     assert.match(after[LIST], /^\| AC-5-1 \| {2}\| 有効 \| 5 \| — \| 転記する。 \|$/m)
     assert.equal(after[ORDER], moduleDoc([...MODULE_HEADER, moduleRow('AC-1', '一つ目。')]))
-    assert.equal(after[PAYMENT], paymentText)
+    assert.equal(after[LEGACY], legacyText)
   })
 })
 

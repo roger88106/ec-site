@@ -20,6 +20,7 @@ import {
   listChangedFiles,
   parseRiskConfig,
   readBodyRisk,
+  SHOWN_FILES,
 } from './risk.mjs'
 
 /** 実際の危険度が高い経路の一覧 */
@@ -163,6 +164,16 @@ describe('変更の危険度の判定', () => {
     const line = lines.find((item) => item.startsWith('- エージェントの規則と設定：'))
     assert.match(line, /ほか 7 件$/)
     assert.ok(lines.length <= 4, lines.join('\n'))
+  })
+
+  test('当たったファイルが上限（SHOWN_FILES）の数なら全て出し、1 件多ければ「ほか 1 件」にする', () => {
+    const groupLine = (count) => {
+      const files = Array.from({ length: count }, (_, index) => `.claude/skills/x/file${String(index).padStart(2, '0')}.md`)
+      return formatJudgement(judgeRisk(files, CONFIG, reader({}))).find((item) => item.startsWith('- エージェントの規則と設定：'))
+    }
+    assert.doesNotMatch(groupLine(SHOWN_FILES), /ほか/)
+    assert.equal(groupLine(SHOWN_FILES).split('、').length, SHOWN_FILES)
+    assert.match(groupLine(SHOWN_FILES + 1), /ほか 1 件$/)
   })
 
   test('一覧の経路が実在しなければ、誤りとして返す（経路の書き間違いで判定が低になるのを防ぐ）', () => {

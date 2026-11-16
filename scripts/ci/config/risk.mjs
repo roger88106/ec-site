@@ -36,7 +36,7 @@ const CONFIG_FILE = new URL('./risk.json', import.meta.url)
 const DEFAULT_BASE = 'origin/develop'
 
 /** 1 つのまとまりについて、出力に名前を出すファイルの数（残りは件数だけ） */
-const SHOWN_FILES = 5
+export const SHOWN_FILES = 5
 
 /** spec の宣言の行 */
 const DECLARATION = '危険度：高'

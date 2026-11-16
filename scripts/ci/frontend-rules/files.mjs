@@ -1,7 +1,7 @@
 // frontend-rules が規則を当てるファイルの種類と、種類ごとの振り分け。
 // spec-numbers も、テストのファイルの種類を読む（frontend-rules.mjs が公開する）
 
-/** 画面のソース（テスト、生成物、shadcn/ui の部品、共有の ui、テストの補助を含む） */
+/** 画面のソース（テスト、生成物、shadcn/ui のコンポーネント、共有の ui、テストの補助を含む） */
 export const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/
 
 /** 場所に関わらない、テストのファイル（.test.ts・.test.tsx）。公開する名前などから、どの場所のテストも除くときに使う */

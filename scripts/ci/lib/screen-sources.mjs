@@ -6,7 +6,7 @@
 //   spec-numbers：バックエンドも読み、画面の共有の ui と shadcn/ui の部品も読む。画面のテスト・テストの補助・E2E は、コメントだけを読む（keepTsComments）
 //   time-waits：本番のソースでなく、テストを読む
 //   message-comments：定義に加えて、店舗画面・管理画面の src/test/ のテストの補助と generated/ の .tsx を読む
-// Biome の plugin が本番のソースに当てる規則の対象（frontend/biome.plugins.jsonc）も、この定義に合わせる
+// frontend/biome.plugins.jsonc で、Biome の plugin を本番のソースに当てる対象も、この定義に合わせる
 
 /** 画面のパッケージ（frontend/ の下のディレクトリ） */
 export const SCREEN_APPS = ['admin', 'store', 'shared']

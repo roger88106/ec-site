@@ -5,11 +5,8 @@
 // - シェル（.sh）：# のコメント（1 行目の #! を除く）
 //
 // 走査（コメント・文字列の読み分け）は scan-code が行う。
-import { scanCode, templateEnd } from './scan-code.mjs'
+import { JAVA_SCAN, scanCode, templateEnd } from './scan-code.mjs'
 import { skipModifiers } from './test-files.mjs'
-
-/** Java と Kotlin の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */
-const JAVA_SCAN = { regex: false, templates: false, textBlocks: true }
 
 /** テストの呼び出しの始まり。前が . や語の文字のもの（/re/.test(...) など）は読まない */
 const TS_TEST_CALL = /(?<![.\w$])(?:describe|it|test)(?![\w$])/g

@@ -2,10 +2,7 @@
 // 走査（コメント・文字列・正規表現の読み分け）は scan-code が行う。Java は、文字列とテキストブロックの中の // をコメントにしない。
 //
 // 限界：TSX の JSX のテキスト（<p>It's // here</p>）の中の '・"・// を、文字列やコメントと誤って判定する。
-import { scanCode } from './scan-code.mjs'
-
-/** Java の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */
-const JAVA_SCAN = { regex: false, templates: false, textBlocks: true }
+import { JAVA_SCAN, scanCode } from './scan-code.mjs'
 
 /**
  * コメントを同じ長さの空白に置き換え、文字列とコードはそのまま残す。

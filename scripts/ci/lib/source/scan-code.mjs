@@ -9,6 +9,9 @@
  */
 const BEFORE_REGEX_CHARS = '(,=:[!&|?{;'
 
+/** Java と Kotlin の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */
+export const JAVA_SCAN = Object.freeze({ regex: false, templates: false, textBlocks: true })
+
 /** 正規表現のリテラルの前に来る語 */
 const BEFORE_REGEX_WORD = /\b(?:return|typeof|case|in|of|delete|void|throw|new|instanceof|yield|await)$/
 

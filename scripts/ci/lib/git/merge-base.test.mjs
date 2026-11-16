@@ -111,6 +111,25 @@ describe('差分の基準（develop との分岐点）', () => {
     assert.deepEqual(resolveDiffBase(r.repo, {}), { revision: null, base: null })
   })
 
+  test('commit がない（HEAD がない）リポジトリでは、基準も ref もない（null）', () => {
+    const repo = mkdtempSync(path.join(tmpdir(), 'merge-base-'))
+    repos.push(repo)
+    execFileSync('git', ['init', '-q'], { cwd: repo, stdio: 'ignore' })
+    assert.deepEqual(resolveDiffBase(repo, {}), { revision: null, base: null })
+  })
+
+  test('origin/ のブランチの履歴が HEAD と繋がらなければ、origin/ のないブランチを見る', () => {
+    const r = createRepo()
+    const first = r.commit()
+    r.git('branch', 'develop')
+    r.git('checkout', '-q', '--orphan', 'unrelated')
+    const unrelated = r.commit()
+    r.git('update-ref', 'refs/remotes/origin/develop', unrelated)
+    r.git('checkout', '-q', 'main')
+    r.commit()
+    assert.deepEqual(mergeBaseWith('develop', r.repo), { base: 'develop', revision: first })
+  })
+
   test('ブランチごとの merge-base は、origin/ の方を先に見て、どちらもなければ null を返す', () => {
     const r = createRepo()
     const first = r.commit()

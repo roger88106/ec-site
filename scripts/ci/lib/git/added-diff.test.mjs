@@ -33,31 +33,37 @@ describe('追加行を読む差分の引数', () => {
 })
 
 describe('差分の追加行の読み方', () => {
-  test('差分の本文の「+++」で始まる追加行を、ファイルの見出しと取り違えない。引用符で囲んだパスと、空白のあるパスを読む', () => {
-    const diff = [
-      'diff --git a/docs/a.md b/docs/a.md',
-      '--- a/docs/a.md',
-      '+++ b/docs/a.md',
-      '@@ -1,0 +2,2 @@',
-      '+++ b/docs/x.md',
-      '+次の行',
-      '@@ -5 +7 @@',
-      '-古い行',
-      '+新しい行',
-      'diff --git "a/docs/q\\"\\346\\227\\245.md" "b/docs/q\\"\\346\\227\\245.md"',
-      '+++ "b/docs/q\\"\\346\\227\\245.md"',
-      '@@ -0,0 +1 @@',
-      '+あ',
-      '\\ No newline at end of file',
-      '+++ b/docs/a b.md\t',
-      '@@ -3,2 +3,0 @@',
-      '-消した行',
-      '-消した行',
-      '',
-    ].join('\n')
-    assert.deepEqual(
-      [...parseAddedLines(diff)].map(([file, lines]) => [file, [...lines]]),
-      [['docs/a.md', [2, 3, 7]], ['docs/q"日.md', [1]], ['docs/a b.md', []]],
-    )
+  /** 差分を読み、[パス, 追加行の番号] の並びにする */
+  const read = (lines) => [...parseAddedLines(lines.join('\n'))].map(([file, added]) => [file, [...added]])
+
+  test('差分の本文の「+++」で始まる追加行を、ファイルの見出しと取り違えない', () => {
+    const diff = ['+++ b/docs/a.md', '@@ -1,0 +2,2 @@', '+++ b/docs/x.md', '+次の行']
+    assert.deepEqual(read(diff), [['docs/a.md', [2, 3]]])
+  })
+
+  test('行数を省いた hunk の見出し（@@ -5 +7 @@）は、1 行と読む', () => {
+    const diff = ['+++ b/docs/a.md', '@@ -5 +7 @@', '-古い行', '+新しい行', '@@ -9 +9,0 @@', '-消した行']
+    assert.deepEqual(read(diff), [['docs/a.md', [7]]])
+  })
+
+  test('引用符で囲んだパスの、逃がした字（\\"、\\t、\\\\、8 進数のバイト）を戻す', () => {
+    const diff = ['+++ "b/docs/q\\"\\346\\227\\245.md"', '@@ -0,0 +1 @@', '+あ', '+++ "b/docs/t\\tb\\\\s.md"', '@@ -0,0 +1 @@', '+い']
+    assert.deepEqual(read(diff), [
+      ['docs/q"日.md', [1]],
+      ['docs/t\tb\\s.md', [1]],
+    ])
+  })
+
+  test('空白のあるパスの後ろのタブを除く', () => {
+    const diff = ['+++ b/docs/a b.md\t', '@@ -3,2 +3,0 @@', '-消した行', '-消した行']
+    assert.deepEqual(read(diff), [['docs/a b.md', []]])
+  })
+
+  test('「\\ No newline at end of file」の行は、hunk の行に数えない', () => {
+    const diff = ['+++ b/docs/a.md', '@@ -0,0 +1 @@', '+あ', '\\ No newline at end of file', '+++ b/docs/b.md', '@@ -0,0 +1 @@', '+い']
+    assert.deepEqual(read(diff), [
+      ['docs/a.md', [1]],
+      ['docs/b.md', [1]],
+    ])
   })
 })

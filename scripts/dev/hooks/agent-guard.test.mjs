@@ -58,8 +58,6 @@ describe('.claude/settings.json の hook と permission の設定', () => {
 })
 
 describe('.claude/settings.json の hook のコマンドで、script を探して呼ぶ', () => {
-  /** リポジトリ（作業ツリー）の根 */
-  const repoRoot = REPO_ROOT
   /** settings.json に書いた PreToolUse の hook のコマンド */
   const hookCommand = HANDLERS[0].command
 
@@ -94,7 +92,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
       const hooks = path.join(dir, 'scripts', 'dev', 'hooks')
       mkdirSync(hooks, { recursive: true })
       writeFileSync(path.join(hooks, 'agent-guard.mjs'), "import { readFileSync } from 'node:fs'\nprocess.stdout.write('stub:' + readFileSync(0, 'utf8'))\n")
-      const result = runHook('git push --force', path.join(dir, 'scripts'), repoRoot)
+      const result = runHook('git push --force', path.join(dir, 'scripts'), REPO_ROOT)
       assert.equal(result.status, 0, result.stderr)
       assert.match(result.stdout, /^stub:\{.*git push --force/)
     })
@@ -136,7 +134,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
 
   test('Git の外では、CLAUDE_PROJECT_DIR の script が判定する', () => {
     inTempDir((dir) => {
-      const result = runHook('git push --force', dir, repoRoot)
+      const result = runHook('git push --force', dir, REPO_ROOT)
       assert.equal(result.status, 0, result.stderr)
       assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'deny')
     })

@@ -7,11 +7,9 @@ import { fileURLToPath } from 'node:url'
 import {
   checkExclusions,
   describeEmptyReason,
-  describeExclusionProblems,
   describeStaleExclusion,
   exclusionsPath,
   findEmptyReasons,
-  findStaleExclusions,
   readExclusions,
 } from './exclusions.mjs'
 
@@ -59,47 +57,35 @@ describe('除外の理由', () => {
   })
 })
 
-describe('不要になった除外', () => {
-  test('まだ必要かの判定が false のキーを、書いた順に返す', () => {
-    const needed = new Set(['a', 'c'])
-    assert.deepEqual(findStaleExclusions({ a: 'x', b: 'x', c: 'x', d: 'x' }, (key) => needed.has(key)), ['b', 'd'])
-  })
-
-  test('全てが必要なら空を返す', () => {
-    assert.deepEqual(findStaleExclusions({ a: 'x' }, () => true), [])
-  })
-})
-
 describe('除外の一覧のパス', () => {
-  test('scripts/ci/ の直下の絶対パスを、実行する場所に関わらず返す', () => {
-    const expected = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'x-exclusions.json')
-    assert.equal(exclusionsPath('x-exclusions.json'), expected)
+  test('scripts/ci/ からの相対パスを、実行する場所に関わらず同じ絶対パスにする', () => {
+    const expected = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'spec', 'x-exclusions.json')
+    assert.equal(exclusionsPath('spec/x-exclusions.json'), expected)
     const before = process.cwd()
     process.chdir(tmpdir())
     try {
-      assert.equal(exclusionsPath('x-exclusions.json'), expected)
+      assert.equal(exclusionsPath('spec/x-exclusions.json'), expected)
     } finally {
       process.chdir(before)
     }
   })
 })
 
-describe('除外の一覧の誤りの文', () => {
-  test('理由のない除外と不要な除外を分けて返し、検査の文と同じ文にする', () => {
-    const exclusions = { a: '', b: '理由', c: '理由' }
-    const { emptyReasons, stale } = describeExclusionProblems('x.json', exclusions, (key) => key !== 'c')
-    assert.deepEqual(emptyReasons, [describeEmptyReason('x.json', 'a')])
-    assert.deepEqual(stale, [describeStaleExclusion('x.json', 'c')])
-    assert.deepEqual(checkExclusions('x.json', exclusions, (key) => key !== 'c'), [...emptyReasons, ...stale])
-  })
-})
-
 describe('除外の一覧の検査', () => {
-  test('理由のない除外と不要な除外を、ファイル名を添えた文にして返す', () => {
-    const messages = checkExclusions('x-exclusions.json', { a: '', b: '理由', c: '理由' }, (key) => key !== 'c')
-    assert.equal(messages.length, 2)
-    assert.match(messages[0], /x-exclusions\.json.*a.*理由/)
-    assert.match(messages[1], /x-exclusions\.json.*c.*不要/)
+  test('理由のない除外、不要な除外の順に、それぞれ書いた順で文にして返す', () => {
+    const needed = new Set(['a', 'c', 'e'])
+    const messages = checkExclusions('x.json', { a: '', b: '理由', c: '理由', d: '理由', e: null }, (key) => needed.has(key))
+    assert.deepEqual(messages, [
+      describeEmptyReason('x.json', 'a'),
+      describeEmptyReason('x.json', 'e'),
+      describeStaleExclusion('x.json', 'b'),
+      describeStaleExclusion('x.json', 'd'),
+    ])
+  })
+
+  test('文には、ファイル名とキーを書く', () => {
+    assert.match(describeEmptyReason('x-exclusions.json', 'a'), /x-exclusions\.json.*a.*理由/)
+    assert.match(describeStaleExclusion('x-exclusions.json', 'c'), /x-exclusions\.json.*c.*不要/)
   })
 
   test('理由がなく、不要でもある除外は、2 つとも返す', () => {

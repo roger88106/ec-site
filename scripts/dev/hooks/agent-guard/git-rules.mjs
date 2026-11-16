@@ -1,4 +1,4 @@
-// git の呼び出しの規則：force push、検査の省略、pre-commit hook の有無、tag。
+// git の呼び出しの規則。規則の一覧は GIT_JUDGES。
 import path from 'node:path'
 import { resolveDir } from './commands.mjs'
 import { TAG_REASON, ask, deny } from './decision.mjs'
@@ -81,7 +81,9 @@ const HOOKS_PATH_REASON =
  */
 
 /**
- * コマンドが git の呼び出しなら、git の前のオプションとサブコマンドを読む。フルパスと git.exe の形も git として読む。
+ * コマンドが git の呼び出しなら、git の前のオプションとサブコマンドを読む。
+ *
+ * フルパスと git.exe の形も git として読む。
  *
  * @param {{ words: string[], dir: string, env?: Record<string, string> }} command コマンドの語、ディレクトリ、対象のリポジトリを替える環境変数
  * @param {PathOptions} [options] パスの解き方
@@ -119,7 +121,9 @@ export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
 }
 
 /**
- * サブコマンドの後の語を、長いオプション・短いオプション・位置引数に分ける。オプションの値は、どれにも含めない。
+ * サブコマンドの後の語を、長いオプション・短いオプション・位置引数に分ける。
+ *
+ * オプションの値は、どれにも含めない。
  *
  * @param {string[]} args サブコマンドの後の語
  * @param {{ valueShort: string, optionalShort: string, valueLong: string[] }} spec 値を取るオプション
@@ -158,14 +162,23 @@ function scanOptions(args, { valueShort, optionalShort, valueLong }) {
 }
 
 /**
- * 長いオプションの名前が、対象のオプションのどれかか。git は一意な前方の一致の略記も受け付けるので、3 文字以上の略記も当てる。
+ * 長いオプションの略記として当てる、最も短い文字数。
+ *
+ * 2 文字以下の略記は当てない（既知の限り。--fo のような短い略記を git が受け付けるかは見分けない）。
+ */
+const MIN_ABBREVIATION = 3
+
+/**
+ * 長いオプションの名前が、対象のオプションのどれかか。
+ *
+ * git は一意な前方の一致の略記も受け付けるので、MIN_ABBREVIATION 文字以上の略記も当てる。
  *
  * @param {string} name オプションの名前
  * @param {string[]} targets 対象のオプションの名前
  * @returns {boolean} 当たれば true
  */
 function matchesLong(name, targets) {
-  return targets.some((target) => name === target || (name.length >= 3 && target.startsWith(name)))
+  return targets.some((target) => name === target || (name.length >= MIN_ABBREVIATION && target.startsWith(name)))
 }
 
 /**
@@ -179,7 +192,9 @@ function judgeHooksPath(git) {
 }
 
 /**
- * git push の位置引数のうち、refspec を返す。最初の位置引数はリモート（--repo で指定したときは全てが refspec）。
+ * git push の位置引数のうち、refspec を返す。
+ *
+ * 最初の位置引数はリモート（--repo で指定したときは全てが refspec）。
  *
  * @param {string[]} longs 長いオプションの名前
  * @param {string[]} positionals 位置引数
@@ -252,7 +267,9 @@ function forceTargetsAllowed(git, refspecs, deps) {
 }
 
 /**
- * git push の force を、push の先が全て agent/ で始まるとき以外は拒否する。dry-run（-n）は通す。
+ * git push の force を、push の先が全て agent/ で始まるとき以外は拒否する。
+ *
+ * dry-run（-n、--dry-run）も、ほかの push と同じに判定する。
  *
  * @param {GitInvocation} git git の呼び出し
  * @param {Deps} deps 外部の処理
@@ -326,7 +343,9 @@ function judgeTagCreate(git) {
 }
 
 /**
- * refspec の片側が tag を指すか。refs/tags/ を含めば tag、refs/ で始まらない名前は、対象のリポジトリにその名前の tag があれば tag とする。
+ * refspec の片側が tag を指すか。
+ *
+ * refs/tags/ を含めば tag、refs/ で始まらない名前は、対象のリポジトリにその名前の tag があれば tag とする。
  *
  * @param {string} name refspec の片側
  * @param {GitInvocation} git git の呼び出し

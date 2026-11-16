@@ -1,5 +1,5 @@
 // スロット（作業ツリーごとの手元の環境）の値、空きの選び方、環境変数の組み立て。
-// docker と git を呼ばない純粋な関数だけを置く（割り当ての手順は、ロック・git・ファイル・docker の操作を引数で受ける）。
+// docker と git を呼ばない純粋な関数だけを置く（割り当ての手順は、仮押さえ・git・ファイル・docker の操作を引数で受ける）。
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -18,7 +18,10 @@ function portOf(key) {
   return entry.port
 }
 
-/** スロットの数。0 がメインの作業ツリー、1〜3 が作業ツリー */
+/** スロットの環境で起動する対象 */
+export const TARGETS = /** @type {const} */ (['backend', 'store', 'admin'])
+
+/** スロットの数（ports.json の slotCount）。0 がメインの作業ツリー、1 から後が追加の作業ツリー */
 export const SLOT_COUNT = PORT_LIST.slotCount
 
 /** 共有の SeaweedFS（S3 互換）の URL。配信の基準 URL の前半 */
@@ -28,7 +31,7 @@ const STORAGE_ORIGIN = `http://localhost:${portOf('seaweedfs')}`
 const JDBC_PREFIX = `jdbc:postgresql://localhost:${portOf('postgres')}/`
 
 /**
- * スロットの番号が 0〜3 の整数であることを確認する。
+ * スロットの番号が、0 以上 SLOT_COUNT 未満の整数であることを確認する。
  *
  * @param {number} slot スロットの番号
  */
@@ -41,9 +44,9 @@ function assertSlot(slot) {
 /**
  * スロットのポートと名前を返す。
  *
- * ポートは「スロット 0 の値 + 10000 × 番号」、データベースとバケットは名前の末尾に番号を付ける（0 は付けない）。
+ * ポートは「スロット 0 の値 + ports.json の slotOffset × 番号」、データベースとバケットは名前の末尾に番号を付ける（0 は付けない）。
  *
- * @param {number} slot スロットの番号（0〜3）
+ * @param {number} slot スロットの番号（0 以上 SLOT_COUNT 未満）
  * @returns {{ slot: number, backendPort: number, managementPort: number, storePort: number, adminPort: number,
  *   database: string, publicBucket: string, incomingBucket: string, cookiePrefix: string }}
  *   運用ポートは managementPort。Cookie の接頭辞はスロット 0 では空
@@ -102,7 +105,7 @@ export function parseWorktrees(text) {
  * 作業ツリーの記録（`.local/slot`）の内容からスロットの番号を読む。
  *
  * @param {string | null | undefined} content ファイルの内容。ファイルがなければ null か undefined
- * @returns {number | null} 1〜3 の番号。記録がない、壊れている、0 のときは null
+ * @returns {number | null} 1 以上 SLOT_COUNT 未満の番号。記録がない、壊れている、0 のときは null
  */
 export function parseSlotRecord(content) {
   const text = (content ?? '').trim()
@@ -120,7 +123,7 @@ export function parseSlotRecord(content) {
  * @param {Record<string, string | null | undefined>} records 作業ツリーのパス → `.local/slot` の内容
  * @returns {{ slot: number, path: string }[]} 使っている作業ツリー（番号の順）
  */
-export function usedSlots(porcelain, records) {
+function usedSlots(porcelain, records) {
   const users = []
   for (const worktree of parseWorktrees(porcelain)) {
     if (worktree.main || worktree.prunable) continue
@@ -131,7 +134,9 @@ export function usedSlots(porcelain, records) {
 }
 
 /**
- * 使われていない最小のスロットを選ぶ。使用中は usedSlots で決める。
+ * 使われていない最小のスロットを選ぶ。
+ *
+ * 使用中は usedSlots で決める。
  *
  * @param {string} porcelain `git worktree list --porcelain` の出力
  * @param {Record<string, string | null | undefined>} records 作業ツリーのパス → `.local/slot` の内容
@@ -148,7 +153,27 @@ export function pickSlot(porcelain, records, skipped = new Set()) {
 }
 
 /**
- * 起動の前に API の型（`pnpm generate:api`）を生成するディレクトリ。各アプリの `dev` の script と同じく、生成してから起動する。
+ * 既にある仮押さえのファイルを、どう扱うかを決める。
+ *
+ * 自分の作業ツリーが残した仮押さえは、そのまま使う。
+ * 他の作業ツリーの仮押さえは、その作業ツリーが一覧にあり、まだ記録を書いていなければ、割り当ての途中とみなして使わない。
+ * 一覧にないか、記録を書き終えていれば、中断した割り当ての残りとして消し、新しく作る。
+ *
+ * @param {{ holder: string, own: string, listed: string[], holderRecord: string | null | undefined }} input
+ *   holder は仮押さえのファイルの中身（作業ツリーのパス）、own は自分の作業ツリー、listed は `git worktree list` の作業ツリーのパス、
+ *   holderRecord は持ち主の作業ツリーの `.local/slot` の内容（なければ null）
+ * @returns {'own' | 'busy' | 'stale'} 自分のもの、他の割り当ての途中、残り
+ */
+export function claimState({ holder, own, listed, holderRecord }) {
+  if (holder === own) return 'own'
+  if (listed.includes(holder) && holderRecord == null) return 'busy'
+  return 'stale'
+}
+
+/**
+ * 起動の前に API の型（`pnpm generate:api`）を生成するディレクトリ。
+ *
+ * 各アプリの `dev` の script と同じく、生成してから起動する。
  *
  * @param {'backend' | 'store' | 'admin'} target 起動する対象
  * @returns {string | null} リポジトリのルートからの相対のパス。生成が要らない対象は null
@@ -158,7 +183,9 @@ export function generateApiDir(target) {
 }
 
 /**
- * 対象に付ける環境変数を組み立てる。スロット 0 は何も上書きしない。
+ * 対象に付ける環境変数を組み立てる。
+ *
+ * スロット 0 は何も上書きしない。
  *
  * @param {number} slot スロットの番号
  * @param {'backend' | 'store' | 'admin'} target 起動する対象
@@ -166,7 +193,7 @@ export function generateApiDir(target) {
  */
 export function slotEnv(slot, target) {
   const values = slotValues(slot)
-  if (!['backend', 'store', 'admin'].includes(target)) throw new Error(`知らない対象: ${target}`)
+  if (!TARGETS.includes(target)) throw new Error(`知らない対象: ${target}`)
   if (slot === 0) return {}
   const backendOrigin = `http://localhost:${values.backendPort}`
   if (target === 'backend') {
@@ -196,7 +223,9 @@ export function slotEnv(slot, target) {
 export const SHARED_CONTAINERS = ['ec-site-postgres', 'ec-site-seaweedfs']
 
 /**
- * メインの作業ツリーかを判定する。git-dir と git-common-dir が同じならメイン（追加の作業ツリーの git-dir は worktrees/ の下）。
+ * メインの作業ツリーかを判定する。
+ *
+ * git-dir と git-common-dir が同じならメイン（追加の作業ツリーの git-dir は worktrees/ の下）。
  *
  * @param {string} gitDir `git rev-parse --path-format=absolute --git-dir` の出力
  * @param {string} commonDir `git rev-parse --path-format=absolute --git-common-dir` の出力
@@ -207,7 +236,9 @@ export function isMainWorktree(gitDir, commonDir) {
 }
 
 /**
- * 作業ツリーのスロットを返す。メインの作業ツリーは記録によらず 0。
+ * 作業ツリーのスロットを返す。
+ *
+ * メインの作業ツリーは記録によらず 0。
  *
  * @param {{ main: boolean, record: string | null | undefined }} input record は `.local/slot` の内容
  * @returns {number | null} 番号。割り当てがなければ null
@@ -219,7 +250,7 @@ export function currentSlotOf({ main, record }) {
 /**
  * 作業ツリーの記録（`.local/slot`）に書く内容。
  *
- * @param {number} slot スロットの番号（1〜3）
+ * @param {number} slot スロットの番号（1 以上 SLOT_COUNT 未満）
  * @returns {string} 番号と改行
  */
 export function formatSlotRecord(slot) {
@@ -262,7 +293,9 @@ export function isBackendDown(error) {
 }
 
 /**
- * バックエンドが動いているときの案内を決める。動いている間にデータベースを削除すると、起動中の処理が失敗する。
+ * バックエンドが動いているときの案内を決める。
+ *
+ * 動いている間にデータベースを削除すると、起動中の処理が失敗する。
  *
  * @param {{ slot: number, running: boolean, action: string }} input action は止めた後にする操作（「流し直す」「解く」）
  * @returns {{ code: 1, message: string } | null} 動いていなければ null
@@ -328,7 +361,7 @@ function claimSlot(deps) {
       continue
     }
     try {
-      // 仮押さえを待つ間に、同じ作業ツリーの別のセッションが割り当てていないかを再確認する
+      // 仮押さえの前後に、同じ作業ツリーの別のセッションが割り当てていないかを再確認する
       const own = parseSlotRecord(deps.readOwnRecord())
       if (own !== null) return { kind: 'already', slot: own }
       const again = readRecords(deps)
@@ -366,8 +399,8 @@ export async function assignSlot(deps) {
   if (picked.kind !== 'picked') return picked
   try {
     deps.recreate(picked.slot)
-  } catch (error) {
-    return { kind: 'recreateFailed', slot: picked.slot, error }
+  } catch (e) {
+    return { kind: 'recreateFailed', slot: picked.slot, error: e }
   }
   return { kind: 'assigned', slot: picked.slot }
 }

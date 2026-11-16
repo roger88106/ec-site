@@ -33,6 +33,14 @@ function run(from, to, command) {
 }
 
 describe('壊しての確認', () => {
+  test('引数が足りないと、使い方を示して終了コード 2 で止まり、ファイルは変わらない', () => {
+    writeFileSync(target, original)
+    const result = spawnSync('node', [script, target, 'ok = true', 'ok = false', dir], { encoding: 'utf8' })
+    assert.equal(result.status, 2, result.stdout + result.stderr)
+    assert.match(result.stderr, /使い方/)
+    assert.equal(readFileSync(target, 'utf8'), original)
+  })
+
   test('置き換える文字列が当たらないと、終了コード 2 で止まり、ファイルは変わらない', () => {
     const result = run('ok = false', 'ok = true', './check.sh')
     assert.equal(result.status, 2, result.stderr)

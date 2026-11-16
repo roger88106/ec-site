@@ -8,7 +8,8 @@
 #     マージできる状態（CLEAN で失敗がない）なら、次の 1 行を標準出力に出す。
 #       gh pr merge <番号> --merge --match-head-commit <SHA>
 #     DIRTY、update-branch の後に head が変わらない、待っても CI が終わらない（上限に達する）、失敗がある、
-#     のときは理由を標準エラー出力に出して終了コード 1 で止まる（マージのコマンドは出さない）
+#     のときは理由を標準エラー出力に出して終了コード 1 で止まる（マージのコマンドは出さない）。
+#     gh がない、引数がない、リポジトリを求められない（使い方か環境の誤り）ときは、終了コード 2
 #
 #   この script はマージを実行しない。理由：Claude Code の hook
 #   （scripts/dev/hooks/agent-guard.mjs）は Bash のコマンドの文字列だけを読むので、
@@ -19,14 +20,14 @@ set -u
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "gh が PATH にない。GitHub CLI を入れて PATH に通してから実行する" >&2
-  exit 1
+  exit 2
 fi
 if [ "$#" -eq 0 ]; then
   echo "使い方：bash scripts/dev/merge-deps.sh <番号>..." >&2
-  exit 1
+  exit 2
 fi
 
-repo=$(gh repo view --json nameWithOwner -q .nameWithOwner) || { echo "リポジトリを求められない" >&2; exit 1; }
+repo=$(gh repo view --json nameWithOwner -q .nameWithOwner) || { echo "リポジトリを求められない" >&2; exit 2; }
 
 merge_state() { gh pr view "$1" -R "$repo" --json mergeStateStatus -q .mergeStateStatus; }
 head_sha() { gh pr view "$1" -R "$repo" --json headRefOid -q .headRefOid; }
@@ -70,7 +71,7 @@ for n in "$@"; do
   if [ "$state" = "CLEAN" ] && [ "$fails" = "0" ]; then
     echo "gh pr merge $n --merge --match-head-commit $(head_sha "$n")"
   else
-    echo "#$n: マージできない（state=$state、失敗=$fails、または CI が終わらない）" >&2
+    echo "#$n: マージできない（state=$state、失敗=$fails）" >&2
     exit 1
   fi
 done

@@ -2,13 +2,12 @@
 // 走査（コメント・文字列・正規表現の読み分け）は scan-code が行う。Java は、文字列とテキストブロックの中の // をコメントにしない。
 //
 // 限界：TSX の JSX のテキスト（<p>It's // here</p>）の中の '・"・// を、文字列やコメントと誤って判定する。
-import { scanCode } from './scan-code.mjs'
-
-/** Java の走査の選択肢。正規表現のリテラルとテンプレートがなく、テキストブロックがある */
-const JAVA_SCAN = { regex: false, templates: false, textBlocks: true }
+import { JAVA_SCAN, scanCode } from './scan-code.mjs'
 
 /**
- * コメントを同じ長さの空白に置き換え、文字列とコードはそのまま残す。改行は残すので、位置と行番号は変わらない。
+ * コメントを同じ長さの空白に置き換え、文字列とコードはそのまま残す。
+ *
+ * 改行は残すので、位置と行番号は変わらない。
  *
  * @param {string} text ソース
  * @param {Parameters<typeof scanCode>[1]} options 走査の選択肢
@@ -27,9 +26,9 @@ function blankComments(text, options, keepRegex = true, blankStrings = false) {
 }
 
 /**
- * Java のコメント（行コメント、ブロックコメント、Javadoc）を、同じ長さの空白に置き換える。改行は残すので、位置と行番号は変わらない。
+ * Java のコメント（行コメント、ブロックコメント、Javadoc）を、同じ長さの空白に置き換える。
  *
- * 文字列、テキストブロック、文字リテラルの中の // などはコメントにしない。
+ * 改行は残すので、位置と行番号は変わらない。文字列、テキストブロック、文字リテラルの中の // などはコメントにしない。
  *
  * @param {string} text ソース
  * @returns {string} コメントを空白にしたソース
@@ -39,9 +38,9 @@ export function stripJavaComments(text) {
 }
 
 /**
- * Java のコメントだけを残し、コメントの外（コード、文字列、テキストブロック）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。
+ * Java のコメントだけを残し、コメントの外（コード、文字列、テキストブロック）を空白に置き換える。
  *
- * コメントの判定は stripJavaComments と同じ（元のソースと stripJavaComments の結果を文字ごとに比べ、空白にされた文字だけを残す）。
+ * 改行は残すので、位置と行番号は元のソースと同じ。コメントの判定は stripJavaComments と同じ（元のソースと stripJavaComments の結果を文字ごとに比べ、空白にされた文字だけを残す）。
  *
  * @param {string} text ソース
  * @returns {string} コメントだけを残したソース
@@ -51,9 +50,10 @@ export function keepJavaComments(text) {
 }
 
 /**
- * TypeScript のコメントだけを残し、コメントの外（コード、文字列、テンプレートの文字の部分と ${...} の中のコード、正規表現のリテラル）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。
+ * TypeScript のコメントだけを残し、コメントの外を空白に置き換える。
  *
- * コメントの判定は stripComments と同じ。テスト名や test.step の名前などの文字列の中の番号を、コメントの番号と取り違えないために使う。
+ * コメントの外は、コード、文字列、テンプレートの文字の部分と ${...} の中のコード、正規表現のリテラルである。
+ * 改行は残すので、位置と行番号は元のソースと同じ。コメントの判定は stripComments と同じ。文字列の中の // や /*（URL、テスト名など）は残さない。
  * 限界：.tsx の JSX の文字（`<p>It's // here</p>`）は読み分けられない。文字の中の `'`・`"` を文字列の始まりと、`//` をコメントと読み違える。
  *
  * @param {string} text ソース
@@ -80,9 +80,9 @@ function keepBlanked(text, stripped) {
 }
 
 /**
- * コメントを空白に置き換える（行の数は変えない）。文字列の中の // は、URL などなので消さない。
+ * コメントを空白に置き換える（行の数は変えない）。
  *
- * テンプレートの `${...}` の中はコードとして読む（入れ子のテンプレートも数える）。
+ * 文字列の中の // は、URL などなので消さない。テンプレートの `${...}` の中はコードとして読む（入れ子のテンプレートも数える）。
  *
  * @param {string} text ソース
  * @param {{ keepRegex?: boolean, blankStrings?: boolean }} [options] keepRegex が true なら、正規表現のリテラルを残す（中の文字を読む検査用。既定は空白にする）。

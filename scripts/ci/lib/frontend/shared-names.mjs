@@ -6,16 +6,15 @@ import { ANY_TEST_FILE } from './files.mjs'
  *
  * @param {string[]} files リポジトリのルートからのパス
  * @param {(file: string) => string} read ファイルの中身を読む関数
- * @param {string[]} excluded 見ない src からの相対パス
  * @returns {string[]} 同じ内容のファイルの src からの相対パス（名前の順）
  */
-export function duplicatedFiles(files, read, excluded) {
+export function duplicatedFiles(files, read) {
   const prefix = (app) => `frontend/${app}/src/`
   const storeFiles = new Set(files.filter((file) => file.startsWith(prefix('store'))).map((file) => file.slice(prefix('store').length)))
   return files
     .filter((file) => file.startsWith(prefix('admin')))
     .map((file) => file.slice(prefix('admin').length))
-    .filter((relative) => storeFiles.has(relative) && !excluded.includes(relative))
+    .filter((relative) => storeFiles.has(relative))
     .filter((relative) => read(prefix('admin') + relative) === read(prefix('store') + relative))
     .sort()
 }

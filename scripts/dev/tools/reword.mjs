@@ -23,15 +23,23 @@ import { fileURLToPath } from 'node:url'
 
 const self = fileURLToPath(import.meta.url)
 
-/** 条件に合わないときの例外。メッセージをそのまま利用者に見せる */
+/**
+ * 条件に合わないときの例外。
+ *
+ * メッセージをそのまま利用者に見せる
+ */
 class Refusal extends Error {}
 
 /**
- * rebase の todo を書き換える。対象の commit の pick の行の後に、メッセージを差し替える exec の行を入れる。
+ * rebase の todo を書き換える。
  *
- * entries は { commit: 完全な SHA, message: メッセージのファイルの絶対パス }。
+ * 対象の commit の pick の行の後に、メッセージを差し替える exec の行を入れる。
  * todo の SHA は、rebase を core.abbrev=no で実行して完全な形にしてあるので、完全な SHA の一致で照合する
  * （短縮形の前方一致だと、前方が同じ 2 つの対象で、最初の対象のメッセージが両方に当たる）
+ *
+ * @param {string} todo rebase の todo の中身
+ * @param {{ commit: string, message: string }[]} entries 完全な SHA と、メッセージのファイルの絶対パス
+ * @returns {string} 書き換えた todo
  */
 export function editTodo(todo, entries) {
   const lines = todo.split('\n')
@@ -46,24 +54,49 @@ export function editTodo(todo, entries) {
   return out.join('\n')
 }
 
+/**
+ * git を実行し、終了コードと出力を返す。
+ *
+ * @param {string} cwd 実行するディレクトリ
+ * @param {string[]} args git の引数
+ * @param {import('node:child_process').SpawnSyncOptions} [options] spawnSync に加える指定
+ * @returns {{ status: number | null, stdout: string, stderr: string }} 終了コードと、前後の空白を除いた出力
+ */
 function git(cwd, args, options = {}) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8', ...options })
   return { status: result.status, stdout: (result.stdout ?? '').trim(), stderr: (result.stderr ?? '').trim() }
 }
 
+/**
+ * git を実行し、標準出力を返す。
+ *
+ * 失敗したら、git の標準エラー出力を付けた Refusal を投げる。
+ *
+ * @param {string} cwd 実行するディレクトリ
+ * @param {string[]} args git の引数
+ * @returns {string} 前後の空白を除いた標準出力
+ */
 function gitOrThrow(cwd, args) {
   const result = git(cwd, args)
   if (result.status !== 0) throw new Refusal(`git ${args.join(' ')} が失敗した：${result.stderr}`)
   return result.stdout
 }
 
-/** 対応表を読み、commit を完全な SHA に解決し、メッセージのファイルを読む。誤りがあれば Refusal */
+/**
+ * 対応表を読み、commit を完全な SHA に解決し、メッセージのファイルを読む。
+ *
+ * 誤りがあれば Refusal を投げる。
+ *
+ * @param {string} mapPath 対応表の JSON のパス
+ * @param {string} cwd リポジトリのディレクトリ
+ * @returns {{ commit: string, message: string }[]} 完全な SHA と、メッセージのファイルの絶対パス
+ */
 function loadPlan(mapPath, cwd) {
   let map
   try {
     map = JSON.parse(readFileSync(mapPath, 'utf8'))
-  } catch (error) {
-    throw new Refusal(`対応表が読めない：${mapPath}（${error.message}）`)
+  } catch (e) {
+    throw new Refusal(`対応表が読めない：${mapPath}（${e.message}）`)
   }
   if (!Array.isArray(map) || map.length === 0) throw new Refusal('対応表は、1 件以上の配列にする')
   const baseDir = path.dirname(path.resolve(mapPath))
@@ -81,15 +114,21 @@ function loadPlan(mapPath, cwd) {
     let text
     try {
       text = readFileSync(message, 'utf8')
-    } catch (error) {
-      throw new Refusal(`メッセージのファイルが読めない：${message}（${error.message}）`)
+    } catch (e) {
+      throw new Refusal(`メッセージのファイルが読めない：${message}（${e.message}）`)
     }
     if (text.trim() === '') throw new Refusal(`メッセージのファイルが空：${message}`)
     return { commit, message }
   })
 }
 
-/** 範囲の commit と tree を、古い順に返す。base が null なら全ての commit */
+/**
+ * 範囲の commit と tree を、古い順に返す。
+ *
+ * @param {string} cwd リポジトリのディレクトリ
+ * @param {string | null} base 範囲の起点（含まない）。null なら全ての commit
+ * @returns {string[][]} commit と tree の SHA の組
+ */
 function listCommits(cwd, base) {
   const range = base ? [`${base}..HEAD`] : ['HEAD']
   const out = gitOrThrow(cwd, ['log', '--reverse', '--format=%H %T', ...range])
@@ -106,7 +145,14 @@ const OPERATION_MARKERS = [
   ['bisect', 'BISECT_LOG'],
 ]
 
-/** rebase・merge・cherry-pick などが進行中ならその名前、なければ null。利用者が先に始めた操作を、自分の失敗の巻き戻しで中止しないため */
+/**
+ * rebase・merge・cherry-pick などが進行中なら、その名前を返す。
+ *
+ * 利用者が先に始めた操作を、自分の失敗の巻き戻しで中止しないために見る。
+ *
+ * @param {string} cwd リポジトリのディレクトリ
+ * @returns {string | null} 進行中の操作の名前。なければ null
+ */
 function operationInProgress(cwd) {
   for (const [name, marker] of OPERATION_MARKERS) {
     const found = git(cwd, ['rev-parse', '--git-path', marker])
@@ -115,8 +161,16 @@ function operationInProgress(cwd) {
   return null
 }
 
-/** 書き換えを実行する。成功なら { lines }、条件に合わなければ Refusal を投げる */
-export function reword(mapPath, cwd = process.cwd()) {
+/**
+ * 書き換えを実行する。
+ *
+ * 条件に合わなければ Refusal を投げる。
+ *
+ * @param {string} mapPath 対応表の JSON のパス
+ * @param {string} [cwd] リポジトリのディレクトリ
+ * @returns {{ lines: string[] }} 出力する行
+ */
+function reword(mapPath, cwd = process.cwd()) {
   const inProgress = operationInProgress(cwd)
   if (inProgress !== null) {
     throw new Refusal(`${inProgress}が進行中なので書き換えない（状態は変えていない）。終えるか中止してから、もう一度流す`)
@@ -184,27 +238,54 @@ export function reword(mapPath, cwd = process.cwd()) {
   }
 }
 
-/** rebase を中止し、HEAD を元の commit に戻す。戻せなければ Refusal で SHA を知らせる */
+/**
+ * rebase を中止し、HEAD を元の commit に戻す。
+ *
+ * 戻せなければ、元の SHA を書いた Refusal を投げる。
+ *
+ * @param {string} cwd リポジトリのディレクトリ
+ * @param {string} head 元の HEAD の SHA
+ */
 function restore(cwd, head) {
   git(cwd, ['rebase', '--abort'])
-  if (gitOrThrowSafe(cwd, ['rev-parse', 'HEAD']) !== head) {
+  if (gitOutput(cwd, ['rev-parse', 'HEAD']) !== head) {
     git(cwd, ['reset', '--hard', head])
   }
-  if (gitOrThrowSafe(cwd, ['rev-parse', 'HEAD']) !== head) {
+  if (gitOutput(cwd, ['rev-parse', 'HEAD']) !== head) {
     throw new Refusal(`元に戻せなかった。git reset --hard ${head} で手で戻す`)
   }
 }
 
-function gitOrThrowSafe(cwd, args) {
+/**
+ * git を実行し、成否によらず標準出力を返す。
+ *
+ * @param {string} cwd 実行するディレクトリ
+ * @param {string[]} args git の引数
+ * @returns {string} 前後の空白を除いた標準出力
+ */
+function gitOutput(cwd, args) {
   return git(cwd, args).stdout
 }
 
-/** todo の編集の役。git が sequence.editor として、todo のファイルの絶対パスを最後に付けて呼ぶ */
+/**
+ * todo の編集の役。
+ *
+ * git が sequence.editor として、todo のファイルの絶対パスを最後に付けて呼ぶ。
+ *
+ * @param {string} planFile 解決した対応表の JSON のパス
+ * @param {string} todoFile rebase の todo のファイル
+ */
 function runEditTodo(planFile, todoFile) {
   const plan = JSON.parse(readFileSync(planFile, 'utf8'))
   writeFileSync(todoFile, editTodo(readFileSync(todoFile, 'utf8'), plan))
 }
 
+/**
+ * 引数を読み、書き換えか todo の編集を実行する。
+ *
+ * @param {string[]} argv コマンドの引数
+ * @returns {number} 終了コード
+ */
 function main(argv) {
   const [first, planFile, todoFile] = argv
   if (first === '--edit-todo') {
@@ -220,9 +301,9 @@ function main(argv) {
     const { lines } = reword(argv[0])
     process.stdout.write(`${lines.join('\n')}\n`)
     return 0
-  } catch (error) {
-    if (!(error instanceof Refusal)) throw error
-    process.stderr.write(`${error.message}\n`)
+  } catch (e) {
+    if (!(e instanceof Refusal)) throw e
+    process.stderr.write(`${e.message}\n`)
     return 1
   }
 }

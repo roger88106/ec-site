@@ -35,6 +35,19 @@ describe('コマンドの文字列を、1 つずつのコマンドの語に分�
     assert.deepEqual(splitCommands(command), [['git', 'commit', '-F', '-'], ['echo', 'done']])
   })
 
+  test('<<- のヒアドキュメントは、行の先頭のタブを除いた終わりの語で閉じる', () => {
+    assert.deepEqual(splitCommands("cat <<-EOF\n\tgit push -f\n\tEOF\necho done"), [['cat'], ['echo', 'done']])
+  })
+
+  test('<<< はヒアドキュメントとして読まず、次の行をコマンドとして読む', () => {
+    assert.deepEqual(splitCommands('cat <<< x\ngit push -f'), [['cat'], ['git', 'push', '-f']])
+  })
+
+  test('$((…)) は、コマンドの置き換えとして読まない', () => {
+    assert.deepEqual(splitCommands('echo "$((1+2))"'), [['echo', '$((1+2))']])
+    assert.ok(!splitCommands('echo $((1+2))').flat().includes('$(…)'))
+  })
+
   test('括弧の中のコマンドも区切って読む', () => {
     assert.deepEqual(splitCommands('(cd a && git push -f)'), [['cd', 'a'], ['git', 'push', '-f']])
   })
@@ -92,6 +105,16 @@ describe('cd と git -C から、対象のディレクトリを決める', () =>
     // 先のない pushd は、今のディレクトリと積んだ最後のディレクトリを入れ替える
     const swapped = parseCommands('pushd a; pushd; git status; pushd; git log', CWD).map((c) => c.dir)
     assert.deepEqual(swapped, [CWD, path.join(CWD, 'a'), CWD, CWD, path.join(CWD, 'a')])
+  })
+
+  test('cd - と、引数のある popd は、移る先を追わずに今のディレクトリのままにする', () => {
+    assert.deepEqual(parseCommands('cd sub; cd -; git status', CWD).map((c) => c.dir), [CWD, path.join(CWD, 'sub'), path.join(CWD, 'sub')])
+    assert.deepEqual(parseCommands('pushd a; popd +1; git status', CWD).map((c) => c.dir), [CWD, path.join(CWD, 'a'), path.join(CWD, 'a')])
+  })
+
+  test('env -S の値は、語に分けてコマンドとして読む', () => {
+    assert.deepEqual(parseCommands('env -S "git push -f" x', CWD).map((c) => c.words), [['git', 'push', '-f', 'x']])
+    assertDenied('env -S "git push -f"', /force push/)
   })
 
   test('env -C は、そのコマンドのディレクトリだけを替える', () => {

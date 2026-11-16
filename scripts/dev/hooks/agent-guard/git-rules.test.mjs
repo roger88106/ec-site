@@ -1,10 +1,10 @@
-// git の規則（force push、検査の省略、pre-commit hook、tag）のテスト
+// git の規則（git-rules.mjs）のテスト
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { describe, test } from 'node:test'
+import { after, before, describe, test } from 'node:test'
 import { withoutGitEnv } from '../../../ci/lib/git/git-env.mjs'
 import { createDeps, judgeCommand } from '../agent-guard.mjs'
 import { CWD, INSTALLED_HOOK, assertAsked, assertDenied, assertPassed, fakeDeps } from './test-support.mjs'
@@ -27,6 +27,13 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     ]) {
       assertDenied(command, /force push.*新しい commit/s)
     }
+  })
+
+  test('長いオプションの略記は 3 文字から当て、2 文字以下は当てない', () => {
+    assertDenied('git push --for origin x', /force push/)
+    assertPassed('git push --fo origin x')
+    assertDenied('git commit --no- -m x', /--no-verify/)
+    assertPassed('git commit --no -m x')
   })
 
   test('cd を前に付けた形、つないだ形、git -C、フルパスの git でも拒否する', () => {
@@ -77,27 +84,6 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
       assertDenied(command, /force push/)
     }
   })
-  test('リモートのブランチの削除は通す（develop と main の削除は ruleset が禁止する）', () => {
-    for (const command of [
-      'git push origin --delete feature',
-      'git push -d origin hotfix/1-x',
-      'git push origin :release/1.2.0',
-      'git push --delete origin agent/367-x',
-    ]) {
-      assertPassed(command)
-    }
-  })
-
-  test('tag の削除（tag を指す名前と refs/tags/ の refspec）は確認を求める', () => {
-    for (const command of [
-      'git push origin --delete v1.0.0',
-      'git push -d origin refs/tags/v2',
-      'git push origin :v1.0.0',
-      'git push origin :refs/tags/v2',
-    ]) {
-      assertAsked(command, /tag/, fakeDeps({ tags: ['v1.0.0'] }))
-    }
-  })
 
   test('$(…) とバッククォートの中の push、ヒアドキュメントの commit に続けた push を拒否する', () => {
     for (const command of [
@@ -132,6 +118,19 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
 
   test('引用符の中や、git 以外のコマンドの引数の文字列は通す', () => {
     for (const command of ['echo "git push --force"', "grep -n 'git push -f' a.md", 'echo git push --force']) {
+      assertPassed(command)
+    }
+  })
+})
+
+describe('リモートのブランチの削除', () => {
+  test('リモートのブランチの削除は通す（develop と main の削除は ruleset が禁止する）', () => {
+    for (const command of [
+      'git push origin --delete feature',
+      'git push -d origin hotfix/1-x',
+      'git push origin :release/1.2.0',
+      'git push --delete origin agent/367-x',
+    ]) {
       assertPassed(command)
     }
   })
@@ -301,6 +300,17 @@ describe('tag の作成と push で確認を求める', () => {
     }
   })
 
+  test('リモートの tag の削除（tag を指す名前と refs/tags/ の refspec）は確認を求める', () => {
+    for (const command of [
+      'git push origin --delete v1.0.0',
+      'git push -d origin refs/tags/v2',
+      'git push origin :v1.0.0',
+      'git push origin :refs/tags/v2',
+    ]) {
+      assertAsked(command, /tag/, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+  })
+
   test('tag の一覧と削除、tag でない名前の push、読むだけの gh release は通す', () => {
     for (const command of [
       'git tag',
@@ -345,6 +355,10 @@ describe('tag の作成と push で確認を求める', () => {
     }
   })
 
+  test('push の名前が tag かを git で調べられない（show-ref がタイムアウトする）ときは、確認を求める', () => {
+    assertAsked('git push origin v1.0.0', /v1\.0\.0）が tag かを、git で調べられなかった/, fakeDeps({ tags: null }))
+  })
+
   test('push の名前が tag かは、対象のディレクトリで git show-ref で調べる', () => {
     const deps = fakeDeps({ tags: ['v1.0.0'] })
     assertAsked('git -C sub push origin v1.0.0', /tag/, deps)
@@ -355,47 +369,61 @@ describe('tag の作成と push で確認を求める', () => {
 })
 
 describe('実際のリポジトリと作業ツリーで、pre-commit hook を調べる', () => {
-  test('作業ツリーの中の commit は、共通の .git の hooks を調べる', () => {
-    const root = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'agent-guard-test-')))
-    try {
-      const env = withoutGitEnv()
-      const main = path.join(root, 'main')
-      const worktree = path.join(root, 'wt')
-      mkdirSync(main)
-      const git = (cwd, ...args) => {
-        const result = spawnSync('git', args, { cwd, env, encoding: 'utf8' })
-        assert.equal(result.status, 0, result.stderr)
-        return result.stdout
-      }
-      git(main, 'init', '-q')
-      git(main, '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', 'init')
-      git(main, 'worktree', 'add', '-q', worktree, '-b', 'work')
-      const deps = createDeps(env)
-      const hook = path.join(main, '.git', 'hooks', 'pre-commit')
+  const env = withoutGitEnv()
+  const deps = createDeps(env)
+  let root
+  let main
+  let worktree
+  let hook
 
-      // 作業ツリーでも --git-path は共通の .git の hooks を返す
-      const resolved = path.resolve(worktree, git(worktree, 'rev-parse', '--git-path', 'hooks/pre-commit').trim())
-      assert.equal(resolved.toLowerCase(), hook.toLowerCase())
+  /** git を実行し、成功を確認して標準出力を返す */
+  const git = (cwd, ...args) => {
+    const result = spawnSync('git', args, { cwd, env, encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    return result.stdout
+  }
 
-      rmSync(hook, { force: true })
-      assert.equal(judgeCommand('git commit -m x', worktree, deps)?.decision, 'deny')
+  before(() => {
+    // メインの作業ツリーと、追加の作業ツリー wt を作る
+    root = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'agent-guard-test-')))
+    main = path.join(root, 'main')
+    worktree = path.join(root, 'wt')
+    mkdirSync(main)
+    git(main, 'init', '-q')
+    git(main, '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', 'init')
+    git(main, 'worktree', 'add', '-q', worktree, '-b', 'work')
+    hook = path.join(main, '.git', 'hooks', 'pre-commit')
+  })
 
-      writeFileSync(hook, INSTALLED_HOOK)
-      assert.equal(judgeCommand('git commit -m x', worktree, deps), null)
-      assert.equal(judgeCommand('cd wt && git commit -m x', root, deps), null)
-      assert.equal(judgeCommand('git -C wt commit -m x', root, deps), null)
-      assert.equal(judgeCommand('git commit -m x', main, deps), null)
+  after(() => rmSync(root, { recursive: true, force: true }))
 
-      // GIT_DIR で、hook のない別のリポジトリに commit する形は拒否する
-      const other = path.join(root, 'other')
-      mkdirSync(other)
-      git(other, 'init', '-q')
-      assert.equal(judgeCommand(`GIT_DIR=${other.replaceAll('\\', '/')}/.git git commit -m x`, main, deps)?.decision, 'deny')
+  test('作業ツリーでも、git rev-parse --git-path は共通の .git の hooks を返す', () => {
+    const resolved = path.resolve(worktree, git(worktree, 'rev-parse', '--git-path', 'hooks/pre-commit').trim())
+    assert.equal(resolved.toLowerCase(), hook.toLowerCase())
+  })
 
-      // リポジトリでないディレクトリでは、対象を決められないので拒否する
-      assert.equal(judgeCommand('git commit -m x', root, deps)?.decision, 'deny')
-    } finally {
-      rmSync(root, { recursive: true, force: true })
-    }
+  test('共通の .git に hook がなければ、作業ツリーの中の commit を拒否する', () => {
+    rmSync(hook, { force: true })
+    assert.equal(judgeCommand('git commit -m x', worktree, deps)?.decision, 'deny')
+  })
+
+  test('共通の .git に hook があれば、作業ツリーの中、cd・git -C で入った作業ツリー、メインの作業ツリーの commit を通す', () => {
+    writeFileSync(hook, INSTALLED_HOOK)
+    assert.equal(judgeCommand('git commit -m x', worktree, deps), null)
+    assert.equal(judgeCommand('cd wt && git commit -m x', root, deps), null)
+    assert.equal(judgeCommand('git -C wt commit -m x', root, deps), null)
+    assert.equal(judgeCommand('git commit -m x', main, deps), null)
+  })
+
+  test('GIT_DIR で、hook のない別のリポジトリに commit する形は拒否する', () => {
+    writeFileSync(hook, INSTALLED_HOOK)
+    const other = path.join(root, 'other')
+    mkdirSync(other)
+    git(other, 'init', '-q')
+    assert.equal(judgeCommand(`GIT_DIR=${other.replaceAll('\\', '/')}/.git git commit -m x`, main, deps)?.decision, 'deny')
+  })
+
+  test('リポジトリでないディレクトリでは、対象を決められないので拒否する', () => {
+    assert.equal(judgeCommand('git commit -m x', root, deps)?.decision, 'deny')
   })
 })

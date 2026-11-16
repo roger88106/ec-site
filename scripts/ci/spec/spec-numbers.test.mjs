@@ -396,9 +396,9 @@ describe('script の実行', () => {
     }
   })
 
-  test('対象のファイルが 0 件なら、理由を出して終了コード 1 で終わる', () => {
+  test('対象のファイルが 0 件なら、理由を出して終了コード 2（環境の誤り）で終わる', () => {
     const result = run({ 'README.md': 'AC-12\n' })
-    assert.equal(result.status, 1, result.stdout)
+    assert.equal(result.status, 2, result.stdout)
     assert.match(result.stdout, /1 件も見つからない/)
     assert.doesNotMatch(result.stdout, /spec の番号：/)
   })

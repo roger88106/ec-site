@@ -1,6 +1,7 @@
-// テストが、git の hook や Claude Code の hook のコマンドを実行するときの bash を求める補助。
-// Windows の素の PATH では、名前だけで指定した bash（`bash`）が WSL の bash.exe を指すことがあり、Git Bash で動くことを確認するテストにならない。
-// bash を求める処理はここだけに置き、hook を実行するテストはこれを使う
+// Git の bash（git が hook を実行するときと同じ bash）の絶対パスを求める。
+//
+// Windows の素の PATH では、名前だけで指定した bash（`bash`）が WSL の bash.exe を指すことがあり、Git Bash で動くことを確認できないため。
+// bash を求める処理はここだけに置く。
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'

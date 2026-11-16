@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 /**
- * 検査の除外の一覧のパスを返す。一覧は検査と同じフォルダに置き、scripts/ci/ からの相対パスで渡す。実行する場所に関わらず同じパスになる。
+ * 検査の除外の一覧のパスを返す。
+ *
+ * 一覧は検査と同じフォルダに置き、scripts/ci/ からの相対パスで渡す。実行する場所に関わらず同じパスになる。
  *
  * @param {string} name scripts/ci/ からの相対パス（例：spec/ac-exclusions.json）
  * @returns {string} 絶対パス
@@ -25,8 +27,8 @@ export function readExclusions(file) {
   let parsed
   try {
     parsed = JSON.parse(readFileSync(file, 'utf8'))
-  } catch (error) {
-    throw new Error(`${file}：除外の一覧を読めない（${error.message}）`, { cause: error })
+  } catch (e) {
+    throw new Error(`${file}：除外の一覧を読めない（${e.message}）`, { cause: e })
   }
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error(`${file}：除外の一覧は {キー: 理由} の形で書く`)
@@ -47,44 +49,19 @@ export function findEmptyReasons(exclusions) {
 }
 
 /**
- * 不要になった除外を探す。
- *
- * @param {Record<string, unknown>} exclusions 除外の一覧
- * @param {(key: string) => boolean} isNeeded そのキーの除外が今も必要か（除外がなければ違反になるか、など）を返す関数
- * @returns {string[]} 必要でなくなった除外のキー（書いた順）
- */
-export function findStaleExclusions(exclusions, isNeeded) {
-  return Object.keys(exclusions).filter((key) => !isNeeded(key))
-}
-
-/**
  * 除外の一覧の誤り（理由がない、不要になった）を、表示する文にして返す。
  *
  * @param {string} name 除外の一覧のファイルの名前（文に添える）
  * @param {Record<string, unknown>} exclusions 除外の一覧
- * @param {(key: string) => boolean} isNeeded そのキーの除外が今も必要かを返す関数
- * @returns {string[]} 誤りの文。理由のない除外、不要な除外の順。なければ空
+ * @param {(key: string) => boolean} isNeeded そのキーの除外が今も必要か（除外がなければ違反になるか、など）を返す関数
+ * @returns {string[]} 誤りの文。理由のない除外、不要な除外の順（それぞれ書いた順）。なければ空
  */
 export function checkExclusions(name, exclusions, isNeeded) {
-  const { emptyReasons, stale } = describeExclusionProblems(name, exclusions, isNeeded)
+  const emptyReasons = findEmptyReasons(exclusions).map((key) => describeEmptyReason(name, key))
+  const stale = Object.keys(exclusions)
+    .filter((key) => !isNeeded(key))
+    .map((key) => describeStaleExclusion(name, key))
   return [...emptyReasons, ...stale]
-}
-
-/**
- * 除外の一覧の誤りを、理由がないものと不要になったものに分けて、表示する文にして返す。
- *
- * 不要な除外だけを警告にしたい検査（手元と CI で扱いを変えるもの）が使う。
- *
- * @param {string} name 除外の一覧のファイルの名前（文に添える）
- * @param {Record<string, unknown>} exclusions 除外の一覧
- * @param {(key: string) => boolean} isNeeded そのキーの除外が今も必要かを返す関数
- * @returns {{ emptyReasons: string[], stale: string[] }} 理由のない除外の文と、不要な除外の文（どちらも書いた順）
- */
-export function describeExclusionProblems(name, exclusions, isNeeded) {
-  return {
-    emptyReasons: findEmptyReasons(exclusions).map((key) => describeEmptyReason(name, key)),
-    stale: findStaleExclusions(exclusions, isNeeded).map((key) => describeStaleExclusion(name, key)),
-  }
 }
 
 /**

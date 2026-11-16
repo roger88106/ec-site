@@ -45,13 +45,13 @@ steps=("$@")
 failed=0
 
 # 1 つの手順を流し、結果を 1 行で出す（失敗したら出力の末尾を添える）
-#   $1：表示の名前、$2：ログの名前、残り：流すコマンド
+#   $1：表示の名前、$2：ログの名前、$3：流すディレクトリ、残り：流すコマンド
 run_step() {
-  local name="$1" logname="$2"
-  shift 2
+  local name="$1" logname="$2" dir="$3"
+  shift 3
   local log="$LOG_DIR/$logname.log"
   local start=$SECONDS
-  "$@" >"$log" 2>&1
+  (cd "$dir" && "$@") >"$log" 2>&1
   local status=$?
   local elapsed=$((SECONDS - start))
   if [ $status -eq 0 ]; then
@@ -72,9 +72,9 @@ e2e_running() {
 app_steps=()
 for step in "${steps[@]}"; do
   case "$step" in
-    install) run_step "install" install bash -c "cd '$ROOT' && pnpm install --frozen-lockfile" ;;
-    licenses) run_step "licenses" licenses bash -c "cd '$ROOT' && node scripts/ci/licenses/check-frontend.mjs" ;;
-    knip) run_step "knip" knip bash -c "cd '$ROOT' && pnpm knip" ;;
+    install) run_step "install" install "$ROOT" pnpm install --frozen-lockfile ;;
+    licenses) run_step "licenses" licenses "$ROOT" node scripts/ci/licenses/check-frontend.mjs ;;
+    knip) run_step "knip" knip "$ROOT" pnpm knip ;;
     *) app_steps+=("$step") ;;
   esac
 done
@@ -87,15 +87,23 @@ for app in "${apps[@]}"; do
     if [ "$app" = e2e ] && [ "$step" != lint ] && [ "$step" != typecheck ]; then continue; fi
     if [ "$app" = shared ] && [ "$step" = build ]; then continue; fi
     # E2E の実行中は、画面をビルドし直さない（E2E が配っている dist が入れ替わり、E2E が失敗するため）
-    if [ "$step" = build ] && e2e_running; then
-      failed=1
-      echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
-      continue
+    if [ "$step" = build ]; then
+      e2e_running
+      running=$?
+      if [ $running -eq 0 ]; then
+        failed=1
+        echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
+        continue
+      elif [ $running -ne 1 ]; then
+        failed=1
+        echo "FAIL $app build：E2E が実行中かを調べられない（終了コード $running。理由は上の行）ので、ビルドしない"
+        continue
+      fi
     fi
     # テストは CI と同じく、カバレッジの基準と比べる test:coverage で実行する
     script="$step"
     [ "$step" = test ] && script=test:coverage
-    run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$script'"
+    run_step "$app $step" "$app-$step" "$dir" pnpm "$script"
   done
 done
 

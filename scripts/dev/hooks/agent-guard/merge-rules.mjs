@@ -14,9 +14,11 @@ import { GH_PR_OPTIONS, flagEnabled, optionValue, parseGhArgs } from './gh-rules
 /** @typedef {import('./gh-rules.mjs').GhInvocation} GhInvocation */
 
 /**
- * gh の 1 回の呼び出しのタイムアウト（ミリ秒）。pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
+ * gh の 1 回の呼び出しのタイムアウト（ミリ秒）。
+ *
+ * pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
  */
-const GH_TIMEOUT_MS = 10000
+export const GH_TIMEOUT_MS = 10000
 
 /**
  * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。
@@ -52,23 +54,28 @@ const PASSING_CONCLUSIONS = ['SUCCESS', 'SKIPPED', 'NEUTRAL']
 /** 終わっていないとみなす commit status の状態 */
 const PENDING_STATES = ['PENDING', 'EXPECTED']
 
+/** GraphQL の一覧の 1 ページの件数（GitHub の上限） */
+const PAGE_SIZE = 100
+
 /**
- * マージの条件を読む GraphQL の問い合わせ。1 回のリクエストで、pull request、変更のファイル、閉じる issue のラベル、head の commit の検査を読む。
+ * マージの条件を読む GraphQL の問い合わせ。
  *
- * 一覧はどれも 1 ページ（100 件）だけ読み、続きがあれば条件を確認できないとする。
+ * 1 回のリクエストで、pull request、変更のファイル、閉じる issue のラベル、head の commit の検査を読む。
+ *
+ * 一覧はどれも 1 ページ（PAGE_SIZE 件）だけ読み、続きがあれば条件を確認できないとする。
  */
 const PULL_REQUEST_QUERY = `query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
       state baseRefName headRefOid title body changedFiles lastEditedAt
       author { __typename login }
-      files(first: 100) { nodes { path } pageInfo { hasNextPage } }
-      closingIssuesReferences(first: 100) {
-        nodes { number labels(first: 100) { nodes { name } pageInfo { hasNextPage } } }
+      files(first: ${PAGE_SIZE}) { nodes { path } pageInfo { hasNextPage } }
+      closingIssuesReferences(first: ${PAGE_SIZE}) {
+        nodes { number labels(first: ${PAGE_SIZE}) { nodes { name } pageInfo { hasNextPage } } }
         pageInfo { hasNextPage }
       }
       commits(last: 1) {
-        nodes { commit { statusCheckRollup { contexts(first: 100) {
+        nodes { commit { statusCheckRollup { contexts(first: ${PAGE_SIZE}) {
           nodes {
             __typename
             ... on CheckRun { name status conclusion startedAt checkSuite { workflowRun { workflow { name } } } }
@@ -93,7 +100,9 @@ const NO_MATCH_HEAD_REASON =
   'gh pr merge <番号> --match-head-commit <SHA> で実行し直す。'
 
 /**
- * `[HOST/]OWNER/REPO` の形のリポジトリを読む。github.com 以外のホストは読まない。
+ * `[HOST/]OWNER/REPO` の形のリポジトリを読む。
+ *
+ * github.com 以外のホストは読まない。
  *
  * @param {string} value リポジトリ
  * @returns {{ owner: string, name: string } | null} 所有者と名前。読めなければ null
@@ -164,8 +173,8 @@ function readPullRequest(target, dir, deps, timeout) {
   let result
   try {
     result = deps.runGh(args, { cwd: dir, timeout })
-  } catch (error) {
-    return { error: `gh を実行できない：${error instanceof Error ? error.message : String(error)}` }
+  } catch (e) {
+    return { error: `gh を実行できない：${e instanceof Error ? e.message : String(e)}` }
   }
   const failure = describeGhFailure(result, timeout)
   if (failure !== null) return { error: failure }
@@ -235,7 +244,7 @@ function checkProblems({ nodes, undated, truncated }) {
     }
   }
   const problems = []
-  if (truncated) problems.push('CI の検査の一覧を全ては読めない（100 件を超える）')
+  if (truncated) problems.push(`CI の検査の一覧を全ては読めない（${PAGE_SIZE} 件を超える）`)
   if (undated.length > 0) problems.push(`再実行で重なった CI の検査の時刻を読めず、最も新しい実行を決められない（${undated.join('、')}）`)
   if (pending.length > 0) problems.push(`CI の検査が終わっていない（${[...new Set(pending)].join('、')}）`)
   if (failed.length > 0) problems.push(`CI の検査が成功していない（${[...new Set(failed)].join('、')}）`)
@@ -247,7 +256,7 @@ function checkProblems({ nodes, undated, truncated }) {
  *
  * @returns {{ groups: { name: string, paths: string[] }[] }} 危険度が高い経路の一覧
  */
-function loadRiskConfig() {
+function readRiskConfig() {
   return parseRiskConfig(readFileSync(RISK_CONFIG_FILE, 'utf8'))
 }
 
@@ -264,9 +273,9 @@ function dependabotProblems(pullRequest) {
   }
   let config
   try {
-    config = loadRiskConfig()
-  } catch (error) {
-    return [`危険度が高い経路の一覧（scripts/ci/config/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
+    config = readRiskConfig()
+  } catch (e) {
+    return [`危険度が高い経路の一覧（scripts/ci/config/risk.json）を読めない：${e instanceof Error ? e.message : String(e)}`]
   }
   // Dependabot は spec.md を変えないので、spec の宣言を読む関数は常に null を返すものでよい
   const result = applyDependabotTitle(judgeRisk(files, config, () => null), pullRequest.title)
@@ -303,7 +312,7 @@ function authoredProblems(pullRequest, checks) {
   const closing = pullRequest.closingIssuesReferences
   const issues = closing?.nodes ?? []
   if (closing?.pageInfo?.hasNextPage || issues.some((issue) => issue.labels?.pageInfo?.hasNextPage)) {
-    problems.push('閉じる issue かそのラベルの一覧を全ては読めない（100 件を超える）')
+    problems.push(`閉じる issue かそのラベルの一覧を全ては読めない（${PAGE_SIZE} 件を超える）`)
   }
   if (issues.length === 0) problems.push('本文の Closes の issue がない（機能の spec でないことを確認できない）')
   const features = issues.filter((issue) => (issue.labels?.nodes ?? []).some((label) => label.name === FEATURE_LABEL))
@@ -312,7 +321,9 @@ function authoredProblems(pullRequest, checks) {
 }
 
 /**
- * gh api graphql の作成者を、risk.mjs の作成者の形にする。GraphQL の Bot の login は `[bot]` を付けないので付ける。
+ * gh api graphql の作成者を、risk.mjs の作成者の形にする。
+ *
+ * GraphQL の Bot の login は `[bot]` を付けないので付ける。
  *
  * @param {{ __typename?: string, login?: string } | null | undefined} author 作成者
  * @returns {string | undefined} 作成者の名前
@@ -331,7 +342,7 @@ function authorName(author) {
  * @param {string} headCommit --match-head-commit の値
  * @returns {string[]} 満たさない条件。空なら全て満たす
  */
-export function mergeProblems(pullRequest, headCommit) {
+function mergeProblems(pullRequest, headCommit) {
   const problems = []
   if (pullRequest.state !== 'OPEN') problems.push(`pull request が開いていない（${pullRequest.state}）`)
   if (String(pullRequest.headRefOid).toLowerCase() !== headCommit.toLowerCase()) {
@@ -347,7 +358,9 @@ export function mergeProblems(pullRequest, headCommit) {
 }
 
 /**
- * gh pr merge の判定。--match-head-commit のない形は拒否し、pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
+ * gh pr merge の判定。
+ *
+ * --match-head-commit のない形は拒否し、pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
  *
  * --admin と --auto は見ない。ruleset の除外の対象が空で、リポジトリの設定で自動のマージを無効にしてあるので、GitHub が受け付けないため。
  *

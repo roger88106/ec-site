@@ -7,7 +7,9 @@ import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './slo
 const PORTS = [18080, 19080, 13000, 15173]
 
 /**
- * 解除の依存を差し替える。find は呼ばれるたびに answers を順に返し、他は呼ばれたことを記録する。
+ * 解除の依存を差し替える。
+ *
+ * find は呼ばれるたびに answers を順に返し、他は呼ばれたことを記録する。
  *
  * @param {{ answers: object[], running?: boolean }} options 問い合わせの結果の並びと、health が応答するか
  */
@@ -145,7 +147,9 @@ describe('停止の対象のポート', () => {
 
 describe('スロットのプロセスの停止', () => {
   /**
-   * 停止の依存を差し替える。find は呼ばれるたびに answers を順に返す。
+   * 停止の依存を差し替える。
+   *
+   * find は呼ばれるたびに answers を順に返す。
    *
    * @param {object[]} answers 問い合わせの結果の並び
    */

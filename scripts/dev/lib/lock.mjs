@@ -1,13 +1,30 @@
-// E2E のロック。E2E は共有のデータベースとポートを使うので、同時に 1 つだけ実行する。
-// 取るのは E2E の入口（e2e/scripts/run.ts）、実行中かを調べるのは scripts/dev/check-frontend.sh（e2e-running.mjs）。
+// E2E のロック。
+//
+// E2E は共有のデータベースとポートを使うので、同時に 1 つだけ実行する。
 // ロックの中身は所有者（作業ツリーのパス、PID、開始の時刻）。所有者の PID のプロセスがなければ古いロックとして再取得する。
 import { randomUUID } from 'node:crypto'
 import { linkSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 
 /** @typedef {{ worktree: string, pid: number, startedAt: string }} LockOwner */
 
+/** E2E のロックのファイルの名前。全ての作業ツリーで共有するため、git の共通のディレクトリに置く */
+const E2E_LOCK_NAME = 'ec-site-e2e.lock'
+
 /**
- * プロセスが実行中か。権限がなくて信号を送れない（EPERM）プロセスも実行中とみなす。
+ * E2E のロックのファイルのパス。
+ *
+ * @param {string} commonDir git の共通のディレクトリ（`git rev-parse --git-common-dir` の絶対パス）
+ * @returns {string} ロックのファイルのパス
+ */
+export function e2eLockFile(commonDir) {
+  return path.join(commonDir, E2E_LOCK_NAME)
+}
+
+/**
+ * プロセスが実行中か。
+ *
+ * 権限がなくて信号を送れない（EPERM）プロセスも実行中とみなす。
  *
  * @param {number} pid プロセスの ID
  * @returns {boolean} 実行中なら true
@@ -66,7 +83,9 @@ export function readLock(file) {
 }
 
 /**
- * 中身を書いたロックを作る。一時のファイルに書いてから link で置くので、書きかけ（空）のロックを他方に読まれない。
+ * 中身を書いたロックを作る。
+ *
+ * 一時のファイルに書いてから link で置くので、書きかけ（空）のロックを他方に読まれない。
  *
  * @param {string} file ロックのファイル
  * @param {string} content 中身
@@ -87,7 +106,9 @@ function createLock(file, content) {
 }
 
 /**
- * 古いロックを退かす。退かした中身が古いと判定した中身と違えば（他方が先に再取得した）、元に戻す。
+ * 古いロックを退かす。
+ *
+ * 退かした中身が古いと判定した中身と違えば（他方が先に再取得した）、元に戻す。
  *
  * @param {string} file ロックのファイル
  * @param {string} judged 古いと判定した中身
@@ -113,7 +134,9 @@ function removeStale(file, judged) {
 }
 
 /**
- * ロックを取る。待たない。所有者のプロセスが動いていれば取らず、所有者を返す。古いロック（所有者のプロセスがない、壊れた中身）は取り除いて再取得する。
+ * ロックを取る。
+ *
+ * 待たない。所有者のプロセスが動いていれば取らず、所有者を返す。古いロック（所有者のプロセスがない、壊れた中身）は取り除いて再取得する。
  *
  * @param {{ file: string, owner: LockOwner, isRunning: (pid: number) => boolean }} input ロックのファイル、自分、プロセスの確認
  * @returns {{ acquired: true } | { acquired: false, owner: LockOwner | null }} 取れたか。取れなければ所有者（分からなければ null）
@@ -130,7 +153,9 @@ export function acquireLock({ file, owner, isRunning }) {
 }
 
 /**
- * ロックを取れなかったときの案内。所有者のプロセスがなければ削除してよいことを示す（PID が別のプロセスに再利用されると、古いロックが実行中に見え続ける）。
+ * ロックを取れなかったときの案内。
+ *
+ * 所有者のプロセスがなければ削除してよいことを示す（PID が別のプロセスに再利用されると、古いロックが実行中に見え続ける）。
  *
  * @param {{ lock: string, owner: LockOwner | null }} input ロックのファイルと所有者
  * @returns {string} 案内
@@ -141,7 +166,9 @@ export function busyLockMessage({ lock, owner }) {
 }
 
 /**
- * ロックが自分のもの（PID と開始の時刻が同じ）か。放すときに、他の所有者のロックを消さないために見る。
+ * ロックが自分のもの（PID と開始の時刻が同じ）か。
+ *
+ * 放すときに、他の所有者のロックを消さないために見る。
  *
  * @param {string | null} content ロックの中身。なければ null
  * @param {LockOwner} owner 自分
@@ -153,7 +180,9 @@ export function ownsLock(content, owner) {
 }
 
 /**
- * 指定の作業ツリーの E2E が実行中か。所有者がその作業ツリーで、所有者のプロセスが動いているときに実行中とする（PID の再利用は判定しない）。
+ * 指定の作業ツリーの E2E が実行中か。
+ *
+ * 所有者がその作業ツリーで、所有者のプロセスが動いているときに実行中とする（PID の再利用は判定しない）。
  *
  * @param {{ content: string | null, worktree: string, isRunning: (pid: number) => boolean }} input ロックの中身（なければ null）、調べる作業ツリー、プロセスの確認
  * @returns {boolean} 実行中なら true

@@ -5,7 +5,8 @@
 #     -WhatIf を付けると、照合した結果を示すだけで何も変えない
 #
 # 先に compose（docker compose stop）、バックエンド、画面を止める。使っているポートは予約できない。
-# 管理者の権限が必要だ。管理者でなければ、照合した結果を示して何も変えずに終わる。
+# 管理者の権限が必要だ。管理者でなければ、照合した結果を示して何も変えずに終わる（終了コード 2）。
+# 予約できなかったポートが 1 つでもあれば、最後にそのポートを並べて終了コード 1 で終わる。
 # すること：
 #   1. 今の予約の範囲と、一覧のポートを照合して示す
 #   2. 変えること（WinNAT を止める → 各ポートを 1 つずつ予約する → WinNAT を始める）を示し、確認を求める
@@ -76,7 +77,7 @@ if ($WhatIf) {
 }
 if (-not $admin) {
   Write-Host '管理者の権限がないので、何も変えずに終わる。管理者の PowerShell で流し直す。'
-  exit 1
+  exit 2
 }
 $answer = Read-Host '変えるなら y を入れる'
 if ($answer -ne 'y') {
@@ -84,14 +85,22 @@ if ($answer -ne 'y') {
   exit 0
 }
 
+$failedPorts = @()
 net stop winnat
 try {
   foreach ($port in $toAdd) {
     netsh int ipv4 add excludedportrange protocol=tcp startport=$port numberofports=1
-    if ($LASTEXITCODE -ne 0) { Write-Host "  $port を予約できなかった（ほかのプログラムが使っているか、管理者の予約と重なる）" }
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "  $port を予約できなかった（ほかのプログラムが使っているか、管理者の予約と重なる）"
+      $failedPorts += $port
+    }
   }
 } finally {
   net start winnat
 }
 Write-Host '終えた。今の予約の範囲：'
 netsh interface ipv4 show excludedportrange protocol=tcp
+if ($failedPorts.Count -gt 0) {
+  Write-Host "予約できなかったポート：$($failedPorts -join '、')。使っているプログラムを止めてから流し直す。"
+  exit 1
+}

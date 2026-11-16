@@ -47,7 +47,7 @@
         "src/**/*.tsx",
         "!**/*.test.ts",
         "!**/*.test.tsx",
-        "!src/test/**",
+        "!src/**/test/**",
         "!**/generated/**",
         "!**/components/ui/**",
         "!src/ui/**"
@@ -61,7 +61,7 @@
     },
     {
       // テストの補助の部品も、数字を直接書くと本番の部品の写しになるので見る
-      "includes": ["src/test/**/*.tsx", "!**/*.test.tsx"],
+      "includes": ["src/**/test/**/*.tsx", "!**/*.test.tsx"],
       "plugins": ["../biome-plugins/no-literal-input-constraint.grit"]
     },
     {
@@ -76,13 +76,13 @@
       ]
     },
     {
-      // 画面のテストとテストの補助（src/test/）
-      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**"],
+      // 画面のテストとテストの補助（src の下の test/）
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/test/**"],
       "plugins": ["../biome-plugins/no-type-cast-escape.grit", "../biome-plugins/no-fire-event.grit"]
     },
     {
       // テストとテストを動かす側（テストの補助、Vitest・Vite の設定）
-      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**", "vite.config.*", "vitest.config.*"],
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/test/**", "vite.config.*", "vitest.config.*"],
       "plugins": ["../biome-plugins/no-time-wait.grit"]
     }
   ]

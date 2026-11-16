@@ -13,7 +13,8 @@ import { listGitFiles } from '../../ci/lib/git/git-files.mjs'
 import { listSpecDirs } from '../../ci/lib/docs/spec-dirs.mjs'
 import { findTestFiles, readTsTests } from '../../ci/lib/source/test-files.mjs'
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+/** リポジトリのルート（このファイルは scripts/dev/tools/ にある） */
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 
 /** Java のテストのメソッドの注釈 */
 const JAVA_TEST = /^\s*@(?:Test|ParameterizedTest)\b/gm
@@ -24,8 +25,8 @@ let acs = 0
 for (const { dir } of specDirs) {
   try {
     acs += [...readFileSync(path.join(dir, 'spec.md'), 'utf8').matchAll(/^- \*\*AC-[0-9]+(?:-[0-9]+)?\*\*/gm)].length
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e
   }
 }
 

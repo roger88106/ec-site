@@ -1,6 +1,8 @@
 // コードをわざと壊してテストが失敗するかを確認する（「壊しての確認」）。
+//
 // sed は合わない式でも黙って何もしないので、壊したつもりで「通った」と読み違える。
-// 置き換えは正規表現でなく文字列で行い、当たらなければ止める。テストの後は必ず元に戻す（Ctrl+C などの停止のシグナルを受けたときも）。
+// そのため、置き換えは正規表現でなく文字列で行い、当たらなければ止める。テストの後は必ず元に戻す（Ctrl+C などの停止のシグナルを受けたときも）。
+//
 // コマンドは Git Bash で実行する。Windows の cmd.exe では `./gradlew` のような `./` で始まるコマンドを起動できない。
 //
 // 使い方：node scripts/dev/tools/break-check.mjs <ファイル> <置き換える文字列> <置き換え後> <ディレクトリ> <テストのコマンド>
@@ -23,8 +25,8 @@ if (!command) {
 let original
 try {
   original = readFileSync(file, 'utf8')
-} catch (error) {
-  process.stderr.write(`対象のファイルが読めない：${file}（${error.message}）\n`)
+} catch (e) {
+  process.stderr.write(`対象のファイルが読めない：${file}（${e.message}）\n`)
   process.exit(2)
 }
 const count = original.split(from).length - 1

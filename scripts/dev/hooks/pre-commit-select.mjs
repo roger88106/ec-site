@@ -1,5 +1,6 @@
 // commit の前の hook が実行する検査と script のテストを、ステージしたファイルから選ぶ。
-// CI は今までどおり全てを実行するので、選び漏れは CI で見つかる。対応の表と考え方は、CI の検査の script の「commit の前の hook」。
+//
+// CI は全てを実行するので、選び漏れは CI で見つかる。対応の表と考え方は、CI の検査の script の「commit の前の hook」。
 //
 // 検査（scripts/ci/ の検査のフォルダの直下）とテストは、次のどれかに当たれば実行する。
 //   - ステージしたファイルが、検査・テストが import・require でたどれるファイル（自分を含む）である
@@ -12,7 +13,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 /** 全てを実行するファイル：scripts/ の下の全てと、依存 */
-export const RUN_ALL = [/^scripts\//, /^package\.json$/, /^pnpm-lock\.yaml$/]
+const RUN_ALL = [/^scripts\//, /^package\.json$/, /^pnpm-lock\.yaml$/]
 
 /** 検査のフォルダ（scripts/ci/ の下。ここの直下の .mjs のうち、テスト以外が検査）。lib と report など引数で動くものは含めない */
 export const CHECK_GROUPS = ['docs', 'spec', 'ja', 'java', 'config', 'frontend']
@@ -24,7 +25,9 @@ const CHECK_TEST = new RegExp(`^scripts/ci/(?:${CHECK_GROUPS.join('|')})/[^/]+\\
 const ALWAYS = 'always'
 
 /**
- * 検査ごとの、読むファイルのパスの正規表現。import と、ソースの中のパス・名前から分からないもの（Git のファイルの一覧から選ぶもの）を書く。
+ * 検査ごとの、読むファイルのパスの正規表現。
+ *
+ * import と、ソースの中のパス・名前から分からないもの（Git のファイルの一覧から選ぶもの）を書く。
  *
  * 表にない検査は、常に実行する（選び漏れで検査が実行されないことを避けるため）。
  */
@@ -54,7 +57,7 @@ export const CHECK_INPUTS = {
 }
 
 /** テストごとの、読むファイルのパスの正規表現（import と名前の検査で分からないもの）。scripts/ の外の文書を読むテスト */
-export const TEST_INPUTS = {
+const TEST_INPUTS = {
   '.claude/skills/review/checklist.test.cjs': [/^docs\/05-開発規則\//],
 }
 
@@ -93,10 +96,10 @@ export function importClosure(file, read) {
  * @returns {boolean} 当たれば true
  */
 function touches(staged, closure, patterns) {
+  // 先にパスで当たるかを見て、当たらないときだけ内容をつなぐ
+  if (staged.some((file) => closure.has(file) || patterns.some((pattern) => pattern.test(file)))) return true
   const sources = [...closure.values()].join('\n')
-  return staged.some(
-    (file) => closure.has(file) || sources.includes(file) || sources.includes(path.posix.basename(file)) || patterns.some((pattern) => pattern.test(file)),
-  )
+  return staged.some((file) => sources.includes(file) || sources.includes(path.posix.basename(file)))
 }
 
 /**
@@ -105,6 +108,7 @@ function touches(staged, closure, patterns) {
  * @param {object} input
  * @param {string[]} input.staged ステージしたファイル（削除と改名の元を含む。リポジトリのルートからの相対パス）
  * @param {string[]} input.checks 検査の名前（検査のフォルダの直下の、拡張子を除いた名前）
+ * @param {Record<string, string>} input.files 検査の名前から、検査のファイル（リポジトリのルートからの相対パス）
  * @param {string[]} input.tests テストのファイル（リポジトリのルートからの相対パス）
  * @param {(file: string) => string | null} input.read ステージした内容のファイルを読む。ないときは null
  * @returns {{ all: boolean, checks: string[], tests: string[] }} 全てを実行するか、実行する検査、実行するテスト（与えた順）
@@ -125,7 +129,7 @@ export function selectChecks({ staged, checks, files, tests, read }) {
  * 取り出した先から、検査の名前とテストのファイルを集める。
  *
  * @param {string} root 取り出した先のディレクトリ
- * @returns {{ checks: string[], tests: string[] }} 検査の名前と、テストのファイル（名前の順）
+ * @returns {{ checks: string[], files: Record<string, string>, tests: string[] }} 検査の名前（名前の順）、検査の名前から検査のファイル、テストのファイル（名前の順）
  */
 export function listChecksAndTests(root) {
   const list = (dir) => {
@@ -152,15 +156,23 @@ export function listChecksAndTests(root) {
 /**
  * 取り出した先のファイルを読む関数を作る。
  *
+ * 読んだ内容（ないことを含む）は覚えておく。共有の lib は、検査とテストごとに何度もたどられるため。
+ *
  * @param {string} root 取り出した先のディレクトリ
  * @returns {(file: string) => string | null} 相対パスのファイルの内容。ないときは null
  */
 export function fileReader(root) {
+  const cache = new Map()
   return (file) => {
-    try {
-      return readFileSync(path.join(root, file), 'utf8')
-    } catch {
-      return null
+    if (!cache.has(file)) {
+      let text = null
+      try {
+        text = readFileSync(path.join(root, file), 'utf8')
+      } catch {
+        // ないファイルは null として覚える
+      }
+      cache.set(file, text)
     }
+    return cache.get(file)
   }
 }

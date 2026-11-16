@@ -1,15 +1,14 @@
 // pre-commit.mjs のテスト（node --test scripts/dev/hooks/pre-commit.test.mjs）
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
-import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, checkShell, resolveIndexFile, runPreCommit, selectWarningLines } from './pre-commit.mjs'
-import { COMMIT_MSG_FAILED, runCommitMsg } from './commit-msg.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
+import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, shellForChecks, resolveIndexFile, runPreCommit, selectWarningLines } from './pre-commit.mjs'
+import { COMMIT_MSG_FILES, JA_TEXT_FILES, MINI_LIST, copyFromRepo } from './test-support.mjs'
 
 describe('一時の index のパス', () => {
   test('相対パスは、リポジトリのルートからの絶対パスにする', () => {
@@ -30,12 +29,12 @@ describe('一時の index のパス', () => {
 
 describe('検査を実行する bash', () => {
   test('hook が渡した bash のパス（PRE_COMMIT_BASH）があれば、それを使う', () => {
-    assert.equal(checkShell({ PRE_COMMIT_BASH: 'C:/Program Files/Git/usr/bin/bash.exe' }), 'C:/Program Files/Git/usr/bin/bash.exe')
+    assert.equal(shellForChecks({ PRE_COMMIT_BASH: 'C:/Program Files/Git/usr/bin/bash.exe' }), 'C:/Program Files/Git/usr/bin/bash.exe')
   })
 
   test('なければ、PATH の bash を使う', () => {
-    assert.equal(checkShell({}), 'bash')
-    assert.equal(checkShell({ PRE_COMMIT_BASH: '' }), 'bash')
+    assert.equal(shellForChecks({}), 'bash')
+    assert.equal(shellForChecks({ PRE_COMMIT_BASH: '' }), 'bash')
   })
 })
 
@@ -205,10 +204,12 @@ describe('検査の実行と終了コード', () => {
     assert.equal('CHECK_TESTS' in calls.runCheck[0].env, false)
   })
 
-  test('ステージしたファイルの一覧を読めなければ、検査を実行せずに 2 を返す', () => {
-    const { deps, calls } = fakeDeps({ staged: { status: 128, files: [] } })
+  test('ステージしたファイルの一覧を読めなければ、検査を実行せずに 2 を返し、git の標準エラー出力を付けて理由を表示する', () => {
+    const { deps, calls } = fakeDeps({ staged: { status: 128, files: [], stderr: 'fatal: index file corrupt' } })
     assert.equal(runPreCommit(deps), CHECKOUT_FAILED)
     assert.equal(calls.runCheck.length, 0)
+    assert.equal(calls.errors.length, 1)
+    assert.match(calls.errors[0], /ステージしたファイルの一覧.*終了コード 128.*\nfatal: index file corrupt$/s)
   })
 
   test('GIT_INDEX_FILE がなければ、環境変数に加えない', () => {
@@ -257,67 +258,29 @@ describe('検査が通った後の warning', () => {
     assert.equal(runPreCommit(fakeDeps({ diff, warnings: { status: null, stdout: '' } }).deps), WARNING_FAILED)
     assert.equal(runPreCommit(fakeDeps({ diff: { status: 128, stdout: '' }, warnings: { status: 0, stdout: list } }).deps), WARNING_FAILED)
   })
-})
 
-describe('commit のメッセージの検査', () => {
-  /** 実行した script を記録し、script ごとの終了コードと、要約の行のある出力を返す */
-  function fakeRun(codes) {
-    const calls = []
-    return { calls, run: (name, args) => (calls.push({ name, args }), { status: codes[name], output: '使わない語：0\n' }) }
-  }
-
-  test('終了コード 0 でも、出力の最後の行が要約の行でなければ、失敗にして理由を表示する', () => {
-    const logs = []
-    for (const output of ['', '何もしない\n']) {
-      assert.equal(runCommitMsg({ file: 'm', run: () => ({ status: 0, output }), log: (text) => logs.push(text) }), 1)
-    }
-    assert.equal(logs.length, 2)
-    assert.match(logs[0], /要約の行/)
-  })
-
-  test('日本語の文の検査を、メッセージのファイルを渡して実行する', () => {
-    const { calls, run } = fakeRun({ 'ja-text': 0 })
-    assert.equal(runCommitMsg({ file: '.git/MSG', run }), 0)
-    assert.deepEqual(calls, [{ name: 'ja-text', args: ['--message', '.git/MSG'] }])
-  })
-
-  test('検査が失敗すれば、全体は失敗にする', () => {
-    assert.equal(runCommitMsg({ file: 'm', run: fakeRun({ 'ja-text': 1 }).run }), 1)
-  })
-
-  test('終了コードを返さない（シグナルでの終了など）検査は、失敗にする', () => {
-    assert.equal(runCommitMsg({ file: 'm', run: fakeRun({ 'ja-text': null }).run }), 1)
-  })
-
-  test('メッセージのファイルがなければ、検査を実行せずに失敗にする', () => {
-    const { calls, run } = fakeRun({ 'ja-text': 0 })
-    assert.equal(runCommitMsg({ file: undefined, run }), COMMIT_MSG_FAILED)
-    assert.equal(calls.length, 0)
+  test('warning の一覧か差分を取得できないときは、失敗した手順と子のプロセスの標準エラー出力を表示する', () => {
+    const failedList = fakeDeps({ diff, warnings: { status: 1, stdout: '', stderr: 'Error: 壊れた ja-text' } })
+    runPreCommit(failedList.deps)
+    assert.match(failedList.calls.errors.join('\n'), /warning の一覧.*終了コード 1.*\nError: 壊れた ja-text$/s)
+    const killed = fakeDeps({ diff, warnings: { status: null, stdout: '' } })
+    runPreCommit(killed.deps)
+    assert.match(killed.calls.errors.join('\n'), /warning の一覧.*シグナル/)
+    const failedDiff = fakeDeps({ diff: { status: 128, stdout: '', stderr: 'fatal: bad object' } })
+    runPreCommit(failedDiff.deps)
+    assert.match(failedDiff.calls.errors.join('\n'), /追加行の差分.*\nfatal: bad object$/s)
   })
 })
-
-/**
- * 実際の hook のテストが使う、日本語の文の検査の一覧。
- *
- * 本物の一覧は、許容用語が使われていないと失敗にする（小さな一時のリポジトリでは使われない）ので、試す語だけの一覧にする。
- */
-const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }], warning: [{ word: '要求', use: 'リクエスト' }], style: { no: 4, length: 100, comma: 5, cell: 80 } })
 
 describe('実際の hook', () => {
-  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
   /** 実際のリポジトリと同じ置き場所にコピーする、hook とその hook が読む script（日本語の文の検査と、その検査が読む補助を含む） */
   const hookFiles = [
     'scripts/dev/hooks/pre-commit',
-    'scripts/dev/hooks/commit-msg',
     'scripts/dev/hooks/pre-commit.mjs',
     'scripts/dev/hooks/pre-commit-main.mjs',
     'scripts/dev/hooks/pre-commit-select.mjs',
-    'scripts/dev/hooks/commit-msg.mjs',
-    'scripts/dev/hooks/commit-msg-main.mjs',
-    'scripts/ci/ja/ja-text.mjs',
-    ...readdirSync(path.join(repoRoot, 'scripts/ci/lib'), { recursive: true })
-      .map((name) => `scripts/ci/lib/${String(name).split(path.sep).join('/')}`)
-      .filter((file) => file.endsWith('.mjs') && !file.endsWith('.test.mjs')),
+    ...COMMIT_MSG_FILES,
+    ...JA_TEXT_FILES,
   ]
   /** 一時のリポジトリで commit する作業ブランチ */
   const WORK_BRANCH = '1-work'
@@ -342,10 +305,7 @@ describe('実際の hook', () => {
     git('config', 'user.name', 'test')
     git('config', 'user.email', 'test@example.com')
     git('config', 'commit.gpgsign', 'false')
-    for (const file of hookFiles) {
-      mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
-      copyFileSync(path.join(repoRoot, file), path.join(dir, file))
-    }
+    copyFromRepo(dir, hookFiles)
     writeFileSync(path.join(dir, 'scripts/ci/ja/ja-text.json'), MINI_LIST)
     for (const [file, content] of Object.entries({ 'docs/base.md': 'ふつうの文書。\n', ...baseline })) {
       mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
@@ -532,90 +492,20 @@ describe('実際の hook', () => {
   test('warning の一覧を出力する検査が失敗したら、成功にせず失敗にする', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
+      // 準備：検査は通し、日本語の文の検査（warning の一覧を出力する）を異常終了させる
       const env = withoutGitEnv()
       const git = initRepo(dir, env, { 'scripts/ci/check-all.sh': '#!/usr/bin/env bash\nexit 0\n' })
-      // 日本語の文の検査を壊す（異常終了させる）
       writeFileSync(path.join(dir, 'scripts/ci/ja/ja-text.mjs'), 'process.exit(5)\n')
       writeFileSync(path.join(dir, 'staged.txt'), 'staged')
       git('add', '-A')
+
+      // 操作
       const result = spawnSync(gitBash(), ['scripts/dev/hooks/pre-commit'], { cwd: dir, env, encoding: 'utf8' })
+
+      // 確認
       assert.equal(result.status, WARNING_FAILED)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
-  })
-})
-
-describe('実際の commit-msg の hook', () => {
-  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
-  const hookFiles = [
-    'scripts/dev/hooks/commit-msg',
-    'scripts/dev/hooks/commit-msg.mjs',
-    'scripts/dev/hooks/commit-msg-main.mjs',
-    'scripts/ci/ja/ja-text.mjs',
-    ...readdirSync(path.join(repoRoot, 'scripts/ci/lib'), { recursive: true })
-      .map((name) => `scripts/ci/lib/${String(name).split(path.sep).join('/')}`)
-      .filter((file) => file.endsWith('.mjs') && !file.endsWith('.test.mjs')),
-  ]
-
-  /**
-   * 一時のディレクトリ（Git のリポジトリでない場所は hook が使えないので、git init する）に hook をコピーして、hook を実行する。
-   *
-   * @param {string} message コミットメッセージのファイルの中身
-   * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
-   */
-  function runCommitMsgHookFull(message, jaText) {
-    const dir = mkdtempSync(path.join(tmpdir(), 'commit-msg-test-'))
-    try {
-      const env = withoutGitEnv()
-      spawnSync('git', ['init', '-q'], { cwd: dir, env })
-      for (const file of hookFiles) {
-        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
-        copyFileSync(path.join(repoRoot, file), path.join(dir, file))
-      }
-      if (jaText !== undefined) writeFileSync(path.join(dir, 'scripts/ci/ja/ja-text.mjs'), jaText)
-      writeFileSync(path.join(dir, 'scripts/ci/ja/ja-text.json'), MINI_LIST)
-      writeFileSync(path.join(dir, 'MSG'), message)
-      const result = spawnSync(gitBash(env), ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
-      return { status: result.status, output: result.stdout }
-    } finally {
-      rmSync(dir, { recursive: true, force: true })
-    }
-  }
-
-  /** hook の終了コードだけを返す */
-  function runCommitMsgHook(message) {
-    return runCommitMsgHookFull(message).status
-  }
-
-  test('メッセージに使わない語（error）がなければ成功する', () => {
-    assert.equal(runCommitMsgHook('ツールを追加する\n'), 0)
-  })
-
-  test('メッセージに使わない語（error）があれば失敗する', () => {
-    const { status, output } = runCommitMsgHookFull('道具を追加する\n')
-    assert.equal(status, 1)
-    assert.match(output, /道具/)
-  })
-
-  test('検査が成功するときも、検査の出力（要約の行）を表示する', () => {
-    const { status, output } = runCommitMsgHookFull('ツールを追加する\n')
-    assert.equal(status, 0)
-    assert.match(output, /使わない語：0/)
-  })
-
-  test('日本語の文の検査が何も調べずに終了コード 0 で終わる（要約の行がない）と、hook は失敗する', () => {
-    const { status, output } = runCommitMsgHookFull('道具を追加する\n', '// 直接実行の判定が外れた検査の代わり\n')
-    assert.equal(status, 1)
-    assert.match(output, /要約の行/)
-  })
-
-  test('git commit -v の差分に使わない語があっても、数えない', () => {
-    const message = 'ツールを追加する\n# ------------------------ >8 ------------------------\ndiff --git a/a b/a\n-道具を使う\n'
-    assert.equal(runCommitMsgHook(message), 0)
-  })
-
-  test('# で始まる行の使わない語は、数えない', () => {
-    assert.equal(runCommitMsgHook('ツールを追加する\n# 道具\n'), 0)
   })
 })

@@ -80,7 +80,7 @@ script に残るのは、2 種類の規則である。1 つは、複数のファ
 
 ※4：shell の入口が薄いのは、テストで処理を呼べるようにするため。`core.hooksPath` を使わないのは、各自が置いた他の hook と並べられるようにするため。
 
-※5：全てを実行すると commit が遅いため。選び漏れは CI で見つかる。選び方は[CI の検査の script](../06-手順書/ci-checks.md)の「commit の前の hook」。検査はステージした内容を一時ディレクトリに取り出して実行し、作業ツリーを変えない。stash で退避すると、一部だけをステージしたファイルを戻すときに衝突するため（`scripts/dev/hooks/pre-commit` の冒頭のコメント）。
+※5：全てを実行すると commit が遅いため。選び漏れは CI で見つかる。選び方は[CI の検査の script](../06-手順書/ci-checks.md)の「commit の前の hook」。検査はステージした内容を一時ディレクトリに取り出して実行し、作業ツリーを変えない。stash で退避すると、一部だけをステージしたファイルを戻すときに衝突するため（`scripts/dev/hooks/pre-commit.mjs` の冒頭のコメント）。
 
 ※6：`.claude/settings.json` には `agent-guard.mjs`（git・gh のコマンドを実行の前に判定する）を、`.claude/settings.local.json` には `session-start.mjs` と `backslash-guard.mjs` を置く。script が見つからないとき、`settings.json` の hook はコマンドを拒否し、`settings.local.json` の hook は拒否せずに通す。働きと書き先の決め方は[手元の hook の設定](../../.claude/skills/local-dev/hooks.md)。
 

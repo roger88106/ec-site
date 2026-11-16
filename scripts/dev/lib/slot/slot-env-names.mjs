@@ -1,13 +1,15 @@
-// スロットが対象に付ける環境変数の名前（E2E の入口が、引き継がないように除くために使う）
-import { slotEnv } from './slot.mjs'
+// スロットが対象に付ける環境変数の名前
+import { slotEnv, TARGETS } from './slot.mjs'
 
 /**
  * スロットが付ける環境変数の名前を全て返す（backend・store・admin のキーの和）。
+ *
  * @returns {string[]}
  */
 export function slotEnvNames() {
   const names = new Set()
-  for (const target of /** @type {const} */ (['backend', 'store', 'admin'])) {
+  // スロット 0 は何も上書きしないので、名前は 0 以外のスロットで求める
+  for (const target of TARGETS) {
     for (const key of Object.keys(slotEnv(1, target))) names.add(key)
   }
   return [...names]

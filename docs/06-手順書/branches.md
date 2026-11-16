@@ -125,7 +125,6 @@ GitHub の ruleset を `develop` と `main` に作る。
 - 危険度は、経路と、pull request の題から読む更新の種類で判定する。`github-actions` の更新（`.github/`）と major の更新、題から更新の種類を読めないものは危険度が高く、利用者が許可する。他の minor と patch は危険度が低く、issue 担当のセッションがマージする。CI の job は作成者で見分け、本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
 - Gradle のバージョンを上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<バージョン>-bin.zip.sha256` の値に替える（Dependabot の更新がこの値も替えるかは未確認なので、pull request で確認する）。
-- TypeScript のバージョンを上げる pull request は、`node scripts/ci/globals/lib-globals.mjs --write` で組み込みの名前の一覧（`lib-globals.json`）を再生成して差分を確認し、`node scripts/ci/frontend-rules.mjs` で増えた名前によるシャドーイングがないことを確認する。
 - Dependabot の pnpm の対応は v10 まで（このリポジトリは pnpm 12）。`npm` の更新が失敗したときは、issue を起票し、Renovate への切り替えを検討する。
 
 ## デプロイの spec まで

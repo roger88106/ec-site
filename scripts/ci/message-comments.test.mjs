@@ -80,6 +80,14 @@ describe('文言のキーのコメントの検査', () => {
     assert.deepEqual(findMissingComments(text), [])
   })
 
+  test('文字列の中の // と /* は、コメントにしない', () => {
+    const text = ["const link = { label: t('link'), href: 'https://example.com' }", "const x = [t('a'), '/* b */']"].join('\n')
+    assert.deepEqual(findMissingComments(text), [
+      { line: 1, key: 'link' },
+      { line: 2, key: 'a' },
+    ])
+  })
+
   test('キーを組み立てる呼び出しは見ない', () => {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
     assert.deepEqual(findMissingComments('{t(`status.${status}`)}'), [])

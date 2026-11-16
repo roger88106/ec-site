@@ -1,4 +1,4 @@
-// 画面のテストの規則：複数の結果を並びのインデックスで選ばない（E2E にも当てる）。
+// 画面のテストの規則：複数の結果を並びのインデックスで選ばない。
 // 変数の範囲を追うので、Biome の plugin では書けない
 import { closingParen } from '../lib/closing-paren.mjs'
 import { createLineLocator } from '../lib/line-number.mjs'
@@ -85,8 +85,7 @@ function blockEnd(code, from) {
  * 受け手（screen.、within(…).）、スプレッド（[...x]）、Array.from(x) をはさんでもよい。
  * 変数の使用は、宣言した所より後で、同じ名前が別の宣言（const・let・var、分割代入、引数）で上書きされるまで、
  * const・let・var の宣言ならそのブロックが閉じるまでの範囲だけ見る（別のテストの同じ名前の普通の配列は見ない）。
- * 見つけない形：変数に入れる前に map・filter などをつなぐもの、関数の引数や戻り値で渡して選ぶもの。
- * Playwright の .first()・.nth() は対象にしない
+ * 見つけない形：変数に入れる前に map・filter などをつなぐもの、関数の引数や戻り値で渡して選ぶもの
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行

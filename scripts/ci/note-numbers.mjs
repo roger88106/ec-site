@@ -1,6 +1,6 @@
 // 文書の注の番号（※1 など）が、1 つの文書の中で重複せず、出る順に並ぶことを確認する。
 //   - 定義：行頭（リストの中の字下げを含む）の `※N：`。同じ番号を 2 回定義したら失敗にする。枝番（※2a）も 1 つの注として読み、順序は ※2、※2a、※3 の順
-//   - 本文の参照：定義の行以外の `※N`（他の文書の注を指す `第 N 節 ※N`・`第 N 節の ※N` と、リンク・文書の名前・パスの後の `の「…」 ※N`・`の「…」の ※N` は除く。
+//   - 本文の参照：定義の行以外の `※N`（他の文書の注を指す、リンク・文書の名前・パスの後の `の「…」 ※N`・`の「…」の ※N` は除く。節の番号の参照は doc-refs が禁じる。
 //     前の文書は、lib/doc-names.mjs の resolveDocument で、インラインコードを残した元の行から決める（パスの後と同じく、インラインコードで書いたパスの後も除く）。
 //     外のリンクの後も除く（doc-refs は先を見ないが、他の文書を指すため）。「この節 ※1」、文書の名前のない `「…」 ※N`、`この文書の「…」 ※N`・`表の「…」 ※N` は同じ文書の参照）。定義も参照も、先の番号より小さい番号が新しく出たら失敗にする（同じ注を何度参照してもよい）
 //
@@ -23,9 +23,6 @@ const DEFINITION = /^\s*※(\d+[a-z]?)：/
 
 /** 本文の参照 */
 const REFERENCE = /※(\d+[a-z]?)/g
-
-/** 他の文書の注を指す参照（`第 N 節 ※N`、`第 N 節の ※N`）。この文書の参照に数えない */
-const SECTION_NOTE = /第 ?\d+(?:\.\d+)* ?節(?: ?の)? ?※\d+[a-z]?/g
 
 /**
  * 見出しの後の注の参照（`の「…」 ※N`・`の「…」の ※N`）。前がリンク（外のリンクを含む）か文書の名前かパス（doc-refs の resolveDocument で決める）で、他の文書を指すときだけ、この文書の参照に数えない。
@@ -60,8 +57,7 @@ export function findNoteProblems(text, names = new Map(), file = '', basenames =
    */
   const countedPart = (line) => {
     const blank = (text) => ' '.repeat(text.length)
-    const masked = maskCodeSpans(line).replace(SECTION_NOTE, blank)
-    return masked.replace(HEADING_NOTE, (match, offset) => {
+    return maskCodeSpans(line).replace(HEADING_NOTE, (match, offset) => {
       const before = line.slice(0, offset)
       // 外のリンク（`[x](https://…)の「Y」`）は、doc-refs は先を見ないが、他の文書なので除く
       if (/\]\((?:https?:|mailto:)[^)]*\)\s*$/.test(before)) return blank(match)

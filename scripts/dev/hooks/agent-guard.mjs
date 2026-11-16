@@ -186,10 +186,10 @@ export function handleInput(text, deps = createDeps(), judge = judgeCommand) {
   let decision
   try {
     decision = judge(command, cwd, deps)
-  } catch (error) {
+  } catch (e) {
     decision = /\b(git|gh)\b/i.test(command)
       ? deny(
-          `Claude Code の hook（scripts/dev/hooks/agent-guard.mjs）が、git か gh を含むコマンドの判定で失敗した（${error instanceof Error ? error.message : String(error)}）。` +
+          `Claude Code の hook（scripts/dev/hooks/agent-guard.mjs）が、git か gh を含むコマンドの判定で失敗した（${e instanceof Error ? e.message : String(e)}）。` +
             '判定できない git・gh のコマンドは、force push や許可のないマージを通さないために拒否する。コマンドを単純な形に分けて実行し直し、通らなければ hook の不具合として報告する。',
         )
       : null

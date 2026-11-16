@@ -296,9 +296,9 @@ function claim(ctx, slot) {
     try {
       writeFileSync(file, ctx.root, { flag: 'wx' })
       return true
-    } catch (error) {
-      if (error?.code === 'EEXIST') return false
-      throw error
+    } catch (e) {
+      if (e?.code === 'EEXIST') return false
+      throw e
     }
   }
   if (create()) return true
@@ -416,8 +416,8 @@ async function backendRunning(slot) {
       signal: AbortSignal.timeout(2000),
     })
     return true
-  } catch (error) {
-    return !isBackendDown(error)
+  } catch (e) {
+    return !isBackendDown(e)
   }
 }
 

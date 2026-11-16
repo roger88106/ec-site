@@ -25,8 +25,8 @@ let acs = 0
 for (const { dir } of specDirs) {
   try {
     acs += [...readFileSync(path.join(dir, 'spec.md'), 'utf8').matchAll(/^- \*\*AC-[0-9]+(?:-[0-9]+)?\*\*/gm)].length
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e
   }
 }
 

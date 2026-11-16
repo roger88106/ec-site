@@ -23,8 +23,8 @@ if (!command) {
 let original
 try {
   original = readFileSync(file, 'utf8')
-} catch (error) {
-  process.stderr.write(`対象のファイルが読めない：${file}（${error.message}）\n`)
+} catch (e) {
+  process.stderr.write(`対象のファイルが読めない：${file}（${e.message}）\n`)
   process.exit(2)
 }
 const count = original.split(from).length - 1

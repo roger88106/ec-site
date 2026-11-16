@@ -131,9 +131,9 @@ export function stopListeners(listeners, deps = {}) {
     try {
       kill(pid, 'SIGKILL')
       waiting.push(pid)
-    } catch (error) {
+    } catch (e) {
       // すでに終わっている（ESRCH など）プロセスは、念のため生存を確認する。権限がなく止められない（EPERM）プロセスは、待っても終わらないので待たない
-      if (error?.code !== 'EPERM') waiting.push(pid)
+      if (e?.code !== 'EPERM') waiting.push(pid)
     }
   }
   // 生存の問い合わせ（シグナル 0）を、終わるまで繰り返す。ゾンビのプロセスは生きていると判定され続けるので、上限まで待つ
@@ -182,8 +182,8 @@ function isAlive(pid, kill) {
   try {
     kill(pid, 0)
     return true
-  } catch (error) {
-    return error?.code === 'EPERM'
+  } catch (e) {
+    return e?.code === 'EPERM'
   }
 }
 

@@ -387,8 +387,8 @@ export async function assignSlot(deps) {
   if (picked.kind !== 'picked') return picked
   try {
     deps.recreate(picked.slot)
-  } catch (error) {
-    return { kind: 'recreateFailed', slot: picked.slot, error }
+  } catch (e) {
+    return { kind: 'recreateFailed', slot: picked.slot, error: e }
   }
   return { kind: 'assigned', slot: picked.slot }
 }

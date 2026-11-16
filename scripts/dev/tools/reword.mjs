@@ -62,8 +62,8 @@ function loadPlan(mapPath, cwd) {
   let map
   try {
     map = JSON.parse(readFileSync(mapPath, 'utf8'))
-  } catch (error) {
-    throw new Refusal(`対応表が読めない：${mapPath}（${error.message}）`)
+  } catch (e) {
+    throw new Refusal(`対応表が読めない：${mapPath}（${e.message}）`)
   }
   if (!Array.isArray(map) || map.length === 0) throw new Refusal('対応表は、1 件以上の配列にする')
   const baseDir = path.dirname(path.resolve(mapPath))
@@ -81,8 +81,8 @@ function loadPlan(mapPath, cwd) {
     let text
     try {
       text = readFileSync(message, 'utf8')
-    } catch (error) {
-      throw new Refusal(`メッセージのファイルが読めない：${message}（${error.message}）`)
+    } catch (e) {
+      throw new Refusal(`メッセージのファイルが読めない：${message}（${e.message}）`)
     }
     if (text.trim() === '') throw new Refusal(`メッセージのファイルが空：${message}`)
     return { commit, message }
@@ -220,9 +220,9 @@ function main(argv) {
     const { lines } = reword(argv[0])
     process.stdout.write(`${lines.join('\n')}\n`)
     return 0
-  } catch (error) {
-    if (!(error instanceof Refusal)) throw error
-    process.stderr.write(`${error.message}\n`)
+  } catch (e) {
+    if (!(e instanceof Refusal)) throw e
+    process.stderr.write(`${e.message}\n`)
     return 1
   }
 }

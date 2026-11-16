@@ -173,8 +173,8 @@ function readPullRequest(target, dir, deps, timeout) {
   let result
   try {
     result = deps.runGh(args, { cwd: dir, timeout })
-  } catch (error) {
-    return { error: `gh を実行できない：${error instanceof Error ? error.message : String(error)}` }
+  } catch (e) {
+    return { error: `gh を実行できない：${e instanceof Error ? e.message : String(e)}` }
   }
   const failure = describeGhFailure(result, timeout)
   if (failure !== null) return { error: failure }
@@ -274,8 +274,8 @@ function dependabotProblems(pullRequest) {
   let config
   try {
     config = readRiskConfig()
-  } catch (error) {
-    return [`危険度が高い経路の一覧（scripts/ci/config/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
+  } catch (e) {
+    return [`危険度が高い経路の一覧（scripts/ci/config/risk.json）を読めない：${e instanceof Error ? e.message : String(e)}`]
   }
   // Dependabot は spec.md を変えないので、spec の宣言を読む関数は常に null を返すものでよい
   const result = applyDependabotTitle(judgeRisk(files, config, () => null), pullRequest.title)

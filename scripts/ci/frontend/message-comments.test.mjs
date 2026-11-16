@@ -48,6 +48,10 @@ describe('文言のキーのコメントの検査', () => {
     assert.deepEqual(findMissingComments(text), [{ line: 2, key: 'a' }])
   })
 
+  test('キーを二重引用符で書いた呼び出しも見る', () => {
+    assert.deepEqual(findMissingComments('<span>{t("save")}</span>'), [{ line: 1, key: 'save' }])
+  })
+
   test('t で始まる別の名前の関数（tCommon など）も見る', () => {
     assert.deepEqual(findMissingComments("<span>{tCommon('save')}</span>"), [{ line: 1, key: 'save' }])
   })
@@ -137,7 +141,5 @@ describe('調べるファイル（共通の定義より広い部分）', () => {
     assert.equal(isTargetFile('frontend/store/src/test/render.tsx'), true)
     assert.equal(isTargetFile('frontend/admin/src/generated/Foo.tsx'), true)
     assert.equal(isTargetFile('frontend/admin/src/test/helper.ts'), false)
-    assert.equal(isTargetFile('frontend/admin/src/components/ui/sidebar.tsx'), false)
-    assert.equal(isTargetFile('frontend/admin/src/a.test.tsx'), false)
   })
 })

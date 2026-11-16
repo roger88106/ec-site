@@ -137,7 +137,7 @@ if (import.meta.main) {
   let count = 0
   for (const file of files) {
     for (const hit of findMissingComments(readFileSync(file, 'utf8'))) {
-      console.log(`${file}:${hit.line} ${hit.key}`)
+      console.log(`${file}:${hit.line} ${hit.key} 表示する内容のコメントがない（呼び出しの後に /* 内容 */ を書く。コメントの書き方の「文言をキーにした所」）`)
       count += 1
     }
   }

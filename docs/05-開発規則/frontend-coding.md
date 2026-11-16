@@ -113,7 +113,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 理由：同じ処理とコンポーネントを 1 か所で修正し、片方の画面の都合をもう片方に持ち込まないため。
 
-確認方法：admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー
+確認方法：admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー
 
 ### 既定の書式とテーマの値は共有のものを使う
 

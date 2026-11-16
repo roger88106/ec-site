@@ -9,7 +9,7 @@ describe('リンクでないパスの置き換え', () => {
   })
 
   test('テストのデータ（*.test.*）は置き換えない', () => {
-    assert.equal(isExcluded('scripts/ci/doc-refs.test.mjs'), true)
+    assert.equal(isExcluded('scripts/ci/docs/doc-refs.test.mjs'), true)
     assert.equal(isExcluded('frontend/store/src/lib/format.test.ts'), true)
     assert.equal(isExcluded('.claude/skills/docs/replace-paths.test.cjs'), true)
   })
@@ -21,7 +21,7 @@ describe('リンクでないパスの置き換え', () => {
   test('それ以外のファイルは置き換えの対象にする', () => {
     assert.equal(isExcluded('docs/03-機能仕様/cart.md'), false)
     assert.equal(isExcluded('.claude/skills/review/SKILL.md'), false)
-    assert.equal(isExcluded('scripts/ci/ac-check.mjs'), false)
+    assert.equal(isExcluded('scripts/ci/spec/ac-check.mjs'), false)
     assert.equal(isExcluded('docs/08-spec/019-mvp-completion/plan.md'), false)
   })
 

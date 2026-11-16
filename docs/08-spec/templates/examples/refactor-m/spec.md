@@ -29,7 +29,7 @@
 
 ### DS-900-2 文書の検査が通る（D / P1）
 
-- **DC-900-4** `node scripts/ci/doc-refs.mjs` が通る。
+- **DC-900-4** `node scripts/ci/docs/doc-refs.mjs` が通る。
 - **DC-900-5** 書き換えた節の `ja-text` の warning が 0 である。
 
 ## 変える範囲
@@ -74,7 +74,7 @@
 - [ ] **T900-01-03** 文書の検査を通す（DC-900-4、DC-900-5）。
   - 依存：T900-01-02
   - 範囲：`docs/03-機能仕様/order.md`
-  - 確認方法：`node scripts/ci/doc-refs.mjs` と `node scripts/ci/ja-text.mjs --warning`
+  - 確認方法：`node scripts/ci/docs/doc-refs.mjs` と `node scripts/ci/ja/ja-text.mjs --warning`
 - [ ] **T900-01-04** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T900-01-03
 - [ ] **T900-01-05** pull request の前のレビュー。指摘を修正し、draft を外す。

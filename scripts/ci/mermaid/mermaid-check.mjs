@@ -27,9 +27,9 @@ import { execFileSync, execSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { readCodeBlocks } from '../lib/code-block.mjs'
-import { readDocument } from '../lib/doc-structure.mjs'
-import { emptyListReason, listGitFiles } from '../lib/git-files.mjs'
+import { readCodeBlocks } from '../lib/docs/code-block.mjs'
+import { readDocument } from '../lib/docs/doc-structure.mjs'
+import { emptyListReason, listGitFiles } from '../lib/git/git-files.mjs'
 
 /** 使う mermaid-cli のバージョン（上げるときは、GitHub での表示と食い違わないかを確認する） */
 const MERMAID_CLI = '@mermaid-js/mermaid-cli@12.0.0'

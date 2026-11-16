@@ -1,7 +1,7 @@
 // Chrome とネットワークは使わない。描画は偽の関数に替える。
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { emptyListReason } from '../lib/git-files.mjs'
+import { emptyListReason } from '../lib/git/git-files.mjs'
 import { buildCommand, checkDocs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, puppeteerConfig, quoteArg, runCheck, summaryLine, toMarkdown } from './mermaid-check.mjs'
 
 const FENCE = '```'

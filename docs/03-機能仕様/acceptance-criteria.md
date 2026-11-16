@@ -2,7 +2,7 @@
 
 全ての受け入れ基準（AC）の、今の状態と今の内容の一覧。この一覧が AC の正本で、各モジュールの機能仕様（③）の「今有効な AC」の表は、この一覧から作る。完了した spec は変更の単位としてアーカイブに残し、AC の今の内容はこの一覧に書く。
 
-進行中の spec の AC は、`node scripts/ci/ac-check.mjs --write` が AC・状態・元の spec・今の内容を転記し、変えた spec を「—」にする。手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容である。転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは、手動で修正する（手順は[起票と記録の操作](../05-開発規則/issues.md)の「AC 一覧の操作」）。
+進行中の spec の AC は、`node scripts/ci/spec/ac-check.mjs --write` が AC・状態・元の spec・今の内容を転記し、変えた spec を「—」にする。手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容である。転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは、手動で修正する（手順は[起票と記録の操作](../05-開発規則/issues.md)の「AC 一覧の操作」）。
 
 | 列 | 内容 |
 |----|------|
@@ -15,8 +15,8 @@
 
 - モジュールに迷う AC は、表示するデータを持つモジュールにする。支払や出荷の状態を画面に表示するだけの AC は、`payment`・`shipping` にする。
 - AC を追加する・変更する手順は、[起票と記録の操作](../05-開発規則/issues.md)の「AC 一覧の操作」。
-- AC とテストの対応は `node scripts/ci/ac-check.mjs --tests` で表示する。
-- CI の検査 `ac-check`（[CI の検査の script](../06-手順書/ci-checks.md)）がこの一覧を読む。検査の内容は `scripts/ci/ac-check.mjs` の冒頭のコメント。
+- AC とテストの対応は `node scripts/ci/spec/ac-check.mjs --tests` で表示する。
+- CI の検査 `ac-check`（[CI の検査の script](../06-手順書/ci-checks.md)）がこの一覧を読む。検査の内容は `scripts/ci/spec/ac-check.mjs` の冒頭のコメント。
 
 <!-- generated:ac-list -->
 | AC | モジュール | 状態 | 元の spec | 変えた spec | 今の内容 |

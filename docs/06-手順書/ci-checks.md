@@ -4,7 +4,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 ## 検査の一覧
 
-`scripts/ci/check-all.sh` は、script のテストと `scripts/ci/` の直下の検査を全て実行する（判定の規則は冒頭のコメント）。`ja-text --changed` は分岐点を求めるので、shallow clone では失敗する。YAML・TOML を読む検査はルートの依存（js-yaml・smol-toml）を読むので、先にリポジトリのルートで `pnpm install` を実行する。各検査の確認すること、失敗したときの修正の手順、除外の書き方は、script の先頭のコメントにある。
+`scripts/ci/check-all.sh` は、script のテストと検査のフォルダ（`scripts/ci/` の `docs`・`spec`・`ja`・`java`・`config`・`frontend`）の直下の検査を全て実行する（判定の規則は冒頭のコメント）。`ja-text --changed` は分岐点を求めるので、shallow clone では失敗する。YAML・TOML を読む検査はルートの依存（js-yaml・smol-toml）を読むので、先にリポジトリのルートで `pnpm install` を実行する。各検査の確認すること、失敗したときの修正の手順、除外の書き方は、script の先頭のコメントにある。
 
 | script | 目的 |
 |--------|------|
@@ -37,7 +37,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 ## commit の前の hook
 
-commit の前の hook（[開発環境の起動](setup.md)の「起動」）は、ステージしたファイルに関係する検査と script のテストだけを `check-all.sh` で実行する。CI は全てを実行するので、選び漏れは CI で見つかる。選び方の処理と表は `scripts/dev/lib/pre-commit-select.mjs`。
+commit の前の hook（[開発環境の起動](setup.md)の「起動」）は、ステージしたファイルに関係する検査と script のテストだけを `check-all.sh` で実行する。CI は全てを実行するので、選び漏れは CI で見つかる。選び方の処理と表は `scripts/dev/hooks/pre-commit-select.mjs`。
 
 | ステージしたファイル | 実行するもの |
 |----------------------|----------|

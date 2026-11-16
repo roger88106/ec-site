@@ -21,7 +21,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import path from 'node:path'
 import { stopOnSignals } from './lib/child-stop.mjs'
 import { findListeners, stopListeners } from './lib/port-stop.mjs'
-import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './lib/slot-ports.mjs'
+import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './lib/slot/slot-ports.mjs'
 import {
   assignSlot,
   checkBackendStopped,
@@ -39,7 +39,7 @@ import {
   slotValues,
   SHARED_CONTAINERS,
   SLOT_COUNT,
-} from './lib/slot.mjs'
+} from './lib/slot/slot.mjs'
 
 /** 共有の PostgreSQL のコンテナ */
 const POSTGRES = 'ec-site-postgres'

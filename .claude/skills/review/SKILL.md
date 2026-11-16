@@ -26,7 +26,7 @@ description: 段階や spec の最後のレビュー、plan・tasks を書き終
 認証・支払・権限の経路を変えるなら、セキュリティのレビューも行う。
 hook・CI の検査の script・認証・支払・権限の経路を変える spec は、文脈を持たないレビュー役（`reviewer`）も 1 回加える（[エージェントの作業フロー](../../../docs/05-開発規則/subagents.md)の「レビューの時点と profile」）。
 中国語で指示する環境では手順 9 も行う（校閲の対象と時点は、[docs-review.md](docs-review.md)の手順 3）。
-差分の追加行の文体の警告は、spec 担当のセッションが `node scripts/ci/ja-text.mjs --changed` を実行する。一覧の警告を 1 件ずつ読み、修正するかを決める。
+差分の追加行の文体の警告は、spec 担当のセッションが `node scripts/ci/ja/ja-text.mjs --changed` を実行する。一覧の警告を 1 件ずつ読み、修正するかを決める。
 修正しないものは、理由をレビューの記録に書く。
 pull request の画面の注釈は 10 件までなので、一覧は上のコマンドで読む。
 

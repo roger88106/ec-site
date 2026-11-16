@@ -8,6 +8,9 @@ const SPEC_DIR = /^\d+-/
 /** アーカイブのディレクトリ（docs/08-spec/ から） */
 export const ARCHIVE = 'archive'
 
+/** spec の置き場所（リポジトリのルートから） */
+export const SPECS_DIR = 'docs/08-spec'
+
 /**
  * ディレクトリの名前が、spec のディレクトリの名前（<番号>-名前）の形かを返す。
  *

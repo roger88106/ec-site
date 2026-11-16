@@ -39,7 +39,7 @@ import path from 'node:path'
 import { readCodeBlocks } from '../lib/docs/code-block.mjs'
 import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from '../lib/docs/doc-structure.mjs'
 import { FUNCTIONAL_SPECS } from '../lib/docs/functional-specs.mjs'
-import { ARCHIVE, isSpecDirName, listSpecDirs } from '../lib/docs/spec-dirs.mjs'
+import { ARCHIVE, isSpecDirName, listSpecDirs, SPECS_DIR } from '../lib/docs/spec-dirs.mjs'
 
 /** 機能の spec の `##` の節 */
 export const FEATURE_SECTIONS = ['背景と目的', 'スコープ', 'User stories', '受け入れ条件', '業務ルール', '非機能要件', '依存', 'Non-goals', 'Open questions']
@@ -55,9 +55,6 @@ const FUNCTIONAL_TEMPLATE = 'docs/03-機能仕様/template.md'
 
 /** 機能仕様の雛形で、骨組みのコードブロックを置く節の見出し */
 const SKELETON_HEADING = '写して使う骨組み'
-
-/** 進行中の spec の置き場所 */
-const SPECS_DIR = 'docs/08-spec'
 
 /** 雛形の置き場所 */
 const TEMPLATES_DIR = 'docs/08-spec/templates'
@@ -328,7 +325,7 @@ export function findTargets(specsDir) {
   const all = listSpecDirs(specsDir)
   const numberOf = (spec) => spec.name.split('-')[0]
   return {
-    targets: all.filter((spec) => !spec.rel.startsWith('archive/')).map((spec) => ({ dir: spec.dir, number: numberOf(spec) })),
+    targets: all.filter((spec) => !spec.rel.startsWith(`${ARCHIVE}/`)).map((spec) => ({ dir: spec.dir, number: numberOf(spec) })),
     known: new Set([...all.map(numberOf), EXAMPLE_NUMBER]),
   }
 }

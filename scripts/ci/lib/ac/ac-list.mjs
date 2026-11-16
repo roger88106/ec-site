@@ -21,7 +21,7 @@ import path from 'node:path'
 import { readCodeBlocks } from '../docs/code-block.mjs'
 import { readCodeSpans, replaceCodeSpans } from '../source/code-span.mjs'
 import { readDocument } from '../docs/doc-structure.mjs'
-import { ARCHIVE, listSpecDirs } from '../docs/spec-dirs.mjs'
+import { ARCHIVE, listSpecDirs, SPECS_DIR } from '../docs/spec-dirs.mjs'
 import { AC_NUMBER, compareAc, toAcKey } from './test-names.mjs'
 
 /** AC 一覧の状態 */
@@ -41,9 +41,6 @@ export const MODULE_DOCS_DIR = 'docs/03-機能仕様'
 
 /** バックエンドのモジュールのディレクトリの置き場所（リポジトリのルートから） */
 export const BACKEND_MODULES_DIR = 'backend/ecsite/src/main/java/com/ecsite/module'
-
-/** spec の置き場所（リポジトリのルートから） */
-export const SPECS_DIR = 'docs/08-spec'
 
 /** AC 一覧の表の列 */
 const LIST_COLUMNS = ['AC', 'モジュール', '状態', '元の spec', '変えた spec', '今の内容']

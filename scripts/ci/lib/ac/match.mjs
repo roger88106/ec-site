@@ -32,7 +32,8 @@
 import { findEmptyReasons } from '../output/exclusions.mjs'
 import { readDocument, readHeadings } from '../docs/doc-structure.mjs'
 import { AC_NUMBER_ONLY, compareAc, findAmbiguousAcLists, findSpacedAcLists, parseAcRefs, toAcKey } from './test-names.mjs'
-import { BASIS, COMMON, LIST_MARK, MODULE_AC_SECTION, MODULE_COLUMNS, MODULE_MARK, MVP_AC_LIMIT, MVP_ARCHIVE_PREFIX, PLACEHOLDER, SPEC_NUMBER, SPEC_NUMBER_SEPARATOR, SPEC_ONLY_REFS, SPECS_DIR, STATUSES, findMarks, readPair, renderModuleTable, specNumberOf, splitKeepingEol, toLf } from './ac-list.mjs'
+import { BASIS, COMMON, LIST_MARK, MODULE_AC_SECTION, MODULE_COLUMNS, MODULE_MARK, MVP_AC_LIMIT, MVP_ARCHIVE_PREFIX, PLACEHOLDER, SPEC_NUMBER, SPEC_NUMBER_SEPARATOR, SPEC_ONLY_REFS, STATUSES, findMarks, readPair, renderModuleTable, specNumberOf, splitKeepingEol, toLf } from './ac-list.mjs'
+import { SPECS_DIR } from '../docs/spec-dirs.mjs'
 
 /**
  * AC とテスト名を照合する。

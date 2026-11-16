@@ -68,6 +68,11 @@ class CartApiTest {
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
+     * 1 つのカートに入れられる品目の数の上限
+     */
+    private static final int MAX_ITEMS = 30;
+
+    /**
      * 販売可能数を超えたときの、利用者へのメッセージ（在庫数を含まない）
      */
     private static final String EXCEEDS_STOCK_MESSAGE = "在庫が足りないため、この数量ではカートに入れられません。";
@@ -277,6 +282,29 @@ class CartApiTest {
     }
 
     @Nested
+    @DisplayName("品目の数の上限")
+    class ItemLimit {
+
+        @Test
+        @DisplayName("AC-75 30 品目のカートに 31 品目めは入れられず、30 品目のまま")
+        void rejectsThirtyFirstItem() throws Exception {
+            // 準備：在庫のある 31 のバリアントのうち、30 を入れたカート
+            var variants = stockedVariants(MAX_ITEMS + 1);
+            for (var variant : variants.subList(0, MAX_ITEMS)) {
+                add(cartId, variant, 1).andExpect(status().isNoContent());
+            }
+
+            // 操作：31 品目めを入れる
+            var result = add(cartId, variants.getLast(), 1);
+
+            // 確認：品目の数の上限として拒否され、品目は 30 のまま
+            result.andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("TOO_MANY_CART_ITEMS"));
+            assertThat(items()).extracting(Map.Entry::getKey).containsExactlyElementsOf(variants.subList(0, MAX_ITEMS));
+        }
+    }
+
+    @Nested
     @DisplayName("入れるときの販売可能数")
     class AddStock {
 
@@ -366,6 +394,37 @@ class CartApiTest {
         }
 
         @Test
+        @DisplayName("AC-78 販売可能数ちょうどまでは、数量を増やせる")
+        void increasesUpToSellable() throws Exception {
+            // 準備：在庫 3 のうち 2 をカートに入れる
+            var variant = stockedVariant(3);
+            add(cartId, variant, 2).andExpect(status().isNoContent());
+
+            // 操作：3 個に増やす
+            var result = change(cartId, variant, 3);
+
+            // 確認：受け付けられ、3 個になる
+            result.andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, 3));
+        }
+
+        @Test
+        @DisplayName("AC-78 今と同じ数量への変更は増量でないので、在庫がなくても受け付ける")
+        void acceptsSameQuantityRegardlessOfStock() throws Exception {
+            // 準備：在庫 3 のうち 2 をカートに入れた後、在庫が 0 になる
+            var variant = stockedVariant(3);
+            add(cartId, variant, 2).andExpect(status().isNoContent());
+            inventory.adjust(variant, -3);
+
+            // 操作：2 個に変える
+            var result = change(cartId, variant, 2);
+
+            // 確認：受け付けられ、2 個のまま
+            result.andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, 2));
+        }
+
+        @Test
         @DisplayName("AC-78 カートにない品目の数量は変えられない")
         void rejectsItemNotInCart() throws Exception {
             // 準備：在庫はあるが、カートに入れていないバリアント
@@ -445,6 +504,87 @@ class CartApiTest {
             // 確認：受け付けられ、カートは空になる
             result.andExpect(status().isNoContent());
             assertThat(items()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("入れた後に選べなくなった品目")
+    class NoLongerSelectable {
+
+        @Test
+        @DisplayName("AC-78 入れた後に非公開になった商品の品目も、数量を減らせる")
+        void decreasesUnpublished() throws Exception {
+            // 準備：2 個入れた後に、商品を非公開にする
+            var product = inCart(2);
+            product.unpublish();
+            var variant = product.variantIds.getFirst();
+
+            // 操作と確認：1 個に減らせる
+            change(cartId, variant, 1).andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, 1));
+        }
+
+        @Test
+        @DisplayName("AC-78 入れた後に非公開になった商品の品目も、削除できる")
+        void removesUnpublished() throws Exception {
+            // 準備：2 個入れた後に、商品を非公開にする
+            var product = inCart(2);
+            product.unpublish();
+
+            // 操作と確認：削除でき、カートは空になる
+            remove(cartId, product.variantIds.getFirst()).andExpect(status().isNoContent());
+            assertThat(items()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-78 入れた後に非公開になった商品の品目も、販売可能数の範囲で増やせる（増量は商品カタログを見ない）")
+        void increasesUnpublishedWithinSellable() throws Exception {
+            // 準備：2 個入れた後に、商品を非公開にする
+            var product = inCart(2);
+            product.unpublish();
+            var variant = product.variantIds.getFirst();
+
+            // 操作と確認：在庫 3 の範囲の 3 個に増やせる
+            change(cartId, variant, 3).andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, 3));
+        }
+
+        @Test
+        @DisplayName("AC-78 入れた後に販売停止になったバリアントの品目も、数量を減らせる")
+        void decreasesSuspended() throws Exception {
+            // 準備：2 個入れた後に、バリアントを販売停止にする
+            var product = inCart(2);
+            product.suspend(0);
+            var variant = product.variantIds.getFirst();
+
+            // 操作と確認：1 個に減らせる
+            change(cartId, variant, 1).andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, 1));
+        }
+
+        @Test
+        @DisplayName("AC-78 入れた後に販売停止になったバリアントの品目も、削除できる")
+        void removesSuspended() throws Exception {
+            // 準備：2 個入れた後に、バリアントを販売停止にする
+            var product = inCart(2);
+            product.suspend(0);
+
+            // 操作と確認：削除でき、カートは空になる
+            remove(cartId, product.variantIds.getFirst()).andExpect(status().isNoContent());
+            assertThat(items()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-78 入れた後に販売停止になったバリアントの品目も、販売可能数の範囲で増やせる（増量は商品カタログを見ない）")
+        void increasesSuspendedWithinSellable() throws Exception {
+            // 準備：2 個入れた後に、バリアントを販売停止にする
+            var product = inCart(2);
+            product.suspend(0);
+            var variant = product.variantIds.getFirst();
+
+            // 操作と確認：在庫 3 の範囲の 3 個に増やせる
+            change(cartId, variant, 3).andExpect(status().isNoContent());
+            assertThat(items()).containsExactly(Map.entry(variant, 3));
         }
     }
 
@@ -556,6 +696,37 @@ class CartApiTest {
      */
     private UUID stockedVariant(int quantity) throws Exception {
         return inventory.stockedVariant(catalog, standard, "商品", quantity);
+    }
+
+    /**
+     * 在庫のある、指定した数のバリアントを作る。
+     *
+     * <p>色の軸を持つ 1 つの商品に、指定した数のバリアントを登録して公開し、それぞれに在庫を 1 つ置く。
+     *
+     * @param count バリアントの数
+     * @return バリアント ID（登録した順）
+     */
+    private List<UUID> stockedVariants(int count) throws Exception {
+        var product = catalog.product(standard, "商品", 1000, "色");
+        for (int i = 0; i < count; i++) {
+            product.variant("色 " + i);
+        }
+        product.publish();
+        product.variantIds.forEach(variant -> inventory.stock(variant, 1));
+        return List.copyOf(product.variantIds);
+    }
+
+    /**
+     * 在庫が 3 の、公開した商品のバリアントを、指定した数量でテストのカートに入れる。
+     *
+     * @param quantity 入れる数量
+     * @return 商品（バリアントは 1 つ）
+     */
+    private CatalogTestData.TestProduct inCart(int quantity) throws Exception {
+        var product = catalog.product(standard, "商品", 1000, "色").variant("白").publish();
+        inventory.stock(product.variantIds.getFirst(), 3);
+        add(cartId, product.variantIds.getFirst(), quantity).andExpect(status().isNoContent());
+        return product;
     }
 
     /**

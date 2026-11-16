@@ -172,6 +172,25 @@ class CategoryTest {
     }
 
     @Nested
+    @DisplayName("子を持てるか")
+    class CanHaveChildren {
+
+        @Test
+        @DisplayName("AC-9 2 階層目のカテゴリは子を持てる")
+        void secondLevelCanHaveChildren() {
+            // 操作と確認：深さ 2 は子を持てる
+            assertThat(Category.canHaveChildren(2)).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-9 3 階層目のカテゴリは子を持てない")
+        void thirdLevelCannotHaveChildren() {
+            // 操作と確認：深さ 3 は子を持てない
+            assertThat(Category.canHaveChildren(3)).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("名称の変更")
     class Rename {
 

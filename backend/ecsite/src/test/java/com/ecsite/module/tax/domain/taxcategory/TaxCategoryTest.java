@@ -207,6 +207,18 @@ class TaxCategoryTest {
         }
 
         @Test
+        @DisplayName("AC-3 終了が空白の税率の後に税率がある一覧は、重複として拒否される")
+        void rejectsRateAfterUnboundedEnd() {
+            // 準備：税率のない税区分
+            var category = factory.create(NAME);
+
+            // 操作と確認：無期限の税率と、2027-04-01 からの税率は、業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
+            assertBusinessError(() -> category.replaceRates(List.of(
+                    newDraft("10", null, null),
+                    newDraft("8", APR_2027, null)), NOW), TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);
+        }
+
+        @Test
         @DisplayName("AC-3 期間の間に途切れがある一覧は拒否される")
         void rejectsGap() {
             // 準備：税率のない税区分
@@ -454,6 +466,20 @@ class TaxCategoryTest {
         }
 
         @Test
+        @DisplayName("AC-5 終了済みの税率は、率を変えなくても、終了を延ばせない")
+        void rejectsExtendingEnded() {
+            // 準備：2026-04-01 に終了済みの税率と、今の税率を持つ税区分
+            var ended = rate("8", null, APR_2026);
+            var current = rate("10", APR_2026, null);
+            var category = restore(ended, current);
+
+            // 操作と確認：率は 8% のまま終了を 2027-04-01 に延ばすと、業務のエラー TAX_RATE_ENDED_UNCHANGEABLE で拒否される
+            assertBusinessError(() -> category.replaceRates(List.of(
+                    draft(ended.id(), "8", null, APR_2027),
+                    draft(current.id(), "10", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_ENDED_UNCHANGEABLE);
+        }
+
+        @Test
         @DisplayName("AC-5 終了済みの税率は削除できない")
         void rejectsDeletingEnded() {
             // 準備：2026-04-01 に終了済みの税率と、今の税率を持つ税区分
@@ -520,6 +546,20 @@ class TaxCategoryTest {
 
             // 確認：開始済みの税率だけが残る
             assertThat(category.rates()).extracting(TaxRate::id).containsExactly(started.id());
+        }
+
+        @Test
+        @DisplayName("AC-5 未開始の税率の開始を、現在より前の日時に変更できない")
+        void rejectsMovingNotStartedToPast() {
+            // 準備：2027-04-01 に終わる開始済みの税率と、2027-04-01 から始まる未開始の税率を持つ税区分
+            var started = rate("10", null, APR_2027);
+            var future = rate("8", APR_2027, null);
+            var category = restore(started, future);
+
+            // 操作と確認：未開始の税率の開始を 2026-04-01 に変えると、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
+            assertBusinessError(() -> category.replaceRates(List.of(
+                    draft(started.id(), "10", null, APR_2027),
+                    draft(future.id(), "8", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }
     }
 

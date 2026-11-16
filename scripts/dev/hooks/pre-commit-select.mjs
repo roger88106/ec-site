@@ -93,10 +93,10 @@ export function importClosure(file, read) {
  * @returns {boolean} 当たれば true
  */
 function touches(staged, closure, patterns) {
+  // 先にパスで当たるかを見て、当たらないときだけ内容をつなぐ
+  if (staged.some((file) => closure.has(file) || patterns.some((pattern) => pattern.test(file)))) return true
   const sources = [...closure.values()].join('\n')
-  return staged.some(
-    (file) => closure.has(file) || sources.includes(file) || sources.includes(path.posix.basename(file)) || patterns.some((pattern) => pattern.test(file)),
-  )
+  return staged.some((file) => sources.includes(file) || sources.includes(path.posix.basename(file)))
 }
 
 /**
@@ -152,15 +152,23 @@ export function listChecksAndTests(root) {
 /**
  * 取り出した先のファイルを読む関数を作る。
  *
+ * 読んだ内容（ないことを含む）は覚えておく。共有の lib は、検査とテストごとに何度もたどられるため。
+ *
  * @param {string} root 取り出した先のディレクトリ
  * @returns {(file: string) => string | null} 相対パスのファイルの内容。ないときは null
  */
 export function fileReader(root) {
+  const cache = new Map()
   return (file) => {
-    try {
-      return readFileSync(path.join(root, file), 'utf8')
-    } catch {
-      return null
+    if (!cache.has(file)) {
+      let text = null
+      try {
+        text = readFileSync(path.join(root, file), 'utf8')
+      } catch {
+        // ないファイルは null として覚える
+      }
+      cache.set(file, text)
     }
+    return cache.get(file)
   }
 }

@@ -241,6 +241,17 @@ tasks.named<Test>("test") {
     }
 }
 
+// コンテナのイメージのバージョンの正本。統合テスト（ComposeImages）と jOOQ のコード生成は、ここからイメージを読む。
+// Dependabot が compose を更新すると、両方が同じバージョンになる
+val composeFile: File = file("../../docker/compose.yaml")
+
+/** compose の `image: <名前>:<バージョン>` の行から、名前が一致するイメージを返す */
+fun composeImage(name: String): String =
+    composeFile.readLines().map { it.trim() }.filter { it.startsWith("image:") }
+        .map { it.removePrefix("image:").trim() }
+        .firstOrNull { it.substringBeforeLast(':') == name }
+        ?: throw GradleException("docker/compose.yaml に $name のイメージがない")
+
 val integrationTest = tasks.register<Test>("integrationTest") {
     description = "統合テストを実行する（Docker 必須）"
     group = "verification"
@@ -251,6 +262,9 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     systemProperty("openapi.dir", openApiDir.asFile.absolutePath)
     systemProperty("keycloak.realms.dir", keycloakRealmsDir.absolutePath)
     systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
+    // リポジトリのルート。コンテナのイメージの補助（ComposeImages）が docker/compose.yaml を読む
+    systemProperty("repo.root", file("../..").absolutePath)
+    inputs.file(composeFile)
     // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照合する）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
@@ -663,7 +677,7 @@ tasks.named<JooqGenerate>("generateJooq") {
     inputs.dir(migrationDir)
 
     // 使い捨て PostgreSQL（docker/compose.yaml と同じイメージ）
-    val container = PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"))
+    val container = PostgreSQLContainer(DockerImageName.parse(composeImage("postgres")))
 
     // jooq { } ブロックで組んだ Configuration と同一インスタンスを参照している
     val jdbc = jooq.configurations.getByName("main").jooqConfiguration.jdbc

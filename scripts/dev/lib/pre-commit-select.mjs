@@ -30,7 +30,6 @@ export const CHECK_INPUTS = {
   'frontend-rules': [/^frontend\//, /^e2e\//],
   'glossary-ids': ALWAYS,
   'gradle-plugins': [/^backend\/ecsite\/.*\.gradle\.kts$/],
-  'image-versions': [/^backend\/ecsite\/src\/integrationTest\//],
   'ja-text': ALWAYS,
   'java-rules': [/^backend\/ecsite\/src\//],
   'local-ports': [],

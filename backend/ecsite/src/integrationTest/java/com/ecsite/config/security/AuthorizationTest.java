@@ -143,11 +143,35 @@ class AuthorizationTest {
                     .andExpect(status().isUnauthorized())
                     .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
         }
+
+        @Test
+        @DisplayName("AC-138 audience のない運営者の token は 401")
+        void rejectsTokenWithoutAudience() throws Exception {
+            // 準備：audience を載せない管理者の token
+            var token = TestTokens.administrator().audience(null);
+
+            // 操作と確認：「ログインが必要」
+            mockMvc.perform(get(TAX_CATEGORIES).with(token.bearer()))
+                    .andExpect(status().isUnauthorized())
+                    .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
+        }
     }
 
     @Nested
     @DisplayName("店舗 API の会員向けの操作の認証")
     class StoreAuthentication {
+
+        @Test
+        @DisplayName("AC-137 店舗 API の会員向けの操作は、audience が店舗 API でない会員の token で 401")
+        void rejectsMemberTokenForOtherAudience() throws Exception {
+            // 準備：audience を店舗画面にした会員の token
+            var token = TestTokens.member().audience("ec-store-web");
+
+            // 操作と確認：「ログインが必要」
+            mockMvc.perform(get(MEMBER_CART).with(token.bearer()))
+                    .andExpect(status().isUnauthorized())
+                    .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
+        }
 
         @Test
         @DisplayName("AC-137 店舗 API の会員向けの操作は、有効期限の切れた token で 401")

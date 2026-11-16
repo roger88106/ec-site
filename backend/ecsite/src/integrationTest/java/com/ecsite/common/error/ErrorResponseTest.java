@@ -248,6 +248,15 @@ class ErrorResponseTest {
         }
 
         @Test
+        @DisplayName("Spring MVC の標準の例外でも 5xx になるもの（パスの変数の名前の誤り）は、想定外のエラーの 500")
+        void frameworkServerError() throws Exception {
+            // 操作と確認：Controller の定義の誤りは、入力の誤りの本文でなく SYSTEM_ERROR の 500
+            mockMvc.perform(get(BASE + "/missing-path-variable/value"))
+                    .andExpect(status().isInternalServerError())
+                    .andExpectAll(problem("SYSTEM_ERROR", SYSTEM_ERROR));
+        }
+
+        @Test
         @DisplayName("許可されていないメソッドは 405")
         void methodNotAllowed() throws Exception {
             // 操作と確認：GET だけのパスに DELETE を送ると METHOD_NOT_ALLOWED の 405
@@ -360,6 +369,10 @@ class ErrorResponseTest {
 
         @GetMapping("/required-param")
         void requiredParam(@RequestParam String q) {
+        }
+
+        @GetMapping("/missing-path-variable/{actual}")
+        void missingPathVariable(@PathVariable("expected") String expected) {
         }
     }
 

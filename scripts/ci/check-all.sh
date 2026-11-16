@@ -46,11 +46,10 @@ run_check() {
   local reason ok=0
   last_ok=0
   if [ "$status" -ne 0 ]; then
-    # 終了コードは shell が直接見る（node の判定に頼らない）
     reason="終了コード $status"
   else
     # 要約の行の判定だけを node に任せる。OK の行が出なければ、判定の script が動かなかったものとして失敗にする
-    reason="$(node scripts/ci/lib/output/check-result.mjs "$status" "$LOG" "$mode")"
+    reason="$(node scripts/ci/lib/output/check-result.mjs "$LOG" "$mode")"
     if [ $? -eq 0 ] && [ "$reason" = "OK" ]; then
       ok=1
     elif [ -z "$reason" ]; then

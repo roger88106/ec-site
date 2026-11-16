@@ -75,40 +75,40 @@ describe('検査の成功・失敗の判定', () => {
 
 describe('check-all.sh から呼ぶ形（コマンドライン）', () => {
   /** ログのファイルを作って判定の script を実行する */
-  function run(output, status, mode) {
+  function run(output, mode) {
     const dir = mkdtempSync(path.join(tmpdir(), 'check-result-'))
     try {
       const log = path.join(dir, 'log.txt')
       writeFileSync(log, output)
-      return spawnSync(process.execPath, ['scripts/ci/lib/output/check-result.mjs', String(status), log, mode], { encoding: 'utf8' })
+      return spawnSync(process.execPath, ['scripts/ci/lib/output/check-result.mjs', log, mode], { encoding: 'utf8' })
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
   }
 
   test('成功は終了コード 0 で、OK の 1 行を出す', () => {
-    const result = run('切れた参照：0\n', 0, 'summary')
+    const result = run('切れた参照：0\n', 'summary')
     assert.equal(result.status, 0)
     assert.equal(result.stdout.trim(), 'OK')
   })
 
   test('要約の行がなければ終了コード 1 で、理由を出す', () => {
-    const result = run('問題はない\n', 0, 'summary')
+    const result = run('問題はない\n', 'summary')
     assert.equal(result.status, 1)
     assert.match(result.stdout, /要約の行/)
   })
 
   test('モードが tests なら、要約の行がなくても、テストが 1 件以上あれば成功', () => {
-    assert.equal(run('ℹ tests 10\nℹ pass 10\n', 0, 'tests').status, 0)
+    assert.equal(run('ℹ tests 10\nℹ pass 10\n', 'tests').status, 0)
   })
 
   test('モードが tests で、テストが 0 件なら終了コード 1 で、理由を出す', () => {
-    const result = run('ℹ tests 0\nℹ pass 0\n', 0, 'tests')
+    const result = run('ℹ tests 0\nℹ pass 0\n', 'tests')
     assert.equal(result.status, 1)
     assert.match(result.stdout, /0 件/)
   })
 
   test('知らないモードは失敗にする', () => {
-    assert.equal(run('切れた参照：0\n', 0, 'unknown').status, 1)
+    assert.equal(run('切れた参照：0\n', 'unknown').status, 1)
   })
 })

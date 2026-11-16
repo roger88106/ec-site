@@ -23,6 +23,16 @@ describe('mutation score（PIT の XML）', () => {
     ])
   })
 
+  test('status ごとの数を、多い順（同じ数なら名前順）に返す', () => {
+    const { statuses } = readMutations(readFileSync(PIT, 'utf8'))
+    assert.deepEqual(statuses, [
+      { status: 'KILLED', count: 3 },
+      { status: 'NO_COVERAGE', count: 2 },
+      { status: 'SURVIVED', count: 1 },
+      { status: 'TIMED_OUT', count: 1 },
+    ])
+  })
+
   test('上位は 10 件までにする', () => {
     const mutation = (n) => `<mutation detected='false' status='SURVIVED'><mutatedClass>c.C${n}</mutatedClass></mutation>`
     const xml = `<mutations>${Array.from({ length: 12 }, (_, n) => mutation(n)).join('')}</mutations>`

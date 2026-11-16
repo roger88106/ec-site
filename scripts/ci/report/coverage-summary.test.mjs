@@ -66,6 +66,7 @@ describe('mutation score の報告', () => {
     const markdown = mutationMarkdown('domain', readFileSync(PIT, 'utf8'))
     assert.match(markdown, /### mutation score（domain）/)
     assert.match(markdown, /57[.]1% [|] 4 [/] 7/)
+    assert.match(markdown, /status ごとの数：KILLED 3、NO_COVERAGE 2、SURVIVED 1、TIMED_OUT 1/)
     const order = markdown.indexOf('domain.order.Order`')
     const product = markdown.indexOf('domain.product.Product`')
     assert.ok(order > 0 && order < product, markdown)

@@ -42,7 +42,7 @@
 
 ### ruleset
 
-GitHub の ruleset を `develop` と `main` に作る。
+GitHub の ruleset を、`develop`・`main`・`release-hotfix` の 3 つ作る。`develop` と `main` は次の表のとおり。
 
 | 項目 | `develop` | `main` |
 |------|-----------|--------|
@@ -52,10 +52,16 @@ GitHub の ruleset を `develop` と `main` に作る。
 | マージの前に最新の `develop` を含む | なし ※2 | なし |
 | force push | 禁止 | 禁止 |
 | 削除 | 禁止 | 禁止 |
+| 未解決のレビューのスレッド | あるとマージできない ※3 | 同左 |
 
 ※1：分けたバックエンドのジョブ（ビルドと単体テスト、PIT、統合テスト 1/3・2/3・3/3）は登録しない。「バックエンド」がそれらの結果を確認するため（[CI の検査](ci.md)の「CI のジョブ」）。
 
 ※2：続けてマージするとき、取り込みと CI の再実行を待たないために、最新の取り込みを必須にしない。代わりに、マージの後に `develop` の CI を見届ける（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
+
+※3：pull request の会話の全てのスレッドを解決（resolve）するまでマージできない（required_review_thread_resolution）。理由：利用者の指摘に答えないままマージしないため。
+
+- `release-hotfix`：`release/**` と `hotfix/**` の force push を禁止する。理由：リリースする commit を、確認した後に書き換えないため。削除は禁止しない（マージの後に自動で削除するため。「自動の削除」）。
+- `agent/**` には ruleset を作らない。force push もできる。理由：利用者は最後の pull request だけを確認し、途中のブランチの履歴は重要でないため。エージェントの force push は、Claude Code の hook（`scripts/dev/hooks/agent-guard.mjs`）が、push の先が全て `agent/` で始まるときだけ通す。
 
 ### `main` の元のブランチの制限
 
@@ -110,12 +116,12 @@ GitHub の ruleset を `develop` と `main` に作る。
 |------|------|
 | 対象 | `gradle`（`/backend/ecsite`）、`npm`（`/`。pnpm の workspace）、`github-actions`（`/`）、`docker-compose`（`/docker`） |
 | 頻度 | 週 1 回（月曜、日本時間） |
-| group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする。`github-actions` は major も含めて 1 つの pull request にする ※3 |
+| group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする。`github-actions` は major も含めて 1 つの pull request にする ※4 |
 | cooldown | リリースから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は SemVer の日数に対応しないため、7 日（`default-days`） |
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 
-※3：`github-actions` の更新は危険度が高いので、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
+※4：`github-actions` の更新は危険度が高いので、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
 
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
 - Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。

@@ -131,6 +131,16 @@ describe('マージのコマンドを判定する', () => {
     assert.equal(deps.ghCalls.length, 1)
   })
 
+  test('向き先が agent/ で始まるマージは、CI・危険度・閉じる issue を見ずに通し、閉じたものと head の不一致は確認を求める', () => {
+    const unchecked = { baseRefName: 'agent/458-module-review', checks: [check('バックエンド', 'FAILURE')], closing: [], body: '' }
+    assertPassed(MERGE, mergeDeps(unchecked))
+    assertPassed(MERGE, mergeDeps({ ...unchecked, closing: [{ number: 1, labels: ['種類:機能'] }] }))
+    assertAsked(MERGE, /開いていない/, mergeDeps({ ...unchecked, state: 'MERGED' }))
+    assertAsked(MERGE, /head の commit/, mergeDeps({ ...unchecked, headRefOid: 'f'.repeat(40) }))
+    assertDenied('gh pr merge 246', /--match-head-commit/, mergeDeps(unchecked))
+    assertAsked(MERGE, /向き先/, mergeDeps({ baseRefName: 'agents/x' }))
+  })
+
   test('フルパスの gh と gh.exe でも判定する', () => {
     for (const program of ['"/c/Program Files/GitHub CLI/gh.exe"', 'gh.exe', '/usr/bin/gh']) {
       assertPassed(`${program} pr merge 246 --match-head-commit ${HEAD_SHA}`, mergeDeps())

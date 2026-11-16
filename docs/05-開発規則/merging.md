@@ -15,6 +15,7 @@ pull request のマージと、その後の作業の規則。pull request を作
 | `hotfix/` の後の `main` から `develop` への取り込み | issue 担当 |
 | tag | issue 担当 |
 
+- 向き先が `agent/` で始まる pull request（作業ブランチどうしのマージ）は、利用者の許可も CI の結果も求めず、その作業を任されたセッションがマージしてよい。マージは他と同じく head の commit を指定して行う。理由：利用者は最後の pull request だけを確認し、途中のブランチの履歴は重要でないため（2026-11-17 の決定）。
 - それ以外は、CI が全て通り、未解決の重要度「高」「必須」の指摘が 0 なら、issue 担当のセッションがマージし、spec 担当のセッションに知らせる。spec 担当のセッションは、pull request を作り、「ready と CI の順」に従って報告する。推奨の指摘と起票の案も本文に書き、利用者はステップの終わりに確認する（skill `sessions`）。
 - 承認に数えるのは、利用者が会話か pull request で明示した許可だけ。エージェント（issue 担当を含む）の承認とレビューの合格は数えない。GitHub の approve の数は求めない。
 - 承認は、求めたときの head の commit にだけ有効。マージは head の commit を指定して行い、承認の後に push したら再度求める。

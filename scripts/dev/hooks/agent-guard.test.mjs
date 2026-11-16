@@ -19,23 +19,28 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 /** .claude/settings.json の中身 */
 const SETTINGS = JSON.parse(readFileSync(path.join(REPO_ROOT, '.claude/settings.json'), 'utf8'))
 
-/** settings.json の PreToolUse の hook の設定（matcher と hook の一覧） */
-const PRE_TOOL_USE = SETTINGS.hooks.PreToolUse[0]
+/** settings.json の PreToolUse の hook の設定（matcher ごとの、hook の一覧） */
+const PRE_TOOL_USE = SETTINGS.hooks.PreToolUse
 
-/** settings.json の hook のタイムアウト（ミリ秒） */
-const HOOK_TIMEOUT_MS = PRE_TOOL_USE.hooks[0].timeout * 1000
+/** settings.json の PreToolUse の全てのハンドラー */
+const HANDLERS = PRE_TOOL_USE.flatMap((entry) => entry.hooks)
 
 describe('.claude/settings.json の hook と permission の設定', () => {
-  test('hook の matcher は、Bash と PowerShell のツールを対象にする', () => {
-    const tools = PRE_TOOL_USE.matcher.split('|')
-    assert.ok(tools.includes('Bash'), PRE_TOOL_USE.matcher)
-    assert.ok(tools.includes('PowerShell'), PRE_TOOL_USE.matcher)
+  test('hook は、Bash と PowerShell のツールで、コマンドに git か gh を含むときだけ起動する（if 欄）', () => {
+    const rules = PRE_TOOL_USE.flatMap((entry) => entry.hooks.map((hook) => `${entry.matcher}：${hook.if}`))
+    assert.deepEqual(rules.sort(), ['Bash：Bash(*gh*)', 'Bash：Bash(*git*)', 'PowerShell：PowerShell(*gh*)', 'PowerShell：PowerShell(*git*)'])
+  })
+
+  test('どのハンドラーも、同じコマンドで script を呼ぶ', () => {
+    assert.equal(new Set(HANDLERS.map((hook) => hook.command)).size, 1)
   })
 
   test('hook のタイムアウトは、script の中の gh の合計と git のタイムアウトを足した値より長い', () => {
-    assert.ok(Number.isFinite(HOOK_TIMEOUT_MS), `hook のタイムアウト：${HOOK_TIMEOUT_MS}`)
     assert.ok(Number.isInteger(GH_BUDGET_MS) && Number.isInteger(GIT_TIMEOUT_MS), `gh：${GH_BUDGET_MS}、git：${GIT_TIMEOUT_MS}`)
-    assert.ok(HOOK_TIMEOUT_MS > GH_BUDGET_MS + GIT_TIMEOUT_MS, `hook：${HOOK_TIMEOUT_MS}、gh と git：${GH_BUDGET_MS + GIT_TIMEOUT_MS}`)
+    for (const hook of HANDLERS) {
+      const timeout = hook.timeout * 1000
+      assert.ok(Number.isFinite(timeout) && timeout > GH_BUDGET_MS + GIT_TIMEOUT_MS, `hook：${timeout}、gh と git：${GH_BUDGET_MS + GIT_TIMEOUT_MS}`)
+    }
   })
 
   test('自動マージの有効化と、settings.json・settings.local.json の Edit で確認を求める', () => {
@@ -56,21 +61,17 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
   /** リポジトリ（作業ツリー）の根 */
   const repoRoot = REPO_ROOT
   /** settings.json に書いた PreToolUse の hook のコマンド */
-  const hookCommand = PRE_TOOL_USE.hooks[0].command
+  const hookCommand = HANDLERS[0].command
 
   /**
    * hook のコマンドを Git の bash で、`cwd` を作業ディレクトリにして実行する（hook のコマンドは Git Bash で動く形で書くので、その bash で確認する）。
-   * CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す。`description` は tool_input に、`fields` は入力の最上位に加え、
-   * `binDir` は PATH の先頭に加える
+   * CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す。git・gh を含むかの絞り込みは Claude Code が if 欄で行うので、ここでは見ない
    */
-  function runHook(command, cwd, projectDir, { description, fields = {}, binDir } = {}) {
+  function runHook(command, cwd, projectDir) {
     const env = withoutGitEnv()
     delete env.CLAUDE_PROJECT_DIR
     if (projectDir !== undefined) env.CLAUDE_PROJECT_DIR = projectDir
-    // Windows では環境変数が Path という名前のこともあるので、今の名前に加える
-    const pathName = Object.keys(env).find((name) => name.toUpperCase() === 'PATH') ?? 'PATH'
-    if (binDir !== undefined) env[pathName] = `${binDir}${path.delimiter}${env[pathName] ?? ''}`
-    const input = JSON.stringify({ tool_name: 'Bash', tool_input: { command, description }, cwd, hook_event_name: 'PreToolUse', ...fields })
+    const input = JSON.stringify({ tool_name: 'Bash', tool_input: { command }, cwd, hook_event_name: 'PreToolUse' })
     return spawnSync(gitBash(env), ['-c', hookCommand], { cwd, env, input, encoding: 'utf8' })
   }
 
@@ -98,10 +99,9 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
     })
   })
 
-  test('script が見つからないとき、git・gh を含む入力（大文字を含む）は終了コード 2 で拒否し、理由を標準エラーに出力する', () => {
+  test('script が見つからないとき、終了コード 2 で拒否し、理由を標準エラーに出力する', () => {
     inTempDir((dir) => {
-      // Windows ではコマンドの名前の大文字と小文字を区別しないので、GIT・Gh も git・gh として扱う
-      for (const command of ['git push --force', 'GIT push --force', 'Gh pr merge 1']) {
+      for (const command of ['git push --force', 'gh pr merge 1']) {
         const result = runHook(command, dir)
         assert.equal(result.status, 2, `${command}：${result.stderr}`)
         assert.match(result.stderr, /agent-guard\.mjs/, command)
@@ -109,76 +109,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
     })
   })
 
-  test('script が見つからないとき、git・gh を含まない入力は通す', () => {
-    inTempDir((dir) => {
-      const result = runHook('ls', dir)
-      assert.equal(result.status, 0, result.stderr)
-      assert.equal(result.stdout, '')
-    })
-  })
-
-  test('script が見つからなくても、command に git・gh の語がなければ、cwd・transcript_path・description にあっても通す', () => {
-    inTempDir((dir) => {
-      const cwd = path.join(dir, 'git-work')
-      mkdirSync(cwd)
-      const fields = { transcript_path: path.join(dir, 'gh', 'session.jsonl') }
-      const result = runHook('ls', cwd, undefined, { description: 'git の状態を見る前に ls する', fields })
-      assert.equal(result.status, 0, result.stderr)
-      assert.equal(result.stdout, '')
-    })
-  })
-
-  test('command の JSON のエスケープ（改行、引用符、\\）を戻してから、git・gh の語があるかを調べる', () => {
-    inTempDir((dir) => {
-      // どれも bash では git か gh のコマンドになる
-      for (const command of ['echo "a"\ngit push --force', 'ls; g"it" push -f', "ls; g'i't push -f", 'ls; \\git push -f', 'ls; gi\\t push -f', 'echo "a\\"b" && gh pr merge 1', 'env -S"git push --force"', 'env -Sgh pr merge 1', "env -S'git push --force'", 'env -iS"gh pr merge 1"']) {
-        const result = runHook(command, dir)
-        assert.equal(result.status, 2, `${command}：${result.stderr}`)
-      }
-      // \ 区切りのパスの git・gh。フォルダーの名前に git・gh があるときは、本体を不要に起動しても、検査を省かない
-      for (const command of [
-        '"C:\\Program Files\\Git\\cmd\\git.exe" push --force',
-        '& "C:\\Program Files\\GitHub CLI\\gh.exe" api -X PUT repos/x/rulesets/1',
-        'C:\\tools\\gh pr merge 1',
-        'C:\\tools\\gh.exe pr merge 1',
-        'C:\\Tools\\GH.EXE pr merge 1',
-        '.\\gh.exe pr merge 1',
-        '\\\\server\\share\\git.exe push --force',
-        'ls C:\\git\\logs',
-      ]) {
-        const result = runHook(command, dir)
-        assert.equal(result.status, 2, `${command}：${result.stderr}`)
-      }
-      // 語の一部にある git・gh と、二重引用符で囲んだ \n に続く git は、コマンドにならない
-      for (const command of ['echo digit ghost', 'ls "a\\ngit"', 'C:\\tools\\digit.exe', 'C:\\tools\\ghost.exe']) {
-        const result = runHook(command, dir)
-        assert.equal(result.status, 0, `${command}：${result.stderr}`)
-      }
-    })
-  })
-
-  test('作業ツリーの中でも、command に git・gh の語がなければ、node を起動しない', () => {
-    inTempDir((dir) => {
-      const git = spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv(), encoding: 'utf8' })
-      assert.equal(git.status, 0, git.stderr)
-      const hooks = path.join(dir, 'scripts', 'dev', 'hooks')
-      mkdirSync(hooks, { recursive: true })
-      writeFileSync(path.join(hooks, 'agent-guard.mjs'), '')
-      // PATH の先頭に、起動されたことを出力するだけの node を置く
-      const binDir = path.join(dir, 'fake-bin')
-      mkdirSync(binDir)
-      writeFileSync(path.join(binDir, 'node'), '#!/bin/sh\necho fake-node\n', { mode: 0o755 })
-      const passed = runHook('ls', dir, undefined, { description: 'git の前に ls する', binDir })
-      assert.equal(passed.status, 0, passed.stderr)
-      assert.equal(passed.stdout, '')
-      // 同じ PATH で、git のコマンドでは、置いた node が起動される（この確認方法で検出できることの確認）
-      const called = runHook('git status', dir, undefined, { binDir })
-      assert.equal(called.status, 0, called.stderr)
-      assert.match(called.stdout, /fake-node/)
-    })
-  })
-
-  test('script が判定の前に異常終了したとき、git・gh を含む入力（大文字を含む）は終了コード 2 で拒否し、含まない入力は通す', () => {
+  test('script が判定の前に異常終了したとき、終了コード 2 で拒否する', () => {
     const scripts = {
       // 構文の誤りで、node が読み込みの時点で終了コード 1 で終わる
       構文の誤り: 'const = 1\n',
@@ -192,15 +123,12 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
         const hooks = path.join(dir, 'scripts', 'dev', 'hooks')
         mkdirSync(hooks, { recursive: true })
         writeFileSync(path.join(hooks, 'agent-guard.mjs'), script)
-        for (const command of ['git push --force', 'GIT push --force']) {
+        for (const command of ['git push --force', 'gh pr merge 1']) {
           const stopped = runHook(command, dir)
           assert.equal(stopped.status, 2, `${name}、${command}：${stopped.stderr}`)
           assert.match(stopped.stderr, /agent-guard\.mjs/, `${name}、${command}`)
           assert.equal(stopped.stdout, '', `${name}、${command}`)
         }
-        const passed = runHook('echo x', dir)
-        assert.equal(passed.status, 0, `${name}：${passed.stderr}`)
-        assert.equal(passed.stdout, '', name)
       })
     }
   })

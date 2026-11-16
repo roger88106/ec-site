@@ -24,8 +24,11 @@ export const GH_BUDGET_MS = 20000
 /** 危険度が高い経路の一覧（Dependabot の pull request の危険度の判定に使う） */
 const RISK_CONFIG_FILE = new URL('../../../ci/risk.json', import.meta.url)
 
-/** 利用者の許可なしにマージしてよい向き先のブランチ */
+/** 利用者の許可なしにマージしてよい向き先のブランチ（CI と危険度の条件を満たすとき） */
 const MERGE_BASE = 'develop'
+
+/** 向き先がこの接頭辞で始まる pull request（作業ブランチどうしのマージ）は、CI と危険度を見ずに、利用者の許可なしにマージしてよい */
+const AGENT_BASE_PREFIX = 'agent/'
 
 /** pull request の本文の危険度を、本文の判定と照合する CI の検査の名前 */
 const RISK_CHECK = '危険度の照合'
@@ -312,6 +315,7 @@ function authorName(author) {
 
 /**
  * pull request が、利用者の許可なしにマージしてよい条件（未解決の指摘が 0 であることを除く）を満たすかを調べる。
+ * 向き先が agent/ で始まるものは、開いていることと head の commit だけを見る（途中のブランチの履歴は、最後の pull request で利用者が確認するため）。
  *
  * @param {object} pullRequest pull request（GraphQL の形）
  * @param {string} headCommit --match-head-commit の値
@@ -320,10 +324,11 @@ function authorName(author) {
 export function mergeProblems(pullRequest, headCommit) {
   const problems = []
   if (pullRequest.state !== 'OPEN') problems.push(`pull request が開いていない（${pullRequest.state}）`)
-  if (pullRequest.baseRefName !== MERGE_BASE) problems.push(`向き先が ${MERGE_BASE} でない（${pullRequest.baseRefName}）`)
   if (String(pullRequest.headRefOid).toLowerCase() !== headCommit.toLowerCase()) {
     problems.push(`--match-head-commit の commit（${headCommit}）が、pull request の今の head の commit（${pullRequest.headRefOid}）と一致しない`)
   }
+  if (String(pullRequest.baseRefName).startsWith(AGENT_BASE_PREFIX)) return problems
+  if (pullRequest.baseRefName !== MERGE_BASE) problems.push(`向き先が ${MERGE_BASE} か ${AGENT_BASE_PREFIX} で始まるブランチでない（${pullRequest.baseRefName}）`)
   const checks = latestChecks(pullRequest)
   problems.push(...checkProblems(checks))
   const dependabot = isDependabot({ author: authorName(pullRequest.author) })

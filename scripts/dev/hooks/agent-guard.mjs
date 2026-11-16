@@ -5,7 +5,8 @@
 // 前に付けたコマンドとディレクトリ（commands）、git の規則（git-rules）、gh の規則（gh-rules）、マージの条件（merge-rules）。
 //
 // エージェントが Bash で実行しようとするコマンドの全文を読み、例外のない規則に反するものを拒否する。
-// - push 済みの履歴の書き換え：git push の force（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ の refspec）
+// - agent/ で始まるブランチ以外の push 済みの履歴の書き換え：git push の force（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ の refspec）。
+//   push の先（refspec か、ないときは今のブランチと上流）が全て agent/ で始まるときだけ通し、先を決められないときは拒否する
 // - commit の前の検査の省略：git commit の --no-verify と -n、git -c core.hooksPath=…
 // - pre-commit hook を置いていないリポジトリでの git commit（git rev-parse --git-path hooks/pre-commit のファイルが、
 //   scripts/dev/hooks/pre-commit を呼んでいなければ拒否する。作業ツリーでは共通の .git の hooks を見る）
@@ -14,6 +15,7 @@
 // 利用者の許可が必要な操作では、確認を求める（利用者に確認の画面を表示させる）。
 // - マージ：gh pr merge のうち、利用者の許可なしにマージしてよい条件（docs/05-開発規則/merging.md「マージの許可と後片付け」）を満たさないもの。
 //   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）。
+//   向き先が agent/ で始まる pull request は、開いていることと head の commit だけを見て通す。
 // - tag：git tag での作成、git push の --tags・--follow-tags・tag の refspec（tag の削除を含む）、gh release create、
 //   Release と tag の参照を変える gh api（GET 以外のリクエストで、パスが releases・git/refs・git/tags のもの）
 // - ruleset：ruleset とブランチの保護を変える gh api（GET 以外のリクエスト）
@@ -23,9 +25,8 @@
 // PowerShell のツールのコマンドは、書き方を読まずに git・gh のサブコマンドだけを見る。
 // サブコマンドが hook の判定する操作（judgePowerShell）なら拒否し、Bash のツールで実行するよう返す。読むだけのコマンドは通す。
 //
-// .claude/settings.json の hook のコマンドは、tool_input.command に git か gh の語がなければ、この script を起動せずに通す
-// （判定は全て git・gh のコマンドだけが対象なので、他のコマンドで node を起動する時間を省く）。command は node を使わずに awk で取り出し、
-// JSON のエスケープと引用符を戻してから語を探す。\ を消した形（gi\t）と、\ を空白に置き換えた形（C:\tools\gh）の両方で語を探す。Windows では bash -c の引数の \\ が \ に減って届くので、hook のコマンドに \ を書かず、awk の中で作る。
+// .claude/settings.json の hook は、if 欄（Bash(*git*)・Bash(*gh*) と PowerShell の同じ形）で、コマンドに git か gh を含むときだけこの script を起動する
+// （判定は全て git・gh のコマンドだけが対象なので、他のコマンドで node を起動する時間を省く。Claude Code が解析できない形のコマンドは、常に起動する）。
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash と PowerShell 以外のツールは何もせずに通す。
 // 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出力する。通すときは何も出力しない。終了コードは常に 0。
 // 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd・pushd・popd、env -C、git -C で決める。前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る

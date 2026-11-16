@@ -60,15 +60,23 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
-  test('作業ブランチ、緊急の修正、リリースのブランチの名前に `/` を含む push は通し、force は拒否する', () => {
+  test('作業ブランチ、緊急の修正、リリースのブランチの名前に `/` を含む push は通し、agent/ 以外への force は拒否する', () => {
     for (const command of ['git push -u origin agent/367-x', 'git push origin hotfix/1-x', 'git push origin release/1.2.0']) {
       assertPassed(command)
     }
-    for (const command of ['git push -f origin agent/367-x', 'git push origin +agent/367-x']) {
+    for (const command of [
+      'git push -f origin hotfix/1-x',
+      'git push origin +release/1.2.0',
+      'git push -f origin develop',
+      'git push --force-with-lease origin main',
+      'git push -f origin agent/367-x develop',
+      'git push -f origin agent/367-x:refs/heads/main',
+      'git push -f origin HEAD:refs/tags/agent/v1',
+      'git push -f origin refs/heads/*:refs/heads/*',
+    ]) {
       assertDenied(command, /force push/)
     }
   })
-
   test('リモートのブランチの削除は通す（develop と main の削除は ruleset が禁止する）', () => {
     for (const command of [
       'git push origin --delete feature',
@@ -125,6 +133,52 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
   test('引用符の中や、git 以外のコマンドの引数の文字列は通す', () => {
     for (const command of ['echo "git push --force"', "grep -n 'git push -f' a.md", 'echo git push --force']) {
       assertPassed(command)
+    }
+  })
+})
+
+describe('push の先が全て agent/ で始まる force push は通す', () => {
+  test('refspec の先が agent/ で始まれば、今のブランチによらず通す', () => {
+    for (const command of [
+      'git push -f origin agent/367-x',
+      'git push origin +agent/367-x',
+      'git push --force-with-lease origin agent/367-x',
+      'git push --force-with-lease=agent/367-x:abc123 origin agent/367-x',
+      'git push -f origin HEAD:agent/367-x',
+      'git push -f origin develop:refs/heads/agent/367-x',
+      'git push -f origin agent/1-a agent/2-b',
+      'git push -f --repo=origin agent/367-x',
+    ]) {
+      assertPassed(command, fakeDeps({ branch: 'develop' }))
+    }
+  })
+
+  test('refspec がなければ今のブランチ（HEAD の refspec を含む）で決め、agent/ で始まれば通し、それ以外と detached は拒否する', () => {
+    for (const command of ['git push -f', 'git push --force-with-lease origin', 'git push -f origin HEAD']) {
+      assertPassed(command, fakeDeps({ branch: 'agent/367-x' }))
+      assertDenied(command, /force push/, fakeDeps({ branch: 'develop' }))
+      assertDenied(command, /force push/, fakeDeps({ branch: 'hotfix/1-x' }))
+      assertDenied(command, /force push/, fakeDeps({ branch: null }))
+    }
+  })
+
+  test('上流が agent/ で始まらないブランチ、matching の push.default、remote の push の設定、設定を読めないときは拒否する', () => {
+    const cases = [
+      { branch: 'agent/367-x', config: ['branch.agent/367-x.merge refs/heads/develop'] },
+      { branch: 'agent/367-x', config: ['push.default matching'] },
+      { branch: 'agent/367-x', config: ['remote.origin.push refs/heads/*:refs/heads/*'] },
+      { branch: 'agent/367-x', config: null },
+    ]
+    for (const options of cases) {
+      assertDenied('git push -f', /force push/, fakeDeps(options))
+      assertDenied('git push -f origin agent/367-x', /force push/, fakeDeps(options))
+    }
+    assertPassed('git push -f', fakeDeps({ branch: 'agent/367-x', config: ['push.default simple', 'branch.agent/367-x.merge refs/heads/agent/367-x'] }))
+  })
+
+  test('--mirror・--all・--branches の force は、今のブランチによらず拒否する', () => {
+    for (const command of ['git push --mirror origin', 'git push -f --all origin', 'git push -f --branches origin']) {
+      assertDenied(command, /force push/, fakeDeps({ branch: 'agent/367-x' }))
     }
   })
 })

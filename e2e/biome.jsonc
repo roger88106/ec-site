@@ -22,8 +22,14 @@
         "../frontend/biome-plugins/no-css-class-check.grit",
         "../frontend/biome-plugins/no-weak-existence-check.grit",
         "./biome-plugins/no-position-selector.grit",
-        "./biome-plugins/no-network-idle.grit"
+        "./biome-plugins/no-network-idle.grit",
+        "./biome-plugins/no-partial-button-name.grit"
       ]
+    },
+    {
+      // タイムアウトの定数を定義する waits.ts は、数字のリテラルを書く
+      "includes": ["**/*.ts", "**/*.tsx", "!src/waits.ts"],
+      "plugins": ["./biome-plugins/no-timeout-literal.grit"]
     },
     {
       // テストと、テストを動かす側（補助、実行の script、Playwright の設定）

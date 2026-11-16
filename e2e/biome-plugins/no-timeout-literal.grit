@@ -1,0 +1,17 @@
+// E2E のタイムアウトを数字のリテラルで書かず、e2e/src/waits.ts の定数を使う（テストの書き方の「待ち方」）。
+// timeout を含む項目（actionTimeout、timeoutMs など。引用符のキーを含み、大小文字を区別しない）と intervals の項目の値、
+// setTimeout・setDefaultTimeout・setDefaultNavigationTimeout の最後の引数に、数字のリテラルを含む式（10_000、5 * 1000、ASYNC_TIMEOUT * 2）を見る。
+language js
+
+or {
+  JsPropertyObjectMember(name=$key, value=$value) as $hit where {
+    $key <: r"(?i)['\"`]?(?:[\w$]*timeout[\w$]*|intervals)['\"`]?",
+    $value <: contains JsNumberLiteralExpression()
+  },
+  JsCallExpression(callee=$callee, arguments=JsCallArguments(args=[..., $last])) as $hit where {
+    $callee <: r"(?s)(?:.*\.)?(?:setTimeout|setDefaultTimeout|setDefaultNavigationTimeout)",
+    $last <: contains JsNumberLiteralExpression()
+  }
+} where {
+  register_diagnostic(span=$hit, message="タイムアウトを数字のリテラルで書かず、e2e/src/waits.ts の定数を使う（テストの書き方の「待ち方」）。", severity="error")
+}

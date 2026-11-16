@@ -22,7 +22,7 @@
 - `getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと：フロントのテストと E2E で自動（`scripts/ci/frontend-rules.mjs`）
 - 画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現：自動（Biome の plugin `no-internal-selector`・`no-markup-text-check`）
 - E2E の位置で選ぶメソッド：自動（Biome の plugin `no-position-selector`）
-- E2E のボタンの名前の完全一致：自動（`scripts/ci/frontend-rules.mjs`）
+- E2E のボタンの名前の完全一致：自動（Biome の plugin `no-partial-button-name`）
 - その他の探し方：レビュー
 
 ## API の差し替えは型付きの MSW

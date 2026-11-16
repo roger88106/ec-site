@@ -66,6 +66,9 @@ class PlaceOrderConflictApiTest {
     @Autowired
     ApplicationContext applicationContext;
 
+    /**
+     * 在庫の引当の API（拒否の後に、注文手続きの引当が残ることを販売可能数で確認する）
+     */
     @Autowired
     StockReservationApi stockReservationApi;
 

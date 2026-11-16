@@ -118,6 +118,9 @@ class ShipmentApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * テストの中で発行されたイベント（出荷のイベントの配送業者を確認する）
+     */
     @Autowired
     ApplicationEvents events;
 

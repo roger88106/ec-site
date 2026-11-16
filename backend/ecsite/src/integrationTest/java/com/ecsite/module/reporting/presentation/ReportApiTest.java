@@ -31,6 +31,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.module.reporting.support.ReportTestData.lineExclTax;
+import static com.ecsite.module.reporting.support.ReportTestData.lineInclTax;
+import static com.ecsite.module.reporting.support.ReportTestData.total;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -44,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>集計の規則は application 層のテスト（{@code SalesTrendQueryTest} など）で確認し、ここはリクエストの受け取りと応答の形を確認する。
  * 写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  *
- * <p>金額は {@link ReportTestData} の明細（1 枚 1,100 円、税抜 1,000 円）と送料 1,000 円から決まる。
+ * <p>金額の期待値は {@link ReportTestData} の単価と送料の定数から、関数（{@code total} など）で作る。
  */
 @IntegrationTest
 @Transactional
@@ -141,7 +144,7 @@ class ReportApiTest {
             // 操作と確認：出荷していない受付の注文の総額 3,200 円を数える
             mockMvc.perform(get(REPORTS + "/sales-trend?" + FIRST_HALF + "&granularity=QUARTER"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.points[0].amount").value(3200));
+                    .andExpect(jsonPath("$.points[0].amount").value(total(2)));
         }
 
         @Test
@@ -169,7 +172,7 @@ class ReportApiTest {
             // 操作と確認：明細の税抜小計 2,000 円で、送料を除いた印
             mockMvc.perform(get(REPORTS + "/sales-trend?" + APRIL + "&granularity=MONTH&excludeTax=true&excludeShipping=true"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.points[0].amount").value(2000))
+                    .andExpect(jsonPath("$.points[0].amount").value(lineExclTax(2)))
                     .andExpect(jsonPath("$.shippingExcluded").value(true));
         }
 
@@ -179,7 +182,7 @@ class ReportApiTest {
             // 操作と確認：T シャツの明細の税込小計 2,200 円で、送料を除いた印
             mockMvc.perform(get(REPORTS + "/sales-trend?" + APRIL + "&granularity=MONTH&productId=" + shirt.id))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.points[0].amount").value(2200))
+                    .andExpect(jsonPath("$.points[0].amount").value(lineInclTax(2)))
                     .andExpect(jsonPath("$.shippingExcluded").value(true));
         }
 
@@ -201,7 +204,7 @@ class ReportApiTest {
             // 確認：行の売上額と販売数量の合計が、注文の 3,200 円と 2 枚
             List<Number> amounts = JsonPath.read(body, "$.points[*].amount");
             List<Number> quantities = JsonPath.read(body, "$.points[*].quantity");
-            assertThat(amounts.stream().mapToLong(Number::longValue).sum()).isEqualTo(3200);
+            assertThat(amounts.stream().mapToLong(Number::longValue).sum()).isEqualTo(total(2));
             assertThat(quantities.stream().mapToLong(Number::longValue).sum()).isEqualTo(2);
         }
 
@@ -259,7 +262,7 @@ class ReportApiTest {
                     .andExpect(jsonPath("$.variants[0].axisValues[0].name").value("色"))
                     .andExpect(jsonPath("$.variants[0].axisValues[0].value").value("白"))
                     .andExpect(jsonPath("$.variants[0].quantity").value(2))
-                    .andExpect(jsonPath("$.variants[0].amount").value(2200))
+                    .andExpect(jsonPath("$.variants[0].amount").value(lineInclTax(2)))
                     .andExpect(jsonPath("$.variants[1].quantity").value(0));
         }
 
@@ -305,7 +308,7 @@ class ReportApiTest {
                     .andExpect(jsonPath("$.prefectures", hasSize(2)))
                     .andExpect(jsonPath("$.prefectures[0].prefectureCode").value("13"))
                     .andExpect(jsonPath("$.prefectures[0].prefectureName").value("東京都"))
-                    .andExpect(jsonPath("$.prefectures[0].amount").value(3200))
+                    .andExpect(jsonPath("$.prefectures[0].amount").value(total(2)))
                     .andExpect(jsonPath("$.prefectures[0].orders").value(1))
                     .andExpect(jsonPath("$.prefectures[1].prefectureCode").doesNotExist())
                     .andExpect(jsonPath("$.prefectures[1].prefectureName").doesNotExist());
@@ -322,10 +325,10 @@ class ReportApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.ageGroups[*].ageGroup").value(contains(
                             "TEENS_OR_YOUNGER", "TWENTIES", "THIRTIES", "FORTIES", "FIFTIES", "SIXTIES_OR_OLDER", "UNKNOWN")))
-                    .andExpect(jsonPath("$.ageGroups[2].amount").value(3200))
+                    .andExpect(jsonPath("$.ageGroups[2].amount").value(total(2)))
                     .andExpect(jsonPath("$.ageGroups[2].orders").value(1))
                     .andExpect(jsonPath("$.ageGroups[6].ageGroup").value("UNKNOWN"))
-                    .andExpect(jsonPath("$.ageGroups[6].amount").value(2100))
+                    .andExpect(jsonPath("$.ageGroups[6].amount").value(total(1)))
                     .andExpect(jsonPath("$.ageGroups[6].orders").value(1));
         }
 
@@ -369,9 +372,9 @@ class ReportApiTest {
             mockMvc.perform(get(REPORTS + "/customer-breakdown?" + APRIL + "&productId=" + shirt.id))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.prefectures", hasSize(1)))
-                    .andExpect(jsonPath("$.prefectures[0].amount").value(2200))
+                    .andExpect(jsonPath("$.prefectures[0].amount").value(lineInclTax(2)))
                     .andExpect(jsonPath("$.prefectures[0].orders").value(1))
-                    .andExpect(jsonPath("$.ageGroups[2].amount").value(2200))
+                    .andExpect(jsonPath("$.ageGroups[2].amount").value(lineInclTax(2)))
                     .andExpect(jsonPath("$.ageGroups[2].orders").value(1))
                     .andExpect(jsonPath("$.ageGroups[3].amount").value(0))
                     .andExpect(jsonPath("$.ageGroups[3].orders").value(0))

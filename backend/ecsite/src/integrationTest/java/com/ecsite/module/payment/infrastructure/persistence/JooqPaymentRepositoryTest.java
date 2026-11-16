@@ -142,8 +142,8 @@ class JooqPaymentRepositoryTest {
             // 操作：ID から再構築する
             var restored = repository.findById(payment.id()).orElseThrow();
 
-            // 確認：保存した支払と同じ内容
-            assertThat(restored.toSnapshot()).isEqualTo(payment.toSnapshot());
+            // 確認：保存した未払いの支払の内容
+            assertUnpaidSaved(restored, payment.id(), payment.orderId());
         }
 
         @Test
@@ -156,8 +156,8 @@ class JooqPaymentRepositoryTest {
             // 操作：注文 ID から再構築する
             var restored = repository.findByOrderId(payment.orderId()).orElseThrow();
 
-            // 確認：保存した支払と同じ内容
-            assertThat(restored.toSnapshot()).isEqualTo(payment.toSnapshot());
+            // 確認：保存した未払いの支払の内容
+            assertUnpaidSaved(restored, payment.id(), payment.orderId());
         }
 
         @Test
@@ -527,6 +527,36 @@ class JooqPaymentRepositoryTest {
     }
 
     // ============================== 確認の補助 ==============================
+
+    /**
+     * 作ったまま保存した未払いの支払（{@link #payment(UUID, Instant)}）を、そのまま再構築したことを確認する。
+     *
+     * <p>確認すること（ID のほかの期待値は定数）：
+     * <ul>
+     *   <li>支払 ID と注文 ID が保存したもの</li>
+     *   <li>金額が {@link #AMOUNT}、支払の期限が {@link #DEADLINE}</li>
+     *   <li>状態が未払い</li>
+     *   <li>支払画面・与信の参照・与信の時刻・与信の反映を待ち始めた時刻がない</li>
+     *   <li>バージョンが 0</li>
+     * </ul>
+     *
+     * @param restored  再構築した支払
+     * @param paymentId 保存した支払 ID（実行ごとに作るので、定数にできない）
+     * @param orderId   保存した注文 ID（実行ごとに作るので、定数にできない）
+     */
+    private static void assertUnpaidSaved(Payment restored, UUID paymentId, UUID orderId) {
+        var snapshot = restored.toSnapshot();
+        assertThat(snapshot.id()).isEqualTo(paymentId);
+        assertThat(snapshot.orderId()).isEqualTo(orderId);
+        assertThat(snapshot.amount()).isEqualTo(AMOUNT);
+        assertThat(snapshot.deadline()).isEqualTo(DEADLINE);
+        assertThat(snapshot.status()).isEqualTo(PaymentStatus.UNPAID);
+        assertThat(snapshot.page()).isNull();
+        assertThat(snapshot.authorizationRef()).isNull();
+        assertThat(snapshot.authorizedAt()).isNull();
+        assertThat(snapshot.awaitingAuthorizationSince()).isNull();
+        assertThat(snapshot.version()).isZero();
+    }
 
     /**
      * 与信を受けた支払（{@link #authorized(Payment)}）の更新が保存されたことを確認する。

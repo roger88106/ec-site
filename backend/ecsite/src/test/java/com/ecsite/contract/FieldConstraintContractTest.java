@@ -47,6 +47,12 @@ class FieldConstraintContractTest {
     // ============================== 定数 ==============================
 
     /**
+     * レポートの写しの明細の表（注文の明細の表と名前が同じなので、別の名前で持つ）
+     */
+    private static final com.ecsite.jooq.reporting.tables.SalesOrderLine REPORT_LINE =
+            com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
+
+    /**
      * 照合する項目の 1 行
      *
      * @param label    項目の論理名
@@ -125,14 +131,14 @@ class FieldConstraintContractTest {
                         "com.ecsite.module.catalog.domain.category.Category#NAME_MAX_LENGTH", List.of(CATEGORY.NAME)),
                 new Row("商品品番", List.of("admin.yaml#ProductCode"),
                         "com.ecsite.module.catalog.domain.product.vo.CodeFormat#MAX_LENGTH",
-                        List.of(PRODUCT.PRODUCT_CODE, SALES_ORDER_LINE.PRODUCT_CODE)),
+                        List.of(PRODUCT.PRODUCT_CODE, SALES_ORDER_LINE.PRODUCT_CODE, REPORT_LINE.PRODUCT_CODE)),
                 new Row("バリアント品番", List.of("admin.yaml#VariantCode"),
                         "com.ecsite.module.catalog.domain.product.vo.CodeFormat#MAX_LENGTH",
-                        List.of(VARIANT.VARIANT_CODE, SALES_ORDER_LINE.VARIANT_CODE)),
+                        List.of(VARIANT.VARIANT_CODE, SALES_ORDER_LINE.VARIANT_CODE, REPORT_LINE.VARIANT_CODE)),
                 new Row("商品名",
                         List.of("admin.yaml#CreateProductRequest.name", "admin.yaml#UpdateProductRequest.name"),
                         "com.ecsite.module.catalog.domain.product.Product#NAME_MAX_LENGTH",
-                        List.of(PRODUCT.NAME, SALES_ORDER_LINE.PRODUCT_NAME)),
+                        List.of(PRODUCT.NAME, SALES_ORDER_LINE.PRODUCT_NAME, REPORT_LINE.PRODUCT_NAME)),
                 new Row("商品の説明",
                         List.of("admin.yaml#CreateProductRequest.description", "admin.yaml#UpdateProductRequest.description"),
                         "com.ecsite.module.catalog.domain.product.Product#DESCRIPTION_MAX_LENGTH", List.of()),

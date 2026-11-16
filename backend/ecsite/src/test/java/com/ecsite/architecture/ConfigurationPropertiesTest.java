@@ -1,5 +1,15 @@
 package com.ecsite.architecture;
 
+import com.ecsite.architecture.sample.configprops.EnumFieldProperties;
+import com.ecsite.architecture.sample.configprops.ExampleProperties;
+import com.ecsite.architecture.sample.configprops.MappedSecretProperties;
+import com.ecsite.architecture.sample.configprops.MisplacedExampleConfig;
+import com.ecsite.architecture.sample.configprops.NestedSecretProperties;
+import com.ecsite.architecture.sample.configprops.NestedSecretSafeProperties;
+import com.ecsite.architecture.sample.configprops.PresentationExampleController;
+import com.ecsite.architecture.sample.configprops.SecretWithToStringProperties;
+import com.ecsite.architecture.sample.configprops.SecretWithoutToStringProperties;
+import com.ecsite.architecture.sample.configprops.StaticConstantProperties;
 import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -81,7 +91,7 @@ class ConfigurationPropertiesTest {
         var examples = new ClassFileImporter().importClasses(MisplacedExampleConfig.class);
 
         // 操作：例のパッケージに置き換えた規則を当てる
-        var result = moduleConfigurationRule("com.ecsite.architecture..").evaluate(examples);
+        var result = moduleConfigurationRule("com.ecsite.architecture.sample.configprops..").evaluate(examples);
 
         // 確認：例が違反になる
         assertThat(result.hasViolation()).isTrue();
@@ -103,7 +113,7 @@ class ConfigurationPropertiesTest {
         var examples = new ClassFileImporter().importClasses(ExampleProperties.class, PresentationExampleController.class);
 
         // 操作：例のパッケージに置き換えた規則を当てる
-        var result = presentationRule("com.ecsite.architecture..").evaluate(examples);
+        var result = presentationRule("com.ecsite.architecture.sample.configprops..").evaluate(examples);
 
         // 確認：コントローラーの例が違反になる
         assertThat(result.hasViolation()).isTrue();
@@ -302,148 +312,5 @@ class ConfigurationPropertiesTest {
         return classes().that().resideInAPackage(modulePackage)
                 .and().areMetaAnnotatedWith(Configuration.class)
                 .should().resideInAPackage("..infrastructure..");
-    }
-}
-
-/**
- * 規則に当たる例：設定のクラスが infrastructure にない
- */
-@Configuration(proxyBeanMethods = false)
-class MisplacedExampleConfig {
-}
-
-/**
- * 例の設定の値の型
- *
- * @param value 例の値
- */
-@ConfigurationProperties("example")
-record ExampleProperties(String value) {
-}
-
-/**
- * 規則に当たる例：コントローラーが設定の値の型を受け取る
- */
-class PresentationExampleController {
-
-    /**
-     * 例の設定
-     */
-    private final ExampleProperties properties;
-
-    PresentationExampleController(ExampleProperties properties) {
-        this.properties = properties;
-    }
-
-    String value() {
-        return properties.value();
-    }
-}
-
-/**
- * 規則に当たる例：秘密の値の項目を持つが、toString を宣言しない
- *
- * @param apiKey 例の秘密の値
- */
-@ConfigurationProperties("example-secret")
-record SecretWithoutToStringProperties(String apiKey) {
-}
-
-/**
- * 規則に当たらない例：秘密の値の項目を持ち、toString を宣言する
- *
- * @param apiKey 例の秘密の値
- */
-@ConfigurationProperties("example-secret-safe")
-record SecretWithToStringProperties(String apiKey) {
-
-    @Override
-    public String toString() {
-        return "SecretWithToStringProperties[apiKey=***]";
-    }
-}
-
-/**
- * 規則に当たる例：入れ子の型（注釈がない）が秘密の値の項目を持つが、toString を宣言しない
- *
- * @param account 例の資格情報
- */
-@ConfigurationProperties("example-nested-secret")
-record NestedSecretProperties(Credentials account) {
-
-    /**
-     * 例の資格情報
-     *
-     * @param apiKey 例の秘密の値
-     */
-    record Credentials(String apiKey) {
-    }
-}
-
-/**
- * 規則に当たる例：Map の値の型（注釈がない）が秘密の値の項目を持つが、toString を宣言しない
- *
- * @param endpoints 例の接続先（名前ごと）
- */
-@ConfigurationProperties("example-mapped-secret")
-record MappedSecretProperties(Map<String, Endpoint> endpoints) {
-
-    /**
-     * 例の接続先
-     *
-     * @param url    例の URL
-     * @param secret 例の秘密の値
-     */
-    record Endpoint(String url, String secret) {
-    }
-}
-
-/**
- * 規則に当たらない例：入れ子の型が秘密の値の項目を持ち、toString を宣言する
- *
- * @param account 例の資格情報
- */
-@ConfigurationProperties("example-nested-secret-safe")
-record NestedSecretSafeProperties(MaskedCredentials account) {
-
-    /**
-     * 例の資格情報
-     *
-     * @param apiKey 例の秘密の値
-     */
-    record MaskedCredentials(String apiKey) {
-
-        @Override
-        public String toString() {
-            return "MaskedCredentials[apiKey=***]";
-        }
-    }
-}
-
-/**
- * 規則に当たらない例：static の定数の名前が秘密の値の名前だが、設定の値の項目ではない
- *
- * @param value 例の値
- */
-@ConfigurationProperties("example-static-constant")
-record StaticConstantProperties(String value) {
-
-    static final String DEFAULT_KEY = "default";
-}
-
-/**
- * 規則に当たらない例：項目の型が enum で、enum の定数の名前が秘密の値の名前だが、設定の値の項目ではない
- *
- * @param kind 例の種類
- */
-@ConfigurationProperties("example-enum-field")
-record EnumFieldProperties(Kind kind) {
-
-    /**
-     * 例の種類
-     */
-    enum Kind {
-        TOKEN,
-        PLAIN
     }
 }

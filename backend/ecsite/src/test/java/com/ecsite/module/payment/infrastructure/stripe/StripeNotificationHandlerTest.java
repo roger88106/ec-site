@@ -119,6 +119,20 @@ class StripeNotificationHandlerTest {
         }
 
         @Test
+        @DisplayName("BR-17 ちょうど 5 分前に署名した通知は受け付ける")
+        void acceptsSignatureAtTolerance() {
+            // 準備：ちょうど 5 分前の署名の通知
+            var payload = recorded("checkout-session-expired.json");
+            var signedAt = NOW.minus(Duration.ofMinutes(5));
+
+            // 操作：受け取る
+            handler.handle(payload, sign(payload, WEBHOOK_SECRET, signedAt));
+
+            // 確認：渡した
+            assertThat(receiver.received).containsExactly("pageExpired " + EXPIRED_SESSION_ID);
+        }
+
+        @Test
         @DisplayName("BR-17 5 分以内に署名した通知は受け付ける（Stripe の再送も署名し直される）")
         void acceptsRecentSignature() {
             // 準備：5 分より 1 秒新しい署名の通知

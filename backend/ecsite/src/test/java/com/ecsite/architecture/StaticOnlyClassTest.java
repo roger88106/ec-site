@@ -1,5 +1,13 @@
 package com.ecsite.architecture;
 
+import com.ecsite.architecture.sample.staticonly.ExampleException;
+import com.ecsite.architecture.sample.staticonly.ExampleKind;
+import com.ecsite.architecture.sample.staticonly.ExampleRecord;
+import com.ecsite.architecture.sample.staticonly.StaticOnlyNotFinal;
+import com.ecsite.architecture.sample.staticonly.StaticOnlyWithPrivateConstructor;
+import com.ecsite.architecture.sample.staticonly.StaticOnlyWithPublicConstructor;
+import com.ecsite.architecture.sample.staticonly.WithInstanceField;
+import com.ecsite.architecture.sample.staticonly.WithInstanceMethod;
 import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -159,131 +167,4 @@ class StaticOnlyClassTest {
         return javaClass.getAnnotations().stream()
                 .anyMatch(annotation -> annotation.getRawType().getPackageName().startsWith("org.springframework"));
     }
-}
-
-/**
- * 規則に当たる例：static のメンバーだけで、コンストラクタが public
- */
-final class StaticOnlyWithPublicConstructor {
-
-    /**
-     * 例の定数
-     */
-    static final int LIMIT = 1;
-
-    /**
-     * 例のコンストラクタ（規則に合わない）
-     */
-    public StaticOnlyWithPublicConstructor() {
-    }
-
-    /**
-     * 例の関数。
-     *
-     * @return 定数
-     */
-    static int limit() {
-        return LIMIT;
-    }
-}
-
-/**
- * 規則に合う例：static のメンバーだけで、コンストラクタが private
- */
-final class StaticOnlyWithPrivateConstructor {
-
-    /**
-     * インスタンスを作らない。
-     */
-    private StaticOnlyWithPrivateConstructor() {
-    }
-
-    /**
-     * 例の関数。
-     *
-     * @return 1
-     */
-    static int one() {
-        return 1;
-    }
-}
-
-/**
- * final の規則に当たる例：static のメンバーだけで、コンストラクタは private だが final でない
- */
-class StaticOnlyNotFinal {
-
-    /**
-     * インスタンスを作らない。
-     */
-    private StaticOnlyNotFinal() {
-    }
-
-    /**
-     * 例の関数。
-     *
-     * @return 2
-     */
-    static int two() {
-        return 2;
-    }
-}
-
-/**
- * 当たらない例：static でないメソッドを持つ
- */
-final class WithInstanceMethod {
-
-    /**
-     * 例のメソッド。
-     *
-     * @return 1
-     */
-    int one() {
-        return 1;
-    }
-}
-
-/**
- * 当たらない例：static でない項目を持つ
- */
-final class WithInstanceField {
-
-    /**
-     * 例の項目
-     */
-    int value;
-}
-
-/**
- * 当たらない例：ほかのクラスを継ぐ（自分のメンバーはコンストラクタだけ）
- */
-class ExampleException extends RuntimeException {
-
-    /**
-     * 例のコンストラクター。
-     *
-     * @param message 例の文
-     */
-    ExampleException(String message) {
-        super(message);
-    }
-}
-
-/**
- * 当たらない例：enum
- */
-enum ExampleKind {
-    /**
-     * 例の値
-     */
-    ONE
-}
-
-/**
- * 当たらない例：record
- *
- * @param value 例の項目
- */
-record ExampleRecord(int value) {
 }

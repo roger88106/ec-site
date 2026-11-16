@@ -22,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static com.ecsite.module.reporting.support.ReportTestData.lineExclTax;
+import static com.ecsite.module.reporting.support.ReportTestData.lineInclTax;
+import static com.ecsite.module.reporting.support.ReportTestData.total;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -30,7 +33,7 @@ import static org.assertj.core.api.Assertions.tuple;
  *
  * <p>写しを DB に直接入れて集計する。他のテストの写しと重ならないよう、2031 年の日付を使う。テストごとにロールバックする。
  *
- * <p>金額は {@link ReportTestData} の明細（1 個 1,100 円）と送料 1,000 円から決まる：明細 1 個の注文は 2,100 円、2 個は 3,200 円。
+ * <p>金額の期待値は {@link ReportTestData} の単価と送料の定数から、関数（{@code total} など）で作る。
  */
 @IntegrationTest
 @Transactional
@@ -97,10 +100,10 @@ class CustomerBreakdownQueryTest {
             assertThat(report.prefectures())
                     .extracting(PrefectureSales::prefectureCode, PrefectureSales::amount, PrefectureSales::orders)
                     .containsExactly(
-                            tuple("01", Money.of(3200), 1L),
-                            tuple("13", Money.of(3200 + 2100), 2L),
-                            tuple("27", Money.of(2100), 1L),
-                            tuple(null, Money.of(2100), 1L));
+                            tuple("01", Money.of(total(2)), 1L),
+                            tuple("13", Money.of(total(2) + total(1)), 2L),
+                            tuple("27", Money.of(total(1)), 1L),
+                            tuple(null, Money.of(total(1)), 1L));
         }
     }
 
@@ -118,13 +121,13 @@ class CustomerBreakdownQueryTest {
             assertThat(report.ageGroups())
                     .extracting(AgeGroupSales::ageGroup, AgeGroupSales::amount, AgeGroupSales::orders)
                     .containsExactly(
-                            tuple(AgeGroup.TEENS_OR_YOUNGER, Money.of(2100), 1L),
-                            tuple(AgeGroup.TWENTIES, Money.of(3200), 1L),
-                            tuple(AgeGroup.THIRTIES, Money.of(3200), 1L),
+                            tuple(AgeGroup.TEENS_OR_YOUNGER, Money.of(total(1)), 1L),
+                            tuple(AgeGroup.TWENTIES, Money.of(total(2)), 1L),
+                            tuple(AgeGroup.THIRTIES, Money.of(total(2)), 1L),
                             tuple(AgeGroup.FORTIES, Money.ZERO, 0L),
                             tuple(AgeGroup.FIFTIES, Money.ZERO, 0L),
-                            tuple(AgeGroup.SIXTIES_OR_OLDER, Money.of(2100), 1L),
-                            tuple(AgeGroup.UNKNOWN, Money.of(2100), 1L));
+                            tuple(AgeGroup.SIXTIES_OR_OLDER, Money.of(total(1)), 1L),
+                            tuple(AgeGroup.UNKNOWN, Money.of(total(1)), 1L));
         }
 
         @Test
@@ -136,7 +139,7 @@ class CustomerBreakdownQueryTest {
             // 確認：年齢のない大阪府の注文（2,100 円）が「不明」に入る
             assertThat(report.ageGroups()).filteredOn(row -> row.ageGroup() == AgeGroup.UNKNOWN)
                     .extracting(AgeGroupSales::amount, AgeGroupSales::orders)
-                    .containsExactly(tuple(Money.of(2100), 1L));
+                    .containsExactly(tuple(Money.of(total(1)), 1L));
         }
     }
 
@@ -154,10 +157,10 @@ class CustomerBreakdownQueryTest {
             assertThat(report.genders())
                     .extracting(GenderSales::gender, GenderSales::amount, GenderSales::orders)
                     .containsExactly(
-                            tuple(ReportGender.MALE, Money.of(3200), 1L),
-                            tuple(ReportGender.FEMALE, Money.of(3200), 1L),
-                            tuple(ReportGender.OTHER, Money.of(2100), 1L),
-                            tuple(ReportGender.UNKNOWN, Money.of(2100 + 2100), 2L));
+                            tuple(ReportGender.MALE, Money.of(total(2)), 1L),
+                            tuple(ReportGender.FEMALE, Money.of(total(2)), 1L),
+                            tuple(ReportGender.OTHER, Money.of(total(1)), 1L),
+                            tuple(ReportGender.UNKNOWN, Money.of(total(1) + total(1)), 2L));
         }
     }
 
@@ -185,9 +188,9 @@ class CustomerBreakdownQueryTest {
             assertThat(report.prefectures())
                     .extracting(PrefectureSales::prefectureCode, PrefectureSales::amount, PrefectureSales::orders)
                     .containsExactly(
-                            tuple("01", Money.of(1100), 1L),
-                            tuple("13", Money.of(2200 + 1100), 2L),
-                            tuple(null, Money.of(1100), 1L));
+                            tuple("01", Money.of(lineInclTax(1)), 1L),
+                            tuple("13", Money.of(lineInclTax(2) + lineInclTax(1)), 2L),
+                            tuple(null, Money.of(lineInclTax(1)), 1L));
         }
 
         @Test
@@ -219,7 +222,7 @@ class CustomerBreakdownQueryTest {
 
             // 確認：東京都は、明細の税抜小計 2,000 円 ＋ 1,000 円
             assertThat(report.prefectures()).filteredOn(row -> "13".equals(row.prefectureCode()))
-                    .extracting(PrefectureSales::amount).containsExactly(Money.of(3000));
+                    .extracting(PrefectureSales::amount).containsExactly(Money.of(lineExclTax(2) + lineExclTax(1)));
         }
     }
 

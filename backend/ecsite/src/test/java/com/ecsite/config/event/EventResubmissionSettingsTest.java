@@ -50,6 +50,16 @@ class EventResubmissionSettingsTest {
     }
 
     @Test
+    @DisplayName("処理の回数の上限が下限の 1 なら、値の検証を通る")
+    void acceptsMaxAttemptsAtMinimum() {
+        // 操作：上限 1 を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, EventResubmissionJob.Properties.class, Map.of("max-attempts", "1"));
+
+        // 確認：1 回
+        assertThat(properties.maxAttempts()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("処理の回数の上限が 1 より小さい設定は、拒否される")
     void rejectsNonPositiveMaxAttempts() {
         // 操作と確認：上限 0 を渡すと、値の検証で拒否される

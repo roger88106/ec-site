@@ -85,7 +85,7 @@ describe('spec の AC の取り出し', () => {
     assert.deepEqual(definitions.map((definition) => definition.ac), ['5-1'])
   })
 
-  test('定義の形でない 5 つの書き方（太字のない箇条・箇条のない太字・チェックボックス・見出し・表の行）を、崩れた定義の行として報告する', () => {
+  test('定義の形でない書き方（太字のない箇条・箇条のない太字・チェックボックス・見出し・表の行）を、崩れた定義の行として報告する', () => {
     const lines = [
       '- AC-400 文。',
       '* AC-5-1 文。',
@@ -151,7 +151,7 @@ describe('spec の AC の取り出し', () => {
     assert.deepEqual(parseSpecAcDefinitions('- AC-5-1 もし在庫がなければ拒否する。', '5-x'), { definitions: [], problems: [] })
   })
 
-  test('定義の形でない 5 つの書き方でも、コードブロック・HTML のコメント・1 行のコードの中は問題にしない', () => {
+  test('定義の形でない書き方でも、コードブロック・HTML のコメント・1 行のコードの中は問題にしない', () => {
     const spec = ['```markdown', '- AC-5-1 文。', '| AC-5-2 | 文。 |', '```', '<!-- ### AC-5-3 文。 -->', '`**AC-5-4** 文。`', '| `AC-5-5` | 文。 |'].join('\n')
     assert.deepEqual(parseSpecAcDefinitions(spec, '5-x'), { definitions: [], problems: [] })
   })
@@ -432,7 +432,7 @@ describe('AC 一覧の読み取り', () => {
     ])
   })
 
-  test('列「テスト」のない 6 列の一覧は、問題にしない', () => {
+  test('列が AC 一覧の定義どおりの一覧は、問題にしない', () => {
     assert.deepEqual(listProblems(listRow()), [])
   })
 

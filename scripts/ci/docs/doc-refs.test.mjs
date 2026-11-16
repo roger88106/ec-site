@@ -75,6 +75,14 @@ describe('文書の参照の検査', () => {
     assert.match(problems[1], /^ファイルがない/)
   })
 
+  test('改行が CRLF の文書でも、行末のリンクと見出しの参照を確認する', () => {
+    const text = ['[c](../process/none.md)', '[開発の進め方](../process/workflow.md)の「TDD」', ''].join('\r\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['1', '2'])
+    assert.match(problems[0], /^ファイルがない/)
+    assert.match(problems[1], /^見出しがない/)
+  })
+
   test('title の付いたリンクも、先のファイルを確認する', () => {
     const problems = check('docs/dev/setup.md', '[c](../process/none.md "説明")')
     assert.equal(problems.length, 1)

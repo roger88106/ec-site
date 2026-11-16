@@ -167,7 +167,7 @@ export function splitSectionNumbers(numbers) {
 export function findReferences(file, text, names, basenames, exists = existsSync) {
   const refs = []
   const isMarkdown = file.endsWith('.md')
-  const lines = text.split('\n')
+  const lines = text.split(/\r?\n/)
   const codeLines = isMarkdown ? codeBlockLines(text) : []
   lines.forEach((line, index) => {
     const inCode = Boolean(codeLines[index])

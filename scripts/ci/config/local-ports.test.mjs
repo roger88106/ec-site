@@ -91,6 +91,55 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.ok(problems.some((problem) => /18081/.test(problem)))
   })
 
+  test('文書にスロットのポートの表がなければ、表が見つからないことと、全てのスロットの行がないことを失敗にする', () => {
+    const doc = DOC.split('\n').filter((line) => !/^\| \d \|/.test(line)).join('\n')
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': doc } })
+    assert.ok(problems.some((problem) => /スロットのポートの表が見つからない/.test(problem)), problems.join(' / '))
+    for (let slot = 0; slot < LIST.slotCount; slot++) {
+      assert.ok(problems.some((problem) => problem.includes(`スロット ${slot} の行がない`)), problems.join(' / '))
+    }
+  })
+
+  test('スロットの表に、あるスロットの行がなければ、そのスロットの行がないことを失敗にする', () => {
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC.replace('| 1 | 18080 |\n', '') } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /スロット 1 の行がない/)
+  })
+
+  test('スロットの表の行の番号は、スロットの数より 1 小さい番号まで通り、スロットの数以上なら失敗にする', () => {
+    const last = LIST.slotCount - 1
+    assert.deepEqual(findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC } }), [])
+    assert.ok(DOC.includes(`| ${last} |`))
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': `${DOC}\n| ${LIST.slotCount} | 38080 |` } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], new RegExp(`スロット ${LIST.slotCount} の行のポート（38080）`))
+  })
+
+  test('realm に一覧にないポートがあれば失敗にする', () => {
+    const text = [8080, 18080, 28080, 8090, 9999].map((port) => `http://localhost:${port}/*`).join(' ')
+    const problems = findPortMismatches({ ...INPUT, realms: { 'docker/r.json': { text, keys: ['backend', 'backend-e2e'] } } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /r\.json に一覧にないポート 9999/)
+  })
+
+  test('E2E の設定は、E2E が使う共有のサービス（E2E 用の IdP、Mailpit の画面）のポートなら通し、他の共有のサービスのポートなら失敗にする', () => {
+    const list = {
+      ...LIST,
+      ports: [
+        ...LIST.ports,
+        { key: 'keycloak-e2e', port: 8180, name: 'E2E 用の IdP', group: 'shared', slotted: false },
+        { key: 'mailpit-ui', port: 8025, name: 'Mailpit の画面', group: 'shared', slotted: false },
+      ],
+    }
+    const compose = [COMPOSE, '  idp:', '    ports:', '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8180:8080"', '  ui:', '    ports:', '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8025:8025"'].join('\n')
+    const docs = { 'docs/06-手順書/setup.md': `${DOC}\n:8180 :8025` }
+    const base = "'http://localhost:8090' 'http://localhost:8180' 'http://localhost:8025'"
+    assert.deepEqual(findPortMismatches({ list, compose, docs, sources: { 'e2e/src/urls.ts': base } }), [])
+    const problems = findPortMismatches({ list, compose, docs, sources: { 'e2e/src/urls.ts': `${base} 'http://localhost:5432'` } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /urls\.ts のポート 5432.*E2E/)
+  })
+
   test('一覧のポートがどの文書にも書かれていなければ失敗にする', () => {
     const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC.replace(':8090', '') } })
     assert.equal(problems.length, 1)

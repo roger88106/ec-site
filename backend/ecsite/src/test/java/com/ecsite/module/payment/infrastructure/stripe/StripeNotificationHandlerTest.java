@@ -167,11 +167,13 @@ class StripeNotificationHandlerTest {
             // 準備：記録した与信の成功の通知を、古い API のバージョンにしたもの
             var payload = recorded("checkout-session-completed.json").replace(RECORDED_API_VERSION, OLD_API_VERSION);
 
+            // 確認（前提）：記録した通知を、古い API のバージョンに書き換えられている
+            assertThat(payload).contains(OLD_API_VERSION);
+
             // 操作：正しい鍵の署名で受け取る
             handler.handle(payload, sign(payload, WEBHOOK_SECRET, NOW));
 
             // 確認：支払画面 ID と与信の参照を渡した
-            assertThat(payload).contains(OLD_API_VERSION);
             assertThat(receiver.received).containsExactly("authorized " + SESSION_ID + " " + PAYMENT_INTENT_ID);
         }
 
@@ -183,8 +185,10 @@ class StripeNotificationHandlerTest {
                     .replace("\"type\": \"payment_intent.canceled\"", "\"type\": \"checkout.session.completed\"");
             var signature = sign(payload, WEBHOOK_SECRET, NOW);
 
-            // 操作と確認：システムのエラーになり、何も渡さない
+            // 確認（前提）：通知の種類を、与信の成功に書き換えられている
             assertThat(payload).contains("checkout.session.completed");
+
+            // 操作と確認：システムのエラーになり、何も渡さない
             assertSystemError(() -> handler.handle(payload, signature), CommonErrorCode.SYSTEM_ERROR);
             assertThat(receiver.received).isEmpty();
         }

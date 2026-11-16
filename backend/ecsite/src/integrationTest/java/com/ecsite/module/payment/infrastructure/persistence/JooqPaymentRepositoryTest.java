@@ -3,6 +3,7 @@ package com.ecsite.module.payment.infrastructure.persistence;
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -90,6 +91,12 @@ class JooqPaymentRepositoryTest {
      */
     @Autowired
     PaymentRepository repository;
+
+    /**
+     * 確認する参照のリポジトリ
+     */
+    @Autowired
+    PaymentQueryRepository queryRepository;
 
     /**
      * テストが直接 DB を読み書きする jOOQ の DSLContext
@@ -469,6 +476,53 @@ class JooqPaymentRepositoryTest {
             // 操作と確認：上限 1 件で取得すると、最も古くから待つ 1 件
             assertThat(repository.findUnpaidAwaitingAuthorization(1)).extracting(Payment::id)
                     .containsExactly(waiting.oldest().id());
+        }
+    }
+
+    @Nested
+    @DisplayName("長く与信の反映を待つ支払の件数")
+    class CountAwaitingAuthorization {
+
+        /**
+         * 数える基準の時刻（この時刻までに待ち始めた支払を数える）
+         *
+         * <p>テーブル全体を数えるので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする。
+         */
+        private static final Instant LATEST_AWAITING_SINCE = SEARCH_NOW.minusSeconds(3600);
+
+        @Test
+        @DisplayName("AC-312 基準の時刻ちょうどから待つ支払は数え、その 1 秒後から待つ支払は数えない")
+        void countsUntilLatestInclusive() {
+            // 準備：基準の時刻ちょうどから待つ支払と、その 1 秒後から待つ支払
+            var atLatest = payment(UUID.randomUUID(), DEADLINE);
+            var afterLatest = payment(UUID.randomUUID(), DEADLINE);
+            insertAll(atLatest, afterLatest);
+            awaitAuthorization(atLatest, LATEST_AWAITING_SINCE);
+            awaitAuthorization(afterLatest, LATEST_AWAITING_SINCE.plusSeconds(1));
+
+            // 操作：基準の時刻までに待ち始めた支払を数える
+            var count = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
+
+            // 確認：ちょうどの 1 件だけ
+            assertThat(count).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("AC-312 待った後に与信済みになった支払は数えない")
+        void excludesAuthorized() {
+            // 準備：基準の時刻から待ち、その後に与信済みになった支払
+            var authorized = payment(UUID.randomUUID(), DEADLINE);
+            insertAll(authorized);
+            awaitAuthorization(authorized, LATEST_AWAITING_SINCE);
+            var loaded = repository.findById(authorized.id()).orElseThrow();
+            loaded.authorize(AUTHORIZATION_REF, LATEST_AWAITING_SINCE.plusSeconds(1));
+            repository.update(loaded);
+
+            // 操作：基準の時刻までに待ち始めた支払を数える
+            var count = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
+
+            // 確認：数えない
+            assertThat(count).isZero();
         }
     }
 

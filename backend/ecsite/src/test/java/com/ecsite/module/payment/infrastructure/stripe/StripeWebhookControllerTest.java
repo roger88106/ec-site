@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
+import com.ecsite.common.error.exception.SystemException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -77,6 +79,16 @@ class StripeWebhookControllerTest {
 
         // 確認：400
         result.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("BR-17 受け取りの処理が失敗したら、200 も 400 も返さず、例外のまま返す（5xx になり、Stripe が再送する）")
+    void propagatesProcessingFailure() {
+        // 準備：受け取りの処理が失敗する
+        doThrow(SystemException.of("処理の失敗", null)).when(handler).handle(anyString(), anyString());
+
+        // 操作と確認：例外が受け取りの外に出る
+        assertThatThrownBy(() -> receive(SIGNATURE)).hasCauseInstanceOf(SystemException.class);
     }
 
     @Test

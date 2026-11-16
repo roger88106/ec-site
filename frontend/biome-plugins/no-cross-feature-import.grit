@@ -1,0 +1,32 @@
+// 機能（src/features/<機能>/）は、ほかの機能を import しない（フロントの書き方の「機能ごとに features/<機能>/」）。
+// 2 つの機能で使うものは components/ か lib/ に置く。
+// 別名（@/features/<機能>）と、features/ まで上る相対パス（../ の数がファイルの深さより 1 つ多いもの。4 階層まで）を見る。
+language js
+
+or {
+  JsModuleSource() as $source,
+  JsImportCallExpression(arguments=$args) as $call where {
+    $args <: r"(?s)\(\s*['\"`][^$]*['\"`]\s*\)",
+    $args <: contains or {
+      JsStringLiteralExpression(),
+      JsTemplateExpression()
+    } as $source
+  }
+} where {
+  $filename <: r".*[/\\]src[/\\]features[/\\]([^/\\]+)[/\\](.*)"($own, $rest),
+  or {
+    $source <: r"['\"`]@/features/([^/'\"`]+)(?:/.*)?['\"`]"($other),
+    and { $rest <: r"[^/\\]+", $source <: r"['\"`]\.\./([^./][^/'\"`]*)(?:/.*)?['\"`]"($other) },
+    and { $rest <: r"[^/\\]+[/\\][^/\\]+", $source <: r"['\"`](?:\.\./){2}([^./][^/'\"`]*)(?:/.*)?['\"`]"($other) },
+    and {
+      $rest <: r"(?:[^/\\]+[/\\]){2}[^/\\]+",
+      $source <: r"['\"`](?:\.\./){3}([^./][^/'\"`]*)(?:/.*)?['\"`]"($other)
+    },
+    and {
+      $rest <: r"(?:[^/\\]+[/\\]){3}[^/\\]+",
+      $source <: r"['\"`](?:\.\./){4}([^./][^/'\"`]*)(?:/.*)?['\"`]"($other)
+    }
+  },
+  not $other <: $own,
+  register_diagnostic(span=$source, message="ほかの機能を import しない。2 つの機能で使うものは components/ か lib/ に置く（フロントの書き方の「機能ごとに features/<機能>/」）。", severity="error")
+}

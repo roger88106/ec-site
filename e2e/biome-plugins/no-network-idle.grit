@@ -1,0 +1,10 @@
+// E2E で networkidle で待たず、画面の状態を条件にして待つ（テストの書き方の「待ち方」）。
+language js
+
+or {
+  JsStringLiteralExpression(),
+  JsTemplateExpression()
+} as $hit where {
+  $hit <: r"(?s).*\bnetworkidle\b.*",
+  register_diagnostic(span=$hit, message="networkidle で待たず、画面の状態を条件にして待つ（テストの書き方の「待ち方」）。", severity="error")
+}

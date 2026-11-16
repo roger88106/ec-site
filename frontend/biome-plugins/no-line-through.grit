@@ -1,0 +1,12 @@
+// line-through を直接書かず、取り消し線は <s> で示す（フロントの書き方の「取り消し線は <s> で示す」）。
+language js
+
+or {
+  JsStringLiteralExpression(),
+  JsxString(),
+  JsxText(),
+  JsTemplateExpression()
+} as $hit where {
+  $hit <: r"(?s).*line-through.*",
+  register_diagnostic(span=$hit, message="line-through を直接書かず、取り消し線は <s> で示す（フロントの書き方の「取り消し線は <s> で示す」）。", severity="error")
+}

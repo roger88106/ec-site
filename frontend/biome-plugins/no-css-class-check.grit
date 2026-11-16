@@ -1,0 +1,21 @@
+// テストで CSS のクラスを確認せず、役割と名前で探す（フロントのテストの書き方の「画面に見えるもので探す」）。
+// toHaveClass・.className・.classList、属性の class、文字列の中の class="、クラスのセレクターを見る。
+language js
+
+or {
+  JsStaticMemberExpression(member=r"toHaveClass|className|classList") as $hit,
+  JsCallExpression(callee=JsStaticMemberExpression(member=r"getAttribute|toHaveAttribute"), arguments=r"(?s)\(\s*['\"`]class['\"`].*") as $hit,
+  or {
+    JsStringLiteralExpression(),
+    JsTemplateExpression(),
+    JsRegexLiteralExpression()
+  } as $hit where { $hit <: r"(?s).*class=\\?[\"'].*" },
+  JsCallExpression(callee=$callee, arguments=r"(?s)\(\s*['\"`][\w\s>+~*#-]*\.[A-Za-z_-].*") as $hit where {
+    $callee <: or {
+      r"(?s).*\b(?:locator|querySelector|querySelectorAll|closest|matches)",
+      r"(?s)(?:.*\.)?\$\$?"
+    }
+  }
+} where {
+  register_diagnostic(span=$hit, message="CSS のクラスを確認せず、役割と名前で探す（フロントのテストの書き方の「画面に見えるもので探す」）。", severity="error")
+}

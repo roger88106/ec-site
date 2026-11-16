@@ -1,0 +1,26 @@
+// ロケールとタイムゾーンは frontend/shared/src/lib/locale.ts だけに書き、ほかは LOCALE・TIME_ZONE を使う（フロントの書き方の「ロケールは 1 か所」）。
+// Intl と toLocale…String の 1 つ目の引数に文字を直接書くことと、ロケールとタイムゾーンの文字（'ja'、'en-US'、'Asia/Tokyo' など）を見る。
+language js
+
+or {
+  JsNewExpression(callee=$callee, arguments=$args) as $hit where {
+    $callee <: r"Intl\.\w+",
+    $args <: r"(?s)\(\s*['\"`].*"
+  },
+  JsCallExpression(callee=$callee, arguments=$args) as $hit where {
+    $callee <: or {
+      r"Intl\.\w+",
+      r"(?s).*\.toLocale\w*String"
+    },
+    $args <: r"(?s)\(\s*['\"`].*"
+  },
+  or {
+    JsStringLiteralExpression(),
+    JsxString(),
+    TsStringLiteralType(),
+    JsLiteralMemberName(),
+    JsTemplateExpression()
+  } as $hit where { $hit <: r"['\"`](?:ja|ja-JP|en|en-US|Asia/Tokyo)['\"`]" }
+} where {
+  register_diagnostic(span=$hit, message="ロケールかタイムゾーンを直接書かず、LOCALE・TIME_ZONE を使う（フロントの書き方の「ロケールは 1 か所」）。", severity="error")
+}

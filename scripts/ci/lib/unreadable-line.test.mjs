@@ -21,7 +21,6 @@ describe('検査の script が文を直接組み立てない', () => {
         // 行を持たない（ファイル全体や、Java の record の引数）読めない物を自前の文で出す script と、その理由
         exceptions: {
           'ci/env-defaults.mjs': 'Java の record の引数の並びは、行でなく括弧の中を読む',
-          'ci/frontend-rules.mjs': '共有のパッケージの exports は、package.json の全体を読む',
           'ci/lib/exclusions.mjs': '除外の一覧の JSON は、ファイル全体を読む',
         },
       },

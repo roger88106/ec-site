@@ -1,0 +1,84 @@
+// 管理画面・店舗画面・共有のパッケージが共通に使う、書き方の規則の plugin（frontend/biome-plugins/）と import の制限。
+// 各プロジェクトの biome.jsonc が extends で読む。plugin のパスと includes は、読む側の biome.jsonc からの相対パスになる。
+// E2E は置き場所が違うので、e2e/biome.jsonc に同じ plugin を書く。
+// 規則の中身と理由は、各 .grit の冒頭のコメントにある。
+{
+  "overrides": [
+    {
+      // 画面のソースとテストの補助（テストを除く）
+      "includes": ["src/**/*.ts", "src/**/*.tsx", "!**/*.test.ts", "!**/*.test.tsx", "!src/lib/locale.ts"],
+      "plugins": ["../biome-plugins/no-locale-literal.grit"]
+    },
+    {
+      // 機能（src/features/<機能>/）
+      "includes": ["src/features/**"],
+      "plugins": ["../biome-plugins/no-cross-feature-import.grit"]
+    },
+    {
+      // 機能の外の共通の置き場所は features/ を import しない（フロントの書き方の「機能ごとに features/<機能>/」）
+      "includes": ["src/actions/**", "src/lib/**", "src/api/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/features", "@/features/**", "**/features", "**/features/**"],
+                    "message": "共通の置き場所（actions/・lib/・api/）は features/ を import しない。使うものは features/ の外に移す（フロントの書き方の「機能ごとに features/<機能>/」）。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // 画面の本番のソース（テスト、テストの補助、生成物、shadcn/ui の部品、共有の ui を除く）
+      "includes": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!src/test/**",
+        "!**/generated/**",
+        "!**/components/ui/**",
+        "!src/ui/**"
+      ],
+      "plugins": [
+        "../biome-plugins/no-line-through.grit",
+        "../biome-plugins/no-query-url-string.grit",
+        "../biome-plugins/no-hardcoded-text.grit",
+        "../biome-plugins/no-literal-input-constraint.grit"
+      ]
+    },
+    {
+      // テストの補助の部品も、数字を直接書くと本番の部品の写しになるので見る
+      "includes": ["src/test/**/*.tsx", "!**/*.test.tsx"],
+      "plugins": ["../biome-plugins/no-literal-input-constraint.grit"]
+    },
+    {
+      // 画面の単体・結合テスト
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      "plugins": [
+        "../biome-plugins/no-css-class-check.grit",
+        "../biome-plugins/no-weak-existence-check.grit",
+        "../biome-plugins/no-internal-selector.grit",
+        "../biome-plugins/no-identifier-describe.grit",
+        "../biome-plugins/no-markup-text-check.grit"
+      ]
+    },
+    {
+      // 画面のテストとテストの補助（src/test/）
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**"],
+      "plugins": ["../biome-plugins/no-type-cast-escape.grit", "../biome-plugins/no-fire-event.grit"]
+    },
+    {
+      // テストとテストを動かす側（テストの補助、Vitest・Vite の設定）
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**", "vite.config.*", "vitest.config.*"],
+      "plugins": ["../biome-plugins/no-time-wait.grit"]
+    }
+  ]
+}

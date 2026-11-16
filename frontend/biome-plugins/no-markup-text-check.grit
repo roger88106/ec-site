@@ -1,0 +1,18 @@
+// 描画した HTML の文字を、要素や属性の並びで確認しない。描画した結果を DOM に読み込み、役割と名前で探す（フロントのテストの書き方の「画面に見えるもので探す」）。
+// toMatch・toContain・toBe・toEqual・toStrictEqual の引数の文字列・正規表現に HTML のタグ（<a、</p）があるものと、
+// toMatch・toContain の引数に属性（href="）があるものを見る。空の描画の確認（toBe('')）は当たらない。
+language js
+
+JsCallExpression(callee=JsStaticMemberExpression(member=$matcher), arguments=$args) as $call where {
+  $matcher <: r"toMatch|toContain|toBe|toEqual|toStrictEqual",
+  $args <: contains or {
+    JsStringLiteralExpression(),
+    JsTemplateExpression(),
+    JsRegexLiteralExpression()
+  } as $literal,
+  or {
+    $literal <: r"(?s).*<\\?/?[A-Za-z].*",
+    and { $matcher <: r"toMatch|toContain", $literal <: r"(?s).*[A-Za-z][\w:-]*=\\?[\"'].*" }
+  },
+  register_diagnostic(span=$call, message="描画した HTML の文字を、要素や属性の並びで確認しない。描画した結果を DOM に読み込み、役割と名前で探す（フロントのテストの書き方の「画面に見えるもので探す」）。", severity="error")
+}

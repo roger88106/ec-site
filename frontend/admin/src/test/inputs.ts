@@ -11,7 +11,7 @@ import { fireEvent } from '@testing-library/react'
  * @param value 入れる値（`yyyy-MM-ddTHH:mm`）
  */
 export function typeDateTime(input: HTMLElement, value: string): void {
-  // datetime-local の入力欄は user-event で入力できない（jsdom が直接の入力を受け付けない）ため、fireEvent.change で値を入れる
+  // biome-ignore lint/plugin/no-fire-event: datetime-local の入力欄は user-event で入力できない（jsdom が直接の入力を受け付けない）ため、fireEvent.change で値を入れる
   fireEvent.change(input, { target: { value } })
 }
 
@@ -23,6 +23,6 @@ export function typeDateTime(input: HTMLElement, value: string): void {
  * window の `visibilitychange` を発火する。
  */
 export function returnToTab(): void {
-  // window の visibilitychange（別のタブから戻る）に当たる user-event の操作がないため、fireEvent で起こす
+  // biome-ignore lint/plugin/no-fire-event: window の visibilitychange（別のタブから戻る）に当たる user-event の操作がないため、fireEvent で起こす
   fireEvent(window, new Event('visibilitychange'))
 }

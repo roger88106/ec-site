@@ -1,7 +1,7 @@
 // テストが時間で待っていないことを確認する（テストの書き方の「待ち方」）。
 // 時間で待つテストは、遅い環境で失敗し、速い環境で時間を無駄にする。条件で待つ（latch、Playwright の expect の再試行など）。
-// 対象は、バックエンド・画面・E2E のテストに加え、E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助（src/test/）。
-// 時間で待つ呼び出し（Thread.sleep、waitForTimeout、Awaitility の during・pollDelay、Promise で包んだ setTimeout）があると失敗にする。
+// 対象は、バックエンドの単体テストと統合テスト。画面と E2E の待ちは、Biome の plugin（frontend/biome-plugins/no-time-wait.grit）が見る。
+// 時間で待つ呼び出し（Thread.sleep、TimeUnit の sleep、Awaitility の during・pollDelay）があると失敗にする。
 // 失敗したとき：条件で待つ。バックエンドの「起きないこと」は AsyncEvents で待つ。
 // 除外：time-waits-exclusions.json に {キー: 理由} を書く。キーは `<ファイル>:<待ちを書いた行の文字>`（ルートからのパス。行の前後の空白は除く）。
 // 行番号でなく行の文字で当てるので、行が動いても除外は当たり続けて、同じファイルに後から書いた別の待ちは失敗になる。
@@ -14,27 +14,11 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 
-/**
- * テストのコードの置き場所。本番のソースを読む検査ではなくテストを読むので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。
- * テストを動かす側（E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助）も、時間で待てば同じ問題になるので読む
- */
-const TEST_FILES = [
-  /^backend\/ecsite\/src\/(?:test|integrationTest)\/.*\.java$/,
-  /^frontend\/(?:admin|store|shared)\/src\/.*\.test\.tsx?$/,
-  /^frontend\/(?:admin|store|shared)\/src\/test\/.*\.tsx?$/,
-  /^frontend\/(?:admin|store|shared)\/(?:vite|vitest)\.config\.[mc]?[tj]s$/,
-  /^e2e\/(?:tests|src|showcase|scripts)\/.*\.ts$/,
-  /^e2e\/playwright(?:\.\w+)?\.config\.[mc]?[tj]s$/,
-]
+/** バックエンドの単体テストと統合テスト */
+const TEST_FILES = [/^backend\/ecsite\/src\/(?:test|integrationTest)\/.*\.java$/]
 
-/**
- * 時間で待つ呼び出し（Thread.sleep、TimeUnit の sleep、Playwright の waitForTimeout）と、
- * 決まった時間だけ見る・待ってから見る Awaitility の書き方（during、pollDelay）
- */
-const TIME_WAIT = /\bThread\.sleep\(|\bTimeUnit\.\w+\.sleep\(|\bwaitForTimeout\(|\.during\(|\.pollDelay\(/g
-
-/** Promise で包んで、決まった時間だけ待つ setTimeout（new Promise((resolve) => setTimeout(resolve, …))）。行をまたいでもよい */
-const PROMISE_TIMEOUT = /new Promise\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*(setTimeout\()\s*\1\b/g
+/** 時間で待つ呼び出し（Thread.sleep、TimeUnit の sleep）と、決まった時間だけ見る・待ってから見る Awaitility の書き方（during、pollDelay） */
+const TIME_WAIT = /\bThread\.sleep\(|\bTimeUnit\.\w+\.sleep\(|\.during\(|\.pollDelay\(/g
 
 /**
  * 時間で待つ呼び出しを書いた行を探す。
@@ -46,9 +30,6 @@ export function findTimeWaits(text) {
   const lineOf = createLineLocator(text)
   const lines = text.split('\n')
   const hits = [...text.matchAll(TIME_WAIT)].map((match) => ({ line: lineOf(match.index), call: match[0] }))
-  for (const match of text.matchAll(PROMISE_TIMEOUT)) {
-    hits.push({ line: lineOf(match.index + match[0].lastIndexOf(match[2])), call: match[2] })
-  }
   return hits.sort((a, b) => a.line - b.line).map((hit) => ({ ...hit, text: lines[hit.line - 1].trim() }))
 }
 
@@ -90,7 +71,7 @@ export function applyExclusions(hitsByFile, exclusions) {
  * 調べるファイルかを返す。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} テストのコードなら true
+ * @returns {boolean} バックエンドのテストなら true
  */
 export function isTestFile(file) {
   return TEST_FILES.some((pattern) => pattern.test(file))

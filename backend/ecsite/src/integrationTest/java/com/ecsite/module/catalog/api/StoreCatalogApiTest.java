@@ -8,12 +8,14 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.api.model.StoreProductQuery;
 import com.ecsite.module.catalog.api.model.StoreProductSort;
 import com.ecsite.module.catalog.api.model.StoreProductSummary;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.tax.api.TaxRateApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,6 +85,21 @@ class StoreCatalogApiTest {
      */
     private static final PageRequest FIRST_PAGE = PageRequest.of(1, 20);
 
+    /**
+     * 税率の切り替え・開始の、今からの時間
+     */
+    private static final Duration RATE_CHANGE_AFTER = Duration.ofHours(1);
+
+    /**
+     * 税抜価格 {@value #PRICE_EXCL_TAX} 円の、税率 {@value #STANDARD_RATE}% の税込価格
+     */
+    private static final long PRICE_INCL_STANDARD = 1100;
+
+    /**
+     * 税抜価格 {@value #PRICE_EXCL_TAX} 円の、税率 {@value #REDUCED_RATE}% の税込価格
+     */
+    private static final long PRICE_INCL_REDUCED = 1080;
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -96,6 +113,9 @@ class StoreCatalogApiTest {
 
     @Autowired
     MutableClock clock;
+
+    @Autowired
+    ApplicationContext context;
 
     /**
      * 税区分・カテゴリ・商品を作る補助
@@ -331,6 +351,64 @@ class StoreCatalogApiTest {
             // 操作と確認：表示される商品だけが含まれる
             assertOnlyVisibleListed(visible.id);
         }
+
+        @Test
+        @DisplayName("有効な税率のない税区分の商品は含まれない")
+        void excludesProductWithoutTaxRate() throws Exception {
+            // 準備：表示される商品と、税区分に今は有効な税率がない商品
+            var visible = published(standard, PRICE_EXCL_TAX);
+            publishedBeforeRateStarts();
+
+            // 操作と確認：表示される商品だけが含まれる
+            assertOnlyVisibleListed(visible.id);
+        }
+
+        @Test
+        @DisplayName("有効な税率のない税区分の商品は、詳細も見つからない")
+        void hidesDetailOfProductWithoutTaxRate() throws Exception {
+            // 準備：税区分に今は有効な税率がない商品
+            var product = publishedBeforeRateStarts();
+
+            // 操作と確認：詳細は空
+            assertThat(api.findProduct(product.id)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("予定の税率への切り替え")
+    class RateSwitch {
+
+        @Test
+        @DisplayName("切り替えの直前は、旧い税率の税込価格")
+        void usesOldRateJustBeforeSwitch() throws Exception {
+            // 準備：税区分「標準」の税率を、1 時間後から軽減と同じ率に切り替える予定にし、キャッシュを捨てる
+            published(standard, PRICE_EXCL_TAX);
+            var switchAt = scheduleSwitch();
+
+            // 操作：切り替えの 1 ナノ秒前に一覧を取得する
+            clock.setInstant(switchAt.minusNanos(1));
+            var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
+
+            // 確認：旧い税率の税込価格
+            assertThat(item.priceInclTax()).isEqualTo(Money.of(PRICE_INCL_STANDARD));
+        }
+
+        @Test
+        @DisplayName("切り替えの時刻ちょうどから、キャッシュを捨てなくても新しい税率の税込価格になる")
+        void usesNewRateAtSwitchWithoutEvicting() throws Exception {
+            // 準備：切り替えの予定を登録し、直前に一覧を取得して、予定を含む税率の一覧をキャッシュに入れる
+            published(standard, PRICE_EXCL_TAX);
+            var switchAt = scheduleSwitch();
+            clock.setInstant(switchAt.minusNanos(1));
+            api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE);
+
+            // 操作：切り替えの時刻ちょうどに、キャッシュを捨てずに一覧を取得する
+            clock.setInstant(switchAt);
+            var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
+
+            // 確認：新しい税率の税込価格
+            assertThat(item.priceInclTax()).isEqualTo(Money.of(PRICE_INCL_REDUCED));
+        }
     }
 
     @Nested
@@ -447,6 +525,25 @@ class StoreCatalogApiTest {
     // ============================== 準備の補助 ==============================
 
     /**
+     * 税区分に今は有効な税率がない商品を、テストのカテゴリに作って公開する。
+     *
+     * <p>最後の税率は無期限なので、商品を登録した後に有効な税率がなくなるのは、最初の税率の開始より前の時刻だけ。
+     * そこで、今から {@link #RATE_CHANGE_AFTER} 後に税率が始まる税区分を作り、その時刻に商品を登録して公開した後、
+     * 時計を税率の開始の 1 秒前に戻して、税率のキャッシュを捨てる。
+     *
+     * @return 商品
+     */
+    private CatalogTestData.TestProduct publishedBeforeRateStarts() throws Exception {
+        var startAt = clock.instant().plus(RATE_CHANGE_AFTER);
+        var notYetEffective = catalog.taxCategory("将来", STANDARD_RATE, startAt);
+        clock.setInstant(startAt);
+        var product = published(notYetEffective, PRICE_EXCL_TAX);
+        clock.setInstant(startAt.minusSeconds(1));
+        TaxRateScheduleCaches.evict(context);
+        return product;
+    }
+
+    /**
      * テストのカテゴリに、バリアントを 1 つ持つ商品を登録して公開する。
      *
      * @param taxCategoryId 税区分 ID
@@ -491,6 +588,18 @@ class StoreCatalogApiTest {
     }
 
     // ============================== 操作の補助 ==============================
+
+    /**
+     * 税区分「標準」の税率を、今から {@link #RATE_CHANGE_AFTER} 後に {@value #REDUCED_RATE}% へ切り替える予定にし、税率のキャッシュを捨てる。
+     *
+     * @return 切り替えの時刻
+     */
+    private Instant scheduleSwitch() throws Exception {
+        var switchAt = clock.instant().plus(RATE_CHANGE_AFTER);
+        catalog.changeRate(standard, REDUCED_RATE, switchAt);
+        TaxRateScheduleCaches.evict(context);
+        return switchAt;
+    }
 
     /**
      * テストのカテゴリの一覧を、指定した順で取得し、商品 ID を返す。

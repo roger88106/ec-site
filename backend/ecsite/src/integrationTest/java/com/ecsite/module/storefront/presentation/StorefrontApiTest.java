@@ -678,6 +678,26 @@ class StorefrontApiTest {
         }
 
         @Test
+        @DisplayName("AC-32、65 販売終了の商品は見つからない")
+        void returnsNotFoundForDiscontinuedProduct() throws Exception {
+            // 準備：公開してから販売を終了した商品
+            var discontinued = catalog.product(standard, "販売終了", 1000).publish().discontinue();
+
+            // 操作と確認：存在しない商品と同じ、見つからないというエラー
+            assertDetailNotFound(discontinued.id);
+        }
+
+        @Test
+        @DisplayName("AC-65 一度も公開していない商品は見つからない")
+        void returnsNotFoundForNeverPublishedProduct() throws Exception {
+            // 準備：一度も公開していない商品
+            var neverPublished = catalog.product(standard, "一度も公開していない商品", 1000);
+
+            // 操作と確認：存在しない商品と同じ、見つからないというエラー
+            assertDetailNotFound(neverPublished.id);
+        }
+
+        @Test
         @DisplayName("AC-65 存在しない商品は見つからない")
         void returnsNotFoundForUnknownProduct() throws Exception {
             // 操作と確認：見つからないというエラー
@@ -804,6 +824,23 @@ class StorefrontApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id", contains(visible.id.toString())))
                 .andExpect(jsonPath("$.totalItems").value(1));
+    }
+
+    /**
+     * 商品の詳細が、存在しない商品と同じく見つからないことを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>404</li>
+     *   <li>エラーコードが NOT_FOUND</li>
+     * </ul>
+     *
+     * @param productId 商品 ID（実行ごとに作るので、定数にできない）
+     */
+    private void assertDetailNotFound(UUID productId) throws Exception {
+        mockMvc.perform(get(BASE + "/products/" + productId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
     }
 
     // ============================== 準備の補助 ==============================

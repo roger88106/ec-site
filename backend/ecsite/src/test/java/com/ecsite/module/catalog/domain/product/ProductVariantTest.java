@@ -209,6 +209,20 @@ class ProductVariantTest {
         }
 
         @Test
+        @DisplayName("軸キーの区切り文字を含む軸の値は拒否され、バリアントは加わらない")
+        void rejectsAxisValueContainingSeparator() {
+            // 準備：軸が色・サイズの商品
+            var product = productWithAxes("色", "サイズ");
+
+            // 操作と確認：区切り文字を含む値は、業務のエラー INVALID_AXIS_VALUES で拒否される
+            assertBusinessError(() -> product.addVariant(VariantCode.of("V4"), List.of("白" + Variant.AXIS_KEY_SEPARATOR + "M", "L"), NOW),
+                    ProductErrorCode.INVALID_AXIS_VALUES);
+
+            // 確認：バリアントは加わらない
+            assertThat(product.variants()).isEmpty();
+        }
+
+        @Test
         @DisplayName("AC-23 軸の値の組み合わせが重複すれば拒否される")
         void rejectsDuplicatedAxisValues() {
             // 準備：白・M のバリアントを持つ商品
@@ -543,6 +557,23 @@ class ProductVariantTest {
 
             // 操作と確認：業務のエラー PRODUCT_HAS_NO_VARIANTS で拒否される
             assertBusinessError(() -> product.deleteVariant(variantId, NOW), ProductErrorCode.PRODUCT_HAS_NO_VARIANTS);
+        }
+
+        @Test
+        @DisplayName("公開中（表示予定）の商品でも、バリアントが 2 つ以上なら 1 つを削除できる")
+        void deletesOneOfVariantsOfPublishedProduct() {
+            // 準備：バリアントが白、黒の 2 つで、公開開始日時が明日の、公開中の商品
+            var product = productWithAxes("色");
+            var white = product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            var black = product.addVariant(VariantCode.of("V2"), List.of("黒"), NOW);
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+            product.publish(NOW);
+
+            // 操作：白を削除する
+            product.deleteVariant(white, NOW);
+
+            // 確認：黒だけが残る
+            assertThat(product.variants()).extracting(Variant::id).containsExactly(black);
         }
 
         @Test

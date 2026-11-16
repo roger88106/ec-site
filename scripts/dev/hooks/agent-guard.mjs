@@ -6,9 +6,7 @@
 //
 // エージェントが Bash で実行しようとするコマンドの全文を読み、例外のない規則に反するものを拒否する。
 // - push 済みの履歴の書き換え：git push の force（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ の refspec）
-// - リモートのブランチの削除：git push の --delete・-d と、: で始まる refspec のうち tag を指さないもの（削除した後の push は、書き換えと同じ結果になる）。
-//   作業ブランチ（agent/ で始まるもの）の削除は通す（docs/06-手順書/branches.md「自動の削除」）
-// - commit の前の検査の省略：git commit・git push の --no-verify、git commit の -n、git -c core.hooksPath=…
+// - commit の前の検査の省略：git commit の --no-verify と -n、git -c core.hooksPath=…
 // - pre-commit hook を置いていないリポジトリでの git commit（git rev-parse --git-path hooks/pre-commit のファイルが、
 //   scripts/dev/hooks/pre-commit を呼んでいなければ拒否する。作業ツリーでは共通の .git の hooks を見る）
 // - gh api によるマージ（REST の …/pulls/<番号>/merge と GraphQL の mergePullRequest）、gh pr merge の --admin と、

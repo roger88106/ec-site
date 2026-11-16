@@ -255,57 +255,27 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
-  test('リモートのブランチの削除（--delete とその略記、-d、: で始まる refspec）を拒否し、消して push し直さないよう返す', () => {
-    for (const command of [
-      'git push origin --delete feature',
-      'git push --delete origin feature',
-      'git push --del origin feature',
-      'git push -d origin feature',
-      'git push origin :feature',
-      'git push origin :refs/heads/feature',
-      'git push --repo origin --delete feature',
-      'git push -d origin v1.0.0 feature',
-    ]) {
-      assertDenied(command, /ブランチを削除して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
-    }
-  })
-
-  test('作業ブランチ、緊急の修正、リリースのブランチの名前に `/` を含む push は通し、force と削除は拒否する', () => {
+  test('作業ブランチ、緊急の修正、リリースのブランチの名前に `/` を含む push は通し、force は拒否する', () => {
     for (const command of ['git push -u origin agent/367-x', 'git push origin hotfix/1-x', 'git push origin release/1.2.0']) {
       assertPassed(command)
     }
     for (const command of ['git push -f origin agent/367-x', 'git push origin +agent/367-x']) {
       assertDenied(command, /force push/)
     }
-    for (const command of ['git push --delete origin hotfix/1-x', 'git push origin :release/1.2.0']) {
-      assertDenied(command, /ブランチを削除して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
-    }
   })
 
-  test('作業ブランチ（agent/ で始まるもの）の削除は通す。他のブランチと同時に削除するときは拒否する', () => {
+  test('リモートのブランチの削除は通す（develop と main の削除は ruleset が禁止する）', () => {
     for (const command of [
+      'git push origin --delete feature',
+      'git push -d origin hotfix/1-x',
+      'git push origin :release/1.2.0',
       'git push --delete origin agent/367-x',
-      'git push origin -d agent/367-x agent/368-y',
-      'git push origin :agent/367-x',
-      'git push origin :refs/heads/agent/367-x',
     ]) {
-      assertPassed(command, fakeDeps({ tags: ['v1.0.0'] }))
-    }
-    for (const command of [
-      'git push --delete origin agent/367-x feature',
-      'git push origin :agent/367-x :develop',
-      'git push --delete origin agentx/1',
-      'git push --delete origin refs/heads/main',
-      'git push --delete origin refs/remotes/agent/367-x',
-      'git push --delete origin Agent/367-x',
-      'git push --rep=origin --delete develop agent/367-x',
-      'git push --repo=origin --delete develop agent/367-x',
-    ]) {
-      assertDenied(command, /ブランチを削除して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
+      assertPassed(command)
     }
   })
 
-  test('tag の削除（tag を指す名前と refs/tags/ の refspec）は拒否せず、確認を求める', () => {
+  test('tag の削除（tag を指す名前と refs/tags/ の refspec）は確認を求める', () => {
     for (const command of [
       'git push origin --delete v1.0.0',
       'git push -d origin refs/tags/v2',
@@ -313,13 +283,6 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
       'git push origin :refs/tags/v2',
     ]) {
       assertAsked(command, /tag/, fakeDeps({ tags: ['v1.0.0'] }))
-    }
-  })
-
-  test('ローカルにない tag の名前の削除は、ブランチの削除として拒否し、refs/tags/<名前> で指定するよう返す。refs/tags/ で指定すれば確認を求める', () => {
-    assertDenied('git push origin --delete v1', /tag を消すときは `refs\/tags\/<名前>` で指定する/, fakeDeps())
-    for (const command of ['git push origin --delete refs/tags/v1', 'git push origin :refs/tags/v1']) {
-      assertAsked(command, /tag/, fakeDeps())
     }
   })
 
@@ -362,7 +325,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
 })
 
 describe('commit の前の検査の省略を拒否する', () => {
-  test('commit と push の --no-verify、commit の -n（短いオプションの組み合わせを含む）を拒否し、問題を直すよう返す', () => {
+  test('commit の --no-verify と -n（短いオプションの組み合わせを含む）を拒否し、問題を直すよう返す', () => {
     for (const command of [
       'git commit --no-verify -m x',
       'git commit --amend --no-verify',
@@ -370,11 +333,13 @@ describe('commit の前の検査の省略を拒否する', () => {
       'git commit -n -m x',
       'git commit -an -m x',
       'git commit -anm x',
-      'git push --no-verify',
-      'git push --no-verify origin x',
     ]) {
       assertDenied(command, /--no-verify.*直して/s)
     }
+  })
+
+  test('push の --no-verify は通す（push の前の hook を置いていないので、省略する検査がない）', () => {
+    assertPassed('git push --no-verify origin x')
   })
 
   test('メッセージなどの値の中の -n と、--amend・--no-edit は通す', () => {

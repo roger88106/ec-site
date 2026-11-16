@@ -73,7 +73,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 マージした作業ブランチは、リポジトリの設定で自動で削除される。
 
-マージせずに残った作業ブランチ（pull request を閉じたものなど）は、エージェントも `git push --delete` で削除してよい。Claude Code の hook は、リモートのブランチの削除のうち、作業ブランチだけを許可する。開いている pull request のあるブランチは削除しない。ブランチを削除すると、GitHub がその pull request を閉じるため。hook は pull request を調べないので、削除の前に `gh pr list --head <ブランチ>` で確認する。
+マージせずに残った作業ブランチ（pull request を閉じたものなど）は、エージェントも `git push --delete` で削除してよい。作業ブランチ以外のブランチは削除しない。開いている pull request のあるブランチも削除しない。ブランチを削除すると、GitHub がその pull request を閉じるため。hook は削除を判定しないので、削除の前に `gh pr list --head <ブランチ>` で確認する。
 
 ## リリース
 

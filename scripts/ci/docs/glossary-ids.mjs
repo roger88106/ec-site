@@ -164,7 +164,7 @@ if (import.meta.main) {
     const glossaryIds = entries.map((entry) => entry.id)
     ids.push(...glossaryIds)
     const absent = new Set(findMissing(glossaryIds, tokens, content))
-    for (const { id, line } of entries.filter((entry) => absent.has(entry.id) && !(entry.id in exclusions))) {
+    for (const { id, line } of entries.filter((entry) => absent.has(entry.id) && !Object.hasOwn(exclusions, entry.id))) {
       missing.push(id)
       console.log(`${glossary}:${line} 識別子 \`${id}\` がコードにない`)
     }

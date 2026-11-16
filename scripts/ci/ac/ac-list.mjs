@@ -1,0 +1,394 @@
+// AC 一覧と ③ の生成の表を読み書きする（ac-check の一覧の読み書き）。進行中の spec の AC の定義もここで読む。
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
+import { readCodeBlocks } from '../lib/code-block.mjs'
+import { readCodeSpans, replaceCodeSpans } from '../lib/code-span.mjs'
+import { readDocument } from '../lib/doc-structure.mjs'
+import { ARCHIVE, listSpecDirs } from '../lib/spec-dirs.mjs'
+import { AC_NUMBER, compareAc, toAcKey } from './test-names.mjs'
+
+/** AC 一覧の状態 */
+export const STATUSES = ['有効', '変更', '廃止']
+
+/** ③ の表に入れる状態 */
+const ACTIVE = ['有効', '変更']
+
+/** 共通（どのモジュールにも属さない AC）を表す、モジュールの列の値。AC 一覧だけに置き、③ の表には生成しない */
+export const COMMON = 'common'
+
+/** AC 一覧の文書（リポジトリのルートから） */
+export const AC_LIST = 'docs/03-機能仕様/acceptance-criteria.md'
+
+/** ③ の文書の置き場所（リポジトリのルートから） */
+export const MODULE_DOCS_DIR = 'docs/03-機能仕様'
+
+/** バックエンドのモジュールのディレクトリの置き場所（リポジトリのルートから） */
+export const BACKEND_MODULES_DIR = 'backend/ecsite/src/main/java/com/ecsite/module'
+
+/** spec の置き場所（リポジトリのルートから） */
+export const SPECS_DIR = 'docs/08-spec'
+
+/** AC 一覧の表の列 */
+const LIST_COLUMNS = ['AC', 'モジュール', '状態', '元の spec', '変えた spec', '今の内容']
+
+/** ③ の生成の表の列 */
+export const MODULE_COLUMNS = ['AC', '今の内容', '元の spec']
+
+/** ③ に生成する表の、見出しと区切りの行 */
+const MODULE_TABLE_HEAD = ['| AC | 今の内容 | 元の spec |', '|----|----------|-----------|']
+
+/** 対応する AC が 0 件のモジュールの、マーカーの範囲の中の行 */
+const NO_ACS = 'なし。'
+
+/** ③ の生成の表を置く節。雛形の骨組みの ## にあることを、テストで確認する */
+export const MODULE_AC_SECTION = '今有効な AC'
+
+/** 生成のマーカーの名前（AC 一覧の表と、③ の表） */
+export const LIST_MARK = 'ac-list'
+export const MODULE_MARK = 'module-ac'
+
+/** 生成のマーカーの形（開きは `<!-- generated:<名前> -->`、閉じは `<!-- /generated:<名前> -->`） */
+const MARK = /^(\/?)generated:(ac-list|module-ac)$/
+
+/** 表の区切りの行 */
+const SEPARATOR_ROW = /^\|(?:\s*:?-+:?\s*\|)+$/
+
+/** AC の番号のセル（0 で埋めない） */
+const AC_CELL = /^AC-([1-9][0-9]*(?:-[1-9][0-9]*)?)$/
+
+/** MVP の形（AC-n）の番号の上限。MVP は終わっていて、AC-n は増えない */
+export const MVP_AC_LIMIT = 312
+
+/**
+ * AC の番号の後に文が続く形。文の先頭が一覧の助詞か記号なら、文の中で番号に触れただけの行なので一致しない。
+ * 開きのかぎかっこ、[ で始まるリンク、* の強調は、文の先頭に書くので記号から除く。助詞の一覧は語の先頭で比べる
+ */
+const AC_SENTENCE = '\\s+(?!(?:の|に|は|を|が|で|と|も|へ|や|か|まで|より|など|だけ|および|または|(?![「『\\[*])[\\p{P}\\p{S}]))\\S'
+
+/** AC の番号の後が、文か行の終わりである形 */
+const AC_SENTENCE_OR_END = `(?:${AC_SENTENCE}|\\s*$)`
+
+/** 太字でも太字でなくてもよい AC の番号 */
+const AC_LABEL = `(?:\\*\\*AC-${AC_NUMBER}\\*\\*|AC-${AC_NUMBER})`
+
+/** AC の定義を書こうとした行の形。定義の形でなければ、読み飛ばされて検査をすり抜けないよう、崩れた行として報告する */
+const DEFINITION_ATTEMPTS = [
+  // 箇条（- * + と番号。字下げしてもよい）の先頭の太字の AC
+  /^\s*(?:[-*+]|\d+[.)])\s*\*\*AC-/,
+  // 太字のない箇条
+  new RegExp(`^\\s*(?:[-*+]|\\d+[.)])\\s+AC-${AC_NUMBER}${AC_SENTENCE}`, 'u'),
+  // 箇条のない太字
+  new RegExp(`^\\s*\\*\\*AC-${AC_NUMBER}\\*\\*${AC_SENTENCE_OR_END}`, 'u'),
+  // チェックボックス
+  new RegExp(`^\\s*(?:[-*+]|\\d+[.)])\\s*\\[[ xX]\\]\\s*${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
+  // 見出し（節の番号を付けてもよい）
+  new RegExp(`^\\s*#{1,6}\\s+(?:[0-9][0-9.]*\\s+)?${AC_LABEL}${AC_SENTENCE_OR_END}`, 'u'),
+  // 表の行（先頭のセルが番号だけ）
+  new RegExp(`^\\s*\\|\\s*${AC_LABEL}\\s*\\|`, 'u'),
+]
+
+/** 元の spec・変えた spec の列の、spec の番号の形。MVP の spec は MVP-<3 桁の番号>、それ以外は番号だけ（0 埋めの有無は変えずに、そのまま比べる） */
+export const SPEC_NUMBER = /^(?:MVP-(?<mvp>[0-9]{3})|(?<plain>[0-9]+))$/
+
+/** MVP の spec のディレクトリの置き場所（docs/08-spec/ から） */
+export const MVP_ARCHIVE_PREFIX = `${ARCHIVE}/mvp/`
+
+/** 変えた spec の列で、2 つ以上の番号を区切る記号 */
+export const SPEC_NUMBER_SEPARATOR = '、'
+
+/** 今の内容に残してはいけない、spec の中だけで通じる参照（※1、事実 2、US の番号、spec の節） */
+export const SPEC_ONLY_REFS = [/※[0-9]/, /事実\s*[0-9]/, /US-[0-9]/, /spec\s*の「/]
+
+/**
+ * 今の内容の根拠の形：リンク（[<文書の名前>](<パス>)）と、その直後の「の「<見出し>」」。リンクのない「…の「…」」は当たらない。
+ * 理由：doc-refs が見出しの実在を確認できるのは、リンクの後の「の「…」」だけのため
+ */
+export const BASIS = /\[[^\]]+\]\([^()\s]+\)の「[^「」]+」/
+
+/** 今の内容の仮の値（`<…>`。英字で始まる HTML のタグは除く） */
+export const PLACEHOLDER = /<[^\x00-\x7F][^<>]*>/
+
+/**
+ * 改行コードを LF にそろえる。
+ *
+ * @param {string} text 文書
+ * @returns {string} LF にした文書
+ */
+export function toLf(text) {
+  return text.replace(/\r\n?/g, '\n')
+}
+
+/**
+ * 文書を、改行コードを付けたままの行に分ける（書き換えるときに、範囲の外の改行コードを変えないため）。
+ *
+ * @param {string} text 文書
+ * @returns {string[]} 行（改行コードを含む）。つなぐと元の文書になる
+ */
+export function splitKeepingEol(text) {
+  return text.split(/(?<=\n)/)
+}
+
+/**
+ * 表の行をセルに分ける。1 行のコードの中の縦線と、エスケープした縦線（\|）では分けない。
+ *
+ * @param {string} line 行（`|` で始まる）
+ * @returns {string[] | null} セル（前後の空白を除く）。表の行でなければ null
+ */
+export function splitRow(line) {
+  const text = line.trim()
+  if (!text.startsWith('|')) return null
+  const spans = readCodeSpans(text).spans
+  const cells = []
+  let start = 1
+  for (let i = 1; i < text.length; i++) {
+    if (text[i] !== '|' || text[i - 1] === '\\' || spans.some((span) => i > span.start && i < span.end)) continue
+    cells.push(text.slice(start, i).trim())
+    start = i + 1
+  }
+  // 末尾の縦線がない行は、最後のセルも数える
+  if (start < text.length) cells.push(text.slice(start).trim())
+  return cells
+}
+
+/**
+ * 文書から、生成のマーカーを読む。コードブロックと 1 行のコードの中は読まない。
+ * `generated:` を含むコメントで、既知のマーカーの形でないもの（綴りの誤り）と、行に単独で書いていないマーカーは問題にする。
+ *
+ * @param {string} text 文書（LF）
+ * @returns {{ marks: { name: string, close: boolean, line: number }[], problems: string[] }} マーカー（出る順。line は 1 から）と問題
+ */
+export function findMarks(text) {
+  const lines = text.split('\n')
+  const inCode = new Set()
+  for (const block of readCodeBlocks(text)) {
+    const last = block.closed ? block.closeLine : lines.length
+    for (let line = block.line; line <= last; line++) inCode.add(line)
+  }
+  const marks = []
+  const problems = []
+  lines.forEach((raw, index) => {
+    const number = index + 1
+    if (inCode.has(number)) return
+    const line = replaceCodeSpans(raw, () => ' ')
+    for (const comment of line.matchAll(/<!--([\s\S]*?)-->/g)) {
+      const body = comment[1].trim()
+      if (!body.includes('generated:')) continue
+      const match = MARK.exec(body)
+      if (!match) problems.push(`${number} 行：知らない生成の印（${comment[0]}）。<!-- generated:${LIST_MARK} --> か <!-- generated:${MODULE_MARK} --> と、その閉じだけを書く`)
+      else if (line.trim() !== comment[0]) problems.push(`${number} 行：生成の印は、1 行に単独で書く`)
+      else marks.push({ name: match[2], close: match[1] === '/', line: number })
+    }
+  })
+  return { marks, problems }
+}
+
+/**
+ * 1 つの名前のマーカーの組を、ただ 1 組として読む。
+ *
+ * @param {{ name: string, close: boolean, line: number }[]} marks findMarks のマーカー
+ * @param {string} name マーカーの名前
+ * @returns {{ pair: { open: number, close: number } | null, problems: string[] }} 組（開きと閉じの行）と問題。マーカーが 1 つもなければ pair も problems も空
+ */
+export function readPair(marks, name) {
+  const own = marks.filter((mark) => mark.name === name)
+  if (own.length === 0) return { pair: null, problems: [] }
+  const opens = own.filter((mark) => !mark.close)
+  const closes = own.filter((mark) => mark.close)
+  if (opens.length !== 1 || closes.length !== 1) {
+    return { pair: null, problems: [`生成の印 generated:${name} の開きが ${opens.length} 個、閉じが ${closes.length} 個ある（1 組だけにする）`] }
+  }
+  if (closes[0].line < opens[0].line) return { pair: null, problems: [`生成の印 generated:${name} の閉じ（${closes[0].line} 行）が開き（${opens[0].line} 行）より前にある`] }
+  return { pair: { open: opens[0].line, close: closes[0].line }, problems: [] }
+}
+
+/**
+ * AC 一覧の文書から、生成のマーカーの範囲の表を読む。行を読み飛ばさず、読めない行は問題にする。
+ *
+ * @param {string} document AC 一覧の文書（改行は LF でも CRLF でもよい）
+ * @returns {{ rows: { ac: number | string, label: string, module: string, status: string, origin: string, changedBy: string, content: string, line: number }[], problems: string[], pair: { open: number, close: number } | null }}
+ *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：マーカーの範囲（読めなければ null）
+ */
+export function readAcList(document) {
+  const text = toLf(document)
+  const { marks, problems } = findMarks(text)
+  if (marks.some((mark) => mark.name === MODULE_MARK)) problems.push(`AC 一覧に ③ の生成の印（generated:${MODULE_MARK}）がある`)
+  const { pair, problems: pairProblems } = readPair(marks, LIST_MARK)
+  problems.push(...pairProblems)
+  if (!pair && pairProblems.length === 0) problems.push(`<!-- generated:${LIST_MARK} --> と <!-- /generated:${LIST_MARK} --> の範囲がない`)
+  if (!pair) return { rows: [], problems, pair: null }
+  const lines = text.split('\n')
+  const rows = []
+  let tableLine = 0
+  // 表の最後の行（見出し、区切り、AC の行のうち最後のもの。1 から）。転記する行を、表が切れない位置に入れるために返す
+  let lastLine = 0
+  // 空行は、表より前と表より後だけ許す。GFM の表は空行で切れ、後ろの行が表にならないため
+  const filled = []
+  for (let number = pair.open + 1; number < pair.close; number++) {
+    if (lines[number - 1].trim() !== '') filled.push(number)
+  }
+  for (let number = pair.open + 1; number < pair.close; number++) {
+    const line = lines[number - 1]
+    if (line.trim() === '') {
+      if (number > filled[0] && number < filled.at(-1)) problems.push(`${number} 行：AC 一覧の表の途中に空行がある（表がそこで切れる）`)
+      continue
+    }
+    const cells = splitRow(line)
+    tableLine++
+    lastLine = number
+    if (cells === null) {
+      problems.push(`${number} 行：AC 一覧の範囲の中に、表の行でない行がある（セルの中で改行しない）`)
+      continue
+    }
+    if (tableLine === 1) {
+      if (cells.join('|') !== LIST_COLUMNS.join('|')) problems.push(`${number} 行：AC 一覧の列が ${LIST_COLUMNS.join('、')} でない`)
+      continue
+    }
+    if (tableLine === 2) {
+      if (!SEPARATOR_ROW.test(line.trim()) || cells.length !== LIST_COLUMNS.length) problems.push(`${number} 行：AC 一覧の表の区切りの行が ${LIST_COLUMNS.length} 列でない`)
+      continue
+    }
+    const match = AC_CELL.exec(cells[0])
+    if (!match) {
+      problems.push(`${number} 行：AC の番号の形が違う（${cells[0]}。AC-<番号> か AC-<spec の番号>-<連番> の形で、0 で埋めない）`)
+      continue
+    }
+    if (cells.length !== LIST_COLUMNS.length) {
+      problems.push(`${number} 行：${cells[0]} の行のセルが ${cells.length} 個ある（${LIST_COLUMNS.length} 個にする。今の内容の縦線は ｜ にする）`)
+      continue
+    }
+    const [label, module, status, origin, changedBy, content] = cells
+    rows.push({ ac: toAcKey(match[1]), label, module, status, origin, changedBy, content, line: number })
+  }
+  if (tableLine === 0) problems.push(`${pair.open} 行：AC 一覧の範囲に、表の見出しの行がない（列は ${LIST_COLUMNS.join('、')}）`)
+  return { rows, problems, pair, lastLine }
+}
+
+/**
+ * spec のディレクトリの名前、または docs/08-spec からのパスから、spec の番号を取り出す。
+ *
+ * @param {string} nameOrRel ディレクトリの名前（5-x）か、パス（archive/1to10/5-x）
+ * @returns {string} 先頭の番号（0 埋めはそのまま）
+ */
+export function specNumberOf(nameOrRel) {
+  return /^[0-9]+/.exec(nameOrRel.split('/').pop())[0]
+}
+
+/**
+ * spec の本文から、AC の定義を読む。コードブロック・HTML のコメント・1 行のコードの中は読まない。
+ * 今の内容は定義の文にし、定義の下の箇条は「：」の後に読点でつなぐ。
+ *
+ * @param {string} markdown spec.md の本文
+ * @param {string} specRel docs/08-spec からの spec のディレクトリのパス
+ * @returns {{ definitions: { ac: number | string, specRel: string, content: string }[], problems: string[] }} 定義（書いた順）と、崩れた定義の行（行を付ける）
+ */
+export function parseSpecAcDefinitions(markdown, specRel) {
+  const { lines, plain } = readDocument(markdown)
+  const definitions = []
+  const problems = []
+  const definition = new RegExp(`^- \\*\\*AC-(${AC_NUMBER})\\*\\*\\s+(\\S.*)$`)
+  plain.forEach((line, index) => {
+    // 1 行のコードを文の先頭として扱えるよう、コードを記号でない文字（x）に替えた行で判定する
+    const marked = replaceCodeSpans(lines[index], () => 'x')
+    if (!DEFINITION_ATTEMPTS.some((attempt) => attempt.test(marked))) return
+    const match = definition.exec(line)
+    if (!match) {
+      problems.push(`${index + 1} 行：AC の定義の行が崩れている（- **AC-<番号>** <文> の形にする）`)
+      return
+    }
+    // 本文は、1 行のコードを残した行から読む
+    const text = lines[index].slice(lines[index].indexOf('**', 4) + 2).trim()
+    const items = []
+    for (let next = index + 1; next < lines.length; next++) {
+      const item = /^\s{2,}[-*]\s+(.*)$/.exec(lines[next])
+      if (!item) break
+      items.push(item[1].trim().replace(/。$/, ''))
+    }
+    const content = items.length === 0 ? text : `${text.replace(/[。：]$/, '')}：${items.join('、')}。`
+    definitions.push({ ac: toAcKey(match[1]), specRel, content: content.replaceAll('|', '｜') })
+  })
+  return { definitions, problems }
+}
+
+/**
+ * 進行中の spec（docs/08-spec/ の直下）の AC の定義を読む。アーカイブの spec は読まない。spec.md のないディレクトリは飛ばす。
+ *
+ * @param {string} specsDir docs/08-spec のパス
+ * @returns {{ specs: { rel: string, definitions: object[] }[], problems: string[] }} spec ごとの定義と、崩れた定義の行（spec.md のパスを付ける）
+ */
+export function readInProgressSpecs(specsDir) {
+  const specs = []
+  const problems = []
+  for (const { rel, dir } of listSpecDirs(specsDir).filter((spec) => !spec.rel.startsWith(`${ARCHIVE}/`))) {
+    const file = path.join(dir, 'spec.md')
+    if (!existsSync(file)) continue
+    const parsed = parseSpecAcDefinitions(readFileSync(file, 'utf8'), rel)
+    specs.push({ rel, definitions: parsed.definitions })
+    problems.push(...parsed.problems.map((problem) => `${SPECS_DIR}/${rel}/spec.md：${problem}`))
+  }
+  return { specs, problems }
+}
+
+/**
+ * AC 一覧の行を作る（転記する進行中の spec の AC）。モジュールは空にし、書くまで検査を失敗にする。
+ *
+ * @param {{ ac: number | string, specRel: string, content: string }} definition AC の定義
+ * @returns {string} 表の行
+ */
+function renderListRow({ ac, specRel, content }) {
+  return `| AC-${ac} |  | 有効 | ${specNumberOf(specRel)} | — | ${content} |`
+}
+
+/**
+ * AC 一覧にない AC を、AC の順の位置に転記する。既存の行と、範囲の外は変えない。
+ *
+ * @param {string} document AC 一覧の文書
+ * @param {{ ac: number | string, specRel: string, content: string }[]} definitions 進行中の spec の AC の定義
+ * @returns {string} 転記した文書（転記する AC がなければ元のまま）
+ * @throws {Error} AC 一覧を読めないとき
+ */
+export function addAcsToList(document, definitions) {
+  const { rows, problems, pair, lastLine } = readAcList(document)
+  if (problems.length > 0) throw new Error(`AC 一覧を読めないので転記しない：${problems.join(' / ')}`)
+  const known = new Set(rows.map((row) => String(row.ac)))
+  const added = []
+  for (const definition of definitions) {
+    if (known.has(String(definition.ac))) continue
+    known.add(String(definition.ac))
+    added.push(definition)
+  }
+  if (added.length === 0) return document
+  const lines = splitKeepingEol(document)
+  const eol = lines[pair.open - 1].endsWith('\r\n') ? '\r\n' : '\n'
+  // 行の前に入れる行（1 から）→ 入れる行
+  const inserts = new Map()
+  for (const definition of added.sort((a, b) => compareAc(a.ac, b.ac))) {
+    // 全ての行より後ろの AC は、閉じのマーカーでなく表の最後の行の直後に入れる（範囲の末尾の空行で、表が切れないように）
+    const before = rows.find((row) => compareAc(row.ac, definition.ac) > 0)?.line ?? lastLine + 1
+    inserts.set(before, [...(inserts.get(before) ?? []), `${renderListRow(definition)}${eol}`])
+  }
+  return lines.map((line, index) => [...(inserts.get(index + 1) ?? []), line].join('')).join('')
+}
+
+/**
+ * ③ のモジュールの名前を決める。バックエンドのモジュールのディレクトリと、③ の文書の両方がある名前。
+ *
+ * @param {{ backendDirs: string[], docFiles: string[] }} input バックエンドのモジュールのディレクトリの名前と、③ の置き場所のファイルの名前
+ * @returns {Set<string>} モジュールの名前
+ */
+export function listModuleNames({ backendDirs, docFiles }) {
+  const docs = new Set(docFiles.filter((file) => file.endsWith('.md')).map((file) => file.slice(0, -3)))
+  return new Set(backendDirs.filter((name) => docs.has(name)))
+}
+
+/**
+ * ③ の「今有効な AC」の表を、AC 一覧から作る。有効・変更の、そのモジュールの AC を AC の順に置く。
+ *
+ * @param {ReturnType<typeof readAcList>['rows']} rows AC 一覧の行
+ * @param {string} module モジュールの名前
+ * @returns {string} マーカーの範囲の中に置く行（LF。末尾に改行を付けない）。0 件なら「なし。」
+ */
+export function renderModuleTable(rows, module) {
+  const selected = rows.filter((row) => ACTIVE.includes(row.status) && row.module === module && module !== COMMON).sort((a, b) => compareAc(a.ac, b.ac))
+  if (selected.length === 0) return NO_ACS
+  return [...MODULE_TABLE_HEAD, ...selected.map((row) => `| ${row.label} | ${row.content} | ${row.origin} |`)].join('\n')
+}

@@ -754,8 +754,12 @@ function printChangedWarnings(list) {
  * @returns {number} 終了コード（error の語があれば 1。ファイルがなければ 2）
  */
 function checkMessage(file, terms, warning) {
-  if (!file) {
+  if (!file || file.startsWith('--')) {
     console.error('--message にはコミットメッセージのファイルを指定する')
+    return 2
+  }
+  if (!existsSync(file)) {
+    console.error(`--message のファイルがない：${file}`)
     return 2
   }
   const hits = findTerms(stripMessageComments(readFileSync(file, 'utf8')), termsFor(terms, null))
@@ -846,13 +850,40 @@ function checkFiles(list, { warning, added }) {
   return !warning && count ? 1 : 0
 }
 
+/** 引数として受け付ける印。--message の次の引数はファイル */
+const OPTIONS = new Set(['--warning', '--added', '--changed', '--message'])
+
+/**
+ * 引数の誤り（知らない印、--warning のない --added）を返す。
+ *
+ * @param {string[]} args コマンドの引数
+ * @returns {string | null} 誤りの文。なければ null
+ */
+export function findArgumentProblem(args) {
+  const unknown = args.filter((arg, index) => !OPTIONS.has(arg) && args[index - 1] !== '--message')
+  if (unknown.length) return `知らない引数：${unknown.join(' ')}`
+  if (args.includes('--added') && !args.includes('--warning')) return '--added は --warning と合わせて使う'
+  return null
+}
 
 if (import.meta.main) {
   const args = process.argv.slice(2)
+  const argumentProblem = findArgumentProblem(args)
+  if (argumentProblem) {
+    console.error(`${argumentProblem}（使い方は ja-text.mjs の冒頭のコメント）`)
+    process.exit(2)
+  }
   const warning = args.includes('--warning')
-  const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
-  validateTerms(list.error)
-  validateTerms(list.warning)
+  let list
+  // ja-text.json が読めないのは、文書の違反でなく設定の誤りなので、終了コードを 2 にする
+  try {
+    list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
+    validateTerms(list.error)
+    validateTerms(list.warning)
+  } catch (e) {
+    console.error(`ja-text.json の設定の誤り：${e.message}`)
+    process.exit(2)
+  }
   if (args.includes('--message')) {
     process.exit(checkMessage(args[args.indexOf('--message') + 1], warning ? list.warning : list.error, warning))
   }

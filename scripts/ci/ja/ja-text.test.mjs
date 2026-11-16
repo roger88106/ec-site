@@ -214,6 +214,39 @@ describe('日本語の文の検査（コミットメッセージ）', () => {
   })
 })
 
+describe('日本語の文の検査（使い方の誤り）', () => {
+  /**
+   * 引数を付けて入口を実行する。
+   *
+   * @param {string[]} args 引数
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  const run = (args) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', env: withoutGitEnv() })
+
+  test('知らない引数と、--warning のない --added は、終了コード 2 で理由を示す', () => {
+    const typo = run(['--waning'])
+    assert.equal(typo.status, 2)
+    assert.match(typo.stderr, /知らない引数：--waning/)
+    const added = run(['--added'])
+    assert.equal(added.status, 2)
+    assert.match(added.stderr, /--added は --warning と合わせて使う/)
+  })
+
+  test('--message のファイルがないとき、ファイルを指定しないときは、終了コード 2 にする', () => {
+    const missing = run(['--message', path.join(tmpdir(), 'ja-text-no-such-file')])
+    assert.equal(missing.status, 2)
+    assert.match(missing.stderr, /--message のファイルがない/)
+    assert.equal(run(['--message']).status, 2)
+  })
+
+  test('引数の誤りは、知る印と --message のファイルを誤りにしない', () => {
+    assert.equal(jaText.findArgumentProblem(['--warning', '--added']), null)
+    assert.equal(jaText.findArgumentProblem(['--message', 'COMMIT_EDITMSG']), null)
+    assert.equal(jaText.findArgumentProblem(['--changed']), null)
+    assert.equal(jaText.findArgumentProblem([]), null)
+  })
+})
+
 describe('日本語の文の検査（git commit -v の差分）', () => {
   const SCISSORS = '# ------------------------ >8 ------------------------'
   const verbose = `docs: 文書を直す\n\n本文\n${SCISSORS}\n# Do not modify or remove the line above.\ndiff --git a/docs/a.md b/docs/a.md\n@@ -1 +1 @@\n-道具を使う\n+ツールを使う\n`

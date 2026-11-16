@@ -8,8 +8,9 @@
 //
 // 使い方：node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファイル]
 //   名前の対応のファイル：1 行に「旧=新」。空行と # の行は飛ばす。名前は語の境目で当てる。
+//   元の commit がない、対応のファイルがない、対応のファイルに「旧=新」の形でない行があるときは、理由を出して終了コード 2 を返す。
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 /**
  * 名前の対応のファイルの中身を、[旧, 新] の並びにする。
@@ -23,6 +24,23 @@ export function parseRenames(text) {
     .map((line) => line.trim())
     .filter((line) => line !== '' && !line.startsWith('#'))
     .map((line) => line.split('=').map((part) => part.trim()))
+}
+
+/**
+ * 名前の対応のファイルで、「旧=新」の形でない行を探す（= が 1 つでない、旧か新が空）。
+ *
+ * @param {string} text 名前の対応のファイルの中身
+ * @returns {{ line: number, text: string }[]} 形でない行（1 から）と、その行の文字
+ */
+export function findRenameProblems(text) {
+  return text
+    .split(/\r?\n/)
+    .map((raw, index) => ({ line: index + 1, text: raw.trim() }))
+    .filter(({ text: line }) => line !== '' && !line.startsWith('#'))
+    .filter(({ text: line }) => {
+      const parts = line.split('=').map((part) => part.trim())
+      return parts.length !== 2 || parts.some((part) => part === '')
+    })
 }
 
 /**
@@ -197,12 +215,31 @@ function main() {
     console.error('使い方：node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファイル]')
     process.exit(2)
   }
-  const renames = renamesPath ? parseRenames(readFileSync(renamesPath, 'utf8')) : []
-  // 日本語を含むパスを、引用符と 8 進数の形にせずに読む
-  const diffText = execFileSync('git', ['-c', 'core.quotepath=false', 'diff', '-M', '-l0', '--no-color', base], {
-    encoding: 'utf8',
-    maxBuffer: 256 * 1024 * 1024,
-  })
+  let renamesText = ''
+  if (renamesPath) {
+    if (!existsSync(renamesPath)) {
+      console.error(`名前の対応のファイルがない：${renamesPath}`)
+      process.exit(2)
+    }
+    renamesText = readFileSync(renamesPath, 'utf8')
+  }
+  // 形の崩れた行を読み飛ばすと、名前を置き換えずに違反が増え、原因が対応のファイルだと分からないので、先に止める
+  const renameProblems = findRenameProblems(renamesText)
+  for (const { line, text } of renameProblems) console.error(`${renamesPath}:${line} 「旧=新」の形でない：${text}`)
+  if (renameProblems.length) process.exit(2)
+  const renames = parseRenames(renamesText)
+  let diffText
+  try {
+    // 日本語を含むパスを、引用符と 8 進数の形にせずに読む
+    diffText = execFileSync('git', ['-c', 'core.quotepath=false', 'diff', '-M', '-l0', '--no-color', base], {
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+  } catch (e) {
+    console.error(`git diff を実行できない（元の commit ${base} があるかを確認する）：${e.stderr?.toString().trim() || e.message}`)
+    process.exit(2)
+  }
   const violations = findViolations(diffText, renames)
   for (const { kind, line, location } of violations) {
     console.log(`${location} ${kind === 'added' ? '+' : '-'}${line}`)

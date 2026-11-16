@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
-import { findViolations, parseRenames } from './test-diff.mjs'
+import { fileURLToPath } from 'node:url'
+import { findRenameProblems, findViolations, parseRenames } from './test-diff.mjs'
 
 /** 1 つのファイルの差分（git diff -M の形）を作る */
 function fileDiff({ from, to = from, removed = [], added = [], newFile = false }) {
@@ -24,6 +29,37 @@ describe('名前の対応の読み込み', () => {
       ['ProductDirectory', 'CatalogDirectory'],
       ['com.a.Foo', 'com.b.Foo'],
     ])
+  })
+
+  test('= のない行、= が 2 つ以上の行、旧か新が空の行を、行の番号つきで返す', () => {
+    const text = ['# 説明', 'A=B', 'NoEquals', 'A=B=C', '=New', 'Old=', ''].join('\n')
+    assert.deepEqual(findRenameProblems(text).map(({ line }) => line), [3, 4, 5, 6])
+    assert.deepEqual(findRenameProblems(''), [])
+  })
+})
+
+describe('入口の使い方の誤り', () => {
+  const SCRIPT = fileURLToPath(new URL('./test-diff.mjs', import.meta.url))
+  const run = (args) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' })
+
+  test('元の commit がない、対応のファイルがない、対応のファイルの形が崩れているときは、終了コード 2 で理由を示す', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'test-diff-'))
+    try {
+      const broken = path.join(dir, 'renames.txt')
+      writeFileSync(broken, 'A=B\nNoEquals\n')
+      assert.equal(run([]).status, 2)
+      const missing = run(['HEAD', path.join(dir, 'none.txt')])
+      assert.equal(missing.status, 2)
+      assert.match(missing.stderr, /名前の対応のファイルがない/)
+      const shape = run(['HEAD', broken])
+      assert.equal(shape.status, 2)
+      assert.match(shape.stderr, /renames\.txt:2 「旧=新」の形でない：NoEquals/)
+      const commit = run(['no-such-commit-xyz'])
+      assert.equal(commit.status, 2)
+      assert.match(commit.stderr, /git diff を実行できない/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
 

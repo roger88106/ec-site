@@ -9,7 +9,8 @@ import { withoutGitEnv } from './lib/git-env.mjs'
 import { commentText, trailingCommentLines } from './lib/comment-text.mjs'
 import { SHALLOW_CLONE_MESSAGE } from './lib/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
-import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments, validateTerms } from './ja-text.mjs'
+import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, stripMessageComments, validateTerms } from './ja-text.mjs'
+import { isTargetDoc } from './lib/ja-docs.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
 const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))

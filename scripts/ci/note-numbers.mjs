@@ -9,8 +9,8 @@
 // 除外：なし。
 // 使い方：node scripts/ci/note-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { documentIndex, readHeadings, resolveDocument } from './doc-refs.mjs'
-import { isTargetDoc } from './ja-text.mjs'
+import { documentIndex, readHeadings, resolveDocument } from './lib/doc-names.mjs'
+import { isTargetDoc } from './lib/ja-docs.mjs'
 import { codeBlockLines } from './lib/code-block.mjs'
 import { maskCodeSpans } from './lib/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

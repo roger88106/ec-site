@@ -51,14 +51,9 @@ import { checkExclusions } from './lib/exclusions.mjs'
 import { codeKind, commentText, trailingCommentLines } from './lib/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { isTargetDoc } from './lib/ja-docs.mjs'
 import { resolveDiffBase } from './lib/merge-base.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
-
-/** 調べる文書 */
-const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/(skills|agents)\/.*)\.md|\.github\/.*\.(md|ya?ml))$/
-
-/** 見ない文書：アーカイブした spec と、評価の一覧の置き場所。前者は当時の記録で、後者は使わない語を例として書くため。note-numbers も ja-text の判定を使うので、評価の一覧は注の番号の検査からも外れる（例文に ※1 を含む。意図した影響） */
-const EXCLUDED = /^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\//
 
 /**
  * 調べないコード。
@@ -234,16 +229,6 @@ export function findAllowProblems(texts, terms) {
   return terms.flatMap((term) =>
     checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => texts.some((text) => withoutInlineCode(text).includes(allow))),
   )
-}
-
-/**
- * 調べる文書かを返す。
- *
- * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 調べるなら true
- */
-export function isTargetDoc(file) {
-  return DOCS.test(file) && !EXCLUDED.test(file)
 }
 
 /**

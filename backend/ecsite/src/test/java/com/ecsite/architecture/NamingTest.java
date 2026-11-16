@@ -1,5 +1,11 @@
 package com.ecsite.architecture;
 
+import com.ecsite.architecture.sample.naming.ExampleDirectory;
+import com.ecsite.architecture.sample.naming.ExampleQueryRepository;
+import com.ecsite.architecture.sample.naming.ExampleRepository;
+import com.ecsite.architecture.sample.naming.MisnamedExampleRepositoryImpl;
+import com.ecsite.architecture.sample.naming.NamingExamples;
+import com.ecsite.architecture.sample.naming.PublicExampleApiDirectory;
 import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -113,7 +119,7 @@ class NamingTest {
         void implementationRuleMatchesMisnamedExample() {
             // 操作と確認：名前の合わない例が違反になる
             assertThat(implementationViolations(namingExamples(), "Directory", "", "Api", ".infrastructure.directory"))
-                    .containsExactly(MisnamedExampleDirectoryAdapter.class.getName());
+                    .containsExactly(NamingExamples.MISNAMED_DIRECTORY_ADAPTER.getName());
         }
 
         @Test
@@ -121,10 +127,10 @@ class NamingTest {
         void publicRuleMatchesPublicExample() {
             // 準備：窓口と、public な実装と、public でない実装
             var examples = new ClassFileImporter().importClasses(
-                    ExampleDirectory.class, PublicExampleApiDirectory.class, MisnamedExampleDirectoryAdapter.class);
+                    ExampleDirectory.class, PublicExampleApiDirectory.class, NamingExamples.MISNAMED_DIRECTORY_ADAPTER);
 
             // 操作と確認：public な実装だけが違反になる
-            assertThat(publicDirectoryImplementations(examples, ".architecture"))
+            assertThat(publicDirectoryImplementations(examples, ".naming"))
                     .containsExactly(PublicExampleApiDirectory.class.getName());
         }
     }
@@ -139,7 +145,7 @@ class NamingTest {
     private static JavaClasses namingExamples() {
         return new ClassFileImporter().importClasses(
                 ExampleRepository.class, ExampleQueryRepository.class, ExampleDirectory.class,
-                MisnamedExampleRepositoryImpl.class, MisnamedExampleDirectoryAdapter.class);
+                MisnamedExampleRepositoryImpl.class, NamingExamples.MISNAMED_DIRECTORY_ADAPTER);
     }
 
     // ============================== 規則の補助 ==============================
@@ -278,40 +284,4 @@ class NamingTest {
         }
         return violations.stream().sorted().toList();
     }
-
-    /**
-     * 規則に当たる例：腐敗防止層の実装が public（public のクラスは、ファイルの名前のクラスしか書けないので、入れ子で置く）
-     */
-    public static final class PublicExampleApiDirectory implements ExampleDirectory {
-    }
-}
-
-/**
- * 規則に当たる例：リポジトリの port が port のパッケージにない
- */
-interface ExampleRepository {
-}
-
-/**
- * 規則に当たる例：参照用のリポジトリの port が application の port のパッケージにない
- */
-interface ExampleQueryRepository {
-}
-
-/**
- * 規則に当たる例：腐敗防止層の窓口が port にない
- */
-interface ExampleDirectory {
-}
-
-/**
- * 規則に当たる例：リポジトリの実装の名前が Jooq と port の名前でない
- */
-final class MisnamedExampleRepositoryImpl implements ExampleRepository {
-}
-
-/**
- * 規則に当たる例：腐敗防止層の実装の名前が ApiDirectory の形でない
- */
-final class MisnamedExampleDirectoryAdapter implements ExampleDirectory {
 }

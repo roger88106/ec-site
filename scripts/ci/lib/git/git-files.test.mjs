@@ -91,10 +91,10 @@ describe('対象が 0 件のときの失敗', () => {
 
   for (const file of checkFiles) {
     const name = path.basename(file, '.mjs')
-    test(`${name} は、対象のファイルが 0 件のとき失敗にする`, () => {
+    test(`${name} は、対象のファイルが 0 件のとき終了コード 2 で失敗にする`, () => {
       const script = path.join(ciDir, file)
       const result = spawnSync('node', [script], { cwd: empty, env, encoding: 'utf8' })
-      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.equal(result.status, 2, result.stdout + result.stderr)
       assert.match(result.stdout, /1 件も見つからない/)
     })
   }

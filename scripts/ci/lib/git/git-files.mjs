@@ -68,7 +68,7 @@ export function emptyListReason(files, label) {
 }
 
 /**
- * 対象のファイルが 0 件なら、理由を出して終了コード 1 で終わる。
+ * 対象のファイルが 0 件なら、理由を出して終了コード 2（環境の誤り）で終わる。
  *
  * @param {string[]} files 検査の対象のファイル
  * @param {string} label 対象の呼び名
@@ -77,5 +77,5 @@ export function exitIfNoFiles(files, label) {
   const reason = emptyListReason(files, label)
   if (!reason) return
   console.log(reason)
-  process.exit(1)
+  process.exit(2)
 }

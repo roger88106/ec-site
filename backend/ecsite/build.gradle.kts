@@ -313,7 +313,7 @@ fun parseShard(spec: String): Pair<Int, Int> {
 /** クラスのファイル（com/ecsite/Foo$Bar.class）またはソース（com/ecsite/Foo.java）の相対パスが入る側（0 から数える） */
 fun shardOf(path: String, count: Int): Int {
     val outer = path.removeSuffix(".class").removeSuffix(".java").substringBefore('$').replace('/', '.')
-    val salt = "cb" // 時間の差が大きいときに変える（"cb" は 3 つに分けたときのテストの数がほぼ等しくなる値）
+    val salt = "xs" // 時間の差が大きいときに変える（"xs" は 3 つに分けたときの、CI のクラスごとの時間の合計がほぼ等しくなる値）
     // String.hashCode の下位ビットは文字の偶奇に偏るので（2 つに分けると偏る）、混ぜてから割る
     val mixed = (salt + outer).hashCode() * -1640531535
     return Math.floorMod(mixed xor (mixed ushr 15), count)

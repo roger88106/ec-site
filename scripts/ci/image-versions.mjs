@@ -85,8 +85,6 @@ export function describeUnreadableImages(file, unreadable) {
   return unreadable.map((item) => `${file} ${item.service}：${item.image}（${UNREADABLE_IMAGE_REASON}）`)
 }
 
-/** 正規表現の特別な文字を、そのままの文字として書く */
-const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')
 
 /**
  * ソースから、イメージの名前とバージョンを読む。<br />
@@ -103,7 +101,7 @@ export function readSourceImages(text, images) {
   const unknown = []
   const names = [...images.keys()]
   const knownPattern = names.length
-    ? new RegExp(`(?<![\\w./-])(${names.map(escapeRegExp).join('|')}):(${VERSION})`, 'g')
+    ? new RegExp(`(?<![\\w./-])(${names.map((name) => RegExp.escape(name)).join('|')}):(${VERSION})`, 'g')
     : null
   const parsePattern = new RegExp(`DockerImageName\\.parse\\("([^":]+):(${VERSION})"\\)`, 'g')
   text.split('\n').forEach((line, index) => {

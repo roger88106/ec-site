@@ -9,7 +9,7 @@ if (!stem) {
   console.error('語幹を 1 つ渡す')
   process.exit(2)
 }
-const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const escaped = RegExp.escape(stem)
 const pattern = new RegExp(`${escaped}(\\p{Script=Hiragana}{1,2})`, 'gu')
 // 日本語を含むパスを、引用符と 8 進数の形にせずに読む
 const files = execSync('git -c core.quotepath=false ls-files -co --exclude-standard "*.md"', { encoding: 'utf8' })

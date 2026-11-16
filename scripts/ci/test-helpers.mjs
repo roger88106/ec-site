@@ -79,7 +79,7 @@ function constantsOf(code, path) {
  */
 function findPostsTo(code, path) {
   const targets = [`"${path}"`, ...constantsOf(code, path)]
-  const alternatives = targets.map((target) => target.replace(/[.*+?^${}()|[\]\\]/g, (char) => `\\${char}`)).join('|')
+  const alternatives = targets.map((target) => RegExp.escape(target)).join('|')
   const mockMvc = [...code.matchAll(new RegExp(`(?<!\\w)post\\s*\\(\\s*(?:${alternatives})\\s*[),]`, 'g'))].map((match) => match.index)
   // RestClient・WebTestClient の `.post().uri(…)`。`.post()` から次の `;` までの間の `.uri(` の最初の引数を見る
   const uri = [...code.matchAll(new RegExp(`\\.\\s*post\\s*\\(\\s*\\)[^;]*?\\.\\s*uri\\s*\\(\\s*(?:${alternatives})\\s*[),]`, 'g'))].map((match) => match.index)

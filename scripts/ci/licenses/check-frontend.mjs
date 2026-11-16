@@ -16,7 +16,10 @@ import { fileURLToPath } from 'node:url'
  * @param name    部品の名前
  */
 function matches(pattern, name) {
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*')
+  const escaped = pattern
+    .split('*')
+    .map((part) => RegExp.escape(part))
+    .join('.*')
   return new RegExp(`^${escaped}$`).test(name)
 }
 

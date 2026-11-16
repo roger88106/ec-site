@@ -52,7 +52,7 @@ export function findActionDirectories(files) {
  * @returns {boolean} 含めば true
  */
 function covers(target, directory) {
-  const pattern = target.split('*').map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+  const pattern = target.split('*').map((part) => RegExp.escape(part))
   return new RegExp(`^${pattern.join('[^/]*')}$`).test(directory)
 }
 

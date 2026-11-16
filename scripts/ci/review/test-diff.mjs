@@ -39,15 +39,11 @@ function isImportLine(line) {
   return /^\s*(import|package)\s/.test(line)
 }
 
-/** 正規表現の特別な文字を逃がす */
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 /** 行に名前の対応を当てる */
 function applyRenames(line, renames) {
   return renames.reduce(
-    (result, [from, to]) => result.replace(new RegExp(`(?<![\\w.])${escapeRegExp(from)}(?!\\w)`, 'g'), to),
+    (result, [from, to]) => result.replace(new RegExp(`(?<![\\w.])${RegExp.escape(from)}(?!\\w)`, 'g'), to),
     line,
   )
 }

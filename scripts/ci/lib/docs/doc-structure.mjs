@@ -1,5 +1,5 @@
 // 文書の構造（見出しの名前と順）と、ID（US・DS・AC・BR・NFR・DC・DN・T）の定義と参照を読む。
-// 見出しと ID は、コードブロックと HTML のコメント（lib/code-block）と、1 行のコード（lib/code-span）の中を読まない。
+// 見出しと ID は、コードブロックと HTML のコメント（lib/docs/code-block）と、1 行のコード（lib/source/code-span）の中を読まない。
 import { readBlocks } from './code-block.mjs'
 import { replaceCodeSpans } from '../source/code-span.mjs'
 

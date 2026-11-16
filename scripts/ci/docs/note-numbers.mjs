@@ -26,7 +26,7 @@ const DEFINITION = /^\s*※(\d+[a-z]?)：/
 const REFERENCE = /※(\d+[a-z]?)/g
 
 /**
- * 見出しの後の注の参照（`の「…」 ※N`・`の「…」の ※N`）。前がリンク（外のリンクを含む）か文書の名前かパス（doc-refs の resolveDocument で決める）で、他の文書を指すときだけ、この文書の参照に数えない。
+ * 見出しの後の注の参照（`の「…」 ※N`・`の「…」の ※N`）。前がリンク（外のリンクを含む）か文書の名前かパス（lib/docs/doc-names の resolveDocument で決める）で、他の文書を指すときだけ、この文書の参照に数えない。
  *
  * 文書の名前を付けない `「…」 ※N` と、`この文書の「…」 ※N`・`表の「…」 ※N` は、同じ文書の注を指すので数える。
  */
@@ -47,9 +47,9 @@ function order(id) {
  * 1 つの文書の注の番号の問題を探す。
  *
  * @param {string} text 文書
- * @param {Map<string, string>} [names] 文書の名前からパスへの対応（doc-refs の documentIndex。長い名前から順）
+ * @param {Map<string, string>} [names] 文書の名前からパスへの対応（lib/docs/doc-names の documentIndex。長い名前から順）
  * @param {string} [file] 文書のパス（リンクの先を決めるため）
- * @param {Map<string, string>} [basenames] ファイル名からパスへの対応（doc-refs の documentIndex）
+ * @param {Map<string, string>} [basenames] ファイル名からパスへの対応（lib/docs/doc-names の documentIndex）
  * @returns {{ line: number, message: string }[]} 問題の行と内容
  */
 export function findNoteProblems(text, names = new Map(), file = '', basenames = new Map()) {

@@ -61,7 +61,7 @@ export function readHeadingIndex(text) {
   const seen = new Map()
   let title = null
   // 見出しの読み方（ATX と Setext、コードブロックと HTML のコメントの外）は、spec-structure と同じ doc-structure の readHeadings
-  for (const { level, title: name } of readHeadings(text.replace(/^﻿/, ''))) {
+  for (const { level, title: name } of readHeadings(text.replace(/^\uFEFF/, ''))) {
     if (level === 1 && title === null) title = name.trim()
     let key = slug(name)
     if (seen.has(key)) {

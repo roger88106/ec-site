@@ -443,6 +443,34 @@ class CartTest {
         }
 
         @Test
+        @DisplayName("AC-81 期限の切れたカートの品目を削除しても、品目もバージョンも変わらない")
+        void removeOnExpiredCartChangesNothing() {
+            // 準備：白 2 個、黒 1 個のカート（バージョン 2）
+            var cart = whiteAndBlack();
+
+            // 操作：30 日たってから白を削除する
+            cart.remove(WHITE, NOW.plus(EXPIRY));
+
+            // 確認：期限の前から見た品目は白・黒のままで、バージョンは 2 のまま
+            assertThat(cart.itemsAt(NOW)).extracting(CartItem::variantId).containsExactly(WHITE, BLACK);
+            assertThat(cart.version()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("AC-81 期限の切れたカートから品目を一度に除いても、品目もバージョンも変わらない")
+        void removeAllOnExpiredCartChangesNothing() {
+            // 準備：白 2 個、黒 1 個のカート（バージョン 2）
+            var cart = whiteAndBlack();
+
+            // 操作：30 日たってから白と黒を一度に除く
+            cart.removeAll(List.of(WHITE, BLACK), NOW.plus(EXPIRY));
+
+            // 確認：期限の前から見た品目は白・黒のままで、バージョンは 2 のまま
+            assertThat(cart.itemsAt(NOW)).extracting(CartItem::variantId).containsExactly(WHITE, BLACK);
+            assertThat(cart.version()).isEqualTo(2);
+        }
+
+        @Test
         @DisplayName("AC-81 ある時刻より前に期限が切れたカートは、最後の変更がその時刻の 30 日前より前のもの")
         void findsLastUpdateOfCartsExpiredBefore() {
             // 操作と確認：30 日後より前に切れたカートは、最後の変更が今より前

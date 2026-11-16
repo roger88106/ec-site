@@ -3,7 +3,7 @@
 // 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい）
 //   assign                          空いている最小のスロットを割り当て、データベースとバケットを作る。割り当て済みなら番号を示すだけ
 //   release                         スロットのポートで待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
-//   stop [backend|store|admin]      自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。省略は 4 つのポート全て
+//   stop [backend|store|admin]      自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。省略はスロットのポート全て
 //   reset                           割り当てを変えずに、データベースとバケットを再作成する（バックエンドを止めてから）
 //   show                            スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
 //   env                             スロットの環境変数を `export NAME='value'` の形で出す
@@ -220,7 +220,7 @@ function runInit(root, args, command = []) {
 }
 
 /**
- * スロットの 2 つのバケットを削除する。ないバケット（NoSuchBucket）は無視し、他の誤りは失敗にする。
+ * スロットのバケット（受付と配信）を削除する。ないバケット（NoSuchBucket）は無視し、他の誤りは失敗にする。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -231,7 +231,7 @@ function dropBuckets(root, slot) {
 }
 
 /**
- * スロットの 2 つのバケットを削除してから再作成し、seed の画像を配信のバケットの assets/ に写す。
+ * スロットのバケット（受付と配信）を削除してから再作成し、seed の画像を配信のバケットの assets/ に写す。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -250,7 +250,7 @@ function recreateBuckets(root, slot) {
 }
 
 /**
- * スロットのデータ（データベースとバケット）を再作成する。assign と reset が使う。
+ * スロットのデータ（データベースとバケット）を再作成する。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -261,7 +261,7 @@ function recreateData(root, slot) {
 }
 
 /**
- * スロットのデータ（データベースとバケット）を消す。release が使う。
+ * スロットのデータ（データベースとバケット）を消す。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -319,7 +319,7 @@ function claim(ctx, slot) {
 }
 
 /**
- * assign：スロットを割り当てる。記録を書いてロックを放してから、データベースとバケットを再作成する。
+ * assign：スロットを割り当てる。記録を書いて仮押さえを外してから、データベースとバケットを再作成する。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */
@@ -423,7 +423,7 @@ async function backendRunning(slot) {
 }
 
 /**
- * reset：割り当てを変えずに、データベースを再作成する。
+ * reset：割り当てを変えずに、データベースとバケットを再作成する。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */

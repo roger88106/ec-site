@@ -7,7 +7,7 @@ import { checkBackendStopped, slotPorts } from './slot.mjs'
  * stop コマンドの対象から、停止するポートを決める。
  *
  * @param {number} slot スロットの番号
- * @param {string[]} args stop の引数。backend、store、admin のどれか 1 つ。空は 4 つ全て
+ * @param {string[]} args stop の引数。backend、store、admin のどれか 1 つ。空はスロットのポート全て
  * @returns {{ ports: number[] } | { error: string }} 停止するポート。2 つ以上の対象と知らない対象は、理由
  */
 export function stopTargetPorts(slot, args) {

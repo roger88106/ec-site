@@ -1,5 +1,6 @@
-// E2E のロック。E2E は共有のデータベースとポートを使うので、同時に 1 つだけ実行する。
-// 取るのは E2E の入口（e2e/scripts/run.ts）、実行中かを調べるのは scripts/dev/check-frontend.sh（e2e-running.mjs）。
+// E2E のロック。
+//
+// E2E は共有のデータベースとポートを使うので、同時に 1 つだけ実行する。
 // ロックの中身は所有者（作業ツリーのパス、PID、開始の時刻）。所有者の PID のプロセスがなければ古いロックとして再取得する。
 import { randomUUID } from 'node:crypto'
 import { linkSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'

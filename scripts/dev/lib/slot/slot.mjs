@@ -1,5 +1,5 @@
 // スロット（作業ツリーごとの手元の環境）の値、空きの選び方、環境変数の組み立て。
-// docker と git を呼ばない純粋な関数だけを置く（割り当ての手順は、ロック・git・ファイル・docker の操作を引数で受ける）。
+// docker と git を呼ばない純粋な関数だけを置く（割り当ての手順は、仮押さえ・git・ファイル・docker の操作を引数で受ける）。
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -18,7 +18,7 @@ function portOf(key) {
   return entry.port
 }
 
-/** スロットの数。0 がメインの作業ツリー、1〜3 が作業ツリー */
+/** スロットの数（ports.json の slotCount）。0 がメインの作業ツリー、1 から後が追加の作業ツリー */
 export const SLOT_COUNT = PORT_LIST.slotCount
 
 /** 共有の SeaweedFS（S3 互換）の URL。配信の基準 URL の前半 */
@@ -28,7 +28,7 @@ const STORAGE_ORIGIN = `http://localhost:${portOf('seaweedfs')}`
 const JDBC_PREFIX = `jdbc:postgresql://localhost:${portOf('postgres')}/`
 
 /**
- * スロットの番号が 0〜3 の整数であることを確認する。
+ * スロットの番号が、0 以上 SLOT_COUNT 未満の整数であることを確認する。
  *
  * @param {number} slot スロットの番号
  */
@@ -41,9 +41,9 @@ function assertSlot(slot) {
 /**
  * スロットのポートと名前を返す。
  *
- * ポートは「スロット 0 の値 + 10000 × 番号」、データベースとバケットは名前の末尾に番号を付ける（0 は付けない）。
+ * ポートは「スロット 0 の値 + ports.json の slotOffset × 番号」、データベースとバケットは名前の末尾に番号を付ける（0 は付けない）。
  *
- * @param {number} slot スロットの番号（0〜3）
+ * @param {number} slot スロットの番号（0 以上 SLOT_COUNT 未満）
  * @returns {{ slot: number, backendPort: number, managementPort: number, storePort: number, adminPort: number,
  *   database: string, publicBucket: string, incomingBucket: string, cookiePrefix: string }}
  *   運用ポートは managementPort。Cookie の接頭辞はスロット 0 では空
@@ -102,7 +102,7 @@ export function parseWorktrees(text) {
  * 作業ツリーの記録（`.local/slot`）の内容からスロットの番号を読む。
  *
  * @param {string | null | undefined} content ファイルの内容。ファイルがなければ null か undefined
- * @returns {number | null} 1〜3 の番号。記録がない、壊れている、0 のときは null
+ * @returns {number | null} 1 以上 SLOT_COUNT 未満の番号。記録がない、壊れている、0 のときは null
  */
 export function parseSlotRecord(content) {
   const text = (content ?? '').trim()
@@ -219,7 +219,7 @@ export function currentSlotOf({ main, record }) {
 /**
  * 作業ツリーの記録（`.local/slot`）に書く内容。
  *
- * @param {number} slot スロットの番号（1〜3）
+ * @param {number} slot スロットの番号（1 以上 SLOT_COUNT 未満）
  * @returns {string} 番号と改行
  */
 export function formatSlotRecord(slot) {
@@ -328,7 +328,7 @@ function claimSlot(deps) {
       continue
     }
     try {
-      // 仮押さえを待つ間に、同じ作業ツリーの別のセッションが割り当てていないかを再確認する
+      // 仮押さえの前後に、同じ作業ツリーの別のセッションが割り当てていないかを再確認する
       const own = parseSlotRecord(deps.readOwnRecord())
       if (own !== null) return { kind: 'already', slot: own }
       const again = readRecords(deps)

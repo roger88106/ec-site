@@ -51,11 +51,12 @@ Checkstyle（`checkstyleMain`、`checkstyleTest` など）が失敗したとき�
 
 ```bash
 # CI と同じ確認（lint と整形、型チェック、テスト、ビルド）
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build
 ```
 
 - 管理画面の `pnpm build`（本番ビルド）は、環境変数 `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がないと失敗する。ローカルの値で確認するときは、[環境変数](environment.md)の「管理画面」の既定値を付ける。
-- `pnpm test` はカバレッジの報告を `coverage/index.html` と `coverage/coverage-summary.json` に出力する（共有パッケージ `frontend/shared` も同じ）。
+- `pnpm test` はカバレッジを取らない。`pnpm test <ファイル>` で一部のファイルだけを実行できる。
+- `pnpm test:coverage` は、全てのテストを実行してカバレッジを基準と比べ、報告を `coverage/index.html` と `coverage/coverage-summary.json` に出力する（共有パッケージ `frontend/shared` も同じ）。
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる。
 
@@ -125,7 +126,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 |------|----------------|------------------------|
 | バックエンド（単体と統合を合わせたカバレッジ） | `backend/ecsite/build.gradle.kts` の `coverageVerification` | `./gradlew coverageVerification` |
 | domain の mutation score | `backend/ecsite/build.gradle.kts` の `pitest` の `mutationThreshold` | `./gradlew pitest` |
-| 管理画面、店舗画面、共有のパッケージ | 各ディレクトリの `vite.config.ts`・`vitest.config.ts` の `coverage.thresholds` | `pnpm test` |
+| 管理画面、店舗画面、共有のパッケージ | 各ディレクトリの `vite.config.ts`・`vitest.config.ts` の `coverage.thresholds` | `pnpm test:coverage` |
 
 - 基準は、決めたときの CI の値を整数に切り捨て、さらに 1 下げた値にしている。理由：書き方の変更（引数の null の検査など）や、統合テストの同時実行の競合でだけ実行される分岐のばらつき（[CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」）で止めないため。
 - CI の値が基準より 2 以上高くなったら、同じ決め方で基準を上げる（自動では上がらない）。
@@ -140,7 +141,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 上の表のコマンドで、CI と同じ検査が手元で流れる。バックエンドのカバレッジは、先に `backend/ecsite/` で `./gradlew check`（統合テストを含む）を実行して実行データを作り、`./gradlew coverageVerification` を実行する。
 
 - バックエンドの一部のテストだけを実行すると、値が基準より低くなり、検査が失敗する。CI と同じ範囲（`./gradlew check`）の実行データを使う。
-- フロントの 1 つのファイルのテストは、カバレッジを取らない `npx vitest run <ファイル>` で実行する（`pnpm test` はカバレッジを取り、全体の基準と比べる）。
+- フロントの 1 つのファイルのテストは、カバレッジを取らない `pnpm test <ファイル>` で実行する（`pnpm test:coverage` は、全体の基準と比べる）。
 
 ### 失敗したとき
 

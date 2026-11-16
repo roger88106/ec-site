@@ -93,7 +93,10 @@ for app in "${apps[@]}"; do
       echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
       continue
     fi
-    run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$step'"
+    # テストは CI と同じく、カバレッジの基準と比べる test:coverage で実行する
+    script="$step"
+    [ "$step" = test ] && script=test:coverage
+    run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$script'"
   done
 done
 

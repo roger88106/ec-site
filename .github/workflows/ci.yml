@@ -316,7 +316,7 @@ jobs:
         run: pnpm typecheck
 
       - name: テスト
-        run: pnpm test
+        run: pnpm test:coverage
 
       # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準を下回るとテストが失敗する（vite.config.ts の thresholds）。テストが失敗しても書く
       - name: カバレッジの合計を summary に書く
@@ -377,7 +377,7 @@ jobs:
       # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確認する
       - name: 共有のパッケージの lint・型チェック・テスト
         working-directory: frontend/shared
-        run: pnpm lint && pnpm typecheck && pnpm test
+        run: pnpm lint && pnpm typecheck && pnpm test:coverage
 
       # 共有のパッケージのカバレッジ（管理画面・店舗画面と同じ v8 の設定）。基準を下回るとテストが失敗する（vitest.config.ts の thresholds）
       - name: 共有のパッケージのカバレッジの合計を summary に書く
@@ -402,7 +402,7 @@ jobs:
         run: pnpm typecheck
 
       - name: テスト
-        run: pnpm test
+        run: pnpm test:coverage
 
       # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準を下回るとテストが失敗する（vitest.config.ts の thresholds）。テストが失敗しても書く
       - name: カバレッジの合計を summary に書く

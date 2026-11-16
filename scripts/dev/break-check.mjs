@@ -11,6 +11,7 @@
 // 127 と 126 は、コマンドの誤りを「壊すと検出できる」と読み違えないよう、テストの失敗と区別する。
 import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
+import { stopChild } from './lib/child-stop.mjs'
 import { gitBash } from './lib/git-bash.mjs'
 
 const [file, from, to, cwd, command] = process.argv.slice(2)
@@ -55,7 +56,8 @@ for (const [signal, code] of [
   ['SIGTERM', 143],
 ]) {
   process.on(signal, () => {
-    child?.kill()
+    // Windows ではシグナルが bash の下の gradle・vitest に届かないので、ツリーごと停止する
+    if (child) stopChild(child, signal)
     process.exit(code)
   })
 }

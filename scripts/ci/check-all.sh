@@ -100,7 +100,6 @@ fi
 # 警告は GitHub Actions の注釈の行（「::warning file=<ファイル>,line=<行>::<内容>」）で出る。通ったときの出し方は、実行する所で分ける。
 #   GitHub Actions（GITHUB_ACTIONS=true）では、注釈の行を加工せず行頭から出力し、最後に要約の行（件数）を出力する。GitHub が注釈を pull request の画面の行に表示するため。
 #   手元では、件数を示す「警告：」の行だけを出力し、1 件ずつは出力しない（既定の ja-text の warning と同じ）。
-#   commit の前の hook も check-all.sh を実行するので、1 件ずつ出力すると、hook が表示する追加行の warning が埋もれるため。
 run_check "ja-text --changed" summary node scripts/ci/ja-text.mjs --changed
 if [ "$last_ok" -eq 1 ]; then
   if [ "${GITHUB_ACTIONS:-}" = "true" ]; then

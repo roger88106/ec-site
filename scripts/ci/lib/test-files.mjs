@@ -210,17 +210,6 @@ export function readTsTests(source) {
 }
 
 /**
- * テスト名を読めない test・it の呼び出し（名前が文字列でもテンプレートでもない、括弧が閉じない）を返す。
- * 黙って数えないと AC の照合から消えるので、検査が失敗にする。
- *
- * @param {string} source テストのソース
- * @returns {{ index: number, reason: string }[]} ソースの中の位置と理由
- */
-export function findUnreadableTsTests(source) {
-  return scanTsTests(source).unreadable
-}
-
-/**
  * テストのソースから、実行されるテストの名前を取り出す。まとまりの名前（describe、クラス）は読まない。
  *
  * @param {string} source テストのソース

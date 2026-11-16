@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { extractTestNames, findTestFiles, findUnreadableTsTests, readTsTests, scanTsTests, testFileKind } from './test-files.mjs'
+import { extractTestNames, findTestFiles, readTsTests, scanTsTests, testFileKind } from './test-files.mjs'
 
 describe('テストのファイルの種類', () => {
   test('Java の src/test・src/integrationTest と .test.ts(x)・.spec.ts を選び、他は null にする', () => {
@@ -91,12 +91,12 @@ describe('テストの関数の読み方', () => {
         ['AC-6 飛ばす', true],
       ],
     )
-    assert.deepEqual(findUnreadableTsTests(source), [])
+    assert.deepEqual(scanTsTests(source).unreadable, [])
   })
 
-  test('findUnreadableTsTests は、名前が文字列でない呼び出しと、括弧が閉じない呼び出しを、位置と理由で返す', () => {
+  test('scanTsTests の unreadable は、名前が文字列でない呼び出しと、括弧が閉じない呼び出しを、位置と理由で返す', () => {
     const source = ['test(name, () => {})', 'it.each([[1]])(title, () => {})', 'test.each([[1, 2]', "test('閉じない名前"].join('\n')
-    const problems = findUnreadableTsTests(source)
+    const problems = scanTsTests(source).unreadable
     assert.deepEqual(
       problems.map(({ index }) => index),
       [0, source.indexOf('it.each'), source.indexOf('test.each'), source.indexOf("test('閉")],
@@ -127,12 +127,12 @@ describe('テストの関数の読み方', () => {
         ['AC-6 後で', true],
       ],
     )
-    assert.deepEqual(findUnreadableTsTests(source), [])
+    assert.deepEqual(scanTsTests(source).unreadable, [])
   })
 
-  test('findUnreadableTsTests は、知らない修飾の付いた test・it の呼び出しを失敗にする', () => {
+  test('scanTsTests の unreadable は、知らない修飾の付いた test・it の呼び出しを失敗にする', () => {
     const source = "test.shuffle('AC-1 知らない', () => {})\nit.unknown.only('AC-2 知らない', () => {})"
-    const problems = findUnreadableTsTests(source)
+    const problems = scanTsTests(source).unreadable
     assert.deepEqual(
       problems.map(({ index }) => index),
       [0, source.indexOf('it.unknown')],
@@ -140,7 +140,7 @@ describe('テストの関数の読み方', () => {
     assert.match(problems[0].reason, /修飾/)
   })
 
-  test('findUnreadableTsTests は、テストの宣言でない呼び出しを失敗にしない', () => {
+  test('scanTsTests の unreadable は、テストの宣言でない呼び出しを失敗にしない', () => {
     const source = [
       "test.describe('まとまり', () => {})",
       'test.use({ locale: "ja" })',
@@ -153,7 +153,7 @@ describe('テストの関数の読み方', () => {
       '// test(name) はコメント',
       "const text = 'test(name)'",
     ].join('\n')
-    assert.deepEqual(findUnreadableTsTests(source), [])
+    assert.deepEqual(scanTsTests(source).unreadable, [])
   })
 
   test('コメント・ブロックコメント・文字列・テンプレートの中の test・it の呼び出しは、テストとして数えない', () => {
@@ -177,14 +177,14 @@ describe('テストの関数の読み方', () => {
       readTsTests(source).map(({ name }) => name),
       ['AC-1 入れ子 %s', 'AC-2 括弧と波括弧', 'AC-3 名前 ${`x`}'],
     )
-    assert.deepEqual(findUnreadableTsTests(source), [])
+    assert.deepEqual(scanTsTests(source).unreadable, [])
   })
 
   test('each の表の後に、名前の括弧が続かない呼び出しは、読めない呼び出しにする', () => {
     const source = 'test.each([[1]])`AC-1 名前`'
     assert.deepEqual(readTsTests(source), [])
     assert.deepEqual(
-      findUnreadableTsTests(source).map(({ index }) => index),
+      scanTsTests(source).unreadable.map(({ index }) => index),
       [0],
     )
   })

@@ -48,7 +48,8 @@
     { "word": "口頭の", "use": "話し言葉" },
     { "word": "許す語", "use": "許容用語" },
     { "word": "判定器", "use": "検査の script（CI を失敗させる script）。文脈で決める" },
-    { "word": "護り", "use": "誤りの防止" }
+    { "word": "護り", "use": "誤りの防止" },
+    { "pattern": "(?<![A-Za-z0-9/._-])(?i:claude code|claude|opus|sonnet|haiku|codex|gemini|copilot|cursor)(?![A-Za-z0-9/._-])", "files": "^docs/(constitution\\.md|05-開発規則/.*\\.md)$", "use": "規則の本文には、AI のサービス固有の名前を書かない。サービスに依存しない言葉（エージェント、高性能の区分など）にするか、skill sessions の「ツールの補足」に移す。パスと識別子はインラインコードにする", "examples": { "hit": ["Claude Code の設定", "Opus で読む", "codexを使う"], "miss": ["`CLAUDE.md`", ".claude/skills/", "claude-opus-5-5", "claudette"] } }
   ],
   "warning": [
     { "word": "部品", "use": "React はコンポーネント、Java はクラス、外のものはライブラリ" },

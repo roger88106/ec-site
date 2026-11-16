@@ -1,6 +1,7 @@
 // 日本語の文を確認する。言い換えの一覧は ja-text.json。
 //   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許容用語: 理由} で書く（その中の一致は数えない）。
 //       理由のない許容用語と、どの文書にも使われなくなった許容用語は失敗にする。
+//       files（パスの正規表現）を書いた項目は、当たるファイルにだけ当て、コミットメッセージには当てない（規則の本文の AI のサービス固有の名前など）。
 //       語の検査（error と warning の語、allow の照合）は、インラインコード（バッククォートで囲んだ部分）の中を見ない。
 //       許容用語がインラインコードの中にしか出ないときは、使われていないと見る。
 //   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
@@ -182,6 +183,7 @@ export function validateTerms(terms) {
     if (Array.isArray(term.allow)) {
       throw new Error(`「${termName(term)}」の allow は {許容用語: 理由} の形で書く（ja-text.json）`)
     }
+    if (term.files !== undefined) new RegExp(term.files, 'u')
     if (term.word === undefined) continue
     for (const allow of Object.keys(term.allow ?? {})) {
       if (!allow.includes(term.word)) {
@@ -189,6 +191,17 @@ export function validateTerms(terms) {
       }
     }
   }
+}
+
+/**
+ * ファイルに当てる項目を返す。files（パスの正規表現）を書いた項目は、当たるファイルにだけ当てる。
+ *
+ * @param {{ files?: string }[]} terms 一覧の項目
+ * @param {string | null} file リポジトリのルートからのパス。コミットメッセージは null（files を書いた項目を当てない）
+ * @returns {object[]} 当てる項目
+ */
+export function termsFor(terms, file) {
+  return terms.filter((term) => term.files === undefined || (file !== null && new RegExp(term.files, 'u').test(file)))
 }
 
 /**
@@ -801,7 +814,7 @@ if (isMain(import.meta.url)) {
       console.error('--message にはコミットメッセージのファイルを指定する')
       process.exit(2)
     }
-    const hits = findTerms(stripMessageComments(readFileSync(file, 'utf8')), terms)
+    const hits = findTerms(stripMessageComments(readFileSync(file, 'utf8')), termsFor(terms, null))
     for (const hit of hits) {
       console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
     }
@@ -836,14 +849,14 @@ if (isMain(import.meta.url)) {
   }
   let count = allowProblems.length
   for (const [index, file] of files.entries()) {
-    for (const hit of findTerms(texts[index], terms)) {
+    for (const hit of findTerms(texts[index], termsFor(terms, file))) {
       if (!isAdded(file, hit.line)) continue
       console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
       count += 1
     }
   }
   for (const [index, file] of codeFiles.entries()) {
-    for (const hit of findCodeTerms(file, codeTexts[index], terms)) {
+    for (const hit of findCodeTerms(file, codeTexts[index], termsFor(terms, file))) {
       if (!isAdded(file, hit.line)) continue
       console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
       count += 1

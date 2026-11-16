@@ -151,6 +151,20 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
     assert.deepEqual(findTerms('道具と1', terms).map((hit) => hit.word), ['道具', '1'])
   })
 
+  test('files を書いた項目は、当たるファイルにだけ当て、コミットメッセージには当てない', () => {
+    const terms = [{ word: '道具', use: 'ツール' }, { word: 'X', use: 'Y', files: '^docs/05-' }]
+    assert.equal(jaText.termsFor(terms, 'docs/05-開発規則/a.md').length, 2)
+    assert.equal(jaText.termsFor(terms, 'docs/06-手順書/a.md').length, 1)
+    assert.equal(jaText.termsFor(terms, null).length, 1)
+  })
+
+  test('規則の本文の AI のサービス固有の名前は、規則の文書（constitution と 05-開発規則）でだけ error にする', () => {
+    const term = list.error.find((item) => item.files !== undefined && item.pattern.includes('claude'))
+    for (const file of ['docs/constitution.md', 'docs/05-開発規則/writing.md']) assert.deepEqual(jaText.termsFor([term], file), [term], file)
+    for (const file of ['docs/06-手順書/setup.md', 'AGENTS.md', '.claude/skills/sessions/SKILL.md']) assert.deepEqual(jaText.termsFor([term], file), [], file)
+    assert.equal(findTerms('[規則](../../CLAUDE.md) と Gemini', [term]).map((hit) => hit.word).join(), 'Gemini')
+  })
+
   test('--message でも pattern の項目が働き、漢字の後の形は成功する', () => {
     assert.equal(runMessage(`docs: 不${ADD}る\n`).status, 0)
     assert.equal(runMessage(`docs: 数を${ADD}\n`).status, 1)

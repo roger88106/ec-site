@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findIndexedMultiples, findPropertyComparisons } from './screen-tests.mjs'
+import { findIndexedMultiples } from './screen-tests.mjs'
 
 describe('テストの書き方の検査', () => {
   const lines = (hits) => hits.map((hit) => hit.line)
@@ -78,48 +78,5 @@ describe('テストの書き方の検査', () => {
     assert.deepEqual(lines(findIndexedMultiples(arrow)), [2])
     const afterBlock = ['{', "  const rows = screen.getAllByRole('row')", '  rows[0]', '}', 'rows[1]'].join('\n')
     assert.deepEqual(lines(findIndexedMultiples(afterBlock)), [3])
-  })
-
-  test('.disabled・.checked・.value・getAttribute を toBe・toEqual で比べる所を見つける', () => {
-    const text = [
-      "const button = screen.getByRole('button')",
-      "const input = await screen.findByRole('textbox')",
-      "const link = within(nav).getByRole('link')",
-      "const box = screen.queryByRole('checkbox')",
-      'expect(button.disabled).toBe(true)',
-      'expect((input as HTMLInputElement).value).toEqual(\'a\')',
-      "expect(link.getAttribute('href')).toBe('/x')",
-      'expect(box.checked).not.toBe(true)',
-      'expect(button).toBeDisabled()',
-      'expect(input).toHaveValue(\'a\')',
-      'expect(parts.map((part) => part.value)).toEqual([1])',
-      "expect(link.getAttribute('href')).toBeNull()",
-      'expect(button.textContent).toBe(\'a\')',
-      'expect(\n  input.value,\n).toBe(\'a\')',
-      '// expect(a.disabled).toBe(true)',
-    ].join('\n')
-    assert.deepEqual(lines(findPropertyComparisons(text)), [5, 6, 7, 8, 14])
-  })
-
-  test('受け手が要素のものだけを見つける（screen・within・document・container からたどる形、要素の型の変数）', () => {
-    const hits = [
-      "expect(screen.getByRole('button').disabled).toBe(true)",
-      "expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('a')",
-      "expect(within(row).getByRole('checkbox').checked).toBe(true)",
-      "expect(document.getElementById('a').value).toBe('a')",
-      "expect(container.querySelector('input').value).toBe('a')",
-      "function check(input: HTMLInputElement) {\n  expect(input.value).toBe('a')\n}",
-      "const rows = screen.getAllByRole('row')\nexpect(rows[0].getAttribute('x')).toBe('a')",
-      "const field = screen.getByLabelText('a') as HTMLInputElement\nexpect(field.value).toBe('a')",
-    ]
-    for (const text of hits) assert.equal(findPropertyComparisons(text).length, 1, text)
-    const misses = [
-      'const { result } = renderHook(() => useX())\nexpect(result.current.value).toBe(1)',
-      'const counter = createCounter()\nexpect(counter.value).toBe(1)',
-      'expect(item.value).toBe(1)',
-      "const input = screen.getByRole('textbox')\nconst input2 = { value: 1 }\nexpect(input2.value).toBe(1)",
-      "const state = useStore()\nexpect(state.disabled).toEqual(false)",
-    ]
-    for (const text of misses) assert.deepEqual(findPropertyComparisons(text), [], text)
   })
 })

@@ -1,10 +1,8 @@
 // フロントの書き方の規則のうち、Biome の plugin（frontend/biome-plugins/、e2e/biome-plugins/）で書けないものを確認する。
-// 複数のファイルを比べる規則と、変数の範囲や式の終わりを追う規則が残る。規則は、ファイルの種類ごとのモジュール（frontend-rules/）にあり、対象と見る形は関数のコメントにある。
+// 複数のファイルを比べる規則と、変数の範囲を追う規則が残る。規則は、ファイルの種類ごとのモジュール（frontend-rules/）にあり、対象と見る形は関数のコメントにある。
 //
 // - 店舗画面と管理画面：同じ相対パスで同じ内容のファイルを置かない。共有のパッケージが公開する名前と同じ名前を定義しない（フロントの書き方の「入れるもの・入れないもの」）
-// - 画面のテスト：要素のプロパティ・属性を toBe・toEqual で比べない（フロントのテストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」）
 // - 画面のテストと E2E：複数の結果を並びのインデックスで選ばない（フロントのテストの書き方の「画面に見えるもので探す」）
-// - 画面のテストと補助と E2E：テストの間に空行を置く（フロントのテストの書き方の「テストとテストの間に空行を置く」）
 //
 // 失敗したとき：報告の括弧の中の書き方に直す。同じファイルは共有のパッケージに移す。
 // 除外：frontend-rules-exclusions.json に {キー: 理由}。キーは src からの相対パス（同じ内容のファイル）か <画面>:<名前>（共有と同じ名前の定義。例：store:translate）。不要になった除外は失敗にする。
@@ -15,14 +13,13 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { groupTargets } from './frontend-rules/files.mjs'
-import { findIndexedMultiples, findPropertyComparisons } from './frontend-rules/screen-tests.mjs'
+import { findIndexedMultiples } from './frontend-rules/screen-tests.mjs'
 import { duplicatedFiles, findDefinitions, sharedPublicNames } from './frontend-rules/shared-names.mjs'
-import { findMissingTestSpacing } from './frontend-rules/test-style.mjs'
 
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
 if (isMain(import.meta.url)) {
-  // E2E（e2e/）には、並びのインデックスとテストの間の空行だけを当てる
+  // E2E（e2e/）には、並びのインデックスだけを当てる
   const files = listGitFiles(['frontend', 'e2e'])
   exitIfNoFiles(files, 'フロントのファイル')
   const exclusions = readExclusions(exclusionsPath('frontend-rules-exclusions.json'))
@@ -53,21 +50,10 @@ if (isMain(import.meta.url)) {
       }
     }
   }
-  for (const file of targets.frontendTests) {
-    const text = readFileSync(file, 'utf8')
-    for (const hit of findPropertyComparisons(text)) {
-      report(`${file}:${hit.line} 要素のプロパティ・属性を toBe・toEqual で比べる（toBeDisabled、toHaveValue、toHaveAttribute などを使う。フロントのテストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」）：${hit.text}`)
-    }
-  }
   for (const file of targets.tests) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findIndexedMultiples(text)) {
       report(`${file}:${hit.line} 複数の結果を並びのインデックスで選ぶ（役割と名前で 1 つに絞る。フロントのテストの書き方の「画面に見えるもので探す」）：${hit.text}`)
-    }
-  }
-  for (const file of targets.testsWithSupportAndE2e) {
-    for (const hit of findMissingTestSpacing(readFileSync(file, 'utf8'))) {
-      report(`${file}:${hit.line} テストの間に空行がない（}) の直後に test・it・describe を続けず、空行を置く。フロントのテストの書き方の「テストとテストの間に空行を置く」）：${hit.text}`)
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))

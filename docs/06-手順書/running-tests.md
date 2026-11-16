@@ -25,9 +25,9 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 | `./gradlew test` | 単体テスト（Spring を起動しない） | 不要 ※2 |
 | `./gradlew integrationTest` | 統合テスト（Spring + Testcontainers の PostgreSQL など） | 必要 |
 | `./gradlew check` | 単体・統合テスト、OpenAPI の構文の検証（CI はジョブに分けて同じものを実行する） | 必要 |
-| `./gradlew integrationTest -PintegrationTestShard=<番号>/<総数>` | 統合テストの一部だけ（クラスの名前の hash で分ける。例 `1/2`）。CI が 2 つのジョブに分けるために使う。手元では通常は使わない | 必要 |
+| `./gradlew integrationTest -PintegrationTestShard=<番号>/<総数>` | 統合テストの一部だけ（クラスの名前の hash で分ける。例 `1/2`）。CI が 3 つのジョブに分けるために使う。手元では通常は使わない | 必要 |
 | `./gradlew integrationTest -PintegrationTestForks=<数>` | 統合テストを実行するフォークの数（既定 1。CI も 1）。手元では通常は使わない | 必要 |
-| `./gradlew integrationTestShards` | 統合テストのジョブ（1/2・2/2）に入るクラスの一覧（`-PintegrationTestShardCount=<数>` で分ける数を変える。既定 2） | 不要 |
+| `./gradlew integrationTestShards -PintegrationTestShardCount=<数>` | 統合テストを <数> に分けたときの、各ジョブに入るクラスの一覧（CI と同じ分け方は 3） | 不要 |
 | `./gradlew coverageReport` | 単体テストと統合テストを合算したカバレッジ（`build/reports/jacoco/coverageReport/`）。`-PcoverageExecDir`・`-PcoverageClassesDir` は CI が使う。手元では通常は使わない | 必要 |
 | `./gradlew pitest` | domain（`com.ecsite.module.*.domain.*`）の mutation testing（PIT）。単体テスト（`src/test`）だけを使う。報告は `build/reports/pitest/`。`check` と `build` には含まれない。時間は ※3 | 不要 ※2 |
 
@@ -132,7 +132,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 ### CI での手順の位置
 
-手順は `.github/workflows/ci.yml` にある。バックエンドのカバレッジの検査は、報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブの、単体テストの後で実行し、ジョブの時間が約 2 分増える（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
+手順は `.github/workflows/ci.yml` にある。バックエンドのカバレッジの検査は、報告を保存した後に置く（失敗しても報告が残る）。PIT は、ビルドと単体テストのジョブから分けた別のジョブで、同時に実行する（[CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」）。
 
 ### 手元での実行
 

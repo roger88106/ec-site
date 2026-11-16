@@ -31,7 +31,6 @@ export const CHECK_INPUTS = {
   'glossary-ids': ALWAYS,
   'gradle-plugins': [/^backend\/ecsite\/.*\.gradle\.kts$/],
   'image-versions': [/^backend\/ecsite\/src\/integrationTest\//],
-  'integration-shards': [],
   'ja-text': ALWAYS,
   'java-rules': [/^backend\/ecsite\/src\//],
   'local-ports': [],

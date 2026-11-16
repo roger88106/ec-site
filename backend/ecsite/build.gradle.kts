@@ -279,9 +279,9 @@ tasks.check { dependsOn(integrationTest) }
 // 統合テストの分け方（CI でジョブを分けて同時に流して、全体の時間を短くする）
 //   テストクラスの完全修飾名の hash で決める。内部クラス（Outer$Inner）は外のクラスと同じ側に入る。
 //   名前だけで決まるので、テストクラスを追加しても設定を変えなくてよい。全てのクラスがちょうど 1 つの側に入る。
-//   2 つの側の時間が離れたときは、shardOf の salt を変えて分け直す
-//   ./gradlew integrationTestShards                                → 各側に入るクラスの一覧（Docker 不要）
-//   ./gradlew integrationTestShards -PintegrationTestShardCount=3  → 3 つに分けた一覧
+//   側の時間が離れたときは、shardOf の salt を変えて分け方を変える
+//   ./gradlew integrationTestShards -PintegrationTestShardCount=<数>  → 各側に入るクラスの一覧（Docker 不要）
+//   CI で分ける数は ci.yml の matrix（backend-integration の shard）だけで決まる。ここに既定の数を置かない
 // -----------------------------------------------------------------------------
 /** "1/2" → (0, 2)。番号は 1 から数え、内部では 0 から数える */
 fun parseShard(spec: String): Pair<Int, Int> {
@@ -298,7 +298,7 @@ fun parseShard(spec: String): Pair<Int, Int> {
 /** クラスのファイル（com/ecsite/Foo$Bar.class）またはソース（com/ecsite/Foo.java）の相対パスが入る側（0 から数える） */
 fun shardOf(path: String, count: Int): Int {
     val outer = path.removeSuffix(".class").removeSuffix(".java").substringBefore('$').replace('/', '.')
-    val salt = "a" // 時間の差が大きいときに変えて分け直す（"a" はテストの数がほぼ半々になる値）
+    val salt = "cb" // 時間の差が大きいときに変える（"cb" は 3 つに分けたときのテストの数がほぼ等しくなる値）
     // String.hashCode の下位ビットは文字の偶奇に偏るので（2 つに分けると偏る）、混ぜてから割る
     val mixed = (salt + outer).hashCode() * -1640531535
     return Math.floorMod(mixed xor (mixed ushr 15), count)
@@ -308,12 +308,12 @@ tasks.register("integrationTestShards") {
     description = "統合テストの各側に入るテストクラスの一覧を出す（Docker 不要）"
     group = "verification"
     val sourceRoot = layout.projectDirectory.dir("src/integrationTest/java")
-    // 既定の数は、.github/workflows/ci.yml の backend-integration の matrix の shard の一覧の長さと合わせる
-    val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }.orElse(2)
+    val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }
     inputs.dir(sourceRoot)
     doLast {
         val root = sourceRoot.asFile
-        val count = shardCount.get()
+        val count = shardCount.orNull
+            ?: throw GradleException("分ける数を -PintegrationTestShardCount=<数> で指定する（CI の数は ci.yml の backend-integration の shard の一覧の長さ）")
         val classes = root.walkTopDown().filter { it.isFile && (it.nameWithoutExtension.endsWith("Test") || it.nameWithoutExtension.endsWith("Tests")) }
             .map { it.relativeTo(root).invariantSeparatorsPath.removeSuffix(".java").replace('/', '.') }
             .sorted().toList()

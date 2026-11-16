@@ -18,7 +18,6 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
 | `gradle-plugins` | Gradle のプラグインの id が、policy.json の gradlePlugins と過不足なく一致することを確認する |
 | `image-versions` | compose と、Gradle・統合テストのイメージのバージョンの一致と、patch までの固定を確認する |
-| `integration-shards` | 統合テストを分ける数が、`build.gradle.kts` と CI の matrix で一致することを確認する |
 | `ja-text` | 使わない語（error。規則の本文に書いた、AI のサービス固有の名前も含む）がないことを確認し、文脈で決める語と文体の型を warning として示す |
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文と表のセルを、注釈の形で示す（失敗にしない） |
 | `java-rules` | バックエンドのソースに、禁止した書き方（列挙型の変換、理由のない @SuppressWarnings）がないことを確認する |

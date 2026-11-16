@@ -74,9 +74,9 @@ public class TestcontainersConfig {
     /**
      * PostgreSQL のイメージ
      *
-     * <p>docker/compose.yaml と同じ。
+     * <p>docker/compose.yaml から読む。
      */
-    public static final String POSTGRES_IMAGE = "postgres:18-alpine";
+    public static final String POSTGRES_IMAGE = ComposeImages.of("postgres");
 
     /**
      * コンテナ同士のネットワークの中での SeaweedFS の名前
@@ -127,7 +127,7 @@ public class TestcontainersConfig {
      */
     @Bean
     GenericContainer<?> seaweedfs(Network network) {
-        var container = new GenericContainer<>(DockerImageName.parse("chrislusf/seaweedfs:4.51"))
+        var container = new GenericContainer<>(DockerImageName.parse(ComposeImages.of("chrislusf/seaweedfs")))
                 // ボリュームの数の上限は「空きの容量 ÷ ボリュームの大きさ（既定 30GB）」になる。空きの少ない CI の
                 // 環境では 2 つ目のバケットにボリュームを割り当てられず 500 になるので、ボリュームを小さくする
                 .withCommand("server", "-dir=/data", "-s3", "-s3.port=" + S3_PORT, "-s3.config=/etc/seaweedfs/s3.json",
@@ -213,7 +213,7 @@ public class TestcontainersConfig {
      */
     @Bean
     GenericContainer<?> imgproxy(Network network, GenericContainer<?> seaweedfs) {
-        var container = new GenericContainer<>(DockerImageName.parse("darthsim/imgproxy:v4.0.20"))
+        var container = new GenericContainer<>(DockerImageName.parse(ComposeImages.of("darthsim/imgproxy")))
                 .withNetwork(network)
                 .withEnv(Map.ofEntries(
                         Map.entry("IMGPROXY_KEY", IMGPROXY_KEY),

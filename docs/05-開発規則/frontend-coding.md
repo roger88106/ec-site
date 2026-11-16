@@ -200,10 +200,11 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 - 依存を追加・更新したら、ルートで `pnpm install --frozen-lockfile` を再実行する。
 - インストール時のスクリプトを持つライブラリ（間接の依存も含む）は、`pnpm-workspace.yaml` の `allowBuilds` に、実行するか（`true`・`false`）と理由を書く。
 - ライセンスも確認する（`node scripts/ci/licenses/check-frontend.mjs`）。両方は `scripts/dev/check-frontend.sh` でも実行できる。
+- `frontend/` の 3 つの `package.json` は、React の指定（`react`・`react-dom`・`@types/react`・`@types/react-dom`）を `^1.2.3` の範囲の書き方にそろえる。固定のバージョンが混ざると、更新の仕方がパッケージごとに変わるため。
 
 理由：`allowBuilds` にないライブラリがあると pnpm はインストールを失敗にするが、手元は依存が入った後なので気づかず、CI で初めて失敗するため。
 
-確認方法：自動（CI のインストールとライセンス検査）
+確認方法：自動（CI のインストールとライセンス検査）。React の指定の書き方はレビュー
 
 ## 表示の要素
 

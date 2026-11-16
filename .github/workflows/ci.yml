@@ -34,11 +34,6 @@ on:
 
 permissions: {}
 
-# 全ての job の JDK のバージョン。バックエンドの toolchain のバージョン（backend/ecsite/gradle/libs.versions.toml の java）と同じにする。
-# setup-java は libs.versions.toml を読めないので、ここに 1 か所だけ書き、各 job が参照する
-env:
-  JAVA_VERSION: '21'
-
 # develop と main は全ての commit を検査し、前の実行を中止しない。作業ブランチは、同じ ref で新しい実行が始まったら、古い実行を中止する。
 # 作業ブランチの push と pull request を同じ group にしない（docs/06-手順書/ci.md の「CI のジョブ」）
 concurrency:
@@ -46,7 +41,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' }}
 
 jobs:
-  # バックエンドは、ビルドと単体テスト、統合テスト（matrix の shard の一覧の数に分ける）、集計のジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、分けて同時に流す。
+  # バックエンドは、ビルドと単体テスト、PIT、統合テスト（matrix の shard の一覧の数に分ける）、集計のジョブに分ける。時間の長い PIT と統合テストを分けて同時に実行する。
   # 集計の前のジョブは同時に始まり、それぞれコンパイルする（結果を渡すと、統合テストがビルドを待って全体が長くなる）。
   # 変わっていない部分（jOOQ のコード、コンパイル）は、setup-gradle が develop のビルドのキャッシュから読む。
   # 手元は分けずに ./gradlew check で全て流す（docs/06-手順書/ci.md）。
@@ -68,7 +63,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       # Gradle のキャッシュと、wrapper の検証
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
@@ -104,8 +99,43 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      # domain の mutation testing（PIT。backend/ecsite/build.gradle.kts の pitest）。単体テストで domain の変異を検出できるかを測る。
-      # check には入れていないので、ここで流す。mutation score が基準（build.gradle.kts の mutationThreshold）を下回ると失敗する
+      - name: テストレポートを保存（失敗時）
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-reports-build
+          path: |
+            backend/ecsite/build/reports/tests/
+            backend/ecsite/build/test-results/
+            backend/ecsite/build/reports/dependency-license/dependencies-without-allowed-license.json
+          retention-days: 7
+
+  # domain の mutation testing（PIT。backend/ecsite/build.gradle.kts の pitest）。単体テストで domain の変異を検出できるかを測る。
+  # check には入れていないので、ここで実行する。mutation score が基準（build.gradle.kts の mutationThreshold）を下回ると失敗する。
+  # 単体テストをもう一度実行するが、ビルドと単体テストのジョブを待たずに同時に始める（待つと全体が長くなる）
+  backend-mutation:
+    name: バックエンド（PIT）
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend/ecsite
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version-file: .java-version
+
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      # jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
       - name: domain の mutation testing（PIT）
         run: ./gradlew pitest
 
@@ -123,19 +153,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: node ../../scripts/ci/report/coverage-summary.mjs バックエンドの domain build/reports/pitest/mutations.xml
 
-      - name: テストレポートを保存（失敗時）
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: test-reports-build
-          path: |
-            backend/ecsite/build/reports/tests/
-            backend/ecsite/build/test-results/
-            backend/ecsite/build/reports/dependency-license/dependencies-without-allowed-license.json
-          retention-days: 7
-
   # 統合テストをテストクラスの名前で分け、matrix の shard の一覧のジョブで同時に流す（分け方は build.gradle.kts の integrationTestShards）。
-  # 片方が失敗しても、もう片方は最後まで流す（失敗の全体を一度に見るため）
+  # 1 つが失敗しても、他は最後まで実行する（失敗の全体を一度に見るため）
   backend-integration:
     name: バックエンド（統合テスト ${{ matrix.shard }}/${{ strategy.job-total }}）
     permissions:
@@ -145,7 +164,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     defaults:
       run:
         working-directory: backend/ecsite
@@ -158,7 +177,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
@@ -186,7 +205,7 @@ jobs:
           retention-days: 7
 
   # ruleset の必須の検査の名前は「バックエンド」なので、この名前を残す（変えると ruleset の変更が必要になる）。
-  # 上の 3 つのジョブの後に、カバレッジの実行データを合わせて報告を作る。
+  # 上のジョブの後に、カバレッジの実行データを合わせて報告を作る。
   # 上のジョブが失敗・スキップしたときも、このジョブを実行して失敗にする。
   # needs のジョブが失敗するとこのジョブはスキップされ、必須の検査としては成功と同じに扱われるので、
   # if で必ず実行し、最初の手順で結果を調べる。
@@ -196,7 +215,7 @@ jobs:
     name: バックエンド
     permissions:
       contents: read
-    needs: [backend-build, backend-integration]
+    needs: [backend-build, backend-mutation, backend-integration]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -206,15 +225,17 @@ jobs:
 
     steps:
       # checkout の前に走るので、defaults の working-directory（まだ存在しない）を使わない
-      - name: ビルドと単体テスト、統合テストの結果を確認
+      - name: ビルドと単体テスト、PIT、統合テストの結果を確認
         working-directory: .
         env:
           BUILD_RESULT: ${{ needs.backend-build.result }}
+          MUTATION_RESULT: ${{ needs.backend-mutation.result }}
           INTEGRATION_RESULT: ${{ needs.backend-integration.result }}
         run: |
           echo "ビルドと単体テスト: $BUILD_RESULT"
+          echo "PIT: $MUTATION_RESULT"
           echo "統合テスト: $INTEGRATION_RESULT"
-          if [ "$BUILD_RESULT" != "success" ] || [ "$INTEGRATION_RESULT" != "success" ]; then
+          if [ "$BUILD_RESULT" != "success" ] || [ "$MUTATION_RESULT" != "success" ] || [ "$INTEGRATION_RESULT" != "success" ]; then
             echo "::error::成功しなかったジョブがある。それぞれのジョブのログを見る"
             exit 1
           fi
@@ -226,7 +247,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       # 報告を作る Gradle の呼び出しだけに使う（テストもコンパイルも流さない）
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
@@ -295,7 +316,7 @@ jobs:
         run: pnpm typecheck
 
       - name: テスト
-        run: pnpm test
+        run: pnpm test:coverage
 
       # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準を下回るとテストが失敗する（vite.config.ts の thresholds）。テストが失敗しても書く
       - name: カバレッジの合計を summary に書く
@@ -350,7 +371,7 @@ jobs:
       # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確認する
       - name: 共有のパッケージの lint・型チェック・テスト
         working-directory: frontend/shared
-        run: pnpm lint && pnpm typecheck && pnpm test
+        run: pnpm lint && pnpm typecheck && pnpm test:coverage
 
       # 共有のパッケージのカバレッジ（管理画面・店舗画面と同じ v8 の設定）。基準を下回るとテストが失敗する（vitest.config.ts の thresholds）
       - name: 共有のパッケージのカバレッジの合計を summary に書く
@@ -375,7 +396,7 @@ jobs:
         run: pnpm typecheck
 
       - name: テスト
-        run: pnpm test
+        run: pnpm test:coverage
 
       # カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）。基準を下回るとテストが失敗する（vitest.config.ts の thresholds）。テストが失敗しても書く
       - name: カバレッジの合計を summary に書く
@@ -415,7 +436,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version-file: .java-version
 
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 

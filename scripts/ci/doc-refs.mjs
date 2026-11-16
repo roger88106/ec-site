@@ -170,7 +170,8 @@ export function findReferences(file, text, names, basenames, exists = existsSync
     const inCode = Boolean(codeLines[index])
     const lineNumber = index + 1
     if (isMarkdown && !inCode) {
-      for (const match of line.matchAll(/(?:\[([^[\]]*))?\]\(([^)\s]+)\)/g)) {
+      // 宛先の後の title（`[x](a.md "説明")`）も読む。参照式のリンク（`[x][ref]` と `[ref]: a.md`）は読まないので、文書では使わない
+      for (const match of line.matchAll(/(?:\[([^[\]]*))?\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
         const [whole, label, link] = match
         if (/^(https?:|mailto:)/.test(link)) continue
         const [path, anchor] = link.split('#')

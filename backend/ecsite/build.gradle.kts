@@ -53,7 +53,8 @@ extra["jooq.version"] = libs.versions.jooq.get()
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get()))
+        // JDK のバージョンは、リポジトリのルートの .java-version の 1 か所に書く（CI の setup-java も読む）
+        languageVersion.set(JavaLanguageVersion.of(file("../../.java-version").readText().trim()))
     }
 }
 
@@ -150,6 +151,7 @@ dependencies {
     implementation(libs.awssdk.s3)
 
     // --- コード生成（Lombok） ---
+    // main だけに入れる。テストの configuration には加えない（バックエンドの書き方の「Lombok は main だけ」。テストで使うとコンパイルが失敗する）
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
@@ -241,6 +243,17 @@ tasks.named<Test>("test") {
     }
 }
 
+// コンテナのイメージのバージョンの正本。統合テスト（ComposeImages）と jOOQ のコード生成は、ここからイメージを読む。
+// Dependabot が compose を更新すると、両方が同じバージョンになる
+val composeFile: File = file("../../docker/compose.yaml")
+
+/** compose の `image: <名前>:<バージョン>` の行から、名前が一致するイメージを返す */
+fun composeImage(name: String): String =
+    composeFile.readLines().map { it.trim() }.filter { it.startsWith("image:") }
+        .map { it.removePrefix("image:").trim() }
+        .firstOrNull { it.substringBeforeLast(':') == name }
+        ?: throw GradleException("docker/compose.yaml に $name のイメージがない")
+
 val integrationTest = tasks.register<Test>("integrationTest") {
     description = "統合テストを実行する（Docker 必須）"
     group = "verification"
@@ -251,6 +264,9 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     systemProperty("openapi.dir", openApiDir.asFile.absolutePath)
     systemProperty("keycloak.realms.dir", keycloakRealmsDir.absolutePath)
     systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
+    // リポジトリのルート。コンテナのイメージの補助（ComposeImages）が docker/compose.yaml を読む
+    systemProperty("repo.root", file("../..").absolutePath)
+    inputs.file(composeFile)
     // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照合する）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
@@ -279,9 +295,9 @@ tasks.check { dependsOn(integrationTest) }
 // 統合テストの分け方（CI でジョブを分けて同時に流して、全体の時間を短くする）
 //   テストクラスの完全修飾名の hash で決める。内部クラス（Outer$Inner）は外のクラスと同じ側に入る。
 //   名前だけで決まるので、テストクラスを追加しても設定を変えなくてよい。全てのクラスがちょうど 1 つの側に入る。
-//   2 つの側の時間が離れたときは、shardOf の salt を変えて分け直す
-//   ./gradlew integrationTestShards                                → 各側に入るクラスの一覧（Docker 不要）
-//   ./gradlew integrationTestShards -PintegrationTestShardCount=3  → 3 つに分けた一覧
+//   側の時間が離れたときは、shardOf の salt を変えて分け方を変える
+//   ./gradlew integrationTestShards -PintegrationTestShardCount=<数>  → 各側に入るクラスの一覧（Docker 不要）
+//   CI で分ける数は ci.yml の matrix（backend-integration の shard）だけで決まる。ここに既定の数を置かない
 // -----------------------------------------------------------------------------
 /** "1/2" → (0, 2)。番号は 1 から数え、内部では 0 から数える */
 fun parseShard(spec: String): Pair<Int, Int> {
@@ -298,7 +314,7 @@ fun parseShard(spec: String): Pair<Int, Int> {
 /** クラスのファイル（com/ecsite/Foo$Bar.class）またはソース（com/ecsite/Foo.java）の相対パスが入る側（0 から数える） */
 fun shardOf(path: String, count: Int): Int {
     val outer = path.removeSuffix(".class").removeSuffix(".java").substringBefore('$').replace('/', '.')
-    val salt = "a" // 時間の差が大きいときに変えて分け直す（"a" はテストの数がほぼ半々になる値）
+    val salt = "xs" // 時間の差が大きいときに変える（"xs" は 3 つに分けたときの、CI のクラスごとの時間の合計がほぼ等しくなる値）
     // String.hashCode の下位ビットは文字の偶奇に偏るので（2 つに分けると偏る）、混ぜてから割る
     val mixed = (salt + outer).hashCode() * -1640531535
     return Math.floorMod(mixed xor (mixed ushr 15), count)
@@ -308,12 +324,12 @@ tasks.register("integrationTestShards") {
     description = "統合テストの各側に入るテストクラスの一覧を出す（Docker 不要）"
     group = "verification"
     val sourceRoot = layout.projectDirectory.dir("src/integrationTest/java")
-    // 既定の数は、.github/workflows/ci.yml の backend-integration の matrix の shard の一覧の長さと合わせる
-    val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }.orElse(2)
+    val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }
     inputs.dir(sourceRoot)
     doLast {
         val root = sourceRoot.asFile
-        val count = shardCount.get()
+        val count = shardCount.orNull
+            ?: throw GradleException("分ける数を -PintegrationTestShardCount=<数> で指定する（CI の数は ci.yml の backend-integration の shard の一覧の長さ）")
         val classes = root.walkTopDown().filter { it.isFile && (it.nameWithoutExtension.endsWith("Test") || it.nameWithoutExtension.endsWith("Tests")) }
             .map { it.relativeTo(root).invariantSeparatorsPath.removeSuffix(".java").replace('/', '.') }
             .sorted().toList()
@@ -348,12 +364,12 @@ tasks.register<JavaExec>("generateRegionMigration") {
 }
 
 // -----------------------------------------------------------------------------
-// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」、使わない注釈：「Lombok は main だけ」「null の扱い」）
+// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」、使わない注釈：「null の扱い」）
 //   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
 //   ・import：使われていないもの（UnusedImports）、* の import（AvoidStarImport）、並び（CustomImportOrder）
 //   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
 //     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
-//   ・使わない注釈：Lombok（テストのソースセットだけ）と、JSpecify 以外の Nullable。import と完全修飾名の注釈を見る
+//   ・使わない注釈：JSpecify 以外の Nullable。import と完全修飾名の注釈を見る
 //   生成したコード（jOOQ、OpenAPI。build/ の下）は見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
 //   Checkstyle はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない
@@ -413,8 +429,8 @@ pitest {
     threads = 4
     outputFormats = listOf("HTML", "XML")
     timestampedReports = false
-    // mutation score（%）が下回ると失敗する。今の値（91.02%）を整数に切り捨てて、さらに 1 下げた値
-    mutationThreshold = 90
+    // mutation score（%）が下回ると失敗する。CI の値（94.66%。656 件中 621 件を検出）を整数に切り捨てて、さらに 1 下げた値
+    mutationThreshold = 93
 }
 
 // jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）
@@ -663,7 +679,7 @@ tasks.named<JooqGenerate>("generateJooq") {
     inputs.dir(migrationDir)
 
     // 使い捨て PostgreSQL（docker/compose.yaml と同じイメージ）
-    val container = PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"))
+    val container = PostgreSQLContainer(DockerImageName.parse(composeImage("postgres")))
 
     // jooq { } ブロックで組んだ Configuration と同一インスタンスを参照している
     val jdbc = jooq.configurations.getByName("main").jooqConfiguration.jdbc

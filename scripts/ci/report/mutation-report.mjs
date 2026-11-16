@@ -33,8 +33,9 @@ function attribute(tag, name) {
  *
  * @param {string} text mutations.xml の中身
  * @param {{ limit?: number }} options クラスを出す数
- * @returns {{ total: number, detected: number, survivors: { name: string, survived: number, total: number }[] }}
- *   全変異の数、検出した数、生き残った変異が多いクラス（多い順。同じ数なら名前順）
+ * @returns {{ total: number, detected: number, statuses: { status: string, count: number }[], survivors: { name: string, survived: number, total: number }[] }}
+ *   全変異の数、検出した数、status ごとの数（多い順。同じ数なら名前順。MEMORY_ERROR、TIMED_OUT なども、検出に数えたかによらず含める）、
+ *   生き残った変異が多いクラス（多い順。同じ数なら名前順）
  * @throws {Error} 閉じの </mutations> がない（途中で切れた）、または <mutation> の開始タグの数と読めた変異の数が違うとき
  */
 export function readMutations(text, { limit = SURVIVORS_LIMIT } = {}) {
@@ -45,6 +46,7 @@ export function readMutations(text, { limit = SURVIVORS_LIMIT } = {}) {
   let total = 0
   let detected = 0
   const classes = new Map()
+  const statusCounts = new Map()
   for (const [i, start] of starts.entries()) {
     const detectedValue = attribute(start[0], 'detected')
     // 本文は次の <mutation の開始位置（なければ文書の終わり）までに限る。閉じタグが欠けた変異が、次の変異の中身を読まないため
@@ -54,10 +56,12 @@ export function readMutations(text, { limit = SURVIVORS_LIMIT } = {}) {
     const name = body.match(/<mutatedClass>([^<]+)<\/mutatedClass>/)?.[1]
     if ((detectedValue !== 'true' && detectedValue !== 'false') || end < 0 || !name) continue
     total++
+    const status = attribute(start[0], 'status') ?? '（status なし）'
+    statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1)
     const row = classes.get(name) ?? { name, survived: 0, total: 0 }
     row.total++
     if (detectedValue === 'true') detected++
-    else if (SURVIVED_STATUSES.has(attribute(start[0], 'status'))) row.survived++
+    else if (SURVIVED_STATUSES.has(status)) row.survived++
     classes.set(name, row)
   }
   if (total !== starts.length) {
@@ -67,5 +71,8 @@ export function readMutations(text, { limit = SURVIVORS_LIMIT } = {}) {
     .filter((row) => row.survived > 0)
     .sort((a, b) => b.survived - a.survived || a.name.localeCompare(b.name))
     .slice(0, limit)
-  return { total, detected, survivors }
+  const statuses = [...statusCounts]
+    .map(([status, count]) => ({ status, count }))
+    .sort((a, b) => b.count - a.count || a.status.localeCompare(b.status))
+  return { total, detected, statuses, survivors }
 }

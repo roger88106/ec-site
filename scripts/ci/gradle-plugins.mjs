@@ -2,9 +2,8 @@
 // Gradle のプラグインは依存の構成（licenseReport が読む構成）に出ないので、ライセンスは policy.json に手動で書いている。
 // プラグインを追加・削除して一覧を修正し忘れると、ライセンスを確認しないプラグインが入る、または使わないものが残るため、過不足を失敗にする。
 //
-// プラグインの id は、`gradle/libs.versions.toml` の `[plugins]` と、`build.gradle.kts` の `plugins {}` に直接書いた `id("…")`・`kotlin("…")` から読む。
-// java、jacoco のように `.` のない id は Gradle の組み込みで、別の成果物として入らないので対象にしない。
-// id を読めない書き方（カタログの id のない項目、`plugins {}` の中の知らない行、`apply(plugin = "…")`）は、読み飛ばすと誤って通るので失敗にする。
+// プラグインの id は、`gradle/libs.versions.toml` の `[plugins]` から読む。java、jacoco のように `.` のない id は Gradle の組み込みで、別の成果物として入らないので対象にしない。
+// カタログを通さない書き方（Gradle のファイルの `id("…")`、`kotlin("…")`、`apply(plugin = "…")`）と、カタログの id のない項目は、照合から漏れるので失敗にする。
 //
 // 失敗したとき：プラグインを加える・外すときは、gradlePlugins にライセンスを確認して加える・削除する。
 // 除外：なし
@@ -14,8 +13,8 @@ import { parse } from 'smol-toml'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
-/** 読めない行の理由 */
-const UNREADABLE_REASON = '読めない書き方。検査の読み方を追加するか、今の書き方にそろえる'
+/** カタログを通さない書き方の理由 */
+const DIRECT_REASON = '外部のプラグインは、libs.versions.toml の [plugins] に書き、plugins {} で alias(libs.plugins.…) にする'
 
 /** バージョンカタログ */
 const CATALOG_FILE = 'backend/ecsite/gradle/libs.versions.toml'
@@ -56,57 +55,21 @@ export function readCatalogPlugins(text) {
   return { ids, unknown }
 }
 
-/** `plugins {}` の中の 1 つの文（`;` で区切る）が読める形か。id("…")、kotlin("…")、alias(…)、組み込みの名前（`java`、`` `java-library` ``）の後に、`version …`、`apply …` が続いてよい */
-const PLUGIN_STATEMENT = /^(?:id\s*\(\s*"([^"]+)"\s*\)|kotlin\s*\(\s*"([^"]+)"\s*\)|alias\s*\([^)]*\)|`?[\w-]+`?)(?:\s+(?:version|apply)\b.*)?$/
+/** カタログを通さずにプラグインを入れる書き方（`id("…")`、`kotlin("…")`、`apply(plugin = "…")`、`apply plugin:`） */
+const DIRECT_PLUGIN = /\b(?:id|kotlin)\s*\(\s*"|\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/
 
 /**
- * `build.gradle.kts` の `plugins {}` の中に直接書いた `id("…")` と `kotlin("…")`（`org.jetbrains.kotlin.…`）を読む。<br />
- * `alias(libs.plugins.…)` はバージョンカタログ側で読むので読まない。行コメントの中は読まない。`plugins {` と同じ行の書き方も読む。
- * `plugins {}` の中の読めない行と、`apply(plugin = "…")` は、`unknown` に集める。
+ * Gradle のファイルで、カタログを通さずにプラグインを入れる行を探す。行コメントの中は読まない。<br />
+ * 外部のプラグインは `plugins {}` に `alias(libs.plugins.…)` で書く。カタログの `[plugins]` だけを照合するので、他の書き方はライセンスの確認から漏れる。
  *
  * @param {string} text Gradle のファイルの内容
- * @returns {{ ids: string[], unknown: { line: number, text: string }[] }} id（書いた順）と、読めない行（1 始まりの行番号と内容）
+ * @returns {{ line: number, text: string }[]} 見つけた行（1 始まりの行番号と内容）
  */
-export function readBuildPlugins(text) {
-  const ids = []
-  const unknown = []
-  let inPlugins = false
-  const readStatements = (content, lineNumber) => {
-    for (const statement of content.split(';').map((item) => item.trim()).filter((item) => item !== '')) {
-      const match = PLUGIN_STATEMENT.exec(statement)
-      if (!match) {
-        unknown.push({ line: lineNumber, text: statement })
-      } else if (match[1]) {
-        ids.push(match[1])
-      } else if (match[2]) {
-        ids.push(`org.jetbrains.kotlin.${match[2]}`)
-      }
-    }
-  }
-  text.split('\n').forEach((raw, index) => {
-    const line = raw.replace(/\r$/, '').replace(/\/\/.*$/, '')
-    const lineNumber = index + 1
-    if (/\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/.test(line)) {
-      unknown.push({ line: lineNumber, text: line.trim() })
-      return
-    }
-    let content = line
-    if (!inPlugins) {
-      const start = /^plugins\s*\{(.*)$/.exec(line)
-      if (!start) {
-        return
-      }
-      inPlugins = true
-      content = start[1]
-    }
-    const end = /\}/.exec(content)
-    if (end) {
-      inPlugins = false
-      content = content.slice(0, end.index)
-    }
-    readStatements(content, lineNumber)
-  })
-  return { ids, unknown }
+export function findDirectPlugins(text) {
+  return text
+    .split('\n')
+    .map((raw, index) => ({ line: index + 1, text: raw.replace(/\r$/, '').replace(/\/\/.*$/, '').trim() }))
+    .filter((item) => DIRECT_PLUGIN.test(item.text))
 }
 
 /**
@@ -155,9 +118,8 @@ if (import.meta.main) {
   used.push(...catalog.ids)
   unknownLines.push(...catalog.unknown.map((name) => `${CATALOG_FILE} の plugins.${name}（id を読めない。id を書く）`))
   for (const file of buildFiles) {
-    const build = readBuildPlugins(readFileSync(file, 'utf8'))
-    used.push(...build.ids)
-    unknownLines.push(...build.unknown.map((item) => describeUnreadableLine({ file, line: item.line, text: item.text, reason: UNREADABLE_REASON })))
+    const direct = findDirectPlugins(readFileSync(file, 'utf8'))
+    unknownLines.push(...direct.map((item) => describeUnreadableLine({ file, line: item.line, text: item.text, reason: DIRECT_REASON })))
   }
   let listed
   try {

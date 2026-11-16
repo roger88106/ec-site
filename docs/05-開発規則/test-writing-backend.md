@@ -36,7 +36,7 @@
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture` を使う。
 
-補助以外のテストは、補助が持つ手順を直接書かない（その操作そのものを確認するテストを除く）。手順と、手順を書いてよい補助・テストの対応の正本は `scripts/ci/test-helpers.mjs` の `HELPER_STEPS`。
+補助以外のテストは、補助が持つ手順（上の表）を直接書かない（その操作そのものを確認するテストを除く）。
 
 次の 3 つは手順に含めず、テストが直接書いてよい。
 
@@ -50,7 +50,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 
 package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、同じパッケージの `src/integrationTest` に public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。テストのために可視性を広げない。
 
-確認方法：レビュー（記録を読む操作は自動。`EventPublicationReadTest`。手順を補助の外で書かないことも自動。`scripts/ci/test-helpers.mjs`）
+確認方法：レビュー（記録を読む操作は自動。`EventPublicationReadTest`。在庫と支払の作成を補助の外で呼ばないことも自動。`TestDataCreationTest`）
 
 ## テストの置き場所
 

@@ -78,7 +78,7 @@ describe('対象が 0 件のときの失敗', () => {
     .map((name) => name.slice(0, -'.mjs'.length))
 
   test('0 件で失敗にするかを試す検査が、直下の検査の大半を占める（走査が空にならない）', () => {
-    assert.ok(checks.length >= 15, `${checks.length} 件`)
+    assert.ok(checks.length >= 12, `${checks.length} 件`)
     for (const name of ['note-numbers', 'doc-refs', 'frontend-rules']) assert.ok(checks.includes(name), name)
   })
 

@@ -46,6 +46,22 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 ※1：表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。
 
+## commit の前の hook
+
+commit の前の hook（[開発環境の起動](setup.md)の「起動」）は、ステージしたファイルに関係する検査と script のテストだけを `check-all.sh` で実行する。CI は全てを実行するので、選び漏れは CI で見つかる。選び方の処理と表は `scripts/dev/lib/pre-commit-select.mjs`。
+
+| ステージしたファイル | 実行するもの |
+|----------------------|----------|
+| `check-all.sh`、結果の判定（`lib/check-result.mjs`）、hook の処理、`package.json`、`pnpm-lock.yaml` | 全ての検査とテスト |
+| 検査・テストが import・require でたどれるファイル（自分を含む） | その検査・テスト |
+| 検査・テストのソースに、パスか名前が書いてあるファイル（読む設定、除外の一覧など） | その検査・テスト |
+| 検査ごとの、読むファイルのパスの正規表現（`CHECK_INPUTS`。Git のファイルの一覧から読む検査）に当たるファイル | その検査と、同じ名前のテスト |
+| どれでもよい | `CHECK_INPUTS` で常に実行するとした検査（`doc-refs`、`glossary-ids`、`ja-text`、`risk`、`spec-numbers`）と、表にない検査 |
+
+- 検査を加えたら、Git のファイルの一覧から読むファイルのパスの正規表現を `CHECK_INPUTS` に書く。書かなければ常に実行される。
+- 差分の追加行の文体の検査（`ja-text --changed`）は実行しない。hook が、ステージした追加行の warning を表示するため。
+- 検査は、ステージした内容を取り出した一時ディレクトリで実行する。依存を読めるように、元のリポジトリの `node_modules` へのリンクを置く。
+
 ## カバレッジと mutation score の基準の検査
 
 基準の値、手順の位置、失敗したときと基準を変えるときの手順は、[テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」。

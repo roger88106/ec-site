@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# commit の前に、CI の検査の script（scripts/ci/check-all.sh）を流す（CI の検査）
+# commit の前に、CI の検査の script（scripts/ci/check-all.sh）のうち、ステージしたファイルに関係するものを実行する（CI の検査）
 # 今のブランチが develop か main なら、検査の前に commit を失敗にする（直接 commit しない規則。AGENTS.md の Git の表）。
 # detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。
 #

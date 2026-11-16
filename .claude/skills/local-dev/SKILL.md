@@ -149,7 +149,7 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 
 `./gradlew check` と `check-frontend.sh` に入っていない CI の検査。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
 
-hook `pre-commit` を置いていれば、commit のときに同じ検査が実行される。commit の前に `scripts/ci/check-all.sh` を手動で実行しない（約 1 分の重複実行になる）。失敗の理由を見るときは、commit をやり直さずに、失敗した検査の script を直接実行する。hook を置いていなければ、commit の前にルートで実行する。
+hook `pre-commit` を置いていれば、commit のときに、ステージしたファイルに関係する検査が実行される。commit の前に `scripts/ci/check-all.sh` を手動で実行しない（重複実行になる）。失敗の理由を見るときは、commit をやり直さずに、失敗した検査の script を直接実行する。hook を置いていなければ、commit の前にルートで実行する。
 
 ```bash
 scripts/ci/check-all.sh

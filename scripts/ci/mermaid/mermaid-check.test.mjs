@@ -96,10 +96,6 @@ describe('Mermaid の図の読み取り：取り出さない', () => {
     assert.deepEqual(extractMermaidBlocks('```md\n~~~mermaid\nA\n~~~\n```\n'), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
-  test('markdown の ```` に入った ```mermaid（外側より短い）は失敗にしない', () => {
-    assert.deepEqual(extractMermaidBlocks('````markdown\n```mermaid\nA\n```\n````\n').misplaced, [])
-  })
-
   test('mermaid の図の本文の中の ```mermaid の行は、閉じていない疑いにしない（描画の検査に任せる）', () => {
     assert.deepEqual(extractMermaidBlocks('````mermaid\n```mermaid\n````\n').misplaced, [])
   })

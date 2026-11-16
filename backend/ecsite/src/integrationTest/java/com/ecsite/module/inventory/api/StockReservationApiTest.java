@@ -173,6 +173,20 @@ class StockReservationApiTest {
             assertThat(api.sellableQuantities(List.of(plenty, scarce), null))
                     .containsExactlyInAnyOrderEntriesOf(Map.of(plenty, 5, scarce, 1));
         }
+
+        @Test
+        @DisplayName("AC-82 全ての品目の在庫がなければ、全ての品目を足りないとして返す")
+        void returnsAllWhenNoStock() {
+            // 準備：在庫がまだない 2 品目
+            var first = UUID.randomUUID();
+            var second = UUID.randomUUID();
+
+            // 操作：2 品目を引き当てる
+            var shortages = api.reserve(UUID.randomUUID(), Map.of(first, 1, second, 2), EXPIRES_AT);
+
+            // 確認：2 品目とも返す
+            assertThat(shortages).containsExactlyInAnyOrder(first, second);
+        }
     }
 
     @Nested

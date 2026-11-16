@@ -151,6 +151,46 @@ class PlaceOrderAddressApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_MUNICIPALITY"));
         }
+
+        @Test
+        @DisplayName("AC-251 地域の誤りで拒否したときは、注文を作らず、在庫数が変わらない")
+        void writesNothingWhenRegionRejected() throws Exception {
+            // 操作：マスターデータにない市区町村で注文して拒否される
+            fixture.placeWith(checkoutId, body(POSTAL_CODE, TOKYO, "13999")).andExpect(status().isBadRequest());
+
+            // 確認：注文がなく、T シャツの在庫数が準備の時点のまま
+            fixture.expectNotPlaced(checkoutId);
+            fixture.expectQuantity(PlaceOrderFixture.SHIRT_STOCK);
+        }
+    }
+
+    @Nested
+    @DisplayName("空白だけの氏名と住所")
+    class Blank {
+
+        @Test
+        @DisplayName("AC-86 空白だけの氏名は、氏名の誤りを示す 400 で、注文を作らない")
+        void rejectsBlankName() throws Exception {
+            // 操作と確認：全角の空白だけの氏名は 400 で、エラーコードが INVALID_RECIPIENT_NAME
+            fixture.placeWith(checkoutId, bodyWith("　　", "千代田 1-1"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_RECIPIENT_NAME"));
+
+            // 確認：注文がない
+            fixture.expectNotPlaced(checkoutId);
+        }
+
+        @Test
+        @DisplayName("AC-86 空白だけの住所は、住所の誤りを示す 400 で、注文を作らない")
+        void rejectsBlankAddress() throws Exception {
+            // 操作と確認：半角の空白だけの住所は 400 で、エラーコードが INVALID_ADDRESS
+            fixture.placeWith(checkoutId, bodyWith("山田 太郎", "   "))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_ADDRESS"));
+
+            // 確認：注文がない
+            fixture.expectNotPlaced(checkoutId);
+        }
     }
 
     // ============================== 準備の補助 ==============================
@@ -181,5 +221,21 @@ class PlaceOrderAddressApiTest {
                 {"expectedTotal": %d, "shippingAddress": {"name": "山田 太郎", "postalCode": "%s",
                  "prefectureCode": "%s", "municipalityCode": "%s", "address": "千代田 1-1", "phone": "%s"}}"""
                 .formatted(PlaceOrderFixture.TOTAL, postalCode, prefectureCode, municipalityCode, phone);
+    }
+
+    /**
+     * 氏名と住所を指定した、注文のリクエストの本文を作る。
+     *
+     * <p>郵便番号と地域と電話番号は、正しい値にする。
+     *
+     * @param name    氏名
+     * @param address 市区町村より下の住所
+     * @return 注文のリクエストの本文
+     */
+    private static String bodyWith(String name, String address) {
+        return """
+                {"expectedTotal": %d, "shippingAddress": {"name": "%s", "postalCode": "%s",
+                 "prefectureCode": "%s", "municipalityCode": "%s", "address": "%s", "phone": "03-1234-5678"}}"""
+                .formatted(PlaceOrderFixture.TOTAL, name, POSTAL_CODE, TOKYO, CHIYODA, address);
     }
 }

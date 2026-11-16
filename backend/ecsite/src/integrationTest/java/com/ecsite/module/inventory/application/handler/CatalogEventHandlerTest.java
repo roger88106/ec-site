@@ -1,16 +1,21 @@
 package com.ecsite.module.inventory.application.handler;
 
 import com.ecsite.AsyncEvents;
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.MutableClock;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -22,6 +27,9 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 商品カタログのイベントによる在庫の作成・削除の統合テスト
@@ -54,6 +62,12 @@ class CatalogEventHandlerTest {
 
     @Autowired
     AsyncEvents asyncEvents;
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @Autowired
+    MutableClock clock;
 
     // ============================== テスト ==============================
 
@@ -179,6 +193,87 @@ class CatalogEventHandlerTest {
             // 確認：削除する商品の在庫が消えるのを待ってから、ほかの商品の在庫が残ることを確認する
             await().atMost(TIMEOUT).until(() -> stockCount(first) == 0);
             assertThat(stockCount(other)).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("管理の API からの削除（商品の登録から在庫の削除までの流れ）")
+    class DeletionFromAdminApi {
+
+        @Test
+        @DisplayName("公開前の商品のバリアントを管理の API で削除すると、その在庫が消え、同じ商品のほかのバリアントの在庫は残る")
+        void deletesStockOfDeletedVariant() throws Exception {
+            // 準備：管理の API で、2 つのバリアントを持つ公開前の商品を登録し、両方の在庫ができるのを待つ
+            var product = draftWithTwoVariants();
+            var deleted = product.variantIds.getFirst();
+            var kept = product.variantIds.getLast();
+
+            // 操作：1 つ目のバリアントを管理の API で削除する
+            mockMvc.perform(delete("/api/admin/products/" + product.id + "/variants/" + deleted)
+                            .param("version", String.valueOf(productVersion(product.id))))
+                    .andExpect(status().isNoContent());
+
+            // 確認：削除したバリアントの在庫の取得が 404 になり、もう 1 つの在庫は取得できる
+            await().atMost(TIMEOUT).until(() -> inventoryStatus(deleted) == HttpStatus.NOT_FOUND.value());
+            assertThat(inventoryStatus(kept)).isEqualTo(HttpStatus.OK.value());
+        }
+
+        @Test
+        @DisplayName("公開前の商品を管理の API で削除すると、その商品の全てのバリアントの在庫が消える")
+        void deletesStocksOfDeletedProduct() throws Exception {
+            // 準備：管理の API で、2 つのバリアントを持つ公開前の商品を登録し、両方の在庫ができるのを待つ
+            var product = draftWithTwoVariants();
+
+            // 操作：商品を管理の API で削除する
+            mockMvc.perform(delete("/api/admin/products/" + product.id)
+                            .param("version", String.valueOf(productVersion(product.id))))
+                    .andExpect(status().isNoContent());
+
+            // 確認：両方のバリアントの在庫の取得が 404 になる
+            await().atMost(TIMEOUT).until(() -> product.variantIds.stream()
+                    .allMatch(variantId -> inventoryStatus(variantId) == HttpStatus.NOT_FOUND.value()));
+        }
+
+        /**
+         * 管理の API で、2 つのバリアント（白・黒）を持つ公開前の商品を登録し、両方の在庫ができるまで待つ。
+         *
+         * @return 登録した商品
+         * @throws Exception API の呼び出しに失敗したとき
+         */
+        private CatalogTestData.TestProduct draftWithTwoVariants() throws Exception {
+            var catalog = new CatalogTestData(mockMvc, clock);
+            var taxCategory = catalog.taxCategory("在庫の削除 " + UUID.randomUUID().toString().substring(0, 8), "10");
+            var product = catalog.product(taxCategory, "削除する商品", 1000, "色").variant("白").variant("黒");
+            await().atMost(TIMEOUT).until(() -> product.variantIds.stream()
+                    .allMatch(variantId -> inventoryStatus(variantId) == HttpStatus.OK.value()));
+            return product;
+        }
+
+        /**
+         * 管理の API で商品を読み、今のバージョンを返す。
+         *
+         * @param productId 商品 ID
+         * @return バージョン
+         * @throws Exception API の呼び出しに失敗したとき
+         */
+        private long productVersion(UUID productId) throws Exception {
+            var detail = mockMvc.perform(get("/api/admin/products/" + productId)).andReturn().getResponse().getContentAsString();
+            return JsonPath.<Number>read(detail, "$.version").longValue();
+        }
+
+        /**
+         * 管理の API でバリアントの在庫を取得し、応答の状態コードを返す。
+         *
+         * @param variantId バリアント ID
+         * @return 状態コード
+         * @throws IllegalStateException API の呼び出しに失敗したとき（待つ条件の中で呼ぶので、検査例外にしない）
+         */
+        private int inventoryStatus(UUID variantId) {
+            try {
+                return mockMvc.perform(get("/api/admin/inventory/variants/" + variantId)).andReturn().getResponse().getStatus();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
 

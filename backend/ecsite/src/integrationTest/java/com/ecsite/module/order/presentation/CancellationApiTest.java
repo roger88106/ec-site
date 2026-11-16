@@ -370,6 +370,19 @@ class CancellationApiTest {
         }
 
         @Test
+        @DisplayName("申請のない注文の承認を拒否したときは、注文は受付のままで、在庫を戻さない")
+        void keepsOrderWhenApprovalRejected() throws Exception {
+            // 操作：申請のない注文を承認して拒否される
+            admin("cancellation-request/approve").andExpect(status().isBadRequest());
+
+            // 確認：受付のままで、キャンセルの記録がなく、在庫数は注文の後のまま
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.status").value("ACCEPTED"))
+                    .andExpect(jsonPath("$.cancellation").doesNotExist());
+            expectQuantity(AFTER_ORDER);
+        }
+
+        @Test
         @DisplayName("存在しない注文の承認は 404")
         void rejectsApprovalOfUnknownOrder() throws Exception {
             // 操作と確認：ない注文 ID で 404

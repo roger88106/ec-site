@@ -16,6 +16,7 @@ import java.util.UUID;
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 在庫調整の単体テスト
@@ -208,6 +209,35 @@ class StockAdjustmentTest {
 
             // 確認：注文の写しを持ち、メモを持たない
             assertOrderAdjustment(adjustment, orderId);
+        }
+
+        @Test
+        @DisplayName("AC-107 注文のキャンセルによる戻しの調整を、理由「注文のキャンセル」で作れる")
+        void createsCancellationAdjustment() {
+            // 操作：注文のキャンセルで 2 個戻す調整を作る
+            var adjustment = StockAdjustment.forOrder(-ORDER_DELTA, StockAdjustmentReason.ORDER_CANCELLATION, UUID.randomUUID(),
+                    ORDER_NUMBER, NOW);
+
+            // 確認：増える調整で、理由が注文のキャンセル
+            assertThat(adjustment.delta()).isEqualTo(-ORDER_DELTA);
+            assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER_CANCELLATION);
+        }
+
+        @Test
+        @DisplayName("注文による調整でも、増減量が 0 なら拒否される")
+        void rejectsZeroDeltaForOrder() {
+            // 操作と確認：業務のエラー INVALID_STOCK_DELTA で拒否される
+            assertBusinessError(() -> StockAdjustment.forOrder(0, StockAdjustmentReason.ORDER, UUID.randomUUID(), ORDER_NUMBER, NOW),
+                    InventoryErrorCode.INVALID_STOCK_DELTA);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = StockAdjustmentReason.class, names = {"ORDER", "ORDER_CANCELLATION"}, mode = EnumSource.Mode.EXCLUDE)
+        @DisplayName("注文による調整は、運営者の理由では作れない（プログラムの誤り）")
+        void rejectsOperatorReasonsForOrder(StockAdjustmentReason reason) {
+            // 操作と確認：プログラムの誤りとして拒否される
+            assertThatThrownBy(() -> StockAdjustment.forOrder(ORDER_DELTA, reason, UUID.randomUUID(), ORDER_NUMBER, NOW))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 

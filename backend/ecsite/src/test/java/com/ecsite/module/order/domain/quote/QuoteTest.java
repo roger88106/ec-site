@@ -304,6 +304,31 @@ class QuoteTest {
         }
 
         @Test
+        @DisplayName("購入できない理由が在庫不足だけなら、在庫だけが足りない")
+        void trueWhenOnlyInsufficient() {
+            // 準備：購入できる品目と、販売可能数 1 に 2 個の在庫不足の品目
+            var ok = item(variant(1000, true, false), 1, 10, STANDARD);
+            var insufficient = item(variant(1000, true, false), 2, 1, STANDARD);
+
+            // 確認（前提）：在庫不足の品目の理由は在庫不足
+            assertThat(insufficient.unpurchasableReason()).isEqualTo(UnpurchasableReason.INSUFFICIENT_STOCK);
+
+            // 操作と確認：在庫だけが足りない
+            assertThat(Quote.of(List.of(ok, insufficient), false, SHIPPING, TAX).shortOfStockOnly()).isTrue();
+        }
+
+        @Test
+        @DisplayName("表示されない品目があれば、在庫だけが足りないとはしない")
+        void falseWithNotShown() {
+            // 準備：在庫切れの品目と表示されない品目
+            var soldOut = item(variant(1000, true, false), 1, 0, STANDARD);
+            var hidden = item(variant(1000, false, false), 1, 10, STANDARD);
+
+            // 操作と確認：在庫だけが足りないとはしない
+            assertThat(Quote.of(List.of(soldOut, hidden), false, SHIPPING, TAX).shortOfStockOnly()).isFalse();
+        }
+
+        @Test
         @DisplayName("在庫以外の理由で購入できない品目があれば、在庫だけが足りないとはしない")
         void falseWithOtherReason() {
             // 準備：在庫切れの品目と販売停止の品目

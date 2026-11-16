@@ -13,6 +13,7 @@ import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import java.util.UUID;
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * 注文の単体テスト
@@ -145,6 +147,20 @@ class OrderTest {
         }
 
         @Test
+        @DisplayName("AC-92 明細の行番号は、1 から見積もりの品目の並びで振る")
+        void numbersLinesInQuoteOrder() {
+            // 準備：品番 A・B・C の順に並ぶ 3 品目の見積もり
+            var quote = quoteOf(List.of("TS-001-A", "TS-001-B", "TS-001-C"));
+
+            // 操作：注文を作る
+            var order = place(quote);
+
+            // 確認：行番号が 1・2・3 で、並びが見積もりのまま
+            assertThat(order.lines()).extracting(OrderLine::lineNo, OrderLine::variantCode)
+                    .containsExactly(tuple(1, "TS-001-A"), tuple(2, "TS-001-B"), tuple(3, "TS-001-C"));
+        }
+
+        @Test
         @DisplayName("AC-92 明細は、注文時点の品番・商品名・軸の値・税抜単価・税率・税込単価の写しと、数量・小計を持つ")
         void copiesItemIntoLine() {
             // 準備：T シャツ 2 枚の見積もり
@@ -222,6 +238,60 @@ class OrderTest {
             // 操作と確認：業務のエラー INVALID_EMAIL で拒否される
             assertBusinessError(() -> Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
                     ORDERED_AT, quote(), email, ADDRESS, BuyerProfile.UNKNOWN), OrderErrorCode.INVALID_EMAIL);
+        }
+
+        @Test
+        @DisplayName("AC-86 メールアドレスがなければ拒否される")
+        void rejectsMissingEmail() {
+            // 操作と確認：業務のエラー INVALID_EMAIL で拒否される
+            assertBusinessError(() -> placeWithEmail(null), OrderErrorCode.INVALID_EMAIL);
+        }
+
+        @Test
+        @DisplayName("AC-86 上限の 254 文字ちょうどのメールアドレスで注文が成立する")
+        void acceptsEmailAtMaxLength() {
+            // 準備：形が正しく、254 文字のメールアドレス
+            var email = emailOfLength(254);
+
+            // 操作：注文を作る
+            var order = placeWithEmail(email);
+
+            // 確認：渡したメールアドレスのまま
+            assertThat(order.email()).isEqualTo(email);
+        }
+
+        @Test
+        @DisplayName("AC-86 上限を 1 文字超える 255 文字のメールアドレスは拒否される")
+        void rejectsEmailOverMaxLength() {
+            // 準備：形が正しく、255 文字のメールアドレス
+            var email = emailOfLength(255);
+
+            // 操作と確認：形が正しくても、業務のエラー INVALID_EMAIL で拒否される
+            assertBusinessError(() -> placeWithEmail(email), OrderErrorCode.INVALID_EMAIL);
+        }
+
+        /**
+         * 指定のメールアドレスで、注文できる見積もりから注文を作る。
+         *
+         * @param email メールアドレス
+         * @return 注文
+         */
+        private Order placeWithEmail(@Nullable String email) {
+            return Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
+                    ORDERED_AT, quote(), email, ADDRESS, BuyerProfile.UNKNOWN);
+        }
+
+        /**
+         * 形が正しく、指定の文字数のメールアドレスを作る。
+         *
+         * <p>ドメインを {@code @example.com} にし、ローカル部の長さで文字数を合わせる。
+         *
+         * @param length 文字数
+         * @return メールアドレス
+         */
+        private String emailOfLength(int length) {
+            var domain = "@example.com";
+            return "a".repeat(length - domain.length()) + domain;
         }
     }
 
@@ -305,6 +375,22 @@ class OrderTest {
         var amounts = new Amounts(SUBTOTAL, Money.of(1000), Money.of(6940),
                 List.of(new TaxAmount(RATE_PERCENT, Money.of(6940), Money.of(630))));
         return new Quote(List.of(item), amounts, true);
+    }
+
+    /**
+     * 指定のバリアント品番の T シャツを 1 枚ずつ、指定の並びで持つ、注文できる見積もりを作る。
+     *
+     * <p>行番号の確認にだけ使うので、金額の内訳は品目と合わせない。
+     *
+     * @param variantCodes バリアント品番の並び
+     * @return 見積もり
+     */
+    private static Quote quoteOf(List<String> variantCodes) {
+        var items = variantCodes.stream()
+                .map(code -> QuoteItem.of(new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), PRODUCT_CODE, code, PRODUCT_NAME,
+                        AXIS_VALUES, UNIT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false), 1, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX))
+                .toList();
+        return new Quote(items, quote().amounts(), true);
     }
 
     /**

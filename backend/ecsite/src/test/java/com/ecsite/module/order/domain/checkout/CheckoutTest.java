@@ -15,8 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 注文手続きの単体テスト
  *
- * <p>支払待ちの注文を確認済みとみなすかの判定（{@link Checkout#acknowledges}）だけを確認する。注文のときに拒否することは
- * {@code PlaceOrderPendingConfirmationApiTest} などの統合テストが確認する。
+ * <p>支払待ちの注文を確認済みとみなすかの判定（{@link Checkout#acknowledges}）、引当の期限、カートの変化と持ち主の判定を
+ * 確認する。注文のときに拒否することは {@code PlaceOrderPendingConfirmationApiTest} などの統合テストが確認する。
  */
 class CheckoutTest {
 
@@ -123,6 +123,73 @@ class CheckoutTest {
         }
     }
 
+    @Nested
+    @DisplayName("引当の期限")
+    class Expiry {
+
+        @Test
+        @DisplayName("AC-82 注文手続きの期限は、始めた時刻に有効時間を足した時刻")
+        void expiresAfterTtl() {
+            // 操作：注文手続きを始める
+            var checkout = start(Set.of());
+
+            // 確認：期限が開始の 15 分後で、作成の時刻が開始の時刻
+            assertThat(checkout.expiresAt()).isEqualTo(Instant.parse("2026-11-01T00:15:00Z"));
+            assertThat(checkout.createdAt()).isEqualTo(NOW);
+        }
+    }
+
+    @Nested
+    @DisplayName("カートの変化の判定")
+    class CartChange {
+
+        @Test
+        @DisplayName("始めたときと同じバージョンのカートは、変わっていないとみなす")
+        void sameVersionIsUnchanged() {
+            // 準備：バージョン 3 のカートで始めた注文手続き
+            var checkout = startWithCartVersion(3);
+
+            // 操作と確認：今もバージョン 3 なら変わっていない
+            assertThat(checkout.cartChangedSince(3)).isFalse();
+        }
+
+        @Test
+        @DisplayName("始めたときとバージョンが違うカートは、変わったとみなす")
+        void otherVersionIsChanged() {
+            // 準備：バージョン 3 のカートで始めた注文手続き
+            var checkout = startWithCartVersion(3);
+
+            // 操作と確認：今はバージョン 4 なら変わった
+            assertThat(checkout.cartChangedSince(4)).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("持ち主の判定")
+    class Owner {
+
+        @Test
+        @DisplayName("AC-406-17 始めた会員は、注文手続きの持ち主")
+        void starterIsOwner() {
+            // 準備：会員が始めた注文手続き
+            var memberId = UUID.randomUUID();
+            var checkout = Checkout.start(UUID.randomUUID(), memberId, UUID.randomUUID(), 1, NOW, TTL, Set.of());
+
+            // 操作と確認：始めた会員は持ち主
+            assertThat(checkout.isOwnedBy(memberId)).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-406-17 他の会員は、注文手続きの持ち主でない")
+        void otherMemberIsNotOwner() {
+            // 準備：会員が始めた注文手続き
+            var checkout = start(Set.of());
+
+            // 操作と確認：他の会員は持ち主でない
+            assertThat(checkout.isOwnedBy(UUID.randomUUID())).isFalse();
+        }
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**
@@ -133,5 +200,15 @@ class CheckoutTest {
      */
     private static Checkout start(Set<UUID> acknowledgedOrderIds) {
         return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, NOW, TTL, acknowledgedOrderIds);
+    }
+
+    /**
+     * 指定のバージョンのカートで、注文手続きを始める。
+     *
+     * @param cartVersion 始めたときのカートのバージョン
+     * @return 始めた注文手続き
+     */
+    private static Checkout startWithCartVersion(long cartVersion) {
+        return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), cartVersion, NOW, TTL, Set.of());
     }
 }

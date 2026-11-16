@@ -4,6 +4,7 @@ import com.ecsite.Concurrently;
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
@@ -189,6 +190,28 @@ class JooqStockItemRepositoryTest {
 
             // 確認：調整後の在庫数に重なりがない
             assertThat(history(PageRequest.of(1, 100)).items()).extracting(StockAdjustmentView::quantityAfter).doesNotHaveDuplicates();
+        }
+
+        @Test
+        @DisplayName("AC-43、44 同時に減らしても在庫数は負にならず、在庫数の分だけが成功し、残りは在庫不足で拒否される")
+        void decrementsConcurrentlyWithoutGoingNegative() throws Exception {
+            // 準備：在庫数 5
+            adjust(5, StockAdjustmentReason.ARRIVAL);
+
+            // 操作：1 個減らす調整を 10 回同時に行い、成功と在庫不足を数える
+            var results = Concurrently.run(10, i -> {
+                try {
+                    adjust(-1, StockAdjustmentReason.DAMAGE_OR_LOSS);
+                    return "成功";
+                } catch (BusinessException e) {
+                    return e.getErrorDetail().errorCode().code();
+                }
+            });
+
+            // 確認：5 回成功し、5 回は INSUFFICIENT_STOCK で、在庫数は 0
+            assertThat(results).filteredOn("成功"::equals).hasSize(5);
+            assertThat(results).filteredOn(InventoryErrorCode.INSUFFICIENT_STOCK.getCode().code()::equals).hasSize(5);
+            assertThat(queryRepository.findQuantity(variantId)).contains(0);
         }
     }
 

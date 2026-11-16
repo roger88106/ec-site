@@ -926,7 +926,7 @@ class PaymentTest {
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "VOID_PENDING")
-        @DisplayName("AC-166 与信の取消待ち以外は、取消済みにしない")
+        @DisplayName("BR-21 与信の取消待ち以外は、取消済みにしない")
         void markVoidedChangesNothing(PaymentStatus status) {
             // 準備：その状態の支払
             var payment = inState(status);
@@ -941,7 +941,7 @@ class PaymentTest {
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "REFUND_PENDING")
-        @DisplayName("AC-195 返金待ち以外は、返金済みにしない")
+        @DisplayName("BR-21 返金待ち以外は、返金済みにしない")
         void markRefundedChangesNothing(PaymentStatus status) {
             // 準備：その状態の支払
             var payment = inState(status);

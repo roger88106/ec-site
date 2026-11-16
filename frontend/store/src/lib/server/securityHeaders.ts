@@ -53,7 +53,7 @@ export function fixedSecurityHeaders(production: boolean): SecurityHeader[] {
  * 許すオリジンを追加するときは、この関数の入力と `proxy.ts` の呼び出しを変える。環境変数から取るなら、あわせて次も変える。
  *
  * - `auth/config.ts`、環境変数の文書、E2E の起動の設定、テストの期待値
- * - スロットの script（`scripts/dev/lib/slot.mjs` とそのテスト。スロットごとに値が変わるとき）
+ * - スロットの script（`scripts/dev/lib/slot/slot.mjs` とそのテスト。スロットごとに値が変わるとき）
  * - 店舗画面の構成の「セキュリティヘッダー」の表
  * - デプロイの前提（本番で設定する値のとき）
  *

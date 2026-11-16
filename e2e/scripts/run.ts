@@ -21,7 +21,7 @@ import {
   ownsLock,
   readLock,
 } from '../../scripts/dev/lib/lock.mjs'
-import { slotEnvNames } from '../../scripts/dev/lib/slot-env-names.mjs'
+import { slotEnvNames } from '../../scripts/dev/lib/slot/slot-env-names.mjs'
 
 // スロット（scripts/dev/slot.mjs env）の環境変数を shell に export したまま流すと、バックエンドがスロットの DB とバケットにつながる。
 // E2E は常にスロット 0 の固定の環境で流すので、スロットが付ける環境変数は引き継がない

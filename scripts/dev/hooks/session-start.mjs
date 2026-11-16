@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
+import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
 
 try {
   const cwd = JSON.parse(readFileSync(0, 'utf8'))?.cwd

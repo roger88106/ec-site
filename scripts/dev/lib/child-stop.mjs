@@ -1,5 +1,5 @@
 // 子のプロセスの停止と、停止のシグナルを受けたときの止め方。
-// scripts/dev/slot.mjs、e2e/scripts/run.ts、scripts/dev/break-check.mjs が共有する。
+// scripts/dev/slot.mjs、e2e/scripts/run.ts、scripts/dev/tools/break-check.mjs が共有する。
 import { spawnSync } from 'node:child_process'
 
 /** 受けたら子を停止するシグナル */

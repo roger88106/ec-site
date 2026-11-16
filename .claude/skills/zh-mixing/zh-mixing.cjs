@@ -9,7 +9,7 @@
 // 環境の印：git config --local ecsite.instructionLanguage の値が zh のときだけ調べる。印がなければ、何も調べず何も出さず、終了コード 0。
 // 見つかれば終了コード 1 で、ファイル・行・語を標準エラー出力に出す。使い方の誤りは 2。
 // 字・用語の一覧と許容用語は zh-mixing.json。Git の外の許容用語は .local/agent/zh-allow.txt（「語」か「ファイルのパス<TAB>語」を 1 行ずつ）
-// 層 1（scripts/ci/ja-text.json）にある語は、ここに置かない（同じ語を 2 つの層に置かない）
+// 層 1（scripts/ci/ja/ja-text.json）にある語は、ここに置かない（同じ語を 2 つの層に置かない）
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')

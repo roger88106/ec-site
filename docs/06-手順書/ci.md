@@ -30,7 +30,7 @@
 | `ci.yml` | E2E | E2E のコードの lint・型チェックの後、ブラウザーで操作する。 | 同上 |
 | `docs.yml` | 文書と CI の検査の script | `check-all.sh` と Mermaid の図の描画の検査を実行する（[CI の検査の script](ci-checks.md)）。 | 全ての push と pull request |
 | `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチ名が `release/` か `hotfix/` で始まることを確認する（[ブランチとリリース](branches.md)の「`main` の元のブランチの制限」）。 | `main` への pull request |
-| `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
+| `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/config/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する。 | `main` で `showcase/` が変わったとき、手動 |
 
 `ci.yml` と `docs.yml` は、`develop` と `main` では全ての commit を検査し、前の実行を中止しない。作業ブランチでは、新しい push が、同じブランチの前の push の実行を中止する。pull request の実行も、同じ pull request の前の実行を中止する。push と pull request の実行は別に動くので、pull request のあるブランチでは同じ commit で 2 回実行される（`ci.yml` は、文書だけの push では pull request の 1 回）。これらを同じ group にしない（中止された check が残ると、同じ名前の成功した check があっても、必須の検査を満たさずマージできないため）。

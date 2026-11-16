@@ -1,7 +1,7 @@
 // gh pr merge の規則。pull request を gh で読み、利用者の許可なしにマージしてよい条件（マージと後片付けの「マージの許可と後片付け」）を調べる。
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, readBodyRisk } from '../../../ci/risk.mjs'
+import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, readBodyRisk } from '../../../ci/config/risk.mjs'
 import { APPROVE_ONLY_IF_ALLOWED, ask, deny } from './decision.mjs'
 import { GH_PR_OPTIONS, flagEnabled, optionValue, parseGhArgs } from './gh-rules.mjs'
 
@@ -22,7 +22,7 @@ const GH_TIMEOUT_MS = 10000
 export const GH_BUDGET_MS = 20000
 
 /** 危険度が高い経路の一覧（Dependabot の pull request の危険度の判定に使う） */
-const RISK_CONFIG_FILE = new URL('../../../ci/risk.json', import.meta.url)
+const RISK_CONFIG_FILE = new URL('../../../ci/config/risk.json', import.meta.url)
 
 /** 利用者の許可なしにマージしてよい向き先のブランチ（CI と危険度の条件を満たすとき） */
 const MERGE_BASE = 'develop'
@@ -257,7 +257,7 @@ function dependabotProblems(pullRequest) {
   try {
     config = loadRiskConfig()
   } catch (error) {
-    return [`危険度が高い経路の一覧（scripts/ci/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
+    return [`危険度が高い経路の一覧（scripts/ci/config/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
   }
   // Dependabot は spec.md を変えないので、spec の宣言を読む関数は常に null を返すものでよい
   const result = applyDependabotTitle(judgeRisk(files, config, () => null), pullRequest.title)

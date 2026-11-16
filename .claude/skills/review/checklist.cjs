@@ -5,7 +5,7 @@
 // 行の形の誤り（字下げ、半角のコロン、箇条のない形 2 など）は、CI の rule-sections が確認するので、ここでは見ない。
 // 見出しとコードブロックは、CI の検査と同じ lib/doc-structure で読む。
 const fs = require('fs'), { execSync } = require('child_process')
-const { readDocument, readHeadings } = require('../../../scripts/ci/lib/doc-structure.mjs')
+const { readDocument, readHeadings } = require('../../../scripts/ci/lib/docs/doc-structure.mjs')
 
 const TARGET_DIR = 'docs/05-開発規則/'
 

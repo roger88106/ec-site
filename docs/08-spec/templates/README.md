@@ -2,7 +2,7 @@
 
 spec・plan・tasks を新しく書くときの雛形と、書き方の見本。書き方の規則は[文書の構成](../../05-開発規則/doc-structure.md)の「spec と plan の書き方」、番号と記号は[文書の記号と番号](../../05-開発規則/notation.md)。
 
-構造は、検査の script `node scripts/ci/spec-structure.mjs` が確認する。`scripts/ci/check-all.sh` からも実行される。
+構造は、検査の script `node scripts/ci/spec/spec-structure.mjs` が確認する。`scripts/ci/check-all.sh` からも実行される。
 
 ## 雛形と見本
 
@@ -34,7 +34,7 @@ spec・plan・tasks を新しく書くときの雛形と、書き方の見本。
 1. 雛形を `docs/08-spec/<番号>-<名前>/` にコピーする（`spec-feature.md` は `spec.md` に、`tasks-stage.md` は `tasks/NN-<名前>.md` に名前を変える）。
 2. 見出し・表・箇条の中の `<…>` は埋める。`<…>` だけの段落（書き方の説明）と HTML コメントは削除する。見出しの名前と順は変えない。
 3. 同じ種類の見本を読み、書き方を合わせる。
-4. `node scripts/ci/spec-structure.mjs` で構造を確認する。
+4. `node scripts/ci/spec/spec-structure.mjs` で構造を確認する。
 
 ## アーカイブの spec を元にしない理由
 

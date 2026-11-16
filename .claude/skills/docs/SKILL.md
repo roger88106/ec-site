@@ -9,7 +9,7 @@ description: ec-site の文書を書いて検査するまでの手順。docs/・
 
 ## 置き場所
 
-置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の構成](../../../docs/05-開発規則/doc-structure.md)の「文書の置き場所」。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と、constitution の地図の表を一緒に修正する。
+置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の構成](../../../docs/05-開発規則/doc-structure.md)の「文書の置き場所」。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs/docs-folders.mjs` の一覧と、constitution の地図の表を一緒に修正する。
 
 ## 書き方
 
@@ -27,10 +27,10 @@ description: ec-site の文書を書いて検査するまでの手順。docs/・
    - 「正本にある」として文を削るとき：[prompts.md](../review/prompts.md)の「観点の一覧」の ※2 の表を報告に含める。
 3. 文書を移した、見出しを変えた、節を別の文書に移したときは、「参照の修正」で参照を修正する。
 4. 確認する。次が全て通ること：
-   - `node scripts/ci/doc-refs.mjs`
-   - `node scripts/ci/note-numbers.mjs`
-   - `node scripts/ci/ja-text.mjs`（error は失敗になるので修正する）
-   - `node scripts/ci/ja-text.mjs --warning`（終了コードは 0）。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する
+   - `node scripts/ci/docs/doc-refs.mjs`
+   - `node scripts/ci/docs/note-numbers.mjs`
+   - `node scripts/ci/ja/ja-text.mjs`（error は失敗になるので修正する）
+   - `node scripts/ci/ja/ja-text.mjs --warning`（終了コードは 0）。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する
 
    各検査の内容は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)。
    - コードのコメントを修正したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`
@@ -44,8 +44,8 @@ description: ec-site の文書を書いて検査するまでの手順。docs/・
 |------|--------|
 | Markdown のリンク | `node .claude/skills/docs/fix-links.cjs 旧パス=新パス ...`（切れたリンクだけを、移した先に修正する） |
 | コード・skill・CI・script・文書の本文の中のパス（リンクでないもの） | `node .claude/skills/docs/replace-paths.cjs 旧パス=新パス ...`（適用済みのマイグレーションと seed、テストのデータ、アーカイブを除外する） |
-| 見出しの参照（`<文書の名前>の「<見出し>」`） | 見出しを変えたら `node scripts/ci/doc-refs.mjs` を実行し、「見出しがない」と示された参照を、新しい見出しに修正する |
-| 別の文書に移した節への参照 | 節を移したら `node scripts/ci/doc-refs.mjs` を実行し、「見出しがない」と示された参照の文書の名前（リンク）を、移した先の文書に修正する |
+| 見出しの参照（`<文書の名前>の「<見出し>」`） | 見出しを変えたら `node scripts/ci/docs/doc-refs.mjs` を実行し、「見出しがない」と示された参照を、新しい見出しに修正する |
+| 別の文書に移した節への参照 | 節を移したら `node scripts/ci/docs/doc-refs.mjs` を実行し、「見出しがない」と示された参照の文書の名前（リンク）を、移した先の文書に修正する |
 
 - リンクでないパスは、その場で書いた script で置き換えず、`replace-paths.cjs` で置き換える。置き換えた後に `git grep` で旧パスが残らないことを確認する。
 - 「見出しが 1 つに決まらない」と示された参照は、親の見出しを前に付ける（`の「段階 1」の「タスク」`）。

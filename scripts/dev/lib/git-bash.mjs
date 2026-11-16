@@ -4,7 +4,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
+import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
 
 /**
  * Git の bash（git が hook を実行するときと同じ bash）の絶対パスを返す。

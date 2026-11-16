@@ -32,13 +32,13 @@ issue と記録を扱う操作の規則。起票するとき、spec を書く・
 
 ## AC 一覧の操作
 
-- spec で AC を追加したら、同じ commit で `node scripts/ci/ac-check.mjs --write` を実行して [AC 一覧](../03-機能仕様/acceptance-criteria.md)に転記し、列「モジュール」に ③ のモジュールの名前か `common` を書く。
+- spec で AC を追加したら、同じ commit で `node scripts/ci/spec/ac-check.mjs --write` を実行して [AC 一覧](../03-機能仕様/acceptance-criteria.md)に転記し、列「モジュール」に ③ のモジュールの名前か `common` を書く。
 - 転記した今の内容は、spec の中だけで通じる参照（※1、事実 2、US の番号など）を書き換える。
 - 進行中の spec の AC の文を転記の後に修正したときは、同じ commit で AC 一覧の今の内容も手動で修正する。理由：検査は違いを見つけないため。
 - 前の spec の AC を変えた・廃止したときは、AC 一覧のその行の状態、変えた spec、今の内容を手動で修正する。変更の AC の今の内容には、根拠を、文書の名前のリンクの直後に「の「<見出し>」」を続ける形で添える。
 - ③ の「今有効な AC」の表は、`--write` で AC 一覧から作る（生成のマーカーがある ③ だけ）。AC 一覧のモジュールや今の内容を書いた・修正した後は、`--write` を再度実行する。
 - spec で BR を定義したら、アーカイブに移す前に、③ の業務規則の文に BR の番号を付けて書く（書き方は[文書の記号と番号](notation.md)の「業務規則の番号（BR）」）。
-- AC とテストの対応は、`node scripts/ci/ac-check.mjs --tests` で表示する。
+- AC とテストの対応は、`node scripts/ci/spec/ac-check.mjs --tests` で表示する。
 
 ## アーカイブの操作
 

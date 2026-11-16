@@ -1,6 +1,0 @@
-{
-  "backend/ecsite/src/test/java/com/ecsite/architecture/sample/testcode/WaitsForTime.java:Thread.sleep(10);": "TimeWaitTest が違反を見つけることを確認する例で、テストとして実行しない",
-  "backend/ecsite/src/test/java/com/ecsite/architecture/sample/testcode/WaitsForTime.java:TimeUnit.MILLISECONDS.sleep(10);": "TimeWaitTest が違反を見つけることを確認する例で、テストとして実行しない",
-  "backend/ecsite/src/test/java/com/ecsite/architecture/sample/testcode/WaitsForTime.java:await().during(Duration.ofMillis(10)).until(() -> true);": "TimeWaitTest が違反を見つけることを確認する例で、テストとして実行しない",
-  "backend/ecsite/src/test/java/com/ecsite/architecture/sample/testcode/WaitsForTime.java:await().pollDelay(Duration.ofMillis(10)).until(() -> true);": "TimeWaitTest が違反を見つけることを確認する例で、テストとして実行しない"
-}

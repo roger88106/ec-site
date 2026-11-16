@@ -35,7 +35,6 @@ export const CHECK_INPUTS = {
   'local-ports': [],
   'main-entry': [/^scripts\//, /^frontend\/shared\/scripts\//],
   'message-comments': [/^frontend\//],
-  'message-numbers': [],
   migrations: [/^backend\/ecsite\/src\/main\/resources\/db\/migration\//],
   'note-numbers': [/\.md$/, /^\.github\/.*\.ya?ml$/],
   progress: [/^docs\/08-spec\//],

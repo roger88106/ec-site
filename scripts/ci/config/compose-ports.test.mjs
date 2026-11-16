@@ -94,9 +94,10 @@ describe('script として実行する', () => {
     assert.match(result.stdout, /docker\/compose\.yaml extra：.*9000-9001:80（ホスト側のポートを読めない/)
   })
 
-  test('ポートが 0 件なら、何も見ずに通らず、終了コード 1 で終わる', () => {
+  test('ポートが 0 件なら、何も見ずに通らず、原因を出して終了コード 1 で終わる', () => {
     const result = run('services:\n  app:\n    image: x\n')
     assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /docker\/compose\.yaml にポートが 1 件も見つからない/)
     assert.match(result.stdout, /compose のポート：0 件/)
   })
 })

@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import {
   checkDocument,
   parseRealmRoles,
@@ -184,5 +189,67 @@ describe('ロールと権限の対応表', () => {
       replaceGenerated(doc, '新しい表\n'),
       '# 表\n\n<!-- generated:role-permissions -->\n新しい表\n<!-- /generated:role-permissions -->\n',
     )
+  })
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./role-permissions.mjs', import.meta.url))
+  const forgotten = `${STORE}\n  /forgotten:\n    get:\n      summary: 書き忘れ`
+
+  /**
+   * 一時のディレクトリに契約と realm と文書を置いて、script を実行する。
+   *
+   * @param {string} store 店舗 API の契約
+   * @param {string[]} args script の引数
+   * @param {string} [table] 文書の生成の範囲に置く表
+   * @returns {{ result: import('node:child_process').SpawnSyncReturns<string>, document: string }} 実行の結果と、実行の後の文書
+   */
+  function run(store, args, table = '古い表\n') {
+    const dir = mkdtempSync(path.join(tmpdir(), 'role-permissions-'))
+    try {
+      const files = {
+        'api/openapi/admin.yaml': ADMIN,
+        'api/openapi/store.yaml': store,
+        'docker/keycloak/realms/ec-admin-realm.json': JSON.stringify(REALM),
+        'docs/02-設計/role-permissions.md': `# 表\n\n<!-- generated:role-permissions -->\n${table}<!-- /generated:role-permissions -->\n`,
+      }
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      const result = spawnSync(process.execPath, [script, ...args], { cwd: dir, encoding: 'utf8' })
+      return { result, document: readFileSync(path.join(dir, 'docs/02-設計/role-permissions.md'), 'utf8') }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  const current = renderTables({ admin: readOperations(ADMIN), store: readOperations(STORE), realm: parseRealmRoles(REALM) }).markdown
+
+  test('文書の表が契約と realm から作った表と同じなら、終了コード 0 で、食い違いの数を出して終わる', () => {
+    const { result } = run(STORE, [], current)
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /対応表の食い違い：0/)
+  })
+
+  test('文書の表が違えば、書き直し方を出し、終了コード 1 で終わる', () => {
+    const { result } = run(STORE, [])
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /--write で書き直し/)
+  })
+
+  test('--write は、問題がなければ表を書き直し、終了コード 0 で終わる', () => {
+    const { result, document } = run(STORE, ['--write'])
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /書き直した：/)
+    assert.ok(document.includes(current), document)
+  })
+
+  test('--write は、契約に問題があれば、表を書かず、書かなかったことを出して終了コード 1 で終わる', () => {
+    const { result, document } = run(forgotten, ['--write'])
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /GET \/forgotten：security がない/)
+    assert.match(result.stdout, /書き直さなかった/)
+    assert.ok(document.includes('古い表'), document)
   })
 })

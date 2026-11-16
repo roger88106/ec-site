@@ -80,6 +80,9 @@ if (import.meta.main) {
   for (const port of unreadable) {
     console.log(describeUnreadableHostPort(COMPOSE_FILE, port))
   }
+  if (ports.length === 0) {
+    console.log(`${COMPOSE_FILE} にポートが 1 件も見つからない（services の ports の書き方か、検査の読み方が変わっていないか確認する）`)
+  }
   console.log(`compose のポート：${ports.length} 件、決まった形でないもの：${problems.length} 件、ホスト側のポートを読めないもの：${unreadable.length} 件`)
   process.exit(problems.length || unreadable.length || ports.length === 0 ? 1 : 0)
 }

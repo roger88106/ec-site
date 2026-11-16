@@ -194,6 +194,8 @@ if (import.meta.main) {
   }
   problems.push(...checkDocument(document, markdown))
   for (const problem of problems) console.log(problem)
+  // --write で問題があるときは、書かずにここへ来る
+  if (process.argv.includes('--write')) console.log(`契約に問題があるので、${DOCUMENT} は書き直さなかった（問題を直してから --write を実行する）`)
   console.log(`対応表の食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)
 }

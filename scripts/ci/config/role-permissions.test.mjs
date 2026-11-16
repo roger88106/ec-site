@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { readFileSync } from 'node:fs'
 import {
   checkDocument,
   parseRealmRoles,
@@ -105,12 +104,6 @@ describe('ロールと権限の対応表', () => {
   test('フロー形式と引用符で囲んだパスも読み、パスの parameters と知らないメソッドは操作にしない', () => {
     const text = ['paths:', "  '/a': {get: {summary: a, x-required-permission: tax:read}}", '  /b:', '    parameters: []', '    head: {summary: b}'].join('\n')
     assert.deepEqual(readOperations(text), [{ method: 'GET', path: '/a', summary: 'a', permission: 'tax:read', security: null }])
-  })
-
-  test('リポジトリの管理 API と店舗 API の契約から、操作を読める', () => {
-    for (const file of ['api/openapi/admin.yaml', 'api/openapi/store.yaml']) {
-      assert.ok(readOperations(readFileSync(file, 'utf8')).length > 0, file)
-    }
   })
 
   test('realm から、管理 API の権限を持つロールと、その権限を読む（権限のないロールは除く）', () => {

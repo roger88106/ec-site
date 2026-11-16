@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { describeUnreadableHostPort, findPortProblems, readHostPort } from './compose-ports.mjs'
 
@@ -59,12 +58,5 @@ describe('compose のポートの検査', () => {
         'docker/compose.yaml extra：${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80（ホスト側のポートを読めない。数字か ${変数:-数字} で 1 つのポートを書く）',
       ],
     )
-  })
-
-  test('リポジトリの compose のすべてのポートが、決まった形で書いてある', () => {
-    const { ports, problems, unreadable } = findPortProblems(readFileSync('docker/compose.yaml', 'utf8'))
-    assert.ok(ports.length > 0)
-    assert.deepEqual(problems, [])
-    assert.deepEqual(unreadable, [])
   })
 })

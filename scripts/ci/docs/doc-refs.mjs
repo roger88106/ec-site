@@ -122,7 +122,7 @@ const SPEC_RECORD = /^docs\/08-spec\/(?:.+\/)?(?:(?:spec|plan)\.md|tasks\/[^/]+\
  * @param {string} title リンク先の文書の 1 行目の見出し
  * @returns {boolean} 許可する形なら true
  */
-export function isAllowedLinkLabel(file, ref, title) {
+function isAllowedLinkLabel(file, ref, title) {
   // 文書の名前は、両方から全角と半角の括弧の補足を除いて比べる
   const nameKey = (text) => headingKey(referenceName(text).replace(/\([^()]*\)/g, ''))
   if (nameKey(ref.label) === nameKey(title)) return true
@@ -164,7 +164,7 @@ export function splitSectionNumbers(numbers) {
  *   - sections：節の番号の参照の番号
  *   - unknown：直前が「（」などで、先の文書が決まらない
  */
-export function findReferences(file, text, names, basenames, exists = existsSync) {
+function findReferences(file, text, names, basenames, exists = existsSync) {
   const refs = []
   const isMarkdown = file.endsWith('.md')
   const lines = text.split(/\r?\n/)

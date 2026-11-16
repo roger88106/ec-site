@@ -387,7 +387,7 @@ function joinPieces(pieces) {
  * @returns {{ line: number, lines: number[], sentence: string }[]} 文の最初の行（1 から）、文の全ての行、文。
  *   リンクの表示文字列は LINK_START と LINK_END で囲む（measureSentence が読点の数に使い、plainSentence で除く）
  */
-export function proseSentences(text, kind = 'markdown', trailing = new Set()) {
+function proseSentences(text, kind = 'markdown', trailing = new Set()) {
   const result = []
   let pending = []
   const flush = () => {
@@ -552,7 +552,7 @@ function proseCells(text) {
  * @param {string} sentence 文
  * @returns {{ no: number, length: number, comma: number }} 1 区間の「の」の最大の数、字数、読点の数
  */
-export function measureSentence(sentence) {
+function measureSentence(sentence) {
   const plain = plainSentence(sentence)
   return {
     no: Math.max(...plain.split(CLAUSE_SEPARATOR).map((part) => (part.match(/の/g) ?? []).length)),

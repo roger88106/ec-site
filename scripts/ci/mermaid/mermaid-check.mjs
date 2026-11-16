@@ -158,7 +158,7 @@ export function describeFailure(error) {
  * @param {number} expected 渡した図の数
  * @returns {string | null} 全ての図が描画されたら null、そうでなければ空でない理由
  */
-export function renderFailure(result, expected) {
+function renderFailure(result, expected) {
   if (result.error !== null) return result.error
   if (result.outputs !== expected) {
     return `描画された図が足りない（${expected} 個のうち ${result.outputs} 個。図の本文に、行末の \`\`\` か ::: がないか確認する）`
@@ -283,7 +283,7 @@ function countOutputs(work, stem, kind) {
  * @returns {(input: string, kind: 'markdown' | 'diagram') => { error: string | null, outputs: number }}
  *   描画する関数。プロセスが失敗したら error に空でない誤りの文を入れる
  */
-export function createRenderer(work, config) {
+function createRenderer(work, config) {
   let serial = 0
   return (content, kind) => {
     serial++

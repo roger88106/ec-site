@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { readMutations } from './mutation-report.mjs'
+import { readMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'
 
 /** 実際の mutations.xml から切り出した 7 件（検出 4、生き残り 3：Order 2、Product 1）。57.14% */
 const PIT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'testdata', 'pit-mutations.xml')
@@ -33,10 +33,12 @@ describe('mutation score（PIT の XML）', () => {
     ])
   })
 
-  test('上位は 10 件までにする', () => {
+  test('生き残った変異の多いクラスは、上限（SURVIVORS_LIMIT）の数までにする', () => {
     const mutation = (n) => `<mutation detected='false' status='SURVIVED'><mutatedClass>c.C${n}</mutatedClass></mutation>`
-    const xml = `<mutations>${Array.from({ length: 12 }, (_, n) => mutation(n)).join('')}</mutations>`
-    assert.equal(readMutations(xml).survivors.length, 10)
+    const survivors = (count) => readMutations(`<mutations>${Array.from({ length: count }, (_, n) => mutation(n)).join('')}</mutations>`).survivors
+    assert.equal(survivors(SURVIVORS_LIMIT - 1).length, SURVIVORS_LIMIT - 1)
+    assert.equal(survivors(SURVIVORS_LIMIT).length, SURVIVORS_LIMIT)
+    assert.equal(survivors(SURVIVORS_LIMIT + 1).length, SURVIVORS_LIMIT)
   })
 })
 

@@ -172,6 +172,7 @@ describe('節の一覧と対象の文書', () => {
   test('対象の文書は、書き方の規則とレビューの冒頭の文のリンクと同じ', () => {
     const review = readFileSync(new URL('../../../docs/05-開発規則/review.md', import.meta.url), 'utf8')
     const sentence = review.split(/\r?\n/).find((line) => line.startsWith('書き方の規則（'))
+    assert.ok(sentence, 'review.md に「書き方の規則（」で始まる冒頭の文がない')
     const linked = [...sentence.matchAll(/\]\(([^)]+)\)/g)].map((match) => `docs/05-開発規則/${match[1]}`)
     assert.deepEqual(RULE_DOCS, linked)
   })

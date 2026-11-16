@@ -121,6 +121,96 @@ class JooqOrderRepositoryTest {
     private static final UUID TEA_VARIANT_ID = UUID.randomUUID();
 
     /**
+     * 標準の税率（%）
+     */
+    private static final BigDecimal STANDARD_RATE = BigDecimal.TEN;
+
+    /**
+     * 軽減の税率（%）
+     */
+    private static final BigDecimal REDUCED_RATE = new BigDecimal("8");
+
+    /**
+     * T シャツの品番
+     */
+    private static final String SHIRT_PRODUCT_CODE = "TS-001";
+
+    /**
+     * T シャツ（白・M）のバリアント品番
+     */
+    private static final String SHIRT_VARIANT_CODE = "TS-001-WM";
+
+    /**
+     * T シャツの商品名
+     */
+    private static final String SHIRT_NAME = "T シャツ";
+
+    /**
+     * T シャツ（白・M）の軸の値
+     */
+    private static final List<AxisValue> SHIRT_AXES = List.of(new AxisValue("色", "白"), new AxisValue("サイズ", "M"));
+
+    /**
+     * T シャツの税抜単価
+     */
+    private static final Money SHIRT_PRICE_EXCL_TAX = Money.of(2700);
+
+    /**
+     * T シャツの税込単価（10%）
+     */
+    private static final Money SHIRT_PRICE_INCL_TAX = Money.of(2970);
+
+    /**
+     * お茶の品番（バリアント品番も同じ）
+     */
+    private static final String TEA_CODE = "TEA-1";
+
+    /**
+     * お茶の商品名
+     */
+    private static final String TEA_NAME = "お茶";
+
+    /**
+     * お茶の税抜単価
+     */
+    private static final Money TEA_PRICE_EXCL_TAX = Money.of(1234);
+
+    /**
+     * お茶の税込単価（8%）
+     */
+    private static final Money TEA_PRICE_INCL_TAX = Money.of(1332);
+
+    /**
+     * 上限の注文の商品の品番（バリアント品番も同じ）
+     */
+    private static final String MAX_CODE = "MAX-1";
+
+    /**
+     * 上限の注文の商品名
+     */
+    private static final String MAX_NAME = "高価な商品";
+
+    /**
+     * 上限の税抜単価
+     */
+    private static final Money MAX_PRICE_EXCL_TAX = Money.of(9_999_999);
+
+    /**
+     * 上限の税抜単価の税込単価（10%）
+     */
+    private static final Money MAX_PRICE_INCL_TAX = Money.of(10_999_998);
+
+    /**
+     * 上限の数量
+     */
+    private static final int MAX_QUANTITY = 10;
+
+    /**
+     * 上限の注文の小計（税込単価 × 上限の数量）
+     */
+    private static final Money MAX_SUBTOTAL = Money.of(109_999_980);
+
+    /**
      * 標準の注文のメールアドレス
      */
     private static final String EMAIL = "taro@example.com";
@@ -140,11 +230,10 @@ class JooqOrderRepositoryTest {
      * 標準の注文の明細（T シャツ 1 枚（10%）とお茶 1 個（8%））
      */
     private static final List<OrderLine> LINES = List.of(
-            new OrderLine(1, SHIRT_VARIANT_ID, "TS-001", "TS-001-WM", "T シャツ",
-                    List.of(new AxisValue("色", "白"), new AxisValue("サイズ", "M")), Money.of(2700), BigDecimal.TEN,
-                    Money.of(2970), 1, Money.of(2970)),
-            new OrderLine(2, TEA_VARIANT_ID, "TEA-1", "TEA-1", "お茶", List.of(), Money.of(1234), new BigDecimal("8"),
-                    Money.of(1332), 1, Money.of(1332)));
+            new OrderLine(1, SHIRT_VARIANT_ID, SHIRT_PRODUCT_CODE, SHIRT_VARIANT_CODE, SHIRT_NAME, SHIRT_AXES,
+                    SHIRT_PRICE_EXCL_TAX, STANDARD_RATE, SHIRT_PRICE_INCL_TAX, 1, SHIRT_PRICE_INCL_TAX),
+            new OrderLine(2, TEA_VARIANT_ID, TEA_CODE, TEA_CODE, TEA_NAME, List.of(),
+                    TEA_PRICE_EXCL_TAX, REDUCED_RATE, TEA_PRICE_INCL_TAX, 1, TEA_PRICE_INCL_TAX));
 
     /**
      * 標準の注文の金額の内訳
@@ -172,8 +261,8 @@ class JooqOrderRepositoryTest {
     /**
      * 上限の注文の明細（税抜単価 9,999,999 円（税込 10,999,998 円）を数量 10 個）
      */
-    private static final OrderLine MAX_LINE = new OrderLine(1, SHIRT_VARIANT_ID, "MAX-1", "MAX-1-1", "高価な商品", List.of(),
-            Money.of(9_999_999), BigDecimal.TEN, Money.of(10_999_998), 10, Money.of(109_999_980));
+    private static final OrderLine MAX_LINE = new OrderLine(1, SHIRT_VARIANT_ID, MAX_CODE, MAX_CODE, MAX_NAME, List.of(),
+            MAX_PRICE_EXCL_TAX, STANDARD_RATE, MAX_PRICE_INCL_TAX, MAX_QUANTITY, MAX_SUBTOTAL);
 
     /**
      * 上限の注文の金額の内訳
@@ -734,14 +823,13 @@ class JooqOrderRepositoryTest {
      * @return 注文（支払待ち）
      */
     private static Order order(UUID checkoutId, String orderNumber) {
-        var shirt = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), "TS-001", "TS-001-WM", "T シャツ",
-                List.of(new AxisValue("色", "白"), new AxisValue("サイズ", "M")), Money.of(2700), UUID.randomUUID(),
-                null, true, false);
-        var tea = new VariantInfo(TEA_VARIANT_ID, UUID.randomUUID(), "TEA-1", "TEA-1", "お茶", List.of(),
-                Money.of(1234), UUID.randomUUID(), null, true, false);
+        var shirt = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), SHIRT_PRODUCT_CODE, SHIRT_VARIANT_CODE, SHIRT_NAME,
+                SHIRT_AXES, SHIRT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
+        var tea = new VariantInfo(TEA_VARIANT_ID, UUID.randomUUID(), TEA_CODE, TEA_CODE, TEA_NAME, List.of(),
+                TEA_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
         var items = List.of(
-                QuoteItem.of(shirt, 1, 10, BigDecimal.TEN, Money.of(2970)),
-                QuoteItem.of(tea, 1, 10, new BigDecimal("8"), Money.of(1332)));
+                QuoteItem.of(shirt, 1, 10, STANDARD_RATE, SHIRT_PRICE_INCL_TAX),
+                QuoteItem.of(tea, 1, 10, REDUCED_RATE, TEA_PRICE_INCL_TAX));
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
                 new Quote(items, AMOUNTS, true), EMAIL, ADDRESS, BUYER_PROFILE);
     }
@@ -756,9 +844,9 @@ class JooqOrderRepositoryTest {
      * @return 注文（支払待ち）
      */
     private static Order maxOrder(UUID checkoutId, String orderNumber) {
-        var variant = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), "MAX-1", "MAX-1-1", "高価な商品", List.of(),
-                Money.of(9_999_999), UUID.randomUUID(), null, true, false);
-        var item = QuoteItem.of(variant, 10, 10, BigDecimal.TEN, Money.of(10_999_998));
+        var variant = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), MAX_CODE, MAX_CODE, MAX_NAME, List.of(),
+                MAX_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
+        var item = QuoteItem.of(variant, MAX_QUANTITY, MAX_QUANTITY, STANDARD_RATE, MAX_PRICE_INCL_TAX);
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
                 new Quote(List.of(item), MAX_AMOUNTS, true), MAX_EMAIL, MAX_ADDRESS, MAX_BUYER_PROFILE);
     }

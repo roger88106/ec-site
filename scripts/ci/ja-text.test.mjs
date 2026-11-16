@@ -1009,34 +1009,6 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     assert.ok(result.stdout.includes(SHALLOW_CLONE_MESSAGE), result.stdout)
   })
 
-  test('差分の本文の「+++」で始まる追加行を、ファイルの見出しと取り違えない。引用符で囲んだパスと、空白のあるパスを読む', () => {
-    const diff = [
-      'diff --git a/docs/a.md b/docs/a.md',
-      '--- a/docs/a.md',
-      '+++ b/docs/a.md',
-      '@@ -1,0 +2,2 @@',
-      '+++ b/docs/x.md',
-      '+次の行',
-      '@@ -5 +7 @@',
-      '-古い行',
-      '+新しい行',
-      'diff --git "a/docs/q\\"\\346\\227\\245.md" "b/docs/q\\"\\346\\227\\245.md"',
-      '+++ "b/docs/q\\"\\346\\227\\245.md"',
-      '@@ -0,0 +1 @@',
-      '+あ',
-      '\\ No newline at end of file',
-      '+++ b/docs/a b.md\t',
-      '@@ -3,2 +3,0 @@',
-      '-消した行',
-      '-消した行',
-      '',
-    ].join('\n')
-    assert.deepEqual(
-      [...jaText.parseAddedLines(diff)].map(([file, lines]) => [file, [...lines]]),
-      [['docs/a.md', [2, 3, 7]], ['docs/q"日.md', [1]], ['docs/a b.md', []]],
-    )
-  })
-
   test('注釈の内容とパスの、GitHub Actions が区切りに使う字を逃がす', () => {
     assert.equal(jaText.formatAnnotation('docs/a,b:c.md', 3, '100% の文\n次'), '::warning file=docs/a%2Cb%3Ac.md,line=3::100%25 の文%0A次')
   })

@@ -1,7 +1,7 @@
 // 日本語の文を確認する。言い換えの一覧は ja-text.json。
 //   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許容用語: 理由} で書く（その中の一致は数えない）。
 //       理由のない許容用語と、どの文書にも使われなくなった許容用語は失敗にする。
-//       files（パスの正規表現）を書いた項目は、当たるファイルにだけ当て、コミットメッセージには当てない（規則の本文の AI のサービス固有の名前など）。
+//       files（パスの正規表現）を書いた項目は、当たるファイルにだけ当て、コミットメッセージには当てない（例：規則の文書に書く、AI のサービスの名前）。
 //       語の検査（error と warning の語、allow の照合）は、インラインコード（バッククォートで囲んだ部分）の中を見ない。
 //       許容用語がインラインコードの中にしか出ないときは、使われていないと見る。
 //   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
@@ -44,7 +44,7 @@
 //   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする。
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { ADDED_DIFF_ARGS } from './lib/added-diff.mjs'
+import { ADDED_DIFF_ARGS, parseAddedLines } from './lib/added-diff.mjs'
 import { codeBlockLines } from './lib/code-block.mjs'
 import { maskCodeSpans, replaceCodeSpans } from './lib/code-span.mjs'
 import { checkExclusions } from './lib/exclusions.mjs'
@@ -674,33 +674,6 @@ export function stripMessageComments(message) {
     .join('\n')
 }
 
-/** git が引用符で囲んだパスの、逃がした字（\ooo は 1 バイト） */
-const QUOTED_ESCAPES = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 }
-
-/**
- * git の差分のパス（"…" で囲み、字を逃がしたもの）を戻す。囲んでいなければそのまま返す。
- *
- * @param {string} name 差分の +++ の行のパス
- * @returns {string} パス
- */
-function unquotePath(name) {
-  if (!name.startsWith('"') || !name.endsWith('"')) return name
-  const bytes = []
-  const body = name.slice(1, -1)
-  for (let at = 0; at < body.length; at += 1) {
-    if (body[at] !== '\\') {
-      bytes.push(...Buffer.from(body[at], 'utf8'))
-    } else if (/[0-7]{3}/.test(body.slice(at + 1, at + 4))) {
-      bytes.push(Number.parseInt(body.slice(at + 1, at + 4), 8))
-      at += 3
-    } else {
-      at += 1
-      bytes.push(QUOTED_ESCAPES[body[at]] ?? body.charCodeAt(at))
-    }
-  }
-  return Buffer.from(bytes).toString('utf8')
-}
-
 /**
  * 測るファイルを返す（--warning --added）。追加行の差分があれば、差分にあるファイルだけにする。
  * 差分にないファイルは追加行がないので、測っても示さない（結果は全てのファイルを測るときと同じ）。
@@ -711,40 +684,6 @@ function unquotePath(name) {
  */
 export function filesToMeasure(files, addedMap) {
   return addedMap === null ? files : files.filter((file) => addedMap.has(file))
-}
-
-/**
- * git diff -U0 の出力から、ファイルごとの追加行の番号（新しい方の行）を読む。
- * 本文の行は hunk の見出しの行数だけ読み飛ばすので、「+++」で始まる追加行を見出しと取り違えない。
- *
- * @param {string} output 差分（--src-prefix=a/ --dst-prefix=b/ -U0）
- * @returns {Map<string, Set<number>>} パス → 追加行の番号（1 から）
- */
-export function parseAddedLines(output) {
-  const added = new Map()
-  let current = null
-  let remaining = 0
-  for (const line of output.split('\n')) {
-    if (remaining > 0) {
-      if (!line.startsWith('\\')) remaining -= 1
-      continue
-    }
-    if (line.startsWith('+++ ')) {
-      // パスに空白があると、git は後ろにタブを 1 つ付ける
-      const name = unquotePath(line.slice(4).replace(/\t$/, ''))
-      current = name.startsWith('b/') ? name.slice(2) : null
-      if (current !== null && !added.has(current)) added.set(current, new Set())
-      continue
-    }
-    const hunk = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line)
-    if (!hunk) continue
-    const removedCount = Number(hunk[1] ?? 1)
-    const start = Number(hunk[2])
-    const count = Number(hunk[3] ?? 1)
-    remaining = removedCount + count
-    for (let number = start; number < start + count; number += 1) added.get(current)?.add(number)
-  }
-  return added
 }
 
 /**
@@ -800,90 +739,130 @@ function printChangedWarnings(list) {
   console.log(`差分の追加行の文体の警告：${count}`)
 }
 
+/**
+ * コミットメッセージのファイルを調べ、見つけた語を出力する（--message）。
+ *
+ * @param {string | undefined} file メッセージのファイル
+ * @param {object[]} terms 語の一覧（error か warning）
+ * @param {boolean} warning warning の一覧を見るか
+ * @returns {number} 終了コード（error の語があれば 1。ファイルがなければ 2）
+ */
+function checkMessage(file, terms, warning) {
+  if (!file) {
+    console.error('--message にはコミットメッセージのファイルを指定する')
+    return 2
+  }
+  const hits = findTerms(stripMessageComments(readFileSync(file, 'utf8')), termsFor(terms, null))
+  for (const hit of hits) console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
+  console.log(`${warning ? '注意する語' : '使わない語'}：${hits.length}`)
+  return !warning && hits.length ? 1 : 0
+}
+
+/**
+ * 調べる文書とコードを読む。
+ *
+ * @param {Map<string, Set<number>> | null} addedMap ファイルごとの追加行（--added）。null なら全てのファイルを読む
+ * @returns {{ docs: { file: string, text: string }[], code: { file: string, text: string, comments: string, trailing: Set<number> }[] }} 文書とコード（コードはコメントとテスト名と、行末のコメントの行）
+ */
+function readTargets(addedMap) {
+  const gitFiles = listGitFiles()
+  const allDocs = gitFiles.filter((file) => isTargetDoc(file))
+  exitIfNoFiles(allDocs, '語を調べる文書')
+  const allCode = gitFiles.filter((file) => isTargetCode(file))
+  exitIfNoFiles(allCode, '語を調べるコード')
+  const docs = filesToMeasure(allDocs, addedMap).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
+  const code = filesToMeasure(allCode, addedMap).map((file) => {
+    const text = readFileSync(file, 'utf8')
+    return { file, text, comments: commentText(text, codeKind(file)), trailing: trailingCommentLines(text, codeKind(file)) }
+  })
+  return { docs, code }
+}
+
+/**
+ * 文書とコードの語の一致を集める。
+ *
+ * @param {{ docs: { file: string, text: string }[], code: { file: string, text: string }[] }} targets 調べる文書とコード
+ * @param {object[]} terms 語の一覧
+ * @returns {{ file: string, line: number, word: string, use: string }[]} 見つけた行と語
+ */
+function collectTermHits({ docs, code }, terms) {
+  return [
+    ...docs.flatMap(({ file, text }) => findTerms(text, termsFor(terms, file)).map((hit) => ({ file, ...hit }))),
+    ...code.flatMap(({ file, text }) => findCodeTerms(file, text, termsFor(terms, file)).map((hit) => ({ file, ...hit }))),
+  ]
+}
+
+/**
+ * 文書とコードの文体の warning を集める。
+ *
+ * @param {{ docs: { file: string, text: string }[], code: { file: string, comments: string, trailing: Set<number> }[] }} targets 調べる文書とコード
+ * @param {object} style 閾値（ja-text.json の style）
+ * @param {(file: string) => Set<number> | null} addedOf ファイルの追加行（null なら全ての行）
+ * @returns {{ file: string, line: number, word: string, use: string }[]} 文体の warning
+ */
+function collectStyleHits({ docs, code }, style, addedOf) {
+  return [
+    ...docs.flatMap(({ file, text }) => findStyleWarnings(text, style, { kind: styleKind(file), added: addedOf(file) }).map((hit) => ({ file, ...hit }))),
+    ...code.flatMap(({ file, comments, trailing }) => findStyleWarnings(comments, style, { kind: 'code', trailing, added: addedOf(file) }).map((hit) => ({ file, ...hit }))),
+  ]
+}
+
+/**
+ * warning の語の件数を数える（既定の実行で、件数だけを示すため）。
+ *
+ * @param {{ docs: { text: string }[], code: { comments: string }[] }} targets 調べる文書とコード
+ * @param {object[]} terms warning の語の一覧
+ * @returns {number} 件数
+ */
+function countWarningTerms({ docs, code }, terms) {
+  return [...docs.map(({ text }) => text), ...code.map(({ comments }) => comments)].reduce((sum, text) => sum + findTerms(text, terms).length, 0)
+}
+
+/**
+ * 文書とコードを調べ、結果を出力する（既定の実行と --warning）。
+ *
+ * @param {{ error: object[], warning: object[], style: object }} list 一覧
+ * @param {{ warning: boolean, added: boolean }} options --warning と --added を付けたか
+ * @returns {number} 終了コード（error の語か許容用語の誤りがあれば 1）
+ */
+function checkFiles(list, { warning, added }) {
+  const terms = warning ? list.warning : list.error
+  // --added：標準入力の差分（git diff --cached -U0）の追加行だけを --warning の対象にする（commit の前の hook。--changed と同じ選び方）。
+  // 差分にないファイルは、追加行がないので測らない
+  const addedMap = warning && added ? parseAddedLines(readFileSync(0, 'utf8')) : null
+  const addedOf = (file) => (addedMap === null ? null : (addedMap.get(file) ?? new Set()))
+  const isAdded = (file, line) => addedMap === null || addedOf(file).has(line)
+  const targets = readTargets(addedMap)
+  const allowProblems = warning ? [] : findAllowProblems([...targets.docs.map(({ text }) => text), ...targets.code.map(({ comments }) => comments)], terms)
+  for (const problem of allowProblems) console.log(problem)
+  const termHits = collectTermHits(targets, terms).filter(({ file, line }) => isAdded(file, line))
+  for (const hit of termHits) console.log(`${hit.file}:${hit.line} ${hit.word} → ${hit.use}`)
+  let count = allowProblems.length + termHits.length
+  const styleHits = collectStyleHits(targets, list.style, addedOf)
+  if (warning) {
+    for (const hit of styleHits) console.log(`${hit.file}:${hit.line} ${hit.word} → ${hit.use}`)
+    count += styleHits.length
+  } else {
+    // 「警告：」で始まる行は、check-all.sh が通った検査でも出す
+    const warningCount = countWarningTerms(targets, list.warning) + styleHits.length
+    console.log(`警告：warning が ${warningCount} 件ある（一覧：node scripts/ci/ja-text.mjs --warning）`)
+  }
+  console.log(`${warning ? '注意する語と文' : '使わない語'}：${count}`)
+  return !warning && count ? 1 : 0
+}
+
 if (isMain(import.meta.url)) {
   const args = process.argv.slice(2)
   const warning = args.includes('--warning')
   const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
   validateTerms(list.error)
   validateTerms(list.warning)
-  const terms = warning ? list.warning : list.error
-  const messageIndex = args.indexOf('--message')
-  if (messageIndex !== -1) {
-    const file = args[messageIndex + 1]
-    if (!file) {
-      console.error('--message にはコミットメッセージのファイルを指定する')
-      process.exit(2)
-    }
-    const hits = findTerms(stripMessageComments(readFileSync(file, 'utf8')), termsFor(terms, null))
-    for (const hit of hits) {
-      console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
-    }
-    console.log(`${warning ? '注意する語' : '使わない語'}：${hits.length}`)
-    process.exit(!warning && hits.length ? 1 : 0)
+  if (args.includes('--message')) {
+    process.exit(checkMessage(args[args.indexOf('--message') + 1], warning ? list.warning : list.error, warning))
   }
   if (args.includes('--changed')) {
     printChangedWarnings(list)
     process.exit(0)
   }
-  const gitFiles = listGitFiles()
-  const allDocs = gitFiles.filter((file) => isTargetDoc(file))
-  exitIfNoFiles(allDocs, '語を調べる文書')
-  const allCode = gitFiles.filter((file) => isTargetCode(file))
-  exitIfNoFiles(allCode, '語を調べるコード')
-  // --added：標準入力の差分（git diff --cached -U0）の追加行だけを --warning の対象にする（commit の前の hook。--changed と同じ選び方）。
-  // 差分にないファイルは、追加行なし（全ての行ではない）。追加行がないので測らない（語と文体の warning）
-  const addedMap = warning && args.includes('--added') ? parseAddedLines(readFileSync(0, 'utf8')) : null
-  const files = filesToMeasure(allDocs, addedMap)
-  const codeFiles = filesToMeasure(allCode, addedMap)
-  const addedOf = (file) => (addedMap === null ? null : (addedMap.get(file) ?? new Set()))
-  const isAdded = (file, line) => addedMap === null || addedOf(file).has(line)
-  const texts = files.map((file) => readFileSync(file, 'utf8'))
-  const codeTexts = codeFiles.map((file) => readFileSync(file, 'utf8'))
-  const codeComments = codeFiles.map((file, index) => commentText(codeTexts[index], codeKind(file)))
-  // コードの文の測り方（行末のコメントは、前後の行とつながない）
-  const codeStyles = codeFiles.map((file, index) => ({ kind: 'code', trailing: trailingCommentLines(codeTexts[index], codeKind(file)) }))
-  const allowTexts = [...texts, ...codeComments]
-  const allowProblems = warning ? [] : findAllowProblems(allowTexts, terms)
-  for (const problem of allowProblems) {
-    console.log(problem)
-  }
-  let count = allowProblems.length
-  for (const [index, file] of files.entries()) {
-    for (const hit of findTerms(texts[index], termsFor(terms, file))) {
-      if (!isAdded(file, hit.line)) continue
-      console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
-      count += 1
-    }
-  }
-  for (const [index, file] of codeFiles.entries()) {
-    for (const hit of findCodeTerms(file, codeTexts[index], termsFor(terms, file))) {
-      if (!isAdded(file, hit.line)) continue
-      console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
-      count += 1
-    }
-  }
-  // 文体の warning（--warning のときだけ一覧にする。既定の実行は件数だけを示す）
-  const styleHits = []
-  for (const [index, file] of files.entries()) {
-    for (const hit of findStyleWarnings(texts[index], list.style, { kind: styleKind(file), added: addedOf(file) })) styleHits.push({ file, ...hit })
-  }
-  for (const [index, file] of codeFiles.entries()) {
-    for (const hit of findStyleWarnings(codeComments[index], list.style, { ...codeStyles[index], added: addedOf(file) })) styleHits.push({ file, ...hit })
-  }
-  if (warning) {
-    for (const hit of styleHits) {
-      console.log(`${hit.file}:${hit.line} ${hit.word} → ${hit.use}`)
-    }
-    count += styleHits.length
-  } else {
-    // 「警告：」で始まる行は、check-all.sh が通った検査でも出す
-    const warningCount = list.warning.reduce((sum, term) => {
-      const docs = texts.reduce((n, text) => n + findTerms(text, [term]).length, 0)
-      return sum + docs + codeFiles.reduce((n, file, index) => n + (isTargetCode(file) ? findTerms(codeComments[index], [term]).length : 0), 0)
-    }, styleHits.length)
-    console.log(`警告：warning が ${warningCount} 件ある（一覧：node scripts/ci/ja-text.mjs --warning）`)
-  }
-  console.log(`${warning ? '注意する語と文' : '使わない語'}：${count}`)
-  process.exit(!warning && count ? 1 : 0)
+  process.exit(checkFiles(list, { warning, added: args.includes('--added') }))
 }
-

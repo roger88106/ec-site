@@ -478,6 +478,11 @@ describe('日本語の文の検査（文体の warning）', () => {
     assert.deepEqual(lines('あ'.repeat(10) + 'である。', 'length'), [])
   })
 
+  test('字数がちょうど閾値の文は示し、閾値より 1 字少ない文は示さない（「。」は数えない）', () => {
+    assert.deepEqual(lines(`${'あ'.repeat(LIMITS.length - 3)}である。`, 'length'), [1])
+    assert.deepEqual(lines(`${'あ'.repeat(LIMITS.length - 4)}である。`, 'length'), [])
+  })
+
   test('読点が閾値以上の文を示す', () => {
     assert.deepEqual(lines('一、二、三、四とする。', 'comma'), [1])
     assert.deepEqual(lines('一、二、三とする。', 'comma'), [])
@@ -884,7 +889,7 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
   const repos = []
   after(() => repos.forEach((repo) => rmSync(repo, { recursive: true, force: true })))
 
-  /** 字数が閾値（100）以上の文 */
+  /** 字数が閾値（100）より多い文（103 字） */
   const LONG = `${'あ'.repeat(100)}である。`
   /** 読点が閾値（5）以上の文 */
   const COMMAS = '一、二、三、四、五、六とする。'

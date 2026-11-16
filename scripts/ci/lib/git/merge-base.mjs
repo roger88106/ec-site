@@ -1,5 +1,5 @@
 // 差分と比べる基準の commit（develop・main との分岐点）を求める。
-// CI の checkout には origin/ の ref しかないことがあるので、origin/ の方を先に見る。shallow clone の確認は呼ぶ側で行う（lib/shallow-clone）
+// CI の checkout には origin/ の ref しかないことがあるので、origin/ の方を先に見る。shallow clone の確認は呼ぶ側で行う（lib/git/shallow-clone.mjs）
 import { execFileSync } from 'node:child_process'
 
 /**

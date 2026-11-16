@@ -12,7 +12,12 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
-/** 名前の対応のファイルの中身を、[旧, 新] の並びにする */
+/**
+ * 名前の対応のファイルの中身を、[旧, 新] の並びにする。
+ *
+ * @param {string} text 名前の対応のファイルの中身
+ * @returns {string[][]} [旧, 新] の並び（ファイルの順）
+ */
 export function parseRenames(text) {
   return text
     .split(/\r?\n/)
@@ -21,7 +26,12 @@ export function parseRenames(text) {
     .map((line) => line.split('=').map((part) => part.trim()))
 }
 
-/** テストのファイルか */
+/**
+ * テストのファイルか。
+ *
+ * @param {string} path リポジトリのルートからのパス
+ * @returns {boolean} テストのファイルなら true
+ */
 function isTestPath(path) {
   return (
     /\/src\/(test|integrationTest)\//.test(path) ||
@@ -30,13 +40,24 @@ function isTestPath(path) {
   )
 }
 
-/** import・package の行か */
+/**
+ * import・package の行か。
+ *
+ * @param {string} line 行
+ * @returns {boolean} import・package の行なら true
+ */
 function isImportLine(line) {
   return /^\s*(import|package)\s/.test(line)
 }
 
 
-/** 行に名前の対応を当てる */
+/**
+ * 行に名前の対応を当てる。
+ *
+ * @param {string} line 行
+ * @param {string[][]} renames [旧, 新] の並び
+ * @returns {string} 名前を置き換えた行
+ */
 function applyRenames(line, renames) {
   return renames.reduce(
     (result, [from, to]) => result.replace(new RegExp(`(?<![\\w.])${RegExp.escape(from)}(?!\\w)`, 'g'), to),
@@ -44,12 +65,22 @@ function applyRenames(line, renames) {
   )
 }
 
-/** 複数行の import の始まりの行か（`import {` や `import type {` で、行の終わりが `{`） */
+/**
+ * 複数行の import の始まりの行か（`import {` や `import type {` で、行の終わりが `{`）。
+ *
+ * @param {string} line 行
+ * @returns {boolean} 始まりの行なら true
+ */
 function startsImportBlock(line) {
   return /^\s*import\b.*\{\s*$/.test(line)
 }
 
-/** 複数行の import の終わりの行か（`} from '…'`） */
+/**
+ * 複数行の import の終わりの行か（`} from '…'`）。
+ *
+ * @param {string} line 行
+ * @returns {boolean} 終わりの行なら true
+ */
 function endsImportBlock(line) {
   return /^\s*\}\s*from\s/.test(line)
 }
@@ -59,6 +90,9 @@ function endsImportBlock(line) {
  *
  * import・package の行（複数行の import の中の行を含む）は除く。複数行の import は、変更の前と後の
  * それぞれで、前後の行（差分の文脈の行を含む）から中にいるかを辿る。
+ *
+ * @param {string} diffText git diff -M の出力
+ * @returns {{ path: string, newFile: boolean, removed: string[], added: string[] }[]} ファイルごとの差分（path は変更の後のパス）
  */
 function parseDiff(diffText) {
   const files = []
@@ -105,6 +139,10 @@ function parseDiff(diffText) {
  * 既存のファイル（消したファイルを含む）の消した行は、すべてのテストのファイル（新しく追加したファイルを含む）の
  * 追加した行と、前後の空白を除いて照合する（テストを中身を変えずに別のファイルへ移すことを認めるため）。
  * 照合して残った追加した行は、既存のファイルなら違反とし、新しく追加したファイルなら見ない（移した先の import と枠の行のため）。
+ *
+ * @param {string} diffText git diff -M の出力
+ * @param {string[][]} renames [旧, 新] の並び
+ * @returns {{ file: string, kind: 'removed' | 'added', line: string }[]} 説明できない行
  */
 export function findViolations(diffText, renames) {
   const files = parseDiff(diffText).filter((file) => isTestPath(file.path))
@@ -134,6 +172,7 @@ export function findViolations(diffText, renames) {
   return violations
 }
 
+/** 元の commit からの差分を調べ、説明できない行があれば失敗する */
 function main() {
   const [base, renamesPath] = process.argv.slice(2)
   if (!base) {

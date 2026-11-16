@@ -60,8 +60,10 @@ const NO_ACS = 'なし。'
 /** ③ の生成の表を置く節。雛形の骨組みの ## にあることを、テストで確認する */
 export const MODULE_AC_SECTION = '今有効な AC'
 
-/** 生成のマーカーの名前（AC 一覧の表と、③ の表） */
+/** AC 一覧の表の、生成のマーカーの名前 */
 export const LIST_MARK = 'ac-list'
+
+/** ③ の表の、生成のマーカーの名前 */
 export const MODULE_MARK = 'module-ac'
 
 /** 生成のマーカーの形（開きは `<!-- generated:<名前> -->`、閉じは `<!-- /generated:<名前> -->`） */

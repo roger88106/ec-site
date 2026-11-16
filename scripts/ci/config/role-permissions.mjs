@@ -14,8 +14,14 @@ import { load } from 'js-yaml'
 
 /** 対応表の文書 */
 const DOCUMENT = 'docs/02-設計/role-permissions.md'
+
+/** 管理 API の OpenAPI */
 const ADMIN_API = 'api/openapi/admin.yaml'
+
+/** 店舗 API の OpenAPI */
 const STORE_API = 'api/openapi/store.yaml'
+
+/** 管理画面の realm（ロールと権限の割り当て） */
 const ADMIN_REALM = 'docker/keycloak/realms/ec-admin-realm.json'
 
 /** 管理 API の client（権限はこの client のロール） */
@@ -24,9 +30,13 @@ const ADMIN_CLIENT = 'ec-admin-api'
 /** ログインしていればよい操作の印（権限ではない） */
 const AUTHENTICATED = 'authenticated'
 
+/** 対応表の文書の、生成する範囲の開きのマーカー */
 const START = '<!-- generated:role-permissions -->'
+
+/** 対応表の文書の、生成する範囲の閉じのマーカー */
 const END = '<!-- /generated:role-permissions -->'
 
+/** OpenAPI の paths の下で、操作として読む HTTP のメソッド */
 const METHODS = ['get', 'post', 'put', 'patch', 'delete']
 
 /**

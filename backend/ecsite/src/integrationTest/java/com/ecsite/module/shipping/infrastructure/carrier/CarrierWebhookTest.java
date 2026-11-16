@@ -260,6 +260,7 @@ class CarrierWebhookTest {
             assertThat(statusOf(first)).isEqualTo(DeliveryStatus.IN_TRANSIT);
             assertThat(statusOf(second)).isEqualTo(DeliveryStatus.IN_TRANSIT);
             assertThat(events.stream(DeliveryStatusChanged.class)
+                    .filter(event -> event.orderId().equals(first.orderId()) || event.orderId().equals(second.orderId()))
                     .filter(event -> event.to() == DeliveryStatusChanged.Status.IN_TRANSIT))
                     .extracting(DeliveryStatusChanged::orderId, DeliveryStatusChanged::from)
                     .containsExactlyInAnyOrder(
@@ -348,7 +349,7 @@ class CarrierWebhookTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"ABC", "１２３４５６７８９０１２", "1234/5678"})
-        @DisplayName("AC-178 送り状番号の形に合わない（英字・全角・記号）通知は、200 で何も変えない")
+        @DisplayName("AC-178 送り状番号の形に合わない通知は、200 で何も変えない")
         void ignoresMalformedTrackingNumber(String trackingNumber) throws Exception {
             // 準備：出荷済みの出荷
             var shipment = shipped();
@@ -356,9 +357,10 @@ class CarrierWebhookTest {
             // 操作と確認：形に合わない番号の通知は 200
             send(signed(body("YAMATO", trackingNumber, "配達完了"))).andExpect(status().isOk());
 
-            // 確認：出荷済みのまま、配送状態の変化のイベントも出ない
+            // 確認：出荷済みのまま、この注文の配送状態の変化のイベントは出荷のときの 1 件だけ
             assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
-            assertThat(events.stream(DeliveryStatusChanged.class)).noneMatch(event -> event.to() == DeliveryStatusChanged.Status.DELIVERED);
+            assertThat(events.stream(DeliveryStatusChanged.class).filter(event -> event.orderId().equals(shipment.orderId())))
+                    .extracting(DeliveryStatusChanged::to).containsExactly(DeliveryStatusChanged.Status.SHIPPED);
         }
 
         @Test

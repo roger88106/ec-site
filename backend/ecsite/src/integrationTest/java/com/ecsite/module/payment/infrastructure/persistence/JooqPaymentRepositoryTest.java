@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -485,32 +486,32 @@ class JooqPaymentRepositoryTest {
 
         /**
          * 数える基準の時刻（この時刻までに待ち始めた支払を数える）
-         *
-         * <p>テーブル全体を数えるので、ロールバックしない他のテストの支払（2026 年）より前の時刻にする。
          */
         private static final Instant LATEST_AWAITING_SINCE = SEARCH_NOW.minusSeconds(3600);
 
         @Test
-        @DisplayName("AC-312 基準の時刻ちょうどから待つ支払は数え、その 1 秒後から待つ支払は数えない")
+        @DisplayName("AC-312 基準の時刻ちょうどから待つ支払は数え、その 1 マイクロ秒後から待つ支払は数えない")
         void countsUntilLatestInclusive() {
-            // 準備：基準の時刻ちょうどから待つ支払と、その 1 秒後から待つ支払
+            // 準備：他のテストの支払を含む今の件数と、基準の時刻ちょうどから待つ支払、その 1 マイクロ秒後から待つ支払
+            var before = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
             var atLatest = payment(UUID.randomUUID(), DEADLINE);
             var afterLatest = payment(UUID.randomUUID(), DEADLINE);
             insertAll(atLatest, afterLatest);
             awaitAuthorization(atLatest, LATEST_AWAITING_SINCE);
-            awaitAuthorization(afterLatest, LATEST_AWAITING_SINCE.plusSeconds(1));
+            awaitAuthorization(afterLatest, LATEST_AWAITING_SINCE.plus(Duration.ofNanos(1_000)));
 
             // 操作：基準の時刻までに待ち始めた支払を数える
             var count = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
 
-            // 確認：ちょうどの 1 件だけ
-            assertThat(count).isEqualTo(1);
+            // 確認：増えたのは、ちょうどの 1 件だけ
+            assertThat(count - before).isEqualTo(1);
         }
 
         @Test
         @DisplayName("AC-312 待った後に与信済みになった支払は数えない")
         void excludesAuthorized() {
-            // 準備：基準の時刻から待ち、その後に与信済みになった支払
+            // 準備：他のテストの支払を含む今の件数と、基準の時刻から待ち、その後に与信済みになった支払
+            var before = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
             var authorized = payment(UUID.randomUUID(), DEADLINE);
             insertAll(authorized);
             awaitAuthorization(authorized, LATEST_AWAITING_SINCE);
@@ -521,8 +522,8 @@ class JooqPaymentRepositoryTest {
             // 操作：基準の時刻までに待ち始めた支払を数える
             var count = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
 
-            // 確認：数えない
-            assertThat(count).isZero();
+            // 確認：件数は増えない
+            assertThat(count).isEqualTo(before);
         }
     }
 

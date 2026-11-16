@@ -1,20 +1,12 @@
 // frontend-rules が規則を当てるファイルの種類と、種類ごとの振り分け。
-// spec-numbers も、テストのファイルの種類を読む（frontend-rules.mjs が公開する）
+// テストと E2E のファイルの場所は、spec-numbers と共有する lib/frontend-paths.mjs にある
+import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from '../lib/frontend-paths.mjs'
 
 /** 画面のソース（テスト、生成物、shadcn/ui のコンポーネント、共有の ui、テストの補助を含む） */
-export const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/
+const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/
 
 /** 場所に関わらない、テストのファイル（.test.ts・.test.tsx）。公開する名前などから、どの場所のテストも除くときに使う */
 export const ANY_TEST_FILE = /\.test\.tsx?$/
-
-/** 画面の単体・結合テストのファイル */
-export const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
-
-/** 画面のテストの補助のファイル（src の下の test/ ディレクトリの下） */
-export const FRONTEND_TEST_SUPPORT = /^frontend\/(?:store|admin|shared)\/src\/(?:.*\/)?test\/.*\.tsx?$/
-
-/** E2E のファイル */
-export const E2E_FILE = /^e2e\/.*\.tsx?$/
 
 /**
  * ファイルを、規則を当てるまとまりに振り分ける。ファイルの順は保つ。どのまとまりにも入らないファイルは捨てる。

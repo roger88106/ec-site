@@ -23,8 +23,6 @@ import { findIndexedMultiples, findPropertyComparisons } from './frontend-rules/
 import { duplicatedFiles, findDefinitions, sharedPublicNames } from './frontend-rules/shared-names.mjs'
 import { BUILTIN_NAMES_FILE, findBuiltinShadowing, findMissingTestSpacing } from './frontend-rules/test-style.mjs'
 
-export { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from './frontend-rules/files.mjs'
-
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
 if (isMain(import.meta.url)) {

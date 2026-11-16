@@ -264,9 +264,9 @@ describe('script として実行する', () => {
     assert.equal(result.status, 0, result.stdout)
   })
 
-  test('対象のファイルが 0 件なら、理由を出して終了コード 1 で終わる', () => {
+  test('対象のファイルが 0 件なら、理由を出して終了コード 2 で終わる（lib の exitIfNoFiles）', () => {
     const result = run({ 'README.md': '@SuppressWarnings\n' })
-    assert.equal(result.status, 1, result.stdout)
+    assert.equal(result.status, 2, result.stdout)
     assert.match(result.stdout, /1 件も見つからない/)
     assert.doesNotMatch(result.stdout, /違反：/)
   })

@@ -143,7 +143,7 @@ function judgePowerShell(command) {
   const found = words.some((word, index) => GIT_OR_GH_PROGRAM.test(word) && isOperation(words.slice(index + 1)))
   if (!found) return null
   return deny(
-    'PowerShell のツールでは、git・gh の push、commit、tag、merge、api、release、hooksPath を含むコマンドを実行しない。' +
+    `PowerShell のツールでは、git・gh の ${OPERATIONS.join('、')}、hooksPath を含むコマンドを実行しない。` +
       '同じコマンドを Bash のツールで実行し直す（Bash では、Claude Code の hook がコマンドの全文を読んで判定する）。',
   )
 }

@@ -161,6 +161,9 @@ class ProductApiTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 税率のキャッシュを捨てるときに渡す、アプリのコンテキスト
+     */
     @Autowired
     ApplicationContext context;
 
@@ -389,10 +392,13 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(longs = {1, 9_999_999})
-        @DisplayName("AC-25 税抜価格が範囲の端なら登録できる")
+        @DisplayName("AC-25 税抜価格が範囲の端なら、その値で登録できる")
         void acceptsPriceAtBoundary(long price) throws Exception {
-            // 操作と確認：登録できる
-            products.create(productJson(PRODUCT_CODE, standard, price)).andExpect(status().isCreated());
+            // 操作：登録する
+            var id = products.createdId(productJson(PRODUCT_CODE, standard, price));
+
+            // 確認：送った税抜価格で保存される
+            products.getProduct(id).andExpect(jsonPath("$.priceExclTax").value(price));
         }
 
         @Test
@@ -439,10 +445,13 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, NAME_MAX_LENGTH})
-        @DisplayName("商品名が範囲の端の文字数なら登録できる")
+        @DisplayName("商品名が範囲の端の文字数なら、その値で登録できる")
         void acceptsNameAtBoundary(int length) throws Exception {
-            // 操作と確認：登録できる
-            products.create(createJson(PRODUCT_CODE, "あ".repeat(length), "", AXIS_COLOR)).andExpect(status().isCreated());
+            // 操作：登録する
+            var id = products.createdId(createJson(PRODUCT_CODE, "あ".repeat(length), "", AXIS_COLOR));
+
+            // 確認：送った商品名で保存される
+            products.getProduct(id).andExpect(jsonPath("$.name").value("あ".repeat(length)));
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -457,10 +466,13 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {0, DESCRIPTION_MAX_LENGTH})
-        @DisplayName("説明が範囲の端の文字数なら登録できる")
+        @DisplayName("説明が範囲の端の文字数なら、その値で登録できる")
         void acceptsDescriptionAtBoundary(int length) throws Exception {
-            // 操作と確認：登録できる
-            products.create(createJson(PRODUCT_CODE, NAME, "あ".repeat(length), AXIS_COLOR)).andExpect(status().isCreated());
+            // 操作：登録する
+            var id = products.createdId(createJson(PRODUCT_CODE, NAME, "あ".repeat(length), AXIS_COLOR));
+
+            // 確認：送った説明で保存される
+            products.getProduct(id).andExpect(jsonPath("$.description").value("あ".repeat(length)));
         }
 
         @Test
@@ -474,10 +486,13 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, AXIS_NAME_MAX_LENGTH})
-        @DisplayName("軸の名前が範囲の端の文字数なら登録できる")
+        @DisplayName("軸の名前が範囲の端の文字数なら、その値で登録できる")
         void acceptsAxisNameAtBoundary(int length) throws Exception {
-            // 操作と確認：登録できる
-            products.create(createJson(PRODUCT_CODE, NAME, "", "あ".repeat(length))).andExpect(status().isCreated());
+            // 操作：登録する
+            var id = products.createdId(createJson(PRODUCT_CODE, NAME, "", "あ".repeat(length)));
+
+            // 確認：送った軸の名前で保存される
+            products.getProduct(id).andExpect(jsonPath("$.axes", contains("あ".repeat(length))));
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -492,10 +507,13 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, CODE_MAX_LENGTH})
-        @DisplayName("商品品番が範囲の端の文字数なら登録できる")
+        @DisplayName("商品品番が範囲の端の文字数なら、その値で登録できる")
         void acceptsProductCodeAtBoundary(int length) throws Exception {
-            // 操作と確認：登録できる
-            products.create(createJson("A".repeat(length), NAME, "", AXIS_COLOR)).andExpect(status().isCreated());
+            // 操作：登録する
+            var id = products.createdId(createJson("A".repeat(length), NAME, "", AXIS_COLOR));
+
+            // 確認：送った商品品番で保存される
+            products.getProduct(id).andExpect(jsonPath("$.productCode").value("A".repeat(length)));
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -515,13 +533,16 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, NAME_MAX_LENGTH})
-        @DisplayName("商品名が範囲の端の文字数なら編集できる")
+        @DisplayName("商品名が範囲の端の文字数なら、その値に編集できる")
         void acceptsNameAtBoundary(int length) throws Exception {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：編集できる
+            // 操作：編集する
             products.update(id, nameAndDescriptionJson("あ".repeat(length), "")).andExpect(status().isNoContent());
+
+            // 確認：送った商品名で保存される
+            products.getProduct(id).andExpect(jsonPath("$.name").value("あ".repeat(length)));
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -539,13 +560,16 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {0, DESCRIPTION_MAX_LENGTH})
-        @DisplayName("説明が範囲の端の文字数なら編集できる")
+        @DisplayName("説明が範囲の端の文字数なら、その値に編集できる")
         void acceptsDescriptionAtBoundary(int length) throws Exception {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：編集できる
+            // 操作：編集する
             products.update(id, nameAndDescriptionJson(NAME, "あ".repeat(length))).andExpect(status().isNoContent());
+
+            // 確認：送った説明で保存される
+            products.getProduct(id).andExpect(jsonPath("$.description").value("あ".repeat(length)));
         }
 
         @Test
@@ -562,13 +586,16 @@ class ProductApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(longs = {1, 9_999_999})
-        @DisplayName("AC-25 税抜価格が範囲の端なら編集できる")
+        @DisplayName("AC-25 税抜価格が範囲の端なら、その値に編集できる")
         void acceptsPriceAtBoundary(long price) throws Exception {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：編集できる
+            // 操作：編集する
             products.update(id, updateJson(standard, price, 0)).andExpect(status().isNoContent());
+
+            // 確認：送った税抜価格で保存される
+            products.getProduct(id).andExpect(jsonPath("$.priceExclTax").value(price));
         }
     }
 

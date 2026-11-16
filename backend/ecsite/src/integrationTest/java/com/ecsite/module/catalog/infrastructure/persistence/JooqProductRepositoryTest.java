@@ -86,7 +86,7 @@ class JooqProductRepositoryTest {
     private static final int DESCRIPTION_MAX_LENGTH = 10_000;
 
     /**
-     * 軸名の上限（文字）
+     * 軸の名前の上限（文字）
      */
     private static final int AXIS_NAME_MAX_LENGTH = 30;
 
@@ -427,7 +427,7 @@ class JooqProductRepositoryTest {
         @Test
         @DisplayName("文字数と品番の上限の値（サロゲートペアを含む）を保存して、同じ値で読み戻せる")
         void savesMaxValues() {
-            // 準備：商品名・説明・軸名・軸の値・商品品番・バリアント品番が、どれも上限ちょうどの商品
+            // 準備：商品名・説明・軸の名前・軸の値・商品品番・バリアント品番が、どれも上限ちょうどの商品
             var product = factory.create(ProductCode.of(MAX_PRODUCT_CODE), "𩸽".repeat(NAME_MAX_LENGTH),
                     "𩸽".repeat(DESCRIPTION_MAX_LENGTH), TAX_CATEGORY_ID, PriceExclTax.of(1000), Set.of(clothing),
                     List.of("𩸽".repeat(AXIS_NAME_MAX_LENGTH)));
@@ -597,7 +597,7 @@ class JooqProductRepositoryTest {
      * <ul>
      *   <li>商品品番</li>
      *   <li>商品名と説明</li>
-     *   <li>軸名</li>
+     *   <li>軸の名前</li>
      *   <li>バリアント品番と軸の値</li>
      * </ul>
      *

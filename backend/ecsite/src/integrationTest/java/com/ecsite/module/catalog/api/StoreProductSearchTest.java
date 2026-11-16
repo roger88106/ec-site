@@ -74,6 +74,9 @@ class StoreProductSearchTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 税率のキャッシュを捨てるときに渡す、アプリのコンテキスト
+     */
     @Autowired
     ApplicationContext context;
 

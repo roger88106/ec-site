@@ -71,7 +71,7 @@ for n in "$@"; do
   if [ "$state" = "CLEAN" ] && [ "$fails" = "0" ]; then
     echo "gh pr merge $n --merge --match-head-commit $(head_sha "$n")"
   else
-    echo "#$n: マージできない（state=$state、失敗=$fails、または CI が終わらない）" >&2
+    echo "#$n: マージできない（state=$state、失敗=$fails）" >&2
     exit 1
   fi
 done

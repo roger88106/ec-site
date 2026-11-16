@@ -89,7 +89,9 @@ export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
   for (; i < words.length && words[i].startsWith('-'); i++) {
     const word = words[i]
     if (word === '-C') {
-      current = resolveDir(current, words[++i] ?? '', options)
+      // 先が変数かコマンドの置き換えを含むときは、cd と同じく値を読めないので、今のディレクトリのままにする
+      const target = words[++i] ?? ''
+      if (!/[$`]/.test(target)) current = resolveDir(current, target, options)
     } else if (word === '-c' || word === '--config-env') {
       configs.push(words[++i] ?? '')
     } else if (word.startsWith('--config-env=')) {

@@ -20,8 +20,8 @@
 // GitHub が受け付けない操作（gh pr merge の --admin、自動のマージ）と、意図した回避（bash -c、エイリアス、ファイルから読む GraphQL の本文）は見ない。
 // permission の規則は git -C やフルパスで書いた git・gh に当たらず、commit のメッセージにある語にも当たるので、hook で語を読む。
 //
-// PowerShell のツールのコマンドは書き方を読まず、git か gh と、操作の語（push、commit、tag、merge、api、release、hooksPath）を
-// 語として含めば拒否し、Bash のツールで実行するよう返す。それ以外（git status など）は通す。
+// PowerShell のツールのコマンドは、書き方を読まずに git・gh のサブコマンドだけを見る。
+// サブコマンドが hook の判定する操作（judgePowerShell）なら拒否し、Bash のツールで実行するよう返す。読むだけのコマンドは通す。
 //
 // .claude/settings.json の hook のコマンドは、tool_input.command に git か gh の語がなければ、この script を起動せずに通す
 // （判定は全て git・gh のコマンドだけが対象なので、他のコマンドで node を起動する時間を省く）。command は node を使わずに awk で取り出し、
@@ -29,7 +29,7 @@
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash と PowerShell 以外のツールは何もせずに通す。
 // 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出力する。通すときは何も出力しない。終了コードは常に 0。
 // 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd・pushd・popd、env -C、git -C で決める。前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る
-// （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない。cd・pushd の先が変数かコマンドの置き換えを含めば、ディレクトリを変えない）。
+// （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない。cd・pushd・git -C の先が変数かコマンドの置き換えを含めば、ディレクトリを変えない）。
 // $(…) とバッククォートの中のコマンド、timeout・env・xargs などを前に付けたコマンド、
 // シェルの予約語（do、then、{、! など）の後のコマンド、function f { … } の本体も判定する。
 // 判定の中で例外が発生したときは、git か gh を含むコマンドは拒否し、含まないコマンドは通す
@@ -115,21 +115,47 @@ export function createDeps(env = process.env) {
   }
 }
 
-/** git か gh を語として含むか（git.exe、gh.exe、フルパスを含む。digit のような語の一部は含まない） */
-const GIT_OR_GH_WORD = /\b(git|gh)\b/i
+/** git・gh のコマンドの名前（git.exe、gh.exe、フルパスを含む） */
+const GIT_OR_GH_PROGRAM = /(^|[\\/])(git|gh)(\.exe)?$/i
 
-/** hook が判定する操作の語を、語として含むか（大文字と小文字を区別しない） */
-const OPERATION_WORD = /\b(push|commit|tag|merge|api|release|hookspath)\b/i
+/** hook が判定する、git・gh のサブコマンド（gh pr merge は pr の次の語で見る） */
+const OPERATIONS = ['push', 'commit', 'tag', 'merge', 'api', 'release']
+
+/** git の前のオプションのうち、値を次の語に取るもの */
+const GIT_VALUE_OPTIONS = ['-C', '-c', '--config-env', '--git-dir', '--work-tree', '--namespace']
 
 /**
- * PowerShell のツールのコマンドを判定する。git か gh と、hook が判定する操作の語の両方を含めば拒否する。
- * PowerShell の書き方は読まず、語を含むかだけを見る（判定は Bash の 1 か所に置き、読むだけのコマンドは通すため）。
+ * PowerShell のコマンドの git・gh が、hook が判定する操作か。git・gh の後のオプションを飛ばした最初の語（gh pr は次の語）を見る。
+ * 前のオプションに hooksPath を含むときも、操作とみなす。
+ *
+ * @param {string[]} words git・gh の後の語
+ * @returns {boolean} 操作なら true
+ */
+function isOperation(words) {
+  let i = 0
+  // 前のオプションを、値と一緒に飛ばす
+  for (; i < words.length && words[i].startsWith('-'); i++) {
+    if (/hookspath/i.test(words[i])) return true
+    if (GIT_VALUE_OPTIONS.includes(words[i])) {
+      i++
+      if (/hookspath/i.test(words[i] ?? '')) return true
+    }
+  }
+  const subcommand = (words[i] ?? '').toLowerCase()
+  return OPERATIONS.includes(subcommand) || (subcommand === 'pr' && (words[i + 1] ?? '').toLowerCase() === 'merge')
+}
+
+/**
+ * PowerShell のツールのコマンドを判定する。git・gh のサブコマンドが、hook が判定する操作なら拒否する。
+ * PowerShell の書き方は読まず、空白と引用符と区切り（; | & 括弧）で語に分けるだけにする（判定は Bash の 1 か所に置き、読むだけのコマンドは通すため）。
  *
  * @param {string} command コマンドの全文
  * @returns {Decision | null} 判定。通すときは null
  */
 function judgePowerShell(command) {
-  if (!GIT_OR_GH_WORD.test(command) || !OPERATION_WORD.test(command)) return null
+  const words = command.split(/[\s;|&(){}"']+/).filter((word) => word !== '')
+  const found = words.some((word, index) => GIT_OR_GH_PROGRAM.test(word) && isOperation(words.slice(index + 1)))
+  if (!found) return null
   return deny(
     'PowerShell のツールでは、git・gh の push、commit、tag、merge、api、release、hooksPath を含むコマンドを実行しない。' +
       '同じコマンドを Bash のツールで実行し直す（Bash では、Claude Code の hook がコマンドの全文を読んで判定する）。',

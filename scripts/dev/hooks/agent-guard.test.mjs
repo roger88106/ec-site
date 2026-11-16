@@ -139,13 +139,15 @@ describe('cd と git -C から、対象のディレクトリを決める', () =>
     assert.deepEqual(dirs, [CWD, path.join(CWD, 'sub'), path.join(CWD, 'sub'), path.join(CWD, 'other')])
   })
 
-  test('cd・pushd の先が変数かコマンドの置き換えを含むときは、ディレクトリを変えずに、入力の cwd のリポジトリで判定する', () => {
+  test('cd・pushd・git -C の先が変数かコマンドの置き換えを含むときは、ディレクトリを変えずに、入力の cwd のリポジトリで判定する', () => {
     for (const command of [
       'cd "$(git rev-parse --show-toplevel)" && git commit -m x',
       'cd "$D" && git commit -m x',
       'cd $D/sub && git commit -m x',
       'cd `pwd` && git commit -m x',
       'pushd "$D" && git commit -m x',
+      'git -C "$W" commit -m x',
+      'git -C "$(pwd)" commit -m x',
     ]) {
       const deps = fakeDeps()
       assert.equal(judgeCommand(command, CWD, deps), null, command)
@@ -1141,15 +1143,19 @@ describe('hook の入力と出力', () => {
     assert.equal(handleInput(JSON.stringify({ tool_name: 'Bash', tool_input: {} }), fakeDeps()), '')
   })
 
-  test('PowerShell のツールで、git・gh と操作の語を含むコマンドは、Bash で実行するよう返して拒否する', () => {
+  test('PowerShell のツールで、git・gh のサブコマンドが操作のコマンドは、Bash で実行するよう返して拒否する', () => {
     const commands = [
       'git push --force',
       'git tag v1',
       'gh pr merge 1 --admin',
       '& "C:\\Program Files\\GitHub CLI\\gh.exe" api -X PUT repos/o/r/rulesets/1',
       'git -c core.hooksPath=x commit',
+      'git -c core.hooksPath=x status',
       'git commit -m x',
       'git.exe PUSH origin',
+      'git -C C:\\work push',
+      'Set-Location C:\\work; git push',
+      'gh release create v1',
     ]
     for (const command of commands) {
       const output = JSON.parse(handleInput(input(command, 'PowerShell'), fakeDeps()) || '{}')
@@ -1159,7 +1165,18 @@ describe('hook の入力と出力', () => {
   })
 
   test('PowerShell のツールで、操作の語のない git・gh と、git・gh を含まないコマンドは通す', () => {
-    const commands = ['git status', 'git log --oneline -3', 'gh pr view 1', 'Get-ChildItem', 'Write-Output digit', 'Write-Output digit push']
+    const commands = [
+      'git status',
+      'git log --oneline -3',
+      'gh pr view 1',
+      'Get-ChildItem',
+      'Write-Output digit',
+      'Write-Output digit push',
+      'git diff -- api/openapi/admin.yaml',
+      'git log --grep merge',
+      'git log -- docs/release.md',
+      'gh pr view 1 --json mergeable',
+    ]
     for (const command of commands) {
       assert.equal(handleInput(input(command, 'PowerShell'), fakeDeps()), '', command)
     }

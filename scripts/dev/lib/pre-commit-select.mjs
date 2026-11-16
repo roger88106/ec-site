@@ -24,7 +24,6 @@ export const CHECK_INPUTS = {
   'ac-check': [/^docs\/03-機能仕様\//, /^docs\/08-spec\//, /^backend\/ecsite\/src\/(?:test|integrationTest)\//, /^frontend\//, /^e2e\//],
   'ci-docs': [/^scripts\/ci\//],
   'compose-ports': [],
-  'dependabot-actions': [/(?:^|\/)action\.ya?ml$/],
   'doc-refs': ALWAYS,
   'doc-shape': [/\.md$/],
   'docs-folders': [/^docs\//],

@@ -1,8 +1,12 @@
 // PIT（mutation testing）の XML の報告（mutations.xml）を読む。
-// mutation score は、検出した変異の数を、全変異の数で割った割合。「検出した」は、PIT の定義に合わせて、
-// 各 <mutation> の detected 属性が true のもの（KILLED と TIMED_OUT など）とする（PIT のコンソールの「Killed」の数と一致する）。
-// 生き残った変異は、detected が false で、status が SURVIVED か NO_COVERAGE のもの
-// （RUN_ERROR などは、全変異に数えるが、検出にも生き残りにも数えない）。
+//
+// mutation score は、検出した変異の数を、全変異の数で割った割合。
+// 「検出した」は、各 <mutation> の detected 属性が true のもの（KILLED と TIMED_OUT など）。
+// PIT の定義に合わせ、PIT のコンソールの「Killed」の数と一致する。
+//
+// 生き残った変異は、detected が false で、status が SURVIVED か NO_COVERAGE のもの。
+// RUN_ERROR などは、全変異に数えるが、検出にも生き残りにも数えない。
+//
 // 読み方は、属性の並びとクォート（' と "）に依存しない。途中で切れた XML、読めない変異がある XML は、読まずに失敗にする。
 
 /** 生き残ったクラスを出す数 */

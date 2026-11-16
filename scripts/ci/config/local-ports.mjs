@@ -269,8 +269,9 @@ export function findPortMismatches({ list, compose, docs, sources, configs = {},
     }
   }
   for (const [file, { text, keys }] of Object.entries(realms)) {
-    const written = new Set(readConfigPorts(text))
-    for (const port of readConfigPorts(text)) {
+    const ports = readConfigPorts(text)
+    const written = new Set(ports)
+    for (const port of ports) {
       if (!all.has(port)) {
         problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、${file} を修正する）`)
       }

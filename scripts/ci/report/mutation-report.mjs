@@ -25,9 +25,13 @@ export function isPitReport(text) {
   return /<mutations[\s>]/.test(text)
 }
 
+/** 属性の名前ごとの、値を読む正規表現（変異ごとに作らないため） */
+const ATTRIBUTE_PATTERNS = new Map()
+
 /** 開始タグの文字列から、属性の値を読む（クォートは ' も " も受ける） */
 function attribute(tag, name) {
-  return tag.match(new RegExp(`\\s${name}\\s*=\\s*(['"])(.*?)\\1`))?.[2]
+  if (!ATTRIBUTE_PATTERNS.has(name)) ATTRIBUTE_PATTERNS.set(name, new RegExp(`\\s${name}\\s*=\\s*(['"])(.*?)\\1`))
+  return tag.match(ATTRIBUTE_PATTERNS.get(name))?.[2]
 }
 
 /**

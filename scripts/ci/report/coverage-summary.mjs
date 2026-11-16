@@ -16,6 +16,9 @@ const LOWEST_LIMIT = 10
 /** 割合の表示（小数第 1 位） */
 const percent = (covered, total) => (total === 0 ? '-' : `${((covered / total) * 100).toFixed(1)}%`)
 
+/** counter の種類ごとの、counter の要素の正規表現（package ごとに作らないため。matchAll は lastIndex を変えない） */
+const COUNTER_PATTERNS = new Map()
+
 /**
  * JaCoCo の XML の一部から、counter を読む。
  *
@@ -24,7 +27,8 @@ const percent = (covered, total) => (total === 0 ? '-' : `${((covered / total) *
  * @returns {{ covered: number, total: number }} 実行した数と全体の数
  */
 function counter(text, type) {
-  const match = [...text.matchAll(new RegExp(`<counter type="${type}" missed="([0-9]+)" covered="([0-9]+)"/>`, 'g'))].at(-1)
+  if (!COUNTER_PATTERNS.has(type)) COUNTER_PATTERNS.set(type, new RegExp(`<counter type="${type}" missed="([0-9]+)" covered="([0-9]+)"/>`, 'g'))
+  const match = [...text.matchAll(COUNTER_PATTERNS.get(type))].at(-1)
   const [missed, covered] = match ? [Number(match[1]), Number(match[2])] : [0, 0]
   return { covered, total: missed + covered }
 }

@@ -52,17 +52,24 @@ function isImportLine(line) {
 
 
 /**
+ * 名前の対応を、語の境目で当てる正規表現と新しい名前の並びにする（行ごとに正規表現を作らないため）。
+ *
+ * @param {string[][]} renames [旧, 新] の並び
+ * @returns {[RegExp, string][]} [旧の名前の正規表現, 新] の並び
+ */
+function compileRenames(renames) {
+  return renames.map(([from, to]) => [new RegExp(`(?<![\\w.])${RegExp.escape(from)}(?!\\w)`, 'g'), to])
+}
+
+/**
  * 行に名前の対応を当てる。
  *
  * @param {string} line 行
- * @param {string[][]} renames [旧, 新] の並び
+ * @param {[RegExp, string][]} renames compileRenames の結果
  * @returns {string} 名前を置き換えた行
  */
 function applyRenames(line, renames) {
-  return renames.reduce(
-    (result, [from, to]) => result.replace(new RegExp(`(?<![\\w.])${RegExp.escape(from)}(?!\\w)`, 'g'), to),
-    line,
-  )
+  return renames.reduce((result, [from, to]) => result.replace(from, to), line)
 }
 
 /**
@@ -150,9 +157,10 @@ export function findViolations(diffText, renames) {
     file.added.map((line) => ({ file, line, key: line.trim(), used: false })),
   )
   const violations = []
+  const compiled = compileRenames(renames)
   for (const file of files.filter((f) => !f.newFile)) {
     for (const line of file.removed) {
-      const key = applyRenames(line, renames).trim()
+      const key = applyRenames(line, compiled).trim()
       // 同じファイルの行を先に当て、なければ他のファイルの行を当てる
       const match =
         added.find((entry) => !entry.used && entry.file === file && entry.key === key) ??

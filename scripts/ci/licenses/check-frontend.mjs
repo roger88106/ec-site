@@ -31,12 +31,18 @@ import { fileURLToPath } from 'node:url'
  * @returns {boolean} 合えば true
  */
 function matches(pattern, name) {
-  const escaped = pattern
-    .split('*')
-    .map((part) => RegExp.escape(part))
-    .join('.*')
-  return new RegExp(`^${escaped}$`).test(name)
+  if (!NAME_PATTERNS.has(pattern)) {
+    const escaped = pattern
+      .split('*')
+      .map((part) => RegExp.escape(part))
+      .join('.*')
+    NAME_PATTERNS.set(pattern, new RegExp(`^${escaped}$`))
+  }
+  return NAME_PATTERNS.get(pattern).test(name)
 }
+
+/** 部品の名前の形ごとの正規表現（部品ごとに作らないため） */
+const NAME_PATTERNS = new Map()
 
 /**
  * 1 つのライセンス（OR・AND を含まない）を判定する。

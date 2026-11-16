@@ -267,8 +267,8 @@ class ErrorResponseTest {
     }
 
     @Test
-    @DisplayName("トレースの span がない状態でも traceId を返す（テストではトレーシングが無効）")
-    void returnsTraceIdWithoutSpan() throws Exception {
+    @DisplayName("エラーの応答に、リクエストのトレースの traceId（32 桁の 16 進数）を入れる")
+    void returnsTraceId() throws Exception {
         // 操作：エラーになるパスを呼ぶ
         ResultActions result = mockMvc.perform(get(BASE + "/not-found"));
 

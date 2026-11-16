@@ -56,7 +56,7 @@
 
 理由：相手の変更の影響を実装の 1 か所に限り、列挙に値を追加したときの変換の書き忘れをコンパイルで気づけるようにするため。
 
-確認方法：置き場所、`api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）、値の対応は変換ごとの単体テスト。名前の文字列からの `valueOf`・`fromValue` は自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー
+確認方法：置き場所、`api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）、値の対応は変換ごとの単体テスト。名前の文字列からの `valueOf`・`fromValue` は自動（ArchUnit。`name()` を渡すものは `scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー
 
 ### パッケージの大きさ
 

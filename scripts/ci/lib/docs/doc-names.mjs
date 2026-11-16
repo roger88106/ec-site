@@ -57,16 +57,18 @@ export function readHeadingIndex(text) {
   const headings = []
   /** 今の見出しの上の見出し（レベル、比べる形） */
   const stack = []
-  const seen = {}
+  /** slug ごとの、前に出た回数（2 回目からの slug に `-1`、`-2` を付ける） */
+  const seen = new Map()
   let title = null
   // 見出しの読み方（ATX と Setext、コードブロックと HTML のコメントの外）は、spec-structure と同じ doc-structure の readHeadings
   for (const { level, title: name } of readHeadings(text.replace(/^﻿/, ''))) {
     if (level === 1 && title === null) title = name.trim()
     let key = slug(name)
-    if (seen[key] !== undefined) {
-      seen[key] += 1
-      key = `${key}-${seen[key]}`
-    } else seen[key] = 0
+    if (seen.has(key)) {
+      const count = seen.get(key) + 1
+      seen.set(key, count)
+      key = `${key}-${count}`
+    } else seen.set(key, 0)
     anchors.add(key)
     const heading = name.replace(HEADING_NUMBER, '')
     const number = name.match(HEADING_NUMBER)

@@ -26,6 +26,11 @@ describe('文書の名前と見出しの読み取り', () => {
     assert.deepEqual([...anchors], ['題', '依存', '字下げ', '段落'])
   })
 
+  test('同じ slug の見出しは、2 回目から -1、-2 を付ける（slug が Object の持つ名前（constructor など）でも同じ）', () => {
+    const { anchors } = readHeadingIndex('# 題\n## a\n## a\n## a\n## constructor\n## constructor\n## valueOf\n')
+    assert.deepEqual([...anchors], ['題', 'a', 'a-1', 'a-2', 'constructor', 'constructor-1', 'valueof'])
+  })
+
   test('文書の名前は括弧の中を除く', () => {
     assert.equal(referenceName('店舗画面（`frontend/store`）の構成'), '店舗画面の構成')
   })

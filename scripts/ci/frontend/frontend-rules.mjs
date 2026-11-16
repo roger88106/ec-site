@@ -24,8 +24,9 @@ if (import.meta.main) {
   try {
     sharedNames = sharedPublicNames(JSON.parse(read('frontend/shared/package.json')).exports, files, read)
   } catch (e) {
+    // 共有の公開する名前を読めないのは違反でなく、検査の前提（package.json の exports の形）の誤り
     console.log(e.message)
-    process.exit(1)
+    process.exit(2)
   }
   const messages = findViolations(files, read, sharedNames, exclusions)
   for (const message of messages) console.log(message)

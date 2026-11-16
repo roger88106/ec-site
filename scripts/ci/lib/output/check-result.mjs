@@ -3,7 +3,7 @@
 //
 // 使い方：node scripts/ci/lib/output/check-result.mjs <出力のファイル> <summary|tests>
 // check-all.sh は終了コードが 0 の検査だけを渡すので、コマンドラインでは終了コードを受け取らない。
-// 成功なら OK の 1 行を、失敗なら理由を標準出力に出す。呼ぶ側は、OK の行が出たときだけ成功にする（この script が動かなかったときに成功にしないため）
+// 成功なら OK の 1 行を、失敗なら理由を標準出力に出す（終了コードは、検査の失敗が 1、判定の種類の誤りが 2）。呼ぶ側は、OK の行が出たときだけ成功にする（この script が動かなかったときに成功にしないため）
 import { readFileSync } from 'node:fs'
 
 /** 要約の行：「<何>：<件数>」。「：」の前が空でなく、「：」の後に数字がある */
@@ -58,6 +58,10 @@ export function judgeCheck({ status, output, mode }) {
 
 if (import.meta.main) {
   const [file, mode] = process.argv.slice(2)
+  if (mode !== 'summary' && mode !== 'tests') {
+    console.log(`知らない判定の種類：${mode}（summary か tests）`)
+    process.exit(2)
+  }
   const result = judgeCheck({ status: 0, output: readFileSync(file, 'utf8'), mode })
   if (!result.ok) {
     console.log(result.reason)

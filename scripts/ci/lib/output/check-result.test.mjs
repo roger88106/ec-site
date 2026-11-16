@@ -108,7 +108,9 @@ describe('check-all.sh から呼ぶ形（コマンドライン）', () => {
     assert.match(result.stdout, /0 件/)
   })
 
-  test('知らないモードは失敗にする', () => {
-    assert.equal(run('切れた参照：0\n', 'unknown').status, 1)
+  test('知らないモードは、使い方の誤りとして終了コード 2 にする', () => {
+    const result = run('切れた参照：0\n', 'unknown')
+    assert.equal(result.status, 2)
+    assert.match(result.stdout, /知らない判定の種類：unknown/)
   })
 })

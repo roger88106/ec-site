@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -36,5 +36,14 @@ describe('shallow clone の確認', () => {
 
   test('失敗の文は、fetch-depth: 0 を付けることを示す', () => {
     assert.match(SHALLOW_CLONE_MESSAGE, /fetch-depth: 0/)
+  })
+
+  test('shallow clone で呼ぶと、失敗の文を出して終了コード 2（環境の誤り）で終わる', () => {
+    const module = pathToFileURL(path.join(import.meta.dirname, 'shallow-clone.mjs')).href
+    const run = (cwd) => spawnSync(process.execPath, ['--input-type=module', '-e', `import { exitIfShallow } from '${module}'; exitIfShallow()`], { cwd, encoding: 'utf8' })
+    const result = run(shallow)
+    assert.equal(result.status, 2)
+    assert.equal(result.stdout.trim(), SHALLOW_CLONE_MESSAGE)
+    assert.equal(run(source).status, 0)
   })
 })

@@ -33,6 +33,7 @@ const ALWAYS = 'always'
  */
 export const CHECK_INPUTS = {
   'ac-check': [/^docs\/03-機能仕様\//, /^docs\/08-spec\//, /^backend\/ecsite\/src\/(?:test|integrationTest)\//, /^frontend\//, /^e2e\//],
+  'action-pins': [/^\.github\//],
   'ci-docs': [],
   'compose-ports': [],
   'doc-refs': ALWAYS,

@@ -179,11 +179,11 @@ action の固定（`action-pins`）・検出してはいけない例：
   - 依存：なし
   - 範囲：`docs/08-spec/565-ci-checks/spec.md`
   - 確認方法：追加した例が表にある
-- [ ] **T565-01-02** [テスト] `action-pins` のテストを書き、レッドを確認する（DC-565-1〜3）。※ CI の検査の script のテストは、続く実装のタスクと同じ commit に入れる（[開発の進め方](../../05-開発規則/workflow.md)の「循環」）。
+- [x] **T565-01-02** [テスト] `action-pins` のテストを書き、レッドを確認する（DC-565-1〜3）。※ CI の検査の script のテストは、続く実装のタスクと同じ commit に入れる（[開発の進め方](../../05-開発規則/workflow.md)の「循環」）。
   - 依存：T565-01-01
   - 範囲：`scripts/ci/config/action-pins.test.mjs`
   - 確認方法：`node --test` で失敗する
-- [ ] **T565-01-03** T565-01-02 のテストが通る `action-pins` を書く。
+- [x] **T565-01-03** T565-01-02 のテストが通る `action-pins` を書く。
   - 依存：T565-01-02
   - 範囲：`scripts/ci/config/action-pins.mjs`
   - 確認方法：テストが通る。今の workflow で通る

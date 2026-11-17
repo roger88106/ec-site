@@ -1,0 +1,188 @@
+import assert from 'node:assert/strict'
+import { describe, test } from 'node:test'
+import { findActionPinProblems, isActionPinTarget } from './action-pins.mjs'
+
+const SHA = '3d3c42e5aac5ba805825da76410c181273ba90b1'
+const WORKFLOW = '.github/workflows/new.yml'
+const ACTION = '.github/actions/a/action.yml'
+
+/** step の uses を 1 つ持つ workflow の内容 */
+const workflowWithStep = (uses) => `jobs:\n  a:\n    steps:\n      - uses: ${uses}\n`
+
+/** workflow を検査して、問題の件数を返す */
+const countProblems = (text, path = WORKFLOW) => findActionPinProblems([{ path, text }]).length
+
+describe('action の固定の検査・検出すべき例', () => {
+  test('タグ、ブランチ、短い SHA の指定は失敗にする', () => {
+    for (const uses of ['actions/checkout@v4', 'actions/checkout@main', 'actions/checkout@3d3c42e']) {
+      assert.equal(countProblems(workflowWithStep(uses)), 1, uses)
+    }
+  })
+
+  test('大文字を含む 40 桁、39 桁、41 桁の 16 進は失敗にする', () => {
+    for (const sha of [SHA.toUpperCase(), `${SHA.slice(0, 39)}A`, SHA.slice(1), `${SHA}0`]) {
+      assert.equal(countProblems(workflowWithStep(`actions/checkout@${sha}`)), 1, sha)
+    }
+  })
+
+  test('@ のない指定と owner のない指定は失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep('actions/checkout')), 1)
+    assert.equal(countProblems(workflowWithStep(`checkout@${SHA}`)), 1)
+  })
+
+  test('パスの付いた指定のタグは失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep('github/codeql-action/init@v3')), 1)
+  })
+
+  test('job の uses（再利用の workflow）のタグは失敗にする', () => {
+    const text = 'jobs:\n  a:\n    uses: org/repo/.github/workflows/a.yml@v1\n'
+    assert.equal(countProblems(text), 1)
+  })
+
+  test('複合の action の runs.steps にあるタグの指定は失敗にする', () => {
+    const text = "runs:\n  using: composite\n  steps:\n    - uses: actions/checkout@v4\n      shell: bash\n"
+    assert.equal(countProblems(text, ACTION), 1)
+  })
+
+  test('docker:// の指定は失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep('docker://alpine:3.20')), 1)
+    assert.equal(countProblems(workflowWithStep(`docker://alpine@sha256:${'a'.repeat(64)}`)), 1)
+  })
+
+  test('./ で始まらない相対のパスは失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep('../other/action')), 1)
+    assert.equal(countProblems(workflowWithStep('.github/actions/x')), 1)
+  })
+
+  test('uses の値が数値、空、null なら失敗にする', () => {
+    for (const value of ['123', "''", 'null', '']) {
+      assert.equal(countProblems(workflowWithStep(value)), 1, `[${value}]`)
+    }
+  })
+
+  test('引用符の中で SHA の後に空白や文字が続けば失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep(`"actions/checkout@${SHA} "`)), 1)
+    assert.equal(countProblems(workflowWithStep(`'actions/checkout@${SHA}x'`)), 1)
+    assert.equal(countProblems(workflowWithStep(`"actions/checkout@${SHA}\\n"`)), 1)
+  })
+
+  test('YAML のアンカーとエイリアスで入れたタグの指定は、展開後の値で判定して失敗にする', () => {
+    const text = 'jobs:\n  a:\n    steps:\n      - &s\n        uses: actions/checkout@v4\n      - *s\n'
+    assert.equal(countProblems(text), 2)
+  })
+
+  test('拡張子 .yaml の workflow と action.yaml の中のタグは失敗にする', () => {
+    const text = workflowWithStep('actions/checkout@v4')
+    assert.equal(countProblems(text, '.github/workflows/a.yaml'), 1)
+    assert.equal(countProblems('runs:\n  steps:\n    - uses: actions/checkout@v4\n', '.github/actions/a/action.yaml'), 1)
+  })
+
+  test('読めない YAML は、ファイルを示して失敗にする', () => {
+    const problems = findActionPinProblems([{ path: WORKFLOW, text: 'jobs: [\n  a: {' }])
+    assert.equal(problems.length, 1)
+    assert.ok(problems[0].startsWith(`${WORKFLOW} `), problems[0])
+    assert.ok(problems[0].includes('YAML を読めない'), problems[0])
+  })
+
+  test('式を含む指定は、step と job のどちらも失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep('actions/checkout@${{ matrix.ref }}')), 1)
+    assert.equal(countProblems('jobs:\n  a:\n    uses: org/repo/.github/workflows/a.yml@${{ matrix.ref }}\n'), 1)
+  })
+
+  test('.github/actions/ の下の 2 段の下のフォルダーの action.yml も対象にして失敗にする', () => {
+    assert.equal(isActionPinTarget('.github/actions/a/b/action.yml'), true)
+    assert.equal(countProblems('runs:\n  steps:\n    - uses: actions/checkout@v4\n', '.github/actions/a/b/action.yml'), 1)
+  })
+
+  test('対象のファイルが 0 件のとき（対象の判定を通るファイルがない）を、呼び出し側が見分けられる', () => {
+    const files = ['README.md', 'docs/a.yml', '.github/dependabot.yml'].filter(isActionPinTarget)
+    assert.deepEqual(files, [])
+  })
+})
+
+describe('action の固定の検査・検出してはいけない例', () => {
+  test('40 桁の小文字の SHA の固定は、後ろのコメントを見ずに通る', () => {
+    assert.equal(countProblems(workflowWithStep(`actions/checkout@${SHA} # v7.0.1`)), 0)
+  })
+
+  test('ローカルの action と、ローカルの再利用の workflow は通る', () => {
+    assert.equal(countProblems(workflowWithStep('./.github/actions/setup-frontend')), 0)
+    assert.equal(countProblems('jobs:\n  a:\n    uses: ./.github/workflows/build.yml\n'), 0)
+  })
+
+  test('パスの付いた固定と、job の uses の固定は通る', () => {
+    assert.equal(countProblems(workflowWithStep(`github/codeql-action/init@${SHA}`)), 0)
+    assert.equal(countProblems(`jobs:\n  a:\n    uses: org/repo/.github/workflows/a.yml@${SHA}\n`), 0)
+  })
+
+  test('uses のない step は通る', () => {
+    assert.equal(countProblems('jobs:\n  a:\n    steps:\n      - run: echo hi\n'), 0)
+  })
+
+  test('run の文字列やコメントの中の uses は見ない', () => {
+    const text = [
+      'jobs:',
+      '  a:',
+      '    steps:',
+      '      - run: |',
+      '          echo "uses: actions/checkout@v4"',
+      '        # uses: actions/checkout@v4',
+      '',
+    ].join('\n')
+    assert.equal(countProblems(text), 0)
+  })
+
+  test('with の入力の値は見ない', () => {
+    const text = `jobs:\n  a:\n    steps:\n      - uses: actions/checkout@${SHA}\n        with:\n          ref: v1\n          uses: v1\n`
+    assert.equal(countProblems(text), 0)
+  })
+
+  test('.github/ の外の YAML、dependabot.yml、workflows/ のサブフォルダーの yml は対象にしない', () => {
+    for (const path of ['docs/a.yml', 'compose.yaml', '.github/dependabot.yml', '.github/workflows/sub/a.yml', '.github/actions/a/other.yml']) {
+      assert.equal(isActionPinTarget(path), false, path)
+    }
+    for (const path of ['.github/workflows/ci.yml', '.github/workflows/ci.yaml', '.github/actions/a/action.yml', '.github/actions/a/b/c/action.yaml']) {
+      assert.equal(isActionPinTarget(path), true, path)
+    }
+  })
+
+  test('フロースタイルの step も展開後の値で判定して通る', () => {
+    const text = `jobs:\n  a:\n    steps:\n      - { uses: a/b@${SHA} }\n`
+    assert.equal(countProblems(text), 0)
+    assert.equal(countProblems('jobs:\n  a:\n    steps:\n      - { uses: a/b@v1 }\n'), 1)
+  })
+
+  test('owner と repo に大文字、-、_、. を含む固定は通る', () => {
+    assert.equal(countProblems(workflowWithStep(`Azure/login@${SHA}`)), 0)
+    assert.equal(countProblems(workflowWithStep(`my-org_1/Repo.name-x@${SHA}`)), 0)
+  })
+
+  test('引用符で囲んだ許可する形は通る', () => {
+    assert.equal(countProblems(workflowWithStep(`"actions/checkout@${SHA}"`)), 0)
+    assert.equal(countProblems(workflowWithStep("'./.github/actions/setup-frontend'")), 0)
+  })
+})
+
+describe('action の固定の検査・失敗の出力', () => {
+  test('ファイル、場所（job と step）、値、固定の形への修正の方法を出す', () => {
+    const text = 'jobs:\n  build:\n    steps:\n      - run: echo\n      - uses: actions/checkout@v4\n'
+    const [problem, ...rest] = findActionPinProblems([{ path: WORKFLOW, text }])
+    assert.deepEqual(rest, [])
+    assert.ok(problem.includes(WORKFLOW), problem)
+    assert.ok(problem.includes('jobs.build.steps[1].uses'), problem)
+    assert.ok(problem.includes('actions/checkout@v4'), problem)
+    assert.ok(problem.includes('<owner>/<repo>@<40 桁の小文字の 16 進>'), problem)
+  })
+
+  test('job の uses と複合の action の場所も示す', () => {
+    const [job] = findActionPinProblems([{ path: WORKFLOW, text: 'jobs:\n  r:\n    uses: o/r/.github/workflows/a.yml@v1\n' }])
+    assert.ok(job.includes('jobs.r.uses'), job)
+    const [composite] = findActionPinProblems([{ path: ACTION, text: 'runs:\n  steps:\n    - uses: a/b@v1\n' }])
+    assert.ok(composite.includes('runs.steps[0].uses'), composite)
+  })
+
+  test('文字列でない値は、値の型が分かる形で示す', () => {
+    const [problem] = findActionPinProblems([{ path: WORKFLOW, text: workflowWithStep('123') }])
+    assert.ok(problem.includes('123'), problem)
+  })
+})

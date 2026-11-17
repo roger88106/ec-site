@@ -89,7 +89,8 @@ import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { readString } from '@/lib/server/formData'
 
 /**
- * 〇〇する。成功したら、〇〇の画面を再表示する。<br />
+ * 〇〇する。成功したら、〇〇の画面を再表示する。
+ *
  * フォームの項目：fooId、note。
  */
 export async function updateFoo(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {

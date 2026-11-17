@@ -21,6 +21,7 @@
   "ssoSessionIdleTimeout": 604800,
   "ssoSessionMaxLifespan": 2592000,
   "accessTokenLifespan": 300,
+  "revokeRefreshToken": false,
   "internationalizationEnabled": true,
   "supportedLocales": ["ja"],
   "defaultLocale": "ja",

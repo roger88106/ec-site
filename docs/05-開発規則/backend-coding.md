@@ -17,7 +17,7 @@
 - **公開の API**：`api/` は interface を持たない `@Component` のクラスで、view を `api/` の型に変換する。`api/` の型を `api/` の外が実装・継承せず、service は `api/` の型に依存しない。
   - `api/` は、application を通さず domain を直接呼んでよい。
   - 専用の検索の Repository が必要なとき、または計算を再利用しうるときは、application の service に委ねる。
-- **転送だけのメソッド**：受け取った引数をそのまま別の層に渡すだけのメソッド（`api/` から service、service から Repository、腐敗防止層の実装から相手の `api/`）は、残してよい。層の規則に従った形であり、層を飛ばして呼ぶ例外にしない。
+- **転送だけのメソッド**：受け取った引数をそのまま別の層に渡すだけのメソッドは、残してよい。対象は、`api/` から service、service から Repository、腐敗防止層の実装から相手の `api/` である。これらは層の規則に従った形で、層の規則の例外ではない。
 - **domain の直下**：エラーの定義と、複数の集約が使う値（商品とカテゴリが使う表示順の再採番など）を置く。値の型は、集約の項目でなくても、その集約の `vo/` に置く（例：order の `BuyerProfile`、`Gender`）。
   - `vo/` の型が持つ列挙も `vo/` に置く。理由：集約のパッケージに置くと、`vo/` と集約のパッケージが循環するため。
   - 1 つの型の中だけで使う列挙は、その型の入れ子にする。
@@ -45,7 +45,7 @@
 - 層の間の依存：依存の表の組と表にない依存、`api/` の interface と外からの実装・継承、domain のパッケージの循環は自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることはレビュー（集約に依存しないことは次の行で自動）
 - 参照の service が返す型：presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー
 - 公開の API：`api/` が application を通すか domain を直接呼ぶかの選び方はレビュー、application が `api` に依存しないことは自動（ArchUnit）
-- 転送だけのメソッド：層を飛ばす例外にしていないことはレビュー
+- 転送だけのメソッド：転送だけのメソッドを理由に層を飛ばしていないことはレビュー
 - `vo/` の型と entity の置き場所：レビュー
 - イベントの置き場所と送り出し：レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー
 - application の `port/` と共通コード・設定への依存、認証の情報の取り出し、jOOQ の置き場所：自動（ArchUnit）
@@ -64,17 +64,17 @@
 - 他のモジュールの `api/` を使うのは `infrastructure/directory/` だけにする。例外は、presentation から使う `member.api.CurrentMemberIds`（「標準の構成」の表）。
 - モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
 - 列挙を別の列挙に変換するとき（相手の型と自分の型、ドメインとイベント、ドメインと生成したモデル）は、次のとおりにする。
-  - 定数の名前の集合が同じ列挙の間は、共通の変換のメソッド（`common/` に置く）で、名前で変換してよい。
+  - 定数の名前の集合が同じ列挙の間は、共通の変換のメソッドで、名前で変換してよい。
   - 名前が違う、または 1 対 1 でない変換は、`switch` 式で値ごとに書く。
   - どちらも、`valueOf(x.name())`・`fromValue(x.name())` を変換の中に直接書かない（共通の変換のメソッドの中だけで使う）。
   - 変換元と変換先の列挙の組ごとに、全ての値を変換できることを単体テストで確認する（名前で変換する組も、`switch` 式の組も）。
   - ドメインの列挙からイベントの列挙への変換は、ドメインの列挙のメソッドに置く。
   - 変換先が domain から依存できない型なら、変換する側に置く。
-- モジュールの間とレイヤーの間で、列挙を名前の文字列で受け渡さない（command・query・view・api の型は列挙で持つ）。名前の文字列から列挙にするのは、DB の文字列を読む `infrastructure/persistence/` と、ドメインの中だけにする。
+- モジュールの間とレイヤーの間で、列挙を名前の文字列で受け渡さない（command・query・view・api の型は列挙で持つ）。名前の文字列から列挙にするのは、DB の文字列を読む `infrastructure/persistence/`、ドメインの中、共通の変換のメソッド（上の箇条）だけにする。
 
-理由：相手の変更の影響を実装の 1 か所に限り、列挙に値を追加したときの変換の書き忘れに気づけるようにするため（`switch` 式はコンパイルで、名前の変換は組ごとの単体テストで気づく）。
+理由：相手の変更の影響を実装の 1 か所に限り、列挙に値を追加したときの変換の書き忘れを検出できるようにするため。
 
-確認方法：置き場所、`api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは、`switch` 式は自動（コンパイル）、名前の変換は組ごとの単体テスト。列挙の変換の置き場所はレビュー。名前の文字列からの `valueOf`・`fromValue` は、共通の変換のメソッドを除いて自動（ArchUnit。`name()` を渡すものは `scripts/ci/java/java-rules.mjs`）。port と実装の分け方はレビュー
+確認方法：置き場所、`api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは、`switch` 式なら自動（コンパイル）、名前の変換なら組ごとの単体テスト。全ての組に、全ての値を変換できることの単体テストがあることはレビュー。列挙の変換の置き場所はレビュー。名前の文字列からの `valueOf`・`fromValue` は、共通の変換のメソッドを除いて自動（ArchUnit。`name()` を渡すものは `scripts/ci/java/java-rules.mjs`）。port と実装の分け方はレビュー
 
 ### パッケージの大きさ
 
@@ -253,8 +253,6 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 
 ハンドラーは、受けて service を呼ぶだけにし、処理は `XxxService` に置く（置き場所は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」）。
 
-公開の API の名前の例外は `CurrentMemberIds` で、「標準の構成」の例外の表にある。
-
 別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
 
 理由：クラスの名前から、役割（port、実装、用途）と置き場所が分かるようにするため。
@@ -265,7 +263,7 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 
 - 条件が 1 つの検索を、Query の record で包まない。
 - 引数をそのまま返すだけのメソッドの戻り値は、`void` にする。
-- 代入だけのコンストラクターは、手動で書かず、Lombok で作る。domain の型では、引数に `lombok.NonNull` を付ける（「null の扱い」）。
+- 代入だけのコンストラクターは、手動で書かず、引数に `lombok.NonNull` を付けて Lombok で作る。service の公開の引数、Command の項目、`api/` の公開の引数には付けない（「null の扱い」）。
   - 引数をコピーする・検査するコンストラクターは、手書きでよい。
   - コンストラクターに処理のある enum は、対象でない。
 - `catch` の変数の名前は `e` にする。
@@ -395,17 +393,16 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
   - ローカル変数には `@Nullable` を付けない。
   - jOOQ で 1 件を取るときは、`fetchOptional` にする。
 - IDE の null の誤検出を消すために `Objects.requireNonNull` で包まない。null の判定は CI の NullAway を正とする。
-- null はコンパイルの時に NullAway で防ぐ。service の公開の引数、Command の項目、`api/` の公開の引数に `lombok.NonNull` を付けない。
-  - domain の型（集約、entity、値）の、Lombok で作るコンストラクターの引数には `lombok.NonNull` を付け、実行時にも null を防ぐ。DB から再構築するときの jOOQ の値は、NullAway が確認しないため（上の jOOQ の箇条）。
+- null はコンパイルの時に NullAway で防ぐ。service の公開の引数、Command の項目、`api/` の公開の引数には `lombok.NonNull` を付けず、同じ null の検査も書かない。
+- それ以外の、Lombok で作るコンストラクターの引数（domain の型、common の値、application の Query・view の record など）には `lombok.NonNull` を付け、実行時にも null を止める。理由：DB から再構築するときの jOOQ の値は、NullAway が確認しないため（上の jOOQ の箇条）。
   - 投げる例外は `NullPointerException` のままにする（`IllegalArgumentException` が `NullPointerException` に変わってよい）。
   - presentation（Controller と Mapper）には付けない。
-  - NullAway が確認する引数に、同じ null の検査を書かない。
   - null で業務のエラーを確認するテストは削除しない。null を渡すだけのテストは足さない。
-  - 分岐網羅（C1）のカバレッジの基準が変わったら、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の決め方で、基準を書き換える。
+- 分岐網羅（C1）のカバレッジの基準が変わったら、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の決め方で、基準を書き換える。
 
 理由：null の誤りを、Spring の API の注釈（同じ JSpecify）も含めて、実行より前のコンパイルで見つけるため。
 
-確認方法：自動（NullAway、JSpecify 以外の Nullable は Checkstyle）、`@Nullable` と `Optional` の選び方、ローカル変数の `@Nullable`、domain の `lombok.NonNull` と、入口に付けないことはレビュー
+確認方法：自動（NullAway、JSpecify 以外の Nullable は Checkstyle）、`@Nullable` と `Optional` の選び方、ローカル変数の `@Nullable`、入口以外の `lombok.NonNull` と、入口に付けないことはレビュー
 
 ### 検査を抑えるとき
 

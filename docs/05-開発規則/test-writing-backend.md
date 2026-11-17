@@ -5,9 +5,10 @@
 ## 統合テストの土台
 
 - 統合テストは `@IntegrationTest` を付ける。Spring と、Testcontainers の PostgreSQL・SeaweedFS・imgproxy が起動する ※1。例外は、本番の jar を別のプロセスで起動するテスト（`ProductionJarStartupTest`）で、Spring の外で動くので、必要な PostgreSQL を自分で起動する。
-- `@IntegrationTest` は、MockMvc と、テストから時刻を決められる時計（`TestClockConfig`）を含む。API のテストは、注入した MockMvc で呼ぶ。コンテキストは 1 つで、DB とイベントの記録は全てのテストで共有する。
-- 共有する状態は、JUnit の拡張（`SharedStateReset`）が、毎回のテストの前に最初の状態へ戻す。時計は既定の時刻（`TestClockConfig.INITIAL_INSTANT`）に、`TestPaymentGateway` は空に戻し、税率のキャッシュは捨てる。時計を使うテストは、`@BeforeEach` で時刻を決める。
-- イベントの再発行は、`AsyncEvents.resubmit` に条件を渡して、自分のイベントだけを再発行する。理由：全件を再発行すると、他のテストが残した失敗も処理されるため（`AsyncEvents.resubmit` の Javadoc）。
+- `@IntegrationTest` は、MockMvc と、テストから時刻を決められる時計（`TestClockConfig`）を含む。API のテストは、注入した MockMvc で呼ぶ。
+- コンテキストは 1 つで、DB とイベントの記録は全てのテストで共有する。
+- 共有する状態（時計、支払の mock、税率のキャッシュ）は、JUnit の拡張が毎回のテストの前に最初の状態へ戻す。時計を使うテストは、`@BeforeEach` で時刻を決める。
+- イベントの再発行は、`AsyncEvents.resubmit` に条件を渡して、自分のイベントだけを再発行する。理由：全件を再発行すると、他のテストが残した失敗も処理されるため。
 - `@RecordApplicationEvents` は、別のスレッドで発行されたイベントを記録しない。
 - データを残さないテストは `@Transactional` で巻き戻す。
 - 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID や実行ごとの識別子）でデータを分ける。確認するのは、自分のデータだけである。表の全体の数や一覧の全体は確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要で、今あるものは残してよい。理由：DB はテストの実行ごとに作り、削除には漏れと順序（外部キー）の手間があるため。
@@ -47,7 +48,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 - 作成の応答の ID（UUID）は、`TestJson.createdId` で読む。
 - `CatalogTestData` を入れる変数の名前は `catalog` にする。
 - 結果の一覧を作る繰り返しは `IntStream…toList()`、副作用の繰り返しは for 文で書く。
-- 同時実行は `Concurrently` で行い、待つ時間に上限を付ける（上限は `AsyncEvents.TIMEOUT`）。
+- 同時実行は `Concurrently` で行い、待つ時間に上限（`AsyncEvents.TIMEOUT`）を付ける。
 
 次の 3 つは手順に含めず、テストが直接書いてよい。
 

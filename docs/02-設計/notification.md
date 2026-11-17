@@ -54,7 +54,7 @@ sequenceDiagram
 
 ```
 notification/
-├── application/        # 出荷のハンドラー（OrderShippedHandler）、出荷通知メールのサービス（ShipmentMailService）
+├── application/        # 出荷のハンドラー、メールの作成
 │   └── port/           # メール送信、記録、配送業者の表示名
 └── infrastructure/
     ├── directory/      # 出荷の腐敗防止層

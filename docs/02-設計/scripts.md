@@ -5,7 +5,7 @@
 | 知りたいこと | 文書 |
 |--------------|------|
 | 検査ごとの目的と、失敗したときの読み方 | [CI の検査の script](../06-手順書/ci-checks.md) |
-| 検査を加える手順、検査にするかの基準、検査の script の約束（要約の行、終了コード、先頭のコメント）と書き方、テストの観点 | [CI の検査の追加](../06-手順書/ci-adding-checks.md) |
+| 検査にするかの基準、検査を加える手順、検査の script の約束と書き方、テストの観点 | [CI の検査の追加](../06-手順書/ci-adding-checks.md) |
 | CI のジョブの一覧と、手元で同じ検査を実行するコマンド | [CI の検査](../06-手順書/ci.md) |
 | git の hook の置き方 | [開発環境の起動](../06-手順書/setup.md)の「起動」 |
 | Claude Code の手元の hook の設定 | skill `local-dev` の[手元の hook の設定](../../.claude/skills/local-dev/hooks.md) |
@@ -97,7 +97,7 @@ script に残るのは、2 種類の規則である。1 つは、複数のファ
 
 ※5：`.claude/settings.json` には `agent-guard.mjs`（git・gh のコマンドを実行の前に判定する）を、`.claude/settings.local.json` には `session-start.mjs` と `backslash-guard.mjs` を置く。script が見つからないとき、`settings.json` の hook はコマンドを拒否し、`settings.local.json` の hook は拒否せずに通す。働きと書き先の決め方は[手元の hook の設定](../../.claude/skills/local-dev/hooks.md)。
 
-※6：`docs.yml` は、文書だけを変えた push でも実行する。文書だけの変更でも参照や対応表が崩れるため、文書だけの push で実行しない `ci.yml` と分けた。`risk.yml` は、pull request の本文を書き換えたときにも実行する。そのたびに `ci.yml` の全体を実行しないため、分けた。ジョブの一覧と実行する時は[CI の検査](../06-手順書/ci.md)の「CI のジョブ」。
+※6：`docs.yml` は、文書だけを変えた push（develop・main・release/**・hotfix/**）と pull request でも実行する。文書だけの変更でも参照や対応表が崩れるため、文書だけの push で実行しない `ci.yml` と分けた。`risk.yml` は、pull request の本文を書き換えたときにも実行する。そのたびに `ci.yml` の全体を実行しないため、分けた。ジョブの一覧と実行する時は[CI の検査](../06-手順書/ci.md)の「CI のジョブ」。
 
 ※7：`unreadable-line` は、検査が知らない書き方の行を失敗にする。読み飛ばすと検査が誤って通るため。
 
@@ -105,7 +105,7 @@ script に残るのは、2 種類の規則である。1 つは、複数のファ
 
 ※9：基準は[CI の検査の追加](../06-手順書/ci-adding-checks.md)の「検査にするかの基準」。
 
-※10：`.claude/settings.json` の `if` 欄（`Bash(*git*)`、`Bash(*gh*)`）は、コマンドの文字列に `git`・`gh` が含まれるときだけ hook を起動する。次の書き方は、`if` 欄に当たらず hook が起動しないか、判定の対象にならない。
+※10：`.claude/settings.json` の `if` 欄（`Bash(*git*)`、`Bash(*gh*)`）は、コマンドの文字列に `git`・`gh` が含まれるときだけ hook を起動する。次の書き方は、`if` 欄の条件に一致せず hook が起動しないか、判定の対象にならない。
 
 - `g''it` のように引用符で分けたコマンドと、`\` を挟む変形は、`if` 欄に当たらず hook が起動しない（直さないと決めた）。
 - git の長いオプションの略記は、3 字以上だけ読む（`scripts/dev/hooks/agent-guard/git-rules.mjs` の `MIN_ABBREVIATION`）。
@@ -154,7 +154,7 @@ flowchart LR
 | git commit（メッセージの前） | git の pre-commit | `dev/hooks/pre-commit` → `pre-commit.mjs` → 選んだ検査とテスト（`ci/check-all.sh`） |
 | git commit（メッセージを書いた後） | git の commit-msg | `dev/hooks/commit-msg` → `ci/ja/ja-text.mjs --message` |
 | push（コードを含む）、pull request | `ci.yml` | バックエンドのビルドのジョブで `ci/backend/config-defaults.mjs`。バックエンド・PIT・管理画面・店舗画面のジョブで `ci/report/coverage-summary.mjs`。店舗画面のジョブで `ci/licenses/check-frontend.mjs`。E2E のジョブで `e2e/scripts/run.ts`（`shared/` を使う） |
-| 全ての push、pull request | `docs.yml` | `ci/check-all.sh`（全て。差分の文体の注釈 `ja-text --changed` を含む）、`ci/mermaid/mermaid-check.mjs` |
+| develop・main・release/**・hotfix/** への push、pull request | `docs.yml` | `ci/check-all.sh`（全て。差分の文体の注釈 `ja-text --changed` を含む）、`ci/mermaid/mermaid-check.mjs` |
 | `develop` への draft でない pull request（本文の書き換えを含む） | `risk.yml` | `ci/config/risk.mjs` |
 | 手動 | 人・エージェント | `dev/` の直下の入口と `dev/tools/`、`ci/review/test-diff.mjs`、個々の検査 |
 

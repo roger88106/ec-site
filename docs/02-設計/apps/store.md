@@ -12,7 +12,7 @@ C 側（消費者）の画面。Next.js（App Router）で、店舗 API（`store
 |------|------|------|
 | フレームワーク | Next.js（App Router） | 画面はサーバーコンポーネント、操作のある部分だけクライアントコンポーネント |
 | API | openapi-fetch | 取得はサーバーコンポーネント、変更はサーバーアクションから呼ぶ |
-| キャッシュ | Next.js の fetch のキャッシュ | `revalidate` の秒数（既定 60 秒）の後は、最初のリクエストに古い結果を返し、裏で再取得する（古さに上限はない）。会員の token を付けて呼ぶ API はキャッシュしない |
+| キャッシュ | Next.js の fetch のキャッシュ | `revalidate` の期限（既定 60 秒）を過ぎた後は、古い結果を返して裏で再取得する。会員の token を付けて呼ぶ API はキャッシュしない |
 | ログイン | Keycloak provider（Auth.js、`next-auth` v5） | セッションは暗号化した Cookie（JWT 方式）。token はサーバーだけで扱う |
 | 文言 | next-intl | サーバーの設定は `src/i18n/request.ts` |
 | UI・lint | shadcn/ui、Tailwind CSS、lucide-react、Biome | 管理画面と同じ |
@@ -74,7 +74,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 | 取得 | キャッシュ |
 |------|------------|
-| 一覧・検索・カテゴリ | `revalidate` は既定 60 秒（`STORE_API_REVALIDATE_SECONDS` で変えられる。E2E で短くするため）。期限の後の最初のリクエストには古い結果を返し、裏で再取得する。古さに上限はない |
+| 一覧・検索・カテゴリ | `revalidate` は既定 60 秒（`STORE_API_REVALIDATE_SECONDS` で変えられる。E2E で短くするため）。期限を過ぎたら古い結果を返し、バックグラウンドで再取得する。古さに上限はない |
 | 商品の詳細 | 使わない（`UNCACHED`）※2 |
 | カート・注文手続き・注文 | 使わない（操作のたびに変わるため） |
 | 会員の token を付ける API | 使わない（`cache: 'no-store'`。会員ごとの結果を共有のキャッシュに載せないため） |

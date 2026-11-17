@@ -39,7 +39,8 @@ E2E は専用の DB・IdP・画像のバケットで、毎回再作成した状�
 
 コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`-Werror` を付けているので、警告でも失敗する。修正は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「null の扱い」と「検査を抑えるとき」。
 
-並行のセッションがあるときは `./gradlew --stop` を実行しない。デーモンは全ての作業ツリーで共有で、他のセッションの実行中の検査が止まる。`--no-daemon` を付けて実行するか、issue 担当のセッションに聞く。並行のセッションがないときは、Docker を再起動した後に `./gradlew --stop` を実行してからテストを実行する。Gradle のデーモンが Docker に接続できなかった結果を保持し、`./gradlew check` が失敗することがあるため。
+- 並行のセッションがあるときは、`./gradlew --stop` を実行しない。理由：デーモンは全ての作業ツリーで共有されていて、他のセッションの実行中の検査が止まるため。`--no-daemon` を付けて実行するか、issue 担当のセッションに聞く。
+- 並行のセッションがないときは、Docker を再起動した後に `./gradlew --stop` を実行してから、テストを実行する。理由：Gradle のデーモンが Docker に接続できなかった結果を保持し、`./gradlew check` が失敗することがあるため。
 
 Checkstyle（`checkstyleMain`、`checkstyleTest` など）が失敗したときも、`[検査の名前]` で分かる。import の違反（`UnusedImports`、`CustomImportOrder`、`AvoidStarImport`）の修正方法は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は `src/main` の Javadoc の記載漏れなので、Javadoc を書く（他のソースセットでは `config/checkstyle/suppressions.xml` で抑えている）。
 

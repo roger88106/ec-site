@@ -13,7 +13,10 @@
 - 自分たちで作っていない画面（IdP）の要素の選び方は、`e2e/src/auth.ts` だけに置く。
 - 詳細の項目の値（`dd`）は Biome の検査が名前を認めないので、E2E では `e2e/src/detail.ts` だけに、結合テストでは補助だけに（一覧の行を探す書き方も）置く。テストのファイルは補助を呼ぶ。
 - Testing Library は画面の側の空白（全角を含む）を半角 1 つにそろえるが、検索する文字列はそろえないので、その文字列の空白は半角で書く（`'全 45 件 2 / 3 ページ'`）。
-- `toBeTruthy`・`toBeDefined` を使わない。要素があることは `toBeInTheDocument`（E2E は `toBeVisible` など）で、値は型や部分的な構造（`expect.any(…)`、`toMatchObject` など）で確認する。理由：`getBy…` は見つからないと先に失敗し、`queryBy…` の `null` は `toBeDefined` を通るため。
+- `toBeTruthy`・`toBeDefined` を使わない。
+  - 要素があることは `toBeInTheDocument`（E2E は `toBeVisible`）で確認する。
+  - 値は型や部分的な構造（`expect.any(…)`、`toMatchObject`）で確認する。
+  - 理由：`getBy…` は見つからないと先に失敗し、`queryBy…` の `null` は `toBeDefined` を通るため。
 - 表示のコンポーネントを HTML にして確認するときは、HTML の属性や要素の並びに依存する正規表現・文字の一致を使わず、役割と名前で探して jest-dom で確認する。例外は、描画の結果が空文字であることの確認（`expect(renderMarkup(…)).toBe('')`）。
 
 理由：画面を再作成しても振る舞いが同じならテストが壊れず、並びや名前の似た別の要素に一致して通ることがないようにするため。

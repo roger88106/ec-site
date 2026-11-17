@@ -38,7 +38,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 - 依存の向き：presentation → application → domain ← infrastructure（各層が依存してよい層は「層とパッケージ」の表のとおり）。
 - Repository の port は `domain/<集約>/port/` に置く。command と query の service・Repository を分ける（CQRS）。
-- ドメインオブジェクトは jMolecules で明示し（`@AggregateRoot`、`@ValueObject`、`@Identity` など。対応する注釈があれば付ける。`@Factory`・`@Repository` を含む。enum には付けない）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
+- ドメインオブジェクトは jMolecules で明示し（対応する注釈があれば付ける。enum には付けない）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
 - 永続化は `toSnapshot()` で書き出し、Factory で再構築する。application が投げる例外は `BusinessException` / `SystemException` だけ。
 - 例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい ※3。今は在庫だけ。
 
@@ -56,23 +56,32 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 ```
 module/<モジュール>/
-├── api/                公開の同期の API（@NamedInterface("api")）。API のクラスと package-info だけを置く
-│   └── model/          API の引数と戻り値の record（@NamedInterface("api")）
+├── api/                公開の同期の API（@NamedInterface("api")）
+│   └── model/          API の引数と戻り値の型
 ├── event/              公開のイベント（@NamedInterface("event")）
 ├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
 ├── application/        use case（@Transactional はここ）
-│   ├── model/          command・query・view（view は SQL の View のような読み取り用の投影で、画面の型ではない）。少なければ直下に置き、直下が 10 を超えたら command/・query/・view/ に分ける
-│   ├── port/           application が使う port（参照の Repository、他のモジュールの Directory）。interface だけを置き、port が返す record は model/ に置く（port の引数の record と結果の enum は入れ子でよい）
-│   ├── handler/        イベントのハンドラー（package-private の service や型を使うハンドラーは、それらと同じパッケージに置く）
+│   ├── model/          command・query・view
+│   ├── port/           application が使う port（参照の Repository、Directory）
+│   ├── handler/        イベントのハンドラー
 │   └── job/            定期実行のジョブと、その設定の値の型
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
-│   └── <集約>/         集約、entity（直下に package-private で置き、パッケージを分けない）、vo/（値）、port/（Repository、domain が使う Directory）
+│   └── <集約>/         集約、entity、vo/（値）、port/（Repository など）
 └── infrastructure/     port の実装
-    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする、外部のクライアントを作る。バックエンドの書き方の「設定の値の型」）。adapter ごとの設定と、条件で有効にする設定は、技術の名前でよい（`StripeConfig`、`Mock*Config`）
+    ├── <モジュール>Config  設定のクラス
     ├── persistence/    jOOQ の Repository と、それが使うクラス
     ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
     └── <外部>/          外部の仕組み（storage、converter、cache など）
 ```
+
+構成の補足：
+
+- `api/` には、API のクラスと package-info だけを置く。`api/model/` も `@NamedInterface("api")` で公開する。
+- `application/model/` の view は、SQL の View のような読み取り用の投影で、画面の型ではない。少なければ直下に置き、直下が 10 を超えたら command/・query/・view/ に分ける。
+- `application/port/` には interface だけを置く。port が返す型は `model/` に置く（port の引数の型と結果の enum は入れ子でよい）。
+- package-private の service や型を使うハンドラーは、それらと同じパッケージに置く。
+- `domain/<集約>/` の entity は、直下に package-private で置き、パッケージを分けない。
+- 設定のクラスの役割は、設定の値の型の有効化、domain の部品の Bean 化、外部のクライアントの作成（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「設定の値の型」）。adapter ごとの設定と、条件で有効にする設定は、技術の名前でよい（`StripeConfig`、`Mock*Config`）。
 
 層ごとの、依存してよい先：
 

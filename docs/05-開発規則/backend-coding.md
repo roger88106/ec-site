@@ -9,10 +9,20 @@
 どのモジュールも、[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」の構成と依存の表のとおりにし、不要な層は作らない（イベントを出さないなら `event/` は不要）。どの層も config に依存せず、`application/model/` は application の `port/` に依存しない。
 
 - **参照と更新（レベル A）**：参照の service は `application/model/` の view を返し、集約を返さない（presentation は集約を受け取らない）。画面の操作の可否は、view を作る所で集約のメソッドを呼んで view に入れる。
-- **外部の呼び出しの前の読み取り**：外部のサービスを呼ぶ前に集約の状態を読む処理（外部へのリクエストを作る）も参照の service に置き、リクエストの型か view を返す。呼んだ後の更新は更新の service で行う。トランザクションの外で外部のサービスを呼ぶ処理は `XxxGatewayService`（`PaymentGatewayService` など）にまとめ、読み取りと結果の反映は参照・更新の service に委ねる。ジョブとハンドラーから外部のサービスを直接呼ばない。例外は 2 つで、レベル B で外部のサービスが 1 つなら DB の操作と同じ service でよく、記録と送信を同じトランザクションで巻き戻す設計は分けない。
+- **外部の呼び出しの前の読み取り**：外部のサービスを呼ぶ前に集約の状態を読む処理（外部へのリクエストを作る）も参照の service に置き、リクエストの型か view を返す。呼んだ後の更新は更新の service で行う。
+  - トランザクションの外で外部のサービスを呼ぶ処理は `XxxGatewayService`（`PaymentGatewayService` など）にまとめ、読み取りと結果の反映は参照・更新の service に委ねる。
+  - ジョブとハンドラーから、外部のサービスを直接呼ばない。
+  - 例外：レベル B で外部のサービスが 1 つなら、DB の操作と同じ service でよい。記録と送信を同じトランザクションで巻き戻す設計は分けない。
 - **イベント**：レベル A の application はイベントを送り出さない（送り出し方はバックエンドのアーキテクチャの「モジュール間の連携」）。domain は自分のモジュールの `event/` を参照してよい。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
-- **公開の API**：`api/` は interface を持たない `@Component` のクラスで、view を `api/` の型に変換する。`api/` の型を `api/` の外が実装・継承せず、service は `api/` の型に依存しない。`api/` は application を通さず domain を直接呼んでよい（依存は内向き）。専用の検索の Repository が必要なとき、または計算を再利用しうるときは、application の service に委ねる。転送だけのメソッドも、トランザクションの境界か、null の入口（「null の扱い」）なら残してよい。
-- **domain の直下**：エラーの定義と、複数の集約が使う値（商品とカテゴリが使う表示順の再採番など）を置く。値の型は、集約の項目でなくても、その集約の `vo/` に置く（例：order の `vo/` の `BuyerProfile`、`Gender`）。`vo/` の型が持つ列挙も `vo/` に置く。理由：集約のパッケージに置くと、`vo/` と集約のパッケージが循環するため。1 つの型の中だけで使う列挙は、その型の入れ子にする。entity は、パッケージを分けず、集約の直下に package-private で置く。`vo/` のない小さい集約は、値の型を集約のパッケージに置いてよい。
+- **公開の API**：`api/` は interface を持たない `@Component` のクラスで、view を `api/` の型に変換する。`api/` の型を `api/` の外が実装・継承せず、service は `api/` の型に依存しない。
+  - `api/` は、application を通さず domain を直接呼んでよい。
+  - 専用の検索の Repository が必要なとき、または計算を再利用しうるときは、application の service に委ねる。
+  - 転送だけのメソッドは、トランザクションの境界か null の入口（「null の扱い」）なら残してよい。
+- **domain の直下**：エラーの定義と、複数の集約が使う値（商品とカテゴリが使う表示順の再採番など）を置く。値の型は、集約の項目でなくても、その集約の `vo/` に置く（例：order の `BuyerProfile`、`Gender`）。
+  - `vo/` の型が持つ列挙も `vo/` に置く。理由：集約のパッケージに置くと、`vo/` と集約のパッケージが循環するため。
+  - 1 つの型の中だけで使う列挙は、その型の入れ子にする。
+  - `vo/` のない小さい集約は、値の型を集約のパッケージに置いてよい。
+  - entity は、パッケージを分けず、集約の直下に package-private で置く（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」）。
 - **認証の情報の取り出し**：`CurrentToken`、`CurrentMember`、`CurrentOperator`、`CurrentMemberIds` を使えるのは、presentation 層と `common.security` だけにする。application 以降へは取り出した値（会員の ID など）を引数で渡し、Spring Security の型を公開しない。例外は次の表で、増やすときは表に理由を書く。
 
 | 呼び出し元 | 置き場所 | 例外の理由 |
@@ -52,7 +62,9 @@
 - 他のモジュールの `api/` は、port（`<相手>Directory` の interface と、相手の情報を変換して持つ自分の型）を通して使い、相手の型を内部で使わない。port は使う層の `port/` に、実装（`<相手>ApiDirectory`。public にしない）は `infrastructure/directory/` に置く。
 - 他のモジュールの `api/` を使うのは `infrastructure/directory/` だけにする。例外は、presentation から使う `member.api.CurrentMemberIds`（「標準の構成」の表）。
 - モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
-- 列挙を別の列挙に変換するとき（相手の型と自分の型、ドメインとイベント、ドメインと生成したモデル）は、`switch` 式で値ごとに書き、`valueOf(x.name())`・`fromValue(x.name())` を使わない。ドメインの列挙からイベントの列挙への変換は、ドメインの列挙のメソッド（`OrderStatus.toEventStatus()` など）に置く。変換先が domain から依存できない型なら、変換する側に置く。
+- 列挙を別の列挙に変換するとき（相手の型と自分の型、ドメインとイベント、ドメインと生成したモデル）は、`switch` 式で値ごとに書き、`valueOf(x.name())`・`fromValue(x.name())` を使わない。
+  - ドメインの列挙からイベントの列挙への変換は、ドメインの列挙のメソッド（`OrderStatus.toEventStatus()` など）に置く。
+  - 変換先が domain から依存できない型なら、変換する側に置く。
 - モジュールの間とレイヤーの間で、列挙を名前の文字列で受け渡さない（command・query・view・api の型は列挙で持つ）。名前の文字列から列挙にするのは、DB の文字列を読む `infrastructure/persistence/` と、ドメインの中だけにする。
 
 理由：相手の変更の影響を実装の 1 か所に限り、列挙に値を追加したときの変換の書き忘れをコンパイルで気づけるようにするため。
@@ -170,7 +182,9 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 
 ### トランザクションは application
 
-- `@Transactional` は application の service に付け、参照だけなら `readOnly = true` にする。参照だけか更新だけの service（`XxxQueryService`、`XxxCommandService`、用途の名前の service）はクラスに付け、Command と Query を分けないレベル B の service はメソッドに付ける。api と presentation には付けない。
+- `@Transactional` は application の service に付け、参照だけなら `readOnly = true` にする。api と presentation には付けない。
+  - 参照だけか更新だけの service（`XxxQueryService`、`XxxCommandService`、用途の名前の service）は、クラスに付ける。
+  - Command と Query を分けないレベル B の service は、メソッドに付ける。
 - 例外は、別のトランザクションが必要な infrastructure のもの（呼び出し元と別に確定させる記録など）で、付けた所に理由を書く。
 - 外部サービス（決済・画像の変換・ファイル保存・物流・メールなど）は、トランザクションの外で、タイムアウトを設定して呼ぶ（BR-40）。呼ぶ前の読み取りと呼んだ後の更新は、それぞれのトランザクションにし、`XxxGatewayService` でまとめる（「標準の構成」）。イベントのリスナーで呼ぶときは、リスナーをトランザクションなし（`@ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)`）にする。
 - 外で呼べないものは、呼ぶ所と設計書に理由を書く（出荷のメール：[通知モジュール](../03-機能仕様/notification.md)）。
@@ -206,14 +220,16 @@ getter・コンストラクターの注入などの定型コードは、main で
 | jOOQ の実装 | `JooqXxxRepository` | `JooqOrderRepository` |
 | service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` か用途の名前 ※3 | `OrderQueryService`、`OrderPlacementService` |
 | service（外部の呼び出し） | `XxxGatewayService` | `PaymentGatewayService` |
-| イベントのハンドラー | `XxxHandler`（置き場所は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」）。受けて service を呼ぶだけにし、処理は `XxxService` に置く | `CartChangedHandler` |
-| ジョブ | `XxxJob`（`application/job/`）。ジョブの設定の型も同じ場所 | `CartCleanupJob`、`CartCleanupProperties` |
-| Config | `<モジュール>Config`。adapter ごとの Config と、条件で有効にする Config は技術の名前でよい | `CartConfig`、`StripeConfig`、`MockPaymentConfig` |
+| イベントのハンドラー | `XxxHandler` | `CartChangedHandler` |
+| ジョブ | `XxxJob`（設定の型も `application/job/`） | `CartCleanupJob`、`CartCleanupProperties` |
+| Config | `<モジュール>Config`。adapter ごと・条件ごとの Config は技術の名前 | `CartConfig`、`StripeConfig` |
 | 腐敗防止層の port | `<相手>Directory`（使う層の `port/`） | `OrderDirectory` |
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `OrderApiDirectory` |
 | イベント | 過去形 | `OrderShipped` |
 
 ※3：用途の名前を使うのは、1 つの集約に用途が複数あるときと、他のモジュールの呼び出しを組み合わせるとき。データを変えずに他のモジュールの結果を組み合わせる service（注文の手続きの見積もりなど）も用途の名前にし、読み取り専用のトランザクションにする。Command と Query を分けないレベル B の service は `XxxService` にする。
+
+ハンドラーは、受けて service を呼ぶだけにし、処理は `XxxService` に置く（置き場所は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」）。
 
 別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
 
@@ -221,14 +237,20 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 確認方法：リポジトリと腐敗防止層は自動（ArchUnit）、service・ハンドラー・ジョブ・Config とイベントはレビュー
 
-### 小さなコードの形
+### 細かいコードの書き方
 
-- 条件が 1 つの検索を、Query の record で包まない。引数をそのまま返すだけのメソッドの戻り値は `void` にする。
-- 代入だけのコンストラクターは、手で書かず、引数に `lombok.NonNull` を付けて Lombok で作る。引数をコピーする・検査するコンストラクターは手書きでよい。コンストラクターに処理のある enum は対象でない。
+- 条件が 1 つの検索を、Query の record で包まない。
+- 引数をそのまま返すだけのメソッドの戻り値は、`void` にする。
+- 代入だけのコンストラクターは、手で書かず、引数に `lombok.NonNull` を付けて Lombok で作る。
+  - 引数をコピーする・検査するコンストラクターは、手書きでよい。
+  - コンストラクターに処理のある enum は、対象でない。
 - `catch` の変数の名前は `e` にする。
-- lambda の中から別の検索を呼ばない（N+1 に見える）。1 回だけの callback は呼んでよい。添字の `for` を避ける。
+- lambda の中から別の検索を呼ばない（N+1 に見える）。1 回だけの callback は呼んでよい。
+- 添字の `for` を避ける。
 - `Optional` は `isEmpty` と `get` に分けず、`map` でつなぐ。
-- 項目を 1 つずつ設定する・組み立てる処理（`record.setXxx` の連続、多くの引数の `new`）は、まとまり（住所、購入者、日時など）ごとに空行で分け、必要ならまとまりにコメントを付ける。全体を探して直さず、触ったときに直す。
+- 項目を 1 つずつ設定・組み立てる処理（`record.setXxx` の連続、多くの引数の `new`）は、まとまり（住所、購入者、日時など）ごとに空行で分ける。
+  - 必要なら、まとまりにコメントを付ける。
+  - 全体を探して直さず、触ったときに直す。
 - 集約は、状態を判定・参照するメソッドを前に集め、状態を変えるメソッドを業務の流れの順に並べる。
 
 理由：lambda の中の検索は N+1 に見えるため。
@@ -272,7 +294,9 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 - 設定は `@ConfigurationProperties` の record で受け、`@Validated` を付ける。型は使う層に置く（画像の変換の設定は `infrastructure/converter/` など）。
 - 接頭辞は `ecsite.<モジュール>`、まとまりを分けるときは `ecsite.<モジュール>.<範囲>`（`ecsite.media.storage` など）、モジュールでない共通の設定は `ecsite.<範囲>`（`ecsite.security` など）。
 - 環境で変わる値（接続先・資格情報・ID・バケット名）は既定値を持たず必須にし（BR-31）、環境によらない値（上限、時間など）だけ既定値を持つ ※4。
-- 外部のクライアント（`RestClient` など）は、Config の `@Bean` で作り、使うクラスにコンストラクターで注入する。テストは、Config の static メソッド（`ImgproxyConfig.restClient`）で同じ設定を作る。外部のクライアントを使う実装のクラスは public にしない（port を通さず具象に依存させないため。設定の切り替えのテストが具象を見るなら public にしてよい）。
+- 外部のクライアント（`RestClient` など）は、Config の `@Bean` で作り、使うクラスにコンストラクターで注入する。
+  - テストは、Config の static メソッド（`ImgproxyConfig.restClient`）で同じ設定を作る。
+  - 外部のクライアントを使う実装のクラスは、public にしない（port を通さず具象に依存させないため）。設定の切り替えのテストが具象を見るなら、public にしてよい。
 - モジュールの `@Configuration` のクラスは `infrastructure/`（またはその下）に置き、`@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - presentation は設定の値の型を受け取らず、必要な値は application の service が読んで view で返す（`api/` は対象外）。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
@@ -292,12 +316,19 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 
 ### 検索と更新と値の取り出し
 
-- ループの中で SQL を実行しない。複数行の挿入・upsert は 1 つの `insert ... values` に、更新は `update ... from (values ...)` にまとめる。例：`JooqCartRepository` の品目の挿入（`values` を繰り返して最後に 1 回 `execute`）、`JooqCategoryRepository.saveAll` の `DSL.values(rows)`。行ごとに実行する必要があるときは、理由をコメントに書く。
+- ループの中で SQL を実行しない。
+  - 複数行の挿入・upsert は 1 つの `insert ... values` に、更新は `update ... from (values ...)` にまとめる。
+  - 例：`JooqCartRepository` の品目の挿入、`JooqCategoryRepository.saveAll` の `DSL.values(rows)`。
+  - 行ごとに実行する必要があるときは、理由をコメントに書く。
 - JDBC の batch は使わない。制約違反の変換が `getCause()` だけをたどるため。
 - 1 対 1 の 2 回の検索は、JOIN で 1 回にする。`MULTISET` は、複数の親の子の一覧を読むときだけに使う。
 - `INSERT ... RETURNING` を CTE で読み直さない（同時の挿入が見えないため）。
-- 位置で値を取らない。`r.value1()` ではなく `r.get(FIELD)` を使う。計算した列は、ローカル変数に置いた `Field` で取る。1 列だけの選択の `Record1::value1` は使ってよい。
-- 同じ変換は、`row(...).mapping(Xxx::new)` の `SelectField` の定数にし、列を組み合わせるときは `Records.mapping` で包む。列の並びは変換先の項目の順にし、その旨をコメントに書く。
+- 位置で値を取らない。`r.value1()` ではなく `r.get(FIELD)` を使う。
+  - 計算した列は、ローカル変数に置いた `Field` で取る。
+  - 1 列だけの選択の `Record1::value1` は、使ってよい。
+- 同じ変換は、`row(...).mapping(Xxx::new)` の `SelectField` の定数にする。
+  - 列を組み合わせるときは、`Records.mapping` で包む。
+  - 列の並びは変換先の項目の順にし、その旨をコメントに書く。
 - Repository の実装は、定数を「取得列と変換」、検索のメソッドを「検索処理」の区切りに置く。
 
 ```java
@@ -327,12 +358,19 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
 - null を取りうる所には JSpecify の `org.jspecify.annotations.Nullable` を付け、他の `Nullable`（`jakarta.annotation`、`javax.annotation`、`org.springframework.lang`）は使わない。配列や修飾した型では型の直前に付け、迷ったら JSpecify の位置にする（`String @Nullable []` など）。
 - 選び方：
   - null が正しい値（API の応答の省略できる項目、DB の null を取りうる列など）は `@Nullable` にし、それ以外は null を作らない書き方にする。
-  - 値がないことを返す参照のメソッドは、`findXxx` が見つからなければ `Optional`（一覧なら空の一覧）を返し、`getXxx` が `NOT_FOUND`（404）を投げる。集約の null を取りうるフィールドは `@Nullable` にする。
+  - 値がないことを返す参照のメソッド：`findXxx` は `Optional`（一覧なら空の一覧）を返し、`getXxx` は `NOT_FOUND`（404）を投げる。集約の null を取りうるフィールドは `@Nullable` にする。
   - getter は、値の有無が状態に依存しないなら `Optional`（`Cart.memberId()`）、状態で決まるなら `@Nullable`（`Order.cancellation()`）を返す。後者は、呼ぶ側が状態を確認してから `Objects.requireNonNull` で受ける。
 - `@Nullable` の値を受ける `Objects.requireNonNull` のメッセージは、null でない根拠の状態を肯定の文で書く（「キャンセルした注文にはキャンセルの記録がある」）。メッセージのない呼び出し（`Operator` の生成など）は対象外。
-- jOOQ のレコードの getter は NullAway が確認しないので、null を取りうる列の値は `@Nullable` の引数か `Optional` で受け、注釈のない引数に渡さない。ローカル変数には `@Nullable` を付けず、jOOQ で 1 件を取るのは `fetchOptional` にする。
-- IDE の null の誤検出をなくすために `Objects.requireNonNull` で包まない。null の判定は CI の NullAway を正とする。
-- null を入口で防ぐ。service の公開の引数、Command の項目、`api/` の公開の引数に `lombok.NonNull` を付ける（投げる例外は NPE のまま。`IllegalArgumentException` が NPE に変わってよい）。presentation（Controller と Mapper）には付けない。入口に付けたら、下の層の同じ null の検査は削除する。null で業務のエラーを確認するテストがあれば削除しない。null を渡すだけのテストは足さない。分岐網羅（C1）のカバレッジの基準が変わったら、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の決め方で、基準を書き換える。
+- jOOQ のレコードの getter は NullAway が確認しないので、null を取りうる列の値は `@Nullable` の引数か `Optional` で受け、注釈のない引数に渡さない。
+  - ローカル変数には `@Nullable` を付けない。
+  - jOOQ で 1 件を取るときは、`fetchOptional` にする。
+- IDE の null の誤検出を消すために `Objects.requireNonNull` で包まない。null の判定は CI の NullAway を正とする。
+- null は入口で防ぐ。service の公開の引数、Command の項目、`api/` の公開の引数に `lombok.NonNull` を付ける。
+  - 投げる例外は NPE のままにする（`IllegalArgumentException` が NPE に変わってよい）。
+  - presentation（Controller と Mapper）には付けない。
+  - 入口に付けたら、下の層の同じ null の検査は削除する。
+  - null で業務のエラーを確認するテストは削除しない。null を渡すだけのテストは足さない。
+  - 分岐網羅（C1）のカバレッジの基準が変わったら、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の決め方で、基準を書き換える。
 
 理由：null の誤りを、Spring の API の注釈（同じ JSpecify）も含めて、実行より前のコンパイルで見つけるため。
 

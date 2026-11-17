@@ -57,7 +57,7 @@
 ```
 region/
 ├── api/                    # 他モジュールへの参照の公開
-│   └── model/              # API の引数と戻り値の record
+│   └── model/              # API の引数と戻り値の型
 ├── application/            # 参照のサービス
 │   └── port/               # リポジトリの port
 ├── domain/                 # 都道府県、市区町村、住所

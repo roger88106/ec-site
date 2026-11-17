@@ -2,7 +2,9 @@
 // 手で rebase -i を操作すると、途中で止まったまま残ったり、内容を変えてしまったりする。
 // この script は、条件を確認してから書き換え、tree（内容）が元と同じことを確認し、失敗したら元に戻す。
 //
-// 条件（進行中の操作がない、未 commit の変更がない、対象が HEAD の祖先で、今の agent/ のブランチ以外のリモートのブランチに push 済みでない、範囲にマージの commit がない）は reword が確認する。
+// 書き換える前に、次の条件を確認する。
+// - 進行中の操作と、未 commit の変更がない。範囲にマージの commit がない。
+// - 対象が HEAD の祖先で、今の agent/ のブランチ以外のリモートのブランチに push 済みでない。
 // 各 commit の書き換えは commit の hook（commit-msg など）を通す。hook が拒否して rebase が止まったら、元の HEAD に戻す。
 //
 // 使い方：node scripts/dev/tools/reword.mjs <対応表の JSON>
@@ -180,7 +182,7 @@ function reword(mapPath, cwd = process.cwd()) {
   }
   const plan = loadPlan(mapPath, cwd)
   const head = gitOrThrow(cwd, ['rev-parse', 'HEAD'])
-  // 今の agent/ のブランチは push 済みでも書き換えて force push してよいので、同じ名前のリモートのブランチを条件から除く。
+  // 今の agent/ のブランチは push 済みでも書き換えて force push してよいので、同じ名前のリモートのブランチを、拒否の対象から除く。
   // 他の agent/ のブランチ（親のブランチなど）に入った commit は、書き換えると元の commit がそのブランチに残るので除かない
   const branch = git(cwd, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout
   const isOwnAgentBranch = (ref) => {

@@ -1,4 +1,6 @@
-// reword.mjs（commit のメッセージを非対話で書き換える script）のテスト（node --test scripts/dev/tools/reword.test.mjs）
+// reword.mjs（commit のメッセージを非対話で書き換える script）のテスト。
+//
+// 実行：node --test scripts/dev/tools/reword.test.mjs
 // os.tmpdir() の下の一時のリポジトリの中だけで行い、テストの後に消す
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'

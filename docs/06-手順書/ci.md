@@ -21,19 +21,19 @@
 
 | ワークフロー | ジョブ | 実行するもの | 実行する時 |
 |--------------|--------|--------------|------------|
-| `ci.yml` | バックエンド（ビルドと単体テスト） | ライセンス、ビルド、静的解析、単体テストの検査を実行する（[バックエンドの CI のジョブ](ci-backend-jobs.md)）。 | push（[バックエンドの CI のジョブ](ci-backend-jobs.md)の「ci.yml を実行しないファイル」を除く）と pull request |
+| `ci.yml` | バックエンド（ビルドと単体テスト） | ライセンス、ビルド、静的解析、単体テストの検査を実行する（[バックエンドの CI のジョブ](ci-backend-jobs.md)）。 | pull request と、`develop`・`main`・`release/**`・`hotfix/**` への push（[バックエンドの CI のジョブ](ci-backend-jobs.md)の「ci.yml を実行しないファイル」を除く） |
 | `ci.yml` | バックエンド（PIT） | domain の mutation testing（PIT）と、mutation score の基準の検査を実行する。 | 同上 |
 | `ci.yml` | バックエンド（統合テスト 1/3・2/3・3/3） | 統合テストを 3 つに分けて実行する。 | 同上 |
 | `ci.yml` | バックエンド | 上のバックエンドのジョブの結果を確認し、カバレッジの報告と基準の検査を行う。 | 同上 |
 | `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの基準の検査を行う。 | 同上 |
 | `ci.yml` | 店舗画面 | 画面全体の検査（ライセンス、knip など）と、共有パッケージ・店舗画面のテストとビルドを行う。 | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェックの後、ブラウザーで操作する。 | 同上 |
-| `docs.yml` | 文書と CI の検査の script | `check-all.sh` と Mermaid の図の描画の検査を実行する（[CI の検査の script](ci-checks.md)）。 | 全ての push と pull request |
+| `docs.yml` | 文書と CI の検査の script | `check-all.sh` と Mermaid の図の描画の検査を実行する（[CI の検査の script](ci-checks.md)）。 | pull request と、`develop`・`main`・`release/**`・`hotfix/**` への全ての push |
 | `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチ名が `release/` か `hotfix/` で始まることを確認する（[ブランチとリリース](branches.md)の「`main` の元のブランチの制限」）。 | `main` への pull request |
 | `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/config/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する。 | `main` で `showcase/` が変わったとき、手動 |
 
-`ci.yml` と `docs.yml` は、`develop` と `main` では全ての commit を検査し、前の実行を中止しない。作業ブランチでは、新しい push が、同じブランチの前の push の実行を中止する。pull request の実行も、同じ pull request の前の実行を中止する。push と pull request の実行は別に動くので、pull request のあるブランチでは同じ commit で 2 回実行される（`ci.yml` は、文書だけの push では pull request の 1 回）。これらを同じ group にしない（中止された check が残ると、同じ名前の成功した check があっても、必須の検査を満たさずマージできないため）。
+`ci.yml` と `docs.yml` は、`develop` と `main` では全ての commit を検査し、前の実行を中止しない。それ以外では、新しい実行が、同じ ref の前の実行を中止する。作業ブランチ（`agent/` など）は、pull request で実行し、push だけでは実行しない。理由：両方で実行すると、同じ検査が 2 回動き、警告も 2 回付くため。push の実行と pull request の実行は、同じ group にしない。理由：中止された check が残ると、同じ名前の成功した check があっても、必須の検査を満たさずマージできないため。
 
 ## 他の文書
 

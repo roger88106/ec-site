@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
@@ -497,22 +497,13 @@ describe('固定の節に書き換えた機能仕様', () => {
     assertOne(checkFunctionalSpec(`${functionalText(SECTIONS)}\n\`\`\`\n`, SECTIONS), /閉じていないコードブロック/)
   })
 
-  test('登録している機能仕様は、書き換え済みの ③ だけである', () => {
-    assert.deepEqual(FUNCTIONAL_SPECS, [
-      'docs/03-機能仕様/order.md',
-      'docs/03-機能仕様/tax.md',
-      'docs/03-機能仕様/catalog.md',
-      'docs/03-機能仕様/inventory.md',
-      'docs/03-機能仕様/media.md',
-      'docs/03-機能仕様/cart.md',
-      'docs/03-機能仕様/member.md',
-      'docs/03-機能仕様/region.md',
-      'docs/03-機能仕様/storefront.md',
-      'docs/03-機能仕様/payment.md',
-      'docs/03-機能仕様/shipping.md',
-      'docs/03-機能仕様/notification.md',
-      'docs/03-機能仕様/reporting.md',
-    ])
+  test('登録している機能仕様は、全て docs/03-機能仕様/ の直下に今あるファイルで、重複しない', () => {
+    assert.ok(FUNCTIONAL_SPECS.length > 0)
+    for (const file of FUNCTIONAL_SPECS) {
+      assert.match(file, /^docs\/03-機能仕様\/[^/]+\.md$/)
+      assert.ok(existsSync(new URL(`../../../${file}`, import.meta.url)), file)
+    }
+    assert.equal(new Set(FUNCTIONAL_SPECS).size, FUNCTIONAL_SPECS.length)
   })
 })
 

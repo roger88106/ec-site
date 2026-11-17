@@ -21,29 +21,29 @@ jooq = "3.21.9"
 # jooq-plugin にすると、jooq の値を build.gradle.kts で libs.versions.jooq.asProvider() から取る形に変わるので、camelCase にする
 jooqPlugin = "10.2.1"
 # jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM のバージョンになるので、Boot の管理するバージョンに合わせる
-flyway = "13.12.0"
+flyway = "13.12.2"
 postgresql = "42.7.14"
 
 # --- API ---
-openapi-generator = "7.26.0"
+openapi-generator = "7.27.0"
 jackson-databind-nullable = "0.2.13"
 
 # --- DDD ---
 jmolecules = "2025.0.2"
 
 # --- 定期ジョブの分散ロック（バックエンドのアーキテクチャの「水平スケール」） ---
-shedlock = "7.10.1"
+shedlock = "7.11.0"
 
 # --- 決済サービス（Stripe。決済の設計の「Stripe」） ---
 stripe = "34.1.0"
 
 # --- 画像のファイル（オブジェクトストレージ） ---
-awssdk = "2.57.10"
+awssdk = "2.57.13"
 
 # --- 静的解析 ---
 # コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体でバージョンが別
 errorprone-plugin = "5.2.0"
-errorprone = "2.51.0"
+errorprone = "2.52.0"
 # null の検査（Error Prone の検査として動く）
 nullaway = "0.14.3"
 # Javadoc の書き漏れと import の検査（コメントの書き方の「Java」、バックエンドの書き方の「書式」）
@@ -54,7 +54,7 @@ testcontainers = "2.0.5"
 jacoco = "0.8.13"
 # テストの Java のコードの重複の検出（PMD の CPD）。Gradle のプラグインと PMD の本体でバージョンが別
 cpd-plugin = "3.5"
-pmd = "7.28.0"
+pmd = "7.29.0"
 # domain の mutation testing（PIT）。PIT の本体、Gradle のプラグイン、JUnit 5 との連携でバージョンが別
 pitest-engine = "1.30.1"
 pitest-gradle-plugin = "1.19.0"

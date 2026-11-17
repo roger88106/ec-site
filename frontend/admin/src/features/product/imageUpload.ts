@@ -132,9 +132,13 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
  *
  * @param productId 商品 ID
  * @param file      画像のファイル
- * @param version   登録のときに送る商品のバージョン
+ * @param currentVersion 商品の最新のバージョンを取得する関数。ファイルの送信の後、登録の直前に呼ぶ（送信の間に他の操作で上がったバージョンで送るため）
  */
-export async function uploadProductImage(productId: string, file: File, version: number): Promise<void> {
+export async function uploadProductImage(
+  productId: string,
+  file: File,
+  currentVersion: () => Promise<number>,
+): Promise<void> {
   // 受け付けない形式は送らずに失敗にする
   const contentType = imageContentType(file)
   if (contentType === null) {
@@ -153,6 +157,6 @@ export async function uploadProductImage(productId: string, file: File, version:
   }
   await fetchClient.POST('/products/{productId}/images', {
     params: { path: { productId } },
-    body: { uploadId: upload.uploadId, version },
+    body: { uploadId: upload.uploadId, version: await currentVersion() },
   })
 }

@@ -64,8 +64,10 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 
 | ツール | 名前 | level の指定 |
 |--------|------|--------------|
-| 組み込みのコードレビュー | Claude Code の `/code-review` | 毎回指定する（厚め high、標準 medium、節約 low） |
+| 組み込みのコードレビュー | Claude Code の `/code-review` | 毎回指定する（厚め high、標準 medium、節約 low） ※2 |
 | セキュリティのレビュー | Claude Code の `/security-review` | |
+
+※2：medium を指定しても、Claude Code の側で high で動く（既知の制限。指定の書き方は公式の文書のとおり）。指定は変えず、レビューの記録に、指定した level と表示された level を両方書く（skill `review` の「使う場面」の ※1）。
 
 ## Git
 
@@ -75,13 +77,13 @@ skill は `.claude/skills/` にある。追加する・削除する・役割を�
 | メッセージ | 日本語。1 行目は `<対象>: <要約>`（例：`tax: 税率の一覧の置き換えを実装する`）、決定の理由は本文 |
 | 単位 | セッションは、いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。`develop`・`main`・`release/`・`hotfix/` の push 済みの履歴は書き換えない。`agent/` のブランチは、push 済みでも書き換えて force push してよい（理由：利用者は最後の pull request だけを確認し、途中のブランチの履歴は重要でないため） |
-| push・pull request | セッションは、push と pull request の作成で許可を求めない ※2。push の時点は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」 |
-| マージ・tag | 許可と担当は [マージと後片付け](docs/05-開発規則/merging.md)の「マージの許可と後片付け」。マージは `gh pr merge --match-head-commit <SHA>` で head の commit を指定する。hook の扱いは ※3 |
+| push・pull request | セッションは、push と pull request の作成で許可を求めない ※3。push の時点は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」 |
+| マージ・tag | 許可と担当は [マージと後片付け](docs/05-開発規則/merging.md)の「マージの許可と後片付け」。マージは `gh pr merge --match-head-commit <SHA>` で head の commit を指定する。hook の扱いは ※4 |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（[開発環境の起動](docs/06-手順書/setup.md)の「手元の置き場所」） |
 
-※2：`gh pr ready` も許可を求めない（`.claude/settings.json` の permissions で許可してある）。draft に戻す `--undo` は、確認を求める。
+※3：`gh pr ready` も許可を求めない（`.claude/settings.json` の permissions で許可してある）。draft に戻す `--undo` は、確認を求める。
 
-※3：hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する。担当のセッション、未解決の指摘、`hotfix/` の後の `main` から `develop` への取り込みは hook が見ないので、[マージと後片付け](docs/05-開発規則/merging.md)の規則として守る。
+※4：hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する。担当のセッション、未解決の指摘、`hotfix/` の後の `main` から `develop` への取り込みは hook が見ないので、[マージと後片付け](docs/05-開発規則/merging.md)の規則として守る。
 
 ## 環境
 

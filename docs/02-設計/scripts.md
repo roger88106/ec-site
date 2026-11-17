@@ -43,7 +43,7 @@
 | 場所 | 置くもの |
 |------|----------|
 | 直下 | 人やエージェントが直接呼ぶ入口（スロット、データの再作成、画面と E2E の確認、Dependabot の pull request のマージの補助など）と、入口の shell が呼ぶ script（E2E が実行中かの確認）。スロットは、作業ツリーごとの手元の環境 |
-| `hooks/` | git の hook（入口の `pre-commit`・`commit-msg` と処理の `.mjs`）と Claude Code の hook（`agent-guard.mjs` と規則のモジュール `agent-guard/`、`backslash-guard.mjs`、`session-start.mjs`） |
+| `hooks/` | git の hook（入口の `pre-commit`・`commit-msg` と処理の `.mjs`）と Claude Code の hook（`agent-guard.mjs` と規則のモジュール `agent-guard/`、`backslash-guard.mjs`、`session-start.mjs`、`compact-context.mjs`） |
 | `lib/` | ポートを使うプロセスの停止、Git Bash の場所など、入口が共有するモジュール。`lib/slot/` はスロットのポートの確認と停止 |
 | `tools/` | 手動で使うツール（壊しての確認、commit のメッセージの書き換え、機能紹介のページの数字） |
 | `windows/` | Windows だけのツール（ポートの予約から外す） |
@@ -95,7 +95,7 @@ script に残るのは、2 種類の規則である。1 つは、複数のファ
 
 ※4：全てを実行すると commit が遅いため。選び漏れは CI で見つかる。選び方は[CI の検査の script](../06-手順書/ci-checks.md)の「commit の前の hook」。検査はステージした内容を一時ディレクトリに取り出して実行し、作業ツリーを変えない。stash で退避すると、一部だけをステージしたファイルを戻すときに衝突するため（`scripts/dev/hooks/pre-commit.mjs` の冒頭のコメント）。
 
-※5：`.claude/settings.json` には `agent-guard.mjs`（git・gh のコマンドを実行の前に判定する）を、`.claude/settings.local.json` には `session-start.mjs` と `backslash-guard.mjs` を置く。script が見つからないとき、`settings.json` の hook はコマンドを拒否し、`settings.local.json` の hook は拒否せずに通す。働きと書き先の決め方は[手元の hook の設定](../../.claude/skills/local-dev/hooks.md)。
+※5：`.claude/settings.json` には `agent-guard.mjs`（git・gh のコマンドを実行の前に判定する）と `compact-context.mjs`（文脈の圧縮の前に要約に残すものを指示し、圧縮の後に規則の文書を読み直すよう知らせる）を、`.claude/settings.local.json` には `session-start.mjs` と `backslash-guard.mjs` を置く。script が見つからないとき、`agent-guard.mjs` の hook はコマンドを拒否し、他の hook は拒否せずに通す。働きと書き先の決め方は[手元の hook の設定](../../.claude/skills/local-dev/hooks.md)。
 
 ※6：`docs.yml` は、文書だけを変えた push（develop・main・release/**・hotfix/**）と pull request でも実行する。文書だけの変更でも参照や対応表が崩れるため、文書だけの push で実行しない `ci.yml` と分けた。`risk.yml` は、pull request の本文を書き換えたときにも実行する。そのたびに `ci.yml` の全体を実行しないため、分けた。ジョブの一覧と実行する時は[CI の検査](../06-手順書/ci.md)の「CI のジョブ」。
 
@@ -149,6 +149,7 @@ flowchart LR
 | 時点 | 起動するもの | 動く script |
 |------|--------------|-------------|
 | セッションの始め・再開、文脈の圧縮の後 | Claude Code の SessionStart の hook（手元） | `dev/hooks/session-start.mjs` |
+| 文脈の圧縮の前と後 | Claude Code の PreCompact と SessionStart の hook（`settings.json`） | `dev/hooks/compact-context.mjs` |
 | Claude Code が git・gh を実行する前 | PreToolUse の hook（`settings.json`） | `dev/hooks/agent-guard.mjs` |
 | Claude Code が Bash を実行する前 | PreToolUse の hook（手元） | `dev/hooks/backslash-guard.mjs` |
 | git commit（メッセージの前） | git の pre-commit | `dev/hooks/pre-commit` → `pre-commit.mjs` → 選んだ検査とテスト（`ci/check-all.sh`） |

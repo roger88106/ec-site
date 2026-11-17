@@ -2,6 +2,7 @@ import type { UseMutationResult } from '@tanstack/react-query'
 import type { FetchResponse, MaybeOptionalInit } from 'openapi-fetch'
 import { toast } from 'sonner'
 import { $api } from '@/api/client'
+import { ApiError } from '@/api/errors'
 import type { paths } from '@/api/generated/admin'
 import { type ApiPathPrefix, useInvalidate } from '@/api/invalidate'
 
@@ -38,6 +39,8 @@ type ApiMutationOptions<TData, TInit> = {
  *
  * $api.useMutation に、成功したら知らせを出し、続きの処理を行い、関係する一覧を取り直す処理を追加する。
  * 失敗のエラーは、戻り値の error で画面に出す。
+ * 409 か 404 で失敗したときも、成功のときと同じ一覧を取り直す（画面が古いデータのままだと、同じ操作が失敗し続けるため）。
+ * 400・5xx・通信の失敗では取り直さない。
  *
  * @param method  HTTP のメソッド
  * @param path    管理 API のパス
@@ -70,6 +73,13 @@ export function useApiMutation<M extends Method, P extends PathWith<M>>(
         await invalidate(...prefixes)
       }
     },
-    onError: (error) => onError?.(error),
+    onError: (error) => {
+      onError?.(error)
+      // 409（他の人の更新）と 404（消えた）は、画面のデータが古いことが多い。取り直さないと同じ操作が失敗し続ける。
+      // 業務の 409 でも取り直す（入力は残り、害がない）。取り直しを待つと error の表示が遅れるので、待たない
+      if (error instanceof ApiError && (error.status === 409 || error.status === 404) && prefixes.length > 0) {
+        void invalidate(...prefixes)
+      }
+    },
   })
 }

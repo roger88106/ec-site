@@ -109,6 +109,17 @@ describe('リポジトリの検査とテスト', () => {
     assert.ok(!checks.some((name) => name.endsWith('.test')), 'テストを検査にしない')
   })
 
+  test('skill の下の .test.cjs と .test.mjs を、テストとして集める', () => {
+    assert.ok(tests.includes('.claude/skills/review/checklist.test.cjs'))
+    assert.ok(tests.includes('.claude/skills/review/compare-targets.test.mjs'))
+    assert.ok(!tests.includes('.claude/skills/review/compare-targets.mjs'))
+  })
+
+  test('skill の script を変えると、その .test.mjs を実行する', () => {
+    const result = selectChecks({ staged: ['.claude/skills/review/compare-targets.mjs'], checks, files, tests, read: fileReader(root) })
+    assert.ok(result.tests.includes('.claude/skills/review/compare-targets.test.mjs'))
+  })
+
   test('compose を変えると、compose を読む検査と、常に実行する検査だけを実行する', () => {
     const result = selectChecks({ staged: ['docker/compose.yaml'], checks, files, tests, read: fileReader(root) })
     assert.equal(result.all, false)

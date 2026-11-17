@@ -6,7 +6,8 @@
 #   commit の前の hook は、環境変数 CHECK_TESTS・CHECK_SCRIPTS で実行するものを絞る（実行する所のコメント）。
 #
 # 流すもの：
-#   1. script のテスト（scripts/ci/・scripts/dev/・scripts/shared/ の下のすべての *.test.mjs と、skill（.claude/skills/）の下のすべての *.test.cjs）
+#   1. script のテスト。scripts/ci/・scripts/dev/・scripts/shared/ の下のすべての *.test.mjs。
+#      skill（.claude/skills/）の下のすべての *.test.cjs と *.test.mjs。
 #   2. 検査のフォルダ（scripts/ci/{docs,spec,ja,java,config,frontend}/）の直下の *.mjs のうち、*.test.mjs 以外のすべて（検査）
 #   3. 差分の追加行の文体の検査（ja-text --changed）。警告だけを出し、失敗にしない（警告があっても終了コードは 0）
 #
@@ -74,7 +75,7 @@ run_check() {
 # commit の前の hook は、選んだテストと検査だけを CHECK_TESTS・CHECK_SCRIPTS（空白で区切る）で渡す。渡さなければ全てを実行する。
 # 選んだものが空なら実行しない（hook の選び方は scripts/dev/hooks/pre-commit-select.mjs）
 if [ -z "${CHECK_TESTS+set}" ]; then
-  run_check "script のテスト" tests node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" "scripts/shared/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
+  run_check "script のテスト" tests node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" "scripts/shared/**/*.test.mjs" ".claude/skills/**/*.test.cjs" ".claude/skills/**/*.test.mjs"
 elif [ -n "$CHECK_TESTS" ]; then
   # shellcheck disable=SC2086 # 空白で区切った一覧を、ファイルごとの引数にする
   run_check "script のテスト" tests node --test $CHECK_TESTS

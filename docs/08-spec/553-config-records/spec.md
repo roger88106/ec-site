@@ -147,7 +147,7 @@
   - 依存：T553-01-01
   - 範囲：「変える範囲」のアプリのクラス、設定のクラス、`MockPaymentProperties`、`StripeProperties`、定期ジョブ、`ExternalServiceSelectionTest.java`
   - 確認方法：`./gradlew test`。決済と物流の切り替えのテストで、mock のときに Stripe の秘密の値なしで起動できること
-- [ ] **T553-01-03** 規則と環境変数の一覧を修正する（DC-553-5）。
+- [x] **T553-01-03** 規則と環境変数の一覧を修正する（DC-553-5）。
   - 依存：T553-01-02
   - 範囲：`docs/05-開発規則/backend-coding.md`、`docs/06-手順書/environment.md`
   - 確認方法：文書を読み、決定 7 と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`

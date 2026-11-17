@@ -7,87 +7,105 @@ import { CONFLICT_MESSAGE, PRODUCT_ID, productActions, productDetail, taxCategor
 import { returnToTab } from '@/test/inputs'
 import { PAGE_PATH, serveProduct, serveUpload } from '@/test/productEditServer'
 import { renderApp } from '@/test/renderApp'
-import { conflict, getPending, getServerError, http, SERVER_ERROR_MESSAGE, server } from '@/test/server'
+import {
+  conflict,
+  getNetworkError,
+  getPending,
+  getServerError,
+  http,
+  SERVER_ERROR_MESSAGE,
+  server,
+} from '@/test/server'
 
 /** 商品の基本情報の更新のリクエストの本文（送った内容を確認する） */
 type UpdateProductRequest = components['schemas']['UpdateProductRequest']
+
+/** 商品の取得が通信の失敗になったときに、画面に出る文 */
+const CONNECTION_FAILED_MESSAGE = 'サーバーに接続できませんでした。'
 
 /** 商品の取得がシステムエラー（5xx）で失敗したときに、画面に出る文 */
 const FETCH_FAILED_MESSAGE = SERVER_ERROR_MESSAGE
 
 describe('商品の編集', () => {
-  describe('入力中に他の人が更新した（409）', () => {
-    /** 商品名を入力し、他の人が商品名と価格を変えた後に、画面が取得し直した状態にする。保存するときは saveButton を渡す。 */
-    function editNameAfterOthersUpdate(saveButton?: string) {
-      return setUpConflictFlow({
-        edit: async () => {
-          const state = serveProduct(productDetail())
-          const { user } = renderApp(PAGE_PATH)
-          const nameField = await screen.findByLabelText('商品名')
-          await user.clear(nameField)
-          await user.type(nameField, 'T シャツ（改）')
-          return { state, user }
-        },
-        othersUpdate: ({ state }) => {
-          state.current = productDetail({ name: 'T シャツ（新）', priceExclTax: 1200, priceInclTax: 1320, version: 1 })
-        },
-        refetched: () => screen.findByText('1,320 円（税抜 1,200 円）'),
-        saveButton,
+  describe('基本情報', () => {
+    describe('入力中に他の人が更新した（409）', () => {
+      /** 商品名を入力し、他の人が商品名と価格を変えた後に、画面が取得し直した状態にする。保存するときは saveButton を渡す。 */
+      function editNameAfterOthersUpdate(saveButton?: string) {
+        return setUpConflictFlow({
+          edit: async () => {
+            const state = serveProduct(productDetail())
+            const { user } = renderApp(PAGE_PATH)
+            const nameField = await screen.findByLabelText('商品名')
+            await user.clear(nameField)
+            await user.type(nameField, 'T シャツ（改）')
+            return { state, user }
+          },
+          othersUpdate: ({ state }) => {
+            state.current = productDetail({
+              name: 'T シャツ（新）',
+              priceExclTax: 1200,
+              priceInclTax: 1320,
+              version: 1,
+            })
+          },
+          refetched: () => screen.findByText('1,320 円（税抜 1,200 円）'),
+          saveButton,
+        })
+      }
+
+      /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする。 */
+      function saveIntoConflict() {
+        return editNameAfterOthersUpdate('保存')
+      }
+
+      test('取得し直しても、入力した商品名は消えない', async () => {
+        await editNameAfterOthersUpdate()
+
+        expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
       })
-    }
 
-    /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする。 */
-    function saveIntoConflict() {
-      return editNameAfterOthersUpdate('保存')
-    }
+      test('AC-559-5 保存すると 409 になり、競合を知らせる', async () => {
+        const { state } = await saveIntoConflict()
 
-    test('取得し直しても、入力した商品名は消えない', async () => {
-      await editNameAfterOthersUpdate()
+        expect(state.versions).toEqual([0])
+      })
 
-      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
-    })
+      test('409 になっても、入力した商品名は消えない', async () => {
+        await saveIntoConflict()
 
-    test('AC-559-5 保存すると 409 になり、競合を知らせる', async () => {
-      const { state } = await saveIntoConflict()
+        expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+      })
 
-      expect(state.versions).toEqual([0])
-    })
+      test('再読み込みすると、最新の値に再作成され、競合の知らせが消える', async () => {
+        const { user } = await saveIntoConflict()
 
-    test('409 になっても、入力した商品名は消えない', async () => {
-      await saveIntoConflict()
+        await user.click(screen.getByRole('button', { name: '再読み込み' }))
 
-      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
-    })
+        expect(await screen.findByDisplayValue('T シャツ（新）')).toBe(screen.getByLabelText('商品名'))
+        expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+      })
 
-    test('再読み込みすると、最新の値に再作成され、競合の知らせが消える', async () => {
-      const { user } = await saveIntoConflict()
+      test('AC-559-1、AC-559-6 再読み込みの取得が失敗したら、入力した商品名と競合の知らせを残し、取得の失敗を表示する', async () => {
+        const { user } = await saveIntoConflict()
+        server.use(getServerError(`/products/${PRODUCT_ID}`))
 
-      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+        await user.click(screen.getByRole('button', { name: '再読み込み' }))
 
-      expect(await screen.findByDisplayValue('T シャツ（新）')).toBe(screen.getByLabelText('商品名'))
-      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
-    })
+        expect(await screen.findByText(FETCH_FAILED_MESSAGE)).toBeInTheDocument()
+        expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+        expect(screen.getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+      })
 
-    test('AC-559-6 再読み込みの取得が失敗したら、入力した商品名と競合の知らせを残し、取得の失敗を表示する', async () => {
-      const { user } = await saveIntoConflict()
-      server.use(getServerError(`/products/${PRODUCT_ID}`))
+      test('再読み込みした後は、最新のバージョンで保存できる', async () => {
+        const { state, user } = await saveIntoConflict()
+        await user.click(screen.getByRole('button', { name: '再読み込み' }))
+        await screen.findByDisplayValue('T シャツ（新）')
 
-      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+        await user.click(screen.getByRole('button', { name: '保存' }))
 
-      expect(await screen.findByText(FETCH_FAILED_MESSAGE)).toBeInTheDocument()
-      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
-      expect(screen.getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
-    })
-
-    test('再読み込みした後は、最新のバージョンで保存できる', async () => {
-      const { state, user } = await saveIntoConflict()
-      await user.click(screen.getByRole('button', { name: '再読み込み' }))
-      await screen.findByDisplayValue('T シャツ（新）')
-
-      await user.click(screen.getByRole('button', { name: '保存' }))
-
-      expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
-      expect(state.versions).toEqual([0, 1])
+        expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
+        expect(state.versions).toEqual([0, 1])
+      })
     })
   })
 
@@ -173,31 +191,39 @@ describe('商品の編集', () => {
   })
 
   describe('入力中に商品の再取得が失敗した', () => {
-    /** 商品の取得を、システムエラー（5xx）にする。 */
-    function failProduct() {
-      server.use(getServerError(`/products/${PRODUCT_ID}`))
+    /** 商品の取得を、システムエラー（5xx）か通信の失敗にする。 */
+    function failProduct(kind: 'server' | 'network') {
+      server.use(
+        kind === 'server' ? getServerError(`/products/${PRODUCT_ID}`) : getNetworkError(`/products/${PRODUCT_ID}`),
+      )
     }
 
     /** 商品名を入力した後、別のタブから戻って再取得が失敗し、取得の失敗が出た状態にする。 */
-    async function typeNameThenFailRefetch() {
+    async function typeNameThenFailRefetch(kind: 'server' | 'network' = 'server') {
       const state = serveProduct(productDetail())
       const { user } = renderApp(PAGE_PATH)
       const nameField = await screen.findByLabelText('商品名')
       await user.clear(nameField)
       await user.type(nameField, 'T シャツ（改）')
-      failProduct()
+      failProduct(kind)
       returnToTab()
-      await screen.findByText(FETCH_FAILED_MESSAGE)
+      await screen.findByText(kind === 'server' ? FETCH_FAILED_MESSAGE : CONNECTION_FAILED_MESSAGE)
       return { state, user }
     }
 
-    test('AC-559-1 再取得が失敗しても、画面と入力した商品名を残し、取得の失敗と「再試行」のボタンを表示する', async () => {
-      await typeNameThenFailRefetch()
+    test.each([
+      { kind: 'server', cause: '5xx' },
+      { kind: 'network', cause: '通信の失敗' },
+    ] as const)(
+      'AC-559-1 再取得が$causeになっても、画面と入力した商品名を残し、取得の失敗と「再試行」のボタンを表示する',
+      async ({ kind }) => {
+        await typeNameThenFailRefetch(kind)
 
-      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ABC-001')
-      expect(screen.getByRole('button', { name: '再試行' })).toBeEnabled()
-    })
+        expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ABC-001')
+        expect(screen.getByRole('button', { name: '再試行' })).toBeEnabled()
+      },
+    )
 
     test('AC-559-2 「再試行」で取得に成功したら、取得の失敗と「再試行」のボタンが消え、入力した商品名は残る', async () => {
       const { user } = await typeNameThenFailRefetch()

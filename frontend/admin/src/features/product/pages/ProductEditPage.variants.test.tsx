@@ -64,103 +64,105 @@ describe('商品の編集', () => {
     expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
   })
 
-  describe('入力中に他の人が更新した（409）', () => {
-    /**
-     * 品番と軸の値を入力し、他の人が価格を変えた状態にする。
-     *
-     * 画面が取得し直すかは refetch で、追加して 409 にするかは addButton で決める。
-     */
-    function fillVariantAfterOthersUpdate({ refetch, addButton }: { refetch: boolean; addButton?: string }) {
-      return setUpConflictFlow({
-        edit: async () => {
-          const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
-          const versions: number[] = []
-          server.use(
-            stockHandler(0),
-            http.post('/products/{productId}/variants', async ({ request, response }) => {
-              const body = await request.json()
-              versions.push(body.version)
-              if (body.version !== state.current.version) {
-                return conflict(response)
-              }
-              state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
-              return response(201).json({ id: variant().id })
-            }),
-          )
-          const { user } = renderApp(PAGE_PATH)
-          await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
-          await user.type(screen.getByLabelText('色'), '赤')
-          return { state, user, versions }
-        },
-        othersUpdate: ({ state }) => {
-          state.current = productDetail({
-            axes: ['色'],
-            variants: [],
-            priceExclTax: 1200,
-            priceInclTax: 1320,
-            version: 1,
-          })
-        },
-        refetched: refetch ? () => screen.findByText('1,320 円（税抜 1,200 円）') : undefined,
-        saveButton: addButton,
+  describe('バリアントの追加', () => {
+    describe('入力中に他の人が更新した（409）', () => {
+      /**
+       * 品番と軸の値を入力し、他の人が価格を変えた状態にする。
+       *
+       * 画面が取得し直すかは refetch で、追加して 409 にするかは addButton で決める。
+       */
+      function fillVariantAfterOthersUpdate({ refetch, addButton }: { refetch: boolean; addButton?: string }) {
+        return setUpConflictFlow({
+          edit: async () => {
+            const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
+            const versions: number[] = []
+            server.use(
+              stockHandler(0),
+              http.post('/products/{productId}/variants', async ({ request, response }) => {
+                const body = await request.json()
+                versions.push(body.version)
+                if (body.version !== state.current.version) {
+                  return conflict(response)
+                }
+                state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
+                return response(201).json({ id: variant().id })
+              }),
+            )
+            const { user } = renderApp(PAGE_PATH)
+            await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
+            await user.type(screen.getByLabelText('色'), '赤')
+            return { state, user, versions }
+          },
+          othersUpdate: ({ state }) => {
+            state.current = productDetail({
+              axes: ['色'],
+              variants: [],
+              priceExclTax: 1200,
+              priceInclTax: 1320,
+              version: 1,
+            })
+          },
+          refetched: refetch ? () => screen.findByText('1,320 円（税抜 1,200 円）') : undefined,
+          saveButton: addButton,
+        })
+      }
+
+      /** 画面が取得し直す前に追加して 409 にし、競合の知らせが出た状態にする。 */
+      function addIntoConflict() {
+        return fillVariantAfterOthersUpdate({ refetch: false, addButton: 'バリアントを追加' })
+      }
+
+      test('取得し直しても、入力した品番と軸の値は消えない', async () => {
+        await fillVariantAfterOthersUpdate({ refetch: true })
+
+        expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+        expect(screen.getByLabelText('色')).toHaveValue('赤')
       })
-    }
 
-    /** 画面が取得し直す前に追加して 409 にし、競合の知らせが出た状態にする。 */
-    function addIntoConflict() {
-      return fillVariantAfterOthersUpdate({ refetch: false, addButton: 'バリアントを追加' })
-    }
+      test('AC-559-4 取得し直した後なら、他の人が価格を変えていても、入力を残して新しいバージョンで追加できる', async () => {
+        const { user, versions } = await fillVariantAfterOthersUpdate({ refetch: true })
 
-    test('取得し直しても、入力した品番と軸の値は消えない', async () => {
-      await fillVariantAfterOthersUpdate({ refetch: true })
+        await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
 
-      expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
-      expect(screen.getByLabelText('色')).toHaveValue('赤')
-    })
+        expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+        expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+        expect(versions).toEqual([1])
+      })
 
-    test('AC-559-4 取得し直した後なら、他の人が価格を変えていても、入力を残して新しいバージョンで追加できる', async () => {
-      const { user, versions } = await fillVariantAfterOthersUpdate({ refetch: true })
+      test('取得し直す前に追加すると 409 になり、競合を知らせる', async () => {
+        const { versions } = await addIntoConflict()
 
-      await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+        expect(versions).toEqual([0])
+      })
 
-      expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
-      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
-      expect(versions).toEqual([1])
-    })
+      test('409 になっても、入力した品番は消えない', async () => {
+        await addIntoConflict()
 
-    test('取得し直す前に追加すると 409 になり、競合を知らせる', async () => {
-      const { versions } = await addIntoConflict()
+        expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+      })
 
-      expect(versions).toEqual([0])
-    })
+      test('再読み込みすると、空のフォームに再作成され、競合の知らせが消える', async () => {
+        const { user } = await addIntoConflict()
 
-    test('409 になっても、入力した品番は消えない', async () => {
-      await addIntoConflict()
+        await user.click(screen.getByRole('button', { name: '再読み込み' }))
 
-      expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
-    })
+        await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
+        expect(screen.getByLabelText('色')).toHaveValue('')
+        expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+      })
 
-    test('再読み込みすると、空のフォームに再作成され、競合の知らせが消える', async () => {
-      const { user } = await addIntoConflict()
+      test('再読み込みした後は、最新のバージョンで追加できる', async () => {
+        const { user, versions } = await addIntoConflict()
+        await user.click(screen.getByRole('button', { name: '再読み込み' }))
+        await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
 
-      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+        await user.type(screen.getByLabelText('バリアント品番'), 'abc-001-red')
+        await user.type(screen.getByLabelText('色'), '赤')
+        await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
 
-      await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
-      expect(screen.getByLabelText('色')).toHaveValue('')
-      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
-    })
-
-    test('再読み込みした後は、最新のバージョンで追加できる', async () => {
-      const { user, versions } = await addIntoConflict()
-      await user.click(screen.getByRole('button', { name: '再読み込み' }))
-      await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
-
-      await user.type(screen.getByLabelText('バリアント品番'), 'abc-001-red')
-      await user.type(screen.getByLabelText('色'), '赤')
-      await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
-
-      expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
-      expect(versions).toEqual([0, 1])
+        expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+        expect(versions).toEqual([0, 1])
+      })
     })
   })
 

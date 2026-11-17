@@ -7,7 +7,7 @@ import { schemas } from '@/api/generated/constraints'
 import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
 import { returnToTab } from '@/test/inputs'
 import { PAGE_PATH, serveProduct, serveUpload, UPLOAD_URL } from '@/test/productEditServer'
-import { getListItemContaining } from '@/test/queries'
+import { getCardContaining, getListItemContaining } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { getServerError, http, problem, SERVER_ERROR_MESSAGE, server, stockHandler } from '@/test/server'
 
@@ -125,7 +125,7 @@ describe('商品画像', () => {
     releaseStale()
   })
 
-  test('AC-559-7 登録の直前の商品の取得が失敗したら、エラーを表示し、画像を登録しない', async () => {
+  test('登録の直前の商品の取得が失敗したら、エラーを表示し、画像を登録しない', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
     const { user } = renderApp(PAGE_PATH)
@@ -134,7 +134,10 @@ describe('商品画像', () => {
 
     await uploadPng(user)
 
-    expect(await screen.findByText(SERVER_ERROR_MESSAGE)).toBeInTheDocument()
+    const card = getCardContaining(await screen.findByLabelText('画像のファイル'))
+    expect(await within(card).findByText(SERVER_ERROR_MESSAGE)).toBeInTheDocument()
+    // 登録の直前の取得は画面の取得と同じなので、上部にも取得の失敗が出る
+    expect(screen.getAllByText(SERVER_ERROR_MESSAGE).length).toBeGreaterThan(1)
     expect(calls.filter((call) => call.startsWith('登録'))).toEqual([])
   })
 

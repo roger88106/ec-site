@@ -154,7 +154,7 @@ describe('更新の操作', () => {
       expect(result.current.rename.error).not.toBeNull()
     })
 
-    test('AC-559-9 通信の失敗で失敗しても、一覧は再取得しない', async () => {
+    test('AC-559-9 通信の失敗になっても、一覧は再取得しない', async () => {
       const { result, extraGets } = await failWithResponse(() => HttpResponse.error())
 
       expect(result.current.list.isFetching).toBe(false)

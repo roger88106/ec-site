@@ -157,3 +157,24 @@ export function getListItemContaining(element: HTMLElement, scope: Scope = scree
 export function findGroup(name: string, scope: Scope = screen): Promise<HTMLElement> {
   return scope.findByRole('group', { name })
 }
+
+/**
+ * 渡した要素を含むカード（`data-slot="card"`）を返す。
+ *
+ * カードには role がないので、カードの中の要素から探す。
+ *
+ * 例：`within(getCardContaining(await screen.findByLabelText('画像のファイル'))).getByText('…')`
+ *
+ * @param element カードの中にある要素
+ * @returns 渡した要素を含むカード
+ * @throws 渡した要素を含むカードがないとき
+ */
+export function getCardContaining(element: HTMLElement): HTMLElement {
+  const card = Array.from(document.querySelectorAll<HTMLElement>('[data-slot="card"]')).find((candidate) =>
+    candidate.contains(element),
+  )
+  if (card === undefined) {
+    throw new Error('渡した要素を含むカードがない')
+  }
+  return card
+}

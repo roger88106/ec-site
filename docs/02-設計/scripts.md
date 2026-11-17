@@ -42,7 +42,7 @@
 
 | 場所 | 置くもの |
 |------|----------|
-| 直下 | 人やエージェントが直接呼ぶ入口（スロット、データの再作成、画面と E2E の確認、Dependabot の pull request のマージの補助など）。スロットは、作業ツリーごとの手元の環境 |
+| 直下 | 人やエージェントが直接呼ぶ入口（スロット、データの再作成、画面と E2E の確認、Dependabot の pull request のマージの補助など）と、入口の shell が呼ぶ script（E2E が実行中かの確認）。スロットは、作業ツリーごとの手元の環境 |
 | `hooks/` | git の hook（入口の `pre-commit`・`commit-msg` と処理の `.mjs`）と Claude Code の hook（`agent-guard.mjs` と規則のモジュール `agent-guard/`、`backslash-guard.mjs`、`session-start.mjs`） |
 | `lib/` | ポートを使うプロセスの停止、Git Bash の場所など、入口が共有するモジュール。`lib/slot/` はスロットのポートの確認と停止 |
 | `tools/` | 手動で使うツール（壊しての確認、commit のメッセージの書き換え、機能紹介のページの数字） |

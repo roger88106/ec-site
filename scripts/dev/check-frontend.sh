@@ -66,7 +66,7 @@ run_step() {
 # この作業ツリーの E2E が実行中か。E2E の入口（e2e/scripts/run.ts）のロックの所有者が、この作業ツリーで動いていれば実行中
 # （E2E は画面のビルドの結果を配るので、e2e.sh でも e2e/ の pnpm test でも、同じロックで守る）
 e2e_running() {
-  node "$ROOT/scripts/dev/lib/e2e-running.mjs"
+  node "$ROOT/scripts/dev/e2e-running.mjs"
 }
 
 app_steps=()

@@ -18,7 +18,7 @@
 //
 // 使い方：node scripts/ci/docs/rule-sections.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
-import { readDocument, readHeadings, SETEXT_UNDERLINE } from '../lib/docs/doc-structure.mjs'
+import { readDocument, readHeadings, SETEXT_UNDERLINE } from '../../shared/docs/doc-structure.mjs'
 import { checkExclusions, exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'
 
 /** 書き方の規則の文書（ルートからのパス） */

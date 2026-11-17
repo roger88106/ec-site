@@ -80,7 +80,7 @@ describe('check-all.sh から呼ぶ形（コマンドライン）', () => {
     try {
       const log = path.join(dir, 'log.txt')
       writeFileSync(log, output)
-      return spawnSync(process.execPath, ['scripts/ci/lib/output/check-result.mjs', log, mode], { encoding: 'utf8' })
+      return spawnSync(process.execPath, ['scripts/shared/check-result.mjs', log, mode], { encoding: 'utf8' })
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

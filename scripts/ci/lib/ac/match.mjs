@@ -23,17 +23,18 @@
 //     バックエンドのモジュールのディレクトリと ③ の文書の両方がある名前の ③ が、一覧にない（追加し忘れ）
 //   - その他のマーカー：一覧にない ③ にマーカーがある。既知のマーカー（generated:ac-list、generated:module-ac）でない generated: のコメントがある
 //   - 進行中の spec：AC が AC 一覧にない、AC 一覧の元の spec がその spec でない（番号の重なり）。
-//     定義の行が崩れている（- **AC-<番号>** <文> の形でない。見分け方は ac-list.mjs の DEFINITION_ATTEMPTS）。
+//     定義の行が崩れている（- **AC-<番号>** <文> の形でない。見分け方は scripts/shared/docs/ac-definitions.mjs の DEFINITION_ATTEMPTS）。
 //     spec から消した AC が、AC 一覧に有効・変更で残っている
 //   - テスト名の AC：AC 一覧にない AC 番号がある、廃止の AC を参照する
 //   - テスト名の書き方：範囲（AC-n〜m）、新しい形の後の数字だけの番号（AC-s-n、m）、空白の区切り（AC-n AC-m）
 //   - テストのファイル：テスト名を読めない test・it の呼び出しがある、ファイルが 0 件。
 //     読めない呼び出しは、名前が文字列でない、each の括弧が閉じない、知らない修飾が付いている、のどれか
 import { findEmptyReasons } from '../output/exclusions.mjs'
-import { readDocument, readHeadings } from '../docs/doc-structure.mjs'
-import { AC_NUMBER_ONLY, compareAc, findAmbiguousAcLists, findSpacedAcLists, parseAcRefs, toAcKey } from './test-names.mjs'
+import { readDocument, readHeadings } from '../../../shared/docs/doc-structure.mjs'
+import { toAcKey } from '../../../shared/docs/ac-definitions.mjs'
+import { AC_NUMBER_ONLY, compareAc, findAmbiguousAcLists, findSpacedAcLists, parseAcRefs } from './test-names.mjs'
 import { BASIS, COMMON, LIST_MARK, MODULE_AC_SECTION, MODULE_COLUMNS, MODULE_MARK, MVP_AC_LIMIT, MVP_ARCHIVE_PREFIX, PLACEHOLDER, SPEC_NUMBER, SPEC_NUMBER_SEPARATOR, SPEC_ONLY_REFS, STATUSES, findMarks, readPair, renderModuleTable, specNumberOf, splitKeepingEol, toLf } from './ac-list.mjs'
-import { SPECS_DIR } from '../docs/spec-dirs.mjs'
+import { SPECS_DIR } from '../../../shared/docs/spec-dirs.mjs'
 
 /**
  * AC とテスト名を照合する。

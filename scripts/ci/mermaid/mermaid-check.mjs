@@ -2,7 +2,7 @@
 // GitHub は構文の誤りのある図を「Unable to render」と表示するだけで、push して画面を見るまで気づけないため。
 //
 // 対象の文書は、Git で扱う全ての .md（GitHub は置き場所によらず図を描画するため）。アーカイブ（docs/08-spec/archive/）は対象にしない。
-// コードブロックは lib/docs/code-block で読む（CommonMark と同じ。HTML のコメントの中、他のコードブロックの中は読まない）。
+// コードブロックは scripts/shared/docs/code-block で読む（CommonMark と同じ。HTML のコメントの中、他のコードブロックの中は読まない）。
 // 次も失敗にする：
 //   - 閉じていない図
 //   - 箇条書き・引用・字下げの中の図（対象にしない書き方。描画しない）
@@ -25,9 +25,9 @@ import { execFileSync, execSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { readCodeBlocks } from '../lib/docs/code-block.mjs'
-import { readDocument } from '../lib/docs/doc-structure.mjs'
-import { emptyListReason, listGitFiles } from '../lib/git/git-files.mjs'
+import { readCodeBlocks } from '../../shared/docs/code-block.mjs'
+import { readDocument } from '../../shared/docs/doc-structure.mjs'
+import { emptyListReason, listGitFiles } from '../../shared/git/git-files.mjs'
 
 /** 使う mermaid-cli のバージョン（上げるときは、GitHub での表示と食い違わないかを確認する） */
 const MERMAID_CLI = '@mermaid-js/mermaid-cli@12.0.0'
@@ -239,6 +239,8 @@ export function puppeteerConfig(chrome, platform) {
 
 /**
  * 引数を引用符で囲む（shell を通す起動で、空白のあるパスが 1 つの引数になるように）。
+ *
+ * 既知の制限：引数に " や %名前% があると、Windows の shell が読み替えて壊れる（今の引数は、固定の文字列と一時のディレクトリのパスだけ）。
  *
  * @param {string} arg 引数
  * @returns {string} 引用符で囲んだ引数

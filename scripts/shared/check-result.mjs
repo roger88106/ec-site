@@ -1,7 +1,7 @@
 // check-all.sh が、検査の 1 つが成功したかを判定する。
 // 終了コードが 0 でも、出力の最後の行が要約の行でなければ失敗にする。script のテストは、テストが 0 件なら失敗にする。
 //
-// 使い方：node scripts/ci/lib/output/check-result.mjs <出力のファイル> <summary|tests>
+// 使い方：node scripts/shared/check-result.mjs <出力のファイル> <summary|tests>
 // check-all.sh は終了コードが 0 の検査だけを渡すので、コマンドラインでは終了コードを受け取らない。
 // 成功なら OK の 1 行を、失敗なら理由を標準出力に出す（終了コードは、検査の失敗が 1、判定の種類の誤りが 2）。呼ぶ側は、OK の行が出たときだけ成功にする（この script が動かなかったときに成功にしないため）
 import { readFileSync } from 'node:fs'

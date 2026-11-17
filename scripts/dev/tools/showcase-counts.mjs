@@ -1,6 +1,6 @@
 // 機能紹介のページ（showcase/index.html）の数字を数える（開発環境の起動の「機能紹介のページのスクリーンショット」）。
 //   spec：docs/08-spec/ の直下とアーカイブの下の spec のディレクトリ（<番号>-名前）の数
-//   AC：機能の spec の定義の行（- **AC-n**、1→10 の - **AC-n-m**）の数
+//   AC：機能の spec の定義の行（- **AC-n**、1→10 の - **AC-n-m**）の数。読み方は ac-check と同じ（コードブロック・コメントの中は数えない）
 //   テスト：Java は、./gradlew check の結果（build/test-results/ の XML）があれば実行した件数（パラメーターの組ごと）、
 //          なければソースの @Test・@ParameterizedTest の数。Vitest・Playwright は、ソースの test・it の数
 //          （*.test.ts(x)、*.spec.ts。test.describe などのまとまりは数えない）。ページの数字は実行した件数で書く
@@ -9,9 +9,10 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { listGitFiles } from '../../ci/lib/git/git-files.mjs'
-import { listSpecDirs } from '../../ci/lib/docs/spec-dirs.mjs'
-import { findTestFiles, readTsTests } from '../../ci/lib/source/test-files.mjs'
+import { parseSpecAcDefinitions } from '../../shared/docs/ac-definitions.mjs'
+import { listGitFiles } from '../../shared/git/git-files.mjs'
+import { listSpecDirs } from '../../shared/docs/spec-dirs.mjs'
+import { findTestFiles, readTsTests } from '../../shared/source/test-files.mjs'
 
 /** リポジトリのルート（このファイルは scripts/dev/tools/ にある） */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -22,9 +23,9 @@ const JAVA_TEST = /^\s*@(?:Test|ParameterizedTest)\b/gm
 const specDirs = listSpecDirs(path.join(ROOT, 'docs/08-spec'))
 
 let acs = 0
-for (const { dir } of specDirs) {
+for (const { dir, rel } of specDirs) {
   try {
-    acs += [...readFileSync(path.join(dir, 'spec.md'), 'utf8').matchAll(/^- \*\*AC-[0-9]+(?:-[0-9]+)?\*\*/gm)].length
+    acs += parseSpecAcDefinitions(readFileSync(path.join(dir, 'spec.md'), 'utf8'), rel).definitions.length
   } catch (e) {
     if (e.code !== 'ENOENT') throw e
   }

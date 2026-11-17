@@ -9,7 +9,7 @@ CI の検査の script を加える手順と、補助の script の置き場所�
 - 違反は標準出力に出し、最後の行に要約の行（`<何>：<件数>`。例：`切れた参照：0`）を出す。終了コードは 0（通過）・1（違反）・2（使い方か環境の誤り。例：知らない引数、読むファイルがない、対象が 0 件）にする。
 - 先頭のコメント（1 行目から `//`）に、確認すること、失敗したとき、除外を書く。
 - [CI の検査の script](ci-checks.md)の表に行を加える（`ci-docs` の検査が対応を確認する）。
-- Git の一覧は `listGitFiles`（`lib/git/git-files.mjs`）で求め、`git ls-files` を直接呼ばない。対象が 0 件のとき `exitIfNoFiles` で失敗にする。
+- Git の一覧は `listGitFiles`（`scripts/shared/git/git-files.mjs`）で求め、`git ls-files` を直接呼ばない。対象が 0 件のとき `exitIfNoFiles` で失敗にする。
 - 対応していない書き方の行は、読み飛ばさずに `describeUnreadableLine`（`lib/source/unreadable-line.mjs`）で失敗にする。
 - 除外の一覧を持つなら、パスを `exclusionsPath`、誤りの文を `checkExclusions`（`lib/output/exclusions.mjs`）で作る。
 - 画面のソースを読むなら `lib/docs/screen-sources.mjs`（違う対象を読むときは理由を書く）、行番号が必要なら `lib/source/line-number.mjs` を使う。

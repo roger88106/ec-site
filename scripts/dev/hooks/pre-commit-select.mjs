@@ -148,7 +148,7 @@ export function listChecksAndTests(root) {
       }
     }
   }
-  const tests = [...list('scripts/ci'), ...list('scripts/dev')].filter((file) => file.endsWith('.test.mjs'))
+  const tests = [...list('scripts/ci'), ...list('scripts/dev'), ...list('scripts/shared')].filter((file) => file.endsWith('.test.mjs'))
   tests.push(...list('.claude/skills').filter((file) => file.endsWith('.test.cjs')))
   return { checks: Object.keys(files).sort(), files, tests: tests.sort() }
 }

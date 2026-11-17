@@ -12,7 +12,7 @@
 //
 // 使い方：node scripts/ci/java/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
-import { emptyListReason, splitNulList } from '../lib/git/git-files.mjs'
+import { emptyListReason, splitNulList } from '../../shared/git/git-files.mjs'
 import { mergeBaseWith, tryGit } from '../lib/git/merge-base.mjs'
 import { exitIfShallow } from '../lib/git/shallow-clone.mjs'
 

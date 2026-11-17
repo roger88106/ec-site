@@ -7,11 +7,11 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
 import { GIT_TIMEOUT_MS, handleInput } from './agent-guard.mjs'
 import { GH_BUDGET_MS } from './agent-guard/merge-rules.mjs'
-import { CWD, fakeDeps } from './agent-guard/test-support.mjs'
+import { CWD, fakeDeps } from './agent-guard/support/test-support.mjs'
 
 /** リポジトリ（作業ツリー）の根 */
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -181,6 +181,7 @@ describe('hook の入力と出力', () => {
       'git commit -m x',
       'git.exe PUSH origin',
       'git -C C:\\work push',
+      'git --super-prefix x push',
       'Set-Location C:\\work; git push',
       'gh release create v1',
     ]

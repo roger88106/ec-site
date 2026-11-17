@@ -4,7 +4,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { judgeCommand } from '../agent-guard.mjs'
 import { GH_BUDGET_MS, GH_TIMEOUT_MS, judgeMerge } from './merge-rules.mjs'
-import { CWD, assertAsked, assertDenied, assertPassed, fakeDeps } from './test-support.mjs'
+import { CWD, assertAsked, assertDenied, assertPassed, fakeDeps } from './support/test-support.mjs'
 
 /** マージする pull request の今の head の commit */
 const HEAD_SHA = '28361e9899ad2db8de4c6452d1a2b21aa83e370d'

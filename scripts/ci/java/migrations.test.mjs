@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { withoutGitEnv } from '../lib/git/git-env.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { findChangedMigrations, findRemovedMigrations, isVersionedMigration, parseBlobList } from './migrations.mjs'
 
 describe('適用済みのマイグレーションの検査', () => {

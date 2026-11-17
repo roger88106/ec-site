@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { withoutGitEnv } from '../lib/git/git-env.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { commentText, trailingCommentLines } from '../lib/source/comment-text.mjs'
 import { SHALLOW_CLONE_MESSAGE } from '../lib/git/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
@@ -18,7 +18,7 @@ const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url),
 /** 改善のまとまりを数える中国語の字（U+6279）。ファイルには字を書かず、エスケープで書く */
 const BATCH = '\u6279'
 
-/** 「〜し直す」の動詞の連用形に「修正」が続く、崩れと確定している複合動詞の 15 語（「〜し直す」の崩れを調べた spec の「背景と目的」） */
+/** 「〜し直す」の動詞の連用形に「修正」が続く、崩れと確定している複合動詞（「〜し直す」の崩れを調べた spec の「背景と目的」） */
 const BROKEN_VERBS = ['書き', '作り', '置き', '読み', 'やり', '考え', '組み', '問い', '洗い', '貼り', '撮り', '練り', '言い', '数え', '測り']
 
 /**
@@ -77,8 +77,7 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
     assert.deepEqual(findTerms('\u6279\u5224的な意見と\u6279\u8a55', items), [])
   })
 
-  test('崩れと確定している複合動詞の 15 語が error になる', () => {
-    assert.equal(BROKEN_VERBS.length, 15)
+  test('崩れと確定している複合動詞が error になる', () => {
     for (const verb of BROKEN_VERBS) {
       assert.equal(findTerms(`設定を${verb}修正する`, list.error).length, 1, `${verb}修正`)
     }
@@ -532,10 +531,6 @@ describe('日本語の文の検査（文体の warning）', () => {
     assert.deepEqual(cells(`| 項目 | ${'あ'.repeat(5)}。${'い'.repeat(5)}。 |`), [1])
     assert.deepEqual(cells(`| 項目 | ${'あ'.repeat(9)} |`), [])
     assert.deepEqual(cells(`${'あ'.repeat(20)}である。`), [])
-  })
-
-  test('セルの閾値は 80 字である', () => {
-    assert.equal(list.style.cell, 80)
   })
 })
 

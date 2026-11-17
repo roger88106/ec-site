@@ -7,7 +7,7 @@ function ids(text) {
   return collectReferences(text).references.map((reference) => reference.id)
 }
 
-describe('見出しの読み方（DC-321-19）', () => {
+describe('見出しの読み方', () => {
   test('見出しの深さ・名前・行を返す', () => {
     assert.deepEqual(readHeadings('# 題\n\n## 節 A\n\n### 小節\n'), [
       { level: 1, title: '題', line: 1 },
@@ -86,7 +86,7 @@ describe('見出しの読み方（DC-321-19）', () => {
   })
 })
 
-describe('閉じていないコードブロックの検査（DC-321-19）', () => {
+describe('閉じていないコードブロックの検査', () => {
   test('閉じていないコードブロックの開きの行を返す', () => {
     assert.deepEqual(checkUnclosedCodeBlocks('文\n```\n## 中'), ['2 行：閉じていないコードブロックがある（後ろの見出しと ID を読めない）'])
   })
@@ -96,7 +96,7 @@ describe('閉じていないコードブロックの検査（DC-321-19）', () =
   })
 })
 
-describe('節の名前と順の検査（DC-321-19）', () => {
+describe('節の名前と順の検査', () => {
   const required = ['A', 'B', 'C']
   const headings = (...titles) => titles.map((title, index) => ({ level: 2, title, line: index + 1 }))
 
@@ -136,7 +136,7 @@ describe('節の名前と順の検査（DC-321-19）', () => {
   })
 })
 
-describe('ID の定義の読み方（DC-321-20）', () => {
+describe('ID の定義の読み方', () => {
   test('箇条とタスクの行の先頭にある太字の ID を、定義として読む', () => {
     const text = ['- **AC-321-1** 文', '- **DC-321-2** 文', '- **NFR-321-3** 文', '- [ ] **T321-01-01** 内容', '- [x] **T321-01-02** 内容'].join('\n')
     assert.deepEqual(
@@ -189,7 +189,7 @@ describe('ID の定義の読み方（DC-321-20）', () => {
   })
 })
 
-describe('ID の参照の読み方（DC-321-20）', () => {
+describe('ID の参照の読み方', () => {
   test('単独の ID、範囲、列挙、範囲と列挙の組み合わせを開く', () => {
     assert.deepEqual(ids('AC-321-1'), ['AC-321-1'])
     assert.deepEqual(ids('DC-321-18〜21'), ['DC-321-18', 'DC-321-19', 'DC-321-20', 'DC-321-21'])

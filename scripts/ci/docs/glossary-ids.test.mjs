@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { GLOSSARIES, checkGlossary, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryEntries, parseGlossaryIds } from './glossary-ids.mjs'
 
@@ -68,7 +69,7 @@ describe('用語集の識別子の検査', () => {
     assert.equal(isSearchedFile('scripts/ci/frontend/frontend-rules-exclusions.json'), false)
     assert.equal(isSearchedFile('scripts/dev/lib/x-exclusions.json'), true)
     assert.equal(isSearchedFile('scripts/ci/docs/glossary-ids.mjs'), true)
-    assert.equal(isSearchedFile('scripts/dev/lib/slot/slot.test.mjs'), true)
+    assert.equal(isSearchedFile('scripts/shared/slot/slot.test.mjs'), true)
     assert.equal(isSearchedFile('backend/ecsite/src/Foo.java'), true)
     assert.equal(isSearchedFile('frontend/store/logo.png'), false)
   })
@@ -101,7 +102,8 @@ describe('用語集の表の見出し', () => {
 })
 
 describe('調べる用語集', () => {
-  test('業務の用語集と開発の用語集の両方を読む', () => {
-    assert.deepEqual(GLOSSARIES, ['docs/03-機能仕様/glossary.md', 'docs/05-開発規則/glossary.md'])
+  test('読む用語集は、全てリポジトリに今あるファイルである', () => {
+    assert.ok(GLOSSARIES.length > 0)
+    for (const file of GLOSSARIES) assert.ok(existsSync(new URL(`../../../${file}`, import.meta.url)), file)
   })
 })

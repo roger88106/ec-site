@@ -30,16 +30,16 @@
 //       文は、どれかの行が追加行なら、最初の追加行で示す（--changed と同じ選び方）。
 //   --changed：差分の追加行の文で、字数が style.length 以上か読点が style.comma 以上のものを示す。
 //       文の字数の合計が style.cell 以上の表のセルも示す。形は GitHub Actions の注釈（`::warning file=…,line=…::`）。
-//       警告があっても終了コードは 0。差分の基準は lib/git/merge-base の resolveDiffBase、追加行の決め方は lib/git/added-diff。
+//       警告があっても終了コードは 0。差分の基準は lib/git/merge-base の resolveDiffBase、追加行の決め方は scripts/shared/git/added-diff。
 //   node scripts/ci/ja/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする。
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { ADDED_DIFF_ARGS, parseAddedLines } from '../lib/git/added-diff.mjs'
-import { codeBlockLines } from '../lib/docs/code-block.mjs'
-import { maskCodeSpans, replaceCodeSpans } from '../lib/source/code-span.mjs'
+import { ADDED_DIFF_ARGS, parseAddedLines } from '../../shared/git/added-diff.mjs'
+import { codeBlockLines } from '../../shared/docs/code-block.mjs'
+import { maskCodeSpans, replaceCodeSpans } from '../../shared/source/code-span.mjs'
 import { checkExclusions } from '../lib/output/exclusions.mjs'
 import { codeKind, commentText, trailingCommentLines } from '../lib/source/comment-text.mjs'
-import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from '../../shared/git/git-files.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
 import { resolveDiffBase } from '../lib/git/merge-base.mjs'
 import { exitIfShallow } from '../lib/git/shallow-clone.mjs'

@@ -20,9 +20,9 @@
 // 使い方：node scripts/ci/docs/doc-refs.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
-import { codeBlockLines } from '../lib/docs/code-block.mjs'
-import { maskCodeSpans } from '../lib/source/code-span.mjs'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { codeBlockLines } from '../../shared/docs/code-block.mjs'
+import { maskCodeSpans } from '../../shared/source/code-span.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { documentIndex, headingKey, readHeadingIndex, referenceName, resolveDocument } from '../lib/docs/doc-names.mjs'
 
 /**

@@ -1,4 +1,4 @@
-// lock.mjs（E2E のロック）のテスト（node --test scripts/dev/lib/lock.test.mjs）
+// lock.mjs（E2E のロック）のテスト（node --test scripts/shared/lock.test.mjs）
 import assert from 'node:assert/strict'
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

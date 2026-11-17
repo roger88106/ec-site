@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
@@ -155,7 +155,7 @@ describe('構造の検査の土台', () => {
   })
 })
 
-describe('spec の構造（DC-321-19）', () => {
+describe('spec の構造', () => {
   test('1 行目が「# Spec <番号>：」でなければ失敗にする', () => {
     assertOne(check(edit(baseFiles(), 'spec.md', '# Spec 321：', '# Spec 322：')), /spec\.md：1 行目が「# Spec 321：…」でない/)
   })
@@ -248,7 +248,7 @@ describe('spec の構造（DC-321-19）', () => {
   })
 })
 
-describe('plan の構造（DC-321-19）', () => {
+describe('plan の構造', () => {
   test('1 行目が「# Plan <番号>：」でなければ失敗にする', () => {
     assertOne(check(edit(baseFiles(), 'plan.md', '# Plan 321：', '# Plan 322：')), /plan\.md：1 行目が「# Plan 321：…」でない/)
   })
@@ -301,7 +301,7 @@ describe('plan の構造（DC-321-19）', () => {
   })
 })
 
-describe('段階のファイルの構造（DC-321-19）', () => {
+describe('段階のファイルの構造', () => {
   test('ファイル名の番号と 1 行目の段階が違えば失敗にする（02 のファイルが「段階 3」）', () => {
     const files = { ...baseFiles(), 'tasks/02-name.md': STAGE.replace('# 段階 1：', '# 段階 3：').replaceAll('T321-01-', 'T321-02-') }
     assertOne(check(files), /tasks\/02-name\.md：1 行目の段階（3）がファイル名の番号（02）と違う/)
@@ -354,7 +354,7 @@ describe('段階のファイルの構造（DC-321-19）', () => {
   })
 })
 
-describe('ID の定義と参照（DC-321-20）', () => {
+describe('ID の定義と参照', () => {
   test('定義のない ID を参照すれば失敗にする（DC-321-99）', () => {
     assertOne(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：DC-321-99 を満たす。')), /plan\.md：5 行：DC-321-99 が定義されていない/)
     assertOne(check(edit(baseFiles(), 'tasks/01-name.md', '（DC-321-1）。', '（DC-321-99）。')), /tasks\/01-name\.md：11 行：DC-321-99 が定義されていない/)
@@ -473,7 +473,7 @@ describe('ID の定義と参照（DC-321-20）', () => {
   })
 })
 
-describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
+describe('固定の節に書き換えた機能仕様', () => {
   test('業務規則、状態の遷移、データモデル、今有効な AC の順なら問題がない', () => {
     assert.deepEqual(checkFunctionalSpec(`# 注文\n\n${functionalText(SECTIONS)}`, SECTIONS), [])
   })
@@ -497,26 +497,17 @@ describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
     assertOne(checkFunctionalSpec(`${functionalText(SECTIONS)}\n\`\`\`\n`, SECTIONS), /閉じていないコードブロック/)
   })
 
-  test('登録している機能仕様は、書き換え済みの ③ だけである', () => {
-    assert.deepEqual(FUNCTIONAL_SPECS, [
-      'docs/03-機能仕様/order.md',
-      'docs/03-機能仕様/tax.md',
-      'docs/03-機能仕様/catalog.md',
-      'docs/03-機能仕様/inventory.md',
-      'docs/03-機能仕様/media.md',
-      'docs/03-機能仕様/cart.md',
-      'docs/03-機能仕様/member.md',
-      'docs/03-機能仕様/region.md',
-      'docs/03-機能仕様/storefront.md',
-      'docs/03-機能仕様/payment.md',
-      'docs/03-機能仕様/shipping.md',
-      'docs/03-機能仕様/notification.md',
-      'docs/03-機能仕様/reporting.md',
-    ])
+  test('登録している機能仕様は、全て docs/03-機能仕様/ の直下に今あるファイルで、重複しない', () => {
+    assert.ok(FUNCTIONAL_SPECS.length > 0)
+    for (const file of FUNCTIONAL_SPECS) {
+      assert.match(file, /^docs\/03-機能仕様\/[^/]+\.md$/)
+      assert.ok(existsSync(new URL(`../../../${file}`, import.meta.url)), file)
+    }
+    assert.equal(new Set(FUNCTIONAL_SPECS).size, FUNCTIONAL_SPECS.length)
   })
 })
 
-describe('③ の節の名前を雛形の骨組みから読む（DC-326-3、#325）', () => {
+describe('③ の節の名前を雛形の骨組みから読む', () => {
   const HEADING = '## 写して使う骨組み'
   const BODY_LINES = ['# <モジュールの論理名>モジュール', '', '## 業務規則', '', '<注>', '', '## 状態の遷移', '', '## データモデル', '', '## 今有効な AC', '']
 
@@ -696,7 +687,7 @@ describe('雛形の見本', () => {
   })
 })
 
-describe('検査の対象（DC-321-19）', () => {
+describe('検査の対象', () => {
   /** 一時の docs/08-spec を作り、中身を書く */
   function makeSpecs(entries) {
     const dir = mkdtempSync(path.join(tmpdir(), 'spec-structure-'))

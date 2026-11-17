@@ -13,14 +13,14 @@
 #   3. 確認したら変える。予約したポートは、ほかのプログラムが動的に取る範囲に入らなくなる（再起動の後も残る）
 # 予約を消すとき：netsh int ipv4 delete excludedportrange protocol=tcp startport=<ポート> numberofports=1
 #
-# ポートの一覧は scripts/dev/ports.json を読む。ポートを追加したら（compose、バックエンド、画面、E2E）、一覧に加える。
+# ポートの一覧は scripts/shared/slot/ports.json を読む。ポートを追加したら（compose、バックエンド、画面、E2E）、一覧に加える。
 # ============================================================================
 param([switch]$WhatIf)
 
 $ErrorActionPreference = 'Stop'
 
-# ポートの一覧（scripts/dev/ports.json）を読み、スロットごとにずらした分（スロット 1 以降は、スロットを使う項目だけ）を含めて展開する
-$list = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot '..\ports.json') | ConvertFrom-Json
+# ポートの一覧（scripts/shared/slot/ports.json）を読み、スロットごとにずらした分（スロット 1 以降は、スロットを使う項目だけ）を含めて展開する
+$list = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot '..\..\shared\slot\ports.json') | ConvertFrom-Json
 $ports = @()
 foreach ($slot in 0..($list.slotCount - 1)) {
   foreach ($entry in $list.ports) {

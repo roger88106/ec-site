@@ -12,7 +12,7 @@
 // 使い方：node scripts/ci/config/runtime-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 
 /** バージョンを指定する setup 系の入力の名前と、許す値（バージョンのファイル）。undefined は、その入力を使わない。これ以外の値（直書き、別のファイル、行列）は失敗にする */
 const ALLOWED_VERSION_INPUTS = {

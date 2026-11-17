@@ -1,4 +1,4 @@
-// ローカルのポートの一覧（scripts/dev/ports.json）と、一覧を読めない所のポートが食い違わないことを確認する。
+// ローカルのポートの一覧（scripts/shared/slot/ports.json）と、一覧を読めない所のポートが食い違わないことを確認する。
 // 読めない所は、compose のホスト側のポート（COMPOSE_FILE）、文書（DOC_FILES）、E2E の設定（SOURCE_FILES）、
 // ポートを直接書く設定と script（CONFIG_FILES）、Keycloak の realm の redirect URI（REALM_FILES）。一覧を読むスロットの script は対象にしない。
 //
@@ -13,11 +13,11 @@
 //
 // 使い方：node scripts/ci/config/local-ports.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
-import { exitIfNoFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles } from '../../shared/git/git-files.mjs'
 import { describeUnreadableHostPort, findPortProblems, parseHostPort } from './compose-ports.mjs'
 
 /** ポートの一覧 */
-const LIST_FILE = 'scripts/dev/ports.json'
+const LIST_FILE = 'scripts/shared/slot/ports.json'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'

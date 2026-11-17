@@ -23,9 +23,9 @@
 //
 // 使い方：node scripts/ci/spec/spec-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { codeKind, commentText } from '../lib/source/comment-text.mjs'
-import { keepJavaComments, keepTsComments } from '../lib/source/strip-comments.mjs'
+import { keepJavaComments, keepTsComments } from '../../shared/source/strip-comments.mjs'
 import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from '../lib/docs/screen-sources.mjs'
 
 /**

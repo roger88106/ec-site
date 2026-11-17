@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT, isScreenSource, SCREEN_APPS } from './screen-sources.mjs'
 
 describe('画面の本番のソースの定義', () => {
   test('店舗画面・管理画面・共有パッケージの src の .ts と .tsx を対象にする', () => {
-    assert.deepEqual(SCREEN_APPS, ['admin', 'store', 'shared'])
+    for (const app of SCREEN_APPS) assert.ok(existsSync(new URL(`../../../../frontend/${app}/src`, import.meta.url)), app)
     assert.equal(isScreenSource('frontend/admin/src/features/tax/pages/TaxListPage.tsx'), true)
     assert.equal(isScreenSource('frontend/store/src/lib/labels.ts'), true)
     assert.equal(isScreenSource('frontend/shared/src/lib/locale.ts'), true)

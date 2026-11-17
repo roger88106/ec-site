@@ -12,7 +12,7 @@ import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { stopOnSignals } from '../../scripts/dev/lib/child-stop.mjs'
+import { stopOnSignals } from '../../scripts/shared/child-stop.mjs'
 import {
   acquireLock,
   busyLockMessage,
@@ -21,8 +21,8 @@ import {
   type LockOwner,
   ownsLock,
   readLock,
-} from '../../scripts/dev/lib/lock.mjs'
-import { slotEnvNames } from '../../scripts/dev/lib/slot/slot-env-names.mjs'
+} from '../../scripts/shared/lock.mjs'
+import { slotEnvNames } from '../../scripts/shared/slot/slot-env-names.mjs'
 
 // スロット（scripts/dev/slot.mjs env）の環境変数を shell に export したまま流すと、バックエンドがスロットの DB とバケットにつながる。
 // E2E は常にスロット 0 の固定の環境で流すので、スロットが付ける環境変数は引き継がない
@@ -56,7 +56,7 @@ function git(...args: string[]): string {
 /**
  * ロックを取る。取れなければ、所有者とロックのファイルのパスを示して終了コード 1 で終了する。
  * 所有者のプロセスが実行中なら待たない。プロセスがなければ古いロックとして取得し直す。
- * 取得は scripts/dev/lib/lock.mjs の手順で、中身を書いた一時のファイルを link で置くので、空のロックを他方に読まれない。
+ * 取得は scripts/shared/lock.mjs の手順で、中身を書いた一時のファイルを link で置くので、空のロックを他方に読まれない。
  *
  * @param file  ロックのファイルのパス
  * @param owner 自分（所有者として書く内容）

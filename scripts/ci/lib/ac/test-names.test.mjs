@@ -1,7 +1,7 @@
 // lib/ac/test-names.mjs のテスト（node --test scripts/ci/lib/ac/test-names.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { scanTsTests } from '../source/test-files.mjs'
+import { scanTsTests } from '../../../shared/source/test-files.mjs'
 import { describeUnreadableTests, findAmbiguousAcLists, findSpacedAcLists, parseAcRefs } from './test-names.mjs'
 
 describe('テスト名の AC 番号', () => {

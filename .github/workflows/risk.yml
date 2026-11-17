@@ -53,7 +53,7 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         # 出力と基準のバージョンの script は、作業ツリーの外（RUNNER_TEMP）に置く（追跡していないファイルとして差分に入れないため）
-        # 基準の側は、基準の scripts/ci/ を取り出して、pull request の作業ツリーで実行する（差分は同じで、経路の一覧と script だけが基準のバージョンになる）
+        # 基準の側は、基準の scripts/ci/ と scripts/shared/（あれば）を取り出して、pull request の作業ツリーで実行する（差分は同じで、経路の一覧と script だけが基準のバージョンになる）
         # 基準の側にも同じ引数を渡すので、引数を変えるときは前のバージョンでも読める形にする
         run: |
           status=0
@@ -61,7 +61,10 @@ jobs:
           printf '%s' "$PR_BODY" | node scripts/ci/config/risk.mjs --body-file - --author "$PR_AUTHOR" --title "$PR_TITLE" > "$RUNNER_TEMP/risk-head.txt" || status=$?
           if git cat-file -e origin/develop:scripts/ci/config/risk.mjs 2> /dev/null; then
             mkdir -p "$base_dir"
-            git archive origin/develop scripts/ci | tar -x -C "$base_dir"
+            base_paths=(scripts/ci)
+            # scripts/shared/ は、判定の規則と経路の一覧の置き場所（ない基準では、scripts/ci/ だけで動く）
+            if git cat-file -e origin/develop:scripts/shared 2> /dev/null; then base_paths+=(scripts/shared); fi
+            git archive origin/develop "${base_paths[@]}" | tar -x -C "$base_dir"
             printf '%s' "$PR_BODY" | node "$base_dir/scripts/ci/config/risk.mjs" --skip-path-check --body-file - --author "$PR_AUTHOR" --title "$PR_TITLE" > "$RUNNER_TEMP/risk-base.txt" || status=$?
           else
             echo '基準（origin/develop）に scripts/ci/config/risk.mjs がないので、pull request の側だけで判定した' > "$RUNNER_TEMP/risk-base.txt"

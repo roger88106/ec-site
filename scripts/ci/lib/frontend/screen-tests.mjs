@@ -1,9 +1,9 @@
 // 画面のテストの規則：複数の結果を並びのインデックスで選ばない。
 // 変数の範囲を追うので、Biome の plugin では書けない
-import { closingParen } from '../source/closing-paren.mjs'
+import { closingParen } from '../../../shared/source/closing-paren.mjs'
 import { createLineLocator } from '../source/line-number.mjs'
-import { scanCode } from '../source/scan-code.mjs'
-import { stripComments } from '../source/strip-comments.mjs'
+import { scanCode } from '../../../shared/source/scan-code.mjs'
+import { stripComments } from '../../../shared/source/strip-comments.mjs'
 
 /**
  * 行の番号と表示する文字（元のソースの行）にする。

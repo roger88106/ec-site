@@ -6,8 +6,8 @@
 //
 // 走査（コメント・文字列の読み分け）は scan-code が行う。
 import { createLineLocator } from './line-number.mjs'
-import { JAVA_SCAN, scanCode, templateEnd } from './scan-code.mjs'
-import { skipModifiers, skipSpaces } from './test-files.mjs'
+import { JAVA_SCAN, scanCode, templateEnd } from '../../../shared/source/scan-code.mjs'
+import { skipModifiers, skipSpaces } from '../../../shared/source/test-files.mjs'
 
 /** テストの呼び出しの始まり。前が . や語の文字のもの（/re/.test(...) など）は読まない */
 const TS_TEST_CALL = /(?<![.\w$])(?:describe|it|test)(?![\w$])/g

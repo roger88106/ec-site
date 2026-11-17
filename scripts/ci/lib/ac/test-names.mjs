@@ -9,34 +9,20 @@
 //     コメント・文字列の中の呼び出しも読まない
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { exitIfNoFiles } from '../git/git-files.mjs'
+import { exitIfNoFiles } from '../../../shared/git/git-files.mjs'
 import { createLineLocator } from '../source/line-number.mjs'
-import { extractTestNames, findTestFiles, scanTsTests } from '../source/test-files.mjs'
+import { extractTestNames, findTestFiles, scanTsTests } from '../../../shared/source/test-files.mjs'
 import { describeUnreadableLine } from '../source/unreadable-line.mjs'
+import { AC_NUMBER, toAcKey } from '../../../shared/docs/ac-definitions.mjs'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
 const RANGE = '[〜～~]'
-
-/** AC の番号の書き方。MVP の `12` と、1→10 の `7-1`（spec の番号 ＋ 連番）の 2 つの形 */
-export const AC_NUMBER = '[0-9]+(?:-[0-9]+)?'
 
 /** テスト名の中の AC の並び（`AC-n、m`、`AC-n〜m` など）に合う正規表現の元。1 つ目の括弧が、`AC-` の後の並び全体 */
 const AC_LIST_SOURCE = `AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`
 
 /** AC の番号だけに合う正規表現（`AC-` の後の全体） */
 export const AC_NUMBER_ONLY = new RegExp(`^(${AC_NUMBER})$`)
-
-/**
- * AC の番号の文字列を、照合に使う値にする。MVP の `12` は数、1→10 の `7-1` は文字列のまま。
- *
- * 形で型を分けるので、`AC-s` と `AC-s-n` は別の AC になる。
- *
- * @param text AC- の後の番号（`12`、`7-1`）
- * @returns 数（MVP）か文字列（1→10）
- */
-export function toAcKey(text) {
-  return text.includes('-') ? text : Number(text)
-}
 
 /** AC の値を並べるための組。MVP は番号の順、その後に 1→10 の spec の番号、連番の順 */
 function acOrder(ac) {

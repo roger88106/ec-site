@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import type { JWT } from 'next-auth/jwt'
 import { readServerConfig } from '@/auth/config'
 import { needsTokenRefresh } from '@/lib/login'
+import { log } from '@/lib/server/log'
 import { timeoutSignal } from '@/lib/server/timeout'
 
 /** セッションの Cookie に持つ値（token はサーバーだけで扱い、画面から読める session には入れない） */
@@ -25,7 +26,7 @@ const {
 const SETTLED_RETENTION_MS = 10_000
 
 /** 上の以外の失敗の結果を保持する時間（ミリ秒）。障害の間の IdP の呼び出しを、この時間に 1 回に減らす */
-const FAILURE_RETENTION_MS = 0
+const FAILURE_RETENTION_MS = 30_000
 
 /** 失敗の理由の種類（ログの項目。token や応答の本文は含めない） */
 type FailureReason = 'unreachable' | 'error-response' | 'unreadable-body'
@@ -141,7 +142,7 @@ async function requestRefresh(refreshToken: string, token: MemberJwt): Promise<O
   }
   if (!response.ok) {
     const error = await readError(response)
-    if (error === 'unreadable') {
+    if (error === UNREADABLE) {
       return failed('unreadable-body', response.status)
     }
     // invalid_grant はログアウトの通常の流れなので、失敗の warn にしない
@@ -175,7 +176,8 @@ async function requestRefresh(refreshToken: string, token: MemberJwt): Promise<O
  *
  * 項目は理由の種類と状態コードだけ。token、Cookie、応答の本文は出さない。
  */
-function failed(_reason: FailureReason, _status?: number): Outcome {
+async function failed(reason: FailureReason, status?: number): Promise<Outcome> {
+  await log.warn('IdP での token の再取得に失敗した', { reason, status })
   return { kind: 'failed' }
 }
 
@@ -184,16 +186,19 @@ function nowSeconds(): number {
   return Math.floor(Date.now() / 1000)
 }
 
+/** 失敗の応答の本文が読めなかった印（error の値と取り違えない） */
+const UNREADABLE = Symbol('unreadable')
+
 /**
  * 失敗の応答の本文の error を読む。
  *
- * @returns error の値（invalid_grant など）。本文が JSON でない（前段のプロキシーが返すエラー画面など）ときは 'unreadable'
+ * @returns error の値（invalid_grant など）。本文が JSON でない（前段のプロキシーが返すエラー画面など）ときは UNREADABLE
  */
 async function readError(response: Response): Promise<unknown> {
   try {
     const body = (await response.json()) as { error?: unknown } | null
     return body?.error
   } catch {
-    return 'unreadable'
+    return UNREADABLE
   }
 }

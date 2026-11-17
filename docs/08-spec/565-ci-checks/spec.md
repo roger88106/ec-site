@@ -199,7 +199,7 @@ action の固定（`action-pins`）・検出してはいけない例：
   - 依存：T565-01-03、T565-01-05
   - 範囲：`scripts/dev/hooks/pre-commit-select.mjs`、`docs/06-手順書/ci-checks.md`
   - 確認方法：`node --test scripts/dev/hooks/pre-commit-select.test.mjs`、`node scripts/ci/docs/ci-docs.mjs`
-- [ ] **T565-01-07** 壊しての確認と全体の検査（DC-565-1、DC-565-4、DC-565-10）。
+- [x] **T565-01-07** 壊しての確認と全体の検査（DC-565-1、DC-565-4、DC-565-10）。
   - 依存：T565-01-06
   - 範囲：なし（確認だけ）
   - 確認方法：今の workflow の 1 か所をタグにして `action-pins` が失敗し、`.gitignore` に追跡しているファイルを除外する行を加えて `ignored-tracked` が失敗することを確認し、元に戻す。`scripts/ci/check-all.sh` が通る

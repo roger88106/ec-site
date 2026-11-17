@@ -126,7 +126,7 @@ const { orderId } = await test.step('注文する', async () => {
 
 理由：`process.env` への代入はテストの後も残り、他のテストの結果に影響するため。
 
-確認方法：レビュー
+確認方法：`process.env` への代入・`delete`・`Object.assign` は自動（Biome の plugin `no-process-env-write`）、別の変数を経由した代入はレビュー
 
 ## 宣言していないグローバルの名前を使わない
 

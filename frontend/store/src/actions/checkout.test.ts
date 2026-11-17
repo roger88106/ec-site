@@ -140,6 +140,22 @@ describe('注文する', () => {
     expect(revalidatedPaths).toEqual([`/checkout/${CHECKOUT_ID}`])
   })
 
+  test('AC-88 購入できない品目を含むカートで注文できなければ、注文手続きの画面を再表示する', async () => {
+    signInAs()
+    server.use(
+      http.post('/checkouts/{checkoutId}/order', ({ response }) =>
+        response(400).json(
+          problem(400, 'CART_NOT_ORDERABLE', '購入できない商品が含まれています。カートを確かめてください。'),
+        ),
+      ),
+    )
+
+    const result = await placeOrder(null, orderForm())
+
+    expect(result).toMatchObject({ ok: false, errorCode: 'CART_NOT_ORDERABLE' })
+    expect(revalidatedPaths).toEqual([`/checkout/${CHECKOUT_ID}`])
+  })
+
   test('AC-406-13 確認が必要（409）なら、入力を保存せず、確認の画面へ移る', async () => {
     signInAs()
     server.use(

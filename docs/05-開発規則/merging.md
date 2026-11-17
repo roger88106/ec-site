@@ -48,7 +48,7 @@ pull request のマージと、その後の作業の規則。pull request を作
 
 大きい issue は、親ブランチ（`agent/<番号>-…`）を作り、子の作業ブランチ（同じく `agent/` で始まる）を親にまとめる方式を選べる。
 
-- 子は pull request を作らない。子の担当のセッションが、CI と diff を確認してから、親に `--no-ff` でマージする。
+- 子は pull request を作らないので、上の `agent/` の規則（CI の結果を求めない）によらず、子の担当のセッションが、CI と diff を確認してから、親に `--no-ff` でマージする。
 - 子の終わりに、親に最新の `develop` を取り込む。
 - 親から `develop` へは、通常の pull request で入れる。「マージの許可」は、親の pull request に当てる。
 - 子のリモートのブランチは、pull request を通さないので自動で削除されない。子の担当のセッションが、親へのマージの後に `git push origin --delete <子のブランチ>` で削除する。hook（`agent-guard.mjs`）はブランチの削除を判定しない。

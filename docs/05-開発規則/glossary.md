@@ -37,7 +37,7 @@
 | 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に変換するクラス。インターフェースは使う層の `port/`、実装は `infrastructure/directory/` |
 | 参照の service | `XxxQueryService` | データを更新しない application の service。読み取り専用のトランザクションで、view（または外部へのリクエストの型）を返し、集約を返さない（[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
 | 更新の service | `XxxCommandService` など | データを更新する application の service。参照だけのメソッドを持たない |
-| view | `application/model/` | 参照の service が返す、SQL の View のような読み取り用の投影の型（画面の型ではない）。直下が 10 を超えたら `view/` に分ける。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
+| view | `application/model/` | 参照の service が返す、SQL の View のような読み取り用の投影の型（画面の型ではない）。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
 | 作成の応答 | `CreatedResponses` | 作成の API の応答（201、作成したものの Location、作成した ID）。共通の補助で作る |
 | jest-dom | `@testing-library/jest-dom` | DOM の要素の状態を確認する照合の関数（`toBeDisabled`、`toHaveAttribute`、`toHaveAccessibleName` など）を Vitest に加えるライブラリ |
 | テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストに加えた変更が、本番のクラスの移動と改名に伴うものだけであることを確認する script |

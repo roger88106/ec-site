@@ -103,13 +103,16 @@ script に残るのは、2 種類の規則である。1 つは、複数のファ
 
 ※8：CI の対象（`ci.yml` の paths は `scripts/dev/` を除く）と、手元だけのツールを、フォルダで分けるため。`scripts/dev/` のモジュールを CI が使うと、paths に例外の行が必要になる。検査は `scripts/ci/config/script-deps.mjs`。
 
-※9：検査にするか、ツールに任せるか、レビューだけにするかは、規則ごとに、検査を書いて保つ費用と、防げる誤りの大きさを比べて決める。既製のツールで書けるなら、ツールに任せる（※1）。費用が効果を上回るなら、検査にしない。基準は[CI の検査の追加](../06-手順書/ci-adding-checks.md)の「検査にするかの基準」。
+※9：基準は[CI の検査の追加](../06-手順書/ci-adding-checks.md)の「検査にするかの基準」。
 
-※10：`.claude/settings.json` の `if` 欄（`Bash(*git*)`、`Bash(*gh*)`）は、コマンドの文字列に `git`・`gh` が含まれるときだけ hook を起動する。次の書き方は、判定されないか、起動しない。
+※10：`.claude/settings.json` の `if` 欄（`Bash(*git*)`、`Bash(*gh*)`）は、コマンドの文字列に `git`・`gh` が含まれるときだけ hook を起動する。次の書き方は、`if` 欄に当たらず hook が起動しないか、判定の対象にならない。
+
 - `g''it` のように引用符で分けたコマンドと、`\` を挟む変形は、`if` 欄に当たらず hook が起動しない（直さないと決めた）。
 - git の長いオプションの略記は、3 字以上だけ読む（`scripts/dev/hooks/agent-guard/git-rules.mjs` の `MIN_ABBREVIATION`）。
 - `bash -c`、エイリアス、ファイルから読む GraphQL の本文は見ない（`agent-guard.mjs` の冒頭のコメント）。
-サーバー側で守るものは、ruleset で守る（[ブランチとリリース](../06-手順書/branches.md)）。
+
+サーバー側の保護は、ruleset が担う（[ブランチとリリース](../06-手順書/branches.md)）。
+
 ## いつ何が動くか
 
 ```mermaid

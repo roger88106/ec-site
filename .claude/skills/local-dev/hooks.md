@@ -56,8 +56,10 @@ command は、次の例の形で script を探す（`git rev-parse --show-toplev
 `settings.json` の `if` 欄のように、絞り込みを Claude Code が行う設定は、script の単体テストでは確認できない。作業ツリーで次を実行し、debug のログを読む。
 
 ```bash
-claude -p "<指示>" --model claude-haiku-5-5 --allowedTools "Bash PowerShell" --debug hooks --debug-file <ファイル>
+claude -p --model claude-haiku-5-5 --permission-mode default --allowedTools "Bash PowerShell" --debug hooks --debug-file <ファイル> < <指示のファイル>
 ```
+
+`claude -p` の起動の形とログインの確認は、skill `sessions` の「ツールの補足」にある。
 
 - ログの `Skipping hook due to if condition`（絞り込みで起動しなかった）と `Hooks: PreToolUse:Bash [...] finished`（起動した）で、hook が起動したかを読む。
 - 確認するだけなので、軽量のモデルで足りる。

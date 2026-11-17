@@ -1,6 +1,6 @@
 # Spec 555：集約の不変条件と同一性の判定を整える
 
-種類：整理　規模：L　ステータス：草案
+種類：整理　規模：L　ステータス：確定
 
 ## 背景と目的
 
@@ -25,7 +25,7 @@
   - 値オブジェクト・entity・集約ルートの不変条件は、作るときと復元するときに共通のコンストラクターで検査する。
   - ファクトリーメソッドに残すのは、コンストラクターを呼ぶ前の前処理（正規化、計算、解析）と、作り方によって違う規則だけにする。例：在庫の調整の「運営者は注文に由来する理由を選べない」「理由が『その他』ならメモが必須」は、運営者の調整だけの規則なので、ファクトリーメソッドに残す。
   - 復元で不変条件に違反したときは、復元のエラーにする。例外のメッセージとログに DB の値を含めない。
-- **DC-555-2** 対象の型（「変える範囲」の表。商品は Open questions 1 の結果による）は、コンストラクターを直接呼んでも、条件に違反する値のインスタンスを作れない。
+- **DC-555-2** 対象の型（「変える範囲」の表）は、コンストラクターを直接呼んでも、条件に違反する値のインスタンスを作れない。
 - **DC-555-3** 対象の型のファクトリーメソッドには、前処理と、作り方によって違う規則だけが残っている。
 - **DC-555-4** 対象の型を DB から復元するとき、条件に違反する行を読むと復元のエラーになり、例外のメッセージとログに DB の値が出ない。
 - **DC-555-5** 加えた条件ごとに、違反を拒むことと境界の値を受け付けることを、コンストラクターを直接呼ぶ単体テストで確認している。
@@ -33,7 +33,7 @@
 
 ### DS-555-2 entity と集約を、識別子で比べる（D / P1）
 
-- **DC-555-7** 対象の entity と集約（Open questions 2・3 で決めた範囲）の `equals` と `hashCode` が、識別子だけで比べる。
+- **DC-555-7** 対象の entity と集約（jMolecules の注釈の付いた 10 個と、注釈を付けるレベル B の 4 個）の `equals` と `hashCode` が、識別子だけで比べる。
 - **DC-555-8** 参照の同一性か、record の全項目の等価に頼る所の一覧と、それぞれへの対応（振る舞いが同じか、意図して変えたか）が、pull request に書いてある。
 - **DC-555-9** テストで entity と集約を等価（`isEqualTo`、`containsExactly` など）で比べない規則が、バックエンドのテストの書き方の文書にある。値を比べるときは、項目ごとか `usingRecursiveComparison` で比べる。
 - **DC-555-10** DC-555-9 の規則に反するテストを、自動の検査が見つける（検査の方法は plan で決める）。
@@ -48,7 +48,7 @@
 | まとまり | ファイル |
 |----------|----------|
 | 規則 | `docs/05-開発規則/backend-coding.md`、`docs/05-開発規則/test-writing-backend.md` |
-| domain | `backend/ecsite/src/main/java/com/ecsite/module/{order,inventory,tax,shipping,reporting,payment,catalog}/domain/` の対象の型、`common/model/base/`（基底）。Open questions 3 の結果で cart・shipping・media・member の domain |
+| domain | `backend/ecsite/src/main/java/com/ecsite/module/{order,inventory,tax,shipping,reporting,payment,catalog}/domain/` の対象の型、`common/model/base/`（基底）。レベル B の cart・shipping・media・member の domain の entity |
 | 復元 | 各モジュールの `infrastructure/persistence/` の Jooq*Repository と、catalog・tax のファクトリー |
 | 検査 | `backend/ecsite/src/test/java/com/ecsite/architecture/` か `scripts/ci/java/`（plan で決める） |
 | テスト | `backend/ecsite/src/test/`、`src/integrationTest/`、`src/testFixtures/` の対象の型のテスト |
@@ -73,7 +73,7 @@
 | order | 注文（集約ルート） | `Order` | メールアドレスの検査が、注文の作成だけにある。状態と取消の情報の整合は検査しない | メールアドレスの検査をコンストラクターに移す。状態と取消の情報（取消の申請、取消）の整合を検査する |
 | payment | 支払（集約ルート） | `Payment` | 状態と項目の整合を検査しない | 状態と、状態ごとに必要な項目（承認済みなら承認の参照番号と承認の日時など）の整合を検査する |
 | order | 注文手続き（record の集約ルート） | `Checkout` | 検査なし | 引当の期限が作成の日時より後 |
-| catalog | 商品（集約ルート） | `Product` | 名前・説明・軸はコンストラクターで検査する。他の 4 つの条件は、状態を変えるメソッドでだけ検査する | 4 つの条件を復元でも検査するかを、Open questions 1 で決める |
+| catalog | 商品（集約ルート） | `Product` | 名前・説明・軸はコンストラクターで検査する。他の 4 つの条件は、状態を変えるメソッドでだけ検査する | 4 つの条件をコンストラクターで検査する。状態を変えるメソッドの検査は、操作の前の判定として残す |
 
 ※1：運営者の調整だけの規則は、ファクトリーメソッドに残す。在庫の調整は復元しない（読み取りは別の型）。
 
@@ -94,7 +94,7 @@
 ### 同一性の判定の調査の結果（DS-555-2 の対象）
 
 - jMolecules の注釈で entity・集約を示すクラスは 10 個ある。catalog の `Category`・`Product`・`ProductImage`・`Variant`、inventory の `StockAdjustment`、order の `Checkout`・`Order`、payment の `Payment`、tax の `TaxCategory`・`TaxRate`。
-- 注釈のない entity の候補は 4 個ある。レベル B の cart の `Cart`、shipping の `Shipment`（どちらも class で識別子を持つ）、media の `Asset`、member の `Member`（どちらも識別子を持つ record）。
+- 注釈のない entity は 4 個あり、対象にして注釈を付ける。レベル B の cart の `Cart`、shipping の `Shipment`（どちらも class で識別子を持つ）、media の `Asset`、member の `Member`（どちらも識別子を持つ record）。
 - 本番のコードには、参照の同一性に頼る所がない。集約・entity を Set・Map のキー、`remove`・`contains`、`==` で使う所はない。
 - record の全項目の等価に頼るテストは、6 ファイル、9 件程度ある。対象は次の 6 つの型である：商品の画像、バリアント、税率、注文手続き、画像の資産、支払のスナップショット。
 - これらのテストは、識別子で比べる形に変えると確認が弱くなる。項目ごとか `usingRecursiveComparison` で比べる形に書き換える。
@@ -128,19 +128,4 @@
 
 ## Open questions
 
-issue 担当が、利用者に代わって決める。
-
-1. 商品の集約で、次の 4 つの不変条件を復元でも検査するか。
-   - 画像の数が上限以下
-   - 軸がないとき、バリアントは 1 つ
-   - 初めて表示した日時と状態の整合
-   - バリアントの軸の値の数が、商品の軸の数と同じ
-   - 案 A（推奨）：コンストラクターで検査する（復元でも有効になる）。理由：規則（作るときと復元するときに共通のコンストラクターで検査する）に合わせるため。状態を変えるメソッドの検査は、操作の前の判定（業務のエラー）として残す。
-   - 案 B：今のまま、状態を変えるメソッドでだけ検査する。
-2. record の entity と集約（商品の画像、バリアント、在庫の調整、注文手続き、税率）の `equals` と `hashCode` をどうするか。Lombok は record に対応せず、`@EqualsAndHashCode` を付けられない。今の規則は、手動で書かずに Lombok で作ると決めている。
-   - 案 A（推奨）：class に変え、他の集約と同じく、Lombok の getter（fluent）と、識別子だけで比べる Lombok の指定で作る。理由：規則を変えずに済み、getter の名前（`id()` など）が record と同じなので、呼び出し元の変更は少ない見込みのため（件数は plan で調べる）。
-   - 案 B：record のまま、`equals` と `hashCode` を手動で書き、識別子だけで比べる。規則に、record の例外を加える。
-   - 案 C：record のまま値として扱い、規則の対象から外す。DDD の慣習（entity は同一性で比べる）と合わない。
-3. 注釈のない entity（レベル B の `Cart`、`Shipment`、`Asset`、`Member`）を対象にするか。
-   - 案 A（推奨）：対象にし、jMolecules の注釈も付ける。理由：規則は entity と集約の全てに適用され、注釈があれば、規則を自動の検査にできるため（方法は plan で決める）。`Asset` と `Member` は record なので、Open questions 2 の決定に従う。
-   - 案 B：注釈の付いた 10 個だけを対象にし、レベル B は別の issue にする。
+なし。

@@ -5,7 +5,7 @@
 | 知りたいこと | 文書 |
 |--------------|------|
 | 検査ごとの目的と、失敗したときの読み方 | [CI の検査の script](../06-手順書/ci-checks.md) |
-| 検査を加える手順と、検査の script の約束（要約の行、終了コード、先頭のコメント） | [CI の検査の追加](../06-手順書/ci-adding-checks.md) |
+| 検査を加える手順、検査にするかの基準、検査の script の約束（要約の行、終了コード、先頭のコメント）と書き方、テストの観点 | [CI の検査の追加](../06-手順書/ci-adding-checks.md) |
 | CI のジョブの一覧と、手元で同じ検査を実行するコマンド | [CI の検査](../06-手順書/ci.md) |
 | git の hook の置き方 | [開発環境の起動](../06-手順書/setup.md)の「起動」 |
 | Claude Code の手元の hook の設定 | skill `local-dev` の[手元の hook の設定](../../.claude/skills/local-dev/hooks.md) |
@@ -74,6 +74,8 @@
 | ワークフローは実行する時点で分ける | `ci.yml`・`docs.yml`・`risk.yml` に分ける ※6 |
 | 共通のモジュールは 1 か所 | ソースの走査（`scan-code`）、読めない行のエラーメッセージ（`unreadable-line`）、除外の一覧の読み方（`exclusions`）、Git のファイルの一覧（`git-files`）を、検査ごとに書かない。検査だけが使うものは `scripts/ci/lib/`、2 つ以上のフォルダが使うものは `scripts/shared/` に置く ※7 |
 | 依存の向き | `scripts/ci/` と `scripts/dev/` は互いに import しない。`scripts/shared/` は `scripts/ci/` と `scripts/dev/` を import しない。`e2e/` は、`scripts/` の下では `scripts/shared/` だけを import する。テストのファイルも同じ ※8 |
+| 検査の取捨 | 費用が効果を上回る規則は、検査にせずレビューだけにするか、規則ごと消す ※9 |
+| agent-guard は誤操作の防止 | エージェントの誤操作を止める hook であり、意図して避ける書き方は止めない。既知の制限は残す。サーバー側の保護は ruleset が担う ※10 |
 
 ※1：自前の構文の読み取りは、誤検出と保守の費用が大きいため。
 
@@ -101,6 +103,13 @@ script に残るのは、2 種類の規則である。1 つは、複数のファ
 
 ※8：CI の対象（`ci.yml` の paths は `scripts/dev/` を除く）と、手元だけのツールを、フォルダで分けるため。`scripts/dev/` のモジュールを CI が使うと、paths に例外の行が必要になる。検査は `scripts/ci/config/script-deps.mjs`。
 
+※9：検査にするか、ツールに任せるか、レビューだけにするかは、規則ごとに、検査を書いて保つ費用と、防げる誤りの大きさを比べて決める。既製のツールで書けるなら、ツールに任せる（※1）。費用が効果を上回るなら、検査にしない。基準は[CI の検査の追加](../06-手順書/ci-adding-checks.md)の「検査にするかの基準」。
+
+※10：`.claude/settings.json` の `if` 欄（`Bash(*git*)`、`Bash(*gh*)`）は、コマンドの文字列に `git`・`gh` が含まれるときだけ hook を起動する。次の書き方は、判定されないか、起動しない。
+- `g''it` のように引用符で分けたコマンドと、`\` を挟む変形は、`if` 欄に当たらず hook が起動しない（直さないと決めた）。
+- git の長いオプションの略記は、3 字以上だけ読む（`scripts/dev/hooks/agent-guard/git-rules.mjs` の `MIN_ABBREVIATION`）。
+- `bash -c`、エイリアス、ファイルから読む GraphQL の本文は見ない（`agent-guard.mjs` の冒頭のコメント）。
+サーバー側で守るものは、ruleset で守る（[ブランチとリリース](../06-手順書/branches.md)）。
 ## いつ何が動くか
 
 ```mermaid

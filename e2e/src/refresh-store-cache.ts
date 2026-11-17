@@ -20,10 +20,14 @@ async function expectNoStaleCard(page: Page): Promise<void> {
     .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''))
   const productIds = hrefs.map((href) => PRODUCT_LINK.exec(href)?.[1]).filter((id) => id !== undefined)
   // カードのない画面（エラーの画面など）では、再作成の前の商品が残っているかを確認できない
-  if (productIds.length === 0) throw new Error(`商品のカードが表示されていない：${page.url()}`)
+  if (productIds.length === 0) {
+    throw new Error(`商品のカードが表示されていない：${page.url()}`)
+  }
   for (const productId of productIds) {
     const response = await fetch(`${BACKEND}/api/store/products/${productId}`)
-    if (!response.ok) throw new Error(`DB にない商品のカードが表示されている：${productId}（${response.status}）`)
+    if (!response.ok) {
+      throw new Error(`DB にない商品のカードが表示されている：${productId}（${response.status}）`)
+    }
   }
 }
 

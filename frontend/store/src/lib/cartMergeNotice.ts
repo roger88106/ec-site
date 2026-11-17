@@ -7,10 +7,18 @@ const MAX_ITEMS = 10
 /** 知らせる品目 */
 type NoticeItem = { label: string; quantity: number }
 
-/** 知らせる品目の並び。more は上限を超えて省いた品目の数 */
+/**
+ * 知らせる品目の並び
+ *
+ * more は上限を超えて省いた品目の数。
+ */
 type NoticeItems = { items: NoticeItem[]; more: number }
 
-/** カートを移した結果の知らせ。カートの画面で一度だけ示す */
+/**
+ * カートを移した結果の知らせ
+ *
+ * カートの画面で一度だけ示す。
+ */
 export type CartMergeNotice = {
   /** 数量を上限に切り詰めた品目（切り詰めた後の数量） */
   truncated: NoticeItems

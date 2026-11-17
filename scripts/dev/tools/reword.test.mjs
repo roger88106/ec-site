@@ -1,4 +1,6 @@
-// reword.mjs（push していない commit のメッセージを書き換える script）のテスト（node --test scripts/dev/tools/reword.test.mjs）
+// reword.mjs（commit のメッセージを非対話で書き換える script）のテスト。
+//
+// 実行：node --test scripts/dev/tools/reword.test.mjs
 // os.tmpdir() の下の一時のリポジトリの中だけで行い、テストの後に消す
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -147,6 +149,19 @@ describe('書き換え', () => {
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.equal(subjects(dir), 'one\ntwo\nthree2')
   })
+
+  test('今の agent/ のブランチにだけ push した commit は書き換えられる', () => {
+    const { dir, shas } = makeRepo(['one', 'two', 'three'])
+    git(dir, 'branch', '-q', '-m', 'agent/1-work')
+    const remote = path.join(root, `remote-${counter++}.git`)
+    git(root, 'init', '-q', '--bare', remote)
+    git(dir, 'remote', 'add', 'origin', remote)
+    git(dir, 'push', '-q', 'origin', `${shas[2]}:refs/heads/agent/1-work`)
+    git(dir, 'fetch', '-q', 'origin')
+    const result = run(dir, [{ commit: shas[1], message: 'two2\n' }])
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    assert.equal(subjects(dir), 'one\ntwo2\nthree')
+  })
 })
 
 describe('拒否', () => {
@@ -167,6 +182,37 @@ describe('拒否', () => {
     const result = run(dir, [{ commit: shas[1], message: 'two2\n' }])
     assert.equal(result.status, 1, result.stdout + result.stderr)
     assert.match(result.stderr, /push 済み/)
+    assertUntouched(dir, head, 'one\ntwo\nthree')
+  })
+
+  test('今のブランチでない agent/ のブランチ（親のブランチなど）に push した commit は書き換えず、終了コード 1 で止まる', () => {
+    const { dir, shas } = makeRepo(['one', 'two', 'three'])
+    git(dir, 'branch', '-q', '-m', 'agent/2-child')
+    const remote = path.join(root, `remote-${counter++}.git`)
+    git(root, 'init', '-q', '--bare', remote)
+    git(dir, 'remote', 'add', 'origin', remote)
+    git(dir, 'push', '-q', 'origin', `${shas[2]}:refs/heads/agent/1-parent`)
+    git(dir, 'fetch', '-q', 'origin')
+    const head = git(dir, 'rev-parse', 'HEAD')
+    const result = run(dir, [{ commit: shas[1], message: 'two2\n' }])
+    assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /push 済み.*agent\/1-parent/)
+    assertUntouched(dir, head, 'one\ntwo\nthree')
+  })
+
+  test('agent/ と別のブランチの両方に push した commit は書き換えず、終了コード 1 で止まる', () => {
+    const { dir, shas } = makeRepo(['one', 'two', 'three'])
+    git(dir, 'branch', '-q', '-m', 'agent/1-work')
+    const remote = path.join(root, `remote-${counter++}.git`)
+    git(root, 'init', '-q', '--bare', remote)
+    git(dir, 'remote', 'add', 'origin', remote)
+    git(dir, 'push', '-q', 'origin', `${shas[2]}:refs/heads/agent/1-work`)
+    git(dir, 'push', '-q', 'origin', `${shas[1]}:refs/heads/develop`)
+    git(dir, 'fetch', '-q', 'origin')
+    const head = git(dir, 'rev-parse', 'HEAD')
+    const result = run(dir, [{ commit: shas[1], message: 'two2\n' }])
+    assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /push 済み.*develop/)
     assertUntouched(dir, head, 'one\ntwo\nthree')
   })
 

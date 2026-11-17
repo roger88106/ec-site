@@ -206,7 +206,7 @@ val unitTestMaxHeap = "768m"
 // 単体テストの JVM の systemProperty。test の task と pitest で同じ値を使う（ないと、設定を読むテストが PIT で失敗する）。
 //   openapi.dir：契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
-//   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、ModuleStructureTest）が、
+//   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、PackageSizeTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
 //   test-classes.dirs：単体テストと統合テストのクラスの置き場所。テストの書き方の検査（TestNameTest など）が読む（TestCodeClasses）
 // API の契約の正本（OpenAPI）の置き場所。テストが読むほか、下の「OpenAPI からのコード生成」でも使う

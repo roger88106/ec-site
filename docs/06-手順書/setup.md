@@ -48,7 +48,7 @@ pnpm dev
 - 店舗画面の開発サーバーのログに、Edge Runtime で使えない API（`instrumentation.ts` の `process.exit`）の警告が出る。Node.js の実行環境でだけ呼ぶので、影響しない。
 - compose のプロジェクトの名前（`ec-site`）とコンテナの名前は固定なので、2 つ目の clone は volume（DB と画像のデータ）を共有する。別のデータで動かすときは、1 つ目の compose を `docker compose down` で停止し、環境変数 `COMPOSE_PROJECT_NAME` に別の名前を設定してから起動する。
 - E2E 用の Keycloak（:8181、profile `e2e`）はこの一覧に含まれない。E2E の準備の script が起動する（[テストの実行方法](running-tests.md)）。
-- 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
+- 店舗画面は API の結果を Next.js の fetch のキャッシュに入れる。期限（`STORE_API_REVALIDATE_SECONDS`）の後の最初のリクエストは、古い結果を返し、バックグラウンドで再取得する。管理画面での変更がすぐ表示されないのは正常。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で修正できる lint は `pnpm lint:fix`。
 - commit のときに CI の検査の script（[CI の検査の script](ci-checks.md)）を実行するには、次の 2 つの hook を置く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`core.hooksPath` は変えない。
 

@@ -73,6 +73,7 @@ sequenceDiagram
 ```
 catalog/
 ├── api/                # 注文向けのバリアント、店舗向けの参照、レポート向けの写し
+│   └── model/          # API の引数と戻り値の型
 ├── event/              # 商品・バリアントの状態の変化
 ├── presentation/       # 店舗 API・管理 API の実装
 ├── application/        # 他のモジュール向けの参照

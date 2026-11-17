@@ -103,7 +103,7 @@ test('形 2 の箇条は、空行か箇条でない行で終わり、行の途�
   assert.deepEqual(r.entries.map((e) => e.name), ['名前', '置き場所'])
 })
 
-test('今の docs/05-開発規則/ の文書は、項目が 56', () => {
+test('今の docs/05-開発規則/ の文書から、項目を読める（規則を増やしても直さないよう、数は下限で見る）', () => {
   const fs = require('fs'), path = require('path')
   const dir = path.join(__dirname, '..', '..', '..', 'docs', '05-開発規則')
   let items = 0
@@ -111,5 +111,6 @@ test('今の docs/05-開発規則/ の文書は、項目が 56', () => {
     const r = readCheckMethods(fs.readFileSync(path.join(dir, name), 'utf8'), name)
     if (r) items += reviewItems(r.entries).length
   }
-  assert.equal(items, 56)
+  // 下限は今の数。確認方法をレビューから自動に替えて減らしたときは、下限も下げる
+  assert.ok(items >= 70, `項目の数：${items}`)
 })

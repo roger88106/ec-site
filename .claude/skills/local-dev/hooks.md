@@ -50,3 +50,18 @@ command は、次の例の形で script を探す（`git rev-parse --show-toplev
 - 既に `hooks` があれば、イベントごとの配列に項目を追加する。設定を変えたら、新しいセッションを起動する。
 - PostToolUse の項目は、中国語で指示する環境だけに置く。環境の印と git の hook は skill `zh-mixing`。
 - 他の置き方：同じ項目を利用者の設定（`~/.claude/settings.json`）に置く。他のリポジトリでも呼ばれ、script がないと node が失敗するので、PostToolUse の command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。
+
+## 設定の反映を手元で確認する
+
+`settings.json` の `if` 欄のように、絞り込みを Claude Code が行う設定は、script の単体テストでは確認できない。作業ツリーで次を実行し、debug のログを読む。
+
+```bash
+claude -p --model claude-haiku-5-5 --permission-mode default --allowedTools "Bash PowerShell" --debug hooks --debug-file <ファイル> < <指示のファイル>
+```
+
+`claude -p` の起動の形とログインの確認は、skill `sessions` の「ツールの補足」にある。
+
+- ログの `Skipping hook due to if condition`（絞り込みで起動しなかった）と `Hooks: PreToolUse:Bash [...] finished`（起動した）で、hook が起動したかを読む。
+- 確認するだけなので、軽量のモデルで足りる。
+- ログインが切れて失敗したときは、`claude auth status` で状態を確認する。
+- `if` 欄で起動しない書き方（`g''it` など）は、hook `agent-guard` の既知の制限である。位置付けと制限の一覧は、[scripts の設計](../../../docs/02-設計/scripts.md)の「設計の判断」の注（※10）。

@@ -124,7 +124,7 @@ GitHub の ruleset を、`develop`・`main`・`release-hotfix` の 3 つ作る�
 ※4：`github-actions` の更新は危険度が高いので、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
 
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
-- Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
+- Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、`bash scripts/dev/merge-deps.sh <番号>` を使う。script は `gh pr update-branch` で最新にし、CI を待ってから、マージのコマンドを出力する（衝突しているときは止まる。使い方は script の冒頭）。
 - `@types/node` の major は、Dependabot の対象から外す。型の定義だけを上げると、`.node-version` の Node にない API も型の検査を通るため。Node のバージョンを上げるときに合わせて上げる。
 - `github-actions` の `directories` に、ローカルの複合の action のディレクトリを glob（`/.github/actions/*`）で加えている（`/` は `.github/workflows` とルートの `action.yml` しか見ないため）。複合の action を増やしても、設定は変えなくてよい。
 - workflow と複合の action の `uses` は、commit の SHA に固定し、同じ行のコメントにタグを書く（`uses: actions/checkout@<SHA> # v7.0.1`）。GitHub の文書では、Dependabot はこの形の SHA とコメントを更新する（Dependabot が実際に作る更新の pull request は未確認）。SHA に固定した action は Dependabot alerts の対象にならないので、脆弱性を修正したバージョンも、週 1 回の更新（cooldown あり）で取り込む。ローカルの action（`./.github/actions/...`）は固定しない。

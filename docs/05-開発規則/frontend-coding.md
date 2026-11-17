@@ -86,6 +86,26 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 確認方法：自動（`pnpm lint`）
 
+### 1 行の `if` にも波括弧を付ける
+
+`if`・`else`・繰り返しは、本体が 1 行でも波括弧で囲む。
+
+理由：1 行の if の書き方が混ざらないよう、画面の間でそろえるため。
+
+確認方法：自動（Biome の `useBlockStatements`）
+
+### 条件で変わる `className` は `cn()` で書く
+
+条件で変わるクラスは、三項演算子やテンプレート文字列で文字列をつなげず、`cn()` の引数に条件ごとに書く。
+
+```tsx
+<span className={cn('text-sm', isSoldOut && 'text-muted-foreground')} />
+```
+
+理由：画面の間で書き方をそろえ、`cn()` の引数に対して Tailwind のクラスの並びも検査されるため（`biome.base.jsonc` の `useTailwindSortedClasses`）。
+
+確認方法：レビュー
+
 ### 使われていないものを残さない
 
 使われていないファイル、export、依存を残さない。定義したファイルの中だけで使うものは export しない。報告の対象から外すのは生成物の export と型だけ（`knip.ts`）で、テストだけが import している export は使われているとみなす。失敗したときの修正は[テストの実行方法](../06-手順書/running-tests.md)の「knip が失敗したとき」。

@@ -103,6 +103,7 @@ sequenceDiagram
 ```
 shipping/
 ├── api/                    # 注文と通知への公開
+│   └── model/              # API の引数と戻り値の型
 ├── event/                  # 配送状態の変化
 ├── application/            # 出荷の作成と参照、通知の反映
 │   └── port/               # リポジトリ、追跡、通知の受信

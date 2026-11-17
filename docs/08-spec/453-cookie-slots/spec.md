@@ -87,19 +87,19 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。
 
-- [ ] **T453-01-01** [テスト] スロットの値のテストを、新しい URL に合わせて書き換え、失敗することを確認する（DC-453-1、DC-453-2、DC-453-3）。
+- [x] **T453-01-01** [テスト] スロットの値のテストを、新しい URL に合わせて書き換え、失敗することを確認する（DC-453-1、DC-453-2、DC-453-3）。
   - 依存：なし
   - 範囲：`scripts/shared/slot/slot.test.mjs`
   - 確認方法：`node --test scripts/shared/slot/slot.test.mjs` が失敗する（レッド）
-- [ ] **T453-01-02** スロットの値と環境変数を変える。`show` の表示と realm と `.claude/launch.json` も合わせる（DC-453-1、DC-453-2、DC-453-3）。
+- [x] **T453-01-02** スロットの値と環境変数を変える。`show` の表示と realm と `.claude/launch.json` も合わせる（DC-453-1、DC-453-2、DC-453-3）。
   - 依存：T453-01-01
   - 範囲：`scripts/shared/slot/slot.mjs`、`scripts/dev/slot.mjs`、`docker/keycloak/realms/ec-store-realm.json`、`.claude/launch.json`
   - 確認方法：`node --test scripts/shared/slot/slot.test.mjs` が通る。`node scripts/ci/config/local-ports.mjs` が通る
-- [ ] **T453-01-03** 手順書を書き換える（DC-453-6、DC-453-7）。
+- [x] **T453-01-03** 手順書を書き換える（DC-453-6、DC-453-7）。
   - 依存：T453-01-02
   - 範囲：`docs/06-手順書/setup.md`
   - 確認方法：`node scripts/ci/docs/doc-refs.mjs` と `node scripts/ci/ja/ja-text.mjs --warning`
-- [ ] **T453-01-04** [手動] スロットの店舗画面の操作（DC-453-4 の 3 つ）と、Cookie のホストを確認する（DC-453-4、DC-453-5）。
+- [x] **T453-01-04** [手動] スロットの店舗画面の操作（DC-453-4 の 3 つ）と、Cookie のホストを確認する（DC-453-4、DC-453-5）。
   - 依存：T453-01-02
   - 範囲：動いている Keycloak の店舗の client（加えるだけ）
   - 確認方法：issue 担当のセッションに知らせてから、Keycloak の Admin REST API で client に新しい origin を加える。ブラウザーで操作し、Cookie の一覧を見る

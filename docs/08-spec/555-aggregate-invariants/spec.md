@@ -50,7 +50,7 @@
 | 規則 | `docs/05-開発規則/backend-coding.md`、`docs/05-開発規則/test-writing-backend.md` |
 | domain | `backend/ecsite/src/main/java/com/ecsite/module/{order,inventory,tax,shipping,reporting,payment,catalog}/domain/` の対象の型、`common/model/base/`（基底）。レベル B の cart・shipping・media・member の domain の entity |
 | 復元 | 各モジュールの `infrastructure/persistence/` の Jooq*Repository と、catalog・tax のファクトリー |
-| 検査 | `backend/ecsite/src/test/java/com/ecsite/architecture/` か `scripts/ci/java/`（plan で決める） |
+| 検査 | `backend/ecsite/src/test/java/com/ecsite/architecture/`、`backend/ecsite/src/errorprone/java/`、`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、`backend/ecsite/lombok.config`（plan の「テストの等価の検査」） |
 | テスト | `backend/ecsite/src/test/`、`src/integrationTest/`、`src/testFixtures/` の対象の型のテスト |
 | seed | `backend/ecsite/src/main/resources/db/seed/`（違反がなければ変えない） |
 
@@ -58,7 +58,7 @@
 
 | モジュール | 業務の名前 | 型 | 今 | 変えること |
 |------------|------------|----|----|------------|
-| order | 配送先 | `ShippingAddress` | ファクトリーメソッドだけで検査と正規化をする。復元はコンストラクターを直接呼び、検査を通らない | 検査と、郵便番号・電話番号のハイフンを除く正規化を、コンストラクターに移す |
+| order | 配送先 | `ShippingAddress` | ファクトリーメソッドだけで検査と正規化をする。復元はコンストラクターを直接呼び、検査を通らない | 検査をコンストラクターに移す。郵便番号・電話番号のハイフンを除く正規化は前処理なので、ファクトリーメソッドに残す。コンストラクターは正規化の後の形を検査する |
 | inventory | 在庫の調整 | `StockAdjustment` | ファクトリーメソッドで検査する。注文 ID と注文番号が両方あるか両方ないかは検査しない | 増減が 0 でないこと、メモの長さ、注文 ID と注文番号の有無の一致を、コンストラクターで検査する ※1 |
 | tax | 税率の一覧 | `TaxRates` | 期間の連続を、税率の置き換えのときだけ検査する | 期間の連続を、コンストラクターで検査する（復元でも有効になる） |
 | shipping | 追跡番号 | `TrackingNumber` | ファクトリーメソッドだけで検査する。復元は検査を通らない | 検査をコンストラクターに移す |

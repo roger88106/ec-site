@@ -209,7 +209,7 @@ node scripts/dev/tools/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{f
   gh run watch <ID> --exit-status
   ```
 
-  - 「CI」（`ci.yml`）と「文書」（`docs.yml`）は、pull request と、`develop`・`main`・`release/**`・`hotfix/**` への push で実行する。作業ブランチ（`agent/` など）は push だけでは実行しないので、pull request の CI を待つ（`-e pull_request`）。
+  - 「CI」（`ci.yml`）と「文書」（`docs.yml`）は、pull request と、`develop`・`main`・`release/**`・`hotfix/**` への push で実行する。作業ブランチ（`agent/` など）は push だけでは実行しないので、pull request の CI を待つ（`-e pull_request`）。pull request の前に実行するときは `gh workflow run` を使い、`-e workflow_dispatch` で待つ。
   - `develop` などへの push で待つワークフローは、`ci.yml` の push の `paths` で決まる。`.md` と `.claude/` の下のファイルだけなら「文書」だけを待つ（モジュールの設計書など一部の `.md` は「CI」も実行される）。pull request では、「CI」は変えたファイルによらず実行される。
   - pull request の全ての CI は、issue 担当のセッションが待つ（[マージと後片付け](../../../docs/05-開発規則/merging.md)の「ready と CI の順」）。ready にすると `risk.yml`（危険度の照合）が再実行される。自分で確認するときは `gh run list -b <ブランチ> -w risk.yml -L 1` で最新の実行を見る。
 - commit の前の hook（`pre-commit`）は、作業ツリーでなく index（ステージした内容）を検査する。ステージしていない変更は検査に入らない。そのため、前の段階の変更を参照するファイルを先に commit すると、参照先が index にないので、hook が切れた参照として commit を失敗にする。段階の順に commit する。

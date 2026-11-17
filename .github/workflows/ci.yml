@@ -35,6 +35,8 @@ on:
       - 'docs/05-開発規則/backend-coding.md' # バックエンドの書き方。バックエンドの単体テスト（PackageSizeTest）がパッケージの大きさの表と照合する
   # pull request は、変えたファイルによらずいつも流す（develop と main に入る前に必ず確認する）
   pull_request:
+  # CI でしか確認できない変更を、pull request の前に手で実行するとき（gh workflow run ci.yml --ref <ブランチ>）
+  workflow_dispatch:
 
 permissions: {}
 

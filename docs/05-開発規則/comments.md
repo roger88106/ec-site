@@ -51,13 +51,30 @@
 
 ```java
 /**
- * 違反した制約の名前を取り出す。
+ * カートの service
  *
- * <p>jOOQ や Spring の例外に包まれていても、原因をたどって PostgreSQL のエラーを探す。
- *
- * @param ex 例外
- * @return 制約名。制約違反でなければ空
+ * <p>店舗画面のカートの操作を受け、カートの集約を読み書きする。
  */
+@Service
+class CartService {
+
+    /**
+     * カートの品目の数量を変える。
+     *
+     * <p>数量が上限を超えるときは、上限に切り詰める。
+     *
+     * @param cartId カートの ID
+     * @param itemId 品目の ID
+     * @param quantity 新しい数量
+     * @return 変えた後のカート
+     * @throws BusinessException カートがない、カートの持ち主でない、またはカートにない品目を指定した（{@code NOT_FOUND}）
+     * @throws BusinessException 数量が 1 未満（{@code INVALID_REQUEST}）
+     */
+    @Transactional
+    public CartView changeQuantity(UUID cartId, UUID itemId, int quantity) {
+        // …
+    }
+}
 ```
 
 理由：使う側が実装を読まずに意味を把握できるようにするため。

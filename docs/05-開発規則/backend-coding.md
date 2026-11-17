@@ -10,7 +10,7 @@
 
 - **参照と更新（レベル A）**：参照の service は `application/model/` の view を返し、集約を返さない（presentation は集約を受け取らない）。画面の操作の可否は、view を作る所で集約のメソッドを呼んで view に入れる。
 - **外部の呼び出しの前の読み取り**：外部のサービスを呼ぶ前に集約の状態を読む処理（外部へのリクエストを作る）も参照の service に置き、リクエストの型か view を返す。呼んだ後の更新は更新の service で行う。
-  - トランザクションの外で外部のサービスを呼ぶ処理は `XxxGatewayService`（`PaymentGatewayService` など）にまとめ、読み取りと結果の反映は参照・更新の service に委ねる。
+  - トランザクションの外で外部のサービスを呼ぶ処理は `XxxGatewayService` にまとめ、読み取りと結果の反映は参照・更新の service に委ねる。
   - ジョブとハンドラーから、外部のサービスを直接呼ばない。
   - 例外：レベル B で外部のサービスが 1 つなら、DB の操作と同じ service でよい。記録と送信を同じトランザクションで巻き戻す設計は分けない。
 - **イベント**：レベル A の application はイベントを送り出さない（送り出し方はバックエンドのアーキテクチャの「モジュール間の連携」）。domain は自分のモジュールの `event/` を参照してよい。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
@@ -63,7 +63,7 @@
 - 他のモジュールの `api/` を使うのは `infrastructure/directory/` だけにする。例外は、presentation から使う `member.api.CurrentMemberIds`（「標準の構成」の表）。
 - モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
 - 列挙を別の列挙に変換するとき（相手の型と自分の型、ドメインとイベント、ドメインと生成したモデル）は、`switch` 式で値ごとに書き、`valueOf(x.name())`・`fromValue(x.name())` を使わない。
-  - ドメインの列挙からイベントの列挙への変換は、ドメインの列挙のメソッド（`OrderStatus.toEventStatus()` など）に置く。
+  - ドメインの列挙からイベントの列挙への変換は、ドメインの列挙のメソッドに置く。
   - 変換先が domain から依存できない型なら、変換する側に置く。
 - モジュールの間とレイヤーの間で、列挙を名前の文字列で受け渡さない（command・query・view・api の型は列挙で持つ）。名前の文字列から列挙にするのは、DB の文字列を読む `infrastructure/persistence/` と、ドメインの中だけにする。
 
@@ -253,7 +253,7 @@ getter・コンストラクターの注入などの定型コードは、main で
   - 全体を探して直さず、触ったときに直す。
 - 集約は、状態を判定・参照するメソッドを前に集め、状態を変えるメソッドを業務の流れの順に並べる。
 
-理由：lambda の中の検索は N+1 に見えるため。
+理由：同じ処理を同じ形で書き、読むときに書き方の違いで迷わないようにするため。
 
 確認方法：レビュー
 
@@ -295,7 +295,7 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 - 接頭辞は `ecsite.<モジュール>`、まとまりを分けるときは `ecsite.<モジュール>.<範囲>`（`ecsite.media.storage` など）、モジュールでない共通の設定は `ecsite.<範囲>`（`ecsite.security` など）。
 - 環境で変わる値（接続先・資格情報・ID・バケット名）は既定値を持たず必須にし（BR-31）、環境によらない値（上限、時間など）だけ既定値を持つ ※4。
 - 外部のクライアント（`RestClient` など）は、Config の `@Bean` で作り、使うクラスにコンストラクターで注入する。
-  - テストは、Config の static メソッド（`ImgproxyConfig.restClient`）で同じ設定を作る。
+  - テストは、Config の static メソッドで同じ設定を作る。
   - 外部のクライアントを使う実装のクラスは、public にしない（port を通さず具象に依存させないため）。設定の切り替えのテストが具象を見るなら、public にしてよい。
 - モジュールの `@Configuration` のクラスは `infrastructure/`（またはその下）に置き、`@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - presentation は設定の値の型を受け取らず、必要な値は application の service が読んで view で返す（`api/` は対象外）。
@@ -318,7 +318,6 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 
 - ループの中で SQL を実行しない。
   - 複数行の挿入・upsert は 1 つの `insert ... values` に、更新は `update ... from (values ...)` にまとめる。
-  - 例：`JooqCartRepository` の品目の挿入、`JooqCategoryRepository.saveAll` の `DSL.values(rows)`。
   - 行ごとに実行する必要があるときは、理由をコメントに書く。
 - JDBC の batch は使わない。制約違反の変換が `getCause()` だけをたどるため。
 - 1 対 1 の 2 回の検索は、JOIN で 1 回にする。`MULTISET` は、複数の親の子の一覧を読むときだけに使う。
@@ -344,7 +343,6 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
         .fetch(Records.mapping(PostalAddress::new));
 ```
 
-例：`JooqRegionRepository`。
 
 理由：jOOQ の書き方の違いによる N+1 と、制約違反の見逃しを避けるため。
 
@@ -366,7 +364,7 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
   - jOOQ で 1 件を取るときは、`fetchOptional` にする。
 - IDE の null の誤検出を消すために `Objects.requireNonNull` で包まない。null の判定は CI の NullAway を正とする。
 - null は入口で防ぐ。service の公開の引数、Command の項目、`api/` の公開の引数に `lombok.NonNull` を付ける。
-  - 投げる例外は NPE のままにする（`IllegalArgumentException` が NPE に変わってよい）。
+  - 投げる例外は `NullPointerException` のままにする（`IllegalArgumentException` が `NullPointerException` に変わってよい）。
   - presentation（Controller と Mapper）には付けない。
   - 入口に付けたら、下の層の同じ null の検査は削除する。
   - null で業務のエラーを確認するテストは削除しない。null を渡すだけのテストは足さない。

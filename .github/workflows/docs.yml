@@ -18,6 +18,8 @@ on:
       - 'release/**'
       - 'hotfix/**'
   pull_request:
+  # pull request の前に手で実行するとき（gh workflow run docs.yml --ref <ブランチ>）
+  workflow_dispatch:
 
 permissions: {}
 

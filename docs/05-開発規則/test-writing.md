@@ -13,7 +13,7 @@
   - application、presentation、`api/` は、入口ごとの統合テストで確認する。API のテストは presentation に置き、application も通す。API から届かない分岐だけ、単体テストで確認する。
   - infrastructure は、Repository と port の統合テストで確認する。
   - 画面をつないだ流れは、E2E で確認する。
-  - domain の `lombok.NonNull` に null を渡すだけのテストは足さない（[バックエンドの書き方](backend-coding.md)の「null の扱い」）。
+  - 入口（service・Command・`api/`）以外の `lombok.NonNull` に null を渡すだけのテストは足さない（[バックエンドの書き方](backend-coding.md)の「null の扱い」）。
 - 流れのテスト（入口から複数の層を通す統合テストと E2E）は、正常と、標準の流れの中で起きる例外だけを確認する。標準でない流れでだけ起きる例外は、presentation と domain の、的を絞ったテストで確認する。
 - 必須の統合テスト：Modulith の境界、Repository（永続化・再構築・差分更新・イベント発行）、並行性（並行の不変条件を持つモジュール）、外部連携の port（mock と実装の挙動の一致）。
 - 店舗画面には結合テストを置かない ※1（対象ごとの方法は [フロントのテストの書き方](test-writing-frontend.md)の「店舗画面のテストは、対象ごとの方法で書く」）。画面をつないだ流れは E2E で確認する。

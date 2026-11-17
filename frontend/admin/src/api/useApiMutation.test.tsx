@@ -1,11 +1,14 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { HttpResponse, http as mswHttp } from 'msw'
 import type { ReactNode } from 'react'
 import { toast } from 'sonner'
 import { describe, expect, test, vi } from 'vitest'
 import { $api } from '@/api/client'
+import type { ErrorCode } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { createQueryClient } from '@/app/queryClient'
+
 import { http, problem, server } from '@/test/server'
 
 /** テストごとに新しいキャッシュで hook を描画する。 */
@@ -96,5 +99,56 @@ describe('更新の操作', () => {
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(success).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledWith(result.current.error)
+  })
+
+  describe('失敗の後の取り直し', () => {
+    /** 取得の回数を数えながら、カテゴリ名の変更を指定の状態で失敗させ、失敗した状態にする。 */
+    async function failWith(status: number, errorCode: ErrorCode) {
+      let gets = 0
+      server.use(
+        // 契約にない状態（500）も試すので、型付きの http でなく、型のない msw のハンドラーで作る
+        mswHttp.put(`${window.location.origin}/api/admin/categories/c-1`, () =>
+          HttpResponse.json(problem(status, errorCode, '失敗しました。'), { status }),
+        ),
+        http.get('/categories', ({ response }) => {
+          gets += 1
+          return response(200).json({ items: [] })
+        }),
+      )
+      const { result } = renderWithClient(() => ({
+        list: $api.useQuery('get', '/categories'),
+        rename: useApiMutation('put', '/categories/{categoryId}', { invalidate: ['/categories'] }),
+      }))
+      await waitFor(() => expect(result.current.list.isSuccess).toBe(true))
+      const before = gets
+      act(() =>
+        result.current.rename.mutate({ params: { path: { categoryId: 'c-1' } }, body: { name: '服', version: 0 } }),
+      )
+      await waitFor(() => expect(result.current.rename.isError).toBe(true))
+      return { result, extraGets: () => gets - before }
+    }
+
+    test.each([
+      [409, 'CONCURRENT_MODIFICATION'],
+      [409, 'CATEGORY_NAME_ALREADY_EXISTS'],
+      [404, 'NOT_FOUND'],
+    ] as const)('AC-559-9 %i（%s）で失敗したら、指定した一覧を取り直し、エラーは残す', async (status, errorCode) => {
+      const { result, extraGets } = await failWith(status, errorCode)
+
+      await waitFor(() => expect(extraGets()).toBe(1))
+      expect(result.current.rename.error).not.toBeNull()
+    })
+
+    test.each([
+      [400, 'INVALID_REQUEST'],
+      [500, 'SYSTEM_ERROR'],
+    ] as const)('AC-559-9 %i（%s）で失敗しても、一覧は取り直さない', async (status, errorCode) => {
+      const { result, extraGets } = await failWith(status, errorCode)
+
+      // 失敗の処理で取り直しが始まるなら、この時点で取得中になっている
+      expect(result.current.list.isFetching).toBe(false)
+      expect(extraGets()).toBe(0)
+      expect(result.current.rename.error).not.toBeNull()
+    })
   })
 })

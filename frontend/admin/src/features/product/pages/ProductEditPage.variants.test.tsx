@@ -226,6 +226,43 @@ describe('商品の編集', () => {
     expect(requests).toEqual([{ variantIds: [SECOND_ID, variant().id], version: 5 }])
   })
 
+  test('AC-559-9 並び替えが 409 になったら、エラーを出したまま商品を取り直し、もう一度押すと最新のバージョンで送って成功する', async () => {
+    const SECOND_ID = '00000000-0000-0000-0000-000000000202'
+    const state = serveProduct(
+      productDetail({
+        version: 0,
+        variants: [variant(), variant({ id: SECOND_ID, variantCode: 'ABC-001-BLUE', axisValues: ['青'] })],
+      }),
+    )
+    const versions: number[] = []
+    server.use(
+      stockHandler(3),
+      http.put('/products/{productId}/variants/order', async ({ request, response }) => {
+        const body = await request.json()
+        versions.push(body.version)
+        if (body.version !== state.current.version) {
+          return conflict(response)
+        }
+        state.current = {
+          ...state.current,
+          variants: [...state.current.variants].reverse(),
+          version: state.current.version + 1,
+        }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(PAGE_PATH)
+    await screen.findByRole('button', { name: 'ABC-001-REDを下へ' })
+    // 他の人が商品を更新した。画面はまだ取り直していない
+    state.current = { ...state.current, version: 1 }
+
+    await user.click(screen.getByRole('button', { name: 'ABC-001-REDを下へ' }))
+
+    expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを下へ' }))
+    await waitFor(() => expect(versions).toEqual([0, 1]))
+  })
+
   test('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
     const state = serveProduct(productDetail({ version: 5, variants: [variant()] }))
     const calls: string[] = []

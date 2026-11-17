@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { ALLOWED_DOCS_FOLDERS, findDocsFolderProblems } from './docs-folders.mjs'
 
 describe('docs/ の下のフォルダー名の検査', () => {
-  test('許可する 8 つの名前のフォルダーと constitution.md は通る', () => {
+  test('許可する名前のフォルダーと constitution.md は通る', () => {
     const files = [
       'docs/constitution.md',
       'docs/01-概要/system.md',
@@ -17,7 +17,10 @@ describe('docs/ の下のフォルダー名の検査', () => {
       'docs/08-spec/279-docs-folders/spec.md',
     ]
     assert.deepEqual(findDocsFolderProblems(files), [])
-    assert.equal(ALLOWED_DOCS_FOLDERS.length, 8)
+  })
+
+  test('許可する名前は、全て docs/ の下に今あるフォルダーである', () => {
+    for (const folder of ALLOWED_DOCS_FOLDERS) assert.ok(existsSync(new URL(`../../../docs/${folder}`, import.meta.url)), folder)
   })
 
   test('繁体字の 05-開發規則 と 07-記錄 は失敗にする', () => {

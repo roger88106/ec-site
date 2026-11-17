@@ -3,6 +3,8 @@ package com.ecsite.config.event;
 import com.ecsite.support.TestSettings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.context.properties.bind.BindException;
 
 import java.time.Duration;
@@ -57,6 +59,15 @@ class EventResubmissionSettingsTest {
 
         // 確認：1 回
         assertThat(properties.maxAttempts()).isEqualTo(1);
+    }
+
+    @ParameterizedTest(name = "「{0}」が {1}")
+    @CsvSource({"interval, 0s", "interval, -1s", "min-age, 0s", "min-age, -1s"})
+    @DisplayName("正の値だけの時間の設定が 0 以下なら、値の検証で拒否される")
+    void rejectsNonPositiveDuration(String name, String value) {
+        // 操作と確認：下限の外の時間を渡すと、値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, EventResubmissionJob.Properties.class, Map.of(name, value)))
+                .isInstanceOf(BindException.class);
     }
 
     @Test

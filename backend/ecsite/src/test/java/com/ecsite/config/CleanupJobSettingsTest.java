@@ -188,6 +188,61 @@ class CleanupJobSettingsTest {
     }
 
     @Nested
+    @DisplayName("時間の設定の下限")
+    class DurationBounds {
+
+        @ParameterizedTest(name = "「{0}」の間隔が {2}")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties, 0s",
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties, -1s",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, 0s",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, -1s",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 0s",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, -1s"})
+        @DisplayName("片付けの間隔が 0 以下なら、値の検証で拒否される")
+        void rejectsNonPositiveInterval(String prefix, String propertiesClass, String value) throws Exception {
+            // 準備：設定の型
+            var type = Class.forName(propertiesClass);
+
+            // 操作と確認：値の検証で拒否される
+            assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("interval", value)))
+                    .isInstanceOf(BindException.class);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("保存期間が負なら、値の検証で拒否される")
+        void rejectsNegativeRetention(String prefix, String propertiesClass) throws Exception {
+            // 準備：設定の型
+            var type = Class.forName(propertiesClass);
+
+            // 操作と確認：-1s は値の検証で拒否される
+            assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("retention", "-1s")))
+                    .isInstanceOf(BindException.class);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("保存期間が 0 なら、値の検証を通り、0 になる")
+        void acceptsZeroRetention(String prefix, String propertiesClass) throws Exception {
+            // 準備：設定の型
+            var type = Class.forName(propertiesClass);
+
+            // 操作：0s を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(prefix, type, Map.of("retention", "0s"));
+
+            // 確認：0 になる
+            assertThat(properties).extracting("retention").isEqualTo(Duration.ZERO);
+        }
+    }
+
+    @Nested
     @DisplayName("分散ロック")
     class Lock {
 

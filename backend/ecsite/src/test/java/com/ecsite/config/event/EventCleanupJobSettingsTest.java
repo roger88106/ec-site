@@ -4,12 +4,16 @@ import com.ecsite.support.TestSettings;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 処理の済んだイベントを消す片付けのジョブの設定と分散ロックの単体テスト
@@ -50,8 +54,35 @@ class EventCleanupJobSettingsTest {
         assertThat(properties.retention()).isEqualTo(Duration.ofDays(3));
     }
 
+    @ParameterizedTest(name = "「{0}」")
+    @ValueSource(strings = {"0s", "-1s"})
+    @DisplayName("片付けの間隔が 0 以下なら、値の検証で拒否される")
+    void rejectsNonPositiveInterval(String value) {
+        // 操作と確認：値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("interval", value)))
+                .isInstanceOf(BindException.class);
+    }
+
     @Test
-    @DisplayName("AC-287 処理の済んだイベントの片付けは、定期に動き、分散ロックで同時に 1 つのインスタンスだけが動く")
+    @DisplayName("保存期間が負なら、値の検証で拒否される")
+    void rejectsNegativeRetention() {
+        // 操作と確認：-1s は値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("retention", "-1s")))
+                .isInstanceOf(BindException.class);
+    }
+
+    @Test
+    @DisplayName("保存期間が 0 なら、値の検証を通り、0 になる")
+    void acceptsZeroRetention() {
+        // 操作：0s を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("retention", "0s"));
+
+        // 確認：0 になる
+        assertThat(properties.retention()).isEqualTo(Duration.ZERO);
+    }
+
+    @Test
+    @DisplayName("AC-287処理の済んだイベントの片付けは、定期に動き、分散ロックで同時に 1 つのインスタンスだけが動く")
     void runsWithDistributedLock() throws Exception {
         // 準備：ジョブの片付けのメソッド
         var method = EventCleanupJob.class.getDeclaredMethod("cleanUp");

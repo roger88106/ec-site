@@ -4,6 +4,9 @@ import com.ecsite.support.TestSettings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.boot.context.properties.bind.BindException;
 
 import java.net.URI;
 import java.time.Duration;
@@ -11,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * ファイルの置き場所の設定（MediaStorageProperties）の単体テスト
@@ -125,6 +129,18 @@ class MediaStoragePropertiesTest {
             assertThat(bound.attemptTimeout()).isEqualTo(Duration.ofSeconds(2));
             assertThat(bound.callTimeout()).isEqualTo(Duration.ofSeconds(45));
         }
+
+        @ParameterizedTest(name = "「{0}」が {1}")
+        @CsvSource({
+                "upload-url-ttl, 0s", "upload-url-ttl, -1s",
+                "attempt-timeout, 0s", "attempt-timeout, -1s",
+                "call-timeout, 0s", "call-timeout, -1s"})
+        @DisplayName("正の値だけの時間の設定が 0 以下なら、値の検証で拒否される")
+        void rejectsNonPositiveDuration(String name, String value) {
+            // 操作と確認：必須の値と下限の外の時間を渡すと、値の検証で拒否される
+            assertThatThrownBy(() -> bindValidated(Map.of(name, value)))
+                    .isInstanceOf(BindException.class);
+        }
     }
 
     // ============================== 準備の補助 ==============================
@@ -151,11 +167,31 @@ class MediaStoragePropertiesTest {
      * @return 設定
      */
     private static MediaStorageProperties bind(Map<String, String> values) {
+        return TestSettings.bind(PREFIX, MediaStorageProperties.class, withRequired(values));
+    }
+
+    /**
+     * 接頭辞の下の値を、必須の値と合わせて設定の型に当てはめ、型の制約で検証する。
+     *
+     * @param values 必須の値に加える値
+     * @return 設定
+     */
+    private static MediaStorageProperties bindValidated(Map<String, String> values) {
+        return TestSettings.bindValidated(PREFIX, MediaStorageProperties.class, withRequired(values));
+    }
+
+    /**
+     * 必須の値を加えた値を返す。
+     *
+     * @param values 必須の値に加える値
+     * @return 必須の値と加える値
+     */
+    private static Map<String, String> withRequired(Map<String, String> values) {
         var all = new HashMap<>(values);
         all.put("region", REGION);
         all.put("incoming-bucket", INCOMING_BUCKET);
         all.put("public-bucket", PUBLIC_BUCKET);
         all.put("public-base-url", PUBLIC_BASE_URL);
-        return TestSettings.bind(PREFIX, MediaStorageProperties.class, all);
+        return all;
     }
 }

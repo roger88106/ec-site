@@ -38,6 +38,7 @@
   - `api/package-info`：「<モジュール>モジュールの公開の API」／「他のモジュールが同期で呼び出す。」
   - `event/package-info`：「<モジュール>モジュールの公開のイベント」／「他のモジュールが非同期で受け取る。」
 - メソッドの Javadoc は、何をするかと `@param`・`@return`・`@throws` だけにし、record は項目を `@param` で書く。
+- `@param` と項目の Javadoc は、識別子を論理名で言い換えるだけの文（`@param orderId 注文 ID`）になっても省かない。
 - `@throws` は業務のエラーだけを書く。想定外の `SystemException` と、`IllegalArgumentException`・`IllegalStateException`・`NullPointerException` は書かない。エラーコードのある外部サービスの失敗は書く。
   - 説明に「業務のエラー」とは書かない。
   - 型は import して単純名で書き、`{@link}` は付けない。
@@ -78,7 +79,7 @@ class CartService {
 }
 ```
 
-理由：使う側が実装を読まずに意味を把握できるようにするため。
+理由：使う側が実装を読まずに意味を把握できるようにするため。論理名で言い換えるだけの文も、識別子を業務の用語で読めるようにするので書く。
 
 確認方法：本番のコードの Javadoc の有無は Checkstyle（`./gradlew check`）。内容はレビュー
 

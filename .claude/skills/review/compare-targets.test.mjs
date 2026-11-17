@@ -245,6 +245,126 @@ test('参照元：ちょうど 10 なら「ほか」を出さない', () => {
   }
 })
 
+test('参照元：Java の同じパッケージのクラスが、import なしで型の名前だけを使うものも出す', () => {
+  const dir = makeRepo([{
+    'src/a/Foo.java': 'package a;\nclass Foo {}\n',
+    'src/a/Bar.java': 'package a;\nclass Bar {\n  private Foo foo;\n}\n',
+    'src/a/Baz.java': 'package a;\nclass Baz {\n  List<Foo> list() { return Foo::new; }\n}\n',
+    'src/a/Qux.java': 'package a;\nclass Qux { FooBar x; }\n',
+  }])
+  try {
+    assert.deepEqual(items(run(dir, ['src/a/Foo.java']).stdout, 'src/a/Foo.java', '参照元'), ['src/a/Bar.java', 'src/a/Baz.java'])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+/**
+ * 同じ名前のファイルを、フォルダーの名前の一覧の下に置いた内容を返す。
+ *
+ * @param {string} name ファイルの名前
+ * @param {string[]} dirs フォルダー
+ * @returns {Record<string, string>} パスと中身
+ */
+function sameNames(name, dirs) {
+  return Object.fromEntries(dirs.map((d) => [`${d}/${name}`, 'x\n']))
+}
+
+test('参照元：一般的な名前（同じ名前が 5 つ以上）は、名前の語でなく、親のフォルダー付きのパスで探す', () => {
+  const dir = makeRepo([{
+    ...sameNames('card.tsx', ['app/orders', 'app/cart', 'app/a', 'app/b', 'app/c']),
+    'app/nav.tsx': "import Orders from './orders/card'\n",
+    'app/myorders/x.tsx': "import X from '../myorders/card'\n",
+    'app/cards.tsx': "import X from './orders/cards'\n",
+    'app/other.tsx': 'this card\n',
+  }])
+  try {
+    const out = run(dir, ['app/orders/card.tsx']).stdout
+    assert.deepEqual(items(out, 'app/orders/card.tsx', '参照元'), ['app/nav.tsx'])
+    assert.match(out, /名前が一般的なので、パスの一部 `orders\/card` で探した/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('参照元：同じ名前が 4 つまでなら、名前の語で探す', () => {
+  const dir = makeRepo([{
+    ...sameNames('card.tsx', ['app/orders', 'app/cart', 'app/a', 'app/b']),
+    'app/other.tsx': 'this card\n',
+  }])
+  try {
+    const out = run(dir, ['app/orders/card.tsx']).stdout
+    assert.deepEqual(items(out, 'app/orders/card.tsx', '参照元'), ['app/other.tsx'])
+    assert.doesNotMatch(out, /名前が一般的/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('参照元：一般的な名前の index は、フォルダーのパスで探す', () => {
+  const dir = makeRepo([{
+    ...sameNames('index.ts', ['src/features/order', 'src/features/cart', 'src/a', 'src/b', 'src/c']),
+    'src/app.ts': "import { x } from './features/order'\n",
+    'src/app2.ts': "import { x } from './features/orders'\n",
+  }])
+  try {
+    const out = run(dir, ['src/features/order/index.ts']).stdout
+    assert.deepEqual(items(out, 'src/features/order/index.ts', '参照元'), ['src/app.ts'])
+    assert.match(out, /パスの一部 `features\/order` で探した/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('参照元：一般的な名前で、パスの一部も作れないもの（ルートの README.md）は探さない', () => {
+  const dir = makeRepo([{
+    'README.md': 'x\n',
+    ...sameNames('README.md', ['a', 'b', 'c', 'd']),
+    'docs/x.md': 'README を見る\n',
+  }])
+  try {
+    const out = run(dir, ['README.md']).stdout
+    assert.deepEqual(items(out, 'README.md', '参照元'), [])
+    assert.match(out, /### 参照元\n\n名前が一般的なので探さない\n/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('参照元：フォルダーの名前に正規表現の記号（[id]）があっても、そのまま探す', () => {
+  const dir = makeRepo([{
+    ...sameNames('page.tsx', ['app/orders/[id]', 'app/cart', 'app/a', 'app/b', 'app/c']),
+    'app/nav.tsx': "import X from './orders/[id]/page'\n",
+    'app/other.tsx': "import X from './orders/i/page'\n",
+  }])
+  try {
+    assert.deepEqual(items(run(dir, ['app/orders/[id]/page.tsx']).stdout, 'app/orders/[id]/page.tsx', '参照元'), ['app/nav.tsx'])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('参照元：決まった名前（index・layout・README など）は、1 つだけでもパスの一部で探す', () => {
+  const dir = makeRepo([{
+    'src/features/order/index.ts': 'x\n',
+    'app/shop/layout.tsx': 'x\n',
+    'README.md': 'x\n',
+    'src/app.ts': "import { x } from './features/order'\nconst index = 1\n",
+    'src/other.ts': 'const layout = 1\n',
+    'docs/x.md': 'README を見る\n',
+  }])
+  try {
+    const out = run(dir, ['src/features/order/index.ts', 'app/shop/layout.tsx', 'README.md']).stdout
+    assert.deepEqual(items(out, 'src/features/order/index.ts', '参照元'), ['src/app.ts'])
+    assert.match(out, /パスの一部 `features\/order` で探した/)
+    assert.deepEqual(items(out, 'app/shop/layout.tsx', '参照元'), [])
+    assert.match(out, /パスの一部 `shop\/layout` で探した/)
+    assert.match(out, /## README\.md\n\n(?:.*\n)*?### 参照元\n\n名前が一般的なので探さない\n/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('参照元がなければ「なし」と出す', () => {
   const dir = makeRepo([{ 'src/Foo.java': 'class Foo {}\n', 'src/Bar.java': 'x\n' }])
   try {

@@ -8,6 +8,7 @@
 // テストのファイルは、テストのファイルどうしで探す。
 // 並びは、親のフォルダーの名前が同じもの（同じ層）、共通の上位のフォルダーが深いもの、パスの順。
 //
+// 限界：別名の import（tsconfig の paths。`@/` など）は、パスの一部の検索に当たらないので、参照元に出ない。
 // 参照元から、アーカイブした spec を除く。各節を上限で切ったときは、「ほか N 件」を出す。
 //
 // 引数は、git の引用の形（core.quotepath が true のときの "docs/05-\351..."）でもよい。元のパスに戻して扱う。
@@ -21,6 +22,10 @@ import path from 'node:path'
 const MAX_SAME_KIND = 3
 /** 参照元の上限 */
 const MAX_REFERRERS = 10
+/** 名前が一般的とみなす、同じ名前の追跡ファイルの数 */
+const GENERIC_NAME_COUNT = 5
+/** 数によらず一般的とみなす名前（拡張子を除く）。フレームワークや慣習で決まり、名前の語では関係の薄いファイルが多く当たるもの */
+const GENERIC_STEMS = new Set(['index', 'page', 'layout', 'route', 'main', 'README', 'loading', 'error', 'not-found', 'template', 'middleware'])
 /** 参照元から除く場所。終わった spec は比べ先にならず、残すと、上限の件数に入って他の参照元が押し出されるため */
 const REFERRER_EXCLUDED = ':(exclude)docs/08-spec/archive/'
 /** 一緒に変わるファイルを数える commit の数 */
@@ -174,16 +179,46 @@ function findSameKind(file, byKind) {
 }
 
 /**
- * ファイルの名前（拡張子を除く）を単語として含む追跡ファイルを返す。
+ * 一般的な名前のファイルを探す、パスの一部を返す。
+ *
+ * index は、フォルダーを import するので、親の親と親のフォルダー。他は、親のフォルダーと拡張子を除いた名前。
  *
  * @param {string} file 対象
- * @returns {string[]} 参照元（パスの順）
+ * @returns {string | null} パスの一部。フォルダーが足りなくて作れなければ null
  */
-function findReferrers(file) {
-  const name = path.posix.basename(file, path.posix.extname(file))
+function pathPart(file) {
+  const stem = path.posix.basename(file, path.posix.extname(file))
+  const dirs = path.posix.dirname(file).split('/').filter((dir) => dir !== '.')
+  const parts = stem === 'index' ? dirs.slice(-2) : [...dirs.slice(-1), stem]
+  return parts.length === 2 ? parts.join('/') : null
+}
+
+/**
+ * 対象を参照する追跡ファイルを探す。
+ *
+ * 一般的な名前（GENERIC_STEMS の名前か、同じ名前のファイルが GENERIC_NAME_COUNT 以上あるもの）は、名前の語では関係の薄いファイルが多く当たるので、パスの一部で探す。
+ * パスの一部は、前後が名前の文字でない所だけに当てる（orders/page は myorders/page と orders/pages に当てない）。
+ *
+ * @param {string} file 対象
+ * @param {Map<string, number>} nameCounts ファイルの名前ごとの、追跡ファイルの数
+ * @returns {{ files: string[] | null, note: string | null }} 参照元（パスの順。探さないときは null）と、探し方の注記
+ */
+function findReferrers(file, nameCounts) {
+  let args
+  let note = null
+  const stem = path.posix.basename(file, path.posix.extname(file))
+  if (GENERIC_STEMS.has(stem) || (nameCounts.get(path.posix.basename(file)) ?? 0) >= GENERIC_NAME_COUNT) {
+    const part = pathPart(file)
+    if (!part) return { files: null, note: '名前が一般的なので探さない' }
+    const escaped = part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    args = ['-E', '-e', `(^|[^A-Za-z0-9_.-])${escaped}([^A-Za-z0-9_-]|$)`]
+    note = `名前が一般的なので、パスの一部 \`${part}\` で探した`
+  } else {
+    args = ['-w', '-F', '-e', stem]
+  }
   // 1 件もないとき git grep は終了コード 1 を返す
-  const output = git(['grep', '-l', '-z', '-w', '-F', '-e', name, '--', '.', REFERRER_EXCLUDED], true)
-  return output.split('\0').filter(Boolean).filter((other) => other !== file).sort()
+  const output = git(['grep', '-l', '-z', ...args, '--', '.', REFERRER_EXCLUDED], true)
+  return { files: output.split('\0').filter(Boolean).filter((other) => other !== file).sort(), note }
 }
 
 /**
@@ -213,11 +248,14 @@ function findCoChanged(file, tracked) {
  * 見出しと箇条を Markdown の行にする。箇条がなければ「なし」とする。
  *
  * @param {string} title 見出し（### の後）
- * @param {string[]} entries 箇条の中身
+ * @param {string[] | null} entries 箇条の中身。探さなかったときは null で、注記だけを出す
+ * @param {string | null} [note] 箇条の前に置く注記
  * @returns {string[]} 行
  */
-function section(title, entries) {
-  return [`### ${title}`, '', ...(entries.length ? entries.map((entry) => `- ${entry}`) : ['なし']), '']
+function section(title, entries, note = null) {
+  const head = [`### ${title}`, '', ...(note ? [note, ''] : [])]
+  if (entries === null) return head
+  return [...head, ...(entries.length ? entries.map((entry) => `- ${entry}`) : ['なし']), '']
 }
 
 /** 引数を読み、比べる候補を出す。git の失敗は、理由を 1 行出して終了コード 2 にする。 */
@@ -251,17 +289,21 @@ function report(targets) {
     process.exit(2)
   }
   const byKind = new Map()
+  const nameCounts = new Map()
   for (const file of files) {
     const kind = kindOf(file)
     if (!byKind.has(kind)) byKind.set(kind, [])
     byKind.get(kind).push(file)
+    const name = path.posix.basename(file)
+    nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
   }
 
   const out = ['# 比べる対象', '']
   for (const file of targets) {
     out.push(`## ${file}`, '')
     out.push(...section('同じ種類のファイル', limit(findSameKind(file, byKind), MAX_SAME_KIND)))
-    out.push(...section('参照元', limit(findReferrers(file), MAX_REFERRERS)))
+    const referrers = findReferrers(file, nameCounts)
+    out.push(...section('参照元', referrers.files && limit(referrers.files, MAX_REFERRERS), referrers.note))
     const coChanged = findCoChanged(file, tracked).map((entry) => `${entry.file}（${entry.count} 回）`)
     out.push(...section('一緒に変わるファイル', limit(coChanged, MAX_CO_CHANGED)))
   }

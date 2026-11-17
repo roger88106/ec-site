@@ -148,8 +148,9 @@ describe('書き換え', () => {
     assert.equal(subjects(dir), 'one\ntwo\nthree2')
   })
 
-  test('agent/ のブランチにだけ push した commit は書き換えられる', () => {
+  test('今の agent/ のブランチにだけ push した commit は書き換えられる', () => {
     const { dir, shas } = makeRepo(['one', 'two', 'three'])
+    git(dir, 'branch', '-q', '-m', 'agent/1-work')
     const remote = path.join(root, `remote-${counter++}.git`)
     git(root, 'init', '-q', '--bare', remote)
     git(dir, 'remote', 'add', 'origin', remote)
@@ -182,8 +183,24 @@ describe('拒否', () => {
     assertUntouched(dir, head, 'one\ntwo\nthree')
   })
 
+  test('今のブランチでない agent/ のブランチ（親のブランチなど）に push した commit は書き換えず、終了コード 1 で止まる', () => {
+    const { dir, shas } = makeRepo(['one', 'two', 'three'])
+    git(dir, 'branch', '-q', '-m', 'agent/2-child')
+    const remote = path.join(root, `remote-${counter++}.git`)
+    git(root, 'init', '-q', '--bare', remote)
+    git(dir, 'remote', 'add', 'origin', remote)
+    git(dir, 'push', '-q', 'origin', `${shas[2]}:refs/heads/agent/1-parent`)
+    git(dir, 'fetch', '-q', 'origin')
+    const head = git(dir, 'rev-parse', 'HEAD')
+    const result = run(dir, [{ commit: shas[1], message: 'two2\n' }])
+    assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /push 済み.*agent\/1-parent/)
+    assertUntouched(dir, head, 'one\ntwo\nthree')
+  })
+
   test('agent/ と別のブランチの両方に push した commit は書き換えず、終了コード 1 で止まる', () => {
     const { dir, shas } = makeRepo(['one', 'two', 'three'])
+    git(dir, 'branch', '-q', '-m', 'agent/1-work')
     const remote = path.join(root, `remote-${counter++}.git`)
     git(root, 'init', '-q', '--bare', remote)
     git(dir, 'remote', 'add', 'origin', remote)

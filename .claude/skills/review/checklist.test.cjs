@@ -111,5 +111,6 @@ test('今の docs/05-開発規則/ の文書から、項目を読める（規則
     const r = readCheckMethods(fs.readFileSync(path.join(dir, name), 'utf8'), name)
     if (r) items += reviewItems(r.entries).length
   }
-  assert.ok(items >= 50, `項目の数：${items}`)
+  // 下限は今の数。確認方法をレビューから自動に替えて減らしたときは、下限も下げる
+  assert.ok(items >= 70, `項目の数：${items}`)
 })

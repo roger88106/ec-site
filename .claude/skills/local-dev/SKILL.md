@@ -226,7 +226,7 @@ node scripts/dev/tools/reword.mjs <対応表の JSON>   # [{ "commit": "<SHA>", 
 ```
 
 - メッセージのファイルは、commit のときと同じく `ja-text.mjs --message` で検査してから渡す。各 commit の書き換えは commit の hook を通るので、hook の検査の時間（1 件 1 分ほど）がかかる。最初からバックグラウンドで実行する。
-- 未 commit の変更、書き換える範囲にあるマージの commit があると、状態を変えずに終了コード 1 で終わる。`develop` を取り込む前に書き換える。push 済みの commit は、`agent/` のブランチだけ書き換えられる（書き換えた後は force push する）。それ以外のブランチでは、状態を変えずに終了コード 1 で終わる。
+- 未 commit の変更、書き換える範囲にあるマージの commit があると、状態を変えずに終了コード 1 で終わる。`develop` を取り込む前に書き換える。push 済みの commit は、今の `agent/` のブランチにだけ入っているものを書き換えられる。書き換えた後は、先を refspec で書いて force push する（`git push --force-with-lease origin HEAD:agent/<名前>`。先を書かないと hook `agent-guard` が拒否することがある）。他のブランチ（親のブランチを含む）に入った commit では、状態を変えずに終了コード 1 で終わる。
 - 最後の行で、書き換えた件数と、各 commit の内容（tree）が元と一致したことを確認する。途中で hook が拒否したときは、元の HEAD に戻して終了コード 1 で終わる。条件と終了コードの詳細は script の冒頭のコメント。
 
 ## 場面ごとに読むファイル

@@ -28,7 +28,7 @@ import { move } from '@/lib/array'
  * 商品の画像の登録・並び替え・削除
  *
  * 先頭が代表画像。ファイルは署名付き URL でストレージへ直接送る。並び替えと削除は、表示している商品のバージョンで送る。
- * 登録は、1 枚ごとに商品を取得し直し、その時点のバージョンで送る。
+ * 登録は、1 枚ごとに、登録の直前に商品を再取得したバージョンで送る。
  */
 export function ProductImagesCard({ product }: { product: ProductDetail }) {
   const invalidate = useInvalidate()
@@ -41,15 +41,14 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
   const ids = images.map((image) => image.id)
 
   const upload = useMutation({
-    // 複数のファイルは 1 枚ずつ登録する。1 枚目も含めて、登録の直前（ファイルの送信の後）に商品を取得し直し、その時点のバージョンで送る。
-    // 画像の追加は末尾に加えるだけで他の人の変更を上書きしないため。取得は画面の商品の取得と同じキャッシュを更新する
+    // 複数のファイルは 1 枚ずつ登録する
     mutationFn: async (files: File[]) => {
-      const latestVersion = async () =>
-        (
-          await queryClient.fetchQuery(
-            $api.queryOptions('get', '/products/{productId}', { params: { path: { productId: product.id } } }),
-          )
-        ).version
+      const options = $api.queryOptions('get', '/products/{productId}', { params: { path: { productId: product.id } } })
+      // 画像の追加は他の人の変更を上書きしないので、最新のバージョンで送る。実行中の古い取得を使わないよう、取り消してから取得する
+      const latestVersion = async () => {
+        await queryClient.cancelQueries({ queryKey: options.queryKey })
+        return (await queryClient.fetchQuery(options)).version
+      }
       for (const file of files) {
         await uploadProductImage(product.id, file, latestVersion)
       }

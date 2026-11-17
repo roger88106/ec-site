@@ -231,7 +231,7 @@ describe('商品の編集', () => {
     expect(requests).toEqual([{ variantIds: [SECOND_ID, variant().id], version: 5 }])
   })
 
-  test('AC-559-9 並び替えが 409 になったら、エラーを出したまま商品を取り直し、もう一度押すと最新のバージョンで送って成功する', async () => {
+  test('AC-559-9 並び替えが 409 になったら、エラーを出したまま商品を再取得し、もう一度押すと最新のバージョンで送って成功する', async () => {
     const SECOND_ID = '00000000-0000-0000-0000-000000000202'
     const state = serveProduct(
       productDetail({
@@ -258,13 +258,16 @@ describe('商品の編集', () => {
     )
     const { user } = renderApp(PAGE_PATH)
     await screen.findByRole('button', { name: 'ABC-001-REDを下へ' })
-    // 他の人が商品を更新した。画面はまだ取り直していない
-    state.current = { ...state.current, version: 1 }
+    // 他の人が商品を更新した。画面はまだ再取得していない
+    state.current = { ...state.current, priceExclTax: 1200, priceInclTax: 1320, version: 1 }
 
     await user.click(screen.getByRole('button', { name: 'ABC-001-REDを下へ' }))
 
     expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
-    await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを下へ' }))
+    // 409 の後の再取得が終わり、新しい価格が表示されるまで待つ。終わった後も、競合の知らせは残る
+    expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+    expect(screen.getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'ABC-001-REDを下へ' }))
     await waitFor(() => expect(versions).toEqual([0, 1]))
   })
 

@@ -127,12 +127,12 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
 /**
  * 画像を 1 枚アップロードして登録する。
  *
- * 受付で署名付き URL を受け取り、ファイルをストレージへ直接 PUT してから、受付 ID で登録する。
+ * 受付で署名付き URL を受け取り、ファイルをストレージへ直接 PUT してから、登録の直前に取得した商品のバージョンと受付 ID で登録する。
  * API のエラーは ApiError として投げる。
  *
- * @param productId 商品 ID
- * @param file      画像のファイル
- * @param currentVersion 商品の最新のバージョンを取得する関数。ファイルの送信の後、登録の直前に呼ぶ（送信の間に他の操作で上がったバージョンで送るため）
+ * @param productId      商品 ID
+ * @param file           画像のファイル
+ * @param currentVersion 商品の最新のバージョンを返す関数
  */
 export async function uploadProductImage(
   productId: string,

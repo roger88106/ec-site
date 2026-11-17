@@ -1,14 +1,15 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent, { type UserEvent } from '@testing-library/user-event'
-import { HttpResponse, http as rawHttp } from 'msw'
+import { HttpResponse, http as mswHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { schemas } from '@/api/generated/constraints'
-import { productDetail, variant } from '@/test/fixtures'
-import { PAGE_PATH, serveProduct } from '@/test/productEditServer'
+import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
+import { returnToTab } from '@/test/inputs'
+import { PAGE_PATH, serveProduct, serveUpload, UPLOAD_URL } from '@/test/productEditServer'
 import { getListItemContaining } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { conflict, http, problem, server, stockHandler } from '@/test/server'
+import { getServerError, http, problem, SERVER_ERROR_MESSAGE, server, stockHandler } from '@/test/server'
 
 /** バリアントの画像の指定のリクエストの本文（送った内容を確認する） */
 type SetVariantImageRequest = components['schemas']['SetVariantImageRequest']
@@ -29,58 +30,12 @@ const TWO_IMAGES = [
 ]
 
 describe('商品画像', () => {
-  const UPLOAD_URL = 'http://storage.test/images-incoming/upload-1?X-Amz-Signature=test'
-
   /** 画像のファイルの欄に、PNG のファイルを選ぶ。 */
   async function uploadPng(user: UserEvent) {
     await user.upload(
       await screen.findByLabelText('画像のファイル'),
       new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
     )
-  }
-
-  /**
-   * 画像のアップロードの受付・ストレージへの PUT・登録に応答する。
-   *
-   * 登録すると、商品の画像の最後に加える。
-   *
-   * @param state 商品の編集の画面が使う API の状態
-   * @returns 受けた呼び出し
-   */
-  function serveUpload(state: ReturnType<typeof serveProduct>) {
-    const calls: string[] = []
-    server.use(
-      http.post('/products/{productId}/image-uploads', async ({ request, response }) => {
-        const body = await request.json()
-        calls.push(`受付 ${body.contentType} ${body.contentLength}`)
-        return response(201).json({
-          uploadId: '00000000-0000-0000-0000-000000000901',
-          uploadUrl: UPLOAD_URL,
-          headers: { 'Content-Type': body.contentType },
-          expiresAt: '2026-10-10T10:05:00Z',
-        })
-      }),
-      // ストレージへの送信は admin.yaml にない（署名付き URL への PUT）ので、型のない msw のハンドラーで作る
-      rawHttp.put(UPLOAD_URL.split('?')[0], ({ request }) => {
-        calls.push(`PUT ${request.headers.get('Content-Type')}`)
-        return new HttpResponse(null, { status: 200 })
-      }),
-      http.post('/products/{productId}/images', async ({ request, response }) => {
-        const body = await request.json()
-        calls.push(`登録 version=${body.version}`)
-        if (body.version !== state.current.version) {
-          return conflict(response)
-        }
-        const id = `00000000-0000-0000-0000-00000000095${state.current.images.length}`
-        state.current = {
-          ...state.current,
-          images: [...state.current.images, { id, url: `http://cdn.test/products/p/${id}.png` }],
-          version: state.current.version + 1,
-        }
-        return response(201).json({ id })
-      }),
-    )
-    return calls
   }
 
   test('AC-37 選んだ画像を受付・PUT・登録の順に送り、登録した画像を代表画像として出す', async () => {
@@ -107,7 +62,7 @@ describe('商品画像', () => {
     })
     // 2 枚目のストレージへの PUT の応答を保留し、1 枚目の登録の後・2 枚目の登録の前に、他のカードの操作をする
     server.use(
-      rawHttp.put(UPLOAD_URL.split('?')[0], async ({ request }) => {
+      mswHttp.put(UPLOAD_URL.split('?')[0], async ({ request }) => {
         calls.push(`PUT ${request.headers.get('Content-Type')}`)
         if (calls.filter((call) => call.startsWith('PUT')).length === 2) {
           await secondPutGate
@@ -134,6 +89,53 @@ describe('商品画像', () => {
     expect(await screen.findByText('画像を 2 枚登録しました')).toBeInTheDocument()
     expect(state.current.images).toHaveLength(2)
     expect(calls.filter((call) => call.startsWith('登録')).length).toBe(2)
+  })
+
+  test('AC-559-7 実行中の古い商品の取得があっても、登録の直前に新しく取得した最新のバージョンで送る', async () => {
+    const state = serveProduct(productDetail({ version: 0 }))
+    const calls = serveUpload(state)
+    let fetches = 0
+    let releaseStale: () => void = () => {}
+    const staleGate = new Promise<void>((resolve) => {
+      releaseStale = resolve
+    })
+    // 2 回目の取得（別のタブから戻ったときの再取得）は、始まった時点の古い商品を、保留してから返す
+    server.use(
+      http.get('/products/{productId}', async ({ response }) => {
+        fetches += 1
+        const snapshot = state.current
+        if (fetches === 2) {
+          await staleGate
+          return response(200).json(snapshot)
+        }
+        return response(200).json(state.current)
+      }),
+    )
+    const { user } = renderApp(PAGE_PATH)
+    await screen.findByLabelText('画像のファイル')
+    returnToTab()
+    await waitFor(() => expect(fetches).toBe(2))
+    // 他の人の更新。保留した取得は、これより前の古い商品を返す
+    state.current = { ...state.current, version: 1 }
+
+    await uploadPng(user)
+
+    expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
+    expect(calls).toContain('登録 version=1')
+    releaseStale()
+  })
+
+  test('AC-559-7 登録の直前の商品の取得が失敗したら、エラーを表示し、画像を登録しない', async () => {
+    const state = serveProduct(productDetail())
+    const calls = serveUpload(state)
+    const { user } = renderApp(PAGE_PATH)
+    await screen.findByLabelText('画像のファイル')
+    server.use(getServerError(`/products/${PRODUCT_ID}`))
+
+    await uploadPng(user)
+
+    expect(await screen.findByText(SERVER_ERROR_MESSAGE)).toBeInTheDocument()
+    expect(calls.filter((call) => call.startsWith('登録'))).toEqual([])
   })
 
   test('AC-559-8 画面を開いた後に他の人が商品を更新しても、画像の登録は 409 にならない', async () => {
@@ -271,7 +273,7 @@ describe('商品画像', () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
     // ストレージの拒否（403）は admin.yaml にない応答なので、型のない msw のハンドラーで作る
-    server.use(rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 403 })))
+    server.use(mswHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 403 })))
     const { user } = renderApp(PAGE_PATH)
 
     await uploadPng(user)

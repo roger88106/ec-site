@@ -101,15 +101,13 @@ describe('更新の操作', () => {
     expect(onError).toHaveBeenCalledWith(result.current.error)
   })
 
-  describe('失敗の後の取り直し', () => {
-    /** 取得の回数を数えながら、カテゴリ名の変更を指定の状態で失敗させ、失敗した状態にする。 */
-    async function failWith(status: number, errorCode: ErrorCode) {
+  describe('失敗の後の再取得', () => {
+    /** 取得の回数を数えながら、カテゴリ名の変更を、指定の応答（通信の失敗を含む）で失敗させる。 */
+    async function failWithResponse(respond: () => Response) {
       let gets = 0
       server.use(
-        // 契約にない状態（500）も試すので、型付きの http でなく、型のない msw のハンドラーで作る
-        mswHttp.put(`${window.location.origin}/api/admin/categories/c-1`, () =>
-          HttpResponse.json(problem(status, errorCode, '失敗しました。'), { status }),
-        ),
+        // 契約にない状態（500）や通信の失敗も試すので、型付きの http でなく、型のない msw のハンドラーで作る
+        mswHttp.put(`${window.location.origin}/api/admin/categories/c-1`, respond),
         http.get('/categories', ({ response }) => {
           gets += 1
           return response(200).json({ items: [] })
@@ -128,11 +126,16 @@ describe('更新の操作', () => {
       return { result, extraGets: () => gets - before }
     }
 
+    /** 指定の HTTP ステータスのエラーの応答で失敗させる。 */
+    function failWith(status: number, errorCode: ErrorCode) {
+      return failWithResponse(() => HttpResponse.json(problem(status, errorCode, '失敗しました。'), { status }))
+    }
+
     test.each([
       [409, 'CONCURRENT_MODIFICATION'],
       [409, 'CATEGORY_NAME_ALREADY_EXISTS'],
       [404, 'NOT_FOUND'],
-    ] as const)('AC-559-9 %i（%s）で失敗したら、指定した一覧を取り直し、エラーは残す', async (status, errorCode) => {
+    ] as const)('AC-559-9 %i（%s）で失敗したら、指定した一覧を再取得し、エラーは残す', async (status, errorCode) => {
       const { result, extraGets } = await failWith(status, errorCode)
 
       await waitFor(() => expect(extraGets()).toBe(1))
@@ -142,10 +145,18 @@ describe('更新の操作', () => {
     test.each([
       [400, 'INVALID_REQUEST'],
       [500, 'SYSTEM_ERROR'],
-    ] as const)('AC-559-9 %i（%s）で失敗しても、一覧は取り直さない', async (status, errorCode) => {
+    ] as const)('AC-559-9 %i（%s）で失敗しても、一覧は再取得しない', async (status, errorCode) => {
       const { result, extraGets } = await failWith(status, errorCode)
 
-      // 失敗の処理で取り直しが始まるなら、この時点で取得中になっている
+      // 失敗の処理で再取得が始まるなら、この時点で取得中になっている
+      expect(result.current.list.isFetching).toBe(false)
+      expect(extraGets()).toBe(0)
+      expect(result.current.rename.error).not.toBeNull()
+    })
+
+    test('AC-559-9 通信の失敗で失敗しても、一覧は再取得しない', async () => {
+      const { result, extraGets } = await failWithResponse(() => HttpResponse.error())
+
       expect(result.current.list.isFetching).toBe(false)
       expect(extraGets()).toBe(0)
       expect(result.current.rename.error).not.toBeNull()

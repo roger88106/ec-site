@@ -13,7 +13,7 @@ import { CancelOrderDialog } from '@/features/order/components/CancelOrderDialog
  * 注文の操作
  *
  * 申請の承認・却下と、運営者の判断によるキャンセルを行う。どれも確認してから送る。キャンセルで在庫数と調整履歴も変わるので、成功したら在庫も取り直す。
- * 行える操作がない（キャンセル済み）ときは何も出さない。
+ * 行える操作がない（キャンセル済み）ときは、操作を出さない。失敗の後の再取得で操作がなくなっても、直前の失敗の表示は残す。
  */
 export function OrderActions({ order }: { order: OrderDetail }) {
   const t = useTranslations('order.actions')
@@ -36,7 +36,7 @@ export function OrderActions({ order }: { order: OrderDetail }) {
   const { pending, error } = useMutationGroup([approve, reject, cancel], { errorsShownElsewhere: [cancel] })
 
   if (!actions.approveCancellation && !actions.rejectCancellation && !actions.cancel) {
-    return null
+    return <ErrorMessage error={error ?? cancel.error} />
   }
   return (
     <div className="space-y-3">

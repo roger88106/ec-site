@@ -1,20 +1,19 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { delay, HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { ProductDetail } from '@/api/types'
 import { setUpConflictFlow } from '@/test/conflictFlow'
 import { CONFLICT_MESSAGE, PRODUCT_ID, productActions, productDetail, taxCategory } from '@/test/fixtures'
 import { returnToTab } from '@/test/inputs'
-import { PAGE_PATH, serveProduct } from '@/test/productEditServer'
+import { PAGE_PATH, serveProduct, serveUpload } from '@/test/productEditServer'
 import { renderApp } from '@/test/renderApp'
-import { getServerError, http, server } from '@/test/server'
+import { conflict, getPending, getServerError, http, SERVER_ERROR_MESSAGE, server } from '@/test/server'
 
 /** 商品の基本情報の更新のリクエストの本文（送った内容を確認する） */
 type UpdateProductRequest = components['schemas']['UpdateProductRequest']
 
-/** 商品の取得がシステムエラー（5xx）で失敗したときに、画面に出る文（応答の message） */
-const FETCH_FAILED_MESSAGE = 'システムエラーが発生しました。'
+/** 商品の取得がシステムエラー（5xx）で失敗したときに、画面に出る文 */
+const FETCH_FAILED_MESSAGE = SERVER_ERROR_MESSAGE
 
 describe('商品の編集', () => {
   describe('入力中に他の人が更新した（409）', () => {
@@ -69,6 +68,17 @@ describe('商品の編集', () => {
       expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
     })
 
+    test('AC-559-6 再読み込みの取得が失敗したら、入力した商品名と競合の知らせを残し、取得の失敗を表示する', async () => {
+      const { user } = await saveIntoConflict()
+      server.use(getServerError(`/products/${PRODUCT_ID}`))
+
+      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+
+      expect(await screen.findByText(FETCH_FAILED_MESSAGE)).toBeInTheDocument()
+      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+      expect(screen.getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+    })
+
     test('再読み込みした後は、最新のバージョンで保存できる', async () => {
       const { state, user } = await saveIntoConflict()
       await user.click(screen.getByRole('button', { name: '再読み込み' }))
@@ -82,36 +92,9 @@ describe('商品の編集', () => {
   })
 
   describe('基本情報の入力中に自分の別の操作で商品のバージョンが上がった', () => {
-    const UPLOAD_URL = 'http://storage.test/images-incoming/upload-1?X-Amz-Signature=test'
-
-    /** 画像のアップロードの受付・ストレージへの PUT・登録に応答する。登録すると、商品に画像を加えてバージョンを上げる。 */
-    function serveImageUpload(state: ReturnType<typeof serveProduct>) {
-      server.use(
-        http.post('/products/{productId}/image-uploads', async ({ request, response }) => {
-          const body = await request.json()
-          return response(201).json({
-            uploadId: '00000000-0000-0000-0000-000000000901',
-            uploadUrl: UPLOAD_URL,
-            headers: { 'Content-Type': body.contentType },
-            expiresAt: '2026-10-10T10:05:00Z',
-          })
-        }),
-        rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 200 })),
-        http.post('/products/{productId}/images', ({ response }) => {
-          const id = `00000000-0000-0000-0000-00000000095${state.current.images.length}`
-          state.current = {
-            ...state.current,
-            images: [...state.current.images, { id, url: `http://cdn.test/products/p/${id}.png` }],
-            version: state.current.version + 1,
-          }
-          return response(201).json({ id })
-        }),
-      )
-    }
-
     test('AC-559-4 商品名を変えた後に画像を追加しても、入力した商品名を残し、新しいバージョンで保存できる', async () => {
       const state = serveProduct(productDetail())
-      serveImageUpload(state)
+      serveUpload(state)
       const { user } = renderApp(PAGE_PATH)
       const nameField = await screen.findByLabelText('商品名')
       await user.clear(nameField)
@@ -162,20 +145,37 @@ describe('商品の編集', () => {
     })
   })
 
+  describe('状態の操作が 409 になった', () => {
+    test('AC-559-9 古いバージョンで削除して 409 になったら、商品の再取得が終わった後も、競合の知らせを残す', async () => {
+      const state = serveProduct(productDetail())
+      let fetches = 0
+      server.use(
+        http.get('/products/{productId}', ({ response }) => {
+          fetches += 1
+          return response(200).json(state.current)
+        }),
+        http.delete('/products/{productId}', ({ response }) => conflict(response)),
+      )
+      const { user } = renderApp(PAGE_PATH)
+      await user.click(await screen.findByRole('button', { name: '削除' }))
+      // 他の人が商品を更新した。画面はまだ再取得していない
+      state.current = productDetail({ priceExclTax: 1200, priceInclTax: 1320, version: 1 })
+      const fetchesBefore = fetches
+      const dialog = await screen.findByRole('alertdialog', { name: '商品「T シャツ」を削除しますか？' })
+
+      await user.click(within(dialog).getByRole('button', { name: '削除する' }))
+
+      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+      await waitFor(() => expect(fetches).toBeGreaterThan(fetchesBefore))
+      expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+      expect(screen.getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+    })
+  })
+
   describe('入力中に商品の再取得が失敗した', () => {
     /** 商品の取得を、システムエラー（5xx）にする。 */
     function failProduct() {
       server.use(getServerError(`/products/${PRODUCT_ID}`))
-    }
-
-    /** 商品の取得を、応答しないままにする（再取得の間を作る）。 */
-    function holdProduct() {
-      server.use(
-        http.get('/products/{productId}', async () => {
-          await delay('infinite')
-          return HttpResponse.error()
-        }),
-      )
     }
 
     /** 商品名を入力した後、別のタブから戻って再取得が失敗し、取得の失敗が出た状態にする。 */
@@ -214,7 +214,7 @@ describe('商品の編集', () => {
       const { user } = await typeNameThenFailRefetch()
       const retry = screen.getByRole('button', { name: '再試行' })
       expect(retry).toBeEnabled()
-      holdProduct()
+      server.use(getPending(`/products/${PRODUCT_ID}`))
 
       await user.click(retry)
 

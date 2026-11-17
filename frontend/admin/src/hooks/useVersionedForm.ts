@@ -5,8 +5,8 @@ import { deepEqual } from '@/lib/equal'
 /** 同時に編集されうるリソース（API の規約の version を持つ） */
 type Versioned = { version: number }
 
-/** リソースを取得し直す関数。取得し直したリソースを data に持つ結果を返す（TanStack Query の refetch と合う形） */
-export type Refetch<R> = () => Promise<{ data?: R }>
+/** リソースを再取得する関数。取得の成否と、取得したリソース（data）を持つ結果を返す（TanStack Query の refetch と合う形） */
+export type Refetch<R> = () => Promise<{ data?: R; isError: boolean }>
 
 /**
  * 同時に編集されうるリソースのフォームを作る（管理画面の構成の「フォーム」）。
@@ -17,7 +17,8 @@ export type Refetch<R> = () => Promise<{ data?: R }>
  * - 入力を変えた後にリソースが変わったときは、基準のリソースと新しいリソースのフォームの値を比べる。
  *   同じなら（自分の別の操作でバージョンだけ進んだ場合など）、入力を残して基準を新しいリソースに進める。
  *   違えば（他の人が更新した場合）、入力を残して基準を進めない。送ると 409 になり、古い入力で黙って上書きしない。
- * - 409 の後は {@link reloadAfter} で更新の状態を戻して取得し直し、バージョンが変わらなくても、フォームを最新の値で再作成する。
+ * - 409 の後は {@link reloadAfter} で再取得し、取得できたら、バージョンが変わらなくても、フォームを最新の値で再作成して更新の状態を戻す。
+ *   取得できなかったら、入力と更新の状態（409 の表示）を残す。
  *
  * 保存に成功したら {@link markSaved} を呼ぶ。入力を変えていない状態に戻し、取得し直した値で再作成できるようにする。
  *
@@ -41,43 +42,35 @@ export function useVersionedForm<R extends Versioned, T extends FieldValues>(
   toValuesRef.current = toValues
   const form = useForm<T>({ defaultValues: toValues(resource) as DefaultValues<T> })
   const [base, setBase] = useState(resource)
-  const [reloading, setReloading] = useState(false)
-  // 取得し直しの途中に、effect が再作成を済ませたか（reloadAfter での二重の再作成を避ける）
-  const recreatedRef = useRef(false)
   const { isDirty } = form.formState
 
   useEffect(() => {
     if (resource.version === base.version) {
       return
     }
-    if (reloading || !isDirty) {
-      // 取得し直しの途中か、入力を変えていないときは再作成する（入力中の値を黙って捨てない）
+    if (!isDirty) {
+      // 入力を変えていないときは再作成する（入力中の値を黙って捨てない）
       form.reset(toValuesRef.current(resource))
-      if (reloading) {
-        recreatedRef.current = true
-      }
       setBase(resource)
-      setReloading(false)
     } else if (deepEqual(toValuesRef.current(base), toValuesRef.current(resource))) {
       // 入力を変えた後でも、リソースの値が基準と同じなら、入力を残してバージョンだけ進める
       setBase(resource)
     }
-  }, [resource, base, isDirty, reloading, form])
+  }, [resource, base, isDirty, form])
 
   return {
     form,
     baseVersion: base.version,
     markSaved: () => form.reset(form.getValues()),
     reloadAfter: async (mutation) => {
-      mutation.reset()
-      recreatedRef.current = false
-      setReloading(true)
-      const { data } = await refetch()
-      if (data && !recreatedRef.current) {
-        form.reset(toValuesRef.current(data))
-        setBase(data)
+      const { data, isError } = await refetch()
+      // 取得できなかったときは、入力と更新の失敗の表示を残す（古い値で再作成しない）
+      if (isError || !data) {
+        return
       }
-      setReloading(false)
+      form.reset(toValuesRef.current(data))
+      setBase(data)
+      mutation.reset()
     },
   }
 }

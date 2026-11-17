@@ -3,9 +3,10 @@
 //    - 直下の検査：*.test.mjs 以外の *.mjs（check-all.sh が引数なしで実行するもの）
 //    - 表：見出し（h2・h3）が「検査の一覧」の節にある表の、1 列目が | `名前` | の行。名前の後に（`引数`）を書いた行（ja-text の --changed）は数えない
 //      名前の形でない行は数えないので、その検査は「表にない検査」として失敗になる
-// 2. 直下の検査と lib/ の各ファイル（テストを除く）の 1 行目が `//` で始まらない。先頭のコメントのない script を残さないため
+// 2. 直下の検査、補助のフォルダ（backend・licenses・mermaid・report・review）の script、lib/ と scripts/shared/ の各ファイル（テストを除く）の
+//    1 行目が `//` で始まらない。先頭のコメントのない script を残さないため
 // 3. 直下の検査の先頭のコメント（1 行目から続く `//` の行）に、「失敗したとき：」の行と「除外：」の行がない。書き漏らしを防ぐため
-//    - 行は、`//` の後に空白と箇条書きの `-` を置いてよい。lib/ のファイルは、役割だけを書くので対象にしない
+//    - 行は、`//` の後に空白と箇条書きの `-` を置いてよい。補助の script とモジュールは対象にしない（検査でないものと、役割だけを書くもの）
 //
 // 表の列の数と書き方は確認しない（レビューで見る）。
 //
@@ -37,8 +38,14 @@ const CHECK_FOLDERS = ['docs', 'spec', 'ja', 'java', 'config', 'frontend'].join(
 /** 検査のファイル（CHECK_DIR からの相対パス）。検査のフォルダの直下の .mjs（テストを除くのは呼ぶ側） */
 const CHECK_FILE = new RegExp(`^(?:${CHECK_FOLDERS})/[^/]+\\.mjs$`)
 
-/** 先頭のコメントを確認するファイル：検査と、lib の下の各ファイル */
-const COMMENT_FILE = new RegExp(`^(?:(?:${CHECK_FOLDERS})/[^/]+|lib/(?:.+/)?[^/]+)\\.mjs$`)
+/** 補助のフォルダ（CHECK_DIR の下。check-all.sh が実行しない script）。正規表現の選択肢の形 */
+const HELPER_FOLDERS = ['backend', 'licenses', 'mermaid', 'report', 'review'].join('|')
+
+/** 共有のモジュールを置くディレクトリ */
+const SHARED_DIR = 'scripts/shared/'
+
+/** 先頭のコメントを確認するファイル（リポジトリのルートからのパス）：検査、補助の script、lib の下と共有のモジュールの各ファイル */
+const COMMENT_FILE = new RegExp(`^(?:scripts/ci/(?:(?:${CHECK_FOLDERS}|${HELPER_FOLDERS})/[^/]+|lib/(?:.+/)?[^/]+)|scripts/shared/(?:.+/)?[^/]+)\\.mjs$`)
 
 /** 1 列目が名前の行（名前と、名前の後の（`引数`）） */
 const NAME_ROW = /^\| `([^`\s]+)`(（`[^`]+`）)? \|/
@@ -97,15 +104,23 @@ export function compareChecks(tableNames, checkNames) {
 }
 
 /**
- * 先頭のコメントを確認する script を選ぶ。対象は、検査と lib/ の下のファイルで、テストを除く。
+ * 先頭のコメントを確認する script を選ぶ。対象は、検査、補助の script、lib/ の下と scripts/shared/ の下のファイルで、テストを除く。
  *
  * @param {string[]} files リポジトリのルートからのパス
  * @returns {string[]} 対象のパス。名前の順
  */
 export function listCommentTargets(files) {
-  return files
-    .filter((file) => file.startsWith(CHECK_DIR) && COMMENT_FILE.test(file.slice(CHECK_DIR.length)) && !file.endsWith('.test.mjs'))
-    .sort()
+  return files.filter((file) => COMMENT_FILE.test(file) && !file.endsWith('.test.mjs')).sort()
+}
+
+/**
+ * 直下の検査か。「失敗したとき：」と「除外：」の行を求めるのは、直下の検査だけ。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 直下の検査なら true
+ */
+function isCheck(file) {
+  return file.startsWith(CHECK_DIR) && CHECK_FILE.test(file.slice(CHECK_DIR.length))
 }
 
 /**
@@ -156,8 +171,8 @@ if (import.meta.main) {
     process.exit(1)
   }
   const doc = readFileSync(DOC, 'utf8')
-  const sources = listCommentTargets(checkFiles).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
-  const problems = [...compareChecks(readTableChecks(doc), listChecks(checkFiles)), ...checkFirstLines(sources), ...checkCommentLines(sources.filter(({ file }) => !file.startsWith(`${CHECK_DIR}lib/`)))]
+  const sources = listCommentTargets([...checkFiles, ...listGitFiles([SHARED_DIR])]).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
+  const problems = [...compareChecks(readTableChecks(doc), listChecks(checkFiles)), ...checkFirstLines(sources), ...checkCommentLines(sources.filter(({ file }) => isCheck(file)))]
   for (const problem of problems) console.log(problem)
   console.log(`食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

@@ -82,13 +82,34 @@ describe('CI の検査の文書の表の検査', () => {
     assert.deepEqual(readTableChecks(doc), ['ja-text'])
   })
 
-  test('先頭のコメントの検査の対象は、直下の検査と lib の各ファイルで、テストと他の拡張子を除く', () => {
-    const files = ['scripts/ci/spec/ac-check.mjs', 'scripts/ci/spec/ac-check.test.mjs', 'scripts/ci/lib/x.mjs', 'scripts/ci/lib/x.test.mjs', 'scripts/ci/lib/deep/y.mjs', 'scripts/ci/check-all.sh', 'scripts/ci/ja/ja-text.json']
-    assert.deepEqual(listCommentTargets(files), ['scripts/ci/lib/deep/y.mjs', 'scripts/ci/lib/x.mjs', 'scripts/ci/spec/ac-check.mjs'])
+  test('先頭のコメントの検査の対象は、直下の検査、補助の script、lib と scripts/shared の各ファイルで、テストと他の拡張子を除く', () => {
+    const files = [
+      'scripts/ci/spec/ac-check.mjs',
+      'scripts/ci/spec/ac-check.test.mjs',
+      'scripts/ci/lib/x.mjs',
+      'scripts/ci/lib/x.test.mjs',
+      'scripts/ci/lib/deep/y.mjs',
+      'scripts/ci/mermaid/mermaid-check.mjs',
+      'scripts/ci/report/coverage-summary.mjs',
+      'scripts/shared/lock.mjs',
+      'scripts/shared/git/git-env.mjs',
+      'scripts/shared/git/git-env.test.mjs',
+      'scripts/ci/check-all.sh',
+      'scripts/ci/ja/ja-text.json',
+    ]
+    assert.deepEqual(listCommentTargets(files), [
+      'scripts/ci/lib/deep/y.mjs',
+      'scripts/ci/lib/x.mjs',
+      'scripts/ci/mermaid/mermaid-check.mjs',
+      'scripts/ci/report/coverage-summary.mjs',
+      'scripts/ci/spec/ac-check.mjs',
+      'scripts/shared/git/git-env.mjs',
+      'scripts/shared/lock.mjs',
+    ])
   })
 
-  test('scripts/ci/ の直下と補助のフォルダの .mjs は、先頭のコメントの検査の対象にしない', () => {
-    assert.deepEqual(listCommentTargets(['scripts/ci/x.mjs', 'scripts/ci/mermaid/mermaid-check.mjs']), [])
+  test('scripts/ci/ の直下と、補助でないフォルダの下の深い .mjs は、先頭のコメントの検査の対象にしない', () => {
+    assert.deepEqual(listCommentTargets(['scripts/ci/x.mjs', 'scripts/ci/mermaid/deep/x.mjs', 'scripts/dev/slot.mjs']), [])
   })
 
   test('全ての script の 1 行目がコメントなら、先頭のコメントの検査が通る', () => {

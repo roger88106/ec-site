@@ -164,6 +164,7 @@ describe('script として実行する', () => {
   })
 })
 
+// workflow の書き方の確認だが、この script と同時に変えるものなので、検査に分けずにここで確認する
 describe('危険度の workflow', () => {
   const workflow = readFileSync(new URL('../../../.github/workflows/risk.yml', import.meta.url), 'utf8')
 

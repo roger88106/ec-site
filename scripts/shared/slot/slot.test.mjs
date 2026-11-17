@@ -447,6 +447,7 @@ describe('バケットの削除の script', () => {
   })
 })
 
+// スロットの値（origin、バケットの名前）を書き写した設定を、スロットの値の作り方と並べて確認する（ポートは local-ports が確認する）
 describe('スロットの値を書き写したファイル', () => {
   const slots = [1, 2, 3]
   const readJson = (relative) => JSON.parse(repoFile(relative))

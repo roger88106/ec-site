@@ -56,6 +56,7 @@
 | realm | `docker/keycloak/realms/ec-store-realm.json` |
 | 起動設定 | `.claude/launch.json` |
 | 手順書 | `docs/06-手順書/setup.md` |
+| skill | `.claude/skills/local-dev/SKILL.md`、`.claude/skills/local-dev/shell.md`、`.claude/skills/new-screen/SKILL.md` |
 
 ## 非機能要件
 

@@ -153,7 +153,7 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 ```
 
 - 起動を待つ curl は「バックエンド」の節と同じで、待つ先は自分のスロットの運用ポート（スロット 1 は `localhost:19080`）。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
-- 店舗画面と管理画面は、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>`（`<n>` は自分のスロット）をバックグラウンドで実行し、curl で 200 を確認してから、`preview_start` に URL を渡して開く。URL は `http://localhost:<自分のスロットのポート>`（`node scripts/dev/slot.mjs show` で見る）。
+- 店舗画面と管理画面は、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>`（`<n>` は自分のスロット）をバックグラウンドで実行し、curl で 200 を確認してから、`preview_start` に URL を渡して開く。URL は `node scripts/dev/slot.mjs show` の表示を使う（店舗画面は `http://slot<n>.localhost:<ポート>`、管理画面は `http://localhost:<ポート>`）。店舗画面を `localhost` で開くと、Cookie が `localhost` に残って 400・431 の原因になる（[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」）。
 - 停止は「バックエンド」の節の `stop`。`run backend` がポートの使用で終了コード 1 で終わったら、`stop` で停止してから再実行する。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
 

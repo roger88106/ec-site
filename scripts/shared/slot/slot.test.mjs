@@ -476,7 +476,8 @@ describe('スロットの値を書き写したファイル', () => {
     assert.ok(client.attributes['post.logout.redirect.uris'].split('##').includes(`${o}/*`), `post.logout.redirect.uris に ${o}/* がない`)
   }
 
-  test('店舗画面の realm は、スロット 1〜3 の slot<番号>.localhost の origin を redirectUris、webOrigins、post.logout.redirect.uris に含み、今の localhost の origin も残す（DC-453-2）', () => {
+  // 許す先は redirectUris、webOrigins、post.logout.redirect.uris の 3 つ（assertAllows）
+  test('店舗画面の realm は、スロット 1〜3 の slot<番号>.localhost と今の localhost の origin を許す（DC-453-2）', () => {
     const client = clientAllowing('docker/keycloak/realms/ec-store-realm.json', 'http://localhost:3000')
     for (const slot of slots) {
       assertAllows(client, `http://slot${slot}.localhost:${slotValues(slot).storePort}`)
@@ -484,7 +485,7 @@ describe('スロットの値を書き写したファイル', () => {
     }
   })
 
-  test('管理画面の realm は、スロット 1〜3 の localhost の origin を redirectUris、webOrigins、post.logout.redirect.uris に含む（管理画面のホスト名は変えない）', () => {
+  test('管理画面の realm は、スロット 1〜3 の localhost の origin を許す（管理画面のホスト名は変えない）', () => {
     const client = clientAllowing('docker/keycloak/realms/ec-admin-realm.json', 'http://localhost:5173')
     for (const slot of slots) assertAllows(client, `http://localhost:${slotValues(slot).adminPort}`)
   })

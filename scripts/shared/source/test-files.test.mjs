@@ -250,7 +250,7 @@ describe('Java のテストの読み方', () => {
 
   test('注釈と修飾子が重なる形でも、指数的に遅くならない', () => {
     const source = `@DisplayName("a")@${'.final @'.repeat(40)}`
-    // 指数的に遅くなると 1 秒を大きく超えるので、マシンの速さの差では失敗しない。正規表現の退化を見つける、ただ 1 つのテスト
+    // 指数的に遅くなると 1 秒を大きく超えるので、マシンの速さの違いでは失敗しない。正規表現の劣化を見つける、ただ 1 つのテスト
     const start = Date.now()
     assert.deepEqual(extractTestNames(source, 'java'), ['a'])
     assert.ok(Date.now() - start < 1000)

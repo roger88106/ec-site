@@ -147,6 +147,14 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 確認方法：自動（メッセージのテスト `MessageContractTest`。文に 2 以上の数字がないことも確認する）
 
+### 想定外の例外のメッセージ
+
+想定外の分岐で投げる例外（`SystemException`）のメッセージに、利用者を指す ID（IdP の subject、会員の ID、メールアドレスなど）を入れない。原因の例外があれば、cause として渡す。
+
+理由：ログとエラーの応答に利用者の情報が出ないようにし、原因をたどれるようにするため。
+
+確認方法：レビュー
+
 ### 入力の検証のメッセージ
 
 入力の検証の文は、フレームワークの既定の文（JVM のロケールで言語が変わる）を使わず、`messages.properties` の `ecsite.validation.<種類>`（`notnull`、`size`、`min` など。対応のない種類は `ecsite.validation.invalid`）から取る。上限・下限は `{max}`、`{min}`、`{value}` で差し込む。
@@ -210,6 +218,14 @@ getter・コンストラクターの注入などの定型コードは、main で
 理由：テストのクラスは、JUnit でコンストラクターの注入に設定が必要なのでフィールドの注入を使い、定型コードもほとんどないため。
 
 確認方法：自動（コンパイル。テストのソースセットの classpath に Lombok がないので、使うとコンパイルが失敗する）
+
+### entity と集約の同一性
+
+entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる `@EqualsAndHashCode` だけを付けない。
+
+理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。
+
+確認方法：レビュー
 
 ### 名前の形
 
@@ -345,6 +361,14 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
 
 
 理由：jOOQ の書き方の違いによる N+1 と、制約違反の見逃しを避けるため。
+
+確認方法：レビュー
+
+### 行をロックする検索
+
+`FOR UPDATE` などで複数の行をロックする検索は、並び順（主キーの `ORDER BY` など）を指定し、ロックを取る順序をそろえる。
+
+理由：同じ行を違う順でロックすると、並行の処理がデッドロックしうるため。
 
 確認方法：レビュー
 

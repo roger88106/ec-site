@@ -10,6 +10,9 @@ import { TAG_REASON, ask, deny } from './decision.mjs'
 /** 置いた pre-commit hook が呼ぶ script（開発環境の起動の「起動」の置き方） */
 const PRE_COMMIT_SCRIPT = 'scripts/dev/hooks/pre-commit'
 
+/** git の前のオプションのうち、値を次の語に取るもの */
+export const GIT_VALUE_OPTIONS = ['-C', '-c', '--config-env', '--git-dir', '--work-tree', '--namespace', '--super-prefix']
+
 /** force push の長いオプション（--mirror は、リモートの参照を force で更新し、リモートにしかない参照を削除する） */
 const FORCE_OPTIONS = ['force', 'force-with-lease', 'force-if-includes', 'mirror']
 
@@ -113,7 +116,8 @@ export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
       pathOptions.push(word, words[++i] ?? '')
     } else if (word.startsWith('--git-dir=') || word.startsWith('--work-tree=')) {
       pathOptions.push(word)
-    } else if (word === '--namespace' || word === '--super-prefix') {
+    } else if (GIT_VALUE_OPTIONS.includes(word)) {
+      // 値を次の語に取る、他のオプション（--namespace、--super-prefix）
       i++
     }
   }

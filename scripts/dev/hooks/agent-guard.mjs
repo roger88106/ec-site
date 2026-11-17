@@ -29,7 +29,7 @@ import { readFileSync } from 'node:fs'
 import { parseCommands } from './agent-guard/commands.mjs'
 import { TAG_REASON, ask, deny } from './agent-guard/decision.mjs'
 import { GH_PR_OPTIONS, GH_RELEASE_OPTIONS, judgeGhApi, parseGhArgs, parseGhInvocation } from './agent-guard/gh-rules.mjs'
-import { GIT_JUDGES, parseGitInvocation } from './agent-guard/git-rules.mjs'
+import { GIT_JUDGES, GIT_VALUE_OPTIONS, parseGitInvocation } from './agent-guard/git-rules.mjs'
 import { GH_BUDGET_MS, judgeMerge } from './agent-guard/merge-rules.mjs'
 
 /** @typedef {import('./agent-guard/decision.mjs').Decision} Decision */
@@ -112,9 +112,6 @@ const GIT_OR_GH_PROGRAM = /(^|[\\/])(git|gh)(\.exe)?$/i
 
 /** hook が判定する、git・gh のサブコマンド（gh pr merge は pr の次の語で見る） */
 const OPERATIONS = ['push', 'commit', 'tag', 'merge', 'api', 'release']
-
-/** git の前のオプションのうち、値を次の語に取るもの */
-const GIT_VALUE_OPTIONS = ['-C', '-c', '--config-env', '--git-dir', '--work-tree', '--namespace']
 
 /**
  * PowerShell のコマンドの git・gh が、hook が判定する操作か。

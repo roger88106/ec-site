@@ -181,6 +181,7 @@ describe('hook の入力と出力', () => {
       'git commit -m x',
       'git.exe PUSH origin',
       'git -C C:\\work push',
+      'git --super-prefix x push',
       'Set-Location C:\\work; git push',
       'gh release create v1',
     ]

@@ -16,8 +16,14 @@ import {
 } from '@/lib/pendingOrders'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
 
-/** 確認した総額が注文の時点と違うときのエラーコード */
-const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
+/**
+ * 注文手続きの画面を再表示するエラーコード。
+ * 総額が注文の時点と違うとき（新しい金額を表示する）と、購入できない品目を含むとき（品目に購入できない理由を表示する）。
+ */
+const REVALIDATE_ERROR_CODES: ReadonlySet<ErrorCode> = new Set<ErrorCode>([
+  'TOTAL_AMOUNT_CHANGED',
+  'CART_NOT_ORDERABLE',
+])
 
 /**
  * 注文する。
@@ -28,6 +34,7 @@ const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
  * 郵便番号と電話番号は、全角の数字とハイフンの類を半角にして API に送る（氏名と住所は入力のまま）。
  * 連絡先のメールアドレスは、API が会員の token から取る。
  * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す。
+ * 購入できない品目を含むときも再表示し、品目に購入できない理由を表示する。
  *
  * @param _previous 前の結果（使わない）
  * @param formData  フォームの値
@@ -62,7 +69,7 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
         // 入力は保存しない。確認の画面で、上限に達したため注文できないことを示す
         return pendingOrdersLimitHref()
       }
-      if (failure.errorCode === TOTAL_AMOUNT_CHANGED) {
+      if (failure.errorCode !== undefined && REVALIDATE_ERROR_CODES.has(failure.errorCode)) {
         revalidatePath(`/checkout/${checkoutId}`)
       }
       return failure

@@ -4,12 +4,12 @@
 
 ## 前提
 
-JDK 21、Docker（Compose 2.20 以上。ルートの `compose.yaml` が `include` を使うため）、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
+JDK（バージョンはリポジトリのルートの `.java-version`）、Docker（Compose 2.20 以上。ルートの `compose.yaml` が `include` を使うため）、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
 
-- `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に JDK 21 のパスを設定する。コンパイルとテストの JDK 21 は、Gradle の toolchain が探す。
+- `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に `.java-version` の JDK のパスを設定する。コンパイルとテストの JDK は、Gradle の toolchain が探す。
 - clone したら、リポジトリのルートで `git config core.quotepath false` を実行する。日本語を含むパスを、`git status` などで読める形で表示するため。
 
-IntelliJ IDEA でルートを開いたら、`backend/ecsite/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
+IntelliJ IDEA でルートを開いたら、`backend/ecsite/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を `.java-version` の JDK にする。
 
 ## 起動
 

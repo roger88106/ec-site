@@ -98,7 +98,7 @@ const { orderId } = await test.step('注文する', async () => {
 
 ## 型を回避する変換を使わない
 
-テストは型を回避する変換（`as never`、`as unknown as`）を使わず、型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、直前の行の `// biome-ignore lint/plugin/no-type-cast-escape: <理由>` に理由を書いて使う。
+画面のテスト・テストの補助・E2E（`e2e/` の下の全ての TypeScript）は、型を回避する変換（`as never`、`as unknown as`）を使わず、型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、直前の行の `// biome-ignore lint/plugin/no-type-cast-escape: <理由>` に理由を書いて使う。
 
 理由：「API の差し替えは型付きの MSW」が禁じる契約にない応答を、型付きの `http` を通さずに作れてしまうため。
 

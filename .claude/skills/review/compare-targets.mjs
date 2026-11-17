@@ -18,7 +18,7 @@ import path from 'node:path'
 const MAX_SAME_KIND = 3
 /** 参照元の上限 */
 const MAX_REFERRERS = 10
-/** 参照元から除く場所。終わった spec は今のコードと比べる対象でなく、多いと他の参照元が上限に入らないため */
+/** 参照元から除く場所。終わった spec は比べ先にならず、残すと他の参照元が上限から外れるため */
 const REFERRER_EXCLUDED = ':(exclude)docs/08-spec/archive/'
 /** 一緒に変わるファイルを数える commit の数 */
 const MAX_COMMITS = 50
@@ -80,7 +80,7 @@ function kindOf(file) {
 }
 
 /**
- * 2 つのパスに共通の上位のフォルダーの数を返す。
+ * 2 つのパスで、先頭から同じフォルダーが続く数を返す。
  *
  * @param {string} a パス
  * @param {string} b パス

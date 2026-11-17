@@ -25,3 +25,43 @@
 | 表示名の番号 | 次要 | 表示名の先頭の番号は AC の文と合うか。タスク番号が残っていないか。 | 表示名にタスク番号が残り、管理画面のテストに店舗画面の表示の AC を付けていた | [テストの書き方](../../../../docs/05-開発規則/test-writing.md)の「AC 番号を入れる」 |
 | テストのファイルの大きさ | 次要 | 1 つのテストのファイルに、画面の全ての部品のテストを詰めていないか。部品ごとに分け、API の差し替えを補助に移せないか。 | 画面のテストのファイルが数百行で、全てのカードのテストと API の差し替えを持っていた | なし（レビューの判断） |
 | テストの補助の置き場所 | 次要 | テストのルートパッケージにテストだけを置き、補助とモックを子のパッケージに置いているか。 | テストのルートパッケージに、テストでない補助が多く並んでいた | [バックエンドのテストの書き方](../../../../docs/05-開発規則/test-writing-backend.md)の「統合テストの土台」「単体テストの補助」 |
+
+## 重要の行の例
+
+形で示すと分かりやすい行だけ、悪い例と良い例を書く。名前は一般の形。
+
+### 境界の両側
+
+悪い例：ちょうどと 2 つ外だけを確認する。
+```java
+assertAccepted(MAX);
+assertRejected(MAX + 2);
+```
+良い例：ちょうどと 1 つ外を対にする。
+```java
+assertAccepted(MAX);
+assertRejected(MAX + 1);
+```
+
+### 拒否のときの副作用
+
+悪い例：エラーコードだけを見る。
+```java
+assertThat(error.code()).isEqualTo("REJECTED");
+```
+良い例：DB・イベントが変わらないことも見る。
+```java
+assertThat(error.code()).isEqualTo("REJECTED");
+assertThat(orders.count()).isEqualTo(before);
+```
+
+### 確認の強さ
+
+悪い例：本番が壊れても通る。
+```java
+assertThat(response.status()).isEqualTo(200);
+```
+良い例：結果の中身を確認する。
+```java
+assertThat(response.body().total()).isEqualTo(expectedTotal);
+```

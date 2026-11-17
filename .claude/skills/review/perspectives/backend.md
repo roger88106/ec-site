@@ -9,7 +9,7 @@
 | トランザクションの付け方 | 重要 | 読むだけ・書くだけの service はクラスに、Command と Query を分けない service はメソッドに `@Transactional` があるか。 | 読むだけの用途の service の多くが、メソッドに付けていた | [バックエンドの書き方](../../../../docs/05-開発規則/backend-coding.md)の「トランザクションは application」 |
 | SQL の回数 | 重要 | 1 つの要求・1 件の読み込みの SQL の数（子の表ごとの SELECT を含む）が、件数に比例しないか。結果の並びは一意か。 | 複数の行の登録を、ループの中で 1 行ずつ実行していた | [バックエンドの書き方](../../../../docs/05-開発規則/backend-coding.md)の「検索と更新と値の取り出し」 |
 | 列挙の変換の置き場所 | 重要 | ドメインの列挙からイベントの列挙への変換が、ドメインの列挙のメソッドにあるか。 | 同じ変換を、使う側のクラスごとに書いていた | [バックエンドの書き方](../../../../docs/05-開発規則/backend-coding.md)の「他のモジュールは腐敗防止層で包む」 |
-| entity・集約の同一性 | 重要 | entity・集約の equals をどう決めたか。テストで entity を `isEqualTo` で比べて、ID だけで通っていないか。 | 集約の equals の決まりがどの文書にもなく、上書きするかが人によって違った | なし（レビューの判断） |
+| entity・集約の同一性 | 重要 | entity・集約の equals の決まりが文書にあり、それに従っているか。テストで entity を `isEqualTo` で比べて、ID だけで通っていないか。 | 集約の equals の決まりがどの文書にもなく、上書きするかが人によって違った | なし（レビューの判断） |
 | ロックと検索の順・インデックス | 重要 | 行をロックする検索に順序があるか。ジョブの検索の条件にインデックスがあるか。 | 出荷の行をロックする検索に `ORDER BY` がなかった | なし（レビューの判断） |
 | 上下限の一致（契約・domain・DB） | 重要 | 契約の制約、domain の定数、DB の列が一致するか。数え方（code point と UTF-16、精度）が同じか。 | 備考の上限を domain と契約で別の数え方にし、絵文字で結果が違った。期間の精度が domain と DB で違い、CHECK の違反で 500 になった | [バックエンドの書き方](../../../../docs/05-開発規則/backend-coding.md)の「形の検証は presentation、業務の規則は domain」、[テストの書き方](../../../../docs/05-開発規則/test-writing.md)の「テストの観点」 |
 | 入口で null を止める | 次要 | service・Command・`api/` の公開の引数に `lombok.NonNull` があるか。入口で止めた null を、下の層でもう一度検査していないか。 | 入口に付けた後も、下の層に同じ null の検査が残っていた | [バックエンドの書き方](../../../../docs/05-開発規則/backend-coding.md)の「null の扱い」 |
@@ -19,3 +19,42 @@
 | jOOQ の値の取り出し | 次要 | 位置で値を取っていないか。同じ変換を定数にまとめているか。 | 同じ型の列の順を取り違えてもコンパイルできる、位置での取り出しが多くの所にあった | [バックエンドの書き方](../../../../docs/05-開発規則/backend-coding.md)の「検索と更新と値の取り出し」 |
 | 外部のクライアントの作り方 | 次要 | 外部のクライアントを Config の `@Bean` で作って注入し、テストは同じ設定から作っているか。 | 外部のクライアントを、使うクラスのコンストラクターの中で組み立てていた | [バックエンドの書き方](../../../../docs/05-開発規則/backend-coding.md)の「設定の値の型」 |
 | 想定外の例外の文と調べる手がかり | 次要 | 想定外の例外の文に、利用者を指す ID を入れていないか。原因と、調べる手がかり（trace ID、原因の例外）が残るか。 | 再取得で見つからないときの例外に、原因も手がかりもなく調べられなかった | なし（レビューの判断） |
+
+## 重要の行の例
+
+形で示すと分かりやすい行だけ、悪い例と良い例を書く。名前は一般の形。
+
+### SQL の回数
+
+悪い例：
+```java
+for (var item : items) {
+    dsl.insertInto(TABLE).set(toRecord(item)).execute();
+}
+```
+良い例：
+```java
+dsl.batchInsert(items.stream().map(this::toRecord).toList()).execute();
+```
+
+### 列挙の変換の置き場所
+
+悪い例：使う側のクラスごとに、同じ変換を書く。
+```java
+var eventKind = switch (status) { case PAID -> EventKind.PAID; case CANCELED -> EventKind.CANCELED; };
+```
+良い例：ドメインの列挙のメソッドに 1 つだけ置く。
+```java
+var eventKind = status.toEventKind();
+```
+
+### ロックと検索の順
+
+悪い例：
+```sql
+SELECT * FROM shipment WHERE status = 'WAITING' FOR UPDATE
+```
+良い例：
+```sql
+SELECT * FROM shipment WHERE status = 'WAITING' ORDER BY id FOR UPDATE
+```

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddVariantForm } from '@/features/product/components/AddVariantForm'
 import { VariantRow, type VariantRowActions } from '@/features/product/components/VariantRow'
+import type { Refetch } from '@/hooks/useVersionedForm'
 import { move } from '@/lib/array'
 
 /**
@@ -14,7 +15,7 @@ import { move } from '@/lib/array'
  *
  * 並び替えと削除は、表示している一覧のバージョンで送る。
  */
-export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
+export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: Refetch<ProductDetail> }) {
   const t = useTranslations('product.variants')
   const tImages = useTranslations('product.images')
   const reorder = useApiMutation('put', '/products/{productId}/variants/order', { invalidate: ['/products'] })

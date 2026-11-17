@@ -9,7 +9,7 @@ import { DateTimeInput } from '@/components/DateTimeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { rateState } from '@/features/tax/rates'
-import { useVersionedForm } from '@/hooks/useVersionedForm'
+import { type Refetch, useVersionedForm } from '@/hooks/useVersionedForm'
 
 /**
  * 編集中の税率の 1 行
@@ -58,13 +58,7 @@ function toValues(taxCategory: TaxCategory): Values {
  * 一覧ごと置き換えて保存する。
  * 期間の重複・途切れ、過去の根拠の変更はサーバーが検証し、そのエラーを表示する。
  */
-export function TaxRatesEditor({
-  taxCategory,
-  refetch,
-}: {
-  taxCategory: TaxCategory
-  refetch: () => Promise<unknown>
-}) {
+export function TaxRatesEditor({ taxCategory, refetch }: { taxCategory: TaxCategory; refetch: Refetch<TaxCategory> }) {
   const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(taxCategory, toValues, refetch)
   const t = useTranslations('tax.rates')
   const tApp = useTranslations('app.common')

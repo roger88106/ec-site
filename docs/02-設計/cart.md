@@ -73,6 +73,7 @@ sequenceDiagram
 ```
 cart/
 ├── api/                # 注文に公開するカートの API
+│   └── model/          # API の引数と戻り値の record
 ├── event/              # カート変更
 ├── presentation/       # 店舗 API の実装
 ├── application/        # カートの操作

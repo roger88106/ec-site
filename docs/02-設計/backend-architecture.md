@@ -10,7 +10,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 ※1：C 側で複数モジュールを組み合わせるときの循環依存を避けるため。B 側は合成モジュールを作らず、管理画面が複数の API を呼んで組み合わせる。
 
-各モジュールのレベル（「モジュール内のアーキテクチャレベル」）と理由は、`docs/02-設計/<モジュール>.md` の冒頭にある。
+各モジュールのレベル（「モジュール内のアーキテクチャレベル」）と理由は、モジュールの `package-info.java` の Javadoc と、`docs/02-設計/<モジュール>.md` の冒頭にある。
 
 モジュールが外に公開するもの：
 
@@ -24,7 +24,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 ## モジュール内のアーキテクチャレベル
 
-複雑さに応じて選び、選んだ理由を `docs/02-設計/<module>.md` に書く。層とパッケージの名前はどのレベルでも同じ（「層とパッケージ」）。
+複雑さに応じて選び、選んだレベルと理由を、モジュールの `package-info.java` と `docs/02-設計/<module>.md` に書く。層とパッケージの名前はどのレベルでも同じ（「層とパッケージ」）。
 
 | レベル | 構成 | 向く場面 |
 |--------|------|----------|
@@ -38,7 +38,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 - 依存の向き：presentation → application → domain ← infrastructure（各層が依存してよい層は「層とパッケージ」の表のとおり）。
 - Repository の port は `domain/<集約>/port/` に置く。command と query の service・Repository を分ける（CQRS）。
-- ドメインオブジェクトは jMolecules で明示し（`@AggregateRoot`、`@ValueObject`、`@Identity`）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
+- ドメインオブジェクトは jMolecules で明示し（`@AggregateRoot`、`@ValueObject`、`@Identity` など。対応する注釈があれば付ける。`@Factory`・`@Repository` を含む。enum には付けない）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
 - 永続化は `toSnapshot()` で書き出し、Factory で再構築する。application が投げる例外は `BusinessException` / `SystemException` だけ。
 - 例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい ※3。今は在庫だけ。
 
@@ -56,18 +56,19 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 ```
 module/<モジュール>/
-├── api/                公開の同期の API（@NamedInterface("api")）
+├── api/                公開の同期の API（@NamedInterface("api")）。API のクラスと package-info だけを置く
+│   └── model/          API の引数と戻り値の record（@NamedInterface("api")）
 ├── event/              公開のイベント（@NamedInterface("event")）
 ├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
 ├── application/        use case（@Transactional はここ）
-│   ├── model/          command・query・view
-│   ├── port/           application が使う port（参照の Repository、他のモジュールの Directory）
+│   ├── model/          command・query・view（view は SQL の View のような読み取り用の投影で、画面の型ではない）。少なければ直下に置き、直下が 10 を超えたら command/・query/・view/ に分ける
+│   ├── port/           application が使う port（参照の Repository、他のモジュールの Directory）。interface だけを置き、port が返す record は model/ に置く（port の引数の record と結果の enum は入れ子でよい）
 │   ├── handler/        イベントのハンドラー（package-private の service や型を使うハンドラーは、それらと同じパッケージに置く）
 │   └── job/            定期実行のジョブと、その設定の値の型
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
-│   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
+│   └── <集約>/         集約、entity（直下に package-private で置き、パッケージを分けない）、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装
-    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。バックエンドの書き方の「設定の値の型」）
+    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする、外部のクライアントを作る。バックエンドの書き方の「設定の値の型」）。adapter ごとの設定と、条件で有効にする設定は、技術の名前でよい（`StripeConfig`、`Mock*Config`）
     ├── persistence/    jOOQ の Repository と、それが使うクラス
     ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
     └── <外部>/          外部の仕組み（storage、converter、cache など）

@@ -80,6 +80,7 @@ sequenceDiagram
 ```
 media/
 ├── api/                    # 他のモジュールへの公開
+│   └── model/              # API の引数と戻り値の record
 ├── application/            # アップロードの流れ、解放のイベント
 │   ├── model/              # 表示の型
 │   └── port/               # リポジトリ、変換、ファイルの置き場所

@@ -251,6 +251,7 @@ sequenceDiagram
 ```
 payment/
 ├── api/                    # 注文への公開
+│   └── model/              # API の引数と戻り値の record
 ├── event/                  # 与信の成功、支払の期限切れ
 ├── application/            # 支払の処理、ハンドラー
 │   ├── model/view/         # 表示の型

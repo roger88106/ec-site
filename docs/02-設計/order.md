@@ -150,6 +150,7 @@ sequenceDiagram
 ```
 order/
 ├── api/                # 見積もり、レポート用の写し
+│   └── model/          # API の引数と戻り値の record
 ├── event/              # 状態の変化、出荷
 ├── presentation/       # 店舗 API・管理 API の実装
 ├── application/        # 注文の参照、キャンセル

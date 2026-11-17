@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { judgeCommand } from '../agent-guard.mjs'
+import { judgeCommand } from '../../agent-guard.mjs'
 
 /** pre-commit hook を置いたときの中身（開発環境の起動の置き方のとおり） */
 export const INSTALLED_HOOK = '#!/bin/sh\n"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" || exit 1\n'

@@ -8,7 +8,7 @@ import { describe, test } from 'node:test'
 import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
 import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, shellForChecks, resolveIndexFile, runPreCommit, selectWarningLines } from './pre-commit.mjs'
-import { COMMIT_MSG_FILES, JA_TEXT_FILES, MINI_LIST, copyFromRepo } from './test-support.mjs'
+import { COMMIT_MSG_FILES, JA_TEXT_FILES, MINI_LIST, copyFromRepo } from './support/test-support.mjs'
 
 describe('一時の index のパス', () => {
   test('相対パスは、リポジトリのルートからの絶対パスにする', () => {

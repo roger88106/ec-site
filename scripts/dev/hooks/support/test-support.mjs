@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** リポジトリ（作業ツリー）の根 */
-export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
+export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..')
 
 /**
  * 日本語の文の検査と、その検査が読む補助（scripts/ci/lib と scripts/shared のテスト以外の .mjs）。

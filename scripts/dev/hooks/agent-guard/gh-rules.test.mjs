@@ -1,7 +1,7 @@
 // gh の規則（gh api のマージ、GraphQL、ruleset）のテスト
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { CWD, assertAsked, assertDenied, assertPassed, fakeDeps } from './test-support.mjs'
+import { CWD, assertAsked, assertDenied, assertPassed, fakeDeps } from './support/test-support.mjs'
 
 /** GraphQL の、pull request をマージする mutation */
 const MERGE_MUTATION = 'mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'

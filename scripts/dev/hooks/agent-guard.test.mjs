@@ -11,7 +11,7 @@ import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
 import { GIT_TIMEOUT_MS, handleInput } from './agent-guard.mjs'
 import { GH_BUDGET_MS } from './agent-guard/merge-rules.mjs'
-import { CWD, fakeDeps } from './agent-guard/test-support.mjs'
+import { CWD, fakeDeps } from './agent-guard/support/test-support.mjs'
 
 /** リポジトリ（作業ツリー）の根 */
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')

@@ -8,7 +8,7 @@ import { describe, test } from 'node:test'
 import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
 import { COMMIT_MSG_FAILED, runCommitMsg } from './commit-msg.mjs'
-import { COMMIT_MSG_FILES, JA_TEXT_FILES, MINI_LIST, copyFromRepo } from './test-support.mjs'
+import { COMMIT_MSG_FILES, JA_TEXT_FILES, MINI_LIST, copyFromRepo } from './support/test-support.mjs'
 
 describe('commit のメッセージの検査', () => {
   /** 実行した script を記録し、script ごとの終了コードと、要約の行のある出力を返す */

@@ -6,7 +6,7 @@ import { judgeCommand } from '../agent-guard.mjs'
 import { parseCommands, resolveDir } from './commands.mjs'
 import { parseGitInvocation } from './git-rules.mjs'
 import { splitCommands } from './shell-words.mjs'
-import { CWD, assertDenied, assertPassed, fakeDeps } from './test-support.mjs'
+import { CWD, assertDenied, assertPassed, fakeDeps } from './support/test-support.mjs'
 
 describe('コマンドの文字列を、1 つずつのコマンドの語に分ける', () => {
   test('&&、||、;、|、改行で区切る', () => {

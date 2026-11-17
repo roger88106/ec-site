@@ -1,15 +1,19 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
+import { delay, HttpResponse } from 'msw'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { ProductDetail } from '@/api/types'
-import { CONFLICT_MESSAGE, productActions, productDetail, taxCategory } from '@/test/fixtures'
+import { CONFLICT_MESSAGE, PRODUCT_ID, productActions, productDetail, taxCategory } from '@/test/fixtures'
 import { returnToTab } from '@/test/inputs'
 import { PAGE_PATH, serveProduct } from '@/test/productEditServer'
 import { renderApp } from '@/test/renderApp'
-import { http, server } from '@/test/server'
+import { getServerError, http, server } from '@/test/server'
 
 /** 商品の基本情報の更新のリクエストの本文（送った内容を確認する） */
 type UpdateProductRequest = components['schemas']['UpdateProductRequest']
+
+/** 商品の取得がシステムエラー（5xx）で失敗したときに、画面に出る文（応答の message） */
+const FETCH_FAILED_MESSAGE = 'システムエラーが発生しました。'
 
 describe('商品の編集', () => {
   describe('基本情報の入力中に他の人が更新した（409）', () => {
@@ -71,6 +75,75 @@ describe('商品の編集', () => {
       expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
       expect(state.versions).toEqual([0, 1])
     })
+  })
+
+  describe('入力中に商品の再取得が失敗した', () => {
+    /** 商品の取得を、システムエラー（5xx）にする。 */
+    function failProduct() {
+      server.use(getServerError(`/products/${PRODUCT_ID}`))
+    }
+
+    /** 商品の取得を、応答しないままにする（再取得の間を作る）。 */
+    function holdProduct() {
+      server.use(
+        http.get('/products/{productId}', async () => {
+          await delay('infinite')
+          return HttpResponse.error()
+        }),
+      )
+    }
+
+    /** 商品名を入力した後、別のタブから戻って再取得が失敗し、取得の失敗が出た状態にする。 */
+    async function typeNameThenFailRefetch() {
+      const state = serveProduct(productDetail())
+      const { user } = renderApp(PAGE_PATH)
+      const nameField = await screen.findByLabelText('商品名')
+      await user.clear(nameField)
+      await user.type(nameField, 'T シャツ（改）')
+      failProduct()
+      returnToTab()
+      await screen.findByText(FETCH_FAILED_MESSAGE)
+      return { state, user }
+    }
+
+    test('AC-559-1 再取得が失敗しても、画面と入力した商品名を残し、取得の失敗と「再試行」のボタンを表示する', async () => {
+      await typeNameThenFailRefetch()
+
+      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ABC-001')
+      expect(screen.getByRole('button', { name: '再試行' })).toBeEnabled()
+    })
+
+    test('AC-559-2 「再試行」で取得に成功したら、取得の失敗と「再試行」のボタンが消え、入力した商品名は残る', async () => {
+      const { user } = await typeNameThenFailRefetch()
+      server.use(http.get('/products/{productId}', ({ response }) => response(200).json(productDetail())))
+
+      await user.click(screen.getByRole('button', { name: '再試行' }))
+
+      await waitFor(() => expect(screen.queryByText(FETCH_FAILED_MESSAGE)).not.toBeInTheDocument())
+      expect(screen.queryByRole('button', { name: '再試行' })).not.toBeInTheDocument()
+      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+    })
+
+    test('AC-559-2 再取得している間は、「再試行」のボタンを押せない', async () => {
+      const { user } = await typeNameThenFailRefetch()
+      const retry = screen.getByRole('button', { name: '再試行' })
+      expect(retry).toBeEnabled()
+      holdProduct()
+
+      await user.click(retry)
+
+      await waitFor(() => expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled())
+    })
+  })
+
+  test('AC-559-3 最初の取得が失敗したら、画面の全体を取得の失敗の表示にする', async () => {
+    serveProduct(productDetail())
+    server.use(getServerError(`/products/${PRODUCT_ID}`))
+    renderApp(PAGE_PATH)
+
+    expect(await screen.findByText(FETCH_FAILED_MESSAGE)).toBeInTheDocument()
+    expect(screen.queryByLabelText('商品名')).not.toBeInTheDocument()
   })
 
   test('AC-18、19 税区分を変えて基本情報を保存すると、入力した値とバージョンを送り、保存を知らせ、変更後の税率の税込価格を出す', async () => {

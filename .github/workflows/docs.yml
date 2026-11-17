@@ -10,7 +10,13 @@
 name: 文書
 
 on:
+  # 作業ブランチ（agent/ など）は pull request で流すので、push では流さない（ci.yml と同じ）
   push:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+      - 'hotfix/**'
   pull_request:
 
 permissions: {}

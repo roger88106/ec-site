@@ -1,7 +1,7 @@
 # ============================================================================
 # CI（constitution の「CI/CD」）
 #
-# push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
+# pull request と、develop・main・release/**・hotfix/** への push で実行する。CI が失敗している状態で、次の spec の実装に進まない。
 # ジョブの一覧と手元で同じ検査を実行するコマンドは docs/06-手順書/ci.md、CI の検査の script の中身は docs/06-手順書/ci-checks.md。
 # ============================================================================
 
@@ -11,7 +11,13 @@ on:
   # CI の結果に関わらないファイルだけを変えた push では流さない（constitution の「CI/CD」）。
   # 1 つでも他のファイルが含まれていれば、すべての job を流す。
   # paths は上から順に当てる（! で除いたものも、後の行で再度含められる）
+  # 作業ブランチ（agent/ など）は pull request で流すので、push では流さない。両方で流すと、同じ検査が 2 回動き、警告も 2 回付く
   push:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+      - 'hotfix/**'
     paths:
       - '**'
       - '!**.md'          # 文書、skill の本文
@@ -33,7 +39,7 @@ on:
 permissions: {}
 
 # develop と main は全ての commit を検査し、前の実行を中止しない。作業ブランチは、同じ ref で新しい実行が始まったら、古い実行を中止する。
-# 作業ブランチの push と pull request を同じ group にしない（docs/06-手順書/ci.md の「CI のジョブ」）
+# push と pull request を同じ group にしない（docs/06-手順書/ci.md の「CI のジョブ」）
 concurrency:
   group: ci-${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && github.sha || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' }}

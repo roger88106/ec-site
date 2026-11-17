@@ -55,22 +55,22 @@ class EventCleanupJobSettingsTest {
     }
 
     @ParameterizedTest(name = "「{0}」")
-    @ValueSource(strings = {"0s", "-1s"})
-    @DisplayName("片付けの間隔が 0 以下なら、値の検証で拒否される")
-    void rejectsNonPositiveInterval(String value) {
+    @ValueSource(strings = {"0s", "-1s", "999us"})
+    @DisplayName("片付けの間隔が 0、負の値、下限の 1ms 未満（999us）なら、値の検証で拒否される")
+    void rejectsIntervalBelowMinimum(String value) {
         // 操作と確認：値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("interval", value)))
                 .isInstanceOf(BindException.class);
     }
 
     @Test
-    @DisplayName("片付けの間隔が正の最小値（1ns）なら、値の検証を通り、その値になる")
-    void acceptsSmallestPositiveInterval() {
-        // 操作：1ns を検証付きで当てはめる
-        var properties = TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("interval", "1ns"));
+    @DisplayName("片付けの間隔が下限の 1ms なら、値の検証を通り、その値になる")
+    void acceptsIntervalAtMinimum() {
+        // 操作：1ms を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("interval", "1ms"));
 
-        // 確認：1ns になる
-        assertThat(properties.interval()).isEqualTo(Duration.ofNanos(1));
+        // 確認：1ms になる
+        assertThat(properties.interval()).isEqualTo(Duration.ofMillis(1));
     }
 
     @Test

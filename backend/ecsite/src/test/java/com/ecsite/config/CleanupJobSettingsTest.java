@@ -192,9 +192,12 @@ class CleanupJobSettingsTest {
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, 0s",
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, -1s",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 0s",
-                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, -1s"})
-        @DisplayName("片付けの間隔が 0 以下なら、値の検証で拒否される")
-        void rejectsNonPositiveInterval(String prefix, Class<?> type, String value) {
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, -1s",
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties, 999us",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, 999us",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 999us"})
+        @DisplayName("片付けの間隔が 0、負の値、下限の 1ms 未満（999us）なら、値の検証で拒否される")
+        void rejectsIntervalBelowMinimum(String prefix, Class<?> type, String value) {
             // 操作と確認：値の検証で拒否される
             assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("interval", value)))
                     .isInstanceOf(BindException.class);
@@ -205,13 +208,13 @@ class CleanupJobSettingsTest {
                 "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
-        @DisplayName("片付けの間隔が正の最小値（1ns）なら、値の検証を通り、その値になる")
-        void acceptsSmallestPositiveInterval(String prefix, Class<?> type) {
-            // 操作：1ns を検証付きで当てはめる
-            var properties = TestSettings.bindValidated(prefix, type, Map.of("interval", "1ns"));
+        @DisplayName("片付けの間隔が下限の 1ms なら、値の検証を通り、その値になる")
+        void acceptsIntervalAtMinimum(String prefix, Class<?> type) {
+            // 操作：1ms を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(prefix, type, Map.of("interval", "1ms"));
 
-            // 確認：1ns になる
-            assertThat(properties).extracting("interval").isEqualTo(Duration.ofNanos(1));
+            // 確認：1ms になる
+            assertThat(properties).extracting("interval").isEqualTo(Duration.ofMillis(1));
         }
 
         @ParameterizedTest(name = "「{0}」")

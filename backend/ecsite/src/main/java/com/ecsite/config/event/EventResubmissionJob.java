@@ -102,8 +102,8 @@ class EventResubmissionJob {
     @Validated
     @ConfigurationProperties("ecsite.scheduling.event-resubmission")
     record Properties(
-            @DefaultValue("1m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration interval,
-            @DefaultValue("5m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration minAge,
+            @DefaultValue("1m") @NotNull @DurationMin(millis = 1) Duration interval,
+            @DefaultValue("5m") @NotNull @DurationMin(millis = 1) Duration minAge,
             @DefaultValue("60") @Positive int maxAttempts) {
     }
 }

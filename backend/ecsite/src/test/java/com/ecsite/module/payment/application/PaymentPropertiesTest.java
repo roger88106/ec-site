@@ -65,12 +65,12 @@ class PaymentPropertiesTest {
 
     @ParameterizedTest(name = "「{0}」が {1}")
     @CsvSource({
-            "deadline, 0s", "deadline, -1s",
-            "expiry-interval, 0s", "expiry-interval, -1s",
-            "awaiting-authorization-warning, 0s", "awaiting-authorization-warning, -1s",
-            "authorization-validity, 0s", "authorization-validity, -1s"})
-    @DisplayName("正の値だけの時間の設定が 0 以下なら、値の検証で拒否される")
-    void rejectsNonPositiveDuration(String name, String value) {
+            "deadline, 0s", "deadline, -1s", "deadline, 999us",
+            "expiry-interval, 0s", "expiry-interval, -1s", "expiry-interval, 999us",
+            "awaiting-authorization-warning, 0s", "awaiting-authorization-warning, -1s", "awaiting-authorization-warning, 999us",
+            "authorization-validity, 0s", "authorization-validity, -1s", "authorization-validity, 999us"})
+    @DisplayName("下限が 1ms の時間の設定が、0、負の値、1ms 未満（999us）なら、値の検証で拒否される")
+    void rejectsDurationBelowMinimum(String name, String value) {
         // 準備：必須の値と、許す範囲の外の値
         var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}"));
         values.put(name, value);
@@ -82,21 +82,21 @@ class PaymentPropertiesTest {
 
     @ParameterizedTest(name = "「{0}」")
     @CsvSource({"deadline", "expiry-interval", "awaiting-authorization-warning", "authorization-validity"})
-    @DisplayName("正の値だけの時間の設定が正の最小値（1ns）なら、値の検証を通り、その値になる")
-    void acceptsSmallestPositiveDuration(String name) {
-        // 操作：必須の値と 1ns を検証付きで当てはめる
+    @DisplayName("下限が 1ms の時間の設定が、下限の 1ms なら、値の検証を通り、その値になる")
+    void acceptsDurationAtMinimum(String name) {
+        // 操作：必須の値と 1ms を検証付きで当てはめる
         var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}"));
-        values.put(name, "1ns");
+        values.put(name, "1ms");
         var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class, values);
 
-        // 確認：1ns になる
+        // 確認：1ms になる
         var actual = switch (name) {
             case "deadline" -> properties.deadline();
             case "expiry-interval" -> properties.expiryInterval();
             case "awaiting-authorization-warning" -> properties.awaitingAuthorizationWarning();
             default -> properties.authorizationValidity();
         };
-        assertThat(actual).isEqualTo(Duration.ofNanos(1));
+        assertThat(actual).isEqualTo(Duration.ofMillis(1));
     }
 
     @Test

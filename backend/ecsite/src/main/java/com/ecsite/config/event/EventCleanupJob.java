@@ -64,7 +64,7 @@ class EventCleanupJob {
     @Validated
     @ConfigurationProperties("ecsite.scheduling.event-cleanup")
     record Properties(
-            @DefaultValue("1h") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration interval,
+            @DefaultValue("1h") @NotNull @DurationMin(millis = 1) Duration interval,
             @DefaultValue("7d") @NotNull @DurationMin(nanos = 0) Duration retention) {
     }
 }

@@ -25,6 +25,6 @@ import java.util.UUID;
 public record OrderProperties(
         @DefaultValue("1000") @Min(0) long shippingFee,
         @NotNull UUID shippingTaxCategoryId,
-        @DefaultValue("15m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration reservationTtl,
+        @DefaultValue("15m") @NotNull @DurationMin(millis = 1) Duration reservationTtl,
         @DefaultValue("3") @Min(1) int pendingOrderLimit) {
 }

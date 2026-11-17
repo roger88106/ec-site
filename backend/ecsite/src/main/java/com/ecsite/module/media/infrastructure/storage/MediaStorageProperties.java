@@ -38,9 +38,9 @@ public record MediaStorageProperties(
         @NotBlank String incomingBucket,
         @NotBlank String publicBucket,
         @NotNull URI publicBaseUrl,
-        @DefaultValue("5m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration uploadUrlTtl,
-        @DefaultValue("10s") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration attemptTimeout,
-        @DefaultValue("30s") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration callTimeout) {
+        @DefaultValue("5m") @NotNull @DurationMin(seconds = 1) Duration uploadUrlTtl,
+        @DefaultValue("10s") @NotNull @DurationMin(millis = 1) Duration attemptTimeout,
+        @DefaultValue("30s") @NotNull @DurationMin(millis = 1) Duration callTimeout) {
 
     /**
      * 資格情報を設定で与えているかを返す。

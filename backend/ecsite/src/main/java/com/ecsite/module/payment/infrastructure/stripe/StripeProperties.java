@@ -25,8 +25,8 @@ import java.time.Duration;
 @Validated
 @ConfigurationProperties("ecsite.payment.stripe")
 public record StripeProperties(@NotBlank String secretKey, @NotBlank String webhookSecret,
-                               @DefaultValue("5s") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration connectTimeout,
-                               @DefaultValue("20s") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration readTimeout) {
+                               @DefaultValue("5s") @NotNull @DurationMin(millis = 1) Duration connectTimeout,
+                               @DefaultValue("20s") @NotNull @DurationMin(millis = 1) Duration readTimeout) {
 
     /**
      * {@inheritDoc}

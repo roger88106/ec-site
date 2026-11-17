@@ -31,10 +31,11 @@
   - 定期ジョブの間隔を指定する式（SpEL）は変えない。
   - 式の横のコメントの「登録の注釈の決まり」は、「設定の型の登録の決まり」に修正する。
 - 決定 5（構成の検査）：今の「登録の注釈を付けるクラスは設定のクラス」の検査を、「本番のクラスは登録の注釈を使わない」に替える。「本番の設定の型は、決定 1 の 2 つのパッケージにある」の検査を加える。
-- 決定 6（下限の分け方）：時間と間隔の値を、「正の値だけ」と「0 以上」に分ける（下の表）。
+- 決定 6（下限の分け方）：時間と間隔の値を、「正の値だけ（1ms 以上か 1 秒以上）」と「0 以上」に分ける（下の表）。
   - 保存期間は 0 を許す。カートの保存期間の既定は 0 で、期限を過ぎたらすぐ削除する意味のため。
   - 与信の期限が近いと判定する長さも 0 を許す。0 は「期限が近い」と判定しない意味のため。
-  - 他の値は、正の値だけを許す。
+  - 他の値は、正の値だけを許す。下限は値の使われ方に合わせ、ミリ秒で使う値は 1ms 以上、署名付き URL の有効期間は 1 秒以上にする。
+  - 理由：1ms 未満の値は、Stripe の待ち時間では 0（無制限）と扱われ、定期ジョブではほぼ連続して実行されるため。署名付き URL の有効期間は、秒に切り捨てられるため。pull request の前の組み込みのコードレビューで挙がり、issue 担当のセッションが 2026-11-18 に確認した。
   - 全ての値に、null を許さない制約を付ける。今、この制約がない値がある。
 - 決定 7（規則と環境変数の一覧）：
   - バックエンドの書き方の「設定の値の型」で、登録の注釈をモジュールの設定のクラスに付けるという項目を、決定 1〜3 の形に書き換える。
@@ -59,18 +60,19 @@
 
 | 設定の型 | 値 | 許す範囲 |
 |----------|-----|----------|
-| `PaymentProperties` | `deadline`（上限は今のまま） | 正の値 |
-| `PaymentProperties` | `expiryInterval` | 正の値 |
-| `PaymentProperties` | `awaitingAuthorizationWarning` | 正の値 |
-| `PaymentProperties` | `authorizationValidity` | 正の値 |
+| `PaymentProperties` | `deadline`（上限は今のまま） | 1ms 以上 |
+| `PaymentProperties` | `expiryInterval` | 1ms 以上 |
+| `PaymentProperties` | `awaitingAuthorizationWarning` | 1ms 以上 |
+| `PaymentProperties` | `authorizationValidity` | 1ms 以上 |
 | `PaymentProperties` | `authorizationWarning` | 0 以上 |
-| `StripeProperties` | `connectTimeout`、`readTimeout` | 正の値 |
-| `ImgproxyProperties` | `timeout` | 正の値 |
-| `MediaStorageProperties` | `uploadUrlTtl`、`attemptTimeout`、`callTimeout` | 正の値 |
-| `OrderProperties` | `reservationTtl` | 正の値 |
-| `CartCleanupProperties`、`StockReservationCleanupProperties`、`CheckoutCleanupProperties`、イベントの片付けの設定 | `interval` | 正の値 |
+| `StripeProperties` | `connectTimeout`、`readTimeout` | 1ms 以上 |
+| `ImgproxyProperties` | `timeout` | 1ms 以上 |
+| `MediaStorageProperties` | `attemptTimeout`、`callTimeout` | 1ms 以上 |
+| `MediaStorageProperties` | `uploadUrlTtl` | 1 秒以上 |
+| `OrderProperties` | `reservationTtl` | 1ms 以上 |
+| `CartCleanupProperties`、`StockReservationCleanupProperties`、`CheckoutCleanupProperties`、イベントの片付けの設定 | `interval` | 1ms 以上 |
 | 同上 | `retention` | 0 以上 |
-| イベントの再発行の設定 | `interval`、`minAge` | 正の値 |
+| イベントの再発行の設定 | `interval`、`minAge` | 1ms 以上 |
 
 イベントの再発行の `minAge` は #521 の表にないが、同じ時間の値なので含める。
 
@@ -87,7 +89,7 @@
 ### DS-553-2 時間と間隔の設定の値に下限がある（D / P1）
 
 - **DC-553-6** 決定 6 の表の全ての値に、許す範囲の下限の制約がある。
-- **DC-553-7** 許す範囲の外の値（正の値だけの値は 0、0 以上の値は負の値）で、設定の検証が失敗することを、値ごとのテストで確認している。
+- **DC-553-7** 許す範囲の外の値（正の値だけを許す値は 0 と下限未満の値、0 以上を許す値は負の値）で、設定の検証が失敗することを、値ごとのテストで確認している。
 - **DC-553-8** 0 以上の値は、0 で検証が通ることをテストで確認している。
 
 ### DS-553-3 検査が通る（D / P1）
@@ -163,7 +165,7 @@
 - [x] **T553-01-06** `./gradlew check` を通す（DC-553-4、DC-553-9）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T553-01-03、T553-01-05
   - 確認方法：`./gradlew check`
-- [ ] **T553-01-07** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
+- [x] **T553-01-07** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T553-01-06
   - 結果：
 
@@ -182,7 +184,22 @@
     - 残したもの：校閲の「例に当たる」「規則を当てる」「当てはめる」（同じファイルと検証の補助の既存の書き方に合わせた）。
     - 機械の検査に移したもの：なし。AC 番号の後の空白（ac-check）と「承認期限」（用語の一覧）は移せるが、1 件ずつで、この spec の範囲の外のため移していない。
     - 本文の書き手：規則・設計・手順書の修正は 5 行未満の書き換えで、セッションが自分で書いた。
-- [ ] **T553-01-08** pull request の前のレビュー。指摘を修正し、draft を外す。
+- [x] **T553-01-08** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T553-01-07
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | pull request の前 | 組み込み | 組み込み | 1 | — | — | 0 | 4 | 2 | 6 |
+    | pull request の前 | 拒否・判定の回避 | 高性能 | 1 | 112001 | 3m06s | 0 | 2 | 0 | 2 |
+    | pull request の前 | セキュリティ | 組み込み | 1 | — | — | 0 | 0 | 0 | 0 |
+    | pull request の前 | 重複を除く | — | 1 | — | — | 0 | 5 | 2 | 7 |
+
+    - 組み込みのコードレビューは、level を high（profile は厚め）に指定して実行し、表示も high だった。指摘は 6 件で、重要度の定義で分けた。危険度が高いので、文脈を持たない高性能のレビュー役とセキュリティのレビューも行った。
+    - 修正したもの（必須）：正の値の下限が 1ns で、1ms 未満の値が通っていた所（Stripe の待ち時間が 0 で無制限、定期ジョブがほぼ連続、署名付き URL の有効期間が 0 秒）。issue 担当のセッションの確認で、ミリ秒で使う値を 1ms 以上、署名付き URL の有効期間を 1 秒以上にし、決定 6 と規則を直した。下限のすぐ下で拒否されるテストを加えた。登録の注釈の検査がメタ注釈を見逃す所。
+    - 修正したもの（推奨）：スキャンの範囲を検査とアプリのクラスで二重に持つ所（アプリのクラスの注釈から作る）。`@Bean` のメソッドに付けた設定の注釈の検査。
+    - セキュリティのレビューは、指摘 0 件（認証の設定の検証、決済の mock と Stripe の条件、秘密の値の表示が変わらないことを確認した）。
+    - 機械の検査に移したもの：上の 2 つの構成の検査（ArchUnit）。
+    - 校閲：spec の最後の後の差分（検出役 47 件、確認役が挙げる 16 件）は 11 件を反映した。pull request の本文とコミットメッセージ（検出役 23 件、確認役が挙げる 9 件）は、本文の 3 件と最新のコミットメッセージの 2 件を反映した。残したもの：「規則を当てる」「例に当たる」「当てはめる」（同じファイルと検証の補助の既存の書き方）、「全体のブランチ」「組の issue」（#544 の語）、push 済みのコミットメッセージ（書き換えに force push が必要で、文体の候補のため）。
 - [ ] **T553-01-09** spec をアーカイブに移す。
   - 依存：T553-01-08

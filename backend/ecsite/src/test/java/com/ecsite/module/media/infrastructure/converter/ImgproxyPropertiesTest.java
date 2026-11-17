@@ -114,9 +114,9 @@ class ImgproxyPropertiesTest {
     }
 
     @ParameterizedTest(name = "「{0}」")
-    @ValueSource(strings = {"0s", "-1s"})
-    @DisplayName("変換の呼び出しを待つ時間が 0 以下なら、値の検証で拒否される")
-    void rejectsNonPositiveTimeout(String value) {
+    @ValueSource(strings = {"0s", "-1s", "999us"})
+    @DisplayName("変換の呼び出しを待つ時間が 0、負の値、下限の 1ms 未満（999us）なら、値の検証で拒否される")
+    void rejectsTimeoutBelowMinimum(String value) {
         // 操作と確認：必須の値と許す範囲の外の時間を渡すと、値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.media.converter", ImgproxyProperties.class,
                 Map.of("base-url", BASE_URL, "key", KEY, "salt", SALT, "timeout", value)))
@@ -124,14 +124,14 @@ class ImgproxyPropertiesTest {
     }
 
     @Test
-    @DisplayName("変換の呼び出しを待つ時間が正の最小値（1ns）なら、値の検証を通り、その値になる")
-    void acceptsSmallestPositiveTimeout() {
-        // 操作：1ns を検証付きで当てはめる
+    @DisplayName("変換の呼び出しを待つ時間が下限の 1ms なら、値の検証を通り、その値になる")
+    void acceptsTimeoutAtMinimum() {
+        // 操作：1ms を検証付きで当てはめる
         var properties = TestSettings.bindValidated("ecsite.media.converter", ImgproxyProperties.class,
-                Map.of("base-url", BASE_URL, "key", KEY, "salt", SALT, "timeout", "1ns"));
+                Map.of("base-url", BASE_URL, "key", KEY, "salt", SALT, "timeout", "1ms"));
 
-        // 確認：1ns になる
-        assertThat(properties.timeout()).isEqualTo(Duration.ofNanos(1));
+        // 確認：1ms になる
+        assertThat(properties.timeout()).isEqualTo(Duration.ofMillis(1));
     }
 
     // ============================== 準備の補助 ==============================

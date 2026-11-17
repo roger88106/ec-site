@@ -21,7 +21,7 @@ import java.time.Duration;
 @Validated
 @ConfigurationProperties("ecsite.order.cleanup")
 public record CheckoutCleanupProperties(
-        @DefaultValue("1h") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration interval,
+        @DefaultValue("1h") @NotNull @DurationMin(millis = 1) Duration interval,
         @DefaultValue("1d") @NotNull @DurationMin(nanos = 0) Duration retention,
         @DefaultValue("1000") @Min(1) int batchSize) {
 }

@@ -30,7 +30,7 @@ public record ImgproxyProperties(
         @NotBlank String key,
         @NotBlank String salt,
         @DefaultValue("82") @Min(1) @Max(100) int quality,
-        @DefaultValue("30s") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration timeout) {
+        @DefaultValue("30s") @NotNull @DurationMin(millis = 1) Duration timeout) {
 
     /**
      * 文字列表現を返す。

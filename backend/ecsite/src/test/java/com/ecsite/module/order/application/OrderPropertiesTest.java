@@ -108,9 +108,9 @@ class OrderPropertiesTest {
     }
 
     @ParameterizedTest(name = "「{0}」")
-    @ValueSource(strings = {"0s", "-1s"})
-    @DisplayName("在庫の引当を保持する時間が 0 以下なら、値の検証で拒否される")
-    void rejectsNonPositiveReservationTtl(String value) {
+    @ValueSource(strings = {"0s", "-1s", "999us"})
+    @DisplayName("在庫の引当を保持する時間が 0、負の値、下限の 1ms 未満（999us）なら、値の検証で拒否される")
+    void rejectsReservationTtlBelowMinimum(String value) {
         // 操作と確認：必須の値と許す範囲の外の時間を渡すと、値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, OrderProperties.class,
                 Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "reservation-ttl", value)))
@@ -118,14 +118,14 @@ class OrderPropertiesTest {
     }
 
     @Test
-    @DisplayName("在庫の引当を保持する時間が正の最小値（1ns）なら、値の検証を通り、その値になる")
-    void acceptsSmallestPositiveReservationTtl() {
-        // 操作：1ns を検証付きで当てはめる
+    @DisplayName("在庫の引当を保持する時間が下限の 1ms なら、値の検証を通り、その値になる")
+    void acceptsReservationTtlAtMinimum() {
+        // 操作：1ms を検証付きで当てはめる
         var properties = TestSettings.bindValidated(PREFIX, OrderProperties.class,
-                Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "reservation-ttl", "1ns"));
+                Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "reservation-ttl", "1ms"));
 
-        // 確認：1ns になる
-        assertThat(properties.reservationTtl()).isEqualTo(Duration.ofNanos(1));
+        // 確認：1ms になる
+        assertThat(properties.reservationTtl()).isEqualTo(Duration.ofMillis(1));
     }
 
     // ============================== 準備の補助 ==============================

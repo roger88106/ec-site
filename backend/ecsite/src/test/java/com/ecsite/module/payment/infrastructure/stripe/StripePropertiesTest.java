@@ -37,10 +37,10 @@ class StripePropertiesTest {
 
     @ParameterizedTest(name = "「{0}」が {1}")
     @CsvSource({
-            "connect-timeout, 0s", "connect-timeout, -1s",
-            "read-timeout, 0s", "read-timeout, -1s"})
-    @DisplayName("正の値だけの時間の設定が 0 以下なら、値の検証で拒否される")
-    void rejectsNonPositiveDuration(String name, String value) {
+            "connect-timeout, 0s", "connect-timeout, -1s", "connect-timeout, 999us",
+            "read-timeout, 0s", "read-timeout, -1s", "read-timeout, 999us"})
+    @DisplayName("下限が 1ms の時間の設定が、0、負の値、1ms 未満（999us）なら、値の検証で拒否される")
+    void rejectsDurationBelowMinimum(String name, String value) {
         // 準備：必須の値と、許す範囲の外の値
         var values = new HashMap<>(REQUIRED);
         values.put(name, value);
@@ -52,17 +52,17 @@ class StripePropertiesTest {
 
     @ParameterizedTest(name = "「{0}」")
     @CsvSource({"connect-timeout", "read-timeout"})
-    @DisplayName("正の値だけの時間の設定が正の最小値（1ns）なら、値の検証を通り、その値になる")
-    void acceptsSmallestPositiveDuration(String name) {
-        // 準備：必須の値と、1ns
+    @DisplayName("下限が 1ms の時間の設定が、下限の 1ms なら、値の検証を通り、その値になる")
+    void acceptsDurationAtMinimum(String name) {
+        // 準備：必須の値と、1ms
         var values = new HashMap<>(REQUIRED);
-        values.put(name, "1ns");
+        values.put(name, "1ms");
 
         // 操作：検証付きで当てはめる
         var properties = TestSettings.bindValidated(PREFIX, StripeProperties.class, values);
 
-        // 確認：1ns になる
+        // 確認：1ms になる
         var actual = name.equals("connect-timeout") ? properties.connectTimeout() : properties.readTimeout();
-        assertThat(actual).isEqualTo(Duration.ofNanos(1));
+        assertThat(actual).isEqualTo(Duration.ofMillis(1));
     }
 }

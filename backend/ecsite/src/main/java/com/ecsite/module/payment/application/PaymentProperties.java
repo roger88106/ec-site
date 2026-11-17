@@ -29,10 +29,10 @@ import java.util.UUID;
 @Validated
 @ConfigurationProperties("ecsite.payment")
 public record PaymentProperties(
-        @DefaultValue("30m") @NotNull @DurationMin(nanos = 0, inclusive = false) @DurationMax(minutes = 30) Duration deadline,
-        @DefaultValue("1m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration expiryInterval,
-        @DefaultValue("1h") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration awaitingAuthorizationWarning,
-        @DefaultValue("7d") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration authorizationValidity,
+        @DefaultValue("30m") @NotNull @DurationMin(millis = 1) @DurationMax(minutes = 30) Duration deadline,
+        @DefaultValue("1m") @NotNull @DurationMin(millis = 1) Duration expiryInterval,
+        @DefaultValue("1h") @NotNull @DurationMin(millis = 1) Duration awaitingAuthorizationWarning,
+        @DefaultValue("7d") @NotNull @DurationMin(millis = 1) Duration authorizationValidity,
         @DefaultValue("2d") @NotNull @DurationMin(nanos = 0) Duration authorizationWarning,
         @NotBlank String returnUrl) {
 

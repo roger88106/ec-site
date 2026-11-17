@@ -28,6 +28,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `role-permissions` | ロールと権限の対応表が、API の契約と運営者の realm の設定から再作成した表と一致することを確認する ※1 |
 | `rule-sections` | 書き方の規則の文書の各節に、`確認方法：` と `理由：` の行があることを確認する |
 | `runtime-versions` | workflow が JDK と Node のバージョンを直接書かず、バージョンのファイルを参照していることを確認する |
+| `script-deps` | `scripts/ci/`・`scripts/dev/`・`scripts/shared/`・`e2e/` の間の import の向きが、[scripts の設計](../02-設計/scripts.md)の「設計の判断」の依存の向きに合うことを確認する |
 | `spec-numbers` | 本番のコード（コメントの外を含む）と、テスト・設定のファイル・script のコメントに、spec・plan・tasks の番号がないことを確認する |
 | `spec-structure` | spec・plan・tasks と機能仕様の構造と ID を確認する。失敗したら、雛形（`docs/08-spec/templates/`、`docs/03-機能仕様/template.md`）に合わせる |
 

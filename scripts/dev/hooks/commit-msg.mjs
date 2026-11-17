@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { judgeCheck } from '../../ci/lib/output/check-result.mjs'
+import { judgeCheck } from '../../shared/check-result.mjs'
 
 /** メッセージのファイルが渡されなかったときの終了コード（検査の失敗の 1 と区別する） */
 export const COMMIT_MSG_FAILED = 2

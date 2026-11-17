@@ -17,7 +17,7 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { stopOnSignals } from './lib/child-stop.mjs'
+import { stopOnSignals } from '../shared/child-stop.mjs'
 import { findListeners, stopListeners } from './lib/port-stop.mjs'
 import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './lib/slot/slot-ports.mjs'
 import {
@@ -39,7 +39,7 @@ import {
   SHARED_CONTAINERS,
   SLOT_COUNT,
   TARGETS,
-} from './lib/slot/slot.mjs'
+} from '../shared/slot/slot.mjs'
 
 /** 共有の PostgreSQL のコンテナ */
 const POSTGRES = 'ec-site-postgres'

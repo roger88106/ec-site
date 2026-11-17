@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
-import { emptyListReason } from '../lib/git/git-files.mjs'
+import { emptyListReason } from '../../shared/git/git-files.mjs'
 import { buildCommand, checkDocs, countOutputs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, puppeteerConfig, quoteArg, runCheck, summaryLine, toMarkdown } from './mermaid-check.mjs'
 
 const FENCE = '```'

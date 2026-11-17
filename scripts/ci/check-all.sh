@@ -6,7 +6,7 @@
 #   commit の前の hook は、環境変数 CHECK_TESTS・CHECK_SCRIPTS で実行するものを絞る（実行する所のコメント）。
 #
 # 流すもの：
-#   1. script のテスト（scripts/ci/ と scripts/dev/ の下のすべての *.test.mjs と、skill（.claude/skills/）の下のすべての *.test.cjs）
+#   1. script のテスト（scripts/ci/・scripts/dev/・scripts/shared/ の下のすべての *.test.mjs と、skill（.claude/skills/）の下のすべての *.test.cjs）
 #   2. 検査のフォルダ（scripts/ci/{docs,spec,ja,java,config,frontend}/）の直下の *.mjs のうち、*.test.mjs 以外のすべて（検査）
 #   3. 差分の追加行の文体の検査（ja-text --changed）。警告だけを出し、失敗にしない（警告があっても終了コードは 0）
 #
@@ -34,7 +34,7 @@ last_ok=0
 # 1 つを流し、結果を 1 行で出す（失敗したら出力の末尾を添える）
 #   $1：表示の名前、$2：判定の種類（summary は要約の行を求める、tests は node --test のテストの数が 1 件以上を求める）、残り：流すコマンド
 #   終了コードが 0 でなければ、node を呼ばずに失敗にする。
-#   summary のものは、終了コードが 0 でも、最後の行が要約の行（「<何>：<件数>」）でなければ失敗にする（判定は lib/output/check-result.mjs。成功は OK の 1 行で示す）
+#   summary のものは、終了コードが 0 でも、最後の行が要約の行（「<何>：<件数>」）でなければ失敗にする（判定は scripts/shared/check-result.mjs。成功は OK の 1 行で示す）
 run_check() {
   local name="$1"
   local mode="$2"
@@ -49,7 +49,7 @@ run_check() {
     reason="終了コード $status"
   else
     # 要約の行の判定だけを node に任せる。OK の行が出なければ、判定の script が動かなかったものとして失敗にする
-    reason="$(node scripts/ci/lib/output/check-result.mjs "$LOG" "$mode")"
+    reason="$(node scripts/shared/check-result.mjs "$LOG" "$mode")"
     if [ $? -eq 0 ] && [ "$reason" = "OK" ]; then
       ok=1
     elif [ -z "$reason" ]; then
@@ -74,7 +74,7 @@ run_check() {
 # commit の前の hook は、選んだテストと検査だけを CHECK_TESTS・CHECK_SCRIPTS（空白で区切る）で渡す。渡さなければ全てを実行する。
 # 選んだものが空なら実行しない（hook の選び方は scripts/dev/hooks/pre-commit-select.mjs）
 if [ -z "${CHECK_TESTS+set}" ]; then
-  run_check "script のテスト" tests node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
+  run_check "script のテスト" tests node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" "scripts/shared/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
 elif [ -n "$CHECK_TESTS" ]; then
   # shellcheck disable=SC2086 # 空白で区切った一覧を、ファイルごとの引数にする
   run_check "script のテスト" tests node --test $CHECK_TESTS

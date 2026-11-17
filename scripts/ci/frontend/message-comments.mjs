@@ -10,11 +10,11 @@
 //
 // 使い方：node scripts/ci/frontend/message-comments.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { closingParen } from '../lib/source/closing-paren.mjs'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { closingParen } from '../../shared/source/closing-paren.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { isScreenSource } from '../lib/docs/screen-sources.mjs'
 import { createLineLocator } from '../lib/source/line-number.mjs'
-import { keepTsComments } from '../lib/source/strip-comments.mjs'
+import { keepTsComments } from '../../shared/source/strip-comments.mjs'
 
 /** 文言の関数（t、tCommon、translate など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
 const MESSAGE_CALL = /(?<![\w.$])(?:t(?:[A-Z]\w*)?|translate)\(\s*(['"])([^'"]+)\1/g

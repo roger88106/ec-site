@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 
 /** テストする script */
 const SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'session-start.mjs')

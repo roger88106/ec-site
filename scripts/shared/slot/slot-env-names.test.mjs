@@ -1,4 +1,4 @@
-// slot-env-names.mjs のテスト（node --test scripts/dev/lib/slot/slot-env-names.test.mjs）
+// slot-env-names.mjs のテスト（node --test scripts/shared/slot/slot-env-names.test.mjs）
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { slotEnvNames } from './slot-env-names.mjs'

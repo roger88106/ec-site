@@ -9,9 +9,9 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { listGitFiles } from '../../ci/lib/git/git-files.mjs'
-import { listSpecDirs } from '../../ci/lib/docs/spec-dirs.mjs'
-import { findTestFiles, readTsTests } from '../../ci/lib/source/test-files.mjs'
+import { listGitFiles } from '../../shared/git/git-files.mjs'
+import { listSpecDirs } from '../../shared/spec-dirs.mjs'
+import { findTestFiles, readTsTests } from '../../shared/source/test-files.mjs'
 
 /** リポジトリのルート（このファイルは scripts/dev/tools/ にある） */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')

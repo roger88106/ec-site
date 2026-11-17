@@ -9,9 +9,9 @@
 //     コメント・文字列の中の呼び出しも読まない
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { exitIfNoFiles } from '../git/git-files.mjs'
+import { exitIfNoFiles } from '../../../shared/git/git-files.mjs'
 import { createLineLocator } from '../source/line-number.mjs'
-import { extractTestNames, findTestFiles, scanTsTests } from '../source/test-files.mjs'
+import { extractTestNames, findTestFiles, scanTsTests } from '../../../shared/source/test-files.mjs'
 import { describeUnreadableLine } from '../source/unreadable-line.mjs'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */

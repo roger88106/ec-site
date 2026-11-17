@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { removeGitEnv } from './git-env.mjs'
+import { removeGitEnv } from '../../../shared/git/git-env.mjs'
 import { isShallowRepository, SHALLOW_CLONE_MESSAGE } from './shallow-clone.mjs'
 
 // Git の hook の中で実行されても別のリポジトリを見ないよう、Git を呼ぶ前に GIT_ の環境変数を外す

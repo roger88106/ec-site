@@ -22,9 +22,9 @@ const CHECKS = {
 }
 
 before(() => {
-  for (const file of ['check-all.sh', 'lib/output/check-result.mjs']) {
-    mkdirSync(path.dirname(path.join(root, 'scripts/ci', file)), { recursive: true })
-    copyFileSync(path.join(CI_DIR, file), path.join(root, 'scripts/ci', file))
+  for (const file of ['scripts/ci/check-all.sh', 'scripts/shared/check-result.mjs']) {
+    mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
+    copyFileSync(path.join(CI_DIR, '../..', file), path.join(root, file))
   }
   mkdirSync(path.join(root, 'scripts/ci/docs'), { recursive: true })
   for (const [name, body] of Object.entries(CHECKS)) writeFileSync(path.join(root, `scripts/ci/docs/${name}.mjs`), `${body}\n`)

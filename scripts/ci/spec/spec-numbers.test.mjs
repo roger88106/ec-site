@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { withoutGitEnv } from '../lib/git/git-env.mjs'
-import { keepJavaComments, keepTsComments } from '../lib/source/strip-comments.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
+import { keepJavaComments, keepTsComments } from '../../shared/source/strip-comments.mjs'
 import { commentsOf, findSpecNumbers, isBackendTestFile, isCommentOnlyTsFile, isConfigFile, isProductionFile, isScriptFile } from './spec-numbers.mjs'
 
 describe('本番のコードの spec の番号の検査', () => {
@@ -229,7 +229,7 @@ describe('scripts/ の下の script のコメントの spec の番号の検査',
     for (const file of [
       'scripts/ci/spec/spec-numbers.mjs',
       'scripts/ci/spec/spec-numbers.test.mjs',
-      'scripts/ci/lib/git/git-files.mjs',
+      'scripts/shared/git/git-files.mjs',
       'scripts/dev/foo.cjs',
       'scripts/ci/check-all.sh',
       'scripts/dev/hooks/pre-commit',
@@ -241,7 +241,7 @@ describe('scripts/ の下の script のコメントの spec の番号の検査',
   test('scripts/ の下でも script でないファイルと、scripts/ の外のファイルは対象にしない', () => {
     for (const file of [
       'scripts/ci/ja/ja-text.json',
-      'scripts/dev/lib/lock.d.mts',
+      'scripts/shared/lock.d.mts',
       'scripts/dev/windows/exclude-ports.ps1',
       'scripts/ci/report/testdata/pit-mutations.xml',
       'e2e/scripts/seed.ts',

@@ -5,7 +5,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { gitBash } from '../lib/git-bash.mjs'
 import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, shellForChecks, resolveIndexFile, runPreCommit, selectWarningLines } from './pre-commit.mjs'
 import { COMMIT_MSG_FILES, JA_TEXT_FILES, MINI_LIST, copyFromRepo } from './test-support.mjs'

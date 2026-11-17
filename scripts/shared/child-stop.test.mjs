@@ -1,4 +1,4 @@
-// child-stop.mjs のテスト（node --test scripts/dev/lib/child-stop.test.mjs）
+// child-stop.mjs のテスト（node --test scripts/shared/child-stop.test.mjs）
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import { describe, test } from 'node:test'

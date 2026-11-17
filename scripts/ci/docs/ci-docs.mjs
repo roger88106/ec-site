@@ -16,7 +16,7 @@
 //
 // 使い方：node scripts/ci/docs/ci-docs.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { describeUnreadableLine } from '../lib/source/unreadable-line.mjs'
 
 /** CI の検査の script の文書 */

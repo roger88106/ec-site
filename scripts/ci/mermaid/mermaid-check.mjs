@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { readCodeBlocks } from '../lib/docs/code-block.mjs'
 import { readDocument } from '../lib/docs/doc-structure.mjs'
-import { emptyListReason, listGitFiles } from '../lib/git/git-files.mjs'
+import { emptyListReason, listGitFiles } from '../../shared/git/git-files.mjs'
 
 /** 使う mermaid-cli のバージョン（上げるときは、GitHub での表示と食い違わないかを確認する） */
 const MERMAID_CLI = '@mermaid-js/mermaid-cli@12.0.0'

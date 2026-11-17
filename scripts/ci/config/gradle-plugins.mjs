@@ -12,7 +12,7 @@
 // 使い方：node scripts/ci/config/gradle-plugins.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { parse } from 'smol-toml'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { describeUnreadableLine } from '../lib/source/unreadable-line.mjs'
 
 /** カタログを通さない書き方の理由 */

@@ -11,10 +11,10 @@
 //
 // 使い方：node scripts/ci/java/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { closingParen } from '../lib/source/closing-paren.mjs'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { closingParen } from '../../shared/source/closing-paren.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { createLineLocator } from '../lib/source/line-number.mjs'
-import { stripJavaComments } from '../lib/source/strip-comments.mjs'
+import { stripJavaComments } from '../../shared/source/strip-comments.mjs'
 
 /** 本番のソース */
 const MAIN_SOURCE = /^backend\/ecsite\/src\/main\/.*\.java$/

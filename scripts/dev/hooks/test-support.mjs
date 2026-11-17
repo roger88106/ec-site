@@ -7,15 +7,17 @@ import { fileURLToPath } from 'node:url'
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 
 /**
- * 日本語の文の検査と、その検査が読む補助（scripts/ci/lib のテスト以外の .mjs）。
+ * 日本語の文の検査と、その検査が読む補助（scripts/ci/lib と scripts/shared のテスト以外の .mjs）。
  *
  * 一時のリポジトリに、実際のリポジトリと同じ置き場所でコピーする。
  */
 export const JA_TEXT_FILES = [
   'scripts/ci/ja/ja-text.mjs',
-  ...readdirSync(path.join(REPO_ROOT, 'scripts/ci/lib'), { recursive: true })
-    .map((name) => `scripts/ci/lib/${String(name).split(path.sep).join('/')}`)
-    .filter((file) => file.endsWith('.mjs') && !file.endsWith('.test.mjs')),
+  ...['scripts/ci/lib', 'scripts/shared'].flatMap((dir) =>
+    readdirSync(path.join(REPO_ROOT, dir), { recursive: true })
+      .map((name) => `${dir}/${String(name).split(path.sep).join('/')}`)
+      .filter((file) => file.endsWith('.mjs') && !file.endsWith('.test.mjs')),
+  ),
 ]
 
 /** commit-msg の hook と、その hook が呼ぶ script */

@@ -1,7 +1,7 @@
 // スロットのポートで待ち受けるプロセスを探し、停止する。
 // script の node を強制終了すると停止の処理が動かず、Gradle のデーモンの子のバックエンドがポートで待ち受け続けるため。
 import { spawnSync } from 'node:child_process'
-import { killTreeOnWindows } from './child-stop.mjs'
+import { killTreeOnWindows } from '../../shared/child-stop.mjs'
 
 /** 停止したプロセスの終了を待つ上限（ミリ秒）。Windows の Wait-Process と、それ以外の生存の問い合わせで共有する */
 export const STOP_WAIT_MS = 30_000

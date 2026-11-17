@@ -1,7 +1,7 @@
 // スロットのポートを使うプロセスの扱い：解除で止めてからデータを消す判断と、停止（stop）と、バックエンドの起動の前の確認。
 // 問い合わせ・停止・データの削除の実体は、引数で受け取る。
 import { portBusyMessage, queryFailedMessage, releaseBlockedMessage, stopLeftMessage, stoppedMessage } from '../port-stop.mjs'
-import { checkBackendStopped, slotPorts, TARGETS } from './slot.mjs'
+import { checkBackendStopped, slotPorts, TARGETS } from '../../../shared/slot/slot.mjs'
 
 /**
  * stop コマンドの対象から、停止するポートを決める。

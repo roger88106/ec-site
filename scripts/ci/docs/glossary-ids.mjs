@@ -14,7 +14,7 @@
 // 除外：glossary-ids-exclusions.json に {キー: 理由}。キーは識別子。コードにない語でよいものを書く。用語集にない識別子の除外は失敗にする（コードに偶然の一致があっても除外は残す）
 //
 // 使い方：node scripts/ci/docs/glossary-ids.mjs（リポジトリのルートで）
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'
 

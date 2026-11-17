@@ -21,7 +21,7 @@ import path from 'node:path'
 import { readCodeBlocks } from '../docs/code-block.mjs'
 import { readCodeSpans, replaceCodeSpans } from '../source/code-span.mjs'
 import { readDocument } from '../docs/doc-structure.mjs'
-import { ARCHIVE, listSpecDirs, SPECS_DIR } from '../docs/spec-dirs.mjs'
+import { ARCHIVE, listSpecDirs, SPECS_DIR } from '../../../shared/spec-dirs.mjs'
 import { AC_NUMBER, compareAc, toAcKey } from './test-names.mjs'
 
 /** AC 一覧の状態 */

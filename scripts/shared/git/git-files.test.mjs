@@ -72,7 +72,7 @@ describe('対象が 0 件のときの失敗', () => {
 
   // Git の一覧を読む検査は、対象が 0 件のとき（検査の対象の置き場所が変わった、除外の条件が広すぎる）に、何も見ずに成功してしまわない
   // 一覧は、exitIfNoFiles を呼ぶ検査を走査して作る（検査を足したとき、一覧への追加を忘れない）
-  const ciDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+  const ciDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../ci')
   const checkFiles = ['docs', 'spec', 'ja', 'java', 'config', 'frontend']
     .flatMap((group) => readdirSync(path.join(ciDir, group)).map((name) => path.join(group, name)))
     .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs') && /\bexitIfNoFiles\(/.test(readFileSync(path.join(ciDir, name), 'utf8')))

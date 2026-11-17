@@ -12,7 +12,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync, symlinkSync, unlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { ADDED_DIFF_ARGS } from '../../ci/lib/git/added-diff.mjs'
+import { ADDED_DIFF_ARGS } from '../../shared/git/added-diff.mjs'
 import { fileReader, listChecksAndTests, selectChecks } from './pre-commit-select.mjs'
 
 /** 取り出しに失敗したときの終了コード（環境の誤りの 2。検査の失敗の 1 と区別する） */
@@ -256,7 +256,7 @@ export function main() {
     },
     runCheck: (script, env) => spawnSync(shellForChecks(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     diffAdded: (env) => {
-      // --changed と同じ引数（scripts/ci/lib/git/added-diff）。CI の注釈と同じ判定にする
+      // --changed と同じ引数（scripts/shared/git/added-diff）。CI の注釈と同じ判定にする
       const args = [...ADDED_DIFF_ARGS, '--cached', '--']
       const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: DIFF_MAX_BUFFER })
       return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }

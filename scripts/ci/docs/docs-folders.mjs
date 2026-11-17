@@ -10,7 +10,7 @@
 // 除外：なし
 //
 // 使い方：node scripts/ci/docs/docs-folders.mjs（リポジトリのルートで）
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 
 /** docs/ の直下に置いてよいフォルダー名 */
 export const ALLOWED_DOCS_FOLDERS = ['01-概要', '02-設計', '03-機能仕様', '04-決定記録', '05-開発規則', '06-手順書', '07-記録', '08-spec']

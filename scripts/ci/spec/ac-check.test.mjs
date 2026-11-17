@@ -7,8 +7,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { withoutGitEnv } from '../lib/git/git-env.mjs'
-import { extractTestNames } from '../lib/source/test-files.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
+import { extractTestNames } from '../../shared/source/test-files.mjs'
 import { isStrict } from './ac-check.mjs'
 
 /** リポジトリのルート */
@@ -221,6 +221,7 @@ describe('ac-check.mjs を script として実行する', () => {
       execFileSync('git', ['init', '-q'], { cwd: root, env: withoutGitEnv() })
       const ciDir = path.join(ROOT, 'scripts/ci')
       cpSync(path.join(ciDir, 'lib'), path.join(root, 'scripts/ci/lib'), { recursive: true, filter: (source) => !source.endsWith('.test.mjs') })
+      cpSync(path.join(ROOT, 'scripts/shared'), path.join(root, 'scripts/shared'), { recursive: true, filter: (source) => !source.endsWith('.test.mjs') })
       mkdirSync(path.join(root, 'scripts/ci/spec'), { recursive: true })
       cpSync(script, path.join(root, 'scripts/ci/spec/ac-check.mjs'))
       writeFileSync(path.join(root, 'scripts/ci/spec/ac-exclusions.json'), JSON.stringify(exclusions))

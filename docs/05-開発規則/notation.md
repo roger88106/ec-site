@@ -88,10 +88,10 @@ spec の進み具合（どの段階まで完了したか）は、MVP の spec �
 ```markdown
 - [ ] **T7-02-01** [P] [テスト] spec のディレクトリと番号：…を書き、レッドを確認する（DC-7-14〜19）。
   - 依存：なし
-  - 範囲：`scripts/ci/lib/docs/spec-dirs.test.mjs`
+  - 範囲：`scripts/shared/spec-dirs.test.mjs`
 - [ ] **T7-02-02** T7-02-01 のテストが通る実装を書く。
   - 依存：T7-02-01
-  - 範囲：`scripts/ci/lib/docs/spec-dirs.mjs`
+  - 範囲：`scripts/shared/spec-dirs.mjs`
 ```
 
 レビューの段階のタスクの結果は、レビューごとに 1 行の表で書く。列の形は skill `review` の手順 6 にある。

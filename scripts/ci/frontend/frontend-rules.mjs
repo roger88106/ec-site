@@ -10,7 +10,7 @@
 //
 // 使い方：node scripts/ci/frontend/frontend-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { exitIfNoFiles, listGitFiles } from '../lib/git/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { sharedPublicNames } from '../lib/frontend/shared-names.mjs'
 import { findViolations } from '../lib/frontend/violations.mjs'
 import { exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'

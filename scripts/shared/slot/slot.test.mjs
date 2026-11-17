@@ -1,4 +1,4 @@
-// slot.mjs のテスト（node --test scripts/dev/lib/slot/slot.test.mjs）
+// slot.mjs のテスト（node --test scripts/shared/slot/slot.test.mjs）
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -32,7 +32,7 @@ const PRUNABLE = 'prunable gitdir file points to non-existent location'
 const worktree = (path, ...extra) => ['worktree ' + path, 'HEAD bbb', 'branch refs/heads/x', ...extra]
 
 /** リポジトリのファイルを読む（lib は純粋なままにし、読み取りはテストで行う） */
-const repoFile = (relative) => readFileSync(new URL(`../../../../${relative}`, import.meta.url), 'utf8').replace(/\r/g, '')
+const repoFile = (relative) => readFileSync(new URL(`../../../${relative}`, import.meta.url), 'utf8').replace(/\r/g, '')
 
 describe('スロットの値', () => {
   test('スロット 0 は今の既定の値で、Cookie の接頭辞がない（DC-104-1）', () => {

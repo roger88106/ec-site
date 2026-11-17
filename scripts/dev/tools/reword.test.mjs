@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { withoutGitEnv } from '../../ci/lib/git/git-env.mjs'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { editTodo } from './reword.mjs'
 
 const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'reword.mjs')

@@ -3,8 +3,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-/** ローカルのポートの一覧（scripts/dev/ports.json）。他のポートの書き場所との照合は scripts/ci/config/local-ports.mjs */
-const PORT_LIST = JSON.parse(readFileSync(new URL('../../ports.json', import.meta.url), 'utf8'))
+/** ローカルのポートの一覧（scripts/shared/slot/ports.json）。他のポートの書き場所との照合は scripts/ci/config/local-ports.mjs */
+const PORT_LIST = JSON.parse(readFileSync(new URL('./ports.json', import.meta.url), 'utf8'))
 
 /**
  * 一覧からポートを引く。

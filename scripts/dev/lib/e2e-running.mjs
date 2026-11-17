@@ -3,7 +3,7 @@
 // 実行中なら終了コード 0、そうでなければ 1。git で作業ツリーを調べられなければ、理由を標準エラー出力に出して 2。
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
-import { e2eLockFile, isE2eRunningIn, isProcessRunning, readLock } from './lock.mjs'
+import { e2eLockFile, isE2eRunningIn, isProcessRunning, readLock } from '../../shared/lock.mjs'
 
 /**
  * git の出力（改行を除いたもの）を返す。

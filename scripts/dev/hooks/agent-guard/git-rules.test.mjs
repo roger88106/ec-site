@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
-import { withoutGitEnv } from '../../../ci/lib/git/git-env.mjs'
+import { withoutGitEnv } from '../../../shared/git/git-env.mjs'
 import { createDeps, judgeCommand } from '../agent-guard.mjs'
 import { CWD, INSTALLED_HOOK, assertAsked, assertDenied, assertPassed, fakeDeps } from './test-support.mjs'
 

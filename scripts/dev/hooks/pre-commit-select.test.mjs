@@ -15,18 +15,18 @@ const reader = (files) => (file) => files[file] ?? null
  */
 const FILES = {
   'scripts/ci/config/compose-ports.mjs': "import { lineNumber } from '../lib/source/line-number.mjs'\nconst COMPOSE_FILE = 'docker/compose.yaml'",
-  'scripts/ci/java/java-rules.mjs': "import { listGitFiles } from '../lib/git/git-files.mjs'\nimport { RULES } from '../../../config/rules.mjs'",
+  'scripts/ci/java/java-rules.mjs': "import { listGitFiles } from '../../shared/git/git-files.mjs'\nimport { RULES } from '../../../config/rules.mjs'",
   'scripts/ci/ja/ja-text.mjs': "import { WORDS } from '../../../config/words.mjs'",
   'config/rules.mjs': "import { x } from './shared.mjs'",
   'config/shared.mjs': '',
   'config/words.mjs': '',
   'scripts/ci/lib/source/line-number.mjs': '',
-  'scripts/ci/lib/git/git-files.mjs': "import { x } from './git-env.mjs'",
-  'scripts/ci/lib/git/git-env.mjs': '',
+  'scripts/shared/git/git-files.mjs': "import { x } from './git-env.mjs'",
+  'scripts/shared/git/git-env.mjs': '',
   'scripts/ci/frontend/new-check.mjs': '',
   'scripts/ci/config/compose-ports.test.mjs': "import { findPortProblems } from './compose-ports.mjs'",
   'scripts/ci/ja/ja-text.test.mjs': "import { checkText } from './ja-text.mjs'",
-  'scripts/ci/lib/git/git-files.test.mjs': "import { listGitFiles } from './git-files.mjs'",
+  'scripts/shared/git/git-files.test.mjs': "import { listGitFiles } from './git-files.mjs'",
   '.claude/skills/review/checklist.test.cjs': "const x = require('./checklist.cjs')",
 }
 
@@ -44,7 +44,7 @@ const select = (staged) =>
     staged,
     checks: ['compose-ports', 'ja-text', 'java-rules', 'new-check'],
     files: FILE_OF,
-    tests: ['.claude/skills/review/checklist.test.cjs', 'scripts/ci/config/compose-ports.test.mjs', 'scripts/ci/ja/ja-text.test.mjs', 'scripts/ci/lib/git/git-files.test.mjs'],
+    tests: ['.claude/skills/review/checklist.test.cjs', 'scripts/ci/config/compose-ports.test.mjs', 'scripts/ci/ja/ja-text.test.mjs', 'scripts/shared/git/git-files.test.mjs'],
     read: reader(FILES),
   })
 
@@ -80,14 +80,14 @@ describe('commit の前の hook が実行する検査の選び方', () => {
   })
 
   test('scripts/ の下のファイルか依存を変えると、全てを実行する', () => {
-    for (const file of ['scripts/ci/check-all.sh', 'scripts/ci/lib/git/git-env.mjs', 'scripts/dev/slot.mjs', 'package.json', 'pnpm-lock.yaml']) {
+    for (const file of ['scripts/ci/check-all.sh', 'scripts/shared/git/git-env.mjs', 'scripts/dev/slot.mjs', 'package.json', 'pnpm-lock.yaml']) {
       assert.equal(select([file]).all, true, file)
     }
   })
 
   test('import の先は、相対パスを正規化して読む', () => {
     const closure = importClosure('scripts/ci/java/java-rules.mjs', reader(FILES))
-    assert.deepEqual([...closure.keys()].sort(), ['config/rules.mjs', 'config/shared.mjs', 'scripts/ci/java/java-rules.mjs', 'scripts/ci/lib/git/git-env.mjs', 'scripts/ci/lib/git/git-files.mjs'])
+    assert.deepEqual([...closure.keys()].sort(), ['config/rules.mjs', 'config/shared.mjs', 'scripts/ci/java/java-rules.mjs', 'scripts/shared/git/git-env.mjs', 'scripts/shared/git/git-files.mjs'])
   })
 })
 

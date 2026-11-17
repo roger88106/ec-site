@@ -39,7 +39,7 @@ import path from 'node:path'
 import { readCodeBlocks } from '../lib/docs/code-block.mjs'
 import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from '../lib/docs/doc-structure.mjs'
 import { FUNCTIONAL_SPECS } from '../lib/docs/functional-specs.mjs'
-import { ARCHIVE, isSpecDirName, listSpecDirs, SPECS_DIR } from '../lib/docs/spec-dirs.mjs'
+import { ARCHIVE, isSpecDirName, listSpecDirs, SPECS_DIR } from '../../shared/spec-dirs.mjs'
 
 /** 機能の spec の `##` の節 */
 export const FEATURE_SECTIONS = ['背景と目的', 'スコープ', 'User stories', '受け入れ条件', '業務ルール', '非機能要件', '依存', 'Non-goals', 'Open questions']

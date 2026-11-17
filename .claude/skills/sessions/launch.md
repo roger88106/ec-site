@@ -10,7 +10,7 @@ issue 担当のセッションが、spec か issue の担当を渡すときに�
 ```text
 1. 役割と確認の宛先：あなたは <spec の番号または issue の番号> の spec 担当のセッション。報告と確認の依頼は、issue 担当のセッション（<識別子>）に送る。
 2. 最初に読むもの：作業ツリーの AGENTS.md の「最初に読むもの」、メインの /.local/agent/environment.md（返答の言語。Git に入るものは日本語）、担当の issue（gh issue view <番号> --json title,body,comments）。材料のファイル：<材料>。skill を変えるなら skill writing-for-agents。
-3. 作業ツリー：作業ツリーがなければ、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b agent/<issue の番号>-<短い名前> develop` を実行する。作業ツリーで起動されたときは、`git -C <作業ツリー> rev-parse --show-toplevel` で確認する。以後は作業ツリーの絶対パスで作業し、メインの作業ツリーを変えない（cd で移らない）。
+3. 作業ツリー：作業ツリーがなければ、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b agent/<issue の番号>-<短い名前> develop` を実行する。作業ツリーで起動されたときは、`git -C <作業ツリー> rev-parse --show-toplevel` で確認する。作業ツリーを作った直後は、ルートで `pnpm install --frozen-lockfile` を実行する。以後は作業ツリーの絶対パスで作業し、メインの作業ツリーを変えない（cd で移らない）。
 4. 確認と開始の条件：<規模の区分と、spec（規模 L は spec・plan・tasks）の確認は、issue 担当のセッションが利用者に代わって行う、と決まっているときだけ書く>。書き終えたら、issue 担当のセッションに確認を求める。本文で決めていない設計の判断は、案と推奨を示して確認を求める。利用者が <確認する対象> を承認し、5 時間の使用量が <x>% 未満、週が <y>% 未満なら、問い合わせずに始め、開始を知らせる。特例：<有無>。レビューの profile：<profile>。
 5. 並行の状況：並行している他の担当は次のとおり。両方が変えるファイルは、自分の行だけを変える。相手の範囲を変える必要が出たら、issue 担当のセッションに知らせる。マージの前に develop を取り込んで、衝突を解消する。
    | 担当（issue） | 変えるもの |

@@ -15,7 +15,7 @@ description: ec-site をローカルで起動・確認する手順。スロッ�
 
 hook や検査に止められてからコマンドを書き換えないよう、次のとおりに書く。検査に拒否されて同じコマンドを書き直すことが、振り返りで最も多かった（47 件）。
 
-- 文書・コメント・コミットメッセージを書く前に、避ける語の一覧を読む。一覧は `scripts/ci/ja/ja-text.json` の error と、skill `zh-mixing` の「書くときの注意」。
+- 文書・コメント・コミットメッセージを書く前に、避ける語の一覧を読む。テストのコード（テスト名、コメント、Javadoc、`@DisplayName`）も `ja-text` の対象なので、書いたら commit の前に `node scripts/ci/ja/ja-text.mjs` を実行する。サブエージェントへの指示の文も通す。一覧は `scripts/ci/ja/ja-text.json` の error と、skill `zh-mixing` の「書くときの注意」。
 - 複数のファイルの置き換えと、`\` や正規表現を含む書き換えは、初めから Edit で行う（新しいファイルは Write）。script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。heredoc（`<<'EOF'` も）と `node -e` の文字列に `\` を入れない。理由：Windows の Git Bash では `\` が除かれ、正規表現がエラーにならずに誤った内容になるため。hook `backslash-guard` も、heredoc と `node -e` の中の `\` を拒否する。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記も Edit で書く。
 - コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと hook に拒否される。
 - commit の失敗を見逃さない。`git commit` の出力を `tail`・`grep` に通さない（出力はファイルに書く）。commit と次の操作を `;` でつながない（`&&` でつなぐか、別の呼び出しにする）。commit の後に `git log --oneline -1` で、commit ができたかを確認する。理由：終了コードが隠れ、commit がないまま push や次の commit に進んだことがあったため。検査の出力を `| tail` に通すときも同じで、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
@@ -24,7 +24,8 @@ hook や検査に止められてからコマンドを書き換えないよう、
 ## 環境の準備
 
 - `java` が PATH にないシェル（Bash のツールなど）では、`./gradlew`・`scripts/dev/e2e.sh`・`node scripts/dev/slot.mjs run backend` が JDK を見つけられず失敗する。`JAVA_HOME=<JDK 21 のパス>` をコマンドの前に付ける（パスはマシンごと。`/.local/agent/environment.md`）。手順は[開発環境の起動](../../../docs/06-手順書/setup.md)の冒頭の箇条にある。
-- Docker を使うテストの前に `docker info` で、エンジンが応答するかを確認する。応答しないときは、マシンの手順（`/.local/agent/environment.md`）で復旧する。複数のセッションが同時に復旧しない（issue 担当のセッションに知らせる）。復旧の後は `./gradlew --stop` を実行してからテストする（Gradle のデーモンが Docker の失敗の状態を保持しているため。[テストの実行方法](../../../docs/06-手順書/running-tests.md)）。
+- Docker を使うテストの前に `docker info` で、エンジンが応答するかを確認する。応答しないときは、マシンの手順（`/.local/agent/environment.md`）で復旧する。複数のセッションが同時に復旧しない（issue 担当のセッションに知らせる）。復旧の後は、他のセッションが Gradle を実行していなければ `./gradlew --stop` を実行してからテストする（Gradle のデーモンが Docker の失敗の状態を保持しているため。[テストの実行方法](../../../docs/06-手順書/running-tests.md)）。並行のときは `./gradlew --stop` を実行しない。理由：デーモンは全ての作業ツリーで共有で、他のセッションの実行中の検査が止まるため。`--no-daemon` を付けて実行するか、issue 担当のセッションに聞く。
+- 新しい作業ツリーは、作った直後にルートで `pnpm install --frozen-lockfile` を実行する。理由：commit の前の hook が js-yaml などの依存を使うため。
 - 新しい作業ツリーでは、フロントのテスト・型検査の前に、各アプリのディレクトリで `pnpm generate:api` を実行する。生成した API の型 `src/api/generated/` は Git に入らず、ないと Vitest が `@/api/generated/constraints` を解決できず、`npx tsc --noEmit` も失敗する。`typecheck`・`build`・`dev` の前には自動で生成されるが、`vitest` と `npx tsc --noEmit` を直接実行するときは生成されない。
 
 ## ミドルウェア（compose）
@@ -87,8 +88,9 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 ```
 
 - `check` は単体・統合テストと OpenAPI の検証を含む（AGENTS.md の完了の基準）。一部だけなら `test`（単体）、`integrationTest`（統合）、`--tests '<クラス名>'`。
+- `check` の前に `checkstyleMain`・`checkstyleTest`・`checkstyleIntegrationTest`・`cpdCheck` を実行すると、違反を早く見つけられる。
 - `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。
-- 長い検査は、最初からバックグラウンドで実行する。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、`e2e.sh` は続けて実行し、同時に実行しない（CPU が足りずに、時間の上限のあるテストと管理画面のテストがタイムアウトする）。
+- 長い検査は、最初からバックグラウンドで実行する。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、`e2e.sh` は続けて実行し、同時に実行しない（CPU が足りずに、時間の上限のあるテストと管理画面のテストがタイムアウトする）。他のセッションとも同じで、重い検査は同時に 1 つにする。
 - バックエンドと画面は、スロットごとに同時に起動してよい（「スロット」の節）。E2E はロックで 1 つずつ実行される。他のセッションがバックエンドの全テスト、フロントの検査の script、E2E を実行しているときは待つ。
 - 失敗の詳細は `build/test-results/**/TEST-*.xml` を、失敗したクラスだけ grep する。
 
@@ -115,7 +117,7 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 | `admin` | http://localhost:5173 | バックエンド（`/api` を :8080 に転送） |
 | `store` | http://localhost:3000 | バックエンド（API はサーバーから呼ぶ） |
 
-- 店舗画面の一覧は API の結果を最大 60 秒キャッシュする。管理画面での変更がすぐ表示されないのは正常。
+- 店舗画面の一覧は、API の結果を Next.js の fetch のキャッシュに入れる。期限（`STORE_API_REVALIDATE_SECONDS`）の後の最初の要求は古い結果を返し、裏で取り直すので、管理画面での変更がすぐ表示されないのは正常。
 
 ### プレビューで画面を確認する
 
@@ -184,6 +186,7 @@ node scripts/dev/tools/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{f
 
 - 置き換える文字列が 1 か所だけに一致しなければ、変えずに止まる。テストの後は元に戻す。
 - 最後の行が `→ 失敗した（壊すと検出できる）` なら終了コード 0、`→ 通った（壊しても検出できない）` なら 1。置き換える文字列が一致しない・コマンドが実行できないときは 2（理由は標準エラー出力）。詳しい終了コードと、元に戻す条件は `scripts/dev/tools/break-check.mjs` の冒頭のコメントにある。
+- テストを失敗させる壊し方は、定数の条件でなく、判定の反転か戻り値の差し替えにする。先に `./gradlew compileJava` を実行して、Error Prone・NullAway に止まらないことを確認する。同時に複数を壊すときは、出力を捨てない。
 - Gradle のテストでは、出力に `FAILED` か `BUILD` の行があることを確認する。ない失敗は、テスト以外の原因（起動の失敗など）を疑う。
 
 ## シェルと Git の落とし穴
@@ -215,14 +218,14 @@ node scripts/dev/tools/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{f
 
 ## コミットメッセージの書き換え
 
-push していない commit のメッセージを、校閲の後にまとめて書き換えるときに使う（push の時点は[開発の進め方](../../../docs/05-開発規則/workflow.md)の「push のタイミング」）。対話の `git rebase -i` は使えないので、対応表から非対話で書き換える。
+commit のメッセージを、校閲の後にまとめて書き換えるときに使う（push の時点は[開発の進め方](../../../docs/05-開発規則/workflow.md)の「push のタイミング」）。対話の `git rebase -i` は使えないので、対応表から非対話で書き換える。
 
 ```bash
 node scripts/dev/tools/reword.mjs <対応表の JSON>   # [{ "commit": "<SHA>", "message": "<新しいメッセージのファイル>" }]
 ```
 
 - メッセージのファイルは、commit のときと同じく `ja-text.mjs --message` で検査してから渡す。各 commit の書き換えは commit の hook を通るので、hook の検査の時間（1 件 1 分ほど）がかかる。最初からバックグラウンドで実行する。
-- push 済みの commit、未 commit の変更、書き換える範囲にあるマージの commit があると、状態を変えずに終了コード 1 で終わる。`develop` を取り込む前に書き換える。
+- 未 commit の変更、書き換える範囲にあるマージの commit があると、状態を変えずに終了コード 1 で終わる。`develop` を取り込む前に書き換える。push 済みの commit は、`agent/` のブランチだけ書き換えられる（書き換えた後は force push する）。それ以外のブランチでは、状態を変えずに終了コード 1 で終わる。
 - 最後の行で、書き換えた件数と、各 commit の内容（tree）が元と一致したことを確認する。途中で hook が拒否したときは、元の HEAD に戻して終了コード 1 で終わる。条件と終了コードの詳細は script の冒頭のコメント。
 
 ## 場面ごとに読むファイル

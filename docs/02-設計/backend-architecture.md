@@ -69,7 +69,7 @@ module/<モジュール>/
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
 │   └── <集約>/         集約、entity、vo/（値）、port/（Repository など）
 └── infrastructure/     port の実装
-    ├── <モジュール>Config  設定のクラス
+    ├── <モジュール>Config  設定のクラス（他の Bean を作るときだけ）
     ├── persistence/    jOOQ の Repository と、それが使うクラス
     ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
     └── <外部>/          外部の仕組み（storage、converter、cache など）
@@ -83,7 +83,7 @@ module/<モジュール>/
 - package-private の service や型を使うハンドラーは、それらと同じパッケージに置く。
 - 組み立てだけの処理（メールの本文の組み立てなど、状態も他への依存も持たないもの）は、別のクラスに分けず、それを使う application の service の中に置いてよい。
 - `domain/<集約>/` の entity は、直下に package-private で置き、パッケージを分けない。
-- 設定のクラスの役割は、設定の値の型の有効化、domain の部品の Bean 化、外部のクライアントの作成（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「設定の値の型」）。adapter ごとの設定と、条件で有効にする設定は、技術の名前でよい（`StripeConfig`、`Mock*Config`）。
+- 設定のクラスの役割は、domain の部品の Bean 化と、外部のクライアントの作成。設定の値の型は、アプリのクラスのスキャンで登録する（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「設定の値の型」）。adapter ごとの設定と、条件で有効にする設定は、技術の名前でよい（`StripeConfig`、`Mock*Config`）。
 
 層ごとの、依存してよい先：
 
@@ -93,7 +93,7 @@ module/<モジュール>/
 | presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
 | application | domain、common、event（自分のモジュールのイベントを発行する。他のモジュールのイベントを購読する） |
 | domain | common、自分のモジュールの event（レベル A は Spring・jOOQ にも依存しない） |
-| infrastructure | application の port と model（port が返す view）、設定の値の型（設定のクラスが有効にしたもの）、domain、common |
+| infrastructure | application の port と model（port が返す view）、設定の値の型、domain、common |
 | common | モジュールに依存しない |
 | config | common。モジュールに依存しない |
 

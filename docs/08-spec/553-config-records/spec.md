@@ -107,6 +107,7 @@
 | 定期ジョブのコメント | `EventCleanupJob`、`EventResubmissionJob`、`CartCleanupJob`、`StockReservationCleanupJob`、`CheckoutCleanupJob`、`PaymentExpiryJob` |
 | テスト | `backend/ecsite/src/test/java/com/ecsite/architecture/ConfigurationPropertiesTest.java`、`backend/ecsite/src/test/java/com/ecsite/config/ExternalServiceSelectionTest.java`、設定の型ごとの設定のテスト（既存のものに加えるか、新しく作る） |
 | 規則と手順書 | `docs/05-開発規則/backend-coding.md`、`docs/06-手順書/environment.md` |
+| 設計（設定のクラスが設定の型を有効にするという説明） | `docs/02-設計/backend-architecture.md`、`docs/02-設計/storefront.md` |
 
 ## 非機能要件
 
@@ -159,7 +160,7 @@
   - 依存：T553-01-04
   - 範囲：決定 6 の表の設定の型
   - 確認方法：`./gradlew test`
-- [ ] **T553-01-06** `./gradlew check` を通す（DC-553-4、DC-553-9）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
+- [x] **T553-01-06** `./gradlew check` を通す（DC-553-4、DC-553-9）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T553-01-03、T553-01-05
   - 確認方法：`./gradlew check`
 - [ ] **T553-01-07** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。

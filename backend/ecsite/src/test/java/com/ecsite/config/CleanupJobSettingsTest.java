@@ -205,6 +205,20 @@ class CleanupJobSettingsTest {
                 "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("片付けの間隔が正の最小値（1ns）なら、値の検証を通り、その値になる")
+        void acceptsSmallestPositiveInterval(String prefix, Class<?> type) {
+            // 操作：1ns を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(prefix, type, Map.of("interval", "1ns"));
+
+            // 確認：1ns になる
+            assertThat(properties).extracting("interval").isEqualTo(Duration.ofNanos(1));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
         @DisplayName("保存期間が負なら、値の検証で拒否される")
         void rejectsNegativeRetention(String prefix, Class<?> type) {
             // 操作と確認：-1s は値の検証で拒否される

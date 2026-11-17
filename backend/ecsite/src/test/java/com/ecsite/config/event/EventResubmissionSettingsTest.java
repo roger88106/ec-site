@@ -65,9 +65,21 @@ class EventResubmissionSettingsTest {
     @CsvSource({"interval, 0s", "interval, -1s", "min-age, 0s", "min-age, -1s"})
     @DisplayName("正の値だけの時間の設定が 0 以下なら、値の検証で拒否される")
     void rejectsNonPositiveDuration(String name, String value) {
-        // 操作と確認：下限の外の時間を渡すと、値の検証で拒否される
+        // 操作と確認：許す範囲の外の時間を渡すと、値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, EventResubmissionJob.Properties.class, Map.of(name, value)))
                 .isInstanceOf(BindException.class);
+    }
+
+    @ParameterizedTest(name = "「{0}」")
+    @CsvSource({"interval", "min-age"})
+    @DisplayName("正の値だけの時間の設定が正の最小値（1ns）なら、値の検証を通り、その値になる")
+    void acceptsSmallestPositiveDuration(String name) {
+        // 操作：1ns を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, EventResubmissionJob.Properties.class, Map.of(name, "1ns"));
+
+        // 確認：1ns になる
+        var actual = name.equals("interval") ? properties.interval() : properties.minAge();
+        assertThat(actual).isEqualTo(Duration.ofNanos(1));
     }
 
     @Test

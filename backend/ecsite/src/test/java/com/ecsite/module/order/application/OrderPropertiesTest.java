@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -110,10 +111,21 @@ class OrderPropertiesTest {
     @ValueSource(strings = {"0s", "-1s"})
     @DisplayName("在庫の引当を保持する時間が 0 以下なら、値の検証で拒否される")
     void rejectsNonPositiveReservationTtl(String value) {
-        // 操作と確認：必須の値と下限の外の時間を渡すと、値の検証で拒否される
+        // 操作と確認：必須の値と許す範囲の外の時間を渡すと、値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, OrderProperties.class,
                 Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "reservation-ttl", value)))
                 .isInstanceOf(BindException.class);
+    }
+
+    @Test
+    @DisplayName("在庫の引当を保持する時間が正の最小値（1ns）なら、値の検証を通り、その値になる")
+    void acceptsSmallestPositiveReservationTtl() {
+        // 操作：1ns を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, OrderProperties.class,
+                Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "reservation-ttl", "1ns"));
+
+        // 確認：1ns になる
+        assertThat(properties.reservationTtl()).isEqualTo(Duration.ofNanos(1));
     }
 
     // ============================== 準備の補助 ==============================

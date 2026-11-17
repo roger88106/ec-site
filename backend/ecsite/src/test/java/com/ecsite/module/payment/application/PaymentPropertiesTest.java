@@ -71,7 +71,7 @@ class PaymentPropertiesTest {
             "authorization-validity, 0s", "authorization-validity, -1s"})
     @DisplayName("正の値だけの時間の設定が 0 以下なら、値の検証で拒否される")
     void rejectsNonPositiveDuration(String name, String value) {
-        // 準備：必須の値と、下限の外の値
+        // 準備：必須の値と、許す範囲の外の値
         var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}"));
         values.put(name, value);
 
@@ -80,8 +80,27 @@ class PaymentPropertiesTest {
                 .isInstanceOf(BindException.class);
     }
 
+    @ParameterizedTest(name = "「{0}」")
+    @CsvSource({"deadline", "expiry-interval", "awaiting-authorization-warning", "authorization-validity"})
+    @DisplayName("正の値だけの時間の設定が正の最小値（1ns）なら、値の検証を通り、その値になる")
+    void acceptsSmallestPositiveDuration(String name) {
+        // 操作：必須の値と 1ns を検証付きで当てはめる
+        var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}"));
+        values.put(name, "1ns");
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class, values);
+
+        // 確認：1ns になる
+        var actual = switch (name) {
+            case "deadline" -> properties.deadline();
+            case "expiry-interval" -> properties.expiryInterval();
+            case "awaiting-authorization-warning" -> properties.awaitingAuthorizationWarning();
+            default -> properties.authorizationValidity();
+        };
+        assertThat(actual).isEqualTo(Duration.ofNanos(1));
+    }
+
     @Test
-    @DisplayName("承認期限の警告の時間が負なら、値の検証で拒否される")
+    @DisplayName("与信の期限が近いとする期間が負なら、値の検証で拒否される")
     void rejectsNegativeAuthorizationWarning() {
         // 操作と確認：-1s は値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
@@ -90,7 +109,7 @@ class PaymentPropertiesTest {
     }
 
     @Test
-    @DisplayName("承認期限の警告の時間が 0 なら、値の検証を通る")
+    @DisplayName("与信の期限が近いとする期間が 0 なら、値の検証を通る")
     void acceptsZeroAuthorizationWarning() {
         // 操作：0s を検証付きで当てはめる
         var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,

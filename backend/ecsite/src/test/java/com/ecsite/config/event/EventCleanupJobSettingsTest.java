@@ -64,6 +64,16 @@ class EventCleanupJobSettingsTest {
     }
 
     @Test
+    @DisplayName("片付けの間隔が正の最小値（1ns）なら、値の検証を通り、その値になる")
+    void acceptsSmallestPositiveInterval() {
+        // 操作：1ns を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("interval", "1ns"));
+
+        // 確認：1ns になる
+        assertThat(properties.interval()).isEqualTo(Duration.ofNanos(1));
+    }
+
+    @Test
     @DisplayName("保存期間が負なら、値の検証で拒否される")
     void rejectsNegativeRetention() {
         // 操作と確認：-1s は値の検証で拒否される
@@ -82,7 +92,7 @@ class EventCleanupJobSettingsTest {
     }
 
     @Test
-    @DisplayName("AC-287処理の済んだイベントの片付けは、定期に動き、分散ロックで同時に 1 つのインスタンスだけが動く")
+    @DisplayName("AC-287 処理の済んだイベントの片付けは、定期に動き、分散ロックで同時に 1 つのインスタンスだけが動く")
     void runsWithDistributedLock() throws Exception {
         // 準備：ジョブの片付けのメソッド
         var method = EventCleanupJob.class.getDeclaredMethod("cleanUp");

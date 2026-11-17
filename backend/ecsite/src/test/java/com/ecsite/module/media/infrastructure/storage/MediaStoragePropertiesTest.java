@@ -137,9 +137,25 @@ class MediaStoragePropertiesTest {
                 "call-timeout, 0s", "call-timeout, -1s"})
         @DisplayName("正の値だけの時間の設定が 0 以下なら、値の検証で拒否される")
         void rejectsNonPositiveDuration(String name, String value) {
-            // 操作と確認：必須の値と下限の外の時間を渡すと、値の検証で拒否される
+            // 操作と確認：必須の値と許す範囲の外の時間を渡すと、値の検証で拒否される
             assertThatThrownBy(() -> bindValidated(Map.of(name, value)))
                     .isInstanceOf(BindException.class);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({"upload-url-ttl", "attempt-timeout", "call-timeout"})
+        @DisplayName("正の値だけの時間の設定が正の最小値（1ns）なら、値の検証を通り、その値になる")
+        void acceptsSmallestPositiveDuration(String name) {
+            // 操作：1ns を検証付きで当てはめる
+            var properties = bindValidated(Map.of(name, "1ns"));
+
+            // 確認：1ns になる
+            var actual = switch (name) {
+                case "upload-url-ttl" -> properties.uploadUrlTtl();
+                case "attempt-timeout" -> properties.attemptTimeout();
+                default -> properties.callTimeout();
+            };
+            assertThat(actual).isEqualTo(Duration.ofNanos(1));
         }
     }
 

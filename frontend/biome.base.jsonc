@@ -30,6 +30,13 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "style": {
+        // 本体が 1 行の if・else・繰り返しも波括弧で囲む
+        "useBlockStatements": {
+          "level": "error",
+          "fix": "safe"
+        }
+      },
       "nursery": {
         // Tailwind のクラスの並びを揃える（cn、cva の引数も、tailwind の既定で対象になる）
         // tailwind.stylesheet は指定しない。Biome は各プロジェクトの外にある shared の theme.css を読まず、プロジェクトごとに並びが変わるため。テーマの値を使うクラス（text-muted-foreground など）は先頭に並ぶ
@@ -66,6 +73,9 @@
           },
           "correctness": {
             "useExhaustiveDependencies": "off"
+          },
+          "style": {
+            "useBlockStatements": "off"
           },
           "nursery": {
             "useTailwindSortedClasses": "off"

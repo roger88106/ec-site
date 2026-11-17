@@ -34,10 +34,14 @@ const NAME = { lastName: '山田', firstName: '花子' }
  */
 async function openLatestStoreTop(page: Page): Promise<void> {
   const response = await fetch(`${BACKEND}/api/store/products?sort=newest&size=1`)
-  if (!response.ok) throw new Error(`新着の商品を取得できない（${response.status}）`)
+  if (!response.ok) {
+    throw new Error(`新着の商品を取得できない（${response.status}）`)
+  }
   const { items } = (await response.json()) as { items: { name: string }[] }
   const newest = items.at(0)
-  if (newest === undefined) throw new Error('新着の商品がない')
+  if (newest === undefined) {
+    throw new Error('新着の商品がない')
+  }
   await reopenUntil(
     page,
     `${STORE}/`,

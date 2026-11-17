@@ -144,7 +144,9 @@ test('幅 1024px 以上では、メニューを開くボタンが出ず、商品
       .poll(async () => {
         const siteNameBox = await siteName.boundingBox()
         const logoutBox = await logout.boundingBox()
-        if (siteNameBox === null || logoutBox === null) throw new Error('店名かログアウトのボタンの位置が取れない')
+        if (siteNameBox === null || logoutBox === null) {
+          throw new Error('店名かログアウトのボタンの位置が取れない')
+        }
         return Math.abs(siteNameBox.y + siteNameBox.height / 2 - (logoutBox.y + logoutBox.height / 2))
       })
       .toBeLessThan(8)

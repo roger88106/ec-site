@@ -8,7 +8,7 @@ import { productDetail, variant } from '@/test/fixtures'
 import { PAGE_PATH, serveProduct } from '@/test/productEditServer'
 import { getListItemContaining } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { http, problem, server, stockHandler } from '@/test/server'
+import { conflict, http, problem, server, stockHandler } from '@/test/server'
 
 /** バリアントの画像の指定のリクエストの本文（送った内容を確認する） */
 type SetVariantImageRequest = components['schemas']['SetVariantImageRequest']
@@ -68,6 +68,9 @@ describe('商品画像', () => {
       http.post('/products/{productId}/images', async ({ request, response }) => {
         const body = await request.json()
         calls.push(`登録 version=${body.version}`)
+        if (body.version !== state.current.version) {
+          return conflict(response)
+        }
         const id = `00000000-0000-0000-0000-00000000095${state.current.images.length}`
         state.current = {
           ...state.current,
@@ -93,6 +96,58 @@ describe('商品画像', () => {
     const first = getListItemContaining(image)
     expect(within(first).getByText('代表画像')).toBeInTheDocument()
     expect(calls).toEqual(['受付 image/png 2', 'PUT image/png', '登録 version=0'])
+  })
+
+  test('AC-559-7 複数の画像の登録の間に、他のカードの操作で商品のバージョンが上がっても、残りの画像を登録する', async () => {
+    const state = serveProduct(productDetail())
+    const calls = serveUpload(state)
+    let releaseSecondPut: () => void = () => {}
+    const secondPutGate = new Promise<void>((resolve) => {
+      releaseSecondPut = resolve
+    })
+    // 2 枚目のストレージへの PUT の応答を保留し、1 枚目の登録の後・2 枚目の登録の前に、他のカードの操作をする
+    server.use(
+      rawHttp.put(UPLOAD_URL.split('?')[0], async ({ request }) => {
+        calls.push(`PUT ${request.headers.get('Content-Type')}`)
+        if (calls.filter((call) => call.startsWith('PUT')).length === 2) {
+          await secondPutGate
+        }
+        return new HttpResponse(null, { status: 200 })
+      }),
+      http.put('/products/{productId}/publish', ({ response }) => {
+        state.current = { ...state.current, status: 'PUBLISHED', version: state.current.version + 1 }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(PAGE_PATH)
+
+    await user.upload(await screen.findByLabelText('画像のファイル'), [
+      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+      new File([new Uint8Array([0x89, 0x50])], 'b.png', { type: 'image/png' }),
+    ])
+    await waitFor(() => expect(calls.filter((call) => call.startsWith('PUT'))).toHaveLength(2))
+    expect(state.current.images).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: '公開する' }))
+    await waitFor(() => expect(state.current.version).toBe(2))
+    releaseSecondPut()
+
+    expect(await screen.findByText('画像を 2 枚登録しました')).toBeInTheDocument()
+    expect(state.current.images).toHaveLength(2)
+    expect(calls.filter((call) => call.startsWith('登録')).length).toBe(2)
+  })
+
+  test('AC-559-8 画面を開いた後に他の人が商品を更新しても、画像の登録は 409 にならない', async () => {
+    const state = serveProduct(productDetail({ version: 3 }))
+    serveUpload(state)
+    const { user } = renderApp(PAGE_PATH)
+    await screen.findByLabelText('画像のファイル')
+    // 他の人の更新。画面は取得し直さない
+    state.current = { ...state.current, version: 4 }
+
+    await uploadPng(user)
+
+    expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
+    expect(state.current.images).toHaveLength(1)
   })
 
   test('AC-39、67 受け付ける形式以外のファイルは送らずに誤りを出す', async () => {

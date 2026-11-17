@@ -65,11 +65,11 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "fullScopeAllowed": false,
-      "redirectUris": ["http://localhost:3000/*", "http://localhost:3100/*", "http://localhost:13000/*", "http://localhost:23000/*", "http://localhost:33000/*"],
-      "webOrigins": ["http://localhost:3000", "http://localhost:3100", "http://localhost:13000", "http://localhost:23000", "http://localhost:33000"],
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:3100/*", "http://localhost:13000/*", "http://localhost:23000/*", "http://localhost:33000/*", "http://slot1.localhost:13000/*", "http://slot2.localhost:23000/*", "http://slot3.localhost:33000/*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3100", "http://localhost:13000", "http://localhost:23000", "http://localhost:33000", "http://slot1.localhost:13000", "http://slot2.localhost:23000", "http://slot3.localhost:33000"],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:3100/*##http://localhost:13000/*##http://localhost:23000/*##http://localhost:33000/*"
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:3100/*##http://localhost:13000/*##http://localhost:23000/*##http://localhost:33000/*##http://slot1.localhost:13000/*##http://slot2.localhost:23000/*##http://slot3.localhost:33000/*"
       },
       "protocolMappers": [
         {

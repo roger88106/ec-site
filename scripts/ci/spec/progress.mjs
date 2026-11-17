@@ -19,7 +19,7 @@
 // 使い方：node scripts/ci/spec/progress.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { ARCHIVE, listSpecDirs, SPECS_DIR } from '../../shared/spec-dirs.mjs'
+import { ARCHIVE, listSpecDirs, SPECS_DIR } from '../../shared/docs/spec-dirs.mjs'
 
 /** 1→10 の spec をアーカイブしたディレクトリ（docs/08-spec/ から） */
 const ARCHIVE_1TO10 = `${ARCHIVE}/1to10`

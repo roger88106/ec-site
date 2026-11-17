@@ -1,7 +1,8 @@
 // lib/ac/match.mjs のテスト（node --test scripts/ci/lib/ac/match.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { addAcsToList, parseSpecAcDefinitions, parseAcList } from './ac-list.mjs'
+import { parseSpecAcDefinitions } from '../../../shared/docs/ac-definitions.mjs'
+import { addAcsToList, parseAcList } from './ac-list.mjs'
 import { check, checkAcRows, checkInProgress, checkModuleDoc, checkModuleDocNames, renderTestMap } from './match.mjs'
 
 /** 照合に渡すテスト（ファイルは共通で、名前だけを変える） */

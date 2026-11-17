@@ -7,7 +7,7 @@
 // 直前の印（`` ` ``、「」」、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
 import { existsSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
-import { readHeadings } from './doc-structure.mjs'
+import { readHeadings } from '../../../shared/docs/doc-structure.mjs'
 
 /** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない）。docs/08-spec/ の見出しを指す参照で除く */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*\.|\d+(?:\.\d+)+)\s+/

@@ -14,8 +14,8 @@
 //   - ID：spec の ID は spec の番号の次に連番（0 で埋めない）。タスクの ID は `T<spec の番号>-<段階 2 桁>-<連番 2 桁>`（段階はファイルの段階と同じ）。
 //     機能の spec は US・AC・BR・NFR を、整理の spec は DS・DC・DN を定義する。同じ ID を 2 回定義しない
 //   - 参照：範囲と列挙を展開した ID の spec の番号が、既知の spec（進行中とアーカイブのディレクトリ、見本の番号）の番号である。
-//     同じ spec の ID は、spec か tasks に定義がある。範囲は逆順にせず、MAX_RANGE（lib/docs/doc-structure）件までにする。
-//     定義と参照の読み方（定義の 3 つの形、列挙に読む形）は lib/docs/doc-structure の collectDefinitions と collectReferences
+//     同じ spec の ID は、spec か tasks に定義がある。範囲は逆順にせず、MAX_RANGE（scripts/shared/docs/doc-structure）件までにする。
+//     定義と参照の読み方（定義の 3 つの形、列挙に読む形）は scripts/shared/docs/doc-structure の collectDefinitions と collectReferences
 //   - 機能仕様：`##` の節の名前と順が、雛形（docs/03-機能仕様/template.md の骨組み。読み方は readSkeleton）と完全に同じである。
 //     FUNCTIONAL_SPECS の文書だけ。script に節の名前を持たない。雛形の側を読めないときも失敗にする
 //   - 見出しは ATX と Setext を読む（readHeadings）。コードブロック、HTML のコメント、1 行のコードの中は読まない。
@@ -36,10 +36,10 @@
 // 使い方：node scripts/ci/spec/spec-structure.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { readCodeBlocks } from '../lib/docs/code-block.mjs'
-import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from '../lib/docs/doc-structure.mjs'
+import { readCodeBlocks } from '../../shared/docs/code-block.mjs'
+import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from '../../shared/docs/doc-structure.mjs'
 import { FUNCTIONAL_SPECS } from '../lib/docs/functional-specs.mjs'
-import { ARCHIVE, isSpecDirName, listSpecDirs, SPECS_DIR } from '../../shared/spec-dirs.mjs'
+import { ARCHIVE, isSpecDirName, listSpecDirs, SPECS_DIR } from '../../shared/docs/spec-dirs.mjs'
 
 /** 機能の spec の `##` の節 */
 export const FEATURE_SECTIONS = ['背景と目的', 'スコープ', 'User stories', '受け入れ条件', '業務ルール', '非機能要件', '依存', 'Non-goals', 'Open questions']

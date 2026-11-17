@@ -15,8 +15,8 @@
 import { readFileSync } from 'node:fs'
 import { documentIndex, readHeadingIndex, resolveDocument } from '../lib/docs/doc-names.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
-import { codeBlockLines } from '../lib/docs/code-block.mjs'
-import { maskCodeSpans } from '../lib/source/code-span.mjs'
+import { codeBlockLines } from '../../shared/docs/code-block.mjs'
+import { maskCodeSpans } from '../../shared/source/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 
 /** 注の定義の行（行頭の `※N：`。リストの中の字下げも可。枝番は `※2a：`） */

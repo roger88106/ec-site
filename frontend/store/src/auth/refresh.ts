@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { JWT } from 'next-auth/jwt'
 import { readServerConfig } from '@/auth/config'
 import { needsTokenRefresh } from '@/lib/login'
@@ -20,8 +21,64 @@ const {
   idpTimeoutSeconds: IDP_TIMEOUT_SECONDS,
 } = readServerConfig()
 
+/** 再取得できた結果と、IdP の拒否（invalid_grant）の結果を保持する時間（ミリ秒） */
+const SETTLED_RETENTION_MS = 10_000
+
+/** 上の以外の失敗の結果を保持する時間（ミリ秒）。障害の間の IdP の呼び出しを、この時間に 1 回に減らす */
+const FAILURE_RETENTION_MS = 0
+
+/** 失敗の理由の種類（ログの項目。token や応答の本文は含めない） */
+type FailureReason = 'unreachable' | 'error-response' | 'unreadable-body'
+
+/**
+ * 再取得の結果。
+ *
+ * 失敗では token を持たない。保持した失敗を返すときは、呼び出しに渡された今の token を返すため。
+ */
+type Outcome = { kind: 'refreshed'; token: MemberJwt } | { kind: 'rejected' } | { kind: 'failed' }
+
+/** 保持している結果。実行中は retainedUntil が null で、終わると保持の期限（`Date.now()` のミリ秒）が入る */
+type Retained = { outcome: Promise<Outcome>; retainedUntil: number | null }
+
+/**
+ * 保持する場所の名前。
+ *
+ * 保持はモジュールの変数でなく、`globalThis` の上に置く。proxy とアプリのサーバーは別のバンドルで、
+ * 同じモジュールを読んでも変数を共有しないため。
+ */
+const RETAINED_KEY = Symbol.for('ec-site.store.auth.refresh.retained')
+
+/** 保持している結果（refresh token のハッシュごと） */
+function retainedResults(): Map<string, Retained> {
+  const holder = globalThis as { [RETAINED_KEY]?: Map<string, Retained> }
+  holder[RETAINED_KEY] ??= new Map()
+  return holder[RETAINED_KEY]
+}
+
+/** テストの間で、保持している結果を全て削除する（setup.ts が各テストの前に呼ぶ） */
+export function resetRefreshRetention(): void {
+  retainedResults().clear()
+}
+
+/** refresh token のハッシュ。token そのものをメモリーの保持のキーにしないため */
+function retentionKey(refreshToken: string): string {
+  return createHash('sha256').update(refreshToken).digest('hex')
+}
+
+/** 保持の時間を過ぎた結果を削除する（保持が増え続けないようにする） */
+function removeExpired(retained: Map<string, Retained>): void {
+  const now = Date.now()
+  for (const [key, entry] of retained) {
+    if (entry.retainedUntil !== null && entry.retainedUntil <= now) {
+      retained.delete(key)
+    }
+  }
+}
+
 /**
  * access token の期限が近ければ、refresh token で取り直す。
+ *
+ * 同じ refresh token の再取得が実行中なら、その結果を待って共有する。終わった結果は一定の時間保持し、その間は IdP を呼ばない。
  *
  * @param token         セッションの token
  * @param marginSeconds 期限までの残りがこの秒数以下なら取り直す
@@ -35,24 +92,62 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
   if (!token.refreshToken) {
     return null
   }
+  const retained = retainedResults()
+  removeExpired(retained)
+  const key = retentionKey(token.refreshToken)
+  let entry = retained.get(key)
+  if (!entry) {
+    const created: Retained = { outcome: requestRefresh(token.refreshToken, token), retainedUntil: null }
+    created.outcome.then((outcome) => {
+      created.retainedUntil = Date.now() + (outcome.kind === 'failed' ? FAILURE_RETENTION_MS : SETTLED_RETENTION_MS)
+    })
+    retained.set(key, created)
+    entry = created
+  }
+  const outcome = await entry.outcome
+  if (outcome.kind === 'refreshed') {
+    return outcome.token
+  }
+  // 拒否（IdP のログインが切れた）だけをログアウトにする。IdP の障害や client の設定の誤りでは、
+  // 会員のセッションの Cookie を削除しない（Auth.js は null を受けると Cookie を削除する）
+  return outcome.kind === 'rejected' ? null : token
+}
+
+/**
+ * IdP に refresh token で再取得を求める。失敗は例外にせず、結果で返す。
+ *
+ * @param refreshToken 再取得に使う refresh token
+ * @param token        今の token（再取得できたとき、新しい値を重ねる元）
+ * @returns 再取得の結果。IdP に届かない・失敗の応答のときは、warn のログを 1 件出す
+ */
+async function requestRefresh(refreshToken: string, token: MemberJwt): Promise<Outcome> {
+  let response: Response
   try {
-    const response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
+    response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
       method: 'POST',
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
-        refresh_token: token.refreshToken,
+        refresh_token: refreshToken,
       }),
       cache: 'no-store',
-      // 上限を過ぎたら、IdP に届かなかったときと同じに扱う（下の catch）
+      // 上限を過ぎたら、IdP に届かなかったときと同じに扱う
       signal: timeoutSignal(IDP_TIMEOUT_SECONDS),
     })
-    if (!response.ok) {
-      // 拒否（IdP のログインが切れた）だけをログアウトにする。IdP の障害や client の設定の誤りでは、
-      // 会員のセッションの Cookie を削除しない（Auth.js は null を受けると Cookie を削除する）
-      return (await isRefreshTokenRejected(response)) ? null : token
+  } catch {
+    // IdP に届かなかった：ログインの状態は残す（期限が切れていれば、API が 401 を返し、ログインの画面へ移る）
+    return failed('unreachable')
+  }
+  if (!response.ok) {
+    const error = await readError(response)
+    if (error === 'unreadable') {
+      return failed('unreadable-body', response.status)
     }
+    // invalid_grant はログアウトの通常の流れなので、失敗の warn にしない
+    return error === 'invalid_grant' ? { kind: 'rejected' } : failed('error-response', response.status)
+  }
+  try {
     const refreshed = (await response.json()) as {
       access_token: string
       expires_in: number
@@ -60,16 +155,28 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
       id_token?: string
     }
     return {
-      ...token,
-      accessToken: refreshed.access_token,
-      expiresAt: nowSeconds() + refreshed.expires_in,
-      refreshToken: refreshed.refresh_token ?? token.refreshToken,
-      idToken: refreshed.id_token ?? token.idToken,
+      kind: 'refreshed',
+      token: {
+        ...token,
+        accessToken: refreshed.access_token,
+        expiresAt: nowSeconds() + refreshed.expires_in,
+        refreshToken: refreshed.refresh_token ?? token.refreshToken,
+        idToken: refreshed.id_token ?? token.idToken,
+      },
     }
   } catch {
-    // IdP に届かなかった、または応答が読めなかった：ログインの状態は残す（期限が切れていれば、API が 401 を返し、ログインの画面へ移る）
-    return token
+    // 成功の応答の本文が読めなかった
+    return failed('unreadable-body', response.status)
   }
+}
+
+/**
+ * 失敗の warn のログを 1 件出し、失敗の結果を返す。
+ *
+ * 項目は理由の種類と状態コードだけ。token、Cookie、応答の本文は出さない。
+ */
+function failed(_reason: FailureReason, _status?: number): Outcome {
+  return { kind: 'failed' }
 }
 
 /** いまの UNIX 時刻（秒） */
@@ -77,13 +184,16 @@ function nowSeconds(): number {
   return Math.floor(Date.now() / 1000)
 }
 
-/** IdP が refresh token を拒否した（応答の本文の error が invalid_grant）か */
-async function isRefreshTokenRejected(response: Response): Promise<boolean> {
+/**
+ * 失敗の応答の本文の error を読む。
+ *
+ * @returns error の値（invalid_grant など）。本文が JSON でない（前段のプロキシーが返すエラー画面など）ときは 'unreadable'
+ */
+async function readError(response: Response): Promise<unknown> {
   try {
     const body = (await response.json()) as { error?: unknown } | null
-    return body?.error === 'invalid_grant'
+    return body?.error
   } catch {
-    // 本文が JSON でない（前段のプロキシーが返すエラー画面など）
-    return false
+    return 'unreadable'
   }
 }

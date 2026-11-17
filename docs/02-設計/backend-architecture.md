@@ -80,7 +80,7 @@ module/<モジュール>/
 - `application/model/` の view は、SQL の View のような読み取り用の投影で、画面の型ではない。少なければ直下に置き、直下が 10 を超えたら command/・query/・view/ に分ける。
 - `application/port/` には interface だけを置く。port が返す型は `model/` に置く（port の引数の型と結果の enum は入れ子でよい）。
 - package-private の service や型を使うハンドラーは、それらと同じパッケージに置く。
-- 組み立てだけのクラス（メールの本文の組み立てなど、状態も他への依存も持たないもの）は、別のクラスに分けず、それを使う application の service の中に置いてよい。
+- 組み立てだけの処理（メールの本文の組み立てなど、状態も他への依存も持たないもの）は、別のクラスに分けず、それを使う application の service の中に置いてよい。
 - `domain/<集約>/` の entity は、直下に package-private で置き、パッケージを分けない。
 - 設定のクラスの役割は、設定の値の型の有効化、domain の部品の Bean 化、外部のクライアントの作成（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「設定の値の型」）。adapter ごとの設定と、条件で有効にする設定は、技術の名前でよい（`StripeConfig`、`Mock*Config`）。
 
@@ -217,7 +217,7 @@ module/<モジュール>/
 ### 業務のコードとの境界
 
 - domain と application は Spring Security の型に依存しない。呼び出し元は値（会員 ID、運営者の ID と氏名の写し）で渡す。
-- 管理 API の権限は endpoint ごとに `resource:action`（例：`product:write`）で spec に書く。運営者の realm の、管理 API の client の role（client role）として token（`resource_access`）に載せ、読む処理は 1 か所にまとめる。
+- 管理 API の権限は endpoint ごとに `resource:action`（例：`product:write`）で spec に書く。運営者の realm にある管理 API の client の role（client role）として token（`resource_access`）に載せ、読む処理は 1 か所にまとめる。
 - 職務は、権限（client role）をまとめた realm の role（複合の role）である。職務を追加・変更するときは、IdP の設定（realm の設定のファイル）だけを変え、EC のコードは変えない（BR-12）。
 - ログインしていればよい操作（自分の権限の一覧）は、権限の代わりに `authenticated` と書く。管理画面はメニューと画面を自分の権限の一覧で出し分け、token を自分で読まない。
 - `/api/admin/**` は運営者の realm、`/api/store/**` は消費者の realm の token だけを受け付ける。

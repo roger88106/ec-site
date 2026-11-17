@@ -6,6 +6,9 @@
 // - PreCompact：標準出力が要約の指示になる。要約に残すものを並べる。
 // - SessionStart（source が compact）：標準出力が文脈に入る。読み直すものを並べる。
 // - それ以外の入力と、入力が読めないときは、何も出さずに終了コード 0 で終わる（圧縮とセッションを止めないため）。
+//
+// 出力の使われ方と、圧縮の後に読み直されるもの（AGENTS.md は CLAUDE.md の代わりとして読まれる）の出典は、Claude Code の文書
+// （https://code.claude.com/docs/en/hooks.md の PreCompact と SessionStart、https://code.claude.com/docs/en/context-window.md）。
 import { readFileSync } from 'node:fs'
 
 /** 圧縮の要約に残すもの */
@@ -14,11 +17,11 @@ const PRE_COMPACT = `要約には、次を必ず残す。
 - 作業中の tasks のファイルと今のタスク、読んだ引き継ぎの文書のパス
 - 利用者の決定と、その場限りの特例（利用者の言葉で）
 - commit・push していない変更、動いているサブエージェントとセッション
-- 次の一歩と、利用者に確認している途中の問い
+- 次にする作業と、利用者に確認している途中の問い
 `
 
 /** 圧縮の後に読み直すもの */
-const AFTER_COMPACT = `文脈が圧縮された。AGENTS.md の「最初に読むもの」の 1〜3（constitution、開発の進め方、着手している段階の tasks と参照の文書）と、要約にある引き継ぎの文書を読み直してから、作業を続ける。コードや文書を書く前には、同じ節の 4・5 の文書も読み直す。
+const AFTER_COMPACT = `文脈が圧縮された。AGENTS.md の「最初に読むもの」の 1〜3（constitution、開発の進め方、着手している段階の tasks と、それが参照する文書）と、要約にある引き継ぎの文書を読み直してから、作業を続ける。コードや文書を書く前には、同じ節の 4・5 の文書も読み直す。
 `
 
 try {

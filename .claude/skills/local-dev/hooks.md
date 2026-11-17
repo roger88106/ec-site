@@ -14,7 +14,7 @@ hook と permission の置き場所は 2 つに分ける。チームの全員に
 
 表の働きの細目（読むファイル、対象、出力）は、各 script の冒頭のコメントにある。
 
-command は、次の例の形で script を探す（`git rev-parse --show-toplevel` の作業ツリー、`$CLAUDE_PROJECT_DIR` の順）。どちらにも見つからないときは、`.claude/settings.json` と違い、ツールの実行を止めずに終了コード 0 で終わる。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。
+command は、次の例の形で script を探す（`git rev-parse --show-toplevel` の作業ツリー、`$CLAUDE_PROJECT_DIR` の順）。どちらにも見つからないときは、`.claude/settings.json` の `agent-guard.mjs` の hook と違い、ツールの実行を止めずに終了コード 0 で終わる。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。
 
 ```json
 {

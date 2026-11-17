@@ -151,7 +151,7 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 想定外の分岐で投げる例外（`SystemException`）のメッセージに、利用者を指す ID（IdP の subject、会員の ID、メールアドレスなど）を入れない。原因の例外があれば、cause として渡す。
 
-理由：ログとエラーの応答に利用者の情報が出ないようにし、原因をたどれるようにするため。
+理由：ログに利用者の情報が出ないようにし、原因をたどれるようにするため。
 
 確認方法：レビュー
 
@@ -221,7 +221,7 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 ### entity と集約の同一性
 
-entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる `@EqualsAndHashCode` だけを付けない。
+entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。
 
 理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。
 

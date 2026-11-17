@@ -36,6 +36,20 @@ describe('compact-context.mjs', () => {
     }
   })
 
+  test('手動の圧縮（trigger が manual）でも、要約に残すものを出す', () => {
+    const result = run(JSON.stringify({ hook_event_name: 'PreCompact', trigger: 'manual', custom_instructions: null }))
+    assert.equal(result.status, 0)
+    assert.match(result.stdout, /^要約には、次を必ず残す。/)
+  })
+
+  test('source のない SessionStart と、対象外のイベントでは、何も出さない', () => {
+    for (const input of [{ hook_event_name: 'SessionStart' }, { hook_event_name: 'Stop', source: 'compact' }, {}]) {
+      const result = run(JSON.stringify(input))
+      assert.equal(result.status, 0)
+      assert.equal(result.stdout, '', JSON.stringify(input))
+    }
+  })
+
   test('入力が JSON でないときは、何も出さずに終了コード 0 で終わる', () => {
     const result = run('{')
     assert.equal(result.status, 0)

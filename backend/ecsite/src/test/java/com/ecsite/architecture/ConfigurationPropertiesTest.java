@@ -69,12 +69,34 @@ class ConfigurationPropertiesTest {
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("@EnableConfigurationProperties を付けるクラスは、設定のクラス（@Configuration）")
-    void enableConfigurationPropertiesIsOnConfiguration() {
+    @DisplayName("本番のクラスは、@EnableConfigurationProperties を使わない")
+    void productionDoesNotUseEnableConfigurationProperties() {
         // 操作と確認：本番の手書きのクラスに規則を当てる
-        ArchRule rule = classes().that().areAnnotatedWith(EnableConfigurationProperties.class)
-                .should().beMetaAnnotatedWith(Configuration.class);
+        ArchRule rule = noClasses().should().beAnnotatedWith(EnableConfigurationProperties.class)
+                .because("設定の型の登録は、アプリのクラスの @ConfigurationPropertiesScan にまとめるため");
         rule.check(ProductionClasses.handwritten());
+    }
+
+    @Test
+    @DisplayName("本番の設定の型（@ConfigurationProperties）は、com.ecsite.config か com.ecsite.module の下にある")
+    void configurationPropertiesResideInScanPackages() {
+        // 操作と確認：本番の手書きのクラスに規則を当てる
+        configurationPropertiesLocationRule().check(ProductionClasses.handwritten());
+    }
+
+    @Test
+    @DisplayName("設定の型の置き場所の規則は、範囲の外に置いた例に当たる")
+    void configurationPropertiesLocationRuleMatchesOutOfScopeExample() {
+        // 準備：スキャンの範囲の外の設定の型の例
+        var examples = new ClassFileImporter().importClasses(ExampleProperties.class);
+
+        // 操作：規則を当てる
+        var result = configurationPropertiesLocationRule().evaluate(examples);
+
+        // 確認：例が違反になる
+        assertThat(result.hasViolation()).isTrue();
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(ExampleProperties.class.getName()));
     }
 
     @Test
@@ -300,6 +322,16 @@ class ConfigurationPropertiesTest {
     private static ArchRule presentationRule(String presentationPackage) {
         return noClasses().that().resideInAPackage(presentationPackage)
                 .should().dependOnClassesThat().areAnnotatedWith(ConfigurationProperties.class);
+    }
+
+    /**
+     * 設定の型を、スキャンの範囲（com.ecsite.config か com.ecsite.module の下）に置く規則を作る。
+     *
+     * @return 規則
+     */
+    private static ArchRule configurationPropertiesLocationRule() {
+        return classes().that().areAnnotatedWith(ConfigurationProperties.class)
+                .should().resideInAnyPackage("com.ecsite.config..", ProductionClasses.MODULE_PACKAGE + "..");
     }
 
     /**

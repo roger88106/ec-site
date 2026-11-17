@@ -43,10 +43,11 @@ function makeRepo(commits) {
  *
  * @param {string} dir 実行する場所
  * @param {string[]} args 引数
+ * @param {Record<string, string | undefined>} [runEnv] 環境変数
  * @returns {{ status: number | null, stdout: string, stderr: string }} 結果
  */
-function run(dir, args) {
-  const result = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: dir, env, encoding: 'utf8' })
+function run(dir, args, runEnv = env) {
+  const result = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: dir, env: runEnv, encoding: 'utf8' })
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
 
@@ -90,6 +91,7 @@ test('同じ種類のファイル：末尾の語が同じものを、同じ層�
       `${app}/cart/application/CartService.java`,
       `${app}/order/application/OrderService.java`,
       `${app}/tax/application/TaxService.java`,
+      'ほか 2 件',
     ])
   } finally {
     rmSync(dir, { recursive: true, force: true })
@@ -131,6 +133,21 @@ test('同じ種類のファイル：テストのファイルは、テストの�
   }
 })
 
+test('同じ種類のファイル：E2E の .spec.ts は、テストのファイルどうしで探す', () => {
+  const dir = makeRepo([{
+    'e2e/tests/order.spec.ts': 'x\n',
+    'e2e/tests/cart.spec.ts': 'x\n',
+    'e2e/tests/helper.ts': 'x\n',
+  }])
+  try {
+    const out = run(dir, ['e2e/tests/order.spec.ts', 'e2e/tests/helper.ts']).stdout
+    assert.deepEqual(items(out, 'e2e/tests/order.spec.ts', '同じ種類のファイル'), ['e2e/tests/cart.spec.ts'])
+    assert.deepEqual(items(out, 'e2e/tests/helper.ts', '同じ種類のファイル'), [])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('同じ種類のファイル：小文字の名前は、同じ拡張子のファイルを、近いフォルダーのものから出す', () => {
   const dir = makeRepo([{
     '.claude/skills/x/a.mjs': 'x\n',
@@ -146,6 +163,7 @@ test('同じ種類のファイル：小文字の名前は、同じ拡張子の�
       'scripts/ci/docs/doc-refs.mjs',
       'scripts/ci/lib/b.mjs',
       'scripts/shared/c.mjs',
+      'ほか 1 件',
     ])
   } finally {
     rmSync(dir, { recursive: true, force: true })
@@ -200,9 +218,23 @@ test('参照元：アーカイブした spec は出さない', () => {
   }
 })
 
-test('参照元：最大 10 で、11 個目は出さない', () => {
+test('参照元：最大 10 で、超えた分は「ほか N 件」と出す', () => {
   const files = { 'src/Foo.java': 'class Foo {}\n' }
   for (let i = 10; i < 21; i++) files[`src/U${i}.java`] = 'Foo\n'
+  const dir = makeRepo([files])
+  try {
+    const refs = items(run(dir, ['src/Foo.java']).stdout, 'src/Foo.java', '参照元')
+    assert.equal(refs.length, 11)
+    assert.equal(refs[9], 'src/U19.java')
+    assert.equal(refs[10], 'ほか 1 件')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('参照元：ちょうど 10 なら「ほか」を出さない', () => {
+  const files = { 'src/Foo.java': 'class Foo {}\n' }
+  for (let i = 10; i < 20; i++) files[`src/U${i}.java`] = 'Foo\n'
   const dir = makeRepo([files])
   try {
     const refs = items(run(dir, ['src/Foo.java']).stdout, 'src/Foo.java', '参照元')
@@ -239,16 +271,75 @@ test('一緒に変わるファイル：2 回以上のものを、多い順に回
   }
 })
 
-test('一緒に変わるファイル：最大 5 で、回数が同じならパスの順', () => {
-  const together = {}
-  for (const name of ['B', 'C', 'D', 'E', 'F', 'G']) together[`src/${name}.java`] = '1\n'
-  const second = Object.fromEntries(Object.keys(together).map((file) => [file, '2\n']))
-  const dir = makeRepo([{ 'src/A.java': '1\n', ...together }, { 'src/A.java': '2\n', ...second }])
+/**
+ * A と、名前の一覧のファイルを、2 回一緒に変えたリポジトリを作る。
+ *
+ * @param {string[]} names 一緒に変えるファイルの名前
+ * @returns {string} リポジトリのパス
+ */
+function makeCoChangedRepo(names) {
+  const commit = (text) => Object.fromEntries(['A', ...names].map((name) => [`src/${name}.java`, text]))
+  return makeRepo([commit('1\n'), commit('2\n')])
+}
+
+test('一緒に変わるファイル：最大 5 で、回数が同じならパスの順、超えた分は「ほか N 件」と出す', () => {
+  const dir = makeCoChangedRepo(['B', 'C', 'D', 'E', 'F', 'G'])
+  try {
+    const out = run(dir, ['src/A.java']).stdout
+    assert.deepEqual(items(out, 'src/A.java', '一緒に変わるファイル'), [
+      ...['B', 'C', 'D', 'E', 'F'].map((name) => `src/${name}.java（2 回）`),
+      'ほか 1 件',
+    ])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('一緒に変わるファイル：ちょうど 5 なら「ほか」を出さない', () => {
+  const dir = makeCoChangedRepo(['B', 'C', 'D', 'E', 'F'])
   try {
     const out = run(dir, ['src/A.java']).stdout
     assert.deepEqual(items(out, 'src/A.java', '一緒に変わるファイル'), ['B', 'C', 'D', 'E', 'F'].map((name) => `src/${name}.java（2 回）`))
   } finally {
     rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('一緒に変わるファイル：消したファイルは出さない', () => {
+  const dir = makeCoChangedRepo(['B', 'C'])
+  try {
+    execFileSync('git', ['rm', '-q', 'src/C.java'], { cwd: dir, env })
+    execFileSync('git', ['commit', '-q', '-m', 'rm'], { cwd: dir, env })
+    const out = run(dir, ['src/A.java']).stdout
+    assert.deepEqual(items(out, 'src/A.java', '一緒に変わるファイル'), ['src/B.java（2 回）'])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('同じ種類のファイル：最大 3 で、ちょうど 3 なら「ほか」を出さない', () => {
+  const dir = makeRepo([{ 'src/AService.java': 'x\n', 'src/BService.java': 'x\n', 'src/CService.java': 'x\n', 'src/DService.java': 'x\n' }])
+  try {
+    const out = run(dir, ['src/AService.java']).stdout
+    assert.deepEqual(items(out, 'src/AService.java', '同じ種類のファイル'), ['src/BService.java', 'src/CService.java', 'src/DService.java'])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('共有の部品：最大 50 で、ちょうど 50 なら全て出し、51 なら「ほか 1 件」と出す', () => {
+  const common = 'backend/ecsite/src/main/java/com/ecsite/common'
+  const parts = (count) => Object.fromEntries(Array.from({ length: count }, (_, i) => [`${common}/p/P${String(i).padStart(2, '0')}.java`, 'x\n']))
+  for (const [count, expected] of [[50, 50], [51, 51]]) {
+    const dir = makeRepo([{ [SERVICE]: 'x\n', ...parts(count) }])
+    try {
+      const listed = items(run(dir, [SERVICE]).stdout, '共有の部品', `バックエンド（${common}/）`)
+      assert.equal(listed.length, expected, String(count))
+      assert.equal(listed[49], `${common}/p/P49.java`)
+      if (count === 51) assert.equal(listed[50], 'ほか 1 件')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   }
 })
 
@@ -261,6 +352,7 @@ test('共有の部品：フロントとバックエンドの対象があれば�
     'frontend/shared/src/ui/Button.tsx': 'x\n',
     'frontend/shared/src/lib/money.ts': 'x\n',
     'frontend/shared/src/lib/money.test.ts': 'x\n',
+    'frontend/shared/src/lib/money.spec.ts': 'x\n',
     'frontend/shared/package.json': '{}\n',
     [`${common}/web/ApiError.java`]: 'x\n',
     [`${common}/time/Clock.java`]: 'x\n',
@@ -296,6 +388,45 @@ test('Windows の区切りと ./ で始まるパスも受け付ける', () => {
     assert.match(result.stdout, /^## src\/A\.java$/m)
   } finally {
     rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('git の引用の形（8 進のエスケープ）のパスは、元のパスに戻して扱う', () => {
+  const dir = makeRepo([{ 'docs/05-開発/a.md': 'x\n' }])
+  try {
+    const result = run(dir, ['"docs/05-\\351\\226\\213\\347\\231\\272/a.md"'])
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /^## docs\/05-開発\/a\.md$/m)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('リポジトリの外で実行すると、理由を 1 行出して終了コード 2', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'compare-targets-'))
+  try {
+    const result = run(dir, ['src/A.java'], { ...env, GIT_CEILING_DIRECTORIES: path.dirname(dir) })
+    assert.equal(result.status, 2)
+    assert.equal(result.stderr.trim().split('\n').length, 1, result.stderr)
+    assert.match(result.stderr, /git/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('git がなければ、理由を 1 行出して終了コード 2', () => {
+  const dir = makeRepo([{ 'src/A.java': 'x\n' }])
+  // PATH を消すだけでは、Windows は既定の場所から git を探すので、空のフォルダーを PATH にする
+  const emptyDir = mkdtempSync(path.join(os.tmpdir(), 'compare-targets-path-'))
+  try {
+    const noGit = { ...Object.fromEntries(Object.entries(env).filter(([name]) => name.toUpperCase() !== 'PATH')), PATH: emptyDir }
+    const result = run(dir, ['src/A.java'], noGit)
+    assert.equal(result.status, 2)
+    assert.equal(result.stderr.trim().split('\n').length, 1, result.stderr)
+    assert.match(result.stderr, /git/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+    rmSync(emptyDir, { recursive: true, force: true })
   }
 })
 

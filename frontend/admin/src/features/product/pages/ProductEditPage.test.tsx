@@ -3,6 +3,7 @@ import { delay, HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { ProductDetail } from '@/api/types'
+import { setUpConflictFlow } from '@/test/conflictFlow'
 import { CONFLICT_MESSAGE, PRODUCT_ID, productActions, productDetail, taxCategory } from '@/test/fixtures'
 import { returnToTab } from '@/test/inputs'
 import { PAGE_PATH, serveProduct } from '@/test/productEditServer'
@@ -16,26 +17,29 @@ type UpdateProductRequest = components['schemas']['UpdateProductRequest']
 const FETCH_FAILED_MESSAGE = 'システムエラーが発生しました。'
 
 describe('商品の編集', () => {
-  describe('基本情報の入力中に他の人が更新した（409）', () => {
-    /** 商品名を入力し、他の人が商品名と価格を変えた後に、画面が取得し直した状態にする。 */
-    async function editNameAfterOthersUpdate() {
-      const state = serveProduct(productDetail())
-      const { user } = renderApp(PAGE_PATH)
-      const nameField = await screen.findByLabelText('商品名')
-      await user.clear(nameField)
-      await user.type(nameField, 'T シャツ（改）')
-      state.current = productDetail({ name: 'T シャツ（新）', priceExclTax: 1200, priceInclTax: 1320, version: 1 })
-      returnToTab()
-      expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
-      return { state, user }
+  describe('入力中に他の人が更新した（409）', () => {
+    /** 商品名を入力し、他の人が商品名と価格を変えた後に、画面が取得し直した状態にする。保存するときは saveButton を渡す。 */
+    function editNameAfterOthersUpdate(saveButton?: string) {
+      return setUpConflictFlow({
+        edit: async () => {
+          const state = serveProduct(productDetail())
+          const { user } = renderApp(PAGE_PATH)
+          const nameField = await screen.findByLabelText('商品名')
+          await user.clear(nameField)
+          await user.type(nameField, 'T シャツ（改）')
+          return { state, user }
+        },
+        othersUpdate: ({ state }) => {
+          state.current = productDetail({ name: 'T シャツ（新）', priceExclTax: 1200, priceInclTax: 1320, version: 1 })
+        },
+        refetched: () => screen.findByText('1,320 円（税抜 1,200 円）'),
+        saveButton,
+      })
     }
 
     /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする。 */
-    async function saveIntoConflict() {
-      const context = await editNameAfterOthersUpdate()
-      await context.user.click(screen.getByRole('button', { name: '保存' }))
-      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
-      return context
+    function saveIntoConflict() {
+      return editNameAfterOthersUpdate('保存')
     }
 
     test('取得し直しても、入力した商品名は消えない', async () => {

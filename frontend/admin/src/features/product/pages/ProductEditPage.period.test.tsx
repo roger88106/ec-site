@@ -1,8 +1,9 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
+import { setUpConflictFlow } from '@/test/conflictFlow'
 import { CONFLICT_MESSAGE, productDetail } from '@/test/fixtures'
-import { returnToTab, typeDateTime } from '@/test/inputs'
+import { typeDateTime } from '@/test/inputs'
 import { PAGE_PATH, serveProduct } from '@/test/productEditServer'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, server } from '@/test/server'
@@ -73,24 +74,27 @@ describe('公開期間', () => {
   })
 
   describe('入力中に他の人が更新した（409）', () => {
-    /** 公開開始を入力し、他の人が商品名と公開終了を変えた後に、画面が取得し直した状態にする。 */
-    async function inputStartAfterOthersUpdate() {
-      const state = serveProduct(productDetail())
-      const requests = servePeriod(state)
-      const { user } = renderApp(PAGE_PATH)
-      typeDateTime(await screen.findByLabelText('公開開始'), '2026-11-01T10:00')
-      state.current = productDetail({ name: 'T シャツ（新）', version: 1, publishEnd: '2026-12-31T15:00:00Z' })
-      returnToTab()
-      expect(await screen.findByDisplayValue('T シャツ（新）')).toBeInTheDocument()
-      return { user, requests }
+    /** 公開開始を入力し、他の人が商品名と公開終了を変えた後に、画面が取得し直した状態にする。保存するときは saveButton を渡す。 */
+    function inputStartAfterOthersUpdate(saveButton?: string) {
+      return setUpConflictFlow({
+        edit: async () => {
+          const state = serveProduct(productDetail())
+          const requests = servePeriod(state)
+          const { user } = renderApp(PAGE_PATH)
+          typeDateTime(await screen.findByLabelText('公開開始'), '2026-11-01T10:00')
+          return { state, user, requests }
+        },
+        othersUpdate: ({ state }) => {
+          state.current = productDetail({ name: 'T シャツ（新）', version: 1, publishEnd: '2026-12-31T15:00:00Z' })
+        },
+        refetched: () => screen.findByDisplayValue('T シャツ（新）'),
+        saveButton,
+      })
     }
 
     /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする。 */
-    async function saveIntoConflict() {
-      const context = await inputStartAfterOthersUpdate()
-      await context.user.click(screen.getByRole('button', { name: '公開期間を保存' }))
-      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
-      return context
+    function saveIntoConflict() {
+      return inputStartAfterOthersUpdate('公開期間を保存')
     }
 
     test('取得し直しても、入力した公開開始は消えない', async () => {

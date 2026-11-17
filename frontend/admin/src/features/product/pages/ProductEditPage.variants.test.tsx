@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
+import { setUpConflictFlow } from '@/test/conflictFlow'
 import { CONFLICT_MESSAGE, productActions, productDetail, variant } from '@/test/fixtures'
-import { returnToTab } from '@/test/inputs'
 import { PAGE_PATH, serveProduct } from '@/test/productEditServer'
 import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
@@ -64,46 +64,51 @@ describe('商品の編集', () => {
     expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
   })
 
-  describe('バリアントの追加の入力中に他の人が商品を更新した（409）', () => {
-    /** 品番と軸の値を入力し、他の人が価格を変えた状態にする。画面が取得し直すかは、refetch で決める。 */
-    async function fillVariantAfterOthersUpdate({ refetch }: { refetch: boolean }) {
-      const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
-      const versions: number[] = []
-      server.use(
-        stockHandler(0),
-        http.post('/products/{productId}/variants', async ({ request, response }) => {
-          const body = await request.json()
-          versions.push(body.version)
-          if (body.version !== state.current.version) {
-            return conflict(response)
-          }
-          state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
-          return response(201).json({ id: variant().id })
-        }),
-      )
-      const { user } = renderApp(PAGE_PATH)
-      await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
-      await user.type(screen.getByLabelText('色'), '赤')
-      state.current = productDetail({
-        axes: ['色'],
-        variants: [],
-        priceExclTax: 1200,
-        priceInclTax: 1320,
-        version: 1,
+  describe('入力中に他の人が更新した（409）', () => {
+    /**
+     * 品番と軸の値を入力し、他の人が価格を変えた状態にする。
+     *
+     * 画面が取得し直すかは refetch で、追加して 409 にするかは addButton で決める。
+     */
+    function fillVariantAfterOthersUpdate({ refetch, addButton }: { refetch: boolean; addButton?: string }) {
+      return setUpConflictFlow({
+        edit: async () => {
+          const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
+          const versions: number[] = []
+          server.use(
+            stockHandler(0),
+            http.post('/products/{productId}/variants', async ({ request, response }) => {
+              const body = await request.json()
+              versions.push(body.version)
+              if (body.version !== state.current.version) {
+                return conflict(response)
+              }
+              state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
+              return response(201).json({ id: variant().id })
+            }),
+          )
+          const { user } = renderApp(PAGE_PATH)
+          await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
+          await user.type(screen.getByLabelText('色'), '赤')
+          return { state, user, versions }
+        },
+        othersUpdate: ({ state }) => {
+          state.current = productDetail({
+            axes: ['色'],
+            variants: [],
+            priceExclTax: 1200,
+            priceInclTax: 1320,
+            version: 1,
+          })
+        },
+        refetched: refetch ? () => screen.findByText('1,320 円（税抜 1,200 円）') : undefined,
+        saveButton: addButton,
       })
-      if (refetch) {
-        returnToTab()
-        expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
-      }
-      return { user, versions }
     }
 
     /** 画面が取得し直す前に追加して 409 にし、競合の知らせが出た状態にする。 */
-    async function addIntoConflict() {
-      const context = await fillVariantAfterOthersUpdate({ refetch: false })
-      await context.user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
-      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
-      return context
+    function addIntoConflict() {
+      return fillVariantAfterOthersUpdate({ refetch: false, addButton: 'バリアントを追加' })
     }
 
     test('取得し直しても、入力した品番と軸の値は消えない', async () => {

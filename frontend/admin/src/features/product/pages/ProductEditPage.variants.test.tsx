@@ -65,8 +65,8 @@ describe('商品の編集', () => {
   })
 
   describe('バリアントの追加の入力中に他の人が商品を更新した（409）', () => {
-    /** 品番と軸の値を入力し、他の人が価格を変えた後に、画面が取得し直した状態にする。 */
-    async function fillVariantAfterOthersUpdate() {
+    /** 品番と軸の値を入力し、他の人が価格を変えた状態にする。画面が取得し直すかは、refetch で決める。 */
+    async function fillVariantAfterOthersUpdate({ refetch }: { refetch: boolean }) {
       const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
       const versions: number[] = []
       server.use(
@@ -91,27 +91,39 @@ describe('商品の編集', () => {
         priceInclTax: 1320,
         version: 1,
       })
-      returnToTab()
-      expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+      if (refetch) {
+        returnToTab()
+        expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+      }
       return { user, versions }
     }
 
-    /** 取得し直した後に追加して 409 にし、競合の知らせが出た状態にする。 */
+    /** 画面が取得し直す前に追加して 409 にし、競合の知らせが出た状態にする。 */
     async function addIntoConflict() {
-      const context = await fillVariantAfterOthersUpdate()
+      const context = await fillVariantAfterOthersUpdate({ refetch: false })
       await context.user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
       expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
       return context
     }
 
     test('取得し直しても、入力した品番と軸の値は消えない', async () => {
-      await fillVariantAfterOthersUpdate()
+      await fillVariantAfterOthersUpdate({ refetch: true })
 
       expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
       expect(screen.getByLabelText('色')).toHaveValue('赤')
     })
 
-    test('追加すると 409 になり、競合を知らせる', async () => {
+    test('AC-559-4 取得し直した後なら、他の人が価格を変えていても、入力を残して新しいバージョンで追加できる', async () => {
+      const { user, versions } = await fillVariantAfterOthersUpdate({ refetch: true })
+
+      await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+
+      expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+      expect(versions).toEqual([1])
+    })
+
+    test('取得し直す前に追加すると 409 になり、競合を知らせる', async () => {
       const { versions } = await addIntoConflict()
 
       expect(versions).toEqual([0])

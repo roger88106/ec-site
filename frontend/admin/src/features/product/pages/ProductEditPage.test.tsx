@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { delay, HttpResponse } from 'msw'
+import { delay, HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { ProductDetail } from '@/api/types'
@@ -44,7 +44,7 @@ describe('商品の編集', () => {
       expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
     })
 
-    test('保存すると 409 になり、競合を知らせる', async () => {
+    test('AC-559-5 保存すると 409 になり、競合を知らせる', async () => {
       const { state } = await saveIntoConflict()
 
       expect(state.versions).toEqual([0])
@@ -74,6 +74,87 @@ describe('商品の編集', () => {
 
       expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
       expect(state.versions).toEqual([0, 1])
+    })
+  })
+
+  describe('基本情報の入力中に自分の別の操作で商品のバージョンが上がった', () => {
+    const UPLOAD_URL = 'http://storage.test/images-incoming/upload-1?X-Amz-Signature=test'
+
+    /** 画像のアップロードの受付・ストレージへの PUT・登録に応答する。登録すると、商品に画像を加えてバージョンを上げる。 */
+    function serveImageUpload(state: ReturnType<typeof serveProduct>) {
+      server.use(
+        http.post('/products/{productId}/image-uploads', async ({ request, response }) => {
+          const body = await request.json()
+          return response(201).json({
+            uploadId: '00000000-0000-0000-0000-000000000901',
+            uploadUrl: UPLOAD_URL,
+            headers: { 'Content-Type': body.contentType },
+            expiresAt: '2026-10-10T10:05:00Z',
+          })
+        }),
+        rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 200 })),
+        http.post('/products/{productId}/images', ({ response }) => {
+          const id = `00000000-0000-0000-0000-00000000095${state.current.images.length}`
+          state.current = {
+            ...state.current,
+            images: [...state.current.images, { id, url: `http://cdn.test/products/p/${id}.png` }],
+            version: state.current.version + 1,
+          }
+          return response(201).json({ id })
+        }),
+      )
+    }
+
+    test('AC-559-4 商品名を変えた後に画像を追加しても、入力した商品名を残し、新しいバージョンで保存できる', async () => {
+      const state = serveProduct(productDetail())
+      serveImageUpload(state)
+      const { user } = renderApp(PAGE_PATH)
+      const nameField = await screen.findByLabelText('商品名')
+      await user.clear(nameField)
+      await user.type(nameField, 'T シャツ（改）')
+
+      await user.upload(
+        screen.getByLabelText('画像のファイル'),
+        new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+      )
+      expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
+      expect(await screen.findByRole('img', { name: '画像 1' })).toBeInTheDocument()
+      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+      await user.click(screen.getByRole('button', { name: '保存' }))
+
+      expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
+      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+      expect(state.versions).toEqual([1])
+      expect(state.current.name).toBe('T シャツ（改）')
+    })
+  })
+
+  describe('基準のバージョンが先に進んだ後の再読み込み', () => {
+    test('AC-559-6 基本情報でない項目を他の人が変えて 409 になった後に再読み込みすると、最新の値に再作成され、競合の知らせが消える', async () => {
+      const state = serveProduct(productDetail())
+      let fetches = 0
+      server.use(
+        http.get('/products/{productId}', ({ response }) => {
+          fetches += 1
+          return response(200).json(state.current)
+        }),
+      )
+      const { user } = renderApp(PAGE_PATH)
+      const nameField = await screen.findByLabelText('商品名')
+      await user.clear(nameField)
+      await user.type(nameField, 'T シャツ（改）')
+      // 他の人が基本情報でない項目（公開期間）を変える。画面はまだ取得し直さない
+      state.current = productDetail({ publishStart: '2026-12-01T00:00:00+09:00', version: 1 })
+      await user.click(screen.getByRole('button', { name: '保存' }))
+      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+      const fetchesBefore = fetches
+      returnToTab()
+      await waitFor(() => expect(fetches).toBeGreaterThan(fetchesBefore))
+
+      await user.click(await screen.findByRole('button', { name: '再読み込み' }))
+
+      await waitFor(() => expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ'))
+      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
     })
   })
 

@@ -64,7 +64,7 @@ export function resetRefreshRetention(): void {
   retainedResults().clear()
 }
 
-/** refresh token のハッシュ。token そのものをメモリーの保持のキーにしないため */
+/** refresh token のハッシュ。保持のキーは期限まで Map に残るので、token そのものをキーにしない */
 function retentionKey(refreshToken: string): string {
   return createHash('sha256').update(refreshToken).digest('hex')
 }
@@ -163,10 +163,14 @@ async function requestRefresh(refreshToken: string): Promise<Outcome> {
   }
   try {
     const refreshed = (await response.json()) as {
-      access_token: string
-      expires_in: number
+      access_token?: unknown
+      expires_in?: unknown
       refresh_token?: string
       id_token?: string
+    }
+    if (typeof refreshed.access_token !== 'string' || typeof refreshed.expires_in !== 'number') {
+      // 成功の応答でも、access token と期限がなければ使えないので、本文を解析できないときと同じに扱う
+      return failed('unreadable-body', response.status)
     }
     return {
       kind: 'refreshed',

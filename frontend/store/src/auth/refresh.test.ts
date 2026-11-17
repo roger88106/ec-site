@@ -63,6 +63,20 @@ describe('refreshIfNeeded の再取得のまとめ', () => {
     expect(second).toMatchObject({ accessToken: 'new-access-2' })
   })
 
+  test('保持した結果から、呼び出し側の token には更新された値だけを反映する', async () => {
+    await refreshIfNeeded({ ...expiredToken(), name: '最初の呼び出し' }, 60)
+
+    const second = await refreshIfNeeded({ ...expiredToken(), name: '後の呼び出し', idToken: 'later-id' }, 60)
+
+    expect(requests).toBe(1)
+    expect(second).toMatchObject({
+      name: '後の呼び出し',
+      idToken: 'later-id',
+      accessToken: 'new-access-1',
+      refreshToken: 'new-refresh',
+    })
+  })
+
   test('refresh token が違えば、まとめずに IdP を呼ぶ', async () => {
     await Promise.all([refreshIfNeeded(expiredToken('refresh-a'), 60), refreshIfNeeded(expiredToken('refresh-b'), 60)])
 
@@ -83,6 +97,7 @@ describe('refreshIfNeeded の失敗の保持', () => {
     ['IdP の障害（503、本文なし）', () => new HttpResponse(null, { status: 503 })],
     ['前段のプロキシーが返す HTML の 400', () => HttpResponse.html(`<html>${BODY_SECRET}</html>`, { status: 400 })],
     ['成功の応答の本文が JSON でない', () => new HttpResponse(BODY_SECRET, { status: 200 })],
+    ['成功の応答に access token がない', () => HttpResponse.json({ expires_in: 300 }, { status: 200 })],
   ]
 
   /** 失敗する IdP を用意する */
@@ -201,6 +216,21 @@ describe('refreshIfNeeded の失敗の保持', () => {
     expect(await refreshIfNeeded(expiredToken(), 60)).toBeNull()
 
     expect(stderr.entries()).toEqual([])
+  })
+
+  test('再取得が例外で終わったときは、結果を保持せず、次の再取得で IdP を呼ぶ', async () => {
+    stubFailingIdp(() => new HttpResponse(null, { status: 503 }))
+    // warn の書き込みが例外になり、結果を返すはずの再取得が、例外で終わる
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => {
+      throw new Error('書き込めない')
+    })
+    const token = expiredToken()
+    await expect(refreshIfNeeded(token, 60)).rejects.toThrow('書き込めない')
+
+    vi.restoreAllMocks()
+    recordStderr()
+    expect(await refreshIfNeeded(token, 60)).toEqual(token)
+    expect(requests).toBe(2)
   })
 
   test('IdP が refresh token を拒否した後の 10 秒の間は、IdP を呼ばずにログインしていないものとし、10 秒を過ぎたら呼ぶ', async () => {

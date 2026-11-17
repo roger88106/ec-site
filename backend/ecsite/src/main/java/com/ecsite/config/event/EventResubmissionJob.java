@@ -59,7 +59,7 @@ class EventResubmissionJob {
      * </ul>
      * <p>終わりに、未完了と止めたイベントの件数をメトリクスに記録する。時間と回数は {@link Properties}。
      */
-    // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-resubmission-"
             + "com.ecsite.config.event.EventResubmissionJob$Properties'.interval()}")
     @SchedulerLock(name = "event-resubmission")

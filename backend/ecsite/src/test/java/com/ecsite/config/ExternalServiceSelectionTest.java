@@ -4,6 +4,8 @@ import com.ecsite.common.message.MessageResolver;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.MockPaymentProperties;
+import com.ecsite.module.payment.infrastructure.stripe.StripeProperties;
 import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
@@ -99,6 +102,8 @@ class ExternalServiceSelectionTest {
             runner.withPropertyValues(PAYMENT_MOCK, SHIPPING_MOCK).run(context -> {
                 assertThat(context).hasNotFailed();
                 assertThat(context.getBean(PaymentGateway.class)).isInstanceOf(MockPaymentGateway.class);
+                assertThat(context).hasSingleBean(MockPaymentProperties.class);
+                assertThat(context).doesNotHaveBean(StripeProperties.class);
             });
         }
 
@@ -109,6 +114,8 @@ class ExternalServiceSelectionTest {
             runner.withPropertyValues(SHIPPING_MOCK).withPropertyValues(STRIPE_KEYS).run(context -> {
                 assertThat(context).hasNotFailed();
                 assertThat(context.getBean(PaymentGateway.class)).isNotInstanceOf(MockPaymentGateway.class);
+                assertThat(context).hasSingleBean(StripeProperties.class);
+                assertThat(context).doesNotHaveBean(MockPaymentProperties.class);
             });
         }
 
@@ -264,6 +271,9 @@ class ExternalServiceSelectionTest {
             "com.ecsite.module.payment.infrastructure.mock",
             "com.ecsite.module.payment.infrastructure.stripe",
             "com.ecsite.module.shipping.infrastructure.mock"})
+    @ConfigurationPropertiesScan({
+            "com.ecsite.module.payment.infrastructure.mock",
+            "com.ecsite.module.payment.infrastructure.stripe"})
     @Import(UnconnectedCarrierTracking.class)
     static class ExternalServices {
     }

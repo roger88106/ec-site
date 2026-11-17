@@ -40,7 +40,7 @@ class CartCleanupJob {
      *
      * <p>件数の上限ずつ、残りがなくなるまで消す。1 回ごとに別のトランザクションにする。
      */
-    // 設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    // 設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.cart.cleanup-"
             + "com.ecsite.module.cart.application.job.CartCleanupProperties'.interval()}")
     @SchedulerLock(name = "cart-cleanup")

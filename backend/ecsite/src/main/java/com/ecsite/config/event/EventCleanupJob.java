@@ -42,7 +42,7 @@ class EventCleanupJob {
      *
      * <p>未完了のイベントと止めたイベントは消さない。
      */
-    // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"
             + "com.ecsite.config.event.EventCleanupJob$Properties'.interval()}")
     @SchedulerLock(name = "event-cleanup")

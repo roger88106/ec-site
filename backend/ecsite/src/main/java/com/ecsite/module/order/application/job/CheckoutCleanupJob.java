@@ -40,7 +40,7 @@ class CheckoutCleanupJob {
     /**
      * 期限から保存期間を過ぎた注文手続きを消す。
      */
-    // 設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    // 設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.order.cleanup-"
             + "com.ecsite.module.order.application.job.CheckoutCleanupProperties'.interval()}")
     @SchedulerLock(name = "checkout-cleanup")

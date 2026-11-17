@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
+import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentStripe;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -19,6 +20,7 @@ import java.time.Duration;
  * @param connectTimeout Stripe への接続を待つ時間の上限
  * @param readTimeout    Stripe の応答を待つ時間の上限（1 回のリクエストごと。自動のやり直しは別に数える）
  */
+@ConditionalOnPaymentStripe
 @Validated
 @ConfigurationProperties("ecsite.payment.stripe")
 public record StripeProperties(@NotBlank String secretKey, @NotBlank String webhookSecret,

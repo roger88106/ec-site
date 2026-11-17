@@ -240,6 +240,8 @@ export function puppeteerConfig(chrome, platform) {
 /**
  * 引数を引用符で囲む（shell を通す起動で、空白のあるパスが 1 つの引数になるように）。
  *
+ * 既知の制限：引数に " や %名前% があると、Windows の shell が読み替えて壊れる（今の引数は、固定の文字列と一時のディレクトリのパスだけ）。
+ *
  * @param {string} arg 引数
  * @returns {string} 引用符で囲んだ引数
  */

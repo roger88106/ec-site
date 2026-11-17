@@ -168,7 +168,8 @@ function scanOptions(args, { valueShort, optionalShort, valueLong }) {
 /**
  * 長いオプションの略記として当てる、最も短い文字数。
  *
- * 2 文字以下の略記は当てない（既知の限り。--fo のような短い略記を git が受け付けるかは見分けない）。
+ * 2 文字以下の略記は当てない。既知の制限：git が --fo のような 2 文字の一意な略記を受け付けるなら、force とタグの判定を通り抜ける
+ * （hook は誤った操作を防ぐためのもので、意図した回避までは防がない）。
  */
 const MIN_ABBREVIATION = 3
 

@@ -51,7 +51,8 @@ export function findExportedNames(text) {
  * 共有のパッケージが公開する名前を集める。
  *
  * package.json の exports の値（./src/lib/*.ts など。* は 1 つ以内）に合うソースのファイルを読む。テストは公開しないので読まない。
- * exports にない src のファイルは、パッケージの外から import できないので読まない
+ * exports にない src のファイルは、パッケージの外から import できないので読まない。
+ * 値が文字列でない（条件ごとの指定の）項目があれば、読み落とさないよう例外を投げる
  *
  * @param {Record<string, string>} exportsMap shared の package.json の exports
  * @param {string[]} files リポジトリのルートからのパス
@@ -59,8 +60,11 @@ export function findExportedNames(text) {
  * @returns {Set<string>} 公開する名前
  */
 export function sharedPublicNames(exportsMap, files, read) {
+  const unreadable = Object.entries(exportsMap).filter(([, target]) => typeof target !== 'string')
+  if (unreadable.length > 0) {
+    throw new Error(`frontend/shared/package.json の exports に、値が文字列でない項目がある（${unreadable.map(([key]) => key).join('、')}。検査を直す）`)
+  }
   const patterns = Object.values(exportsMap)
-    .filter((target) => typeof target === 'string')
     .map((target) => {
       const path = target.replace(/^\.\//, 'frontend/shared/')
       return new RegExp(`^${RegExp.escape(path).replaceAll('\\*', '.*')}$`)

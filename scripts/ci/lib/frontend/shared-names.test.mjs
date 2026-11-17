@@ -69,6 +69,13 @@ describe('共有のパッケージと同じ名前の定義', () => {
     assert.throws(() => sharedPublicNames({}, files, read), /公開する名前/)
   })
 
+  test('exports の値が文字列でない項目があれば、他の項目で名前を読めても失敗にする', () => {
+    const files = ['frontend/shared/src/lib/format.ts']
+    const read = () => 'export function formatYen() {}'
+    const exportsMap = { './lib/*': './src/lib/*.ts', './ui/*': { import: './src/ui/*.tsx' } }
+    assert.throws(() => sharedPublicNames(exportsMap, files, read), /値が文字列でない項目がある（\.\/ui\/\*/)
+  })
+
   test('同じ名前の関数・定数・クラスの定義を、export の有無によらず見つける', () => {
     const text = [
       'export const translate = createTranslator()',

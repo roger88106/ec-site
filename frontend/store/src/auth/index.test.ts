@@ -259,4 +259,28 @@ describe('token の取り直し', () => {
 
     expect(await getAccessToken()).toBe(ACCESS_TOKEN)
   })
+
+  test('同じリクエストの中で、proxy・auth()・API を呼ぶときの取り直しが重なっても、IdP を 1 回だけ呼ぶ', async () => {
+    let calls = 0
+    server.use(
+      mswHttp.post(TOKEN_ENDPOINT, () => {
+        calls += 1
+        return HttpResponse.json({ access_token: 'fresh', expires_in: 300 })
+      }),
+    )
+    signInAs({ expiresAt: nowSeconds() - 10 })
+    // proxy と、サーバーコンポーネントの auth() は、どちらも jwt コールバックを、セッションの Cookie の古い token で呼ぶ
+    const token = { accessToken: ACCESS_TOKEN, refreshToken: 'member-refresh-token', expiresAt: nowSeconds() - 10 }
+
+    const [fromProxy, fromAuth, accessToken] = await Promise.all([
+      callbacks().jwt(jwtParams({ token })),
+      callbacks().jwt(jwtParams({ token })),
+      getAccessToken(),
+    ])
+
+    expect(calls).toBe(1)
+    expect(fromProxy).toMatchObject({ accessToken: 'fresh' })
+    expect(fromAuth).toMatchObject({ accessToken: 'fresh' })
+    expect(accessToken).toBe('fresh')
+  })
 })

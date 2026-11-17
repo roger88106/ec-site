@@ -11,7 +11,7 @@ function expiredToken(refreshToken = 'old-refresh'): MemberJwt {
 }
 
 describe('refreshIfNeeded の再取得のまとめ', () => {
-  /** IdP への再取得の要求の回数 */
+  /** IdP への再取得のリクエストの回数 */
   let requests: number
 
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe('refreshIfNeeded の再取得のまとめ', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
   })
 
-  test('同じ refresh token の同時の再取得は、IdP への要求が 1 回で、どちらも新しい token を受け取る', async () => {
+  test('同じ refresh token の同時の再取得は、IdP へのリクエストが 1 回で、どちらも新しい token を受け取る', async () => {
     const [first, second] = await Promise.all([
       refreshIfNeeded(expiredToken(), 60),
       refreshIfNeeded(expiredToken(), 60),
@@ -71,7 +71,7 @@ describe('refreshIfNeeded の再取得のまとめ', () => {
 })
 
 describe('refreshIfNeeded の失敗の保持', () => {
-  /** IdP への再取得の要求の回数 */
+  /** IdP への再取得のリクエストの回数 */
   let requests: number
 
   /** 失敗の応答の本文に入れる文字（ログに出ないことの確認に使う） */
@@ -101,6 +101,7 @@ describe('refreshIfNeeded の失敗の保持', () => {
   })
 
   test.each(failures)('%s の後の 30 秒の間は、IdP を呼ばずに今の token を返す', async (_, response) => {
+    recordStderr()
     stubFailingIdp(response)
     const token = expiredToken()
     expect(await refreshIfNeeded(token, 60)).toEqual(token)
@@ -112,6 +113,7 @@ describe('refreshIfNeeded の失敗の保持', () => {
   })
 
   test.each(failures)('%s の後の 30 秒を過ぎたら、IdP を呼ぶ', async (_, response) => {
+    recordStderr()
     stubFailingIdp(response)
     const token = expiredToken()
     await refreshIfNeeded(token, 60)
@@ -123,6 +125,7 @@ describe('refreshIfNeeded の失敗の保持', () => {
   })
 
   test('IdP に届かなかった後の 30 秒の間は、IdP を呼ばずに今の token を返し、30 秒を過ぎたら呼ぶ', async () => {
+    recordStderr()
     let calls = 0
     server.use(
       mswHttp.post(TOKEN_ENDPOINT, () => {
@@ -143,6 +146,7 @@ describe('refreshIfNeeded の失敗の保持', () => {
   })
 
   test('失敗の保持は refresh token ごとで、別の refresh token の再取得は IdP を呼ぶ', async () => {
+    recordStderr()
     stubFailingIdp(() => new HttpResponse(null, { status: 503 }))
 
     await refreshIfNeeded(expiredToken('refresh-a'), 60)
@@ -197,5 +201,19 @@ describe('refreshIfNeeded の失敗の保持', () => {
     expect(await refreshIfNeeded(expiredToken(), 60)).toBeNull()
 
     expect(stderr.entries()).toEqual([])
+  })
+
+  test('IdP が refresh token を拒否した後の 10 秒の間は、IdP を呼ばずにログインしていないものとし、10 秒を過ぎたら呼ぶ', async () => {
+    stubFailingIdp(() => HttpResponse.json({ error: 'invalid_grant' }, { status: 400 }))
+    const token = expiredToken()
+    expect(await refreshIfNeeded(token, 60)).toBeNull()
+
+    vi.advanceTimersByTime(9_000)
+    expect(await refreshIfNeeded(token, 60)).toBeNull()
+    expect(requests).toBe(1)
+
+    vi.advanceTimersByTime(1_001)
+    await refreshIfNeeded(token, 60)
+    expect(requests).toBe(2)
   })
 })

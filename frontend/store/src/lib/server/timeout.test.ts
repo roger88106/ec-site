@@ -5,6 +5,7 @@ import { withActionResult } from '@/actions/withActionResult'
 import { getApi, getMemberApi } from '@/api/client'
 import { authState, nowSeconds, signInAs } from '@/test/auth'
 import { IDP, STORE_API, server, TOKEN_ENDPOINT } from '@/test/server'
+import { recordStderr } from '@/test/stderr'
 import '@/auth'
 import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
 import { connectionFailedMessage } from '@/lib/actionResult'
@@ -38,6 +39,7 @@ describe('待つ時間の上限（店舗画面のサーバー → バックエ�
   })
 
   test('AC-302 token の更新が上限を過ぎたら、IdP に接続できないときと同じく、ログインの状態を残す', async () => {
+    recordStderr()
     server.use(mswHttp.post(TOKEN_ENDPOINT, hang))
     const token: MemberJwt = { accessToken: 'old', refreshToken: 'refresh', expiresAt: nowSeconds() }
 

@@ -11,6 +11,7 @@ import { ACCESS_TOKEN, authState, nowSeconds, signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { cookieValue, redirectedTo, resetRequest } from '@/test/next'
 import { http, IDP, networkError, server, TOKEN_ENDPOINT } from '@/test/server'
+import { recordStderr } from '@/test/stderr'
 
 /** auth.ts が Auth.js に渡したコールバック */
 function callbacks() {
@@ -218,6 +219,7 @@ describe('token の取り直し', () => {
   })
 
   test('IdP に届かなければ、ログインの状態を残す', async () => {
+    recordStderr()
     server.use(networkError('post', TOKEN_ENDPOINT))
     const token = { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: nowSeconds() - 10 }
 
@@ -231,6 +233,7 @@ describe('token の取り直し', () => {
     ['client の認証の失敗（401）', () => HttpResponse.json({ error: 'invalid_client' }, { status: 401 })],
     ['前段のプロキシーが返す HTML の 400', () => HttpResponse.html('<html>Bad Request</html>', { status: 400 })],
   ])('IdP が refresh token を拒否したのでなければ（%s）、ログインの状態を残す', async (_, response) => {
+    recordStderr()
     server.use(mswHttp.post(TOKEN_ENDPOINT, response))
     const token = { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: nowSeconds() - 10 }
 
@@ -247,6 +250,7 @@ describe('token の取り直し', () => {
   })
 
   test('API を呼ぶときに IdP の障害で取り直せなければ、セッションの access token を使う', async () => {
+    recordStderr()
     signInAs({ expiresAt: nowSeconds() - 10 })
     server.use(mswHttp.post(TOKEN_ENDPOINT, () => new HttpResponse(null, { status: 503 })))
 

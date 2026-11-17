@@ -37,7 +37,7 @@ type RefreshedFields = Pick<MemberJwt, 'accessToken' | 'expiresAt' | 'refreshTok
 /**
  * 再取得の結果。
  *
- * token の全体でなく、新しくなる値だけを持つ。保持した結果を返すときは、呼び出しに渡された今の token に重ねるため。
+ * token の全体でなく、新しくなる値だけを持つ。保持した結果を返すときは、呼び出しに渡された今の token に反映するため。
  */
 type Outcome = { kind: 'refreshed'; fields: RefreshedFields } | { kind: 'rejected' } | { kind: 'failed' }
 
@@ -102,9 +102,13 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
   let entry = retained.get(key)
   if (!entry) {
     const created: Retained = { outcome: requestRefresh(token.refreshToken), retainedUntil: null }
-    created.outcome.then((outcome) => {
-      created.retainedUntil = Date.now() + (outcome.kind === 'failed' ? FAILURE_RETENTION_MS : SETTLED_RETENTION_MS)
-    })
+    created.outcome.then(
+      (outcome) => {
+        created.retainedUntil = Date.now() + (outcome.kind === 'failed' ? FAILURE_RETENTION_MS : SETTLED_RETENTION_MS)
+      },
+      // 結果で返す約束が破れて例外になったときは、保持を残さない（残すと、同じ refresh token の後の呼び出しが全て同じ例外になる）
+      () => retained.delete(key),
+    )
     retained.set(key, created)
     entry = created
   }
@@ -174,7 +178,7 @@ async function requestRefresh(refreshToken: string): Promise<Outcome> {
       },
     }
   } catch {
-    // 成功の応答の本文が読めなかった
+    // 成功の応答の本文を解析できなかった
     return failed('unreadable-body', response.status)
   }
 }
@@ -194,7 +198,7 @@ function nowSeconds(): number {
   return Math.floor(Date.now() / 1000)
 }
 
-/** 失敗の応答の本文が読めなかった印（error の値と取り違えない） */
+/** 失敗の応答の本文を解析できなかった印（error の値と取り違えない） */
 const UNREADABLE = Symbol('unreadable')
 
 /**

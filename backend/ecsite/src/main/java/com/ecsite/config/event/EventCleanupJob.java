@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -62,6 +63,8 @@ class EventCleanupJob {
      */
     @Validated
     @ConfigurationProperties("ecsite.scheduling.event-cleanup")
-    record Properties(@DefaultValue("1h") @NotNull Duration interval, @DefaultValue("7d") @NotNull Duration retention) {
+    record Properties(
+            @DefaultValue("1h") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration interval,
+            @DefaultValue("7d") @NotNull @DurationMin(nanos = 0) Duration retention) {
     }
 }

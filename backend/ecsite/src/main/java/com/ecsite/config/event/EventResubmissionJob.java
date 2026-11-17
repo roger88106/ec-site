@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.modulith.events.IncompleteEventPublications;
@@ -100,7 +101,9 @@ class EventResubmissionJob {
      */
     @Validated
     @ConfigurationProperties("ecsite.scheduling.event-resubmission")
-    record Properties(@DefaultValue("1m") @NotNull Duration interval, @DefaultValue("5m") @NotNull Duration minAge,
-                      @DefaultValue("60") @Positive int maxAttempts) {
+    record Properties(
+            @DefaultValue("1m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration interval,
+            @DefaultValue("5m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration minAge,
+            @DefaultValue("60") @Positive int maxAttempts) {
     }
 }

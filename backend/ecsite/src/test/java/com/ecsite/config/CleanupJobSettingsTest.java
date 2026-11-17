@@ -160,10 +160,7 @@ class CleanupJobSettingsTest {
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
         @DisplayName("1 回に消す件数が下限の 1 なら、検証を通り、1 件になる")
-        void acceptsBatchSizeAtMinimum(String prefix, String propertiesClass) throws Exception {
-            // 準備：設定の型
-            var type = Class.forName(propertiesClass);
-
+        void acceptsBatchSizeAtMinimum(String prefix, Class<?> type) {
             // 操作：1 件を検証付きで当てはめる
             var properties = TestSettings.bindValidated(prefix, type, Map.of("batch-size", "1"));
 
@@ -177,10 +174,7 @@ class CleanupJobSettingsTest {
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
         @DisplayName("1 回に消す件数が下限より 1 小さい 0 なら、値の検証で拒否される")
-        void rejectsBatchSizeBelowMinimum(String prefix, String propertiesClass) throws Exception {
-            // 準備：設定の型
-            var type = Class.forName(propertiesClass);
-
+        void rejectsBatchSizeBelowMinimum(String prefix, Class<?> type) {
             // 操作と確認：0 件は拒否される
             assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("batch-size", "0")))
                     .isInstanceOf(BindException.class);
@@ -200,10 +194,7 @@ class CleanupJobSettingsTest {
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 0s",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, -1s"})
         @DisplayName("片付けの間隔が 0 以下なら、値の検証で拒否される")
-        void rejectsNonPositiveInterval(String prefix, String propertiesClass, String value) throws Exception {
-            // 準備：設定の型
-            var type = Class.forName(propertiesClass);
-
+        void rejectsNonPositiveInterval(String prefix, Class<?> type, String value) {
             // 操作と確認：値の検証で拒否される
             assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("interval", value)))
                     .isInstanceOf(BindException.class);
@@ -215,10 +206,7 @@ class CleanupJobSettingsTest {
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
         @DisplayName("保存期間が負なら、値の検証で拒否される")
-        void rejectsNegativeRetention(String prefix, String propertiesClass) throws Exception {
-            // 準備：設定の型
-            var type = Class.forName(propertiesClass);
-
+        void rejectsNegativeRetention(String prefix, Class<?> type) {
             // 操作と確認：-1s は値の検証で拒否される
             assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("retention", "-1s")))
                     .isInstanceOf(BindException.class);
@@ -230,10 +218,7 @@ class CleanupJobSettingsTest {
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
         @DisplayName("保存期間が 0 なら、値の検証を通り、0 になる")
-        void acceptsZeroRetention(String prefix, String propertiesClass) throws Exception {
-            // 準備：設定の型
-            var type = Class.forName(propertiesClass);
-
+        void acceptsZeroRetention(String prefix, Class<?> type) {
             // 操作：0s を検証付きで当てはめる
             var properties = TestSettings.bindValidated(prefix, type, Map.of("retention", "0s"));
 

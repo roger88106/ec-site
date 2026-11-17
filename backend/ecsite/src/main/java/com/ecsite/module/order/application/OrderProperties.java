@@ -2,6 +2,7 @@ package com.ecsite.module.order.application;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
@@ -24,6 +25,6 @@ import java.util.UUID;
 public record OrderProperties(
         @DefaultValue("1000") @Min(0) long shippingFee,
         @NotNull UUID shippingTaxCategoryId,
-        @DefaultValue("15m") Duration reservationTtl,
+        @DefaultValue("15m") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration reservationTtl,
         @DefaultValue("3") @Min(1) int pendingOrderLimit) {
 }

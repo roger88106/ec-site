@@ -3,6 +3,7 @@ package com.ecsite.module.payment.infrastructure.stripe;
 import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentStripe;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
@@ -24,8 +25,8 @@ import java.time.Duration;
 @Validated
 @ConfigurationProperties("ecsite.payment.stripe")
 public record StripeProperties(@NotBlank String secretKey, @NotBlank String webhookSecret,
-                               @DefaultValue("5s") @NotNull Duration connectTimeout,
-                               @DefaultValue("20s") @NotNull Duration readTimeout) {
+                               @DefaultValue("5s") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration connectTimeout,
+                               @DefaultValue("20s") @NotNull @DurationMin(nanos = 0, inclusive = false) Duration readTimeout) {
 
     /**
      * {@inheritDoc}

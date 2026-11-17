@@ -482,7 +482,7 @@ function show(ctx) {
     console.log(`スロット：${slot}${ctx.main ? '（メインの作業ツリー）' : ''}`)
     console.log(`バックエンド：http://localhost:${v.backendPort}`)
     console.log(`運用：http://localhost:${v.managementPort}`)
-    console.log(`店舗画面：http://localhost:${v.storePort}`)
+    console.log(`店舗画面：${v.storeOrigin}`)
     console.log(`管理画面：http://localhost:${v.adminPort}`)
     console.log(`データベース：${v.database}`)
     console.log(`バケット：${v.publicBucket}、${v.incomingBucket}`)

@@ -15,6 +15,6 @@ Git Bash で長い処理やパイプを使うとき、Browser で画面を確認
 
 SKILL.md の「プレビューで画面を確認する」の補足。
 
-- スロット 1〜3 の店舗画面は `slot<n>.localhost` で開く。`localhost` に残った Cookie で 400 や 431（ヘッダーが大きすぎる）になったときの削除の手順は、[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」。
+- 店舗画面の `localhost` に残った Cookie で 400 や 431（ヘッダーが大きすぎる）になったときの削除の手順は、[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」。
 - CSP の違反は `read_console_messages` で取れないことがある。`javascript_tool` で `securitypolicyviolation` のイベントを登録してから操作し、違反を読む。
 - バックグラウンドのタブでは、描画とアニメーションが停止する。タブを前面にしてからスクリーンショットを撮るか、DOM の属性（`data-closed` など）で状態を判定する。

@@ -205,12 +205,10 @@ Windows で `run backend` の node を強制終了すると、Gradle のクラ�
 
 - 作業ツリーを `release` せずに消しても、そのスロットは次の `assign` で空きになる。データベースとバケットは共有の基盤に残るが、`assign` が再作成する。
 - `node_modules` のある作業ツリーを Windows で削除すると、パスが長すぎて失敗する。`git config core.longpaths true` を設定してから `git worktree remove <パス>` で削除する。失敗が続くときは、PowerShell で `\\?\` を付けたパスを指定して削除する。
-- 店舗画面の Cookie は、ポートでなくホストで分かれる。スロット 1〜3 の店舗画面は、`http://slot<番号>.localhost:<店舗画面のポート>` で開く（`slot.mjs show` も表示する）。ブラウザーは `*.localhost` をループバックアドレスに解決する。
-  - `localhost` で開くと、全てのスロットの店舗画面の Cookie が `localhost` に残り、全てのポートへのリクエストに付く。ヘッダーが上限を超えると、mock の支払画面（バックエンド）が 400 を、店舗画面が 431 を返すことがある。
-  - Cookie の名前の接頭辞（`STORE_COOKIE_PREFIX`、[環境変数](environment.md)の「店舗画面」）も残っている。Keycloak のログインの状態は共有される。
-  - スロットの店舗画面を `slot<番号>.localhost` で開く前に、`localhost` に残った店舗画面の Cookie を一度削除する。400・431 が出たときも同じ手順で直る。
-    - ブラウザーの開発者ツールの Application（Chrome）の Cookies で `http://localhost:<店舗画面のポート>` を選び、削除する。
-    - または、ブラウザーの設定でサイト `localhost` のデータを削除する（スロット 0 のログインも消える）。
+- 店舗画面の Cookie は、ポートでなくホストで分かれる。スロット 1〜3 の店舗画面は、`http://slot<番号>.localhost:<店舗画面のポート>` で開く（`slot.mjs show` の表示も同じ URL）。ブラウザーは `*.localhost` をループバックアドレスに解決する。
+- スロットの店舗画面を `localhost` で開くと、全てのスロットの店舗画面の Cookie が `localhost` に残り、全てのポートへのリクエストに付く。ヘッダーが上限を超えると、mock の支払画面（バックエンド）が 400 を、店舗画面が 431 を返すことがある。
+- `localhost` に残った店舗画面の Cookie は、スロットの店舗画面を `slot<番号>.localhost` で初めて開く前に一度削除する。400・431 が出たときも同じ手順で解消する。手順：ブラウザーの開発者ツールの Application（Chrome）の Cookies で `http://localhost:<店舗画面のポート>` を選び、削除する。
+- Cookie の名前は、引き続きスロットごとの接頭辞（`STORE_COOKIE_PREFIX`、[環境変数](environment.md)の「店舗画面」）でも分ける。Keycloak のログインの状態は共有される。
 - `env` の出力は、`bootRun` などを手動で実行するときだけ subshell の中で使う（`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)`）。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
 - E2E のポート（8090、9090、4173、3100）、データベース、バケットは、どのスロットとも重ならない。E2E は作業ツリーからも流せる（[テストの実行方法](running-tests.md)の「E2E」）。
 

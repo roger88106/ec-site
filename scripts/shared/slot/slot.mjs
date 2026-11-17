@@ -50,7 +50,7 @@ function assertSlot(slot) {
  * @returns {{ slot: number, backendPort: number, managementPort: number, storePort: number, adminPort: number,
  *   database: string, publicBucket: string, incomingBucket: string, cookiePrefix: string, storeOrigin: string }}
  *   運用ポートは managementPort。Cookie の接頭辞はスロット 0 では空。
- *   storeOrigin はブラウザーが開く店舗画面の origin（Cookie はポートで分かれずホストで分かれるので、スロット 1 から後はホストを `slot<N>.localhost` に分ける）
+ *   storeOrigin はブラウザーが開く店舗画面の origin（Cookie はポートで分かれずホストで分かれるので、スロット 1 以降はホストを `slot<N>.localhost` に分ける）
  */
 export function slotValues(slot) {
   assertSlot(slot)

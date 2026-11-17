@@ -102,7 +102,7 @@ const { orderId } = await test.step('注文する', async () => {
 
 理由：「API の差し替えは型付きの MSW」が禁じる契約にない応答を、型付きの `http` を通さずに作れてしまうため。
 
-確認方法：理由のない `as never`・`as unknown as` は自動（Biome の plugin `no-type-cast-escape`）、理由が妥当かはレビュー
+確認方法：理由のない `as never`・`as unknown as`（山括弧の形を含む）は自動（Biome の plugin `no-type-cast-escape`）。`unknown` の値を経由する変換などの他の書き方と、理由が妥当かはレビュー
 
 ## 要素のプロパティ・属性・状態を jest-dom で確認する
 
@@ -126,7 +126,7 @@ const { orderId } = await test.step('注文する', async () => {
 
 理由：`process.env` への代入はテストの後も残り、他のテストの結果に影響するため。
 
-確認方法：`process.env` への代入・`delete` と、`process.env` を最初の引数に渡す `Object.assign`・`Object.defineProperty`・`Reflect.set` などは、画面のテストとテストの補助で自動（Biome の plugin `no-process-env-write`）。別の変数を経由した変更はレビュー
+確認方法：`process.env` への代入（`++`・`--` を含む）・`delete` と、`process.env` を最初の引数に渡す `Object.assign`・`Object.defineProperty`・`Reflect.set` などは、画面のテストとテストの補助で自動（Biome の plugin `no-process-env-write`）。別の変数を経由した変更などの他の書き方はレビュー
 
 ## 宣言していないグローバルの名前を使わない
 

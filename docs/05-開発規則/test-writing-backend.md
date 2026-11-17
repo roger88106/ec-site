@@ -5,7 +5,10 @@
 ## 統合テストの土台
 
 - 統合テストは `@IntegrationTest` を付ける。Spring と、Testcontainers の PostgreSQL・SeaweedFS・imgproxy が起動する ※1。例外は、本番の jar を別のプロセスで起動するテスト（`ProductionJarStartupTest`）で、Spring の外で動くので、必要な PostgreSQL を自分で起動する。
-- API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
+- `@IntegrationTest` は、MockMvc と、テストから時刻を決められる時計（`TestClockConfig`）を含む。API のテストは、注入した MockMvc で呼ぶ。コンテキストは 1 つで、DB とイベントの記録は全てのテストで共有する。
+- 共有する状態は、JUnit の拡張（`SharedStateReset`）が、毎回のテストの前に最初の状態へ戻す。時計は既定の時刻（`TestClockConfig.INITIAL_INSTANT`）に、`TestPaymentGateway` は空に戻し、税率のキャッシュは捨てる。時計を使うテストは、`@BeforeEach` で時刻を決める。
+- イベントの再発行は、`AsyncEvents.resubmit` に条件を渡して、自分のイベントだけを再発行する。理由：全件を再発行すると、他のテストが残した失敗も処理されるため（`AsyncEvents.resubmit` の Javadoc）。
+- `@RecordApplicationEvents` は、別のスレッドで発行されたイベントを記録しない。
 - データを残さないテストは `@Transactional` で巻き戻す。
 - 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID や実行ごとの識別子）でデータを分ける。確認するのは、自分のデータだけである。表の全体の数や一覧の全体は確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要で、今あるものは残してよい。理由：DB はテストの実行ごとに作り、削除には漏れと順序（外部キー）の手間があるため。
 - ログを確認するテストは、そのテストの中で出た出力だけを確認する。ログは `LogCapture` で取り込み、確認する処理の前に `LogCapture.clear` で、それまでに取り込んだログを捨てる。理由：準備や前のテストの処理（非同期を含む）が出したログが件数に数えられ、件数を誤っていても通るため（`LogCapture` の Javadoc）。
@@ -38,6 +41,14 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 
 補助以外のテストは、補助が持つ手順（上の表）を直接書かない（その操作そのものを確認するテストを除く）。
 
+補助の使い方は次のとおり。
+
+- `SystemException` は、`assertSystemError` でエラーコードまで確認する（`ErrorCode` 全体の比較は残してよい）。
+- 作成の応答の ID（UUID）は、`TestJson.createdId` で読む。
+- `CatalogTestData` を入れる変数の名前は `catalog` にする。
+- 結果の一覧を作る繰り返しは `IntStream…toList()`、副作用の繰り返しは for 文で書く。
+- 同時実行は `Concurrently` で行い、待つ時間に上限を付ける（上限は `AsyncEvents.TIMEOUT`）。
+
 次の 3 つは手順に含めず、テストが直接書いてよい。
 
 - Repository のテストが集約を直接作る処理（支払の Repository のテストなど）
@@ -51,6 +62,19 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、同じパッケージの `src/integrationTest` に public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。テストのために可視性を広げない。
 
 確認方法：レビュー（記録を読む操作は自動。`EventPublicationReadTest`。在庫と支払の作成を補助の外で呼ばないことも自動。`TestDataCreationTest`）
+
+## テストの本文の書き方
+
+Java のテストのクラスは、`// ============================== 名前 ==============================` の区切りで分ける。見本は `OrderTest`。区切りの名前は、見本にある定数・テスト・確認の補助・準備の補助に揃え、「テストのデータ」「操作の補助」のような別の名前を作らない。
+
+- テストの本文は、準備・操作・確認の段落を空行で分け、段落の先頭に `// 準備：`・`// 操作：`・`// 確認：` を付けて、続けて意図だけを書く。1 つの確認の段落では 1 つの観点を確認する。
+- 前提の確認は `// 確認（前提）：`、後片付けは `// 後片付け：` と書く。`// Given：`・`// When：`・`// Then：` は書かない。
+- 確認する項目が多いときは、private の確認のメソッドにし、その Javadoc に確認する内容を箇条書きで書く。
+- 準備のデータと期待値は、同じ定数から作る。準備した物から期待値を取り出さない。実行ごとに変わる ID は引数で渡し、そのことを Javadoc に書く。
+
+理由：テストの本文を、何を準備し、何をして、何を確認するかの順で読めるようにするため。
+
+確認方法：レビュー
 
 ## テストの置き場所
 

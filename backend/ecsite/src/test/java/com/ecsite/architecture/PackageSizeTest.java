@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>token の取り出しを使う場所：{@code TokenAccessTest}</li>
  * </ul>
  */
-class ModuleStructureTest {
+class PackageSizeTest {
 
     // ============================== 定数 ==============================
 

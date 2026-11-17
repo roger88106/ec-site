@@ -490,28 +490,19 @@ describe('スロットの値を書き写したファイル', () => {
     for (const slot of slots) assertAllows(client, `http://localhost:${slotValues(slot).adminPort}`)
   })
 
-  test('.claude/launch.json は、スロットごとの画面の起動に、スロットのポートと番号を渡す', () => {
+  test('.claude/launch.json は、スロットの番号とポートを渡し、店舗画面だけ url を slot<番号>.localhost にする（DC-453-1）', () => {
     const configs = readJson('.claude/launch.json').configurations
     for (const slot of slots) {
-      for (const [target, port] of [
-        ['admin', 'adminPort'],
-        ['store', 'storePort'],
+      for (const [target, port, url] of [
+        ['admin', 'adminPort', undefined],
+        ['store', 'storePort', `http://slot${slot}.localhost:${slotValues(slot).storePort}`],
       ]) {
         const config = configs.find((c) => c.name === `${target}-${slot}`)
         assert.ok(config, `${target}-${slot} がない`)
         assert.equal(config.port, slotValues(slot)[port])
         assert.deepEqual(config.runtimeArgs, ['scripts/dev/slot.mjs', 'run', target, String(slot)])
+        assert.equal(config.url, url)
       }
-    }
-  })
-
-  test('.claude/launch.json は、スロットの店舗画面の url を slot<番号>.localhost にし、管理画面には url を付けない（DC-453-1）', () => {
-    const configs = readJson('.claude/launch.json').configurations
-    for (const slot of slots) {
-      const store = configs.find((c) => c.name === `store-${slot}`)
-      assert.equal(store.url, `http://slot${slot}.localhost:${slotValues(slot).storePort}`)
-      const admin = configs.find((c) => c.name === `admin-${slot}`)
-      assert.equal(admin.url, undefined)
     }
   })
 

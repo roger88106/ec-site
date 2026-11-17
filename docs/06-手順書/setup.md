@@ -205,7 +205,7 @@ Windows で `run backend` の node を強制終了すると、Gradle のクラ�
 
 - 作業ツリーを `release` せずに消しても、そのスロットは次の `assign` で空きになる。データベースとバケットは共有の基盤に残るが、`assign` が再作成する。
 - `node_modules` のある作業ツリーを Windows で削除すると、パスが長すぎて失敗する。`git config core.longpaths true` を設定してから `git worktree remove <パス>` で削除する。失敗が続くときは、PowerShell で `\\?\` を付けたパスを指定して削除する。
-- 店舗画面の Cookie は、ポートでなくホストで分かれる。スロット 1〜3 の店舗画面は、`http://slot<番号>.localhost:<店舗画面のポート>` で開く（`slot.mjs show` の表示も同じ URL）。ブラウザーは `*.localhost` をループバックアドレスに解決する。
+- 店舗画面の Cookie は、ポートでなくホストで分かれる。スロット 1〜3 の店舗画面は、`http://slot<番号>.localhost:<店舗画面のポート>` で開く（`slot.mjs show` と `run store` の表示も同じ URL）。ブラウザーは `*.localhost` をループバックアドレスに解決する。Next.js が起動時に表示する `localhost` の URL で開くと、ログインの戻り先（`AUTH_URL`）とホストが違うので、ログインできない。
 - スロットの店舗画面を `localhost` で開くと、全てのスロットの店舗画面の Cookie が `localhost` に残り、全てのポートへのリクエストに付く。ヘッダーが上限を超えると、mock の支払画面（バックエンド）が 400 を、店舗画面が 431 を返すことがある。
 - `localhost` に残った店舗画面の Cookie は、スロットの店舗画面を `slot<番号>.localhost` で初めて開く前に一度削除する。400・431 が出たときも同じ手順で解消する。手順：ブラウザーの開発者ツールの Application（Chrome）の Cookies で `http://localhost:<店舗画面のポート>` を選び、削除する。
 - Cookie の名前は、引き続きスロットごとの接頭辞（`STORE_COOKIE_PREFIX`、[環境変数](environment.md)の「店舗画面」）でも分ける。Keycloak のログインの状態は共有される。

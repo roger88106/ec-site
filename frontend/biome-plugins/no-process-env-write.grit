@@ -1,0 +1,55 @@
+// テストで環境変数を変えるときは vi.stubEnv を使い、process.env を変えない（フロントのテストの書き方の「環境変数は vi.stubEnv で変える」）。
+// 見る形は、process.env（globalThis.process.env・global.process.env を含む）のプロパティへの代入（+= と分割代入を含む）と増減（++、--）、
+// process.env そのものへの代入、delete、process.env を最初の引数に渡す Object.assign・Object.defineProperty(ies)・Reflect.set・
+// Reflect.deleteProperty・Reflect.defineProperty。左辺の中で process.env を読むだけの式（添字、分割代入の既定値）は報告しない。
+// これ以外の書き方（別の変数を経由した変更、optional chaining など）は追わない（レビューで見る）。
+language js
+
+pattern env_object() {
+  or { `process.env`, `globalThis.process.env`, `global.process.env` }
+}
+
+// 代入の先になる process.env のプロパティ
+pattern env_target() {
+  or {
+    JsStaticMemberAssignment(object=$env),
+    JsComputedMemberAssignment(object=$env)
+  } where { $env <: env_object() }
+}
+
+// delete の対象になる process.env のプロパティ
+pattern env_member() {
+  or {
+    JsStaticMemberExpression(object=$env),
+    JsComputedMemberExpression(object=$env)
+  } where { $env <: env_object() }
+}
+
+or {
+  JsAssignmentExpression(left=$target) as $write where {
+    $target <: or { env_target(), contains env_target() }
+  },
+  JsPostUpdateExpression(operand=$target) as $write where { $target <: env_target() },
+  JsPreUpdateExpression(operand=$target) as $write where { $target <: env_target() },
+  `process.env = $_` as $write,
+  `globalThis.process.env = $_` as $write,
+  `global.process.env = $_` as $write,
+  JsUnaryExpression(argument=$target) as $write where {
+    $write <: r"(?s)delete.*",
+    $target <: or { env_member(), env_object() }
+  },
+  JsCallExpression(callee=$callee, arguments=$args) as $write where {
+    $callee <: or {
+      `Object.assign`,
+      `Object.defineProperty`,
+      `Object.defineProperties`,
+      `Reflect.set`,
+      `Reflect.deleteProperty`,
+      `Reflect.defineProperty`
+    },
+    $args <: JsCallArguments(args=[$first, ...]),
+    $first <: env_object()
+  }
+} where {
+  register_diagnostic(span=$write, message="process.env を変えず、vi.stubEnv で変える（フロントのテストの書き方の「環境変数は vi.stubEnv で変える」）。", severity="error")
+}

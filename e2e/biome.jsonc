@@ -21,6 +21,7 @@
       "plugins": [
         "../frontend/biome-plugins/no-css-class-check.grit",
         "../frontend/biome-plugins/no-weak-existence-check.grit",
+        "../frontend/biome-plugins/no-type-cast-escape.grit",
         "./biome-plugins/no-position-selector.grit",
         "./biome-plugins/no-network-idle.grit",
         "./biome-plugins/no-partial-button-name.grit"

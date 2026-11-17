@@ -17,6 +17,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
 | `gradle-plugins` | Gradle のプラグインの id が、policy.json の gradlePlugins と過不足なく一致することを確認する |
+| `ignored-tracked` | 追跡しているファイルが、リポジトリの `.gitignore` で除外の対象になっていないことを確認する |
 | `ja-text` | 使わない語（error）がないことを確認する。文脈で決める語と文体の型は、`--warning` で一覧にする |
 | `ja-text`（`--changed`） | `develop` から分けた後に追加した行の長い文、読点の多い文、長い表のセルを、注釈の形で示す（失敗にしない） |
 | `java-rules` | バックエンドのソースに、禁止した書き方（列挙型の変換に name() を渡すこと、理由のない @SuppressWarnings）がないことを確認する |
@@ -47,7 +48,7 @@ commit の前の hook（[開発環境の起動](setup.md)の「起動」）は�
 | `scripts/` の外の、検査・テストが import・require でたどれるファイル | その検査・テスト |
 | 検査・テストのソースに、パスか名前が書いてあるファイル（読む設定、除外の一覧など） | その検査・テスト |
 | 検査ごとの、読むファイルのパスの正規表現（`CHECK_INPUTS`。Git のファイルの一覧から読む検査）に当たるファイル | その検査と、同じ名前のテスト |
-| どれでもよい | `CHECK_INPUTS` で常に実行するとした検査（`doc-refs`、`ja-text`、`risk`、`spec-numbers`）と、表にない検査 |
+| どれでもよい | `CHECK_INPUTS` で常に実行するとした検査（`doc-refs`、`ignored-tracked`、`ja-text`、`risk`、`spec-numbers`）と、表にない検査 |
 
 - `scripts/` の下で全てを実行するのは、他の script を走査するテストがあり、どの検査に関わるかを表で保つのが難しいため。
 - 検査を加えたら、Git のファイルの一覧から読むファイルのパスの正規表現を `CHECK_INPUTS` に書く。書かなければ常に実行される。

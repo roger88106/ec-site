@@ -187,15 +187,15 @@ action の固定（`action-pins`）・検出してはいけない例：
   - 依存：T565-01-02
   - 範囲：`scripts/ci/config/action-pins.mjs`
   - 確認方法：テストが通る。今の workflow で通る
-- [ ] **T565-01-04** [テスト] `ignored-tracked` のテストを書き、レッドを確認する（DC-565-4〜6）。
+- [x] **T565-01-04** [テスト] `ignored-tracked` のテストを書き、レッドを確認する（DC-565-4〜6）。
   - 依存：T565-01-01
   - 範囲：`scripts/ci/config/ignored-tracked.test.mjs`
   - 確認方法：`node --test` で失敗する
-- [ ] **T565-01-05** T565-01-04 のテストが通る `ignored-tracked` を書く。
+- [x] **T565-01-05** T565-01-04 のテストが通る `ignored-tracked` を書く。
   - 依存：T565-01-04
   - 範囲：`scripts/ci/config/ignored-tracked.mjs`
   - 確認方法：テストが通る。今のリポジトリで通る
-- [ ] **T565-01-06** `pre-commit-select.mjs` と `ci-checks.md` に行を加える（DC-565-7〜9）。
+- [x] **T565-01-06** `pre-commit-select.mjs` と `ci-checks.md` に行を加える（DC-565-7〜9）。
   - 依存：T565-01-03、T565-01-05
   - 範囲：`scripts/dev/hooks/pre-commit-select.mjs`、`docs/06-手順書/ci-checks.md`
   - 確認方法：`node --test scripts/dev/hooks/pre-commit-select.test.mjs`、`node scripts/ci/docs/ci-docs.mjs`

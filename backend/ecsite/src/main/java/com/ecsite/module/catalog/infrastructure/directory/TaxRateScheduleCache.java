@@ -3,6 +3,7 @@ package com.ecsite.module.catalog.infrastructure.directory;
 import com.ecsite.module.tax.api.TaxRateApi;
 import com.ecsite.module.tax.api.model.TaxRateSchedule;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -41,7 +42,7 @@ class TaxRateScheduleCache {
      *
      * <p>まだ取得していなければ null。
      */
-    private final AtomicReference<Entry> entry = new AtomicReference<>();
+    private final AtomicReference<@Nullable Entry> entry = new AtomicReference<>();
 
     /**
      * 税率の一覧を返す。

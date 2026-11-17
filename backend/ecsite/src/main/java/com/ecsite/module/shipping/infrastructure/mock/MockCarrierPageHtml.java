@@ -13,8 +13,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * mock の物流サービスの画面の HTML を組み立てる（{@link MockCarrierController} の補助）。<br />
- * 外から来る値（送り状番号、エラーの文）は、ここで HTML の特殊文字を置き換える。
+ * mock の物流サービスの画面の HTML
+ *
+ * <p>外から来る値（送り状番号、エラーの文）は、ここで HTML の特殊文字を置き換える。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class MockCarrierPageHtml {

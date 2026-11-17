@@ -9,19 +9,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 売上の推移の、区切りへのまとめ（docs/03-機能仕様/reporting.md「売上の推移」）
+ * 売上の推移の区切りへのまとめ
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SalesTrend {
 
     /**
-     * 日ごとの売上を区切りにまとめる。売れなかった区切りも 0 として並べる。
+     * 日ごとの売上を区切りにまとめる。
+     *
+     * <p>売れなかった区切りも 0 として並べる。
      *
      * @param buckets 区切り（期間のすべて）
      * @param daily   日 → その日の売上
      * @return 区切りの順の売上
      */
     public static List<TrendPoint> sum(List<TrendBucket> buckets, Map<LocalDate, DailySales> daily) {
+        // 区切りごとに、区切りに入る日の売上を合計する
         return buckets.stream().map(bucket -> {
             var amount = Money.ZERO;
             long quantity = 0;

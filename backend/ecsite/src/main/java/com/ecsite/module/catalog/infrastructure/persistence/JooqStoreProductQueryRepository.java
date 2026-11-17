@@ -25,7 +25,7 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
 
 /**
- * C 側向けの商品照会のクエリリポジトリ（docs/03-機能仕様/catalog.md）
+ * C 側の商品照会のクエリリポジトリ
  */
 @Repository
 @RequiredArgsConstructor
@@ -73,7 +73,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .offset(request.offset())
                 .fetch();
 
-        var items = storeProductSummaries.of(rows);
+        var items = storeProductSummaries.of(rows, priceInclTax);
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }
@@ -92,23 +92,27 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
             return Optional.empty();
         }
         var priceInclTax = PriceInclTaxField.of(rates);
-        return dsl.select(PRODUCT.ID, PRODUCT.NAME, PRODUCT.DESCRIPTION, priceInclTax, PRODUCT.PRICE_EXCL_TAX)
+        var axes = ProductParts.axes(PRODUCT.ID);
+        var found = dsl.select(PRODUCT.ID, PRODUCT.NAME, PRODUCT.DESCRIPTION, priceInclTax, PRODUCT.PRICE_EXCL_TAX, axes)
                 .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
                 .and(ProductVisibility.visibleAt(now))
                 .and(priceInclTax.isNotNull())
-                .fetchOptional()
-                .map(row -> {
-                    var images = storeImageUrls.ofProduct(id);
-                    return new StoreProductDetailView(row.value1(), row.value2(), row.value3(), Money.of(row.value4()), Money.of(row.value5()),
-                            ProductParts.axes(dsl, id), variants(id, images), List.copyOf(images.values()));
-                });
+                .fetchOptional();
+        return found.map(row -> {
+            var images = storeImageUrls.ofProduct(id);
+            return new StoreProductDetailView(row.get(PRODUCT.ID), row.get(PRODUCT.NAME), row.get(PRODUCT.DESCRIPTION),
+                    Money.of(row.get(priceInclTax)), Money.of(row.get(PRODUCT.PRICE_EXCL_TAX)),
+                    List.of(row.get(axes)), variants(id, images), List.copyOf(images.values()));
+        });
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 一覧の条件：表示される商品で、税込価格を出せること。カテゴリ・価格の範囲で絞り込む。
+     * 一覧の条件：表示される商品で、税込価格を出せること。
+     *
+     * <p>カテゴリ・価格の範囲で絞り込む。
      */
     private static Condition condition(StoreProductListQuery query, Instant now, Field<Long> priceInclTax) {
         var condition = ProductVisibility.visibleAt(now).and(priceInclTax.isNotNull());
@@ -125,9 +129,12 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * 並び順。同じ値なら ID の順にし、ページをまたいでも重複・欠落しないようにする（API の規約）。
+     * 並び順を返す。
+     *
+     * <p>同じ値なら ID の順。
      */
     private static List<OrderField<?>> orderBy(StoreProductListQuery.Sort sort, Field<Long> priceInclTax) {
+        // 同じ値を ID の順にして、ページをまたいでも重複・欠落しないようにする（API の規約）
         return switch (sort) {
             case NEWEST -> List.of(PRODUCT.FIRST_SHOWN_AT.desc(), PRODUCT.ID);
             case PRICE_ASC -> List.of(priceInclTax.asc(), PRODUCT.ID);
@@ -136,17 +143,23 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * すべてのバリアント（販売停止中を含む）を表示順で取得する。バリアントの画像は、指定した画像の URL（なければ null）。
+     * 全てのバリアント（販売停止中を含む）を表示順で取得する。
+     *
+     * <p>バリアントの画像は、指定した画像の URL（なければ null）。
      */
     private List<StoreProductDetailView.Variant> variants(UUID productId, Map<UUID, String> imageUrls) {
-        var axisValuesByVariant = ProductParts.axisValuesByVariant(dsl, productId);
-        return dsl.selectFrom(VARIANT)
+        var axisValues = ProductParts.axisValues(VARIANT.ID);
+        return dsl.select(VARIANT.ID, VARIANT.SALES_SUSPENDED, VARIANT.IMAGE_ID, axisValues)
+                .from(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(productId))
-                .orderBy(VARIANT.DISPLAY_ORDER)
-                .fetch(variant -> new StoreProductDetailView.Variant(
-                        variant.getId(),
-                        axisValuesByVariant.getOrDefault(variant.getId(), List.of()),
-                        variant.getSalesSuspended(),
-                        variant.getImageId() == null ? null : imageUrls.get(variant.getImageId())));
+                .orderBy(VARIANT.DISPLAY_ORDER, VARIANT.ID)
+                .fetch(row -> {
+                    var imageId = row.get(VARIANT.IMAGE_ID);
+                    return new StoreProductDetailView.Variant(
+                            row.get(VARIANT.ID),
+                            List.of(row.get(axisValues)),
+                            row.get(VARIANT.SALES_SUSPENDED),
+                            imageId == null ? null : imageUrls.get(imageId));
+                });
     }
 }

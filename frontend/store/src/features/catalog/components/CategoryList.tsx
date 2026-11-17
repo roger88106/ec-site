@@ -2,7 +2,11 @@ import Link from 'next/link'
 import type { CategoryNode } from '@/api/types'
 import { categoryHref } from '@/features/catalog/listQuery'
 
-/** カテゴリの一覧。最上位と、その子を並べ、それぞれ絞り込んだ商品一覧へリンクする */
+/**
+ * カテゴリの一覧
+ *
+ * 最上位と、その子を並べ、それぞれ絞り込んだ商品一覧へリンクする。
+ */
 export function CategoryList({ categories }: { categories: CategoryNode[] }) {
   if (categories.length === 0) {
     return null

@@ -9,9 +9,9 @@ import com.ecsite.api.store.model.RequestOrderCancellationRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
-import com.ecsite.module.order.application.model.OrderSummaryView;
-import com.ecsite.module.order.application.payment.OrderPaymentPageService;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,7 +20,9 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * 注文のコントローラー（C 側。store.yaml の tag: order）
+ * 店舗の注文のコントローラー
+ *
+ * <p>C 側の API のうち、store.yaml のタグ order の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -37,12 +39,12 @@ class StoreOrderController implements OrderApi {
     private final OrderCancellationService orderCancellationService;
 
     /**
-     * 支払画面のサービス
+     * 注文の決済ゲートウェイサービス
      */
-    private final OrderPaymentPageService orderPaymentPageService;
+    private final OrderPaymentGatewayService paymentGatewayService;
 
     /**
-     * 店舗 API（注文手続き・注文）のマッパー
+     * 店舗の注文 API のマッパー
      */
     private final StoreOrderMapper mapper;
 
@@ -63,7 +65,9 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 自分の支払待ちの注文の一覧（確認の画面に表示する情報）。注文日時の新しい順
+     * 自分の支払待ちの注文の一覧。
+     *
+     * <p>注文日時の新しい順
      *
      * @return Http 200 : {@link PendingOrderList}
      */
@@ -73,7 +77,9 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * キャンセルの申請。申請中なら何もしない
+     * キャンセルの申請。
+     *
+     * <p>申請中なら何もしない
      *
      * @param orderId 注文 ID
      * @param request キャンセルの申請のリクエスト
@@ -86,19 +92,23 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 支払画面を開く。開いている画面があれば同じ画面
+     * 支払画面を開く。
+     *
+     * <p>開いている画面があれば同じ画面
      *
      * @param orderId 注文 ID
      * @return Http 200 : {@link PaymentPage}
      */
     @Override
     public ResponseEntity<PaymentPage> openOrderPaymentPage(UUID orderId) {
-        var url = orderPaymentPageService.pageUrl(orderId, currentMemberIds.require());
+        var url = paymentGatewayService.pageUrl(orderId, currentMemberIds.require());
         return ResponseEntity.ok(new PaymentPage().url(URI.create(url)));
     }
 
     /**
-     * 自分の注文の一覧。注文日時の新しい順
+     * 自分の注文の一覧。
+     *
+     * <p>注文日時の新しい順
      *
      * @param page ページ番号
      * @param size 1 ページの件数

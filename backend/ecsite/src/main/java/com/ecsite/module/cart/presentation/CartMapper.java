@@ -3,14 +3,14 @@ package com.ecsite.module.cart.presentation;
 import com.ecsite.api.store.model.MemberCart;
 import com.ecsite.api.store.model.MergeCartResult;
 import com.ecsite.api.store.model.MergedCartItem;
-import com.ecsite.module.cart.application.CartService;
+import com.ecsite.module.cart.application.model.MergedCart;
 import com.ecsite.module.cart.domain.CartMergeResult;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 /**
- * カートの API の型への変換（バックエンドの書き方の「応答への変換は手動で書く」）
+ * カートの API の型への変換
  */
 @Component
 class CartMapper {
@@ -31,7 +31,7 @@ class CartMapper {
      * @param merged 移した結果
      * @return カートを移した結果のレスポンス
      */
-    MergeCartResult toMergeCartResult(CartService.MergedCart merged) {
+    MergeCartResult toMergeCartResult(MergedCart merged) {
         return new MergeCartResult()
                 .cartId(merged.cartId())
                 .truncatedItems(merged.result().truncatedItems().stream().map(CartMapper::toMergedItem).toList())

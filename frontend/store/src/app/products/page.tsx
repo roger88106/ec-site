@@ -1,3 +1,4 @@
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { flattenTree } from '@ec-site/shared/lib/categoryTree'
 import type { Metadata, Route } from 'next'
 import { useTranslations } from 'next-intl'
@@ -18,7 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 商品一覧。カテゴリ（子孫を含む）と税込の価格帯で絞り込み、並べ替え、ページで送る。<br />
+ * 商品一覧
+ *
+ * カテゴリ（子孫を含む）と税込の価格帯で絞り込み、並べ替え、ページで送る。
  * 入力の誤り（URL のクエリの形が違うなど）は、API のエラーの message をこの画面に出す。
  */
 export default async function ProductListPage({ searchParams }: PageProps<'/products'>) {
@@ -44,7 +47,7 @@ export default async function ProductListPage({ searchParams }: PageProps<'/prod
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-semibold">{categoryName ?? t('title') /* カテゴリ名か商品一覧 */}</h1>
+      <PageHeader title={categoryName ?? t('title') /* カテゴリ名か商品一覧 */} />
       <ListFilterForm categories={flatCategories} query={query} />
       {result.response.status === 400 ? (
         <ProblemAlert error={result.error} fallback={t('invalidQuery') /* 条件の再検討 */} />

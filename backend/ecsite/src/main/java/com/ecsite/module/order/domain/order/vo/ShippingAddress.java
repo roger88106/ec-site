@@ -9,14 +9,15 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * お届け先。郵便番号と電話番号はハイフンを除いた数字で持つ。<br />
- * 都道府県と市区町村がマスターデータにあるかは、作る前に注文の確定で確認する（地域の API）。
+ * お届け先
  *
- * @param name       氏名（50 文字まで）
- * @param postalCode 郵便番号（数字 7 桁）
+ * <p>郵便番号と電話番号はハイフンを除いた数字で持つ。都道府県と市区町村がマスターデータにあるかは確認しない。
+ *
+ * @param name       氏名（{@value #NAME_MAX_LENGTH} 文字まで）
+ * @param postalCode 郵便番号（数字 {@value #POSTAL_CODE_DIGITS} 桁）
  * @param area       都道府県と市区町村（コードと注文の時点の名前）
- * @param address    市区町村より下の住所（200 文字まで）
- * @param phone      電話番号（数字 10〜11 桁）
+ * @param address    市区町村より下の住所（{@value #ADDRESS_MAX_LENGTH} 文字まで）
+ * @param phone      電話番号（数字 {@value #PHONE_MIN_DIGITS}〜{@value #PHONE_MAX_DIGITS} 桁）
  */
 @ValueObject
 public record ShippingAddress(String name, String postalCode, AddressArea area, String address, String phone) {
@@ -63,7 +64,9 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
     private static final Pattern PHONE_DIGITS = Pattern.compile("\\d{%d,%d}".formatted(PHONE_MIN_DIGITS, PHONE_MAX_DIGITS));
 
     /**
-     * 入力からお届け先を作る。郵便番号と電話番号のハイフンを除く。
+     * 入力からお届け先を作る。
+     *
+     * <p>郵便番号と電話番号のハイフンを除く。
      *
      * @param name       氏名
      * @param postalCode 郵便番号（ハイフンは任意）
@@ -71,18 +74,22 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
      * @param address    市区町村より下の住所
      * @param phone      電話番号（ハイフンは任意）
      * @return お届け先
+     * @throws BusinessException 氏名が正しくない（{@code INVALID_RECIPIENT_NAME}）
+     * @throws BusinessException 郵便番号が正しくない（{@code INVALID_POSTAL_CODE}）
+     * @throws BusinessException 住所が正しくない（{@code INVALID_ADDRESS}）
+     * @throws BusinessException 電話番号が正しくない（{@code INVALID_PHONE_NUMBER}）
      */
     public static ShippingAddress of(String name, String postalCode, AddressArea area, String address, String phone) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(OrderErrorCode.INVALID_RECIPIENT_NAME, List.of(NAME_MAX_LENGTH));
         }
-        if (postalCode == null || !POSTAL_CODE.matcher(postalCode).matches()) {
+        if (!POSTAL_CODE.matcher(postalCode).matches()) {
             throw BusinessException.of(OrderErrorCode.INVALID_POSTAL_CODE, List.of(POSTAL_CODE_DIGITS));
         }
         if (!BoundedText.isFilledWithin(address, ADDRESS_MAX_LENGTH)) {
             throw BusinessException.of(OrderErrorCode.INVALID_ADDRESS, List.of(ADDRESS_MAX_LENGTH));
         }
-        var phoneDigits = phone == null ? "" : phone.replace("-", "");
+        var phoneDigits = phone.replace("-", "");
         if (!PHONE_DIGITS.matcher(phoneDigits).matches()) {
             throw BusinessException.of(OrderErrorCode.INVALID_PHONE_NUMBER, List.of(PHONE_MIN_DIGITS, PHONE_MAX_DIGITS));
         }

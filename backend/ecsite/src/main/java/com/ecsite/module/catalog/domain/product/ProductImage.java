@@ -7,8 +7,9 @@ import org.jmolecules.ddd.annotation.Identity;
 import java.util.UUID;
 
 /**
- * 商品画像（商品集約の一部）。<br />
- * ファイルはメディアモジュールのアセットで、ここにはアセット ID だけを持つ（docs/03-機能仕様/catalog.md「商品画像」）。
+ * 商品画像
+ *
+ * <p>商品集約の一部。ファイルはメディアモジュールのアセットで、ここにはアセット ID だけを持つ。
  *
  * @param id           画像 ID
  * @param assetId      メディアモジュールのアセット ID

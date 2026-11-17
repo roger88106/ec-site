@@ -25,6 +25,9 @@ class JooqMemberRepository implements MemberRepository {
 
     /**
      * IdP のアカウントの ID で、会員 ID を探す。
+     *
+     * @param idpSubject IdP のアカウントの ID
+     * @return 会員 ID。いなければ空
      */
     @Override
     public Optional<UUID> findIdByIdpSubject(String idpSubject) {
@@ -32,17 +35,20 @@ class JooqMemberRepository implements MemberRepository {
     }
 
     /**
-     * 会員を作る。同じ IdP のアカウントの会員がすでにいれば、何もしない。
+     * 会員を作る
+     *
+     * <p>同じ IdP のアカウントの会員が既にいれば、作らない。
+     *
+     * @param member 会員
      */
     @Override
     public void insertIfAbsent(Member member) {
-        // 同じアカウントの会員を、ほかのリクエストが先に作っていたら何もしない（一意制約の違反でトランザクションを壊さない）
         dsl.insertInto(MEMBER_)
                 .set(MEMBER_.ID, member.id())
                 .set(MEMBER_.IDP_SUBJECT, member.idpSubject())
                 .set(MEMBER_.CREATED_AT, member.createdAt())
-                .onConflict(MEMBER_.IDP_SUBJECT)
-                .doNothing()
+                // IdP のアカウントの ID が重複するときは挿入しない（一意制約の違反でトランザクションを失敗させない）
+                .onConflict(MEMBER_.IDP_SUBJECT).doNothing()
                 .execute();
     }
 }

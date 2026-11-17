@@ -10,9 +10,9 @@ import com.ecsite.api.admin.model.Shipment;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
-import com.ecsite.module.order.application.model.OrderSummaryView;
-import com.ecsite.module.order.application.shipment.OrderShipmentService;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -23,7 +23,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * 注文のコントローラー（B 側。admin.yaml の tag: order）
+ * 管理の注文のコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ order の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -40,12 +42,12 @@ class AdminOrderController implements OrderApi {
     private final OrderQueryService orderQueryService;
 
     /**
-     * 出荷の登録のサービス
+     * 注文の決済ゲートウェイサービス
      */
-    private final OrderShipmentService orderShipmentService;
+    private final OrderPaymentGatewayService paymentGatewayService;
 
     /**
-     * 管理 API（注文）のマッパー
+     * 管理の注文 API のマッパー
      */
     private final AdminOrderMapper mapper;
 
@@ -55,7 +57,9 @@ class AdminOrderController implements OrderApi {
     private final CurrentOperator currentOperator;
 
     /**
-     * 注文一覧。注文日時の新しい順
+     * 注文一覧。
+     *
+     * <p>注文日時の新しい順
      *
      * @param orderNumber           注文番号の前方一致
      * @param status                状態
@@ -101,13 +105,15 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Shipment> shipOrder(UUID orderId, ShipOrderRequest request) {
-        var shipment = orderShipmentService.ship(orderId, mapper.toDomainCarrier(request.getCarrier()),
+        var shipment = paymentGatewayService.ship(orderId, mapper.toDomainCarrier(request.getCarrier()),
                 request.getTrackingNumber());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toShipment(shipment));
     }
 
     /**
-     * キャンセルの申請の承認。キャンセル済みなら何もしない
+     * キャンセルの申請の承認。
+     *
+     * <p>キャンセル済みなら何もしない
      *
      * @param orderId 注文 ID
      * @return Http 204
@@ -131,7 +137,9 @@ class AdminOrderController implements OrderApi {
     }
 
     /**
-     * 運営者の判断によるキャンセル。キャンセル済みなら何もしない
+     * 運営者の判断によるキャンセル。
+     *
+     * <p>キャンセル済みなら何もしない
      *
      * @param orderId 注文 ID
      * @param request キャンセルのリクエスト（理由は必須。出荷済みなら在庫に戻すかも必須）

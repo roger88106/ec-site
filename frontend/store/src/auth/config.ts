@@ -1,5 +1,6 @@
 /**
- * 店舗画面のサーバーの設定（店舗画面の構成の「サーバーの設定とログ」）。<br />
+ * 店舗画面のサーバーの設定（店舗画面の構成の「サーバーの設定とログ」）。
+ *
  * 本番（`NODE_ENV=production`）では、必須の値がなければ起動に失敗させる（`instrumentation.ts`）。
  * ローカル用の既定の値（realm の JSON と同じ）は、開発のモードとテストでだけ使う。
  */
@@ -50,7 +51,7 @@ const URL_SETTINGS = [
 const LOCAL_MOCK_PAYMENT_ORIGIN = 'http://localhost:8080'
 
 /**
- * `http:` か `https:` の URL として解析できるか。
+ * `http:` か `https:` の URL として解析できるかを判定する。
  *
  * @param value 確認する値
  * @returns 解析できて、スキームが `http:` か `https:` なら true
@@ -81,13 +82,13 @@ type ServerConfig = {
   publicUrl: string
   /** 商品の画像の配信元のオリジン（CSP の img-src に使う） */
   imageOrigin: string
-  /** mock の支払画面のオリジン（CSP の form-action に使う。任意。本番のモードでなければ既定 `http://localhost:8080`、本番のモードでは設定したときだけ） */
+  /** mock の支払画面のオリジン（CSP の form-action に使う。任意。本番のモードでなければ既定は `LOCAL_MOCK_PAYMENT_ORIGIN`、本番のモードでは設定したときだけ） */
   mockPaymentOrigin: string | undefined
-  /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定 60） */
+  /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定は `DEFAULT_REVALIDATE_SECONDS`） */
   apiRevalidateSeconds: number
-  /** 店舗 API の応答を待つ秒数（任意。既定 30） */
+  /** 店舗 API の応答を待つ秒数（任意。既定は `DEFAULT_API_TIMEOUT_SECONDS`） */
   apiTimeoutSeconds: number
-  /** IdP（ログイン、token の更新）の応答を待つ秒数（任意。既定 10） */
+  /** IdP（ログイン、token の更新）の応答を待つ秒数（任意。既定は `DEFAULT_IDP_TIMEOUT_SECONDS`） */
   idpTimeoutSeconds: number
   /** 店舗画面の全ての Cookie の名前の前に付ける接頭辞（任意。既定は空で、今の名前のまま） */
   cookiePrefix: string
@@ -100,7 +101,9 @@ const NON_NEGATIVE_INTEGER_PATTERN = /^\d+$/
 const COOKIE_PREFIX_PATTERN = /^[A-Za-z0-9_-]*$/
 
 /**
- * 環境変数から設定を読む。本番のモードで必須の値がなければ（空も含む）、足りない名前を並べた例外を投げる。
+ * 環境変数から設定を読む。
+ *
+ * 本番のモードで必須の値がなければ（空も含む）、足りない名前を並べた例外を投げる。
  * 待つ時間の上限が正の数でなければ、モードによらず、その名前を並べた例外を投げる。
  * 再取得の間隔が 0 以上の整数でなければ、同じくモードによらず例外を投げる。
  * 画像の配信元・issuer・店舗 API の接続先・mock の支払画面のオリジンは、値があれば http か https の URL でなければ、同じく例外を投げる。
@@ -133,7 +136,10 @@ export function loadServerConfig(env: Record<string, string | undefined> = proce
 }
 
 /**
- * 環境変数から設定を読む。確認はせず、値がなければローカル用の既定の値にする。<br />
+ * 環境変数から設定を読む。
+ *
+ * 確認はせず、値がなければローカル用の既定の値にする。
+ *
  * モジュールの読み込みで使う（`next build` でも読まれるため）。本番で値がないときは、起動のとき
  * （{@link loadServerConfig}）にすでに失敗しているので、既定の値で動くことはない。
  *

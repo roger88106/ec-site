@@ -1,5 +1,5 @@
 import { Button } from '@ec-site/shared/ui/button'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
@@ -18,11 +18,16 @@ import { Textarea } from '@/components/ui/textarea'
 /** 理由の長さの上限 */
 const REASON_MAX_LENGTH = schemas.CancelOrderRequest.reason.maxLength
 
-/** 入力欄の値。在庫に戻すかは、選ぶまで空（文字列は radio の値） */
+/**
+ * 入力欄の値
+ *
+ * 在庫に戻すかは、選ぶまで空（文字列は radio の値）。
+ */
 type Values = { reason: string; restock: 'true' | 'false' | '' }
 
 /**
- * 運営者の判断によるキャンセルの、理由（必須）を入力するダイアログ。<br />
+ * 運営者の判断によるキャンセルの、理由（必須）を入力するダイアログ
+ *
  * 出荷済み（返送）の注文では、在庫に戻すかも選ばせる（既定を置かない）。送信は onSubmit に任せ、成功したら閉じる。
  */
 export function CancelOrderDialog({
@@ -47,6 +52,7 @@ export function CancelOrderDialog({
 }) {
   const t = useTranslations('order.cancelDialog')
   const form = useForm<Values>({ defaultValues: { reason: '', restock: '' } })
+  const [reason, restock] = useWatch({ control: form.control, name: ['reason', 'restock'] })
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
       <DialogContent>
@@ -91,7 +97,7 @@ export function CancelOrderDialog({
           <ErrorMessage error={error} shownFields={['reason']} />
           <DialogFooter>
             <Button
-              disabled={pending || !form.watch('reason').trim() || (askRestock && !form.watch('restock'))}
+              disabled={pending || !reason.trim() || (askRestock && !restock)}
               type="submit"
               variant="destructive"
             >

@@ -1,0 +1,52 @@
+package com.ecsite.module.order.application.job;
+
+import com.ecsite.common.scheduling.ExpiredDataCleanup;
+import com.ecsite.module.order.application.checkout.CheckoutService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.time.Clock;
+
+/**
+ * 注文手続きの片付けのジョブ
+ *
+ * <p>期限から保存期間を過ぎた注文手続きを、件数の上限ずつ、残りがなくなるまで消す（1 回ごとに別のトランザクション）。
+ * 注文になった注文手続きも消す。
+ * 間隔と保存期間は注文手続きの片付けの設定 {@code ecsite.order.cleanup} で変えられる。
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+class CheckoutCleanupJob {
+
+    /**
+     * 注文手続きのサービス
+     */
+    private final CheckoutService service;
+
+    /**
+     * 注文手続きの片付けの設定
+     */
+    private final CheckoutCleanupProperties properties;
+
+    /**
+     * 時計
+     */
+    private final Clock clock;
+
+    /**
+     * 期限から保存期間を過ぎた注文手続きを消す。
+     */
+    // 設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    @Scheduled(fixedDelayString = "#{@'ecsite.order.cleanup-"
+            + "com.ecsite.module.order.application.job.CheckoutCleanupProperties'.interval()}")
+    @SchedulerLock(name = "checkout-cleanup")
+    void cleanUp() {
+        var expiredBefore = clock.instant().minus(properties.retention());
+        ExpiredDataCleanup.run(log, "期限切れの注文手続き", properties.batchSize(),
+                () -> service.deleteExpired(expiredBefore, properties.batchSize()));
+    }
+}

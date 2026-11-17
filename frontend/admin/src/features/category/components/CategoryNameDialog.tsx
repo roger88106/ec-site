@@ -1,6 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -11,7 +11,8 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 type Values = { name: string }
 
 /**
- * カテゴリの名称を入力するダイアログ（登録・名称の変更）。<br />
+ * カテゴリの名称を入力するダイアログ（登録・名称の変更）
+ *
  * 送信は onSubmit に任せ、成功したら閉じる。
  */
 export function CategoryNameDialog({
@@ -37,6 +38,7 @@ export function CategoryNameDialog({
 }) {
   const tApp = useTranslations('app.common')
   const form = useForm<Values>({ defaultValues: { name: initialName } })
+  const name = useWatch({ control: form.control, name: 'name' })
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
       <DialogContent>
@@ -64,7 +66,7 @@ export function CategoryNameDialog({
           </Field>
           <ErrorMessage error={error} onReload={onReload} shownFields={['name']} />
           <DialogFooter>
-            <Button disabled={pending || !form.watch('name').trim()} type="submit">
+            <Button disabled={pending || !name.trim()} type="submit">
               {tApp('save') /* 保存 */}
             </Button>
           </DialogFooter>

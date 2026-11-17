@@ -1,6 +1,6 @@
 package com.ecsite.config;
 
-import com.ecsite.IntegrationTest;
+import com.ecsite.support.config.IntegrationTest;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,36 +17,55 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 定期ジョブの分散ロックの統合テスト（バックエンドのアーキテクチャの「水平スケール」）。<br />
+ * 定期ジョブの分散ロックの統合テスト
+ *
+ * <p>バックエンドのアーキテクチャの「水平スケール」に対応する。
  * 別々のインスタンスの代わりに 2 つのスレッドから同じジョブを同時に呼び、DB のロックで 1 回だけ動くことを確認する。
  */
 @IntegrationTest
 class SchedulerLockTest {
 
+    // ============================== Bean ==============================
+
+    /**
+     * 分散ロックを取るテストのジョブ
+     */
     @Autowired
     LockedJob job;
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("同じジョブが動いている間にもう 1 回起動しても、飛ばされ、1 回だけ動く")
     void runsOnlyOnceAtTheSameTime() throws Exception {
         try (var executor = Executors.newSingleThreadExecutor()) {
+            // 準備：別のスレッドで 1 回目を動かし、動き始めるのを待つ
             var first = CompletableFuture.runAsync(job::run, executor);
             job.awaitRunning();
 
+            // 操作：1 回目の最中に 2 回目を呼び、その後で 1 回目を終わらせる
             job.run();
             job.finish();
             first.get(30, TimeUnit.SECONDS);
         }
 
+        // 確認：動いたのは 1 回だけ
         assertThat(job.runs()).isEqualTo(1);
     }
 
+    // ============================== 準備の補助 ==============================
+
     /**
-     * テストのジョブを登録する。
+     * テストのジョブを登録する設定
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Config {
 
+        /**
+         * テストのジョブを登録する。
+         *
+         * @return テストのジョブ
+         */
         @Bean
         LockedJob lockedJob() {
             return new LockedJob();
@@ -54,7 +73,9 @@ class SchedulerLockTest {
     }
 
     /**
-     * 動いた回数を数え、テストが終わらせるまで終わらないジョブ（時間で待たずに、2 回目を 1 回目の最中に呼ぶ）。
+     * 動いた回数を数え、テストが終わらせるまで終わらないジョブ
+     *
+     * <p>時間で待たずに、2 回目を 1 回目の最中に呼ぶ。
      */
     static class LockedJob {
 
@@ -102,6 +123,8 @@ class SchedulerLockTest {
         }
 
         /**
+         * 動いた回数を返す。
+         *
          * @return 動いた回数
          */
         int runs() {

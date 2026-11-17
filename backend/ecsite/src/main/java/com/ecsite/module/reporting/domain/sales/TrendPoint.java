@@ -3,7 +3,7 @@ package com.ecsite.module.reporting.domain.sales;
 import com.ecsite.common.model.value.Money;
 
 /**
- * 売上の推移の 1 つの区切りの、売上額と販売数量
+ * 売上の推移の区切りの売上
  *
  * @param bucket   区切り
  * @param amount   売上額

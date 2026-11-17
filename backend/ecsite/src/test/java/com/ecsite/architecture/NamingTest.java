@@ -1,11 +1,18 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
+import com.ecsite.architecture.sample.naming.ExampleDirectory;
+import com.ecsite.architecture.sample.naming.ExampleQueryRepository;
+import com.ecsite.architecture.sample.naming.ExampleRepository;
+import com.ecsite.architecture.sample.naming.MisnamedExampleRepositoryImpl;
+import com.ecsite.architecture.sample.naming.NamingExamples;
+import com.ecsite.architecture.sample.naming.PublicExampleApiDirectory;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -14,78 +21,134 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * リポジトリと腐敗防止層の名前の形の検査（バックエンドの書き方の「名前の形」）。<br />
+ * リポジトリと腐敗防止層の名前の形の検査
+ *
+ * <p>根拠はバックエンドの書き方の「名前の形」。
  * service とイベントの名前は、用途や時制の判断が必要なので、レビューで確認する。
  */
 class NamingTest {
 
-    @Test
-    @DisplayName("リポジトリの port は domain か application の port に置き、参照用は application に置く")
-    void repositoryPortsResideInPortPackages() {
-        ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Repository"), "名前が Repository で終わる interface");
+    // ============================== テスト ==============================
 
-        assertThat(repositoryPortViolations(ProductionClasses.handwritten())).isEmpty();
+    @Nested
+    @DisplayName("リポジトリ")
+    class Repositories {
+
+        @Test
+        @DisplayName("リポジトリの port は domain か application の port に置き、参照用は application に置く")
+        void repositoryPortsResideInPortPackages() {
+            // 準備：対象の port が 1 件以上ある
+            ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Repository"), "名前が Repository で終わる interface");
+
+            // 操作と確認：本番のクラスに、置き場所の合わない port がない
+            assertThat(repositoryPortViolations(ProductionClasses.handwritten())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("リポジトリの port の実装は、infrastructure.persistence の Jooq と port の名前のクラス")
+        void repositoryImplementationsAreNamedJooq() {
+            // 準備：対象の実装が 1 件以上ある
+            ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Repository"), "Repository の port の実装のクラス");
+
+            // 操作と確認：本番のクラスに、名前か置き場所の合わない実装がない
+            assertThat(implementationViolations(ProductionClasses.handwritten(), "Repository", "Jooq", "", ".infrastructure.persistence"))
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("port の置き場所の規則は、port のパッケージにない port に当たる")
+        void portRuleMatchesMisplacedExamples() {
+            // 操作と確認：置き場所の合わない例（更新用と参照用）が違反になる（合う例は本番のクラスで確認する）
+            assertThat(repositoryPortViolations(namingExamples()))
+                    .containsExactly(ExampleQueryRepository.class.getName(), ExampleRepository.class.getName());
+        }
+
+        @Test
+        @DisplayName("実装の名前の規則は、Jooq と port の名前でない実装に当たる")
+        void implementationRuleMatchesMisnamedExample() {
+            // 操作と確認：名前の合わない例が違反になる
+            assertThat(implementationViolations(namingExamples(), "Repository", "Jooq", "", ".infrastructure.persistence"))
+                    .containsExactly(MisnamedExampleRepositoryImpl.class.getName());
+        }
     }
 
-    @Test
-    @DisplayName("リポジトリの port の実装は、infrastructure.persistence の Jooq と port の名前のクラス")
-    void repositoryImplementationsAreNamedJooq() {
-        ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Repository"), "Repository の port の実装のクラス");
+    @Nested
+    @DisplayName("腐敗防止層")
+    class Directories {
 
-        assertThat(implementationViolations(ProductionClasses.handwritten(), "Repository", "Jooq", "", ".infrastructure.persistence"))
-                .isEmpty();
+        @Test
+        @DisplayName("腐敗防止層の窓口は、使う層の port に置く")
+        void directoryPortsResideInPortPackages() {
+            // 準備：対象の窓口が 1 件以上ある
+            ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Directory"), "名前が Directory で終わる interface");
+
+            // 操作と確認：本番のクラスに、置き場所の合わない窓口がない
+            assertThat(directoryPortViolations(ProductionClasses.handwritten())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("腐敗防止層の実装は、infrastructure.directory の <相手>ApiDirectory のクラス")
+        void directoryImplementationsAreNamedApiDirectory() {
+            // 準備：対象の実装が 1 件以上ある
+            ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Directory"), "Directory の port の実装のクラス");
+
+            // 操作と確認：本番のクラスに、名前か置き場所の合わない実装がない
+            assertThat(implementationViolations(ProductionClasses.handwritten(), "Directory", "", "Api", ".infrastructure.directory")).isEmpty();
+        }
+
+        @Test
+        @DisplayName("腐敗防止層の実装は、public にしない")
+        void directoryImplementationsAreNotPublic() {
+            // 準備：対象の実装が 1 件以上ある
+            ProductionClasses.requireNotEmpty(
+                    directoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory"), "腐敗防止層の実装のクラス");
+
+            // 操作と確認：本番のクラスに、public な実装がない
+            assertThat(publicDirectoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory")).isEmpty();
+        }
+
+        @Test
+        @DisplayName("窓口の置き場所の規則は、port のパッケージにない窓口に当たる")
+        void portRuleMatchesMisplacedExample() {
+            // 操作と確認：置き場所の合わない例が違反になる
+            assertThat(directoryPortViolations(namingExamples())).containsExactly(ExampleDirectory.class.getName());
+        }
+
+        @Test
+        @DisplayName("実装の名前の規則は、<相手>ApiDirectory の形でない実装に当たる")
+        void implementationRuleMatchesMisnamedExample() {
+            // 操作と確認：名前の合わない例が違反になる
+            assertThat(implementationViolations(namingExamples(), "Directory", "", "Api", ".infrastructure.directory"))
+                    .containsExactly(NamingExamples.MISNAMED_DIRECTORY_ADAPTER.getName());
+        }
+
+        @Test
+        @DisplayName("public の規則は、public な腐敗防止層の実装の例に当たる")
+        void publicRuleMatchesPublicExample() {
+            // 準備：窓口と、public な実装と、public でない実装
+            var examples = new ClassFileImporter().importClasses(
+                    ExampleDirectory.class, PublicExampleApiDirectory.class, NamingExamples.MISNAMED_DIRECTORY_ADAPTER);
+
+            // 操作と確認：public な実装だけが違反になる
+            assertThat(publicDirectoryImplementations(examples, ".naming"))
+                    .containsExactly(PublicExampleApiDirectory.class.getName());
+        }
     }
 
-    @Test
-    @DisplayName("腐敗防止層の窓口は、使う層の port に置く")
-    void directoryPortsResideInPortPackages() {
-        ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Directory"), "名前が Directory で終わる interface");
+    // ============================== 準備の補助 ==============================
 
-        assertThat(directoryPortViolations(ProductionClasses.handwritten())).isEmpty();
-    }
-
-    @Test
-    @DisplayName("腐敗防止層の実装は、infrastructure.directory の <相手>ApiDirectory のクラス")
-    void directoryImplementationsAreNamedApiDirectory() {
-        ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Directory"), "Directory の port の実装のクラス");
-
-        assertThat(implementationViolations(ProductionClasses.handwritten(), "Directory", "", "Api", ".infrastructure.directory")).isEmpty();
-    }
-
-    @Test
-    @DisplayName("名前の規則は、置き場所と名前の合わない例に当たる（合う例は本番のクラスで確認する）")
-    void rulesMatchMisplacedAndMisnamedExamples() {
-        var examples = new ClassFileImporter().importClasses(
+    /**
+     * 置き場所と名前の合わない例を読む。
+     *
+     * @return リポジトリと腐敗防止層の、置き場所と名前の合わない port と実装の例
+     */
+    private static JavaClasses namingExamples() {
+        return new ClassFileImporter().importClasses(
                 ExampleRepository.class, ExampleQueryRepository.class, ExampleDirectory.class,
-                MisnamedExampleRepositoryImpl.class, MisnamedExampleDirectoryAdapter.class);
-
-        assertThat(repositoryPortViolations(examples))
-                .containsExactly(ExampleQueryRepository.class.getName(), ExampleRepository.class.getName());
-        assertThat(directoryPortViolations(examples)).containsExactly(ExampleDirectory.class.getName());
-        assertThat(implementationViolations(examples, "Repository", "Jooq", "", ".infrastructure.persistence"))
-                .containsExactly(MisnamedExampleRepositoryImpl.class.getName());
-        assertThat(implementationViolations(examples, "Directory", "", "Api", ".infrastructure.directory"))
-                .containsExactly(MisnamedExampleDirectoryAdapter.class.getName());
+                MisnamedExampleRepositoryImpl.class, NamingExamples.MISNAMED_DIRECTORY_ADAPTER);
     }
 
-    @Test
-    @DisplayName("腐敗防止層の実装は、public にしない（対象は 1 件以上ある）")
-    void directoryImplementationsAreNotPublic() {
-        ProductionClasses.requireNotEmpty(
-                directoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory"), "腐敗防止層の実装のクラス");
-
-        assertThat(publicDirectoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory")).isEmpty();
-    }
-
-    @Test
-    @DisplayName("public の規則は、public な腐敗防止層の実装の例に当たる")
-    void publicRuleMatchesPublicExample() {
-        var examples = new ClassFileImporter().importClasses(
-                ExampleDirectory.class, PublicExampleApiDirectory.class, MisnamedExampleDirectoryAdapter.class);
-
-        assertThat(publicDirectoryImplementations(examples, ".architecture"))
-                .containsExactly(PublicExampleApiDirectory.class.getName());
-    }
+    // ============================== 規則の補助 ==============================
 
     /**
      * 名前が指定した語で終わる interface（port）を返す。
@@ -196,10 +259,10 @@ class NamingTest {
     /**
      * 名前か置き場所の合わない、port の実装の名前を返す。
      *
-     * @param classes   調べるクラス
-     * @param suffix    port の名前の終わり（Repository、Directory）
-     * @param prefix    実装の名前の前に付ける語（Jooq）
-     * @param infix     port の名前の suffix の前に入れる語（Api）
+     * @param classes    調べるクラス
+     * @param suffix     port の名前の終わり（Repository、Directory）
+     * @param prefix     実装の名前の前に付ける語（Jooq）
+     * @param infix      port の名前の suffix の前に入れる語（Api）
      * @param packageEnd 実装を置くパッケージの名前の終わり
      * @return 規則に合わない実装のクラスの名前（名前の順）
      */
@@ -221,40 +284,4 @@ class NamingTest {
         }
         return violations.stream().sorted().toList();
     }
-
-    /**
-     * 規則に当たる例：腐敗防止層の実装が public（public のクラスは、ファイルの名前のクラスしか書けないので、入れ子で置く）
-     */
-    public static final class PublicExampleApiDirectory implements ExampleDirectory {
-    }
-}
-
-/**
- * 規則に当たる例：リポジトリの port が port のパッケージにない
- */
-interface ExampleRepository {
-}
-
-/**
- * 規則に当たる例：参照用のリポジトリの port が application の port のパッケージにない
- */
-interface ExampleQueryRepository {
-}
-
-/**
- * 規則に当たる例：腐敗防止層の窓口が port にない
- */
-interface ExampleDirectory {
-}
-
-/**
- * 規則に当たる例：リポジトリの実装の名前が Jooq と port の名前でない
- */
-final class MisnamedExampleRepositoryImpl implements ExampleRepository {
-}
-
-/**
- * 規則に当たる例：腐敗防止層の実装の名前が ApiDirectory の形でない
- */
-final class MisnamedExampleDirectoryAdapter implements ExampleDirectory {
 }

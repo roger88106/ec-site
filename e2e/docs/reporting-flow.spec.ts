@@ -4,7 +4,7 @@ import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { makeShot, SEED, SEED_ORDERS } from '../src/screenshot'
 import { SHOWCASE_ADMIN_URL as ADMIN } from '../src/showcase-urls'
 
-/** 撮った画像の置き場所（docs/01-概要/reporting.md が載せる） */
+/** 撮った画像の置き場所（概要のレポートの流れの文書が載せる） */
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/reporting')
 
 /** 画面を撮って OUT に置く */

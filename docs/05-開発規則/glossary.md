@@ -10,16 +10,16 @@
 | MVP の完成までの一覧 | `docs/08-spec/archive/mvp/mvp.md` | MVP を完成させるまでの spec の順と理由 |
 | アーカイブ | | 完了した spec を、MVP などのまとまりごとに移す置き場所（`docs/08-spec/archive/<まとまり>/`）。当時の記録として残し、文書の言い回しの検査から外す |
 | AC 一覧 | `docs/03-機能仕様/acceptance-criteria.md` | 全ての AC の状態、モジュール、今の内容の正本。`ac-check` が読む |
-| 言い換えの一覧 | `scripts/ci/ja-text.json` | 日本語の文の検査の一覧。error と warning に分けて書く |
+| 言い換えの一覧 | `scripts/ci/ja/ja-text.json` | 日本語の文の検査の一覧。error と warning に分けて書く |
 | 受け入れ確認 | | レビュー skill でリポジトリ全体をレビューし、完成の条件を満たすかを判断すること。対象は、バックエンド・フロント・E2E・文書・script と CI（skill `review` の「使う場面」） |
 | 文書レビュー | | 日本語だけの文脈のサブエージェントが、見本の文書と規則を基に、不自然な言い回しの候補と、差分で増えた行のうち不要な行の候補を挙げるレビュー。spec 担当のセッションが採否を決める（skill `review`） |
 | 日本語だけの文脈 | | サブエージェントへの指示と読ませる文書を、日本語だけにすること。利用者との会話の言語が文書に混ざらないようにする（[エージェントの作業フロー](subagents.md)） |
-| CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。一覧は[CI の検査の script](../06-手順書/ci-checks.md) |
+| CI の検査の script | `scripts/ci/<フォルダ>/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。一覧は[CI の検査の script](../06-手順書/ci-checks.md) |
 | 書き方の規則 | `docs/05-開発規則/*-coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確認方法の形でまとめた文書（[書き方の規則とレビュー](review.md)） |
 | 引き継ぎの文書 | `/.local/handoff/` | 作業を別のセッションに引き継ぐための文書。Git に入れない（[AGENTS.md](../../AGENTS.md)） |
 | カバレッジ | | テストで実行されたコードの割合（行・分岐）。基準を下回ると CI が失敗する（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
-| mutation score | `backend-domain` | PIT で測る、検出できた変異の割合。バックエンドの domain が対象（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
-| カバレッジの基準 | `scripts/ci/report/quality-baseline.json` | 対象ごとの値と許容の幅（`tolerance`）。CI が今回の値と比べる（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
+| mutation score | `mutationThreshold` | PIT で測る、検出できた変異の割合。バックエンドの domain が対象（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
+| カバレッジの基準 | `coverageVerification`、`thresholds` | 対象ごとの合計の下限。下回るとテストや検証の task が失敗する（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
 | mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使う。ローカルと E2E の設定だけで立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
 | テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗させる操作と、呼ばれた操作を記録する機能を加えた実装 |
@@ -53,7 +53,7 @@
 | 注文の表示名 | `orderLabels` | 注文の状態・配送状態・配送業者の表示名を返す関数。2 つの画面で同じ文言なので、共有パッケージに置く |
 | 金額の内訳 | `AmountsSummary` | 商品の合計・送料・総額・税率ごとの消費税額を並べて表示する、共有のコンポーネント |
 | リンクの見た目のボタン | `LinkButton` | Button の見た目で、リンクの要素を描画する共有のコンポーネント |
-| 文言のキーのコメントの検査 | `scripts/ci/message-comments.mjs` | 画面のコードで文言を取得する `t('…')` の呼び出しに、出る文を示すコメントがあることを確認する script（[コメントの書き方](comments.md)の「文言をキーにした所」） |
+| 文言のキーのコメントの検査 | `scripts/ci/frontend/message-comments.mjs` | 画面のコードで文言を取得する `t('…')` の呼び出しに、出る文を示すコメントがあることを確認する script（[コメントの書き方](comments.md)の「文言をキーにした所」） |
 | 追跡の issue | | spec 1 つに 1 つの issue。番号が spec の番号になる |
 | issue 担当のセッション | | 起票し、作業の形と profile、並行の可否を決め、spec 担当のセッションを起動するセッション。危険度が低い変更のマージと、リリースの内容のまとめも行う |
 | spec 担当のセッション | | spec 1 つを担当するセッション。利用者と文書を作り、実装とレビューをサブエージェントに任せる（[エージェントの作業フロー](subagents.md)の「役割」） |

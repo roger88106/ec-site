@@ -4,10 +4,10 @@ import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.notification.application.port.SentMailRepository;
-import com.ecsite.module.order.domain.order.CancellationKind;
-import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.OrderStatus;
+import com.ecsite.module.order.domain.order.vo.CancellationKind;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
+import com.ecsite.module.order.domain.order.vo.Gender;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
 import com.ecsite.module.reporting.domain.snapshot.HistoryKind;
@@ -15,6 +15,7 @@ import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,13 +36,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
- * 列挙を文字で持つ列の制約と列挙の一致の検証。
+ * 列挙を文字で持つ列の制約と列挙の一致の検証
  */
 @IntegrationTest
 class EnumColumnConstraintTest {
 
+    // ============================== 定数 ==============================
+
     /**
-     * 列挙を文字で持つ列（schema.テーブル.列）→ 取りうる値の列挙。複数の列挙のどれかの値を持つ列は、すべてを並べる
+     * 列挙を文字で持つ列と、取りうる値の列挙の対応
+     *
+     * <p>キーは schema.テーブル.列。複数の列挙のどれかの値を持つ列は、すべてを並べる。
      */
     private static final Map<String, List<Class<? extends Enum<?>>>> ENUM_COLUMNS = Map.ofEntries(
             entry("catalog.product.status", List.of(PublicationStatus.class)),
@@ -66,7 +71,9 @@ class EnumColumnConstraintTest {
             entry("shipping.shipment.status", List.of(com.ecsite.module.shipping.domain.DeliveryStatus.class)));
 
     /**
-     * 名前で列挙とわかる列の名前の形（状態、種類、配送業者、性別、結果、形式、理由）
+     * 名前で列挙とわかる列の名前の形
+     *
+     * <p>状態、種類、配送業者、性別、結果、形式、理由。
      */
     private static final Pattern ENUM_LIKE_NAME = Pattern.compile("(^|_)(status|kind|carrier|gender|result|format|reason)$");
 
@@ -81,7 +88,9 @@ class EnumColumnConstraintTest {
             "common.event_publication.status");
 
     /**
-     * 値を並べる形の制約（{@code IN (...)} と {@code = '...'}）
+     * 値を並べる形の制約
+     *
+     * <p>{@code IN (...)} と {@code = '...'} の形。
      */
     private static final Pattern VALUE_LIST = Pattern.compile("= ANY \\(\\(?ARRAY\\[|::text = '");
 
@@ -90,15 +99,23 @@ class EnumColumnConstraintTest {
      */
     private static final Pattern LITERAL = Pattern.compile("'([^']*)'");
 
+    // ============================== Bean ==============================
+
+    /**
+     * DB の定義を読む JdbcTemplate
+     */
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("AC-279 列挙の列の制約の値が、列挙の値と一致する")
     void constraintValuesMatchEnums() {
+        // 操作：値を並べる形の制約の値を、列ごとに読む
         var constrained = constrainedValues();
 
-        // 食い違う列をすべて出す
+        // 確認：対応の表の全ての列で、制約の値が列挙の値と同じ（食い違う列をすべて出す）
         assertSoftly(softly -> ENUM_COLUMNS.forEach((column, enums) -> {
             var expected = enums.stream()
                     .flatMap(type -> Arrays.stream(type.getEnumConstants()).map(Enum::name))
@@ -110,6 +127,7 @@ class EnumColumnConstraintTest {
     @Test
     @DisplayName("AC-279 値を並べる制約の列と、名前で列挙とわかる列が、すべて対応の表にある")
     void everyEnumColumnIsListed() {
+        // 操作：名前で列挙とわかる文字の列と、値を並べる制約の列を集める（列挙でない列を除く）
         var enumLike = jdbcTemplate.queryForList("""
                 SELECT table_schema || '.' || table_name || '.' || column_name
                   FROM information_schema.columns
@@ -121,8 +139,11 @@ class EnumColumnConstraintTest {
                 .filter(column -> !NOT_ENUM_COLUMNS.contains(column))
                 .collect(Collectors.toCollection(TreeSet::new));
 
+        // 確認：全て対応の表にある
         assertThat(columns).isSubsetOf(ENUM_COLUMNS.keySet());
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * 1 つの列の、値を並べる形の制約の値を読む。

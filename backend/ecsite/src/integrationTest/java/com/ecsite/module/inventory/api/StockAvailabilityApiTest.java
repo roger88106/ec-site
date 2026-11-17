@@ -1,8 +1,8 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.InventoryTestData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,16 +18,24 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 店舗向けの在庫の API の統合テスト。テストごとにロールバックする。
+ * 在庫の有無の API の統合テスト
+ *
+ * <p>テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional
 class StockAvailabilityApiTest {
 
+    // ============================== 定数 ==============================
+
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    // ============================== Bean ==============================
 
     @Autowired
     StockAvailabilityApi api;
@@ -48,9 +56,12 @@ class StockAvailabilityApiTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
     }
 
+    // ============================== テスト ==============================
+
     @Test
-    @DisplayName("複数のバリアントの在庫の有無を返す。在庫数 0 と、在庫がまだないバリアントは「在庫なし」")
+    @DisplayName("複数のバリアントの在庫の有無を、まとめて返す")
     void returnsAvailability() {
+        // 準備：在庫数 1、在庫数 0、在庫がまだない、の 3 つのバリアント
         var productId = UUID.randomUUID();
         var inStock = UUID.randomUUID();
         var soldOut = UUID.randomUUID();
@@ -58,8 +69,10 @@ class StockAvailabilityApiTest {
         inventory.stock(inStock, productId, 1);
         inventory.create(soldOut, productId);
 
+        // 操作：3 つの在庫の有無を求める
         var availability = api.availabilityOf(List.of(inStock, soldOut, withoutStock));
 
+        // 確認：在庫数 1 だけが「在庫あり」で、在庫数 0 と在庫がまだないものは「在庫なし」
         assertThat(availability).containsExactlyInAnyOrderEntriesOf(Map.of(
                 inStock, true,
                 soldOut, false,
@@ -69,23 +82,26 @@ class StockAvailabilityApiTest {
     @Test
     @DisplayName("BR-11 在庫数がすべて引き当てられたバリアントは「在庫なし」")
     void treatsFullyReservedAsOutOfStock() {
+        // 準備：在庫数 1 の全てと、在庫数 2 のうち 1 を引き当てる
         var productId = UUID.randomUUID();
         var reserved = UUID.randomUUID();
         var partlyReserved = UUID.randomUUID();
         inventory.stock(reserved, productId, 1);
         inventory.stock(partlyReserved, productId, 2);
-        // 期限は実際の時計より十分先にする
-        var expiresAt = Instant.now().plus(Duration.ofHours(1));
+        var expiresAt = NOW.plus(Duration.ofHours(1));
         reservationApi.reserve(UUID.randomUUID(), Map.of(reserved, 1, partlyReserved, 1), expiresAt);
 
+        // 操作：在庫の有無を求める
         var availability = api.availabilityOf(List.of(reserved, partlyReserved));
 
+        // 確認：全て引き当てたものだけが「在庫なし」
         assertThat(availability).containsExactlyInAnyOrderEntriesOf(Map.of(reserved, false, partlyReserved, true));
     }
 
     @Test
     @DisplayName("バリアントを指定しなければ空")
     void returnsEmptyForNoVariants() {
+        // 操作と確認：空
         assertThat(api.availabilityOf(List.of())).isEmpty();
     }
 }

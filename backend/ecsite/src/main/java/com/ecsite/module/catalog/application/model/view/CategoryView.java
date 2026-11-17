@@ -5,7 +5,9 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * カテゴリのビュー（子カテゴリを含まない）
+ * カテゴリのビュー
+ *
+ * <p>子カテゴリを含まない。
  *
  * @param id           カテゴリ ID
  * @param parentId     親カテゴリ ID。最上位なら null

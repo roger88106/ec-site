@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 支払の期限切れ。注文が受けて、キャンセル（支払期限切れ）にし、在庫を戻す。
+ * 支払の期限切れ
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

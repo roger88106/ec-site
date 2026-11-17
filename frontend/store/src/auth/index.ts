@@ -16,7 +16,8 @@ import { fetchWithTimeout } from '@/lib/server/timeout'
 
 /**
  * ログイン（店舗画面の構成の「ログイン」）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
- * （ライブラリを替えるときの範囲を狭くするため）。<br />
+ * （ライブラリを替えるときの範囲を狭くするため）。
+ *
  * 接続先と secret は環境変数（`config.ts`。本番で値がなければ起動に失敗する）。token の取り直しは `refresh.ts`、
  * ログアウトの URL は `logout.ts`。外からは `@/auth` だけを import する。
  */
@@ -41,6 +42,7 @@ const REFRESH_MARGIN_SECONDS = 60
 /** proxy が、いまの画面のパス（クエリを含む）を知らせるリクエストのヘッダー */
 export const PATHNAME_HEADER = 'x-pathname'
 
+/** Auth.js の口（handlers）、セッションの確認（auth）、ログイン（signIn）、ログアウト（signOut） */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Keycloak({
@@ -99,9 +101,11 @@ type CurrentMember = {
 }
 
 /**
- * ログインしている会員。サーバーコンポーネントとサーバーアクションから呼ぶ。リクエストの中では 1 回だけ読む。
+ * ログインしている会員を返す。
  *
- * @returns ログインしていなければ（IdP のログインの状態が切れて token を取り直せないときも）null
+ * サーバーコンポーネントとサーバーアクションから呼ぶ。リクエストの中では 1 回だけ読む。
+ *
+ * @returns ログインしている会員。ログインしていなければ（IdP のログインの状態が切れて token を取り直せないときも）null
  */
 export const currentMember = cache(async (): Promise<CurrentMember | null> => {
   const session = await auth()
@@ -112,7 +116,9 @@ export const currentMember = cache(async (): Promise<CurrentMember | null> => {
 })
 
 /**
- * ログインしている会員。ログインしていなければ、ログインの画面へ移す（ログインを求める画面から呼ぶ）。
+ * ログインしている会員を返す。
+ *
+ * ログインしていなければ、ログインの画面へ移す（ログインを求める画面から呼ぶ）。
  *
  * @returns ログインしている会員
  */
@@ -122,10 +128,12 @@ export async function requireMember(): Promise<CurrentMember> {
 }
 
 /**
- * 会員の access token（サーバー専用）。期限が切れていれば、その場で取り直して使う（Cookie には書かない。
- * 次のリクエストで proxy が書く）。リクエストの中では 1 回だけ読む。
+ * 会員の access token を返す（サーバー専用）。
  *
- * @returns ログインしていない、または取り直せなければ null
+ * 期限が切れていれば、その場で取り直して使う（Cookie には書かない。次のリクエストで proxy が書く）。
+ * リクエストの中では 1 回だけ読む。
+ *
+ * @returns access token。ログインしていない、または取り直せなければ null
  */
 export const getAccessToken = cache(async (): Promise<string | null> => {
   const token = await readToken()
@@ -136,7 +144,9 @@ export const getAccessToken = cache(async (): Promise<string | null> => {
 })
 
 /**
- * ログインの画面へ移す（店舗画面の構成の「ログイン」）。ログインの後は、指定の画面（なければいまの画面）に戻る。
+ * ログインの画面へ移す（店舗画面の構成の「ログイン」）。
+ *
+ * ログインの後は、指定の画面（なければいまの画面）に戻る。
  *
  * @param returnTo ログインの後に戻る画面
  */
@@ -146,8 +156,12 @@ export async function redirectToLogin(returnTo?: string): Promise<never> {
 }
 
 /**
- * IdP のログアウト（RP-Initiated Logout）の URL。ログアウトの後は店舗のトップに戻る。
+ * IdP のログアウト（RP-Initiated Logout）の URL を作る。
+ *
+ * ログアウトの後は店舗のトップに戻る。
  * セッションの Cookie を消す前に呼ぶ（ID token を添えるため）。
+ *
+ * @returns ログアウトの URL
  */
 export async function idpLogoutUrl(): Promise<string> {
   const token = await readToken()
@@ -157,8 +171,6 @@ export async function idpLogoutUrl(): Promise<string> {
 
 /** IdP のアカウントの画面 */
 export const ACCOUNT_URL = `${ISSUER}/account`
-
-// ============================== プライベート ==============================
 
 /** セッションの Cookie を復号して読む */
 async function readToken(): Promise<MemberJwt | null> {

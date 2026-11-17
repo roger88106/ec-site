@@ -4,7 +4,11 @@ import type { ProductSort } from '@/api/types'
 import { translate } from '@/i18n/translate'
 import { firstParam, pageParam, type SearchParams } from '@/lib/searchParams'
 
-/** 商品一覧の絞り込み・並び順・ページ。URL のクエリに持つ（店舗画面の構成の「画面の URL」） */
+/**
+ * 商品一覧の絞り込み・並び順・ページ
+ *
+ * URL のクエリに持つ（店舗画面の構成の「画面の URL」）。
+ */
 export type ListQuery = {
   /** カテゴリ（子孫を含む）。null は絞り込まない */
   categoryId: string | null
@@ -22,7 +26,14 @@ export function sortLabel(sort: ProductSort): string {
   return translate(`catalog.sort.${sort}`)
 }
 
-/** URL のクエリから読む。形の合わない値は指定なしとして扱う */
+/**
+ * URL のクエリから商品一覧の条件を読む。
+ *
+ * 形の合わない値は指定なしとして扱う。
+ *
+ * @param params 画面のクエリ
+ * @returns 商品一覧の条件
+ */
 export function parseListQuery(params: SearchParams): ListQuery {
   const sort = firstParam(params.sort)
   return {
@@ -34,14 +45,31 @@ export function parseListQuery(params: SearchParams): ListQuery {
   }
 }
 
-/** 一覧の URL。既定の値（新着順、1 ページ目）と指定なしの条件は書かない */
+/**
+ * 商品一覧の URL を作る。
+ *
+ * 既定の値（新着順、1 ページ目）と指定なしの条件は書かない。
+ *
+ * @param query 商品一覧の条件
+ * @returns 商品一覧の URL
+ */
 export function listHref(query: ListQuery): Route {
   const params = new URLSearchParams()
-  if (query.categoryId) params.set('categoryId', query.categoryId)
-  if (query.minPrice !== null) params.set('minPrice', String(query.minPrice))
-  if (query.maxPrice !== null) params.set('maxPrice', String(query.maxPrice))
-  if (query.sort !== 'newest') params.set('sort', query.sort)
-  if (query.page > 1) params.set('page', String(query.page))
+  if (query.categoryId) {
+    params.set('categoryId', query.categoryId)
+  }
+  if (query.minPrice !== null) {
+    params.set('minPrice', String(query.minPrice))
+  }
+  if (query.maxPrice !== null) {
+    params.set('maxPrice', String(query.maxPrice))
+  }
+  if (query.sort !== 'newest') {
+    params.set('sort', query.sort)
+  }
+  if (query.page > 1) {
+    params.set('page', String(query.page))
+  }
   const search = params.toString()
   return search ? `/products?${search}` : '/products'
 }
@@ -51,7 +79,7 @@ export function categoryHref(categoryId: string): Route {
   return listHref({ categoryId, minPrice: null, maxPrice: null, sort: 'newest', page: 1 })
 }
 
-/** 0 以上の整数だけを価格として扱う */
+/** 0 以上の整数の文字だけを価格に変える（他は null） */
 function toPrice(value: string | undefined): number | null {
   if (!value || !/^\d+$/.test(value)) {
     return null

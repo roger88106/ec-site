@@ -7,7 +7,8 @@ import {
   portBusyMessage,
   queryFailedMessage,
   STOP_WAIT_MS,
-  stopFailedMessage,
+  releaseBlockedMessage,
+  stopLeftMessage,
   stopListeners,
   stoppedMessage,
 } from './port-stop.mjs'
@@ -333,10 +334,17 @@ describe('示す文', () => {
   })
 
   test('停止しても待ち受けが残ったときは、プロセスの ID と手動の停止のコマンド、release の流し直しを示す', () => {
-    const message = stopFailedMessage(listeners, 'win32')
+    const message = releaseBlockedMessage(listeners, 'win32')
     assert.match(message, /5678（ポート 13000）/)
     assert.match(message, /Stop-Process -Id 1234,5678 -Force/)
     assert.match(message, /もう一度 node scripts\/dev\/slot\.mjs release/)
+  })
+
+  test('stop で停止しても待ち受けが残ったときは、プロセスの ID と手動の停止のコマンドだけを示し、release は示さない', () => {
+    const message = stopLeftMessage(listeners, 'linux')
+    assert.match(message, /1234（ポート 18080、19080）/)
+    assert.match(message, /kill 1234 5678 で止める/)
+    assert.doesNotMatch(message, /release/)
   })
 
   test('問い合わせが失敗したときは、理由と、ポートで探して止めるコマンドを示す（Windows）', () => {

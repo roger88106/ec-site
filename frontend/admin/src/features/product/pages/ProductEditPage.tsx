@@ -1,18 +1,22 @@
 import { LinkButton } from '@ec-site/shared/components/LinkButton'
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { Link, useParams } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
-import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { BasicInfoCard } from '@/features/product/components/BasicInfoCard'
 import { ProductImagesCard } from '@/features/product/components/ProductImagesCard'
 import { ProductStatusCard } from '@/features/product/components/ProductStatusCard'
 import { PublicationPeriodCard } from '@/features/product/components/PublicationPeriodCard'
-import { StatusBadge } from '@/features/product/components/StatusBadge'
+import { PublicationStatusBadge } from '@/features/product/components/PublicationStatusBadge'
 import { VariantSection } from '@/features/product/components/VariantSection'
 
-/** 商品の編集。状態、基本情報、バリアントのカードを並べる */
+/**
+ * 商品の編集
+ *
+ * 状態、基本情報、バリアントのカードを並べる。
+ */
 export function ProductEditPage() {
   const tApp = useTranslations('app.common')
   const { productId = '' } = useParams()
@@ -25,7 +29,7 @@ export function ProductEditPage() {
             title={
               <span className="flex items-center gap-3">
                 <span className="font-mono">{product.productCode}</span>
-                <StatusBadge status={product.status} />
+                <PublicationStatusBadge status={product.status} />
               </span>
             }
           >

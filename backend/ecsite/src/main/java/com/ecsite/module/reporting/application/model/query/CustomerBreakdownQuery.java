@@ -2,6 +2,7 @@ package com.ecsite.module.reporting.application.model.query;
 
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
@@ -15,6 +16,6 @@ import java.util.UUID;
  * @param excludeTax      消費税を除くか
  * @param excludeShipping 送料を除くか（商品を選んだときは、指定によらず除く）
  */
-public record CustomerBreakdownQuery(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
+public record CustomerBreakdownQuery(@NonNull ReportPeriod period, @NonNull Basis basis, @Nullable UUID productId, boolean excludeTax,
                                      boolean excludeShipping) {
 }

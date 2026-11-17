@@ -1,7 +1,7 @@
 import type { PublicationStatus } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
-/** 商品の状態の表示名 */
+/** 商品の状態の表示名を返す。 */
 export function publicationStatusLabel(status: PublicationStatus): string {
   return translate(`labels.publicationStatus.${status}`)
 }

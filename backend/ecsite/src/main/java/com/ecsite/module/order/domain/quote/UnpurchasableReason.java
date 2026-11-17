@@ -6,7 +6,9 @@ package com.ecsite.module.order.domain.quote;
 public enum UnpurchasableReason {
 
     /**
-     * 商品が C 側に表示されない。有効な税率がない場合も含む
+     * 商品が C 側に表示されない
+     *
+     * <p>有効な税率がない場合も含む。
      */
     NOT_SHOWN,
 
@@ -27,7 +29,9 @@ public enum UnpurchasableReason {
     ;
 
     /**
-     * 在庫による理由か（在庫不足は時間がたてば解消しうるので、注文の拒否を 409 にする）。
+     * 在庫による理由か。
+     *
+     * <p>在庫不足は、時間がたてば解消しうる。
      *
      * @return 販売可能数がない・足りないなら true
      */

@@ -1,7 +1,7 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
-import com.ecsite.module.order.api.CartQuote;
 import com.ecsite.module.order.api.OrderQuoteApi;
+import com.ecsite.module.order.api.model.CartQuote;
 import com.ecsite.module.storefront.application.model.CartView;
 import com.ecsite.module.storefront.application.port.OrderDirectory;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +12,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
- * 注文モジュールの見積もりの API を呼び、カートの表示に変換する。
+ * 注文の腐敗防止層
+ *
+ * <p>注文モジュールの見積もりの API を呼び、カートの表示に変換する。
  */
 @Component
 @RequiredArgsConstructor
@@ -25,11 +26,7 @@ class OrderApiDirectory implements OrderDirectory {
     private final OrderQuoteApi orderQuoteApi;
 
     /**
-     * カートを見積もり、表示の形にする。
-     *
-     * @param cartId    カート ID
-     * @param requester リクエストした会員の ID（ログインしていなければ null）
-     * @return カートの表示。カートがない、または会員のカートで持ち主でなければ空
+     * {@inheritDoc}
      */
     @Override
     public Optional<CartView> findCart(UUID cartId, @Nullable UUID requester) {

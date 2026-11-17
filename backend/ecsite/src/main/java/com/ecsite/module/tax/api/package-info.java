@@ -1,6 +1,7 @@
 /**
- * 税モジュールが他のモジュールに公開する API（同期呼び出し）。<br />
- * 利用者：商品カタログ（税率の一覧、指定時点の税率、税込価格の計算）、注文（指定時点の税率、税込価格の計算、税率ごとの消費税額の計算）。
+ * 税モジュールの公開の API
+ *
+ * <p>他のモジュールが同期で呼び出す。
  */
 @org.springframework.modulith.NamedInterface("api")
 package com.ecsite.module.tax.api;

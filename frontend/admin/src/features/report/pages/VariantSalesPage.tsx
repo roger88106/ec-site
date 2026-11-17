@@ -4,17 +4,21 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import type { VariantSalesReport } from '@/api/types'
-import { ChartValueTooltip } from '@/components/ChartValueTooltip'
 import { QueryState } from '@/components/QueryState'
 import { type ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ChartValueTooltip } from '@/features/report/components/ChartValueTooltip'
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportPage } from '@/features/report/components/ReportPage'
 import { variantSalesLabel } from '@/features/report/labels'
 import { CALENDAR_PRESETS } from '@/features/report/period'
-import type { ReportCondition } from '@/features/report/reportCondition'
+import { type ReportCondition, toReportQuery } from '@/features/report/reportCondition'
 
-/** バリアントの売れ行き。商品を選んでから出す。条件は URL に持つ */
+/**
+ * バリアントの売れ行き
+ *
+ * 商品を選んでから出す。条件は URL に持つ。
+ */
 export function VariantSalesPage() {
   return (
     <ReportPage
@@ -39,20 +43,14 @@ function VariantSalesView({ condition }: { condition: ReportCondition }) {
   )
 }
 
-/** 選んだ商品のバリアントの売れ行きを取得して出す */
+/** 選んだ商品のバリアントの売れ行き（取得したグラフと表） */
 function VariantSalesQuery({ condition, productId }: { condition: ReportCondition; productId: string }) {
   const query = $api.useQuery(
     'get',
     '/reports/variant-sales',
     {
       params: {
-        query: {
-          productId,
-          from: condition.from,
-          to: condition.to,
-          basis: condition.basis,
-          excludeTax: condition.excludeTax,
-        },
+        query: { ...toReportQuery(condition), productId },
       },
     },
     { placeholderData: keepPreviousData },

@@ -54,7 +54,7 @@ pnpm dev
 
   | hook | 書く 1 行 | 実行するもの |
   |------|-----------|--------------|
-  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh`。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める。今のブランチが `develop` か `main` なら、検査の前に commit を失敗にし、作業ブランチの作り方を示す（detached HEAD は通す）※1。pre-commit hook を置いていないときは ※2 |
+  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh` のうち、ステージしたファイルに関係する検査とテスト（選び方は [CI の検査の script](ci-checks.md)の「commit の前の hook」）。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める。今のブランチが `develop` か `main` なら、検査の前に commit を失敗にし、作業ブランチの作り方を示す（detached HEAD は通す）※1。pre-commit hook を置いていないときは ※2 |
   | `.git/hooks/commit-msg` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/commit-msg" "$1" \|\| exit 1` | `ja-text --message` で、メッセージの error（使わない語）を調べ、あれば commit は失敗する |
 
   ※1：git が pre-commit hook を実行しない `git merge`・`git cherry-pick`・`git revert`・`git am` は、`develop`・`main` の上でも失敗にならない。
@@ -138,7 +138,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 - 撮影では、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面を撮るため）。白のマグカップの在庫を 2 つ使うため、続けて撮るときも DB を再作成する。
 - 設計書の画像（`docs/01-概要/img/`）は `pnpm capture:docs` で撮る。前提は上の手順 1、2 と同じ。続けて撮るときは DB を再作成する（品番が重複するため）。
 - 撮影は E2E とは別で、CI では実行しない。撮った画像は目視で確認してから commit する。
-- ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。
+- ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/tools/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。
 
 ## ポートが使えないとき（Windows）
 
@@ -194,7 +194,7 @@ node scripts/dev/slot.mjs release
 
 Windows で `run backend` の node を強制終了すると、Gradle のクライアントとバックエンドが残る。`stop` で停止できる（データも削除するときは `release`）。`stop` は、停止の後もポートで待ち受けるプロセスが残るときと、ポートを問い合わせられないときに、手動で停止するコマンドを示して終了コード 1 で終了する。
 
-ポートは「スロット 0 の値 + 10000 × スロットの番号」。データベースとバケットは、名前の末尾にスロットの番号を付ける。ポートの一覧は `scripts/dev/ports.json` にある。ポートを加えるときはそこに加え、`node scripts/ci/local-ports.mjs` で他の置き場所との食い違いを確認する。
+ポートは「スロット 0 の値 + 10000 × スロットの番号」。データベースとバケットは、名前の末尾にスロットの番号を付ける。ポートの一覧は `scripts/shared/slot/ports.json` にある。ポートを加えるときはそこに加え、`node scripts/ci/config/local-ports.mjs` で他の置き場所との食い違いを確認する。
 
 | スロット | バックエンド | 運用ポート | 店舗画面 | 管理画面 | データベース | 配信のバケット | 受付のバケット | 店舗画面の Cookie の接頭辞 |
 |---|---|---|---|---|---|---|---|---|

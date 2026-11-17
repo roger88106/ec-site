@@ -13,7 +13,7 @@ RESTful JSON。OpenAPI を plan に記述し、バックエンドは生成した
 | 接頭辞 | EC の API は全て `/api` で始まる | `/api/store/products` |
 | 契約の範囲 | 2 番目のセグメントは契約の範囲で、モジュールではない。`/api/store`（店舗 API、`store.yaml`、消費者）と `/api/admin`（管理 API、`admin.yaml`、運営者） | `/api/store/products`、`/api/admin/products` |
 | 実装するモジュール | 1 つの契約の操作を、複数のモジュールが実装する | 店舗 API の `/carts` はカート、`/orders` は注文のモジュール |
-| `servers.url` と `paths` | 契約の `servers.url` が接頭辞で、`paths` は接頭辞の後ろだけを書く。生成した interface のパスは接頭辞を含まないので、`ApiPathConfig` が Controller に付ける | `paths` の `/products` は、管理 API では `/api/admin/products` |
+| `servers.url` と `paths` | 契約の `servers.url` が接頭辞で、`paths` は接頭辞の後ろだけを書く。生成した interface のパスは接頭辞を含まないので、`WebMvcConfig` が Controller に付ける | `paths` の `/products` は、管理 API では `/api/admin/products` |
 | 契約の外の URL | 外部のサービスが呼ぶ通知は `/api/webhooks/<相手>`。mock の画面は `/api` の外。応答の形は [「OpenAPI の外のエンドポイント」](#openapi-の外のエンドポイント) | `/api/webhooks/stripe`、`/mock-payment`、`/mock-carrier` |
 | 運用の URL | 死活監視とメトリクスは、運用ポート（既定 9080）の `/actuator` | `/actuator` |
 | リソースの名前 | 小文字の kebab-case の複数形。1 つしかないものは単数形。ログインしている本人は `/me` | `tax-categories`、`image-uploads`、`/shop`、`/me/cart`、`/me/orders`、`/orders/{orderId}/shipment` |

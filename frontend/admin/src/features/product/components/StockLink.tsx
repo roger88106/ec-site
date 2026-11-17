@@ -4,7 +4,8 @@ import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
 
 /**
- * バリアントの在庫数と、在庫の画面へのリンク。<br />
+ * バリアントの在庫数と、在庫の画面へのリンク
+ *
  * 在庫はバリアントの登録のイベントで作られるので、登録の直後はまだないことがある（「—」を出す）。
  */
 export function StockLink({ productId, variantId }: { productId: string; variantId: string }) {

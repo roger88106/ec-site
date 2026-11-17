@@ -93,7 +93,7 @@ describe('店舗 API の 5xx のログ', () => {
       params: { path: { orderId: 'order-1' } },
     })
 
-    // 呼んだ側は、今どおり応答の本文を読める
+    // 呼ぶ側は、今どおり応答の本文を読める
     expect(error).toMatchObject({ errorCode: 'PAYMENT_GATEWAY_UNAVAILABLE' })
     expect(stderr.entries()).toEqual([
       expect.objectContaining({

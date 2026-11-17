@@ -1,8 +1,9 @@
 import { generatePath } from 'react-router'
 
 /**
- * 画面の URL の形（管理画面の構成の「画面の URL」）。ルーターの定義はこれを使う。<br />
- * 画面のコードは URL の文字列を直接書かず、{@link paths} で作る。
+ * 画面の URL の形（管理画面の構成の「画面の URL」）
+ *
+ * ルーターの定義はこれを使う。画面のコードは URL の文字列を直接書かず、{@link paths} で作る。
  */
 export const routePatterns = {
   top: '/',
@@ -21,8 +22,9 @@ export const routePatterns = {
 } as const
 
 /**
- * 画面の URL を作る。ID などの値は、URL の形のパラメーターの名前と型で確認する（generatePath）。<br />
- * 一覧の絞り込みのクエリは、各機能の *Filter.ts が作る。
+ * 画面の URL を作る関数
+ *
+ * ID などの値は、URL の形のパラメーターの名前と型で確認する（generatePath）。一覧の絞り込みのクエリは、各機能の *Filter.ts が作る。
  */
 export const paths = {
   /** 最初の画面（商品の一覧に移る） */

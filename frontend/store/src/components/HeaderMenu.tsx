@@ -1,19 +1,26 @@
 'use client'
 
+import { cn } from 'cn'
 import { MenuIcon } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
 /**
- * ヘッダーのメニュー。幅 1024px 未満では、ボタンで開閉する縦の並びにする。1024px 以上は、ボタンを出さず、項目をヘッダーの 1 行に並べる。<br />
+ * ヘッダーのメニュー
+ *
+ * 幅 1024px 未満では、ボタンで開閉する縦の並びにする。1024px 以上は、ボタンを出さず、項目をヘッダーの 1 行に並べる。
+ *
  * 項目は 1 組だけ描画し、幅で並べ方と表示を切り替える（同じリンクが 2 つあると、支援技術で 2 回読み上げられるため）。
  * 1024px 以上では、メニューの div と外側の div を `contents` にして、項目と開閉のボタンをヘッダーの並びの直接の要素にする。
  * 画面を遷移するとメニューを閉じ（メニューの中のリンクのクリックと、パスの変化の両方で）、Esc キーでも閉じてフォーカスをボタンに戻す。
- *
- * @param children メニューの中の項目。1024px 以上で並べる位置は、各項目の `lg:order-*` で決める
  */
-export function HeaderMenu({ children }: { children: ReactNode }) {
+export function HeaderMenu({
+  children,
+}: {
+  /** メニューの中の項目。1024px 以上で並べる位置は、各項目の `lg:order-*` で決める */
+  children: ReactNode
+}) {
   const t = useTranslations('components.headerMenu')
   const pathname = usePathname()
   const menuId = useId()
@@ -34,9 +41,13 @@ export function HeaderMenu({ children }: { children: ReactNode }) {
   // メニューの中のリンクのクリックは、パスが同じ遷移でも閉じる（パスの変化で閉じる処理は戻る・進むのため）。
   // 修飾キーと中ボタンのクリックは別のタブで開き、今の画面は遷移しないので閉じない
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      return
+    }
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented) return
+      if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented) {
+        return
+      }
       const active = document.activeElement
       const focusIsHere =
         active === null ||
@@ -44,7 +55,9 @@ export function HeaderMenu({ children }: { children: ReactNode }) {
         buttonRef.current?.contains(active) === true ||
         menuRef.current?.contains(active) === true
       setOpen(false)
-      if (focusIsHere) buttonRef.current?.focus()
+      if (focusIsHere) {
+        buttonRef.current?.focus()
+      }
     }
     function closeOnLinkClick(event: MouseEvent) {
       const target = event.target
@@ -80,7 +93,10 @@ export function HeaderMenu({ children }: { children: ReactNode }) {
         {t('open') /* メニュー */}
       </button>
       <div
-        className={`w-full flex-col border-t pt-2 text-sm whitespace-nowrap lg:contents lg:border-0 lg:pt-0 [&_a]:py-2 lg:[&_a]:py-0 [&_button]:py-2 lg:[&_button]:py-0 ${open ? 'flex' : 'hidden'}`}
+        className={cn(
+          'w-full flex-col border-t pt-2 text-sm whitespace-nowrap lg:contents lg:border-0 lg:pt-0 [&_a]:py-2 lg:[&_a]:py-0 [&_button]:py-2 lg:[&_button]:py-0',
+          open ? 'flex' : 'hidden',
+        )}
         id={menuId}
         ref={menuRef}
       >

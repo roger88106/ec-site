@@ -1,35 +1,56 @@
-// ============================================================================
-// フロントの依存のライセンスを、方針（policy.json。依存とライセンスの「依存のライセンスの方針」）と照合する
+// フロントの依存のライセンスを、方針（policy.json。依存とライセンスの「依存のライセンスの方針」）と照合する。
+// リポジトリのルートで pnpm licenses list --json --recursive を実行し、workspace の全ての依存（開発用を含む）を見る。
 //
-//   使い方：node scripts/ci/licenses/check-frontend.mjs
+// 失敗したとき：方針に合わない依存の一覧を示すので、方針に合う依存に替えるか、条件付きなら理由を policy.json に追加する。
 //
-// リポジトリのルートで pnpm licenses list --json --recursive を流し、workspace のすべての部品
-// （開発用を含む）を照合する。方針に合わない部品があれば、一覧を出して失敗する。
-// ============================================================================
+// 除外：なし（条件付きのライセンスの依存は、policy.json の conditional.components に理由を書く）
+//
+// 使い方：node scripts/ci/licenses/check-frontend.mjs
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isMain } from '../lib/is-main.mjs'
+
+/**
+ * 方針（policy.json の中身）。
+ *
+ * @typedef {{ allowed: string[], forbidden: string[], normalize?: Record<string, string>, conditional: { licenses: string[], components: Record<string, string> } }} Policy
+ */
+
+/**
+ * 判定の結果。通らなければ理由を持つ。
+ *
+ * @typedef {{ ok: boolean, reason?: string }} Verdict
+ */
 
 /**
  * 部品の名前が、方針の部品の名前の形（* は任意の文字列）に合うか。
  *
- * @param pattern 部品の名前の形（npm: を除いたもの）
- * @param name    部品の名前
+ * @param {string} pattern 部品の名前の形（npm: を除いたもの）
+ * @param {string} name 部品の名前
+ * @returns {boolean} 合えば true
  */
 function matches(pattern, name) {
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*')
-  return new RegExp(`^${escaped}$`).test(name)
+  if (!NAME_PATTERNS.has(pattern)) {
+    const escaped = pattern
+      .split('*')
+      .map((part) => RegExp.escape(part))
+      .join('.*')
+    NAME_PATTERNS.set(pattern, new RegExp(`^${escaped}$`))
+  }
+  return NAME_PATTERNS.get(pattern).test(name)
 }
+
+/** 部品の名前の形ごとの正規表現（部品ごとに作らないため） */
+const NAME_PATTERNS = new Map()
 
 /**
  * 1 つのライセンス（OR・AND を含まない）を判定する。
  *
- * @param license ライセンスの識別子
- * @param name    部品の名前
- * @param policy  方針
- * @returns 通るか、通らない理由
+ * @param {string} license ライセンスの識別子
+ * @param {string} name 部品の名前
+ * @param {Policy} policy 方針
+ * @returns {Verdict} 通るか、通らない理由
  */
 function evaluateOne(license, name, policy) {
   const id = policy.normalize?.[license] ?? license
@@ -51,8 +72,8 @@ function evaluateOne(license, name, policy) {
 /**
  * ライセンスの式を、丸括弧・AND・OR・識別子の並びに分ける。WITH などの演算子でない語は識別子の一部になる。
  *
- * @param expression ライセンスの式
- * @returns 並び（括弧と演算子は文字列、識別子は { id }）
+ * @param {string} expression ライセンスの式
+ * @returns {(string | { id: string })[]} 並び（括弧と演算子は文字列、識別子は { id }）
  */
 function tokenize(expression) {
   const tokens = []
@@ -77,12 +98,13 @@ function tokenize(expression) {
 
 /**
  * ライセンスの式（SPDX の OR・AND と括弧）を判定する。AND は OR より強く結ぶ。
+ *
  * OR はどれか 1 つ、AND はすべてが通れば通る。解析できない式は通らない。
  *
- * @param expression ライセンスの式
- * @param name       部品の名前
- * @param policy     方針
- * @returns 通るか、通らない理由
+ * @param {string} expression ライセンスの式
+ * @param {string} name 部品の名前
+ * @param {Policy} policy 方針
+ * @returns {Verdict} 通るか、通らない理由
  */
 export function evaluate(expression, name, policy) {
   const tokens = tokenize(expression)
@@ -139,20 +161,20 @@ export function evaluate(expression, name, policy) {
       return syntaxError(`${tokens[position]?.id ?? tokens[position]} の位置が正しくない`)
     }
     return result
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return { ok: false, reason: `解析できないライセンスの式（${expression.trim() || '空'}）：${error.message}` }
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      return { ok: false, reason: `解析できないライセンスの式（${expression.trim() || '空'}）：${e.message}` }
     }
-    throw error
+    throw e
   }
 }
 
 /**
  * pnpm licenses list --json の結果を照合する。
  *
- * @param report ライセンス → 部品（name、versions）の一覧
- * @param policy 方針
- * @returns 方針に合わない部品
+ * @param {Record<string, { name: string, versions: string[] }[]>} report ライセンス → 部品（name、versions）の一覧
+ * @param {Policy} policy 方針
+ * @returns {{ name: string, versions: string[], license: string, reason: string }[]} 方針に合わない部品
  */
 export function check(report, policy) {
   const failures = []
@@ -191,6 +213,11 @@ function main() {
   process.exit(failures.length === 0 ? 0 : 1)
 }
 
-if (isMain(import.meta.url)) {
-  main()
+if (import.meta.main) {
+  try {
+    main()
+  } catch (e) {
+    console.log(`依存の一覧を取得できない（pnpm licenses の失敗か、読めない入力）：${e.message.split('\n')[0]}`)
+    process.exit(2)
+  }
 }

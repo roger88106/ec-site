@@ -26,12 +26,12 @@ import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.common.presentation.StorePrices;
 import com.ecsite.common.security.AuthenticatedMember;
-import com.ecsite.module.order.application.model.CheckoutView;
-import com.ecsite.module.order.application.model.OrderDetailView;
-import com.ecsite.module.order.application.model.OrderPayment;
-import com.ecsite.module.order.application.model.OrderShipment;
-import com.ecsite.module.order.application.model.OrderSummaryView;
-import com.ecsite.module.order.application.model.PlaceOrderCommand;
+import com.ecsite.module.order.application.model.command.PlaceOrderCommand;
+import com.ecsite.module.order.application.model.view.CheckoutView;
+import com.ecsite.module.order.application.model.view.OrderDetailView;
+import com.ecsite.module.order.application.model.view.OrderPayment;
+import com.ecsite.module.order.application.model.view.OrderShipment;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 店舗 API（注文手続き・注文）のレスポンスと、アプリケーション層のモデルの変換
+ * 店舗の注文 API のマッパー
+ *
+ * <p>店舗の注文手続き・注文の API のレスポンスと、アプリケーション層のモデルを変換する。
  */
 @Component
 class StoreOrderMapper {
@@ -100,8 +102,10 @@ class StoreOrderMapper {
     }
 
     /**
-     * 注文のレスポンスに変換する。キャンセルの申請・キャンセル・出荷がなければ、その項目を返さない。
-     * 支払の期限は、支払待ちのときだけ返す。出荷はキャンセルの後も返す（画面は注文の状態で出し分ける）。
+     * 注文のレスポンスに変換する。
+     *
+     * <p>キャンセルの申請・キャンセル・出荷がなければ、その項目を返さない。
+     * 支払の期限は、支払待ちのときだけ返す。出荷はキャンセルの後も返す。
      *
      * @param view 注文の詳細
      * @return 注文のレスポンス
@@ -132,6 +136,7 @@ class StoreOrderMapper {
                     .cancelledAt(ApiDateTimes.toOffsetDateTime(view.cancellation().cancelledAt()))
                     .kind(toKind(view.cancellation().kind())));
         }
+        // 出荷はキャンセルの後も返す（画面は注文の状態で出し分ける）
         if (shipment != null) {
             response.shipment(new Shipment()
                     .carrier(toCarrier(shipment.carrier()))
@@ -165,10 +170,30 @@ class StoreOrderMapper {
                 .taxes(amounts.taxes().stream().map(StoreOrderMapper::toTaxAmount).toList());
     }
 
+    /**
+     * 自分の注文の一覧のレスポンスに変換する。
+     *
+     * @param page      注文の一覧
+     * @param payments  注文 ID → 支払
+     * @param shipments 注文 ID → 出荷
+     * @return 注文の一覧のレスポンス
+     */
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
+                                        Map<UUID, OrderShipment> shipments) {
+        return new OrderSummaryPage()
+                .page(page.page())
+                .size(page.size())
+                .totalItems(page.totalItems())
+                .totalPages(page.totalPages())
+                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 見積もりの品目 1 件。画像と購入できない理由は、null でも項目として返す。
+     * 見積もりの品目 1 件。
+     *
+     * <p>画像と購入できない理由は、null でも項目として返す。
      */
     private static QuoteItem toQuoteItem(com.ecsite.module.order.domain.quote.QuoteItem item) {
         var variant = item.variant();
@@ -246,25 +271,9 @@ class StoreOrderMapper {
     }
 
     /**
-     * 自分の注文の一覧のレスポンスに変換する。
+     * 自分の注文の一覧の 1 件。
      *
-     * @param page      注文の一覧
-     * @param payments  注文 ID → 支払
-     * @param shipments 注文 ID → 出荷
-     * @return 注文の一覧のレスポンス
-     */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
-                                        Map<UUID, OrderShipment> shipments) {
-        return new OrderSummaryPage()
-                .page(page.page())
-                .size(page.size())
-                .totalItems(page.totalItems())
-                .totalPages(page.totalPages())
-                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
-    }
-
-    /**
-     * 自分の注文の一覧の 1 件。支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
+     * <p>支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
      */
     private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
                                           @Nullable OrderShipment shipment) {
@@ -299,7 +308,7 @@ class StoreOrderMapper {
     /**
      * キャンセルの種類。
      */
-    private static CancellationKind toKind(com.ecsite.module.order.domain.order.CancellationKind kind) {
+    private static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
         return switch (kind) {
             case REQUEST_APPROVED -> CancellationKind.REQUEST_APPROVED;
             case OPERATOR -> CancellationKind.OPERATOR;

@@ -6,8 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 与信の成功。注文が受けて「受付」にする。<br />
- * 期限切れの後に届いた与信では出ない（決済の中で取り消す）。
+ * 与信の成功
+ *
+ * <p>期限切れの後に届いた与信では出さない（決済の中で取り消す）。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

@@ -6,7 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 商品非公開（将来の検索インデックス同期用）
+ * 商品非公開
+ *
+ * <p>商品を非公開にしたときに発行する。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

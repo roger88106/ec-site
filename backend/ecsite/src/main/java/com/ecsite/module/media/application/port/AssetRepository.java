@@ -27,7 +27,9 @@ public interface AssetRepository {
     List<Asset> findAllById(Collection<UUID> ids);
 
     /**
-     * アセットの記録をまとめて消す。ないものは無視する。
+     * アセットの記録をまとめて消す。
+     *
+     * <p>ないものは無視する。
      *
      * @param ids アセット ID
      */

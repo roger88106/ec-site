@@ -17,9 +17,14 @@ const VARIANT = variant()
 const PAGE_PATH = `/products/${PRODUCT_ID}/variants/${VARIANT.id}/stock`
 
 /**
- * 在庫の画面が使う API に応答する。在庫数は quantity から始める。<br />
- * 調整は、調整後に負になるなら 400（INSUFFICIENT_STOCK）、「その他」でメモがなければ 400（STOCK_MEMO_REQUIRED）、
+ * 在庫の画面が使う API に応答する。
+ *
+ * 在庫数は quantity から始める。調整は、調整後に負になるなら 400（INSUFFICIENT_STOCK）、「その他」でメモがなければ 400（STOCK_MEMO_REQUIRED）、
  * それ以外は在庫数に反映する。調整のリクエストは requests に取っておく。履歴は history を返す。
+ *
+ * @param quantity 在庫数の初期値
+ * @param history  調整履歴
+ * @returns 在庫数と調整のリクエストの記録
  */
 function serveStock(quantity: number, history: StockAdjustment[] = []) {
   const state = { quantity, requests: [] as AdjustStockRequest[] }
@@ -54,7 +59,7 @@ function serveStock(quantity: number, history: StockAdjustment[] = []) {
   return state
 }
 
-/** 在庫数（名前「在庫数」の status）が expected になるまで待つ */
+/** 在庫数（名前「在庫数」の status）が expected になるまで待つ。 */
 async function shownQuantity(expected: number) {
   const quantity = await screen.findByRole('status', { name: '在庫数' })
   await waitFor(() => expect(quantity).toHaveTextContent(new RegExp(`^${expected}$`)))

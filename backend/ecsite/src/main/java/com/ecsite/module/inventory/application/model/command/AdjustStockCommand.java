@@ -2,6 +2,7 @@ package com.ecsite.module.inventory.application.model.command;
 
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
+import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
@@ -15,6 +16,6 @@ import java.util.UUID;
  * @param memo      メモ。理由が「その他」なら必須
  * @param operator  調整した運営者
  */
-public record AdjustStockCommand(UUID variantId, int delta, StockAdjustmentReason reason, @Nullable String memo,
-                                Operator operator) {
+public record AdjustStockCommand(@NonNull UUID variantId, int delta, @NonNull StockAdjustmentReason reason,
+                                 @Nullable String memo, @NonNull Operator operator) {
 }

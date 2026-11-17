@@ -8,7 +8,9 @@ import { COOKIE_CART_ID, NEW_CART_ID } from '@/test/fixtures'
 import { cookieValue, resetRequest } from '@/test/next'
 
 /**
- * 接頭辞を決めて、auth.ts と cartCookie.ts を読み込み直す。環境変数を読むのは読み込むときなので、決めてから読み込む。
+ * 接頭辞を決めて、auth.ts と cartCookie.ts を読み込み直す。
+ *
+ * 環境変数を読むのは読み込むときなので、決めてから読み込む。
  * テストの補助（Auth.js の代わりの状態、Cookie）は読み直さずに同じものを使う。そのため、置き換えたモジュール
  * （next-auth、next/headers）を先に読み込んで、補助との結び付きを決めておく。
  *

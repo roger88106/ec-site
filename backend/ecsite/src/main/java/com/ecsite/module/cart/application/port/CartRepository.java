@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.application.port;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.cart.domain.Cart;
 
 import java.time.Instant;
@@ -12,8 +13,9 @@ import java.util.UUID;
 public interface CartRepository {
 
     /**
-     * カートを作る。<br />
-     * 会員のカートは、同じ会員のカートがすでにあれば何も保存せずに false を返す（同じ会員の同時の初回のリクエスト）。トランザクションは壊さない。
+     * カートを作る。
+     *
+     * <p>会員のカートは、同じ会員のカートがすでにあれば何も保存せずに false を返す。トランザクションは壊さない。
      *
      * @param cart 空のカート
      * @return 保存したら true
@@ -37,16 +39,17 @@ public interface CartRepository {
     Optional<Cart> findById(UUID id);
 
     /**
-     * カートの変更を保存する。品目は置き換える。<br />
-     * 読み込んだ後に他で変更されていたら（保存されているバージョンが 1 つ前でない）、
-     * {@code CONCURRENT_MODIFICATION} の業務のエラーを投げる。
+     * カートの変更を保存する。
+     *
+     * <p>品目は置き換える。
      *
      * @param cart 変更したカート
+     * @throws BusinessException 読み込んだ後に他で変更された（保存されているバージョンが 1 つ前でない。{@code CONCURRENT_MODIFICATION}）
      */
     void save(Cart cart);
 
     /**
-     * 最後の変更が指定した時刻より前のカートを、品目と共に、件数の上限まで消す（片付け）。
+     * 最後の変更が指定した時刻より前のカートを、品目と共に、件数の上限まで消す。
      *
      * @param updatedBefore 最後の変更の時刻の上限
      * @param limit         消す件数の上限

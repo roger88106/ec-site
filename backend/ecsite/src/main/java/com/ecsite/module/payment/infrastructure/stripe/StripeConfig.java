@@ -11,7 +11,9 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Clock;
 
 /**
- * Stripe の決済サービスの設定。決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にする。
+ * Stripe の決済サービスの設定
+ *
+ * <p>決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnPaymentStripe
@@ -19,7 +21,9 @@ import java.time.Clock;
 class StripeConfig {
 
     /**
-     * 通信の失敗を自動でやり直す回数。やり直しには同じ冪等の鍵が付き、Stripe で二重に作られない
+     * 通信の失敗を自動でやり直す回数
+     *
+     * <p>やり直しには同じ冪等の鍵が付き、Stripe で二重に作られない。
      */
     private static final int MAX_NETWORK_RETRIES = 2;
 
@@ -35,7 +39,7 @@ class StripeConfig {
     }
 
     /**
-     * Stripe の API のビルダー（テストが、設定の渡り方を確認するため）。
+     * Stripe の API のビルダーを、設定の値で作る。
      *
      * @param properties Stripe の設定
      * @return Stripe の API のビルダー

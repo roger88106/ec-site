@@ -8,7 +8,7 @@
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
 - データを残さないテストは `@Transactional` で巻き戻す。
 - 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID や実行ごとの識別子）でデータを分ける。確認するのは、自分のデータだけである。表の全体の数や一覧の全体は確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要で、今あるものは残してよい。理由：DB はテストの実行ごとに作り、削除には漏れと順序（外部キー）の手間があるため。
-- ログを確認するテストは、そのテストの中で出た出力だけを確認する。確認する処理の前に `CapturedLogs.mark` で位置を記録し、確認では `CapturedLogs.since` でその後の出力だけを読む。理由：`CapturedOutput` に残る他の出力（`CapturedLogs` の Javadoc）が件数に数えられ、件数を誤っていても通るため。
+- ログを確認するテストは、そのテストの中で出た出力だけを確認する。ログは `LogCapture` で取り込み、確認する処理の前に `LogCapture.clear` で、それまでに取り込んだログを捨てる。理由：準備や前のテストの処理（非同期を含む）が出したログが件数に数えられ、件数を誤っていても通るため（`LogCapture` の Javadoc）。
 - 巻き戻せないテストで、他のテストのデータも処理の対象になるときは、処理の前に対象の行を数え、ログの件数がその数と等しいことを確認する（「1 件以上」だけにしない）。
 
 ※1：IdP は起動せず、`TestSecurityConfig` が署名の鍵を `TestTokens` の鍵に差し替える。Keycloak は、それを確認するテストだけが自分で起動する。
@@ -19,7 +19,11 @@
 
 ## テストデータは補助のクラスで作る
 
-複数のテストで使うデータは、統合テストの補助（次の表）で作る。複数のモジュールのテストで使う補助は `src/integrationTest` の `com.ecsite` の直下に、1 つのパッケージのテストだけが使う補助はそのパッケージに置く。テストのクラスで同じ手順を再定義しない。
+複数のテストで使うデータは、統合テストの補助（次の表）で作る。テストのクラスで同じ手順を再定義しない。補助の置き場所は次のとおり。`com.ecsite` の直下には、テストだけを置く。
+
+- 複数のモジュールのテストで使う補助：`src/integrationTest` の `com.ecsite.support` の下の、用途のパッケージ（`data`：テストデータ、`config`：コンテキストの設定、`security`：token と署名の鍵、`async`：非同期と並行の待ち、`http`：応答の確認と JSON、Mailpit）
+- 1 つのモジュールの複数のパッケージのテストで使う補助：そのモジュールの `support`（例：`module.reporting.support`）
+- 1 つのパッケージのテストだけが使う補助：そのパッケージ
 
 | 補助 | 作るもの |
 |------|----------|
@@ -30,9 +34,9 @@
 | `PaymentTestData` | 支払の作成、与信、売上確定、状態の取得 |
 | `TestJson` | 応答の本文から読む ID（作成の応答の ID など） |
 
-token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う。
+token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture` を使う。
 
-補助以外のテストは、補助が持つ手順を直接書かない（その操作そのものを確認するテストを除く）。手順と、手順を書いてよい補助・テストの対応の正本は `scripts/ci/test-helpers.mjs` の `HELPER_STEPS`。
+補助以外のテストは、補助が持つ手順（上の表）を直接書かない（その操作そのものを確認するテストを除く）。
 
 次の 3 つは手順に含めず、テストが直接書いてよい。
 
@@ -40,13 +44,13 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLo
 - 作った後に変更する呼び出し（店舗の鮮度のテストで税率を変えるなど）
 - 一覧の応答から複数の ID を読む処理（画像の並び、税率の一覧など）
 
-イベントの発行の記録（`EventPublicationRegistry`）を読む操作は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く（`scripts/ci/test-helpers.mjs` の冒頭のコメント）。
+イベントの発行の記録（`EventPublicationRegistry`）を読む操作は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。補助を作るために記録を注入して渡すだけなら、補助の外でもよい。
 
 理由：テストの本文に、確認する項目だけを残すため。
 
 package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、同じパッケージの `src/integrationTest` に public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。テストのために可視性を広げない。
 
-確認方法：レビュー（記録を読む操作と、手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`）
+確認方法：レビュー（記録を読む操作は自動。`EventPublicationReadTest`。在庫と支払の作成を補助の外で呼ばないことも自動。`TestDataCreationTest`）
 
 ## テストの置き場所
 
@@ -58,7 +62,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 ## 単体テストの補助
 
-単体テストの補助は、`src/test` の `com.ecsite` の直下に置く。ただし `Contracts` は、単体テストと統合テストが共有するので `src/testFixtures` の `contract/` に置く。
+単体テストの補助は、`src/test` の `com.ecsite.support` に置く（`com.ecsite` の直下には、テストだけを置く）。ただし `Contracts` は、単体テストと統合テストが共有するので `src/testFixtures` の `contract/` に置く。
 
 | 補助 | 使う場面 | 使い方 |
 |------|----------|--------|

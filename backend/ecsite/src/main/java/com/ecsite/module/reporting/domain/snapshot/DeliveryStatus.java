@@ -1,9 +1,13 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
+import lombok.RequiredArgsConstructor;
+
 /**
- * 配送状態（docs/03-機能仕様/shipping.md「配送状態」の写し）。<br />
- * 写しの配送状態は、状態の履歴のうち順位の最も高いものにする（イベントの届く順によらないため）。
+ * 配送状態
+ *
+ * <p>出荷モジュールの配送状態の写し。状態ごとに順位を持つ。
  */
+@RequiredArgsConstructor
 public enum DeliveryStatus implements HistoryStatus {
 
     /**
@@ -33,16 +37,9 @@ public enum DeliveryStatus implements HistoryStatus {
     private final int rank;
 
     /**
-     * @param rank 順位
-     */
-    DeliveryStatus(int rank) {
-        this.rank = rank;
-    }
-
-    /**
      * 配送状態の順位を返す。
      *
-     * @return 順位（出荷済み 0、配送中 1、配達完了・返送 2）
+     * @return 順位
      */
     public int rank() {
         return rank;

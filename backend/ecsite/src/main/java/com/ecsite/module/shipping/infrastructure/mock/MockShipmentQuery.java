@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 
 /**
- * mock の物流サービスの画面が使う、最近の出荷の問い合わせ（docs/02-設計/shipping.md「mock」）。<br />
- * 本番の処理は使わないので、出荷のリポジトリの port に置かず、mock の側に置く。物流の mock フラグを立てたときだけ出す。
- * 出荷の再構築（列挙型への変換を含む）は出荷のリポジトリに任せ、ここは並びと件数だけを決める。
+ * 最近の出荷の問い合わせ
+ *
+ * <p>本番の処理は使わないので、出荷のリポジトリの port に置かず、mock の側に置く。物流の mock のフラグを立てたときだけ出す。
  */
 @Component
 @ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
@@ -47,6 +47,7 @@ class MockShipmentQuery {
                 .orderBy(SHIPMENT.SHIPPED_AT.desc(), SHIPMENT.ID)
                 .limit(limit)
                 .fetch(SHIPMENT.ORDER_ID);
+        // 出荷の組み立て直し（列挙型への変換を含む）は、出荷のリポジトリに任せる
         var byOrderId = shipmentRepository.findAllByOrderIds(orderIds).stream()
                 .collect(Collectors.toMap(Shipment::orderId, Function.identity()));
         // 注文 ID を読んだ後に出荷が消えることがあるので、なくなった出荷は出さない（mock の画面のため）

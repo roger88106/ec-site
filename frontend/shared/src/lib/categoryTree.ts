@@ -19,7 +19,9 @@ export function flattenTree(nodes: readonly CategoryTreeNode[], depth = 1): Flat
 }
 
 /**
- * カテゴリの選択肢（絞り込み用）。先頭に「すべて」（値は null）を置き、階層は字下げで示す。
+ * 絞り込みに使うカテゴリの選択肢を作る。
+ *
+ * 先頭に「すべて」（値は null）を置き、階層は字下げで示す。
  *
  * @param categories 深さを付けたカテゴリの一覧（{@link flattenTree} の結果）
  * @returns 選択肢の値と表示

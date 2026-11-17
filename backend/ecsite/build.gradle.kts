@@ -53,7 +53,8 @@ extra["jooq.version"] = libs.versions.jooq.get()
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get()))
+        // JDK のバージョンは、リポジトリのルートの .java-version の 1 か所に書く（CI の setup-java も読む）
+        languageVersion.set(JavaLanguageVersion.of(file("../../.java-version").readText().trim()))
     }
 }
 
@@ -85,13 +86,12 @@ sourceSets {
         compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
         runtimeClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
     }
-}
-
-// tools の郵便番号の CSV を読む処理を単体テストで確認するため、単体テストのクラスパスに tools の出力を加える
-// （カバレッジと mutation の対象は main のままで、tools は含まない）
-sourceSets.test {
-    compileClasspath += sourceSets["tools"].output
-    runtimeClasspath += sourceSets["tools"].output
+    // tools の郵便番号の CSV を読む処理を単体テストで確認するため、単体テストのクラスパスに tools の出力を加える
+    // （カバレッジと mutation の対象は main のままで、tools は含まない）
+    test {
+        compileClasspath += sourceSets["tools"].output
+        runtimeClasspath += sourceSets["tools"].output
+    }
 }
 
 configurations["integrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
@@ -109,8 +109,6 @@ idea {
 // 依存関係
 // -----------------------------------------------------------------------------
 dependencies {
-    // CPD は Java だけ見る。既定の pmd-dist は全ての言語の部品（約 40 個）を引くので、Java の部品だけにする（pmd-core は pmd-java から入る）
-    "cpd"("net.sourceforge.pmd:pmd-java:${libs.versions.pmd.get()}")
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.validation)
@@ -153,8 +151,13 @@ dependencies {
     implementation(libs.awssdk.s3)
 
     // --- コード生成（Lombok） ---
+    // main だけに入れる。テストの configuration には加えない（バックエンドの書き方の「Lombok は main だけ」。テストで使うとコンパイルが失敗する）
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+
+    // --- 設定の値の型の一覧（META-INF/spring-configuration-metadata.json。@DefaultValue の既定値を含む） ---
+    // 環境変数の文書の既定値との照合（scripts/ci/backend/config-defaults.mjs）が読む
+    annotationProcessor(libs.spring.boot.configuration.processor)
 
     // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
     errorprone(libs.errorprone.core)
@@ -162,6 +165,10 @@ dependencies {
     // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
     // test などの classpath にも必要なので、compileOnly でなく implementation にする
     implementation(libs.jspecify)
+
+    // --- テストのコードの重複の検出（PMD の CPD） ---
+    // CPD は Java だけ見る。既定の pmd-dist は全ての言語の部品（約 40 個）を引くので、Java の部品だけにする（pmd-core は pmd-java から入る）
+    "cpd"(libs.pmd.java)
 
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」） ---
     implementation(libs.bundles.jmolecules)
@@ -201,17 +208,23 @@ val unitTestMaxHeap = "768m"
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、ModuleStructureTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
-val openApiSourceDir = file("../../api/openapi")
+//   test-classes.dirs：単体テストと統合テストのクラスの置き場所。テストの書き方の検査（TestNameTest など）が読む（TestCodeClasses）
+// API の契約の正本（OpenAPI）の置き場所。テストが読むほか、下の「OpenAPI からのコード生成」でも使う
+val openApiDir = layout.projectDirectory.dir("../../api/openapi")
 val keycloakRealmsDir = file("../../docker/keycloak/realms")
 val unitTestSystemProperties = mapOf(
-    "openapi.dir" to openApiSourceDir.absolutePath,
+    "openapi.dir" to openApiDir.asFile.absolutePath,
     "keycloak.realms.dir" to keycloakRealmsDir.absolutePath,
     "repo.root" to file("../..").absolutePath,
+    "test-classes.dirs" to (sourceSets.test.get().output.classesDirs + sourceSets["integrationTest"].output.classesDirs).asPath,
 )
 
-// 単体テストが読む契約・realm の設定・文書を、task の入力に宣言する（変わったときにテストと PIT を再実行するため）
+// 単体テストが読む契約・realm の設定・文書・統合テストのクラスを、task の入力に宣言する（変わったときにテストと PIT を再実行するため）。
+// 統合テストのクラスは、テストの書き方の検査が読むので、そのコンパイルに依存する
 fun Task.declareUnitTestInputs() {
-    inputs.dir(openApiSourceDir)
+    dependsOn("integrationTestClasses")
+    inputs.files(sourceSets["integrationTest"].output.classesDirs)
+    inputs.dir(openApiDir)
     inputs.dir(keycloakRealmsDir)
     inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
     inputs.file("../../docs/03-機能仕様/glossary.md")
@@ -230,6 +243,17 @@ tasks.named<Test>("test") {
     }
 }
 
+// コンテナのイメージのバージョンの正本。統合テスト（ComposeImages）と jOOQ のコード生成は、ここからイメージを読む。
+// Dependabot が compose を更新すると、両方が同じバージョンになる
+val composeFile: File = file("../../docker/compose.yaml")
+
+/** compose の `image: <名前>:<バージョン>` の行から、名前が一致するイメージを返す */
+fun composeImage(name: String): String =
+    composeFile.readLines().map { it.trim() }.filter { it.startsWith("image:") }
+        .map { it.removePrefix("image:").trim() }
+        .firstOrNull { it.substringBeforeLast(':') == name }
+        ?: throw GradleException("docker/compose.yaml に $name のイメージがない")
+
 val integrationTest = tasks.register<Test>("integrationTest") {
     description = "統合テストを実行する（Docker 必須）"
     group = "verification"
@@ -237,13 +261,16 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     classpath = sourceSets["integrationTest"].runtimeClasspath
     useJUnitPlatform()
     // 契約の補助（Contracts）が読む置き場所：店舗 API の token の契約のテストが読む OpenAPI、IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
-    systemProperty("openapi.dir", openApiSourceDir.absolutePath)
+    systemProperty("openapi.dir", openApiDir.asFile.absolutePath)
     systemProperty("keycloak.realms.dir", keycloakRealmsDir.absolutePath)
     systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
+    // リポジトリのルート。コンテナのイメージの補助（ComposeImages）が docker/compose.yaml を読む
+    systemProperty("repo.root", file("../..").absolutePath)
+    inputs.file(composeFile)
     // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照合する）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
-    inputs.dir(openApiSourceDir)
+    inputs.dir(openApiDir)
     // 本番の jar の起動の統合テスト（ProductionJarStartupTest）が別のプロセスで起動する jar
     val bootJarFile = tasks.bootJar.flatMap { it.archiveFile }
     inputs.file(bootJarFile)
@@ -268,9 +295,9 @@ tasks.check { dependsOn(integrationTest) }
 // 統合テストの分け方（CI でジョブを分けて同時に流して、全体の時間を短くする）
 //   テストクラスの完全修飾名の hash で決める。内部クラス（Outer$Inner）は外のクラスと同じ側に入る。
 //   名前だけで決まるので、テストクラスを追加しても設定を変えなくてよい。全てのクラスがちょうど 1 つの側に入る。
-//   2 つの側の時間が離れたときは、shardOf の salt を変えて分け直す
-//   ./gradlew integrationTestShards                                → 各側に入るクラスの一覧（Docker 不要）
-//   ./gradlew integrationTestShards -PintegrationTestShardCount=3  → 3 つに分けた一覧
+//   側の時間が離れたときは、shardOf の salt を変えて分け方を変える
+//   ./gradlew integrationTestShards -PintegrationTestShardCount=<数>  → 各側に入るクラスの一覧（Docker 不要）
+//   CI で分ける数は ci.yml の matrix（backend-integration の shard）だけで決まる。ここに既定の数を置かない
 // -----------------------------------------------------------------------------
 /** "1/2" → (0, 2)。番号は 1 から数え、内部では 0 から数える */
 fun parseShard(spec: String): Pair<Int, Int> {
@@ -287,7 +314,7 @@ fun parseShard(spec: String): Pair<Int, Int> {
 /** クラスのファイル（com/ecsite/Foo$Bar.class）またはソース（com/ecsite/Foo.java）の相対パスが入る側（0 から数える） */
 fun shardOf(path: String, count: Int): Int {
     val outer = path.removeSuffix(".class").removeSuffix(".java").substringBefore('$').replace('/', '.')
-    val salt = "a" // 時間の差が大きいときに変えて分け直す（"a" はテストの数がほぼ半々になる値）
+    val salt = "xs" // 時間の差が大きいときに変える（"xs" は 3 つに分けたときの、CI のクラスごとの時間の合計がほぼ等しくなる値）
     // String.hashCode の下位ビットは文字の偶奇に偏るので（2 つに分けると偏る）、混ぜてから割る
     val mixed = (salt + outer).hashCode() * -1640531535
     return Math.floorMod(mixed xor (mixed ushr 15), count)
@@ -297,12 +324,12 @@ tasks.register("integrationTestShards") {
     description = "統合テストの各側に入るテストクラスの一覧を出す（Docker 不要）"
     group = "verification"
     val sourceRoot = layout.projectDirectory.dir("src/integrationTest/java")
-    // 既定の数は、.github/workflows/ci.yml の backend-integration の matrix の shard の一覧の長さと合わせる
-    val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }.orElse(2)
+    val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }
     inputs.dir(sourceRoot)
     doLast {
         val root = sourceRoot.asFile
-        val count = shardCount.get()
+        val count = shardCount.orNull
+            ?: throw GradleException("分ける数を -PintegrationTestShardCount=<数> で指定する（CI の数は ci.yml の backend-integration の shard の一覧の長さ）")
         val classes = root.walkTopDown().filter { it.isFile && (it.nameWithoutExtension.endsWith("Test") || it.nameWithoutExtension.endsWith("Tests")) }
             .map { it.relativeTo(root).invariantSeparatorsPath.removeSuffix(".java").replace('/', '.') }
             .sorted().toList()
@@ -317,7 +344,7 @@ tasks.register("integrationTestShards") {
 }
 
 // -----------------------------------------------------------------------------
-// 地域の最初のデータ（地域の設計 docs/02-設計/region.md の「最初のデータの作り方」）
+// 地域の最初のデータ（地域の設計の「最初のデータの作り方」）
 //   ./gradlew generateRegionMigration                      → /.local/masterdata/ の郵便番号のデータから作る
 //   ./gradlew generateRegionMigration -PpostalCodeCsv=<CSV> → CSV の置き場所を指定する
 //   郵便番号のデータは Git に入れない。作ったマイグレーションは Git に入れる
@@ -337,11 +364,12 @@ tasks.register<JavaExec>("generateRegionMigration") {
 }
 
 // -----------------------------------------------------------------------------
-// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」）
+// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」、使わない注釈：「null の扱い」）
 //   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
-//   ・import：使われていないもの（UnusedImports）と、並び（CustomImportOrder）
+//   ・import：使われていないもの（UnusedImports）、* の import（AvoidStarImport）、並び（CustomImportOrder）
 //   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
 //     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
+//   ・使わない注釈：JSpecify 以外の Nullable。import と完全修飾名の注釈を見る
 //   生成したコード（jOOQ、OpenAPI。build/ の下）は見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
 //   Checkstyle はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない
@@ -401,6 +429,8 @@ pitest {
     threads = 4
     outputFormats = listOf("HTML", "XML")
     timestampedReports = false
+    // mutation score（%）が下回ると失敗する。CI の値（94.66%。656 件中 621 件を検出）を整数に切り捨てて、さらに 1 下げた値
+    mutationThreshold = 93
 }
 
 // jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）
@@ -409,10 +439,11 @@ tasks.named("pitest") {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
+// カバレッジ（テストの実行方法の「カバレッジと mutation score の基準の検査」）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
-//   報告：build/reports/jacoco/coverageReport/（html、xml）
-//   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：
+//   coverageReport：報告を作る。build/reports/jacoco/coverageReport/（html、xml）
+//   coverageVerification：全体の行と分岐の割合が基準を下回ると失敗する。CI が報告を保存した後に流す
+//   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡す（テストもコンパイルも流さない）：
 //   ./gradlew coverageReport -PcoverageExecDir=<*.exec を探すディレクトリ> -PcoverageClassesDir=<build/classes/java/main の写し>
 //   各ジョブは別々にコンパイルするが、javac の出力は同じ入力なら同じなので、JaCoCo のクラスの ID は一致する
 // -----------------------------------------------------------------------------
@@ -423,9 +454,8 @@ jacoco {
 /** 生成したコード（jOOQ、OpenAPI）は数えない */
 val coverageExcludes = listOf("com/ecsite/jooq/**", "com/ecsite/api/**")
 
-val coverageReport = tasks.register<JacocoReport>("coverageReport") {
-    description = "単体と統合のテストを合わせたカバレッジの報告を作る"
-    group = "verification"
+/** 報告と基準の検査が読む、実行データとクラス。-PcoverageExecDir と -PcoverageClassesDir があれば、そちらを使う */
+fun JacocoReportBase.useCoverageInputs() {
     val execDir = providers.gradleProperty("coverageExecDir").orNull
     val classesDir = providers.gradleProperty("coverageClassesDir").orNull
     if (execDir != null) {
@@ -447,6 +477,12 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
             exclude(coverageExcludes)
         })
     }
+}
+
+val coverageReport = tasks.register<JacocoReport>("coverageReport") {
+    description = "単体と統合のテストを合わせたカバレッジの報告を作る"
+    group = "verification"
+    useCoverageInputs()
     reports {
         xml.required = true
         html.required = true
@@ -454,6 +490,25 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
 }
 
 tasks.check { finalizedBy(coverageReport) }
+
+// 基準は、今の値（行 98.4%、分岐 79.17%）を整数に切り捨てて、さらに 1 下げた値。書き方の変更（引数の null の検査など）で少し下がっても止めないため
+tasks.register<JacocoCoverageVerification>("coverageVerification") {
+    description = "単体と統合のテストを合わせたカバレッジが、基準を下回らないことを確認する"
+    group = "verification"
+    useCoverageInputs()
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                minimum = "0.97".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                minimum = "0.78".toBigDecimal()
+            }
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // 依存のライセンスの検査（依存とライセンス）
@@ -521,7 +576,7 @@ class PreferPomLicenses : com.github.jk1.license.filter.DependencyFilter {
     }
 }
 
-val allowedLicensesOutput =layout.buildDirectory.file("license-policy/allowed-licenses.json")
+val allowedLicensesOutput = layout.buildDirectory.file("license-policy/allowed-licenses.json")
 
 licenseReport {
     // 実行時、コンパイル時、テスト、注釈の処理、jOOQ のコード生成。
@@ -624,7 +679,7 @@ tasks.named<JooqGenerate>("generateJooq") {
     inputs.dir(migrationDir)
 
     // 使い捨て PostgreSQL（docker/compose.yaml と同じイメージ）
-    val container = PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"))
+    val container = PostgreSQLContainer(DockerImageName.parse(composeImage("postgres")))
 
     // jooq { } ブロックで組んだ Configuration と同一インスタンスを参照している
     val jdbc = jooq.configurations.getByName("main").jooqConfiguration.jdbc
@@ -651,8 +706,6 @@ tasks.named<JooqGenerate>("generateJooq") {
 //   API 契約の正本はリポジトリのルートの api/openapi/（API の規約）。
 //   Controller が実装するインターフェースとモデルを生成する。生成コードはコミットしない（build/ 配下）。
 // -----------------------------------------------------------------------------
-val openApiDir = rootProject.layout.projectDirectory.dir("../../api/openapi")
-
 // 生成する API：名前 → パッケージ（com.ecsite.api.<名前>）
 val openApiSpecs = listOf("admin", "store")
 
@@ -819,7 +872,7 @@ tasks.withType<JavaCompile>().configureEach {
             // 生成した interface の @Nullable の引数を、実装側が注釈なしで上書きした所と、
             // 生成したモデルの @Nullable の getter の値を、null でないとみなす引数に渡す所
             option("NullAway:AcknowledgeRestrictiveAnnotations", "true")
-            // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
+            // JSpecifyMode は付けない（JDK 22 以上が必要で、ここは JDK 21）
         } else {
             // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
             // 意図して null を渡す

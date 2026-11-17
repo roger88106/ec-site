@@ -1,11 +1,11 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
-import com.ecsite.architecture.money.module.sample.api.PricedApi;
-import com.ecsite.architecture.money.module.sample.application.model.PricedCommand;
-import com.ecsite.architecture.money.module.sample.application.model.PricedRow;
-import com.ecsite.architecture.money.module.sample.application.model.PricedView;
-import com.ecsite.architecture.money.module.sample.application.model.view.PricedReport;
+import com.ecsite.architecture.sample.money.module.sample.api.PricedApi;
+import com.ecsite.architecture.sample.money.module.sample.application.model.PricedCommand;
+import com.ecsite.architecture.sample.money.module.sample.application.model.PricedRow;
+import com.ecsite.architecture.sample.money.module.sample.application.model.PricedView;
+import com.ecsite.architecture.sample.money.module.sample.application.model.view.PricedReport;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -23,14 +23,20 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 金額を整数で持つ項目の検査（バックエンドの書き方の「共通の型」）。<br />
+ * 金額を整数で持つ項目の検査
+ *
+ * <p>根拠はバックエンドの書き方の「共通の型」。
  * モジュールの間の公開の型（api・event）と、command・表示用（view）の型の金額は {@code Money} にする。
  * 整数で持つのは presentation（API の型との変換）と infrastructure（DB）だけ。
  */
 class MoneyTypeTest {
 
+    // ============================== 定数 ==============================
+
     /**
-     * 金額の項目の名前（価格、金額、手数料、合計）。{@code totalQuantity} のような数量は含めない
+     * 金額の項目の名前
+     *
+     * <p>価格、金額、手数料、合計を指す。{@code totalQuantity} のような数量は含めない。
      */
     private static final Pattern MONEY_NAME = Pattern.compile("(?i).*(price|amount|fee)(InclTax|ExclTax)?|total|.*Total");
 
@@ -54,28 +60,36 @@ class MoneyTypeTest {
      */
     private static final DescribedPredicate<JavaClass> VIEW_PACKAGE = JavaClass.Predicates.resideInAPackage("..module.*.application.model.view..");
 
+    // ============================== テスト ==============================
+
     @Test
-    @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない（対象は、それぞれ 1 件以上ある）")
+    @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない")
     void moneyIsNotAnInteger() {
+        // 準備：対象の api・event のクラスと、command・view のクラスが、それぞれ 1 件以上ある
         ProductionClasses.requireNotEmpty(publicClasses(ProductionClasses.modules()), "api・event のクラス");
         ProductionClasses.requireNotEmpty(modelClasses(ProductionClasses.modules()), "application.model の view のパッケージと、View・Command のクラス");
 
+        // 操作と確認：本番のモジュールのクラスに、整数の金額の項目がない
         assertThat(violations(ProductionClasses.modules())).isEmpty();
     }
 
     @Test
-    @DisplayName("規則は、api、View・Command（入れ子を含む）、view のパッケージにある整数の金額に当たり、対象でないクラスには当たらない")
+    @DisplayName("規則は、検査の対象のクラスにある整数の金額だけに当たる")
     void ruleMatchesIntegerMoneyInCheckedClasses() {
+        // 準備：整数の金額を持つ例。対象は api、View・Command（入れ子を含む）、view のパッケージ。PricedRow は対象でない
         JavaClasses examples = new ClassFileImporter().importClasses(
                 PricedView.class, PricedRow.class, PricedCommand.class, PricedCommand.Line.class,
                 PricedReport.class, PricedApi.class);
 
+        // 操作と確認：対象の例の項目だけが違反になる
         assertThat(violations(examples)).containsExactlyInAnyOrder(
                 PricedApi.class.getName() + ".fee",
                 PricedCommand.Line.class.getName() + ".unitPrice",
                 PricedReport.class.getName() + ".amount",
                 PricedView.class.getName() + ".price");
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * 金額の検査の対象のクラスを返す。
@@ -95,7 +109,7 @@ class MoneyTypeTest {
      */
     private static List<JavaClass> publicClasses(JavaClasses classes) {
         return classes.stream()
-                .filter(javaClass -> PUBLIC_PACKAGE.test(javaClass))
+                .filter(PUBLIC_PACKAGE)
                 .toList();
     }
 

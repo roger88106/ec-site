@@ -6,7 +6,9 @@ import { TRACEPARENT_HEADER, traceIdOf } from '@/lib/server/trace'
 type Level = 'info' | 'warn' | 'error'
 
 /**
- * 1 行 1 件の JSON のログを書く。info は標準出力、warn・error は標準エラー出力。
+ * 1 行 1 件の JSON のログを書く。
+ *
+ * info は標準出力、warn・error は標準エラー出力。
  *
  * @param level   レベル
  * @param message メッセージ
@@ -19,7 +21,7 @@ async function write(level: Level, message: string, fields: Record<string, unkno
 }
 
 /**
- * いまのリクエストの追跡の ID（proxy がリクエストのヘッダーに付けた traceparent から）。
+ * いまのリクエストの追跡の ID を、proxy がリクエストのヘッダーに付けた traceparent から取り出す。
  *
  * @returns 追跡の ID。リクエストの外（起動のときなど）や、ヘッダーがなければ null
  */
@@ -33,8 +35,9 @@ async function currentTraceId(): Promise<string | null> {
 }
 
 /**
- * 店舗画面のサーバー側のログ（店舗画面の構成の「サーバーの設定とログ」）。`console.*` の代わりに使う。<br />
- * info：調べるための記録。warn：利用者の操作が失敗したが続けられるもの。error：予期しない失敗。
+ * 店舗画面のサーバー側のログ（店舗画面の構成の「サーバーの設定とログ」）
+ *
+ * `console.*` の代わりに使う。info：調べるための記録。warn：利用者の操作が失敗したが続けられるもの。error：予期しない失敗。
  */
 export const log = {
   info: (message: string, fields?: Record<string, unknown>) => write('info', message, fields),

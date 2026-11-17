@@ -14,7 +14,7 @@ export const SEED = {
   chocolate: '00000000-0000-0000-0000-000000002012',
 }
 
-/** local の seed のレポート用の注文の期間（db/seed/local/README.md「レポート用の注文」） */
+/** local の seed のレポート用の注文の期間（local の seed の説明の「レポート用の注文」） */
 export const SEED_ORDERS = {
   /** 最初の日 */
   from: '2024-10-01',

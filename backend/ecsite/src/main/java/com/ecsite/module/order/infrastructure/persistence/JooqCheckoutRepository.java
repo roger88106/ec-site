@@ -1,6 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.jooq.ordering.tables.records.CheckoutRecord;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
@@ -27,7 +27,9 @@ import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 class JooqCheckoutRepository implements CheckoutRepository {
 
     /**
-     * 集約の名前（戻すときの失敗のメッセージに書く）
+     * 集約の名前
+     *
+     * <p>戻すときの失敗のメッセージに書く。
      */
     private static final String AGGREGATE_NAME = "checkout";
 
@@ -89,7 +91,9 @@ class JooqCheckoutRepository implements CheckoutRepository {
     }
 
     /**
-     * カートの最新の注文手続きの ID を返す。同時刻なら ID の順で決める。
+     * カートの最新の注文手続きの ID を返す。
+     *
+     * <p>同時刻なら ID の順で決める。
      */
     @Override
     public Optional<UUID> findLatestIdByCartId(UUID cartId) {
@@ -102,11 +106,13 @@ class JooqCheckoutRepository implements CheckoutRepository {
     }
 
     /**
-     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。<br />
-     * 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行（注文の途中）は飛ばす（次の回で消す）。
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。
+     *
+     * <p>他のトランザクションがロックしている行（注文の途中）は飛ばす。
      */
     @Override
     public int deleteExpiredBefore(Instant expiredBefore, int limit) {
+        // 選ぶのと消すのを 1 文にする。ロックされた行は、次の回で消す
         return dsl.deleteFrom(CHECKOUT)
                 .where(CHECKOUT.ID.in(dsl.select(CHECKOUT.ID)
                         .from(CHECKOUT)
@@ -123,6 +129,6 @@ class JooqCheckoutRepository implements CheckoutRepository {
     private Checkout toCheckout(CheckoutRecord record) {
         return new Checkout(record.getId(), record.getMemberId(), record.getCartId(), record.getCartVersion(), record.getExpiresAt(),
                 record.getCreatedAt(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(record.getAcknowledgedOrderIds().data(), ORDER_IDS)));
+                RestoreGuard.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(record.getAcknowledgedOrderIds().data(), ORDER_IDS)));
     }
 }

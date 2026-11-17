@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品カタログから受け取った、カテゴリの木の節
+ * 商品カタログのカテゴリの木の節
  *
  * @param id       カテゴリ ID
  * @param name     名称

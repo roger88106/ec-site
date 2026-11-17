@@ -1,7 +1,7 @@
 package com.ecsite.config.event;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.MutableClock;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -15,15 +15,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-
 /**
- * イベントの記録（Spring Modulith の表）のテーブルの定義と、イベントを発行して処理を待つ補助。<br />
- * イベントの片付けと再発行のテストが使う。処理は非同期なので、リスナーが終わるのを待つ処理は {@link AsyncEvents} に任せる。
+ * イベントの記録（Spring Modulith の表）のテーブルの定義と、イベントを発行して処理を待つ補助
+ *
+ * <p>イベントの片付けと再発行のテストが使う。処理は非同期なので、リスナーが終わるのを待つ処理は {@link AsyncEvents} に任せる。
  */
 class EventPublications {
 
     /**
-     * イベントの記録のテーブル（jOOQ の生成クラスはモジュールの外では使わない）
+     * イベントの記録のテーブル
+     *
+     * <p>jOOQ の生成クラスはモジュールの外では使わない。
      */
     static final Table<?> EVENT_PUBLICATION = DSL.table(DSL.name("common", "event_publication"));
 
@@ -78,7 +80,9 @@ class EventPublications {
     private final AsyncEvents asyncEvents;
 
     /**
-     * テスト用の時計（再発行の対象になる時間まで進める）
+     * テスト用の時計
+     *
+     * <p>再発行の対象になる時間まで進める。
      */
     private final MutableClock clock;
 
@@ -171,5 +175,15 @@ class EventPublications {
      */
     int count(UUID eventId) {
         return dsl.fetchCount(EVENT_PUBLICATION, SERIALIZED_EVENT.contains(eventId.toString()));
+    }
+
+    /**
+     * イベント ID を含む記録の状態の列を空にする（状態の列のない、古い形式の記録に見せる）。
+     *
+     * @param eventId イベントを見分ける ID
+     */
+    void clearStatus(UUID eventId) {
+        dsl.update(EVENT_PUBLICATION).set(STATUS, (String) null)
+                .where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
     }
 }

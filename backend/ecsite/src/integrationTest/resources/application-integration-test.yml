@@ -24,7 +24,7 @@ spring:
 
 management:
   server:
-    # 運用の口を、業務ポートと同じに置く（MockMvc で確認するため）。運用ポートを分ける確認は ManagementPortTest
+    # 運用の口を、業務ポートと同じに置く（MockMvc で確認するため）。運用ポートを分ける確認は ObservabilityTest
     port: ${server.port}
 
 ecsite:

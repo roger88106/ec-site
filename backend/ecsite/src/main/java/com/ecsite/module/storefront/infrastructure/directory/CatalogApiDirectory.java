@@ -3,16 +3,16 @@ package com.ecsite.module.storefront.infrastructure.directory;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.StoreCatalogApi;
-import com.ecsite.module.catalog.api.StoreCategoryNode;
-import com.ecsite.module.catalog.api.StoreProductDetail;
-import com.ecsite.module.catalog.api.StoreProductQuery;
-import com.ecsite.module.catalog.api.StoreProductSort;
-import com.ecsite.module.catalog.api.StoreProductSummary;
+import com.ecsite.module.catalog.api.model.StoreCategoryNode;
+import com.ecsite.module.catalog.api.model.StoreProductDetail;
+import com.ecsite.module.catalog.api.model.StoreProductQuery;
+import com.ecsite.module.catalog.api.model.StoreProductSort;
+import com.ecsite.module.catalog.api.model.StoreProductSummary;
 import com.ecsite.module.storefront.application.model.CatalogCategory;
+import com.ecsite.module.storefront.application.model.CatalogProduct;
+import com.ecsite.module.storefront.application.model.CatalogProductDetail;
 import com.ecsite.module.storefront.application.model.ProductCondition;
 import com.ecsite.module.storefront.application.port.CatalogDirectory;
-import com.ecsite.module.storefront.application.port.CatalogProduct;
-import com.ecsite.module.storefront.application.port.CatalogProductDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
- * 商品カタログの API を呼び、店舗の型に変換する。商品カタログの型を店舗の内部に持ち込まない。
+ * 商品カタログの腐敗防止層
+ *
+ * <p>商品カタログの API を呼び、店舗の型に変換する。商品カタログの型を店舗の内部に持ち込まない。
  */
 @Component
 @RequiredArgsConstructor
@@ -34,11 +35,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     private final StoreCatalogApi storeCatalogApi;
 
     /**
-     * 商品一覧を取得する。
-     *
-     * @param condition 絞り込みと並び順
-     * @param request   ページの指定
-     * @return 商品の一覧
+     * {@inheritDoc}
      */
     @Override
     public PageResult<CatalogProduct> listProducts(ProductCondition condition, PageRequest request) {
@@ -48,11 +45,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     }
 
     /**
-     * キーワードで商品を探す。
-     *
-     * @param keyword キーワード
-     * @param request ページの指定
-     * @return 検索結果
+     * {@inheritDoc}
      */
     @Override
     public PageResult<CatalogProduct> searchProducts(String keyword, PageRequest request) {
@@ -60,10 +53,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     }
 
     /**
-     * 商品の詳細を取得する。
-     *
-     * @param productId 商品 ID
-     * @return 商品の詳細。表示されない商品なら空
+     * {@inheritDoc}
      */
     @Override
     public Optional<CatalogProductDetail> findProduct(UUID productId) {
@@ -71,9 +61,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     }
 
     /**
-     * カテゴリの木を取得する。
-     *
-     * @return 最上位カテゴリの一覧（子孫を含む）
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogCategory> categoryTree() {

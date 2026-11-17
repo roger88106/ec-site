@@ -2,13 +2,16 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 税率のテストで使う、税率と置き換えの要素の作り方。単体テストと統合テストが共有する。
+ * 税率のテストで使う、税率と置き換えの要素の作り方
+ *
+ * <p>単体テストと統合テストが共有する。
  */
 public final class TestTaxRates {
 
@@ -19,7 +22,9 @@ public final class TestTaxRates {
     }
 
     /**
-     * 税率を作る（ID は新しく振る）。期間の端の null は無限
+     * 税率を作る（ID は新しく振る）。
+     *
+     * <p>期間の端の null は無限。
      *
      * @param percent 税率（%）
      * @param from    適用の開始
@@ -31,7 +36,7 @@ public final class TestTaxRates {
     }
 
     /**
-     * 新しい税率（ID なし）の置き換えの要素を作る
+     * 新しい税率（ID なし）の置き換えの要素を作る。
      *
      * @param percent 税率（%）
      * @param from    適用の開始
@@ -43,7 +48,9 @@ public final class TestTaxRates {
     }
 
     /**
-     * 置き換えの要素を作る。既存の税率を残すなら、その ID を渡す
+     * 置き換えの要素を作る。
+     *
+     * <p>既存の税率を残すなら、その ID を渡す。
      *
      * @param id      既存の税率の ID（新しい税率なら null）
      * @param percent 税率（%）

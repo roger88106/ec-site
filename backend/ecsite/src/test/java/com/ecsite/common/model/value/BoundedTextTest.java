@@ -3,6 +3,9 @@ package com.ecsite.common.model.value;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,19 +14,37 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class BoundedTextTest {
 
+    // ============================== 定数 ==============================
+
     /**
-     * サロゲートペアの文字（𠮷）。char では 2、code point では 1 と数える
+     * サロゲートペアの文字（𠮷）
+     *
+     * <p>char では 2、code point では 1 と数える。
      */
     private static final String SURROGATE = "𠮷";
+
+    /**
+     * 文字数の上限
+     */
+    private static final int LIMIT = 3;
+
+    // ============================== テスト ==============================
 
     @Nested
     @DisplayName("長さ")
     class Length {
 
         @Test
-        @DisplayName("code point で数える（サロゲートペアは 1 文字）")
-        void countsCodePoints() {
+        @DisplayName("サロゲートペアのない文字は、1 文字を 1 と数える")
+        void countsCharacters() {
+            // 操作と確認：3 文字
             assertThat(BoundedText.length("abc")).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("code point で数え、サロゲートペアは 1 文字と数える")
+        void countsCodePoints() {
+            // 操作と確認：サロゲートペアと 1 文字で 2 文字
             assertThat(BoundedText.length(SURROGATE + "a")).isEqualTo(2);
         }
     }
@@ -33,25 +54,40 @@ class BoundedTextTest {
     class IsFilledWithin {
 
         @Test
-        @DisplayName("上限ちょうどは通り、1 文字超えると通らない")
-        void acceptsUpToTheLimit() {
-            assertThat(BoundedText.isFilledWithin("abc", 3)).isTrue();
-            assertThat(BoundedText.isFilledWithin("abcd", 3)).isFalse();
+        @DisplayName("上限ちょうどは通る")
+        void acceptsTheLimit() {
+            // 操作と確認：3 文字は通る
+            assertThat(BoundedText.isFilledWithin("abc", LIMIT)).isTrue();
         }
 
         @Test
-        @DisplayName("サロゲートペアは 1 文字と数える")
-        void countsSurrogatePairAsOne() {
-            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(3), 3)).isTrue();
-            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(4), 3)).isFalse();
+        @DisplayName("上限を 1 文字超えると通らない")
+        void rejectsOverTheLimit() {
+            // 操作と確認：4 文字は通らない
+            assertThat(BoundedText.isFilledWithin("abcd", LIMIT)).isFalse();
         }
 
         @Test
+        @DisplayName("サロゲートペアは 1 文字と数え、上限ちょうどは通る")
+        void acceptsSurrogatePairsUpToTheLimit() {
+            // 操作と確認：サロゲートペア 3 つは通る
+            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(3), LIMIT)).isTrue();
+        }
+
+        @Test
+        @DisplayName("サロゲートペアは 1 文字と数え、上限を 1 文字超えると通らない")
+        void rejectsSurrogatePairsOverTheLimit() {
+            // 操作と確認：サロゲートペア 4 つは通らない
+            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(4), LIMIT)).isFalse();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @NullAndEmptySource
+        @ValueSource(strings = " 　")
         @DisplayName("null、空、空白だけは通らない")
-        void rejectsBlank() {
-            assertThat(BoundedText.isFilledWithin(null, 3)).isFalse();
-            assertThat(BoundedText.isFilledWithin("", 3)).isFalse();
-            assertThat(BoundedText.isFilledWithin(" 　", 3)).isFalse();
+        void rejectsBlank(String text) {
+            // 操作と確認：通らない
+            assertThat(BoundedText.isFilledWithin(text, LIMIT)).isFalse();
         }
     }
 
@@ -59,19 +95,26 @@ class BoundedTextTest {
     @DisplayName("上限以内（空白を許す項目）")
     class FitsWithin {
 
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"", "  ", "abc"})
+        @DisplayName("上限以内なら、空や空白だけでも通る")
+        void acceptsUpToTheLimit(String text) {
+            // 操作と確認：通る
+            assertThat(BoundedText.fitsWithin(text, LIMIT)).isTrue();
+        }
+
         @Test
-        @DisplayName("空と空白は通り、上限を超えると通らない")
-        void acceptsBlankUpToTheLimit() {
-            assertThat(BoundedText.fitsWithin("", 3)).isTrue();
-            assertThat(BoundedText.fitsWithin("  ", 3)).isTrue();
-            assertThat(BoundedText.fitsWithin("abc", 3)).isTrue();
-            assertThat(BoundedText.fitsWithin("abcd", 3)).isFalse();
+        @DisplayName("上限を超えると通らない")
+        void rejectsOverTheLimit() {
+            // 操作と確認：4 文字は通らない
+            assertThat(BoundedText.fitsWithin("abcd", LIMIT)).isFalse();
         }
 
         @Test
         @DisplayName("null は通らない")
         void rejectsNull() {
-            assertThat(BoundedText.fitsWithin(null, 3)).isFalse();
+            // 操作と確認：通らない
+            assertThat(BoundedText.fitsWithin(null, LIMIT)).isFalse();
         }
     }
 }

@@ -2,6 +2,7 @@ package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
@@ -17,8 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * テストで使う決済サービス。本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。<br />
- * 通知の遅れ・重複・順序の入れ替わりや、取消・売上確定・返金の失敗を起こし、呼ばれた操作を記録する。
+ * テストで使う決済サービス
+ *
+ * <p>本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。通知の遅れ・重複・順序の入れ替わりや、取消・売上確定・返金の失敗を起こし、呼ばれた操作を記録する。
  * 本番の jar に入れないため、テストで共有するソースに置く。
  */
 public class TestPaymentGateway implements PaymentGateway {
@@ -29,14 +31,25 @@ public class TestPaymentGateway implements PaymentGateway {
     private final MockPaymentGateway mock;
 
     /**
-     * 呼ばれた金額のある操作（呼ばれた順。失敗と重複を含む）
+     * 呼ばれた金額のある操作
+     *
+     * <p>呼ばれた順。失敗と重複を含む。
      */
     private final List<AmountCall> amountCalls = new CopyOnWriteArrayList<>();
 
     /**
-     * 作った支払画面の数
+     * 作った支払画面の ID
+     *
+     * <p>作った順。
      */
-    private final AtomicInteger openedPages = new AtomicInteger();
+    private final List<String> openedPageIds = new CopyOnWriteArrayList<>();
+
+    /**
+     * 次の支払画面の作成の最中に行う処理
+     *
+     * <p>画面を作った後、応答を返す前に行う。同時のリクエストや、作っている間の期限切れのテスト用。なければ null。
+     */
+    private final AtomicReference<Runnable> duringNextOpen = new AtomicReference<>();
 
     /**
      * これから接続できないことにする支払画面の作成の回数
@@ -44,7 +57,9 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger openFailures = new AtomicInteger();
 
     /**
-     * 与信の取得を呼ばれた回数（失敗を含む）
+     * 与信の取得を呼ばれた回数
+     *
+     * <p>失敗を含む。
      */
     private final AtomicInteger authorizationFetchCalls = new AtomicInteger();
 
@@ -59,7 +74,9 @@ public class TestPaymentGateway implements PaymentGateway {
     private final Set<String> rejectedAuthorizationFetches = ConcurrentHashMap.newKeySet();
 
     /**
-     * 取り消した与信の参照（取り消した順）
+     * 取り消した与信の参照
+     *
+     * <p>取り消した順。
      */
     private final List<String> voided = new CopyOnWriteArrayList<>();
 
@@ -69,27 +86,37 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger voidFailures = new AtomicInteger();
 
     /**
-     * 与信が切れたことにした与信の参照。売上確定が与信期限切れで断られる
+     * 与信が切れたことにした与信の参照
+     *
+     * <p>売上確定が与信期限切れで断られる。
      */
     private final Set<String> expiredAuthorizations = ConcurrentHashMap.newKeySet();
 
     /**
-     * 売上を確定した注文 ID（確定した順）
+     * 売上を確定した注文 ID
+     *
+     * <p>確定した順。
      */
-    private final List<UUID> captured = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<UUID> captured = new CopyOnWriteArrayList<>();
 
     /**
-     * 売上確定に渡された与信の参照（注文 ID ごとに、最後に渡されたもの）
+     * 売上確定に渡された与信の参照
+     *
+     * <p>注文 ID ごとに、最後に渡されたもの。
      */
     private final Map<UUID, String> capturedAuthorizationRefs = new ConcurrentHashMap<>();
 
     /**
-     * 次の売上確定の最中に行う処理（売上確定と注文のキャンセルが重なったときのテスト用）。なければ null
+     * 次の売上確定の最中に行う処理
+     *
+     * <p>売上確定と注文のキャンセルが重なったときのテスト用。なければ null。
      */
     private final AtomicReference<Runnable> duringNextCapture = new AtomicReference<>();
 
     /**
-     * 売上確定を呼ばれた回数（失敗と重複を含む）
+     * 売上確定を呼ばれた回数
+     *
+     * <p>失敗と重複を含む。
      */
     private final AtomicInteger captureCalls = new AtomicInteger();
 
@@ -104,9 +131,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger captureResponseLosses = new AtomicInteger();
 
     /**
-     * 返金した注文 ID（返金した順）
+     * 返金した注文 ID
+     *
+     * <p>返金した順。
      */
-    private final List<UUID> refunded = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<UUID> refunded = new CopyOnWriteArrayList<>();
 
     /**
      * これから失敗させる返金の回数
@@ -114,12 +143,16 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger refundFailures = new AtomicInteger();
 
     /**
-     * 返金と与信の取消を呼ばれた時点で行う処理（呼ばれた時点の状態を記録するテスト用）。なければ null
+     * 返金と与信の取消を呼ばれた時点で行う処理
+     *
+     * <p>呼ばれた時点の状態を記録するテスト用。なければ null。
      */
     private final AtomicReference<Runnable> onRefundOrVoid = new AtomicReference<>();
 
     /**
-     * 与信の取得を呼ばれた時点で行う処理（呼ばれた時点の状態を記録するテスト用）。なければ null
+     * 与信の取得を呼ばれた時点で行う処理
+     *
+     * <p>呼ばれた時点の状態を記録するテスト用。なければ null。
      */
     private final AtomicReference<Runnable> onFetchAuthorization = new AtomicReference<>();
 
@@ -132,7 +165,7 @@ public class TestPaymentGateway implements PaymentGateway {
         this.mock = mock;
     }
 
-// ============================== 決済サービス ==============================
+    // ============================== 決済サービス ==============================
 
     @Override
     public PaymentPage openPage(PageRequest request) {
@@ -141,8 +174,13 @@ public class TestPaymentGateway implements PaymentGateway {
             throw SystemException.of("mock：支払画面を作れなくする: " + request.paymentId(), null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
-        openedPages.incrementAndGet();
-        return mock.openPage(request);
+        var page = mock.openPage(request);
+        openedPageIds.add(page.id());
+        var during = duringNextOpen.getAndSet(null);
+        if (during != null) {
+            during.run();
+        }
+        return page;
     }
 
     @Override
@@ -193,9 +231,7 @@ public class TestPaymentGateway implements PaymentGateway {
         var result = mock.capture(request);
         capturedAuthorizationRefs.put(request.orderId(), request.authorizationRef());
         // 冪等キー（注文 ID）が同じなら、確定は 1 回だけ
-        if (!captured.contains(request.orderId())) {
-            captured.add(request.orderId());
-        }
+        captured.addIfAbsent(request.orderId());
         var during = duringNextCapture.getAndSet(null);
         if (during != null) {
             during.run();
@@ -215,12 +251,10 @@ public class TestPaymentGateway implements PaymentGateway {
         }
         mock.refund(request);
         // 冪等キー（注文 ID）が同じなら、返金は 1 回だけ
-        if (!refunded.contains(request.orderId())) {
-            refunded.add(request.orderId());
-        }
+        refunded.addIfAbsent(request.orderId());
     }
 
-// ============================== 支払画面の操作（本番の mock に渡す） ==============================
+    // ============================== 支払画面の操作（本番の mock に渡す） ==============================
 
     /**
      * 支払う：決済サービスで支払を済ませ、与信の成功を通知する。
@@ -241,7 +275,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信の成功を通知する。重ねて呼ぶと、重ねて届いた通知になる。
+     * 与信の成功を通知する。
+     *
+     * <p>重ねて呼ぶと、重ねて届いた通知になる。
      *
      * @param pageId 支払画面 ID
      */
@@ -260,7 +296,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信の参照を返す。支払画面ごとに決まる。
+     * 与信の参照を返す。
+     *
+     * <p>支払画面ごとに決まる。
      *
      * @param pageId 支払画面 ID
      * @return 与信の参照
@@ -269,7 +307,7 @@ public class TestPaymentGateway implements PaymentGateway {
         return mock.authorizationRefOf(pageId);
     }
 
-// ============================== テストだけで使う操作 ==============================
+    // ============================== テストだけで使う操作 ==============================
 
     /**
      * 次の与信の取消を、指定した回数だけ失敗させる。
@@ -299,7 +337,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * その支払画面の与信の取得を、予期しないエラーで失敗させ続ける。解除は {@link #reset()}。
+     * その支払画面の与信の取得を、予期しないエラーで失敗させ続ける。
+     *
+     * <p>解除は {@link #reset()}。
      *
      * @param pageId 支払画面 ID
      */
@@ -308,7 +348,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信が切れたことにする。以降、その与信の売上確定は、与信期限切れで断られる。
+     * 与信が切れたことにする。
+     *
+     * <p>以降、その与信の売上確定は、与信期限切れで断られる。
      *
      * @param authorizationRef 与信の参照
      */
@@ -327,12 +369,22 @@ public class TestPaymentGateway implements PaymentGateway {
 
     /**
      * 次の売上確定から指定した回数だけ、決済サービスでは売上を確定するが、応答が届かないようにする。
-     * 呼んだ側には、接続できなかった場合と同じ結果が返る。
+     *
+     * <p>呼んだ側には、接続できなかった場合と同じ結果が返る。
      *
      * @param times 応答を届かなくする回数
      */
     public void loseNextCaptureResponses(int times) {
         captureResponseLosses.set(times);
+    }
+
+    /**
+     * 次の支払画面の作成で、決済サービスが画面を作った後、応答を返す前に処理を行う。
+     *
+     * @param action 行う処理（同じ注文の支払画面のリクエスト、時計を進めるなど）
+     */
+    public void duringNextOpen(Runnable action) {
+        duringNextOpen.set(action);
     }
 
     /**
@@ -390,6 +442,18 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 注文について、売上確定を呼ばれた回数を返す。
+     *
+     * <p>他のテストの注文の呼び出しを数えないように、注文で絞る。
+     *
+     * @param orderId 注文 ID
+     * @return 売上確定を呼ばれた回数（失敗と重複を含む）
+     */
+    public int captureCallsOf(UUID orderId) {
+        return amountsOf(Operation.CAPTURE, orderId).size();
+    }
+
+    /**
      * 注文の売上確定に渡された与信の参照を返す。
      *
      * @param orderId 注文 ID
@@ -418,12 +482,36 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 注文について、返金した回数を返す。
+     *
+     * <p>他のテストの注文の返金を数えないように、注文で絞る。
+     *
+     * @param orderId 注文 ID
+     * @return 返金した回数（同じ注文は 1 回）
+     */
+    public int refundsOf(UUID orderId) {
+        return (int) refunded.stream().filter(orderId::equals).count();
+    }
+
+    /**
      * 取り消した与信の参照を返す。
      *
      * @return 取り消した与信の参照（取り消した順）
      */
     public List<String> voided() {
         return List.copyOf(voided);
+    }
+
+    /**
+     * 与信について、取り消した回数を返す。
+     *
+     * <p>他のテストの与信の取消を数えないように、与信の参照で絞る。
+     *
+     * @param authorizationRef 与信の参照
+     * @return 取り消した回数
+     */
+    public int voidsOf(String authorizationRef) {
+        return (int) voided.stream().filter(authorizationRef::equals).count();
     }
 
     /**
@@ -446,15 +534,27 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 作った支払画面の数（最後に状態を消してから）
      */
     public int openedPages() {
-        return openedPages.get();
+        return openedPageIds.size();
     }
 
     /**
-     * テストだけで使う状態を最初に戻す。本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
+     * 作った支払画面の ID を返す。
+     *
+     * @return 作った順の支払画面 ID（最後に状態を消してから）
+     */
+    public List<String> openedPageIds() {
+        return List.copyOf(openedPageIds);
+    }
+
+    /**
+     * テストだけで使う状態を最初に戻す。
+     *
+     * <p>本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
      */
     public void reset() {
         amountCalls.clear();
-        openedPages.set(0);
+        openedPageIds.clear();
+        duringNextOpen.set(null);
         openFailures.set(0);
         voided.clear();
         voidFailures.set(0);

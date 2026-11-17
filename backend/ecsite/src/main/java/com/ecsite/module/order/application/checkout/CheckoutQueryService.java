@@ -2,20 +2,25 @@ package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.order.application.model.CheckoutView;
+import com.ecsite.module.order.application.model.CartSnapshot;
+import com.ecsite.module.order.application.model.view.CartQuoteView;
+import com.ecsite.module.order.application.model.view.CheckoutView;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文手続きの参照のサービス（docs/03-機能仕様/order.md「注文手続き」）
+ * 注文手続きの参照のサービス
  */
 @Service
 @RequiredArgsConstructor
@@ -48,20 +53,45 @@ public class CheckoutQueryService {
     private final Clock clock;
 
     /**
-     * 注文手続きを表示する。見積もりは表示の時点の価格・税率で、自分の引当を販売可能数から除く。
-     * 始めた会員だけが参照できる。ほかの会員には 404。
+     * 注文手続きを表示する。
+     *
+     * <p>見積もりは表示の時点の価格・税率で、自分の引当を販売可能数から除く。
      *
      * @param checkoutId 注文手続き ID
      * @param memberId   リクエストした会員の ID
      * @return 注文手続きの表示
+     * @throws BusinessException 注文手続きがない（{@code NOT_FOUND}）
+     * @throws BusinessException 注文手続きを始めた会員でない（{@code NOT_FOUND}）
      */
-    public CheckoutView get(UUID checkoutId, UUID memberId) {
+    public CheckoutView get(@NonNull UUID checkoutId, @NonNull UUID memberId) {
         var now = clock.instant();
+        // 注文手続き取得 ※始めた会員だけが参照できる
         var checkout = checkoutRepository.findById(checkoutId)
                 .filter(found -> found.isOwnedBy(memberId))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
-        var lines = cartDirectory.find(checkout.cartId()).map(CartDirectory.CartSnapshot::lines).orElse(List.of());
+
+        // 見積もりと、成立済みの注文
+        var lines = cartDirectory.find(checkout.cartId()).map(CartSnapshot::lines).orElse(List.of());
         return new CheckoutView(checkout.id(), quoteService.quote(lines, now, checkout.id()), checkout.expiresAt(),
                 orderRepository.findIdByCheckoutId(checkoutId).orElse(null));
+    }
+
+    /**
+     * カートを現在の価格・税率・販売可能数で見積もる。
+     *
+     * <p>注文手続き中なら、自分の引当を販売可能数から除く。
+     * 会員のカートは、持ち主の会員にだけ見積もる。
+     *
+     * @param cartId    カート ID
+     * @param requester リクエストした会員の ID（ログインしていなければ null）
+     * @return 見積もり。カートがない、または持ち主でなければ空
+     */
+    public Optional<CartQuoteView> quoteCart(@NonNull UUID cartId, @Nullable UUID requester) {
+        var now = clock.instant();
+        var holderId = checkoutRepository.findLatestIdByCartId(cartId).orElse(null);
+        // 持ち主でなければ、カートがないときと同じく空にする
+        return cartDirectory.find(cartId)
+                .filter(cart -> cart.isAccessibleBy(requester))
+                .map(cart -> new CartQuoteView(cartId, quoteService.quote(cart.lines(), now, holderId)));
     }
 }

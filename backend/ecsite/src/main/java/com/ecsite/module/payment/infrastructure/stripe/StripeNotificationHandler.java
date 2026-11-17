@@ -8,21 +8,27 @@ import com.stripe.model.Event;
 import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
 
 /**
- * Stripe の通知の受け取り（docs/02-設計/payment.md「Stripe」）。<br />
- * 署名を確認してから、通知を決済サービスの型から直して、port へ渡す。
- * 扱う種類は、与信の成功（Checkout Session の完了）と、支払画面の期限切れ（Checkout Session の期限切れ）だけ。
+ * Stripe の通知の受け取り
+ *
+ * <p>署名を確認してから、通知を決済サービスの型から直して、port へ渡す。
  */
 @Slf4j
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class StripeNotificationHandler {
 
     /**
-     * 署名を受け付ける時間（秒）。これより前に署名した通知は、盗んだ通知の再送とみなして拒否する（Stripe の既定）
+     * 署名を受け付ける時間（秒）
+     *
+     * <p>これより前に署名した通知は、盗んだ通知の再送とみなして拒否する（Stripe の既定）。
      */
     private static final long TOLERANCE_SECONDS = Webhook.DEFAULT_TOLERANCE;
 
@@ -39,35 +45,34 @@ class StripeNotificationHandler {
     /**
      * 通知の port
      */
+    @NonNull
     private final PaymentNotificationReceiver receiver;
 
     /**
      * 通知の署名の鍵
      */
+    @NonNull
     private final String webhookSecret;
 
     /**
-     * 時計（署名の古さを判定する）
+     * 時計
+     *
+     * <p>署名の古さを判定する。
      */
+    @NonNull
     private final Clock clock;
 
     /**
-     * @param receiver      通知の port
-     * @param webhookSecret 通知の署名の鍵
-     * @param clock         時計
-     */
-    StripeNotificationHandler(PaymentNotificationReceiver receiver, String webhookSecret, Clock clock) {
-        this.receiver = receiver;
-        this.webhookSecret = webhookSecret;
-        this.clock = clock;
-    }
-
-    /**
-     * 通知を受け取る。扱わない種類は、何もせずに受け付ける。
+     * 通知を受け取る。
+     *
+     * <p>扱う種類は、与信の成功（Checkout Session の完了）と、支払画面の期限切れ（Checkout Session の期限切れ）だけで、
+     * 扱わない種類は、何もせずに受け付ける。
      *
      * @param payload         通知の本文（受け取ったまま。署名は本文のバイト列に対して付いている）
      * @param signatureHeader ヘッダー {@code Stripe-Signature}
-     * @throws InvalidStripeNotificationException 署名がない・合わない・古いとき
+     * @throws InvalidStripeNotificationException 署名がないとき
+     * @throws InvalidStripeNotificationException 署名が合わないとき
+     * @throws InvalidStripeNotificationException 署名が古いとき
      */
     void handle(String payload, @Nullable String signatureHeader) {
         var event = verify(payload, signatureHeader);
@@ -98,16 +103,15 @@ class StripeNotificationHandler {
     }
 
     /**
-     * 通知の Checkout Session を読む。<br />
-     * 通知の API のバージョンがライブラリと違うと安全な読み方では読めないので、そのときは項目の名前で読む
-     * （使う項目は ID と PaymentIntent の ID だけで、バージョンで変わらない）。
+     * 通知の Checkout Session を読む。
      */
     private static Session session(Event event) {
         var deserializer = event.getDataObjectDeserializer();
         try {
-            StripeObject object = deserializer.getObject().isPresent()
-                    ? deserializer.getObject().get()
-                    : deserializer.deserializeUnsafe();
+            // 通知の API のバージョンがライブラリと違うと安全な読み方では読めないので、そのときは項目の名前で読む
+            // （使う項目は ID と PaymentIntent の ID だけで、バージョンで変わらない）
+            var safe = deserializer.getObject();
+            StripeObject object = safe.isPresent() ? safe.get() : deserializer.deserializeUnsafe();
             return (Session) object;
         } catch (EventDataObjectDeserializationException | ClassCastException e) {
             // 再送でも直らないが、例外で返して Stripe の通知の記録に残す

@@ -1,18 +1,23 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.DomainEvents;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
+import com.ecsite.common.persistence.AdvisoryLockSpace;
+import com.ecsite.common.persistence.AdvisoryLocks;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
-import com.ecsite.module.order.domain.order.BuyerProfile;
-import com.ecsite.module.order.domain.order.Cancellation;
-import com.ecsite.module.order.domain.order.CancellationKind;
-import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.order.vo.AddressArea;
+import com.ecsite.module.order.domain.order.vo.BuyerProfile;
+import com.ecsite.module.order.domain.order.vo.Cancellation;
+import com.ecsite.module.order.domain.order.vo.CancellationKind;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
+import com.ecsite.module.order.domain.order.vo.Gender;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
@@ -22,7 +27,6 @@ import com.ecsite.module.order.domain.quote.TaxAmount;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
@@ -40,14 +44,18 @@ import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_LINE;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER_TAX;
 
 /**
- * 注文のリポジトリ。注文、明細、税率ごとの消費税額を、集約の単位で保存・再構築する。
+ * 注文のリポジトリ
+ *
+ * <p>注文、明細、税率ごとの消費税額を、集約の単位で保存・再構築する。
  */
 @Repository
 @RequiredArgsConstructor
 class JooqOrderRepository implements OrderRepository {
 
     /**
-     * 集約の名前（戻すときの失敗のメッセージに書く）
+     * 集約の名前
+     *
+     * <p>戻すときの失敗のメッセージに書く。
      */
     private static final String AGGREGATE_NAME = "order";
 
@@ -78,7 +86,9 @@ class JooqOrderRepository implements OrderRepository {
     private final Clock clock;
 
     /**
-     * 注文を保存する。注文番号の一意制約に当たったら、何もせずに false を返す。
+     * 注文を保存する。
+     *
+     * <p>注文番号の一意制約に当たったら、何もせずに false を返す。
      *
      * @param order 注文
      * @return 保存したら true
@@ -98,6 +108,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setShippingFee(snapshot.amounts().shippingFee().yen());
         record.setTotalAmount(snapshot.amounts().total().yen());
         record.setEmail(snapshot.email());
+
         var address = snapshot.shippingAddress();
         record.setRecipientName(address.name());
         record.setPostalCode(address.postalCode());
@@ -107,10 +118,12 @@ class JooqOrderRepository implements OrderRepository {
         record.setMunicipalityName(address.area().municipalityName());
         record.setAddress(address.address());
         record.setPhone(address.phone());
+
         var buyer = snapshot.buyerProfile();
         record.setBuyerAge(buyer.age() == null ? null : buyer.age().shortValue());
         record.setBuyerGender(buyer.gender() == null ? null : buyer.gender().name());
         record.setVersion(snapshot.version());
+
         record.setCreatedAt(now);
         record.setUpdatedAt(now);
 
@@ -123,24 +136,35 @@ class JooqOrderRepository implements OrderRepository {
             return false;
         }
         insertLines(snapshot);
-        order.pullEvents().forEach(eventPublisher::publishEvent);
+        DomainEvents.publish(eventPublisher, order);
         return true;
     }
 
     /**
-     * 注文の状態の変更を保存する。明細と金額は成立の後に変わらないので、注文の行だけを更新する。
+     * 注文の状態の変更を保存する。
+     *
+     * <p>バージョンが読んだときと同じ場合に、注文の行だけを更新する。
+     * 行ロックして読んだ注文を保存するので競合は起きないが、ロックを取らずに保存したときの安全網にする。
      *
      * @param order 変更した注文
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Override
     public void update(Order order) {
+        // 明細と金額は成立の後に変わらない
         var snapshot = order.toSnapshot();
         var record = dsl.newRecord(SALES_ORDER);
         writeState(record, snapshot);
         record.setVersion(snapshot.version() + 1);
         record.setUpdatedAt(clock.instant());
-        dsl.update(SALES_ORDER).set(record).where(SALES_ORDER.ID.eq(snapshot.id())).execute();
-        order.pullEvents().forEach(eventPublisher::publishEvent);
+        int updated = dsl.update(SALES_ORDER).set(record)
+                .where(SALES_ORDER.ID.eq(snapshot.id()))
+                .and(SALES_ORDER.VERSION.eq(snapshot.version()))
+                .execute();
+        if (updated == 0) {
+            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
+        DomainEvents.publish(eventPublisher, order);
     }
 
     /**
@@ -202,16 +226,14 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 会員ごとのロックを、トランザクションの終わりまで取る。<br />
-     * 複数の支払待ちの注文を認めるので一意索引では防げず、判定と保存を会員ごとに 1 つずつ処理する（注文の設計の「同時の注文」）。
+     * 会員ごとのロックを、トランザクションの終わりまで取る。
      *
      * @param memberId 会員 ID
      */
     @Override
     public void lockForMember(UUID memberId) {
-        // トランザクションの終わりで解放される、会員 ID のロック（PostgreSQL の advisory lock）
-        dsl.select(DSL.function("pg_advisory_xact_lock", Object.class,
-                DSL.val(memberId.getMostSignificantBits() ^ memberId.getLeastSignificantBits()))).fetch();
+        // 複数の支払待ちの注文を認めるので一意索引では防げない。トランザクションの終わりで解放される、会員 ID の advisory lock を使う
+        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.ORDER, memberId);
     }
 
     /**
@@ -237,7 +259,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * キャンセルの申請をレコードに書く。申請がなければ（null）、申請の項目は全て null にする。
+     * キャンセルの申請をレコードに書く。
+     *
+     * <p>申請がなければ（null）、申請の項目は全て null にする。
      */
     private static void writeRequest(SalesOrderRecord record, @Nullable CancellationRequest request) {
         record.setCancellationRequestedAt(request == null ? null : request.requestedAt());
@@ -250,7 +274,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * キャンセルをレコードに書く。キャンセルがなければ（null）、キャンセルの項目は全て null にする。
+     * キャンセルをレコードに書く。
+     *
+     * <p>キャンセルがなければ（null）、キャンセルの項目は全て null にする。
      */
     private static void writeCancellation(SalesOrderRecord record, @Nullable Cancellation cancellation) {
         record.setCancelledAt(cancellation == null ? null : cancellation.cancelledAt());
@@ -292,10 +318,10 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。<br />
-     * 例外のメッセージに DB の値が入る変換だけを、集約を戻す共通の補助で包む（金額の検証のエラーは値を持たず、今の応答のまま）。
+     * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。
      */
     private Order restore(SalesOrderRecord record) {
+        // 例外のメッセージに DB の値が入る変換だけを、集約を戻す共通の補助で包む（金額の検証のエラーは値を持たず、今の応答のまま）
         var lines = restoreLines(record.getId());
         var amounts = restoreAmounts(record);
         var area = new AddressArea(record.getPrefectureCode(), record.getPrefectureName(), record.getMunicipalityCode(),
@@ -304,18 +330,16 @@ class JooqOrderRepository implements OrderRepository {
                 record.getPhone());
         return Order.restore(new Order.Snapshot(
                 record.getId(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderNumber.of(record.getOrderNumber())),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> OrderNumber.of(record.getOrderNumber())),
                 record.getCheckoutId(),
                 record.getMemberId(),
                 record.getOrderedAt(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> OrderStatus.valueOf(record.getStatus())),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> OrderStatus.valueOf(record.getStatus())),
                 lines,
                 amounts,
                 record.getEmail(),
                 address,
-                new BuyerProfile(record.getBuyerAge() == null ? null : record.getBuyerAge().intValue(),
-                        record.getBuyerGender() == null ? null
-                                : AggregateGuards.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()))),
+                restoreBuyer(record),
                 restoreRequest(record),
                 restoreCancellation(record),
                 record.getVersion()));
@@ -334,7 +358,7 @@ class JooqOrderRepository implements OrderRepository {
                         line.getProductCode(),
                         line.getVariantCode(),
                         line.getProductName(),
-                        AggregateGuards.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES)),
+                        RestoreGuard.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES)),
                         Money.of(line.getUnitPriceExclTax()),
                         normalize(line.getRatePercent()),
                         Money.of(line.getUnitPriceInclTax()),
@@ -343,7 +367,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 注文の金額を読む。税率ごとの消費税額は別の表から、税率の高い順（の表示の順）に読む。
+     * 注文の金額を読む。
+     *
+     * <p>税率ごとの消費税額は別の表から、税率の高い順（の表示の順）に読む。
      */
     private Amounts restoreAmounts(SalesOrderRecord record) {
         var taxes = dsl.selectFrom(SALES_ORDER_TAX)
@@ -356,29 +382,49 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * キャンセルの申請を読む。申請がなければ null。
+     * 注文時の年齢と性別を読む。
+     *
+     * <p>分からない項目は null。
+     */
+    private static BuyerProfile restoreBuyer(SalesOrderRecord record) {
+        var age = record.getBuyerAge() == null ? null : record.getBuyerAge().intValue();
+        var gender = record.getBuyerGender() == null ? null
+                : RestoreGuard.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()));
+        return new BuyerProfile(age, gender);
+    }
+
+    /**
+     * キャンセルの申請を読む。
+     *
+     * <p>申請がなければ null。
      */
     private static @Nullable CancellationRequest restoreRequest(SalesOrderRecord record) {
         if (record.getCancellationRequestedAt() == null) {
             return null;
         }
         return new CancellationRequest(
-                record.getCancellationRequestedAt(), record.getCancellationRequestReason(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
+                record.getCancellationRequestedAt(),
+                record.getCancellationRequestReason(),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
                 record.getCancellationDecidedAt(),
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
     }
 
     /**
-     * キャンセルを読む。キャンセルされていなければ null。
+     * キャンセルを読む。
+     *
+     * <p>キャンセルされていなければ null。
      */
     private static @Nullable Cancellation restoreCancellation(SalesOrderRecord record) {
         if (record.getCancelledAt() == null) {
             return null;
         }
-        return new Cancellation(record.getCancelledAt(),
-                AggregateGuards.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())), record.getCancellationReason(),
-                operatorOf(record.getCancelledById(), record.getCancelledByName()), record.getCancellationRestocked());
+        return new Cancellation(
+                record.getCancelledAt(),
+                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())),
+                record.getCancellationReason(),
+                operatorOf(record.getCancelledById(), record.getCancelledByName()),
+                record.getCancellationRestocked());
     }
 
     /**
@@ -390,7 +436,9 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 操作した運営者。記録を始める前の行は空なので null。
+     * 操作した運営者。
+     *
+     * <p>記録を始める前の行は空なので null。
      */
     private static @Nullable Operator operatorOf(@Nullable UUID id, String name) {
         return id == null ? null : new Operator(id, name);

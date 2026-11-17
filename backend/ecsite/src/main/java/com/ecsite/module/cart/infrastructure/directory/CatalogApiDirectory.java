@@ -9,8 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/cart.md の「境界」）。<br />
- * 商品カタログの API を呼び、カートに入れられるかの判定に変換する。
+ * 商品カタログの腐敗防止層
+ *
+ * <p>商品カタログの API を呼び、カートに入れられるかの判定に変換する。
  */
 @Component
 @RequiredArgsConstructor
@@ -22,7 +23,9 @@ class CatalogApiDirectory implements CatalogDirectory {
     private final OrderCatalogApi orderCatalogApi;
 
     /**
-     * バリアントを選べるか（C 側に表示される商品の、販売停止でないバリアントか）。
+     * バリアントを選べるか。
+     *
+     * <p>選べるのは、C 側に表示される商品の、販売停止でないバリアントである。
      *
      * @param variantId バリアント ID
      * @return 選べれば true。存在しないバリアントは false

@@ -26,6 +26,7 @@ import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
+import com.ecsite.module.catalog.domain.product.vo.ProductActions.DeleteBlockedReason;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -34,14 +35,15 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 商品 API のリクエスト・レスポンスと、アプリケーション層のモデルの変換
+ * 商品 API のマッパー
+ *
+ * <p>商品 API のリクエスト・レスポンスと、アプリケーション層のモデルを変換する。
  */
 @Component
 class ProductMapper {
 
     /**
-     * 商品の登録コマンドに変換する。<br />
-     * 所属カテゴリと軸は LinkedHashSet で受け取るので、送られた順を保つ。
+     * 商品の登録コマンドに変換する。
      *
      * @param request 商品の登録リクエスト
      * @return 商品の登録コマンド
@@ -53,6 +55,7 @@ class ProductMapper {
                 request.getDescription(),
                 request.getTaxCategoryId(),
                 Money.of(request.getPriceExclTax()),
+                // 所属カテゴリと軸は LinkedHashSet で受け取るので、送られた順を保つ
                 List.copyOf(request.getCategoryIds()),
                 List.copyOf(request.getAxes()));
     }
@@ -100,7 +103,9 @@ class ProductMapper {
     }
 
     /**
-     * 公開期間の変更コマンドに変換する。日時を省略・null にしたら、その側は限りがない。
+     * 公開期間の変更コマンドに変換する。
+     *
+     * <p>日時を省略・null にしたら、その側は限りがない。
      *
      * @param productId 商品 ID
      * @param request   公開期間の設定リクエスト
@@ -133,7 +138,7 @@ class ProductMapper {
                 .status(toResponseStatus(view.status()))
                 .images(view.images().stream().map(ProductMapper::toImage).toList())
                 .variants(view.variants().stream().map(ProductMapper::toVariant).toList())
-                .actions(toActions(Objects.requireNonNull(view.actions(), "クエリサービスが操作の可否を決めている")))
+                .actions(toActions(Objects.requireNonNull(view.actions(), "取得した商品の詳細には、できる操作が入っている")))
                 .version(view.version())
                 .createdAt(ApiDateTimes.toOffsetDateTime(view.createdAt()))
                 .updatedAt(ApiDateTimes.toOffsetDateTime(view.updatedAt()))
@@ -216,7 +221,9 @@ class ProductMapper {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * バリアントをレスポンスに変換する。画像 ID は指定がなければ null のまま返す。
+     * バリアントをレスポンスに変換する。
+     *
+     * <p>画像 ID は指定がなければ null のまま返す。
      */
     private static Variant toVariant(ProductDetailView.VariantView view) {
         return new Variant()
@@ -251,7 +258,7 @@ class ProductMapper {
     /**
      * できる操作をレスポンスに変換する。
      */
-    private static ProductActions toActions(com.ecsite.module.catalog.domain.product.ProductActions actions) {
+    private static ProductActions toActions(com.ecsite.module.catalog.domain.product.vo.ProductActions actions) {
         return new ProductActions()
                 .publish(actions.publish())
                 .unpublish(actions.unpublish())
@@ -266,8 +273,7 @@ class ProductMapper {
     /**
      * 削除できない理由をレスポンスに変換する。
      */
-    private static ProductDeleteBlockedReason toDeleteBlockedReason(
-            com.ecsite.module.catalog.domain.product.DeleteBlockedReason reason) {
+    private static ProductDeleteBlockedReason toDeleteBlockedReason(DeleteBlockedReason reason) {
         return switch (reason) {
             case ALREADY_SHOWN -> ProductDeleteBlockedReason.ALREADY_SHOWN;
         };

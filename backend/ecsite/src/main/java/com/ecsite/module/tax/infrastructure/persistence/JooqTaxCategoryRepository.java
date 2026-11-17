@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.tax.Keys;
+import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
@@ -16,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Name;
 import org.jooq.impl.DSL;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
@@ -36,9 +35,9 @@ import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 class JooqTaxCategoryRepository implements TaxCategoryRepository {
 
     /**
-     * 適用期間の重複を防ぐ排他制約（検査を遅らせる設定）。<br />
-     * jOOQ は排他制約のコードを生成せず、SET CONSTRAINTS の DSL もないため、名前で指す。
-     * マイグレーションとの一致は統合テストで確認する（JooqTaxCategoryRepositoryTest）。
+     * 適用期間の重複を防ぐ排他制約（検査を遅らせる設定）
+     *
+     * <p>jOOQ は排他制約のコードを生成しないので、名前で指す。
      */
     static final Name PERIOD_NO_OVERLAP = DSL.name("tax", "tax_rate_period_no_overlap");
 
@@ -53,11 +52,6 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
-
-    /**
-     * Spring イベントパブリッシャー
-     */
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 税区分ファクトリ
@@ -80,29 +74,18 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
         return dsl.selectFrom(TAX_CATEGORY)
                 .where(TAX_CATEGORY.ID.eq(id))
                 .fetchOptional()
-                // スナップショットに変換する
-                .map(category -> new TaxCategory.Snapshot(
-                        category.getId(),
-                        category.getName(),
-                        dsl.selectFrom(TAX_RATE)
-                                .where(TAX_RATE.TAX_CATEGORY_ID.eq(id))
-                                .fetch(JooqTaxCategoryRepository::toTaxRate),
-                        category.getVersion()))
-                // スナップショットからドメインに変換する
-                .map(factory::restore);
+                .map(this::toTaxCategory);
     }
 
     /**
-     * 税区分を登録する。
-     *
-     * @param taxCategory 税区分
+     * {@inheritDoc}
      */
     @Override
     public void add(TaxCategory taxCategory) {
         var snapshot = taxCategory.toSnapshot();
         var now = clock.instant();
 
-        translatingConstraintViolations(() -> {
+        CONSTRAINTS.run(() -> {
             // 税区分の登録
             dsl.insertInto(TAX_CATEGORY)
                     .set(TAX_CATEGORY.ID, snapshot.id())
@@ -115,22 +98,18 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
             // 税率の登録
             writeRates(snapshot);
         });
-
-        // イベント発行
-        taxCategory.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
     /**
-     * 税区分を更新する。<br />
-     * 税率は差分で更新する：なくなった税率を削除し、残りを追加または更新する。
+     * {@inheritDoc}
      *
-     * @param taxCategory 税区分
+     * <p>税率は差分で更新する：なくなった税率を削除し、残りを追加または更新する。
      */
     @Override
     public void save(TaxCategory taxCategory) {
         var snapshot = taxCategory.toSnapshot();
 
-        translatingConstraintViolations(() -> {
+        CONSTRAINTS.run(() -> {
             // 税区分の更新 ※バージョンが一致しなければ、取得後に他で更新されている。
             // 税区分の行を先にロックするので、同じ税区分の税率の書き換えは直列になる
             int affected = dsl.update(TAX_CATEGORY)
@@ -153,66 +132,66 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
             // 税率の追加・更新
             writeRates(snapshot);
         });
-
-        // イベント発行
-        taxCategory.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 書き込みを実行し、制約の違反を業務のエラーに変える。業務のエラーはそのまま投げる。
-     *
-     * @param write 書き込み
+     * 税区分のレコードと、その税率から、税区分を復元する。
      */
-    private static void translatingConstraintViolations(Runnable write) {
-        try {
-            write.run();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw CONSTRAINTS.translate(e);
-        }
+    private TaxCategory toTaxCategory(TaxCategoryRecord category) {
+        // 税率の取得
+        var rates = dsl.selectFrom(TAX_RATE)
+                .where(TAX_RATE.TAX_CATEGORY_ID.eq(category.getId()))
+                .fetch(JooqTaxCategoryRepository::toTaxRate);
+
+        // スナップショットからドメインに変換する
+        var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
+        return factory.restore(snapshot);
     }
 
     /**
-     * 税率を追加または更新し、遅らせていた排他制約を検査させる。<br />
-     * 途中で一時的に期間が重なってもよいので、排他制約は最後に検査する。
+     * 税率を追加または更新し、遅らせていた排他制約を検査させる。
      *
      * @param snapshot 税区分のスナップショット
      */
     private void writeRates(TaxCategory.Snapshot snapshot) {
-        snapshot.rates().forEach(rate -> upsertRate(snapshot.id(), rate));
+        upsertRates(snapshot);
+        // 途中で一時的に期間が重なってもよいので、排他制約は最後に検査する
         checkDeferredConstraints();
     }
 
     /**
-     * 税率を追加する。すでにあれば更新する。
+     * 税率を 1 つの文で追加する。すでにあるものは更新する。
      *
-     * @param taxCategoryId 税区分 ID
-     * @param rate          税率
+     * @param snapshot 税区分のスナップショット
      */
-    private void upsertRate(UUID taxCategoryId, TaxRate rate) {
-        var period = rate.period();
-        dsl.insertInto(TAX_RATE)
-                .set(TAX_RATE.ID, rate.id())
-                .set(TAX_RATE.TAX_CATEGORY_ID, taxCategoryId)
-                .set(TAX_RATE.RATE_PERCENT, rate.ratePercent().value())
-                .set(TAX_RATE.EFFECTIVE_FROM, period.effectiveFrom())
-                .set(TAX_RATE.EFFECTIVE_TO, period.effectiveTo())
-                .onConflict(TAX_RATE.ID)
+    private void upsertRates(TaxCategory.Snapshot snapshot) {
+        if (snapshot.rates().isEmpty()) {
+            return;
+        }
+        var insert = dsl.insertInto(TAX_RATE, TAX_RATE.ID, TAX_RATE.TAX_CATEGORY_ID, TAX_RATE.RATE_PERCENT,
+                TAX_RATE.EFFECTIVE_FROM, TAX_RATE.EFFECTIVE_TO);
+        for (var rate : snapshot.rates()) {
+            var period = rate.period();
+            insert = insert.values(rate.id(), snapshot.id(), rate.ratePercent().value(), period.effectiveFrom(),
+                    period.effectiveTo());
+        }
+        insert.onConflict(TAX_RATE.ID)
                 .doUpdate()
-                .set(TAX_RATE.RATE_PERCENT, rate.ratePercent().value())
-                .set(TAX_RATE.EFFECTIVE_FROM, period.effectiveFrom())
-                .set(TAX_RATE.EFFECTIVE_TO, period.effectiveTo())
+                .set(TAX_RATE.RATE_PERCENT, DSL.excluded(TAX_RATE.RATE_PERCENT))
+                .set(TAX_RATE.EFFECTIVE_FROM, DSL.excluded(TAX_RATE.EFFECTIVE_FROM))
+                .set(TAX_RATE.EFFECTIVE_TO, DSL.excluded(TAX_RATE.EFFECTIVE_TO))
                 .execute();
     }
 
     /**
-     * 遅らせていた排他制約（適用期間の重複）を、この時点で検査させる。<br />
-     * コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため（docs/03-機能仕様/tax.md）。
-     * 検査の後は遅らせる設定に戻し、同じトランザクションの後続の書き込みでも途中の重なりを許す。
+     * 遅らせていた排他制約（適用期間の重複）を、この時点で検査させる。
      */
     private void checkDeferredConstraints() {
+        // コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため、ここで検査する
         dsl.execute("SET CONSTRAINTS {0} IMMEDIATE", PERIOD_NO_OVERLAP);
+        // 遅らせる設定に戻し、同じトランザクションの後続の書き込みでも途中の重なりを許す
         dsl.execute("SET CONSTRAINTS {0} DEFERRED", PERIOD_NO_OVERLAP);
     }
 

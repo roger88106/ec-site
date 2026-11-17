@@ -2,7 +2,11 @@ import { formatYen, taxLabel } from '../lib/format'
 import { translate } from '../lib/translate'
 import { Separator } from '../ui/separator'
 
-/** 金額の内訳の値。各画面の生成した型を import できないので、構造で書く（どちらの画面の型も代入できる）。 */
+/**
+ * 金額の内訳の値
+ *
+ * 各画面の生成した型を import できないので、構造で書く（どちらの画面の型も代入できる）。
+ */
 type AmountsSummaryValue = {
   itemsTotal: number
   shippingFee: number
@@ -10,12 +14,19 @@ type AmountsSummaryValue = {
   taxes: { ratePercent: number; taxableAmount: number; taxAmount: number }[]
 }
 
-/** 見た目の種類。`card` は管理画面（右寄せで総額の上に線）、`page` は店舗画面（送料の次に区切り線で総額を大きく）。 */
+/**
+ * 金額の内訳の見た目の種類
+ *
+ * `card` は管理画面（右寄せで総額の上に線）、`page` は店舗画面（送料の次に区切り線で総額を大きく）。
+ */
 export type AmountsSummaryVariant = 'card' | 'page'
 
 /**
- * 金額の内訳。商品の合計、送料、総額、税率ごとの消費税額の順に出す。<br />
- * 店舗画面のカート・注文手続き・注文と、管理画面の注文の詳細で同じ部品を使う。<br />
+ * 金額の内訳
+ *
+ * 商品の合計、送料、総額、税率ごとの消費税額の順に出す。
+ * 店舗画面のカート・注文手続き・注文と、管理画面の注文の詳細で同じ部品を使う。
+ *
  * hook を使わず、文言は共有の translate で引くので、`"use client"` を付けない。店舗画面のサーバーコンポーネント
  * （async の page）からも、管理画面のブラウザーの描画からも使える。
  */

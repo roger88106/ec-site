@@ -1,7 +1,7 @@
 package com.ecsite.tools.region;
 
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.Prefecture;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,8 +17,9 @@ import java.util.regex.Pattern;
 
 /**
  * 郵便番号のデータ（日本郵便の「住所の郵便番号（1 レコード 1 行、UTF-8 形式）」の CSV）を、
- * マスターデータの行に変える（docs/02-設計/region.md「最初のデータの作り方」）。<br />
- * マイグレーションを作るタスク {@code generateRegionMigration}（{@link RegionMigrationGenerator}）が使う。
+ * マスターデータの行に変える。
+ *
+ * <p>マイグレーションを作るタスク {@code generateRegionMigration}（{@link RegionMigrationGenerator}）が使う。
  */
 public final class PostalCodeCsv {
 
@@ -144,7 +145,9 @@ public final class PostalCodeCsv {
     }
 
     /**
-     * 1 行を列に分ける。値は引用符で囲まれていてもよく、引用符の中に区切りの文字はない
+     * 1 行を列に分ける。
+     *
+     * <p>値は引用符で囲まれていてもよく、引用符の中に区切りの文字はない
      *
      * @param line 行
      * @return 列の値（引用符と前後の空白を除いたもの）

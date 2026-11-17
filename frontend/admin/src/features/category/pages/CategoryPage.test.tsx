@@ -19,8 +19,14 @@ const CLOTHING = categoryNode('101', '衣類', 1, [TOPS])
 const GOODS = categoryNode('201', '雑貨', 1)
 
 /**
- * カテゴリの画面が使う API に応答する。木は tree を返し、変更のリクエストは requests に取っておく。<br />
+ * カテゴリの画面が使う API に応答する。
+ *
+ * 木は tree を返し、変更のリクエストは requests に取っておく。
  * 登録・名称の変更・削除は、それぞれ create・rename・remove の関数があればその応答を、なければ成功を返す。
+ *
+ * @param tree      取得で返す木
+ * @param responses 登録・名称の変更・削除の応答を決める関数
+ * @returns 変更のリクエストの記録
  */
 function serveCategories(
   tree: CategoryNode[],

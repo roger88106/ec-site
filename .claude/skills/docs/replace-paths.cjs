@@ -48,7 +48,7 @@ function replacePaths(text, map) {
   const targets = new Map(map)
   const alternatives = [...targets.keys()]
     .sort((a, b) => b.length - a.length)
-    .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .map((p) => RegExp.escape(p))
   const pattern = new RegExp(`(?<![\\w./-])(${alternatives.join('|')})(?![\\w-]|\\.\\w)`, 'g')
   return text.replace(pattern, (match) => targets.get(match))
 }

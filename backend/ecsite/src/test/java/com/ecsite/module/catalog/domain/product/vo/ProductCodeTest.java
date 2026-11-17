@@ -7,7 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -15,24 +15,27 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ProductCodeTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "「{0}」")
     @ValueSource(strings = {"ABC-001", "A", "0", "ABC", "A-B-C", "12345678901234567890123456789012"})
     @DisplayName("AC-15 英大文字・数字と、英数字の間のハイフンで 1〜32 文字なら受け付ける")
     void acceptsValidCode(String value) {
+        // 操作と確認：受け付け、同じ値を持つ
         assertThat(ProductCode.of(value).value()).isEqualTo(value);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "「{0}」")
     @NullAndEmptySource
     @ValueSource(strings = {"-ABC", "ABC-", "ABC--1", "abc-001", "Abc", "ABC 001", "ABC_001", "ＡＢＣ", "123456789012345678901234567890123"})
-    @DisplayName("AC-15 形式が違えば拒否される（先頭・末尾・連続のハイフン、英小文字、33 文字以上など）")
+    @DisplayName("AC-15 形式が違えば拒否される")
     void rejectsInvalidCode(String value) {
+        // 操作と確認：業務のエラー INVALID_PRODUCT_CODE で拒否される
         assertBusinessError(() -> ProductCode.of(value), ProductErrorCode.INVALID_PRODUCT_CODE);
     }
 
     @Test
     @DisplayName("値が同じなら等しい")
     void equalsByValue() {
+        // 操作と確認：同じ値から作った品番が等しい
         assertThat(ProductCode.of("ABC-001")).isEqualTo(ProductCode.of("ABC-001"));
     }
 }

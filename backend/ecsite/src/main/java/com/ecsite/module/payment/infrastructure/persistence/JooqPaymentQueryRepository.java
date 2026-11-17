@@ -1,6 +1,6 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -28,6 +28,9 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
      */
     private final DSLContext dsl;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<PaymentSummaryView> findSummaries(Collection<UUID> orderIds) {
         if (orderIds.isEmpty()) {
@@ -36,10 +39,14 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
         return dsl.select(PAYMENT_.ORDER_ID, PAYMENT_.STATUS, PAYMENT_.DEADLINE)
                 .from(PAYMENT_)
                 .where(PAYMENT_.ORDER_ID.in(orderIds))
-                .fetch(row -> new PaymentSummaryView(row.value1(),
-                        AggregateGuards.restore("payment", () -> PaymentStatus.valueOf(row.value2())), row.value3()));
+                .fetch(r -> new PaymentSummaryView(r.get(PAYMENT_.ORDER_ID),
+                        RestoreGuard.restore("payment", () -> PaymentStatus.valueOf(r.get(PAYMENT_.STATUS))),
+                        r.get(PAYMENT_.DEADLINE)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<UUID> findOrderIdsAuthorizedUntil(Instant latestAuthorizedAt) {
         // 与信期限を気にする状態の名前（部分インデックスの条件と同じ）
@@ -55,6 +62,9 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .fetch(PAYMENT_.ORDER_ID);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long countUnpaidAwaitingAuthorizationUntil(Instant latestAwaitingSince) {
         return dsl.fetchCount(PAYMENT_, PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name())

@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * 店舗の商品のコントローラー（C 側。store.yaml の tag: product）
+ * 店舗の商品のコントローラー
+ *
+ * <p>C 側の API のうち、store.yaml のタグ product の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -64,7 +66,7 @@ class StorefrontProductController implements ProductApi {
     }
 
     /**
-     * 商品の詳細。表示されない商品は 404
+     * 商品の詳細
      *
      * @param productId 商品 ID
      * @return Http 200 : {@link ProductDetail}

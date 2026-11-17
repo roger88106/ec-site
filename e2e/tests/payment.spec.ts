@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Locator, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createSimpleProduct } from '../src/data'
 import { detailValue } from '../src/detail'
@@ -7,8 +7,10 @@ import {
   fillShipping,
   leaveMockPage,
   loginWithCart,
+  mockPaymentHeading,
   orderCart,
   orderIdOf,
+  payButton,
   payOnMockPage,
   proceedToCheckout,
   submitOrder,
@@ -17,7 +19,7 @@ import { BACKEND_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits'
 
 // 支払の E2E。E2E のバックエンドは mock の決済サービスで動き、支払の期限は 12 秒（application-e2e.yml）。
-// 会員のカートは実行をまたいで残るので、各テストはカートを空にしてから始める。
+// 会員のカートには同じ実行の前のテストの品目が残るので、各テストはカートを空にしてから始める。
 
 /**
  * 公開の商品を作り、会員としてログインして、空にしたカートに 1 つずつ入れる。
@@ -26,7 +28,7 @@ import { CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits
  * @param code 品番の一部
  * @param count 作る商品の数
  */
-async function memberCartWith(page: Page, code: string, count = 1) {
+async function memberCartWith(page: Page, code: string, count = 1): Promise<void> {
   const productIds: string[] = []
   for (let index = 1; index <= count; index++) {
     productIds.push(
@@ -77,8 +79,8 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
   })
 
   await test.step('注文の画面から支払画面を開き直して支払うと、受付になる', async () => {
-    await page.getByRole('button', { name: '支払う', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+    await payButton(page).click()
+    await expect(mockPaymentHeading(page)).toBeVisible()
     await payOnMockPage(page)
   })
 })
@@ -88,13 +90,13 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
   test.setTimeout(test.info().timeout + PAYMENT_EXPIRY_TIMEOUT)
   await memberCartWith(page, 'EXPIRE')
   await orderCart(page)
-  let orderUrl = ''
 
-  await test.step('支払画面でやめると、注文の画面に戻り、注文は支払待ちのまま', async () => {
-    orderUrl = await leaveMockPage(page, 'やめる')
-    await page.goto(orderUrl)
+  const orderUrl = await test.step('支払画面でやめると、注文の画面に戻り、注文は支払待ちのまま', async () => {
+    const url = await leaveMockPage(page, 'やめる')
+    await page.goto(url)
     await expect(page.getByText('支払待ち', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: '支払う', exact: true })).toBeVisible()
+    await expect(payButton(page)).toBeVisible()
+    return url
   })
 
   await test.step('期限を過ぎると、支払期限切れのキャンセルになる', async () => {
@@ -105,7 +107,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
       PAYMENT_EXPIRY_TIMEOUT,
     )
     await expect(detailValue(page, '状態')).toHaveText('キャンセル')
-    await expect(page.getByRole('button', { name: '支払う', exact: true })).toHaveCount(0)
+    await expect(payButton(page)).toHaveCount(0)
   })
 })
 
@@ -132,6 +134,6 @@ test('AC-162 管理画面で受付の注文をキャンセルすると、支払�
 })
 
 /** 管理画面の注文の詳細の、支払の状態 */
-function paymentStatus(page: Page) {
+function paymentStatus(page: Page): Locator {
   return detailValue(page, '支払')
 }

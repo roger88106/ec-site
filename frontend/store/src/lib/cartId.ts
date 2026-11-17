@@ -17,16 +17,21 @@ export function parseCartId(value: string | undefined): string | null {
 }
 
 /**
- * カート ID の Cookie の属性（店舗画面の構成の「カート ID の Cookie」）。ブラウザーの JavaScript からは読めない。
+ * カート ID の Cookie の属性を返す（店舗画面の構成の「カート ID の Cookie」）。
+ *
+ * ブラウザーの JavaScript からは読めない。
  *
  * @param secure HTTPS だけで送るか（本番では true）
+ * @returns Cookie の属性
  */
 export function cartCookieOptions(secure: boolean) {
   return { httpOnly: true, sameSite: 'lax', secure, path: '/', maxAge: MAX_AGE_SECONDS } as const
 }
 
 /**
- * カートを使う操作を行う。カートがなければ作り、見つからなければ再作成して 1 回だけやり直す。
+ * カートを使う操作を行う。
+ *
+ * カートがなければ作り、見つからなければ再作成して 1 回だけやり直す。
  *
  * @param cartId 今のカート ID。なければ null
  * @param create カートを作り、その ID を返す

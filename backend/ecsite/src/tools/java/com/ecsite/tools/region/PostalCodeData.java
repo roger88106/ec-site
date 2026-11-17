@@ -1,7 +1,7 @@
 package com.ecsite.tools.region;
 
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.Prefecture;
 
 import java.util.List;
 import java.util.Set;
@@ -17,7 +17,9 @@ public record PostalCodeData(List<Prefecture> prefectures, List<Municipality> mu
                              List<PostalCodeEntry> postalCodes) {
 
     /**
-     * 郵便番号の表を、指定した郵便番号だけに限る。都道府県と市区町村は全件のまま
+     * 郵便番号の表を、指定した郵便番号だけに限る。
+     *
+     * <p>都道府県と市区町村は全件のまま
      *
      * @param postalCodes 残す郵便番号
      * @return 限ったデータ

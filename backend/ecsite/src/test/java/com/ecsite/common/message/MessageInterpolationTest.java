@@ -1,6 +1,5 @@
 package com.ecsite.common.message;
 
-import com.ecsite.DomainConstants;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.ErrorDetail;
@@ -11,6 +10,7 @@ import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.tax.domain.TaxErrorCode;
+import com.ecsite.support.DomainConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,13 +23,14 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 規則の値を差し込むメッセージの単体テスト（バックエンドの書き方の「エラーは XxxErrorCode と BusinessException」）。<br />
- * 差し込む値をドメインの定数から取り、整理の前（数字を文に書いていたとき）と同じ文になることを確認する。
+ * 規則の値を差し込むメッセージの単体テスト
+ *
+ * <p>差し込む値をドメインの定数から取り、整理の前（数字を文に書いていたとき）と同じ文になることを確認する。
  */
 class MessageInterpolationTest {
 
     /**
-     * 1 件の見本。
+     * 1 件の見本
      *
      * @param error    エラーの定義
      * @param values   差し込む値の出どころ（{@code クラスの完全修飾名#定数名}）。MB にする値は {@code #MAX_BYTES/MB}
@@ -113,18 +114,34 @@ class MessageInterpolationTest {
                         "キャンセルの理由は 500 文字以内で入力してください。"));
     }
 
-    @ParameterizedTest(name = "{0}")
+    // ============================== テスト ==============================
+
+    @ParameterizedTest(name = "「{0}」")
     @MethodSource("cases")
     @DisplayName("AC-266 ドメインの定数を差し込んだ文が、整理の前の文と同じになる")
     void interpolatesDomainConstants(Case example) {
+        // 準備：差し込む値を、ドメインの定数から読む
+        List<Object> values = example.values().stream().map(MessageInterpolationTest::valueOf).toList();
+
+        // 操作：メッセージのファイルの文に差し込む
+        var message = resolver().getMessage(ErrorDetail.of(example.error().getCode(), values));
+
+        // 確認：整理の前の文と同じ
+        assertThat(message).isEqualTo(example.expected());
+    }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * メッセージのファイルから文を取り出す {@link MessageResolver} を作る。
+     *
+     * @return メッセージの取り出し
+     */
+    private static MessageResolver resolver() {
         var messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
-        var helper = new MessageHelper(messageSource);
-
-        List<Object> values = example.values().stream().map(MessageInterpolationTest::valueOf).toList();
-
-        assertThat(helper.getMessage(ErrorDetail.of(example.error().getCode(), values))).isEqualTo(example.expected());
+        return new MessageResolver(messageSource);
     }
 
     /**

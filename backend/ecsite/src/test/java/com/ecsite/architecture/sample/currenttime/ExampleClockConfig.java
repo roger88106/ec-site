@@ -1,0 +1,20 @@
+package com.ecsite.architecture.sample.currenttime;
+
+import java.time.Clock;
+
+/**
+ * 現在時刻の取り方の検査の例：時計の Bean の設定に見立てたクラスが Clock.systemUTC() で時計を作る（例外の一覧に入れると規則に合う）
+ *
+ * <p>構成の検査が違反を見つけられることを確認するための例であり、本番のコードではない。
+ */
+public final class ExampleClockConfig {
+
+    /**
+     * 例の関数。
+     *
+     * @return 今の時刻
+     */
+    Clock now() {
+        return Clock.systemUTC();
+    }
+}

@@ -7,7 +7,7 @@ import { ADMIN_URL, IDP_URL, STORE_URL } from './urls'
 /** ログインに使うアカウント */
 export type Account = { email: string; password: string }
 
-/** realm の JSON にあるローカルと CI 用のアカウント（docs/06-手順書/setup.md の「アカウント」） */
+/** realm の JSON にあるローカルと CI 用のアカウント（開発環境の起動の「アカウント」） */
 export const ACCOUNTS = {
   /** 運営者の realm の管理者（すべての権限） */
   administrator: { email: 'admin@example.com', password: 'admin-pass-1' },
@@ -24,13 +24,33 @@ export const ACCOUNTS = {
 } satisfies Record<string, Account>
 
 /**
- * E2E で登録する会員のメールアドレス。実行ごとの識別子を付け、前の実行で登録した会員と重ならないようにする。
+ * E2E で登録する会員のメールアドレス。実行ごとの識別子を付ける。Mailpit のメールは実行をまたいで残るので、前の実行で同じ宛先に送ったメールと混ざらないようにする。
  *
  * @param label テストの中での呼び名（英小文字と数字）
  * @returns メールアドレス
  */
-export function memberEmail(label: string): string {
+function memberEmail(label: string): string {
   return `e2e-${RUN_ID.toLowerCase()}-${label}@example.com`
+}
+
+/**
+ * E2E で登録する会員のアカウント（{@link memberEmail} のメールアドレスと、条件を満たすパスワード）。
+ *
+ * @param label テストの中での呼び名（英小文字と数字）
+ * @returns 登録するアカウント
+ */
+export function newMemberAccount(label: string): Account {
+  return { email: memberEmail(label), password: 'E2e-pass-1234' }
+}
+
+/**
+ * ログアウトのボタン（店舗画面と管理画面）。
+ *
+ * @param scope 探す範囲（ページか、ヘッダーなどの領域）
+ * @returns ログアウトのボタン
+ */
+export function logoutButton(scope: Page | Locator): Locator {
+  return scope.getByRole('button', { name: 'ログアウト', exact: true })
 }
 
 /**
@@ -144,7 +164,7 @@ export async function loginAdmin(
 ): Promise<void> {
   await page.goto(`${adminUrl}${path}`)
   await submitIdpLogin(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+  await expect(logoutButton(page)).toBeVisible()
 }
 
 /**
@@ -164,7 +184,7 @@ export async function loginStore(
     returnTo = '/',
     storeUrl = STORE_URL,
     waitForLoggedIn = async () => {
-      await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+      await expect(logoutButton(page)).toBeVisible()
     },
   }: { returnTo?: string; storeUrl?: string; waitForLoggedIn?: () => Promise<void> } = {},
 ): Promise<void> {
@@ -198,7 +218,7 @@ export async function registerMember(
 ): Promise<void> {
   await submitSignup(page, account, name, profile)
   await setPasswordFromMail(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
+  await expect(logoutButton(page)).toBeVisible()
 }
 
 /**
@@ -319,7 +339,8 @@ async function latestIdpLink(to: string): Promise<string> {
 }
 
 /**
- * 運営者の access token を、管理画面と同じ認可コード + PKCE の流れで取る（ブラウザーを使わない）。<br />
+ * 運営者の access token を、管理画面と同じ認可コード + PKCE の流れで取る（ブラウザーを使わない）。
+ *
  * テストのデータを管理 API で直接作るときに使う。web の client はパスワードで token を取る方式を無効にしているため。
  *
  * @param account ログインする運営者のアカウント

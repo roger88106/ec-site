@@ -13,7 +13,7 @@ const zh = require('./zh-mixing.cjs')
 const list = zh.loadList()
 /** 許容用語を空にした一覧。文書に字・語がないことは、許容用語によらず調べる（DC-249-28、30） */
 const strict = { ...list, allow: [] }
-const ja = require('../../../scripts/ci/ja-text.json')
+const ja = require('../../../scripts/ci/ja/ja-text.json')
 
 /** 簡体字の U+8FD9。日本語では使わない字 */
 const SIMPLIFIED = String.fromCodePoint(0x8fd9)

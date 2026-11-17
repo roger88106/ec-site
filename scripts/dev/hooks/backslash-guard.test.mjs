@@ -45,6 +45,10 @@ describe('heredoc と node -e の中の \\ を拒否する', () => {
     assertDenied('node --eval "console.log(1)\\n"')
   })
 
+  test('node --eval=… の形の引数に \\ がある', () => {
+    assertDenied("node --eval='console.log(\"a\\nb\")'")
+  })
+
   test('node と -e の間に他のオプション（--input-type=module など）があっても、引数の \\ を拒否する', () => {
     assertDenied("node --input-type=module -e 'console.log(\"a\\nb\")'")
     assertDenied('node --input-type=module --eval "console.log(1)\\n"')

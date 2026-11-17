@@ -6,7 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * バリアント登録。在庫モジュールが、在庫数 0 の在庫を作る。
+ * バリアント登録
+ *
+ * <p>バリアントを登録したときに発行する。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

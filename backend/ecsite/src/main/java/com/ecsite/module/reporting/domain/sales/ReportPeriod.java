@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * レポートの期間。始まりと終わりの日（日本時間、両端を含む）。
+ * レポートの期間
+ *
+ * <p>始まりと終わりの日（日本時間、両端を含む）。
  *
  * @param from 始まりの日
  * @param to   終わりの日
@@ -29,7 +31,8 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
      * @param from 始まりの日
      * @param to   終わりの日
      * @return 期間
-     * @throws BusinessException 始まりが終わりより後、または {@value #MAX_YEARS} 年を超える
+     * @throws BusinessException 始まりが終わりより後（{@code INVALID_PERIOD}）
+     * @throws BusinessException {@value #MAX_YEARS} 年を超える（{@code INVALID_PERIOD}）
      */
     public static ReportPeriod of(@NonNull LocalDate from, @NonNull LocalDate to) {
         if (from.isAfter(to) || !to.isBefore(from.plusYears(MAX_YEARS))) {
@@ -39,7 +42,9 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
     }
 
     /**
-     * 期間を区切りに分ける。期間が区切りの途中で切れたら、その区切りは期間の中の日だけにする。
+     * 期間を区切りに分ける。
+     *
+     * <p>期間が区切りの途中で切れたら、その区切りは期間の中の日だけにする。
      *
      * @param granularity          粒度
      * @param fiscalYearStartMonth 会計年度の始まりの月（1〜12）
@@ -70,6 +75,7 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
             case QUARTER -> {
                 var fiscalYear = fiscalYearOf(date, fiscalYearStartMonth);
                 var yearStart = LocalDate.of(fiscalYear, fiscalYearStartMonth, 1);
+                // 会計年度の始まりの月からの月数で、何番目の四半期かを決める
                 int months = (date.getYear() * 12 + date.getMonthValue()) - (fiscalYear * 12 + fiscalYearStartMonth);
                 int quarter = months / 3 + 1;
                 var start = yearStart.plusMonths((quarter - 1) * 3L);
@@ -84,7 +90,9 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
     }
 
     /**
-     * 日の会計年度（始まりの月の年）。始まりの月より前の月は、前の年の年度。
+     * 日の会計年度（始まりの月の年）。
+     *
+     * <p>始まりの月より前の月は、前の年の年度。
      */
     private static int fiscalYearOf(LocalDate date, int fiscalYearStartMonth) {
         return date.getMonthValue() >= fiscalYearStartMonth ? date.getYear() : date.getYear() - 1;

@@ -2,7 +2,11 @@ import type { ReactNode } from 'react'
 import { useTranslations } from 'use-intl'
 import { ErrorMessage } from '@/components/ErrorMessage'
 
-/** 取得中・取得の失敗を、その取得を使う場所に出す。取得できたら children に渡す */
+/**
+ * 取得の状態の表示
+ *
+ * 取得中・取得の失敗を、その取得を使う場所に出す。取得できたら children に渡す。
+ */
 export function QueryState<T>({
   query,
   children,

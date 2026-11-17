@@ -1,5 +1,8 @@
 package com.ecsite.config.security;
 
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.server.PathContainer;
 import org.springframework.web.util.pattern.PathPattern;
@@ -22,12 +25,14 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
- * OpenAPI の契約の操作（メソッドとパス）ごとの値。管理 API の権限と、店舗 API の token の要否に使う。<br />
- * パスは {@code servers.url} を前に付け、具体的なパスを変数を含むパスより先に照合する
+ * OpenAPI の契約の操作（メソッドとパス）ごとの値
+ *
+ * <p>パスは {@code servers.url} を前に付け、具体的なパスを変数を含むパスより先に照合する
  * （{@code /categories/order} を {@code /categories/{categoryId}} より先）。
  *
  * @param <T> 操作ごとの値
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 final class OpenApiOperations<T> {
 
     /**
@@ -36,7 +41,9 @@ final class OpenApiOperations<T> {
     private static final Set<String> HTTP_METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "trace");
 
     /**
-     * OpenAPI の Path Item の項目のうち、操作でないもの。拡張（{@code x-} で始まるもの）も認める
+     * OpenAPI の Path Item の項目のうち、操作でないもの
+     *
+     * <p>拡張（{@code x-} で始まるもの）も認める。
      */
     private static final Set<String> PATH_ITEM_FIELDS = Set.of("summary", "description", "servers", "parameters", "$ref");
 
@@ -59,23 +66,18 @@ final class OpenApiOperations<T> {
     /**
      * 操作の一覧（パスの具体的なものが先）
      */
+    @NonNull
     private final List<Operation<T>> operations;
 
     /**
-     * @param operations 操作の一覧（パスの具体的なものが先）
-     */
-    private OpenApiOperations(List<Operation<T>> operations) {
-        this.operations = operations;
-    }
-
-    /**
      * 契約を読み込む。
+     *
+     * <p>パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキーがあれば、起動を止める。
      *
      * @param resource 契約（{@code admin.yaml} など）
      * @param valueOf  操作の名前（{@code GET /products} の形）と操作の定義から、操作ごとの値を作る。起動を止めるときは例外を投げる
      * @param <T>      操作ごとの値の型
      * @return 操作ごとの値
-     * @throws IllegalStateException パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキーがあるとき
      */
     static <T> OpenApiOperations<T> load(Resource resource, BiFunction<String, Map<String, Object>, T> valueOf) {
         try (InputStream in = resource.getInputStream()) {
@@ -89,6 +91,10 @@ final class OpenApiOperations<T> {
      * 契約の操作を読み、パスの具体的なものが先になるように並べる。
      *
      * @param contract 契約のファイル（例外のメッセージに使う）
+     * @param in       契約の内容
+     * @param valueOf  操作の名前と操作の定義から、操作ごとの値を作る
+     * @param <T>      操作ごとの値の型
+     * @return 操作ごとの値
      */
     // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
@@ -117,10 +123,11 @@ final class OpenApiOperations<T> {
     /**
      * 操作でないパスの下のキーが、OpenAPI の Path Item の項目か拡張であることを確認する。
      *
+     * <p>そうでなければ起動を止める。
+     *
      * @param contract 契約のファイル
      * @param path     パス
      * @param key      パスの下のキー
-     * @throws IllegalStateException 小文字でない HTTP メソッドか、Path Item の項目の外のキーのとき
      */
     private static void checkPathItemField(String contract, String path, String key) {
         if (HTTP_METHODS.contains(key.toLowerCase(Locale.ROOT))) {

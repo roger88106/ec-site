@@ -1,13 +1,14 @@
 package com.ecsite.module.media.application.port;
 
+import com.ecsite.module.media.application.model.PresignedUpload;
+
 import java.net.URI;
-import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 
 /**
- * ファイルの置き場所（オブジェクトストレージ）。<br />
- * アップロードのバケット（非公開。アップロードされたままのファイル）と、配信のバケット（公開）を扱う。
+ * ファイルの置き場所（オブジェクトストレージ）
+ *
+ * <p>アップロードのバケット（非公開。アップロードされたままのファイル）と、配信のバケット（公開）を扱う。
  * AWS（S3）と GCP（GCS）の両方にある機能だけを使えるよう、操作を絞る。
  */
 public interface ObjectStorage {
@@ -31,7 +32,7 @@ public interface ObjectStorage {
     Optional<Long> findUploadSize(String uploadKey);
 
     /**
-     * アップロードのバケットのファイルの先頭を読む（形式の判定に使う）。
+     * アップロードのバケットのファイルの先頭を読む。
      *
      * @param uploadKey アップロードのバケットのキー
      * @param length    読む長さ（バイト）
@@ -40,7 +41,9 @@ public interface ObjectStorage {
     byte[] readUploadHead(String uploadKey, int length);
 
     /**
-     * 配信のバケットへファイルを書き込む。長くキャッシュさせる（キーを上書きしないため）。
+     * 配信のバケットへファイルを書き込む。
+     *
+     * <p>長くキャッシュさせる（キーを上書きしないため）。
      *
      * @param publicKey   配信のバケットのキー
      * @param content     ファイルの中身（変換した画像）
@@ -49,7 +52,9 @@ public interface ObjectStorage {
     void putPublished(String publicKey, byte[] content, String contentType);
 
     /**
-     * 配信のバケットのファイルを消す。ファイルがなくても成功とする（何度行っても同じ結果）。
+     * 配信のバケットのファイルを消す。
+     *
+     * <p>ファイルがなくても成功とする（何度行っても同じ結果）。
      *
      * @param publicKey 配信のバケットのキー
      */
@@ -62,14 +67,4 @@ public interface ObjectStorage {
      * @return 配信の URL
      */
     URI publicUrl(String publicKey);
-
-    /**
-     * 署名付きのアップロード
-     *
-     * @param url       PUT する URL
-     * @param headers   PUT に付けるヘッダー
-     * @param expiresAt URL の期限
-     */
-    record PresignedUpload(URI url, Map<String, String> headers, Instant expiresAt) {
-    }
 }

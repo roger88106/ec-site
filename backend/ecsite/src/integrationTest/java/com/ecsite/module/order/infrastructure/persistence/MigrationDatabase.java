@@ -11,7 +11,11 @@ import java.sql.SQLException;
 import java.util.UUID;
 
 /**
- * マイグレーションのテストの補助。テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流す。
+ * マイグレーションのテストの補助
+ *
+ * <p>テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流す。
+ * テストは、移行の前の形のデータを入れてから、{@link #flyway()} で残りを流す。
+ * 作ったデータベースは消さない（コンテナと一緒に捨てる）。
  */
 final class MigrationDatabase {
 
@@ -25,6 +29,11 @@ final class MigrationDatabase {
      */
     private final JdbcTemplate jdbc;
 
+    /**
+     * テストのデータベースにつなぐ。
+     *
+     * @param dataSource テストのデータベース
+     */
     private MigrationDatabase(DriverManagerDataSource dataSource) {
         this.dataSource = dataSource;
         this.jdbc = new JdbcTemplate(dataSource);
@@ -36,6 +45,7 @@ final class MigrationDatabase {
      * @param postgres 統合テストの PostgreSQL
      * @param target   流す最後のバージョン（マイグレーションの前のバージョン）
      * @return テストのデータベース
+     * @throws SQLException データベースを作れない
      */
     static MigrationDatabase migratedTo(PostgreSQLContainer postgres, String target) throws SQLException {
         var name = "migration_" + UUID.randomUUID().toString().replace("-", "");
@@ -50,19 +60,28 @@ final class MigrationDatabase {
     }
 
     /**
-     * テストのデータベースの SQL
+     * テストのデータベースの SQL を返す。
+     *
+     * @return テストのデータベースの SQL
      */
     JdbcTemplate jdbc() {
         return jdbc;
     }
 
     /**
-     * 残りを最新まで流す Flyway
+     * 残りを最新まで流す Flyway を返す。
+     *
+     * @return テストのデータベースの Flyway（{@code migrate} で残りを流す）
      */
     Flyway flyway() {
         return configuration().load();
     }
 
+    /**
+     * テストのデータベースに、本番と同じマイグレーションを流す設定を返す。
+     *
+     * @return Flyway の設定
+     */
     private FluentConfiguration configuration() {
         return Flyway.configure().dataSource(dataSource).locations("classpath:db/migration");
     }

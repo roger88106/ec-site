@@ -10,7 +10,8 @@ import { VariantRow, type VariantRowActions } from '@/features/product/component
 import { move } from '@/lib/array'
 
 /**
- * バリアントの一覧、登録、削除、並び替え、販売停止。<br />
+ * バリアントの一覧、登録、削除、並び替え、販売停止
+ *
  * 並び替えと削除は、表示している一覧のバージョンで送る。
  */
 export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
@@ -40,32 +41,34 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
   ]
   const ids = product.variants.map((variant) => variant.id)
   // 別の操作を始めたら、前の操作のエラーを消す
-  const { pending, error, resetErrors } = useMutationGroup(reorder, remove, suspend, resume, setImage)
-  /** 表示している商品のバージョンで、バリアントの並びを送る */
-  const reorderTo = (variantIds: string[]) => {
-    resetErrors()
-    reorder.mutate({
-      params: { path: { productId: product.id } },
-      body: { variantIds, version: product.version },
-    })
-  }
-  /** バリアントの 1 行の操作。どれも前の操作のエラーを消してから送る */
+  const { pending, error, run } = useMutationGroup([reorder, remove, suspend, resume, setImage])
+  /** 表示している商品のバージョンで、バリアントの並びを送る。 */
+  const reorderTo = (variantIds: string[]) =>
+    run(() =>
+      reorder.mutate({
+        params: { path: { productId: product.id } },
+        body: { variantIds, version: product.version },
+      }),
+    )
+  /**
+   * バリアントの 1 行の操作を作る。
+   *
+   * どれも前の操作のエラーを消してから送る。
+   *
+   * @param variantId 対象のバリアントの ID
+   * @param index     バリアントの並びの中の位置
+   * @returns 行の操作
+   */
   const rowActions = (variantId: string, index: number): VariantRowActions => {
     const path = { productId: product.id, variantId }
-    const run = (action: () => void) => () => {
-      resetErrors()
-      action()
-    }
     return {
       moveUp: () => reorderTo(move(ids, index, index - 1)),
       moveDown: () => reorderTo(move(ids, index, index + 1)),
-      setImage: (imageId) => {
-        resetErrors()
-        setImage.mutate({ params: { path }, body: { imageId, version: product.version } })
-      },
-      suspend: run(() => suspend.mutate({ params: { path } })),
-      resume: run(() => resume.mutate({ params: { path } })),
-      remove: run(() => remove.mutate({ params: { path, query: { version: product.version } } })),
+      setImage: (imageId) =>
+        run(() => setImage.mutate({ params: { path }, body: { imageId, version: product.version } })),
+      suspend: () => run(() => suspend.mutate({ params: { path } })),
+      resume: () => run(() => resume.mutate({ params: { path } })),
+      remove: () => run(() => remove.mutate({ params: { path, query: { version: product.version } } })),
     }
   }
 

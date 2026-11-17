@@ -1,5 +1,5 @@
 import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
-import { axisValuesLabel, formatDateTime, formatYen } from '@ec-site/shared/lib/format'
+import { formatDateTime } from '@ec-site/shared/lib/format'
 import { carrierLabel } from '@ec-site/shared/lib/orderLabels'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
@@ -9,7 +9,7 @@ import { getTranslations } from 'next-intl/server'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
 import { requireMember } from '@/auth'
-import { PriceText } from '@/components/PriceText'
+import { OrderLineList } from '@/components/OrderLineList'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
@@ -28,14 +28,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 注文。注文の直後の表示と、注文の一覧からの照会と、支払画面から戻る先を兼ねる。<br />
+ * 注文
+ *
+ * 注文の直後の表示と、注文の一覧からの照会と、支払画面から戻る先を兼ねる。
  * ログインを求め、注文した会員のものでなければ「見つかりません」にする。
  * 支払画面から戻るときは、クエリの `payment=returned` が付く（バックエンドの設定の戻る先）。
  */
 export default async function OrderPage({ params, searchParams }: PageProps<'/orders/[orderId]'>) {
   const t = await getTranslations('order.detail')
   const tCommon = await getTranslations('common')
-  const tLabels = await getTranslations('labels')
   const { orderId } = await params
   const returned = (await searchParams).payment === 'returned'
   await requireMember()
@@ -95,25 +96,12 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
 
       <section className="space-y-3">
         <h2 className="font-semibold">{t('lines') /* 明細 */}</h2>
-        <ul className="divide-y rounded-lg border">
-          {order.lines.map((line) => (
-            <li className="flex justify-between gap-4 p-4 text-sm" key={line.variantCode}>
-              <div className="space-y-1">
-                <p className="font-medium">{line.productName}</p>
-                {line.axisValues.length > 0 && (
-                  <p className="text-muted-foreground">
-                    {axisValuesLabel(line.axisValues, tLabels('axisSeparator') /* 軸の区切り */)}
-                  </p>
-                )}
-                <PriceText price={line.unitPrice} />
-              </div>
-              <div className="text-right">
-                <p>{t('quantity', { quantity: line.quantity }) /* 数量 */}</p>
-                <p className="font-semibold tabular-nums">{formatYen(line.subtotal)}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <OrderLineList
+          className="rounded-lg"
+          itemClassName="p-4"
+          lines={order.lines}
+          quantityLabel={(quantity) => t('quantity', { quantity }) /* 数量 */}
+        />
         <div className="rounded-lg border p-4 md:ml-auto md:w-96">
           <AmountsSummary amounts={order.amounts} variant="page" />
         </div>

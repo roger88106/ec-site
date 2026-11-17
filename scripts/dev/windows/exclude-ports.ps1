@@ -5,21 +5,22 @@
 #     -WhatIf を付けると、照合した結果を示すだけで何も変えない
 #
 # 先に compose（docker compose stop）、バックエンド、画面を止める。使っているポートは予約できない。
-# 管理者の権限が必要だ。管理者でなければ、照合した結果を示して何も変えずに終わる。
+# 管理者の権限が必要だ。管理者でなければ、照合した結果を示して何も変えずに終わる（終了コード 2）。
+# 予約できなかったポートが 1 つでもあれば、最後にそのポートを並べて終了コード 1 で終わる。
 # すること：
 #   1. 今の予約の範囲と、一覧のポートを照合して示す
 #   2. 変えること（WinNAT を止める → 各ポートを 1 つずつ予約する → WinNAT を始める）を示し、確認を求める
 #   3. 確認したら変える。予約したポートは、ほかのプログラムが動的に取る範囲に入らなくなる（再起動の後も残る）
 # 予約を消すとき：netsh int ipv4 delete excludedportrange protocol=tcp startport=<ポート> numberofports=1
 #
-# ポートの一覧は scripts/dev/ports.json を読む。ポートを追加したら（compose、バックエンド、画面、E2E）、一覧に加える。
+# ポートの一覧は scripts/shared/slot/ports.json を読む。ポートを追加したら（compose、バックエンド、画面、E2E）、一覧に加える。
 # ============================================================================
 param([switch]$WhatIf)
 
 $ErrorActionPreference = 'Stop'
 
-# ポートの一覧（scripts/dev/ports.json）を読み、スロットごとにずらした分（スロット 1 以降は、スロットを使う項目だけ）を含めて展開する
-$list = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot '..\ports.json') | ConvertFrom-Json
+# ポートの一覧（scripts/shared/slot/ports.json）を読み、スロットごとにずらした分（スロット 1 以降は、スロットを使う項目だけ）を含めて展開する
+$list = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot '..\..\shared\slot\ports.json') | ConvertFrom-Json
 $ports = @()
 foreach ($slot in 0..($list.slotCount - 1)) {
   foreach ($entry in $list.ports) {
@@ -76,7 +77,7 @@ if ($WhatIf) {
 }
 if (-not $admin) {
   Write-Host '管理者の権限がないので、何も変えずに終わる。管理者の PowerShell で流し直す。'
-  exit 1
+  exit 2
 }
 $answer = Read-Host '変えるなら y を入れる'
 if ($answer -ne 'y') {
@@ -84,14 +85,22 @@ if ($answer -ne 'y') {
   exit 0
 }
 
+$failedPorts = @()
 net stop winnat
 try {
   foreach ($port in $toAdd) {
     netsh int ipv4 add excludedportrange protocol=tcp startport=$port numberofports=1
-    if ($LASTEXITCODE -ne 0) { Write-Host "  $port を予約できなかった（ほかのプログラムが使っているか、管理者の予約と重なる）" }
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "  $port を予約できなかった（ほかのプログラムが使っているか、管理者の予約と重なる）"
+      $failedPorts += $port
+    }
   }
 } finally {
   net start winnat
 }
 Write-Host '終えた。今の予約の範囲：'
 netsh interface ipv4 show excludedportrange protocol=tcp
+if ($failedPorts.Count -gt 0) {
+  Write-Host "予約できなかったポート：$($failedPorts -join '、')。使っているプログラムを止めてから流し直す。"
+  exit 1
+}

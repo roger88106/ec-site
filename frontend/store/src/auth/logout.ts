@@ -4,7 +4,9 @@ import { readServerConfig } from '@/auth/config'
 const { issuer: ISSUER, clientId: CLIENT_ID } = readServerConfig()
 
 /**
- * IdP のログアウト（RP-Initiated Logout）の URL を作る。ログアウトの後は店舗のトップに戻る。
+ * IdP のログアウト（RP-Initiated Logout）の URL を作る。
+ *
+ * ログアウトの後は店舗のトップに戻る。
  *
  * @param origin  店舗画面の起点（`https://shop.example` など）
  * @param idToken ID token。あれば添える（IdP が確認の画面を出さずにログアウトする）

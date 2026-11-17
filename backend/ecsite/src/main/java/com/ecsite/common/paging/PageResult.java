@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * ページの結果（API の規約）。<br />
- * レスポンスの {@code { items, page, size, totalItems, totalPages }} の元になる。
- * API ごとのレスポンスの型（OpenAPI の生成モデル）への変換は、presentation 層で行う。
+ * ページの結果
  *
  * @param items      このページの要素
  * @param page       ページ番号（1 始まり）
@@ -37,7 +35,9 @@ public record PageResult<T>(List<T> items, int page, int size, long totalItems) 
     }
 
     /**
-     * 総ページ数。0 件なら 0。
+     * 総ページ数を返す。
+     *
+     * <p>0 件なら 0。
      *
      * @return 総ページ数
      */
@@ -46,7 +46,9 @@ public record PageResult<T>(List<T> items, int page, int size, long totalItems) 
     }
 
     /**
-     * 要素を変換する。ページの情報はそのまま。
+     * 要素を変換する。
+     *
+     * <p>ページの情報はそのまま。
      *
      * @param mapper 変換
      * @param <R>    変換後の型

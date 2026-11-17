@@ -1,5 +1,5 @@
 import { Button } from '@ec-site/shared/ui/button'
-import { FormProvider } from 'react-hook-form'
+import { FormProvider, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
@@ -15,11 +15,16 @@ import { useVersionedForm } from '@/hooks/useVersionedForm'
 const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.UpdateProductRequest)
 
 /**
- * 基本情報の編集。商品品番とバリアント軸は表示だけ。<br />
- * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
+ * 基本情報の編集
+ *
+ * 商品品番とバリアント軸は表示だけ。送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(product, toProductFields, refetch)
+  const [name, taxCategoryId, priceExclTax] = useWatch({
+    control: form.control,
+    name: ['name', 'taxCategoryId', 'priceExclTax'],
+  })
   const t = useTranslations('product.basicInfo')
   const tApp = useTranslations('app.common')
   const mutation = useApiMutation('put', '/products/{productId}', {
@@ -64,7 +69,10 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
               shownFields={PRODUCT_FIELD_NAMES}
             />
             <div>
-              <Button disabled={mutation.isPending || !isProductFieldsFilled(form.watch())} type="submit">
+              <Button
+                disabled={mutation.isPending || !isProductFieldsFilled({ name, taxCategoryId, priceExclTax })}
+                type="submit"
+              >
                 {tApp('save') /* 保存 */}
               </Button>
             </div>

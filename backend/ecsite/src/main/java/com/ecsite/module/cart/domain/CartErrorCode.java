@@ -11,11 +11,11 @@ import lombok.Getter;
 public enum CartErrorCode implements ErrorCodeProvider {
 
     /**
-     * 1 品目の数量が 1〜10 でない。合算した結果を含む
+     * 1 品目の数量が 1〜{max} でない。合算した結果を含む
      */
     INVALID_CART_QUANTITY(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 31 品目めを入れようとした
+     * 上限（{max} 品目）を超えて品目を入れようとした
      */
     TOO_MANY_CART_ITEMS(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**

@@ -14,7 +14,7 @@ import java.util.UUID;
  * @param id                 税区分 ID
  * @param name               名称
  * @param currentRatePercent 現時点で有効な率。なければ null
- * @param rates              税率の一覧（適用開始日時の古い順）
+ * @param rates              税率の一覧
  * @param version            バージョン
  */
 public record TaxCategoryView(UUID id, String name, @Nullable BigDecimal currentRatePercent,

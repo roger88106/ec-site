@@ -9,7 +9,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てたときだけ有効にする。
+ * mock の決済サービスの条件
+ *
+ * <p>決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てたときだけ有効にする。
  * 立てないときの条件は {@link ConditionalOnPaymentStripe}。
  */
 @Target({ElementType.TYPE, ElementType.METHOD})

@@ -7,8 +7,9 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.List;
 
 /**
- * 商品品番。<br />
- * 業務上の番号であり、他のデータからの参照には使わない（バックエンドのアーキテクチャの「永続化」）。
+ * 商品品番
+ *
+ * <p>業務上の番号であり、他のデータからの参照には使わない。
  *
  * @param value 商品品番
  */
@@ -19,6 +20,7 @@ public record ProductCode(String value) {
      * コンストラクタ。
      *
      * @param value 商品品番
+     * @throws BusinessException 形式が正しくない（{@code INVALID_PRODUCT_CODE}）
      */
     public ProductCode {
         if (!CodeFormat.matches(value)) {
@@ -31,6 +33,7 @@ public record ProductCode(String value) {
      *
      * @param value 商品品番
      * @return 商品品番
+     * @throws BusinessException 形式が正しくない（{@code INVALID_PRODUCT_CODE}）
      */
     public static ProductCode of(String value) {
         return new ProductCode(value);

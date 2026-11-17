@@ -1,33 +1,34 @@
-import { axisValuesLabel, formatDateTime, formatYen } from '@ec-site/shared/lib/format'
+import { formatDateTime, formatYen } from '@ec-site/shared/lib/format'
 import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
 import { buttonVariants } from '@ec-site/shared/ui/button'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import type { Order } from '@/api/types'
+import { OrderLineList } from '@/components/OrderLineList'
 import { PayForm } from '@/components/PayForm'
-import { PriceText } from '@/components/PriceText'
 import { NewOrderForm } from '@/features/checkout/components/NewOrderForm'
 
 /**
- * 支払待ちの注文の確認。注文ごとに、注文番号、注文日時、明細、総額、支払の期限を示し、支払へ進むか、新しく注文するか、戻るかを選ばせる。<br />
+ * 支払待ちの注文の確認
+ *
+ * 注文ごとに、注文番号、注文日時、明細、総額、支払の期限を示し、支払へ進むか、新しく注文するか、戻るかを選ばせる。
+ *
  * 「支払へ進む」は、支払える注文（`actions.pay`）にだけ出す。支払待ちのキャンセルの操作は置かない。
  *
  * 上限に達して拒否されたときは、見出しの下に、新しく注文できないことを知らせ（画面を開いたときの知らせなので `Alert`）、
  * 食い違う案内文は示さない。
- *
- * @param orders 支払待ちの注文（1 件以上）
- * @param limitReached 支払待ちの注文の上限に達して拒否されたか（省略は false）
  */
 export function PendingOrdersConfirmation({
   orders,
   limitReached = false,
 }: {
+  /** 支払待ちの注文（1 件以上） */
   orders: Order[]
+  /** 支払待ちの注文の上限に達して拒否されたか（省略は false） */
   limitReached?: boolean
 }) {
   const t = useTranslations('checkout.pendingOrders')
   const tCommon = useTranslations('common')
-  const tLabels = useTranslations('labels')
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -56,25 +57,12 @@ export function PendingOrdersConfirmation({
                 </>
               )}
             </dl>
-            <ul className="divide-y rounded-md border">
-              {order.lines.map((line) => (
-                <li className="flex justify-between gap-4 p-3 text-sm" key={line.variantCode}>
-                  <div className="space-y-1">
-                    <p className="font-medium">{line.productName}</p>
-                    {line.axisValues.length > 0 && (
-                      <p className="text-muted-foreground">
-                        {axisValuesLabel(line.axisValues, tLabels('axisSeparator') /* 軸の区切り */)}
-                      </p>
-                    )}
-                    <PriceText price={line.unitPrice} />
-                  </div>
-                  <div className="text-right">
-                    <p>{t('quantity', { quantity: line.quantity }) /* 数量 */}</p>
-                    <p className="font-semibold tabular-nums">{formatYen(line.subtotal)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <OrderLineList
+              className="rounded-md"
+              itemClassName="p-3"
+              lines={order.lines}
+              quantityLabel={(quantity) => t('quantity', { quantity }) /* 数量 */}
+            />
             <p className="text-right font-semibold tabular-nums">
               {t('total', { total: formatYen(order.amounts.total) }) /* 総額 */}
             </p>

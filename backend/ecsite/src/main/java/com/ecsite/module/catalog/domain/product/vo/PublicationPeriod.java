@@ -9,10 +9,11 @@ import org.jspecify.annotations.Nullable;
 import java.time.Instant;
 
 /**
- * 公開期間。公開状態でも、C 側に表示する期間を限る。<br />
- * 開始を含み、終了を含まない。null は無限。
+ * 公開期間
  *
- * @param publishStart 公開開始日時。null は過去すべて
+ * <p>公開状態でも、C 側に表示する期間を限る。開始を含み、終了を含まない。null は無限。
+ *
+ * @param publishStart 公開開始日時。null は開始を限らない
  * @param publishEnd   公開終了日時。null は無期限
  */
 @ValueObject
@@ -28,6 +29,7 @@ public record PublicationPeriod(@Nullable Instant publishStart, @Nullable Instan
      *
      * @param publishStart 公開開始日時
      * @param publishEnd   公開終了日時
+     * @throws BusinessException 開始が終了より前でない（{@code INVALID_PUBLICATION_PERIOD}）
      */
     public PublicationPeriod {
         // 開始と終了の両方があるときだけ、開始が終了より前であることを求める
@@ -39,9 +41,10 @@ public record PublicationPeriod(@Nullable Instant publishStart, @Nullable Instan
     /**
      * 公開期間を作る。
      *
-     * @param publishStart 公開開始日時。null は過去すべて
+     * @param publishStart 公開開始日時。null は開始を限らない
      * @param publishEnd   公開終了日時。null は無期限
      * @return 公開期間
+     * @throws BusinessException 開始が終了より前でない（{@code INVALID_PUBLICATION_PERIOD}）
      */
     public static PublicationPeriod of(@Nullable Instant publishStart, @Nullable Instant publishEnd) {
         return new PublicationPeriod(publishStart, publishEnd);

@@ -12,9 +12,9 @@ import java.util.UUID;
 public interface CategoryQueryRepository {
 
     /**
-     * すべてのカテゴリを取得する。
+     * 全てのカテゴリを取得する。
      *
-     * @return カテゴリの一覧（表示順、登録の古い順、ID の順）
+     * @return カテゴリの一覧（表示順、登録日時の古い順、ID の順）
      */
     List<CategoryView> findAll();
 

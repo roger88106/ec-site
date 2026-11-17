@@ -6,7 +6,7 @@ import { Input } from '@ec-site/shared/ui/input'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { type ReactNode, type RefObject, startTransition, useActionState, useEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useActionState, useEffect, useRef, useState } from 'react'
 import { placeOrder } from '@/actions/checkout'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { schemas } from '@/api/generated/constraints'
@@ -17,10 +17,16 @@ import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrde
 import { postalCodeFill } from '@/features/checkout/postalCodeFill'
 import type { ActionResult } from '@/lib/actionResult'
 import { normalizePostalCode } from '@/lib/postalCode'
+import { useKeepInputsSubmit } from '@/lib/useKeepInputsSubmit'
 
-/** 注文のフォームの props（注文の連絡先、金額、都道府県の一覧） */
+/**
+ * 注文のフォームの props
+ *
+ * 注文の連絡先、金額、都道府県の一覧を持つ。
+ */
 type OrderFormProps = {
   checkoutId: string
+  /** 画面に示した総額（円） */
   expectedTotal: number
   /** 会員のメールアドレス（注文の連絡先） */
   email: string
@@ -29,7 +35,9 @@ type OrderFormProps = {
 }
 
 /**
- * お届け先の入力と、注文。注文のサーバーアクションの結果を受け、表示（{@link OrderFormView}）に渡す。
+ * お届け先の入力と、注文
+ *
+ * 注文のサーバーアクションの結果を受け、表示（{@link OrderFormView}）に渡す。
  */
 export function OrderForm(props: OrderFormProps) {
   const [result, formAction, pending] = useActionState(placeOrder, null)
@@ -38,16 +46,13 @@ export function OrderForm(props: OrderFormProps) {
 }
 
 /**
- * お届け先の入力と、注文の表示。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />
- * 都道府県と市区町村は一覧から選び、郵便番号が 7 桁になったら補う（店舗画面の構成の「お届け先の都道府県と市区町村」）。
- * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
- * 読み込み後は onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。
- * action は、JavaScript の読み込み前の送信に使う（ないと、ブラウザーが入力を今の URL のクエリに載せて送る）。<br />
- * サーバーアクションの結果を props で受けるので、結果ごとの表示をテストで確認できる。
+ * お届け先の入力と、注文の表示
  *
- * @param result     注文のサーバーアクションの結果（送る前は null）
- * @param formAction 入力を送る関数（`useActionState` が返すもの）
- * @param pending    送信中か
+ * 連絡先のメールアドレスは会員のものを示すだけで、入力しない。
+ * 都道府県と市区町村は一覧から選び、郵便番号が 7 桁になったら補う（店舗画面の構成の「お届け先の都道府県と市区町村」）。
+ * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さない（{@link useKeepInputsSubmit}）。
+ *
+ * サーバーアクションの結果を props で受けるので、結果ごとの表示をテストで確認できる。
  */
 export function OrderFormView({
   checkoutId,
@@ -58,8 +63,11 @@ export function OrderFormView({
   formAction,
   pending,
 }: OrderFormProps & {
+  /** 注文のサーバーアクションの結果（送る前は null） */
   result: ActionResult | null
+  /** 入力を送る関数（`useActionState` が返すもの） */
   formAction: (formData: FormData) => void
+  /** 送信中か */
   pending: boolean
 }) {
   const t = useTranslations('checkout.form')
@@ -67,20 +75,10 @@ export function OrderFormView({
   const area = useAddressArea()
   const formRef = useRef<HTMLFormElement>(null)
   useFocusFirstErrorField(formRef, result)
+  const submit = useKeepInputsSubmit(formAction)
 
   return (
-    <form
-      action={formAction}
-      className="space-y-4"
-      ref={formRef}
-      noValidate
-      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを空にし、誤りのときに入力が消える）
-      onSubmit={(event) => {
-        event.preventDefault()
-        const formData = new FormData(event.currentTarget)
-        startTransition(() => formAction(formData))
-      }}
-    >
+    <form {...submit} className="space-y-4" ref={formRef} noValidate>
       <input name="checkoutId" type="hidden" value={checkoutId} />
       <input name="expectedTotal" type="hidden" value={expectedTotal} />
       <div className="space-y-1.5 text-sm">
@@ -185,16 +183,19 @@ export function OrderFormView({
         )}
       </ActionError>
       <Button className="w-full" disabled={pending} size="lg" type="submit">
-        {pending ? t('placing') : t('submit', { total: formatYen(expectedTotal) }) /* 注文中か、総額を添えて注文する */}
+        {
+          pending
+            ? t('placing') /* 注文中 */
+            : t('submit', { total: formatYen(expectedTotal) }) /* 総額を添えて注文する */
+        }
       </Button>
     </form>
   )
 }
 
-// ============================== 部品 ==============================
-
 /**
- * 送信の結果を受けたとき、無効でない誤りの欄のうち画面の順で最初の欄へフォーカスを移す。<br />
+ * 送信の結果を受けたとき、無効でない誤りの欄のうち画面の順で最初の欄へフォーカスを移す。
+ *
  * 誤りの欄は、`aria-invalid="true"` を持つ要素（{@link Field} が付ける）を DOM の順にたどって探す。
  * 無効の欄は飛ばし、欄の誤りがなければ移さない。結果のオブジェクトが変わったときだけフォーカスを移すので、
  * 結果の後に欄を入力しても移し直さない。サーバーアクションの結果は送信のたびに新しいオブジェクトになるため、
@@ -221,8 +222,11 @@ function useFocusFirstErrorField(formRef: RefObject<HTMLFormElement | null>, res
 }
 
 /**
- * お届け先の都道府県・市区町村・住所の入力の状態（店舗画面の構成の「お届け先の都道府県と市区町村」）。<br />
+ * お届け先の都道府県・市区町村・住所の入力の状態を持つ（店舗画面の構成の「お届け先の都道府県と市区町村」）。
+ *
  * 引いている間に都道府県や郵便番号を変えたら、古い応答は捨てる。
+ *
+ * @returns 入力の値と、値を変える関数
  */
 function useAddressArea() {
   const [prefectureCode, setPrefectureCode] = useState('')
@@ -307,8 +311,9 @@ type FieldControlProps = {
 }
 
 /**
- * 入力欄の見出し、補足、エラー。補足とエラーの文を入力欄の説明（補足、エラーの順）に結び付け、
- * エラーのある欄は誤りの状態にする。入力欄には、子の関数が受ける props を展開して渡す。
+ * 入力欄の見出し、補足、エラー
+ *
+ * 補足とエラーの文を入力欄の説明（補足、エラーの順）に結び付け、エラーのある欄は誤りの状態にする。
  */
 function Field({
   name,
@@ -321,6 +326,7 @@ function Field({
   label: string
   hint?: string
   error?: string
+  /** 入力欄を描く関数。受けた props を入力欄に展開して渡す */
   children: (control: FieldControlProps) => ReactNode
 }) {
   const hintId = `${name}-hint`

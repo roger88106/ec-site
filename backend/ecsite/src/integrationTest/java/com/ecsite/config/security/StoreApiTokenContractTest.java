@@ -1,12 +1,11 @@
 package com.ecsite.config.security;
 
-import com.ecsite.IntegrationTest;
-import com.ecsite.TestTokens;
 import com.ecsite.contract.Contracts;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,39 +23,53 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 店舗 API の token の要否が、契約（{@code store.yaml} の {@code security}）と合うことの検査。<br />
+ * 店舗 API の token の要否と契約の一致の検査
+ *
+ * <p>契約は {@code store.yaml} の {@code security}。
  * 操作の一覧はテストに書かず {@code store.yaml} から読むので、操作を追加したときに認可の設定が食い違えば、このテストが失敗する。
  * パスの変数には、どの資源にも当たらない ID を入れる（認可の後の結果は見ない）。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
 @Transactional
 class StoreApiTokenContractTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * OpenAPI で操作を表す HTTP メソッド
      */
     private static final Set<String> HTTP_METHODS = Set.of("get", "put", "post", "delete", "patch");
 
+    // ============================== Bean ==============================
+
+    /**
+     * API を呼ぶ MockMvc
+     */
     @Autowired
     MockMvc mockMvc;
 
+    // ============================== テスト ==============================
+
     @Test
-    @DisplayName("AC-232、AC-234 契約で会員の token だけを受け付ける操作は、どれも token なしで 401")
+    @DisplayName("AC-232、234 契約で会員の token だけを受け付ける操作は、どれも token なしで 401")
     void memberOperationsRejectMissingToken() throws Exception {
+        // 準備：契約で token が必要な操作
         var operations = operations().stream().filter(Operation::requiresToken).toList();
         assertThat(operations).isNotEmpty();
 
+        // 操作と確認：どの操作も、token なしで 401
         assertThat(statusesWithoutToken(operations)).allSatisfy((name, code) ->
                 assertThat(code).as(name).isEqualTo(401));
     }
 
     @Test
-    @DisplayName("AC-233、AC-234 契約で token が必要ない操作は、どれも token なしで 401 にならない")
+    @DisplayName("AC-233、234 契約で token が必要ない操作は、どれも token なしで 401 にならない")
     void publicOperationsAcceptMissingToken() throws Exception {
+        // 準備：契約で token が必要ない操作
         var operations = operations().stream().filter(operation -> !operation.requiresToken()).toList();
         assertThat(operations).isNotEmpty();
 
+        // 操作と確認：どの操作も、token なしで 401 にならない
         assertThat(statusesWithoutToken(operations)).allSatisfy((name, code) ->
                 assertThat(code).as(name).isNotEqualTo(401));
     }
@@ -64,6 +77,7 @@ class StoreApiTokenContractTest {
     @Test
     @DisplayName("契約にない店舗 API の操作は、token なしで 401")
     void unknownOperationRejected() throws Exception {
+        // 操作と確認：契約にない商品の一覧の DELETE を token なしで呼ぶと 401
         mockMvc.perform(request(HttpMethod.DELETE, "/api/store/products").with(TestTokens.none()))
                 .andExpect(status().isUnauthorized());
     }
@@ -71,11 +85,12 @@ class StoreApiTokenContractTest {
     @Test
     @DisplayName("契約にない店舗 API の操作は、会員の token があっても 403")
     void unknownOperationForbiddenWithToken() throws Exception {
+        // 操作と確認：契約にない商品の一覧の DELETE を会員の token で呼ぶと 403
         mockMvc.perform(request(HttpMethod.DELETE, "/api/store/products").with(TestTokens.member().bearer()))
                 .andExpect(status().isForbidden());
     }
 
-    // ============================== 部品 ==============================
+    // ============================== 準備の補助 ==============================
 
     /**
      * 店舗 API の操作

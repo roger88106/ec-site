@@ -3,8 +3,7 @@ package com.ecsite.module.notification.application.port;
 import com.ecsite.module.order.event.OrderShipped;
 
 /**
- * 配送業者の表示名の文言のキーを得る port（docs/02-設計/notification.md の「境界」）。<br />
- * 表示名は出荷モジュールが決めるので、実装は出荷モジュールの API から得る。
+ * 出荷の腐敗防止層の port
  */
 public interface ShippingDirectory {
 

@@ -4,8 +4,13 @@ import { translate } from '@/i18n/translate'
 type RateLike = { rateId: string | null; effectiveFrom: string | null; effectiveTo: string | null }
 
 /**
- * 税率の行の状態（の変更できる範囲の目安）。<br />
+ * 税率の行の状態を、変更できる範囲の目安として返す。
+ *
  * 新しい行は「新規」。保存済みの行は、現在と適用期間を比べて「終了済み」「適用中」「未開始」。
+ *
+ * @param row 税率の行。ない行は新しい行として扱う
+ * @param now 現在の時刻（ミリ秒）
+ * @returns 状態の表示名
  */
 export function rateState(row: RateLike | undefined, now: number = Date.now()): string {
   if (!row || row.rateId === null) {

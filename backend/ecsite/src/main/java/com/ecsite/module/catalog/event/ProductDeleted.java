@@ -6,7 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 商品削除。在庫モジュールが、商品のすべての在庫と調整履歴を消す。
+ * 商品削除
+ *
+ * <p>商品を削除したときに発行する。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

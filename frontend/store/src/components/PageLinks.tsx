@@ -4,7 +4,11 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
-/** ページ送り（API の規約のレスポンスの page、totalPages、totalItems を受ける）。リンクで移る */
+/**
+ * ページ送り
+ *
+ * API の規約のレスポンスの page、totalPages、totalItems を受け、リンクで移る。
+ */
 export function PageLinks({
   page,
   totalPages,
@@ -14,6 +18,7 @@ export function PageLinks({
   page: number
   totalPages: number
   totalItems: number
+  /** ページ番号から移る先の URL を作る */
   hrefFor: (page: number) => Route
 }) {
   const t = useTranslations('common.pagination')

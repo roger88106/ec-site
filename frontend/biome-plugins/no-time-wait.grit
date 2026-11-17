@@ -1,0 +1,16 @@
+// テストは決まった時間だけ待たず、条件で待つ（テストの書き方の「待ち方」）。
+// 時間で待つテストは、遅い環境で失敗し、速い環境で時間を無駄にする。
+// waitForTimeout と、Promise で包んだ setTimeout を見る。
+language js
+
+or {
+  JsCallExpression(callee=r"(?s)(?:.*\.)?waitForTimeout") as $hit,
+  JsNewExpression(callee=r"Promise", arguments=$args) as $hit where {
+    $args <: contains JsArrowFunctionExpression(parameters=$params, body=JsCallExpression(callee=r"setTimeout", arguments=$timer)),
+    $params <: r"\(?\s*(\w+)\s*\)?"($resolve),
+    $timer <: r"(?s)\(\s*(\w+)\b.*"($first),
+    $first <: $resolve
+  }
+} where {
+  register_diagnostic(span=$hit, message="決まった時間だけ待たず、条件で待つ（テストの書き方の「待ち方」）。", severity="error")
+}

@@ -31,13 +31,15 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルの変換。
+ * 店舗 API のマッパー
+ *
+ * <p>店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルを変換する。
  */
 @Component
 class StorefrontMapper {
 
     /**
-     * 並び順を変換する。省略されたときの既定（新着順）は、API の契約が持つ。
+     * 並び順を変換する。
      *
      * @param sort 並び順
      * @return 並び順
@@ -148,7 +150,9 @@ class StorefrontMapper {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 一覧の商品をレスポンスに変換する。代表画像がなければ null。
+     * 一覧の商品をレスポンスに変換する。
+     *
+     * <p>代表画像がなければ null。
      */
     private static ProductSummary toProductSummary(ProductSummaryView view) {
         return new ProductSummary()
@@ -167,7 +171,9 @@ class StorefrontMapper {
     }
 
     /**
-     * バリアントのレスポンスに変換する。画像がなければ null。
+     * バリアントのレスポンスに変換する。
+     *
+     * <p>画像がなければ null。
      */
     private static Variant toVariant(ProductDetailView.VariantView variant) {
         return new Variant()
@@ -179,7 +185,9 @@ class StorefrontMapper {
     }
 
     /**
-     * カートの品目のレスポンスに変換する。画像と購入できない理由は、null でも項目として返す。
+     * カートの品目のレスポンスに変換する。
+     *
+     * <p>画像と購入できない理由は、null でも項目として返す。
      */
     private static QuoteItem toQuoteItem(CartView.Item item) {
         var reason = item.unpurchasableReason();

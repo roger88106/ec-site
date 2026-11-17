@@ -5,8 +5,9 @@ import com.ecsite.common.error.exception.BusinessException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * ページの指定（API の規約）。<br />
- * ページは 1 始まり、件数は既定 20・最大 100。MVP はオフセット方式。
+ * ページの指定
+ *
+ * <p>ページは 1 始まり、件数は既定 {@value #DEFAULT_SIZE}・最大 {@value #MAX_SIZE}。MVP はオフセット方式。
  *
  * @param page ページ番号（1 始まり）
  * @param size 1 ページの件数
@@ -29,11 +30,12 @@ public record PageRequest(int page, int size) {
     public static final int MAX_SIZE = 100;
 
     /**
-     * コンストラクタ。<br />
-     * 範囲は API の入力検証でも確認するが、ここでも守る。
+     * コンストラクタ。
      *
      * @param page ページ番号（1 始まり）
      * @param size 1 ページの件数
+     * @throws BusinessException ページ番号が 1 未満（{@code INVALID_REQUEST}）
+     * @throws BusinessException 件数が 1〜{@value #MAX_SIZE} の外（{@code INVALID_REQUEST}）
      */
     public PageRequest {
         // ページ番号と件数は 1 以上、件数は上限まで
@@ -43,11 +45,15 @@ public record PageRequest(int page, int size) {
     }
 
     /**
-     * リクエストのパラメータから作る。指定がなければ既定値にする。
+     * リクエストのパラメータから作る。
      *
-     * @param page ページ番号（1 始まり）。null は 1
-     * @param size 1 ページの件数。null は 20
+     * <p>指定がなければ既定値にする。
+     *
+     * @param page ページ番号（1 始まり）。null は {@value #DEFAULT_PAGE}
+     * @param size 1 ページの件数。null は {@value #DEFAULT_SIZE}
      * @return ページの指定
+     * @throws BusinessException ページ番号が 1 未満（{@code INVALID_REQUEST}）
+     * @throws BusinessException 件数が 1〜{@value #MAX_SIZE} の外（{@code INVALID_REQUEST}）
      */
     public static PageRequest of(@Nullable Integer page, @Nullable Integer size) {
         return new PageRequest(
@@ -56,7 +62,7 @@ public record PageRequest(int page, int size) {
     }
 
     /**
-     * 読み飛ばす件数
+     * 読み飛ばす件数を返す。
      *
      * @return (page - 1) × size
      */

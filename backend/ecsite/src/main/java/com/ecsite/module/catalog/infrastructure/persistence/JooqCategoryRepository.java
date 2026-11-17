@@ -12,10 +12,9 @@ import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.RowN;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
@@ -47,14 +46,18 @@ class JooqCategoryRepository implements CategoryRepository {
     private static final String PARENT_FKEY = Keys.CATEGORY__CATEGORY_PARENT_ID_FKEY.getName();
 
     /**
-     * 登録・更新時の制約名 → 業務のエラー。登録時の外部キーの違反は、親が同時に削除された場合
+     * 登録・更新時の制約名 → 業務のエラー
+     *
+     * <p>登録時の外部キーの違反は、親が同時に削除された場合。
      */
     private static final ConstraintViolationTranslator WRITE_CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
             NAME_KEY, () -> BusinessException.of(CategoryErrorCode.CATEGORY_NAME_ALREADY_EXISTS),
             PARENT_FKEY, () -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
 
     /**
-     * 削除時の制約名 → 業務のエラー。外部キーの違反は、子カテゴリの登録や商品への割り当てが同時に起きた場合
+     * 削除時の制約名 → 業務のエラー
+     *
+     * <p>外部キーの違反は、子カテゴリの登録や商品への割り当てが同時に起きた場合。
      */
     private static final ConstraintViolationTranslator DELETE_CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
             PARENT_FKEY, () -> BusinessException.of(CategoryErrorCode.CATEGORY_HAS_CHILDREN),
@@ -65,11 +68,6 @@ class JooqCategoryRepository implements CategoryRepository {
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
-
-    /**
-     * Spring イベントパブリッシャー
-     */
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * カテゴリファクトリ
@@ -96,7 +94,7 @@ class JooqCategoryRepository implements CategoryRepository {
     }
 
     /**
-     * 子カテゴリをすべて取得し、ID の順にロックする（並び替えが同時に起きても、いつも同じ順にロックしてデッドロックを避ける）。
+     * 子カテゴリを全て取得し、ID の順にロックする。
      *
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 子カテゴリの一覧
@@ -105,6 +103,7 @@ class JooqCategoryRepository implements CategoryRepository {
     public List<Category> lockChildren(@Nullable UUID parentId) {
         return dsl.selectFrom(CATEGORY)
                 .where(childOf(parentId))
+                // 並び順の同時の変更を直列にする。いつも同じ順にロックして、デッドロックを避ける
                 .orderBy(CATEGORY.ID)
                 .forUpdate()
                 .fetch(this::toCategory);
@@ -118,11 +117,12 @@ class JooqCategoryRepository implements CategoryRepository {
      */
     @Override
     public int nextDisplayOrder(@Nullable UUID parentId) {
-        return dsl.select(DSL.coalesce(DSL.max(CATEGORY.DISPLAY_ORDER), 0).plus(1))
+        var next = DSL.coalesce(DSL.max(CATEGORY.DISPLAY_ORDER), 0).plus(1);
+        return dsl.select(next)
                 .from(CATEGORY)
                 .where(childOf(parentId))
                 .fetchSingle()
-                .value1();
+                .get(next);
     }
 
     /**
@@ -148,10 +148,10 @@ class JooqCategoryRepository implements CategoryRepository {
     }
 
     /**
-     * カテゴリがすべて存在するかを返す。
+     * カテゴリが全て存在するかを返す。
      *
      * @param ids カテゴリ ID
-     * @return すべて存在すれば true
+     * @return 全て存在すれば true
      */
     @Override
     public boolean existsAll(Collection<UUID> ids) {
@@ -164,83 +164,106 @@ class JooqCategoryRepository implements CategoryRepository {
      * カテゴリを登録する。
      *
      * @param category カテゴリ
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     * @throws BusinessException 親が削除されている（{@code NOT_FOUND}）
      */
     @Override
     public void add(Category category) {
         var snapshot = category.toSnapshot();
         var now = clock.instant();
 
-        try {
-            dsl.insertInto(CATEGORY)
-                    .set(CATEGORY.ID, snapshot.id())
-                    .set(CATEGORY.PARENT_ID, snapshot.parentId())
-                    .set(CATEGORY.NAME, snapshot.name())
-                    .set(CATEGORY.DEPTH, (short) snapshot.depth())
-                    .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
-                    .set(CATEGORY.VERSION, snapshot.version())
-                    .set(CATEGORY.CREATED_AT, now)
-                    .set(CATEGORY.UPDATED_AT, now)
-                    .execute();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw WRITE_CONSTRAINTS.translate(e);
-        }
-
-        // イベント発行
-        category.pullEvents().forEach(eventPublisher::publishEvent);
+        WRITE_CONSTRAINTS.run(() -> dsl.insertInto(CATEGORY)
+                .set(CATEGORY.ID, snapshot.id())
+                .set(CATEGORY.PARENT_ID, snapshot.parentId())
+                .set(CATEGORY.NAME, snapshot.name())
+                .set(CATEGORY.DEPTH, (short) snapshot.depth())
+                .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
+                .set(CATEGORY.VERSION, snapshot.version())
+                .set(CATEGORY.CREATED_AT, now)
+                .set(CATEGORY.UPDATED_AT, now)
+                .execute());
     }
 
     /**
-     * カテゴリを更新する。親と深さは変わらないので、名称と表示順だけを書き換える。
+     * カテゴリを更新する。
+     *
+     * <p>親と深さは変わらないので、名称と表示順だけを書き換える。
      *
      * @param category カテゴリ
+     * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
     @Override
     public void save(Category category) {
         var snapshot = category.toSnapshot();
 
-        int affected;
-        try {
-            // バージョンが一致しなければ、取得後に他で更新されている
-            affected = dsl.update(CATEGORY)
-                    .set(CATEGORY.NAME, snapshot.name())
-                    .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
-                    .set(CATEGORY.VERSION, snapshot.version() + 1)
-                    .set(CATEGORY.UPDATED_AT, clock.instant())
-                    .where(CATEGORY.ID.eq(snapshot.id()))
-                    .and(CATEGORY.VERSION.eq(snapshot.version()))
-                    .execute();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw WRITE_CONSTRAINTS.translate(e);
-        }
+        // バージョンが一致しなければ、取得後に他で更新されている
+        int affected = WRITE_CONSTRAINTS.call(() -> dsl.update(CATEGORY)
+                .set(CATEGORY.NAME, snapshot.name())
+                .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
+                .set(CATEGORY.VERSION, snapshot.version() + 1)
+                .set(CATEGORY.UPDATED_AT, clock.instant())
+                .where(CATEGORY.ID.eq(snapshot.id()))
+                .and(CATEGORY.VERSION.eq(snapshot.version()))
+                .execute());
         if (affected == 0) {
             throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
         }
+    }
 
-        // イベント発行
-        category.pullEvents().forEach(eventPublisher::publishEvent);
+    /**
+     * 複数のカテゴリを、1 つの文で更新する。
+     *
+     * <p>親と深さは変わらないので、名称と表示順だけを書き換える。
+     *
+     * @param categories カテゴリ
+     * @throws BusinessException どれかを取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
+     * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
+     */
+    @Override
+    public void saveAll(Collection<Category> categories) {
+        if (categories.isEmpty()) {
+            return;
+        }
+        var rows = categories.stream()
+                .map(Category::toSnapshot)
+                .map(snapshot -> DSL.row(List.of(snapshot.id(), snapshot.version(), snapshot.name(), snapshot.displayOrder())))
+                .toArray(RowN[]::new);
+        var changes = DSL.values(rows).as("changes", "id", "version", "name", "display_order");
+        var id = changes.field("id", UUID.class);
+        var version = changes.field("version", Long.class);
+
+        // バージョンが一致しなければ、取得後に他で更新されている
+        int affected = WRITE_CONSTRAINTS.call(() -> dsl.update(CATEGORY)
+                .set(CATEGORY.NAME, changes.field("name", String.class))
+                .set(CATEGORY.DISPLAY_ORDER, changes.field("display_order", Integer.class))
+                .set(CATEGORY.VERSION, CATEGORY.VERSION.plus(1))
+                .set(CATEGORY.UPDATED_AT, clock.instant())
+                .from(changes)
+                .where(CATEGORY.ID.eq(id))
+                .and(CATEGORY.VERSION.eq(version))
+                .execute());
+        if (affected != categories.size()) {
+            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
     }
 
     /**
      * カテゴリを削除する。
      *
      * @param category カテゴリ
+     * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）
+     * @throws BusinessException 商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）
+     * @throws BusinessException 既に削除されている（{@code NOT_FOUND}）
      */
     @Override
     public void delete(Category category) {
-        int affected;
-        try {
-            affected = dsl.deleteFrom(CATEGORY)
-                    .where(CATEGORY.ID.eq(category.id()))
-                    .execute();
-        } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
-            throw DELETE_CONSTRAINTS.translate(e);
-        }
+        int affected = DELETE_CONSTRAINTS.call(() -> dsl.deleteFrom(CATEGORY)
+                .where(CATEGORY.ID.eq(category.id()))
+                .execute());
         if (affected == 0) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
-
-        // イベント発行
-        category.pullEvents().forEach(eventPublisher::publishEvent);
     }
 
 // ============================== プライベートメソッド ==============================

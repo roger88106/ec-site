@@ -1,7 +1,9 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.BusinessTime;
+import com.ecsite.common.persistence.AdvisoryLockSpace;
+import com.ecsite.common.persistence.AdvisoryLocks;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
 import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
 import com.ecsite.module.reporting.domain.snapshot.HistoryKind;
@@ -13,7 +15,6 @@ import com.ecsite.module.reporting.domain.snapshot.StatusHistoryEntry;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -59,12 +60,13 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     @Override
     public void lock(UUID orderId) {
         // トランザクションの終わりで外れる、注文 ID のロック（PostgreSQL の advisory lock）
-        dsl.select(DSL.function("pg_advisory_xact_lock", Object.class,
-                DSL.val(orderId.getMostSignificantBits() ^ orderId.getLeastSignificantBits()))).fetch();
+        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.REPORTING, orderId);
     }
 
     /**
-     * 状態の履歴に 1 行追加する。同じイベント ID の行があれば何もしない。
+     * 状態の履歴に 1 行追加する。
+     *
+     * <p>同じイベント ID の行があれば何もしない。
      *
      * @param entry 履歴の行
      * @return 追加したら true
@@ -87,7 +89,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 注文の状態の履歴を、発生日時の順に読む。同じ日時はイベント ID の順にする。
+     * 注文の状態の履歴を、発生日時の順に読む。
+     *
+     * <p>同じ日時はイベント ID の順にする。
      *
      * @param orderId 注文 ID
      * @return 履歴
@@ -97,7 +101,7 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         return dsl.selectFrom(STATUS_HISTORY)
                 .where(STATUS_HISTORY.ORDER_ID.eq(orderId))
                 .orderBy(STATUS_HISTORY.OCCURRED_AT, STATUS_HISTORY.EVENT_ID)
-                .fetch(row -> AggregateGuards.restore("status history", () -> {
+                .fetch(row -> RestoreGuard.restore("status history", () -> {
                     var kind = HistoryKind.valueOf(row.getKind());
                     return new StatusHistoryEntry(row.getEventId(), row.getOrderId(), kind,
                             row.getFromStatus() == null ? null : historyStatus(kind, row.getFromStatus()),
@@ -120,11 +124,14 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .where(SALES_ORDER_LINE.ORDER_ID.eq(orderId), SALES_ORDER_LINE.PRODUCT_ID.isNotNull())
                 .fetch()
                 .stream()
-                .collect(Collectors.toMap(row -> row.value1().intValue(), row -> row.value2()));
+                .collect(Collectors.toMap(row -> row.get(SALES_ORDER_LINE.LINE_NO).intValue(),
+                        row -> row.get(SALES_ORDER_LINE.PRODUCT_ID)));
     }
 
     /**
-     * 写しを上書きする（なければ作る）。明細は消して入れ直す。注文日・出荷日は日本時間の日付にする。
+     * 写しを上書きする。
+     *
+     * <p>なければ作る。明細は消して入れ直す。注文日・出荷日は日本時間の日付にする。
      *
      * @param order 写し
      */
@@ -135,7 +142,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 注文の行を上書きする（なければ作る）。
+     * 注文の行を上書きする。
+     *
+     * <p>なければ作る。
      */
     private void saveOrder(ReportOrder order) {
         var now = clock.instant();
@@ -143,24 +152,30 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         record.setOrderId(order.orderId());
         record.setOrderNumber(order.orderNumber());
         record.setMemberId(order.memberId());
+
         record.setOrderedAt(order.orderedAt());
         record.setOrderedOn(dateOf(order.orderedAt()));
         record.setStatus(order.status().name());
         record.setShippedAt(order.shippedAt());
         record.setShippedOn(order.shippedAt() == null ? null : dateOf(order.shippedAt()));
         record.setDeliveryStatus(order.deliveryStatus() == null ? null : order.deliveryStatus().name());
+
         record.setCancelledAt(order.cancelledAt());
         record.setCancellationKind(order.cancellationKind() == null ? null : order.cancellationKind().name());
         record.setRestocked(order.restocked());
+
         record.setPostalCode(order.postalCode());
         record.setPrefectureCode(order.prefectureCode());
         record.setBuyerAge(order.buyerAge() == null ? null : order.buyerAge().shortValue());
         record.setBuyerGender(order.buyerGender() == null ? null : order.buyerGender().name());
+
         record.setTotalAmount(order.total().yen());
         record.setShippingFee(order.shippingFee().yen());
         record.setTaxTotal(order.taxTotal().yen());
         record.setShippingTax(order.shippingTax().yen());
+
         record.setRefreshedAt(now);
+
         dsl.insertInto(SALES_ORDER).set(record)
                 .onConflict(SALES_ORDER.ORDER_ID)
                 .doUpdate()
@@ -191,7 +206,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 履歴の列の状態の値を、出来事に合う列挙にする（注文の状態の変化なら注文の状態、配送状態の変化なら配送状態）。
+     * 履歴の列の状態の値を、出来事に合う列挙にする。
+     *
+     * <p>注文の状態の変化なら注文の状態、配送状態の変化なら配送状態にする。
      */
     private static HistoryStatus historyStatus(HistoryKind kind, String value) {
         return switch (kind) {

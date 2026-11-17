@@ -42,7 +42,7 @@
 
 ### ruleset
 
-GitHub の ruleset を `develop` と `main` に作る。
+GitHub の ruleset を、`develop`・`main`・`release-hotfix` の 3 つ作る。`develop` と `main` は次の表のとおり。
 
 | 項目 | `develop` | `main` |
 |------|-----------|--------|
@@ -52,16 +52,22 @@ GitHub の ruleset を `develop` と `main` に作る。
 | マージの前に最新の `develop` を含む | なし ※2 | なし |
 | force push | 禁止 | 禁止 |
 | 削除 | 禁止 | 禁止 |
+| 未解決のレビューのスレッド | あるとマージできない ※3 | 同左 |
 
-※1：分けたバックエンドのジョブ（ビルドと単体テスト、統合テスト 1/2・2/2）は登録しない。「バックエンド」がそれらの結果を確認するため（[CI の検査](ci.md)の「CI のジョブ」）。
+※1：分けたバックエンドのジョブ（ビルドと単体テスト、PIT、統合テスト 1/3・2/3・3/3）は登録しない。「バックエンド」がそれらの結果を確認するため（[CI の検査](ci.md)の「CI のジョブ」）。
 
 ※2：続けてマージするとき、取り込みと CI の再実行を待たないために、最新の取り込みを必須にしない。代わりに、マージの後に `develop` の CI を見届ける（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
+
+※3：pull request の会話の全てのスレッドを解決（resolve）するまでマージできない（required_review_thread_resolution）。理由：利用者の指摘に答えないままマージしないため。
+
+- `release-hotfix`：`release/**` と `hotfix/**` の force push を禁止する。理由：リリースする commit を、確認した後に書き換えないため。削除は禁止しない（マージの後に自動で削除するため。「自動の削除」）。
+- `agent/**` には ruleset を作らない。force push もできる。理由：利用者は最後の pull request だけを確認し、途中のブランチの履歴は重要でないため。エージェントの force push は、Claude Code の hook（`scripts/dev/hooks/agent-guard.mjs`）が、push の先が全て `agent/` で始まるときだけ通す。
 
 ### `main` の元のブランチの制限
 
 `main` は、`release/` と `hotfix/` で始まるブランチからの pull request だけを受け付ける。理由：リリースするのは確認した commit で、`develop` の最新とは限らないため（「リリース」）。
 
-- 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request の元のブランチの名前が `release/` か `hotfix/` で始まらなければ失敗する。判定は `scripts/ci/workflow/main-source.mjs`（テストあり）。
+- 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request で、元のブランチの名前が `release/` か `hotfix/` で始まらなければ失敗する。判定は workflow の中の `case` に書く。
 - この検査を `main` の ruleset の必須の検査にする。
 
 ### マージの方式
@@ -73,7 +79,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 マージした作業ブランチは、リポジトリの設定で自動で削除される。
 
-マージせずに残った作業ブランチ（pull request を閉じたものなど）は、エージェントも `git push --delete` で削除してよい。Claude Code の hook は、リモートのブランチの削除のうち、作業ブランチだけを許可する。開いている pull request のあるブランチは削除しない。ブランチを削除すると、GitHub がその pull request を閉じるため。hook は pull request を調べないので、削除の前に `gh pr list --head <ブランチ>` で確認する。
+マージせずに残った作業ブランチ（pull request を閉じたものなど）は、エージェントも `git push --delete` で削除してよい。作業ブランチ以外のブランチは削除しない。開いている pull request のあるブランチも削除しない。ブランチを削除すると、GitHub がその pull request を閉じるため。hook は削除を判定しないので、削除の前に `gh pr list --head <ブランチ>` で確認する。
 
 ## リリース
 
@@ -110,22 +116,21 @@ GitHub の ruleset を `develop` と `main` に作る。
 |------|------|
 | 対象 | `gradle`（`/backend/ecsite`）、`npm`（`/`。pnpm の workspace）、`github-actions`（`/`）、`docker-compose`（`/docker`） |
 | 頻度 | 週 1 回（月曜、日本時間） |
-| group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする。`github-actions` は major も含めて 1 つの pull request にする ※3 |
+| group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする。`github-actions` は major も含めて 1 つの pull request にする ※4 |
 | cooldown | リリースから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は SemVer の日数に対応しないため、7 日（`default-days`） |
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 
-※3：`github-actions` の更新は危険度が高いので、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
+※4：`github-actions` の更新は危険度が高いので、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
 
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
 - Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
 - `@types/node` の major は、Dependabot の対象から外す。型の定義だけを上げると、`.node-version` の Node にない API も型の検査を通るため。Node のバージョンを上げるときに合わせて上げる。
-- `github-actions` の `directories` に、ローカルの複合の action のディレクトリ（`.github/actions/setup-frontend`）を加えている（`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため）。複合の action を増やしたら追加する。
+- `github-actions` の `directories` に、ローカルの複合の action のディレクトリを glob（`/.github/actions/*`）で加えている（`/` は `.github/workflows` とルートの `action.yml` しか見ないため）。複合の action を増やしても、設定は変えなくてよい。
 - workflow と複合の action の `uses` は、commit の SHA に固定し、同じ行のコメントにタグを書く（`uses: actions/checkout@<SHA> # v7.0.1`）。GitHub の文書では、Dependabot はこの形の SHA とコメントを更新する（Dependabot が実際に作る更新の pull request は未確認）。SHA に固定した action は Dependabot alerts の対象にならないので、脆弱性を修正したバージョンも、週 1 回の更新（cooldown あり）で取り込む。ローカルの action（`./.github/actions/...`）は固定しない。
 - 危険度は、経路と、pull request の題から読む更新の種類で判定する。`github-actions` の更新（`.github/`）と major の更新、題から更新の種類を読めないものは危険度が高く、利用者が許可する。他の minor と patch は危険度が低く、issue 担当のセッションがマージする。CI の job は作成者で見分け、本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[マージと後片付け](../05-開発規則/merging.md)の「マージの許可と後片付け」）。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
 - Gradle のバージョンを上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<バージョン>-bin.zip.sha256` の値に替える（Dependabot の更新がこの値も替えるかは未確認なので、pull request で確認する）。
-- TypeScript のバージョンを上げる pull request は、`node scripts/ci/globals/lib-globals.mjs --write` で組み込みの名前の一覧（`lib-globals.json`）を再生成して差分を確認し、`node scripts/ci/frontend-rules.mjs` で増えた名前によるシャドーイングがないことを確認する。
 - Dependabot の pnpm の対応は v10 まで（このリポジトリは pnpm 12）。`npm` の更新が失敗したときは、issue を起票し、Renovate への切り替えを検討する。
 
 ## デプロイの spec まで

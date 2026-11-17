@@ -5,12 +5,18 @@ import { CancellationRequestForm } from '@/features/order/components/Cancellatio
 import { cancellationState } from '@/features/order/orderState'
 
 /**
- * 注文のキャンセル。状況に応じて、申請のフォーム、申請中、却下（問い合わせ先）、キャンセル済みを出す。
+ * 注文のキャンセル
  *
- * @param order        注文
- * @param contactEmail 問い合わせ先のメールアドレス
+ * 状況に応じて、申請のフォーム、申請中、却下（問い合わせ先）、キャンセル済みを出す。
  */
-export function CancellationSection({ order, contactEmail }: { order: Order; contactEmail: string }) {
+export function CancellationSection({
+  order,
+  contactEmail,
+}: {
+  order: Order
+  /** 問い合わせ先のメールアドレス */
+  contactEmail: string
+}) {
   const t = useTranslations('order.cancellation')
   const request = order.cancellationRequest
   switch (cancellationState(order)) {
@@ -54,7 +60,7 @@ export function CancellationSection({ order, contactEmail }: { order: Order; con
     case 'NOT_YET':
     case 'SHIPPED':
     case 'UNAVAILABLE':
-      // 欄ごと出さない注文は、呼び出し側が `showsCancellationSection` で除く。ここに来るのは使い方の誤り
+      // 欄ごと出さない注文は、呼ぶ側が `showsCancellationSection` で除く。ここに来るのは使い方の誤り
       throw new Error(`キャンセルの欄を出さない状況で描かれた：${order.status}`)
   }
 }

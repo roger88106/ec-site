@@ -8,6 +8,7 @@ import { TRACEPARENT } from '@/test/fixtures'
  *
  * @param url  リクエストの URL
  * @param init リクエストのヘッダーなど
+ * @returns proxy の応答
  */
 async function runProxy(url: string, init?: ConstructorParameters<typeof NextRequest>[1]): Promise<Response> {
   // auth(処理) の型は、ルートハンドラーの形（第 2 引数に params）になる。置き換えた auth は処理をそのまま返すので、第 2 引数は使われない

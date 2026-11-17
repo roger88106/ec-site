@@ -18,6 +18,7 @@ import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.catalog.application.product.ProductCommandService;
+import com.ecsite.module.catalog.application.product.ProductImageCommandService;
 import com.ecsite.module.catalog.application.product.ProductImageService;
 import com.ecsite.module.catalog.application.product.ProductPublicationService;
 import com.ecsite.module.catalog.application.product.ProductQueryService;
@@ -32,7 +33,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品のコントローラー（B 側。admin.yaml の tag: product）。
+ * 商品のコントローラー
+ *
+ * <p>B 側の API のうち、admin.yaml のタグ product の操作を受ける。
  */
 @RestController
 @RequiredArgsConstructor
@@ -62,6 +65,11 @@ class ProductController implements ProductApi {
      * 商品画像のアプリケーションサービス
      */
     private final ProductImageService imageService;
+
+    /**
+     * 商品画像のコマンドサービス
+     */
+    private final ProductImageCommandService imageCommandService;
 
     /**
      * 商品マッパー
@@ -119,7 +127,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの登録。Location は、登録したバリアントの URL（削除などの操作の URL）
+     * バリアントの登録。
+     *
+     * <p>Location は、登録したバリアントの URL（削除などの操作の URL）
      *
      * @param productId 商品 ID
      * @param request   バリアントの登録リクエスト
@@ -147,7 +157,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 公開する。冪等
+     * 公開する。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -159,7 +171,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 非公開にする。冪等
+     * 非公開にする。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -171,7 +185,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 販売終了にする。冪等
+     * 販売終了にする。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -209,7 +225,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの販売停止。冪等
+     * バリアントの販売停止。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -222,7 +240,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの販売停止の解除。冪等
+     * バリアントの販売停止の解除。
+     *
+     * <p>冪等
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -250,7 +270,9 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 受け付けた画像の登録。商品の一部で単独の URL を持たないので、Location は返さない
+     * 受け付けた画像の登録。
+     *
+     * <p>商品の一部で単独の URL を持たないので、Location は返さない
      *
      * @param productId 商品 ID
      * @param request   画像の登録リクエスト
@@ -272,7 +294,7 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<Void> reorderProductImages(UUID productId, ReorderProductImagesRequest request) {
         // imageIds は LinkedHashSet で受け取るので、送られた順を保つ
-        imageService.reorderImages(productId, List.copyOf(request.getImageIds()), request.getVersion());
+        imageCommandService.reorderImages(productId, List.copyOf(request.getImageIds()), request.getVersion());
         return ResponseEntity.noContent().build();
     }
 
@@ -286,7 +308,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> deleteProductImage(UUID productId, UUID imageId, Long version) {
-        imageService.deleteImage(productId, imageId, version);
+        imageCommandService.deleteImage(productId, imageId, version);
         return ResponseEntity.noContent().build();
     }
 
@@ -300,7 +322,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> setVariantImage(UUID productId, UUID variantId, SetVariantImageRequest request) {
-        imageService.setVariantImage(productId, variantId, request.getImageId().orElse(null), request.getVersion());
+        imageCommandService.setVariantImage(productId, variantId, request.getImageId().orElse(null), request.getVersion());
         return ResponseEntity.noContent().build();
     }
 

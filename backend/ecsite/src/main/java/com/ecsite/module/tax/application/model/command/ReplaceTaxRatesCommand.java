@@ -1,5 +1,6 @@
 package com.ecsite.module.tax.application.model.command;
 
+import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -14,7 +15,7 @@ import java.util.UUID;
  * @param version       取得時のバージョン
  * @param rates         置き換え後の税率の一覧
  */
-public record ReplaceTaxRatesCommand(UUID taxCategoryId, long version, List<Rate> rates) {
+public record ReplaceTaxRatesCommand(@NonNull UUID taxCategoryId, long version, @NonNull List<Rate> rates) {
 
     /**
      * 置き換え後の税率の 1 件
@@ -24,7 +25,7 @@ public record ReplaceTaxRatesCommand(UUID taxCategoryId, long version, List<Rate
      * @param effectiveFrom 適用開始日時。null は過去すべて
      * @param effectiveTo   適用終了日時。null は無期限
      */
-    public record Rate(@Nullable UUID id, BigDecimal ratePercent,
+    public record Rate(@Nullable UUID id, @NonNull BigDecimal ratePercent,
                        @Nullable Instant effectiveFrom, @Nullable Instant effectiveTo) {
     }
 }

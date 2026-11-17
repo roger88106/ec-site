@@ -6,7 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * カート変更。注文モジュールが、そのカートの注文手続きの引当を解く。
+ * カート変更
+ *
+ * <p>カートの品目か数量が変わったときに発行する。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

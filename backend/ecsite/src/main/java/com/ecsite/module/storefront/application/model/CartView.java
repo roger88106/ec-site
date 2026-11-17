@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * カートの表示（店舗モジュールの型。注文モジュールの見積もりから変換する）
+ * カートの表示
  *
  * @param cartId    カート ID
  * @param items     品目（入れた順）
@@ -72,7 +72,9 @@ public record CartView(UUID cartId, List<Item> items, Amounts amounts, boolean o
     public enum UnpurchasableReason {
 
         /**
-         * 商品が C 側に表示されない。有効な税率がない場合も含む
+         * 商品が C 側に表示されない
+         *
+         * <p>有効な税率がない場合も含む。
          */
         NOT_SHOWN,
 

@@ -34,12 +34,15 @@ type ApiMutationOptions<TData, TInit> = {
 }
 
 /**
- * 管理 API の更新の操作（管理画面の構成の「API の呼び出し」）。$api.useMutation に、更新の定型を追加する。<br />
- * 成功したら、知らせを出し、続きの処理を行い、関係する一覧を取り直す。失敗のエラーは、戻り値の error で画面に出す。
+ * 管理 API の更新の操作に、更新の定型を追加する（管理画面の構成の「API の呼び出し」）。
  *
- * @param method HTTP のメソッド
- * @param path   管理 API のパス
+ * $api.useMutation に、成功したら知らせを出し、続きの処理を行い、関係する一覧を取り直す処理を追加する。
+ * 失敗のエラーは、戻り値の error で画面に出す。
+ *
+ * @param method  HTTP のメソッド
+ * @param path    管理 API のパス
  * @param options 成功の知らせ、取り直す一覧、続きの処理
+ * @returns $api.useMutation の戻り値
  */
 export function useApiMutation<M extends Method, P extends PathWith<M>>(
   method: M,

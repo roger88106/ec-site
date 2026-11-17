@@ -14,20 +14,21 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * 表示順の振り直し（商品のバリアント・画像、カテゴリで共通）。<br />
- * 表示順は 1 から始まる連番。並べ替えは、今の要素のすべてを、送られた順に並べ直す。
+ * 表示順の振り直し
+ *
+ * <p>表示順は 1 から始まる連番。並べ替えは、今の要素の全てを、送られた順に並べ直す。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class DisplayOrders {
 
     /**
-     * 並べたい順の ID に、1 から表示順を振る。<br />
-     * 今の要素と過不足なく一致しなければ（重複・漏れ・ないものを含めば）、業務のエラーを投げる。
+     * 並べたい順の ID に、1 から表示順を振る。
      *
      * @param currentIds 今の要素の ID
      * @param orderedIds 並べたい順の ID
      * @param error      一致しないときのエラー
      * @return ID → 新しい表示順
+     * @throws BusinessException 今の要素と過不足なく一致しない（重複・漏れ・ないものを含む。{@code error} のエラー）
      */
     public static Map<UUID, Integer> assign(Collection<UUID> currentIds, List<UUID> orderedIds, ErrorCodeProvider error) {
         // 数が同じで、集合としても等しければ、重複も漏れもない
@@ -35,8 +36,9 @@ public final class DisplayOrders {
             throw BusinessException.of(error);
         }
         Map<UUID, Integer> orders = new HashMap<>();
-        for (int i = 0; i < orderedIds.size(); i++) {
-            orders.put(orderedIds.get(i), i + 1);
+        var order = 1;
+        for (var id : orderedIds) {
+            orders.put(id, order++);
         }
         return orders;
     }

@@ -12,15 +12,15 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 class ValidationConfig {
 
     /**
-     * バリデーター。<br />
-     * 制約アノテーションの {@code {key}} 形式のメッセージを messages.properties から解決する。
-     * API の応答の検証のエラーの文は、この文ではなく {@code ValidationMessages} が制約の種類から作る。
+     * バリデーターを作る。
+     *
+     * <p>制約アノテーションの {@code {key}} 形式のメッセージを messages.properties から解決する。
      *
      * @param messageSource メッセージソース
      * @return バリデーター
      */
     @Bean
-    public LocalValidatorFactoryBean validator(MessageSource messageSource) {
+    LocalValidatorFactoryBean validator(MessageSource messageSource) {
         var factoryBean = new LocalValidatorFactoryBean();
         factoryBean.setValidationMessageSource(messageSource);
         return factoryBean;

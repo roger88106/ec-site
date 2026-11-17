@@ -1,0 +1,7 @@
+/**
+ * 注文モジュールの公開の API の型
+ *
+ * <p>API の引数と戻り値。API と同じ名前付きインターフェース（{@code api}）に含める。
+ */
+@org.springframework.modulith.NamedInterface("api")
+package com.ecsite.module.order.api.model;

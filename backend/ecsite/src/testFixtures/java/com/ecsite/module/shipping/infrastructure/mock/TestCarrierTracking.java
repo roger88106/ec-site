@@ -7,8 +7,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * テストで使う物流サービスの追跡。本番の mock（{@link MockCarrierTracking}）を包み、追跡を始めた送り状番号を記録する。<br />
- * 記録はメモリで、テストは 1 インスタンスで動かす前提のため。本番の jar に入れないため、テストで共有するソースに置く。
+ * テストで使う物流サービスの追跡
+ *
+ * <p>本番の mock（{@link MockCarrierTracking}）を包み、追跡を始めた送り状番号を記録する。記録はメモリで、テストは 1 インスタンスで動かす前提のため。本番の jar に入れないため、テストで共有するソースに置く。
  */
 public class TestCarrierTracking implements CarrierTracking {
 
@@ -18,7 +19,9 @@ public class TestCarrierTracking implements CarrierTracking {
     private final MockCarrierTracking mock;
 
     /**
-     * 追跡を始めた送り状番号（始めた順）
+     * 追跡を始めた送り状番号
+     *
+     * <p>始めた順。
      */
     private final List<Started> started = new CopyOnWriteArrayList<>();
 

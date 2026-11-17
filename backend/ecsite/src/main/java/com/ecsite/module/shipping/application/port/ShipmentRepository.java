@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.application.port;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.Shipment;
 import com.ecsite.module.shipping.domain.TrackingNumber;
@@ -17,7 +18,7 @@ public interface ShipmentRepository {
      * 出荷を保存する。
      *
      * @param shipment 出荷
-     * @throws com.ecsite.common.error.exception.BusinessException 同じ注文にすでに出荷があるとき
+     * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
     void insert(Shipment shipment);
 
@@ -30,7 +31,7 @@ public interface ShipmentRepository {
     List<Shipment> findAllByOrderIds(Collection<UUID> orderIds);
 
     /**
-     * 配送業者と送り状番号で出荷を取得し、行をロックする。同じ出荷への通知を直列にするため、トランザクションの中で呼ぶ。
+     * 配送業者と送り状番号で出荷を取得し、トランザクションの終わりまで行をロックする。
      *
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号
@@ -39,11 +40,11 @@ public interface ShipmentRepository {
     List<Shipment> findAllByTrackingForUpdate(Carrier carrier, TrackingNumber trackingNumber);
 
     /**
-     * 通知で進めた配送状態と、通知を反映した日時を保存する。
+     * 通知で進めた配送状態と、通知を反映した日時を、1 つの文で保存する。
      *
-     * @param shipment 出荷
+     * @param shipments 出荷
      */
-    void updateProgress(Shipment shipment);
+    void updateProgress(Collection<Shipment> shipments);
 
     /**
      * 配送状態が「返送」の出荷の注文 ID を返す。

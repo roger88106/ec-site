@@ -11,7 +11,7 @@ import lombok.Getter;
 public enum ShippingErrorCode implements ErrorCodeProvider {
 
     /**
-     * 送り状番号が形に合わない（半角の数字とハイフンだけ、30 文字まで、数字が 1 つ以上）
+     * 送り状番号が形に合わない（半角の数字とハイフンだけ、{maxLength} 文字まで、数字が 1 つ以上）
      */
     TRACKING_NUMBER_INVALID(ErrorType.VALIDATION_ERROR, "maxLength"),
 

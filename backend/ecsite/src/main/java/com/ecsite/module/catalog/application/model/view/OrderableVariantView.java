@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 注文に使うバリアントの情報（docs/02-設計/catalog.md「他のモジュールへの公開」）。<br />
- * カートに入れられるか、購入できるかの判定と、注文の写しに使う。
+ * 注文に使うバリアントの情報
  *
  * @param variantId      バリアント ID
  * @param productId      商品 ID

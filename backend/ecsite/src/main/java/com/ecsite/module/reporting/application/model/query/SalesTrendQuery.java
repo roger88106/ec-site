@@ -3,6 +3,7 @@ package com.ecsite.module.reporting.application.model.query;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.Granularity;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
@@ -17,6 +18,6 @@ import java.util.UUID;
  * @param excludeTax      消費税を除くか
  * @param excludeShipping 送料を除くか（商品を選んだときは、指定によらず除く）
  */
-public record SalesTrendQuery(ReportPeriod period, Granularity granularity, Basis basis, @Nullable UUID productId,
+public record SalesTrendQuery(@NonNull ReportPeriod period, @NonNull Granularity granularity, @NonNull Basis basis, @Nullable UUID productId,
                               boolean excludeTax, boolean excludeShipping) {
 }

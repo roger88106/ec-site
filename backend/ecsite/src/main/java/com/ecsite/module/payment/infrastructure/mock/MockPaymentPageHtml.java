@@ -6,8 +6,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.web.util.HtmlUtils;
 
 /**
- * mock の支払画面の HTML を組み立てる（{@link MockPaymentPageController} の補助）。<br />
- * 外から来る値（支払画面 ID、戻る先の URL、エラーの文）は、ここで HTML の特殊文字を置き換える。
+ * mock の支払画面の HTML
+ *
+ * <p>外から来る値（支払画面 ID、戻る先の URL、エラーの文）は、ここで HTML の特殊文字を置き換える。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class MockPaymentPageHtml {

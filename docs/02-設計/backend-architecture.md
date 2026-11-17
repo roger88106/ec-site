@@ -61,7 +61,9 @@ module/<モジュール>/
 ├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
 ├── application/        use case（@Transactional はここ）
 │   ├── model/          command・query・view
-│   └── port/           application が使う port（参照の Repository、他のモジュールの Directory）
+│   ├── port/           application が使う port（参照の Repository、他のモジュールの Directory）
+│   ├── handler/        イベントのハンドラー（package-private の service や型を使うハンドラーは、それらと同じパッケージに置く）
+│   └── job/            定期実行のジョブと、その設定の値の型
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
 │   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装
@@ -212,7 +214,7 @@ module/<モジュール>/
   - `memberToken` だけを書いた操作は、token が必要。
   - `memberToken` と `{}` を並べた操作（token は任意）と、`security: []` の操作（公開）は、token なしで使える。公開の操作は `security: []` で明示する。
   - `security` を書かない操作があると、起動に失敗する。失敗のメッセージは、操作のメソッドとパスを含む。理由：書き忘れた操作を、公開の操作として受け付けないため。
-- 認可は既定で拒む。契約にない店舗 API・管理 API の操作は拒み、それ以外の URL は、通知（`/api/webhooks/**`）・mock（`/mock-payment/**`、`/mock-carrier/**`）・運用（`/actuator/**`）のエンドポイントだけを許す（BR-32）。拒むときは 401（認証のあるリクエストは 403）。
+- 認可は既定で拒む。契約にない店舗 API・管理 API の操作は拒み、それ以外の URL は、通知（`/api/webhooks/**`）・mock（`/mock-payment/**`、`/mock-carrier/**`）・運用（`/actuator/**`）のエンドポイントだけを許す（BR-32）。拒むときは 401。店舗 API・管理 API で認証のあるリクエストは 403 にする。それ以外の URL は token を読まないので、token があっても 401 にする。
 
 ### 公開ネットワークへのデプロイの前提
 

@@ -10,8 +10,8 @@ import { paths } from '@/app/paths'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DateTime } from '@/components/DateTime'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Price } from '@/components/Price'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Price } from '@/features/product/components/Price'
 
 /** 価格・日時の表示と、公開・非公開・販売終了・削除 */
 export function ProductStatusCard({ product }: { product: ProductDetail }) {
@@ -23,7 +23,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
   /** 状態で在庫の画面の表示も変わるので、在庫も読み直す */
   const invalidate: ApiPathPrefix[] = ['/products', '/inventory']
   const publish = useApiMutation('put', '/products/{productId}/publish', {
-    success: t('published') /* 公開の知らせ */,
+    success: t('published'), // 公開の知らせ
     invalidate,
   })
   const unpublish = useApiMutation('put', '/products/{productId}/unpublish', {
@@ -43,7 +43,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
       queryClient.removeQueries({ queryKey: ['get', '/products/{productId}'] })
     },
   })
-  const { pending, error } = useMutationGroup(publish, unpublish, discontinue, remove)
+  const { pending, error } = useMutationGroup([publish, unpublish, discontinue, remove])
 
   return (
     <Card>
@@ -115,7 +115,9 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
           <p className="text-muted-foreground text-sm">{t('discontinuedNote') /* 公開に戻せない */}</p>
         )}
         {product.actions.deleteBlockedReason && (
-          <p className="text-muted-foreground text-sm">{t(`deleteBlocked.${product.actions.deleteBlockedReason}`)}</p>
+          <p className="text-muted-foreground text-sm">
+            {t(`deleteBlocked.${product.actions.deleteBlockedReason}`) /* 削除できない理由 */}
+          </p>
         )}
         <ErrorMessage error={error} />
       </CardContent>

@@ -61,8 +61,10 @@ function expectErrorUnder(view: ReturnType<typeof renderStatic>, message: string
 }
 
 /**
- * 送る前（結果がない）の初期表示で、文字を直接持つ要素の文言を、文書の順に並べたもの
- * （見出し、メールアドレスと案内、各欄の見出しとヒント、選択肢、ボタン）。エラーの文は含まない。
+ * 送る前（結果がない）の初期表示の文言
+ *
+ * 文字を直接持つ要素の文言を、文書の順に並べたもの（見出し、メールアドレスと案内、各欄の見出しとヒント、選択肢、ボタン）。
+ * エラーの文は含まない。
  */
 const INITIAL_TEXTS = [
   'メールアドレス',
@@ -377,6 +379,41 @@ describe('郵便番号で補う', () => {
     expect(select('都道府県')).toHaveValue('14')
     expect(select('市区町村')).toHaveValue('14104')
     expect(input('住所')).toHaveValue('千代田 1-1')
+  })
+})
+
+describe('引いている間に選び直したら、古い応答を捨てる', () => {
+  test('都道府県を選び直した後に前の一覧が届いても、選び直した都道府県の一覧を出す', async () => {
+    const tokyo = Promise.withResolvers<(typeof MUNICIPALITIES)[string]>()
+    vi.mocked(listMunicipalities).mockImplementation(async (code) =>
+      code === '13' ? tokyo.promise : (MUNICIPALITIES[code] ?? null),
+    )
+    const { user } = renderInBrowser(form())
+
+    await user.selectOptions(screen.getByLabelText('都道府県'), '13')
+    await user.selectOptions(screen.getByLabelText('都道府県'), '14')
+    await screen.findByRole('option', { name: '横浜市中区' })
+    await act(async () => tokyo.resolve(MUNICIPALITIES['13']))
+
+    expect(screen.queryByRole('option', { name: '中央区' })).toBeNull()
+    expect(screen.getByRole('option', { name: '横浜市中区' })).toBeInTheDocument()
+    expect(select('都道府県')).toHaveValue('14')
+  })
+
+  test('郵便番号を引いている間に別の番号に変えたら、前の番号の結果で補わない', async () => {
+    const first = Promise.withResolvers<ReturnType<typeof postal>[]>()
+    vi.mocked(findPostalCodeAddresses).mockImplementation(async (digits) => (digits === '1000001' ? first.promise : []))
+    const { user } = renderInBrowser(form())
+
+    await user.type(screen.getByLabelText('郵便番号'), '1000001')
+    await user.clear(screen.getByLabelText('郵便番号'))
+    await user.type(screen.getByLabelText('郵便番号'), '9999999')
+    await waitFor(() => expect(findPostalCodeAddresses).toHaveBeenCalledWith('9999999'))
+    await act(async () => first.resolve([postal('13', '13101', '千代田')]))
+
+    expect(listMunicipalities).not.toHaveBeenCalled()
+    expect(select('都道府県')).toHaveValue('')
+    expect(input('住所')).toHaveValue('')
   })
 })
 

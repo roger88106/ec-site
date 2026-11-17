@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.payment;
 
+import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import lombok.RequiredArgsConstructor;
@@ -7,9 +8,9 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 決済のイベントのリスナー（docs/03-機能仕様/order.md「支払」）。<br />
- * コミット後に非同期で、別のトランザクションで動く。何度届いても結果は同じ。
- * 処理に失敗したら、未完了のイベントの再発行でやり直す。
+ * 決済のイベントのリスナー
+ *
+ * <p>コミット後に非同期で、別のトランザクションで動く。何度届いても結果は同じ。処理に失敗したら、未完了のイベントの再発行でやり直す。
  */
 @Component
 @RequiredArgsConstructor
@@ -19,6 +20,11 @@ class PaymentEventHandler {
      * 注文の支払の結果のサービス
      */
     private final OrderPaymentService orderPaymentService;
+
+    /**
+     * キャンセルのサービス
+     */
+    private final OrderCancellationService cancellationService;
 
     /**
      * 与信の成功：注文を受付にし、注文した品目をカートから除く。
@@ -37,6 +43,6 @@ class PaymentEventHandler {
      */
     @ApplicationModuleListener
     void on(PaymentExpired event) {
-        orderPaymentService.expire(event.orderId());
+        cancellationService.expirePayment(event.orderId());
     }
 }

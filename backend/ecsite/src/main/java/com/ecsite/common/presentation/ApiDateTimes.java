@@ -10,8 +10,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 /**
- * API の日時（{@link OffsetDateTime}）と、アプリの日時（{@link Instant}）の変換。<br />
- * API の応答の日時は UTC で返す（画面が日本時間に直して表示する）。
+ * API の日時（{@link OffsetDateTime}）と、アプリの日時（{@link Instant}）の変換
+ *
+ * <p>API の応答の日時は UTC で返す。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ApiDateTimes {

@@ -1,8 +1,8 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "root": true,
-  // 共通の設定（整形、lint の規則）
-  "extends": ["../frontend/biome.base.jsonc"],
+  // 共通の設定（整形、lint の規則）と、テストで使わないグローバルの名前
+  "extends": ["../frontend/biome.base.jsonc", "../frontend/biome.test-globals.jsonc"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -13,5 +13,28 @@
   "files": {
     // 生成物（admin.yaml の型）は対象にしない
     "includes": ["**", "!src/generated"]
-  }
+  },
+  // 書き方の規則の plugin。画面と共通の規則は frontend/biome-plugins/、E2E だけの規則は biome-plugins/ にある
+  "overrides": [
+    {
+      "includes": ["**/*.ts", "**/*.tsx"],
+      "plugins": [
+        "../frontend/biome-plugins/no-css-class-check.grit",
+        "../frontend/biome-plugins/no-weak-existence-check.grit",
+        "./biome-plugins/no-position-selector.grit",
+        "./biome-plugins/no-network-idle.grit",
+        "./biome-plugins/no-partial-button-name.grit"
+      ]
+    },
+    {
+      // タイムアウトの定数を定義する waits.ts は、数字のリテラルを書く
+      "includes": ["**/*.ts", "**/*.tsx", "!src/waits.ts"],
+      "plugins": ["./biome-plugins/no-timeout-literal.grit"]
+    },
+    {
+      // テストと、テストを動かす側（補助、実行の script、Playwright の設定）
+      "includes": ["tests/**", "src/**", "showcase/**", "scripts/**", "playwright*.config.*"],
+      "plugins": ["../frontend/biome-plugins/no-time-wait.grit"]
+    }
+  ]
 }

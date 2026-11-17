@@ -1,5 +1,7 @@
 /**
- * ログインの後に戻ってよいパスか。画面の中のパス（`/` で始まり、`//`・`/\` で始まらず、制御文字を含まない）だけを
+ * ログインの後に戻ってよいパスかを判定する。
+ *
+ * 画面の中のパス（`/` で始まり、`//`・`/\` で始まらず、制御文字を含まない）だけを
  * 受け付け、外のサイトへは戻さない。URL の解析は TAB と改行を除くので（`/\t/evil.example` は `//evil.example`
  * になる）、制御文字は一律に受け付けない。
  *
@@ -20,7 +22,9 @@ export function isSafeReturnPath(path: unknown): path is string {
 function hasControlCharacter(text: string): boolean {
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i)
-    if (code <= 0x1f || code === 0x7f) return true
+    if (code <= 0x1f || code === 0x7f) {
+      return true
+    }
   }
   return false
 }

@@ -1,6 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;
@@ -16,6 +17,8 @@ import java.util.UUID;
 
 /**
  * 注文のテストで使う、状態ごとの注文の作り方
+ *
+ * <p>注文の状態の遷移の単体テスト（支払・出荷・キャンセル）が、遷移の前の注文を作るのに使う。
  */
 public final class TestOrders {
 
@@ -26,7 +29,10 @@ public final class TestOrders {
     }
 
     /**
-     * 「支払待ち」の注文を作る（成立のイベントは取り出し済み）
+     * 「支払待ち」の注文を作る。
+     *
+     * <p>成立のイベントは取り出してあるので、後の操作で登録されたイベントだけが残る。
+     * 総額は 2,100 円（税込 1,100 円の商品 1 個と送料 1,000 円）。
      *
      * @param orderedAt 注文の日時
      * @return 支払待ちの注文

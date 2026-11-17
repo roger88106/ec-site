@@ -11,13 +11,19 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+/** IdleLogout の props */
+type Props = {
+  /** ログアウトする（IdP のログアウトへ移る） */
+  onExpire: () => void
+}
+
 /**
- * 操作がないまま 30 分たつと onExpire でログアウトし、その 2 分前に警告のダイアログを表示する。<br />
- * ログインしているときだけ置く（ログインしていないときに動かさないため）。
+ * 無操作のログアウトと警告
  *
- * @param props.onExpire ログアウトする（IdP のログアウトへ移る）
+ * 操作がないまま IDLE_LIMIT_MS の時間がたつと onExpire でログアウトし、IDLE_WARNING_BEFORE_MS 前に警告のダイアログを表示する。
+ * ログインしているときだけ置く（ログインしていないときに動かさないため）。
  */
-export function IdleLogout({ onExpire }: { onExpire: () => void }) {
+export function IdleLogout({ onExpire }: Props) {
   const t = useTranslations('auth.idleWarning')
   const { warning, logoutAt, keepWorking } = useIdleLogout({ onExpire })
   return (

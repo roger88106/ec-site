@@ -1,13 +1,13 @@
 package com.ecsite.module.media.infrastructure.converter;
 
-import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.error.exception.SystemException;
-import com.ecsite.module.media.infrastructure.storage.S3ObjectStorage;
+import com.ecsite.module.media.domain.MediaErrorCode;
+import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -27,29 +28,69 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
- * 画像の変換の imgproxy の実装の、失敗のときの振る舞いのテスト（docs/03-機能仕様/media.md「アップロードの流れ」）。<br />
- * imgproxy の代わりに、テストの中の小さな HTTP サーバーが応答する。
+ * imgproxy の画像の変換の、失敗のときの振る舞いのテスト
+ *
+ * <p>imgproxy の代わりに、テストの中の小さな HTTP サーバーが応答する。
  * imgproxy が応答した（4xx と 500）ときは業務のエラー（変換の失敗）、imgproxy に届かない・時間の上限を超えたときは
- * 外部サービスのエラーになる。
+ * 外部サービスのエラーになる。本物の imgproxy での変換は {@code ImgproxyImageConverterTest} が確認する。
  */
 class ImgproxyImageConverterFailureTest {
 
+    // ============================== 定数 ==============================
+
     /**
-     * 正常に応答するサーバーを使うテストの、変換を待つ時間の上限。
-     * 負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
+     * 正常に応答するサーバーを使うテストの、変換を待つ時間の上限
+     *
+     * <p>負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
      */
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     /**
-     * 時間の上限を確認するテストの、変換を待つ時間の上限（応答しないサーバーを待つので短くする）
+     * 時間の上限を確認するテストの、変換を待つ時間の上限
+     *
+     * <p>応答しないサーバーを待つので短くする。
      */
     private static final Duration SHORT_TIMEOUT = Duration.ofMillis(300);
+
+    /**
+     * 署名の鍵（16 進数）
+     */
+    private static final String KEY = "0123456789abcdef";
+
+    /**
+     * 署名のソルト（16 進数）
+     */
+    private static final String SALT = "fedcba9876543210";
+
+    /**
+     * WebP の品質
+     */
+    private static final int QUALITY = 82;
+
+    /**
+     * アップロードのバケット
+     */
+    private static final String INCOMING_BUCKET = "incoming";
+
+    /**
+     * 変換するファイルの、アップロードのバケットのキー
+     */
+    private static final String UPLOAD_KEY = "scope/upload";
+
+    /**
+     * WebP の先頭のバイト
+     */
+    private static final byte[] WEBP = {'R', 'I', 'F', 'F', 4, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '};
+
+    /**
+     * PNG の先頭のバイト
+     */
+    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0, 0, 0, 0, 'I', 'H', 'D', 'R'};
 
     /**
      * imgproxy の代わりの HTTP サーバー
@@ -57,7 +98,9 @@ class ImgproxyImageConverterFailureTest {
     private HttpServer server;
 
     /**
-     * サーバーの応答の仕方（テストごとに決める）
+     * サーバーの応答の仕方
+     *
+     * <p>テストごとに決める。
      */
     private final AtomicReference<Responder> responder = new AtomicReference<>();
 
@@ -79,98 +122,160 @@ class ImgproxyImageConverterFailureTest {
         server.stop(0);
     }
 
-    @Test
-    @DisplayName("AC-297 imgproxy が 500 を返したら（壊れたファイルに 500 を返す）、変換の失敗になる")
-    void failsOnInternalError() {
-        responder.set(exchange -> send(exchange, 500, "Internal error"));
+    // ============================== テスト ==============================
 
-        assertConversionFailed(converter(baseUrl()));
-    }
+    @Nested
+    @DisplayName("変換できたとき")
+    class Converted {
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(ints = {502, 503, 504})
-    @DisplayName("AC-296 imgproxy に届かない（手前の代理が 502・503・504 を返す）なら、外部サービスのエラーになる")
-    void unavailableOnGatewayError(int status) {
-        responder.set(exchange -> send(exchange, status, "unavailable"));
+        @Test
+        @DisplayName("AC-68 imgproxy が 200 で WebP の本文を返したら、その本文を変換の結果にする")
+        void returnsWebpBody() {
+            // 準備：WebP を返す
+            responder.set(exchange -> sendBytes(exchange, "image/webp", WEBP));
 
-        assertServiceUnavailable(converter(baseUrl()));
-    }
-
-    @Test
-    @DisplayName("AC-68 imgproxy が 200 で WebP でない本文を返したら、Content-Type が WebP でも変換の失敗になる")
-    void failsWhenBodyIsNotWebp() {
-        byte[] png = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0, 0, 0, 0, 'I', 'H', 'D', 'R'};
-        responder.set(exchange -> sendBytes(exchange, "image/webp", png));
-
-        assertConversionFailed(converter(baseUrl()));
-    }
-
-    @Test
-    @DisplayName("imgproxy が 200 で WebP の本文を返したら、その本文を変換の結果にする")
-    void returnsWebpBody() {
-        byte[] webp = {'R', 'I', 'F', 'F', 4, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '};
-        responder.set(exchange -> sendBytes(exchange, "image/webp", webp));
-
-        assertThat(converter(baseUrl()).convertToWebp("scope/upload")).isEqualTo(webp);
-    }
-
-    @Test
-    @DisplayName("imgproxy には、アップロードのバケットのファイルを指す署名付きの URL でリクエストする")
-    void requestsSignedUrlOfUploadedFile() throws Exception {
-        byte[] webp = {'R', 'I', 'F', 'F', 4, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '};
-        var requested = new AtomicReference<String>();
-        responder.set(exchange -> {
-            requested.set(exchange.getRequestURI().getRawPath());
-            sendBytes(exchange, "image/webp", webp);
-        });
-
-        converter(baseUrl()).convertToWebp("scope/upload");
-
-        var source = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString("s3://incoming/scope/upload".getBytes(StandardCharsets.UTF_8));
-        var path = "/q:82/f:webp/" + source;
-        var hex = HexFormat.of();
-        var mac = Mac.getInstance("HmacSHA256");
-        mac.init(new SecretKeySpec(hex.parseHex("0123456789abcdef"), "HmacSHA256"));
-        mac.update(hex.parseHex("fedcba9876543210"));
-        mac.update(path.getBytes(StandardCharsets.UTF_8));
-        var signature = Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal());
-        assertThat(requested.get()).isEqualTo("/" + signature + path);
-    }
-
-    @Test
-    @DisplayName("AC-297 imgproxy がリクエストを断った（4xx）ら、変換の失敗になる")
-    void failsOnClientError() {
-        responder.set(exchange -> send(exchange, 422, "unprocessable"));
-
-        assertConversionFailed(converter(baseUrl()));
-    }
-
-    @Test
-    @DisplayName("AC-296 imgproxy の応答が時間の上限を超えたら、外部サービスのエラーになる")
-    void unavailableOnTimeout() {
-        responder.set(exchange -> {
-            // テストが終わるまで応答しない
-            awaitRelease();
-            send(exchange, 200, "late");
-        });
-
-        assertServiceUnavailable(converter(baseUrl(), SHORT_TIMEOUT));
-    }
-
-    @Test
-    @DisplayName("AC-296 imgproxy につながらなければ、外部サービスのエラーになる")
-    void unavailableWhenUnreachable() throws IOException {
-        URI unreachable;
-        try (var socket = new ServerSocket(0)) {
-            // 使っていないポート（閉じた後は、だれも待ち受けていない）
-            unreachable = URI.create("http://127.0.0.1:" + socket.getLocalPort());
+            // 操作と確認：返した本文のまま
+            assertThat(converter(baseUrl()).convertToWebp(UPLOAD_KEY)).isEqualTo(WEBP);
         }
 
-        assertServiceUnavailable(converter(unreachable));
+        @Test
+        @DisplayName("imgproxy には、アップロードのバケットのファイルを指す署名付きの URL でリクエストする")
+        void requestsSignedUrlOfUploadedFile() throws Exception {
+            // 準備：リクエストのパスを記録して、WebP を返す
+            var requested = new AtomicReference<String>();
+            responder.set(exchange -> {
+                requested.set(exchange.getRequestURI().getRawPath());
+                sendBytes(exchange, "image/webp", WEBP);
+            });
+
+            // 操作：変換する
+            converter(baseUrl()).convertToWebp(UPLOAD_KEY);
+
+            // 確認：設定の鍵とソルトで署名した、変換元を指すパス
+            assertThat(requested.get()).isEqualTo(expectedSignedPath());
+        }
     }
 
-    // ============================== 補助 ==============================
+    @Nested
+    @DisplayName("変換の失敗（業務のエラー）")
+    class ConversionFailure {
+
+        @Test
+        @DisplayName("AC-297 imgproxy が 500 を返したら（壊れたファイルに 500 を返す）、変換の失敗になる")
+        void failsOnInternalError() {
+            // 準備：500 を返す
+            responder.set(exchange -> send(exchange, 500, "Internal error"));
+
+            // 操作と確認：変換の失敗
+            assertConversionFailed(converter(baseUrl()));
+        }
+
+        @Test
+        @DisplayName("AC-297 imgproxy がリクエストを断った（4xx）ら、変換の失敗になる")
+        void failsOnClientError() {
+            // 準備：422 を返す
+            responder.set(exchange -> send(exchange, 422, "unprocessable"));
+
+            // 操作と確認：変換の失敗
+            assertConversionFailed(converter(baseUrl()));
+        }
+
+        @Test
+        @DisplayName("AC-68 imgproxy が 200 で WebP でない本文を返したら、Content-Type が WebP でも変換の失敗になる")
+        void failsWhenBodyIsNotWebp() {
+            // 準備：Content-Type だけ WebP にして、PNG を返す
+            responder.set(exchange -> sendBytes(exchange, "image/webp", PNG));
+
+            // 操作と確認：変換の失敗
+            assertConversionFailed(converter(baseUrl()));
+        }
+    }
+
+    @Nested
+    @DisplayName("imgproxy が使えない（外部サービスのエラー）")
+    class ServiceUnavailable {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {502, 503, 504})
+        @DisplayName("AC-296 imgproxy に届かない（手前の代理が中継のエラーを返す）なら、外部サービスのエラーになる")
+        void unavailableOnGatewayError(int status) {
+            // 準備：手前の代理の中継のエラーを返す
+            responder.set(exchange -> send(exchange, status, "unavailable"));
+
+            // 操作と確認：外部サービスのエラー
+            assertServiceUnavailable(converter(baseUrl()));
+        }
+
+        @Test
+        @DisplayName("AC-296 imgproxy の応答が時間の上限を超えたら、外部サービスのエラーになる")
+        void unavailableOnTimeout() {
+            // 準備：テストが終わるまで応答しない
+            responder.set(exchange -> {
+                awaitRelease();
+                send(exchange, 200, "late");
+            });
+
+            // 操作と確認：短い上限で待つと、外部サービスのエラー
+            assertServiceUnavailable(converter(baseUrl(), SHORT_TIMEOUT));
+        }
+
+        @Test
+        @DisplayName("AC-296 imgproxy につながらなければ、外部サービスのエラーになる")
+        void unavailableWhenUnreachable() throws IOException {
+            // 準備：使っていないポート（閉じた後は、だれも待ち受けていない）
+            URI unreachable;
+            try (var socket = new ServerSocket(0)) {
+                unreachable = URI.create("http://127.0.0.1:" + socket.getLocalPort());
+            }
+
+            // 操作と確認：外部サービスのエラー
+            assertServiceUnavailable(converter(unreachable));
+        }
+    }
+
+    // ============================== 確認の補助 ==============================
+
+    /**
+     * 変換が、業務のエラー（変換の失敗）になることを確認する。
+     *
+     * @param converter 変換の実装
+     */
+    private static void assertConversionFailed(ImgproxyImageConverter converter) {
+        assertBusinessError(() -> converter.convertToWebp(UPLOAD_KEY), MediaErrorCode.IMAGE_CONVERSION_FAILED);
+    }
+
+    /**
+     * 変換が、外部サービスのエラー（画像のサービスが使えない）になることを確認する。
+     *
+     * @param converter 変換の実装
+     */
+    private static void assertServiceUnavailable(ImgproxyImageConverter converter) {
+        assertSystemError(() -> converter.convertToWebp(UPLOAD_KEY), MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
+    }
+
+    /**
+     * imgproxy へのリクエストの、期待するパスを定数から作る。
+     *
+     * <p>変換の指定（品質、WebP）と、変換元（アップロードのバケットのキー）を URL セーフの Base64 にしたものを、
+     * 鍵とソルトの HMAC-SHA256 で署名し、署名を先頭に付ける。
+     *
+     * @return 署名を含むパス
+     * @throws GeneralSecurityException 署名を作れない
+     */
+    private static String expectedSignedPath() throws GeneralSecurityException {
+        var source = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(("s3://" + INCOMING_BUCKET + "/" + UPLOAD_KEY).getBytes(StandardCharsets.UTF_8));
+        var path = "/q:" + QUALITY + "/f:webp/" + source;
+        var hex = HexFormat.of();
+        var mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(hex.parseHex(KEY), "HmacSHA256"));
+        mac.update(hex.parseHex(SALT));
+        mac.update(path.getBytes(StandardCharsets.UTF_8));
+        var signature = Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal());
+        return "/" + signature + path;
+    }
+
+    // ============================== 準備の補助 ==============================
 
     /**
      * サーバーの応答の仕方
@@ -178,7 +283,7 @@ class ImgproxyImageConverterFailureTest {
     @FunctionalInterface
     private interface Responder {
         /**
-         * リクエストに応答する
+         * リクエストに応答する。
          *
          * @param exchange リクエストと応答
          * @throws IOException 応答を書けない
@@ -187,7 +292,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     /**
-     * テストのサーバーを呼ぶ変換の実装を作る
+     * テストのサーバーを呼ぶ変換の実装を作る。
      *
      * @param baseUrl imgproxy の URL
      * @return 変換の実装
@@ -197,43 +302,23 @@ class ImgproxyImageConverterFailureTest {
     }
 
     /**
-     * 変換を待つ時間の上限を指定して、テストのサーバーを呼ぶ変換の実装を作る
+     * 変換を待つ時間の上限を指定して、テストのサーバーを呼ぶ変換の実装を作る。
      *
      * @param baseUrl imgproxy の URL
      * @param timeout 変換を待つ時間の上限
      * @return 変換の実装
      */
     private static ImgproxyImageConverter converter(URI baseUrl, Duration timeout) {
-        var properties = new ImgproxyProperties(baseUrl, "0123456789abcdef", "fedcba9876543210", 82, timeout);
-        var storage = mock(S3ObjectStorage.class);
-        when(storage.uploadSourceUrl("scope/upload")).thenReturn("s3://incoming/scope/upload");
-        return new ImgproxyImageConverter(RestClient.builder(), properties, storage);
+        var properties = new ImgproxyProperties(baseUrl, KEY, SALT, QUALITY, timeout);
+        var storageProperties = new MediaStorageProperties(null, "us-east-1", true, null, null,
+                INCOMING_BUCKET, "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
+                Duration.ofSeconds(10), Duration.ofSeconds(30));
+        return new ImgproxyImageConverter(ImgproxyConfig.restClient(RestClient.builder(), properties), properties,
+                storageProperties);
     }
 
     /**
-     * 変換が、業務のエラー（変換の失敗）になることを確認する
-     *
-     * @param converter 変換の実装
-     */
-    private static void assertConversionFailed(ImgproxyImageConverter converter) {
-        assertThatThrownBy(() -> converter.convertToWebp("scope/upload"))
-                .isInstanceOfSatisfying(BusinessException.class, ex ->
-                        assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_CONVERSION_FAILED"));
-    }
-
-    /**
-     * 変換が、外部サービスのエラー（画像のサービスが使えない）になることを確認する
-     *
-     * @param converter 変換の実装
-     */
-    private static void assertServiceUnavailable(ImgproxyImageConverter converter) {
-        assertThatThrownBy(() -> converter.convertToWebp("scope/upload"))
-                .isInstanceOfSatisfying(SystemException.class, ex ->
-                        assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_SERVICE_UNAVAILABLE"));
-    }
-
-    /**
-     * テストのサーバーの URL
+     * テストのサーバーの URL を返す。
      *
      * @return URL
      */
@@ -242,7 +327,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     /**
-     * テストが終わるまで待つ
+     * テストが終わるまで待つ。
      */
     private void awaitRelease() {
         try {
@@ -253,7 +338,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     /**
-     * 応答を書く
+     * 応答を書く。
      *
      * @param exchange リクエストと応答
      * @param status   HTTP の状態

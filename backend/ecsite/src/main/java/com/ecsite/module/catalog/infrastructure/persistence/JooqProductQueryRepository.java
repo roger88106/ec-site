@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
 
@@ -53,10 +52,13 @@ class JooqProductQueryRepository implements ProductQueryRepository {
      */
     @Override
     public Optional<ProductDetailView> findDetailById(UUID id) {
-        return dsl.selectFrom(PRODUCT)
+        var axes = ProductParts.axes(PRODUCT.ID);
+        var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
+        var found = dsl.select(PRODUCT.asterisk(), axes, categoryIds)
+                .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
-                .fetchOptional()
-                .map(this::toDetail);
+                .fetchOptional();
+        return found.map(row -> toDetail(row.into(PRODUCT), List.of(row.get(axes)), List.of(row.get(categoryIds))));
     }
 
     /**
@@ -82,9 +84,9 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .limit(request.size())
                 .offset(request.offset())
                 .fetch(record -> new ProductSummaryView(
-                        record.value1(), record.value2(), record.value3(),
-                        AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.value4())),
-                        record.value5()));
+                        record.get(PRODUCT.ID), record.get(PRODUCT.PRODUCT_CODE), record.get(PRODUCT.NAME),
+                        RestoreGuard.restore("product", () -> PublicationStatus.valueOf(record.get(PRODUCT.STATUS))),
+                        record.get(variantCount)));
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }
@@ -92,7 +94,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * B 側の商品一覧の絞り込みの条件を作る（docs/03-機能仕様/catalog.md）。
+     * B 側の商品一覧の絞り込みの条件を作る。
      *
      * @param query 絞り込みの条件
      * @return 条件
@@ -121,37 +123,33 @@ class JooqProductQueryRepository implements ProductQueryRepository {
     }
 
     /**
-     * レコードから商品の詳細に変換する。商品の一部は別に取得する。
+     * レコードから商品の詳細に変換する。
      *
-     * @param record 商品のレコード
+     * <p>バリアントと画像は別に取得する。
+     *
+     * @param record      商品のレコード
+     * @param axes        軸の名前（並び順）
+     * @param categoryIds 所属カテゴリ ID（ID の順）
      * @return 商品の詳細（税込価格は空）
      */
-    private ProductDetailView toDetail(ProductRecord record) {
+    private ProductDetailView toDetail(ProductRecord record, List<String> axes, List<UUID> categoryIds) {
         var id = record.getId();
 
-        var axes = ProductParts.axes(dsl, id);
-
-        var categoryIds = dsl.select(PRODUCT_CATEGORY.CATEGORY_ID)
-                .from(PRODUCT_CATEGORY)
-                .where(PRODUCT_CATEGORY.PRODUCT_ID.eq(id))
-                .orderBy(PRODUCT_CATEGORY.CATEGORY_ID)
-                .fetch(PRODUCT_CATEGORY.CATEGORY_ID);
-
-        var axisValuesByVariant = ProductParts.axisValuesByVariant(dsl, id);
-
-        var variants = dsl.selectFrom(VARIANT)
+        var axisValues = ProductParts.axisValues(VARIANT.ID);
+        var variants = dsl.select(VARIANT.asterisk(), axisValues)
+                .from(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(id))
-                .orderBy(VARIANT.DISPLAY_ORDER)
-                .fetch(variant -> new ProductDetailView.VariantView(
-                        variant.getId(),
-                        variant.getVariantCode(),
-                        axisValuesByVariant.getOrDefault(variant.getId(), List.of()),
-                        variant.getSalesSuspended(),
-                        variant.getImageId()));
+                .orderBy(VARIANT.DISPLAY_ORDER, VARIANT.ID)
+                .fetch(row -> new ProductDetailView.VariantView(
+                        row.get(VARIANT.ID),
+                        row.get(VARIANT.VARIANT_CODE),
+                        List.of(row.get(axisValues)),
+                        row.get(VARIANT.SALES_SUSPENDED),
+                        row.get(VARIANT.IMAGE_ID)));
 
         var imageRecords = dsl.selectFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
-                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
+                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.ID)
                 .fetch();
         var urls = mediaDirectory.urls(imageRecords.map(ProductImageRecord::getAssetId));
         var images = imageRecords.map(image -> new ProductDetailView.ImageView(image.getId(), urls.get(image.getAssetId())));
@@ -166,13 +164,13 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 null,
                 categoryIds,
                 axes,
-                AggregateGuards.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
+                RestoreGuard.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
                 record.getFirstShownAt(),
                 record.getPublishStart(),
                 record.getPublishEnd(),
                 images,
                 variants,
-                // できる操作は現在時刻で決まるので、クエリサービスが決める
+                // できる操作は現在時刻で決まるので、ここでは決めない
                 null,
                 record.getVersion(),
                 record.getCreatedAt(),

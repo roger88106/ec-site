@@ -1,7 +1,7 @@
 package com.ecsite.config;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.TestcontainersConfig;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.config.TestcontainersConfig;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
 import org.junit.jupiter.api.AfterAll;
@@ -32,16 +32,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 本番の jar の起動の統合テスト（バックエンドのアーキテクチャの「公開ネットワークへのデプロイの前提」）。<br />
- * 本番の jar には、ローカルの設定ファイルが入らない。ローカルの設定から物流の mock フラグだけを除いて渡し、
- * 本番の jar を別のプロセスで起動して、起動に成功し、物流の mock の画面が見つからないことを確認する。
+ * 本番の jar の起動の統合テスト
+ *
+ * <p>バックエンドのアーキテクチャの「公開ネットワークへのデプロイの前提」に対応する。
+ * 本番の jar には、ローカルの設定ファイルが入らない。
+ *
+ * <p>ローカルの設定から物流の mock フラグだけを除いて渡し、本番の jar を別のプロセスで起動して、
+ * 起動に成功し、物流の mock の画面が見つからないことを確認する。
  * jar の中にローカルの設定が入っていてフラグが読まれれば、画面のエンドポイントができて 404 でなくなり、このテストが失敗する。
- * Spring のコンテキストを 1 つのテストの中で作るテストでは、Bean を作る順と設定の読み方が本番の jar と違い、確認できないため。
+ *
+ * <p>別のプロセスで起動する理由：Spring のコンテキストを 1 つのテストの中で作るテストでは、
+ * Bean を作る順と設定の読み方が本番の jar と違い、確認できないため。
  */
 class ProductionJarStartupTest {
 
+    // ============================== 定数 ==============================
+
     /**
-     * 起動を待つ時間の上限。Spring の起動を別のプロセスで待つので、非同期のリスナーのタイムアウトより長く待つ
+     * 起動を待つ時間の上限
+     *
+     * <p>Spring の起動を別のプロセスで待つので、非同期のリスナーのタイムアウトより長く待つ。
      */
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
 
@@ -54,6 +64,8 @@ class ProductionJarStartupTest {
      * リダイレクトを追わない HTTP クライアント
      */
     private static final HttpClient HTTP = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+
+    // ============================== 起動した本番の jar ==============================
 
     /**
      * ローカルの設定とログを置くディレクトリ
@@ -87,7 +99,7 @@ class ProductionJarStartupTest {
         businessPort = freePort();
         var managementPort = freePort();
 
-        var command = new ArrayList<>(List.of(javaCommand(), "-jar", System.getProperty("ecsite.boot-jar"),
+        var command = List.of(javaCommand(), "-jar", System.getProperty("ecsite.boot-jar"),
                 "--spring.profiles.active=local",
                 "--spring.config.additional-location=" + dir.toAbsolutePath().toUri(),
                 "--spring.datasource.url=" + postgres.getJdbcUrl(),
@@ -96,7 +108,7 @@ class ProductionJarStartupTest {
                 // 確認する URL は DB を使わないので、マイグレーションと seed は適用しない（起動の時間を短くするため）
                 "--spring.flyway.enabled=false",
                 "--server.port=" + businessPort,
-                "--management.server.port=" + managementPort));
+                "--management.server.port=" + managementPort);
         process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(logFile().toFile()).start();
 
         try {
@@ -122,21 +134,32 @@ class ProductionJarStartupTest {
         }
     }
 
-    @Test
-    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の画面の GET と通知の操作の POST は 404 になる")
-    void mockCarrierPageIsNotFound() throws Exception {
-        assertThat(send(HttpRequest.newBuilder(businessUri("/mock-carrier")).GET()).statusCode())
-                .as("画面の GET").isEqualTo(404);
+    // ============================== テスト ==============================
 
+    @Test
+    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の画面の GET は 404 になる")
+    void mockCarrierPageIsNotFound() throws Exception {
+        // 操作と確認：画面を開くと、見つからない
+        assertThat(send(HttpRequest.newBuilder(businessUri("/mock-carrier")).GET()).statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の通知の操作の POST は 404 になる")
+    void mockCarrierNotifyIsNotFound() throws Exception {
+        // 準備：通知の操作のリクエスト
         var notify = HttpRequest.newBuilder(businessUri("/mock-carrier/orders/" + UUID.randomUUID() + "/notify"))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString("status=RETURNED"));
-        assertThat(send(notify).statusCode()).as("通知の操作の POST").isEqualTo(404);
+
+        // 操作と確認：送ると、見つからない
+        assertThat(send(notify).statusCode()).isEqualTo(404);
     }
 
     @Test
     @DisplayName("AC-410-2 物流のフラグを立てずに起動すると、物流サービスに接続していないことを、フラグの名前と一緒に警告のログに 1 回出力する")
     void warnsOnceAboutUnconnectedCarrier() throws IOException {
+        // 確認：起動の出力のうち、フラグの名前を含む警告が 1 行だけで、接続していないことを伝える
+        // （本番の jar は別のプロセスで動くので、ログはプロセスの出力から読む）
         assertThat(readLog().lines())
                 .filteredOn(line -> line.contains("WARN") && line.contains(SHIPPING_MOCK_FLAG))
                 .singleElement()
@@ -147,17 +170,22 @@ class ProductionJarStartupTest {
     @Test
     @DisplayName("物流のフラグを立てないときも、通知のエンドポイントは残り、署名のない POST を 401 で拒否する")
     void carrierWebhookRejectsUnsignedPost() throws Exception {
+        // 操作：署名のない通知を送る
         var response = send(HttpRequest.newBuilder(businessUri("/api/webhooks/carrier"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{}")));
 
+        // 確認：401 で、本文が空。認可で拒否された 401 は本文（Problem Details）を持つので、本文が空なら、エンドポイントの署名の確認で拒否された
         assertThat(response.statusCode()).isEqualTo(401);
-        // 認可で拒否された 401 は本文（Problem Details）を持つ。本文が空なら、エンドポイントの署名の確認で拒否された
         assertThat(response.body()).isEmpty();
     }
 
+    // ============================== 準備の補助 ==============================
+
     /**
-     * 運用ポートの準備の完了を確認する。接続できない間は、まだ準備ができていないとみなす。
+     * 運用ポートの準備の完了を確認する。
+     *
+     * <p>接続できない間は、まだ準備ができていないとみなす。
      *
      * @param managementPort 運用ポート
      * @return 準備ができていれば true

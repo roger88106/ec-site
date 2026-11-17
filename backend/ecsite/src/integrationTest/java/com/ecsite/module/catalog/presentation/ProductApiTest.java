@@ -1,70 +1,159 @@
 package com.ecsite.module.catalog.presentation;
 
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.MutableClock;
-import com.ecsite.TestClockConfig;
-import com.jayway.jsonpath.JsonPath;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.http.TestJson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.ecsite.module.catalog.presentation.ProductRequests.BASE;
+import static com.ecsite.module.catalog.presentation.ProductRequests.productJson;
+import static com.ecsite.module.catalog.presentation.ProductRequests.updateJson;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品 API の受け入れテスト。<br />
- * 現在時刻は {@link MutableClock} で 2026-10-08 00:00（日本時間）に固定する。
- * 税区分（標準 10%、軽減 8%、有効な税率のない税区分）は、テストごとに税区分 API で作る。テストごとにロールバックする。
+ * 商品 API の受け入れテスト（商品の登録・取得・編集）
+ *
+ * <p>バリアントは {@link ProductVariantApiTest}、公開・非公開・販売終了・削除・公開期間は {@link ProductStatusApiTest} が確認する。
+ *
+ * <p>現在時刻は {@link MutableClock} で固定する。税区分（標準 10%、軽減 8%、有効な税率のない税区分）とカテゴリは、
+ * テストごとに作る。テストごとにロールバックする。
+ *
+ * <p>準備のデータと確認の期待値は、同じ定数から作る（準備した物から期待値を取り出さない）。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 @Transactional
 class ProductApiTest {
 
-    /**
-     * API のパス
-     */
-    private static final String BASE = "/api/admin/products";
+    // ============================== 定数 ==============================
 
     /**
      * 存在しない ID
      */
-    private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
+    private static final UUID UNKNOWN_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     /**
-     * 現在：2026-10-08 00:00（日本時間）
-     */
-    private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
-
-    /**
-     * 有効な税率がない税区分の税率が有効になる日時：2027-04-01 00:00（日本時間）
+     * 有効な税率がない税区分の税率が有効になる日時
+     *
+     * <p>日本時間の 2027-04-01 00:00。
      */
     private static final Instant NOT_YET_EFFECTIVE_FROM = OffsetDateTime.parse("2027-04-01T00:00:00+09:00").toInstant();
+
+    /**
+     * 登録する商品の品番
+     */
+    private static final String PRODUCT_CODE = "ABC-001";
+
+    /**
+     * 登録する商品の商品名
+     */
+    private static final String NAME = "T シャツ";
+
+    /**
+     * 登録する商品の説明
+     */
+    private static final String DESCRIPTION = "綿 100%";
+
+    /**
+     * 登録する商品の税抜価格（円）
+     */
+    private static final int PRICE_EXCL_TAX = 1000;
+
+    /**
+     * 登録する商品の税込価格（円）
+     *
+     * <p>標準の税率 10% で計算したもの。
+     */
+    private static final int PRICE_INCL_TAX = 1100;
+
+    /**
+     * 色の軸
+     */
+    private static final String AXIS_COLOR = "色";
+
+    /**
+     * サイズの軸
+     */
+    private static final String AXIS_SIZE = "サイズ";
+
+    /**
+     * 素材の軸
+     */
+    private static final String AXIS_MATERIAL = "素材";
+
+    /**
+     * 編集後の商品名
+     */
+    private static final String NEW_NAME = "ポロシャツ";
+
+    /**
+     * 編集後の説明
+     */
+    private static final String NEW_DESCRIPTION = "綿 50%";
+
+    /**
+     * 編集後の税抜価格（円）
+     */
+    private static final int NEW_PRICE_EXCL_TAX = 2000;
+
+    /**
+     * 編集後の税込価格（円）
+     *
+     * <p>標準の税率 10% で計算したもの。
+     */
+    private static final int NEW_PRICE_INCL_TAX = 2200;
+
+    /**
+     * 軽減の税区分に変えた後の税込価格（円）
+     *
+     * <p>税抜価格 1,000 円を、軽減の税率 8% で計算したもの。
+     */
+    private static final int REDUCED_PRICE_INCL_TAX = 1080;
+
+    /**
+     * 商品名の上限（文字）
+     */
+    private static final int NAME_MAX_LENGTH = 200;
+
+    /**
+     * 説明の上限（文字）
+     */
+    private static final int DESCRIPTION_MAX_LENGTH = 10_000;
+
+    /**
+     * 軸の名前の上限（文字）
+     */
+    private static final int AXIS_NAME_MAX_LENGTH = 30;
+
+    /**
+     * 商品品番の上限（文字）
+     */
+    private static final int CODE_MAX_LENGTH = 32;
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -73,20 +162,35 @@ class ProductApiTest {
     MutableClock clock;
 
     /**
-     * 標準（10%）
+     * 税率のキャッシュを捨てるときに渡す、アプリのコンテキスト
+     */
+    @Autowired
+    ApplicationContext context;
+
+    /**
+     * 標準
+     *
+     * <p>税率は 10%。
      */
     private String standard;
 
     /**
-     * 軽減（8%）
+     * 軽減
+     *
+     * <p>税率は 8%。
      */
     private String reduced;
 
     /**
-     * 有効な税率がない（2027-04-01 から 10%）
+     * 有効な税率がまだない税区分
+     *
+     * <p>2027-04-01 から 10%。
      */
     private String notYetEffective;
 
+    /**
+     * 衣類のカテゴリ
+     */
     private String clothing;
 
     /**
@@ -94,205 +198,214 @@ class ProductApiTest {
      */
     private CatalogTestData catalog;
 
+    /**
+     * 商品 API を呼ぶ補助
+     */
+    private ProductRequests products;
+
     @BeforeEach
     void setUp() throws Exception {
-        clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
-        standard = catalog.taxCategory("標準", "10").toString();
+        standard = catalog.taxCategory("標準 " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         reduced = catalog.taxCategory("軽減", "8").toString();
         notYetEffective = catalog.taxCategory("将来", "10", NOT_YET_EFFECTIVE_FROM).toString();
-        clothing = catalog.category("衣類", null).toString();
+        clothing = catalog.category("衣類 " + UUID.randomUUID(), null).toString();
+        products = new ProductRequests(mockMvc, standard);
     }
 
+    // ============================== テスト ==============================
+
     @Nested
-    @DisplayName("AC-6、13、14、15、16、17、25 商品の登録")
+    @DisplayName("商品の登録")
     class Create {
 
         @Test
-        @DisplayName("AC-13、17 指定した内容で登録され、非公開になる。Location の URL で詳細を取得できる")
-        void createsAndGetsByLocation() throws Exception {
-            var result = createProduct("""
-                    {"productCode": "ABC-001", "name": "T シャツ", "description": "綿 100%%",
-                     "taxCategoryId": "%s", "priceExclTax": 1000,
-                     "categoryIds": ["%s"], "axes": ["色", "サイズ"]}""".formatted(standard, clothing))
+        @DisplayName("AC-13 登録すると 201 で、Location の URL で登録した商品を取得できる")
+        void createsWithLocation() throws Exception {
+            // 操作と確認：201 で、Location が商品の URL
+            var result = products.create(fullProductJson())
                     .andExpect(status().isCreated())
                     .andExpect(header().string(HttpHeaders.LOCATION, matchesPattern(".*" + BASE + "/[0-9a-f-]{36}")))
                     .andReturn();
-            String id = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+            var id = TestJson.createdId(result.getResponse().getContentAsString());
 
+            // 確認：Location の URL で、本文の ID の商品を取得できる
             mockMvc.perform(get(result.getResponse().getHeader(HttpHeaders.LOCATION)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(id))
-                    .andExpect(jsonPath("$.productCode").value("ABC-001"))
-                    .andExpect(jsonPath("$.name").value("T シャツ"))
-                    .andExpect(jsonPath("$.description").value("綿 100%"))
-                    .andExpect(jsonPath("$.taxCategoryId").value(standard))
-                    .andExpect(jsonPath("$.priceExclTax").value(1000))
-                    .andExpect(jsonPath("$.priceInclTax").value(1100))
-                    .andExpect(jsonPath("$.categoryIds", contains(clothing)))
-                    .andExpect(jsonPath("$.axes", contains("色", "サイズ")))
-                    .andExpect(jsonPath("$.status").value("UNPUBLISHED"))
-                    .andExpect(jsonPath("$.firstShownAt").value(nullValue()))
-                    .andExpect(jsonPath("$.variants").isEmpty())
-                    .andExpect(jsonPath("$.version").value(0))
+                    .andExpect(jsonPath("$.id").value(id.toString()));
+        }
+
+        @Test
+        @DisplayName("AC-13 指定した内容で登録される")
+        void createsWithSpecifiedContent() throws Exception {
+            // 操作：全ての項目を指定して登録する
+            var id = products.createdId(fullProductJson());
+
+            // 確認：詳細の項目が、指定した内容と同じ
+            assertSpecifiedContent(products.getProduct(id), standard, clothing);
+        }
+
+        @Test
+        @DisplayName("登録直後の商品は、バリアントを持たない")
+        void startsWithoutVariants() throws Exception {
+            // 操作：商品を登録する
+            var id = products.createdId(fullProductJson());
+
+            // 確認：バリアントがない
+            products.getProduct(id).andExpect(jsonPath("$.variants").isEmpty());
+        }
+
+        @Test
+        @DisplayName("登録直後の商品は、バージョンが 0")
+        void startsAtVersionZero() throws Exception {
+            // 操作：商品を登録する
+            var id = products.createdId(fullProductJson());
+
+            // 確認：バージョンが 0
+            products.getProduct(id).andExpect(jsonPath("$.version").value(0));
+        }
+
+        @Test
+        @DisplayName("登録直後の商品は、登録日時と更新日時を持つ")
+        void startsWithTimestamps() throws Exception {
+            // 操作：商品を登録する
+            var id = products.createdId(fullProductJson());
+
+            // 確認：登録日時と更新日時がある
+            products.getProduct(id)
                     .andExpect(jsonPath("$.createdAt").isString())
                     .andExpect(jsonPath("$.updatedAt").isString());
         }
 
         @Test
+        @DisplayName("AC-17 登録直後の商品は非公開で、初回表示日時を持たない")
+        void startsUnpublished() throws Exception {
+            // 操作：商品を登録する
+            var id = products.createdId(fullProductJson());
+
+            // 確認：非公開で、C 側に表示されたことがない
+            products.getProduct(id)
+                    .andExpect(jsonPath("$.status").value("UNPUBLISHED"))
+                    .andExpect(jsonPath("$.firstShownAt").value(nullValue()));
+        }
+
+        @Test
         @DisplayName("AC-13 所属カテゴリと軸は省略でき、空になる")
         void createsWithoutCategoriesAndAxes() throws Exception {
-            var id = productId("ABC-001");
+            // 操作：所属カテゴリと軸を省いて登録する
+            var id = products.product(PRODUCT_CODE);
 
-            getProduct(id)
+            // 確認：所属カテゴリと軸が空
+            products.getProduct(id)
                     .andExpect(jsonPath("$.categoryIds").isEmpty())
                     .andExpect(jsonPath("$.axes").isEmpty());
         }
 
         @Test
-        @DisplayName("AC-14 商品品番が重複すれば 409")
-        void rejectsDuplicatedProductCode() throws Exception {
-            productId("ABC-001");
+        @DisplayName("AC-13 所属カテゴリを複数指定できる")
+        void createsWithMultipleCategories() throws Exception {
+            // 準備：衣類のほかに、もう 1 つのカテゴリ
+            var food = catalog.category("食品 " + UUID.randomUUID(), null).toString();
 
-            createProduct(productJson("ABC-001", standard, 1000))
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("PRODUCT_CODE_ALREADY_EXISTS"));
+            // 操作：2 つのカテゴリを指定して登録する
+            var id = products.createdId("""
+                    {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
+                     "priceExclTax": %d, "categoryIds": ["%s", "%s"]}"""
+                    .formatted(PRODUCT_CODE, NAME, standard, PRICE_EXCL_TAX, clothing, food));
+
+            // 確認：両方のカテゴリに所属する
+            products.getProduct(id).andExpect(jsonPath("$.categoryIds", containsInAnyOrder(clothing, food)));
         }
 
         @Test
-        @DisplayName("AC-15 商品品番の形式が違えば 400（英小文字、先頭・末尾・連続のハイフン）")
-        void rejectsInvalidProductCode() throws Exception {
-            for (var code : new String[]{"abc-001", "-ABC", "ABC-", "ABC--1"}) {
-                createProduct(productJson(code, standard, 1000))
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
-            }
-        }
+        @DisplayName("AC-13 軸は 3 つまで指定できる")
+        void createsWithThreeAxes() throws Exception {
+            // 操作：軸を 3 つ指定して登録する
+            var id = products.product(PRODUCT_CODE, AXIS_COLOR, AXIS_SIZE, AXIS_MATERIAL);
 
-        @Test
-        @DisplayName("AC-16 税区分がなければ 400")
-        void rejectsMissingTaxCategory() throws Exception {
-            createProduct("""
-                    {"productCode": "ABC-001", "name": "T シャツ", "description": "", "priceExclTax": 1000}""")
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
-        }
-
-        @Test
-        @DisplayName("AC-6 現時点で有効な税率のない税区分は 400。存在しない税区分も 400")
-        void rejectsTaxCategoryWithoutCurrentRate() throws Exception {
-            createProduct(productJson("ABC-001", notYetEffective, 1000))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
-            createProduct(productJson("ABC-001", UNKNOWN_ID, 1000))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
-        }
-
-        @Test
-        @DisplayName("AC-25 税抜価格が 1 円未満なら 400")
-        void rejectsPriceLessThanOneYen() throws Exception {
-            createProduct(productJson("ABC-001", standard, 0))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
-        }
-
-        @Test
-        @DisplayName("AC-25 税抜価格が 9,999,999 円を超えれば 400。9,999,999 円は登録できる")
-        void rejectsPriceOverMaximum() throws Exception {
-            createProduct(productJson("ABC-001", standard, 10_000_000))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
-            createProduct(productJson("ABC-002", standard, Long.MAX_VALUE)).andExpect(status().isBadRequest());
-
-            createProduct(productJson("ABC-003", standard, 9_999_999)).andExpect(status().isCreated());
+            // 確認：3 つの軸を、指定した順に持つ
+            products.getProduct(id).andExpect(jsonPath("$.axes", contains(AXIS_COLOR, AXIS_SIZE, AXIS_MATERIAL)));
         }
 
         @Test
         @DisplayName("AC-13 軸が 4 つ以上なら 400")
         void rejectsFourAxes() throws Exception {
-            createProduct("""
-                    {"productCode": "ABC-001", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                     "priceExclTax": 1000, "axes": ["色", "サイズ", "素材", "柄"]}""".formatted(standard))
+            // 操作と確認：軸を 4 つ指定すると、リクエストの誤りで拒否される
+            products.create("""
+                            {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
+                             "priceExclTax": %d, "axes": ["%s", "%s", "%s", "柄"]}"""
+                            .formatted(PRODUCT_CODE, NAME, standard, PRICE_EXCL_TAX, AXIS_COLOR, AXIS_SIZE, AXIS_MATERIAL))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test
-        @DisplayName("存在しないカテゴリを指定すれば 400")
-        void rejectsUnknownCategory() throws Exception {
-            createProduct("""
-                    {"productCode": "ABC-001", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                     "priceExclTax": 1000, "categoryIds": ["%s"]}""".formatted(standard, UNKNOWN_ID))
+        @DisplayName("AC-14 商品品番が重複すれば 409")
+        void rejectsDuplicatedProductCode() throws Exception {
+            // 準備：同じ品番の商品
+            products.product(PRODUCT_CODE);
+
+            // 操作と確認：同じ品番での登録は、重複で拒否される
+            products.create(productJson(PRODUCT_CODE, standard, PRICE_EXCL_TAX))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.errorCode").value("PRODUCT_CODE_ALREADY_EXISTS"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"abc-001", "-ABC", "ABC-", "ABC--1"})
+        @DisplayName("AC-15 商品品番の形式が違えば 400")
+        void rejectsInvalidProductCode(String code) throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(productJson(code, standard, PRICE_EXCL_TAX))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ID"));
-        }
-    }
-
-    @Nested
-    @DisplayName("取得")
-    class Get {
-
-        @Test
-        @DisplayName("存在しない ID は 404")
-        void returnsNotFound() throws Exception {
-            getProduct(UNKNOWN_ID)
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
-        }
-    }
-
-    @Nested
-    @DisplayName("AC-6、18、19、25、26 商品の編集")
-    class Update {
-
-        @Test
-        @DisplayName("AC-18、26 商品名、説明、税区分、税抜価格、所属カテゴリを変更でき、バージョンが上がる。価格の変更は税込価格に反映される")
-        void updates() throws Exception {
-            var id = productId("ABC-001");
-
-            updateProduct(id, """
-                    {"name": "ポロシャツ", "description": "綿 50%%", "taxCategoryId": "%s", "priceExclTax": 2000,
-                     "categoryIds": ["%s"], "version": 0}""".formatted(standard, clothing))
-                    .andExpect(status().isNoContent());
-
-            getProduct(id)
-                    .andExpect(jsonPath("$.productCode").value("ABC-001"))
-                    .andExpect(jsonPath("$.name").value("ポロシャツ"))
-                    .andExpect(jsonPath("$.description").value("綿 50%"))
-                    .andExpect(jsonPath("$.priceExclTax").value(2000))
-                    .andExpect(jsonPath("$.priceInclTax").value(2200))
-                    .andExpect(jsonPath("$.categoryIds", contains(clothing)))
-                    .andExpect(jsonPath("$.version").value(1));
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test
-        @DisplayName("AC-19 税区分を変えると、税込価格が変更後の税率で計算される")
-        void recalculatesPriceInclTaxWithNewTaxCategory() throws Exception {
-            var id = productId("ABC-001");
-            getProduct(id).andExpect(jsonPath("$.priceInclTax").value(1100));
-
-            updateProduct(id, updateJson(reduced, 1000, 0)).andExpect(status().isNoContent());
-
-            getProduct(id).andExpect(jsonPath("$.priceInclTax").value(1080));
+        @DisplayName("AC-16 税区分がなければ 400")
+        void rejectsMissingTaxCategory() throws Exception {
+            // 操作と確認：税区分を省くと、リクエストの誤りで拒否される
+            products.create("""
+                            {"productCode": "%s", "name": "%s", "description": "", "priceExclTax": %d}"""
+                            .formatted(PRODUCT_CODE, NAME, PRICE_EXCL_TAX))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test
-        @DisplayName("AC-6 現時点で有効な税率のない税区分に変えると 400")
+        @DisplayName("AC-6 現時点で有効な税率のない税区分は 400")
         void rejectsTaxCategoryWithoutCurrentRate() throws Exception {
-            var id = productId("ABC-001");
-
-            updateProduct(id, updateJson(notYetEffective, 1000, 0))
+            // 操作と確認：割り当てられない税区分として拒否される
+            products.create(productJson(PRODUCT_CODE, notYetEffective, PRICE_EXCL_TAX))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
         }
 
         @Test
+        @DisplayName("AC-6 存在しない税区分は 400")
+        void rejectsUnknownTaxCategory() throws Exception {
+            // 操作と確認：割り当てられない税区分として拒否される
+            products.create(productJson(PRODUCT_CODE, UNKNOWN_ID.toString(), PRICE_EXCL_TAX))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(longs = {1, 9_999_999})
+        @DisplayName("AC-25 税抜価格が範囲の端なら、その値で登録できる")
+        void acceptsPriceAtBoundary(long price) throws Exception {
+            // 操作：登録する
+            var id = products.createdId(productJson(PRODUCT_CODE, standard, price));
+
+            // 確認：送った税抜価格で保存される
+            products.getProduct(id).andExpect(jsonPath("$.priceExclTax").value(price));
+        }
+
+        @Test
         @DisplayName("AC-25 税抜価格が 1 円未満なら 400")
         void rejectsPriceLessThanOneYen() throws Exception {
-            var id = productId("ABC-001");
-
-            updateProduct(id, updateJson(standard, 0, 0))
+            // 操作と確認：0 円は、リクエストの誤りで拒否される
+            products.create(productJson(PRODUCT_CODE, standard, 0))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
@@ -300,9 +413,369 @@ class ProductApiTest {
         @Test
         @DisplayName("AC-25 税抜価格が 9,999,999 円を超えれば 400")
         void rejectsPriceOverMaximum() throws Exception {
-            var id = productId("ABC-001");
+            // 操作と確認：10,000,000 円は、リクエストの誤りで拒否される
+            products.create(productJson(PRODUCT_CODE, standard, 10_000_000))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
 
-            updateProduct(id, updateJson(standard, 10_000_000, 0))
+        @Test
+        @DisplayName("AC-25 税抜価格が long の上限でも、500 でなく 400")
+        void rejectsPriceAtLongMaximum() throws Exception {
+            // 操作と確認：拒否される
+            products.create(productJson(PRODUCT_CODE, standard, Long.MAX_VALUE)).andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("存在しないカテゴリを指定すれば 400")
+        void rejectsUnknownCategory() throws Exception {
+            // 操作と確認：カテゴリの誤りで拒否される
+            products.create("""
+                            {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
+                             "priceExclTax": %d, "categoryIds": ["%s"]}"""
+                            .formatted(PRODUCT_CODE, NAME, standard, PRICE_EXCL_TAX, UNKNOWN_ID))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ID"));
+        }
+    }
+
+    @Nested
+    @DisplayName("登録の入力の範囲")
+    class CreateRanges {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, NAME_MAX_LENGTH})
+        @DisplayName("商品名が範囲の端の文字数なら、その値で登録できる")
+        void acceptsNameAtBoundary(int length) throws Exception {
+            // 操作：登録する
+            var id = products.createdId(createJson(PRODUCT_CODE, "あ".repeat(length), "", AXIS_COLOR));
+
+            // 確認：送った商品名で保存される
+            products.getProduct(id).andExpect(jsonPath("$.name").value("あ".repeat(length)));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, NAME_MAX_LENGTH + 1})
+        @DisplayName("商品名が範囲の外の文字数なら 400")
+        void rejectsNameOutOfRange(int length) throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson(PRODUCT_CODE, "あ".repeat(length), "", AXIS_COLOR))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, DESCRIPTION_MAX_LENGTH})
+        @DisplayName("説明が範囲の端の文字数なら、その値で登録できる")
+        void acceptsDescriptionAtBoundary(int length) throws Exception {
+            // 操作：登録する
+            var id = products.createdId(createJson(PRODUCT_CODE, NAME, "あ".repeat(length), AXIS_COLOR));
+
+            // 確認：送った説明で保存される
+            products.getProduct(id).andExpect(jsonPath("$.description").value("あ".repeat(length)));
+        }
+
+        @Test
+        @DisplayName("説明が上限を 1 文字超えれば 400")
+        void rejectsDescriptionOverMaximum() throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson(PRODUCT_CODE, NAME, "あ".repeat(DESCRIPTION_MAX_LENGTH + 1), AXIS_COLOR))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, AXIS_NAME_MAX_LENGTH})
+        @DisplayName("軸の名前が範囲の端の文字数なら、その値で登録できる")
+        void acceptsAxisNameAtBoundary(int length) throws Exception {
+            // 操作：登録する
+            var id = products.createdId(createJson(PRODUCT_CODE, NAME, "", "あ".repeat(length)));
+
+            // 確認：送った軸の名前で保存される
+            products.getProduct(id).andExpect(jsonPath("$.axes", contains("あ".repeat(length))));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, AXIS_NAME_MAX_LENGTH + 1})
+        @DisplayName("軸の名前が範囲の外の文字数なら 400")
+        void rejectsAxisNameOutOfRange(int length) throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson(PRODUCT_CODE, NAME, "", "あ".repeat(length)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, CODE_MAX_LENGTH})
+        @DisplayName("商品品番が範囲の端の文字数なら、その値で登録できる")
+        void acceptsProductCodeAtBoundary(int length) throws Exception {
+            // 操作：登録する
+            var id = products.createdId(createJson("A".repeat(length), NAME, "", AXIS_COLOR));
+
+            // 確認：送った商品品番で保存される
+            products.getProduct(id).andExpect(jsonPath("$.productCode").value("A".repeat(length)));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, CODE_MAX_LENGTH + 1})
+        @DisplayName("商品品番が範囲の外の文字数なら 400")
+        void rejectsProductCodeOutOfRange(int length) throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create(createJson("A".repeat(length), NAME, "", AXIS_COLOR))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+    }
+
+    @Nested
+    @DisplayName("編集の入力の範囲")
+    class UpdateRanges {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {1, NAME_MAX_LENGTH})
+        @DisplayName("商品名が範囲の端の文字数なら、その値に編集できる")
+        void acceptsNameAtBoundary(int length) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：編集する
+            products.update(id, nameAndDescriptionJson("あ".repeat(length), "")).andExpect(status().isNoContent());
+
+            // 確認：送った商品名で保存される
+            products.getProduct(id).andExpect(jsonPath("$.name").value("あ".repeat(length)));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, NAME_MAX_LENGTH + 1})
+        @DisplayName("商品名が範囲の外の文字数なら 400")
+        void rejectsNameOutOfRange(int length) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.update(id, nameAndDescriptionJson("あ".repeat(length), ""))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {0, DESCRIPTION_MAX_LENGTH})
+        @DisplayName("説明が範囲の端の文字数なら、その値に編集できる")
+        void acceptsDescriptionAtBoundary(int length) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：編集する
+            products.update(id, nameAndDescriptionJson(NAME, "あ".repeat(length))).andExpect(status().isNoContent());
+
+            // 確認：送った説明で保存される
+            products.getProduct(id).andExpect(jsonPath("$.description").value("あ".repeat(length)));
+        }
+
+        @Test
+        @DisplayName("説明が上限を 1 文字超えれば 400")
+        void rejectsDescriptionOverMaximum() throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.update(id, nameAndDescriptionJson(NAME, "あ".repeat(DESCRIPTION_MAX_LENGTH + 1)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(longs = {1, 9_999_999})
+        @DisplayName("AC-25 税抜価格が範囲の端なら、その値に編集できる")
+        void acceptsPriceAtBoundary(long price) throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：編集する
+            products.update(id, updateJson(standard, price, 0)).andExpect(status().isNoContent());
+
+            // 確認：送った税抜価格で保存される
+            products.getProduct(id).andExpect(jsonPath("$.priceExclTax").value(price));
+        }
+    }
+
+    @Nested
+    @DisplayName("商品の取得")
+    class Get {
+
+        @Test
+        @DisplayName("存在しない ID は 404")
+        void returnsNotFound() throws Exception {
+            // 操作と確認：見つからない
+            products.getProduct(UNKNOWN_ID)
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
+        }
+
+        @Test
+        @DisplayName("有効な税率のない税区分の商品も取得でき、税込価格は空")
+        void returnsNoPriceInclTaxWithoutTaxRate() throws Exception {
+            // 準備：税区分に今は有効な税率がない商品
+            var id = productBeforeRateStarts();
+
+            // 操作と確認：200 で、税抜価格はあり、税込価格は空
+            products.getProduct(id)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.priceExclTax").value(PRICE_EXCL_TAX))
+                    .andExpect(jsonPath("$.priceInclTax").value(nullValue()));
+        }
+    }
+
+    @Nested
+    @DisplayName("商品の編集")
+    class Update {
+
+        @Test
+        @DisplayName("AC-18 商品名・説明・税抜価格・所属カテゴリを変更できる")
+        void updatesFields() throws Exception {
+            // 準備：所属カテゴリのない商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：商品名・説明・税抜価格・所属カテゴリを変えて編集する
+            updateProduct(id).andExpect(status().isNoContent());
+
+            // 確認：詳細の項目が、編集した内容と同じ
+            assertUpdatedContent(products.getProduct(id), clothing);
+        }
+
+        @Test
+        @DisplayName("AC-18 税区分を変更できる")
+        void updatesTaxCategory() throws Exception {
+            // 準備：標準の税区分の商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：軽減の税区分に変える
+            products.update(id, updateJson(reduced, PRICE_EXCL_TAX, 0)).andExpect(status().isNoContent());
+
+            // 確認：税区分が軽減
+            products.getProduct(id).andExpect(jsonPath("$.taxCategoryId").value(reduced));
+        }
+
+        @Test
+        @DisplayName("AC-15 編集しても、商品品番は変わらない")
+        void keepsProductCode() throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：編集する
+            updateProduct(id).andExpect(status().isNoContent());
+
+            // 確認：品番は登録したまま
+            products.getProduct(id).andExpect(jsonPath("$.productCode").value(PRODUCT_CODE));
+        }
+
+        @Test
+        @DisplayName("税抜価格を変えると、税込価格が変わる")
+        void recalculatesPriceInclTax() throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：税抜価格を変えて編集する
+            updateProduct(id).andExpect(status().isNoContent());
+
+            // 確認：税込価格が、変えた後の税抜価格から計算される
+            products.getProduct(id).andExpect(jsonPath("$.priceInclTax").value(NEW_PRICE_INCL_TAX));
+        }
+
+        @Test
+        @DisplayName("編集すると、バージョンが上がる")
+        void incrementsVersion() throws Exception {
+            // 準備：バージョン 0 の商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作：編集する
+            updateProduct(id).andExpect(status().isNoContent());
+
+            // 確認：バージョンが 1
+            products.getProduct(id).andExpect(jsonPath("$.version").value(1));
+        }
+
+        @Test
+        @DisplayName("AC-19 税区分を変えると、税込価格が変更後の税率で計算される")
+        void recalculatesPriceInclTaxWithNewTaxCategory() throws Exception {
+            // 準備：標準の税区分の商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 確認（前提）：税込価格が標準の税率で計算されている
+            products.getProduct(id).andExpect(jsonPath("$.priceInclTax").value(PRICE_INCL_TAX));
+
+            // 操作：税抜価格を変えずに、軽減の税区分に変える
+            products.update(id, updateJson(reduced, PRICE_EXCL_TAX, 0)).andExpect(status().isNoContent());
+
+            // 確認：税込価格が軽減の税率で計算される
+            products.getProduct(id).andExpect(jsonPath("$.priceInclTax").value(REDUCED_PRICE_INCL_TAX));
+        }
+
+        @Test
+        @DisplayName("AC-6 現時点で有効な税率のない税区分に変えると 400")
+        void rejectsTaxCategoryWithoutCurrentRate() throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：割り当てられない税区分として拒否される
+            products.update(id, updateJson(notYetEffective, PRICE_EXCL_TAX, 0))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("TAX_CATEGORY_NOT_ASSIGNABLE"));
+        }
+
+        @Test
+        @DisplayName("AC-6 税区分に今は有効な税率がなくても、税区分を変えない編集はできる")
+        void updatesWithoutChangingTaxCategoryWithoutCurrentRate() throws Exception {
+            // 準備：税区分に今は有効な税率がない商品
+            var id = productBeforeRateStarts();
+
+            // 操作：税区分を変えずに、税抜価格を変えて編集する
+            products.update(id, updateJson(notYetEffective, NEW_PRICE_EXCL_TAX, 0)).andExpect(status().isNoContent());
+
+            // 確認：税抜価格が変わる
+            products.getProduct(id).andExpect(jsonPath("$.priceExclTax").value(NEW_PRICE_EXCL_TAX));
+        }
+
+        @Test
+        @DisplayName("存在しないカテゴリを指定すると 400 で、商品は変わらない")
+        void rejectsUnknownCategoryOnUpdate() throws Exception {
+            // 準備：所属カテゴリのない商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：カテゴリの誤りで拒否される
+            products.update(id, """
+                            {"name": "%s", "description": "", "taxCategoryId": "%s", "priceExclTax": %d,
+                             "categoryIds": ["%s"], "version": 0}""".formatted(NEW_NAME, standard, NEW_PRICE_EXCL_TAX, UNKNOWN_ID))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ID"));
+
+            // 確認：商品名・所属カテゴリ・バージョンは変わらない
+            products.getProduct(id)
+                    .andExpect(jsonPath("$.name").value(ProductRequests.DEFAULT_NAME))
+                    .andExpect(jsonPath("$.categoryIds").isEmpty())
+                    .andExpect(jsonPath("$.version").value(0));
+        }
+
+        @Test
+        @DisplayName("AC-25 税抜価格が 1 円未満なら 400")
+        void rejectsPriceLessThanOneYen() throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：0 円は、リクエストの誤りで拒否される
+            products.update(id, updateJson(standard, 0, 0))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
+        @DisplayName("AC-25 税抜価格が 9,999,999 円を超えれば 400")
+        void rejectsPriceOverMaximum() throws Exception {
+            // 準備：商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：10,000,000 円は、リクエストの誤りで拒否される
+            products.update(id, updateJson(standard, 10_000_000, 0))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
@@ -310,10 +783,12 @@ class ProductApiTest {
         @Test
         @DisplayName("取得時のバージョンと一致しなければ 409")
         void rejectsVersionMismatch() throws Exception {
-            var id = productId("ABC-001");
-            updateProduct(id, updateJson(standard, 2000, 0)).andExpect(status().isNoContent());
+            // 準備：1 回編集して、バージョンが 1 になった商品
+            var id = products.product(PRODUCT_CODE);
+            products.update(id, updateJson(standard, 2000, 0)).andExpect(status().isNoContent());
 
-            updateProduct(id, updateJson(standard, 3000, 0))
+            // 操作と確認：古いバージョン 0 での編集は、競合で拒否される
+            products.update(id, updateJson(standard, 3000, 0))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("CONCURRENT_MODIFICATION"));
         }
@@ -321,557 +796,177 @@ class ProductApiTest {
         @Test
         @DisplayName("存在しない商品は 404")
         void rejectsUnknownProduct() throws Exception {
-            updateProduct(UNKNOWN_ID, updateJson(standard, 1000, 0))
+            // 操作と確認：見つからない
+            products.update(UNKNOWN_ID, updateJson(standard, PRICE_EXCL_TAX, 0))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
         }
     }
 
     @Nested
-    @DisplayName("AC-20、21、22、23、24、27、71 バリアント")
-    class Variants {
-
-        @Test
-        @DisplayName("AC-20、276 品番と軸の値で登録でき、本文で ID が返る。Location は作ったバリアントの URL")
-        void addsVariant() throws Exception {
-            var id = productId("ABC-001", "色", "サイズ");
-
-            var result = addVariant(id, "ABC-001-WH-M", 0, "白", "M")
-                    .andExpect(status().isCreated())
-                    .andReturn();
-            String variantId = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
-            assertThat(result.getResponse().getHeader(HttpHeaders.LOCATION))
-                    .endsWith("/api/admin/products/" + id + "/variants/" + variantId);
-
-            getProduct(id)
-                    .andExpect(jsonPath("$.variants[0].id").value(variantId))
-                    .andExpect(jsonPath("$.variants[0].variantCode").value("ABC-001-WH-M"))
-                    .andExpect(jsonPath("$.variants[0].axisValues", contains("白", "M")))
-                    .andExpect(jsonPath("$.variants[0].salesSuspended").value(false))
-                    .andExpect(jsonPath("$.version").value(1));
-        }
-
-        @Test
-        @DisplayName("AC-21 バリアント品番が別の商品と重複すれば 409")
-        void rejectsDuplicatedVariantCode() throws Exception {
-            var first = productId("ABC-001");
-            addVariant(first, "V1", 0).andExpect(status().isCreated());
-            var second = productId("ABC-002");
-
-            addVariant(second, "V1", 0)
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("VARIANT_CODE_ALREADY_EXISTS"));
-        }
-
-        @Test
-        @DisplayName("AC-21 バリアント品番の形式が違えば 400")
-        void rejectsInvalidVariantCode() throws Exception {
-            var id = productId("ABC-001");
-
-            addVariant(id, "v-1", 0)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
-        }
-
-        @Test
-        @DisplayName("AC-22 すべての軸の値を持たなければ 400")
-        void rejectsMissingAxisValue() throws Exception {
-            var id = productId("ABC-001", "色", "サイズ");
-
-            addVariant(id, "V1", 0, "白")
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_AXIS_VALUES"));
-        }
-
-        @Test
-        @DisplayName("AC-23 軸の値の組み合わせが重複すれば 409")
-        void rejectsDuplicatedAxisValues() throws Exception {
-            var id = productId("ABC-001", "色", "サイズ");
-            addVariant(id, "V1", 0, "白", "M").andExpect(status().isCreated());
-
-            addVariant(id, "V2", 1, "白", "M")
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("VARIANT_AXIS_VALUES_ALREADY_EXISTS"));
-        }
-
-        @Test
-        @DisplayName("AC-24 軸のない商品のバリアントは 1 つだけ。2 つ目は 400")
-        void rejectsSecondVariantWithoutAxes() throws Exception {
-            var id = productId("ABC-001");
-            addVariant(id, "V1", 0).andExpect(status().isCreated());
-
-            addVariant(id, "V2", 1)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("SINGLE_VARIANT_ONLY"));
-        }
-
-        @Test
-        @DisplayName("AC-27 表示順を変更できる。過不足があれば 400")
-        void reordersVariants() throws Exception {
-            var id = productId("ABC-001", "色");
-            var white = variantId(id, "V-WH", 0, "白");
-            var black = variantId(id, "V-BK", 1, "黒");
-
-            reorderVariants(id, 2, black, white).andExpect(status().isNoContent());
-            getProduct(id)
-                    .andExpect(jsonPath("$.variants[*].id", contains(black, white)))
-                    .andExpect(jsonPath("$.version").value(3));
-
-            reorderVariants(id, 3, black)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_VARIANT_ORDER"));
-        }
-
-        @Test
-        @DisplayName("AC-269 削除できない商品は削除できない理由（C 側に表示されたこと）を返し、削除できる商品は理由を省く")
-        void returnsDeleteBlockedReason() throws Exception {
-            var id = productId("ABC-001", "色");
-            variantId(id, "V-WH", 0, "白");
-
-            getProduct(id)
-                    .andExpect(jsonPath("$.actions.delete").value(true))
-                    .andExpect(jsonPath("$.actions.deleteBlockedReason").doesNotExist());
-
-            publish(id).andExpect(status().isNoContent());
-            getProduct(id)
-                    .andExpect(jsonPath("$.actions.delete").value(false))
-                    .andExpect(jsonPath("$.actions.deleteBlockedReason").value("ALREADY_SHOWN"));
-        }
-
-        @Test
-        @DisplayName("AC-71 C 側に表示されていない商品のバリアントは削除できる")
-        void deletesVariantOfNeverShownProduct() throws Exception {
-            var id = productId("ABC-001", "色");
-            var white = variantId(id, "V-WH", 0, "白");
-
-            deleteVariant(id, white, 1).andExpect(status().isNoContent());
-
-            getProduct(id).andExpect(jsonPath("$.variants").isEmpty());
-        }
-
-        @Test
-        @DisplayName("AC-71 表示されたことのある商品のバリアントは削除できず 400")
-        void rejectsDeletingVariantOfShownProduct() throws Exception {
-            var id = productId("ABC-001", "色");
-            var white = variantId(id, "V-WH", 0, "白");
-            variantId(id, "V-BK", 1, "黒");
-            publish(id).andExpect(status().isNoContent());
-            unpublish(id).andExpect(status().isNoContent());
-
-            deleteVariant(id, white, 4)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("PRODUCT_ALREADY_SHOWN"));
-        }
-
-        @Test
-        @DisplayName("存在しないバリアントの削除は 404")
-        void rejectsUnknownVariant() throws Exception {
-            var id = productId("ABC-001");
-
-            deleteVariant(id, UNKNOWN_ID, 0)
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
-        }
-
-        @Test
-        @DisplayName("登録・削除・並び替えで、バージョンが一致しなければ 409")
-        void rejectsVersionMismatch() throws Exception {
-            var id = productId("ABC-001", "色");
-            var white = variantId(id, "V-WH", 0, "白");
-
-            addVariant(id, "V-BK", 0, "黒")
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("CONCURRENT_MODIFICATION"));
-            reorderVariants(id, 0, white)
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("CONCURRENT_MODIFICATION"));
-            deleteVariant(id, white, 0)
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("CONCURRENT_MODIFICATION"));
-        }
-
-        @Test
-        @DisplayName("存在しない商品へのバリアントの登録は 404")
-        void rejectsUnknownProduct() throws Exception {
-            addVariant(UNKNOWN_ID, "V1", 0)
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
-        }
-    }
-
-    @Nested
-    @DisplayName("AC-29、30、31、32、33 公開・非公開・販売終了・削除")
-    class Status {
-
-        @Test
-        @DisplayName("AC-29 公開でき、初回表示日時が記録される。同じ状態への切り替えは 204 で、何も変わらない")
-        void publishes() throws Exception {
-            var id = productWithVariant("ABC-001");
-
-            publish(id).andExpect(status().isNoContent());
-            getProduct(id)
-                    .andExpect(jsonPath("$.status").value("PUBLISHED"))
-                    .andExpect(jsonPath("$.firstShownAt").value("2026-10-07T15:00:00Z"))
-                    .andExpect(jsonPath("$.version").value(2));
-
-            publish(id).andExpect(status().isNoContent());
-            getProduct(id).andExpect(jsonPath("$.version").value(2));
-        }
-
-        @Test
-        @DisplayName("AC-31 バリアントのない商品は公開できず 400")
-        void rejectsPublishingWithoutVariants() throws Exception {
-            var id = productId("ABC-001");
-
-            publish(id)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("PRODUCT_HAS_NO_VARIANTS"));
-        }
-
-        @Test
-        @DisplayName("AC-30 非公開にできる。すでに非公開なら 204")
-        void unpublishes() throws Exception {
-            var id = productWithVariant("ABC-001");
-            unpublish(id).andExpect(status().isNoContent());
-            publish(id).andExpect(status().isNoContent());
-
-            unpublish(id).andExpect(status().isNoContent());
-
-            getProduct(id).andExpect(jsonPath("$.status").value("UNPUBLISHED"));
-        }
-
-        @Test
-        @DisplayName("AC-32 販売終了にでき、販売終了からは公開にも非公開にも戻せず 400。すでに販売終了なら 204")
-        void discontinues() throws Exception {
-            var id = productWithVariant("ABC-001");
-            publish(id).andExpect(status().isNoContent());
-
-            discontinue(id).andExpect(status().isNoContent());
-            discontinue(id).andExpect(status().isNoContent());
-
-            getProduct(id).andExpect(jsonPath("$.status").value("DISCONTINUED"));
-            publish(id)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("PRODUCT_DISCONTINUED"));
-            unpublish(id)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("PRODUCT_DISCONTINUED"));
-        }
-
-        @Test
-        @DisplayName("存在しない商品の状態の切り替えは 404")
-        void rejectsUnknownProduct() throws Exception {
-            publish(UNKNOWN_ID)
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
-        }
-
-        @Test
-        @DisplayName("AC-33 C 側に一度も表示されていない商品は削除できる")
-        void deletesNeverShownProduct() throws Exception {
-            var id = productWithVariant("ABC-001");
-
-            deleteProduct(id, 1).andExpect(status().isNoContent());
-
-            getProduct(id).andExpect(status().isNotFound());
-        }
-
-        @Test
-        @DisplayName("AC-33 表示されたことのある商品は削除できず 400")
-        void rejectsDeletingShownProduct() throws Exception {
-            var id = productWithVariant("ABC-001");
-            publish(id).andExpect(status().isNoContent());
-            discontinue(id).andExpect(status().isNoContent());
-
-            deleteProduct(id, 3)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("PRODUCT_ALREADY_SHOWN"));
-        }
-
-        @Test
-        @DisplayName("商品の削除で、バージョンが一致しなければ 409")
-        void rejectsDeletingWithVersionMismatch() throws Exception {
-            var id = productWithVariant("ABC-001");
-
-            deleteProduct(id, 0)
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("CONCURRENT_MODIFICATION"));
-        }
-    }
-
-    @Nested
-    @DisplayName("AC-34、35、36 公開期間")
-    class PublicationPeriod {
-
-        @Test
-        @DisplayName("AC-34 公開開始・終了日時を設定でき、詳細に出て、バージョンが上がる。空にもできる")
-        void setsPeriod() throws Exception {
-            var id = productWithVariant("ABC-001");
-
-            setPeriod(id, "\"2026-10-10T00:00:00+09:00\"", "\"2026-10-20T00:00:00+09:00\"", 1)
-                    .andExpect(status().isNoContent());
-            getProduct(id)
-                    .andExpect(jsonPath("$.publishStart").value("2026-10-09T15:00:00Z"))
-                    .andExpect(jsonPath("$.publishEnd").value("2026-10-19T15:00:00Z"))
-                    .andExpect(jsonPath("$.version").value(2));
-
-            setPeriod(id, "null", "null", 2).andExpect(status().isNoContent());
-            getProduct(id)
-                    .andExpect(jsonPath("$.publishStart").doesNotExist())
-                    .andExpect(jsonPath("$.publishEnd").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("公開中に開始日時を未来にすると、初回表示日時がその日時になり、C 側に表示されていない扱いになる")
-        void reschedulesFirstShownAt() throws Exception {
-            var id = productWithVariant("ABC-001");
-            setPeriod(id, "\"2026-10-10T00:00:00+09:00\"", "null", 1).andExpect(status().isNoContent());
-
-            publish(id).andExpect(status().isNoContent());
-
-            getProduct(id).andExpect(jsonPath("$.firstShownAt").value("2026-10-09T15:00:00Z"));
-            // 表示前なので、予約を取り消せば削除できる
-            unpublish(id).andExpect(status().isNoContent());
-            deleteProduct(id, 4).andExpect(status().isNoContent());
-        }
-
-        @Test
-        @DisplayName("AC-36 終了日時が開始日時より後でなければ 400")
-        void rejectsEndNotAfterStart() throws Exception {
-            var id = productWithVariant("ABC-001");
-
-            setPeriod(id, "\"2026-10-10T00:00:00+09:00\"", "\"2026-10-10T00:00:00+09:00\"", 1)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_PUBLICATION_PERIOD"));
-        }
-
-        @Test
-        @DisplayName("取得時のバージョンと一致しなければ 409。存在しない商品は 404")
-        void rejectsStaleVersionAndUnknownProduct() throws Exception {
-            var id = productWithVariant("ABC-001");
-
-            setPeriod(id, "null", "null", 0)
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errorCode").value("CONCURRENT_MODIFICATION"));
-            setPeriod(UNKNOWN_ID, "null", "null", 0).andExpect(status().isNotFound());
-        }
-    }
-
-    @Nested
-    @DisplayName("AC-28 バリアントの販売停止")
-    class SalesSuspension {
-
-        @Test
-        @DisplayName("AC-28 販売停止・解除でき、バージョンが上がる。同じ状態への切り替えは 204 で、何も変わらない")
-        void suspendsAndResumes() throws Exception {
-            var id = productWithVariant("ABC-001");
-            var variantId = JsonPath.<String>read(getProduct(id).andReturn().getResponse().getContentAsString(),
-                    "$.variants[0].id");
-
-            suspend(id, variantId).andExpect(status().isNoContent());
-            getProduct(id)
-                    .andExpect(jsonPath("$.variants[0].salesSuspended").value(true))
-                    .andExpect(jsonPath("$.version").value(2));
-
-            suspend(id, variantId).andExpect(status().isNoContent());
-            getProduct(id).andExpect(jsonPath("$.version").value(2));
-
-            resume(id, variantId).andExpect(status().isNoContent());
-            getProduct(id)
-                    .andExpect(jsonPath("$.variants[0].salesSuspended").value(false))
-                    .andExpect(jsonPath("$.version").value(3));
-        }
-
-        @Test
-        @DisplayName("存在しない商品・バリアントは 404")
-        void rejectsUnknown() throws Exception {
-            var id = productWithVariant("ABC-001");
-
-            suspend(UNKNOWN_ID, UNKNOWN_ID).andExpect(status().isNotFound());
-            suspend(id, UNKNOWN_ID)
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
-            resume(id, UNKNOWN_ID).andExpect(status().isNotFound());
-        }
-    }
-
-    @Nested
-    @DisplayName("AC-12 商品が所属しているカテゴリ")
+    @DisplayName("商品が所属しているカテゴリの削除")
     class AssignedCategory {
 
         @Test
-        @DisplayName("AC-12 商品が所属しているカテゴリは削除できず 400。所属を外せば削除できる")
+        @DisplayName("AC-12 商品が所属しているカテゴリは削除できず 400")
         void rejectsDeletingCategoryWithProducts() throws Exception {
-            var id = createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
-                    {"productCode": "ABC-001", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                     "priceExclTax": 1000, "categoryIds": ["%s"]}""".formatted(standard, clothing)));
+            // 準備：衣類に所属する商品
+            productInClothing();
 
+            // 操作と確認：衣類の削除は、商品があるので拒否される
             mockMvc.perform(delete("/api/admin/categories/" + clothing))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("CATEGORY_HAS_PRODUCTS"));
+        }
 
-            updateProduct(id, updateJson(standard, 1000, 0)).andExpect(status().isNoContent());
+        @Test
+        @DisplayName("AC-12 商品の所属を外せば、カテゴリを削除できる")
+        void deletesCategoryAfterUnassigning() throws Exception {
+            // 準備：衣類に所属していた商品を、編集で所属から外す
+            var id = productInClothing();
+            products.update(id, updateJson(standard, PRICE_EXCL_TAX, 0)).andExpect(status().isNoContent());
+
+            // 操作と確認：衣類を削除できる
             mockMvc.perform(delete("/api/admin/categories/" + clothing)).andExpect(status().isNoContent());
         }
     }
 
-    // ============================== 補助 ==============================
-    // 商品とバリアントの登録は、このテストが確認する API なので、品番・本文・応答をここで扱う。税区分とカテゴリは CatalogTestData で作る
+    // ============================== 確認の補助 ==============================
 
     /**
-     * リクエストを送って 201 を確認し、応答の本文の ID を返す
+     * 詳細が、{@link #fullProductJson()} で指定した内容であることを確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *   <li>商品品番</li>
+     *   <li>商品名</li>
+     *   <li>説明</li>
+     *   <li>税区分</li>
+     *   <li>税抜価格</li>
+     *   <li>税込価格（標準の税率で計算したもの）</li>
+     *   <li>所属カテゴリ</li>
+     *   <li>軸（並びを含む）</li>
+     * </ul>
+     *
+     * @param detail        商品の詳細の応答
+     * @param taxCategoryId 指定した税区分の ID（テストごとに作るので、定数にできない）
+     * @param categoryId    指定したカテゴリの ID（テストごとに作るので、定数にできない）
      */
-    private String createdId(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
-        var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+    private static void assertSpecifiedContent(ResultActions detail, String taxCategoryId, String categoryId) throws Exception {
+        detail.andExpect(jsonPath("$.productCode").value(PRODUCT_CODE))
+                .andExpect(jsonPath("$.name").value(NAME))
+                .andExpect(jsonPath("$.description").value(DESCRIPTION))
+                .andExpect(jsonPath("$.taxCategoryId").value(taxCategoryId))
+                .andExpect(jsonPath("$.priceExclTax").value(PRICE_EXCL_TAX))
+                .andExpect(jsonPath("$.priceInclTax").value(PRICE_INCL_TAX))
+                .andExpect(jsonPath("$.categoryIds", contains(categoryId)))
+                .andExpect(jsonPath("$.axes", contains(AXIS_COLOR, AXIS_SIZE)));
     }
 
     /**
-     * 商品の登録の本文（軸なし、所属カテゴリなし）
+     * 詳細が、{@link #updateProduct(UUID)} で編集した内容であることを確認する。
+     *
+     * <p>確認すること（期待値は定数）：
+     * <ul>
+     *   <li>商品名</li>
+     *   <li>説明</li>
+     *   <li>税抜価格</li>
+     *   <li>所属カテゴリ</li>
+     * </ul>
+     *
+     * @param detail     商品の詳細の応答
+     * @param categoryId 編集で指定したカテゴリの ID（テストごとに作るので、定数にできない）
      */
-    private String productJson(String code, String taxCategoryId, long price) {
-        return """
-                {"productCode": "%s", "name": "T シャツ", "description": "", "taxCategoryId": "%s", "priceExclTax": %d}"""
-                .formatted(code, taxCategoryId, price);
+    private static void assertUpdatedContent(ResultActions detail, String categoryId) throws Exception {
+        detail.andExpect(jsonPath("$.name").value(NEW_NAME))
+                .andExpect(jsonPath("$.description").value(NEW_DESCRIPTION))
+                .andExpect(jsonPath("$.priceExclTax").value(NEW_PRICE_EXCL_TAX))
+                .andExpect(jsonPath("$.categoryIds", contains(categoryId)));
     }
 
-    /**
-     * 商品の編集の本文（所属カテゴリなし）
-     */
-    private String updateJson(String taxCategoryId, long price, long version) {
-        return """
-                {"name": "T シャツ", "description": "", "taxCategoryId": "%s", "priceExclTax": %d,
-                 "categoryIds": [], "version": %d}""".formatted(taxCategoryId, price, version);
-    }
+    // ============================== 準備の補助 ==============================
 
     /**
-     * 商品を登録する
+     * 有効な税率がまだない税区分の商品を登録し、その税区分に今は有効な税率がない状態にする。
+     *
+     * <p>最後の税率は無期限なので、商品を登録した後に有効な税率がなくなるのは、最初の税率の開始より前の時刻だけ。
+     * そこで、税率の開始の時刻に商品を登録した後、時計を開始の 1 秒前に戻して、税率のキャッシュを捨てる。
+     *
+     * @return 商品 ID
      */
-    private ResultActions createProduct(String json) throws Exception {
-        return mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(json));
-    }
-
-    /**
-     * 標準の税区分で商品を登録して、その ID を返す
-     */
-    private String productId(String code, String... axes) throws Exception {
-        var axesJson = Arrays.stream(axes).map("\"%s\""::formatted).collect(Collectors.joining(", "));
-        return createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
-                {"productCode": "%s", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                 "priceExclTax": 1000, "axes": [%s]}""".formatted(code, standard, axesJson)));
-    }
-
-    /**
-     * 軸がなく、バリアントを 1 つ持つ非公開の商品（バージョン 1）
-     */
-    private String productWithVariant(String code) throws Exception {
-        var id = productId(code);
-        addVariant(id, code + "-V", 0).andExpect(status().isCreated());
+    private UUID productBeforeRateStarts() throws Exception {
+        clock.setInstant(NOT_YET_EFFECTIVE_FROM);
+        var id = products.createdId(productJson(PRODUCT_CODE, notYetEffective, PRICE_EXCL_TAX));
+        catalog.rewindBeforeRateStart(NOT_YET_EFFECTIVE_FROM, context);
         return id;
     }
 
     /**
-     * 商品の詳細を取得する
+     * 全ての項目を指定した、商品の登録の本文を作る。
+     *
+     * <p>標準の税区分、衣類のカテゴリ、色とサイズの軸。
+     *
+     * @return 本文
      */
-    private ResultActions getProduct(String id) throws Exception {
-        return mockMvc.perform(get(BASE + "/" + id));
+    private String fullProductJson() {
+        return """
+                {"productCode": "%s", "name": "%s", "description": "%s", "taxCategoryId": "%s", "priceExclTax": %d,
+                 "categoryIds": ["%s"], "axes": ["%s", "%s"]}"""
+                .formatted(PRODUCT_CODE, NAME, DESCRIPTION, standard, PRICE_EXCL_TAX, clothing, AXIS_COLOR, AXIS_SIZE);
     }
 
     /**
-     * 商品を編集する
+     * 品番・商品名・説明・軸を指定した、商品の登録の本文を作る（標準の税区分、所属カテゴリなし）。
+     *
+     * @param code        商品品番
+     * @param name        商品名
+     * @param description 説明
+     * @param axis        軸の名前（1 つ）
+     * @return 本文
      */
-    private ResultActions updateProduct(String id, String json) throws Exception {
-        return mockMvc.perform(put(BASE + "/" + id).contentType(MediaType.APPLICATION_JSON).content(json));
+    private String createJson(String code, String name, String description, String axis) {
+        return """
+                {"productCode": "%s", "name": "%s", "description": "%s", "taxCategoryId": "%s", "priceExclTax": %d,
+                 "axes": ["%s"]}"""
+                .formatted(code, name, description, standard, PRICE_EXCL_TAX, axis);
     }
 
     /**
-     * 商品を削除する
+     * バージョン 0 の商品の、商品名と説明を指定した編集の本文を作る（標準の税区分、所属カテゴリなし）。
+     *
+     * @param name        商品名
+     * @param description 説明
+     * @return 本文
      */
-    private ResultActions deleteProduct(String id, long version) throws Exception {
-        return mockMvc.perform(delete(BASE + "/" + id).param("version", String.valueOf(version)));
+    private String nameAndDescriptionJson(String name, String description) {
+        return """
+                {"name": "%s", "description": "%s", "taxCategoryId": "%s", "priceExclTax": %d,
+                 "categoryIds": [], "version": 0}""".formatted(name, description, standard, PRICE_EXCL_TAX);
     }
 
     /**
-     * バリアントを登録する
+     * バージョン 0 の商品を、商品名・説明・税抜価格・所属カテゴリを変えて編集する。
+     *
+     * <p>税区分は標準のまま、所属カテゴリは衣類にする。
+     *
+     * @param id 商品 ID
+     * @return 応答
      */
-    private ResultActions addVariant(String productId, String code, long version, String... axisValues) throws Exception {
-        var values = Arrays.stream(axisValues).map("\"%s\""::formatted).collect(Collectors.joining(", "));
-        return mockMvc.perform(post(BASE + "/" + productId + "/variants")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"variantCode": "%s", "axisValues": [%s], "version": %d}""".formatted(code, values, version)));
+    private ResultActions updateProduct(UUID id) throws Exception {
+        return products.update(id, """
+                {"name": "%s", "description": "%s", "taxCategoryId": "%s", "priceExclTax": %d,
+                 "categoryIds": ["%s"], "version": 0}"""
+                .formatted(NEW_NAME, NEW_DESCRIPTION, standard, NEW_PRICE_EXCL_TAX, clothing));
     }
 
     /**
-     * バリアントを登録して、その ID を返す
+     * 衣類に所属する商品を登録する。
+     *
+     * @return 商品 ID
      */
-    private String variantId(String productId, String code, long version, String... axisValues) throws Exception {
-        var body = addVariant(productId, code, version, axisValues)
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
-    }
-
-    /**
-     * バリアントを、指定した順に並び替える
-     */
-    private ResultActions reorderVariants(String productId, long version, String... variantIds) throws Exception {
-        var ids = Arrays.stream(variantIds).map("\"%s\""::formatted).collect(Collectors.joining(", "));
-        return mockMvc.perform(put(BASE + "/" + productId + "/variants/order")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"variantIds": [%s], "version": %d}""".formatted(ids, version)));
-    }
-
-    /**
-     * バリアントを削除する
-     */
-    private ResultActions deleteVariant(String productId, String variantId, long version) throws Exception {
-        return mockMvc.perform(delete(BASE + "/" + productId + "/variants/" + variantId)
-                .param("version", String.valueOf(version)));
-    }
-
-    /**
-     * 商品を公開する
-     */
-    private ResultActions publish(String id) throws Exception {
-        return mockMvc.perform(put(BASE + "/" + id + "/publish"));
-    }
-
-    /**
-     * 商品を非公開にする
-     */
-    private ResultActions unpublish(String id) throws Exception {
-        return mockMvc.perform(put(BASE + "/" + id + "/unpublish"));
-    }
-
-    /**
-     * 商品を販売終了にする
-     */
-    private ResultActions discontinue(String id) throws Exception {
-        return mockMvc.perform(put(BASE + "/" + id + "/discontinue"));
-    }
-
-    /**
-     * 公開期間を設定する。日時は JSON の値（文字列か null）で渡す
-     */
-    private ResultActions setPeriod(String id, String publishStart, String publishEnd, long version) throws Exception {
-        return mockMvc.perform(put(BASE + "/" + id + "/publication-period")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"publishStart": %s, "publishEnd": %s, "version": %d}""".formatted(publishStart, publishEnd, version)));
-    }
-
-    /**
-     * バリアントを販売停止にする
-     */
-    private ResultActions suspend(String productId, String variantId) throws Exception {
-        return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/suspend"));
-    }
-
-    /**
-     * バリアントの販売停止を解除する
-     */
-    private ResultActions resume(String productId, String variantId) throws Exception {
-        return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/resume"));
+    private UUID productInClothing() throws Exception {
+        return products.createdId("""
+                {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
+                 "priceExclTax": %d, "categoryIds": ["%s"]}""".formatted(PRODUCT_CODE, NAME, standard, PRICE_EXCL_TAX, clothing));
     }
 }

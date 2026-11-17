@@ -1,36 +1,33 @@
 // 文書の Mermaid の図（```mermaid、~~~mermaid のコードブロック）が、mermaid-cli で描画できることを確認する（判定の区分：誤りの防止。構文の誤りの検査）。
-// 目的：GitHub は構文の誤りのある図を「Unable to render」と表示するだけで、push して画面を見るまで気づけないため。
-// 対象の文書：Git で扱う全ての .md（GitHub は置き場所によらず図を描画するため）。アーカイブ（docs/08-spec/archive/）は対象にしない。
-// 図の取り出し：コードブロックは lib/code-block で読む（CommonMark と同じ。HTML のコメントの中、他のコードブロックの中は読まない）。
-//   閉じていない mermaid のコードブロックは失敗にする。
-//   箇条書き・引用・4 個以上の字下げの中の図は、「対象にしない書き方の図」として失敗にする。中身は描画しない（使っていない書き方の解釈は加えないため）。
-//     見る行：コードブロックとコメントの外で、行頭の空白・`>`・箇条の記号を除くと ```mermaid か ~~~mermaid で始まる行
-//   コードブロックの本文に図の開きの形の行があれば、「前のコードブロックが閉じていない疑い」として失敗にする。
-//     理由：閉じを書き忘れると、図がコードとして表示され、取り出されないため。mermaid と markdown・md のコードブロックは除く（後者は雛形の骨組みを書く）
-//   HTML のブロック・front matter の中の図は対象にしない（使っていないため）。
-//   取り出した図が 0 件のときも失敗にする（取り出しの不具合で、何も検査せずに成功するのを防ぐ）。
-// 描画：ファイルごとに 1 回、そのファイルの図だけを並べた一時の Markdown を mermaid-cli に渡す。出力の SVG が図の数だけできたかを確認する。足りなければ失敗にする
-//   （mermaid-cli は、行頭の記号がちょうど 3 個のコードブロックだけを取り出し、図が 1 つも取り出されなくても終了コード 0 で終わるため）。
-//   本文に行末の ``` か ::: がある図は、まとめた Markdown では途中で切れる（SVG はできるので数では検出できない）ため、そのファイルはまとめて描画せず、図ごとに描画する。
-//   失敗したファイルだけ、図ごとに、図の本文だけの .mmd を入力にして再描画し、失敗した図の行（元のファイルの行）を示す。
-//   描画のプロセスが失敗したら、エラーの出力が空でも失敗にする。
+// GitHub は構文の誤りのある図を「Unable to render」と表示するだけで、push して画面を見るまで気づけないため。
+//
+// 対象の文書は、Git で扱う全ての .md（GitHub は置き場所によらず図を描画するため）。アーカイブ（docs/08-spec/archive/）は対象にしない。
+// コードブロックは scripts/shared/docs/code-block で読む（CommonMark と同じ。HTML のコメントの中、他のコードブロックの中は読まない）。
+// 次も失敗にする：
+//   - 閉じていない図
+//   - 箇条書き・引用・字下げの中の図（対象にしない書き方。描画しない）
+//   - 他のコードブロックの中にある、図の開きの形の行（前のコードブロックが閉じていない疑い）
+//   - 取り出した図が 0 件（何も検査せずに成功しないため）
+//
+// 描画では、ファイルの図を並べた Markdown を、ファイルごとに 1 回 mermaid-cli に渡す。
+// mermaid-cli は図が取り出されなくても終了コード 0 で終わるので、出力の SVG が図の数だけあるかを見る。失敗したファイルは、図ごとに再描画して、失敗した図の行を示す。
 // mermaid-cli は依存に入れず、バージョンを固定して npx で取得する。ブラウザーは取得せず（PUPPETEER_SKIP_DOWNLOAD）、手元の Chrome を使う。
-// Chrome の場所は環境変数 MERMAID_CHROME。指定しないときは、既定の場所を順に探す（Windows の Chrome、macOS の Chrome、google-chrome、chromium）。
-//   Linux では --no-sandbox を付ける（CI のランナーでは、サンドボックスを使えないことがあるため）。
-//   見つからなければ、作業のディレクトリを作る前に、理由を出して終了コード 2 で終わる。
-// script を scripts/ci/ の直下に置かない理由：直下の script は check-all.sh と commit の前の hook が全て実行する。この検査は Chrome とネットワークが必要で遅いので、実行するのは CI の文書のワークフローだけにする。
+// Chrome の場所は環境変数 MERMAID_CHROME か、既定の場所（CHROME_CANDIDATES）。見つからなければ、理由を出して終了コード 2 で終わる。
+// Chrome とネットワークが必要で遅いので、scripts/ci/ の検査のフォルダに置かず、CI の文書のワークフローだけで実行する。
+//
 // 失敗したとき：出力された文書と行の図の構文を修正する（mermaid-cli のエラーメッセージに、構文が崩れた箇所の前後が表示される）。閉じていないコードブロックは、閉じの行を追加する。
 //   対象にしない書き方の図は、字下げしないコードブロックに移す。図でなく書き方の例なら、markdown のコードブロックか 1 行のコードに入れる。
+//
 // 除外：なし
+//
 // 使い方：node scripts/ci/mermaid/mermaid-check.mjs（リポジトリのルートで）
 import { execFileSync, execSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { readCodeBlocks } from '../lib/code-block.mjs'
-import { readDocument } from '../lib/doc-structure.mjs'
-import { emptyListReason, listGitFiles } from '../lib/git-files.mjs'
-import { isMain } from '../lib/is-main.mjs'
+import { readCodeBlocks } from '../../shared/docs/code-block.mjs'
+import { readDocument } from '../../shared/docs/doc-structure.mjs'
+import { emptyListReason, listGitFiles } from '../../shared/git/git-files.mjs'
 
 /** 使う mermaid-cli のバージョン（上げるときは、GitHub での表示と食い違わないかを確認する） */
 const MERMAID_CLI = '@mermaid-js/mermaid-cli@12.0.0'
@@ -50,8 +47,8 @@ const CUTTING_LINE = /(`{3}|:{3})[^\S\n]*$/m
 /** 図の開きの形（囲みの記号と、先頭の語が mermaid の info string）。` の囲みの info string には ` を含めない（1 行のコードの範囲になるため） */
 const MERMAID_OPEN = /^(?:`{3,}(?:\s*mermaid)(?:\s[^`]*)?|~{3,}\s*mermaid(?:\s.*)?)$/i
 
-/** 0〜3 個の空白で字下げした、図の開きの形の行（コードブロックの本文の中で、閉じていない疑いを見る） */
-const INDENTED_MERMAID_OPEN = /^ {0,3}(\S.*)$/
+/** 0〜3 個の空白の字下げと、その後の文字（図の開きの形かは isMermaidOpen が MERMAID_OPEN で見る） */
+const UP_TO_3_INDENT = /^ {0,3}(\S.*)$/
 
 /** 行頭の空白・`>`・箇条の記号（`-`、`*`、`+`、`1.`、`1)`）の並び */
 const LINE_PREFIX = /^(?:[ \t]|>|[-*+][ \t]|\d{1,9}[.)][ \t])*/
@@ -76,7 +73,7 @@ export function isMermaidTargetDoc(file) {
  * @returns {boolean} 図の開きの形なら true
  */
 function isMermaidOpen(line) {
-  const match = INDENTED_MERMAID_OPEN.exec(line)
+  const match = UP_TO_3_INDENT.exec(line)
   return match !== null && MERMAID_OPEN.test(match[1].trimEnd())
 }
 
@@ -161,7 +158,7 @@ export function describeFailure(error) {
  * @param {number} expected 渡した図の数
  * @returns {string | null} 全ての図が描画されたら null、そうでなければ空でない理由
  */
-export function renderFailure(result, expected) {
+function renderFailure(result, expected) {
   if (result.error !== null) return result.error
   if (result.outputs !== expected) {
     return `描画された図が足りない（${expected} 個のうち ${result.outputs} 個。図の本文に、行末の \`\`\` か ::: がないか確認する）`
@@ -243,6 +240,8 @@ export function puppeteerConfig(chrome, platform) {
 /**
  * 引数を引用符で囲む（shell を通す起動で、空白のあるパスが 1 つの引数になるように）。
  *
+ * 既知の制限：引数に " や %名前% があると、Windows の shell が読み替えて壊れる（今の引数は、固定の文字列と一時のディレクトリのパスだけ）。
+ *
  * @param {string} arg 引数
  * @returns {string} 引用符で囲んだ引数
  */
@@ -263,14 +262,15 @@ export function buildCommand(command, args) {
 
 /**
  * できた SVG の数を数える。
- * mermaid-cli 12.0.0 は、Markdown の入力では `<出力の名前>-<n>.svg`（n は 1 から）、図の本文だけの入力では `<出力の名前>.svg` を作る。
+ *
+ * MERMAID_CLI のバージョンは、Markdown の入力では `<出力の名前>-<n>.svg`（n は 1 から）、図の本文だけの入力では `<出力の名前>.svg` を作る。
  *
  * @param {string} work 作業のディレクトリ
  * @param {string} stem 出力の名前（拡張子を除く）
  * @param {'markdown' | 'diagram'} kind 入力の種類
  * @returns {number} 中身のある SVG の数
  */
-function countOutputs(work, stem, kind) {
+export function countOutputs(work, stem, kind) {
   const names = kind === 'markdown'
     ? readdirSync(work).filter((name) => name.startsWith(stem) && /^-\d+\.svg$/.test(name.slice(stem.length)))
     : [`${stem}.svg`].filter((name) => existsSync(path.join(work, name)))
@@ -285,7 +285,7 @@ function countOutputs(work, stem, kind) {
  * @returns {(input: string, kind: 'markdown' | 'diagram') => { error: string | null, outputs: number }}
  *   描画する関数。プロセスが失敗したら error に空でない誤りの文を入れる
  */
-export function createRenderer(work, config) {
+function createRenderer(work, config) {
   let serial = 0
   return (content, kind) => {
     serial++
@@ -300,8 +300,8 @@ export function createRenderer(work, config) {
       // Windows の npx は npx.cmd で、shell を通さないと起動できない。引用符で囲んだ 1 つのコマンドにして、空白のあるパスが 1 つの引数になるようにする
       if (process.platform === 'win32') execSync(buildCommand('npx', args), options)
       else execFileSync('npx', args, options)
-    } catch (error) {
-      return { error: describeFailure(error), outputs: 0 }
+    } catch (e) {
+      return { error: describeFailure(e), outputs: 0 }
     }
     return { error: null, outputs: countOutputs(work, stem, kind) }
   }
@@ -366,4 +366,4 @@ function main() {
   if (code !== 0) process.exit(code)
 }
 
-if (isMain(import.meta.url)) main()
+if (import.meta.main) main()

@@ -5,7 +5,7 @@
 <!--
   Javadoc の書き漏れの検査は、本番のコード（src/main）だけにする（コメントの書き方の「Java」）。
   main 以外のソースセット（test、integrationTest、testFixtures、tools）では、この 3 つの検査を抑える。
-  import の検査（UnusedImports、CustomImportOrder）は全てのソースセットで行う。
+  import の検査（UnusedImports、CustomImportOrder）と、JSpecify 以外の Nullable の検査は全てのソースセットで行う。
 -->
 <suppressions>
     <suppress checks="MissingJavadocType|MissingJavadocMethod|JavadocVariable"

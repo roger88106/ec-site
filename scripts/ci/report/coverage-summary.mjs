@@ -1,23 +1,23 @@
-// ============================================================================
-// カバレッジの合計（行・分岐）と、行のカバレッジが低い所を、GitHub Actions の job の summary に書く。
-// 基準は、テストの実行方法の「カバレッジと mutation score の基準の検査」
+// カバレッジか mutation score の合計と、低い所を、GitHub Actions の job の summary に書く。
+// 報告を書くだけで、失敗にしない。基準を下回ったときに失敗させるのは、各ツールの閾値（テストの実行方法の「カバレッジと mutation score の基準の検査」）。
 //
-//   使い方：node scripts/ci/report/coverage-summary.mjs <名前> <報告のファイル>
-//     報告のファイル：JaCoCo の XML（*.xml）か、Vitest の json-summary（coverage-summary.json）
+// 低い所は、JaCoCo はパッケージ、Vitest はファイル（流した場所からのパス）、PIT は生き残った変異が多いクラスで、LOWEST_LIMIT 件を出す。
+// 報告がなければ、そのことを書いて終わる。GITHUB_STEP_SUMMARY がなければ（ローカル）、標準出力に書く。
 //
-// 低い所は、JaCoCo はパッケージ、Vitest はファイル（流した場所からのパス）の単位で、低い順に 10 件を出す。
-// この script は報告を書くだけで、失敗にしない。基準の検査は coverage-baseline.mjs が行う。報告がなければ、そのことを書いて終わる。
-// GITHUB_STEP_SUMMARY がなければ（ローカル）、標準出力に書く。
-// ============================================================================
+// 使い方：node scripts/ci/report/coverage-summary.mjs <名前> <報告のファイル>
+//   報告のファイル：JaCoCo の XML、Vitest の json-summary（coverage-summary.json）、PIT の XML（mutations.xml）
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { isMain } from '../lib/is-main.mjs'
+import { isPitReport, parseMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'
 
 /** 低い所を出す数 */
 const LOWEST_LIMIT = 10
 
 /** 割合の表示（小数第 1 位） */
 const percent = (covered, total) => (total === 0 ? '-' : `${((covered / total) * 100).toFixed(1)}%`)
+
+/** counter の種類ごとの、counter の要素の正規表現（package ごとに作らないため。matchAll は lastIndex を変えない） */
+const COUNTER_PATTERNS = new Map()
 
 /**
  * JaCoCo の XML の一部から、counter を読む。
@@ -27,7 +27,8 @@ const percent = (covered, total) => (total === 0 ? '-' : `${((covered / total) *
  * @returns {{ covered: number, total: number }} 実行した数と全体の数
  */
 function counter(text, type) {
-  const match = [...text.matchAll(new RegExp(`<counter type="${type}" missed="([0-9]+)" covered="([0-9]+)"/>`, 'g'))].at(-1)
+  if (!COUNTER_PATTERNS.has(type)) COUNTER_PATTERNS.set(type, new RegExp(`<counter type="${type}" missed="([0-9]+)" covered="([0-9]+)"/>`, 'g'))
+  const match = [...text.matchAll(COUNTER_PATTERNS.get(type))].at(-1)
   const [missed, covered] = match ? [Number(match[1]), Number(match[2])] : [0, 0]
   return { covered, total: missed + covered }
 }
@@ -39,7 +40,7 @@ function counter(text, type) {
  * @param {'xml' | 'json'} kind 報告の種類（JaCoCo の XML、Vitest の json-summary）
  * @returns 行と分岐の、実行した数と全体の数
  */
-export function readTotals(text, kind) {
+export function parseTotals(text, kind) {
   if (kind === 'xml') {
     // 報告の全体の counter は、最後の package の後（</report> の直前）に並ぶ
     const tail = text.slice(text.lastIndexOf('</package>'))
@@ -78,6 +79,71 @@ export function lowest(text, kind, { limit = LOWEST_LIMIT, root = '' } = {}) {
     .slice(0, limit)
 }
 
+/**
+ * カバレッジの summary を作る。
+ *
+ * @param {string} name 表示の名前
+ * @param {string} text 報告の中身
+ * @param {'xml' | 'json'} kind 報告の種類
+ * @returns {string} Markdown
+ */
+function coverageMarkdown(name, text, kind) {
+  const { lines, branches } = parseTotals(text, kind)
+  const unit = kind === 'xml' ? 'パッケージ' : 'ファイル'
+  return [
+    `### カバレッジ（${name}）`,
+    '',
+    '| 種類 | 割合 | 実行した数 / 全体 |',
+    '|------|------|-------------------|',
+    `| 行 | ${percent(lines.covered, lines.total)} | ${lines.covered} / ${lines.total} |`,
+    `| 分岐 | ${percent(branches.covered, branches.total)} | ${branches.covered} / ${branches.total} |`,
+    '',
+    `行のカバレッジが低い${unit}（低い順に ${LOWEST_LIMIT} 件）：`,
+    '',
+    `| ${unit} | 行 | 実行した数 / 全体 |`,
+    '|------|------|-------------------|',
+    ...lowest(text, kind, { root: process.cwd() }).map(
+      (row) => `| \`${row.name}\` | ${percent(row.covered, row.total)} | ${row.covered} / ${row.total} |`,
+    ),
+    '',
+  ].join('\n')
+}
+
+/**
+ * mutation score の summary を作る。
+ *
+ * 生き残った変異が多いクラスは、テストを追加する所の手がかりとして出す。
+ *
+ * @param {string} name 表示の名前
+ * @param {string} text PIT の XML
+ * @returns {string} Markdown
+ * @throws {Error} PIT の XML を読めないとき
+ */
+export function mutationMarkdown(name, text) {
+  const { total, detected, statuses, survivors } = parseMutations(text)
+  return [
+    `### mutation score（${name}）`,
+    '',
+    '| 割合 | 検出した変異 / 全体 |',
+    '|------|---------------------|',
+    `| ${percent(detected, total)} | ${detected} / ${total} |`,
+    '',
+    `status ごとの数：${statuses.map(({ status, count }) => `${status} ${count}`).join('、')}`,
+    '',
+    `生き残った変異（テストが検出できなかった変異）が多いクラス（上位 ${SURVIVORS_LIMIT} 件）：`,
+    '',
+    '| クラス | 生き残った変異 | 変異 |',
+    '|--------|----------------|------|',
+    ...survivors.map((row) => `| \`${row.name}\` | ${row.survived} | ${row.total} |`),
+    '',
+  ].join('\n')
+}
+
+/**
+ * summary に書く。GITHUB_STEP_SUMMARY がなければ標準出力に書く。
+ *
+ * @param {string} markdown 書く Markdown
+ */
 const output = (markdown) => {
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`)
@@ -94,35 +160,19 @@ function main() {
     process.exit(2)
   }
   if (!existsSync(file)) {
-    output(`### カバレッジ（${name}）\n\n報告がありません（${file}）。\n`)
+    output(`### ${name}\n\n報告がありません（${file}）。\n`)
     return
   }
-
   const text = readFileSync(file, 'utf8')
   const kind = file.endsWith('.xml') ? 'xml' : 'json'
-  const { lines, branches } = readTotals(text, kind)
-  const unit = kind === 'xml' ? 'パッケージ' : 'ファイル'
-  output(
-    [
-      `### カバレッジ（${name}）`,
-      '',
-      '| 種類 | 割合 | 実行した数 / 全体 |',
-      '|------|------|-------------------|',
-      `| 行 | ${percent(lines.covered, lines.total)} | ${lines.covered} / ${lines.total} |`,
-      `| 分岐 | ${percent(branches.covered, branches.total)} | ${branches.covered} / ${branches.total} |`,
-      '',
-      `行のカバレッジが低い${unit}（低い順に ${LOWEST_LIMIT} 件）：`,
-      '',
-      `| ${unit} | 行 | 実行した数 / 全体 |`,
-      '|------|------|-------------------|',
-      ...lowest(text, kind, { root: process.cwd() }).map(
-        (row) => `| \`${row.name}\` | ${percent(row.covered, row.total)} | ${row.covered} / ${row.total} |`,
-      ),
-      '',
-    ].join('\n'),
-  )
+  output(kind === 'xml' && isPitReport(text) ? mutationMarkdown(name, text) : coverageMarkdown(name, text, kind))
 }
 
-if (isMain(import.meta.url)) {
-  main()
+if (import.meta.main) {
+  try {
+    main()
+  } catch (e) {
+    console.error(`報告を読めない：${e.message.split('\n')[0]}`)
+    process.exit(2)
+  }
 }

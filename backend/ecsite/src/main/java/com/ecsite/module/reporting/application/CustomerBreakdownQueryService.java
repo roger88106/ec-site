@@ -1,6 +1,7 @@
 package com.ecsite.module.reporting.application;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.reporting.application.model.SegmentTotal;
 import com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuery;
 import com.ecsite.module.reporting.application.model.view.AgeGroupSales;
 import com.ecsite.module.reporting.application.model.view.CustomerBreakdownReport;
@@ -8,9 +9,9 @@ import com.ecsite.module.reporting.application.model.view.GenderSales;
 import com.ecsite.module.reporting.application.model.view.PrefectureSales;
 import com.ecsite.module.reporting.application.port.RegionDirectory;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
-import com.ecsite.module.reporting.application.port.ReportQueryRepository.SegmentTotal;
 import com.ecsite.module.reporting.domain.sales.AgeGroup;
 import com.ecsite.module.reporting.domain.sales.ReportGender;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +26,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 地域・年齢層・性別（docs/03-機能仕様/reporting.md「地域・年齢層・性別」）。<br />
- * 都道府県・年齢・性別の組ごとに SQL で集計し、3 つの分け方へのまとめは Java で行う。
- * 注文は 1 つの組にだけ入るので、組の注文件数を合算しても、同じ注文を 2 回数えない。
+ * 地域・年齢層・性別のクエリサービス
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CustomerBreakdownQueryService {
 
     /**
-     * 都道府県が不明な組をまとめるキー（都道府県のコードは空にならないので、他のコードと重ならない）
+     * 都道府県が不明な組をまとめるキー
+     *
+     * <p>都道府県のコードは空にならないので、他のコードと重ならない。
      */
     private static final String UNKNOWN_PREFECTURE = "";
 
@@ -59,23 +61,28 @@ public class CustomerBreakdownQueryService {
      * @param query 条件
      * @return 3 つの分け方の売上
      */
-    @Transactional(readOnly = true)
-    public CustomerBreakdownReport breakdown(CustomerBreakdownQuery query) {
+    public CustomerBreakdownReport breakdown(@NonNull CustomerBreakdownQuery query) {
+        // 都道府県・年齢・性別の組ごとの集計 ※注文は 1 つの組にだけ入るので、組の注文件数を合算しても、同じ注文を 2 回数えない
         var segments = queryRepository.segmentSales(query.period(), query.basis(), query.productId(), query.excludeTax(),
                 query.excludeShipping());
 
-        // 年齢層と性別：すべての区分を、売れなかったものも 0 として
+        // 年齢層と性別へのまとめ ※売れなかった区分も 0 として、すべての区分を並べる
         var ageGroups = forEveryValue(AgeGroup.values(), group(segments, segment -> AgeGroup.of(segment.age())),
                 (group, total) -> new AgeGroupSales(group, total.amount(), total.orders()));
         var genders = forEveryValue(ReportGender.values(), group(segments, segment -> ReportGender.of(segment.gender())),
                 (gender, total) -> new GenderSales(gender, total.amount(), total.orders()));
 
+        // 商品を選んだときは、指定によらず送料を除いている
         return new CustomerBreakdownReport(prefectureSales(segments), ageGroups, genders,
                 query.excludeShipping() || query.productId() != null);
     }
 
+// ============================== プライベートメソッド ==============================
+
     /**
-     * 都道府県の売上を求める：売れた都道府県だけを、コードの順に。不明は最後。名前は地域から引く。
+     * 都道府県の売上を求める。
+     *
+     * <p>売れた都道府県だけを、コードの順に並べ、不明を最後に置く。名前は地域から引く。
      */
     private List<PrefectureSales> prefectureSales(List<SegmentTotal> segments) {
         var names = regionDirectory.prefectureNames();
@@ -95,7 +102,9 @@ public class CustomerBreakdownQueryService {
     }
 
     /**
-     * すべての区分について、売上を作る。売れなかった区分は 0 にする。
+     * すべての区分について、売上を作る。
+     *
+     * <p>売れなかった区分は 0 にする。
      */
     private static <K, R> List<R> forEveryValue(K[] values, Map<K, Total> totals, BiFunction<K, Total, R> toSales) {
         return Arrays.stream(values)
@@ -117,7 +126,7 @@ public class CustomerBreakdownQueryService {
     private record Total(Money amount, long orders) {
 
         /**
-         * 0
+         * 売上額と注文件数が 0 の合計
          */
         static final Total ZERO = new Total(Money.ZERO, 0);
 

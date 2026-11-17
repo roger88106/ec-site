@@ -1,6 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { Controller, useFieldArray } from 'react-hook-form'
+import { Controller, useFieldArray, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { schemas } from '@/api/generated/constraints'
 import type { TaxCategory } from '@/api/types'
@@ -11,7 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { rateState } from '@/features/tax/rates'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
-/** 編集中の税率の 1 行。rateId がなければ新しい税率 */
+/**
+ * 編集中の税率の 1 行
+ *
+ * rateId がなければ新しい税率。
+ */
 type RateRow = {
   /** 保存済みの税率の ID。null は新しい税率 */
   rateId: string | null
@@ -26,13 +30,17 @@ type RateRow = {
 /** 率の刻み（小数第 2 位まで） */
 const RATE_STEP = 0.01
 
-/** 率の上限。契約の上限はその値を含まない（exclusiveMaximum）ので、1 刻み下にする */
+/**
+ * 率の上限
+ *
+ * 契約の上限はその値を含まない（exclusiveMaximum）ので、1 刻み下にする。
+ */
 const RATE_MAX = schemas.RatePercent.maximum - RATE_STEP
 
 /** 入力欄の値（税率の一覧） */
 type Values = { rates: RateRow[] }
 
-/** 税区分の税率の一覧を、入力欄の行にする（率は入力中の文字列として持つ） */
+/** 税区分の税率の一覧を、入力欄の行にする（率は入力中の文字列として持つ）。 */
 function toValues(taxCategory: TaxCategory): Values {
   return {
     rates: taxCategory.rates.map((rate) => ({
@@ -45,7 +53,9 @@ function toValues(taxCategory: TaxCategory): Values {
 }
 
 /**
- * 税率の一覧の編集。一覧ごと置き換えて保存する。<br />
+ * 税率の一覧の編集
+ *
+ * 一覧ごと置き換えて保存する。
  * 期間の重複・途切れ、過去の根拠の変更はサーバーが検証し、そのエラーを表示する。
  */
 export function TaxRatesEditor({
@@ -64,7 +74,7 @@ export function TaxRatesEditor({
     invalidate: ['/tax-categories'],
     onSuccess: markSaved,
   })
-  const rows = form.watch('rates')
+  const rows = useWatch({ control: form.control, name: 'rates' })
   const incomplete = rows.length === 0 || rows.some((row) => row.ratePercent.trim() === '')
 
   const save = form.handleSubmit((values) =>

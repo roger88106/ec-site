@@ -22,7 +22,8 @@ export async function shipOnAdmin(page: Page, trackingNumber: string): Promise<v
 }
 
 /**
- * mock の物流の画面（既定は E2E のバックエンド）で、注文の出荷の配送状態を通知し、一覧に反映されるのを待つ。<br />
+ * mock の物流の画面（既定は E2E のバックエンド）で、注文の出荷の配送状態を通知し、一覧に反映されるのを待つ。
+ *
  * mock は画面を出したバックエンドのエンドポイントに通知するので、E2E の設定は必要ない。
  *
  * @param page 使うページ（mock の物流の画面に移る）
@@ -44,7 +45,8 @@ export async function notifyCarrier(
 }
 
 /**
- * 注文番号を書いた出荷通知メールを、Mailpit に届くまで待って返す。<br />
+ * 注文番号を書いた出荷通知メールを、Mailpit に届くまで待って返す。
+ *
  * 注文番号は注文ごとに違うので、前の実行のメールと混ざらない（メールを消さずに探す）。
  *
  * @param orderNumber 注文番号

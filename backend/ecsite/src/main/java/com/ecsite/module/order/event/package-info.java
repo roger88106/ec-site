@@ -1,6 +1,7 @@
 /**
- * 注文モジュールが発行するイベント。<br />
- * 利用者：通知（注文の出荷）、レポート（注文の状態の変化）。
+ * 注文モジュールの公開のイベント
+ *
+ * <p>他のモジュールが非同期で受け取る。
  */
 @org.springframework.modulith.NamedInterface("event")
 package com.ecsite.module.order.event;

@@ -1,11 +1,17 @@
 import { useTranslations } from 'use-intl'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-/** 選択肢の 1 つ。value が null の選択肢は「すべて」「なし」などに使う */
+/**
+ * 選択肢の 1 つ
+ *
+ * value が null の選択肢は「すべて」「なし」などに使う。
+ */
 type Option<V extends string> = { value: V | null; label: string }
 
 /**
- * 決まった選択肢から 1 つ選ぶ。<br />
+ * 選択肢から選ぶ入力欄
+ *
+ * 決まった選択肢から 1 つ選ぶ。
  * 選択肢を Select の items に渡し、選んだ値の表示名を出す。
  */
 export function OptionSelect<V extends string>({

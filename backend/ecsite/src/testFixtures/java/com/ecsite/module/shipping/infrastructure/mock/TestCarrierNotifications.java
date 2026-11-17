@@ -4,18 +4,21 @@ import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier.SignedNotification;
 
 /**
- * テストだけで使う、物流サービスの通知の作り方（テストで共有するソース。本番の jar に入らない）。<br />
- * 本番の mock は、画面のボタンが使う正しい署名の通知だけを作る。署名の誤りなど、テストで作りたい通知はここで作る。
+ * テストだけで使う、物流サービスの通知の作り方
+ *
+ * <p>テストで共有するソースで、本番の jar に入らない。本番の mock は、正しい署名の通知だけを作る。署名の誤りなど、テストで作りたい通知はここで作る。
  */
 public final class TestCarrierNotifications {
 
     /**
-     * 誤った署名に使う鍵（mock の鍵と違うもの）
+     * 誤った署名に使う鍵
+     *
+     * <p>mock の鍵と違うもの。
      */
     private static final String WRONG_SECRET = "mock-carrier-wrong-secret";
 
     /**
-     * 作らせない
+     * インスタンスを作らない。
      */
     private TestCarrierNotifications() {
     }

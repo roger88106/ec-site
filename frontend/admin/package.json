@@ -15,7 +15,8 @@
     "typecheck": "pnpm generate:api && tsc -b",
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write",
-    "test": "vitest run --coverage",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "preview": "vite preview"
   },
   "dependencies": {

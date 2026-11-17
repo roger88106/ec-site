@@ -1,25 +1,24 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.AsyncEvents;
-import com.ecsite.CatalogTestData;
-import com.ecsite.IntegrationTest;
-import com.ecsite.InventoryTestData;
-import com.ecsite.LockWaits;
-import com.ecsite.MutableClock;
-import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTaxCategory;
-import com.ecsite.TestClockConfig;
-import com.ecsite.TestJson;
-import com.ecsite.TestTokens;
+import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
+import com.ecsite.support.async.Concurrently;
+import com.ecsite.support.async.LockWaits;
+import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.data.CatalogTestData;
+import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.data.OrderTestData;
+import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.http.TestJson;
+import com.ecsite.support.security.TestTokens;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -31,37 +30,39 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.ecsite.OrderTestData.placeOrderRequest;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
+import static com.ecsite.support.data.OrderTestData.placeOrderRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
- * 注文の並行性の受け入れテスト。<br />
- * 行ロックと会員のロックが働いていることを確認するため、リクエストごとにコミットする。ロールバックしないが、作ったデータは消さない。
+ * 注文の並行性の受け入れテスト
+ *
+ * <p>行ロックと会員のロックが働いていることを確認するため、リクエストごとにコミットする。ロールバックしないが、作ったデータは消さない。
  * 税区分の名称は一意なので、ほかのテストと重ならない名前にする。
  */
 @IntegrationTest
-@AutoConfigureMockMvc
-@Import(TestClockConfig.class)
 class PlaceOrderConcurrencyTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    // ============================== Bean ==============================
 
     @Autowired
     MockMvc mockMvc;
@@ -79,6 +80,9 @@ class PlaceOrderConcurrencyTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    AsyncEvents asyncEvents;
 
     /**
      * テストの側でトランザクションを開いて、在庫の行をロックする TransactionTemplate
@@ -111,23 +115,27 @@ class PlaceOrderConcurrencyTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
-        clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
-        var data = new CatalogTestData(mockMvc, clock);
+        var catalog = new CatalogTestData(mockMvc, clock);
         orders = new OrderTestData(mockMvc);
-        taxCategoryId = data.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
-        product = data.product(taxCategoryId, "並行の商品", 1000).publish();
+        taxCategoryId = catalog.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
+        product = catalog.product(taxCategoryId, "並行の商品", 1000).publish();
     }
+
+    // ============================== テスト ==============================
 
     @Test
     @DisplayName("AC-91 同じ注文手続きで同時に何度送っても、注文は 1 件だけで、どの応答も同じ注文 ID")
     void placesOnceForConcurrentResends() throws Exception {
+        // 準備：在庫数 3 に 2 個のカートで注文手続きに進む
         stock(3);
         var cartId = cartWith(2);
         var checkoutId = startCheckout(cartId);
 
-        var responses = concurrently(5, () -> place(checkoutId));
+        // 操作：同じ注文手続きで 5 回同時に注文する
+        var responses = Concurrently.run(5, i -> place(checkoutId));
 
+        // 確認：201 は 1 回だけで、全ての応答が同じ注文 ID、注文は 1 件で、在庫は 1 回分だけ減る
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsOnly(201, 200)
                 .filteredOn(status -> status == 201).hasSize(1);
         assertThat(responses).extracting(response -> JsonPath.<String>read(response.getContentAsString(), "$.id"))
@@ -139,28 +147,35 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-87 引当の期限が切れた 2 人が、販売可能数 1 の在庫を同時に注文すると、1 件だけ成立する")
     void placesOnlyOneForLastItem() throws Exception {
+        // 準備：在庫数 1 で、1 人目の引当の期限が切れてから 2 人目が引き当て、2 人目の期限も切らす
         stock(1);
         var first = startCheckout(cartWith(1));
-        // 1 人目の引当の期限が切れてから、2 人目が引き当てる
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(20)));
         var second = startCheckout(cartWith(1));
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(20)));
 
+        // 操作：2 人が同時に注文する
         var responses = placeAll(List.of(first, second));
 
+        // 確認：201 と在庫不足の 409 が 1 つずつで、在庫数は 0
         assertThat(responses).extracting(MockHttpServletResponse::getStatus).containsExactlyInAnyOrder(201, 409);
+        var rejected = responses.stream().filter(response -> response.getStatus() == 409).findFirst().orElseThrow();
+        assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");
         assertThat(quantity()).isZero();
     }
 
     @Test
     @DisplayName("AC-406-14 同じ会員の確認していない 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 件分だけ減り、他方は確認を求められる")
     void placesOnlyOneForSameMember() throws Exception {
+        // 準備：同じ会員のカートから、確認していない注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var checkouts = List.of(startCheckout(cartId), startCheckout(cartId));
 
+        // 操作：2 つの注文手続きから同時に注文する
         var responses = placeAll(checkouts);
 
+        // 確認：一方だけ成立し、他方は確認を求められ、在庫は 1 個分だけ減る
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(4);
     }
@@ -168,13 +183,16 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-406-12、AC-406-14 同じ支払待ちの注文を確認した 2 つの注文手続きから同時に注文すると、先に成立した注文を確認していないので、一方だけ成立する")
     void placesOnlyOneWhenBothAcknowledged() throws Exception {
+        // 準備：支払待ちの注文を 1 件作り、それを確認した注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var pending = TestJson.createdId(place(startCheckout(cartId)).getContentAsString());
         var checkouts = List.of(startAcknowledging(cartId, pending), startAcknowledging(cartId, pending));
 
+        // 操作：2 つの注文手続きから同時に注文する
         var responses = placeAll(checkouts);
 
+        // 確認：一方だけ成立し、他方は確認を求められ、在庫は 2 件分（先の注文と成立した 1 件）だけ減る
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(3);
     }
@@ -182,17 +200,17 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-411-5、NFR-411-1 支払待ちの 2 件を全て確認した 2 つの注文手続きから同時に注文すると、一方だけ成立し、在庫は 1 個分だけ減り、支払待ちは上限（3 件）を超えない（後の注文は確認の判定で拒否される）")
     void placesOnlyOneBelowLimit() throws Exception {
+        // 準備：支払待ちの注文を 2 件作り、その 2 件を確認した注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var first = TestJson.createdId(place(startCheckout(cartId)).getContentAsString());
         var second = TestJson.createdId(place(startAcknowledging(cartId, first)).getContentAsString());
         var checkouts = List.of(startAcknowledging(cartId, first, second), startAcknowledging(cartId, first, second));
 
+        // 操作：2 つの注文手続きから同時に注文する
         var responses = placeAll(checkouts);
 
-        // 確認するのは、同時の注文でも支払待ちが上限を超えない結果である。
-        // 後の注文は、会員のロックを待った後の読み取りで先の注文を読み取れ、それを確認していないので、確認の判定で拒否される
-        // （開始で上限を判定しており、上限の設定は同じなので、同時の注文では上限の判定に届かない。注文の時点の上限の判定は、PlaceOrderApiTest で確認する）
+        // 確認：一方だけ成立し、在庫は 1 個分だけ減り、支払待ちは上限の 3 件を超えない
         expectOnePlacedAndOneRejected(responses, checkouts);
         assertThat(quantity()).isEqualTo(2);
         assertThat(OrderTestData.pendingOrderCount(dsl, memberOf(checkouts.getFirst()))).isEqualTo(3);
@@ -201,23 +219,26 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-406-14 先の注文のトランザクションが終わるまで、同じ会員の後の注文は会員のロックを待ち、先の注文の成立の後に判定されて、確認を求められる")
     void waitsForMemberLockAndRejectsLater() throws Exception {
+        // 準備：同じ会員のカートから、確認していない注文手続きを 2 つ始める
         stock(5);
         var cartId = cartWith(1);
         var earlier = startCheckout(cartId);
         var later = startCheckout(cartId);
         var executor = Executors.newFixedThreadPool(2);
         try {
+            // 操作：在庫の行をロックしている間に、先の注文と後の注文を送る
             var placing = new ArrayList<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
-                // 先の注文は、会員のロックを持ったまま、在庫の行で待つ。トランザクションはコミットしない
+                // 先の注文は、会員のロックを持ったまま、在庫の行で待つ（トランザクションはコミットしない）
                 placing.add(executor.submit(() -> place(earlier)));
                 LockWaits.awaitBlockedByThisTransaction(dsl);
-                // 後の注文は、先の注文が持つ会員のロックを待つ。ロックがなければ、この待ちは現れない
+                // 後の注文は、先の注文が持つ会員のロックを待つ（ロックがなければ、この待ちは現れない）
                 placing.add(executor.submit(() -> place(later)));
                 LockWaits.awaitMemberLockWaiter(dsl, memberOf(later));
             });
 
-            var placed = placing.get(0).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            // 確認：先の注文が成立し、後の注文は確認を求める 409 で、在庫は 1 個分だけ減る
+            var placed = placing.getFirst().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             var rejected = placing.get(1).get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             assertThat(placed.getStatus()).isEqualTo(201);
             expectOnePlacedAndOneRejected(List.of(placed, rejected), List.of(earlier, later));
@@ -231,10 +252,12 @@ class PlaceOrderConcurrencyTest {
     @Test
     @DisplayName("AC-87 在庫の行を待つ間に在庫がなくなると、どの在庫も減らさずに拒否し、先に解いた引当は取り消しで元に戻る")
     void keepsReservationWhenRejectedAfterRelease() throws Exception {
+        // 準備：在庫数 1 に 1 個で注文手続きに進む
         stock(1);
         var checkoutId = startCheckout(cartWith(1));
         var executor = Executors.newSingleThreadExecutor();
         try {
+            // 操作：在庫の行をロックしている間に注文を送り、減算が待っている間に在庫数を 0 にする
             var placing = new AtomicReference<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
                 placing.set(executor.submit(() -> place(checkoutId)));
@@ -244,6 +267,7 @@ class PlaceOrderConcurrencyTest {
                         .where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).execute();
             });
 
+            // 確認：在庫不足の 409 で、注文手続きの引当は残り、注文は作られない
             var rejected = placing.get().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             assertThat(rejected.getStatus()).isEqualTo(409);
             assertThat(JsonPath.<String>read(rejected.getContentAsString(), "$.errorCode")).isEqualTo("OUT_OF_STOCK");
@@ -257,7 +281,9 @@ class PlaceOrderConcurrencyTest {
     // ============================== 補助 ==============================
 
     /**
-     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。処理の後のコミットでロックが解放される
+     * テストのトランザクションで商品の在庫の行をロックしたまま、処理を実行する。
+     *
+     * <p>処理の後のコミットでロックが解放される
      */
     private void whileStockLocked(Runnable body) {
         transactionTemplate.executeWithoutResult(status -> {
@@ -274,41 +300,10 @@ class PlaceOrderConcurrencyTest {
     }
 
     /**
-     * 同じ処理を、複数のスレッドで同時に始める
-     */
-    private List<MockHttpServletResponse> concurrently(int threads, Callable<MockHttpServletResponse> task)
-            throws Exception {
-        var ready = new CountDownLatch(threads);
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(threads);
-        try {
-            List<Future<MockHttpServletResponse>> futures = new ArrayList<>();
-            for (int i = 0; i < threads; i++) {
-                futures.add(executor.submit(() -> {
-                    ready.countDown();
-                    start.await();
-                    return task.call();
-                }));
-            }
-            ready.await();
-            start.countDown();
-            var responses = new ArrayList<MockHttpServletResponse>();
-            for (var future : futures) {
-                responses.add(future.get());
-            }
-            return responses;
-        } finally {
-            // close は全部の処理の終わりを待つので、途中で失敗すると start を待つスレッドが残る。割り込んで止める
-            executor.shutdownNow();
-        }
-    }
-
-    /**
      * 注文手続きごとに 1 つのスレッドで、同時に注文する
      */
     private List<MockHttpServletResponse> placeAll(List<UUID> checkouts) throws Exception {
-        var index = new AtomicInteger();
-        return concurrently(checkouts.size(), () -> place(checkouts.get(index.getAndIncrement())));
+        return Concurrently.run(checkouts.size(), i -> place(checkouts.get(i)));
     }
 
     /**
@@ -342,6 +337,8 @@ class PlaceOrderConcurrencyTest {
         var cartId = orders.cart(owner.bearer());
         owners.put(cartId, owner);
         orders.add(cartId, product.variantIds.getFirst(), quantity, owner.bearer());
+        // カートの変更の処理が、注文手続きや注文と重ならないように待つ
+        asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.cartId().equals(cartId));
         return cartId;
     }
 

@@ -6,14 +6,18 @@ import { useTranslations } from 'use-intl'
 import { publicationStatusValues } from '@/api/generated/admin'
 import { parameters } from '@/api/generated/constraints'
 import type { PublicationStatus } from '@/api/types'
-import { CategorySelect } from '@/components/CategorySelect'
-import { CodeInput } from '@/components/CodeInput'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
+import { CategorySelect } from '@/features/product/components/CategorySelect'
+import { CodeInput } from '@/features/product/components/CodeInput'
 import { publicationStatusLabel } from '@/features/product/labels'
 import { EMPTY_FILTER, type ProductFilter } from '@/features/product/productFilter'
 
-/** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */
+/**
+ * 絞り込みの入力
+ *
+ * 「絞り込む」で URL に反映し、1 ページ目に戻す。
+ */
 export function ProductFilterForm({
   filter,
   onApply,

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -16,29 +16,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PriceExclTaxTest {
 
     @Test
-    @DisplayName("AC-25 1 円以上なら受け付け、金額として取り出せる")
-    void acceptsOneYenOrMore() {
+    @DisplayName("AC-25 1 円なら受け付け、金額として取り出せる")
+    void acceptsOneYen() {
+        // 操作と確認：1 円の金額になる
         assertThat(PriceExclTax.of(1).toMoney()).isEqualTo(Money.of(1));
+    }
+
+    @Test
+    @DisplayName("AC-25 範囲の中の価格を、円のまま取り出せる")
+    void keepsYen() {
+        // 操作と確認：1,000,000 円のまま
         assertThat(PriceExclTax.of(1_000_000).yen()).isEqualTo(1_000_000);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "「{0}」")
     @ValueSource(longs = {0, -1})
     @DisplayName("AC-25 1 円未満なら拒否される")
     void rejectsLessThanOneYen(long yen) {
+        // 操作と確認：業務のエラー INVALID_PRICE_EXCL_TAX で拒否される
         assertBusinessError(() -> PriceExclTax.of(yen), ProductErrorCode.INVALID_PRICE_EXCL_TAX);
     }
 
     @Test
     @DisplayName("AC-25 9,999,999 円までなら受け付ける")
     void acceptsUpToMaximum() {
+        // 操作と確認：9,999,999 円のまま
         assertThat(PriceExclTax.of(9_999_999).yen()).isEqualTo(9_999_999);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "「{0}」")
     @ValueSource(longs = {10_000_000, Long.MAX_VALUE})
     @DisplayName("AC-25 9,999,999 円を超えれば拒否される")
     void rejectsOverMaximum(long yen) {
+        // 操作と確認：業務のエラー INVALID_PRICE_EXCL_TAX で拒否される
         assertBusinessError(() -> PriceExclTax.of(yen), ProductErrorCode.INVALID_PRICE_EXCL_TAX);
     }
 }

@@ -2,7 +2,8 @@ import { SHIRT_ID } from '@/test/fixtures'
 import { http, server } from '@/test/server'
 
 /**
- * レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する（結合テストだけで使う）。<br />
+ * レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する（結合テストだけで使う）。
+ *
  * 会計年度は 4 月始まり、商品は T シャツ 1 つ。
  */
 export function serveReportBasics() {

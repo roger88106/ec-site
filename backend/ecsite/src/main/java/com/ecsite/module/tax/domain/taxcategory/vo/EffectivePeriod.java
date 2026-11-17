@@ -11,7 +11,9 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * 適用期間。開始を含み、終了を含まない。空白（null）は無限を意味する。
+ * 適用期間
+ *
+ * <p>開始を含み、終了を含まない。空白（null）は無限を意味する。
  *
  * @param effectiveFrom 適用開始日時。null は過去すべて
  * @param effectiveTo   適用終了日時（この日時を含まない）。null は無期限
@@ -24,6 +26,7 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
      *
      * @param effectiveFrom 適用開始日時
      * @param effectiveTo   適用終了日時
+     * @throws BusinessException 開始と終了の両方があり、開始が終了より前でない（{@code INVALID_EFFECTIVE_PERIOD}）
      */
     public EffectivePeriod {
         // 開始と終了の両方があるときだけ、開始が終了より前であることを求める
@@ -38,6 +41,7 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
      * @param effectiveFrom 適用開始日時。null は過去すべて
      * @param effectiveTo   適用終了日時。null は無期限
      * @return 適用期間
+     * @throws BusinessException 開始と終了の両方があり、開始が終了より前でない（{@code INVALID_EFFECTIVE_PERIOD}）
      */
     public static EffectivePeriod of(@Nullable Instant effectiveFrom, @Nullable Instant effectiveTo) {
         return new EffectivePeriod(effectiveFrom, effectiveTo);
@@ -54,8 +58,7 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
     }
 
     /**
-     * 指定した時点を期間に含むものを返す。
-     * 税区分の税率の期間は重複しないので、該当は 0 件か 1 件。
+     * 指定した時点を期間に含むもののうち、最初のものを返す。
      *
      * @param items   期間を持つもの（税率など）
      * @param period  期間の取り出し方
@@ -68,7 +71,9 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
     }
 
     /**
-     * 指定した時点で開始済みか。開始が空白なら常に開始済み。
+     * 指定した時点で開始済みか。
+     *
+     * <p>開始が空白なら常に開始済み。
      *
      * @param now 時点
      * @return 開始済みなら true
@@ -78,7 +83,9 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
     }
 
     /**
-     * 指定した時点で終了済みか。終了が空白なら終了しない。
+     * 指定した時点で終了済みか。
+     *
+     * <p>終了が空白なら終了しない。
      *
      * @param now 時点
      * @return 終了済みなら true

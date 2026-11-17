@@ -22,7 +22,9 @@ public record ProductDetailView(UUID id, String name, String description, Money 
                                 List<AxisView> axes, List<VariantView> variants, List<String> imageUrls) {
 
     /**
-     * バリアント軸と、その値のすべて（選べない値も含む）
+     * バリアント軸と、その値のすべて
+     *
+     * <p>選べない値も含む。
      *
      * @param name   軸の名前
      * @param values 値
@@ -31,7 +33,9 @@ public record ProductDetailView(UUID id, String name, String description, Money 
     }
 
     /**
-     * バリアント。在庫は有無だけ
+     * バリアント
+     *
+     * <p>在庫は有無だけを持つ。
      *
      * @param id             バリアント ID
      * @param axisValues     軸の値

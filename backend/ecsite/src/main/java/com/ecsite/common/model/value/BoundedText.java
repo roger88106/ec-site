@@ -2,11 +2,12 @@ package com.ecsite.common.model.value;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 /**
- * 文字の項目の判定（バックエンドの書き方の「形の検証は presentation、業務の規則は domain」）。<br />
- * 長さは code point で数える（サロゲートペアの文字を 1 文字とし、画面の見た目の文字数と合わせるため）。
- * 各ドメインは上限の定数とエラーの種類だけを持ち、判定はここに任せる。
+ * 文字の項目の判定
+ *
+ * <p>長さは code point で数える（サロゲートペアの文字を 1 文字とし、画面の見た目の文字数と合わせるため）。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BoundedText {
@@ -22,24 +23,26 @@ public final class BoundedText {
     }
 
     /**
-     * 必須の項目として正しいか（空白だけでなく、上限以内か）を返す。
+     * 必須の項目として正しいかを返す。
      *
-     * @param text      文字列
+     * <p>null・空・空白だけのどれでもなく、上限以内なら正しい。
+     *
+     * @param text      文字列。null のときは false を返す
      * @param maxLength 上限の文字の数
-     * @return 正しければ true。null は false
+     * @return 正しければ true
      */
-    public static boolean isFilledWithin(String text, int maxLength) {
+    public static boolean isFilledWithin(@Nullable String text, int maxLength) {
         return text != null && !text.isBlank() && length(text) <= maxLength;
     }
 
     /**
      * 空白を許す項目として正しいか（上限以内か）を返す。
      *
-     * @param text      文字列
+     * @param text      文字列。null のときは false を返す
      * @param maxLength 上限の文字の数
-     * @return 正しければ true。null は false
+     * @return 正しければ true
      */
-    public static boolean fitsWithin(String text, int maxLength) {
+    public static boolean fitsWithin(@Nullable String text, int maxLength) {
         return text != null && length(text) <= maxLength;
     }
 }

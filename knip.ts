@@ -11,7 +11,8 @@ process.env.VITE_OIDC_CLIENT_ID ??= 'ec-admin-web'
 const config: KnipConfig = {
   workspaces: {
     // ルートは、依存と設定だけを見る。scripts/ などは対象にしない
-    '.': { entry: [], project: [] },
+    // js-yaml・smol-toml は、scripts/ci/ の YAML・TOML を読む検査が使う
+    '.': { entry: [], project: [], ignoreDependencies: ['js-yaml', 'smol-toml'] },
     'frontend/*': {},
     // 共有パッケージは、package.json の exports のワイルドカードで全てのファイルが入口になる。
     // 入口の export も、管理画面・店舗画面・テストから使われているかを見る

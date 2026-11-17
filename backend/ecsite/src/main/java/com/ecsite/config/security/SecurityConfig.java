@@ -31,13 +31,9 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 認証と認可の設定（バックエンドのアーキテクチャの「業務のコードとの境界」）。<br />
- * パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
- * <ul>
- *     <li>{@code /api/admin/**}：運営者の realm の token が必須。権限は {@code admin.yaml} で決める</li>
- *     <li>{@code /api/store/**}：消費者の realm の token。token の要否は {@code store.yaml} で決める</li>
- *     <li>そのほか：既定で拒み、通知の口・mock の口・運用の口だけを許す</li>
- * </ul>
+ * 認証と認可の設定
+ *
+ * <p>パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
  * 契約にない操作と、決めていない URL は拒む（認証がなければ 401）。
  * token はステートレスに検証する。Cookie を使わない（token をヘッダーで受ける）ので、CSRF の対策は無効にする。
  */
@@ -46,7 +42,9 @@ import java.util.List;
 class SecurityConfig {
 
     /**
-     * realm の署名の鍵。issuer の OpenID Connect の設定から公開鍵の URL を求める（最初の検証のときに IdP から取る）。
+     * realm の署名の鍵を作る。
+     *
+     * <p>issuer の OpenID Connect の設定から公開鍵の URL を求める（最初の検証のときに IdP から取る）。
      *
      * @return realm の署名の鍵
      */
@@ -56,7 +54,9 @@ class SecurityConfig {
     }
 
     /**
-     * 管理 API の操作ごとに必要な権限。ビルドのときにリソースに写した {@code admin.yaml} を、起動時に読む。
+     * 管理 API の操作ごとに必要な権限を読み込む。
+     *
+     * <p>ビルドのときにリソースに写した {@code admin.yaml} を、起動時に読む。
      *
      * @param adminApi {@code admin.yaml}
      * @return 操作ごとに必要な権限
@@ -67,7 +67,9 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API の操作ごとの token の要否。ビルドのときにリソースに写した {@code store.yaml} を、起動時に読む。
+     * 店舗 API の操作ごとの token の要否を読み込む。
+     *
+     * <p>ビルドのときにリソースに写した {@code store.yaml} を、起動時に読む。
      *
      * @param storeApi {@code store.yaml}
      * @return 操作ごとの token の要否
@@ -89,7 +91,16 @@ class SecurityConfig {
     }
 
     /**
-     * 管理 API：運営者の realm の token と、{@code admin.yaml} の権限が必須。
+     * 管理 API の filter chain を作る。
+     *
+     * <p>運営者の realm の token と、{@code admin.yaml} の権限が必須。
+     *
+     * @param http        HttpSecurity
+     * @param properties  認証の設定
+     * @param keys        realm の署名の鍵
+     * @param permissions 操作ごとに必要な権限
+     * @param responder   認証・認可の失敗の応答
+     * @return filter chain
      */
     @Bean
     @Order(1)
@@ -100,7 +111,16 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API：消費者の realm の token を受け付ける。会員の token には権限を載せない。token の要否は {@code store.yaml} で決める。
+     * 店舗 API の filter chain を作る。
+     *
+     * <p>消費者の realm の token を受け付ける。会員の token には権限を載せない。token の要否は {@code store.yaml} で決める。
+     *
+     * @param http       HttpSecurity
+     * @param properties 認証の設定
+     * @param keys       realm の署名の鍵
+     * @param security   操作ごとの token の要否
+     * @param responder  認証・認可の失敗の応答
+     * @return filter chain
      */
     @Bean
     @Order(2)
@@ -111,16 +131,23 @@ class SecurityConfig {
     }
 
     /**
-     * そのほか：既定で拒み、決めた口だけを許す。<br />
-     * 通知の口は署名で、mock の口は mock フラグ（フラグがなければ Controller がなく 404）で守る。
-     * 運用の口は運用ポートで出す。エラーの画面への転送を許さないと、許した口の 404 が 401 に変わる。
+     * 管理 API と店舗 API 以外のパスの filter chain を作る。
+     *
+     * <p>既定で拒み、決めたパスだけを許す。
+     *
+     * @param http      HttpSecurity
+     * @param responder 認証・認可の失敗の応答
+     * @return filter chain
      */
     @Bean
     @Order(3)
     SecurityFilterChain defaultFilterChain(HttpSecurity http, SecurityProblemResponder responder) throws Exception {
         return stateless(http, responder)
                 .authorizeHttpRequests(authorize -> authorize
+                        // エラーの画面への転送を許さないと、許したパスの 404 が 401 に変わる
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        // 通知のパスは署名で、mock の画面のパスは mock フラグ（フラグがなければ Controller がなく 404）で守る。
+                        // 運用のパスは運用ポートで出す
                         .requestMatchers("/api/webhooks/**", "/mock-payment/**", "/mock-carrier/**", "/actuator/**").permitAll()
                         .anyRequest().denyAll())
                 .build();
@@ -140,7 +167,9 @@ class SecurityConfig {
     }
 
     /**
-     * realm の token を受ける filter chain：{@link #stateless} の共通の設定に、realm の token の検証と認可を追加する。
+     * realm の token を受ける filter chain を作る。
+     *
+     * <p>{@link #stateless} の共通の設定に、realm の token の検証と認可を追加する。
      *
      * @param http                 HttpSecurity
      * @param responder            認証・認可の失敗の応答
@@ -171,14 +200,16 @@ class SecurityConfig {
     }
 
     /**
-     * realm の token の decoder。署名に加え、issuer・audience・有効期限を確認する。<br />
-     * 鍵は最初の検証のときに取る（起動のときに IdP が動いていなくてもよい）。
+     * realm の token の decoder を作る。
+     *
+     * <p>署名に加え、issuer・audience・有効期限を確認する。鍵は最初の検証のときに取る。
      *
      * @param realm realm の設定
      * @param keys  realm の署名の鍵
      * @return decoder
      */
     private static JwtDecoder decoder(SecurityProperties.Realm realm, RealmKeys keys) {
+        // 起動のときに IdP が動いていなくてもよいように、鍵は最初の検証のときに取る
         return new SupplierJwtDecoder(() -> {
             var decoder = keys.decoder(realm.issuerUri());
             decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(

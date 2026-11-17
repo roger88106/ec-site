@@ -1,7 +1,11 @@
 import type { CancellationRequest, OrderStatus, PaymentStatus } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
-/** 注文の状態ごとの見た目（Badge の variant）。対応が必要な「キャンセル申請中」を目立たせる */
+/**
+ * 注文の状態ごとの見た目（Badge の variant）
+ *
+ * 対応が必要な「キャンセル申請中」を目立たせる。
+ */
 export const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'destructive' | 'secondary'> = {
   PENDING_PAYMENT: 'secondary',
   ACCEPTED: 'default',
@@ -10,12 +14,16 @@ export const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'destructive
   SHIPPED: 'secondary',
 }
 
-/** 支払の状態の表示名 */
+/** 支払の状態の表示名を返す。 */
 export function paymentStatusLabel(status: PaymentStatus): string {
   return translate(`labels.paymentStatus.${status}`)
 }
 
-/** 支払の状態ごとの見た目（Badge の variant）。対応が必要な「与信の取消待ち」「与信期限切れ」「返金待ち」を目立たせる */
+/**
+ * 支払の状態ごとの見た目（Badge の variant）
+ *
+ * 対応が必要な「与信の取消待ち」「与信期限切れ」「返金待ち」を目立たせる。
+ */
 export const PAYMENT_STATUS_VARIANTS: Record<PaymentStatus, 'destructive' | 'outline' | 'secondary'> = {
   UNPAID: 'secondary',
   AUTHORIZED: 'outline',
@@ -28,7 +36,7 @@ export const PAYMENT_STATUS_VARIANTS: Record<PaymentStatus, 'destructive' | 'out
   REFUNDED: 'secondary',
 }
 
-/** キャンセルの申請の結果の表示名 */
+/** キャンセルの申請の結果の表示名を返す。 */
 export function cancellationRequestResultLabel(result: CancellationRequest['result']): string {
   return translate(`order.requestResult.${result}`)
 }

@@ -12,43 +12,58 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 受け付ける画像の形式。ファイルの先頭のバイト（マジックナンバー）で判定する。<br />
- * ブラウザーが申告した形式は信用せず、確定のときに先頭のバイトで確認する（docs/03-機能仕様/media.md）。
+ * 受け付ける画像の形式
+ *
+ * <p>ファイルの先頭のバイト（マジックナンバー）で判定する。
  */
 public enum ImageFormat {
 
     /**
-     * JPEG（FF D8 FF で始まる）
+     * JPEG
+     *
+     * <p>FF D8 FF で始まる。
      */
     JPEG("JPEG", "jpg", "image/jpeg"),
     /**
-     * PNG（89 50 4E 47 0D 0A 1A 0A で始まる）
+     * PNG
+     *
+     * <p>89 50 4E 47 0D 0A 1A 0A で始まる。
      */
     PNG("PNG", "png", "image/png"),
     /**
-     * WebP（"RIFF" + 4 バイトの長さ + "WEBP" で始まる）
+     * WebP
+     *
+     * <p>"RIFF" + 4 バイトの長さ + "WEBP" で始まる。
      */
     WEBP("WebP", "webp", "image/webp"),
     /**
-     * BMP（"BM" + 4 バイトの大きさ + 0 の予約の 4 バイトで始まる）
+     * BMP
+     *
+     * <p>"BM" + 4 バイトの大きさ + 0 の予約の 4 バイトで始まる。
      */
     BMP("BMP", "bmp", "image/bmp"),
     /**
-     * HEIC / HEIF（ftyp のボックスのブランドが HEIC の系統。スマートフォンの写真）
+     * HEIC / HEIF
+     *
+     * <p>ftyp のボックスのブランドが HEIC の系統。スマートフォンの写真。
      */
     HEIF("HEIC / HEIF", "heic", "image/heic", "image/heif"),
     /**
-     * AVIF（ftyp のボックスのブランドが avif・avis）
+     * AVIF
+     *
+     * <p>ftyp のボックスのブランドが avif・avis。
      */
     AVIF("AVIF", "avif", "image/avif");
 
     /**
-     * 1 ファイルの大きさの上限（10MB）
+     * 1 ファイルの大きさの上限（バイト）
      */
     public static final long MAX_BYTES = 10L * 1024 * 1024;
 
     /**
-     * 形式の判定に読む先頭の長さ（バイト）。ftyp のボックスの互換のブランドを、いくつか読める長さにする
+     * 形式の判定に読む先頭の長さ（バイト）
+     *
+     * <p>ftyp のボックスの互換のブランドを、いくつか読める長さにする。
      */
     public static final int SIGNATURE_LENGTH = 32;
 
@@ -68,7 +83,9 @@ public enum ImageFormat {
     private static final byte[] RIFF = {'R', 'I', 'F', 'F'};
 
     /**
-     * WebP の形式の名前（RIFF の入れ物の 8〜11 バイト目）
+     * WebP の形式の名前
+     *
+     * <p>RIFF の入れ物の 8〜11 バイト目。
      */
     private static final byte[] WEBP_FOURCC = {'W', 'E', 'B', 'P'};
 
@@ -78,7 +95,9 @@ public enum ImageFormat {
     private static final byte[] BMP_SIGNATURE = {'B', 'M'};
 
     /**
-     * BMP の予約の領域（6〜9 バイト目。必ず 0）
+     * BMP の予約の領域
+     *
+     * <p>6〜9 バイト目。必ず 0。
      */
     private static final byte[] BMP_RESERVED = {0, 0, 0, 0};
 
@@ -88,7 +107,9 @@ public enum ImageFormat {
     private static final byte[] FTYP = {'f', 't', 'y', 'p'};
 
     /**
-     * HEIC の系統のブランド（HEVC で符号化した画像・画像の列）
+     * HEIC の系統のブランド
+     *
+     * <p>HEVC で符号化した画像・画像の列。
      */
     private static final Set<String> HEIF_BRANDS = Set.of("heic", "heix", "heim", "heis", "hevc", "hevx");
 
@@ -98,7 +119,9 @@ public enum ImageFormat {
     private static final Set<String> AVIF_BRANDS = Set.of("avif", "avis");
 
     /**
-     * HEIF の汎用のブランド。中身の符号化は互換のブランドで分かる
+     * HEIF の汎用のブランド
+     *
+     * <p>中身の符号化は互換のブランドで分かる。
      */
     private static final Set<String> GENERIC_BRANDS = Set.of("mif1", "msf1");
 
@@ -165,7 +188,7 @@ public enum ImageFormat {
     /**
      * ファイルの先頭のバイトから形式を判定する。
      *
-     * @param head ファイルの先頭（{@link #SIGNATURE_LENGTH} バイトまで読めば判定できる）
+     * @param head ファイルの先頭（{@value #SIGNATURE_LENGTH} バイトまで読めば判定できる）
      * @return 形式。受け付ける形式のどれでもなければ空
      */
     public static Optional<ImageFormat> detect(byte @NonNull [] head) {
@@ -190,8 +213,9 @@ public enum ImageFormat {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * ftyp のボックス（大きさ 4 バイト、"ftyp"、メジャーブランド、バージョン 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。<br />
-     * メジャーブランドが汎用（mif1、msf1）なら、互換のブランドを見る。どちらとも分からなければ HEIF とする（中身は変換で確認する）。
+     * ftyp のボックス（大きさ 4 バイト、"ftyp"、メジャーブランド、バージョン 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。
+     *
+     * <p>メジャーブランドが汎用（mif1、msf1）なら、互換のブランドを見る。どちらとも分からなければ HEIF とする（中身は変換で確認する）。
      */
     private static Optional<ImageFormat> detectFtyp(byte[] head) {
         if (head.length < 12) {

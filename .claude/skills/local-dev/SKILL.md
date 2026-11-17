@@ -15,9 +15,9 @@ description: ec-site をローカルで起動・確認する手順。スロッ�
 
 hook や検査に止められてからコマンドを書き換えないよう、次のとおりに書く。検査に拒否されて同じコマンドを書き直すことが、振り返りで最も多かった（47 件）。
 
-- 文書・コメント・コミットメッセージを書く前に、避ける語の一覧を読む。一覧は `scripts/ci/ja-text.json` の error と、skill `zh-mixing` の「書くときの注意」。
+- 文書・コメント・コミットメッセージを書く前に、避ける語の一覧を読む。一覧は `scripts/ci/ja/ja-text.json` の error と、skill `zh-mixing` の「書くときの注意」。
 - 複数のファイルの置き換えと、`\` や正規表現を含む書き換えは、初めから Edit で行う（新しいファイルは Write）。script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。heredoc（`<<'EOF'` も）と `node -e` の文字列に `\` を入れない。理由：Windows の Git Bash では `\` が除かれ、正規表現がエラーにならずに誤った内容になるため。hook `backslash-guard` も、heredoc と `node -e` の中の `\` を拒否する。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記も Edit で書く。
-- コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと hook に拒否される。
+- コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと hook に拒否される。
 - commit の失敗を見逃さない。`git commit` の出力を `tail`・`grep` に通さない（出力はファイルに書く）。commit と次の操作を `;` でつながない（`&&` でつなぐか、別の呼び出しにする）。commit の後に `git log --oneline -1` で、commit ができたかを確認する。理由：終了コードが隠れ、commit がないまま push や次の commit に進んだことがあったため。検査の出力を `| tail` に通すときも同じで、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
 - issue は `gh issue view <番号> --json title,body,comments` で読む。理由：`--comments` は、コメントのない issue で本文を出さないため。
 
@@ -149,7 +149,7 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 
 `./gradlew check` と `check-frontend.sh` に入っていない CI の検査。各検査の目的は [CI の検査の script](../../../docs/06-手順書/ci-checks.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
 
-hook `pre-commit` を置いていれば、commit のときに同じ検査が実行される。commit の前に `scripts/ci/check-all.sh` を手動で実行しない（約 1 分の重複実行になる）。失敗の理由を見るときは、commit をやり直さずに、失敗した検査の script を直接実行する。hook を置いていなければ、commit の前にルートで実行する。
+hook `pre-commit` を置いていれば、commit のときに、ステージしたファイルに関係する検査が実行される。commit の前に `scripts/ci/check-all.sh` を手動で実行しない（重複実行になる）。失敗の理由を見るときは、commit をやり直さずに、失敗した検査の script を直接実行する。hook を置いていなければ、commit の前にルートで実行する。
 
 ```bash
 scripts/ci/check-all.sh
@@ -178,12 +178,12 @@ scripts/dev/e2e.sh tests/payment.spec.ts -g AC-148   # 引数は Playwright に�
 コードをわざと壊してテストが失敗することを確認する（DN の確認など）ときに使う。sed は、当たらない式でも黙って通り、壊したつもりで「通った」と読み違えるため、使わない。
 
 ```bash
-node scripts/dev/break-check.mjs <ファイル> <置き換える文字列> <置き換え後> <ディレクトリ> <テストのコマンド>
-node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false && <p" frontend/store "npx vitest run src/x.test.tsx"
+node scripts/dev/tools/break-check.mjs <ファイル> <置き換える文字列> <置き換え後> <ディレクトリ> <テストのコマンド>
+node scripts/dev/tools/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false && <p" frontend/store "npx vitest run src/x.test.tsx"
 ```
 
 - 置き換える文字列が 1 か所だけに一致しなければ、変えずに止まる。テストの後は元に戻す。
-- 最後の行が `→ 失敗した（壊すと検出できる）` なら終了コード 0、`→ 通った（壊しても検出できない）` なら 1。置き換える文字列が一致しない・コマンドが実行できないときは 2（理由は標準エラー出力）。詳しい終了コードと、元に戻す条件は `scripts/dev/break-check.mjs` の冒頭のコメントにある。
+- 最後の行が `→ 失敗した（壊すと検出できる）` なら終了コード 0、`→ 通った（壊しても検出できない）` なら 1。置き換える文字列が一致しない・コマンドが実行できないときは 2（理由は標準エラー出力）。詳しい終了コードと、元に戻す条件は `scripts/dev/tools/break-check.mjs` の冒頭のコメントにある。
 - Gradle のテストでは、出力に `FAILED` か `BUILD` の行があることを確認する。ない失敗は、テスト以外の原因（起動の失敗など）を疑う。
 
 ## シェルと Git の落とし穴
@@ -210,7 +210,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 | PowerShell のツールで実行する `git`・`gh` の commit、push、merge、tag、api など | hook `agent-guard` | Bash のツールで実行する |
 | `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` の「ツールの補足」） |
 | spec やコミットメッセージに写した、利用者の中国語の言葉 | git の hook `commit-msg`・`pre-commit`（中国語の混入の検査） | 日本語に訳して書く（skill `zh-mixing` の「書くときの注意」） |
-| `git -C` と `cd` のパスに変数やコマンドの置き換え（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（`git commit` の対象のリポジトリを決められないとき） | 変数を使わず、絶対パスを直接書く |
+| 作業ディレクトリがリポジトリの外のときの、`git -C` と `cd` のパスに変数やコマンドの置き換えを使った `git commit`（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（変数の先を読まず、作業ディレクトリで対象のリポジトリを決めるので、決められない） | 変数を使わず、絶対パスを直接書く |
 | `cd` で `/.local/` などに移る | 拒否されない。以後のコマンドの作業ディレクトリが意図しない場所になる | `cd` で作業ディレクトリを移さず、`git -C <絶対パス>` と絶対パスを使う |
 
 ## コミットメッセージの書き換え
@@ -218,7 +218,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 push していない commit のメッセージを、校閲の後にまとめて書き換えるときに使う（push の時点は[開発の進め方](../../../docs/05-開発規則/workflow.md)の「push のタイミング」）。対話の `git rebase -i` は使えないので、対応表から非対話で書き換える。
 
 ```bash
-node scripts/dev/reword.mjs <対応表の JSON>   # [{ "commit": "<SHA>", "message": "<新しいメッセージのファイル>" }]
+node scripts/dev/tools/reword.mjs <対応表の JSON>   # [{ "commit": "<SHA>", "message": "<新しいメッセージのファイル>" }]
 ```
 
 - メッセージのファイルは、commit のときと同じく `ja-text.mjs --message` で検査してから渡す。各 commit の書き換えは commit の hook を通るので、hook の検査の時間（1 件 1 分ほど）がかかる。最初からバックグラウンドで実行する。

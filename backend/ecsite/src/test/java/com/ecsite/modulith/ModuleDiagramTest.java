@@ -1,9 +1,10 @@
 package com.ecsite.modulith;
 
-import com.ecsite.ProductionClasses;
 import com.ecsite.contract.Contracts;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModule;
 import org.springframework.modulith.core.ApplicationModuleDependency;
@@ -30,13 +31,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 全体構成の文書（docs/02-設計/overview.md）の図とコードの一致の検証。<br />
- * モジュールの依存の図とモジュール間のイベントの図は、Spring Modulith のモジュールの検出結果から作り、文書の生成の範囲と比べる。
- * 図に出すモジュールとイベントの日本語の名前は、用語集（docs/03-機能仕様/glossary.md）から読む。
+ * 全体構成の文書の図とコードの一致の検証
+ *
+ * <p>モジュールの依存の図とモジュール間のイベントの図は、Spring Modulith のモジュールの検出結果から作り、文書の生成の範囲と比べる。
+ * 図に出すモジュールとイベントの日本語の名前は、用語集から読む。
  * 外部システムの図は手で書くので、図に出るモジュールの名前が、コードのモジュールであることだけを確認する。
  * システムプロパティ {@code ecsite.update-docs} が {@code true} なら、比べずに文書の生成の範囲を書き直す。
  */
 class ModuleDiagramTest {
+
+    // ============================== 定数 ==============================
 
     /**
      * 全体構成の文書（Gradle が system property で渡すリポジトリのルートから）
@@ -52,22 +56,27 @@ class ModuleDiagramTest {
      * モジュールの依存の図の、文書の生成の範囲の始まりの印
      */
     private static final String DEPENDENCIES_START = "<!-- generated:module-dependencies -->";
+
     /**
      * モジュールの依存の図の、文書の生成の範囲の終わりの印
      */
     private static final String DEPENDENCIES_END = "<!-- /generated:module-dependencies -->";
+
     /**
      * モジュール間のイベントの図の、文書の生成の範囲の始まりの印
      */
     private static final String EVENTS_START = "<!-- generated:module-events -->";
+
     /**
      * モジュール間のイベントの図の、文書の生成の範囲の終わりの印
      */
     private static final String EVENTS_END = "<!-- /generated:module-events -->";
+
     /**
      * 文書の手書きの外部システムの図（2 つ）をまとめて囲む始まりの印
      */
     private static final String EXTERNAL_START = "<!-- external-systems -->";
+
     /**
      * 文書の手書きの外部システムの図（2 つ）をまとめて囲む終わりの印
      */
@@ -93,150 +102,231 @@ class ModuleDiagramTest {
      */
     private final ApplicationModules modules = ProductionClasses.applicationModules();
 
-    @Test
-    @DisplayName("全体構成の文書のモジュールの依存の図が、コードから作った図と一致する")
-    void dependenciesDiagramMatchesCode() throws IOException {
-        var expected = renderDependencies(diagramOf(modules), glossary().modules());
-        verifyOrUpdate(expected, DEPENDENCIES_START, DEPENDENCIES_END, "モジュールの依存");
+    // ============================== テスト ==============================
+
+    @Nested
+    @DisplayName("文書の図とコードの照合")
+    class DocumentDiagrams {
+
+        @Test
+        @DisplayName("全体構成の文書のモジュールの依存の図が、コードから作った図と一致する")
+        void dependenciesDiagramMatchesCode() throws IOException {
+            // 準備：コードのモジュールと用語集の名前から作った図
+            var expected = renderDependencies(diagramOf(modules), glossary().modules());
+
+            // 操作と確認：文書の生成の範囲と一致する（更新のモードなら書き直す）
+            verifyOrUpdate(expected, DEPENDENCIES_START, DEPENDENCIES_END, "モジュールの依存");
+        }
+
+        @Test
+        @DisplayName("全体構成の文書のモジュール間のイベントの図が、コードから作った図と一致する")
+        void eventsDiagramMatchesCode() throws IOException {
+            // 準備：コードのモジュールと用語集の名前から作った図
+            var glossary = glossary();
+            var expected = renderEvents(diagramOf(modules), glossary.modules(), glossary.events());
+
+            // 操作と確認：文書の生成の範囲と一致する（更新のモードなら書き直す）
+            verifyOrUpdate(expected, EVENTS_START, EVENTS_END, "モジュール間のイベント");
+        }
+
+        @Test
+        @DisplayName("全体構成の文書の外部システムの図の module_<名前> のノードが、全てコードのモジュールである")
+        void externalSystemsDiagramDrawsOnlyExistingModules() throws IOException {
+            // 操作：文書の外部システムの図から、モジュールのノードの名前を集める
+            var names = externalModuleNames(Files.readString(OVERVIEW, StandardCharsets.UTF_8));
+
+            // 確認：全てコードのモジュールの名前
+            assertThat(names)
+                    .as("外部システムの図のモジュール（module_<名前> のノード）は、コードにあるモジュールだけにする")
+                    .isSubsetOf(moduleNames(modules));
+        }
+
+        @Test
+        @DisplayName("外部システムの図に module_<名前> のノードが 1 つもないと、図の範囲を示して失敗する")
+        void externalSystemsDiagramWithoutModuleNodesFails() {
+            // 準備：モジュールのノードのない外部システムの図
+            var document = EXTERNAL_START + "\n```mermaid\nflowchart LR\n    carrier[\"物流サービス\"]\n```\n" + EXTERNAL_END;
+
+            // 操作と確認：ノードの形と図の範囲の印を示して失敗する
+            assertThatThrownBy(() -> externalModuleNames(document))
+                    .hasMessageContaining("module_<名前>")
+                    .hasMessageContaining(EXTERNAL_START);
+        }
     }
 
-    @Test
-    @DisplayName("全体構成の文書のモジュール間のイベントの図が、コードから作った図と一致する")
-    void eventsDiagramMatchesCode() throws IOException {
-        var glossary = glossary();
-        var expected = renderEvents(diagramOf(modules), glossary.modules(), glossary.events());
-        verifyOrUpdate(expected, EVENTS_START, EVENTS_END, "モジュール間のイベント");
+    @Nested
+    @DisplayName("用語集の読み取り")
+    class GlossaryParsing {
+
+        @Test
+        @DisplayName("用語集の節が順番を入れ替えて並んでいても、モジュールとイベントの両方の名前を読める")
+        void glossarySectionsCanBeInAnyOrder() {
+            // 準備：イベントの節を先に置いた用語集
+            var lines = List.of(
+                    "## イベント", "| 用語 | 識別子 | 発行元 |", "|---|---|---|", "| 支払の期限切れ | `PaymentExpired` | 決済 |",
+                    "## モジュール", "| 用語 | 識別子 | 意味 |", "|---|---|---|", "| 決済モジュール | `payment` | 支払 |");
+
+            // 操作：用語集を読む
+            var glossary = parseGlossary(lines);
+
+            // 確認：モジュール（末尾の「モジュール」を除く）とイベントの名前を読める
+            assertThat(glossary.modules()).containsExactly(Map.entry("payment", "決済"));
+            assertThat(glossary.events()).containsExactly(Map.entry("PaymentExpired", "支払の期限切れ"));
+        }
+
+        @Test
+        @DisplayName("用語集に「## モジュール」の節がないと、節の名前を示して失敗する")
+        void glossaryWithoutModuleSectionFails() {
+            // 準備：イベントの節だけの用語集
+            var eventsOnly = List.of("## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
+
+            // 操作と確認：ない節の名前を示して失敗する
+            assertThatThrownBy(() -> parseGlossary(eventsOnly)).hasMessageContaining("## モジュール");
+        }
+
+        @Test
+        @DisplayName("用語集に「## イベント」の節がないと、節の名前を示して失敗する")
+        void glossaryWithoutEventSectionFails() {
+            // 準備：モジュールの節だけの用語集
+            var modulesOnly = List.of("## モジュール", "| 決済モジュール | `payment` | 支払 |");
+
+            // 操作と確認：ない節の名前を示して失敗する
+            assertThatThrownBy(() -> parseGlossary(modulesOnly)).hasMessageContaining("## イベント");
+        }
+
+        @Test
+        @DisplayName("用語集の節の中で 1 行も読めないと、節の名前を示して失敗する")
+        void glossarySectionWithoutRowsFails() {
+            // 準備：モジュールの節の識別子の列が、バッククォートで囲まれていない用語集
+            var lines = List.of(
+                    "## モジュール", "| 用語 | 意味 | 識別子 |", "| 決済モジュール | 支払 | payment |",
+                    "## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
+
+            // 操作と確認：節の名前と、行がないことを示して失敗する
+            assertThatThrownBy(() -> parseGlossary(lines)).hasMessageContaining("## モジュール")
+                    .hasMessageContaining("1 行も");
+        }
+
+        @Test
+        @DisplayName("用語集のモジュールの論理名の末尾が「モジュール」でないと、その行を示して失敗する")
+        void glossaryModuleRowWithoutSuffixFails() {
+            // 準備：モジュールの論理名の末尾に「モジュール」がない用語集
+            var lines = List.of(
+                    "## モジュール", "| 決済 | `payment` | 支払 |",
+                    "## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
+
+            // 操作と確認：その行を示して失敗する
+            assertThatThrownBy(() -> parseGlossary(lines)).hasMessageContaining("| 決済 | `payment` | 支払 |");
+        }
+
+        @Test
+        @DisplayName("用語集の同じ節に同じ識別子の行が 2 つあると、その行を示して失敗する")
+        void glossaryDuplicateIdentifierFails() {
+            // 準備：モジュールの節に、同じ識別子の行が 2 つある用語集
+            var lines = List.of(
+                    "## モジュール", "| 決済モジュール | `payment` | 支払 |", "| 支払モジュール | `payment` | 支払 |",
+                    "## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
+
+            // 操作と確認：2 つ目の行を示して失敗する
+            assertThatThrownBy(() -> parseGlossary(lines)).hasMessageContaining("| 支払モジュール | `payment` | 支払 |");
+        }
     }
 
-    @Test
-    @DisplayName("全体構成の文書の外部システムの図の module_<名前> のノードが、全てコードのモジュールである")
-    void externalSystemsDiagramDrawsOnlyExistingModules() throws IOException {
-        var names = externalModuleNames(Files.readString(OVERVIEW, StandardCharsets.UTF_8));
-        assertThat(names)
-                .as("外部システムの図のモジュール（module_<名前> のノード）は、コードにあるモジュールだけにする")
-                .isSubsetOf(moduleNames(modules));
+    @Nested
+    @DisplayName("図の描き方")
+    class Rendering {
+
+        @Test
+        @DisplayName("用語集にモジュールの名前がないと、依存の図は追加する識別子を示して失敗する")
+        void missingModuleNameFails() {
+            // 準備：order と payment のモジュールと、order の名前だけの用語集
+            var diagram = paymentToOrderDiagram();
+
+            // 操作と確認：名前のない識別子を示して失敗する
+            assertThatThrownBy(() -> renderDependencies(diagram, Map.of("order", "注文")))
+                    .hasMessageContaining("payment");
+        }
+
+        @Test
+        @DisplayName("用語集にイベントの名前がないと、イベントの図は追加するクラス名を示して失敗する")
+        void missingEventNameFails() {
+            // 準備：payment から order へのイベントと、イベントの名前のない用語集
+            var diagram = paymentToOrderDiagram();
+
+            // 操作と確認：名前のないイベントのクラス名を示して失敗する
+            assertThatThrownBy(() -> renderEvents(diagram, Map.of("order", "注文", "payment", "決済"), Map.of()))
+                    .hasMessageContaining("PaymentExpired");
+        }
+
+        @Test
+        @DisplayName("固定した内容から、依存だけを上から下に並べた図に描く")
+        void rendersDependencies() {
+            // 準備：order が shipping と payment に依存する内容
+            var dependencies = new TreeMap<String, Set<String>>();
+            dependencies.put("order", new TreeSet<>(Set.of("shipping", "payment")));
+            var diagram = new Diagram(new TreeSet<>(Set.of("order", "payment", "shipping")), dependencies, Map.of());
+
+            // 操作：依存の図を描く
+            var rendered = renderDependencies(diagram, Map.of("order", "注文", "payment", "決済", "shipping", "出荷"));
+
+            // 確認：ノードと依存が名前の順に並ぶ
+            // （依存の抽出は、固定した内容では確認できない。dependenciesDiagramMatchesCode が、コードから作った図を文書と比べて確認する）
+            assertThat(rendered).isEqualTo("""
+                    ```mermaid
+                    flowchart TB
+                        order["注文"]
+                        payment["決済"]
+                        shipping["出荷"]
+                        order --> payment
+                        order --> shipping
+                    ```
+                    """);
+        }
+
+        @Test
+        @DisplayName("固定した内容から、イベントだけを、発行するモジュールから受けるモジュールへの点線で左から右に並べた図に描く")
+        void rendersEvents() {
+            // 準備：payment から order への 2 つのイベントと、イベントに関わらない shipping
+            var events = new TreeMap<EventEdge, Set<String>>();
+            events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired", "PaymentAuthorized")));
+            var diagram = new Diagram(new TreeSet<>(Set.of("order", "payment", "shipping")), Map.of(), events);
+
+            // 操作：イベントの図を描く
+            var rendered = renderEvents(diagram, Map.of("order", "注文", "payment", "決済", "shipping", "出荷"),
+                    Map.of("PaymentAuthorized", "与信の成功", "PaymentExpired", "支払の期限切れ"));
+
+            // 確認：イベントに関わるモジュールだけをノードにし、同じ流れのイベントを 1 本の点線にまとめる
+            // （イベントの組ごとの集約は、固定した内容では確認できない。eventsDiagramMatchesCode が、コードから作った図を文書と比べて確認する）
+            assertThat(rendered).isEqualTo("""
+                    ```mermaid
+                    flowchart LR
+                        order["注文"]
+                        payment["決済"]
+                        payment -. 与信の成功<br>支払の期限切れ .-> order
+                    ```
+                    """);
+        }
     }
 
-    @Test
-    @DisplayName("外部システムの図に module_<名前> のノードが 1 つもないと、図の範囲を示して失敗する")
-    void externalSystemsDiagramWithoutModuleNodesFails() {
-        var document = EXTERNAL_START + "\n```mermaid\nflowchart LR\n    carrier[\"物流サービス\"]\n```\n" + EXTERNAL_END;
-
-        assertThatThrownBy(() -> externalModuleNames(document))
-                .hasMessageContaining("module_<名前>")
-                .hasMessageContaining(EXTERNAL_START);
-    }
-
-    @Test
-    @DisplayName("用語集の節が順番を入れ替えて並んでいても、モジュールとイベントの両方の名前を読める")
-    void glossarySectionsCanBeInAnyOrder() {
-        var glossary = parseGlossary(List.of(
-                "## イベント", "| 用語 | 識別子 | 発行元 |", "|---|---|---|", "| 支払の期限切れ | `PaymentExpired` | 決済 |",
-                "## モジュール", "| 用語 | 識別子 | 意味 |", "|---|---|---|", "| 決済モジュール | `payment` | 支払 |"));
-
-        assertThat(glossary.modules()).containsExactly(Map.entry("payment", "決済"));
-        assertThat(glossary.events()).containsExactly(Map.entry("PaymentExpired", "支払の期限切れ"));
-    }
-
-    @Test
-    @DisplayName("用語集に「## モジュール」か「## イベント」の節がないと、節の名前を示して失敗する")
-    void glossaryWithoutSectionFails() {
-        var eventsOnly = List.of("## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
-        var modulesOnly = List.of("## モジュール", "| 決済モジュール | `payment` | 支払 |");
-
-        assertThatThrownBy(() -> parseGlossary(eventsOnly)).hasMessageContaining("## モジュール");
-        assertThatThrownBy(() -> parseGlossary(modulesOnly)).hasMessageContaining("## イベント");
-    }
-
-    @Test
-    @DisplayName("用語集の節の中で 1 行も読めないと、節の名前を示して失敗する")
-    void glossarySectionWithoutRowsFails() {
-        var lines = List.of(
-                "## モジュール", "| 用語 | 意味 | 識別子 |", "| 決済モジュール | 支払 | payment |",
-                "## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
-
-        assertThatThrownBy(() -> parseGlossary(lines)).hasMessageContaining("## モジュール")
-                .hasMessageContaining("1 行も");
-    }
-
-    @Test
-    @DisplayName("用語集のモジュールの論理名の末尾が「モジュール」でないと、その行を示して失敗する")
-    void glossaryModuleRowWithoutSuffixFails() {
-        var lines = List.of(
-                "## モジュール", "| 決済 | `payment` | 支払 |",
-                "## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
-
-        assertThatThrownBy(() -> parseGlossary(lines)).hasMessageContaining("| 決済 | `payment` | 支払 |");
-    }
-
-    @Test
-    @DisplayName("用語集の同じ節に同じ識別子の行が 2 つあると、その行を示して失敗する")
-    void glossaryDuplicateIdentifierFails() {
-        var lines = List.of(
-                "## モジュール", "| 決済モジュール | `payment` | 支払 |", "| 支払モジュール | `payment` | 支払 |",
-                "## イベント", "| 支払の期限切れ | `PaymentExpired` | 決済 |");
-
-        assertThatThrownBy(() -> parseGlossary(lines)).hasMessageContaining("| 支払モジュール | `payment` | 支払 |");
-    }
-
-    @Test
-    @DisplayName("用語集にモジュールかイベントの名前がないと、追加する名前を示して失敗する")
-    void missingGlossaryNamesFail() {
-        var events = new TreeMap<EventEdge, Set<String>>();
-        events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired")));
-        var diagram = new Diagram(new TreeSet<>(Set.of("order", "payment")), Map.of(), events);
-
-        assertThatThrownBy(() -> renderDependencies(diagram, Map.of("order", "注文")))
-                .hasMessageContaining("payment");
-        assertThatThrownBy(() -> renderEvents(diagram, Map.of("order", "注文", "payment", "決済"), Map.of()))
-                .hasMessageContaining("PaymentExpired");
-    }
-
-    @Test
-    @DisplayName("固定した内容から、依存だけを上から下に並べた図に描く")
-    void rendersDependencies() {
-        var dependencies = new TreeMap<String, Set<String>>();
-        dependencies.put("order", new TreeSet<>(Set.of("shipping", "payment")));
-        var diagram = new Diagram(new TreeSet<>(Set.of("order", "payment", "shipping")), dependencies, Map.of());
-
-        var rendered = renderDependencies(diagram, Map.of("order", "注文", "payment", "決済", "shipping", "出荷"));
-
-        // 依存の抽出は、固定した内容では確認できない。dependenciesDiagramMatchesCode が、コードから作った図を文書と比べて確認する
-        assertThat(rendered).isEqualTo("""
-                ```mermaid
-                flowchart TB
-                    order["注文"]
-                    payment["決済"]
-                    shipping["出荷"]
-                    order --> payment
-                    order --> shipping
-                ```
-                """);
-    }
-
-    @Test
-    @DisplayName("固定した内容から、イベントだけを、発行するモジュールから受けるモジュールへの点線で左から右に並べた図に描く")
-    void rendersEvents() {
-        var events = new TreeMap<EventEdge, Set<String>>();
-        events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired", "PaymentAuthorized")));
-        var diagram = new Diagram(new TreeSet<>(Set.of("order", "payment", "shipping")), Map.of(), events);
-
-        var rendered = renderEvents(diagram, Map.of("order", "注文", "payment", "決済", "shipping", "出荷"),
-                Map.of("PaymentAuthorized", "与信の成功", "PaymentExpired", "支払の期限切れ"));
-
-        // イベントの組ごとの集約は、固定した内容では確認できない。eventsDiagramMatchesCode が、コードから作った図を文書と比べて確認する
-        assertThat(rendered).isEqualTo("""
-                ```mermaid
-                flowchart LR
-                    order["注文"]
-                    payment["決済"]
-                    payment -. 与信の成功<br>支払の期限切れ .-> order
-                ```
-                """);
-    }
+    // ============================== 準備の補助 ==============================
 
     /**
-     * 作った図を、文書の生成の範囲と比べる。更新のモードなら、比べずに範囲を書き直す。
+     * order と payment のモジュールと、payment から order への支払の期限切れのイベントを持つ図の内容を作る。
+     *
+     * @return 図に描く内容（依存はない）
+     */
+    private static Diagram paymentToOrderDiagram() {
+        var events = new TreeMap<EventEdge, Set<String>>();
+        events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired")));
+        return new Diagram(new TreeSet<>(Set.of("order", "payment")), Map.of(), events);
+    }
+
+    // ============================== 図と文書の補助 ==============================
+
+    /**
+     * 作った図を、文書の生成の範囲と比べる。
+     *
+     * <p>更新のモードなら、比べずに範囲を書き直す。
      *
      * @param expected 作った図
      * @param start    始まりの印
@@ -268,8 +358,9 @@ class ModuleDiagramTest {
     }
 
     /**
-     * 用語集の行から、モジュールとイベントの名前を読む。<br />
-     * 節は見出しで見つけるので、節の順に依存しない。次のときは、原因の節か行を示して失敗する。節がない。節の中で行を 1 つも読めない。
+     * 用語集の行から、モジュールとイベントの名前を読む。
+     *
+     * <p>節は見出しで見つけるので、節の順に依存しない。次のときは、原因の節か行を示して失敗する。節がない。節の中で行を 1 つも読めない。
      * モジュールの論理名の末尾が「モジュール」でない。同じ識別子の行が 2 つある。
      *
      * @param lines 用語集の行
@@ -315,8 +406,9 @@ class ModuleDiagramTest {
     }
 
     /**
-     * 文書の手書きの外部システムの図から、{@code module_<名前>} のノードのモジュールの名前を集める。<br />
-     * ノードが 1 つもないと、図の範囲を示して失敗する（検査が何も確認しないまま通らないようにする）。
+     * 文書の手書きの外部システムの図から、{@code module_<名前>} のノードのモジュールの名前を集める。
+     *
+     * <p>ノードが 1 つもないと、図の範囲を示して失敗する（検査が何も確認しないまま通らないようにする）。
      *
      * @param document 文書
      * @return モジュールの名前（名前の順）
@@ -361,7 +453,9 @@ class ModuleDiagramTest {
     }
 
     /**
-     * モジュールの依存の図（Mermaid のコードブロック）を描く。実線だけで、上から下に並べる。並びは名前の順で、毎回同じ結果になる。
+     * モジュールの依存の図（Mermaid のコードブロック）を描く。
+     *
+     * <p>実線だけで、上から下に並べる。並びは名前の順で、毎回同じ結果になる。
      *
      * @param diagram     図に描く内容
      * @param moduleNames モジュールの識別子から日本語の名前
@@ -380,7 +474,9 @@ class ModuleDiagramTest {
     }
 
     /**
-     * モジュール間のイベントの図（Mermaid のコードブロック）を描く。点線だけで、左から右に並べる。
+     * モジュール間のイベントの図（Mermaid のコードブロック）を描く。
+     *
+     * <p>点線だけで、左から右に並べる。
      * イベントを発行するモジュールと、受けるモジュールだけをノードにする。並びは名前の順で、毎回同じ結果になる。
      *
      * @param diagram     図に描く内容
@@ -511,7 +607,7 @@ class ModuleDiagramTest {
     }
 
     /**
-     * 図に描く内容。
+     * 図に描く内容
      *
      * @param modules      モジュールの名前
      * @param dependencies モジュールから、使うモジュールへの依存（イベント以外）
@@ -560,7 +656,7 @@ class ModuleDiagramTest {
     }
 
     /**
-     * 用語集のモジュールとイベントの名前。
+     * 用語集のモジュールとイベントの名前
      *
      * @param modules モジュールの識別子から、論理名（末尾の「モジュール」を除く）
      * @param events  イベントのクラス名から、論理名
@@ -570,6 +666,9 @@ class ModuleDiagramTest {
 
     /**
      * イベントの流れの 1 本
+     *
+     * @param publisher 発行するモジュールの名前
+     * @param listener  受け取るモジュールの名前
      */
     private record EventEdge(String publisher, String listener) implements Comparable<EventEdge> {
 

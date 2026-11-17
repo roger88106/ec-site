@@ -6,7 +6,7 @@
 
 | 検査 | コマンド（ルートで） | CI のジョブ |
 |------|----------------------|-------------|
-| バックエンド | `cd backend/ecsite && ./gradlew check` | バックエンド（ビルドと単体テスト）、バックエンド（統合テスト 1/2・2/2）、バックエンド |
+| バックエンド | `cd backend/ecsite && ./gradlew check` | バックエンド（ビルドと単体テスト）、バックエンド（PIT）、バックエンド（統合テスト 1/3・2/3・3/3）、バックエンド |
 | 画面（共有パッケージ・管理画面・店舗画面・E2E のコード） | `scripts/dev/check-frontend.sh`（ルートで 1 回の検査として、依存の再インストール、ライセンス、knip、組み込みの名前の一覧の確認も実行する） | 管理画面、店舗画面（共有パッケージを含む）、E2E（E2E のコードの lint・型チェック） |
 | CI の検査の script | `scripts/ci/check-all.sh` | 文書と CI の検査の script |
 | E2E | `scripts/dev/e2e.sh` | E2E |
@@ -21,15 +21,16 @@
 
 | ワークフロー | ジョブ | 実行するもの | 実行する時 |
 |--------------|--------|--------------|------------|
-| `ci.yml` | バックエンド（ビルドと単体テスト） | ライセンス、ビルド、静的解析、単体テスト、PIT の検査を実行する（[バックエンドの CI のジョブ](ci-backend-jobs.md)）。 | push（[バックエンドの CI のジョブ](ci-backend-jobs.md)の「ci.yml を実行しないファイル」を除く）と pull request |
-| `ci.yml` | バックエンド（統合テスト 1/2・2/2） | 統合テストの半分ずつを実行する。 | 同上 |
-| `ci.yml` | バックエンド | 上の 3 つの結果を確認し、カバレッジの報告と基準の検査を行う。 | 同上 |
+| `ci.yml` | バックエンド（ビルドと単体テスト） | ライセンス、ビルド、静的解析、単体テストの検査を実行する（[バックエンドの CI のジョブ](ci-backend-jobs.md)）。 | push（[バックエンドの CI のジョブ](ci-backend-jobs.md)の「ci.yml を実行しないファイル」を除く）と pull request |
+| `ci.yml` | バックエンド（PIT） | domain の mutation testing（PIT）と、mutation score の基準の検査を実行する。 | 同上 |
+| `ci.yml` | バックエンド（統合テスト 1/3・2/3・3/3） | 統合テストを 3 つに分けて実行する。 | 同上 |
+| `ci.yml` | バックエンド | 上のバックエンドのジョブの結果を確認し、カバレッジの報告と基準の検査を行う。 | 同上 |
 | `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの基準の検査を行う。 | 同上 |
 | `ci.yml` | 店舗画面 | 画面全体の検査（ライセンス、knip など）と、共有パッケージ・店舗画面のテストとビルドを行う。 | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェックの後、ブラウザーで操作する。 | 同上 |
 | `docs.yml` | 文書と CI の検査の script | `check-all.sh` と Mermaid の図の描画の検査を実行する（[CI の検査の script](ci-checks.md)）。 | 全ての push と pull request |
 | `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチ名が `release/` か `hotfix/` で始まることを確認する（[ブランチとリリース](branches.md)の「`main` の元のブランチの制限」）。 | `main` への pull request |
-| `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
+| `risk.yml` | 危険度の照合 | pull request の本文の危険度が、`scripts/ci/config/risk.mjs` の判定より低くないことを確認する。 | `develop` への draft でない pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する。 | `main` で `showcase/` が変わったとき、手動 |
 
 `ci.yml` と `docs.yml` は、`develop` と `main` では全ての commit を検査し、前の実行を中止しない。作業ブランチでは、新しい push が、同じブランチの前の push の実行を中止する。pull request の実行も、同じ pull request の前の実行を中止する。push と pull request の実行は別に動くので、pull request のあるブランチでは同じ commit で 2 回実行される（`ci.yml` は、文書だけの push では pull request の 1 回）。これらを同じ group にしない（中止された check が残ると、同じ名前の成功した check があっても、必須の検査を満たさずマージできないため）。

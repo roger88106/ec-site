@@ -5,7 +5,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 決済モジュールの設定（決済サービス、支払の期限、戻る先）を有効にする。
+ * 決済モジュールの設定
+ *
+ * <p>決済の設定（支払の期限、与信の有効期間、戻る先など）を有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PaymentProperties.class)

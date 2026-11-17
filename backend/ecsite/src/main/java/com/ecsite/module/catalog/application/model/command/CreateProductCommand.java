@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.application.model.command;
 
 import com.ecsite.common.model.value.Money;
+import lombok.NonNull;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import java.util.UUID;
  * @param categoryIds   所属カテゴリの ID
  * @param axes          バリアント軸の名前（並び順）
  */
-public record CreateProductCommand(String productCode, String name, String description, UUID taxCategoryId,
-                                   Money priceExclTax, List<UUID> categoryIds, List<String> axes) {
+public record CreateProductCommand(@NonNull String productCode, @NonNull String name, @NonNull String description,
+                                   @NonNull UUID taxCategoryId, @NonNull Money priceExclTax,
+                                   @NonNull List<UUID> categoryIds, @NonNull List<String> axes) {
 }

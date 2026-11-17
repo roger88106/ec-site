@@ -5,13 +5,13 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 /**
- * 認可で使う、リクエストのパスの取り出し。
+ * リクエストのパスの取り出し
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class RequestPaths {
 
     /**
-     * リクエストのパスから、コンテキストパスを除いたものを返す。OpenAPI の契約のパスと比べるために使う。
+     * リクエストのパスから、コンテキストパスを除いたものを返す。
      *
      * @param request リクエスト
      * @return コンテキストパスを除いたパス

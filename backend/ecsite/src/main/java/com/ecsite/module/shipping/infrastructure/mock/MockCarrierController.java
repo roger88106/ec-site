@@ -1,6 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
-import com.ecsite.common.message.MessageHelper;
+import com.ecsite.common.message.MessageResolver;
 import com.ecsite.common.presentation.MockPageResponses;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
@@ -26,10 +25,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * mock の物流サービスの画面（docs/02-設計/shipping.md「mock」）。<br />
- * 外部の物流サービスの代わりで、EC の API ではない（OpenAPI に書かない）。物流の mock フラグを立てたときだけ出す。
- * 出荷の一覧と、出荷ごとに「配送中」「配達完了」「返送」のボタンを持つ。ボタンを押すと、署名付きの通知を
- * HTTP で自分の通知のエンドポイントに送る。
+ * mock の物流サービスの画面
+ *
+ * <p>外部の物流サービスの代わりで、EC の API ではないので、OpenAPI に書かない。物流の mock のフラグを立てたときだけ出す。
  */
 @Slf4j
 @Controller
@@ -60,7 +58,7 @@ class MockCarrierController {
     /**
      * メッセージ（配送業者の表示の名前）
      */
-    private final MessageHelper messageHelper;
+    private final MessageResolver messageResolver;
 
     /**
      * 出荷の一覧を出す。
@@ -73,7 +71,9 @@ class MockCarrierController {
     }
 
     /**
-     * 出荷の配送状態を通知する。署名付きの通知を、この画面を出したサーバーのエンドポイントに HTTP で送り、一覧に戻る。
+     * 出荷の配送状態を通知する。
+     *
+     * <p>署名付きの通知を、この画面を出したサーバーのエンドポイントに HTTP で送り、一覧に戻る。
      *
      * @param orderId 注文 ID
      * @param status  通知する配送状態（配送中、配達完了、返送）
@@ -108,10 +108,13 @@ class MockCarrierController {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * エンドポイントを持つ、このサーバーの URL（リクエストと同じ接続先）を求める。
+     * エンドポイントを持つ、このサーバーの URL を求める。
+     *
+     * <p>宛先は、リクエストを受けたローカルのポートの localhost にする。Host ヘッダーから作ると、
+     * 書き換えたリクエストで、署名した通知を外のホストに送らせられるため。
      */
     private static String baseUrl(HttpServletRequest request) {
-        return ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();
+        return "http://localhost:" + request.getLocalPort() + request.getContextPath();
     }
 
     /**
@@ -125,9 +128,9 @@ class MockCarrierController {
     }
 
     /**
-     * 配送業者の表示の名前を、出荷モジュールのメッセージから取る。通知のメールも同じキーを使う。
+     * 配送業者の表示の名前を、出荷モジュールのメッセージから取る。
      */
     private String carrierName(Carrier carrier) {
-        return messageHelper.getMessage(carrier.nameMessageKey(), Map.of());
+        return messageResolver.getMessage(carrier.nameMessageKey(), Map.of());
     }
 }

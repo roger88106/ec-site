@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { Pagination } from '@/components/Pagination'
 import { I18nProvider } from '@/i18n/I18nProvider'
 
+/** ページングを描画し、ページを選んだときの関数の代わりと user を返す。 */
 function renderPagination(page: number, totalPages: number, totalItems: number) {
   const onChange = vi.fn()
   render(

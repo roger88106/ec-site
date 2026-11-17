@@ -1,13 +1,15 @@
 package com.ecsite.module.region.infrastructure.persistence;
 
+import com.ecsite.module.region.application.model.MunicipalityView;
 import com.ecsite.module.region.application.port.RegionRepository;
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.PostalAddress;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.PostalAddress;
+import com.ecsite.module.region.domain.vo.Prefecture;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
-import org.jooq.Record2;
-import org.jooq.Record3;
+import org.jooq.Record1;
+import org.jooq.Records;
+import org.jooq.SelectField;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.Optional;
 import static com.ecsite.jooq.region.Tables.MUNICIPALITY;
 import static com.ecsite.jooq.region.Tables.POSTAL_CODE;
 import static com.ecsite.jooq.region.Tables.PREFECTURE;
+import static org.jooq.impl.DSL.row;
 
 /**
  * 地域のマスターデータのリポジトリの jOOQ の実装
@@ -29,74 +32,82 @@ class JooqRegionRepository implements RegionRepository {
      */
     private final DSLContext dsl;
 
+// ============================== 取得列と変換 ==============================
+
     /**
-     * 都道府県の一覧
+     * 都道府県の列と、都道府県への変換
+     *
+     * <p>列の並びは {@link Prefecture} の項目の順にする。
+     */
+    private static final SelectField<Prefecture> PREFECTURE_ROW =
+            row(PREFECTURE.CODE, PREFECTURE.NAME).mapping(Prefecture::new);
+
+    /**
+     * 市区町村の列と、市区町村への変換
+     *
+     * <p>列の並びは {@link Municipality} の項目の順にする。
+     */
+    private static final SelectField<Municipality> MUNICIPALITY_ROW =
+            row(MUNICIPALITY.CODE, MUNICIPALITY.PREFECTURE_CODE, MUNICIPALITY.NAME).mapping(Municipality::new);
+
+// ============================== 検索処理 ==============================
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public List<Prefecture> findPrefectures() {
-        return dsl.select(PREFECTURE.CODE, PREFECTURE.NAME).from(PREFECTURE).orderBy(PREFECTURE.CODE)
-                .fetch(JooqRegionRepository::toPrefecture);
+        return dsl.select(PREFECTURE_ROW).from(PREFECTURE).orderBy(PREFECTURE.CODE)
+                .fetch(Record1::value1);
     }
 
     /**
-     * 都道府県をコードで引く
+     * {@inheritDoc}
      */
     @Override
     public Optional<Prefecture> findPrefecture(String code) {
-        return dsl.select(PREFECTURE.CODE, PREFECTURE.NAME).from(PREFECTURE).where(PREFECTURE.CODE.eq(code))
-                .fetchOptional(JooqRegionRepository::toPrefecture);
+        return dsl.select(PREFECTURE_ROW).from(PREFECTURE).where(PREFECTURE.CODE.eq(code))
+                .fetchOptional(Record1::value1);
     }
 
     /**
-     * 都道府県の市区町村の一覧
+     * {@inheritDoc}
      */
     @Override
     public List<Municipality> findMunicipalities(String prefectureCode) {
-        return dsl.select(MUNICIPALITY.CODE, MUNICIPALITY.PREFECTURE_CODE, MUNICIPALITY.NAME).from(MUNICIPALITY)
+        return dsl.select(MUNICIPALITY_ROW).from(MUNICIPALITY)
                 .where(MUNICIPALITY.PREFECTURE_CODE.eq(prefectureCode))
                 .orderBy(MUNICIPALITY.CODE)
-                .fetch(JooqRegionRepository::toMunicipality);
+                .fetch(Record1::value1);
     }
 
     /**
-     * 市区町村をコードで引く
+     * {@inheritDoc}
      */
     @Override
-    public Optional<Municipality> findMunicipality(String code) {
-        return dsl.select(MUNICIPALITY.CODE, MUNICIPALITY.PREFECTURE_CODE, MUNICIPALITY.NAME).from(MUNICIPALITY)
+    public Optional<MunicipalityView> findMunicipality(String code) {
+        // 列の並びは MunicipalityView の項目の順にする
+        return dsl.select(PREFECTURE_ROW, MUNICIPALITY_ROW)
+                .from(MUNICIPALITY)
+                .join(PREFECTURE).on(PREFECTURE.CODE.eq(MUNICIPALITY.PREFECTURE_CODE))
                 .where(MUNICIPALITY.CODE.eq(code))
-                .fetchOptional(JooqRegionRepository::toMunicipality);
+                .fetchOptional(Records.mapping(MunicipalityView::new));
     }
 
     /**
-     * 郵便番号の住所。市区町村と都道府県を結んで、並び順に返す
+     * {@inheritDoc}
+     *
+     * <p>市区町村と都道府県を結合して、並び順に返す。
      */
     @Override
     public List<PostalAddress> findPostalAddresses(String postalCode) {
-        return dsl.select(POSTAL_CODE.POSTAL_CODE_, POSTAL_CODE.TOWN_NAME,
-                        MUNICIPALITY.CODE, MUNICIPALITY.PREFECTURE_CODE, MUNICIPALITY.NAME, PREFECTURE.NAME)
+        // 列の並びは PostalAddress の項目の順にする
+        return dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CODE.TOWN_NAME)
                 .from(POSTAL_CODE)
                 .join(MUNICIPALITY).on(MUNICIPALITY.CODE.eq(POSTAL_CODE.MUNICIPALITY_CODE))
                 .join(PREFECTURE).on(PREFECTURE.CODE.eq(MUNICIPALITY.PREFECTURE_CODE))
                 .where(POSTAL_CODE.POSTAL_CODE_.eq(postalCode))
                 .orderBy(POSTAL_CODE.DISPLAY_ORDER)
-                .fetch(r -> new PostalAddress(r.value1(), new Prefecture(r.value4(), r.value6()),
-                        new Municipality(r.value3(), r.value4(), r.value5()), r.value2()));
-    }
-
-// ============================== プライベートメソッド ==============================
-
-    /**
-     * 都道府県の行（コード、名前）を都道府県にする。
-     */
-    private static Prefecture toPrefecture(Record2<String, String> row) {
-        return new Prefecture(row.value1(), row.value2());
-    }
-
-    /**
-     * 市区町村の行（コード、都道府県のコード、名前）を市区町村にする。
-     */
-    private static Municipality toMunicipality(Record3<String, String, String> row) {
-        return new Municipality(row.value1(), row.value2(), row.value3());
+                .fetch(Records.mapping(PostalAddress::new));
     }
 }

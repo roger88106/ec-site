@@ -17,12 +17,12 @@ const ME_FAILURES = [
   ['通信の失敗', 'networkError', 'サーバーに接続できませんでした。'],
 ] as const
 
-/** 機能のメニュー */
+/** 機能のメニューを返す。 */
 function menu() {
   return within(screen.getByRole('navigation', { name: '機能のメニュー' }))
 }
 
-/** 地域・年齢層・性別の API に、空の集計で応答する */
+/** 地域・年齢層・性別の API に、空の集計で応答する。 */
 function serveEmptyBreakdown() {
   server.use(
     http.get('/reports/customer-breakdown', ({ response }) =>
@@ -31,7 +31,7 @@ function serveEmptyBreakdown() {
   )
 }
 
-/** 自分の権限の一覧の取得を、応答しないままにする（再試行の間を作る） */
+/** 自分の権限の一覧の取得を、応答しないままにする（再試行の間を作る）。 */
 function holdMe() {
   server.use(
     http.get('/me', async ({ response }) => {

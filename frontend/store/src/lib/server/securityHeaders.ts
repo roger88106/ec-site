@@ -1,5 +1,6 @@
 /**
- * 店舗画面のセキュリティヘッダーの値（店舗画面の構成の「セキュリティヘッダー」）。<br />
+ * 店舗画面のセキュリティヘッダーの値（店舗画面の構成の「セキュリティヘッダー」）。
+ *
  * `next.config.ts` からも読むので、`server-only` は import しない。
  */
 
@@ -21,11 +22,15 @@ type ContentSecurityPolicyInput = {
 /** 決済サービス（Stripe）の支払画面のオリジン */
 const STRIPE_CHECKOUT_ORIGIN = 'https://checkout.stripe.com'
 
-/** HSTS の有効期間（1 年）。サブドメインへの適用とプリロードは、公開のドメインが決まるまで指定しない */
+/**
+ * HSTS の有効期間
+ *
+ * サブドメインへの適用とプリロードは、公開のドメインが決まるまで指定しない。
+ */
 const HSTS_VALUE = 'max-age=31536000'
 
 /**
- * 値が固定のヘッダー。
+ * 値が固定のヘッダーを返す。
  *
  * @param production 本番のモードか（本番のときだけ HSTS を含める）
  * @returns ヘッダーの一覧
@@ -43,14 +48,14 @@ export function fixedSecurityHeaders(production: boolean): SecurityHeader[] {
 }
 
 /**
- * CSP の値。<br />
+ * CSP の値を作る。
+ *
  * 許すオリジンを追加するときは、この関数の入力と `proxy.ts` の呼び出しを変える。環境変数から取るなら、あわせて次も変える。
- * <ul>
- * <li>`auth/config.ts`、環境変数の文書、E2E の起動の設定、テストの期待値</li>
- * <li>スロットの script（`scripts/dev/lib/slot.mjs` とそのテスト。スロットごとに値が変わるとき）</li>
- * <li>店舗画面の構成の「セキュリティヘッダー」の表</li>
- * <li>デプロイの前提（本番で設定する値のとき）</li>
- * </ul>
+ *
+ * - `auth/config.ts`、環境変数の文書、E2E の起動の設定、テストの期待値
+ * - スロットの script（`scripts/shared/slot/slot.mjs` とそのテスト。スロットごとに値が変わるとき）
+ * - 店舗画面の構成の「セキュリティヘッダー」の表
+ * - デプロイの前提（本番で設定する値のとき）
  *
  * @param input 本番かどうかと、許すオリジンの元になる値
  * @returns `Content-Security-Policy` の値

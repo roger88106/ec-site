@@ -22,3 +22,14 @@ export const MAILPIT_URL = 'http://localhost:8025'
 export function portOf(url: string): string {
   return new URL(url).port
 }
+
+/**
+ * 管理画面の、バリアントの在庫の画面のパス。
+ *
+ * @param productId 商品 ID
+ * @param variantId バリアント ID
+ * @returns 管理画面の URL の後ろに付けるパス
+ */
+export function stockPath(productId: string, variantId: string): string {
+  return `/products/${productId}/variants/${variantId}/stock`
+}

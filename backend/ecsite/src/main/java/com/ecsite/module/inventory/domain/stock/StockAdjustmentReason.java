@@ -1,7 +1,9 @@
 package com.ecsite.module.inventory.domain.stock;
 
 /**
- * 調整理由。注文に由来する理由は、運営者の調整では選べない。
+ * 調整理由
+ *
+ * <p>注文に由来する理由は、運営者の調整では選べない。
  */
 public enum StockAdjustmentReason {
 
@@ -21,17 +23,23 @@ public enum StockAdjustmentReason {
     DAMAGE_OR_LOSS,
 
     /**
-     * その他。メモが必須
+     * その他
+     *
+     * <p>メモが必須。
      */
     OTHER,
 
     /**
-     * 注文（注文の成立による減算）
+     * 注文
+     *
+     * <p>注文の成立による減算。
      */
     ORDER,
 
     /**
-     * 注文のキャンセル（キャンセルによる戻し）
+     * 注文のキャンセル
+     *
+     * <p>キャンセルによる戻し。
      */
     ORDER_CANCELLATION,
     ;

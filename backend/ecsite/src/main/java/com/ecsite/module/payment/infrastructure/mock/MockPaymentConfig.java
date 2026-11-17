@@ -5,7 +5,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * mock の決済サービスの設定を有効にする。決済の mock フラグを立てたとき（{@link MockPaymentGateway} と同じ条件）だけ。
+ * mock の決済サービスの設定
+ *
+ * <p>mock の決済サービスの設定の値を有効にする。決済の mock フラグを立てたときだけ有効にする。
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnPaymentMock

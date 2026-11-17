@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」）
+ * 商品カタログの腐敗防止層の port
  */
 public interface CatalogDirectory {
 
     /**
-     * 複数のバリアントの情報を返す。表示されない商品・販売停止のバリアントも含める。
+     * 複数のバリアントの情報を返す。
+     *
+     * <p>表示されない商品・販売停止のバリアントも含める。
      *
      * @param variantIds バリアント ID
      * @return バリアント ID → 情報。存在しないバリアントは含めない

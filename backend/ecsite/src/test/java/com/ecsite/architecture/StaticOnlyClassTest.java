@@ -1,6 +1,14 @@
 package com.ecsite.architecture;
 
-import com.ecsite.ProductionClasses;
+import com.ecsite.architecture.sample.staticonly.ExampleException;
+import com.ecsite.architecture.sample.staticonly.ExampleKind;
+import com.ecsite.architecture.sample.staticonly.ExampleRecord;
+import com.ecsite.architecture.sample.staticonly.StaticOnlyNotFinal;
+import com.ecsite.architecture.sample.staticonly.StaticOnlyWithPrivateConstructor;
+import com.ecsite.architecture.sample.staticonly.StaticOnlyWithPublicConstructor;
+import com.ecsite.architecture.sample.staticonly.WithInstanceField;
+import com.ecsite.architecture.sample.staticonly.WithInstanceMethod;
+import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -13,43 +21,54 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * インスタンスを作らないクラスの検査（バックエンドの書き方の「インスタンスを作らないクラス」）。<br />
+ * インスタンスを作らないクラスの検査
+ *
+ * <p>根拠はバックエンドの書き方の「インスタンスを作らないクラス」。
  * static でないメンバーを持たない最上位のクラスは、final にし、コンストラクタをすべて private にする。
  * コンパイルした後のクラスを読むので、Lombok で作ったコンストラクタも見える。
  */
 class StaticOnlyClassTest {
 
+    // ============================== テスト ==============================
+
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは、コンストラクタがすべて private")
     void staticOnlyClassesHavePrivateConstructors() {
+        // 準備：対象のクラスが 1 件以上ある
         ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
 
+        // 操作と確認：本番のクラスに、private でないコンストラクタを持つものがない
         assertThat(violations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは final")
     void staticOnlyClassesAreFinal() {
+        // 準備：対象のクラスが 1 件以上ある
         ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
 
+        // 操作と確認：本番のクラスに、final でないものがない
         assertThat(nonFinal(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
-    @DisplayName("final の規則は、final でない static のメンバーだけのクラスに当たり、ほかには当たらない")
+    @DisplayName("final の規則は、final でない static のメンバーだけのクラスだけに当たる")
     void finalRuleMatchesOnlyNonFinalStaticOnlyClasses() {
+        // 準備：final でない例と、規則に合う例・対象でない例
         var examples = new ClassFileImporter().importClasses(
                 StaticOnlyNotFinal.class,
                 StaticOnlyWithPrivateConstructor.class,
                 WithInstanceMethod.class,
                 ExampleException.class);
 
+        // 操作と確認：final でない例だけが違反になる
         assertThat(nonFinal(examples)).containsExactly(StaticOnlyNotFinal.class.getName());
     }
 
     @Test
-    @DisplayName("規則は、private でないコンストラクタを持つ static のメンバーだけのクラスに当たり、ほかには当たらない")
+    @DisplayName("コンストラクタの規則は、private でないコンストラクタを持つ static のメンバーだけのクラスだけに当たる")
     void ruleMatchesOnlyStaticOnlyClassesWithOpenConstructors() {
+        // 準備：public のコンストラクタを持つ例と、規則に合う例・対象でない例（インスタンスのメンバー、継承、enum、record）
         var examples = new ClassFileImporter().importClasses(
                 StaticOnlyWithPublicConstructor.class,
                 StaticOnlyWithPrivateConstructor.class,
@@ -59,8 +78,11 @@ class StaticOnlyClassTest {
                 ExampleKind.class,
                 ExampleRecord.class);
 
+        // 操作と確認：public のコンストラクタを持つ例だけが違反になる
         assertThat(violations(examples)).containsExactly(StaticOnlyWithPublicConstructor.class.getName());
     }
+
+    // ============================== 補助 ==============================
 
     /**
      * 規則に合わないクラスの名前を返す。
@@ -145,129 +167,4 @@ class StaticOnlyClassTest {
         return javaClass.getAnnotations().stream()
                 .anyMatch(annotation -> annotation.getRawType().getPackageName().startsWith("org.springframework"));
     }
-}
-
-/**
- * 規則に当たる例：static のメンバーだけで、コンストラクタが public
- */
-final class StaticOnlyWithPublicConstructor {
-
-    /**
-     * 例の定数
-     */
-    static final int LIMIT = 1;
-
-    /**
-     * 例のコンストラクタ（規則に合わない）
-     */
-    StaticOnlyWithPublicConstructor() {
-    }
-
-    /**
-     * 例の関数。
-     *
-     * @return 定数
-     */
-    static int limit() {
-        return LIMIT;
-    }
-}
-
-/**
- * 規則に合う例：static のメンバーだけで、コンストラクタが private
- */
-final class StaticOnlyWithPrivateConstructor {
-
-    /**
-     * 作らせない
-     */
-    private StaticOnlyWithPrivateConstructor() {
-    }
-
-    /**
-     * 例の関数。
-     *
-     * @return 1
-     */
-    static int one() {
-        return 1;
-    }
-}
-
-/**
- * final の規則に当たる例：static のメンバーだけで、コンストラクタは private だが final でない
- */
-class StaticOnlyNotFinal {
-
-    /**
-     * 作らせない
-     */
-    private StaticOnlyNotFinal() {
-    }
-
-    /**
-     * 例の関数。
-     *
-     * @return 2
-     */
-    static int two() {
-        return 2;
-    }
-}
-
-/**
- * 当たらない例：static でないメソッドを持つ
- */
-final class WithInstanceMethod {
-
-    /**
-     * 例のメソッド。
-     *
-     * @return 1
-     */
-    int one() {
-        return 1;
-    }
-}
-
-/**
- * 当たらない例：static でない項目を持つ
- */
-final class WithInstanceField {
-
-    /**
-     * 例の項目
-     */
-    int value;
-}
-
-/**
- * 当たらない例：ほかのクラスを継ぐ（自分のメンバーはコンストラクタだけ）
- */
-class ExampleException extends RuntimeException {
-
-    /**
-     * @param message 例の文
-     */
-    ExampleException(String message) {
-        super(message);
-    }
-}
-
-/**
- * 当たらない例：enum
- */
-enum ExampleKind {
-    /**
-     * 例の値
-     */
-    ONE
-}
-
-/**
- * 当たらない例：record
- *
- * @param value 例の項目
- */
-record ExampleRecord(int value) {
 }

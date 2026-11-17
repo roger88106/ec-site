@@ -24,7 +24,7 @@
 
 理由：機能の追加・削除で触るファイルを 1 か所にまとめ、機能を削除しても共通の置き場所が壊れないようにするため。
 
-確認方法：機能の間と、共通の置き場所から機能への import は自動（`scripts/ci/frontend-rules.mjs`）、置き場所はレビュー
+確認方法：機能の間の import は自動（Biome の plugin `no-cross-feature-import`）、共通の置き場所から機能への import は自動（Biome の `noRestrictedImports`）、置き場所はレビュー
 
 ## API
 
@@ -50,7 +50,7 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 理由：契約の制約を変えたら、画面の制約も一緒に変わるようにするため。
 
-確認方法：自動（`input-constraints.mjs`）
+確認方法：自動（Biome の plugin `no-literal-input-constraint`）
 
 ### API の列挙の値ごとの表示は、全ての値を書く
 
@@ -113,7 +113,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 理由：同じ処理とコンポーネントを 1 か所で修正し、片方の画面の都合をもう片方に持ち込まないため。
 
-確認方法：admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー
+確認方法：admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー
 
 ### 既定の書式とテーマの値は共有のものを使う
 
@@ -139,7 +139,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 確認方法：
 
 - 型の付く URL：自動（型チェック）
-- クエリ付きの URL の文字列の組み立て：自動（`scripts/ci/frontend-rules.mjs`）
+- クエリ付きの URL の文字列の組み立て：自動（Biome の plugin `no-query-url-string`）
 - 型の付かない他の URL：レビュー（管理画面は `git grep` でパスの直書きを、店舗画面は `as Route`、`revalidatePath()`、`<form action>` を見る）
 
 ## 表示の文言とロケール
@@ -153,11 +153,11 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 - 数は整形してから渡し（`{amount}` は数を整形しない）、値は名前で差し込む（`{code}を上へ`）。コードで組み立てる表示名（`画像 ${n}` など）も文言にする。
 - 例外：テストの中の文字、開発者だけが見るログ、アイコンの代わりの記号、API の応答の文 ※1、言語に依らない入力例（`+10 / -3` など）。地域で形の変わる入力例（電話番号など）も、今は日本だけを扱うので直接書いてよい。地域を追加するときに文言に移す。
 
-※1：API に送る値など文言でないものは、理由と一緒に `scripts/ci/hardcoded-text-exclusions.json` に書く。
+※1：API に送る値など文言でないものは、直前の行の `// biome-ignore lint/plugin/no-hardcoded-text: <理由>` に理由を書く。
 
 理由：文言を 1 か所で管理し、2 つ目の言語を追加できるようにするため。
 
-確認方法：自動（`hardcoded-text.mjs`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー
+確認方法：自動（Biome の plugin `no-hardcoded-text`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー
 
 ### 文言キーの形
 
@@ -173,7 +173,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 理由：言語を追加するときに、変える所を 1 か所にするため。
 
-確認方法：自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：自動（Biome の plugin `no-locale-literal`）
 
 ## 店舗画面のサーバーの設定とログ
 
@@ -200,10 +200,11 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 - 依存を追加・更新したら、ルートで `pnpm install --frozen-lockfile` を再実行する。
 - インストール時のスクリプトを持つライブラリ（間接の依存も含む）は、`pnpm-workspace.yaml` の `allowBuilds` に、実行するか（`true`・`false`）と理由を書く。
 - ライセンスも確認する（`node scripts/ci/licenses/check-frontend.mjs`）。両方は `scripts/dev/check-frontend.sh` でも実行できる。
+- `frontend/` の 3 つの `package.json` は、React の指定（`react`・`react-dom`・`@types/react`・`@types/react-dom`）を `^1.2.3` の範囲の書き方にそろえる。固定のバージョンが混ざると、更新の仕方がパッケージごとに変わるため。
 
 理由：`allowBuilds` にないライブラリがあると pnpm はインストールを失敗にするが、手元は依存が入った後なので気づかず、CI で初めて失敗するため。
 
-確認方法：自動（CI のインストールとライセンス検査）
+確認方法：自動（CI のインストールとライセンス検査）。React の指定の書き方はレビュー
 
 ## 表示の要素
 
@@ -213,7 +214,7 @@ Biome の設定（`frontend/biome.base.jsonc` と各画面の `biome.jsonc`）�
 
 理由：見た目だけの線は支援技術に伝わらず、テストもクラスでしか確認できなくなるため（[フロントのテストの書き方](test-writing-frontend.md)の「画面に見えるもので探す」）。
 
-確認方法：`line-through` の直書きは自動（`scripts/ci/frontend-rules.mjs`）、他の書き方はレビュー
+確認方法：`line-through` の直書きは自動（Biome の plugin `no-line-through`）、他の書き方はレビュー
 
 ### 店舗画面の読み上げの領域は status の役割で作る
 

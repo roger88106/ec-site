@@ -9,8 +9,9 @@ import { recordStderr } from '@/test/stderr'
 /** ログインで得た access token（セッションの Cookie はまだない） */
 const LOGIN_TOKEN = 'login-access-token'
 
-/** 移す元のカートの品目 */
+/** 移す元のカートの品目（T シャツ） */
 const RED = quoteItem({ variantId: '00000000-0000-0000-0000-000000000211', productName: 'T シャツ' })
+/** 移す元のカートの品目（青のパーカー） */
 const BLUE = quoteItem({
   variantId: '00000000-0000-0000-0000-000000000212',
   productName: 'パーカー',

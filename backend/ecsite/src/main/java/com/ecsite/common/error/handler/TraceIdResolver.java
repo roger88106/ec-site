@@ -11,16 +11,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * エラーレスポンスに入れるトレース ID を決める。<br />
- * 現在の span があればそのトレース ID を使う。span がない場合（トレーシングが無効、サンプリングの対象外など）は、
- * 新しい ID を作る。どちらの場合も、エラーのログに同じ ID を出すことで、問い合わせとログを結び付けられるようにする。
+ * エラーレスポンスのトレース ID の解決
+ *
+ * <p>現在の span があればそのトレース ID を使う。span がない場合（トレーシングが無効、サンプリングの対象外など）は、
+ * 新しい ID を作る。
  */
 @Component
 @RequiredArgsConstructor
 class TraceIdResolver {
 
     /**
-     * トレーサー（トレーシングが構成されていない場合は無い）
+     * トレーサー
+     *
+     * <p>トレーシングが構成されていない場合は無い。
      */
     private final ObjectProvider<Tracer> tracer;
 
@@ -39,7 +42,9 @@ class TraceIdResolver {
     }
 
     /**
-     * 新しいトレース ID を作る。W3C のトレース ID と同じ 32 桁の 16 進数にする。
+     * 新しいトレース ID を作る。
+     *
+     * <p>W3C のトレース ID と同じ 32 桁の 16 進数にする。
      *
      * @return トレース ID
      */

@@ -9,7 +9,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { messages } from '@/i18n/messages'
 
 /**
- * 部品を HTML の文字にする。画面と同じく、日本語の文言の提供者（next-intl）で包む。
+ * 部品を HTML の文字にする。
+ *
+ * 画面と同じく、日本語の文言の提供者（next-intl）で包む。
  *
  * @param element 描画する部品
  * @returns HTML の文字
@@ -23,7 +25,8 @@ export function renderMarkup(element: ReactElement): string {
 }
 
 /**
- * コンポーネントを jsdom の上に描画する（ブラウザーの中だけで終わる操作を確認する。フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。<br />
+ * コンポーネントを jsdom の上に描画する（ブラウザーの中だけで終わる操作を確認する。フロントのテストの書き方の「店舗画面のテストは、対象ごとの方法で書く」）。
+ *
  * テストのファイルの先頭で jsdom を選ぶ（`// @vitest-environment jsdom`）。
  *
  * @param element 描画する部品
@@ -44,7 +47,9 @@ const staticWindow = new JSDOM('<!doctype html><html><body></body></html>').wind
 
 /**
  * 部品を HTML にし、jsdom の文書に読み込んで、役割と名前などで探す関数を返す。
- * 効果（`useEffect`）は実行されない（サーバーが返す HTML と同じ）。<br />
+ *
+ * 効果（`useEffect`）は実行されない（サーバーが返す HTML と同じ）。
+ *
  * テストの環境は Node のまま使う（ページとサーバーコンポーネントのテストが、Node の上の MSW と Next.js の置き換えを使うため）。
  * そのため、jsdom の文書は、ここで `JSDOM` で作る。
  *

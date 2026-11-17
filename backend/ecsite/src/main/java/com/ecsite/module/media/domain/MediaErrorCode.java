@@ -6,8 +6,9 @@ import com.ecsite.common.error.ErrorType;
 import lombok.Getter;
 
 /**
- * メディアのエラーコード。<br />
- * コードの文字列は、商品画像 API の契約（admin.yaml）のとおり。商品カタログから移したときに変えていない。
+ * メディアのエラーコード
+ *
+ * <p>コードの文字列は、商品画像 API の契約（admin.yaml）のとおり。商品カタログから移したときに変えていない。
  */
 public enum MediaErrorCode implements ErrorCodeProvider {
 
@@ -16,7 +17,7 @@ public enum MediaErrorCode implements ErrorCodeProvider {
      */
     UNSUPPORTED_IMAGE_FORMAT(ErrorType.VALIDATION_ERROR, "formats"),
     /**
-     * 画像の大きさが範囲の外（0 バイト、または 10MB を超える）
+     * 画像の大きさが範囲の外（0 バイト、または {maxMegabytes}MB を超える）
      */
     IMAGE_TOO_LARGE(ErrorType.VALIDATION_ERROR, "maxMegabytes"),
     /**

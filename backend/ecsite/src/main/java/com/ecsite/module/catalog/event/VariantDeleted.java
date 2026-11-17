@@ -6,7 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * バリアント削除。在庫モジュールが、その在庫と調整履歴を消す。
+ * バリアント削除
+ *
+ * <p>バリアントを削除したときに発行する。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

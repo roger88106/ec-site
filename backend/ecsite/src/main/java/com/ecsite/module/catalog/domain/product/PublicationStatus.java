@@ -16,7 +16,9 @@ public enum PublicationStatus {
     PUBLISHED,
 
     /**
-     * 販売終了。公開にも非公開にも戻せない
+     * 販売終了
+     *
+     * <p>公開にも非公開にも戻せない。
      */
     DISCONTINUED,
 }

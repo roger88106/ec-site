@@ -15,7 +15,11 @@ export type CategoryActions = {
   createChild: (parent: CategoryNode) => void
 }
 
-/** 兄弟の一覧。子があれば入れ子で表示する */
+/**
+ * 兄弟の一覧
+ *
+ * 子があれば入れ子で表示する。
+ */
 export function CategoryTreeList({
   nodes,
   parentId,

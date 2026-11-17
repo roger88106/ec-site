@@ -1,18 +1,18 @@
 import { LinkButton } from '@ec-site/shared/components/LinkButton'
+import { PageHeader } from '@ec-site/shared/components/PageHeader'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
+import { Controller, FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import { useApiMutation } from '@/api/useApiMutation'
 import { paths } from '@/app/paths'
-import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import { CodeInput } from '@/features/product/components/CodeInput'
 import { ProductFields, productFieldConstraints } from '@/features/product/components/ProductFields'
 import {
   EMPTY_PRODUCT_FIELDS,
@@ -28,7 +28,11 @@ const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.CreateProductR
 /** バリアント軸の上限 */
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
 
-/** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を追加したもの） */
+/**
+ * 入力欄の値
+ *
+ * 基本情報に、登録のときだけ入れる品番と軸を追加したもの。
+ */
 type Values = ProductFieldsValues & {
   productCode: string
   axes: { name: string }[]
@@ -38,7 +42,8 @@ type Values = ProductFieldsValues & {
 const FIELD_NAMES = [...PRODUCT_FIELD_NAMES, 'productCode', 'axes'] as const
 
 /**
- * 商品の登録。<br />
+ * 商品の登録
+ *
  * 商品品番とバリアント軸は登録後に変更できないので、この画面でだけ入力する。登録後は編集の画面に移る。
  */
 export function ProductCreatePage() {
@@ -53,9 +58,14 @@ export function ProductCreatePage() {
     onSuccess: (created) => navigate(paths.product(created.id)),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
-  const values = form.watch()
+  const [productCode, name, taxCategoryId, priceExclTax, axisNames] = useWatch({
+    control: form.control,
+    name: ['productCode', 'name', 'taxCategoryId', 'priceExclTax', 'axes'],
+  })
   const filled =
-    values.productCode !== '' && isProductFieldsFilled(values) && values.axes.every((axis) => axis.name.trim() !== '')
+    productCode !== '' &&
+    isProductFieldsFilled({ name, taxCategoryId, priceExclTax }) &&
+    axisNames.every((axis) => axis.name.trim() !== '')
 
   return (
     <>

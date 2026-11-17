@@ -1,6 +1,9 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.DomainEvents;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.payment.tables.records.PaymentRecord;
 import com.ecsite.module.payment.domain.payment.Payment;
@@ -45,7 +48,9 @@ class JooqPaymentRepository implements PaymentRepository {
     private final Clock clock;
 
     /**
-     * 新しい支払を保存する。同じ注文の支払がすでにあれば、例外にせず（トランザクションを壊さず）false を返す。
+     * 新しい支払を保存する。
+     *
+     * <p>同じ注文の支払がすでにあれば、例外にせず（トランザクションを壊さず）false を返す。
      *
      * @param payment 支払
      * @return 保存したら true
@@ -70,15 +75,18 @@ class JooqPaymentRepository implements PaymentRepository {
         if (inserted == 0) {
             return false;
         }
-        payment.pullEvents().forEach(eventPublisher::publishEvent);
+        DomainEvents.publish(eventPublisher, payment);
         return true;
     }
 
     /**
-     * 支払の変更を保存する。金額と期限は変わらないので、変わりうる項目だけを更新する。<br />
-     * 登録されたイベントはすべて発行する（与信の成功、与信の取消の依頼、返金の依頼など）。
+     * 支払の変更を保存し、登録されたイベント（与信の成功、与信の取消の依頼、返金の依頼など）を発行する。
+     *
+     * <p>金額と期限は変わらないので、バージョンが読んだときと同じ場合に、変わりうる項目だけを更新する。
+     * 行ロックして読んだ支払を保存するので競合は起きないが、ロックを取らずに保存したときの安全網にする。
      *
      * @param payment 変更した支払
+     * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Override
     public void update(Payment payment) {
@@ -87,25 +95,43 @@ class JooqPaymentRepository implements PaymentRepository {
         writeState(record, snapshot);
         record.setVersion(snapshot.version() + 1);
         record.setUpdatedAt(clock.instant());
-        dsl.update(PAYMENT_).set(record).where(PAYMENT_.ID.eq(snapshot.id())).execute();
-        payment.pullEvents().forEach(eventPublisher::publishEvent);
+        int updated = dsl.update(PAYMENT_).set(record)
+                .where(PAYMENT_.ID.eq(snapshot.id()))
+                .and(PAYMENT_.VERSION.eq(snapshot.version()))
+                .execute();
+        if (updated == 0) {
+            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
+        }
+        DomainEvents.publish(eventPublisher, payment);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> lockById(UUID id) {
         return lock(PAYMENT_.ID.eq(id));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> lockByOrderId(UUID orderId) {
         return lock(PAYMENT_.ORDER_ID.eq(orderId));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> lockByPageId(String pageId) {
         return lock(PAYMENT_.PAGE_ID.eq(pageId));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> findById(UUID id) {
         return dsl.selectFrom(PAYMENT_)
@@ -114,6 +140,9 @@ class JooqPaymentRepository implements PaymentRepository {
                 .map(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Payment> findByOrderId(UUID orderId) {
         return dsl.selectFrom(PAYMENT_)
@@ -122,6 +151,9 @@ class JooqPaymentRepository implements PaymentRepository {
                 .map(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Payment> findByOrderIds(Collection<UUID> orderIds) {
         if (orderIds.isEmpty()) {
@@ -132,17 +164,24 @@ class JooqPaymentRepository implements PaymentRepository {
                 .fetch(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Payment> findUnpaidPastDeadline(Instant now, int limit) {
         return dsl.selectFrom(PAYMENT_)
                 .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
                 .and(PAYMENT_.DEADLINE.le(now))
+                // 与信の反映を待つ支払がたまっても、それより新しい支払を処理できるように除く
                 .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNull())
                 .orderBy(PAYMENT_.DEADLINE)
                 .limit(limit)
                 .fetch(JooqPaymentRepository::restore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Payment> findUnpaidAwaitingAuthorization(int limit) {
         return dsl.selectFrom(PAYMENT_)
@@ -189,7 +228,7 @@ class JooqPaymentRepository implements PaymentRepository {
                 record.getOrderId(),
                 Money.of(record.getAmount()),
                 record.getDeadline(),
-                AggregateGuards.restore("payment", () -> PaymentStatus.valueOf(record.getStatus())),
+                RestoreGuard.restore("payment", () -> PaymentStatus.valueOf(record.getStatus())),
                 page,
                 record.getAuthorizationRef(),
                 record.getAuthorizedAt(),

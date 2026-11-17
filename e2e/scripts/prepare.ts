@@ -1,10 +1,11 @@
 /**
- * E2E の準備。`pnpm test` が Playwright の前に流す。<br />
+ * E2E の準備。`pnpm test` が Playwright の前に流す。
+ *
  * E2E 用の DB（ec_site_e2e）と IdP の database（keycloak_e2e）を再作成し、E2E 用の Keycloak だけを起動し直す（共有の基盤のコンテナは再作成しない）。
  * 毎回、マイグレーションと seed/base だけの DB と、realm の JSON の状態の IdP から始まる。
  * ローカルの DB（ec_site）と Keycloak（keycloak、8180）には触れない。
  *
- * 前提：compose の PostgreSQL が起動している（docs/06-手順書/running-tests.md の「E2E」）。
+ * 前提：compose の PostgreSQL が起動している（テストの実行方法の「E2E（`e2e/`）」）。
  * 初めに、E2E のサーバーのポートで待ち受けられるかを確認する（Windows の予約範囲に入ったポートは、起動の後まで分からないため）。
  *
  * 使い方：node scripts/prepare.ts（e2e/ で）
@@ -38,6 +39,9 @@ function psql(...statements: string[]): void {
  * ポートで待ち受けられるかを、画面のサーバーと同じく localhost の IPv4・IPv6 の両方で確認する。
  * OS が拒んだ（EACCES）ときだけ投げる。使用中（起動済みのサーバー）や、IPv6 のない環境はよいとする。
  * Windows では、WinNAT などの予約範囲（netsh interface ipv4 show excludedportrange protocol=tcp）に入ったポートが EACCES になる。
+ *
+ * @param url 待ち受けるサーバーの URL（ポートを含む）
+ * @throws Error OS が待ち受けを拒んだとき
  */
 async function assertListenable(url: string): Promise<void> {
   const port = Number(new URL(url).port)

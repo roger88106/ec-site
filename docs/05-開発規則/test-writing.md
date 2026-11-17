@@ -16,7 +16,7 @@
 
 ※1：操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないため。サーバーアクションを呼ばない操作はこの理由に当たらないので、例外にする。結果の表示の遷移は、同じ要素が残ることを、結果を変えて再描画する静的な HTML では確認できないので、サーバーアクションの処理は差し替え、表示だけを確認する（処理はサーバーアクションのテストと E2E で確認する）。
 
-※2：IdP は自分たちで作っていないので、設定が正しければ IdP が振る舞いを守る、とみなす。IdP を取り替えたときは、会員の登録・ログインの E2E で振る舞いを確認する。対象の AC は、`node scripts/ci/ac-check.mjs --tests` で `RealmSettingsContractTest` が表示される AC である。
+※2：IdP は自分たちで作っていないので、設定が正しければ IdP が振る舞いを守る、とみなす。IdP を取り替えたときは、会員の登録・ログインの E2E で振る舞いを確認する。対象の AC は、`node scripts/ci/spec/ac-check.mjs --tests` で `RealmSettingsContractTest` が表示される AC である。
 
 理由：テストの種類ごとに確認する対象を決め、どのテストでも確認されない AC や振る舞いを残さないため。
 
@@ -24,7 +24,7 @@
 
 - 必須の統合テスト：レビュー
 - 店舗画面に結合テストを置かない：レビュー
-- テストに出ない AC：自動（`scripts/ci/ac-check.mjs`）
+- テストに出ない AC：自動（`scripts/ci/spec/ac-check.mjs`）
 - IdP の振る舞いだけで決まる AC：自動（`RealmSettingsContractTest`）
 
 ### カバレッジと mutation score の基準
@@ -47,7 +47,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 理由：失敗したときに、どの振る舞いが壊れたかが名前だけで分かるようにするため。
 
-確認方法：レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：レビュー（`@DisplayName` があることは自動。`TestNameTest`）。フロントの `describe` の名前が識別子だけでないことは自動（Biome の plugin `no-identifier-describe`）
 
 
 ## 待ち方
@@ -62,4 +62,4 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 理由：処理が遅い環境では失敗し、速い環境では待ち時間が無駄になるため。決まった時間だけ見ると、遅い環境では、処理が終わる前に確認が終わり、誤って通るため。
 
-確認方法：時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`）
+確認方法：時間で待つことは自動（バックエンドは `TimeWaitTest`、フロントと E2E は Biome の plugin `no-time-wait`）、`networkidle` は自動（Biome の plugin `no-network-idle`）、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（Biome の plugin `no-timeout-literal`）

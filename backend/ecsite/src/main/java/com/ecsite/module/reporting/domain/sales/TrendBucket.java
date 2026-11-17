@@ -5,7 +5,9 @@ import org.jspecify.annotations.Nullable;
 import java.time.LocalDate;
 
 /**
- * 売上の推移の 1 つの区切り。始まりと終わりは、期間で切った日（両端を含む）。
+ * 売上の推移の区切り
+ *
+ * <p>始まりと終わりは、期間で切った日（両端を含む）。
  *
  * @param start      始まりの日
  * @param end        終わりの日

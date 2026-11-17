@@ -1,33 +1,30 @@
 // スロット（作業ツリーごとの手元の環境）の割り当てと、スロットの環境での起動。
 //
-// 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい）
-//   assign                          空いている最小のスロットを割り当て、データベースとバケットを作る。割り当て済みなら番号を示すだけ
-//   release                         スロットのポートで待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
-//   stop [backend|store|admin]      自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。省略は 4 つのポート全て
-//   reset                           割り当てを変えずに、データベースとバケットを再作成する（バックエンドを止めてから）
-//   show                            スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
-//   env                             スロットの環境変数を `export NAME='value'` の形で出す
-//   run <backend|store|admin> [番号]  スロットの環境変数を付けて起動する。番号を渡したときは、作業ツリーのスロットと同じときだけ起動する
-//     - run backend は profile local で起動する。バックエンドのポートか運用のポートが使われていれば、待ち受けるプロセスの ID と停止のコマンドを表示して、終了コード 1 で終了する。ポートの問い合わせが失敗したときは、警告して起動する
-//     - run store と run admin は、起動の前に pnpm generate:api で API の型を生成する（失敗したら起動しない）
-//     - 停止のシグナル（Ctrl+C など）の 1 回目で、起動したプロセスを子プロセスも含めて停止し、終了するのを待ってから終了する。2 回目は待たずに終了する
+// 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい。コマンドの一覧は USAGE）
+//
+// run の細部：
+//   - run backend は profile local で起動する。バックエンドのポートか運用のポートが使われていれば、待ち受けるプロセスの ID と停止のコマンドを表示して、終了コード 1 で終了する。ポートの問い合わせが失敗したときは、警告して起動する
+//   - run store と run admin は、起動の前に pnpm generate:api で API の型を生成する（失敗したら起動しない）
+//   - 停止のシグナル（Ctrl+C など）の 1 回目で、起動したプロセスを子プロセスも含めて停止し、終了するのを待ってから終了する。2 回目は待たずに終了する
 //
 // メインの作業ツリーはいつもスロット 0。assign・release・reset は何もせずに知らせ、show・env・run・stop はスロット 0 の値で動く。
 // 割り当ては `<作業ツリー>/.local/slot` に番号だけで書く。
-// 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、2 共有の基盤が動いていない。
+//
+// 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、
+// 2 使い方の誤り（知らないコマンドや対象）か、環境の誤り（git の作業ツリーの外、共有の基盤が動いていない）。
+//
 // 共有の基盤（compose）は、メインの作業ツリーで起動する。この script は起動しない。
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { stopOnSignals } from './lib/child-stop.mjs'
-import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
+import { stopOnSignals } from '../shared/child-stop.mjs'
 import { findListeners, stopListeners } from './lib/port-stop.mjs'
-import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
-import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './lib/slot-ports.mjs'
+import { checkBackendPorts, releaseSlot, stopSlot, stopTargetPorts } from './lib/slot/slot-ports.mjs'
 import {
   assignSlot,
   checkBackendStopped,
   checkShared,
+  claimState,
   currentSlotOf,
   dropBucketsScript,
   formatSlotRecord,
@@ -41,25 +38,21 @@ import {
   slotValues,
   SHARED_CONTAINERS,
   SLOT_COUNT,
-} from './lib/slot.mjs'
+  TARGETS,
+} from '../shared/slot/slot.mjs'
 
 /** 共有の PostgreSQL のコンテナ */
 const POSTGRES = 'ec-site-postgres'
 
-/** 起動できる対象 */
-const TARGETS = ['backend', 'store', 'admin']
-
-/** ロックを待つ上限（ミリ秒）。ロックの中は空きの選択と記録の書き込みだけなので、長く待つのは所有者が止まっているとき */
-const LOCK_WAIT_MS = 90_000
-
+/** コマンドの一覧（知らないコマンドのときに示す） */
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
-  assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
+  assign                            空いている最小のスロットを割り当て、データベースとバケットを作る（割り当て済みなら番号を示すだけ）
   release                           待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
-  stop [backend|store|admin]        自分のスロットのポートで待ち受けるプロセスを停止する（割り当てとデータは変えない）
-  reset                             割り当てを変えずに、データベースとバケットを作り直す
+  stop [backend|store|admin]        自分のスロットのポートで待ち受けるプロセスを停止する（割り当てとデータは変えない。省略はスロットのポート全て）
+  reset                             割り当てを変えずに、データベースとバケットを再作成する（バックエンドを止めてから）
   show                              スロットのポート・URL・名前と、作業ツリーの一覧を示す
-  env                               スロットの環境変数を export の形で出す
-  run <backend|store|admin> [番号]  スロットの環境変数を付けて起動する`
+  env                               スロットの環境変数を export NAME='value' の形で出す
+  run <backend|store|admin> [番号]  スロットの環境変数を付けて起動する（番号を渡したときは、作業ツリーのスロットと同じときだけ）`
 
 /**
  * 終了コードを付けて終わるための例外。
@@ -91,7 +84,7 @@ function git(args) {
  * @returns {{ root: string, commonDir: string, main: boolean, porcelain: string, mainPath: string }}
  *   root は作業ツリーのルート、commonDir は git の共通のディレクトリ、mainPath はメインの作業ツリー
  */
-function context() {
+function readContext() {
   const root = git(['rev-parse', '--show-toplevel'])
   const gitDir = git(['rev-parse', '--path-format=absolute', '--git-dir'])
   const commonDir = git(['rev-parse', '--path-format=absolute', '--git-common-dir'])
@@ -138,13 +131,29 @@ function writeRecord(root, slot) {
 }
 
 /**
- * 今の作業ツリーのスロットを返す。メインの作業ツリーは 0。
+ * 今の作業ツリーのスロットを返す。
+ *
+ * メインの作業ツリーは 0。
  *
  * @param {{ root: string, main: boolean }} ctx 作業ツリーの状態
  * @returns {number | null} スロットの番号。割り当てがなければ null
  */
 function currentSlot(ctx) {
   return currentSlotOf({ main: ctx.main, record: ctx.main ? null : readRecord(ctx.root) })
+}
+
+/**
+ * 今の作業ツリーのスロットを返す。
+ *
+ * 割り当てがなければ、assign を案内して終わる（終了コード 1）。
+ *
+ * @param {{ root: string, main: boolean }} ctx 作業ツリーの状態
+ * @returns {number} スロットの番号
+ */
+function requireSlot(ctx) {
+  const slot = currentSlot(ctx)
+  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
+  return slot
 }
 
 /**
@@ -167,7 +176,9 @@ function containerRunning(name) {
 }
 
 /**
- * 共有の基盤が動いていることを確認する。止まっていれば、メインの作業ツリーで起動するよう示して終わる。
+ * 共有の基盤が動いていることを確認する。
+ *
+ * 止まっていれば、メインの作業ツリーで起動するよう示して終わる。
  *
  * @param {{ mainPath: string }} ctx 作業ツリーの状態
  */
@@ -198,7 +209,9 @@ function dropDatabase(slot) {
 }
 
 /**
- * スロットのデータベースを再作成する。マイグレーションと seed は、次のバックエンドの起動で入る。
+ * スロットのデータベースを再作成する。
+ *
+ * マイグレーションと seed は、次のバックエンドの起動で入る。
  *
  * @param {number} slot スロットの番号
  */
@@ -208,7 +221,9 @@ function recreateDatabase(slot) {
 }
 
 /**
- * 一時のコンテナとして seaweedfs-init を流す。共有のコンテナは再作成しない。
+ * 一時のコンテナとして seaweedfs-init を流す。
+ *
+ * 共有のコンテナは再作成しない。
  *
  * @param {string} root 作業ツリーのルート（compose の定義を読む場所）
  * @param {string[]} args `docker compose run` の引数（サービス名の前）
@@ -223,7 +238,9 @@ function runInit(root, args, command = []) {
 }
 
 /**
- * スロットの 2 つのバケットを削除する。ないバケット（NoSuchBucket）は無視し、他の誤りは失敗にする。
+ * スロットのバケット（受付と配信）を削除する。
+ *
+ * ないバケット（NoSuchBucket）は無視し、他の誤りは失敗にする。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -234,7 +251,7 @@ function dropBuckets(root, slot) {
 }
 
 /**
- * スロットの 2 つのバケットを削除してから再作成し、seed の画像を配信のバケットの assets/ に写す。
+ * スロットのバケット（受付と配信）を削除してから再作成し、seed の画像を配信のバケットの assets/ に写す。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -253,7 +270,7 @@ function recreateBuckets(root, slot) {
 }
 
 /**
- * スロットのデータ（データベースとバケット）を再作成する。assign と reset が使う。
+ * スロットのデータ（データベースとバケット）を再作成する。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -264,7 +281,7 @@ function recreateData(root, slot) {
 }
 
 /**
- * スロットのデータ（データベースとバケット）を消す。release が使う。
+ * スロットのデータ（データベースとバケット）を消す。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -275,35 +292,62 @@ function dropData(root, slot) {
 }
 
 /**
- * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
- * ロックは git の共通のディレクトリの ec-site-slot-assign.lock（作業ツリーのパス、PID、開始の時刻）。
- * 所有者の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
- * 2 つのセッションが同時に assign しても、空きの選択から記録の書き込みまでが重ならない。
+ * スロットの仮押さえのファイルのパス。
  *
- * @template T
- * @param {{ root: string, commonDir: string }} ctx 作業ツリーの状態
- * @param {() => T} action ロックを持って流す処理（短いものだけ）
- * @returns {Promise<T>} action の結果
+ * git の共通のディレクトリに置き、全ての作業ツリーで共有する。
+ *
+ * @param {{ commonDir: string }} ctx 作業ツリーの状態
+ * @param {number} slot スロットの番号
+ * @returns {string} ファイルのパス（中身は仮押さえした作業ツリーのパス）
  */
-async function withLock(ctx, action) {
-  const lock = path.join(ctx.commonDir, 'ec-site-slot-assign.lock')
-  const io = createLockIo(lock)
-  const owner = { worktree: ctx.root, pid: process.pid, startedAt: new Date().toISOString() }
-  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: LOCK_WAIT_MS })
-  if (!result.acquired) {
-    throw new Exit(1, `スロットのロックを取れなかった。${busyLockMessage({ lock, owner: result.owner })}`)
-  }
-  try {
-    return action()
-  } finally {
-    if (ownsLock(io.read(), owner)) rmSync(lock, { force: true })
-  }
+function claimFile(ctx, slot) {
+  return path.join(ctx.commonDir, `ec-site-slot-${slot}.claim`)
 }
 
 /**
- * assign：スロットを割り当てる。記録を書いてロックを放してから、データベースとバケットを再作成する。
+ * スロットを仮押さえする。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * ファイルを排他（wx）で作るので、同時に 1 つの割り当てだけが成功する。
+ *
+ * 既にある仮押さえの扱いは claimState で決める（残りなら消して、新しく作る）。
+ *
+ * @param {{ root: string, commonDir: string }} ctx 作業ツリーの状態
+ * @param {number} slot スロットの番号
+ * @returns {boolean} 仮押さえできれば true
+ */
+function claim(ctx, slot) {
+  const file = claimFile(ctx, slot)
+  const create = () => {
+    try {
+      writeFileSync(file, ctx.root, { flag: 'wx' })
+      return true
+    } catch (e) {
+      if (e?.code === 'EEXIST') return false
+      throw e
+    }
+  }
+  if (create()) return true
+  let holder
+  try {
+    holder = readFileSync(file, 'utf8').trim()
+  } catch {
+    // 読む前に持ち主が外した
+    return create()
+  }
+  const listed = holder === ctx.root ? [] : parseWorktrees(git(['worktree', 'list', '--porcelain'])).map((worktree) => worktree.path)
+  const state = claimState({ holder, own: ctx.root, listed, holderRecord: listed.includes(holder) ? readRecord(holder) : null })
+  if (state === 'own') return true
+  if (state === 'busy') return false
+  rmSync(file, { force: true })
+  return create()
+}
+
+/**
+ * assign：スロットを割り当てる。
+ *
+ * 記録を書いて仮押さえを外してから、データベースとバケットを再作成する。
+ *
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 async function assign(ctx) {
   if (!ctx.main) requireShared(ctx)
@@ -312,7 +356,8 @@ async function assign(ctx) {
     readOwnRecord: () => readRecord(ctx.root),
     listWorktrees: () => git(['worktree', 'list', '--porcelain']),
     readRecord,
-    withLock: (action) => withLock(ctx, action),
+    claim: (slot) => claim(ctx, slot),
+    unclaim: (slot) => rmSync(claimFile(ctx, slot), { force: true }),
     writeRecord: (slot) => writeRecord(ctx.root, slot),
     recreate: (slot) => recreateData(ctx.root, slot),
   })
@@ -340,7 +385,7 @@ async function assign(ctx) {
 /**
  * release：スロットのポートで待ち受けるプロセスを停止してから、割り当てを解く。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 async function release(ctx) {
   if (ctx.main) return console.log('メインの作業ツリーはスロット 0。解くものはない')
@@ -366,16 +411,17 @@ async function release(ctx) {
 }
 
 /**
- * stop：自分のスロットのポートで待ち受けるプロセスを停止する。割り当てとデータは変えない。
+ * stop：自分のスロットのポートで待ち受けるプロセスを停止する。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * 割り当てとデータは変えない。
+ *
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  * @param {string[]} args 対象（backend、store、admin のどれか 1 つ。省略は全て）
  */
 function stop(ctx, args) {
-  const slot = currentSlot(ctx)
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を実行する')
+  const slot = requireSlot(ctx)
   const target = stopTargetPorts(slot, args)
-  if (target.error !== undefined) throw new Exit(1, target.error)
+  if (target.error !== undefined) throw new Exit(2, target.error)
   const result = stopSlot({
     ports: target.ports,
     platform: process.platform,
@@ -387,7 +433,9 @@ function stop(ctx, args) {
 }
 
 /**
- * スロットのバックエンドが動いているか。運用ポートの死活監視に応答があるかで見る。
+ * スロットのバックエンドが動いているか。
+ *
+ * 運用ポートの死活監視に応答があるかで見る。
  *
  * @param {number} slot スロットの番号
  * @returns {Promise<boolean>} 接続が拒まれた（待ち受けがない）とき以外は true（タイムアウトも動いているとみなす）
@@ -398,21 +446,20 @@ async function backendRunning(slot) {
       signal: AbortSignal.timeout(2000),
     })
     return true
-  } catch (error) {
-    return !isBackendDown(error)
+  } catch (e) {
+    return !isBackendDown(e)
   }
 }
 
 /**
- * reset：割り当てを変えずに、データベースを再作成する。
+ * reset：割り当てを変えずに、データベースとバケットを再作成する。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 async function reset(ctx) {
   if (ctx.main) return console.log('メインの作業ツリーはスロット 0。scripts/dev/reset.sh を使う')
   requireShared(ctx)
-  const slot = parseSlotRecord(readRecord(ctx.root))
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
+  const slot = requireSlot(ctx)
   const values = slotValues(slot)
   const problem = checkBackendStopped({ slot, running: await backendRunning(slot), action: '流し直す' })
   if (problem !== null) throw new Exit(problem.code, problem.message)
@@ -423,7 +470,7 @@ async function reset(ctx) {
 /**
  * show：スロットの値と、作業ツリーの一覧を示す。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 function show(ctx) {
   const slot = currentSlot(ctx)
@@ -461,11 +508,10 @@ function shellQuote(value) {
 /**
  * env：スロットの環境変数を export の形で出す。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  */
 function env(ctx) {
-  const slot = currentSlot(ctx)
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
+  const slot = requireSlot(ctx)
   const merged = {}
   for (const target of TARGETS) Object.assign(merged, slotEnv(slot, target))
   for (const [name, value] of Object.entries(merged)) console.log(`export ${name}=${shellQuote(value)}`)
@@ -474,15 +520,14 @@ function env(ctx) {
 /**
  * run：スロットの環境変数を付けて対象を起動する。
  *
- * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
+ * @param {ReturnType<typeof readContext>} ctx 作業ツリーの状態
  * @param {string[]} args 対象と、あれば番号
  * @returns {Promise<number>} 子の終了コード
  */
 async function run(ctx, args) {
   const [target, number] = args
-  if (!TARGETS.includes(target)) throw new Exit(1, `起動する対象は backend、store、admin のどれか：${target ?? ''}`)
-  const slot = currentSlot(ctx)
-  if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
+  if (!TARGETS.includes(target)) throw new Exit(2, `起動する対象は ${TARGETS.join('、')} のどれか：${target ?? ''}`)
+  const slot = requireSlot(ctx)
   if (number !== undefined && Number(number) !== slot) {
     throw new Exit(1, `この作業ツリーのスロットは ${slot} で、指定の ${number} と違う。起動しない`)
   }
@@ -555,13 +600,13 @@ async function main(argv) {
   const known = ['assign', 'release', 'stop', 'reset', 'show', 'env', 'run']
   if (!known.includes(command)) {
     console.error(USAGE)
-    return command === undefined ? 0 : 1
+    return command === undefined ? 0 : 2
   }
   let ctx
   try {
-    ctx = context()
+    ctx = readContext()
   } catch {
-    throw new Exit(1, 'git の作業ツリーの中で流す')
+    throw new Exit(2, 'git の作業ツリーの中で流す')
   }
   if (command === 'assign') await assign(ctx)
   else if (command === 'release') await release(ctx)

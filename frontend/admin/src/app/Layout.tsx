@@ -20,7 +20,11 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 
-/** 画面の共通の枠（左のメニューと本文。上に運営者の氏名とログアウト） */
+/**
+ * 画面の共通の枠
+ *
+ * 左のメニューと本文を並べ、上に運営者の氏名とログアウトを出す。
+ */
 export function Layout() {
   const { pathname } = useLocation()
   const operator = useOperator()
@@ -83,7 +87,11 @@ export function Layout() {
   )
 }
 
-/** メニューの項目 1 つ（機能の群とレポートの群で共通） */
+/**
+ * メニューの項目 1 つ
+ *
+ * 機能の群とレポートの群で共通。
+ */
 function MenuItem({
   item,
   pathname,

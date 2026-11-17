@@ -1,13 +1,12 @@
 package com.ecsite.module.notification.application.port;
 
 /**
- * メールを送る port（docs/03-機能仕様/notification.md「メールの送信」、docs/02-設計/notification.md「外部のサービス」）。<br />
- * SMTP の型とエラーは実装の中に閉じ、送れなければ実行時例外を投げる。
+ * メールの送信
  */
 public interface Mailer {
 
     /**
-     * メールを送る。送信元は設定の値。
+     * メールを送る。
      *
      * @param mail メール
      */

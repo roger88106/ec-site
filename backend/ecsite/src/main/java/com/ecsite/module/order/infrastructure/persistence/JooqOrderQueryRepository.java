@@ -1,10 +1,10 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.order.application.model.OrderSummaryView;
+import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import lombok.RequiredArgsConstructor;
@@ -45,13 +45,17 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
                 .orderBy(SALES_ORDER.ORDERED_AT.desc(), SALES_ORDER.ID)
                 .limit(request.size())
                 .offset(request.offset())
-                .fetch(row -> new OrderSummaryView(row.value1(), row.value2(), row.value3(), row.value4(), Money.of(row.value5()),
-                        AggregateGuards.restore("order", () -> OrderStatus.valueOf(row.value6()))));
+                .fetch(row -> new OrderSummaryView(row.get(SALES_ORDER.ID), row.get(SALES_ORDER.ORDER_NUMBER),
+                        row.get(SALES_ORDER.ORDERED_AT), row.get(SALES_ORDER.RECIPIENT_NAME),
+                        Money.of(row.get(SALES_ORDER.TOTAL_AMOUNT)),
+                        RestoreGuard.restore("order", () -> OrderStatus.valueOf(row.get(SALES_ORDER.STATUS)))));
         return PageResult.of(items, request, dsl.fetchCount(SALES_ORDER, where));
     }
 
     /**
-     * 絞り込みの条件を SQL の条件にする。注文番号の前方一致は、% や _ を文字として扱う。
+     * 絞り込みの条件を SQL の条件にする。
+     *
+     * <p>注文番号の前方一致は、% や _ を文字として扱う。
      */
     private static Condition where(Filter filter) {
         var where = DSL.noCondition();

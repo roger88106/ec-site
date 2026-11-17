@@ -21,8 +21,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * レポート API のレスポンスと、アプリケーション層のモデルの変換。<br />
- * レスポンスは集計の値だけで、会員を特定できる情報（会員 ID、氏名、住所など）を持たない。
+ * レポートの API の型への変換
+ *
+ * <p>レスポンスは集計の値だけで、会員を特定できる情報（会員 ID、氏名、住所など）を持たない。
  */
 @Component
 class ReportMapper {
@@ -39,7 +40,9 @@ class ReportMapper {
     }
 
     /**
-     * 売上の数え方に変換する。省けば注文基準。
+     * 売上の数え方に変換する。
+     *
+     * <p>省けば注文基準。
      *
      * @param basis 売上の数え方（省略可）
      * @return 売上の数え方
@@ -153,7 +156,7 @@ class ReportMapper {
     }
 
     /**
-     * 年齢層。
+     * 年齢層を、レスポンスの年齢層に変換する。
      */
     private static AgeGroupSales.AgeGroupEnum toAgeGroup(AgeGroup ageGroup) {
         return switch (ageGroup) {
@@ -168,7 +171,7 @@ class ReportMapper {
     }
 
     /**
-     * 性別の区分。
+     * 性別の区分を、レスポンスの性別に変換する。
      */
     private static GenderSales.GenderEnum toGender(ReportGender gender) {
         return switch (gender) {

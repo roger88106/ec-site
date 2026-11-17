@@ -32,7 +32,7 @@ function Detail() {
   )
 }
 
-/** ボタンを押すと、描画の後で項目と行が現れる */
+/** ボタンを押すと、描画の後で項目と行が現れる詳細 */
 function Reveal() {
   const [shown, setShown] = useState(false)
   return (
@@ -123,7 +123,7 @@ describe('詳細の項目の値', () => {
 })
 
 describe('一覧の行', () => {
-  test('名前に含む文字で行を返す', () => {
+  test('名前の始まりの文字で行を返す', () => {
     render(<List />)
     expect(within(getRow('軽減')).getByRole('cell', { name: '5' })).toBeInTheDocument()
   })
@@ -186,7 +186,7 @@ describe('一覧の行', () => {
     expect(() => getRow('-0012')).toThrow()
   })
 
-  test('含む行がなければ失敗する', () => {
+  test('始まる行がなければ失敗する', () => {
     render(<List />)
     expect(() => getRow('非課税')).toThrow(/非課税/)
   })

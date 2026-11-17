@@ -6,8 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 状態の履歴の 1 行（docs/03-機能仕様/reporting.md「集めるデータ」）。受けたイベントごとに 1 行。<br />
- * 状態は、出来事に応じて注文の状態か配送状態の列挙で持つ（後から出来事を追加しても表を変えずに済むため）。
+ * 状態の履歴の 1 行
+ *
+ * <p>受けたイベントごとに 1 行。状態は、出来事に応じて注文の状態か配送状態の列挙で持つ（後から出来事を追加しても表を変えずに済むため）。
  *
  * @param eventId          元のイベント ID
  * @param orderId          注文 ID
@@ -22,10 +23,9 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
                                  Instant occurredAt, @Nullable ReportCancellationKind cancellationKind, @Nullable Boolean restocked) {
 
     /**
-     * 出来事と状態の型が合うことを確認する。<br />
-     * 注文の状態の出来事なら状態は注文の状態、配送状態の出来事なら配送状態でなければならない。前の状態は null でもよい。
+     * 出来事と状態の型が合うことを確認する。
      *
-     * @throws IllegalArgumentException 出来事に合わない型の状態のとき
+     * <p>注文の状態の出来事なら状態は注文の状態、配送状態の出来事なら配送状態でなければならない。前の状態は null でもよい。
      */
     public StatusHistoryEntry {
         if (!matches(kind, to) || (from != null && !matches(kind, from))) {
@@ -34,9 +34,9 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
     }
 
     /**
-     * 後の状態を配送状態の列挙にする。
+     * 後の状態を配送状態の列挙で返す。
      *
-     * @return 後の状態を配送状態の列挙にしたもの（出来事が配送状態の変化のときだけ使う）
+     * @return 後の状態
      */
     public DeliveryStatus deliveryStatus() {
         if (to instanceof DeliveryStatus delivery) {

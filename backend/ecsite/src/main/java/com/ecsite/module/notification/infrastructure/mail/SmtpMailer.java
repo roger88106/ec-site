@@ -7,8 +7,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 /**
- * SMTP でメールを送る（Spring Boot のメール。接続先は設定 spring.mail.*）。<br />
- * 送れなければ Spring の MailException（実行時例外）がそのまま伝わる。
+ * SMTP のメールの送信
+ *
+ * <p>Spring Boot のメールで送る。接続先は設定 spring.mail.* にある。
  */
 @Component
 @RequiredArgsConstructor
@@ -24,6 +25,13 @@ class SmtpMailer implements Mailer {
      */
     private final NotificationProperties properties;
 
+    /**
+     * メールを SMTP で送る。
+     *
+     * <p>送信元は設定の値。
+     *
+     * @param mail メール
+     */
     @Override
     public void send(Mail mail) {
         var message = new SimpleMailMessage();

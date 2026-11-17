@@ -12,7 +12,9 @@ import { returnPath } from '@/lib/login'
 import './index.css'
 
 /**
- * ログインした後に作る画面。ルーターは、IdP から戻った URL（code と state）を、移る前の画面の URL に
+ * ログインした後に作る画面
+ *
+ * ルーターは、IdP から戻った URL（code と state）を、移る前の画面の URL に
  * 書き換えてから作る（ルーターは作ったときの URL を読むため）。
  */
 function AuthenticatedApp() {

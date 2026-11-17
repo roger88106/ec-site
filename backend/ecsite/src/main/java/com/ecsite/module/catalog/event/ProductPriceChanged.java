@@ -7,7 +7,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 商品価格変更（将来の検索インデックス同期用）
+ * 商品価格変更
+ *
+ * <p>商品の税抜価格が変わったときに発行する。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

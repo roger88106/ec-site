@@ -1,8 +1,11 @@
 package com.ecsite.module.region.api;
 
+import com.ecsite.module.region.api.model.RegionMunicipality;
+import com.ecsite.module.region.api.model.RegionPrefecture;
 import com.ecsite.module.region.application.RegionQueryService;
-import com.ecsite.module.region.domain.Municipality;
-import com.ecsite.module.region.domain.Prefecture;
+import com.ecsite.module.region.domain.vo.Municipality;
+import com.ecsite.module.region.domain.vo.Prefecture;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -10,8 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 他のモジュールに公開する、地域のマスターデータの参照（docs/02-設計/region.md「他のモジュールへの公開」）。<br />
- * 参照だけで、EC に固有の判断を持たない。使う側は腐敗防止層で包む（別のサービスに切り出せるようにするため）。
+ * 地域モジュールの公開の API
+ *
+ * <p>地域のマスターデータを参照するだけで、EC に固有の判断を持たない（別のサービスに切り出せるようにするため）。
  */
 @Component
 @RequiredArgsConstructor
@@ -23,7 +27,7 @@ public class RegionLookupApi {
     private final RegionQueryService queryService;
 
     /**
-     * 都道府県の一覧
+     * 都道府県の一覧を返す。
      *
      * @return コードの順の都道府県
      */
@@ -32,25 +36,27 @@ public class RegionLookupApi {
     }
 
     /**
-     * 都道府県をコードで引く
+     * 都道府県をコードで引く。
      *
      * @param code 都道府県のコード
      * @return 都道府県。なければ空
      */
-    public Optional<RegionPrefecture> findPrefecture(String code) {
+    public Optional<RegionPrefecture> findPrefecture(@NonNull String code) {
         return queryService.findPrefecture(code).map(RegionLookupApi::toPrefecture);
     }
 
     /**
-     * 市区町村をコードで引く
+     * 市区町村をコードで引く。
      *
      * @param code 市区町村のコード
      * @return 市区町村と、属する都道府県。なければ空
      */
-    public Optional<RegionMunicipality> findMunicipality(String code) {
+    public Optional<RegionMunicipality> findMunicipality(@NonNull String code) {
         return queryService.findMunicipality(code)
                 .map(found -> toMunicipality(found.prefecture(), found.municipality()));
     }
+
+// ============================== プライベートメソッド ==============================
 
     /**
      * 公開する都道府県の型に変換する

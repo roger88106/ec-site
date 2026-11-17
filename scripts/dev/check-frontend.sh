@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # ============================================================================
-# フロントの確認（依存の入れ直し、ライセンス、knip、組み込みの名前の一覧、lint、型チェック、テスト、ビルド）を実行し、手順ごとに結果の要約だけを出す
+# フロントの確認（依存の入れ直し、ライセンス、knip、lint、型チェック、テスト、ビルド）を実行し、手順ごとに結果の要約だけを出す
 #
 #   使い方：scripts/dev/check-frontend.sh [shared|store|admin|e2e|all] [手順...]
-#     例：scripts/dev/check-frontend.sh                    # install licenses knip globals の後に、共有パッケージで lint typecheck test、
+#     例：scripts/dev/check-frontend.sh                    # install licenses knip の後に、共有パッケージで lint typecheck test、
 #                                                          # 両方のアプリで lint typecheck test build、e2e で lint typecheck
 #         scripts/dev/check-frontend.sh admin test         # 管理画面のテストだけ
 #         scripts/dev/check-frontend.sh store lint typecheck
 #
 # e2e（E2E のコード）は lint と typecheck だけを流し、ほかの手順は飛ばす。E2E のテストは scripts/dev/e2e.sh で流す。
 #
-# install（pnpm install --frozen-lockfile）、licenses（依存のライセンスの検査）、knip（使われていないファイル・export・依存の検査）、globals（組み込みの名前の一覧が TypeScript の lib と一致するかの確認）は、ルートで 1 回だけ流す。
+# install（pnpm install --frozen-lockfile）、licenses（依存のライセンスの検査）、knip（使われていないファイル・export・依存の検査）は、ルートで 1 回だけ流す。
 # 手元は依存が入った後なので、CI のインストールでだけ失敗すること（allowBuilds の漏れなど）を先に見つけるため。
 #
-# 成功した手順は 1 行だけ出す。失敗した手順は、出力の末尾（TAIL_LINES 行。既定 30）を添える。
+# 成功した手順は 1 行だけ出す。失敗した手順は、出力の末尾（TAIL_LINES 行）を添える。
 # 出力の全体は LOG_DIR（既定は一時ディレクトリ）に手順ごとに残す。
 # 失敗した手順があれば、すべての手順を実行したあとで終了コード 1 を返す。
 # ============================================================================
@@ -40,18 +40,18 @@ case "$target" in
     ;;
 esac
 steps=("$@")
-[ ${#steps[@]} -eq 0 ] && steps=(install licenses knip globals lint typecheck test build)
+[ ${#steps[@]} -eq 0 ] && steps=(install licenses knip lint typecheck test build)
 
 failed=0
 
 # 1 つの手順を流し、結果を 1 行で出す（失敗したら出力の末尾を添える）
-#   $1：表示の名前、$2：ログの名前、残り：流すコマンド
+#   $1：表示の名前、$2：ログの名前、$3：流すディレクトリ、残り：流すコマンド
 run_step() {
-  local name="$1" logname="$2"
-  shift 2
+  local name="$1" logname="$2" dir="$3"
+  shift 3
   local log="$LOG_DIR/$logname.log"
   local start=$SECONDS
-  "$@" >"$log" 2>&1
+  (cd "$dir" && "$@") >"$log" 2>&1
   local status=$?
   local elapsed=$((SECONDS - start))
   if [ $status -eq 0 ]; then
@@ -66,16 +66,15 @@ run_step() {
 # この作業ツリーの E2E が実行中か。E2E の入口（e2e/scripts/run.ts）のロックの所有者が、この作業ツリーで動いていれば実行中
 # （E2E は画面のビルドの結果を配るので、e2e.sh でも e2e/ の pnpm test でも、同じロックで守る）
 e2e_running() {
-  node "$ROOT/scripts/dev/lib/e2e-running.mjs"
+  node "$ROOT/scripts/dev/e2e-running.mjs"
 }
 
 app_steps=()
 for step in "${steps[@]}"; do
   case "$step" in
-    install) run_step "install" install bash -c "cd '$ROOT' && pnpm install --frozen-lockfile" ;;
-    licenses) run_step "licenses" licenses bash -c "cd '$ROOT' && node scripts/ci/licenses/check-frontend.mjs" ;;
-    knip) run_step "knip" knip bash -c "cd '$ROOT' && pnpm knip" ;;
-    globals) run_step "globals" globals bash -c "cd '$ROOT' && node scripts/ci/globals/lib-globals.mjs" ;;
+    install) run_step "install" install "$ROOT" pnpm install --frozen-lockfile ;;
+    licenses) run_step "licenses" licenses "$ROOT" node scripts/ci/licenses/check-frontend.mjs ;;
+    knip) run_step "knip" knip "$ROOT" pnpm knip ;;
     *) app_steps+=("$step") ;;
   esac
 done
@@ -88,12 +87,23 @@ for app in "${apps[@]}"; do
     if [ "$app" = e2e ] && [ "$step" != lint ] && [ "$step" != typecheck ]; then continue; fi
     if [ "$app" = shared ] && [ "$step" = build ]; then continue; fi
     # E2E の実行中は、画面をビルドし直さない（E2E が配っている dist が入れ替わり、E2E が失敗するため）
-    if [ "$step" = build ] && e2e_running; then
-      failed=1
-      echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
-      continue
+    if [ "$step" = build ]; then
+      e2e_running
+      running=$?
+      if [ $running -eq 0 ]; then
+        failed=1
+        echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
+        continue
+      elif [ $running -ne 1 ]; then
+        failed=1
+        echo "FAIL $app build：E2E が実行中かを調べられない（終了コード $running。理由は上の行）ので、ビルドしない"
+        continue
+      fi
     fi
-    run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$step'"
+    # テストは CI と同じく、カバレッジの基準と比べる test:coverage で実行する
+    script="$step"
+    [ "$step" = test ] && script=test:coverage
+    run_step "$app $step" "$app-$step" "$dir" pnpm "$script"
   done
 done
 

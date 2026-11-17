@@ -1,8 +1,8 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "root": true,
-  // 共通の設定（整形、lint の規則、shadcn/ui の生成物の扱い）
-  "extends": ["../biome.base.jsonc"],
+  // 共通の設定（整形、lint の規則、shadcn/ui の生成物の扱い）、テストで使わないグローバルの名前、書き方の規則の plugin
+  "extends": ["../biome.base.jsonc", "../biome.test-globals.jsonc", "../biome.plugins.jsonc"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",

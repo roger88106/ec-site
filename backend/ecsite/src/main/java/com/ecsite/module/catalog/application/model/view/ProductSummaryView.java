@@ -5,7 +5,7 @@ import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import java.util.UUID;
 
 /**
- * B 側の商品一覧の 1 件のビュー。在庫数の合計は在庫モジュールの API で取得する。
+ * B 側の商品一覧の 1 件のビュー
  *
  * @param id           商品 ID
  * @param productCode  商品品番

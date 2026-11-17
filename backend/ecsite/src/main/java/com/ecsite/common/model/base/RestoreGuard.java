@@ -1,0 +1,96 @@
+package com.ecsite.common.model.base;
+
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.SystemException;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
+
+import java.io.Serial;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
+import java.util.function.Supplier;
+
+/**
+ * 保存した値の復元の失敗の扱い
+ *
+ * <p>集約と、DB の値から作る値（列挙、値オブジェクト、JSON、読み取りのモデル）を戻すときに使う。
+ * 戻すときの例外を、値を含まない、復元の失敗を表すシステムの例外にする。
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class RestoreGuard {
+
+    /**
+     * 保存した状態から集約を戻す。
+     *
+     * <p>戻すときに例外が出れば、復元の失敗のシステムの例外にする。
+     *
+     * <p>メッセージには集約の名前と原因の例外の種類だけを書き、集約の ID を書かない。
+     * 原因は、元の例外の種類とスタックトレースだけを持つ例外に置き換える。原因の原因と抑制した例外も同じく置き換える。
+     *
+     * @param name     集約か読み取りのモデルの名前（デバッグ用のメッセージに書く。例：{@code category}）
+     * @param restorer 集約か DB の値を戻す処理
+     * @param <T>      戻す値の型
+     * @return 戻した値
+     */
+    public static <T> T restore(String name, Supplier<T> restorer) {
+        try {
+            return restorer.get();
+        } catch (Exception e) {
+            // 保存した状態と原因の例外のメッセージには、個人情報を含みうる値が入る。例外は連鎖ごとログに出るので、値を残さない。
+            // 集約の ID も、後に加わる集約で利用者を指す値になりうるので書かない（リクエストとの対応は、ログのトレース ID で追う）
+            String debugMessage = "%s restore error: %s".formatted(name, e.getClass().getName());
+            throw SystemException.of(debugMessage, redact(e, Collections.newSetFromMap(new IdentityHashMap<>())),
+                    CommonErrorCode.RESTORE_ERROR);
+        }
+    }
+
+    /**
+     * 例外を、元の例外の種類とスタックトレースだけを持つ例外に置き換える。
+     *
+     * <p>原因と抑制した例外も、再帰的に置き換える。
+     *
+     * @param throwable 置き換える例外
+     * @param visited   置き換えた例外（輪になった連鎖で止まるため）
+     * @return 置き換えた例外。例外がないか、既に置き換えた例外なら null
+     */
+    private static @Nullable RedactedException redact(@Nullable Throwable throwable, Set<Throwable> visited) {
+        if (throwable == null || !visited.add(throwable)) {
+            return null;
+        }
+        var redacted = new RedactedException(throwable.getClass().getName(), redact(throwable.getCause(), visited));
+        redacted.setStackTrace(throwable.getStackTrace());
+        for (var suppressed : throwable.getSuppressed()) {
+            var redactedSuppressed = redact(suppressed, visited);
+            if (redactedSuppressed != null) {
+                redacted.addSuppressed(redactedSuppressed);
+            }
+        }
+        return redacted;
+    }
+
+    /**
+     * 伏せた例外
+     *
+     * <p>元の例外の種類をメッセージに持ち、元の例外のメッセージを持たない。スタックトレースは元の例外のものを入れる。
+     */
+    private static final class RedactedException extends RuntimeException {
+
+        /**
+         * シリアライズのバージョン
+         */
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * コンストラクタ。
+         *
+         * @param typeName 元の例外の種類（クラスの完全修飾名）
+         * @param cause    置き換えた原因。なければ null
+         */
+        private RedactedException(String typeName, @Nullable RedactedException cause) {
+            super(typeName, cause, true, true);
+        }
+    }
+}

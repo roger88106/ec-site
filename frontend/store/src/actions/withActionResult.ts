@@ -4,7 +4,8 @@ import { type ActionResult, connectionFailedMessage } from '@/lib/actionResult'
 import { log } from '@/lib/server/log'
 
 /**
- * サーバーアクションの処理を包み、例外を結果にする（フロントの書き方の「店舗画面のサーバーアクション」）。<br />
+ * サーバーアクションの処理を包み、例外を結果にする（フロントの書き方の「店舗画面のサーバーアクション」）。
+ *
  * 画面の移動（`redirect`）と not found は例外で知らせるので、そのまま通す。それ以外の例外（接続の失敗など）は、
  * 操作した部品の近くに出せるよう、接続できなかったことを示す失敗の結果にし、error のログに出す。
  *
@@ -15,34 +16,46 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
   try {
     return await work()
   } catch (error) {
-    // 画面の移動・not found の例外は、ここで飲み込まずに Next.js へ返す
-    unstable_rethrow(error)
-    // 例外の名前と、原因の例外の名前とコード、API の失敗の状態コードだけを出す。メッセージには、カートの ID などの識別子や
-    // リクエストの内容が入りうるので、例外と原因のどちらのメッセージも出さない
-    const cause: unknown = error instanceof Error ? error.cause : undefined
-    const causeCode = cause instanceof Error && 'code' in cause ? cause.code : undefined
-    await log.error('サーバーアクションが失敗しました', {
-      errorName: error instanceof Error ? error.name : typeof error,
-      causeName: cause instanceof Error ? cause.name : null,
-      causeCode: typeof causeCode === 'string' ? causeCode : null,
-      // API の失敗の例外なら、その状態コード（識別子ではないので出してよい）
-      status: error instanceof ApiError ? error.status : null,
-    })
+    await handleFailure(error)
     return { ok: false, message: connectionFailedMessage() }
   }
 }
 
 /**
- * 読むだけの処理を包み、例外なら代わりの値を返す。例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
+ * 読むだけの処理を包み、例外なら代わりの値を返す。
  *
- * @param work 処理
+ * 例外の扱い（画面の移動の通し方、ログ）は {@link withActionResult} と同じ。
+ *
+ * @param work     処理
  * @param fallback 例外で失敗したときに返す値
  * @returns 処理の値。例外なら fallback
  */
 export async function withFallback<T>(work: () => Promise<T>, fallback: T): Promise<T> {
-  let value = fallback
-  await withActionResult(async () => {
-    value = await work()
+  try {
+    return await work()
+  } catch (error) {
+    await handleFailure(error)
+    return fallback
+  }
+}
+
+/**
+ * 処理の例外を扱う。画面の移動と not found の例外は投げ直し、それ以外は error のログに出す。
+ *
+ * @param error 処理の例外
+ */
+async function handleFailure(error: unknown): Promise<void> {
+  // 画面の移動・not found の例外は、ここで飲み込まずに Next.js へ返す
+  unstable_rethrow(error)
+  // 例外の名前と、原因の例外の名前とコード、API の失敗の状態コードだけを出す。メッセージには、カートの ID などの識別子や
+  // リクエストの内容が入りうるので、例外と原因のどちらのメッセージも出さない
+  const cause: unknown = error instanceof Error ? error.cause : undefined
+  const causeCode = cause instanceof Error && 'code' in cause ? cause.code : undefined
+  await log.error('サーバーアクションが失敗しました', {
+    errorName: error instanceof Error ? error.name : typeof error,
+    causeName: cause instanceof Error ? cause.name : null,
+    causeCode: typeof causeCode === 'string' ? causeCode : null,
+    // API の失敗の例外なら、その状態コード（識別子ではないので出してよい）
+    status: error instanceof ApiError ? error.status : null,
   })
-  return value
 }

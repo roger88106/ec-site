@@ -6,6 +6,7 @@ import com.ecsite.module.catalog.application.model.view.CategoryNodeView;
 import com.ecsite.module.catalog.application.model.view.CategoryView;
 import com.ecsite.module.catalog.application.port.CategoryQueryRepository;
 import com.ecsite.module.catalog.domain.category.Category;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -49,8 +50,9 @@ public class CategoryQueryService {
      *
      * @param id カテゴリ ID
      * @return カテゴリ（子カテゴリを含まない）
+     * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）
      */
-    public CategoryView getCategory(UUID id) {
+    public CategoryView getCategory(@NonNull UUID id) {
         return categoryQueryRepository.findById(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 

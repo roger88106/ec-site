@@ -1,8 +1,10 @@
 package com.ecsite.module.catalog.domain.product;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import org.jmolecules.ddd.annotation.Factory;
 
 import java.util.Collection;
 import java.util.List;
@@ -11,10 +13,13 @@ import java.util.UUID;
 /**
  * 商品のファクトリー
  */
+@Factory
 public class ProductFactory {
 
     /**
-     * 商品を作る。登録直後は非公開で、バリアントはない。
+     * 商品を作る。
+     *
+     * <p>登録直後は非公開で、バリアントはない。
      *
      * @param productCode   商品品番
      * @param name          商品名
@@ -24,6 +29,9 @@ public class ProductFactory {
      * @param categoryIds   所属カテゴリの ID
      * @param axes          バリアント軸の名前（並び順）
      * @return 商品
+     * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
+     * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
+     * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
     public Product create(ProductCode productCode, String name, String description, UUID taxCategoryId,
                           PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {
@@ -39,6 +47,6 @@ public class ProductFactory {
      */
     public Product restore(Product.Snapshot snapshot) {
         // 復元失敗の場合、復元エラーに変換してスローする
-        return AggregateGuards.restore("product", () -> new Product(snapshot));
+        return RestoreGuard.restore("product", () -> new Product(snapshot));
     }
 }

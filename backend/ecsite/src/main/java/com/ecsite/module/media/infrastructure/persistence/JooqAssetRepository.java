@@ -1,6 +1,6 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.jooq.media.tables.records.AssetRecord;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.domain.Asset;
@@ -16,7 +16,7 @@ import java.util.UUID;
 import static com.ecsite.jooq.media.Tables.ASSET;
 
 /**
- * アセットのリポジトリの jOOQ の実装
+ * jOOQ のアセットのリポジトリ
  */
 @Repository
 @RequiredArgsConstructor
@@ -54,7 +54,9 @@ class JooqAssetRepository implements AssetRepository {
     }
 
     /**
-     * アセットの記録をまとめて消す。ないものは無視する。
+     * アセットの記録をまとめて消す。
+     *
+     * <p>ないものは無視する。
      *
      * @param ids アセット ID
      */
@@ -72,7 +74,10 @@ class JooqAssetRepository implements AssetRepository {
      * アセットのレコードを、アセットに変換する。
      */
     private static Asset toAsset(AssetRecord record) {
-        return new Asset(record.getId(), AggregateGuards.restore("asset", () -> ImageFormat.valueOf(record.getFormat())), record.getStorageKey(),
+        return new Asset(
+                record.getId(),
+                RestoreGuard.restore("asset", () -> ImageFormat.valueOf(record.getFormat())),
+                record.getStorageKey(),
                 record.getCreatedAt());
     }
 }

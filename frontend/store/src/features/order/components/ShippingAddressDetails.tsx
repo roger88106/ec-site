@@ -3,7 +3,9 @@ import { useTranslations } from 'next-intl'
 import type { ShippingAddress } from '@/api/types'
 
 /**
- * 注文のお届け先と連絡先。住所は郵便番号、都道府県名・市区町村名（注文の時点の写し）、市区町村より下の住所の順に出す。
+ * 注文のお届け先と連絡先
+ *
+ * 住所は郵便番号、都道府県名・市区町村名（注文の時点の写し）、市区町村より下の住所の順に出す。
  */
 export function ShippingAddressDetails({ address, email }: { address: ShippingAddress; email: string }) {
   const t = useTranslations('order.detail')

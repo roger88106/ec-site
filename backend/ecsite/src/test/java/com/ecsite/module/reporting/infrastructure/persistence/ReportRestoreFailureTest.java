@@ -1,11 +1,12 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
-import com.ecsite.RestoreFailures;
 import com.ecsite.jooq.reporting.tables.records.StatusHistoryRecord;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.support.RestoreFailures;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -16,13 +17,15 @@ import java.time.LocalDate;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static com.ecsite.RestoreFailures.RECORDS;
-import static com.ecsite.RestoreFailures.assertValueIsHidden;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
 import static com.ecsite.jooq.reporting.Tables.STATUS_HISTORY;
+import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 
 /**
- * 集計の写しを DB の値から戻すときの失敗の単体テスト。例外の出力に DB の値が出ないことを確認する。
+ * 集計の写しを DB の値から戻すときの失敗の単体テスト
+ *
+ * <p>例外の出力に DB の値が出ないことを確認する。
  */
 class ReportRestoreFailureTest {
 
@@ -31,38 +34,59 @@ class ReportRestoreFailureTest {
      */
     private final String value = RestoreFailures.value();
 
-    @Test
-    @DisplayName("組ごとの売上で性別が列挙にないとき、例外の出力に値が出ない")
-    void hidesBuyerGender() {
-        var row = RECORDS.newRecord(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER,
-                        DSL.field("amount", BigDecimal.class), DSL.field("orders", Integer.class))
-                .values("13", (short) 30, value, BigDecimal.ONE, 1);
-        var repository = new JooqReportQueryRepository(new RestoreFailures().with("sales_order", row).dsl());
-        var period = ReportPeriod.of(LocalDate.EPOCH, LocalDate.EPOCH);
+    // ============================== テスト ==============================
 
-        assertValueIsHidden(() -> repository.segmentSales(period, Basis.ORDER, null, false, false), value);
+    @Nested
+    @DisplayName("組ごとの売上")
+    class SegmentSales {
+
+        @Test
+        @DisplayName("性別が列挙にないとき、例外の出力に値が出ない")
+        void hidesBuyerGender() {
+            // 準備：性別の列が列挙にない値の、組ごとの売上の行
+            var row = RECORDS.newRecord(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER,
+                            DSL.field("amount", BigDecimal.class), DSL.field("orders", Integer.class))
+                    .values("13", (short) 30, value, BigDecimal.ONE, 1);
+            var repository = new JooqReportQueryRepository(new RestoreFailures().with("sales_order", row).dsl());
+            var period = ReportPeriod.of(LocalDate.EPOCH, LocalDate.EPOCH);
+
+            // 操作と確認：読むと失敗し、例外の出力に値が出ない
+            assertValueIsHidden(() -> repository.segmentSales(period, Basis.ORDER, null, false, false), value);
+        }
     }
 
-    @Test
-    @DisplayName("状態の履歴の出来事が列挙にないとき、例外の出力に値が出ない")
-    void hidesHistoryKind() {
-        assertHistoryHides(history -> history.setKind(value));
+    @Nested
+    @DisplayName("状態の履歴")
+    class History {
+
+        @Test
+        @DisplayName("出来事が列挙にないとき、例外の出力に値が出ない")
+        void hidesHistoryKind() {
+            // 操作と確認：出来事を壊した行を読むと失敗し、例外の出力に値が出ない
+            assertHistoryHides(history -> history.setKind(value));
+        }
+
+        @Test
+        @DisplayName("状態が列挙にないとき、例外の出力に値が出ない")
+        void hidesHistoryStatus() {
+            // 操作と確認：後の状態を壊した行を読むと失敗し、例外の出力に値が出ない
+            assertHistoryHides(history -> history.setToStatus(value));
+        }
+
+        @Test
+        @DisplayName("キャンセルの種類が列挙にないとき、例外の出力に値が出ない")
+        void hidesHistoryCancellationKind() {
+            // 操作と確認：キャンセルの種類を壊した行を読むと失敗し、例外の出力に値が出ない
+            assertHistoryHides(history -> history.setCancellationKind(value));
+        }
     }
 
-    @Test
-    @DisplayName("状態の履歴の状態が列挙にないとき、例外の出力に値が出ない")
-    void hidesHistoryStatus() {
-        assertHistoryHides(history -> history.setToStatus(value));
-    }
-
-    @Test
-    @DisplayName("状態の履歴のキャンセルの種類が列挙にないとき、例外の出力に値が出ない")
-    void hidesHistoryCancellationKind() {
-        assertHistoryHides(history -> history.setCancellationKind(value));
-    }
+    // ============================== 確認の補助 ==============================
 
     /**
      * 行の一部を壊して状態の履歴を読み、例外の出力に値が出ないことを確認する。
+     *
+     * <p>壊す前の行は、注文の状態が受付になった変化。
      *
      * @param breaking 行を壊す処理
      */

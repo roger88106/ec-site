@@ -19,23 +19,23 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     INVALID_VARIANT_CODE(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 税抜価格が 1 円以上 9,999,999 円以下でない
+     * 税抜価格が {min} 円以上 {max} 円以下でない
      */
     INVALID_PRICE_EXCL_TAX(ErrorType.VALIDATION_ERROR, "min", "max"),
     /**
-     * 商品名が 1 文字以上 200 文字以内でない
+     * 商品名が 1 文字以上 {max} 文字以内でない
      */
     INVALID_PRODUCT_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 説明が 10,000 文字を超えている
+     * 説明が {max} 文字を超えている
      */
     INVALID_PRODUCT_DESCRIPTION(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * バリアント軸が 3 つを超えている、名前が 1 文字以上 30 文字以内でない、または重複している
+     * バリアント軸が {maxAxes} つを超えている、名前が 1 文字以上 {max} 文字以内でない、または重複している
      */
     INVALID_VARIANT_AXES(ErrorType.VALIDATION_ERROR, "maxAxes", "max"),
     /**
-     * 軸の値が商品の軸と同じ数でない、または 1 文字以上 50 文字以内でない
+     * 軸の値が商品の軸と同じ数でない、または 1 文字以上 {max} 文字以内でない
      */
     INVALID_AXIS_VALUES(ErrorType.VALIDATION_ERROR, "max"),
     /**
@@ -55,7 +55,7 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     INVALID_VARIANT_IMAGE(ErrorType.VALIDATION_ERROR),
     /**
-     * 商品の画像が上限（20 枚）に達している
+     * 商品の画像が上限（{max} 枚）に達している
      */
     TOO_MANY_PRODUCT_IMAGES(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**

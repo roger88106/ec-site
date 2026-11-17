@@ -1,0 +1,16 @@
+// 画面のテストで、コンポーネントの内部の属性（data-slot）と querySelector・querySelectorAll で探さず、役割と名前で探す（フロントのテストの書き方の「画面に見えるもので探す」）。
+// E2E には当てない。E2E の locator は、IdP の画面（id で探す）と詳細の項目（xpath）に限って許すため。
+language js
+
+or {
+  or {
+    JsStringLiteralExpression(),
+    JsTemplateExpression(),
+    JsRegexLiteralExpression(),
+    JsxAttribute()
+  } as $hit where { $hit <: r"(?s).*\bdata-slot\b.*" },
+  JsReferenceIdentifier() as $hit where { $hit <: r"querySelector(?:All)?" },
+  JsStaticMemberExpression(member=r"querySelector(?:All)?") as $hit
+} where {
+  register_diagnostic(span=$hit, message="コンポーネントの内部の属性（data-slot）や querySelector で探さず、役割と名前で探す（フロントのテストの書き方の「画面に見えるもので探す」）。", severity="error")
+}

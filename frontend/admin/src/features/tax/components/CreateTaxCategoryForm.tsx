@@ -1,6 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
@@ -17,6 +17,7 @@ export function CreateTaxCategoryForm() {
   const t = useTranslations('tax.create')
   const tApp = useTranslations('app.common')
   const form = useForm<Values>({ defaultValues: { name: '' } })
+  const name = useWatch({ control: form.control, name: 'name' })
   const mutation = useApiMutation('post', '/tax-categories', {
     success: t('registered'), // 登録の知らせ
     invalidate: ['/tax-categories'],
@@ -43,7 +44,7 @@ export function CreateTaxCategoryForm() {
             />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
-          <Button className="mt-6" disabled={mutation.isPending || !form.watch('name').trim()} type="submit">
+          <Button className="mt-6" disabled={mutation.isPending || !name.trim()} type="submit">
             {tApp('register') /* 登録 */}
           </Button>
         </form>

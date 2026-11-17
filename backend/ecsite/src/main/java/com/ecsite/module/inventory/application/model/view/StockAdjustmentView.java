@@ -7,7 +7,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 在庫調整のビュー（履歴の 1 件）
+ * 在庫調整のビュー
+ *
+ * <p>調整履歴の 1 件を表す。
  *
  * @param id            在庫調整 ID
  * @param delta         増減量

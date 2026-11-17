@@ -4,7 +4,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { startTransition, useActionState, useId } from 'react'
+import { useActionState, useId } from 'react'
 import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
 import { ActionError } from '@/components/ActionError'
@@ -12,26 +12,28 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { isPurchasable } from '@/features/catalog/variantSelection'
 import type { ActionResult } from '@/lib/actionResult'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
+import { useKeepInputsSubmit } from '@/lib/useKeepInputsSubmit'
 
 /**
- * 数量を選んでカートに入れる。<br />
- * サーバーアクションの状態（結果、送信中か）を持ち、表示は {@link AddToCartFormView} に任せる。
+ * カートに入れるフォーム
  *
- * @param variant 選んだバリアント（決まっていなければ null）
+ * 数量を選んでカートに入れる。サーバーアクションの状態（結果、送信中か）を持ち、表示は {@link AddToCartFormView} に任せる。
  */
-export function AddToCartForm({ variant }: { variant: Variant | null }) {
+export function AddToCartForm({
+  variant,
+}: {
+  /** 選んだバリアント（決まっていなければ null） */
+  variant: Variant | null
+}) {
   const [result, formAction, pending] = useActionState(addToCart, null)
   return <AddToCartFormView formAction={formAction} pending={pending} result={result} variant={variant} />
 }
 
 /**
- * カートに入れるフォームの表示。サーバーアクションの結果を props で受ける。<br />
- * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
+ * カートに入れるフォームの表示
  *
- * @param variant    選んだバリアント（決まっていなければ null）
- * @param result     サーバーアクションの結果（送る前は null）
- * @param formAction フォームを送ったときに呼ぶ関数
- * @param pending    送信中か
+ * サーバーアクションの結果を props で受ける。
+ * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
  */
 export function AddToCartFormView({
   variant,
@@ -39,26 +41,22 @@ export function AddToCartFormView({
   formAction,
   pending,
 }: {
+  /** 選んだバリアント（決まっていなければ null） */
   variant: Variant | null
+  /** サーバーアクションの結果（送る前は null） */
   result: ActionResult | null
+  /** フォームを送ったときに呼ぶ関数 */
   formAction: (formData: FormData) => void
+  /** 送信中か */
   pending: boolean
 }) {
   const t = useTranslations('catalog.addToCart')
   const selectable = variant !== null && isPurchasable(variant)
   const quantityId = useId()
+  const submit = useKeepInputsSubmit(formAction)
 
   return (
-    <form
-      action={formAction}
-      className="space-y-3"
-      // action は JavaScript の読み込み前の送信に使う。読み込み後は onSubmit から送る（action で送ると、React が送った後にフォームを初期値に戻し、数量が 1 になる）
-      onSubmit={(event) => {
-        event.preventDefault()
-        const formData = new FormData(event.currentTarget)
-        startTransition(() => formAction(formData))
-      }}
-    >
+    <form {...submit} className="space-y-3">
       <input name="variantId" type="hidden" value={variant?.id ?? ''} />
       <div className="flex items-center gap-3">
         <Label htmlFor={quantityId}>{t('quantity') /* 数量 */}</Label>

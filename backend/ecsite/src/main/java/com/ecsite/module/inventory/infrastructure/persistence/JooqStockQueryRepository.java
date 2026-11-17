@@ -1,6 +1,6 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
-import com.ecsite.common.model.base.AggregateGuards;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
@@ -38,7 +38,7 @@ class JooqStockQueryRepository implements StockQueryRepository {
      * バリアントの在庫数を取得する。
      *
      * @param variantId バリアント ID
-     * @return 在庫数
+     * @return 在庫数。在庫がまだなければ空
      */
     @Override
     public Optional<Integer> findQuantity(UUID variantId) {
@@ -53,42 +53,23 @@ class JooqStockQueryRepository implements StockQueryRepository {
      *
      * @param variantId バリアント ID
      * @param request   ページの指定
-     * @return 調整履歴
+     * @return 調整履歴。在庫がまだなければ空
      */
     @Override
     public Optional<PageResult<StockAdjustmentView>> findAdjustments(UUID variantId, PageRequest request) {
+        // 在庫の取得 ※在庫がなければ（そのバリアントがなければ）空
         return dsl.select(STOCK_ITEM.ID)
                 .from(STOCK_ITEM)
                 .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
                 .fetchOptional(STOCK_ITEM.ID)
-                // 在庫がなければ（そのバリアントがなければ）空。あれば、その在庫の調整履歴を 1 ページ分取得する
-                .map(stockItemId -> {
-                    var condition = STOCK_ADJUSTMENT.STOCK_ITEM_ID.eq(stockItemId);
-                    var items = dsl.selectFrom(STOCK_ADJUSTMENT)
-                            .where(condition)
-                            // 同じ時刻の調整は、記録した順（連番）の新しいほうを先にする
-                            .orderBy(STOCK_ADJUSTMENT.ADJUSTED_AT.desc(), STOCK_ADJUSTMENT.SEQUENCE_NO.desc())
-                            .limit(request.size())
-                            .offset(request.offset())
-                            .fetch(record -> new StockAdjustmentView(
-                                    record.getId(),
-                                    record.getDelta(),
-                                    AggregateGuards.restore("stock adjustment", () -> StockAdjustmentReason.valueOf(record.getReason())),
-                                    record.getMemo(),
-                                    record.getOrderId(),
-                                    record.getOrderNumber(),
-                                    record.getQuantityAfter(),
-                                    record.getAdjustedAt(),
-                                    record.getActorName()));
-                    return PageResult.of(items, request, dsl.fetchCount(STOCK_ADJUSTMENT, condition));
-                });
+                .map(stockItemId -> adjustmentsOf(stockItemId, request));
     }
 
     /**
      * 商品ごとに在庫数を合計する。
      *
      * @param productIds 商品 ID
-     * @return 商品 ID → 在庫数の合計
+     * @return 商品 ID → 在庫数の合計。在庫がまだない商品は含まない
      */
     @Override
     public Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds) {
@@ -100,14 +81,15 @@ class JooqStockQueryRepository implements StockQueryRepository {
                 .fetchMap(STOCK_ITEM.PRODUCT_ID, total);
     }
 
-
     /**
-     * 販売可能数を返す。在庫数から、在庫ごとの有効な引当の合計を引く。
+     * 販売可能数を返す。
+     *
+     * <p>在庫数から、在庫ごとの有効な引当の合計を引く。
      *
      * @param variantIds       バリアント ID
-     * @param excludedHolderId 数えない引当の持ち主
+     * @param excludedHolderId 数えない引当の持ち主。なければ null
      * @param now              現在時刻
-     * @return バリアント ID → 販売可能数
+     * @return バリアント ID → 販売可能数。在庫のないバリアントは含まない
      */
     @Override
     public Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId, Instant now) {
@@ -124,5 +106,35 @@ class JooqStockQueryRepository implements StockQueryRepository {
                 .from(STOCK_ITEM)
                 .where(STOCK_ITEM.VARIANT_ID.in(variantIds))
                 .fetchMap(STOCK_ITEM.VARIANT_ID, sellable);
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 在庫の調整履歴の 1 ページ分を取得する。
+     *
+     * @param stockItemId 在庫 ID
+     * @param request     ページの指定
+     * @return 調整履歴
+     */
+    private PageResult<StockAdjustmentView> adjustmentsOf(UUID stockItemId, PageRequest request) {
+        var condition = STOCK_ADJUSTMENT.STOCK_ITEM_ID.eq(stockItemId);
+        var items = dsl.selectFrom(STOCK_ADJUSTMENT)
+                .where(condition)
+                // 同じ時刻の調整は、記録した順（連番）の新しいほうを先にする
+                .orderBy(STOCK_ADJUSTMENT.ADJUSTED_AT.desc(), STOCK_ADJUSTMENT.SEQUENCE_NO.desc())
+                .limit(request.size())
+                .offset(request.offset())
+                .fetch(record -> new StockAdjustmentView(
+                        record.getId(),
+                        record.getDelta(),
+                        RestoreGuard.restore("stock adjustment", () -> StockAdjustmentReason.valueOf(record.getReason())),
+                        record.getMemo(),
+                        record.getOrderId(),
+                        record.getOrderNumber(),
+                        record.getQuantityAfter(),
+                        record.getAdjustedAt(),
+                        record.getActorName()));
+        return PageResult.of(items, request, dsl.fetchCount(STOCK_ADJUSTMENT, condition));
     }
 }

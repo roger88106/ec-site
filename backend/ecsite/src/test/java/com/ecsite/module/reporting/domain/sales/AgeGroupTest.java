@@ -12,32 +12,39 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class AgeGroupTest {
 
-    @ParameterizedTest(name = "{0} 歳は {1}")
+    @ParameterizedTest(name = "{0} 歳は「{1}」")
     @CsvSource({
             "0, TEENS_OR_YOUNGER",
             "19, TEENS_OR_YOUNGER",
             "20, TWENTIES",
             "29, TWENTIES",
             "30, THIRTIES",
+            "39, THIRTIES",
+            "40, FORTIES",
             "45, FORTIES",
+            "49, FORTIES",
+            "50, FIFTIES",
             "59, FIFTIES",
             "60, SIXTIES_OR_OLDER",
             "120, SIXTIES_OR_OLDER",
     })
-    @DisplayName("BR-27 10 代以下、20 代、30 代、40 代、50 代、60 代以上に分ける")
+    @DisplayName("BR-27 年齢を 10 歳ごとの層に分け、19 歳以下と 60 歳以上はそれぞれ 1 つの層にまとめる")
     void groupsByAge(int age, AgeGroup group) {
+        // 操作と確認：年齢の入る層になる
         assertThat(AgeGroup.of(age)).isEqualTo(group);
     }
 
     @Test
     @DisplayName("AC-208 年齢が分からなければ不明")
     void unknownAge() {
+        // 操作と確認：年齢がなければ「不明」
         assertThat(AgeGroup.of(null)).isEqualTo(AgeGroup.UNKNOWN);
     }
 
     @Test
     @DisplayName("BR-27 年齢層の並びは、若い順で、不明が最後")
     void order() {
+        // 確認：列挙の並びが、若い順の後に「不明」
         assertThat(AgeGroup.values()).containsExactly(AgeGroup.TEENS_OR_YOUNGER, AgeGroup.TWENTIES, AgeGroup.THIRTIES,
                 AgeGroup.FORTIES, AgeGroup.FIFTIES, AgeGroup.SIXTIES_OR_OLDER, AgeGroup.UNKNOWN);
     }

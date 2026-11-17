@@ -1,7 +1,9 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
 /**
- * キャンセルの種類（注文のキャンセルの種類の写し。docs/03-機能仕様/order.md）
+ * キャンセルの種類
+ *
+ * <p>注文のキャンセルの種類の写し。
  */
 public enum ReportCancellationKind {
 

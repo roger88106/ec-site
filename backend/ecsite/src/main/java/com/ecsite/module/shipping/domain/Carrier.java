@@ -3,7 +3,7 @@ package com.ecsite.module.shipping.domain;
 import java.util.Locale;
 
 /**
- * 配送業者（docs/03-機能仕様/shipping.md「配送業者」）。運営者が出荷のときに、決まった一覧から選ぶ。
+ * 配送業者
  */
 public enum Carrier {
 
@@ -23,8 +23,7 @@ public enum Carrier {
     JAPAN_POST;
 
     /**
-     * 表示名の文言のキー。<br />
-     * キーの形は出荷モジュールの中のここだけで決める。通知のメールは公開 API から、mock の画面はこの操作から得る。
+     * 表示名の文言のキーを返す。
      *
      * @return 文言のキー（{@code ecsite.shipping.carrier.<小文字の名前>}）
      */

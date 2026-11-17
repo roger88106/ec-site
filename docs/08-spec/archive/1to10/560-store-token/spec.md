@@ -4,7 +4,7 @@
 
 ## 背景と目的
 
-店舗画面は、会員の access token の期限が近いと、refresh token で再取得する（[店舗画面の構成](../../02-設計/apps/store.md)の「token の更新」）。1 つのリクエストの中で再取得の入口が 3 つあり、同じ refresh token の再取得をまとめる仕組みがない。IdP の障害の間は、失敗を保持しないので、入口の数だけ、リクエストごとに IdP を待つ。この spec は、再取得を 1 つの経路にまとめ、失敗の間は IdP を呼ばないようにする。
+店舗画面は、会員の access token の期限が近いと、refresh token で再取得する（[店舗画面の構成](../../../../02-設計/apps/store.md)の「token の更新」）。1 つのリクエストの中で再取得の入口が 3 つあり、同じ refresh token の再取得をまとめる仕組みがない。IdP の障害の間は、失敗を保持しないので、入口の数だけ、リクエストごとに IdP を待つ。この spec は、再取得を 1 つの経路にまとめ、失敗の間は IdP を呼ばないようにする。
 
 追跡の issue は #560（組の issue。全体の issue #544 の一部）。sub-issue は次の 2 つ。
 
@@ -42,8 +42,8 @@
 | 再取得が重なってもログアウトしないのは、realm で refresh token のローテーションが無効だから。この前提は設計書にない | #525 の本文 |
 | ローテーションを有効にすると、2 回目の再取得が `invalid_grant` で拒否され、会員がログアウトする（Auth.js がセッションの Cookie を削除する） | #525 の本文、`frontend/store/src/auth/refresh.ts:54` |
 | 再取得の失敗をログに出さない。運用者は、画面の遅れの原因が IdP だと分からない | #442 のコメント（2026-11-17） |
-| 店舗画面の設計は、操作が失敗しても処理を続けられるものを warn とする | [店舗画面の構成](../../02-設計/apps/store.md)の「ログ」 |
-| 設計書は、カート ID の Cookie を書くのはサーバーアクションだけと書く | [店舗画面の構成](../../02-設計/apps/store.md)の「カート ID の Cookie」 |
+| 店舗画面の設計は、操作が失敗しても処理を続けられるものを warn とする | [店舗画面の構成](../../../../02-設計/apps/store.md)の「ログ」 |
+| 設計書は、カート ID の Cookie を書くのはサーバーアクションだけと書く | [店舗画面の構成](../../../../02-設計/apps/store.md)の「カート ID の Cookie」 |
 | Auth.js の `signIn` のイベントも、Cookie を書く（カート ID の削除と、カートを移した結果の知らせの Cookie） | `frontend/store/src/auth/index.ts` の `events.signIn`、`api/cart.ts` の `mergeCartAfterLogin`、#252 の指摘、#560 の本文 |
 
 表の出典の行は、この spec の作業の前の commit（`6c2400b77`）のものである。ブラウザーと実際の IdP での確認は、tasks の手動の確認（T560-01-07）で行った。
@@ -84,8 +84,8 @@
 
 ### DS-560-3 設計書が実装と合う（D / P1）
 
-- **DC-560-6** [店舗画面の構成](../../02-設計/apps/store.md)の「token の更新」に、決定 1〜8 の規則と前提が書いてある。
-- **DC-560-7** [店舗画面の構成](../../02-設計/apps/store.md)の「カート ID の Cookie」で、Cookie を書く箇所に Auth.js の `signIn` のイベントが含まれている。
+- **DC-560-6** [店舗画面の構成](../../../../02-設計/apps/store.md)の「token の更新」に、決定 1〜8 の規則と前提が書いてある。
+- **DC-560-7** [店舗画面の構成](../../../../02-設計/apps/store.md)の「カート ID の Cookie」で、Cookie を書く箇所に Auth.js の `signIn` のイベントが含まれている。
 
 ### DS-560-4 検査が通る（D / P1）
 
@@ -98,7 +98,7 @@
 | 認証 | `frontend/store/src/auth/refresh.ts`、`frontend/store/src/auth/index.ts`（コメント）、`docker/keycloak/realms/ec-store-realm.json`（ローテーションを無効と明示する） |
 | テスト | `frontend/store/src/auth/refresh.test.ts`（新規）、`frontend/store/src/auth/index.test.ts`、`frontend/store/src/test/setup.ts`（テストごとに保持を削除する）、`frontend/store/src/lib/server/timeout.test.ts`（warn の出力を抑える） |
 | 設計書 | `docs/02-設計/apps/store.md` |
-| spec | `docs/08-spec/560-store-token/spec.md` |
+| spec | `docs/08-spec/archive/1to10/560-store-token/spec.md`（完了の後にアーカイブへ移した） |
 
 ## 非機能要件
 
@@ -161,10 +161,11 @@
   - 範囲：ローカルの環境（変えるファイルはない）
   - 確認方法：店舗画面のサーバーのログを読む
   - 結果：スロット 1 で店舗画面とバックエンドを起動し、IdP の呼び出しを一時的な info のログで数えた（一時的な変更は戻した）。期限の 60 秒前を過ぎてからカートの画面を開くと、IdP の呼び出しは 1 回だった。token のエンドポイントを到達できない URL に一時的に変えると、3 回の表示で呼び出しは 1 回、warn は 1 件だった。失敗の保持の 30 秒を過ぎた後の表示で、呼び出しと warn が 1 件ずつ増えた。
-- [ ] **T560-01-08** 検査を通す（DC-560-8）。
+- [x] **T560-01-08** 検査を通す（DC-560-8）。
   - 依存：T560-01-06、T560-01-07
   - 範囲：`frontend/store/`
   - 確認方法：`pnpm lint`、型チェック、店舗画面のテスト
+  - 結果：`scripts/dev/check-frontend.sh store` の全ての手順（install、licenses、knip、lint、typecheck、test、build）が通った。
 - [x] **T560-01-09** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T560-01-08
   - 結果：
@@ -215,5 +216,5 @@
       - 時刻が戻ると保持が長くなる。まれにしか起きない運用上の問題で、保持の時間も短いため。
       - 期限切れの結果を削除するとき、呼び出しのたびに全件を調べる。保持の数は、保持の時間の間に再取得した会員の数に限られるため。
     - proxy から始まった warn に追跡の ID が付かない指摘は、設計書に書いた（spec の最後のレビューで対応済み）。
-- [ ] **T560-01-11** spec をアーカイブに移す。
+- [x] **T560-01-11** spec をアーカイブに移す。
   - 依存：T560-01-10

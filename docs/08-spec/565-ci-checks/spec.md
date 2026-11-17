@@ -39,6 +39,7 @@ workflow と複合の action の `uses` は、#419 で commit の SHA に固定�
 
 - action の固定の対象は、Git の対象のファイル（追跡しているファイルと、除外されない新しいファイル）のうち、`.github/workflows/` 直下の `*.yml`・`*.yaml` と、`.github/actions/` の下の `action.yml`・`action.yaml`。読む場所は、workflow の各 job の `steps` の `uses`、job の `uses`（再利用の workflow）、複合の action の `runs.steps` の `uses`。YAML として読み、`run` の中の文字列やコメントは見ない。読めない YAML は失敗にする。対象のファイルが 0 件のときも失敗にする。
 - 除外の判定は、リポジトリの `.gitignore`（各フォルダーのものを含む）だけで行い、`.git/info/exclude` と全体の `core.excludesFile` は読まない。理由：手元の除外の設定で、手元でだけ失敗することを避け、手元と CI で同じ結果にするため。判定のコマンドの形は `git ls-files -z -i -c --exclude-per-directory=.gitignore` である。
+- 除外の判定では、大文字と小文字を区別する（Git の設定 `core.ignorecase` を false にして実行する）。理由：Windows の clone は区別しない設定になり、Linux の CI と結果が変わるため。
 - 失敗の出力は、action の固定ではファイル、場所（job と step）、値と、固定の形への修正の方法を示す。除外された追跡しているファイルでは、ファイルの一覧と、一致した行を調べるコマンド（`git check-ignore -v --no-index <ファイル>`）を示す。
 - commit の前の hook は、`.github/` の下のファイルをステージしたときに `action-pins` を、常に `ignored-tracked` を実行する。理由：`git add -f` で除外のファイルを加えると、`.gitignore` を変えずに検査が失敗する状態になるため。hook では、除外の検査も、ステージした `.gitignore` とファイルで判定する。
 - 文書は、CI の検査の script の文書（`docs/06-手順書/ci-checks.md`）の「検査の一覧」の表に 2 行を加える。`ci-docs.mjs` が、表と検査の 1 対 1 を確認する。同じ文書の「commit の前の hook」の表で、常に実行する検査の列挙に `ignored-tracked` を加える。
@@ -66,6 +67,8 @@ action の固定（`action-pins`）・検出すべき例：
 | 16 | 拡張子 `.yaml` の workflow、`action.yaml` の中のタグ | 対象のファイル |
 | 17 | 読めない YAML | 判定できない |
 | 18 | 対象のファイルが 0 件 | 検査の対象がないまま通るのを防ぐ |
+| 19 | `actions/checkout@${{ matrix.ref }}`（step と job の `uses` の式） | 許可する形にない |
+| 20 | `.github/actions/a/b/action.yml`（2 段の下のフォルダー）の中のタグの指定 | `.github/actions/` の下の全ての深さが対象 |
 
 action の固定（`action-pins`）・検出してはいけない例：
 
@@ -80,6 +83,10 @@ action の固定（`action-pins`）・検出してはいけない例：
 | 7 | `with` の入力の値 `ref: v1` | `uses` でない |
 | 8 | `.github/` の外の YAML、`.github/dependabot.yml` | 対象のファイルでない |
 | 9 | フロースタイル（`- { uses: a/b@<40 桁> }`） | 展開後の値で判定する |
+| 10 | job の `uses: ./.github/workflows/build.yml`（ローカルの再利用の workflow） | `./` で始まる |
+| 11 | owner と repo に大文字、`-`、`_`、`.` を含む固定（`Azure/login@<40 桁の小文字>`） | 小文字に限るのは SHA だけ |
+| 12 | 引用符で囲んだ許可する形（`"actions/checkout@<40 桁の小文字>"`、`'./.github/actions/setup-frontend'`） | YAML の値は同じ |
+| 13 | `.github/workflows/` のサブフォルダーの `*.yml` | 対象は直下だけ（GitHub Actions もサブフォルダーを読まない） |
 
 除外された追跡しているファイル（`ignored-tracked`）・検出すべき例：
 
@@ -91,6 +98,10 @@ action の固定（`action-pins`）・検出してはいけない例：
 | 4 | 追跡しているディレクトリを丸ごと除外する（`/docs/`） | ディレクトリの下の全て |
 | 5 | `git add -f` で、除外のファイルを加えた | 追跡しているファイルが除外の対象 |
 | 6 | 名前に空白・日本語を含む追跡しているファイルが除外の対象 | 名前の形によらない |
+| 7 | 親のディレクトリを除外した後に、その下のファイルを `!` で戻す（`/backend/` の後に `!/backend/ecsite/build.gradle.kts`） | 親のディレクトリが除外されていると戻せない |
+| 8 | 許可の行を除外の行より前に移した（`!/LICENSE` を `/*` より前に置く） | 最後に一致する行が除外する |
+| 9 | `/` のない行が深いフォルダーの追跡しているファイルに一致する（`bin/` が `scripts/bin/` に） | `/` のない行はどの階層にも一致する |
+| 10 | 大文字と小文字だけが違う許可の行（`!/readme.md` と、追跡している `README.md`） | 大文字と小文字を区別する |
 
 除外された追跡しているファイル（`ignored-tracked`）・検出してはいけない例：
 
@@ -98,8 +109,11 @@ action の固定（`action-pins`）・検出してはいけない例：
 |------|----|------|
 | 1 | 追跡していない除外のファイル（`/.local/` の下、ビルドの出力） | 追跡していない |
 | 2 | `.git/info/exclude` か全体の `core.excludesFile` だけが除外する追跡しているファイル | 手元の設定は読まない |
-| 3 | 除外の後に `!` で戻した追跡しているファイル | 最後に一致する行が `!` で戻している |
+| 3 | 除外の後に `!` で戻した追跡しているファイル（親のディレクトリは除外されていない） | 最後に一致する行が `!` で戻している |
 | 4 | 追跡していない、除外されないファイル | 追跡していない |
+| 5 | `/*` で除外し、`!/docs/` で戻したディレクトリの下の追跡しているファイル | 許可リストの書き方 |
+| 6 | 許可の行の末尾に空白がある（`!/LICENSE` の後に空白） | 末尾の空白は無視される |
+| 7 | `git rm --cached` で追跡をやめた除外のファイル | 追跡していない |
 
 ## 目的と完了条件
 
@@ -150,6 +164,7 @@ action の固定（`action-pins`）・検出してはいけない例：
 | `ci.yml` の `paths` から `!.gitignore` を外す（#255 の 2 つ目の箇条） | 決定のとおり、文書の workflow が検査を実行するため。`ci.yml` を変えると、結果に関わらない job も実行される |
 | SHA の後に書くバージョンのコメントの照合 | 実行する action は SHA で決まり、コメントは読む人の目印で実行に影響しないため |
 | `docker://` の digest の指定を許す | 今は使っていない。使うときに、許可する形に加える |
+| Docker の action の `runs.image` の固定 | `uses` と別の項目で、今は Docker の action もない。作るときに対象に加える |
 | 手元の除外の設定の検査 | 手元の設定はリポジトリに入らず、CI の結果に関わらないため |
 
 ## Open questions
@@ -160,7 +175,7 @@ action の固定（`action-pins`）・検出してはいけない例：
 
 実装は実装役（汎用）に 1 タスクずつ任せる。
 
-- [ ] **T565-01-01** 例の 4 つの表をレビュー役（spec の文脈を持たない）に読ませ、例を追加する（DC-565-1、DC-565-2、DC-565-4、DC-565-5）。
+- [x] **T565-01-01** 例の 4 つの表をレビュー役（spec の文脈を持たない）に読ませ、例を追加する（DC-565-1、DC-565-2、DC-565-4、DC-565-5）。
   - 依存：なし
   - 範囲：`docs/08-spec/565-ci-checks/spec.md`
   - 確認方法：追加した例が表にある

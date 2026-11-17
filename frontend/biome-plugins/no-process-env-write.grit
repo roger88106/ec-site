@@ -1,16 +1,44 @@
-// テストで環境変数を変えるときは vi.stubEnv を使い、process.env に代入しない（フロントのテストの書き方の「環境変数は vi.stubEnv で変える」）。
-// 見る形は、プロパティへの代入（+= などを含む）、process.env そのものへの代入、delete、Object.assign。別の変数を経由した代入は追わない。
+// テストで環境変数を変えるときは vi.stubEnv を使い、process.env を変えない（フロントのテストの書き方の「環境変数は vi.stubEnv で変える」）。
+// 見る形は、process.env（globalThis.process.env を含む）のプロパティへの代入（+= と分割代入を含む）、process.env そのものへの代入、delete、
+// process.env を最初の引数に渡す Object.assign・Object.defineProperty(ies)・Reflect.set・Reflect.deleteProperty・Reflect.defineProperty。
+// 別の変数を経由した変更は追わない（レビューで見る）。
 language js
+
+pattern env_object() {
+  or { `process.env`, `globalThis.process.env` }
+}
+
+pattern env_member() {
+  or {
+    JsStaticMemberAssignment(object=$env),
+    JsComputedMemberAssignment(object=$env),
+    JsStaticMemberExpression(object=$env),
+    JsComputedMemberExpression(object=$env)
+  } where { $env <: env_object() }
+}
 
 or {
   JsAssignmentExpression(left=$target) as $write where {
-    $target <: or { JsStaticMemberAssignment(object=$env), JsComputedMemberAssignment(object=$env) },
-    $env <: `process.env`
+    $target <: or { env_member(), contains env_member() }
   },
   `process.env = $_` as $write,
-  `delete process.env.$_` as $write,
-  `delete process.env[$_]` as $write,
-  `Object.assign(process.env, $_)` as $write
+  `globalThis.process.env = $_` as $write,
+  JsUnaryExpression(argument=$target) as $write where {
+    $write <: r"(?s)delete.*",
+    $target <: env_member()
+  },
+  JsCallExpression(callee=$callee, arguments=$args) as $write where {
+    $callee <: or {
+      `Object.assign`,
+      `Object.defineProperty`,
+      `Object.defineProperties`,
+      `Reflect.set`,
+      `Reflect.deleteProperty`,
+      `Reflect.defineProperty`
+    },
+    $args <: JsCallArguments(args=[$first, ...]),
+    $first <: env_object()
+  }
 } where {
-  register_diagnostic(span=$write, message="process.env に代入せず、vi.stubEnv で変える（フロントのテストの書き方の「環境変数は vi.stubEnv で変える」）。", severity="error")
+  register_diagnostic(span=$write, message="process.env を変えず、vi.stubEnv で変える（フロントのテストの書き方の「環境変数は vi.stubEnv で変える」）。", severity="error")
 }

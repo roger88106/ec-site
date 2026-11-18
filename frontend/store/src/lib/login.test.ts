@@ -11,6 +11,13 @@ describe('ログインの後に戻る画面', () => {
     expect(safeReturnTo('https://evil.example.com/')).toBe('/')
   })
 
+  test('AC-430-2 ログインのエンドポイントの下のパスは、戻る画面にせずトップにする（ログインできなかった画面に戻らないため）', () => {
+    expect(safeReturnTo('/login')).toBe('/')
+    expect(safeReturnTo('/login/failed')).toBe('/')
+    expect(safeReturnTo('/login?retry=1')).toBe('/')
+    expect(safeReturnTo('/loginx')).toBe('/loginx')
+  })
+
   test('指定がなければトップにする', () => {
     expect(safeReturnTo(null)).toBe('/')
     expect(safeReturnTo(undefined)).toBe('/')

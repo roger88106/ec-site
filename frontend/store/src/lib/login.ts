@@ -7,13 +7,19 @@ const HOME: Route = '/'
 /**
  * ログインの後に戻る画面を決める（店舗画面の構成の「ログイン」）。
  *
- * 店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。
+ * 店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。ログインのエンドポイントの下のパス（`/login`、
+ * `/login/failed` など）も受け付けない（ログインできなかったことを示す画面からログインしたときに、その画面へ戻らないため）。
  *
  * @param value 指定された戻り先
  * @returns 戻り先のパス（クエリを含む）。受け付けなければ店舗のトップ
  */
 export function safeReturnTo(value: string | null | undefined): string {
-  return isSafeReturnPath(value) ? value : HOME
+  return isSafeReturnPath(value) && !isLoginPath(value) ? value : HOME
+}
+
+/** ログインのエンドポイントの下のパスか（`/login`、`/login/...`、`/login?...`） */
+function isLoginPath(path: string): boolean {
+  return /^\/login(?:[/?#]|$)/.test(path)
 }
 
 /**

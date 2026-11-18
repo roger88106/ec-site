@@ -24,7 +24,7 @@
   - 依存：T493-03-03
   - 範囲：`reporting/`（presentation、application、domain、infrastructure）
   - 確認方法：T493-03-03 のテストと、既存の集計のテスト（`SalesTrendQueryTest`、`CustomerBreakdownQueryTest`、`VariantSalesQueryTest`）が通る
-- [ ] **T493-03-05** 設計の文書（catalog、reporting、tax のパッケージの構成）を確認し、変わった所があれば修正する。
+- [x] **T493-03-05** 設計の文書（catalog、reporting、tax のパッケージの構成）を確認し、変わった所があれば修正する。
   - 依存：T493-03-01、T493-03-02、T493-03-04
   - 範囲：`docs/02-設計/catalog.md`、`docs/02-設計/reporting.md`、`docs/02-設計/tax.md`
   - 確認方法：文書の検査（`doc-refs`、`ja-text`）が通る

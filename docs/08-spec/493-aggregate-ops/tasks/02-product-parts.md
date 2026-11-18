@@ -20,7 +20,7 @@
   - 依存：T493-02-02
   - 範囲：`VariantsTest`、`ProductImagesTest`（どちらも新規）、`ProductRestoreFailureTest`
   - 確認方法：新しい型がないので、コンパイルで失敗する。テストを通すためにテストを弱めない
-- [ ] **T493-02-04** T493-02-03 のテストが通る実装を書く。一覧の型を作り、商品の集約の重複した処理を、一覧の型の操作に置き換える。
+- [x] **T493-02-04** T493-02-03 のテストが通る実装を書く。一覧の型を作り、商品の集約の重複した処理を、一覧の型の操作に置き換える。
   - 依存：T493-02-03
   - 範囲：`catalog/domain/product/`（`Variants.java`、`ProductImages.java`、`Product.java`）、`JooqProductRepository`
   - 確認方法：T493-02-03 のテストと、既存の商品のテスト、`JooqProductRepositoryTest` が通る

@@ -1,10 +1,8 @@
 package com.ecsite.module.catalog.domain.product;
 
-import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
-import com.ecsite.module.catalog.domain.DisplayOrders;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductActions;
@@ -30,15 +28,11 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * 商品
@@ -140,14 +134,16 @@ public class Product extends AggregateRoot {
      *
      * <p>表示順に並んだ、変更できない一覧。先頭が代表画像。
      */
-    private List<ProductImage> images;
+    @Getter(AccessLevel.NONE)
+    private ProductImages images;
 
     /**
      * バリアント
      *
      * <p>表示順に並んだ、変更できない一覧。
      */
-    private List<Variant> variants;
+    @Getter(AccessLevel.NONE)
+    private Variants variants;
 
     /**
      * バージョン（楽観ロック）
@@ -179,8 +175,8 @@ public class Product extends AggregateRoot {
         this.priceExclTax = snapshot.priceExclTax();
         this.categoryIds = Set.copyOf(snapshot.categoryIds());
         this.axes = verifyAxes(snapshot.axes());
-        this.images = snapshot.images().stream().sorted(Comparator.comparingInt(ProductImage::displayOrder)).toList();
-        this.variants = snapshot.variants().stream().sorted(Comparator.comparingInt(Variant::displayOrder)).toList();
+        this.images = new ProductImages(snapshot.images());
+        this.variants = new Variants(snapshot.variants());
         this.version = snapshot.version();
         verifyInvariants();
         // 公開の条件の検査は、他の条件の検査の後にする（検査の順序を変えないため）
@@ -210,6 +206,26 @@ public class Product extends AggregateRoot {
         return new Product(new Snapshot(id, productCode, name, description, taxCategoryId, priceExclTax,
                 Set.copyOf(categoryIds), List.copyOf(axes), PublicationStatus.UNPUBLISHED, null,
                 PublicationPeriod.UNLIMITED, List.of(), List.of(), 0));
+    }
+
+// ============================== 画像とバリアントの項目 ==============================
+
+    /**
+     * 画像を返す。
+     *
+     * @return 表示順に並んだ、変更できない一覧。先頭が代表画像
+     */
+    public List<ProductImage> images() {
+        return images.list();
+    }
+
+    /**
+     * バリアントを返す。
+     *
+     * @return 表示順に並んだ、変更できない一覧
+     */
+    public List<Variant> variants() {
+        return variants.list();
     }
 
 // ============================== 公開の項目 ==============================
@@ -376,17 +392,15 @@ public class Product extends AggregateRoot {
         if (!canAddVariant(axes.size(), variants.size())) {
             throw BusinessException.of(ProductErrorCode.SINGLE_VARIANT_ONLY);
         }
-        if (variants.stream().anyMatch(variant -> variant.variantCode().equals(variantCode))) {
+        if (variants.list().stream().anyMatch(variant -> variant.variantCode().equals(variantCode))) {
             throw BusinessException.of(ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
         }
-        var variant = new Variant(UUID.randomUUID(), variantCode, axisValues, nextVariantDisplayOrder(), false, null);
-        if (variants.stream().anyMatch(other -> other.axisKey().equals(variant.axisKey()))) {
+        var variant = new Variant(UUID.randomUUID(), variantCode, axisValues, variants.nextDisplayOrder(), false, null);
+        if (variants.list().stream().anyMatch(other -> other.axisKey().equals(variant.axisKey()))) {
             throw BusinessException.of(ProductErrorCode.VARIANT_AXIS_VALUES_ALREADY_EXISTS);
         }
 
-        var added = new ArrayList<>(variants);
-        added.add(variant);
-        this.variants = List.copyOf(added);
+        this.variants = variants.add(variant);
 
         registerEvent(VariantRegistered.of(now, id, variant.id()));
         return variant.id();
@@ -402,7 +416,7 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
     public void deleteVariant(@NonNull UUID variantId, @NonNull Instant now) {
-        requireVariant(variantId);
+        variants.require(variantId);
         if (hasBeenShown(now)) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_ALREADY_SHOWN);
         }
@@ -411,7 +425,7 @@ public class Product extends AggregateRoot {
             throw BusinessException.of(ProductErrorCode.PRODUCT_HAS_NO_VARIANTS);
         }
 
-        this.variants = variants.stream().filter(variant -> !variant.id().equals(variantId)).toList();
+        this.variants = variants.remove(variantId);
 
         registerEvent(VariantDeleted.of(now, id, variantId));
     }
@@ -425,8 +439,7 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）。このときは何も変えない
      */
     public void reorderVariants(@NonNull List<UUID> orderedIds) {
-        this.variants = reorder(variants, Variant::id, Variant::withDisplayOrder, orderedIds,
-                ProductErrorCode.INVALID_VARIANT_ORDER);
+        this.variants = variants.reorder(orderedIds);
     }
 
     /**
@@ -464,10 +477,7 @@ public class Product extends AggregateRoot {
      */
     public void addImage(@NonNull UUID imageId, @NonNull UUID assetId) {
         verifyCanAddImage();
-        var nextOrder = DisplayOrders.next(images.stream().mapToInt(ProductImage::displayOrder));
-        var added = new ArrayList<>(images);
-        added.add(new ProductImage(imageId, assetId, nextOrder));
-        this.images = List.copyOf(added);
+        this.images = images.add(new ProductImage(imageId, assetId, images.nextDisplayOrder()));
     }
 
     /**
@@ -479,8 +489,7 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）。このときは何も変えない
      */
     public void reorderImages(@NonNull List<UUID> orderedIds) {
-        this.images = reorder(images, ProductImage::id, ProductImage::withDisplayOrder, orderedIds,
-                ProductErrorCode.INVALID_IMAGE_ORDER);
+        this.images = images.reorder(orderedIds);
     }
 
     /**
@@ -493,12 +502,10 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 商品にない画像（{@code NOT_FOUND}）
      */
     public UUID deleteImage(@NonNull UUID imageId) {
-        var image = requireImage(imageId);
+        var image = images.require(imageId);
 
-        this.images = images.stream().filter(candidate -> !candidate.id().equals(imageId)).toList();
-        this.variants = variants.stream()
-                .map(variant -> imageId.equals(variant.imageId()) ? variant.withImageId(null) : variant)
-                .toList();
+        this.images = images.remove(imageId);
+        this.variants = variants.withoutImage(imageId);
         return image.assetId();
     }
 
@@ -513,13 +520,11 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 商品にない画像（{@code INVALID_VARIANT_IMAGE}）
      */
     public void setVariantImage(@NonNull UUID variantId, @Nullable UUID imageId) {
-        requireVariant(variantId);
-        if (imageId != null && images.stream().noneMatch(image -> image.id().equals(imageId))) {
+        variants.require(variantId);
+        if (imageId != null && !images.contains(imageId)) {
             throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_IMAGE);
         }
-        this.variants = variants.stream()
-                .map(variant -> variant.id().equals(variantId) ? variant.withImageId(imageId) : variant)
-                .toList();
+        this.variants = variants.replace(variantId, variant -> variant.withImageId(imageId));
     }
 
     /**
@@ -621,17 +626,14 @@ public class Product extends AggregateRoot {
      * 集約として成り立つ条件を検査する。
      *
      * <p>状態を変えるメソッドの検査（業務のエラー）は、操作の前の判定として別にある。ここで、条件に合わない状態の集約を作れないようにする。
-     * 画像が上限を超える、軸のない商品のバリアントが 2 つ以上、軸の値の数が軸の数と違う、のどれかのとき、
-     * IllegalArgumentException を投げる。例外のメッセージには値を入れない。公開の条件は、{@link Publication} が検査する。
+     * 軸のない商品のバリアントが 2 つ以上、軸の値の数が軸の数と違う、のどれかのとき、IllegalArgumentException を投げる。
+     * 例外のメッセージには値を入れない。画像の数の上限は {@link ProductImages}、公開の条件は {@link Publication} が検査する。
      */
     private void verifyInvariants() {
-        if (images.size() > MAX_IMAGES) {
-            throw new IllegalArgumentException("画像の数が上限を超える");
-        }
         if (axes.isEmpty() && variants.size() > 1) {
             throw new IllegalArgumentException("軸のない商品にバリアントが 2 つ以上ある");
         }
-        if (variants.stream().anyMatch(variant -> variant.axisValues().size() != axes.size())) {
+        if (variants.list().stream().anyMatch(variant -> variant.axisValues().size() != axes.size())) {
             throw new IllegalArgumentException("バリアントの軸の値の数が商品の軸の数と違う");
         }
     }
@@ -645,69 +647,12 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
     private boolean changeSalesSuspended(UUID variantId, boolean salesSuspended) {
-        var variant = requireVariant(variantId);
+        var variant = variants.require(variantId);
         if (variant.salesSuspended() == salesSuspended) {
             return false;
         }
-        this.variants = variants.stream()
-                .map(v -> v.id().equals(variantId) ? v.withSalesSuspended(salesSuspended) : v)
-                .toList();
+        this.variants = variants.replace(variantId, target -> target.withSalesSuspended(salesSuspended));
         return true;
-    }
-
-    /**
-     * 商品のバリアントを ID で探す。
-     *
-     * @param variantId バリアント ID
-     * @return バリアント
-     * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
-     */
-    private Variant requireVariant(UUID variantId) {
-        return variants.stream().filter(variant -> variant.id().equals(variantId)).findFirst()
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
-    }
-
-    /**
-     * 商品の画像を ID で探す。
-     *
-     * @param imageId 画像 ID
-     * @return 画像
-     * @throws BusinessException 商品にない画像（{@code NOT_FOUND}）
-     */
-    private ProductImage requireImage(UUID imageId) {
-        return images.stream().filter(image -> image.id().equals(imageId)).findFirst()
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
-    }
-
-    /**
-     * 並び替える。
-     *
-     * <p>送られた順に 1 から表示順を振り直す。
-     *
-     * @param items            今の要素
-     * @param idOf             要素の ID
-     * @param withDisplayOrder 表示順を変えた要素を作る
-     * @param orderedIds       並べたい順の ID
-     * @param error            一致しないときのエラー
-     * @param <T>              要素の型
-     * @return 並び替えた要素（変更できない一覧）
-     * @throws BusinessException 今の要素と過不足なく一致しない（重複・漏れ・ないものを含む。{@code error} のエラー）
-     */
-    private static <T> List<T> reorder(List<T> items, Function<T, UUID> idOf, BiFunction<T, Integer, T> withDisplayOrder,
-                                       List<UUID> orderedIds, ProductErrorCode error) {
-        // 送られた順に新しい表示順を振り、その順に並べ直す
-        var orders = DisplayOrders.assign(items.stream().map(idOf).toList(), orderedIds, error);
-        return items.stream()
-                .map(item -> withDisplayOrder.apply(item, orders.get(idOf.apply(item))))
-                .sorted(Comparator.comparing(idOf, Comparator.comparing(orders::get)))
-                .toList();
-    }
-
-    /**
-     * 新しいバリアントの表示順（最大＋1。なければ 1）を返す。
-     */
-    private int nextVariantDisplayOrder() {
-        return DisplayOrders.next(variants.stream().mapToInt(Variant::displayOrder));
     }
 
     /**
@@ -801,7 +746,7 @@ public class Product extends AggregateRoot {
      */
     public Snapshot toSnapshot() {
         return new Snapshot(id, productCode, name, description, taxCategoryId, priceExclTax, categoryIds, axes,
-                publication.status(), publication.firstShownAt(), publication.publicationPeriod(), images, variants,
-                version);
+                publication.status(), publication.firstShownAt(), publication.publicationPeriod(), images.list(),
+                variants.list(), version);
     }
 }

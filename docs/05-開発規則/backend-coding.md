@@ -150,7 +150,12 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 理由：契約に書ける検証は契約に、業務の規則は 1 か所に置くため。同じ値を契約とドメインで同じ数え方で数えないと、契約の制約とドメインの上限が一致しないため。一覧の要素の null を Controller ごとに検査すると、加えた一覧で漏れるため。
 
-確認方法：自動（契約のテスト）、判定の重複はレビュー
+確認方法：
+
+- 長さの一致：自動（`OpenApiRequestConstraintTest`、`FieldConstraintContractTest`）
+- code point の数え方：自動（`CodePointSizeValidatorTest`）
+- 一覧の要素の null：自動（生成の設定と、各 API の統合テスト）。要素の null を許す一覧の妥当性はレビュー
+- 判定の重複：レビュー
 
 ### 不変条件はコンストラクターで検査する
 

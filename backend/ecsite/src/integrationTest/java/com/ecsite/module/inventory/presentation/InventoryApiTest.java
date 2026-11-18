@@ -289,6 +289,25 @@ class InventoryApiTest {
             expectQuantity(mockMvc, variantId, 0);
         }
 
+        @Test
+        @DisplayName("サロゲートペアの文字を含む 500 文字のメモは、UTF-16 では 1000 でも、調整できる")
+        void acceptsSurrogatePairMemoAtMax() throws Exception {
+            // 操作と確認：サロゲートペアの文字 500 個（code point では 500）のメモの調整は 201 で、メモをそのまま返す
+            adjust(variantId, 1, "OTHER", "𠮷".repeat(500))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.memo").value("𠮷".repeat(500)));
+        }
+
+        @Test
+        @DisplayName("サロゲートペアの文字を含む 501 文字のメモは、入力の誤りの 400")
+        void rejectsSurrogatePairMemoOverMax() throws Exception {
+            // 操作と確認：サロゲートペアの文字 501 個のメモの調整は 400 で、メモの欄を示す
+            adjust(variantId, 1, "OTHER", "𠮷".repeat(501))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("memo"));
+        }
+
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"ORDER", "ORDER_CANCELLATION"})
         @DisplayName("AC-107 注文に由来する理由は、運営者の調整では選べず 400")

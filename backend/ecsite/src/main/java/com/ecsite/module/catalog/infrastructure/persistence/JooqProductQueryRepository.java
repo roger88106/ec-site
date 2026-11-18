@@ -11,7 +11,7 @@ import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
-import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;

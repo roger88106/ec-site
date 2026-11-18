@@ -10,7 +10,9 @@ import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductActions;
 import com.ecsite.module.catalog.domain.product.vo.ProductActions.DeleteBlockedReason;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.Publication;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.ProductDiscontinued;
@@ -19,6 +21,7 @@ import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -127,22 +130,10 @@ public class Product extends AggregateRoot {
     private final List<String> axes;
 
     /**
-     * 公開状態
+     * 公開（公開状態・公開期間・初回表示日時）
      */
-    private PublicationStatus status;
-
-    /**
-     * 初回表示日時
-     *
-     * <p>null は一度も表示されていない（表示の予定もない）。
-     */
-    @Nullable
-    private Instant firstShownAt;
-
-    /**
-     * 公開期間
-     */
-    private PublicationPeriod publicationPeriod;
+    @Getter(AccessLevel.NONE)
+    private Publication publication;
 
     /**
      * 画像
@@ -170,7 +161,7 @@ public class Product extends AggregateRoot {
     /**
      * スナップショットから作る（登録・復元で共通）
      *
-     * <p>画像の数・バリアントの数・軸の値の数・公開状態と初回表示日時の組が条件に合わないとき、IllegalArgumentException を投げる。
+     * <p>画像の数・バリアントの数・軸の値の数・公開の組み合わせが条件に合わないとき、IllegalArgumentException を投げる。
      *
      * @param snapshot 商品のスナップショット
      * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
@@ -188,13 +179,12 @@ public class Product extends AggregateRoot {
         this.priceExclTax = snapshot.priceExclTax();
         this.categoryIds = Set.copyOf(snapshot.categoryIds());
         this.axes = verifyAxes(snapshot.axes());
-        this.status = snapshot.status();
-        this.firstShownAt = snapshot.firstShownAt();
-        this.publicationPeriod = snapshot.publicationPeriod();
         this.images = snapshot.images().stream().sorted(Comparator.comparingInt(ProductImage::displayOrder)).toList();
         this.variants = snapshot.variants().stream().sorted(Comparator.comparingInt(Variant::displayOrder)).toList();
         this.version = snapshot.version();
         verifyInvariants();
+        // 公開の条件の検査は、他の条件の検査の後にする（検査の順序を変えないため）
+        this.publication = new Publication(snapshot.status(), snapshot.publicationPeriod(), snapshot.firstShownAt());
     }
 
     /**
@@ -222,6 +212,35 @@ public class Product extends AggregateRoot {
                 PublicationPeriod.UNLIMITED, List.of(), List.of(), 0));
     }
 
+// ============================== 公開の項目 ==============================
+
+    /**
+     * 公開状態を返す。
+     *
+     * @return 公開状態
+     */
+    public PublicationStatus status() {
+        return publication.status();
+    }
+
+    /**
+     * 初回表示日時を返す。
+     *
+     * @return 初回表示日時。一度も表示されていない（表示の予定もない）なら null
+     */
+    public @Nullable Instant firstShownAt() {
+        return publication.firstShownAt();
+    }
+
+    /**
+     * 公開期間を返す。
+     *
+     * @return 公開期間
+     */
+    public PublicationPeriod publicationPeriod() {
+        return publication.publicationPeriod();
+    }
+
 // ============================== ドメインの振る舞い ==============================
 
     /**
@@ -233,7 +252,7 @@ public class Product extends AggregateRoot {
      * @return 表示されるなら true
      */
     public boolean isVisibleAt(@NonNull Instant now) {
-        return status == PublicationStatus.PUBLISHED && publicationPeriod.contains(now);
+        return publication.isVisibleAt(now);
     }
 
     /**
@@ -245,7 +264,7 @@ public class Product extends AggregateRoot {
      * @return 表示されたことがあれば true
      */
     public boolean hasBeenShown(@NonNull Instant now) {
-        return hasBeenShown(firstShownAt, now);
+        return publication.hasBeenShown(now);
     }
 
     /**
@@ -255,7 +274,7 @@ public class Product extends AggregateRoot {
      * @return できる操作
      */
     public ProductActions actions(@NonNull Instant now) {
-        return actionsOf(status, firstShownAt, axes.size(), variants.size(), now);
+        return actionsOf(publication.status(), publication.firstShownAt(), axes.size(), variants.size(), now);
     }
 
     /**
@@ -270,7 +289,7 @@ public class Product extends AggregateRoot {
      */
     public static ProductActions actionsOf(@NonNull PublicationStatus status, @Nullable Instant firstShownAt,
                                            int axisCount, int variantCount, @NonNull Instant now) {
-        var neverShown = !hasBeenShown(firstShownAt, now);
+        var neverShown = !Publication.hasBeenShown(firstShownAt, now);
         return new ProductActions(
                 status == PublicationStatus.UNPUBLISHED,
                 status == PublicationStatus.PUBLISHED,
@@ -279,19 +298,6 @@ public class Product extends AggregateRoot {
                 neverShown,
                 canAddVariant(axisCount, variantCount),
                 neverShown ? null : DeleteBlockedReason.ALREADY_SHOWN);
-    }
-
-    /**
-     * C 側に表示されたことがあるかを返す。
-     *
-     * <p>初回表示日時が空か未来なら、まだ表示されていない。
-     *
-     * @param firstShownAt 初回表示日時。なければ null
-     * @param now          現在時刻
-     * @return 表示されたことがあれば true
-     */
-    static boolean hasBeenShown(@Nullable Instant firstShownAt, @NonNull Instant now) {
-        return firstShownAt != null && !firstShownAt.isAfter(now);
     }
 
     /**
@@ -401,7 +407,7 @@ public class Product extends AggregateRoot {
             throw BusinessException.of(ProductErrorCode.PRODUCT_ALREADY_SHOWN);
         }
         // 公開中の商品を、バリアントのない状態にしない
-        if (status == PublicationStatus.PUBLISHED && variants.size() == 1) {
+        if (publication.status() == PublicationStatus.PUBLISHED && variants.size() == 1) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_HAS_NO_VARIANTS);
         }
 
@@ -527,16 +533,15 @@ public class Product extends AggregateRoot {
      * @throws BusinessException バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
     public boolean publish(@NonNull Instant now) {
-        verifyNotDiscontinued();
-        if (status == PublicationStatus.PUBLISHED) {
+        var published = publication.publish(now);
+        if (published.equals(publication)) {
             return false;
         }
         if (variants.isEmpty()) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_HAS_NO_VARIANTS);
         }
 
-        this.status = PublicationStatus.PUBLISHED;
-        this.firstShownAt = calculateFirstShownAt(now);
+        this.publication = published;
 
         registerEvent(ProductPublished.of(now, id));
         return true;
@@ -552,13 +557,12 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
      */
     public boolean unpublish(@NonNull Instant now) {
-        verifyNotDiscontinued();
-        if (status == PublicationStatus.UNPUBLISHED) {
+        var unpublished = publication.unpublish(now);
+        if (unpublished.equals(publication)) {
             return false;
         }
 
-        this.status = PublicationStatus.UNPUBLISHED;
-        clearScheduledFirstShownAt(now);
+        this.publication = unpublished;
 
         registerEvent(ProductUnpublished.of(now, id));
         return true;
@@ -573,12 +577,12 @@ public class Product extends AggregateRoot {
      * @return 状態が変わったら true。既にその状態なら false
      */
     public boolean discontinue(@NonNull Instant now) {
-        if (status == PublicationStatus.DISCONTINUED) {
+        var discontinued = publication.discontinue(now);
+        if (discontinued.equals(publication)) {
             return false;
         }
 
-        this.status = PublicationStatus.DISCONTINUED;
-        clearScheduledFirstShownAt(now);
+        this.publication = discontinued;
 
         registerEvent(ProductDiscontinued.of(now, id));
         return true;
@@ -587,16 +591,13 @@ public class Product extends AggregateRoot {
     /**
      * 公開期間を変える。
      *
-     * <p>公開中なら、表示前の初回表示日時を計算し直す。表示されて確定した初回表示日時は変わらない。
+     * <p>公開中なら、表示前の初回表示日時を計算する。表示されて確定した初回表示日時は変わらない。
      *
      * @param period 公開期間
      * @param now    現在時刻
      */
     public void changePublicationPeriod(@NonNull PublicationPeriod period, @NonNull Instant now) {
-        this.publicationPeriod = period;
-        if (status == PublicationStatus.PUBLISHED) {
-            this.firstShownAt = calculateFirstShownAt(now);
-        }
+        this.publication = publication.changePublicationPeriod(period, now);
     }
 
     /**
@@ -620,8 +621,8 @@ public class Product extends AggregateRoot {
      * 集約として成り立つ条件を検査する。
      *
      * <p>状態を変えるメソッドの検査（業務のエラー）は、操作の前の判定として別にある。ここで、条件に合わない状態の集約を作れないようにする。
-     * 画像が上限を超える、軸のない商品のバリアントが 2 つ以上、軸の値の数が軸の数と違う、公開で初回表示日時も公開終了もない、
-     * のどれかのとき、IllegalArgumentException を投げる。例外のメッセージには値を入れない。
+     * 画像が上限を超える、軸のない商品のバリアントが 2 つ以上、軸の値の数が軸の数と違う、のどれかのとき、
+     * IllegalArgumentException を投げる。例外のメッセージには値を入れない。公開の条件は、{@link Publication} が検査する。
      */
     private void verifyInvariants() {
         if (images.size() > MAX_IMAGES) {
@@ -632,10 +633,6 @@ public class Product extends AggregateRoot {
         }
         if (variants.stream().anyMatch(variant -> variant.axisValues().size() != axes.size())) {
             throw new IllegalArgumentException("バリアントの軸の値の数が商品の軸の数と違う");
-        }
-        // 公開で初回表示日時がないのは、公開の時点で公開終了を過ぎていて、表示されなかったときだけ
-        if (status == PublicationStatus.PUBLISHED && firstShownAt == null && publicationPeriod.publishEnd() == null) {
-            throw new IllegalArgumentException("公開中で、初めて表示した日時も公開終了もない");
         }
     }
 
@@ -683,37 +680,6 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開したとき（または公開中に公開期間を変えたとき）の初回表示日時を求める。
-     *
-     * @param now 現在時刻
-     * @return 初回表示日時。表示されないなら null
-     */
-    private @Nullable Instant calculateFirstShownAt(Instant now) {
-        // 表示されて確定した値（過去）は変えない
-        if (hasBeenShown(now)) {
-            return firstShownAt;
-        }
-        // 現在時刻と公開開始日時の遅いほう。それが公開終了日時以降なら、表示されないので null にする
-        var start = publicationPeriod.publishStart();
-        var candidate = start != null && start.isAfter(now) ? start : now;
-        var end = publicationPeriod.publishEnd();
-        return end != null && !candidate.isBefore(end) ? null : candidate;
-    }
-
-    /**
-     * 未来（表示予定）の初回表示日時を空に戻す。
-     *
-     * <p>確定済みなら何もしない。
-     *
-     * @param now 現在時刻
-     */
-    private void clearScheduledFirstShownAt(Instant now) {
-        if (!hasBeenShown(now)) {
-            this.firstShownAt = null;
-        }
-    }
-
-    /**
      * 並び替える。
      *
      * <p>送られた順に 1 から表示順を振り直す。
@@ -735,17 +701,6 @@ public class Product extends AggregateRoot {
                 .map(item -> withDisplayOrder.apply(item, orders.get(idOf.apply(item))))
                 .sorted(Comparator.comparing(idOf, Comparator.comparing(orders::get)))
                 .toList();
-    }
-
-    /**
-     * 販売終了でないことを検証する。
-     *
-     * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
-     */
-    private void verifyNotDiscontinued() {
-        if (status == PublicationStatus.DISCONTINUED) {
-            throw BusinessException.of(ProductErrorCode.PRODUCT_DISCONTINUED);
-        }
     }
 
     /**
@@ -846,6 +801,7 @@ public class Product extends AggregateRoot {
      */
     public Snapshot toSnapshot() {
         return new Snapshot(id, productCode, name, description, taxCategoryId, priceExclTax, categoryIds, axes,
-                status, firstShownAt, publicationPeriod, images, variants, version);
+                publication.status(), publication.firstShownAt(), publication.publicationPeriod(), images, variants,
+                version);
     }
 }

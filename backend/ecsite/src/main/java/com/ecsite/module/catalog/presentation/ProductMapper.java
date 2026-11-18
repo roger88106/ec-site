@@ -196,11 +196,11 @@ class ProductMapper {
      * @param status リクエストの公開状態
      * @return ドメインの公開状態
      */
-    static com.ecsite.module.catalog.domain.product.PublicationStatus toDomainStatus(PublicationStatus status) {
+    static com.ecsite.module.catalog.domain.product.vo.PublicationStatus toDomainStatus(PublicationStatus status) {
         return switch (status) {
-            case UNPUBLISHED -> com.ecsite.module.catalog.domain.product.PublicationStatus.UNPUBLISHED;
-            case PUBLISHED -> com.ecsite.module.catalog.domain.product.PublicationStatus.PUBLISHED;
-            case DISCONTINUED -> com.ecsite.module.catalog.domain.product.PublicationStatus.DISCONTINUED;
+            case UNPUBLISHED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.UNPUBLISHED;
+            case PUBLISHED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.PUBLISHED;
+            case DISCONTINUED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.DISCONTINUED;
         };
     }
 
@@ -210,7 +210,7 @@ class ProductMapper {
      * @param status ドメインの公開状態
      * @return レスポンスの公開状態
      */
-    static PublicationStatus toResponseStatus(com.ecsite.module.catalog.domain.product.PublicationStatus status) {
+    static PublicationStatus toResponseStatus(com.ecsite.module.catalog.domain.product.vo.PublicationStatus status) {
         return switch (status) {
             case UNPUBLISHED -> PublicationStatus.UNPUBLISHED;
             case PUBLISHED -> PublicationStatus.PUBLISHED;

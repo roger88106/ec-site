@@ -196,7 +196,7 @@ class JooqStockItemRepository implements StockItemRepository {
      *
      * @param delta    増減量
      * @param limited  運営者の調整で、在庫数の上限を当てるか
-     * @param quantity 今の在庫数。在庫がなければ空（増やす調整で上限を当てないときは読まない）
+     * @param quantity 今の在庫数。在庫がなければ空（運営者でない増やす調整では読まない）
      * @return 例外（{@code STOCK_QUANTITY_EXCEEDED}、{@code INSUFFICIENT_STOCK}、{@code NOT_FOUND} のどれか）
      */
     static BusinessException failureOf(int delta, boolean limited, Supplier<Optional<Integer>> quantity) {
@@ -210,10 +210,14 @@ class JooqStockItemRepository implements StockItemRepository {
                     ? BusinessException.of(InventoryErrorCode.STOCK_QUANTITY_EXCEEDED, List.of(StockAdjustment.MAX_MANUAL_QUANTITY))
                     : BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
-        // 減らす調整は、在庫があれば負になるときだけ更新されない
-        return quantity.get().isPresent()
-                ? BusinessException.of(InventoryErrorCode.INSUFFICIENT_STOCK)
-                : BusinessException.of(CommonErrorCode.NOT_FOUND);
+        // 減らす調整は、在庫があれば、負になるときか、運営者の調整で調整後も上限を超えるときに更新されない
+        var current = quantity.get();
+        if (current.isEmpty()) {
+            return BusinessException.of(CommonErrorCode.NOT_FOUND);
+        }
+        return limited && current.get() + delta > StockAdjustment.MAX_MANUAL_QUANTITY
+                ? BusinessException.of(InventoryErrorCode.STOCK_QUANTITY_EXCEEDED, List.of(StockAdjustment.MAX_MANUAL_QUANTITY))
+                : BusinessException.of(InventoryErrorCode.INSUFFICIENT_STOCK);
     }
 
 // ============================== プライベートメソッド ==============================

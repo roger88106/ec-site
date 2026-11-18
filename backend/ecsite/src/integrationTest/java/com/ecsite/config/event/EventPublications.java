@@ -24,7 +24,7 @@ import java.util.UUID;
 class EventPublications {
 
     /**
-     * イベントの記録のテーブル
+     * イベント発行記録のテーブル
      *
      * <p>jOOQ の生成クラスはモジュールの外では使わない。
      */
@@ -81,7 +81,7 @@ class EventPublications {
     private static final Field<Instant> STOPPED_DATE = DSL.field(DSL.name("stopped_date"), Instant.class);
 
     /**
-     * イベントの記録の表を数える DSLContext
+     * イベント発行記録の表を数える DSLContext
      */
     private final DSLContext dsl;
 

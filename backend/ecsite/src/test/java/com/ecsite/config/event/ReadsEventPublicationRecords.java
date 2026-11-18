@@ -18,13 +18,13 @@ public final class ReadsEventPublicationRecords {
     }
 
     /**
-     * 未完了のイベントを数える。
+     * 未完了のイベントと止めたイベントを数える。
      *
      * @param records 記録を読み書きする設定クラス
-     * @return 件数
+     * @return 2 つの件数
      */
-    public static int count(EventPublicationRecords records) {
-        return records.countIncompleteNotStopped();
+    public static EventPublicationRecords.PublicationCounts count(EventPublicationRecords records) {
+        return records.countIncompleteAndStopped();
     }
 
     /**

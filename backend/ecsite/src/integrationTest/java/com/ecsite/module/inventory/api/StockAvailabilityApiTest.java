@@ -61,7 +61,7 @@ class StockAvailabilityApiTest {
     @Test
     @DisplayName("複数のバリアントの在庫の有無を、まとめて返す")
     void returnsAvailability() {
-        // 準備：在庫数 1、在庫数 0、在庫がまだない、の 3 つのバリアント
+        // 準備：在庫数 1、在庫数 0、在庫が作られていない、の 3 つのバリアント
         var productId = UUID.randomUUID();
         var inStock = UUID.randomUUID();
         var soldOut = UUID.randomUUID();
@@ -72,7 +72,7 @@ class StockAvailabilityApiTest {
         // 操作：3 つの在庫の有無を求める
         var availability = api.availabilityOf(List.of(inStock, soldOut, withoutStock));
 
-        // 確認：在庫数 1 だけが「在庫あり」で、在庫数 0 と在庫がまだないものは「在庫なし」
+        // 確認：在庫数 1 だけが「在庫あり」で、在庫数 0 と在庫が作られていないものは「在庫なし」
         assertThat(availability).containsExactlyInAnyOrderEntriesOf(Map.of(
                 inStock, true,
                 soldOut, false,

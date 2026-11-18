@@ -15,14 +15,14 @@ import java.util.UUID;
 /**
  * Spring Modulith のイベントの記録と、止めたイベントの直接の読み書き
  *
- * <p>止めたイベントは、イベントの記録の表から止めたイベントの表へ移すことで表す。
+ * <p>止めたイベントは、イベント発行記録の表から止めたイベントの表へ移すことで表す。
  */
 @Component
 @RequiredArgsConstructor
 class EventPublicationRecords {
 
     /**
-     * イベントの記録のテーブル
+     * イベント発行記録のテーブル
      *
      * <p>Spring Modulith の表。モジュールの外なので、jOOQ の生成クラスでなく名前で指す。
      */
@@ -31,8 +31,8 @@ class EventPublicationRecords {
     /**
      * 止めたイベントのテーブル
      *
-     * <p>列は、イベントの記録の表の列のうち復旧に必要なものと同じ名前に、止めた時刻を加えたもの。
-     * イベントの記録の表と同じく、名前で指す。
+     * <p>列は、イベント発行記録の表の列のうち復旧に必要なものと同じ名前に、止めた時刻を加えたもの。
+     * イベント発行記録の表と同じく、名前で指す。
      */
     private static final Table<?> EVENT_PUBLICATION_STOPPED = DSL.table(DSL.name("common", "event_publication_stopped"));
 
@@ -142,21 +142,17 @@ class EventPublicationRecords {
     }
 
     /**
-     * イベントの記録の表の未完了のイベント（止めたイベントを含まない）を数える。
+     * イベント発行記録の表の未完了のイベント（止めたイベントを含まない）と、止めたイベントを数える。
      *
-     * @return 件数
-     */
-    int countIncompleteNotStopped() {
-        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull());
-    }
-
-    /**
-     * 止めたイベントを数える。
+     * <p>2 つの件数を 1 つの文で数えるので、同じ時点の値になる。
      *
-     * @return 件数
+     * @return 2 つの件数
      */
-    int countStopped() {
-        return dsl.fetchCount(EVENT_PUBLICATION_STOPPED);
+    PublicationCounts countIncompleteAndStopped() {
+        var incompleteNotStopped = DSL.field(DSL.selectCount().from(EVENT_PUBLICATION).where(COMPLETION_DATE.isNull()));
+        var stopped = DSL.field(DSL.selectCount().from(EVENT_PUBLICATION_STOPPED));
+        return dsl.select(incompleteNotStopped, stopped)
+                .fetchSingle(row -> new PublicationCounts(row.value1(), row.value2()));
     }
 
     /**
@@ -197,5 +193,14 @@ class EventPublicationRecords {
      * @param completionAttempts 処理の回数
      */
     record StoppedPublication(UUID id, String eventType, String listenerId, int completionAttempts) {
+    }
+
+    /**
+     * 未完了のイベントと止めたイベントの件数
+     *
+     * @param incompleteNotStopped イベント発行記録の表の未完了のイベント（止めたイベントを含まない）の件数
+     * @param stopped              止めたイベントの件数
+     */
+    record PublicationCounts(int incompleteNotStopped, int stopped) {
     }
 }

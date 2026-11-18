@@ -165,7 +165,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントは 404")
+        @DisplayName("在庫が作られていないバリアントは 404")
         void returnsNotFound() throws Exception {
             // 操作と確認：NOT_FOUND
             mockMvc.perform(get(BASE + "/variants/" + UUID.randomUUID()))
@@ -219,7 +219,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントへの調整は 404")
+        @DisplayName("在庫が作られていないバリアントへの調整は 404")
         void rejectsUnknownVariant() throws Exception {
             // 操作と確認：NOT_FOUND
             adjust(UUID.randomUUID(), 1, "ARRIVAL", null)
@@ -445,7 +445,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントの履歴は 404")
+        @DisplayName("在庫が作られていないバリアントの履歴は 404")
         void returnsNotFound() throws Exception {
             // 操作と確認：NOT_FOUND
             mockMvc.perform(get(BASE + "/variants/" + UUID.randomUUID() + "/adjustments"))

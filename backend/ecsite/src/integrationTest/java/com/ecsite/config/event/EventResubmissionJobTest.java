@@ -57,9 +57,9 @@ class EventResubmissionJobTest {
     // ============================== 定数 ==============================
 
     /**
-     * 止めたイベントを、イベントの記録の表に戻す SQL（設計書の復旧の手順と同じ SQL。ID を bind 変数で渡す）
+     * 止めたイベントを、イベント発行記録の表に戻す SQL（設計書の復旧の手順と同じ SQL。ID を bind 変数で渡す）
      *
-     * <p>1 つの文で、止めたイベントの表から消して、イベントの記録の表に入れる。
+     * <p>1 つの文で、止めたイベントの表から消して、イベント発行記録の表に入れる。
      * 状態を失敗、処理の回数を 1、完了日時を空にして戻す。
      */
     private static final String RESTORE_STOPPED_EVENT = """
@@ -404,7 +404,7 @@ class EventResubmissionJobTest {
         }
 
         @Test
-        @DisplayName("AC-290 最後の再発行が失敗したイベントは、次の回で止めたイベントの表に移り、イベントの記録の表から消える")
+        @DisplayName("AC-290 最後の再発行が失敗したイベントは、次の回で止めたイベントの表に移り、イベント発行記録の表から消える")
         void movesStoppedEventToStoppedTable() {
             // 準備：処理の回数の上限 2 のジョブで、処理を 2 回失敗したイベント
             var job = jobWithMaxAttempts(2);
@@ -491,7 +491,7 @@ class EventResubmissionJobTest {
             clock.advance(Duration.ofMinutes(1));
             jobWith(Duration.ofDays(365), 2).resubmit();
 
-            // 確認：止めたイベントの表になく、イベントの記録の表に、処理の回数 1 のまま残る
+            // 確認：止めたイベントの表になく、イベント発行記録の表に、処理の回数 1 のまま残る
             assertThat(publications.stoppedOf(event.id())).isEmpty();
             assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(1);
         }
@@ -510,7 +510,7 @@ class EventResubmissionJobTest {
             clock.advance(Duration.ofMinutes(1));
             job.resubmit();
 
-            // 確認：止めたイベントの表になく、イベントの記録の表に、処理の回数 2 の記録が残り、リスナーは 2 回だけ受けた
+            // 確認：止めたイベントの表になく、イベント発行記録の表に、処理の回数 2 の記録が残り、リスナーは 2 回だけ受けた
             assertThat(publications.stoppedOf(event.id())).isEmpty();
             assertThat(publications.count(event.id())).isEqualTo(1);
             assertThat(listener.attempts(event)).isEqualTo(2);
@@ -566,7 +566,7 @@ class EventResubmissionJobTest {
             logs.clear();
             job.resubmit();
 
-            // 確認：イベントの記録の表に、状態と処理の回数が変わらないまま残り、止めたイベントの表になく、この発行の記録のログがない
+            // 確認：イベント発行記録の表に、状態と処理の回数が変わらないまま残り、止めたイベントの表になく、この発行の記録のログがない
             assertThat(statusOf(publication)).isEqualTo(status);
             assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
             assertThat(publications.stoppedOf(event.id())).isEmpty();
@@ -589,7 +589,7 @@ class EventResubmissionJobTest {
             registry.markStalePublicationsFailed(staleness);
             job.resubmit();
 
-            // 確認：止めたイベントの表に移ってイベントの記録の表から消え、この発行の記録のエラーのログが 1 件
+            // 確認：止めたイベントの表に移ってイベント発行記録の表から消え、この発行の記録のエラーのログが 1 件
             assertThat(publications.stoppedOf(event.id())).hasValueSatisfying(stopped ->
                     assertThat(stopped.completionAttempts()).isEqualTo(2));
             assertThat(publications.count(event.id())).isZero();
@@ -607,7 +607,7 @@ class EventResubmissionJobTest {
             clock.advance(Duration.ofMinutes(6));
             jobWithMaxAttempts(5).resubmit();
 
-            // 確認：止めたイベントの表の行が変わらず、イベントの記録の表に戻らず、リスナーは 2 回だけ受けた
+            // 確認：止めたイベントの表の行が変わらず、イベント発行記録の表に戻らず、リスナーは 2 回だけ受けた
             assertThat(publications.stoppedOf(event.id())).contains(before);
             assertThat(publications.count(event.id())).isZero();
             assertThat(failingListener.attempts(event)).isEqualTo(2);
@@ -746,7 +746,7 @@ class EventResubmissionJobTest {
             // 操作：復旧の手順で戻す
             dsl.execute(RESTORE_STOPPED_EVENT, stopped.id());
 
-            // 確認：止めたイベントの表になく、イベントの記録の表に、失敗の状態・処理の回数 1・未完了で戻る
+            // 確認：止めたイベントの表になく、イベント発行記録の表に、失敗の状態・処理の回数 1・未完了で戻る
             assertThat(publications.stoppedOf(event.id())).isEmpty();
             var restored = publicationOf(event);
             assertThat(restored.getIdentifier()).isEqualTo(stopped.id());
@@ -764,7 +764,7 @@ class EventResubmissionJobTest {
         }
 
         @Test
-        @DisplayName("不要な止めたイベントを復旧の手順で消すと、止めたイベントの表からも、イベントの記録の表からもなくなる")
+        @DisplayName("不要な止めたイベントを復旧の手順で消すと、止めたイベントの表からも、イベント発行記録の表からもなくなる")
         void deletesUnneededStoppedEvent() {
             // 準備：止めたイベント
             var event = stoppedEvent();

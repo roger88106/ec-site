@@ -93,7 +93,7 @@ class CatalogEventHandlerTest {
     class Registration {
 
         @Test
-        @DisplayName("AC-41 バリアントが登録されると、在庫数 0 の在庫ができる")
+        @DisplayName("AC-41 バリアントが登録されると、在庫数 0 の在庫が作られる")
         void createsStockOnVariantRegistered() {
             // 準備：商品とバリアント
             var productId = UUID.randomUUID();
@@ -102,7 +102,7 @@ class CatalogEventHandlerTest {
             // 操作：バリアント登録のイベントを発行する
             publish(VariantRegistered.of(NOW, productId, variantId));
 
-            // 確認：その商品の、在庫数 0 の在庫ができる
+            // 確認：その商品の、在庫数 0 の在庫が作られる
             assertStockCreated(productId, variantId);
         }
 
@@ -138,13 +138,13 @@ class CatalogEventHandlerTest {
         }
 
         @Test
-        @DisplayName("バリアント登録のイベントを発行したトランザクションの中で、コミットの前に在庫ができている")
+        @DisplayName("バリアント登録のイベントを発行したトランザクションの中で、コミットの前に在庫が作られている")
         void createsStockInPublishingTransaction() {
             // 準備：商品とバリアント
             var productId = UUID.randomUUID();
             var variantId = UUID.randomUUID();
 
-            // 操作と確認：イベントを発行し、同じトランザクションの中で、その商品の在庫数 0 の在庫ができている
+            // 操作と確認：イベントを発行し、同じトランザクションの中で、その商品の在庫数 0 の在庫が作られている
             transactionTemplate.executeWithoutResult(status -> {
                 eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, variantId));
                 assertStockCreated(productId, variantId);
@@ -159,7 +159,7 @@ class CatalogEventHandlerTest {
             var rolledBack = UUID.randomUUID();
             var committed = UUID.randomUUID();
 
-            // 操作：イベントを発行し、在庫ができたことを確認してから、トランザクションを巻き戻す
+            // 操作：イベントを発行し、在庫が作られたことを確認してから、トランザクションを巻き戻す
             transactionTemplate.executeWithoutResult(status -> {
                 eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, rolledBack));
                 // 確認（前提）：巻き戻す前に在庫がある（イベントがリスナーに届いたうえで、巻き戻しで消えることを確認するため）
@@ -167,7 +167,7 @@ class CatalogEventHandlerTest {
                 status.setRollbackOnly();
             });
 
-            // 確認：後に発行してコミットしたイベントの在庫ができるのを待ってから、巻き戻したバリアントの在庫がないことを確認する
+            // 確認：後に発行してコミットしたイベントの在庫が作られるのを待ってから、巻き戻したバリアントの在庫がないことを確認する
             // リスナーが非同期で動くと、巻き戻したイベントの処理が遅れて動き、確認の後に在庫を作って、テストが誤って通ることがあるのを防ぐため
             publish(VariantRegistered.of(NOW, productId, committed));
             await().atMost(TIMEOUT).until(() -> stockCount(committed) == 1);
@@ -185,11 +185,11 @@ class CatalogEventHandlerTest {
             // 操作：イベントを発行する
             publish(event);
 
-            // 確認：在庫のリスナー宛ての発行の記録がなく、在庫はできている
+            // 確認：在庫のリスナー宛ての発行の記録がなく、在庫は作られている
             assertThat(asyncEvents.isRecorded(event::equals, listenerId(VariantRegistered.class))).isFalse();
             assertStockCreated(productId, variantId);
 
-            // 確認（前提）：同じ組み立ての ID で、非同期のまま残る削除のリスナー宛ての記録は見つかる（ID の形の誤りで通らないようにするため）
+            // 確認（前提）：同じ組み立て方の ID で、削除のリスナー宛ての記録は見つかる（削除は非同期のまま記録が残る）。ID の形を誤っていても確認が通ってしまうのを防ぐため
             var deletion = VariantDeleted.of(NOW, productId, variantId);
             publish(deletion);
             asyncEvents.awaitPublishedThenHandled(deletion::equals);
@@ -304,7 +304,7 @@ class CatalogEventHandlerTest {
         @Test
         @DisplayName("公開前の商品のバリアントを管理の API で削除すると、その在庫が消え、同じ商品のほかのバリアントの在庫は残る")
         void deletesStockOfDeletedVariant() throws Exception {
-            // 準備：管理の API で、2 つのバリアントを持つ公開前の商品を登録し、両方の在庫ができるのを待つ
+            // 準備：管理の API で、2 つのバリアントを持つ公開前の商品を登録し、両方の在庫が作られたことを確認する
             var product = draftWithTwoVariants();
             var deleted = product.variantIds.getFirst();
             var kept = product.variantIds.getLast();
@@ -322,7 +322,7 @@ class CatalogEventHandlerTest {
         @Test
         @DisplayName("公開前の商品を管理の API で削除すると、その商品の全てのバリアントの在庫が消える")
         void deletesStocksOfDeletedProduct() throws Exception {
-            // 準備：管理の API で、2 つのバリアントを持つ公開前の商品を登録し、両方の在庫ができるのを待つ
+            // 準備：管理の API で、2 つのバリアントを持つ公開前の商品を登録し、両方の在庫が作られたことを確認する
             var product = draftWithTwoVariants();
 
             // 操作：商品を管理の API で削除する
@@ -336,7 +336,7 @@ class CatalogEventHandlerTest {
         }
 
         /**
-         * 管理の API で、2 つのバリアント（白・黒）を持つ公開前の商品を登録し、両方の在庫ができたことを確認する。
+         * 管理の API で、2 つのバリアント（白・黒）を持つ公開前の商品を登録し、両方の在庫が作られたことを確認する。
          *
          * @return 登録した商品
          * @throws Exception API の呼び出しに失敗したとき
@@ -456,7 +456,7 @@ class CatalogEventHandlerTest {
     }
 
     /**
-     * 商品のバリアントの登録のイベントを発行し、全ての在庫ができたことを確認する。
+     * 商品のバリアントの登録のイベントを発行し、全ての在庫が作られたことを確認する。
      *
      * @param productId  商品 ID
      * @param variantIds バリアント ID

@@ -112,9 +112,9 @@ class StockReservationApiTest {
         }
 
         @Test
-        @DisplayName("指定した全てのバリアントの販売可能数を返し、在庫がまだないバリアントは 0")
+        @DisplayName("指定した全てのバリアントの販売可能数を返し、在庫が作られていないバリアントは 0")
         void includesVariantsWithoutStock() {
-            // 準備：在庫数 5 のうち 2 を引き当てたバリアントと、在庫がまだないバリアント
+            // 準備：在庫数 5 のうち 2 を引き当てたバリアントと、在庫が作られていないバリアント
             var variant = inventory.stockNewVariant(productId, 5);
             var withoutStock = UUID.randomUUID();
             api.reserve(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
@@ -122,7 +122,7 @@ class StockReservationApiTest {
             // 操作：2 つの販売可能数を求める
             var sellable = api.sellableQuantities(List.of(variant, withoutStock), null);
 
-            // 確認：両方を含み、在庫がまだないものは 0
+            // 確認：両方を含み、在庫が作られていないものは 0
             assertThat(sellable).containsExactlyInAnyOrderEntriesOf(Map.of(variant, 3, withoutStock, 0));
         }
 
@@ -146,7 +146,7 @@ class StockReservationApiTest {
         @Test
         @DisplayName("AC-82 1 品目でも足りなければ、足りない品目を返す")
         void returnsShortages() {
-            // 準備：在庫数 5 と 1 の品目と、在庫がまだない品目
+            // 準備：在庫数 5 と 1 の品目と、在庫が作られていない品目
             var plenty = inventory.stockNewVariant(productId, 5);
             var scarce = inventory.stockNewVariant(productId, 1);
             var withoutStock = UUID.randomUUID();
@@ -161,7 +161,7 @@ class StockReservationApiTest {
         @Test
         @DisplayName("AC-82 1 品目でも足りなければ、どれも引き当てない")
         void reservesAllOrNothing() {
-            // 準備：在庫数 5 と 1 の品目と、在庫がまだない品目
+            // 準備：在庫数 5 と 1 の品目と、在庫が作られていない品目
             var plenty = inventory.stockNewVariant(productId, 5);
             var scarce = inventory.stockNewVariant(productId, 1);
             var withoutStock = UUID.randomUUID();
@@ -177,7 +177,7 @@ class StockReservationApiTest {
         @Test
         @DisplayName("AC-82 全ての品目の在庫がなければ、全ての品目を足りないとして返す")
         void returnsAllWhenNoStock() {
-            // 準備：在庫がまだない 2 品目
+            // 準備：在庫が作られていない 2 品目
             var first = UUID.randomUUID();
             var second = UUID.randomUUID();
 

@@ -76,10 +76,10 @@ class EventResubmissionJob {
                 properties.minAge(), properties.interval(), properties.maxAttempts());
         var lastTriedBy = clock.instant().minus(properties.interval());
         // 選ぶ条件：
-        // - 最後の処理に失敗した（失敗したイベントを再発行する Spring Modulith の操作は、失敗の状態の行だけを読むので、
-        //   絞り込みの条件に入れない。この操作は状態が空で未完了の行も読むが、今の表の作り方では状態が必ず入るので、
-        //   読むのは失敗の行だけになる。処理中のものは、リスナーの処理が続いていることがあるので読まれない。処理の途中でインスタンスが止まったものは、
-        //   Spring Modulith の監視（spring.modulith.events.staleness）が失敗の状態にした後の回で読まれる）
+        // - 最後の処理に失敗した。絞り込みの条件には入れない。失敗したイベントを再発行する Spring Modulith の操作は、
+        //   失敗の状態の行と、状態が空で未完了の行を読むが、今の表の作り方では状態が必ず入るので、ジョブが読むのは失敗の行だけになる。
+        //   処理中のものは、リスナーの処理が続いていることがあるので読まない。処理の途中でインスタンスが止まったものは、
+        //   Spring Modulith の監視（spring.modulith.events.staleness）が失敗の状態にした後の回で読む
         // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
         // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
         // - 回数が上限より少ない
@@ -91,9 +91,10 @@ class EventResubmissionJob {
                 .withBatchSize(Integer.MAX_VALUE)
                 .withFilter(publication -> !publication.getLastPublicationDate().isAfter(lastTriedBy)
                         && publication.getCompletionAttempts() < properties.maxAttempts()));
-        // 止めた件数は 1 回だけ数え、未完了の件数にも使う（2 回数えると、間に復旧で戻った行で 2 つの値が食い違う）
-        var stoppedCount = publicationRecords.countStopped();
-        publicationMetrics.record(publicationRecords.countIncompleteNotStopped() + stoppedCount, stoppedCount);
+        // 2 つの件数を 1 つの文で数え、同じ時点の値にする（文を分けると、2 つの文の間に復旧で行が戻ったとき、
+        // その行が両方の件数に入り、未完了の件数が多くなる）
+        var counts = publicationRecords.countIncompleteAndStopped();
+        publicationMetrics.record(counts.incompleteNotStopped() + counts.stopped(), counts.stopped());
     }
 
     /**

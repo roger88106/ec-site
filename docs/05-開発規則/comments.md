@@ -36,7 +36,8 @@
 - 決まった形のクラスは、次のとおり書く（1 行目／次の `<p>`）。
   - Controller：「〜のコントローラー」／「C 側の API のうち、store.yaml のタグ xxx の操作を受ける。」
   - `api/package-info`：「<モジュール>モジュールの公開の API」／「他のモジュールが同期で呼び出す。」
-  - `event/package-info`：「<モジュール>モジュールの公開のイベント」／「他のモジュールが非同期で受け取る。」。同期で受ける例外（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「モジュラーモノリス」）があるモジュールは、続けて、どのイベントをどのモジュールが同期で受けるかを 1 文で書く。
+  - `event/package-info`：「<モジュール>モジュールの公開のイベント」／「他のモジュールが非同期で受け取る。」
+    - 同期で受ける例外（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「モジュラーモノリス」）があるモジュールは、2 文目に、同期で受けるイベントと受けるモジュールを 1 文で書く。
 - メソッドの Javadoc は、何をするかと `@param`・`@return`・`@throws` だけにし、record は項目を `@param` で書く。
 - `@throws` は業務のエラーだけを書く。想定外の `SystemException` と、`IllegalArgumentException`・`IllegalStateException`・`NullPointerException` は書かない。エラーコードのある外部サービスの失敗は書く。
   - 説明に「業務のエラー」とは書かない。

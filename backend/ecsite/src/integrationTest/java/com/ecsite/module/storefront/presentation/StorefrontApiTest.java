@@ -581,7 +581,7 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-58 検索の結果の商品は、税込価格と在庫の有無を持つ")
         void returnsPriceAndStock() throws Exception {
-            // 準備：税抜 1,000 円で、在庫数 0 の商品（在庫は登録と同時に在庫数 0 でできる）
+            // 準備：税抜 1,000 円で、在庫数 0 の商品（在庫は登録と同時に在庫数 0 で作られる）
             var mark = newMark();
             catalog.product(standard, mark + "綿のシャツ", 1000).publish();
 

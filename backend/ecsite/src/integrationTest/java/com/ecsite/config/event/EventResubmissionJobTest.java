@@ -21,6 +21,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.events.config.StalenessProperties;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
@@ -55,6 +56,33 @@ import static org.awaitility.Awaitility.await;
 @IntegrationTest
 @Import(EventResubmissionJobTest.Config.class)
 class EventResubmissionJobTest {
+
+    // ============================== 定数 ==============================
+
+    /**
+     * 止めたイベントを、イベントの記録の表に戻す SQL（設計書の復旧の手順と同じ SQL。ID を bind 変数で渡す）
+     *
+     * <p>状態を失敗、処理の回数を 1、完了日時を空にして戻す。{@link #DELETE_STOPPED_EVENT} と 1 つのトランザクションで実行する。
+     */
+    private static final String RESTORE_STOPPED_EVENT = """
+            INSERT INTO common.event_publication
+                (id, listener_id, event_type, serialized_event, publication_date,
+                 completion_date, status, completion_attempts, last_resubmission_date)
+            SELECT id, listener_id, event_type, serialized_event, publication_date,
+                   NULL, 'FAILED', 1, last_resubmission_date
+            FROM common.event_publication_stopped
+            WHERE id = ?
+            """;
+
+    /**
+     * 止めたイベントを、止めたイベントの表から消す SQL（設計書の復旧の手順と同じ SQL。ID を bind 変数で渡す）
+     *
+     * <p>戻した後と、不要なイベントを消すときに使う。
+     */
+    private static final String DELETE_STOPPED_EVENT = """
+            DELETE FROM common.event_publication_stopped
+            WHERE id = ?
+            """;
 
     // ============================== Bean ==============================
 
@@ -250,6 +278,30 @@ class EventResubmissionJobTest {
         }
 
         @Test
+        @DisplayName("最後の処理に失敗したイベントを再発行するとき、処理中のイベントは再発行しない")
+        void resubmitsOnlyFailedEvents() {
+            // 準備：処理中に見せたイベントと、1 回目の処理に失敗したイベント
+            var inProcess = publications.failedOnce(new FailingEvent(UUID.randomUUID(), "in-process-" + UUID.randomUUID() + "@example.com"));
+            markStatus(inProcess, "PROCESSING");
+            var lastResubmission = publicationOf(inProcess).getLastResubmissionDate();
+            var failed = publications.failedOnce(new FailingEvent(UUID.randomUUID(), "failed-" + UUID.randomUUID() + "@example.com"));
+
+            // 操作：6 分後に再発行する（結果の出ないイベントを失敗の扱いにする監視は動かさない）
+            clock.advance(Duration.ofMinutes(6));
+            job.resubmit();
+
+            // 確認：失敗したイベントは 2 回目の処理が動き、処理中のイベントは状態・処理の回数・最後の再発行の日時が変わらない
+            asyncEvents.awaitFailed(failed::equals, 2);
+            assertThat(failingListener.attempts(failed)).isEqualTo(2);
+            var publication = publicationOf(inProcess);
+            assertThat(dsl.select(STATUS).from(EVENT_PUBLICATION).where(ID.eq(publication.getIdentifier())).fetchOne(STATUS))
+                    .isEqualTo("PROCESSING");
+            assertThat(publication.getCompletionAttempts()).isEqualTo(1);
+            assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
+            assertThat(failingListener.attempts(inProcess)).isEqualTo(1);
+        }
+
+        @Test
         @DisplayName("AC-290 処理の回数が上限に達する前に処理できたイベントは、処理を終える")
         void completesBeforeMaxAttempts() {
             // 準備：処理の回数の上限 3 のジョブと、1 回目の処理に失敗したイベント
@@ -343,9 +395,35 @@ class EventResubmissionJobTest {
             clock.advance(Duration.ofMinutes(1));
             job.resubmit();
 
-            // 確認：再発行の日時が変わらず（リスナーは非同期で動くので、受けた回数だけでは確認できない）、リスナーは 3 回だけ受けた
-            assertThat(publicationOf(event).getLastResubmissionDate()).isEqualTo(lastResubmission);
+            // 確認：止めたイベントの表に、再発行の日時が変わらないまま移り（リスナーは非同期で動くので、受けた回数だけでは確認できない）、
+            // リスナーは 3 回だけ受けた
+            assertThat(publications.stoppedOf(event.id())).hasValueSatisfying(stopped ->
+                    assertThat(stopped.lastResubmissionDate()).isEqualTo(lastResubmission));
             assertThat(failingListener.attempts(event)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("AC-290 最後の再発行が失敗したイベントは、次の回で止めたイベントの表に移り、イベントの記録の表から消える")
+        void movesStoppedEventToStoppedTable() {
+            // 準備：処理の回数の上限 2 のジョブで、処理を 2 回失敗したイベント
+            var job = jobWithMaxAttempts(2);
+            var event = failedUntil(job, 2);
+            var publication = publicationOf(event);
+
+            // 操作：1 分後に再発行する
+            clock.advance(Duration.ofMinutes(1));
+            job.resubmit();
+
+            // 確認：止めたイベントの表に、記録の ID・リスナー・型・処理の回数・最後の再発行の日時を保ったまま移り、記録の表にない
+            assertThat(publications.stoppedOf(event.id())).hasValueSatisfying(stopped -> {
+                assertThat(stopped.id()).isEqualTo(publication.getIdentifier());
+                assertThat(stopped.listenerId()).isEqualTo(publication.getTargetIdentifier().getValue());
+                assertThat(stopped.eventType()).isEqualTo(FailingEvent.class.getName());
+                assertThat(stopped.completionAttempts()).isEqualTo(2);
+                assertThat(stopped.lastResubmissionDate()).isEqualTo(publication.getLastResubmissionDate());
+                assertThat(stopped.stoppedDate()).isNotNull();
+            });
+            assertThat(publications.count(event.id())).isZero();
         }
 
         @Test
@@ -360,9 +438,46 @@ class EventResubmissionJobTest {
             logs.clear();
             resubmitTwice(job);
 
-            // 確認：この発行の記録のログが、エラーで 1 件だけ
+            // 確認：止めたイベントの表に移り、この発行の記録のログが、エラーで 1 件だけ
+            assertThat(publications.stoppedOf(event.id())).isPresent();
             assertThat(logsOf(publication)).singleElement()
                     .satisfies(entry -> assertThat(entry.level()).isEqualTo(Level.ERROR));
+        }
+
+        @Test
+        @DisplayName("AC-290、291 処理の回数の上限を今の処理の回数より小さく下げると、上限以上の失敗したイベントは全て移り、エラーのログに 1 回ずつ出す")
+        void movesAllFailedEventsAtOrAboveLoweredMaxAttempts() {
+            // 準備：処理の回数の上限 3 のジョブで、処理を 3 回失敗したイベントと、2 回失敗したイベント
+            var job = jobWithMaxAttempts(3);
+            var third = publications.failedOnce(new FailingEvent(UUID.randomUUID(), "third-" + UUID.randomUUID() + "@example.com"));
+            clock.advance(Duration.ofMinutes(6));
+            job.resubmit();
+            asyncEvents.awaitFailed(third::equals, 2);
+            var second = publications.failedOnce(new FailingEvent(UUID.randomUUID(), "second-" + UUID.randomUUID() + "@example.com"));
+            clock.advance(Duration.ofMinutes(6));
+            job.resubmit();
+            asyncEvents.awaitFailed(third::equals, 3);
+            asyncEvents.awaitFailed(second::equals, 2);
+            var thirdPublication = publicationOf(third);
+            var secondPublication = publicationOf(second);
+
+            // 操作：上限を 2 に下げたジョブを、1 分ずつ 2 回動かす
+            logs.clear();
+            resubmitTwice(jobWithMaxAttempts(2));
+
+            // 確認：上限を超えたイベントも、上限ちょうどのイベントも、止めたイベントの表に移り、それぞれのエラーのログが 1 件だけ（処理の回数は今の値）
+            assertThat(publications.stoppedOf(third.id())).hasValueSatisfying(stopped ->
+                    assertThat(stopped.completionAttempts()).isEqualTo(3));
+            assertThat(publications.stoppedOf(second.id())).hasValueSatisfying(stopped ->
+                    assertThat(stopped.completionAttempts()).isEqualTo(2));
+            assertThat(logsOf(thirdPublication)).singleElement().satisfies(entry -> {
+                assertThat(entry.level()).isEqualTo(Level.ERROR);
+                assertThat(entry.text()).contains("処理の回数 3");
+            });
+            assertThat(logsOf(secondPublication)).singleElement().satisfies(entry -> {
+                assertThat(entry.level()).isEqualTo(Level.ERROR);
+                assertThat(entry.text()).contains("処理の回数 2");
+            });
         }
 
         @Test
@@ -414,8 +529,11 @@ class EventResubmissionJobTest {
             logs.clear();
             job.resubmit();
 
-            // 確認：処理の回数が変わらず、この発行の記録のログがない
+            // 確認：イベントの記録の表に、状態と処理の回数が変わらないまま残り、止めたイベントの表になく、この発行の記録のログがない
+            assertThat(dsl.select(STATUS).from(EVENT_PUBLICATION).where(ID.eq(publication.getIdentifier())).fetchOne(STATUS))
+                    .isEqualTo(status);
             assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
+            assertThat(publications.stoppedOf(event.id())).isEmpty();
             assertThat(logs.text()).doesNotContain(publication.getIdentifier().toString());
         }
 
@@ -435,29 +553,43 @@ class EventResubmissionJobTest {
             registry.markStalePublicationsFailed(staleness);
             job.resubmit();
 
-            // 確認：止めた印（処理の回数が上限を超える）が付き、この発行の記録のエラーのログが 1 件
-            assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(3);
+            // 確認：止めたイベントの表に移ってイベントの記録の表から消え、この発行の記録のエラーのログが 1 件
+            assertThat(publications.stoppedOf(event.id())).hasValueSatisfying(stopped ->
+                    assertThat(stopped.completionAttempts()).isEqualTo(2));
+            assertThat(publications.count(event.id())).isZero();
             assertThat(logsOf(publication)).filteredOn(entry -> entry.level() == Level.ERROR).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("AC-290 止めたイベントは、処理の回数の上限を上げたジョブでも、再発行のために読まない")
+        void doesNotReadStoppedEvent() {
+            // 準備：処理の回数の上限 2 のジョブで止めたイベント
+            var event = stoppedEvent();
+            var before = publications.stoppedOf(event.id()).orElseThrow();
+
+            // 操作：6 分後に、処理の回数の上限 5 のジョブで再発行する
+            clock.advance(Duration.ofMinutes(6));
+            jobWithMaxAttempts(5).resubmit();
+
+            // 確認：止めたイベントの表の行が変わらず、イベントの記録の表に戻らず、リスナーは 2 回だけ受けた
+            assertThat(publications.stoppedOf(event.id())).contains(before);
+            assertThat(publications.count(event.id())).isZero();
+            assertThat(failingListener.attempts(event)).isEqualTo(2);
         }
 
         @Test
         @DisplayName("AC-293 止めたイベントは、処理の済んだイベントの片付けで消えない")
         void stoppedEventIsNotCleanedUp() {
             // 準備：処理の回数の上限 2 のジョブで止めたイベント
-            var job = jobWithMaxAttempts(2);
-            var event = failedUntil(job, 2);
-            clock.advance(Duration.ofMinutes(1));
-            job.resubmit();
-
-            // 確認（前提）：止めた印が付いている
-            assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(3);
+            var event = stoppedEvent();
+            var before = publications.stoppedOf(event.id()).orElseThrow();
 
             // 操作：30 日後に片付ける
             clock.advance(Duration.ofDays(30));
             cleanupJob.cleanUp();
 
-            // 確認：止めたイベントの記録が残る
-            assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(3);
+            // 確認：止めたイベントの表の行が、そのまま残る
+            assertThat(publications.stoppedOf(event.id())).contains(before);
         }
 
         /**
@@ -538,26 +670,96 @@ class EventResubmissionJobTest {
         @DisplayName("AC-292 再発行のジョブの後、未完了のイベントの件数と止めたイベントの件数をメトリクスに出す")
         void publishesCountsAsMetrics() {
             // 準備：止めたイベントを 1 件作る
-            var job = jobWithMaxAttempts(2);
-            failedUntil(job, 2);
-            clock.advance(Duration.ofMinutes(1));
-            job.resubmit();
-            // 何も再発行しないジョブ（発行からの時間の下限が長い）で、件数が動かない状態で数える
-            var quietJob = jobWith(Duration.ofDays(365), 2);
+            stoppedEvent();
+            // 何も再発行せず、何も止めないジョブ（発行からの時間の下限が長く、処理の回数の上限が既定）で、件数が動かない状態で数える
+            var quietJob = jobWith(Duration.ofDays(365), 60);
 
-            // 操作と確認：ジョブの後のメトリクスが、DB の未完了・止めた件数と同じ（ほかのテストの非同期の処理で件数が動くので、合うまで繰り返す）
+            // 操作と確認：ジョブの後のメトリクスが、止めた件数は止めたイベントの表の件数、未完了の件数は記録の表の未完了と止めた件数の合計
+            // （ほかのテストの非同期の処理で件数が動くので、合うまで繰り返す）
             await().atMost(TIMEOUT).untilAsserted(() -> {
                 quietJob.resubmit();
-                assertThat(gauge("ecsite.events.stopped"))
-                        .isEqualTo(dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull().and(COMPLETION_ATTEMPTS.gt(2))))
-                        .isPositive();
+                var stopped = publications.countStopped();
+                assertThat(gauge("ecsite.events.stopped")).isEqualTo(stopped).isPositive();
                 assertThat(gauge("ecsite.events.incomplete"))
-                        .isEqualTo(dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull()));
+                        .isEqualTo(dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull()) + stopped);
             });
         }
     }
 
+    @Nested
+    @DisplayName("止めたイベントの復旧")
+    class Recovery {
+
+        @Test
+        @DisplayName("止めたイベントを復旧の手順で戻すと、次の回で再発行され、リスナーが受ける")
+        void resubmitsRestoredEvent() {
+            // 準備：処理の回数の上限 2 のジョブで止めたイベント
+            var job = jobWithMaxAttempts(2);
+            var event = stoppedEvent(job);
+            var stopped = publications.stoppedOf(event.id()).orElseThrow();
+
+            // 操作：復旧の手順で戻す
+            transactionTemplate.executeWithoutResult(status -> {
+                dsl.execute(RESTORE_STOPPED_EVENT, stopped.id());
+                dsl.execute(DELETE_STOPPED_EVENT, stopped.id());
+            });
+
+            // 確認：止めたイベントの表になく、イベントの記録の表に、失敗の状態・処理の回数 1・未完了で戻る
+            assertThat(publications.stoppedOf(event.id())).isEmpty();
+            var restored = publicationOf(event);
+            assertThat(restored.getIdentifier()).isEqualTo(stopped.id());
+            assertThat(restored.getStatus()).isEqualTo(EventPublication.Status.FAILED);
+            assertThat(restored.getCompletionAttempts()).isEqualTo(1);
+            assertThat(restored.getCompletionDate()).isEmpty();
+
+            // 操作：1 分後に再発行する
+            clock.advance(Duration.ofMinutes(1));
+            job.resubmit();
+
+            // 確認：リスナーが 3 回目を受け、処理の回数が 2 になる
+            asyncEvents.awaitFailed(event::equals, 2);
+            assertThat(failingListener.attempts(event)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("不要な止めたイベントを復旧の手順で消すと、止めたイベントの表からも、イベントの記録の表からもなくなる")
+        void deletesUnneededStoppedEvent() {
+            // 準備：止めたイベント
+            var event = stoppedEvent();
+            var stopped = publications.stoppedOf(event.id()).orElseThrow();
+
+            // 操作：復旧の手順で消す
+            dsl.execute(DELETE_STOPPED_EVENT, stopped.id());
+
+            // 確認：どちらの表にもない
+            assertThat(publications.stoppedOf(event.id())).isEmpty();
+            assertThat(publications.count(event.id())).isZero();
+        }
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 処理の回数の上限 2 のジョブで、処理を 2 回失敗させてから止めたイベントを作る。
+     *
+     * @return 止めたイベント
+     */
+    private FailingEvent stoppedEvent() {
+        return stoppedEvent(jobWithMaxAttempts(2));
+    }
+
+    /**
+     * 再発行のジョブで、処理の回数が上限になるまで失敗させてから止めたイベントを作る。
+     *
+     * @param job 処理の回数の上限 2 の再発行のジョブ
+     * @return 止めたイベント
+     */
+    private FailingEvent stoppedEvent(EventResubmissionJob job) {
+        var event = failedUntil(job, 2);
+        clock.advance(Duration.ofMinutes(1));
+        job.resubmit();
+        return event;
+    }
 
     /**
      * 1 回目の処理に失敗したイベントについて、ジョブを決まった間隔で呼び、処理の回数が上限（4）に達するまでの時間を測る。

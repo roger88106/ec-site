@@ -13,10 +13,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * イベントの記録（Spring Modulith の表）のテーブルの定義と、イベントを発行して処理を待つ補助
+ * イベントの記録（Spring Modulith の表）と止めたイベントの表のテーブルの定義と、イベントを発行して処理を待つ補助
  *
  * <p>イベントの片付けと再発行のテストが使う。処理は非同期なので、リスナーが終わるのを待つ処理は {@link AsyncEvents} に任せる。
  */
@@ -53,6 +54,31 @@ class EventPublications {
      * イベントを JSON にして持つ列
      */
     private static final Field<String> SERIALIZED_EVENT = DSL.field(DSL.name("serialized_event"), String.class);
+
+    /**
+     * 止めたイベントのテーブル
+     */
+    private static final Table<?> EVENT_PUBLICATION_STOPPED = DSL.table(DSL.name("common", "event_publication_stopped"));
+
+    /**
+     * リスナーの ID
+     */
+    private static final Field<String> LISTENER_ID = DSL.field(DSL.name("listener_id"), String.class);
+
+    /**
+     * イベントの型
+     */
+    private static final Field<String> EVENT_TYPE = DSL.field(DSL.name("event_type"), String.class);
+
+    /**
+     * 最後の再発行の時刻
+     */
+    private static final Field<Instant> LAST_RESUBMISSION_DATE = DSL.field(DSL.name("last_resubmission_date"), Instant.class);
+
+    /**
+     * 止めた時刻
+     */
+    private static final Field<Instant> STOPPED_DATE = DSL.field(DSL.name("stopped_date"), Instant.class);
 
     /**
      * イベントの記録の表を数える DSLContext
@@ -175,6 +201,43 @@ class EventPublications {
      */
     int count(UUID eventId) {
         return dsl.fetchCount(EVENT_PUBLICATION, SERIALIZED_EVENT.contains(eventId.toString()));
+    }
+
+    /**
+     * イベント ID を含む、止めたイベントの表の行。
+     *
+     * @param eventId イベントを見分ける ID
+     * @return 止めたイベント（止めたイベントの表になければ空）
+     */
+    Optional<StoppedEvent> stoppedOf(UUID eventId) {
+        return dsl.select(ID, LISTENER_ID, EVENT_TYPE, COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE, STOPPED_DATE)
+                .from(EVENT_PUBLICATION_STOPPED)
+                .where(SERIALIZED_EVENT.contains(eventId.toString()))
+                .fetchOptional(row -> new StoppedEvent(row.get(ID), row.get(LISTENER_ID), row.get(EVENT_TYPE),
+                        row.get(COMPLETION_ATTEMPTS), row.get(LAST_RESUBMISSION_DATE), row.get(STOPPED_DATE)));
+    }
+
+    /**
+     * 止めたイベントの表の行の数。
+     *
+     * @return 行の数
+     */
+    int countStopped() {
+        return dsl.fetchCount(EVENT_PUBLICATION_STOPPED);
+    }
+
+    /**
+     * 止めたイベントの表の行
+     *
+     * @param id                   イベントの記録の ID
+     * @param listenerId           リスナーの ID
+     * @param eventType            イベントの型
+     * @param completionAttempts   処理の回数
+     * @param lastResubmissionDate 最後の再発行の時刻
+     * @param stoppedDate          止めた時刻
+     */
+    record StoppedEvent(UUID id, String listenerId, String eventType, int completionAttempts,
+                        Instant lastResubmissionDate, Instant stoppedDate) {
     }
 
     /**

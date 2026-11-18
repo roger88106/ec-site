@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  * カートに入った商品のバリアントを消せない。そのため、商品カタログの腐敗防止層を差し替えて確認する。金額の求め方は
  * {@code QuoteTest} が確認する。
  */
-class QuoteServiceTest {
+class QuoteQueryServiceTest {
 
     // ============================== 定数 ==============================
 
@@ -72,7 +72,7 @@ class QuoteServiceTest {
     /**
      * 見積もりのサービス
      */
-    private QuoteService service;
+    private QuoteQueryService service;
 
     /**
      * 残っているバリアントの ID
@@ -97,7 +97,7 @@ class QuoteServiceTest {
         when(taxDirectory.rateAt(any(), any())).thenReturn(Optional.of(RATE));
         when(taxDirectory.priceInclTax(any(), any())).thenReturn(Money.of(1100));
         var properties = new OrderProperties(1000, UUID.randomUUID(), Duration.ofMinutes(15), 3);
-        service = new QuoteService(catalogDirectory, stockDirectory, taxDirectory, properties);
+        service = new QuoteQueryService(catalogDirectory, stockDirectory, taxDirectory, properties);
     }
 
     // ============================== テスト ==============================

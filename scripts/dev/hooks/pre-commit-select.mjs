@@ -33,6 +33,7 @@ const ALWAYS = 'always'
  */
 export const CHECK_INPUTS = {
   'ac-check': [/^docs\/03-機能仕様\//, /^docs\/08-spec\//, /^backend\/ecsite\/src\/(?:test|integrationTest)\//, /^frontend\//, /^e2e\//],
+  'action-pins': [/^\.github\//],
   'ci-docs': [],
   'compose-ports': [],
   'doc-refs': ALWAYS,
@@ -41,6 +42,8 @@ export const CHECK_INPUTS = {
   // 用語集は名前で選ぶ。コードの名前を探す場所（SEARCH_ROOTS）のうち scripts/ は全てを実行する形に含まれる
   'glossary-ids': [/^(?:backend|frontend|api|docker|e2e)\//],
   'gradle-plugins': [/^backend\/ecsite\/.*\.gradle\.kts$/],
+  // git add -f で除外のファイルを加えると、.gitignore を変えずに失敗する状態になるので、常に実行する
+  'ignored-tracked': ALWAYS,
   'ja-text': ALWAYS,
   'java-rules': [/^backend\/ecsite\/src\//],
   'local-ports': [],

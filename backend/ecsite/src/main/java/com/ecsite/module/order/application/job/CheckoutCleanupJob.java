@@ -1,7 +1,7 @@
 package com.ecsite.module.order.application.job;
 
 import com.ecsite.common.scheduling.ExpiredDataCleanup;
-import com.ecsite.module.order.application.checkout.CheckoutService;
+import com.ecsite.module.order.application.checkout.CheckoutCommandService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -25,7 +25,7 @@ class CheckoutCleanupJob {
     /**
      * 注文手続きのサービス
      */
-    private final CheckoutService service;
+    private final CheckoutCommandService service;
 
     /**
      * 注文手続きの片付けの設定

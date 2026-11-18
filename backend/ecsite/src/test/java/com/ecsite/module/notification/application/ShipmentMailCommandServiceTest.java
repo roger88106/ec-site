@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>出荷通知メールの宛先と内容の組み立てだけを確認する。送ったメールの記録はいつも「まだ送っていない」と答え、
  * 送ったメールを受け取って、組み立てた内容を確認する。再送と 1 通だけ届くことは、通知の統合テストが確認する。
  */
-class ShipmentMailServiceTest {
+class ShipmentMailCommandServiceTest {
 
     // ============================== 定数 ==============================
 
@@ -60,7 +60,7 @@ class ShipmentMailServiceTest {
     /**
      * 出荷通知メールのサービス
      */
-    private ShipmentMailService service;
+    private ShipmentMailCommandService service;
 
     /**
      * 文言のファイルを読み、配送業者の表示名のキーを返すサービスを作る。
@@ -71,7 +71,7 @@ class ShipmentMailServiceTest {
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setFallbackToSystemLocale(false);
-        service = new ShipmentMailService((orderId, kind, recipient, sentAt) -> true, sent::add,
+        service = new ShipmentMailCommandService((orderId, kind, recipient, sentAt) -> true, sent::add,
                 Clock.fixed(SHIPPED_AT, ZoneOffset.UTC),
                 new MessageResolver(messageSource), carrier -> switch (carrier) {
                     case YAMATO -> "ecsite.shipping.carrier.yamato";

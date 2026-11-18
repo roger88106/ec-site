@@ -56,7 +56,7 @@ import static org.mockito.Mockito.when;
  * <p>注文番号の衝突の扱いだけを確認する。乱数の 6 桁が重なることは API の統合テストでは起こせないので、注文リポジトリを差し替えて
  * 使用済みの番号と保存の失敗を起こす。注文の成立の流れは {@code PlaceOrderPlacementApiTest} などの統合テストが確認する。
  */
-class OrderPlacementServiceTest {
+class OrderPlacementCommandServiceTest {
 
     // ============================== 定数 ==============================
 
@@ -73,7 +73,7 @@ class OrderPlacementServiceTest {
     private static final Money TOTAL = Money.of(2100);
 
     /**
-     * 空いている注文番号を探す回数の上限（{@code OrderPlacementService.ORDER_NUMBER_ATTEMPTS}）
+     * 空いている注文番号を探す回数の上限（{@code OrderPlacementCommandService.ORDER_NUMBER_ATTEMPTS}）
      */
     private static final int ORDER_NUMBER_ATTEMPTS = 10;
 
@@ -97,7 +97,7 @@ class OrderPlacementServiceTest {
     /**
      * 注文の成立のサービス
      */
-    private OrderPlacementService service;
+    private OrderPlacementCommandService service;
 
     /**
      * 注文手続き
@@ -125,8 +125,8 @@ class OrderPlacementServiceTest {
         var cartDirectory = mock(CartDirectory.class);
         when(cartDirectory.find(cartId)).thenReturn(Optional.of(new CartSnapshot(cartId, memberId, 1, lines)));
 
-        var quoteService = mock(QuoteService.class);
-        when(quoteService.quote(lines, NOW, checkout.id())).thenReturn(orderableQuote(variantId));
+        var quoteQueryService = mock(QuoteQueryService.class);
+        when(quoteQueryService.quote(lines, NOW, checkout.id())).thenReturn(orderableQuote(variantId));
 
         when(stockDirectory.commit(eq(checkout.id()), anyMap(), any(), anyString())).thenReturn(Set.of());
 
@@ -135,8 +135,8 @@ class OrderPlacementServiceTest {
         when(regionDirectory.findMunicipality("13101")).thenReturn(Optional.of(new Municipality("13101", "千代田区", "13")));
 
         var properties = new OrderProperties(1000, UUID.randomUUID(), Duration.ofMinutes(15), 3);
-        service = new OrderPlacementService(checkoutRepository, orderRepository, new PendingOrderGuard(orderRepository, properties),
-                cartDirectory, stockDirectory, paymentDirectory, regionDirectory, quoteService, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new OrderPlacementCommandService(checkoutRepository, orderRepository, new PendingOrderGuard(orderRepository, properties),
+                cartDirectory, stockDirectory, paymentDirectory, regionDirectory, quoteQueryService, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     // ============================== テスト ==============================

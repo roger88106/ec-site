@@ -26,7 +26,7 @@ import java.util.ArrayList;
 @Service
 @RequiredArgsConstructor
 @Transactional
-class ShipmentNotificationService implements ShipmentNotificationReceiver {
+class ShipmentNotificationCommandService implements ShipmentNotificationReceiver {
 
     /**
      * 出荷のリポジトリ

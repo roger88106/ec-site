@@ -1,7 +1,7 @@
 package com.ecsite.module.order.application.job;
 
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.checkout.CheckoutService;
+import com.ecsite.module.order.application.checkout.CheckoutCommandService;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -98,7 +98,7 @@ class CheckoutCleanupJobTest {
     CheckoutCleanupJob job;
 
     @Autowired
-    CheckoutService service;
+    CheckoutCommandService service;
 
     @Autowired
     CheckoutRepository checkoutRepository;

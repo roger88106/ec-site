@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class OrderCancellationService {
+public class OrderCancellationCommandService {
 
     /**
      * 注文リポジトリ

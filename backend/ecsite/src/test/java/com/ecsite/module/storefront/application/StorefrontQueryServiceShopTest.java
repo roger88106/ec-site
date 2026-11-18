@@ -14,7 +14,7 @@ import static org.mockito.Mockito.mock;
  *
  * <p>設定の値を view に写すことだけを確認する。店舗の API の応答は {@code StorefrontShopTest} が確認する。
  */
-class StorefrontServiceShopTest {
+class StorefrontQueryServiceShopTest {
 
     // ============================== 定数 ==============================
 
@@ -29,7 +29,7 @@ class StorefrontServiceShopTest {
     @DisplayName("店舗の情報は、設定の問い合わせ先を view にして返す")
     void returnsContactEmailFromProperties() {
         // 準備：問い合わせ先を設定したサービス
-        var service = new StorefrontService(mock(CatalogDirectory.class), mock(StockDirectory.class),
+        var service = new StorefrontQueryService(mock(CatalogDirectory.class), mock(StockDirectory.class),
                 mock(OrderDirectory.class), new ShopProperties(CONTACT_EMAIL));
 
         // 操作と確認：設定の問い合わせ先

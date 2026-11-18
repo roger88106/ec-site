@@ -34,7 +34,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-class QuoteService {
+class QuoteQueryService {
 
     /**
      * 商品カタログの腐敗防止層

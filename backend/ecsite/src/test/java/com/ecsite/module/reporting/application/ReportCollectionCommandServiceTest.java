@@ -16,14 +16,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>イベントの列挙の全ての値を回すので、値を追加して対応を書き忘れると失敗する。
  */
-class ReportCollectionServiceTest {
+class ReportCollectionCommandServiceTest {
 
     @ParameterizedTest(name = "「{0}」")
     @EnumSource(OrderStatusChanged.Status.class)
     @DisplayName("AC-277 注文の状態の全ての値を、レポートの状態の同じ名前の値に写す")
     void mapsEveryOrderStatus(OrderStatusChanged.Status status) {
         // 操作と確認：同じ名前の値になる
-        assertThat(ReportCollectionService.toOrderStatus(status)).isEqualTo(ReportOrderStatus.valueOf(status.name()));
+        assertThat(ReportCollectionCommandService.toOrderStatus(status)).isEqualTo(ReportOrderStatus.valueOf(status.name()));
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -31,7 +31,7 @@ class ReportCollectionServiceTest {
     @DisplayName("AC-277 キャンセルの種類の全ての値を、レポートのキャンセルの種類の同じ名前の値に写す")
     void mapsEveryCancellationKind(OrderStatusChanged.CancellationKind kind) {
         // 操作と確認：同じ名前の値になる
-        assertThat(ReportCollectionService.toCancellationKind(kind)).isEqualTo(ReportCancellationKind.valueOf(kind.name()));
+        assertThat(ReportCollectionCommandService.toCancellationKind(kind)).isEqualTo(ReportCancellationKind.valueOf(kind.name()));
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -39,6 +39,6 @@ class ReportCollectionServiceTest {
     @DisplayName("AC-277 配送状態の全ての値を、レポートの配送状態の同じ名前の値に写す")
     void mapsEveryDeliveryStatus(DeliveryStatusChanged.Status status) {
         // 操作と確認：同じ名前の値になる
-        assertThat(ReportCollectionService.toDeliveryStatus(status)).isEqualTo(DeliveryStatus.valueOf(status.name()));
+        assertThat(ReportCollectionCommandService.toDeliveryStatus(status)).isEqualTo(DeliveryStatus.valueOf(status.name()));
     }
 }

@@ -11,6 +11,9 @@ import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
+/** git の出力の最大の大きさ（バイト） */
+const MAX_BUFFER = 64 * 1024 * 1024
+
 /**
  * `git ls-files -z` の出力を、パスの配列に分ける（ASCII でない文字を含むパスも、引用符なしで扱える）。
  *
@@ -52,8 +55,43 @@ export function listUntrackedFiles(pathspecs = [], cwd = process.cwd()) {
  * @returns {string[]} 相対パス。名前の順
  */
 function listFiles(kinds, pathspecs, cwd) {
-  const output = execFileSync('git', ['ls-files', '-z', ...kinds, '--exclude-standard', '--', ...pathspecs], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  const output = execFileSync('git', ['ls-files', '-z', ...kinds, '--exclude-standard', '--', ...pathspecs], { cwd, encoding: 'utf8', maxBuffer: MAX_BUFFER })
   return [...new Set(splitNulList(output))].filter((file) => existsSync(path.join(cwd, file))).sort()
+}
+
+/**
+ * 追跡しているファイルの一覧を返す。作業ツリーから消えたファイルも含める。
+ *
+ * @param {string} [cwd] 実行する場所（リポジトリの中）。なければ今のディレクトリ
+ * @returns {string[]} cwd からの相対パス（/ 区切り）。重複なし
+ */
+export function listTrackedFiles(cwd = process.cwd()) {
+  return [...new Set(splitNulList(runGit(['ls-files', '-z', '-c'], cwd)))]
+}
+
+/**
+ * 追跡しているファイルのうち、リポジトリの .gitignore（各フォルダーのものを含む）だけで除外の対象になるものを返す。
+ *
+ * `--exclude-standard` を使わず `--exclude-per-directory=.gitignore` にする理由：.git/info/exclude と全体の core.excludesFile を読まず、
+ * 手元の除外の設定で結果が変わらないようにし、手元と CI で同じ結果にするため。
+ * 大文字と小文字は区別する（`core.ignorecase=false`）。Windows の clone は区別しない設定になり、Linux の CI と結果が変わるため。
+ *
+ * @param {string} [cwd] 実行する場所（リポジトリの中）。なければ今のディレクトリ
+ * @returns {string[]} cwd からの相対パス（/ 区切り）。重複なし
+ */
+export function listIgnoredTrackedFiles(cwd = process.cwd()) {
+  return [...new Set(splitNulList(runGit(['ls-files', '-z', '-i', '-c', '--exclude-per-directory=.gitignore'], cwd)))]
+}
+
+/**
+ * 大文字と小文字を区別する設定で git を実行して、標準出力を返す。
+ *
+ * @param {string[]} args git の引数
+ * @param {string} cwd 実行する場所
+ * @returns {string} 標準出力
+ */
+function runGit(args, cwd) {
+  return execFileSync('git', ['-c', 'core.ignorecase=false', ...args], { cwd, encoding: 'utf8', maxBuffer: MAX_BUFFER })
 }
 
 /**

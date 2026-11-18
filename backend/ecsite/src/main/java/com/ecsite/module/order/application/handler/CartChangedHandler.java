@@ -1,7 +1,7 @@
 package com.ecsite.module.order.application.handler;
 
 import com.ecsite.module.cart.event.CartChanged;
-import com.ecsite.module.order.application.checkout.CheckoutService;
+import com.ecsite.module.order.application.checkout.CheckoutCommandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ class CartChangedHandler {
     /**
      * 注文手続きのサービス
      */
-    private final CheckoutService checkoutService;
+    private final CheckoutCommandService checkoutCommandService;
 
     /**
      * カート変更：そのカートのすべての注文手続きの引当を解く。
@@ -28,6 +28,6 @@ class CartChangedHandler {
      */
     @ApplicationModuleListener
     void on(CartChanged event) {
-        checkoutService.releaseReservations(event.cartId());
+        checkoutCommandService.releaseReservations(event.cartId());
     }
 }

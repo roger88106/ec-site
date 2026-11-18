@@ -8,9 +8,9 @@ import com.ecsite.api.store.model.StartCheckoutRequest;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.api.CurrentMemberIds;
+import com.ecsite.module.order.application.checkout.CheckoutCommandService;
 import com.ecsite.module.order.application.checkout.CheckoutQueryService;
-import com.ecsite.module.order.application.checkout.CheckoutService;
-import com.ecsite.module.order.application.checkout.OrderPlacementService;
+import com.ecsite.module.order.application.checkout.OrderPlacementCommandService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +32,7 @@ class StoreCheckoutController implements CheckoutApi {
     /**
      * 注文手続きのサービス
      */
-    private final CheckoutService checkoutService;
+    private final CheckoutCommandService checkoutCommandService;
 
     /**
      * 注文手続きの参照のサービス
@@ -42,7 +42,7 @@ class StoreCheckoutController implements CheckoutApi {
     /**
      * 注文の成立のサービス
      */
-    private final OrderPlacementService orderPlacementService;
+    private final OrderPlacementCommandService orderPlacementCommandService;
 
     /**
      * 店舗の注文 API のマッパー
@@ -68,7 +68,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<CreatedId> startCheckout(UUID cartId, @Nullable StartCheckoutRequest request) {
-        var id = checkoutService.start(cartId, currentMemberIds.require(), acknowledgedOrderIds(request));
+        var id = checkoutCommandService.start(cartId, currentMemberIds.require(), acknowledgedOrderIds(request));
         // ロケーション：作った注文手続きの URL
         return CreatedResponses.storeAt("/api/store/checkouts/{id}", id);
     }
@@ -112,7 +112,7 @@ class StoreCheckoutController implements CheckoutApi {
     @Override
     public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
         var member = currentMember.require();
-        var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request,
+        var result = orderPlacementCommandService.place(mapper.toPlaceOrderCommand(checkoutId, request,
                 currentMemberIds.require(), member));
         if (!result.created()) {
             return ResponseEntity.ok(CreatedResponses.storeId(result.orderId()));

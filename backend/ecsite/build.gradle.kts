@@ -435,7 +435,7 @@ tasks.cpdCheck {
 // mutation testing（PIT。カバレッジとは別に、テストが振る舞いを確認しているかを測る）
 //   ./gradlew pitest で、domain のクラスに小さな変異を入れ、単体テストが失敗するか（変異を検出するか）を見る。
 //   報告：build/reports/pitest/（html、xml。タイムスタンプのディレクトリを作らず、CI が決まったパスで読む）
-//   単体テスト（src/test）だけを使う（統合テストは Docker が要り、domain のテストもない）。
+//   単体テスト（src/test）だけを使う（統合テストは Docker が必要で、domain のテストもない）。
 //   テストは targetTests で src/test の全ての単体テスト（com.ecsite.*）を渡す。省くと targetClasses（domain）と同じ範囲になり、
 //   domain のクラスと同じパッケージのテストしか使われず、ほかのパッケージ（architecture、contract など）のテストが変異を検出できない。
 //   PIT は変異の前にカバレッジを取るため、渡した全ての単体テストを 1 回実行する（CI で約 1 分）。変異ごとには、対象のクラスを実行するテストだけを実行する。

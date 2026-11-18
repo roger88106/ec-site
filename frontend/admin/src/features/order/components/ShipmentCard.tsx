@@ -2,7 +2,7 @@ import { carrierLabel, shipmentStatusLabel } from '@ec-site/shared/lib/orderLabe
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { useId } from 'react'
-import { Controller, useForm, useWatch } from 'react-hook-form'
+import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { carrierValues } from '@/api/generated/admin'
@@ -22,17 +22,30 @@ type Values = { carrier: Carrier | null; trackingNumber: string }
 /** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['carrier', 'trackingNumber'] as const
 
+/** 出荷の登録の操作 */
+type ShipMutation = Pick<
+  ReturnType<typeof useApiMutation<'post', '/orders/{orderId}/shipment'>>,
+  'mutate' | 'error' | 'isPending'
+>
+
 /**
  * 注文の出荷
  *
  * 出荷後は配送状態・配送業者・送り状番号・出荷日時を示し、出荷できる注文には登録のフォームを出す。
- * どちらでもない注文には何も出さない。
+ * どちらでもない注文には、直前の登録の失敗があるときだけ、その表示を出す。
+ * 登録の操作はここで持つ。失敗の後の再取得で内容が変わっても、直前の失敗の表示を残すため。
  */
 export function ShipmentCard({ order }: { order: OrderDetail }) {
   const t = useTranslations('order.shipment')
   const titleId = useId()
+  const form = useForm<Values>({ defaultValues: { carrier: null, trackingNumber: '' } })
+  const mutation = useApiMutation('post', '/orders/{orderId}/shipment', {
+    success: t('registered'), // 登録の知らせ
+    invalidate: ['/orders'],
+    onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
+  })
   if (!order.shipment && !order.actions.ship) {
-    return null
+    return <ErrorMessage error={mutation.error} />
   }
   return (
     // 見出しを名前にした region にして、支援技術から出荷の欄として探せるようにする
@@ -42,9 +55,12 @@ export function ShipmentCard({ order }: { order: OrderDetail }) {
       </CardHeader>
       <CardContent>
         {order.shipment ? (
-          <ShipmentDetail shipment={order.shipment} />
+          <div className="grid gap-4">
+            <ShipmentDetail shipment={order.shipment} />
+            <ErrorMessage error={mutation.error} />
+          </div>
         ) : (
-          <ShipForm orderId={order.id} orderNumber={order.orderNumber} />
+          <ShipForm form={form} mutation={mutation} orderId={order.id} orderNumber={order.orderNumber} />
         )}
       </CardContent>
     </Card>
@@ -77,17 +93,21 @@ function ShipmentDetail({ shipment }: { shipment: Shipment }) {
  * 売上を確定するので取り消せず、確認してから送る。
  * 売上確定の失敗（与信期限切れ、決済サービスに接続できない）は、サーバーのメッセージを出す。
  */
-function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
+function ShipForm({
+  form,
+  mutation,
+  orderId,
+  orderNumber,
+}: {
+  form: UseFormReturn<Values>
+  mutation: ShipMutation
+  orderId: string
+  orderNumber: string
+}) {
   const t = useTranslations('order.shipment')
   const tCommon = useTranslations('common')
   // 配送業者の選択肢
   const carrierOptions = carrierValues.map((carrier) => ({ value: carrier, label: carrierLabel(carrier) }))
-  const form = useForm<Values>({ defaultValues: { carrier: null, trackingNumber: '' } })
-  const mutation = useApiMutation('post', '/orders/{orderId}/shipment', {
-    success: t('registered'), // 登録の知らせ
-    invalidate: ['/orders'],
-    onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
-  })
   const [carrier, trackingNumber] = useWatch({ control: form.control, name: ['carrier', 'trackingNumber'] })
   const filled = carrier !== null && trackingNumber.trim() !== ''
   const submit = form.handleSubmit((submitted) =>

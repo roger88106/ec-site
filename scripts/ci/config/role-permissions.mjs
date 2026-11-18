@@ -2,7 +2,7 @@
 // 表は、管理 API の各操作の x-required-permission、運営者の realm のロール、店舗 API の各操作の security から作る。
 //
 // 権限が定義されていない管理 API の操作、realm にない権限、security のない店舗 API の操作も失敗にする。
-// token が要らない店舗 API の操作は、security: [] で明示する（書き忘れを「不要」と読まないため）。
+// token が必要ない店舗 API の操作は、security: [] で明示する（書き忘れを「不要」と読まないため）。
 // 契約の書き方も失敗にする。店舗の契約の最上位の security（操作ごとに書く。バックエンドも操作ごとの security だけを読む）と、
 // 管理と店舗の両方のパスの下の $ref（Path Item の $ref は読まない）。パスの parameters や応答の中の $ref は見ない。
 //
@@ -177,8 +177,8 @@ export function renderTables({ admin, store, realm }) {
   lines.push('|------|------|----------|')
   for (const operation of store) {
     if (operation.security === null) {
-      // 書き忘れを「不要」と読まない。token が要らない操作は security: [] で明示する
-      problems.push(`${operation.method} ${operation.path}：security がない。token が要らない操作は security: [] と書く`)
+      // 書き忘れを「不要」と読まない。token が必要ない操作は security: [] で明示する
+      problems.push(`${operation.method} ${operation.path}：security がない。token が必要ない操作は security: [] と書く`)
       continue
     }
     lines.push(`| \`${operation.method} ${operation.path}\` | ${operation.summary} | ${storeLogin(operation)} |`)

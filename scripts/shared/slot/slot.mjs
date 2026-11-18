@@ -179,7 +179,7 @@ export function claimState({ holder, own, listed, holderRecord }) {
  * 各アプリの `dev` の script と同じく、生成してから起動する。
  *
  * @param {'backend' | 'store' | 'admin'} target 起動する対象
- * @returns {string | null} リポジトリのルートからの相対のパス。生成が要らない対象は null
+ * @returns {string | null} リポジトリのルートからの相対のパス。生成が必要ない対象は null
  */
 export function generateApiDir(target) {
   return target === 'store' || target === 'admin' ? `frontend/${target}` : null

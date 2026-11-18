@@ -9,7 +9,7 @@ import { ErrorMessage } from '@/components/ErrorMessage'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProductFields, productFieldConstraints } from '@/features/product/components/ProductFields'
 import { isProductFieldsFilled, PRODUCT_FIELD_NAMES, toProductBody, toProductFields } from '@/features/product/product'
-import { useVersionedForm } from '@/hooks/useVersionedForm'
+import { type Refetch, useVersionedForm } from '@/hooks/useVersionedForm'
 
 /** 商品の項目の入力の制約（更新のリクエストの制約） */
 const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.UpdateProductRequest)
@@ -19,7 +19,7 @@ const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.UpdateProductR
  *
  * 商品品番とバリアント軸は表示だけ。送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
-export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
+export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: Refetch<ProductDetail> }) {
   const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(product, toProductFields, refetch)
   const [name, taxCategoryId, priceExclTax] = useWatch({
     control: form.control,

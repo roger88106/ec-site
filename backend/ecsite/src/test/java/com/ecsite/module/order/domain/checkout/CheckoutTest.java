@@ -131,7 +131,7 @@ class CheckoutTest {
     class Expiry {
 
         @Test
-        @DisplayName("AC-82 注文手続きの期限は、始めた時刻に有効時間を足した時刻")
+        @DisplayName("AC-82 注文手続きの期限は、始めた時刻に有効時間を加えた時刻")
         void expiresAfterTtl() {
             // 操作：注文手続きを始める
             var checkout = start(Set.of());

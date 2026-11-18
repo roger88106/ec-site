@@ -210,7 +210,7 @@ class StorefrontCartTest {
             // 準備：T シャツとお茶を 1 つずつ入れたカート
             shirtAndTea();
 
-            // 操作と確認：商品の合計は 2 つの小計の和、総額はそれに送料を足した額
+            // 操作と確認：商品の合計は 2 つの小計の和、総額はそれに送料を加えた額
             showCart()
                     .andExpect(jsonPath("$.amounts.itemsTotal").value(SHIRT_PRICE_INCL_TAX + TEA_PRICE_INCL_TAX))
                     .andExpect(jsonPath("$.amounts.shippingFee").value(SHIPPING_FEE))
@@ -325,7 +325,7 @@ class StorefrontCartTest {
             // 準備：購入できない 4 品目と、税込 1,100 円を 2 つの買える品目のカート
             unpurchasableCart();
 
-            // 操作と確認：商品の合計は買える品目の 2,200 円だけ、総額は送料を足した 3,200 円
+            // 操作と確認：商品の合計は買える品目の 2,200 円だけ、総額は送料を加えた 3,200 円
             showCart()
                     .andExpect(jsonPath("$.amounts.itemsTotal").value(2200))
                     .andExpect(jsonPath("$.amounts.total").value(3200));

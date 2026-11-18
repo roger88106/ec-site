@@ -4,7 +4,7 @@ import type { ProductSummary } from '@/api/types'
 import { productSummary } from '@/test/fixtures'
 import { getCell } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { http, problem, type Reply, server } from '@/test/server'
+import { getServerError, http, problem, type Reply, SERVER_ERROR_MESSAGE, server } from '@/test/server'
 
 /** 一覧に出す商品（公開中） */
 const SHIRT = productSummary()
@@ -82,6 +82,19 @@ describe('商品の一覧', () => {
 
     expect(await screen.findByRole('cell', { name: 'T シャツ' })).toBeInTheDocument()
     expect(await within(totalOf('ABC-001')).findByText('取得できません')).toBeInTheDocument()
+  })
+
+  test('AC-559-3 ページを移った取得が失敗したら、前のページの一覧を残さず、全体を取得の失敗の表示にする', async () => {
+    serveList([SHIRT], (_, response) => response(200).json({ items: [] }))
+    const { user } = renderApp('/products')
+    await screen.findByRole('cell', { name: 'T シャツ' })
+    server.use(getServerError('/products'))
+
+    await user.click(screen.getByRole('button', { name: '次へ' }))
+
+    expect(await screen.findByText(SERVER_ERROR_MESSAGE)).toBeInTheDocument()
+    expect(screen.queryByRole('cell', { name: 'T シャツ' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '再試行' })).not.toBeInTheDocument()
   })
 
   test('AC-48 絞り込みは URL のクエリになり、1 ページ目から API に送る', async () => {

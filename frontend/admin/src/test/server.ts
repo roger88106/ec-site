@@ -1,4 +1,4 @@
-import { HttpResponse, http as mswHttp } from 'msw'
+import { delay, HttpResponse, http as mswHttp } from 'msw'
 import { setupServer } from 'msw/node'
 import { createOpenApiHttp, type HttpMethod, type ResponseResolver, type ResponseResolverInfo } from 'openapi-msw'
 import type { paths } from '@/api/generated/admin'
@@ -28,6 +28,23 @@ export function getNetworkError(path: string) {
   return mswHttp.get(`${ADMIN_API}${path}`, () => HttpResponse.error())
 }
 
+/** システムエラー（500）の応答の message。取得の失敗として画面に出る文 */
+export const SERVER_ERROR_MESSAGE = 'システムエラーが発生しました。'
+
+/**
+ * 管理 API の GET を、応答しないままにするハンドラーを作る（取得している間の状態を作る）。
+ *
+ * @param path admin.yaml のパス（例：/me）
+ * @returns 応答しないハンドラー
+ */
+export function getPending(path: string) {
+  // 応答しない取得は admin.yaml にない応答なので、型付きの http でなく、型のない msw のハンドラーで作る
+  return mswHttp.get(`${ADMIN_API}${path}`, async () => {
+    await delay('infinite')
+    return HttpResponse.error()
+  })
+}
+
 /**
  * 管理 API の GET を、システムエラー（500）にするハンドラーを作る。
  *
@@ -37,7 +54,7 @@ export function getNetworkError(path: string) {
 export function getServerError(path: string) {
   // 500 は admin.yaml にない応答なので、型付きの http でなく、型のない msw のハンドラーで作る
   return mswHttp.get(`${ADMIN_API}${path}`, () =>
-    HttpResponse.json(problem(500, 'SYSTEM_ERROR', 'システムエラーが発生しました。'), { status: 500 }),
+    HttpResponse.json(problem(500, 'SYSTEM_ERROR', SERVER_ERROR_MESSAGE), { status: 500 }),
   )
 }
 

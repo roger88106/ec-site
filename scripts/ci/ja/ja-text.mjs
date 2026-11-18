@@ -16,7 +16,8 @@
 // warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
 //   既定の実行は warning を数えない（全体の件数が多く、読まれないため）。
 //   文体の型と閾値（ja-text.json の style）は findStyleWarnings、文の取り出し方は proseSentences、読点の数え方は countCommas に書いてある。
-//   読点を数えない「参照だけの項目」の文書の名前は、参照の検査と同じ名前の一覧（lib/docs/doc-names の documentIndex）に語の全体が一致するものと、`.md` で終わるパスだけ。
+//   読点を数えない「参照だけの項目」の文書の名前は、参照の検査と同じ名前の一覧（lib/docs/doc-names の documentIndex。参照の検査が見るファイルだけで、アーカイブした spec は含まない）に語の全体が一致するものと、`.md` で終わるパスだけ。
+//   名前の一覧は、見出しの参照が付いた項目（`の「…」`）を見るときに初めて作る（docs/ の文書の 1 行目の見出しを読む。測る文書と同じ内容は読み直さない）。
 //
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 //
@@ -36,7 +37,7 @@
 //
 // 使い方：node scripts/ci/ja/ja-text.mjs [--warning [--added] | --changed]（リポジトリのルートで）
 //   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。
-//       追加行のあるファイルだけを読む（削除した行だけのファイル、名前だけを変えたファイル、改行コードだけを変えたファイルは読まない）。
+//       追加行のあるファイルだけを読む（削除した行だけのファイル、名前だけを変えたファイル、改行コードだけを変えたファイルは読まない）。例外は、文書の名前の一覧を作るとき（上の warning の段落）。
 //       error の語は数えず（検査の段で数え済み）、error の語の一部に当たる warning の語も示さない（error の語に warning の語を含む形がある）。
 //       文は、どれかの行が追加行なら、最初の追加行で示す（--changed と同じ選び方）。
 //   --changed：差分の追加行の文で、字数が style.length 以上か読点が style.comma 以上のものを示す。
@@ -50,6 +51,7 @@ import { codeBlockLines } from '../../shared/docs/code-block.mjs'
 import { readHeadings } from '../../shared/docs/doc-structure.mjs'
 import { maskCodeSpans, readCodeSpans, replaceCodeSpans } from '../../shared/source/code-span.mjs'
 import { checkExclusions, describeEmptyReason, describeStaleExclusion } from '../lib/output/exclusions.mjs'
+import { isExcluded } from '../docs/doc-refs.mjs'
 import { documentIndex, readHeadingIndex } from '../lib/docs/doc-names.mjs'
 import { codeKind, commentText, trailingCommentLines } from '../lib/source/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from '../../shared/git/git-files.mjs'
@@ -191,11 +193,13 @@ function disallowedMatches(line, term) {
  * @param {string} text 文書、またはコードのコメントとテスト名（インラインコードを除く前）
  * @param {string} warningMasked text の、全てのインラインコードを除いたもの（warning の語を探す文）
  * @param {object[]} errorTerms 当てる error の項目（termsFor の結果）
+ * @param {Set<number> | null} targetLines 当てる行（1 から。追加行。他の行の語は示さないので当てない）。null なら全ての行
  * @returns {string} error の語の範囲を空白にした、warning の語を探す文
  */
-function blankErrorSpans(text, warningMasked, errorTerms) {
+function blankErrorSpans(text, warningMasked, errorTerms, targetLines) {
   const lines = warningMasked.split('\n')
   text.split('\n').forEach((raw, index) => {
+    if (targetLines !== null && !targetLines.has(index + 1)) return
     const line = maskPlainCode(raw)
     for (const term of errorTerms) {
       for (const { at, text: matched } of disallowedMatches(line, term)) {
@@ -309,7 +313,7 @@ export function findTerms(text, terms, { masked = false, allCode = false } = {})
 /**
  * 許容用語の誤り（理由がない、どの文書にも使われなくなった）を、表示する文にして返す。
  *
- * インラインコードの中の語は検査しないので、そこにしか出ない許容用語は、使われていない（不要）と見る。
+ * 英字だけのインラインコードの中の語は検査しないので、そこにしか出ない許容用語は、使われていない（不要）と見る。日本語を含むものの中にある許容用語は、使われているとみる。
  *
  * @param {string[]} texts 調べる文書の内容（全て）
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 語（または正規表現）と許容用語
@@ -317,7 +321,7 @@ export function findTerms(text, terms, { masked = false, allCode = false } = {})
  * @returns {string[]} 誤りの文
  */
 export function findAllowProblems(texts, terms, { masked = false } = {}) {
-  const plain = masked ? texts : texts.map(withoutInlineCode)
+  const plain = masked ? texts : texts.map((text) => withoutInlineCode(text))
   return terms.flatMap((term) =>
     checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => plain.some((text) => text.includes(allow))),
   )
@@ -423,13 +427,13 @@ const MARKDOWN_PATH_WORD = /^[^\s、。「」（）()]+\.md$/
  * パスは、空白のない `.md` で終わる語。末尾だけが一致する語（`作業の記録` の `記録`）は見ない。
  *
  * @param {string} item 項目（前後の空白を除いたもの）
- * @param {Set<string>} names 文書の名前の一覧
+ * @param {() => Set<string>} names 文書の名前の一覧を返す関数（見出しの参照が付いた項目を見るときだけ呼ぶ）
  * @returns {boolean} 参照だけの項目なら true
  */
 function isReferenceItem(item, names) {
   if (REFERENCE_ITEM.test(item)) return true
   const named = NAMED_REFERENCE.exec(item)
-  return named !== null && (names.has(named[1]) || MARKDOWN_PATH_WORD.test(named[1]))
+  return named !== null && (MARKDOWN_PATH_WORD.test(named[1]) || names().has(named[1]))
 }
 
 /** 動詞の連用形の終わりになるかな（い段とえ段。助詞の「に」「へ」と、「て」「で」は除く） */
@@ -710,7 +714,7 @@ function proseCells(text) {
  * 1 つの文の、文体を測る値を返す。
  *
  * @param {string} sentence 文
- * @param {Set<string>} names 文書の名前の一覧（読点の数で、参照だけの項目を見分ける）
+ * @param {() => Set<string>} names 文書の名前の一覧を返す関数（読点の数で、参照だけの項目を見分ける）
  * @returns {{ no: number, length: number, comma: number }} 1 区間の「の」の最大の数、字数、読点の数
  */
 function measureSentence(sentence, names) {
@@ -729,7 +733,7 @@ function measureSentence(sentence, names) {
  * 前後の項目の両方が参照だけのときに、その間の読点を数えない（他の語を含む項目の前後の読点は数える）。
  *
  * @param {string} sentence 文（リンクの表示文字列は LINK_START と LINK_END で囲んである）
- * @param {Set<string>} names 文書の名前の一覧
+ * @param {() => Set<string>} names 文書の名前の一覧を返す関数
  * @returns {number} 数える読点の数
  */
 function countCommas(sentence, names) {
@@ -781,12 +785,13 @@ function plainSentence(sentence) {
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書
  * @param {{ no?: number, length?: number, comma?: number, cell?: number, compound?: string[] }} limits 閾値と、崩れの疑いを見る漢語
- * @param {{ kind?: 'markdown' | 'lines' | 'code', added?: Set<number> | null, trailing?: Set<number>, names?: Set<string> }} [options]
- *   測り方、追加行（null か省略なら全ての行）、code の行末のコメントの行、文書の名前の一覧（省略なら空）
+ * @param {{ kind?: 'markdown' | 'lines' | 'code', added?: Set<number> | null, trailing?: Set<number>, names?: Set<string> | (() => Set<string>) }} [options]
+ *   測り方、追加行（null か省略なら全ての行）、code の行末のコメントの行、文書の名前の一覧か一覧を返す関数（省略なら空。関数は、一覧が必要なときだけ呼ぶ）
  * @returns {{ line: number, kind: 'no' | 'length' | 'comma' | 'negation' | 'compound' | 'cell', word: string, use: string }[]} 見つけた行と種類（行の順）
  */
 export function findStyleWarnings(text, limits, { kind = 'markdown', added = null, trailing = new Set(), names = new Set() } = {}) {
   const hits = []
+  const namesOf = typeof names === 'function' ? names : () => names
   if (limits.cell !== undefined) {
     for (const { line, total } of tableCellTotals(text)) {
       if (added !== null && !added.has(line)) continue
@@ -799,7 +804,7 @@ export function findStyleWarnings(text, limits, { kind = 'markdown', added = nul
     if (line === undefined) continue
     const sentence = plainSentence(marked)
     const excerpt = sentence.length > 30 ? `${sentence.slice(0, 30)}…` : sentence
-    const measured = measureSentence(marked, names)
+    const measured = measureSentence(marked, namesOf)
     const add = (hitKind, word, detail) => hits.push({ line, kind: hitKind, word, use: `${detail}：「${excerpt}」` })
     if (limits.no !== undefined && measured.no >= limits.no) add('no', '「の」の連なり', `1 区間に「の」が ${measured.no} 個`)
     if (limits.length !== undefined && measured.length >= limits.length) add('length', '長い文', `字数が ${measured.length} 字`)
@@ -880,18 +885,21 @@ function printChangedWarnings(list) {
     ? parseAddedLines(git([...ADDED_DIFF_ARGS, revision, '--']))
     : new Map()
   // 追跡していない新しいファイルは、全ての行を追加行として見る（CI にはない。手元で commit の前に見るため）
-  const untracked = revision ? listUntrackedFiles() : listGitFiles()
+  let tracked = null
+  const trackedFiles = () => (tracked ??= listGitFiles())
+  const untracked = revision ? listUntrackedFiles() : trackedFiles()
   for (const file of untracked) added.set(file, null)
   // length、comma、cell だけを見る（「の」の連なり、否定、複合動詞の崩れは形だけでは誤りと判定できないので注釈にしない）。
   // 否定の型は閾値を渡さなくても示されるので、種類でも絞る
   const limits = { length: list.style.length, comma: list.style.comma, cell: list.style.cell }
   const kinds = new Set(Object.keys(limits))
-  const names = documentNames(listGitFiles())
+  const read = cachedReader()
+  const names = lazyDocumentNames(trackedFiles, read)
   let count = 0
   for (const file of [...added.keys()].sort()) {
     const doc = isTargetDoc(file)
     if ((!doc && !isTargetCode(file)) || !existsSync(file)) continue
-    const raw = readFileSync(file, 'utf8')
+    const raw = read(file)
     // 文の行のどれかが追加行の文だけを示す（既存の行だけでできた文は示さない）
     const options = { kind: styleKind(file), added: added.get(file), trailing: doc ? new Set() : trailingCommentLines(raw, codeKind(file)), names }
     for (const hit of findStyleWarnings(doc ? raw : commentText(raw, codeKind(file)), limits, options)) {
@@ -930,39 +938,68 @@ function checkMessage(file, terms, warning) {
  * 調べる文書とコードを読む。
  *
  * @param {Map<string, Set<number> | null> | null} addedMap ファイルごとの追加行（--warning）。null なら全てのファイルを読む
- * @param {boolean} style 文体を測るか。測るときだけ、コードの行末のコメントの行を求める
- * @returns {{ docs: { file: string, text: string, masked: string }[], code: { file: string, comments: string, masked: string, trailing: Set<number> }[], names: Set<string> }} 文書とコードと文書の名前の一覧
+ * @param {{ style: boolean, allCode: boolean }} options style は文体を測るか（測るときだけ、コードの行末のコメントの行を求める）。allCode は全てのインラインコードを除くか（warning の語）
+ * @returns {{ docs: { file: string, text: string, masked: string }[], code: { file: string, comments: string, masked: string, trailing: Set<number> }[], names: () => Set<string> }} 文書とコードと文書の名前の一覧を返す関数
  *   - text・comments：文書と、コードのコメントとテスト名
- *   - names：文書の名前の一覧（文体を測るときだけ求める。読点の数で、参照だけの項目を見分ける）
+ *   - names：文書の名前の一覧を返す関数（読点の数で、参照だけの項目を見分けるときに初めて求める。読んだ中身は測る文書と共有する）
  *   - masked：text・comments のインラインコードを除いたもの（語の一致と許容用語の照合で共に使う）
  *   - trailing：コードの行末のコメントの行
  */
-function readTargets(addedMap, style) {
+function readTargets(addedMap, { style, allCode }) {
   const gitFiles = listGitFiles()
   const allDocs = gitFiles.filter((file) => isTargetDoc(file))
   exitIfNoFiles(allDocs, '語を調べる文書')
-  const allCode = gitFiles.filter((file) => isTargetCode(file))
-  exitIfNoFiles(allCode, '語を調べるコード')
+  const allCodeFiles = gitFiles.filter((file) => isTargetCode(file))
+  exitIfNoFiles(allCodeFiles, '語を調べるコード')
+  const read = cachedReader()
   const docs = filesToMeasure(allDocs, addedMap).map((file) => {
-    const text = readFileSync(file, 'utf8')
-    return { file, text, masked: withoutInlineCode(text, style) }
+    const text = read(file)
+    return { file, text, masked: withoutInlineCode(text, allCode) }
   })
-  const code = filesToMeasure(allCode, addedMap).map((file) => {
-    const text = readFileSync(file, 'utf8')
+  const code = filesToMeasure(allCodeFiles, addedMap).map((file) => {
+    const text = read(file)
     const comments = commentText(text, codeKind(file))
-    return { file, comments, masked: withoutInlineCode(comments, style), trailing: style ? trailingCommentLines(text, codeKind(file)) : new Set() }
+    return { file, comments, masked: withoutInlineCode(comments, allCode), trailing: style ? trailingCommentLines(text, codeKind(file)) : new Set() }
   })
-  return { docs, code, names: style ? documentNames(gitFiles) : new Set() }
+  return { docs, code, names: lazyDocumentNames(() => gitFiles, read) }
 }
 
 /**
- * 文書の名前の一覧を返す（参照の検査と同じ lib/docs/doc-names の documentIndex で求める）。
+ * 読んだ中身を覚えるファイルの読み取りを作る（1 回の実行で同じファイルを 2 回読まない）。
  *
- * @param {string[]} files 対象のファイル（Git の一覧）
+ * @returns {(file: string) => string} ファイルの内容を返す関数
+ */
+function cachedReader() {
+  const texts = new Map()
+  return (file) => {
+    if (!texts.has(file)) texts.set(file, readFileSync(file, 'utf8'))
+    return texts.get(file)
+  }
+}
+
+/**
+ * 文書の名前の一覧を、初めて求められたときに 1 回だけ作る関数を返す。
+ *
+ * 名前の一覧を使うのは、読点を数えて参照だけの項目を見分けるときだけ。作るには、docs/ の全ての文書の 1 行目の見出しを読む。
+ *
+ * @param {() => string[]} listFiles 対象のファイル（Git の一覧）を返す関数
+ * @param {(file: string) => string} read ファイルの内容を返す関数
+ * @returns {() => Set<string>} 文書の名前の一覧を返す関数
+ */
+function lazyDocumentNames(listFiles, read) {
+  let names = null
+  return () => (names ??= documentNames(listFiles(), read))
+}
+
+/**
+ * 文書の名前の一覧を返す（参照の検査と同じ範囲と、同じ lib/docs/doc-names の documentIndex で求める）。
+ *
+ * @param {string[]} files 対象のファイル（Git の一覧。参照の検査が見ないファイル（isExcluded）は除く）
+ * @param {(file: string) => string} read ファイルの内容を返す関数
  * @returns {Set<string>} 文書の名前（docs/ の文書の 1 行目の見出しと skill の名前）
  */
-function documentNames(files) {
-  const { names } = documentIndex(files, (file) => readHeadingIndex(readFileSync(file, 'utf8')).title)
+export function documentNames(files, read) {
+  const { names } = documentIndex(files.filter((file) => !isExcluded(file)), (file) => readHeadingIndex(read(file)).title)
   return new Set(names.keys())
 }
 
@@ -980,7 +1017,7 @@ function collectTermHits({ docs, code }, terms) {
 /**
  * 文書とコードの文体の warning を集める。
  *
- * @param {{ docs: { file: string, text: string }[], code: { file: string, comments: string, trailing: Set<number> }[], names: Set<string> }} targets 調べる文書とコードと文書の名前の一覧
+ * @param {{ docs: { file: string, text: string }[], code: { file: string, comments: string, trailing: Set<number> }[], names: () => Set<string> }} targets 調べる文書とコードと文書の名前の一覧を返す関数
  * @param {object} style 閾値（ja-text.json の style）
  * @param {(file: string) => Set<number> | null} addedOf ファイルの追加行（null なら全ての行）
  * @returns {{ file: string, line: number, word: string, use: string }[]} 文体の warning
@@ -1009,11 +1046,12 @@ function checkFiles(list, { warning, added }) {
     const lines = addedOf(file)
     return lines === null || lines.has(line)
   }
-  const targets = readTargets(addedMap, warning)
+  const targets = readTargets(addedMap, { style: warning, allCode: warning })
   if (addedMap !== null) {
     // error の語は検査の段で数え済みなので、error の語に重なる warning の語は示さない
-    for (const doc of targets.docs) doc.masked = blankErrorSpans(doc.text, doc.masked, termsFor(list.error, doc.file))
-    for (const item of targets.code) item.masked = blankErrorSpans(item.comments, item.masked, termsFor(list.error, item.file))
+    // （語の一致は追加行だけを示すので、error の語の範囲を求めるのも追加行だけにする）
+    for (const doc of targets.docs) doc.masked = blankErrorSpans(doc.text, doc.masked, termsFor(list.error, doc.file), addedOf(doc.file))
+    for (const item of targets.code) item.masked = blankErrorSpans(item.comments, item.masked, termsFor(list.error, item.file), addedOf(item.file))
   }
   const allowProblems = warning ? [] : findAllowProblems([...targets.docs, ...targets.code].map(({ masked }) => masked), terms, { masked: true })
   let termHits = collectTermHits(targets, terms)

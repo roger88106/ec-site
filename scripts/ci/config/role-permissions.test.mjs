@@ -174,7 +174,7 @@ describe('ロールと権限の対応表', () => {
       ].join('\n'),
     )
     const { markdown, problems } = renderTables({ admin: [], store, realm: parseRealmRoles(REALM) })
-    assert.deepEqual(problems, ['GET /forgotten：security がない。token が要らない操作は security: [] と書く'])
+    assert.deepEqual(problems, ['GET /forgotten：security がない。token が必要ない操作は security: [] と書く'])
     assert.match(markdown, /\| `GET \/open` \| 公開 \| 不要 \|/)
     assert.doesNotMatch(markdown, /GET \/forgotten/)
     assert.match(markdown, /\| `POST \/forgotten` \| 同じパスの別の操作 \| 会員 \|/)

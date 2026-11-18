@@ -178,7 +178,7 @@ export function renderTables({ admin, store, realm }) {
   for (const operation of store) {
     if (operation.security === null) {
       // 書き忘れを「不要」と読まない。token が必要ない操作は security: [] で明示する
-      problems.push(`${operation.method} ${operation.path}：security がない。token が要らない操作は security: [] と書く`)
+      problems.push(`${operation.method} ${operation.path}：security がない。token が必要ない操作は security: [] と書く`)
       continue
     }
     lines.push(`| \`${operation.method} ${operation.path}\` | ${operation.summary} | ${storeLogin(operation)} |`)

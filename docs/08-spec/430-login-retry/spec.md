@@ -149,7 +149,7 @@ AC-112 に、今の文の後に次の文を加える。変えた spec に 430 �
   - 依存：T430-01-04
   - 範囲：`frontend/store/src/app/login/failed/`、`frontend/store/messages/ja.json`
   - 確認方法：追加したテストが通る。
-- [ ] **T430-01-06** AC 一覧の AC-112 の行、会員登録とログインの流れ、店舗画面の構成を書き換える（AC-112、決定 8）。
+- [x] **T430-01-06** AC 一覧の AC-112 の行、会員登録とログインの流れ、店舗画面の構成を書き換える（AC-112、決定 8）。
   - 依存：T430-01-03、T430-01-05
   - 範囲：`docs/03-機能仕様/acceptance-criteria.md`、`docs/01-概要/member.md`、`docs/02-設計/apps/store.md`
   - 確認方法：`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/spec/ac-check.mjs` が通る。

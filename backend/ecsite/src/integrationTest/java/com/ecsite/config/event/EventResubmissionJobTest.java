@@ -40,6 +40,7 @@ import static com.ecsite.config.event.EventPublications.EVENT_PUBLICATION;
 import static com.ecsite.config.event.EventPublications.ID;
 import static com.ecsite.config.event.EventPublications.STATUS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * 未完了のイベントの再発行と、止めたイベントの統合テスト
@@ -83,6 +84,22 @@ class EventResubmissionJobTest {
      */
     private static final String DELETE_STOPPED_EVENT = """
             DELETE FROM common.event_publication_stopped
+            WHERE id = ?
+            """;
+
+    /**
+     * 止めたイベントを、止めたイベントの表に残したまま、イベント発行記録の表に入れる SQL（ID を bind 変数で渡す）
+     *
+     * <p>復旧の手順の SQL を使わずに戻し、止めたイベントの表から消し忘れた状態を作る。
+     * 止めたイベントの表の行と値が異なるようにするため、処理の回数を 1 増やし、最後の再発行の日時を 1 分進めて、失敗の状態で入れる。
+     */
+    private static final String COPY_STOPPED_EVENT_BACK = """
+            INSERT INTO common.event_publication
+                (id, listener_id, event_type, serialized_event, publication_date,
+                 completion_date, status, completion_attempts, last_resubmission_date)
+            SELECT id, listener_id, event_type, serialized_event, publication_date,
+                   NULL, 'FAILED', completion_attempts + 1, last_resubmission_date + INTERVAL '1 minute'
+            FROM common.event_publication_stopped
             WHERE id = ?
             """;
 
@@ -614,6 +631,34 @@ class EventResubmissionJobTest {
         }
 
         @Test
+        @DisplayName("止めたイベントの表に同じ ID の行が残っていても、止める操作は失敗せず、行を新しい値で上書きして、再発行も続ける")
+        void overwritesStoppedEventLeftWithSameId() {
+            // 準備：処理の回数の上限 2 のジョブで止めたイベントを、止めたイベントの表に残したまま、
+            // 処理の回数を 3、最後の再発行の日時を 1 分後にして、イベント発行記録の表に入れる。ほかに、1 回目の処理に失敗したイベント
+            var job = jobWithMaxAttempts(2);
+            var event = stoppedEvent(job);
+            var before = publications.stoppedOf(event.id()).orElseThrow();
+            dsl.execute(COPY_STOPPED_EVENT_BACK, before.id());
+            var flaky = failedOnce();
+
+            // 操作：6 分後に再発行する
+            clock.advance(Duration.ofMinutes(6));
+            job.resubmit();
+
+            // 確認：止めたイベントの表の行が、入れた行の値と新しい止めた日時で上書きされ、イベント発行記録の表になく、
+            // ほかのイベントは再発行されて、2 回目の処理で成功する
+            assertThat(publications.stoppedOf(event.id())).hasValueSatisfying(stopped -> {
+                assertThat(stopped.id()).isEqualTo(before.id());
+                assertThat(stopped.completionAttempts()).isEqualTo(3);
+                assertThat(stopped.lastResubmissionDate()).isEqualTo(before.lastResubmissionDate().plus(Duration.ofMinutes(1)));
+                assertThat(stopped.stoppedDate()).isAfter(before.stoppedDate());
+            });
+            assertThat(publications.count(event.id())).isZero();
+            asyncEvents.awaitHandled(flaky::equals);
+            assertThat(listener.succeeded(flaky)).isTrue();
+        }
+
+        @Test
         @DisplayName("AC-293 止めたイベントは、処理の済んだイベントの片付けで消えない")
         void stoppedEventIsNotCleanedUp() {
             // 準備：処理の回数の上限 2 のジョブで止めたイベント
@@ -704,14 +749,10 @@ class EventResubmissionJobTest {
         @Test
         @DisplayName("AC-292 再発行のジョブの後、未完了のイベントの件数と止めたイベントの件数をメトリクスに出す")
         void publishesCountsAsMetrics() {
-            // 準備：何も再発行しないジョブ（発行からの時間の下限が長く、処理の回数の上限が既定）で、
-            // ほかのテストが残したイベントの件数を、作る前に数える（統合テストは DB を共有するので、作った数を差分で比べる）
-            var quietJob = jobWith(Duration.ofDays(365), 60);
-            quietJob.resubmit();
-            var incompleteBefore = gauge("ecsite.events.incomplete");
-            var stoppedBefore = gauge("ecsite.events.stopped");
+            // 準備：何も再発行しないジョブ（発行からの時間の下限が長く、処理の回数の上限が既定）と、
             // 最後の処理に失敗したイベント 1 件
-            publications.failedOnce(failingEvent("metrics-failed"));
+            var quietJob = jobWith(Duration.ofDays(365), 60);
+            var failed = publications.failedOnce(failingEvent("metrics-failed"));
             // 止めるイベント 1 件（ほかのテストのイベントを再発行も停止もしないよう、処理の回数を上限 60 に書き換え、次のジョブで止める）
             var stopped = publications.failedOnce(failingEvent("metrics-stopped"));
             markAttempts(stopped, 60);
@@ -721,13 +762,19 @@ class EventResubmissionJobTest {
             asyncEvents.resubmit(completed::equals);
             asyncEvents.awaitHandled(completed::equals);
 
-            // 操作：ジョブを動かす
-            quietJob.resubmit();
-
-            // 確認：止めた件数は 1 件増え、未完了の件数は、失敗したイベントと止めたイベントの 2 件増える（処理を終えたイベントは数えない）
-            assertThat(publications.stoppedOf(stopped.id())).isPresent();
-            assertThat(gauge("ecsite.events.stopped")).isEqualTo(stoppedBefore + 1);
-            assertThat(gauge("ecsite.events.incomplete")).isEqualTo(incompleteBefore + 2);
+            // 操作と確認：ジョブを動かすと、作ったイベントは、止めたイベントは止めたイベントの表に、失敗したイベントはイベント発行記録の表の未完了の行にあり、
+            // 処理を終えたイベントは未完了にない。止めた件数は止めたイベントの表の行の数、未完了の件数は記録の表の未完了の行と止めたイベントの表の行を
+            // 合わせた数になる。統合テストは DB を共有し、ほかのテストの非同期の処理で件数が動くので、DB の件数と合うまで、ジョブの実行から繰り返す
+            await().atMost(AsyncEvents.TIMEOUT).untilAsserted(() -> {
+                quietJob.resubmit();
+                var stoppedCount = publications.countStopped();
+                var incompleteCount = publications.countIncomplete();
+                assertThat(publications.stoppedOf(stopped.id())).isPresent();
+                assertThat(publications.isIncomplete(failed)).isTrue();
+                assertThat(publications.isIncomplete(completed)).isFalse();
+                assertThat(gauge("ecsite.events.stopped")).isEqualTo(stoppedCount);
+                assertThat(gauge("ecsite.events.incomplete")).isEqualTo(incompleteCount + stoppedCount);
+            });
         }
     }
 

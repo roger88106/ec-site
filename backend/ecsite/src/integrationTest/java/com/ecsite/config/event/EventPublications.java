@@ -194,6 +194,35 @@ class EventPublications {
     }
 
     /**
+     * 発行したイベントについて、未完了の記録があるか。
+     *
+     * @param event 発行したイベント
+     * @return 未完了の発行の記録があれば true
+     */
+    boolean isIncomplete(Object event) {
+        return registry.findIncompletePublications().stream()
+                .anyMatch(publication -> publication.getEvent().equals(event));
+    }
+
+    /**
+     * イベント発行記録の表の、未完了の行の数（ほかのテストの行を含む）。
+     *
+     * @return 行の数
+     */
+    int countIncomplete() {
+        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull());
+    }
+
+    /**
+     * 止めたイベントの表の行の数（ほかのテストの行を含む）。
+     *
+     * @return 行の数
+     */
+    int countStopped() {
+        return dsl.fetchCount(EVENT_PUBLICATION_STOPPED);
+    }
+
+    /**
      * イベント ID を含む記録の数（記録はイベントを JSON にして持つ）。
      *
      * @param eventId イベントを見分ける ID

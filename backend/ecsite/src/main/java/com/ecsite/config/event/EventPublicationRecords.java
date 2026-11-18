@@ -31,7 +31,7 @@ class EventPublicationRecords {
     /**
      * 止めたイベントのテーブル
      *
-     * <p>列は、イベント発行記録の表の列のうち復旧に必要なものと同じ名前に、止めた時刻を加えたもの。
+     * <p>列は、イベント発行記録の表の列のうち復旧に必要なものと同じ名前に、止めた日時を加えたもの。
      * イベント発行記録の表と同じく、名前で指す。
      */
     private static final Table<?> EVENT_PUBLICATION_STOPPED = DSL.table(DSL.name("common", "event_publication_stopped"));
@@ -87,7 +87,7 @@ class EventPublicationRecords {
     private static final Field<Instant> COMPLETION_DATE = DSL.field(DSL.name("completion_date"), Instant.class);
 
     /**
-     * 止めた時刻
+     * 止めた日時
      */
     private static final Field<Instant> STOPPED_DATE = DSL.field(DSL.name("stopped_date"), Instant.class);
 
@@ -107,7 +107,7 @@ class EventPublicationRecords {
     private final DSLContext dsl;
 
     /**
-     * 止めた時刻を取る時計
+     * 止めた日時を取る時計
      */
     private final Clock clock;
 
@@ -136,6 +136,18 @@ class EventPublicationRecords {
                 .select(DSL.select(ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE,
                                 COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE, DSL.val(clock.instant()))
                         .from(moved))
+                // 止めたイベントの表に同じ ID の行が残っていると（復旧の手順の SQL を使わずに戻して消し忘れたときなど）、
+                // 文全体が主キーの重複で失敗し、ジョブが再発行の前に例外で止まるので、移した行の値と止めた日時で上書きする。
+                // 重複した行を捨てる（DO NOTHING）と、イベント発行記録の表から消した行の内容が失われる。上書きした行も返し、ログに出す
+                .onConflict(ID)
+                .doUpdate()
+                .set(LISTENER_ID, DSL.excluded(LISTENER_ID))
+                .set(EVENT_TYPE, DSL.excluded(EVENT_TYPE))
+                .set(SERIALIZED_EVENT, DSL.excluded(SERIALIZED_EVENT))
+                .set(PUBLICATION_DATE, DSL.excluded(PUBLICATION_DATE))
+                .set(COMPLETION_ATTEMPTS, DSL.excluded(COMPLETION_ATTEMPTS))
+                .set(LAST_RESUBMISSION_DATE, DSL.excluded(LAST_RESUBMISSION_DATE))
+                .set(STOPPED_DATE, DSL.excluded(STOPPED_DATE))
                 .returning(stopped(ID), stopped(EVENT_TYPE), stopped(LISTENER_ID), stopped(COMPLETION_ATTEMPTS))
                 .fetch(row -> new StoppedPublication(row.get(stopped(ID)), row.get(stopped(EVENT_TYPE)),
                         row.get(stopped(LISTENER_ID)), row.get(stopped(COMPLETION_ATTEMPTS))));

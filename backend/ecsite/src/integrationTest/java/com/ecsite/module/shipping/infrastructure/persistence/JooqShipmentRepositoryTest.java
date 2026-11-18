@@ -114,6 +114,27 @@ class JooqShipmentRepositoryTest {
         }
 
         @Test
+        @DisplayName("DC-548-8 同じ配送業者と送り状番号の出荷が複数あるとき、出荷 ID の昇順で返る")
+        void returnsInShipmentIdOrder() {
+            // 準備：出荷 ID が挿入の順と逆になるように、大きい ID から挿入する
+            var digits = ShippingTestData.trackingNumber();
+            var ids = List.of(
+                    UUID.fromString("00000000-0000-0000-0000-000000000003"),
+                    UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                    UUID.fromString("00000000-0000-0000-0000-000000000002"));
+            ids.forEach(id -> repository.insert(
+                    Shipment.create(id, UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of(digits), SHIPPED_AT)));
+
+            // 操作と確認：出荷 ID の昇順
+            assertThat(repository.findAllByTrackingForUpdate(Carrier.YAMATO, TrackingNumber.of(digits)))
+                    .extracting(Shipment::id)
+                    .containsExactly(
+                            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                            UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                            UUID.fromString("00000000-0000-0000-0000-000000000003"));
+        }
+
+        @Test
         @DisplayName("AC-174 送り状番号が同じでも、別の配送業者では引けない")
         void doesNotFindByOtherCarrier() {
             // 準備：ヤマト運輸の出荷

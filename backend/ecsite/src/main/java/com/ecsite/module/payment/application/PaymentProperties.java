@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.domain.payment.AuthorizationTerm;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.time.DurationMax;
@@ -35,6 +36,23 @@ public record PaymentProperties(
         @DefaultValue("7d") @NotNull @DurationMin(millis = 1) Duration authorizationValidity,
         @DefaultValue("2d") @NotNull @DurationMin(nanos = 0) Duration authorizationWarning,
         @NotBlank String returnUrl) {
+
+    /**
+     * 与信の期限が近いとする期間が、与信の有効期間より短いかを返す。
+     *
+     * <p>値の検証で検査し、短くなければ起動に失敗させる（与信を受けた時点から期限が近いことになるため）。
+     * どちらかが null か、項目の下限を満たさないときは、項目の検証が失敗にするので、true を返す。
+     *
+     * @return 短いか、項目の検証で失敗するなら true
+     */
+    @AssertTrue(message = "authorization-warning は authorization-validity より短くする")
+    boolean isAuthorizationWarningShorterThanValidity() {
+        if (authorizationValidity == null || authorizationWarning == null
+                || !authorizationValidity.isPositive() || authorizationWarning.isNegative()) {
+            return true;
+        }
+        return authorizationWarning.compareTo(authorizationValidity) < 0;
+    }
 
     /**
      * 注文の戻る先の URL を作る。

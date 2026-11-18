@@ -98,4 +98,24 @@ class TrackingNumberTest {
             assertBusinessError(() -> TrackingNumber.of(input), ShippingErrorCode.TRACKING_NUMBER_INVALID);
         }
     }
+
+    @Nested
+    @DisplayName("コンストラクターの検査")
+    class Constructor {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"", "-", "12-34", "ABC", "12 34", "１２３", "1234567890123456789012345678901"})
+        @DisplayName("復元でも、数字だけでない値と 31 桁以上は、業務のエラー TRACKING_NUMBER_INVALID で拒否される")
+        void rejectsInvalidForm(String value) {
+            // 操作と確認：業務のエラー TRACKING_NUMBER_INVALID で拒否される
+            assertBusinessError(() -> new TrackingNumber(value), ShippingErrorCode.TRACKING_NUMBER_INVALID);
+        }
+
+        @Test
+        @DisplayName("数字だけの 30 桁は作れる")
+        void acceptsThirtyDigits() {
+            // 操作と確認：そのままの値を持つ
+            assertThat(new TrackingNumber("1".repeat(30)).value()).isEqualTo("1".repeat(30));
+        }
+    }
 }

@@ -4,7 +4,10 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.inventory.domain.InventoryErrorCode;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
@@ -17,20 +20,58 @@ import java.util.UUID;
  * 在庫調整
  *
  * <p>在庫数が負にならないことは、この型ではなく、リポジトリの条件付きの更新と DB の CHECK 制約で守る。
- *
- * @param id          在庫調整 ID
- * @param delta       増減量（0 以外）
- * @param reason      調整理由
- * @param memo        メモ。なければ null
- * @param orderId     注文 ID。注文に由来する調整でなければ null
- * @param orderNumber 注文番号（写し）。注文に由来する調整でなければ null
- * @param adjustedAt  調整日時
- * @param operator    調整した運営者。注文に由来する調整なら null
  */
+@Getter
+@Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReason reason, @Nullable String memo,
-                              @Nullable UUID orderId, @Nullable String orderNumber, Instant adjustedAt,
-                              @Nullable Operator operator) {
+public final class StockAdjustment {
+
+    /**
+     * 在庫調整 ID
+     */
+    @Identity
+    @EqualsAndHashCode.Include
+    private final UUID id;
+
+    /**
+     * 増減量（0 以外）
+     */
+    private final int delta;
+
+    /**
+     * 調整理由
+     */
+    private final StockAdjustmentReason reason;
+
+    /**
+     * メモ。なければ null
+     */
+    @Nullable
+    private final String memo;
+
+    /**
+     * 注文 ID。注文に由来する調整でなければ null
+     */
+    @Nullable
+    private final UUID orderId;
+
+    /**
+     * 注文番号（写し）。注文に由来する調整でなければ null
+     */
+    @Nullable
+    private final String orderNumber;
+
+    /**
+     * 調整日時
+     */
+    private final Instant adjustedAt;
+
+    /**
+     * 調整した運営者。注文に由来する調整なら null
+     */
+    @Nullable
+    private final Operator operator;
 
     /**
      * メモの最大の文字数
@@ -50,6 +91,45 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
     public static final int MAX_MANUAL_QUANTITY = 1_000_000;
 
     /**
+     * 全属性コンストラクタ
+     *
+     * <p>作り方によらない不変条件を検査する。運営者の調整だけの規則（理由の選べる範囲、増減量の上限、メモの必須）は、
+     * {@link #create} で検査する。
+     *
+     * <p>注文 ID と注文番号の一方だけがあるとき、IllegalArgumentException を投げる。
+     *
+     * @param id          在庫調整 ID
+     * @param delta       増減量
+     * @param reason      調整理由
+     * @param memo        メモ
+     * @param orderId     注文 ID
+     * @param orderNumber 注文番号
+     * @param adjustedAt  調整日時
+     * @param operator    調整した運営者
+     * @throws BusinessException 増減量が 0（{@code INVALID_STOCK_DELTA}）
+     * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
+     */
+    public StockAdjustment(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
+                           @Nullable UUID orderId, @Nullable String orderNumber, @NonNull Instant adjustedAt,
+                           @Nullable Operator operator) {
+        verifyDeltaNotZero(delta);
+        if (memo != null && !BoundedText.fitsWithin(memo, MEMO_MAX_LENGTH)) {
+            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_MEMO, List.of(MEMO_MAX_LENGTH));
+        }
+        if ((orderId == null) != (orderNumber == null)) {
+            throw new IllegalArgumentException("注文 ID と注文番号の一方だけがある");
+        }
+        this.id = id;
+        this.delta = delta;
+        this.reason = reason;
+        this.memo = memo;
+        this.orderId = orderId;
+        this.orderNumber = orderNumber;
+        this.adjustedAt = adjustedAt;
+        this.operator = operator;
+    }
+
+    /**
      * 運営者の在庫調整を作る。
      *
      * <p>空白だけのメモは、メモなしとして扱う。
@@ -67,8 +147,9 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      */
     public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
-        // 0 と、絶対値が上限を超える増減量は受け付けない
-        if (delta == 0 || delta > MAX_MANUAL_DELTA || delta < -MAX_MANUAL_DELTA) {
+        // 0 と、絶対値が上限を超える増減量は、他の条件より先に検査して拒否する（エラーの順を保つ）
+        verifyDeltaNotZero(delta);
+        if (delta > MAX_MANUAL_DELTA || delta < -MAX_MANUAL_DELTA) {
             throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));
         }
         if (reason.isFromOrder()) {
@@ -77,9 +158,6 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
         var normalizedMemo = memo == null || memo.isBlank() ? null : memo;
         if (reason == StockAdjustmentReason.OTHER && normalizedMemo == null) {
             throw BusinessException.of(InventoryErrorCode.STOCK_MEMO_REQUIRED);
-        }
-        if (normalizedMemo != null && !BoundedText.fitsWithin(normalizedMemo, MEMO_MAX_LENGTH)) {
-            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_MEMO, List.of(MEMO_MAX_LENGTH));
         }
         return new StockAdjustment(UUID.randomUUID(), delta, reason, normalizedMemo, null, null, now, operator);
     }
@@ -97,12 +175,22 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      */
     public static StockAdjustment forOrder(int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
                                            @NonNull String orderNumber, @NonNull Instant now) {
-        if (delta == 0) {
-            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));
-        }
+        verifyDeltaNotZero(delta);
         if (!reason.isFromOrder()) {
             throw new IllegalArgumentException("注文に由来する理由ではありません: " + reason);
         }
         return new StockAdjustment(UUID.randomUUID(), delta, reason, null, orderId, orderNumber, now, null);
+    }
+
+    /**
+     * 増減量が 0 でないことを検証する。
+     *
+     * @param delta 増減量
+     * @throws BusinessException 増減量が 0（{@code INVALID_STOCK_DELTA}）
+     */
+    private static void verifyDeltaNotZero(int delta) {
+        if (delta == 0) {
+            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));
+        }
     }
 }

@@ -6,17 +6,20 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 注文手続きの単体テスト
  *
- * <p>支払待ちの注文を確認済みとみなすかの判定（{@link Checkout#acknowledges}）、引当の期限、カートの変化と持ち主の判定を
- * 確認する。注文のときに拒否することは {@code PlaceOrderPendingConfirmationApiTest} などの統合テストが確認する。
+ * <p>支払待ちの注文を確認済みとみなすかの判定（{@link Checkout#acknowledges}）、引当の期限（作成の日時より後であること
+ * を含む）、カートの変化と持ち主の判定を確認する。注文のときに拒否することは {@code PlaceOrderPendingConfirmationApiTest}
+ * などの統合テストが確認する。
  */
 class CheckoutTest {
 
@@ -145,6 +148,51 @@ class CheckoutTest {
 
             // 確認：作成の時刻が開始の時刻
             assertThat(checkout.createdAt()).isEqualTo(NOW);
+        }
+
+        @Test
+        @DisplayName("引当の期限が作成の日時の 1 マイクロ秒後の注文手続きは、作れる")
+        void acceptsExpiryJustAfterCreation() {
+            // 準備：作成の日時の 1 マイクロ秒後の期限
+            var expiresAt = NOW.plus(1, ChronoUnit.MICROS);
+
+            // 操作：注文手続きを作る
+            var checkout = checkoutExpiringAt(expiresAt);
+
+            // 確認：渡した期限のまま
+            assertThat(checkout.expiresAt()).isEqualTo(expiresAt);
+        }
+
+        @Test
+        @DisplayName("引当の期限が作成の日時と同じ注文手続きは、作れず、メッセージに日時が出ない")
+        void rejectsExpiryAtCreation() {
+            // 操作と確認：例外になり、メッセージに日時がない
+            assertThatThrownBy(() -> checkoutExpiringAt(NOW))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageNotContaining(NOW.toString());
+        }
+
+        @Test
+        @DisplayName("引当の期限が作成の日時の 1 マイクロ秒前の注文手続きは、作れず、メッセージに日時が出ない")
+        void rejectsExpiryBeforeCreation() {
+            // 準備：作成の日時の 1 マイクロ秒前の期限
+            var expiresAt = NOW.minus(1, ChronoUnit.MICROS);
+
+            // 操作と確認：例外になり、メッセージに日時がない
+            assertThatThrownBy(() -> checkoutExpiringAt(expiresAt))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageNotContaining(NOW.toString())
+                    .hasMessageNotContaining(expiresAt.toString());
+        }
+
+        /**
+         * 作成の日時が {@link #NOW} で、指定の期限の注文手続きを、コンストラクターで作る。
+         *
+         * @param expiresAt 引当の期限
+         * @return 注文手続き
+         */
+        private Checkout checkoutExpiringAt(Instant expiresAt) {
+            return new Checkout(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, expiresAt, NOW, Set.of());
         }
     }
 

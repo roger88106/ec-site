@@ -272,7 +272,7 @@ class TaxCategoryTest {
                     newDraft("8", APR_2027, APR_2028)), NOW), TaxErrorCode.TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED);
 
             // 確認：税率の一覧は元のまま
-            assertThat(category.rates()).containsExactly(existing);
+            assertThat(category.rates()).usingRecursiveFieldByFieldElementComparator().containsExactly(existing);
         }
     }
 
@@ -536,7 +536,7 @@ class TaxCategoryTest {
                     newDraft("12", APR_2027, null)), NOW);
 
             // 確認：3 件になり、先頭は終了済みの税率のまま
-            assertThat(category.rates()).hasSize(3).first().isEqualTo(ended);
+            assertThat(category.rates()).hasSize(3).first().usingRecursiveComparison().isEqualTo(ended);
         }
     }
 
@@ -611,7 +611,7 @@ class TaxCategoryTest {
         @DisplayName("同じ税率の ID を 2 回指定すると拒否される")
         void rejectsDuplicatedId() {
             // 準備：税率を 1 つ持つ税区分
-            var started = rate("10", null, APR_2027);
+            var started = rate("10", null, null);
             var category = restore(started);
 
             // 操作と確認：業務のエラー INVALID_TAX_RATE_ID で拒否される

@@ -17,7 +17,7 @@ import java.time.format.ResolverStyle;
  *
  * <p>注文の成立のときに、会員の token の生年月日と性別から求める。生年月日は持たない（個人を特定できる情報を持たないため）。
  *
- * @param age    注文日（日本時間）の時点の満年齢。分からなければ null
+ * @param age    注文日（日本時間）の時点の満年齢（{@value #MIN_AGE}〜{@value #MAX_AGE}）。分からなければ null
  * @param gender 性別。分からなければ null
  */
 @ValueObject
@@ -31,6 +31,11 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
     static final int MAX_AGE = 120;
 
     /**
+     * 年齢の下限
+     */
+    static final int MIN_AGE = 0;
+
+    /**
      * 年齢・性別とも不明
      */
     public static final BuyerProfile UNKNOWN = new BuyerProfile(null, null);
@@ -42,6 +47,20 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
      */
     private static final DateTimeFormatter BIRTHDATE = DateTimeFormatter.ofPattern("uuuu-MM-dd")
             .withResolverStyle(ResolverStyle.STRICT);
+
+    /**
+     * コンストラクタ。
+     *
+     * <p>年齢があるときは、{@value #MIN_AGE}〜{@value #MAX_AGE} の範囲にあることを確認する。
+     *
+     * @param age    注文日の時点の満年齢
+     * @param gender 性別
+     */
+    public BuyerProfile {
+        if (age != null && (age < MIN_AGE || age > MAX_AGE)) {
+            throw new IllegalArgumentException("年齢が範囲の外");
+        }
+    }
 
     /**
      * token の生年月日と性別から求める。

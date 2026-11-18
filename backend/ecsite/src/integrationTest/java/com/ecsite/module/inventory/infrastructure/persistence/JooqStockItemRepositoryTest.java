@@ -110,7 +110,7 @@ class JooqStockItemRepositoryTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントへの調整は見つからない")
+        @DisplayName("在庫が作られていないバリアントへの調整は見つからない")
         void rejectsUnknownVariant() {
             // 準備：運営者の調整
             var adjustment = StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW);
@@ -292,7 +292,7 @@ class JooqStockItemRepositoryTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントの履歴は見つからない")
+        @DisplayName("在庫が作られていないバリアントの履歴は見つからない")
         void returnsEmptyHistoryForUnknownVariant() {
             // 操作と確認：空
             assertThat(queryRepository.findAdjustments(UUID.randomUUID(), PageRequest.of(1, 20))).isEmpty();

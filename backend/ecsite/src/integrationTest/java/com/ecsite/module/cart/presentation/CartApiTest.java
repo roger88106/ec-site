@@ -45,8 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * カートの中身の表示は {@code StorefrontCartTest}、会員のカートとカートを移す操作は {@code MemberCartApiTest}、
  * 数量と品目の数の上限の判定そのものは {@code CartTest} が確認する。
  *
- * <p>商品は B 側の API で作る。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
- * 在庫モジュールのリポジトリで直接作る。カートの中身は DB で確認する。テストごとにロールバックする。
+ * <p>商品は B 側の API で作る。バリアントの在庫は、登録と同じトランザクションの中で在庫数 0 で作られるので、
+ * 在庫数は在庫モジュールのリポジトリで直接調整する。カートの中身は DB で確認する。テストごとにロールバックする。
  */
 @IntegrationTest
 @RecordApplicationEvents

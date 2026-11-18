@@ -5,6 +5,7 @@ import org.springframework.modulith.events.CompletedEventPublications;
 import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
+import org.springframework.modulith.events.core.TargetEventPublication;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -75,9 +76,10 @@ public class AsyncEvents {
     }
 
     /**
-     * 条件に合う未完了のイベントを、再発行のジョブと同じく再発行する。
+     * 条件に合う未完了のイベントを再発行する。
      *
      * <p>対象は、発行から {@link #RESUBMIT_AFTER} を過ぎた記録のうち、条件に合うイベントだけ。
+     * 再発行のジョブと違い、処理の状態は見ないので、リスナーの失敗を確認してから呼ぶ。
      * 統合テストは 1 つのコンテキストで DB を共有するので、全件を再発行すると、他のテストが残した失敗も処理される。
      * 再発行の後のリスナーの処理は待たない。
      *
@@ -118,6 +120,24 @@ public class AsyncEvents {
                         registry.findIncompletePublications().stream(), completedPublications.findAll().stream())
                 .anyMatch(publication -> event.test(publication.getEvent())));
         awaitHandled(event);
+    }
+
+    /**
+     * 条件に合うイベントの、指定のリスナーへの発行の記録があるかを返す。
+     *
+     * <p>待たずに、呼んだ時の記録を見る。発行の記録は発行したトランザクションのコミットまでに書かれるので、コミットした後に呼ぶ。
+     * 発行の記録は、完了したものも含めて探す。完了した記録は、リスナー ID を読むために、記録の実装の型（{@link TargetEventPublication}）にキャストする。
+     *
+     * @param event      イベントの条件（テストで作った ID などで、このテストのイベントだけに絞る）
+     * @param listenerId リスナー ID（リスナーのクラスの完全修飾名、メソッド名、引数の型の完全修飾名。
+     *                   例：{@code com.example.Handler.on(com.example.Event)}）
+     * @return 記録が 1 件以上あれば true
+     */
+    public boolean isRecorded(Predicate<Object> event, String listenerId) {
+        return Stream.concat(registry.findIncompletePublications().stream(),
+                        completedPublications.findAll().stream().map(TargetEventPublication.class::cast))
+                .anyMatch(publication -> event.test(publication.getEvent())
+                        && publication.getTargetIdentifier().getValue().equals(listenerId));
     }
 
     /**

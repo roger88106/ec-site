@@ -16,6 +16,24 @@ import java.time.Instant;
 public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration warning) {
 
     /**
+     * コンストラクタ
+     *
+     * @throws IllegalArgumentException 有効期間が正でない、期限が近いとする長さが負か、有効期間より短くない
+     */
+    public AuthorizationTerm {
+        if (!validity.isPositive()) {
+            throw new IllegalArgumentException("与信の有効期間は正にする");
+        }
+        if (warning.isNegative()) {
+            throw new IllegalArgumentException("与信期限が近いとする長さは 0 以上にする");
+        }
+        // 有効期間以上にすると、与信を受けた時点から期限が近いことになる
+        if (warning.compareTo(validity) >= 0) {
+            throw new IllegalArgumentException("与信期限が近いとする長さは、与信の有効期間より短くする");
+        }
+    }
+
+    /**
      * 与信期限を返す。
      *
      * @param authorizedAt 与信の時刻

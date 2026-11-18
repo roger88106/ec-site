@@ -37,6 +37,18 @@ public record PaymentProperties(
         @NotBlank String returnUrl) {
 
     /**
+     * コンストラクタ
+     *
+     * <p>与信の有効期間を作れない組（期限が近いとする期間が有効期間より短くないなど）なら、起動に失敗させる。
+     * 使うときに作るので、作って捨てる。
+     *
+     * @throws IllegalArgumentException 与信の有効期間と期限が近いとする期間から、与信の有効期間を作れない
+     */
+    public PaymentProperties {
+        new AuthorizationTerm(authorizationValidity, authorizationWarning);
+    }
+
+    /**
      * 注文の戻る先の URL を作る。
      *
      * @param orderId 注文 ID

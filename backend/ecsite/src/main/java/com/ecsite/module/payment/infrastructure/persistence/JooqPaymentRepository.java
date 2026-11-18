@@ -220,19 +220,23 @@ class JooqPaymentRepository implements PaymentRepository {
 
     /**
      * レコードから支払を再構築する。
+     *
+     * <p>列挙にない状態、URL のない支払画面、状態と項目が整合しない行は、復元の失敗にする。
      */
     private static Payment restore(PaymentRecord record) {
-        var page = record.getPageId() == null ? null : new PaymentPage(record.getPageId(), record.getPageUrl());
-        return Payment.restore(new Payment.Snapshot(
-                record.getId(),
-                record.getOrderId(),
-                Money.of(record.getAmount()),
-                record.getDeadline(),
-                RestoreGuard.restore("payment", () -> PaymentStatus.valueOf(record.getStatus())),
-                page,
-                record.getAuthorizationRef(),
-                record.getAuthorizedAt(),
-                record.getAwaitingAuthorizationSince(),
-                record.getVersion()));
+        return RestoreGuard.restore("payment", () -> {
+            var page = record.getPageId() == null ? null : new PaymentPage(record.getPageId(), record.getPageUrl());
+            return Payment.restore(new Payment.Snapshot(
+                    record.getId(),
+                    record.getOrderId(),
+                    Money.of(record.getAmount()),
+                    record.getDeadline(),
+                    PaymentStatus.valueOf(record.getStatus()),
+                    page,
+                    record.getAuthorizationRef(),
+                    record.getAuthorizedAt(),
+                    record.getAwaitingAuthorizationSince(),
+                    record.getVersion()));
+        });
     }
 }

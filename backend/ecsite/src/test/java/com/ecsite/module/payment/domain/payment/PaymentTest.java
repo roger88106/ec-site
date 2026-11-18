@@ -7,11 +7,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 支払の単体テスト
  *
- * <p>支払の状態の遷移と、遷移で登録するイベント、与信期限の計算を確認する。
+ * <p>支払の状態の遷移と、遷移で登録するイベント、与信期限の計算、復元のときの状態と項目の整合を確認する。
  *
  * <p>準備のデータと確認の期待値は、同じ定数から作る（準備した物から期待値を取り出さない）。<br />
  * ただし、注文 ID と支払 ID は準備で毎回作るので、準備した支払から取り出して比べる。
@@ -55,6 +59,11 @@ class PaymentTest {
      */
     private static final String OTHER_AUTHORIZATION_REF = "pi_test_other";
 
+    /**
+     * 支払画面
+     */
+    private static final PaymentPage PAGE = new PaymentPage("cs_test_1", "https://pay.example/cs_test_1");
+
     // ============================== テスト ==============================
 
     @Nested
@@ -72,6 +81,100 @@ class PaymentTest {
 
             // 確認：未払いで、渡した値を持ち、画面もイベントもない
             assertCreatedUnpaid(payment, orderId);
+        }
+    }
+
+    @Nested
+    @DisplayName("状態と項目の整合（復元）")
+    class Consistency {
+
+        /**
+         * 整合する、状態・与信の参照・与信の時刻の組に、支払画面と待ち始めた時刻の有無の全ての組を掛ける。
+         *
+         * <p>支払画面と待ち始めた時刻は未払いのときに付き、遷移で消えないので、どの状態でもあってもなくてもよい。
+         *
+         * @return 状態、与信の参照・与信の時刻・支払画面・待ち始めた時刻があるか
+         */
+        static Stream<Arguments> consistentItems() {
+            var rows = Stream.of(
+                    Arguments.of(PaymentStatus.UNPAID, false, false),
+                    Arguments.of(PaymentStatus.NOT_PAID, false, false),
+                    Arguments.of(PaymentStatus.AUTHORIZED, true, true),
+                    Arguments.of(PaymentStatus.CAPTURED, true, true),
+                    Arguments.of(PaymentStatus.AUTHORIZATION_EXPIRED, true, true),
+                    // 支払なしの後に届いた与信から進んだ支払は、与信の時刻を持たない
+                    Arguments.of(PaymentStatus.VOID_PENDING, true, true),
+                    Arguments.of(PaymentStatus.VOID_PENDING, true, false),
+                    Arguments.of(PaymentStatus.VOIDED, true, true),
+                    Arguments.of(PaymentStatus.VOIDED, true, false),
+                    Arguments.of(PaymentStatus.REFUND_PENDING, true, true),
+                    Arguments.of(PaymentStatus.REFUND_PENDING, true, false),
+                    Arguments.of(PaymentStatus.REFUNDED, true, true),
+                    Arguments.of(PaymentStatus.REFUNDED, true, false));
+            return rows.flatMap(row -> Stream.of(true, false).flatMap(hasPage -> Stream.of(true, false)
+                    .map(isAwaiting -> Arguments.of(row.get()[0], row.get()[1], row.get()[2], hasPage, isAwaiting))));
+        }
+
+        @ParameterizedTest(name = "「{0}」与信の参照 {1}、与信の時刻 {2}、支払画面 {3}、待ち始めた時刻 {4}")
+        @MethodSource("consistentItems")
+        @DisplayName("状態と項目が整合すれば、復元でき、同じ値を持つ")
+        void restoresConsistentItems(PaymentStatus status, boolean hasRef, boolean hasAuthorizedAt, boolean hasPage,
+                                     boolean isAwaiting) {
+            // 準備：整合する支払のスナップショット
+            var snapshot = snapshotOf(status, hasRef, hasAuthorizedAt, hasPage, isAwaiting);
+
+            // 操作：復元する
+            var payment = Payment.restore(snapshot);
+
+            // 確認：全ての項目が同じ
+            assertThat(payment.toSnapshot()).usingRecursiveComparison().isEqualTo(snapshot);
+        }
+
+        @ParameterizedTest(name = "「{0}」与信の参照 {1}、与信の時刻 {2}")
+        @CsvSource({
+                // 与信がない状態は、与信の参照も与信の時刻も持たない
+                "UNPAID, true, false", "UNPAID, false, true", "UNPAID, true, true",
+                "NOT_PAID, true, false", "NOT_PAID, false, true", "NOT_PAID, true, true",
+                // 未払いから与信済みにした支払と、そこから進んだ支払は、両方を持つ
+                "AUTHORIZED, false, false", "AUTHORIZED, true, false", "AUTHORIZED, false, true",
+                "CAPTURED, false, false", "CAPTURED, true, false", "CAPTURED, false, true",
+                "AUTHORIZATION_EXPIRED, false, false", "AUTHORIZATION_EXPIRED, true, false", "AUTHORIZATION_EXPIRED, false, true",
+                // 与信を取り消す・返金する状態は、与信の参照を持つ
+                "VOID_PENDING, false, false", "VOID_PENDING, false, true",
+                "VOIDED, false, false", "VOIDED, false, true",
+                "REFUND_PENDING, false, false", "REFUND_PENDING, false, true",
+                "REFUNDED, false, false", "REFUNDED, false, true"})
+        @DisplayName("状態と与信の参照・与信の時刻が整合しなければ、復元できず、メッセージに値が出ない")
+        void rejectsInconsistentItems(PaymentStatus status, boolean hasRef, boolean hasAuthorizedAt) {
+            // 準備：整合しない支払のスナップショット（支払画面と待ち始めた時刻は持たせる）
+            var snapshot = snapshotOf(status, hasRef, hasAuthorizedAt, true, true);
+
+            // 操作と確認：例外になり、メッセージに状態の名前があり、与信の参照と時刻がない
+            assertThatThrownBy(() -> Payment.restore(snapshot))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(status.name())
+                    .hasMessageNotContaining(AUTHORIZATION_REF)
+                    .hasMessageNotContaining(ORDERED_AT.toString());
+        }
+
+        /**
+         * 支払のスナップショットを作る。
+         *
+         * <p>持たせる項目は、与信の参照が {@link #AUTHORIZATION_REF}、与信の時刻が注文日時、支払画面が {@link #PAGE}、
+         * 待ち始めた時刻が支払の期限。
+         *
+         * @param status          状態
+         * @param hasRef          与信の参照を持たせるか
+         * @param hasAuthorizedAt 与信の時刻を持たせるか
+         * @param hasPage         支払画面を持たせるか
+         * @param isAwaiting      待ち始めた時刻を持たせるか
+         * @return スナップショット
+         */
+        private static Payment.Snapshot snapshotOf(PaymentStatus status, boolean hasRef, boolean hasAuthorizedAt,
+                                                   boolean hasPage, boolean isAwaiting) {
+            return new Payment.Snapshot(UUID.randomUUID(), UUID.randomUUID(), AMOUNT, DEADLINE, status,
+                    hasPage ? PAGE : null, hasRef ? AUTHORIZATION_REF : null, hasAuthorizedAt ? ORDERED_AT : null,
+                    isAwaiting ? DEADLINE : null, 0);
         }
     }
 

@@ -6,7 +6,7 @@ import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { removeGitEnv, withoutGitEnv } from './git-env.mjs'
-import { emptyListReason, listGitFiles, listUntrackedFiles, splitNulList } from './git-files.mjs'
+import { emptyListReason, listGitFiles, listIgnoredTrackedFiles, listTrackedFiles, listUntrackedFiles, splitNulList } from './git-files.mjs'
 
 /** 試す Git のリポジトリ */
 const repo = mkdtempSync(path.join(tmpdir(), 'git-files-'))
@@ -61,6 +61,59 @@ describe('Git の対象のファイルの一覧', () => {
 
   test('追跡していないファイルだけの一覧は、無視されるファイルと追跡しているファイルを返さない', () => {
     assert.deepEqual(listUntrackedFiles([], repo), ['untracked.txt'])
+  })
+})
+
+describe('追跡しているファイルの一覧', () => {
+  test('追跡しているファイルだけを返す（作業ツリーから消えたものを含み、追跡していないものと無視されるものは含めない）', () => {
+    assert.deepEqual(listTrackedFiles(repo).sort(), ['.gitignore', 'docs/a.md', 'frontend/app.ts', 'removed.txt', 'tracked.txt'])
+  })
+
+  test('リポジトリの外では git が失敗して例外を投げる', () => {
+    const outside = mkdtempSync(path.join(tmpdir(), 'git-files-outside-'))
+    after(() => rmSync(outside, { recursive: true, force: true }))
+    const saved = process.env.GIT_CEILING_DIRECTORIES
+    process.env.GIT_CEILING_DIRECTORIES = path.dirname(outside)
+    try {
+      assert.throws(() => listTrackedFiles(outside))
+      assert.throws(() => listIgnoredTrackedFiles(outside))
+    } finally {
+      if (saved === undefined) delete process.env.GIT_CEILING_DIRECTORIES
+      else process.env.GIT_CEILING_DIRECTORIES = saved
+    }
+  })
+})
+
+describe('.gitignore で除外の対象になる追跡しているファイルの一覧', () => {
+  /** 除外のファイル（a.log）を `git add -f` で追跡した、一時のリポジトリ */
+  function makeIgnoredRepo() {
+    const dir = mkdtempSync(path.join(tmpdir(), 'git-files-ignored-'))
+    after(() => rmSync(dir, { recursive: true, force: true }))
+    const run = (...args) => execFileSync('git', args, { cwd: dir, env: withoutGitEnv(), stdio: 'ignore' })
+    run('init', '-q')
+    writeFileSync(path.join(dir, '.gitignore'), '*.log\n')
+    writeFileSync(path.join(dir, 'a.log'), 'x')
+    writeFileSync(path.join(dir, 'b.txt'), 'x')
+    run('add', '-f', '.gitignore', 'a.log', 'b.txt')
+    return { dir, run }
+  }
+
+  test('.gitignore が除外するファイルだけを返す', () => {
+    const { dir } = makeIgnoredRepo()
+    assert.deepEqual(listIgnoredTrackedFiles(dir), ['a.log'])
+  })
+
+  test('.git/info/exclude は読まない（手元と CI で同じ結果にする）', () => {
+    const { dir } = makeIgnoredRepo()
+    writeFileSync(path.join(dir, '.git', 'info', 'exclude'), 'b.txt\n')
+    assert.deepEqual(listIgnoredTrackedFiles(dir), ['a.log'])
+  })
+
+  test('大文字と小文字は、core.ignorecase が true でも区別する', () => {
+    const { dir, run } = makeIgnoredRepo()
+    writeFileSync(path.join(dir, '.gitignore'), 'B.TXT\n')
+    run('config', 'core.ignorecase', 'true')
+    assert.deepEqual(listIgnoredTrackedFiles(dir), [])
   })
 })
 

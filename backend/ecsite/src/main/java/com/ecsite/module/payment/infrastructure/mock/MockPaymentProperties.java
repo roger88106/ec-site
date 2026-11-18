@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
+import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentMock;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -11,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * @param baseUrl mock の支払画面を出すバックエンドの URL（ブラウザーから開ける URL）
  */
+@ConditionalOnPaymentMock
 @Validated
 @ConfigurationProperties("ecsite.payment.mock")
 public record MockPaymentProperties(@NotBlank String baseUrl) {

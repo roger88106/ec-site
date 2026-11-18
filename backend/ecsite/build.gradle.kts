@@ -872,7 +872,8 @@ tasks.withType<JavaCompile>().configureEach {
             // 生成した interface の @Nullable の引数を、実装側が注釈なしで上書きした所と、
             // 生成したモデルの @Nullable の getter の値を、null でないとみなす引数に渡す所
             option("NullAway:AcknowledgeRestrictiveAnnotations", "true")
-            // JSpecifyMode は付けない（JDK 22 以上が必要で、ここは JDK 21）
+            // ジェネリクスの型引数と配列の要素の null も検査する（JSpecify mode。JDK 22 以上が必要）
+            option("NullAway:JSpecifyMode", "true")
         } else {
             // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
             // 意図して null を渡す

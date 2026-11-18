@@ -4,7 +4,6 @@ import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.infrastructure.ConditionalOnPaymentStripe;
 import com.stripe.StripeClient;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,11 +12,10 @@ import java.time.Clock;
 /**
  * Stripe の決済サービスの設定
  *
- * <p>決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にする。
+ * <p>決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にし、Stripe の API のクライアントを作る。
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnPaymentStripe
-@EnableConfigurationProperties(StripeProperties.class)
 class StripeConfig {
 
     /**

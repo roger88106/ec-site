@@ -1,17 +1,15 @@
 package com.ecsite.module.shipping.infrastructure;
 
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
  * 出荷モジュールの設定
  *
- * <p>出荷の設定を有効にする。
+ * <p>物流サービスの通知の署名を作る。
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ShippingProperties.class)
 class ShippingConfig {
 
     /**

@@ -2,6 +2,7 @@ package com.ecsite.module.cart.application.job;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
@@ -20,7 +21,7 @@ import java.time.Duration;
 @Validated
 @ConfigurationProperties("ecsite.cart.cleanup")
 public record CartCleanupProperties(
-        @DefaultValue("1h") @NotNull Duration interval,
-        @DefaultValue("0d") @NotNull Duration retention,
+        @DefaultValue("1h") @NotNull @DurationMin(millis = 1) Duration interval,
+        @DefaultValue("0d") @NotNull @DurationMin(nanos = 0) Duration retention,
         @DefaultValue("1000") @Min(1) int batchSize) {
 }

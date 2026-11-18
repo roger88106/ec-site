@@ -46,6 +46,7 @@ describe('スロットの値', () => {
       publicBucket: 'ec-site-images',
       incomingBucket: 'ec-site-images-incoming',
       cookiePrefix: '',
+      storeOrigin: 'http://localhost:3000',
     })
   })
 
@@ -60,6 +61,7 @@ describe('スロットの値', () => {
       publicBucket: 'ec-site-images-2',
       incomingBucket: 'ec-site-images-incoming-2',
       cookiePrefix: 's2-',
+      storeOrigin: 'http://slot2.localhost:23000',
     })
     assert.equal(slotValues(3).adminPort, 35173)
     assert.equal(slotValues(1).database, 'ec_site_1')
@@ -358,11 +360,11 @@ describe('既にある仮押さえの扱い', () => {
 })
 
 describe('環境変数の組み立て', () => {
-  test('スロット 0 は、どの対象でも何も上書きしない（DC-104-1）', () => {
+  test('スロット 0 は、どの対象でも何も上書きせず、変更の前と同じ（DC-104-1、DC-453-3）', () => {
     for (const target of ['backend', 'store', 'admin']) assert.deepEqual(slotEnv(0, target), {})
   })
 
-  test('バックエンドの環境変数', () => {
+  test('バックエンドの環境変数。支払後の戻り先は、スロットごとのホスト名の店舗画面を指す（DC-453-1）', () => {
     assert.deepEqual(slotEnv(1, 'backend'), {
       SERVER_PORT: '18080',
       MANAGEMENT_SERVER_PORT: '19080',
@@ -370,18 +372,26 @@ describe('環境変数の組み立て', () => {
       ECSITE_MEDIA_STORAGE_INCOMING_BUCKET: 'ec-site-images-incoming-1',
       ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET: 'ec-site-images-1',
       ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL: 'http://localhost:8333/ec-site-images-1',
-      ECSITE_PAYMENT_RETURN_URL: 'http://localhost:13000/orders/{orderId}?payment=returned',
+      ECSITE_PAYMENT_RETURN_URL: 'http://slot1.localhost:13000/orders/{orderId}?payment=returned',
       ECSITE_PAYMENT_MOCK_BASE_URL: 'http://localhost:18080',
     })
   })
 
-  test('店舗画面の環境変数', () => {
+  test('店舗画面の環境変数。公開 URL だけがスロットごとのホスト名で、サーバーからの URL は localhost のまま（DC-453-1）', () => {
     assert.deepEqual(slotEnv(2, 'store'), {
       STORE_API_BASE_URL: 'http://localhost:28080/api/store',
-      AUTH_URL: 'http://localhost:23000',
+      AUTH_URL: 'http://slot2.localhost:23000',
       STORE_COOKIE_PREFIX: 's2-',
       STORE_MOCK_PAYMENT_ORIGIN: 'http://localhost:28080',
     })
+  })
+
+  test('スロット 1〜3 の公開 URL と支払後の戻り先は、slot<番号>.localhost:<店舗画面のポート>（DC-453-1）', () => {
+    for (const slot of [1, 2, 3]) {
+      const origin = `http://slot${slot}.localhost:${slotValues(slot).storePort}`
+      assert.equal(slotEnv(slot, 'store').AUTH_URL, origin)
+      assert.equal(slotEnv(slot, 'backend').ECSITE_PAYMENT_RETURN_URL, `${origin}/orders/{orderId}?payment=returned`)
+    }
   })
 
   test('管理画面の環境変数', () => {
@@ -459,32 +469,39 @@ describe('スロットの値を書き写したファイル', () => {
     return client
   }
 
-  for (const [label, relative, origin, port] of [
-    ['店舗画面', 'docker/keycloak/realms/ec-store-realm.json', 'http://localhost:3000', 'storePort'],
-    ['管理画面', 'docker/keycloak/realms/ec-admin-realm.json', 'http://localhost:5173', 'adminPort'],
-  ]) {
-    test(`${label}の realm は、スロット 1〜3 の origin を redirectUris、webOrigins、post.logout.redirect.uris に含む`, () => {
-      const client = clientAllowing(relative, origin)
-      for (const slot of slots) {
-        const o = `http://localhost:${slotValues(slot)[port]}`
-        assert.ok(client.redirectUris.includes(`${o}/*`), `redirectUris に ${o}/* がない`)
-        assert.ok(client.webOrigins.includes(o), `webOrigins に ${o} がない`)
-        assert.ok(client.attributes['post.logout.redirect.uris'].split('##').includes(`${o}/*`), `post.logout.redirect.uris に ${o}/* がない`)
-      }
-    })
+  /** client が origin を redirectUris、webOrigins、post.logout.redirect.uris の全てで許す */
+  const assertAllows = (client, o) => {
+    assert.ok(client.redirectUris.includes(`${o}/*`), `redirectUris に ${o}/* がない`)
+    assert.ok(client.webOrigins.includes(o), `webOrigins に ${o} がない`)
+    assert.ok(client.attributes['post.logout.redirect.uris'].split('##').includes(`${o}/*`), `post.logout.redirect.uris に ${o}/* がない`)
   }
 
-  test('.claude/launch.json は、スロットごとの画面の起動に、スロットのポートと番号を渡す', () => {
+  // 許す先は redirectUris、webOrigins、post.logout.redirect.uris の 3 つ（assertAllows）
+  test('店舗画面の realm は、スロット 1〜3 の slot<番号>.localhost と従来の localhost の origin を許す（DC-453-2）', () => {
+    const client = clientAllowing('docker/keycloak/realms/ec-store-realm.json', 'http://localhost:3000')
+    for (const slot of slots) {
+      assertAllows(client, `http://slot${slot}.localhost:${slotValues(slot).storePort}`)
+      assertAllows(client, `http://localhost:${slotValues(slot).storePort}`)
+    }
+  })
+
+  test('管理画面の realm は、スロット 1〜3 の localhost の origin を許す（管理画面のホスト名は変えない）', () => {
+    const client = clientAllowing('docker/keycloak/realms/ec-admin-realm.json', 'http://localhost:5173')
+    for (const slot of slots) assertAllows(client, `http://localhost:${slotValues(slot).adminPort}`)
+  })
+
+  test('.claude/launch.json は、スロットの番号とポートを渡し、店舗画面だけ url を slot<番号>.localhost にする（DC-453-1）', () => {
     const configs = readJson('.claude/launch.json').configurations
     for (const slot of slots) {
-      for (const [target, port] of [
-        ['admin', 'adminPort'],
-        ['store', 'storePort'],
+      for (const [target, port, url] of [
+        ['admin', 'adminPort', undefined],
+        ['store', 'storePort', `http://slot${slot}.localhost:${slotValues(slot).storePort}`],
       ]) {
         const config = configs.find((c) => c.name === `${target}-${slot}`)
         assert.ok(config, `${target}-${slot} がない`)
         assert.equal(config.port, slotValues(slot)[port])
         assert.deepEqual(config.runtimeArgs, ['scripts/dev/slot.mjs', 'run', target, String(slot)])
+        assert.equal(config.url, url)
       }
     }
   })

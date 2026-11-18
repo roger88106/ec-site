@@ -38,8 +38,8 @@ const FIELD_BY_ERROR_CODE: Partial<Record<ErrorCode, OrderField>> = {
   INVALID_PHONE_NUMBER: 'phone',
 }
 
-/** 次にすべきことがカートの画面にあるエラーコード（在庫不足、注文手続きの後のカートの変更） */
-const BACK_TO_CART_ERROR_CODES = new Set<ErrorCode>(['OUT_OF_STOCK', 'CART_CHANGED'])
+/** 次にすべきことがカートの画面にあるエラーコード（購入できない品目、在庫不足、注文手続きの後のカートの変更） */
+const BACK_TO_CART_ERROR_CODES = new Set<ErrorCode>(['CART_NOT_ORDERABLE', 'OUT_OF_STOCK', 'CART_CHANGED'])
 
 /**
  * 注文のサーバーアクションの結果を、フォームに出すエラーにする（店舗画面の構成の「結果の知らせ方」）。

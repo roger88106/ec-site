@@ -57,9 +57,12 @@ server.listen({
   },
 })
 
-beforeEach(() => {
+beforeEach(async () => {
   resetRequest()
   resetAuth()
+  // 再取得の結果の保持（プロセスのメモリー）を消す。同じ refresh token を使い回すテストが、互いに影響しないようにする。
+  // 静的に読み込まない。refresh.ts は読み込むときに設定を読むので、テストのファイルが読み込む前に環境変数を差し替えられなくなるため
+  ;(await import('@/auth/refresh')).resetRefreshRetention()
 })
 
 afterEach(() => {

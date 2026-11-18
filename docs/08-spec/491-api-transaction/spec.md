@@ -1,6 +1,6 @@
 # Spec 491：モジュールをまたぐ API のトランザクションの前提を、実行時に守る
 
-種類：整理　規模：M　ステータス：草案
+種類：整理　規模：M　ステータス：確定
 
 ## 背景と目的
 
@@ -8,7 +8,7 @@
 
 目的は、誤った呼び方を実行時の例外にすることである。消費者・運営者に見える振る舞いは変えない。本番のコードの呼び方は、今は全て前提に合っている（調べた結果は、「スコープ」の決定の後に書く）。追跡の issue は #491（全体の issue #544 の sub-issue。段階 2 の 5 番目）。
 
-規模は、判定の表では 2 つ以上のモジュールにまたがるので L である。plan に書く中身がなく、API の契約と DB の構造を変えず、全てのモジュールに同じ機械的な基準を適用するので、特例で M を提案する（Open questions の 1）。振る舞いを変えず、注釈とテストの呼び方の整理だけなので、冒頭に「危険度：高」の行は書かない。
+規模は、判定の表では 2 つ以上のモジュールにまたがるので L である。plan に書く中身がなく、API の契約と DB の構造を変えず、全てのモジュールに同じ機械的な基準を適用するので、特例で M にした（issue 担当のセッションが、利用者の委任で承認した）。振る舞いを変えず、注釈とテストの呼び方の整理だけなので、冒頭に「危険度：高」の行は書かない。
 
 ## スコープ
 
@@ -51,8 +51,10 @@
 | カート | `CartContentsApi.removeItems` | 加わる | `CartService.removeItems` |
 | 出荷 | `ShippingApi.create` | 加わる | `ShipmentService.create` |
 | メディア | `MediaApi.prepareImage` | 外 | `MediaService.prepareImage` |
-| メディア | `MediaApi.discardImage` | 外 | `MediaService.discardImage` |
+| メディア | `MediaApi.discardImage` | 外 ※ | `MediaService.discardImage` |
 | メディア | `MediaApi.registerImage` | 加わる（済み） | `MediaService.registerImage`（変えない） |
+
+※：今の Javadoc には前提がない。ファイルの保存は外部サービスなので、基準を適用して「外」にし、Javadoc にも前提を書く。
 
 前提を持たない（変えない）メソッドは次のとおり。
 
@@ -123,11 +125,7 @@
 
 ## Open questions
 
-1. 規模を M（特例）にしてよいか。
-2. 注釈を `api/` でなく、`api/` が呼び出す service のメソッドに付けてよいか（推奨。決定の 2 番目）。代わりの案は、`api/` のメソッドに付け、規則と ArchUnit の検査を変えることである。
-3. メディアの `discardImage`（配信のファイルを削除する）を「外」に含めてよいか。Javadoc に前提がないが、ファイルの保存は外部サービスで、基準を適用すると「外」になる。
-
-これらは、issue 担当のセッションが確認する。
+なし。
 
 ## tasks
 

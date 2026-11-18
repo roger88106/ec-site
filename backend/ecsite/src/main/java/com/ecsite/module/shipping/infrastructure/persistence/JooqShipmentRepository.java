@@ -86,6 +86,8 @@ class JooqShipmentRepository implements ShipmentRepository {
     public List<Shipment> findAllByTrackingForUpdate(Carrier carrier, TrackingNumber trackingNumber) {
         return dsl.selectFrom(SHIPMENT)
                 .where(SHIPMENT.CARRIER.eq(carrier.name()), SHIPMENT.TRACKING_NUMBER.eq(trackingNumber.value()))
+                // 同じ番号の通知の同時の処理を直列にする。いつも同じ順にロックして、デッドロックを避ける
+                .orderBy(SHIPMENT.ID)
                 .forUpdate()
                 .fetch(JooqShipmentRepository::toShipment);
     }

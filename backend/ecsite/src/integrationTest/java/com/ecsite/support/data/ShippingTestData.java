@@ -5,6 +5,7 @@ import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -70,7 +71,22 @@ public class ShippingTestData {
      * @param statusName     配送状態の名前
      */
     public void notifyStatus(Carrier carrier, String trackingNumber, String statusName) throws Exception {
-        var notification = mockCarrier.notification(carrier, trackingNumber, statusName);
+        notifyStatus(mockCarrier.notification(carrier, trackingNumber, statusName));
+    }
+
+    /**
+     * mock の物流サービスから、発生日時を指定した署名付きの配送状態の通知をエンドポイントへ送り、200 を確認する。
+     *
+     * @param carrier        物流サービス
+     * @param trackingNumber 送り状番号
+     * @param statusName     配送状態の名前
+     * @param occurredAt     状態が変わった日時
+     */
+    public void notifyStatus(Carrier carrier, String trackingNumber, String statusName, Instant occurredAt) throws Exception {
+        notifyStatus(mockCarrier.notification(carrier, trackingNumber, statusName, occurredAt));
+    }
+
+    private void notifyStatus(MockCarrier.SignedNotification notification) throws Exception {
         mockMvc.perform(post("/api/webhooks/carrier")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Carrier-Signature", notification.signature())

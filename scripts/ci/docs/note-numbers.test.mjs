@@ -77,6 +77,16 @@ describe('注の番号の検査', () => {
     assert.deepEqual(findNoteProblems(['a ※2', '`の「x」 ※1`', '※2：2'].join('\n')), [])
   })
 
+  test('太字の文書の名前と、『』で囲んだ文書の名前の後の「の「…」 ※N」も、他の文書の注なので数えない', () => {
+    const names = new Map([['架空の文書', 'docs/x/fictional.md']])
+    for (const before of ['**架空の文書**', '__架空の文書__', '『架空の文書』', '**[架空の文書](../x/fictional.md)**']) {
+      const text = ['a ※2', `${before}の「起票」 ※1 を参照`, '※2：2'].join('\n')
+      assert.deepEqual(findNoteProblems(text, names, 'docs/a.md'), [], before)
+    }
+    // 文書の名前の一覧がなければ、同じ行は同じ文書の参照として数え、順序の問題になる（上の確認が空の一覧でも通る誤りを防ぐ）
+    assert.equal(findNoteProblems(['a ※2', '**架空の文書**の「起票」 ※1 を参照', '※2：2'].join('\n')).length, 1)
+  })
+
   test('前がリンクか文書の名前でない「の「…」 ※N」（この文書の「…」、表の「…」）は、同じ文書の注として数える', () => {
     const names = new Map([['開発の進め方', 'docs/05-開発規則/workflow.md']])
     assert.equal(findNoteProblems(['a ※2', 'この文書の「起票」 ※1', '※1：1', '※2：2'].join('\n'), names).length, 1)

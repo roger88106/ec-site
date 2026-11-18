@@ -31,9 +31,9 @@
 
 | 場所 | 用途 |
 |------|------|
-| `lib/docs/` | 参照の先の文書の決め方、検査の対象の文書の一覧（機能仕様、日本語の文書）、検査が読む画面のソースの定義（`screen-sources.mjs`） |
+| `lib/docs/` | 参照の先の文書の決め方、検査の対象の文書の一覧（機能仕様、日本語の文書）、検査が読む画面のソースの定義（`screen-sources.mjs`）、参照と日本語の検査が見ないファイルの判定（`excluded-files.mjs`） |
 | `lib/git/` | git の分岐点と、shallow clone の確認 |
-| `lib/source/` | ソースの中のコメントと行番号の読み取りと、読めない行の失敗の文 |
+| `lib/source/` | ソースの中のコメントと行番号の読み取りと、読めない行の失敗の文、生成物のフォルダーの判定（`generated-folders.mjs`） |
 | `lib/output/` | 除外の一覧の読み方 |
 | `lib/ac/` | `ac-check` だけが使う、AC 一覧の読み書きと照合 |
 | `lib/frontend/` | `frontend-rules` だけが使う、ファイルの振り分けと規則のモジュール |

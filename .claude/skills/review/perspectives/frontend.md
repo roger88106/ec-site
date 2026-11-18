@@ -44,11 +44,11 @@ const Chart = React.lazy(() => import('./Chart'))
 
 ### 拡張の手間
 
-悪い例：種類を足しても、変え忘れが型エラーにならない。
+悪い例：種類を追加しても、変え忘れが型エラーにならない。
 ```ts
 const label = (kind: string) => (kind === 'a' ? 'A' : 'B')
 ```
-良い例：種類の定義 1 つに集め、足し忘れを型エラーにする。
+良い例：種類の定義 1 つに集め、追加し忘れを型エラーにする。
 ```ts
 const labels = { a: 'A', b: 'B' } satisfies Record<Kind, string>
 ```

@@ -8,8 +8,8 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
+import org.springframework.modulith.events.ResubmissionOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -59,7 +59,7 @@ class EventResubmissionJob {
      * <ul>
      *     <li>最後の処理の結果が出ていない（処理中など）</li>
      *     <li>最後の試行から、再発行の間隔がたっていない</li>
-     *     <li>処理の回数（発行の時の 1 回と再発行の回数）が上限に達した。最後の処理に失敗していれば、止めた印を付けてエラーのログに出す</li>
+     *     <li>処理の回数（発行の時の 1 回と再発行の回数）が上限に達した。最後の処理に失敗していれば、止めたイベントの表に移してエラーのログに出す</li>
      * </ul>
      * <p>終わりに、未完了と止めたイベントの件数をメトリクスに記録する。時間と回数は {@link Properties}。
      */
@@ -74,25 +74,23 @@ class EventResubmissionJob {
         }
         log.debug("未完了のイベントを再発行する（最後の処理に失敗し、発行から {} より前で、最後の試行から {} 以上たち、処理の回数が {} より少ないもの）",
                 properties.minAge(), properties.interval(), properties.maxAttempts());
-        var now = clock.instant();
-        var publishedBefore = now.minus(properties.minAge());
-        var lastTriedBy = now.minus(properties.interval());
+        var lastTriedBy = clock.instant().minus(properties.interval());
         // 選ぶ条件：
-        // - 最後の処理に失敗した（処理中のものは、リスナーの処理が続いていることがあるので選ばない。
-        //   処理の途中でインスタンスが止まったものは、Spring Modulith の監視（spring.modulith.events.staleness）が
-        //   失敗の状態にした後の回で選ぶ）
+        // - 最後の処理に失敗した（失敗したイベントの再発行の操作は、失敗の状態の行だけを読むので、絞り込みの条件に置かない。
+        //   処理中のものは、リスナーの処理が続いていることがあるので読まれない。処理の途中でインスタンスが止まったものは、
+        //   Spring Modulith の監視（spring.modulith.events.staleness）が失敗の状態にした後の回で読まれる）
         // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
         // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
         // - 回数が上限より少ない
-        // 再発行の選択肢（ResubmissionOptions）は使わない。FAILED のものを件数の上限まで古い順に読んでから絞るので、
-        // 止めたイベントが溜まると、新しいイベントが再発行されなくなるため
-        incompletePublications.resubmitIncompletePublications(publication ->
-                publication.getStatus() == EventPublication.Status.FAILED
-                        && publication.getPublicationDate().isBefore(publishedBefore)
-                        && !publication.getLastPublicationDate().isAfter(lastTriedBy)
-                        && publication.getCompletionAttempts() < properties.maxAttempts());
-        publicationMetrics.record(publicationRecords.countIncomplete(),
-                publicationRecords.countStopped(properties.maxAttempts()));
+        // 読む件数の上限は付けない（件数の上限を最大の値にする）。この操作は失敗の状態の行を発行の古い順に件数の上限まで
+        // 読んでから絞るので、上限を付けると、古い失敗したイベントだけが毎回読まれ、新しいイベントの再発行が遅れるため。
+        // 止めたイベントは表を移すので、失敗の状態の行は、まだ再発行するものだけになる
+        incompletePublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
+                .withMinAge(properties.minAge())
+                .withBatchSize(Integer.MAX_VALUE)
+                .withFilter(publication -> !publication.getLastPublicationDate().isAfter(lastTriedBy)
+                        && publication.getCompletionAttempts() < properties.maxAttempts()));
+        publicationMetrics.record(publicationRecords.countIncomplete(), publicationRecords.countStopped());
     }
 
     /**

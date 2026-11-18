@@ -16,7 +16,7 @@
   - 依存：T547-02-01
   - 範囲：`backend/ecsite/src/main/resources/db/migration/`
   - 確認方法：論理名のコメントの検査を含む既存の検査が通る
-- [ ] **T547-02-03** [リスク] T547-02-01 のテストが通るように、止める操作・再発行の操作・メトリクスを書き換える。
+- [x] **T547-02-03** [リスク] T547-02-01 のテストが通るように、止める操作・再発行の操作・メトリクスを書き換える。
   - 依存：T547-02-02
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/config/event/`
   - 確認方法：`EventResubmissionJobTest` が通る

@@ -503,13 +503,14 @@ class EventResubmissionJobTest {
             // 準備：処理の回数の上限 2 のジョブで、処理を 2 回失敗したイベント
             var job = jobWithMaxAttempts(2);
             var event = failedUntil(job, 2);
+            var publication = publicationOf(event);
 
             // 操作：次の回で止める
             logs.clear();
             resubmitTwice(job);
 
             // 確認：イベントの中身（メールアドレス）が、止めたログにも、ほかのログにもない
-            assertThat(logsOf(publicationOf(event))).singleElement()
+            assertThat(logsOf(publication)).singleElement()
                     .satisfies(entry -> assertThat(entry.text()).doesNotContain(event.email()));
             assertThat(logs.text()).doesNotContain(event.email());
         }

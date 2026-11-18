@@ -7,14 +7,15 @@ import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Spring Modulith のイベントの記録の直接の読み書き
+ * Spring Modulith のイベントの記録と、止めたイベントの直接の読み書き
  *
- * <p>止めた印は、処理の回数を上限より 1 つ多くした値で表す。
+ * <p>止めたイベントは、イベントの記録の表から止めたイベントの表に移して表す。
  */
 @Component
 @RequiredArgsConstructor
@@ -26,6 +27,19 @@ class EventPublicationRecords {
      * <p>Spring Modulith の表。モジュールの外なので、jOOQ の生成クラスでなく名前で指す。
      */
     private static final Table<?> EVENT_PUBLICATION = DSL.table(DSL.name("common", "event_publication"));
+
+    /**
+     * 止めたイベントのテーブル
+     *
+     * <p>列は、イベントの記録の表の列のうち復旧に必要なものと同じ名前に、止めた時刻を加えたもの。
+     * イベントの記録の表と同じく、名前で指す。
+     */
+    private static final Table<?> EVENT_PUBLICATION_STOPPED = DSL.table(DSL.name("common", "event_publication_stopped"));
+
+    /**
+     * イベントの記録を移す共通テーブル式の名前
+     */
+    private static final String MOVED = "moved";
 
     /**
      * イベントの記録の ID
@@ -43,6 +57,16 @@ class EventPublicationRecords {
     private static final Field<String> LISTENER_ID = DSL.field(DSL.name("listener_id"), String.class);
 
     /**
+     * イベントを JSON にした中身
+     */
+    private static final Field<String> SERIALIZED_EVENT = DSL.field(DSL.name("serialized_event"), String.class);
+
+    /**
+     * 発行した時刻
+     */
+    private static final Field<Instant> PUBLICATION_DATE = DSL.field(DSL.name("publication_date"), Instant.class);
+
+    /**
      * 処理の状態
      */
     private static final Field<String> STATUS = DSL.field(DSL.name("status"), String.class);
@@ -53,9 +77,19 @@ class EventPublicationRecords {
     private static final Field<Integer> COMPLETION_ATTEMPTS = DSL.field(DSL.name("completion_attempts"), Integer.class);
 
     /**
+     * 最後に再発行した時刻
+     */
+    private static final Field<Instant> LAST_RESUBMISSION_DATE = DSL.field(DSL.name("last_resubmission_date"), Instant.class);
+
+    /**
      * 処理を終えた時刻
      */
     private static final Field<Instant> COMPLETION_DATE = DSL.field(DSL.name("completion_date"), Instant.class);
+
+    /**
+     * 止めた時刻
+     */
+    private static final Field<Instant> STOPPED_DATE = DSL.field(DSL.name("stopped_date"), Instant.class);
 
     /**
      * 処理を終えた状態
@@ -73,22 +107,35 @@ class EventPublicationRecords {
     private final DSLContext dsl;
 
     /**
-     * 処理の回数が上限に達し、最後の処理に失敗したイベントに、止めた印を付ける。
+     * 止めた時刻を取る時計
+     */
+    private final Clock clock;
+
+    /**
+     * 処理の回数が上限以上で、最後の処理に失敗した未完了のイベントを、止めたイベントの表に移す。
      *
      * @param maxAttempts 処理の回数の上限
-     * @return 印を付けたイベント
+     * @return 移したイベント
      */
     List<StoppedPublication> markStopped(int maxAttempts) {
-        // Spring Modulith の再発行は処理の回数を見ずに読むので、印は回数を上限より 1 つ多くした値にする。
-        // 1 文で印を付け、付けた行だけを返す（同じイベントを 2 回ログに出さない）。
+        // 1 文で消して入れ、移した行だけを返す（2 台が同時に動いても、同じイベントを 2 回移さず、2 回ログに出さない）。
+        // 上限を下げたときも止めるので、回数は上限以上を選ぶ。
         // 処理中（RESUBMITTED など）のものは、最後の処理の結果が出ていないので除く
-        return dsl.update(EVENT_PUBLICATION)
-                .set(COMPLETION_ATTEMPTS, COMPLETION_ATTEMPTS.plus(1))
+        var moved = DSL.name(MOVED).as(dsl.deleteFrom(EVENT_PUBLICATION)
                 .where(STATUS.eq(FAILED))
-                .and(COMPLETION_ATTEMPTS.eq(maxAttempts))
+                .and(COMPLETION_ATTEMPTS.ge(maxAttempts))
                 .and(COMPLETION_DATE.isNull())
-                .returning(ID, EVENT_TYPE, LISTENER_ID)
-                .fetch(row -> new StoppedPublication(row.get(ID), row.get(EVENT_TYPE), row.get(LISTENER_ID), maxAttempts));
+                .returning(ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE,
+                        COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE));
+        return dsl.with(moved)
+                .insertInto(EVENT_PUBLICATION_STOPPED, ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE,
+                        COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE, STOPPED_DATE)
+                .select(DSL.select(ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE,
+                                COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE, DSL.val(clock.instant()))
+                        .from(moved))
+                .returning(stopped(ID), stopped(EVENT_TYPE), stopped(LISTENER_ID), stopped(COMPLETION_ATTEMPTS))
+                .fetch(row -> new StoppedPublication(row.get(stopped(ID)), row.get(stopped(EVENT_TYPE)),
+                        row.get(stopped(LISTENER_ID)), row.get(stopped(COMPLETION_ATTEMPTS))));
     }
 
     /**
@@ -97,17 +144,16 @@ class EventPublicationRecords {
      * @return 件数
      */
     int countIncomplete() {
-        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull());
+        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull()) + countStopped();
     }
 
     /**
      * 止めたイベントを数える。
      *
-     * @param maxAttempts 処理の回数の上限
      * @return 件数
      */
-    int countStopped(int maxAttempts) {
-        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull().and(COMPLETION_ATTEMPTS.gt(maxAttempts)));
+    int countStopped() {
+        return dsl.fetchCount(EVENT_PUBLICATION_STOPPED);
     }
 
     /**
@@ -124,6 +170,17 @@ class EventPublicationRecords {
                 .where(COMPLETION_DATE.lt(threshold))
                 .and(STATUS.eq(COMPLETED).or(STATUS.isNull()))
                 .execute();
+    }
+
+    /**
+     * 止めたイベントのテーブルで修飾した列を返す。
+     *
+     * @param field 列
+     * @param <T>   列の型
+     * @return 修飾した列
+     */
+    private static <T> Field<T> stopped(Field<T> field) {
+        return DSL.field(EVENT_PUBLICATION_STOPPED.getQualifiedName().append(field.getUnqualifiedName()), field.getType());
     }
 
     /**

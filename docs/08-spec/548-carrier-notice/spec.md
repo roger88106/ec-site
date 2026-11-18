@@ -175,7 +175,7 @@ DN-548-1 の例外は、次の表のとおり。
   - 依存：T548-01-04、T548-01-06
   - 範囲：「変える範囲」の文書、イベントの説明の 2 ファイル
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`
-- [ ] **T548-01-08** `./gradlew check` を通す（DC-548-9）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
+- [x] **T548-01-08** `./gradlew check` を通す（DC-548-9）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T548-01-07
   - 確認方法：`./gradlew check`
 - [ ] **T548-01-09** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。

@@ -126,6 +126,9 @@ spring-boot-configuration-processor = { module = "org.springframework.boot:sprin
 # --- 静的解析 ---
 # コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+# 独自の検査（src/errorprone）を書く API と、その検査のテスト（CompilationTestHelper）
+errorprone-check-api = { module = "com.google.errorprone:error_prone_check_api", version.ref = "errorprone" }
+errorprone-test-helpers = { module = "com.google.errorprone:error_prone_test_helpers", version.ref = "errorprone" }
 # null の検査（errorprone の構成に入れる）
 nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
 # null を許す型の注釈（Nullable）。NullAway が見る（バージョンは Spring Boot の BOM が管理）

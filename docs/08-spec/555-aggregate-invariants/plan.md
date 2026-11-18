@@ -107,7 +107,7 @@ record を class に変えるときの呼び出し元（[文書の構成](../../
 |------|--------|----------|
 | Error Prone の独自の検査（`EntityEqualityAssertion`）を作る。テストのソースセット（test、integrationTest、testFixtures）のコンパイルだけで有効にし、エラーにする | 新しいソースセット `backend/ecsite/src/errorprone/java/` | 検査のテストと、テストのソースセットのコンパイル |
 | 検査のテストを書く。下の例の表を全て入れる | `backend/ecsite/src/test/java/com/ecsite/errorprone/EntityEqualityAssertionTest.java`（Error Prone の `CompilationTestHelper`） | テスト |
-| 依存（`error_prone_check_api` と `error_prone_test_helpers`）を加える。ライセンスは Apache-2.0 で、依存とライセンスの区分に合う | `gradle/libs.versions.toml`、`build.gradle.kts` | ライセンスの検査（CI） |
+| 依存（`error_prone_check_api` と `error_prone_test_helpers`）を加える。ライセンスは Apache-2.0。テストの補助の間接の依存の JUnit 4 は条件付き（EPL-1.0）で、依存とライセンスの一覧に加える | `gradle/libs.versions.toml`、`build.gradle.kts` | ライセンスの検査（CI） |
 
 検査の置き場所：
 

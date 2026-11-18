@@ -40,7 +40,7 @@
   - 依存：T555-01-04（`lombok.config` の基底クラスの指定を前提にするため）
   - 範囲：各モジュールの domain、対象の型のテスト、`docs/05-開発規則/backend-coding.md`
   - 確認方法：同一性の検査のテストと、変えたモジュールのテストが通る
-- [ ] **T555-01-06** [テスト] ソースセットと `build.gradle.kts` の組み込みを試作し、例の表の全てを入れた検査のテストを書き、レッドを確認する。組み込めなければ止めて報告する（DC-555-10）。最初に、例の表を spec の文脈を持たないレビュー役に読ませ、例を追加させる。
+- [x] **T555-01-06** [テスト] ソースセットと `build.gradle.kts` の組み込みを試作し、例の表の全てを入れた検査のテストを書き、レッドを確認する。組み込めなければ止めて報告する（DC-555-10）。最初に、例の表を spec の文脈を持たないレビュー役に読ませ、例を追加させる。
   - 依存：T555-01-05
   - 範囲：`backend/ecsite/src/errorprone/java/`、`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、`backend/ecsite/src/test/java/com/ecsite/errorprone/EntityEqualityAssertionTest.java`
   - 確認方法：検査のテストが失敗する。追加した依存がライセンスの検査に通る。`assertThat(T)` の引数の静的な型がクラスファイルに残らないことを確認する

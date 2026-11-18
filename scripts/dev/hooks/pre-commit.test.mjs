@@ -428,7 +428,7 @@ describe('実際の hook', () => {
     assert.match(output, /docs\/a\.md:5 長いセル/)
   })
 
-  test('既存の行から始まる文に行を足して閾値以上になったら、その文の warning を（最初の追加行で）表示する', () => {
+  test('既存の行から始まる文に行を追加して閾値以上になったら、その文の warning を（最初の追加行で）表示する', () => {
     const head = 'あ'.repeat(60)
     const tail = 'い'.repeat(60)
     const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': `${head}、\n` }, files: { 'docs/a.md': `${head}、\n${tail}。\n` } })
@@ -455,7 +455,7 @@ describe('実際の hook', () => {
     }
   })
 
-  test('diff.renames=copies の設定でも、コピーして長い文を足したファイルに warning を表示する', () => {
+  test('diff.renames=copies の設定でも、コピーして長い文を追加したファイルに warning を表示する', () => {
     // コピーの元（old.md）も変えると、git はコピー（C）として見分けられる。コピーとして見分けると、追加行の差分から落ちる
     // 似ている度合いが git の閾値（50%）を超えるよう、元の行を長い文より十分に多くする
     const body = Array.from({ length: 40 }, (_, index) => `${index + 1} 番目の行。`).join('\n')

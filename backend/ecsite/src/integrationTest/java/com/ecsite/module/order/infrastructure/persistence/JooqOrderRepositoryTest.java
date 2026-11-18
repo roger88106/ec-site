@@ -601,7 +601,7 @@ class JooqOrderRepositoryTest {
         @Transactional(propagation = Propagation.NOT_SUPPORTED)
         @DisplayName("AC-406-14 会員のロックを取っている間は、別のトランザクションが同じ会員のロックを取れず、別の会員のロックは取れる")
         void blocksOtherTransactionWhileMemberLocked() {
-            // 準備：ロックはトランザクションの終わりで外れ、行を作らないので、ロールバックは要らない
+            // 準備：ロックはトランザクションの終わりで外れ、行を作らないので、ロールバックは必要ない
             var memberId = UUID.randomUUID();
             var executor = Executors.newSingleThreadExecutor();
             try {

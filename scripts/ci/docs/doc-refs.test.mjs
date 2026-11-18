@@ -52,7 +52,7 @@ describe('文書の参照の検査', () => {
     assert.equal(isExcluded('scripts/ci/docs/doc-refs.mjs'), false)
   })
 
-  test('Gradle の設定（.kts）と、xml・json・jsonc・grit・ps1 も見る（ファイルの全体を読むので、コメントの読み方は要らない）', () => {
+  test('Gradle の設定（.kts）と、xml・json・jsonc・grit・ps1 も見る（ファイルの全体を読むので、コメントの読み方は必要ない）', () => {
     assert.equal(isTargetFile('backend/ecsite/build.gradle.kts'), true)
     assert.equal(isTargetFile('docs/a.md'), true)
     assert.equal(isTargetFile('backend/ecsite/config/checkstyle/checkstyle.xml'), true)

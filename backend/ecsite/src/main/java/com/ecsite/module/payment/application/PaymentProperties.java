@@ -19,7 +19,7 @@ import java.util.UUID;
  * ここには持たない。
  *
  * @param deadline                     支払の期限（注文日時からの時間）。上限は、注文の後に作る支払画面の期限
- *                                     （Stripe の最短の 30 分に余裕を足した時間）が支払の期限より前に来ないように決める
+ *                                     （Stripe の最短の 30 分に余裕を加えた時間）が支払の期限より前に来ないように決める
  * @param expiryInterval               支払の期限切れのジョブの間隔
  * @param awaitingAuthorizationWarning 与信の反映を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに出すか
  * @param authorizationValidity        与信の有効期間（与信の時刻からの時間）。Stripe のカード決済の与信が切れるまでの期間に合わせる

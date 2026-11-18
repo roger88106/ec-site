@@ -4,7 +4,7 @@
 // 利用者の git の設定（diff.renames、diff.mnemonicPrefix など）によらないよう、名前の変更の検出（-M）と接頭辞を固定する。
 // 名前を変えたファイルの変えていない行と、改行コードだけの違いは、追加行にしない。
 
-/** `git diff` の後ろに、比べる対象（revision や --cached）と `--` を足して使う。 */
+/** `git diff` の後ろに、比べる対象（revision や --cached）と `--` を追加して使う。 */
 export const ADDED_DIFF_ARGS = [
   '-c',
   'core.quotePath=false',

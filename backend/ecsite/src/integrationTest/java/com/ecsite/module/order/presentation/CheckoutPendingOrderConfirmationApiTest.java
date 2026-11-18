@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 支払待ちの注文があるときの、注文手続きの開始の確認の受け入れテスト
  *
  * <p>会員に支払待ちの注文があるとき、開始が確認を求めること、確認した一覧を送れば始められること、
- * 支払待ちの注文がなくなれば確認が要らなくなることを確認する。支払待ちの注文の上限は
+ * 支払待ちの注文がなくなれば確認が必要なくなることを確認する。支払待ちの注文の上限は
  * {@link CheckoutPendingOrderLimitApiTest}、注文の時点の確認は {@code PlaceOrderPendingConfirmationApiTest} が確認する。
  *
  * <p>テストごとにロールバックする。

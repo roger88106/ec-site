@@ -16,7 +16,7 @@ async function renderLoginFailedPage() {
 }
 
 describe('ログインできなかった画面の表示', () => {
-  test('AC-430-2 ログインできなかったことを見出しで示す', async () => {
+  test('AC-430-2 ログインしていなくても、ログインできなかったことを見出しで示す', async () => {
     const view = await renderLoginFailedPage()
 
     expect(view.getByRole('heading', { level: 1, name: text.title })).toBeInTheDocument()
@@ -33,10 +33,5 @@ describe('ログインできなかった画面の表示', () => {
 
     expect(view.getByRole('link', { name: text.login })).toHaveAttribute('href', '/login')
     expect(view.getByRole('link', { name: text.top })).toHaveAttribute('href', '/')
-  })
-
-  test('AC-430-2 ログインしていなくても、移らずに表示する', async () => {
-    const view = await renderLoginFailedPage()
-    expect(view.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
 })

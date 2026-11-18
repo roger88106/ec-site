@@ -305,12 +305,12 @@ access token の期限までの残りが 1 分未満なら、refresh token で�
 
 ### ログイン画面へ移す
 
-- `/login?returnTo=<戻る画面>` から IdP へリダイレクトし、ログイン後は `returnTo` に戻る。`returnTo` は画面の中のパスだけを受け付け、それ以外は `/`。判定には、管理画面と同じ共有パッケージの関数を使う（受け付けるパスの条件は管理画面の構成の「API に付ける token」）。
+- `/login?returnTo=<戻る画面>` から IdP へリダイレクトし、ログイン後は `returnTo` に戻る。`returnTo` は画面の中のパスだけを受け付け、それ以外は `/`。判定には、管理画面と同じ共有パッケージの関数を使う（受け付けるパスの条件は管理画面の構成の「API に付ける token」）。店舗画面は、それに加えて、ログインのエンドポイントの下のパス（`/login`、`/login/failed` など）も受け付けず `/` にする。理由：ログインできなかったことを示す画面のヘッダーからログインしたときに、その画面に戻らないようにするため。
 - 会員登録は `/login?register=1&returnTo=...`（OIDC の `prompt=create`）。
 - 画面とサーバーアクションは `redirectToLogin()` で今の画面に戻るようにリダイレクトする。今のパスは `proxy.ts` が要求のヘッダー（`x-pathname`）で渡す（サーバーコンポーネントは URL を直接知らないため）。
 - ログインを求める画面（注文手続き、支払待ちの注文の確認、注文一覧、注文）は、取得の前に `currentMember()` を確認し、`null` なら `redirectToLogin()`。API が 401 を返したときも同じ。注文手続きに進む操作も、ログインしていなければカートに戻るようにログイン画面へリダイレクトする。
 
-IdP から戻ったときにログインの手続きが失敗すると、Auth.js はエラーの画面の設定（`/login/error`）へ `error=Configuration` を付けて移す。`/login/error` は、再試行のフラグ（期限 10 分の Cookie）で次のように分ける。
+IdP から戻ったときにログインの手続きが失敗すると、Auth.js はエラーの画面の設定（`/login/error`）へ `error=Configuration` を付けて移す。`/login/error` は、再試行のフラグ（Cookie `login-retry`。期限 10 分。`STORE_COOKIE_PREFIX` があれば名前の先頭に付く）で次のように分ける。
 
 | 条件 | 動き |
 |------|------|

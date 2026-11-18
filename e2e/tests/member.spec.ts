@@ -121,7 +121,7 @@ test('AC-111、AC-112、AC-430-1 パスワードを設定するまではログ�
   page,
 }) => {
   const account = newMemberAccount('unverified')
-  await page.goto(STORE_URL)
+  await page.goto(`${STORE_URL}/products`)
   await submitSignup(page, account, { lastName: '会員', firstName: '未確認' })
 
   await test.step('パスワードを設定する前は、ログインできない（会員登録を始めたのと同じブラウザーで試す）', async () => {
@@ -132,7 +132,13 @@ test('AC-111、AC-112、AC-430-1 パスワードを設定するまではログ�
 
   await test.step('同じブラウザーでログインを試した後でも、確認メールのリンクでパスワードを設定でき、ログインできる', async () => {
     await setPasswordFromMail(page, account)
+    await expect(page).toHaveURL(`${STORE_URL}/`)
     await expect(page.getByText('会員 未確認 様')).toBeVisible()
+  })
+
+  await test.step('ログインできたので、再試行のフラグの Cookie は残らない', async () => {
+    const cookies = await page.context().cookies()
+    expect(cookies.filter((cookie) => cookie.name.endsWith('login-retry'))).toEqual([])
   })
 })
 

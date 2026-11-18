@@ -87,4 +87,12 @@ describe('ログインの戻り先', () => {
     expect(`${signInUrl.origin}${signInUrl.pathname}`).toBe(`${IDP}/protocol/openid-connect/auth`)
     expect(signInUrl.searchParams.get('redirect_uri')).toBe(`${PUBLIC_URL}/api/auth/callback/keycloak`)
   })
+
+  test('AC-430-1 IdP から戻ったときの手続きが失敗したら、ログインできなかった画面の案内へ移る', async () => {
+    server.use(idpDiscovery())
+
+    const response = await handlers.GET(forgedRequest('/callback/keycloak?code=x&state=y'))
+
+    expect(response.headers.get('location')).toBe(`${PUBLIC_URL}/login/error?error=Configuration`)
+  })
 })

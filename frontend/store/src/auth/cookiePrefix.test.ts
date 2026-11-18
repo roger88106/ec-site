@@ -15,12 +15,16 @@ import { cookieValue, resetRequest } from '@/test/next'
  * （next-auth、next/headers）を先に読み込んで、補助との結び付きを決めておく。
  *
  * @param prefix STORE_COOKIE_PREFIX の値。空なら指定しない
- * @returns 読み込み直した auth.ts と cartCookie.ts
+ * @returns 読み込み直した auth.ts、cartCookie.ts、loginRetry.ts
  */
 async function loadWithPrefix(prefix: string) {
   vi.resetModules()
   vi.stubEnv('STORE_COOKIE_PREFIX', prefix)
-  return { auth: await import('@/auth'), cartCookie: await import('@/api/cartCookie') }
+  return {
+    auth: await import('@/auth'),
+    cartCookie: await import('@/api/cartCookie'),
+    loginRetry: await import('@/auth/loginRetry'),
+  }
 }
 
 describe('店舗画面の Cookie の接頭辞（STORE_COOKIE_PREFIX）', () => {
@@ -64,5 +68,26 @@ describe('店舗画面の Cookie の接頭辞（STORE_COOKIE_PREFIX）', () => {
     await cartCookie.deleteCartId()
     expect(cookieValue('s1-cart_id')).toBeUndefined()
     expect(cookieValue('cart_id')).toBe('other')
+  })
+
+  test('AC-430-1 再試行のフラグの Cookie は、名前に接頭辞が付く', async () => {
+    const { loginRetry } = await loadWithPrefix('s1-')
+    resetRequest({ cookies: { 's1-login-retry': '1' } })
+
+    expect(await loginRetry.hasLoginRetryFlag()).toBe(true)
+
+    await loginRetry.deleteLoginRetryFlag()
+    expect(cookieValue('s1-login-retry')).toBeUndefined()
+
+    await loginRetry.setLoginRetryFlag()
+    expect(cookieValue('s1-login-retry')).toBe('1')
+    expect(cookieValue('login-retry')).toBeUndefined()
+  })
+
+  test('AC-430-1 接頭辞を指定したときは、接頭辞のない再試行のフラグの Cookie を読まない', async () => {
+    const { loginRetry } = await loadWithPrefix('s1-')
+    resetRequest({ cookies: { 'login-retry': '1' } })
+
+    expect(await loginRetry.hasLoginRetryFlag()).toBe(false)
   })
 })

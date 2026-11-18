@@ -16,7 +16,7 @@
   - 依存：T547-01-01
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/config/event/EventResubmissionJob.java`
   - 確認方法：`EventResubmissionJobTest` と `EventResubmissionSettingsTest` が通る
-- [ ] **T547-01-03** [P] [テスト] [リスク] 次の 3 つのテストを書き、レッドを確認する（DC-547-9）。バリアントを登録したトランザクションの中で在庫の行が作られている。登録を巻き戻すと在庫の行も残らない。同期のリスナーがイベントの記録に行を作らない。
+- [x] **T547-01-03** [P] [テスト] [リスク] 次の 3 つのテストを書き、レッドを確認する（DC-547-9）。バリアントを登録したトランザクションの中で在庫の行が作られている。登録を巻き戻すと在庫の行も残らない。同期のリスナーがイベントの記録に行を作らない。
   - 依存：なし
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/handler/CatalogEventHandlerTest.java`
   - 確認方法：テストが失敗する。テストを通すためにテストを弱めない

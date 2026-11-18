@@ -49,6 +49,12 @@ class CatalogEventHandlerTest {
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * バリアント登録を受ける在庫のリスナーの ID（イベントの発行の記録の listener_id の形）
+     */
+    private static final String REGISTRATION_LISTENER_ID =
+            CatalogEventHandler.class.getName() + ".on(" + VariantRegistered.class.getName() + ")";
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -118,6 +124,78 @@ class CatalogEventHandlerTest {
 
             // 確認：在庫が 1 つ
             assertThat(stockCount(variantId)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("バリアント登録のイベントを発行したトランザクションの中で、コミットの前に在庫ができている")
+        void createsStockInPublishingTransaction() {
+            // 準備：商品とバリアント
+            var productId = UUID.randomUUID();
+            var variantId = UUID.randomUUID();
+
+            // 操作と確認：イベントを発行し、同じトランザクションの中で、その商品の在庫数 0 の在庫ができている
+            transactionTemplate.executeWithoutResult(status -> {
+                eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, variantId));
+                assertStockCreated(productId, variantId);
+            });
+        }
+
+        @Test
+        @DisplayName("バリアント登録のイベントを発行したトランザクションを巻き戻すと、在庫も残らない")
+        void rollsBackStockWithPublishingTransaction() {
+            // 準備：巻き戻す商品とバリアントと、巻き戻した後にコミットするバリアント
+            var productId = UUID.randomUUID();
+            var rolledBack = UUID.randomUUID();
+            var committed = UUID.randomUUID();
+
+            // 操作：イベントを発行し、在庫ができたことを確認してから、トランザクションを巻き戻す
+            transactionTemplate.executeWithoutResult(status -> {
+                eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, rolledBack));
+                // 確認（前提）：巻き戻す前に在庫がある（イベントがリスナーに届いたうえで、巻き戻しで消えることを確認するため）
+                assertThat(stockCount(rolledBack)).isEqualTo(1);
+                status.setRollbackOnly();
+            });
+
+            // 確認：後に発行してコミットしたイベントの在庫ができるのを待ってから、巻き戻したバリアントの在庫がないことを確認する
+            // 巻き戻したイベントが非同期のリスナーに渡ったときに、その処理が見終わった後に動いて誤って通らないようにするため
+            publish(VariantRegistered.of(NOW, productId, committed));
+            await().atMost(TIMEOUT).until(() -> stockCount(committed) == 1);
+            assertThat(stockCount(rolledBack)).isZero();
+        }
+
+        @Test
+        @DisplayName("バリアント登録のイベントを発行しても、在庫のリスナーへのイベントの発行の記録はできない")
+        void doesNotRecordPublicationForStockListener() {
+            // 準備：バリアント登録のイベント
+            var productId = UUID.randomUUID();
+            var variantId = UUID.randomUUID();
+            var event = VariantRegistered.of(NOW, productId, variantId);
+
+            // 操作：イベントを発行する
+            publish(event);
+
+            // 確認：在庫のリスナーへの発行の記録がなく、在庫はできている
+            assertThat(asyncEvents.isRecorded(event::equals, REGISTRATION_LISTENER_ID)).isFalse();
+            assertStockCreated(productId, variantId);
+        }
+
+        /**
+         * その商品の、在庫数 0 の在庫があることを確認する。
+         *
+         * <ul>
+         *   <li>バリアントの在庫がある</li>
+         *   <li>在庫数が 0</li>
+         *   <li>商品 ID が、イベントの商品 ID</li>
+         * </ul>
+         *
+         * @param productId 商品 ID（実行ごとに作る）
+         * @param variantId バリアント ID（実行ごとに作る）
+         */
+        private void assertStockCreated(UUID productId, UUID variantId) {
+            var stock = dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId)).fetchOne();
+            assertThat(stock).isNotNull();
+            assertThat(stock.getQuantity()).isZero();
+            assertThat(stock.getProductId()).isEqualTo(productId);
         }
     }
 

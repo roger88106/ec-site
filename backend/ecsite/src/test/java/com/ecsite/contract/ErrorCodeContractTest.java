@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>API の規約の「エラーの本文」に沿う。API ごとに、全体の列挙（{@code ErrorCode}）が、操作ごとの一覧（{@code x-error-codes}）と共通のエラー
  * （{@code x-common-error-codes}）の和と一致し、バックエンドのエラーのコードと過不足なく一致することを確認する。
+ * また、全ての操作に {@code x-error-codes} があること（業務のエラーがなければ空の配列）も確認する。
  */
 class ErrorCodeContractTest {
 
@@ -71,13 +72,10 @@ class ErrorCodeContractTest {
         @ValueSource(strings = {"admin.yaml", "store.yaml"})
         @DisplayName("AC-274 全ての操作に x-error-codes がある（空の配列も可）")
         void everyOperationHasErrorCodes(String file) {
-            // 準備：x-error-codes のない操作を集める
-            List<String> missing = OpenApiNodes.operations(CONTRACTS.get(file)).stream()
-                    .filter(operation -> !operation.node().containsKey("x-error-codes"))
-                    .map(OpenApiNodes.Operation::name)
-                    .toList();
+            // 操作：x-error-codes のない操作を集める
+            List<String> missing = missingErrorCodes(OpenApiNodes.operations(CONTRACTS.get(file)));
 
-            // 操作と確認：x-error-codes のない操作がない
+            // 確認：x-error-codes のない操作が 1 つもない
             assertThat(missing).as("x-error-codes のない操作").isEmpty();
         }
 
@@ -91,6 +89,35 @@ class ErrorCodeContractTest {
 
             // 操作と確認：契約の共通のエラーが、バックエンドの共通のエラーと同じ
             assertThat(commonOf(file)).as("共通のエラー").isEqualTo(backend);
+        }
+    }
+
+    @Nested
+    @DisplayName("検査が誤りを検出できること")
+    class Detection {
+
+        @Test
+        @DisplayName("AC-274 x-error-codes のキーがない操作と値がない操作を検出できる（空の配列は誤りにしない）")
+        void detectsMissingErrorCodes() {
+            // 準備：値のある配列、空の配列、キーなし、値なしの 4 つの操作を含む契約
+            var document = OpenApiNodes.parse("""
+                    paths:
+                      /products:
+                        get:
+                          x-error-codes: [PRODUCT_NOT_FOUND]
+                        post:
+                          x-error-codes: []
+                        put:
+                          operationId: updateProduct
+                        delete:
+                          x-error-codes:
+                    """);
+
+            // 操作：x-error-codes のない操作を集める
+            var missing = missingErrorCodes(OpenApiNodes.operations(document));
+
+            // 確認：キーなしと値なしの操作だけを返す
+            assertThat(missing).containsExactly("PUT /products", "DELETE /products");
         }
     }
 
@@ -116,6 +143,19 @@ class ErrorCodeContractTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * x-error-codes が配列でない操作（キーがない、値がない、値が配列でない）を列挙する。値が空の配列なら「ある」とする。
+     *
+     * @param operations 操作の一覧
+     * @return x-error-codes のない操作の名前（{@code GET /products} の形。なければ空）
+     */
+    private static List<String> missingErrorCodes(List<OpenApiNodes.Operation> operations) {
+        return operations.stream()
+                .filter(operation -> !(operation.node().get("x-error-codes") instanceof List<?>))
+                .map(OpenApiNodes.Operation::name)
+                .toList();
+    }
 
     /**
      * API の全体の列挙を返す。

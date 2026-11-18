@@ -4,7 +4,7 @@
 // `skill `<名前>` の <ファイル名>`（`skill `review` の prompts.md`）は、その skill のフォルダーのファイルを指す。リポジトリにない skill の参照は見ない。
 //
 // 参照の先は、直前のリンク、文書の名前、パス（`docs/06-手順書/ci.md`、`notification.md` など）で決める。
-// 直前の印（`` ` ``、「」」、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
+// 直前の印（`` ` ``、「」」、「』」、太字の `**` と `__`、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
 import { existsSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
 import { readHeadings } from '../../../shared/docs/doc-structure.mjs'
@@ -123,6 +123,30 @@ export function resolveDocument(file, before, names, basenames, exists = existsS
   return resolveEnd(file, withoutNote, names, basenames, exists, existingPath) ?? null
 }
 
+/** 名前やパスの後ろの閉じる印（コードの印、「」」と「』」、太字の印）。除いてから名前を比べる */
+const CLOSING_MARKS = /(?:[`」』]|\*\*|__)+$/
+
+/**
+ * 文書の名前・リンク・パスの直後（間の半角・全角の空白と太字の印は許す）かを調べ、先の文書を決める。
+ *
+ * 「の」のない「」の前の判定に使う。閉じ括弧・「」」・「』」の後と、「の」の後は、直後とみなさない
+ * （`（docs/a.md）「語」`、`「docs/a.md」「語」` は、語の引用との見分けがつかないため。リンクの `)` は除く）。
+ *
+ * @param {string} file 参照のあるファイル
+ * @param {string} before 参照の前の文字
+ * @param {Map<string, string>} names 文書の名前からファイルのパスへの対応（長い名前から順）
+ * @param {Map<string, string>} basenames ファイル名からファイルのパスへの対応
+ * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
+ * @param {boolean} existingPath パスを、ファイルがあるときだけ先にするか
+ * @returns {string | null} 文書のパス。直後でなければ、決まらなければ null
+ */
+export function resolveAdjacent(file, before, names, basenames, exists = existsSync, existingPath = false) {
+  const text = before.replace(/[ 　]+$/, '').replace(/(?:\*\*|__)$/, '')
+  if (text.endsWith('の')) return null
+  if (/[」』）)]$/.test(text) && !/\]\([^)\s]*\)$/.test(text)) return null
+  return resolveEnd(file, text, names, basenames, exists, existingPath) ?? null
+}
+
 /**
  * 文字の末尾にあるリンク・パス・文書の名前から、文書を決める。
  *
@@ -135,8 +159,8 @@ export function resolveDocument(file, before, names, basenames, exists = existsS
  * @returns {string | null | undefined} 文書のパス。外のリンクと、existingPath でファイルのないパスは null、当たらなければ undefined
  */
 function resolveEnd(file, text, names, basenames, exists, existingPath) {
-  const marked = text.replace(/[`」]+$/, '').trimEnd()
-  for (const candidate of [marked, marked.replace(/[）)]$/, '').replace(/[`」]+$/, '').trimEnd()]) {
+  const marked = text.replace(CLOSING_MARKS, '').trimEnd()
+  for (const candidate of [marked, marked.replace(/[）)]$/, '').replace(CLOSING_MARKS, '').trimEnd()]) {
     const link = candidate.match(/\]\(([^)\s#]*)(#[^)]*)?\)$/)
     if (link) {
       if (/^(https?:|mailto:)/.test(link[1])) return null

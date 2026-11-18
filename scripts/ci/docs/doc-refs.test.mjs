@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, splitSectionNumbers } from './doc-refs.mjs'
+import * as docRefs from './doc-refs.mjs'
 import { readHeadingIndex } from '../lib/docs/doc-names.mjs'
 
 /** 調べる文書の組。キーがパス、値が中身 */
@@ -11,6 +12,15 @@ const DOCS = {
   'docs/process/tasks.md': '# 段階の一覧\n## 段階 1\n### タスク\n## 段階 2\n### タスク\n#### 確認\n',
   'docs/process/marks.md':
     '# 記号の文書\n## 1. `pnpm` の置き場所\n## 2. [OpenAPI](https://www.openapis.org/) の規則\n## 3. 全角（Ａ１）の  見出し\n',
+  // 見本の文書：見出し「規模」と「push のタイミング」はあり、「ない」はない
+  'docs/sample/sample.md': '# 見本の文書\n## 規模\n## push のタイミング\n',
+  'docs/sample/glossary.md': '# 用語集\n## 写し専用の見出し\n',
+  'docs/05-開発規則/style.md': '# 文書の書き方\n## 用語の選び方\n',
+  // 追跡するファイルとフォルダー（存在しないパスの検査の入力）
+  'frontend/store/package.json': '{}',
+  'scripts/ci/docs/doc-refs.mjs': '',
+  'scripts/ci/check-all.sh': '',
+  '.claude/skills/review/SKILL.md': '# review\n',
 }
 
 /**
@@ -18,10 +28,11 @@ const DOCS = {
  *
  * @param {string} file 追加するファイルのパス
  * @param {string} text 追加するファイルの中身
+ * @param {Record<string, string>} [extra] 一緒に追加する他のファイル
  * @returns {string[]} 切れた参照の説明
  */
-function check(file, text) {
-  const files = { ...DOCS, [file]: text }
+function check(file, text, extra = {}) {
+  const files = { ...DOCS, ...extra, [file]: text }
   return checkReferences(Object.keys(files), (path) => files[path], (path) => path in files)
 }
 
@@ -351,6 +362,7 @@ describe('リンクテキストの検査', () => {
     'README.md': '# EC Site\n',
     '.claude/agents/proofreader.md': '# 校閲役\n',
     'docs/rules/badge.svg': '',
+    'frontend/store/package.json': '{}',
   }
 
   /**
@@ -392,7 +404,8 @@ describe('リンクテキストの検査', () => {
       '[](workflow.md)',
       '[一覧](../08-spec/archive/mvp/mvp.md)',
     ].join('\n')
-    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3', '4', '5', '6', '7'])
+    // 3 行目は、リンクテキストの誤りと、リンクテキストに書いた存在しないパス（最後に出る）の 2 件になる
+    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3', '4', '5', '6', '7', '3'])
   })
 
   test('見出しの参照の形では、ファイル名のリンクテキストを失敗にする（リンクと「の」の間の空白、閉じる印、バッククォートで囲んだファイル名も）', () => {
@@ -516,7 +529,7 @@ describe('見出しの番号と、見出しの参照の先', () => {
     assert.deepEqual(lines(check('backend/Foo.java', code)), ['2', '3', '4'])
   })
 
-  test('「の」を挟まずにパスかリンクの直後に書いた「」も、その文書の見出しとして確認する', () => {
+  test('「の」を挟まずにパスの直後に書いた「」は見出しの参照として確認し、リンクの直後の「」は見出しに当たるときだけ失敗にする', () => {
     const code = [
       '// docs/testing/writing.md「名前」',
       '// docs/testing/writing.md「ない」',
@@ -526,9 +539,10 @@ describe('見出しの番号と、見出しの参照の先', () => {
       '// docs/process/tasks.md「タスク」',
       '# docs/testing/writing.md「ない」',
     ].join('\n')
+    // 空白を挟まないパスの直後は、見出しがなければ失敗にする（3・5・7 行目）。6 行目は「タスク」が 2 つあり 1 つに決まらない。リンクの直後は、「ない」は語の引用で、「対応」は「の」の抜け
     assert.deepEqual(lines(check('backend/Foo.java', code)), ['2', '3', '5', '6', '7'])
     const text = ['`docs/testing/writing.md`「ない」', '[テストの書き方](../testing/writing.md)「ない」', '[テストの書き方](../testing/writing.md)「対応」'].join('\n')
-    assert.deepEqual(lines(check('docs/dev/setup.md', text)), ['1', '2'])
+    assert.deepEqual(lines(check('docs/dev/setup.md', text)), ['1', '3'])
   })
 
   test('「の」のない「」は、文書の名前の直後、空白を挟んだもの、ファイルのないパス、.md でないファイルの後では読まない', () => {
@@ -566,11 +580,11 @@ describe('見出しの番号と、見出しの参照の先', () => {
       '// 「docs/testing/writing.md」の「名前」',
     ].join('\n')
     assert.deepEqual(lines(check('backend/Foo.java', code)), ['1', '2', '3'])
-    assert.deepEqual(lines(check('docs/dev/setup.md', '[テストの書き方](../testing/writing.md#1-名前)「ない」')), ['1'])
+    assert.deepEqual(lines(check('docs/dev/setup.md', '[テストの書き方](../testing/writing.md#1-名前)「名前」')), ['1'])
   })
 
   test('「の」のない見出しの参照の形でも、ファイル名のリンクテキストを失敗にする', () => {
-    const problems = check('docs/dev/setup.md', '[writing.md](../testing/writing.md)「名前」')
+    const problems = check('docs/dev/setup.md', '[writing.md](../testing/writing.md)「ない」')
     assert.equal(problems.length, 1)
     assert.match(problems[0], /^リンクテキスト「writing\.md」が文書の名前でない/)
   })
@@ -619,5 +633,273 @@ describe('見出しの番号と、見出しの参照の先', () => {
       'docs/dev/setup.md': ['[計画](../process/plan.md)の「設定」', '[計画](../process/plan.md)の「設定（任意）」', '[計画](../process/plan.md)の「用語」'].join('\n'),
     }
     assert.deepEqual(checkReferences(Object.keys(docs), (path) => docs[path], (path) => path in docs), [])
+  })
+})
+
+/** 文書の組に Markdown の文書を追加して、問題の行の番号を返す */
+const mdLines = (text, extra = {}) => lines(check('docs/dev/setup.md', text, extra))
+
+describe('節の番号の参照の検査の広げ方（DC-566-1、DC-566-10）', () => {
+  test('「第」のある漢数字（第三節、第三・四節、第三〜五節、第十二節）を節の番号の参照として失敗にする', () => {
+    const text = ['見本の文書の第三節', '見本の文書の第三・四節', '見本の文書の第三〜五節', '見本の文書の第十二節'].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['1', '2', '3', '4'])
+    for (const problem of problems) assert.match(problem, /^節の番号で参照している/)
+    assert.deepEqual(lines(check('backend/Foo.java', '// 見本の文書の第三節')), ['1'])
+  })
+
+  test('漢数字の番号も、番号から求めた見出しを示す（第四節は 4 の見出し、第四・八節は 4 と 8）', () => {
+    const [one] = check('docs/dev/setup.md', '店舗画面の構成 第四節')
+    assert.match(one, /（docs\/frontend\/apps\/store\.md の「取得」）/)
+    const [several] = check('docs/dev/setup.md', '店舗画面の構成 第四・八節')
+    assert.match(several, /（docs\/frontend\/apps\/store\.md の「取得」、「文言」）/)
+    assert.deepEqual(splitSectionNumbers('三・十二〜二十三'), ['3', '12', '23'])
+  })
+
+  test('「第」のない漢数字と、節でない語（第三章、第三段、第三条）は読まない', () => {
+    const text = ['見本の文書の一節を引用する', '三節に分ける', '見本の文書の第三章', '見本の文書の第三段', '見本の文書の第三条'].join('\n')
+    assert.deepEqual(mdLines(text), [])
+  })
+
+  test('§ は、直前で参照先の文書が決まるとき、全角の数字・§§・範囲も失敗にする', () => {
+    const text = ['見本の文書の §3', '見本の文書の § 3', '見本の文書の §3.2', '見本の文書の §３', '見本の文書の §§3-4', '見本の文書の §3〜5', 'この文書の §3', '`docs/05-開発規則/style.md` の §2'].join('\n')
+    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5', '6', '7', '8'])
+    assert.deepEqual(lines(check('backend/Foo.java', '// 見本の文書の §3')), ['1'])
+  })
+
+  test('§ は、外の規格と外のリンクの後、参照先が決まらない位置では通す', () => {
+    const text = ['RFC 9457 §3.1', '[RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) §3', '§3 を読む', '（§3）', '手順は §3'].join('\n')
+    assert.deepEqual(mdLines(text), [])
+  })
+
+  test('「第」のない N 節は、参照先の文書が直前で決まるときと、点を含む番号のときに失敗にする（第 N 節は今のとおり）', () => {
+    const text = ['見本の文書の 3 節', 'この文書の 3 節', '本書の 3 節', '4.2 節', '第 3 節', '- 第 3 節', '`docs/sample/sample.md` の 2 節'].join('\n')
+    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5', '6', '7'])
+  })
+
+  test('「第」のない N 節は、個数を表す語、行の始め、リストの印、表のセル、「。」と開き括弧の後では通す', () => {
+    const text = ['3 節に分ける', '全 5 節', '- 3 節に分ける', '* 3 節に分ける', '1. 3 節に分ける', '| a | 3 節 |', '手順。3 節に分ける', '（3 節）'].join('\n')
+    assert.deepEqual(mdLines(text), [])
+  })
+
+  test('「第」のない N 節と § は、コードでは文書の名前・リンク・パスの直後だけを失敗にする', () => {
+    const code = ['// 見本の文書の 3 節', '// 3 節に分ける', '// 見本の文書の §3', '// §3 を読む', '// RFC 9457 §3.1'].join('\n')
+    assert.deepEqual(lines(check('backend/Foo.java', code)), ['1', '3'])
+  })
+})
+
+describe('見出しの参照の検査の広げ方（DC-566-2〜4、DC-566-7、DC-566-9）', () => {
+  test('の節「…」を見出しの参照として読む（当たる見出しは通し、ないものは失敗にする）', () => {
+    assert.deepEqual(mdLines('見本の文書の節「ない」'), ['1'])
+    assert.deepEqual(mdLines('見本の文書の節「規模」'), [])
+    assert.deepEqual(mdLines('見本の文書の節「規模」と「ない」'), ['1'])
+  })
+
+  test('の『…』を見出しの参照として読む。文字列の連結・埋め込みを含むものは読まない', () => {
+    assert.deepEqual(mdLines('見本の文書の『ない』'), ['1'])
+    assert.deepEqual(mdLines('見本の文書の『規模』'), [])
+    assert.deepEqual(lines(check('backend/Foo.java', '// 見本の文書の『ない』')), ['1'])
+    const java = ['String a = "見本の文書の『" + section.heading() + "』の節に、…";', 'String b = "見本の文書の『${name}』";'].join('\n')
+    assert.deepEqual(lines(check('backend/Foo.java', java)), [])
+  })
+
+  test('『文書の名前』の後の「の「…」」は、その文書の見出しとして確認する', () => {
+    assert.deepEqual(mdLines('『見本の文書』の「ない」'), ['1'])
+    assert.deepEqual(mdLines('『見本の文書』の「規模」'), [])
+  })
+
+  test('「の」のない「」は、文書の名前の直後でも、見出しに当たるときだけ失敗にし、「の」を入れるよう示す', () => {
+    const problems = check('docs/dev/setup.md', '見本の文書「規模」')
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /「の」/)
+    assert.match(problems[0], /docs\/sample\/sample\.md の「規模」/)
+  })
+
+  test('見出しに当たらない語の引用（用語集「写し」、見本の文書「ない」）は通す', () => {
+    assert.deepEqual(mdLines(['用語集「写し」', '見本の文書「ない」'].join('\n')), [])
+  })
+
+  test('リンクの直後の「」も、半角・全角の空白を挟んでも、見出しに当たるときだけ失敗にする', () => {
+    const text = [
+      '[見本の文書](../sample/sample.md) 「規模」',
+      '[見本の文書](../sample/sample.md)　「規模」',
+      '[見本の文書](../sample/sample.md) 「ない」',
+      '見本の文書 「規模」',
+      '見本の文書　「規模」',
+      '見本の文書 「ない」',
+      '`docs/sample/sample.md` 「規模」',
+    ].join('\n')
+    assert.deepEqual(mdLines(text), ['1', '2', '4', '5', '7'])
+  })
+
+  test('見出しに当たる「」に「の「…」」が続くとき、続く「」も確認する', () => {
+    const problems = check('docs/dev/setup.md', '見本の文書「規模」の「ない」')
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /「の」/)
+    assert.match(problems[1], /^見出しがない/)
+  })
+
+  test('太字（**名前**、__名前__、太字のリンク、太字の後の空白）の文書の名前を、印を除いて読む', () => {
+    const text = ['**見本の文書**の「ない」', '**見本の文書** の「ない」', '__見本の文書__の「ない」', '**[見本の文書](../sample/sample.md)**の「ない」', '**[見本の文書](../sample/sample.md)** の「ない」', '**見本の文書**の「規模」'].join('\n')
+    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5'])
+    assert.deepEqual(mdLines('**見本の文書**「規模」'), ['1'])
+  })
+
+  test('見出しの参照の後に、と・、・・や か区切りなしで続く「」も、同じ文書の見出しとして確認する', () => {
+    const text = [
+      '見本の文書の「規模」と「ない」',
+      '見本の文書の「規模」、「ない」',
+      '見本の文書の「規模」・「ない」',
+      '見本の文書の「規模」や「ない」',
+      '見本の文書の「規模」「ない」',
+      '見本の文書の「規模」、「規模」、「ない」',
+      '見本の文書の「規模」と「push のタイミング」',
+    ].join('\n')
+    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5', '6'])
+  })
+
+  test('行が文書の名前・リンク・パスで終わり、次の行が「」か の「 で始まるときだけ、2 行をつないで読む（コメントの印を除く）', () => {
+    const code = [
+      '// 見本の文書の',
+      '// 「ない」を見る',
+      '// 見本の文書を読む。',
+      '// 「ない」と書く',
+      '// 詳しくは見本の文書',
+      '// の「ない」を見る',
+      '/**',
+      ' * 見本の文書の',
+      ' * 「ない」を見る',
+      ' */',
+      '// 見本の文書',
+      '// 「規模」を見る',
+      '// 見本の文書の「規模」と書く。',
+      '// 「ない」',
+    ].join('\n')
+    // 1・5・8・11 行目から始まる 4 件（11 行目は「の」の抜け）。3 行目は名前で終わらない。13 行目は「」の中の名前で終わらない
+    assert.deepEqual(lines(check('backend/Foo.java', code)), ['1', '5', '8', '11'])
+    assert.deepEqual(lines(check('docker/compose.yaml', '# 見本の文書の\n# 「ない」を見る')), ['1'])
+    assert.deepEqual(lines(check('db/q.sql', '-- 見本の文書の\n-- 「ない」を見る')), ['1'])
+  })
+
+  test('Markdown は、同じ段落の続きの行だけをつなぐ（見出し、表、リストの項目の始め、コードブロックの境目ではつながない）', () => {
+    assert.deepEqual(mdLines('見本の文書の\n「ない」を見る'), ['1'])
+    assert.deepEqual(mdLines('説明は見本の文書\nの「ない」を見る'), ['1'])
+    assert.deepEqual(mdLines('- 見本の文書の\n  「ない」を見る'), ['1'])
+    assert.deepEqual(mdLines('## 見本の文書\n「規模」は別の節に書く'), [])
+    assert.deepEqual(mdLines('- 見本の文書\n- 「規模」は別に書く'), [])
+    assert.deepEqual(mdLines('見本の文書\n1. 「規模」は別に書く'), [])
+    assert.deepEqual(mdLines('| 見本の文書の\n| 「ない」を見る'), [])
+    assert.deepEqual(mdLines('見本の文書の\n\n「ない」を見る'), [])
+    assert.deepEqual(mdLines('```\n見本の文書の\n```\n「ない」を見る'), [])
+  })
+
+  test('実在する文書のパスで終わる行の次の行が、見出しに当たらない「」で始まっても通す', () => {
+    assert.deepEqual(lines(check('backend/Foo.java', '// docs/testing/writing.md\n// 「ない」と書く')), [])
+  })
+})
+
+describe('拡張子のないスクリプトを読む（DC-566-8）', () => {
+  const SCRIPT = '#!/bin/sh\n# 見本の文書の「ない」\n'
+
+  test('1 行目が #! のファイルは、コードとして参照を探す', () => {
+    assert.deepEqual(lines(check('scripts/dev/hooks/pre-commit', SCRIPT)), ['2'])
+    assert.deepEqual(lines(check('scripts/dev/hooks/pre-commit', '#!/bin/sh\n# 見本の文書の\n# 「ない」を見る\n')), ['2'])
+  })
+
+  test('検査の対象は、拡張子がなく 1 行目が #! で始まるファイルだけを加える', () => {
+    const texts = { 'scripts/dev/hooks/pre-commit': SCRIPT, 'scripts/dev/hooks/commit-msg': '#!/usr/bin/env node\n', 'scripts/dev/hooks/memo': '説明だけ\n', 'Dockerfile': 'FROM node\n', 'scripts/a.mjs': '', 'a.png': '#!x' }
+    const targets = docRefs.selectTargetFiles(Object.keys(texts), (file) => texts[file])
+    assert.deepEqual(targets, ['scripts/dev/hooks/pre-commit', 'scripts/dev/hooks/commit-msg', 'scripts/a.mjs'])
+  })
+})
+
+describe('存在しない Markdown のパスの検査（DC-566-5、DC-566-6）', () => {
+  test('綴りを誤った存在しない文書へのパスは、インラインコードの中も外も失敗にする（見出しの参照が続かなくてもよい）', () => {
+    const problems = check('docs/dev/setup.md', ['`docs/sample/sampel.md`', 'docs/sample/sampel.md を読む', '`docs/sample/sampel.md` の「規模」'].join('\n'))
+    assert.deepEqual(lines(problems), ['1', '2', '3'])
+    assert.match(problems[0], /^存在しないパス/)
+    assert.match(problems[0], /docs\/sample\/sampel\.md/)
+  })
+
+  test('あるファイルとフォルダー、末尾に行・見出しの指定を付けたパスは通す', () => {
+    const text = [
+      '`scripts/ci/docs/doc-refs.mjs`',
+      '`scripts/ci/docs/doc-refs.mjs:84`',
+      '`scripts/ci/docs/doc-refs.mjs:84-90`',
+      '`docs/05-開発規則/style.md#用語の選び方`',
+      '`scripts/ci/docs/`',
+      '`scripts/ci/docs`',
+      'scripts/ci/docs/doc-refs.mjs:84 を読む',
+      '`docs/sample/sample.md「規模」`',
+      '`docs/sample/sample.md` の「規模」',
+    ].join('\n')
+    assert.deepEqual(mdLines(text), [])
+    assert.deepEqual(mdLines('`scripts/ci/docs/doc-refs.mjs:84` `scripts/ci/docs/missing.mjs:84` `docs/05-開発規則/missing.md#用語の選び方`'), ['1', '1'])
+  })
+
+  test('追跡していない参照してよい場所、プレースホルダー・glob・…・URL の中のものは通す', () => {
+    const text = [
+      '`.claude/settings.local.json`',
+      '`.claude/worktrees/566-doc-check-tools/a.md`',
+      '`docker/.env`',
+      '`backend/ecsite/build/libs/a.jar`',
+      '`frontend/store/node_modules/a/index.js`',
+      '`frontend/store/.next/a.js`',
+      '`frontend/store/dist/a.js`',
+      '`backend/ecsite/src/main/generated/A.java`',
+      '`docs/08-spec/<番号>-*/`',
+      '`docs/*.md`',
+      '`scripts/{a,b}.mjs`',
+      '`docs/sample/…/a.md`',
+      '`docs/${name}/a.md`',
+      'https://github.com/owner/repo/blob/develop/docs/missing.md',
+      '[ファイル](https://github.com/owner/repo/blob/develop/docs/missing.md)',
+    ].join('\n')
+    assert.deepEqual(mdLines(text), [])
+  })
+
+  test('.claude/ の下は、.gitignore の判定を使わず、綴りを誤ったフォルダーを通るパスを失敗にする', () => {
+    assert.deepEqual(mdLines('`.claude/skils/review/SKILL.md` と `.claude/skills/review/SKILL.md`'), ['1'])
+  })
+
+  test('大文字と小文字を区別して照合する', () => {
+    assert.deepEqual(mdLines('`scripts/ci/docs/Doc-Refs.mjs`\n`Scripts/ci/docs/doc-refs.mjs`'), ['1'])
+  })
+
+  test('実在するファイルの末尾に / を付けたパスは、フォルダーとして照合して失敗にする', () => {
+    assert.deepEqual(mdLines('`scripts/ci/check-all.sh/`\n`scripts/ci/check-all.sh`'), ['1'])
+  })
+
+  test('インラインコードの外は、全角の句読点・括弧・かぎ括弧で切る', () => {
+    const text = ['対象は、docs/、README、AGENTS.md', '対象は docs/・README・AGENTS.md', '（frontend/store）', '「docs/sample/sample.md」を読む', '対象は docs/sample/sampel.md、README'].join('\n')
+    assert.deepEqual(mdLines(text), ['5'])
+  })
+
+  test('始まりの一覧の外のパスと、語の途中の / の後のパスは見ない', () => {
+    const text = ['`api/cart.ts`', '`AGENT.md`', '`db/seed/e2e/`', '`.local/a.md`', '`src/docs/missing.md`', '`api/openapi/missing.yaml`'].join('\n')
+    assert.deepEqual(mdLines(text), ['6'])
+  })
+
+  test('コードブロックの中と、Markdown でないファイルの中は見ない', () => {
+    assert.deepEqual(mdLines('```\ndocs/sample/sampel.md\n```'), [])
+    assert.deepEqual(lines(check('backend/Foo.java', '// docs/sample/sampel.md を読む')), [])
+    assert.equal(docRefs.isTargetFile('backend/seed/a.sql'), false)
+    assert.equal(docRefs.isTargetFile('docs/a.txt'), false)
+    assert.deepEqual(lines(check('backend/Foo.java', '// 見本の文書の「ない」')), ['1'])
+  })
+
+  test('当時のパスを書く記録と、進行中の spec は、存在しないパスの検査から除く', () => {
+    const text = '`docs/sample/gone.md`'
+    assert.deepEqual(lines(check('docs/07-記録/a.md', text)), [])
+    assert.deepEqual(lines(check('.claude/skills/review/evals/a.md', text)), [])
+    assert.deepEqual(lines(check('docs/08-spec/566-x/tasks.md', text)), [])
+    assert.deepEqual(lines(check('docs/08-spec/566-x/spec.md', text)), [])
+    assert.deepEqual(lines(check('docs/06-手順書/a.md', text)), ['1'])
+  })
+
+  test('追跡するファイルの一覧は、読む文書の一覧と別に渡せる（画像など、参照を探さないファイルも追跡する）', () => {
+    const files = { ...DOCS, 'docs/dev/setup.md': '`docs/dev/a.png`\n`docs/dev/b.png`' }
+    const problems = checkReferences(Object.keys(files), (path) => files[path], (path) => path in files, [...Object.keys(files), 'docs/dev/a.png'])
+    assert.deepEqual(lines(problems), ['2'])
   })
 })

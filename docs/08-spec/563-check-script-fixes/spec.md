@@ -256,11 +256,11 @@ spec の番号の検査の例：
   - 範囲：`docs/08-spec/563-check-script-fixes/spec.md`
   - 確認方法：追加した例の採否を結果に書く
   - 結果：候補 54 件のうち 52 件を例の表に加え、採らなかった候補はない。Non-goals に回したのは 3 件で、うちモックの準備の呼び出しは、例の表にも加えた。決定を詳しくした点は、ポートの変数の名前、区切りの字、TOML と properties の読み方、秘密の値の語の分け方。文言のキーのコメントの 2 件は、候補の「検出する」を issue の期待に合わせて「検出しない」にした。
-- [ ] **T563-01-02** [テスト] ローカルのポートの検査と、文言のキーのコメントの検査のテストを書き、レッドを確認する（DC-563-1、DC-563-2、DC-563-15）。
+- [x] **T563-01-02** [テスト] ローカルのポートの検査と、文言のキーのコメントの検査のテストを書き、レッドを確認する（DC-563-1、DC-563-2、DC-563-15）。
   - 依存：T563-01-01
   - 範囲：`scripts/ci/config/local-ports.test.mjs`、`scripts/ci/frontend/message-comments.test.mjs`
   - 確認方法：`node --test` が失敗する。commit は次のタスクと同じにする（[開発の進め方](../../05-開発規則/workflow.md)の「循環」）
-- [ ] **T563-01-03** T563-01-02 のテストが通る実装を書き、先頭のコメントを修正する（DC-563-1、DC-563-2、DC-563-16）。
+- [x] **T563-01-03** T563-01-02 のテストが通る実装を書き、先頭のコメントを修正する（DC-563-1、DC-563-2、DC-563-16）。
   - 依存：T563-01-02
   - 範囲：`scripts/ci/config/local-ports.mjs`、`scripts/ci/frontend/message-comments.mjs`
   - 確認方法：`node --test`、`node scripts/ci/config/local-ports.mjs`、`node scripts/ci/frontend/message-comments.mjs`

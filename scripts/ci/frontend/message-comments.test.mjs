@@ -48,6 +48,68 @@ describe('文言のキーのコメントの検査', () => {
     assert.deepEqual(findMissingComments(text), [{ line: 2, key: 'a' }])
   })
 
+  test('アロー関数の本体の呼び出しは、本体の別の行のコメントを呼び出しのコメントにしない（例 1）', () => {
+    const text = ['const labels = () => {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(text), [{ line: 2, key: 'cart.title' }])
+  })
+
+  test('戻り値の型を書いた関数の本体も、JSX の式と読まない（例 2）', () => {
+    const text = ['function f(): Promise<string> {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(text), [{ line: 2, key: 'cart.title' }])
+  })
+
+  test('戻り値の型がオブジェクトの型の関数の本体も、JSX の式と読まない（例 7）', () => {
+    const text = ['function f(price: Price): { inclTax: string } {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(text), [{ line: 2, key: 'cart.title' }])
+  })
+
+  test('戻り値の型に波括弧と入れ子の型引数を書いた関数の本体も、JSX の式と読まない（例 8）', () => {
+    const first = ['async function f(', '): Promise<{ cartId: string }> {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(first), [{ line: 3, key: 'cart.title' }])
+    const second = ['async function g(', '): Promise<T | Extract<R, { ok: false }>> {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(second), [{ line: 3, key: 'cart.title' }])
+  })
+
+  test('クラスのメソッドの本体も、JSX の式と読まない（例 9）', () => {
+    const text = ['class ErrorFallback extends Component<Props> {', '  render() {', "    const a = t('cart.title')", '    return a // 返す', '  }', '}'].join('\n')
+    assert.deepEqual(findMissingComments(text), [{ line: 3, key: 'cart.title' }])
+  })
+
+  test('JSX の式の中のアロー関数の本体は、外側の式の終わりのコメントで通る（例 3）', () => {
+    const text = [
+      '<ul>',
+      '  {items.map((item) => {',
+      "    const a = t('cart.title')",
+      '    return <li key={item.id}>{a}</li>',
+      '  })',
+      '  /* 表示 */}',
+      '</ul>',
+    ].join('\n')
+    assert.deepEqual(findMissingComments(text), [])
+  })
+
+  test('属性の式の中のアロー関数の本体は、同じ属性の式の別の行のコメントで通る（例 5）', () => {
+    const text = ['<button', '  onClick={() => {', "    toast(t('order.cancelled'))", '    setOpen(false) // 閉じる', '  }}', '/>'].join('\n')
+    assert.deepEqual(findMissingComments(text), [])
+  })
+
+  test('JSX の式の中のアロー関数の本体は、同じ式の後の行のコメントで通る（例 6）', () => {
+    const text = [
+      '<ul>',
+      '  {orders.items.map((order) => {',
+      "    const s = t('status')",
+      '    return <li>{s}{deadline /* 支払の期限 */}</li>',
+      '  })}',
+      '</ul>',
+    ].join('\n')
+    assert.deepEqual(findMissingComments(text), [])
+  })
+
+  test('要素の直後の複数行の式の終わりのコメントは通る（例 10）', () => {
+    const text = ['<p className="text-sm">{', "  t('k')", '  /* 表示 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(text), [])
+  })
+
   test('キーを二重引用符で書いた呼び出しも見る', () => {
     assert.deepEqual(findMissingComments('<span>{t("save")}</span>'), [{ line: 1, key: 'save' }])
   })

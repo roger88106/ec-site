@@ -4,6 +4,10 @@
 //
 // 対象は、店舗画面・管理画面・共有パッケージの本番ソース（.ts、.tsx）と、店舗画面・管理画面の src/test/ 内のテスト補助と、generated/ 内の .tsx。
 //
+// コメントを式の終わりに書く形のため、呼び出しを包む JSX の式（子の `{…}`、属性の `={…}`）の中のコメントでも通す。
+// 関数の本体（アロー関数、戻り値の型を書いた関数、クラスとメソッド）の `{` は JSX の式と読まず、外側へ探し続ける。
+// 外側に JSX の式があれば、その式の中のコメントで通る。
+//
 // 失敗したとき：呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く。
 //
 // 除外：なし
@@ -47,6 +51,52 @@ function jsxExpressionEnd(text, from, limit) {
 }
 
 /**
+ * `{` の直前の文字列が、JSX の要素のタグの終わり（`<p className="x">`、`</b>`、`<br />`）かを返す。
+ *
+ * `>` で終わっていても、アロー関数の `=>` と、型引数の終わり（`Promise<string>`、`Component<Props>`）は、関数やクラスの本体の前なので違う。
+ * 型引数は、対応する `<` が名前の直後にあることで、タグと見分ける。
+ *
+ * @param {string} before `{` の直前までのソース（末尾の空白は除く）
+ * @returns {boolean} タグの終わりなら true
+ */
+function endsWithJsxTag(before) {
+  if (!before.endsWith('>') || before.endsWith('=>')) return false
+  let depth = 0
+  for (let i = before.length - 1; i >= 0; i -= 1) {
+    if (before[i] === '>' && before[i - 1] !== '=') {
+      depth += 1
+    } else if (before[i] === '<') {
+      depth -= 1
+      if (depth === 0) return !/[\w$]/.test(before[i - 1] ?? '')
+    }
+  }
+  return true
+}
+
+/**
+ * `{` の直前の文字列が、前の JSX の式の終わり（`{a}{b}` の `}`）かを返す。
+ *
+ * 戻り値の型がオブジェクトの型（`): { inclTax: string } {`）のときの `}` は、関数の本体の前なので違う。
+ * 対応する `{` の直前が `:` なら、型である。
+ *
+ * @param {string} before `{` の直前までのソース（末尾の空白は除く）
+ * @returns {boolean} 前の JSX の式の終わりなら true
+ */
+function endsWithJsxExpression(before) {
+  if (!before.endsWith('}')) return false
+  let depth = 0
+  for (let i = before.length - 1; i >= 0; i -= 1) {
+    if (before[i] === '}') {
+      depth += 1
+    } else if (before[i] === '{') {
+      depth -= 1
+      if (depth === 0) return !before.slice(0, i).trimEnd().endsWith(':')
+    }
+  }
+  return true
+}
+
+/**
  * 呼び出しを包む、いちばん内側の JSX の式（子の `{` か、属性の `={`）の範囲を返す。
  *
  * 式が複数行にわたり、コメントを式の終わりに書く形（`{ a ? t('x') : b /* … *\/ }`）のため。
@@ -67,8 +117,8 @@ function enclosingJsxExpression(text, index) {
       }
       // JSX の子の式は、直前（空白を除く）が要素の終わり（>）か前の式（}）。属性の値は、名前の直後の ={
       const before = text.slice(0, i).trimEnd()
-      const isJsx = /[>}]$/.test(before) || /[\w-]=$/.test(text.slice(0, i))
-      // 引数のオブジェクトや関数の本体の括弧なら、外側へ探し続ける
+      const isJsx = endsWithJsxTag(before) || endsWithJsxExpression(before) || /[\w-]=$/.test(text.slice(0, i))
+      // 引数のオブジェクトや関数の本体（アロー関数、戻り値の型を書いた関数、クラスとメソッド）の括弧なら、外側へ探し続ける
       if (!isJsx) continue
       let inner = 0
       for (let j = i + 1; j < text.length; j += 1) {

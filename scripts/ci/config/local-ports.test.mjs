@@ -65,6 +65,51 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.deepEqual(parseDocPorts('http://localhost:8080/api と :8090、4242 4242、12:3456'), [8080, 8090, 3456])
   })
 
+  test('文書の ${変数:-ポート} の形のポートを読む（例 2）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象の文書の例
+    assert.deepEqual(parseDocPorts('起動は ${PORT:-9999} で待つ'), [9999])
+  })
+
+  test('スクリプトの PORT="${PORT:-9999}"、:=、-、=、引用符で囲んだ既定値のポートを読む（例 1、7、8、9）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const lines = ['PORT="${PORT:-9999}"', 'PORT="${PORT:=9998}"', 'PORT="${PORT-9997}"', 'PORT="${PORT=9996}"', 'PORT="${PORT:-"9995"}"', "PORT=\"${PORT:-'9994'}\""]
+    for (const [index, line] of lines.entries()) {
+      assert.deepEqual(parseConfigPorts(line), [9999 - index], line)
+    }
+  })
+
+  test('スクリプトの ${PORT:-ポート} の既定値が一覧にないときは失敗にし、一覧にあるときは通す（例 1、3）', () => {
+    const script = (value) => ({ 'scripts/dev/x.sh': `PORT="\${PORT:-${value}}"` })
+    const problems = findPortMismatches({ ...INPUT, configs: script(9999) })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /x\.sh.*9999/)
+    assert.deepEqual(findPortMismatches({ ...INPUT, configs: script(8080) }), [])
+  })
+
+  test('文書の ${PORT:-ポート} の既定値が一覧にないときは失敗にする（例 2）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象の文書の例
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': `${DOC}\n起動は \${PORT:-9999} で待つ` } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /setup\.md.*9999/)
+  })
+
+  test('ポートでない既定値は読まない：2 桁、名前に PORT を含まない変数、IP アドレス（例 5、6、10）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const text = 'TAIL_LINES="${TAIL_LINES:-30}"\nWAIT_MS="${WAIT_MS:-5000}"\nADDR="${LOCAL_BIND_ADDRESS:-127.0.0.1}"'
+    assert.deepEqual(parseConfigPorts(text), [])
+    assert.deepEqual(findPortMismatches({ ...INPUT, configs: { 'scripts/dev/x.sh': text } }), [])
+  })
+
+  test('compose の ${MAILPIT_SMTP_PORT:-2525} は compose の読み方で読み、他のファイルの読み方の問題にしない（例 4）', () => {
+    assert.deepEqual(findPortMismatches(INPUT), [])
+    assert.deepEqual(parseComposeHostPorts(COMPOSE).ports, [5432, 2525])
+  })
+
+  test('検査の対象にしていないファイルの PORT="${PORT:-9999}" は見ない（例 11）', () => {
+    // 対象は、呼び出す側が渡した configs・docs・sources だけ。渡さなかったファイルの内容は照合しない
+    assert.deepEqual(findPortMismatches({ ...INPUT, configs: { 'scripts/dev/ok.sh': 'echo ok' } }), [])
+  })
+
   test('一覧にないポートが compose にあれば失敗にする', () => {
     const compose = `${COMPOSE}\n  extra:\n    ports:\n      - "\${LOCAL_BIND_ADDRESS:-127.0.0.1}:6379:6379"`
     const problems = findPortMismatches({ ...INPUT, compose })

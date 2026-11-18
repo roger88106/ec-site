@@ -21,7 +21,7 @@ import java.util.function.Function;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 
 /**
- * C 側で商品を 1 ページずつ取得する骨組み
+ * C 側で商品を 1 ページずつ取得する共通の処理
  *
  * <p>一覧と検索で共通の処理（表示条件・列・ページング・要約の組み立て・件数）をまとめる。
  * 呼び出し元は、絞り込みの条件と並び順だけを渡す。
@@ -43,7 +43,7 @@ class StoreProductPages {
     /**
      * 表示される商品の 1 ページ分を取得する。
      *
-     * <p>表示される商品で、税込価格を出せることを、呼び出し元の絞り込みに加える。
+     * <p>呼び出し元の絞り込みに、表示される商品であることと、税込価格を出せることを加える。
      *
      * @param request ページの指定
      * @param now     表示時刻
@@ -60,10 +60,7 @@ class StoreProductPages {
             return PageResult.of(List.of(), request, 0);
         }
         var priceInclTax = PriceInclTaxField.of(rates);
-        // 表示条件は一覧と検索で同じ式を使う（検索だけに非公開の商品が出る事故を防ぐ）
-        var condition = ProductVisibility.visibleAt(now)
-                .and(priceInclTax.isNotNull())
-                .and(filter.apply(priceInclTax));
+        var condition = visible(now, priceInclTax).and(filter.apply(priceInclTax));
 
         var rows = dsl.select(PRODUCT.ID, PRODUCT.NAME, priceInclTax, PRODUCT.PRICE_EXCL_TAX)
                 .from(PRODUCT)
@@ -76,5 +73,18 @@ class StoreProductPages {
         var items = storeProductSummaries.of(rows, priceInclTax);
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
+    }
+
+    /**
+     * 表示される商品で、税込価格を出せる条件。
+     *
+     * <p>一覧・検索・1 件の取得で同じ式を使う（一部だけに非公開の商品が出る事故を防ぐ）。
+     *
+     * @param now          表示時刻
+     * @param priceInclTax 税込価格の式
+     * @return 表示の条件
+     */
+    static Condition visible(Instant now, Field<Long> priceInclTax) {
+        return ProductVisibility.visibleAt(now).and(priceInclTax.isNotNull());
     }
 }

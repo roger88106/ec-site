@@ -50,7 +50,7 @@ public class VariantSalesQueryService {
      */
     public VariantSalesReport variants(@NonNull VariantSalesQuery query) {
         // 商品カタログのバリアントの一覧と、売れたバリアントの集計
-        var productId = Objects.requireNonNull(query.scope().productId());
+        var productId = Objects.requireNonNull(query.scope().productId(), "バリアントの売れ行きの条件は商品を選んだ範囲を持つ");
         var product = catalogDirectory.findProduct(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         var totals = queryRepository.variantSales(query.period(), query.basis(), query.scope())
@@ -70,7 +70,7 @@ public class VariantSalesQueryService {
                 total.quantity(), total.amount())));
         // 安定な並べ替えなので、販売数量が同じなら商品カタログの並びの順のまま
         rows.sort(Comparator.comparingLong(VariantSales::quantity).reversed());
-        // 商品を選ぶ範囲は、明細だけを数えるので、送料を除いている
+        // 商品を選んだ範囲は、明細だけを数えるので、送料を除いている
         return new VariantSalesReport(product.productId(), product.name(), rows, query.scope().shippingExcluded());
     }
 }

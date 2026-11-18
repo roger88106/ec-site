@@ -205,13 +205,13 @@ class CustomerBreakdownQueryTest {
         }
 
         @Test
-        @DisplayName("BR-26 商品を選ぶと、送料を除く指定の真偽によらず、同じ売上額で送料を除いた印を付ける")
+        @DisplayName("BR-26 商品を選ぶと、送料を除く指定が true でも false でも、売上額は同じで、送料を除いたことを示す")
         void ignoresShippingSettingForProduct() {
-            // 操作：商品 A を選び、送料を除く指定を真と偽にして集計する
+            // 操作：商品 A を選び、送料を除く指定を true と false にして集計する
             var excluded = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productA, false, true)));
             var included = service.breakdown(query(productA));
 
-            // 確認：売上額が同じで、どちらも送料を除いた印を付ける
+            // 確認：売上額が同じで、どちらも送料を除いたことを示す
             assertThat(excluded.prefectures()).isEqualTo(included.prefectures());
             assertThat(excluded.shippingExcluded()).isTrue();
         }
@@ -225,6 +225,24 @@ class CustomerBreakdownQueryTest {
             // 確認：出荷済みの北海道の 1 件だけ
             assertThat(report.prefectures()).extracting(PrefectureSales::prefectureCode, PrefectureSales::orders)
                     .containsExactly(tuple("01", 1L));
+        }
+
+        @Test
+        @DisplayName("BR-26 商品を選んで消費税を除くと、その商品の明細の税抜小計だけを数える")
+        void selectsProductExcludingTax() {
+            // 操作：商品 A を選び、消費税を除いて集計する
+            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productA, true, false)));
+
+            // 確認：都道府県・年齢層・性別のどれも、商品 A の明細の税抜小計だけ（商品 B と送料は含めない）
+            assertThat(report.prefectures()).filteredOn(row -> "01".equals(row.prefectureCode()))
+                    .extracting(PrefectureSales::amount).containsExactly(Money.of(lineExclTax(1)));
+            assertThat(report.prefectures()).filteredOn(row -> "13".equals(row.prefectureCode()))
+                    .extracting(PrefectureSales::amount).containsExactly(Money.of(lineExclTax(2) + lineExclTax(1)));
+            assertThat(report.ageGroups()).filteredOn(row -> row.ageGroup() == AgeGroup.TWENTIES)
+                    .extracting(AgeGroupSales::amount).containsExactly(Money.of(lineExclTax(1)));
+            assertThat(report.genders()).filteredOn(row -> row.gender() == ReportGender.FEMALE)
+                    .extracting(GenderSales::amount).containsExactly(Money.of(lineExclTax(2)));
+            assertThat(report.shippingExcluded()).isTrue();
         }
 
         @Test

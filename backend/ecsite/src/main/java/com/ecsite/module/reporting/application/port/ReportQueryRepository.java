@@ -35,7 +35,7 @@ public interface ReportQueryRepository {
      *
      * @param period 期間
      * @param basis  売上の数え方
-     * @param scope  集計の範囲（商品を選ぶ範囲）
+     * @param scope  集計の範囲（商品を選んだ範囲）
      * @return 売れたバリアントの売上
      */
     List<VariantTotal> variantSales(ReportPeriod period, Basis basis, SalesScope scope);

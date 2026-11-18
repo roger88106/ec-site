@@ -85,7 +85,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      *
      * @param period 期間
      * @param basis  売上の数え方
-     * @param scope  集計の範囲（商品を選ぶ範囲）
+     * @param scope  集計の範囲（商品を選んだ範囲）
      * @return 売れたバリアントの売上
      */
     @Override
@@ -173,14 +173,14 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     }
 
     /**
-     * 商品を選ぶ集計に、商品の明細との結合と、数える注文と商品の条件を加える。
+     * 商品を選んだ集計に、商品の明細の結合と、期間・基準・商品の条件を加える。
      *
      * <p>範囲の商品の明細だけを数える。
      */
     private static <R extends Record> SelectConditionStep<R> productLines(SelectJoinStep<R> select, ReportPeriod period,
                                                                            Basis basis, SalesScope scope) {
         return select.join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
-                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(Objects.requireNonNull(scope.productId())));
+                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(Objects.requireNonNull(scope.productId(), "商品を選んだ集計の範囲には商品 ID がある")));
     }
 
     /**

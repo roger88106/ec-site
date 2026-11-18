@@ -41,7 +41,7 @@ class SalesScopeTest {
     }
 
     @Test
-    @DisplayName("バリアント別の範囲は、商品を選び、常に送料を除く")
+    @DisplayName("バリアント別の範囲は、商品を選んだ範囲で、常に送料を除く")
     void variantScopeAlwaysExcludesShipping() {
         // 準備：バリアント別の範囲
         var productId = UUID.randomUUID();

@@ -58,7 +58,7 @@ public class ReportCatalogApi {
     }
 
     /**
-     * application の view を公開の型に変換する。
+     * application が返す、保存されている商品の詳細を、公開の型に変換する。
      */
     private static ReportProduct toProduct(StoredProductDetail product) {
         var variants = product.variants().stream()

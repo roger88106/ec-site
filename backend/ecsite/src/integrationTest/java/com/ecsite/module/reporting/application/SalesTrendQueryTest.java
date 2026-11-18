@@ -194,13 +194,13 @@ class SalesTrendQueryTest {
         }
 
         @Test
-        @DisplayName("BR-26 商品を選ぶと、送料を除く指定の真偽によらず、同じ売上額で送料を除いた印を付ける")
+        @DisplayName("BR-26 商品を選ぶと、送料を除く指定が true でも false でも、売上額は同じで、送料を除いたことを示す")
         void ignoresShippingSettingForProduct() {
-            // 操作：商品 A を選び、送料を除く指定を真と偽にして集計する
+            // 操作：商品 A を選び、送料を除く指定を true と false にして集計する
             var excluded = service.trend(query(Basis.ORDER, productA, false, true));
             var included = service.trend(query(Basis.ORDER, productA, false, false));
 
-            // 確認：売上額が同じで、どちらも送料を除いた印を付ける
+            // 確認：売上額が同じで、どちらも送料を除いたことを示す
             assertThat(excluded.points()).isEqualTo(included.points());
             assertThat(excluded.shippingExcluded()).isTrue();
         }

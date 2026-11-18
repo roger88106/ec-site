@@ -43,7 +43,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     private final StoreImageUrls storeImageUrls;
 
     /**
-     * C 側で商品を 1 ページずつ取得する骨組み
+     * C 側で商品を 1 ページずつ取得する共通の処理
      */
     private final StoreProductPages storeProductPages;
 
@@ -82,8 +82,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
         var found = dsl.select(PRODUCT.ID, PRODUCT.NAME, PRODUCT.DESCRIPTION, priceInclTax, PRODUCT.PRICE_EXCL_TAX, axes)
                 .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
-                .and(ProductVisibility.visibleAt(now))
-                .and(priceInclTax.isNotNull())
+                .and(StoreProductPages.visible(now, priceInclTax))
                 .fetchOptional();
         return found.map(row -> {
             var images = storeImageUrls.ofProduct(id);

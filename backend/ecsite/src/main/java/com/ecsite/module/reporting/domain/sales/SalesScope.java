@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * 集計の範囲
  *
- * <p>商品を選んだら、その商品の明細だけを数え、送料は含めない（指定によらず送料を除く）。
+ * <p>商品を選んだら、その商品の明細だけを数え、送料は含めない（送料を除く指定にかかわらず、送料を除く）。
  *
  * @param productId       商品 ID。全商品なら null
  * @param excludeTax      消費税を除くか
@@ -17,13 +17,13 @@ import java.util.UUID;
 public record SalesScope(@Nullable UUID productId, boolean excludeTax, boolean excludeShipping) {
 
     /**
-     * 商品を選ぶ範囲を作る。
+     * 商品を選んだ範囲を作る。
      *
      * <p>明細だけを数えるので、送料はいつも除く。
      *
      * @param productId  商品 ID
      * @param excludeTax 消費税を除くか
-     * @return 商品を選ぶ範囲
+     * @return 商品を選んだ範囲
      */
     public static SalesScope ofProduct(@NonNull UUID productId, boolean excludeTax) {
         return new SalesScope(productId, excludeTax, true);

@@ -26,7 +26,7 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 class PostgresProductSearch implements ProductSearch {
 
     /**
-     * C 側で商品を 1 ページずつ取得する骨組み
+     * C 側で商品を 1 ページずつ取得する共通の処理
      */
     private final StoreProductPages storeProductPages;
 

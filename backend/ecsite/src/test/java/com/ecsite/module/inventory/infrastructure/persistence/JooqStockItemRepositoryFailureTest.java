@@ -81,6 +81,33 @@ class JooqStockItemRepositoryFailureTest {
         }
 
         @Test
+        @DisplayName("運営者の減らす調整が更新されず、今の在庫数に加えると上限を超えるなら、上限を超えるエラー")
+        void negativeManualDeltaOverLimitIsExceeded() {
+            // 操作と確認：在庫数 1,000,010 に -5 を加えても上限を超えるので、STOCK_QUANTITY_EXCEEDED を選ぶ
+            assertBusinessError(() -> {
+                throw JooqStockItemRepository.failureOf(-5, true, () -> Optional.of(MAX_MANUAL_QUANTITY + 10));
+            }, InventoryErrorCode.STOCK_QUANTITY_EXCEEDED);
+        }
+
+        @Test
+        @DisplayName("運営者の減らす調整が更新されず、今の在庫数に加えても上限を超えないなら、負になるエラー")
+        void negativeManualDeltaWithinLimitIsInsufficient() {
+            // 操作と確認：在庫数 3 に -5 を加えると負になるので、INSUFFICIENT_STOCK を選ぶ
+            assertBusinessError(() -> {
+                throw JooqStockItemRepository.failureOf(-5, true, () -> Optional.of(3));
+            }, InventoryErrorCode.INSUFFICIENT_STOCK);
+        }
+
+        @Test
+        @DisplayName("運営者でない減らす調整は、在庫数が上限を超えていても上限を当てず、在庫があれば負になるエラー")
+        void negativeNonManualDeltaIgnoresLimit() {
+            // 操作と確認：上限を当てない調整は、在庫があれば INSUFFICIENT_STOCK を選ぶ
+            assertBusinessError(() -> {
+                throw JooqStockItemRepository.failureOf(-5, false, () -> Optional.of(MAX_MANUAL_QUANTITY + 10));
+            }, InventoryErrorCode.INSUFFICIENT_STOCK);
+        }
+
+        @Test
         @DisplayName("減らす調整が更新されず、在庫がなければ見つからない")
         void negativeDeltaWithoutStockIsNotFound() {
             // 操作と確認：NOT_FOUND を選ぶ

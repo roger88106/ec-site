@@ -426,6 +426,48 @@ class InventoryApiTest {
             // 確認：在庫数が上限のまま
             expectQuantity(mockMvc, variantId, MANUAL_LIMIT);
         }
+
+        @Test
+        @DisplayName("注文のキャンセルで上限を超えた在庫への、運営者の減らす調整は、調整後も上限を超えるなら 400 で、在庫数は変わらない")
+        void rejectsDecreaseThatLeavesQuantityOverOneMillion() throws Exception {
+            // 準備：上限ちょうどの在庫を、注文で 10 減らし、運営者が 10 増やし、注文のキャンセルで 10 戻して 1,000,010 にする
+            adjust(variantId, MANUAL_LIMIT, "ARRIVAL", null).andExpect(status().isCreated());
+            var holderId = UUID.randomUUID();
+            var orderId = UUID.randomUUID();
+            var quantities = Map.of(variantId, 10);
+            stockReservationApi.reserve(holderId, quantities, clock.instant().plusSeconds(600));
+            stockReservationApi.commit(holderId, quantities, orderId, ORDER_NUMBER);
+            adjust(variantId, 10, "ARRIVAL", null).andExpect(status().isCreated());
+            stockReservationApi.restore(quantities, orderId, ORDER_NUMBER);
+            expectQuantity(mockMvc, variantId, MANUAL_LIMIT + 10);
+
+            // 操作と確認：-5 の調整（調整後 1,000,005）は STOCK_QUANTITY_EXCEEDED
+            adjust(variantId, -5, "STOCKTAKE", null)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("STOCK_QUANTITY_EXCEEDED"));
+
+            // 確認：在庫数が 1,000,010 のまま
+            expectQuantity(mockMvc, variantId, MANUAL_LIMIT + 10);
+        }
+
+        @Test
+        @DisplayName("注文のキャンセルで上限を超えた在庫への、運営者の減らす調整は、調整後が上限以下なら成功する")
+        void acceptsDecreaseThatLeavesQuantityAtOneMillion() throws Exception {
+            // 準備：上限ちょうどの在庫を、注文で 10 減らし、運営者が 10 増やし、注文のキャンセルで 10 戻して 1,000,010 にする
+            adjust(variantId, MANUAL_LIMIT, "ARRIVAL", null).andExpect(status().isCreated());
+            var holderId = UUID.randomUUID();
+            var orderId = UUID.randomUUID();
+            var quantities = Map.of(variantId, 10);
+            stockReservationApi.reserve(holderId, quantities, clock.instant().plusSeconds(600));
+            stockReservationApi.commit(holderId, quantities, orderId, ORDER_NUMBER);
+            adjust(variantId, 10, "ARRIVAL", null).andExpect(status().isCreated());
+            stockReservationApi.restore(quantities, orderId, ORDER_NUMBER);
+
+            // 操作と確認：-10 の調整（調整後 1,000,000）は 201 で、調整後の在庫数が上限
+            adjust(variantId, -10, "STOCKTAKE", null)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.quantityAfter").value(MANUAL_LIMIT));
+        }
     }
 
     @Nested

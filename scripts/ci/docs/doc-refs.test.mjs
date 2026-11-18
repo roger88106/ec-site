@@ -804,6 +804,18 @@ describe('見出しの参照の検査の広げ方（DC-566-2〜4、DC-566-7、DC
     assert.deepEqual(mdLines('```\n見本の文書の\n```\n「ない」を見る'), [])
   })
 
+  test('つないだ 2 行の、次の行だけにある参照は、前の行の番号で重ねて報告しない（次の行の 1 件だけにする）', () => {
+    assert.deepEqual(mdKinds('本文は見本の文書\n「節」と、見本の文書の「ない見出し」を読む。'), ['2:見出しがない'])
+    assert.deepEqual(lines(check('backend/Foo.java', '// 本文は見本の文書\n// 「節」と、見本の文書の「ない見出し」を読む。')), ['2'])
+  })
+
+  test('最初の「」が語の引用のとき、続く「」も語の引用として通す。最初が見出しに当たるときは「の」の抜けを報告する', () => {
+    assert.deepEqual(mdLines(['用語集「写し」と「控え」', '見本の文書「ない」、「なし」', '見本の文書「ない」「なし」', '見本の文書「ない」や「なし」'].join('\n')), [])
+    assert.deepEqual(mdKinds('見本の文書「規模」と「ない」'), ['1:見出しの参照に「の」がない', '1:見出しがない'])
+    assert.deepEqual(mdKinds('見本の文書「ない」と「規模」の「ない」'), [])
+    assert.deepEqual(mdKinds('見本の文書の「規模」と「ない」'), ['1:見出しがない'])
+  })
+
   test('実在する文書のパスで終わる行の次の行が、見出しに当たらない「」で始まっても通す', () => {
     assert.deepEqual(lines(check('backend/Foo.java', '// docs/testing/writing.md\n// 「ない」と書く')), [])
   })

@@ -3,7 +3,7 @@
 //   - Markdown のリンクテキスト：# の付かない、docs/ の下の文書へのリンクで、リンクテキストが文書の名前か（略した名前を見つけるため）。許可する形は isAllowedLinkLabel
 //   - 見出しの参照（`起票と記録の操作の「起票」`、`の節「…」`、`の『…』` など）：先の文書に、その見出しが 1 つだけあるか。
 //     同じ見出しが 2 つ以上あれば、親の見出しを前に付けた形（`の「段階 1」の「タスク」`）で 1 つに決める。読む形は scanQuoteRefs、比べ方は countHeadingMatches。
-//     見出しの参照の後に `と`・`、`・`・`・`や` か区切りなしで続く「」は、同じ文書の見出しとして確認する。
+//     見出しの参照の後に `と`・`、`・`・`・`や` か区切りなしで続く「」は、同じ文書の見出しとして確認する（「の」のない最初の「」を語の引用として通したときは、続く「」も語の引用として通す）。
 //     文書の名前・リンクの直後の「」と、パスの後に空白を挟んだ「」は、「の」がなくても、最初の「」が先の文書の見出しに当たるときだけ失敗にし、「の」を入れるよう示す。
 //     当たらないものは語の引用（`用語集「写し」`）として通す。空白を挟まないパスの直後の「」は、見出しの参照として読む（なければ失敗。文書の構成の「参照」が許す形）。
 //     行が文書の名前・リンク・パス（とその後の「の」）で終わり、次の行（コメントの印を除く）が「」か `の「` で始まるときは、2 行をつないで読む（Markdown は同じ段落の続きだけ）
@@ -241,7 +241,7 @@ export function splitSectionNumbers(numbers) {
  * @param {Map<string, string>} basenames ファイル名からファイルのパスへの対応
  * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
  * @param {number} [minEnd] 参照の終わりがこの位置より後のものだけを返す（2 行をつないだとき、前の行だけで読める参照を重ねないため）
- * @returns {{ target: string, headings: string[], text: string, noParticle: boolean }[]} 参照（headings は「」の中、親から順）
+ * @returns {{ target: string, headings: string[], text: string, noParticle: boolean, lead?: string[] }[]} 参照（headings は「」の中、親から順。lead は、「の」のない最初の「」に続く参照だけが持つ、最初の「」の中）
  */
 function scanQuoteRefs(file, line, names, basenames, exists, minEnd = 0) {
   const refs = []
@@ -251,6 +251,8 @@ function scanQuoteRefs(file, line, names, basenames, exists, minEnd = 0) {
   let match
   while ((match = QUOTE_HEAD.exec(line)) !== null) {
     const [whole, particle, first] = match
+    // 2 行をつないだとき、次の行から始まる別の参照は、次の行を読むときに返るので、ここでは返さない
+    if (minEnd > 0 && match.index > minEnd) break
     let start = match.index
     let text = whole
     let target = null
@@ -271,13 +273,15 @@ function scanQuoteRefs(file, line, names, basenames, exists, minEnd = 0) {
     let end = match.index + whole.length
     if (!target) continue
     const items = [{ text: text.trim(), end, noParticle }]
+    // 「の」のない最初の「」は、見出しに当たらなければ語の引用になる。続く「」はその語の並びなので、最初の「」の中を持たせ、確認から外せるようにする
+    const lead = noParticle ? quotesOf(items[0].text) : undefined
     for (let next = QUOTE_NEXT.exec(line.slice(end)); next !== null; next = QUOTE_NEXT.exec(line.slice(end))) {
       end += next[0].length
-      items.push({ text: next[1], end, noParticle: false })
+      items.push({ text: next[1], end, noParticle: false, lead })
     }
     QUOTE_HEAD.lastIndex = end
     for (const item of items) {
-      if (item.end > minEnd) refs.push({ target, headings: quotesOf(item.text), text: item.text, noParticle: item.noParticle })
+      if (item.end > minEnd) refs.push({ target, headings: quotesOf(item.text), text: item.text, noParticle: item.noParticle, lead: item.lead })
     }
   }
   return refs
@@ -534,6 +538,8 @@ export function checkReferences(files, read, exists, tracked = files) {
       } else if (ref.headings && ref.target.endsWith('.md')) {
         const index = headingsOf(ref.target)
         const quoted = ref.headings.map((heading) => `「${heading}」`).join('の')
+        // 「の」のない最初の「」が見出しに当たらない（語の引用）とき、続く「」も語の引用として通す
+        if (ref.lead && countHeadingMatches(index.headings, ref.lead.slice(0, 1)) === 0) continue
         if (ref.noParticle) {
           // 「の」のない「」は、最初の「」が先の文書の見出しに当たるときだけ見出しの参照とする。当たらないものは語の引用
           if (countHeadingMatches(index.headings, ref.headings.slice(0, 1)) === 0) continue

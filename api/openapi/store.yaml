@@ -1230,10 +1230,12 @@ components:
       properties:
         acknowledgedOrderIds:
           type: array
-          description: 確認の画面で表示した、支払待ちの注文の ID
+          description: |
+            確認の画面で表示した、支払待ちの注文の ID。要素の null は許し、どの注文とも一致しない（確認していないものとして扱う）。
           items:
             type: string
             format: uuid
+            nullable: true
     PlaceOrderRequest:
       type: object
       description: 連絡先のメールアドレスは受けず、会員の token のメールアドレス（確認済み）を使う

@@ -36,6 +36,8 @@
 //
 // 使い方：node scripts/ci/ja/ja-text.mjs [--warning [--added] | --changed]（リポジトリのルートで）
 //   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。
+//       追加行のあるファイルだけを読む（削除した行だけのファイル、名前だけを変えたファイル、改行コードだけを変えたファイルは読まない）。
+//       error の語は数えず（検査の段で数え済み）、error の語の一部に当たる warning の語も示さない（error の語に warning の語を含む形がある）。
 //       文は、どれかの行が追加行なら、最初の追加行で示す（--changed と同じ選び方）。
 //   --changed：差分の追加行の文で、字数が style.length 以上か読点が style.comma 以上のものを示す。
 //       文の字数の合計が style.cell 以上の表のセルも示す。形は GitHub Actions の注釈（`::warning file=…,line=…::`）。
@@ -149,6 +151,17 @@ function compiled(term) {
  * @returns {string | null} 許容用語の外にある最初の一致（当たった文字列）。なければ null
  */
 function disallowedMatch(line, term) {
+  return disallowedMatches(line, term)[0]?.text ?? null
+}
+
+/**
+ * インラインコードを除いた行の中の、使わない語の一致のうち、許容用語の外にあるものを全て返す。
+ *
+ * @param {string} line インラインコードを除いた行（maskPlainCode の結果）
+ * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }} term 使わない語（または正規表現）と許容用語
+ * @returns {{ at: number, text: string }[]} 許容用語の外にある一致の位置と当たった文字列（左から順）
+ */
+function disallowedMatches(line, term) {
   const { regExp, allows } = compiled(term)
   const matches = []
   if (regExp !== null) {
@@ -159,18 +172,38 @@ function disallowedMatch(line, term) {
     }
   }
   // 大半の行は一致がないので、許容用語の範囲は一致があるときだけ求める
-  if (matches.length === 0) return null
+  if (matches.length === 0) return []
   const allowed = []
   for (const allow of allows) {
     for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
       allowed.push([at, at + allow.length])
     }
   }
-  for (const { at, text } of matches) {
-    const end = at + text.length
-    if (!allowed.some(([from, to]) => from <= at && end <= to)) return text
-  }
-  return null
+  return matches.filter(({ at, text }) => !allowed.some(([from, to]) => from <= at && at + text.length <= to))
+}
+
+/**
+ * warning の語を探す文から、error の語の一致の範囲を、同じ長さの空白に置き換える。
+ *
+ * commit の前の hook（--warning --added）は、error の語を検査の段で数え済みなので、error の語に重なる warning の語（error の語の一部に当たるもの）を重ねて示さない。
+ * 重ならない warning の語は残す。
+ *
+ * @param {string} text 文書、またはコードのコメントとテスト名（インラインコードを除く前）
+ * @param {string} warningMasked text の、全てのインラインコードを除いたもの（warning の語を探す文）
+ * @param {object[]} errorTerms 当てる error の項目（termsFor の結果）
+ * @returns {string} error の語の範囲を空白にした、warning の語を探す文
+ */
+function blankErrorSpans(text, warningMasked, errorTerms) {
+  const lines = warningMasked.split('\n')
+  text.split('\n').forEach((raw, index) => {
+    const line = maskPlainCode(raw)
+    for (const term of errorTerms) {
+      for (const { at, text: matched } of disallowedMatches(line, term)) {
+        lines[index] = lines[index].slice(0, at) + ' '.repeat(matched.length) + lines[index].slice(at + matched.length)
+      }
+    }
+  })
+  return lines.join('\n')
 }
 
 /**
@@ -802,16 +835,17 @@ export function stripMessageComments(message) {
 }
 
 /**
- * 測るファイルを返す（--warning --added）。追加行の差分があれば、差分にあるファイルだけにする。
+ * 測るファイルを返す（--warning --added）。追加行の差分があれば、追加行のあるファイルだけにする。
  *
- * 差分にないファイルは追加行がないので、測っても示さない（結果は全てのファイルを測るときと同じ）。
+ * 差分にないファイルと、削除した行だけのファイルは追加行がないので、読んでも示さない（結果は全てのファイルを測るときと同じ）。
+ * 追跡していない新しいファイルのように、全ての行が追加行のファイルは null で渡す。
  *
  * @param {string[]} files 対象のファイル
  * @param {Map<string, Set<number> | null> | null} addedMap ファイルごとの追加行。null なら全てのファイルを測る
  * @returns {string[]} 測るファイル（files の順）
  */
 export function filesToMeasure(files, addedMap) {
-  return addedMap === null ? files : files.filter((file) => addedMap.has(file))
+  return addedMap === null ? files : files.filter((file) => addedMap.has(file) && (addedMap.get(file) === null || addedMap.get(file).size > 0))
 }
 
 /**
@@ -978,6 +1012,11 @@ function checkFiles(list, { warning, added }) {
     return lines === null || lines.has(line)
   }
   const targets = readTargets(addedMap, warning)
+  if (addedMap !== null) {
+    // error の語は検査の段で数え済みなので、error の語に重なる warning の語は示さない
+    for (const doc of targets.docs) doc.masked = blankErrorSpans(doc.text, doc.masked, termsFor(list.error, doc.file))
+    for (const item of targets.code) item.masked = blankErrorSpans(item.comments, item.masked, termsFor(list.error, item.file))
+  }
   const allowProblems = warning ? [] : findAllowProblems([...targets.docs, ...targets.code].map(({ masked }) => masked), terms, { masked: true })
   let termHits = collectTermHits(targets, terms)
   if (!warning) {

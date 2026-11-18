@@ -1033,6 +1033,7 @@ describe('日本語の文の検査（warning と終了コード）', () => {
   }
 
   const longSentence = `${'あ'.repeat(200)}である。要求を送る。少し修正する。\n`
+  const okCode = { 'src/ok.mjs': '// 問題のない文である。\n' }
   const files = { 'docs/a.md': longSentence, 'src/a.mjs': `// ${'い'.repeat(200)}である。\n` }
 
   test('warning だけのとき、既定の実行は成功し、warning を数えない。最後の行は要約の行である', () => {
@@ -1053,6 +1054,62 @@ describe('日本語の文の検査（warning と終了コード）', () => {
     assert.equal(result.status, 0)
     assert.match(result.stdout, /docs\/a\.md:1 .*字数/)
     assert.doesNotMatch(result.stdout, /docs\/b\.md|src\/a\.mjs/)
+  })
+
+  /**
+   * 追加行だけの差分を作る（git diff -U0 の形）。
+   *
+   * @param {string} file パス
+   * @param {string} hunk @@ の行
+   * @param {string[]} body hunk の本文の行
+   * @returns {string} 差分
+   */
+  function diffOf(file, hunk, body = []) {
+    return [`diff --git a/${file} b/${file}`, `--- a/${file}`, `+++ b/${file}`, hunk, ...body].join('\n')
+  }
+
+  test('--warning --added は、差分にないファイルの error の語と warning の語を示さない（hook の例 1）', () => {
+    const diff = diffOf('docs/a.md', '@@ -0,0 +1 @@', ['+問題のない文である。'])
+    const result = runIn({ ...okCode, 'docs/a.md': '問題のない文である。\n', 'docs/b.md': `見直す。要求を送る。\n${longSentence}` }, ['--warning', '--added'], diff)
+    assert.equal(result.status, 0)
+    assert.equal(result.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、削除した行だけがある文書を示さない（hook の例 2）', () => {
+    const diff = diffOf('docs/a.md', '@@ -5 +4,0 @@', ['-古い行'])
+    const result = runIn({ ...okCode, 'docs/a.md': `見直す。要求を送る。\n${longSentence}` }, ['--warning', '--added'], diff)
+    assert.equal(result.status, 0)
+    assert.equal(result.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、名前だけを変えたファイルと改行コードだけを変えたファイルを示さない（hook の例 3）', () => {
+    const renamed = ['diff --git a/docs/old.md b/docs/new.md', 'similarity index 100%', 'rename from docs/old.md', 'rename to docs/new.md'].join('\n')
+    const renamedResult = runIn({ ...okCode, 'docs/new.md': `見直す。要求を送る。\n${longSentence}` }, ['--warning', '--added'], renamed)
+    assert.equal(renamedResult.stdout.trimEnd(), '注意する語と文：0')
+    // 改行コードだけの違いは、--ignore-cr-at-eol により差分が空になる
+    const emptyResult = runIn({ ...okCode, 'docs/a.md': `見直す。要求を送る。\r\n${longSentence}` }, ['--warning', '--added'], '')
+    assert.equal(emptyResult.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、追加行の error の語を示さず、それに重なる warning の語も重ねて示さない（hook の例 4）', () => {
+    const diff = diffOf('docs/a.md', '@@ -0,0 +1 @@', ['+文書を見直す。'])
+    const result = runIn({ ...okCode, 'docs/a.md': '文書を見直す。\n' }, ['--warning', '--added'], diff)
+    assert.equal(result.status, 0)
+    assert.doesNotMatch(result.stdout, /見直す|直す/)
+    assert.equal(result.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、error の語に重ならない warning の語は、同じ行にあっても示す', () => {
+    const diff = diffOf('docs/a.md', '@@ -0,0 +1 @@', ['+文書を見直す。誤りを直す。'])
+    const result = runIn({ ...okCode, 'docs/a.md': '文書を見直す。誤りを直す。\n' }, ['--warning', '--added'], diff)
+    assert.match(result.stdout, /^docs\/a\.md:1 直す → /m)
+    assert.doesNotMatch(result.stdout, /見直す/)
+    assert.equal(result.stdout.trimEnd().split('\n').at(-1), '注意する語と文：1')
+  })
+
+  test('--warning（--added なし）は、error の語に重なる warning の語も今までどおり示す', () => {
+    const result = runIn({ ...okCode, 'docs/a.md': '文書を見直す。\n' }, ['--warning'])
+    assert.match(result.stdout, /^docs\/a\.md:1 直す → /m)
   })
 
   test('--warning は文体・崩れの疑い・「要求」を一覧にし、成功する。最後の行は要約の行である', () => {
@@ -1306,8 +1363,8 @@ describe('日本語の文の検査（--warning --added の測るファイル）'
     assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md'], null), ['docs/a.md', 'docs/b.md'])
   })
 
-  test('追加行の差分があれば、差分にあるファイルだけを（順を変えずに）測る。追加行のないファイルも差分にあれば測る', () => {
-    const added = new Map([['docs/b.md', new Set([1])], ['docs/c.md', new Set()], ['docs/x.md', new Set([2])]])
-    assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md', 'docs/c.md'], added), ['docs/b.md', 'docs/c.md'])
+  test('追加行の差分があれば、追加行のあるファイルだけを（順を変えずに）測る。追加行のないファイル（削除した行だけ）は差分にあっても測らない', () => {
+    const added = new Map([['docs/b.md', new Set([1])], ['docs/c.md', new Set()], ['docs/x.md', new Set([2])], ['docs/d.md', null]])
+    assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md', 'docs/c.md', 'docs/d.md'], added), ['docs/b.md', 'docs/d.md'])
   })
 })

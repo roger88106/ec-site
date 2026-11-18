@@ -4,6 +4,7 @@ import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.ProductDiscontinued;
@@ -174,6 +175,43 @@ class ProductPublicationTest {
             // 確認：イベントがない
             assertThat(product.pullEvents()).isEmpty();
         }
+
+        @Test
+        @DisplayName("非公開の商品を公開にすると、変わったので true を返す")
+        void returnsTrueWhenChanged() {
+            // 準備：バリアントを持つ非公開の商品
+            var product = productWithVariant();
+
+            // 操作：公開する
+            var result = product.publish(NOW);
+
+            // 確認：変わった
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("公開中の商品を公開にしても、変わらないので false を返す")
+        void returnsFalseWhenAlreadyPublished() {
+            // 準備：公開中の商品
+            var product = publishedProduct();
+
+            // 操作：翌日にもう一度公開する
+            var result = product.publish(NOW.plus(ONE_DAY));
+
+            // 確認：変わらない
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("バリアントのない販売終了の商品を公開にすると、PRODUCT_HAS_NO_VARIANTS でなく PRODUCT_DISCONTINUED で拒否される")
+        void rejectsPublishingDiscontinuedWithoutVariants() {
+            // 準備：バリアントのない、販売終了の商品
+            var product = productWithoutVariant();
+            product.discontinue(NOW);
+
+            // 操作と確認：業務のエラー PRODUCT_DISCONTINUED で拒否される
+            assertBusinessError(() -> product.publish(NOW), ProductErrorCode.PRODUCT_DISCONTINUED);
+        }
     }
 
     @Nested
@@ -230,6 +268,32 @@ class ProductPublicationTest {
 
             // 確認：イベントがない
             assertThat(product.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("公開中の商品を非公開にすると、変わったので true を返す")
+        void returnsTrueWhenChanged() {
+            // 準備：公開中の商品
+            var product = publishedProduct();
+
+            // 操作：翌日に非公開にする
+            var result = product.unpublish(NOW.plus(ONE_DAY));
+
+            // 確認：変わった
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("非公開の商品を非公開にしても、変わらないので false を返す")
+        void returnsFalseWhenAlreadyUnpublished() {
+            // 準備：非公開の商品
+            var product = productWithVariant();
+
+            // 操作：非公開にする
+            var result = product.unpublish(NOW);
+
+            // 確認：変わらない
+            assertThat(result).isFalse();
         }
     }
 
@@ -324,6 +388,46 @@ class ProductPublicationTest {
 
             // 確認：イベントがない
             assertThat(product.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("公開中の商品を販売終了にすると、変わったので true を返す")
+        void returnsTrueWhenPublishedChanged() {
+            // 準備：公開中の商品
+            var product = publishedProduct();
+
+            // 操作：販売終了にする
+            var result = product.discontinue(NOW);
+
+            // 確認：変わった
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("非公開の商品を販売終了にすると、変わったので true を返す")
+        void returnsTrueWhenUnpublishedChanged() {
+            // 準備：非公開の商品
+            var product = productWithVariant();
+
+            // 操作：販売終了にする
+            var result = product.discontinue(NOW);
+
+            // 確認：変わった
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("販売終了の商品を販売終了にしても、変わらないので false を返す")
+        void returnsFalseWhenAlreadyDiscontinued() {
+            // 準備：販売終了の商品
+            var product = productWithVariant();
+            product.discontinue(NOW);
+
+            // 操作：もう一度販売終了にする
+            var result = product.discontinue(NOW);
+
+            // 確認：変わらない
+            assertThat(result).isFalse();
         }
     }
 

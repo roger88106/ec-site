@@ -35,11 +35,10 @@ public class SalesTrendQueryService {
      */
     public SalesTrendReport trend(@NonNull SalesTrendQuery query) {
         // 日ごとの集計
-        var daily = queryRepository.dailySales(query.period(), query.basis(), query.productId(), query.excludeTax(),
-                query.excludeShipping());
+        var daily = queryRepository.dailySales(query.period(), query.basis(), query.scope());
         // 区切りへのまとめ
         var buckets = query.period().split(query.granularity(), properties.fiscalYearStartMonth());
         // 商品を選んだときは、指定によらず送料を除いている
-        return new SalesTrendReport(SalesTrend.sum(buckets, daily), query.excludeShipping() || query.productId() != null);
+        return new SalesTrendReport(SalesTrend.sum(buckets, daily), query.scope().shippingExcluded());
     }
 }

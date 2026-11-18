@@ -5,6 +5,7 @@ import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.RefundRequested;
+import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -66,6 +67,18 @@ class PaymentRefundTest {
     PaymentApi paymentApi;
 
     /**
+     * 反映の操作を直接呼ぶ、支払の更新のサービス
+     */
+    @Autowired
+    PaymentCommandService commandService;
+
+    /**
+     * 支払のバージョンを読むリポジトリ
+     */
+    @Autowired
+    PaymentRepository paymentRepository;
+
+    /**
      * テスト用の決済サービス
      */
     @Autowired
@@ -102,7 +115,7 @@ class PaymentRefundTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -232,6 +245,22 @@ class PaymentRefundTest {
             // 確認：返金の呼び出しは 1 回のまま、返金済みのまま
             assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).hasSize(1);
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
+        }
+
+        @Test
+        @DisplayName("返金済みの支払に返金済みの反映が重ねて届いても、支払のバージョンは進まない")
+        void keepsVersionOnRepeatedMarkRefunded() {
+            // 準備：返金済みの支払と、そのときの支払のバージョン
+            var orderId = payments.captured(ORDERED_AT);
+            paymentApi.cancel(orderId);
+            awaitRefunded(orderId);
+            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+
+            // 操作：返金済みの反映がもう一度届く
+            commandService.markRefunded(payment.id());
+
+            // 確認：リポジトリから再取得した支払のバージョンが同じ
+            assertThat(payments.versionOf(orderId)).isEqualTo(payment.version());
         }
     }
 

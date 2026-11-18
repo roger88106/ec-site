@@ -5,6 +5,7 @@ import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.Granularity;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.SalesScope;
 import com.ecsite.module.reporting.domain.sales.TrendPoint;
 import com.ecsite.module.reporting.support.ReportTestData;
 import com.ecsite.support.config.IntegrationTest;
@@ -193,6 +194,18 @@ class SalesTrendQueryTest {
         }
 
         @Test
+        @DisplayName("BR-26 商品を選ぶと、送料を除く指定が true でも false でも、売上額は同じで、送料を除いたことを示す")
+        void ignoresShippingSettingForProduct() {
+            // 操作：商品 A を選び、送料を除く指定を true と false にして集計する
+            var excluded = service.trend(query(Basis.ORDER, productA, false, true));
+            var included = service.trend(query(Basis.ORDER, productA, false, false));
+
+            // 確認：売上額が同じで、どちらも送料を除いたことを示す
+            assertThat(excluded.points()).isEqualTo(included.points());
+            assertThat(excluded.shippingExcluded()).isTrue();
+        }
+
+        @Test
         @DisplayName("BR-26 商品を選んで消費税を除くと、その商品の明細の税抜小計だけを数える")
         void selectsProductExcludingTax() {
             // 操作：商品 A を選び、消費税を除いて集計する
@@ -251,7 +264,7 @@ class SalesTrendQueryTest {
     @DisplayName("AC-197 粒度を選べる（四半期は会計年度の区切り）")
     void granularity() {
         // 操作：四半期で集計する
-        var report = service.trend(new SalesTrendQuery(PERIOD, Granularity.QUARTER, Basis.ORDER, null, false, false));
+        var report = service.trend(new SalesTrendQuery(PERIOD, Granularity.QUARTER, Basis.ORDER, new SalesScope(null, false, false)));
 
         // 確認：4〜6 月が 2031 年度の第 1 四半期の 1 行
         assertThat(report.points()).extracting(point -> point.bucket().fiscalYear(), point -> point.bucket().quarter(),
@@ -271,6 +284,6 @@ class SalesTrendQueryTest {
      * @return 問い合わせ
      */
     private static SalesTrendQuery query(Basis basis, UUID productId, boolean excludeTax, boolean excludeShipping) {
-        return new SalesTrendQuery(PERIOD, Granularity.MONTH, basis, productId, excludeTax, excludeShipping);
+        return new SalesTrendQuery(PERIOD, Granularity.MONTH, basis, new SalesScope(productId, excludeTax, excludeShipping));
     }
 }

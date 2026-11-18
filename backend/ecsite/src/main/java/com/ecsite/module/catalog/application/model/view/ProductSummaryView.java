@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.application.model.view;
 
-import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 
 import java.util.UUID;
 

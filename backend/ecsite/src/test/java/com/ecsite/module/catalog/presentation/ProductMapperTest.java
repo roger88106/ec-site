@@ -18,13 +18,13 @@ class ProductMapperTest {
     void mapsEveryRequestStatus(PublicationStatus status) {
         // 操作と確認：同じ名前の値になる
         assertThat(ProductMapper.toDomainStatus(status))
-                .isEqualTo(com.ecsite.module.catalog.domain.product.PublicationStatus.valueOf(status.name()));
+                .isEqualTo(com.ecsite.module.catalog.domain.product.vo.PublicationStatus.valueOf(status.name()));
     }
 
     @ParameterizedTest(name = "「{0}」")
-    @EnumSource(com.ecsite.module.catalog.domain.product.PublicationStatus.class)
+    @EnumSource(com.ecsite.module.catalog.domain.product.vo.PublicationStatus.class)
     @DisplayName("AC-277 ドメインの公開状態の全ての値を、レスポンスの同じ名前の値に写す")
-    void mapsEveryDomainStatus(com.ecsite.module.catalog.domain.product.PublicationStatus status) {
+    void mapsEveryDomainStatus(com.ecsite.module.catalog.domain.product.vo.PublicationStatus status) {
         // 操作と確認：同じ名前の値になる
         assertThat(ProductMapper.toResponseStatus(status)).isEqualTo(PublicationStatus.valueOf(status.name()));
     }

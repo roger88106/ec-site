@@ -2,8 +2,8 @@ package com.ecsite.module.catalog.application.port;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.catalog.application.model.StoredProductDetail;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
-import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 
 import java.util.Optional;
@@ -12,7 +12,7 @@ import java.util.UUID;
 /**
  * 商品照会のクエリリポジトリ
  *
- * <p>返すビューの税込価格とできる操作は空のまま（どちらも時刻で決まるため）。
+ * <p>商品の詳細は、保存されている値だけの型で返す（税込価格とできる操作は、時刻で決まるのでサービスが求める）。
  */
 public interface ProductQueryRepository {
 
@@ -22,7 +22,7 @@ public interface ProductQueryRepository {
      * @param id 商品 ID
      * @return 商品の詳細（バリアントは表示順）。なければ空
      */
-    Optional<ProductDetailView> findDetailById(UUID id);
+    Optional<StoredProductDetail> findDetailById(UUID id);
 
     /**
      * B 側の商品一覧を取得する。

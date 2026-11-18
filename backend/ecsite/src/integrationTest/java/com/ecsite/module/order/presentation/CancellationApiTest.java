@@ -1,6 +1,7 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -89,6 +90,9 @@ class CancellationApiTest {
 
     @Autowired
     StockItemRepository stockItemRepository;
+
+    @Autowired
+    OrderRepository orderRepository;
 
     /**
      * 在庫を作る補助
@@ -185,6 +189,20 @@ class CancellationApiTest {
 
             // 確認：理由は最初の申請のまま
             store().andExpect(jsonPath("$.cancellationRequest.reason").value("最初"));
+        }
+
+        @Test
+        @DisplayName("申請中の注文にもう一度申請しても、注文のバージョンは進まない")
+        void keepsVersionOnRepeatedRequest() throws Exception {
+            // 準備：申請して、そのときの注文のバージョンを読む
+            request("最初").andExpect(status().isNoContent());
+            var versionAfterFirst = orderRepository.findById(orderId).orElseThrow().version();
+
+            // 操作：もう一度申請する
+            request("次").andExpect(status().isNoContent());
+
+            // 確認：リポジトリから再取得した注文のバージョンが同じ
+            assertThat(orderRepository.findById(orderId).orElseThrow().version()).isEqualTo(versionAfterFirst);
         }
 
         @Test

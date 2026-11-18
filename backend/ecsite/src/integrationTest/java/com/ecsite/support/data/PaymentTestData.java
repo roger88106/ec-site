@@ -3,6 +3,7 @@ package com.ecsite.support.data;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
+import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 
 import java.time.Instant;
@@ -35,6 +36,13 @@ public class PaymentTestData {
     private final TestPaymentGateway gateway;
 
     /**
+     * 支払のバージョンを読むリポジトリ
+     *
+     * <p>バージョンを読まないときは null。
+     */
+    private final PaymentRepository paymentRepository;
+
+    /**
      * 注文 ID → 支払画面 ID
      *
      * <p>支払の後は画面の URL を引けないため、覚えておく。
@@ -48,8 +56,20 @@ public class PaymentTestData {
      * @param gateway    テスト用の決済サービス
      */
     public PaymentTestData(PaymentApi paymentApi, TestPaymentGateway gateway) {
+        this(paymentApi, gateway, null);
+    }
+
+    /**
+     * コンストラクタ（支払のバージョンを読むとき）
+     *
+     * @param paymentApi        支払の API
+     * @param gateway           テスト用の決済サービス
+     * @param paymentRepository 支払のバージョンを読むリポジトリ
+     */
+    public PaymentTestData(PaymentApi paymentApi, TestPaymentGateway gateway, PaymentRepository paymentRepository) {
         this.paymentApi = paymentApi;
         this.gateway = gateway;
+        this.paymentRepository = paymentRepository;
     }
 
     /**
@@ -132,5 +152,19 @@ public class PaymentTestData {
      */
     public PaymentSummary.Status statusOf(UUID orderId) {
         return paymentApi.find(List.of(orderId)).getFirst().status();
+    }
+
+    /**
+     * 支払のバージョンを、リポジトリから再取得して返す。
+     *
+     * @param orderId 注文 ID
+     * @return 支払のバージョン
+     * @throws IllegalStateException リポジトリを渡さずに作ったとき
+     */
+    public long versionOf(UUID orderId) {
+        if (paymentRepository == null) {
+            throw new IllegalStateException("支払のバージョンを読むには、リポジトリを渡して作る");
+        }
+        return paymentRepository.findByOrderId(orderId).orElseThrow().version();
     }
 }

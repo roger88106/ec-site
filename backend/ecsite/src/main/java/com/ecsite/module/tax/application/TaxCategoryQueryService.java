@@ -2,6 +2,7 @@ package com.ecsite.module.tax.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.tax.application.model.StoredTaxCategory;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
@@ -42,7 +43,7 @@ public class TaxCategoryQueryService {
     public List<TaxCategoryView> listTaxCategories() {
         var now = clock.instant();
         return taxCategoryQueryRepository.findAll().stream()
-                .map(view -> withCurrentRate(view, now))
+                .map(stored -> toView(stored, now))
                 .toList();
     }
 
@@ -67,22 +68,22 @@ public class TaxCategoryQueryService {
      */
     public Optional<TaxCategoryView> findTaxCategory(@NonNull UUID id) {
         return taxCategoryQueryRepository.findById(id)
-                .map(view -> withCurrentRate(view, clock.instant()));
+                .map(stored -> toView(stored, clock.instant()));
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 現時点の率を設定する。
+     * 保存されている税区分に、現時点の率を加えてビューにする。
      *
-     * @param view 税区分のビュー
-     * @param now  現在時刻
-     * @return 現時点の率を設定したビュー
+     * @param stored 保存されている税区分
+     * @param now    現在時刻
+     * @return 税区分のビュー
      */
-    private static TaxCategoryView withCurrentRate(TaxCategoryView view, Instant now) {
-        var current = EffectivePeriod.findAt(view.rates(), TaxCategoryView.TaxRateView::period, now)
+    private static TaxCategoryView toView(StoredTaxCategory stored, Instant now) {
+        var current = EffectivePeriod.findAt(stored.rates(), TaxCategoryView.TaxRateView::period, now)
                 .map(TaxCategoryView.TaxRateView::ratePercent)
                 .orElse(null);
-        return new TaxCategoryView(view.id(), view.name(), current, view.rates(), view.version());
+        return new TaxCategoryView(stored.id(), stored.name(), current, stored.rates(), stored.version());
     }
 }

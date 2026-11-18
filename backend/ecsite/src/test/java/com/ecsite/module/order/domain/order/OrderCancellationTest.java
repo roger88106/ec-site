@@ -71,9 +71,10 @@ class OrderCancellationTest {
             var order = acceptedOrder();
 
             // 操作：理由を添えて申請する
-            order.requestCancellation(REQUEST_REASON, LATER);
+            var changed = order.requestCancellation(REQUEST_REASON, LATER);
 
-            // 確認：キャンセル申請中
+            // 確認：状態を変えたので true。キャンセル申請中
+            assertThat(changed).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
         }
 
@@ -163,9 +164,10 @@ class OrderCancellationTest {
             order.requestCancellation("最初の理由", LATER);
 
             // 操作：別の理由で、後からもう一度申請する
-            order.requestCancellation("次の理由", LATER.plusSeconds(60));
+            var changed = order.requestCancellation("次の理由", LATER.plusSeconds(60));
 
-            // 確認：最初の申請のまま
+            // 確認：状態を変えなかったので false。最初の申請のまま
+            assertThat(changed).isFalse();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
             assertThat(order.cancellationRequest().reason()).isEqualTo("最初の理由");
             assertThat(order.cancellationRequest().requestedAt()).isEqualTo(LATER);

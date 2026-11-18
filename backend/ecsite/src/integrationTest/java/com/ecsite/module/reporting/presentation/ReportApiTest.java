@@ -34,6 +34,7 @@ import java.util.UUID;
 import static com.ecsite.module.reporting.support.ReportTestData.lineExclTax;
 import static com.ecsite.module.reporting.support.ReportTestData.lineInclTax;
 import static com.ecsite.module.reporting.support.ReportTestData.total;
+import static com.ecsite.module.reporting.support.ReportTestData.totalExclTax;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -177,6 +178,26 @@ class ReportApiTest {
         }
 
         @Test
+        @DisplayName("BR-26 消費税だけを除く指定を受け取ると、送料は含めたまま")
+        void acceptsTaxExclusionOnly() throws Exception {
+            // 操作と確認：総額 3,200 円から消費税の合計を引いた額で、送料を除いたことを示さない
+            mockMvc.perform(get(REPORTS + "/sales-trend?" + APRIL + "&granularity=MONTH&excludeTax=true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.points[0].amount").value(totalExclTax(2)))
+                    .andExpect(jsonPath("$.shippingExcluded").value(false));
+        }
+
+        @Test
+        @DisplayName("BR-26 送料だけを除く指定を受け取ると、消費税は含めたまま")
+        void acceptsShippingExclusionOnly() throws Exception {
+            // 操作と確認：明細の税込小計 2,200 円で、送料を除いたことを示す
+            mockMvc.perform(get(REPORTS + "/sales-trend?" + APRIL + "&granularity=MONTH&excludeShipping=true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.points[0].amount").value(lineInclTax(2)))
+                    .andExpect(jsonPath("$.shippingExcluded").value(true));
+        }
+
+        @Test
         @DisplayName("AC-199 商品の選択を受け取る")
         void acceptsProduct() throws Exception {
             // 操作と確認：T シャツの明細の税込小計 2,200 円で、送料を除いた印
@@ -276,6 +297,16 @@ class ReportApiTest {
         }
 
         @Test
+        @DisplayName("BR-26 消費税を除く指定を受け取ると、明細の税抜小計を返し、送料を除いたことを示す")
+        void acceptsTaxExclusion() throws Exception {
+            // 操作と確認：白の明細の税抜小計 2,000 円
+            mockMvc.perform(get(REPORTS + "/variant-sales?" + APRIL + "&productId=" + shirt.id + "&excludeTax=true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.variants[0].amount").value(lineExclTax(2)))
+                    .andExpect(jsonPath("$.shippingExcluded").value(true));
+        }
+
+        @Test
         @DisplayName("商品がなければ 404")
         void unknownProduct() throws Exception {
             // 操作と確認：見つからない
@@ -353,6 +384,30 @@ class ReportApiTest {
             mockMvc.perform(get(REPORTS + "/customer-breakdown?" + APRIL))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.shippingExcluded").value(false));
+        }
+
+        @Test
+        @DisplayName("BR-26 消費税を除く指定を受け取ると、総額から消費税の合計を引き、送料は含めたまま")
+        void acceptsTaxExclusion() throws Exception {
+            // 操作と確認：都道府県・年齢層・性別のどれも、総額 3,200 円から消費税の合計を引いた額で、送料を除いたことを示さない
+            mockMvc.perform(get(REPORTS + "/customer-breakdown?" + APRIL + "&excludeTax=true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.prefectures[0].amount").value(totalExclTax(2)))
+                    .andExpect(jsonPath("$.ageGroups[2].amount").value(totalExclTax(2)))
+                    .andExpect(jsonPath("$.genders[1].amount").value(totalExclTax(2)))
+                    .andExpect(jsonPath("$.shippingExcluded").value(false));
+        }
+
+        @Test
+        @DisplayName("BR-26 商品と消費税を除く指定を受け取ると、その商品の明細の税抜小計を返す")
+        void acceptsProductAndTaxExclusion() throws Exception {
+            // 操作と確認：T シャツの明細の税抜小計 2,000 円で、送料を除いたことを示す
+            mockMvc.perform(get(REPORTS + "/customer-breakdown?" + APRIL + "&productId=" + shirt.id + "&excludeTax=true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.prefectures[0].amount").value(lineExclTax(2)))
+                    .andExpect(jsonPath("$.ageGroups[2].amount").value(lineExclTax(2)))
+                    .andExpect(jsonPath("$.genders[1].amount").value(lineExclTax(2)))
+                    .andExpect(jsonPath("$.shippingExcluded").value(true));
         }
 
         @Test

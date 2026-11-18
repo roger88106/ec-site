@@ -3,6 +3,7 @@ package com.ecsite.module.payment.api;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
+import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
@@ -84,6 +85,12 @@ class PaymentApiTest {
     MutableClock clock;
 
     /**
+     * 支払のバージョンを読むリポジトリ
+     */
+    @Autowired
+    PaymentRepository paymentRepository;
+
+    /**
      * 支払の行を数える DB
      */
     @Autowired
@@ -102,7 +109,7 @@ class PaymentApiTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -295,6 +302,22 @@ class PaymentApiTest {
 
             // 確認：与信の成功のイベントは 1 件のまま
             assertThat(authorizedEvents(orderId)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("与信の成功の通知が重ねて届いても、支払のバージョンは進まない")
+        void keepsVersionOnDuplicateNotification() {
+            // 準備：通知が 1 回届いていて、そのときの支払のバージョンを読む
+            var orderId = payments.created(ORDERED_AT);
+            var pageId = payments.openPage(orderId);
+            gateway.pay(pageId);
+            var versionAfterFirst = payments.versionOf(orderId);
+
+            // 操作：同じ通知がもう一度届く
+            gateway.notifyAuthorized(pageId);
+
+            // 確認：リポジトリから再取得した支払のバージョンが同じ
+            assertThat(payments.versionOf(orderId)).isEqualTo(versionAfterFirst);
         }
     }
 

@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.catalog.application.model.StoredProductDetail;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
@@ -86,23 +87,26 @@ public class ProductQueryService {
      */
     public ProductDetailView getProduct(@NonNull UUID id) {
         // 商品の詳細の取得
-        var view = productQueryRepository.findDetailById(id)
+        var stored = productQueryRepository.findDetailById(id)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
-        // 今の税込価格と、できる操作の設定
+        // 今の税込価格と、できる操作を求め、保存されている値と合わせる
         var now = clock.instant();
-        var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), view.priceExclTax(), now).orElse(null);
-        var actions = Product.actionsOf(view.status(), view.firstShownAt(), view.axes().size(),
-                view.variants().size(), now);
-        return view.withCurrentState(priceInclTax, actions);
+        var priceInclTax = taxDirectory.priceInclTaxAt(stored.taxCategoryId(), stored.priceExclTax(), now).orElse(null);
+        var actions = Product.actionsOf(stored.status(), stored.firstShownAt(), stored.axes().size(),
+                stored.variants().size(), now);
+        return new ProductDetailView(stored.id(), stored.productCode(), stored.name(), stored.description(),
+                stored.taxCategoryId(), stored.priceExclTax(), priceInclTax, stored.categoryIds(), stored.axes(),
+                stored.status(), stored.firstShownAt(), stored.publishStart(), stored.publishEnd(), stored.images(),
+                stored.variants(), actions, stored.version(), stored.createdAt(), stored.updatedAt());
     }
 
     /**
-     * 商品の詳細を、今の状態（税込価格、できる操作）なしで探す。
+     * 保存されている商品の詳細を探す（税込価格とできる操作は求めない）。
      *
      * @param id 商品 ID
-     * @return 商品の詳細。なければ空
+     * @return 保存されている商品の詳細。なければ空
      */
-    public Optional<ProductDetailView> findProduct(@NonNull UUID id) {
+    public Optional<StoredProductDetail> findProduct(@NonNull UUID id) {
         return productQueryRepository.findDetailById(id);
     }
 

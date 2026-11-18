@@ -5,6 +5,7 @@ import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * 支払の更新のサービス
@@ -91,26 +92,31 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     @Override
     public void authorized(String pageId, String authorizationRef) {
         paymentRepository.lockByPageId(pageId).ifPresentOrElse(payment -> {
-            payment.authorize(authorizationRef, clock.instant());
-            paymentRepository.update(payment);
+            // 変えたときだけ保存する
+            if (payment.authorize(authorizationRef, clock.instant())) {
+                paymentRepository.update(payment);
+            }
         }, () -> log.warn("知らない支払画面の与信の成功を無視する: pageId={}", pageId));
     }
 
     /**
      * 決済サービスから取得した与信を反映する。
      *
-     * <p>行ロックの後に確認し直す。
+     * <p>行ロックの後に確認し直す。変えたときだけ保存する。
      *
      * @param paymentId     支払 ID
      * @param authorization 取得した与信
-     * @return 未払いから与信済みにしたら true（先に通知が届いていれば false）
+     * @return 与信済みにしたら true（先に通知が届いていれば false。支払なし（NOT_PAID）の支払に反映して与信の取消待ちにしたときも false）
      */
     public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull Authorization authorization) {
         var now = clock.instant();
         return paymentRepository.lockById(paymentId).map(payment -> {
-            var authorized = payment.authorize(authorization.authorizationRef(), authorization.authorizedAt(), now);
-            paymentRepository.update(payment);
-            return authorized;
+            var changed = payment.authorize(authorization.authorizationRef(), authorization.authorizedAt(), now);
+            if (changed) {
+                paymentRepository.update(payment);
+            }
+            // 変えた後が与信済みなら、変える前は未払いだった
+            return changed && payment.status() == PaymentStatus.AUTHORIZED;
         }).orElse(false);
     }
 
@@ -147,9 +153,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     public void awaitAuthorization(@NonNull UUID paymentId) {
         var now = clock.instant();
         // 行ロックの後に確認し直し、読んでから通知が届いて与信済みになった支払を変えない
-        paymentRepository.lockById(paymentId)
-                .filter(payment -> payment.awaitAuthorization(now))
-                .ifPresent(paymentRepository::update);
+        modify(paymentId, payment -> payment.awaitAuthorization(now));
     }
 
     /**
@@ -181,8 +185,10 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     public void cancel(@NonNull UUID orderId) {
         // 支払のない注文（決済を入れる前の注文）は、取り消すものがない
         paymentRepository.lockByOrderId(orderId).ifPresentOrElse(payment -> {
-            payment.cancel(clock.instant());
-            paymentRepository.update(payment);
+            // 変えたときだけ保存する
+            if (payment.cancel(clock.instant())) {
+                paymentRepository.update(payment);
+            }
         }, () -> log.info("支払のない注文の取消：何もしない: orderId={}", orderId));
     }
 
@@ -221,17 +227,14 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 支払を行ロックして操作を 1 つ呼び、保存する。
+     * 支払を行ロックして操作を 1 つ呼び、変えたときだけ保存する。
      *
      * <p>支払がなければ何もしない。
      *
      * @param paymentId 支払 ID
-     * @param operation 支払への操作
+     * @param operation 支払への操作。変えたら true を返す
      */
-    private void modify(UUID paymentId, Consumer<Payment> operation) {
-        paymentRepository.lockById(paymentId).ifPresent(payment -> {
-            operation.accept(payment);
-            paymentRepository.update(payment);
-        });
+    private void modify(UUID paymentId, Predicate<Payment> operation) {
+        paymentRepository.lockById(paymentId).filter(operation).ifPresent(paymentRepository::update);
     }
 }

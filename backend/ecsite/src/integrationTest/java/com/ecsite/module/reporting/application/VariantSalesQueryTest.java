@@ -6,6 +6,7 @@ import com.ecsite.module.reporting.application.model.query.VariantSalesQuery;
 import com.ecsite.module.reporting.application.model.view.VariantSales;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.SalesScope;
 import com.ecsite.module.reporting.support.ReportTestData;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -124,8 +125,9 @@ class VariantSalesQueryTest {
         @DisplayName("販売数量が同じなら、商品カタログの並びの順")
         void tiesInCatalogOrder() {
             // 操作：どれも売れていない 6 月を集計する
-            var report = service.variants(new VariantSalesQuery(shirt.id,
-                    new ReportPeriod(LocalDate.parse("2031-06-01"), LocalDate.parse("2031-06-30")), Basis.ORDER, false));
+            var report = service.variants(new VariantSalesQuery(
+                    new ReportPeriod(LocalDate.parse("2031-06-01"), LocalDate.parse("2031-06-30")), Basis.ORDER,
+                    SalesScope.ofProduct(shirt.id, false)));
 
             // 確認：商品カタログの並び（白・M、白・L、黒・M）
             assertThat(report.variants()).extracting(VariantSales::variantId).containsExactlyElementsOf(shirt.variantIds);
@@ -203,7 +205,7 @@ class VariantSalesQueryTest {
         @DisplayName("商品カタログにない商品は、見つからない誤り")
         void unknownProduct() {
             // 操作と確認：業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> service.variants(new VariantSalesQuery(UUID.randomUUID(), PERIOD, Basis.ORDER, false)),
+            assertBusinessError(() -> service.variants(new VariantSalesQuery(PERIOD, Basis.ORDER, SalesScope.ofProduct(UUID.randomUUID(), false))),
                     CommonErrorCode.NOT_FOUND);
         }
     }
@@ -218,7 +220,7 @@ class VariantSalesQueryTest {
      * @return 問い合わせ
      */
     private VariantSalesQuery query(Basis basis, boolean excludeTax) {
-        return new VariantSalesQuery(shirt.id, PERIOD, basis, excludeTax);
+        return new VariantSalesQuery(PERIOD, basis, SalesScope.ofProduct(shirt.id, excludeTax));
     }
 
     /**

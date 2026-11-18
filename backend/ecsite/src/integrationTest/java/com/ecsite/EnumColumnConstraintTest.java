@@ -1,6 +1,6 @@
 package com.ecsite;
 
-import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.notification.application.port.SentMailRepository;

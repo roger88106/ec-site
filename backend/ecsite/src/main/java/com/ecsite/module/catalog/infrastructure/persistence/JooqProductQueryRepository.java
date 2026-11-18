@@ -6,12 +6,13 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.jooq.catalog.tables.records.ProductImageRecord;
 import com.ecsite.jooq.catalog.tables.records.ProductRecord;
+import com.ecsite.module.catalog.application.model.StoredProductDetail;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
-import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -51,7 +52,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
      * @return 商品の詳細
      */
     @Override
-    public Optional<ProductDetailView> findDetailById(UUID id) {
+    public Optional<StoredProductDetail> findDetailById(UUID id) {
         var axes = ProductParts.axes(PRODUCT.ID);
         var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
         var found = dsl.select(PRODUCT.asterisk(), axes, categoryIds)
@@ -135,9 +136,9 @@ class JooqProductQueryRepository implements ProductQueryRepository {
      * @param record      商品のレコード
      * @param axes        軸の名前（並び順）
      * @param categoryIds 所属カテゴリ ID（ID の順）
-     * @return 商品の詳細（税込価格は空）
+     * @return 保存されている商品の詳細
      */
-    private ProductDetailView toDetail(ProductRecord record, List<String> axes, List<UUID> categoryIds) {
+    private StoredProductDetail toDetail(ProductRecord record, List<String> axes, List<UUID> categoryIds) {
         var id = record.getId();
 
         var axisValues = ProductParts.axisValues(VARIANT.ID);
@@ -159,14 +160,13 @@ class JooqProductQueryRepository implements ProductQueryRepository {
         var urls = mediaDirectory.urls(imageRecords.map(ProductImageRecord::getAssetId));
         var images = imageRecords.map(image -> new ProductDetailView.ImageView(image.getId(), urls.get(image.getAssetId())));
 
-        return new ProductDetailView(
+        return new StoredProductDetail(
                 id,
                 record.getProductCode(),
                 record.getName(),
                 record.getDescription(),
                 record.getTaxCategoryId(),
                 Money.of(record.getPriceExclTax()),
-                null,
                 categoryIds,
                 axes,
                 RestoreGuard.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
@@ -175,8 +175,6 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 record.getPublishEnd(),
                 images,
                 variants,
-                // できる操作は現在時刻で決まるので、ここでは決めない
-                null,
                 record.getVersion(),
                 record.getCreatedAt(),
                 record.getUpdatedAt());

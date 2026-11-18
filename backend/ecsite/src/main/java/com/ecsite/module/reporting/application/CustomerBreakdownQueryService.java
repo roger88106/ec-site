@@ -63,8 +63,7 @@ public class CustomerBreakdownQueryService {
      */
     public CustomerBreakdownReport breakdown(@NonNull CustomerBreakdownQuery query) {
         // 都道府県・年齢・性別の組ごとの集計 ※注文は 1 つの組にだけ入るので、組の注文件数を合算しても、同じ注文を 2 回数えない
-        var segments = queryRepository.segmentSales(query.period(), query.basis(), query.productId(), query.excludeTax(),
-                query.excludeShipping());
+        var segments = queryRepository.segmentSales(query.period(), query.basis(), query.scope());
 
         // 年齢層と性別へのまとめ ※売れなかった区分も 0 として、すべての区分を並べる
         var ageGroups = forEveryValue(AgeGroup.values(), group(segments, segment -> AgeGroup.of(segment.age())),
@@ -74,7 +73,7 @@ public class CustomerBreakdownQueryService {
 
         // 商品を選んだときは、指定によらず送料を除いている
         return new CustomerBreakdownReport(prefectureSales(segments), ageGroups, genders,
-                query.excludeShipping() || query.productId() != null);
+                query.scope().shippingExcluded());
     }
 
 // ============================== プライベートメソッド ==============================

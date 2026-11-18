@@ -35,7 +35,7 @@
 | `InventoryTestData` | 在庫と、入荷の調整 |
 | `OrderTestData` | カート、注文手続き、注文、支払画面 |
 | `ShippingTestData` | 出荷の登録、配送状態の通知、送り状番号 |
-| `PaymentTestData` | 支払の作成、与信、売上確定、状態の取得 |
+| `PaymentTestData` | 支払の作成、与信、売上確定、状態とバージョンの取得 |
 | `TestJson` | 応答の本文から読む ID（作成の応答の ID など） |
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture` を使う。

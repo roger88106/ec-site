@@ -3,6 +3,7 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 import com.ecsite.jooq.reporting.tables.records.StatusHistoryRecord;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.SalesScope;
 import com.ecsite.support.RestoreFailures;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +52,7 @@ class ReportRestoreFailureTest {
             var period = new ReportPeriod(LocalDate.EPOCH, LocalDate.EPOCH);
 
             // 操作と確認：読むと失敗し、例外の出力に値が出ない
-            assertValueIsHidden(() -> repository.segmentSales(period, Basis.ORDER, null, false, false), value, IllegalArgumentException.class);
+            assertValueIsHidden(() -> repository.segmentSales(period, Basis.ORDER, new SalesScope(null, false, false)), value, IllegalArgumentException.class);
         }
     }
 

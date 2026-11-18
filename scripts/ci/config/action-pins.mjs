@@ -15,7 +15,7 @@
 // 使い方：node scripts/ci/config/action-pins.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
-import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
+import { emptyListReason, listGitFiles } from '../../shared/git/git-files.mjs'
 
 /** 許可する形。ローカルの action（./ で始まる）か、<owner>/<repo>[/<パス>]@<40 桁の小文字の 16 進> */
 const ALLOWED_USES = /^(?:\.\/.*|[^\s/@]+\/[^\s/@]+(?:\/[^\s@]+)?@[0-9a-f]{40})$/s
@@ -45,7 +45,7 @@ export function isActionPinTarget(path) {
 const isAllowedUses = (value) => typeof value === 'string' && ALLOWED_USES.test(value)
 
 /**
- * 読んだ値の step の配列から、uses を持つ場所と値を集める。
+ * YAML を読んだ値のうち、steps の配列から、uses を持つ場所と値を集める。
  *
  * @param {unknown} steps steps の値
  * @param {string} where steps の場所
@@ -116,13 +116,27 @@ export function findActionPinProblems(files) {
   return problems
 }
 
+/**
+ * 検査を実行して、結果を出力する。
+ *
+ * @param {string[]} paths 検査の対象のファイル
+ * @param {(path: string) => string} read ファイルの内容を読む関数
+ * @param {(line: string) => void} [log] 1 行を出力する関数
+ * @returns {number} 終了コード（0：通る、1：固定の形でない uses がある、2：対象のファイルが 1 件もない）
+ */
+export function runActionPins(paths, read, log = console.log) {
+  const reason = emptyListReason(paths, 'workflow と action の yml のファイル')
+  if (reason) {
+    log(reason)
+    return 2
+  }
+  const problems = findActionPinProblems(paths.map((file) => ({ path: file, text: read(file) })))
+  for (const problem of problems) log(problem)
+  log(`action の固定：読んだファイル ${paths.length} 件、問題 ${problems.length} 件`)
+  return problems.length ? 1 : 0
+}
+
 if (import.meta.main) {
   const targets = listGitFiles(['.github/workflows', '.github/actions']).filter(isActionPinTarget)
-  exitIfNoFiles(targets, 'workflow と action の yml のファイル')
-  const problems = findActionPinProblems(targets.map((file) => ({ path: file, text: readFileSync(file, 'utf8') })))
-  for (const problem of problems) {
-    console.log(problem)
-  }
-  console.log(`action の固定：読んだファイル ${targets.length} 件、問題 ${problems.length} 件`)
-  process.exit(problems.length ? 1 : 0)
+  process.exit(runActionPins(targets, (file) => readFileSync(file, 'utf8')))
 }

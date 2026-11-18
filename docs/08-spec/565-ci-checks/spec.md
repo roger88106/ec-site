@@ -14,10 +14,10 @@ workflow と複合の action の `uses` は、#419 で commit の SHA に固定�
 
 | 含める | 含めない |
 |--------|----------|
-| workflow と複合の action の `uses` の固定を確認する検査の追加 | `ci.yml` の `paths` の変更（#255 の 2 つ目の箇条） |
+| workflow と複合の action の `uses` が固定されていることを確認する検査の追加 | `ci.yml` の `paths` の変更（#255 の 2 つ目の箇条） |
 | 追跡しているファイルがリポジトリの `.gitignore` で除外されていないかを確認する検査の追加 | SHA の後のバージョンのコメント（`# v7.0.1`）の照合 |
-| commit の前の hook が実行する検査を選ぶ表と、CI の検査の script の文書の一覧への行の追加 | `docker://` の指定の固定の形（digest）の許可 |
-| | 手元の除外の設定（`.git/info/exclude`、全体の `core.excludesFile`）の検査 |
+| commit の前の hook が実行する検査を選ぶ表と、CI の検査の文書の一覧に、行を加えること | `docker://` の指定の固定の形（digest）の許可 |
+| Git の一覧を求める共有のモジュールへの関数の追加と、既存の手順書の 2 つの規則への検査の名前の追記 | 手元の除外の設定（`.git/info/exclude`、全体の `core.excludesFile`）の検査 |
 
 決定：
 
@@ -28,9 +28,9 @@ workflow と複合の action の `uses` は、#419 で commit の SHA に固定�
   | action の固定 | `scripts/ci/config/action-pins.mjs`（テストは `action-pins.test.mjs`） |
   | 除外された追跡しているファイル | `scripts/ci/config/ignored-tracked.mjs`（テストは `ignored-tracked.test.mjs`） |
 
-- `ci.yml` の `paths` から `!.gitignore` を外さず、`.github/workflows/` を変えない。理由：文書の workflow（`.github/workflows/docs.yml`）は `paths` の指定がなく、全ての push と pull request で `check-all.sh` を実行する。そのため、新しい検査は `.gitignore` だけの変更でも実行される。
+- `ci.yml` の `paths` から `!.gitignore` を外さず、`.github/workflows/` を変えない。理由：文書の workflow（`.github/workflows/docs.yml`）は `paths` の指定がなく、全ての pull request と、`develop`・`main`・`release/**`・`hotfix/**` への push で `check-all.sh` を実行する。そのため、新しい検査は `.gitignore` だけの変更でも実行される。
 - 判定の区分は、どちらも誤りの防止とする。誤って書いたものを拒否し、意図して作った回避は対象にしない。
-- action の固定は、許可する形の一覧で判定する。許可する形は次の 2 つだけで、それ以外は全て失敗にする。失敗にする例は、タグ、ブランチ、短い SHA、大文字を含む 16 進、`docker://`、`@` のない指定、文字列でない値である。
+- action の固定は、許可する形の一覧で判定する。許可する形は次の 2 つだけで、それ以外は全て失敗にする。
 
   | 形 | 例 |
   |----|----|
@@ -38,11 +38,11 @@ workflow と複合の action の `uses` は、#419 で commit の SHA に固定�
   | `<owner>/<repo>` と任意のパスの後に、`@` と 40 桁の小文字の 16 進 | `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` |
 
 - action の固定の対象は、Git の対象のファイル（追跡しているファイルと、除外されない新しいファイル）のうち、`.github/workflows/` 直下の `*.yml`・`*.yaml` と、`.github/actions/` の下の `action.yml`・`action.yaml`。読む場所は、workflow の各 job の `steps` の `uses`、job の `uses`（再利用の workflow）、複合の action の `runs.steps` の `uses`。YAML として読み、`run` の中の文字列やコメントは見ない。読めない YAML は失敗にする。対象のファイルが 0 件のときも失敗にする。
-- 除外の判定は、リポジトリの `.gitignore`（各フォルダーのものを含む）だけで行い、`.git/info/exclude` と全体の `core.excludesFile` は読まない。理由：手元の除外の設定で、手元でだけ失敗することを避け、手元と CI で同じ結果にするため。判定のコマンドの形は `git ls-files -z -i -c --exclude-per-directory=.gitignore` である。
+- 除外の判定は、リポジトリの `.gitignore`（各フォルダーのものを含む）だけで行い、`.git/info/exclude` と全体の `core.excludesFile` は読まない。理由：手元の除外の設定で、手元と CI の結果が変わるのを避けるため。判定のコマンドの形は `git ls-files -z -i -c --exclude-per-directory=.gitignore` である。この判定は、Git の一覧を求める共有のモジュール（`scripts/shared/git/git-files.mjs`）に関数として加える。手動で実行したときは、作業ツリーにある追跡していない `.gitignore` も読むので、手元でだけ失敗することがある（commit の前の hook と CI では起きない）。
 - 除外の判定では、大文字と小文字を区別する（Git の設定 `core.ignorecase` を false にして実行する）。理由：Windows の clone は区別しない設定になり、Linux の CI と結果が変わるため。
 - 失敗の出力は、action の固定ではファイル、場所（job と step）、値と、固定の形への修正の方法を示す。除外された追跡しているファイルでは、ファイルの一覧と、一致した行を調べるコマンド（`git check-ignore -v --no-index <ファイル>`）を示す。
-- commit の前の hook は、`.github/` の下のファイルをステージしたときに `action-pins` を、常に `ignored-tracked` を実行する。理由：`git add -f` で除外のファイルを加えると、`.gitignore` を変えずに検査が失敗する状態になるため。hook では、除外の検査も、ステージした `.gitignore` とファイルで判定する。
-- 文書は、CI の検査の script の文書（`docs/06-手順書/ci-checks.md`）の「検査の一覧」の表に 2 行を加える。`ci-docs.mjs` が、表と検査の 1 対 1 を確認する。同じ文書の「commit の前の hook」の表で、常に実行する検査の列挙に `ignored-tracked` を加える。
+- commit の前の hook は、`.github/` の下のファイルをステージしたときに `action-pins` を、常に `ignored-tracked` を実行する。理由：`git add -f` で除外のファイルを加えると、`.gitignore` を変えずに検査が失敗する状態になるため。hook では、`ignored-tracked` もステージした内容で判定する。
+- 文書は、CI の検査の script の文書（`docs/06-手順書/ci-checks.md`）の「検査の一覧」の表に 2 行を加える。`ci-docs.mjs` が、表と検査の 1 対 1 を確認する。同じ文書の「commit の前の hook」の表で、常に実行する検査の列挙に `ignored-tracked` を加える。ブランチとリリースの手順書の、SHA の固定と `.gitignore` の許可リストの規則に、確認する検査の名前を書く。検査を加える手順書には、0 件のときの終了コードの返し方と、追跡しているファイルの一覧を求める関数を書く。
 - 検出すべき例と検出してはいけない例を、次の 4 つの表に置く（[文書の構成](../../05-開発規則/doc-structure.md)の「形を判定する検査」）。
 
 action の固定（`action-pins`）・検出すべき例：
@@ -66,9 +66,12 @@ action の固定（`action-pins`）・検出すべき例：
 | 15 | YAML のアンカーとエイリアスで入れたタグの指定 | 展開後の値で判定する |
 | 16 | 拡張子 `.yaml` の workflow、`action.yaml` の中のタグ | 対象のファイル |
 | 17 | 読めない YAML | 判定できない |
-| 18 | 対象のファイルが 0 件 | 検査の対象がないまま通るのを防ぐ |
+| 18 | 対象のファイルが 0 件（終了コード 2） | 検査の対象がないまま通るのを防ぐ |
 | 19 | `actions/checkout@${{ matrix.ref }}`（step と job の `uses` の式） | 許可する形にない |
-| 20 | `.github/actions/a/b/action.yml`（2 段の下のフォルダー）の中のタグの指定 | `.github/actions/` の下の全ての深さが対象 |
+| 20 | `.github/actions/a/b/action.yml`（2 階層下のフォルダー）の中のタグの指定 | `.github/actions/` の下の全ての深さが対象 |
+| 21 | 改行コードが CRLF の workflow にあるタグの指定 | 改行コードによらない |
+| 22 | 1 つのファイルに複数の文書（`---` が 2 つ） | 読めない YAML |
+| 23 | 1 つの step に `uses` が 2 つ | 読めない YAML |
 
 action の固定（`action-pins`）・検出してはいけない例：
 
@@ -87,6 +90,7 @@ action の固定（`action-pins`）・検出してはいけない例：
 | 11 | owner と repo に大文字、`-`、`_`、`.` を含む固定（`Azure/login@<40 桁の小文字>`） | 小文字に限るのは SHA だけ |
 | 12 | 引用符で囲んだ許可する形（`"actions/checkout@<40 桁の小文字>"`、`'./.github/actions/setup-frontend'`） | YAML の値は同じ |
 | 13 | `.github/workflows/` のサブフォルダーの `*.yml` | 対象は直下だけ（GitHub Actions もサブフォルダーを読まない） |
+| 14 | 改行コードが CRLF の、許可する形の workflow | 改行コードによらない |
 
 除外された追跡しているファイル（`ignored-tracked`）・検出すべき例：
 
@@ -95,13 +99,14 @@ action の固定（`action-pins`）・検出してはいけない例：
 | 1 | 追跡しているファイルを除外する行を、ルートの `.gitignore` に加えた | 除外の対象 |
 | 2 | 子のフォルダーの `.gitignore` が、追跡しているファイルを除外する | 各フォルダーの `.gitignore` も読む |
 | 3 | 許可の行（`!/LICENSE`）を消した | 戻していたファイルが除外になる |
-| 4 | 追跡しているディレクトリを丸ごと除外する（`/docs/`） | ディレクトリの下の全て |
+| 4 | 追跡しているフォルダーを丸ごと除外する（`/docs/`） | フォルダーの下の全て |
 | 5 | `git add -f` で、除外のファイルを加えた | 追跡しているファイルが除外の対象 |
 | 6 | 名前に空白・日本語を含む追跡しているファイルが除外の対象 | 名前の形によらない |
-| 7 | 親のディレクトリを除外した後に、その下のファイルを `!` で戻す（`/backend/` の後に `!/backend/ecsite/build.gradle.kts`） | 親のディレクトリが除外されていると戻せない |
+| 7 | 親のフォルダーを除外した後に、その下のファイルを `!` で戻す（`/backend/` の後に `!/backend/ecsite/build.gradle.kts`） | 親のフォルダーが除外されていると戻せない |
 | 8 | 許可の行を除外の行より前に移した（`!/LICENSE` を `/*` より前に置く） | 最後に一致する行が除外する |
 | 9 | `/` のない行が深いフォルダーの追跡しているファイルに一致する（`bin/` が `scripts/bin/` に） | `/` のない行はどの階層にも一致する |
 | 10 | 大文字と小文字だけが違う許可の行（`!/readme.md` と、追跡している `README.md`） | 大文字と小文字を区別する |
+| 11 | ステージした `.gitignore` が追跡しているファイルを除外する（作業ツリーの `.gitignore` は元のまま。commit の前の hook と同じ状態） | hook はステージした内容で判定する |
 
 除外された追跡しているファイル（`ignored-tracked`）・検出してはいけない例：
 
@@ -109,11 +114,12 @@ action の固定（`action-pins`）・検出してはいけない例：
 |------|----|------|
 | 1 | 追跡していない除外のファイル（`/.local/` の下、ビルドの出力） | 追跡していない |
 | 2 | `.git/info/exclude` か全体の `core.excludesFile` だけが除外する追跡しているファイル | 手元の設定は読まない |
-| 3 | 除外の後に `!` で戻した追跡しているファイル（親のディレクトリは除外されていない） | 最後に一致する行が `!` で戻している |
+| 3 | 除外の後に `!` で戻した追跡しているファイル（親のフォルダーは除外されていない） | 最後に一致する行が `!` で戻している |
 | 4 | 追跡していない、除外されないファイル | 追跡していない |
-| 5 | `/*` で除外し、`!/docs/` で戻したディレクトリの下の追跡しているファイル | 許可リストの書き方 |
+| 5 | `/*` で除外し、`!/docs/` で戻したフォルダーの下の追跡しているファイル | 許可リストの書き方 |
 | 6 | 許可の行の末尾に空白がある（`!/LICENSE` の後に空白） | 末尾の空白は無視される |
 | 7 | `git rm --cached` で追跡をやめた除外のファイル | 追跡していない |
+| 8 | 作業ツリーでだけ `.gitignore` を変え、ステージしていない（commit の前の hook と同じ状態） | hook はステージした内容で判定する |
 
 ## 目的と完了条件
 
@@ -140,9 +146,9 @@ action の固定（`action-pins`）・検出してはいけない例：
 
 | まとまり | ファイル |
 |----------|----------|
-| 検査 | `scripts/ci/config/action-pins.mjs`、`scripts/ci/config/action-pins.test.mjs`、`scripts/ci/config/ignored-tracked.mjs`、`scripts/ci/config/ignored-tracked.test.mjs` |
-| commit の前の hook | `scripts/dev/hooks/pre-commit-select.mjs` |
-| 文書 | `docs/06-手順書/ci-checks.md`、`docs/08-spec/565-ci-checks/spec.md` |
+| 検査 | `scripts/ci/config/action-pins.mjs`、`scripts/ci/config/action-pins.test.mjs`、`scripts/ci/config/ignored-tracked.mjs`、`scripts/ci/config/ignored-tracked.test.mjs`、`scripts/shared/git/git-files.mjs`、`scripts/shared/git/git-files.test.mjs` |
+| commit の前の hook | `scripts/dev/hooks/pre-commit-select.mjs`、`scripts/dev/hooks/pre-commit-select.test.mjs` |
+| 文書 | `docs/06-手順書/ci-checks.md`、`docs/06-手順書/ci-adding-checks.md`、`docs/06-手順書/branches.md`、`docs/08-spec/565-ci-checks/spec.md` |
 
 ## 非機能要件
 
@@ -154,8 +160,8 @@ action の固定（`action-pins`）・検出してはいけない例：
 
 | 対象 | 関係 |
 |------|------|
-| #563（既存の検査の script の漏れと誤検出の修正） | `pre-commit-select.mjs` と `ci-checks.md` を変える可能性がある。自分の行だけを加え、マージの前に全体のブランチを取り込む |
-| #566（文書の検査の script の漏れの修正） | #563 と同じ |
+| #563（既存の検査の漏れと誤検出の修正） | `pre-commit-select.mjs` と `ci-checks.md` を変える可能性がある。自分の行だけを加え、マージの前に全体のブランチを取り込む |
+| #566（文書の検査の漏れの修正） | #563 と同じ |
 
 ## Non-goals
 
@@ -164,7 +170,7 @@ action の固定（`action-pins`）・検出してはいけない例：
 | `ci.yml` の `paths` から `!.gitignore` を外す（#255 の 2 つ目の箇条） | 決定のとおり、文書の workflow が検査を実行するため。`ci.yml` を変えると、結果に関わらない job も実行される |
 | SHA の後に書くバージョンのコメントの照合 | 実行する action は SHA で決まり、コメントは読む人の目印で実行に影響しないため |
 | `docker://` の digest の指定を許す | 今は使っていない。使うときに、許可する形に加える |
-| Docker の action の `runs.image` の固定 | `uses` と別の項目で、今は Docker の action もない。作るときに対象に加える |
+| Docker の action の `runs.image` の固定 | `uses` と別の項目で、今は Docker の action がない。作るときに対象に加える |
 | 手元の除外の設定の検査 | 手元の設定はリポジトリに入らず、CI の結果に関わらないため |
 
 ## Open questions
@@ -203,8 +209,21 @@ action の固定（`action-pins`）・検出してはいけない例：
   - 依存：T565-01-06
   - 範囲：なし（確認だけ）
   - 確認方法：今の workflow の 1 か所をタグにして `action-pins` が失敗し、`.gitignore` に追跡しているファイルを除外する行を加えて `ignored-tracked` が失敗することを確認し、元に戻す。`scripts/ci/check-all.sh` が通る
-- [ ] **T565-01-08** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
+- [x] **T565-01-08** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T565-01-07
+  - 結果：次の表のとおり。危険度が高いので、3 つの観点に「script と CI」を加えた。
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | 段階をまたぐ影響 | 高性能 | 1 | 113550 | 3m59s | 0 | 2 | 3 | 5 |
+    | spec の最後 | ファイルをまたぐ影響 | 高性能 | 1 | 124280 | 2m56s | 0 | 2 | 1 | 3 |
+    | spec の最後 | spec との一致 | 高性能 | 1 | 100511 | 2m24s | 0 | 0 | 2 | 2 |
+    | spec の最後 | script と CI | 高性能 | 1 | 98521 | 3m42s | 0 | 4 | 4 | 7 |
+    | spec の最後 | 重複を除く | — | 1 | — | — | 0 | 4 | 8 | 11 |
+
+    検証役（高性能、85666 token、1m51s）は 18 件の全てを真と判定した。修正したものは、hook の選び方のテスト（常に実行する検査の列挙と、`.github/` の下での選び方）、テストでの共有の `GIT_` の変数の除き方、Git の一覧を求める共有のモジュールへの関数の追加、0 件と git の失敗の終了コード 2、hook と同じ状態のテスト、CRLF と読めない YAML の例、`docs.yml` の実行の条件の文、手順書の 2 つの規則への検査の名前である。残したものは 1 件で、`runtime-versions` と workflow の読み方を共有にする案である。既存の検査の判定を変えないため（DN-565-2）、pull request の「推奨の指摘の扱い」に書く。機械の検査に移したものはない。本文の書き手：spec の修正と手順書の数行は spec 担当のセッション、コードとテストは実装役。
+
+    文書のレビュー（汎用）は候補 16 件のうち 14 件を修正した。手順書から検査の名前を削る 2 件は、上の指摘（規則を自動で確認するようになったら示す）と食い違うので採らなかった。校閲は、確認役が「挙げる」とした 8 件を全て修正した。
 - [ ] **T565-01-09** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T565-01-08
 - [ ] **T565-01-10** spec をアーカイブに移す。

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findActionPinProblems, isActionPinTarget } from './action-pins.mjs'
+import { findActionPinProblems, isActionPinTarget, runActionPins } from './action-pins.mjs'
 
 const SHA = '3d3c42e5aac5ba805825da76410c181273ba90b1'
 const WORKFLOW = '.github/workflows/new.yml'
@@ -89,14 +89,30 @@ describe('action の固定の検査・検出すべき例', () => {
     assert.equal(countProblems('jobs:\n  a:\n    uses: org/repo/.github/workflows/a.yml@${{ matrix.ref }}\n'), 1)
   })
 
-  test('.github/actions/ の下の 2 段の下のフォルダーの action.yml も対象にして失敗にする', () => {
+  test('.github/actions/ の下の 2 階層下のフォルダーの action.yml も対象にして失敗にする', () => {
     assert.equal(isActionPinTarget('.github/actions/a/b/action.yml'), true)
     assert.equal(countProblems('runs:\n  steps:\n    - uses: actions/checkout@v4\n', '.github/actions/a/b/action.yml'), 1)
   })
 
-  test('対象のファイルが 0 件のとき（対象の判定を通るファイルがない）を、呼び出し側が見分けられる', () => {
-    const files = ['README.md', 'docs/a.yml', '.github/dependabot.yml'].filter(isActionPinTarget)
-    assert.deepEqual(files, [])
+  test('対象のファイルが 0 件なら、終了コード 2 で理由を出す', () => {
+    const lines = []
+    const code = runActionPins([], () => '', (line) => lines.push(line))
+    assert.equal(code, 2)
+    assert.match(lines.join('\n'), /1 件も見つからない/)
+  })
+
+  test('改行が CRLF の workflow の中のタグの指定は失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep('actions/checkout@v4').replaceAll('\n', '\r\n')), 1)
+  })
+
+  test('1 つのファイルに複数の文書があるときと、1 つの step に uses が 2 つあるときは、読めない YAML として失敗にする', () => {
+    const multiple = `---\njobs: {}\n---\njobs:\n  a:\n    steps:\n      - uses: actions/checkout@${SHA}\n`
+    const duplicate = `jobs:\n  a:\n    steps:\n      - uses: actions/checkout@${SHA}\n        uses: actions/checkout@v4\n`
+    for (const text of [multiple, duplicate]) {
+      const problems = findActionPinProblems([{ path: WORKFLOW, text }])
+      assert.equal(problems.length, 1, text)
+      assert.ok(problems[0].includes('YAML を読めない'), problems[0])
+    }
   })
 })
 
@@ -157,6 +173,10 @@ describe('action の固定の検査・検出してはいけない例', () => {
     assert.equal(countProblems(workflowWithStep(`my-org_1/Repo.name-x@${SHA}`)), 0)
   })
 
+  test('改行が CRLF の、許可する形の workflow は通る', () => {
+    assert.equal(countProblems(workflowWithStep(`actions/checkout@${SHA} # v7.0.1`).replaceAll('\n', '\r\n')), 0)
+  })
+
   test('引用符で囲んだ許可する形は通る', () => {
     assert.equal(countProblems(workflowWithStep(`"actions/checkout@${SHA}"`)), 0)
     assert.equal(countProblems(workflowWithStep("'./.github/actions/setup-frontend'")), 0)
@@ -184,5 +204,22 @@ describe('action の固定の検査・失敗の出力', () => {
   test('文字列でない値は、値の型が分かる形で示す', () => {
     const [problem] = findActionPinProblems([{ path: WORKFLOW, text: workflowWithStep('123') }])
     assert.ok(problem.includes('123'), problem)
+    assert.ok(problem.includes('（文字列でない）'), problem)
+  })
+
+  test('問題があれば終了コード 1、なければ 0 で、最後の行が要約の行になる', () => {
+    const files = { [WORKFLOW]: workflowWithStep('actions/checkout@v4'), '.github/workflows/ok.yml': workflowWithStep(`actions/checkout@${SHA}`) }
+    const run = (paths) => {
+      const lines = []
+      const code = runActionPins(paths, (file) => files[file], (line) => lines.push(line))
+      return { code, last: lines.at(-1), lines }
+    }
+    const failed = run([WORKFLOW, '.github/workflows/ok.yml'])
+    assert.equal(failed.code, 1)
+    assert.match(failed.last, /^[^：]+：.*2 件.*1 件/)
+    assert.ok(failed.lines.some((line) => line.includes(WORKFLOW)))
+    const passed = run(['.github/workflows/ok.yml'])
+    assert.equal(passed.code, 0)
+    assert.match(passed.last, /^[^：]+：.*1 件.*0 件/)
   })
 })

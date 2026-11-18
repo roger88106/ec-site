@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
-import { withoutGitEnv } from '../../shared/git/git-env.mjs'
+import { removeGitEnv, withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { findIgnoredTracked, runIgnoredTracked } from './ignored-tracked.mjs'
 
 /** 一時のリポジトリを作った場所 */
@@ -15,10 +15,8 @@ const roots = []
 /** hook の中でも一時のリポジトリを指すように、GIT_ で始まる環境変数を外す */
 const env = withoutGitEnv()
 
-/** 検査の実行時の環境も、hook の GIT_DIR などを外す（検査は自分の git の呼び出しで環境を引き継ぐため） */
-for (const name of Object.keys(process.env)) {
-  if (name.startsWith('GIT_')) delete process.env[name]
-}
+/** 検査の実行時の環境も、hook の GIT_DIR などを外す（検査が git を呼び出すときに、この環境を引き継ぐため） */
+removeGitEnv()
 
 /** 一時のリポジトリで git を実行する */
 function git(dir, ...args) {
@@ -49,6 +47,26 @@ function makeRepo(files, untracked = []) {
   }
   for (const file of untracked) write(dir, file, 'x\n')
   return dir
+}
+
+/**
+ * commit の前の hook と同じ状態で検査する。ステージした内容を別のディレクトリに取り出し、
+ * GIT_DIR を元のリポジトリ、GIT_WORK_TREE を取り出した場所にして、取り出した場所で実行する。
+ *
+ * @param {string} dir 元のリポジトリ
+ * @returns {string[]} 除外された追跡しているファイル
+ */
+function findInHookForm(dir) {
+  const staged = mkdtempSync(path.join(tmpdir(), 'ignored-tracked-staged-'))
+  roots.push(staged)
+  git(dir, 'checkout-index', '-a', `--prefix=${staged.replaceAll('\\', '/')}/`)
+  process.env.GIT_DIR = path.join(dir, '.git')
+  process.env.GIT_WORK_TREE = staged
+  try {
+    return findIgnoredTracked(staged)
+  } finally {
+    removeGitEnv()
+  }
 }
 
 describe('除外された追跡しているファイルの検出', () => {
@@ -111,6 +129,14 @@ describe('除外された追跡しているファイルの検出', () => {
       git(dir, 'config', 'core.ignorecase', 'true')
       assert.deepEqual(findIgnoredTracked(dir), ['README.md'])
     })
+
+    test('例 11：ステージした .gitignore が除外するとき、作業ツリーの .gitignore が元のままでも対象になる（commit の前の hook と同じ状態）', () => {
+      const dir = makeRepo({ 'a.txt': 'a', '.gitignore': 'b.log\n' })
+      write(dir, '.gitignore', 'a.txt\n')
+      git(dir, 'add', '-f', '.gitignore')
+      write(dir, '.gitignore', 'b.log\n')
+      assert.deepEqual(findInHookForm(dir), ['a.txt'])
+    })
   })
 
   describe('検出してはいけない例', () => {
@@ -156,6 +182,12 @@ describe('除外された追跡しているファイルの検出', () => {
       git(dir, 'rm', '-q', '--cached', 'a.log')
       assert.deepEqual(findIgnoredTracked(dir), [])
     })
+
+    test('例 8：作業ツリーでだけ .gitignore を変えてステージしていないとき、ステージした内容で判定する（commit の前の hook と同じ状態）', () => {
+      const dir = makeRepo({ 'a.txt': 'a', '.gitignore': 'b.log\n' })
+      write(dir, '.gitignore', 'a.txt\n')
+      assert.deepEqual(findInHookForm(dir), [])
+    })
   })
 
   describe('出力と終了コード', () => {
@@ -186,6 +218,22 @@ describe('除外された追跡しているファイルの検出', () => {
     test('失敗のときも、最後の行が要約の行になる', () => {
       const dir = makeRepo({ 'a.txt': 'a', '.gitignore': '*.txt\n' })
       assert.match(run(dir).lines.at(-1), /^[^：]+：\d+ 件/)
+    })
+
+    test('リポジトリの外など、git が失敗するときは、終了コード 2 で理由と要約の行を出す', () => {
+      const outside = mkdtempSync(path.join(tmpdir(), 'ignored-tracked-outside-'))
+      roots.push(outside)
+      const saved = process.env.GIT_CEILING_DIRECTORIES
+      process.env.GIT_CEILING_DIRECTORIES = path.dirname(outside)
+      try {
+        const { code, lines } = run(outside)
+        assert.equal(code, 2)
+        assert.ok(lines.length >= 2, lines.join('\n'))
+        assert.match(lines.at(-1), /^[^：]+：\d+ 件/)
+      } finally {
+        if (saved === undefined) delete process.env.GIT_CEILING_DIRECTORIES
+        else process.env.GIT_CEILING_DIRECTORIES = saved
+      }
     })
 
     test('追跡しているファイルが 0 件なら、終了コード 2 で理由を出す', () => {

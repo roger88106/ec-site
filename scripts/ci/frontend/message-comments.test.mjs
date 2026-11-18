@@ -122,6 +122,39 @@ describe('文言のキーのコメントの検査', () => {
     assert.deepEqual(findMissingComments(text), [])
   })
 
+  test('テキストの直後の開きタグの後の複数行の式の終わりのコメントも通る', () => {
+    const text = ['<li>Total<b>{', "  t('k')", '  /* 合計 */}</b></li>'].join('\n')
+    assert.deepEqual(findMissingComments(text), [])
+  })
+
+  test('型引数の直後の本体は、JSX の式と読まない（開きタグと見分ける）', () => {
+    const text = ['function f(): Array<string> {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(text), [{ line: 2, key: 'cart.title' }])
+  })
+
+  test('属性の式の中の < や > があっても、直前のタグの後の式の終わりのコメントは通る', () => {
+    const small = ['<p hidden={n<2}>{', "  t('k')", '  /* 表示 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(small), [])
+    const large = ['<p hidden={a > b}>{', "  t('k')", '  /* 表示 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(large), [])
+  })
+
+  test('文字列の中の波括弧は、式の範囲に数えない', () => {
+    const closing = ['<p>{', "  t('k') + '}'", '  /* 表示 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(closing), [])
+    const opening = ['<p>{', "  '{' + t('k')", '  /* 表示 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(opening), [])
+    const before = ["<p>{'{'}{", "  t('k')", '  /* 表示 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(before), [])
+  })
+
+  test('戻り値の型が交差か合併で最後にオブジェクトの型の関数の本体も、JSX の式と読まない', () => {
+    const intersection = ['function f(): Base & { a: string } {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(intersection), [{ line: 2, key: 'cart.title' }])
+    const union = ['function f(): null | { a: string } {', "  const a = t('cart.title')", '  return a // 返す', '}'].join('\n')
+    assert.deepEqual(findMissingComments(union), [{ line: 2, key: 'cart.title' }])
+  })
+
   test('キーを二重引用符で書いた呼び出しも見る', () => {
     assert.deepEqual(findMissingComments('<span>{t("save")}</span>'), [{ line: 1, key: 'save' }])
   })

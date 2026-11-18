@@ -107,6 +107,12 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.deepEqual(parseDocPorts(text), [])
   })
 
+  test('名前が PORT_ で始まる変数の既定値は読む（REPORT_ROWS は読まない）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const text = 'A="${PORT_E2E:-9999}"\nB="${BACKEND_PORT_E2E:-9998}"\nC="${REPORT_ROWS:-5000}"'
+    assert.deepEqual(parseDocPorts(text), [9999, 9998])
+  })
+
   test('--port は大文字小文字を区別し、--Port と --PORT の後の数字は読まない', () => {
     assert.deepEqual(parseDocPorts('pnpm preview --port 8080'), [8080])
     assert.deepEqual(parseDocPorts('pnpm preview --Port 8080 --PORT 8081'), [])

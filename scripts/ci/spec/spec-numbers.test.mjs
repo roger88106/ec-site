@@ -137,6 +137,14 @@ describe('本番のコードの spec の番号の検査', () => {
     )
   })
 
+  test('数字の間の区切りに、長音記号（U+30FC）と横線（U+2012、U+2014、U+2015）も - と同じに読む', () => {
+    const text = ['// ＡＣー１２', '// AC―12', '// AC—12', '// AC‒12'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '2 AC-12', '3 AC-12', '4 AC-12'],
+    )
+  })
+
   test('全角の英字・数字・ハイフンで書いた番号を見つけ、報告する行の文字は正規化の前のものにする', () => {
     const text = ['// 割引の上限（ＡＣ－１０）', '// 共有の基準（ＤＣ-７）', '// タスク（Ｔ０１１－０１－０１）、ｐｌａｎ　００１'].join('\n')
     const hits = findSpecNumbers(text)

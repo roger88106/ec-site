@@ -72,12 +72,12 @@ export function keepTsComments(text) {
  * @returns {string} コメントだけを残したソース
  */
 function keepMasked(text, mask) {
-  let result = ''
+  const chars = []
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i]
-    result += char === '\r' || char === '\n' || mask[i] ? char : ' '
+    chars.push(char === '\r' || char === '\n' || mask[i] ? char : ' ')
   }
-  return result
+  return chars.join('')
 }
 
 /**
@@ -125,12 +125,12 @@ export function keepPropertiesComments(text) {
  * @returns {string} コメントだけを残したソース
  */
 function keepBlanked(text, stripped) {
-  let result = ''
+  const chars = []
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i]
-    result += char === '\r' || char === '\n' || stripped[i] !== char ? char : ' '
+    chars.push(char === '\r' || char === '\n' || stripped[i] !== char ? char : ' ')
   }
-  return result
+  return chars.join('')
 }
 
 /**

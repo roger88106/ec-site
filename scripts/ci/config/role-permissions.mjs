@@ -3,6 +3,8 @@
 //
 // 権限が定義されていない管理 API の操作、realm にない権限、security のない店舗 API の操作も失敗にする。
 // token が要らない店舗 API の操作は、security: [] で明示する（書き忘れを「不要」と読まないため）。
+// 契約の書き方も失敗にする。店舗の契約の最上位の security（操作ごとに書く。バックエンドも操作ごとの security だけを読む）と、
+// 管理と店舗の両方のパスの下の $ref（Path Item の $ref は読まない）。パスの parameters や応答の中の $ref は見ない。
 //
 // 失敗したとき：リポジトリのルートで --write を付けて実行して表を再生成し、差分を確認する。
 //
@@ -81,6 +83,30 @@ export function parseRealmRoles(realm) {
     .filter((role) => role.permissions.length > 0)
   const permissions = (realm.roles?.client?.[ADMIN_CLIENT] ?? []).map((role) => role.name)
   return { roles, permissions }
+}
+
+/**
+ * OpenAPI の契約の書き方を検査する。operations の読み方が対応しない書き方を失敗にする。
+ *
+ * - 店舗の契約の最上位の `security`（値のない `security:` と `[]` も）。バックエンドは操作ごとの `security` だけを読むため
+ * - パスの下の `$ref`（Path Item の `$ref`）。読まないため、操作を読み落とす。parameters や応答の中の `$ref` は見ない
+ *
+ * @param {string} text OpenAPI の契約
+ * @param {{ store: boolean }} options store は、店舗の契約のとき true
+ * @returns {string[]} 問題（なければ空）
+ */
+export function checkContract(text, { store }) {
+  const contract = load(text) ?? {}
+  const problems = []
+  if (store && Object.hasOwn(contract, 'security')) {
+    problems.push('最上位の security：最上位に書かず、操作ごとに書く')
+  }
+  for (const [path, item] of Object.entries(contract.paths ?? {})) {
+    if (item !== null && typeof item === 'object' && Object.hasOwn(item, '$ref')) {
+      problems.push(`${path}：パスの下に $ref がある。$ref の Path Item は読まないので、パスの下に直接書く`)
+    }
+  }
+  return problems
 }
 
 /** 店舗 API の操作の、ログインの要否。security を書いていない操作は呼ばない（問題にする） */
@@ -193,11 +219,14 @@ export function replaceGenerated(document, markdown) {
 }
 
 if (import.meta.main) {
+  const adminText = readFileSync(ADMIN_API, 'utf8')
+  const storeText = readFileSync(STORE_API, 'utf8')
   const { markdown, problems } = renderTables({
-    admin: parseOperations(readFileSync(ADMIN_API, 'utf8')),
-    store: parseOperations(readFileSync(STORE_API, 'utf8')),
+    admin: parseOperations(adminText),
+    store: parseOperations(storeText),
     realm: parseRealmRoles(JSON.parse(readFileSync(ADMIN_REALM, 'utf8'))),
   })
+  problems.push(...checkContract(adminText, { store: false }), ...checkContract(storeText, { store: true }))
   const document = readFileSync(DOCUMENT, 'utf8')
   if (process.argv.includes('--write') && problems.length === 0) {
     writeFileSync(DOCUMENT, replaceGenerated(document, markdown))

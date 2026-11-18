@@ -272,11 +272,11 @@ spec の番号の検査の例：
   - 依存：T563-01-04
   - 範囲：`scripts/ci/spec/spec-numbers.mjs`、`scripts/shared/source/strip-comments.mjs`、`scripts/ci/lib/source/comment-text.mjs` とそのテスト
   - 確認方法：`node --test`、`node scripts/ci/spec/spec-numbers.mjs`
-- [ ] **T563-01-06** [テスト] ロールと権限の対応表の検査のテストを書き、レッドを確認する（DC-563-7、DC-563-14 の検査の側、DC-563-15）。
+- [x] **T563-01-06** [テスト] ロールと権限の対応表の検査のテストを書き、レッドを確認する（DC-563-7、DC-563-14 の検査の側、DC-563-15）。
   - 依存：T563-01-01
   - 範囲：`scripts/ci/config/role-permissions.test.mjs`
   - 確認方法：`node --test` が失敗する。commit は次のタスクと同じにする
-- [ ] **T563-01-07** T563-01-06 のテストが通る実装を書く（DC-563-7、DC-563-14、DC-563-16）。
+- [x] **T563-01-07** T563-01-06 のテストが通る実装を書く（DC-563-7、DC-563-14、DC-563-16）。
   - 依存：T563-01-06
   - 範囲：`scripts/ci/config/role-permissions.mjs`
   - 確認方法：`node --test`、`node scripts/ci/config/role-permissions.mjs`

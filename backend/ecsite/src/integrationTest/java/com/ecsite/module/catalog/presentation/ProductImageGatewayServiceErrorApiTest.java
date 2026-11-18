@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @Transactional
-class ProductImageServiceErrorApiTest {
+class ProductImageGatewayServiceErrorApiTest {
 
     // ============================== Bean ==============================
 

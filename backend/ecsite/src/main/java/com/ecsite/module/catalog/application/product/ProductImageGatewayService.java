@@ -17,7 +17,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
-public class ProductImageService {
+public class ProductImageGatewayService {
 
     /**
      * メディアの腐敗防止層

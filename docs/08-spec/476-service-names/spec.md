@@ -140,7 +140,7 @@
   - 依存：T476-01-01。#567 が全体のブランチにあれば、取り込んだ後
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/`
   - 確認方法：対象のテストだけを実行し、改名の対象の 11 個の service が違反として報告されることを確認する
-- [ ] **T476-01-03** catalog の service を改名する（DC-476-2、DC-476-5）。
+- [x] **T476-01-03** catalog の service を改名する（DC-476-2、DC-476-5）。
   - 依存：T476-01-02
   - 範囲：catalog の service、テストのクラス（統合テストを含む）、呼び出し元
   - 確認方法：コンパイルと、catalog のテスト

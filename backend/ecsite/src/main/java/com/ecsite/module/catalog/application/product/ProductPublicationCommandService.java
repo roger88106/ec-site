@@ -19,7 +19,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class ProductPublicationService {
+public class ProductPublicationCommandService {
 
     /**
      * 商品リポジトリ

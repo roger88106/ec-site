@@ -35,7 +35,7 @@ describe('.claude/settings.json の hook と permission の設定', () => {
     assert.equal(new Set(HANDLERS.map((hook) => hook.command)).size, 1)
   })
 
-  test('hook のタイムアウトは、script の中の gh の合計と git のタイムアウトを足した値より長い', () => {
+  test('hook のタイムアウトは、script の中の gh の合計と git のタイムアウトを加えた値より長い', () => {
     assert.ok(Number.isInteger(GH_BUDGET_MS) && Number.isInteger(GIT_TIMEOUT_MS), `gh：${GH_BUDGET_MS}、git：${GIT_TIMEOUT_MS}`)
     for (const hook of HANDLERS) {
       const timeout = hook.timeout * 1000

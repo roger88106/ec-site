@@ -348,7 +348,7 @@ class CheckoutStartApiTest {
             var checkoutId = fixture.startCheckout(cartId);
             product.suspend(0);
 
-            // 操作と確認：合計は購入できる 1 つ目の 1,100 円だけで、総額はそれに送料を足した額
+            // 操作と確認：合計は購入できる 1 つ目の 1,100 円だけで、総額はそれに送料を加えた額
             mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
                     .andExpect(jsonPath("$.items.length()").value(2))
                     .andExpect(jsonPath("$.amounts.itemsTotal").value(1100))
@@ -392,7 +392,7 @@ class CheckoutStartApiTest {
             orders.add(cartId, variant, 1);
             var checkoutId = fixture.startCheckout(cartId);
 
-            // 操作と確認：品目と、送料 1,000 円を足した総額を返す
+            // 操作と確認：品目と、送料 1,000 円を加えた総額を返す
             mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
                     .andExpect(jsonPath("$.items[0].variantId").value(variant.toString()))
                     .andExpect(jsonPath("$.amounts.itemsTotal").value(1100))

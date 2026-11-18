@@ -6,7 +6,7 @@
 //     --write は、進行中の spec の AC について、列 AC・状態（有効）・元の spec・今の内容を転記し、変えた spec を「—」にする。
 //     手動で書くのは、モジュールと、前の spec の AC を変えた・廃止したときの状態・変えた spec・今の内容。
 //     転記した行の今の内容も、spec の中だけで通じる参照を書き換えるときと、転記の後に spec の AC の文を直したときは手動で修正する
-//     （手順は docs/05-開発規則/issues.md「AC 一覧の操作」）
+//     （手順は docs/05-開発規則/issues.md の「AC 一覧の操作」）
 //   - 元の spec・変えた spec の値：形は SPEC_NUMBER。変えた spec が 2 つ以上なら SPEC_NUMBER_SEPARATOR で区切る。
 //     spec のディレクトリとの照合は match.mjs
 //   - ③ のモジュールの名前：listModuleNames と、common（共通。③ の表に生成しない）

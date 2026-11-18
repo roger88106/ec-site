@@ -211,7 +211,7 @@ const DEDUP_TABLE = [
   '| spec の最後 | 安全 | 高性能 | 1 | 10000 | 1m | 0 | 1 | 0 | 1 |',
 ].join('\n')
 
-test('重複を除く行がある時点は、その行の「高」「必須」「推奨」「採用」の列を使い、他の行の値は足さない', () => {
+test('重複を除く行がある時点は、その行の「高」「必須」「推奨」「採用」の列を使い、他の行の値は加えない', () => {
   const stage = aggregate(readReviewRows(DEDUP_TABLE)).byTime.find((t) => t.time === '段階')
   // 段階 1 は重複を除く行の 1・2・1・3、段階 2 は行の 0・1・0・1 を合計する
   assert.equal(stage.high, 1)
@@ -228,7 +228,7 @@ test('重複を除く行がない時点は、今までどおり行の値を合�
   assert.equal(last.adopted, 2)
 })
 
-test('重複を除く行は行の数に数えず、token も足さず、token が読めない行にも数えない', () => {
+test('重複を除く行は行の数に数えず、token も加えず、token が読めない行にも数えない', () => {
   const result = aggregate(readReviewRows(DEDUP_TABLE))
   const stage = result.byTime.find((t) => t.time === '段階')
   assert.equal(stage.rows, 3)

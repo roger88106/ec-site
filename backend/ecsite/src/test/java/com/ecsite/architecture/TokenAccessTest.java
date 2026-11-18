@@ -108,7 +108,7 @@ class TokenAccessTest {
         // 操作と確認：一覧のクラスごとに、本番のクラスが token の取り出しに依存している
         for (String exception : TOKEN_ACCESS_EXCEPTIONS) {
             boolean used = ProductionClasses.all().stream()
-                    .filter(javaClass -> outermostName(javaClass).equals(exception))
+                    .filter(javaClass -> ProductionClasses.isOrNestedIn(javaClass, exception))
                     .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
                     .anyMatch(dependency -> TOKEN_ACCESSORS.contains(dependency.getTargetClass().getName()));
             assertThat(used).as(exception).isTrue();

@@ -232,7 +232,7 @@ spec の番号の検査の例：
   - 依存：T563-01-08
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/EventPublicationReadTest.java`、`docs/05-開発規則/test-writing-backend.md`
   - 確認方法：`./gradlew test --tests '*EventPublicationReadTest'` が通る。規則の文が検査の対象の型と一致することを読んで確認する
-- [ ] **T563-01-10** 入れ子のクラスを外側のクラスに対応付ける判定を、テストの補助にまとめる（DC-563-10）。
+- [x] **T563-01-10** 入れ子のクラスを外側のクラスに対応付ける判定を、テストの補助にまとめる（DC-563-10）。
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/support/ProductionClasses.java`、`backend/ecsite/src/test/java/com/ecsite/architecture/SchemaOwnershipTest.java`、`backend/ecsite/src/test/java/com/ecsite/architecture/TokenAccessTest.java`
   - 確認方法：振る舞いを変えないので、`./gradlew test --tests '*SchemaOwnershipTest' --tests '*TokenAccessTest'` が通る

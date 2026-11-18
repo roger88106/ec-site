@@ -216,6 +216,17 @@ public final class ProductionClasses {
     }
 
     /**
+     * クラスが、指定した名前のクラスか、その入れ子のクラスかを返す。
+     *
+     * @param javaClass クラス
+     * @param name      外側のクラスの名前
+     * @return 外側のクラスの名前が指定した名前と同じなら true
+     */
+    public static boolean isOrNestedIn(JavaClass javaClass, String name) {
+        return outermostName(javaClass).equals(name);
+    }
+
+    /**
      * クラスが、単体テストと統合テストが共有する testFixtures のクラスかを返す。
      *
      * @param javaClass クラス

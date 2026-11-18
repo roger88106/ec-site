@@ -80,7 +80,7 @@
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/contract/ErrorCodeContractTest.java`
   - 確認方法：テストが失敗し、34 操作が示されることを確認する
-- [ ] **T517-01-02** 業務のエラーのない操作に、空の配列の `x-error-codes` を書く（DC-517-1）。
+- [x] **T517-01-02** 業務のエラーのない操作に、空の配列の `x-error-codes` を書く（DC-517-1）。
   - 依存：T517-01-01
   - 範囲：`api/openapi/admin.yaml`、`api/openapi/store.yaml`
   - 確認方法：T517-01-01 のテストが通る。1 つの操作から外すと失敗することを確認し、戻す

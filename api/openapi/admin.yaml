@@ -34,6 +34,7 @@ paths:
     get:
       tags: [tax]
       operationId: listTaxCategories
+      x-error-codes: []
       summary: 税区分の一覧（税率を含む）
       x-required-permission: tax:read
       responses:
@@ -77,6 +78,7 @@ paths:
     get:
       tags: [tax]
       operationId: getTaxCategory
+      x-error-codes: []
       summary: 税区分の取得（税率を含む）
       x-required-permission: tax:read
       responses:
@@ -130,6 +132,7 @@ paths:
     get:
       tags: [category]
       operationId: listCategories
+      x-error-codes: []
       summary: カテゴリの木
       x-required-permission: category:read
       responses:
@@ -201,6 +204,7 @@ paths:
     get:
       tags: [category]
       operationId: getCategory
+      x-error-codes: []
       summary: カテゴリの取得
       x-required-permission: category:read
       responses:
@@ -264,6 +268,7 @@ paths:
     get:
       tags: [product]
       operationId: listProducts
+      x-error-codes: []
       summary: 商品の一覧・絞り込み
       description: 状態に関係なく、全ての商品が対象。登録日時の新しい順。
       x-required-permission: product:read
@@ -334,6 +339,7 @@ paths:
     get:
       tags: [product]
       operationId: getProduct
+      x-error-codes: []
       summary: 商品の詳細（バリアントを含む）
       x-required-permission: product:read
       responses:
@@ -448,6 +454,7 @@ paths:
     put:
       tags: [product]
       operationId: discontinueProduct
+      x-error-codes: []
       summary: 販売終了にする
       x-required-permission: product:write
       responses:
@@ -587,6 +594,7 @@ paths:
     put:
       tags: [product]
       operationId: suspendVariant
+      x-error-codes: []
       summary: バリアントを販売停止にする
       x-required-permission: product:write
       responses:
@@ -610,6 +618,7 @@ paths:
     put:
       tags: [product]
       operationId: resumeVariant
+      x-error-codes: []
       summary: バリアントの販売停止を解除する
       x-required-permission: product:write
       responses:
@@ -737,6 +746,7 @@ paths:
     delete:
       tags: [product]
       operationId: deleteProductImage
+      x-error-codes: []
       summary: 画像の削除
       description: その画像を指定していたバリアントの指定は外れる。配信のファイルは、削除の後に消える。
       x-required-permission: product:write
@@ -792,6 +802,7 @@ paths:
     get:
       tags: [inventory]
       operationId: getStock
+      x-error-codes: []
       summary: バリアントの在庫数
       x-required-permission: inventory:read
       responses:
@@ -842,6 +853,7 @@ paths:
     get:
       tags: [inventory]
       operationId: listStockAdjustments
+      x-error-codes: []
       summary: 在庫調整の履歴
       description: 新しい順。
       x-required-permission: inventory:read
@@ -866,6 +878,7 @@ paths:
     get:
       tags: [inventory]
       operationId: listStockSummaries
+      x-error-codes: []
       summary: 商品ごとの在庫数の合計
       x-required-permission: inventory:read
       parameters:
@@ -901,6 +914,7 @@ paths:
     get:
       tags: [order]
       operationId: listOrders
+      x-error-codes: []
       summary: 注文一覧
       description: 注文日時の新しい順。キャンセル済みの注文も含む。
       x-required-permission: order:read
@@ -959,6 +973,7 @@ paths:
     get:
       tags: [order]
       operationId: getOrder
+      x-error-codes: []
       summary: 注文の詳細
       x-required-permission: order:read
       responses:
@@ -1092,6 +1107,7 @@ paths:
     get:
       tags: [me]
       operationId: getMe
+      x-error-codes: []
       summary: 自分の権限の一覧
       description: 管理画面が、メニューと画面を権限で出し分けるのに使う。
       x-required-permission: authenticated
@@ -1222,6 +1238,7 @@ paths:
     get:
       tags: [report]
       operationId: getReportSettings
+      x-error-codes: []
       summary: レポートの設定
       description: 管理画面が、期間の選択肢（今年度・前年度）を、バックエンドと同じ会計年度で求めるのに使う。
       x-required-permission: authenticated

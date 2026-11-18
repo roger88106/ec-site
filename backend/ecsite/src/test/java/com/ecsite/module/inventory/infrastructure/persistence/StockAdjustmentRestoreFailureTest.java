@@ -34,6 +34,7 @@ class StockAdjustmentRestoreFailureTest {
         var repository = new JooqStockQueryRepository(dsl);
 
         // 操作と確認：履歴の取得が失敗し、例外の出力に理由の値が出ない
-        assertValueIsHidden(() -> repository.findAdjustments(UUID.randomUUID(), new PageRequest(1, 20)), value);
+        assertValueIsHidden(() -> repository.findAdjustments(UUID.randomUUID(), new PageRequest(1, 20)), value,
+                IllegalArgumentException.class);
     }
 }

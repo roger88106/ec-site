@@ -43,7 +43,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
       queryClient.removeQueries({ queryKey: ['get', '/products/{productId}'] })
     },
   })
-  const { pending, error } = useMutationGroup([publish, unpublish, discontinue, remove])
+  const { pending, error, run } = useMutationGroup([publish, unpublish, discontinue, remove])
 
   return (
     <Card>
@@ -71,12 +71,12 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
         </dl>
         <div className="flex flex-wrap gap-2">
           {product.actions.publish && (
-            <Button disabled={pending} onClick={() => publish.mutate(path)}>
+            <Button disabled={pending} onClick={() => run(() => publish.mutate(path))}>
               {t('publish') /* 公開する */}
             </Button>
           )}
           {product.actions.unpublish && (
-            <Button disabled={pending} onClick={() => unpublish.mutate(path)} variant="outline">
+            <Button disabled={pending} onClick={() => run(() => unpublish.mutate(path))} variant="outline">
               {t('unpublish') /* 非公開にする */}
             </Button>
           )}
@@ -84,7 +84,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
             <ConfirmDialog
               confirmLabel={t('discontinue') /* 販売終了にする */}
               description={t('discontinueDescription') /* 戻せない */}
-              onConfirm={() => discontinue.mutate(path)}
+              onConfirm={() => run(() => discontinue.mutate(path))}
               title={t('discontinueTitle', { name: product.name }) /* 販売終了の確認 */}
               trigger={
                 <Button disabled={pending} variant="outline">
@@ -98,9 +98,11 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
               confirmLabel={tApp('deleteConfirm') /* 削除する */}
               description={t('deleteDescription') /* あわせて消すもの */}
               onConfirm={() =>
-                remove.mutate({
-                  params: { path: { productId: product.id }, query: { version: product.version } },
-                })
+                run(() =>
+                  remove.mutate({
+                    params: { path: { productId: product.id }, query: { version: product.version } },
+                  }),
+                )
               }
               title={t('deleteTitle', { name: product.name }) /* 削除の確認 */}
               trigger={

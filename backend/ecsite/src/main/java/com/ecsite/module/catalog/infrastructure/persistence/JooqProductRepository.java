@@ -378,20 +378,15 @@ class JooqProductRepository implements ProductRepository {
                 .from(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(id))
                 .orderBy(VARIANT.DISPLAY_ORDER, VARIANT.ID)
-                .fetch(row -> new Variant(
-                        row.get(VARIANT.ID),
-                        VariantCode.of(row.get(VARIANT.VARIANT_CODE)),
-                        List.of(row.get(axisValues)),
-                        row.get(VARIANT.DISPLAY_ORDER),
-                        row.get(VARIANT.SALES_SUSPENDED),
-                        row.get(VARIANT.IMAGE_ID)));
+                .fetch();
 
         var images = dsl.selectFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
                 .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.ID)
-                .fetch(image -> new ProductImage(image.getId(), image.getAssetId(), image.getDisplayOrder()));
+                .fetch();
 
-        return factory.restore(new Product.Snapshot(
+        // DB の値から作る値（品番・価格・公開期間・バリアント・画像）も、復元の失敗として扱うため、全体を包む
+        return RestoreGuard.restore("product", () -> factory.restore(new Product.Snapshot(
                 id,
                 ProductCode.of(record.getProductCode()),
                 record.getName(),
@@ -400,11 +395,17 @@ class JooqProductRepository implements ProductRepository {
                 PriceExclTax.of(record.getPriceExclTax()),
                 categoryIds,
                 axes,
-                RestoreGuard.restore("product", () -> PublicationStatus.valueOf(record.getStatus())),
+                PublicationStatus.valueOf(record.getStatus()),
                 record.getFirstShownAt(),
                 PublicationPeriod.of(record.getPublishStart(), record.getPublishEnd()),
-                images,
-                variants,
-                record.getVersion()));
+                images.map(image -> new ProductImage(image.getId(), image.getAssetId(), image.getDisplayOrder())),
+                variants.map(row -> new Variant(
+                        row.get(VARIANT.ID),
+                        VariantCode.of(row.get(VARIANT.VARIANT_CODE)),
+                        List.of(row.get(axisValues)),
+                        row.get(VARIANT.DISPLAY_ORDER),
+                        row.get(VARIANT.SALES_SUSPENDED),
+                        row.get(VARIANT.IMAGE_ID))),
+                record.getVersion())));
     }
 }

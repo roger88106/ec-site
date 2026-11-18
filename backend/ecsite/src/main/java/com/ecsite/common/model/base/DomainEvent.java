@@ -9,6 +9,7 @@ import java.util.UUID;
  *
  * <p>イベントは過去形で命名する。同じイベントが複数回届きうる（at-least-once 配信）ので、重複を見分ける識別子として {@link #eventId()} を持つ。
  * 発生時刻は {@code Instant.now()} で取らず、アプリの {@link Clock} から得た時刻にする。
+ * ただし、外部のサービスが通知した日時を使うイベントは、その日時にする（例：物流サービスの通知の発生日時）。
  */
 public interface DomainEvent extends org.jmolecules.event.types.DomainEvent {
 

@@ -45,6 +45,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | テスト | AssertJ | Apache-2.0 |
 | テスト | Testcontainers | MIT |
 | テスト | JUnit | 条件付き（EPL-2.0。テストでだけ使い、配布しない） |
+| テスト | Error Prone の検査のテストの補助（`error_prone_test_helpers`）と、その間接の依存の JUnit 4 | Apache-2.0。JUnit 4 は条件付き（EPL-1.0。テストでだけ使い、配布しない。改変しない） |
 
 ※1：依存の照合と例外の理由は、`scripts/ci/licenses/policy.json` と `build.gradle.kts` にある。
 

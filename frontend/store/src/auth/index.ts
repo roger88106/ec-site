@@ -9,6 +9,7 @@ import { cache } from 'react'
 import { mergeCartAfterLogin } from '@/api/cart'
 import { readServerConfig } from '@/auth/config'
 import { authCookies, sessionCookieName } from '@/auth/cookieNames'
+import { deleteLoginRetryFlag, hasLoginRetryFlag, setLoginRetryFlag } from '@/auth/loginRetry'
 import { logoutUrl } from '@/auth/logout'
 import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
 import { loginPath, safeReturnTo } from '@/lib/login'
@@ -58,8 +59,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   useSecureCookies: SECURE_COOKIE,
   // 接頭辞が空なら undefined で、Auth.js の既定の名前・属性のまま
   cookies: authCookies(COOKIE_PREFIX, SECURE_COOKIE),
+  // エラーの画面は、再試行の判断をするエンドポイントへ移す（店舗画面の構成の「ログイン」）
+  pages: { error: '/login/error' },
   events: {
     async signIn({ account }) {
+      // ログインできたので、再試行のフラグを削除する
+      await deleteLoginRetryFlag()
       // ログインの直後に、Cookie のカートを会員のカートへ移す
       if (account?.access_token) {
         await mergeCartAfterLogin(account.access_token)
@@ -169,6 +174,12 @@ export async function idpLogoutUrl(): Promise<string> {
   // 戻り先は公開する URL から作る。リクエストヘッダーのホストは偽れるので使わない
   return logoutUrl(PUBLIC_URL, token?.idToken)
 }
+
+/**
+ * 公開する URL（リダイレクトの先を作るのに使う。リクエストヘッダーのホストは偽装できるので使わない）と、
+ * ログインの再試行のフラグ（`loginRetry.ts`）
+ */
+export { deleteLoginRetryFlag, hasLoginRetryFlag, PUBLIC_URL, setLoginRetryFlag }
 
 /** IdP のアカウントの画面 */
 export const ACCOUNT_URL = `${ISSUER}/account`

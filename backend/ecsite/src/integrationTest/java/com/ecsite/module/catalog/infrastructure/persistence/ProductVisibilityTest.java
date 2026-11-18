@@ -155,7 +155,7 @@ class ProductVisibilityTest {
     /**
      * 状態と公開期間を指定した商品を作る（保存はしない）。
      *
-     * <p>バリアントなしで状態を決めるため、スナップショットから作る。
+     * <p>バリアントなしで状態を決めるため、スナップショットから作る。公開中の商品は、初めて表示した日時を持たせる（公開中の商品として成り立たせるため）。
      *
      * @param sequence 品番と商品名に付ける連番
      * @param status   公開状態
@@ -168,6 +168,7 @@ class ProductVisibilityTest {
         var snapshot = created.toSnapshot();
         return factory.restore(new Product.Snapshot(snapshot.id(), snapshot.productCode(), snapshot.name(),
                 snapshot.description(), snapshot.taxCategoryId(), snapshot.priceExclTax(), snapshot.categoryIds(),
-                snapshot.axes(), status, null, period, snapshot.images(), snapshot.variants(), snapshot.version()));
+                snapshot.axes(), status, status == PublicationStatus.PUBLISHED ? NOW : null, period, snapshot.images(),
+                snapshot.variants(), snapshot.version()));
     }
 }

@@ -459,7 +459,7 @@ class JooqProductRepositoryTest {
 
             // 確認：画像は並び順どおりで、バリアントは 2 枚目を指す
             var restored = repository.findById(product.id()).orElseThrow();
-            assertThat(restored.images()).containsExactly(
+            assertThat(restored.images()).usingRecursiveFieldByFieldElementComparator().containsExactly(
                     new ProductImage(first, FIRST_ASSET_ID, 1), new ProductImage(second, SECOND_ASSET_ID, 2));
             assertThat(restored.variants().getFirst().imageId()).isEqualTo(second);
         }
@@ -585,7 +585,7 @@ class JooqProductRepositoryTest {
         assertThat(restored.firstShownAt()).isNull();
         assertThat(restored.publicationPeriod()).isEqualTo(PublicationPeriod.UNLIMITED);
         assertThat(restored.images()).isEmpty();
-        assertThat(restored.variants()).containsExactly(
+        assertThat(restored.variants()).usingRecursiveFieldByFieldElementComparator().containsExactly(
                 new Variant(white, VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), 1, false, null),
                 new Variant(black, VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), 2, false, null));
     }

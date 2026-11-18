@@ -13,11 +13,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 注文時の年齢と性別の単体テスト
  *
- * <p>token の生年月日と性別から、注文時の年齢と性別を求めることだけを確認する。成立した注文に記録することは
+ * <p>token の生年月日と性別から、注文時の年齢と性別を求めることと、年齢の範囲の検査だけを確認する。成立した注文に記録することは
  * {@code PlaceOrderBuyerProfileApiTest}、token に載せることは {@code RealmSettingsContractTest} が確認する。
  */
 class BuyerProfileTest {
@@ -117,6 +118,34 @@ class BuyerProfileTest {
         void keepsExactly120Years() {
             // 操作と確認：120 年前の同じ日の生年月日では、120 歳
             assertThat(BuyerProfile.of("1906-10-08", null, ORDERED_AT).age()).isEqualTo(120);
+        }
+    }
+
+    @Nested
+    @DisplayName("コンストラクターの検査")
+    class ConstructorValidation {
+
+        @ParameterizedTest(name = "{0} 歳")
+        @ValueSource(ints = {-1, 121})
+        @DisplayName("0〜120 の外の年齢は拒否される")
+        void rejectsAgeOutOfRange(int age) {
+            // 操作と確認：IllegalArgumentException で拒否される
+            assertThatThrownBy(() -> new BuyerProfile(age, Gender.MALE)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest(name = "{0} 歳")
+        @ValueSource(ints = {0, 120})
+        @DisplayName("0 歳と 120 歳は受け付ける")
+        void acceptsBoundaryAges(int age) {
+            // 操作と確認：年齢をそのまま持つ
+            assertThat(new BuyerProfile(age, Gender.MALE).age()).isEqualTo(age);
+        }
+
+        @Test
+        @DisplayName("年齢がないときは、検査の対象にしない")
+        void acceptsUnknownAge() {
+            // 操作と確認：年齢がない
+            assertThat(new BuyerProfile(null, Gender.MALE).age()).isNull();
         }
     }
 

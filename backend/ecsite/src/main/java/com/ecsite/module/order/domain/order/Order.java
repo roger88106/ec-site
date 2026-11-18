@@ -17,6 +17,7 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Order extends AggregateRoot {
 
@@ -65,6 +67,7 @@ public class Order extends AggregateRoot {
      * 注文 ID
      */
     @Identity
+    @EqualsAndHashCode.Include
     private final UUID id;
 
     /**
@@ -144,12 +147,35 @@ public class Order extends AggregateRoot {
 
     /**
      * 全属性コンストラクタ
+     *
+     * <p>メールアドレスと、状態と取消の情報（申請、キャンセル）の整合を検査する。
+     *
+     * @param id                  注文 ID
+     * @param orderNumber         注文番号
+     * @param checkoutId          注文手続き ID
+     * @param memberId            会員 ID
+     * @param orderedAt           注文日時
+     * @param status              状態
+     * @param lines               明細
+     * @param amounts             金額の内訳
+     * @param email               メールアドレス（null なら拒否する）
+     * @param shippingAddress     お届け先
+     * @param buyerProfile        注文時の年齢と性別
+     * @param cancellationRequest キャンセルの申請
+     * @param cancellation        キャンセル
+     * @param version             バージョン
+     * @throws BusinessException メールアドレスの形が違う（{@code INVALID_EMAIL}）
      */
     private Order(@NonNull UUID id, @NonNull OrderNumber orderNumber, @NonNull UUID checkoutId, @NonNull UUID memberId,
                   @NonNull Instant orderedAt, @NonNull OrderStatus status, @NonNull List<OrderLine> lines,
-                  @NonNull Amounts amounts, @NonNull String email, @NonNull ShippingAddress shippingAddress,
+                  @NonNull Amounts amounts, @Nullable String email, @NonNull ShippingAddress shippingAddress,
                   @NonNull BuyerProfile buyerProfile, @Nullable CancellationRequest cancellationRequest,
                   @Nullable Cancellation cancellation, long version) {
+        // メールアドレスは、空でなく、長さの上限以内で、形式に合うこと
+        if (email == null || email.length() > EMAIL_MAX_LENGTH || !EMAIL.matcher(email).matches()) {
+            throw BusinessException.of(OrderErrorCode.INVALID_EMAIL);
+        }
+        verifyCancellation(status, cancellationRequest, cancellation);
         this.id = id;
         this.orderNumber = orderNumber;
         this.checkoutId = checkoutId;
@@ -188,10 +214,6 @@ public class Order extends AggregateRoot {
                               @Nullable String email, ShippingAddress shippingAddress, BuyerProfile buyerProfile) {
         if (!quote.orderable()) {
             throw new IllegalArgumentException("注文できない見積もりからは注文を作れません");
-        }
-        // メールアドレスは、空でなく、長さの上限以内で、形式に合うこと
-        if (email == null || email.length() > EMAIL_MAX_LENGTH || !EMAIL.matcher(email).matches()) {
-            throw BusinessException.of(OrderErrorCode.INVALID_EMAIL);
         }
         // 行番号は 1 から、見積もりの品目の並びで振る
         var lines = new ArrayList<OrderLine>();
@@ -454,6 +476,45 @@ public class Order extends AggregateRoot {
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 状態と、キャンセルの申請・キャンセルが整合するかを検査する。
+     *
+     * <p>メッセージには状態の名前だけを書き、申請とキャンセルの値を書かない（DB から戻した値が入るため）。
+     *
+     * @param status              状態
+     * @param cancellationRequest キャンセルの申請
+     * @param cancellation        キャンセル
+     */
+    private static void verifyCancellation(OrderStatus status, @Nullable CancellationRequest cancellationRequest,
+                                           @Nullable Cancellation cancellation) {
+        var result = cancellationRequest == null ? null : cancellationRequest.result();
+        switch (status) {
+            // 支払待ちは申請できない
+            case PENDING_PAYMENT -> {
+                if (result != null || cancellation != null) {
+                    throw new IllegalArgumentException("支払待ちの注文は、申請とキャンセルを持たない");
+                }
+            }
+            // 申請していないか、申請を却下して受付に戻した注文と、そこから出荷した注文
+            case ACCEPTED, SHIPPED -> {
+                if ((result != null && result != CancellationRequest.Result.REJECTED) || cancellation != null) {
+                    throw new IllegalArgumentException("受付と出荷済みの注文は、申請がないか却下した申請を持ち、キャンセルを持たない");
+                }
+            }
+            case CANCELLATION_REQUESTED -> {
+                if (result != CancellationRequest.Result.PENDING || cancellation != null) {
+                    throw new IllegalArgumentException("申請中の注文は、申請中の申請を持ち、キャンセルを持たない");
+                }
+            }
+            // 申請中からのキャンセルは申請を承認にし、受付・出荷済みからのキャンセルは申請を変えない
+            case CANCELLED -> {
+                if (result == CancellationRequest.Result.PENDING || cancellation == null) {
+                    throw new IllegalArgumentException("キャンセル済みの注文は、キャンセルを持ち、申請中の申請を持たない");
+                }
+            }
+        }
+    }
 
     /**
      * 申請に結果を記録する。

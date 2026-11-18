@@ -42,6 +42,7 @@
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API のシークレットキー、通知の署名鍵。Git にコミットしない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md)の「Stripe で動かす」） | 決済の mock フラグを有効にしなければ必須 |
 | `ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT`、`_READ_TIMEOUT` | Stripe の API への接続、応答のタイムアウト（応答は 1 回の要求ごと。SDK の自動の再試行は別に数える） | 5s、20s |
 | `ECSITE_SHIPPING_MOCK_ENABLED` | 物流の mock フラグ。`true` でなければ、接続していない物流サービスを使う（配送状態は進まない）。本番では有効にしない | false |
+| `ECSITE_SHIPPING_OCCURRED_AT_MAX_AGE`、`ECSITE_SHIPPING_OCCURRED_AT_FUTURE_TOLERANCE` | 物流サービスが通知した発生日時について、古さの上限と未来の許容。範囲の外の通知は 400 で拒否する | 30d、5m |
 | `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名鍵。Git にコミットしない。ローカルと統合テストでは、テスト用の値を設定ファイルに書く。物流サービスを接続していない環境でも必須 | 必須 |
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |
 | `SPRING_MAIL_HOST`、`_PORT`、`_USERNAME`、`_PASSWORD` | メールを送る SMTP サーバーの接続先と認証（Spring Boot の設定）。ローカルは compose の Mailpit（`localhost:2525`。ポートは `MAILPIT_SMTP_PORT` で変える） | host は必須、port は 25 |
@@ -54,6 +55,7 @@
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省略したもの（`SPRING_DATASOURCE_USERNAME` など）。
 - 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）だけは 0 以上。
+- `ECSITE_PAYMENT_AUTHORIZATION_WARNING` は、`ECSITE_PAYMENT_AUTHORIZATION_VALIDITY` より短くないと起動に失敗する。
 - マイグレーションの適用は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「マイグレーション」。
 - ログは標準出力に JSON（Elastic Common Schema）で出力される。
 - 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「公開ネットワークへのデプロイの前提」）を決めてから行う。

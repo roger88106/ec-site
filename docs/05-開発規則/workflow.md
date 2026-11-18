@@ -100,7 +100,7 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 作業ブランチの最初の push は、draft の pull request を作る直前に行う（規模によらない）。それまでは commit だけにする。pull request を作った後の修正の commit も、push の前にまとめる。理由は 2 つある。
 
 - pull request を作った後は、push のたびに CI が全て実行されるが、途中の CI の結果は使わないので、実行が無駄になる。
-- push 済みの commit のメッセージを校閲の後に書き換えると、force push が要り、CI も実行し直しになる。`agent/` のブランチは、push 済みでも書き換えてよい（[AGENTS.md](../../AGENTS.md) の Git の「修正」）。
+- push 済みの commit のメッセージを校閲の後に書き換えると、force push が必要になり、CI も実行し直しになる。`agent/` のブランチは、push 済みでも書き換えてよい（[AGENTS.md](../../AGENTS.md) の Git の「修正」）。
 
 例外：CI でしか確認できない変更（ワークフローの設定、CI の環境でだけ動く検査など）は、pull request の前に push し、`gh workflow run ci.yml --ref <ブランチ>`（文書の検査は `docs.yml`）で実行してよい。作業ブランチへの push だけでは CI は実行されない。
 

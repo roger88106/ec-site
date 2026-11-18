@@ -185,7 +185,7 @@ services:
       - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8025:8025"
 
   # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する
-  # （docs/06-手順書/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
+  # （docs/06-手順書/setup.md の「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
   stripe-cli:
     image: stripe/stripe-cli:v1.55.9
     container_name: ec-site-stripe-cli

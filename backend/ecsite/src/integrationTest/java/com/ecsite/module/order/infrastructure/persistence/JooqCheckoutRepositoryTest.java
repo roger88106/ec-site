@@ -73,8 +73,8 @@ class JooqCheckoutRepositoryTest {
             repository.insert(checkout);
 
             // 確認：読むときも、ロックして読むときも、保存したものと等しい
-            assertThat(repository.findById(checkout.id())).contains(checkout);
-            assertThat(repository.lockById(checkout.id())).contains(checkout);
+            assertThat(repository.findById(checkout.id())).get().usingRecursiveComparison().isEqualTo(checkout);
+            assertThat(repository.lockById(checkout.id())).get().usingRecursiveComparison().isEqualTo(checkout);
         }
 
         @Test

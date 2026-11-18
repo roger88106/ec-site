@@ -141,6 +141,16 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 確認方法：自動（契約のテスト）、判定の重複はレビュー
 
+### 不変条件はコンストラクターで検査する
+
+- 値オブジェクト・entity・集約ルートの不変条件は、作るときと復元するときに共通のコンストラクターで検査する。
+- ファクトリーメソッドに残すのは、コンストラクターを呼ぶ前の前処理（正規化、計算、解析）と、作り方によって違う規則だけにする。例：在庫の調整の「運営者は注文に由来する理由を選べない」「理由が『その他』ならメモが必須」は、運営者の調整だけの規則なので、ファクトリーメソッドに残す。
+- 復元で不変条件に違反したときは、復元のエラーにする（復元の処理を `RestoreGuard.restore` の中で行う）。例外のメッセージとログに DB の値を含めない。
+
+理由：ファクトリーメソッドだけで検査すると、公開のコンストラクターから検査を通らないインスタンスを作れ、DB の値が条件に違反していても読み込みで検出できないため。
+
+確認方法：レビュー
+
 ### エラーは `XxxErrorCode` と `BusinessException`
 
 - 業務のエラーは、モジュールごとの `XxxErrorCode`（`ErrorCodeProvider` の enum）で表し、`BusinessException.of(...)` で投げる。定数は種類（`ErrorType`）と、いつ起きるかの Javadoc を持つ。
@@ -227,11 +237,14 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 ### entity と集約の同一性
 
-entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。
+entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。entity と集約は record にせず、class にする。entity と集約には、モジュールのレベルによらず、jMolecules の注釈（`@Entity`・`@AggregateRoot`）と、識別子の項目の `@Identity` を付ける。
 
-理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。
+理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。record には Lombok の `@EqualsAndHashCode` を付けられず、record の `equals` は全ての項目で比べるため。注釈を付けるのは、自動の検査（`EntityEqualityTest`、`EntityEqualityAssertion`）が、注釈と基底クラスの継承で対象を決めるため。
 
-確認方法：レビュー
+確認方法：
+
+- record にしない、`equals` と `hashCode` が識別子の項目だけを使う：自動（ArchUnit の `EntityEqualityTest`。注釈の付いたクラスと基底クラスの継承先が対象）
+- 注釈を付ける、手動で書かず Lombok で作る：レビュー（注釈のない entity は自動の検査の対象にならない）
 
 ### 名前の形
 
@@ -401,7 +414,7 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
 - それ以外の、Lombok で作るコンストラクターの引数（domain の型、common の値、application の Query・view の record など）には `lombok.NonNull` を付け、実行時にも null を止める。理由：DB から再構築するときの jOOQ の値は、NullAway が確認しないため（上の jOOQ の箇条）。
   - 投げる例外は `NullPointerException` のままにする（`IllegalArgumentException` が `NullPointerException` に変わってよい）。
   - presentation（Controller と Mapper）には付けない。
-  - null で業務のエラーを確認するテストは削除しない。null を渡すだけのテストは足さない。
+  - null で業務のエラーを確認するテストは削除しない。null を渡すだけのテストは追加しない。
 - 分岐網羅（C1）のカバレッジの基準が変わったら、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の決め方で、基準を書き換える。
 
 理由：null の誤りを、Spring の API の注釈（同じ JSpecify）も含めて、実行より前のコンパイルで見つけるため。
@@ -415,7 +428,7 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
   - 修正すると振る舞いが変わるもの
   - mock（本番で動かないコード）で、修正する手間に見合わないもの
 - 抑える理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く。他の注釈が間にあるときは、その注釈の行を飛ばして直前の行に書く。
-- 検査を全体で無効にする、重大度を変えるのは `backend/ecsite/build.gradle.kts`（今無効にしている検査と理由もここ）で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。生成したコードは検査しない。
+- 検査を全体で無効にする、重大度を変えるのは `backend/ecsite/build.gradle.kts`（今無効にしている検査と理由もここ）で行い、先に spec で決める。意味のない注釈を追加しないと消えない報告は、注釈でなく設定で扱う。生成したコードは検査しない。
 
 ```java
 // 本番で動かない mock。body は HTTP の本文として送るだけなので、配列の成分を許す

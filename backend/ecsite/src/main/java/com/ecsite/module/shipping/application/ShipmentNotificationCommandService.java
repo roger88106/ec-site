@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 
 /**
@@ -47,7 +48,8 @@ class ShipmentNotificationCommandService implements ShipmentNotificationReceiver
      * {@inheritDoc}
      */
     @Override
-    public Result receive(@NonNull Carrier carrier, @Nullable String trackingNumber, @NonNull DeliveryStatus status) {
+    public Result receive(@NonNull Carrier carrier, @Nullable String trackingNumber, @NonNull DeliveryStatus status,
+                          @NonNull Instant occurredAt) {
         // 出荷取得
         var normalized = normalize(trackingNumber);
         if (normalized == null) {
@@ -65,9 +67,9 @@ class ShipmentNotificationCommandService implements ShipmentNotificationReceiver
         var changes = new ArrayList<DeliveryStatusChanged>();
         for (var shipment : shipments) {
             var from = shipment.status();
-            if (shipment.advanceTo(status, now)) {
+            if (shipment.advanceTo(status, occurredAt, now)) {
                 advanced.add(shipment);
-                changes.add(DeliveryStatusChanged.of(now, shipment.orderId(), from.toEventStatus(), status.toEventStatus()));
+                changes.add(DeliveryStatusChanged.of(occurredAt, shipment.orderId(), from.toEventStatus(), status.toEventStatus()));
             }
         }
         if (advanced.isEmpty()) {

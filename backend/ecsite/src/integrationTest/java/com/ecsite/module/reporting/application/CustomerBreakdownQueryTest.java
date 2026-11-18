@@ -46,7 +46,7 @@ class CustomerBreakdownQueryTest {
      *
      * <p>2031 年 4 月。
      */
-    private static final ReportPeriod PERIOD = ReportPeriod.of(LocalDate.parse("2031-04-01"), LocalDate.parse("2031-04-30"));
+    private static final ReportPeriod PERIOD = new ReportPeriod(LocalDate.parse("2031-04-01"), LocalDate.parse("2031-04-30"));
 
     // ============================== Bean ==============================
 

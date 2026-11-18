@@ -72,6 +72,9 @@ describe('用語集の識別子の検査', () => {
     assert.equal(isSearchedFile('scripts/shared/slot/slot.test.mjs'), true)
     assert.equal(isSearchedFile('backend/ecsite/src/Foo.java'), true)
     assert.equal(isSearchedFile('frontend/store/logo.png'), false)
+    assert.equal(isSearchedFile('frontend/store/node_modules/a/index.js'), false)
+    assert.equal(isSearchedFile('backend/ecsite/build/x.java'), false)
+    assert.equal(isSearchedFile('docs/rebuild/a.md'), true)
   })
 })
 

@@ -86,6 +86,8 @@ class JooqShipmentRepository implements ShipmentRepository {
     public List<Shipment> findAllByTrackingForUpdate(Carrier carrier, TrackingNumber trackingNumber) {
         return dsl.selectFrom(SHIPMENT)
                 .where(SHIPMENT.CARRIER.eq(carrier.name()), SHIPMENT.TRACKING_NUMBER.eq(trackingNumber.value()))
+                // 同じ番号の通知の同時の処理を直列にする。いつも同じ順にロックして、デッドロックを避ける
+                .orderBy(SHIPMENT.ID)
                 .forUpdate()
                 .fetch(JooqShipmentRepository::toShipment);
     }
@@ -132,10 +134,11 @@ class JooqShipmentRepository implements ShipmentRepository {
      * 出荷のレコードを、出荷に変換する。
      */
     private static Shipment toShipment(ShipmentRecord record) {
-        return Shipment.restore(record.getId(), record.getOrderId(),
-                RestoreGuard.restore("shipment", () -> Carrier.valueOf(record.getCarrier())),
+        // 列挙と追跡番号も含め、復元の全体を失敗の扱いの中で行う
+        return RestoreGuard.restore("shipment", () -> Shipment.restore(record.getId(), record.getOrderId(),
+                Carrier.valueOf(record.getCarrier()),
                 new TrackingNumber(record.getTrackingNumber()),
-                RestoreGuard.restore("shipment", () -> DeliveryStatus.valueOf(record.getStatus())),
-                record.getShippedAt(), record.getLastNotifiedAt());
+                DeliveryStatus.valueOf(record.getStatus()),
+                record.getShippedAt(), record.getLastNotifiedAt()));
     }
 }

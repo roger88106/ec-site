@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.carrier;
 
 import com.ecsite.module.shipping.application.port.ShipmentNotificationReceiver;
+import com.ecsite.module.shipping.infrastructure.ShippingProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.time.Clock;
 
 /**
  * 物流サービスの通知のエンドポイント
@@ -43,12 +46,22 @@ class CarrierWebhookController {
     private final JsonMapper jsonMapper;
 
     /**
+     * 発生日時の範囲の判定に使う現在時刻の時計
+     */
+    private final Clock clock;
+
+    /**
+     * 出荷の設定（発生日時の古さの上限と未来の許容）
+     */
+    private final ShippingProperties properties;
+
+    /**
      * 通知を受け取る。
      *
      * @param payload         本文（署名を確認するため、受け取ったままのバイト列で受け取る）
      * @param signatureHeader ヘッダー {@code X-Carrier-Signature}
      * @return 受け付けたら 200（合う出荷がない通知と、対応の表にない状態の名前を含む）、署名を確認できなければ 401、
-     *         署名が合っても本文が読めなければ 400。処理に失敗したら 5xx
+     *         署名が合っても本文が読めない、または発生日時が範囲の外なら 400。処理に失敗したら 5xx
      */
     @PostMapping(CarrierNotification.WEBHOOK_PATH)
     ResponseEntity<Void> receive(@RequestBody(required = false) byte @Nullable [] payload,
@@ -62,6 +75,14 @@ class CarrierWebhookController {
         if (notification == null) {
             return ResponseEntity.badRequest().build();
         }
+        // 範囲の外の発生日時は、再送されても受け付けられないので、本文が読めない通知と同じく 400 を返す
+        var now = clock.instant();
+        var occurredAt = notification.occurredAt();
+        if (!occurredAt.isAfter(now.minus(properties.occurredAtMaxAge()))
+                || occurredAt.isAfter(now.plus(properties.occurredAtFutureTolerance()))) {
+            log.warn("発生日時が範囲の外の物流サービスの通知を拒否した: carrier={}, occurredAt={}", notification.carrier(), occurredAt);
+            return ResponseEntity.badRequest().build();
+        }
         // 対応の表にない状態の名前と、合う出荷がない通知は、再送されても合うようにならないので、記録して 200 を返す。
         // 処理の失敗は 5xx にし、物流サービスの再送で処理し直す
         var status = statusMapping.resolve(notification.carrier(), notification.status());
@@ -69,7 +90,8 @@ class CarrierWebhookController {
             log.warn("対応の表にない状態の名前の通知を無視する: carrier={}, status={}", notification.carrier(), notification.status());
             return ResponseEntity.ok().build();
         }
-        var result = receiver.receive(notification.carrier(), notification.trackingNumber(), status.get());
+        var result = receiver.receive(notification.carrier(), notification.trackingNumber(), status.get(),
+                notification.occurredAt());
         log.info("物流サービスの通知を受けた: carrier={}, status={}, occurredAt={}, result={}",
                 notification.carrier(), notification.status(), notification.occurredAt(), result);
         return ResponseEntity.ok().build();

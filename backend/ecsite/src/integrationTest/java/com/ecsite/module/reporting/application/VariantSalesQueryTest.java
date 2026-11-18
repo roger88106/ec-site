@@ -46,7 +46,7 @@ class VariantSalesQueryTest {
      *
      * <p>2031 年 4 月。
      */
-    private static final ReportPeriod PERIOD = ReportPeriod.of(LocalDate.parse("2031-04-01"), LocalDate.parse("2031-04-30"));
+    private static final ReportPeriod PERIOD = new ReportPeriod(LocalDate.parse("2031-04-01"), LocalDate.parse("2031-04-30"));
 
     /**
      * T シャツの商品名
@@ -125,7 +125,7 @@ class VariantSalesQueryTest {
         void tiesInCatalogOrder() {
             // 操作：どれも売れていない 6 月を集計する
             var report = service.variants(new VariantSalesQuery(shirt.id,
-                    ReportPeriod.of(LocalDate.parse("2031-06-01"), LocalDate.parse("2031-06-30")), Basis.ORDER, false));
+                    new ReportPeriod(LocalDate.parse("2031-06-01"), LocalDate.parse("2031-06-30")), Basis.ORDER, false));
 
             // 確認：商品カタログの並び（白・M、白・L、黒・M）
             assertThat(report.variants()).extracting(VariantSales::variantId).containsExactlyElementsOf(shirt.variantIds);

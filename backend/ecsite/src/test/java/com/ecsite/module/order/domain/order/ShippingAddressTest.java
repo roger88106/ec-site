@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * お届け先の単体テスト
  *
- * <p>お届け先の項目の形の検証と、持ち方だけを確認する。都道府県と市区町村がマスターデータにあるかは、注文の確定で
+ * <p>お届け先の項目の形の検証（入力から作るときと、コンストラクターを直接呼ぶとき）と、持ち方だけを確認する。都道府県と市区町村がマスターデータにあるかは、注文の確定で
  * 地域の API が確認する（統合テスト）。
  */
 class ShippingAddressTest {
@@ -175,6 +175,77 @@ class ShippingAddressTest {
             // 確認：切り詰めずに持つ
             assertThat(address.name()).hasSize(50);
             assertThat(address.address()).hasSize(200);
+        }
+    }
+
+    @Nested
+    @DisplayName("コンストラクターの検査")
+    class ConstructorValidation {
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"", " "})
+        @DisplayName("空白の氏名は、コンストラクターでも拒否される")
+        void rejectsBlankName(String name) {
+            // 操作と確認：業務のエラー INVALID_RECIPIENT_NAME で拒否される
+            assertBusinessError(() -> new ShippingAddress(name, POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
+                    OrderErrorCode.INVALID_RECIPIENT_NAME);
+        }
+
+        @Test
+        @DisplayName("51 文字の氏名は、コンストラクターでも拒否される")
+        void rejectsTooLongName() {
+            // 操作と確認：業務のエラー INVALID_RECIPIENT_NAME で拒否される
+            assertBusinessError(() -> new ShippingAddress("あ".repeat(51), POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
+                    OrderErrorCode.INVALID_RECIPIENT_NAME);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {POSTAL_CODE_WITH_HYPHEN, "100000", "10000011", "100000a"})
+        @DisplayName("ハイフンを含むか、数字 7 桁でない郵便番号は、コンストラクターで拒否される")
+        void rejectsNonNormalizedPostalCode(String postalCode) {
+            // 操作と確認：業務のエラー INVALID_POSTAL_CODE で拒否される
+            assertBusinessError(() -> new ShippingAddress(NAME, postalCode, CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
+                    OrderErrorCode.INVALID_POSTAL_CODE);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"", " "})
+        @DisplayName("空白の住所は、コンストラクターでも拒否される")
+        void rejectsBlankAddress(String addressLine) {
+            // 操作と確認：業務のエラー INVALID_ADDRESS で拒否される
+            assertBusinessError(() -> new ShippingAddress(NAME, POSTAL_CODE_DIGITS, CHIYODA, addressLine, PHONE_DIGITS),
+                    OrderErrorCode.INVALID_ADDRESS);
+        }
+
+        @Test
+        @DisplayName("201 文字の住所は、コンストラクターでも拒否される")
+        void rejectsTooLongAddress() {
+            // 操作と確認：業務のエラー INVALID_ADDRESS で拒否される
+            assertBusinessError(() -> new ShippingAddress(NAME, POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(201), PHONE_DIGITS),
+                    OrderErrorCode.INVALID_ADDRESS);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {PHONE_WITH_HYPHENS, "031234567", "031234567890", "031234567a"})
+        @DisplayName("ハイフンを含むか、数字 10〜11 桁でない電話番号は、コンストラクターで拒否される")
+        void rejectsNonNormalizedPhone(String phone) {
+            // 操作と確認：業務のエラー INVALID_PHONE_NUMBER で拒否される
+            assertBusinessError(() -> new ShippingAddress(NAME, POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, phone),
+                    OrderErrorCode.INVALID_PHONE_NUMBER);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {PHONE_DIGITS, MOBILE_PHONE_DIGITS})
+        @DisplayName("上限の長さの氏名と住所、数字 7 桁の郵便番号、10 桁と 11 桁の電話番号は、コンストラクターで受け付ける")
+        void acceptsNormalizedBoundaryValues(String phone) {
+            // 操作：上限の長さの氏名と住所、正規化した後の形の番号で作る
+            var address = new ShippingAddress("あ".repeat(50), POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(200), phone);
+
+            // 確認：値をそのまま持つ
+            assertThat(address.name()).hasSize(50);
+            assertThat(address.postalCode()).isEqualTo(POSTAL_CODE_DIGITS);
+            assertThat(address.address()).hasSize(200);
+            assertThat(address.phone()).isEqualTo(phone);
         }
     }
 

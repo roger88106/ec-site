@@ -28,6 +28,8 @@ import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 /**
  * 税区分のリポジトリの統合テスト
@@ -234,12 +236,13 @@ class JooqTaxCategoryRepositoryTest {
         @Test
         @DisplayName("期間が重なる税率は、排他制約で拒否され、業務のエラーになる（500 にならない）")
         void rejectsOverlapByExclusionConstraint() {
-            // 準備：ドメインの検証を通らない状態（期間の重複）を、スナップショットから直接作る
+            // 準備：ドメインの検証を通らない状態（期間の重複）を、スナップショットを差し替えて作る（税区分は作る時点で検証する）
             var category = factory.create(NAME);
             repository.add(category);
-            var overlapping = factory.restore(new TaxCategory.Snapshot(category.id(), category.name(), List.of(
+            var overlapping = spy(category);
+            doReturn(new TaxCategory.Snapshot(category.id(), category.name(), List.of(
                     rate("10", null, APR_2028),
-                    rate("8", APR_2027, null)), category.version()));
+                    rate("8", APR_2027, null)), category.version())).when(overlapping).toSnapshot();
 
             // 操作と確認：業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
             assertBusinessError(() -> repository.save(overlapping), TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);

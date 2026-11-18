@@ -5,7 +5,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -24,7 +24,7 @@ import java.util.UUID;
  */
 @Getter
 @Accessors(fluent = true)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Payment extends AggregateRoot {
 
@@ -34,6 +34,7 @@ public class Payment extends AggregateRoot {
      * 支払 ID
      */
     @Identity
+    @EqualsAndHashCode.Include
     @NonNull
     private final UUID id;
 
@@ -105,6 +106,39 @@ public class Payment extends AggregateRoot {
     private final long version;
 
 // ============================== コンストラクタ ==============================
+
+    /**
+     * 全属性コンストラクタ
+     *
+     * <p>状態と、与信の参照・与信の時刻の整合を検査する。支払画面と待ち始めた時刻は、未払いのときに付き、遷移で消えないので、
+     * どの状態でも、あってもなくてもよい。
+     *
+     * @param id                         支払 ID
+     * @param orderId                    注文 ID
+     * @param amount                     金額
+     * @param deadline                   支払の期限
+     * @param status                     状態
+     * @param page                       支払画面
+     * @param authorizationRef           与信の参照
+     * @param authorizedAt               与信の時刻
+     * @param awaitingAuthorizationSince 与信の反映を待ち始めた時刻
+     * @param version                    バージョン
+     */
+    private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
+                    @NonNull PaymentStatus status, @Nullable PaymentPage page, @Nullable String authorizationRef,
+                    @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince, long version) {
+        verifyAuthorization(status, authorizationRef, authorizedAt);
+        this.id = id;
+        this.orderId = orderId;
+        this.amount = amount;
+        this.deadline = deadline;
+        this.status = status;
+        this.page = page;
+        this.authorizationRef = authorizationRef;
+        this.authorizedAt = authorizedAt;
+        this.awaitingAuthorizationSince = awaitingAuthorizationSince;
+        this.version = version;
+    }
 
     /**
      * 未払いの支払を作る。
@@ -349,6 +383,39 @@ public class Payment extends AggregateRoot {
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 状態と、与信の参照・与信の時刻が整合するかを検査し、整合しなければ拒否する。
+     *
+     * <p>メッセージには状態の名前だけを書き、与信の参照と時刻を書かない（DB から戻した値が入るため）。
+     *
+     * @param status           状態
+     * @param authorizationRef 与信の参照
+     * @param authorizedAt     与信の時刻
+     */
+    private static void verifyAuthorization(PaymentStatus status, @Nullable String authorizationRef,
+                                            @Nullable Instant authorizedAt) {
+        switch (status) {
+            // 与信が成功していない。支払なしの後に届いた与信は、与信の取消待ちにする
+            case UNPAID, NOT_PAID -> {
+                if (authorizationRef != null || authorizedAt != null) {
+                    throw new IllegalArgumentException("与信のない状態は、与信の参照と与信の時刻を持たない");
+                }
+            }
+            // 未払いから与信済みにした支払と、そこから進んだ支払
+            case AUTHORIZED, CAPTURED, AUTHORIZATION_EXPIRED -> {
+                if (authorizationRef == null || authorizedAt == null) {
+                    throw new IllegalArgumentException("与信済みから進んだ状態は、与信の参照と与信の時刻を持つ");
+                }
+            }
+            // 支払なしの後に届いた与信から進んだ支払は、与信の時刻を持たない
+            case VOID_PENDING, VOIDED, REFUND_PENDING, REFUNDED -> {
+                if (authorizationRef == null) {
+                    throw new IllegalArgumentException("与信を取り消す・返金する状態は、与信の参照を持つ");
+                }
+            }
+        }
+    }
 
     /**
      * 与信の取消待ちにし、取消の依頼を登録する。

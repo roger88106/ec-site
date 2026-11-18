@@ -96,7 +96,7 @@ class DeliveryStatusChangedEventTest {
         }
 
         @Test
-        @DisplayName("通知で配送状態が進むたびに、前と後の配送状態と、通知を反映した日時のイベントが出る")
+        @DisplayName("通知で配送状態が進むたびに、前と後の配送状態と、通知の発生日時のイベントが出る")
         void emitsOnEachAdvance() throws Exception {
             // 準備：出荷を作る
             var orderId = UUID.randomUUID();
@@ -116,6 +116,23 @@ class DeliveryStatusChangedEventTest {
                             tuple(orderId, null, Status.SHIPPED, NOW),
                             tuple(orderId, Status.SHIPPED, Status.IN_TRANSIT, minutes(1)),
                             tuple(orderId, Status.IN_TRANSIT, Status.DELIVERED, minutes(3)));
+        }
+
+        @Test
+        @DisplayName("DC-548-5 通知で配送状態が進んだときのイベントの発生日時は、処理した時刻でなく、通知の発生日時になる")
+        void usesOccurredAtOfNotification() throws Exception {
+            // 準備：出荷を作り、時計を 10 分後にする
+            var orderId = UUID.randomUUID();
+            shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
+            at(10);
+
+            // 操作：3 分後に起きた配達中を通知する
+            new ShippingTestData(mockMvc, mockCarrier).notifyStatus(Carrier.YAMATO, TRACKING_NUMBER, "配達中", minutes(3));
+
+            // 確認：最後のイベントの発生日時が、通知の発生日時
+            assertThat(events.stream(DeliveryStatusChanged.class)).last()
+                    .extracting(DeliveryStatusChanged::orderId, DeliveryStatusChanged::to, DeliveryStatusChanged::occurredAt)
+                    .containsExactly(orderId, Status.IN_TRANSIT, minutes(3));
         }
 
         @Test

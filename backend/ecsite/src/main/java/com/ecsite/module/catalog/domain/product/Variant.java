@@ -1,7 +1,10 @@
 package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
@@ -13,17 +16,12 @@ import java.util.UUID;
  * バリアント
  *
  * <p>商品集約の一部。価格は持たず、商品の価格を使う。
- *
- * @param id             バリアント ID
- * @param variantCode    バリアント品番
- * @param axisValues     軸の値（商品の軸と同じ並び）
- * @param displayOrder   商品の中の表示順
- * @param salesSuspended 販売停止
- * @param imageId        指定した画像。なければ null（代表画像を使う）
  */
+@Getter
+@Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues,
-                      int displayOrder, boolean salesSuspended, @Nullable UUID imageId) {
+public final class Variant {
 
     /**
      * 軸キーで軸の値を区切る文字（U+001F 単位区切り文字）
@@ -31,12 +29,63 @@ public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCo
     public static final String AXIS_KEY_SEPARATOR = "\u001F";
 
     /**
+     * バリアント ID
+     */
+    @Identity
+    @EqualsAndHashCode.Include
+    private final UUID id;
+
+    /**
+     * バリアント品番
+     */
+    private final VariantCode variantCode;
+
+    /**
+     * 軸の値（商品の軸と同じ並び）
+     */
+    private final List<String> axisValues;
+
+    /**
+     * 商品の中の表示順
+     */
+    private final int displayOrder;
+
+    /**
+     * 販売停止
+     */
+    private final boolean salesSuspended;
+
+    /**
+     * 指定した画像。なければ null（代表画像を使う）
+     */
+    @Nullable
+    private final UUID imageId;
+
+    /**
      * コンストラクタ
      *
      * <p>軸の値は変更できない一覧にする。
+     *
+     * <p>表示順が負のとき、IllegalArgumentException を投げる。
+     *
+     * @param id             バリアント ID
+     * @param variantCode    バリアント品番
+     * @param axisValues     軸の値
+     * @param displayOrder   表示順
+     * @param salesSuspended 販売停止
+     * @param imageId        指定した画像。なければ null
      */
-    public Variant {
-        axisValues = List.copyOf(axisValues);
+    public Variant(@NonNull UUID id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues, int displayOrder,
+                   boolean salesSuspended, @Nullable UUID imageId) {
+        if (displayOrder < 0) {
+            throw new IllegalArgumentException("表示順は 0 以上にする");
+        }
+        this.id = id;
+        this.variantCode = variantCode;
+        this.axisValues = List.copyOf(axisValues);
+        this.displayOrder = displayOrder;
+        this.salesSuspended = salesSuspended;
+        this.imageId = imageId;
     }
 
     /**

@@ -12,7 +12,7 @@ import java.util.UUID;
  * <p>出荷を作ったとき（出荷済み）と、通知で配送状態が進んだときに 1 つ出る。反映しなかった通知では出ない。
  *
  * @param eventId    イベント ID
- * @param occurredAt 発生時刻（出荷日時、または通知を反映した日時）
+ * @param occurredAt 発生時刻（出荷日時、または通知の発生日時）
  * @param orderId    注文 ID
  * @param from       前の配送状態。出荷を作ったときは null
  * @param to         後の配送状態

@@ -58,7 +58,7 @@ class JooqAssetRepositoryTest {
             repository.insert(asset);
 
             // 確認：全ての項目が同じアセットを取得できる
-            assertThat(repository.findAllById(List.of(asset.id()))).containsExactly(asset);
+            assertThat(repository.findAllById(List.of(asset.id()))).usingRecursiveFieldByFieldElementComparator().containsExactly(asset);
         }
 
         @Test
@@ -93,7 +93,7 @@ class JooqAssetRepositoryTest {
             var found = repository.findAllById(List.of(first.id(), second.id(), UUID.randomUUID()));
 
             // 確認：指定した 2 つだけ
-            assertThat(found).containsExactlyInAnyOrder(first, second);
+            assertThat(found).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(first, second);
         }
 
         @Test
@@ -123,7 +123,7 @@ class JooqAssetRepositoryTest {
             repository.deleteAllById(Set.of(first.id(), second.id()));
 
             // 確認：指定しなかった 1 つだけが残る
-            assertThat(repository.findAllById(List.of(first.id(), second.id(), kept.id()))).containsExactly(kept);
+            assertThat(repository.findAllById(List.of(first.id(), second.id(), kept.id()))).usingRecursiveFieldByFieldElementComparator().containsExactly(kept);
         }
 
         @Test
@@ -151,7 +151,7 @@ class JooqAssetRepositoryTest {
             repository.deleteAllById(List.of());
 
             // 確認：記録が残る
-            assertThat(repository.findAllById(List.of(kept.id()))).containsExactly(kept);
+            assertThat(repository.findAllById(List.of(kept.id()))).usingRecursiveFieldByFieldElementComparator().containsExactly(kept);
         }
     }
 

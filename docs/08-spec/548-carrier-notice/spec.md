@@ -35,7 +35,7 @@
 - 決定 3（範囲の外の発生日時）：通知の発生日時が、現在時刻より「古さの上限」以上前か、現在時刻より「未来の許容」を超えて先なら、署名が合っていても処理せず 400 を返す。
   - 判定は、エンドポイントで、本文の読み取りの後、port を呼ぶ前に行う。
   - 古さの上限は 30 日、未来の許容は 5 分を既定にする。
-  - どちらも出荷の設定の値にする。設定のキーは実装のタスクで決める。
+  - どちらも出荷の設定の値にする。既定値は、他の時間の設定と同じく設定の型に置き、環境変数では渡さない。
   - 下限は spec 553 の規則に合わせて 1ms 以上とし、null を許さない。
   - 理由（400）：本文が読めない通知と同じく、再送しても受け付けられないことを、送信元に知らせるため。出荷の設計の「通知のエンドポイント」の既存の理由と同じである。
   - 理由（未来も拒否）：決定 4 で発生日時をレポートの履歴に使うので、未来の日時が入ると履歴が誤るため。#487 の本文は「極端に古い」だけを挙げているが、同じ理由で含める。
@@ -50,7 +50,6 @@
 - 決定 6（文書）：
   - 出荷の機能仕様の「通知のエンドポイント」と「状態の遷移」に、決定 2〜4 の規則を書く。AC も業務規則の番号（BR）も追加しない。
   - 出荷の設計の「通知のエンドポイント」に、範囲の外の発生日時が 400 であることと理由を書く。「物流サービスの通知の反映」の図の後に、ロックの順を書く。
-  - 環境変数で渡す設定にしたときは、加える 2 つの設定を環境変数の一覧に書く。環境変数で渡すかは、実装のタスクで決める。
   - 配送状態の変化のイベントの説明で、発生時刻を「出荷日時、または通知を反映した日時」から「出荷日時、または通知の発生日時」に修正する。
   - 出荷の設計で署名の時刻を確認しない理由の箇条を、範囲の外の発生日時の拒否と、出荷日時による判定を加えて書き換える。
 
@@ -73,7 +72,7 @@
 - **DC-548-1** 通知の発生日時が出荷日時より前なら、配送状態と最後に通知を反映した日時が変わらず、イベントが発行されないことを、テストで確認している。同じ日時なら反映することも確認している。
 - **DC-548-2** 送り状番号が同じ 2 つの出荷のうち、出荷日時が通知の発生日時以前の出荷だけが進むことを、テストで確認している（再利用された送り状番号の場合）。
 - **DC-548-3** 発生日時が古さの上限以上前の通知と、未来の許容を超えて先の通知が 400 になり、出荷が進まないことを、テストで確認している。上限と許容の境界のすぐ内側の値が受け付けられることも確認している。
-- **DC-548-4** 古さの上限と未来の許容の設定に下限（1ms 以上、null 不可）があり、許す範囲の外の値で起動できないことを、テストで確認している。
+- **DC-548-4** 古さの上限と未来の許容の設定に、1ms 以上の下限と null 不可の制約があり、下限より小さい値で起動できないことを、テストで確認している。null は既定値があるため、テストでは確認しない。
 
 ### DS-548-2 配送状態の変化の発生日時が、物流サービスの日時になる（D / P1）
 
@@ -97,7 +96,7 @@
 |----------|----------|
 | 出荷の集約 | `module/shipping/domain/Shipment.java` |
 | port とサービス | `module/shipping/application/port/ShipmentNotificationReceiver.java`、`module/shipping/application/ShipmentNotificationCommandService.java` |
-| エンドポイントと設定 | `module/shipping/infrastructure/carrier/CarrierWebhookController.java`、`module/shipping/infrastructure/ShippingProperties.java`、`backend/ecsite/src/main/resources/application.yml` |
+| エンドポイントと設定 | `module/shipping/infrastructure/carrier/CarrierWebhookController.java`、`module/shipping/infrastructure/ShippingProperties.java` |
 | リポジトリ | `module/shipping/application/port/ShipmentRepository.java`（説明だけ）、`module/shipping/infrastructure/persistence/JooqShipmentRepository.java` |
 | イベントの説明 | `module/shipping/event/DeliveryStatusChanged.java`、`common/model/base/DomainEvent.java` |
 | 単体テスト | `backend/ecsite/src/test/java/com/ecsite/module/shipping/domain/ShipmentTest.java` |
@@ -105,7 +104,7 @@
 | 設定のテスト | 出荷の設定のテスト |
 | 既存のテスト | 受け取りの port を呼ぶ既存のテスト（引数が増えるため） |
 | 既存のテストのデータ | 発生日時が出荷日時より前になるデータ。テストの意図を変えずに日時を合わせる ※1 |
-| 文書 | `docs/03-機能仕様/shipping.md`、`docs/02-設計/shipping.md`、必要なら `docs/06-手順書/environment.md` |
+| 文書 | `docs/03-機能仕様/shipping.md`、`docs/02-設計/shipping.md` |
 
 ※1：例は、mock の画面のテストである。
 

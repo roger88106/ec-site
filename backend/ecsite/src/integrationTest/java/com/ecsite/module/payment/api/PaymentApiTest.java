@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
@@ -101,6 +104,12 @@ class PaymentApiTest {
      */
     @Autowired
     ApplicationEvents events;
+
+    /**
+     * トランザクションの前提を確認するため、呼び出しを包むテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     /**
      * 支払を進める補助
@@ -426,6 +435,58 @@ class PaymentApiTest {
             assertThat(summaries).extracting(PaymentSummary::orderId, PaymentSummary::status).containsExactlyInAnyOrder(
                     tuple(unpaid, PaymentSummary.Status.UNPAID),
                     tuple(authorized, PaymentSummary.Status.AUTHORIZED));
+        }
+    }
+
+    @Nested
+    @DisplayName("トランザクションの前提")
+    class TransactionPrecondition {
+
+        @Test
+        @DisplayName("支払の作成は、トランザクションの外から呼ぶと失敗する")
+        void createFailsOutsideTransaction() {
+            // 操作と確認：トランザクションの外で作ると失敗する
+            assertThatThrownBy(() -> paymentApi.create(UUID.randomUUID(), AMOUNT, ORDERED_AT))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+        }
+
+        @Test
+        @DisplayName("支払の取消は、トランザクションの外から呼ぶと失敗する")
+        void cancelFailsOutsideTransaction() {
+            // 準備：未払いの支払
+            var orderId = payments.created(ORDERED_AT);
+
+            // 操作と確認：トランザクションの外で取り消すと失敗する
+            assertThatThrownBy(() -> paymentApi.cancel(orderId)).isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：支払は未払いのまま
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
+        }
+
+        @Test
+        @DisplayName("支払画面の URL は、トランザクションの中から呼ぶと失敗する")
+        void pageUrlFailsInsideTransaction() {
+            // 準備：未払いの支払
+            var orderId = payments.created(ORDERED_AT);
+
+            // 操作と確認：トランザクションの中で URL を求めると失敗する
+            assertThatThrownBy(() -> transactionTemplate.execute(status -> paymentApi.pageUrl(orderId)))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+        }
+
+        @Test
+        @DisplayName("売上確定は、トランザクションの中から呼ぶと失敗する")
+        void captureFailsInsideTransaction() {
+            // 準備：与信済みの支払
+            var orderId = payments.authorized(ORDERED_AT);
+
+            // 操作と確認：トランザクションの中で売上を確定すると失敗する
+            assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> paymentApi.capture(orderId)))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：決済サービスの売上確定を呼ばず、支払は与信済みのまま
+            assertThat(gateway.captureCallsOf(orderId)).isZero();
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         }
     }
 

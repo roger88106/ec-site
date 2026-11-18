@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
@@ -25,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -248,6 +250,23 @@ class ShippingApiTest {
             // 確認：1 回だけ呼ばれ、そのときトランザクションがない
             asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of("88912223")));
             assertThat(transactionActive).containsExactly(false);
+        }
+    }
+
+    @Nested
+    @DisplayName("トランザクションの前提")
+    class TransactionPrecondition {
+
+        @Test
+        @DisplayName("出荷の作成は、トランザクションの外から呼ぶと失敗する")
+        void createFailsOutsideTransaction() {
+            // 操作と確認：トランザクションの外で作ると失敗する
+            var orderId = UUID.randomUUID();
+            assertThatThrownBy(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, "777788889999", SHIPPED_AT))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：出荷は作られない
+            assertThat(shippingApi.find(List.of(orderId))).isEmpty();
         }
     }
 

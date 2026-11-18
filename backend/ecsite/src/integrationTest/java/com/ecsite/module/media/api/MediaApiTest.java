@@ -488,6 +488,38 @@ class MediaApiTest {
     }
 
     @Nested
+    @DisplayName("トランザクションの前提")
+    class TransactionPrecondition {
+
+        @Test
+        @DisplayName("画像の用意は、トランザクションの中から呼ぶと失敗する")
+        void prepareFailsInsideTransaction() throws Exception {
+            // 準備：PNG をアップロードする
+            var scope = scope();
+            var upload = uploaded(scope, PNG_TYPE, TestImages.png());
+
+            // 操作と確認：トランザクションの中で用意すると失敗する
+            assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> media.prepareImage(scope, upload.uploadId())))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+        }
+
+        @Test
+        @DisplayName("画像の破棄は、トランザクションの中から呼ぶと失敗する")
+        void discardFailsInsideTransaction() throws Exception {
+            // 準備：PNG を用意する
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
+
+            // 操作と確認：トランザクションの中で破棄すると失敗する
+            assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> media.discardImage(prepared)))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 後片付け：配信のファイルを削除する
+            media.discardImage(prepared);
+        }
+    }
+
+    @Nested
     @DisplayName("解放")
     class Release {
 

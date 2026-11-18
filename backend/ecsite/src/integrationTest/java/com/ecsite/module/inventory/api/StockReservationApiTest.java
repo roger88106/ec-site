@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.IllegalTransactionStateException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 引当の統合テスト
@@ -271,6 +273,57 @@ class StockReservationApiTest {
             assertThat(results).filteredOn(shortages -> !shortages.isEmpty())
                     .hasSize(CONCURRENT_HOLDERS - 1)
                     .allSatisfy(shortages -> assertThat(shortages).containsExactly(variant));
+        }
+    }
+
+    @Nested
+    @DisplayName("トランザクションの前提")
+    class TransactionPrecondition {
+
+        @Test
+        @DisplayName("引当は、トランザクションの外から呼ぶと失敗する")
+        void reserveFailsOutsideTransaction() {
+            // 準備：在庫数 5
+            var variant = inventory.stockNewVariant(productId, 5);
+
+            // 操作と確認：トランザクションの外で引き当てると失敗する
+            assertThatThrownBy(() -> api.reserve(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：販売可能数が在庫数のまま
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 5);
+        }
+
+        @Test
+        @DisplayName("引当の解除は、トランザクションの外から呼ぶと失敗する")
+        void releaseFailsOutsideTransaction() {
+            // 操作と確認：トランザクションの外で解除すると失敗する
+            assertThatThrownBy(() -> api.release(UUID.randomUUID())).isInstanceOf(IllegalTransactionStateException.class);
+        }
+
+        @Test
+        @DisplayName("減算は、トランザクションの外から呼ぶと失敗する")
+        void commitFailsOutsideTransaction() {
+            // 準備：在庫数 5
+            var variant = inventory.stockNewVariant(productId, 5);
+
+            // 操作と確認：トランザクションの外で減算すると失敗する
+            assertThatThrownBy(() -> api.commit(UUID.randomUUID(), Map.of(variant, 2), UUID.randomUUID(), "ORD-1"))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+        }
+
+        @Test
+        @DisplayName("在庫数への戻しは、トランザクションの外から呼ぶと失敗する")
+        void restoreFailsOutsideTransaction() {
+            // 準備：在庫数 5
+            var variant = inventory.stockNewVariant(productId, 5);
+
+            // 操作と確認：トランザクションの外で戻すと失敗する
+            assertThatThrownBy(() -> api.restore(Map.of(variant, 2), UUID.randomUUID(), "ORD-1"))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：販売可能数が在庫数のまま
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 5);
         }
     }
 

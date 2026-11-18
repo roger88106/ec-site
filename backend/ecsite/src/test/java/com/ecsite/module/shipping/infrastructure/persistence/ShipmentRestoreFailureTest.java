@@ -45,6 +45,13 @@ class ShipmentRestoreFailureTest {
         assertFindHides(shipment -> shipment.setStatus(value));
     }
 
+    @Test
+    @DisplayName("追跡番号の形が違うとき、例外の出力に値が出ない")
+    void hidesTrackingNumber() {
+        // 操作と確認：追跡番号を数字でない値にした行を読む
+        assertFindHides(shipment -> shipment.setTrackingNumber(value));
+    }
+
     // ============================== 確認の補助 ==============================
 
     /**

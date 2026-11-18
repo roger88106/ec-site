@@ -67,6 +67,20 @@ class ReportPeriodTest {
         }
 
         @Test
+        @DisplayName("BR-24 コンストラクターでも、始まりが終わりより後なら拒否される")
+        void constructorRejectsReversed() {
+            // 操作と確認：業務のエラー INVALID_PERIOD で拒否される
+            assertBusinessError(() -> new ReportPeriod(date("2026-10-02"), date("2026-10-01")), ReportingErrorCode.INVALID_PERIOD);
+        }
+
+        @Test
+        @DisplayName("BR-24 コンストラクターでも、期間が 5 年を超えると拒否される")
+        void constructorRejectsLongerThanFiveYears() {
+            // 操作と確認：業務のエラー INVALID_PERIOD で拒否される
+            assertBusinessError(() -> new ReportPeriod(date("2021-01-01"), date("2026-01-01")), ReportingErrorCode.INVALID_PERIOD);
+        }
+
+        @Test
         @DisplayName("BR-24 始まりと終わりが同じ日でよい")
         void allowsSingleDay() {
             // 操作：1 日だけの期間を月で区切る

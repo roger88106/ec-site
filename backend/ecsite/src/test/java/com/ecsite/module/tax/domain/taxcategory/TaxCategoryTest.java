@@ -589,7 +589,7 @@ class TaxCategoryTest {
         @DisplayName("同じ税率の ID を 2 回指定すると拒否される")
         void rejectsDuplicatedId() {
             // 準備：税率を 1 つ持つ税区分
-            var started = rate("10", null, APR_2027);
+            var started = rate("10", null, null);
             var category = restore(started);
 
             // 操作と確認：業務のエラー INVALID_TAX_RATE_ID で拒否される

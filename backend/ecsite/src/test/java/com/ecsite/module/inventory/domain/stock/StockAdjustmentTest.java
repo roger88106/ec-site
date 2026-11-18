@@ -243,6 +243,88 @@ class StockAdjustmentTest {
         }
     }
 
+    @Nested
+    @DisplayName("複数の条件に違反したときのエラーの順")
+    class ErrorOrder {
+
+        @Test
+        @DisplayName("増減量が 0 で理由が注文に由来するとき、INVALID_STOCK_DELTA が返る")
+        void deltaBeforeReasonInCreate() {
+            // 操作と確認：増減量の誤りが先
+            assertBusinessError(() -> StockAdjustment.create(0, StockAdjustmentReason.ORDER, null, OPERATOR, NOW),
+                    InventoryErrorCode.INVALID_STOCK_DELTA);
+        }
+
+        @Test
+        @DisplayName("増減量が上限を超え理由が注文に由来するとき、INVALID_STOCK_DELTA が返る")
+        void rangeBeforeReasonInCreate() {
+            // 操作と確認：増減量の誤りが先
+            assertBusinessError(() -> StockAdjustment.create(1_000_001, StockAdjustmentReason.ORDER, null, OPERATOR, NOW),
+                    InventoryErrorCode.INVALID_STOCK_DELTA);
+        }
+
+        @Test
+        @DisplayName("理由が注文に由来しメモが長すぎるとき、ORDER_REASON_NOT_SELECTABLE が返る")
+        void reasonBeforeMemoLengthInCreate() {
+            // 操作と確認：理由の誤りがメモの長さより先
+            assertBusinessError(() -> StockAdjustment.create(ARRIVAL_DELTA, StockAdjustmentReason.ORDER,
+                    "あ".repeat(MEMO_MAX_LENGTH + 1), OPERATOR, NOW), InventoryErrorCode.ORDER_REASON_NOT_SELECTABLE);
+        }
+
+        @Test
+        @DisplayName("注文による調整で、増減量が 0 かつ運営者の理由のとき、INVALID_STOCK_DELTA が返る")
+        void deltaBeforeReasonInForOrder() {
+            // 操作と確認：増減量の誤りが先
+            assertBusinessError(() -> StockAdjustment.forOrder(0, StockAdjustmentReason.ARRIVAL, UUID.randomUUID(), ORDER_NUMBER, NOW),
+                    InventoryErrorCode.INVALID_STOCK_DELTA);
+        }
+    }
+
+    @Nested
+    @DisplayName("コンストラクターの検査")
+    class Constructor {
+
+        @Test
+        @DisplayName("増減量が 0 なら、業務のエラー INVALID_STOCK_DELTA で拒否される")
+        void rejectsZeroDelta() {
+            // 操作と確認：業務のエラーで拒否される
+            assertBusinessError(() -> new StockAdjustment(UUID.randomUUID(), 0, StockAdjustmentReason.ARRIVAL, null, null, null,
+                    NOW, OPERATOR), InventoryErrorCode.INVALID_STOCK_DELTA);
+        }
+
+        @Test
+        @DisplayName("メモが 501 文字なら、業務のエラー INVALID_STOCK_MEMO で拒否される")
+        void rejectsLongMemo() {
+            // 操作と確認：業務のエラーで拒否される
+            assertBusinessError(() -> new StockAdjustment(UUID.randomUUID(), ARRIVAL_DELTA, StockAdjustmentReason.ARRIVAL,
+                    "あ".repeat(MEMO_MAX_LENGTH + 1), null, null, NOW, OPERATOR), InventoryErrorCode.INVALID_STOCK_MEMO);
+        }
+
+        @Test
+        @DisplayName("メモが 500 文字なら作れる")
+        void acceptsMemoAtLimit() {
+            // 操作と確認：例外にならない
+            assertThatCode(() -> new StockAdjustment(UUID.randomUUID(), ARRIVAL_DELTA, StockAdjustmentReason.ARRIVAL,
+                    "あ".repeat(MEMO_MAX_LENGTH), null, null, NOW, OPERATOR)).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("注文 ID だけあって注文番号がないと、プログラムの誤りとして拒否される")
+        void rejectsOrderIdWithoutOrderNumber() {
+            // 操作と確認：IllegalArgumentException で拒否される
+            assertThatThrownBy(() -> new StockAdjustment(UUID.randomUUID(), ORDER_DELTA, StockAdjustmentReason.ORDER, null,
+                    UUID.randomUUID(), null, NOW, null)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("注文番号だけあって注文 ID がないと、プログラムの誤りとして拒否される")
+        void rejectsOrderNumberWithoutOrderId() {
+            // 操作と確認：IllegalArgumentException で拒否される
+            assertThatThrownBy(() -> new StockAdjustment(UUID.randomUUID(), ORDER_DELTA, StockAdjustmentReason.ORDER, null,
+                    null, ORDER_NUMBER, NOW, null)).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
     // ============================== 確認の補助 ==============================
 
     /**

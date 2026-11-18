@@ -153,7 +153,7 @@ public class TaxCategory extends AggregateRoot {
                 .map(draft -> new TaxRate(Objects.requireNonNullElseGet(draft.id(), UUID::randomUUID),
                         draft.ratePercent(), draft.period()))
                 .toList();
-        this.rates = TaxRates.continuous(replaced);
+        this.rates = new TaxRates(replaced);
     }
 
 // ============================== プライベートメソッド ==============================

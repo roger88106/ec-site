@@ -2,6 +2,7 @@ package com.ecsite.module.tax.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.tax.Keys;
 import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
@@ -141,13 +142,16 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      */
     private TaxCategory toTaxCategory(TaxCategoryRecord category) {
         // 税率の取得
-        var rates = dsl.selectFrom(TAX_RATE)
+        var rateRecords = dsl.selectFrom(TAX_RATE)
                 .where(TAX_RATE.TAX_CATEGORY_ID.eq(category.getId()))
-                .fetch(JooqTaxCategoryRepository::toTaxRate);
+                .fetch();
 
-        // スナップショットからドメインに変換する
-        var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
-        return factory.restore(snapshot);
+        // 税率を含む復元の全体を、失敗の扱いの中で行う
+        return RestoreGuard.restore("tax category", () -> {
+            var rates = rateRecords.map(JooqTaxCategoryRepository::toTaxRate);
+            var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
+            return factory.restore(snapshot);
+        });
     }
 
     /**

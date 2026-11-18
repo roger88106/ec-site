@@ -1,5 +1,6 @@
 package com.ecsite.module.tax.infrastructure.persistence;
 
+import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
@@ -97,8 +98,8 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
     private static TaxRateView toView(TaxRateRecord record) {
         return new TaxRateView(
                 record.getId(),
-                // numeric(4,2) の末尾の 0 を除いた形にそろえる（10.00 → 10）
-                RatePercent.of(record.getRatePercent()).value(),
+                // numeric(4,2) の末尾の 0 を除いた形にそろえる（10.00 → 10）。DB の値から作るので、失敗の扱いの中で行う
+                RestoreGuard.restore("tax rate", () -> RatePercent.of(record.getRatePercent())).value(),
                 record.getEffectiveFrom(),
                 record.getEffectiveTo());
     }

@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * テストの等価の検査 {@link EntityEqualityAssertion} のテスト
+ * テストで entity と集約を等価で比べる書き方の検査 {@link EntityEqualityAssertion} のテスト
  *
  * <p>テストの入力のソース（{@code example} パッケージ）に検査をかけ、
  * 検出する書き方は直前の行の {@code // BUG: Diagnostic contains:} の期待で、検出しない書き方は期待を書かないことで確認する
@@ -367,7 +367,7 @@ class EntityEqualityAssertionTest {
     }
 
     @Test
-    @DisplayName("AssertJ の一覧の残りの比較・Map・返り値・ハッシュ値の比較で、引数が entity を含むとき検出する")
+    @DisplayName("AssertJ の、ほかの等価の比較（要素の包含・Map・返り値・ハッシュ値）で、引数が entity を含むとき検出する")
     void detectsRemainingAssertJEqualityMethods() {
         // 準備：一覧・Map の包含の系統、returns・hasFieldOrPropertyWithValue、ハッシュ値の比較
         var helper = helper(detect(
@@ -537,7 +537,7 @@ class EntityEqualityAssertionTest {
     }
 
     @Test
-    @DisplayName("比較の方法を替える using から始まる呼び出しが連鎖にあれば、検出しない")
+    @DisplayName("比べ方を替える using から始まる呼び出しが連鎖にあれば、検出しない")
     void ignoresWhenComparisonStrategyIsChanged() {
         // 準備：usingRecursiveComparison などで項目ごとに比べる文（途中・後続の呼び出しを含む）
         var helper = helper(pass(
@@ -586,7 +586,7 @@ class EntityEqualityAssertionTest {
     }
 
     @Test
-    @DisplayName("Hamcrest と Map の検索で、引数が entity でないときは検出しない")
+    @DisplayName("Hamcrest の matcher と Map の検索で、引数が entity でないときは検出しない")
     void ignoresLookupsWithNonEntityArguments() {
         // 準備：識別子の引数、Map のメソッド参照、一覧の位置を指定する remove
         var helper = helper(pass(
@@ -661,7 +661,7 @@ class EntityEqualityAssertionTest {
     }
 
     @Test
-    @DisplayName("equals の仕様を確認するテストは、抑える注釈で検出しない")
+    @DisplayName("equals の仕様を確認するテストは、@SuppressWarnings で抑えているので検出しない")
     void ignoresWhenSuppressed() {
         // 準備：理由のコメントと @SuppressWarnings を付けた宣言の中で、entity を等価で比べるメソッド
         var helper = helper("""

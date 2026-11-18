@@ -121,7 +121,7 @@ class EntityEqualityTest {
     }
 
     @Test
-    @DisplayName("equals と hashCode の規則は、どちらかを宣言していない class の例だけに当たる")
+    @DisplayName("equals と hashCode の規則は、どちらかを宣言していない class の例だけが該当する")
     void equalsRuleMatchesOnlyClassesWithoutBoth() {
         // 操作と確認：record の例は、record の規則で扱うので当たらない
         assertThat(names(withoutEqualsOrHashCode(examples()))).containsExactlyInAnyOrder(
@@ -132,7 +132,7 @@ class EntityEqualityTest {
     }
 
     @Test
-    @DisplayName("@Identity の規則は、@Identity の項目がない class の例だけに当たる")
+    @DisplayName("@Identity の規則は、@Identity の項目がない class の例だけが該当する")
     void identityRuleMatchesOnlyClassesWithoutIdentityField() {
         // 操作と確認：record の例は、record の規則で扱うので当たらない
         assertThat(names(withoutIdentity(examples()))).containsExactlyInAnyOrder(
@@ -141,9 +141,9 @@ class EntityEqualityTest {
     }
 
     @Test
-    @DisplayName("識別子だけで比べる規則は、@Identity でない項目を equals か hashCode で使う例だけに当たる")
+    @DisplayName("識別子だけで比べる規則は、@Identity でない項目を equals か hashCode で使う例だけが該当する")
     void identityOnlyRuleMatchesOnlyClassesUsingOtherFields() {
-        // 操作と確認：全ての項目で比べる例（getter 経由）、hashCode が他の項目も使う例、@Identity を付けていない項目を比べる例が当たる。
+        // 操作と確認：全ての項目で比べる例（getter 経由）、hashCode が他の項目も使う例、@Identity を付けていない項目を比べる例が該当する。
         // getter と canEqual を使って識別子だけで比べる例は当たらない
         assertThat(nonIdentityFieldsUsed(examples())).containsExactly(
                 AllFieldsEntity.class.getName() + ".name",

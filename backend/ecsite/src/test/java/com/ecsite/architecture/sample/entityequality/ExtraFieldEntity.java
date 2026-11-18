@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 同一性の検査の例：手書きの equals と hashCode が、識別子の他の項目も比べる集約（違反）
+ * 同一性の検査の例：手書きの equals と hashCode が、識別子以外の項目も比べる集約（違反）
  *
  * <p>構成の検査が規則に合う例と違反する例を見分けることを確認するための例であり、本番のコードではない。
  */

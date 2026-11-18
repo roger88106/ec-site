@@ -39,7 +39,7 @@ import static com.google.errorprone.matchers.Matchers.staticMethod;
  *       ただし、比べ方を {@code equals} に戻す {@code usingDefault} で始まる呼び出しより後は検出する。
  *       {@code RecursiveComparisonAssert} の比較は、項目ごとの比べ方なので検出しない。</li>
  *   <li>Hamcrest の matcher を作る static メソッド、JUnit の {@code assertEquals} の系統、{@code equals}（メソッド参照を含む）、
- *       {@code Objects.equals}、{@code Collection} と {@code Map} の探すメソッドの引数の型が対象の型を含むとき。</li>
+ *       {@code Objects.equals}、{@code Collection} と {@code Map} の、要素を検索するメソッドの引数の型が対象の型を含むとき。</li>
  *   <li>参照で比べる {@code isSameAs} の系統、Mockito、対象の型を成分に持つ record は検出しない。</li>
  * </ul>
  */
@@ -77,7 +77,7 @@ public final class EntityEqualityAssertion extends BugChecker
     /** 比べ方を {@code equals} に戻す呼び出しの名前の先頭 */
     private static final String DEFAULT_STRATEGY_PREFIX = "usingDefault";
 
-    /** AssertJ の、等価で比べるメソッドの閉じた一覧（否定の形を含む。参照で比べる isSameAs・containsSame は含めない） */
+    /** AssertJ の、等価で比べるメソッドの、決まった一覧（否定の形を含む。参照で比べる isSameAs・containsSame は含めない） */
     private static final Set<String> ASSERTJ_EQUALITY_METHODS = Set.of(
             "isEqualTo", "isNotEqualTo", "isIn", "isNotIn",
             "contains", "containsOnly", "containsOnlyOnce", "containsExactly", "containsExactlyInAnyOrder",
@@ -103,11 +103,11 @@ public final class EntityEqualityAssertion extends BugChecker
     private static final Set<String> JUNIT_EQUALITY_METHODS = Set.of(
             "assertEquals", "assertNotEquals", "assertIterableEquals", "assertArrayEquals");
 
-    /** {@code Collection} の、等価で探すメソッド */
+    /** {@code Collection} の、等価で検索するメソッド */
     private static final Set<String> COLLECTION_EQUALITY_METHODS = Set.of(
             "contains", "containsAll", "indexOf", "lastIndexOf", "remove", "removeAll", "retainAll");
 
-    /** {@code Map} の、等価で探すメソッド */
+    /** {@code Map} の、等価で検索するメソッド */
     private static final Set<String> MAP_EQUALITY_METHODS = Set.of(
             "containsValue", "containsKey", "get", "remove");
 

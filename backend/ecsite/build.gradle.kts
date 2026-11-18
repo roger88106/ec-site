@@ -195,7 +195,7 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
     // 独自の検査のテスト（CompilationTestHelper）。検査の API と本体は、test のクラスパスにも必要になる
     testImplementation(libs.errorprone.check.api)
-    // 補助の間接の依存の JUnit 4 は、テストのコンパイルのクラスパスに入れない（誤って org.junit.Test を import したテストが、
+    // 補助が間接に依存する JUnit 4 は、テストのコンパイルのクラスパスに入れない（誤って org.junit.Test を import したテストが、
     // コンパイルを通って実行されないのを防ぐ）。補助の実行には必要なので、実行のクラスパスだけに加える
     testImplementation(libs.errorprone.test.helpers) {
         exclude(group = "junit", module = "junit")
@@ -237,7 +237,7 @@ val unitTestSystemProperties = mapOf(
     "test-classes.dirs" to (sourceSets.test.get().output.classesDirs + sourceSets["integrationTest"].output.classesDirs).asPath,
 )
 
-// Error Prone の検査を JVM の中で動かすテスト（CompilationTestHelper）と、javac の内部の API を使う検査の本体のコンパイルに必要な、jdk.compiler の公開。
+// Error Prone の検査を JVM の中で動かすテスト（CompilationTestHelper）と、javac の内部の API を使う検査の本体のコンパイルに必要な、jdk.compiler のパッケージの export。
 // test の task と pitest で同じ値を使う
 val javacInternalPackages = listOf("api", "file", "main", "model", "parser", "processing", "tree", "util", "code", "comp")
 val javacExportArgs = javacInternalPackages.flatMap { listOf("--add-exports", "jdk.compiler/com.sun.tools.javac.$it=ALL-UNNAMED") }
@@ -874,7 +874,7 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     // 警告も失敗にする（Error Prone の警告も、javac の -Werror で失敗になる）
     options.compilerArgs.add("-Werror")
-    // 独自の検査の本体（src/errorprone）：javac の内部の API を使うので公開する。Error Prone は動かさない
+    // 独自の検査の本体（src/errorprone）：javac の内部の API を使うので、パッケージを export する。Error Prone は動かさない
     //   （errorprone の構成が自分の出力を含むので、動かすと自分のコンパイルに自分が必要になる循環になる）
     if (name == "compileErrorproneJava") {
         options.compilerArgs.addAll(javacExportArgs)

@@ -228,6 +228,27 @@ class EventResubmissionJobTest {
             assertThat(listener.succeeded(event)).isTrue();
         }
 
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
+        @DisplayName("結果の出ていないイベントは、発行から 5 分を過ぎても再発行しない")
+        void doesNotResubmitEventWithoutResult(String status) {
+            // 準備：処理を 2 回失敗したイベントを、結果の出ていない状態に見せる
+            var job = jobWithMaxAttempts(3);
+            var event = failedUntil(job, 2);
+            var lastResubmission = publicationOf(event).getLastResubmissionDate();
+            markStatus(event, status);
+
+            // 操作：6 分後に再発行する（結果の出ないイベントを失敗の扱いにする監視は動かさない）
+            clock.advance(Duration.ofMinutes(6));
+            job.resubmit();
+
+            // 確認：処理の回数と最後の再発行の日時が変わらず（リスナーは非同期で動くので、受けた回数だけでは確認できない）、リスナーは 2 回だけ受けた
+            var publication = publicationOf(event);
+            assertThat(publication.getCompletionAttempts()).isEqualTo(2);
+            assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
+            assertThat(failingListener.attempts(event)).isEqualTo(2);
+        }
+
         @Test
         @DisplayName("AC-290 処理の回数が上限に達する前に処理できたイベントは、処理を終える")
         void completesBeforeMaxAttempts() {
@@ -452,6 +473,25 @@ class EventResubmissionJobTest {
             var job = jobWithMaxAttempts(3);
             var event = failedUntil(job, 2);
             markStatus(event, "RESUBMITTED");
+
+            // 操作：6 分後に、結果の出ないイベントを失敗の扱いにしてから、再発行する
+            clock.advance(Duration.ofMinutes(6));
+            registry.markStalePublicationsFailed(staleness);
+            job.resubmit();
+
+            // 確認：3 回目の処理が動く
+            asyncEvents.awaitFailed(event::equals, 3);
+            assertThat(failingListener.attempts(event)).isEqualTo(3);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"PUBLISHED", "PROCESSING"})
+        @DisplayName("リスナーの処理の前や途中でインスタンスが止まったイベントは、最後の試行から 5 分たつと再発行される")
+        void resubmitsEventStuckBeforeResult(String status) {
+            // 準備：処理を 2 回失敗したイベントを、リスナーの処理の前や途中で止まった状態に見せる
+            var job = jobWithMaxAttempts(3);
+            var event = failedUntil(job, 2);
+            markStatus(event, status);
 
             // 操作：6 分後に、結果の出ないイベントを失敗の扱いにしてから、再発行する
             clock.advance(Duration.ofMinutes(6));

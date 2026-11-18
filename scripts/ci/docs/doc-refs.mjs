@@ -12,20 +12,20 @@
 //     「第」のない `N 節` と `§` は、参照先の文書が直前で決まるとき（文書の名前、パス、リンク、`この文書の`、`本書の`。`N 節` は点を含む番号も）だけ読む（`3 節に分ける`、外の規格の `§3` は通す）
 //   - 見出しの番号（`1.`、`1.2` の形。形は NUMBERED_HEADING）：docs/08-spec/ の外の Markdown で失敗にする（文書の構成の「参照」）。
 //     誤りを防ぐ検査なので、意図して番号を避けた書き方（`1) ` など）は対象にしない
-//   - 存在しないパス：Markdown のコードブロックの外（インラインコードの中を含む）に書いた、`docs/`・`scripts/`・`backend/`・`frontend/`・`e2e/`・`api/openapi/`・`docker/`・`showcase/`・`.claude/`・`.github/` で始まるパスが、
+//   - 存在しないパス：Markdown のコードブロックの外（インラインコードの中を含む）に書いた、PATH_START で始まるパスが、
 //     Git の一覧（ファイルとフォルダー。大文字と小文字を区別する）にないか。形は findMissingPaths
 //
 // 参照の先の文書は、直前のリンク、文書の名前（太字も）、パスで決める（読み方は lib/docs/doc-names.mjs）。
 // 見出しの参照と節の番号の参照は、Markdown の他に、コードと設定のファイル（TEXT_FILE と、拡張子がなく 1 行目が `#!` のファイル）も、文字列を含めてファイルの全体を読む。
-// コードでは、文書の名前・リンク・パスの直後の節の番号だけを読む。Markdown のコードブロックとインラインコードの中は見ない。
+// Markdown のコードブロックの中は、どの参照も見ない。
+// インラインコードの中は、見出しの参照は読み（行の全体を読む）、節の番号の参照は Markdown では見ない。コードのファイルは、行の全体から文書の名前・リンク・パスの直後の節の番号だけを読む。
 // 存在しないパスは Markdown だけを読む（コードとコメントの例のパスが多く、誤検出になるため）。
 // 見ないファイル（EXCLUDED）は、アーカイブした spec（当時の記録）、適用済みのマイグレーション（直せない）、切れた参照をわざと書くテスト。
-// 存在しないパスの検査だけ、当時のパスを書く記録（docs/07-記録/、skill review の evals）と、まだないファイルを書く進行中の spec（docs/08-spec/）を除く（PATH_CHECK_EXEMPT）。
-// 追跡しないが参照してよい場所（`.claude/settings.local.json`、`.claude/worktrees/`、`.local/`、`docker/.env`、`build/` などを含むパス）と、
-// プレースホルダー・glob・`…` を含むパスは見ない。
+// 存在しないパスの検査だけ、当時のパスを書く記録とまだないファイルを書く進行中の spec を除く（PATH_CHECK_EXEMPT）。
+// 追跡しないが参照してよい場所（UNTRACKED_FOLDERS、UNTRACKED_FILES、生成物のフォルダー）と、プレースホルダー・glob・`…` を含むパス（PATH_PLACEHOLDER）は見ない。
 //
 // 失敗したとき：リンクか見出しの参照を修正する（skill `docs`）。見出しの参照は文書の名前と見出しの間に「の」を入れる。見出しの番号は外す。`1.5 倍の負荷` のように数字を名前の先頭に置かない。
-// 存在しないパスは、綴りと大文字と小文字を直す。まだないファイルの名前なら、パスの形（インラインコード）を避けるか、ファイルを作ってから書く。
+// 存在しないパスは、綴りと大文字と小文字を直す。まだないファイルの名前なら、ファイルを作ってから書く。例のパスは、`<名前>` か `…` を含む形にする（インラインコードの外のパスも読むので、バッククォートを外しても通らない）。
 //
 // 除外：なし
 //
@@ -35,6 +35,7 @@ import { basename, dirname, join, normalize } from 'node:path/posix'
 import { codeBlockLines } from '../../shared/docs/code-block.mjs'
 import { maskCodeSpans, readCodeSpans } from '../../shared/source/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
+import { isInGeneratedFolder } from '../../shared/source/generated-folders.mjs'
 import { documentIndex, headingKey, readHeadingIndex, referenceName, resolveAdjacent, resolveDocument } from '../lib/docs/doc-names.mjs'
 
 /**
@@ -101,14 +102,29 @@ export function selectTargetFiles(files, read) {
 /** 節の番号（`4`、`4.2`。全角の数字と点も） */
 const SECTION_DIGITS = '[0-9０-９]+(?:[.．][0-9０-９]+)*'
 
-/** 漢数字の節の番号（`三`、`十二`）。「第」のある形だけで読む */
-const SECTION_KANJI = '[〇一二三四五六七八九十百]+'
+/** 漢数字の 1 桁（0 から 9）。位置が数の値（kanjiToNumber が使う） */
+const KANJI_DIGITS = '〇一二三四五六七八九'
 
-/** 節の番号の間の、範囲と並びの区切り（・、〜 ~ ～ , ， - －、「と」「から」）。前後の半角・全角の空白は許す */
-const SECTION_SEPARATOR = '[ 　]*(?:[・、〜~～,，\\-－‐–—−]|と|から)[ 　]*'
+/** 漢数字の位（十、百） */
+const KANJI_UNITS = '十百'
+
+/** 漢数字の節の番号（`三`、`十二`）。「第」のある形だけで読む */
+const SECTION_KANJI = `[${KANJI_DIGITS}${KANJI_UNITS}]+`
+
+/** 漢数字だけの番号（splitSectionNumbers が、番号を算用数字にするかを決める） */
+const KANJI_NUMBER = new RegExp(`^${SECTION_KANJI}$`, 'u')
+
+/** 節の番号の間の、範囲と並びの区切りの字（・、〜 ~ ～ , ， - －）。正規表現の [] の中に置く形 */
+const SECTION_SEPARATOR_CHARS = '・、〜~～,，\\-－‐–—−'
+
+/** 節の番号の間の区切り（SECTION_SEPARATOR_CHARS の字か、「と」「から」）。前後の半角・全角の空白は許す */
+const SECTION_SEPARATOR = `[ 　]*(?:[${SECTION_SEPARATOR_CHARS}]|と|から)[ 　]*`
+
+/** 番号の部分を分ける区切り（NFKC で揃えた後は、全角の区切りは半角になっている） */
+const SECTION_SPLIT = new RegExp(`[${SECTION_SEPARATOR_CHARS}]|と|から`, 'u')
 
 /**
- * 節の番号の参照。3 つの形があり、どれに当たったかは名前付きの括弧（dai、plain、sign）で分かる。
+ * 節の番号の参照。どの形に当たったかは、名前付きの括弧（dai、plain、sign）で分かる。
  *
  *   - dai：「第 4.2、5.6 節」「第 4〜6・8 節」「第 3 と 4 節」「第三節」「第三・四節」など。空白のない「第2節」、全角の数字と空白の「第　２　節」も。漢数字は「第」のある形だけ
  *   - plain：「第」のない「4.2 節」。番号の直前が英数字か点（`v1.2 節`）のものは除く
@@ -138,7 +154,10 @@ const QUOTE = '(?:「[^「」\\n]*」|『(?:(?!\\$\\{)[^『』\\n"+])*』)'
 const PARTICLE_CHAIN = `(?:\\s?の${QUOTE})*`
 
 /** 見出しの参照の最初の「」。直前の「の」（`の節` も）は、あれば読む */
-const QUOTE_HEAD = `(\\s?の節?)?(${QUOTE})(${PARTICLE_CHAIN})`
+const QUOTE_HEAD = new RegExp(`(\\s?の節?)?(${QUOTE})(${PARTICLE_CHAIN})`, 'gu')
+
+/** 「」か『』の中の文字（見出しの参照の 1 つの見出し）。matchAll で使うので、lastIndex を共有しない */
+const QUOTED_TEXT = /[「『]([^「」『』]*)[」』]/g
 
 /** 見出しの参照の後に続く、同じ文書の見出し（`と`・`、`・`・`・`や` か区切りなし） */
 const QUOTE_NEXT = new RegExp(`^(?:と|、|・|や)?(${QUOTE}${PARTICLE_CHAIN})`, 'u')
@@ -150,16 +169,13 @@ const QUOTE_NEXT = new RegExp(`^(?:と|、|・|や)?(${QUOTE}${PARTICLE_CHAIN})`
  * @returns {string} 算用数字
  */
 function kanjiToNumber(kanji) {
-  const digit = (char) => '〇一二三四五六七八九'.indexOf(char)
-  if (!/[十百]/.test(kanji)) return [...kanji].map(digit).join('')
+  const digit = (char) => KANJI_DIGITS.indexOf(char)
+  if (![...kanji].some((char) => KANJI_UNITS.includes(char))) return [...kanji].map(digit).join('')
   let total = 0
   let current = 0
   for (const char of kanji) {
-    if (char === '百') {
-      total += (current || 1) * 100
-      current = 0
-    } else if (char === '十') {
-      total += (current || 1) * 10
+    if (KANJI_UNITS.includes(char)) {
+      total += (current || 1) * 10 ** (KANJI_UNITS.indexOf(char) + 1)
       current = 0
     } else current = digit(char)
   }
@@ -227,10 +243,10 @@ function isAllowedLinkLabel(file, ref, title) {
 export function splitSectionNumbers(numbers) {
   return numbers
     .normalize('NFKC')
-    .split(/[・、〜~,\-‐–—−]|と|から/)
+    .split(SECTION_SPLIT)
     .map((number) => number.trim())
     .filter(Boolean)
-    .map((number) => (/^[〇一二三四五六七八九十百]+$/.test(number) ? kanjiToNumber(number) : number))
+    .map((number) => (KANJI_NUMBER.test(number) ? kanjiToNumber(number) : number))
 }
 
 /**
@@ -249,10 +265,11 @@ export function splitSectionNumbers(numbers) {
  */
 function scanQuoteRefs(file, line, names, basenames, exists, minEnd = 0) {
   const refs = []
-  const head = new RegExp(QUOTE_HEAD, 'gu')
-  const quotesOf = (text) => [...text.matchAll(/[「『]([^「」『』]*)[」』]/g)].map((quote) => quote[1])
+  // QUOTE_HEAD は g フラグで lastIndex を持つので、使い始めに戻す
+  QUOTE_HEAD.lastIndex = 0
+  const quotesOf = (text) => [...text.matchAll(QUOTED_TEXT)].map((quote) => quote[1])
   let match
-  while ((match = head.exec(line)) !== null) {
+  while ((match = QUOTE_HEAD.exec(line)) !== null) {
     const [whole, particle, first] = match
     let start = match.index
     let text = whole
@@ -278,7 +295,7 @@ function scanQuoteRefs(file, line, names, basenames, exists, minEnd = 0) {
       end += next[0].length
       items.push({ text: next[1], end, noParticle: false })
     }
-    head.lastIndex = end
+    QUOTE_HEAD.lastIndex = end
     for (const item of items) {
       if (item.end > minEnd) refs.push({ target, headings: quotesOf(item.text), text: item.text, noParticle: item.noParticle })
     }
@@ -396,43 +413,46 @@ const PATH_START = /(?<![\p{L}\p{N}_/])(?:docs|scripts|backend|frontend|e2e|dock
 /** インラインコードの外のパスの終わり（空白、全角の句読点・中黒・括弧・かぎ括弧、半角の括弧・引用符・区切り）。中黒は、`docs/・README・AGENTS.md` のような並べ方があるため */
 const PATH_END_OUTSIDE = /^[^\s、。，．：；！？・（）()「」『』【】[\]"'|,;]*/
 
+/** インラインコードの中のパスの終わり（空白、「、閉じ括弧、「」』、全角の読点・句点）。`(docs/a.md)` や `docs/a.md、` の閉じる記号をパスに含めない */
+const PATH_END_INSIDE = /^[^\s「」』、。，）)]*/
+
+/** パスの末尾から除く印（太字の印、半角の句読点・引用符、全角の読点・句点・閉じる記号）。`:<行>` の前後で 2 回除く */
+const PATH_TRAILING = /(?:\*\*|__|[.,;:!?'"、。，．：；！？）)」』】])+$/
+
 /** パスの検査で読まない形（プレースホルダー、glob、`…`、`.`が続く省略） */
 const PATH_PLACEHOLDER = /[<>*?{}$%[\]…]|\.\.\./
 
-/** 追跡しないが参照してよい場所（パスの始まり。`docker/.env` は、そのファイルだけ） */
-const UNTRACKED_PREFIXES = ['.claude/worktrees/', '.local/']
+/** 追跡しないが参照してよいフォルダー（パスがこのフォルダー自身か、その下のとき） */
+const UNTRACKED_FOLDERS = ['.claude/worktrees']
 
 /** 追跡しないが参照してよいファイル */
 const UNTRACKED_FILES = ['.claude/settings.local.json', 'docker/.env']
-
-/** 生成物のフォルダー（パスの中にあれば読まない） */
-const GENERATED_FOLDERS = ['build/', 'node_modules/', '.next/', 'dist/', 'generated/']
 
 /** 存在しないパスの検査から除く文書（当時のパスを書く記録と、まだないファイルのパスを書く進行中の spec） */
 const PATH_CHECK_EXEMPT = [/^docs\/07-記録\//, /^\.claude\/skills\/review\/evals\//, /^docs\/08-spec\//]
 
 /**
- * 文書の 1 つの文字（インラインコードの中か外のどちらか）から、パスの候補を取り出す。
+ * 行の一部（インラインコードの中か外のどちらか。readCodeSpans で分けた区間）の文字列から、パスの候補を取り出す。
  *
- * @param {string} segment 文字
- * @param {boolean} inCode インラインコードの中か（中は空白か「までをパスにする）
- * @returns {string[]} 確認するパス（行・見出しの指定を除いたもの）
+ * @param {string} segment 区間の文字列
+ * @param {boolean} inCode インラインコードの中か（PATH_END_INSIDE か PATH_END_OUTSIDE でパスの終わりを決める）
+ * @returns {string[]} 確認するパス（行・見出しの指定と、末尾の印を除いたもの）
  */
 function pathsIn(segment, inCode) {
   const paths = []
   let consumed = 0
   for (const match of segment.matchAll(PATH_START)) {
     if (match.index < consumed) continue
-    const raw = segment.slice(match.index).match(inCode ? /^[^\s「]*/ : PATH_END_OUTSIDE)[0]
+    const raw = segment.slice(match.index).match(inCode ? PATH_END_INSIDE : PATH_END_OUTSIDE)[0]
     consumed = match.index + raw.length
+    // 文の句読点が `:<行>` の後に続く形（`doc-refs.mjs:84.`）も除けるよう、`:<行>` の前後で末尾の印を除く
     const path = raw
       .replace(/#.*$/, '')
+      .replace(PATH_TRAILING, '')
       .replace(/:\d+(?:-\d+)?$/, '')
-      .replace(/(?:\*\*|__)$/, '')
-      .replace(/[.,;:!?'"]+$/, '')
-    if (PATH_PLACEHOLDER.test(path) || UNTRACKED_FILES.includes(path) || UNTRACKED_PREFIXES.some((prefix) => path.startsWith(prefix))) continue
-    const folders = path.endsWith('/') ? path : `${path}/`
-    if (GENERATED_FOLDERS.some((folder) => folders.includes(folder))) continue
+      .replace(PATH_TRAILING, '')
+    if (PATH_PLACEHOLDER.test(path) || UNTRACKED_FILES.includes(path) || UNTRACKED_FOLDERS.some((folder) => path === folder || path.startsWith(`${folder}/`))) continue
+    if (isInGeneratedFolder(path)) continue
     paths.push(path)
   }
   return paths

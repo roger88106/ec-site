@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, splitSectionNumbers } from './doc-refs.mjs'
 import * as docRefs from './doc-refs.mjs'
 import { readHeadingIndex } from '../lib/docs/doc-names.mjs'
@@ -639,6 +645,26 @@ describe('見出しの番号と、見出しの参照の先', () => {
 /** 文書の組に Markdown の文書を追加して、問題の行の番号を返す */
 const mdLines = (text, extra = {}) => lines(check('docs/dev/setup.md', text, extra))
 
+/** 失敗の文の始まり（規則の種類。checkReferences の失敗の文の書き出し） */
+const KINDS = ['節の番号で参照している', '見出しの参照に「の」がない', '見出しが 1 つに決まらない', '見出しがない', 'ファイルがない', '存在しないパス', 'リンクテキスト']
+
+/**
+ * 切れた参照の説明から、`行:規則の種類` を取り出す。規則の種類が KINDS にない文は、失敗にする。
+ *
+ * @param {string[]} problems 切れた参照の説明
+ * @returns {string[]} `行:規則の種類`
+ */
+function lineKinds(problems) {
+  return problems.map((problem) => {
+    const kind = KINDS.find((candidate) => problem.startsWith(candidate))
+    assert.ok(kind, `規則の種類が分からない失敗の文：${problem}`)
+    return `${problem.match(/:(\d+) /)[1]}:${kind}`
+  })
+}
+
+/** 文書の組に Markdown の文書を追加して、`行:規則の種類` を返す */
+const mdKinds = (text, extra = {}) => lineKinds(check('docs/dev/setup.md', text, extra))
+
 describe('節の番号の参照の検査の広げ方（DC-566-1、DC-566-10）', () => {
   test('「第」のある漢数字（第三節、第三・四節、第三〜五節、第十二節）を節の番号の参照として失敗にする', () => {
     const text = ['見本の文書の第三節', '見本の文書の第三・四節', '見本の文書の第三〜五節', '見本の文書の第十二節'].join('\n')
@@ -663,7 +689,7 @@ describe('節の番号の参照の検査の広げ方（DC-566-1、DC-566-10）',
 
   test('§ は、直前で参照先の文書が決まるとき、全角の数字・§§・範囲も失敗にする', () => {
     const text = ['見本の文書の §3', '見本の文書の § 3', '見本の文書の §3.2', '見本の文書の §３', '見本の文書の §§3-4', '見本の文書の §3〜5', 'この文書の §3', '`docs/05-開発規則/style.md` の §2'].join('\n')
-    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5', '6', '7', '8'])
+    assert.deepEqual(mdKinds(text), ['1', '2', '3', '4', '5', '6', '7', '8'].map((line) => `${line}:節の番号で参照している`))
     assert.deepEqual(lines(check('backend/Foo.java', '// 見本の文書の §3')), ['1'])
   })
 
@@ -674,7 +700,7 @@ describe('節の番号の参照の検査の広げ方（DC-566-1、DC-566-10）',
 
   test('「第」のない N 節は、参照先の文書が直前で決まるときと、点を含む番号のときに失敗にする（第 N 節は今のとおり）', () => {
     const text = ['見本の文書の 3 節', 'この文書の 3 節', '本書の 3 節', '4.2 節', '第 3 節', '- 第 3 節', '`docs/sample/sample.md` の 2 節'].join('\n')
-    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5', '6', '7'])
+    assert.deepEqual(mdKinds(text), ['1', '2', '3', '4', '5', '6', '7'].map((line) => `${line}:節の番号で参照している`))
   })
 
   test('「第」のない N 節は、個数を表す語、行の始め、リストの印、表のセル、「。」と開き括弧の後では通す', () => {
@@ -690,13 +716,13 @@ describe('節の番号の参照の検査の広げ方（DC-566-1、DC-566-10）',
 
 describe('見出しの参照の検査の広げ方（DC-566-2〜4、DC-566-7、DC-566-9）', () => {
   test('の節「…」を見出しの参照として読む（当たる見出しは通し、ないものは失敗にする）', () => {
-    assert.deepEqual(mdLines('見本の文書の節「ない」'), ['1'])
+    assert.deepEqual(mdKinds('見本の文書の節「ない」'), ['1:見出しがない'])
     assert.deepEqual(mdLines('見本の文書の節「規模」'), [])
     assert.deepEqual(mdLines('見本の文書の節「規模」と「ない」'), ['1'])
   })
 
   test('の『…』を見出しの参照として読む。文字列の連結・埋め込みを含むものは読まない', () => {
-    assert.deepEqual(mdLines('見本の文書の『ない』'), ['1'])
+    assert.deepEqual(mdKinds('見本の文書の『ない』'), ['1:見出しがない'])
     assert.deepEqual(mdLines('見本の文書の『規模』'), [])
     assert.deepEqual(lines(check('backend/Foo.java', '// 見本の文書の『ない』')), ['1'])
     const java = ['String a = "見本の文書の『" + section.heading() + "』の節に、…";', 'String b = "見本の文書の『${name}』";'].join('\n')
@@ -729,7 +755,7 @@ describe('見出しの参照の検査の広げ方（DC-566-2〜4、DC-566-7、DC
       '見本の文書 「ない」',
       '`docs/sample/sample.md` 「規模」',
     ].join('\n')
-    assert.deepEqual(mdLines(text), ['1', '2', '4', '5', '7'])
+    assert.deepEqual(mdKinds(text), ['1', '2', '4', '5', '7'].map((line) => `${line}:見出しの参照に「の」がない`))
   })
 
   test('見出しに当たる「」に「の「…」」が続くとき、続く「」も確認する', () => {
@@ -741,8 +767,8 @@ describe('見出しの参照の検査の広げ方（DC-566-2〜4、DC-566-7、DC
 
   test('太字（**名前**、__名前__、太字のリンク、太字の後の空白）の文書の名前を、印を除いて読む', () => {
     const text = ['**見本の文書**の「ない」', '**見本の文書** の「ない」', '__見本の文書__の「ない」', '**[見本の文書](../sample/sample.md)**の「ない」', '**[見本の文書](../sample/sample.md)** の「ない」', '**見本の文書**の「規模」'].join('\n')
-    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5'])
-    assert.deepEqual(mdLines('**見本の文書**「規模」'), ['1'])
+    assert.deepEqual(mdKinds(text), ['1', '2', '3', '4', '5'].map((line) => `${line}:見出しがない`))
+    assert.deepEqual(mdKinds('**見本の文書**「規模」'), ['1:見出しの参照に「の」がない'])
   })
 
   test('見出しの参照の後に、と・、・・や か区切りなしで続く「」も、同じ文書の見出しとして確認する', () => {
@@ -755,7 +781,7 @@ describe('見出しの参照の検査の広げ方（DC-566-2〜4、DC-566-7、DC
       '見本の文書の「規模」、「規模」、「ない」',
       '見本の文書の「規模」と「push のタイミング」',
     ].join('\n')
-    assert.deepEqual(mdLines(text), ['1', '2', '3', '4', '5', '6'])
+    assert.deepEqual(mdKinds(text), ['1', '2', '3', '4', '5', '6'].map((line) => `${line}:見出しがない`))
   })
 
   test('行が文書の名前・リンク・パスで終わり、次の行が「」か の「 で始まるときだけ、2 行をつないで読む（コメントの印を除く）', () => {
@@ -778,7 +804,7 @@ describe('見出しの参照の検査の広げ方（DC-566-2〜4、DC-566-7、DC
     // 1・5・8・11 行目から始まる 4 件（11 行目は「の」の抜け）。3 行目は名前で終わらない。13 行目は「」の中の名前で終わらない
     assert.deepEqual(lines(check('backend/Foo.java', code)), ['1', '5', '8', '11'])
     assert.deepEqual(lines(check('docker/compose.yaml', '# 見本の文書の\n# 「ない」を見る')), ['1'])
-    assert.deepEqual(lines(check('db/q.sql', '-- 見本の文書の\n-- 「ない」を見る')), ['1'])
+    assert.deepEqual(lines(check('backend/q.properties', '-- 見本の文書の\n-- 「ない」を見る')), ['1'])
   })
 
   test('Markdown は、同じ段落の続きの行だけをつなぐ（見出し、表、リストの項目の始め、コードブロックの境目ではつながない）', () => {
@@ -863,11 +889,30 @@ describe('存在しない Markdown のパスの検査（DC-566-5、DC-566-6）',
   })
 
   test('大文字と小文字を区別して照合する', () => {
-    assert.deepEqual(mdLines('`scripts/ci/docs/Doc-Refs.mjs`\n`Scripts/ci/docs/doc-refs.mjs`'), ['1'])
+    assert.deepEqual(mdKinds('`scripts/ci/docs/Doc-Refs.mjs`\n`Scripts/ci/docs/doc-refs.mjs`'), ['1:存在しないパス'])
   })
 
   test('実在するファイルの末尾に / を付けたパスは、フォルダーとして照合して失敗にする', () => {
-    assert.deepEqual(mdLines('`scripts/ci/check-all.sh/`\n`scripts/ci/check-all.sh`'), ['1'])
+    assert.deepEqual(mdKinds('`scripts/ci/check-all.sh/`\n`scripts/ci/check-all.sh`'), ['1:存在しないパス'])
+  })
+
+  test('インラインコードの中は、閉じ括弧・かぎ括弧・読点でも切る（実在するファイルを括弧やかぎ括弧で囲んでも失敗にしない）', () => {
+    const text = ['`(scripts/ci/docs/doc-refs.mjs)`', '`（scripts/ci/docs/doc-refs.mjs）`', '`「scripts/ci/docs/doc-refs.mjs」`', '`scripts/ci/docs/doc-refs.mjs、`', '`scripts/ci/docs/doc-refs.mjs。`'].join('\n')
+    assert.deepEqual(mdLines(text), [])
+    const problems = check('docs/dev/setup.md', '`(docs/sample/sampel.md)`')
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /docs\/sample\/sampel\.md$/)
+  })
+
+  test('末尾の句読点を除いてから `:<行>` を除く（文の終わりの `.`、`。`、`)` が続いても確認する）', () => {
+    const text = ['scripts/ci/docs/doc-refs.mjs:84.', 'scripts/ci/docs/doc-refs.mjs:84-90。', '(scripts/ci/docs/doc-refs.mjs:84)', '**scripts/ci/docs/doc-refs.mjs:84**', '`scripts/ci/docs/doc-refs.mjs:84.`'].join('\n')
+    assert.deepEqual(mdLines(text), [])
+    assert.deepEqual(mdKinds('scripts/ci/docs/missing.mjs:84.'), ['1:存在しないパス'])
+  })
+
+  test('`.claude/worktrees` は、末尾の / がなくても見ない。名前の一部が同じフォルダー（rebuild）は見る', () => {
+    assert.deepEqual(mdLines('`.claude/worktrees`\n`.claude/worktrees/566-x`\n`backend/ecsite/build`'), [])
+    assert.deepEqual(mdKinds('`.claude/worktrees-old/a.md`\n`docs/rebuild/missing.md`\n`docs/builds/missing.md`'), ['1:存在しないパス', '2:存在しないパス', '3:存在しないパス'])
   })
 
   test('インラインコードの外は、全角の句読点・括弧・かぎ括弧で切る', () => {
@@ -901,5 +946,55 @@ describe('存在しない Markdown のパスの検査（DC-566-5、DC-566-6）',
     const files = { ...DOCS, 'docs/dev/setup.md': '`docs/dev/a.png`\n`docs/dev/b.png`' }
     const problems = checkReferences(Object.keys(files), (path) => files[path], (path) => path in files, [...Object.keys(files), 'docs/dev/a.png'])
     assert.deepEqual(lines(problems), ['2'])
+  })
+})
+
+describe('script として実行する', () => {
+  const script = fileURLToPath(new URL('./doc-refs.mjs', import.meta.url))
+
+  /**
+   * 一時の Git のリポジトリにファイルを置いて、script を実行する（追跡していないファイルも、Git の対象の一覧に入る）。
+   *
+   * @param {Record<string, string>} files 置くファイル
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function run(files) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'doc-refs-'))
+    const env = withoutGitEnv()
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: dir, env })
+      for (const [file, text] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        writeFileSync(path.join(dir, file), text)
+      }
+      return spawnSync(process.execPath, [script], { cwd: dir, env, encoding: 'utf8' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('参照が切れていなければ、終了コード 0 で、要約の行を出して終わる', () => {
+    const result = run({ 'docs/a.md': '# 文書 A\n', 'docs/b.md': '# 文書 B\n\n[文書 A](a.md)\n' })
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /切れた参照と番号のある見出し：0/)
+  })
+
+  test('切れた参照があれば、ファイルと行を出し、終了コード 1 で終わる', () => {
+    const result = run({ 'docs/a.md': '# 文書 A\n', 'docs/b.md': '# 文書 B\n\n[文書 A](none.md)\n' })
+    assert.equal(result.status, 1, result.stdout)
+    assert.ok(result.stdout.includes('ファイルがない：docs/b.md:3 none.md'), result.stdout)
+    assert.match(result.stdout, /切れた参照と番号のある見出し：1/)
+  })
+
+  test('見出しに番号があれば、終了コード 1 で終わる', () => {
+    const result = run({ 'docs/a.md': '# 文書 A\n## 1. 節\n' })
+    assert.equal(result.status, 1, result.stdout)
+    assert.ok(result.stdout.includes('見出しに番号がある。番号を外す：docs/a.md:2'), result.stdout)
+  })
+
+  test('調べる文書が 1 件もなければ、何も見ずに通らず、失敗の終了コードで終わる', () => {
+    const result = run({ 'a.png': 'x' })
+    assert.notEqual(result.status, 0, result.stdout + result.stderr)
+    assert.match(result.stdout + result.stderr, /参照を調べる文書が 1 件も見つからない/)
   })
 })

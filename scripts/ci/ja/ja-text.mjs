@@ -53,21 +53,21 @@ import { checkExclusions, describeEmptyReason, describeStaleExclusion } from '..
 import { documentIndex, readHeadingIndex } from '../lib/docs/doc-names.mjs'
 import { codeKind, commentText, trailingCommentLines } from '../lib/source/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from '../../shared/git/git-files.mjs'
+import { isInGeneratedFolder } from '../../shared/source/generated-folders.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
 import { resolveDiffBase } from '../lib/git/merge-base.mjs'
 import { exitIfShallow } from '../lib/git/shallow-clone.mjs'
 
 /**
- * 調べないコード。
+ * 調べないコード（生成したコード、依存のパッケージ、ビルドの出力は isInGeneratedFolder で除く）。
  *
- * - 生成したコード、依存のパッケージ、ビルドの出力（書き手が直せない）
  * - アーカイブした spec の下（当時の記録）
  * - 評価の一覧の置き場所（使わない語を例として書く）
  * - 語を例に挙げるテスト（サンプルの文に、使わない語を書く）
  */
-const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\/|^scripts\/ci\/(ja\/ja-text\.test\.mjs|lib\/source\/comment-text\.test\.mjs)$/
+const CODE_EXCLUDED = /^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\/|^scripts\/ci\/(ja\/ja-text\.test\.mjs|lib\/source\/comment-text\.test\.mjs)$/
 
-/** 日本語の字（ひらがな・カタカナ・漢字）。インラインコードの中の語を調べるかを決める */
+/** 日本語の字（ひらがな・カタカナ・漢字）。インラインコードの中の語を調べるかと、コメントの行をコードや型の例とみなすかを決める */
 const JAPANESE_CHAR = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u
 
 /**
@@ -330,7 +330,7 @@ export function findAllowProblems(texts, terms, { masked = false } = {}) {
  * @returns {boolean} 調べるなら true
  */
 export function isTargetCode(file) {
-  return codeKind(file) !== null && !CODE_EXCLUDED.test(file)
+  return codeKind(file) !== null && !isInGeneratedFolder(file) && !CODE_EXCLUDED.test(file)
 }
 
 /**
@@ -465,8 +465,6 @@ const RULED_HEADING = /^[=\-*_#~+]{3,}\s*\S|\S\s*[=\-*_#~+]{3,}$/
 /** コメントの、語の見出しで始まる行（「使い方：」「対象：」など。定義の一覧の項目）。半角の : は型やコードにも使うので見ない */
 const LABEL = /^[^\s：:、。（）()]{1,24}：\s*\S/
 
-/** 日本語の字（かな・漢字）。コメントで日本語の字のない行は、コードや型、コマンドの例として、前後の行とつながない */
-const JAPANESE = /[ぁ-んァ-ヶ一-龠]/
 
 /** ひらがな。かなを含む文だけを、文体を測る文にする */
 const KANA = /[ぁ-ん]/
@@ -626,7 +624,7 @@ function proseSentences(text, kind = 'markdown', trailing = new Set()) {
     const alone =
       kind === 'lines' ||
       testName ||
-      (kind === 'markdown' ? HEADING.test(plain) : trailing.has(line) || RULED_HEADING.test(body) || ALIGNED.test(body) || !JAPANESE.test(body))
+      (kind === 'markdown' ? HEADING.test(plain) : trailing.has(line) || RULED_HEADING.test(body) || ALIGNED.test(body) || !JAPANESE_CHAR.test(body))
     // コードの、語の見出しで始まる行（「使い方：」など）は、定義の一覧の項目として扱う
     const item = ITEM.test(plain) || (kind === 'code' && LABEL.test(body))
     // 項目の続きは、項目の記号より深く字下げした行だけ。浅い行は、項目の後の別の段落にする

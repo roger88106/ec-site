@@ -101,7 +101,7 @@ export function referenceName(title) {
  * 参照の前の文字から、指す先の文書を決める。見出しの参照と節の番号の参照で同じ読み方にする。
  *
  * 直前のリンク、constitution、パス（`docs/06-手順書/ci.md`、`notification.md`）、文書の名前の順に当てる。
- * 名前の後の「の」、パスや名前の印（`` ` ``、「」」）、閉じ括弧（`（docs/06-手順書/ci.md）の`）は除いて読む。
+ * 名前の後の「の」、名前やパスの後の閉じる印（CLOSING_MARKS。コードの印、「」」、「』」、太字の印）、閉じ括弧（`（docs/06-手順書/ci.md）の`）は除いて読む。
  * 当たらず、末尾が括弧の補足（`店舗画面の構成（補足）の`）なら、補足の前で読み直す。
  * 見出しの参照では、パスはファイルがあるとき（ファイル名だけなら docs/ の下に同じ名前の文書があるとき）だけ先にする（外のリポジトリのファイルや、コードの中で組み立てるパスを、切れた参照にしないため）。パスの読み方は resolvePath。
  *
@@ -126,6 +126,9 @@ export function resolveDocument(file, before, names, basenames, exists = existsS
 /** 名前やパスの後ろの閉じる印（コードの印、「」」と「』」、太字の印）。除いてから名前を比べる */
 const CLOSING_MARKS = /(?:[`」』]|\*\*|__)+$/
 
+/** 文字の末尾のリンク（`[x](a.md)`、`[x](a.md#見出し)`、`[x](a.md "説明")`）。1 つ目の括弧が宛先、2 つ目が # 以降。doc-refs のリンクの読み方と同じく、宛先の後の title も許す */
+const LINK_END = /\]\(([^)\s#]*)(#[^)\s]*)?(?:\s+"[^"]*")?\)$/
+
 /**
  * 文書の名前・リンク・パスの直後（間の半角・全角の空白と太字の印は許す）かを調べ、先の文書を決める。
  *
@@ -143,7 +146,7 @@ const CLOSING_MARKS = /(?:[`」』]|\*\*|__)+$/
 export function resolveAdjacent(file, before, names, basenames, exists = existsSync, existingPath = false) {
   const text = before.replace(/[ 　]+$/, '').replace(/(?:\*\*|__)$/, '')
   if (text.endsWith('の')) return null
-  if (/[」』）)]$/.test(text) && !/\]\([^)\s]*\)$/.test(text)) return null
+  if (/[」』）)]$/.test(text) && !LINK_END.test(text)) return null
   return resolveEnd(file, text, names, basenames, exists, existingPath) ?? null
 }
 
@@ -161,7 +164,7 @@ export function resolveAdjacent(file, before, names, basenames, exists = existsS
 function resolveEnd(file, text, names, basenames, exists, existingPath) {
   const marked = text.replace(CLOSING_MARKS, '').trimEnd()
   for (const candidate of [marked, marked.replace(/[）)]$/, '').replace(CLOSING_MARKS, '').trimEnd()]) {
-    const link = candidate.match(/\]\(([^)\s#]*)(#[^)]*)?\)$/)
+    const link = candidate.match(LINK_END)
     if (link) {
       if (/^(https?:|mailto:)/.test(link[1])) return null
       return link[1] ? normalize(join(dirname(file), decodeURIComponent(link[1]))) : file

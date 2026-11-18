@@ -16,6 +16,7 @@
 // 使い方：node scripts/ci/docs/glossary-ids.mjs（リポジトリのルートで）
 import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { readFileSync } from 'node:fs'
+import { isInGeneratedFolder } from '../../shared/source/generated-folders.mjs'
 import { checkExclusions, exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'
 
 /** 調べる用語集（業務の用語集と、開発の用語集） */
@@ -32,8 +33,8 @@ const SEARCH_ROOTS = ['backend', 'frontend', 'api', 'docker', 'e2e', 'scripts']
  */
 const SELF_FILES = /^scripts\/ci\/(?:.*\.test\.mjs$|(?:.*\/)?testdata\/|(?:.*\/)?[\w-]+-exclusions\.json$|(?:.*\/)?ja-text\.json$)/
 
-/** 調べないファイル（生成物、画像など） */
-const SKIPPED = /\/(?:node_modules|build|dist|\.next|generated)\/|\.(?:png|jpe?g|webp|gif|ico|svg|woff2?|jar|lock)$|pnpm-lock\.yaml$/
+/** 調べないファイル（画像、jar、ロックファイル。生成物のフォルダーは isInGeneratedFolder で除く） */
+const SKIPPED = /\.(?:png|jpe?g|webp|gif|ico|svg|woff2?|jar|lock)$|pnpm-lock\.yaml$/
 
 /**
  * 識別子の根拠として調べるファイルかを返す。
@@ -42,7 +43,7 @@ const SKIPPED = /\/(?:node_modules|build|dist|\.next|generated)\/|\.(?:png|jpe?g
  * @returns {boolean} 調べるなら true
  */
 export function isSearchedFile(file) {
-  return !SKIPPED.test(file) && !SELF_FILES.test(file)
+  return !isInGeneratedFolder(file) && !SKIPPED.test(file) && !SELF_FILES.test(file)
 }
 
 /**

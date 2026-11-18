@@ -29,17 +29,18 @@ export function findIgnoredTracked(cwd = process.cwd()) {
  *
  * @param {string} [cwd] 実行する場所（リポジトリの中）
  * @param {(line: string) => void} [log] 1 行を出力する関数
+ * @param {{ findIgnored?: (cwd: string) => string[] }} [deps] 除外の判定の関数（テストで差し替える）
  * @returns {number} 終了コード（0：通る、1：除外された追跡しているファイルがある、2：git の失敗か、追跡しているファイルが 1 件もない）
  */
-export function runIgnoredTracked(cwd = process.cwd(), log = console.log) {
-  let tracked
+export function runIgnoredTracked(cwd = process.cwd(), log = console.log, { findIgnored = findIgnoredTracked } = {}) {
+  let tracked = []
   let ignored
   try {
     tracked = listTrackedFiles(cwd)
-    ignored = tracked.length === 0 ? [] : findIgnoredTracked(cwd)
+    ignored = tracked.length === 0 ? [] : findIgnored(cwd)
   } catch (e) {
     log(`git で追跡しているファイルを読めない（リポジトリの中で実行しているか確認する）：${e.message}`)
-    log('追跡しているファイル：0 件、除外されたもの：0 件')
+    log(`追跡しているファイル：${tracked.length} 件、除外されたもの：0 件`)
     return 2
   }
   const reason = emptyListReason(tracked, '追跡しているファイル')

@@ -1,11 +1,12 @@
 // workflow と複合の action の uses が、commit の SHA に固定されていることを確認する。
 // タグやブランチの指定は、指す先が後から変わり、実行する action が知らない間に入れ替わる（サプライチェーンの攻撃の経路になる）ため。
-// 許可する形は 2 つだけで、それ以外（タグ、ブランチ、短い SHA、大文字の 16 進、docker://、@ のない指定、式、文字列でない値）は全て失敗にする。
-//   - ローカルの action：./ で始まる
+// 許可する形は 2 つだけで、それ以外（タグ、ブランチ、短い SHA、大文字の 16 進、docker://、@ のない指定、式、文字列でない値、.github/ の外のローカルの指定）は全て失敗にする。
+//   - ローカルの action と再利用の workflow：./.github/actions/ か ./.github/workflows/ で始まり、.. のパスの要素と改行を含まない（許可したものが必ず検査の対象のファイルになるようにするため）
 //   - <owner>/<repo>[/<パス>]@<40 桁の小文字の 16 進>
 //
 // 対象は Git の対象のファイルのうち、.github/workflows/ 直下の *.yml・*.yaml と、.github/actions/ の下（全ての深さ）の action.yml・action.yaml。
 // 読む場所は、jobs.<id>.steps[].uses、jobs.<id>.uses（再利用の workflow）、runs.steps[].uses。YAML として読むので、run の文字列とコメントは見ない。
+// YAML のマージキー（<<）は判定できないので、文書の直下、job、step、runs のどれかにあれば失敗にする。
 // 読めない YAML と、対象のファイルが 0 件のときは失敗にする。SHA の後のバージョンのコメントは照合しない。
 //
 // 失敗したとき：uses を、<owner>/<repo>@<40 桁の小文字の 16 進> の形にする（SHA はタグが指す commit を調べて書く）。
@@ -14,14 +15,21 @@
 //
 // 使い方：node scripts/ci/config/action-pins.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { load } from 'js-yaml'
+import { CORE_SCHEMA, load } from 'js-yaml'
 import { emptyListReason, listGitFiles } from '../../shared/git/git-files.mjs'
 
-/** 許可する形。ローカルの action（./ で始まる）か、<owner>/<repo>[/<パス>]@<40 桁の小文字の 16 進> */
-const ALLOWED_USES = /^(?:\.\/.*|[^\s/@]+\/[^\s/@]+(?:\/[^\s@]+)?@[0-9a-f]{40})$/s
+/**
+ * 許可する形は 2 つ。1 つは、ローカルの action と再利用の workflow で、./.github/actions/ か ./.github/workflows/ で始まり、.. のパスの要素と改行を含まない。
+ * もう 1 つは、<owner>/<repo>[/<パス>]@<40 桁の小文字の 16 進>。
+ */
+const ALLOWED_USES = /^(?:\.\/\.github\/(?:actions|workflows)\/(?!(?:.*\/)?\.\.(?:\/|$))[^\n\r]*|[^\s/@]+\/[^\s/@]+(?:\/[^\s@]+)?@[0-9a-f]{40})$/
 
 /** 失敗の出力に示す、固定の形への修正の方法 */
-const FIX_HINT = '<owner>/<repo>@<40 桁の小文字の 16 進> の形（ローカルの action は ./ で始まる形）にする'
+const FIX_HINT =
+  '<owner>/<repo>@<40 桁の小文字の 16 進> の形にする（複合の action は .github/actions/ の下に置き、指定は ./.github/actions/ か ./.github/workflows/ で始まる形にして、.. を含めない）'
+
+/** マージキーを展開せず、キーのまま残すスキーマ（既定のスキーマは、マージキーを展開してキーを消す） */
+const YAML_OPTIONS = { schema: CORE_SCHEMA }
 
 /** workflow の直下の yml と、.github/actions/ の下の全ての深さの action.yml・action.yaml */
 const TARGET_PATH = /^\.github\/(?:workflows\/[^/]+\.ya?ml|actions\/(?:.+\/)?action\.ya?ml)$/
@@ -82,6 +90,34 @@ function collectUses(doc) {
 }
 
 /**
+ * マージキー（<<）を持つ マッピング の場所を集める。対象は、文書の直下、job、step、runs。
+ *
+ * @param {unknown} doc 読んだ YAML
+ * @returns {string[]} マージキーのある場所
+ */
+function collectMergeKeys(doc) {
+  const isMap = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+  const found = []
+  const check = (value, where) => {
+    if (isMap(value) && Object.hasOwn(value, '<<')) found.push(where)
+  }
+  const checkSteps = (steps, where) => {
+    if (Array.isArray(steps)) steps.forEach((step, index) => check(step, `${where}[${index}]`))
+  }
+  check(doc, '文書の直下')
+  if (!isMap(doc)) return found
+  if (isMap(doc.jobs)) {
+    for (const [id, job] of Object.entries(doc.jobs)) {
+      check(job, `jobs.${id}`)
+      if (isMap(job)) checkSteps(job.steps, `jobs.${id}.steps`)
+    }
+  }
+  check(doc.runs, 'runs')
+  if (isMap(doc.runs)) checkSteps(doc.runs.steps, 'runs.steps')
+  return found
+}
+
+/**
  * 値を、失敗の出力に示す形にする（文字列は引用符で囲み、空白の違いを見えるようにする）。
  *
  * @param {unknown} value uses の値
@@ -102,10 +138,13 @@ export function findActionPinProblems(files) {
   for (const { path, text } of files) {
     let doc
     try {
-      doc = load(text)
+      doc = load(text, YAML_OPTIONS)
     } catch (e) {
       problems.push(`${path} の YAML を読めない（判定できない）：${e.reason ?? e.message}`)
       continue
+    }
+    for (const where of collectMergeKeys(doc)) {
+      problems.push(`${path} の ${where}：マージキー（<<）は判定できない。マージキーを使わず、値を直接書く`)
     }
     for (const { where, value } of collectUses(doc)) {
       if (!isAllowedUses(value)) {

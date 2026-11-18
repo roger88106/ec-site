@@ -236,6 +236,18 @@ describe('除外された追跡しているファイルの検出', () => {
       }
     })
 
+    test('追跡しているファイルの一覧を取得できて、除外の判定の git が失敗したときは、終了コード 2 で、取得した件数を要約の行に出す', () => {
+      const dir = makeRepo({ 'a.txt': 'a', 'b.txt': 'b' })
+      const lines = []
+      const code = runIgnoredTracked(dir, (line) => lines.push(line), {
+        findIgnored: () => {
+          throw new Error('git が失敗した')
+        },
+      })
+      assert.equal(code, 2)
+      assert.equal(lines.at(-1), '追跡しているファイル：2 件、除外されたもの：0 件')
+    })
+
     test('追跡しているファイルが 0 件なら、終了コード 2 で理由を出す', () => {
       const dir = makeRepo({})
       const { code, lines } = run(dir)

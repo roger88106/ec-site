@@ -30,11 +30,11 @@ workflow と複合の action の `uses` は、#419 で commit の SHA に固定�
 
 - `ci.yml` の `paths` から `!.gitignore` を外さず、`.github/workflows/` を変えない。理由：文書の workflow（`.github/workflows/docs.yml`）は `paths` の指定がなく、全ての pull request と、`develop`・`main`・`release/**`・`hotfix/**` への push で `check-all.sh` を実行する。そのため、新しい検査は `.gitignore` だけの変更でも実行される。
 - 判定の区分は、どちらも誤りの防止とする。誤って書いたものを拒否し、意図して作った回避は対象にしない。
-- action の固定は、許可する形の一覧で判定する。許可する形は次の 2 つだけで、それ以外は全て失敗にする。
+- action の固定は、許可する形の一覧で判定する。許可する形は次の 2 つだけで、それ以外は全て失敗にする。ローカルの指定を `.github/` の下に限るのは、許可したローカルの action が必ず検査の対象のファイルになり、commit の前の hook が検査を選ぶ条件（`.github/` の下のファイル）からも外れないようにするため。YAML のマージキー（`<<`）は判定できないので、step・job・`runs`・文書の直下のどれかにあれば失敗にする。
 
   | 形 | 例 |
   |----|----|
-  | ローカルの action（`./` で始まる） | `./.github/actions/setup-frontend` |
+  | ローカルの action と再利用の workflow（`./.github/actions/` か `./.github/workflows/` で始まり、`..` を含まない） | `./.github/actions/setup-frontend` |
   | `<owner>/<repo>` と任意のパスの後に、`@` と 40 桁の小文字の 16 進 | `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` |
 
 - action の固定の対象は、Git の対象のファイル（追跡しているファイルと、除外されない新しいファイル）のうち、`.github/workflows/` 直下の `*.yml`・`*.yaml` と、`.github/actions/` の下の `action.yml`・`action.yaml`。読む場所は、workflow の各 job の `steps` の `uses`、job の `uses`（再利用の workflow）、複合の action の `runs.steps` の `uses`。YAML として読み、`run` の中の文字列やコメントは見ない。読めない YAML は失敗にする。対象のファイルが 0 件のときも失敗にする。
@@ -72,6 +72,8 @@ action の固定（`action-pins`）・検出すべき例：
 | 21 | 改行コードが CRLF の workflow にあるタグの指定 | 改行コードによらない |
 | 22 | 1 つのファイルに複数の文書（`---` が 2 つ） | 読めない YAML |
 | 23 | 1 つの step に `uses` が 2 つ | 読めない YAML |
+| 24 | `./tools/setup`（`.github/actions/` の外のローカルの action）、`./.github/actions/../x` | 許可する形にない（検査の対象のファイルから外れる） |
+| 25 | マージキー `<<` を含む step・job・`runs` | 判定できない |
 
 action の固定（`action-pins`）・検出してはいけない例：
 
@@ -86,7 +88,7 @@ action の固定（`action-pins`）・検出してはいけない例：
 | 7 | `with` の入力の値 `ref: v1` | `uses` でない |
 | 8 | `.github/` の外の YAML、`.github/dependabot.yml` | 対象のファイルでない |
 | 9 | フロースタイル（`- { uses: a/b@<40 桁> }`） | 展開後の値で判定する |
-| 10 | job の `uses: ./.github/workflows/build.yml`（ローカルの再利用の workflow） | `./` で始まる |
+| 10 | job の `uses: ./.github/workflows/build.yml`（ローカルの再利用の workflow） | `./.github/workflows/` で始まる |
 | 11 | owner と repo に大文字、`-`、`_`、`.` を含む固定（`Azure/login@<40 桁の小文字>`） | 小文字に限るのは SHA だけ |
 | 12 | 引用符で囲んだ許可する形（`"actions/checkout@<40 桁の小文字>"`、`'./.github/actions/setup-frontend'`） | YAML の値は同じ |
 | 13 | `.github/workflows/` のサブフォルダーの `*.yml` | 対象は直下だけ（GitHub Actions もサブフォルダーを読まない） |
@@ -224,7 +226,16 @@ action の固定（`action-pins`）・検出してはいけない例：
     検証役（高性能、85666 token、1m51s）は 18 件の全てを真と判定した。修正したものは、hook の選び方のテスト（常に実行する検査の列挙と、`.github/` の下での選び方）、テストでの共有の `GIT_` の変数の除き方、Git の一覧を求める共有のモジュールへの関数の追加、0 件と git の失敗の終了コード 2、hook と同じ状態のテスト、CRLF と読めない YAML の例、`docs.yml` の実行の条件の文、手順書の 2 つの規則への検査の名前である。残したものは 1 件で、`runtime-versions` と workflow の読み方を共有にする案である。既存の検査の判定を変えないため（DN-565-2）、pull request の「推奨の指摘の扱い」に書く。機械の検査に移したものはない。本文の書き手：spec の修正と手順書の数行は spec 担当のセッション、コードとテストは実装役。
 
     文書のレビュー（汎用）は候補 16 件のうち 14 件を修正した。手順書から検査の名前を削る 2 件は、上の指摘（規則を自動で確認するようになったら示す）と食い違うので採らなかった。校閲は、確認役が「挙げる」とした 8 件を全て修正した。
-- [ ] **T565-01-09** pull request の前のレビュー。指摘を修正し、draft を外す。
+- [x] **T565-01-09** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T565-01-08
+  - 結果：次の表のとおり。CI の検査の script と hook を変えるので、文脈を持たない高性能のレビュー役（観点は、拒否・判定を別の書き方で回避できないか）を加えた。
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | pull request の前 | 組み込み | 組み込み | 1 | — | — | 0 | 1 | 4 | 3 |
+    | pull request の前 | 判定の回避 | 高性能 | 1 | 76593 | 4m08s | 0 | 1 | 1 | 2 |
+    | pull request の前 | 重複を除く | — | 1 | — | — | 0 | 1 | 5 | 4 |
+
+    組み込みのコードレビューは level に high を指定し、表示された level も high だった。重要度が区別して表示されないので、指摘を重要度の定義に当てはめて分けた。2 つのレビューが同じ指摘（`.github/actions/` の外のローカルの action を検査しない）を挙げたので、許可するローカルの指定を `./.github/actions/` と `./.github/workflows/` に限り、`..` を含むパスを失敗にした。ほかに、YAML のマージキーを判定できないものとして失敗にし、許可する形の正規表現の `s` フラグを外し、git が失敗したときの要約の行の件数を直した。残したものは 2 件である。除外の判定の関数を呼ぶだけの関数は、テストが検査の名前で呼び出すので残した。git を 2 回起動する点は、1 回が 1 秒未満のため直さない。
 - [ ] **T565-01-10** spec をアーカイブに移す。
   - 依存：T565-01-09

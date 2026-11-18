@@ -54,6 +54,36 @@ describe('action の固定の検査・検出すべき例', () => {
     assert.equal(countProblems(workflowWithStep('.github/actions/x')), 1)
   })
 
+  test('.github/actions/ と .github/workflows/ の外のローカルの指定と、.. を含む指定は失敗にする', () => {
+    for (const uses of ['./tools/setup', './.github/actions/../x', './.github/workflows/../../x', './.github/other/x']) {
+      assert.equal(countProblems(workflowWithStep(uses)), 1, uses)
+    }
+    assert.equal(countProblems('jobs:\n  a:\n    uses: ./tools/build.yml\n'), 1)
+  })
+
+  test('改行を含むローカルの指定は失敗にする', () => {
+    assert.equal(countProblems(workflowWithStep('"./.github/actions/x\\nfoo"')), 1)
+  })
+
+  test('失敗の出力の修正の方法に、複合の action を .github/actions/ の下に置くことを示す', () => {
+    const [problem] = findActionPinProblems([{ path: WORKFLOW, text: workflowWithStep('./tools/setup') }])
+    assert.ok(problem.includes('.github/actions/'), problem)
+  })
+
+  test('マージキー（<<）が step・job・runs・文書の直下にあれば、判定できないとして失敗にする', () => {
+    const cases = [
+      [WORKFLOW, `x: &x\n  uses: actions/checkout@${SHA}\njobs:\n  a:\n    steps:\n      - <<: *x\n`],
+      [WORKFLOW, 'x: &x\n  runs-on: a\njobs:\n  a:\n    <<: *x\n    steps: []\n'],
+      [ACTION, 'x: &x\n  using: composite\nruns:\n  <<: *x\n  steps: []\n'],
+      [WORKFLOW, 'x: &x\n  jobs: {}\n<<: *x\n'],
+    ]
+    for (const [path, text] of cases) {
+      const problems = findActionPinProblems([{ path, text }])
+      assert.equal(problems.length, 1, text)
+      assert.ok(problems[0].includes(path) && problems[0].includes('マージキー'), problems[0])
+    }
+  })
+
   test('uses の値が数値、空、null なら失敗にする', () => {
     for (const value of ['123', "''", 'null', '']) {
       assert.equal(countProblems(workflowWithStep(value)), 1, `[${value}]`)
@@ -124,6 +154,10 @@ describe('action の固定の検査・検出してはいけない例', () => {
   test('ローカルの action と、ローカルの再利用の workflow は通る', () => {
     assert.equal(countProblems(workflowWithStep('./.github/actions/setup-frontend')), 0)
     assert.equal(countProblems('jobs:\n  a:\n    uses: ./.github/workflows/build.yml\n'), 0)
+  })
+
+  test('./.github/actions/ の下の深いローカルの指定は通る', () => {
+    assert.equal(countProblems(workflowWithStep('./.github/actions/a/b')), 0)
   })
 
   test('パスの付いた固定と、job の uses の固定は通る', () => {

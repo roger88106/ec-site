@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.BindException;
+import org.springframework.boot.context.properties.bind.validation.BindValidationException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
@@ -23,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 決済の設定の検証
  *
  * <p>支払の期限の上限（30 分）を超えると起動に失敗し、設定の名前が知らされることを確認する。
- * 与信の期限が近いとする期間が与信の有効期間より短くないと、起動に失敗することも確認する。
+ * 与信の期限が近いとする期間が与信の有効期間より短くないと、起動に失敗し、2 つの設定の名前が知らされることも確認する。
  */
 class PaymentPropertiesTest {
 
@@ -74,14 +75,15 @@ class PaymentPropertiesTest {
     }
 
     @Test
-    @DisplayName("与信の期限が近いとする期間が、与信の有効期間と同じなら、起動に失敗する")
+    @DisplayName("与信の期限が近いとする期間が、与信の有効期間と同じなら、起動に失敗し、2 つの設定の名前が知らされる")
     void failsWithAuthorizationWarningNotShorterThanValidity() {
-        // 操作と確認：有効期間と同じ 2 日では、与信の有効期間を作れずに起動に失敗する
+        // 操作と確認：有効期間と同じ 2 日では起動に失敗し、原因に 2 つの設定の名前がある
         runner.withPropertyValues(RETURN_URL, "ecsite.payment.authorization-validity=2d",
                         "ecsite.payment.authorization-warning=2d")
                 .run(context -> {
                     assertThat(context).hasFailed();
-                    assertThat(context.getStartupFailure()).rootCause().isInstanceOf(IllegalArgumentException.class);
+                    assertThat(context.getStartupFailure()).rootCause().isInstanceOf(BindValidationException.class)
+                            .hasMessageContaining("authorization-warning").hasMessageContaining("authorization-validity");
                 });
     }
 
@@ -93,13 +95,14 @@ class PaymentPropertiesTest {
             "authorization-validity, 0s", "authorization-validity, -1s", "authorization-validity, 999us"})
     @DisplayName("下限が 1ms の時間の設定が、0、負の値、1ms 未満（999us）なら、値の検証で拒否される")
     void rejectsDurationBelowMinimum(String name, String value) {
-        // 準備：必須の値と、許す範囲の外の値。与信の有効期間の 999us を、期限が近いとする期間（既定 2 日）以下であることでなく値の検証で拒否させるため、後者を 0 にする
-        var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}", "authorization-warning", "0s"));
+        // 準備：必須の値と、許す範囲の外の値
+        var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}"));
         values.put(name, value);
 
         // 操作と確認：値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class, values))
-                .isInstanceOf(BindException.class);
+                .isInstanceOf(BindException.class)
+                .hasCauseInstanceOf(BindValidationException.class);
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -127,7 +130,8 @@ class PaymentPropertiesTest {
         // 操作と確認：-1s は値の検証で拒否される
         assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
                 Map.of("return-url", "http://store/orders/{orderId}", "authorization-warning", "-1s")))
-                .isInstanceOf(BindException.class);
+                .isInstanceOf(BindException.class)
+                .hasCauseInstanceOf(BindValidationException.class);
     }
 
     @Test

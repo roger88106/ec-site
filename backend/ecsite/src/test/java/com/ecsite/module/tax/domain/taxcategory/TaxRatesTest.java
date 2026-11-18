@@ -13,6 +13,7 @@ import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * 税率の一覧の単体テスト
@@ -74,6 +75,29 @@ class TaxRatesTest {
     void rejectsGap() {
         // 操作と確認：1 件目の終了と 2 件目の開始の間が空く
         assertBusinessError(() -> new TaxRates(List.of(rate("8", null, T1), rate("10", T2, null))),
+                TaxErrorCode.TAX_RATE_PERIODS_GAP);
+    }
+
+    @Test
+    @DisplayName("前の終了と次の開始がちょうど同じなら、つながるので作れる")
+    void acceptsExactlyAdjacent() {
+        // 操作と確認：境目が同じ時刻なら、例外にならない
+        assertThatCode(() -> new TaxRates(List.of(rate("8", null, T1), rate("10", T1, null)))).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("次の開始が前の終了より最小の単位だけ前だと、業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される")
+    void rejectsOverlapByOneUnit() {
+        // 操作と確認：境目の 1 つ内側で重なる
+        assertBusinessError(() -> new TaxRates(List.of(rate("8", null, T1), rate("10", T1.minusNanos(1), null))),
+                TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);
+    }
+
+    @Test
+    @DisplayName("次の開始が前の終了より最小の単位だけ後だと、業務のエラー TAX_RATE_PERIODS_GAP で拒否される")
+    void rejectsGapByOneUnit() {
+        // 操作と確認：境目の 1 つ外で途切れる
+        assertBusinessError(() -> new TaxRates(List.of(rate("8", null, T1), rate("10", T1.plusNanos(1), null))),
                 TaxErrorCode.TAX_RATE_PERIODS_GAP);
     }
 

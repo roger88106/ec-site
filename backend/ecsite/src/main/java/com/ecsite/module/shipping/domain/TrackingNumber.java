@@ -21,13 +21,6 @@ public record TrackingNumber(String value) {
     public static final int MAX_LENGTH = 30;
 
     /**
-     * 入力の形
-     *
-     * <p>半角の数字とハイフンだけ。
-     */
-    private static final Pattern FORM = Pattern.compile("[0-9-]+");
-
-    /**
      * 保存する値の形
      *
      * <p>半角の数字だけ。
@@ -62,8 +55,8 @@ public record TrackingNumber(String value) {
      */
     public static TrackingNumber of(@Nullable String input) {
         var trimmed = input == null ? "" : input.strip();
-        // ハイフンを含む入力の長さは、ハイフンを除く前に確認する
-        if (trimmed.length() > MAX_LENGTH || !FORM.matcher(trimmed).matches()) {
+        // ハイフンを含む入力の長さは、ハイフンを除く前に確認する。形（数字だけか）は、ハイフンを除いた後にコンストラクターが検査する
+        if (trimmed.length() > MAX_LENGTH) {
             throw BusinessException.of(ShippingErrorCode.TRACKING_NUMBER_INVALID, List.of(MAX_LENGTH));
         }
         return new TrackingNumber(trimmed.replace("-", ""));

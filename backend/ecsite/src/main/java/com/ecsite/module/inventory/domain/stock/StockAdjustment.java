@@ -96,6 +96,8 @@ public final class StockAdjustment {
      * <p>作り方によらない不変条件を検査する。運営者の調整だけの規則（理由の選べる範囲、増減量の上限、メモの必須）は、
      * {@link #create} で検査する。
      *
+     * <p>注文 ID と注文番号の一方だけがあるとき、IllegalArgumentException を投げる。
+     *
      * @param id          在庫調整 ID
      * @param delta       増減量
      * @param reason      調整理由
@@ -106,7 +108,6 @@ public final class StockAdjustment {
      * @param operator    調整した運営者
      * @throws BusinessException 増減量が 0（{@code INVALID_STOCK_DELTA}）
      * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
-     * @throws IllegalArgumentException 注文 ID と注文番号の一方だけがある
      */
     StockAdjustment(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                     @Nullable UUID orderId, @Nullable String orderNumber, @NonNull Instant adjustedAt,

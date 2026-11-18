@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.persistence;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.jooq.shipping.tables.records.ShipmentRecord;
 import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
@@ -35,21 +36,21 @@ class ShipmentRestoreFailureTest {
     @DisplayName("配送業者が列挙にないとき、例外の出力に値が出ない")
     void hidesCarrier() {
         // 操作と確認：配送業者を列挙にない値にした行を読む
-        assertFindHides(shipment -> shipment.setCarrier(value));
+        assertFindHides(shipment -> shipment.setCarrier(value), IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("配送状態が列挙にないとき、例外の出力に値が出ない")
     void hidesStatus() {
         // 操作と確認：配送状態を列挙にない値にした行を読む
-        assertFindHides(shipment -> shipment.setStatus(value));
+        assertFindHides(shipment -> shipment.setStatus(value), IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("追跡番号の形が違うとき、例外の出力に値が出ない")
     void hidesTrackingNumber() {
         // 操作と確認：追跡番号を数字でない値にした行を読む
-        assertFindHides(shipment -> shipment.setTrackingNumber(value));
+        assertFindHides(shipment -> shipment.setTrackingNumber(value), BusinessException.class);
     }
 
     // ============================== 確認の補助 ==============================
@@ -58,8 +59,9 @@ class ShipmentRestoreFailureTest {
      * 行の一部を壊して出荷を読み、例外の出力に値が出ないことを確認する。
      *
      * @param breaking 行を壊す処理
+     * @param causeType 復元の失敗の原因になるはずの例外の種類
      */
-    private void assertFindHides(Consumer<ShipmentRecord> breaking) {
+    private void assertFindHides(Consumer<ShipmentRecord> breaking, Class<? extends Throwable> causeType) {
         var shipment = RECORDS.newRecord(SHIPMENT);
         shipment.setCarrier("YAMATO");
         shipment.setTrackingNumber("123");
@@ -68,6 +70,6 @@ class ShipmentRestoreFailureTest {
         var dsl = new RestoreFailures().with("shipment", shipment).dsl();
         var repository = new JooqShipmentRepository(dsl, Clock.systemUTC());
 
-        assertValueIsHidden(() -> repository.findAllByOrderIds(List.of(UUID.randomUUID())), value);
+        assertValueIsHidden(() -> repository.findAllByOrderIds(List.of(UUID.randomUUID())), value, causeType);
     }
 }

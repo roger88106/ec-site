@@ -15,6 +15,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 支払の単体テスト
  *
- * <p>支払の状態の遷移と、遷移で登録するイベント、与信期限の計算、復元のときの状態と項目の整合を確認する。
+ * <p>支払の状態の遷移と、遷移で登録するイベント、与信期限の計算、復元のときの状態と項目の整合と、遷移のメソッドで作った支払がそのまま復元できることを確認する。
  *
  * <p>準備のデータと確認の期待値は、同じ定数から作る（準備した物から期待値を取り出さない）。<br />
  * ただし、注文 ID と支払 ID は準備で毎回作るので、準備した支払から取り出して比べる。
@@ -155,6 +156,84 @@ class PaymentTest {
                     .hasMessageContaining(status.name())
                     .hasMessageNotContaining(AUTHORIZATION_REF)
                     .hasMessageNotContaining(ORDERED_AT.toString());
+        }
+
+        /**
+         * 遷移のメソッドをたどって、状態と項目の整合の表の各行に至る支払を作る経路
+         *
+         * <p>支払なしの後に届いた与信は、与信の時刻を持たずに与信の取消待ちに進む。
+         *
+         * @return 経路の名前、至る状態、支払を作る処理
+         */
+        static Stream<Arguments> transitionPaths() {
+            return Stream.of(
+                    Arguments.of("作成", PaymentStatus.UNPAID, (Supplier<Payment>) PaymentTest::unpaid),
+                    Arguments.of("支払画面を開き、与信の反映を待つ", PaymentStatus.UNPAID, (Supplier<Payment>) () -> {
+                        var payment = unpaid();
+                        payment.openPage(PAGE);
+                        payment.awaitAuthorization(DEADLINE);
+                        return payment;
+                    }),
+                    Arguments.of("支払の期限切れ", PaymentStatus.NOT_PAID, (Supplier<Payment>) PaymentTest::expired),
+                    Arguments.of("支払画面を開いた後の注文のキャンセル", PaymentStatus.NOT_PAID, (Supplier<Payment>) () -> {
+                        var payment = unpaid();
+                        payment.openPage(PAGE);
+                        payment.cancel(ORDERED_AT);
+                        return payment;
+                    }),
+                    Arguments.of("与信", PaymentStatus.AUTHORIZED, (Supplier<Payment>) PaymentTest::authorized),
+                    Arguments.of("売上確定", PaymentStatus.CAPTURED, (Supplier<Payment>) PaymentTest::captured),
+                    Arguments.of("与信の期限切れ", PaymentStatus.AUTHORIZATION_EXPIRED,
+                            (Supplier<Payment>) PaymentTest::authorizationExpired),
+                    Arguments.of("与信済みの取消", PaymentStatus.VOID_PENDING, (Supplier<Payment>) PaymentTest::voidPending),
+                    Arguments.of("支払なしの後に届いた与信", PaymentStatus.VOID_PENDING, (Supplier<Payment>) Consistency::lateAuthorized),
+                    Arguments.of("与信済みの取消の完了", PaymentStatus.VOIDED, (Supplier<Payment>) PaymentTest::voided),
+                    Arguments.of("支払なしの後に届いた与信の取消の完了", PaymentStatus.VOIDED, (Supplier<Payment>) () -> {
+                        var payment = lateAuthorized();
+                        payment.markVoided();
+                        return payment;
+                    }),
+                    Arguments.of("売上確定済みの取消", PaymentStatus.REFUND_PENDING, (Supplier<Payment>) PaymentTest::refundPending),
+                    Arguments.of("支払なしの後に届いた与信の売上確定", PaymentStatus.REFUND_PENDING, (Supplier<Payment>) () -> {
+                        var payment = lateAuthorized();
+                        payment.capture(DEADLINE);
+                        return payment;
+                    }),
+                    Arguments.of("返金", PaymentStatus.REFUNDED, (Supplier<Payment>) PaymentTest::refunded),
+                    Arguments.of("支払なしの後に届いた与信の返金", PaymentStatus.REFUNDED, (Supplier<Payment>) () -> {
+                        var payment = lateAuthorized();
+                        payment.capture(DEADLINE);
+                        payment.markRefunded();
+                        return payment;
+                    }));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("transitionPaths")
+        @DisplayName("遷移のメソッドで作った支払のスナップショットは、そのまま復元でき、同じ値を持つ")
+        void restoresAfterTransitions(String path, PaymentStatus expected, Supplier<Payment> transition) {
+            // 準備：遷移のメソッドをたどった支払のスナップショット
+            var snapshot = transition.get().toSnapshot();
+
+            // 確認（前提）：経路が狙った状態に至っている
+            assertThat(snapshot.status()).isEqualTo(expected);
+
+            // 操作：復元する
+            var restored = Payment.restore(snapshot);
+
+            // 確認：全ての項目が同じ
+            assertThat(restored.toSnapshot()).usingRecursiveComparison().isEqualTo(snapshot);
+        }
+
+        /**
+         * 期限切れで支払なしにした後に与信が届いた、与信の取消待ちの支払を作る。
+         *
+         * @return 支払
+         */
+        private static Payment lateAuthorized() {
+            var payment = expired();
+            payment.authorize(AUTHORIZATION_REF, DEADLINE);
+            return payment;
         }
 
         /**

@@ -123,7 +123,6 @@ public class Payment extends AggregateRoot {
      * @param authorizedAt               与信の時刻
      * @param awaitingAuthorizationSince 与信の反映を待ち始めた時刻
      * @param version                    バージョン
-     * @throws IllegalArgumentException 状態と、与信の参照・与信の時刻が整合しない
      */
     private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
                     @NonNull PaymentStatus status, @Nullable PaymentPage page, @Nullable String authorizationRef,
@@ -386,14 +385,13 @@ public class Payment extends AggregateRoot {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 状態と、与信の参照・与信の時刻が整合するかを検査する。
+     * 状態と、与信の参照・与信の時刻が整合するかを検査し、整合しなければ拒否する。
      *
      * <p>メッセージには状態の名前だけを書き、与信の参照と時刻を書かない（DB から戻した値が入るため）。
      *
      * @param status           状態
      * @param authorizationRef 与信の参照
      * @param authorizedAt     与信の時刻
-     * @throws IllegalArgumentException 整合しない
      */
     private static void verifyAuthorization(PaymentStatus status, @Nullable String authorizationRef,
                                             @Nullable Instant authorizedAt) {

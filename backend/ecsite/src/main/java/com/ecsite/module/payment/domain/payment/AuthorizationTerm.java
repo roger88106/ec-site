@@ -18,7 +18,7 @@ public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration wa
     /**
      * コンストラクタ
      *
-     * @throws IllegalArgumentException 有効期間が正でない、期限が近いとする長さが負か、有効期間より短くない
+     * <p>有効期間が正で、期限が近いとする長さが 0 以上で有効期間より短いことを検査する。
      */
     public AuthorizationTerm {
         if (!validity.isPositive()) {

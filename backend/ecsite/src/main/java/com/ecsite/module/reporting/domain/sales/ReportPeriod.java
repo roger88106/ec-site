@@ -2,7 +2,6 @@ package com.ecsite.module.reporting.domain.sales;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.reporting.domain.ReportingErrorCode;
-import lombok.NonNull;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -37,19 +36,6 @@ public record ReportPeriod(LocalDate from, LocalDate to) {
         if (from.isAfter(to) || !to.isBefore(from.plusYears(MAX_YEARS))) {
             throw BusinessException.of(ReportingErrorCode.INVALID_PERIOD, List.of(MAX_YEARS));
         }
-    }
-
-    /**
-     * 期間を作る。
-     *
-     * @param from 始まりの日
-     * @param to   終わりの日
-     * @return 期間
-     * @throws BusinessException 始まりが終わりより後（{@code INVALID_PERIOD}）
-     * @throws BusinessException {@value #MAX_YEARS} 年を超える（{@code INVALID_PERIOD}）
-     */
-    public static ReportPeriod of(@NonNull LocalDate from, @NonNull LocalDate to) {
-        return new ReportPeriod(from, to);
     }
 
     /**

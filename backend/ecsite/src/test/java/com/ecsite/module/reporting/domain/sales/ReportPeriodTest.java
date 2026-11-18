@@ -46,14 +46,14 @@ class ReportPeriodTest {
         @DisplayName("BR-24 始まりが終わりより後なら、期間の誤り")
         void rejectsReversed() {
             // 操作と確認：業務のエラー INVALID_PERIOD で拒否される
-            assertBusinessError(() -> ReportPeriod.of(date("2026-10-02"), date("2026-10-01")), ReportingErrorCode.INVALID_PERIOD);
+            assertBusinessError(() -> new ReportPeriod(date("2026-10-02"), date("2026-10-01")), ReportingErrorCode.INVALID_PERIOD);
         }
 
         @Test
         @DisplayName("BR-24 期間は 5 年ちょうどまで作れる")
         void allowsFiveYears() {
             // 操作：始まりから 5 年後の前日までの期間を作る
-            var period = ReportPeriod.of(date("2021-01-01"), date("2025-12-31"));
+            var period = new ReportPeriod(date("2021-01-01"), date("2025-12-31"));
 
             // 確認：終わりの日がそのまま
             assertThat(period.to()).isEqualTo(date("2025-12-31"));
@@ -63,28 +63,14 @@ class ReportPeriodTest {
         @DisplayName("BR-24 期間が 5 年を超えると、期間の誤り")
         void rejectsLongerThanFiveYears() {
             // 操作と確認：5 年と 1 日の期間は、業務のエラー INVALID_PERIOD で拒否される
-            assertBusinessError(() -> ReportPeriod.of(date("2021-01-01"), date("2026-01-01")), ReportingErrorCode.INVALID_PERIOD);
-        }
-
-        @Test
-        @DisplayName("BR-24 コンストラクターでも、始まりが終わりより後なら拒否される")
-        void constructorRejectsReversed() {
-            // 操作と確認：業務のエラー INVALID_PERIOD で拒否される
-            assertBusinessError(() -> new ReportPeriod(date("2026-10-02"), date("2026-10-01")), ReportingErrorCode.INVALID_PERIOD);
-        }
-
-        @Test
-        @DisplayName("BR-24 コンストラクターでも、期間が 5 年を超えると拒否される")
-        void constructorRejectsLongerThanFiveYears() {
-            // 操作と確認：業務のエラー INVALID_PERIOD で拒否される
             assertBusinessError(() -> new ReportPeriod(date("2021-01-01"), date("2026-01-01")), ReportingErrorCode.INVALID_PERIOD);
         }
 
         @Test
         @DisplayName("BR-24 始まりと終わりが同じ日でよい")
         void allowsSingleDay() {
-            // 操作：1 日だけの期間を月で区切る
-            var buckets = period("2026-10-01", "2026-10-01").split(Granularity.MONTH, APRIL);
+            // 操作：コンストラクターで 1 日だけの期間を作り、月で区切る
+            var buckets = new ReportPeriod(date("2026-10-01"), date("2026-10-01")).split(Granularity.MONTH, APRIL);
 
             // 確認：その 1 日だけの区切りが 1 つ
             assertThat(buckets)
@@ -260,7 +246,7 @@ class ReportPeriodTest {
      * @return 期間
      */
     private static ReportPeriod period(String from, String to) {
-        return ReportPeriod.of(date(from), date(to));
+        return new ReportPeriod(date(from), date(to));
     }
 
     /**

@@ -75,7 +75,7 @@ class ReportController implements ReportApi {
     public ResponseEntity<SalesTrendReport> getSalesTrend(LocalDate from, LocalDate to, Granularity granularity,
                                                           @Nullable ReportBasis basis, @Nullable UUID productId,
                                                           Boolean excludeTax, Boolean excludeShipping) {
-        var query = new SalesTrendQuery(ReportPeriod.of(from, to),
+        var query = new SalesTrendQuery(new ReportPeriod(from, to),
                 mapper.toGranularity(granularity), mapper.toBasis(basis), productId, excludeTax, excludeShipping);
         return ResponseEntity.ok(mapper.toSalesTrendReport(salesTrendService.trend(query)));
     }
@@ -93,7 +93,7 @@ class ReportController implements ReportApi {
     @Override
     public ResponseEntity<VariantSalesReport> getVariantSales(UUID productId, LocalDate from, LocalDate to,
                                                               @Nullable ReportBasis basis, Boolean excludeTax) {
-        var query = new VariantSalesQuery(productId, ReportPeriod.of(from, to), mapper.toBasis(basis), excludeTax);
+        var query = new VariantSalesQuery(productId, new ReportPeriod(from, to), mapper.toBasis(basis), excludeTax);
         return ResponseEntity.ok(mapper.toVariantSalesReport(variantSalesService.variants(query)));
     }
 
@@ -113,7 +113,7 @@ class ReportController implements ReportApi {
                                                                         @Nullable ReportBasis basis,
                                                                         @Nullable UUID productId, Boolean excludeTax,
                                                                         Boolean excludeShipping) {
-        var query = new CustomerBreakdownQuery(ReportPeriod.of(from, to), mapper.toBasis(basis), productId, excludeTax,
+        var query = new CustomerBreakdownQuery(new ReportPeriod(from, to), mapper.toBasis(basis), productId, excludeTax,
                 excludeShipping);
         return ResponseEntity.ok(mapper.toCustomerBreakdownReport(customerBreakdownService.breakdown(query)));
     }

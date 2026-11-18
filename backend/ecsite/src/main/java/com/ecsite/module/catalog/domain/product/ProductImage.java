@@ -42,10 +42,11 @@ public final class ProductImage {
     /**
      * コンストラクタ
      *
+     * <p>表示順が負のとき、IllegalArgumentException を投げる。
+     *
      * @param id           画像 ID
      * @param assetId      メディアモジュールのアセット ID
      * @param displayOrder 商品の中の表示順
-     * @throws IllegalArgumentException 表示順が負
      */
     public ProductImage(@NonNull UUID id, @NonNull UUID assetId, int displayOrder) {
         if (displayOrder < 0) {

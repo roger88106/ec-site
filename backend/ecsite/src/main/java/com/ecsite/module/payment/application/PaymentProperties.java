@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.domain.payment.AuthorizationTerm;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.time.DurationMax;
@@ -37,15 +38,20 @@ public record PaymentProperties(
         @NotBlank String returnUrl) {
 
     /**
-     * コンストラクタ
+     * 与信の期限が近いとする期間が、与信の有効期間より短いかを返す。
      *
-     * <p>与信の有効期間を作れない組（期限が近いとする期間が有効期間より短くないなど）なら、起動に失敗させる。
-     * 使うときに作るので、作って捨てる。
+     * <p>値の検証で検査し、短くなければ起動に失敗させる（与信を受けた時点から期限が近いことになるため）。
+     * どちらかが null か、項目の下限を満たさないときは、項目の検証が失敗を知らせるので、true を返す。
      *
-     * @throws IllegalArgumentException 与信の有効期間と期限が近いとする期間から、与信の有効期間を作れない
+     * @return 短いか、項目の検証で失敗するなら true
      */
-    public PaymentProperties {
-        new AuthorizationTerm(authorizationValidity, authorizationWarning);
+    @AssertTrue(message = "authorization-warning は authorization-validity より短くする")
+    boolean isAuthorizationWarningShorterThanValidity() {
+        if (authorizationValidity == null || authorizationWarning == null
+                || !authorizationValidity.isPositive() || authorizationWarning.isNegative()) {
+            return true;
+        }
+        return authorizationWarning.compareTo(authorizationValidity) < 0;
     }
 
     /**

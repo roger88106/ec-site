@@ -66,13 +66,14 @@ public final class Variant {
      *
      * <p>軸の値は変更できない一覧にする。
      *
+     * <p>表示順が負のとき、IllegalArgumentException を投げる。
+     *
      * @param id             バリアント ID
      * @param variantCode    バリアント品番
      * @param axisValues     軸の値
      * @param displayOrder   表示順
      * @param salesSuspended 販売停止
      * @param imageId        指定した画像。なければ null
-     * @throws IllegalArgumentException 表示順が負
      */
     public Variant(@NonNull UUID id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues, int displayOrder,
                    boolean salesSuspended, @Nullable UUID imageId) {

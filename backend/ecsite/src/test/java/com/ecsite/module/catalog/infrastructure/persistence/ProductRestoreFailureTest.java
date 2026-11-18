@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
@@ -14,13 +15,16 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.support.RestoreFailures.RECORDS;
+import static com.ecsite.support.RestoreFailures.assertDatabaseFailurePropagates;
 import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 import static org.mockito.Mockito.mock;
 
@@ -45,6 +49,11 @@ class ProductRestoreFailureTest {
      */
     private static final int NEGATIVE_ORDER = -123456;
 
+    /**
+     * 上限（20 枚）を超える画像の数
+     */
+    private static final int IMAGE_COUNT_OVER_LIMIT = 21;
+
     // ============================== テスト ==============================
 
     @Test
@@ -55,7 +64,7 @@ class ProductRestoreFailureTest {
         var repository = new JooqProductRepository(dsl, mock(ApplicationEventPublisher.class), mock(ProductFactory.class), Clock.systemUTC());
 
         // 操作と確認：商品を読むと復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
     }
 
     @Test
@@ -92,22 +101,19 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", product));
 
         // 操作と確認：商品を読むと復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, BusinessException.class);
     }
 
     @Test
     @DisplayName("画像の表示順が負のとき、例外の出力に値が出ない")
     void hidesNegativeImageOrder() {
         // 準備：表示順が負の画像の行を持つ商品
-        var image = RECORDS.newRecord(PRODUCT_IMAGE.fields());
-        image.set(PRODUCT_IMAGE.ID, UUID.randomUUID());
-        image.set(PRODUCT_IMAGE.PRODUCT_ID, UUID.randomUUID());
-        image.set(PRODUCT_IMAGE.ASSET_ID, UUID.randomUUID());
-        image.set(PRODUCT_IMAGE.DISPLAY_ORDER, NEGATIVE_ORDER);
+        var image = validImage(NEGATIVE_ORDER);
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("product_image", image));
 
         // 操作と確認：復元の失敗になり、例外の出力に表示順の値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER));
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER),
+                IllegalArgumentException.class);
     }
 
     @Test
@@ -118,7 +124,8 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
 
         // 操作と確認：復元の失敗になり、例外の出力に表示順の値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER));
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER),
+                IllegalArgumentException.class);
     }
 
     @Test
@@ -129,7 +136,53 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("画像が 21 枚あるとき、例外の出力に値が出ない")
+    void hidesTooManyImages() {
+        // 準備：上限の 20 枚を 1 枚超える画像の行を持つ、説明に目印の値がある商品
+        var product = validProduct();
+        product.set(PRODUCT.DESCRIPTION, value);
+        var images = IntStream.rangeClosed(1, IMAGE_COUNT_OVER_LIMIT).mapToObj(order -> validImage(order)).toList();
+        var repository = realFactoryRepository(new RestoreFailures().with("product", product).withRows("product_image", images));
+
+        // 操作と確認：復元の失敗になり、例外の出力に値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("軸のない商品にバリアントが 2 つあるとき、例外の出力に値が出ない")
+    void hidesTwoVariantsWithoutAxes() {
+        // 準備：軸のない商品に、軸の値のないバリアントの行が 2 つ。説明に目印の値がある
+        var product = validProduct();
+        product.set(PRODUCT.DESCRIPTION, value);
+        var variants = List.of(validVariant(1, new String[0]), validVariant(2, new String[0]));
+        var repository = realFactoryRepository(new RestoreFailures().with("product", product).withRows("variant", variants));
+
+        // 操作と確認：復元の失敗になり、例外の出力に値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("バリアントの表を読む DB の失敗は、復元のエラーに変わらずそのまま出る")
+    void propagatesVariantReadFailure() {
+        // 準備：バリアントの表を読むと失敗する DB
+        var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).failingOn("variant"));
+
+        // 操作と確認：DB の失敗のまま出る
+        assertDatabaseFailurePropagates(() -> repository.findById(UUID.randomUUID()));
+    }
+
+    @Test
+    @DisplayName("画像の表を読む DB の失敗は、復元のエラーに変わらずそのまま出る")
+    void propagatesImageReadFailure() {
+        // 準備：画像の表を読むと失敗する DB
+        var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).failingOn("product_image"));
+
+        // 操作と確認：DB の失敗のまま出る
+        assertDatabaseFailurePropagates(() -> repository.findById(UUID.randomUUID()));
     }
 
     @Test
@@ -141,7 +194,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, BusinessException.class);
     }
 
     @Test
@@ -154,7 +207,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", product));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
     }
 
     // ============================== 準備の補助 ==============================
@@ -182,6 +235,21 @@ class ProductRestoreFailureTest {
         product.set(PRODUCT.TAX_CATEGORY_ID, UUID.randomUUID());
         product.set(PRODUCT.VERSION, 0L);
         return product;
+    }
+
+    /**
+     * 画像の行を作る。
+     *
+     * @param displayOrder 表示順
+     * @return 画像の行
+     */
+    private static Record validImage(int displayOrder) {
+        var image = RECORDS.newRecord(PRODUCT_IMAGE.fields());
+        image.set(PRODUCT_IMAGE.ID, UUID.randomUUID());
+        image.set(PRODUCT_IMAGE.PRODUCT_ID, UUID.randomUUID());
+        image.set(PRODUCT_IMAGE.ASSET_ID, UUID.randomUUID());
+        image.set(PRODUCT_IMAGE.DISPLAY_ORDER, displayOrder);
+        return image;
     }
 
     /**

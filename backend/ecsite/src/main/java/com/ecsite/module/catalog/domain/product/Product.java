@@ -170,11 +170,12 @@ public class Product extends AggregateRoot {
     /**
      * スナップショットから作る（登録・復元で共通）
      *
+     * <p>画像の数・バリアントの数・軸の値の数・公開状態と初回表示日時の組が条件に合わないとき、IllegalArgumentException を投げる。
+     *
      * @param snapshot 商品のスナップショット
      * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
      * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
-     * @throws IllegalArgumentException 画像の数・バリアントの数・軸の値の数・公開状態と初回表示日時の組が条件に合わない
      */
     Product(@NonNull Snapshot snapshot) {
         this.id = snapshot.id();
@@ -619,10 +620,8 @@ public class Product extends AggregateRoot {
      * 集約として成り立つ条件を検査する。
      *
      * <p>状態を変えるメソッドの検査（業務のエラー）は、操作の前の判定として別にある。ここは、条件に合わない状態を作らせない。
-     * 例外のメッセージには値を入れない。
-     *
-     * @throws IllegalArgumentException 画像が上限を超える、軸のない商品のバリアントが 2 つ以上、軸の値の数が軸の数と違う、
-     *                                  公開で初回表示日時も公開終了もない
+     * 画像が上限を超える、軸のない商品のバリアントが 2 つ以上、軸の値の数が軸の数と違う、公開で初回表示日時も公開終了もない、
+     * のどれかのとき、IllegalArgumentException を投げる。例外のメッセージには値を入れない。
      */
     private void verifyInvariants() {
         if (images.size() > MAX_IMAGES) {

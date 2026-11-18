@@ -1,6 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.Cancellation;
@@ -21,13 +22,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +44,7 @@ import static org.assertj.core.api.Assertions.tuple;
 /**
  * 注文の単体テスト
  *
- * <p>注文の成立（{@link Order#place}）と、復元（{@link Order#restore}）のときのメールアドレスと、状態と取消の情報の整合を確認する。
+ * <p>注文の成立（{@link Order#place}）と、復元（{@link Order#restore}）のときのメールアドレスと、状態と取消の情報の整合と、遷移のメソッドで作った注文がそのまま復元できることを確認する。
  * 見積もりが注文できるかの判定（{@code orderable}）は
  * {@code QuoteTest}、API を通した流れは {@code CheckoutStartApiTest}・{@code PlaceOrderPlacementApiTest} などが確認する。
  *
@@ -458,6 +465,128 @@ class OrderTest {
         private CancellationRequest requestOf(CancellationRequest.Result result) {
             var decidedAt = result == CancellationRequest.Result.PENDING ? null : DECIDED_AT;
             return new CancellationRequest(ORDERED_AT, REASON, result, decidedAt, null);
+        }
+    }
+
+    @Nested
+    @DisplayName("遷移の後の復元")
+    class RestoreAfterTransitions {
+
+        /**
+         * 遷移の時刻
+         */
+        private static final Instant LATER = ORDERED_AT.plus(Duration.ofHours(1));
+
+        /**
+         * 申請を決定し、キャンセルする運営者
+         */
+        private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
+
+        /**
+         * 申請と運営者のキャンセルの理由
+         */
+        private static final String REASON = "在庫の不足のため";
+
+        /**
+         * 遷移のメソッドをたどって、状態と取消の情報の整合の表の各行に至る注文を作る経路
+         *
+         * @return 経路の名前、至る状態、注文を作る処理
+         */
+        static Stream<Arguments> transitionPaths() {
+            return Stream.of(
+                    Arguments.of("注文の作成", OrderStatus.PENDING_PAYMENT, (Supplier<Order>) () -> place(quote())),
+                    Arguments.of("支払の受付", OrderStatus.ACCEPTED, (Supplier<Order>) RestoreAfterTransitions::accepted),
+                    Arguments.of("申請の却下", OrderStatus.ACCEPTED, (Supplier<Order>) RestoreAfterTransitions::rejected),
+                    Arguments.of("取消の申請", OrderStatus.CANCELLATION_REQUESTED,
+                            (Supplier<Order>) RestoreAfterTransitions::requested),
+                    Arguments.of("受付からの出荷", OrderStatus.SHIPPED,
+                            (Supplier<Order>) () -> after(accepted(), RestoreAfterTransitions::ship)),
+                    Arguments.of("却下の後の出荷", OrderStatus.SHIPPED,
+                            (Supplier<Order>) () -> after(rejected(), RestoreAfterTransitions::ship)),
+                    Arguments.of("支払の期限切れ", OrderStatus.CANCELLED,
+                            (Supplier<Order>) () -> after(place(quote()), order -> order.expirePayment(LATER))),
+                    Arguments.of("申請の承認", OrderStatus.CANCELLED,
+                            (Supplier<Order>) () -> after(requested(), order -> order.approveCancellation(OPERATOR, LATER))),
+                    Arguments.of("受付からの運営者のキャンセル", OrderStatus.CANCELLED,
+                            (Supplier<Order>) () -> after(accepted(),
+                                    order -> order.cancelByOperator(REASON, null, false, OPERATOR, LATER))),
+                    Arguments.of("申請中の運営者のキャンセル", OrderStatus.CANCELLED,
+                            (Supplier<Order>) () -> after(requested(),
+                                    order -> order.cancelByOperator(REASON, null, false, OPERATOR, LATER))),
+                    Arguments.of("却下の後の運営者のキャンセル", OrderStatus.CANCELLED,
+                            (Supplier<Order>) () -> after(rejected(),
+                                    order -> order.cancelByOperator(REASON, null, false, OPERATOR, LATER))),
+                    Arguments.of("出荷済みの返送の運営者のキャンセル", OrderStatus.CANCELLED,
+                            (Supplier<Order>) () -> after(after(accepted(), RestoreAfterTransitions::ship),
+                                    order -> order.cancelByOperator(REASON, true, true, OPERATOR, LATER))),
+                    Arguments.of("却下の後に出荷した返送の運営者のキャンセル", OrderStatus.CANCELLED,
+                            (Supplier<Order>) () -> after(after(rejected(), RestoreAfterTransitions::ship),
+                                    order -> order.cancelByOperator(REASON, false, true, OPERATOR, LATER))));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("transitionPaths")
+        @DisplayName("遷移のメソッドで作った注文のスナップショットは、そのまま復元でき、同じ値を持つ")
+        void restoresAfterTransitions(String path, OrderStatus expected, Supplier<Order> transition) {
+            // 準備：遷移のメソッドをたどった注文のスナップショット
+            var snapshot = transition.get().toSnapshot();
+
+            // 確認（前提）：経路が狙った状態に至っている
+            assertThat(snapshot.status()).isEqualTo(expected);
+
+            // 操作：復元する
+            var restored = Order.restore(snapshot);
+
+            // 確認：全ての項目が同じ
+            assertThat(restored.toSnapshot()).usingRecursiveComparison().isEqualTo(snapshot);
+        }
+
+        /**
+         * 注文に遷移を行う。
+         *
+         * @param order      注文
+         * @param transition 遷移
+         * @return 遷移した注文
+         */
+        private static Order after(Order order, Consumer<Order> transition) {
+            transition.accept(order);
+            return order;
+        }
+
+        /**
+         * 支払を受け付けた注文を作る。
+         *
+         * @return 「受付」の注文
+         */
+        private static Order accepted() {
+            return after(place(quote()), order -> order.acceptPayment(LATER));
+        }
+
+        /**
+         * キャンセルを申請した注文を作る。
+         *
+         * @return 「キャンセル申請中」の注文
+         */
+        private static Order requested() {
+            return after(accepted(), order -> order.requestCancellation(REASON, LATER));
+        }
+
+        /**
+         * キャンセルの申請を却下した注文を作る。
+         *
+         * @return 却下した申請を持つ「受付」の注文
+         */
+        private static Order rejected() {
+            return after(requested(), order -> order.rejectCancellation(OPERATOR, LATER));
+        }
+
+        /**
+         * 注文を出荷する。
+         *
+         * @param order 「受付」の注文
+         */
+        private static void ship(Order order) {
+            order.ship(Carrier.YAMATO, "123456789012", LATER);
         }
     }
 

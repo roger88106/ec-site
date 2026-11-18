@@ -284,6 +284,23 @@ class StockAdjustmentTest {
     @DisplayName("コンストラクターの検査")
     class Constructor {
 
+        @ParameterizedTest(name = "増減量 {0}")
+        @ValueSource(ints = {1, -1})
+        @DisplayName("増減量が 0 の隣（1 と -1）なら作れる")
+        void acceptsDeltaNextToZero(int delta) {
+            // 操作と確認：例外にならない
+            assertThatCode(() -> new StockAdjustment(UUID.randomUUID(), delta, StockAdjustmentReason.ARRIVAL, null, null, null,
+                    NOW, OPERATOR)).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("注文 ID と注文番号の両方があれば作れる")
+        void acceptsOrderIdWithOrderNumber() {
+            // 操作と確認：例外にならない
+            assertThatCode(() -> new StockAdjustment(UUID.randomUUID(), ORDER_DELTA, StockAdjustmentReason.ORDER, null,
+                    UUID.randomUUID(), ORDER_NUMBER, NOW, null)).doesNotThrowAnyException();
+        }
+
         @Test
         @DisplayName("増減量が 0 なら、業務のエラー INVALID_STOCK_DELTA で拒否される")
         void rejectsZeroDelta() {

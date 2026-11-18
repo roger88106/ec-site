@@ -216,7 +216,7 @@ Windows で `run backend` の node を強制終了すると、Gradle のクラ�
 
 | 機能 | 扱い |
 |------|------|
-| Stripe の通知の転送（`stripe-cli`）、機能紹介のスクリーンショット（`pnpm capture`） | スロット 0（メインの作業ツリー）だけで対応する |
+| Stripe の通知の転送（`stripe-cli`）、機能紹介のスクリーンショット（`pnpm capture`）、設計書の画像（`pnpm capture:docs`） | スロット 0（メインの作業ツリー）だけで対応する |
 | Mailpit、Zipkin | 全スロットで共有する（スロットごとには分けない） |
 
 ### 共有の基盤の設定を変える変更をマージしたとき

@@ -48,7 +48,7 @@
    - error と warning の分け方：error にするのは、次のどちらかの型だけである。リポジトリの全体（アーカイブした spec を除く）に当てて誤検出が 0 の型。全ての誤検出を許容用語（層 1 は `allow`、層 2 は `allow` の `{ "word", "file", "reason" }`）で除ける型。
      それ以外は、文脈で正しいかが決まる型なので、層 1 の warning にする。層 2 には warning がないため、それ以外の型は層 2 に加えない。
    - 当てて数える：層 1 は、先に `warning` に加え、`node scripts/ci/ja/ja-text.mjs --warning` で一覧にして誤検出を数える。`warning` は全てのインラインコードの中を見ず、`error` は日本語を含むインラインコードの中も見るので、`warning` で数えた件数は、`error` に移した後の件数より少ない（移した後に、もう一度 `node scripts/ci/ja/ja-text.mjs` で数える）。error にするときは `error` に移し、`node scripts/ci/ja/ja-text.mjs` の失敗が 0 になるまで、見つかった行を修正するか、許容用語か許可の一覧に追加する。層 2 は、加えてから `node .claude/skills/zh-mixing/zh-mixing.cjs --force tracked` で全体に当てる。環境の印がなくても `--force` で調べられる。
-   - 加えたら、それぞれの script のテスト（`node --test scripts/ci/ja/ja-text.test.mjs`、`node --test .claude/skills/zh-mixing/zh-mixing.test.cjs`）と `bash scripts/ci/check-all.sh` が通ることを確認する。
+   - 加えたら、それぞれの script のテスト（`node --test scripts/ci/ja/ja-text.test.mjs`、`node --test .claude/skills/zh-mixing/zh-mixing.test.cjs`）が通ることを確認する。`bash scripts/ci/check-all.sh` を手動で実行するかは、skill [local-dev](../local-dev/SKILL.md)の「CI の検査の script」に従う（hook `pre-commit` を置いていれば、commit のときに関係する検査が実行される）。
    完了の条件：加えた型ごとに、error か warning かの理由と、全体に当てた誤検出の数が説明できる。
 
 ## 指示のひな形（plan・tasks の照合）

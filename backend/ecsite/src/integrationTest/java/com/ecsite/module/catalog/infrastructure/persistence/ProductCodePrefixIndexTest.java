@@ -47,7 +47,7 @@ class ProductCodePrefixIndexTest {
     private static final String VARIANT_CODE_INDEX = "variant_variant_code_key";
 
     /**
-     * 絞り込みに使う品番の前半
+     * 絞り込みに使う品番の先頭の部分
      */
     private static final String CODE_PREFIX = "ABC";
 
@@ -86,7 +86,7 @@ class ProductCodePrefixIndexTest {
         repository.findSummaries(new ProductListQuery(CODE_PREFIX, null, null, null), PageRequest.of(1, 20));
         List<String> plans = executed.stream().map(query -> dsl.explain(query).plan()).toList();
 
-        // 確認：実行された Query があり、各計画に、二つの索引の範囲の条件に、それぞれの品番の列が出る
+        // 確認：実行された Query があり、各計画で、2 つの索引それぞれの範囲の条件に、品番の列が出る
         assertThat(plans).as("実行された Query の実行計画").isNotEmpty();
         for (String plan : plans) {
             assertThat(plan)

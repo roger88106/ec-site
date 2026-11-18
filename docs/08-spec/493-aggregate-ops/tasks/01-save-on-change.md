@@ -18,7 +18,7 @@
   - 依存：なし
   - 範囲：`OrderTest`、`CancellationApiTest`
   - 確認方法：テストが失敗する。テストを通すためにテストを弱めない
-- [ ] **T493-01-03** T493-01-02 のテストが通る実装を書く（注文の集約と取消の service）。
+- [x] **T493-01-03** T493-01-02 のテストが通る実装を書く（注文の集約と取消の service）。
   - 依存：T493-01-02
   - 範囲：`order/domain/order/Order.java`、`order/application/OrderCancellationCommandService.java`
   - 確認方法：T493-01-02 のテストと、`order` のテストが通る

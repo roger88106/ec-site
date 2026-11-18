@@ -364,12 +364,13 @@ public class Order extends AggregateRoot {
      *
      * @param reason 理由（任意、{@value #REASON_MAX_LENGTH} 文字まで）。空白だけなら理由なし
      * @param now    現在時刻
+     * @return 申請中にしたら true。すでに申請中なら false
      * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
      * @throws BusinessException 理由が {@value #REASON_MAX_LENGTH} 文字を超える（{@code INVALID_CANCELLATION_REASON}）
      */
-    public void requestCancellation(@Nullable String reason, @NonNull Instant now) {
+    public boolean requestCancellation(@Nullable String reason, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
-            return;
+            return false;
         }
         // 申請は 1 回だけ ※却下済み・キャンセル済みも申請できない
         if (!isCancellationRequestable()) {
@@ -378,6 +379,7 @@ public class Order extends AggregateRoot {
         cancellationRequest = new CancellationRequest(now, optionalReason(reason), CancellationRequest.Result.PENDING,
                 null, null);
         changeStatus(OrderStatus.CANCELLATION_REQUESTED, now);
+        return true;
     }
 
     /**

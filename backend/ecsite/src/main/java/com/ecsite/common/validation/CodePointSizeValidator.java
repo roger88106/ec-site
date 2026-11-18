@@ -18,7 +18,14 @@ import org.jspecify.annotations.Nullable;
  */
 public class CodePointSizeValidator implements ConstraintValidator<Size, String> {
 
+    /**
+     * 下限の文字の数（code point）
+     */
     private int min;
+
+    /**
+     * 上限の文字の数（code point）
+     */
     private int max;
 
     @Override

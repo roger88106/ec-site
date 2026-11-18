@@ -1,8 +1,9 @@
 // ソースのコメントを空白に置き換える（.ts・.tsx は stripComments、.java は stripJavaComments）。コメントだけを残す keepTsComments もある。
-// 走査（コメント・文字列・正規表現の読み分け）は scan-code が行う。Java は、文字列とテキストブロックの中の // をコメントにしない。
+// コメントだけを残す読み方は、Kotlin（keepKotlinComments）、TOML（keepTomlComments）、properties（keepPropertiesComments）にもある。
+// 走査（コメント・文字列・正規表現の読み分け）は、Kotlin・TOML・properties の分も含めて scan-code が行い、ここは結果を空白に置き換えるだけ。Java は、文字列とテキストブロックの中の // をコメントにしない。
 //
 // 限界：TSX の JSX のテキスト（<p>It's // here</p>）の中の '・"・// を、文字列やコメントと誤って判定する。
-import { JAVA_SCAN, scanCode } from './scan-code.mjs'
+import { JAVA_SCAN, kotlinCommentMask, propertiesCommentMask, scanCode, tomlCommentMask } from './scan-code.mjs'
 
 /**
  * コメントを同じ長さの空白に置き換え、文字列とコードはそのまま残す。
@@ -64,6 +65,59 @@ export function keepTsComments(text) {
 }
 
 /**
+ * コメントの区間（mask が 1 の字）だけを残し、他を空白にする。改行は残す。
+ *
+ * @param {string} text ソース
+ * @param {Uint8Array} mask コメントの字の位置なら 1
+ * @returns {string} コメントだけを残したソース
+ */
+function keepMasked(text, mask) {
+  const chars = []
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i]
+    chars.push(char === '\r' || char === '\n' || mask[i] ? char : ' ')
+  }
+  return chars.join('')
+}
+
+/**
+ * Kotlin（Gradle の *.kts）のコメントだけを残し、コメントの外（コード、文字列、raw 文字列）を空白に置き換える。
+ *
+ * 読み方（ブロックコメントの入れ子、raw 文字列、文字列の埋め込み）は scan-code の kotlinCommentMask。
+ * 改行は残すので、位置と行番号は元のソースと同じ。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントだけを残したソース
+ */
+export function keepKotlinComments(text) {
+  return keepMasked(text, kotlinCommentMask(text))
+}
+
+/**
+ * TOML（libs.versions.toml など）の # のコメントだけを残し、他を空白に置き換える。
+ *
+ * 読み方は scan-code の tomlCommentMask。改行は残すので、位置と行番号は元のソースと同じ。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントだけを残したソース
+ */
+export function keepTomlComments(text) {
+  return keepMasked(text, tomlCommentMask(text))
+}
+
+/**
+ * properties（gradle.properties など）のコメントだけを残し、他を空白に置き換える。
+ *
+ * 読み方は scan-code の propertiesCommentMask。改行は残すので、位置と行番号は元のソースと同じ。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントだけを残したソース
+ */
+export function keepPropertiesComments(text) {
+  return keepMasked(text, propertiesCommentMask(text))
+}
+
+/**
  * 元のソースと、コメントを空白にしたソースを文字ごとに比べ、空白にされた文字（コメント）だけを残す。
  *
  * @param {string} text 元のソース
@@ -71,12 +125,12 @@ export function keepTsComments(text) {
  * @returns {string} コメントだけを残したソース
  */
 function keepBlanked(text, stripped) {
-  let result = ''
+  const chars = []
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i]
-    result += char === '\r' || char === '\n' || stripped[i] !== char ? char : ' '
+    chars.push(char === '\r' || char === '\n' || stripped[i] !== char ? char : ' ')
   }
-  return result
+  return chars.join('')
 }
 
 /**

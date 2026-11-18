@@ -2,6 +2,9 @@
 // 読めない所は、compose のホスト側のポート（COMPOSE_FILE）、文書（DOC_FILES）、E2E の設定（SOURCE_FILES）、
 // ポートを直接書く設定と script（CONFIG_FILES）、Keycloak の realm の redirect URI（REALM_FILES）。一覧を読むスロットの script は対象にしない。
 //
+// ポートは、`:ポート`、`--port ポート`、`${変数:-ポート}` の形で読む。`${変数:-ポート}` は、変数の名前が `PORT` を `_` で区切った語として含み（`PORT`、`BACKEND_PORT`、`PORT_E2E`。大文字小文字を区別する）、
+// 既定値が 4〜5 桁の数字のときだけ読む（`:=`・`-`・`=` の既定値の書き方と、引用符で囲んだ既定値も読む。時間や行数の既定値と、`REPORT_ROWS` のように名前の途中に PORT を含む変数は読まない）。
+//
 // 一覧にないポート、書かれていない一覧のポート、一覧の中で重なるポートを失敗にする。
 // E2E の設定は、E2E のポートと、E2E が使う共有のサービスのポートだけを許す（開発の画面のポートに替えると失敗にする）。
 // realm には、一覧の画面のポートが、スロットごとの分と E2E を含めて全てあることを確認する。
@@ -23,16 +26,16 @@ const LIST_FILE = 'scripts/shared/slot/ports.json'
 const COMPOSE_FILE = 'docker/compose.yaml'
 
 /** ポートを書く文書 */
-const DOC_FILES = ['docs/06-手順書/setup.md', 'docs/06-手順書/running-tests.md']
+export const DOC_FILES = ['docs/06-手順書/setup.md', 'docs/06-手順書/running-tests.md']
 
 /** E2E のポートを書く設定（E2E のサーバーの URL、画面のサーバーの `--port`、Playwright の `port:`。読み方は CONFIG_FILES と同じ readConfigPorts） */
-const SOURCE_FILES = ['e2e/src/urls.ts', 'e2e/playwright.config.ts']
+export const SOURCE_FILES = ['e2e/src/urls.ts', 'e2e/playwright.config.ts']
 
 /** E2E の設定が書いてよい共有のサービスの key（E2E 用の IdP、メールを確認する Mailpit の画面、店舗画面の CSP が許す画像の配信元） */
 const E2E_SHARED_KEYS = ['keycloak-e2e', 'mailpit-ui', 'seaweedfs']
 
 /** ポートを直接書く設定とスクリプト（一覧にあるポートだけが書かれていることを確認する） */
-const CONFIG_FILES = [
+export const CONFIG_FILES = [
   'backend/ecsite/src/main/resources/application.yml',
   'backend/ecsite/src/main/resources/application-local.yml',
   'backend/ecsite/src/main/resources/application-e2e.yml',
@@ -101,7 +104,17 @@ export function parseComposeHostPorts(text) {
 }
 
 /**
- * 文書や設定の中の、`:ポート` の書き方（`localhost:8080`、`:8090`）と `--port ポート` から、ポートを読む。
+ * 文書や設定のポートの書き方。
+ * `:ポート`・`--port ポート`（1 番目の組）と、`${変数:-ポート}` の形（2 番目の組）。
+ * 後者は、変数の名前が `PORT` を `_` で区切った語として含み（`PORT`、`BACKEND_PORT`、`PORT_E2E`。大文字小文字を区別する）、既定値が 4〜5 桁の数字のときだけ読む
+ * （時間や行数の既定値、`REPORT_ROWS` のように名前の途中に PORT を含むものを読まないため）。
+ * 既定値の書き方は `:-`・`:=`・`-`・`=`、引用符で囲んだ既定値も読む。
+ * `--port` も大文字小文字を区別する。
+ */
+const DOC_PORT = /(?::|--port\s+)(\d{4,5})(?!\d)|\$\{(?:\w*_)?PORT(?:_\w+)?:?[-=]\s*["']?(\d{4,5})(?!\d)/g
+
+/**
+ * 文書や設定の中の、`:ポート` の書き方（`localhost:8080`、`:8090`）、`--port ポート`、`${変数:-ポート}` から、ポートを読む。
  *
  * 数字だけの書き方（カード番号など）は、ポートか分からないので読まない。
  *
@@ -109,13 +122,13 @@ export function parseComposeHostPorts(text) {
  * @returns {number[]} ポート（出てくる順）
  */
 export function parseDocPorts(text) {
-  return [...text.matchAll(/(?::|--port\s+)(\d{4,5})(?!\d)/g)].map((match) => Number(match[1]))
+  return [...text.matchAll(DOC_PORT)].map((match) => Number(match[1] ?? match[2]))
 }
 
 /**
  * 設定とスクリプトのポートを読む。
  *
- * `:ポート`（URL、`${変数:-ポート}`）と `--port ポート` に加え、
+ * `:ポート`（URL）、`${変数:-ポート}` と `--port ポート` に加え、
  * yml の `port: ポート`・`port: ${変数:ポート}`、JSON の `"port": ポート`、起動の引数の `"--port", "ポート"` を読む。
  *
  * @param {string} text 設定やスクリプト

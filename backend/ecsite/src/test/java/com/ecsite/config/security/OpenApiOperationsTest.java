@@ -1,13 +1,17 @@
 package com.ecsite.config.security;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ByteArrayResource;
 
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
@@ -116,7 +120,7 @@ class OpenApiOperationsTest {
         @Test
         @DisplayName("パスの下の OpenAPI の Path Item の項目（パス共通の parameters など）と x- で始まる拡張は、操作として読まずに認める")
         void acceptsPathItemFields() {
-            // 操作：Path Item の全ての項目と拡張を置いた契約を読む
+            // 操作：$ref を除く Path Item の全ての項目と拡張を置いた契約を読む
             var loaded = load(pathItem("""
                     summary: カテゴリ
                         description: カテゴリの一覧
@@ -125,7 +129,6 @@ class OpenApiOperationsTest {
                         parameters:
                           - name: q
                             in: query
-                        $ref: '#/components/pathItems/Categories'
                         x-note: 補足
                         get:
                           operationId: getCategories"""));
@@ -133,6 +136,161 @@ class OpenApiOperationsTest {
             // 確認：読み込みに成功し、操作だけが見つかる
             assertThat(loaded.find("GET", "/api/admin/categories")).hasValue("getCategories");
         }
+
+        @Test
+        @DisplayName("パスの下に $ref があると、参照先の操作を読まないので、契約のファイル、パス、キー、原因、直し方を示して読み込みに失敗する")
+        void rejectsPathItemRef() {
+            // 操作と確認：読み込みに失敗し、知らせに契約のファイル・パス・キー・原因（参照先の操作を読まない）・直し方がある
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> load(pathItem("$ref: './paths/categories.yaml'")))
+                    .withMessageContainingAll("admin.yaml", "/categories", "$ref", "参照先の操作を読まない", "パスの下に操作を直接書く");
+        }
+
+        @Test
+        @DisplayName("パス共通の parameters の中の $ref は、読み込みに失敗しない")
+        void acceptsRefInPathParameters() {
+            // 操作：パス共通の parameters に $ref を置いた契約を読む
+            var loaded = load(pathItem("""
+                    parameters:
+                          - $ref: '#/components/parameters/CategoryId'
+                        get:
+                          operationId: getCategories"""));
+
+            // 確認：読み込みに成功し、操作が見つかる
+            assertThat(loaded.find("GET", "/api/admin/categories")).hasValue("getCategories");
+        }
+
+        @Test
+        @DisplayName("操作の応答の $ref は、読み込みに失敗しない")
+        void acceptsRefInOperation() {
+            // 操作：操作の応答に $ref を置いた契約を読む
+            var loaded = load(pathItem("""
+                    post:
+                          operationId: postCategory
+                          responses:
+                            '201':
+                              $ref: '#/components/responses/Created'"""));
+
+            // 確認：読み込みに成功し、操作が見つかる
+            assertThat(loaded.find("POST", "/api/admin/categories")).hasValue("postCategory");
+        }
+    }
+
+    @Nested
+    @DisplayName("重複したキーの検証")
+    class DuplicateKeys {
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("com.ecsite.config.security.OpenApiOperationsTest#duplicateKeySpecs")
+        @DisplayName("契約のどこかに重複したキーがあると、後のキーが前のキーを黙って上書きするので、契約のファイルと後のキーの位置を示して読み込みに失敗する")
+        void rejectsDuplicateKey(String spec, String position) {
+            // 操作と確認：読み込みに失敗し、知らせに契約のファイル・重複したキーであること・後のキーの行と列がある
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> load(spec))
+                    .withMessageContainingAll("admin.yaml", "重複したキー", position);
+        }
+    }
+
+    @Nested
+    @DisplayName("YAML として読めない契約の検証")
+    class MalformedYaml {
+
+        @Test
+        @DisplayName("契約に YAML の書き方の誤りがあると、契約のファイルと誤りの位置を示して読み込みに失敗する")
+        void rejectsSyntaxError() {
+            // 操作と確認：読み込みに失敗し、知らせに契約のファイル・YAML として読めないこと・誤りの行と列がある
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> load(pathItem("get: operationId: getCategories")))
+                    .withMessageContainingAll("admin.yaml", "YAML として読めない", "5 行 21 列");
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"", "# コメントだけ\n"})
+        @DisplayName("契約が空だと、契約のファイルを示して読み込みに失敗する")
+        void rejectsEmptyContract(String spec) {
+            // 操作と確認：読み込みに失敗し、知らせに契約のファイルと空であることがある
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> load(spec))
+                    .withMessageContainingAll("admin.yaml", "空");
+        }
+
+        @Test
+        @DisplayName("契約の最上位がキーと値の組でないと、契約のファイルを示して読み込みに失敗する")
+        void rejectsNonMappingRoot() {
+            // 操作と確認：読み込みに失敗し、知らせに契約のファイルと最上位の形がある
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> load("- servers\n- paths\n"))
+                    .withMessageContainingAll("admin.yaml", "最上位がキーと値の組でない");
+        }
+    }
+
+    // ============================== テストのデータ ==============================
+
+    /**
+     * 重複したキーのある契約
+     *
+     * @return 契約（名前は例の説明）と、後のキーの位置
+     */
+    static Stream<Arguments> duplicateKeySpecs() {
+        return Stream.of(
+                Arguments.of(Named.of("パスの下に get が 2 つ", pathItem("""
+                        get:
+                              operationId: getCategories
+                            get:
+                              operationId: getCategories2""")), "7 行 5 列"),
+                Arguments.of(Named.of("同じパスが 2 つ", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /categories:
+                            get:
+                              operationId: getCategories
+                          /categories:
+                            post:
+                              operationId: postCategory
+                        """), "7 行 3 列"),
+                Arguments.of(Named.of("操作の中に x-required-permission が 2 つ", pathItem("""
+                        get:
+                              operationId: getCategories
+                              x-required-permission: product.read
+                              x-required-permission: product.write""")), "8 行 7 列"),
+                Arguments.of(Named.of("引用符だけが違う同じパス", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /carts/{cartId}:
+                            get:
+                              operationId: getCart
+                          '/carts/{cartId}':
+                            delete:
+                              operationId: deleteCart
+                        """), "7 行 3 列"),
+                Arguments.of(Named.of("最上位に paths が 2 つ", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /categories:
+                            get:
+                              operationId: getCategories
+                        paths:
+                          /products:
+                            get:
+                              operationId: getProducts
+                        """), "7 行 1 列"),
+                Arguments.of(Named.of("components.schemas の下に同じ名前のスキーマが 2 つ", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /categories:
+                            get:
+                              operationId: getCategories
+                        components:
+                          schemas:
+                            Category:
+                              type: object
+                            Category:
+                              type: string
+                        """), "11 行 5 列"));
     }
 
     // ============================== 準備の補助 ==============================

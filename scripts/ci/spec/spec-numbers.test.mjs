@@ -88,9 +88,61 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.deepEqual(findSpecNumbers(text), [])
   })
 
-  test('16 進の色（# の直後の語）は、番号として見つけない', () => {
-    const text = ["const red = '#DC2626'", 'color: #AC1234;'].join('\n')
+  test('16 進の色（# の直後の、全体が 16 進の字で 3・4・6・8 字の語）は、番号として見つけない', () => {
+    const text = ["const red = '#DC2626'", 'color: #AC1234;', 'a: #ACE;', 'b: #DC26;', 'c: #DC262680;', 'd: #ac1234'].join('\n')
     assert.deepEqual(findSpecNumbers(text), [])
+  })
+
+  test('16 進の色の境界の外（5・7・9 字）の # の直後の語は、番号として見つける', () => {
+    const text = ['// #DC123', '// #DC12345', '// #DC1234567'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 DC123', '2 DC12345', '3 DC1234567'],
+    )
+  })
+
+  test('# の直後の語の後に -数字 が続く形（#DC7-2、#AC1-2、#DC12-3）は、色にせず番号として見つける', () => {
+    const text = ['// #DC7-2', '// #AC1-2', '// #DC12-3'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 DC7-2', '2 AC1-2', '3 DC12-3'],
+    )
+  })
+
+  test('数字のない 2 字の #DC は、色の規則に関わらず番号の形ではないので見つけない', () => {
+    assert.deepEqual(findSpecNumbers('// #DC'), [])
+  })
+
+  test('# の直後の番号（#AC-12、# 理由 #BR-3、#T7-01-01、#spec 7、全角の ＃ＡＣ－１０）を見つける', () => {
+    const text = ['// #AC-12', '// # 理由 #BR-3', '// #T7-01-01', '// #spec 7', '// ＃ＡＣ－１０'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '2 BR-3', '3 T7-01-01', '4 spec 7', '5 AC-10'],
+    )
+  })
+
+  test('# の直後の、16 進の字でない文字を含む番号（#BR12、#DS1234、#DN3、#T123）を見つける', () => {
+    const text = ['// #BR12', '// #DS1234', '// #DN3', '// #T123'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.number}`),
+      ['BR12', 'DS1234', 'DN3', 'T123'],
+    )
+  })
+
+  test('数字の間の区切りに、U+2212、U+2010、U+2011、U+2013 を - と同じに読む', () => {
+    const text = ['// AC−12', '// AC‐12', '// AC‑12', '// AC–12', '// T7‐01‐01、DC−7−14、MVP–001'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '2 AC-12', '3 AC-12', '4 AC-12', '5 T7-01-01', '5 DC-7-14', '5 MVP-001'],
+    )
+  })
+
+  test('数字の間の区切りに、長音記号（U+30FC）と横線（U+2012、U+2014、U+2015）も - と同じに読む', () => {
+    const text = ['// ＡＣー１２', '// AC―12', '// AC—12', '// AC‒12'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '2 AC-12', '3 AC-12', '4 AC-12'],
+    )
   })
 
   test('全角の英字・数字・ハイフンで書いた番号を見つけ、報告する行の文字は正規化の前のものにする', () => {
@@ -156,12 +208,91 @@ describe('本番のコードの spec の番号の検査', () => {
       'frontend/admin/package.json',
       'frontend/other/vite.config.ts',
       'package.json',
-      'backend/ecsite/gradle/libs.versions.toml',
+      'backend/ecsite/gradle/wrapper/gradle-wrapper.properties',
+      'backend/ecsite/src/main/resources/messages.properties',
+      'backend/ecsite/gradle/libs.versions.json',
+      'frontend/admin/gradle.properties',
       'backend/ecsite/src/main/java/com/ecsite/Foo.java',
     ]) {
       assert.equal(isConfigFile(file), false, file)
     }
     assert.equal(isProductionFile('knip.ts'), false)
+  })
+
+  test('バージョンカタログ（*.versions.toml）と gradle.properties を、コメントだけを見る設定のファイルにする', () => {
+    for (const file of ['backend/ecsite/gradle/libs.versions.toml', 'backend/ecsite/gradle/test.versions.toml', 'backend/ecsite/gradle.properties']) {
+      assert.equal(isConfigFile(file), true, file)
+      assert.equal(isProductionFile(file), false, file)
+    }
+  })
+
+  test('libs.versions.toml は、行頭と行末の # のコメントの番号を見つけ、文字列の値の中の # は見ない', () => {
+    const text = [
+      '# AC-12 のため',
+      '[versions]',
+      'spring-boot = "4.1.2" # AC-12',
+      'a = "a#AC-1"',
+      "name = 'a#AC-1'",
+      'esc = "x\\"#AC-2"',
+      'multi = """',
+      '#AC-3',
+      '"""',
+      'lit = \'\'\'',
+      '#AC-4',
+      "'''",
+      'after = 1 # DC-9',
+    ].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(commentsOf('backend/ecsite/gradle/libs.versions.toml', text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '3 AC-12', '13 DC-9'],
+    )
+  })
+
+  test('gradle.properties は、行頭の # と ! のコメントだけを読み、値の途中の # は見ない', () => {
+    const text = [
+      '# AC-12',
+      '! AC-13',
+      '  # AC-14（先頭に空白）',
+      'org.gradle.jvmargs=-Xmx2g #AC-12',
+      'a=b \\',
+      '# AC-15（行の継続で、値の一部）',
+      'c=d',
+      '#T123',
+    ].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(commentsOf('backend/ecsite/gradle.properties', text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '2 AC-13', '3 AC-14', '8 T123'],
+    )
+  })
+
+  test('Gradle の Kotlin の設定は、入れ子のコメントの後半の番号を見つける', () => {
+    const text = '/* 外 /* 内 */ AC-12 */\nval a = 1 /* x /* y */ z */ // T123'
+    assert.deepEqual(
+      findSpecNumbers(commentsOf('backend/ecsite/build.gradle.kts', text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '2 T123'],
+    )
+  })
+
+  test('Gradle の Kotlin の設定は、raw 文字列の中の番号と、引用符を含む raw 文字列の中の番号を見ない', () => {
+    const text = ['val a = """AC-12"""', 'val b = """a "b" AC-12"""', 'val c = """', '// AC-13', '/* DC-1 */', '"""', '// 本物 US-5'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(commentsOf('backend/ecsite/build.gradle.kts', text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['7 US-5'],
+    )
+  })
+
+  test('Gradle の Kotlin の設定は、文字列の埋め込みの中の引用符を文字列の始まりと読み違えない', () => {
+    const text = [
+      'val d = "${dir.replace("/", "//")}/T123"',
+      'val e = "${a /* AC-7 */}"',
+      'val f = """${x.replace("a", "//")} T123"""',
+      "val g = '\"' // US-2",
+      'val h = "\\"//T123"',
+    ].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(commentsOf('backend/ecsite/build.gradle.kts', text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['2 AC-7', '4 US-2'],
+    )
   })
 
   test('Gradle の設定のファイルは、コメントの番号だけを見つける（文字列は見ない）', () => {
@@ -388,6 +519,8 @@ describe('script の実行', () => {
       ['knip.ts', '// 上限（DC-5）\n'],
       ['scripts/ci/foo.mjs', '// 上限（DC-5）\n'],
       ['scripts/ci/foo.sh', '# 上限（DC-5）\n'],
+      ['backend/ecsite/gradle/libs.versions.toml', '# 上限（DC-5）\n'],
+      ['backend/ecsite/gradle.properties', '# 上限（DC-5）\n'],
     ]
     for (const [file, text] of cases) {
       const result = run({ [file]: text })

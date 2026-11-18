@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { expandedPorts, findPortMismatches, parseComposeHostPorts, parseConfigPorts, parseDocPorts } from './local-ports.mjs'
+import { CONFIG_FILES, DOC_FILES, SOURCE_FILES, expandedPorts, findPortMismatches, parseComposeHostPorts, parseConfigPorts, parseDocPorts } from './local-ports.mjs'
 
 /** 小さな一覧（共有 2 件、スロットでずらす 1 件、E2E 1 件、スロット 3 つ） */
 const LIST = {
@@ -63,6 +63,77 @@ describe('ローカルのポートの一覧の検査', () => {
 
   test('文書のポートは、コロンの後の数字だけを読む（カード番号などは読まない）', () => {
     assert.deepEqual(parseDocPorts('http://localhost:8080/api と :8090、4242 4242、12:3456'), [8080, 8090, 3456])
+  })
+
+  test('文書の ${変数:-ポート} の形のポートを読む（例 2）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象の文書の例
+    assert.deepEqual(parseDocPorts('起動は ${PORT:-9999} で待つ'), [9999])
+  })
+
+  test('script の PORT="${PORT:-9999}"、:=、-、=、引用符で囲んだ既定値のポートを読む（例 1、7、8、9）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const lines = ['PORT="${PORT:-9999}"', 'PORT="${PORT:=9998}"', 'PORT="${PORT-9997}"', 'PORT="${PORT=9996}"', 'PORT="${PORT:-"9995"}"', "PORT=\"${PORT:-'9994'}\""]
+    for (const [index, line] of lines.entries()) {
+      assert.deepEqual(parseConfigPorts(line), [9999 - index], line)
+    }
+  })
+
+  test('script の ${PORT:-ポート} の既定値が一覧にないときは失敗にし、一覧にあるときは通す（例 1、3）', () => {
+    const script = (value) => ({ 'scripts/dev/x.sh': `PORT="\${PORT:-${value}}"` })
+    const problems = findPortMismatches({ ...INPUT, configs: script(9999) })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /x\.sh.*9999/)
+    assert.deepEqual(findPortMismatches({ ...INPUT, configs: script(8080) }), [])
+  })
+
+  test('文書の ${PORT:-ポート} の既定値が一覧にないときは失敗にする（例 2）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象の文書の例
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': `${DOC}\n起動は \${PORT:-9999} で待つ` } })
+    assert.equal(problems.length, 1, problems.join(' / '))
+    assert.match(problems[0], /setup\.md.*9999/)
+  })
+
+  test('ポートでない既定値は読まない：2 桁、名前に PORT を含まない変数、IP アドレス（例 5、6、10）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const text = 'TAIL_LINES="${TAIL_LINES:-30}"\nWAIT_MS="${WAIT_MS:-5000}"\nADDR="${LOCAL_BIND_ADDRESS:-127.0.0.1}"'
+    assert.deepEqual(parseConfigPorts(text), [])
+    assert.deepEqual(findPortMismatches({ ...INPUT, configs: { 'scripts/dev/x.sh': text } }), [])
+  })
+
+  test('名前の途中に PORT を含む変数（REPORT_ROWS など）と、小文字の port の変数の既定値は読まない（例 12、13）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const text = 'A="${REPORT_ROWS:-5000}"\nB="${EXPORT_LIMIT:-1000}"\nC="${SUPPORT_TTL:-3600}"\nD="${port:-9999}"'
+    assert.deepEqual(parseConfigPorts(text), [])
+    assert.deepEqual(parseDocPorts(text), [])
+  })
+
+  test('名前が PORT_ で始まる変数の既定値は読む（REPORT_ROWS は読まない）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const text = 'A="${PORT_E2E:-9999}"\nB="${BACKEND_PORT_E2E:-9998}"\nC="${REPORT_ROWS:-5000}"'
+    assert.deepEqual(parseDocPorts(text), [9999, 9998])
+  })
+
+  test('--port は大文字小文字を区別し、--Port と --PORT の後の数字は読まない', () => {
+    assert.deepEqual(parseDocPorts('pnpm preview --port 8080'), [8080])
+    assert.deepEqual(parseDocPorts('pnpm preview --Port 8080 --PORT 8081'), [])
+  })
+
+  test('名前が _PORT で終わる変数の既定値は読む（例 1 の変種）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    assert.deepEqual(parseConfigPorts('P="${MAILPIT_SMTP_PORT:-9999}"'), [9999])
+  })
+
+  test('compose の ${MAILPIT_SMTP_PORT:-2525} は compose の読み方で読み、他のファイルの読み方の問題にしない（例 4）', () => {
+    assert.deepEqual(findPortMismatches(INPUT), [])
+    assert.deepEqual(parseComposeHostPorts(COMPOSE).ports, [5432, 2525])
+  })
+
+  test('検査の対象の一覧にない script（scripts/dev/e2e.sh）は、どの一覧にも入っていない（例 11）', () => {
+    // 検査は、一覧のファイルだけを読んで findPortMismatches に渡す。一覧にないファイルの PORT="${PORT:-9999}" は読まれない
+    for (const files of [CONFIG_FILES, DOC_FILES, SOURCE_FILES]) {
+      assert.ok(!files.includes('scripts/dev/e2e.sh'), files.join(' / '))
+    }
+    assert.ok(CONFIG_FILES.includes('scripts/dev/reset.sh'), '同じ形の script が一覧にあることの確認')
   })
 
   test('一覧にないポートが compose にあれば失敗にする', () => {

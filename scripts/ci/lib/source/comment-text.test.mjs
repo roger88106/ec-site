@@ -77,6 +77,16 @@ describe('Gradle の設定（.kts）のコメント', () => {
     const source = ['plugins {', '  id("x") // 道具の設定', '}', '/* まとめ', ' 続き */', 'val name = "文字列 // 文字列"'].join('\n')
     assert.deepEqual(lines(source, 'kts'), ['2:// 道具の設定', '4:/* まとめ', '5: 続き */'])
   })
+
+  test('Kotlin の書き方で読む：入れ子のコメント、raw 文字列の中の //、文字列の埋め込みの中のコメント', () => {
+    assert.deepEqual(lines('/* 外 /* 内 */ 後 */\nval a = 1', 'kts'), ['1:/* 外 /* 内 */ 後 */'])
+    assert.deepEqual(lines('val s = """a "b" // 文字列"""\n// 本物', 'kts'), ['2:// 本物'])
+    assert.deepEqual(lines('val s = "${a /* 埋め込み */}"', 'kts'), ['1:/* 埋め込み */'])
+  })
+
+  test('行末のコメントの行も、同じ読み方で見つける', () => {
+    assert.deepEqual([...trailingCommentLines('val s = """// x""" // 末尾\n// 行頭', 'kts')], [1])
+  })
 })
 
 describe('TypeScript・JavaScript のコメントとテスト名', () => {

@@ -8,12 +8,15 @@ import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.DailySales;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.SalesScope;
 import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
+import org.jooq.SelectConditionStep;
+import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
@@ -23,7 +26,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Objects;
 
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
@@ -43,24 +46,21 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     /**
      * 日ごとの売上額と販売数量を求める。
      *
-     * @param period          期間
-     * @param basis           売上の数え方
-     * @param productId       商品 ID。全商品なら null
-     * @param excludeTax      消費税を除くか
-     * @param excludeShipping 送料を除くか（商品を指定したときは使わない）
+     * @param period 期間
+     * @param basis  売上の数え方
+     * @param scope  集計の範囲
      * @return 日 → 売上。売れなかった日は含めない
      */
     @Override
-    public Map<LocalDate, DailySales> dailySales(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
-                                                 boolean excludeShipping) {
+    public Map<LocalDate, DailySales> dailySales(ReportPeriod period, Basis basis, SalesScope scope) {
         var day = dayOf(basis);
         var result = new LinkedHashMap<LocalDate, DailySales>();
-        if (productId == null) {
+        if (!scope.hasProduct()) {
             // 注文ごとの販売数量は、明細の数量の合計
             Field<BigDecimal> orderQuantity = DSL.field(DSL.select(DSL.sum(SALES_ORDER_LINE.QUANTITY))
                     .from(SALES_ORDER_LINE)
                     .where(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID)));
-            var amount = DSL.sum(orderAmount(excludeTax, excludeShipping));
+            var amount = DSL.sum(orderAmount(scope));
             var quantity = DSL.sum(orderQuantity);
             dsl.select(day, amount, quantity)
                     .from(SALES_ORDER)
@@ -70,12 +70,9 @@ class JooqReportQueryRepository implements ReportQueryRepository {
             return result;
         }
         // 商品を選んだら、その商品の明細だけを数える
-        var amount = DSL.sum(lineAmount(excludeTax));
+        var amount = DSL.sum(lineAmount(scope.excludeTax()));
         var quantity = DSL.sum(SALES_ORDER_LINE.QUANTITY);
-        dsl.select(day, amount, quantity)
-                .from(SALES_ORDER)
-                .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
-                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
+        productLines(dsl.select(day, amount, quantity).from(SALES_ORDER), period, basis, scope)
                 .groupBy(day)
                 .forEach(row -> result.put(row.get(day), toDailySales(row, amount, quantity)));
         return result;
@@ -86,21 +83,18 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      *
      * <p>送料は含めない。
      *
-     * @param period     期間
-     * @param basis      売上の数え方
-     * @param productId  商品 ID
-     * @param excludeTax 消費税を除くか
+     * @param period 期間
+     * @param basis  売上の数え方
+     * @param scope  集計の範囲（商品を選ぶ範囲）
      * @return 売れたバリアントの売上
      */
     @Override
-    public List<VariantTotal> variantSales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax) {
+    public List<VariantTotal> variantSales(ReportPeriod period, Basis basis, SalesScope scope) {
         var variantCode = DSL.max(SALES_ORDER_LINE.VARIANT_CODE);
         var quantity = DSL.sum(SALES_ORDER_LINE.QUANTITY);
-        var amount = DSL.sum(lineAmount(excludeTax));
-        return dsl.select(SALES_ORDER_LINE.VARIANT_ID, variantCode, quantity, amount)
-                .from(SALES_ORDER)
-                .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
-                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
+        var amount = DSL.sum(lineAmount(scope.excludeTax()));
+        return productLines(dsl.select(SALES_ORDER_LINE.VARIANT_ID, variantCode, quantity, amount).from(SALES_ORDER),
+                period, basis, scope)
                 .groupBy(SALES_ORDER_LINE.VARIANT_ID)
                 .fetch(row -> new VariantTotal(row.get(SALES_ORDER_LINE.VARIANT_ID), row.get(variantCode),
                         count(row.get(quantity)), money(row.get(amount))));
@@ -109,19 +103,16 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     /**
      * 都道府県・年齢・性別の組ごとの売上額と注文件数を求める。
      *
-     * @param period          期間
-     * @param basis           売上の数え方
-     * @param productId       商品 ID。全商品なら null
-     * @param excludeTax      消費税を除くか
-     * @param excludeShipping 送料を除くか（商品を指定したときは使わない）
+     * @param period 期間
+     * @param basis  売上の数え方
+     * @param scope  集計の範囲
      * @return 組ごとの売上
      */
     @Override
-    public List<SegmentTotal> segmentSales(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
-                                           boolean excludeShipping) {
+    public List<SegmentTotal> segmentSales(ReportPeriod period, Basis basis, SalesScope scope) {
         var keys = List.<Field<?>>of(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER);
-        if (productId == null) {
-            var amount = DSL.sum(orderAmount(excludeTax, excludeShipping));
+        if (!scope.hasProduct()) {
+            var amount = DSL.sum(orderAmount(scope));
             var orders = DSL.count();
             return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER, amount, orders)
                     .from(SALES_ORDER)
@@ -130,12 +121,10 @@ class JooqReportQueryRepository implements ReportQueryRepository {
                     .fetch(row -> toSegmentTotal(row, amount, orders));
         }
         // 商品を選んだら、その商品の明細を含む注文だけを数え、売上額はその明細の分だけ
-        var amount = DSL.sum(lineAmount(excludeTax));
+        var amount = DSL.sum(lineAmount(scope.excludeTax()));
         var orders = DSL.countDistinct(SALES_ORDER.ORDER_ID);
-        return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER, amount, orders)
-                .from(SALES_ORDER)
-                .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
-                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
+        return productLines(dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER, amount, orders)
+                .from(SALES_ORDER), period, basis, scope)
                 .groupBy(keys)
                 .fetch(row -> toSegmentTotal(row, amount, orders));
     }
@@ -184,17 +173,28 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     }
 
     /**
+     * 商品を選ぶ集計に、商品の明細との結合と、数える注文と商品の条件を加える。
+     *
+     * <p>範囲の商品の明細だけを数える。
+     */
+    private static <R extends Record> SelectConditionStep<R> productLines(SelectJoinStep<R> select, ReportPeriod period,
+                                                                           Basis basis, SalesScope scope) {
+        return select.join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
+                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(Objects.requireNonNull(scope.productId())));
+    }
+
+    /**
      * 注文の売上額の式を返す。
      *
      * <p>総額から、消費税を除くなら消費税の合計を、送料を除くなら送料（消費税を除くなら税抜の送料）を引く。
      */
-    private static Field<Long> orderAmount(boolean excludeTax, boolean excludeShipping) {
+    private static Field<Long> orderAmount(SalesScope scope) {
         Field<Long> amount = SALES_ORDER.TOTAL_AMOUNT;
-        if (excludeTax) {
+        if (scope.excludeTax()) {
             amount = amount.minus(SALES_ORDER.TAX_TOTAL);
         }
-        if (excludeShipping) {
-            amount = amount.minus(excludeTax ? SALES_ORDER.SHIPPING_FEE.minus(SALES_ORDER.SHIPPING_TAX) : SALES_ORDER.SHIPPING_FEE);
+        if (scope.shippingExcluded()) {
+            amount = amount.minus(scope.excludeTax() ? SALES_ORDER.SHIPPING_FEE.minus(SALES_ORDER.SHIPPING_TAX) : SALES_ORDER.SHIPPING_FEE);
         }
         return amount;
     }

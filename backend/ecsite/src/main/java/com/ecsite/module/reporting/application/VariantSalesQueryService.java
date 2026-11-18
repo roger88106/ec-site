@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,9 +50,10 @@ public class VariantSalesQueryService {
      */
     public VariantSalesReport variants(@NonNull VariantSalesQuery query) {
         // 商品カタログのバリアントの一覧と、売れたバリアントの集計
-        var product = catalogDirectory.findProduct(query.productId())
+        var productId = Objects.requireNonNull(query.scope().productId());
+        var product = catalogDirectory.findProduct(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
-        var totals = queryRepository.variantSales(query.period(), query.basis(), query.productId(), query.excludeTax())
+        var totals = queryRepository.variantSales(query.period(), query.basis(), query.scope())
                 .stream()
                 .collect(Collectors.toMap(VariantTotal::variantId, Function.identity()));
 
@@ -68,7 +70,7 @@ public class VariantSalesQueryService {
                 total.quantity(), total.amount())));
         // 安定な並べ替えなので、販売数量が同じなら商品カタログの並びの順のまま
         rows.sort(Comparator.comparingLong(VariantSales::quantity).reversed());
-        // バリアントの売れ行きは、明細だけを数えるので、いつも送料を除いている
-        return new VariantSalesReport(product.productId(), product.name(), rows, true);
+        // 商品を選ぶ範囲は、明細だけを数えるので、送料を除いている
+        return new VariantSalesReport(product.productId(), product.name(), rows, query.scope().shippingExcluded());
     }
 }

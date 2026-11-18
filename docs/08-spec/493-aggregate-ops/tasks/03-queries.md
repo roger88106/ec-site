@@ -20,7 +20,7 @@
   - 依存：なし
   - 範囲：`SalesScopeTest`（新規）
   - 確認方法：新しい型がないので、コンパイルで失敗する。テストを通すためにテストを弱めない
-- [ ] **T493-03-04** T493-03-03 のテストが通る実装を書く。範囲の型を controller から repository まで渡し、商品で絞る結合と条件を 1 か所にする（DC-493-12〜14）。
+- [x] **T493-03-04** T493-03-03 のテストが通る実装を書く。範囲の型を controller から repository まで渡し、商品で絞る結合と条件を 1 か所にする（DC-493-12〜14）。
   - 依存：T493-03-03
   - 範囲：`reporting/`（presentation、application、domain、infrastructure）
   - 確認方法：T493-03-03 のテストと、既存の集計のテスト（`SalesTrendQueryTest`、`CustomerBreakdownQueryTest`、`VariantSalesQueryTest`）が通る

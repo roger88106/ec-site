@@ -18,7 +18,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional
-class ShipmentMailService {
+class ShipmentMailCommandService {
 
     /**
      * 送ったメールの記録

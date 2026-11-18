@@ -15,7 +15,7 @@ import static org.mockito.Mockito.mock;
  * 配送業者の表示名のキーを出荷モジュールから得る腐敗防止層の単体テスト
  *
  * <p>出荷のイベントの配送業者と、出荷モジュールの配送業者の対応だけを確認する。表示名の文言は
- * {@code ShipmentMailServiceTest} が確認する。
+ * {@code ShipmentMailCommandServiceTest} が確認する。
  */
 class ShippingApiDirectoryTest {
 

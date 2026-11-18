@@ -34,7 +34,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
-class ReportCollectionService {
+class ReportCollectionCommandService {
 
     /**
      * 注文の写しと状態の履歴のリポジトリ

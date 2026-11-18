@@ -5,7 +5,7 @@ import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummaryPage;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.storefront.application.StorefrontService;
+import com.ecsite.module.storefront.application.StorefrontQueryService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +25,7 @@ class StorefrontProductController implements ProductApi {
     /**
      * 店舗のサービス
      */
-    private final StorefrontService storefrontService;
+    private final StorefrontQueryService storefrontQueryService;
 
     /**
      * 店舗 API のマッパー
@@ -47,7 +47,7 @@ class StorefrontProductController implements ProductApi {
     public ResponseEntity<ProductSummaryPage> listProducts(@Nullable UUID categoryId, @Nullable Long minPrice, @Nullable Long maxPrice,
                                                            ProductSort sort, Integer page, Integer size) {
         var condition = mapper.toProductCondition(categoryId, minPrice, maxPrice, sort);
-        var result = storefrontService.listProducts(condition, PageRequest.of(page, size));
+        var result = storefrontQueryService.listProducts(condition, PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toProductSummaryPage(result));
     }
 
@@ -61,7 +61,7 @@ class StorefrontProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ProductSummaryPage> searchProducts(String q, Integer page, Integer size) {
-        var result = storefrontService.searchProducts(q, PageRequest.of(page, size));
+        var result = storefrontQueryService.searchProducts(q, PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toProductSummaryPage(result));
     }
 
@@ -73,6 +73,6 @@ class StorefrontProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ProductDetail> getProduct(UUID productId) {
-        return ResponseEntity.ok(mapper.toProductDetail(storefrontService.getProduct(productId)));
+        return ResponseEntity.ok(mapper.toProductDetail(storefrontQueryService.getProduct(productId)));
     }
 }

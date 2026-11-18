@@ -33,24 +33,25 @@
 - 既存の検査を広げるだけで、新しい検査は作らない。検査の一覧（[CI の検査の script](../../06-手順書/ci-checks.md)）と、commit の前の hook の対象の表は変えない。
 - イベントの発行の記録を読む操作は、次の表の型の、名前が find か count で始まる操作とする。記録の型を非同期のイベントの補助のクラスに渡すだけのクラスは対象にしない（今の規則のとおり）。
 - 補助のメソッドを経由した間接の読み取りは、今の検査がクラスの単位で見るので、テストの中の補助のメソッドからの読み取りも検査の対象になる。違反の例のクラスに、補助のメソッドを経由する例を加えて確認する。
-- バックエンドのテストの書き方（[バックエンドのテストの書き方](../../05-開発規則/test-writing-backend.md)）の、記録を読む操作の規則の文を、表の全ての型に合わせて書き換える。今は 1 つの型（`EventPublicationRegistry`）だけを挙げている。
+- バックエンドのテストの書き方（[バックエンドのテストの書き方](../../05-開発規則/test-writing-backend.md)）の、記録を読む操作の規則の文を、表の全ての型に合わせて書き換える。
 - 入れ子のクラスを外側のクラスに対応付ける判定が、2 つのテストに重複している。テストの補助のクラスの 1 つのメソッドにまとめる。外側のクラスの名前を返すメソッドは、補助のクラスに既にある。
 - ローカルのポートの検査は、`${変数:-ポート}` の形を、変数の名前が `PORT` か、`_PORT` で終わり（大文字と小文字を区別する）、既定値が 4〜5 桁の数字のときだけ読む。`:-` のほかに `:=`・`-`・`=` の既定値の書き方と、引用符で囲んだ既定値も読む。理由：ポートでない既定値（時間、行数）を誤って読まないため。
 - 文言のキーのコメントの検査は、関数の本体（アロー関数、戻り値の型を書いた関数、クラスとメソッドの本体）の `{` を JSX の式と読まず、外側へ探し続ける。外側に JSX の式があれば、その式の中のコメントで通す（issue #536 の期待のとおり）。
-- spec の番号の検査が数字の間の区切りと読む字は、`-` と、U+2010、U+2011、U+2013、U+2212 とする。`#` の直後は、全体が 16 進の字だけで 3・4・6・8 字の語だけを色として除く。
+- spec の番号の検査は、数字の間の区切りとして、`-` と U+2010・U+2011・U+2013・U+2212 を読む。`#` の直後の語は、全体が 16 進の字だけで 3・4・6・8 字のものだけを色として除く。
 - spec の番号の検査は、`libs.versions.toml` を TOML の書き方（`#` のコメント、`"…"` と `'…'` の文字列）で、`gradle.properties` を properties の書き方（行頭の `#` と `!` だけがコメント）で読む。
 - 契約の YAML の重複したキーは、起動を失敗にする。理由：後のキーが黙って前のキーを上書きし、操作を読み落とすため。
 - 店舗の契約の最上位に `security` があれば、対応表の検査を失敗にする。失敗の文は「最上位に書かず、操作ごとに書く」とする。理由：バックエンドの店舗の契約の読み込みも、操作ごとの `security` だけを読み、ない操作で起動を失敗にするので、最上位の `security` は反映されず、読む人を誤らせるため。
-- パスの下に `$ref` があれば、起動を失敗にし、対応表の検査も失敗にする。issue の本文の「読む」とは違う。理由：今の契約は `$ref` の Path Item を使っておらず、書いたときに気づける方が、バックエンドと検査の両方で同じ扱いにしやすいため。
+- パスの下に `$ref` があれば、起動を失敗にし、対応表の検査も失敗にする。issue の本文は `$ref` の先を読むとしていたが、読まずに失敗にする。理由：今の契約は `$ref` の Path Item を使っておらず、書いたときに気づける方が、バックエンドと検査の両方で同じ扱いにしやすいため。
 - 秘密の値の項目の名前は、名前を語に分けて判定する。理由：今の判定（key で終わる、credential を含む）は、`cacheKey`、`credentialsFile` のような秘密でない項目にも該当するため。
   - 語の分け方：区切りは、小文字から大文字への変わり目と、大文字の並びの終わり（`stripeAPIKey` は stripe・API・Key）。最後に付く数字と、`V2` のようなバージョンの語は除いてから判定する。
   - credential：いずれかの語が credential か credentials で、最後の語が file・path・dir でないときに秘密とする。
-  - key：最後の語が key で、名前が key だけか、直前の語が access・api・encryption・hmac・master・private・secret・signing のどれかのときに秘密とする。名前の全体が小文字で、これらの語と key をつないだ形（`apikey` など）も秘密とする。
-- 上の 3 つは、issue 担当のセッションが利用者の代わりに確認して決めた。
+  - key：最後の語が key で、名前が key だけのときに秘密とする。最後の語が key で、直前の語が access・api・encryption・hmac・master・private・secret・signing のどれかのときも秘密とする。
+  - key の小文字の形：名前の全体が小文字で、これらの語と key をつないだ形（`apikey` など）も秘密とする。
+- 店舗の契約の最上位の `security`、パスの下の `$ref`、秘密の値の項目の名前の 3 つは、issue 担当のセッションが利用者の代わりに確認して決めた。
 - ポートの変数の名前、区切りの字、TOML と properties の読み方、秘密の値の語の分け方は、T563-01-01 の例の結果から決めた。issue 担当のセッションが確認した Open questions の決定の範囲を、例に合わせて詳しくしたものである。
 - CI の検査の script のテストと、バックエンドの単体テスト（`./gradlew check`）で確認する。各タスクの確認方法に書く。
 
-イベントの発行の記録を読む操作の型を、次の表に示す。再送の操作だけを持ち、記録を読む操作のない 2 つの型（`IncompleteEventPublications`、`FailedEventPublications`）は対象に入れない（Spring Modulith 2.1.2 で確認）。
+イベントの発行の記録を読む操作の型を、次の表に示す。再送の操作だけを持つ 2 つの型（`IncompleteEventPublications`、`FailedEventPublications`）は対象に入れない（Spring Modulith 2.1.2 で確認）。
 
 | 型 | 役割 | 対象 |
 |----|------|------|
@@ -78,6 +79,7 @@
 | 11 | 検査の対象の一覧にない script（`scripts/dev/e2e.sh` など）の `PORT="${PORT:-9999}"` | 検出しない（今のとおり） |
 | 12 | `${REPORT_ROWS:-5000}`、`${EXPORT_LIMIT:-1000}`、`${SUPPORT_TTL:-3600}`（名前の途中に PORT を含む） | 検出しない |
 | 13 | `${port:-9999}`（小文字の名前） | 検出しない |
+| 14 | `--PORT 9999`、`--Port 9999`（`--port` は大文字小文字を区別する。変更前と同じ） | 検出しない |
 
 文言のキーのコメントの検査の例：
 
@@ -95,7 +97,7 @@
 | 10 | `<p className="text-sm">{` の後の行に `t('k')`、その後の行に `/* 表示 */}`（要素の直後の、複数行の式の終わりのコメント） | 検出しない |
 | 11 | `<p><b>Total</b>{` の後の行に `t('k')`、その後の行に `/* 表示 */}`（テキストの直後の閉じタグの後の式） | 検出しない |
 | 12 | `<li>Name<br />{` の後の、11 と同じ形（自己閉じタグの後の式） | 検出しない |
-| 13 | `<p>合計: {total}{t('unit') /* 単位 */}</p>`（`:` で終わる文字の後に続く式） | 検出しない |
+| 13 | `<p>合計: {total}{t('unit') /* 単位 */}</p>`（`:` で終わるテキストの後に続く式） | 検出しない |
 
 spec の番号の検査の例：
 
@@ -121,6 +123,7 @@ spec の番号の検査の例：
 | 18 | `gradle.properties` の、`\` で続く行の次の行の `#`（値の一部） | 検出しない |
 | 19 | `libs.versions.toml` の複数行の文字列（`"""…"""`）の中の `# AC-1` | 検出しない |
 | 20 | Gradle の Kotlin の設定の、`val q = '"'` の行と、その次の行の文字列 `"AC-1"`（文字リテラルの引用符を文字列の始まりと読まない） | 検出しない |
+| 21 | `#DC7-2`、`#AC1-2`、`#DC12-3`（`#` の直後の語の後にハイフンと数字が続く形） | 検出する |
 
 ロールと権限の対応表の検査の例：
 
@@ -155,8 +158,8 @@ spec の番号の検査の例：
 
 | 番号 | 例 | 結果 |
 |------|----|------|
-| 1 | `secretKey`、`apiKey`、`privateKey`、`signingKey`、`key`、`credentials`、`clientCredential`、`secretAccessKey`、`webhookSecret`、`accessToken`、`apiPassword`、`salt`、`hmacKey`、`masterKey`、`stripeAPIKey`、`apikey`、`apiKeyV2`、`signingKey2`、`credentialsJson` | 秘密とする |
-| 2 | `cacheKey`、`objectKey`、`idempotencyKey`、`credentialsFile`、`accessKeyId`、`publicKey`、`publishableKey`、`primaryKey`、`privateKeyPath`、`apiKeyHeader`、`signingKeyId` | 秘密としない |
+| 1 | `secretKey`、`apiKey`、`privateKey`、`signingKey`、`key`、`credentials`、`clientCredential`、`secretAccessKey`、`webhookSecret`、`accessToken`、`apiPassword`、`salt`、`hmacKey`、`masterKey`、`stripeAPIKey`、`apikey`、`apiKeyV2`、`signingKey2`、`credentialsJson`、`encryptionKey`、`hmackey`、`masterkey`、`signingkey` | 秘密とする |
+| 2 | `cacheKey`、`objectKey`、`idempotencyKey`、`credentialsFile`、`accessKeyId`、`publicKey`、`publishableKey`、`primaryKey`、`privateKeyPath`、`apiKeyHeader`、`signingKeyId`、`credentialsPath`、`credentialsDir` | 秘密としない |
 
 `toString` の宣言の例：
 
@@ -221,7 +224,7 @@ spec の番号の検査の例：
 | まとまり | ファイル |
 |----------|----------|
 | 検査の script | `scripts/ci/config/local-ports.mjs`、`scripts/ci/config/local-ports.test.mjs`、`scripts/ci/frontend/message-comments.mjs`、`scripts/ci/frontend/message-comments.test.mjs`、`scripts/ci/spec/spec-numbers.mjs`、`scripts/ci/spec/spec-numbers.test.mjs`、`scripts/ci/config/role-permissions.mjs`、`scripts/ci/config/role-permissions.test.mjs` |
-| コメントの読み方の共通のモジュール | `scripts/shared/source/strip-comments.mjs` とそのテスト、`scripts/ci/lib/source/comment-text.mjs` とそのテスト（日本語の検査も .kts を Kotlin の読み方で読むため） |
+| コメントの読み方の共通のモジュール | `scripts/shared/source/scan-code.mjs`、`scripts/shared/source/strip-comments.mjs` とそのテスト、`scripts/ci/lib/source/comment-text.mjs` とそのテスト（日本語の検査も .kts を Kotlin の読み方で読むため。走査は scan-code の 1 か所に置く） |
 | 構成の検査のテスト | `backend/ecsite/src/test/java/com/ecsite/architecture/EventPublicationReadTest.java`、`SchemaOwnershipTest.java`、`TokenAccessTest.java`、`ConfigurationPropertiesTest.java`、`backend/ecsite/src/test/java/com/ecsite/support/ProductionClasses.java`、`backend/ecsite/src/test/java/com/ecsite/support/TestCodeClasses.java`、違反の例のクラス（`backend/ecsite/src/test/java/com/ecsite/architecture/sample/` の下）、本番のパッケージに置く違反の例 `backend/ecsite/src/test/java/com/ecsite/config/event/ReadsEventPublicationRecords.java`（記録の型が package-private のため） |
 | 契約の読み込み | `backend/ecsite/src/main/java/com/ecsite/config/security/OpenApiOperations.java`、`backend/ecsite/src/test/java/com/ecsite/config/security/OpenApiOperationsTest.java` |
 | 規則 | `docs/05-開発規則/test-writing-backend.md`、`docs/02-設計/role-permissions.md`（失敗したときの 1 文） |
@@ -251,8 +254,8 @@ spec の番号の検査の例：
 | テストが jOOQ や SQL で発行の記録のテーブルを直接読む書き方 | issue の範囲外で、規則の対象（記録を読む操作）でもないため |
 | secret・password・salt・token を含む名前の判定 | issue が狭めるのは key と credential だけで、今の判定で誤りの例が見つかっていないため |
 | バックエンドの店舗の契約の読み込みの、最上位の `security` の扱い | 今も操作ごとの `security` だけを読み、ない操作で起動を失敗にするので、修正する点がないため |
-| 対応表の検査が読む HTTP メソッドが、バックエンドの契約の読み込みより少ない（head・options・trace を読まない）こと | 今の契約はこれらの操作を使っておらず、issue の範囲外のため。issue 担当のセッションに知らせる |
-| 変数の名前だけが違う同じ形のパス（`/carts/{cartId}` と `/carts/{id}`）を、契約の読み込みで失敗にすること | YAML の重複したキーではなく、issue の範囲外のため。issue 担当のセッションに知らせる |
+| 対応表の検査が読む HTTP メソッドが、バックエンドの契約の読み込みより少ない（head・options・trace を読まない）こと | 今の契約はこれらの操作を使っておらず、issue の範囲外のため。 |
+| 変数の名前だけが違う同じ形のパス（`/carts/{cartId}` と `/carts/{id}`）を、契約の読み込みで失敗にすること | YAML の重複したキーではなく、issue の範囲外のため。 |
 | モックの準備の呼び出しを、記録を読む操作と区別すること | 今のリポジトリに該当がなく、呼び出しの形だけでは区別できないため |
 
 ## Open questions
@@ -267,7 +270,7 @@ spec の番号の検査の例：
   - 依存：なし
   - 範囲：`docs/08-spec/563-check-script-fixes/spec.md`
   - 確認方法：追加した例の採否を結果に書く
-  - 結果：候補 54 件のうち 52 件を例の表に加え、採らなかった候補はない。Non-goals に回したのは 3 件で、うちモックの準備の呼び出しは、例の表にも加えた。決定を詳しくした点は、ポートの変数の名前、区切りの字、TOML と properties の読み方、秘密の値の語の分け方。文言のキーのコメントの 2 件は、候補の「検出する」を issue の期待に合わせて「検出しない」にした。
+  - 結果：候補 54 件の全てを採り、採らなかった候補はない。52 件を例の表に加え、2 件を Non-goals だけに加え、モックの準備の呼び出しの 1 件は両方に入れた（Non-goals に加えたのは合わせて 3 件）。決定を詳しくした点は、ポートの変数の名前、区切りの字、TOML と properties の読み方、秘密の値の語の分け方。文言のキーのコメントの 2 件は、候補の「検出する」を issue の期待に合わせて「検出しない」にした。
 - [x] **T563-01-02** [テスト] ローカルのポートの検査と、文言のキーのコメントの検査のテストを書き、レッドを確認する（DC-563-1、DC-563-2、DC-563-15）。
   - 依存：T563-01-01
   - 範囲：`scripts/ci/config/local-ports.test.mjs`、`scripts/ci/frontend/message-comments.test.mjs`
@@ -339,23 +342,50 @@ spec の番号の検査の例：
 
     - 検証役（高性能）は 22 件のうち 1 件を偽と判定し、除いた（管理の契約の script の層のテストの名前の指摘）。
     - 修正したもの：
-      - 文言のキーのコメントの検査の後退 2 件
+      - 文言のキーのコメントの検査で、変更前は読めた式を読まなくなった 2 件
       - ポートの変数の名前の誤読
-      - 対応表の失敗の文と契約の読み込みの回数
+      - 対応表の検査の失敗の文
+      - 契約を読み込む回数
       - .kts の読み方の統一
       - 契約の読み込みの失敗の文
       - 本番のパッケージに置く違反の例の除き方
       - toString の見分けを JDK の標準の読み方にしたこと
       - テストの不足
-    - 残したもの 3 件と理由：
-      - 入れ子の判定の 2 つの書き方：判定の処理は 1 か所にあり、一覧と比べる形と 1 つの名前と比べる形は役割が違うため。
-      - コメントの書き方の番号の形の説明：誤って書いた変種の見つけ方は検査の script に書くため。
-      - 本番のコードの読み取りの例のテスト：検査の入力がテストのクラスだけであることで成り立つため。
+    - 残したもの 2 件と理由（入れ子の判定の 2 つの書き方は、spec の最後のレビューで同じ形にそろえたので、ここから外した。T563-01-16 の結果に書く）：
+      - 番号の形を説明する規則の文：誤って書いた変種の見つけ方は検査の script に書くため。
+      - 本番のコードの読み取りの例のテスト：検査の入力がテストのクラスだけなので、本番のコードの読み取りは対象にならないため。
     - 機械の検査に移したもの：なし。
     - 本文の書き手：spec は要点から書き手（汎用）が書いた。コードのコメントは実装役が書いた。
     - 修正の後に `./gradlew check` と `scripts/ci/check-all.sh` が通った。
 - [ ] **T563-01-16** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T563-01-15
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | 段階をまたぐ影響 | 高性能 | 1 | 146590 | 2m56s | 0 | 0 | 3 | 3 |
+    | spec の最後 | ファイルをまたぐ影響 | 高性能 | 1 | 191939 | 4m36s | 0 | 1 | 3 | 4 |
+    | spec の最後 | spec との一致 | 高性能 | 1 | 150230 | 3m10s | 0 | 0 | 2 | 2 |
+    | spec の最後 | 重複を除く | — | 1 | — | — | 0 | 1 | 6 | 7 |
+
+    - 検証役（高性能）は 7 件の全てを真と判定した。
+    - 修正したもの：
+      - 走査を scan-code の 1 か所に戻したこと（設計書の判断に合わせる）
+      - 対応表の検査の「失敗したとき」
+      - テスト名の例の番号
+      - `--port` の大文字小文字
+      - `#` の直後の語にハイフンと数字が続く番号
+      - 一覧と比べる入れ子の判定の書き方
+      - 補助と同じ処理の重複
+    - 文書のレビューの候補 19 件のうち 11 件と、校閲で確認役が挙げた 18 件を修正した。
+    - 文書のレビューで採らなかった候補：
+      - 雛形が両方の節を求めるもの（スコープの「含めない」と Non-goals の重なり）
+      - 決定の経緯と確認方法の行
+      - 先例と同じ手順の文
+      - 背景の要約
+      - 規則の文の箇条化（規則の書き方が決まっていない）
+    - 機械の検査に移したもの：なし。
+    - 本文の書き手：spec は要点から書き手（汎用）が書いた。コードのコメントは実装役が書いた。
 - [ ] **T563-01-17** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T563-01-16
 - [ ] **T563-01-18** spec をアーカイブに移す。

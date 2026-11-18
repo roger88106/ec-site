@@ -4,7 +4,11 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.inventory.domain.InventoryErrorCode;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
@@ -17,20 +21,59 @@ import java.util.UUID;
  * 在庫調整
  *
  * <p>在庫数が負にならないことは、この型ではなく、リポジトリの条件付きの更新と DB の CHECK 制約で守る。
- *
- * @param id          在庫調整 ID
- * @param delta       増減量（0 以外）
- * @param reason      調整理由
- * @param memo        メモ。なければ null
- * @param orderId     注文 ID。注文に由来する調整でなければ null
- * @param orderNumber 注文番号（写し）。注文に由来する調整でなければ null
- * @param adjustedAt  調整日時
- * @param operator    調整した運営者。注文に由来する調整なら null
  */
+@Getter
+@Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@AllArgsConstructor
 @Entity
-public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReason reason, @Nullable String memo,
-                              @Nullable UUID orderId, @Nullable String orderNumber, Instant adjustedAt,
-                              @Nullable Operator operator) {
+public final class StockAdjustment {
+
+    /**
+     * 在庫調整 ID
+     */
+    @Identity
+    @EqualsAndHashCode.Include
+    private final UUID id;
+
+    /**
+     * 増減量（0 以外）
+     */
+    private final int delta;
+
+    /**
+     * 調整理由
+     */
+    private final StockAdjustmentReason reason;
+
+    /**
+     * メモ。なければ null
+     */
+    @Nullable
+    private final String memo;
+
+    /**
+     * 注文 ID。注文に由来する調整でなければ null
+     */
+    @Nullable
+    private final UUID orderId;
+
+    /**
+     * 注文番号（写し）。注文に由来する調整でなければ null
+     */
+    @Nullable
+    private final String orderNumber;
+
+    /**
+     * 調整日時
+     */
+    private final Instant adjustedAt;
+
+    /**
+     * 調整した運営者。注文に由来する調整なら null
+     */
+    @Nullable
+    private final Operator operator;
 
     /**
      * メモの最大の文字数

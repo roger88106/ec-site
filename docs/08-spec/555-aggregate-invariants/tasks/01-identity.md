@@ -36,7 +36,7 @@
   - 依存：T555-01-01、T555-01-03
   - 範囲：各モジュールの domain、`backend/ecsite/lombok.config`、対象の型のテスト
   - 確認方法：変えたモジュールのテストが通る。`-Werror` のときに Lombok の callSuper の警告が出るかを確認する
-- [ ] **T555-01-05** record の 7 個（ProductImage、Variant、StockAdjustment、Checkout、TaxRate、Asset、Member）を class に変え、Lombok の equals を付ける。Asset と Member には注釈も付ける。全項目の等価に頼るテストを、項目ごとか `usingRecursiveComparison` に書き換える。`EntityEqualityTest` が通った後に、backend-coding.md の「entity と集約の同一性」の確認方法を自動に変える（DC-555-7、DC-555-8）。
+- [x] **T555-01-05** record の 7 個（ProductImage、Variant、StockAdjustment、Checkout、TaxRate、Asset、Member）を class に変え、Lombok の equals を付ける。Asset と Member には注釈も付ける。全項目の等価に頼るテストを、項目ごとか `usingRecursiveComparison` に書き換える。`EntityEqualityTest` が通った後に、backend-coding.md の「entity と集約の同一性」の確認方法を自動に変える（DC-555-7、DC-555-8）。
   - 依存：T555-01-04（`lombok.config` の基底クラスの指定を前提にするため）
   - 範囲：各モジュールの domain、対象の型のテスト、`docs/05-開発規則/backend-coding.md`
   - 確認方法：同一性の検査のテストと、変えたモジュールのテストが通る

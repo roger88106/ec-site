@@ -272,7 +272,7 @@ class TaxCategoryTest {
                     newDraft("8", APR_2027, APR_2028)), NOW), TaxErrorCode.TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED);
 
             // 確認：税率の一覧は元のまま
-            assertThat(category.rates()).containsExactly(existing);
+            assertThat(category.rates()).usingRecursiveFieldByFieldElementComparator().containsExactly(existing);
         }
     }
 
@@ -514,7 +514,7 @@ class TaxCategoryTest {
                     newDraft("12", APR_2027, null)), NOW);
 
             // 確認：3 件になり、先頭は終了済みの税率のまま
-            assertThat(category.rates()).hasSize(3).first().isEqualTo(ended);
+            assertThat(category.rates()).hasSize(3).first().usingRecursiveComparison().isEqualTo(ended);
         }
     }
 

@@ -1,6 +1,9 @@
 package com.ecsite.module.order.domain.checkout;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -13,24 +16,72 @@ import java.util.UUID;
  * 注文手続き
  *
  * <p>カートから注文に進んだ 1 回の手続きで、引当の持ち主になる。作った後は変わらない。
- *
- * @param id                   注文手続き ID（引当の持ち主 ID）
- * @param memberId             会員 ID（始めた会員。その会員だけが参照・注文できる）
- * @param cartId               カート ID
- * @param cartVersion          始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
- * @param expiresAt            引当の期限
- * @param createdAt            作成日時
- * @param acknowledgedOrderIds 確認した注文の ID の集合（始めるときに会員が確認した支払待ちの注文。確認していなければ空）
  */
+@Getter
+@Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @AggregateRoot
-public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt,
-                       Set<UUID> acknowledgedOrderIds) {
+public final class Checkout {
 
     /**
-     * 確認した注文の ID の集合は、後から変えられないようにコピーする。
+     * 注文手続き ID（引当の持ち主 ID）
      */
-    public Checkout {
-        acknowledgedOrderIds = Set.copyOf(acknowledgedOrderIds);
+    @Identity
+    @EqualsAndHashCode.Include
+    private final UUID id;
+
+    /**
+     * 会員 ID（始めた会員。その会員だけが参照・注文できる）
+     */
+    private final UUID memberId;
+
+    /**
+     * カート ID
+     */
+    private final UUID cartId;
+
+    /**
+     * 始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
+     */
+    private final long cartVersion;
+
+    /**
+     * 引当の期限
+     */
+    private final Instant expiresAt;
+
+    /**
+     * 作成日時
+     */
+    private final Instant createdAt;
+
+    /**
+     * 確認した注文の ID の集合（始めるときに会員が確認した支払待ちの注文。確認していなければ空）
+     */
+    private final Set<UUID> acknowledgedOrderIds;
+
+    /**
+     * コンストラクタ
+     *
+     * <p>確認した注文の ID の集合は、後から変えられないようにコピーする。
+     *
+     * @param id                   注文手続き ID
+     * @param memberId             会員 ID
+     * @param cartId               カート ID
+     * @param cartVersion          カートのバージョン
+     * @param expiresAt            引当の期限
+     * @param createdAt            作成日時
+     * @param acknowledgedOrderIds 確認した注文の ID の集合
+     */
+    public Checkout(UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt,
+                    Set<UUID> acknowledgedOrderIds) {
+        this.id = id;
+        this.memberId = memberId;
+        this.cartId = cartId;
+        this.cartVersion = cartVersion;
+        this.expiresAt = expiresAt;
+        this.createdAt = createdAt;
+        this.acknowledgedOrderIds = Set.copyOf(acknowledgedOrderIds);
     }
 
     /**

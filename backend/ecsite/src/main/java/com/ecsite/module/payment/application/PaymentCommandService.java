@@ -106,7 +106,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param paymentId     支払 ID
      * @param authorization 取得した与信
-     * @return 与信済みにしたら true（先に通知が届いていれば false。支払なしの支払に反映して与信の取消待ちにしたときも false）
+     * @return 与信済みにしたら true（先に通知が届いていれば false。支払なし（NOT_PAID）の支払に反映して与信の取消待ちにしたときも false）
      */
     public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull Authorization authorization) {
         var now = clock.instant();
@@ -153,9 +153,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     public void awaitAuthorization(@NonNull UUID paymentId) {
         var now = clock.instant();
         // 行ロックの後に確認し直し、読んでから通知が届いて与信済みになった支払を変えない
-        paymentRepository.lockById(paymentId)
-                .filter(payment -> payment.awaitAuthorization(now))
-                .ifPresent(paymentRepository::update);
+        modify(paymentId, payment -> payment.awaitAuthorization(now));
     }
 
     /**

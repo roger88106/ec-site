@@ -28,7 +28,7 @@
 
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
-| 規則 2 つ（戻り値と保存、照会の型）を追加する | `docs/05-開発規則/backend-coding.md` の「命名と書き方」の下（新しい小節 2 つ。見出しは書き手が決める） | 文書を読む |
+| 規則 2 つ（戻り値と保存、照会の型）を追加する | `docs/05-開発規則/backend-coding.md` の新しい小節 2 つ（照会の型は「層とパッケージ」、戻り値と保存は「入力の検証とエラー」の「更新の競合は `version`」の後） | 文書を読む |
 | 取消の申請を、変えたかを返す形にする | `order/domain/order/Order.java` の `requestCancellation` | `OrderTest` |
 | 取消の申請の service が、変えたときだけ保存する | `order/application/OrderCancellationCommandService.java` の `request` | 統合テスト（申請中の注文に再度申請しても、注文のバージョンが進まない） |
 | 支払の 5 つの操作を、変えたかを返す形にする | `payment/domain/payment/Payment.java` の `capture`、`expireAuthorization`、`cancel`、`markVoided`、`markRefunded` | `PaymentTest` |

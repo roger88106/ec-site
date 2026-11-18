@@ -115,7 +115,7 @@ class PaymentRefundTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -260,7 +260,7 @@ class PaymentRefundTest {
             commandService.markRefunded(payment.id());
 
             // 確認：リポジトリから再取得した支払のバージョンが同じ
-            assertThat(paymentRepository.findByOrderId(orderId).orElseThrow().version()).isEqualTo(payment.version());
+            assertThat(payments.versionOf(orderId)).isEqualTo(payment.version());
         }
     }
 

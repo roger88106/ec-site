@@ -128,7 +128,7 @@ class PaymentVoidTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -247,7 +247,7 @@ class PaymentVoidTest {
         @Test
         @DisplayName("AC-166 取消済みの支払を重ねて取り消しても成功し、決済サービスを呼び直さず、取消済みのまま")
         void ignoresRepeatedCancel() {
-            // 準備：与信の取消済みの支払
+            // 準備：与信が取消済みの支払
             var orderId = payments.created(ORDERED_AT);
             var authorizationRef = gateway.authorizationRefOf(payments.pay(orderId));
             paymentApi.cancel(orderId);
@@ -265,25 +265,25 @@ class PaymentVoidTest {
         @Test
         @DisplayName("取消済みの支払を重ねて取り消しても、支払のバージョンは進まない")
         void keepsVersionOnRepeatedCancel() {
-            // 準備：与信の取消済みの支払と、そのときの支払のバージョン
+            // 準備：与信が取消済みの支払と、そのときの支払のバージョン
             var orderId = payments.authorized(ORDERED_AT);
             paymentApi.cancel(orderId);
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-            var versionAfterVoid = paymentRepository.findByOrderId(orderId).orElseThrow().version();
+            var versionAfterVoid = payments.versionOf(orderId);
 
             // 操作：もう一度取り消す
             paymentApi.cancel(orderId);
 
             // 確認：リポジトリから再取得した支払のバージョンが同じ
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-            assertThat(paymentRepository.findByOrderId(orderId).orElseThrow().version()).isEqualTo(versionAfterVoid);
+            assertThat(payments.versionOf(orderId)).isEqualTo(versionAfterVoid);
         }
 
         @Test
-        @DisplayName("与信の取消済みの支払に取消済みの反映が重ねて届いても、支払のバージョンは進まない")
+        @DisplayName("与信が取り消された支払に、取消済みの反映が重ねて届いても、支払のバージョンは進まない")
         void keepsVersionOnRepeatedMarkVoided() {
-            // 準備：与信の取消済みの支払と、そのときの支払のバージョン
+            // 準備：与信が取消済みの支払と、そのときの支払のバージョン
             var orderId = payments.authorized(ORDERED_AT);
             paymentApi.cancel(orderId);
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
@@ -294,7 +294,7 @@ class PaymentVoidTest {
             commandService.markVoided(payment.id());
 
             // 確認：リポジトリから再取得した支払のバージョンが同じ
-            assertThat(paymentRepository.findByOrderId(orderId).orElseThrow().version()).isEqualTo(payment.version());
+            assertThat(payments.versionOf(orderId)).isEqualTo(payment.version());
         }
     }
 

@@ -340,7 +340,7 @@ class PaymentTest {
             // 操作：与信の成功を反映する
             var changed = payment.authorize(AUTHORIZATION_REF, ORDERED_AT);
 
-            // 確認：変えたので true で、与信済みにせず、届いた与信の取消を依頼する
+            // 確認：状態を変えたので true。与信済みにせず、届いた与信の取消を依頼する
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.VOID_PENDING);
             assertThat(payment.authorizationRef()).isEqualTo(AUTHORIZATION_REF);
@@ -356,7 +356,7 @@ class PaymentTest {
             // 操作：与信の時刻を付けて反映する
             var changed = payment.authorize(AUTHORIZATION_REF, ORDERED_AT.plusSeconds(10), ORDERED_AT.plusSeconds(20));
 
-            // 確認：変えたので true で、取消待ちで、与信の時刻はなく、取消の依頼だけ
+            // 確認：状態を変えたので true。取消待ちで、与信の時刻はなく、取消の依頼だけ
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.VOID_PENDING);
             assertThat(payment.authorizedAt()).isEmpty();
@@ -374,7 +374,7 @@ class PaymentTest {
             // 操作：与信の時刻を付けて反映する
             var changed = payment.authorize(AUTHORIZATION_REF, authorizedAt, now);
 
-            // 確認：変えたので true で、与信済みで、与信の時刻は渡した時刻、イベントは現在時刻
+            // 確認：状態を変えたので true。与信済みで、与信の時刻は渡した時刻、イベントは現在時刻
             assertThat(changed).isTrue();
             assertAuthorized(payment);
             assertThat(payment.authorizedAt()).contains(authorizedAt);
@@ -394,7 +394,7 @@ class PaymentTest {
             // 操作：別の与信を、別の時刻で反映する
             var changed = payment.authorize(OTHER_AUTHORIZATION_REF, ORDERED_AT.plusSeconds(30), ORDERED_AT.plusSeconds(40));
 
-            // 確認：変えなかったので false で、最初の与信のまま、イベントもない
+            // 確認：状態を変えなかったので false。最初の与信のまま、イベントもない
             assertThat(changed).isFalse();
             assertAuthorized(payment);
             assertThat(payment.authorizedAt()).contains(authorizedAt);
@@ -404,7 +404,7 @@ class PaymentTest {
         @Test
         @DisplayName("BR-17 与信の取消済みに届いても（順序の入れ替わり）、何も変わらない")
         void ignoresAfterVoided() {
-            // 準備：与信の取消済みの支払
+            // 準備：与信が取消済みの支払
             var payment = voided();
 
             // 操作：与信の成功を反映する
@@ -570,7 +570,7 @@ class PaymentTest {
             // 操作：取り消す
             var changed = payment.cancel(ORDERED_AT);
 
-            // 確認：変えたので true で、取消待ちで、この支払の取消の依頼が 1 件
+            // 確認：状態を変えたので true。取消待ちで、この支払の取消の依頼が 1 件
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.VOID_PENDING);
             assertThat(payment.pullEvents()).singleElement().isInstanceOfSatisfying(VoidRequested.class,
@@ -586,7 +586,7 @@ class PaymentTest {
             // 操作：取り消す
             var changed = payment.cancel(ORDERED_AT);
 
-            // 確認：変えたので true で、支払なしで、イベントはない
+            // 確認：状態を変えたので true。支払なしで、イベントはない
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.NOT_PAID);
             assertThat(payment.pullEvents()).isEmpty();
@@ -603,7 +603,7 @@ class PaymentTest {
             // 操作：重ねて取り消す
             var changed = payment.cancel(ORDERED_AT);
 
-            // 確認：変えなかったので false で、取消待ちのまま、取消の依頼も出ない
+            // 確認：状態を変えなかったので false。取消待ちのまま、取消の依頼も出ない
             assertThat(changed).isFalse();
             assertThat(payment.status()).isEqualTo(PaymentStatus.VOID_PENDING);
             assertThat(payment.pullEvents()).isEmpty();
@@ -612,7 +612,7 @@ class PaymentTest {
         @Test
         @DisplayName("AC-166 与信の取消済みに重ねて取り消しても、何も変わらない")
         void ignoresRepeatedCancelWhenVoided() {
-            // 準備：与信の取消済みの支払
+            // 準備：与信が取消済みの支払
             var payment = voided();
 
             // 操作：重ねて取り消す
@@ -638,7 +638,7 @@ class PaymentTest {
             // 操作：取消済みにする
             var changed = payment.markVoided();
 
-            // 確認：変えたので true で、取消済み
+            // 確認：状態を変えたので true。取消済み
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.VOIDED);
         }
@@ -652,7 +652,7 @@ class PaymentTest {
             // 操作：取消済みにする
             var changed = payment.markVoided();
 
-            // 確認：変えなかったので false で、与信済みのまま
+            // 確認：状態を変えなかったので false。与信済みのまま
             assertThat(changed).isFalse();
             assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
         }
@@ -671,7 +671,7 @@ class PaymentTest {
             // 操作：売上を確定する
             var changed = payment.capture(ORDERED_AT);
 
-            // 確認：変えたので true で、売上確定済みで、イベントはない
+            // 確認：状態を変えたので true。売上確定済みで、イベントはない
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.CAPTURED);
             assertThat(payment.pullEvents()).isEmpty();
@@ -686,7 +686,7 @@ class PaymentTest {
             // 操作：重ねて確定する
             var changed = payment.capture(ORDERED_AT);
 
-            // 確認：変えなかったので false で、売上確定済みのまま、イベントもない
+            // 確認：状態を変えなかったので false。売上確定済みのまま、イベントもない
             assertThat(changed).isFalse();
             assertThat(payment.status()).isEqualTo(PaymentStatus.CAPTURED);
             assertThat(payment.pullEvents()).isEmpty();
@@ -703,7 +703,7 @@ class PaymentTest {
             // 操作：売上確定を反映する
             var changed = payment.capture(ORDERED_AT);
 
-            // 確認：変えたので true で、返金待ちで、この支払の返金の依頼が 1 件
+            // 確認：状態を変えたので true。返金待ちで、この支払の返金の依頼が 1 件
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.REFUND_PENDING);
             assertThat(payment.pullEvents()).singleElement().isInstanceOfSatisfying(RefundRequested.class,
@@ -765,7 +765,7 @@ class PaymentTest {
             // 操作：与信期限切れにする
             var changed = payment.expireAuthorization();
 
-            // 確認：変えたので true で、与信期限切れで、イベントはない
+            // 確認：状態を変えたので true。与信期限切れで、イベントはない
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZATION_EXPIRED);
             assertThat(payment.pullEvents()).isEmpty();
@@ -780,7 +780,7 @@ class PaymentTest {
             // 操作：重ねて与信期限切れにする
             var changed = payment.expireAuthorization();
 
-            // 確認：変えなかったので false で、与信期限切れのまま
+            // 確認：状態を変えなかったので false。与信期限切れのまま
             assertThat(changed).isFalse();
             assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZATION_EXPIRED);
         }
@@ -812,7 +812,7 @@ class PaymentTest {
             // 操作：取り消す
             var changed = payment.cancel(ORDERED_AT);
 
-            // 確認：変えたので true で、返金待ちで、この支払の返金の依頼が 1 件
+            // 確認：状態を変えたので true。返金待ちで、この支払の返金の依頼が 1 件
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.REFUND_PENDING);
             assertThat(payment.pullEvents()).singleElement().isInstanceOfSatisfying(RefundRequested.class,
@@ -828,7 +828,7 @@ class PaymentTest {
             // 操作：返金済みにする
             var changed = payment.markRefunded();
 
-            // 確認：変えたので true で、返金済み
+            // 確認：状態を変えたので true。返金済み
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.REFUNDED);
         }
@@ -842,7 +842,7 @@ class PaymentTest {
             // 操作：返金済みにする
             var changed = payment.markRefunded();
 
-            // 確認：変えなかったので false で、売上確定済みのまま
+            // 確認：状態を変えなかったので false。売上確定済みのまま
             assertThat(changed).isFalse();
             assertThat(payment.status()).isEqualTo(PaymentStatus.CAPTURED);
         }
@@ -1087,7 +1087,7 @@ class PaymentTest {
             // 操作：売上確定を反映する
             var changed = payment.capture(DEADLINE);
 
-            // 確認：変えなかったので false で、変わらず、返金の依頼も出ない
+            // 確認：状態を変えなかったので false。変わらず、返金の依頼も出ない
             assertThat(changed).isFalse();
             assertUnchanged(payment, before);
         }
@@ -1103,7 +1103,7 @@ class PaymentTest {
             // 操作：与信期限切れにする
             var changed = payment.expireAuthorization();
 
-            // 確認：変えなかったので false で、変わらない
+            // 確認：状態を変えなかったので false。変わらない
             assertThat(changed).isFalse();
             assertUnchanged(payment, before);
         }
@@ -1119,7 +1119,7 @@ class PaymentTest {
             // 操作：取り消す
             var changed = payment.cancel(DEADLINE);
 
-            // 確認：変えなかったので false で、変わらず、依頼も出ない
+            // 確認：状態を変えなかったので false。変わらず、依頼も出ない
             assertThat(changed).isFalse();
             assertUnchanged(payment, before);
         }
@@ -1135,7 +1135,7 @@ class PaymentTest {
             // 操作：取消済みにする
             var changed = payment.markVoided();
 
-            // 確認：変えなかったので false で、変わらない
+            // 確認：状態を変えなかったので false。変わらない
             assertThat(changed).isFalse();
             assertUnchanged(payment, before);
         }
@@ -1151,7 +1151,7 @@ class PaymentTest {
             // 操作：返金済みにする
             var changed = payment.markRefunded();
 
-            // 確認：変えなかったので false で、変わらない
+            // 確認：状態を変えなかったので false。変わらない
             assertThat(changed).isFalse();
             assertUnchanged(payment, before);
         }
@@ -1316,7 +1316,7 @@ class PaymentTest {
     }
 
     /**
-     * 与信の取消済みの支払を作る（イベントは取り出し済み）。
+     * 与信が取消済みの支払を作る（イベントは取り出し済み）。
      *
      * @return 支払
      */

@@ -75,7 +75,7 @@ public class OrderCancellationCommandService {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
 
-        // キャンセル申請 ※変えたときだけ保存する
+        // キャンセルの申請 ※変えたときだけ保存する
         if (order.requestCancellation(reason, clock.instant())) {
             orderRepository.update(order);
         }

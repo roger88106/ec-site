@@ -109,7 +109,7 @@ class PaymentApiTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -311,13 +311,13 @@ class PaymentApiTest {
             var orderId = payments.created(ORDERED_AT);
             var pageId = payments.openPage(orderId);
             gateway.pay(pageId);
-            var versionAfterFirst = paymentRepository.findByOrderId(orderId).orElseThrow().version();
+            var versionAfterFirst = payments.versionOf(orderId);
 
             // 操作：同じ通知がもう一度届く
             gateway.notifyAuthorized(pageId);
 
             // 確認：リポジトリから再取得した支払のバージョンが同じ
-            assertThat(paymentRepository.findByOrderId(orderId).orElseThrow().version()).isEqualTo(versionAfterFirst);
+            assertThat(payments.versionOf(orderId)).isEqualTo(versionAfterFirst);
         }
     }
 

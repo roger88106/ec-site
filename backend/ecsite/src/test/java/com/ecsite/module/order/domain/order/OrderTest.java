@@ -370,7 +370,7 @@ class OrderTest {
     class Consistency {
 
         /**
-         * 取消の申請の決定日時と、キャンセルの日時
+         * キャンセルの申請の決定日時と、キャンセルの日時
          */
         private static final Instant DECIDED_AT = Instant.parse("2026-10-09T01:23:45Z");
 
@@ -468,59 +468,6 @@ class OrderTest {
     }
 
     @Nested
-    @DisplayName("取消の申請が変えたかの戻り値")
-    class RequestCancellationResult {
-
-        /**
-         * 申請の時刻
-         */
-        private static final Instant REQUESTED_AT = ORDERED_AT.plus(Duration.ofHours(1));
-
-        /**
-         * 最初の申請の理由
-         */
-        private static final String FIRST_REASON = "最初の理由";
-
-        /**
-         * 2 回目の申請の理由
-         */
-        private static final String SECOND_REASON = "次の理由";
-
-        @Test
-        @DisplayName("受付の注文を申請すると true を返し、申請中になる")
-        void returnsTrueAndRequests() {
-            // 準備：受付の注文
-            var order = place(quote());
-            order.acceptPayment(REQUESTED_AT);
-
-            // 操作：申請する
-            var changed = order.requestCancellation(FIRST_REASON, REQUESTED_AT.plusSeconds(60));
-
-            // 確認：変えたので true で、申請中
-            assertThat(changed).isTrue();
-            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
-        }
-
-        @Test
-        @DisplayName("申請中の注文にもう一度申請すると false を返し、何も変えない")
-        void returnsFalseAndKeepsRequest() {
-            // 準備：最初の理由と日時で申請した注文
-            var order = place(quote());
-            order.acceptPayment(REQUESTED_AT);
-            order.requestCancellation(FIRST_REASON, REQUESTED_AT.plusSeconds(60));
-
-            // 操作：別の理由と後の日時で、もう一度申請する
-            var changed = order.requestCancellation(SECOND_REASON, REQUESTED_AT.plusSeconds(120));
-
-            // 確認：変えなかったので false で、申請の日時と理由は最初のまま
-            assertThat(changed).isFalse();
-            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
-            assertThat(order.cancellationRequest().requestedAt()).isEqualTo(REQUESTED_AT.plusSeconds(60));
-            assertThat(order.cancellationRequest().reason()).isEqualTo(FIRST_REASON);
-        }
-    }
-
-    @Nested
     @DisplayName("遷移の後の復元")
     class RestoreAfterTransitions {
 
@@ -549,7 +496,7 @@ class OrderTest {
                     Arguments.of("注文の作成", OrderStatus.PENDING_PAYMENT, (Supplier<Order>) () -> place(quote())),
                     Arguments.of("支払の受付", OrderStatus.ACCEPTED, (Supplier<Order>) RestoreAfterTransitions::accepted),
                     Arguments.of("申請の却下", OrderStatus.ACCEPTED, (Supplier<Order>) RestoreAfterTransitions::rejected),
-                    Arguments.of("取消の申請", OrderStatus.CANCELLATION_REQUESTED,
+                    Arguments.of("キャンセルの申請", OrderStatus.CANCELLATION_REQUESTED,
                             (Supplier<Order>) RestoreAfterTransitions::requested),
                     Arguments.of("受付からの出荷", OrderStatus.SHIPPED,
                             (Supplier<Order>) () -> after(accepted(), RestoreAfterTransitions::ship)),

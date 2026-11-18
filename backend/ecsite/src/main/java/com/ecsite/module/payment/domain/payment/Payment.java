@@ -317,7 +317,7 @@ public class Payment extends AggregateRoot {
      * それ以外なら何もしない。
      *
      * @param now 現在時刻
-     * @return 状態を変えたら true。確定を反映するものがなければ false
+     * @return 状態を変えたら true。売上確定を反映する状態でなければ false
      */
     public boolean capture(@NonNull Instant now) {
         return switch (status) {
@@ -330,7 +330,7 @@ public class Payment extends AggregateRoot {
                 requestRefund(now);
                 yield true;
             }
-            // 確定を反映するものがない
+            // 売上確定を反映する状態ではない
             case UNPAID, NOT_PAID, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> false;
         };
     }

@@ -84,7 +84,7 @@ class PaymentCaptureTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -178,7 +178,7 @@ class PaymentCaptureTest {
             commandService.markCaptured(payment.id());
 
             // 確認：リポジトリから再取得した支払のバージョンが同じ
-            assertThat(paymentRepository.findByOrderId(orderId).orElseThrow().version())
+            assertThat(payments.versionOf(orderId))
                     .isEqualTo(versionAfterCapture);
         }
     }
@@ -199,7 +199,7 @@ class PaymentCaptureTest {
             commandService.markAuthorizationExpired(payment.id());
 
             // 確認：リポジトリから再取得した支払のバージョンが同じ
-            assertThat(paymentRepository.findByOrderId(orderId).orElseThrow().version())
+            assertThat(payments.versionOf(orderId))
                     .isEqualTo(versionAfterCapture);
         }
 

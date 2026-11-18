@@ -482,7 +482,7 @@ function show(ctx) {
     console.log(`スロット：${slot}${ctx.main ? '（メインの作業ツリー）' : ''}`)
     console.log(`バックエンド：http://localhost:${v.backendPort}`)
     console.log(`運用：http://localhost:${v.managementPort}`)
-    console.log(`店舗画面：http://localhost:${v.storePort}`)
+    console.log(`店舗画面：${v.storeOrigin}`)
     console.log(`管理画面：http://localhost:${v.adminPort}`)
     console.log(`データベース：${v.database}`)
     console.log(`バケット：${v.publicBucket}、${v.incomingBucket}`)
@@ -551,6 +551,8 @@ async function run(ctx, args) {
     cwd = path.join(ctx.root, 'frontend', 'store')
     command = process.execPath
     commandArgs = ['node_modules/next/dist/bin/next', 'dev', '--port', String(values.storePort)]
+    // Next.js が起動時に表示する URL は localhost だが、localhost で開くと AUTH_URL とホストが違い、ログインできない
+    console.log(`店舗画面は ${values.storeOrigin} で開く`)
   } else {
     cwd = ctx.root
     command = process.execPath

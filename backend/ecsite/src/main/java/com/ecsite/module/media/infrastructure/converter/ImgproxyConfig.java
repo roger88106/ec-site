@@ -1,6 +1,5 @@
 package com.ecsite.module.media.infrastructure.converter;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -12,10 +11,9 @@ import java.time.Duration;
 /**
  * 画像の変換の設定
  *
- * <p>画像の変換（imgproxy）の設定を有効にし、imgproxy を呼ぶ HTTP クライアントを作る。
+ * <p>imgproxy を呼ぶ HTTP クライアントを作る。
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ImgproxyProperties.class)
 class ImgproxyConfig {
 
     /**

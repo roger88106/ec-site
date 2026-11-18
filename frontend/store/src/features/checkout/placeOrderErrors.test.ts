@@ -21,15 +21,32 @@ describe('注文のエラーの出し方（店舗画面の構成の「結果の�
     expect(errors.message).toBe('入力内容に誤りがあります。')
   })
 
-  test('AC-86 業務の検証エラーは、エラーコードで入力欄に対応させ、フォームの下には出さない', () => {
-    const errors = placeOrderErrors({
-      ok: false,
-      message: '郵便番号は数字 7 桁で入力してください。',
-      errorCode: 'INVALID_POSTAL_CODE',
-    })
+  test.each([
+    ['INVALID_RECIPIENT_NAME', 'name'],
+    ['INVALID_POSTAL_CODE', 'postalCode'],
+    ['INVALID_PREFECTURE', 'prefecture'],
+    ['INVALID_MUNICIPALITY', 'municipality'],
+    ['INVALID_ADDRESS', 'address'],
+    ['INVALID_PHONE_NUMBER', 'phone'],
+  ] as const)(
+    'AC-86 業務の検証エラー（%s）は、エラーコードで入力欄（%s）に対応させ、フォームの下には出さない',
+    (errorCode, field) => {
+      const errors = placeOrderErrors({ ok: false, message: '欄の誤り', errorCode })
 
-    expect(errors.fields).toEqual({ postalCode: '郵便番号は数字 7 桁で入力してください。' })
-    expect(errors.message).toBeNull()
+      expect(errors.fields).toEqual({ [field]: '欄の誤り' })
+      expect(errors.message).toBeNull()
+      expect(errors.backToCart).toBe(false)
+    },
+  )
+
+  test('AC-88 購入できない品目を含むカートで注文できないときは、カートへのリンクを添える', () => {
+    expect(
+      placeOrderErrors({ ok: false, message: '購入できない商品が含まれている', errorCode: 'CART_NOT_ORDERABLE' }),
+    ).toEqual({
+      fields: {},
+      message: '購入できない商品が含まれている',
+      backToCart: true,
+    })
   })
 
   test('在庫不足・カートの変更は、カートへのリンクを添える', () => {

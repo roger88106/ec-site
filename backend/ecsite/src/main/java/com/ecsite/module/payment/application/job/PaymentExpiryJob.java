@@ -51,7 +51,7 @@ class PaymentExpiryJob {
      *
      * <p>与信の反映を長く待つ支払があれば、warn のログに件数を出す。
      */
-    // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
             + ".expiryInterval()}")
     @SchedulerLock(name = "payment-expiry")

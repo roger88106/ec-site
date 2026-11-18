@@ -76,9 +76,13 @@
       ]
     },
     {
-      // 画面のテストとテストの補助（src の下の test/）
-      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/test/**"],
-      "plugins": ["../biome-plugins/no-type-cast-escape.grit", "../biome-plugins/no-fire-event.grit"]
+      // 画面のテスト（src の外の設定のテストを含む）とテストの補助（src の下の test/）
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "src/**/test/**"],
+      "plugins": [
+        "../biome-plugins/no-type-cast-escape.grit",
+        "../biome-plugins/no-fire-event.grit",
+        "../biome-plugins/no-process-env-write.grit"
+      ]
     },
     {
       // テストとテストを動かす側（テストの補助、Vitest・Vite の設定）

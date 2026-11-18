@@ -1,10 +1,22 @@
 // 型を回避する変換（as never、as unknown as）を使わず、型に合う値を補助で作る（フロントのテストの書き方の「型を回避する変換を使わない」）。
+// 山括弧の型アサーション（<never>x、<T><unknown>x、<unknown>x as T、<T>(x as unknown)）も同じ変換として見る。
 // 避けられないときは、直前の行に biome-ignore lint/plugin/no-type-cast-escape と理由を書く。
 language js
 
+pattern unknown_cast() {
+  or {
+    TsAsExpression(ty=TsUnknownType()),
+    TsTypeAssertionExpression(ty=TsUnknownType()),
+    JsParenthesizedExpression(expression=TsAsExpression(ty=TsUnknownType())),
+    JsParenthesizedExpression(expression=TsTypeAssertionExpression(ty=TsUnknownType()))
+  }
+}
+
 or {
   TsAsExpression(ty=TsNeverType()) as $cast,
-  TsAsExpression(expression=TsAsExpression(ty=TsUnknownType())) as $cast
+  TsTypeAssertionExpression(ty=TsNeverType()) as $cast,
+  TsAsExpression(expression=unknown_cast()) as $cast,
+  TsTypeAssertionExpression(expression=unknown_cast()) as $cast
 } where {
   register_diagnostic(span=$cast, message="型を回避する変換（as never、as unknown as）を使わず、型に合う値を補助で作る。避けられないときは、直前の行の biome-ignore に理由を書く（フロントのテストの書き方の「型を回避する変換を使わない」）。", severity="error")
 }

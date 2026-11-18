@@ -98,11 +98,11 @@ const { orderId } = await test.step('注文する', async () => {
 
 ## 型を回避する変換を使わない
 
-テストは型を回避する変換（`as never`、`as unknown as`）を使わず、型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、直前の行の `// biome-ignore lint/plugin/no-type-cast-escape: <理由>` に理由を書いて使う。
+画面のテスト・テストの補助・E2E（`e2e/` の下の全ての TypeScript）は、型を回避する変換（`as never`、`as unknown as`。山括弧で書く `<never>`・`<unknown>` の形を含む）を使わず、型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、直前の行の `// biome-ignore lint/plugin/no-type-cast-escape: <理由>` に理由を書いて使う。
 
 理由：「API の差し替えは型付きの MSW」が禁じる契約にない応答を、型付きの `http` を通さずに作れてしまうため。
 
-確認方法：理由のない `as never`・`as unknown as` は自動（Biome の plugin `no-type-cast-escape`）、理由が妥当かはレビュー
+確認方法：理由のない `as never`・`as unknown as`（山括弧の形を含む）は自動（Biome の plugin `no-type-cast-escape`）。`unknown` の値を経由する変換などの他の書き方と、理由が妥当かはレビュー
 
 ## 要素のプロパティ・属性・状態を jest-dom で確認する
 
@@ -122,11 +122,11 @@ const { orderId } = await test.step('注文する', async () => {
 
 ## 環境変数は `vi.stubEnv` で変える
 
-テストで環境変数を変えるときは `vi.stubEnv` を使い、`process.env` に代入しない。
+画面のテストとテストの補助で環境変数を変えるときは `vi.stubEnv` を使い、`process.env` に代入しない。E2E は対象外とする（実行の準備の script が `process.env` を変えるため）。
 
 理由：`process.env` への代入はテストの後も残り、他のテストの結果に影響するため。
 
-確認方法：レビュー
+確認方法：`process.env` への代入（`++`・`--` を含む）・`delete` と、`process.env` を最初の引数に渡す `Object.assign`・`Object.defineProperty`・`Reflect.set` などは、画面のテストとテストの補助で自動（Biome の plugin `no-process-env-write`）。別の変数を経由した変更などの他の書き方はレビュー
 
 ## 宣言していないグローバルの名前を使わない
 

@@ -160,10 +160,7 @@ class CleanupJobSettingsTest {
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
         @DisplayName("1 回に消す件数が下限の 1 なら、検証を通り、1 件になる")
-        void acceptsBatchSizeAtMinimum(String prefix, String propertiesClass) throws Exception {
-            // 準備：設定の型
-            var type = Class.forName(propertiesClass);
-
+        void acceptsBatchSizeAtMinimum(String prefix, Class<?> type) {
             // 操作：1 件を検証付きで当てはめる
             var properties = TestSettings.bindValidated(prefix, type, Map.of("batch-size", "1"));
 
@@ -177,13 +174,73 @@ class CleanupJobSettingsTest {
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
         @DisplayName("1 回に消す件数が下限より 1 小さい 0 なら、値の検証で拒否される")
-        void rejectsBatchSizeBelowMinimum(String prefix, String propertiesClass) throws Exception {
-            // 準備：設定の型
-            var type = Class.forName(propertiesClass);
-
+        void rejectsBatchSizeBelowMinimum(String prefix, Class<?> type) {
             // 操作と確認：0 件は拒否される
             assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("batch-size", "0")))
                     .isInstanceOf(BindException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("時間の設定の下限")
+    class DurationBounds {
+
+        @ParameterizedTest(name = "「{0}」の間隔が {2}")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties, 0s",
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties, -1s",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, 0s",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, -1s",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 0s",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, -1s",
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties, 999us",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, 999us",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 999us"})
+        @DisplayName("片付けの間隔が 0、負の値、下限の 1ms 未満（999us）なら、値の検証で拒否される")
+        void rejectsIntervalBelowMinimum(String prefix, Class<?> type, String value) {
+            // 操作と確認：値の検証で拒否される
+            assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("interval", value)))
+                    .isInstanceOf(BindException.class);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("片付けの間隔が下限の 1ms なら、値の検証を通り、その値になる")
+        void acceptsIntervalAtMinimum(String prefix, Class<?> type) {
+            // 操作：1ms を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(prefix, type, Map.of("interval", "1ms"));
+
+            // 確認：1ms になる
+            assertThat(properties).extracting("interval").isEqualTo(Duration.ofMillis(1));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("保存期間が負なら、値の検証で拒否される")
+        void rejectsNegativeRetention(String prefix, Class<?> type) {
+            // 操作と確認：-1s は値の検証で拒否される
+            assertThatThrownBy(() -> TestSettings.bindValidated(prefix, type, Map.of("retention", "-1s")))
+                    .isInstanceOf(BindException.class);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @CsvSource({
+                "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
+                "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+        @DisplayName("保存期間が 0 なら、値の検証を通り、0 になる")
+        void acceptsZeroRetention(String prefix, Class<?> type) {
+            // 操作：0s を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(prefix, type, Map.of("retention", "0s"));
+
+            // 確認：0 になる
+            assertThat(properties).extracting("retention").isEqualTo(Duration.ZERO);
         }
     }
 

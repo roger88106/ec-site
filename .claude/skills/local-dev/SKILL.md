@@ -7,7 +7,7 @@ description: ec-site をローカルで起動・確認する手順。スロッ�
 
 エージェントだけが行う手順（待ち方、出力の読み方、避けるコマンドの書き方）を書く。人も行う手順は、各節が指す `docs/06-手順書/` の節にある。
 
-前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う。
+前提：JDK（バージョンはリポジトリのルートの `.java-version`）、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う。
 
 以下の 8080、9080、3000、5173 と DB `ec_site` などの固定の値は、メインの作業ツリー（スロット 0）の値。追加の作業ツリーは、[開発環境の起動](../../../docs/06-手順書/setup.md)の「スロット」の表の値を使う。
 
@@ -30,7 +30,7 @@ hook や検査に止められてからコマンドを書き換えないよう、
 
 ## 環境の準備
 
-- `java` が PATH にないシェル（Bash のツールなど）では、`./gradlew`・`scripts/dev/e2e.sh`・`node scripts/dev/slot.mjs run backend` が JDK を見つけられず失敗する。`JAVA_HOME=<JDK 21 のパス>` をコマンドの前に付ける（パスはマシンごと。`/.local/agent/environment.md`）。手順は[開発環境の起動](../../../docs/06-手順書/setup.md)の冒頭の箇条にある。
+- `java` が PATH にないシェル（Bash のツールなど）では、`./gradlew`・`scripts/dev/e2e.sh`・`node scripts/dev/slot.mjs run backend` が JDK を見つけられず失敗する。`JAVA_HOME=<.java-version の JDK のパス>` をコマンドの前に付ける（パスはマシンごと。`/.local/agent/environment.md`）。手順は[開発環境の起動](../../../docs/06-手順書/setup.md)の冒頭の箇条にある。
 - Docker を使うテストの前に `docker info` で、エンジンが応答するかを確認する。応答しないときは、マシンの手順（`/.local/agent/environment.md`）で復旧する。複数のセッションが同時に復旧しない（issue 担当のセッションに知らせる）。
   - 並行のセッションがないときは、復旧の後に `./gradlew --stop` を実行してからテストする（Gradle のデーモンが Docker の失敗の状態を保持しているため。[テストの実行方法](../../../docs/06-手順書/running-tests.md)）。
   - 並行のセッションがあるときは `./gradlew --stop` を実行しない。理由：デーモンは全ての作業ツリーで共有されていて、他のセッションの実行中の検査が止まるため。`--no-daemon` を付けて実行するか、issue 担当のセッションに聞く。
@@ -153,7 +153,7 @@ node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun
 ```
 
 - 起動を待つ curl は「バックエンド」の節と同じで、待つ先は自分のスロットの運用ポート（スロット 1 は `localhost:19080`）。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
-- 店舗画面と管理画面は、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>`（`<n>` は自分のスロット）をバックグラウンドで実行し、curl で 200 を確認してから、`preview_start` に URL を渡して開く。URL は `http://localhost:<自分のスロットのポート>`（`node scripts/dev/slot.mjs show` で見る）。
+- 店舗画面と管理画面は、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>`（`<n>` は自分のスロット）をバックグラウンドで実行し、curl で 200 を確認してから、`preview_start` に URL を渡して開く。URL は `node scripts/dev/slot.mjs show` の表示を使う（店舗画面は `http://slot<n>.localhost:<ポート>`、管理画面は `http://localhost:<ポート>`）。
 - 停止は「バックエンド」の節の `stop`。`run backend` がポートの使用で終了コード 1 で終わったら、`stop` で停止してから再実行する。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
 

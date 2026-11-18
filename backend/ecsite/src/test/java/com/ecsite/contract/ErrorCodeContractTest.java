@@ -69,6 +69,20 @@ class ErrorCodeContractTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"admin.yaml", "store.yaml"})
+        @DisplayName("AC-274 全ての操作に x-error-codes がある（空の配列も可）")
+        void everyOperationHasErrorCodes(String file) {
+            // 準備：x-error-codes のない操作を集める
+            List<String> missing = OpenApiNodes.operations(CONTRACTS.get(file)).stream()
+                    .filter(operation -> !operation.node().containsKey("x-error-codes"))
+                    .map(OpenApiNodes.Operation::name)
+                    .toList();
+
+            // 操作と確認：x-error-codes のない操作がない
+            assertThat(missing).as("x-error-codes のない操作").isEmpty();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"admin.yaml", "store.yaml"})
         @DisplayName("AC-274 共通のエラーは、バックエンドの共通のエラーと同じ")
         void commonIsBackendCommon(String file) {
             // 準備：バックエンドの共通のエラーのコード

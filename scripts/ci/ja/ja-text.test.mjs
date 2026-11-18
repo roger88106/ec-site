@@ -249,7 +249,7 @@ describe('言い換えの一覧（活用と語。DC-566-11・12）', () => {
     for (const text of ['不足して', '補足して', '足りない']) assert.equal(errorHits(text), 0, text)
   })
 
-  test('足し算 は許容用語にして、error にしない', () => {
+  test('足し算 は pattern で除き、error にしない', () => {
     assert.equal(errorHits('足し算で求める'), 0)
   })
 

@@ -239,7 +239,7 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。entity と集約は record にせず、class にする。entity と集約には、モジュールのレベルによらず、jMolecules の注釈（`@Entity`・`@AggregateRoot`）と、識別子の項目の `@Identity` を付ける。
 
-理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。record には Lombok の `@EqualsAndHashCode` を付けられず、record の `equals` は全ての項目で比べるため。注釈は、自動の検査（`EntityEqualityTest`、`EntityEqualityAssertion`）が、注釈と基底クラスの継承で対象を決めるため。
+理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。record には Lombok の `@EqualsAndHashCode` を付けられず、record の `equals` は全ての項目で比べるため。注釈を付けるのは、自動の検査（`EntityEqualityTest`、`EntityEqualityAssertion`）が、注釈と基底クラスの継承で対象を決めるため。
 
 確認方法：
 

@@ -7,7 +7,7 @@ import messages from '../../../../messages/ja.json'
 
 const text = messages.app.loginFailed
 
-/** ログインしていない状態で、ログインできなかった画面を DOM に読み込む */
+/** ログインしていない状態で、ログインできなかったことを示す画面を DOM に読み込む */
 async function renderLoginFailedPage() {
   resetRequest()
   authState.session = null
@@ -15,7 +15,7 @@ async function renderLoginFailedPage() {
   return renderStatic(await LoginFailedPage())
 }
 
-describe('ログインできなかった画面の表示', () => {
+describe('ログインできなかったことを示す画面の表示', () => {
   test('AC-430-2 ログインしていなくても、ログインできなかったことを見出しで示す', async () => {
     const view = await renderLoginFailedPage()
 

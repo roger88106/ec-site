@@ -88,7 +88,7 @@ describe('ログインの戻り先', () => {
     expect(signInUrl.searchParams.get('redirect_uri')).toBe(`${PUBLIC_URL}/api/auth/callback/keycloak`)
   })
 
-  test('AC-430-1 IdP から戻ったときの手続きが失敗したら、ログインできなかった画面の案内へ移る', async () => {
+  test('AC-430-1 IdP から戻ったときの手続きが失敗したら、エラーのエンドポイントへ移る', async () => {
     server.use(idpDiscovery())
 
     const response = await handlers.GET(forgedRequest('/callback/keycloak?code=x&state=y'))

@@ -176,7 +176,7 @@ export async function idpLogoutUrl(): Promise<string> {
 }
 
 /**
- * 公開する URL（リダイレクトの先を作るのに使う。リクエストヘッダーのホストは偽れるので使わない）と、
+ * 公開する URL（リダイレクトの先を作るのに使う。リクエストヘッダーのホストは偽装できるので使わない）と、
  * ログインの再試行のフラグ（`loginRetry.ts`）
  */
 export { deleteLoginRetryFlag, hasLoginRetryFlag, PUBLIC_URL, setLoginRetryFlag }

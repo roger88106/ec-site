@@ -26,7 +26,7 @@ async function loginLocation(query: string): Promise<string | null> {
 }
 
 describe('再試行のログイン', () => {
-  test('AC-430-3 フラグの Cookie がなければ、IdP へ移らず、ログインできなかった画面へ移す', async () => {
+  test('AC-430-3 フラグの Cookie がなければ、IdP へ移らず、ログインできなかったことを示す画面へ移す', async () => {
     const location = await loginLocation('?retry=1')
 
     expect(authState.signIn).not.toHaveBeenCalled()

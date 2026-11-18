@@ -38,7 +38,7 @@ describe('ログインのエラーのエンドポイント', () => {
     expect(cookieValue(RETRY_COOKIE)).toBe('1')
   })
 
-  test('AC-430-2 error が Configuration でも、フラグがあれば、フラグを削除して、ログインできなかった画面へ移す', async () => {
+  test('AC-430-2 error が Configuration でも、フラグがあれば、フラグを削除して、ログインできなかったことを示す画面へ移す', async () => {
     resetRequest({ cookies: { [RETRY_COOKIE]: '1' } })
 
     const response = await callLoginError('?error=Configuration')
@@ -50,7 +50,7 @@ describe('ログインのエラーのエンドポイント', () => {
   test.each([
     ['AccessDenied', '?error=AccessDenied'],
     ['error がない', ''],
-  ])('AC-430-2 error が %s なら、再試行せずに、ログインできなかった画面へ移す', async (_, query) => {
+  ])('AC-430-2 error が %s なら、再試行せずに、ログインできなかったことを示す画面へ移す', async (_, query) => {
     const response = await callLoginError(query)
 
     expect(response.headers.get('location')).toBe(`${PUBLIC_URL}/login/failed`)

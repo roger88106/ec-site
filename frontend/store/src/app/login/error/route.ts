@@ -3,10 +3,10 @@ import { deleteLoginRetryFlag, hasLoginRetryFlag, PUBLIC_URL, setLoginRetryFlag 
 import { loginRetryPath } from '@/lib/login'
 
 /**
- * Auth.js のエラーの画面の先（店舗画面の構成の「ログイン」）。
+ * Auth.js のエラーの画面の指定先（店舗画面の構成の「ログイン」）。
  *
  * error が Configuration で再試行のフラグがなければ、フラグを書いて、もう 1 回だけログインを試す。
- * それ以外は、フラグを削除して、ログインできなかった画面へ移す。
+ * それ以外は、フラグを削除して、ログインできなかったことを示す画面へ移す。
  * 移動先は決まったパスだけで、クエリの値は使わない。
  *
  * @param request リクエスト。クエリは error（Auth.js のエラーの種類）

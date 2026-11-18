@@ -20,9 +20,19 @@ export function safeReturnTo(value: string | null | undefined): string {
   return isSafeReturnPath(value) && !isLoginPath(value) ? value : HOME
 }
 
-/** `/login` の下のパスか（`/login`、`/login/...`、`/login?...`） */
+/**
+ * `/login` の下のパスか（`/login`、`/login/...`、`/login?...`）。
+ *
+ * 文字列のままでは `/./login` や `/x/../login`、`/%2e/login`、`\` 区切りのように、ブラウザーが解決すると
+ * `/login` の下になる書き方を見逃すので、ブラウザーと同じ URL の解析で正規化したパスを調べる。
+ * 解析に失敗したときは、安全側で `/login` の下とみなす。
+ */
 function isLoginPath(path: string): boolean {
-  return /^\/login(?:[/?#]|$)/.test(path)
+  try {
+    return /^\/login(?:\/|$)/.test(new URL(path, 'http://localhost').pathname)
+  } catch {
+    return true
+  }
 }
 
 /**

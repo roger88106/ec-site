@@ -20,7 +20,7 @@
   - 依存：なし
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/handler/CatalogEventHandlerTest.java`
   - 確認方法：テストが失敗する。テストを通すためにテストを弱めない
-- [ ] **T547-01-04** [リスク] T547-01-03 のテストが通るように、バリアントの登録のイベントを同期で受ける。呼んだ側のトランザクションがないときは例外にする（DC-547-9）。
+- [x] **T547-01-04** [リスク] T547-01-03 のテストが通るように、バリアントの登録のイベントを同期で受ける。呼んだ側のトランザクションがないときは例外にする（DC-547-9）。
   - 依存：T547-01-03
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/inventory/application/handler/CatalogEventHandler.java`
   - 確認方法：`CatalogEventHandlerTest` と、Spring Modulith のモジュールの検査のテストが通る

@@ -34,8 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 商品カタログのイベントによる在庫の作成・削除の統合テスト
  *
- * <p>イベントはコミット後に非同期で処理されるので、コミットするトランザクションで発行し、処理を待つ。
- * ロールバックしない。
+ * <p>バリアント登録は、発行したトランザクションの中で同期で処理される。バリアント削除と商品削除は、コミット後に非同期で処理されるので、
+ * コミットするトランザクションで発行し、処理を待つ。ロールバックしない。
  */
 @IntegrationTest
 class CatalogEventHandlerTest {
@@ -388,7 +388,7 @@ class CatalogEventHandlerTest {
     /**
      * コミットするトランザクションでイベントを発行する。
      *
-     * <p>リスナーはコミット後に動く。
+     * <p>バリアント登録のリスナーはトランザクションの中で動き、削除のリスナーはコミット後に動く。
      *
      * @param event イベント
      */

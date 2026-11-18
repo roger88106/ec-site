@@ -151,6 +151,12 @@ class EntityEqualityAssertionTest {
             Map<UUID, Order> ordersById = Map.of();
             Map<String, UUID> idByNumber = Map.of();
             Map<String, String> settings = Map.of();
+            Map<Order, String> byOrder = Map.of();
+            Map.Entry<UUID, Order> entry = Map.entry(id, order);
+            Class<Order> orderType = Order.class;
+            Comparator<Order> comparator = Comparator.comparing(Order::id);
+            Function<Order, UUID> idOf = Order::id;
+            Supplier<Order> supplier = () -> order;
             Repository repository = null;
             Optional<Payment> optionalPayment = Optional.empty();
             AtomicInteger calls = new AtomicInteger();
@@ -332,7 +338,9 @@ class EntityEqualityAssertionTest {
                 "assertNotEquals(a, b);",
                 "assertIterableEquals(expectedOrders, orders);",
                 "assertArrayEquals(expectedArray, orderArray);",
-                "assertEquals(Optional.of(a), repository.findById(id));"));
+                "assertEquals(Optional.of(a), repository.findById(id));",
+                "org.junit.Assert.assertEquals(a, b);",
+                "org.junit.Assert.assertArrayEquals(expectedArray, orderArray);"));
 
         // 操作と確認：全ての行を検出する
         helper.doTest();
@@ -353,6 +361,124 @@ class EntityEqualityAssertionTest {
                 "assertThat(orderSet.contains(a)).isTrue();",
                 "assertThat(orders).filteredOn(a::equals).hasSize(1);",
                 "assertThat(orders.stream().filter(a::equals).count()).isEqualTo(1);"));
+
+        // 操作と確認：全ての行を検出する
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("AssertJ の一覧の残りの比較・Map・返り値・ハッシュ値の比較で、引数が entity を含むとき検出する")
+    void detectsRemainingAssertJEqualityMethods() {
+        // 準備：一覧・Map の包含の系統、returns・hasFieldOrPropertyWithValue、ハッシュ値の比較
+        var helper = helper(detect(
+                "assertThat(orders).containsOnlyElementsOf(expectedOrders);",
+                "assertThat(orders).containsOnlyOnceElementsOf(expectedOrders);",
+                "assertThat(orders).containsAnyElementsOf(expectedOrders);",
+                "assertThat(orders).doesNotContainSequence(a, b);",
+                "assertThat(orders).doesNotContainSubsequence(a, b);",
+                "assertThat(ordersById).containsExactlyInAnyOrderEntriesOf(Map.of(id, order));",
+                "assertThat(ordersById).containsAllEntriesOf(Map.of(id, order));",
+                "assertThat(ordersById).containsExactlyEntriesOf(Map.of(id, order));",
+                "assertThat(ordersById).doesNotContainEntry(id, order);",
+                "assertThat(ordersById).doesNotContainValue(order);",
+                "assertThat(byOrder).containsKey(a);",
+                "assertThat(byOrder).containsKeys(a, b);",
+                "assertThat(byOrder).containsOnlyKeys(a);",
+                "assertThat(byOrder).doesNotContainKey(a);",
+                "assertThat(byOrder).doesNotContainKeys(a, b);",
+                "assertThat(order).returns(customer, Order::customer);",
+                "assertThat(order).doesNotReturn(customer, Order::customer);",
+                "assertThat(order).hasFieldOrPropertyWithValue(\"customer\", customer);",
+                "assertThat(order).hasSameHashCodeAs(expected);",
+                "assertThat(order).doesNotHaveSameHashCodeAs(expected);",
+                "assertThat(entry).isEqualTo(Map.entry(id, a));",
+                "assertThat(orders.iterator()).isEqualTo(expectedOrders.iterator());"));
+
+        // 操作と確認：全ての行を検出する
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("Collection と Map の探すメソッドの引数が entity を含むとき検出する")
+    void detectsCollectionAndMapLookups() {
+        // 準備：lastIndexOf・remove・removeAll・retainAll と、Map の containsValue・containsKey・get・remove
+        var helper = helper(detect(
+                "orders.lastIndexOf(a);",
+                "orders.remove(a);",
+                "orders.removeAll(expectedOrders);",
+                "orders.retainAll(expectedOrders);",
+                "ordersById.containsValue(a);",
+                "byOrder.containsKey(a);",
+                "byOrder.get(a);",
+                "byOrder.remove(a);"));
+
+        // 操作と確認：全ての行を検出する
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("Hamcrest の matcher の引数が entity を含むとき検出する")
+    void detectsHamcrestMatchers() {
+        // 準備：等価で比べる matcher を作る static メソッドに、entity とその一覧を渡す文
+        var helper = helper(detect(
+                "Matchers.equalTo(expected);",
+                "CoreMatchers.equalTo(expected);",
+                "Matchers.is(order);",
+                "Matchers.not(order);",
+                "Matchers.isIn(orders);",
+                "Matchers.in(orders);",
+                "Matchers.oneOf(a, b);",
+                "Matchers.hasItem(a);",
+                "Matchers.hasItems(a, b);",
+                "Matchers.contains(a, b);",
+                "Matchers.containsInAnyOrder(a, b);",
+                "Matchers.containsInRelativeOrder(a, b);",
+                "Matchers.arrayContaining(a, b);",
+                "Matchers.arrayContainingInAnyOrder(a, b);",
+                "Matchers.hasItemInArray(a);",
+                "Matchers.hasEntry(id, order);",
+                "Matchers.hasKey(a);",
+                "Matchers.hasValue(a);"));
+
+        // 操作と確認：全ての行を検出する
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("entity の equals とコレクションの探すメソッドのメソッド参照を検出する")
+    void detectsMethodReferences() {
+        // 準備：束縛した参照（a::equals）、束縛しない参照（Order::equals）、一覧の contains の参照
+        var helper = helper(detect(
+                "Predicate<Object> bound = a::equals;",
+                "BiPredicate<Order, Object> unbound = Order::equals;",
+                "Predicate<Object> lookup = orders::contains;"));
+
+        // 操作と確認：全ての行を検出する
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("tuple に entity を入れて比べるとき、tuple の引数の型を見て検出する")
+    void detectsEntityInsideTuple() {
+        // 準備：extracting で取り出した組を、entity を含む tuple（Assertions.tuple と Tuple.tuple）で比べる文
+        var helper = helper(detect(
+                "assertThat(orders).extracting(Order::customer, Order::status).containsExactly(tuple(customer, Status.OPEN));",
+                "assertThat(orders).extracting(Order::customer, Order::status)"
+                        + ".containsExactly(org.assertj.core.groups.Tuple.tuple(customer, Status.OPEN));",
+                "assertThat(orders).extracting(Order::customer, Order::status).containsExactly(tuple(tuple(customer), 1));"));
+
+        // 操作と確認：全ての行を検出する
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("比べ方を equals に戻す usingDefault から始まる呼び出しより後は、検出する")
+    void detectsAfterUsingDefaultComparator() {
+        // 準備：比べ方を替えた後に equals へ戻して比べる文
+        var helper = helper(detect(
+                "assertThat(order).usingComparator(Comparator.comparing(Order::id)).usingDefaultComparator().isEqualTo(expected);",
+                "assertThat(orders).usingElementComparator(Comparator.comparing(Order::id))"
+                        + ".usingDefaultElementComparator().containsExactly(a);"));
 
         // 操作と確認：全ての行を検出する
         helper.doTest();
@@ -426,6 +552,69 @@ class EntityEqualityAssertionTest {
                 "assertThat(orders).first().usingRecursiveComparison().isEqualTo(expected);",
                 "assertThat(orders).hasSize(1).first().usingRecursiveComparison().isEqualTo(expected);",
                 "assertThat(repository.findById(id)).get().usingRecursiveComparison().isEqualTo(order);"));
+
+        // 操作と確認：検出しない
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("連鎖を変数に分けた項目ごとの比較（RecursiveComparisonAssert）は、検出しない")
+    void ignoresRecursiveComparisonHeldInVariable() {
+        // 準備：usingRecursiveComparison の結果を変数に取り、別の文で比べる
+        var helper = helper(pass(
+                "var comparison = assertThat(order).usingRecursiveComparison();",
+                "comparison.isEqualTo(expected);",
+                "comparison.isNotEqualTo(other);"));
+
+        // 操作と確認：検出しない
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("要素や値を持たない総称型（Class・Comparator・Function・Supplier）の型引数が entity でも、検出しない")
+    void ignoresGenericTypesWithoutValues() {
+        // 準備：型引数が entity の、Class・Comparator・Function・Supplier を比べる文と、matcher を引数にする Hamcrest の文
+        var helper = helper(pass(
+                "assertThat(orderType).isEqualTo(Order.class);",
+                "assertThat(comparator).isEqualTo(comparator);",
+                "assertThat(idOf).isEqualTo(idOf);",
+                "assertThat(supplier).isEqualTo(supplier);",
+                "Matchers.is(Matchers.instanceOf(Order.class));"));
+
+        // 操作と確認：検出しない
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("Hamcrest と Map の検索で、引数が entity でないときは検出しない")
+    void ignoresLookupsWithNonEntityArguments() {
+        // 準備：識別子の引数、Map のメソッド参照、一覧の位置を指定する remove
+        var helper = helper(pass(
+                "Matchers.equalTo(order.id());",
+                "Matchers.hasItem(id);",
+                "ordersById.get(id);",
+                "ordersById.containsKey(id);",
+                "ordersById.remove(id);",
+                "orders.remove(0);",
+                "Function<UUID, Order> lookup = ordersById::get;"));
+
+        // 操作と確認：検出しない
+        helper.doTest();
+    }
+
+    @Test
+    @DisplayName("型変数が自己参照で、入れ子の深さの上限に達するときは、検出しない")
+    void ignoresSelfReferencingTypeVariable() {
+        // 準備：上限が自分を型引数に持つ型変数（要素を持つ型と持たない型）を比べるメソッド
+        var helper = helper("""
+                <T extends Iterable<T>> void holder(T actual, T expectedValue) {
+                    assertThat((Object) actual).isEqualTo(expectedValue);
+                }
+
+                <T extends Comparable<T>> void comparable(T actual, T expectedValue) {
+                    assertThat((Object) actual).isEqualTo(expectedValue);
+                }
+                """);
 
         // 操作と確認：検出しない
         helper.doTest();
@@ -544,6 +733,12 @@ class EntityEqualityAssertionTest {
                 import java.util.Set;
                 import java.util.UUID;
                 import java.util.concurrent.atomic.AtomicInteger;
+                import java.util.function.BiPredicate;
+                import java.util.function.Function;
+                import java.util.function.Predicate;
+                import java.util.function.Supplier;
+                import org.hamcrest.CoreMatchers;
+                import org.hamcrest.Matchers;
 
                 class Sample {
                 """

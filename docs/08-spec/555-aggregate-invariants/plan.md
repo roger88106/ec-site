@@ -116,11 +116,11 @@ record を class に変えるときの呼び出し元（[文書の構成](../../
 
 判定：
 
-- 対象の型は、jMolecules の Entity・AggregateRoot の注釈が付いたクラスと、基底クラスとその継承先。型が対象の型を含むとは、型そのもの、配列の要素、総称型の型引数（`List<Order>`、`Optional<Order>`、`Map<String, List<Order>>` など。入れ子もたどる）のどれかが対象の型であること。型変数とワイルドカードは上限の型で見る。
+- 対象の型は、jMolecules の Entity・AggregateRoot の注釈が付いたクラスと、基底クラスとその継承先。型が対象の型を含むとは、型そのもの、配列の要素、要素や値を持つ総称型（`Iterable`、`Iterator`、`Stream`、`Optional`、`Map`、`Map.Entry`）の型引数（`List<Order>`、`Map<String, List<Order>>` など。入れ子もたどる）、`tuple(...)` の引数のどれかが対象の型であること。`Class<Order>`・`Comparator<Order>` などの型引数はたどらない。型変数とワイルドカードは上限の型で見る。
 - AssertJ の assert のオブジェクトに対する、等価で比べるメソッドの呼び出しで、引数の型が対象の型を含むときに検出する。メソッドの一覧は検査のクラスに閉じた一覧で持つ（`isEqualTo`・`isIn`・`contains` の系統・`containsEntry`・`hasValue`・`hasSameElementsAs`・`startsWith` など、否定の形を含む）。`first()`・`get()`・`extracting(...)` の後の呼び出しも同じに判定する。
-- assert の連鎖の途中に、名前が `using` で始まる比較の方法を替える呼び出し（`usingRecursiveComparison()`・`usingElementComparator(...)` など）があれば、検出しない。
-- JUnit の `assertEquals`・`assertNotEquals`・`assertIterableEquals`・`assertArrayEquals` の引数の型が対象の型を含むときに検出する。
-- 対象の型の `equals` の呼び出し（メソッド参照を含む）と `Objects.equals`、`Collection` の `contains`・`containsAll`・`indexOf`・`remove` の引数の型が対象の型を含むときに検出する。
+- assert の連鎖の途中に、名前が `using` で始まる比較の方法を替える呼び出し（`usingRecursiveComparison()`・`usingElementComparator(...)` など）があれば、検出しない。ただし、最も後ろの呼び出しが比べ方を equals に戻す `usingDefault` で始まる呼び出しなら検出する。受け手が `RecursiveComparisonAssert` の呼び出しは検出しない。
+- JUnit（4 と 5）の `assertEquals`・`assertNotEquals`・`assertIterableEquals`・`assertArrayEquals` と、Hamcrest の値で比べる matcher（`equalTo`・`is`・`hasItem`・`hasEntry` など）の引数の型が対象の型を含むときに検出する。
+- 対象の型の `equals` の呼び出し（メソッド参照を含む）と `Objects.equals`、`Collection` の `contains`・`containsAll`・`indexOf`・`lastIndexOf`・`remove`・`removeAll`・`retainAll`、`Map` の `containsKey`・`containsValue`・`get`・`remove` の引数の型が対象の型を含むときに検出する。
 - 検出しないもの：参照で比べる `isSameAs`・`containsSame`・`assertSame` の系統、Mockito の引数の照合（`verify`・`eq` など）、対象の型を成分に持つ record の比較。
 - 対象はテストのソースセット（test、integrationTest、testFixtures）だけ。抑えるときは `@SuppressWarnings("EntityEqualityAssertion")` と、直前の行の理由のコメント（[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「検査を抑えるとき」）。
 - 判定の区分は、誤りの防止（誤って書いたものを拒否し、意図して作った回避は対象にしない）にする（[文書の構成](../../05-開発規則/doc-structure.md)の「形を判定する検査」）。
@@ -144,6 +144,11 @@ record を class に変えるときの呼び出し元（[文書の構成](../../
 | `assertThat(images).extracting(ProductImage::id).containsExactly(id1)` | しない | 要素は識別子 |
 | `assertThat(payment.toSnapshot()).isEqualTo(before)` | しない | スナップショットは record の値で、entity でない |
 | `assertThat(order).isSameAs(loaded)` | しない | 参照の同一性の確認で、等価でない |
+| `assertThat(actual, equalTo(expected))`（Hamcrest。どちらも注文） | する | matcher も equals で比べる |
+| `assertThat(items).containsExactly(tuple(product, 2))` | する | tuple の中の entity も equals で比べる |
+| `assertThat(order).usingComparator(c).usingDefaultComparator().isEqualTo(expected)` | する | 比べ方が equals に戻っている |
+| `var c = assertThat(order).usingRecursiveComparison(); c.isEqualTo(expected);` | しない | 項目ごとに比べる |
+| `assertThat(type).isEqualTo(Order.class)`（`Class<Order>`） | しない | 型の比較で、entity の equals を使わない |
 | `verify(repository).save(order)`（Mockito） | しない | 呼び出しの確認で、値の確認でない |
 | main のコードの `equals` の呼び出し | しない | 対象はテストのソースセットだけ |
 

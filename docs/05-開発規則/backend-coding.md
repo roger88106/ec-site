@@ -241,7 +241,10 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 
 理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。record には Lombok の `@EqualsAndHashCode` を付けられず、record の `equals` は全ての項目で比べるため、entity と集約は class にする。
 
-確認方法：自動（ArchUnit の `EntityEqualityTest`）
+確認方法：
+
+- record にしない、`equals` と `hashCode` を宣言する、`@Identity` の項目を持つ、`equals` と `hashCode` が識別子の項目だけを使う：自動（ArchUnit の `EntityEqualityTest`）
+- 手動で書かず Lombok で作る：レビュー（識別子だけで比べていれば、手書きでも自動の確認は通る）
 
 ### 名前の形
 

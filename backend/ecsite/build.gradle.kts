@@ -195,7 +195,12 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
     // 独自の検査のテスト（CompilationTestHelper）。検査の API と本体は、test のクラスパスにも必要になる
     testImplementation(libs.errorprone.check.api)
-    testImplementation(libs.errorprone.test.helpers)
+    // 補助の間接の依存の JUnit 4 は、テストのコンパイルのクラスパスに入れない（誤って org.junit.Test を import したテストが、
+    // コンパイルを通って実行されないのを防ぐ）。補助の実行には必要なので、実行のクラスパスだけに加える
+    testImplementation(libs.errorprone.test.helpers) {
+        exclude(group = "junit", module = "junit")
+    }
+    testRuntimeOnly(libs.junit4)
 
     // --- テスト：統合 ---
     "integrationTestImplementation"(testFixtures(project))
@@ -832,6 +837,9 @@ tasks.check { dependsOn(checkBootJar) }
 // クラスパスで片方が隠れ、テストが流れないか、別のクラスを読む
 val testSourceSetNames = listOf("test", "integrationTest", "testFixtures")
 
+/** テストのソースセットのコンパイルの task の名前（compileTestJava など）。コンパイルオプションで使う */
+val testCompileTaskNames = testSourceSetNames.map { "compile${it.replaceFirstChar { c -> c.uppercase() }}Java" }
+
 val checkTestClassNames = tasks.register("checkTestClassNames") {
     description = "テストのソースセットの間に、同じ完全修飾名のクラスがないことを確認する"
     group = "verification"
@@ -883,11 +891,11 @@ tasks.withType<JavaCompile>().configureEach {
         disable("ImmutableEnumChecker")
         // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
         // テストのツール（JsonPath.read と同じ形の read）で、本番の誤りにつながらない
-        if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
+        if (name in testCompileTaskNames) {
             disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
         }
         // 独自の検査 EntityEqualityAssertion は、テストのソースセットのコンパイルだけで動かし、エラーにする（main と tools では動かさない）
-        if (testSourceSetNames.any { name == "compile${it.replaceFirstChar { c -> c.uppercase() }}Java" }) {
+        if (name in testCompileTaskNames) {
             check("EntityEqualityAssertion", CheckSeverity.ERROR)
         } else {
             disable("EntityEqualityAssertion")

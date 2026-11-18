@@ -147,6 +147,8 @@ spring-boot-micrometer-tracing-test = { module = "org.springframework.boot:sprin
 spring-boot-micrometer-metrics-test = { module = "org.springframework.boot:spring-boot-micrometer-metrics-test" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+# 検査のテストの補助（error_prone_test_helpers）が実行で使う JUnit 4。コンパイルのクラスパスには入れない
+junit4 = { module = "junit:junit", version = "4.13.2" }
 # CPD の Java の言語の部品（cpd の構成に入れる）
 pmd-java = { module = "net.sourceforge.pmd:pmd-java", version.ref = "pmd" }
 

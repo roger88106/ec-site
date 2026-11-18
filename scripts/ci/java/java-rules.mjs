@@ -163,7 +163,7 @@ function annotationMask(code) {
  * @SuppressWarnings の理由を求める場所か。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 本番、テスト、tools のソースなら true（生成したコードは含まない）
+ * @returns {boolean} 本番、テスト、tools、errorprone のソースなら true（生成したコードは含まない）
  */
 export function isSuppressWarningsTarget(file) {
   return JAVA_SOURCE.test(file)

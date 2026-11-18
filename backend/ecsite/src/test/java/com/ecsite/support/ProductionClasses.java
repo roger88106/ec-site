@@ -238,16 +238,16 @@ public final class ProductionClasses {
     }
 
     /**
-     * ソースの場所が tools の出力かを返す。
+     * ソースの場所が tools と errorprone の出力かを返す。
      *
-     * <p>tools は開発で流すツールで、本番のクラスではない。
-     * 単体テストの classpath には、tools の出力のディレクトリ（build/classes/java/tools）が入る。
+     * <p>tools は開発で流すツール、errorprone は独自の Error Prone の検査で、どちらも本番のクラスではない。
+     * 単体テストの classpath には、それぞれの出力のディレクトリ（build/classes/java/tools、build/classes/java/errorprone）が入る。
      *
      * @param location クラスの場所の URI
-     * @return tools の出力のディレクトリなら true
+     * @return tools か errorprone の出力のディレクトリなら true
      */
-    private static boolean isToolsLocation(String location) {
-        return location.contains("/classes/java/tools/");
+    private static boolean isDevelopmentToolLocation(String location) {
+        return location.contains("/classes/java/tools/") || location.contains("/classes/java/errorprone/");
     }
 
     /**
@@ -275,12 +275,12 @@ public final class ProductionClasses {
          * {@code com.ecsite} の本番のクラス
          *
          * <p>単体テストと統合テストが共有する testFixtures は、テストのコードなので除く。
-         * 単体テストの classpath にある tools は、開発のツールなので除く。
+         * 単体テストの classpath にある tools と errorprone は、開発のツールと検査なので除く。
          */
         private static final JavaClasses ALL = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                 .withImportOption(location -> !isTestFixtureLocation(location.asURI().toString()))
-                .withImportOption(location -> !isToolsLocation(location.asURI().toString()))
+                .withImportOption(location -> !isDevelopmentToolLocation(location.asURI().toString()))
                 .importPackages("com.ecsite");
 
         /**

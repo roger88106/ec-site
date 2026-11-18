@@ -19,8 +19,8 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.catalog.application.product.ProductCommandService;
 import com.ecsite.module.catalog.application.product.ProductImageCommandService;
-import com.ecsite.module.catalog.application.product.ProductImageService;
-import com.ecsite.module.catalog.application.product.ProductPublicationService;
+import com.ecsite.module.catalog.application.product.ProductImageGatewayService;
+import com.ecsite.module.catalog.application.product.ProductPublicationCommandService;
 import com.ecsite.module.catalog.application.product.ProductQueryService;
 import com.ecsite.module.catalog.application.product.VariantCommandService;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +54,7 @@ class ProductController implements ProductApi {
     /**
      * 公開のコマンドサービス
      */
-    private final ProductPublicationService productPublicationService;
+    private final ProductPublicationCommandService productPublicationCommandService;
 
     /**
      * 商品クエリサービス
@@ -62,9 +62,9 @@ class ProductController implements ProductApi {
     private final ProductQueryService queryService;
 
     /**
-     * 商品画像のアプリケーションサービス
+     * 商品画像のゲートウェイサービス
      */
-    private final ProductImageService imageService;
+    private final ProductImageGatewayService imageGatewayService;
 
     /**
      * 商品画像のコマンドサービス
@@ -166,7 +166,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> publishProduct(UUID productId) {
-        productPublicationService.publishProduct(productId);
+        productPublicationCommandService.publishProduct(productId);
         return ResponseEntity.noContent().build();
     }
 
@@ -180,7 +180,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> unpublishProduct(UUID productId) {
-        productPublicationService.unpublishProduct(productId);
+        productPublicationCommandService.unpublishProduct(productId);
         return ResponseEntity.noContent().build();
     }
 
@@ -194,7 +194,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> discontinueProduct(UUID productId) {
-        productPublicationService.discontinueProduct(productId);
+        productPublicationCommandService.discontinueProduct(productId);
         return ResponseEntity.noContent().build();
     }
 
@@ -207,7 +207,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> setPublicationPeriod(UUID productId, SetPublicationPeriodRequest request) {
-        productPublicationService.changePublicationPeriod(mapper.toChangePublicationPeriodCommand(productId, request));
+        productPublicationCommandService.changePublicationPeriod(mapper.toChangePublicationPeriodCommand(productId, request));
         return ResponseEntity.noContent().build();
     }
 
@@ -265,7 +265,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ImageUpload> createImageUpload(UUID productId, CreateImageUploadRequest request) {
-        var upload = imageService.createUpload(productId, request.getContentType().getValue(), request.getContentLength());
+        var upload = imageGatewayService.createUpload(productId, request.getContentType().getValue(), request.getContentLength());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toImageUpload(upload));
     }
 
@@ -280,7 +280,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<CreatedId> addProductImage(UUID productId, AddProductImageRequest request) {
-        var id = imageService.addImage(productId, request.getUploadId(), request.getVersion());
+        var id = imageGatewayService.addImage(productId, request.getUploadId(), request.getVersion());
         return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId().id(id));
     }
 

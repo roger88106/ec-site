@@ -48,23 +48,26 @@ function assertSlot(slot) {
  *
  * @param {number} slot スロットの番号（0 以上 SLOT_COUNT 未満）
  * @returns {{ slot: number, backendPort: number, managementPort: number, storePort: number, adminPort: number,
- *   database: string, publicBucket: string, incomingBucket: string, cookiePrefix: string }}
- *   運用ポートは managementPort。Cookie の接頭辞はスロット 0 では空
+ *   database: string, publicBucket: string, incomingBucket: string, cookiePrefix: string, storeOrigin: string }}
+ *   運用ポートは managementPort。Cookie の接頭辞はスロット 0 では空。
+ *   storeOrigin はブラウザーが開く店舗画面の origin（Cookie はポートで分かれずホストで分かれるので、スロット 1 以降はホストを `slot<N>.localhost` に分ける）
  */
 export function slotValues(slot) {
   assertSlot(slot)
   const offset = PORT_LIST.slotOffset * slot
+  const storePort = portOf('store') + offset
   const suffix = slot === 0 ? '' : `-${slot}`
   return {
     slot,
     backendPort: portOf('backend') + offset,
     managementPort: portOf('management') + offset,
-    storePort: portOf('store') + offset,
+    storePort,
     adminPort: portOf('admin') + offset,
     database: slot === 0 ? 'ec_site' : `ec_site_${slot}`,
     publicBucket: `ec-site-images${suffix}`,
     incomingBucket: `ec-site-images-incoming${suffix}`,
     cookiePrefix: slot === 0 ? '' : `s${slot}-`,
+    storeOrigin: slot === 0 ? `http://localhost:${storePort}` : `http://slot${slot}.localhost:${storePort}`,
   }
 }
 
@@ -204,14 +207,14 @@ export function slotEnv(slot, target) {
       ECSITE_MEDIA_STORAGE_INCOMING_BUCKET: values.incomingBucket,
       ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET: values.publicBucket,
       ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL: `${STORAGE_ORIGIN}/${values.publicBucket}`,
-      ECSITE_PAYMENT_RETURN_URL: `http://localhost:${values.storePort}/orders/{orderId}?payment=returned`,
+      ECSITE_PAYMENT_RETURN_URL: `${values.storeOrigin}/orders/{orderId}?payment=returned`,
       ECSITE_PAYMENT_MOCK_BASE_URL: backendOrigin,
     }
   }
   if (target === 'store') {
     return {
       STORE_API_BASE_URL: `${backendOrigin}/api/store`,
-      AUTH_URL: `http://localhost:${values.storePort}`,
+      AUTH_URL: values.storeOrigin,
       STORE_COOKIE_PREFIX: values.cookiePrefix,
       STORE_MOCK_PAYMENT_ORIGIN: backendOrigin,
     }

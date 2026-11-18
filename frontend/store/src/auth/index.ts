@@ -133,7 +133,8 @@ export async function requireMember(): Promise<CurrentMember> {
  * 期限が切れていれば、その場で取り直して使う（Cookie には書かない。次のリクエストで proxy が書く）。
  * リクエストの中では 1 回だけ読む。
  *
- * @returns access token。ログインしていない、または取り直せなければ null
+ * @returns access token。ログインしていない、または IdP が refresh token を拒否したら null。
+ *          それ以外の失敗（IdP に届かない、IdP の障害など）では、セッションの access token
  */
 export const getAccessToken = cache(async (): Promise<string | null> => {
   const token = await readToken()

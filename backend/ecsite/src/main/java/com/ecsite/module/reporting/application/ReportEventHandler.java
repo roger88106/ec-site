@@ -16,7 +16,7 @@ class ReportEventHandler {
     /**
      * 写しと状態の履歴を集めるサービス
      */
-    private final ReportCollectionService reportCollectionService;
+    private final ReportCollectionCommandService reportCollectionCommandService;
 
     /**
      * 注文の状態の変化：履歴に追加し、注文の写しを再作成する。
@@ -27,7 +27,7 @@ class ReportEventHandler {
      */
     @ApplicationModuleListener
     void on(OrderStatusChanged event) {
-        reportCollectionService.record(event);
+        reportCollectionCommandService.record(event);
     }
 
     /**
@@ -39,6 +39,6 @@ class ReportEventHandler {
      */
     @ApplicationModuleListener
     void on(DeliveryStatusChanged event) {
-        reportCollectionService.record(event);
+        reportCollectionCommandService.record(event);
     }
 }

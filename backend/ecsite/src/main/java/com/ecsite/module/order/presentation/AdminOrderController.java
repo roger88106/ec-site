@@ -9,7 +9,7 @@ import com.ecsite.api.admin.model.ShipOrderRequest;
 import com.ecsite.api.admin.model.Shipment;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
-import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderCancellationCommandService;
 import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.model.view.OrderSummaryView;
@@ -34,7 +34,7 @@ class AdminOrderController implements OrderApi {
     /**
      * キャンセルのサービス
      */
-    private final OrderCancellationService orderCancellationService;
+    private final OrderCancellationCommandService orderCancellationCommandService;
 
     /**
      * 注文の照会のサービス
@@ -120,7 +120,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> approveOrderCancellation(UUID orderId) {
-        orderCancellationService.approve(orderId, currentOperator.require());
+        orderCancellationCommandService.approve(orderId, currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 
@@ -132,7 +132,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> rejectOrderCancellation(UUID orderId) {
-        orderCancellationService.reject(orderId, currentOperator.require());
+        orderCancellationCommandService.reject(orderId, currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 
@@ -147,7 +147,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> cancelOrder(UUID orderId, CancelOrderRequest request) {
-        orderCancellationService.cancel(orderId, request.getReason(), request.getRestock(), currentOperator.require());
+        orderCancellationCommandService.cancel(orderId, request.getReason(), request.getRestock(), currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,6 +1,5 @@
 package com.ecsite.module.media.infrastructure.storage;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -20,7 +19,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
  * <p>S3 API のクライアントを作る。
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(MediaStorageProperties.class)
 class MediaStorageConfig {
 
     /**

@@ -1,8 +1,12 @@
 package com.ecsite.architecture;
 
 import com.ecsite.architecture.sample.naming.ExampleDirectory;
+import com.ecsite.architecture.sample.naming.ExampleNonTransactionalCommandService;
+import com.ecsite.architecture.sample.naming.ExampleOrderService;
 import com.ecsite.architecture.sample.naming.ExampleQueryRepository;
 import com.ecsite.architecture.sample.naming.ExampleRepository;
+import com.ecsite.architecture.sample.naming.ExampleTransactionalGatewayService;
+import com.ecsite.architecture.sample.naming.ExampleWritableQueryService;
 import com.ecsite.architecture.sample.naming.MisnamedExampleRepositoryImpl;
 import com.ecsite.architecture.sample.naming.NamingExamples;
 import com.ecsite.architecture.sample.naming.PublicExampleApiDirectory;
@@ -14,19 +18,45 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * リポジトリと腐敗防止層の名前の形の検査
+ * リポジトリと腐敗防止層と service の名前の形の検査
  *
- * <p>根拠はバックエンドの書き方の「名前の形」。
- * service とイベントの名前は、用途や時制の判断が必要なので、レビューで確認する。
+ * <p>根拠はバックエンドの書き方の「名前の形」。service のトランザクションの付け方の根拠は、同じ文書の「トランザクションは application」。
+ * イベントの名前は、時制の判断が必要なので、レビューで確認する。
+ *
+ * <p>service の検査の対象は、{@code com.ecsite.module.*.application..} にある、{@code @Service} を付けた手書きのクラス。
  */
 class NamingTest {
+
+    // ============================== 定数 ==============================
+
+    /**
+     * service の名前の検査の例外
+     *
+     * <p>完全修飾名から、例外にする理由への対応。
+     */
+    private static final Map<String, String> NAME_EXCEPTIONS = Map.of(
+            "com.ecsite.module.cart.application.CartService", "読み書きが混ざるレベル B の service で、参照と更新のどちらの名前にも当てはまらない",
+            "com.ecsite.module.media.application.MediaService", "読み書きが混ざるレベル B の service で、参照と更新のどちらの名前にも当てはまらない",
+            "com.ecsite.module.shipping.application.ShipmentService", "読み書きが混ざるレベル B の service で、参照と更新のどちらの名前にも当てはまらない");
+
+    /**
+     * service のトランザクションの検査の例外
+     *
+     * <p>完全修飾名から、例外にする理由への対応。
+     */
+    private static final Map<String, String> TRANSACTION_EXCEPTIONS = Map.of(
+            "com.ecsite.module.reporting.application.ReportSettingsQueryService",
+            "DB を使わない参照の service で、設定の値だけを返すので、トランザクションを付けると不要な DB の接続を取る");
 
     // ============================== テスト ==============================
 
@@ -135,7 +165,146 @@ class NamingTest {
         }
     }
 
+    @Nested
+    @DisplayName("service")
+    class Services {
+
+        @Test
+        @DisplayName("service の名前は、QueryService・CommandService・GatewayService のどれかで終わる")
+        void serviceNamesEndWithRoleSuffix() {
+            // 準備：対象の service が 1 件以上ある
+            ProductionClasses.requireNotEmpty(productionServices(), "application の @Service のクラス");
+
+            // 操作と確認：本番のクラスに、名前の合わない service がない
+            assertThat(serviceNameViolations(productionServices())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("参照と更新の service は、クラスに @Transactional を付ける")
+        void queryAndCommandServicesAreTransactional() {
+            // 準備：対象の service が 1 件以上ある
+            ProductionClasses.requireNotEmpty(
+                    productionServices().stream().filter(NamingTest::endsWithQueryOrCommand).toList(),
+                    "名前が QueryService か CommandService で終わる service");
+
+            // 操作と確認：本番のクラスに、@Transactional のない参照と更新の service がない
+            assertThat(missingTransactionViolations(productionServices())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("参照の service は、クラスの @Transactional を読み取り専用にする")
+        void queryServicesAreReadOnly() {
+            // 準備：対象の service が 1 件以上ある
+            ProductionClasses.requireNotEmpty(
+                    productionServices().stream().filter(javaClass -> javaClass.getSimpleName().endsWith("QueryService")).toList(),
+                    "名前が QueryService で終わる service");
+
+            // 操作と確認：本番のクラスに、読み取り専用でない参照の service がない
+            assertThat(writableQueryViolations(productionServices())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("外部の呼び出しの service は、クラスに @Transactional を付けない")
+        void gatewayServicesAreNotTransactional() {
+            // 準備：対象の service が 1 件以上ある
+            ProductionClasses.requireNotEmpty(
+                    productionServices().stream().filter(javaClass -> javaClass.getSimpleName().endsWith("GatewayService")).toList(),
+                    "名前が GatewayService で終わる service");
+
+            // 操作と確認：本番のクラスに、@Transactional を付けた外部の呼び出しの service がない
+            assertThat(gatewayTransactionViolations(productionServices())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("名前の検査の例外の表は、例外がなければ違反になる service だけを持つ")
+        void nameExceptionsAreStillNeeded() {
+            // 準備：本番の service の名前
+            var services = productionServices();
+
+            // 操作：例外の表のうち、service がない、または例外がなくても違反にならない項目を集める
+            var unneeded = NAME_EXCEPTIONS.keySet().stream()
+                    .filter(name -> services.stream().noneMatch(javaClass -> javaClass.getName().equals(name) && !endsWithRoleSuffix(javaClass)))
+                    .sorted()
+                    .toList();
+
+            // 確認：不要になった項目がない
+            assertThat(unneeded).isEmpty();
+        }
+
+        @Test
+        @DisplayName("トランザクションの検査の例外の表は、例外がなければ違反になる service だけを持つ")
+        void transactionExceptionsAreStillNeeded() {
+            // 準備：本番の service の名前
+            var services = productionServices();
+
+            // 操作：例外の表のうち、service がない、または例外がなくても違反にならない項目を集める
+            var unneeded = TRANSACTION_EXCEPTIONS.keySet().stream()
+                    .filter(name -> services.stream().noneMatch(javaClass -> javaClass.getName().equals(name)
+                            && endsWithQueryOrCommand(javaClass) && !javaClass.isAnnotatedWith(Transactional.class)))
+                    .sorted()
+                    .toList();
+
+            // 確認：不要になった項目がない
+            assertThat(unneeded).isEmpty();
+        }
+
+        @Test
+        @DisplayName("名前の規則は、3 つの語のどれでも終わらない service に当たる")
+        void nameRuleMatchesMisnamedExample() {
+            // 操作と確認：名前の合わない例だけが違反になる
+            assertThat(serviceNameViolations(exampleServices())).containsExactly(ExampleOrderService.class.getName());
+        }
+
+        @Test
+        @DisplayName("トランザクションの規則は、@Transactional のない更新の service に当たる")
+        void transactionRuleMatchesNonTransactionalCommandExample() {
+            // 操作と確認：@Transactional のない更新の例だけが違反になる
+            assertThat(missingTransactionViolations(exampleServices()))
+                    .containsExactly(ExampleNonTransactionalCommandService.class.getName());
+        }
+
+        @Test
+        @DisplayName("読み取り専用の規則は、読み取り専用でない参照の service に当たる")
+        void readOnlyRuleMatchesWritableQueryExample() {
+            // 操作と確認：読み取り専用でない参照の例だけが違反になる
+            assertThat(writableQueryViolations(exampleServices()))
+                    .containsExactly(ExampleWritableQueryService.class.getName());
+        }
+
+        @Test
+        @DisplayName("外部の呼び出しの規則は、@Transactional を付けた外部の呼び出しの service に当たる")
+        void gatewayRuleMatchesTransactionalExample() {
+            // 操作と確認：@Transactional を付けた外部の呼び出しの例だけが違反になる
+            assertThat(gatewayTransactionViolations(exampleServices()))
+                    .containsExactly(ExampleTransactionalGatewayService.class.getName());
+        }
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 検査の対象の、本番の service を返す。
+     *
+     * @return application にある、{@code @Service} を付けた手書きのクラス
+     */
+    private static List<JavaClass> productionServices() {
+        return ProductionClasses.handwritten().stream()
+                .filter(javaClass -> JavaClass.Predicates.resideInAPackage("com.ecsite.module.*.application..").test(javaClass))
+                .filter(javaClass -> javaClass.isTopLevelClass() && javaClass.isAnnotatedWith(Service.class))
+                .toList();
+    }
+
+    /**
+     * 名前かトランザクションの合わない service の例を返す。
+     *
+     * @return 例の service のクラス
+     */
+    private static List<JavaClass> exampleServices() {
+        return new ClassFileImporter().importClasses(
+                        ExampleOrderService.class, ExampleNonTransactionalCommandService.class, ExampleTransactionalGatewayService.class,
+                        ExampleWritableQueryService.class)
+                .stream().toList();
+    }
 
     /**
      * 置き場所と名前の合わない例を読む。
@@ -149,6 +318,92 @@ class NamingTest {
     }
 
     // ============================== 規則の補助 ==============================
+
+    /**
+     * 名前が QueryService か CommandService で終わるかを返す。
+     *
+     * @param javaClass 調べる service
+     * @return 参照か更新の名前なら true
+     */
+    private static boolean endsWithQueryOrCommand(JavaClass javaClass) {
+        var name = javaClass.getSimpleName();
+        return name.endsWith("QueryService") || name.endsWith("CommandService");
+    }
+
+    /**
+     * 名前が QueryService・CommandService・GatewayService のどれかで終わるかを返す。
+     *
+     * @param javaClass 調べる service
+     * @return 3 つの語のどれかなら true
+     */
+    private static boolean endsWithRoleSuffix(JavaClass javaClass) {
+        return endsWithQueryOrCommand(javaClass) || javaClass.getSimpleName().endsWith("GatewayService");
+    }
+
+    /**
+     * 名前が QueryService・CommandService・GatewayService のどれでも終わらない service の名前を返す。
+     *
+     * @param services 調べる service
+     * @return 規則に合わない service の名前（名前の順。例外の表の service を除く）
+     */
+    private static List<String> serviceNameViolations(List<JavaClass> services) {
+        return services.stream()
+                .filter(javaClass -> !endsWithRoleSuffix(javaClass))
+                .map(JavaClass::getName)
+                .filter(name -> !NAME_EXCEPTIONS.containsKey(name))
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * クラスに {@code @Transactional} を付けていない、参照と更新の service の名前を返す。
+     *
+     * @param services 調べる service
+     * @return 規則に合わない service の名前（名前の順。例外の表の service を除く）
+     */
+    private static List<String> missingTransactionViolations(List<JavaClass> services) {
+        return services.stream()
+                .filter(NamingTest::endsWithQueryOrCommand)
+                .filter(javaClass -> !javaClass.isAnnotatedWith(Transactional.class))
+                .map(JavaClass::getName)
+                .filter(name -> !TRANSACTION_EXCEPTIONS.containsKey(name))
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * クラスの {@code @Transactional} が読み取り専用でない、参照の service の名前を返す。
+     *
+     * <p>{@code @Transactional} がない service は、{@link #missingTransactionViolations} が見つけるので、ここでは除く。
+     *
+     * @param services 調べる service
+     * @return 規則に合わない service の名前（名前の順。例外の表の service を除く）
+     */
+    private static List<String> writableQueryViolations(List<JavaClass> services) {
+        return services.stream()
+                .filter(javaClass -> javaClass.getSimpleName().endsWith("QueryService"))
+                .filter(javaClass -> javaClass.isAnnotatedWith(Transactional.class))
+                .filter(javaClass -> !javaClass.getAnnotationOfType(Transactional.class).readOnly())
+                .map(JavaClass::getName)
+                .filter(name -> !TRANSACTION_EXCEPTIONS.containsKey(name))
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * クラスに {@code @Transactional} を付けている、外部の呼び出しの service の名前を返す。
+     *
+     * @param services 調べる service
+     * @return 規則に合わない service の名前（名前の順）
+     */
+    private static List<String> gatewayTransactionViolations(List<JavaClass> services) {
+        return services.stream()
+                .filter(javaClass -> javaClass.getSimpleName().endsWith("GatewayService"))
+                .filter(javaClass -> javaClass.isAnnotatedWith(Transactional.class))
+                .map(JavaClass::getName)
+                .sorted()
+                .toList();
+    }
 
     /**
      * 名前が指定した語で終わる interface（port）を返す。

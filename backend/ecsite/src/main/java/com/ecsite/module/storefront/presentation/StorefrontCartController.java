@@ -3,7 +3,7 @@ package com.ecsite.module.storefront.presentation;
 import com.ecsite.api.store.CartViewApi;
 import com.ecsite.api.store.model.Cart;
 import com.ecsite.module.member.api.CurrentMemberIds;
-import com.ecsite.module.storefront.application.StorefrontService;
+import com.ecsite.module.storefront.application.StorefrontQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +22,7 @@ class StorefrontCartController implements CartViewApi {
     /**
      * 店舗のサービス
      */
-    private final StorefrontService storefrontService;
+    private final StorefrontQueryService storefrontQueryService;
 
     /**
      * 店舗 API のマッパー
@@ -43,6 +43,6 @@ class StorefrontCartController implements CartViewApi {
     @Override
     public ResponseEntity<Cart> getCart(UUID cartId) {
         var requester = currentMemberIds.find().orElse(null);
-        return ResponseEntity.ok(mapper.toCart(storefrontService.getCart(cartId, requester)));
+        return ResponseEntity.ok(mapper.toCart(storefrontQueryService.getCart(cartId, requester)));
     }
 }

@@ -67,7 +67,8 @@
         "store",
         "1"
       ],
-      "port": 13000
+      "port": 13000,
+      "url": "http://slot1.localhost:13000"
     },
     {
       "name": "store-2",
@@ -78,7 +79,8 @@
         "store",
         "2"
       ],
-      "port": 23000
+      "port": 23000,
+      "url": "http://slot2.localhost:23000"
     },
     {
       "name": "store-3",
@@ -89,7 +91,8 @@
         "store",
         "3"
       ],
-      "port": 33000
+      "port": 33000,
+      "url": "http://slot3.localhost:33000"
     }
   ]
 }

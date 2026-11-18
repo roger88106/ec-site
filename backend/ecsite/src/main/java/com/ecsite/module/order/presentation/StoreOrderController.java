@@ -8,7 +8,7 @@ import com.ecsite.api.store.model.PendingOrderList;
 import com.ecsite.api.store.model.RequestOrderCancellationRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.member.api.CurrentMemberIds;
-import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderCancellationCommandService;
 import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.model.view.OrderSummaryView;
@@ -36,7 +36,7 @@ class StoreOrderController implements OrderApi {
     /**
      * キャンセルのサービス
      */
-    private final OrderCancellationService orderCancellationService;
+    private final OrderCancellationCommandService orderCancellationCommandService;
 
     /**
      * 注文の決済ゲートウェイサービス
@@ -87,7 +87,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> requestOrderCancellation(UUID orderId, RequestOrderCancellationRequest request) {
-        orderCancellationService.request(orderId, currentMemberIds.require(), request.getReason().orElse(null));
+        orderCancellationCommandService.request(orderId, currentMemberIds.require(), request.getReason().orElse(null));
         return ResponseEntity.noContent().build();
     }
 

@@ -45,7 +45,7 @@ public class CheckoutQueryService {
     /**
      * 見積もりのサービス
      */
-    private final QuoteService quoteService;
+    private final QuoteQueryService quoteQueryService;
 
     /**
      * 時計
@@ -72,7 +72,7 @@ public class CheckoutQueryService {
 
         // 見積もりと、成立済みの注文
         var lines = cartDirectory.find(checkout.cartId()).map(CartSnapshot::lines).orElse(List.of());
-        return new CheckoutView(checkout.id(), quoteService.quote(lines, now, checkout.id()), checkout.expiresAt(),
+        return new CheckoutView(checkout.id(), quoteQueryService.quote(lines, now, checkout.id()), checkout.expiresAt(),
                 orderRepository.findIdByCheckoutId(checkoutId).orElse(null));
     }
 
@@ -92,6 +92,6 @@ public class CheckoutQueryService {
         // 持ち主でなければ、カートがないときと同じく空にする
         return cartDirectory.find(cartId)
                 .filter(cart -> cart.isAccessibleBy(requester))
-                .map(cart -> new CartQuoteView(cartId, quoteService.quote(cart.lines(), now, holderId)));
+                .map(cart -> new CartQuoteView(cartId, quoteQueryService.quote(cart.lines(), now, holderId)));
     }
 }

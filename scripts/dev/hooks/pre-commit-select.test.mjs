@@ -125,7 +125,14 @@ describe('リポジトリの検査とテスト', () => {
     assert.equal(result.all, false)
     for (const name of ['compose-ports', 'local-ports']) assert.ok(result.checks.includes(name), name)
     // 常に実行する検査（CI の検査の script の「commit の前の hook」の表）
-    for (const name of ['doc-refs', 'ja-text', 'risk', 'spec-numbers']) assert.ok(result.checks.includes(name), name)
-    for (const name of ['java-rules', 'frontend-rules', 'migrations']) assert.ok(!result.checks.includes(name), name)
+    for (const name of ['doc-refs', 'ignored-tracked', 'ja-text', 'risk', 'spec-numbers']) assert.ok(result.checks.includes(name), name)
+    for (const name of ['java-rules', 'frontend-rules', 'migrations', 'action-pins']) assert.ok(!result.checks.includes(name), name)
+  })
+
+  test('workflow と複合の action を変えると、action-pins とそのテストを実行する', () => {
+    const result = selectChecks({ staged: ['.github/workflows/ci.yml', '.github/actions/a/action.yml'], checks, files, tests, read: fileReader(root) })
+    assert.equal(result.all, false)
+    assert.ok(result.checks.includes('action-pins'))
+    assert.ok(result.tests.includes('scripts/ci/config/action-pins.test.mjs'))
   })
 })

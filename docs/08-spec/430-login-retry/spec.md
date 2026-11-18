@@ -145,7 +145,7 @@ AC-112 に、今の文の後に次の文を加える。変えた spec に 430 �
   - 依存：なし
   - 範囲：`frontend/store/src/app/login/failed/` のテスト
   - 確認方法：追加したテストが失敗する。
-- [ ] **T430-01-05** T430-01-04 のテストが通る画面を書く（決定 6）。
+- [x] **T430-01-05** T430-01-04 のテストが通る画面を書く（決定 6）。
   - 依存：T430-01-04
   - 範囲：`frontend/store/src/app/login/failed/`、`frontend/store/messages/ja.json`
   - 確認方法：追加したテストが通る。

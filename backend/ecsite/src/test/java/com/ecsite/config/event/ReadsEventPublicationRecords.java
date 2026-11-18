@@ -24,7 +24,7 @@ public final class ReadsEventPublicationRecords {
      * @return 件数
      */
     public static int count(EventPublicationRecords records) {
-        return records.countIncomplete();
+        return records.countIncompleteNotStopped();
     }
 
     /**

@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Spring Modulith のイベントの記録と、止めたイベントの直接の読み書き
  *
- * <p>止めたイベントは、イベントの記録の表から止めたイベントの表に移して表す。
+ * <p>止めたイベントは、イベントの記録の表から止めたイベントの表へ移すことで表す。
  */
 @Component
 @RequiredArgsConstructor
@@ -117,13 +117,16 @@ class EventPublicationRecords {
      * @param maxAttempts 処理の回数の上限
      * @return 移したイベント
      */
-    List<StoppedPublication> markStopped(int maxAttempts) {
-        // 1 文で消して入れ、移した行だけを返す（2 台が同時に動いても、同じイベントを 2 回移さず、2 回ログに出さない）。
+    List<StoppedPublication> moveStopped(int maxAttempts) {
+        // 1 文で消して入れ、移した行だけを返す。2 台が同時に動いても、同じイベントを 2 回移さず、2 回ログに出さない。
+        // 削除した文が行をロックし、同時に同じ行を消そうとした別の文は、ロックが解けた後に行が消えているので、
+        // その行を返さないため（PostgreSQL の READ COMMITTED の振る舞い）。
         // 上限を下げたときも止めるので、回数は上限以上を選ぶ。
         // 処理中（RESUBMITTED など）のものは、最後の処理の結果が出ていないので除く
         var moved = DSL.name(MOVED).as(dsl.deleteFrom(EVENT_PUBLICATION)
                 .where(STATUS.eq(FAILED))
                 .and(COMPLETION_ATTEMPTS.ge(maxAttempts))
+                // Spring Modulith は処理を終えた行を失敗にしないが、未完了の行だけを移すことを、条件でも示す
                 .and(COMPLETION_DATE.isNull())
                 .returning(ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE,
                         COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE));
@@ -139,12 +142,12 @@ class EventPublicationRecords {
     }
 
     /**
-     * 未完了のイベント（止めたイベントを含む）を数える。
+     * イベントの記録の表の未完了のイベント（止めたイベントを含まない）を数える。
      *
      * @return 件数
      */
-    int countIncomplete() {
-        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull()) + countStopped();
+    int countIncompleteNotStopped() {
+        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull());
     }
 
     /**

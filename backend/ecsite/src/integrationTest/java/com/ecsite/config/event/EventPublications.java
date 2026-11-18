@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * イベントの記録（Spring Modulith の表）と止めたイベントの表のテーブルの定義と、イベントを発行して処理を待つ補助
+ * イベントの記録（Spring Modulith の表）と止めたイベントの表の定義と、イベントを発行して処理を待つ補助
  *
  * <p>イベントの片付けと再発行のテストが使う。処理は非同期なので、リスナーが終わるのを待つ処理は {@link AsyncEvents} に任せる。
  */
@@ -215,15 +215,6 @@ class EventPublications {
                 .where(SERIALIZED_EVENT.contains(eventId.toString()))
                 .fetchOptional(row -> new StoppedEvent(row.get(ID), row.get(LISTENER_ID), row.get(EVENT_TYPE),
                         row.get(COMPLETION_ATTEMPTS), row.get(LAST_RESUBMISSION_DATE), row.get(STOPPED_DATE)));
-    }
-
-    /**
-     * 止めたイベントの表の行の数。
-     *
-     * @return 行の数
-     */
-    int countStopped() {
-        return dsl.fetchCount(EVENT_PUBLICATION_STOPPED);
     }
 
     /**

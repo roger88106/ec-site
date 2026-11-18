@@ -68,7 +68,7 @@ class EventResubmissionJob {
             + "com.ecsite.config.event.EventResubmissionJob$Properties'.interval()}")
     @SchedulerLock(name = "event-resubmission")
     void resubmit() {
-        for (var stopped : publicationRecords.markStopped(properties.maxAttempts())) {
+        for (var stopped : publicationRecords.moveStopped(properties.maxAttempts())) {
             log.error("処理の回数が上限に達したイベントの再発行を止めた：種類 {}、イベント ID {}、リスナー {}、処理の回数 {}",
                     stopped.eventType(), stopped.id(), stopped.listenerId(), stopped.completionAttempts());
         }
@@ -76,21 +76,24 @@ class EventResubmissionJob {
                 properties.minAge(), properties.interval(), properties.maxAttempts());
         var lastTriedBy = clock.instant().minus(properties.interval());
         // 選ぶ条件：
-        // - 最後の処理に失敗した（失敗したイベントの再発行の操作は、失敗の状態の行だけを読むので、絞り込みの条件に置かない。
-        //   処理中のものは、リスナーの処理が続いていることがあるので読まれない。処理の途中でインスタンスが止まったものは、
+        // - 最後の処理に失敗した（失敗したイベントを再発行する Spring Modulith の操作は、失敗の状態の行だけを読むので、
+        //   絞り込みの条件に入れない。この操作は状態が空で未完了の行も読むが、今の表の作り方では状態が必ず入るので、
+        //   読むのは失敗の行だけになる。処理中のものは、リスナーの処理が続いていることがあるので読まれない。処理の途中でインスタンスが止まったものは、
         //   Spring Modulith の監視（spring.modulith.events.staleness）が失敗の状態にした後の回で読まれる）
         // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
         // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
         // - 回数が上限より少ない
         // 読む件数の上限は付けない（件数の上限を最大の値にする）。この操作は失敗の状態の行を発行の古い順に件数の上限まで
         // 読んでから絞るので、上限を付けると、古い失敗したイベントだけが毎回読まれ、新しいイベントの再発行が遅れるため。
-        // 止めたイベントは表を移すので、失敗の状態の行は、まだ再発行するものだけになる
+        // 止めたイベントは別の表に移るので、失敗の状態の行は、まだ再発行するものだけになる
         incompletePublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
                 .withMinAge(properties.minAge())
                 .withBatchSize(Integer.MAX_VALUE)
                 .withFilter(publication -> !publication.getLastPublicationDate().isAfter(lastTriedBy)
                         && publication.getCompletionAttempts() < properties.maxAttempts()));
-        publicationMetrics.record(publicationRecords.countIncomplete(), publicationRecords.countStopped());
+        // 止めた件数は 1 回だけ数え、未完了の件数にも使う（2 回数えると、間に復旧で戻った行で 2 つの値が食い違う）
+        var stoppedCount = publicationRecords.countStopped();
+        publicationMetrics.record(publicationRecords.countIncompleteNotStopped() + stoppedCount, stoppedCount);
     }
 
     /**

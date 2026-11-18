@@ -4,16 +4,35 @@ import type { Route } from 'next'
 /** ログインの後に戻る画面の既定（店舗のトップ） */
 const HOME: Route = '/'
 
+/** ログインできなかったことを示す画面のパス */
+export const LOGIN_FAILED_PATH: Route = '/login/failed'
+
 /**
  * ログインの後に戻る画面を決める（店舗画面の構成の「ログイン」）。
  *
- * 店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。
+ * 店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。`/login` の下のパス（`/login`、
+ * `/login/failed` など）も受け付けない（ログインできなかったことを示す画面からログインしたときに、その画面へ戻らないため）。
  *
  * @param value 指定された戻り先
  * @returns 戻り先のパス（クエリを含む）。受け付けなければ店舗のトップ
  */
 export function safeReturnTo(value: string | null | undefined): string {
-  return isSafeReturnPath(value) ? value : HOME
+  return isSafeReturnPath(value) && !isLoginPath(value) ? value : HOME
+}
+
+/**
+ * `/login` の下のパスか（`/login`、`/login/...`、`/login?...`）。
+ *
+ * 文字列のままでは `/./login` や `/x/../login`、`/%2e/login`、`\` 区切りのように、ブラウザーが解決すると
+ * `/login` の下になる書き方を見逃すので、ブラウザーと同じ URL の解析で正規化したパスを調べる。
+ * 解析に失敗したときは、安全側で `/login` の下とみなす。
+ */
+function isLoginPath(path: string): boolean {
+  try {
+    return /^\/login(?:\/|$)/.test(new URL(path, 'http://localhost').pathname)
+  } catch {
+    return true
+  }
 }
 
 /**
@@ -21,7 +40,7 @@ export function safeReturnTo(value: string | null | undefined): string {
  *
  * @param returnTo ログインの後に戻る画面
  * @param options  register：会員登録の画面にする
- * @returns ログインの口のパス（クエリ付き）
+ * @returns ログインのエンドポイントのパス（クエリ付き）
  */
 export function loginPath(returnTo: string, options: { register?: boolean } = {}): Route {
   const query = new URLSearchParams({ returnTo })
@@ -29,6 +48,15 @@ export function loginPath(returnTo: string, options: { register?: boolean } = {}
     query.set('register', '1')
   }
   return `/login?${query}`
+}
+
+/**
+ * ログインの再試行（エラーの後の 1 回だけ）のエンドポイントのパスを作る。
+ *
+ * @returns 再試行のログインのエンドポイントのパス（クエリ付き）
+ */
+export function loginRetryPath(): Route {
+  return `/login?${new URLSearchParams({ retry: '1' })}`
 }
 
 /**

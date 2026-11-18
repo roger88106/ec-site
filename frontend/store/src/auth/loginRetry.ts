@@ -7,7 +7,7 @@ import { cookieName } from '@/auth/cookieNames'
 const { cookiePrefix: COOKIE_PREFIX } = readServerConfig()
 
 /** ログインの再試行のフラグを持つ Cookie の名前（店舗画面の構成の「ログイン」。接頭辞は環境変数 `STORE_COOKIE_PREFIX`） */
-const loginRetryCookie = () => cookieName(COOKIE_PREFIX, 'login-retry')
+const LOGIN_RETRY_COOKIE = cookieName(COOKIE_PREFIX, 'login-retry')
 
 /** フラグの有効期間（秒） */
 const LOGIN_RETRY_MAX_AGE_SECONDS = 600
@@ -20,7 +20,7 @@ const LOGIN_RETRY_MAX_AGE_SECONDS = 600
  * @returns フラグがあれば true
  */
 export async function hasLoginRetryFlag(): Promise<boolean> {
-  return (await cookies()).get(loginRetryCookie())?.value === '1'
+  return (await cookies()).get(LOGIN_RETRY_COOKIE)?.value === '1'
 }
 
 /**
@@ -29,7 +29,7 @@ export async function hasLoginRetryFlag(): Promise<boolean> {
  * ルートハンドラーからだけ呼べる。
  */
 export async function setLoginRetryFlag(): Promise<void> {
-  ;(await cookies()).set(loginRetryCookie(), '1', {
+  ;(await cookies()).set(LOGIN_RETRY_COOKIE, '1', {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -44,5 +44,5 @@ export async function setLoginRetryFlag(): Promise<void> {
  * ルートハンドラーとサーバーアクションからだけ呼べる。
  */
 export async function deleteLoginRetryFlag(): Promise<void> {
-  ;(await cookies()).delete(loginRetryCookie())
+  ;(await cookies()).delete(LOGIN_RETRY_COOKIE)
 }

@@ -4,6 +4,9 @@ import type { Route } from 'next'
 /** ログインの後に戻る画面の既定（店舗のトップ） */
 const HOME: Route = '/'
 
+/** ログインできなかったことを示す画面のパス */
+export const LOGIN_FAILED_PATH: Route = '/login/failed'
+
 /**
  * ログインの後に戻る画面を決める（店舗画面の構成の「ログイン」）。
  *

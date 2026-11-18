@@ -4,7 +4,7 @@ import { GET as login } from '@/app/login/route'
 import { readServerConfig } from '@/auth/config'
 import { cookieName } from '@/auth/cookieNames'
 import { authState } from '@/test/auth'
-import { redirectedTo, resetRequest } from '@/test/next'
+import { cookieValue, redirectedTo, resetRequest } from '@/test/next'
 
 const { publicUrl: PUBLIC_URL, cookiePrefix: COOKIE_PREFIX } = readServerConfig()
 
@@ -58,6 +58,31 @@ describe('再試行のログイン', () => {
   test('retry が 1 以外なら、再試行でなく通常のログインとして扱う', async () => {
     await login(new NextRequest('http://localhost:3000/login?retry=0&returnTo=%2Fcart'))
 
+    expect(authState.signIn).toHaveBeenCalledWith('keycloak', { redirectTo: '/cart' }, undefined)
+  })
+
+  test('AC-430-1 再試行のときは、register=1 があっても、会員登録の画面にしない', async () => {
+    resetRequest({ cookies: { [RETRY_COOKIE]: '1' } })
+
+    await loginLocation('?retry=1&register=1')
+
+    expect(authState.signIn).toHaveBeenCalledWith('keycloak', { redirectTo: '/' }, undefined)
+  })
+
+  test('AC-430-1 再試行のときは、フラグの Cookie を削除しない', async () => {
+    resetRequest({ cookies: { [RETRY_COOKIE]: '1' } })
+
+    await loginLocation('?retry=1')
+
+    expect(cookieValue(RETRY_COOKIE)).toBe('1')
+  })
+
+  test('AC-430-1 通常のログインの始めに、残っていた再試行のフラグを削除する（IdP のエラーや離脱で残った分）', async () => {
+    resetRequest({ cookies: { [RETRY_COOKIE]: '1' } })
+
+    await login(new NextRequest('http://localhost:3000/login?returnTo=%2Fcart'))
+
+    expect(cookieValue(RETRY_COOKIE)).toBeUndefined()
     expect(authState.signIn).toHaveBeenCalledWith('keycloak', { redirectTo: '/cart' }, undefined)
   })
 })

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { deleteLoginRetryFlag, hasLoginRetryFlag, PUBLIC_URL, setLoginRetryFlag } from '@/auth'
-import { loginRetryPath } from '@/lib/login'
+import { LOGIN_FAILED_PATH, loginRetryPath } from '@/lib/login'
 
 /**
  * Auth.js のエラーの画面の指定先（店舗画面の構成の「ログイン」）。
@@ -17,5 +17,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${PUBLIC_URL}${loginRetryPath()}`)
   }
   await deleteLoginRetryFlag()
-  return NextResponse.redirect(`${PUBLIC_URL}/login/failed`)
+  return NextResponse.redirect(`${PUBLIC_URL}${LOGIN_FAILED_PATH}`)
 }

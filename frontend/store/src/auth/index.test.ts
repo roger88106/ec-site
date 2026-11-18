@@ -7,6 +7,7 @@ import { logout } from '@/actions/auth'
 import { GET as login } from '@/app/login/route'
 import { currentMember, getAccessToken, redirectToLogin } from '@/auth'
 import { readServerConfig } from '@/auth/config'
+import { cookieName } from '@/auth/cookieNames'
 import { ACCESS_TOKEN, authState, nowSeconds, signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { cookieValue, redirectedTo, resetRequest } from '@/test/next'
@@ -138,6 +139,15 @@ describe('ログイン', () => {
 
     expect(authorization).toBe('Bearer login-access')
     expect(cookieValue('cart_id')).toBeUndefined()
+  })
+
+  test('AC-430-1 ログインできたら、再試行のフラグの Cookie を削除する', async () => {
+    const retryCookie = cookieName(readServerConfig().cookiePrefix, 'login-retry')
+    resetRequest({ cookies: { [retryCookie]: '1' } })
+
+    await authState.config?.events?.signIn?.(signInEvent('login-access'))
+
+    expect(cookieValue(retryCookie)).toBeUndefined()
   })
 
   test('ログインしている会員を、セッションから読む', async () => {

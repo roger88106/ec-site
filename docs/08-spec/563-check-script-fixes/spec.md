@@ -292,11 +292,11 @@ spec の番号の検査の例：
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/support/ProductionClasses.java`、`backend/ecsite/src/test/java/com/ecsite/architecture/SchemaOwnershipTest.java`、`backend/ecsite/src/test/java/com/ecsite/architecture/TokenAccessTest.java`
   - 確認方法：振る舞いを変えないので、`./gradlew test --tests '*SchemaOwnershipTest' --tests '*TokenAccessTest'` が通る
-- [ ] **T563-01-11** [テスト] 秘密の値の項目の名前と `toString` の宣言の、テストと例を加え、レッドを確認する（DC-563-11、DC-563-12、DC-563-15）。
+- [x] **T563-01-11** [テスト] 秘密の値の項目の名前と `toString` の宣言の、テストと例を加え、レッドを確認する（DC-563-11、DC-563-12、DC-563-15）。
   - 依存：T563-01-01
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/ConfigurationPropertiesTest.java`、違反の例のクラス
   - 確認方法：`./gradlew test --tests '*ConfigurationPropertiesTest'` が失敗する。commit は次のタスクと同じにする
-- [ ] **T563-01-12** T563-01-11 のテストが通る実装を書く（DC-563-11、DC-563-12）。
+- [x] **T563-01-12** T563-01-11 のテストが通る実装を書く（DC-563-11、DC-563-12）。
   - 依存：T563-01-11
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/ConfigurationPropertiesTest.java`
   - 確認方法：`./gradlew test --tests '*ConfigurationPropertiesTest'` が通る。record のコンパイラが作る `toString` と利用者が書いた `toString` を見分ける方法が見つからなければ、作業を止めて報告する

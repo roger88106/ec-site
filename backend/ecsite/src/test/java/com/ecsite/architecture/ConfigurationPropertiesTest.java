@@ -9,6 +9,9 @@ import com.ecsite.architecture.sample.configprops.MisplacedExampleConfig;
 import com.ecsite.architecture.sample.configprops.NestedSecretProperties;
 import com.ecsite.architecture.sample.configprops.NestedSecretSafeProperties;
 import com.ecsite.architecture.sample.configprops.PresentationExampleController;
+import com.ecsite.architecture.sample.configprops.SecretClassWithFinalToStringProperties;
+import com.ecsite.architecture.sample.configprops.SecretWithFinalToStringProperties;
+import com.ecsite.architecture.sample.configprops.SecretWithParameterizedToStringProperties;
 import com.ecsite.architecture.sample.configprops.SecretWithToStringProperties;
 import com.ecsite.architecture.sample.configprops.SecretWithoutToStringProperties;
 import com.ecsite.architecture.sample.configprops.StaticConstantProperties;
@@ -27,11 +30,19 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.asm.ClassReader;
+import org.springframework.asm.ClassVisitor;
+import org.springframework.asm.Handle;
+import org.springframework.asm.MethodVisitor;
+import org.springframework.asm.Opcodes;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
@@ -60,9 +71,20 @@ class ConfigurationPropertiesTest {
     /**
      * 秘密の値の項目の名前に含まれる語
      *
-     * <p>小文字で持つ。名前が key で終わる項目も秘密の値とみなす。
+     * <p>小文字で持ち、名前の小文字に含まれれば秘密の値とみなす。credential と key は、語に分けて別に判定する。
      */
-    private static final List<String> SECRET_WORDS = List.of("secret", "password", "salt", "token", "credential");
+    private static final List<String> SECRET_WORDS = List.of("secret", "password", "salt", "token");
+
+    /**
+     * 名前の最後の語が key のとき、直前にあれば秘密の値とみなす語
+     */
+    private static final Set<String> KEY_PREFIX_WORDS =
+            Set.of("access", "api", "encryption", "hmac", "master", "private", "secret", "signing");
+
+    /**
+     * 名前の最後にあると、credential を含んでも秘密の値としない語
+     */
+    private static final Set<String> CREDENTIAL_LOCATION_WORDS = Set.of("file", "path", "dir");
 
     /**
      * 設定の型の項目からたどる型のパッケージ
@@ -225,6 +247,32 @@ class ConfigurationPropertiesTest {
     }
 
     @Test
+    @DisplayName("toString の規則は、引数のある toString だけを書いた record の例に当たる")
+    void toStringRuleMatchesExampleWithOnlyParameterizedToString() {
+        // 準備：引数のある toString だけを書き、コンパイラが作る toString を使う例
+        var examples = new ClassFileImporter().importClasses(SecretWithParameterizedToStringProperties.class);
+
+        // 操作：規則を当てる
+        var result = secretPropertiesRule(examples).evaluate(examples);
+
+        // 確認：例が違反になる
+        assertThat(result.hasViolation()).isTrue();
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(SecretWithParameterizedToStringProperties.class.getName()));
+    }
+
+    @Test
+    @DisplayName("toString の規則は、利用者が書いた final の toString（record と record でないクラス）の例に当たらない")
+    void toStringRuleDoesNotMatchFinalToStringExamples() {
+        // 準備：final の toString を書いた record と、record でないクラスの例
+        var examples = new ClassFileImporter().importClasses(
+                SecretWithFinalToStringProperties.class, SecretClassWithFinalToStringProperties.class);
+
+        // 操作と確認：違反にならない
+        assertThat(secretPropertiesRule(examples).evaluate(examples).hasViolation()).isFalse();
+    }
+
+    @Test
     @DisplayName("toString の規則は、規則に合う例に当たらない")
     void toStringRuleDoesNotMatchCompliantExamples() {
         // 準備：toString を宣言する例（入れ子を含む）と、秘密の値の項目を持たない例（static の定数、enum の定数の名前だけが当たる例を含む）
@@ -241,16 +289,20 @@ class ConfigurationPropertiesTest {
     class SecretFieldNames {
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(strings = {"secretAccessKey", "webhookSecret", "salt", "key", "secretKey", "apiPassword", "accessToken", "credentials"})
-        @DisplayName("secret、password、salt、token、credential を含むか、key で終わる名前は、秘密の値の項目の名前")
+        @ValueSource(strings = {"secretKey", "apiKey", "privateKey", "signingKey", "key", "credentials", "clientCredential",
+                "secretAccessKey", "webhookSecret", "accessToken", "apiPassword", "salt", "hmacKey", "masterKey",
+                "stripeAPIKey", "apikey", "apiKeyV2", "signingKey2", "credentialsJson"})
+        @DisplayName("secret、password、salt、token を含む名前か、語に分けて credential と key の条件に合う名前は、秘密の値の項目の名前")
         void detectsSecretFieldName(String name) {
             // 操作と確認：秘密の値の項目の名前と判定する
             assertThat(isSecretFieldName(name)).isTrue();
         }
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(strings = {"accessKeyId", "value", "endpoint", "keyId", "monkeyBusiness"})
-        @DisplayName("秘密の語を含まず、key で終わらない名前は、秘密の値の項目の名前でない")
+        @ValueSource(strings = {"cacheKey", "objectKey", "idempotencyKey", "credentialsFile", "accessKeyId", "publicKey",
+                "publishableKey", "primaryKey", "privateKeyPath", "apiKeyHeader", "signingKeyId",
+                "value", "endpoint", "keyId", "monkeyBusiness"})
+        @DisplayName("秘密の語を含まず、credential と key の条件に合わない名前は、秘密の値の項目の名前でない")
         void ignoresOtherFieldName(String name) {
             // 操作と確認：秘密の値の項目の名前と判定しない
             assertThat(isSecretFieldName(name)).isFalse();
@@ -274,15 +326,52 @@ class ConfigurationPropertiesTest {
                 .should(new ArchCondition<JavaClass>("toString を宣言する") {
                     @Override
                     public void check(JavaClass javaClass, ConditionEvents events) {
-                        // record のコンパイラが作る toString は final で、宣言した toString と区別できないので、final を除く
+                        // record のコンパイラが作る toString は、バイトコードの形で見分けて除く（final の有無では見分けない）
                         boolean declared = javaClass.getMethods().stream()
                                 .anyMatch(method -> method.getName().equals("toString")
                                         && method.getRawParameterTypes().isEmpty()
-                                        && !method.getModifiers().contains(JavaModifier.FINAL));
+                                        && !isCompilerGeneratedRecordToString(javaClass));
                         events.add(new SimpleConditionEvent(javaClass, declared,
                                 "%s は秘密の値の項目を持つが、toString を宣言していない".formatted(javaClass.getName())));
                     }
                 });
+    }
+
+    /**
+     * 引数のない toString が、record のコンパイラが作ったものかを返す。
+     *
+     * <p>コンパイラが作る toString は、本体が {@code java.lang.runtime.ObjectMethods} を呼ぶ invokedynamic だけで、
+     * 利用者が書いた toString にはこの呼び出しがない。final の有無と行番号では、利用者が書いたものと見分けられない。
+     *
+     * @param javaClass 対象のクラス
+     * @return コンパイラが作った toString なら true
+     */
+    private static boolean isCompilerGeneratedRecordToString(JavaClass javaClass) {
+        if (!javaClass.isRecord()) {
+            return false;
+        }
+        boolean[] generated = {false};
+        try (InputStream bytes = javaClass.reflect().getResourceAsStream(javaClass.getName().substring(javaClass.getName().lastIndexOf('.') + 1) + ".class")) {
+            new ClassReader(bytes).accept(new ClassVisitor(Opcodes.ASM9) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                    if (!name.equals("toString") || !descriptor.equals("()Ljava/lang/String;")) {
+                        return null;
+                    }
+                    return new MethodVisitor(Opcodes.ASM9) {
+                        @Override
+                        public void visitInvokeDynamicInsn(String methodName, String methodDescriptor, Handle bootstrap, Object... args) {
+                            if (bootstrap.getOwner().equals("java/lang/runtime/ObjectMethods")) {
+                                generated[0] = true;
+                            }
+                        }
+                    };
+                }
+            }, ClassReader.SKIP_DEBUG);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return generated[0];
     }
 
     /**
@@ -332,14 +421,44 @@ class ConfigurationPropertiesTest {
     /**
      * 秘密の値の項目の名前かを返す。
      *
-     * <p>名前を小文字にして判定する。
+     * <p>secret・password・salt・token は、名前を小文字にして含むかで判定する。credential と key は、名前を語に分けて判定する。
      *
      * @param name 項目の名前
      * @return 秘密の値の項目なら true
      */
     private static boolean isSecretFieldName(String name) {
         String lower = name.toLowerCase(Locale.ROOT);
-        return SECRET_WORDS.stream().anyMatch(lower::contains) || lower.endsWith("key");
+        if (SECRET_WORDS.stream().anyMatch(lower::contains)) {
+            return true;
+        }
+        List<String> words = splitWords(name);
+        if (words.isEmpty()) {
+            return false;
+        }
+        String last = words.get(words.size() - 1);
+        boolean credential = words.stream().anyMatch(word -> word.equals("credential") || word.equals("credentials"))
+                && !CREDENTIAL_LOCATION_WORDS.contains(last);
+        boolean key = last.equals("key")
+                && (words.size() == 1 || KEY_PREFIX_WORDS.contains(words.get(words.size() - 2)));
+        boolean joinedKey = name.equals(lower)
+                && KEY_PREFIX_WORDS.stream().anyMatch(prefix -> lower.equals(prefix + "key"));
+        return credential || key || joinedKey;
+    }
+
+    /**
+     * 名前を小文字の語に分ける。
+     *
+     * <p>小文字から大文字への変わり目と、大文字の並びの終わりで分ける。最後に付く数字と、{@code V2} のようなバージョンの語は除く。
+     *
+     * @param name 項目の名前
+     * @return 小文字の語
+     */
+    private static List<String> splitWords(String name) {
+        return Arrays.stream(name.split("(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])"))
+                .filter(word -> !word.matches("[vV]\\d+"))
+                .map(word -> word.replaceAll("\\d+$", "").toLowerCase(Locale.ROOT))
+                .filter(word -> !word.isEmpty())
+                .toList();
     }
 
     /**

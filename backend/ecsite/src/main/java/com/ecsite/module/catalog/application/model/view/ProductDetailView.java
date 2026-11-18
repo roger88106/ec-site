@@ -30,7 +30,7 @@ import java.util.UUID;
  * @param publishEnd    公開終了日時
  * @param images        画像（表示順。先頭が代表画像）
  * @param variants      バリアント（表示順）
- * @param actions       できる操作。現在時刻で決める前は null
+ * @param actions       できる操作
  * @param version       バージョン
  * @param createdAt     登録日時
  * @param updatedAt     更新日時
@@ -39,21 +39,8 @@ public record ProductDetailView(UUID id, String productCode, String name, String
                                 Money priceExclTax, @Nullable Money priceInclTax, List<UUID> categoryIds,
                                 List<String> axes, PublicationStatus status, @Nullable Instant firstShownAt,
                                 @Nullable Instant publishStart, @Nullable Instant publishEnd,
-                                List<ImageView> images, List<VariantView> variants, @Nullable ProductActions actions,
+                                List<ImageView> images, List<VariantView> variants, ProductActions actions,
                                 long version, Instant createdAt, Instant updatedAt) {
-
-    /**
-     * 現時点の税込価格と、できる操作を設定したビューを返す。
-     *
-     * @param priceInclTax 税込価格。なければ null
-     * @param actions      できる操作
-     * @return ビュー
-     */
-    public ProductDetailView withCurrentState(@Nullable Money priceInclTax, ProductActions actions) {
-        return new ProductDetailView(id, productCode, name, description, taxCategoryId, priceExclTax, priceInclTax,
-                categoryIds, axes, status, firstShownAt, publishStart, publishEnd, images, variants, actions, version,
-                createdAt, updatedAt);
-    }
 
     /**
      * バリアントのビュー

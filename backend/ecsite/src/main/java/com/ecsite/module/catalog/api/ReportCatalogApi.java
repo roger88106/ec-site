@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.api;
 
 import com.ecsite.module.catalog.api.model.ReportProduct;
 import com.ecsite.module.catalog.application.OrderableVariantQueryService;
+import com.ecsite.module.catalog.application.model.StoredProductDetail;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.product.ProductQueryService;
 import lombok.NonNull;
@@ -59,7 +60,7 @@ public class ReportCatalogApi {
     /**
      * application の view を公開の型に変換する。
      */
-    private static ReportProduct toProduct(ProductDetailView product) {
+    private static ReportProduct toProduct(StoredProductDetail product) {
         var variants = product.variants().stream()
                 .map(variant -> toVariant(product.axes(), variant))
                 .toList();

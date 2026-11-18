@@ -82,10 +82,10 @@
 
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
-| 商品の詳細：保存されている値の型を新しく作る | 新規 `catalog/application/model/StoredProductDetail.java`（仮の名前） | 既存の `ProductApiTest`、`ProductStatusApiTest`、`ProductVariantApiTest` |
+| 商品の詳細：保存されている値の型を新しく作る | 新規 `catalog/application/model/StoredProductDetail.java` | 既存の `ProductApiTest`、`ProductStatusApiTest`、`ProductVariantApiTest` |
 | 商品の詳細：リポジトリは保存されている値だけの型を返す | `ProductQueryRepository`、`JooqProductQueryRepository` | 同上 |
 | 商品の詳細：service が view を作る | `ProductQueryService`、`ProductDetailView`（`withCurrentState` を削除） | 同上 |
-| 税区分：リポジトリは保存されている値だけの型を返す。service が今の税率を加えて view を作る | 新規 `tax/application/model/StoredTaxCategory.java`（仮の名前）、`TaxCategoryQueryRepository`、`JooqTaxCategoryQueryRepository`、`TaxCategoryQueryService`、`TaxCategoryView` | 既存の `TaxCategoryApiTest`、`TaxRateApiTest` |
+| 税区分：リポジトリは保存されている値だけの型を返す。service が今の税率を加えて view を作る | 新規 `tax/application/model/StoredTaxCategory.java`、`TaxCategoryQueryRepository`、`JooqTaxCategoryQueryRepository`、`TaxCategoryQueryService`、`TaxCategoryView` | 既存の `TaxCategoryApiTest`、`TaxRateApiTest` |
 | 店舗の商品の一覧と検索で、骨組みを共通のクラスにする | 新規 `catalog/infrastructure/persistence/StoreProductPages.java`（package-private）、`JooqStoreProductQueryRepository.findVisible`、`PostgresProductSearch.search` | 既存の `StoreCatalogApiTest`、`StoreProductSearchTest`、`StoreCatalogApiSortTest`、`PriceInclTaxFieldTest`、`ProductVisibilityTest`、`StorefrontApiTest`、`StorefrontShopTest` |
 | 売上の集計の範囲（商品、税抜き、送料除外）を値の型にする。「商品を選んだら送料を除く」は、その型の判定のメソッドにだけ置く | 新規 `reporting/domain/sales/SalesScope.java` | 単体テスト `SalesScopeTest`（新規） |
 | 集計の条件の型、service、リポジトリの port と実装が、範囲の型を受け取る。controller が範囲の型を作る | `ReportController`、`SalesTrendQuery`、`CustomerBreakdownQuery`、`VariantSalesQuery`、3 つの service、`ReportQueryRepository`、`JooqReportQueryRepository` | 既存の `SalesTrendQueryTest`、`CustomerBreakdownQueryTest`、`VariantSalesQueryTest` |
@@ -97,7 +97,7 @@
 - 骨組みの共通のクラスを、infrastructure の persistence に置く。理由：jOOQ を使えるのは `infrastructure/persistence/` だけのため。このパッケージは目安の例外で（[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「パッケージの大きさ」）、15 になっても上限の 20 以下に収まる。
 - 集計の範囲の型を、domain に置く。理由：期間と同じく集計の条件の値で、規則（商品を選んだら送料を除く）を持つため。
 - バリアント別の集計は、商品を必ず選ぶ範囲として同じ型で渡す。送料は常に除く（今と同じ）。
-- 新しい型の名前（表の `StoredProductDetail` など）は仮である。実装のタスクで確定し、plan を修正する。
+- 新しい型の名前は、T493-03-01 で確定した（表の名前）。
 
 ## 段階と変えるファイル
 

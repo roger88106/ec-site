@@ -3,7 +3,7 @@ package com.ecsite.module.tax.infrastructure.persistence;
 import com.ecsite.common.model.base.RestoreGuard;
 import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
-import com.ecsite.module.tax.application.model.view.TaxCategoryView;
+import com.ecsite.module.tax.application.model.StoredTaxCategory;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView.TaxRateView;
 import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
@@ -40,7 +40,7 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
      * @return 税区分の一覧（登録の古い順）
      */
     @Override
-    public List<TaxCategoryView> findAll() {
+    public List<StoredTaxCategory> findAll() {
         return find(noCondition());
     }
 
@@ -51,7 +51,7 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
      * @return 税区分
      */
     @Override
-    public Optional<TaxCategoryView> findById(UUID id) {
+    public Optional<StoredTaxCategory> findById(UUID id) {
         return find(TAX_CATEGORY.ID.eq(id)).stream().findFirst();
     }
 
@@ -63,7 +63,7 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
      * @param condition 税区分の条件
      * @return 税区分の一覧（登録の古い順。同じなら ID 順）
      */
-    private List<TaxCategoryView> find(Condition condition) {
+    private List<StoredTaxCategory> find(Condition condition) {
         var categories = dsl.selectFrom(TAX_CATEGORY)
                 .where(condition)
                 .orderBy(TAX_CATEGORY.CREATED_AT, TAX_CATEGORY.ID)
@@ -81,10 +81,9 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
                 .collect(Collectors.groupingBy(TaxRateRecord::getTaxCategoryId,
                         Collectors.mapping(JooqTaxCategoryQueryRepository::toView, Collectors.toList())));
 
-        return categories.map(category -> new TaxCategoryView(
+        return categories.map(category -> new StoredTaxCategory(
                 category.getId(),
                 category.getName(),
-                null,
                 ratesByCategory.getOrDefault(category.getId(), List.of()),
                 category.getVersion()));
     }

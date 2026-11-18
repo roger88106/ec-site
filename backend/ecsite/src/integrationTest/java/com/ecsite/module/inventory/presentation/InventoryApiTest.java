@@ -35,8 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 在庫 API の受け入れテスト
  *
- * <p>在庫はバリアント登録のイベントで作られるが、イベントはコミット後に動くので、ここではリポジトリで直接作る。
- * テストごとにロールバックする。
+ * <p>在庫はバリアントの登録と同じトランザクションの中で作られるが、在庫の API は商品とバリアントを読まないので、
+ * ここでは商品を登録せず、リポジトリで直接作る。テストごとにロールバックする。
  *
  * <p>確認の期待値は、準備した物から取り出さない。複数のテストで使う値は定数にし、1 つのテストの中だけで使う在庫数などは、
  * 準備と確認に同じ数を書く。
@@ -165,7 +165,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントは 404")
+        @DisplayName("在庫が作られていないバリアントは 404")
         void returnsNotFound() throws Exception {
             // 操作と確認：NOT_FOUND
             mockMvc.perform(get(BASE + "/variants/" + UUID.randomUUID()))
@@ -219,7 +219,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントへの調整は 404")
+        @DisplayName("在庫が作られていないバリアントへの調整は 404")
         void rejectsUnknownVariant() throws Exception {
             // 操作と確認：NOT_FOUND
             adjust(UUID.randomUUID(), 1, "ARRIVAL", null)
@@ -445,7 +445,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("在庫がまだないバリアントの履歴は 404")
+        @DisplayName("在庫が作られていないバリアントの履歴は 404")
         void returnsNotFound() throws Exception {
             // 操作と確認：NOT_FOUND
             mockMvc.perform(get(BASE + "/variants/" + UUID.randomUUID() + "/adjustments"))

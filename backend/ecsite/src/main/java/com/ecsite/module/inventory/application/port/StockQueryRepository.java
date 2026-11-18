@@ -20,7 +20,7 @@ public interface StockQueryRepository {
      * バリアントの在庫数を取得する。
      *
      * @param variantId バリアント ID
-     * @return 在庫数。在庫がまだなければ空
+     * @return 在庫数。在庫が作られていなければ空
      */
     Optional<Integer> findQuantity(UUID variantId);
 
@@ -31,7 +31,7 @@ public interface StockQueryRepository {
      *
      * @param variantId バリアント ID
      * @param request   ページの指定
-     * @return 調整履歴。在庫がまだなければ空
+     * @return 調整履歴。在庫が作られていなければ空
      */
     Optional<PageResult<StockAdjustmentView>> findAdjustments(UUID variantId, PageRequest request);
 

@@ -85,7 +85,7 @@ class EventPublicationReadTest {
                 reads + " -> findByStatus",
                 reads + " -> findCompletedPublications",
                 reads + " -> findIncompletePublicationsPublishedBefore",
-                ReadsEventPublicationRecords.class.getName() + " -> countIncomplete");
+                ReadsEventPublicationRecords.class.getName() + " -> countIncompleteAndStopped");
     }
 
     // ============================== 補助 ==============================

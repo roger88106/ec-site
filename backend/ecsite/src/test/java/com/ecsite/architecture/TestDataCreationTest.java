@@ -37,6 +37,7 @@ class TestDataCreationTest {
     private static final Map<Rule, Set<String>> ALLOWED = Map.of(
             Rule.STOCK, Set.of(
                     "com.ecsite.support.data.InventoryTestData",
+                    "com.ecsite.module.inventory.application.handler.CatalogEventHandlerTest",
                     "com.ecsite.module.inventory.infrastructure.persistence.JooqStockItemRepositoryTest"),
             Rule.PAYMENT, Set.of(
                     "com.ecsite.support.data.PaymentTestData",

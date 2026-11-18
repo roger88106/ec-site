@@ -6,7 +6,7 @@ import { paths } from '@/app/paths'
 /**
  * バリアントの在庫数と、在庫の画面へのリンク
  *
- * 在庫はバリアントの登録のイベントで作られるので、登録の直後はまだないことがある（「—」を出す）。
+ * 在庫の行がないバリアントは、在庫の取得が失敗するので「—」を出す。
  */
 export function StockLink({ productId, variantId }: { productId: string; variantId: string }) {
   const query = $api.useQuery('get', '/inventory/variants/{variantId}', { params: { path: { variantId } } })

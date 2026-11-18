@@ -343,8 +343,8 @@ public class OrderTestData {
      * 注文の支払画面を開く。
      *
      * <p>ロールバックするテストでは、トランザクションの外で呼ぶ前提のメソッド（{@code NEVER}）を本番の経路で呼べない。
-     * そのため、HTTP を通らずに、支払画面の URL を求める処理（{@code PaymentGatewayService.pageUrl}）の中身を、
-     * テストのトランザクションの中で順に呼んで同じ状態を作る。
+     * そのため、HTTP を通らずに同じ状態を作る。
+     * 支払画面の URL を求める処理（{@code PaymentGatewayService.pageUrl}）の中身を、テストのトランザクションの中で順に呼ぶ。
      * エンドポイント自身は {@code OrderPaymentApiTest} で確認する。
      *
      * @param orderId 注文 ID

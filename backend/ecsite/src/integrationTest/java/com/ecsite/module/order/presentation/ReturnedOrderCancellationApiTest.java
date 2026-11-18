@@ -128,7 +128,7 @@ class ReturnedOrderCancellationApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         ShippingTaxCategory.ensure(dsl);
-        shipping = new ShippingTestData(mockMvc, mockCarrier);
+        shipping = new ShippingTestData(mockMvc, mockCarrier, applicationContext);
         var catalog = new CatalogTestData(mockMvc, clock);
         var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();

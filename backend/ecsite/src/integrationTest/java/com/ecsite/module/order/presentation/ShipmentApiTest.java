@@ -12,6 +12,7 @@ import com.ecsite.support.data.CatalogTestData;
 import com.ecsite.support.data.InventoryTestData;
 import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.security.TestTokens;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +29,6 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -49,10 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>管理 API で出荷を登録したときの、売上確定と注文の状態、失敗と重ねた登録、入力の検証を確認する。
  * 出荷の可否の判定そのものは {@code OrderShipmentTest}、店舗の注文の出荷の表示は {@code StoreOrderShipmentApiTest} が確認する。
  *
- * <p>売上確定は mock の決済サービスで行う。テストごとにロールバックする。
+ * <p>売上確定は mock の決済サービスで行う。テストごとに別の ID でデータを作り、コミットする（出荷の登録のエンドポイントは、売上の確定をトランザクションの外で行うため、ロールバックできない）。
  */
 @IntegrationTest
-@Transactional
 @RecordApplicationEvents
 class ShipmentApiTest {
 
@@ -125,6 +124,11 @@ class ShipmentApiTest {
     ApplicationEvents events;
 
     /**
+     * 注文する会員（コミットするので、テストごとの会員にする）
+     */
+    private TestTokens.Builder owner;
+
+    /**
      * 注文を作る補助
      */
     private OrderTestData orders;
@@ -144,10 +148,11 @@ class ShipmentApiTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
-        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", UNIT_PRICE_EXCL_TAX).publish();
+        var product = catalog.product(catalog.taxCategory("標準 " + UUID.randomUUID(), "10"), "商品", UNIT_PRICE_EXCL_TAX).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
-        orders = new OrderTestData(mockMvc, gateway, applicationContext);
+        owner = TestTokens.member().subject(UUID.randomUUID());
+        orders = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer());
         orderId = orders.placeOrder(variantId, QUANTITY);
     }
 
@@ -248,7 +253,7 @@ class ShipmentApiTest {
             // 確認：管理と店舗の注文詳細の出荷が、登録した業者
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.shipment.carrier").value(carrier));
-            mockMvc.perform(get("/api/store/orders/" + orderId))
+            mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer()))
                     .andExpect(jsonPath("$.shipment.carrier").value(carrier));
         }
 
@@ -669,7 +674,7 @@ class ShipmentApiTest {
      * 消費者がキャンセルを申請する。
      */
     private void requestCancellation() throws Exception {
-        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
+        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNoContent());
     }

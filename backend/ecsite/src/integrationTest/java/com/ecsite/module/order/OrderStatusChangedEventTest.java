@@ -120,7 +120,7 @@ class OrderStatusChangedEventTest {
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 10);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
-        shipping = new ShippingTestData(mockMvc, mockCarrier);
+        shipping = new ShippingTestData(mockMvc, mockCarrier, applicationContext);
         // 商品の準備で時計が進むので、注文の前に戻す
         clock.setInstant(NOW);
     }

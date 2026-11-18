@@ -180,7 +180,7 @@ class ReportFlowTest {
         // コミットするので、他のテストとカートを共有しないよう、テストごとの会員で注文する
         var owner = TestTokens.member().subject(UUID.randomUUID()).email("report-flow-" + UUID.randomUUID() + "@example.com");
         orders = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer());
-        shipping = new ShippingTestData(mockMvc, mockCarrier);
+        shipping = new ShippingTestData(mockMvc, mockCarrier, applicationContext);
 
         var delivered = acceptedOrder(DELIVERED_QUANTITY);
         var cancelled = acceptedOrder(CANCELLED_QUANTITY);

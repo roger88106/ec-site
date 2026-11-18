@@ -222,7 +222,7 @@ class OrderReportApiTest {
         void returnsShippedOrder() throws Exception {
             // 準備：受付の注文を出荷する
             var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
-            new ShippingTestData(mockMvc, mockCarrier).ship(orderId, Carrier.YAMATO, "123456789012");
+            new ShippingTestData(mockMvc, mockCarrier, applicationContext).ship(orderId, Carrier.YAMATO, "123456789012");
 
             // 操作と確認：状態が出荷済み
             assertThat(orderReportApi.find(orderId).orElseThrow().status()).isEqualTo(OrderReportSnapshot.Status.SHIPPED);

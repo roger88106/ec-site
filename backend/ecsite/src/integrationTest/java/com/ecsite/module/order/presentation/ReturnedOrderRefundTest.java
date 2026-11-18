@@ -138,7 +138,7 @@ class ReturnedOrderRefundTest {
         // 楽観ロックで衝突することがある
         asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId));
         var trackingNumber = ShippingTestData.trackingNumber();
-        var shipping = new ShippingTestData(mockMvc, mockCarrier);
+        var shipping = new ShippingTestData(mockMvc, mockCarrier, applicationContext);
         shipping.ship(orderId, Carrier.YAMATO, trackingNumber);
         shipping.notifyStatus(Carrier.YAMATO, trackingNumber, "返品");
     }

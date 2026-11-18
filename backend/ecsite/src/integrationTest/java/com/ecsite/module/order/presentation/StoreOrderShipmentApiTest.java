@@ -115,7 +115,7 @@ class StoreOrderShipmentApiTest {
         accepted = orders.placeOrder(variantId, 1);
         shipped = orders.placeOrder(variantId, 1);
         // ハイフン付きで出荷し、送り状番号をハイフンなしにそろえる処理も通す
-        new ShippingTestData(mockMvc, mockCarrier).ship(shipped, Carrier.YAMATO, TRACKING_NUMBER_WITH_HYPHENS);
+        new ShippingTestData(mockMvc, mockCarrier, applicationContext).ship(shipped, Carrier.YAMATO, TRACKING_NUMBER_WITH_HYPHENS);
     }
 
     // ============================== テスト ==============================
@@ -230,7 +230,7 @@ class StoreOrderShipmentApiTest {
      * @param statusName 物流サービスの配送状態の名前
      */
     private void notifyStatus(Carrier carrier, String statusName) throws Exception {
-        new ShippingTestData(mockMvc, mockCarrier).notifyStatus(carrier, TRACKING_NUMBER, statusName);
+        new ShippingTestData(mockMvc, mockCarrier, applicationContext).notifyStatus(carrier, TRACKING_NUMBER, statusName);
     }
 
     /**

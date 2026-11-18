@@ -125,10 +125,12 @@ class JooqCheckoutRepository implements CheckoutRepository {
 
     /**
      * レコードから注文手続きを作る。
+     *
+     * <p>全体を、集約を戻す共通の補助の中で作る（不変条件の違反と、読めない JSON を、復元の失敗にする）。
      */
     private Checkout toCheckout(CheckoutRecord record) {
-        return new Checkout(record.getId(), record.getMemberId(), record.getCartId(), record.getCartVersion(), record.getExpiresAt(),
-                record.getCreatedAt(),
-                RestoreGuard.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(record.getAcknowledgedOrderIds().data(), ORDER_IDS)));
+        return RestoreGuard.restore(AGGREGATE_NAME, () -> new Checkout(record.getId(), record.getMemberId(), record.getCartId(),
+                record.getCartVersion(), record.getExpiresAt(), record.getCreatedAt(),
+                jsonMapper.readValue(record.getAcknowledgedOrderIds().data(), ORDER_IDS)));
     }
 }

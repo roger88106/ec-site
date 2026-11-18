@@ -8,7 +8,9 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
 import com.ecsite.common.persistence.AdvisoryLocks;
+import com.ecsite.jooq.ordering.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
+import com.ecsite.jooq.ordering.tables.records.SalesOrderTaxRecord;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -321,62 +323,67 @@ class JooqOrderRepository implements OrderRepository {
      * 注文のレコードと、その明細・税率ごとの消費税額から、注文を再構築する。
      */
     private Order restore(SalesOrderRecord record) {
-        // 例外のメッセージに DB の値が入る変換だけを、集約を戻す共通の補助で包む（金額の検証のエラーは値を持たず、今の応答のまま）
-        var lines = restoreLines(record.getId());
-        var amounts = restoreAmounts(record);
-        var area = new AddressArea(record.getPrefectureCode(), record.getPrefectureName(), record.getMunicipalityCode(),
-                record.getMunicipalityName());
-        var address = new ShippingAddress(record.getRecipientName(), record.getPostalCode(), area, record.getAddress(),
-                record.getPhone());
-        return Order.restore(new Order.Snapshot(
-                record.getId(),
-                RestoreGuard.restore(AGGREGATE_NAME, () -> OrderNumber.of(record.getOrderNumber())),
-                record.getCheckoutId(),
-                record.getMemberId(),
-                record.getOrderedAt(),
-                RestoreGuard.restore(AGGREGATE_NAME, () -> OrderStatus.valueOf(record.getStatus())),
-                lines,
-                amounts,
-                record.getEmail(),
-                address,
-                restoreBuyer(record),
-                restoreRequest(record),
-                restoreCancellation(record),
-                record.getVersion()));
-    }
-
-    /**
-     * 注文の明細を、行番号の順に読む。
-     */
-    private List<OrderLine> restoreLines(UUID orderId) {
-        return dsl.selectFrom(SALES_ORDER_LINE)
-                .where(SALES_ORDER_LINE.ORDER_ID.eq(orderId))
+        // 明細と税額の行は先に読む（DB の失敗を復元のエラーにしないため）
+        var lineRecords = dsl.selectFrom(SALES_ORDER_LINE)
+                .where(SALES_ORDER_LINE.ORDER_ID.eq(record.getId()))
                 .orderBy(SALES_ORDER_LINE.LINE_NO)
-                .fetch(line -> new OrderLine(
-                        line.getLineNo(),
-                        line.getVariantId(),
-                        line.getProductCode(),
-                        line.getVariantCode(),
-                        line.getProductName(),
-                        RestoreGuard.restore(AGGREGATE_NAME, () -> jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES)),
-                        Money.of(line.getUnitPriceExclTax()),
-                        normalize(line.getRatePercent()),
-                        Money.of(line.getUnitPriceInclTax()),
-                        line.getQuantity(),
-                        Money.of(line.getSubtotal())));
-    }
-
-    /**
-     * 注文の金額を読む。
-     *
-     * <p>税率ごとの消費税額は別の表から、税率の高い順（の表示の順）に読む。
-     */
-    private Amounts restoreAmounts(SalesOrderRecord record) {
-        var taxes = dsl.selectFrom(SALES_ORDER_TAX)
+                .fetch();
+        var taxRecords = dsl.selectFrom(SALES_ORDER_TAX)
                 .where(SALES_ORDER_TAX.ORDER_ID.eq(record.getId()))
                 .orderBy(SALES_ORDER_TAX.RATE_PERCENT.desc())
-                .fetch(tax -> new TaxAmount(normalize(tax.getRatePercent()), Money.of(tax.getTaxableAmount()),
-                        Money.of(tax.getTaxAmount())));
+                .fetch();
+        // 集約の全体を、集約を戻す共通の補助の中で作る（不変条件の違反と、例外のメッセージに DB の値が入る変換を、復元の失敗にする）
+        return RestoreGuard.restore(AGGREGATE_NAME, () -> {
+            var area = new AddressArea(record.getPrefectureCode(), record.getPrefectureName(), record.getMunicipalityCode(),
+                    record.getMunicipalityName());
+            var address = new ShippingAddress(record.getRecipientName(), record.getPostalCode(), area, record.getAddress(),
+                    record.getPhone());
+            return Order.restore(new Order.Snapshot(
+                    record.getId(),
+                    OrderNumber.of(record.getOrderNumber()),
+                    record.getCheckoutId(),
+                    record.getMemberId(),
+                    record.getOrderedAt(),
+                    OrderStatus.valueOf(record.getStatus()),
+                    lineRecords.map(this::restoreLine),
+                    restoreAmounts(record, taxRecords),
+                    record.getEmail(),
+                    address,
+                    restoreBuyer(record),
+                    restoreRequest(record),
+                    restoreCancellation(record),
+                    record.getVersion()));
+        });
+    }
+
+    /**
+     * 注文の明細を戻す。
+     */
+    private OrderLine restoreLine(SalesOrderLineRecord line) {
+        return new OrderLine(
+                line.getLineNo(),
+                line.getVariantId(),
+                line.getProductCode(),
+                line.getVariantCode(),
+                line.getProductName(),
+                jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES),
+                Money.of(line.getUnitPriceExclTax()),
+                normalize(line.getRatePercent()),
+                Money.of(line.getUnitPriceInclTax()),
+                line.getQuantity(),
+                Money.of(line.getSubtotal()));
+    }
+
+    /**
+     * 注文の金額を戻す。
+     *
+     * <p>税率ごとの消費税額は、税率の高い順（の表示の順）に読んだ行から作る。
+     */
+    private static Amounts restoreAmounts(SalesOrderRecord record, List<SalesOrderTaxRecord> taxRecords) {
+        var taxes = taxRecords.stream()
+                .map(tax -> new TaxAmount(normalize(tax.getRatePercent()), Money.of(tax.getTaxableAmount()),
+                        Money.of(tax.getTaxAmount())))
+                .toList();
         return new Amounts(Money.of(record.getItemsTotal()), Money.of(record.getShippingFee()),
                 Money.of(record.getTotalAmount()), taxes);
     }
@@ -388,8 +395,7 @@ class JooqOrderRepository implements OrderRepository {
      */
     private static BuyerProfile restoreBuyer(SalesOrderRecord record) {
         var age = record.getBuyerAge() == null ? null : record.getBuyerAge().intValue();
-        var gender = record.getBuyerGender() == null ? null
-                : RestoreGuard.restore(AGGREGATE_NAME, () -> Gender.valueOf(record.getBuyerGender()));
+        var gender = record.getBuyerGender() == null ? null : Gender.valueOf(record.getBuyerGender());
         return new BuyerProfile(age, gender);
     }
 
@@ -405,7 +411,7 @@ class JooqOrderRepository implements OrderRepository {
         return new CancellationRequest(
                 record.getCancellationRequestedAt(),
                 record.getCancellationRequestReason(),
-                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationRequest.Result.valueOf(record.getCancellationRequestResult())),
+                CancellationRequest.Result.valueOf(record.getCancellationRequestResult()),
                 record.getCancellationDecidedAt(),
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
     }
@@ -421,7 +427,7 @@ class JooqOrderRepository implements OrderRepository {
         }
         return new Cancellation(
                 record.getCancelledAt(),
-                RestoreGuard.restore(AGGREGATE_NAME, () -> CancellationKind.valueOf(record.getCancellationKind())),
+                CancellationKind.valueOf(record.getCancellationKind()),
                 record.getCancellationReason(),
                 operatorOf(record.getCancelledById(), record.getCancelledByName()),
                 record.getCancellationRestocked());

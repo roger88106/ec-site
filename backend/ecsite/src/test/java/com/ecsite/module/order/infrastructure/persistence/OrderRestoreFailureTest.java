@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.common.paging.PageRequest;
+import com.ecsite.jooq.ordering.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.support.RestoreFailures;
@@ -26,8 +27,8 @@ import static org.mockito.Mockito.mock;
 /**
  * 注文を DB の値から戻すときの失敗の単体テスト
  *
- * <p>DB の値を戻せないときに、例外の出力に DB の値が出ないことだけを確認する。値を正しく戻すことは、Repository の
- * 統合テストが確認する。
+ * <p>DB の値を戻せないとき（列挙にない値、不変条件の違反）に、復元の失敗になり、例外の出力に DB の値が出ないことだけを確認する。
+ * 値を正しく戻すことは、Repository の統合テストが確認する。
  */
 class OrderRestoreFailureTest {
 
@@ -98,6 +99,57 @@ class OrderRestoreFailureTest {
             // 操作と確認：例外の出力に値が出ない
             assertValueIsHidden(() -> repository(database).findById(UUID.randomUUID()), value);
         }
+
+        @Test
+        @DisplayName("メールアドレスの形が違うとき、復元の失敗になり、例外の出力に値が出ない")
+        void hidesInvalidEmail() {
+            // 操作と確認：メールアドレスを @ のない値にした行を読む
+            assertFindHides(order -> order.setEmail(value));
+        }
+
+        @Test
+        @DisplayName("キャンセルの注文にキャンセルがないとき、復元の失敗になり、例外の出力に値が出ない")
+        void hidesCancelledWithoutCancellation() {
+            // 操作と確認：状態がキャンセルで、キャンセルの日時がない行を読む。値はメールアドレスに入れる
+            assertFindHides(order -> {
+                order.setStatus("CANCELLED");
+                order.setEmail(value + "@example.com");
+            });
+        }
+
+        @Test
+        @DisplayName("受付の注文の申請が申請中のとき、復元の失敗になり、例外の出力に値が出ない")
+        void hidesAcceptedWithPendingRequest() {
+            // 操作と確認：状態が受付で、申請中の申請を持つ行を読む。値は申請の理由に入れる
+            assertFindHides(order -> {
+                order.setCancellationRequestedAt(Instant.EPOCH);
+                order.setCancellationRequestReason(value);
+                order.setCancellationRequestResult("PENDING");
+            });
+        }
+
+        @Test
+        @DisplayName("総額が商品の合計と送料の和と違うとき、復元の失敗になり、例外の出力に値が出ない")
+        void hidesInconsistentAmounts() {
+            // 操作と確認：総額を 1 円ずらした行を読む。値は氏名に入れる
+            assertFindHides(order -> {
+                order.setTotalAmount(1L);
+                order.setRecipientName(value);
+            });
+        }
+
+        @Test
+        @DisplayName("明細の小計が税込単価と数量の積と違うとき、復元の失敗になり、例外の出力に値が出ない")
+        void hidesInconsistentLineSubtotal() {
+            // 準備：小計を 1 円ずらした明細の行。値は商品名に入れる
+            var line = validLine();
+            line.setSubtotal(line.getUnitPriceInclTax() * line.getQuantity() + 1);
+            line.setProductName(value);
+            var database = new RestoreFailures().with("sales_order", validOrder()).with("sales_order_line", line);
+
+            // 操作と確認：例外の出力に値が出ない
+            assertValueIsHidden(() -> repository(database).findById(UUID.randomUUID()), value);
+        }
     }
 
     @Nested
@@ -155,11 +207,14 @@ class OrderRestoreFailureTest {
         var order = RECORDS.newRecord(SALES_ORDER);
         order.setId(UUID.randomUUID());
         order.setOrderNumber("20261010-482915");
+        order.setCheckoutId(UUID.randomUUID());
+        order.setMemberId(UUID.randomUUID());
         order.setOrderedAt(Instant.EPOCH);
         order.setStatus("ACCEPTED");
         order.setItemsTotal(0L);
         order.setShippingFee(0L);
         order.setTotalAmount(0L);
+        order.setEmail("taro@example.com");
 
         // お届け先
         order.setRecipientName("山田 太郎");
@@ -173,5 +228,28 @@ class OrderRestoreFailureTest {
 
         order.setVersion(0L);
         return order;
+    }
+
+    /**
+     * 戻せる明細の行を作る。
+     *
+     * <p>税込 1,100 円の商品を 2 個、小計 2,200 円。
+     *
+     * @return 明細の行
+     */
+    private static SalesOrderLineRecord validLine() {
+        var line = RECORDS.newRecord(SALES_ORDER_LINE);
+        line.setLineNo((short) 1);
+        line.setVariantId(UUID.randomUUID());
+        line.setProductCode("P-1");
+        line.setVariantCode("P-1-1");
+        line.setProductName("商品");
+        line.setAxisValues(JSONB.valueOf("[]"));
+        line.setUnitPriceExclTax(1000L);
+        line.setRatePercent(BigDecimal.TEN);
+        line.setUnitPriceInclTax(1100L);
+        line.setQuantity(2);
+        line.setSubtotal(2200L);
+        return line;
     }
 }

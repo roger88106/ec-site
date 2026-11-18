@@ -3,6 +3,9 @@ package com.ecsite.module.order.domain.order;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
+import com.ecsite.module.order.domain.order.vo.Cancellation;
+import com.ecsite.module.order.domain.order.vo.CancellationKind;
+import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
@@ -33,7 +37,8 @@ import static org.assertj.core.api.Assertions.tuple;
 /**
  * 注文の単体テスト
  *
- * <p>注文の成立（{@link Order#place}）だけを確認する。見積もりが注文できるかの判定（{@code orderable}）は
+ * <p>注文の成立（{@link Order#place}）と、復元（{@link Order#restore}）のときのメールアドレスと、状態と取消の情報の整合を確認する。
+ * 見積もりが注文できるかの判定（{@code orderable}）は
  * {@code QuoteTest}、API を通した流れは {@code CheckoutStartApiTest}・{@code PlaceOrderPlacementApiTest} などが確認する。
  *
  * <p>準備のデータと確認の期待値は、同じ定数から作る（準備した物から期待値を取り出さない）。
@@ -270,6 +275,64 @@ class OrderTest {
             assertBusinessError(() -> placeWithEmail(email), OrderErrorCode.INVALID_EMAIL);
         }
 
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"", "taro", "taro@", "@example.com"})
+        @DisplayName("形の違うメールアドレスの注文は、復元でも拒否される")
+        void rejectsInvalidEmailOnRestore(String email) {
+            // 準備：メールアドレスだけを変えた注文のスナップショット
+            var snapshot = snapshotWithEmail(email);
+
+            // 操作と確認：業務のエラー INVALID_EMAIL で拒否される
+            assertBusinessError(() -> Order.restore(snapshot), OrderErrorCode.INVALID_EMAIL);
+        }
+
+        @Test
+        @DisplayName("メールアドレスのない注文は、復元でも拒否される")
+        void rejectsMissingEmailOnRestore() {
+            // 準備：メールアドレスのない注文のスナップショット
+            var snapshot = snapshotWithEmail(null);
+
+            // 操作と確認：業務のエラー INVALID_EMAIL で拒否される
+            assertBusinessError(() -> Order.restore(snapshot), OrderErrorCode.INVALID_EMAIL);
+        }
+
+        @Test
+        @DisplayName("上限を 1 文字超える 255 文字のメールアドレスの注文は、復元でも拒否される")
+        void rejectsEmailOverMaxLengthOnRestore() {
+            // 準備：形が正しく、255 文字のメールアドレスの注文のスナップショット
+            var snapshot = snapshotWithEmail(emailOfLength(255));
+
+            // 操作と確認：業務のエラー INVALID_EMAIL で拒否される
+            assertBusinessError(() -> Order.restore(snapshot), OrderErrorCode.INVALID_EMAIL);
+        }
+
+        @Test
+        @DisplayName("上限の 254 文字ちょうどのメールアドレスの注文は、復元できる")
+        void restoresEmailAtMaxLength() {
+            // 準備：形が正しく、254 文字のメールアドレスの注文のスナップショット
+            var email = emailOfLength(254);
+            var snapshot = snapshotWithEmail(email);
+
+            // 操作：復元する
+            var order = Order.restore(snapshot);
+
+            // 確認：渡したメールアドレスのまま
+            assertThat(order.email()).isEqualTo(email);
+        }
+
+        /**
+         * メールアドレスだけを変えた、注文のスナップショットを作る。
+         *
+         * @param email メールアドレス
+         * @return スナップショット
+         */
+        private Order.Snapshot snapshotWithEmail(@Nullable String email) {
+            var base = place(quote()).toSnapshot();
+            return new Order.Snapshot(base.id(), base.orderNumber(), base.checkoutId(), base.memberId(), base.orderedAt(),
+                    base.status(), base.lines(), base.amounts(), email, base.shippingAddress(), base.buyerProfile(),
+                    base.cancellationRequest(), base.cancellation(), base.version());
+        }
+
         /**
          * 指定のメールアドレスで、注文できる見積もりから注文を作る。
          *
@@ -292,6 +355,109 @@ class OrderTest {
         private String emailOfLength(int length) {
             var domain = "@example.com";
             return "a".repeat(length - domain.length()) + domain;
+        }
+    }
+
+    @Nested
+    @DisplayName("状態と取消の情報の整合（復元）")
+    class Consistency {
+
+        /**
+         * 取消の申請と取消の日時
+         */
+        private static final Instant DECIDED_AT = Instant.parse("2026-10-09T01:23:45Z");
+
+        /**
+         * 運営者のキャンセルの理由
+         */
+        private static final String REASON = "在庫の不足のため";
+
+        @ParameterizedTest(name = "「{0}」申請 {1}、取消 {2}")
+        @CsvSource({
+                "PENDING_PAYMENT, NONE, false",
+                // 申請していない注文と、申請を却下して受付に戻した注文
+                "ACCEPTED, NONE, false", "ACCEPTED, REJECTED, false",
+                "CANCELLATION_REQUESTED, PENDING, false",
+                // 受付から出荷するので、申請がないか却下済み
+                "SHIPPED, NONE, false", "SHIPPED, REJECTED, false",
+                // 支払期限切れ・運営者のキャンセル（申請なし、却下の後）、申請の承認・申請中の運営者のキャンセル（承認）
+                "CANCELLED, NONE, true", "CANCELLED, APPROVED, true", "CANCELLED, REJECTED, true"})
+        @DisplayName("状態と取消の情報が整合すれば、復元でき、同じ値を持つ")
+        void restoresConsistentItems(OrderStatus status, String request, boolean cancelled) {
+            // 準備：整合する注文のスナップショット
+            var snapshot = snapshotOf(status, request, cancelled);
+
+            // 操作：復元する
+            var order = Order.restore(snapshot);
+
+            // 確認：全ての項目が同じ
+            assertThat(order.toSnapshot()).usingRecursiveComparison().isEqualTo(snapshot);
+        }
+
+        @ParameterizedTest(name = "「{0}」申請 {1}、取消 {2}")
+        @CsvSource({
+                // 取消のない状態は、取消を持たない
+                "PENDING_PAYMENT, NONE, true",
+                "ACCEPTED, NONE, true", "ACCEPTED, REJECTED, true",
+                "CANCELLATION_REQUESTED, PENDING, true",
+                "SHIPPED, NONE, true", "SHIPPED, REJECTED, true",
+                // 支払待ちは申請できない
+                "PENDING_PAYMENT, PENDING, false", "PENDING_PAYMENT, APPROVED, false", "PENDING_PAYMENT, REJECTED, false",
+                "PENDING_PAYMENT, PENDING, true", "PENDING_PAYMENT, APPROVED, true", "PENDING_PAYMENT, REJECTED, true",
+                // 受付と出荷済みの申請は、ないか却下済み
+                "ACCEPTED, PENDING, false", "ACCEPTED, APPROVED, false", "ACCEPTED, PENDING, true", "ACCEPTED, APPROVED, true",
+                "SHIPPED, PENDING, false", "SHIPPED, APPROVED, false", "SHIPPED, PENDING, true", "SHIPPED, APPROVED, true",
+                // 申請中は、決定していない申請を持つ
+                "CANCELLATION_REQUESTED, NONE, false", "CANCELLATION_REQUESTED, APPROVED, false",
+                "CANCELLATION_REQUESTED, REJECTED, false",
+                "CANCELLATION_REQUESTED, NONE, true", "CANCELLATION_REQUESTED, APPROVED, true",
+                "CANCELLATION_REQUESTED, REJECTED, true",
+                // キャンセルは取消を持ち、申請は決定済み
+                "CANCELLED, NONE, false", "CANCELLED, PENDING, false", "CANCELLED, APPROVED, false",
+                "CANCELLED, REJECTED, false", "CANCELLED, PENDING, true"})
+        @DisplayName("状態と取消の情報が整合しなければ、復元できず、メッセージに値が出ない")
+        void rejectsInconsistentItems(OrderStatus status, String request, boolean cancelled) {
+            // 準備：整合しない注文のスナップショット
+            var snapshot = snapshotOf(status, request, cancelled);
+
+            // 操作と確認：例外になり、メッセージに状態の名前があり、理由・日時・メールアドレスがない
+            assertThatThrownBy(() -> Order.restore(snapshot))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(status.name())
+                    .hasMessageNotContaining(REASON)
+                    .hasMessageNotContaining(DECIDED_AT.toString())
+                    .hasMessageNotContaining(EMAIL);
+        }
+
+        /**
+         * 状態と取消の情報を指定した、注文のスナップショットを作る。
+         *
+         * <p>申請の理由と取消の理由には {@link #REASON} を入れる。
+         *
+         * @param status    状態
+         * @param request   申請の結果（{@code NONE} なら申請なし）
+         * @param cancelled 取消があるか
+         * @return スナップショット
+         */
+        private Order.Snapshot snapshotOf(OrderStatus status, String request, boolean cancelled) {
+            var base = place(quote()).toSnapshot();
+            var cancellationRequest = request.equals("NONE") ? null
+                    : requestOf(CancellationRequest.Result.valueOf(request));
+            var cancellation = cancelled ? new Cancellation(DECIDED_AT, CancellationKind.OPERATOR, REASON, null) : null;
+            return new Order.Snapshot(base.id(), base.orderNumber(), base.checkoutId(), base.memberId(), base.orderedAt(),
+                    status, base.lines(), base.amounts(), base.email(), base.shippingAddress(), base.buyerProfile(),
+                    cancellationRequest, cancellation, base.version());
+        }
+
+        /**
+         * 指定の結果の申請を作る。
+         *
+         * @param result 結果
+         * @return 申請。申請中なら決定の日時がない
+         */
+        private CancellationRequest requestOf(CancellationRequest.Result result) {
+            var decidedAt = result == CancellationRequest.Result.PENDING ? null : DECIDED_AT;
+            return new CancellationRequest(ORDERED_AT, REASON, result, decidedAt, null);
         }
     }
 

@@ -63,18 +63,22 @@ public final class Checkout {
     /**
      * コンストラクタ
      *
-     * <p>確認した注文の ID の集合は、後から変えられないようにコピーする。
+     * <p>引当の期限が作成日時より後であることを検査する。確認した注文の ID の集合は、後から変えられないようにコピーする。
      *
      * @param id                   注文手続き ID
      * @param memberId             会員 ID
      * @param cartId               カート ID
      * @param cartVersion          カートのバージョン
-     * @param expiresAt            引当の期限
+     * @param expiresAt            引当の期限（作成日時より後）
      * @param createdAt            作成日時
      * @param acknowledgedOrderIds 確認した注文の ID の集合
      */
     public Checkout(UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt,
                     Set<UUID> acknowledgedOrderIds) {
+        // メッセージに日時を書かない（DB から戻した値が入るため）
+        if (!expiresAt.isAfter(createdAt)) {
+            throw new IllegalArgumentException("引当の期限が作成日時より後でない");
+        }
         this.id = id;
         this.memberId = memberId;
         this.cartId = cartId;

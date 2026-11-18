@@ -175,7 +175,7 @@ AC-113（ログインすると、ログインの前に見ていた画面に戻�
   - 範囲：`frontend/store/src/lib/login.ts`、`frontend/store/src/lib/login.test.ts`
   - 確認方法：追加したテストが失敗し、実装の後に通る。
   - 結果：テストは `/login`、`/login/failed`、`/login?retry=1` がそのまま返って失敗し、実装の後に通った。curl で、`/login?returnTo=/login/failed` から IdP へ移るときに、Auth.js が Cookie に保存する戻る画面が `/` になることを確認した。
-- [ ] **T430-01-09** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
+- [x] **T430-01-09** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T430-01-06、T430-01-08
   - 結果：
 

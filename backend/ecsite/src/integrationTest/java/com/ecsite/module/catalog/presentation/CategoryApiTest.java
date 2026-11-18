@@ -401,7 +401,7 @@ class CategoryApiTest {
         }
 
         @Test
-        @DisplayName("AC-270 木の節は子のカテゴリを足せるかを持ち、いちばん深いカテゴリだけ足せない")
+        @DisplayName("AC-270 木の節は子のカテゴリを追加できるかを持ち、いちばん深いカテゴリだけ追加できない")
         void listsAddChildAction() throws Exception {
             // 準備：3 階層の木
             var root = uniqueName(CLOTHING);
@@ -409,7 +409,7 @@ class CategoryApiTest {
             var tops = createdId(TOPS, clothing);
             createdId(T_SHIRT, tops);
 
-            // 操作と確認：1・2 階層目は足せて、3 階層目は足せない
+            // 操作と確認：1・2 階層目は追加できて、3 階層目は追加できない
             var node = nodeOf(root);
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())

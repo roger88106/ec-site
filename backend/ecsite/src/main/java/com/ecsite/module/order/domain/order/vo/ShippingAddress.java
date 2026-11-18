@@ -53,15 +53,50 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
     private static final int POSTAL_CODE_HEAD_DIGITS = 3;
 
     /**
-     * 郵便番号の形（ハイフンは前の桁の後だけ）
+     * ハイフンを含む郵便番号の形（ハイフンは前の桁の後だけ）
      */
-    private static final Pattern POSTAL_CODE = Pattern.compile("\\d{%d}-?\\d{%d}"
+    private static final Pattern POSTAL_CODE_WITH_HYPHEN = Pattern.compile("\\d{%d}-\\d{%d}"
             .formatted(POSTAL_CODE_HEAD_DIGITS, POSTAL_CODE_DIGITS - POSTAL_CODE_HEAD_DIGITS));
+
+    /**
+     * 郵便番号の形（ハイフンを除いた数字の桁数）
+     */
+    private static final Pattern POSTAL_CODE = Pattern.compile("\\d{%d}".formatted(POSTAL_CODE_DIGITS));
 
     /**
      * 電話番号の形（ハイフンを除いた数字の桁数）
      */
     private static final Pattern PHONE_DIGITS = Pattern.compile("\\d{%d,%d}".formatted(PHONE_MIN_DIGITS, PHONE_MAX_DIGITS));
+
+    /**
+     * コンストラクタ。
+     *
+     * <p>郵便番号と電話番号は、ハイフンを除いた後の形で受け取る。
+     *
+     * @param name       氏名
+     * @param postalCode 郵便番号（ハイフンのない数字）
+     * @param area       都道府県と市区町村
+     * @param address    市区町村より下の住所
+     * @param phone      電話番号（ハイフンのない数字）
+     * @throws BusinessException 氏名が正しくない（{@code INVALID_RECIPIENT_NAME}）
+     * @throws BusinessException 郵便番号が正しくない（{@code INVALID_POSTAL_CODE}）
+     * @throws BusinessException 住所が正しくない（{@code INVALID_ADDRESS}）
+     * @throws BusinessException 電話番号が正しくない（{@code INVALID_PHONE_NUMBER}）
+     */
+    public ShippingAddress {
+        if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
+            throw BusinessException.of(OrderErrorCode.INVALID_RECIPIENT_NAME, List.of(NAME_MAX_LENGTH));
+        }
+        if (!POSTAL_CODE.matcher(postalCode).matches()) {
+            throw BusinessException.of(OrderErrorCode.INVALID_POSTAL_CODE, List.of(POSTAL_CODE_DIGITS));
+        }
+        if (!BoundedText.isFilledWithin(address, ADDRESS_MAX_LENGTH)) {
+            throw BusinessException.of(OrderErrorCode.INVALID_ADDRESS, List.of(ADDRESS_MAX_LENGTH));
+        }
+        if (!PHONE_DIGITS.matcher(phone).matches()) {
+            throw BusinessException.of(OrderErrorCode.INVALID_PHONE_NUMBER, List.of(PHONE_MIN_DIGITS, PHONE_MAX_DIGITS));
+        }
+    }
 
     /**
      * 入力からお届け先を作る。
@@ -80,19 +115,15 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
      * @throws BusinessException 電話番号が正しくない（{@code INVALID_PHONE_NUMBER}）
      */
     public static ShippingAddress of(String name, String postalCode, AddressArea area, String address, String phone) {
-        if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
-            throw BusinessException.of(OrderErrorCode.INVALID_RECIPIENT_NAME, List.of(NAME_MAX_LENGTH));
-        }
-        if (!POSTAL_CODE.matcher(postalCode).matches()) {
-            throw BusinessException.of(OrderErrorCode.INVALID_POSTAL_CODE, List.of(POSTAL_CODE_DIGITS));
-        }
-        if (!BoundedText.isFilledWithin(address, ADDRESS_MAX_LENGTH)) {
-            throw BusinessException.of(OrderErrorCode.INVALID_ADDRESS, List.of(ADDRESS_MAX_LENGTH));
-        }
-        var phoneDigits = phone.replace("-", "");
-        if (!PHONE_DIGITS.matcher(phoneDigits).matches()) {
-            throw BusinessException.of(OrderErrorCode.INVALID_PHONE_NUMBER, List.of(PHONE_MIN_DIGITS, PHONE_MAX_DIGITS));
-        }
-        return new ShippingAddress(name, postalCode.replace("-", ""), area, address, phoneDigits);
+        return new ShippingAddress(name, normalizePostalCode(postalCode), area, address, phone.replace("-", ""));
+    }
+
+    /**
+     * 郵便番号のハイフンを除く。
+     *
+     * <p>ハイフンが前の桁の後にないときは、そのまま返す（コンストラクターが形の違いとして拒否する）。
+     */
+    private static String normalizePostalCode(String postalCode) {
+        return POSTAL_CODE_WITH_HYPHEN.matcher(postalCode).matches() ? postalCode.replace("-", "") : postalCode;
     }
 }

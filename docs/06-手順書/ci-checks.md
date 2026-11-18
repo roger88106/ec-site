@@ -12,7 +12,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `action-pins` | workflow と複合の action の `uses` が、ローカルの action か、commit の SHA に固定した形であることを確認する |
 | `ci-docs` | この表と検査の 1 対 1 の対応と、検査の先頭のコメントを確認する |
 | `compose-ports` | compose の全ての ports が `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
-| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないことを確認する |
+| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しの番号、Markdown に書いたパスを確認する |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
 | `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |
@@ -36,7 +36,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 
 ※1：表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。
 
-`backend/config-defaults`（設定の型の既定値を環境変数の文書と照合する）は、表に入れていない。CI のビルドのジョブだけで動き、commit の前の hook では動かない（[CI の検査の追加](ci-adding-checks.md)の「補助の script の置き場所」）。
+`scripts/ci/backend/config-defaults.mjs`（設定の型の既定値を環境変数の文書と照合する）は、表に入れていない。CI のビルドのジョブだけで動き、commit の前の hook では動かない（[CI の検査の追加](ci-adding-checks.md)の「補助の script の置き場所」）。
 
 ## commit の前の hook
 

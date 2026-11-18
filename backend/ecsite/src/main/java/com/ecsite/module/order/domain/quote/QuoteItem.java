@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  * 見積もりの品目
  *
  * @param variant             バリアントの情報
- * @param quantity            数量
+ * @param quantity            数量（{@value #MIN_QUANTITY} 以上）
  * @param ratePercent         時点の率（%）。有効な税率がなければ null
  * @param unitPriceInclTax    税込単価（有効な税率がなければ税抜価格）
  * @param subtotal            小計（税込単価 × 数量）
@@ -20,6 +20,29 @@ import java.math.BigDecimal;
 @ValueObject
 public record QuoteItem(VariantInfo variant, int quantity, @Nullable BigDecimal ratePercent, Money unitPriceInclTax,
                         Money subtotal, @Nullable UnpurchasableReason unpurchasableReason) {
+
+    /**
+     * 数量の下限
+     */
+    private static final int MIN_QUANTITY = 1;
+
+    /**
+     * コンストラクタ。
+     *
+     * <p>数量が下限以上であることを確認する。
+     *
+     * @param variant             バリアントの情報
+     * @param quantity            数量
+     * @param ratePercent         時点の率（%）
+     * @param unitPriceInclTax    税込単価
+     * @param subtotal            小計
+     * @param unpurchasableReason 購入できない理由
+     */
+    public QuoteItem {
+        if (quantity < MIN_QUANTITY) {
+            throw new IllegalArgumentException("数量が下限より小さい");
+        }
+    }
 
     /**
      * 品目を作り、購入できるかを判定する。

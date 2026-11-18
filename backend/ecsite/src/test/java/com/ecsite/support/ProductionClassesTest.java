@@ -154,6 +154,19 @@ class ProductionClassesTest {
                     .noneMatch(name -> name.startsWith("com.ecsite.tools."))
                     .doesNotContain(tools.getName());
         }
+
+        @Test
+        @DisplayName("本番のクラスの一覧は、独自の Error Prone の検査のクラスを含まない（errorprone は単体テストの classpath にある）")
+        void allExcludesErrorProneChecks() throws ClassNotFoundException {
+            // 準備：独自の検査のクラスが単体テストの classpath にある
+            Class<?> check = Class.forName("com.ecsite.errorprone.EntityEqualityAssertion");
+
+            // 操作と確認：検査のパッケージのクラスがない
+            assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
+                    .isNotEmpty()
+                    .noneMatch(name -> name.startsWith("com.ecsite.errorprone."))
+                    .doesNotContain(check.getName());
+        }
     }
 
     @Nested

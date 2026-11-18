@@ -1,6 +1,45 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { readHeadingIndex, referenceName, slug } from './doc-names.mjs'
+import { readHeadingIndex, referenceName, resolveAdjacent, resolveDocument, slug } from './doc-names.mjs'
+
+const NAMES = new Map([['見本の文書', 'docs/sample/sample.md']])
+const NO_BASENAMES = new Map()
+const NEVER = () => false
+
+describe('参照の前の文字から、先の文書を決める', () => {
+  const adjacent = (before) => resolveAdjacent('docs/dev/setup.md', before, NAMES, NO_BASENAMES, NEVER)
+  const document = (before) => resolveDocument('docs/dev/setup.md', before, NAMES, NO_BASENAMES, NEVER)
+
+  test('直後の文書の名前、太字の名前、空白を挟んだ名前から先を決める', () => {
+    assert.equal(adjacent('見本の文書'), 'docs/sample/sample.md')
+    assert.equal(adjacent('**見本の文書**'), 'docs/sample/sample.md')
+    assert.equal(adjacent('見本の文書 '), 'docs/sample/sample.md')
+    assert.equal(adjacent('見本の文書　'), 'docs/sample/sample.md')
+  })
+
+  test('title の付いたリンクの直後も、title のないリンクと同じく宛先から先を決める', () => {
+    assert.equal(adjacent('[x](a.md)'), 'docs/dev/a.md')
+    assert.equal(adjacent('[x](a.md "説明")'), 'docs/dev/a.md')
+    assert.equal(adjacent('[x](a.md#見出し "説明")'), 'docs/dev/a.md')
+    assert.equal(adjacent('[x](a.md "説明(補足)")'), 'docs/dev/a.md')
+  })
+
+  test('「の」の後と、閉じ括弧・「」」・「』」の後は、直後とみなさない', () => {
+    assert.equal(adjacent('見本の文書の'), null)
+    assert.equal(adjacent('（見本の文書）'), null)
+    assert.equal(adjacent('「見本の文書」'), null)
+    assert.equal(adjacent('『見本の文書』'), null)
+  })
+
+  test('太字の印と、『』と、title の付いたリンクの後の「の」も、先の文書を決める（resolveDocument）', () => {
+    assert.equal(document('**見本の文書**の'), 'docs/sample/sample.md')
+    assert.equal(document('__見本の文書__の'), 'docs/sample/sample.md')
+    assert.equal(document('『見本の文書』の'), 'docs/sample/sample.md')
+    assert.equal(document('**[x](a.md "説明")**の'), 'docs/dev/a.md')
+    assert.equal(document('[x](a.md "説明")の'), 'docs/dev/a.md')
+    assert.equal(document('見本の文書を読む。「'), null)
+  })
+})
 
 describe('文書の名前と見出しの読み取り', () => {
   test('見出しの slug は GitHub と同じ作り方（記号を除き、空白をハイフンに）', () => {

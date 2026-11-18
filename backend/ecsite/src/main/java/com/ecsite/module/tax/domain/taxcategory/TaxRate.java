@@ -3,7 +3,11 @@ package com.ecsite.module.tax.domain.taxcategory;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -13,13 +17,33 @@ import java.util.UUID;
  * 税率
  *
  * <p>税区分の集約の一部で、率と適用期間を持つ。
- *
- * @param id          税率 ID
- * @param ratePercent 率
- * @param period      適用期間
  */
+@Getter
+@Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@AllArgsConstructor
 @Entity
-public record TaxRate(@Identity @NonNull UUID id, @NonNull RatePercent ratePercent, @NonNull EffectivePeriod period) {
+public final class TaxRate {
+
+    /**
+     * 税率 ID
+     */
+    @Identity
+    @EqualsAndHashCode.Include
+    @NonNull
+    private final UUID id;
+
+    /**
+     * 率
+     */
+    @NonNull
+    private final RatePercent ratePercent;
+
+    /**
+     * 適用期間
+     */
+    @NonNull
+    private final EffectivePeriod period;
 
     /**
      * 率と適用期間が同じか（ID は比べない）。

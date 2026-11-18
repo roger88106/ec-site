@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.domain.payment.AuthorizationTerm;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.time.DurationMax;
@@ -19,7 +20,7 @@ import java.util.UUID;
  * ここには持たない。
  *
  * @param deadline                     支払の期限（注文日時からの時間）。上限は、注文の後に作る支払画面の期限
- *                                     （Stripe の最短の 30 分に余裕を足した時間）が支払の期限より前に来ないように決める
+ *                                     （Stripe の最短の 30 分に余裕を加えた時間）が支払の期限より前に来ないように決める
  * @param expiryInterval               支払の期限切れのジョブの間隔
  * @param awaitingAuthorizationWarning 与信の反映を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに出すか
  * @param authorizationValidity        与信の有効期間（与信の時刻からの時間）。Stripe のカード決済の与信が切れるまでの期間に合わせる
@@ -35,6 +36,23 @@ public record PaymentProperties(
         @DefaultValue("7d") @NotNull @DurationMin(millis = 1) Duration authorizationValidity,
         @DefaultValue("2d") @NotNull @DurationMin(nanos = 0) Duration authorizationWarning,
         @NotBlank String returnUrl) {
+
+    /**
+     * 与信の期限が近いとする期間が、与信の有効期間より短いかを返す。
+     *
+     * <p>値の検証で検査し、短くなければ起動に失敗させる（与信を受けた時点から期限が近いことになるため）。
+     * どちらかが null か、項目の下限を満たさないときは、項目の検証が失敗にするので、true を返す。
+     *
+     * @return 短いか、項目の検証で失敗するなら true
+     */
+    @AssertTrue(message = "authorization-warning は authorization-validity より短くする")
+    boolean isAuthorizationWarningShorterThanValidity() {
+        if (authorizationValidity == null || authorizationWarning == null
+                || !authorizationValidity.isPositive() || authorizationWarning.isNegative()) {
+            return true;
+        }
+        return authorizationWarning.compareTo(authorizationValidity) < 0;
+    }
 
     /**
      * 注文の戻る先の URL を作る。

@@ -34,29 +34,17 @@ record TaxRates(List<TaxRate> list) {
     /**
      * コンストラクタ。
      *
-     * <p>適用開始日時の古い順に並べ替える。
+     * <p>適用開始日時の古い順に並べ替える。一覧が空でなければ、期間が重複せず、途切れがなく、最後の税率の終了が
+     * 空白であることを検証する。
      *
-     * @param list 税率の一覧
-     */
-    TaxRates(@NonNull List<TaxRate> list) {
-        this.list = list.stream().sorted(BY_EFFECTIVE_FROM).toList();
-    }
-
-    /**
-     * 置き換え後の税率の一覧を作る。
-     *
-     * <p>期間が重複せず、途切れがなく、最後の税率の終了が空白であることを検証する。
-     *
-     * @param rates 税率の一覧（1 件以上）
-     * @return 税率の一覧
+     * @param list 税率の一覧（空でもよい）
      * @throws BusinessException 期間が重複している（{@code TAX_RATE_PERIODS_OVERLAP}）
      * @throws BusinessException 期間が途切れている（{@code TAX_RATE_PERIODS_GAP}）
      * @throws BusinessException 最後の税率の終了が空白でない（{@code TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED}）
      */
-    static TaxRates continuous(List<TaxRate> rates) {
-        var sorted = new TaxRates(rates);
-        sorted.verifyContinuous();
-        return sorted;
+    TaxRates(@NonNull List<TaxRate> list) {
+        this.list = list.stream().sorted(BY_EFFECTIVE_FROM).toList();
+        verifyContinuous();
     }
 
     /**
@@ -84,6 +72,10 @@ record TaxRates(List<TaxRate> list) {
      * 期間が重複せず、途切れがなく、最後の税率の終了が空白であることを検証する。
      */
     private void verifyContinuous() {
+        // 税率のない一覧（登録したばかりの税区分）は、検証する対象がない
+        if (list.isEmpty()) {
+            return;
+        }
         // 隣り合う 2 件ずつ、前の終了と次の開始を比べる
         TaxRate previous = null;
         for (var rate : list) {

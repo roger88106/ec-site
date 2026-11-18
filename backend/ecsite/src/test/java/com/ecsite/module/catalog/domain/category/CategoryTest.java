@@ -327,7 +327,7 @@ class CategoryTest {
             var changed = Category.reorder(List.of(a, b, c), List.of(a.id(), c.id(), b.id()));
 
             // 確認：位置の変わった B と C だけ
-            assertThat(changed).containsExactlyInAnyOrder(b, c);
+            assertThat(changed).extracting(Category::id).containsExactlyInAnyOrder(b.id(), c.id());
         }
 
         @Test

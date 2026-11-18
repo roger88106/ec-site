@@ -19,8 +19,8 @@ import { stripJavaComments } from '../../shared/source/strip-comments.mjs'
 /** 本番のソース */
 const MAIN_SOURCE = /^backend\/ecsite\/src\/main\/.*\.java$/
 
-/** 手で書いた全てのソース：本番、テスト、tools（生成したコードは含まない） */
-const JAVA_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFixtures|tools)\/.*\.java$/
+/** 手で書いた全てのソース：本番、テスト、tools、errorprone（生成したコードは含まない） */
+const JAVA_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFixtures|tools|errorprone)\/.*\.java$/
 
 /** 列挙型の変換の呼び出しの開き括弧まで */
 const ENUM_CALL = /\b(?:valueOf|fromValue)\(/g
@@ -163,7 +163,7 @@ function annotationMask(code) {
  * @SuppressWarnings の理由を求める場所か。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 本番、テスト、tools のソースなら true（生成したコードは含まない）
+ * @returns {boolean} 本番、テスト、tools、errorprone のソースなら true（生成したコードは含まない）
  */
 export function isSuppressWarningsTarget(file) {
   return JAVA_SOURCE.test(file)

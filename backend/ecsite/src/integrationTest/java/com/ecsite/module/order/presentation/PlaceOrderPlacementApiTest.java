@@ -139,7 +139,7 @@ class PlaceOrderPlacementApiTest {
         @Test
         @DisplayName("AC-75 カートの 1 品目を上限の数量にして注文でき、注文の明細の数量はその値になる")
         void placesOrderWithMaxQuantity() throws Exception {
-            // 準備：カートの上限と注文の明細の数量の制約は同じ値。上限まで買える在庫を足し、カートの T シャツを上限の数量にする
+            // 準備：カートの上限と注文の明細の数量の制約は同じ値。上限まで買える在庫を追加し、カートの T シャツを上限の数量にする
             var max = maxCartQuantity();
             fixture.inventory.stock(fixture.shirtVariant(), fixture.shirt.id, max + 5);
             fixture.changeShirtQuantity(max);

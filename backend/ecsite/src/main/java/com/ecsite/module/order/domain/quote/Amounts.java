@@ -10,9 +10,25 @@ import java.util.List;
  *
  * @param itemsTotal  商品の合計（購入できる品目の小計の合計）
  * @param shippingFee 送料（購入できる品目がなければ 0）
- * @param total       総額
+ * @param total       総額（商品の合計 + 送料）
  * @param taxes       税率ごとの消費税額（税率の高い順）
  */
 @ValueObject
 public record Amounts(Money itemsTotal, Money shippingFee, Money total, List<TaxAmount> taxes) {
+
+    /**
+     * コンストラクタ。
+     *
+     * <p>総額が商品の合計と送料の和であることを確認する。
+     *
+     * @param itemsTotal  商品の合計
+     * @param shippingFee 送料
+     * @param total       総額
+     * @param taxes       税率ごとの消費税額
+     */
+    public Amounts {
+        if (!total.equals(itemsTotal.plus(shippingFee))) {
+            throw new IllegalArgumentException("総額が商品の合計と送料の和と違う");
+        }
+    }
 }

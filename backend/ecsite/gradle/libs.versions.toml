@@ -55,6 +55,8 @@ jacoco = "0.8.13"
 # テストの Java のコードの重複の検出（PMD の CPD）。Gradle のプラグインと PMD の本体でバージョンが別
 cpd-plugin = "3.5"
 pmd = "7.29.0"
+# JUnit 4（検査のテストの補助が使う）。error_prone_test_helpers の間接の依存に合わせる。errorprone を上げるときに見直す
+junit4 = "4.13.2"
 # domain の mutation testing（PIT）。PIT の本体、Gradle のプラグイン、JUnit 5 との連携でバージョンが別
 pitest-engine = "1.30.1"
 pitest-gradle-plugin = "1.19.0"
@@ -126,6 +128,9 @@ spring-boot-configuration-processor = { module = "org.springframework.boot:sprin
 # --- 静的解析 ---
 # コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+# 独自の検査（src/errorprone）を書く API と、その検査のテスト（CompilationTestHelper）
+errorprone-check-api = { module = "com.google.errorprone:error_prone_check_api", version.ref = "errorprone" }
+errorprone-test-helpers = { module = "com.google.errorprone:error_prone_test_helpers", version.ref = "errorprone" }
 # null の検査（errorprone の構成に入れる）
 nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
 # null を許す型の注釈（Nullable）。NullAway が見る（バージョンは Spring Boot の BOM が管理）
@@ -144,6 +149,8 @@ spring-boot-micrometer-tracing-test = { module = "org.springframework.boot:sprin
 spring-boot-micrometer-metrics-test = { module = "org.springframework.boot:spring-boot-micrometer-metrics-test" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+# 検査のテストの補助（error_prone_test_helpers）が実行で使う JUnit 4。コンパイルのクラスパスには入れない
+junit4 = { module = "junit:junit", version.ref = "junit4" }
 # CPD の Java の言語の部品（cpd の構成に入れる）
 pmd-java = { module = "net.sourceforge.pmd:pmd-java", version.ref = "pmd" }
 

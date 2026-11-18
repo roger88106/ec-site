@@ -5,6 +5,7 @@ import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.DisplayOrders;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -23,6 +24,7 @@ import java.util.UUID;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Category extends AggregateRoot {
 
@@ -42,6 +44,7 @@ public class Category extends AggregateRoot {
      * カテゴリ ID
      */
     @Identity
+    @EqualsAndHashCode.Include
     private final UUID id;
 
     /**

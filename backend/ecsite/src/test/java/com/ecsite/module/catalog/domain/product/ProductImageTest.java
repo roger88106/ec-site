@@ -425,7 +425,7 @@ class ProductImageTest {
             var restored = factory.restore(snapshot);
 
             // 確認：画像は並び順どおりで、バリアントは 2 枚目を指す
-            assertThat(restored.images()).containsExactly(
+            assertThat(restored.images()).usingRecursiveFieldByFieldElementComparator().containsExactly(
                     new ProductImage(FIRST_IMAGE_ID, FIRST_ASSET_ID, 1), new ProductImage(SECOND_IMAGE_ID, SECOND_ASSET_ID, 2));
             assertThat(restored.variants().getFirst().imageId()).isEqualTo(SECOND_IMAGE_ID);
         }

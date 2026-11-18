@@ -42,7 +42,7 @@ import { SPECS_DIR } from '../../../shared/docs/spec-dirs.mjs'
  * @param input.specAcs    AC の番号（AC 一覧と進行中の spec の AC）
  * @param input.tests      テスト（ファイルと名前）
  * @param input.exclusions 除外の一覧（"AC-n" → 理由）
- * @param input.deprecated 廃止の AC の番号。テストが要らず、テストが参照すると失敗。除外の一覧のキーにもできない
+ * @param input.deprecated 廃止の AC の番号。テストが必要なく、テストが参照すると失敗。除外の一覧のキーにもできない
  * @param input.strict     テスト名に出ない AC を失敗にするか。false なら警告にする（missing には出す）
  * @returns 照合した結果。ok が false なら失敗
  */

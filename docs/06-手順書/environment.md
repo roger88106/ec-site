@@ -54,6 +54,7 @@
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省略したもの（`SPRING_DATASOURCE_USERNAME` など）。
 - 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）だけは 0 以上。
+- `ECSITE_PAYMENT_AUTHORIZATION_WARNING` は、`ECSITE_PAYMENT_AUTHORIZATION_VALIDITY` より短くないと起動に失敗する。
 - マイグレーションの適用は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「マイグレーション」。
 - ログは標準出力に JSON（Elastic Common Schema）で出力される。
 - 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「公開ネットワークへのデプロイの前提」）を決めてから行う。

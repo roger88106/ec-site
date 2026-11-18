@@ -60,6 +60,19 @@ function serveOrder(before: OrderDetail, after: OrderDetail = before) {
   return state
 }
 
+/** 他の運営者が出荷して、キャンセルの操作がなくなった注文 */
+const SHIPPED_NOT_RETURNED = orderDetail({
+  status: 'SHIPPED',
+  actions: orderActions({ cancel: false }),
+  payment: payment('CAPTURED'),
+  shipment: {
+    carrier: 'YAMATO',
+    trackingNumber: '123456789012',
+    status: 'IN_TRANSIT',
+    shippedAt: '2026-10-11T03:00:00Z',
+  },
+})
+
 /** 状態のバッジ（見出しの下の「状態」）を返す。 */
 async function shownStatus(label: string) {
   return within(await screen.findByRole('group', { name: '状態' })).findByText(label)
@@ -287,6 +300,53 @@ describe('注文の詳細', () => {
   })
 })
 
+describe('失敗の後の再取得', () => {
+  test('AC-559-10 取得済みの注文の再取得が 404 で失敗したら、画面を残し、失敗の文を表示して、再試行のボタンは表示しない', async () => {
+    serveOrder(REQUESTED)
+    const { user } = renderApp(PAGE_PATH)
+    await shownStatus('キャンセル申請中')
+    // 承認が成功した後の再取得を、404 にする
+    server.use(
+      http.get('/orders/{orderId}', ({ response }) =>
+        response(404).json(problem(404, 'NOT_FOUND', '注文が見つかりません。')),
+      ),
+    )
+
+    await user.click(screen.getByRole('button', { name: '申請を承認する' }))
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: '承認してキャンセルする' }),
+    )
+
+    expect(await screen.findByText('注文が見つかりません。')).toBeInTheDocument()
+    expect(screen.getByText('ABC-001-RED')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '再試行' })).not.toBeInTheDocument()
+  })
+
+  test('AC-559-11 キャンセルが業務の 409 で失敗し、再取得した注文に操作がなくなっても、失敗のメッセージを残す', async () => {
+    const state = serveOrder(orderDetail())
+    server.use(
+      http.put('/orders/{orderId}/cancel', ({ response }) => {
+        state.current = SHIPPED_NOT_RETURNED
+        return response(409).json(
+          problem(409, 'SHIPPED_ORDER_NOT_RETURNED', '出荷済みの注文は、返送されるまでキャンセルできません。'),
+        )
+      }),
+    )
+    const { user } = renderApp(PAGE_PATH)
+    await shownStatus('受付')
+
+    await user.click(screen.getByRole('button', { name: 'キャンセルする' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('理由（必須）'), '電話で取り消しの依頼')
+    await user.click(within(dialog).getByRole('button', { name: 'キャンセルする' }))
+
+    // 再取得の完了を待ってから、メッセージが残っていることを確認する
+    expect(await shownStatus('出荷済み')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'キャンセルする' })).not.toBeInTheDocument()
+    expect(screen.getByText('出荷済みの注文は、返送されるまでキャンセルできません。')).toBeInTheDocument()
+  })
+})
+
 describe('出荷', () => {
   /** 出荷を登録できる「受付」の注文 */
   const SHIPPABLE = orderDetail({
@@ -386,6 +446,24 @@ describe('出荷', () => {
       expect(await shownStatus('受付')).toBeInTheDocument()
     },
   )
+
+  test('AC-559-11 出荷の登録が業務の 409 で失敗し、再取得した注文がキャンセル済みで出荷の欄がなくなっても、失敗のメッセージを残す', async () => {
+    const state = serveShipment(SHIPPABLE)
+    server.use(
+      http.post('/orders/{orderId}/shipment', ({ response }) => {
+        state.current = cancelledOrder()
+        return response(409).json(problem(409, 'ORDER_NOT_SHIPPABLE', 'この注文は、出荷できる状態ではありません。'))
+      }),
+    )
+    const { user } = renderApp(PAGE_PATH)
+    await shownStatus('受付')
+
+    await ship(user, 'ヤマト運輸', '1234-5678-9012')
+
+    expect(await shownStatus('キャンセル')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: '出荷' })).not.toBeInTheDocument()
+    expect(screen.getByText('この注文は、出荷できる状態ではありません。')).toBeInTheDocument()
+  })
 
   test('AC-181 出荷後は、配送状態、配送業者、送り状番号、出荷日時を示す', async () => {
     serveShipment(SHIPPED)

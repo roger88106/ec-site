@@ -48,10 +48,10 @@ class ReportRestoreFailureTest {
                             DSL.field("amount", BigDecimal.class), DSL.field("orders", Integer.class))
                     .values("13", (short) 30, value, BigDecimal.ONE, 1);
             var repository = new JooqReportQueryRepository(new RestoreFailures().with("sales_order", row).dsl());
-            var period = ReportPeriod.of(LocalDate.EPOCH, LocalDate.EPOCH);
+            var period = new ReportPeriod(LocalDate.EPOCH, LocalDate.EPOCH);
 
             // 操作と確認：読むと失敗し、例外の出力に値が出ない
-            assertValueIsHidden(() -> repository.segmentSales(period, Basis.ORDER, null, false, false), value);
+            assertValueIsHidden(() -> repository.segmentSales(period, Basis.ORDER, null, false, false), value, IllegalArgumentException.class);
         }
     }
 
@@ -99,6 +99,6 @@ class ReportRestoreFailureTest {
         var dsl = new RestoreFailures().with("status_history", history).dsl();
         var repository = new JooqReportOrderRepository(dsl, JsonMapper.builder().build(), Clock.systemUTC());
 
-        assertValueIsHidden(() -> repository.history(UUID.randomUUID()), value);
+        assertValueIsHidden(() -> repository.history(UUID.randomUUID()), value, IllegalArgumentException.class);
     }
 }

@@ -183,9 +183,9 @@ describe('@SuppressWarnings の理由の検査', () => {
     assert.deepEqual(findUnexplainedSuppressWarnings(text).map((hit) => hit.line), [3])
   })
 
-  test('全てのソースセット（main、test、integrationTest、testFixtures、tools）を見て、生成したコードは見ない', () => {
+  test('全てのソースセット（main、test、integrationTest、testFixtures、tools、errorprone）を見て、生成したコードは見ない', () => {
     const base = 'backend/ecsite/src'
-    for (const set of ['main', 'test', 'integrationTest', 'testFixtures', 'tools']) {
+    for (const set of ['main', 'test', 'integrationTest', 'testFixtures', 'tools', 'errorprone']) {
       assert.equal(isSuppressWarningsTarget(`${base}/${set}/java/com/ecsite/Foo.java`), true)
     }
     assert.equal(isSuppressWarningsTarget('backend/ecsite/build/generated-sources/jooq/com/ecsite/jooq/Foo.java'), false)

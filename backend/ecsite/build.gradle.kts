@@ -86,11 +86,16 @@ sourceSets {
         compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
         runtimeClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
     }
+    // src/errorprone : 独自の Error Prone の検査（EntityEqualityAssertion）。本番の jar に入れない。
+    //   出力を errorprone の構成に加え（下の dependencies）、テストのソースセットのコンパイルで動かす。単体テストのクラスパスにも加え、検査のテストが読む
+    create("errorprone")
     // tools の郵便番号の CSV を読む処理を単体テストで確認するため、単体テストのクラスパスに tools の出力を加える
     // （カバレッジと mutation の対象は main のままで、tools は含まない）
     test {
         compileClasspath += sourceSets["tools"].output
         runtimeClasspath += sourceSets["tools"].output
+        compileClasspath += sourceSets["errorprone"].output
+        runtimeClasspath += sourceSets["errorprone"].output
     }
 }
 
@@ -162,6 +167,11 @@ dependencies {
     // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
     errorprone(libs.errorprone.core)
     errorprone(libs.nullaway)
+    // 独自の検査（src/errorprone）。検査の本体を書くソースセットは、Error Prone の API でコンパイルする
+    errorprone(sourceSets["errorprone"].output)
+    "errorproneImplementation"(libs.errorprone.check.api)
+    // errorprone の構成は自分の出力を含むので、errorprone のソースセット自身の annotationProcessor は、そこから継がない（循環を断つ）
+    configurations.named("errorproneAnnotationProcessor") { setExtendsFrom(emptyList()) }
     // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
     // test などの classpath にも必要なので、compileOnly でなく implementation にする
     implementation(libs.jspecify)
@@ -183,6 +193,14 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testRuntimeOnly(libs.junit.platform.launcher)
+    // 独自の検査のテスト（CompilationTestHelper）。検査の API と本体は、test のクラスパスにも必要になる
+    testImplementation(libs.errorprone.check.api)
+    // 補助が間接に依存する JUnit 4 は、テストのコンパイルのクラスパスに入れない（誤って org.junit.Test を import したテストが、
+    // コンパイルを通って実行されないのを防ぐ）。補助の実行には必要なので、実行のクラスパスだけに加える
+    testImplementation(libs.errorprone.test.helpers) {
+        exclude(group = "junit", module = "junit")
+    }
+    testRuntimeOnly(libs.junit4)
 
     // --- テスト：統合 ---
     "integrationTestImplementation"(testFixtures(project))
@@ -219,6 +237,12 @@ val unitTestSystemProperties = mapOf(
     "test-classes.dirs" to (sourceSets.test.get().output.classesDirs + sourceSets["integrationTest"].output.classesDirs).asPath,
 )
 
+// Error Prone の検査を JVM の中で動かすテスト（CompilationTestHelper）と、javac の内部の API を使う検査の本体のコンパイルに必要な、jdk.compiler のパッケージの export。
+// test の task と pitest で同じ値を使う
+val javacInternalPackages = listOf("api", "file", "main", "model", "parser", "processing", "tree", "util", "code", "comp")
+val javacExportArgs = javacInternalPackages.flatMap { listOf("--add-exports", "jdk.compiler/com.sun.tools.javac.$it=ALL-UNNAMED") }
+val javacOpenArgs = listOf("code", "comp").flatMap { listOf("--add-opens", "jdk.compiler/com.sun.tools.javac.$it=ALL-UNNAMED") }
+
 // 単体テストが読む契約・realm の設定・文書・統合テストのクラスを、task の入力に宣言する（変わったときにテストと PIT を再実行するため）。
 // 統合テストのクラスは、テストの書き方の検査が読むので、そのコンパイルに依存する
 fun Task.declareUnitTestInputs() {
@@ -234,6 +258,7 @@ fun Task.declareUnitTestInputs() {
 tasks.named<Test>("test") {
     useJUnitPlatform()
     maxHeapSize = unitTestMaxHeap
+    jvmArgs(javacExportArgs + javacOpenArgs)
     unitTestSystemProperties.forEach { (key, value) -> systemProperty(key, value) }
     declareUnitTestInputs()
     // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
@@ -365,7 +390,7 @@ tasks.register<JavaExec>("generateRegionMigration") {
 
 // -----------------------------------------------------------------------------
 // Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」、使わない注釈：「null の扱い」）
-//   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
+//   全てのソースセット（main、test、integrationTest、testFixtures、tools、errorprone）の Java のファイルで、次を確認する。
 //   ・import：使われていないもの（UnusedImports）、* の import（AvoidStarImport）、並び（CustomImportOrder）
 //   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
 //     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
@@ -410,7 +435,7 @@ tasks.cpdCheck {
 // mutation testing（PIT。カバレッジとは別に、テストが振る舞いを確認しているかを測る）
 //   ./gradlew pitest で、domain のクラスに小さな変異を入れ、単体テストが失敗するか（変異を検出するか）を見る。
 //   報告：build/reports/pitest/（html、xml。タイムスタンプのディレクトリを作らず、CI が決まったパスで読む）
-//   単体テスト（src/test）だけを使う（統合テストは Docker が要り、domain のテストもない）。
+//   単体テスト（src/test）だけを使う（統合テストは Docker が必要で、domain のテストもない）。
 //   テストは targetTests で src/test の全ての単体テスト（com.ecsite.*）を渡す。省くと targetClasses（domain）と同じ範囲になり、
 //   domain のクラスと同じパッケージのテストしか使われず、ほかのパッケージ（architecture、contract など）のテストが変異を検出できない。
 //   PIT は変異の前にカバレッジを取るため、渡した全ての単体テストを 1 回実行する（CI で約 1 分）。変異ごとには、対象のクラスを実行するテストだけを実行する。
@@ -424,7 +449,7 @@ pitest {
     targetTests = listOf("com.ecsite.*")
     // テストの JVM の設定（systemProperty、ヒープ）を、test の task と同じ値にする。ないと、設定を読むテスト（ModuleDiagramTest など）が失敗し、PIT が失敗する。
     // test の task から読まないので、pitest は test に依存しない
-    jvmArgs = unitTestSystemProperties.map { (key, value) -> "-D$key=$value" } + "-Xmx$unitTestMaxHeap"
+    jvmArgs = unitTestSystemProperties.map { (key, value) -> "-D$key=$value" } + "-Xmx$unitTestMaxHeap" + javacExportArgs + javacOpenArgs
     // 4 コア（GitHub の ubuntu-latest）と手元で動く値
     threads = 4
     outputFormats = listOf("HTML", "XML")
@@ -587,6 +612,7 @@ licenseReport {
         "testCompileClasspath", "testRuntimeClasspath",
         "integrationTestCompileClasspath", "integrationTestRuntimeClasspath",
         "testFixturesCompileClasspath", "testFixturesRuntimeClasspath",
+        "errorproneCompileClasspath",
         "annotationProcessor", "jooqGenerator",
         "pitest", "cpd",
     )
@@ -811,6 +837,9 @@ tasks.check { dependsOn(checkBootJar) }
 // クラスパスで片方が隠れ、テストが流れないか、別のクラスを読む
 val testSourceSetNames = listOf("test", "integrationTest", "testFixtures")
 
+/** テストのソースセットのコンパイルの task の名前（compileTestJava など）。コンパイルオプションで使う */
+val testCompileTaskNames = testSourceSetNames.map { "compile${it.replaceFirstChar { c -> c.uppercase() }}Java" }
+
 val checkTestClassNames = tasks.register("checkTestClassNames") {
     description = "テストのソースセットの間に、同じ完全修飾名のクラスがないことを確認する"
     group = "verification"
@@ -845,6 +874,12 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     // 警告も失敗にする（Error Prone の警告も、javac の -Werror で失敗になる）
     options.compilerArgs.add("-Werror")
+    // 独自の検査の本体（src/errorprone）：javac の内部の API を使うので、パッケージを export する。Error Prone は動かさない
+    //   （errorprone の構成が自分の出力を含むので、動かすと自分のコンパイルに自分が必要になる循環になる）
+    if (name == "compileErrorproneJava") {
+        options.compilerArgs.addAll(javacExportArgs)
+        options.errorprone.enabled.set(false)
+    }
     options.errorprone {
         // 生成したコード（jOOQ、OpenAPI。build/generated の下）は検査しない
         excludedPaths.set(".*[/\\\\]build[/\\\\]generated.*")
@@ -856,8 +891,14 @@ tasks.withType<JavaCompile>().configureEach {
         disable("ImmutableEnumChecker")
         // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
         // テストのツール（JsonPath.read と同じ形の read）で、本番の誤りにつながらない
-        if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
+        if (name in testCompileTaskNames) {
             disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
+        }
+        // 独自の検査 EntityEqualityAssertion は、テストのソースセットのコンパイルだけで動かし、エラーにする（main と tools では動かさない）
+        if (name in testCompileTaskNames) {
+            check("EntityEqualityAssertion", CheckSeverity.ERROR)
+        } else {
+            disable("EntityEqualityAssertion")
         }
         // NullAway は main のコンパイルだけ動かし、報告はエラーにする。
         // 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
@@ -875,7 +916,7 @@ tasks.withType<JavaCompile>().configureEach {
             // ジェネリクスの型引数と配列の要素の null も検査する（JSpecify mode。JDK 22 以上が必要）
             option("NullAway:JSpecifyMode", "true")
         } else {
-            // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
+            // test、integrationTest、testFixtures、tools、errorprone は検査しない。テストは検証の失敗を確認するため、
             // 意図して null を渡す
             disable("NullAway")
         }

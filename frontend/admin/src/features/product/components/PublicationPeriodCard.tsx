@@ -7,7 +7,7 @@ import { DateTimeInput } from '@/components/DateTimeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { useVersionedForm } from '@/hooks/useVersionedForm'
+import { type Refetch, useVersionedForm } from '@/hooks/useVersionedForm'
 
 /**
  * 入力欄の値
@@ -32,7 +32,7 @@ export function PublicationPeriodCard({
   refetch,
 }: {
   product: ProductDetail
-  refetch: () => Promise<unknown>
+  refetch: Refetch<ProductDetail>
 }) {
   const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(product, toValues, refetch)
   const t = useTranslations('product.period')

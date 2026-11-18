@@ -49,6 +49,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 - domain は振る舞いの少ない型でよく、Spring などに依存してよい。集約ごとのパッケージは作らず、port は全て `application/port/` に置く。
 - CQRS は採用しない。`application/model/` は必要なときだけ作る。
+- entity と集約には、jMolecules の注釈を付ける（[バックエンドの書き方](../05-開発規則/backend-coding.md)の「entity と集約の同一性」）。
 - クラスが多いときは、用途で domain を分けてよい（`domain/<用途>/`。reporting の `domain/snapshot/` と `domain/sales/`）。
 
 ### 層とパッケージ

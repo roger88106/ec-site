@@ -26,7 +26,7 @@
 |------|------|------|
 | 物流サービス | 接続していない物流サービスか mock。本番の実装はまだない | mock を選ぶフラグ `ecsite.shipping.mock.enabled` |
 | 通知の署名の鍵 | 環境変数 `CARRIER_WEBHOOK_SECRET` で渡す。フラグによらず必須 | `ecsite.shipping.webhook-secret` |
-| 通知の発生日時の範囲 | 古さの上限と未来の許容。既定値は設定の型 `ShippingProperties` が持つ。環境変数では渡さない | `ecsite.shipping.occurred-at-max-age`、`ecsite.shipping.occurred-at-future-tolerance` |
+| 通知の発生日時の範囲 | 古さの上限と未来の許容。既定値は設定の型 `ShippingProperties` が持つ | `ecsite.shipping.occurred-at-max-age`、`ecsite.shipping.occurred-at-future-tolerance` |
 
 物流サービスは port（追跡を始める）の実装として `infrastructure` に置き、型とエラーを外に出さない。フラグが有効なら mock、そうでなければ接続していない物流サービス（`UnconnectedCarrierTracking`）を使う。接続していない物流サービスは、何も送らずに成功を返す。起動のときに 1 回、フラグの名前を含む警告のログを出力する。通知のエンドポイントはフラグによらず置き、署名で守る（[API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」）。
 

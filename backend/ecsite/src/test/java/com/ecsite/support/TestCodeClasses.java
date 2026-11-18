@@ -1,5 +1,6 @@
 package com.ecsite.support;
 
+import com.ecsite.config.event.ReadsEventPublicationRecords;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -16,7 +17,7 @@ import java.util.List;
  * 置き場所は、Gradle が system property {@value #DIRS_PROPERTY} に渡す、両方のソースセットの出力のディレクトリ。
  *
  * <p>クラスファイルの読み込みは重いので、JVM ごとに 1 回だけ行う。
- * 違反する例のクラス（{@value #SAMPLE_PACKAGE} の下）は、検査の側で読み込むので含めない。
+ * 違反する例のクラス（{@value #SAMPLE_PACKAGE} の下と、{@link #EXAMPLES_IN_PRODUCTION_PACKAGE}）は、検査の側で読み込むので含めない。
  */
 public final class TestCodeClasses {
 
@@ -29,6 +30,14 @@ public final class TestCodeClasses {
      * 違反する例のクラスのパッケージ
      */
     public static final String SAMPLE_PACKAGE = "com.ecsite.architecture.sample";
+
+    /**
+     * 本番のパッケージに置く、違反の例のクラス
+     *
+     * <p>package-private の型を呼ぶ例なので、{@value #SAMPLE_PACKAGE} の外の、その型と同じパッケージに置く。
+     * 他のテストの検査が違反と数えないよう、一覧から外す。
+     */
+    public static final List<String> EXAMPLES_IN_PRODUCTION_PACKAGE = List.of(ReadsEventPublicationRecords.class.getName());
 
     /**
      * インスタンスを作らない。
@@ -69,6 +78,7 @@ public final class TestCodeClasses {
          * 単体テストと統合テストのクラス（違反する例を除く）
          */
         private static final JavaClasses ALL = new ClassFileImporter().importPaths(dirs()).that(DescribedPredicate.describe(
-                "not samples", javaClass -> !ProductionClasses.isInPackage(javaClass.getPackageName(), SAMPLE_PACKAGE)));
+                "not samples", javaClass -> !ProductionClasses.isInPackage(javaClass.getPackageName(), SAMPLE_PACKAGE)
+                        && !EXAMPLES_IN_PRODUCTION_PACKAGE.contains(ProductionClasses.outermostName(javaClass))));
     }
 }

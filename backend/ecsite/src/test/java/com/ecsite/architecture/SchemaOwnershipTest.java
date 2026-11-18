@@ -138,7 +138,7 @@ class SchemaOwnershipTest {
         // 操作と確認：例外のクラスごとに、本番のクラスが jOOQ に依存している
         for (String exception : JOOQ_EXCEPTIONS) {
             boolean used = ProductionClasses.all().stream()
-                    .filter(javaClass -> isExceptionClass(javaClass, exception))
+                    .filter(javaClass -> ProductionClasses.isOrNestedIn(javaClass, exception))
                     .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
                     .anyMatch(dependency -> dependency.getTargetClass().getPackageName().startsWith("org.jooq"));
             assertThat(used).as(exception).isTrue();
@@ -172,18 +172,7 @@ class SchemaOwnershipTest {
         return noClasses().that().resideInAPackage(modulePackage)
                 .and().resideOutsideOfPackage(persistencePackage)
                 .and(DescribedPredicate.not(DescribedPredicate.describe("listed in the exceptions",
-                        javaClass -> JOOQ_EXCEPTIONS.stream().anyMatch(exception -> isExceptionClass(javaClass, exception)))))
+                        javaClass -> JOOQ_EXCEPTIONS.stream().anyMatch(exception -> ProductionClasses.isOrNestedIn(javaClass, exception)))))
                 .should().dependOnClassesThat().resideInAnyPackage("org.jooq..", ProductionClasses.JOOQ_PACKAGE + "..");
-    }
-
-    /**
-     * クラスが、例外のクラスか、その入れ子のクラスかを返す。
-     *
-     * @param javaClass クラス
-     * @param exception 例外のクラスの名前
-     * @return 例外のクラスか、その入れ子のクラスなら true
-     */
-    private static boolean isExceptionClass(JavaClass javaClass, String exception) {
-        return ProductionClasses.outermostName(javaClass).equals(exception);
     }
 }

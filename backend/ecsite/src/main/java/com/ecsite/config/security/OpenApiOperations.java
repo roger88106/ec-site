@@ -3,13 +3,17 @@ package com.ecsite.config.security;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.http.server.PathContainer;
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.DuplicateKeyException;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.error.Mark;
+import org.yaml.snakeyaml.error.MarkedYAMLException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,14 +47,19 @@ final class OpenApiOperations<T> {
     /**
      * OpenAPI の Path Item の項目のうち、操作でないもの
      *
-     * <p>拡張（{@code x-} で始まるもの）も認める。
+     * <p>拡張（{@code x-} で始まるもの）も認める。{@code $ref} は、参照先の操作を読まないので認めない。
      */
-    private static final Set<String> PATH_ITEM_FIELDS = Set.of("summary", "description", "servers", "parameters", "$ref");
+    private static final Set<String> PATH_ITEM_FIELDS = Set.of("summary", "description", "servers", "parameters");
 
     /**
      * OpenAPI の拡張のキーの接頭辞
      */
     private static final String EXTENSION_PREFIX = "x-";
+
+    /**
+     * Path Item の参照のキー（参照先の操作を読まないので認めない）
+     */
+    private static final String REF = "$ref";
 
     /**
      * 操作
@@ -72,7 +81,9 @@ final class OpenApiOperations<T> {
     /**
      * 契約を読み込む。
      *
-     * <p>パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキーがあれば、起動を止める。
+     * <p>パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキー（{@code $ref} を含む）があれば、起動を止める。
+     * 契約のどこかに重複したキーがあっても、後のキーが前のキーを黙って上書きして操作を読み落とすので、起動を止める。
+     * YAML として読めない契約と空の契約も、起動を止める。
      *
      * @param resource 契約（{@code admin.yaml} など）
      * @param valueOf  操作の名前（{@code GET /products} の形）と操作の定義から、操作ごとの値を作る。起動を止めるときは例外を投げる
@@ -99,7 +110,7 @@ final class OpenApiOperations<T> {
     // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static <T> OpenApiOperations<T> parse(String contract, InputStream in, BiFunction<String, Map<String, Object>, T> valueOf) {
-        Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
+        Map<String, Object> root = loadYaml(contract, in);
         var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約には servers がある");
         var basePath = (String) servers.getFirst().get("url");
         var paths = (Map<String, Map<String, Object>>) Objects.requireNonNull(root.get("paths"), "OpenAPI の契約には paths がある");
@@ -121,6 +132,52 @@ final class OpenApiOperations<T> {
     }
 
     /**
+     * 契約の YAML を読む。
+     *
+     * <p>重複したキー、YAML の書き方の誤り、空の契約、最上位がキーと値の組でない契約は、契約のファイルを示して起動を止める。
+     *
+     * @param contract 契約のファイル（例外のメッセージに使う）
+     * @param in       契約の内容
+     * @return 契約の最上位の Map
+     */
+    // 最上位が Map であることを確認してから、キーを文字列として読む
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> loadYaml(String contract, InputStream in) {
+        var options = new LoaderOptions();
+        options.setAllowDuplicateKeys(false);
+        Object root;
+        try {
+            root = new Yaml(new SafeConstructor(options)).load(in);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException(
+                    "OpenAPI の契約 " + contract + " に重複したキーがある：" + e.getProblem() + position(e.getProblemMark()), e);
+        } catch (MarkedYAMLException e) {
+            throw new IllegalStateException(
+                    "OpenAPI の契約 " + contract + " を YAML として読めない：" + e.getProblem() + position(e.getProblemMark()), e);
+        }
+        if (root == null) {
+            throw new IllegalStateException("OpenAPI の契約 " + contract + " が空");
+        }
+        if (!(root instanceof Map<?, ?> map)) {
+            throw new IllegalStateException("OpenAPI の契約 " + contract + " の最上位がキーと値の組でない");
+        }
+        return (Map<String, Object>) map;
+    }
+
+    /**
+     * YAML の位置を、行と列（1 から数える）で、メッセージの末尾に付ける形で表す。
+     *
+     * @param mark YAML の位置。SnakeYAML が位置を持たないときは null
+     * @return {@code （3 行 5 列）} の形。位置がなければ空文字列
+     */
+    private static String position(@Nullable Mark mark) {
+        if (mark == null) {
+            return "";
+        }
+        return "（" + (mark.getLine() + 1) + " 行 " + (mark.getColumn() + 1) + " 列）";
+    }
+
+    /**
      * 操作でないパスの下のキーが、OpenAPI の Path Item の項目か拡張であることを確認する。
      *
      * <p>そうでなければ起動を止める。
@@ -133,6 +190,10 @@ final class OpenApiOperations<T> {
         if (HTTP_METHODS.contains(key.toLowerCase(Locale.ROOT))) {
             throw new IllegalStateException(
                     "OpenAPI の契約 " + contract + " のパス " + path + " の HTTP メソッド " + key + " は小文字で書く");
+        }
+        if (key.equals(REF)) {
+            throw new IllegalStateException(
+                    "OpenAPI の契約 " + contract + " のパス " + path + " に " + REF + " がある。参照先の操作を読まないので、パスの下に操作を直接書く");
         }
         if (!PATH_ITEM_FIELDS.contains(key) && !key.startsWith(EXTENSION_PREFIX)) {
             throw new IllegalStateException(

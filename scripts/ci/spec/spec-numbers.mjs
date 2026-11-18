@@ -7,11 +7,15 @@
 // - 1→10 の AC-s-n と、タスクの番号（T の後に 0 で埋めない spec の番号）
 // - MVP の spec の番号（MVP の後に数字。空白で区切った形も見つける）
 // - 記号と数字の間に区切りのない形（AC の直後に数字）と、全角で書いた形（NFKC で正規化して照合する）
+// - 区切りの - に似た字（U+2010、U+2011、U+2012、U+2013、U+2014、U+2015、U+2212 と、長音記号 U+30FC）は - と同じに読む
+// - # の直後の番号（#AC-n など）も見つける。# の直後の語の全体が 16 進の字だけで 3・4・6・8 字のもの（#DC2626 などの色）は番号にしない
 //
 // 見る所：
 // - 本番のコード：行の全体を見る
 // - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）
-// - 設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、backend/ecsite/ の *.gradle.kts）：コメントだけを見る
+// - 設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、backend/ecsite/ の *.gradle.kts・*.versions.toml・gradle.properties）：コメントだけを見る
+//   - *.gradle.kts は Kotlin の書き方（入れ子のコメント、raw 文字列、文字列の埋め込み）、*.versions.toml は TOML の書き方（# のコメント、文字列の中の # は見ない）、
+//     gradle.properties は properties の書き方（行頭の # と ! だけがコメント。値の途中の # は見ない）で読む
 // - フロントのテストとテストの補助（*.test.ts(x)、src/test/）と、E2E（e2e/ の下の全ての TypeScript。設定と e2e/scripts/ を含む）：コメントだけを見る（テスト名と test.step の名前などの文字列、テンプレート文字列、正規表現のリテラルは見ない）
 // - scripts/ の下の script（.mjs・.cjs・.sh と、拡張子のない hook の script。テストを含む）：コメントだけを見る（テストの入力の例などの文字列は見ない）
 //
@@ -25,7 +29,7 @@
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { codeKind, commentText } from '../lib/source/comment-text.mjs'
-import { keepJavaComments, keepTsComments } from '../../shared/source/strip-comments.mjs'
+import { keepJavaComments, keepKotlinComments, keepPropertiesComments, keepTomlComments, keepTsComments } from '../../shared/source/strip-comments.mjs'
 import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from '../lib/docs/screen-sources.mjs'
 
 /**
@@ -45,9 +49,30 @@ const EXCLUDED = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/db\/migr
  * - タスクの番号（T の後に spec の番号・段階・連番を - で区切ったもの、古い形式の T と 3〜4 桁の数字）
  * - spec・plan の番号（spec・plan の後の数字）
  *
- * # の直後の語は 16 進の色（#DC2626 など）なので番号にしない。M・V・P は 16 進の文字でないので、MVP の番号は # の直後でも見つける
+ * # の直後の番号（#AC-n など）も見つける。16 進の色は番号にしない（isHexColor）
  */
-const SPEC_NUMBER = /\bMVP[- ]?\d+\b|(?<!#)(?:\b(?:AC|DC|BR|NFR|US|DS|DN)-?\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.))/g
+const SPEC_NUMBER = /\bMVP[- ]?\d+\b|\b(?:AC|DC|BR|NFR|US|DS|DN)-?\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.)/g
+
+/** 数字の間の区切りと読む、- に似た字（U+2010〜U+2015、U+2212、長音記号 U+30FC）。NFKC では - にならない */
+const DASH_LIKE = /[‐‑‒–—―−ー]/g
+
+/**
+ * # の直後の語が 16 進の色（#DC2626 など）かを返す。
+ *
+ * 色は、番号の始まりが # の直後で、その語（英数字の続き）の全体が 16 進の字だけで 3・4・6・8 字のもの。
+ * 語の後にハイフンと数字が続く形は、色でなく番号。
+ *
+ * @param {string} line 正規化した行
+ * @param {number} index 番号の始まりの位置
+ * @returns {boolean} 色なら true
+ */
+function isHexColor(line, index) {
+  if (line[index - 1] !== '#') return false
+  const word = /^[0-9A-Za-z]+/.exec(line.slice(index))[0]
+  // 語の後に ハイフンと数字 が続く形は、色ではなく番号
+  if (/^-\d/.test(line.slice(index + word.length))) return false
+  return /^[0-9A-Fa-f]+$/.test(word) && [3, 4, 6, 8].includes(word.length)
+}
 
 /**
  * spec・plan・tasks の番号を書いた行を探す。
@@ -58,8 +83,10 @@ const SPEC_NUMBER = /\bMVP[- ]?\d+\b|(?<!#)(?:\b(?:AC|DC|BR|NFR|US|DS|DN)-?\d+(?
 export function findSpecNumbers(text) {
   const hits = []
   text.split('\n').forEach((line, index) => {
-    // 全角の英字・数字・ハイフンで書いた番号も見つけるため、照合の前に NFKC で正規化する。報告する行の文字は正規化の前のものにする
-    for (const match of line.normalize('NFKC').matchAll(SPEC_NUMBER)) {
+    // 全角の英字・数字・ハイフンで書いた番号も見つけるため、照合の前に NFKC で正規化し、ハイフンに似た区切りの字を - にする。報告する行の文字は正規化の前のものにする
+    const normalized = line.normalize('NFKC').replace(DASH_LIKE, '-')
+    for (const match of normalized.matchAll(SPEC_NUMBER)) {
+      if (isHexColor(normalized, match.index)) continue
       hits.push({ line: index + 1, number: match[0], text: line.trim() })
     }
   })
@@ -104,9 +131,15 @@ export function isBackendTestFile(file) {
  *
  * - リポジトリのルートの .ts・.mjs・.cjs（knip.ts、.pnpmfile.cjs など）
  * - 各パッケージ（frontend/admin、frontend/store、frontend/shared、e2e）の直下の *.config.ts・*.config.mjs
- * - バックエンド（backend/ecsite/）の Gradle の設定のファイル（*.gradle.kts）
+ * - バックエンド（backend/ecsite/）の Gradle の設定のファイル（*.gradle.kts、*.versions.toml、gradle.properties。gradle-wrapper.properties はコメントを持たないので含めない）
  */
-const CONFIG_FILES = [/^[^/]+\.(?:ts|mjs|cjs)$/, /^(?:frontend\/(?:admin|store|shared)|e2e)\/[^/]+\.config\.(?:ts|mjs)$/, /^backend\/ecsite\/(?:.+\/)?[^/]+\.gradle\.kts$/]
+const CONFIG_FILES = [
+  /^[^/]+\.(?:ts|mjs|cjs)$/,
+  /^(?:frontend\/(?:admin|store|shared)|e2e)\/[^/]+\.config\.(?:ts|mjs)$/,
+  /^backend\/ecsite\/(?:.+\/)?[^/]+\.gradle\.kts$/,
+  /^backend\/ecsite\/(?:.+\/)?[^/]+\.versions\.toml$/,
+  /^backend\/ecsite\/(?:.+\/)?gradle\.properties$/,
+]
 
 /**
  * コメントだけを調べる設定のファイルかを返す。
@@ -134,9 +167,11 @@ export function isScriptFile(file) {
 /**
  * コメントだけを残す。
  *
- * バックエンドのテストと Gradle の設定のファイル（Kotlin のコメントは Java と同じ書き方）は Java の読み方、
+ * バックエンドのテストは Java の読み方、Gradle の Kotlin の設定（*.gradle.kts）は Kotlin の読み方（入れ子のコメント、raw 文字列、文字列の埋め込み）、
  * フロントのテスト・テストの補助、E2E、TypeScript・mjs・cjs の設定のファイルと script は TypeScript の読み方、
- * シェルの script（.sh と hook の script）は # のコメントの読み方で読む。
+ * シェルの script（.sh と hook の script）は # のコメントの読み方、
+ * バージョンカタログ（*.toml）は TOML の読み方（文字列の中の # はコメントにしない）、
+ * gradle.properties は properties の読み方（行頭の # と ! だけがコメント）で読む。
  *
  * @param {string} file リポジトリのルートからのパス
  * @param {string} text ソース
@@ -144,6 +179,9 @@ export function isScriptFile(file) {
  */
 export function commentsOf(file, text) {
   if (/\.(?:tsx?|mjs|cjs)$/.test(file)) return keepTsComments(text)
+  if (file.endsWith('.kts')) return keepKotlinComments(text)
+  if (file.endsWith('.toml')) return keepTomlComments(text)
+  if (file.endsWith('.properties')) return keepPropertiesComments(text)
   if (codeKind(file) === 'sh') return commentText(text, 'sh')
   return keepJavaComments(text)
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { keepJavaComments, keepTsComments, stripComments, stripJavaComments } from './strip-comments.mjs'
+import { keepJavaComments, keepKotlinComments, keepPropertiesComments, keepTomlComments, keepTsComments, stripComments, stripJavaComments } from './strip-comments.mjs'
 
 describe('コメントの除去', () => {
   test('行コメントとブロックコメントを空白にし、行の数を変えない', () => {
@@ -163,5 +163,46 @@ describe('TypeScript のコメントだけを残す', () => {
       kept.split('\n').map((line) => line.length),
       text.split('\n').map((line) => line.length),
     )
+  })
+})
+
+describe('Kotlin のコメントだけを残す', () => {
+  test('入れ子のブロックコメントの全体を残す', () => {
+    assert.equal(keepKotlinComments('a /* 外 /* 内 */ 後 */ b'), '  /* 外 /* 内 */ 後 */  ')
+  })
+
+  test('raw 文字列（引用符を含むものも）と、文字列の埋め込みの中の引用符を、コメントにしない', () => {
+    assert.equal(keepKotlinComments('"""a "b" // c""" // x'), '                 // x')
+    assert.equal(keepKotlinComments('"${f("/", "//")}/y" // z'), '                    // z')
+  })
+
+  test('埋め込みの中のコメントは残し、文字リテラルの引用符で文字列を始めない', () => {
+    assert.equal(keepKotlinComments('"${a /* n */}"'), '     /* n */  ')
+    assert.equal(keepKotlinComments("'\"' // c"), '    // c')
+  })
+
+  test('長さと行ごとの長さが元と同じ（行番号が変わらない）', () => {
+    const text = '/* a\n b */\nval s = """\nx\n"""\n// c'
+    assert.deepEqual(
+      keepKotlinComments(text)
+        .split('\n')
+        .map((line) => line.length),
+      text.split('\n').map((line) => line.length),
+    )
+  })
+})
+
+describe('TOML のコメントだけを残す', () => {
+  test('# のコメントを行末で残し、"…"、\'…\'、複数行の文字列の中の # を残さない', () => {
+    assert.equal(keepTomlComments('a = "x#y" # c'), '          # c')
+    assert.equal(keepTomlComments("a = 'x#y'"), '         ')
+    assert.equal(keepTomlComments('a = """\n# x\n""" # c'), '       \n   \n    # c')
+    assert.equal(keepTomlComments('a = "\\"#y" # c'), '           # c')
+  })
+})
+
+describe('properties のコメントだけを残す', () => {
+  test('行頭（空白の後）の # と ! のコメントだけを残し、値の途中の # と、行の継続の次の行は残さない', () => {
+    assert.equal(keepPropertiesComments('# a\n! b\n  # c\nk=v # d\nk=v \\\n# e\n#f'), '# a\n! b\n  # c\n       \n     \n   \n#f')
   })
 })

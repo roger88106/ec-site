@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { load } from 'js-yaml'
 import {
+  checkContract,
   checkDocument,
   parseRealmRoles,
   parseOperations,
@@ -178,6 +180,63 @@ describe('ロールと権限の対応表', () => {
     assert.match(markdown, /\| `POST \/forgotten` \| 同じパスの別の操作 \| 会員 \|/)
   })
 
+  describe('契約の書き方の検査', () => {
+    const topSecurity = (value) => ['openapi: 3.0.3', `security:${value}`, 'paths:', '  /a:', '    get:', '      security: []'].join('\n')
+    const topSecurityProblem = '最上位の security：最上位に書かず、操作ごとに書く'
+
+    test('店舗の契約の最上位の security を失敗にする（値あり、空の配列、値のない security:）', () => {
+      assert.deepEqual(checkContract(topSecurity('\n  - memberToken: []'), { store: true }), [topSecurityProblem])
+      assert.deepEqual(checkContract(topSecurity(' []'), { store: true }), [topSecurityProblem])
+      assert.deepEqual(checkContract(topSecurity(''), { store: true }), [topSecurityProblem])
+    })
+
+    test('管理の契約の最上位の security は失敗にしない', () => {
+      assert.deepEqual(checkContract(ADMIN, { store: false }), [])
+      assert.deepEqual(checkContract(topSecurity('\n  - adminToken: []'), { store: false }), [])
+    })
+
+    test('店舗の契約の、操作ごとの security と、最上位のない契約は失敗にしない', () => {
+      assert.deepEqual(checkContract(STORE, { store: true }), [])
+    })
+
+    test('パスの下の $ref を、店舗と管理のどちらの契約でも失敗にする', () => {
+      const text = ['paths:', '  /carts:', "    $ref: './paths/carts.yaml'", '  /ok:', '    get:', '      summary: x'].join('\n')
+      const problem = '/carts：パスの下に $ref がある。$ref の Path Item は読まないので、パスの下に直接書く'
+      assert.deepEqual(checkContract(text, { store: true }), [problem])
+      assert.deepEqual(checkContract(text, { store: false }), [problem])
+    })
+
+    test('契約のファイルを渡すと、問題の文の先頭にファイル名を付ける（どの契約を直すかが分かる）', () => {
+      const file = 'api/openapi/store.yaml'
+      assert.deepEqual(checkContract(topSecurity(''), { store: true, file }), [`${file}：${topSecurityProblem}`])
+      const ref = ['paths:', '  /carts:', "    $ref: './paths/carts.yaml'"].join('\n')
+      assert.deepEqual(checkContract(ref, { store: false, file: 'api/openapi/admin.yaml' }), [
+        'api/openapi/admin.yaml：/carts：パスの下に $ref がある。$ref の Path Item は読まないので、パスの下に直接書く',
+      ])
+    })
+
+    test('読んだ後の契約（オブジェクト）も受け取り、文字列と同じ結果にする（YAML を 1 回だけ読むため）', () => {
+      const text = topSecurity('\n  - memberToken: []')
+      assert.deepEqual(checkContract(load(text), { store: true }), checkContract(text, { store: true }))
+      assert.deepEqual(parseOperations(load(STORE)), parseOperations(STORE))
+    })
+
+    test('パスの共通の parameters の下の $ref と、応答の $ref は失敗にしない', () => {
+      const text = [
+        'paths:',
+        '  /carts/{cartId}:',
+        '    parameters:',
+        "      - $ref: '#/components/parameters/CartId'",
+        '    post:',
+        '      responses:',
+        "        '201':",
+        "          $ref: '#/components/responses/Created'",
+      ].join('\n')
+      assert.deepEqual(checkContract(text, { store: true }), [])
+      assert.deepEqual(checkContract(text, { store: false }), [])
+    })
+  })
+
   test('文書の生成の範囲が、生成し直した結果と違えば失敗にし、書き直し方を示す', () => {
     const doc = '# 表\n\n<!-- generated:role-permissions -->\n古い表\n<!-- /generated:role-permissions -->\n'
     assert.deepEqual(checkDocument(doc, '古い表\n'), [])
@@ -253,6 +312,17 @@ describe('script として実行する', () => {
     assert.equal(result.status, 0, result.stdout)
     assert.match(result.stdout, /書き直した：/)
     assert.ok(document.includes(current), document)
+  })
+
+  test('店舗の契約の最上位の security と、パスの下の $ref は、終了コード 1 で終わる。管理の契約の最上位の security は通る', () => {
+    const top = run(`${STORE}\nsecurity:\n  - memberToken: []`, [], current)
+    assert.equal(top.result.status, 1, top.result.stdout)
+    assert.match(top.result.stdout, /最上位に書かず、操作ごとに書く/)
+    const ref = run(`${STORE}\n  /ref:\n    $ref: './ref.yaml'`, [], current)
+    assert.equal(ref.result.status, 1, ref.result.stdout)
+    assert.match(ref.result.stdout, /\/ref：パスの下に \$ref がある/)
+    const admin = run(STORE, [], current)
+    assert.equal(admin.result.status, 0, admin.result.stdout)
   })
 
   test('--write は、契約に問題があれば、表を書かず、書かなかったことを出して終了コード 1 で終わる', () => {

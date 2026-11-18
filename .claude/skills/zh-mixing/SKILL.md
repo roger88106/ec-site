@@ -76,6 +76,6 @@ Git に入れない手元だけの除外は、`.local/agent/zh-allow.txt` に「
 
 ## テスト
 
-`node --test .claude/skills/zh-mixing/zh-mixing.test.cjs`。`scripts/ci/check-all.sh` も実行する。テストは、環境の印を注入した値で試し、利用者の環境の git の設定を読まない。
+`node --test .claude/skills/zh-mixing/zh-mixing.test.cjs`。`scripts/ci/check-all.sh` を手動で実行するかは、skill [local-dev](../local-dev/SKILL.md)の「CI の検査の script」に従う（hook `pre-commit` を置いていれば、commit のときに関係する検査が実行される）。テストは、環境の印を注入した値で試し、利用者の環境の git の設定を読まない。
 
 この文書には、層 2 の字・用語を書かない。テストが調べる。

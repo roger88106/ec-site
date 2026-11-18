@@ -93,6 +93,18 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.deepEqual(findSpecNumbers(text), [])
   })
 
+  test('16 進の色の境界の外（5・7・9 字）の # の直後の語は、番号として見つける', () => {
+    const text = ['// #DC123', '// #DC12345', '// #DC1234567'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 DC123', '2 DC12345', '3 DC1234567'],
+    )
+  })
+
+  test('数字のない 2 字の #DC は、色の規則に関わらず番号の形ではないので見つけない', () => {
+    assert.deepEqual(findSpecNumbers('// #DC'), [])
+  })
+
   test('# の直後の番号（#AC-12、# 理由 #BR-3、#T7-01-01、#spec 7、全角の ＃ＡＣ－１０）を見つける', () => {
     const text = ['// #AC-12', '// # 理由 #BR-3', '// #T7-01-01', '// #spec 7', '// ＃ＡＣ－１０'].join('\n')
     assert.deepEqual(

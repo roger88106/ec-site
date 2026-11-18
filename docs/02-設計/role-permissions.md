@@ -3,7 +3,7 @@
 どのロールが、どの API の操作を実行できるかの一覧。管理 API は、操作ごとの権限と、ロールごとの権限の表をつないで読む。認証と認可の方式は [バックエンドのアーキテクチャ](backend-architecture.md)の「認証・認可」、ロールと権限の名前の意味は [用語集](../03-機能仕様/glossary.md)にある。
 
 - 表は `scripts/ci/config/role-permissions.mjs` が、管理 API の契約（各操作の `x-required-permission`）、運営者の realm の設定（`docker/keycloak/realms/ec-admin-realm.json` のロール）、店舗 API の契約（各操作の `security`）から作る。手動で修正しない。
-- 契約か realm の設定を変えると、CI の検査が失敗する。ルートで `node scripts/ci/config/role-permissions.mjs --write` を実行して表を再生成し、差分を確認して commit する。
+- 契約か realm の設定を変えると、CI の検査が失敗する。契約の書き方の失敗（文の先頭に契約のファイル名がある）は、そのファイルを修正する。表の食い違いは、ルートで `node scripts/ci/config/role-permissions.mjs --write` を実行して表を再生成し、差分を確認して commit する。
 - 管理画面は、権限のない画面のうちレポートの画面だけをメニューから外す（[管理画面の構成](apps/admin.md)）。ほかの操作は画面に表示されるが、権限がなければ API が 403 を返す。
 - 操作のパスは、契約の `servers.url`（管理 API は `/api/admin`、店舗 API は `/api/store`）の後ろの部分。
 - 「ロールと権限」の節の表は 2 つある。ロールの説明の表と、ロールごとの権限の表である。管理 API の表にロールの列はなく、操作を実行できるロールは、管理 API の表の「権限」の列と、ロールごとの権限の表で分かる。

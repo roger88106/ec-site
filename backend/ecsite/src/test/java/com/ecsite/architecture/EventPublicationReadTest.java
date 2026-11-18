@@ -38,18 +38,13 @@ class EventPublicationReadTest {
 
     /**
      * 記録を読む操作を持つ型の名前。EventPublicationRecords は package-private なので、型でなく名前で指す。
-     * 実装の型は、isAssignableTo で表の型として扱う。
+     * 実装の型は、isAssignableTo でこの一覧の型として扱う。
      */
     private static final List<String> RECORD_TYPES = List.of(
             "org.springframework.modulith.events.core.EventPublicationRegistry",
             "org.springframework.modulith.events.core.EventPublicationRepository",
             "org.springframework.modulith.events.CompletedEventPublications",
             "com.ecsite.config.event.EventPublicationRecords");
-
-    /**
-     * 本番のパッケージに置く、違反の例のクラス（package-private の型を呼ぶため）。実際のテストの検査からは外す。
-     */
-    private static final List<String> EXAMPLES_IN_PRODUCTION_PACKAGE = List.of(ReadsEventPublicationRecords.class.getName());
 
     // ============================== テスト ==============================
 
@@ -60,14 +55,19 @@ class EventPublicationReadTest {
         assertThat(TestCodeClasses.all().stream().map(JavaClass::getName)).containsAll(HELPERS);
 
         // 操作と確認：補助の外に、記録を読むクラスがない
-        var violations = violations(TestCodeClasses.all()).stream()
-                .filter(violation -> EXAMPLES_IN_PRODUCTION_PACKAGE.stream().noneMatch(violation::startsWith))
-                .toList();
-        assertThat(violations).isEmpty();
+        assertThat(violations(TestCodeClasses.all())).isEmpty();
     }
 
     @Test
-    @DisplayName("規則は、表の 4 つの型の find と count の呼び出しとメソッド参照に当たり、他の操作と型には当たらない")
+    @DisplayName("テストのクラスの一覧は、本番のパッケージに置いた違反の例を含まない")
+    void testCodeClassesExcludeExampleInProductionPackage() {
+        // 操作と確認：本番のパッケージに置いた違反の例が、一覧にない（他のテストの検査が読まない）
+        assertThat(TestCodeClasses.all().stream().map(JavaClass::getName))
+                .doesNotContain(ReadsEventPublicationRecords.class.getName());
+    }
+
+    @Test
+    @DisplayName("規則は、RECORD_TYPES の型の find と count の呼び出しとメソッド参照に当たり、他の操作と型には当たらない")
     void ruleMatchesOnlyReads() {
         // 準備：記録を読む例（入れ子のクラス、ラムダ、private の補助のメソッド、実装の型を含む）と、読まない例
         var examples = new ClassFileImporter().importClasses(
@@ -75,7 +75,7 @@ class EventPublicationReadTest {
                 PassesEventPublications.class);
         var reads = ReadsEventPublications.class.getName();
 
-        // 操作と確認：読む例だけが違反になり、渡すだけ、find と count 以外の名前、表にない型の例は違反にならない
+        // 操作と確認：読む例だけが違反になり、渡すだけ、find と count 以外の名前、RECORD_TYPES にない型の例は違反にならない
         assertThat(violations(examples)).containsExactlyInAnyOrder(
                 reads + " -> findIncompletePublicationsOlderThan",
                 reads + " -> findIncompletePublications",
@@ -112,7 +112,7 @@ class EventPublicationReadTest {
      * 記録を読む操作（名前が find か count で始まる操作）へのアクセスかを返す。
      *
      * @param access 呼び出しかメソッド参照
-     * @return 表の型（その実装を含む）の find か count で始まる操作なら true
+     * @return RECORD_TYPES の型（その実装を含む）の find か count で始まる操作なら true
      */
     private static boolean readsRegistry(JavaAccess<?> access) {
         return (access.getName().startsWith("find") || access.getName().startsWith("count"))

@@ -6,7 +6,8 @@
 // 契約の書き方も失敗にする。店舗の契約の最上位の security（操作ごとに書く。バックエンドも操作ごとの security だけを読む）と、
 // 管理と店舗の両方のパスの下の $ref（Path Item の $ref は読まない）。パスの parameters や応答の中の $ref は見ない。
 //
-// 失敗したとき：リポジトリのルートで --write を付けて実行して表を再生成し、差分を確認する。
+// 失敗したとき：表の食い違いは、リポジトリのルートで --write を付けて実行して表を再生成し、差分を確認する。
+// 契約の書き方の失敗（文の先頭に契約のファイルを付ける）は、再生成では解消しない。そのファイルを修正する。
 //
 // 除外：なし
 //
@@ -42,16 +43,26 @@ const END = '<!-- /generated:role-permissions -->'
 const METHODS = ['get', 'post', 'put', 'patch', 'delete']
 
 /**
+ * 契約を読んだオブジェクトにする。文字列なら YAML として読み、オブジェクトならそのまま返す（1 つの契約を 1 回だけ読むため）。
+ *
+ * @param {string | object} source OpenAPI の契約
+ * @returns {object} 読んだ契約（空の契約は空のオブジェクト）
+ */
+function readContract(source) {
+  return (typeof source === 'string' ? load(source) : source) ?? {}
+}
+
+/**
  * OpenAPI の契約から操作を読む。
  *
  * 項目のない `security:`（YAML では null）は、認証が不要（`[]`）と同じでないので、書いていないもの（null）として読む。
  *
- * @param {string} text OpenAPI の契約
+ * @param {string | object} source OpenAPI の契約（YAML の文字列。読んだ後のオブジェクトでもよい）
  * @returns {{ method: string, path: string, summary: string, permission: string | null, security: string[] | null }[]}
  *   操作（契約の順）。security は操作に書いた要件の名前の一覧（`{}` は空の文字）で、書いていなければ null
  */
-export function parseOperations(text) {
-  return Object.entries(load(text)?.paths ?? {}).flatMap(([path, item]) =>
+export function parseOperations(source) {
+  return Object.entries(readContract(source).paths ?? {}).flatMap(([path, item]) =>
     Object.keys(item ?? {}).filter((method) => METHODS.includes(method)).map((method) => {
       const operation = item[method]
       const permission = operation['x-required-permission']
@@ -91,19 +102,20 @@ export function parseRealmRoles(realm) {
  * - 店舗の契約の最上位の `security`（値のない `security:` と `[]` も）。バックエンドは操作ごとの `security` だけを読むため
  * - パスの下の `$ref`（Path Item の `$ref`）。読まないため、操作を読み落とす。parameters や応答の中の `$ref` は見ない
  *
- * @param {string} text OpenAPI の契約
- * @param {{ store: boolean }} options store は、店舗の契約のとき true
+ * @param {string | object} source OpenAPI の契約（YAML の文字列。読んだ後のオブジェクトでもよい）
+ * @param {{ store: boolean, file?: string }} options store は、店舗の契約のとき true。file は契約のファイル（問題の文の先頭に付ける）
  * @returns {string[]} 問題（なければ空）
  */
-export function checkContract(text, { store }) {
-  const contract = load(text) ?? {}
+export function checkContract(source, { store, file }) {
+  const contract = readContract(source)
+  const prefix = file ? `${file}：` : ''
   const problems = []
   if (store && Object.hasOwn(contract, 'security')) {
-    problems.push('最上位の security：最上位に書かず、操作ごとに書く')
+    problems.push(`${prefix}最上位の security：最上位に書かず、操作ごとに書く`)
   }
   for (const [path, item] of Object.entries(contract.paths ?? {})) {
     if (item !== null && typeof item === 'object' && Object.hasOwn(item, '$ref')) {
-      problems.push(`${path}：パスの下に $ref がある。$ref の Path Item は読まないので、パスの下に直接書く`)
+      problems.push(`${prefix}${path}：パスの下に $ref がある。$ref の Path Item は読まないので、パスの下に直接書く`)
     }
   }
   return problems
@@ -219,14 +231,14 @@ export function replaceGenerated(document, markdown) {
 }
 
 if (import.meta.main) {
-  const adminText = readFileSync(ADMIN_API, 'utf8')
-  const storeText = readFileSync(STORE_API, 'utf8')
+  const admin = load(readFileSync(ADMIN_API, 'utf8')) ?? {}
+  const store = load(readFileSync(STORE_API, 'utf8')) ?? {}
   const { markdown, problems } = renderTables({
-    admin: parseOperations(adminText),
-    store: parseOperations(storeText),
+    admin: parseOperations(admin),
+    store: parseOperations(store),
     realm: parseRealmRoles(JSON.parse(readFileSync(ADMIN_REALM, 'utf8'))),
   })
-  problems.push(...checkContract(adminText, { store: false }), ...checkContract(storeText, { store: true }))
+  problems.push(...checkContract(admin, { store: false, file: ADMIN_API }), ...checkContract(store, { store: true, file: STORE_API }))
   const document = readFileSync(DOCUMENT, 'utf8')
   if (process.argv.includes('--write') && problems.length === 0) {
     writeFileSync(DOCUMENT, replaceGenerated(document, markdown))

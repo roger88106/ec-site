@@ -179,6 +179,25 @@ export function keepKotlinComments(text) {
 }
 
 /**
+ * Kotlin（Gradle の *.kts）のコメントの区間を返す。読み方は keepKotlinComments と同じ。
+ *
+ * @param {string} text ソース
+ * @returns {{ from: number, to: number }[]} コメントの区間（始まり、終わりの次の位置）。続くコメントは 1 つにまとまる
+ */
+export function kotlinCommentRanges(text) {
+  const mask = new Uint8Array(text.length)
+  scanKotlin(text, 0, mask, false)
+  const ranges = []
+  for (let i = 0; i < text.length; i += 1) {
+    if (!mask[i]) continue
+    const from = i
+    while (i < text.length && mask[i]) i += 1
+    ranges.push({ from, to: i })
+  }
+  return ranges
+}
+
+/**
  * TOML（libs.versions.toml など）の # のコメントだけを残し、他を空白に置き換える。
  *
  * 文字列（"…"、'…'、複数行の """…""" と '''…'''）の中の # はコメントにしない。"…" と複数行の "…" の中は \ でエスケープする。

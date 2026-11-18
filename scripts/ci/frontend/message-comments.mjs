@@ -55,12 +55,14 @@ function jsxExpressionEnd(text, from, limit) {
  *
  * `>` で終わっていても、アロー関数の `=>` と、型引数の終わり（`Promise<string>`、`Component<Props>`）は、関数やクラスの本体の前なので違う。
  * 型引数は、対応する `<` が名前の直後にあることで、タグと見分ける。
+ * 閉じタグ（`</b>`）と自己閉じタグ（`<br />`）は、型引数に書けない形なので、名前の直後でもタグである。
  *
  * @param {string} before `{` の直前までのソース（末尾の空白は除く）
  * @returns {boolean} タグの終わりなら true
  */
 function endsWithJsxTag(before) {
   if (!before.endsWith('>') || before.endsWith('=>')) return false
+  if (before.endsWith('/>') || /<\/[\w.$-]+\s*>$/.test(before)) return true
   let depth = 0
   for (let i = before.length - 1; i >= 0; i -= 1) {
     if (before[i] === '>' && before[i - 1] !== '=') {
@@ -77,7 +79,8 @@ function endsWithJsxTag(before) {
  * `{` の直前の文字列が、前の JSX の式の終わり（`{a}{b}` の `}`）かを返す。
  *
  * 戻り値の型がオブジェクトの型（`): { inclTax: string } {`）のときの `}` は、関数の本体の前なので違う。
- * 対応する `{` の直前が `:` なら、型である。
+ * 対応する `{` の直前が、引数の閉じ括弧の後の `:`（`): {`）なら、型である。
+ * 文字の末尾の `:`（`合計: {a}{b}`）は、型ではない。
  *
  * @param {string} before `{` の直前までのソース（末尾の空白は除く）
  * @returns {boolean} 前の JSX の式の終わりなら true
@@ -90,7 +93,7 @@ function endsWithJsxExpression(before) {
       depth += 1
     } else if (before[i] === '{') {
       depth -= 1
-      if (depth === 0) return !before.slice(0, i).trimEnd().endsWith(':')
+      if (depth === 0) return !/\)\s*:$/.test(before.slice(0, i).trimEnd())
     }
   }
   return true

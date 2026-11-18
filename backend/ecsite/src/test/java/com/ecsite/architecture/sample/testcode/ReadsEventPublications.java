@@ -107,13 +107,17 @@ public final class ReadsEventPublications {
     }
 
     /**
-     * 記録の Repository の実装の型（本番の実装は package-private なので、同じ関係の型を例にする）
+     * 記録の Repository の実装の型
+     *
+     * <p>本番の実装は package-private なので、同じ関係の型を例にする。
      */
     abstract static class Implementation implements EventPublicationRepository {
     }
 
     /**
-     * 入れ子のクラス（テストの {@code @Nested} のクラスに当たる）
+     * 入れ子のクラス
+     *
+     * <p>テストの {@code @Nested} のクラスに当たる。
      */
     public static final class Inner {
 

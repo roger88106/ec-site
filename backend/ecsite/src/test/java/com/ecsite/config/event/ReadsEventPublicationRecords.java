@@ -7,7 +7,7 @@ import java.time.Instant;
  *
  * <p>{@code EventPublicationRecords} は package-private なので、同じパッケージに置く。
  * 構成の検査が違反を見つけられることを確認するための例であり、本番のコードではない。
- * 他のテストの検査が読まないよう、{@code EventPublicationReadTest} の側で読み込む。
+ * テストのクラスの一覧（{@code TestCodeClasses}）から外してあり、{@code EventPublicationReadTest} の側で読み込む。
  */
 public final class ReadsEventPublicationRecords {
 

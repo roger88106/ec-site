@@ -110,6 +110,18 @@ describe('文言のキーのコメントの検査', () => {
     assert.deepEqual(findMissingComments(text), [])
   })
 
+  test('英数字の文字の直後の閉じタグ・自己閉じタグの後の複数行の式の終わりのコメントも通る（例 4、10 の変種）', () => {
+    const closing = ['<p><b>Total</b>{', "  t('k')", '  /* 表示 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(closing), [])
+    const selfClosing = ['<li>Name<br />{', "  t('k')", '  /* 表示 */}</li>'].join('\n')
+    assert.deepEqual(findMissingComments(selfClosing), [])
+  })
+
+  test('「:」で終わる文字の後の前の式と続く式の終わりのコメントも通る（例 10 の変種）', () => {
+    const text = ['<p>合計: {total}{', "  t('unit')", '  /* 単位 */}</p>'].join('\n')
+    assert.deepEqual(findMissingComments(text), [])
+  })
+
   test('キーを二重引用符で書いた呼び出しも見る', () => {
     assert.deepEqual(findMissingComments('<span>{t("save")}</span>'), [{ line: 1, key: 'save' }])
   })

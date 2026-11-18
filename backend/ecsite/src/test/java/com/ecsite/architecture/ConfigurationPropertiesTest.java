@@ -30,19 +30,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.asm.ClassReader;
-import org.springframework.asm.ClassVisitor;
-import org.springframework.asm.Handle;
-import org.springframework.asm.MethodVisitor;
-import org.springframework.asm.Opcodes;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.classfile.ClassFile;
+import java.lang.classfile.CodeModel;
+import java.lang.classfile.instruction.InvokeDynamicInstruction;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
@@ -262,13 +259,24 @@ class ConfigurationPropertiesTest {
     }
 
     @Test
-    @DisplayName("toString の規則は、利用者が書いた final の toString（record と record でないクラス）の例に当たらない")
-    void toStringRuleDoesNotMatchFinalToStringExamples() {
-        // 準備：final の toString を書いた record と、record でないクラスの例
-        var examples = new ClassFileImporter().importClasses(
-                SecretWithFinalToStringProperties.class, SecretClassWithFinalToStringProperties.class);
+    @DisplayName("toString の規則は、利用者が書いた final の toString を持つ record の例を対象にし、違反にしない")
+    void toStringRuleDoesNotMatchRecordWithFinalToString() {
+        // 準備：final の toString を書いた record の例
+        var examples = new ClassFileImporter().importClasses(SecretWithFinalToStringProperties.class);
 
-        // 操作と確認：違反にならない
+        // 操作と確認：規則の対象に入り、違反にならない
+        assertThat(secretConfigurationTypeNames(examples)).containsExactly(SecretWithFinalToStringProperties.class.getName());
+        assertThat(secretPropertiesRule(examples).evaluate(examples).hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("toString の規則は、利用者が書いた final の toString を持つ record でないクラスの例を対象にし、違反にしない")
+    void toStringRuleDoesNotMatchClassWithFinalToString() {
+        // 準備：final の toString を書いた、record でないクラスの例
+        var examples = new ClassFileImporter().importClasses(SecretClassWithFinalToStringProperties.class);
+
+        // 操作と確認：規則の対象に入り、違反にならない
+        assertThat(secretConfigurationTypeNames(examples)).containsExactly(SecretClassWithFinalToStringProperties.class.getName());
         assertThat(secretPropertiesRule(examples).evaluate(examples).hasViolation()).isFalse();
     }
 
@@ -291,7 +299,8 @@ class ConfigurationPropertiesTest {
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"secretKey", "apiKey", "privateKey", "signingKey", "key", "credentials", "clientCredential",
                 "secretAccessKey", "webhookSecret", "accessToken", "apiPassword", "salt", "hmacKey", "masterKey",
-                "stripeAPIKey", "apikey", "apiKeyV2", "signingKey2", "credentialsJson"})
+                "stripeAPIKey", "apikey", "apiKeyV2", "signingKey2", "credentialsJson", "encryptionKey", "hmackey",
+                "masterkey", "signingkey"})
         @DisplayName("secret、password、salt、token を含む名前か、語に分けて credential と key の条件に合う名前は、秘密の値の項目の名前")
         void detectsSecretFieldName(String name) {
             // 操作と確認：秘密の値の項目の名前と判定する
@@ -301,7 +310,7 @@ class ConfigurationPropertiesTest {
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"cacheKey", "objectKey", "idempotencyKey", "credentialsFile", "accessKeyId", "publicKey",
                 "publishableKey", "primaryKey", "privateKeyPath", "apiKeyHeader", "signingKeyId",
-                "value", "endpoint", "keyId", "monkeyBusiness"})
+                "value", "endpoint", "keyId", "monkeyBusiness", "credentialsPath", "credentialsDir"})
         @DisplayName("秘密の語を含まず、credential と key の条件に合わない名前は、秘密の値の項目の名前でない")
         void ignoresOtherFieldName(String name) {
             // 操作と確認：秘密の値の項目の名前と判定しない
@@ -350,28 +359,22 @@ class ConfigurationPropertiesTest {
         if (!javaClass.isRecord()) {
             return false;
         }
-        boolean[] generated = {false};
-        try (InputStream bytes = javaClass.reflect().getResourceAsStream(javaClass.getName().substring(javaClass.getName().lastIndexOf('.') + 1) + ".class")) {
-            new ClassReader(bytes).accept(new ClassVisitor(Opcodes.ASM9) {
-                @Override
-                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-                    if (!name.equals("toString") || !descriptor.equals("()Ljava/lang/String;")) {
-                        return null;
-                    }
-                    return new MethodVisitor(Opcodes.ASM9) {
-                        @Override
-                        public void visitInvokeDynamicInsn(String methodName, String methodDescriptor, Handle bootstrap, Object... args) {
-                            if (bootstrap.getOwner().equals("java/lang/runtime/ObjectMethods")) {
-                                generated[0] = true;
-                            }
-                        }
-                    };
-                }
-            }, ClassReader.SKIP_DEBUG);
+        String resource = javaClass.getName().substring(javaClass.getName().lastIndexOf('.') + 1) + ".class";
+        try (var bytes = javaClass.reflect().getResourceAsStream(resource)) {
+            if (bytes == null) {
+                throw new IllegalStateException("クラスファイルが読めない: " + javaClass.getName());
+            }
+            return ClassFile.of().parse(bytes.readAllBytes()).methods().stream()
+                    .filter(method -> method.methodName().equalsString("toString")
+                            && method.methodType().equalsString("()Ljava/lang/String;"))
+                    .flatMap(method -> method.code().stream())
+                    .flatMap(CodeModel::elementStream)
+                    .anyMatch(element -> element instanceof InvokeDynamicInstruction invoke
+                            && invoke.invokedynamic().bootstrap().bootstrapMethod().reference().owner().asInternalName()
+                            .equals("java/lang/runtime/ObjectMethods"));
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("クラスファイルが読めない: " + javaClass.getName(), e);
         }
-        return generated[0];
     }
 
     /**

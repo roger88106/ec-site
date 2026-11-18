@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { load } from 'js-yaml'
 import {
   checkContract,
   checkDocument,
@@ -203,6 +204,21 @@ describe('ロールと権限の対応表', () => {
       const problem = '/carts：パスの下に $ref がある。$ref の Path Item は読まないので、パスの下に直接書く'
       assert.deepEqual(checkContract(text, { store: true }), [problem])
       assert.deepEqual(checkContract(text, { store: false }), [problem])
+    })
+
+    test('契約のファイルを渡すと、問題の文の先頭にファイル名を付ける（どの契約を直すかが分かる）', () => {
+      const file = 'api/openapi/store.yaml'
+      assert.deepEqual(checkContract(topSecurity(''), { store: true, file }), [`${file}：${topSecurityProblem}`])
+      const ref = ['paths:', '  /carts:', "    $ref: './paths/carts.yaml'"].join('\n')
+      assert.deepEqual(checkContract(ref, { store: false, file: 'api/openapi/admin.yaml' }), [
+        'api/openapi/admin.yaml：/carts：パスの下に $ref がある。$ref の Path Item は読まないので、パスの下に直接書く',
+      ])
+    })
+
+    test('読んだ後の契約（オブジェクト）も受け取り、文字列と同じ結果にする（YAML を 1 回だけ読むため）', () => {
+      const text = topSecurity('\n  - memberToken: []')
+      assert.deepEqual(checkContract(load(text), { store: true }), checkContract(text, { store: true }))
+      assert.deepEqual(parseOperations(load(STORE)), parseOperations(STORE))
     })
 
     test('パスの共通の parameters の下の $ref と、応答の $ref は失敗にしない', () => {

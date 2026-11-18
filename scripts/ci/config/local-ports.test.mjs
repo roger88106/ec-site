@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { expandedPorts, findPortMismatches, parseComposeHostPorts, parseConfigPorts, parseDocPorts } from './local-ports.mjs'
+import { CONFIG_FILES, DOC_FILES, SOURCE_FILES, expandedPorts, findPortMismatches, parseComposeHostPorts, parseConfigPorts, parseDocPorts } from './local-ports.mjs'
 
 /** 小さな一覧（共有 2 件、スロットでずらす 1 件、E2E 1 件、スロット 3 つ） */
 const LIST = {
@@ -100,14 +100,29 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.deepEqual(findPortMismatches({ ...INPUT, configs: { 'scripts/dev/x.sh': text } }), [])
   })
 
+  test('名前の途中に PORT を含む変数（REPORT_ROWS など）と、小文字の port の変数の既定値は読まない（例 5）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    const text = 'A="${REPORT_ROWS:-5000}"\nB="${EXPORT_LIMIT:-1000}"\nC="${SUPPORT_TTL:-3600}"\nD="${port:-9999}"'
+    assert.deepEqual(parseConfigPorts(text), [])
+    assert.deepEqual(parseDocPorts(text), [])
+  })
+
+  test('名前が _PORT で終わる変数の既定値は読む（例 1 の変種）', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    assert.deepEqual(parseConfigPorts('P="${MAILPIT_SMTP_PORT:-9999}"'), [9999])
+  })
+
   test('compose の ${MAILPIT_SMTP_PORT:-2525} は compose の読み方で読み、他のファイルの読み方の問題にしない（例 4）', () => {
     assert.deepEqual(findPortMismatches(INPUT), [])
     assert.deepEqual(parseComposeHostPorts(COMPOSE).ports, [5432, 2525])
   })
 
-  test('検査の対象にしていないファイルの PORT="${PORT:-9999}" は見ない（例 11）', () => {
-    // 対象は、呼び出す側が渡した configs・docs・sources だけ。渡さなかったファイルの内容は照合しない
-    assert.deepEqual(findPortMismatches({ ...INPUT, configs: { 'scripts/dev/ok.sh': 'echo ok' } }), [])
+  test('検査の対象の一覧にない script（scripts/dev/e2e.sh）は、どの一覧にも入っていない（例 11）', () => {
+    // 検査は、一覧のファイルだけを読んで findPortMismatches に渡す。一覧にないファイルの PORT="${PORT:-9999}" は読まれない
+    for (const files of [CONFIG_FILES, DOC_FILES, SOURCE_FILES]) {
+      assert.ok(!files.includes('scripts/dev/e2e.sh'), files.join(' / '))
+    }
+    assert.ok(CONFIG_FILES.includes('scripts/dev/reset.sh'), '同じ形の script が一覧にあることの確認')
   })
 
   test('一覧にないポートが compose にあれば失敗にする', () => {

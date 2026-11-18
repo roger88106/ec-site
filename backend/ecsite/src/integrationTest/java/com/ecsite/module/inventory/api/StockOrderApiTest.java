@@ -17,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -35,6 +37,7 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 注文による在庫の増減の統合テスト
@@ -433,6 +436,67 @@ class StockOrderApiTest {
             // 確認：成功は 1 つだけで、在庫数は 0
             assertThat(results).containsOnlyOnce(true);
             assertThat(stockQueryRepository.findQuantity(variant)).contains(0);
+        }
+    }
+
+    @Nested
+    @DisplayName("数量が 0 以下の品目")
+    class NonPositiveQuantity {
+
+        @ParameterizedTest(name = "数量 {0}")
+        @ValueSource(ints = {0, -1})
+        @DisplayName("引当で、数量が 0 以下の品目があれば、プログラムの誤りとして拒否され、在庫数も引当も変わらない")
+        void rejectsReserve(int quantity) {
+            // 準備：在庫数 5 のうち 2 を引き当てた持ち主と、正常な品目と数量が 0 以下の品目
+            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var invalid = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var holder = reserve(variant);
+
+            // 操作と確認：IllegalArgumentException で拒否される
+            assertThatThrownBy(() -> api.reserve(holder, Map.of(variant, 1, invalid, quantity), EXPIRES_AT))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // 確認：在庫数が変わらず、持ち主の引当が置き換わらず、数量が 0 以下の品目に引当が増えない
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(STOCK_QUANTITY);
+            assertThat(api.sellableQuantities(List.of(variant, invalid), null))
+                    .containsEntry(variant, STOCK_QUANTITY - ORDER_QUANTITY)
+                    .containsEntry(invalid, STOCK_QUANTITY);
+        }
+
+        @ParameterizedTest(name = "数量 {0}")
+        @ValueSource(ints = {0, -1})
+        @DisplayName("減算で、数量が 0 以下の品目があれば、プログラムの誤りとして拒否され、在庫数も引当も変わらない")
+        void rejectsCommit(int quantity) {
+            // 準備：在庫数 5 のうち 2 を引き当てた持ち主と、数量が 0 以下の品目
+            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var invalid = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var holder = reserve(variant);
+
+            // 操作と確認：IllegalArgumentException で拒否される
+            assertThatThrownBy(() -> api.commit(holder, Map.of(variant, ORDER_QUANTITY, invalid, quantity), orderId, ORDER_NUMBER))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // 確認：在庫数が変わらず、持ち主の引当が解かれていない
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(STOCK_QUANTITY);
+            assertThat(stockQueryRepository.findQuantity(invalid)).contains(STOCK_QUANTITY);
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, STOCK_QUANTITY - ORDER_QUANTITY);
+        }
+
+        @ParameterizedTest(name = "数量 {0}")
+        @ValueSource(ints = {0, -1})
+        @DisplayName("戻しで、数量が 0 以下の品目があれば、プログラムの誤りとして拒否され、在庫数が変わらない")
+        void rejectsRestore(int quantity) {
+            // 準備：在庫数 3 の正常な品目と、数量が 0 以下の品目
+            var variant = inventory.stockNewVariant(productId, 3);
+            var invalid = inventory.stockNewVariant(productId, 3);
+
+            // 操作と確認：IllegalArgumentException で拒否される
+            assertThatThrownBy(() -> api.restore(Map.of(variant, ORDER_QUANTITY, invalid, quantity), orderId, ORDER_NUMBER))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // 確認：どちらの在庫数も変わらない
+            assertThat(stockQueryRepository.findQuantity(variant)).contains(3);
+            assertThat(stockQueryRepository.findQuantity(invalid)).contains(3);
         }
     }
 

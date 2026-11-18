@@ -233,6 +233,42 @@ class StockAdjustmentTest {
                     InventoryErrorCode.INVALID_STOCK_DELTA);
         }
 
+        @ParameterizedTest(name = "増減量 {0}")
+        @ValueSource(ints = {1, Integer.MAX_VALUE})
+        @DisplayName("理由が注文で増減量が正なら、プログラムの誤りとして拒否される")
+        void rejectsPositiveDeltaForOrder(int delta) {
+            // 操作と確認：プログラムの誤りとして拒否される
+            assertThatThrownBy(() -> StockAdjustment.forOrder(delta, StockAdjustmentReason.ORDER, UUID.randomUUID(), ORDER_NUMBER, NOW))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest(name = "増減量 {0}")
+        @ValueSource(ints = {-1, Integer.MIN_VALUE})
+        @DisplayName("理由が注文のキャンセルで増減量が負なら、プログラムの誤りとして拒否される")
+        void rejectsNegativeDeltaForCancellation(int delta) {
+            // 操作と確認：プログラムの誤りとして拒否される
+            assertThatThrownBy(() -> StockAdjustment.forOrder(delta, StockAdjustmentReason.ORDER_CANCELLATION, UUID.randomUUID(),
+                    ORDER_NUMBER, NOW)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest(name = "増減量 {0}")
+        @ValueSource(ints = {-1, Integer.MIN_VALUE})
+        @DisplayName("理由が注文で増減量が負なら、境界の値でも作れる")
+        void acceptsNegativeDeltaForOrder(int delta) {
+            // 操作と確認：例外にならない
+            assertThatCode(() -> StockAdjustment.forOrder(delta, StockAdjustmentReason.ORDER, UUID.randomUUID(), ORDER_NUMBER, NOW))
+                    .doesNotThrowAnyException();
+        }
+
+        @ParameterizedTest(name = "増減量 {0}")
+        @ValueSource(ints = {1, Integer.MAX_VALUE})
+        @DisplayName("理由が注文のキャンセルで増減量が正なら、境界の値でも作れる")
+        void acceptsPositiveDeltaForCancellation(int delta) {
+            // 操作と確認：例外にならない
+            assertThatCode(() -> StockAdjustment.forOrder(delta, StockAdjustmentReason.ORDER_CANCELLATION, UUID.randomUUID(),
+                    ORDER_NUMBER, NOW)).doesNotThrowAnyException();
+        }
+
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(value = StockAdjustmentReason.class, names = {"ORDER", "ORDER_CANCELLATION"}, mode = EnumSource.Mode.EXCLUDE)
         @DisplayName("注文による調整は、運営者の理由では作れない（プログラムの誤り）")

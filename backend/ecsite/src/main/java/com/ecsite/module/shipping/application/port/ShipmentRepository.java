@@ -33,6 +33,8 @@ public interface ShipmentRepository {
     /**
      * 配送業者と送り状番号で出荷を取得し、トランザクションの終わりまで行をロックする。
      *
+     * <p>出荷 ID の昇順に返し、その順にロックを取る。同じ番号の通知が同時に届いても、デッドロックにならないようにするため。
+     *
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号
      * @return 出荷。合う出荷がなければ空

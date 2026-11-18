@@ -118,14 +118,16 @@ public class Shipment {
     /**
      * 通知の配送状態へ進める。
      *
-     * <p>今より高い順位でなければ、何もしない。
+     * <p>通知の発生日時が出荷日時より前なら、この出荷の荷物で起きた変化ではないので、何もしない。
+     * 今より高い順位でなければ、何もしない。
      *
      * @param next       通知の配送状態
-     * @param notifiedAt 通知を反映する日時
+     * @param occurredAt 通知の発生日時（出荷日時と同じ日時は反映する）
+     * @param notifiedAt 通知を反映する日時（処理の時刻）
      * @return 進めたら true。進めなければ false
      */
-    public boolean advanceTo(@NonNull DeliveryStatus next, @NonNull Instant notifiedAt) {
-        if (!status.canAdvanceTo(next)) {
+    public boolean advanceTo(@NonNull DeliveryStatus next, @NonNull Instant occurredAt, @NonNull Instant notifiedAt) {
+        if (occurredAt.isBefore(shippedAt) || !status.canAdvanceTo(next)) {
             return false;
         }
         this.status = next;

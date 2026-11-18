@@ -35,6 +35,7 @@ paths:
     get:
       tags: [product]
       operationId: listProducts
+      x-error-codes: []
       security: []
       summary: 商品一覧
       parameters:
@@ -78,6 +79,7 @@ paths:
     get:
       tags: [product]
       operationId: searchProducts
+      x-error-codes: []
       security: []
       summary: キーワード検索
       description: 商品名または説明にキーワードを含む商品。新着順。
@@ -105,6 +107,7 @@ paths:
     get:
       tags: [product]
       operationId: getProduct
+      x-error-codes: []
       security: []
       summary: 商品の詳細
       parameters:
@@ -128,6 +131,7 @@ paths:
     get:
       tags: [category]
       operationId: listCategories
+      x-error-codes: []
       security: []
       summary: カテゴリの木
       responses:
@@ -144,6 +148,7 @@ paths:
     post:
       tags: [cart]
       operationId: createCart
+      x-error-codes: []
       security: []
       summary: カートを作る
       responses:
@@ -156,6 +161,7 @@ paths:
     get:
       tags: [cart-view]
       operationId: getCart
+      x-error-codes: []
       security:
         - {}
         - memberToken: []
@@ -231,6 +237,7 @@ paths:
     delete:
       tags: [cart]
       operationId: removeCartItem
+      x-error-codes: []
       security:
         - {}
         - memberToken: []
@@ -248,6 +255,7 @@ paths:
     get:
       tags: [cart]
       operationId: getMemberCart
+      x-error-codes: []
       summary: 会員のカート
       description: |
         token の会員のカートの ID を返す。まだなければ空のカートを作って返す（会員ごとに 1 つ）。
@@ -268,6 +276,7 @@ paths:
     post:
       tags: [cart]
       operationId: mergeCart
+      x-error-codes: []
       summary: カートを移す
       description: |
         ログインせずに使っていたカートの品目を、token が示す会員のカートへ移し、移す元のカートを空にする。同じバリアントは数量を合算する。
@@ -342,6 +351,7 @@ paths:
     get:
       tags: [checkout]
       operationId: getCheckout
+      x-error-codes: []
       security:
         - memberToken: []
       summary: 注文手続きの表示
@@ -402,6 +412,7 @@ paths:
     get:
       tags: [order]
       operationId: listMemberOrders
+      x-error-codes: []
       summary: 自分の注文の一覧
       description: token の会員の注文を、注文日時の新しい順に返す。
       security:
@@ -425,6 +436,7 @@ paths:
     get:
       tags: [order]
       operationId: listMemberPendingOrders
+      x-error-codes: []
       summary: 自分の支払待ちの注文の一覧
       description: token の会員の支払待ちの注文を、注文日時の新しい順に返す。支払の期限を過ぎ、期限切れによるキャンセルの前の注文も含む。注文手続きの確認の画面の材料である。
       security:
@@ -445,6 +457,7 @@ paths:
     get:
       tags: [order]
       operationId: getOrder
+      x-error-codes: []
       security:
         - memberToken: []
       summary: 注文の表示
@@ -521,6 +534,7 @@ paths:
     get:
       tags: [shop]
       operationId: getShop
+      x-error-codes: []
       security: []
       summary: 店舗の情報
       description: 問い合わせ先など、画面に示す店舗の情報。値はバックエンドの設定。
@@ -537,6 +551,7 @@ paths:
     get:
       tags: [region]
       operationId: listPrefectures
+      x-error-codes: []
       security: []
       summary: 都道府県の一覧
       description: コードの順。マスターデータの更新でしか変わらない
@@ -552,6 +567,7 @@ paths:
     get:
       tags: [region]
       operationId: listMunicipalities
+      x-error-codes: []
       security: []
       summary: 都道府県の市区町村の一覧
       description: コードの順。政令指定都市は区を 1 つの市区町村とし、市そのものは含めない
@@ -573,6 +589,7 @@ paths:
     get:
       tags: [region]
       operationId: findPostalCodeAddresses
+      x-error-codes: []
       security: []
       summary: 郵便番号の住所
       description: |

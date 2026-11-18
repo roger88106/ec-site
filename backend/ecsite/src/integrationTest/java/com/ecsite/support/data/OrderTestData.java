@@ -1,6 +1,11 @@
 package com.ecsite.support.data;
 
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.module.payment.application.PaymentCommandService;
+import com.ecsite.module.payment.application.PaymentProperties;
+import com.ecsite.module.payment.application.PaymentQueryService;
+import com.ecsite.module.payment.application.model.view.PayablePaymentView;
+import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.http.TestJson;
@@ -337,14 +342,32 @@ public class OrderTestData {
     /**
      * 注文の支払画面を開く。
      *
+     * <p>ロールバックするテストでは、トランザクションの外で呼ぶ前提のメソッド（{@code NEVER}）を本番の経路で呼べない。
+     * そのため、HTTP を通らずに、支払画面の URL を求める処理（{@code PaymentGatewayService.pageUrl}）の中身を、
+     * テストのトランザクションの中で順に呼んで同じ状態を作る。
+     * エンドポイント自身は {@code OrderPaymentApiTest} で確認する。
+     *
      * @param orderId 注文 ID
      * @return 支払画面 ID
      */
-    public String openPaymentPage(UUID orderId) throws Exception {
-        var body = mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page").with(member))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        String url = JsonPath.read(body, "$.url");
+    public String openPaymentPage(UUID orderId) {
+        var payable = applicationContext.getBean(PaymentQueryService.class).findPayable(orderId).orElseThrow();
+        var url = payable.page() != null ? payable.page().url() : openNewPage(orderId, payable);
         return url.substring(url.lastIndexOf('/') + 1);
+    }
+
+    /**
+     * 決済サービスに支払画面を作らせ、支払に記録する。
+     *
+     * @param orderId 注文 ID
+     * @param payable 支払える支払
+     * @return 支払画面の URL
+     */
+    private String openNewPage(UUID orderId, PayablePaymentView payable) {
+        var properties = applicationContext.getBean(PaymentProperties.class);
+        var opened = gateway.openPage(
+                new PaymentGateway.PageRequest(payable.id(), orderId, payable.amount(), properties.returnUrlOf(orderId)));
+        return applicationContext.getBean(PaymentCommandService.class).recordPage(orderId, opened).orElseThrow().url();
     }
 
     /**

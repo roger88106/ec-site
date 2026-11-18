@@ -1,5 +1,7 @@
 package com.ecsite.support.data;
 
+import com.ecsite.module.catalog.application.port.MediaDirectory;
+import com.ecsite.module.catalog.application.product.ProductImageCommandService;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.http.TestJson;
@@ -9,6 +11,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -20,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -63,14 +70,33 @@ public class CatalogTestData {
     private final MutableClock clock;
 
     /**
+     * Spring のコンテキスト（画像を HTTP を通らずに追加するために使う）
+     *
+     * <p>画像を追加しないときは null。
+     */
+    private final ApplicationContext applicationContext;
+
+    /**
      * コンストラクタ
      *
      * @param mockMvc MockMvc
      * @param clock   テスト用の時計
      */
     public CatalogTestData(MockMvc mockMvc, MutableClock clock) {
+        this(mockMvc, clock, null);
+    }
+
+    /**
+     * コンストラクタ（画像を追加するとき）
+     *
+     * @param mockMvc            MockMvc
+     * @param clock              テスト用の時計
+     * @param applicationContext Spring のコンテキスト
+     */
+    public CatalogTestData(MockMvc mockMvc, MutableClock clock, ApplicationContext applicationContext) {
         this.mockMvc = mockMvc;
         this.clock = clock;
+        this.applicationContext = applicationContext;
     }
 
     /**
@@ -485,10 +511,19 @@ public class CatalogTestData {
         }
 
         /**
-         * 画像を 1 枚登録する（受付 → ストレージへの PUT → 確定）。
+         * 画像を 1 枚登録する（受付 → ストレージへの PUT → 用意 → 保存）。
+         *
+         * <p>ロールバックするテストでは、トランザクションの外で呼ぶ前提のメソッド（{@code NEVER}）を本番の経路で呼べない。
+         * そのため、HTTP を通らずに、画像の用意はテストのトランザクションを中断して呼び、
+         * 保存はテストのトランザクションの中で行い、同じ状態を作る。
+         * エンドポイント自身は {@code ProductImageApiTest} と {@code ProductImageTransactionApiTest} で確認する。
          */
         public TestProduct image() throws Exception {
-            addImage(upload(), version).andExpect(status().isCreated());
+            var uploadId = UUID.fromString(upload());
+            var suspended = new TransactionTemplate(applicationContext.getBean(PlatformTransactionManager.class),
+                    new DefaultTransactionDefinition(TransactionDefinition.PROPAGATION_NOT_SUPPORTED));
+            var prepared = suspended.execute(status -> applicationContext.getBean(MediaDirectory.class).prepareImage(id, uploadId));
+            applicationContext.getBean(ProductImageCommandService.class).saveAddedImage(id, version, Objects.requireNonNull(prepared));
             version++;
             var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
             imageUrls.clear();

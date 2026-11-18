@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,6 +100,12 @@ class OrderCatalogApiTest {
     MutableClock clock;
 
     /**
+     * Spring のコンテキスト（画像を追加する補助に渡す）
+     */
+    @Autowired
+    ApplicationContext applicationContext;
+
+    /**
      * 税区分・カテゴリ・商品を作る補助
      */
     private CatalogTestData catalog;
@@ -110,7 +117,7 @@ class OrderCatalogApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        catalog = new CatalogTestData(mockMvc, clock);
+        catalog = new CatalogTestData(mockMvc, clock, applicationContext);
         standard = catalog.taxCategory("標準", STANDARD_RATE);
     }
 

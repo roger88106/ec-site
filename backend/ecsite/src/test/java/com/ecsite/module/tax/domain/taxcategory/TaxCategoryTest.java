@@ -357,6 +357,28 @@ class TaxCategoryTest {
         }
 
         @Test
+        @DisplayName("AC-5 現在ちょうどの日時を、新しい税率の開始として設定できない")
+        void rejectsNowStartForNewRate() {
+            // 準備：税率のない税区分
+            var category = factory.create(NAME);
+
+            // 操作と確認：業務のエラー TAX_RATE_PAST_DATETIME で拒否される
+            assertBusinessError(() -> category.replaceRates(List.of(
+                    newDraft("10", NOW, null)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
+        }
+
+        @Test
+        @DisplayName("AC-5 現在ちょうどの日時を、新しい税率の終了として設定できない")
+        void rejectsNowEndForNewRate() {
+            // 準備：税率のない税区分
+            var category = factory.create(NAME);
+
+            // 操作と確認：一覧の形の誤り（最後が無期限でない）より先に、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
+            assertBusinessError(() -> category.replaceRates(List.of(
+                    newDraft("10", null, NOW)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
+        }
+
+        @Test
         @DisplayName("AC-5 新しい税率の開始・終了は空白にできる")
         void acceptsBlankForNewRate() {
             // 準備：税率のない税区分

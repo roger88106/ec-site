@@ -35,7 +35,7 @@
 - 補助のメソッドを経由した間接の読み取りは、今の検査がクラスの単位で見るので、テストの中の補助のメソッドからの読み取りも検査の対象になる。違反の例のクラスに、補助のメソッドを経由する例を加えて確認する。
 - バックエンドのテストの書き方（[バックエンドのテストの書き方](../../05-開発規則/test-writing-backend.md)）の、記録を読む操作の規則の文を、表の全ての型に合わせて書き換える。今は 1 つの型（`EventPublicationRegistry`）だけを挙げている。
 - 入れ子のクラスを外側のクラスに対応付ける判定が、2 つのテストに重複している。テストの補助のクラスの 1 つのメソッドにまとめる。外側のクラスの名前を返すメソッドは、補助のクラスに既にある。
-- ローカルのポートの検査は、`${変数:-ポート}` の形を、変数の名前が PORT を含み、既定値が 4〜5 桁の数字のときだけ読む。`:-` のほかに `:=`・`-`・`=` の既定値の書き方と、引用符で囲んだ既定値も読む。理由：ポートでない既定値（時間、行数）を誤って読まないため。
+- ローカルのポートの検査は、`${変数:-ポート}` の形を、変数の名前が `PORT` か、`_PORT` で終わり（大文字と小文字を区別する）、既定値が 4〜5 桁の数字のときだけ読む。`:-` のほかに `:=`・`-`・`=` の既定値の書き方と、引用符で囲んだ既定値も読む。理由：ポートでない既定値（時間、行数）を誤って読まないため。
 - 文言のキーのコメントの検査は、関数の本体（アロー関数、戻り値の型を書いた関数、クラスとメソッドの本体）の `{` を JSX の式と読まず、外側へ探し続ける。外側に JSX の式があれば、その式の中のコメントで通す（issue #536 の期待のとおり）。
 - spec の番号の検査が数字の間の区切りと読む字は、`-` と、U+2010、U+2011、U+2013、U+2212 とする。`#` の直後は、全体が 16 進の字だけで 3・4・6・8 字の語だけを色として除く。
 - spec の番号の検査は、`libs.versions.toml` を TOML の書き方（`#` のコメント、`"…"` と `'…'` の文字列）で、`gradle.properties` を properties の書き方（行頭の `#` と `!` だけがコメント）で読む。
@@ -76,6 +76,8 @@
 | 9 | 一覧にないポートを `PORT="${PORT:-"9999"}"` と書いた行 | 検出する |
 | 10 | `${LOCAL_BIND_ADDRESS:-127.0.0.1}`（既定値が IP アドレス） | 検出しない |
 | 11 | 検査の対象の一覧にない script（`scripts/dev/e2e.sh` など）の `PORT="${PORT:-9999}"` | 検出しない（今のとおり） |
+| 12 | `${REPORT_ROWS:-5000}`、`${EXPORT_LIMIT:-1000}`、`${SUPPORT_TTL:-3600}`（名前の途中に PORT を含む） | 検出しない |
+| 13 | `${port:-9999}`（小文字の名前） | 検出しない |
 
 文言のキーのコメントの検査の例：
 
@@ -91,6 +93,9 @@
 | 8 | `): Promise<{ cartId: string }> {` と `): Promise<T \| Extract<R, { ok: false }>> {` の本体で、1 と同じ書き方 | 検出する |
 | 9 | `class ErrorFallback extends Component<Props> {` のメソッド `render() {` の本体で、1 と同じ書き方 | 検出する |
 | 10 | `<p className="text-sm">{` の後の行に `t('k')`、その後の行に `/* 表示 */}`（要素の直後の、複数行の式の終わりのコメント） | 検出しない |
+| 11 | `<p><b>Total</b>{` の後の行に `t('k')`、その後の行に `/* 表示 */}`（テキストの直後の閉じタグの後の式） | 検出しない |
+| 12 | `<li>Name<br />{` の後の、11 と同じ形（自己閉じタグの後の式） | 検出しない |
+| 13 | `<p>合計: {total}{t('unit') /* 単位 */}</p>`（`:` で終わる文字の後に続く式） | 検出しない |
 
 spec の番号の検査の例：
 
@@ -112,6 +117,10 @@ spec の番号の検査の例：
 | 14 | `gradle.properties` の値の途中の `#`（`org.gradle.jvmargs=-Xmx2g #AC-12`） | 検出しない（properties では値の一部） |
 | 15 | Gradle の Kotlin の設定の、文字列の埋め込みの中の引用符 `"${dir.replace("/", "//")}/T123"` | 検出しない |
 | 16 | raw 文字列の中の引用符 `"""a "b" AC-12"""` | 検出しない |
+| 17 | `#DC123`（5 字）、`#DC12345`（7 字）、`#DC1234567`（9 字） | 検出する |
+| 18 | `gradle.properties` の、`\` で続く行の次の行の `#`（値の一部） | 検出しない |
+| 19 | `libs.versions.toml` の複数行の文字列（`"""…"""`）の中の `# AC-1` | 検出しない |
+| 20 | Gradle の Kotlin の設定の、`val q = '"'` の行と、その次の行の文字列 `"AC-1"`（文字リテラルの引用符を文字列の始まりと読まない） | 検出しない |
 
 ロールと権限の対応表の検査の例：
 
@@ -172,6 +181,9 @@ spec の番号の検査の例：
 | 7 | `components.schemas` の下に同じ名前のスキーマが 2 つある | 起動を失敗にする（重複したキーは契約の全体で禁じる） |
 | 8 | パスの共通の `parameters:` の下の `- $ref: '#/components/parameters/CartId'` | 起動を失敗にしない |
 | 9 | 操作の応答の `$ref: '#/components/responses/Created'` | 起動を失敗にしない |
+| 10 | YAML として読めない契約（書き方の誤り）。失敗の文に契約のファイルと位置がある | 起動を失敗にする |
+| 11 | 空の契約（空のファイル、コメントだけ） | 起動を失敗にする |
+| 12 | 最上位がキーと値の組でない契約（一覧など） | 起動を失敗にする |
 
 ## 目的と完了条件
 
@@ -209,10 +221,10 @@ spec の番号の検査の例：
 | まとまり | ファイル |
 |----------|----------|
 | 検査の script | `scripts/ci/config/local-ports.mjs`、`scripts/ci/config/local-ports.test.mjs`、`scripts/ci/frontend/message-comments.mjs`、`scripts/ci/frontend/message-comments.test.mjs`、`scripts/ci/spec/spec-numbers.mjs`、`scripts/ci/spec/spec-numbers.test.mjs`、`scripts/ci/config/role-permissions.mjs`、`scripts/ci/config/role-permissions.test.mjs` |
-| コメントの読み方の共通のモジュール（Kotlin の読み方を加えるとき） | `scripts/shared/source/strip-comments.mjs`、`scripts/ci/lib/source/comment-text.mjs` とそのテスト |
-| 構成の検査のテスト | `backend/ecsite/src/test/java/com/ecsite/architecture/EventPublicationReadTest.java`、`SchemaOwnershipTest.java`、`TokenAccessTest.java`、`ConfigurationPropertiesTest.java`、`backend/ecsite/src/test/java/com/ecsite/support/ProductionClasses.java`、違反の例のクラス（`backend/ecsite/src/test/java/com/ecsite/architecture/sample/` の下） |
+| コメントの読み方の共通のモジュール | `scripts/shared/source/strip-comments.mjs` とそのテスト、`scripts/ci/lib/source/comment-text.mjs` とそのテスト（日本語の検査も .kts を Kotlin の読み方で読むため） |
+| 構成の検査のテスト | `backend/ecsite/src/test/java/com/ecsite/architecture/EventPublicationReadTest.java`、`SchemaOwnershipTest.java`、`TokenAccessTest.java`、`ConfigurationPropertiesTest.java`、`backend/ecsite/src/test/java/com/ecsite/support/ProductionClasses.java`、`backend/ecsite/src/test/java/com/ecsite/support/TestCodeClasses.java`、違反の例のクラス（`backend/ecsite/src/test/java/com/ecsite/architecture/sample/` の下）、本番のパッケージに置く違反の例 `backend/ecsite/src/test/java/com/ecsite/config/event/ReadsEventPublicationRecords.java`（記録の型が package-private のため） |
 | 契約の読み込み | `backend/ecsite/src/main/java/com/ecsite/config/security/OpenApiOperations.java`、`backend/ecsite/src/test/java/com/ecsite/config/security/OpenApiOperationsTest.java` |
-| 規則 | `docs/05-開発規則/test-writing-backend.md` |
+| 規則 | `docs/05-開発規則/test-writing-backend.md`、`docs/02-設計/role-permissions.md`（失敗したときの 1 文） |
 | spec | `docs/08-spec/563-check-script-fixes/spec.md` |
 
 ## 非機能要件
@@ -308,10 +320,40 @@ spec の番号の検査の例：
   - 依存：T563-01-13
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/config/security/OpenApiOperations.java`
   - 確認方法：`./gradlew test --tests '*OpenApiOperationsTest'` が通る
-- [ ] **T563-01-15** 段階の最後のレビュー（厚め）。指摘を修正し、`./gradlew check` と `scripts/ci/check-all.sh` を通す（DC-563-17）。
+- [x] **T563-01-15** 段階の最後のレビュー（厚め）。指摘を修正し、`./gradlew check` と `scripts/ci/check-all.sh` を通す（DC-563-17）。
   - 依存：T563-01-03、T563-01-05、T563-01-07、T563-01-09、T563-01-10、T563-01-12、T563-01-14
   - 確認する項目：変えたコードを、[書き方の規則とレビュー](../../05-開発規則/review.md)と照合する
-  - 結果：レビューごとに 1 行の表で書く
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | 段階 1 | 規則と一貫性、構造と共通化 | 汎用 | 1 | 135651 | 1m59s | 0 | 1 | 2 | 2 |
+    | 段階 1 | 規則と一貫性、構造と共通化 | 汎用 | 1 | 133733 | 1m27s | 0 | 0 | 4 | 4 |
+    | 段階 1 | テスト、script と CI | 汎用 | 1 | 131260 | 2m47s | 0 | 0 | 9 | 8 |
+    | 段階 1 | テスト、script と CI | 汎用 | 1 | 138416 | 3m08s | 0 | 1 | 6 | 5 |
+    | 段階 1 | 安定性と運用 | 高性能 | 1 | 72762 | 2m22s | 0 | 0 | 2 | 2 |
+    | 段階 1 | 安定性と運用 | 汎用 | 1 | 66451 | 1m41s | 0 | 0 | 3 | 3 |
+    | 段階 1 | ファイルをまたぐ影響 | 高性能 | 1 | 141963 | 3m21s | 0 | 3 | 2 | 4 |
+    | 段階 1 | ファイルをまたぐ影響 | 汎用 | 1 | 131808 | 2m20s | 0 | 0 | 3 | 2 |
+    | 段階 1 | 重複を除く | — | 1 | — | — | 0 | 4 | 17 | 18 |
+
+    - 検証役（高性能）は 22 件のうち 1 件を偽と判定し、除いた（管理の契約の script の層のテストの名前の指摘）。
+    - 修正したもの：
+      - 文言のキーのコメントの検査の後退 2 件
+      - ポートの変数の名前の誤読
+      - 対応表の失敗の文と契約の読み込みの回数
+      - .kts の読み方の統一
+      - 契約の読み込みの失敗の文
+      - 本番のパッケージに置く違反の例の除き方
+      - toString の見分けを JDK の標準の読み方にしたこと
+      - テストの不足
+    - 残したもの 3 件と理由：
+      - 入れ子の判定の 2 つの書き方：判定の処理は 1 か所にあり、一覧と比べる形と 1 つの名前と比べる形は役割が違うため。
+      - コメントの書き方の番号の形の説明：誤って書いた変種の見つけ方は検査の script に書くため。
+      - 本番のコードの読み取りの例のテスト：検査の入力がテストのクラスだけであることで成り立つため。
+    - 機械の検査に移したもの：なし。
+    - 本文の書き手：spec は要点から書き手（汎用）が書いた。コードのコメントは実装役が書いた。
+    - 修正の後に `./gradlew check` と `scripts/ci/check-all.sh` が通った。
 - [ ] **T563-01-16** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T563-01-15
 - [ ] **T563-01-17** pull request の前のレビュー。指摘を修正し、draft を外す。

@@ -174,6 +174,7 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
      * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
+     * @throws IllegalArgumentException 画像の数・バリアントの数・軸の値の数・公開状態と初回表示日時の組が条件に合わない
      */
     Product(@NonNull Snapshot snapshot) {
         this.id = snapshot.id();
@@ -192,6 +193,7 @@ public class Product extends AggregateRoot {
         this.images = snapshot.images().stream().sorted(Comparator.comparingInt(ProductImage::displayOrder)).toList();
         this.variants = snapshot.variants().stream().sorted(Comparator.comparingInt(Variant::displayOrder)).toList();
         this.version = snapshot.version();
+        verifyInvariants();
     }
 
     /**
@@ -612,6 +614,31 @@ public class Product extends AggregateRoot {
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 集約として成り立つ条件を検査する。
+     *
+     * <p>状態を変えるメソッドの検査（業務のエラー）は、操作の前の判定として別にある。ここは、条件に合わない状態を作らせない。
+     * 例外のメッセージには値を入れない。
+     *
+     * @throws IllegalArgumentException 画像が上限を超える、軸のない商品のバリアントが 2 つ以上、軸の値の数が軸の数と違う、
+     *                                  公開で初回表示日時も公開終了もない
+     */
+    private void verifyInvariants() {
+        if (images.size() > MAX_IMAGES) {
+            throw new IllegalArgumentException("画像の数が上限を超える");
+        }
+        if (axes.isEmpty() && variants.size() > 1) {
+            throw new IllegalArgumentException("軸のない商品にバリアントが 2 つ以上ある");
+        }
+        if (variants.stream().anyMatch(variant -> variant.axisValues().size() != axes.size())) {
+            throw new IllegalArgumentException("バリアントの軸の値の数が商品の軸の数と違う");
+        }
+        // 公開で初回表示日時がないのは、公開の時点で公開終了を過ぎていて、表示されなかったときだけ
+        if (status == PublicationStatus.PUBLISHED && firstShownAt == null && publicationPeriod.publishEnd() == null) {
+            throw new IllegalArgumentException("公開中で、初めて表示した日時も公開終了もない");
+        }
+    }
 
     /**
      * バリアントの販売停止を変える。

@@ -18,6 +18,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
+import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
+import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.support.RestoreFailures.RECORDS;
 import static com.ecsite.support.RestoreFailures.assertValueIsHidden;
 import static org.mockito.Mockito.mock;
@@ -37,6 +39,11 @@ class ProductRestoreFailureTest {
      * <p>公開の状態の列に入れる。
      */
     private final String value = RestoreFailures.value();
+
+    /**
+     * 例外の出力に出ないことを確認する、負の表示順
+     */
+    private static final int NEGATIVE_ORDER = -123456;
 
     // ============================== テスト ==============================
 
@@ -76,7 +83,127 @@ class ProductRestoreFailureTest {
         assertValueIsHidden(() -> repository.findSummaries(query, new PageRequest(1, 20)), value);
     }
 
+    @Test
+    @DisplayName("商品品番が書式に合わないとき、例外の出力に値が出ない")
+    void hidesProductCode() {
+        // 準備：品番を壊した商品の行を返す Repository
+        var product = validProduct();
+        product.set(PRODUCT.PRODUCT_CODE, value);
+        var repository = realFactoryRepository(new RestoreFailures().with("product", product));
+
+        // 操作と確認：商品を読むと復元の失敗になり、例外の出力に値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+    }
+
+    @Test
+    @DisplayName("画像の表示順が負のとき、例外の出力に値が出ない")
+    void hidesNegativeImageOrder() {
+        // 準備：表示順が負の画像の行を持つ商品
+        var image = RECORDS.newRecord(PRODUCT_IMAGE.fields());
+        image.set(PRODUCT_IMAGE.ID, UUID.randomUUID());
+        image.set(PRODUCT_IMAGE.PRODUCT_ID, UUID.randomUUID());
+        image.set(PRODUCT_IMAGE.ASSET_ID, UUID.randomUUID());
+        image.set(PRODUCT_IMAGE.DISPLAY_ORDER, NEGATIVE_ORDER);
+        var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("product_image", image));
+
+        // 操作と確認：復元の失敗になり、例外の出力に表示順の値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER));
+    }
+
+    @Test
+    @DisplayName("バリアントの表示順が負のとき、例外の出力に値が出ない")
+    void hidesNegativeVariantOrder() {
+        // 準備：表示順が負のバリアントの行を持つ商品
+        var variant = validVariant(NEGATIVE_ORDER, new String[0]);
+        var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
+
+        // 操作と確認：復元の失敗になり、例外の出力に表示順の値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER));
+    }
+
+    @Test
+    @DisplayName("軸のない商品のバリアントが軸の値を持つとき、例外の出力に値が出ない")
+    void hidesAxisValuesWithoutAxes() {
+        // 準備：軸の値の数が商品の軸の数と合わないバリアントの行を持つ商品
+        var variant = validVariant(1, new String[]{value});
+        var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
+
+        // 操作と確認：復元の失敗になり、例外の出力に値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+    }
+
+    @Test
+    @DisplayName("バリアント品番が書式に合わないとき、例外の出力に値が出ない")
+    void hidesVariantCode() {
+        // 準備：品番を壊したバリアントの行を持つ商品
+        var variant = validVariant(1, new String[0]);
+        variant.set(VARIANT.VARIANT_CODE, value);
+        var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
+
+        // 操作と確認：復元の失敗になり、例外の出力に値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+    }
+
+    @Test
+    @DisplayName("公開中で初めて表示した日時も公開終了もないとき、例外の出力に値が出ない")
+    void hidesPublishedWithoutFirstShownAt() {
+        // 準備：公開中なのに、初めて表示した日時も公開終了もない商品
+        var product = validProduct();
+        product.set(PRODUCT.STATUS, "PUBLISHED");
+        product.set(PRODUCT.DESCRIPTION, value);
+        var repository = realFactoryRepository(new RestoreFailures().with("product", product));
+
+        // 操作と確認：復元の失敗になり、例外の出力に値が出ない
+        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value);
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 本物の商品ファクトリーを使う Repository を作る。
+     *
+     * @param rows 表ごとの行
+     * @return Repository
+     */
+    private static JooqProductRepository realFactoryRepository(RestoreFailures rows) {
+        return new JooqProductRepository(rows.dsl(), mock(ApplicationEventPublisher.class), new ProductFactory(), Clock.systemUTC());
+    }
+
+    /**
+     * 条件に合う、非公開で軸のない商品の行を作る。
+     *
+     * @return 商品の行
+     */
+    private Record validProduct() {
+        var product = brokenProduct();
+        product.set(PRODUCT.STATUS, "UNPUBLISHED");
+        product.set(PRODUCT.NAME, "商品");
+        product.set(PRODUCT.DESCRIPTION, "");
+        product.set(PRODUCT.TAX_CATEGORY_ID, UUID.randomUUID());
+        product.set(PRODUCT.VERSION, 0L);
+        return product;
+    }
+
+    /**
+     * バリアントの行を作る。
+     *
+     * @param displayOrder 表示順
+     * @param axisValues   軸の値
+     * @return バリアントの行
+     */
+    private static Record validVariant(int displayOrder, String[] axisValues) {
+        var axisValuesField = ProductParts.axisValues(VARIANT.ID);
+        var fields = Stream.concat(Arrays.stream(VARIANT.fields()), Stream.of(axisValuesField)).toArray(Field<?>[]::new);
+        var variant = RECORDS.newRecord(fields);
+        variant.set(VARIANT.ID, UUID.randomUUID());
+        variant.set(VARIANT.PRODUCT_ID, UUID.randomUUID());
+        variant.set(VARIANT.VARIANT_CODE, "PROD-1-A");
+        variant.set(VARIANT.AXIS_KEY, "");
+        variant.set(VARIANT.DISPLAY_ORDER, displayOrder);
+        variant.set(VARIANT.SALES_SUSPENDED, false);
+        variant.set(axisValuesField, axisValues);
+        return variant;
+    }
 
     /**
      * 公開の状態を壊した商品の行を作る。

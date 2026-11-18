@@ -1,6 +1,5 @@
 package com.ecsite.module.catalog.domain.product;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -18,7 +17,6 @@ import java.util.UUID;
 @Getter
 @Accessors(fluent = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@AllArgsConstructor
 @Entity
 public final class ProductImage {
 
@@ -40,6 +38,23 @@ public final class ProductImage {
      * 商品の中の表示順（先頭が代表画像）
      */
     private final int displayOrder;
+
+    /**
+     * コンストラクタ
+     *
+     * @param id           画像 ID
+     * @param assetId      メディアモジュールのアセット ID
+     * @param displayOrder 商品の中の表示順
+     * @throws IllegalArgumentException 表示順が負
+     */
+    public ProductImage(@NonNull UUID id, @NonNull UUID assetId, int displayOrder) {
+        if (displayOrder < 0) {
+            throw new IllegalArgumentException("表示順は 0 以上にする");
+        }
+        this.id = id;
+        this.assetId = assetId;
+        this.displayOrder = displayOrder;
+    }
 
     /**
      * 表示順を変えた画像を返す。

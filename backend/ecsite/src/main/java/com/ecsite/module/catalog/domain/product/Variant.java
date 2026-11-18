@@ -72,9 +72,13 @@ public final class Variant {
      * @param displayOrder   表示順
      * @param salesSuspended 販売停止
      * @param imageId        指定した画像。なければ null
+     * @throws IllegalArgumentException 表示順が負
      */
     public Variant(@NonNull UUID id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues, int displayOrder,
                    boolean salesSuspended, @Nullable UUID imageId) {
+        if (displayOrder < 0) {
+            throw new IllegalArgumentException("表示順は 0 以上にする");
+        }
         this.id = id;
         this.variantCode = variantCode;
         this.axisValues = List.copyOf(axisValues);

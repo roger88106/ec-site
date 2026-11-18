@@ -141,6 +141,16 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 
 確認方法：自動（契約のテスト）、判定の重複はレビュー
 
+### 不変条件はコンストラクターで検査する
+
+- 値オブジェクト・entity・集約ルートの不変条件は、作るときと復元するときに共通のコンストラクターで検査する。
+- ファクトリーメソッドに残すのは、コンストラクターを呼ぶ前の前処理（正規化、計算、解析）と、作り方によって違う規則だけにする。例：在庫の調整の「運営者は注文に由来する理由を選べない」「理由が『その他』ならメモが必須」は、運営者の調整だけの規則なので、ファクトリーメソッドに残す。
+- 復元で不変条件に違反したときは、復元のエラーにする（復元の処理を `RestoreGuard.restore` の中で行う）。例外のメッセージとログに DB の値を含めない。
+
+理由：ファクトリーメソッドだけで検査すると、公開のコンストラクターから検査を通らないインスタンスを作れ、DB の値が条件に違反していても読み込みで検出できないため。
+
+確認方法：レビュー
+
 ### エラーは `XxxErrorCode` と `BusinessException`
 
 - 業務のエラーは、モジュールごとの `XxxErrorCode`（`ErrorCodeProvider` の enum）で表し、`BusinessException.of(...)` で投げる。定数は種類（`ErrorType`）と、いつ起きるかの Javadoc を持つ。
@@ -227,9 +237,9 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 ### entity と集約の同一性
 
-entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。
+entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。entity と集約は record にせず、class にする。
 
-理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。
+理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。record には Lombok の `@EqualsAndHashCode` を付けられず、record の `equals` は全ての項目で比べるため、entity と集約は class にする。
 
 確認方法：レビュー
 

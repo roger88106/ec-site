@@ -499,6 +499,15 @@ class InventoryApiTest {
         }
 
         @Test
+        @DisplayName("商品の指定に空の要素があれば 400")
+        void rejectsNullProductId() throws Exception {
+            // 操作と確認：先頭の要素が空（null になる）なら、INVALID_REQUEST
+            mockMvc.perform(get(BASE + "/stock-summaries").param("productIds", "," + productId))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("商品を指定しなければ 400")
         void requiresProductIds() throws Exception {
             // 操作と確認：INVALID_REQUEST

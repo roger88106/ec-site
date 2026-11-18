@@ -12,6 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,8 @@ import java.util.UUID;
 import static com.ecsite.module.catalog.presentation.ProductRequests.BASE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -317,6 +320,21 @@ class ProductVariantApiTest {
         }
 
         @Test
+        @DisplayName("軸の値の要素が null なら 400")
+        void rejectsNullAxisValue() throws Exception {
+            // 準備：軸のない商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            mockMvc.perform(post(BASE + "/" + id + "/variants")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"variantCode": "V1", "axisValues": [null], "version": 0}"""))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("古いバージョンで登録すると 409")
         void rejectsVersionMismatch() throws Exception {
             // 準備：バリアントを 1 つ持ち、バージョンが 1 の商品
@@ -407,6 +425,22 @@ class ProductVariantApiTest {
 
             // 操作と確認：リクエストの誤りで拒否される
             products.reorderVariants(id, 1)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
+        @DisplayName("要素が null の並びは 400")
+        void rejectsNullElement() throws Exception {
+            // 準備：軸がなく、バリアントを 1 つ持つ商品（バージョン 1）
+            var id = products.product(PRODUCT_CODE);
+            products.variantId(id, "V1", 0);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            mockMvc.perform(put(BASE + "/" + id + "/variants/order")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"variantIds": [null], "version": 1}"""))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }

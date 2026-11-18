@@ -630,6 +630,18 @@ class CategoryApiTest {
         }
 
         @Test
+        @DisplayName("要素が null の並びは 400")
+        void rejectsNullElement() throws Exception {
+            // 操作と確認：リクエストの検証で 400
+            mockMvc.perform(put(BASE + "/order")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"parentId": null, "categoryIds": [null]}"""))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("兄弟が足りずに拒否したとき、並びは変わらない")
         void keepsOrderWhenSiblingMissing() throws Exception {
             // 準備：最上位の A・B

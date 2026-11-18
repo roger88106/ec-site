@@ -449,6 +449,22 @@ class ProductImageApiTest {
         }
 
         @Test
+        @DisplayName("並べ替えで、要素が null の並びは 400")
+        void rejectsNullElement() throws Exception {
+            // 準備：画像 1 枚の商品（バージョン 2）
+            var productId = productWithVariant();
+            registerImages(productId, 1);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            mockMvc.perform(put(BASE + "/" + productId + "/images/order")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"imageIds": [null], "version": 2}"""))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("並べ替えると、商品のバージョンが上がる")
         void incrementsVersion() throws Exception {
             // 準備：画像 3 枚の商品（バージョン 4）

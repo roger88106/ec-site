@@ -230,6 +230,18 @@ class TaxCategoryApiTest {
         }
 
         @Test
+        @DisplayName("要素が null の一覧は 400")
+        void rejectsNullElement() throws Exception {
+            // 準備：税率のない税区分
+            var id = createdCategoryId(NAME);
+
+            // 操作と確認：入力の形の誤りとして、エラーコード INVALID_REQUEST が返る
+            replaceRates(id, 0, "[null]")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("AC-2 開始が終了より後の税率は 400")
         void rejectsInvalidPeriod() throws Exception {
             // 準備：税率のない税区分

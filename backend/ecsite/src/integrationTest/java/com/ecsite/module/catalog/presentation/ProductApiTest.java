@@ -340,6 +340,30 @@ class ProductApiTest {
         }
 
         @Test
+        @DisplayName("所属カテゴリの要素が null なら 400")
+        void rejectsNullCategoryId() throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create("""
+                            {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
+                             "priceExclTax": %d, "categoryIds": [null]}"""
+                            .formatted(PRODUCT_CODE, NAME, standard, PRICE_EXCL_TAX))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
+        @DisplayName("軸の要素が null なら 400")
+        void rejectsNullAxis() throws Exception {
+            // 操作と確認：リクエストの誤りで拒否される
+            products.create("""
+                            {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
+                             "priceExclTax": %d, "axes": [null]}"""
+                            .formatted(PRODUCT_CODE, NAME, standard, PRICE_EXCL_TAX))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("AC-14 商品品番が重複すれば 409")
         void rejectsDuplicatedProductCode() throws Exception {
             // 準備：同じ品番の商品
@@ -754,6 +778,20 @@ class ProductApiTest {
                     .andExpect(jsonPath("$.name").value(ProductRequests.DEFAULT_NAME))
                     .andExpect(jsonPath("$.categoryIds").isEmpty())
                     .andExpect(jsonPath("$.version").value(0));
+        }
+
+        @Test
+        @DisplayName("所属カテゴリの要素が null なら 400")
+        void rejectsNullCategoryIdOnUpdate() throws Exception {
+            // 準備：所属カテゴリのない商品
+            var id = products.product(PRODUCT_CODE);
+
+            // 操作と確認：リクエストの誤りで拒否される
+            products.update(id, """
+                            {"name": "%s", "description": "", "taxCategoryId": "%s", "priceExclTax": %d,
+                             "categoryIds": [null], "version": 0}""".formatted(NEW_NAME, standard, NEW_PRICE_EXCL_TAX))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test

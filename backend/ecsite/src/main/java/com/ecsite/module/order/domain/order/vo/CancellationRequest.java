@@ -22,6 +22,28 @@ public record CancellationRequest(Instant requestedAt, @Nullable String reason, 
                                   @Nullable Instant decidedAt, @Nullable Operator decidedBy) {
 
     /**
+     * コンストラクタ。
+     *
+     * <p>申請中なら決定の日時と決定者がなく、承認・却下なら決定の日時があることを確認する。
+     * 記録を始める前の判断は決定者がないので、承認・却下で決定者がないことは許す。
+     *
+     * @param requestedAt 申請日時
+     * @param reason      理由
+     * @param result      結果
+     * @param decidedAt   承認・却下した日時
+     * @param decidedBy   承認・却下した運営者。申請中と、記録を始める前の判断は null
+     */
+    public CancellationRequest {
+        if (result == Result.PENDING) {
+            if (decidedAt != null || decidedBy != null) {
+                throw new IllegalArgumentException("申請中の申請に、決定の日時か決定者がある");
+            }
+        } else if (decidedAt == null) {
+            throw new IllegalArgumentException("承認・却下した申請に、決定の日時がない");
+        }
+    }
+
+    /**
      * 申請の結果
      */
     public enum Result {

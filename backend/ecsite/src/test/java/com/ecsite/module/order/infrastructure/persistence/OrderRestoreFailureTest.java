@@ -160,6 +160,17 @@ class OrderRestoreFailureTest {
         order.setItemsTotal(0L);
         order.setShippingFee(0L);
         order.setTotalAmount(0L);
+
+        // お届け先
+        order.setRecipientName("山田 太郎");
+        order.setPostalCode("1000001");
+        order.setPrefectureCode("13");
+        order.setPrefectureName("東京都");
+        order.setMunicipalityCode("13101");
+        order.setMunicipalityName("千代田区");
+        order.setAddress("千代田 1-1");
+        order.setPhone("0312345678");
+
         order.setVersion(0L);
         return order;
     }

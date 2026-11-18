@@ -441,15 +441,7 @@ public class CatalogTestData {
          * 軸の値を指定してバリアントを登録する。
          */
         public TestProduct variant(String... axisValues) throws Exception {
-            var values = Arrays.stream(axisValues).map("\"%s\""::formatted).collect(Collectors.joining(", "));
-            var code = "%s-%d".formatted(productCode, variantIds.size() + 1);
-            variantIds.add(createdId(post("/api/admin/products/" + id + "/variants")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""
-                            {"variantCode": "%s", "axisValues": [%s], "version": %d}""".formatted(code, values, version))));
-            variantCodes.add(code);
-            version++;
-            return this;
+            return variantCoded("%s-%d".formatted(productCode, variantIds.size() + 1), axisValues);
         }
 
         /**

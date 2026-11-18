@@ -264,11 +264,11 @@ spec の番号の検査の例：
   - 依存：T563-01-02
   - 範囲：`scripts/ci/config/local-ports.mjs`、`scripts/ci/frontend/message-comments.mjs`
   - 確認方法：`node --test`、`node scripts/ci/config/local-ports.mjs`、`node scripts/ci/frontend/message-comments.mjs`
-- [ ] **T563-01-04** [テスト] spec の番号の検査のテストを書き、レッドを確認する（DC-563-3〜6、DC-563-15）。
+- [x] **T563-01-04** [テスト] spec の番号の検査のテストを書き、レッドを確認する（DC-563-3〜6、DC-563-15）。
   - 依存：T563-01-01
   - 範囲：`scripts/ci/spec/spec-numbers.test.mjs`
   - 確認方法：`node --test` が失敗する。commit は次のタスクと同じにする
-- [ ] **T563-01-05** T563-01-04 のテストが通る実装を書き、先頭のコメントを修正する（DC-563-3〜6、DC-563-16）。
+- [x] **T563-01-05** T563-01-04 のテストが通る実装を書き、先頭のコメントを修正する（DC-563-3〜6、DC-563-16）。
   - 依存：T563-01-04
   - 範囲：`scripts/ci/spec/spec-numbers.mjs`、`scripts/shared/source/strip-comments.mjs`、`scripts/ci/lib/source/comment-text.mjs` とそのテスト
   - 確認方法：`node --test`、`node scripts/ci/spec/spec-numbers.mjs`

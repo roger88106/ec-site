@@ -300,11 +300,11 @@ spec の番号の検査の例：
   - 依存：T563-01-11
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/ConfigurationPropertiesTest.java`
   - 確認方法：`./gradlew test --tests '*ConfigurationPropertiesTest'` が通る。record のコンパイラが作る `toString` と利用者が書いた `toString` を見分ける方法が見つからなければ、作業を止めて報告する
-- [ ] **T563-01-13** [テスト] 契約の読み込みのテスト（重複したキー、`$ref`）を書き、レッドを確認する（DC-563-13、DC-563-14、DC-563-15）。
+- [x] **T563-01-13** [テスト] 契約の読み込みのテスト（重複したキー、`$ref`）を書き、レッドを確認する（DC-563-13、DC-563-14、DC-563-15）。
   - 依存：T563-01-01
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/config/security/OpenApiOperationsTest.java`
   - 確認方法：`./gradlew test --tests '*OpenApiOperationsTest'` が失敗する。commit は次のタスクと同じにする
-- [ ] **T563-01-14** T563-01-13 のテストが通る実装を書く（DC-563-13、DC-563-14）。
+- [x] **T563-01-14** T563-01-13 のテストが通る実装を書く（DC-563-13、DC-563-14）。
   - 依存：T563-01-13
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/config/security/OpenApiOperations.java`
   - 確認方法：`./gradlew test --tests '*OpenApiOperationsTest'` が通る

@@ -1,13 +1,17 @@
 package com.ecsite.config.security;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ByteArrayResource;
 
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
@@ -116,7 +120,7 @@ class OpenApiOperationsTest {
         @Test
         @DisplayName("パスの下の OpenAPI の Path Item の項目（パス共通の parameters など）と x- で始まる拡張は、操作として読まずに認める")
         void acceptsPathItemFields() {
-            // 操作：Path Item の全ての項目と拡張を置いた契約を読む
+            // 操作：$ref の外の Path Item の全ての項目と拡張を置いた契約を読む
             var loaded = load(pathItem("""
                     summary: カテゴリ
                         description: カテゴリの一覧
@@ -125,7 +129,6 @@ class OpenApiOperationsTest {
                         parameters:
                           - name: q
                             in: query
-                        $ref: '#/components/pathItems/Categories'
                         x-note: 補足
                         get:
                           operationId: getCategories"""));
@@ -133,6 +136,128 @@ class OpenApiOperationsTest {
             // 確認：読み込みに成功し、操作だけが見つかる
             assertThat(loaded.find("GET", "/api/admin/categories")).hasValue("getCategories");
         }
+
+        @Test
+        @DisplayName("パスの下に $ref があると、参照先の操作を読まないので、契約のファイル、パス、キーを示して読み込みに失敗する")
+        void rejectsPathItemRef() {
+            // 操作と確認：読み込みに失敗し、知らせに契約のファイル・パス・キーがある
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> load(pathItem("$ref: './paths/categories.yaml'")))
+                    .withMessageContainingAll("admin.yaml", "/categories", "$ref");
+        }
+
+        @Test
+        @DisplayName("パス共通の parameters の中の $ref は、読み込みに失敗しない")
+        void acceptsRefInPathParameters() {
+            // 操作：パス共通の parameters に $ref を置いた契約を読む
+            var loaded = load(pathItem("""
+                    parameters:
+                          - $ref: '#/components/parameters/CategoryId'
+                        get:
+                          operationId: getCategories"""));
+
+            // 確認：読み込みに成功し、操作が見つかる
+            assertThat(loaded.find("GET", "/api/admin/categories")).hasValue("getCategories");
+        }
+
+        @Test
+        @DisplayName("操作の応答の $ref は、読み込みに失敗しない")
+        void acceptsRefInOperation() {
+            // 操作：操作の応答に $ref を置いた契約を読む
+            var loaded = load(pathItem("""
+                    post:
+                          operationId: postCategory
+                          responses:
+                            '201':
+                              $ref: '#/components/responses/Created'"""));
+
+            // 確認：読み込みに成功し、操作が見つかる
+            assertThat(loaded.find("POST", "/api/admin/categories")).hasValue("postCategory");
+        }
+    }
+
+    @Nested
+    @DisplayName("重複したキーの検証")
+    class DuplicateKeys {
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("com.ecsite.config.security.OpenApiOperationsTest#duplicateKeySpecs")
+        @DisplayName("契約のどこかに重複したキーがあると、後のキーが前のキーを黙って上書きするので、契約のファイルとキーを示して読み込みに失敗する")
+        void rejectsDuplicateKey(String spec, String key) {
+            // 操作と確認：読み込みに失敗し、知らせに契約のファイルとキーがある
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> load(spec))
+                    .withMessageContainingAll("admin.yaml", "重複したキー", "duplicate key " + key);
+        }
+    }
+
+    // ============================== テストのデータ ==============================
+
+    /**
+     * 重複したキーのある契約
+     *
+     * @return 契約（名前は場合）と、重複したキー
+     */
+    static Stream<Arguments> duplicateKeySpecs() {
+        return Stream.of(
+                Arguments.of(Named.of("パスの下に get が 2 つ", pathItem("""
+                        get:
+                              operationId: getCategories
+                            get:
+                              operationId: getCategories2""")), "get"),
+                Arguments.of(Named.of("同じパスが 2 つ", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /categories:
+                            get:
+                              operationId: getCategories
+                          /categories:
+                            post:
+                              operationId: postCategory
+                        """), "/categories"),
+                Arguments.of(Named.of("操作の中に x-required-permission が 2 つ", pathItem("""
+                        get:
+                              operationId: getCategories
+                              x-required-permission: product.read
+                              x-required-permission: product.write""")), "x-required-permission"),
+                Arguments.of(Named.of("引用符だけが違う同じパス", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /carts/{cartId}:
+                            get:
+                              operationId: getCart
+                          '/carts/{cartId}':
+                            delete:
+                              operationId: deleteCart
+                        """), "/carts/{cartId}"),
+                Arguments.of(Named.of("最上位に paths が 2 つ", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /categories:
+                            get:
+                              operationId: getCategories
+                        paths:
+                          /products:
+                            get:
+                              operationId: getProducts
+                        """), "paths"),
+                Arguments.of(Named.of("components.schemas の下に同じ名前のスキーマが 2 つ", """
+                        servers:
+                          - url: /api/admin
+                        paths:
+                          /categories:
+                            get:
+                              operationId: getCategories
+                        components:
+                          schemas:
+                            Category:
+                              type: object
+                            Category:
+                              type: string
+                        """), "Category"));
     }
 
     // ============================== 準備の補助 ==============================

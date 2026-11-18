@@ -9,7 +9,9 @@ import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.DuplicateKeyException;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.error.Mark;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,9 +45,9 @@ final class OpenApiOperations<T> {
     /**
      * OpenAPI の Path Item の項目のうち、操作でないもの
      *
-     * <p>拡張（{@code x-} で始まるもの）も認める。
+     * <p>拡張（{@code x-} で始まるもの）も認める。{@code $ref} は、参照先の操作を読まないので認めない。
      */
-    private static final Set<String> PATH_ITEM_FIELDS = Set.of("summary", "description", "servers", "parameters", "$ref");
+    private static final Set<String> PATH_ITEM_FIELDS = Set.of("summary", "description", "servers", "parameters");
 
     /**
      * OpenAPI の拡張のキーの接頭辞
@@ -72,7 +74,8 @@ final class OpenApiOperations<T> {
     /**
      * 契約を読み込む。
      *
-     * <p>パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキーがあれば、起動を止める。
+     * <p>パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキー（{@code $ref} を含む）があれば、起動を止める。
+     * 契約のどこかに重複したキーがあっても、後のキーが前のキーを黙って上書きして操作を読み落とすので、起動を止める。
      *
      * @param resource 契約（{@code admin.yaml} など）
      * @param valueOf  操作の名前（{@code GET /products} の形）と操作の定義から、操作ごとの値を作る。起動を止めるときは例外を投げる
@@ -99,7 +102,7 @@ final class OpenApiOperations<T> {
     // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static <T> OpenApiOperations<T> parse(String contract, InputStream in, BiFunction<String, Map<String, Object>, T> valueOf) {
-        Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
+        Map<String, Object> root = loadYaml(contract, in);
         var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約には servers がある");
         var basePath = (String) servers.getFirst().get("url");
         var paths = (Map<String, Map<String, Object>>) Objects.requireNonNull(root.get("paths"), "OpenAPI の契約には paths がある");
@@ -118,6 +121,34 @@ final class OpenApiOperations<T> {
         }));
         operations.sort(Comparator.comparing(Operation::pattern, PathPattern.SPECIFICITY_COMPARATOR));
         return new OpenApiOperations<>(List.copyOf(operations));
+    }
+
+    /**
+     * 契約の YAML を読む。重複したキーがあれば、起動を止める。
+     *
+     * @param contract 契約のファイル（例外のメッセージに使う）
+     * @param in       契約の内容
+     * @return 契約の最上位の Map
+     */
+    private static Map<String, Object> loadYaml(String contract, InputStream in) {
+        var options = new LoaderOptions();
+        options.setAllowDuplicateKeys(false);
+        try {
+            return new Yaml(new SafeConstructor(options)).load(in);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException(
+                    "OpenAPI の契約 " + contract + " に重複したキーがある：" + e.getProblem() + "（" + position(e.getProblemMark()) + "）", e);
+        }
+    }
+
+    /**
+     * YAML の位置を、行と列（1 から数える）で表す。
+     *
+     * @param mark YAML の位置
+     * @return {@code 3 行 5 列} の形
+     */
+    private static String position(Mark mark) {
+        return (mark.getLine() + 1) + " 行 " + (mark.getColumn() + 1) + " 列";
     }
 
     /**

@@ -5,6 +5,7 @@ import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -36,6 +37,11 @@ public class PaymentTestData {
     private final TestPaymentGateway gateway;
 
     /**
+     * 支払の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    private final TransactionTemplate transactionTemplate;
+
+    /**
      * 支払のバージョンを読むリポジトリ
      *
      * <p>バージョンを読まないときは null。
@@ -52,21 +58,25 @@ public class PaymentTestData {
     /**
      * コンストラクタ
      *
-     * @param paymentApi 支払の API
-     * @param gateway    テスト用の決済サービス
+     * @param paymentApi          支払の API
+     * @param gateway             テスト用の決済サービス
+     * @param transactionTemplate 支払の作成を包むトランザクションのテンプレート
      */
-    public PaymentTestData(PaymentApi paymentApi, TestPaymentGateway gateway) {
-        this(paymentApi, gateway, null);
+    public PaymentTestData(PaymentApi paymentApi, TestPaymentGateway gateway, TransactionTemplate transactionTemplate) {
+        this(paymentApi, gateway, null, transactionTemplate);
     }
 
     /**
      * コンストラクタ（支払のバージョンを読むとき）
      *
-     * @param paymentApi        支払の API
-     * @param gateway           テスト用の決済サービス
-     * @param paymentRepository 支払のバージョンを読むリポジトリ
+     * @param paymentApi          支払の API
+     * @param gateway             テスト用の決済サービス
+     * @param paymentRepository   支払のバージョンを読むリポジトリ
+     * @param transactionTemplate 支払の作成を包むトランザクションのテンプレート
      */
-    public PaymentTestData(PaymentApi paymentApi, TestPaymentGateway gateway, PaymentRepository paymentRepository) {
+    public PaymentTestData(PaymentApi paymentApi, TestPaymentGateway gateway, PaymentRepository paymentRepository,
+                           TransactionTemplate transactionTemplate) {
+        this.transactionTemplate = transactionTemplate;
         this.paymentApi = paymentApi;
         this.gateway = gateway;
         this.paymentRepository = paymentRepository;
@@ -80,7 +90,7 @@ public class PaymentTestData {
      */
     public UUID created(Instant orderedAt) {
         var orderId = UUID.randomUUID();
-        paymentApi.create(orderId, AMOUNT, orderedAt);
+        transactionTemplate.executeWithoutResult(status -> paymentApi.create(orderId, AMOUNT, orderedAt));
         return orderId;
     }
 

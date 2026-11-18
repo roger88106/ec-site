@@ -118,7 +118,7 @@ class PaymentApiTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository, transactionTemplate);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -135,7 +135,7 @@ class PaymentApiTest {
             var orderId = UUID.randomUUID();
 
             // 操作：支払を作る
-            paymentApi.create(orderId, AMOUNT, ORDERED_AT);
+            create(orderId);
 
             // 確認：未払いで、期限は注文日時の 30 分後
             assertThat(paymentApi.find(List.of(orderId))).containsExactly(
@@ -149,8 +149,8 @@ class PaymentApiTest {
             var orderId = UUID.randomUUID();
 
             // 操作：同じ注文で 2 回作る
-            paymentApi.create(orderId, AMOUNT, ORDERED_AT);
-            paymentApi.create(orderId, AMOUNT, ORDERED_AT);
+            create(orderId);
+            create(orderId);
 
             // 確認：支払の行が 1 つで、読める支払も 1 つ
             assertThat(dsl.fetchCount(PAYMENT_, PAYMENT_.ORDER_ID.eq(orderId))).isEqualTo(1);
@@ -512,5 +512,14 @@ class PaymentApiTest {
      */
     private List<PaymentExpired> expiredEvents(UUID orderId) {
         return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(orderId)).toList();
+    }
+
+    /**
+     * 支払を、トランザクションの中で作る（作成は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId 注文 ID
+     */
+    private void create(UUID orderId) {
+        transactionTemplate.executeWithoutResult(status -> paymentApi.create(orderId, AMOUNT, ORDERED_AT));
     }
 }

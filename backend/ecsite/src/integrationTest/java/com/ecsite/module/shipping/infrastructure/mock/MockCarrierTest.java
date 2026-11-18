@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
@@ -58,6 +59,12 @@ class MockCarrierTest {
 
     @Autowired
     ShippingApi shippingApi;
+
+    /**
+     * 出荷の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     @Autowired
     MockCarrier mockCarrier;
@@ -352,7 +359,7 @@ class MockCarrierTest {
     private Created shipped(ShipmentSummary.Carrier carrier) {
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(orderId, carrier, trackingNumber, SHIPPED_AT);
+        createShipment(orderId, carrier, trackingNumber, SHIPPED_AT);
         return new Created(orderId, trackingNumber);
     }
 
@@ -377,5 +384,17 @@ class MockCarrierTest {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body("status=" + status)
                 .exchange((request, response) -> response.getStatusCode().value());
+    }
+
+    /**
+     * 出荷を、トランザクションの中で作る（出荷の作成は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId        注文 ID
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @param shippedAt      出荷日時
+     */
+    private void createShipment(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+        transactionTemplate.executeWithoutResult(status -> shippingApi.create(orderId, carrier, trackingNumber, shippedAt));
     }
 }

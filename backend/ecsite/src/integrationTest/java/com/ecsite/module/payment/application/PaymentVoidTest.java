@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -126,9 +127,15 @@ class PaymentVoidTest {
      */
     PaymentTestData payments;
 
+    /**
+     * 支払の操作を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository, transactionTemplate);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -146,7 +153,7 @@ class PaymentVoidTest {
             var pageId = payments.pay(orderId);
 
             // 操作：注文の支払を取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：この支払の与信が取り消された
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
@@ -163,7 +170,7 @@ class PaymentVoidTest {
             gateway.onRefundOrVoid(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
 
             // 操作：注文の支払を取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：与信の取消済みになり、取消の呼び出しはトランザクションの外の 1 回
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
@@ -177,7 +184,7 @@ class PaymentVoidTest {
             var orderId = payments.created(ORDERED_AT);
 
             // 操作：注文の支払を取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：支払なしになり、決済サービスの与信の取消を呼ばない
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
@@ -217,7 +224,7 @@ class PaymentVoidTest {
             gateway.failNextVoids(1);
 
             // 操作：注文の支払を取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：与信の取消の依頼の処理が失敗し、与信の取消待ちのまま
             asyncEvents.awaitFailed(PaymentRequests.voidAuthorization(dsl, orderId));
@@ -232,7 +239,7 @@ class PaymentVoidTest {
             var orderId = payments.created(ORDERED_AT);
             var authorizationRef = gateway.authorizationRefOf(payments.pay(orderId));
             gateway.failNextVoids(1);
-            paymentApi.cancel(orderId);
+            cancel(orderId);
             asyncEvents.awaitFailed(PaymentRequests.voidAuthorization(dsl, orderId));
 
             // 操作：再発行のジョブと同じく、発行から 5 分より前のこのテストのイベントを再発行する
@@ -250,11 +257,11 @@ class PaymentVoidTest {
             // 準備：与信が取消済みの支払
             var orderId = payments.created(ORDERED_AT);
             var authorizationRef = gateway.authorizationRefOf(payments.pay(orderId));
-            paymentApi.cancel(orderId);
+            cancel(orderId);
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
 
             // 操作：もう一度取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：取消は 1 回のまま、取消済みのまま
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
@@ -267,13 +274,13 @@ class PaymentVoidTest {
         void keepsVersionOnRepeatedCancel() {
             // 準備：与信が取消済みの支払と、そのときの支払のバージョン
             var orderId = payments.authorized(ORDERED_AT);
-            paymentApi.cancel(orderId);
+            cancel(orderId);
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             var versionAfterVoid = payments.versionOf(orderId);
 
             // 操作：もう一度取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：リポジトリから再取得した支払のバージョンが同じ
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
@@ -285,7 +292,7 @@ class PaymentVoidTest {
         void keepsVersionOnRepeatedMarkVoided() {
             // 準備：与信が取消済みの支払と、そのときの支払のバージョン
             var orderId = payments.authorized(ORDERED_AT);
-            paymentApi.cancel(orderId);
+            cancel(orderId);
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
@@ -309,7 +316,7 @@ class PaymentVoidTest {
             var orderId = capturedWithLostResponse();
 
             // 操作：注文の支払を取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：返金済みになり、総額が 1 回だけ返金された
             awaitStatus(orderId, PaymentSummary.Status.REFUNDED);
@@ -325,7 +332,7 @@ class PaymentVoidTest {
             var orderId = capturedWithLostResponse();
 
             // 操作：注文の支払を取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：返金済みになり、決済サービスで与信を取り消していない
             awaitStatus(orderId, PaymentSummary.Status.REFUNDED);
@@ -349,7 +356,7 @@ class PaymentVoidTest {
             });
 
             // 操作：注文の支払を取り消す
-            paymentApi.cancel(orderId);
+            cancel(orderId);
 
             // 確認：重複した依頼を処理し、返金は 1 回で、与信は取り消さない
             awaitStatus(orderId, PaymentSummary.Status.REFUNDED);
@@ -366,7 +373,7 @@ class PaymentVoidTest {
             // 準備：決済サービスが確定した後、確定を反映する前に、キャンセルと与信の取消の処理を終える
             var orderId = payments.authorized(ORDERED_AT);
             gateway.duringNextCapture(() -> {
-                paymentApi.cancel(orderId);
+                cancel(orderId);
                 awaitStatus(orderId, PaymentSummary.Status.REFUNDED);
             });
 
@@ -406,5 +413,14 @@ class PaymentVoidTest {
         assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         return orderId;
+    }
+
+    /**
+     * 支払の取消を、トランザクションの中で呼ぶ（取消は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId 注文 ID
+     */
+    private void cancel(UUID orderId) {
+        transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId));
     }
 }

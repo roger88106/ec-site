@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -47,6 +48,12 @@ class UnconnectedCarrierTrackingTest {
     @Autowired
     ShippingApi shippingApi;
 
+    /**
+     * 出荷の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
     @Autowired
     AsyncEvents asyncEvents;
 
@@ -65,7 +72,7 @@ class UnconnectedCarrierTrackingTest {
     void completesTrackingRequest() {
         // 操作：出荷を登録する
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
+        createShipment(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
 
         // 確認：依頼の処理が終わる（未完了なら待つ処理が上限の時間で失敗する）
         asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of(trackingNumber)));
@@ -80,12 +87,26 @@ class UnconnectedCarrierTrackingTest {
         // 準備：出荷を登録し、追跡の開始の依頼が処理されるまで待つ
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
+        createShipment(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
         asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of(trackingNumber)));
 
         // 操作と確認：出荷があり、出荷済みのまま
         assertThat(shippingApi.find(List.of(orderId)))
                 .singleElement()
                 .satisfies(summary -> assertThat(summary.status()).isEqualTo(ShipmentSummary.Status.SHIPPED));
+    }
+
+    // ============================== 準備の補助 ==============================
+
+    /**
+     * 出荷を、トランザクションの中で作る（出荷の作成は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId        注文 ID
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @param shippedAt      出荷日時
+     */
+    private void createShipment(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+        transactionTemplate.executeWithoutResult(status -> shippingApi.create(orderId, carrier, trackingNumber, shippedAt));
     }
 }

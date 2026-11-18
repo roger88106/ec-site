@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -181,7 +182,7 @@ public class CartService {
      * @param variantIds 除くバリアントの ID
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds) {
         var now = clock.instant();
         cartRepository.findById(cartId).ifPresent(cart -> {

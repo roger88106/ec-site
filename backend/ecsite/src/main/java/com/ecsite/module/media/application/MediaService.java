@@ -105,6 +105,7 @@ public class MediaService {
      * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
+    @Transactional(propagation = Propagation.NEVER)
     public UUID prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
         // 受付の大きさの確認
         var uploadKey = AssetKeys.upload(scope, uploadId);
@@ -147,6 +148,7 @@ public class MediaService {
      *
      * @param assetId 用意した画像のアセット ID
      */
+    @Transactional(propagation = Propagation.NEVER)
     public void discardImage(@NonNull UUID assetId) {
         var storageKey = storageKey(assetId);
         // 呼んだ側の元の失敗を隠さないため、消すのに失敗しても例外を投げない

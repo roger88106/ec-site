@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -64,6 +65,12 @@ class ShippingApiTest {
     @Autowired
     ShippingApi shippingApi;
 
+    /**
+     * 出荷の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
     @Autowired
     ShipmentRepository repository;
 
@@ -92,7 +99,7 @@ class ShippingApiTest {
         void createsShipment() {
             // 操作：空白とハイフンを含む送り状番号で出荷を作る
             var orderId = UUID.randomUUID();
-            shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, TRACKING_NUMBER_INPUT, SHIPPED_AT);
+            createShipment(orderId, ShipmentSummary.Carrier.SAGAWA, TRACKING_NUMBER_INPUT, SHIPPED_AT);
 
             // 確認：読み出した出荷の全ての項目
             assertThat(shippingApi.find(List.of(orderId))).containsExactly(new ShipmentSummary(
@@ -104,11 +111,11 @@ class ShippingApiTest {
         void rejectsSecondShipment() {
             // 準備：出荷を作る
             var orderId = UUID.randomUUID();
-            shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, "111122223333", SHIPPED_AT);
+            createShipment(orderId, ShipmentSummary.Carrier.YAMATO, "111122223333", SHIPPED_AT);
 
             // 操作と確認：業務のエラー SHIPMENT_ALREADY_EXISTS で拒否される
             assertBusinessError(
-                    () -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "444455556666", SHIPPED_AT),
+                    () -> createShipment(orderId, ShipmentSummary.Carrier.SAGAWA, "444455556666", SHIPPED_AT),
                     ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
         }
 
@@ -117,11 +124,11 @@ class ShippingApiTest {
         void keepsFirstShipment() {
             // 準備：出荷を作る
             var orderId = UUID.randomUUID();
-            shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, "111122224444", SHIPPED_AT);
+            createShipment(orderId, ShipmentSummary.Carrier.YAMATO, "111122224444", SHIPPED_AT);
 
             // 操作：別の配送業者で、もう一度作ろうとする（業務のエラーになる）
             assertBusinessError(
-                    () -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "444455557777", SHIPPED_AT),
+                    () -> createShipment(orderId, ShipmentSummary.Carrier.SAGAWA, "444455557777", SHIPPED_AT),
                     ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
 
             // 確認：行は 1 つで、最初の配送業者のまま
@@ -136,7 +143,7 @@ class ShippingApiTest {
         void rejectsInvalidTrackingNumber() {
             // 操作と確認：業務のエラー TRACKING_NUMBER_INVALID で拒否される
             var orderId = UUID.randomUUID();
-            assertBusinessError(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, "ABC", SHIPPED_AT),
+            assertBusinessError(() -> createShipment(orderId, ShipmentSummary.Carrier.YAMATO, "ABC", SHIPPED_AT),
                     ShippingErrorCode.TRACKING_NUMBER_INVALID);
 
             // 確認：この注文の出荷は保存されていない
@@ -154,7 +161,7 @@ class ShippingApiTest {
             // 準備：出荷のある注文と、ない注文
             var shipped = UUID.randomUUID();
             var notShipped = UUID.randomUUID();
-            shippingApi.create(shipped, ShipmentSummary.Carrier.JAPAN_POST, "5555", SHIPPED_AT);
+            createShipment(shipped, ShipmentSummary.Carrier.JAPAN_POST, "5555", SHIPPED_AT);
 
             // 操作と確認：出荷のある注文だけ
             assertThat(shippingApi.find(List.of(shipped, notShipped))).extracting(ShipmentSummary::orderId)
@@ -179,8 +186,8 @@ class ShippingApiTest {
             // 準備：返送と配送中の出荷
             var returned = UUID.randomUUID();
             var inTransit = UUID.randomUUID();
-            shippingApi.create(returned, ShipmentSummary.Carrier.YAMATO, "7771", SHIPPED_AT);
-            shippingApi.create(inTransit, ShipmentSummary.Carrier.YAMATO, "7772", SHIPPED_AT);
+            createShipment(returned, ShipmentSummary.Carrier.YAMATO, "7771", SHIPPED_AT);
+            createShipment(inTransit, ShipmentSummary.Carrier.YAMATO, "7772", SHIPPED_AT);
             advance(returned, DeliveryStatus.RETURNED);
             advance(inTransit, DeliveryStatus.IN_TRANSIT);
 
@@ -193,7 +200,7 @@ class ShippingApiTest {
         void findsReturnedStatus() {
             // 準備：返送の出荷
             var returned = UUID.randomUUID();
-            shippingApi.create(returned, ShipmentSummary.Carrier.YAMATO, "7773", SHIPPED_AT);
+            createShipment(returned, ShipmentSummary.Carrier.YAMATO, "7773", SHIPPED_AT);
             advance(returned, DeliveryStatus.RETURNED);
 
             // 操作と確認：配送状態が返送
@@ -211,7 +218,7 @@ class ShippingApiTest {
         @DisplayName("AC-174 出荷を作ると、物流サービスで、ハイフンを除いた送り状番号の追跡が始まる")
         void startsTracking() {
             // 操作：ハイフンを含む送り状番号で出荷を作る
-            shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, "8881-2223", SHIPPED_AT);
+            createShipment(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, "8881-2223", SHIPPED_AT);
 
             // 確認：追跡の開始の依頼が処理された後、物流サービスで追跡が始まっている
             asyncEvents.awaitPublishedThenHandled(event -> TrackingRequests.isFor(event, List.of("88812223")));
@@ -223,10 +230,10 @@ class ShippingApiTest {
         void doesNotStartTrackingWhenRejected() {
             // 準備：出荷を作る
             var orderId = UUID.randomUUID();
-            shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, "8883-2223", SHIPPED_AT);
+            createShipment(orderId, ShipmentSummary.Carrier.YAMATO, "8883-2223", SHIPPED_AT);
 
             // 操作：同じ注文に、別の送り状番号で出荷を作ろうとする（業務のエラーになる）
-            assertBusinessError(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "8884-5556", SHIPPED_AT),
+            assertBusinessError(() -> createShipment(orderId, ShipmentSummary.Carrier.SAGAWA, "8884-5556", SHIPPED_AT),
                     ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
 
             // 確認：最初の出荷の依頼が処理された後も、作れなかった出荷の追跡は始まっていない
@@ -245,7 +252,7 @@ class ShippingApiTest {
             }).when(tracking).startTracking(any(), eq("88912223"));
 
             // 操作：出荷を作る
-            shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, "8891-2223", SHIPPED_AT);
+            createShipment(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, "8891-2223", SHIPPED_AT);
 
             // 確認：1 回だけ呼ばれ、そのときトランザクションがない
             asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of("88912223")));
@@ -282,5 +289,17 @@ class ShippingApiTest {
         var shipment = repository.findAllByOrderIds(List.of(orderId)).getFirst();
         shipment.advanceTo(status, SHIPPED_AT, SHIPPED_AT);
         repository.updateProgress(List.of(shipment));
+    }
+
+    /**
+     * 出荷を、トランザクションの中で作る（出荷の作成は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId        注文 ID
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @param shippedAt      出荷日時
+     */
+    private void createShipment(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+        transactionTemplate.executeWithoutResult(status -> shippingApi.create(orderId, carrier, trackingNumber, shippedAt));
     }
 }

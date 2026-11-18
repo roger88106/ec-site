@@ -12,6 +12,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -58,6 +60,7 @@ public class PaymentGatewayService {
      * @return 支払画面の URL。支払がない、支払えない（未払いでない、期限の後）なら空
      * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
+    @Transactional(propagation = Propagation.NEVER)
     public Optional<String> pageUrl(@NonNull UUID orderId) {
         // 支払取得
         var payable = queryService.findPayable(orderId);
@@ -93,6 +96,7 @@ public class PaymentGatewayService {
      * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
      * @throws SystemException   決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）。支払は与信済みのまま残る
      */
+    @Transactional(propagation = Propagation.NEVER)
     public void capture(@NonNull UUID orderId) {
         // 支払取得
         var payment = queryService.findForCapture(orderId)

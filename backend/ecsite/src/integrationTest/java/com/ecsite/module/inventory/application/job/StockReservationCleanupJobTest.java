@@ -15,11 +15,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -80,6 +82,12 @@ class StockReservationCleanupJobTest {
 
     @Autowired
     StockReservationApi api;
+
+    /**
+     * 引当を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     @Autowired
     StockItemRepository stockItemRepository;
@@ -239,7 +247,19 @@ class StockReservationCleanupJobTest {
      */
     private UUID reserve(UUID variant, Instant expiresAt) {
         var holder = UUID.randomUUID();
-        assertThat(api.reserve(holder, Map.of(variant, 1), expiresAt)).isEmpty();
+        assertThat(reserveInTransaction(holder, Map.of(variant, 1), expiresAt)).isEmpty();
         return holder;
+    }
+
+    /**
+     * 引当を、トランザクションの中で呼ぶ（引当は呼んだ側のトランザクションに加わる）。
+     *
+     * @param holderId   持ち主 ID
+     * @param quantities バリアント ID → 数量
+     * @param expiresAt  期限
+     * @return 足りないバリアントの ID。引き当てたら空
+     */
+    private Set<UUID> reserveInTransaction(UUID holderId, Map<UUID, Integer> quantities, Instant expiresAt) {
+        return transactionTemplate.execute(status -> api.reserve(holderId, quantities, expiresAt));
     }
 }

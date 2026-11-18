@@ -21,6 +21,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -67,6 +68,12 @@ class CarrierWebhookFailureTest {
     ShippingApi shippingApi;
 
     /**
+     * 出荷の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
+    /**
      * mock の物流サービス（署名付きの通知を作るのに使う）
      */
     @Autowired
@@ -106,7 +113,7 @@ class CarrierWebhookFailureTest {
         // 準備：出荷済みの出荷と配達中の通知、次の配送状態の保存の失敗
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, NOW);
+        createShipment(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, NOW);
         var notification = mockCarrier.notification(Carrier.YAMATO, trackingNumber, "配達中");
         doThrow(new DataAccessResourceFailureException("DB の失敗")).doCallRealMethod()
                 .when(repository).updateProgress(anyCollection());
@@ -163,5 +170,17 @@ class CarrierWebhookFailureTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-Carrier-Signature", notification.signature())
                 .content(notification.body()));
+    }
+
+    /**
+     * 出荷を、トランザクションの中で作る（出荷の作成は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId        注文 ID
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @param shippedAt      出荷日時
+     */
+    private void createShipment(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+        transactionTemplate.executeWithoutResult(status -> shippingApi.create(orderId, carrier, trackingNumber, shippedAt));
     }
 }

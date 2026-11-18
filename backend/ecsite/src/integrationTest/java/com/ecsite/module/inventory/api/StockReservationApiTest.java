@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -56,6 +57,12 @@ class StockReservationApiTest {
     @Autowired
     StockReservationApi api;
 
+    /**
+     * 在庫の操作を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
     @Autowired
     StockItemRepository stockItemRepository;
 
@@ -89,7 +96,7 @@ class StockReservationApiTest {
         void sellableQuantityExcludesActiveReservations() {
             // 準備：在庫数 5 のうち 2 を引き当てる
             var variant = inventory.stockNewVariant(productId, 5);
-            api.reserve(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
+            reserveInTransaction(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
 
             // 操作：持ち主を指定せずに販売可能数を求める
             var sellable = api.sellableQuantities(List.of(variant), null);
@@ -104,7 +111,7 @@ class StockReservationApiTest {
             // 準備：在庫数 5 のうち 2 を引き当てる
             var variant = inventory.stockNewVariant(productId, 5);
             var holder = UUID.randomUUID();
-            api.reserve(holder, Map.of(variant, 2), EXPIRES_AT);
+            reserveInTransaction(holder, Map.of(variant, 2), EXPIRES_AT);
 
             // 操作：引き当てた持ち主を指定して販売可能数を求める
             var sellable = api.sellableQuantities(List.of(variant), holder);
@@ -119,7 +126,7 @@ class StockReservationApiTest {
             // 準備：在庫数 5 のうち 2 を引き当てたバリアントと、在庫が作られていないバリアント
             var variant = inventory.stockNewVariant(productId, 5);
             var withoutStock = UUID.randomUUID();
-            api.reserve(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
+            reserveInTransaction(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
 
             // 操作：2 つの販売可能数を求める
             var sellable = api.sellableQuantities(List.of(variant, withoutStock), null);
@@ -133,7 +140,7 @@ class StockReservationApiTest {
         void ignoresExpiredReservations() {
             // 準備：在庫数 5 のうち 2 を引き当て、期限ちょうどになる
             var variant = inventory.stockNewVariant(productId, 5);
-            api.reserve(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
+            reserveInTransaction(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
             clock.setInstant(EXPIRES_AT);
 
             // 操作と確認：販売可能数が在庫数と同じ 5
@@ -154,7 +161,7 @@ class StockReservationApiTest {
             var withoutStock = UUID.randomUUID();
 
             // 操作：3 品目を引き当てる
-            var shortages = api.reserve(UUID.randomUUID(), Map.of(plenty, 2, scarce, 2, withoutStock, 1), EXPIRES_AT);
+            var shortages = reserveInTransaction(UUID.randomUUID(), Map.of(plenty, 2, scarce, 2, withoutStock, 1), EXPIRES_AT);
 
             // 確認：足りない 2 品目を返す
             assertThat(shortages).containsExactlyInAnyOrder(scarce, withoutStock);
@@ -169,7 +176,7 @@ class StockReservationApiTest {
             var withoutStock = UUID.randomUUID();
 
             // 操作：3 品目を引き当てる
-            api.reserve(UUID.randomUUID(), Map.of(plenty, 2, scarce, 2, withoutStock, 1), EXPIRES_AT);
+            reserveInTransaction(UUID.randomUUID(), Map.of(plenty, 2, scarce, 2, withoutStock, 1), EXPIRES_AT);
 
             // 確認：足りる品目も引き当てられず、販売可能数が在庫数のまま
             assertThat(api.sellableQuantities(List.of(plenty, scarce), null))
@@ -184,7 +191,7 @@ class StockReservationApiTest {
             var second = UUID.randomUUID();
 
             // 操作：2 品目を引き当てる
-            var shortages = api.reserve(UUID.randomUUID(), Map.of(first, 1, second, 2), EXPIRES_AT);
+            var shortages = reserveInTransaction(UUID.randomUUID(), Map.of(first, 1, second, 2), EXPIRES_AT);
 
             // 確認：2 品目とも返す
             assertThat(shortages).containsExactlyInAnyOrder(first, second);
@@ -204,7 +211,7 @@ class StockReservationApiTest {
             var holder = reserveFirstOnly(first);
 
             // 操作：同じ持ち主で、同じ品目を含めて引き当て直す
-            var shortages = api.reserve(holder, Map.of(first, 1, second, 2), EXPIRES_AT);
+            var shortages = reserveInTransaction(holder, Map.of(first, 1, second, 2), EXPIRES_AT);
 
             // 確認：自分の引当に阻まれず、足りない品目がない
             assertThat(shortages).isEmpty();
@@ -219,7 +226,7 @@ class StockReservationApiTest {
             var holder = reserveFirstOnly(first);
 
             // 操作：同じ持ち主で、2 品目を引き当て直す
-            api.reserve(holder, Map.of(first, 1, second, 2), EXPIRES_AT);
+            reserveInTransaction(holder, Map.of(first, 1, second, 2), EXPIRES_AT);
 
             // 確認：前の引当は重ならず、新しい内容の分だけ販売可能数が減る
             assertThat(api.sellableQuantities(List.of(first, second), null))
@@ -232,10 +239,10 @@ class StockReservationApiTest {
             // 準備：在庫数 2 の全てを引き当てる
             var variant = inventory.stockNewVariant(productId, 2);
             var holder = UUID.randomUUID();
-            api.reserve(holder, Map.of(variant, 2), EXPIRES_AT);
+            reserveInTransaction(holder, Map.of(variant, 2), EXPIRES_AT);
 
             // 操作：引当を解く
-            api.release(holder);
+            releaseInTransaction(holder);
 
             // 確認：販売可能数が在庫数の 2 に戻る
             assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 2);
@@ -253,7 +260,7 @@ class StockReservationApiTest {
             var variant = inventory.stockNewVariant(productId, 1);
 
             // 操作：10 人が同時に 1 つずつ引き当てる
-            var results = Concurrently.run(CONCURRENT_HOLDERS, i -> api.reserve(UUID.randomUUID(), Map.of(variant, 1), EXPIRES_AT));
+            var results = Concurrently.run(CONCURRENT_HOLDERS, i -> reserveInTransaction(UUID.randomUUID(), Map.of(variant, 1), EXPIRES_AT));
 
             // 確認：1 人だけが引き当てられ、販売可能数が 0
             assertThat(results).filteredOn(Set::isEmpty).hasSize(1);
@@ -267,7 +274,7 @@ class StockReservationApiTest {
             var variant = inventory.stockNewVariant(productId, 1);
 
             // 操作：10 人が同時に 1 つずつ引き当てる
-            var results = Concurrently.run(CONCURRENT_HOLDERS, i -> api.reserve(UUID.randomUUID(), Map.of(variant, 1), EXPIRES_AT));
+            var results = Concurrently.run(CONCURRENT_HOLDERS, i -> reserveInTransaction(UUID.randomUUID(), Map.of(variant, 1), EXPIRES_AT));
 
             // 確認：引き当てられなかった 9 人には、その品目が足りないと返る
             assertThat(results).filteredOn(shortages -> !shortages.isEmpty())
@@ -337,7 +344,28 @@ class StockReservationApiTest {
      */
     private UUID reserveFirstOnly(UUID first) {
         var holder = UUID.randomUUID();
-        assertThat(api.reserve(holder, Map.of(first, 1), EXPIRES_AT)).isEmpty();
+        assertThat(reserveInTransaction(holder, Map.of(first, 1), EXPIRES_AT)).isEmpty();
         return holder;
+    }
+
+    /**
+     * 引当を、トランザクションの中で呼ぶ（引当は呼んだ側のトランザクションに加わる）。
+     *
+     * @param holderId   持ち主 ID
+     * @param quantities バリアント ID → 数量
+     * @param expiresAt  期限
+     * @return 足りないバリアントの ID。引き当てたら空
+     */
+    private Set<UUID> reserveInTransaction(UUID holderId, Map<UUID, Integer> quantities, Instant expiresAt) {
+        return transactionTemplate.execute(status -> api.reserve(holderId, quantities, expiresAt));
+    }
+
+    /**
+     * 引当の解除を、トランザクションの中で呼ぶ（解除は呼んだ側のトランザクションに加わる）。
+     *
+     * @param holderId 持ち主 ID
+     */
+    private void releaseInTransaction(UUID holderId) {
+        transactionTemplate.executeWithoutResult(status -> api.release(holderId));
     }
 }

@@ -23,6 +23,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -74,6 +75,12 @@ class CarrierWebhookTest {
 
     @Autowired
     ShippingApi shippingApi;
+
+    /**
+     * 出荷の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     @Autowired
     ShipmentRepository repository;
@@ -251,7 +258,7 @@ class CarrierWebhookTest {
             // 準備：同じ送り状番号の、別の注文の出荷を 2 つ
             var first = shipped();
             var second = new Created(UUID.randomUUID(), first.trackingNumber());
-            shippingApi.create(second.orderId(), ShipmentSummary.Carrier.YAMATO, second.trackingNumber(), NOW);
+            createShipment(second.orderId(), ShipmentSummary.Carrier.YAMATO, second.trackingNumber(), NOW);
 
             // 操作：配達中を 1 回送る
             sendStatus(first, "配達中").andExpect(status().isOk());
@@ -308,7 +315,7 @@ class CarrierWebhookTest {
             // 準備：同じ送り状番号の、出荷日時が 1 時間違う出荷（古い出荷と、送り状番号を再利用した新しい出荷）
             var older = shipped();
             var newer = new Created(UUID.randomUUID(), older.trackingNumber());
-            shippingApi.create(newer.orderId(), ShipmentSummary.Carrier.YAMATO, newer.trackingNumber(), NOW.plus(Duration.ofHours(1)));
+            createShipment(newer.orderId(), ShipmentSummary.Carrier.YAMATO, newer.trackingNumber(), NOW.plus(Duration.ofHours(1)));
             clock.setInstant(NOW.plus(Duration.ofHours(1)));
 
             // 操作：2 つの出荷日時の間に起きた配達中の通知を送る
@@ -609,7 +616,7 @@ class CarrierWebhookTest {
     private Created shippedAt(Instant shippedAt) {
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, shippedAt);
+        createShipment(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, shippedAt);
         return new Created(orderId, trackingNumber);
     }
 
@@ -693,5 +700,17 @@ class CarrierWebhookTest {
             builder.header("X-Carrier-Signature", request.signature());
         }
         return mockMvc.perform(builder);
+    }
+
+    /**
+     * 出荷を、トランザクションの中で作る（出荷の作成は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId        注文 ID
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @param shippedAt      出荷日時
+     */
+    private void createShipment(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+        transactionTemplate.executeWithoutResult(status -> shippingApi.create(orderId, carrier, trackingNumber, shippedAt));
     }
 }

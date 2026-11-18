@@ -11,6 +11,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -72,6 +73,7 @@ public class StockReservationCommandService {
      * @param expiresAt  期限
      * @return 足りないバリアントの ID。引き当てたら空
      */
+    @Transactional(propagation = Propagation.MANDATORY)
     public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {
         var now = clock.instant();
 
@@ -97,6 +99,7 @@ public class StockReservationCommandService {
      *
      * @param holderId 持ち主 ID
      */
+    @Transactional(propagation = Propagation.MANDATORY)
     public void release(@NonNull UUID holderId) {
         reservationRepository.deleteByHolder(holderId);
     }
@@ -114,6 +117,7 @@ public class StockReservationCommandService {
      * @return 足りないバリアントの ID。減算したら空
      * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
      */
+    @Transactional(propagation = Propagation.MANDATORY)
     public Set<UUID> commit(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId,
                             @NonNull String orderNumber) {
         var now = clock.instant();
@@ -151,6 +155,7 @@ public class StockReservationCommandService {
      * @param orderNumber 注文番号
      * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
      */
+    @Transactional(propagation = Propagation.MANDATORY)
     public void restore(@NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId, @NonNull String orderNumber) {
         var now = clock.instant();
 

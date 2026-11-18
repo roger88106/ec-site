@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -54,7 +55,7 @@ public class ShipmentService {
      * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
      * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public Shipment create(@NonNull UUID orderId, @NonNull Carrier carrier, @Nullable String trackingNumber,
                            @NonNull Instant shippedAt) {
         // 出荷登録

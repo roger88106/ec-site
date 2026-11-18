@@ -11,6 +11,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -55,6 +56,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param amount    金額（注文の総額）
      * @param orderedAt 注文日時（支払の期限の起点）
      */
+    @Transactional(propagation = Propagation.MANDATORY)
     public void create(@NonNull UUID orderId, @NonNull Money amount, @NonNull Instant orderedAt) {
         var payment = Payment.create(UUID.randomUUID(), orderId, amount, orderedAt.plus(properties.deadline()));
         paymentRepository.insertIfAbsent(payment);
@@ -182,6 +184,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param orderId 注文 ID
      */
+    @Transactional(propagation = Propagation.MANDATORY)
     public void cancel(@NonNull UUID orderId) {
         // 支払のない注文（決済を入れる前の注文）は、取り消すものがない
         paymentRepository.lockByOrderId(orderId).ifPresentOrElse(payment -> {

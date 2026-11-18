@@ -6,6 +6,7 @@ import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.job.PaymentJobs;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
+import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -79,6 +80,18 @@ class PaymentVoidTest {
     ApplicationContext context;
 
     /**
+     * 反映の操作を直接呼ぶ、支払の更新のサービス
+     */
+    @Autowired
+    PaymentCommandService commandService;
+
+    /**
+     * 支払のバージョンを読むリポジトリ
+     */
+    @Autowired
+    PaymentRepository paymentRepository;
+
+    /**
      * テスト用の決済サービス
      */
     @Autowired
@@ -115,7 +128,7 @@ class PaymentVoidTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -234,7 +247,7 @@ class PaymentVoidTest {
         @Test
         @DisplayName("AC-166 取消済みの支払を重ねて取り消しても成功し、決済サービスを呼び直さず、取消済みのまま")
         void ignoresRepeatedCancel() {
-            // 準備：与信の取消済みの支払
+            // 準備：与信が取消済みの支払
             var orderId = payments.created(ORDERED_AT);
             var authorizationRef = gateway.authorizationRefOf(payments.pay(orderId));
             paymentApi.cancel(orderId);
@@ -247,6 +260,41 @@ class PaymentVoidTest {
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
             assertThat(gateway.voidsOf(authorizationRef)).isEqualTo(1);
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOIDED);
+        }
+
+        @Test
+        @DisplayName("取消済みの支払を重ねて取り消しても、支払のバージョンは進まない")
+        void keepsVersionOnRepeatedCancel() {
+            // 準備：与信が取消済みの支払と、そのときの支払のバージョン
+            var orderId = payments.authorized(ORDERED_AT);
+            paymentApi.cancel(orderId);
+            awaitStatus(orderId, PaymentSummary.Status.VOIDED);
+            asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+            var versionAfterVoid = payments.versionOf(orderId);
+
+            // 操作：もう一度取り消す
+            paymentApi.cancel(orderId);
+
+            // 確認：リポジトリから再取得した支払のバージョンが同じ
+            asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+            assertThat(payments.versionOf(orderId)).isEqualTo(versionAfterVoid);
+        }
+
+        @Test
+        @DisplayName("与信が取り消された支払に、取消済みの反映が重ねて届いても、支払のバージョンは進まない")
+        void keepsVersionOnRepeatedMarkVoided() {
+            // 準備：与信が取消済みの支払と、そのときの支払のバージョン
+            var orderId = payments.authorized(ORDERED_AT);
+            paymentApi.cancel(orderId);
+            awaitStatus(orderId, PaymentSummary.Status.VOIDED);
+            asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+
+            // 操作：取消済みの反映がもう一度届く
+            commandService.markVoided(payment.id());
+
+            // 確認：リポジトリから再取得した支払のバージョンが同じ
+            assertThat(payments.versionOf(orderId)).isEqualTo(payment.version());
         }
     }
 

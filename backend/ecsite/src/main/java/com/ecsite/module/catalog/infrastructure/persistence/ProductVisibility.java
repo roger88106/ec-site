@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jooq.Condition;

@@ -5,6 +5,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
+import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -59,6 +60,18 @@ class PaymentCaptureTest {
     TestPaymentGateway gateway;
 
     /**
+     * 反映の操作を直接呼ぶ、支払の更新のサービス
+     */
+    @Autowired
+    PaymentCommandService commandService;
+
+    /**
+     * 支払のバージョンを読むリポジトリ
+     */
+    @Autowired
+    PaymentRepository paymentRepository;
+
+    /**
      * テストの時計
      */
     @Autowired
@@ -71,7 +84,7 @@ class PaymentCaptureTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -152,11 +165,43 @@ class PaymentCaptureTest {
             // 確認：決済サービスの呼び出しは、1 回目の確定の 1 回だけ
             assertThat(gateway.captureCallsOf(orderId)).isEqualTo(1);
         }
+
+        @Test
+        @DisplayName("売上確定済みの支払に売上確定の反映が重ねて届いても、支払のバージョンは進まない")
+        void keepsVersionOnRepeatedMarkCaptured() {
+            // 準備：売上確定済みの支払と、そのときの支払のバージョン
+            var orderId = payments.captured(ORDERED_AT);
+            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+            var versionAfterCapture = payment.version();
+
+            // 操作：売上確定の反映がもう一度届く
+            commandService.markCaptured(payment.id());
+
+            // 確認：リポジトリから再取得した支払のバージョンが同じ
+            assertThat(payments.versionOf(orderId))
+                    .isEqualTo(versionAfterCapture);
+        }
     }
 
     @Nested
     @DisplayName("与信期限切れ")
     class AuthorizationExpired {
+
+        @Test
+        @DisplayName("与信済みでない支払に与信期限切れの反映が届いても、支払のバージョンは進まない")
+        void keepsVersionWhenNotAuthorized() {
+            // 準備：売上確定済みの支払と、そのときの支払のバージョン
+            var orderId = payments.captured(ORDERED_AT);
+            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+            var versionAfterCapture = payment.version();
+
+            // 操作：与信期限切れの反映が届く
+            commandService.markAuthorizationExpired(payment.id());
+
+            // 確認：リポジトリから再取得した支払のバージョンが同じ
+            assertThat(payments.versionOf(orderId))
+                    .isEqualTo(versionAfterCapture);
+        }
 
         @Test
         @DisplayName("AC-169 決済サービスが与信期限切れで断ったら、業務のエラーを返す")

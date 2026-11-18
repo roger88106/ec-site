@@ -8,6 +8,7 @@ import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
+import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
@@ -175,7 +176,7 @@ class PaymentExpiryJobTest {
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -477,6 +478,63 @@ class PaymentExpiryJobTest {
 
             // 確認：与信の成功のイベントは、通知の 1 件だけ
             assertThat(authorizedEvents(orderId)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("AC-409-5 ジョブが待つ支払にした後、取得の前に通知が届いたら、支払のバージョンは進まない")
+        void keepsVersionWhenNotifiedBeforeFetch() {
+            // 準備：通知で与信済みになった、待つ支払と、そのときの支払のバージョン
+            var orderId = notifiedWhileAwaiting();
+            clock.setInstant(DEADLINE.plus(Duration.ofHours(1)));
+            job.expire();
+            var versionBefore = payments.versionOf(orderId);
+
+            // 操作：行ロックの時点で通知が先に届いていた形で、取得した与信を反映する
+            commandService.authorizeFromGateway(paymentOf(orderId).id(),
+                    new Authorization("pi_other", DEADLINE.plus(Duration.ofHours(1))));
+
+            // 確認：リポジトリから再取得した支払のバージョンが同じ
+            assertThat(payments.versionOf(orderId)).isEqualTo(versionBefore);
+        }
+    }
+
+    @Nested
+    @DisplayName("取得した与信の反映")
+    class AuthorizeFromGateway {
+
+        @Test
+        @DisplayName("AC-409-5 与信の反映を待つ未払いの支払に反映すると、与信済みになり、true を返す")
+        void authorizesAwaitingPayment() {
+            // 準備：取得に失敗して待つ、未払いの支払
+            var orderId = awaitingAfterRejectedFetch();
+
+            // 操作：取得した与信を反映する
+            var reflected = commandService.authorizeFromGateway(paymentOf(orderId).id(),
+                    new Authorization("pi_fetched", DEADLINE));
+
+            // 確認：与信済みになり、true を返す
+            assertThat(reflected).isTrue();
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+        }
+
+        @Test
+        @DisplayName("AC-409-5 行ロックの前に支払なしになった支払に反映すると、与信の取消待ちにして取消を依頼し、false を返す")
+        void requestsVoidWhenAlreadyNotPaid() {
+            // 準備：待つ支払が、行ロックの前に支払なしになった（注文の取消など）
+            var orderId = awaitingAfterRejectedFetch();
+            var paymentId = paymentOf(orderId).id();
+            commandService.expire(paymentId);
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+
+            // 操作：取得した与信を反映する
+            var reflected = commandService.authorizeFromGateway(paymentId, new Authorization("pi_late", DEADLINE));
+
+            // 確認：false を返し、与信の取消の依頼を 1 件登録する。取消の依頼は非同期で処理されるので、取消済みまで進んでいてもよい
+            assertThat(reflected).isFalse();
+            assertThat(events.stream(VoidRequested.class).filter(event -> event.paymentId().equals(paymentId)))
+                    .hasSize(1);
+            assertThat(payments.statusOf(orderId))
+                    .isIn(PaymentSummary.Status.VOID_PENDING, PaymentSummary.Status.VOIDED);
         }
     }
 

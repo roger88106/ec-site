@@ -86,7 +86,7 @@ reporting/
 │   └── port/           # 写しの保存、集計、他モジュールの port
 ├── domain/             # エラーの定義。集約はなく、用途で分ける
 │   ├── snapshot/       # 注文の写し、状態の履歴
-│   └── sales/          # 期間と区切り、売上の集計の値
+│   └── sales/          # 期間と区切り、集計の範囲、売上の集計の値
 ├── infrastructure/
 │   ├── persistence/    # 写しの保存、集計の SQL
 │   └── directory/      # 他モジュールの腐敗防止層

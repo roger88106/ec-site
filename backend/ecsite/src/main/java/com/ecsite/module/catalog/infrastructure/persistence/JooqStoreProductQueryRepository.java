@@ -12,6 +12,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.OrderField;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -42,9 +43,9 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     private final StoreImageUrls storeImageUrls;
 
     /**
-     * C 側の一覧の 1 ページ分の商品の組み立て
+     * C 側で商品を 1 ページずつ取得する共通の処理
      */
-    private final StoreProductSummaries storeProductSummaries;
+    private final StoreProductPages storeProductPages;
 
     /**
      * C 側の商品一覧を取得する。
@@ -58,24 +59,9 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     @Override
     public PageResult<StoreProductSummaryView> findVisible(StoreProductListQuery query, PageRequest request, Instant now,
                                                        Map<UUID, BigDecimal> rates) {
-        // 有効な税率がひとつもなければ、どの商品も税込価格を出せない（表示できない）
-        if (rates.isEmpty()) {
-            return PageResult.of(List.of(), request, 0);
-        }
-        var priceInclTax = PriceInclTaxField.of(rates);
-        var condition = condition(query, now, priceInclTax);
-
-        var rows = dsl.select(PRODUCT.ID, PRODUCT.NAME, priceInclTax, PRODUCT.PRICE_EXCL_TAX)
-                .from(PRODUCT)
-                .where(condition)
-                .orderBy(orderBy(query.sort(), priceInclTax))
-                .limit(request.size())
-                .offset(request.offset())
-                .fetch();
-
-        var items = storeProductSummaries.of(rows, priceInclTax);
-
-        return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
+        return storeProductPages.find(request, now, rates,
+                priceInclTax -> condition(query, priceInclTax),
+                priceInclTax -> orderBy(query.sort(), priceInclTax));
     }
 
     /**
@@ -96,8 +82,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
         var found = dsl.select(PRODUCT.ID, PRODUCT.NAME, PRODUCT.DESCRIPTION, priceInclTax, PRODUCT.PRICE_EXCL_TAX, axes)
                 .from(PRODUCT)
                 .where(PRODUCT.ID.eq(id))
-                .and(ProductVisibility.visibleAt(now))
-                .and(priceInclTax.isNotNull())
+                .and(StoreProductPages.visible(now, priceInclTax))
                 .fetchOptional();
         return found.map(row -> {
             var images = storeImageUrls.ofProduct(id);
@@ -110,12 +95,12 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 一覧の条件：表示される商品で、税込価格を出せること。
+     * 一覧の絞り込みの条件。
      *
      * <p>カテゴリ・価格の範囲で絞り込む。
      */
-    private static Condition condition(StoreProductListQuery query, Instant now, Field<Long> priceInclTax) {
-        var condition = ProductVisibility.visibleAt(now).and(priceInclTax.isNotNull());
+    private static Condition condition(StoreProductListQuery query, Field<Long> priceInclTax) {
+        var condition = DSL.noCondition();
         if (query.categoryId() != null) {
             condition = condition.and(CategoryConditions.productInCategory(query.categoryId()));
         }

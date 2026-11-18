@@ -42,7 +42,7 @@ class DisplayOrdersTest {
     class Assign {
 
         @Test
-        @DisplayName("送られた順に 1 から表示順を振る")
+        @DisplayName("指定された順に 1 から表示順を振る")
         void assignsInOrder() {
             // 操作：A、B、C を C、A、B の順に並べ替える
             Map<UUID, Integer> orders = DisplayOrders.assign(List.of(a, b, c), List.of(c, a, b), CommonErrorCode.INVALID_REQUEST);
@@ -77,6 +77,36 @@ class DisplayOrdersTest {
     }
 
     @Nested
+    @DisplayName("要素の並べ替え")
+    class Reorder {
+
+        @Test
+        @DisplayName("指定された順に、1 から新しい表示順を振った要素を返す")
+        void assignsNewDisplayOrders() {
+            // 準備：表示順が 5、7、9 の要素 A、B、C
+            var items = List.of(new Item(a, 5), new Item(b, 7), new Item(c, 9));
+
+            // 操作：C、A、B の順に並べ替える
+            var result = DisplayOrders.reorder(items, Item::id, Item::withDisplayOrder, List.of(c, a, b),
+                    CommonErrorCode.INVALID_REQUEST);
+
+            // 確認：C が 1、A が 2、B が 3
+            assertThat(result).containsExactlyInAnyOrder(new Item(c, 1), new Item(a, 2), new Item(b, 3));
+        }
+
+        @Test
+        @DisplayName("今の要素と ID の集合が一致しなければ、指定した業務のエラー")
+        void rejectsMismatchedIds() {
+            // 準備：表示順が 1、2 の要素 A、B
+            var items = List.of(new Item(a, 1), new Item(b, 2));
+
+            // 操作と確認：A だけを指定すると、指定した業務のエラーで拒否される
+            assertBusinessError(() -> DisplayOrders.reorder(items, Item::id, Item::withDisplayOrder, List.of(a),
+                    CommonErrorCode.INVALID_REQUEST), CommonErrorCode.INVALID_REQUEST);
+        }
+    }
+
+    @Nested
     @DisplayName("末尾への追加")
     class Next {
 
@@ -92,6 +122,27 @@ class DisplayOrdersTest {
         void oneWhenEmpty() {
             // 操作と確認：空なら 1
             assertThat(DisplayOrders.next(IntStream.empty())).isEqualTo(1);
+        }
+    }
+
+    // ============================== テストの補助 ==============================
+
+    /**
+     * 表示順を持つ要素
+     *
+     * @param id           ID
+     * @param displayOrder 表示順
+     */
+    private record Item(UUID id, int displayOrder) {
+
+        /**
+         * 表示順を変えた要素を作る。
+         *
+         * @param newDisplayOrder 新しい表示順
+         * @return 表示順を変えた要素
+         */
+        Item withDisplayOrder(int newDisplayOrder) {
+            return new Item(id, newDisplayOrder);
         }
     }
 }

@@ -31,7 +31,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -138,7 +137,7 @@ class ProductMapper {
                 .status(toResponseStatus(view.status()))
                 .images(view.images().stream().map(ProductMapper::toImage).toList())
                 .variants(view.variants().stream().map(ProductMapper::toVariant).toList())
-                .actions(toActions(Objects.requireNonNull(view.actions(), "取得した商品の詳細には、できる操作が入っている")))
+                .actions(toActions(view.actions()))
                 .version(view.version())
                 .createdAt(ApiDateTimes.toOffsetDateTime(view.createdAt()))
                 .updatedAt(ApiDateTimes.toOffsetDateTime(view.updatedAt()))
@@ -196,11 +195,11 @@ class ProductMapper {
      * @param status リクエストの公開状態
      * @return ドメインの公開状態
      */
-    static com.ecsite.module.catalog.domain.product.PublicationStatus toDomainStatus(PublicationStatus status) {
+    static com.ecsite.module.catalog.domain.product.vo.PublicationStatus toDomainStatus(PublicationStatus status) {
         return switch (status) {
-            case UNPUBLISHED -> com.ecsite.module.catalog.domain.product.PublicationStatus.UNPUBLISHED;
-            case PUBLISHED -> com.ecsite.module.catalog.domain.product.PublicationStatus.PUBLISHED;
-            case DISCONTINUED -> com.ecsite.module.catalog.domain.product.PublicationStatus.DISCONTINUED;
+            case UNPUBLISHED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.UNPUBLISHED;
+            case PUBLISHED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.PUBLISHED;
+            case DISCONTINUED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.DISCONTINUED;
         };
     }
 
@@ -210,7 +209,7 @@ class ProductMapper {
      * @param status ドメインの公開状態
      * @return レスポンスの公開状態
      */
-    static PublicationStatus toResponseStatus(com.ecsite.module.catalog.domain.product.PublicationStatus status) {
+    static PublicationStatus toResponseStatus(com.ecsite.module.catalog.domain.product.vo.PublicationStatus status) {
         return switch (status) {
             case UNPUBLISHED -> PublicationStatus.UNPUBLISHED;
             case PUBLISHED -> PublicationStatus.PUBLISHED;

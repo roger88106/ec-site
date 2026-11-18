@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.domain.product;
+package com.ecsite.module.catalog.domain.product.vo;
 
 /**
  * 公開状態

@@ -9,6 +9,7 @@ import com.ecsite.module.reporting.domain.sales.AgeGroup;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportGender;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.SalesScope;
 import com.ecsite.module.reporting.support.ReportTestData;
 import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
@@ -204,10 +205,22 @@ class CustomerBreakdownQueryTest {
         }
 
         @Test
+        @DisplayName("BR-26 商品を選ぶと、送料を除く指定が true でも false でも、売上額は同じで、送料を除いたことを示す")
+        void ignoresShippingSettingForProduct() {
+            // 操作：商品 A を選び、送料を除く指定を true と false にして集計する
+            var excluded = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productA, false, true)));
+            var included = service.breakdown(query(productA));
+
+            // 確認：売上額が同じで、どちらも送料を除いたことを示す
+            assertThat(excluded.prefectures()).isEqualTo(included.prefectures());
+            assertThat(excluded.shippingExcluded()).isTrue();
+        }
+
+        @Test
         @DisplayName("BR-25 出荷基準では、出荷済みの注文だけを出荷日で数える")
         void shipmentBasis() {
             // 操作：出荷基準で集計する
-            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.SHIPMENT, null, false, false));
+            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.SHIPMENT, new SalesScope(null, false, false)));
 
             // 確認：出荷済みの北海道の 1 件だけ
             assertThat(report.prefectures()).extracting(PrefectureSales::prefectureCode, PrefectureSales::orders)
@@ -215,10 +228,28 @@ class CustomerBreakdownQueryTest {
         }
 
         @Test
+        @DisplayName("BR-26 商品を選んで消費税を除くと、その商品の明細の税抜小計だけを数える")
+        void selectsProductExcludingTax() {
+            // 操作：商品 A を選び、消費税を除いて集計する
+            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productA, true, false)));
+
+            // 確認：都道府県・年齢層・性別のどれも、商品 A の明細の税抜小計だけ（商品 B と送料は含めない）
+            assertThat(report.prefectures()).filteredOn(row -> "01".equals(row.prefectureCode()))
+                    .extracting(PrefectureSales::amount).containsExactly(Money.of(lineExclTax(1)));
+            assertThat(report.prefectures()).filteredOn(row -> "13".equals(row.prefectureCode()))
+                    .extracting(PrefectureSales::amount).containsExactly(Money.of(lineExclTax(2) + lineExclTax(1)));
+            assertThat(report.ageGroups()).filteredOn(row -> row.ageGroup() == AgeGroup.TWENTIES)
+                    .extracting(AgeGroupSales::amount).containsExactly(Money.of(lineExclTax(1)));
+            assertThat(report.genders()).filteredOn(row -> row.gender() == ReportGender.FEMALE)
+                    .extracting(GenderSales::amount).containsExactly(Money.of(lineExclTax(2)));
+            assertThat(report.shippingExcluded()).isTrue();
+        }
+
+        @Test
         @DisplayName("BR-26 消費税と送料を除くと、明細の税抜小計だけを数える")
         void excludesTaxAndShipping() {
             // 操作：消費税と送料を除いて集計する
-            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, null, true, true));
+            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(null, true, true)));
 
             // 確認：東京都は、明細の税抜小計 2,000 円 ＋ 1,000 円
             assertThat(report.prefectures()).filteredOn(row -> "13".equals(row.prefectureCode()))
@@ -235,6 +266,6 @@ class CustomerBreakdownQueryTest {
      * @return 問い合わせ
      */
     private static CustomerBreakdownQuery query(UUID productId) {
-        return new CustomerBreakdownQuery(PERIOD, Basis.ORDER, productId, false, false);
+        return new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productId, false, false));
     }
 }

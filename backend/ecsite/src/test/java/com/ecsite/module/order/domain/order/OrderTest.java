@@ -370,7 +370,7 @@ class OrderTest {
     class Consistency {
 
         /**
-         * 取消の申請の決定日時と、キャンセルの日時
+         * キャンセルの申請の決定日時と、キャンセルの日時
          */
         private static final Instant DECIDED_AT = Instant.parse("2026-10-09T01:23:45Z");
 
@@ -496,7 +496,7 @@ class OrderTest {
                     Arguments.of("注文の作成", OrderStatus.PENDING_PAYMENT, (Supplier<Order>) () -> place(quote())),
                     Arguments.of("支払の受付", OrderStatus.ACCEPTED, (Supplier<Order>) RestoreAfterTransitions::accepted),
                     Arguments.of("申請の却下", OrderStatus.ACCEPTED, (Supplier<Order>) RestoreAfterTransitions::rejected),
-                    Arguments.of("取消の申請", OrderStatus.CANCELLATION_REQUESTED,
+                    Arguments.of("キャンセルの申請", OrderStatus.CANCELLATION_REQUESTED,
                             (Supplier<Order>) RestoreAfterTransitions::requested),
                     Arguments.of("受付からの出荷", OrderStatus.SHIPPED,
                             (Supplier<Order>) () -> after(accepted(), RestoreAfterTransitions::ship)),

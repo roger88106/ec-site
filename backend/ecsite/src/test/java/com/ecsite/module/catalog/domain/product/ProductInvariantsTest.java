@@ -3,6 +3,7 @@ package com.ecsite.module.catalog.domain.product;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.application.model.query;
 
-import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;

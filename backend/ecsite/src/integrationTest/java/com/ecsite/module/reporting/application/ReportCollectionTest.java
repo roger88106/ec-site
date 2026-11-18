@@ -11,6 +11,7 @@ import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.Granularity;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.SalesScope;
 import com.ecsite.module.reporting.domain.sales.TrendPoint;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import com.ecsite.support.MutableClock;
@@ -352,7 +353,7 @@ class ReportCollectionTest {
 
             // 操作：この商品の、2026 年 10 月の注文基準の売上の推移を求める
             var october = new ReportPeriod(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-10-31"));
-            var report = salesTrend.trend(new SalesTrendQuery(october, Granularity.MONTH, Basis.ORDER, productId, false, false));
+            var report = salesTrend.trend(new SalesTrendQuery(october, Granularity.MONTH, Basis.ORDER, new SalesScope(productId, false, false)));
 
             // 確認：受付の 1 件の明細だけを数える
             assertThat(report.points()).extracting(TrendPoint::amount, TrendPoint::quantity)

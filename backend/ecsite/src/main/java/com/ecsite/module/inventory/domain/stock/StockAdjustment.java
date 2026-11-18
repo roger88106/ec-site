@@ -117,7 +117,7 @@ public final class StockAdjustment {
             throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_MEMO, List.of(MEMO_MAX_LENGTH));
         }
         if ((orderId == null) != (orderNumber == null)) {
-            throw new IllegalArgumentException("注文 ID と注文番号は、両方あるか両方ないかのどちらかです");
+            throw new IllegalArgumentException("注文 ID と注文番号の一方だけがある");
         }
         this.id = id;
         this.delta = delta;

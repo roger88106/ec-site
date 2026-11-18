@@ -117,24 +117,18 @@ test('AC-110 確認メールのリンク先の画面で、条件を満たさな�
   })
 })
 
-test('AC-111 確認メールのリンクでパスワードを設定するまでは、ログインできない', async ({ page, browser }) => {
+test('AC-111 確認メールのリンクでパスワードを設定するまでは、ログインできない', async ({ page }) => {
   const account = newMemberAccount('unverified')
   await page.goto(STORE_URL)
   await submitSignup(page, account, { lastName: '会員', firstName: '未確認' })
 
-  await test.step('パスワードを設定する前は、ログインできない（登録の手続きを壊さないよう、別のブラウザーで試す）', async () => {
-    const other = await browser.newContext()
-    try {
-      const otherPage = await other.newPage()
-      await otherPage.goto(`${STORE_URL}/login`)
-      await submitIdpLogin(otherPage, account)
-      await expect(idpLoginError(otherPage)).toBeVisible()
-    } finally {
-      await other.close()
-    }
+  await test.step('パスワードを設定する前は、ログインできない（会員登録を始めたのと同じブラウザーで試す）', async () => {
+    await page.goto(`${STORE_URL}/login`)
+    await submitIdpLogin(page, account)
+    await expect(idpLoginError(page)).toBeVisible()
   })
 
-  await test.step('パスワードを設定した後は、ログインできる', async () => {
+  await test.step('同じブラウザーでログインを試した後でも、確認メールのリンクでパスワードを設定でき、ログインできる', async () => {
     await setPasswordFromMail(page, account)
     await expect(page.getByText('会員 未確認 様')).toBeVisible()
   })

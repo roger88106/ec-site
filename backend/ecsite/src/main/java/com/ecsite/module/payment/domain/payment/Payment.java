@@ -111,7 +111,7 @@ public class Payment extends AggregateRoot {
      * 全属性コンストラクタ
      *
      * <p>状態と、与信の参照・与信の時刻の整合を検査する。支払画面と待ち始めた時刻は、未払いのときに付き、遷移で消えないので、
-     * どの状態でもあってもなくてもよい。
+     * どの状態でも、あってもなくてもよい。
      *
      * @param id                         支払 ID
      * @param orderId                    注文 ID
@@ -396,7 +396,7 @@ public class Payment extends AggregateRoot {
     private static void verifyAuthorization(PaymentStatus status, @Nullable String authorizationRef,
                                             @Nullable Instant authorizedAt) {
         switch (status) {
-            // 与信が成功していない。支払なしに届いた与信は、与信の取消待ちにする
+            // 与信が成功していない。支払なしの後に届いた与信は、与信の取消待ちにする
             case UNPAID, NOT_PAID -> {
                 if (authorizationRef != null || authorizedAt != null) {
                     throw new IllegalArgumentException("与信のない状態は、与信の参照と与信の時刻を持たない: " + status);

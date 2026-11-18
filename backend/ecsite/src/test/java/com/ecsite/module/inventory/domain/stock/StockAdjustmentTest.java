@@ -272,7 +272,7 @@ class StockAdjustmentTest {
         }
 
         @Test
-        @DisplayName("注文による調整で、増減量が 0 かつ運営者の理由のとき、INVALID_STOCK_DELTA が返る")
+        @DisplayName("注文による調整で、増減量が 0 かつ運営者が選ぶ理由のとき、INVALID_STOCK_DELTA が返る")
         void deltaBeforeReasonInForOrder() {
             // 操作と確認：増減量の誤りが先
             assertBusinessError(() -> StockAdjustment.forOrder(0, StockAdjustmentReason.ARRIVAL, UUID.randomUUID(), ORDER_NUMBER, NOW),

@@ -370,7 +370,7 @@ class OrderTest {
     class Consistency {
 
         /**
-         * 取消の申請と取消の日時
+         * 取消の申請の決定日時と、キャンセルの日時
          */
         private static final Instant DECIDED_AT = Instant.parse("2026-10-09T01:23:45Z");
 

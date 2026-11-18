@@ -171,7 +171,7 @@ class OrderRestoreFailureTest {
         @ValueSource(shorts = {-1, 121})
         @DisplayName("注文時の年齢が範囲（0〜120）の外のとき、復元の失敗になり、例外の出力に値が出ない")
         void hidesBuyerAgeOutOfRange(short age) {
-            // 操作と確認：年齢を範囲の 1 つ外にした行を読む。年齢は短い数で出力の他の数と区別できないので、値は氏名に入れる
+            // 操作と確認：年齢を範囲の 1 つ外にした行を読む。年齢は桁の少ない数で、出力の他の数と区別できないので、値は氏名に入れる
             assertFindHides(order -> {
                 order.setBuyerAge(age);
                 order.setRecipientName(value);

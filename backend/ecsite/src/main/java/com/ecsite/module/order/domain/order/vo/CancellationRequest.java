@@ -25,7 +25,7 @@ public record CancellationRequest(Instant requestedAt, @Nullable String reason, 
      * コンストラクタ。
      *
      * <p>申請中なら決定の日時と決定者がなく、承認・却下なら決定の日時があることを確認する。
-     * 記録を始める前の判断は決定者がないので、承認・却下で決定者がないことは許す。
+     * 決定者の記録を始める前に決定した申請は、決定者がないので、承認・却下で決定者がないことは許す。
      *
      * @param requestedAt 申請日時
      * @param reason      理由

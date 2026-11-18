@@ -510,7 +510,7 @@ public class Order extends AggregateRoot {
             // 申請中からのキャンセルは申請を承認にし、受付・出荷済みからのキャンセルは申請を変えない
             case CANCELLED -> {
                 if (result == CancellationRequest.Result.PENDING || cancellation == null) {
-                    throw new IllegalArgumentException("キャンセルの注文は、キャンセルを持ち、申請中の申請を持たない: " + status);
+                    throw new IllegalArgumentException("キャンセル済みの注文は、キャンセルを持ち、申請中の申請を持たない: " + status);
                 }
             }
         }

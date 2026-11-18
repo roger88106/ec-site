@@ -147,7 +147,7 @@ public final class StockAdjustment {
      */
     public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
-        // 0 と、絶対値が上限を超える増減量は、他の条件より先に断る（エラーの順を保つ）
+        // 0 と、絶対値が上限を超える増減量は、他の条件より先に検査して拒否する（エラーの順を保つ）
         verifyDeltaNotZero(delta);
         if (delta > MAX_MANUAL_DELTA || delta < -MAX_MANUAL_DELTA) {
             throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));

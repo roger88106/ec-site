@@ -20,7 +20,7 @@
 | カバレッジ | | テストで実行されたコードの割合（行・分岐）。基準を下回ると CI が失敗する（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
 | mutation score | `mutationThreshold` | PIT で測る、検出できた変異の割合。バックエンドの domain が対象（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
 | カバレッジの基準 | `coverageVerification`、`thresholds` | 対象ごとの合計の下限。下回るとテストや検証の task が失敗する（[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」） |
-| mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使う。ローカルと E2E の設定だけで立てる |
+| mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使う。ローカル・E2E・統合テストの設定で立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
 | テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗させる操作と、呼ばれた操作を記録する機能を加えた実装 |
 | テスト用の物流サービス | `TestCarrierTracking` | テストで、物流の mock をラップし、追跡を始めた送り状番号を記録する実装 |

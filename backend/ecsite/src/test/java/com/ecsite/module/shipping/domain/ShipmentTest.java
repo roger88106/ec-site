@@ -102,7 +102,7 @@ class ShipmentTest {
             var shipment = shipped();
 
             // 操作：配送中の通知を反映する
-            var advanced = shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST);
+            var advanced = shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST, FIRST);
 
             // 確認：配送中で、反映した日時が最初の通知
             assertThat(advanced).isTrue();
@@ -115,10 +115,10 @@ class ShipmentTest {
         void advancesToDelivered() {
             // 準備：配送中の出荷
             var shipment = shipped();
-            shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST);
+            shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST, FIRST);
 
             // 操作：配達完了の通知を反映する
-            var advanced = shipment.advanceTo(DeliveryStatus.DELIVERED, SECOND);
+            var advanced = shipment.advanceTo(DeliveryStatus.DELIVERED, SECOND, SECOND);
 
             // 確認：配達完了で、反映した日時が次の通知
             assertThat(advanced).isTrue();
@@ -131,10 +131,10 @@ class ShipmentTest {
         void advancesToReturned() {
             // 準備：配送中の出荷
             var shipment = shipped();
-            shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST);
+            shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST, FIRST);
 
             // 操作：返送の通知を反映する
-            shipment.advanceTo(DeliveryStatus.RETURNED, SECOND);
+            shipment.advanceTo(DeliveryStatus.RETURNED, SECOND, SECOND);
 
             // 確認：返送
             assertThat(shipment.status()).isEqualTo(DeliveryStatus.RETURNED);
@@ -153,7 +153,7 @@ class ShipmentTest {
             var shipment = shipped();
 
             // 操作：配送中を飛ばして、後の状態の通知を反映する
-            var advanced = shipment.advanceTo(last, FIRST);
+            var advanced = shipment.advanceTo(last, FIRST, FIRST);
 
             // 確認：後の状態
             assertThat(advanced).isTrue();
@@ -167,7 +167,7 @@ class ShipmentTest {
             var shipment = shipped();
 
             // 操作：配達完了の通知を反映する
-            shipment.advanceTo(DeliveryStatus.DELIVERED, FIRST);
+            shipment.advanceTo(DeliveryStatus.DELIVERED, FIRST, FIRST);
 
             // 確認：配達完了
             assertThat(shipment.status()).isEqualTo(DeliveryStatus.DELIVERED);
@@ -198,10 +198,10 @@ class ShipmentTest {
         void doesNotGoBack(DeliveryStatus current, DeliveryStatus late) {
             // 準備：通知で進んだ出荷
             var shipment = shipped();
-            shipment.advanceTo(current, FIRST);
+            shipment.advanceTo(current, FIRST, FIRST);
 
             // 操作：低い順位の通知を反映する
-            var advanced = shipment.advanceTo(late, SECOND);
+            var advanced = shipment.advanceTo(late, SECOND, SECOND);
 
             // 確認：反映せず、元の状態のまま
             assertThat(advanced).isFalse();
@@ -214,10 +214,10 @@ class ShipmentTest {
         void keepsLastNotifiedAt(DeliveryStatus current, DeliveryStatus late) {
             // 準備：通知で進んだ出荷
             var shipment = shipped();
-            shipment.advanceTo(current, FIRST);
+            shipment.advanceTo(current, FIRST, FIRST);
 
             // 操作：低い順位の通知を反映する
-            shipment.advanceTo(late, SECOND);
+            shipment.advanceTo(late, SECOND, SECOND);
 
             // 確認：最初の通知の日時のまま
             assertThat(shipment.lastNotifiedAt()).contains(FIRST);
@@ -232,10 +232,10 @@ class ShipmentTest {
         void deliveredAndReturnedDoNotSwap(DeliveryStatus current, DeliveryStatus other) {
             // 準備：配達完了か返送になった出荷
             var shipment = shipped();
-            shipment.advanceTo(current, FIRST);
+            shipment.advanceTo(current, FIRST, FIRST);
 
             // 操作：もう一方の通知を反映する
-            var advanced = shipment.advanceTo(other, SECOND);
+            var advanced = shipment.advanceTo(other, SECOND, SECOND);
 
             // 確認：反映せず、元の状態のまま
             assertThat(advanced).isFalse();
@@ -255,8 +255,8 @@ class ShipmentTest {
             var shipment = shipped();
 
             // 操作：同じ状態の通知を 2 回反映する
-            var first = shipment.advanceTo(status, FIRST);
-            var second = shipment.advanceTo(status, SECOND);
+            var first = shipment.advanceTo(status, FIRST, FIRST);
+            var second = shipment.advanceTo(status, SECOND, SECOND);
 
             // 確認：1 回目だけ反映する
             assertThat(first).isTrue();
@@ -272,8 +272,8 @@ class ShipmentTest {
             var shipment = shipped();
 
             // 操作：同じ状態の通知を 2 回反映する
-            shipment.advanceTo(status, FIRST);
-            shipment.advanceTo(status, SECOND);
+            shipment.advanceTo(status, FIRST, FIRST);
+            shipment.advanceTo(status, SECOND, SECOND);
 
             // 確認：最初の通知の日時
             assertThat(shipment.lastNotifiedAt()).contains(FIRST);
@@ -286,11 +286,78 @@ class ShipmentTest {
             var shipment = shipped();
 
             // 操作：出荷済みの通知を反映する
-            var advanced = shipment.advanceTo(DeliveryStatus.SHIPPED, FIRST);
+            var advanced = shipment.advanceTo(DeliveryStatus.SHIPPED, FIRST, FIRST);
 
             // 確認：順位が上がらないので反映せず、反映した日時もない
             assertThat(advanced).isFalse();
             assertThat(shipment.lastNotifiedAt()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("通知の発生日時")
+    class OccurredAt {
+
+        /**
+         * 出荷日時より前の発生日時（1 ミリ秒前）
+         */
+        private static final Instant BEFORE_SHIPPED = SHIPPED_AT.minusMillis(1);
+
+        @Test
+        @DisplayName("通知の発生日時が出荷日時より前なら、配送状態は進まない")
+        void doesNotAdvanceBeforeShipped() {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：出荷日時より前に起きた通知を反映する
+            var advanced = shipment.advanceTo(DeliveryStatus.IN_TRANSIT, BEFORE_SHIPPED, FIRST);
+
+            // 確認：反映せず、出荷済みのまま
+            assertThat(advanced).isFalse();
+            assertThat(shipment.status()).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("通知の発生日時が出荷日時より前なら、通知を反映した日時は変わらない")
+        void keepsLastNotifiedAtBeforeShipped() {
+            // 準備：通知で進んだ出荷
+            var shipment = shipped();
+            shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST, FIRST);
+
+            // 操作：出荷日時より前に起きた、順位の高い通知を反映する
+            var advanced = shipment.advanceTo(DeliveryStatus.DELIVERED, BEFORE_SHIPPED, SECOND);
+
+            // 確認：反映せず、最初の通知の日時のまま
+            assertThat(advanced).isFalse();
+            assertThat(shipment.status()).isEqualTo(DeliveryStatus.IN_TRANSIT);
+            assertThat(shipment.lastNotifiedAt()).contains(FIRST);
+        }
+
+        @Test
+        @DisplayName("通知の発生日時が出荷日時と同じなら、配送状態が進む")
+        void advancesAtShippedAt() {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：出荷日時と同じ日時に起きた通知を反映する
+            var advanced = shipment.advanceTo(DeliveryStatus.IN_TRANSIT, SHIPPED_AT, FIRST);
+
+            // 確認：配送中に進む
+            assertThat(advanced).isTrue();
+            assertThat(shipment.status()).isEqualTo(DeliveryStatus.IN_TRANSIT);
+        }
+
+        @Test
+        @DisplayName("通知を反映した日時は、通知の発生日時でなく、反映する日時になる")
+        void recordsNotifiedAtNotOccurredAt() {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：発生日時と反映する日時が違う通知を反映する
+            shipment.advanceTo(DeliveryStatus.IN_TRANSIT, FIRST, SECOND);
+
+            // 確認：反映した日時は反映する日時
+            assertThat(shipment.lastNotifiedAt()).contains(SECOND);
         }
     }
 

@@ -44,7 +44,7 @@
   - 依存：T555-01-05
   - 範囲：`backend/ecsite/src/errorprone/java/`、`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、`backend/ecsite/src/test/java/com/ecsite/errorprone/EntityEqualityAssertionTest.java`
   - 確認方法：検査のテストが失敗する。追加した依存がライセンスの検査に通る。`assertThat(T)` の引数の静的な型がクラスファイルに残らないことを確認する
-- [ ] **T555-01-07** T555-01-06 のテストが通る検査を実装し、テストのソースセットに当てる。見つかったテストを修正する。検査が動いた後に、test-writing-backend.md の規則の確認方法を自動に変える（DC-555-10）。
+- [x] **T555-01-07** T555-01-06 のテストが通る検査を実装し、テストのソースセットに当てる。見つかったテストを修正する。検査が動いた後に、test-writing-backend.md の規則の確認方法を自動に変える（DC-555-10）。
   - 依存：T555-01-06
   - 範囲：`backend/ecsite/src/errorprone/java/`、見つかったテスト、`docs/05-開発規則/test-writing-backend.md`
   - 確認方法：検査のテストが通り、test・integrationTest・testFixtures のコンパイルが通る

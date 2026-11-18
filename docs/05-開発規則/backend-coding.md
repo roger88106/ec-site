@@ -196,7 +196,7 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 ### トランザクションは application
 
 - `@Transactional` は application の service に付け、参照だけなら `readOnly = true` にする。api と presentation には付けない。
-  - 参照だけか更新だけの service（`XxxQueryService`、`XxxCommandService`）は、クラスに付ける。DB を使わない参照の service（設定の値だけを返すもの）は付けない（不要な DB の接続を取らないため）。
+  - 参照だけか更新だけの service（`XxxQueryService`、`XxxCommandService`）は、クラスに付ける。ただし、DB を使わない参照の service（設定の値だけを返すもの）は付けず、参照の service のうち DB を使わないメソッドには `Propagation.NOT_SUPPORTED` を付ける（不要な DB の接続を確保しないため）。
   - 外部の呼び出しの service（`XxxGatewayService`）は、クラスに付けない（下の、外部サービスの箇条）。
   - 読み書きが混ざるレベル B の service（`XxxService`）は、メソッドに付ける。
 - 例外は、別のトランザクションが必要な infrastructure のもの（呼び出し元と別に確定させる記録など）で、付けた所に理由を書く。

@@ -22,9 +22,9 @@ class PaymentEventHandler {
     private final OrderPaymentCommandService orderPaymentCommandService;
 
     /**
-     * キャンセルのサービス
+     * 注文のキャンセルのコマンドサービス
      */
-    private final OrderCancellationCommandService cancellationService;
+    private final OrderCancellationCommandService orderCancellationCommandService;
 
     /**
      * 与信の成功：注文を受付にし、注文した品目をカートから除く。
@@ -43,6 +43,6 @@ class PaymentEventHandler {
      */
     @ApplicationModuleListener
     void on(PaymentExpired event) {
-        cancellationService.expirePayment(event.orderId());
+        orderCancellationCommandService.expirePayment(event.orderId());
     }
 }

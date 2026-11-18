@@ -35,9 +35,9 @@
 | 非同期の処理の待ち | `AsyncEvents` | 統合テストで、コミットの後に動くイベントのリスナーが終わる（または失敗する）のを、イベントの発行の記録で待つ補助（[テストの書き方](test-writing.md)の「待ち方」） |
 | 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」。層の中の役割は[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
 | 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に変換するクラス。インターフェースは使う層の `port/`、実装は `infrastructure/directory/` |
-| 参照の service | `XxxQueryService` | データを更新しない application の service。読み取り専用のトランザクションで、view（または外部へのリクエストの型）を返し、集約を返さない（[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
+| 参照の service | `XxxQueryService` | データを更新しない application の service。view（または外部へのリクエストの型）を返し、集約を返さない（[バックエンドの書き方](backend-coding.md)の「標準の構成」「トランザクションは application」） |
 | 更新の service | `XxxCommandService` | データを更新する application の service。参照だけのメソッドを持たない |
-| 外部の呼び出しの service | `XxxGatewayService` | トランザクションの外で外部のサービスを呼び、読み取りと結果の反映を参照・更新の service に任せる application の service |
+| 外部の呼び出しの service | `XxxGatewayService` | トランザクションの外で外部のサービスを呼び、読み取りと結果の反映を参照・更新の service に委ねる application の service |
 | view | `application/model/` | 参照の service が返す、SQL の View のような読み取り用の投影の型（画面の型ではない）。操作の可否は、view を作る所で入れる |
 | 作成の応答 | `CreatedResponses` | 作成の API の応答（201、作成したものの Location、作成した ID）。共通の補助で作る |
 | jest-dom | `@testing-library/jest-dom` | DOM の要素の状態を確認する照合の関数（`toBeDisabled`、`toHaveAttribute`、`toHaveAccessibleName` など）を Vitest に加えるライブラリ |

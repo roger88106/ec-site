@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * 商品画像のサービス
+ * 商品画像のゲートウェイサービス
  *
  * <p>ファイルの受け付け・検証・配信・削除はメディアモジュールが行い、ここでは商品の規則を扱う。
  * メディアの呼び出しをトランザクションの外で行う受付と追加を受け持ち、保存は {@link ProductImageCommandService} に任せる。

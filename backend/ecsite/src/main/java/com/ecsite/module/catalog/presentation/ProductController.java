@@ -62,9 +62,9 @@ class ProductController implements ProductApi {
     private final ProductQueryService queryService;
 
     /**
-     * 商品画像のアプリケーションサービス
+     * 商品画像のゲートウェイサービス
      */
-    private final ProductImageGatewayService imageService;
+    private final ProductImageGatewayService imageGatewayService;
 
     /**
      * 商品画像のコマンドサービス
@@ -265,7 +265,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ImageUpload> createImageUpload(UUID productId, CreateImageUploadRequest request) {
-        var upload = imageService.createUpload(productId, request.getContentType().getValue(), request.getContentLength());
+        var upload = imageGatewayService.createUpload(productId, request.getContentType().getValue(), request.getContentLength());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toImageUpload(upload));
     }
 
@@ -280,7 +280,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<CreatedId> addProductImage(UUID productId, AddProductImageRequest request) {
-        var id = imageService.addImage(productId, request.getUploadId(), request.getVersion());
+        var id = imageGatewayService.addImage(productId, request.getUploadId(), request.getVersion());
         return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId().id(id));
     }
 

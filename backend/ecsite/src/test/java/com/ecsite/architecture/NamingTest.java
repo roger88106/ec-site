@@ -6,6 +6,7 @@ import com.ecsite.architecture.sample.naming.ExampleOrderService;
 import com.ecsite.architecture.sample.naming.ExampleQueryRepository;
 import com.ecsite.architecture.sample.naming.ExampleRepository;
 import com.ecsite.architecture.sample.naming.ExampleTransactionalGatewayService;
+import com.ecsite.architecture.sample.naming.ExampleWritableQueryService;
 import com.ecsite.architecture.sample.naming.MisnamedExampleRepositoryImpl;
 import com.ecsite.architecture.sample.naming.NamingExamples;
 import com.ecsite.architecture.sample.naming.PublicExampleApiDirectory;
@@ -191,6 +192,18 @@ class NamingTest {
         }
 
         @Test
+        @DisplayName("参照の service は、クラスの @Transactional を読み取り専用にする")
+        void queryServicesAreReadOnly() {
+            // 準備：対象の service が 1 件以上ある
+            ProductionClasses.requireNotEmpty(
+                    productionServices().stream().filter(javaClass -> javaClass.getSimpleName().endsWith("QueryService")).toList(),
+                    "名前が QueryService で終わる service");
+
+            // 操作と確認：本番のクラスに、読み取り専用でない参照の service がない
+            assertThat(writableQueryViolations(productionServices())).isEmpty();
+        }
+
+        @Test
         @DisplayName("外部の呼び出しの service は、クラスに @Transactional を付けない")
         void gatewayServicesAreNotTransactional() {
             // 準備：対象の service が 1 件以上ある
@@ -215,6 +228,14 @@ class NamingTest {
             // 操作と確認：@Transactional のない更新の例だけが違反になる
             assertThat(missingTransactionViolations(exampleServices()))
                     .containsExactly(ExampleNonTransactionalCommandService.class.getName());
+        }
+
+        @Test
+        @DisplayName("読み取り専用の規則は、読み取り専用でない参照の service に当たる")
+        void readOnlyRuleMatchesWritableQueryExample() {
+            // 操作と確認：読み取り専用でない参照の例だけが違反になる
+            assertThat(writableQueryViolations(exampleServices()))
+                    .containsExactly(ExampleWritableQueryService.class.getName());
         }
 
         @Test
@@ -247,7 +268,8 @@ class NamingTest {
      */
     private static List<JavaClass> exampleServices() {
         return new ClassFileImporter().importClasses(
-                        ExampleOrderService.class, ExampleNonTransactionalCommandService.class, ExampleTransactionalGatewayService.class)
+                        ExampleOrderService.class, ExampleNonTransactionalCommandService.class, ExampleTransactionalGatewayService.class,
+                        ExampleWritableQueryService.class)
                 .stream().toList();
     }
 
@@ -300,6 +322,25 @@ class NamingTest {
         return services.stream()
                 .filter(NamingTest::endsWithQueryOrCommand)
                 .filter(javaClass -> !javaClass.isAnnotatedWith(Transactional.class))
+                .map(JavaClass::getName)
+                .filter(name -> !TRANSACTION_EXCEPTIONS.containsKey(name))
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * クラスの {@code @Transactional} が読み取り専用でない、参照の service の名前を返す。
+     *
+     * <p>{@code @Transactional} がない service は、{@link #missingTransactionViolations} が見つけるので、ここでは除く。
+     *
+     * @param services 調べる service
+     * @return 規則に合わない service の名前（名前の順。例外の表の service を除く）
+     */
+    private static List<String> writableQueryViolations(List<JavaClass> services) {
+        return services.stream()
+                .filter(javaClass -> javaClass.getSimpleName().endsWith("QueryService"))
+                .filter(javaClass -> javaClass.isAnnotatedWith(Transactional.class))
+                .filter(javaClass -> !javaClass.getAnnotationOfType(Transactional.class).readOnly())
                 .map(JavaClass::getName)
                 .filter(name -> !TRANSACTION_EXCEPTIONS.containsKey(name))
                 .sorted()

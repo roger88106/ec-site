@@ -8,6 +8,7 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -52,9 +53,11 @@ class EventResubmissionJob {
     /**
      * 発行から一定時間より前の、未完了のイベントを再発行する。
      *
-     * <p>リスナーの処理に失敗した、または処理の途中でインスタンスが止まったイベントを、もう一度リスナーに渡す。
+     * <p>最後の処理に失敗したイベントを、もう一度リスナーに渡す。処理の途中でインスタンスが止まったイベントは、
+     * Spring Modulith の監視が失敗の状態にした後の回で渡す。
      * 次のイベントは再発行しない。
      * <ul>
+     *     <li>最後の処理の結果が出ていない（処理中など）</li>
      *     <li>最後の試行から、再発行の間隔がたっていない</li>
      *     <li>処理の回数（発行の時の 1 回と再発行の回数）が上限に達した。最後の処理に失敗していれば、止めた印を付けてエラーのログに出す</li>
      * </ul>
@@ -69,21 +72,23 @@ class EventResubmissionJob {
             log.error("処理の回数が上限に達したイベントの再発行を止めた：種類 {}、イベント ID {}、リスナー {}、処理の回数 {}",
                     stopped.eventType(), stopped.id(), stopped.listenerId(), stopped.completionAttempts());
         }
-        log.debug("未完了のイベントを再発行する（発行から {} より前で、最後の試行から {} 以上たち、処理の回数が {} より少ないもの）",
+        log.debug("未完了のイベントを再発行する（最後の処理に失敗し、発行から {} より前で、最後の試行から {} 以上たち、処理の回数が {} より少ないもの）",
                 properties.minAge(), properties.interval(), properties.maxAttempts());
         var now = clock.instant();
         var publishedBefore = now.minus(properties.minAge());
         var lastTriedBy = now.minus(properties.interval());
         // 選ぶ条件：
+        // - 最後の処理に失敗した（処理中のものは、リスナーの処理が続いていることがあるので選ばない。
+        //   処理の途中でインスタンスが止まったものは、Spring Modulith の監視（spring.modulith.events.staleness）が
+        //   失敗の状態にした後の回で選ぶ）
         // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
         // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
         // - 回数が上限より少ない
         // 再発行の選択肢（ResubmissionOptions）は使わない。FAILED のものを件数の上限まで古い順に読んでから絞るので、
-        // 止めたイベントが溜まると、新しいイベントが再発行されなくなるため。
-        // 試行の途中でインスタンスが止まったイベントは、Spring Modulith の監視（spring.modulith.events.staleness）が
-        // 失敗の状態に変えた後の回で、再発行するか止める
+        // 止めたイベントが溜まると、新しいイベントが再発行されなくなるため
         incompletePublications.resubmitIncompletePublications(publication ->
-                publication.getPublicationDate().isBefore(publishedBefore)
+                publication.getStatus() == EventPublication.Status.FAILED
+                        && publication.getPublicationDate().isBefore(publishedBefore)
                         && !publication.getLastPublicationDate().isAfter(lastTriedBy)
                         && publication.getCompletionAttempts() < properties.maxAttempts());
         publicationMetrics.record(publicationRecords.countIncomplete(),

@@ -12,7 +12,7 @@
   - 依存：なし
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventResubmissionJobTest.java`
   - 確認方法：再発行しないテストが失敗し、監視が失敗にした後のテストが通る
-- [ ] **T547-01-02** [リスク] T547-01-01 のテストが通るように、再発行の条件に失敗の状態を加え、条件の前のコメントを書き換える（DC-547-1〜3）。
+- [x] **T547-01-02** [リスク] T547-01-01 のテストが通るように、再発行の条件に失敗の状態を加え、条件の前のコメントを書き換える（DC-547-1〜3）。
   - 依存：T547-01-01
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/config/event/EventResubmissionJob.java`
   - 確認方法：`EventResubmissionJobTest` と `EventResubmissionSettingsTest` が通る

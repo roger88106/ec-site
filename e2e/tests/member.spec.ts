@@ -117,7 +117,9 @@ test('AC-110 確認メールのリンク先の画面で、条件を満たさな�
   })
 })
 
-test('AC-111 確認メールのリンクでパスワードを設定するまでは、ログインできない', async ({ page }) => {
+test('AC-111、AC-112、AC-430-1 パスワードを設定するまではログインできず、同じブラウザーでログインを試した後でも、確認メールのリンクでパスワードを設定するとログインできる', async ({
+  page,
+}) => {
   const account = newMemberAccount('unverified')
   await page.goto(STORE_URL)
   await submitSignup(page, account, { lastName: '会員', firstName: '未確認' })

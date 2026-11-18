@@ -8,16 +8,27 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。T555-01-04 は T555-01-02（文書）と並行できる。
 
-- [ ] **T555-01-01** 参照の同一性か record の全項目の等価に頼る所を、main とテストで調べ、一覧と対応をこのタスクの結果に書く（DC-555-8）。
+- [x] **T555-01-01** 参照の同一性か record の全項目の等価に頼る所を、main とテストで調べ、一覧と対応をこのタスクの結果に書く（DC-555-8）。
   - 依存：なし
   - 範囲：調査だけ（コードは変えない）
   - 確認方法：結果に一覧がある
-  - 結果：
-- [ ] **T555-01-02** [P] 規則の文書の本文だけを書く（不変条件の置き場所、entity と集約を record にしない、テストの等価）。規則の確認方法はレビューにしておく（DC-555-1、DC-555-9）。
+  - 結果：main は 0 件。entity と集約（plan の対象の 14 個）を Set・Map のキー、`remove`・`contains`・`indexOf`、`==`・`equals`・`hashCode`・`toString` で扱う所はない（Map の値に入れる所と、識別子で照合する所だけ）。テストは次の 12 件で、Category の 1 件（※1）を除き、識別子での比較に変えると、テストの確認が弱くなる。対応は、12 件とも項目ごとか `usingRecursiveComparison` で比べる形に書き換える（T555-01-04、T555-01-05）。漏れは T555-01-07 の検査で見つける。
+
+    | ファイル | 行 | 型 | 今の比べ方 |
+    |----------|----|----|------------|
+    | `JooqAssetRepositoryTest` | 61、96、126、154 | Asset | `containsExactly`・`containsExactlyInAnyOrder` |
+    | `JooqCheckoutRepositoryTest` | 76、77 | Checkout | `contains` |
+    | `TaxCategoryTest` | 275、517 | TaxRate | `containsExactly`、`isEqualTo` |
+    | `ProductImageTest` | 428 | ProductImage | `containsExactly` |
+    | `JooqProductRepositoryTest` | 462、588 | ProductImage、Variant | `containsExactly` |
+    | `CategoryTest` | 330 | Category | `containsExactlyInAnyOrder` ※1 |
+
+    ※1：同じインスタンスどうしの比較で、識別子で比べても結果は同じ。T555-01-07 の検査に当たるので、書き換える。
+- [x] **T555-01-02** [P] 規則の文書の本文だけを書く（不変条件の置き場所、entity と集約を record にしない、テストの等価）。規則の確認方法はレビューにしておく（DC-555-1、DC-555-9）。
   - 依存：なし
   - 範囲：`docs/05-開発規則/backend-coding.md`、`docs/05-開発規則/test-writing-backend.md`
   - 確認方法：文書の検査（`doc-refs`、`ja-text`）が通る。規則の確認方法はレビューにしてある
-- [ ] **T555-01-03** [テスト] 同一性の規則を検査する ArchUnit のテストを書き、レッドを確認する（DC-555-7）。
+- [x] **T555-01-03** [テスト] 同一性の規則を検査する ArchUnit のテストを書き、レッドを確認する（DC-555-7）。
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/EntityEqualityTest.java`
   - 確認方法：テストが失敗する。テストを通すためにテストを弱めない

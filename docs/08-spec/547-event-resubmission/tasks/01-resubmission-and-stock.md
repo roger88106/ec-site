@@ -24,7 +24,7 @@
   - 依存：T547-01-03
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/inventory/application/handler/CatalogEventHandler.java`
   - 確認方法：`CatalogEventHandlerTest` と、Spring Modulith のモジュールの検査のテストが通る
-- [ ] **T547-01-05** [P] 全てのリスナーについて、順序が入れ替わったときの結果の表を作り、在庫以外で正しく処理できないものを起票する（DC-547-11、12）。
+- [x] **T547-01-05** [P] 全てのリスナーについて、順序が入れ替わったときの結果の表を作り、在庫以外で正しく処理できないものを起票する（DC-547-11、12）。
   - 依存：T547-01-04
   - 範囲：結果は `.local/review/` の下のファイル。起票の本文は、校閲の後に投稿する
   - 確認方法：表に全てのリスナーがあり、正しく処理できないものの issue の番号がある

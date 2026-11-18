@@ -1,6 +1,6 @@
 package com.ecsite.module.order.application.payment;
 
-import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderCancellationCommandService;
 import org.springframework.context.ApplicationContext;
 
 import java.util.UUID;
@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * 注文の支払の結果を反映する、統合テストの補助
  *
- * <p>{@link OrderPaymentService} と {@link OrderCancellationService} を呼ぶ。
+ * <p>{@link OrderPaymentCommandService} と {@link OrderCancellationCommandService} を呼ぶ。
  * サービスのクラスは package-private なので、同じパッケージのこのクラスを通して呼ぶ。
  * ロールバックするテストは決済のイベントが届かないので、リスナーと同じ処理をここで呼ぶ。
  */
@@ -29,7 +29,7 @@ public final class OrderPayments {
      * @param orderId 注文 ID
      */
     public static void accept(ApplicationContext context, UUID orderId) {
-        context.getBean(OrderPaymentService.class).accept(orderId);
+        context.getBean(OrderPaymentCommandService.class).accept(orderId);
     }
 
     /**
@@ -41,6 +41,6 @@ public final class OrderPayments {
      * @param orderId 注文 ID
      */
     public static void expire(ApplicationContext context, UUID orderId) {
-        context.getBean(OrderCancellationService.class).expirePayment(orderId);
+        context.getBean(OrderCancellationCommandService.class).expirePayment(orderId);
     }
 }

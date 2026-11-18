@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class StorefrontService {
+public class StorefrontQueryService {
 
     /**
      * 商品カタログの腐敗防止層

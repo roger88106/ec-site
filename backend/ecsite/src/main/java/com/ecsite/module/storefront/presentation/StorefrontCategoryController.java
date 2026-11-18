@@ -2,7 +2,7 @@ package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.api.store.CategoryApi;
 import com.ecsite.api.store.model.CategoryTree;
-import com.ecsite.module.storefront.application.StorefrontService;
+import com.ecsite.module.storefront.application.StorefrontQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,7 +19,7 @@ class StorefrontCategoryController implements CategoryApi {
     /**
      * 店舗のサービス
      */
-    private final StorefrontService storefrontService;
+    private final StorefrontQueryService storefrontQueryService;
 
     /**
      * 店舗 API のマッパー
@@ -33,6 +33,6 @@ class StorefrontCategoryController implements CategoryApi {
      */
     @Override
     public ResponseEntity<CategoryTree> listCategories() {
-        return ResponseEntity.ok(mapper.toCategoryTree(storefrontService.categoryTree()));
+        return ResponseEntity.ok(mapper.toCategoryTree(storefrontQueryService.categoryTree()));
     }
 }

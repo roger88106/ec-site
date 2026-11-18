@@ -15,7 +15,7 @@ class OrderShippedHandler {
     /**
      * 出荷通知メールのサービス
      */
-    private final ShipmentMailService shipmentMailService;
+    private final ShipmentMailCommandService shipmentMailCommandService;
 
     /**
      * 注文の出荷：出荷通知メールを送る。
@@ -26,6 +26,6 @@ class OrderShippedHandler {
      */
     @ApplicationModuleListener
     void on(OrderShipped event) {
-        shipmentMailService.send(event);
+        shipmentMailCommandService.send(event);
     }
 }

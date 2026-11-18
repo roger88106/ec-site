@@ -245,6 +245,7 @@ module/<モジュール>/
 ### 業務のコードとの境界
 
 - domain と application は Spring Security の型に依存しない。呼び出し元は値（会員 ID、運営者の ID と氏名の写し）で渡す。
+  - 運営者の氏名の写しは、token の姓と名を連結し、写しを持つ列の長さ（255 文字、code point）に切り詰める（`CurrentOperator`）。理由：氏名は表示のための写しで、超える部分を落としても、運営者 ID で本人を特定できるため。
 - 管理 API の権限は endpoint ごとに `resource:action`（例：`product:write`）で spec に書く。運営者の realm にある管理 API の client の role（client role）として token（`resource_access`）に載せ、読む処理は 1 か所にまとめる。
 - 職務は、権限（client role）をまとめた realm の role（複合の role）である。職務を追加・変更するときは、IdP の設定（realm の設定のファイル）だけを変え、EC のコードは変えない（BR-12）。
 - ログインしていればよい操作（自分の権限の一覧）は、権限の代わりに `authenticated` と書く。管理画面はメニューと画面を自分の権限の一覧で出し分け、token を自分で読まない。

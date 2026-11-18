@@ -37,7 +37,8 @@
 - ロールバックするテスト（クラスに `@Transactional`）では、テストデータの補助が本番の経路で「外」のメソッドを呼ぶと例外になる。呼ぶ前に未コミットのテストデータを読むので、トランザクションを開始しても中断しても修正できない。そこで、補助は「外」の経路を HTTP で通らずに、同じ状態を作る。補助の Javadoc に、その理由を書く。
   - 支払画面（`OrderTestData.openPaymentPage`）：mock の決済で支払画面を作り、`PaymentCommandService.recordPage` で記録する（`PaymentGatewayService.pageUrl` の中の処理を、テストのトランザクションの中で順に呼ぶ）。
   - 商品画像（`CatalogTestData` の画像の追加）：`MediaApi.prepareImage` は DB を読まないので、テストのトランザクションを中断して（`PROPAGATION_NOT_SUPPORTED`）呼び、登録は `ProductImageCommandService` でテストのトランザクションの中で行う。
-  - エンドポイント自身のテストは、HTTP のまま、コミットするテストで残す。支払画面の URL は `OrderPaymentApiTest`、画像の登録は `ProductImageApiTest` と `ProductImageTransactionApiTest`。ロールバックするテストでエンドポイントを呼んでいる `ProductImageExternalErrorApiTest` は、コミットするテストに変える。
+  - 出荷（`ShippingTestData.ship`）：`OrderPaymentGatewayService.ship` の中の処理（売上確定の対象の取得、mock の決済での売上確定、`PaymentCommandService.markCaptured`、`OrderShipmentCommandService.ship`）を、テストのトランザクションの中で順に呼ぶ。
+  - エンドポイント自身のテストは、HTTP のまま、コミットするテストで残す。支払画面の URL は `OrderPaymentApiTest`、画像の登録は `ProductImageApiTest` と `ProductImageTransactionApiTest`、出荷の登録は `ShipmentApiTest`。ロールバックするテストでエンドポイントを呼んでいる `ProductImageExternalErrorApiTest` と `ShipmentApiTest` は、コミットするテストに変える。
 - 規則の文書は、バックエンドの書き方の「トランザクションは application」の節を書き換え、上の基準、注釈の場所、Javadoc の文を加える。前提を破る呼び方が例外になることは、メソッドごとの統合テストで確認する。基準を正しく適用しているかは、レビューで確認する。
 
 対象のメソッドは次の表のとおり。「外」はトランザクションの外で呼ぶ前提（`NEVER`）、「加わる」は呼んだ側のトランザクションに加わる前提（`MANDATORY`）。

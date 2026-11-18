@@ -12,7 +12,7 @@ CI の検査の script（`scripts/ci/`）の一覧と、検査ごとの注。検
 | `action-pins` | workflow と複合の action の `uses` が、ローカルの action か、commit の SHA に固定した形であることを確認する |
 | `ci-docs` | この表と検査の 1 対 1 の対応と、検査の先頭のコメントを確認する |
 | `compose-ports` | compose の全ての ports が `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
-| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しに番号がないこと、Markdown に書いたパス（`docs/` などで始まるもの）が Git の一覧にあることを確認する |
+| `doc-refs` | リンクと見出しの参照の先、リンクテキスト、節の番号の参照、見出しの番号、Markdown に書いたパスを確認する |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
 | `frontend-rules` | フロントとテストの書き方の規則のうち、Biome の plugin で書けないものを確認する |
 | `glossary-ids` | 用語集の識別子の列の名前が、コードかファイルのパスにあることを確認する |

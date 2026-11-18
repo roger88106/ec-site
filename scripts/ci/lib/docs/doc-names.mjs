@@ -126,7 +126,7 @@ export function resolveDocument(file, before, names, basenames, exists = existsS
 /** 名前やパスの後ろの閉じる印（コードの印、「」」と「』」、太字の印）。除いてから名前を比べる */
 const CLOSING_MARKS = /(?:[`」』]|\*\*|__)+$/
 
-/** 文字の末尾のリンク（`[x](a.md)`、`[x](a.md#見出し)`、`[x](a.md "説明")`）。1 つ目の括弧が宛先、2 つ目が # 以降。doc-refs のリンクの読み方と同じく、宛先の後の title も許す */
+/** 文字列の末尾のリンク（`[x](a.md)`、`[x](a.md#見出し)`、`[x](a.md "説明")`）。1 つ目の括弧が宛先、2 つ目が # 以降。doc-refs のリンクの読み方と同じく、宛先の後の title も許す */
 const LINK_END = /\]\(([^)\s#]*)(#[^)\s]*)?(?:\s+"[^"]*")?\)$/
 
 /**

@@ -35,29 +35,9 @@ import { basename, dirname, join, normalize } from 'node:path/posix'
 import { codeBlockLines } from '../../shared/docs/code-block.mjs'
 import { maskCodeSpans, readCodeSpans } from '../../shared/source/code-span.mjs'
 import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
-import { isInGeneratedFolder } from '../../shared/source/generated-folders.mjs'
+import { isInGeneratedFolder } from '../lib/source/generated-folders.mjs'
+import { isExcluded } from '../lib/docs/excluded-files.mjs'
 import { documentIndex, headingKey, readHeadingIndex, referenceName, resolveAdjacent, resolveDocument } from '../lib/docs/doc-names.mjs'
-
-/**
- * 見ないファイル（当時の記録、直せないもの、この検査と ja-text のテストの例）。
- *
- * アーカイブの下の mvp.md は spec の記録でなく一覧の文書で、spec を移すたびにリンクが切れるので見る
- */
-const EXCLUDED = [
-  /^docs\/08-spec\/archive\/(?!mvp\/mvp\.md$)/,
-  /\/db\/migration\//,
-  /^scripts\/ci\/(docs\/doc-refs|ja\/ja-text)\.test\.mjs$/,
-]
-
-/**
- * 見ないファイルか。
- *
- * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 見ないなら true
- */
-export function isExcluded(file) {
-  return EXCLUDED.some((pattern) => pattern.test(file))
-}
 
 /** 参照を探すファイル。Gradle の設定（.kts）と、設定のファイル（xml、json、jsonc、grit、ps1）も、コメントや説明に参照を書くので見る */
 const TEXT_FILE = /\.(md|java|kts|ts|tsx|mjs|cjs|js|yml|yaml|sh|ps1|toml|properties|xml|json|jsonc|grit)$/
@@ -304,7 +284,7 @@ function scanQuoteRefs(file, line, names, basenames, exists, minEnd = 0) {
 }
 
 /**
- * 行と、次の行をつないだ文字を返す。つなぐのは、行が文書の名前・リンク・パス（とその後の「の」）で終わり、次の行が「」か の「 で始まるときだけ。
+ * 行と、次の行をつないだ文字列を返す。つなぐのは、行が文書の名前・リンク・パス（とその後の「の」）で終わり、次の行が「」か の「 で始まるときだけ。
  *
  * コードでは、次の行のコメントの印（`//`、`#`、`*`、`--`）と前の空白を除く。
  * Markdown は、同じ段落の続きの行だけつなぐ（見出し、表、リストの項目の始め、引用、コードブロックの境目、空行ではつながない）。
@@ -317,7 +297,7 @@ function scanQuoteRefs(file, line, names, basenames, exists, minEnd = 0) {
  * @param {Map<string, string>} names 文書の名前からファイルのパスへの対応
  * @param {Map<string, string>} basenames ファイル名からファイルのパスへの対応
  * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
- * @returns {{ text: string, length: number } | null} つないだ文字と、前の行の長さ。つながないなら null
+ * @returns {{ text: string, length: number } | null} つないだ文字列と、前の行の長さ。つながないなら null
  */
 function joinWithNextLine(file, isMarkdown, lines, codeLines, index, names, basenames, exists) {
   if (index + 1 >= lines.length) return null
@@ -407,8 +387,8 @@ function findReferences(file, text, names, basenames, exists = existsSync) {
   return refs
 }
 
-/** 存在しないパスの検査で、パスの始まりにする語（直前が `/`・英数字でないもの。`api/` は `api/openapi/` だけ） */
-const PATH_START = /(?<![\p{L}\p{N}_/])(?:docs|scripts|backend|frontend|e2e|docker|showcase|\.claude|\.github|api\/openapi)\//gu
+/** 存在しないパスの検査で、パスの始まりにする語（直前が `/`・半角の英数字・`_` でないもの。日本語の字の直後は始まりにする。`api/` は `api/openapi/` だけ） */
+const PATH_START = /(?<![A-Za-z0-9_/])(?:docs|scripts|backend|frontend|e2e|docker|showcase|\.claude|\.github|api\/openapi)\//g
 
 /** インラインコードの外のパスの終わり（空白、全角の句読点・中黒・括弧・かぎ括弧、半角の括弧・引用符・区切り）。中黒は、`docs/・README・AGENTS.md` のような並べ方があるため */
 const PATH_END_OUTSIDE = /^[^\s、。，．：；！？・（）()「」『』【】[\]"'|,;]*/

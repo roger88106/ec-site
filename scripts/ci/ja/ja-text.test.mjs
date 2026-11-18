@@ -9,7 +9,7 @@ import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { commentText, trailingCommentLines } from '../lib/source/comment-text.mjs'
 import { SHALLOW_CLONE_MESSAGE } from '../lib/git/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
-import { applyPermits, findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, stripMessageComments, validateTerms } from './ja-text.mjs'
+import { applyPermits, findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, lazyDocumentNames, stripMessageComments, validateTerms } from './ja-text.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
@@ -293,7 +293,7 @@ describe('言い換えの一覧（活用と語。DC-566-11・12）', () => {
   test('箱の（箱の大きさ・ftyp の箱）を error にし、漢字・カタカナの直後の 箱 は当てない', () => {
     const term = termHitBy(list.error, 'ftyp の箱')
     for (const text of ['箱の大きさ', 'ftyp の箱']) assert.equal(findTerms(text, [term]).length, 1, text)
-    for (const text of ['道具箱', 'ボックス', 'ゴミ箱の中身', '道具箱の中']) assert.deepEqual(findTerms(text, [term]), [], text)
+    for (const text of ['本箱', 'ボックス', 'ゴミ箱の中身', '本箱の中']) assert.deepEqual(findTerms(text, [term]), [], text)
   })
 
   test('主の（checkout・worktree・チェックアウト）を error にし、持ち主の は当てない', () => {
@@ -988,7 +988,7 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
     assert.deepEqual(commaCounts('参照：作業の記録の「規模」、作業の記録の「循環」。', names), [1])
   })
 
-  test('名前の一覧を返す関数を渡したとき、見出しの参照が付いた項目を見るときだけ呼び、1 文書で何度見ても求めるのは必要なときの 1 回である', () => {
+  test('名前の一覧を返す関数を渡したとき、見出しの参照が付いた項目を見るときだけ呼ぶ', () => {
     let calls = 0
     const names = () => {
       calls += 1
@@ -998,7 +998,40 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
     assert.deepEqual(findStyleWarnings('参照：[a](a.md)、[b](b.md)、skill `sessions`。', { comma: 1 }, { names }), [])
     assert.equal(calls, 0)
     assert.deepEqual(findStyleWarnings('参照：開発の進め方の「規模」、開発の進め方の「循環」。', { comma: 1 }, { names }), [])
-    assert.ok(calls >= 1)
+    assert.ok(calls > 0)
+  })
+
+  test('1 文書で何度見ても、求めるのは必要なときの 1 回だけである（文書の見出しも 1 回だけ読む）', () => {
+    const reads = []
+    let lists = 0
+    const names = lazyDocumentNames(
+      () => {
+        lists += 1
+        return ['docs/a.md', 'docs/b.md']
+      },
+      (file) => {
+        reads.push(file)
+        return file === 'docs/a.md' ? '# 開発の進め方\n' : '# 起票の手順\n'
+      },
+    )
+    const text = '参照：開発の進め方の「規模」、起票の手順の「循環」、開発の進め方の「起票」、起票の手順の「規模」。'
+    assert.deepEqual(findStyleWarnings(text, { comma: 1 }, { names }), [])
+    assert.deepEqual(findStyleWarnings(text, { comma: 1 }, { names }), [])
+    assert.equal(lists, 1)
+    assert.deepEqual(reads, ['docs/a.md', 'docs/b.md'])
+  })
+
+  test('追加行に参照だけの項目の候補がなければ、名前の一覧を作らない（候補のある文が追加行でないときも）', () => {
+    let lists = 0
+    const names = lazyDocumentNames(() => {
+      lists += 1
+      return []
+    }, () => '')
+    const text = ['参照：開発の進め方の「規模」、開発の進め方の「循環」。', '範囲：`a`、`b`、`c`。'].join('\n')
+    assert.deepEqual(findStyleWarnings(text, { comma: 1 }, { names, added: new Set([2]) }), [])
+    assert.equal(lists, 0)
+    findStyleWarnings(text, { comma: 1 }, { names, added: new Set([1]) })
+    assert.equal(lists, 1)
   })
 
   test('文書の名前の一覧は、参照の検査が見ないファイル（アーカイブした spec）の見出しを含まない', () => {

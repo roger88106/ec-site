@@ -6,7 +6,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../shared/git/git-env.mjs'
-import { checkReferences, countHeadingMatches, findNumberedHeadings, isExcluded, isTargetFile, splitSectionNumbers } from './doc-refs.mjs'
+import { checkReferences, countHeadingMatches, findNumberedHeadings, isTargetFile, splitSectionNumbers } from './doc-refs.mjs'
 import * as docRefs from './doc-refs.mjs'
 import { readHeadingIndex } from '../lib/docs/doc-names.mjs'
 
@@ -43,21 +43,6 @@ function check(file, text, extra = {}) {
 }
 
 describe('文書の参照の検査', () => {
-  test('進行中の spec は見て、アーカイブした spec は見ない', () => {
-    assert.equal(isExcluded('docs/08-spec/019-mvp-completion/plan.md'), false)
-    assert.equal(isExcluded('docs/08-spec/mvp.md'), false)
-    assert.equal(isExcluded('docs/08-spec/archive/mvp/002-cart-and-order/spec.md'), true)
-    assert.equal(isExcluded('docs/08-spec/archive/mvp/mvp.md'), false)
-    assert.equal(isExcluded('docs/08-spec/archive/1to10/mvp.md'), true)
-    assert.equal(isExcluded('backend/ecsite/src/main/resources/db/migration/V1__a.sql'), true)
-  })
-
-  test('切れた参照をわざと書く、この検査と ja-text のテストは見ない', () => {
-    assert.equal(isExcluded('scripts/ci/docs/doc-refs.test.mjs'), true)
-    assert.equal(isExcluded('scripts/ci/ja/ja-text.test.mjs'), true)
-    assert.equal(isExcluded('scripts/ci/docs/doc-refs.mjs'), false)
-  })
-
   test('Gradle の設定（.kts）と、xml・json・jsonc・grit・ps1 も見る（ファイルの全体を読むので、コメントの読み方は必要ない）', () => {
     assert.equal(isTargetFile('backend/ecsite/build.gradle.kts'), true)
     assert.equal(isTargetFile('docs/a.md'), true)
@@ -551,7 +536,7 @@ describe('見出しの番号と、見出しの参照の先', () => {
     assert.deepEqual(lines(check('docs/dev/setup.md', text)), ['1', '3'])
   })
 
-  test('「の」のない「」は、文書の名前の直後、空白を挟んだもの、ファイルのないパス、.md でないファイルの後では読まない', () => {
+  test('「の」のない「」は、文書の名前の直後、空白を挟んだもの、ファイルのないパス、.md でないファイルの後でも、見出しに当たらない入力なので通る', () => {
     const code = [
       '// テストの書き方「ない」',
       '// docs/testing/writing.md 「ない」',
@@ -573,7 +558,7 @@ describe('見出しの番号と、見出しの参照の先', () => {
     assert.deepEqual(lines(check('docker/compose.yaml', '# docs/testing/writing.md「ない」')), ['1'])
   })
 
-  test('「の」のない「」は直後だけを読む（閉じ括弧、「」」、全角の空白、改行を挟んだものは読まない）', () => {
+  test('「の」のない「」は、閉じ括弧、「」」、全角の空白、改行を挟んだ入力が見出しに当たらないので通る', () => {
     const code = ['// （docs/testing/writing.md）「ない」', '// 「docs/testing/writing.md」「ない」', '// docs/testing/writing.md　「ない」', '// docs/testing/writing.md', '//「ない」'].join('\n')
     assert.deepEqual(check('backend/Foo.java', code), [])
   })
@@ -832,7 +817,7 @@ describe('拡張子のないスクリプトを読む（DC-566-8）', () => {
     assert.deepEqual(lines(check('scripts/dev/hooks/pre-commit', '#!/bin/sh\n# 見本の文書の\n# 「ない」を見る\n')), ['2'])
   })
 
-  test('検査の対象は、拡張子がなく 1 行目が #! で始まるファイルだけを加える', () => {
+  test('検査の対象には、拡張子がなく 1 行目が #! で始まるファイルだけを加える', () => {
     const texts = { 'scripts/dev/hooks/pre-commit': SCRIPT, 'scripts/dev/hooks/commit-msg': '#!/usr/bin/env node\n', 'scripts/dev/hooks/memo': '説明だけ\n', 'Dockerfile': 'FROM node\n', 'scripts/a.mjs': '', 'a.png': '#!x' }
     const targets = docRefs.selectTargetFiles(Object.keys(texts), (file) => texts[file])
     assert.deepEqual(targets, ['scripts/dev/hooks/pre-commit', 'scripts/dev/hooks/commit-msg', 'scripts/a.mjs'])
@@ -923,6 +908,10 @@ describe('存在しない Markdown のパスの検査（DC-566-5、DC-566-6）',
   test('始まりの一覧の外のパスと、語の途中の / の後のパスは見ない', () => {
     const text = ['`api/cart.ts`', '`AGENT.md`', '`db/seed/e2e/`', '`.local/a.md`', '`src/docs/missing.md`', '`api/openapi/missing.yaml`'].join('\n')
     assert.deepEqual(mdLines(text), ['6'])
+  })
+
+  test('日本語の字の直後に空白なしで書いたパスも、存在しなければ見つける', () => {
+    assert.deepEqual(mdLines('設計はdocs/sample/sampel.md を読む\n手順は`scripts/ci/missing.mjs`を見る\n設計はdocs/sample/sample.md を読む'), ['1', '2'])
   })
 
   test('コードブロックの中と、Markdown でないファイルの中は見ない', () => {

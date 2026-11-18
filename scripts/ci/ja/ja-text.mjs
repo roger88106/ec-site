@@ -51,11 +51,11 @@ import { codeBlockLines } from '../../shared/docs/code-block.mjs'
 import { readHeadings } from '../../shared/docs/doc-structure.mjs'
 import { maskCodeSpans, readCodeSpans, replaceCodeSpans } from '../../shared/source/code-span.mjs'
 import { checkExclusions, describeEmptyReason, describeStaleExclusion } from '../lib/output/exclusions.mjs'
-import { isExcluded } from '../docs/doc-refs.mjs'
+import { isExcluded } from '../lib/docs/excluded-files.mjs'
 import { documentIndex, readHeadingIndex } from '../lib/docs/doc-names.mjs'
 import { codeKind, commentText, trailingCommentLines } from '../lib/source/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from '../../shared/git/git-files.mjs'
-import { isInGeneratedFolder } from '../../shared/source/generated-folders.mjs'
+import { isInGeneratedFolder } from '../lib/source/generated-folders.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
 import { resolveDiffBase } from '../lib/git/merge-base.mjs'
 import { exitIfShallow } from '../lib/git/shallow-clone.mjs'
@@ -986,7 +986,7 @@ function cachedReader() {
  * @param {(file: string) => string} read ファイルの内容を返す関数
  * @returns {() => Set<string>} 文書の名前の一覧を返す関数
  */
-function lazyDocumentNames(listFiles, read) {
+export function lazyDocumentNames(listFiles, read) {
   let names = null
   return () => (names ??= documentNames(listFiles(), read))
 }

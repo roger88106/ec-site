@@ -13,7 +13,6 @@ export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url
  */
 export const JA_TEXT_FILES = [
   'scripts/ci/ja/ja-text.mjs',
-  'scripts/ci/docs/doc-refs.mjs',
   ...['scripts/ci/lib', 'scripts/shared'].flatMap((dir) =>
     readdirSync(path.join(REPO_ROOT, dir), { recursive: true })
       .map((name) => `${dir}/${String(name).split(path.sep).join('/')}`)

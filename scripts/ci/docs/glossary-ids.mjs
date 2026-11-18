@@ -16,7 +16,7 @@
 // 使い方：node scripts/ci/docs/glossary-ids.mjs（リポジトリのルートで）
 import { exitIfNoFiles, listGitFiles } from '../../shared/git/git-files.mjs'
 import { readFileSync } from 'node:fs'
-import { isInGeneratedFolder } from '../../shared/source/generated-folders.mjs'
+import { isInGeneratedFolder } from '../lib/source/generated-folders.mjs'
 import { checkExclusions, exclusionsPath, readExclusions } from '../lib/output/exclusions.mjs'
 
 /** 調べる用語集（業務の用語集と、開発の用語集） */

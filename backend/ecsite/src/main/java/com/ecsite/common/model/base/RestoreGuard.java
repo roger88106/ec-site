@@ -25,6 +25,7 @@ public final class RestoreGuard {
      * 保存した状態から集約を戻す。
      *
      * <p>戻すときに例外が出れば、復元の失敗のシステムの例外にする。
+     * ただし、既に復元の失敗（エラーコードが {@code RESTORE_ERROR}）になった例外は、包み直さずそのまま投げる。
      *
      * <p>メッセージには集約の名前と原因の例外の種類だけを書き、集約の ID を書かない。
      * 原因は、元の例外の種類とスタックトレースだけを持つ例外に置き換える。原因の原因と抑制した例外も同じく置き換える。
@@ -37,13 +38,30 @@ public final class RestoreGuard {
     public static <T> T restore(String name, Supplier<T> restorer) {
         try {
             return restorer.get();
+        } catch (SystemException e) {
+            if (e.getErrorDetail().errorCode().code().equals(CommonErrorCode.RESTORE_ERROR.getCode().code())) {
+                // 入れ子の復元で既に復元のエラーになった例外は、包み直すと内側のメッセージと原因が消えるので、そのまま投げる
+                throw e;
+            }
+            throw toRestoreError(name, e);
         } catch (Exception e) {
-            // 保存した状態と原因の例外のメッセージには、個人情報を含みうる値が入る。例外は連鎖ごとログに出るので、値を残さない。
-            // 集約の ID も、後に加わる集約で利用者を指す値になりうるので書かない（リクエストとの対応は、ログのトレース ID で追う）
-            String debugMessage = "%s restore error: %s".formatted(name, e.getClass().getName());
-            throw SystemException.of(debugMessage, redact(e, Collections.newSetFromMap(new IdentityHashMap<>())),
-                    CommonErrorCode.RESTORE_ERROR);
+            throw toRestoreError(name, e);
         }
+    }
+
+    /**
+     * 復元の失敗のシステムの例外にする。
+     *
+     * @param name 集約か読み取りのモデルの名前
+     * @param e    戻すときに出た例外
+     * @return 復元の失敗のシステムの例外
+     */
+    private static SystemException toRestoreError(String name, Exception e) {
+        // 保存した状態と原因の例外のメッセージには、個人情報を含みうる値が入る。例外は連鎖ごとログに出るので、値を残さない。
+        // 集約の ID も、後に加わる集約で利用者を指す値になりうるので書かない（リクエストとの対応は、ログのトレース ID で追う）
+        String debugMessage = "%s restore error: %s".formatted(name, e.getClass().getName());
+        return SystemException.of(debugMessage, redact(e, Collections.newSetFromMap(new IdentityHashMap<>())),
+                CommonErrorCode.RESTORE_ERROR);
     }
 
     /**

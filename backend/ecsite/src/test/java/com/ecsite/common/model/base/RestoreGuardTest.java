@@ -109,6 +109,60 @@ class RestoreGuardTest {
     }
 
     @Nested
+    @DisplayName("既に復元のエラーになった例外が出たとき")
+    class AlreadyRestoreError {
+
+        @Test
+        @DisplayName("入れ子の復元で内側が失敗すれば、外側は包み直さず同じ例外を投げる")
+        void rethrowsSameInstance() {
+            // 準備：内側の復元で失敗した、復元のエラーの例外
+            var inner = catchThrowable(() -> RestoreGuard.restore("inner", () -> {
+                throw new IllegalArgumentException("壊れた状態");
+            }));
+
+            // 操作：外側の復元の中で、その例外が出る
+            var thrown = catchThrowable(() -> RestoreGuard.restore("outer", () -> {
+                throw (RuntimeException) inner;
+            }));
+
+            // 確認：同じインスタンス
+            assertThat(thrown).isSameAs(inner);
+        }
+
+        @Test
+        @DisplayName("外側の名前のメッセージにならず、内側のメッセージと原因が残る")
+        void keepsInnerMessageAndCause() {
+            // 準備と操作：入れ子の復元で内側が失敗する
+            var thrown = catchThrowable(() -> RestoreGuard.restore("outer", () ->
+                    RestoreGuard.restore("inner", () -> {
+                        throw new IllegalArgumentException("壊れた状態");
+                    })));
+
+            // 確認：内側の名前と原因の種類のメッセージ、原因の写し
+            assertThat(thrown).isInstanceOfSatisfying(SystemException.class, ex -> {
+                assertThat(ex.getMessage()).isEqualTo("inner restore error: java.lang.IllegalArgumentException");
+                assertThat(ex.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.RESTORE_ERROR.getCode());
+            });
+            assertThat(thrown.getCause()).isNotNull();
+            assertThat(thrown.getCause().getMessage()).isEqualTo(IllegalArgumentException.class.getName());
+        }
+
+        @Test
+        @DisplayName("復元のエラーでないシステムの例外は、復元のエラーに変換する")
+        void convertsOtherSystemException() {
+            // 準備：復元のエラーでないエラーコード（共通のシステムエラー）のシステムの例外
+            var other = SystemException.of("other", null);
+
+            // 操作と確認：復元のエラーの別の例外になり、原因の種類がメッセージに出る
+            var thrown = restoreThrowing(other);
+            assertThat(thrown).isNotSameAs(other).isInstanceOfSatisfying(SystemException.class, ex -> {
+                assertThat(ex.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.RESTORE_ERROR.getCode());
+                assertThat(ex.getMessage()).isEqualTo(AGGREGATE + " restore error: " + SystemException.class.getName());
+            });
+        }
+    }
+
+    @Nested
     @DisplayName("原因の例外の写し")
     class CopiedChain {
 

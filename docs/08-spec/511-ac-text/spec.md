@@ -80,7 +80,7 @@
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/module/tax/domain/taxcategory/TaxCategoryTest.java`
   - 確認方法：コードを戻すとテストが通り、一時的に変えると失敗する
-- [ ] **T511-01-02** AC 一覧の AC-126・AC-5 の行を修正し、`node scripts/ci/spec/ac-check.mjs --write` で「今有効な AC」の表を再作成する（DC-511-1、DC-511-2）。
+- [x] **T511-01-02** AC 一覧の AC-126・AC-5 の行を修正し、`node scripts/ci/spec/ac-check.mjs --write` で「今有効な AC」の表を再作成する（DC-511-1、DC-511-2）。
   - 依存：なし
   - 範囲：`docs/03-機能仕様/acceptance-criteria.md`、`docs/03-機能仕様/order.md`、`docs/03-機能仕様/tax.md`
   - 確認方法：`node scripts/ci/spec/ac-check.mjs` と文書の検査が通る（DC-511-4、DC-511-5）

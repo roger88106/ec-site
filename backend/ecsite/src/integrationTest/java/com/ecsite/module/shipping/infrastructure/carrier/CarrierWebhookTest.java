@@ -270,6 +270,146 @@ class CarrierWebhookTest {
     }
 
     @Nested
+    @DisplayName("通知の発生日時と出荷日時")
+    class OccurredAtAndShippedAt {
+
+        @Test
+        @DisplayName("DC-548-1 発生日時が出荷日時より前の通知は 200 で、配送状態も最後に通知を反映した日時も変えず、イベントも出ない")
+        void ignoresNotificationBeforeShippedAt() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：出荷日時の 1ms 前に起きた配達中の通知を送る
+            send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.minusMillis(1)))).andExpect(status().isOk());
+
+            // 確認：出荷済みのまま、反映した日時は空で、この注文のイベントは出荷のときの 1 件だけ
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+            assertThat(lastNotifiedAtOf(shipment)).isEmpty();
+            assertThat(events.stream(DeliveryStatusChanged.class).filter(event -> event.orderId().equals(shipment.orderId())))
+                    .extracting(DeliveryStatusChanged::to).containsExactly(DeliveryStatusChanged.Status.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("DC-548-1 発生日時が出荷日時と同じ通知は反映される")
+        void appliesNotificationAtShippedAt() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作：出荷日時と同じ発生日時の配達中の通知を送る
+            send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW))).andExpect(status().isOk());
+
+            // 確認：配送中になる
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+        }
+
+        @Test
+        @DisplayName("DC-548-2 送り状番号が同じ 2 つの出荷のうち、出荷日時が発生日時以前の出荷だけが進む")
+        void advancesOnlyShipmentShippedBeforeOccurredAt() throws Exception {
+            // 準備：同じ送り状番号の、出荷日時が 1 時間違う出荷（古い出荷と、送り状番号を再利用した新しい出荷）
+            var older = shipped();
+            var newer = new Created(UUID.randomUUID(), older.trackingNumber());
+            shippingApi.create(newer.orderId(), ShipmentSummary.Carrier.YAMATO, newer.trackingNumber(), NOW.plus(Duration.ofHours(1)));
+            clock.setInstant(NOW.plus(Duration.ofHours(1)));
+
+            // 操作：2 つの出荷日時の間に起きた配達中の通知を送る
+            send(signed(body("YAMATO", older.trackingNumber(), "配達中", NOW.plus(Duration.ofMinutes(30))))).andExpect(status().isOk());
+
+            // 確認：出荷日時が前の出荷だけが配送中になる
+            assertThat(statusOf(older)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+            assertThat(statusOf(newer)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+    }
+
+    @Nested
+    @DisplayName("範囲の外の発生日時")
+    class OccurredAtOutOfRange {
+
+        /**
+         * 古さの上限（既定）
+         */
+        private static final Duration MAX_AGE = Duration.ofDays(30);
+
+        /**
+         * 未来の許容（既定）
+         */
+        private static final Duration FUTURE_TOLERANCE = Duration.ofMinutes(5);
+
+        @Test
+        @DisplayName("DC-548-3 発生日時が古さの上限ちょうど前の通知は 400 で処理せず、配送状態を変えない")
+        void rejectsOccurredAtAtMaxAge() throws Exception {
+            // 準備：古さの上限より前に出荷した出荷
+            var shipment = shippedAt(NOW.minus(MAX_AGE).minus(Duration.ofDays(1)));
+
+            // 操作と確認：現在時刻の 30 日前ちょうどの通知は 400
+            send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.minus(MAX_AGE)))).andExpect(status().isBadRequest());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("DC-548-3 発生日時が古さの上限のすぐ内側（1ms 後）の通知は受け付ける")
+        void acceptsOccurredAtJustInsideMaxAge() throws Exception {
+            // 準備：古さの上限より前に出荷した出荷
+            var shipment = shippedAt(NOW.minus(MAX_AGE).minus(Duration.ofDays(1)));
+
+            // 操作と確認：30 日前の 1ms 後の通知は 200
+            send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.minus(MAX_AGE).plusMillis(1))))
+                    .andExpect(status().isOk());
+
+            // 確認：配送中になる
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+        }
+
+        @Test
+        @DisplayName("DC-548-3 発生日時が未来の許容を超えて先の通知は 400 で処理せず、配送状態を変えない")
+        void rejectsOccurredAtBeyondFutureTolerance() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作と確認：5 分の 1ms 先の通知は 400
+            send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.plus(FUTURE_TOLERANCE).plusMillis(1))))
+                    .andExpect(status().isBadRequest());
+
+            // 確認：出荷済みのまま
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
+        }
+
+        @Test
+        @DisplayName("DC-548-3 発生日時が未来の許容ちょうど先の通知は受け付ける")
+        void acceptsOccurredAtAtFutureTolerance() throws Exception {
+            // 準備：出荷済みの出荷
+            var shipment = shipped();
+
+            // 操作と確認：5 分先ちょうどの通知は 200
+            send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.plus(FUTURE_TOLERANCE)))).andExpect(status().isOk());
+
+            // 確認：配送中になる
+            assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.IN_TRANSIT);
+        }
+    }
+
+    @Nested
+    @DisplayName("通知を反映した日時")
+    class LastNotifiedAt {
+
+        @Test
+        @DisplayName("DC-548-6 最後に通知を反映した日時は、通知の発生日時でなく、処理した時刻になる")
+        void usesProcessingTime() throws Exception {
+            // 準備：出荷済みの出荷と、10 分進めた時計
+            var shipment = shipped();
+            var processedAt = NOW.plus(Duration.ofMinutes(10));
+            clock.setInstant(processedAt);
+
+            // 操作：8 分前（出荷の 2 分後）に起きた配達中の通知を送る
+            send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.plus(Duration.ofMinutes(2))))).andExpect(status().isOk());
+
+            // 確認：処理した時刻が入る
+            assertThat(lastNotifiedAtOf(shipment)).contains(processedAt);
+        }
+    }
+
+    @Nested
     @DisplayName("署名を確認できない通知")
     class Signature {
 
@@ -457,9 +597,19 @@ class CarrierWebhookTest {
      * @return 作った出荷
      */
     private Created shipped() {
+        return shippedAt(NOW);
+    }
+
+    /**
+     * 出荷日時を指定して、ヤマト運輸の出荷を作る。
+     *
+     * @param shippedAt 出荷日時
+     * @return 作った出荷
+     */
+    private Created shippedAt(Instant shippedAt) {
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, NOW);
+        shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, shippedAt);
         return new Created(orderId, trackingNumber);
     }
 
@@ -484,8 +634,21 @@ class CarrierWebhookTest {
      * @return 本文の JSON
      */
     private static String body(String carrier, String trackingNumber, String statusName) {
-        return "{\"carrier\":\"%s\",\"trackingNumber\":\"%s\",\"status\":\"%s\",\"occurredAt\":\"2026-10-15T02:30:00Z\"}"
-                .formatted(carrier, trackingNumber, statusName);
+        return body(carrier, trackingNumber, statusName, Instant.parse("2026-10-15T02:30:00Z"));
+    }
+
+    /**
+     * 発生日時を指定して、通知の本文を作る。
+     *
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号
+     * @param statusName     物流サービスの状態の名前
+     * @param occurredAt     発生日時
+     * @return 本文の JSON
+     */
+    private static String body(String carrier, String trackingNumber, String statusName, Instant occurredAt) {
+        return "{\"carrier\":\"%s\",\"trackingNumber\":\"%s\",\"status\":\"%s\",\"occurredAt\":\"%s\"}"
+                .formatted(carrier, trackingNumber, statusName, occurredAt);
     }
 
     /**

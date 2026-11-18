@@ -196,8 +196,9 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 ### トランザクションは application
 
 - `@Transactional` は application の service に付け、参照だけなら `readOnly = true` にする。api と presentation には付けない。
-  - 参照だけか更新だけの service（`XxxQueryService`、`XxxCommandService`、用途の名前の service）は、クラスに付ける。
-  - Command と Query を分けないレベル B の service は、メソッドに付ける。
+  - 参照だけか更新だけの service（`XxxQueryService`、`XxxCommandService`）は、クラスに付ける。DB を使わない参照の service（設定の値だけを返すもの）は付けない（不要な DB の接続を取らないため）。
+  - 外部の呼び出しの service（`XxxGatewayService`）は、クラスに付けない（下の、外部サービスの箇条）。
+  - 読み書きが混ざるレベル B の service（`XxxService`）は、メソッドに付ける。
 - 例外は、別のトランザクションが必要な infrastructure のもの（呼び出し元と別に確定させる記録など）で、付けた所に理由を書く。
 - 外部サービス（決済・画像の変換・ファイル保存・物流・メールなど）は、トランザクションの外で、タイムアウトを設定して呼ぶ（BR-40）。呼ぶ前の読み取りと呼んだ後の更新は、それぞれのトランザクションにし、`XxxGatewayService` でまとめる（「標準の構成」）。イベントのリスナーで呼ぶときは、リスナーをトランザクションなし（`@ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)`）にする。
 - 外で呼べないものは、呼ぶ所と設計書に理由を書く（出荷のメール：[通知モジュール](../03-機能仕様/notification.md)）。
@@ -239,7 +240,7 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 | リポジトリの port（domain） | `XxxRepository` | `OrderRepository` |
 | 参照用のリポジトリの port（application） | `XxxQueryRepository` | `OrderQueryRepository` |
 | jOOQ の実装 | `JooqXxxRepository` | `JooqOrderRepository` |
-| service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` か用途の名前 ※3 | `OrderQueryService`、`OrderPlacementService` |
+| service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` ※3 | `OrderQueryService`、`OrderPlacementCommandService` |
 | service（外部の呼び出し） | `XxxGatewayService` | `PaymentGatewayService` |
 | イベントのハンドラー | `XxxHandler` | `CartChangedHandler` |
 | ジョブ | `XxxJob`（設定の型も `application/job/`） | `CartCleanupJob`、`CartCleanupProperties` |
@@ -249,15 +250,15 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `OrderApiDirectory` |
 | イベント | 過去形 | `OrderShipped` |
 
-※3：用途の名前を使うのは、1 つの集約に用途が複数あるときと、他のモジュールの呼び出しを組み合わせるとき。データを変えずに他のモジュールの結果を組み合わせる service（注文の手続きの見積もりなど）も用途の名前にし、読み取り専用のトランザクションにする。Command と Query を分けないレベル B の service は `XxxService` にする。
+※3：レベル A の service は、名前を参照・更新・外部の呼び出しのどれかで終える。用途の名前は前に付けてよい（例：`QuoteQueryService`）。外部の呼び出しには、他のモジュールを経て外部のサービスを呼ぶもの（商品画像の変換・保存）も含む。レベル B も、参照だけか更新だけと決まっている service は同じ形にし、読み書きが混ざる service だけを `XxxService` にする。
 
-ハンドラーは、受けて service を呼ぶだけにし、処理は `XxxService` に置く（置き場所は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」）。
+ハンドラーは、受けて service を呼ぶだけにし、処理は application の service に置く（置き場所は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」）。
 
 別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
 
 理由：クラスの名前から、役割（port、実装、用途）と置き場所が分かるようにするため。
 
-確認方法：リポジトリと腐敗防止層は自動（ArchUnit）、service・ハンドラー・ジョブ・Config・公開の API とイベントはレビュー
+確認方法：リポジトリ・腐敗防止層・service は自動（ArchUnit）、ハンドラー・ジョブ・Config・公開の API とイベントはレビュー
 
 ### 細かいコードの書き方
 

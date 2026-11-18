@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -42,7 +43,7 @@ class EventCleanupJob {
      *
      * <p>未完了のイベントと止めたイベントは消さない。
      */
-    // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"
             + "com.ecsite.config.event.EventCleanupJob$Properties'.interval()}")
     @SchedulerLock(name = "event-cleanup")
@@ -62,6 +63,8 @@ class EventCleanupJob {
      */
     @Validated
     @ConfigurationProperties("ecsite.scheduling.event-cleanup")
-    record Properties(@DefaultValue("1h") @NotNull Duration interval, @DefaultValue("7d") @NotNull Duration retention) {
+    record Properties(
+            @DefaultValue("1h") @NotNull @DurationMin(millis = 1) Duration interval,
+            @DefaultValue("7d") @NotNull @DurationMin(nanos = 0) Duration retention) {
     }
 }

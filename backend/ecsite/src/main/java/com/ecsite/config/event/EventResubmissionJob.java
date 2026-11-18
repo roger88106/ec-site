@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.modulith.events.IncompleteEventPublications;
@@ -59,7 +60,7 @@ class EventResubmissionJob {
      * </ul>
      * <p>終わりに、未完了と止めたイベントの件数をメトリクスに記録する。時間と回数は {@link Properties}。
      */
-    // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-resubmission-"
             + "com.ecsite.config.event.EventResubmissionJob$Properties'.interval()}")
     @SchedulerLock(name = "event-resubmission")
@@ -100,7 +101,9 @@ class EventResubmissionJob {
      */
     @Validated
     @ConfigurationProperties("ecsite.scheduling.event-resubmission")
-    record Properties(@DefaultValue("1m") @NotNull Duration interval, @DefaultValue("5m") @NotNull Duration minAge,
-                      @DefaultValue("60") @Positive int maxAttempts) {
+    record Properties(
+            @DefaultValue("1m") @NotNull @DurationMin(millis = 1) Duration interval,
+            @DefaultValue("5m") @NotNull @DurationMin(millis = 1) Duration minAge,
+            @DefaultValue("60") @Positive int maxAttempts) {
     }
 }

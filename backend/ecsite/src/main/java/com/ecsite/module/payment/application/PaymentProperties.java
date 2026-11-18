@@ -4,6 +4,7 @@ import com.ecsite.module.payment.domain.payment.AuthorizationTerm;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.time.DurationMax;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
@@ -28,11 +29,11 @@ import java.util.UUID;
 @Validated
 @ConfigurationProperties("ecsite.payment")
 public record PaymentProperties(
-        @DefaultValue("30m") @NotNull @DurationMax(minutes = 30) Duration deadline,
-        @DefaultValue("1m") @NotNull Duration expiryInterval,
-        @DefaultValue("1h") @NotNull Duration awaitingAuthorizationWarning,
-        @DefaultValue("7d") @NotNull Duration authorizationValidity,
-        @DefaultValue("2d") @NotNull Duration authorizationWarning,
+        @DefaultValue("30m") @NotNull @DurationMin(millis = 1) @DurationMax(minutes = 30) Duration deadline,
+        @DefaultValue("1m") @NotNull @DurationMin(millis = 1) Duration expiryInterval,
+        @DefaultValue("1h") @NotNull @DurationMin(millis = 1) Duration awaitingAuthorizationWarning,
+        @DefaultValue("7d") @NotNull @DurationMin(millis = 1) Duration authorizationValidity,
+        @DefaultValue("2d") @NotNull @DurationMin(nanos = 0) Duration authorizationWarning,
         @NotBlank String returnUrl) {
 
     /**

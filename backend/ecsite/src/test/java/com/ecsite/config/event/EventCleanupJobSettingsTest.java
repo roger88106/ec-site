@@ -4,12 +4,16 @@ import com.ecsite.support.TestSettings;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 処理の済んだイベントを消す片付けのジョブの設定と分散ロックの単体テスト
@@ -48,6 +52,43 @@ class EventCleanupJobSettingsTest {
         // 確認：渡した値になる
         assertThat(properties.interval()).isEqualTo(Duration.ofMinutes(10));
         assertThat(properties.retention()).isEqualTo(Duration.ofDays(3));
+    }
+
+    @ParameterizedTest(name = "「{0}」")
+    @ValueSource(strings = {"0s", "-1s", "999us"})
+    @DisplayName("片付けの間隔が 0、負の値、下限の 1ms 未満（999us）なら、値の検証で拒否される")
+    void rejectsIntervalBelowMinimum(String value) {
+        // 操作と確認：値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("interval", value)))
+                .isInstanceOf(BindException.class);
+    }
+
+    @Test
+    @DisplayName("片付けの間隔が下限の 1ms なら、値の検証を通り、その値になる")
+    void acceptsIntervalAtMinimum() {
+        // 操作：1ms を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("interval", "1ms"));
+
+        // 確認：1ms になる
+        assertThat(properties.interval()).isEqualTo(Duration.ofMillis(1));
+    }
+
+    @Test
+    @DisplayName("保存期間が負なら、値の検証で拒否される")
+    void rejectsNegativeRetention() {
+        // 操作と確認：-1s は値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("retention", "-1s")))
+                .isInstanceOf(BindException.class);
+    }
+
+    @Test
+    @DisplayName("保存期間が 0 なら、値の検証を通り、0 になる")
+    void acceptsZeroRetention() {
+        // 操作：0s を検証付きで当てはめる
+        var properties = TestSettings.bindValidated(PREFIX, EventCleanupJob.Properties.class, Map.of("retention", "0s"));
+
+        // 確認：0 になる
+        assertThat(properties.retention()).isEqualTo(Duration.ZERO);
     }
 
     @Test

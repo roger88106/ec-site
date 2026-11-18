@@ -1,14 +1,23 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.support.TestSettings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 決済の設定の検証
@@ -52,6 +61,62 @@ class PaymentPropertiesTest {
                     assertThat(context).hasFailed();
                     assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("deadline");
                 });
+    }
+
+    @ParameterizedTest(name = "「{0}」が {1}")
+    @CsvSource({
+            "deadline, 0s", "deadline, -1s", "deadline, 999us",
+            "expiry-interval, 0s", "expiry-interval, -1s", "expiry-interval, 999us",
+            "awaiting-authorization-warning, 0s", "awaiting-authorization-warning, -1s", "awaiting-authorization-warning, 999us",
+            "authorization-validity, 0s", "authorization-validity, -1s", "authorization-validity, 999us"})
+    @DisplayName("下限が 1ms の時間の設定が、0、負の値、1ms 未満（999us）なら、値の検証で拒否される")
+    void rejectsDurationBelowMinimum(String name, String value) {
+        // 準備：必須の値と、許す範囲の外の値
+        var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}"));
+        values.put(name, value);
+
+        // 操作と確認：値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class, values))
+                .isInstanceOf(BindException.class);
+    }
+
+    @ParameterizedTest(name = "「{0}」")
+    @CsvSource({"deadline", "expiry-interval", "awaiting-authorization-warning", "authorization-validity"})
+    @DisplayName("下限が 1ms の時間の設定が、下限の 1ms なら、値の検証を通り、その値になる")
+    void acceptsDurationAtMinimum(String name) {
+        // 操作：必須の値と 1ms を検証付きで当てはめる
+        var values = new HashMap<>(Map.of("return-url", "http://store/orders/{orderId}"));
+        values.put(name, "1ms");
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class, values);
+
+        // 確認：1ms になる
+        var actual = switch (name) {
+            case "deadline" -> properties.deadline();
+            case "expiry-interval" -> properties.expiryInterval();
+            case "awaiting-authorization-warning" -> properties.awaitingAuthorizationWarning();
+            default -> properties.authorizationValidity();
+        };
+        assertThat(actual).isEqualTo(Duration.ofMillis(1));
+    }
+
+    @Test
+    @DisplayName("与信の期限が近いとする期間が負なら、値の検証で拒否される")
+    void rejectsNegativeAuthorizationWarning() {
+        // 操作と確認：-1s は値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "authorization-warning", "-1s")))
+                .isInstanceOf(BindException.class);
+    }
+
+    @Test
+    @DisplayName("与信の期限が近いとする期間が 0 なら、値の検証を通る")
+    void acceptsZeroAuthorizationWarning() {
+        // 操作：0s を検証付きで当てはめる
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "authorization-warning", "0s"));
+
+        // 確認：0 になる
+        assertThat(properties.authorizationWarning()).isEqualTo(Duration.ZERO);
     }
 
     // ============================== 準備の補助 ==============================

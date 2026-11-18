@@ -1,8 +1,10 @@
 package com.ecsite.architecture;
 
+import com.ecsite.EcSiteApplication;
 import com.ecsite.architecture.sample.configprops.EnumFieldProperties;
 import com.ecsite.architecture.sample.configprops.ExampleProperties;
 import com.ecsite.architecture.sample.configprops.MappedSecretProperties;
+import com.ecsite.architecture.sample.configprops.MethodAnnotatedExampleConfig;
 import com.ecsite.architecture.sample.configprops.MisplacedExampleConfig;
 import com.ecsite.architecture.sample.configprops.NestedSecretProperties;
 import com.ecsite.architecture.sample.configprops.NestedSecretSafeProperties;
@@ -26,10 +28,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -69,12 +74,58 @@ class ConfigurationPropertiesTest {
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("@EnableConfigurationProperties を付けるクラスは、設定のクラス（@Configuration）")
-    void enableConfigurationPropertiesIsOnConfiguration() {
+    @DisplayName("本番のクラスは、@EnableConfigurationProperties を使わない")
+    void productionDoesNotUseEnableConfigurationProperties() {
         // 操作と確認：本番の手書きのクラスに規則を当てる
-        ArchRule rule = classes().that().areAnnotatedWith(EnableConfigurationProperties.class)
-                .should().beMetaAnnotatedWith(Configuration.class);
+        // アプリのクラスは、@ConfigurationPropertiesScan が @EnableConfigurationProperties を含むので、検査の対象から除く
+        ArchRule rule = noClasses().that().doNotHaveFullyQualifiedName(EcSiteApplication.class.getName())
+                .should().beMetaAnnotatedWith(EnableConfigurationProperties.class)
+                .because("設定の型の登録は、アプリのクラスの @ConfigurationPropertiesScan にまとめるため");
         rule.check(ProductionClasses.handwritten());
+    }
+
+    @Test
+    @DisplayName("本番のメソッドには、@ConfigurationProperties を付けない")
+    void productionMethodsAreNotAnnotatedWithConfigurationProperties() {
+        // 操作と確認：本番の手書きのクラスに規則を当てる
+        methodConfigurationPropertiesRule().check(ProductionClasses.handwritten());
+    }
+
+    @Test
+    @DisplayName("メソッドの規則は、@ConfigurationProperties を付けたメソッドの例に当たる")
+    void methodRuleMatchesAnnotatedMethodExample() {
+        // 準備：@Bean のメソッドに @ConfigurationProperties を付けた例
+        var examples = new ClassFileImporter().importClasses(MethodAnnotatedExampleConfig.class);
+
+        // 操作：規則を当てる
+        var result = methodConfigurationPropertiesRule().evaluate(examples);
+
+        // 確認：例のメソッドが違反になる
+        assertThat(result.hasViolation()).isTrue();
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(MethodAnnotatedExampleConfig.class.getName()));
+    }
+
+    @Test
+    @DisplayName("本番の設定の型（@ConfigurationProperties）は、com.ecsite.config か com.ecsite.module の下にある")
+    void configurationPropertiesResideInScanPackages() {
+        // 操作と確認：本番の手書きのクラスに規則を当てる
+        configurationPropertiesLocationRule().check(ProductionClasses.handwritten());
+    }
+
+    @Test
+    @DisplayName("設定の型の置き場所の規則は、範囲の外に置いた例に当たる")
+    void configurationPropertiesLocationRuleMatchesOutOfScopeExample() {
+        // 準備：スキャンの範囲の外の設定の型の例
+        var examples = new ClassFileImporter().importClasses(ExampleProperties.class);
+
+        // 操作：規則を当てる
+        var result = configurationPropertiesLocationRule().evaluate(examples);
+
+        // 確認：例が違反になる
+        assertThat(result.hasViolation()).isTrue();
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(ExampleProperties.class.getName()));
     }
 
     @Test
@@ -300,6 +351,31 @@ class ConfigurationPropertiesTest {
     private static ArchRule presentationRule(String presentationPackage) {
         return noClasses().that().resideInAPackage(presentationPackage)
                 .should().dependOnClassesThat().areAnnotatedWith(ConfigurationProperties.class);
+    }
+
+    /**
+     * 設定の型を、スキャンの範囲（アプリのクラスの {@code @ConfigurationPropertiesScan} の値で指定したパッケージの下）に置く規則を作る。
+     *
+     * @return 規則
+     */
+    private static ArchRule configurationPropertiesLocationRule() {
+        String[] scanPackages = Arrays.stream(EcSiteApplication.class.getAnnotation(ConfigurationPropertiesScan.class).value())
+                .map(basePackage -> basePackage + "..")
+                .toArray(String[]::new);
+        return classes().that().areAnnotatedWith(ConfigurationProperties.class)
+                .should().resideInAnyPackage(scanPackages);
+    }
+
+    /**
+     * メソッドに {@code @ConfigurationProperties} を付けない規則を作る。
+     *
+     * <p>{@code @Bean} のメソッドに付けると、スキャンの外で設定の型を登録できてしまうため。
+     *
+     * @return 規則
+     */
+    private static ArchRule methodConfigurationPropertiesRule() {
+        return noMethods().should().beAnnotatedWith(ConfigurationProperties.class)
+                .because("設定の型の登録は、スキャンにまとめるため");
     }
 
     /**

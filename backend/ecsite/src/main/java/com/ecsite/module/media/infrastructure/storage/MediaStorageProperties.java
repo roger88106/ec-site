@@ -2,6 +2,7 @@ package com.ecsite.module.media.infrastructure.storage;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
@@ -37,9 +38,9 @@ public record MediaStorageProperties(
         @NotBlank String incomingBucket,
         @NotBlank String publicBucket,
         @NotNull URI publicBaseUrl,
-        @DefaultValue("5m") Duration uploadUrlTtl,
-        @DefaultValue("10s") Duration attemptTimeout,
-        @DefaultValue("30s") Duration callTimeout) {
+        @DefaultValue("5m") @NotNull @DurationMin(seconds = 1) Duration uploadUrlTtl,
+        @DefaultValue("10s") @NotNull @DurationMin(millis = 1) Duration attemptTimeout,
+        @DefaultValue("30s") @NotNull @DurationMin(millis = 1) Duration callTimeout) {
 
     /**
      * 資格情報を設定で与えているかを返す。

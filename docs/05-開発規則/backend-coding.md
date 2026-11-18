@@ -243,7 +243,7 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 | service（外部の呼び出し） | `XxxGatewayService` | `PaymentGatewayService` |
 | イベントのハンドラー | `XxxHandler` | `CartChangedHandler` |
 | ジョブ | `XxxJob`（設定の型も `application/job/`） | `CartCleanupJob`、`CartCleanupProperties` |
-| Config | `<モジュール>Config`。adapter ごと・条件ごとの Config は技術の名前 | `CartConfig`、`StripeConfig` |
+| Config | `<モジュール>Config`。adapter ごと・条件ごとの Config は技術の名前 | `ShippingConfig`、`StripeConfig` |
 | 公開の API | `<機能>Api`（提供する側の機能の名前。呼ぶ側の名前を入れない） | `PaymentApi`、`StockReservationApi` |
 | 腐敗防止層の port | `<相手>Directory`（使う層の `port/`） | `OrderDirectory` |
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `OrderApiDirectory` |
@@ -319,7 +319,10 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 - 外部のクライアント（`RestClient` など）は、Config の `@Bean` で作り、使うクラスにコンストラクターで注入する。
   - テストは、Config の static メソッドで同じ設定を作る。
   - 外部のクライアントを使う実装のクラスは、public にしない（port を通さず具象に依存させないため）。設定の切り替えのテストが具象を見るなら、public にしてよい。
-- モジュールの `@Configuration` のクラスは `infrastructure/`（またはその下）に置き、`@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
+- 設定の型は、`EcSiteApplication` の `@ConfigurationPropertiesScan` だけで登録し、本番のコードでは `@EnableConfigurationProperties` を使わない。理由：登録だけのクラスを、モジュールごとに置かないため。
+- 設定の型は、`com.ecsite.config` と `com.ecsite.module` の下に置く（スキャンの範囲を、この 2 つに限る）。理由：統合テストのクラスパスにある、構成の検査の見本の型を登録しないため。条件で切り替える実装（mock など）の設定の型には、実装と同じ条件の注釈を付ける。
+- モジュールの `@Configuration` のクラスは、他の Bean を作るときだけ、`infrastructure/`（またはその下）に置く。
+- 時間の値には、`@NotNull` と `@DurationMin` を付ける。下限は、ミリ秒で使う値は 1ms、秒で使う値（署名付き URL の有効期間など）は 1 秒にし、0 に意味がある値（保存期間など）だけ 0 以上にする。
 - presentation は設定の値の型を受け取らず、必要な値は application の service が読んで view で返す（`api/` は対象外）。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
 - 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きして秘密の値を `***` にする（`StripeProperties` の形。項目の決め方は `ConfigurationPropertiesTest`）。理由：record の既定の `toString` は全ての項目を出し、ログから秘密の値が漏れるため。
@@ -331,7 +334,7 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 
 確認方法：
 
-- 設定の値の型：自動（起動のテスト）。`@EnableConfigurationProperties` と `@Configuration` の置き場所、presentation の依存は自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔の取り方、外部のクライアントの作り方はレビュー
+- 設定の値の型：自動（起動のテスト）。`@EnableConfigurationProperties` を使わないこと、設定の型と `@Configuration` の置き場所、presentation の依存は自動（ArchUnit）。時間の値の下限は単体テスト。型の置き場所と接頭辞、`@Scheduled` の間隔の取り方、外部のクライアントの作り方はレビュー
 - 秘密の値の `toString`：`toString` の宣言は自動（`ConfigurationPropertiesTest`）。値のマスクは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー
 
 ## jOOQ の書き方

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
+import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -44,8 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 一覧と検索の条件と並びの細かい規則（境界の値、同じ並びの基準の順、新着順の基準）は {@code StoreCatalogApiTest}・
  * {@code StoreProductSearchTest}、変更の反映の速さは {@code StorefrontFreshnessTest}、カートの表示は {@code StorefrontCartTest} が確認する。
  *
- * <p>商品は B 側の API で作って公開する。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
- * 在庫モジュールのリポジトリで直接作る。公開するごとに時計を 1 分進める。
+ * <p>商品は B 側の API で作って公開する。バリアントの在庫は、登録と同じトランザクションの中で在庫数 0 で作られるので、
+ * 在庫数は在庫モジュールのリポジトリで直接調整する。公開するごとに時計を 1 分進める。
  * 一覧はテストごとのカテゴリで、検索はテストごとの識別子で絞り、他のテストの商品が見えないようにする。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -367,14 +368,14 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-56 全バリアントが在庫なしの商品も一覧に出て、在庫なしと示される")
         void marksOutOfStock() throws Exception {
-            // 準備：1 つのバリアントに在庫のある商品と、在庫 0 と在庫のまだないバリアントだけの商品
+            // 準備：1 つのバリアントに在庫のある商品と、在庫 0 と在庫の行がないバリアントだけの商品
             var category = newCategory();
             var inStock = catalog.product(standard, "在庫あり", 1000, List.of(category), "色").variant("白").variant("黒").publish();
             inventory.stock(inStock.variantIds.getFirst(), 0);
             inventory.stock(inStock.variantIds.get(1), 3);
             var soldOut = catalog.product(standard, "在庫なし", 1000, List.of(category), "色").variant("白").variant("黒").publish();
             inventory.stock(soldOut.variantIds.getFirst(), 0);
-            // 2 つ目のバリアントの在庫は、まだない
+            removeStock(soldOut.variantIds.get(1));
 
             // 操作と確認：両方が出て、在庫なしの商品は在庫なし、在庫ありの商品は在庫あり
             mockMvc.perform(listIn(category))
@@ -383,11 +384,12 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("AC-56 在庫がまだ作られていないバリアントは、在庫なしとして数える")
+        @DisplayName("AC-56 在庫の行がないバリアントは、在庫なしとして数える")
         void treatsMissingStockAsOutOfStock() throws Exception {
-            // 準備：在庫をまだ作っていないバリアントだけの商品
+            // 準備：在庫の行がないバリアントだけの商品
             var category = newCategory();
-            catalog.product(standard, "在庫の記録なし", 1000, List.of(category)).publish();
+            var product = catalog.product(standard, "在庫の記録なし", 1000, List.of(category)).publish();
+            removeStock(product.variantIds.getFirst());
 
             // 操作と確認：在庫なし
             mockMvc.perform(listIn(category))
@@ -579,7 +581,7 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-58 検索の結果の商品は、税込価格と在庫の有無を持つ")
         void returnsPriceAndStock() throws Exception {
-            // 準備：税抜 1,000 円で、在庫を作っていない商品
+            // 準備：税抜 1,000 円で、在庫数 0 の商品（在庫は登録と同時に在庫数 0 でできる）
             var mark = newMark();
             catalog.product(standard, mark + "綿のシャツ", 1000).publish();
 
@@ -916,6 +918,18 @@ class StorefrontApiTest {
     }
 
     // ============================== 準備の補助 ==============================
+
+    /**
+     * バリアントの在庫の行を消し、行がないことを確認する。
+     *
+     * <p>在庫はバリアントの登録と同時にできるので、在庫の行がないバリアントは、登録の後に消して作る。
+     *
+     * @param variantId バリアント ID
+     */
+    private void removeStock(UUID variantId) {
+        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId)).execute();
+        assertThat(dsl.fetchCount(STOCK_ITEM, STOCK_ITEM.VARIANT_ID.eq(variantId))).isZero();
+    }
 
     /**
      * 公開期間を指定した商品と、指定しない商品

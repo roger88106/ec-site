@@ -232,7 +232,7 @@ class EventResubmissionJobTest {
         @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
         @DisplayName("結果の出ていないイベントは、発行から 5 分を過ぎても再発行しない")
         void doesNotResubmitEventWithoutResult(String status) {
-            // 準備：処理を 2 回失敗したイベントを、結果の出ていない状態に見せる
+            // 準備：処理を 2 回失敗したイベントを、結果の出ていない状態にする
             var job = jobWithMaxAttempts(3);
             var event = failedUntil(job, 2);
             var lastResubmission = publicationOf(event).getLastResubmissionDate();
@@ -242,7 +242,7 @@ class EventResubmissionJobTest {
             clock.advance(Duration.ofMinutes(6));
             job.resubmit();
 
-            // 確認：処理の回数と最後の再発行の日時が変わらず（リスナーは非同期で動くので、受けた回数だけでは確認できない）、リスナーは 2 回だけ受けた
+            // 確認：処理の回数と最後の再発行の日時が変わらない。リスナーが受けた回数も 2 回のまま（非同期で動くので、回数だけでは確認にならない）
             var publication = publicationOf(event);
             assertThat(publication.getCompletionAttempts()).isEqualTo(2);
             assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
@@ -264,6 +264,26 @@ class EventResubmissionJobTest {
             asyncEvents.awaitHandled(event::equals);
             assertThat(listener.attempts(event)).isEqualTo(2);
             assertThat(listener.succeeded(event)).isTrue();
+        }
+
+        @Test
+        @DisplayName("処理を終えたイベントは、時計を進めて再発行のジョブを動かしても、再発行しない")
+        void doesNotResubmitCompletedEvent() {
+            // 準備：1 回目の処理に失敗し、再発行の 2 回目の処理で終えたイベント
+            var event = failedOnce();
+            var publicationId = publicationOf(event).getIdentifier();
+            clock.advance(Duration.ofMinutes(6));
+            job.resubmit();
+            asyncEvents.awaitHandled(event::equals);
+
+            // 操作：さらに 6 分後に再発行する
+            clock.advance(Duration.ofMinutes(6));
+            job.resubmit();
+
+            // 確認：処理の回数が 2 のまま。リスナーが受けた回数も 2 回のまま（非同期で動くので、回数だけでは確認にならない）
+            assertThat(dsl.select(COMPLETION_ATTEMPTS).from(EVENT_PUBLICATION).where(ID.eq(publicationId)).fetchOne(COMPLETION_ATTEMPTS))
+                    .isEqualTo(2);
+            assertThat(listener.attempts(event)).isEqualTo(2);
         }
 
         @Test
@@ -379,14 +399,15 @@ class EventResubmissionJobTest {
             assertThat(logs.text()).doesNotContain(event.email());
         }
 
-        @Test
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
         @DisplayName("AC-291 最後の再発行が処理中（失敗も完了もしていない）のイベントは、止めない")
-        void doesNotStopEventInProcess() {
-            // 準備：処理を 2 回失敗したイベントを、処理中（再発行の後、リスナーが終わる前の状態）に見せる
+        void doesNotStopEventInProcess(String status) {
+            // 準備：処理を 2 回失敗したイベントを、結果の出ていない状態にする
             var job = jobWithMaxAttempts(2);
             var event = failedUntil(job, 2);
             var publication = publicationOf(event);
-            markStatus(event, "RESUBMITTED");
+            markStatus(event, status);
 
             // 操作：1 分後に再発行する
             clock.advance(Duration.ofMinutes(1));
@@ -466,29 +487,11 @@ class EventResubmissionJobTest {
     @DisplayName("処理の途中で止まったインスタンス")
     class StuckInstance {
 
-        @Test
-        @DisplayName("再発行の印を付けた後でインスタンスが止まったイベントは、最後の試行から 5 分たつと再発行される")
-        void resubmitsEventStuckAfterResubmissionMark() {
-            // 準備：処理を 2 回失敗したイベントを、再発行の印を付けたまま止まった状態に見せる
-            var job = jobWithMaxAttempts(3);
-            var event = failedUntil(job, 2);
-            markStatus(event, "RESUBMITTED");
-
-            // 操作：6 分後に、結果の出ないイベントを失敗の扱いにしてから、再発行する
-            clock.advance(Duration.ofMinutes(6));
-            registry.markStalePublicationsFailed(staleness);
-            job.resubmit();
-
-            // 確認：3 回目の処理が動く
-            asyncEvents.awaitFailed(event::equals, 3);
-            assertThat(failingListener.attempts(event)).isEqualTo(3);
-        }
-
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(strings = {"PUBLISHED", "PROCESSING"})
-        @DisplayName("リスナーの処理の前や途中でインスタンスが止まったイベントは、最後の試行から 5 分たつと再発行される")
+        @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
+        @DisplayName("処理の結果が出る前にインスタンスが止まったイベントは、最後の試行から 5 分たつと再発行される")
         void resubmitsEventStuckBeforeResult(String status) {
-            // 準備：処理を 2 回失敗したイベントを、リスナーの処理の前や途中で止まった状態に見せる
+            // 準備：処理を 2 回失敗したイベントを、処理の結果が出る前に止まった状態にする
             var job = jobWithMaxAttempts(3);
             var event = failedUntil(job, 2);
             markStatus(event, status);
@@ -503,21 +506,27 @@ class EventResubmissionJobTest {
             assertThat(failingListener.attempts(event)).isEqualTo(3);
         }
 
-        @Test
-        @DisplayName("最後の試行から 5 分たっていない処理中のイベントは、失敗の扱いにしない")
-        void doesNotFailRecentEventInProcess() {
-            // 準備：処理を 2 回失敗したイベントを、処理中に見せる
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"PROCESSING", "RESUBMITTED"})
+        @DisplayName("最後の試行から 5 分たっていない処理中のイベントは、失敗の扱いにせず、再発行もしない")
+        void doesNotFailRecentEventInProcess(String status) {
+            // 準備：処理を 2 回失敗したイベントを、処理中にする
             var job = jobWithMaxAttempts(3);
             var event = failedUntil(job, 2);
-            markStatus(event, "RESUBMITTED");
+            var lastResubmission = publicationOf(event).getLastResubmissionDate();
+            markStatus(event, status);
 
-            // 操作：4 分後に、結果の出ないイベントを失敗の扱いにする
+            // 操作：4 分後に、結果の出ないイベントを失敗の扱いにしてから、再発行する
             clock.advance(Duration.ofMinutes(4));
             registry.markStalePublicationsFailed(staleness);
+            job.resubmit();
 
-            // 確認：処理中のまま
-            assertThat(dsl.select(STATUS).from(EVENT_PUBLICATION).where(ID.eq(publicationOf(event).getIdentifier())).fetchOne(STATUS))
-                    .isEqualTo("RESUBMITTED");
+            // 確認：処理中のままで、処理の回数と最後の再発行の日時が変わらない
+            var publication = publicationOf(event);
+            assertThat(dsl.select(STATUS).from(EVENT_PUBLICATION).where(ID.eq(publication.getIdentifier())).fetchOne(STATUS))
+                    .isEqualTo(status);
+            assertThat(publication.getCompletionAttempts()).isEqualTo(2);
+            assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
         }
     }
 

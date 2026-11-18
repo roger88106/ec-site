@@ -172,7 +172,7 @@ class ShipmentMailTest {
         @DisplayName("AC-185 同じ注文の出荷のイベントを重ねて受けても、メールは 1 通だけ")
         void sendsOnlyOnce() {
             // 準備：イベントを発行し、メールが届いて発行の記録が完了するのを待つ
-            // （同じイベントの処理が重なると、記録が完了にならないことがあるため。CatalogEventHandlerTest）
+            // （Spring Modulith は処理中の発行を（イベント、リスナー）の組で持つので、同じイベントの処理が重なると、記録が完了にならないことがあるため）
             var event = shipped();
             publish(event);
             await().atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).size() == 1);

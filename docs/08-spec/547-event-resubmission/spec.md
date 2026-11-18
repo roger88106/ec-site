@@ -69,7 +69,9 @@
 | マイグレーション | `backend/ecsite/src/main/resources/db/migration/`（止めたイベントの表を追加する） |
 | 在庫 | `backend/ecsite/src/main/java/com/ecsite/module/inventory/application/`（商品カタログのイベントのリスナーと在庫のコマンドサービス） |
 | テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/event/`、`backend/ecsite/src/test/java/com/ecsite/config/event/`、`backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/handler/` |
-| 設計書 | `docs/02-設計/backend-architecture.md`、`docs/02-設計/common.md`、`docs/03-機能仕様/inventory.md`、`docs/02-設計/inventory.md` ※3 |
+| 設計書 | `docs/02-設計/backend-architecture.md`、`docs/02-設計/common.md`、`docs/03-機能仕様/inventory.md`、`docs/02-設計/inventory.md`、`docs/03-機能仕様/storefront.md` ※3 |
+| 規則 | `docs/constitution.md`（「バックエンドのアーキテクチャ」の `event/` に、例外は細則を見る旨の参照を加える）、`docs/05-開発規則/comments.md`（`event/package-info` の決まった文） ※4 |
+| 在庫の作成の前提の記述 | 商品カタログの `event/package-info.java`、在庫が非同期で作られる前提のコメントがあるテスト（店舗・カート・在庫）、`frontend/admin` の在庫の表示の部品のコメント、`e2e/src/data.ts` |
 
 ※3：変える節は次のとおり。
 
@@ -79,6 +81,9 @@
 | `docs/02-設計/common.md` | 「設定（config/）」 |
 | `docs/03-機能仕様/inventory.md` | 「在庫の作成と削除」 |
 | `docs/02-設計/inventory.md` | 「在庫の作成と削除」 |
+| `docs/03-機能仕様/storefront.md` | 在庫の行がないバリアントの扱い |
+
+※4：段階 1 の最後のレビューで、constitution の `event/` を非同期の通知とする記述と、同期で受ける例外が食い違うと分かった。利用者が、constitution に細則への参照を加える案を承認した（2026-11-18）。
 
 ## 非機能要件
 
@@ -91,11 +96,11 @@
 | 対象 | 関係 |
 |------|------|
 | #544 の全体のブランチ（`agent/544-cleanup-before-release`） | 作業ブランチの元。pull request の向き先 |
-| #493（集約の操作の戻り値と保存） | 並行する。order・payment・catalog・tax・reporting の集約を変える。本 spec は在庫以外の集約を変えない ※4 |
+| #493（集約の操作の戻り値と保存） | 並行する。order・payment・catalog・tax・reporting の集約を変える。本 spec は在庫以外の集約を変えない ※5 |
 | #548（shipping） | 並行する。shipping のリスナーは確認だけで、変えない |
 | #491（モジュールをまたぐ API のトランザクションの前提） | 在庫を、商品カタログのトランザクションの中で作る（スコープの ※2）。#491 で決める前提と合うかを plan で確認する |
 
-※4：catalog の集約を変える必要が出たら、issue 担当のセッションに先に知らせる。
+※5：catalog の集約を変える必要が出たら、issue 担当のセッションに先に知らせる。
 
 ## Non-goals
 

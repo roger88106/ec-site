@@ -18,7 +18,7 @@ import java.time.Clock;
 import java.time.Duration;
 
 /**
- * 未完了のイベントの再発行のジョブ
+ * 最後の処理に失敗した、未完了のイベントの再発行のジョブ
  */
 @Slf4j
 @Component
@@ -51,7 +51,7 @@ class EventResubmissionJob {
     private final EventPublicationMetrics publicationMetrics;
 
     /**
-     * 発行から一定時間より前の、未完了のイベントを再発行する。
+     * 発行から一定時間より前の、最後の処理に失敗した未完了のイベントを再発行する。
      *
      * <p>最後の処理に失敗したイベントを、もう一度リスナーに渡す。処理の途中でインスタンスが止まったイベントは、
      * Spring Modulith の監視が失敗の状態にした後の回で渡す。

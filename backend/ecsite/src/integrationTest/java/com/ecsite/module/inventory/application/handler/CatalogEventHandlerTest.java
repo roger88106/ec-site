@@ -3,6 +3,7 @@ package com.ecsite.module.inventory.application.handler;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import com.ecsite.module.inventory.application.StockCommandService;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
@@ -15,7 +16,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -26,9 +30,14 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -36,6 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>バリアント登録は、発行したトランザクションの中で同期で処理される。バリアント削除と商品削除は、コミット後に非同期で処理されるので、
  * コミットするトランザクションで発行し、処理を待つ。ロールバックしない。
+ *
+ * <p>在庫の作成の失敗は、在庫のコマンドサービスを差し替えるので、入れ子のクラスに分ける（ほかのテストは本物を使う）。
  */
 @IntegrationTest
 class CatalogEventHandlerTest {
@@ -48,12 +59,6 @@ class CatalogEventHandlerTest {
      * <p>日本時間の 2026-10-08 00:00。
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
-     * バリアント登録を受ける在庫のリスナーの ID（イベントの発行の記録の listener_id の形）
-     */
-    private static final String REGISTRATION_LISTENER_ID =
-            CatalogEventHandler.class.getName() + ".on(" + VariantRegistered.class.getName() + ")";
 
     // ============================== Bean ==============================
 
@@ -98,12 +103,7 @@ class CatalogEventHandlerTest {
             publish(VariantRegistered.of(NOW, productId, variantId));
 
             // 確認：その商品の、在庫数 0 の在庫ができる
-            await().atMost(TIMEOUT).untilAsserted(() -> {
-                var stock = dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId)).fetchOne();
-                assertThat(stock).isNotNull();
-                assertThat(stock.getQuantity()).isZero();
-                assertThat(stock.getProductId()).isEqualTo(productId);
-            });
+            assertStockCreated(productId, variantId);
         }
 
         @Test
@@ -115,15 +115,26 @@ class CatalogEventHandlerTest {
             var event = VariantRegistered.of(NOW, productId, variantId);
 
             // 操作：同じイベントを 2 回発行する
-            // 1 回目を処理し終えてから 2 回目を送る。同じイベントの処理が重なると、
-            // Spring Modulith が処理中の発行を（イベント、リスナー）で取り違え、発行の記録が完了にならないことがあるため
             publish(event);
-            asyncEvents.awaitHandled(event::equals);
             publish(event);
-            asyncEvents.awaitHandled(event::equals);
 
             // 確認：在庫が 1 つ
             assertThat(stockCount(variantId)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("バリアント登録のイベントをトランザクションの外で発行すると、例外になり、在庫はできない")
+        void rejectsEventOutsideTransaction() {
+            // 準備：商品とバリアント
+            var productId = UUID.randomUUID();
+            var variantId = UUID.randomUUID();
+
+            // 操作と確認：トランザクションの外で発行すると例外になる
+            assertThatThrownBy(() -> eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, variantId)))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：在庫はできない
+            assertThat(stockCount(variantId)).isZero();
         }
 
         @Test
@@ -157,14 +168,14 @@ class CatalogEventHandlerTest {
             });
 
             // 確認：後に発行してコミットしたイベントの在庫ができるのを待ってから、巻き戻したバリアントの在庫がないことを確認する
-            // 巻き戻したイベントが非同期のリスナーに渡ったときに、その処理が見終わった後に動いて誤って通らないようにするため
+            // リスナーが非同期で動くと、巻き戻したイベントの処理が遅れて動き、確認の後に在庫を作って、テストが誤って通ることがあるのを防ぐため
             publish(VariantRegistered.of(NOW, productId, committed));
             await().atMost(TIMEOUT).until(() -> stockCount(committed) == 1);
             assertThat(stockCount(rolledBack)).isZero();
         }
 
         @Test
-        @DisplayName("バリアント登録のイベントを発行しても、在庫のリスナーへのイベントの発行の記録はできない")
+        @DisplayName("バリアント登録のイベントを発行しても、在庫のリスナー宛てのイベントの発行の記録は残らない")
         void doesNotRecordPublicationForStockListener() {
             // 準備：バリアント登録のイベント
             var productId = UUID.randomUUID();
@@ -174,9 +185,15 @@ class CatalogEventHandlerTest {
             // 操作：イベントを発行する
             publish(event);
 
-            // 確認：在庫のリスナーへの発行の記録がなく、在庫はできている
-            assertThat(asyncEvents.isRecorded(event::equals, REGISTRATION_LISTENER_ID)).isFalse();
+            // 確認：在庫のリスナー宛ての発行の記録がなく、在庫はできている
+            assertThat(asyncEvents.isRecorded(event::equals, listenerId(VariantRegistered.class))).isFalse();
             assertStockCreated(productId, variantId);
+
+            // 確認（前提）：同じ組み立ての ID で、非同期のまま残る削除のリスナー宛ての記録は見つかる（ID の形の誤りで通らないようにするため）
+            var deletion = VariantDeleted.of(NOW, productId, variantId);
+            publish(deletion);
+            asyncEvents.awaitPublishedThenHandled(deletion::equals);
+            assertThat(asyncEvents.isRecorded(deletion::equals, listenerId(VariantDeleted.class))).isTrue();
         }
 
         /**
@@ -319,7 +336,7 @@ class CatalogEventHandlerTest {
         }
 
         /**
-         * 管理の API で、2 つのバリアント（白・黒）を持つ公開前の商品を登録し、両方の在庫ができるまで待つ。
+         * 管理の API で、2 つのバリアント（白・黒）を持つ公開前の商品を登録し、両方の在庫ができたことを確認する。
          *
          * @return 登録した商品
          * @throws Exception API の呼び出しに失敗したとき
@@ -328,8 +345,7 @@ class CatalogEventHandlerTest {
             var catalog = new CatalogTestData(mockMvc, clock);
             var taxCategory = catalog.taxCategory("在庫の削除 " + UUID.randomUUID().toString().substring(0, 8), "10");
             var product = catalog.product(taxCategory, "削除する商品", 1000, "色").variant("白").variant("黒");
-            await().atMost(TIMEOUT).until(() -> product.variantIds.stream()
-                    .allMatch(variantId -> inventoryStatus(variantId) == HttpStatus.OK.value()));
+            assertThat(product.variantIds).allMatch(variantId -> inventoryStatus(variantId) == HttpStatus.OK.value());
             return product;
         }
 
@@ -361,6 +377,39 @@ class CatalogEventHandlerTest {
         }
     }
 
+    @Nested
+    @DisplayName("在庫の作成の失敗")
+    class StockCreationFailure {
+
+        /**
+         * 在庫のコマンドサービス（このテストの中でだけ、在庫の作成を失敗させる）
+         */
+        @MockitoSpyBean
+        StockCommandService commandService;
+
+        @Test
+        @DisplayName("在庫の作成に失敗すると、管理の API のバリアントの登録も失敗し、バリアントも在庫も増えない")
+        void rollsBackVariantRegistrationWhenStockCreationFails() throws Exception {
+            // 準備：バリアントのない公開前の商品と、在庫の作成の失敗
+            var catalog = new CatalogTestData(mockMvc, clock);
+            var taxCategory = catalog.taxCategory("在庫の作成の失敗 " + UUID.randomUUID().toString().substring(0, 8), "10");
+            var product = catalog.product(taxCategory, "在庫の作成に失敗する商品", 1000, "色");
+            doThrow(new IllegalStateException("在庫の作成を失敗させる")).when(commandService).createIfAbsent(any(), any());
+
+            // 操作：管理の API でバリアントを登録する
+            var response = mockMvc.perform(post("/api/admin/products/" + product.id + "/variants")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"variantCode": "%s-1", "axisValues": ["白"], "version": 0}""".formatted(product.productCode)))
+                    .andReturn().getResponse();
+
+            // 確認：失敗の応答になり、商品のバリアントも、その商品の在庫も増えない
+            assertThat(response.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            mockMvc.perform(get("/api/admin/products/" + product.id)).andExpect(jsonPath("$.variants").isEmpty());
+            assertThat(dsl.fetchCount(STOCK_ITEM, STOCK_ITEM.PRODUCT_ID.eq(product.id))).isZero();
+        }
+    }
+
     // ============================== 確認の補助 ==============================
 
     /**
@@ -383,6 +432,16 @@ class CatalogEventHandlerTest {
         return dsl.fetchCount(STOCK_ADJUSTMENT, STOCK_ADJUSTMENT.STOCK_ITEM_ID.eq(stockItemId));
     }
 
+    /**
+     * イベントを受ける在庫のリスナーの ID を、イベントの発行の記録の listener_id の形で組み立てる。
+     *
+     * @param eventType イベントの型
+     * @return リスナーの ID（リスナーのクラスの完全修飾名、メソッド名、引数の型の完全修飾名）
+     */
+    private static String listenerId(Class<?> eventType) {
+        return CatalogEventHandler.class.getName() + ".on(" + eventType.getName() + ")";
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**
@@ -397,14 +456,14 @@ class CatalogEventHandlerTest {
     }
 
     /**
-     * 商品のバリアントの登録のイベントを発行し、全ての在庫ができるまで待つ。
+     * 商品のバリアントの登録のイベントを発行し、全ての在庫ができたことを確認する。
      *
      * @param productId  商品 ID
      * @param variantIds バリアント ID
      */
     private void register(UUID productId, UUID... variantIds) {
         Stream.of(variantIds).forEach(variantId -> publish(VariantRegistered.of(NOW, productId, variantId)));
-        await().atMost(TIMEOUT).until(() -> Stream.of(variantIds).allMatch(variantId -> stockCount(variantId) == 1));
+        assertThat(variantIds).allMatch(variantId -> stockCount(variantId) == 1);
     }
 
     /**

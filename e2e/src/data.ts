@@ -1,9 +1,7 @@
-import { expect } from '@playwright/test'
 import createClient from 'openapi-fetch'
 import { ACCOUNTS, operatorAccessToken } from './auth'
 import type { components, paths } from './generated/admin'
 import { BACKEND_URL } from './urls'
-import { ASYNC_TIMEOUT } from './waits'
 
 /** バリアントの登録のリクエストの本文 */
 type AddVariantRequest = components['schemas']['AddVariantRequest']
@@ -192,14 +190,8 @@ async function productVersion(productId: string): Promise<number> {
   return unwrap(await api.GET('/products/{productId}', { params: { path: { productId } } })).version
 }
 
-/** 入荷する。在庫はバリアントの登録のイベントで作られるので、在庫ができるのを待ってから調整する */
+/** 入荷する。在庫はバリアントの登録と同時にできるので、登録の応答の後にすぐ調整できる */
 async function arrive(variantId: string, quantity: number): Promise<void> {
-  await expect
-    .poll(
-      async () => (await api.GET('/inventory/variants/{variantId}', { params: { path: { variantId } } })).response.ok,
-      { message: `バリアント ${variantId} の在庫が作られない`, timeout: ASYNC_TIMEOUT },
-    )
-    .toBe(true)
   unwrap(
     await api.POST('/inventory/variants/{variantId}/adjustments', {
       params: { path: { variantId } },

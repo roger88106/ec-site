@@ -3,6 +3,7 @@ package com.ecsite.module.shipping.infrastructure.mock;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.ShippingTestData;
 import org.junit.jupiter.api.DisplayName;
@@ -59,6 +60,9 @@ class MockCarrierTest {
 
     @Autowired
     MockCarrier mockCarrier;
+
+    @Autowired
+    MutableClock clock;
 
     /**
      * 移動（リダイレクト）を追わない HTTP の呼び出し
@@ -330,11 +334,13 @@ class MockCarrierTest {
      * 出荷を作る。
      *
      * <p>送り状番号は、ほかのテストが確定した出荷と重ならない。
+     * mock が送る通知は、発生日時が時計の時刻になる。出荷日時より前にならないよう、時計を出荷日時に合わせる。
      *
      * @param carrier 配送業者
      * @return 作った出荷
      */
     private Created shipped(ShipmentSummary.Carrier carrier) {
+        clock.setInstant(SHIPPED_AT);
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
         shippingApi.create(orderId, carrier, trackingNumber, SHIPPED_AT);

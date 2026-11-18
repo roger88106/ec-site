@@ -484,7 +484,7 @@ class CarrierWebhookTest {
      * @return 本文の JSON
      */
     private static String body(String carrier, String trackingNumber, String statusName) {
-        return "{\"carrier\":\"%s\",\"trackingNumber\":\"%s\",\"status\":\"%s\",\"occurredAt\":\"2026-10-15T01:30:00Z\"}"
+        return "{\"carrier\":\"%s\",\"trackingNumber\":\"%s\",\"status\":\"%s\",\"occurredAt\":\"2026-10-15T02:30:00Z\"}"
                 .formatted(carrier, trackingNumber, statusName);
     }
 

@@ -146,7 +146,7 @@ class JooqShipmentRepositoryTest {
             // 準備：保存した出荷を、配達完了に進める
             var shipment = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
             repository.insert(shipment);
-            shipment.advanceTo(DeliveryStatus.DELIVERED, NOTIFIED_AT);
+            shipment.advanceTo(DeliveryStatus.DELIVERED, NOTIFIED_AT, NOTIFIED_AT);
 
             // 操作：進めた出荷を保存する
             repository.updateProgress(List.of(shipment));
@@ -175,8 +175,8 @@ class JooqShipmentRepositoryTest {
             repository.insert(returned);
             repository.insert(delivered);
             repository.insert(shipped);
-            returned.advanceTo(DeliveryStatus.RETURNED, SHIPPED_AT);
-            delivered.advanceTo(DeliveryStatus.DELIVERED, SHIPPED_AT);
+            returned.advanceTo(DeliveryStatus.RETURNED, SHIPPED_AT, SHIPPED_AT);
+            delivered.advanceTo(DeliveryStatus.DELIVERED, SHIPPED_AT, SHIPPED_AT);
             repository.updateProgress(List.of(returned));
             repository.updateProgress(List.of(delivered));
 

@@ -69,7 +69,8 @@ class CarrierWebhookController {
             log.warn("対応の表にない状態の名前の通知を無視する: carrier={}, status={}", notification.carrier(), notification.status());
             return ResponseEntity.ok().build();
         }
-        var result = receiver.receive(notification.carrier(), notification.trackingNumber(), status.get());
+        var result = receiver.receive(notification.carrier(), notification.trackingNumber(), status.get(),
+                notification.occurredAt());
         log.info("物流サービスの通知を受けた: carrier={}, status={}, occurredAt={}, result={}",
                 notification.carrier(), notification.status(), notification.occurredAt(), result);
         return ResponseEntity.ok().build();

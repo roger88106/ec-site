@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * バリアントの一覧の単体テスト
  *
- * <p>表示順の並び、ID で探す操作、次の表示順、置き換え・追加・削除・並べ替え、画像の指定を外す操作を確認する。
+ * <p>表示順の並びと、ID で探す操作・次の表示順・重複の問い合わせ・置き換え・追加・削除・並べ替え・画像の指定を外す操作を確認する。
  */
 class VariantsTest {
 
@@ -56,7 +56,7 @@ class VariantsTest {
         }
 
         @Test
-        @DisplayName("空の一覧は、空であると答える")
+        @DisplayName("空の一覧は、空と判定される")
         void tellsEmpty() {
             // 操作と確認：空の一覧は空で、1 つあれば空でない
             assertThat(new Variants(List.of()).isEmpty()).isTrue();
@@ -80,12 +80,12 @@ class VariantsTest {
         }
 
         @Test
-        @DisplayName("ない ID は、業務のエラー NOT_FOUND になる")
+        @DisplayName("一覧にない ID は、業務のエラー NOT_FOUND になる")
         void rejectsUnknownId() {
             // 準備：1 つのバリアント
             var variants = new Variants(List.of(variant(1)));
 
-            // 操作と確認：知らない ID は拒否される
+            // 操作と確認：一覧にない ID は拒否される
             assertBusinessError(() -> variants.require(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
         }
     }
@@ -113,6 +113,81 @@ class VariantsTest {
     }
 
     @Nested
+    @DisplayName("重複の問い合わせ")
+    class Duplication {
+
+        @Test
+        @DisplayName("同じバリアント品番のバリアントがあれば、品番を含む")
+        void containsSameCode() {
+            // 準備：品番 V1 のバリアントを持つ一覧
+            var variants = new Variants(List.of(variant(1, VariantCode.of("V1"), List.of())));
+
+            // 操作と確認：V1 を含む
+            assertThat(variants.containsCode(VariantCode.of("V1"))).isTrue();
+        }
+
+        @Test
+        @DisplayName("同じバリアント品番のバリアントがなければ、品番を含まない")
+        void doesNotContainOtherCode() {
+            // 準備：品番 V1 のバリアントを持つ一覧
+            var variants = new Variants(List.of(variant(1, VariantCode.of("V1"), List.of())));
+
+            // 操作と確認：V2 は含まない
+            assertThat(variants.containsCode(VariantCode.of("V2"))).isFalse();
+        }
+
+        @Test
+        @DisplayName("同じ軸の値の組み合わせのバリアントがあれば、軸キーを含む")
+        void containsSameAxisKey() {
+            // 準備：白、M のバリアントを持つ一覧
+            var variants = new Variants(List.of(variant(1, VariantCode.of("V1"), List.of("白", "M"))));
+
+            // 操作と確認：白、M の軸キーを含む
+            assertThat(variants.containsAxisKey(variant(2, VariantCode.of("V2"), List.of("白", "M")).axisKey())).isTrue();
+        }
+
+        @Test
+        @DisplayName("軸の値の組み合わせが違えば、軸キーを含まない")
+        void doesNotContainOtherAxisKey() {
+            // 準備：白、M のバリアントを持つ一覧
+            var variants = new Variants(List.of(variant(1, VariantCode.of("V1"), List.of("白", "M"))));
+
+            // 操作と確認：白、L の軸キーは含まない
+            assertThat(variants.containsAxisKey(variant(2, VariantCode.of("V2"), List.of("白", "L")).axisKey())).isFalse();
+        }
+
+        @Test
+        @DisplayName("軸の値の数が指定した数と違うバリアントがあれば、true を返す")
+        void detectsOtherAxisValueCount() {
+            // 準備：軸の値が 2 つのバリアントを持つ一覧
+            var variants = new Variants(List.of(variant(1, VariantCode.of("V1"), List.of("白", "M"))));
+
+            // 操作と確認：軸が 1 つなら、数が違う
+            assertThat(variants.hasAxisValueCountOtherThan(1)).isTrue();
+        }
+
+        @Test
+        @DisplayName("全てのバリアントで軸の値の数が指定した数と同じなら、false を返す")
+        void acceptsSameAxisValueCount() {
+            // 準備：軸の値が 2 つのバリアントを持つ一覧
+            var variants = new Variants(List.of(variant(1, VariantCode.of("V1"), List.of("白", "M"))));
+
+            // 操作と確認：軸が 2 つなら、数は同じ
+            assertThat(variants.hasAxisValueCountOtherThan(2)).isFalse();
+        }
+
+        @Test
+        @DisplayName("バリアントがなければ、軸の値の数が違うバリアントはない")
+        void hasNoOtherAxisValueCountWhenEmpty() {
+            // 準備：空の一覧
+            var variants = new Variants(List.of());
+
+            // 操作と確認：どの数でも false
+            assertThat(variants.hasAxisValueCountOtherThan(1)).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("置き換え")
     class Replace {
 
@@ -134,12 +209,12 @@ class VariantsTest {
         }
 
         @Test
-        @DisplayName("ない ID は、業務のエラー NOT_FOUND になる")
+        @DisplayName("一覧にない ID は、業務のエラー NOT_FOUND になる")
         void rejectsUnknownId() {
             // 準備：1 つのバリアント
             var variants = new Variants(List.of(variant(1)));
 
-            // 操作と確認：知らない ID は拒否される
+            // 操作と確認：一覧にない ID は拒否される
             assertBusinessError(() -> variants.replace(UUID.randomUUID(), variant -> variant), CommonErrorCode.NOT_FOUND);
         }
     }
@@ -207,12 +282,12 @@ class VariantsTest {
         }
 
         @Test
-        @DisplayName("ない ID は、業務のエラー NOT_FOUND になる")
+        @DisplayName("一覧にない ID は、業務のエラー NOT_FOUND になる")
         void rejectsUnknownId() {
             // 準備：1 つのバリアント
             var variants = new Variants(List.of(variant(1)));
 
-            // 操作と確認：知らない ID は拒否される
+            // 操作と確認：一覧にない ID は拒否される
             assertBusinessError(() -> variants.remove(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
         }
     }
@@ -222,7 +297,7 @@ class VariantsTest {
     class Reorder {
 
         @Test
-        @DisplayName("送った順に、1 から表示順を振った一覧を返す")
+        @DisplayName("指定した順に、1 から表示順を付けた一覧を返す")
         void reordersAndRenumbers() {
             // 準備：表示順が 3 と 7 のバリアント
             var first = variant(3);
@@ -232,7 +307,7 @@ class VariantsTest {
             // 操作：逆の順に並べ替える
             var result = variants.reorder(List.of(second.id(), first.id()));
 
-            // 確認：送った順に並び、表示順は 1、2
+            // 確認：指定した順に並び、表示順は 1、2
             assertThat(result.list()).extracting(Variant::id).containsExactly(second.id(), first.id());
             assertThat(result.list()).extracting(Variant::displayOrder).containsExactly(1, 2);
         }
@@ -270,5 +345,17 @@ class VariantsTest {
      */
     private static Variant variant(int displayOrder, UUID imageId) {
         return new Variant(UUID.randomUUID(), VariantCode.of("ABC-001"), List.of(), displayOrder, false, imageId);
+    }
+
+    /**
+     * 品番と軸の値を指定して、画像の指定のないバリアントを作る。
+     *
+     * @param displayOrder 表示順
+     * @param code         バリアント品番
+     * @param axisValues   軸の値
+     * @return バリアント
+     */
+    private static Variant variant(int displayOrder, VariantCode code, List<String> axisValues) {
+        return new Variant(UUID.randomUUID(), code, axisValues, displayOrder, false, null);
     }
 }

@@ -80,7 +80,7 @@ class FieldConstraintContractTest {
      * 商品の画像の枚数の項目
      */
     private static final Row IMAGE_COUNT = new Row("商品の画像の枚数", List.of("admin.yaml#ProductDetail.images"),
-            "com.ecsite.module.catalog.domain.product.Product#MAX_IMAGES", List.of());
+            "com.ecsite.module.catalog.domain.product.ProductImages#MAX_IMAGES", List.of());
 
     /**
      * カテゴリの深さの項目

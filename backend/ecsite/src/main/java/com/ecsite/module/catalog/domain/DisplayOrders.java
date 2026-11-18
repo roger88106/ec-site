@@ -6,7 +6,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +18,7 @@ import java.util.stream.IntStream;
 /**
  * 表示順の振り直し
  *
- * <p>表示順は 1 から始まる連番。並べ替えは、今の要素の全てを、送られた順に並べ直す。
+ * <p>表示順は 1 から始まる連番。並べ替えは、今の要素の全てを、指定された順に並べ直す。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class DisplayOrders {
@@ -47,9 +46,9 @@ public final class DisplayOrders {
     }
 
     /**
-     * 要素を、送られた順に並べ替える。
+     * 要素に、指定された順の表示順を付ける。
      *
-     * <p>送られた順に、1 から表示順を振る。
+     * <p>指定された順に、1 から表示順を振る。返す一覧の要素の順序は元のままで、表示順で整列するのは受け取る側が行う。
      *
      * @param items            今の要素
      * @param idOf             要素の ID
@@ -57,16 +56,15 @@ public final class DisplayOrders {
      * @param orderedIds       並べたい順の ID
      * @param error            一致しないときのエラー
      * @param <T>              要素の型
-     * @return 並び替えた要素（変更できない一覧）
+     * @return 新しい表示順を付けた要素（変更できない一覧）
      * @throws BusinessException 今の要素と過不足なく一致しない（重複・漏れ・ないものを含む。{@code error} のエラー）
      */
     public static <T> List<T> reorder(List<T> items, Function<T, UUID> idOf, BiFunction<T, Integer, T> withDisplayOrder,
                                       List<UUID> orderedIds, ErrorCodeProvider error) {
-        // 送られた順に新しい表示順を振り、その順に並べる
+        // 指定された順に新しい表示順を振る
         var orders = assign(items.stream().map(idOf).toList(), orderedIds, error);
         return items.stream()
                 .map(item -> withDisplayOrder.apply(item, orders.get(idOf.apply(item))))
-                .sorted(Comparator.comparing(idOf, Comparator.comparing(orders::get)))
                 .toList();
     }
 

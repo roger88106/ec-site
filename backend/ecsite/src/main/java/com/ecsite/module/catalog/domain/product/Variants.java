@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.domain.DisplayOrders;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
+import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import lombok.NonNull;
 
 import java.util.ArrayList;
@@ -63,6 +64,38 @@ record Variants(List<Variant> list) {
     }
 
     /**
+     * 同じバリアント品番のバリアントを含むかを返す。
+     *
+     * @param variantCode バリアント品番
+     * @return 同じ品番のバリアントがあれば true
+     */
+    boolean containsCode(VariantCode variantCode) {
+        return list.stream().anyMatch(variant -> variant.variantCode().equals(variantCode));
+    }
+
+    /**
+     * 同じ軸の値の組み合わせのバリアントを含むかを返す。
+     *
+     * @param axisKey 軸キー（{@link Variant#axisKey()}）
+     * @return 同じ軸キーのバリアントがあれば true
+     */
+    boolean containsAxisKey(String axisKey) {
+        return list.stream().anyMatch(variant -> variant.axisKey().equals(axisKey));
+    }
+
+    /**
+     * 軸の値の数が、指定した数と違うバリアントを含むかを返す。
+     *
+     * <p>軸の数は商品が持つので、商品が渡す。
+     *
+     * @param axisCount 軸の数
+     * @return 軸の値の数が違うバリアントがあれば true
+     */
+    boolean hasAxisValueCountOtherThan(int axisCount) {
+        return list.stream().anyMatch(variant -> variant.axisValues().size() != axisCount);
+    }
+
+    /**
      * 新しいバリアントの表示順（最大＋1。なければ 1）を返す。
      *
      * @return 表示順
@@ -87,7 +120,7 @@ record Variants(List<Variant> list) {
     /**
      * 画像の指定を外した一覧を返す。
      *
-     * <p>その画像を指定しているバリアントだけが、代表画像に戻る。
+     * <p>その画像を指定しているバリアントだけ、画像の指定が外れて代表画像に戻る。
      *
      * @param imageId 指定を外す画像の ID
      * @return 外した一覧
@@ -123,9 +156,9 @@ record Variants(List<Variant> list) {
     }
 
     /**
-     * 送られた順に並べ替えた一覧を返す。
+     * 指定された順に並べ替えた一覧を返す。
      *
-     * <p>送られた順に、1 から表示順を振る。
+     * <p>指定された順に、1 から表示順を振る。
      *
      * @param orderedIds 並べたい順のバリアント ID
      * @return 並べ替えた一覧

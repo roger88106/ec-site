@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 画像の一覧の単体テスト
  *
- * <p>表示順の並び、ID で探す操作、次の表示順、置き換え・追加・削除・並べ替え、画像の数の上限を確認する。
+ * <p>表示順の並び、ID で探す操作、次の表示順、追加・削除・並べ替え、画像の数の上限を確認する。
  */
 class ProductImagesTest {
 
@@ -97,12 +97,12 @@ class ProductImagesTest {
         }
 
         @Test
-        @DisplayName("ない ID は、業務のエラー NOT_FOUND になる")
+        @DisplayName("一覧にない ID は、業務のエラー NOT_FOUND になる")
         void rejectsUnknownId() {
             // 準備：1 枚の画像
             var images = new ProductImages(List.of(image(1)));
 
-            // 操作と確認：知らない ID は拒否される
+            // 操作と確認：一覧にない ID は拒否される
             assertBusinessError(() -> images.require(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
         }
 
@@ -142,38 +142,6 @@ class ProductImagesTest {
     }
 
     @Nested
-    @DisplayName("置き換え")
-    class Replace {
-
-        @Test
-        @DisplayName("ID が一致する画像だけを置き換えた一覧を返す")
-        void replacesOnlyTarget() {
-            // 準備：2 枚の画像
-            var first = image(1);
-            var second = image(2);
-            var images = new ProductImages(List.of(first, second));
-
-            // 操作：2 枚目の表示順を 9 に置き換える
-            var replaced = images.replace(second.id(), image -> image.withDisplayOrder(9));
-
-            // 確認：2 枚目だけが替わり、元の一覧は変わらない
-            assertThat(replaced.list()).extracting(ProductImage::displayOrder).containsExactly(1, 9);
-            assertThat(replaced.list()).extracting(ProductImage::id).containsExactly(first.id(), second.id());
-            assertThat(images.list()).extracting(ProductImage::displayOrder).containsExactly(1, 2);
-        }
-
-        @Test
-        @DisplayName("ない ID は、業務のエラー NOT_FOUND になる")
-        void rejectsUnknownId() {
-            // 準備：1 枚の画像
-            var images = new ProductImages(List.of(image(1)));
-
-            // 操作と確認：知らない ID は拒否される
-            assertBusinessError(() -> images.replace(UUID.randomUUID(), image -> image), CommonErrorCode.NOT_FOUND);
-        }
-    }
-
-    @Nested
     @DisplayName("追加")
     class Add {
 
@@ -202,6 +170,19 @@ class ProductImagesTest {
             // 操作と確認：21 枚目は加えられない
             assertThatThrownBy(() -> images.add(image(MAX_IMAGES + 1))).isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        @DisplayName("画像を加えて、ちょうど上限の 20 枚になる")
+        void acceptsAddingUpToLimit() {
+            // 準備：19 枚の画像
+            var images = new ProductImages(images(MAX_IMAGES - 1));
+
+            // 操作：20 枚目を加える
+            var result = images.add(image(MAX_IMAGES));
+
+            // 確認：20 枚になる
+            assertThat(result.size()).isEqualTo(MAX_IMAGES);
+        }
     }
 
     @Nested
@@ -225,12 +206,12 @@ class ProductImagesTest {
         }
 
         @Test
-        @DisplayName("ない ID は、業務のエラー NOT_FOUND になる")
+        @DisplayName("一覧にない ID は、業務のエラー NOT_FOUND になる")
         void rejectsUnknownId() {
             // 準備：1 枚の画像
             var images = new ProductImages(List.of(image(1)));
 
-            // 操作と確認：知らない ID は拒否される
+            // 操作と確認：一覧にない ID は拒否される
             assertBusinessError(() -> images.remove(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
         }
     }
@@ -240,7 +221,7 @@ class ProductImagesTest {
     class Reorder {
 
         @Test
-        @DisplayName("送った順に、1 から表示順を振った一覧を返す")
+        @DisplayName("指定した順に、1 から表示順を付けた一覧を返す")
         void reordersAndRenumbers() {
             // 準備：表示順が 3 と 7 の画像
             var first = image(3);
@@ -250,7 +231,7 @@ class ProductImagesTest {
             // 操作：逆の順に並べ替える
             var result = images.reorder(List.of(second.id(), first.id()));
 
-            // 確認：送った順に並び、表示順は 1、2
+            // 確認：指定した順に並び、表示順は 1、2
             assertThat(result.list()).extracting(ProductImage::id).containsExactly(second.id(), first.id());
             assertThat(result.list()).extracting(ProductImage::displayOrder).containsExactly(1, 2);
         }

@@ -207,6 +207,19 @@ class PublicationTest {
             // 確認：初回表示日時が空
             assertThat(result.firstShownAt()).isNull();
         }
+
+        @Test
+        @DisplayName("公開中で初回表示日時がない値を公開にしても、同じ値を返す")
+        void returnsSameValueWhenPublishedWithoutFirstShownAt() {
+            // 準備：公開の時点で公開終了を過ぎていた公開中
+            var publication = publishedWithoutFirstShownAt();
+
+            // 操作：公開する
+            var result = publication.publish(NOW);
+
+            // 確認：同じ値
+            assertThat(result).isSameAs(publication);
+        }
     }
 
     @Nested
@@ -287,6 +300,19 @@ class PublicationTest {
             // 操作と確認：業務のエラー PRODUCT_DISCONTINUED で拒否される
             assertBusinessError(() -> publication.unpublish(NOW), ProductErrorCode.PRODUCT_DISCONTINUED);
         }
+
+        @Test
+        @DisplayName("公開中で初回表示日時がない値を非公開にすると、非公開になり初回表示日時は空のまま")
+        void unpublishesPublishedWithoutFirstShownAt() {
+            // 準備：公開の時点で公開終了を過ぎていた公開中
+            var publication = publishedWithoutFirstShownAt();
+
+            // 操作：非公開にする
+            var result = publication.unpublish(NOW);
+
+            // 確認：非公開で、初回表示日時は空
+            assertThat(result).isEqualTo(new Publication(PublicationStatus.UNPUBLISHED, publication.publicationPeriod(), null));
+        }
     }
 
     @Nested
@@ -344,6 +370,19 @@ class PublicationTest {
 
             // 確認：同じ値
             assertThat(result).isSameAs(publication);
+        }
+
+        @Test
+        @DisplayName("公開中で初回表示日時がない値を販売終了にすると、販売終了になり初回表示日時は空のまま")
+        void discontinuesPublishedWithoutFirstShownAt() {
+            // 準備：公開の時点で公開終了を過ぎていた公開中
+            var publication = publishedWithoutFirstShownAt();
+
+            // 操作：販売終了にする
+            var result = publication.discontinue(NOW);
+
+            // 確認：販売終了で、初回表示日時は空
+            assertThat(result).isEqualTo(new Publication(PublicationStatus.DISCONTINUED, publication.publicationPeriod(), null));
         }
     }
 
@@ -458,6 +497,32 @@ class PublicationTest {
             // 確認：公開のまま
             assertThat(result.status()).isEqualTo(PublicationStatus.PUBLISHED);
         }
+
+        @Test
+        @DisplayName("公開中で初回表示日時がない値の公開終了日時を未来に延ばすと、初回表示日時は変えた時刻になる")
+        void recordsFirstShownAtWhenEndIsExtended() {
+            // 準備：公開の時点で公開終了を過ぎていた公開中
+            var publication = publishedWithoutFirstShownAt();
+
+            // 操作：公開終了日時を明日にする
+            var result = publication.changePublicationPeriod(PublicationPeriod.of(null, TOMORROW), NOW);
+
+            // 確認：初回表示日時が変えた時刻
+            assertThat(result.firstShownAt()).isEqualTo(NOW);
+        }
+
+        @Test
+        @DisplayName("公開中で初回表示日時がない値の公開終了日時を別の過去にしても、初回表示日時は空のまま")
+        void leavesFirstShownAtEmptyWhenEndStaysPast() {
+            // 準備：公開の時点で公開終了を過ぎていた公開中
+            var publication = publishedWithoutFirstShownAt();
+
+            // 操作：公開終了日時を別の過去にする
+            var result = publication.changePublicationPeriod(PublicationPeriod.of(null, NOW.minusSeconds(1)), NOW);
+
+            // 確認：初回表示日時が空のまま
+            assertThat(result.firstShownAt()).isNull();
+        }
     }
 
     @Nested
@@ -569,6 +634,16 @@ class PublicationTest {
             // 操作と確認：表示したことがある
             assertThat(publication.hasBeenShown(NOW)).isTrue();
         }
+
+        @Test
+        @DisplayName("公開中でも初回表示日時がなければ、表示したことはない")
+        void hasNotBeenShownWhenPublishedWithoutFirstShownAt() {
+            // 準備：公開の時点で公開終了を過ぎていた公開中
+            var publication = publishedWithoutFirstShownAt();
+
+            // 操作と確認：表示したことはない
+            assertThat(publication.hasBeenShown(NOW)).isFalse();
+        }
     }
 
     @Nested
@@ -577,30 +652,54 @@ class PublicationTest {
 
         @ParameterizedTest
         @EnumSource(value = PublicationStatus.class, names = {"UNPUBLISHED", "DISCONTINUED"})
-        @DisplayName("非公開と販売終了は、初回表示日時がなくても過去の初回表示日時があっても作れる")
-        void acceptsNullAndShownForNotPublished(PublicationStatus status) {
-            assertThatCode(() -> new Publication(status, PublicationPeriod.UNLIMITED, null)).doesNotThrowAnyException();
-            assertThatCode(() -> new Publication(status, PublicationPeriod.UNLIMITED, YESTERDAY)).doesNotThrowAnyException();
+        @DisplayName("非公開と販売終了は、初回表示日時がなくても作れる")
+        void acceptsNullForNotPublished(PublicationStatus status) {
+            // 準備：初回表示日時がない
+            Instant firstShownAt = null;
+
+            // 操作と確認：作れる
+            assertThatCode(() -> new Publication(status, PublicationPeriod.UNLIMITED, firstShownAt)).doesNotThrowAnyException();
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = PublicationStatus.class, names = {"UNPUBLISHED", "DISCONTINUED"})
+        @DisplayName("非公開と販売終了は、過去の初回表示日時があっても作れる")
+        void acceptsShownForNotPublished(PublicationStatus status) {
+            // 準備：初回表示日時が昨日
+            var firstShownAt = YESTERDAY;
+
+            // 操作と確認：作れる
+            assertThatCode(() -> new Publication(status, PublicationPeriod.UNLIMITED, firstShownAt)).doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("公開で初回表示日時があれば作れる")
+        @DisplayName("公開中で初回表示日時があれば作れる")
         void acceptsPublishedWithFirstShownAt() {
-            assertThatCode(() -> new Publication(PublicationStatus.PUBLISHED, PublicationPeriod.UNLIMITED, YESTERDAY))
-                    .doesNotThrowAnyException();
+            // 準備：初回表示日時が昨日、公開終了日時がない
+            var period = PublicationPeriod.UNLIMITED;
+
+            // 操作と確認：作れる
+            assertThatCode(() -> new Publication(PublicationStatus.PUBLISHED, period, YESTERDAY)).doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("公開で初回表示日時がなく、公開終了日時があれば作れる（終了済みで表示されなかった）")
+        @DisplayName("公開中で初回表示日時がなく、公開終了日時があれば作れる（終了済みで表示されなかった）")
         void acceptsPublishedWithoutFirstShownAtWhenPeriodEnds() {
-            assertThatCode(() -> new Publication(PublicationStatus.PUBLISHED, PublicationPeriod.of(null, TOMORROW), null))
-                    .doesNotThrowAnyException();
+            // 準備：公開終了日時が明日
+            var period = PublicationPeriod.of(null, TOMORROW);
+
+            // 操作と確認：作れる
+            assertThatCode(() -> new Publication(PublicationStatus.PUBLISHED, period, null)).doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("公開で初回表示日時も公開終了日時もなければ、値を含まないメッセージで拒む")
+        @DisplayName("公開中で初回表示日時も公開終了日時もなければ、値を含まないメッセージで拒む")
         void rejectsPublishedWithoutFirstShownAtAndEnd() {
-            assertThatThrownBy(() -> new Publication(PublicationStatus.PUBLISHED, PublicationPeriod.of(YESTERDAY, null), null))
+            // 準備：公開開始日時だけがある期間
+            var period = PublicationPeriod.of(YESTERDAY, null);
+
+            // 操作と確認：値を含まないメッセージの IllegalArgumentException で拒まれる
+            assertThatThrownBy(() -> new Publication(PublicationStatus.PUBLISHED, period, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .message().doesNotContain(YESTERDAY.toString());
         }
@@ -639,5 +738,14 @@ class PublicationTest {
      */
     private static Publication discontinued(PublicationPeriod period, Instant firstShownAt) {
         return new Publication(PublicationStatus.DISCONTINUED, period, firstShownAt);
+    }
+
+    /**
+     * 公開中で初回表示日時がない値を作る（公開の時点で公開終了を過ぎていて、表示されなかった）。
+     *
+     * @return 公開終了日時が昨日の、公開中の値
+     */
+    private static Publication publishedWithoutFirstShownAt() {
+        return published(PublicationPeriod.of(null, YESTERDAY), null);
     }
 }

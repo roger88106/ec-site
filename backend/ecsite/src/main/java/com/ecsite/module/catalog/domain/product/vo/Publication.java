@@ -24,14 +24,14 @@ public record Publication(@NonNull PublicationStatus status, @NonNull Publicatio
     /**
      * コンストラクタ。
      *
-     * <p>公開で初回表示日時も公開終了もないとき、IllegalArgumentException を投げる。例外のメッセージには値を入れない。
+     * <p>公開状態が「公開」で、初回表示日時も公開終了日時もないとき、IllegalArgumentException を投げる。例外のメッセージには値を入れない。
      *
      * @param status            公開状態
      * @param publicationPeriod 公開期間
      * @param firstShownAt      初回表示日時
      */
     public Publication {
-        // 公開で初回表示日時がないのは、公開の時点で公開終了を過ぎていて、表示されなかったときだけ
+        // 公開状態が「公開」で初回表示日時がないのは、公開した時点で公開終了日時を過ぎていて、表示されなかったときだけ
         if (status == PublicationStatus.PUBLISHED && firstShownAt == null && publicationPeriod.publishEnd() == null) {
             throw new IllegalArgumentException("公開中で、初めて表示した日時も公開終了もない");
         }
@@ -42,7 +42,7 @@ public record Publication(@NonNull PublicationStatus status, @NonNull Publicatio
      *
      * <p>条件は、公開状態が「公開」で、公開期間内であること。
      *
-     * @param now 時点
+     * @param now 現在時刻
      * @return 表示されるなら true
      */
     public boolean isVisibleAt(@NonNull Instant now) {

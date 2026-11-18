@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.UnaryOperator;
 
 /**
  * 画像の一覧
@@ -22,6 +21,11 @@ import java.util.function.UnaryOperator;
 record ProductImages(List<ProductImage> list) {
 
     /**
+     * 1 商品あたりの画像の上限
+     */
+    static final int MAX_IMAGES = 20;
+
+    /**
      * コンストラクタ。
      *
      * <p>表示順に並べ替える。画像の数が上限を超えるとき、IllegalArgumentException を投げる。例外のメッセージには値を入れない。
@@ -29,7 +33,7 @@ record ProductImages(List<ProductImage> list) {
      * @param list 画像の一覧（空でもよい）
      */
     ProductImages(@NonNull List<ProductImage> list) {
-        if (list.size() > Product.MAX_IMAGES) {
+        if (list.size() > MAX_IMAGES) {
             throw new IllegalArgumentException("画像の数が上限を超える");
         }
         this.list = list.stream().sorted(Comparator.comparingInt(ProductImage::displayOrder)).toList();
@@ -76,19 +80,6 @@ record ProductImages(List<ProductImage> list) {
     }
 
     /**
-     * 画像を 1 件置き換えた一覧を返す。
-     *
-     * @param imageId 置き換える画像の ID
-     * @param change  画像から、置き換えた画像を作る関数
-     * @return 置き換えた一覧
-     * @throws BusinessException 一覧にない画像（{@code NOT_FOUND}）
-     */
-    ProductImages replace(UUID imageId, UnaryOperator<ProductImage> change) {
-        require(imageId);
-        return new ProductImages(list.stream().map(image -> image.id().equals(imageId) ? change.apply(image) : image).toList());
-    }
-
-    /**
      * 画像を末尾に加えた一覧を返す。
      *
      * @param image 加える画像
@@ -114,9 +105,9 @@ record ProductImages(List<ProductImage> list) {
     }
 
     /**
-     * 送られた順に並べ替えた一覧を返す。
+     * 指定された順に並べ替えた一覧を返す。
      *
-     * <p>送られた順に、1 から表示順を振る。
+     * <p>指定された順に、1 から表示順を振る。
      *
      * @param orderedIds 並べたい順の画像 ID
      * @return 並べ替えた一覧

@@ -65,8 +65,8 @@
 | 公開中で初回表示日時も公開終了もないことを拒む不変条件を、値の型のコンストラクターに移す | `Publication` | `PublicationTest`、既存の `ProductInvariantsTest`、`ProductRestoreFailureTest` |
 | バリアントの一覧を一覧の型にする（package-private の record） | `catalog/domain/product/Variants.java`（新規） | 単体テスト `VariantsTest`（新規） |
 | 画像の一覧を一覧の型にする（package-private の record） | `catalog/domain/product/ProductImages.java`（新規） | 単体テスト `ProductImagesTest`（新規） |
-| 一覧の型の操作：ID で探す・次の表示順・表示順の整列と、1 件を置き換えた一覧・追加・削除・並べ替え | `Variants`、`ProductImages` | 各単体テスト |
-| 画像の数の上限は一覧の型に、軸の値の数の検査など軸に関わる条件は商品に置く | `ProductImages`、`Product` | 単体テスト、`ProductInvariantsTest`、`ProductRestoreFailureTest`（画像の数が上限を超える行の場合を追加する） |
+| 一覧の型の操作：ID で探す・次の表示順・表示順の整列と、追加・削除・並べ替え。バリアントの一覧は、1 件を置き換えた一覧と、品番・軸の値の組み合わせの重複を調べる操作と、軸の値の数を調べる操作も持つ | `Variants`、`ProductImages` | 各単体テスト |
+| 画像の数の上限（定数を含む）は画像の一覧の型に置く。軸の数は商品が持ち、バリアントの一覧への問い合わせに渡す | `ProductImages`、`Product` | 単体テスト、`ProductInvariantsTest`、`ProductRestoreFailureTest`（画像の数が上限を超える行の場合を追加する） |
 | 復元（変えない見込み） | `ProductFactory`、`JooqProductRepository` | `ProductRestoreFailureTest` に、公開の状態に違反する行の場合を追加する |
 | 保存は、今の差分の書き方のままにする。型の取り出し方だけ合わせる | `JooqProductRepository` | 既存の `JooqProductRepositoryTest` |
 

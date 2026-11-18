@@ -70,11 +70,6 @@ public class Product extends AggregateRoot {
      */
     static final int AXIS_VALUE_MAX_LENGTH = 50;
 
-    /**
-     * 1 商品あたりの画像の上限
-     */
-    static final int MAX_IMAGES = 20;
-
 // ============================== フィールド定義 ==============================
 
     /**
@@ -157,7 +152,8 @@ public class Product extends AggregateRoot {
     /**
      * スナップショットから作る（登録・復元で共通）
      *
-     * <p>画像の数・バリアントの数・軸の値の数・公開の組み合わせが条件に合わないとき、IllegalArgumentException を投げる。
+     * <p>画像の数・バリアントの数・軸の値の数、または公開に関する値の組み合わせ（公開状態・公開期間・初回表示日時）が条件に合わないとき、
+     * IllegalArgumentException を投げる。
      *
      * @param snapshot 商品のスナップショット
      * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
@@ -264,7 +260,7 @@ public class Product extends AggregateRoot {
      *
      * <p>条件は、公開状態が「公開」で、公開期間内であること。
      *
-     * @param now 時点
+     * @param now 現在時刻
      * @return 表示されるなら true
      */
     public boolean isVisibleAt(@NonNull Instant now) {
@@ -332,13 +328,13 @@ public class Product extends AggregateRoot {
     /**
      * 画像を加えられるかを確認する。
      *
-     * <p>上限の {@value #MAX_IMAGES} 枚に達していなければ加えられる。
+     * <p>上限の {@value ProductImages#MAX_IMAGES} 枚に達していなければ加えられる。
      *
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
     public void verifyCanAddImage() {
-        if (images.size() >= MAX_IMAGES) {
-            throw BusinessException.of(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES, List.of(MAX_IMAGES));
+        if (images.size() >= ProductImages.MAX_IMAGES) {
+            throw BusinessException.of(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES, List.of(ProductImages.MAX_IMAGES));
         }
     }
 
@@ -392,11 +388,11 @@ public class Product extends AggregateRoot {
         if (!canAddVariant(axes.size(), variants.size())) {
             throw BusinessException.of(ProductErrorCode.SINGLE_VARIANT_ONLY);
         }
-        if (variants.list().stream().anyMatch(variant -> variant.variantCode().equals(variantCode))) {
+        if (variants.containsCode(variantCode)) {
             throw BusinessException.of(ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
         }
         var variant = new Variant(UUID.randomUUID(), variantCode, axisValues, variants.nextDisplayOrder(), false, null);
-        if (variants.list().stream().anyMatch(other -> other.axisKey().equals(variant.axisKey()))) {
+        if (variants.containsAxisKey(variant.axisKey())) {
             throw BusinessException.of(ProductErrorCode.VARIANT_AXIS_VALUES_ALREADY_EXISTS);
         }
 
@@ -433,7 +429,7 @@ public class Product extends AggregateRoot {
     /**
      * バリアントの並び順を変更する。
      *
-     * <p>送られた順に 1 から表示順を振り直す。
+     * <p>指定された順に 1 から表示順を振り直す。
      *
      * @param orderedIds 並べたい順のバリアント ID
      * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）。このときは何も変えない
@@ -483,7 +479,7 @@ public class Product extends AggregateRoot {
     /**
      * 画像の並び順を変更する。
      *
-     * <p>送られた順に 1 から表示順を振り直す。先頭が代表画像になる。
+     * <p>指定された順に 1 から表示順を振り直す。先頭が代表画像になる。
      *
      * @param orderedIds 並べたい順の画像 ID
      * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）。このときは何も変えない
@@ -633,7 +629,7 @@ public class Product extends AggregateRoot {
         if (axes.isEmpty() && variants.size() > 1) {
             throw new IllegalArgumentException("軸のない商品にバリアントが 2 つ以上ある");
         }
-        if (variants.list().stream().anyMatch(variant -> variant.axisValues().size() != axes.size())) {
+        if (variants.hasAxisValueCountOtherThan(axes.size())) {
             throw new IllegalArgumentException("バリアントの軸の値の数が商品の軸の数と違う");
         }
     }

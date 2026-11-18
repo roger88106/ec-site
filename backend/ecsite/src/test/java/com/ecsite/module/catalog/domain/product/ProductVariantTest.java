@@ -595,6 +595,55 @@ class ProductVariantTest {
             // 操作と確認：業務のエラー NOT_FOUND で拒否される
             assertBusinessError(() -> product.deleteVariant(UUID.randomUUID(), NOW), CommonErrorCode.NOT_FOUND);
         }
+
+        @Test
+        @DisplayName("販売終了の商品の最後のバリアントは削除できる")
+        void deletesLastVariantOfDiscontinuedProduct() {
+            // 準備：バリアントが 1 つの、非公開から販売終了にした商品
+            var product = productWithVariant();
+            var variantId = product.variants().getFirst().id();
+            product.discontinue(NOW);
+
+            // 操作：削除する
+            product.deleteVariant(variantId, NOW);
+
+            // 確認：バリアントがなくなる
+            assertThat(product.variants()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("表示予定の公開中から販売終了にした商品の最後のバリアントは削除できる")
+        void deletesLastVariantOfDiscontinuedProductBeforeShown() {
+            // 準備：公開開始日時が明日の、公開中の商品を販売終了にした
+            var product = productWithVariant();
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+            product.publish(NOW);
+            var variantId = product.variants().getFirst().id();
+            product.discontinue(NOW);
+
+            // 操作：削除する
+            product.deleteVariant(variantId, NOW);
+
+            // 確認：バリアントがなくなる
+            assertThat(product.variants()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("非公開の商品の最後のバリアントは削除できる")
+        void deletesLastVariantOfUnpublishedProduct() {
+            // 準備：公開開始日時が明日の、公開中の商品を非公開にした
+            var product = productWithVariant();
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+            product.publish(NOW);
+            var variantId = product.variants().getFirst().id();
+            product.unpublish(NOW);
+
+            // 操作：削除する
+            product.deleteVariant(variantId, NOW);
+
+            // 確認：バリアントがなくなる
+            assertThat(product.variants()).isEmpty();
+        }
     }
 
     // ============================== 確認の補助 ==============================

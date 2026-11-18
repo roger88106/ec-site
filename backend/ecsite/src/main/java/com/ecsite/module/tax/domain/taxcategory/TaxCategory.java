@@ -6,6 +6,7 @@ import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
 import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class TaxCategory extends AggregateRoot {
 
@@ -43,6 +45,7 @@ public class TaxCategory extends AggregateRoot {
      * 税区分 ID
      */
     @Identity
+    @EqualsAndHashCode.Include
     private final UUID id;
 
     /**

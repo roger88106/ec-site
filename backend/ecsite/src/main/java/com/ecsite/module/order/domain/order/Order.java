@@ -17,6 +17,7 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Order extends AggregateRoot {
 
@@ -65,6 +67,7 @@ public class Order extends AggregateRoot {
      * 注文 ID
      */
     @Identity
+    @EqualsAndHashCode.Include
     private final UUID id;
 
     /**

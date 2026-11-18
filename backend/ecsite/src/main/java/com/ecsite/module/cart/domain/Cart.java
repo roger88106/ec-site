@@ -3,9 +3,11 @@ package com.ecsite.module.cart.domain;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
@@ -28,6 +30,8 @@ import java.util.stream.IntStream;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@org.jmolecules.ddd.annotation.AggregateRoot
 public class Cart {
 
     /**
@@ -50,6 +54,8 @@ public class Cart {
     /**
      * カート ID
      */
+    @Identity
+    @EqualsAndHashCode.Include
     private final UUID id;
 
     /**

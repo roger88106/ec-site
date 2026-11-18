@@ -32,7 +32,7 @@
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/EntityEqualityTest.java`
   - 確認方法：テストが失敗する。テストを通すためにテストを弱めない
-- [ ] **T555-01-04** [P] class の 7 個（Category、Product、Order、Payment、TaxCategory、Cart、Shipment）に Lombok の equals を付ける。Cart と Shipment には注釈も付ける。基底クラスを比較に含めない指定を `lombok.config` に置く。等価に頼るテストを修正する（DC-555-7）。
+- [x] **T555-01-04** [P] class の 7 個（Category、Product、Order、Payment、TaxCategory、Cart、Shipment）に Lombok の equals を付ける。Cart と Shipment には注釈も付ける。基底クラスを比較に含めない指定を `lombok.config` に置く。等価に頼るテストを修正する（DC-555-7）。
   - 依存：T555-01-01、T555-01-03
   - 範囲：各モジュールの domain、`backend/ecsite/lombok.config`、対象の型のテスト
   - 確認方法：変えたモジュールのテストが通る。`-Werror` のときに Lombok の callSuper の警告が出るかを確認する

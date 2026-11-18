@@ -19,6 +19,7 @@ import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -43,6 +44,7 @@ import java.util.function.Function;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Product extends AggregateRoot {
 
@@ -82,6 +84,7 @@ public class Product extends AggregateRoot {
      * 商品 ID
      */
     @Identity
+    @EqualsAndHashCode.Include
     private final UUID id;
 
     /**

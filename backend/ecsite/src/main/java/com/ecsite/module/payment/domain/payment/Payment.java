@@ -6,6 +6,7 @@ import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -24,6 +25,7 @@ import java.util.UUID;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Payment extends AggregateRoot {
@@ -34,6 +36,7 @@ public class Payment extends AggregateRoot {
      * 支払 ID
      */
     @Identity
+    @EqualsAndHashCode.Include
     @NonNull
     private final UUID id;
 

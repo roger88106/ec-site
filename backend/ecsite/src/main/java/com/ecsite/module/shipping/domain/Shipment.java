@@ -2,9 +2,11 @@ package com.ecsite.module.shipping.domain;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -18,12 +20,16 @@ import java.util.UUID;
  */
 @Getter
 @Accessors(fluent = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@org.jmolecules.ddd.annotation.AggregateRoot
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Shipment {
 
     /**
      * 出荷 ID
      */
+    @Identity
+    @EqualsAndHashCode.Include
     @NonNull
     private final UUID id;
 

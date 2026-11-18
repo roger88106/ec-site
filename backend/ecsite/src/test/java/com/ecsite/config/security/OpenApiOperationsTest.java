@@ -120,7 +120,7 @@ class OpenApiOperationsTest {
         @Test
         @DisplayName("パスの下の OpenAPI の Path Item の項目（パス共通の parameters など）と x- で始まる拡張は、操作として読まずに認める")
         void acceptsPathItemFields() {
-            // 操作：$ref の外の Path Item の全ての項目と拡張を置いた契約を読む
+            // 操作：$ref を除く Path Item の全ての項目と拡張を置いた契約を読む
             var loaded = load(pathItem("""
                     summary: カテゴリ
                         description: カテゴリの一覧
@@ -229,7 +229,7 @@ class OpenApiOperationsTest {
     /**
      * 重複したキーのある契約
      *
-     * @return 契約（名前は場合）と、後のキーの位置
+     * @return 契約（名前は例の説明）と、後のキーの位置
      */
     static Stream<Arguments> duplicateKeySpecs() {
         return Stream.of(

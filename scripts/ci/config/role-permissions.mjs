@@ -6,8 +6,9 @@
 // 契約の書き方も失敗にする。店舗の契約の最上位の security（操作ごとに書く。バックエンドも操作ごとの security だけを読む）と、
 // 管理と店舗の両方のパスの下の $ref（Path Item の $ref は読まない）。パスの parameters や応答の中の $ref は見ない。
 //
-// 失敗したとき：表の食い違いは、リポジトリのルートで --write を付けて実行して表を再生成し、差分を確認する。
-// 契約の書き方の失敗（文の先頭に契約のファイルを付ける）は、再生成では解消しない。そのファイルを修正する。
+// 失敗したとき：文書の表が契約と realm から作った表と違うだけなら、リポジトリのルートで --write を付けて実行して表を再生成し、差分を確認する。
+// それ以外の失敗（権限や security がない、realm にない権限、契約の書き方。契約の書き方の失敗は、文の先頭に契約のファイル名がある）は、
+// 再生成では解消しない（問題があると --write は表を書かない）。文に示された契約か realm を直す。
 //
 // 除外：なし
 //
@@ -231,8 +232,8 @@ export function replaceGenerated(document, markdown) {
 }
 
 if (import.meta.main) {
-  const admin = load(readFileSync(ADMIN_API, 'utf8')) ?? {}
-  const store = load(readFileSync(STORE_API, 'utf8')) ?? {}
+  const admin = readContract(readFileSync(ADMIN_API, 'utf8'))
+  const store = readContract(readFileSync(STORE_API, 'utf8'))
   const { markdown, problems } = renderTables({
     admin: parseOperations(admin),
     store: parseOperations(store),

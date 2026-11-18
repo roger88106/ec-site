@@ -70,7 +70,7 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.deepEqual(parseDocPorts('起動は ${PORT:-9999} で待つ'), [9999])
   })
 
-  test('スクリプトの PORT="${PORT:-9999}"、:=、-、=、引用符で囲んだ既定値のポートを読む（例 1、7、8、9）', () => {
+  test('script の PORT="${PORT:-9999}"、:=、-、=、引用符で囲んだ既定値のポートを読む（例 1、7、8、9）', () => {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
     const lines = ['PORT="${PORT:-9999}"', 'PORT="${PORT:=9998}"', 'PORT="${PORT-9997}"', 'PORT="${PORT=9996}"', 'PORT="${PORT:-"9995"}"', "PORT=\"${PORT:-'9994'}\""]
     for (const [index, line] of lines.entries()) {
@@ -78,7 +78,7 @@ describe('ローカルのポートの一覧の検査', () => {
     }
   })
 
-  test('スクリプトの ${PORT:-ポート} の既定値が一覧にないときは失敗にし、一覧にあるときは通す（例 1、3）', () => {
+  test('script の ${PORT:-ポート} の既定値が一覧にないときは失敗にし、一覧にあるときは通す（例 1、3）', () => {
     const script = (value) => ({ 'scripts/dev/x.sh': `PORT="\${PORT:-${value}}"` })
     const problems = findPortMismatches({ ...INPUT, configs: script(9999) })
     assert.equal(problems.length, 1, problems.join(' / '))
@@ -100,11 +100,16 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.deepEqual(findPortMismatches({ ...INPUT, configs: { 'scripts/dev/x.sh': text } }), [])
   })
 
-  test('名前の途中に PORT を含む変数（REPORT_ROWS など）と、小文字の port の変数の既定値は読まない（例 5）', () => {
+  test('名前の途中に PORT を含む変数（REPORT_ROWS など）と、小文字の port の変数の既定値は読まない（例 12、13）', () => {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
     const text = 'A="${REPORT_ROWS:-5000}"\nB="${EXPORT_LIMIT:-1000}"\nC="${SUPPORT_TTL:-3600}"\nD="${port:-9999}"'
     assert.deepEqual(parseConfigPorts(text), [])
     assert.deepEqual(parseDocPorts(text), [])
+  })
+
+  test('--port は大文字小文字を区別し、--Port と --PORT の後の数字は読まない', () => {
+    assert.deepEqual(parseDocPorts('pnpm preview --port 8080'), [8080])
+    assert.deepEqual(parseDocPorts('pnpm preview --Port 8080 --PORT 8081'), [])
   })
 
   test('名前が _PORT で終わる変数の既定値は読む（例 1 の変種）', () => {

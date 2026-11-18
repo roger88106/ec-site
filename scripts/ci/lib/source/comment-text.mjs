@@ -5,10 +5,9 @@
 // - テンプレートで書いたテスト名：外側のバッククォートは文字列の区切りなので " に替え、埋め込み（${…}）は X に替えて取り出す
 // - シェル（.sh）：# のコメント（1 行目の #! を除く）
 //
-// 走査（コメント・文字列の読み分け）は、Java・TypeScript は scan-code、Kotlin は strip-comments が行う。
+// 走査（コメント・文字列の読み分け）は、Java・TypeScript・Kotlin のどれも scan-code が行う。
 import { createLineLocator } from './line-number.mjs'
-import { JAVA_SCAN, scanCode, templateEnd } from '../../../shared/source/scan-code.mjs'
-import { kotlinCommentRanges } from '../../../shared/source/strip-comments.mjs'
+import { JAVA_SCAN, kotlinCommentMask, maskRanges, scanCode, templateEnd } from '../../../shared/source/scan-code.mjs'
 import { skipModifiers, skipSpaces } from '../../../shared/source/test-files.mjs'
 
 /** テストの呼び出しの始まり。前が . や語の文字のもの（/re/.test(...) など）は読まない */
@@ -204,7 +203,7 @@ function lineEnd(text, from) {
  */
 function commentRanges(text, kind) {
   if (kind === 'sh') return shellCommentRanges(text)
-  if (kind === 'kts') return kotlinCommentRanges(text)
+  if (kind === 'kts') return maskRanges(kotlinCommentMask(text))
   return scanRanges(text, kind === 'ts' ? {} : JAVA_SCAN).comments
 }
 
@@ -216,8 +215,7 @@ function commentRanges(text, kind) {
  * @returns {{ from: number, to: number }[]} 区間
  */
 function textRanges(text, kind) {
-  if (kind === 'sh') return shellCommentRanges(text)
-  if (kind === 'kts') return kotlinCommentRanges(text)
+  if (kind === 'sh' || kind === 'kts') return commentRanges(text, kind)
   const scanned = scanRanges(text, kind === 'ts' ? {} : JAVA_SCAN)
   if (kind === 'java') return [...scanned.comments, ...javaTestNameRanges(text, scanned)]
   return [...scanned.comments, ...tsTestNameRanges(text, scanned)]

@@ -62,7 +62,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 
 package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、同じパッケージの `src/integrationTest` に public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。テストのために可視性を広げない。
 
-確認方法：レビュー（上に挙げた型の記録を読む操作は自動。`EventPublicationReadTest`。在庫と支払の作成を補助の外で呼ばないことも自動。`TestDataCreationTest`）
+確認方法：レビュー（記録を読む操作は自動。`EventPublicationReadTest`。在庫と支払の作成を補助の外で呼ばないことも自動。`TestDataCreationTest`）
 
 ## テストの本文の書き方
 

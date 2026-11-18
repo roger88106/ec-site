@@ -60,6 +60,7 @@ const DASH_LIKE = /[‐‑–−]/g
  * # の直後の語が 16 進の色（#DC2626 など）かを返す。
  *
  * 色は、番号の始まりが # の直後で、その語（英数字の続き）の全体が 16 進の字だけで 3・4・6・8 字のもの。
+ * 語の後にハイフンと数字が続く形は、色でなく番号。
  *
  * @param {string} line 正規化した行
  * @param {number} index 番号の始まりの位置
@@ -68,6 +69,8 @@ const DASH_LIKE = /[‐‑–−]/g
 function isHexColor(line, index) {
   if (line[index - 1] !== '#') return false
   const word = /^[0-9A-Za-z]+/.exec(line.slice(index))[0]
+  // 語の後に ハイフンと数字 が続く形は、色ではなく番号
+  if (/^-\d/.test(line.slice(index + word.length))) return false
   return /^[0-9A-Fa-f]+$/.test(word) && [3, 4, 6, 8].includes(word.length)
 }
 

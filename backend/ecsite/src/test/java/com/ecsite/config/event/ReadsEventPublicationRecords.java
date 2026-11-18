@@ -20,7 +20,7 @@ public final class ReadsEventPublicationRecords {
     /**
      * 未完了のイベントを数える。
      *
-     * @param records 記録の読み書き
+     * @param records 記録を読み書きする設定クラス
      * @return 件数
      */
     public static int count(EventPublicationRecords records) {
@@ -30,7 +30,7 @@ public final class ReadsEventPublicationRecords {
     /**
      * 完了したイベントを消す（名前が find でも count でも始まらない）。
      *
-     * @param records 記録の読み書き
+     * @param records 記録を読み書きする設定クラス
      * @return 消した件数
      */
     public static int delete(EventPublicationRecords records) {

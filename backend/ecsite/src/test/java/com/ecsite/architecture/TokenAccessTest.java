@@ -21,7 +21,6 @@ import java.util.Set;
 
 import static com.ecsite.architecture.ArchRuleViolations.assertNoViolation;
 import static com.ecsite.architecture.ArchRuleViolations.assertViolation;
-import static com.ecsite.support.ProductionClasses.outermostName;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -138,7 +137,7 @@ class TokenAccessTest {
      */
     private static ArchRule tokenAccessRule(String presentationPackage) {
         DescribedPredicate<JavaClass> allowedPlace = JavaClass.Predicates.resideInAnyPackage(presentationPackage, "com.ecsite.common.security..")
-                .or(DescribedPredicate.describe("listed in the exceptions", javaClass -> TOKEN_ACCESS_EXCEPTIONS.contains(outermostName(javaClass))));
+                .or(DescribedPredicate.describe("listed in the exceptions", javaClass -> TOKEN_ACCESS_EXCEPTIONS.stream().anyMatch(name -> ProductionClasses.isOrNestedIn(javaClass, name))));
         return noClasses().that(DescribedPredicate.not(allowedPlace))
                 .should().dependOnClassesThat(DescribedPredicate.describe(
                         "are token accessors", javaClass -> TOKEN_ACCESSORS.contains(javaClass.getName())));

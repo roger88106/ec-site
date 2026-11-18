@@ -259,7 +259,7 @@ class ConfigurationPropertiesTest {
     }
 
     @Test
-    @DisplayName("toString の規則は、利用者が書いた final の toString を持つ record の例を対象にし、違反にしない")
+    @DisplayName("toString の規則は、自分で書いた final の toString を持つ record の例を対象にし、違反にしない")
     void toStringRuleDoesNotMatchRecordWithFinalToString() {
         // 準備：final の toString を書いた record の例
         var examples = new ClassFileImporter().importClasses(SecretWithFinalToStringProperties.class);
@@ -270,7 +270,7 @@ class ConfigurationPropertiesTest {
     }
 
     @Test
-    @DisplayName("toString の規則は、利用者が書いた final の toString を持つ record でないクラスの例を対象にし、違反にしない")
+    @DisplayName("toString の規則は、record でないクラスで、自分で書いた final の toString を持つ例を対象にし、違反にしない")
     void toStringRuleDoesNotMatchClassWithFinalToString() {
         // 準備：final の toString を書いた、record でないクラスの例
         var examples = new ClassFileImporter().importClasses(SecretClassWithFinalToStringProperties.class);
@@ -301,7 +301,7 @@ class ConfigurationPropertiesTest {
                 "secretAccessKey", "webhookSecret", "accessToken", "apiPassword", "salt", "hmacKey", "masterKey",
                 "stripeAPIKey", "apikey", "apiKeyV2", "signingKey2", "credentialsJson", "encryptionKey", "hmackey",
                 "masterkey", "signingkey"})
-        @DisplayName("secret、password、salt、token を含む名前か、語に分けて credential と key の条件に合う名前は、秘密の値の項目の名前")
+        @DisplayName("secret、password、salt、token を含む名前と、語に分けたとき credential か key の条件に合う名前は、秘密の値の項目の名前")
         void detectsSecretFieldName(String name) {
             // 操作と確認：秘密の値の項目の名前と判定する
             assertThat(isSecretFieldName(name)).isTrue();
@@ -350,7 +350,7 @@ class ConfigurationPropertiesTest {
      * 引数のない toString が、record のコンパイラが作ったものかを返す。
      *
      * <p>コンパイラが作る toString は、本体が {@code java.lang.runtime.ObjectMethods} を呼ぶ invokedynamic だけで、
-     * 利用者が書いた toString にはこの呼び出しがない。final の有無と行番号では、利用者が書いたものと見分けられない。
+     * 自分で書いた toString にはこの呼び出しがない。final の有無と行番号では、自分で書いたものと見分けられない。
      *
      * @param javaClass 対象のクラス
      * @return コンパイラが作った toString なら true

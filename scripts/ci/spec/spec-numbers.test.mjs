@@ -101,6 +101,14 @@ describe('本番のコードの spec の番号の検査', () => {
     )
   })
 
+  test('# の直後の語の後に -数字 が続く形（#DC7-2、#AC1-2、#DC12-3）は、色にせず番号として見つける', () => {
+    const text = ['// #DC7-2', '// #AC1-2', '// #DC12-3'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 DC7-2', '2 AC1-2', '3 DC12-3'],
+    )
+  })
+
   test('数字のない 2 字の #DC は、色の規則に関わらず番号の形ではないので見つけない', () => {
     assert.deepEqual(findSpecNumbers('// #DC'), [])
   })

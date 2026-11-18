@@ -150,10 +150,9 @@ class PaymentTest {
             // 準備：整合しない支払のスナップショット（支払画面と待ち始めた時刻は持たせる）
             var snapshot = snapshotOf(status, hasRef, hasAuthorizedAt, true, true);
 
-            // 操作と確認：例外になり、メッセージに状態の名前があり、与信の参照と時刻がない
+            // 操作と確認：例外になり、与信の参照と時刻がない
             assertThatThrownBy(() -> Payment.restore(snapshot))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining(status.name())
                     .hasMessageNotContaining(AUTHORIZATION_REF)
                     .hasMessageNotContaining(ORDERED_AT.toString());
         }

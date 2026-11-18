@@ -237,14 +237,14 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 ### entity と集約の同一性
 
-entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。entity と集約は record にせず、class にする。
+entity と集約の `equals` と `hashCode` は、識別子だけで比べる。手動で書かず、Lombok の `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と、識別子の項目の `@EqualsAndHashCode.Include` で作る。全ての項目で比べる、引数のない `@EqualsAndHashCode` を付けない。entity と集約は record にせず、class にする。entity と集約には、モジュールのレベルによらず、jMolecules の注釈（`@Entity`・`@AggregateRoot`）と、識別子の項目の `@Identity` を付ける。
 
-理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。record には Lombok の `@EqualsAndHashCode` を付けられず、record の `equals` は全ての項目で比べるため、entity と集約は class にする。
+理由：entity は、状態が変わっても同じものとして扱うため。全ての項目で比べると、状態が変わったときに、同じ entity が等しくなくなる。record には Lombok の `@EqualsAndHashCode` を付けられず、record の `equals` は全ての項目で比べるため。注釈は、自動の検査（`EntityEqualityTest`、`EntityEqualityAssertion`）が、注釈と基底クラスの継承で対象を決めるため。
 
 確認方法：
 
-- record にしない、`equals` と `hashCode` を宣言する、`@Identity` の項目を持つ、`equals` と `hashCode` が識別子の項目だけを使う：自動（ArchUnit の `EntityEqualityTest`）
-- 手動で書かず Lombok で作る：レビュー（識別子だけで比べていれば、手書きでも自動の確認は通る）
+- record にしない、`equals` と `hashCode` が識別子の項目だけを使う：自動（ArchUnit の `EntityEqualityTest`。注釈の付いたクラスと基底クラスの継承先が対象）
+- 注釈を付ける、手動で書かず Lombok で作る：レビュー（注釈のない entity は自動の検査の対象にならない）
 
 ### 名前の形
 

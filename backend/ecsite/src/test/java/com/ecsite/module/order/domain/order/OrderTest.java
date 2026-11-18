@@ -427,10 +427,9 @@ class OrderTest {
             // 準備：整合しない注文のスナップショット
             var snapshot = snapshotOf(status, request, cancelled);
 
-            // 操作と確認：例外になり、メッセージに状態の名前があり、理由・日時・メールアドレスがない
+            // 操作と確認：例外になり、理由・日時・メールアドレスがない
             assertThatThrownBy(() -> Order.restore(snapshot))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining(status.name())
                     .hasMessageNotContaining(REASON)
                     .hasMessageNotContaining(DECIDED_AT.toString())
                     .hasMessageNotContaining(EMAIL);

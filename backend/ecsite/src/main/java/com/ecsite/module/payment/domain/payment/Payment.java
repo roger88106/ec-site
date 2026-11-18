@@ -399,19 +399,19 @@ public class Payment extends AggregateRoot {
             // 与信が成功していない。支払なしの後に届いた与信は、与信の取消待ちにする
             case UNPAID, NOT_PAID -> {
                 if (authorizationRef != null || authorizedAt != null) {
-                    throw new IllegalArgumentException("与信のない状態は、与信の参照と与信の時刻を持たない: " + status);
+                    throw new IllegalArgumentException("与信のない状態は、与信の参照と与信の時刻を持たない");
                 }
             }
             // 未払いから与信済みにした支払と、そこから進んだ支払
             case AUTHORIZED, CAPTURED, AUTHORIZATION_EXPIRED -> {
                 if (authorizationRef == null || authorizedAt == null) {
-                    throw new IllegalArgumentException("与信済みから進んだ状態は、与信の参照と与信の時刻を持つ: " + status);
+                    throw new IllegalArgumentException("与信済みから進んだ状態は、与信の参照と与信の時刻を持つ");
                 }
             }
             // 支払なしの後に届いた与信から進んだ支払は、与信の時刻を持たない
             case VOID_PENDING, VOIDED, REFUND_PENDING, REFUNDED -> {
                 if (authorizationRef == null) {
-                    throw new IllegalArgumentException("与信を取り消す・返金する状態は、与信の参照を持つ: " + status);
+                    throw new IllegalArgumentException("与信を取り消す・返金する状態は、与信の参照を持つ");
                 }
             }
         }

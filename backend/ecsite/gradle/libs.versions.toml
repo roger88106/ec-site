@@ -56,6 +56,8 @@ jacoco = "0.8.13"
 cpd-plugin = "3.5"
 pmd = "7.29.0"
 # domain の mutation testing（PIT）。PIT の本体、Gradle のプラグイン、JUnit 5 との連携でバージョンが別
+# JUnit 4（検査のテストの補助が使う）。error_prone_test_helpers の間接の依存に合わせる。errorprone を上げるときに見直す
+junit4 = "4.13.2"
 pitest-engine = "1.30.1"
 pitest-gradle-plugin = "1.19.0"
 pitest-junit5-plugin = "1.2.3"
@@ -148,7 +150,7 @@ spring-boot-micrometer-metrics-test = { module = "org.springframework.boot:sprin
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 # 検査のテストの補助（error_prone_test_helpers）が実行で使う JUnit 4。コンパイルのクラスパスには入れない
-junit4 = { module = "junit:junit", version = "4.13.2" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
 # CPD の Java の言語の部品（cpd の構成に入れる）
 pmd-java = { module = "net.sourceforge.pmd:pmd-java", version.ref = "pmd" }
 

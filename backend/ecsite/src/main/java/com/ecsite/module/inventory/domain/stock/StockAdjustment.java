@@ -109,9 +109,9 @@ public final class StockAdjustment {
      * @throws BusinessException 増減量が 0（{@code INVALID_STOCK_DELTA}）
      * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
      */
-    StockAdjustment(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
-                    @Nullable UUID orderId, @Nullable String orderNumber, @NonNull Instant adjustedAt,
-                    @Nullable Operator operator) {
+    public StockAdjustment(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
+                           @Nullable UUID orderId, @Nullable String orderNumber, @NonNull Instant adjustedAt,
+                           @Nullable Operator operator) {
         verifyDeltaNotZero(delta);
         if (memo != null && !BoundedText.fitsWithin(memo, MEMO_MAX_LENGTH)) {
             throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_MEMO, List.of(MEMO_MAX_LENGTH));

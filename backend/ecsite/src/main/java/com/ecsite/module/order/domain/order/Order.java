@@ -493,24 +493,24 @@ public class Order extends AggregateRoot {
             // 支払待ちは申請できない
             case PENDING_PAYMENT -> {
                 if (result != null || cancellation != null) {
-                    throw new IllegalArgumentException("支払待ちの注文は、申請とキャンセルを持たない: " + status);
+                    throw new IllegalArgumentException("支払待ちの注文は、申請とキャンセルを持たない");
                 }
             }
             // 申請していないか、申請を却下して受付に戻した注文と、そこから出荷した注文
             case ACCEPTED, SHIPPED -> {
                 if ((result != null && result != CancellationRequest.Result.REJECTED) || cancellation != null) {
-                    throw new IllegalArgumentException("受付と出荷済みの注文は、申請がないか却下した申請を持ち、キャンセルを持たない: " + status);
+                    throw new IllegalArgumentException("受付と出荷済みの注文は、申請がないか却下した申請を持ち、キャンセルを持たない");
                 }
             }
             case CANCELLATION_REQUESTED -> {
                 if (result != CancellationRequest.Result.PENDING || cancellation != null) {
-                    throw new IllegalArgumentException("申請中の注文は、申請中の申請を持ち、キャンセルを持たない: " + status);
+                    throw new IllegalArgumentException("申請中の注文は、申請中の申請を持ち、キャンセルを持たない");
                 }
             }
             // 申請中からのキャンセルは申請を承認にし、受付・出荷済みからのキャンセルは申請を変えない
             case CANCELLED -> {
                 if (result == CancellationRequest.Result.PENDING || cancellation == null) {
-                    throw new IllegalArgumentException("キャンセル済みの注文は、キャンセルを持ち、申請中の申請を持たない: " + status);
+                    throw new IllegalArgumentException("キャンセル済みの注文は、キャンセルを持ち、申請中の申請を持たない");
                 }
             }
         }

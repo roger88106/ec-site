@@ -77,6 +77,18 @@ class ProductStatusApiTest {
      */
     private static final String PUBLISH_END_UTC = "2026-10-19T15:00:00Z";
 
+    /**
+     * マイクロ秒ちょうどの公開開始日時（送る形）
+     */
+    private static final String SUB_MICRO_START = "2099-01-01T00:00:00.000001Z";
+
+    /**
+     * {@link #SUB_MICRO_START} の 400 ナノ秒後の公開終了日時（送る形）
+     *
+     * <p>DB の精度（マイクロ秒）では開始と同じになる。
+     */
+    private static final String SUB_MICRO_END = "2099-01-01T00:00:00.000001400Z";
+
     // ============================== Bean ==============================
 
     @Autowired
@@ -425,6 +437,24 @@ class ProductStatusApiTest {
             products.setPeriod(id, quoted(PUBLISH_START), quoted(PUBLISH_START), 1)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_PUBLICATION_PERIOD"));
+        }
+
+        @Test
+        @DisplayName("開始と終了の差が 1 マイクロ秒未満なら 400 で、公開期間は変わらない")
+        void rejectsPeriodShorterThanMicrosecond() throws Exception {
+            // 準備：商品
+            var id = products.productWithVariant(PRODUCT_CODE);
+
+            // 操作と確認：終了が開始の 400 ナノ秒後なら、公開期間の誤りで拒否される
+            products.setPeriod(id, quoted(SUB_MICRO_START), quoted(SUB_MICRO_END), 1)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_PUBLICATION_PERIOD"));
+
+            // 確認：公開期間とバージョンが変わらない
+            products.getProduct(id)
+                    .andExpect(jsonPath("$.publishStart").doesNotExist())
+                    .andExpect(jsonPath("$.publishEnd").doesNotExist())
+                    .andExpect(jsonPath("$.version").value(1));
         }
 
         @Test

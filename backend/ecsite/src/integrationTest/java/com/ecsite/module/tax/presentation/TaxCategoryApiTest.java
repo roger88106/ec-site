@@ -20,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
@@ -252,6 +253,28 @@ class TaxCategoryApiTest {
                     [{"ratePercent": 10, "effectiveFrom": "2028-04-01T00:00:00+09:00", "effectiveTo": "2027-04-01T00:00:00+09:00"}]""")
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_EFFECTIVE_PERIOD"));
+        }
+
+        @Test
+        @DisplayName("開始と終了の差が 1 マイクロ秒未満の税率を含む一覧は 400 で、税率の一覧は変わらない")
+        void rejectsPeriodShorterThanMicrosecond() throws Exception {
+            // 準備：税率のない税区分
+            var id = createdCategoryId(NAME);
+            var before = mockMvc.perform(get(BASE + "/" + id)).andReturn().getResponse().getContentAsString();
+
+            // 操作と確認：2 件目の終了が開始の 400 ナノ秒後なら、エラーコード INVALID_EFFECTIVE_PERIOD が返る
+            replaceRates(id, 0, """
+                    [
+                      {"ratePercent": 10, "effectiveTo": "2099-01-01T00:00:00.000001Z"},
+                      {"ratePercent": 8, "effectiveFrom": "2099-01-01T00:00:00.000001Z", "effectiveTo": "2099-01-01T00:00:00.000001400Z"},
+                      {"ratePercent": 10, "effectiveFrom": "2099-01-01T00:00:00.000001400Z"}
+                    ]""")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_EFFECTIVE_PERIOD"));
+
+            // 確認：取得した内容が前と同じ
+            var after = mockMvc.perform(get(BASE + "/" + id)).andReturn().getResponse().getContentAsString();
+            assertThat(after).isEqualTo(before);
         }
 
         @Test

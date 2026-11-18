@@ -36,7 +36,7 @@ import java.util.random.RandomGenerator;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class OrderPlacementService {
+public class OrderPlacementCommandService {
 
     /**
      * 空いている注文番号を探す回数の上限
@@ -88,7 +88,7 @@ public class OrderPlacementService {
     /**
      * 見積もりのサービス
      */
-    private final QuoteService quoteService;
+    private final QuoteQueryService quoteQueryService;
 
     /**
      * 時計
@@ -149,8 +149,8 @@ public class OrderPlacementService {
         if (checkout.cartChangedSince(cart.version())) {
             throw BusinessException.of(OrderErrorCode.CART_CHANGED);
         }
-        var quote = quoteService.quote(cart.lines(), now, checkout.id());
-        CheckoutService.verifyOrderable(quote);
+        var quote = quoteQueryService.quote(cart.lines(), now, checkout.id());
+        CheckoutCommandService.verifyOrderable(quote);
         if (!quote.amounts().total().equals(command.expectedTotal())) {
             throw BusinessException.of(OrderErrorCode.TOTAL_AMOUNT_CHANGED);
         }
@@ -164,7 +164,7 @@ public class OrderPlacementService {
                 BuyerProfile.of(command.birthdate(), command.gender(), now));
 
         // 書き込み：在庫の減算（期限切れなら引き当て直し）→ 注文（支払待ち）→ 支払
-        var shortages = stockDirectory.commit(checkout.id(), CheckoutService.quantities(cart.lines()), order.id(),
+        var shortages = stockDirectory.commit(checkout.id(), CheckoutCommandService.quantities(cart.lines()), order.id(),
                 order.orderNumber().value());
         if (!shortages.isEmpty()) {
             throw BusinessException.of(OrderErrorCode.OUT_OF_STOCK);

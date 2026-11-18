@@ -29,7 +29,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class CheckoutService {
+public class CheckoutCommandService {
 
     /**
      * 注文手続きリポジトリ
@@ -49,7 +49,7 @@ public class CheckoutService {
     /**
      * 見積もりのサービス
      */
-    private final QuoteService quoteService;
+    private final QuoteQueryService quoteQueryService;
 
     /**
      * 支払待ちの注文の判定
@@ -96,7 +96,7 @@ public class CheckoutService {
 
         // 購入できるかの判定 ※前の注文手続きの引当を解いてから判定する（自分の前の引当で足りなくならないように）
         releaseReservations(cartId);
-        verifyOrderable(quoteService.quote(cart.lines(), now, null));
+        verifyOrderable(quoteQueryService.quote(cart.lines(), now, null));
 
         // 注文手続き登録と引当
         var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);

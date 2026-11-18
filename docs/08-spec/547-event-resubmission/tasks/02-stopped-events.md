@@ -12,7 +12,7 @@
   - 依存：なし
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventResubmissionJobTest.java`、`backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventPublications.java`（テストの補助）
   - 確認方法：テストが失敗する。失敗したイベントの再発行の操作が、状態が失敗の行だけを読むことも、このテストで確認する
-- [ ] **T547-02-02** [リスク] 止めたイベントの表を作るマイグレーションを書く（論理名のコメントと、処理の回数の列のコメントの書き換えを含む）。
+- [x] **T547-02-02** [リスク] 止めたイベントの表を作るマイグレーションを書く（論理名のコメントと、処理の回数の列のコメントの書き換えを含む）。
   - 依存：T547-02-01
   - 範囲：`backend/ecsite/src/main/resources/db/migration/`
   - 確認方法：論理名のコメントの検査を含む既存の検査が通る

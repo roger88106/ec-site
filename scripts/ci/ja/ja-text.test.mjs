@@ -9,7 +9,7 @@ import { withoutGitEnv } from '../../shared/git/git-env.mjs'
 import { commentText, trailingCommentLines } from '../lib/source/comment-text.mjs'
 import { SHALLOW_CLONE_MESSAGE } from '../lib/git/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
-import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, stripMessageComments, validateTerms } from './ja-text.mjs'
+import { applyPermits, findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, lazyDocumentNames, stripMessageComments, validateTerms } from './ja-text.mjs'
 import { isTargetDoc } from '../lib/docs/ja-docs.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
@@ -45,14 +45,15 @@ function runAsync(command, args, { cwd, env }) {
  * コミットメッセージのファイルを調べる入口を実行する。
  *
  * @param {string} message コミットメッセージの内容
+ * @param {string[]} [options] 加える印（--warning など）
  * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
  */
-function runMessage(message) {
+function runMessage(message, options = []) {
   const dir = mkdtempSync(path.join(tmpdir(), 'ja-text-'))
   try {
     const file = path.join(dir, 'COMMIT_EDITMSG')
     writeFileSync(file, message)
-    return spawnSync(process.execPath, [SCRIPT, '--message', file], { encoding: 'utf8', env: withoutGitEnv() })
+    return spawnSync(process.execPath, [SCRIPT, ...options, '--message', file], { encoding: 'utf8', env: withoutGitEnv() })
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -60,7 +61,7 @@ function runMessage(message) {
 
 describe('日本語の文の検査（一覧と error の項目）', () => {
   test('一覧の各項目が error か warning のどちらかである', () => {
-    assert.deepEqual(Object.keys(list).sort(), ['error', 'style', 'warning'])
+    assert.deepEqual(Object.keys(list).sort(), ['error', 'permit', 'style', 'warning'])
     for (const item of [...list.error, ...list.warning]) {
       assert.equal(typeof (item.word ?? item.pattern), 'string')
       assert.equal(typeof item.use, 'string')
@@ -196,6 +197,201 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
   test('--message でも pattern の項目が働き、漢字の後の形は成功する', () => {
     assert.equal(runMessage(`docs: 不${ADD}る\n`).status, 0)
     assert.equal(runMessage(`docs: 数を${ADD}\n`).status, 1)
+  })
+})
+
+/**
+ * 一覧の中で、例に当たる項目を 1 つだけ返す（その項目に、当たらない例を当てるため）。
+ *
+ * @param {object[]} terms 一覧
+ * @param {string} hitExample 当たるはずの例
+ * @returns {object} 項目
+ */
+function termHitBy(terms, hitExample) {
+  const items = terms.filter((item) => findTerms(hitExample, [item]).length > 0)
+  assert.equal(items.length, 1, `${hitExample} に当たる項目の数`)
+  return items[0]
+}
+
+/** @param {string} text 文 @returns {number} 一覧の error の語の一致の数 */
+function errorHits(text) {
+  return findTerms(text, list.error).length
+}
+
+/**
+ * 一覧の error の項目のうち、文に当たった項目の名前（word か pattern）を返す。別の項目に当たっても通る確認にしないため。
+ *
+ * @param {string} text 文
+ * @returns {string[]} 当たった項目の名前
+ */
+function errorTermNames(text) {
+  return findTerms(text, list.error).map((hit) => hit.pattern ?? hit.word)
+}
+
+/**
+ * 文が、名前に断片を含む項目に当たることを確認する。
+ *
+ * @param {string} text 文
+ * @param {string} fragment 当たるはずの項目の名前（word か pattern）に含まれる断片
+ */
+function assertHitBy(text, fragment) {
+  assert.ok(errorTermNames(text).some((name) => name.includes(fragment)), `${text} が ${fragment} の項目に当たる（当たった項目：${errorTermNames(text).join(' | ')}）`)
+}
+
+describe('言い換えの一覧（活用と語。DC-566-11・12）', () => {
+  test('足す の活用（足し・足さ・足す・足せ・足そ）を、語の一部や漢字の直後以外は error にする', () => {
+    for (const text of ['数を足して返す', '足さない', '足せば', '送料を足した額', '足し忘れを型エラーにする', '付け足す', '足します', '足そう']) {
+      assertHitBy(text, '足[しさすせそ]')
+    }
+  })
+
+  test('漢字の直後の 足 と、足りない は、足す の活用にしない', () => {
+    for (const text of ['不足して', '補足して', '足りない']) assert.equal(errorHits(text), 0, text)
+  })
+
+  test('足し算 は pattern で除き、error にしない', () => {
+    assert.equal(errorHits('足し算で求める'), 0)
+  })
+
+  test('要る の活用（要ら・要り・要れ・要る）を error にし、名詞の直後に助詞を抜いた形も当てる', () => {
+    for (const text of ['設定は要らない', '要ります', '要れば', '設定要らない', '確認要りますか']) assertHitBy(text, '要[らりるれ]')
+  })
+
+  test('必・重・不・主・概・需 の直後の 要 と、要約・要件 は、要る の活用にしない', () => {
+    for (const text of ['必要らしい', '重要らしい', '不要らしい', '主要らしい', '概要らしい', '需要らしい', '要約する', '要件']) assert.equal(errorHits(text), 0, text)
+  })
+
+  test('見直す の活用（見直さ・見直せ）を error にする', () => {
+    for (const text of ['文書を見直さない', '見直せば', '文書を見直す', '見直しを行う']) assertHitBy(text, '見直[')
+  })
+
+  test('worktree は、大文字と小文字を区別せず error にする', () => {
+    for (const text of ['Worktree を作る', 'WORKTREE', 'WorkTree を作る', 'worktree を作る']) assertHitBy(text, '(?i:worktree)')
+  })
+
+  test('識別子の一部の Worktree（直前が英数字・_）は、error にしない', () => {
+    assert.equal(errorHits('// listWorktrees を呼ぶ'), 0)
+    assert.equal(errorHits('hit_Worktree を呼ぶ'), 0)
+    const comment = '/**\n * @param {{ listWorktrees: () => string }} deps 作業ツリーの一覧\n */'
+    assert.deepEqual(findCodeTerms('a.mjs', comment, list.error), [])
+  })
+
+  test('git のコマンドの worktree は許容用語で、英字だけのインラインコードは見ない', () => {
+    assert.equal(errorHits('git worktree'), 0)
+    assert.equal(errorHits('`.claude/worktrees/` を見る'), 0)
+  })
+
+  test('カタカナの ワークツリー を error にする', () => {
+    assertHitBy('ワークツリーを作る', 'ワークツリー')
+  })
+
+  test('口頭語 を error にし、口頭で伝える は当てない', () => {
+    assertHitBy('口頭語で書く', '口頭語')
+    assert.equal(errorHits('口頭で伝える'), 0)
+  })
+
+  test('箱の（箱の大きさ・ftyp の箱）を error にし、漢字・カタカナの直後の 箱 は当てない', () => {
+    const term = termHitBy(list.error, 'ftyp の箱')
+    for (const text of ['箱の大きさ', 'ftyp の箱']) assert.equal(findTerms(text, [term]).length, 1, text)
+    for (const text of ['本箱', 'ボックス', 'ゴミ箱の中身', '本箱の中']) assert.deepEqual(findTerms(text, [term]), [], text)
+  })
+
+  test('主の（checkout・worktree・チェックアウト）を error にし、持ち主の は当てない', () => {
+    // 主の worktree は worktree の項目にも当たるので、主の の項目を取り出して、その項目だけに当てる
+    const terms = list.error.filter((item) => item.pattern?.includes('主の\\s?'))
+    assert.equal(terms.length, 1)
+    for (const text of ['主の checkout', '主の worktree', '主のチェックアウト']) assert.equal(findTerms(text, terms).length, 1, text)
+    assert.deepEqual(findTerms('持ち主の checkout', [termHitBy(list.error, '主の checkout')]), [])
+  })
+
+  test('判定機 と 資料を集める役 を error にし、判定機能 と 資料を集める役割 は当てない', () => {
+    assertHitBy('判定機を作る', '判定[器機]')
+    assertHitBy('資料を集める役', '資料を集める役')
+    for (const text of ['重複の判定機能を持つ', '資料を集める役割を担う']) assert.equal(errorHits(text), 0, text)
+  })
+})
+
+describe('言い換えの一覧（インラインコードと許可の一覧。DC-566-13・14）', () => {
+  test('かな・漢字を含むインラインコードの中の error の語を見つける。カタカナだけのものも見つける', () => {
+    assert.ok(errorHits('`判定器の結果` を見る') > 0)
+    assert.ok(errorHits('`ブラウザ` を開く') > 0)
+  })
+
+  test('warning の語は、今のとおり、全てのインラインコードの中を見ない（allCode）', () => {
+    const terms = [{ word: '直す', use: '修正する' }]
+    assert.deepEqual(findTerms('`直す` と書く', terms, { allCode: true }), [])
+    assert.equal(findTerms('`直す` と書く', terms).length, 1)
+    // コミットメッセージの入口でも、warning の語（直す）はインラインコードの中を見ない。error の段（--warning なし）では warning の語を数えないので、--warning を付ける
+    assert.doesNotMatch(runMessage('docs: `直す` と書く\n', ['--warning']).stdout, /直す →/)
+    assert.match(runMessage('docs: 直すと書く\n', ['--warning']).stdout, /直す →/)
+  })
+
+  test('コミットメッセージも、かな・漢字を含むインラインコードの中を検査し、英字だけのものは見ない', () => {
+    assert.equal(runMessage('docs: `判定器` を直す\n').status, 1)
+    assert.equal(runMessage('docs: 文書を直す\n\n本文に `足して` と書く\n').status, 1)
+    assert.equal(runMessage('docs: `git worktree` を使う\n').status, 0)
+  })
+
+  const text = ['# 題', '', '## 用語の選び方', '', '`判定器` を使わない', '', '### 子の見出し', '', '`判定器` を使わない', '', '## 次の見出し', '', '`判定器` を使わない'].join('\n')
+  const permit = { file: 'docs/x.md', heading: '用語の選び方', reason: '造語の例を書く' }
+  const hitsOf = () => findTerms(text, list.error).map((hit) => ({ file: 'docs/x.md', ...hit }))
+
+  test('許可した見出しの下（子の見出しを含む）の語は数えず、次の同じレベルの見出しからは数える', () => {
+    const result = applyPermits(hitsOf(), [permit], () => text)
+    assert.deepEqual(result.problems, [])
+    assert.deepEqual(result.hits.map((hit) => hit.line), [13])
+  })
+
+  test('見出しを書かない許可は、ファイルの全体を許可する', () => {
+    const result = applyPermits(hitsOf(), [{ file: 'docs/x.md', reason: 'この文書は使わない語を例に挙げる' }], () => text)
+    assert.deepEqual(result, { hits: [], problems: [] })
+  })
+
+  test('許可していないファイルの語は、許可の外として残す', () => {
+    const hits = hitsOf().map((hit) => ({ ...hit, file: 'docs/y.md' }))
+    assert.equal(applyPermits(hits, [permit], (file) => (file === 'docs/x.md' ? text : null)).hits.length, 3)
+  })
+
+  test('どの文書の場所にも当たらない許可（ファイルがない・見出しがない）を失敗にする', () => {
+    const missingFile = applyPermits(hitsOf(), [{ file: 'docs/none.md', reason: '理由' }], (file) => (file === 'docs/x.md' ? text : null))
+    assert.equal(missingFile.problems.length, 1)
+    assert.match(missingFile.problems[0], /docs\/none\.md.*ファイルがない/)
+    const missingHeading = applyPermits(hitsOf(), [{ file: 'docs/x.md', heading: 'ない見出し', reason: '理由' }], () => text)
+    assert.equal(missingHeading.problems.length, 1)
+    assert.match(missingHeading.problems[0], /ない見出し.*見出しがない/)
+  })
+
+  test('場所はあるが、その中から error の語がなくなった許可を、使われなくなった許可として失敗にする', () => {
+    const cleaned = text.replaceAll('`判定器`', '検査の script')
+    const result = applyPermits(findTerms(cleaned, list.error).map((hit) => ({ file: 'docs/x.md', ...hit })), [permit], () => cleaned)
+    assert.equal(result.problems.length, 1)
+    assert.match(result.problems[0], /用語の選び方.*不要/)
+  })
+
+  test('許可の理由が空なら失敗にする', () => {
+    const result = applyPermits(hitsOf(), [{ ...permit, reason: ' ' }], () => text)
+    assert.equal(result.problems.length, 1)
+    assert.match(result.problems[0], /理由がない/)
+  })
+
+  // この spec のファイルの許可は、アーカイブに移すときに外す一時のものなので、ここでは確認しない（外しても、このテストは成り立つ）
+  test('許可の一覧は、決めた 2 か所（writing.md の「用語の選び方」、subagents-results.md の「校閲の評価の結果」）を載せ、全ての許可に理由を付ける', () => {
+    const places = list.permit.map((item) => `${item.file}|${item.heading ?? ''}`)
+    assert.ok(places.includes('docs/05-開発規則/writing.md|用語の選び方'))
+    assert.ok(places.includes('docs/07-記録/subagents-results.md|校閲の評価の結果'))
+    for (const item of list.permit) assert.ok(typeof item.reason === 'string' && item.reason.trim() !== '', item.file)
+  })
+})
+
+describe('言い換えの一覧（warning の 高・必須。DC-566-15）', () => {
+  const term = termHitBy(list.warning, '高・必須の指摘')
+
+  test('高・必須 の後に ・推奨 が続く列挙は当てない', () => {
+    for (const text of ['重要度（高・必須・推奨）', '重要度：高・必須・推奨', '重要度は「高・必須・推奨」のどれか']) assert.deepEqual(findTerms(text, [term]), [], text)
+  })
+
+  test('高・必須の指摘 は当てる', () => {
+    for (const text of ['高・必須の指摘', '（高・必須の指摘を直す）']) assert.equal(findTerms(text, [term]).length, 1, text)
   })
 })
 
@@ -424,7 +620,8 @@ describe('日本語の文の検査（コードのコメントとテスト名）'
     const source = ['it(`道具を使う`, () => {})', 'test(`${name}の道具`, () => {})', 'it(`複数の', '道具`, () => {})', 'it(`\\`道具\\` と書く`, () => {})'].join('\n')
     assert.deepEqual(
       findCodeTerms('a.test.mjs', source, list.error).map((hit) => `${hit.line}:${hit.word}`),
-      ['1:道具', '2:道具', '4:道具'],
+      // 5 行目は、名前の中のインラインコード（かな・漢字を含む）なので、中の語も数える
+      ['1:道具', '2:道具', '4:道具', '5:道具'],
     )
   })
 
@@ -697,44 +894,63 @@ describe('日本語の文の検査（複数の行にまたがる文）', () => {
 })
 
 describe('日本語の文の検査（インラインコードの扱い）', () => {
-  /** @param {string} text 文書 @returns {number[]} 読点の数（1 個以上の文ごと。文の順） */
-  function commaCounts(text) {
-    return findStyleWarnings(text, { comma: 1 })
+  /** @param {string} text 文書 @param {Set<string>} [names] 文書の名前の一覧 @returns {number[]} 読点の数（1 個以上の文ごと。文の順） */
+  function commaCounts(text, names = new Set()) {
+    return findStyleWarnings(text, { comma: 1 }, { names })
       .filter((hit) => hit.kind === 'comma')
       .map((hit) => Number(/読点が (\d+) 個/.exec(hit.use)[1]))
   }
 
-  test('語の検査は、インラインコードの中の一致を数えない', () => {
-    const terms = [{ word: '道具', use: 'ツール' }]
-    assert.deepEqual(findTerms('`道具` と書く', terms), [])
-    assert.equal(findTerms('`道具` と道具', terms).length, 1)
+  test('語の検査は、英字だけのインラインコードの中の一致を数えない', () => {
+    const terms = [{ word: 'tool', use: 'ツール' }]
+    assert.deepEqual(findTerms('`tool` と書く', terms), [])
+    assert.equal(findTerms('`tool` と tool', terms).length, 1)
   })
 
-  test('pattern の項目も、インラインコードの中の一致を数えない。行番号は元の行である', () => {
-    const terms = [{ pattern: '道[具ぐ]', use: 'ツール', examples: { hit: ['道具'], miss: ['道'] } }]
-    assert.deepEqual(findTerms('あ\n`道具`\n道ぐ', terms).map((hit) => hit.line), [3])
+  test('語の検査は、かな・漢字を含むインラインコードの中の一致を数える', () => {
+    const terms = [{ word: '道具', use: 'ツール' }]
+    assert.equal(findTerms('`道具` と書く', terms).length, 1)
+    assert.equal(findTerms('`ぶんしょう道具` と書く', terms).length, 1)
+  })
+
+  test('pattern の項目も、英字だけのインラインコードの中の一致を数えない。行番号は元の行である', () => {
+    const terms = [{ pattern: 'tool[sz]', use: 'ツール', examples: { hit: ['tools'], miss: ['tool'] } }]
+    assert.deepEqual(findTerms('あ\n`tools`\ntoolz', terms).map((hit) => hit.line), [3])
   })
 
   test('インラインコードをまたいだ一致は作らない', () => {
     assert.deepEqual(findTerms('道`x`具', [{ word: '道具', use: 'ツール' }]), [])
   })
 
-  test('許容用語の照合も、インラインコードを除いた文で行う', () => {
-    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
-    assert.deepEqual(findTerms('`ブラウザー` とブラウザ', terms).map((hit) => hit.line), [1])
+  test('許容用語の照合も、英字だけのインラインコードを除いた文で行う', () => {
+    const terms = [{ word: 'tool', use: 'ツール', allow: { toolbox: '理由' } }]
+    assert.deepEqual(findTerms('`toolbox` と tool', terms).map((hit) => hit.line), [1])
+    assert.deepEqual(findTerms('`toolbox` を開く', terms), [])
   })
 
-  test('許容用語がインラインコードの中にしか出ないときは、使われていない（不要）と見る', () => {
-    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
-    const problems = findAllowProblems(['`ブラウザー` を開く'], terms)
+  test('許容用語が英字だけのインラインコードの中にしか出ないときは、使われていない（不要）と見る', () => {
+    const terms = [{ word: 'tool', use: 'ツール', allow: { toolbox: '理由' } }]
+    const problems = findAllowProblems(['`toolbox` を開く'], terms)
     assert.equal(problems.length, 1)
-    assert.match(problems[0], /ブラウザー.*不要/)
-    assert.deepEqual(findAllowProblems(['`ブラウザー` を開く', 'ブラウザーを開く'], terms), [])
+    assert.match(problems[0], /toolbox.*不要/)
+    assert.deepEqual(findAllowProblems(['`toolbox` を開く', 'toolbox を開く'], terms), [])
   })
 
-  test('コードのコメントの中のインラインコードも、語の検査で数えない', () => {
-    assert.deepEqual(findCodeTerms('a.mjs', '// `道具` を使う', [{ word: '道具', use: 'ツール' }]), [])
-    assert.equal(findCodeTerms('a.mjs', '// `x` と道具', [{ word: '道具', use: 'ツール' }]).length, 1)
+  test('許容用語が、かな・漢字を含むインラインコードの中に出るときは、使われているとみる', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
+    assert.deepEqual(findAllowProblems(['`ブラウザー` を開く'], terms), [])
+  })
+
+  test('許容用語の照合は、文書の順によらない（2 つ目以降の文書の、日本語を含むインラインコードの中の許容用語も使われているとみる）', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
+    assert.deepEqual(findAllowProblems(['別の文書', '`ブラウザー` を開く'], terms), [])
+    assert.deepEqual(findAllowProblems(['別の文書', '別の文書', '`ブラウザー` を開く'], terms), [])
+  })
+
+  test('コードのコメントの中の、英字だけのインラインコードは語の検査で数えず、日本語を含むものは数える', () => {
+    assert.deepEqual(findCodeTerms('a.mjs', '// `tool` を使う', [{ word: 'tool', use: 'ツール' }]), [])
+    assert.equal(findCodeTerms('a.mjs', '// `x` と tool', [{ word: 'tool', use: 'ツール' }]).length, 1)
+    assert.equal(findCodeTerms('a.mjs', '// `道具` を使う', [{ word: '道具', use: 'ツール' }]).length, 1)
   })
 
   test('tasks の範囲の行：インラインコードだけの項目を区切る読点は 0 と数える', () => {
@@ -746,7 +962,85 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
   })
 
   test('参照の行：親の見出しを付けた形（の「A」の「B」）と、文書の名前・skill の名前の後の見出しの参照も、参照だけの項目として扱う', () => {
-    assert.deepEqual(commaCounts('参照：[plan](../plan.md)の「段階 1」の「タスク」、開発の進め方の「起票」、開発の進め方の「規模」、skill `sessions` の「ツールの補足」'), [])
+    assert.deepEqual(commaCounts('参照：[plan](../plan.md)の「段階 1」の「タスク」、開発の進め方の「起票」、開発の進め方の「規模」、skill `sessions` の「ツールの補足」', new Set(['開発の進め方'])), [])
+  })
+
+  test('文書の名前の後の見出しの参照だけの項目の間の読点は、数えない（名前の一覧に一致する語）', () => {
+    const names = new Set(['開発の進め方'])
+    assert.deepEqual(commaCounts('参照：開発の進め方の「規模」、開発の進め方の「循環」、skill `sessions`。', names), [])
+  })
+
+  test('名前の一覧にない語と見出しの参照の項目の間の読点は、数える', () => {
+    assert.deepEqual(commaCounts('参照：作業の「規模」、設定の「値」、画面の「表示」。', new Set(['開発の進め方'])), [2])
+  })
+
+  test('空白を含む文書の名前も、名前の一覧に一致すれば、参照だけの項目と見る', () => {
+    const names = new Set(['Spec Kit 入門'])
+    assert.deepEqual(commaCounts('参照：Spec Kit 入門の「規模」、Spec Kit 入門の「循環」。', names), [])
+  })
+
+  test('.md で終わる語と見出しの参照の項目は、名前の一覧になくても、参照だけの項目と見る', () => {
+    assert.deepEqual(commaCounts('参照：見本/文書.md の「規模」、見本/別.md の「重要度」、skill `x`。'), [])
+  })
+
+  test('名前の一覧との一致は語の全体で、末尾だけが一致する語の項目の間の読点は数える', () => {
+    const names = new Set(['記録'])
+    assert.deepEqual(commaCounts('参照：作業の記録の「規模」、作業の記録の「循環」。', names), [1])
+  })
+
+  test('名前の一覧を返す関数を渡したとき、見出しの参照が付いた項目を見るときだけ呼ぶ', () => {
+    let calls = 0
+    const names = () => {
+      calls += 1
+      return new Set(['開発の進め方'])
+    }
+    assert.deepEqual(findStyleWarnings('範囲：`a`、`b`、`c`。', { comma: 1 }, { names }), [])
+    assert.deepEqual(findStyleWarnings('参照：[a](a.md)、[b](b.md)、skill `sessions`。', { comma: 1 }, { names }), [])
+    assert.equal(calls, 0)
+    assert.deepEqual(findStyleWarnings('参照：開発の進め方の「規模」、開発の進め方の「循環」。', { comma: 1 }, { names }), [])
+    assert.ok(calls > 0)
+  })
+
+  test('1 文書で何度見ても、求めるのは必要なときの 1 回だけである（文書の見出しも 1 回だけ読む）', () => {
+    const reads = []
+    let lists = 0
+    const names = lazyDocumentNames(
+      () => {
+        lists += 1
+        return ['docs/a.md', 'docs/b.md']
+      },
+      (file) => {
+        reads.push(file)
+        return file === 'docs/a.md' ? '# 開発の進め方\n' : '# 起票の手順\n'
+      },
+    )
+    const text = '参照：開発の進め方の「規模」、起票の手順の「循環」、開発の進め方の「起票」、起票の手順の「規模」。'
+    assert.deepEqual(findStyleWarnings(text, { comma: 1 }, { names }), [])
+    assert.deepEqual(findStyleWarnings(text, { comma: 1 }, { names }), [])
+    assert.equal(lists, 1)
+    assert.deepEqual(reads, ['docs/a.md', 'docs/b.md'])
+  })
+
+  test('追加行に参照だけの項目の候補がなければ、名前の一覧を作らない（候補のある文が追加行でないときも）', () => {
+    let lists = 0
+    const names = lazyDocumentNames(() => {
+      lists += 1
+      return []
+    }, () => '')
+    const text = ['参照：開発の進め方の「規模」、開発の進め方の「循環」。', '範囲：`a`、`b`、`c`。'].join('\n')
+    assert.deepEqual(findStyleWarnings(text, { comma: 1 }, { names, added: new Set([2]) }), [])
+    assert.equal(lists, 0)
+    findStyleWarnings(text, { comma: 1 }, { names, added: new Set([1]) })
+    assert.equal(lists, 1)
+  })
+
+  test('文書の名前の一覧は、参照の検査が見ないファイル（アーカイブした spec）の見出しを含まない', () => {
+    const files = ['docs/a.md', 'docs/08-spec/archive/old/spec.md', 'docs/08-spec/archive/mvp/mvp.md']
+    const titles = { 'docs/a.md': '# 開発の進め方\n', 'docs/08-spec/archive/old/spec.md': '# 古い spec\n', 'docs/08-spec/archive/mvp/mvp.md': '# MVP の一覧\n' }
+    const names = jaText.documentNames(files, (file) => titles[file])
+    assert.ok(names.has('開発の進め方'))
+    assert.ok(names.has('MVP の一覧'))
+    assert.ok(!names.has('古い spec'))
   })
 
   test('参照の行：「」の中の読点とコロンで項目を分けない。「」の中の読点は数える', () => {
@@ -827,16 +1121,30 @@ describe('日本語の文の検査（warning と終了コード）', () => {
   }
 
   const longSentence = `${'あ'.repeat(200)}である。要求を送る。少し修正する。\n`
+  const okCode = { 'src/ok.mjs': '// 問題のない文である。\n' }
   const files = { 'docs/a.md': longSentence, 'src/a.mjs': `// ${'い'.repeat(200)}である。\n` }
 
   test('warning だけのとき、既定の実行は成功し、warning を数えない。最後の行は要約の行である', () => {
     // 許容用語が使われなくなったという error を出さないよう、一覧の全ての許容用語を 1 行ずつ書く。
     // リポジトリ本体では実行しない（commit の hook は、Git のない一時の場所で検査を実行するため）
     const allowWords = [...list.error, ...list.warning].flatMap((item) => Object.keys(item.allow ?? {}))
-    const result = runIn({ ...files, 'docs/allow.md': `${allowWords.join('\n')}\n` }, [])
+    // 使われなくなった許可も失敗にするので、許可の一覧の全ての場所に、使わない語を 1 つずつ書く
+    const permitFiles = Object.fromEntries(list.permit.map((permit) => [permit.file, `# 題\n\n${permit.heading === undefined ? '' : `## ${permit.heading}\n\n`}道具\n`]))
+    const result = runIn({ ...files, ...permitFiles, 'docs/allow.md': `${allowWords.join('\n')}\n` }, [])
     assert.equal(result.status, 0)
     assert.doesNotMatch(result.stdout, /警告|要求|字数/)
     assert.equal(result.stdout.trimEnd().split('\n').at(-1), '使わない語：0')
+  })
+
+  test('使われなくなった許可（場所の中に error の語がない）があるとき、既定の実行は終了コード 1 にして、その許可を示す', () => {
+    const allowWords = [...list.error, ...list.warning].flatMap((item) => Object.keys(item.allow ?? {}))
+    const [stale, ...others] = list.permit
+    const placeFile = (permit, body) => [permit.file, `# 題\n\n${permit.heading === undefined ? '' : `## ${permit.heading}\n\n`}${body}\n`]
+    const permitFiles = Object.fromEntries([placeFile(stale, '使わない語はない'), ...others.map((permit) => placeFile(permit, '道具'))])
+    const result = runIn({ ...files, ...permitFiles, 'docs/allow.md': `${allowWords.join('\n')}\n` }, [])
+    assert.equal(result.status, 1)
+    assert.match(result.stdout, new RegExp(`ja-text\\.json の permit.*${stale.heading ?? stale.file}.*不要`))
+    assert.equal(result.stdout.trimEnd().split('\n').at(-1), '使わない語：1')
   })
 
   test('--warning --added は、標準入力の差分の追加行だけを一覧にする', () => {
@@ -845,6 +1153,62 @@ describe('日本語の文の検査（warning と終了コード）', () => {
     assert.equal(result.status, 0)
     assert.match(result.stdout, /docs\/a\.md:1 .*字数/)
     assert.doesNotMatch(result.stdout, /docs\/b\.md|src\/a\.mjs/)
+  })
+
+  /**
+   * 追加行だけの差分を作る（git diff -U0 の形）。
+   *
+   * @param {string} file パス
+   * @param {string} hunk @@ の行
+   * @param {string[]} body hunk の本文の行
+   * @returns {string} 差分
+   */
+  function diffOf(file, hunk, body = []) {
+    return [`diff --git a/${file} b/${file}`, `--- a/${file}`, `+++ b/${file}`, hunk, ...body].join('\n')
+  }
+
+  test('--warning --added は、差分にないファイルの error の語と warning の語を示さない（hook の例 1）', () => {
+    const diff = diffOf('docs/a.md', '@@ -0,0 +1 @@', ['+問題のない文である。'])
+    const result = runIn({ ...okCode, 'docs/a.md': '問題のない文である。\n', 'docs/b.md': `見直す。要求を送る。\n${longSentence}` }, ['--warning', '--added'], diff)
+    assert.equal(result.status, 0)
+    assert.equal(result.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、削除した行だけがある文書を示さない（hook の例 2）', () => {
+    const diff = diffOf('docs/a.md', '@@ -5 +4,0 @@', ['-古い行'])
+    const result = runIn({ ...okCode, 'docs/a.md': `見直す。要求を送る。\n${longSentence}` }, ['--warning', '--added'], diff)
+    assert.equal(result.status, 0)
+    assert.equal(result.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、名前だけを変えたファイルと改行コードだけを変えたファイルを示さない（hook の例 3）', () => {
+    const renamed = ['diff --git a/docs/old.md b/docs/new.md', 'similarity index 100%', 'rename from docs/old.md', 'rename to docs/new.md'].join('\n')
+    const renamedResult = runIn({ ...okCode, 'docs/new.md': `見直す。要求を送る。\n${longSentence}` }, ['--warning', '--added'], renamed)
+    assert.equal(renamedResult.stdout.trimEnd(), '注意する語と文：0')
+    // 改行コードだけの違いは、--ignore-cr-at-eol により差分が空になる
+    const emptyResult = runIn({ ...okCode, 'docs/a.md': `見直す。要求を送る。\r\n${longSentence}` }, ['--warning', '--added'], '')
+    assert.equal(emptyResult.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、追加行の error の語を示さず、それに重なる warning の語も重ねて示さない（hook の例 4）', () => {
+    const diff = diffOf('docs/a.md', '@@ -0,0 +1 @@', ['+文書を見直す。'])
+    const result = runIn({ ...okCode, 'docs/a.md': '文書を見直す。\n' }, ['--warning', '--added'], diff)
+    assert.equal(result.status, 0)
+    assert.doesNotMatch(result.stdout, /見直す|直す/)
+    assert.equal(result.stdout.trimEnd(), '注意する語と文：0')
+  })
+
+  test('--warning --added は、error の語に重ならない warning の語は、同じ行にあっても示す', () => {
+    const diff = diffOf('docs/a.md', '@@ -0,0 +1 @@', ['+文書を見直す。誤りを直す。'])
+    const result = runIn({ ...okCode, 'docs/a.md': '文書を見直す。誤りを直す。\n' }, ['--warning', '--added'], diff)
+    assert.match(result.stdout, /^docs\/a\.md:1 直す → /m)
+    assert.doesNotMatch(result.stdout, /見直す/)
+    assert.equal(result.stdout.trimEnd().split('\n').at(-1), '注意する語と文：1')
+  })
+
+  test('--warning（--added なし）は、error の語に重なる warning の語も今までどおり示す', () => {
+    const result = runIn({ ...okCode, 'docs/a.md': '文書を見直す。\n' }, ['--warning'])
+    assert.match(result.stdout, /^docs\/a\.md:1 直す → /m)
   })
 
   test('--warning は文体・崩れの疑い・「要求」を一覧にし、成功する。最後の行は要約の行である', () => {
@@ -1098,8 +1462,8 @@ describe('日本語の文の検査（--warning --added の測るファイル）'
     assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md'], null), ['docs/a.md', 'docs/b.md'])
   })
 
-  test('追加行の差分があれば、差分にあるファイルだけを（順を変えずに）測る。追加行のないファイルも差分にあれば測る', () => {
-    const added = new Map([['docs/b.md', new Set([1])], ['docs/c.md', new Set()], ['docs/x.md', new Set([2])]])
-    assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md', 'docs/c.md'], added), ['docs/b.md', 'docs/c.md'])
+  test('追加行の差分があれば、追加行のあるファイルだけを（順を変えずに）測る。追加行のないファイル（削除した行だけ）は差分にあっても測らない', () => {
+    const added = new Map([['docs/b.md', new Set([1])], ['docs/c.md', new Set()], ['docs/x.md', new Set([2])], ['docs/d.md', null]])
+    assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md', 'docs/c.md', 'docs/d.md'], added), ['docs/b.md', 'docs/d.md'])
   })
 })

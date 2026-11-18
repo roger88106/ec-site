@@ -1,9 +1,7 @@
-import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
-import { Button } from '@ec-site/shared/ui/button'
 import type { ReactNode } from 'react'
 import { useTranslations } from 'use-intl'
-import { errorMessage } from '@/api/errors'
 import { type Permission, usePermissions } from '@/auth/permissions'
+import { RetryableError } from '@/components/RetryableError'
 
 /**
  * 権限のある運営者にだけ出す枠
@@ -18,22 +16,7 @@ export function RequirePermission({ permission, children }: { permission: Permis
     return null
   }
   if (permissions.status === 'failed') {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          <p>{errorMessage(permissions.error)}</p>
-          <Button
-            className="mt-2"
-            disabled={permissions.isFetching}
-            onClick={permissions.retry}
-            size="sm"
-            variant="outline"
-          >
-            {t('permissionsFailed.retry') /* 再試行 */}
-          </Button>
-        </AlertDescription>
-      </Alert>
-    )
+    return <RetryableError error={permissions.error} fetching={permissions.isFetching} onRetry={permissions.retry} />
   }
   if (!permissions.has(permission)) {
     return <p className="text-muted-foreground">{t('forbidden') /* 権限がない */}</p>

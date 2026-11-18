@@ -428,7 +428,7 @@ describe('実際の hook', () => {
     assert.match(output, /docs\/a\.md:5 長いセル/)
   })
 
-  test('既存の行から始まる文に行を足して閾値以上になったら、その文の warning を（最初の追加行で）表示する', () => {
+  test('既存の行から始まる文に行を追加して閾値以上になったら、その文の warning を（最初の追加行で）表示する', () => {
     const head = 'あ'.repeat(60)
     const tail = 'い'.repeat(60)
     const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': `${head}、\n` }, files: { 'docs/a.md': `${head}、\n${tail}。\n` } })
@@ -455,7 +455,7 @@ describe('実際の hook', () => {
     }
   })
 
-  test('diff.renames=copies の設定でも、コピーして長い文を足したファイルに warning を表示する', () => {
+  test('diff.renames=copies の設定でも、コピーして長い文を追加したファイルに warning を表示する', () => {
     // コピーの元（old.md）も変えると、git はコピー（C）として見分けられる。コピーとして見分けると、追加行の差分から落ちる
     // 似ている度合いが git の閾値（50%）を超えるよう、元の行を長い文より十分に多くする
     const body = Array.from({ length: 40 }, (_, index) => `${index + 1} 番目の行。`).join('\n')
@@ -479,6 +479,22 @@ describe('実際の hook', () => {
     })
     assert.equal(status, 0)
     assert.doesNotMatch(output, /警告：追加した行/)
+  })
+
+  test('削除した行だけの変更では、残った行の warning を表示しない（hook の例 2）', () => {
+    const baseline = { 'docs/a.md': '古い要求の行。\nふつうの行。\n消す行。\n' }
+    const { status, output } = runHook(jaTextCheck, { baseline, files: { 'docs/a.md': '古い要求の行。\nふつうの行。\n' } })
+    assert.equal(status, 0)
+    assert.doesNotMatch(output, /docs\/a\.md:\d/)
+    assert.doesNotMatch(output, /警告：追加した行/)
+  })
+
+  test('追加行に使わない語（error）があっても、その語は warning の一覧に重ねて表示せず、同じ行の別の warning は表示する（hook の例 4）', () => {
+    // 検査の段は通す（error の語は検査の段で数えるので、ここでは数えない）。warning の段は、error の語を示さない
+    const { status, output } = runHook(markedCheck, { baseline: { 'docs/a.md': 'ふつうの行。\n' }, files: { 'docs/a.md': 'ふつうの行。\n道具を使う。要求を送る。\n' } })
+    assert.equal(status, 0)
+    assert.match(output, /docs\/a\.md:2 要求/)
+    assert.doesNotMatch(output, /道具/)
   })
 
   test('追加していない既存の行の warning は表示しない', () => {

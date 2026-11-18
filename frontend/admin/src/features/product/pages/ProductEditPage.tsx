@@ -38,8 +38,7 @@ export function ProductEditPage() {
             </LinkButton>
           </PageHeader>
           <div className="max-w-4xl space-y-6">
-            {/* 商品が変わったら（バージョンが変わったら）、前の操作のエラーを消す */}
-            <ProductStatusCard key={product.version} product={product} />
+            <ProductStatusCard product={product} />
             <PublicationPeriodCard product={product} refetch={query.refetch} />
             <BasicInfoCard product={product} refetch={query.refetch} />
             <ProductImagesCard product={product} />

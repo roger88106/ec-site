@@ -414,7 +414,7 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
 - それ以外の、Lombok で作るコンストラクターの引数（domain の型、common の値、application の Query・view の record など）には `lombok.NonNull` を付け、実行時にも null を止める。理由：DB から再構築するときの jOOQ の値は、NullAway が確認しないため（上の jOOQ の箇条）。
   - 投げる例外は `NullPointerException` のままにする（`IllegalArgumentException` が `NullPointerException` に変わってよい）。
   - presentation（Controller と Mapper）には付けない。
-  - null で業務のエラーを確認するテストは削除しない。null を渡すだけのテストは足さない。
+  - null で業務のエラーを確認するテストは削除しない。null を渡すだけのテストは追加しない。
 - 分岐網羅（C1）のカバレッジの基準が変わったら、[テストの実行方法](../06-手順書/running-tests.md)の「カバレッジと mutation score の基準の検査」の決め方で、基準を書き換える。
 
 理由：null の誤りを、Spring の API の注釈（同じ JSpecify）も含めて、実行より前のコンパイルで見つけるため。
@@ -428,7 +428,7 @@ dsl.select(POSTAL_CODE.POSTAL_CODE_, PREFECTURE_ROW, MUNICIPALITY_ROW, POSTAL_CO
   - 修正すると振る舞いが変わるもの
   - mock（本番で動かないコード）で、修正する手間に見合わないもの
 - 抑える理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く。他の注釈が間にあるときは、その注釈の行を飛ばして直前の行に書く。
-- 検査を全体で無効にする、重大度を変えるのは `backend/ecsite/build.gradle.kts`（今無効にしている検査と理由もここ）で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。生成したコードは検査しない。
+- 検査を全体で無効にする、重大度を変えるのは `backend/ecsite/build.gradle.kts`（今無効にしている検査と理由もここ）で行い、先に spec で決める。意味のない注釈を追加しないと消えない報告は、注釈でなく設定で扱う。生成したコードは検査しない。
 
 ```java
 // 本番で動かない mock。body は HTTP の本文として送るだけなので、配列の成分を許す

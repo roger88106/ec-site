@@ -2,8 +2,9 @@ import { screen, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { TaxCategory } from '@/api/types'
+import { setUpConflictFlow } from '@/test/conflictFlow'
 import { CONFLICT_MESSAGE, TAX_CATEGORY_ID, taxCategory } from '@/test/fixtures'
-import { returnToTab, typeDateTime } from '@/test/inputs'
+import { typeDateTime } from '@/test/inputs'
 import { getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
@@ -127,30 +128,36 @@ describe('税率の一覧の編集', () => {
     expect(screen.queryByText('税率を保存しました')).not.toBeInTheDocument()
   })
 
-  describe('入力中に他の人が更新したとき', () => {
-    /** 率を 9 に入力した後で、他の人が 8% に変えたのを、画面が取得し直した状態にする。 */
-    async function editThenRefetch() {
-      const state = serveTaxCategory(taxCategory(), (body, response) =>
-        body.version === state.current.version ? undefined : conflict(response),
-      )
-      const { user } = renderApp(PAGE_PATH)
-      await screen.findByRole('heading', { name: '税区分「標準」の税率' })
-      await user.clear(rowInputs(0).rate)
-      await user.type(rowInputs(0).rate, '9')
-      state.current = taxCategory({
-        version: 1,
-        currentRatePercent: 8,
-        rates: [{ id: RATE_ID, ratePercent: 8, effectiveFrom: null, effectiveTo: null }],
+  describe('入力中に他の人が更新した（409）', () => {
+    /** 率を 9 に入力した後で、他の人が 8% に変えたのを、画面が取得し直した状態にする。保存するときは saveButton を渡す。 */
+    function editThenRefetch(saveButton?: string) {
+      return setUpConflictFlow({
+        edit: async () => {
+          const state = serveTaxCategory(taxCategory(), (body, response) =>
+            body.version === state.current.version ? undefined : conflict(response),
+          )
+          const { user } = renderApp(PAGE_PATH)
+          await screen.findByRole('heading', { name: '税区分「標準」の税率' })
+          await user.clear(rowInputs(0).rate)
+          await user.type(rowInputs(0).rate, '9')
+          return { state, user }
+        },
+        othersUpdate: ({ state }) => {
+          state.current = taxCategory({
+            version: 1,
+            currentRatePercent: 8,
+            rates: [{ id: RATE_ID, ratePercent: 8, effectiveFrom: null, effectiveTo: null }],
+          })
+        },
+        refetched: () => screen.findByText('現時点の率：8%'),
+        saveButton,
       })
-      returnToTab()
-      await screen.findByText('現時点の率：8%')
-      return { state, user }
     }
 
-    /** 保存して 409 の表示を出し、その表示を返す。 */
-    async function saveToConflict(user: Awaited<ReturnType<typeof editThenRefetch>>['user']) {
-      await user.click(screen.getByRole('button', { name: '保存' }))
-      return screen.findByRole('alert')
+    /** 取得し直した後に保存して 409 にし、競合の知らせ（alert）が出た状態にする。 */
+    async function saveToConflict() {
+      const context = await editThenRefetch('保存')
+      return { ...context, conflictAlert: screen.getByRole('alert') }
     }
 
     test('取得し直しても、入力した率は消えない', async () => {
@@ -160,17 +167,14 @@ describe('税率の一覧の編集', () => {
     })
 
     test('保存は 409 になり、他の人が先に更新したことを知らせ、入力は残る', async () => {
-      const { user } = await editThenRefetch()
-
-      const conflictAlert = await saveToConflict(user)
+      const { conflictAlert } = await saveToConflict()
 
       expect(within(conflictAlert).getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
       expect(rowInputs(0).rate).toHaveValue(9)
     })
 
     test('再読み込みすると、最新の一覧に再作成され、知らせは消える', async () => {
-      const { user } = await editThenRefetch()
-      const conflictAlert = await saveToConflict(user)
+      const { user, conflictAlert } = await saveToConflict()
 
       await user.click(within(conflictAlert).getByRole('button', { name: '再読み込み' }))
 
@@ -179,8 +183,7 @@ describe('税率の一覧の編集', () => {
     })
 
     test('再読み込みの後は、最新のバージョンで保存できる', async () => {
-      const { state, user } = await editThenRefetch()
-      const conflictAlert = await saveToConflict(user)
+      const { state, user, conflictAlert } = await saveToConflict()
       await user.click(within(conflictAlert).getByRole('button', { name: '再読み込み' }))
       await screen.findByDisplayValue('8')
 

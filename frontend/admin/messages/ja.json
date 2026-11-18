@@ -39,6 +39,9 @@
     "queryState": {
       "loading": "読み込み中…"
     },
+    "retryableError": {
+      "retry": "再試行"
+    },
     "confirmDialog": {
       "cancel": "やめる"
     },
@@ -275,10 +278,7 @@
       "description": "操作がないため、{logoutAt} にログアウトします。続けるときは「操作を続ける」を押してください。保存していない入力は失われます。",
       "keepWorking": "操作を続ける"
     },
-    "forbidden": "この画面を見る権限がありません。",
-    "permissionsFailed": {
-      "retry": "再試行"
-    }
+    "forbidden": "この画面を見る権限がありません。"
   },
   "inventory": {
     "page": {

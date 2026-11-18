@@ -9,7 +9,7 @@ import { useApiMutation } from '@/api/useApiMutation'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { CodeInput } from '@/features/product/components/CodeInput'
-import { useVersionedForm } from '@/hooks/useVersionedForm'
+import { type Refetch, useVersionedForm } from '@/hooks/useVersionedForm'
 
 /**
  * 入力欄の値
@@ -31,7 +31,7 @@ function emptyValues(product: ProductDetail): Values {
  *
  * 品番の英小文字は大文字にする。送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
-export function AddVariantForm({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
+export function AddVariantForm({ product, refetch }: { product: ProductDetail; refetch: Refetch<ProductDetail> }) {
   const { form, baseVersion, reloadAfter } = useVersionedForm(product, emptyValues, refetch)
   const t = useTranslations('product.variants')
   const mutation = useApiMutation('post', '/products/{productId}/variants', {

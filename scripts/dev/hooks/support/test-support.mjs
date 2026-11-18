@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..')
 
 /**
- * 日本語の文の検査と、その検査が読む補助（scripts/ci/lib と scripts/shared のテスト以外の .mjs）。
+ * 日本語の文の検査と、その検査が読む補助（参照の検査の見ないファイルの判定 doc-refs.mjs、scripts/ci/lib と scripts/shared のテスト以外の .mjs）。
  *
  * 一時のリポジトリに、実際のリポジトリと同じ置き場所でコピーする。
  */

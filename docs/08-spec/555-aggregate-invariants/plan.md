@@ -116,27 +116,35 @@ record を class に変えるときの呼び出し元（[文書の構成](../../
 
 判定：
 
-- 対象は、静的な型が entity・集約である式。entity・集約は、jMolecules の Entity・AggregateRoot の注釈が付いたクラスと、基底クラスを継承するクラス。
-- AssertJ の `assertThat(x)` の x が対象のとき、続く `isEqualTo`・`isNotEqualTo`・`isIn`・`isNotIn` を検出する。
-- AssertJ の `assertThat` の引数が要素の一覧で、要素の型が対象のとき、続く `contains`・`containsExactly`・`containsExactlyInAnyOrder`・`containsOnly`・`doesNotContain` など、要素の等価で比べるメソッドを検出する。
-- JUnit の `assertEquals`・`assertNotEquals` の引数が対象のときを検出する。
-- 間に `usingRecursiveComparison()`・`usingElementComparator(...)` など、比較の方法を替える呼び出しがあれば、検出しない。
+- 対象の型は、jMolecules の Entity・AggregateRoot の注釈が付いたクラスと、基底クラスとその継承先。型が対象の型を含むとは、型そのもの、配列の要素、総称型の型引数（`List<Order>`、`Optional<Order>`、`Map<String, List<Order>>` など。入れ子もたどる）のどれかが対象の型であること。型変数とワイルドカードは上限の型で見る。
+- AssertJ の assert のオブジェクトに対する、等価で比べるメソッドの呼び出しで、引数の型が対象の型を含むときに検出する。メソッドの一覧は検査のクラスに閉じた一覧で持つ（`isEqualTo`・`isIn`・`contains` の系統・`containsEntry`・`hasValue`・`hasSameElementsAs`・`startsWith` など、否定の形を含む）。`first()`・`get()`・`extracting(...)` の後の呼び出しも同じに判定する。
+- assert の連鎖の途中に、名前が `using` で始まる比較の方法を替える呼び出し（`usingRecursiveComparison()`・`usingElementComparator(...)` など）があれば、検出しない。
+- JUnit の `assertEquals`・`assertNotEquals`・`assertIterableEquals`・`assertArrayEquals` の引数の型が対象の型を含むときに検出する。
+- 対象の型の `equals` の呼び出し（メソッド参照を含む）と `Objects.equals`、`Collection` の `contains`・`containsAll`・`indexOf`・`remove` の引数の型が対象の型を含むときに検出する。
+- 検出しないもの：参照で比べる `isSameAs`・`containsSame`・`assertSame` の系統、Mockito の引数の照合（`verify`・`eq` など）、対象の型を成分に持つ record の比較。
+- 対象はテストのソースセット（test、integrationTest、testFixtures）だけ。抑えるときは `@SuppressWarnings("EntityEqualityAssertion")` と、直前の行の理由のコメント（[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「検査を抑えるとき」）。
 - 判定の区分は、誤りの防止（誤って書いたものを拒否し、意図して作った回避は対象にしない）にする（[文書の構成](../../05-開発規則/doc-structure.md)の「形を判定する検査」）。
 
-例（検出すべき例と検出してはいけない例）：
+例（検出すべき例と検出してはいけない例。検査のテストには、T555-01-06 のレビューで追加した例も入れる）：
 
 | 例 | 検出 | 理由 |
 |----|------|------|
 | `assertThat(order).isEqualTo(expected)`（どちらも注文） | する | 識別子だけで比べ、項目の違いを見落とす |
 | `assertThat(product).isNotEqualTo(other)` | する | 識別子が違うことだけを見て、項目の違いを確認しない |
 | `assertThat(images).containsExactly(new ProductImage(...))`（要素が商品の画像） | する | 要素の等価が識別子だけになる |
-| `assertThat(checkouts).contains(checkout)` | する | 要素が識別子だけで一致し、項目の違いを見落とす |
+| `assertThat(orders).containsExactlyElementsOf(expected)`（`List<Order>`） | する | 引数の一覧の要素が対象の型 |
+| `assertThat(repository.findById(id)).contains(order)`（`Optional<Order>`） | する | Optional の中身の比較も等価 |
+| `assertThat(ordersById).containsEntry(id, order)`（`Map<UUID, Order>`） | する | Map の値の比較も等価 |
+| `assertThat(orders).first().isEqualTo(expected)` | する | 取り出した後の比較も等価 |
+| `assertThat(a.equals(b)).isTrue()` | する | `equals` を直接呼び、識別子だけで比べる |
 | `assertEquals(expectedPayment, payment)` | する | JUnit の比較も、識別子だけで一致する |
 | `assertThat(order.id()).isEqualTo(id)` | しない | 値は識別子（UUID）で、entity でない |
 | `assertThat(order).usingRecursiveComparison().isEqualTo(expected)` | しない | 項目ごとに比べる |
+| `assertThat(orders).usingRecursiveFieldByFieldElementComparator().containsExactly(a)` | しない | 要素を項目ごとに比べる |
 | `assertThat(images).extracting(ProductImage::id).containsExactly(id1)` | しない | 要素は識別子 |
 | `assertThat(payment.toSnapshot()).isEqualTo(before)` | しない | スナップショットは record の値で、entity でない |
 | `assertThat(order).isSameAs(loaded)` | しない | 参照の同一性の確認で、等価でない |
+| `verify(repository).save(order)`（Mockito） | しない | 呼び出しの確認で、値の確認でない |
 | main のコードの `equals` の呼び出し | しない | 対象はテストのソースセットだけ |
 
 理由：

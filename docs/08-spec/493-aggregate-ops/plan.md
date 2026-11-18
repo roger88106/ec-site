@@ -14,7 +14,7 @@
 
 共通の決定：
 
-- 危険度は通常にする。API と DB を変えない整理のため。spec に危険度の行は書かない。
+- 危険度は、経路の判定で高になる（支払と金額の経路のファイルを変えるため。`scripts/ci/config/risk.mjs`）。設計への影響による高ではないので、spec に危険度の行は書かない。支払の経路を変えるので、pull request の前に、文脈を持たない高性能のレビュー役と、セキュリティのレビューを加える（エージェントの作業フローの「レビューの時点と profile」）。
 - レビューの profile は厚めにする（issue 担当の指示）。段階ごとに最後のレビュー、spec の最後のレビュー、pull request の前のレビューを行う。
 - 実装は、実装役（汎用）に 1 タスクずつ任せる。spec 担当は合否を判定する。
 - 最初の push は、draft の pull request を作る直前にする。pull request の向き先は全体のブランチ `agent/544-cleanup-before-release`。
@@ -22,14 +22,14 @@
 - 段階 2 と段階 3 は振る舞いを変えない。今の振る舞いは、各節の表の既存のテストが固定している。足りない所だけ、固定のテストを先に追加する。
 - 実装を始める前に、全体のブランチを取り込み、実装を始める前の照合をする。
 - 新しい型の例外のメッセージとログに、DB の値と個人の情報を含めない（DN-493-4）。段階の最後のレビューで確認する。
-- 並行する #547（イベントと在庫）・#548（出荷）とは、変えるファイルが重ならない。実装を始める前の照合で、両方の変えるファイルとの重なりを確認する。本 spec は #491 より先に全体のブランチに入れる。
+- 並行する #547・#548 とは、変えるファイルが重ならない見込みである。実装を始める前の照合で、両方の変えるファイルとの重なりを確認する。本 spec は #491 より先に全体のブランチに入れる。
 
 ## 戻り値と保存（DS-493-1：DC-493-1〜4）
 
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
 | 規則 2 つ（戻り値と保存、照会の型）を追加する | `docs/05-開発規則/backend-coding.md` の新しい小節 2 つ（照会の型は「層とパッケージ」、戻り値と保存は「入力の検証とエラー」の「更新の競合は `version`」の後） | 文書を読む |
-| 取消の申請を、変えたかを返す形にする | `order/domain/order/Order.java` の `requestCancellation` | `OrderTest` |
+| 取消の申請を、変えたかを返す形にする | `order/domain/order/Order.java` の `requestCancellation` | `OrderCancellationTest` |
 | 取消の申請の service が、変えたときだけ保存する | `order/application/OrderCancellationCommandService.java` の `request` | 統合テスト（申請中の注文に再度申請しても、注文のバージョンが進まない） |
 | 支払の 5 つの操作を、変えたかを返す形にする | `payment/domain/payment/Payment.java` の `capture`、`expireAuthorization`、`cancel`、`markVoided`、`markRefunded` | `PaymentTest` |
 | 与信の反映を、変えたかを返す形にする（支払なしの状態から与信の取消待ちにしたときも真） | `Payment.java` の `authorize`（2 つ） | `PaymentTest` |
@@ -48,11 +48,11 @@
 | 取消済みの注文の支払の取消（再実行） | `CancellationApiTest` か `CapturedOrderCancellationRefundTest` |
 | 与信の期限切れ（与信済みでない支払に期限切れが届く） | `PaymentCaptureTest` |
 
-※1：テストのクラスは、実装役が既存のテストの準備の形に合わせて選んでよい。表の 7 つの場合は全て覆う。
+※1：テストのクラスは、実装役が既存のテストの準備の形に合わせて選んでよい。表の 7 つの場合は全て確認する。
 
-- 範囲は、状態によって何もしないことがある操作だけにする。理由：運営者の編集は、spec の Non-goals のとおり対象にしないため。
-- 与信の反映の判定を、変えたかと変えた後の状態から行う。理由：変えたときの状態が与信済みなら、変える前は未払いだったので、今の「未払いから与信済みにしたら真」と同じ結果になるため。呼び出し元は、決済サービスから与信を取得したときのログだけ（`PaymentGatewayService.recoverAuthorization`）。
-- 何も変わらない操作の後に、注文と支払のバージョンが進まなくなる。画面と応答は変わらない。理由：注文と支払のバージョンと更新日時は、API の応答にない（`api/openapi/` の注文と支払の型に項目がない）ため。他のモジュールが注文と支払のバージョンを読まないことは、実装の前の照合で `version` の呼び出し元を検索して確認する。
+- 範囲は、状態によって何も変えないことがある操作だけにする。理由：運営者の編集は、spec の Non-goals のとおり対象にしないため。
+- 理由（与信の反映の判定）：変えたときの状態が与信済みなら、変える前は未払いだったので、今の「未払いから与信済みにしたら真」と同じ結果になるため。呼び出し元は、決済サービスから与信を取得したときのログだけ。
+- 何も変わらない操作の後に、注文と支払のバージョンが進まなくなる。画面と応答は変わらない。理由：注文と支払のバージョンと更新日時は、API の定義の注文と支払の型に項目がないため、応答にもない。他のモジュールが注文と支払のバージョンを読まないことは、実装の前の照合で、バージョンの呼び出し元を検索して確認する。
 
 ## 商品の型の分割（DS-493-2：DC-493-5〜8）
 
@@ -60,23 +60,24 @@
 |------|--------|----------|
 | 公開の状態（公開状態、公開期間、初回表示日時）を 1 つの値の型にする（record） | `catalog/domain/product/vo/Publication.java`（新規） | 単体テスト `PublicationTest`（新規） |
 | 公開状態の列挙を `vo/` に移す | `catalog/domain/product/PublicationStatus.java` → `vo/` | コンパイル |
-| 値の型の操作：状態を変える操作（公開、非公開、販売終了、公開期間の変更）は新しい値を返す。判定は、表示中か、一度でも表示したか、今できる操作の計算に使う値 | `Publication` のメソッド | `PublicationTest` |
+| 値の型の操作：状態を変える操作（公開、非公開、販売終了、公開期間の変更）は新しい値を返す。判定は、表示中か、一度でも表示したかを返す。今できる操作は、この型の値から計算する | `Publication` のメソッド | `PublicationTest` |
 | 商品の集約は値の型に処理を任せ、値が変わったときだけイベントを登録して真を返す | `Product.java` | 既存の `ProductPublicationTest`、`ProductActionsTest`、`ProductTest` |
 | 公開中で初回表示日時も公開終了もないことを拒む不変条件を、値の型のコンストラクターに移す | `Publication` | `PublicationTest`、既存の `ProductInvariantsTest`、`ProductRestoreFailureTest` |
 | バリアントの一覧を一覧の型にする（package-private の record） | `catalog/domain/product/Variants.java`（新規） | 単体テスト `VariantsTest`（新規） |
 | 画像の一覧を一覧の型にする（package-private の record） | `catalog/domain/product/ProductImages.java`（新規） | 単体テスト `ProductImagesTest`（新規） |
-| 一覧の型の操作：ID で探す・次の表示順・表示順の整列と、追加・削除・並べ替え。バリアントの一覧は、1 件を置き換えた一覧と、品番・軸の値の組み合わせの重複を調べる操作と、軸の値の数を調べる操作も持つ | `Variants`、`ProductImages` | 各単体テスト |
-| 画像の数の上限（定数を含む）は画像の一覧の型に置く。軸の数は商品が持ち、バリアントの一覧への問い合わせに渡す | `ProductImages`、`Product` | 単体テスト、`ProductInvariantsTest`、`ProductRestoreFailureTest`（画像の数が上限を超える行の場合を追加する） |
-| 復元（変えない見込み） | `ProductFactory`、`JooqProductRepository` | `ProductRestoreFailureTest` に、公開の状態に違反する行の場合を追加する |
-| 保存は、今の差分の書き方のままにする。型の取り出し方だけ合わせる | `JooqProductRepository` | 既存の `JooqProductRepositoryTest` |
+| 一覧の型に共通の操作：ID で探す、次の表示順、追加、削除、並べ替え、表示順の整列（作るときに行う） | `Variants`、`ProductImages` | 各単体テスト |
+| バリアントの一覧だけの操作：1 件の置き換え、品番と軸の値の組み合わせの重複の検査、軸の値の数の検査 | `Variants` | `VariantsTest` |
+| 画像の数の上限（定数を含む）は画像の一覧の型に置く。軸の数は商品が持ち、バリアントの一覧への問い合わせに渡す | `ProductImages`、`Product` | 単体テスト、`ProductInvariantsTest`、`ProductRestoreFailureTest`（画像の数が上限を超える行の場合は、既にあるので加えない） |
+| 復元は変えない | `ProductFactory` | `ProductRestoreFailureTest`（公開の状態に違反する行の場合は、既にあるので加えない） |
+| 保存は、今の差分の書き方のままにする。変えるのは、型の取り出し方と、公開状態の列挙の import だけ | `JooqProductRepository` | 既存の `JooqProductRepositoryTest` |
 
 - 一覧の型の「ID で探す」は、見つからなければ業務のエラーにする。
-- 復元で新しい型を作る処理は、商品のコンストラクターの中にあるので、今の復元の補助の中で検査される。そのため復元の部分は変えない見込みである。
-- 公開の状態の値の型を record にする。理由：公開の状態は識別子を持たない値で、#555 の規則（entity と集約は class）の対象でなく、状態を変える操作が新しい値を返すと、商品は前後の値を比べて変えたかを決められるため。
+- 復元で新しい型を作る処理は、商品のコンストラクターの中にあるので、今の復元の補助の中で検査される。そのため復元の補助は変えない。
+- 公開の状態の値の型を record にする。理由：識別子を持たない値で、#555 の規則（entity と集約は class）の対象でないため。
+- 公開の状態を変える操作は、新しい値を返す。理由：商品が前後の値を比べて、変えたかを決められるため。
 - 一覧の型を package-private の record にする。理由：税率の一覧と同じ形にそろえるため。中の要素（バリアント、画像）は entity なので、一覧の型は集約のパッケージに置く（domain の直下に置く規則は、[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「標準の構成」にある）。
-- 公開状態の列挙を `vo/` に移す。理由：値の型が持つ列挙は `vo/` に置く規則のため。呼び出し元は、公開状態の列挙を参照する全てのファイルで、import の書き換えだけで済む。
+- 公開状態の列挙を `vo/` に移す。理由：値の型が持つ列挙は `vo/` に置く規則のため。
 - パッケージの大きさは、集約のパッケージが 7 から 8（`Variants` と `ProductImages` を追加し、`PublicationStatus` を `vo/` に移す）、`vo/` が 6 から 8 になり、目安の 10 以下に収まる。
-- 商品のクラスの行数は減る見込みで、目標値は決めない。
 
 ## 照会の型と骨組み（DS-493-3：DC-493-9〜10、DS-493-4：DC-493-11〜14）
 
@@ -91,13 +92,13 @@
 | 集計の条件の型、service、リポジトリの port と実装が、範囲の型を受け取る。controller が範囲の型を作る | `ReportController`、`SalesTrendQuery`、`CustomerBreakdownQuery`、`VariantSalesQuery`、3 つの service、`ReportQueryRepository`、`JooqReportQueryRepository` | 既存の `SalesTrendQueryTest`、`CustomerBreakdownQueryTest`、`VariantSalesQueryTest` |
 | 商品で絞る結合と条件を、リポジトリの 1 つの private メソッドにする | `JooqReportQueryRepository` | 同上 |
 
-- 商品の詳細の view は、service が税込価格と今できる操作を加えて作る。今できる操作は null でなくなる。
+- 商品の詳細の view は、service が税込価格と今できる操作を加えて作る。
 - 店舗の商品の骨組みは、[spec](spec.md)の DC-493-11 の 5 つである。呼び出し元は、絞り込みの条件と並べ替えだけを渡す。
 - 保存されている値の型を、application の model に置く。理由：参照用のリポジトリの port は application にあり、port の型は application の model に置く今の形に合わせるため。
 - 骨組みの共通のクラスを、infrastructure の persistence に置く。理由：jOOQ を使えるのは `infrastructure/persistence/` だけのため。このパッケージは目安の例外で（[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「パッケージの大きさ」）、15 になっても上限の 20 以下に収まる。
 - 集計の範囲の型を、domain に置く。理由：期間と同じく集計の条件の値で、規則（商品を選んだら送料を除く）を持つため。
-- バリアント別の集計は、商品を必ず選ぶ範囲として同じ型で渡す。送料は常に除く（今と同じ）。
-- 新しい型の名前は、T493-03-01 で確定した（表の名前）。
+- バリアント別の集計は、商品を必ず選ぶ範囲として同じ型で渡す。バリアント別の条件の型は、範囲に商品があることをコンストラクターで検査する。送料は常に除く（今と同じ）。
+- 参照の service が、他のモジュール向けの `api/` に、保存されている値の型を返してよい。条件は、現在時刻や他のモジュールの値で決まる項目を使わないとき（例：商品の詳細を、レポート向けの公開の API に渡す参照）。理由：service が加える項目がないため。
 
 ## 段階と変えるファイル
 
@@ -107,7 +108,7 @@
 | 2 | `tasks/02-product-parts.md` | 商品の公開の値の型、一覧の型 | DC-493-5〜8 | 段階 1 の完了 |
 | 3 | `tasks/03-queries.md` | 照会の型、一覧と検索の骨組み、集計の範囲、最後の確認と pull request | DC-493-10〜16 | 段階 2 の完了 |
 
-変えるファイルは、[spec](spec.md)の「変える範囲」の表のとおり。設計の文書（`docs/02-設計/` の catalog、reporting、tax のパッケージの構成）は、説明が変わらない見込みである。段階 3 で確認する。
+変えるファイルは、[spec](spec.md)の「変える範囲」の表のとおり。設計の文書（`docs/02-設計/` の catalog、reporting、tax のパッケージの構成）は、3 つとも、新しい型の置き場所を 1 行ずつ変えた。
 
 ## 利用者に確認すること
 

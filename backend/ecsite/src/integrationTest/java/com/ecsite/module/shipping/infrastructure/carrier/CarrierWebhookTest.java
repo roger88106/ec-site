@@ -282,7 +282,7 @@ class CarrierWebhookTest {
             // 操作：出荷日時の 1ms 前に起きた配達中の通知を送る
             send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.minusMillis(1)))).andExpect(status().isOk());
 
-            // 確認：出荷済みのまま、反映した日時は空で、この注文のイベントは出荷のときの 1 件だけ
+            // 確認：出荷済みのままで、反映した日時は空。イベントは出荷時の 1 件だけ
             assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
             assertThat(lastNotifiedAtOf(shipment)).isEmpty();
             assertThat(events.stream(DeliveryStatusChanged.class).filter(event -> event.orderId().equals(shipment.orderId())))
@@ -634,7 +634,7 @@ class CarrierWebhookTest {
      * @return 本文の JSON
      */
     private static String body(String carrier, String trackingNumber, String statusName) {
-        return body(carrier, trackingNumber, statusName, Instant.parse("2026-10-15T02:30:00Z"));
+        return body(carrier, trackingNumber, statusName, NOW.plus(Duration.ofMinutes(3)));
     }
 
     /**

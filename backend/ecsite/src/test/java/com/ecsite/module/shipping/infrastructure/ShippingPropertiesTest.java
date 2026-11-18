@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 出荷の設定の検証
  *
- * <p>通知の発生日時の古さの上限と未来の許容の既定値と、下限（1ms 以上、null 不可）を確認する。
+ * <p>発生日時の古さの上限と未来の許容について、既定値と下限（1ms 以上、null 不可）を確認する。
  */
 class ShippingPropertiesTest {
 

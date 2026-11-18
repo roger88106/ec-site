@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 物流サービスの通知のエンドポイントの統合テスト
  *
- * <p>通知で配送状態が進むこと、重ねて届いた通知・順序の入れ替わり・途中の欠けの扱い、署名の誤りと合わない通知の扱いを確認する。
+ * <p>通知で配送状態が進むこと、重ねて届いた通知・順序の入れ替わり・途中の欠けの扱い、署名の誤りと合わない通知の扱い、発生日時が出荷日時より前の通知と発生日時が範囲の外の通知の扱いを確認する。
  * 配送状態の変化のイベントは {@code DeliveryStatusChangedEventTest} が確認する。
  *
  * <p>HTTP（MockMvc）を通し、署名はエンドポイントの実装を使わずにテストで作る。
@@ -335,7 +335,7 @@ class CarrierWebhookTest {
         private static final Duration FUTURE_TOLERANCE = Duration.ofMinutes(5);
 
         @Test
-        @DisplayName("DC-548-3 発生日時が古さの上限ちょうど前の通知は 400 で処理せず、配送状態を変えない")
+        @DisplayName("DC-548-3 発生日時が現在時刻から古さの上限（30 日）ちょうど前の通知は 400 で処理せず、配送状態を変えない")
         void rejectsOccurredAtAtMaxAge() throws Exception {
             // 準備：古さの上限より前に出荷した出荷
             var shipment = shippedAt(NOW.minus(MAX_AGE).minus(Duration.ofDays(1)));
@@ -353,7 +353,7 @@ class CarrierWebhookTest {
             // 準備：古さの上限より前に出荷した出荷
             var shipment = shippedAt(NOW.minus(MAX_AGE).minus(Duration.ofDays(1)));
 
-            // 操作と確認：30 日前の 1ms 後の通知は 200
+            // 操作と確認：30 日前より 1ms 後の通知は 200
             send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.minus(MAX_AGE).plusMillis(1))))
                     .andExpect(status().isOk());
 
@@ -367,7 +367,7 @@ class CarrierWebhookTest {
             // 準備：出荷済みの出荷
             var shipment = shipped();
 
-            // 操作と確認：5 分の 1ms 先の通知は 400
+            // 操作と確認：5 分より 1ms 先の通知は 400
             send(signed(body("YAMATO", shipment.trackingNumber(), "配達中", NOW.plus(FUTURE_TOLERANCE).plusMillis(1))))
                     .andExpect(status().isBadRequest());
 
@@ -376,7 +376,7 @@ class CarrierWebhookTest {
         }
 
         @Test
-        @DisplayName("DC-548-3 発生日時が未来の許容ちょうど先の通知は受け付ける")
+        @DisplayName("DC-548-3 発生日時が現在時刻から未来の許容（5 分）ちょうど先の通知は受け付ける")
         void acceptsOccurredAtAtFutureTolerance() throws Exception {
             // 準備：出荷済みの出荷
             var shipment = shipped();

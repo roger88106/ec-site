@@ -96,7 +96,7 @@ class DeliveryStatusChangedEventTest {
         }
 
         @Test
-        @DisplayName("通知で配送状態が進むたびに、前と後の配送状態と、通知を反映した日時のイベントが出る")
+        @DisplayName("通知で配送状態が進むたびに、前と後の配送状態と、通知の発生日時のイベントが出る")
         void emitsOnEachAdvance() throws Exception {
             // 準備：出荷を作る
             var orderId = UUID.randomUUID();

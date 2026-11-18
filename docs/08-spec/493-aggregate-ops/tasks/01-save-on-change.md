@@ -26,7 +26,7 @@
   - 依存：なし
   - 範囲：`PaymentTest`、[plan](../plan.md)の表の統合テスト
   - 確認方法：テストが失敗する。テストを通すためにテストを弱めない
-- [ ] **T493-01-05** T493-01-04 のテストが通る実装を書く（支払の集約と支払の service。与信の反映の service が返す値は、変えたかと変えた後の状態から判定する）。
+- [x] **T493-01-05** T493-01-04 のテストが通る実装を書く（支払の集約と支払の service。与信の反映の service が返す値は、変えたかと変えた後の状態から判定する）。
   - 依存：T493-01-04
   - 範囲：`payment/domain/payment/Payment.java`、`payment/application/PaymentCommandService.java`
   - 確認方法：T493-01-04 のテストと、既存の `PaymentExpiryJobTest` が通る

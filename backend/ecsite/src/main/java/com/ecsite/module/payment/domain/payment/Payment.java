@@ -239,7 +239,7 @@ public class Payment extends AggregateRoot {
      *
      * @param authorizationRef 与信の参照
      * @param now              現在時刻
-     * @return 未払いから与信済みにしたら true
+     * @return 状態を変えたら true。すでに与信がある状態なら false
      */
     public boolean authorize(@NonNull String authorizationRef, @NonNull Instant now) {
         return authorize(authorizationRef, now, now);
@@ -254,7 +254,7 @@ public class Payment extends AggregateRoot {
      * @param authorizationRef 与信の参照
      * @param authorizedAt     与信の時刻（与信期限の起点）
      * @param now              現在時刻（イベントの発生時刻）
-     * @return 未払いから与信済みにしたら true
+     * @return 状態を変えたら true（未払いから与信済みに、支払なしから与信の取消待ちに）。すでに与信がある状態なら false
      */
     public boolean authorize(@NonNull String authorizationRef, @NonNull Instant authorizedAt, @NonNull Instant now) {
         return switch (status) {
@@ -269,7 +269,7 @@ public class Payment extends AggregateRoot {
             case NOT_PAID -> {
                 this.authorizationRef = authorizationRef;
                 requestVoid(now);
-                yield false;
+                yield true;
             }
             // すでに与信がある（重ねて届いた通知、または順序が入れ替わった通知）
             case AUTHORIZED, VOID_PENDING, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> false;
@@ -317,27 +317,37 @@ public class Payment extends AggregateRoot {
      * それ以外なら何もしない。
      *
      * @param now 現在時刻
+     * @return 状態を変えたら true。確定を反映するものがなければ false
      */
-    public void capture(@NonNull Instant now) {
-        switch (status) {
-            case AUTHORIZED -> status = PaymentStatus.CAPTURED;
-            // 決済サービスが確定した後に注文がキャンセルされた。確定した与信は取り消せないので、返金で戻す
-            case VOID_PENDING -> requestRefund(now);
-            case UNPAID, NOT_PAID, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
-                // 確定を反映するものがない
+    public boolean capture(@NonNull Instant now) {
+        return switch (status) {
+            case AUTHORIZED -> {
+                status = PaymentStatus.CAPTURED;
+                yield true;
             }
-        }
+            // 決済サービスが確定した後に注文がキャンセルされた。確定した与信は取り消せないので、返金で戻す
+            case VOID_PENDING -> {
+                requestRefund(now);
+                yield true;
+            }
+            // 確定を反映するものがない
+            case UNPAID, NOT_PAID, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> false;
+        };
     }
 
     /**
      * 売上確定が与信の期限切れで断られたことを反映する。
      *
      * <p>与信済みでなければ何もしない。
+     *
+     * @return 与信期限切れにしたら true。与信済みでなければ false
      */
-    public void expireAuthorization() {
-        if (status == PaymentStatus.AUTHORIZED) {
-            status = PaymentStatus.AUTHORIZATION_EXPIRED;
+    public boolean expireAuthorization() {
+        if (status != PaymentStatus.AUTHORIZED) {
+            return false;
         }
+        status = PaymentStatus.AUTHORIZATION_EXPIRED;
+        return true;
     }
 
     /**
@@ -347,39 +357,56 @@ public class Payment extends AggregateRoot {
      * それ以外なら何もしない。
      *
      * @param now 現在時刻
+     * @return 状態を変えたら true。取り消すものがなければ false
      */
-    public void cancel(@NonNull Instant now) {
-        switch (status) {
-            case AUTHORIZED -> requestVoid(now);
-            // 未払いは、取り消す与信がない
-            case UNPAID -> status = PaymentStatus.NOT_PAID;
-            case CAPTURED -> requestRefund(now);
-            case VOID_PENDING, VOIDED, NOT_PAID, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
-                // 取り消すものがない（与信期限切れは、決済サービスで与信が切れている）か、取消か返金を始めている
+    public boolean cancel(@NonNull Instant now) {
+        return switch (status) {
+            case AUTHORIZED -> {
+                requestVoid(now);
+                yield true;
             }
-        }
+            // 未払いは、取り消す与信がない
+            case UNPAID -> {
+                status = PaymentStatus.NOT_PAID;
+                yield true;
+            }
+            case CAPTURED -> {
+                requestRefund(now);
+                yield true;
+            }
+            // 取り消すものがない（与信期限切れは、決済サービスで与信が切れている）か、取消か返金を始めている
+            case VOID_PENDING, VOIDED, NOT_PAID, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> false;
+        };
     }
 
     /**
      * 決済サービスで与信を取り消したことを反映する。
      *
      * <p>与信の取消待ちでなければ何もしない。
+     *
+     * @return 取消済みにしたら true。与信の取消待ちでなければ false
      */
-    public void markVoided() {
-        if (status == PaymentStatus.VOID_PENDING) {
-            status = PaymentStatus.VOIDED;
+    public boolean markVoided() {
+        if (status != PaymentStatus.VOID_PENDING) {
+            return false;
         }
+        status = PaymentStatus.VOIDED;
+        return true;
     }
 
     /**
      * 決済サービスで返金したことを反映する。
      *
      * <p>返金待ちでなければ何もしない。
+     *
+     * @return 返金済みにしたら true。返金待ちでなければ false
      */
-    public void markRefunded() {
-        if (status == PaymentStatus.REFUND_PENDING) {
-            status = PaymentStatus.REFUNDED;
+    public boolean markRefunded() {
+        if (status != PaymentStatus.REFUND_PENDING) {
+            return false;
         }
+        status = PaymentStatus.REFUNDED;
+        return true;
     }
 
 // ============================== プライベートメソッド ==============================

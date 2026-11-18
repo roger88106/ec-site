@@ -559,6 +559,37 @@ class InventoryApiTest {
         }
 
         @Test
+        @DisplayName("姓と名をつなぐと 255 文字を超える運営者の調整は、成功し、履歴の氏名を 255 文字に切り詰める")
+        void truncatesLongOperatorName() throws Exception {
+            // 準備：つなぐと 301 文字になる姓と名
+            var familyName = "姓".repeat(200);
+            var givenName = "名".repeat(100);
+
+            // 操作と確認：調整が成功する
+            adjustAs(familyName, givenName).andExpect(status().isCreated());
+
+            // 確認：履歴の氏名は、先頭の 255 文字
+            mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"))
+                    .andExpect(jsonPath("$.items[0].operatorName").value("姓".repeat(200) + " " + "名".repeat(54)));
+        }
+
+        @Test
+        @DisplayName("サロゲートペアの文字を含む氏名は、255 code point に切り詰め、文字の途中で切らない")
+        void truncatesOperatorNameByCodePoint() throws Exception {
+            // 準備：1 文字が UTF-16 で 2 つ分の文字を含み、つなぐと 301 code point になる姓と名
+            var familyName = "𠮷".repeat(200);
+            var givenName = "𠮷".repeat(100);
+
+            // 操作と確認：調整が成功する
+            adjustAs(familyName, givenName).andExpect(status().isCreated());
+
+            // 確認：履歴の氏名は、先頭の 255 code point
+            mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"))
+                    .andExpect(jsonPath("$.items[0].operatorName")
+                            .value("𠮷".repeat(200) + " " + "𠮷".repeat(54)));
+        }
+
+        @Test
         @DisplayName("注文に由来する調整は、運営者の操作でないので空")
         void leavesOrderAdjustmentEmpty() throws Exception {
             // 準備：注文のキャンセルで在庫を戻す
@@ -693,6 +724,22 @@ class InventoryApiTest {
                         .content("""
                                 {"delta": 3, "reason": "ARRIVAL", "memo": null}"""))
                 .andExpect(status().isCreated());
+    }
+
+    /**
+     * 指定した姓と名の運営者の token で、入荷の調整を行う。
+     *
+     * @param familyName 姓
+     * @param givenName  名
+     * @return 調整の応答
+     * @throws Exception API の呼び出しに失敗したとき
+     */
+    private ResultActions adjustAs(String familyName, String givenName) throws Exception {
+        return mockMvc.perform(post(BASE + "/variants/" + variantId + "/adjustments")
+                .with(TestTokens.administrator().name(familyName, givenName).bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"delta": 3, "reason": "ARRIVAL", "memo": null}"""));
     }
 
     /**

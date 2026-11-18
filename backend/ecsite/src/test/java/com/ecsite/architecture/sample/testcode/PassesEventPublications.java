@@ -2,12 +2,14 @@ package com.ecsite.architecture.sample.testcode;
 
 import org.springframework.modulith.events.core.EventPublicationRegistry;
 
+import java.util.List;
 import java.util.function.Function;
 
 /**
- * イベントの発行の記録の検査の例：記録を読まずに、補助に渡すだけ（規則に合う）
+ * イベントの発行の記録の検査の例：記録を読まない操作（規則に合う）
  *
- * <p>構成の検査が違反を見つけられることを確認するための例であり、本番のコードではない。
+ * <p>記録を補助に渡すだけの例、名前が find でも count でも始まらない操作の例、表にない型の find の例。
+ * 構成の検査が違反を見つけられることを確認するための例であり、本番のコードではない。
  */
 public final class PassesEventPublications {
 
@@ -26,5 +28,37 @@ public final class PassesEventPublications {
      */
     static Object pass(EventPublicationRegistry registry, Function<EventPublicationRegistry, Object> helper) {
         return helper.apply(registry);
+    }
+
+    /**
+     * 名前が find でも count でも始まらない操作を呼ぶ。
+     *
+     * @param registry 記録
+     */
+    static void markFailed(EventPublicationRegistry registry) {
+        registry.markStalePublicationsFailed(null);
+    }
+
+    /**
+     * 表にない型の find を呼ぶ。
+     *
+     * @param other 表にない型
+     * @return 結果
+     */
+    static List<String> otherType(OtherRepository other) {
+        return other.findAll();
+    }
+
+    /**
+     * 記録の型ではない Repository
+     */
+    interface OtherRepository {
+
+        /**
+         * 全てを返す。
+         *
+         * @return 全て
+         */
+        List<String> findAll();
     }
 }

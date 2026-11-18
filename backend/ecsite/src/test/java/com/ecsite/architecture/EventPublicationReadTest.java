@@ -2,6 +2,7 @@ package com.ecsite.architecture;
 
 import com.ecsite.architecture.sample.testcode.PassesEventPublications;
 import com.ecsite.architecture.sample.testcode.ReadsEventPublications;
+import com.ecsite.config.event.ReadsEventPublicationRecords;
 import com.ecsite.support.ProductionClasses;
 import com.ecsite.support.TestCodeClasses;
 import com.tngtech.archunit.core.domain.JavaAccess;
@@ -10,7 +11,6 @@ import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.modulith.events.core.EventPublicationRegistry;
 
 import java.util.List;
 import java.util.Set;
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * イベントの発行の記録を読む場所の検査
  *
  * <p>根拠はバックエンドのテストの書き方の「テストデータは補助のクラスで作る」。
- * 発行の記録（{@link EventPublicationRegistry}）を読む操作（名前が find で始まる操作）は、非同期のイベントの補助だけが呼ぶ。
+ * 発行の記録（{@link #RECORD_TYPES} の型）を読む操作（名前が find か count で始まる操作）は、非同期のイベントの補助だけが呼ぶ。
  * テストは、記録を読んで待たずに、補助の待つ操作を呼ぶ。補助を作るために記録を注入して渡すだけのテストは当たらない。
  */
 class EventPublicationReadTest {
@@ -36,6 +36,21 @@ class EventPublicationReadTest {
             "com.ecsite.support.async.AsyncEvents",
             "com.ecsite.config.event.EventPublications");
 
+    /**
+     * 記録を読む操作を持つ型の名前。EventPublicationRecords は package-private なので、型でなく名前で指す。
+     * 実装の型は、isAssignableTo で表の型として扱う。
+     */
+    private static final List<String> RECORD_TYPES = List.of(
+            "org.springframework.modulith.events.core.EventPublicationRegistry",
+            "org.springframework.modulith.events.core.EventPublicationRepository",
+            "org.springframework.modulith.events.CompletedEventPublications",
+            "com.ecsite.config.event.EventPublicationRecords");
+
+    /**
+     * 本番のパッケージに置く、違反の例のクラス（package-private の型を呼ぶため）。実際のテストの検査からは外す。
+     */
+    private static final List<String> EXAMPLES_IN_PRODUCTION_PACKAGE = List.of(ReadsEventPublicationRecords.class.getName());
+
     // ============================== テスト ==============================
 
     @Test
@@ -45,19 +60,32 @@ class EventPublicationReadTest {
         assertThat(TestCodeClasses.all().stream().map(JavaClass::getName)).containsAll(HELPERS);
 
         // 操作と確認：補助の外に、記録を読むクラスがない
-        assertThat(violations(TestCodeClasses.all())).isEmpty();
+        var violations = violations(TestCodeClasses.all()).stream()
+                .filter(violation -> EXAMPLES_IN_PRODUCTION_PACKAGE.stream().noneMatch(violation::startsWith))
+                .toList();
+        assertThat(violations).isEmpty();
     }
 
     @Test
-    @DisplayName("規則は、記録の find の呼び出しとメソッド参照に当たり、記録を渡すだけのクラスには当たらない")
+    @DisplayName("規則は、表の 4 つの型の find と count の呼び出しとメソッド参照に当たり、他の操作と型には当たらない")
     void ruleMatchesOnlyReads() {
-        // 準備：記録を読む例と、渡すだけの例
-        var examples = new ClassFileImporter().importClasses(ReadsEventPublications.class, PassesEventPublications.class);
+        // 準備：記録を読む例（入れ子のクラス、ラムダ、private の補助のメソッド、実装の型を含む）と、読まない例
+        var examples = new ClassFileImporter().importClasses(
+                ReadsEventPublications.class, ReadsEventPublications.Inner.class, ReadsEventPublicationRecords.class,
+                PassesEventPublications.class);
+        var reads = ReadsEventPublications.class.getName();
 
-        // 操作と確認：読む例の呼び出しとメソッド参照だけが違反になる
-        assertThat(violations(examples)).containsExactly(
-                ReadsEventPublications.class.getName() + " -> findIncompletePublications",
-                ReadsEventPublications.class.getName() + " -> findIncompletePublicationsOlderThan");
+        // 操作と確認：読む例だけが違反になり、渡すだけ、find と count 以外の名前、表にない型の例は違反にならない
+        assertThat(violations(examples)).containsExactlyInAnyOrder(
+                reads + " -> findIncompletePublicationsOlderThan",
+                reads + " -> findIncompletePublications",
+                reads + " -> findFailedPublications",
+                reads + " -> findAll",
+                reads + " -> countByStatus",
+                reads + " -> findByStatus",
+                reads + " -> findCompletedPublications",
+                reads + " -> findIncompletePublicationsPublishedBefore",
+                ReadsEventPublicationRecords.class.getName() + " -> countIncomplete");
     }
 
     // ============================== 補助 ==============================
@@ -81,12 +109,13 @@ class EventPublicationReadTest {
     }
 
     /**
-     * 記録を読む操作（名前が find で始まる操作）へのアクセスかを返す。
+     * 記録を読む操作（名前が find か count で始まる操作）へのアクセスかを返す。
      *
      * @param access 呼び出しかメソッド参照
-     * @return 記録の型（その実装を含む）の find で始まる操作なら true
+     * @return 表の型（その実装を含む）の find か count で始まる操作なら true
      */
     private static boolean readsRegistry(JavaAccess<?> access) {
-        return access.getName().startsWith("find") && access.getTargetOwner().isAssignableTo(EventPublicationRegistry.class);
+        return (access.getName().startsWith("find") || access.getName().startsWith("count"))
+                && RECORD_TYPES.stream().anyMatch(access.getTargetOwner()::isAssignableTo);
     }
 }

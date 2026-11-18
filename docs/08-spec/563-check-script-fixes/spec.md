@@ -280,11 +280,11 @@ spec の番号の検査の例：
   - 依存：T563-01-06
   - 範囲：`scripts/ci/config/role-permissions.mjs`
   - 確認方法：`node --test`、`node scripts/ci/config/role-permissions.mjs`
-- [ ] **T563-01-08** [テスト] イベントの発行の記録を読む箇所の検査に、違反の例を加え、レッドを確認する。例は、4 つの型と、補助のメソッドの経由を含む（DC-563-8、DC-563-15）。
+- [x] **T563-01-08** [テスト] イベントの発行の記録を読む箇所の検査に、違反の例を加え、レッドを確認する。例は、4 つの型と、補助のメソッドの経由を含む（DC-563-8、DC-563-15）。
   - 依存：T563-01-01
   - 範囲：違反の例のクラスと、`backend/ecsite/src/test/java/com/ecsite/architecture/EventPublicationReadTest.java`
   - 確認方法：`./gradlew test --tests '*EventPublicationReadTest'` が失敗する。重い検査ではないが、Gradle を使う前に issue 担当のセッションに知らせる
-- [ ] **T563-01-09** T563-01-08 のテストが通る実装を書き、バックエンドのテストの書き方の規則の文を修正する（DC-563-8、DC-563-9）。
+- [x] **T563-01-09** T563-01-08 のテストが通る実装を書き、バックエンドのテストの書き方の規則の文を修正する（DC-563-8、DC-563-9）。
   - 依存：T563-01-08
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/architecture/EventPublicationReadTest.java`、`docs/05-開発規則/test-writing-backend.md`
   - 確認方法：`./gradlew test --tests '*EventPublicationReadTest'` が通る。規則の文が検査の対象の型と一致することを読んで確認する

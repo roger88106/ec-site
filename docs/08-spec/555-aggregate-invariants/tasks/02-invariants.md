@@ -26,13 +26,13 @@
   - 範囲：payment の domain、`JooqPaymentRepository`、`PaymentRestoreFailureTest`
   - 確認方法：違反する行で復元のエラーになり、出力に DB の値がない。設定から作る承認の期間が条件に違反した場合は、起動に失敗することもテストで確認する
   - 結果：
-- [ ] **T555-02-05** [P] [テスト] 商品（4 つの条件）、バリアント、商品の画像と、商品の復元（バリアントと画像を `RestoreGuard.restore` の中で作る）のテストを書き、レッドを確認する。実装も続けて書く（DC-555-2〜5）。
+- [ ] **T555-02-05** [P] [テスト] 商品（4 つの条件）、バリアント、商品の画像と、商品の復元（バリアントと画像を `RestoreGuard.restore` の中で作る）のテストを書き、レッドを確認する。品番・バリアント品番・価格・公開期間など、DB の値から作る値も `RestoreGuard.restore` の中で作る。実装も続けて書く（DC-555-2〜5）。
   - 依存：T555-02-01
   - 範囲：catalog の domain、`JooqProductRepository`、`ProductFactory`、`ProductRestoreFailureTest`
   - 確認方法：違反する行で復元のエラーになり、出力に DB の値がない
-- [ ] **T555-02-06** [P] [テスト] 在庫の調整のテストを書く。税率の一覧（期間の連続）と税区分の復元のテストを書く。税率は `RestoreGuard.restore` の中で作る。追跡番号と出荷の復元のテストを書く。集計の期間のテストを書く。書いたテストのレッドを確認し、実装も続けて書く（DC-555-2〜5）。
+- [ ] **T555-02-06** [P] [テスト] 在庫の調整のテストを書く。税率の一覧（期間の連続）と税区分の復元のテストを書く。税率は `RestoreGuard.restore` の中で作る。税区分を参照するための読み取りモデルで DB の値から作る税率も、`RestoreGuard.restore` の中で作る。追跡番号と出荷の復元のテストを書く。集計の期間のテストを書く。書いたテストのレッドを確認し、実装も続けて書く（DC-555-2〜5）。
   - 依存：T555-02-01
-  - 範囲：inventory・tax・shipping・reporting の domain、`JooqTaxCategoryRepository`、`TaxCategoryFactory`、`JooqShipmentRepository`、各 `*RestoreFailureTest`
+  - 範囲：inventory・tax・shipping・reporting の domain、`JooqTaxCategoryRepository`、`JooqTaxCategoryQueryRepository`、`TaxCategoryFactory`、`JooqShipmentRepository`、各 `*RestoreFailureTest`
   - 確認方法：違反する行で復元のエラーになり、出力に DB の値がない
 - [ ] **T555-02-07** ローカルの seed と E2E のデータに、条件に違反する行がないかを読む。違反があれば直さずに止めて報告する（DC-555-6）。
   - 依存：T555-02-02〜06

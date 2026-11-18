@@ -21,7 +21,7 @@ export function safeReturnTo(value: string | null | undefined): string {
  *
  * @param returnTo ログインの後に戻る画面
  * @param options  register：会員登録の画面にする
- * @returns ログインの口のパス（クエリ付き）
+ * @returns ログインのエンドポイントのパス（クエリ付き）
  */
 export function loginPath(returnTo: string, options: { register?: boolean } = {}): Route {
   const query = new URLSearchParams({ returnTo })
@@ -29,6 +29,15 @@ export function loginPath(returnTo: string, options: { register?: boolean } = {}
     query.set('register', '1')
   }
   return `/login?${query}`
+}
+
+/**
+ * ログインの再試行（エラーの後の 1 回だけ）のエンドポイントのパスを作る。
+ *
+ * @returns 再試行のログインのエンドポイントのパス（クエリ付き）
+ */
+export function loginRetryPath(): Route {
+  return `/login?${new URLSearchParams({ retry: '1' })}`
 }
 
 /**

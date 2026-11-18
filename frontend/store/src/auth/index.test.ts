@@ -140,6 +140,14 @@ describe('ログイン', () => {
     expect(cookieValue('cart_id')).toBeUndefined()
   })
 
+  test('AC-430-1 ログインできたら、再試行のフラグの Cookie を削除する', async () => {
+    resetRequest({ cookies: { 'login-retry': '1' } })
+
+    await authState.config?.events?.signIn?.(signInEvent('login-access'))
+
+    expect(cookieValue('login-retry')).toBeUndefined()
+  })
+
   test('ログインしている会員を、セッションから読む', async () => {
     expect(await currentMember()).toBeNull()
 

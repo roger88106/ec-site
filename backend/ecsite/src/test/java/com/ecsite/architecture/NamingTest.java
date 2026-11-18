@@ -216,6 +216,39 @@ class NamingTest {
         }
 
         @Test
+        @DisplayName("名前の検査の例外の表は、例外がなければ違反になる service だけを持つ")
+        void nameExceptionsAreStillNeeded() {
+            // 準備：本番の service の名前
+            var services = productionServices();
+
+            // 操作：例外の表のうち、service がない、または例外がなくても違反にならない項目を集める
+            var unneeded = NAME_EXCEPTIONS.keySet().stream()
+                    .filter(name -> services.stream().noneMatch(javaClass -> javaClass.getName().equals(name) && !endsWithRoleSuffix(javaClass)))
+                    .sorted()
+                    .toList();
+
+            // 確認：不要になった項目がない
+            assertThat(unneeded).isEmpty();
+        }
+
+        @Test
+        @DisplayName("トランザクションの検査の例外の表は、例外がなければ違反になる service だけを持つ")
+        void transactionExceptionsAreStillNeeded() {
+            // 準備：本番の service の名前
+            var services = productionServices();
+
+            // 操作：例外の表のうち、service がない、または例外がなくても違反にならない項目を集める
+            var unneeded = TRANSACTION_EXCEPTIONS.keySet().stream()
+                    .filter(name -> services.stream().noneMatch(javaClass -> javaClass.getName().equals(name)
+                            && endsWithQueryOrCommand(javaClass) && !javaClass.isAnnotatedWith(Transactional.class)))
+                    .sorted()
+                    .toList();
+
+            // 確認：不要になった項目がない
+            assertThat(unneeded).isEmpty();
+        }
+
+        @Test
         @DisplayName("名前の規則は、3 つの語のどれでも終わらない service に当たる")
         void nameRuleMatchesMisnamedExample() {
             // 操作と確認：名前の合わない例だけが違反になる
@@ -298,6 +331,16 @@ class NamingTest {
     }
 
     /**
+     * 名前が QueryService・CommandService・GatewayService のどれかで終わるかを返す。
+     *
+     * @param javaClass 調べる service
+     * @return 3 つの語のどれかなら true
+     */
+    private static boolean endsWithRoleSuffix(JavaClass javaClass) {
+        return endsWithQueryOrCommand(javaClass) || javaClass.getSimpleName().endsWith("GatewayService");
+    }
+
+    /**
      * 名前が QueryService・CommandService・GatewayService のどれでも終わらない service の名前を返す。
      *
      * @param services 調べる service
@@ -305,7 +348,7 @@ class NamingTest {
      */
     private static List<String> serviceNameViolations(List<JavaClass> services) {
         return services.stream()
-                .filter(javaClass -> !endsWithQueryOrCommand(javaClass) && !javaClass.getSimpleName().endsWith("GatewayService"))
+                .filter(javaClass -> !endsWithRoleSuffix(javaClass))
                 .map(JavaClass::getName)
                 .filter(name -> !NAME_EXCEPTIONS.containsKey(name))
                 .sorted()

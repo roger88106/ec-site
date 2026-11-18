@@ -127,14 +127,18 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
 /**
  * 画像を 1 枚アップロードして登録する。
  *
- * 受付で署名付き URL を受け取り、ファイルをストレージへ直接 PUT してから、受付 ID で登録する。
+ * 受付で署名付き URL を受け取り、ファイルをストレージへ直接 PUT してから、登録の直前に取得した商品のバージョンと受付 ID で登録する。
  * API のエラーは ApiError として投げる。
  *
- * @param productId 商品 ID
- * @param file      画像のファイル
- * @param version   登録のときに送る商品のバージョン
+ * @param productId      商品 ID
+ * @param file           画像のファイル
+ * @param currentVersion 商品の最新のバージョンを返す関数
  */
-export async function uploadProductImage(productId: string, file: File, version: number): Promise<void> {
+export async function uploadProductImage(
+  productId: string,
+  file: File,
+  currentVersion: () => Promise<number>,
+): Promise<void> {
   // 受け付けない形式は送らずに失敗にする
   const contentType = imageContentType(file)
   if (contentType === null) {
@@ -153,6 +157,6 @@ export async function uploadProductImage(productId: string, file: File, version:
   }
   await fetchClient.POST('/products/{productId}/images', {
     params: { path: { productId } },
-    body: { uploadId: upload.uploadId, version },
+    body: { uploadId: upload.uploadId, version: await currentVersion() },
   })
 }

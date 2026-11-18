@@ -1,10 +1,11 @@
 import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
 import { Button } from '@ec-site/shared/ui/button'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
+import { $api } from '@/api/client'
 import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -27,9 +28,11 @@ import { move } from '@/lib/array'
  * 商品の画像の登録・並び替え・削除
  *
  * 先頭が代表画像。ファイルは署名付き URL でストレージへ直接送る。並び替えと削除は、表示している商品のバージョンで送る。
+ * 登録は、1 枚ごとに、登録の直前に商品を再取得したバージョンで送る。
  */
 export function ProductImagesCard({ product }: { product: ProductDetail }) {
   const invalidate = useInvalidate()
+  const queryClient = useQueryClient()
   const t = useTranslations('product.images')
   const tApp = useTranslations('app.common')
   const fileInput = useRef<HTMLInputElement>(null)
@@ -38,10 +41,16 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
   const ids = images.map((image) => image.id)
 
   const upload = useMutation({
-    // 複数のファイルは 1 枚ずつ登録する。登録ごとに商品のバージョンが 1 つ上がる
+    // 複数のファイルは 1 枚ずつ登録する
     mutationFn: async (files: File[]) => {
-      for (const [index, file] of files.entries()) {
-        await uploadProductImage(product.id, file, product.version + index)
+      const options = $api.queryOptions('get', '/products/{productId}', { params: { path: { productId: product.id } } })
+      // 画像の追加は他の人の変更を上書きしないので、最新のバージョンで送る。実行中の古い取得を使わないよう、取り消してから取得する
+      const latestVersion = async () => {
+        await queryClient.cancelQueries({ queryKey: options.queryKey })
+        return (await queryClient.fetchQuery(options)).version
+      }
+      for (const file of files) {
+        await uploadProductImage(product.id, file, latestVersion)
       }
     },
     onSuccess: (_, files) => toast.success(t('registered', { count: files.length })), // 登録の知らせ

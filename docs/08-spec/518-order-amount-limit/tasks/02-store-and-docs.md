@@ -20,7 +20,7 @@
   - 依存：T518-02-02
   - 範囲：`frontend/store/src/features/cart/components/StartCheckoutForm.test.tsx`
   - 確認方法：テストが通る
-- [ ] **T518-02-04** 機能仕様と設計の文書を更新する（plan の「文書の更新」の表）。機能仕様の業務規則の文に、BR-518-1、BR-518-2 の番号を付ける。AC 一覧から機能仕様の「今有効な AC」を再生成する（`node scripts/ci/spec/ac-check.mjs --write`）。
+- [x] **T518-02-04** 機能仕様と設計の文書を更新する（plan の「文書の更新」の表）。機能仕様の業務規則の文に、BR-518-1、BR-518-2 の番号を付ける。AC 一覧から機能仕様の「今有効な AC」を再生成する（`node scripts/ci/spec/ac-check.mjs --write`）。
   - 依存：T518-01-09
   - 範囲：`docs/03-機能仕様/payment.md`、`docs/03-機能仕様/order.md`、`docs/02-設計/order.md`、`docs/02-設計/payment.md`
   - 確認方法：`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs`、`node scripts/ci/spec/ac-check.mjs` が通る

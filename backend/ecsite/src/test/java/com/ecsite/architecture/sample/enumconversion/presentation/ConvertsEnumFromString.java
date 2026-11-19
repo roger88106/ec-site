@@ -28,6 +28,16 @@ public final class ConvertsEnumFromString {
     }
 
     /**
+     * Enum.valueOf(Class, String) で変換する。
+     *
+     * @param name 名前の文字列
+     * @return 列挙の値
+     */
+    static SampleKind byEnumValueOf(String name) {
+        return Enum.valueOf(SampleKind.class, name);
+    }
+
+    /**
      * fromValue をメソッド参照で渡す。
      *
      * @return 変換する関数

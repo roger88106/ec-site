@@ -22,13 +22,12 @@ public final class EnumConversion {
      * @throws IllegalArgumentException 変換先に同名の定数がないとき
      */
     public static <S extends Enum<S>, T extends Enum<T>> T byName(S source, Class<T> targetType) {
-        var constantName = source.name();
         try {
-            return Enum.valueOf(targetType, constantName);
+            return Enum.valueOf(targetType, source.name());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
                     "変換先に同名の定数がない：変換元 " + source.getDeclaringClass().getName()
-                            + "、変換先 " + targetType.getName() + "、定数 " + constantName, e);
+                            + "、変換先 " + targetType.getName() + "、定数 " + source.name(), e);
         }
     }
 }

@@ -1,13 +1,13 @@
 // バックエンドの書き方の規則のうち、ソースの文字で確認できるものを確認する（バックエンドの書き方の「他のモジュールは腐敗防止層で包む」「検査を抑えるとき」）。
-// - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())）。値を追加したときの写し忘れを、コンパイルで見つけられないため
+// - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())、Enum.valueOf(型, x.name())）。共通の変換のメソッドのファイルは除く。値を追加したときの写し忘れを、コンパイルで見つけられないため
 // - 全てのソースセットで、@SuppressWarnings の直前の行に、理由を // のコメントで書く。間にある他の注釈の行は飛ばし、Javadoc だけでは違反にする
 //
 // コメントの中は、どの規則でも読まない。どちらの規則も、クラスファイルに残らないもの（引数の式、ソースだけの注釈）を見るので、ArchUnit で書けない。
 // 列挙型を名前の文字列から変換する場所は ArchUnit（EnumStringConversionTest）が、JSpecify 以外の Nullable は Checkstyle が確認する。
 //
-// 失敗したとき：列挙型は switch 式で変換する。@SuppressWarnings の直前の行に、なぜ抑えてよいかを // で書く。
+// 失敗したとき：名前の集合が同じ列挙は com.ecsite.common.conversion.EnumConversion.byName で、違う列挙は switch 式で変換する。@SuppressWarnings の直前の行に、なぜ抑えてよいかを // で書く。
 //
-// 除外：なし
+// 除外：name() の規則は、共通の変換のメソッドのファイル（ENUM_CONVERSION_FILE）だけを除く
 //
 // 使い方：node scripts/ci/java/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -18,6 +18,9 @@ import { stripJavaComments } from '../../shared/source/strip-comments.mjs'
 
 /** 本番のソース */
 const MAIN_SOURCE = /^backend\/ecsite\/src\/main\/.*\.java$/
+
+/** 名前で変換してよい共通の変換のメソッドのファイル（除外） */
+const ENUM_CONVERSION_FILE = 'backend/ecsite/src/main/java/com/ecsite/common/conversion/EnumConversion.java'
 
 /** 手で書いた全てのソース：本番、テスト、tools、errorprone（生成したコードは含まない） */
 const JAVA_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFixtures|tools|errorprone)\/.*\.java$/
@@ -173,10 +176,10 @@ export function isSuppressWarningsTarget(file) {
  * 列挙型の変換に name() を渡すことを禁じる場所か。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 本番のソースなら true
+ * @returns {boolean} 本番のソースで、共通の変換のメソッドのファイルでなければ true
  */
 export function isEnumNameTarget(file) {
-  return MAIN_SOURCE.test(file)
+  return MAIN_SOURCE.test(file) && file !== ENUM_CONVERSION_FILE
 }
 
 if (import.meta.main) {

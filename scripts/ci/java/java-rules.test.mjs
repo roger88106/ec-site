@@ -68,6 +68,16 @@ describe('バックエンドの書き方の検査', () => {
     assert.deepEqual(findEnumNameConversions('BigDecimal.valueOf(amount.longValue()); String.valueOf(name)'), [])
   })
 
+  test('共通の変換のメソッドのファイルは、name() の変換を禁じる場所から除く。他の本番のファイルは除かない', () => {
+    assert.equal(isEnumNameTarget('backend/ecsite/src/main/java/com/ecsite/common/conversion/EnumConversion.java'), false)
+    assert.equal(isEnumNameTarget('backend/ecsite/src/main/java/com/ecsite/common/conversion/Other.java'), true)
+    assert.equal(isEnumNameTarget('backend/ecsite/src/main/java/com/ecsite/module/order/presentation/OrderMapper.java'), true)
+  })
+
+  test('Enum.valueOf(型, x.name()) は、引数が name() で終わるので見つける', () => {
+    assert.deepEqual(findEnumNameConversions('return Enum.valueOf(targetType, source.name());').map((hit) => hit.line), [1])
+  })
+
   test('name() の変換は、本番のソースだけを見る', () => {
     assert.equal(isEnumNameTarget('backend/ecsite/src/main/java/com/ecsite/Foo.java'), true)
     assert.equal(isEnumNameTarget('backend/ecsite/src/test/java/com/ecsite/FooTest.java'), false)
@@ -257,6 +267,16 @@ describe('script として実行する', () => {
     assert.ok(result.stdout.includes(`${main}:2 @SuppressWarnings の直前の行に`), result.stdout)
     assert.ok(result.stdout.includes(`${main}:4 列挙型の変換に name() を渡す`), result.stdout)
     assert.match(result.stdout, /バックエンドの書き方の違反：2/)
+  })
+
+  test('共通の変換のメソッドのファイルでは Enum.valueOf(型, x.name()) を違反にせず、他の本番のファイルでは違反にする', () => {
+    const conversion = 'backend/ecsite/src/main/java/com/ecsite/common/conversion/EnumConversion.java'
+    const text = 'return Enum.valueOf(targetType, source.name());\n'
+    const allowed = run({ [conversion]: text })
+    assert.equal(allowed.status, 0, allowed.stdout)
+    const other = run({ [main]: text })
+    assert.equal(other.status, 1, other.stdout)
+    assert.ok(other.stdout.includes(`${main}:1 列挙型の変換に name() を渡す`), other.stdout)
   })
 
   test('name() の変換は本番のソースだけを見るので、テストのソースは @SuppressWarnings だけを見る', () => {

@@ -121,11 +121,11 @@
   - 依存：T570-01-01
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/common/conversion/`
   - 確認方法：T570-01-01 のテストが通る
-- [ ] **T570-01-03** [テスト] ArchUnit と `java-rules.mjs` の検査の例とテストを、決定 6・7 の形に変え、レッドを確認する（DC-570-4）。
+- [x] **T570-01-03** [テスト] ArchUnit と `java-rules.mjs` の検査の例とテストを、決定 6・7 の形に変え、レッドを確認する（DC-570-4）。
   - 依存：T570-01-02（検査の例が、共通の変換のメソッドのクラスを使うため）
   - 範囲：`architecture/EnumStringConversionTest.java` と `sample/enumconversion/`、`scripts/ci/java/java-rules.mjs` のテスト
   - 確認方法：変えたテストが失敗する
-- [ ] **T570-01-04** ArchUnit と `java-rules.mjs` の検査を変える（DC-570-4）。
+- [x] **T570-01-04** ArchUnit と `java-rules.mjs` の検査を変える（DC-570-4）。
   - 依存：T570-01-02、T570-01-03
   - 範囲：`architecture/EnumStringConversionTest.java`、`scripts/ci/java/java-rules.mjs`
   - 確認方法：`EnumStringConversionTest` と `java-rules.mjs` のテストが通る。`java-rules.mjs` は commit の前の hook がテストを実行するので、T570-01-03 と同じ commit にする（[開発の進め方](../../05-開発規則/workflow.md)の「循環」の例外）

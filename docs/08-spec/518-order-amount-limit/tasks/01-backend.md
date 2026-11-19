@@ -36,7 +36,7 @@
   - 依存：T518-01-05、T518-01-06
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/order/`、`backend/ecsite/src/main/resources/messages.properties`、`api/openapi/store.yaml`
   - 確認方法：AC-518-1〜5 のテスト、`ErrorCodeContractTest`、`MessageContractTest` が通る
-- [ ] **T518-01-08** 上限ちょうどの金額を決済サービスに渡す単体テストを加え、テストが通ることを確認する（AC-518-8）。コードを変える必要が出たら、変える前に報告する。
+- [x] **T518-01-08** 上限ちょうどの金額を決済サービスに渡す単体テストを加え、テストが通ることを確認する（AC-518-8）。コードを変える必要が出たら、変える前に報告する。
   - 依存：T518-01-02
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/module/payment/infrastructure/stripe/StripePaymentGatewayTest.java`
   - 確認方法：テストが通る

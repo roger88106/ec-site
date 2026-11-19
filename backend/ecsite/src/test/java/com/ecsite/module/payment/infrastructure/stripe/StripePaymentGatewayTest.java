@@ -11,6 +11,7 @@ import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.VoidResult;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
+import com.ecsite.module.payment.domain.payment.PaymentAmountRange;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.Request;
 import org.hibernate.validator.constraints.time.DurationMax;
@@ -297,6 +298,23 @@ class StripePaymentGatewayTest {
 
             // 確認：与信だけ、総額、戻り先、注文と支払の ID、期限
             assertAuthorizationOnlySession(requests().getFirst().body());
+        }
+
+        @Test
+        @DisplayName("AC-518-8 上限ちょうどの金額でも、上限の金額を 1 件の明細で渡す")
+        void passesUpperLimitAsSingleLineItem() {
+            // 準備：作成に成功する。金額は支払 1 回の金額の上限ちょうど
+            respond("POST /v1/checkout/sessions", 200, session("open"));
+            var limit = PaymentAmountRange.STANDARD.max();
+
+            // 操作：上限の金額で支払画面を作る
+            gateway.openPage(new PageRequest(PAYMENT_ID, ORDER_ID, limit, RETURN_URL));
+
+            // 確認：上限の金額の明細が 1 件だけ（2 件目の明細がない）
+            var body = requests().getFirst().body();
+            assertThat(body).contains("line_items[0][price_data][unit_amount]=" + limit.yen(),
+                    "line_items[0][quantity]=1");
+            assertThat(body).doesNotContain("line_items[1]");
         }
 
         @Test

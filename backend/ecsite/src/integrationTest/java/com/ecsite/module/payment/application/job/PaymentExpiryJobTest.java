@@ -575,7 +575,7 @@ class PaymentExpiryJobTest {
             // 準備：待つ支払が、行ロックの前に支払なしになった（注文の取消など）
             var orderId = awaitingAfterRejectedFetch();
             var paymentId = paymentOf(orderId).id();
-            commandService.expire(paymentId);
+            commandService.expire(paymentId, pageIds.get(orderId));
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
 
             // 操作：取得した与信を反映する

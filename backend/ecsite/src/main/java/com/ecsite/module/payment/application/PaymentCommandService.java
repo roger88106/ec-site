@@ -10,6 +10,7 @@ import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,12 +127,22 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * 期限を過ぎた未払いの支払を、支払なしにする。
      *
      * <p>期限の前の支払と、未払いでない支払は変えない。
+     * 行ロックの後に、読んだときになかった支払画面があれば、開いたままの画面を閉じずに支払なしにしないよう、
+     * 何もしない（次の回のジョブが、その画面を読んで閉じる）。
      *
-     * @param paymentId 支払 ID
+     * @param paymentId  支払 ID
+     * @param readPageId 読んだときの支払画面 ID。なければ null
      */
-    public void expire(@NonNull UUID paymentId) {
+    public void expire(@NonNull UUID paymentId, @Nullable String readPageId) {
         var now = clock.instant();
-        paymentRepository.lockById(paymentId).ifPresent(payment -> expireIfPastDeadline(payment, now));
+        paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            // 支払画面は一度記録したら変わらないので、画面があって読んだ画面と違えば、読んだ後に記録された
+            if (payment.page().filter(page -> !page.id().equals(readPageId)).isPresent()) {
+                log.info("読んだ後に支払画面が記録されたので、支払なしにせず次の回に回す: paymentId={}", paymentId);
+                return;
+            }
+            expireIfPastDeadline(payment, now);
+        });
     }
 
     /**

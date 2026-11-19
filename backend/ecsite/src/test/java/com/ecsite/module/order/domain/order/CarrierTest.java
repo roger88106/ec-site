@@ -14,6 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class CarrierTest {
 
+    // ============================== テスト ==============================
+
     @ParameterizedTest(name = "「{0}」")
     @EnumSource(Carrier.class)
     @DisplayName("AC-168 出荷のイベントには、出荷を登録した配送業者と同じ業者を載せる")

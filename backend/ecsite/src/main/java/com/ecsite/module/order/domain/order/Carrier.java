@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.order.event.OrderShipped;
 
 /**
@@ -29,10 +30,6 @@ public enum Carrier {
      * @return イベントの配送業者
      */
     public OrderShipped.Carrier toEventCarrier() {
-        return switch (this) {
-            case YAMATO -> OrderShipped.Carrier.YAMATO;
-            case SAGAWA -> OrderShipped.Carrier.SAGAWA;
-            case JAPAN_POST -> OrderShipped.Carrier.JAPAN_POST;
-        };
+        return EnumConversion.byName(this, OrderShipped.Carrier.class);
     }
 }

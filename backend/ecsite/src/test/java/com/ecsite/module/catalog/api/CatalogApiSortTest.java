@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class CatalogApiSortTest {
 
+    // ============================== テスト ==============================
+
     @ParameterizedTest(name = "「{0}」")
     @EnumSource(ShownProductSort.class)
     @DisplayName("AC-277 公開の並び順の全ての値を、application の同じ名前の値に写す")

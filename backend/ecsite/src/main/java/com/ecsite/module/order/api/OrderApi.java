@@ -1,5 +1,6 @@
 package com.ecsite.module.order.api;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.AxisValue;
 import com.ecsite.module.order.api.model.OrderSnapshot;
@@ -94,11 +95,6 @@ public class OrderApi {
      * 性別を公開の型にする。
      */
     static OrderSnapshot.Gender toGender(Gender gender) {
-        return switch (gender) {
-            case MALE -> OrderSnapshot.Gender.MALE;
-            case FEMALE -> OrderSnapshot.Gender.FEMALE;
-            case OTHER -> OrderSnapshot.Gender.OTHER;
-            case UNDISCLOSED -> OrderSnapshot.Gender.UNDISCLOSED;
-        };
+        return EnumConversion.byName(gender, OrderSnapshot.Gender.class);
     }
 }

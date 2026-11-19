@@ -14,6 +14,7 @@ import com.ecsite.api.admin.model.ReorderVariantsRequest;
 import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.api.admin.model.Variant;
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
@@ -196,11 +197,7 @@ class ProductMapper {
      * @return ドメインの公開状態
      */
     static com.ecsite.module.catalog.domain.product.vo.PublicationStatus toDomainStatus(PublicationStatus status) {
-        return switch (status) {
-            case UNPUBLISHED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.UNPUBLISHED;
-            case PUBLISHED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.PUBLISHED;
-            case DISCONTINUED -> com.ecsite.module.catalog.domain.product.vo.PublicationStatus.DISCONTINUED;
-        };
+        return EnumConversion.byName(status, com.ecsite.module.catalog.domain.product.vo.PublicationStatus.class);
     }
 
     /**
@@ -210,11 +207,14 @@ class ProductMapper {
      * @return レスポンスの公開状態
      */
     static PublicationStatus toResponseStatus(com.ecsite.module.catalog.domain.product.vo.PublicationStatus status) {
-        return switch (status) {
-            case UNPUBLISHED -> PublicationStatus.UNPUBLISHED;
-            case PUBLISHED -> PublicationStatus.PUBLISHED;
-            case DISCONTINUED -> PublicationStatus.DISCONTINUED;
-        };
+        return EnumConversion.byName(status, PublicationStatus.class);
+    }
+
+    /**
+     * 削除できない理由をレスポンスに変換する。
+     */
+    static ProductDeleteBlockedReason toDeleteBlockedReason(DeleteBlockedReason reason) {
+        return EnumConversion.byName(reason, ProductDeleteBlockedReason.class);
     }
 
 // ============================== プライベートメソッド ==============================
@@ -267,14 +267,5 @@ class ProductMapper {
                 .addVariant(actions.addVariant())
                 .deleteBlockedReason(actions.deleteBlockedReason() == null
                         ? null : toDeleteBlockedReason(actions.deleteBlockedReason()));
-    }
-
-    /**
-     * 削除できない理由をレスポンスに変換する。
-     */
-    private static ProductDeleteBlockedReason toDeleteBlockedReason(DeleteBlockedReason reason) {
-        return switch (reason) {
-            case ALREADY_SHOWN -> ProductDeleteBlockedReason.ALREADY_SHOWN;
-        };
     }
 }

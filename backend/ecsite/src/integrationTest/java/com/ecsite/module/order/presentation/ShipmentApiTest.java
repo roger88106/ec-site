@@ -4,6 +4,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPayments;
 import com.ecsite.module.order.event.OrderShipped;
+import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.job.PaymentJobs;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
@@ -14,6 +15,7 @@ import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.data.ShippingTaxCategory;
 import com.ecsite.support.data.ShippingTestData;
 import com.ecsite.support.security.TestTokens;
+import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,6 +36,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
@@ -101,6 +104,9 @@ class ShipmentApiTest {
 
     @Autowired
     MutableClock clock;
+
+    @Autowired
+    PaymentProperties properties;
 
     @Autowired
     StockItemRepository stockItemRepository;
@@ -463,6 +469,75 @@ class ShipmentApiTest {
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("ACCEPTED"))
                     .andExpect(jsonPath("$.payment.status").value("AUTHORIZED"));
+        }
+    }
+
+    @Nested
+    @DisplayName("売上確定の結果が分からず、照合のジョブが売上確定の状態を取得した注文")
+    class ReconciledByJob {
+
+        @Test
+        @DisplayName("AC-423-9 照合で売上確定済みにした注文は、出荷の登録が 201 で、出荷済みになり、決済サービスへの売上確定は増えない")
+        void shipsCapturedOrderWithoutCapturing() throws Exception {
+            // 準備：売上確定の応答が届かず、照合で売上確定済みにする
+            gateway.loseNextCaptureResponses(1);
+            ship("YAMATO", tracking).andExpect(status().isBadGateway());
+            reconcileUntil("CAPTURED");
+            assertThat(gateway.captureCalls()).isEqualTo(1);
+
+            // 操作：出荷を登録する
+            ship("YAMATO", tracking).andExpect(status().isCreated());
+
+            // 確認：出荷済みで、決済サービスへの売上確定は応答が届かなかった 1 回のまま
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.status").value("SHIPPED"))
+                    .andExpect(jsonPath("$.payment.status").value("CAPTURED"))
+                    .andExpect(jsonPath("$.shipment.trackingNumber").value(tracking));
+            assertThat(gateway.captureCalls()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("AC-423-5 決済サービスで売上を確定していなかった注文は、照合の後に出荷を登録すると 201 で、売上を確定する")
+        void shipsNotCapturedOrderAndCaptures() throws Exception {
+            // 準備：決済サービスに接続できず売上を確定せず、照合で売上確定を求めた時刻を削除する
+            gateway.failNextCaptures(1);
+            ship("YAMATO", tracking).andExpect(status().isBadGateway());
+            var authorizationRef = gateway.authorizationRefOf(orders.paidPageId(orderId));
+            reconcileUntil(() -> gateway.fetchCaptureStateCallsOf(authorizationRef) > 0);
+            assertThat(gateway.captured()).isEmpty();
+
+            // 操作：出荷を登録する
+            ship("YAMATO", tracking).andExpect(status().isCreated());
+
+            // 確認：出荷済みで、決済サービスで売上を確定した
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.status").value("SHIPPED"))
+                    .andExpect(jsonPath("$.payment.status").value("CAPTURED"));
+            assertThat(gateway.captured()).containsExactly(orderId);
+        }
+
+        /**
+         * 照合を始めるまでの時間が過ぎた後に、支払が指定の状態になるまで、期限切れのジョブを動かす。
+         *
+         * @param paymentStatus 支払の状態の名前
+         */
+        private void reconcileUntil(String paymentStatus) {
+            reconcileUntil(() -> paymentStatusOf().equals(paymentStatus));
+            assertThat(paymentStatusOf()).isEqualTo(paymentStatus);
+        }
+
+        private void reconcileUntil(BooleanSupplier done) {
+            clock.setInstant(clock.instant().plus(properties.captureReconcileDelay()));
+            PaymentJobs.expireUntil(applicationContext, done);
+        }
+
+        private String paymentStatusOf() {
+            try {
+                return JsonPath.read(mockMvc.perform(get("/api/admin/orders/" + orderId)).andReturn().getResponse()
+                        .getContentAsString(), "$.payment.status");
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
 

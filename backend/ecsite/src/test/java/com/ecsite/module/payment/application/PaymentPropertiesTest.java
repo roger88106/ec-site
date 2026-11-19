@@ -124,6 +124,28 @@ class PaymentPropertiesTest {
         assertThat(actual).isEqualTo(Duration.ofMillis(1));
     }
 
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({"0s", "-1s", "1ms", "119999ms"})
+    @DisplayName("照合を始めるまでの時間が、下限の 2 分に満たなければ、値の検証で拒否される")
+    void rejectsCaptureReconcileDelayBelowMinimum(String value) {
+        // 操作と確認：2 分に満たない値は、値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "capture-reconcile-delay", value)))
+                .isInstanceOf(BindException.class)
+                .hasCauseInstanceOf(BindValidationException.class);
+    }
+
+    @Test
+    @DisplayName("照合を始めるまでの時間が、下限の 2 分なら、値の検証を通り、その値になる")
+    void acceptsCaptureReconcileDelayAtMinimum() {
+        // 操作：2 分を検証付きで当てはめる
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "capture-reconcile-delay", "2m"));
+
+        // 確認：2 分になる
+        assertThat(properties.captureReconcileDelay()).isEqualTo(Duration.ofMinutes(2));
+    }
+
     @Test
     @DisplayName("与信の期限が近いとする期間が負なら、値の検証で拒否される")
     void rejectsNegativeAuthorizationWarning() {
@@ -143,6 +165,17 @@ class PaymentPropertiesTest {
 
         // 確認：0 になる
         assertThat(properties.authorizationWarning()).isEqualTo(Duration.ZERO);
+    }
+
+    @Test
+    @DisplayName("売上確定の照合を始めるまでの時間は、既定で 10 分")
+    void captureReconcileDelayDefault() {
+        // 操作：必須の値だけを検証付きで当てはめる
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}"));
+
+        // 確認：10 分
+        assertThat(properties.captureReconcileDelay()).isEqualTo(Duration.ofMinutes(10));
     }
 
     // ============================== 準備の補助 ==============================

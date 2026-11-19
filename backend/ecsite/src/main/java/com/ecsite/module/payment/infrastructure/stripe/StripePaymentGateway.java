@@ -70,6 +70,11 @@ class StripePaymentGateway implements PaymentGateway {
     private static final String INTENT_CANCELED = "canceled";
 
     /**
+     * PaymentIntent の状態：与信だけを取り、売上を確定していない
+     */
+    private static final String INTENT_REQUIRES_CAPTURE = "requires_capture";
+
+    /**
      * PaymentIntent の状態：売上確定済み
      */
     private static final String INTENT_SUCCEEDED = "succeeded";
@@ -205,6 +210,29 @@ class StripePaymentGateway implements PaymentGateway {
             }
             throw failure("売上を確定できない: orderId=" + request.orderId(), e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>PaymentIntent の状態を、次のように対応させる。
+     * <ul>
+     *   <li>{@code succeeded}：売上確定済み</li>
+     *   <li>{@code requires_capture}：売上を確定していない</li>
+     *   <li>{@code canceled}：与信が切れた（Stripe が取り消している）</li>
+     *   <li>それ以外：例外</li>
+     * </ul>
+     */
+    @Override
+    public CaptureState fetchCaptureState(String authorizationRef) {
+        var status = intentStatus(authorizationRef);
+        return switch (status) {
+            case INTENT_SUCCEEDED -> CaptureState.CAPTURED;
+            case INTENT_REQUIRES_CAPTURE -> CaptureState.NOT_CAPTURED;
+            case INTENT_CANCELED -> CaptureState.AUTHORIZATION_EXPIRED;
+            default -> throw SystemException.of("Stripe：売上確定の状態として扱えない与信の状態: authorizationRef="
+                    + authorizationRef + ", status=" + status, null);
+        };
     }
 
     /**

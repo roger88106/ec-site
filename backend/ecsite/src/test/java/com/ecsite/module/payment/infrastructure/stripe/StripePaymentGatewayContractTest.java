@@ -3,6 +3,7 @@ package com.ecsite.module.payment.infrastructure.stripe;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
+import com.ecsite.module.payment.application.port.PaymentGateway.CaptureState;
 import com.ecsite.module.payment.infrastructure.PaymentGatewayContractTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,6 +92,20 @@ class StripePaymentGatewayContractTest extends PaymentGatewayContractTest {
 
             // 確認：与信期限切れ
             assertThat(result).isEqualTo(CaptureResult.AUTHORIZATION_EXPIRED);
+        }
+
+        @Test
+        @DisplayName("AC-423-6 期限の切れた与信の売上確定の状態は、与信期限切れ")
+        void fetchesCaptureStateOfExpiredAuthorization() {
+            // 準備：期限の切れた与信
+            var authorizationRef = authorized();
+            givenAuthorizationExpired(authorizationRef);
+
+            // 操作：売上確定の状態を取得する
+            var state = gateway.fetchCaptureState(authorizationRef);
+
+            // 確認：与信期限切れ
+            assertThat(state).isEqualTo(CaptureState.AUTHORIZATION_EXPIRED);
         }
 
         @Test

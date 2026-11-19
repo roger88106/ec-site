@@ -6,6 +6,7 @@ import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
+import com.ecsite.module.payment.application.port.PaymentGateway.CaptureState;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
@@ -22,7 +23,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -535,6 +538,59 @@ class StripePaymentGatewayTest {
     }
 
     @Nested
+    @DisplayName("売上確定の状態の取得")
+    class FetchCaptureState {
+
+        @ParameterizedTest(name = "PaymentIntent の状態 {0} は {1}")
+        @CsvSource({
+                "succeeded, CAPTURED",
+                "requires_capture, NOT_CAPTURED",
+                "canceled, AUTHORIZATION_EXPIRED"})
+        @DisplayName("AC-423-1、AC-423-5、AC-423-6 PaymentIntent の状態を、売上確定の状態に対応させる")
+        void mapsIntentStatus(String intentStatus, CaptureState expected) {
+            // 準備：指定の状態の PaymentIntent
+            respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent(intentStatus));
+
+            // 操作と確認：対応する売上確定の状態
+            assertThat(gateway.fetchCaptureState(INTENT_ID)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("PaymentIntent を読むだけで、売上確定も取消も求めない")
+        void onlyReads() {
+            // 準備：与信だけの PaymentIntent
+            respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("requires_capture"));
+
+            // 操作：状態を取得する
+            gateway.fetchCaptureState(INTENT_ID);
+
+            // 確認：読むリクエストだけを送った
+            assertThat(requests()).extracting(Request::key).containsExactly("GET /v1/payment_intents/" + INTENT_ID);
+        }
+
+        @ParameterizedTest(name = "PaymentIntent の状態 {0}")
+        @ValueSource(strings = {"requires_payment_method", "processing"})
+        @DisplayName("それ以外の状態は、予期しないエラー")
+        void rejectsOtherStatus(String intentStatus) {
+            // 準備：与信を取った後には現れない状態の PaymentIntent
+            respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent(intentStatus));
+
+            // 操作と確認：予期しないエラー
+            assertSystemError(() -> gateway.fetchCaptureState(INTENT_ID), CommonErrorCode.SYSTEM_ERROR);
+        }
+
+        @Test
+        @DisplayName("Stripe の 5xx は、外部サービスのエラー")
+        void failure() {
+            // 準備：Stripe の側の故障
+            respond("GET /v1/payment_intents/" + INTENT_ID, 500, StripeApiStub.error("api_error", null));
+
+            // 操作と確認：外部サービスのエラー
+            assertSystemError(() -> gateway.fetchCaptureState(INTENT_ID), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        }
+    }
+
+    @Nested
     @DisplayName("失敗の分類")
     class FailureClassification {
 
@@ -613,7 +669,9 @@ class StripePaymentGatewayTest {
                 Arguments.of("与信の取消", "POST /v1/payment_intents/" + INTENT_ID + "/cancel",
                         (Consumer<StripePaymentGateway>) gateway -> gateway.voidAuthorization(INTENT_ID)),
                 Arguments.of("与信の取得", "GET /v1/checkout/sessions/" + SESSION_ID,
-                        (Consumer<StripePaymentGateway>) gateway -> gateway.fetchAuthorization(SESSION_ID)));
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.fetchAuthorization(SESSION_ID)),
+                Arguments.of("売上確定の状態の取得", "GET /v1/payment_intents/" + INTENT_ID,
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.fetchCaptureState(INTENT_ID)));
     }
 
     // ============================== 確認の補助 ==============================

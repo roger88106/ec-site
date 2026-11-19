@@ -74,6 +74,13 @@ public enum ErrorType {
     EXTERNAL_SERVICE_ERROR(HttpStatus.BAD_GATEWAY),
 
     /**
+     * 今は処理できないエラー
+     *
+     * <p>例：DB のロックを待てず、しばらくしてからやり直せる。メッセージは利用者に見せる。
+     */
+    SERVICE_UNAVAILABLE_ERROR(HttpStatus.SERVICE_UNAVAILABLE),
+
+    /**
      * システムエラー
      *
      * <p>例：予期しないエラー

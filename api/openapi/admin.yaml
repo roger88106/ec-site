@@ -1424,7 +1424,7 @@ components:
       description: >-
         この API が返しうるエラーのコード（API の規約の「エラーの本文」）。フロントが分岐に使う。
         各操作が返しうる業務のエラーは操作の x-error-codes、全ての操作が返しうるエラーは x-common-error-codes。
-      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
+      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, RESOURCE_BUSY, SYSTEM_ERROR]
       enum:
         - AUTHORIZATION_EXPIRED
         - AWAITING_PAYMENT
@@ -1476,6 +1476,7 @@ components:
         - PRODUCT_CODE_ALREADY_EXISTS
         - PRODUCT_DISCONTINUED
         - PRODUCT_HAS_NO_VARIANTS
+        - RESOURCE_BUSY
         - RESTOCK_CHOICE_REQUIRED
         - RESTORE_ERROR
         - SHIPMENT_ALREADY_EXISTS

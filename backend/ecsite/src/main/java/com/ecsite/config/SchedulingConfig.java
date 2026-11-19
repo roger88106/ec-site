@@ -25,7 +25,8 @@ class SchedulingConfig {
     /**
      * ロックを持つ時間の上限
      *
-     * <p>インスタンスが止まってもロックが残り続けないように、上限を置く。
+     * <p>各ジョブは、{@code @SchedulerLock} の {@code lockAtMostFor} で上限を明示する。
+     * この値は、明示を忘れたジョブに掛かる上限（インスタンスが止まってもロックが残り続けないための保険）として残す。
      * ShedLock の注釈は定数しか取らないので、設定の型にせず定数にする。環境で変えることもない。
      */
     static final String LOCK_AT_MOST_FOR = "PT10M";

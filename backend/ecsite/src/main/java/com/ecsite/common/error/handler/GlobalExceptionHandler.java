@@ -1,8 +1,10 @@
 package com.ecsite.common.error.handler;
 
+import com.ecsite.common.error.ErrorDetail;
 import com.ecsite.common.error.ErrorType;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.persistence.DbConflict;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -31,6 +34,11 @@ import java.util.List;
 @RestControllerAdvice
 @RequiredArgsConstructor
 class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    /**
+     * 外部のサービスが呼ぶ通知のエンドポイントのパスの先頭
+     */
+    private static final String WEBHOOK_PATH_PREFIX = "/api/webhooks/";
 
     /**
      * エラーレスポンスのファクトリー
@@ -66,34 +74,37 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * システム例外を応答にする。
      *
-     * <p>外部のサービスに接続できないエラーは、エラーコードとメッセージを返す（502）。
-     * それ以外は想定外のエラーにする。
+     * <p>外部のサービスに接続できないエラー（502）と、今は処理できないエラー（503）は、エラーコードとメッセージを返す。
+     * 原因に DB の競合があるときは、DB の競合の応答にする。それ以外は想定外のエラーにする。
      *
      * @param ex      システム例外
      * @param request リクエスト
-     * @return 502 または 500 + エラー詳細
+     * @return 502、503、409 または 500 + エラー詳細
      */
     @ExceptionHandler(SystemException.class)
     public ResponseEntity<Object> handleSystemException(SystemException ex, WebRequest request) {
-        // 外部のサービスに接続できないエラーだけは、やり直せることを示すため、エラーコードとメッセージを返す
-        if (ex.getErrorDetail().errorCode().type() != ErrorType.EXTERNAL_SERVICE_ERROR) {
-            return handleUnexpected(ex, request);
+        var type = ex.getErrorDetail().errorCode().type();
+        // やり直せることを示すため、この 2 種のエラーだけは、エラーコードとメッセージを返す
+        if (type == ErrorType.EXTERNAL_SERVICE_ERROR || type == ErrorType.SERVICE_UNAVAILABLE_ERROR) {
+            var traceId = traceIdResolver.resolve();
+            log.warn("やり直せるシステムエラー。errorCode={}, traceId={}", ex.getErrorDetail().errorCode().code(), traceId, ex);
+            return responses.of(ex.getErrorDetail(), traceId, request);
         }
-        var traceId = traceIdResolver.resolve();
-        log.warn("外部のサービスに接続できない。errorCode={}, traceId={}", ex.getErrorDetail().errorCode().code(), traceId, ex);
-        return responses.of(ex.getErrorDetail(), traceId, request);
+        return handleDbConflictOrUnexpected(ex, request);
     }
 
     /**
      * 全ての例外を応答にする。
      *
+     * <p>原因に DB の競合があるときは、DB の競合の応答にする。それ以外は想定外のエラーにする。
+     *
      * @param ex      その他の例外
      * @param request リクエスト
-     * @return 500 + エラー詳細
+     * @return 409、503 または 500 + エラー詳細
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllException(Exception ex, WebRequest request) {
-        return handleUnexpected(ex, request);
+        return handleDbConflictOrUnexpected(ex, request);
     }
 
     // ============================== 入力検証 ==============================
@@ -186,6 +197,42 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         var traceId = traceIdResolver.resolve();
         log.debug("入力検証エラー。errors={}, traceId={}", errors, traceId);
         return responses.invalidRequest(status, headers, errors, traceId, request);
+    }
+
+    /**
+     * DB の競合なら、その応答を作る。そうでなければ想定外のエラーにする。
+     *
+     * <p>ログは警告で、エラーコード・トレース ID・SQLState を出す。原因の例外のメッセージ（行の値を含みうる）とスタックトレースは出さない。
+     *
+     * <p>外部のサービスが呼ぶ通知のエンドポイント（{@code /api/webhooks/}）は、DB の競合も想定外のエラー（500）にする。
+     * 通知の約束は「処理に失敗したら 5xx にし、送信元の再送で処理し直す」で、4xx は「再送しても受け付けられない」の合図になるため。
+     */
+    private ResponseEntity<Object> handleDbConflictOrUnexpected(Exception ex, WebRequest request) {
+        if (isWebhook(request)) {
+            return handleUnexpected(ex, request);
+        }
+        return DbConflict.of(ex)
+                .map(conflict -> {
+                    var traceId = traceIdResolver.resolve();
+                    var errorCode = conflict.errorCode();
+                    log.warn("DB の競合。errorCode={}, traceId={}, sqlState={}", errorCode.name(), traceId, conflict.sqlState());
+                    return responses.of(ErrorDetail.of(errorCode.getCode()), traceId, request);
+                })
+                .orElseGet(() -> handleUnexpected(ex, request));
+    }
+
+    /**
+     * リクエストが、外部のサービスが呼ぶ通知のエンドポイントへのものかを返す。
+     *
+     * <p>通知のエンドポイントは、物流と Stripe の 2 つで、どちらも {@code /api/webhooks/} の下にある（認証の設定も同じパスで分けている）。
+     */
+    private static boolean isWebhook(WebRequest request) {
+        if (request instanceof ServletWebRequest servletRequest) {
+            var httpRequest = servletRequest.getRequest();
+            var path = httpRequest.getRequestURI().substring(httpRequest.getContextPath().length());
+            return path.startsWith(WEBHOOK_PATH_PREFIX);
+        }
+        return false;
     }
 
     /**

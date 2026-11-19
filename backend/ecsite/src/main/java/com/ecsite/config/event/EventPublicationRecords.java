@@ -172,14 +172,21 @@ class EventPublicationRecords {
      *
      * <p>未完了のイベントと止めたイベントは消さない。
      *
+     * <p>1 回に消す件数に上限を置く。文の実行のタイムアウトで 1 文が取り消され続けないようにするため。
+     *
      * @param threshold 基準の時刻（これより前に処理を終えたものを消す）
+     * @param limit     消す件数の上限
      * @return 消した件数
      */
-    int deleteCompletedBefore(Instant threshold) {
-        // Spring Modulith の「処理を終えた時刻で消す」操作と同じ条件。消した件数をログに出すため、自分で消す
+    int deleteCompletedBefore(Instant threshold, int limit) {
+        // Spring Modulith の「処理を終えた時刻で消す」操作と同じ条件。消した件数をログに出すため、自分で消す。
+        // 選ぶのと消すのを 1 文にする
         return dsl.deleteFrom(EVENT_PUBLICATION)
-                .where(COMPLETION_DATE.lt(threshold))
-                .and(STATUS.eq(COMPLETED).or(STATUS.isNull()))
+                .where(ID.in(dsl.select(ID)
+                        .from(EVENT_PUBLICATION)
+                        .where(COMPLETION_DATE.lt(threshold))
+                        .and(STATUS.eq(COMPLETED).or(STATUS.isNull()))
+                        .limit(limit)))
                 .execute();
     }
 

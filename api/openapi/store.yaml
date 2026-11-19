@@ -738,7 +738,7 @@ components:
       description: >-
         この API が返しうるエラーのコード（API の規約の「エラーの本文」）。フロントが分岐に使う。
         各操作が返しうる業務のエラーは操作の x-error-codes、全ての操作が返しうるエラーは x-common-error-codes。
-      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
+      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, RESOURCE_BUSY, SYSTEM_ERROR]
       enum:
         - CANCELLATION_NOT_REQUESTABLE
         - CART_CHANGED
@@ -766,6 +766,7 @@ components:
         - PENDING_ORDER_CONFIRMATION_REQUIRED
         - PENDING_ORDER_LIMIT_EXCEEDED
         - QUANTITY_EXCEEDS_STOCK
+        - RESOURCE_BUSY
         - RESTORE_ERROR
         - SYSTEM_ERROR
         - TOO_MANY_CART_ITEMS

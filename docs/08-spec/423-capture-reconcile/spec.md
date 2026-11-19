@@ -129,7 +129,7 @@
   - 依存：T423-01-04
   - 範囲：`PaymentGateway`、`StripePaymentGateway`、`MockPaymentGateway`、`PaymentGatewayService`、`PaymentCommandService`、`PaymentQueryService`、`PaymentExpiryJob`、`PaymentProperties`、`PaymentGatewayContractTest`、`StripePaymentGatewayTest`
   - 確認方法：`./gradlew check` が通る。
-- [ ] **T423-01-06** 機能仕様、設計、用語集、環境変数の文書、AC 一覧を更新する。
+- [x] **T423-01-06** 機能仕様、設計、用語集、環境変数の文書、AC 一覧を更新する。
   - 依存：T423-01-05
   - 範囲：`docs/03-機能仕様/payment.md`、`docs/02-設計/payment.md`、`docs/03-機能仕様/glossary.md`、`docs/06-手順書/environment.md`、`docs/03-機能仕様/acceptance-criteria.md`
   - 機能仕様で変える節：売上確定、データモデル、今有効な AC

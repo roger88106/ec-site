@@ -55,6 +55,8 @@ describe('注文手続きに進む', () => {
 
     await user.click(screen.getByRole('button', { name: '注文手続きへ進む' }))
 
-    expect(await screen.findByText('注文の総額は 50〜99,999,999 円にしてください。カートの商品か数量を変えてください。')).toBeInTheDocument()
+    expect(
+      await screen.findByText('注文の総額は 50〜99,999,999 円にしてください。カートの商品か数量を変えてください。'),
+    ).toBeInTheDocument()
   })
 })

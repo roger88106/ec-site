@@ -34,7 +34,7 @@ class SchemaOwnershipTest {
     // ============================== 定数 ==============================
 
     /**
-     * Gradle が jOOQ の schema の一覧（カンマ区切り）を渡す system property の名前
+     * Gradle が jOOQ の schema の一覧（コロン区切り）を渡す system property の名前
      */
     private static final String JOOQ_SCHEMAS_PROPERTY = "jooq.schemas";
 
@@ -198,7 +198,7 @@ class SchemaOwnershipTest {
         if (schemas == null || schemas.isBlank()) {
             throw new IllegalStateException("system property " + JOOQ_SCHEMAS_PROPERTY + " がない（Gradle の test の task から流す）");
         }
-        return List.of(schemas.split(","));
+        return List.of(schemas.split(":"));
     }
 
     // ============================== 規則の補助 ==============================

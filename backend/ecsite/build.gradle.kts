@@ -231,7 +231,7 @@ val jooqSchemas = listOf("common", "tax", "catalog", "media", "inventory", "cart
 //   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、PackageSizeTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
 //   test-classes.dirs：単体テストと統合テストのクラスの置き場所。テストの書き方の検査（TestNameTest など）が読む（TestCodeClasses）
-//   jooq.schemas：jOOQ の schema の一覧（カンマ区切り）。SchemaOwnershipTest が読む
+//   jooq.schemas：jOOQ の schema の一覧（コロン区切り。PIT は jvmArgs をカンマで分けるので、カンマを使わない）。SchemaOwnershipTest が読む
 // API の契約の正本（OpenAPI）の置き場所。テストが読むほか、下の「OpenAPI からのコード生成」でも使う
 val openApiDir = layout.projectDirectory.dir("../../api/openapi")
 val keycloakRealmsDir = file("../../docker/keycloak/realms")
@@ -240,7 +240,7 @@ val unitTestSystemProperties = mapOf(
     "keycloak.realms.dir" to keycloakRealmsDir.absolutePath,
     "repo.root" to file("../..").absolutePath,
     "test-classes.dirs" to (sourceSets.test.get().output.classesDirs + sourceSets["integrationTest"].output.classesDirs).asPath,
-    "jooq.schemas" to jooqSchemas.joinToString(","),
+    "jooq.schemas" to jooqSchemas.joinToString(":"),
 )
 
 // Error Prone の検査を JVM の中で動かすテスト（CompilationTestHelper）と、javac の内部の API を使う検査の本体のコンパイルに必要な、jdk.compiler のパッケージの export。

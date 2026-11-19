@@ -64,7 +64,30 @@ class SchemaOwnershipTest {
             Map.entry("storefront", Optional.empty()),
             Map.entry("tax", Optional.of("tax")));
 
+    /**
+     * どのモジュールにも属さない schema
+     *
+     * <p>common の schema（イベントの永続化の表）は Spring Modulith が JDBC で使うので、どのモジュールにも割り当てない。
+     */
+    private static final Set<String> SCHEMAS_WITHOUT_MODULE = Set.of("common");
+
     // ============================== テスト ==============================
+
+    @Test
+    @DisplayName("Gradle の jOOQ の schema の一覧は、モジュールと schema の対応と過不足がない")
+    void jooqSchemasMatchSchemaByModule() {
+        // 準備：期待する schema（モジュールの schema とモジュールに属さない schema）
+        Set<String> expected = SCHEMA_BY_MODULE.values().stream()
+                .flatMap(Optional::stream)
+                .collect(Collectors.toCollection(TreeSet::new));
+        expected.addAll(SCHEMAS_WITHOUT_MODULE);
+
+        // 操作：Gradle が渡す jOOQ の schema の一覧
+        List<String> actual = gradleJooqSchemas();
+
+        // 確認：過不足がない
+        assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
+    }
 
     @Test
     @DisplayName("すべてのモジュールが、schema の対応の表にある")
@@ -157,6 +180,20 @@ class SchemaOwnershipTest {
         return jooqPlacementRule("com.ecsite.architecture.sample.jooquse.module..",
                 "com.ecsite.architecture.sample.jooquse.module.*.infrastructure.persistence..")
                 .evaluate(examples).getFailureReport().getDetails();
+    }
+
+    /**
+     * Gradle が system property で渡す、jOOQ の schema の一覧を返す。
+     *
+     * @return schema の名前の一覧
+     * @throws IllegalStateException system property がないとき
+     */
+    private static List<String> gradleJooqSchemas() {
+        String schemas = System.getProperty("jooq.schemas");
+        if (schemas == null) {
+            throw new IllegalStateException("system property jooq.schemas がない（Gradle の test の task から流す）");
+        }
+        return List.of(schemas.split(","));
     }
 
     // ============================== 規則の補助 ==============================

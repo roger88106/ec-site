@@ -43,7 +43,8 @@ class CheckoutCleanupJob {
     // 設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.order.cleanup-"
             + "com.ecsite.module.order.application.job.CheckoutCleanupProperties'.interval()}")
-    @SchedulerLock(name = "checkout-cleanup")
+    // ロックを持つ時間の上限は 10 分。DB の削除だけで外部を呼ばず、通常は上限よりずっと短く終わる。止まったインスタンスのロックが長く残らない値にする
+    @SchedulerLock(name = "checkout-cleanup", lockAtMostFor = "PT10M")
     void cleanUp() {
         var expiredBefore = clock.instant().minus(properties.retention());
         ExpiredDataCleanup.run(log, "期限切れの注文手続き", properties.batchSize(),

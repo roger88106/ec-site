@@ -46,6 +46,8 @@
 | `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名鍵。Git にコミットしない。ローカルと統合テストでは、テスト用の値を設定ファイルに書く。物流サービスを接続していない環境でも必須 | 必須 |
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |
 | `SPRING_MAIL_HOST`、`_PORT`、`_USERNAME`、`_PASSWORD` | メールを送る SMTP サーバーの接続先と認証（Spring Boot の設定）。ローカルは compose の Mailpit（`localhost:2525`。ポートは `MAILPIT_SMTP_PORT` で変える） | host は必須、port は 25 |
+| `ECSITE_DB_LOCK_TIMEOUT`、`_STATEMENT_TIMEOUT`、`_IDLE_IN_TRANSACTION_TIMEOUT` | DB の接続のタイムアウト（ロック待ち、文の実行、トランザクション中のアイドル）。PostgreSQL の時間の形式（`5s`、`500ms`）。マイグレーションの接続には適用しない | 5s、30s、60s |
+| `ECSITE_ASYNC_EXTERNAL_SERVICE_THREADS`、`_QUEUE_CAPACITY` | 外部サービスを呼ぶリスナーのスレッドプールの、スレッドの数とキューの上限。1 以上 | 4、1000 |
 | `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で実行するか | true |
 | `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE`、`_MAX_ATTEMPTS` | 未完了のイベントを再発行する間隔、再発行の対象にする経過時間（発行から）の下限、処理の回数（発行時の 1 回と再発行の回数）の上限 | 1m、5m、60 |
 | `ECSITE_SCHEDULING_EVENT_CLEANUP_INTERVAL`、`_RETENTION` | 処理の済んだイベントを削除する間隔、保存期間（処理を終えた時刻から） | 1h、7d |

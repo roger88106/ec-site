@@ -28,7 +28,9 @@ class AnnotationPlacementTest {
         @DisplayName("@Transactional を付けるクラスは、application と infrastructure だけにある")
         void transactionalClassesOnlyInApplicationOrInfrastructure() {
             // 操作と確認：本番のクラスに規則を当てる
+            // 注釈の型は除く。リスナーのアノテーション（ExternalServiceListener）は、@Transactional を重ねて持つ
             classes().that().areAnnotatedWith(Transactional.class)
+                    .and().areNotAnnotations()
                     .should().resideInAnyPackage(
                             ProductionClasses.MODULE_PACKAGE + ".*.application..", ProductionClasses.MODULE_PACKAGE + ".*.infrastructure..")
                     .check(ProductionClasses.all());

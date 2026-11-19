@@ -1,9 +1,9 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.common.event.ExternalServiceListener;
 import com.ecsite.module.payment.domain.payment.RefundRequested;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
 import lombok.RequiredArgsConstructor;
-import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 
@@ -27,7 +27,7 @@ class PaymentReversalHandler {
      *
      * @param event 与信の取消の依頼
      */
-    @ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)
+    @ExternalServiceListener(propagation = Propagation.NOT_SUPPORTED)
     void on(VoidRequested event) {
         gatewayService.voidAuthorization(event.paymentId());
     }
@@ -37,7 +37,7 @@ class PaymentReversalHandler {
      *
      * @param event 返金の依頼
      */
-    @ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)
+    @ExternalServiceListener(propagation = Propagation.NOT_SUPPORTED)
     void on(RefundRequested event) {
         gatewayService.refund(event.paymentId());
     }

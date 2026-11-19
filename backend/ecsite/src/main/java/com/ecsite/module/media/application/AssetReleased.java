@@ -2,6 +2,7 @@ package com.ecsite.module.media.application;
 
 import com.ecsite.common.model.base.DomainEvent;
 import com.ecsite.module.media.domain.Asset;
+import com.ecsite.module.media.domain.PendingAsset;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -9,7 +10,7 @@ import java.util.UUID;
 /**
  * アセット解放
  *
- * <p>アセットの記録の削除のコミットの後に、配信のファイルを削除するための、メディアモジュールの中だけで使うイベント。
+ * <p>アセットか仮のアセットの記録の削除のコミットの後に、配信のファイルを削除するための、メディアモジュールの中だけで使うイベント。
  * ロールバックしたときは、記録が戻るのでファイルを残す。記録の削除と同じトランザクションで記録されるので、
  * ファイルの削除が失敗しても再発行でやり直せる。
  *
@@ -29,5 +30,16 @@ record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String stor
      */
     public static AssetReleased of(Instant occurredAt, Asset asset) {
         return new AssetReleased(UUID.randomUUID(), occurredAt, asset.id(), asset.storageKey());
+    }
+
+    /**
+     * 消した仮のアセットから、イベントを作る。
+     *
+     * @param occurredAt 発生時刻
+     * @param pending    消した仮のアセット
+     * @return イベント
+     */
+    public static AssetReleased of(Instant occurredAt, PendingAsset pending) {
+        return new AssetReleased(UUID.randomUUID(), occurredAt, pending.id(), pending.storageKey());
     }
 }

@@ -22,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.net.URI;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -225,6 +226,27 @@ public class MediaService {
         // アセット解放の発行 ※配信のファイルはコミットの後に消す
         var now = clock.instant();
         assets.forEach(asset -> eventPublisher.publishEvent(AssetReleased.of(now, asset)));
+    }
+
+    /**
+     * 用意した時刻が指定した時刻より前の仮のアセットを、件数の上限まで消す。
+     *
+     * <p>消した仮のアセットごとに、記録の削除と同じトランザクションでアセット解放のイベントを記録する。
+     * 配信のファイルはコミットの後に削除され、トランザクションが取り消されたときは残る。
+     *
+     * @param preparedBefore この時刻より前に用意したものを消す
+     * @param limit          消す件数の上限
+     * @return 消した件数
+     */
+    @Transactional
+    public int deleteExpiredPendingAssets(@NonNull Instant preparedBefore, int limit) {
+        // 仮のアセットの記録の削除
+        var deleted = pendingAssetRepository.deleteExpiredBefore(preparedBefore, limit);
+
+        // アセット解放の発行 ※配信のファイルはコミットの後に消す
+        var now = clock.instant();
+        deleted.forEach(pending -> eventPublisher.publishEvent(AssetReleased.of(now, pending)));
+        return deleted.size();
     }
 
     /**

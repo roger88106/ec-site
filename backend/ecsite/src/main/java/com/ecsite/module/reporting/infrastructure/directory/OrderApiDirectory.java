@@ -103,9 +103,9 @@ class OrderApiDirectory implements OrderDirectory {
     }
 
     /**
-     * 注文の API の注文の状態を、レポートの型にする。
+     * 注文の状態（注文の API とイベントで共通の列挙）を、レポートの型に変換する。
      *
-     * @param status 注文の API の注文の状態
+     * @param status 注文の状態
      * @return レポートの注文の状態
      */
     static ReportOrderStatus toStatus(OrderStatusChanged.Status status) {

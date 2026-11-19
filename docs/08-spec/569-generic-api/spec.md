@@ -150,7 +150,7 @@ issue は、呼ぶ側の形と名前で作られた公開の API として 5 つ
 
 実装は実装役（汎用）に 1 タスクずつ任せる。
 
-- [ ] **T569-01-01** 層の依存の表に `api` から `event` への依存を加える（DC-569-6）。
+- [x] **T569-01-01** 層の依存の表に `api` から `event` への依存を加える（DC-569-6）。
   - 依存：なし
   - 範囲：`docs/02-設計/backend-architecture.md`、`backend/ecsite/src/test/java/com/ecsite/architecture/LayerDependencyTest.java`
   - 確認方法：`LayerDependencyTest` が通る。文書の検査が通る

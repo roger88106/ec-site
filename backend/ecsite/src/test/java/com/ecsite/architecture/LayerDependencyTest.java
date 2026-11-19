@@ -72,7 +72,7 @@ class LayerDependencyTest {
      * {@code ModuleRoleTest} が確認するので、ここでは domain の全体を許す。
      */
     private static final Map<String, List<AllowedTarget>> ALLOWED_LAYER_DEPENDENCIES = Map.of(
-            "api", List.of(AllowedTarget.whole("application"), AllowedTarget.whole("domain")),
+            "api", List.of(AllowedTarget.whole("application"), AllowedTarget.whole("domain"), AllowedTarget.whole("event")),
             "event", List.of(AllowedTarget.whole("application"), AllowedTarget.whole("domain")),
             "presentation", List.of(AllowedTarget.except("application", "port"), AllowedTarget.whole("domain")),
             "application", List.of(AllowedTarget.whole("domain"), AllowedTarget.whole("event")),

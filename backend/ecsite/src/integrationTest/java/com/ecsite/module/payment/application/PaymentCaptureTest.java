@@ -401,7 +401,7 @@ class PaymentCaptureTest {
     class ReconciledCaptured {
 
         @Test
-        @DisplayName("AC-423-9 照合で売上確定済みにした支払は、売上確定が成功し、決済サービスを呼ばない")
+        @DisplayName("照合で売上確定済みにした支払は、売上確定が成功し、決済サービスを呼ばない")
         void capturesWithoutGateway() {
             // 準備：売上確定の応答が届かず、照合で売上確定済みにした支払
             var orderId = reconciledCaptured();
@@ -415,7 +415,7 @@ class PaymentCaptureTest {
         }
 
         @Test
-        @DisplayName("AC-423-10 照合で売上確定済みにした支払を取り消すと、総額を 1 回だけ返金し、与信は取り消さない")
+        @DisplayName("照合で売上確定済みにした支払を取り消すと、総額を 1 回だけ返金し、与信は取り消さない")
         void refundsTotalOnce() {
             // 準備：売上確定の応答が届かず、照合で売上確定済みにした支払
             var orderId = reconciledCaptured();

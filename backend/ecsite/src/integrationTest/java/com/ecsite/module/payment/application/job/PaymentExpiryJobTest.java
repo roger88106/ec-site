@@ -7,6 +7,7 @@ import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.Authorization;
+import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.Payment;
@@ -824,6 +825,7 @@ class PaymentExpiryJobTest {
         @DisplayName("AC-423-4 照合を始めるまでの時間の前は、その支払を照合しない")
         void doesNotReconcileBeforeDelay() {
             // 準備：売上確定の応答が届かなかった支払。照合を始めるまでの時間の 1 秒前にジョブが動く
+            clearOtherReconciliation();
             var orderId = captureResponseLostAt(ORDERED_AT);
             clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()).minusSeconds(1));
 
@@ -856,6 +858,7 @@ class PaymentExpiryJobTest {
         @DisplayName("AC-423-5 決済サービスで売上を確定していなかった支払は、以降のジョブの実行では照合しない")
         void doesNotReconcileAgainWhenNotCaptured() {
             // 準備：決済サービスで売上を確定していないと照合された支払
+            clearOtherReconciliation();
             var orderId = captureUnreachableAt(ORDERED_AT);
             clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
             expireUntil(() -> fetched(orderId));
@@ -869,7 +872,7 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("AC-423-5 決済サービスで売上を確定していなかった支払は、その後の売上確定で確定できる")
+        @DisplayName("決済サービスで売上を確定していなかった支払は、その後の売上確定で確定できる")
         void capturesAfterNotCaptured() {
             // 準備：決済サービスで売上を確定していないと照合された支払
             var orderId = captureUnreachableAt(ORDERED_AT);
@@ -1022,9 +1025,10 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("NFR-423-3 売上確定済みにした支払は、以降のジョブの実行では照合しない")
-        void doesNotReconcileAgainWhenCaptured() {
+        @DisplayName("BR-423-1 売上確定済みにした支払は、照合の対象から外れ、以降のジョブの実行では照合しない")
+        void leavesReconcileTargetWhenCaptured() {
             // 準備：照合で売上確定済みにした支払
+            clearOtherReconciliation();
             var orderId = captureResponseLostAt(ORDERED_AT);
             clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
             expireUntil(() -> status(orderId) == PaymentStatus.CAPTURED);
@@ -1035,9 +1039,100 @@ class PaymentExpiryJobTest {
             // 確認：状態を読んだのは 1 回だけ
             assertThat(gateway.fetchCaptureStateCallsOf(authorizationRefOf(orderId))).isEqualTo(1);
         }
+
+        @Test
+        @DisplayName("NFR-423-3 同じ照合の対象を重ねて照合しても、売上確定済みのままで、warn のログは 1 件だけ")
+        void reconcilesCapturedOnce() {
+            // 準備：売上確定の応答が届かなかった支払の、同じ照合の対象
+            var orderId = captureResponseLostAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            var target = reconcileTargetOf(orderId);
+            reconcileLogs.clear();
+
+            // 操作：同じ対象を 2 回照合する
+            gatewayService.reconcileCapture(target);
+            gatewayService.reconcileCapture(target);
+
+            // 確認：売上確定済みで、支払 ID を含む warn が 1 件
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
+            assertThat(warnLinesOf(orderId)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("NFR-423-3 同じ照合の対象を重ねて照合しても、売上を確定していない支払は、1 回目の後の状態のまま変わらない")
+        void reconcilesNotCapturedOnce() {
+            // 準備：売上を確定していない支払の、同じ照合の対象。1 回目の照合の後の状態を読む
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            var target = reconcileTargetOf(orderId);
+            gatewayService.reconcileCapture(target);
+            var afterFirst = paymentOf(orderId);
+
+            // 操作：同じ対象をもう一度照合する
+            gatewayService.reconcileCapture(target);
+
+            // 確認：与信済みで、売上確定を求めた時刻の削除も、1 回目の後のまま
+            assertThat(afterFirst.status()).isEqualTo(PaymentStatus.AUTHORIZED);
+            assertThat(afterFirst.captureRequestedAt()).isEmpty();
+            assertThat(paymentOf(orderId).status()).isEqualTo(afterFirst.status());
+            assertThat(paymentOf(orderId).captureRequestedAt()).isEqualTo(afterFirst.captureRequestedAt());
+        }
+
+        @Test
+        @DisplayName("NFR-423-3 同じ照合の対象を重ねて照合しても、与信が切れた支払は、与信期限切れのまま")
+        void reconcilesExpiredOnce() {
+            // 準備：売上を確定できず、決済サービスで与信が切れた支払の、同じ照合の対象
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            gateway.expireAuthorization(authorizationRefOf(orderId));
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            var target = reconcileTargetOf(orderId);
+
+            // 操作：同じ対象を 2 回照合する
+            gatewayService.reconcileCapture(target);
+            gatewayService.reconcileCapture(target);
+
+            // 確認：与信期限切れのまま
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
+        }
+
+        @Test
+        @DisplayName("照合の取得の最中に注文がキャンセルされた支払は、返金待ちにして、返金に進めた文の warn のログを出す")
+        void warnsRefundWhenCancelledDuringFetch() {
+            // 準備：売上確定の応答が届かなかった支払。照合が状態を取得する間に、注文がキャンセルされる。
+            // 取消の依頼の非同期の処理が先に支払を進めないよう、与信の取消は失敗させる
+            clearOtherReconciliation();
+            var orderId = captureResponseLostAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            var target = reconcileTargetOf(orderId);
+            gateway.failNextVoids(1);
+            gateway.duringNextCaptureStateFetch(
+                    () -> transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId)));
+            reconcileLogs.clear();
+
+            // 操作：照合する
+            gatewayService.reconcileCapture(target);
+
+            // 確認：返金に進み（返金は非同期で済んでいてもよい）、売上確定済みにした文でなく、返金に進めた文の warn が 1 件
+            assertThat(payments.statusOf(orderId))
+                    .isIn(PaymentSummary.Status.REFUND_PENDING, PaymentSummary.Status.REFUNDED);
+            assertThat(warnLinesOf(orderId)).hasSize(1).allMatch(line -> line.contains("返金に進めた"));
+        }
     }
 
     // ============================== 確認の補助 ==============================
+
+    /**
+     * 注文の支払の、照合の対象を読む。
+     *
+     * @param orderId 注文 ID（照合を始めるまでの時間が過ぎている）
+     * @return 照合の対象
+     */
+    private CaptureReconcileView reconcileTargetOf(UUID orderId) {
+        var paymentId = paymentOf(orderId).id();
+        return queryService.findForCaptureReconcile(Integer.MAX_VALUE).stream()
+                .filter(view -> view.id().equals(paymentId))
+                .findFirst().orElseThrow();
+    }
 
     /**
      * 注文の支払の状態（ドメインの状態）を返す。

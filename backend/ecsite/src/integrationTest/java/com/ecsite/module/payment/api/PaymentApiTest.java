@@ -1,8 +1,10 @@
 package com.ecsite.module.payment.api;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.api.model.AmountRange;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
+import com.ecsite.module.payment.domain.payment.PaymentAmountRange;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
@@ -435,6 +437,23 @@ class PaymentApiTest {
             assertThat(summaries).extracting(PaymentSummary::orderId, PaymentSummary::status).containsExactlyInAnyOrder(
                     tuple(unpaid, PaymentSummary.Status.UNPAID),
                     tuple(authorized, PaymentSummary.Status.AUTHORIZED));
+        }
+    }
+
+    @Nested
+    @DisplayName("支払 1 回の金額の範囲")
+    class AmountRangeQuery {
+
+        @Test
+        @DisplayName("BR-518-1 範囲は、下限 50 円・上限 99,999,999 円で、決済の domain の範囲と同じ")
+        void returnsStandardRange() {
+            // 操作：範囲を求める
+            var range = paymentApi.amountRange();
+
+            // 確認：下限 50 円、上限 99,999,999 円で、domain の範囲と同じ
+            assertThat(range).isEqualTo(new AmountRange(Money.of(50), Money.of(99_999_999)));
+            assertThat(range.min()).isEqualTo(PaymentAmountRange.STANDARD.min());
+            assertThat(range.max()).isEqualTo(PaymentAmountRange.STANDARD.max());
         }
     }
 

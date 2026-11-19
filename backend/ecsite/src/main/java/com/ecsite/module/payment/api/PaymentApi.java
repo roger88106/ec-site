@@ -4,6 +4,7 @@ import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.api.model.AmountRange;
 import com.ecsite.module.payment.api.model.AuthorizationDeadline;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.PaymentCommandService;
@@ -142,6 +143,18 @@ public class PaymentApi {
      */
     public List<UUID> findExpiringOrderIds() {
         return queryService.findExpiringOrderIds();
+    }
+
+    /**
+     * 支払 1 回の金額の範囲を返す。
+     *
+     * <p>決済サービスが 1 回の支払で受け付ける金額の範囲で、設定によらず決まっている。
+     *
+     * @return 金額の範囲（下限、上限とも含む）
+     */
+    public AmountRange amountRange() {
+        // レッドの確認のための仮の値
+        return new AmountRange(Money.of(1), Money.of(2));
     }
 
     /**

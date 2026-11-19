@@ -16,7 +16,7 @@
   - 依存：T518-01-01
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/payment/domain/payment/`
   - 確認方法：T518-01-01 のテストが通る
-- [ ] **T518-01-03** [テスト] 決済の公開の API で、範囲を返す操作の統合テストを書き、レッドを確認する（BR-518-1）。
+- [x] **T518-01-03** [テスト] 決済の公開の API で、範囲を返す操作の統合テストを書き、レッドを確認する（BR-518-1）。
   - 依存：T518-01-02
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/api/PaymentApiTest.java`
   - 確認方法：テストが失敗する

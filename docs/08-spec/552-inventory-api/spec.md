@@ -168,7 +168,7 @@
   - 依存：T552-01-04、T552-01-06
   - 範囲：注文のまとまり、既存のテスト
   - 確認方法：`./gradlew test` と、注文の統合テスト（`./gradlew integrationTest --tests 'com.ecsite.module.order.*'`）。ループがないことはコードを読んで確認する
-- [ ] **T552-01-08** 文書を修正する（決定 6。DC-552-7）。
+- [x] **T552-01-08** 文書を修正する（決定 6。DC-552-7）。
   - 依存：T552-01-01、T552-01-04、T552-01-06
   - 範囲：「変える範囲」の文書
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`

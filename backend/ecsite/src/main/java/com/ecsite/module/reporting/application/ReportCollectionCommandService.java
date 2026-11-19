@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.reporting.application.port.CatalogDirectory;
 import com.ecsite.module.reporting.application.port.OrderDirectory;
@@ -86,13 +87,7 @@ class ReportCollectionCommandService {
      * @return レポートの注文の状態
      */
     static ReportOrderStatus toOrderStatus(OrderStatusChanged.Status status) {
-        return switch (status) {
-            case PENDING_PAYMENT -> ReportOrderStatus.PENDING_PAYMENT;
-            case ACCEPTED -> ReportOrderStatus.ACCEPTED;
-            case CANCELLATION_REQUESTED -> ReportOrderStatus.CANCELLATION_REQUESTED;
-            case CANCELLED -> ReportOrderStatus.CANCELLED;
-            case SHIPPED -> ReportOrderStatus.SHIPPED;
-        };
+        return EnumConversion.byName(status, ReportOrderStatus.class);
     }
 
     /**
@@ -102,11 +97,7 @@ class ReportCollectionCommandService {
      * @return レポートのキャンセルの種類
      */
     static ReportCancellationKind toCancellationKind(OrderStatusChanged.CancellationKind kind) {
-        return switch (kind) {
-            case REQUEST_APPROVED -> ReportCancellationKind.REQUEST_APPROVED;
-            case OPERATOR -> ReportCancellationKind.OPERATOR;
-            case PAYMENT_EXPIRED -> ReportCancellationKind.PAYMENT_EXPIRED;
-        };
+        return EnumConversion.byName(kind, ReportCancellationKind.class);
     }
 
     /**
@@ -116,12 +107,7 @@ class ReportCollectionCommandService {
      * @return レポートの配送状態
      */
     static DeliveryStatus toDeliveryStatus(DeliveryStatusChanged.Status status) {
-        return switch (status) {
-            case SHIPPED -> DeliveryStatus.SHIPPED;
-            case IN_TRANSIT -> DeliveryStatus.IN_TRANSIT;
-            case DELIVERED -> DeliveryStatus.DELIVERED;
-            case RETURNED -> DeliveryStatus.RETURNED;
-        };
+        return EnumConversion.byName(status, DeliveryStatus.class);
     }
 
 // ============================== プライベートメソッド ==============================

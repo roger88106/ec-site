@@ -1,5 +1,6 @@
 package com.ecsite.module.order.api;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.AxisValue;
 import com.ecsite.module.order.api.model.CartQuote;
@@ -76,12 +77,7 @@ public class OrderQuoteApi {
      * 購入できない理由を、公開する型に変換する。
      */
     static CartQuote.UnpurchasableReason toReason(UnpurchasableReason reason) {
-        return switch (reason) {
-            case NOT_SHOWN -> CartQuote.UnpurchasableReason.NOT_SHOWN;
-            case SALES_SUSPENDED -> CartQuote.UnpurchasableReason.SALES_SUSPENDED;
-            case OUT_OF_STOCK -> CartQuote.UnpurchasableReason.OUT_OF_STOCK;
-            case INSUFFICIENT_STOCK -> CartQuote.UnpurchasableReason.INSUFFICIENT_STOCK;
-        };
+        return EnumConversion.byName(reason, CartQuote.UnpurchasableReason.class);
     }
 
     /**

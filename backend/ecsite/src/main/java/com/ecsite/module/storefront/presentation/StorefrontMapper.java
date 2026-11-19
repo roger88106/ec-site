@@ -15,6 +15,7 @@ import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.api.store.model.Variant;
 import com.ecsite.api.store.model.VariantAxis;
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.StorePrices;
@@ -45,11 +46,7 @@ class StorefrontMapper {
      * @return 並び順
      */
     ProductCondition.Sort toSort(ProductSort sort) {
-        return switch (sort) {
-            case NEWEST -> ProductCondition.Sort.NEWEST;
-            case PRICE_ASC -> ProductCondition.Sort.PRICE_ASC;
-            case PRICE_DESC -> ProductCondition.Sort.PRICE_DESC;
-        };
+        return EnumConversion.byName(sort, ProductCondition.Sort.class);
     }
 
     /**
@@ -209,12 +206,7 @@ class StorefrontMapper {
      * 購入できない理由のレスポンスに変換する。
      */
     static UnpurchasableReason toUnpurchasableReason(CartView.UnpurchasableReason reason) {
-        return switch (reason) {
-            case NOT_SHOWN -> UnpurchasableReason.NOT_SHOWN;
-            case SALES_SUSPENDED -> UnpurchasableReason.SALES_SUSPENDED;
-            case OUT_OF_STOCK -> UnpurchasableReason.OUT_OF_STOCK;
-            case INSUFFICIENT_STOCK -> UnpurchasableReason.INSUFFICIENT_STOCK;
-        };
+        return EnumConversion.byName(reason, UnpurchasableReason.class);
     }
 
     /**

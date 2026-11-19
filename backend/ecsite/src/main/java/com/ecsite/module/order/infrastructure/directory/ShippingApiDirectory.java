@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
@@ -65,34 +66,21 @@ class ShippingApiDirectory implements ShippingDirectory {
     /**
      * 配送業者を、出荷モジュールの型にする。
      */
-    private static ShipmentSummary.Carrier toShippingCarrier(Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> ShipmentSummary.Carrier.YAMATO;
-            case SAGAWA -> ShipmentSummary.Carrier.SAGAWA;
-            case JAPAN_POST -> ShipmentSummary.Carrier.JAPAN_POST;
-        };
+    static ShipmentSummary.Carrier toShippingCarrier(Carrier carrier) {
+        return EnumConversion.byName(carrier, ShipmentSummary.Carrier.class);
     }
 
     /**
      * 出荷モジュールの配送業者を、注文の型にする。
      */
-    private static Carrier toCarrier(ShipmentSummary.Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> Carrier.YAMATO;
-            case SAGAWA -> Carrier.SAGAWA;
-            case JAPAN_POST -> Carrier.JAPAN_POST;
-        };
+    static Carrier toCarrier(ShipmentSummary.Carrier carrier) {
+        return EnumConversion.byName(carrier, Carrier.class);
     }
 
     /**
      * 出荷モジュールの配送状態を、注文の型にする。
      */
-    private static OrderShipment.Status toStatus(ShipmentSummary.Status status) {
-        return switch (status) {
-            case SHIPPED -> OrderShipment.Status.SHIPPED;
-            case IN_TRANSIT -> OrderShipment.Status.IN_TRANSIT;
-            case DELIVERED -> OrderShipment.Status.DELIVERED;
-            case RETURNED -> OrderShipment.Status.RETURNED;
-        };
+    static OrderShipment.Status toStatus(ShipmentSummary.Status status) {
+        return EnumConversion.byName(status, OrderShipment.Status.class);
     }
 }

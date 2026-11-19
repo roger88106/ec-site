@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.api;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
@@ -153,17 +154,7 @@ public class PaymentApi {
     /**
      * 支払の状態の列挙を公開の型にする。
      */
-    private static PaymentSummary.Status toStatus(PaymentStatus status) {
-        return switch (status) {
-            case UNPAID -> PaymentSummary.Status.UNPAID;
-            case AUTHORIZED -> PaymentSummary.Status.AUTHORIZED;
-            case VOID_PENDING -> PaymentSummary.Status.VOID_PENDING;
-            case VOIDED -> PaymentSummary.Status.VOIDED;
-            case NOT_PAID -> PaymentSummary.Status.NOT_PAID;
-            case CAPTURED -> PaymentSummary.Status.CAPTURED;
-            case AUTHORIZATION_EXPIRED -> PaymentSummary.Status.AUTHORIZATION_EXPIRED;
-            case REFUND_PENDING -> PaymentSummary.Status.REFUND_PENDING;
-            case REFUNDED -> PaymentSummary.Status.REFUNDED;
-        };
+    static PaymentSummary.Status toStatus(PaymentStatus status) {
+        return EnumConversion.byName(status, PaymentSummary.Status.class);
     }
 }

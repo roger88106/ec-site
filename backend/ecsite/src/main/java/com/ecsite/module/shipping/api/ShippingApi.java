@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.api;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.ShipmentService;
@@ -90,34 +91,21 @@ public class ShippingApi {
     /**
      * 公開の型の配送業者を、ドメインの型にする。
      */
-    private static Carrier toCarrier(ShipmentSummary.Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> Carrier.YAMATO;
-            case SAGAWA -> Carrier.SAGAWA;
-            case JAPAN_POST -> Carrier.JAPAN_POST;
-        };
+    static Carrier toCarrier(ShipmentSummary.Carrier carrier) {
+        return EnumConversion.byName(carrier, Carrier.class);
     }
 
     /**
      * 配送業者を公開の型にする。
      */
-    private static ShipmentSummary.Carrier toSummaryCarrier(Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> ShipmentSummary.Carrier.YAMATO;
-            case SAGAWA -> ShipmentSummary.Carrier.SAGAWA;
-            case JAPAN_POST -> ShipmentSummary.Carrier.JAPAN_POST;
-        };
+    static ShipmentSummary.Carrier toSummaryCarrier(Carrier carrier) {
+        return EnumConversion.byName(carrier, ShipmentSummary.Carrier.class);
     }
 
     /**
      * 配送状態を公開の型にする。
      */
-    private static ShipmentSummary.Status toSummaryStatus(DeliveryStatus status) {
-        return switch (status) {
-            case SHIPPED -> ShipmentSummary.Status.SHIPPED;
-            case IN_TRANSIT -> ShipmentSummary.Status.IN_TRANSIT;
-            case DELIVERED -> ShipmentSummary.Status.DELIVERED;
-            case RETURNED -> ShipmentSummary.Status.RETURNED;
-        };
+    static ShipmentSummary.Status toSummaryStatus(DeliveryStatus status) {
+        return EnumConversion.byName(status, ShipmentSummary.Status.class);
     }
 }

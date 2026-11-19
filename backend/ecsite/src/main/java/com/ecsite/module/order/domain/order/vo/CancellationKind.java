@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order.vo;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.order.event.OrderStatusChanged;
 
 /**
@@ -33,10 +34,6 @@ public enum CancellationKind {
      * @return イベントの種類
      */
     public OrderStatusChanged.CancellationKind toEventKind() {
-        return switch (this) {
-            case REQUEST_APPROVED -> OrderStatusChanged.CancellationKind.REQUEST_APPROVED;
-            case OPERATOR -> OrderStatusChanged.CancellationKind.OPERATOR;
-            case PAYMENT_EXPIRED -> OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED;
-        };
+        return EnumConversion.byName(this, OrderStatusChanged.CancellationKind.class);
     }
 }

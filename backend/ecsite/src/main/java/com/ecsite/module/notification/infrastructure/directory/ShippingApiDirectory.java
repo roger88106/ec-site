@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.infrastructure.directory;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.notification.application.port.ShippingDirectory;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.shipping.api.ShippingApi;
@@ -37,11 +38,7 @@ class ShippingApiDirectory implements ShippingDirectory {
     /**
      * イベントの配送業者を、出荷モジュールの配送業者にする。
      */
-    private static ShipmentSummary.Carrier toShippingCarrier(OrderShipped.Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> ShipmentSummary.Carrier.YAMATO;
-            case SAGAWA -> ShipmentSummary.Carrier.SAGAWA;
-            case JAPAN_POST -> ShipmentSummary.Carrier.JAPAN_POST;
-        };
+    static ShipmentSummary.Carrier toShippingCarrier(OrderShipped.Carrier carrier) {
+        return EnumConversion.byName(carrier, ShipmentSummary.Carrier.class);
     }
 }

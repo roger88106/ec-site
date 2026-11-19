@@ -28,11 +28,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import javax.sql.DataSource;
 
 import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "ecsite.db.lock-timeout=500ms",
         "ecsite.db.statement-timeout=1s"
 })
-@Import(DbConflictResponseTest.DbConflictTestController.class)
+@Import({DbConflictResponseTest.DbConflictTestController.class, DbConflictResponseTest.WebhookTestController.class})
 class DbConflictResponseTest {
 
     // ============================== 定数 ==============================
@@ -61,6 +61,11 @@ class DbConflictResponseTest {
      * テスト用の Controller のパス
      */
     private static final String BASE = "/api/test-db-conflicts";
+
+    /**
+     * 通知のエンドポイントのパスの下に置いた、テスト用の Controller のパス
+     */
+    private static final String WEBHOOK_BASE = "/api/webhooks/test-db-conflicts";
 
     /**
      * ロック待ちのリクエストの結果を待つ上限（秒）。ロック待ちのタイムアウト（500 ミリ秒）より十分に長くする
@@ -159,7 +164,7 @@ class DbConflictResponseTest {
                     result.andExpect(status().isServiceUnavailable())
                             .andExpectAll(problem("RESOURCE_BUSY", RESOURCE_BUSY));
                 } finally {
-                    // ロックを放す（戻らなかったリクエストも終わらせる）
+                    // ロックを解放する（戻らなかったリクエストも終わらせる）
                     holder.rollback();
                 }
             }
@@ -168,7 +173,7 @@ class DbConflictResponseTest {
         @Test
         @DisplayName("DC-556-3 ロックを持つトランザクションが終われば、同じリクエストは通る")
         void succeedsWhenNoOtherTransactionHoldsLock() throws Exception {
-            // 操作と確認：ほかにロックを持つ人がいなければ 200
+            // 操作と確認：ほかにロックを持つトランザクションがなければ 200
             mockMvc.perform(get(BASE + "/row-lock"))
                     .andExpect(status().isOk());
         }
@@ -257,6 +262,29 @@ class DbConflictResponseTest {
     }
 
     @Nested
+    @DisplayName("通知のエンドポイント")
+    class Webhooks {
+
+        @Test
+        @DisplayName("DC-556-4 通知の処理で、デッドロック（40P01）は、409 にせず 500 のままである")
+        void deadlockStaysSystemError() throws Exception {
+            // 操作と確認：外部のサービスが呼ぶ通知は、処理に失敗したら 5xx にして、送信元の再送で処理し直す
+            mockMvc.perform(get(WEBHOOK_BASE + "/40P01"))
+                    .andExpect(status().isInternalServerError())
+                    .andExpectAll(problem("SYSTEM_ERROR", SYSTEM_ERROR));
+        }
+
+        @Test
+        @DisplayName("DC-556-3 通知の処理で、ロック取得の失敗（55P03）は、503 にせず 500 のままである")
+        void lockNotAvailableStaysSystemError() throws Exception {
+            // 操作と確認：同じく 5xx にして再送で処理し直す
+            mockMvc.perform(get(WEBHOOK_BASE + "/55P03"))
+                    .andExpect(status().isInternalServerError())
+                    .andExpectAll(problem("SYSTEM_ERROR", SYSTEM_ERROR));
+        }
+    }
+
+    @Nested
     @DisplayName("ログ")
     class Logging {
 
@@ -303,7 +331,7 @@ class DbConflictResponseTest {
      *   <li>原因の例外のクラスとスタックトレースが出ない</li>
      * </ul>
      *
-     * @param log       捕まえたログ
+     * @param log       取得したログ
      * @param errorCode 期待するエラーコード
      * @param traceId   応答のトレース ID
      * @param sqlState  期待する SQLState
@@ -381,7 +409,10 @@ class DbConflictResponseTest {
             });
         }
 
-        private static ConcurrencyFailureException dbException(String sqlState) {
+        /**
+         * 原因に PostgreSQL のエラーを持つ例外を作る。
+         */
+        static ConcurrencyFailureException dbException(String sqlState) {
             // PSQLState の列挙に 55P03 がないので、SQLState を指定した PSQLException を作る
             var cause = new PSQLException("ERROR: failed Detail: Key (code)=(" + ROW_VALUE + ") conflicts", PSQLState.UNKNOWN_STATE) {
                 @Override
@@ -390,6 +421,22 @@ class DbConflictResponseTest {
                 }
             };
             return new CannotAcquireLockException("DB のエラー", cause);
+        }
+    }
+
+    /**
+     * 通知のエンドポイントのパスの下で、DB の例外を発生させる Controller
+     */
+    @RestController
+    @RequestMapping(WEBHOOK_BASE)
+    static class WebhookTestController {
+
+        /**
+         * 原因に PostgreSQL のエラーを持つ例外を、そのまま投げる
+         */
+        @GetMapping("/{sqlState}")
+        void raw(@PathVariable String sqlState) {
+            throw DbConflictTestController.dbException(sqlState);
         }
     }
 }

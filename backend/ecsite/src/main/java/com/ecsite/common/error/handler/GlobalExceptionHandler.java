@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -33,6 +34,11 @@ import java.util.List;
 @RestControllerAdvice
 @RequiredArgsConstructor
 class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    /**
+     * 外部のサービスが呼ぶ通知のエンドポイントのパスの先頭
+     */
+    private static final String WEBHOOK_PATH_PREFIX = "/api/webhooks/";
 
     /**
      * エラーレスポンスのファクトリー
@@ -197,8 +203,14 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * DB の競合なら、その応答を作る。そうでなければ想定外のエラーにする。
      *
      * <p>ログは警告で、エラーコード・トレース ID・SQLState を出す。原因の例外のメッセージ（行の値を含みうる）とスタックトレースは出さない。
+     *
+     * <p>外部のサービスが呼ぶ通知のエンドポイント（{@code /api/webhooks/}）は、DB の競合も想定外のエラー（500）にする。
+     * 通知の約束は「処理に失敗したら 5xx にし、送信元の再送で処理し直す」で、4xx は「再送しても受け付けられない」の合図になるため。
      */
     private ResponseEntity<Object> handleDbConflictOrUnexpected(Exception ex, WebRequest request) {
+        if (isWebhook(request)) {
+            return handleUnexpected(ex, request);
+        }
         return DbConflict.of(ex)
                 .map(conflict -> {
                     var traceId = traceIdResolver.resolve();
@@ -207,6 +219,20 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     return responses.of(ErrorDetail.of(errorCode.getCode()), traceId, request);
                 })
                 .orElseGet(() -> handleUnexpected(ex, request));
+    }
+
+    /**
+     * リクエストが、外部のサービスが呼ぶ通知のエンドポイントへのものかを返す。
+     *
+     * <p>通知のエンドポイントは、物流と Stripe の 2 つで、どちらも {@code /api/webhooks/} の下にある（認証の設定も同じパスで分けている）。
+     */
+    private static boolean isWebhook(WebRequest request) {
+        if (request instanceof ServletWebRequest servletRequest) {
+            var httpRequest = servletRequest.getRequest();
+            var path = httpRequest.getRequestURI().substring(httpRequest.getContextPath().length());
+            return path.startsWith(WEBHOOK_PATH_PREFIX);
+        }
+        return false;
     }
 
     /**

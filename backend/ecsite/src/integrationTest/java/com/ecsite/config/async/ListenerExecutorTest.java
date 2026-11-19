@@ -104,7 +104,7 @@ class ListenerExecutorTest {
     class Listeners {
 
         @Test
-        @DisplayName("DC-556-8 外部サービスを呼ぶ 4 つのクラスのリスナーは、外部サービス用のスレッドプールで動く")
+        @DisplayName("DC-556-8 外部サービスを呼ぶリスナー（一覧は EXTERNAL_LISTENERS）は、外部サービス用のスレッドプールで動く")
         void externalListenersUseExternalExecutor() {
             // 操作：外部サービス用のスレッドプールを指すリスナーを集める
             var external = listeners(true);

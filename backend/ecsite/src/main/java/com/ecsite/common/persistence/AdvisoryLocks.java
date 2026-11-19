@@ -20,7 +20,8 @@ public final class AdvisoryLocks {
     /**
      * 用途と ID のロックを、トランザクションの終わりまで取る。
      *
-     * <p>同じ用途と ID のロックを別のトランザクションが持っていれば、外れるまで待つ。
+     * <p>同じ用途と ID のロックを別のトランザクションが持っていれば、ロック待ちのタイムアウト（{@code ecsite.db.lock-timeout}）まで待つ。
+     * 超えたら、ロック取得の失敗（SQLState 55P03）で例外になり、リクエストは 503（{@code RESOURCE_BUSY}）になる。
      *
      * @param dsl   DSLContext
      * @param space 用途

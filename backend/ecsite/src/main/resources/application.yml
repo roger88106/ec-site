@@ -48,11 +48,11 @@ spring:
   datasource:
     hikari:
       data-source-properties:
-        # 全ての DB の接続の初期化で、タイムアウトを置く（値は下の ecsite.db）。PostgreSQL のサーバーの設定で、接続ごとに有効になる。
-        # マイグレーション（Flyway）はプールを使わない別の接続を使うので、この設定は付かない（FlywayConnectionConfig）
-        options: -c lock_timeout=${ecsite.db.lock-timeout} -c statement_timeout=${ecsite.db.statement-timeout} -c idle_in_transaction_session_timeout=${ecsite.db.idle-in-transaction-timeout}
-        # PostgreSQL のエラーの詳細（Key (列)=(値) など、行の値を含む）を、例外の文に入れない。
-        # 想定外のエラーのログは原因の例外の文を出すので、入れると行の値がログに残る（制約名は別に取れるので、制約の違反の変換は働く）
+        # 全ての DB の接続の初期化で置くタイムアウトの設定（options）は、設定の型（ecsite.db。DbTimeoutConfig）から作る。
+        # マイグレーション（Flyway）はプールを使わない別の接続を使うので、タイムアウトは付かない（FlywayConnectionConfig）。
+        # 次の引数は、マイグレーションの別の接続にも、URL に足して付ける（FlywayConnectionConfig）
+        # PostgreSQL のエラーの詳細（Key (列)=(値) など、行の値を含む）を、例外のメッセージに入れない。
+        # 想定外のエラーのログは原因の例外のメッセージを出すので、入れると行の値がログに残る（制約名は別に取れるので、制約の違反の変換は働く）
         logServerErrorDetail: false
   flyway:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（バックエンドのアーキテクチャの「水平スケール」）。
@@ -70,7 +70,10 @@ spring:
         # 満杯で拒否されたイベントは、未完了のまま残り、再発行のジョブが処理する
         queue-capacity: 1000
       shutdown:
-        # 停止のとき、処理中のリスナーを待つ。上限は、処理中のリクエストを待つ上限（spring.lifecycle.timeout-per-shutdown-phase）と同じ
+        # 停止のとき、処理中のリスナーを待つ。上限は、処理中のリクエストを待つ上限（spring.lifecycle.timeout-per-shutdown-phase）と同じ。
+        # 待ちは重なる。処理中のリクエストを最大 30 秒待った後、Bean を壊すときに、2 つのスレッドプール（これと ecsite.async.external-service）が
+        # 1 つずつ順に最大 30 秒待つ（Spring Framework は、Bean の破棄で shutdown を呼び、終わりまでブロックする）。
+        # コンテキストを閉じる時点で、2 つとも新しいタスクの受付を止め、残りのタスクは並行して動く。停止の最大の合計はおよそ 90 秒
         await-termination: true
         await-termination-period: 30s
     scheduling:
@@ -125,19 +128,21 @@ ecsite:
   async:
     external-service:
       # 外部サービス（メール、ファイル保存、決済、物流）を呼ぶリスナーのスレッドプール。外部が遅いとき、外部を呼ばないリスナーを待たせない。
-      # 1 つのインスタンスの、外部への同時の呼び出しの数の上限になる
+      # 1 つのインスタンスで、リスナーが外部を同時に呼ぶ数の上限になる（利用者のリクエストと定期ジョブの外部の呼び出しは含まない）
       threads: 4
       # キューに上限がないと、外部が止まったときにメモリが増え続ける。満杯で拒否されたイベントは、未完了のまま残り、再発行のジョブが処理する
       queue-capacity: 1000
   db:
-    # DB の接続のタイムアウト。1 つずつ環境変数（ECSITE_DB_LOCK_TIMEOUT など）で上書きできる。PostgreSQL の時間の書き方（5s、500ms）で書く
-    # ロック待ち：消費者・運営者のリクエストが行ロックを待つ上限を、画面の操作が待てる長さにする。超えると 503（RESOURCE_BUSY）
-    lock-timeout: 5s
-    # 文の実行：1 つの SQL が終わらないまま、スレッドと接続を使い続けないようにする。超えると 500
-    statement-timeout: 30s
-    # トランザクション中のアイドル：トランザクションを開いたまま止まった接続のロックを放す。
-    # メールの送信はトランザクションの中で SMTP を呼び、タイムアウトが接続・読み取り・書き込みで各 10 秒（spring.mail.properties）なので、それより長くする
-    idle-in-transaction-timeout: 60s
+    # DB の接続のタイムアウト（lock-timeout、statement-timeout、idle-in-transaction-timeout）。値と既定値は、設定の型（DbTimeoutConfig）にあり、
+    # 1 つずつ環境変数（ECSITE_DB_LOCK_TIMEOUT など）で上書きできる。時間は 1ms 以上で、5s、500ms のように書く
+    # ロック待ち（5s）：行ロックと advisory lock を待つ上限を、画面の操作が待てる長さにする。超えると 503（RESOURCE_BUSY）。リスナーは失敗して再発行される
+    # 文の実行（30s）：1 つの SQL が終わらないまま、スレッドと接続を使い続けないようにする。超えると 500。
+    # 1 文で多くの行を消すような処理は、件数の上限ずつに分ける（処理の済んだイベントの片付けなど）
+    # トランザクション中のアイドル（60s）：トランザクションを開いたまま止まった接続のロックを解放する。
+    # メールの送信はトランザクションの中で SMTP を呼ぶ。SMTP のタイムアウト（spring.mail.properties）は、接続・読み取り・書き込みの 1 回ごとに各 10 秒で、
+    # 1 通の送信の全体の上限ではない（往復が多い）ので、60 秒は目安である。
+    # 送信の間に 60 秒を超えると、接続が切断され、トランザクションが失敗する（送信記録のコミットが失敗する）。
+    # メールは送られているので、イベントの再発行で送り直されうる
   payment:
     stripe:
       # Stripe の秘密の値。Git に入れず、Stripe の名前の環境変数で渡す（決済サービスが stripe のときだけ使う）

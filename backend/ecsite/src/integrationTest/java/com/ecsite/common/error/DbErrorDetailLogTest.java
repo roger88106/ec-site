@@ -147,7 +147,7 @@ class DbErrorDetailLogTest {
         }
 
         private void insertDuplicate() {
-            // 値はバインド変数で渡す（SQL の文に値を埋めると、エラーの詳細と関係なく、例外の文に値が出るため）
+            // 値はバインド変数で渡す（SQL の文に値を埋めると、エラーの詳細と関係なく、例外のメッセージに値が出るため）
             dsl.execute("INSERT INTO " + TABLE + " (code) VALUES (?)", ROW_VALUE);
         }
     }

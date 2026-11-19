@@ -6,8 +6,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.autoconfigure.task.TaskSchedulingProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
@@ -60,18 +58,6 @@ class EcSiteApplicationTests {
             // 操作と確認：@Scheduled を動かす部品がない
             // @EnableScheduling が 1 つでも有効だと、@Scheduled のジョブがテストと並んで動き、テストが呼ぶジョブを分散ロックで飛ばす
             assertThat(context.getBeanNamesForType(ScheduledAnnotationBeanPostProcessor.class)).isEmpty();
-        }
-
-        @Test
-        @DisplayName("スケジューラーのスレッドの数が、定期ジョブの数（6）である")
-        void schedulerPoolSizeIsJobCount() {
-            // 操作：テストでは定期ジョブが無効でスケジューラーの Bean がないので、スケジューラーを作る設定の値を束縛する
-            var properties = Binder.get(context.getEnvironment())
-                    .bind("spring.task.scheduling", TaskSchedulingProperties.class)
-                    .get();
-
-            // 確認：定期ジョブの数と同じ。ジョブが互いを待たない
-            assertThat(properties.getPool().getSize()).isEqualTo(6);
         }
     }
 

@@ -26,6 +26,14 @@ import java.time.Duration;
 class EventResubmissionJob {
 
     /**
+     * 1 回に再発行する件数と、再発行中の件数の上限
+     *
+     * <p>リスナーのスレッドプールのキューの上限（既定は 1000。{@code spring.task.execution.pool.queue-capacity}、
+     * {@code ecsite.async.external-service.queue-capacity}）より小さくする。環境で変えない値なので、設定にしない。
+     */
+    private static final int BATCH_SIZE = 500;
+
+    /**
      * 未完了のイベント
      */
     private final IncompleteEventPublications incompletePublications;
@@ -84,12 +92,15 @@ class EventResubmissionJob {
         // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
         // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
         // - 回数が上限より少ない
-        // 読む件数の上限は付けない（件数の上限を最大の値にする）。この操作は失敗の状態の行を発行の古い順に件数の上限まで
-        // 読んでから絞るので、上限を付けると、古い失敗したイベントだけが毎回読まれ、新しいイベントの再発行が遅れるため。
-        // 止めたイベントは別の表に移るので、失敗の状態の行は、まだ再発行するものだけになる
+        // 1 回に読む件数と、再発行中（RESUBMITTED）の件数に、上限を置く。リスナーのスレッドプールのキューの上限（1000）を超えて渡すと、
+        // キューが拒否し、そのイベントは処理されないまま、処理の回数だけが増える（Spring Modulith は、再発行の記録（回数を 1 増やす）を
+        // 先に書いてから、リスナーを呼ぶため）。上限に達したら、その回は再発行せず、次の回に回す。
+        // この操作は失敗の状態の行を発行の古い順に件数の上限まで読んでから絞る。止めたイベントは別の表に移るので、
+        // 失敗の状態の行は、まだ再発行するものだけになり、上限を置いても、古いものだけが読まれ続けることはない
         incompletePublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
                 .withMinAge(properties.minAge())
-                .withBatchSize(Integer.MAX_VALUE)
+                .withBatchSize(BATCH_SIZE)
+                .withMaxInFlight(BATCH_SIZE)
                 .withFilter(publication -> !publication.getLastPublicationDate().isAfter(lastTriedBy)
                         && publication.getCompletionAttempts() < properties.maxAttempts()));
         // 2 つの件数を 1 つの文で数え、同じ時点の値にする（文を分けると、2 つの文の間に復旧で行が戻ったとき、

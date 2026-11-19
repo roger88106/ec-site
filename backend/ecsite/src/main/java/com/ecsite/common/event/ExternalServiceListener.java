@@ -22,8 +22,8 @@ import java.lang.annotation.Target;
  * <p>{@code @ApplicationModuleListener} と同じ組み合わせ（非同期、コミットの後、新しいトランザクション）で、
  * 外部サービスを呼ぶリスナー専用のスレッドプール（{@link #EXECUTOR}）で動く。
  * 理由：外部サービスが遅いとき、リスナーがスレッドを長く使う。スレッドプールを分けておくと、
- * 外部サービスを呼ばないリスナーが、そのスレッドを待たない。
- * イベント発行記録の完了、失敗、再発行は、{@code @ApplicationModuleListener} のリスナーと同じに働く。
+ * 外部サービスを呼ばないリスナーが、そのスレッドの空きを待たない。
+ * イベント発行記録の完了、失敗、再発行は、{@code @ApplicationModuleListener} のリスナーと同じように動く。
  */
 @Async(ExternalServiceListener.EXECUTOR)
 @Transactional(propagation = Propagation.REQUIRES_NEW)

@@ -79,6 +79,7 @@
 | リポジトリ | `module/payment/infrastructure/persistence/JooqPaymentRepository.java` ※2 |
 | サービス | `module/payment/application/PaymentGatewayService.java`、`module/payment/application/PaymentCommandService.java` |
 | 統合テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/infrastructure/persistence/JooqPaymentRepositoryTest.java`、`backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/application/job/PaymentExpiryJobTest.java` |
+| 単体テスト | `backend/ecsite/src/test/java/com/ecsite/module/payment/application/job/PaymentExpiryJobLoggingTest.java`（支払なしにする処理の引数が増えるため） |
 | 文書 | `docs/02-設計/payment.md`、`docs/03-機能仕様/payment.md` |
 
 ※2：与信の反映を長く待つ支払の件数の集計（`JooqPaymentQueryRepository.java`）は、新しい索引で絞れるので変えない。
@@ -139,7 +140,7 @@ DN-549-1 の例外は、次の表のとおり。
   - 確認方法：今のコードで失敗する（レッド）
 - [x] **T549-01-05** 行ロックの後に支払画面を再確認する（決定 3。DC-549-4）。
   - 依存：T549-01-04
-  - 範囲：サービス
+  - 範囲：サービス、単体テスト
   - 確認方法：`./gradlew test` と、支払のモジュールの統合テスト
 - [x] **T549-01-06** 文書を修正する（決定 4。DC-549-5）。
   - 依存：T549-01-03、T549-01-05

@@ -673,6 +673,23 @@ class JooqPaymentRepositoryTest {
     }
 
     @Nested
+    @DisplayName("与信の参照の制約")
+    class AuthorizationRefConstraint {
+
+        @Test
+        @DisplayName("与信のない状態以外で、与信の参照が null の行は、DB が拒否する")
+        void rejectsAuthorizedWithoutRef() {
+            // 準備：未払いの支払を保存する
+            var payment = savedPayment();
+
+            // 操作と確認：与信の参照のないまま与信済みにする更新は、制約に反して失敗する
+            assertThatThrownBy(() -> dsl.update(PAYMENT_).set(PAYMENT_.STATUS, "AUTHORIZED")
+                    .where(PAYMENT_.ID.eq(payment.id())).execute())
+                    .hasMessageContaining("payment_authorization_ref_check");
+        }
+    }
+
+    @Nested
     @DisplayName("同じ期限・同じ待ち始めた時刻の支払の並び順")
     class TieOrder {
 

@@ -2,6 +2,7 @@
 -- 売上確定の応答が届かなかった支払を照合するため、売上確定を決済サービスに求めた時刻を記録する。照合で、決済サービスが売上を確定していなかったときに削除する。
 -- 未払い・支払なしの行は、与信がないので値を持たない。
 -- 部分索引は、照合の対象（与信済みで記録のある支払）を、時刻・支払 ID の順に件数の上限まで読むためのもの。
+-- 与信のない状態（未払い・支払なし）以外の行は、与信の参照を持つ（集約の不変条件と同じ）。照合の検索が、与信の参照のない行で全体の失敗にならないようにする。
 -- 列の追加と、既存の行が満たす制約と、索引の追加なので、前のリリースのアプリもそのまま動く。
 ALTER TABLE payment.payment
     ADD COLUMN capture_requested_at timestamptz;
@@ -10,6 +11,9 @@ COMMENT ON COLUMN payment.payment.capture_requested_at IS '売上確定を求め
 
 ALTER TABLE payment.payment ADD CONSTRAINT payment_capture_requested_at_check
     CHECK (capture_requested_at IS NULL OR status NOT IN ('UNPAID', 'NOT_PAID'));
+
+ALTER TABLE payment.payment ADD CONSTRAINT payment_authorization_ref_check
+    CHECK (status IN ('UNPAID', 'NOT_PAID') OR authorization_ref IS NOT NULL);
 
 CREATE INDEX payment_authorized_capture_requested_at_id_idx ON payment.payment (capture_requested_at, id)
     WHERE status = 'AUTHORIZED' AND capture_requested_at IS NOT NULL;

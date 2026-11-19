@@ -83,7 +83,12 @@ public class ProductImageGatewayService {
             return commandService.saveAddedImage(productId, version, prepared);
         } catch (RuntimeException e) {
             // 保存が失敗したら、用意した配信のファイルを消し、元の失敗を投げ直す
-            mediaDirectory.discardImage(prepared);
+            // ※破棄の失敗で元の失敗を隠さない。破棄の失敗は元の例外に付け、元の例外のスタックトレースに出る
+            try {
+                mediaDirectory.discardImage(prepared);
+            } catch (RuntimeException discardFailure) {
+                e.addSuppressed(discardFailure);
+            }
             throw e;
         }
     }

@@ -54,9 +54,12 @@
 | `ECSITE_INVENTORY_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの引当を削除する間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、1d、1000 |
 | `ECSITE_ORDER_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの注文手続きを削除する間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、1d、1000 |
 | `ECSITE_CART_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れのカートを削除する間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、0d、1000 |
+| `ECSITE_MEDIA_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 仮のアセットを削除する間隔、保存期間（用意した時刻から）、1 回に削除する件数の上限（1 以上 500 以下） | 1h、1d、500 |
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省略したもの（`SPRING_DATASOURCE_USERNAME` など）。
-- 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）だけは 0 以上。
+- 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、例外は次の 2 つ。
+  - 保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）は 0 以上。
+  - `ECSITE_MEDIA_CLEANUP_RETENTION` は 1 分以上。0 にすると、用意から登録までの間の仮のアセットを削除しうるため。
 - `ECSITE_PAYMENT_AUTHORIZATION_WARNING` は、`ECSITE_PAYMENT_AUTHORIZATION_VALIDITY` より短くないと起動に失敗する。
 - マイグレーションの適用は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「マイグレーション」。
 - ログは標準出力に JSON（Elastic Common Schema）で出力される。

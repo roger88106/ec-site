@@ -375,7 +375,7 @@ class OrderPaymentApiTest {
             assertThat(total).isEqualTo(TOTAL_OF_TWO.yen());
 
             // 操作：支払画面を開く
-            orders.openPaymentPage(orderId);
+            openPage(orderId).andExpect(status().isOk());
 
             // 確認：与信の額が総額
             assertThat(gateway.amountsOf(TestPaymentGateway.Operation.OPEN_PAGE, orderId)).containsExactly(TOTAL_OF_TWO);
@@ -388,8 +388,8 @@ class OrderPaymentApiTest {
             var orderId = pending(1);
 
             // 操作：支払画面を 2 回開く
-            var first = orders.openPaymentPage(orderId);
-            var second = orders.openPaymentPage(orderId);
+            var first = openedPageId(orderId);
+            var second = openedPageId(orderId);
 
             // 確認：同じ画面で、作成は 1 回
             assertThat(second).isEqualTo(first);
@@ -896,6 +896,18 @@ class OrderPaymentApiTest {
      */
     private ResultActions openPage(UUID orderId) throws Exception {
         return mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page").with(owner.bearer()));
+    }
+
+    /**
+     * 会員として、支払画面を開き、200 を確認して、支払画面 ID（応答の URL の最後の部分）を返す。
+     *
+     * @param orderId 注文 ID
+     * @return 支払画面 ID
+     */
+    private String openedPageId(UUID orderId) throws Exception {
+        var body = openPage(orderId).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String url = JsonPath.read(body, "$.url");
+        return url.substring(url.lastIndexOf('/') + 1);
     }
 
     /**

@@ -345,7 +345,7 @@ public class OrderTestData {
      * <p>ロールバックするテストでは、トランザクションの外で呼ぶ前提のメソッド（{@code NEVER}）を本番の経路で呼べない。
      * そのため、HTTP を通らずに同じ状態を作る。
      * 支払画面の URL を求める処理（{@code PaymentGatewayService.pageUrl}）の中身を、テストのトランザクションの中で順に呼ぶ。
-     * エンドポイント自身は {@code OrderPaymentApiTest} で確認する。
+     * 会員と支払待ちの確認は写さない。エンドポイント自身（その確認を含む）は {@code OrderPaymentApiTest} で確認する。
      *
      * @param orderId 注文 ID
      * @return 支払画面 ID
@@ -367,7 +367,11 @@ public class OrderTestData {
         var properties = applicationContext.getBean(PaymentProperties.class);
         var opened = gateway.openPage(
                 new PaymentGateway.PageRequest(payable.id(), orderId, payable.amount(), properties.returnUrlOf(orderId)));
-        return applicationContext.getBean(PaymentCommandService.class).recordPage(orderId, opened).orElseThrow().url();
+        var used = applicationContext.getBean(PaymentCommandService.class).recordPage(orderId, opened).orElseThrow();
+        if (!used.id().equals(opened.id())) {
+            gateway.closePage(opened.id());
+        }
+        return used.url();
     }
 
     /**

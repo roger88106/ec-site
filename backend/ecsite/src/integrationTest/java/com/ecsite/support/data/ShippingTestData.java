@@ -1,10 +1,12 @@
 package com.ecsite.support.data;
 
+import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.shipment.OrderShipmentCommandService;
 import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
+import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
@@ -117,7 +119,11 @@ public class ShippingTestData {
      */
     private PaymentCaptureView capture(UUID orderId, PaymentGateway.CaptureResult expected) {
         Objects.requireNonNull(applicationContext, "出荷を登録するときは ApplicationContext を渡すコンストラクタで作る");
+        // 本番の前段の判定（出荷できる注文で、与信済みの支払）。満たさないなら、補助を使える状態ではない
+        assertThat(applicationContext.getBean(OrderQueryService.class).get(orderId).actions().shippable())
+                .as("出荷できる注文で呼ぶ").isTrue();
         var capture = applicationContext.getBean(PaymentQueryService.class).findForCapture(orderId).orElseThrow();
+        assertThat(capture.status()).as("与信済みの支払で呼ぶ").isEqualTo(PaymentStatus.AUTHORIZED);
         var result = applicationContext.getBean(TestPaymentGateway.class).capture(new PaymentGateway.CaptureRequest(
                 orderId, Objects.requireNonNull(capture.authorizationRef()), capture.amount()));
         assertThat(result).isEqualTo(expected);

@@ -37,7 +37,7 @@
 | `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では有効にしない | false |
 | `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔。支払の期限は 30 分を超えると起動に失敗する | 30m、1m |
 | `ECSITE_PAYMENT_AWAITING_AUTHORIZATION_WARNING` | 与信の反映を待つ支払のうち、待ち始めてからこの時間を過ぎたものの件数を、warn のログに出力する | 1h |
-| `ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY` | 売上確定を求めてから、照合を始めるまでの時間。2 分未満では起動に失敗する（決済サービスの 1 回の呼び出しは、再試行を含めて最大約 75 秒かかるため） | 10m |
+| `ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY` | 売上確定を求めてから、照合を始めるまでの時間。表の下の箇条の条件を満たさないと、起動に失敗する | 10m |
 | `ECSITE_PAYMENT_AUTHORIZATION_VALIDITY`、`_AUTHORIZATION_WARNING` | 与信の有効期間（与信の時刻からの時間）、「期限が近い」とする期間（与信期限までの残り時間） | 7d、2d |
 | `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払画面を表示するバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを有効にしたら必須 |
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API のシークレットキー、通知の署名鍵。Git にコミットしない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md)の「Stripe で動かす」） | 決済の mock フラグを有効にしなければ必須 |
@@ -58,6 +58,7 @@
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省略したもの（`SPRING_DATASOURCE_USERNAME` など）。
 - 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）だけは 0 以上。照合を始めるまでの時間（`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY`）は 2 分以上。
+- Stripe を使うとき、`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY` は、売上確定の呼び出しの最長の時間に 1 分を加えた時間より長くないと起動に失敗する。最長の時間は、`ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT` と `_READ_TIMEOUT` と、SDK の再試行から決まる（計算は `StripeConfig`）。既定の値では約 2 分 25 秒。理由：照合が、売上確定の最中の支払の記録を削除しないため。
 - `ECSITE_PAYMENT_AUTHORIZATION_WARNING` は、`ECSITE_PAYMENT_AUTHORIZATION_VALIDITY` より短くないと起動に失敗する。
 - マイグレーションの適用は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「マイグレーション」。
 - ログは標準出力に JSON（Elastic Common Schema）で出力される。

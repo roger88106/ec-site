@@ -189,6 +189,49 @@ class StoreOrderMapper {
                 .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
     }
 
+    /**
+     * 注文の状態。
+     */
+    static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
+        return EnumConversion.byName(status, OrderStatus.class);
+    }
+
+    /**
+     * キャンセルの種類。
+     */
+    static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
+        return EnumConversion.byName(kind, CancellationKind.class);
+    }
+
+    /**
+     * 配送業者。
+     */
+    static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
+        return EnumConversion.byName(carrier, Carrier.class);
+    }
+
+    /**
+     * 配送状態。
+     */
+    static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
+        return EnumConversion.byName(status, ShipmentStatus.class);
+    }
+
+    /**
+     * 買えない理由。
+     */
+    static UnpurchasableReason toReason(com.ecsite.module.order.domain.quote.UnpurchasableReason reason) {
+        return EnumConversion.byName(reason, UnpurchasableReason.class);
+    }
+
+    /**
+     * キャンセルの申請の結果。
+     */
+    static CancellationRequest.ResultEnum toResult(
+            com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
+        return EnumConversion.byName(result, CancellationRequest.ResultEnum.class);
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
@@ -291,48 +334,5 @@ class StoreOrderMapper {
             summary.shipmentStatus(toShipmentStatus(shipment.status()));
         }
         return summary;
-    }
-
-    /**
-     * 注文の状態。
-     */
-    static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
-        return EnumConversion.byName(status, OrderStatus.class);
-    }
-
-    /**
-     * キャンセルの種類。
-     */
-    static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
-        return EnumConversion.byName(kind, CancellationKind.class);
-    }
-
-    /**
-     * 配送業者。
-     */
-    static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
-        return EnumConversion.byName(carrier, Carrier.class);
-    }
-
-    /**
-     * 配送状態。
-     */
-    static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
-        return EnumConversion.byName(status, ShipmentStatus.class);
-    }
-
-    /**
-     * 買えない理由。
-     */
-    static UnpurchasableReason toReason(com.ecsite.module.order.domain.quote.UnpurchasableReason reason) {
-        return EnumConversion.byName(reason, UnpurchasableReason.class);
-    }
-
-    /**
-     * キャンセルの申請の結果。
-     */
-    static CancellationRequest.ResultEnum toResult(
-            com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
-        return EnumConversion.byName(result, CancellationRequest.ResultEnum.class);
     }
 }

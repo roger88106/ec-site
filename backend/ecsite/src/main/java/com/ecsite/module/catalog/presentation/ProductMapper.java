@@ -210,6 +210,13 @@ class ProductMapper {
         return EnumConversion.byName(status, PublicationStatus.class);
     }
 
+    /**
+     * 削除できない理由をレスポンスに変換する。
+     */
+    static ProductDeleteBlockedReason toDeleteBlockedReason(DeleteBlockedReason reason) {
+        return EnumConversion.byName(reason, ProductDeleteBlockedReason.class);
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
@@ -260,12 +267,5 @@ class ProductMapper {
                 .addVariant(actions.addVariant())
                 .deleteBlockedReason(actions.deleteBlockedReason() == null
                         ? null : toDeleteBlockedReason(actions.deleteBlockedReason()));
-    }
-
-    /**
-     * 削除できない理由をレスポンスに変換する。
-     */
-    static ProductDeleteBlockedReason toDeleteBlockedReason(DeleteBlockedReason reason) {
-        return EnumConversion.byName(reason, ProductDeleteBlockedReason.class);
     }
 }

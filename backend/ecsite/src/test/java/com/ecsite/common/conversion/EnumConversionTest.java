@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class EnumConversionTest {
 
-    // ============================== テスト用の列挙 ==============================
+    // ============================== 定数 ==============================
 
     private enum SourceColor {
         RED, GREEN, BLUE

@@ -14,6 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ProductMapperTest {
 
+    // ============================== テスト ==============================
+
     @ParameterizedTest(name = "「{0}」")
     @EnumSource(PublicationStatus.class)
     @DisplayName("AC-277 リクエストの公開状態の全ての値を、ドメインの同じ名前の値に写す")

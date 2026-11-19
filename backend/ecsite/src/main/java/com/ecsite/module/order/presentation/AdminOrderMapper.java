@@ -139,6 +139,49 @@ class AdminOrderMapper {
         return EnumConversion.byName(carrier, com.ecsite.module.order.domain.order.Carrier.class);
     }
 
+    /**
+     * 注文の状態。
+     */
+    static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
+        return EnumConversion.byName(status, OrderStatus.class);
+    }
+
+    /**
+     * 支払の状態。
+     */
+    static PaymentStatus toPaymentStatus(OrderPayment.Status status) {
+        return EnumConversion.byName(status, PaymentStatus.class);
+    }
+
+    /**
+     * 配送業者。
+     */
+    static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
+        return EnumConversion.byName(carrier, Carrier.class);
+    }
+
+    /**
+     * 配送状態。
+     */
+    static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
+        return EnumConversion.byName(status, ShipmentStatus.class);
+    }
+
+    /**
+     * キャンセルの申請の結果。
+     */
+    static CancellationRequest.ResultEnum toResult(
+            com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
+        return EnumConversion.byName(result, CancellationRequest.ResultEnum.class);
+    }
+
+    /**
+     * キャンセルの種類。
+     */
+    static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
+        return EnumConversion.byName(kind, CancellationKind.class);
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
@@ -261,48 +304,5 @@ class AdminOrderMapper {
                                                    @Nullable OrderPayment payment) {
         return status == com.ecsite.module.order.domain.order.OrderStatus.ACCEPTED
                 && payment != null && payment.authorizationExpiring();
-    }
-
-    /**
-     * 注文の状態。
-     */
-    static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
-        return EnumConversion.byName(status, OrderStatus.class);
-    }
-
-    /**
-     * 支払の状態。
-     */
-    static PaymentStatus toPaymentStatus(OrderPayment.Status status) {
-        return EnumConversion.byName(status, PaymentStatus.class);
-    }
-
-    /**
-     * 配送業者。
-     */
-    static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
-        return EnumConversion.byName(carrier, Carrier.class);
-    }
-
-    /**
-     * 配送状態。
-     */
-    static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
-        return EnumConversion.byName(status, ShipmentStatus.class);
-    }
-
-    /**
-     * キャンセルの申請の結果。
-     */
-    static CancellationRequest.ResultEnum toResult(
-            com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
-        return EnumConversion.byName(result, CancellationRequest.ResultEnum.class);
-    }
-
-    /**
-     * キャンセルの種類。
-     */
-    static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
-        return EnumConversion.byName(kind, CancellationKind.class);
     }
 }

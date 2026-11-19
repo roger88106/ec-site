@@ -69,14 +69,14 @@ class CatalogApiDirectory implements CatalogDirectory {
         return catalogApi.categoryTree().stream().map(CatalogApiDirectory::toCategory).toList();
     }
 
-// ============================== プライベートメソッド ==============================
-
     /**
      * 店舗の並び順を、商品カタログの並び順に変換する。
      */
     static ShownProductSort toSort(ProductCondition.Sort sort) {
         return EnumConversion.byName(sort, ShownProductSort.class);
     }
+
+// ============================== プライベートメソッド ==============================
 
     /**
      * 商品カタログの一覧の要素を、店舗の型に変換する。

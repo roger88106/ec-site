@@ -92,8 +92,7 @@ class PaymentPropertiesTest {
             "deadline, 0s", "deadline, -1s", "deadline, 999us",
             "expiry-interval, 0s", "expiry-interval, -1s", "expiry-interval, 999us",
             "awaiting-authorization-warning, 0s", "awaiting-authorization-warning, -1s", "awaiting-authorization-warning, 999us",
-            "authorization-validity, 0s", "authorization-validity, -1s", "authorization-validity, 999us",
-            "capture-reconcile-delay, 0s", "capture-reconcile-delay, -1s", "capture-reconcile-delay, 999us"})
+            "authorization-validity, 0s", "authorization-validity, -1s", "authorization-validity, 999us"})
     @DisplayName("下限が 1ms の時間の設定が、0、負の値、1ms 未満（999us）なら、値の検証で拒否される")
     void rejectsDurationBelowMinimum(String name, String value) {
         // 準備：必須の値と、許す範囲の外の値
@@ -107,8 +106,7 @@ class PaymentPropertiesTest {
     }
 
     @ParameterizedTest(name = "「{0}」")
-    @CsvSource({"deadline", "expiry-interval", "awaiting-authorization-warning", "authorization-validity",
-            "capture-reconcile-delay"})
+    @CsvSource({"deadline", "expiry-interval", "awaiting-authorization-warning", "authorization-validity"})
     @DisplayName("下限が 1ms の時間の設定が、下限の 1ms なら、値の検証を通り、その値になる")
     void acceptsDurationAtMinimum(String name) {
         // 操作：必須の値と 1ms を検証付きで当てはめる。与信の有効期間が期限が近いとする期間より長くなるよう、後者を 0 にする
@@ -121,10 +119,31 @@ class PaymentPropertiesTest {
             case "deadline" -> properties.deadline();
             case "expiry-interval" -> properties.expiryInterval();
             case "awaiting-authorization-warning" -> properties.awaitingAuthorizationWarning();
-            case "capture-reconcile-delay" -> properties.captureReconcileDelay();
             default -> properties.authorizationValidity();
         };
         assertThat(actual).isEqualTo(Duration.ofMillis(1));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({"0s", "-1s", "1ms", "119999ms"})
+    @DisplayName("照合を始めるまでの時間が、下限の 2 分に満たなければ、値の検証で拒否される")
+    void rejectsCaptureReconcileDelayBelowMinimum(String value) {
+        // 操作と確認：2 分に満たない値は、値の検証で拒否される
+        assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "capture-reconcile-delay", value)))
+                .isInstanceOf(BindException.class)
+                .hasCauseInstanceOf(BindValidationException.class);
+    }
+
+    @Test
+    @DisplayName("照合を始めるまでの時間が、下限の 2 分なら、値の検証を通り、その値になる")
+    void acceptsCaptureReconcileDelayAtMinimum() {
+        // 操作：2 分を検証付きで当てはめる
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "capture-reconcile-delay", "2m"));
+
+        // 確認：2 分になる
+        assertThat(properties.captureReconcileDelay()).isEqualTo(Duration.ofMinutes(2));
     }
 
     @Test

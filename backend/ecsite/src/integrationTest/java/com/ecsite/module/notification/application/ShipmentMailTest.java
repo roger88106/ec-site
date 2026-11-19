@@ -1,6 +1,7 @@
 package com.ecsite.module.notification.application;
 
 import com.ecsite.module.notification.application.port.Mailer;
+import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -27,8 +29,10 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * 出荷通知メールの統合テスト
@@ -91,11 +95,17 @@ class ShipmentMailTest {
     @MockitoSpyBean
     Mailer mailer;
 
+    @MockitoBean
+    OrderDirectory orderDirectory;
+
     /**
      * このテストの宛先（テストごとに変える）
      */
     private String email;
 
+    /**
+     * 注文の腐敗防止層は、イベントの注文 ID に、このテストの宛先を返す（イベントを作る補助で登録する）。
+     */
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);
@@ -169,6 +179,22 @@ class ShipmentMailTest {
         }
 
         @Test
+        @DisplayName("DC-572-4 注文が見つからなければ、メールを送らず、イベントは未完了のまま残る")
+        void leavesEventIncompleteWhenOrderNotFound() {
+            // 準備：注文の腐敗防止層が、注文を見つけない
+            var event = shipped();
+            when(orderDirectory.email(event.orderId())).thenThrow(new IllegalStateException("注文が見つかりません"));
+
+            // 操作：注文の出荷のイベントを発行する
+            publish(event);
+
+            // 確認：リスナーが失敗して未完了のまま残り、メールは送られず届かない
+            asyncEvents.awaitFailed(event::equals);
+            verify(mailer, never()).send(any());
+            assertThat(mailpit.messagesTo(email)).isEmpty();
+        }
+
+        @Test
         @DisplayName("AC-185 同じ注文の出荷のイベントを重ねて受けても、メールは 1 通だけ")
         void sendsOnlyOnce() {
             // 準備：イベントを発行し、メールが届いて発行の記録が完了するのを待つ
@@ -180,11 +206,11 @@ class ShipmentMailTest {
 
             // 操作：同じイベントと、同じ注文の別のイベントを発行する
             publish(event);
-            publish(OrderShipped.of(event.occurredAt(), event.orderId(), event.orderNumber(), event.email(),
+            publish(OrderShipped.of(event.occurredAt(), event.orderId(), event.orderNumber(),
                     event.carrier(), event.trackingNumber()));
 
             // 確認：処理が終わった後も、届いたメールは 1 通
-            asyncEvents.awaitHandled(published -> published instanceof OrderShipped shipped && shipped.email().equals(email));
+            asyncEvents.awaitHandled(published -> published instanceof OrderShipped shipped && shipped.orderId().equals(event.orderId()));
             assertThat(mailpit.messagesTo(email)).hasSize(1);
         }
     }
@@ -212,13 +238,15 @@ class ShipmentMailTest {
     // ============================== 準備の補助 ==============================
 
     /**
-     * このテストの宛先への、ヤマト運輸の注文の出荷のイベントを作る。
+     * ヤマト運輸の注文の出荷のイベントを作り、その注文 ID に、このテストの宛先を返すようにする。
      *
      * @return 注文の出荷
      */
     private OrderShipped shipped() {
-        return OrderShipped.of(clock.instant(), UUID.randomUUID(), ORDER_NUMBER, email, OrderShipped.Carrier.YAMATO,
+        var event = OrderShipped.of(clock.instant(), UUID.randomUUID(), ORDER_NUMBER, OrderShipped.Carrier.YAMATO,
                 TRACKING_NUMBER);
+        when(orderDirectory.email(event.orderId())).thenReturn(email);
+        return event;
     }
 
     /**

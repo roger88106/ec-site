@@ -353,7 +353,7 @@ public class Order extends AggregateRoot {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
         }
         changeStatus(OrderStatus.SHIPPED, now);
-        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, carrier.toEventCarrier(),
+        registerEvent(OrderShipped.of(now, id, orderNumber.value(), carrier.toEventCarrier(),
                 trackingNumber));
     }
 

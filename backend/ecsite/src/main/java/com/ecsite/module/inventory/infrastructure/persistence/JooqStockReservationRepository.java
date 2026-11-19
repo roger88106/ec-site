@@ -96,6 +96,19 @@ class JooqStockReservationRepository implements StockReservationRepository {
     }
 
     /**
+     * 複数の持ち主の引当を、1 回の削除で消す。空の集まりでは SQL を実行しない。
+     *
+     * @param holderIds 持ち主 ID
+     */
+    @Override
+    public void deleteByHolders(Collection<UUID> holderIds) {
+        if (holderIds.isEmpty()) {
+            return;
+        }
+        dsl.deleteFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.in(holderIds)).execute();
+    }
+
+    /**
      * 期限が指定した時刻より前の引当を、件数の上限まで消す。
      *
      * @param expiredBefore この時刻

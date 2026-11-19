@@ -217,6 +217,45 @@ class JooqStockReservationRepositoryTest {
     }
 
     @Nested
+    @DisplayName("複数の持ち主の引当の削除")
+    class DeleteByHolders {
+
+        @Test
+        @DisplayName("複数の持ち主の引当を消すと、渡した持ち主の引当だけが消える")
+        void deletesReservationsOfHolders() {
+            // 準備：2 人の持ち主の引当 2 と 3 と、ほかの持ち主の引当 4
+            var stock = createStock(UUID.randomUUID(), 10);
+            var first = UUID.randomUUID();
+            var second = UUID.randomUUID();
+            repository.insert(first, Map.of(stock, 2), NOW.plusSeconds(60), NOW);
+            repository.insert(second, Map.of(stock, 3), NOW.plusSeconds(60), NOW);
+            repository.insert(UUID.randomUUID(), Map.of(stock, 4), NOW.plusSeconds(60), NOW);
+
+            // 操作：2 人の引当をまとめて消す
+            repository.deleteByHolders(List.of(first, second));
+
+            // 確認：ほかの持ち主の 4 だけが残る
+            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW))
+                    .containsOnly(Map.entry(stock, 4));
+        }
+
+        @Test
+        @DisplayName("空の集まりを渡すと、何も消えない")
+        void deletesNothingForEmptyHolders() {
+            // 準備：持ち主の引当 2
+            var stock = createStock(UUID.randomUUID(), 10);
+            repository.insert(UUID.randomUUID(), Map.of(stock, 2), NOW.plusSeconds(60), NOW);
+
+            // 操作：空の集まりを渡す
+            repository.deleteByHolders(List.of());
+
+            // 確認：合計が 2 のまま
+            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW))
+                    .containsOnly(Map.entry(stock, 2));
+        }
+    }
+
+    @Nested
     @DisplayName("期限切れの引当の削除")
     class DeleteExpired {
 

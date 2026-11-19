@@ -98,15 +98,16 @@ public class StockReservationCommandService {
     }
 
     /**
-     * 持ち主の引当を解く。
+     * 複数の持ち主の引当を、まとめて解く。
      *
-     * <p>なければ何もしない。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
+     * <p>持ち主の数によらず、1 回の削除で解く。集まりが空なら、状態を変えずに終える。
+     * 引当のない持ち主は飛ばす。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
-     * @param holderId 持ち主 ID
+     * @param holderIds 持ち主 ID
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void release(@NonNull UUID holderId) {
-        reservationRepository.deleteByHolder(holderId);
+    public void release(@NonNull Collection<UUID> holderIds) {
+        reservationRepository.deleteByHolders(holderIds);
     }
 
     /**

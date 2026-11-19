@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -47,7 +48,7 @@ class StockApiDirectory implements StockDirectory {
      */
     @Override
     public void release(UUID holderId) {
-        stockReservationApi.release(holderId);
+        stockReservationApi.release(List.of(holderId));
     }
 
     /**

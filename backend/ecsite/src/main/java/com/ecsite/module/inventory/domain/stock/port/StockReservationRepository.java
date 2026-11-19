@@ -53,6 +53,15 @@ public interface StockReservationRepository {
     void deleteByHolder(UUID holderId);
 
     /**
+     * 複数の持ち主の引当を、1 回の削除で消す。
+     *
+     * <p>集まりが空なら、SQL を実行しない。引当のない持ち主は飛ばす。
+     *
+     * @param holderIds 持ち主 ID
+     */
+    void deleteByHolders(Collection<UUID> holderIds);
+
+    /**
      * 期限が指定した時刻より前の引当を、件数の上限まで消す。
      *
      * @param expiredBefore この時刻より前に期限が切れた引当を消す

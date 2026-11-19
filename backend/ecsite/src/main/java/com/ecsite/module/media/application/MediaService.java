@@ -5,10 +5,12 @@ import com.ecsite.module.media.application.model.ImageUploadView;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
+import com.ecsite.module.media.application.port.PendingAssetRepository;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.AssetKeys;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
+import com.ecsite.module.media.domain.PendingAsset;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.net.URI;
 import java.time.Clock;
@@ -30,6 +33,9 @@ import java.util.stream.Collectors;
  * メディアのサービス
  *
  * <p>アセットとして配信するのは、中身を確認して WebP に変換したファイルだけ。アップロードされたファイルはそのまま配信しない。
+ *
+ * <p>用意した画像は、登録か破棄までの間、仮のアセットとして記録する。登録も破棄もされずに残った仮のアセットは、
+ * 保存期間を過ぎたら、片付けのジョブが配信のファイルと共に消す。
  */
 @Slf4j
 @Service
@@ -40,6 +46,11 @@ public class MediaService {
      * アセットのリポジトリ
      */
     private final AssetRepository assetRepository;
+
+    /**
+     * 仮のアセットのリポジトリ
+     */
+    private final PendingAssetRepository pendingAssetRepository;
 
     /**
      * ファイルの置き場所
@@ -55,6 +66,13 @@ public class MediaService {
      * イベントの発行
      */
     private final ApplicationEventPublisher eventPublisher;
+
+    /**
+     * 短いトランザクション
+     *
+     * <p>トランザクションの外で呼ぶ用意と破棄で、仮のアセットの記録と削除だけを確定させる。
+     */
+    private final TransactionTemplate transactionTemplate;
 
     /**
      * 時計
@@ -94,13 +112,14 @@ public class MediaService {
      * 受け付けた画像を用意する。
      *
      * <p>大きさと、先頭のバイトで判定した形式を確認し、WebP に変換して配信のバケットへ置く。
-     * DB を使わない（受付と配信のファイルだけを扱う）。
+     * 配信のバケットに書く前に、仮のアセットを短いトランザクションで記録する（変換と保存の間は DB の接続を持たない）。
+     * 仮のアセットを記録できなければ、配信のバケットに書かない。
      *
      * <p>トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
      * @param scope    受付の範囲
      * @param uploadId 受付 ID
-     * @return 配信のバケットに置いた画像のアセット ID（まだ記録していない）
+     * @return 配信のバケットに置いた画像のアセット ID（仮のアセットとして記録した。アセットはまだ記録していない）
      * @throws BusinessException 受付がない（{@code IMAGE_UPLOAD_NOT_FOUND}）
      * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
@@ -122,14 +141,21 @@ public class MediaService {
         // WebP への変換
         var webp = imageConverter.convertToWebp(uploadKey);
 
-        // 配信のバケットへの保存
+        // 仮のアセットの記録 ※書いた後に処理が止まっても、片付けのジョブがファイルを消せるように、書く前に確定させる
         var assetId = UUID.randomUUID();
-        storage.putPublished(storageKey(assetId), webp, ImageFormat.WEBP.contentType());
+        var storageKey = storageKey(assetId);
+        var pending = new PendingAsset(assetId, storageKey, clock.instant());
+        transactionTemplate.executeWithoutResult(status -> pendingAssetRepository.insert(pending));
+
+        // 配信のバケットへの保存
+        storage.putPublished(storageKey, webp, ImageFormat.WEBP.contentType());
         return assetId;
     }
 
     /**
      * 用意した画像をアセットとして記録する。
+     *
+     * <p>仮のアセットを消してから、アセットを記録する。呼んだ側の保存が取り消されると、仮のアセットは残る。
      *
      * <p>呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
@@ -137,16 +163,23 @@ public class MediaService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerImage(@NonNull UUID assetId) {
+        // 仮のアセットの削除 ※片付けのジョブがファイルを消した後の画像を、アセットとして記録しない
+        if (!pendingAssetRepository.deleteById(assetId)) {
+            throw new IllegalStateException("用意した画像の仮のアセットがない：assetId=" + assetId);
+        }
+
+        // アセットの記録
         assetRepository.insert(new Asset(assetId, ImageFormat.WEBP, storageKey(assetId), clock.instant()));
     }
 
     /**
      * 用意した画像の配信のファイルを消す。
      *
-     * <p>消すのに失敗しても例外を投げず、警告のログに保存先のキーを出す。
-     * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
+     * <p>ファイルを消してから、仮のアセットを短いトランザクションで消す。ファイルを消せなければ、仮のアセットを残す
+     * （保存期間を過ぎたら、片付けのジョブがファイルと共に消す）。
      *
-     * <p>消せなかったファイルは、だれからも参照されずに残る（登録のないファイルを探して消すことはしない）。
+     * <p>どちらに失敗しても例外を投げず、警告のログに配信のバケットのキーを出す。
+     * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
      * @param assetId 用意した画像のアセット ID
      */
@@ -158,6 +191,15 @@ public class MediaService {
             storage.deletePublished(storageKey);
         } catch (RuntimeException e) {
             log.warn("用意した画像の配信のファイルを消せない：storageKey={}", storageKey, e);
+            // 仮のアセットを残し、保存期間を過ぎたら片付けのジョブがファイルと共に消す
+            return;
+        }
+
+        // 仮のアセットの削除
+        try {
+            transactionTemplate.executeWithoutResult(status -> pendingAssetRepository.deleteById(assetId));
+        } catch (RuntimeException e) {
+            log.warn("用意した画像の仮のアセットを消せない：storageKey={}", storageKey, e);
         }
     }
 

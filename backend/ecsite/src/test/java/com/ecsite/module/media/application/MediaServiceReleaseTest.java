@@ -3,12 +3,14 @@ package com.ecsite.module.media.application;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
+import com.ecsite.module.media.application.port.PendingAssetRepository;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.ImageFormat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -43,8 +45,8 @@ class MediaServiceReleaseTest {
     /**
      * メディアのサービス
      */
-    private final MediaService service = new MediaService(assetRepository, mock(ObjectStorage.class),
-            mock(ImageConverter.class), eventPublisher, Clock.systemUTC());
+    private final MediaService service = new MediaService(assetRepository, mock(PendingAssetRepository.class),
+            mock(ObjectStorage.class), mock(ImageConverter.class), eventPublisher, mock(TransactionTemplate.class), Clock.systemUTC());
 
     // ============================== テスト ==============================
 

@@ -277,7 +277,24 @@ public class CatalogTestData {
      * @return 商品
      */
     public TestProduct draft(String productCode, UUID taxCategoryId, String name, UUID... categoryIds) throws Exception {
-        var product = register(productCode, taxCategoryId, name, "", 1000, List.of(categoryIds));
+        return draftWithAxes(productCode, taxCategoryId, name, List.of(), categoryIds);
+    }
+
+    /**
+     * バリアントを持たない商品を、軸とカテゴリを指定して登録し、時計を 1 分進める。
+     *
+     * <p>バリアントは {@link TestProduct#variantCoded} で、軸の値を指定して続けて登録する。
+     *
+     * @param productCode   商品品番
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param axes          軸の名前
+     * @param categoryIds   所属するカテゴリ ID（なければ空）
+     * @return 商品
+     */
+    public TestProduct draftWithAxes(String productCode, UUID taxCategoryId, String name, List<String> axes,
+                                     UUID... categoryIds) throws Exception {
+        var product = register(productCode, taxCategoryId, name, "", 1000, List.of(categoryIds), axes.toArray(String[]::new));
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(1)));
         return product;
     }
@@ -424,15 +441,7 @@ public class CatalogTestData {
          * 軸の値を指定してバリアントを登録する。
          */
         public TestProduct variant(String... axisValues) throws Exception {
-            var values = Arrays.stream(axisValues).map("\"%s\""::formatted).collect(Collectors.joining(", "));
-            var code = "%s-%d".formatted(productCode, variantIds.size() + 1);
-            variantIds.add(createdId(post("/api/admin/products/" + id + "/variants")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""
-                            {"variantCode": "%s", "axisValues": [%s], "version": %d}""".formatted(code, values, version))));
-            variantCodes.add(code);
-            version++;
-            return this;
+            return variantCoded("%s-%d".formatted(productCode, variantIds.size() + 1), axisValues);
         }
 
         /**
@@ -469,16 +478,18 @@ public class CatalogTestData {
         }
 
         /**
-         * 品番を指定してバリアントを登録する（軸はなし）。
+         * 品番と軸の値を指定してバリアントを登録する（軸の値を省くと、軸のない商品のバリアントになる）。
          *
          * @param variantCode バリアント品番
+         * @param axisValues  軸の値
          * @return この商品
          */
-        public TestProduct variantCoded(String variantCode) throws Exception {
+        public TestProduct variantCoded(String variantCode, String... axisValues) throws Exception {
+            var values = Arrays.stream(axisValues).map("\"%s\""::formatted).collect(Collectors.joining(", "));
             variantIds.add(createdId(post("/api/admin/products/" + id + "/variants")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                            {"variantCode": "%s", "axisValues": [], "version": %d}""".formatted(variantCode, version))));
+                            {"variantCode": "%s", "axisValues": [%s], "version": %d}""".formatted(variantCode, values, version))));
             variantCodes.add(variantCode);
             version++;
             return this;

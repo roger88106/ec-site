@@ -13,7 +13,7 @@ import java.time.Clock;
 /**
  * 仮のアセットの片付けのジョブ
  *
- * <p>用意した時刻から保存期間を過ぎた仮のアセットを消し、配信のファイルはコミットの後に消す。
+ * <p>用意した時刻から保存期間を過ぎた仮のアセットを、1 回の実行で件数の上限まで消し、配信のファイルはコミットの後に消す。
  * 間隔と保存期間は仮のアセットの片付けの設定 {@code ecsite.media.cleanup} で変えられる。
  */
 @Slf4j
@@ -39,7 +39,7 @@ class MediaCleanupJob {
     /**
      * 用意した時刻から保存期間を過ぎた仮のアセットを消す。
      *
-     * <p>件数の上限ずつ、残りがなくなるまで消す。1 回ごとに別のトランザクションにする。
+     * <p>1 回の実行で、件数の上限までを 1 つのトランザクションで消す。残りは次の回に消す。
      */
     // 設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.media.cleanup-"
@@ -48,7 +48,9 @@ class MediaCleanupJob {
     @SchedulerLock(name = "media-cleanup", lockAtMostFor = "PT10M")
     void cleanUp() {
         var preparedBefore = clock.instant().minus(properties.retention());
-        ExpiredDataCleanup.run(log, "保存期間を過ぎた仮のアセット", properties.batchSize(),
-                () -> service.deleteExpiredPendingAssets(preparedBefore, properties.batchSize()));
+        // 上限に達しても同じ回で繰り返さない。消した件数だけ外部サービスを呼ぶリスナーのキューにイベントが入り、
+        // キューの上限を超えると他のリスナーのイベントも拒否されるため（イベントの再発行の件数の上限と同じ考え方）
+        var deleted = service.deleteExpiredPendingAssets(preparedBefore, properties.batchSize());
+        ExpiredDataCleanup.logDeleted(log, "保存期間を過ぎた仮のアセット", deleted);
     }
 }

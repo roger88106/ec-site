@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static com.ecsite.jooq.media.Tables.PENDING_ASSET;
 import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
@@ -33,7 +32,7 @@ import static org.awaitility.Awaitility.await;
 /**
  * 仮のアセットの片付けのジョブの統合テスト
  *
- * <p>保存期間を過ぎた仮のアセットの記録と配信のファイルの削除、保存期間の中のものが残ること、件数の上限ごとの削除を確認する。
+ * <p>保存期間を過ぎた仮のアセットの記録と配信のファイルの削除、保存期間の中のものが残ること、1 回の実行で件数の上限までだけ消すことを確認する。
  * 間隔と保存期間の設定は {@code CleanupJobSettingsTest} が確認する。
  *
  * <p>ジョブはテストから呼ぶ。配信のファイルはコミットの後のイベントで消すので、このテストはロールバックしない。
@@ -69,6 +68,13 @@ class MediaCleanupJobTest {
      * <p>CLEANUP_AT から保存期間の前（保存期間を過ぎていない）。
      */
     private static final Instant PREPARED_AT_BOUNDARY = CLEANUP_AT.minus(RETENTION);
+
+    /**
+     * 他のテストが残す仮のアセット（テストの時計の 2026 年）より古い、用意した時刻
+     *
+     * <p>件数の上限の確認で、このテストの仮のアセットが先に選ばれるようにする。
+     */
+    private static final Instant LONG_AGO = Instant.parse("1990-01-01T00:00:00Z");
 
     /**
      * 配信のファイルの中身
@@ -157,23 +163,26 @@ class MediaCleanupJobTest {
     class Limit {
 
         @Test
-        @DisplayName("DC-489-4 件数の上限を超える仮のアセットは、上限ずつ分けて、残りがなくなるまで消す")
-        void deletesInBatchesUntilNoneLeft() throws Exception {
-            // 準備：保存期間を過ぎる 5 つの仮のアセットと、件数の上限を 2 にしたジョブ
-            var expired = IntStream.range(0, 5).mapToObj(i -> pendingWithFile(PREPARED_AT)).toList();
+        @DisplayName("DC-489-4 1 回の実行では、用意した時刻の古い順に件数の上限までだけ消し、残りは次の回に消す")
+        void deletesUpToLimitPerRun() {
+            // 準備：他のテストが残すものより古い時刻に用意した 3 つの仮のアセットと、件数の上限を 2 にしたジョブ
+            var oldest = pendingWithFile(LONG_AGO);
+            var middle = pendingWithFile(LONG_AGO.plus(Duration.ofHours(1)));
+            var newest = pendingWithFile(LONG_AGO.plus(Duration.ofHours(2)));
             var smallBatch = new MediaCleanupJob(service, new MediaCleanupProperties(Duration.ofHours(1), RETENTION, SMALL_LIMIT), clock);
-
-            // 操作：保存期間の後に片付ける
             clock.setInstant(CLEANUP_AT);
+
+            // 操作：1 回片付ける
             smallBatch.cleanUp();
 
-            // 確認：5 つとも記録がない
-            assertThat(remaining(expired)).isEmpty();
+            // 確認：古い 2 つだけが消え、最も新しいものが残る
+            assertThat(remaining(List.of(oldest, middle, newest))).containsExactly(newest.id());
 
-            // 確認：コミットの後に、5 つとも配信のファイルが消える
-            for (var pending : expired) {
-                await().atMost(TIMEOUT).untilAsserted(() -> assertThat(status(pending)).isEqualTo(404));
-            }
+            // 操作：もう 1 回片付ける
+            smallBatch.cleanUp();
+
+            // 確認：残りも消える
+            assertThat(remaining(List.of(newest))).isEmpty();
         }
     }
 

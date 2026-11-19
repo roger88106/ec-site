@@ -62,6 +62,13 @@ class CleanupJobSettingsTest {
     private static final int DEFAULT_BATCH_SIZE = 1000;
 
     /**
+     * 仮のアセットの 1 回に消す件数の上限の既定と最大
+     *
+     * <p>500 件。
+     */
+    private static final int PENDING_ASSET_MAX_BATCH_SIZE = 500;
+
+    /**
      * 設定で変える値（間隔 10 分、保存期間 3 日）
      */
     private static final Map<String, String> OVERRIDES = Map.of("interval", "10m", "retention", "3d");
@@ -124,7 +131,7 @@ class CleanupJobSettingsTest {
         }
 
         @Test
-        @DisplayName("DC-489-4 仮のアセットの片付けの既定は、間隔 1 時間、保存期間 1 日")
+        @DisplayName("DC-489-4 仮のアセットの片付けの既定は、間隔 1 時間、保存期間 1 日、1 回に消す件数の上限 500")
         void pendingAssets() {
             // 操作：設定ファイルを読んで当てはめる
             var properties = TestSettings.loadAndBind(PENDING_ASSETS, MediaCleanupProperties.class);
@@ -132,7 +139,7 @@ class CleanupJobSettingsTest {
             // 確認：既定の値
             assertThat(properties.interval()).isEqualTo(DEFAULT_INTERVAL);
             assertThat(properties.retention()).isEqualTo(Duration.ofDays(1));
-            assertThat(properties.batchSize()).isEqualTo(DEFAULT_BATCH_SIZE);
+            assertThat(properties.batchSize()).isEqualTo(PENDING_ASSET_MAX_BATCH_SIZE);
         }
     }
 
@@ -184,6 +191,31 @@ class CleanupJobSettingsTest {
             assertThat(properties.interval()).isEqualTo(OVERRIDDEN_INTERVAL);
             assertThat(properties.retention()).isEqualTo(OVERRIDDEN_RETENTION);
             assertThat(properties.batchSize()).isEqualTo(OVERRIDDEN_BATCH_SIZE);
+        }
+    }
+
+    @Nested
+    @DisplayName("仮のアセットの 1 回に消す件数の上限")
+    class PendingAssetBatchSizeMaximum {
+
+        @Test
+        @DisplayName("DC-489-4 仮のアセットの 1 回に消す件数が上限の 500 なら、値の検証を通り、500 件になる")
+        void acceptsMaximum() {
+            // 操作：500 件を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(PENDING_ASSETS, MediaCleanupProperties.class,
+                    Map.of("batch-size", String.valueOf(PENDING_ASSET_MAX_BATCH_SIZE)));
+
+            // 確認：500 件
+            assertThat(properties.batchSize()).isEqualTo(PENDING_ASSET_MAX_BATCH_SIZE);
+        }
+
+        @Test
+        @DisplayName("DC-489-4 仮のアセットの 1 回に消す件数が上限より 1 大きい 501 なら、値の検証で拒否される")
+        void rejectsAboveMaximum() {
+            // 操作と確認：501 件は拒否される
+            assertThatThrownBy(() -> TestSettings.bindValidated(PENDING_ASSETS, MediaCleanupProperties.class,
+                    Map.of("batch-size", String.valueOf(PENDING_ASSET_MAX_BATCH_SIZE + 1))))
+                    .isInstanceOf(BindException.class);
         }
     }
 

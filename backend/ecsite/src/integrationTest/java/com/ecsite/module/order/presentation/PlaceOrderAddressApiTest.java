@@ -106,7 +106,7 @@ class PlaceOrderAddressApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
                     .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.postalCode"))
-                    .andExpect(jsonPath("$.errors[0].message").value("郵便番号は数字 7 桁で入力してください。"));
+                    .andExpect(jsonPath("$.errors[0].message").value("郵便番号は数字 7 桁にしてください。"));
         }
 
         @Test
@@ -117,7 +117,7 @@ class PlaceOrderAddressApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
                     .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.phone"))
-                    .andExpect(jsonPath("$.errors[0].message").value("電話番号は数字 10〜11 桁で入力してください。"));
+                    .andExpect(jsonPath("$.errors[0].message").value("電話番号は数字 10〜11 桁にしてください。"));
         }
     }
 

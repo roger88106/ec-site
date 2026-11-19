@@ -28,7 +28,7 @@
   - 依存：T518-01-04
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/CheckoutAmountRangeApiTest.java`（新規）
   - 確認方法：テストが失敗する
-- [ ] **T518-01-06** [テスト] 注文の統合テストと、判定の順の単体テストを書き、レッドを確認する。範囲の外で拒否し、注文と支払を作らず、在庫を変えないことを確認する。下限ちょうどと上限ちょうどで注文でき、上限ちょうどでは保存した注文の総額と支払の金額を読み戻せることを確認する。判定の順は単体テストで確認する（AC-518-3、4、5、BR-518-2）。
+- [x] **T518-01-06** [テスト] 注文の統合テストと、判定の順の単体テストを書き、レッドを確認する。範囲の外で拒否し、注文と支払を作らず、在庫を変えないことを確認する。下限ちょうどと上限ちょうどで注文でき、上限ちょうどでは保存した注文の総額と支払の金額を読み戻せることを確認する。判定の順は単体テストで確認する（AC-518-3、4、5、BR-518-2）。
   - 依存：T518-01-05
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/PlaceOrderAmountRangeApiTest.java`（新規）、`backend/ecsite/src/test/java/com/ecsite/module/order/application/checkout/OrderPlacementCommandServiceTest.java`
   - 確認方法：テストが失敗する

@@ -174,7 +174,7 @@ class JooqPaymentRepository implements PaymentRepository {
                 .and(PAYMENT_.DEADLINE.le(now))
                 // 与信の反映を待つ支払がたまっても、それより新しい支払を処理できるように除く
                 .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNull())
-                .orderBy(PAYMENT_.DEADLINE)
+                .orderBy(PAYMENT_.DEADLINE, PAYMENT_.ID)
                 .limit(limit)
                 .fetch(JooqPaymentRepository::restore);
     }
@@ -187,7 +187,7 @@ class JooqPaymentRepository implements PaymentRepository {
         return dsl.selectFrom(PAYMENT_)
                 .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
                 .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNotNull())
-                .orderBy(PAYMENT_.AWAITING_AUTHORIZATION_SINCE)
+                .orderBy(PAYMENT_.AWAITING_AUTHORIZATION_SINCE, PAYMENT_.ID)
                 .limit(limit)
                 .fetch(JooqPaymentRepository::restore);
     }

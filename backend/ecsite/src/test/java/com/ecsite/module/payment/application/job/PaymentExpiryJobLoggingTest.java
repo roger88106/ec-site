@@ -149,7 +149,7 @@ class PaymentExpiryJobLoggingTest {
         @DisplayName("AC-310 支払の保存で例外が起きても、warn のログに支払 ID を出して、残りの支払を期限切れにする")
         void continuesAfterSaveException() {
             // 準備：1 件目の保存で、ロックを取れない
-            doThrow(new CannotAcquireLockException("ロックを取れない")).when(commandService).expire(FIRST.id());
+            doThrow(new CannotAcquireLockException("ロックを取れない")).when(commandService).expire(FIRST.id(), "page-first");
 
             // 操作：ジョブを動かす
             job.expire();
@@ -182,7 +182,7 @@ class PaymentExpiryJobLoggingTest {
 
             // 確認：1 件目は待つ支払に、2 件目は期限切れに
             verify(commandService).awaitAuthorization(FIRST.id());
-            verify(commandService).expire(SECOND.id());
+            verify(commandService).expire(SECOND.id(), "page-second");
         }
     }
 
@@ -389,7 +389,7 @@ class PaymentExpiryJobLoggingTest {
      * </ul>
      */
     private void assertSkippedAndContinued() {
-        verify(commandService).expire(SECOND.id());
+        verify(commandService).expire(SECOND.id(), "page-second");
         assertThat(warnLinesOf(FIRST.id())).hasSize(1);
     }
 

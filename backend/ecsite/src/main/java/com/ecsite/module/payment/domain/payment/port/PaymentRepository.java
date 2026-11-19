@@ -91,7 +91,7 @@ public interface PaymentRepository {
     List<Payment> findByOrderIds(Collection<UUID> orderIds);
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
+     * 期限を過ぎた未払いの支払を、期限・支払 ID の順に取得する。
      *
      * <p>与信の反映を待つ支払は除く。
      *
@@ -102,7 +102,7 @@ public interface PaymentRepository {
     List<Payment> findUnpaidPastDeadline(Instant now, int limit);
 
     /**
-     * 与信の反映を待つ支払を、待ち始めた時刻の古い順に取得する。
+     * 与信の反映を待つ支払を、待ち始めた時刻・支払 ID の順に取得する。
      *
      * <p>与信の反映を待つ支払は、未払いで、待ち始めた時刻がある支払である。
      *

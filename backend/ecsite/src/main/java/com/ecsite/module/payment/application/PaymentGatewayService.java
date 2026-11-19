@@ -135,6 +135,7 @@ public class PaymentGatewayService {
      * 期限を過ぎた未払いの支払を、支払画面を閉じてから支払なしにする。
      *
      * <p>閉じる前に支払が済んでいたら、支払なしにせず、与信の反映を待つ支払にする（期限切れの検索から外れる）。
+     * 読んだ後に支払画面が記録された支払は、画面を閉じていないので、その回は支払なしにしない（次の回で閉じる）。
      *
      * @param payment 期限を過ぎた支払
      * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
@@ -149,7 +150,7 @@ public class PaymentGatewayService {
         }
 
         // 支払なしにする
-        commandService.expire(payment.id());
+        commandService.expire(payment.id(), page == null ? null : page.id());
     }
 
     /**

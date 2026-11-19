@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * C 側の商品の詳細
+ * 店舗に表示される商品の詳細
  *
  * @param id           商品 ID
  * @param name         商品名
@@ -18,7 +18,7 @@ import java.util.UUID;
  * @param variants     全てのバリアント（表示順。販売停止中のものも含む）
  * @param imageUrls    画像の URL（表示順。先頭が代表画像）
  */
-public record StoreProductDetail(UUID id, String name, String description, Money priceInclTax, Money priceExclTax,
+public record ShownProductDetail(UUID id, String name, String description, Money priceInclTax, Money priceExclTax,
                                  List<String> axes, List<Variant> variants, List<String> imageUrls) {
 
     /**

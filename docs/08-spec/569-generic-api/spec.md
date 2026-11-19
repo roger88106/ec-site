@@ -158,7 +158,7 @@ issue は、呼ぶ側の形と名前で作られた公開の API として 5 つ
   - 依存：T569-01-01
   - 範囲：`order/api/`、`reporting`・`storefront` の `infrastructure/directory/`、関係するテスト
   - 確認方法：変えたモジュールのテスト（単体と統合を `--tests` で絞る）が通る
-- [ ] **T569-01-03** 商品カタログの API を `CatalogApi` にまとめ、カート・注文・レポート・店舗の腐敗防止層とテストを合わせる（DC-569-1、DC-569-3、DC-569-4）。
+- [x] **T569-01-03** 商品カタログの API を `CatalogApi` にまとめ、カート・注文・レポート・店舗の腐敗防止層とテストを合わせる（DC-569-1、DC-569-3、DC-569-4）。
   - 依存：T569-01-02
   - 範囲：`catalog/api/`、4 つのモジュールの `infrastructure/directory/`、関係するテスト、`scripts/ci/spec/ac-exclusions.json`
   - 確認方法：変えたモジュールのテスト（単体と統合を `--tests` で絞る）が通る

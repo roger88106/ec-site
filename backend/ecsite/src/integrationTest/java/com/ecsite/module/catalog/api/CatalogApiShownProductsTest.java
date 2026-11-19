@@ -2,9 +2,9 @@ package com.ecsite.module.catalog.api;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.catalog.api.model.StoreProductQuery;
-import com.ecsite.module.catalog.api.model.StoreProductSort;
-import com.ecsite.module.catalog.api.model.StoreProductSummary;
+import com.ecsite.module.catalog.api.model.ShownProductQuery;
+import com.ecsite.module.catalog.api.model.ShownProductSort;
+import com.ecsite.module.catalog.api.model.ShownProductSummary;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.tax.api.TaxRateApi;
 import com.ecsite.support.MutableClock;
@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @IntegrationTest
 @Transactional
-class StoreCatalogApiTest {
+class CatalogApiShownProductsTest {
 
     // ============================== 定数 ==============================
 
@@ -103,7 +103,7 @@ class StoreCatalogApiTest {
     // ============================== Bean ==============================
 
     @Autowired
-    StoreCatalogApi api;
+    CatalogApi api;
 
     @Autowired
     TaxRateApi taxRateApi;
@@ -171,7 +171,7 @@ class StoreCatalogApiTest {
             }
 
             // 操作：一覧を新着順で取得する
-            var page = api.listProducts(query(null, null, StoreProductSort.NEWEST), PageRequest.of(1, 100));
+            var page = api.listShownProducts(query(null, null, ShownProductSort.NEWEST), PageRequest.of(1, 100));
 
             // 確認：新着順は公開した順の逆なので、逆にして並べた税込価格が、税モジュールの計算と一致する
             var actual = page.items().stream().map(summary -> summary.priceInclTax().yen()).toList().reversed();
@@ -193,11 +193,11 @@ class StoreCatalogApiTest {
             published(standard, 2000);
 
             // 操作：税込 1,100〜2,160 円で絞り、安い順に取得する
-            var page = api.listProducts(query(Money.of(1100), Money.of(2160), StoreProductSort.PRICE_ASC), FIRST_PAGE);
+            var page = api.listShownProducts(query(Money.of(1100), Money.of(2160), ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：下限ちょうど・上限ちょうどの商品だけが含まれる
-            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(lower.id, upper.id);
-            assertThat(page.items()).extracting(StoreProductSummary::priceExclTax).containsExactly(Money.of(1000), Money.of(2000));
+            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(lower.id, upper.id);
+            assertThat(page.items()).extracting(ShownProductSummary::priceExclTax).containsExactly(Money.of(1000), Money.of(2000));
         }
 
         @Test
@@ -208,10 +208,10 @@ class StoreCatalogApiTest {
             published(standard, 2000);
 
             // 操作：税込 1,100〜2,160 円で絞る
-            var page = api.listProducts(query(Money.of(1100), Money.of(2160), StoreProductSort.PRICE_ASC), FIRST_PAGE);
+            var page = api.listShownProducts(query(Money.of(1100), Money.of(2160), ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：税込 2,160 円の商品だけが含まれる
-            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(reducedProduct.id);
+            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(reducedProduct.id);
         }
 
         @Test
@@ -223,10 +223,10 @@ class StoreCatalogApiTest {
             var aboveMin = published(standard, 2000);
 
             // 操作：税込 1,100 円以上で絞り、安い順に取得する
-            var page = api.listProducts(query(Money.of(1100), null, StoreProductSort.PRICE_ASC), FIRST_PAGE);
+            var page = api.listShownProducts(query(Money.of(1100), null, ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：税込 1,100 円以上の商品が含まれる
-            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(atMin.id, aboveMin.id);
+            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(atMin.id, aboveMin.id);
         }
 
         @Test
@@ -238,10 +238,10 @@ class StoreCatalogApiTest {
             published(standard, 2000);
 
             // 操作：税込 1,100 円以下で絞り、安い順に取得する
-            var page = api.listProducts(query(null, Money.of(1100), StoreProductSort.PRICE_ASC), FIRST_PAGE);
+            var page = api.listShownProducts(query(null, Money.of(1100), ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：税込 1,100 円以下の商品が含まれる
-            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(belowMax.id, atMax.id);
+            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(belowMax.id, atMax.id);
         }
     }
 
@@ -257,7 +257,7 @@ class StoreCatalogApiTest {
             var cheaperInclTax = published(reduced, 1000);
 
             // 操作と確認：税込の安い順
-            assertThat(listIds(StoreProductSort.PRICE_ASC)).containsExactly(cheaperInclTax.id, cheaperExclTax.id);
+            assertThat(listIds(ShownProductSort.PRICE_ASC)).containsExactly(cheaperInclTax.id, cheaperExclTax.id);
         }
 
         @Test
@@ -268,7 +268,7 @@ class StoreCatalogApiTest {
             var cheaperInclTax = published(reduced, 1000);
 
             // 操作と確認：税込の高い順
-            assertThat(listIds(StoreProductSort.PRICE_DESC)).containsExactly(cheaperExclTax.id, cheaperInclTax.id);
+            assertThat(listIds(ShownProductSort.PRICE_DESC)).containsExactly(cheaperExclTax.id, cheaperInclTax.id);
         }
 
         @Test
@@ -279,7 +279,7 @@ class StoreCatalogApiTest {
             var second = published(standard, PRICE_EXCL_TAX);
 
             // 操作と確認：後に公開した商品が先
-            assertThat(listIds(StoreProductSort.NEWEST)).containsExactly(second.id, first.id);
+            assertThat(listIds(ShownProductSort.NEWEST)).containsExactly(second.id, first.id);
         }
 
         @Test
@@ -293,7 +293,7 @@ class StoreCatalogApiTest {
             first.publish();
 
             // 操作と確認：先の商品は、最初に表示された日時の順のまま後ろ
-            assertThat(listIds(StoreProductSort.NEWEST)).containsExactly(second.id, first.id);
+            assertThat(listIds(ShownProductSort.NEWEST)).containsExactly(second.id, first.id);
         }
 
         @Test
@@ -307,8 +307,8 @@ class StoreCatalogApiTest {
 
             // 操作：安い順で、1 ページ 3 件の 3 ページを続けて取得する
             var collected = IntStream.rangeClosed(1, 3).boxed()
-                    .flatMap(page -> api.listProducts(query(null, null, StoreProductSort.PRICE_ASC), PageRequest.of(page, 3)).items().stream())
-                    .map(StoreProductSummary::id)
+                    .flatMap(page -> api.listShownProducts(query(null, null, ShownProductSort.PRICE_ASC), PageRequest.of(page, 3)).items().stream())
+                    .map(ShownProductSummary::id)
                     .toList();
 
             // 確認：重複がなく、ID の順に全てが並ぶ
@@ -373,7 +373,7 @@ class StoreCatalogApiTest {
             var product = publishedBeforeRateStarts();
 
             // 操作と確認：詳細は空
-            assertThat(api.findProduct(product.id)).isEmpty();
+            assertThat(api.findShownProduct(product.id)).isEmpty();
         }
     }
 
@@ -390,7 +390,7 @@ class StoreCatalogApiTest {
 
             // 操作：切り替えの 1 ナノ秒前に一覧を取得する
             clock.setInstant(switchAt.minusNanos(1));
-            var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
+            var item = api.listShownProducts(query(null, null, ShownProductSort.NEWEST), FIRST_PAGE).items().getFirst();
 
             // 確認：切り替えの前の税率の税込価格
             assertThat(item.priceInclTax()).isEqualTo(Money.of(PRICE_INCL_STANDARD));
@@ -403,11 +403,11 @@ class StoreCatalogApiTest {
             published(standard, PRICE_EXCL_TAX);
             var switchAt = scheduleSwitch();
             clock.setInstant(switchAt.minusNanos(1));
-            api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE);
+            api.listShownProducts(query(null, null, ShownProductSort.NEWEST), FIRST_PAGE);
 
             // 操作：切り替えの時刻ちょうどに、キャッシュを捨てずに一覧を取得する
             clock.setInstant(switchAt);
-            var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
+            var item = api.listShownProducts(query(null, null, ShownProductSort.NEWEST), FIRST_PAGE).items().getFirst();
 
             // 確認：新しい税率の税込価格
             assertThat(item.priceInclTax()).isEqualTo(Money.of(PRICE_INCL_REDUCED));
@@ -428,10 +428,10 @@ class StoreCatalogApiTest {
             publishedIn(food);
 
             // 操作：「衣類」で絞って取得する
-            var page = api.listProducts(new StoreProductQuery(clothing, null, null, StoreProductSort.NEWEST), FIRST_PAGE);
+            var page = api.listShownProducts(new ShownProductQuery(clothing, null, null, ShownProductSort.NEWEST), FIRST_PAGE);
 
             // 確認：「衣類」の商品だけ
-            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(inClothing);
+            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(inClothing);
         }
 
         @Test
@@ -445,10 +445,10 @@ class StoreCatalogApiTest {
             var inTShirts = publishedIn(tShirts);
 
             // 操作：「衣類」で絞って取得する
-            var page = api.listProducts(new StoreProductQuery(clothing, null, null, StoreProductSort.NEWEST), FIRST_PAGE);
+            var page = api.listShownProducts(new ShownProductQuery(clothing, null, null, ShownProductSort.NEWEST), FIRST_PAGE);
 
             // 確認：孫のカテゴリの商品も、新着順で含まれる
-            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(inTShirts, inClothing);
+            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(inTShirts, inClothing);
         }
     }
 
@@ -463,7 +463,7 @@ class StoreCatalogApiTest {
             var product = catalog.product(standard, "商品 1", PRICE_EXCL_TAX, List.of(category)).publish();
 
             // 操作：一覧の先頭の商品を取得する
-            var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
+            var item = api.listShownProducts(query(null, null, ShownProductSort.NEWEST), FIRST_PAGE).items().getFirst();
 
             // 確認：その商品で、販売中のバリアントの ID を持つ
             assertSellableVariants(item, product.id, product.variantIds.getFirst());
@@ -477,7 +477,7 @@ class StoreCatalogApiTest {
                     .variant("白").variant("黒").publish().suspend(1);
 
             // 操作：一覧の先頭の商品を取得する
-            var item = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE).items().getFirst();
+            var item = api.listShownProducts(query(null, null, ShownProductSort.NEWEST), FIRST_PAGE).items().getFirst();
 
             // 確認：販売中のバリアントは 1 つ目だけ
             assertSellableVariants(item, product.id, product.variantIds.getFirst());
@@ -498,8 +498,8 @@ class StoreCatalogApiTest {
      * @param visibleId 表示される商品の ID（実行ごとに作るので、定数にできない）
      */
     private void assertOnlyVisibleListed(UUID visibleId) {
-        var page = api.listProducts(query(null, null, StoreProductSort.NEWEST), FIRST_PAGE);
-        assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(visibleId);
+        var page = api.listShownProducts(query(null, null, ShownProductSort.NEWEST), FIRST_PAGE);
+        assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(visibleId);
         assertThat(page.totalItems()).isEqualTo(1);
     }
 
@@ -518,7 +518,7 @@ class StoreCatalogApiTest {
      * @param productId         商品 ID（実行ごとに作るので、定数にできない）
      * @param sellableVariantId 販売中のバリアントの ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertSellableVariants(StoreProductSummary item, UUID productId, UUID sellableVariantId) {
+    private static void assertSellableVariants(ShownProductSummary item, UUID productId, UUID sellableVariantId) {
         assertThat(item.id()).isEqualTo(productId);
         assertThat(item.name()).isEqualTo("商品 1");
         assertThat(item.sellableVariantIds()).hasSize(1);
@@ -571,8 +571,8 @@ class StoreCatalogApiTest {
      * @param sort     並び順
      * @return 絞り込みと並び順
      */
-    private StoreProductQuery query(Money minPrice, Money maxPrice, StoreProductSort sort) {
-        return new StoreProductQuery(category, minPrice, maxPrice, sort);
+    private ShownProductQuery query(Money minPrice, Money maxPrice, ShownProductSort sort) {
+        return new ShownProductQuery(category, minPrice, maxPrice, sort);
     }
 
     /**
@@ -606,7 +606,7 @@ class StoreCatalogApiTest {
      * @param sort 並び順
      * @return 商品 ID（一覧の並び）
      */
-    private List<UUID> listIds(StoreProductSort sort) {
-        return api.listProducts(query(null, null, sort), FIRST_PAGE).items().stream().map(StoreProductSummary::id).toList();
+    private List<UUID> listIds(ShownProductSort sort) {
+        return api.listShownProducts(query(null, null, sort), FIRST_PAGE).items().stream().map(ShownProductSummary::id).toList();
     }
 }

@@ -1,8 +1,8 @@
 package com.ecsite.module.catalog.api;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.api.model.OrderableVariant;
-import com.ecsite.module.catalog.api.model.OrderableVariant.AxisValue;
+import com.ecsite.module.catalog.api.model.AxisValue;
+import com.ecsite.module.catalog.api.model.VariantDetail;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @IntegrationTest
 @Transactional
-class OrderCatalogApiTest {
+class CatalogApiVariantsTest {
 
     // ============================== 定数 ==============================
 
@@ -91,7 +91,7 @@ class OrderCatalogApiTest {
     // ============================== Bean ==============================
 
     @Autowired
-    OrderCatalogApi api;
+    CatalogApi api;
 
     @Autowired
     MockMvc mockMvc;
@@ -298,7 +298,7 @@ class OrderCatalogApiTest {
      * @param productCode 商品品番（補助が実行ごとに振るので、定数にできない）
      * @param variantCode バリアント品番（補助が商品品番から振るので、定数にできない）
      */
-    private void assertWhiteMediumTShirt(OrderableVariant variant, UUID variantId, UUID productId, String productCode,
+    private void assertWhiteMediumTShirt(VariantDetail variant, UUID variantId, UUID productId, String productCode,
                                          String variantCode) {
         assertThat(variant.variantId()).isEqualTo(variantId);
         assertThat(variant.productId()).isEqualTo(productId);

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 注文に使うバリアントの情報
+ * バリアントの情報
  *
  * @param variantId      バリアント ID
  * @param productId      商品 ID
@@ -18,20 +18,11 @@ import java.util.UUID;
  * @param priceExclTax   税抜価格（商品の価格。バリアント間で共通）
  * @param taxCategoryId  税区分 ID
  * @param imageUrl       バリアントの画像、なければ商品の代表画像の URL。どちらもなければ null
- * @param visible        商品が現在 C 側に表示されるか
+ * @param visible        商品が現在店舗に表示されるか
  * @param salesSuspended バリアントが販売停止か
  */
-public record OrderableVariant(UUID variantId, UUID productId, String productCode, String variantCode,
+public record VariantDetail(UUID variantId, UUID productId, String productCode, String variantCode,
                                String productName, List<AxisValue> axisValues, Money priceExclTax,
                                UUID taxCategoryId, @Nullable String imageUrl, boolean visible,
                                boolean salesSuspended) {
-
-    /**
-     * 軸の名前と値
-     *
-     * @param name  軸の名前（例：色）
-     * @param value 軸の値（例：白）
-     */
-    public record AxisValue(String name, String value) {
-    }
 }

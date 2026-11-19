@@ -2,7 +2,7 @@ package com.ecsite.module.catalog.api;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.catalog.api.model.StoreProductSummary;
+import com.ecsite.module.catalog.api.model.ShownProductSummary;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @IntegrationTest
 @Transactional
-class StoreProductSearchTest {
+class CatalogApiShownProductSearchTest {
 
     // ============================== 定数 ==============================
 
@@ -66,7 +66,7 @@ class StoreProductSearchTest {
     // ============================== Bean ==============================
 
     @Autowired
-    StoreCatalogApi api;
+    CatalogApi api;
 
     @Autowired
     MockMvc mockMvc;
@@ -196,7 +196,7 @@ class StoreProductSearchTest {
             published(mark + "シャツ", "");
 
             // 操作：検索する
-            var page = api.searchProducts(mark + "シャツ", FIRST_PAGE);
+            var page = api.searchShownProducts(mark + "シャツ", FIRST_PAGE);
 
             // 確認：税抜価格に 10% をかけた税込価格
             assertThat(page.items().getFirst().priceInclTax()).isEqualTo(PRICE_INCL_TAX);
@@ -269,10 +269,10 @@ class StoreProductSearchTest {
             }
 
             // 操作：1 ページ 2 件の 2 ページ目を取得する
-            var page = api.searchProducts(mark + "シャツ", PageRequest.of(2, 2));
+            var page = api.searchShownProducts(mark + "シャツ", PageRequest.of(2, 2));
 
             // 確認：新着順の 3、4 件目と、全体の件数・ページ数
-            assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(products.get(2).id, products.get(1).id);
+            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(products.get(2).id, products.get(1).id);
             assertThat(page.totalItems()).isEqualTo(5);
             assertThat(page.totalPages()).isEqualTo(3);
         }
@@ -292,8 +292,8 @@ class StoreProductSearchTest {
      * @param visibleId 表示される商品の ID（実行ごとに作るので、定数にできない）
      */
     private void assertOnlyVisibleFound(UUID visibleId) {
-        var page = api.searchProducts(mark + "綿", FIRST_PAGE);
-        assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(visibleId);
+        var page = api.searchShownProducts(mark + "綿", FIRST_PAGE);
+        assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(visibleId);
         assertThat(page.totalItems()).isEqualTo(1);
     }
 
@@ -319,6 +319,6 @@ class StoreProductSearchTest {
      * @return 商品 ID（結果の並び）
      */
     private List<UUID> searchIds(String keyword) {
-        return api.searchProducts(keyword, FIRST_PAGE).items().stream().map(StoreProductSummary::id).toList();
+        return api.searchShownProducts(keyword, FIRST_PAGE).items().stream().map(ShownProductSummary::id).toList();
     }
 }

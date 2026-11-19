@@ -3,7 +3,8 @@ package com.ecsite.module.reporting.application;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderRecord;
-import com.ecsite.module.catalog.api.ReportCatalogApi;
+import com.ecsite.module.catalog.api.CatalogApi;
+import com.ecsite.module.catalog.api.model.VariantDetail;
 import com.ecsite.module.order.api.OrderApi;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.AxisValue;
@@ -164,7 +165,7 @@ class ReportCollectionTest {
     OrderApi orderApi;
 
     @MockitoBean
-    ReportCatalogApi reportCatalogApi;
+    CatalogApi catalogApi;
 
     /**
      * 今のテストの注文 ID
@@ -187,7 +188,7 @@ class ReportCollectionTest {
         orderId = UUID.randomUUID();
         variantId = UUID.randomUUID();
         productId = UUID.randomUUID();
-        when(reportCatalogApi.productIdsOf(anyCollection())).thenReturn(Map.of(variantId, productId));
+        when(catalogApi.findVariants(anyCollection())).thenReturn(Map.of(variantId, variantDetail()));
     }
 
     // ============================== テスト ==============================
@@ -234,7 +235,7 @@ class ReportCollectionTest {
             orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
             publish(placed());
             awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
-            when(reportCatalogApi.productIdsOf(anyCollection())).thenReturn(Map.of());
+            when(catalogApi.findVariants(anyCollection())).thenReturn(Map.of());
             orderIs(snapshot(OrderStatusChanged.Status.ACCEPTED, null, null));
 
             // 操作：受付のイベントを届ける
@@ -250,7 +251,7 @@ class ReportCollectionTest {
         @DisplayName("AC-223 初めて写しを作るときに商品カタログで商品 ID を求められなければ、明細の商品 ID は空")
         void leavesProductIdEmptyWhenCatalogMissesFirst() {
             // 準備：商品 ID を返さない商品カタログ
-            when(reportCatalogApi.productIdsOf(anyCollection())).thenReturn(Map.of());
+            when(catalogApi.findVariants(anyCollection())).thenReturn(Map.of());
             orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
 
             // 操作：注文の成立のイベントを届ける
@@ -671,6 +672,16 @@ class ReportCollectionTest {
                 List.of(new OrderSnapshot.Line(1, variantId, "P-1", "P-1-W", "T シャツ",
                         List.of(new AxisValue("色", "白")), QUANTITY, BigDecimal.TEN,
                         Money.of(SUBTOTAL_EXCL_TAX / QUANTITY), Money.of(SUBTOTAL_INCL_TAX))));
+    }
+
+    /**
+     * 商品カタログが返す、明細のバリアントの情報を作る。商品 ID だけが確認の対象。
+     *
+     * @return バリアントの情報
+     */
+    private VariantDetail variantDetail() {
+        return new VariantDetail(variantId, productId, "P-1", "P-1-W", "T シャツ", List.of(),
+                Money.of(SUBTOTAL_EXCL_TAX / QUANTITY), UUID.randomUUID(), null, true, false);
     }
 
     /**

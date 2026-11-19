@@ -58,7 +58,7 @@
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省略したもの（`SPRING_DATASOURCE_USERNAME` など）。
 - 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）だけは 0 以上。照合を始めるまでの時間（`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY`）は 2 分以上。
-- Stripe を使うとき、`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY` は、売上確定の呼び出しの最長の時間に 1 分を加えた時間より長くないと起動に失敗する。最長の時間は、`ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT` と `_READ_TIMEOUT` と、SDK の再試行から決まる（計算は `StripeConfig`）。既定の値では約 2 分 25 秒。理由：照合が、売上確定の最中の支払の記録を削除しないため。
+- Stripe を使うとき、`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY` は、売上確定の呼び出しの最長の時間に 1 分を加えた時間より長くないと起動に失敗する。最長の時間は、`ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT` と `_READ_TIMEOUT` と、SDK の再試行から決まる（計算は `StripeConfig`）。既定の値では約 2 分 25 秒。理由：照合が、売上確定の最中の支払の、売上確定を求めた時刻を削除しないようにするため。
 - `ECSITE_PAYMENT_AUTHORIZATION_WARNING` は、`ECSITE_PAYMENT_AUTHORIZATION_VALIDITY` より短くないと起動に失敗する。
 - マイグレーションの適用は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「マイグレーション」。
 - ログは標準出力に JSON（Elastic Common Schema）で出力される。

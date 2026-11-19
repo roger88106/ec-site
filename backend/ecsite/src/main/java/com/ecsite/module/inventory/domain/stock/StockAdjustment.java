@@ -171,13 +171,19 @@ public final class StockAdjustment {
      * @param orderNumber 注文番号
      * @param now         現在時刻
      * @return 在庫調整
-     * @throws BusinessException 増減量が 0（{@code INVALID_STOCK_DELTA}）
+     * @throws BusinessException        増減量が 0（{@code INVALID_STOCK_DELTA}）
+     * @throws IllegalArgumentException 理由が注文に由来しない。理由が注文で増減量が正、または注文のキャンセルで増減量が負
      */
     public static StockAdjustment forOrder(int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
                                            @NonNull String orderNumber, @NonNull Instant now) {
         verifyDeltaNotZero(delta);
         if (!reason.isFromOrder()) {
             throw new IllegalArgumentException("注文に由来する理由ではありません: " + reason);
+        }
+        // 理由と増減量の符号 ※注文は減らし、注文のキャンセルは戻す
+        if ((reason == StockAdjustmentReason.ORDER && delta > 0)
+                || (reason == StockAdjustmentReason.ORDER_CANCELLATION && delta < 0)) {
+            throw new IllegalArgumentException("理由と増減量の符号が合いません: reason=" + reason + ", delta=" + delta);
         }
         return new StockAdjustment(UUID.randomUUID(), delta, reason, null, orderId, orderNumber, now, null);
     }

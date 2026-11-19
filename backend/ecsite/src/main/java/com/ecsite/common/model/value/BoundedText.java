@@ -23,6 +23,22 @@ public final class BoundedText {
     }
 
     /**
+     * 上限の文字の数に切り詰める。
+     *
+     * <p>code point の単位で切るので、サロゲートペアの文字の途中では切らない。上限以内なら、そのまま返す。
+     *
+     * @param text      文字列
+     * @param maxLength 上限の文字の数
+     * @return 先頭から上限までの文字列
+     */
+    public static String truncate(String text, int maxLength) {
+        if (length(text) <= maxLength) {
+            return text;
+        }
+        return text.substring(0, text.offsetByCodePoints(0, maxLength));
+    }
+
+    /**
      * 必須の項目として正しいかを返す。
      *
      * <p>null・空・空白だけのどれでもなく、上限以内なら正しい。

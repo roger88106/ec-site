@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -16,10 +17,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
@@ -230,6 +233,18 @@ class TaxCategoryApiTest {
         }
 
         @Test
+        @DisplayName("要素が null の一覧は 400")
+        void rejectsNullElement() throws Exception {
+            // 準備：税率のない税区分
+            var id = createdCategoryId(NAME);
+
+            // 操作と確認：入力の形の誤りとして、エラーコード INVALID_REQUEST が返る
+            replaceRates(id, 0, "[null]")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("AC-2 開始が終了より後の税率は 400")
         void rejectsInvalidPeriod() throws Exception {
             // 準備：税率のない税区分
@@ -240,6 +255,55 @@ class TaxCategoryApiTest {
                     [{"ratePercent": 10, "effectiveFrom": "2028-04-01T00:00:00+09:00", "effectiveTo": "2027-04-01T00:00:00+09:00"}]""")
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_EFFECTIVE_PERIOD"));
+        }
+
+        @Test
+        @DisplayName("開始と終了の差が 1 マイクロ秒未満の税率を含む一覧は 400 で、税率の一覧は変わらない")
+        void rejectsPeriodShorterThanMicrosecond() throws Exception {
+            // 準備：税率のない税区分
+            var id = createdCategoryId(NAME);
+            var before = mockMvc.perform(get(BASE + "/" + id)).andReturn().getResponse().getContentAsString();
+
+            // 操作と確認：2 件目の終了が開始の 400 ナノ秒後なら、エラーコード INVALID_EFFECTIVE_PERIOD が返る
+            replaceRates(id, 0, """
+                    [
+                      {"ratePercent": 10, "effectiveTo": "2099-01-01T00:00:00.000001Z"},
+                      {"ratePercent": 8, "effectiveFrom": "2099-01-01T00:00:00.000001Z", "effectiveTo": "2099-01-01T00:00:00.000001400Z"},
+                      {"ratePercent": 10, "effectiveFrom": "2099-01-01T00:00:00.000001400Z"}
+                    ]""")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_EFFECTIVE_PERIOD"));
+
+            // 確認：取得した内容が前と同じ
+            var after = mockMvc.perform(get(BASE + "/" + id)).andReturn().getResponse().getContentAsString();
+            assertThat(after).isEqualTo(before);
+        }
+
+        @ParameterizedTest(name = "前の終了 {0}、次の開始 {1}")
+        @CsvSource({
+                "2099-01-01T00:00:00.0000016Z, 2099-01-01T00:00:00.0000014Z",
+                "2099-01-01T00:00:00.0000014Z, 2099-01-01T00:00:00.0000016Z"
+        })
+        @DisplayName("前の終了と次の開始の差が 1 マイクロ秒未満でも、切り捨てた値でつながるので置き換えられる")
+        void connectsAdjacentRatesAfterTruncation(String previousEnd, String nextStart) throws Exception {
+            // 準備：税率のない税区分
+            var id = createdCategoryId(NAME);
+
+            // 操作：前の終了と次の開始が、マイクロ秒未満だけ重複する、または途切れる一覧で置き換える
+            replaceRates(id, 0, """
+                    [
+                      {"ratePercent": 10, "effectiveTo": "%s"},
+                      {"ratePercent": 8, "effectiveFrom": "%s"}
+                    ]""".formatted(previousEnd, nextStart))
+                    .andExpect(status().isNoContent());
+
+            // 確認：前の終了と次の開始が、どちらもマイクロ秒に切り捨てた日時でつながる
+            var body = mockMvc.perform(get(BASE + "/" + id)).andReturn().getResponse().getContentAsString();
+            var expected = Instant.parse("2099-01-01T00:00:00.000001Z");
+            assertThat(OffsetDateTime.parse(JsonPath.<String>read(body, "$.rates[0].effectiveTo")).toInstant())
+                    .isEqualTo(expected);
+            assertThat(OffsetDateTime.parse(JsonPath.<String>read(body, "$.rates[1].effectiveFrom")).toInstant())
+                    .isEqualTo(expected);
         }
 
         @Test

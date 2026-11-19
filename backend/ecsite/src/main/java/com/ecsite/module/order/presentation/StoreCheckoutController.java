@@ -85,7 +85,7 @@ class StoreCheckoutController implements CheckoutApi {
         if (request == null || request.getAcknowledgedOrderIds() == null) {
             return Set.of();
         }
-        // 契約は一覧の要素の null を拒まないので、null を持てる集合にする（どの注文とも一致しない）
+        // 契約は一覧の要素の null を許す（nullable）ので、null を持てる集合にする（どの注文とも一致しない）
         return new HashSet<>(request.getAcknowledgedOrderIds());
     }
 

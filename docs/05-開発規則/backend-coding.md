@@ -145,11 +145,18 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装し、
 - 長さ・必須・形式は OpenAPI の制約（生成した Bean Validation）で、業務の規則（重複、状態、期間の前後など）は domain で確認する。
 - リクエストの数値の項目には範囲（`minimum` と `maximum` の両方）、文字の項目には長さ（`maxLength`）か形式（`pattern`・`format`・`enum`）を書く。上限を書かないのは計算に使わない項目（楽観ロックのバージョン、ページ番号、絞り込みの値など）だけで、契約のテストの一覧に理由を書く。理由：上限のない数値を計算に使うと、桁あふれや DB の範囲の超過で 500 になるため。
 - 同じ項目の契約の制約、ドメインの上限の定数、DB の列の長さは一致させる。項目を追加したら、`OpenApiRequestConstraintTest` と `FieldConstraintContractTest` の表にも追加する。
-- 文字の「空白でない」「長さを code point で数える」の判定は `BoundedText` で行い、各ドメインは上限とエラーの種類だけを持つ。
+- 文字の長さは、契約の制約（`maxLength`。一覧の各要素の文字列にも適用する）もドメインの判定も、code point で数える。契約の制約は、共通の検証の実装（`common/validation/CodePointSizeValidator`）が数える。
+- ドメインの文字の項目の判定（空白だけでないか、code point で数えた長さが上限以内か）は `BoundedText` で行い、各ドメインは上限とエラーの種類だけを持つ。
+- リクエストの一覧（本文・クエリーとも）の要素が null のときは、生成の設定（openapi-generator の `additionalItemsAnnotations`）で拒否し、入力の検証のエラー（400）にする。要素に null を許す一覧は、契約で `items` に `nullable: true` と書く（例：店舗 API の注文手続きの開始で、確認した注文の ID の一覧）。
 
-理由：契約に書ける検証は契約に、業務の規則は 1 か所に置くため。
+理由：契約に書ける検証は契約に、業務の規則は 1 か所に置くため。数え方が契約とドメインで違うと、同じ上限でも判定が食い違うため。Controller ごとに要素の null を検査すると、追加した一覧で検査が漏れるため。
 
-確認方法：自動（契約のテスト）、判定の重複はレビュー
+確認方法：
+
+- 長さの一致：自動（`OpenApiRequestConstraintTest`、`FieldConstraintContractTest`）
+- code point の数え方：自動（`CodePointSizeValidatorTest`）
+- 一覧の要素の null：自動（一覧を受ける各 API の統合テストにある、要素が null の場合のテスト）。要素に null を許す一覧が妥当かどうかはレビュー
+- 判定の重複：レビュー
 
 ### 不変条件はコンストラクターで検査する
 

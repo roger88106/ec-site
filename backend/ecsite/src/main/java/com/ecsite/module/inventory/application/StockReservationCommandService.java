@@ -1,6 +1,5 @@
 package com.ecsite.module.inventory.application;
 
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
@@ -71,8 +70,10 @@ public class StockReservationCommandService {
      * @param quantities バリアント ID → 数量
      * @param expiresAt  期限
      * @return 足りないバリアントの ID。引き当てたら空
+     * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {
+        verifyPositive(quantities);
         var now = clock.instant();
 
         // 在庫の行ロック ※同じ在庫への引当を 1 つずつ判定するため、判定の前にロックする
@@ -112,10 +113,12 @@ public class StockReservationCommandService {
      * @param orderId     注文 ID
      * @param orderNumber 注文番号
      * @return 足りないバリアントの ID。減算したら空
-     * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
+     * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public Set<UUID> commit(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId,
                             @NonNull String orderNumber) {
+        // 引当の解除より前に検査する ※拒否したときに、持ち主の引当を残す
+        verifyPositive(quantities);
         var now = clock.instant();
 
         // 引当の解除 ※注文手続きの開始と同じく、在庫のロックより先に行い、デッドロックを防ぐ。
@@ -149,9 +152,10 @@ public class StockReservationCommandService {
      * @param quantities  バリアント ID → 数量
      * @param orderId     注文 ID
      * @param orderNumber 注文番号
-     * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
+     * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public void restore(@NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId, @NonNull String orderNumber) {
+        verifyPositive(quantities);
         var now = clock.instant();
 
         // 在庫の行ロック
@@ -173,6 +177,20 @@ public class StockReservationCommandService {
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 全ての数量が 1 以上であることを検証する。在庫と引当を変える前に呼ぶ。
+     *
+     * @param quantities バリアント ID → 数量
+     * @throws IllegalArgumentException 数量が 0 以下のバリアントがある（メッセージにはバリアント ID だけを入れる）
+     */
+    private static void verifyPositive(Map<UUID, Integer> quantities) {
+        quantities.forEach((variantId, quantity) -> {
+            if (quantity <= 0) {
+                throw new IllegalArgumentException("数量が 0 以下です: variantId=" + variantId + ", quantity=" + quantity);
+            }
+        });
+    }
 
     /**
      * バリアントの在庫を行ロック（{@code SELECT ... FOR UPDATE}）して読み込む。

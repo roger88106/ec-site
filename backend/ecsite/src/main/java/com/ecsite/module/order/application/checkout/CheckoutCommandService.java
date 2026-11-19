@@ -129,9 +129,7 @@ public class CheckoutCommandService {
      * @param cartId カート ID
      */
     public void releaseReservations(@NonNull UUID cartId) {
-        for (var checkoutId : checkoutRepository.findIdsByCartId(cartId)) {
-            stockDirectory.release(checkoutId);
-        }
+        stockDirectory.release(checkoutRepository.findIdsByCartId(cartId));
     }
 
     /**

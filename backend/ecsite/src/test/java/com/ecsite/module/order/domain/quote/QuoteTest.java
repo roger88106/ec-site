@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -49,6 +51,11 @@ class QuoteTest {
 
         @Override
         public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant) {
             throw new UnsupportedOperationException();
         }
 

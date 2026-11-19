@@ -12,6 +12,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,6 +54,20 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
     @Override
     public Optional<StoredTaxCategory> findById(UUID id) {
         return find(TAX_CATEGORY.ID.eq(id)).stream().findFirst();
+    }
+
+    /**
+     * 複数の税区分を、数によらず決まった回数の問い合わせで取得する。
+     *
+     * @param ids 税区分 ID
+     * @return 税区分の一覧（登録の古い順）。存在しない ID の税区分は含まない
+     */
+    @Override
+    public List<StoredTaxCategory> findAllByIds(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return find(TAX_CATEGORY.ID.in(ids));
     }
 
 // ============================== プライベートメソッド ==============================

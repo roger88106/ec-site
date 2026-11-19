@@ -14,7 +14,10 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,6 +51,24 @@ public class TaxRateApi {
      */
     public Optional<BigDecimal> rateAt(@NonNull UUID taxCategoryId, @NonNull Instant instant) {
         return queryService.findTaxCategory(taxCategoryId).flatMap(view -> toSchedule(view).rateAt(instant));
+    }
+
+    /**
+     * 複数の税区分の、指定した時点の率をまとめて返す。
+     *
+     * <p>存在しない税区分と、その時点の税率がない税区分は、結果に含めない。
+     * 税区分は、数によらず決まった回数の問い合わせで読む。空のコレクションなら、問い合わせをせずに空を返す。
+     *
+     * @param taxCategoryIds 税区分 ID
+     * @param instant        時点
+     * @return 税区分 ID から率（%）への対応（変更不可）
+     */
+    public Map<UUID, BigDecimal> ratesAt(@NonNull Collection<UUID> taxCategoryIds, @NonNull Instant instant) {
+        var result = new HashMap<UUID, BigDecimal>();
+        for (var view : queryService.findTaxCategories(taxCategoryIds)) {
+            toSchedule(view).rateAt(instant).ifPresent(rate -> result.put(view.id(), rate));
+        }
+        return Map.copyOf(result);
     }
 
     /**

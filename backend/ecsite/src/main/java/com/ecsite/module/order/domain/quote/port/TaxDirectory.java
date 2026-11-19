@@ -5,7 +5,9 @@ import com.ecsite.module.order.domain.quote.TaxAmount;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +26,17 @@ public interface TaxDirectory {
      * @return 率（%）。税区分がない、またはその時点の税率がなければ空
      */
     Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant);
+
+    /**
+     * 指定した時点の率を、税区分ごとにまとめて返す。
+     *
+     * <p>存在しない税区分と、その時点の税率がない税区分は、結果に含めない。
+     *
+     * @param taxCategoryIds 税区分 ID
+     * @param instant        時点
+     * @return 税区分 ID → 率（%）。変更できない
+     */
+    Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant);
 
     /**
      * 税込価格を計算する。

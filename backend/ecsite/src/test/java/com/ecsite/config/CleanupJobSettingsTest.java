@@ -2,6 +2,7 @@ package com.ecsite.config;
 
 import com.ecsite.module.cart.application.job.CartCleanupProperties;
 import com.ecsite.module.inventory.application.job.StockReservationCleanupProperties;
+import com.ecsite.module.media.application.job.MediaCleanupProperties;
 import com.ecsite.module.order.application.job.CheckoutCleanupProperties;
 import com.ecsite.support.TestSettings;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -45,6 +47,11 @@ class CleanupJobSettingsTest {
     private static final String CARTS = "ecsite.cart.cleanup";
 
     /**
+     * 仮のアセットの片付けの設定の接頭辞
+     */
+    private static final String PENDING_ASSETS = "ecsite.media.cleanup";
+
+    /**
      * 片付けの間隔の既定
      */
     private static final Duration DEFAULT_INTERVAL = Duration.ofHours(1);
@@ -68,6 +75,11 @@ class CleanupJobSettingsTest {
      * 設定で変えた保存期間
      */
     private static final Duration OVERRIDDEN_RETENTION = Duration.ofDays(3);
+
+    /**
+     * 設定で変えた件数の上限
+     */
+    private static final int OVERRIDDEN_BATCH_SIZE = 50;
 
     // ============================== テスト ==============================
 
@@ -110,6 +122,18 @@ class CleanupJobSettingsTest {
             assertThat(properties.retention()).isZero();
             assertThat(properties.batchSize()).isEqualTo(DEFAULT_BATCH_SIZE);
         }
+
+        @Test
+        @DisplayName("DC-489-4 仮のアセットの片付けの既定は、間隔 1 時間、保存期間 1 日")
+        void pendingAssets() {
+            // 操作：設定ファイルを読んで当てはめる
+            var properties = TestSettings.loadAndBind(PENDING_ASSETS, MediaCleanupProperties.class);
+
+            // 確認：既定の値
+            assertThat(properties.interval()).isEqualTo(DEFAULT_INTERVAL);
+            assertThat(properties.retention()).isEqualTo(Duration.ofDays(1));
+            assertThat(properties.batchSize()).isEqualTo(DEFAULT_BATCH_SIZE);
+        }
     }
 
     @Nested
@@ -148,6 +172,43 @@ class CleanupJobSettingsTest {
             assertThat(properties.interval()).isEqualTo(OVERRIDDEN_INTERVAL);
             assertThat(properties.retention()).isEqualTo(OVERRIDDEN_RETENTION);
         }
+
+        @Test
+        @DisplayName("DC-489-4 仮のアセットの片付けの間隔、保存期間、件数の上限は、設定で変えられる")
+        void pendingAssets() {
+            // 操作：間隔、保存期間、件数の上限を渡して当てはめる
+            var properties = TestSettings.bind(PENDING_ASSETS, MediaCleanupProperties.class,
+                    Map.of("interval", "10m", "retention", "3d", "batch-size", "50"));
+
+            // 確認：渡した値になる
+            assertThat(properties.interval()).isEqualTo(OVERRIDDEN_INTERVAL);
+            assertThat(properties.retention()).isEqualTo(OVERRIDDEN_RETENTION);
+            assertThat(properties.batchSize()).isEqualTo(OVERRIDDEN_BATCH_SIZE);
+        }
+    }
+
+    @Nested
+    @DisplayName("仮のアセットの保存期間の下限")
+    class PendingAssetRetentionMinimum {
+
+        @Test
+        @DisplayName("DC-489-4 仮のアセットの保存期間が下限の 1 分なら、値の検証を通り、1 分になる")
+        void acceptsOneMinute() {
+            // 操作：1 分を検証付きで当てはめる
+            var properties = TestSettings.bindValidated(PENDING_ASSETS, MediaCleanupProperties.class, Map.of("retention", "1m"));
+
+            // 確認：1 分
+            assertThat(properties.retention()).isEqualTo(Duration.ofMinutes(1));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"59999999999ns", "0s", "-1s"})
+        @DisplayName("DC-489-4 仮のアセットの保存期間が 1 分未満なら、値の検証で拒否される")
+        void rejectsBelowOneMinute(String value) {
+            // 操作と確認：値の検証で拒否される（起動に失敗する）
+            assertThatThrownBy(() -> TestSettings.bindValidated(PENDING_ASSETS, MediaCleanupProperties.class, Map.of("retention", value)))
+                    .isInstanceOf(BindException.class);
+        }
     }
 
     @Nested
@@ -158,7 +219,8 @@ class CleanupJobSettingsTest {
         @CsvSource({
                 "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
-                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties",
+                "ecsite.media.cleanup, com.ecsite.module.media.application.job.MediaCleanupProperties"})
         @DisplayName("1 回に消す件数が下限の 1 なら、検証を通り、1 件になる")
         void acceptsBatchSizeAtMinimum(String prefix, Class<?> type) {
             // 操作：1 件を検証付きで当てはめる
@@ -172,7 +234,8 @@ class CleanupJobSettingsTest {
         @CsvSource({
                 "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
-                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties",
+                "ecsite.media.cleanup, com.ecsite.module.media.application.job.MediaCleanupProperties"})
         @DisplayName("1 回に消す件数が下限より 1 小さい 0 なら、値の検証で拒否される")
         void rejectsBatchSizeBelowMinimum(String prefix, Class<?> type) {
             // 操作と確認：0 件は拒否される
@@ -195,7 +258,10 @@ class CleanupJobSettingsTest {
                 "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, -1s",
                 "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties, 999us",
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties, 999us",
-                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 999us"})
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties, 999us",
+                "ecsite.media.cleanup, com.ecsite.module.media.application.job.MediaCleanupProperties, 0s",
+                "ecsite.media.cleanup, com.ecsite.module.media.application.job.MediaCleanupProperties, -1s",
+                "ecsite.media.cleanup, com.ecsite.module.media.application.job.MediaCleanupProperties, 999us"})
         @DisplayName("片付けの間隔が 0、負の値、下限の 1ms 未満（999us）なら、値の検証で拒否される")
         void rejectsIntervalBelowMinimum(String prefix, Class<?> type, String value) {
             // 操作と確認：値の検証で拒否される
@@ -207,7 +273,8 @@ class CleanupJobSettingsTest {
         @CsvSource({
                 "ecsite.inventory.cleanup, com.ecsite.module.inventory.application.job.StockReservationCleanupProperties",
                 "ecsite.order.cleanup, com.ecsite.module.order.application.job.CheckoutCleanupProperties",
-                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties"})
+                "ecsite.cart.cleanup, com.ecsite.module.cart.application.job.CartCleanupProperties",
+                "ecsite.media.cleanup, com.ecsite.module.media.application.job.MediaCleanupProperties"})
         @DisplayName("片付けの間隔が下限の 1ms なら、値の検証を通り、その値になる")
         void acceptsIntervalAtMinimum(String prefix, Class<?> type) {
             // 操作：1ms を検証付きで当てはめる
@@ -252,7 +319,8 @@ class CleanupJobSettingsTest {
         @CsvSource({
                 "com.ecsite.module.inventory.application.job.StockReservationCleanupJob, stock-reservation-cleanup",
                 "com.ecsite.module.order.application.job.CheckoutCleanupJob, checkout-cleanup",
-                "com.ecsite.module.cart.application.job.CartCleanupJob, cart-cleanup"})
+                "com.ecsite.module.cart.application.job.CartCleanupJob, cart-cleanup",
+                "com.ecsite.module.media.application.job.MediaCleanupJob, media-cleanup"})
         @DisplayName("AC-287 片付けのジョブは、定期に動き、分散ロックで同時に 1 つのインスタンスだけが動く")
         void runsWithDistributedLock(String jobClass, String lockName) throws Exception {
             // 準備：ジョブの片付けのメソッド

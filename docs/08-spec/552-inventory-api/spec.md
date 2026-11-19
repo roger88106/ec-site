@@ -172,7 +172,7 @@
   - 依存：T552-01-01、T552-01-04、T552-01-06
   - 範囲：「変える範囲」の文書
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`
-- [ ] **T552-01-09** `./gradlew check` を通す（DC-552-8）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
+- [x] **T552-01-09** `./gradlew check` を通す（DC-552-8）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T552-01-07、T552-01-08
   - 確認方法：`./gradlew check`
 - [ ] **T552-01-10** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。

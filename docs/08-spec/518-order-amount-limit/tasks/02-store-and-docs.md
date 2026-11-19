@@ -16,7 +16,7 @@
   - 依存：T518-02-01
   - 範囲：`frontend/store/src/api/generated/`（生成物。git の管理外）、`frontend/store/src/features/checkout/placeOrderErrors.ts`
   - 確認方法：T518-02-01 のテストが通り、型の検査が通る
-- [ ] **T518-02-03** 注文手続きの開始が拒否されたとき、カートの画面に文言を表示するテストを加え、通ることを確認する（AC-518-6）。
+- [x] **T518-02-03** 注文手続きの開始が拒否されたとき、カートの画面に文言を表示するテストを加え、通ることを確認する（AC-518-6）。
   - 依存：T518-02-02
   - 範囲：`frontend/store/src/features/cart/components/StartCheckoutForm.test.tsx`
   - 確認方法：テストが通る

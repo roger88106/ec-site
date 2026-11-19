@@ -138,11 +138,13 @@ describe('お届け先の入力と注文', () => {
 
   test('AC-86 入力の誤りは、その欄の下に出す', () => {
     const view = renderStatic(
-      form({ ok: false, message: '郵便番号は 7 桁にしてください。', errorCode: 'INVALID_POSTAL_CODE' }),
+      form({ ok: false, message: '郵便番号は数字 7 桁にしてください。', errorCode: 'INVALID_POSTAL_CODE' }),
     )
 
-    expectErrorUnder(view, '郵便番号は 7 桁にしてください。', '郵便番号', '都道府県')
-    expect(view.getByLabelText('郵便番号')).toHaveAccessibleDescription('例：100-0001 郵便番号は 7 桁にしてください。')
+    expectErrorUnder(view, '郵便番号は数字 7 桁にしてください。', '郵便番号', '都道府県')
+    expect(view.getByLabelText('郵便番号')).toHaveAccessibleDescription(
+      '例：100-0001 郵便番号は数字 7 桁にしてください。',
+    )
     expect(view.queryByRole('link', { name: 'カートを見る' })).not.toBeInTheDocument()
   })
 

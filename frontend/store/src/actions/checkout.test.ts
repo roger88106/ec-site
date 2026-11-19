@@ -105,7 +105,7 @@ describe('注文する', () => {
       http.post('/checkouts/{checkoutId}/order', ({ response }) =>
         response(400).json(
           problem(400, 'INVALID_REQUEST', '入力内容に誤りがあります。', [
-            { field: 'shippingAddress.postalCode', message: '郵便番号は 7 桁の数字にしてください。' },
+            { field: 'shippingAddress.postalCode', message: '郵便番号は数字 7 桁にしてください。' },
           ]),
         ),
       ),
@@ -115,7 +115,7 @@ describe('注文する', () => {
       ok: false,
       message: '入力内容に誤りがあります。',
       errorCode: 'INVALID_REQUEST',
-      fieldErrors: { 'shippingAddress.postalCode': '郵便番号は 7 桁の数字にしてください。' },
+      fieldErrors: { 'shippingAddress.postalCode': '郵便番号は数字 7 桁にしてください。' },
     })
     expect(revalidatedPaths).toEqual([])
   })
@@ -145,7 +145,7 @@ describe('注文する', () => {
     server.use(
       http.post('/checkouts/{checkoutId}/order', ({ response }) =>
         response(400).json(
-          problem(400, 'CART_NOT_ORDERABLE', '購入できない商品が含まれています。カートを確認してください。'),
+          problem(400, 'CART_NOT_ORDERABLE', 'カートが空か、購入できない商品が含まれているため、注文できません。'),
         ),
       ),
     )

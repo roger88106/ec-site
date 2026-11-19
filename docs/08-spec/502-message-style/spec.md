@@ -85,7 +85,7 @@
 | 文言 | `backend/ecsite/src/main/resources/messages.properties` |
 | バックエンドのテスト | `backend/ecsite/src/test/java/com/ecsite/common/message/MessageInterpolationTest.java`、`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/PlaceOrderAddressApiTest.java`、`backend/ecsite/src/test/java/com/ecsite/common/message/MessageContractTest.java` |
 | E2E | `e2e/tests/order.spec.ts`、`e2e/tests/stock-hold-race.spec.ts` |
-| 画面テストの API 応答のモック | `frontend/admin/src/features/order/pages/OrderDetailPage.test.tsx`、`frontend/admin/src/features/product/pages/ProductEditPage.images.test.tsx`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx`、`frontend/store/src/actions/cart.test.ts`、`frontend/store/src/actions/checkout.test.ts` |
+| 画面テストの API 応答のモック | `frontend/admin/src/features/order/pages/OrderDetailPage.test.tsx`、`frontend/admin/src/features/product/pages/ProductEditPage.images.test.tsx`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx`、`frontend/store/src/actions/cart.test.ts`、`frontend/store/src/actions/checkout.test.ts`、`frontend/store/src/features/order/components/CancellationRequestForm.test.tsx` |
 
 ## 非機能要件
 
@@ -130,8 +130,23 @@
   - 依存：T502-01-02
   - 範囲：`messages.properties`、`PlaceOrderAddressApiTest.java`、`e2e/tests/order.spec.ts`、`e2e/tests/stock-hold-race.spec.ts`、`OrderDetailPage.test.tsx`、`ProductEditPage.images.test.tsx`、`OrderForm.test.tsx`、`cart.test.ts`、`checkout.test.ts`
   - 確認方法：`./gradlew check`、フロントの検査、注文と在庫の確保の E2E（重い検査は、issue 担当のセッションの許可の後に実行する）
-- [ ] **T502-01-04** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
+- [x] **T502-01-04** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T502-01-03
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | spec との一致 | 高性能 | 1 | 82355 | 1m31s | 0 | 0 | 1 | 1 |
+    | spec の最後 | ファイルをまたぐ影響 | 高性能 | 1 | 97900 | 1m55s | 0 | 0 | 2 | 2 |
+    | spec の最後 | 段階をまたぐ影響 | 高性能 | 1 | 104234 | 2m35s | 0 | 2 | 3 | 5 |
+    | spec の最後 | 重複を除く | — | 1 | — | — | 0 | 2 | 5 | 7 |
+    | spec の最後 | 日本語の校閲 | 汎用・高性能 | 1 | 30353 | 0m46s | 0 | 0 | 3 | 3 |
+
+    - 検証役（高性能、37710 token、0m51s）が 7 件を全て真と判定した。級は、1〜4 を重要から軽微に付け直した。
+    - 修正したもの：規則 3 に、範囲を「1〜{max}」の形で示す文言の例外を加えた（必須）。確認方法を、テストが検査する言い回しとレビューの箇条に分けた（必須）。テストのコメント 2 件（ja-text.json と合わせること、メールの文を除く定数の用途）。画面テストのモックの文言 3 件を実際の文言にそろえた（郵便番号、CART_NOT_ORDERABLE、`CancellationRequestForm.test.tsx` の、規則 4 の言い換えを求める語）。校閲の 3 件。
+    - 残したもの：なし。
+    - 機械の検査に移したもの：なし。テストの使わない言い回しを ja-text.json から読む案（段階をまたぐ影響の推奨）は、Java のテストが CI の script の設定を読むことになるので採らず、コメントで合わせる場所を示した。
+    - 本文の書き手：規則の節は、要点から汎用の書き手に書かせた。レビューの修正は、追加が 5 行未満なのでセッションが書いた。
 - [ ] **T502-01-05** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T502-01-04
 - [ ] **T502-01-06** spec をアーカイブに移し、`scripts/ci/ja/ja-text.json` からこの spec の許可を外す。

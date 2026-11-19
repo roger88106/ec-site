@@ -55,6 +55,8 @@ class MessageContractTest {
 
     /**
      * 文に使わない言い回し（規則の番号は、バックエンドの書き方の「メッセージの文言の書き方」）
+     *
+     * <p>規則 4 の言い換えを求める語は、scripts/ci/ja/ja-text.json で「確認する」に言い換える語と合わせる。
      */
     private static final List<String> FORBIDDEN_PHRASES = List.of(
             "で入力してください", "で指定してください", // 規則 1
@@ -62,7 +64,7 @@ class MessageContractTest {
             "C 側"); // 規則 5
 
     /**
-     * 数字の検査で見ないキーの接頭辞（メールの文。エラーの文でない）
+     * 数字の検査と、使わない言い回しの検査で見ないキーの接頭辞（メールの文。画面に表示する文でない）
      */
     private static final String NOTIFICATION_PREFIX = "ecsite.notification.";
 

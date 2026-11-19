@@ -289,6 +289,25 @@ class InventoryApiTest {
             expectQuantity(mockMvc, variantId, 0);
         }
 
+        @Test
+        @DisplayName("サロゲートペアの文字を含む 500 文字のメモは、UTF-16 では 1000 でも、調整できる")
+        void acceptsSurrogatePairMemoAtMax() throws Exception {
+            // 操作と確認：サロゲートペアの文字 500 個（code point では 500）のメモの調整は 201 で、メモをそのまま返す
+            adjust(variantId, 1, "OTHER", "𠮷".repeat(500))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.memo").value("𠮷".repeat(500)));
+        }
+
+        @Test
+        @DisplayName("サロゲートペアの文字を含む 501 文字のメモは、入力の誤りの 400")
+        void rejectsSurrogatePairMemoOverMax() throws Exception {
+            // 操作と確認：サロゲートペアの文字 501 個のメモの調整は 400 で、メモの欄を示す
+            adjust(variantId, 1, "OTHER", "𠮷".repeat(501))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("memo"));
+        }
+
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"ORDER", "ORDER_CANCELLATION"})
         @DisplayName("AC-107 注文に由来する理由は、運営者の調整では選べず 400")
@@ -407,6 +426,34 @@ class InventoryApiTest {
             // 確認：在庫数が上限のまま
             expectQuantity(mockMvc, variantId, MANUAL_LIMIT);
         }
+
+        @Test
+        @DisplayName("注文のキャンセルで上限を超えた在庫への、運営者の減らす調整は、調整後も上限を超えるなら 400 で、在庫数は変わらない")
+        void rejectsDecreaseThatLeavesQuantityOverOneMillion() throws Exception {
+            // 準備：上限ちょうどの在庫を、注文で 10 減らし、運営者が 10 増やし、注文のキャンセルで 10 戻して 1,000,010 にする
+            stockOverLimitByCancellation();
+            expectQuantity(mockMvc, variantId, MANUAL_LIMIT + 10);
+
+            // 操作と確認：-5 の調整（調整後 1,000,005）は STOCK_QUANTITY_EXCEEDED
+            adjust(variantId, -5, "STOCKTAKE", null)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("STOCK_QUANTITY_EXCEEDED"));
+
+            // 確認：在庫数が 1,000,010 のまま
+            expectQuantity(mockMvc, variantId, MANUAL_LIMIT + 10);
+        }
+
+        @Test
+        @DisplayName("注文のキャンセルで上限を超えた在庫への、運営者の減らす調整は、調整後が上限以下なら成功する")
+        void acceptsDecreaseThatLeavesQuantityAtOneMillion() throws Exception {
+            // 準備：上限ちょうどの在庫を、注文で 10 減らし、運営者が 10 増やし、注文のキャンセルで 10 戻して 1,000,010 にする
+            stockOverLimitByCancellation();
+
+            // 操作と確認：-10 の調整（調整後 1,000,000）は 201 で、調整後の在庫数が上限
+            adjust(variantId, -10, "STOCKTAKE", null)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.quantityAfter").value(MANUAL_LIMIT));
+        }
     }
 
     @Nested
@@ -499,6 +546,15 @@ class InventoryApiTest {
         }
 
         @Test
+        @DisplayName("商品の指定に空の要素があれば 400")
+        void rejectsNullProductId() throws Exception {
+            // 操作と確認：先頭の要素が空（null になる）なら、INVALID_REQUEST
+            mockMvc.perform(get(BASE + "/stock-summaries").param("productIds", "," + productId))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
         @DisplayName("商品を指定しなければ 400")
         void requiresProductIds() throws Exception {
             // 操作と確認：INVALID_REQUEST
@@ -528,6 +584,37 @@ class InventoryApiTest {
             // 操作と確認：履歴に運営者の氏名が出る
             mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"))
                     .andExpect(jsonPath("$.items[0].operatorName").value(operatorName()));
+        }
+
+        @Test
+        @DisplayName("姓と名をつなぐと 255 文字を超える運営者の調整は、成功し、履歴の氏名を 255 文字に切り詰める")
+        void truncatesLongOperatorName() throws Exception {
+            // 準備：つなぐと 301 文字になる姓と名
+            var familyName = "姓".repeat(200);
+            var givenName = "名".repeat(100);
+
+            // 操作と確認：調整が成功する
+            adjustAs(familyName, givenName).andExpect(status().isCreated());
+
+            // 確認：履歴の氏名は、先頭の 255 文字
+            mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"))
+                    .andExpect(jsonPath("$.items[0].operatorName").value("姓".repeat(200) + " " + "名".repeat(54)));
+        }
+
+        @Test
+        @DisplayName("サロゲートペアの文字を含む氏名は、255 code point に切り詰め、文字の途中で切らない")
+        void truncatesOperatorNameByCodePoint() throws Exception {
+            // 準備：1 文字が UTF-16 で 2 つ分の文字を含み、つなぐと 301 code point になる姓と名
+            var familyName = "𠮷".repeat(200);
+            var givenName = "𠮷".repeat(100);
+
+            // 操作と確認：調整が成功する
+            adjustAs(familyName, givenName).andExpect(status().isCreated());
+
+            // 確認：履歴の氏名は、先頭の 255 code point
+            mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"))
+                    .andExpect(jsonPath("$.items[0].operatorName")
+                            .value("𠮷".repeat(200) + " " + "𠮷".repeat(54)));
         }
 
         @Test
@@ -626,6 +713,22 @@ class InventoryApiTest {
     }
 
     /**
+     * 在庫数を、上限ちょうどから注文で 10 減らし、運営者が 10 増やし、注文のキャンセルで 10 戻して、上限 + 10 にする。
+     *
+     * @throws Exception API の呼び出しに失敗したとき
+     */
+    private void stockOverLimitByCancellation() throws Exception {
+        adjust(variantId, MANUAL_LIMIT, "ARRIVAL", null).andExpect(status().isCreated());
+        var holderId = UUID.randomUUID();
+        var orderId = UUID.randomUUID();
+        var quantities = Map.of(variantId, 10);
+        stockReservationApi.reserve(holderId, quantities, clock.instant().plusSeconds(600));
+        stockReservationApi.commit(holderId, quantities, orderId, ORDER_NUMBER);
+        adjust(variantId, 10, "ARRIVAL", null).andExpect(status().isCreated());
+        stockReservationApi.restore(quantities, orderId, ORDER_NUMBER);
+    }
+
+    /**
      * 調整するバリアントを、+10（入荷）、-2（破損・紛失）、+1（その他）の順に調整する。
      *
      * <p>調整後の在庫数は、順に 10、8、9。
@@ -665,6 +768,22 @@ class InventoryApiTest {
                         .content("""
                                 {"delta": 3, "reason": "ARRIVAL", "memo": null}"""))
                 .andExpect(status().isCreated());
+    }
+
+    /**
+     * 指定した姓と名の運営者の token で、入荷の調整を行う。
+     *
+     * @param familyName 姓
+     * @param givenName  名
+     * @return 調整の応答
+     * @throws Exception API の呼び出しに失敗したとき
+     */
+    private ResultActions adjustAs(String familyName, String givenName) throws Exception {
+        return mockMvc.perform(post(BASE + "/variants/" + variantId + "/adjustments")
+                .with(TestTokens.administrator().name(familyName, givenName).bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"delta": 3, "reason": "ARRIVAL", "memo": null}"""));
     }
 
     /**

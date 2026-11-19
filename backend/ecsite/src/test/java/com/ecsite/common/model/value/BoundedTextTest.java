@@ -50,6 +50,46 @@ class BoundedTextTest {
     }
 
     @Nested
+    @DisplayName("上限での切り詰め")
+    class Truncate {
+
+        @Test
+        @DisplayName("上限ちょうどの文字列は、変わらない")
+        void keepsTheLimit() {
+            // 操作と確認：3 文字はそのまま
+            assertThat(BoundedText.truncate("abc", LIMIT)).isEqualTo("abc");
+        }
+
+        @Test
+        @DisplayName("上限を 1 文字超える文字列は、上限の文字数になる")
+        void cutsOneOverTheLimit() {
+            // 操作と確認：4 文字は先頭の 3 文字になる
+            assertThat(BoundedText.truncate("abcd", LIMIT)).isEqualTo("abc");
+        }
+
+        @Test
+        @DisplayName("上限より短い文字列は、変わらない")
+        void keepsShortText() {
+            // 操作と確認：空も含めて変わらない
+            assertThat(BoundedText.truncate("", LIMIT)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("サロゲートペアは 1 文字と数え、上限ちょうどなら変わらない")
+        void keepsSurrogatePairsAtTheLimit() {
+            // 操作と確認：サロゲートペア 3 つはそのまま
+            assertThat(BoundedText.truncate(SURROGATE.repeat(3), LIMIT)).isEqualTo(SURROGATE.repeat(3));
+        }
+
+        @Test
+        @DisplayName("サロゲートペアの文字の途中で切らない")
+        void doesNotSplitSurrogatePairs() {
+            // 操作と確認：サロゲートペア 4 つは、3 つ（char で 6）になる。char の 3 つ目で切ると壊れる
+            assertThat(BoundedText.truncate(SURROGATE.repeat(4), LIMIT)).isEqualTo(SURROGATE.repeat(3));
+        }
+    }
+
+    @Nested
     @DisplayName("空白でなく上限以内（必須の項目）")
     class IsFilledWithin {
 

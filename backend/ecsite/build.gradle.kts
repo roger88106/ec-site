@@ -758,6 +758,8 @@ val openApiGenerateTasks = openApiSpecs.map { spec ->
                 "useTags" to "true",
                 // 入力検証は Bean Validation で行う（API の規約）
                 "useBeanValidation" to "true",
+                // 一覧の要素の null は 400 で拒否する。要素の null を許す一覧は、契約で items に nullable: true と書く
+                "additionalItemsAnnotations" to "@NotNull",
                 // Swagger のアノテーションは付けない
                 "documentationProvider" to "none",
                 "annotationLibrary" to "none",

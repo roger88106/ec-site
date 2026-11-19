@@ -8,6 +8,7 @@ import org.springframework.lang.Contract;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 /**
  * API の日時（{@link OffsetDateTime}）と、アプリの日時（{@link Instant}）の変換
@@ -31,11 +32,14 @@ public final class ApiDateTimes {
     /**
      * API の日時を、アプリの日時にする。
      *
+     * <p>DB の精度（マイクロ秒）に合わせて、マイクロ秒未満を切り捨てる。
+     * domain が判定する値と保存する値を同じにし、DB の「開始 &lt; 終了」の制約と判定が食い違わないようにするため。
+     *
      * @param dateTime API の日時。null なら null
      * @return アプリの日時
      */
     @Contract("null -> null; !null -> !null")
     public static @Nullable Instant toInstant(@Nullable OffsetDateTime dateTime) {
-        return dateTime == null ? null : dateTime.toInstant();
+        return dateTime == null ? null : dateTime.toInstant().truncatedTo(ChronoUnit.MICROS);
     }
 }

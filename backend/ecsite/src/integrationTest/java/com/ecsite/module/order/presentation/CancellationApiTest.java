@@ -523,6 +523,40 @@ class CancellationApiTest {
         }
 
         @Test
+        @DisplayName("姓と名をつなぐと 255 文字を超える運営者が承認しても、成功し、判断した運営者とキャンセルした運営者の氏名を 255 文字に切り詰める")
+        void truncatesLongOperatorName() throws Exception {
+            // 準備：申請する
+            request(null).andExpect(status().isNoContent());
+
+            // 操作：つなぐと 301 文字になる姓と名の運営者が承認する
+            asOperator(put("/api/admin/orders/" + orderId + "/cancellation-request/approve"), JUDGE,
+                    "姓".repeat(200), "名".repeat(100))
+                    .andExpect(status().isNoContent());
+
+            // 確認：詳細の氏名は、どちらも先頭の 255 文字
+            var truncated = "姓".repeat(200) + " " + "名".repeat(54);
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.cancellationRequest.decidedBy").value(truncated))
+                    .andExpect(jsonPath("$.cancellation.cancelledBy").value(truncated));
+        }
+
+        @Test
+        @DisplayName("姓と名をつなぐと 255 文字を超える運営者がキャンセルしても、成功し、サロゲートペアの文字の途中で切らずに 255 code point に切り詰める")
+        void truncatesOperatorNameByCodePointWhenCancelling() throws Exception {
+            // 操作：1 文字が UTF-16 で 2 つ分の文字からなり、つなぐと 301 code point になる姓と名の運営者がキャンセルする
+            asOperator(put("/api/admin/orders/" + orderId + "/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"reason": "在庫の不備"}"""), CANCELLER, "𠮷".repeat(200), "𠮷".repeat(100))
+                    .andExpect(status().isNoContent());
+
+            // 確認：詳細のキャンセルした運営者の氏名は、先頭の 255 code point
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.cancellation.cancelledBy")
+                            .value("𠮷".repeat(200) + " " + "𠮷".repeat(54)));
+        }
+
+        @Test
         @DisplayName("AC-142 申請中の判断前は、判断した運営者は空")
         void leavesPendingRequestEmpty() throws Exception {
             // 操作：申請する

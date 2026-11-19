@@ -1,6 +1,5 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.inventory.application.StockQueryService;
 import com.ecsite.module.inventory.application.StockReservationCommandService;
 import lombok.NonNull;
@@ -53,6 +52,7 @@ public class StockReservationApi {
      * @param quantities バリアント ID → 数量
      * @param expiresAt  期限
      * @return 足りないバリアントの ID。引き当てたら空（足りなければ何も引き当てない）
+     * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {
         return reservationService.reserve(holderId, quantities, expiresAt);
@@ -81,7 +81,7 @@ public class StockReservationApi {
      * @param orderId     注文 ID
      * @param orderNumber 注文番号
      * @return 足りないバリアントの ID。減算したら空
-     * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
+     * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public Set<UUID> commit(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId,
                             @NonNull String orderNumber) {
@@ -96,7 +96,7 @@ public class StockReservationApi {
      * @param quantities  バリアント ID → 数量
      * @param orderId     注文 ID
      * @param orderNumber 注文番号
-     * @throws BusinessException 数量が 0 のバリアントがある（{@code INVALID_STOCK_DELTA}）
+     * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public void restore(@NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId, @NonNull String orderNumber) {
         reservationService.restore(quantities, orderId, orderNumber);

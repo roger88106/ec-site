@@ -119,11 +119,11 @@
   - 依存：T423-01-02
   - 範囲：`Payment`、マイグレーション（新規）、`JooqPaymentRepository`、`JooqPaymentQueryRepository`
   - 確認方法：`./gradlew test` と `./gradlew integrationTest --tests '*JooqPaymentRepositoryTest'` が通る。
-- [ ] **T423-01-04** [テスト] 統合テストを書き、レッドを確認する（AC-423-1〜10）。テスト用の決済サービスに、売上確定の状態を返す操作を加える。
+- [x] **T423-01-04** [テスト] 統合テストを書き、レッドを確認する（AC-423-1〜10）。テスト用の決済サービスに、売上確定の状態を返す操作を加える。
   - 依存：T423-01-03
   - 範囲：`PaymentCaptureTest`、`PaymentExpiryJobTest`、`TestPaymentGateway`
   - 確認方法：`./gradlew integrationTest --tests '*PaymentCaptureTest' --tests '*PaymentExpiryJobTest'` で、加えたテストが失敗する。
-- [ ] **T423-01-05** T423-01-04 のテストが通る実装を書く。契約テストと Stripe の実装の単体テストを加える。
+- [x] **T423-01-05** T423-01-04 のテストが通る実装を書く。契約テストと Stripe の実装の単体テストを加える。
   - 対象：port の新しい操作と、その Stripe の実装・mock
   - 対象：売上確定の前の記録、照合の処理、照合を始めるまでの時間の設定
   - 依存：T423-01-04

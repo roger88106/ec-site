@@ -126,6 +126,16 @@ public class MockPaymentGateway implements PaymentGateway {
 
     /**
      * {@inheritDoc}
+     *
+     * <p>mock は与信の期限切れを持たないので、売上を確定した与信は売上確定済み、それ以外は売上を確定していないとする。
+     */
+    @Override
+    public CaptureState fetchCaptureState(String authorizationRef) {
+        return capturedAuthorizations.contains(authorizationRef) ? CaptureState.CAPTURED : CaptureState.NOT_CAPTURED;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void refund(RefundRequest request) {

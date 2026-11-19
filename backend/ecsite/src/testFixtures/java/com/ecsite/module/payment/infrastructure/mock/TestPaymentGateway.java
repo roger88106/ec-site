@@ -74,6 +74,25 @@ public class TestPaymentGateway implements PaymentGateway {
     private final Set<String> rejectedAuthorizationFetches = ConcurrentHashMap.newKeySet();
 
     /**
+     * 売上確定の状態の取得に渡された与信の参照
+     *
+     * <p>呼ばれた順。失敗を含む。
+     */
+    private final List<String> captureStateFetches = new CopyOnWriteArrayList<>();
+
+    /**
+     * 売上確定の状態の取得を、これから接続の失敗にする回数
+     */
+    private final AtomicInteger captureStateFetchFailures = new AtomicInteger();
+
+    /**
+     * 売上確定の状態の取得の最中に、次の 1 回だけ行う処理
+     *
+     * <p>状態を読んだ後、応答を返す前に行う。照合が読んでいる間の再実行のテスト用。なければ null。
+     */
+    private final AtomicReference<Runnable> duringNextCaptureStateFetch = new AtomicReference<>();
+
+    /**
      * 取り消した与信の参照
      *
      * <p>取り消した順。
@@ -243,6 +262,25 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     @Override
+    public CaptureState fetchCaptureState(String authorizationRef) {
+        captureStateFetches.add(authorizationRef);
+        if (consume(captureStateFetchFailures)) {
+            throw SystemException.of("mock：売上確定の状態の取得を接続の失敗にする: " + authorizationRef, null,
+                    PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        }
+        var state = mock.fetchCaptureState(authorizationRef);
+        // 確定していない与信が切れていれば、与信期限切れ
+        if (state == CaptureState.NOT_CAPTURED && expiredAuthorizations.contains(authorizationRef)) {
+            state = CaptureState.AUTHORIZATION_EXPIRED;
+        }
+        var during = duringNextCaptureStateFetch.getAndSet(null);
+        if (during != null) {
+            during.run();
+        }
+        return state;
+    }
+
+    @Override
     public void refund(RefundRequest request) {
         amountCalls.add(new AmountCall(Operation.REFUND, request.orderId(), request.amount()));
         runOnRefundOrVoid();
@@ -379,6 +417,24 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 次の売上確定の状態の取得を、指定した回数だけ、接続の失敗（外部サービスのエラー）にする。
+     *
+     * @param times 接続の失敗にする回数
+     */
+    public void failNextCaptureStateFetches(int times) {
+        captureStateFetchFailures.set(times);
+    }
+
+    /**
+     * 次の売上確定の状態の取得で、決済サービスが状態を読んだ後、応答を返す前に処理を行う。
+     *
+     * @param action 行う処理（売上確定の再実行、時計を進めるなど）
+     */
+    public void duringNextCaptureStateFetch(Runnable action) {
+        duringNextCaptureStateFetch.set(action);
+    }
+
+    /**
      * 次の支払画面の作成で、決済サービスが画面を作った後、応答を返す前に処理を行う。
      *
      * @param action 行う処理（同じ注文の支払画面のリクエスト、時計を進めるなど）
@@ -470,6 +526,27 @@ public class TestPaymentGateway implements PaymentGateway {
      */
     public int fetchAuthorizationCalls() {
         return authorizationFetchCalls.get();
+    }
+
+    /**
+     * 売上確定の状態の取得を呼ばれた回数を返す。
+     *
+     * @return 売上確定の状態の取得を呼ばれた回数（失敗を含む）
+     */
+    public int fetchCaptureStateCalls() {
+        return captureStateFetches.size();
+    }
+
+    /**
+     * 与信について、売上確定の状態の取得を呼ばれた回数を返す。
+     *
+     * <p>他のテストの支払の照合を数えないように、与信の参照で絞る。
+     *
+     * @param authorizationRef 与信の参照
+     * @return 売上確定の状態の取得を呼ばれた回数（失敗を含む）
+     */
+    public int fetchCaptureStateCallsOf(String authorizationRef) {
+        return (int) captureStateFetches.stream().filter(authorizationRef::equals).count();
     }
 
     /**
@@ -568,6 +645,9 @@ public class TestPaymentGateway implements PaymentGateway {
         captureCalls.set(0);
         captureFailures.set(0);
         captureResponseLosses.set(0);
+        captureStateFetches.clear();
+        captureStateFetchFailures.set(0);
+        duringNextCaptureStateFetch.set(null);
         refunded.clear();
         refundFailures.set(0);
         onRefundOrVoid.set(null);

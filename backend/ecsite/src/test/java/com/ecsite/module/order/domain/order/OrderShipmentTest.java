@@ -54,11 +54,6 @@ class OrderShipmentTest {
     private static final String ORDER_NUMBER = "20261008-000001";
 
     /**
-     * {@link TestOrders#pending} が作る注文の、メールアドレス
-     */
-    private static final String EMAIL = "taro@example.com";
-
-    /**
      * 返送された注文のキャンセルの理由
      */
     private static final String RETURNED_REASON = "返送された";
@@ -428,7 +423,6 @@ class OrderShipmentTest {
      *   <li>注文 ID がこの注文</li>
      *   <li>出荷の日時</li>
      *   <li>注文番号</li>
-     *   <li>メールアドレス</li>
      *   <li>配送業者</li>
      *   <li>送り状番号</li>
      * </ul>
@@ -441,7 +435,6 @@ class OrderShipmentTest {
                     assertThat(event.orderId()).isEqualTo(order.id());
                     assertThat(event.occurredAt()).isEqualTo(LATER);
                     assertThat(event.orderNumber()).isEqualTo(ORDER_NUMBER);
-                    assertThat(event.email()).isEqualTo(EMAIL);
                     assertThat(event.carrier()).isEqualTo(OrderShipped.Carrier.YAMATO);
                     assertThat(event.trackingNumber()).isEqualTo(TRACKING_NUMBER);
                 });

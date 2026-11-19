@@ -16,6 +16,7 @@ import com.ecsite.support.data.InventoryTestData;
 import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.data.ShippingTaxCategory;
 import com.ecsite.support.data.ShippingTestData;
+import com.ecsite.support.security.TestTokens;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 注文の API の統合テスト
  *
- * <p>注文の状態ごとの項目と、個人の情報を持たないことを確認する。
+ * <p>注文の参照について、状態ごとの項目と、個人の情報を持たないことを確認する。あわせて、注文のメールアドレスの操作を確認する。
  *
  * <p>テストごとにロールバックする。
  */
@@ -260,6 +261,28 @@ class OrderApiTest {
         void returnsEmptyForUnknownOrder() {
             // 操作と確認：ない注文 ID には空
             assertThat(orderApi.find(UUID.randomUUID())).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("注文のメールアドレス")
+    class FindEmail {
+
+        @Test
+        @DisplayName("DC-572-3 注文時に写した会員のメールアドレスを返す")
+        void returnsEmailOfOrder() throws Exception {
+            // 準備：既定の会員の受付の注文
+            var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
+
+            // 操作と確認：会員のメールアドレス
+            assertThat(orderApi.findEmail(orderId)).contains(TestTokens.MEMBER_EMAIL);
+        }
+
+        @Test
+        @DisplayName("DC-572-3 ない注文は空")
+        void returnsEmptyForUnknownOrder() {
+            // 操作と確認：ない注文 ID には空
+            assertThat(orderApi.findEmail(UUID.randomUUID())).isEmpty();
         }
     }
 

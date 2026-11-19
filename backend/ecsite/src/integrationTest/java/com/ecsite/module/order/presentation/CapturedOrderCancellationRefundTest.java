@@ -3,7 +3,9 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.PaymentRequests;
+import com.ecsite.module.payment.application.job.PaymentJobs;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -110,6 +112,12 @@ class CapturedOrderCancellationRefundTest {
     MutableClock clock;
 
     /**
+     * 決済の設定（照合を始めるまでの時間）
+     */
+    @Autowired
+    PaymentProperties properties;
+
+    /**
      * 在庫のリポジトリ（入荷に使う）
      */
     @Autowired
@@ -214,6 +222,28 @@ class CapturedOrderCancellationRefundTest {
         InventoryTestData.expectQuantity(mockMvc, variantId, STOCKED);
     }
 
+    @Test
+    @DisplayName("AC-423-10 照合で売上確定済みにした注文をキャンセルすると、総額を 1 回だけ返金し、与信は取り消さない")
+    void refundsTotalOnceAfterReconciliation() throws Exception {
+        // 準備：売上確定の応答が届かず、照合で売上確定済みにした注文
+        gateway.loseNextCaptureResponses(1);
+        ship().andExpect(status().isBadGateway());
+        clock.setInstant(clock.instant().plus(properties.captureReconcileDelay()));
+        PaymentJobs.expireUntil(applicationContext, () -> "CAPTURED".equals(adminOrderUnchecked("$.payment.status")));
+        assertThat(adminOrder("$.payment.status")).isEqualTo("CAPTURED");
+
+        // 操作：運営者がキャンセルする
+        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"reason": "在庫の不備"}"""))
+                .andExpect(status().isNoContent());
+        awaitRefunded();
+
+        // 確認：総額の返金が 1 回だけで、与信の取消はない
+        assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).containsExactly(ORDER_TOTAL);
+        assertThat(gateway.voided()).doesNotContain(authorizationRef);
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**
@@ -226,6 +256,13 @@ class CapturedOrderCancellationRefundTest {
         gateway.duringNextCapture(this::requestCancellationQuietly);
         ship().andExpect(status().isConflict());
         mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/approve")).andExpect(status().isNoContent());
+        awaitRefunded();
+    }
+
+    /**
+     * 支払が返金済みになり、キャンセルのイベントと、支払への依頼のイベントのリスナーが全て終わるまで待つ。
+     */
+    private void awaitRefunded() throws Exception {
         await().atMost(TIMEOUT).until(() -> "REFUNDED".equals(adminOrder("$.payment.status")));
         asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
                 && changed.orderId().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
@@ -258,6 +295,20 @@ class CapturedOrderCancellationRefundTest {
     }
 
     // ============================== 確認の補助 ==============================
+
+    /**
+     * 管理の API で、注文の項目を読む（検査例外を包む）。
+     *
+     * @param path JSON のパス
+     * @return 項目の値
+     */
+    private String adminOrderUnchecked(String path) {
+        try {
+            return adminOrder(path);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     /**
      * 管理の API で、注文の項目を読む。

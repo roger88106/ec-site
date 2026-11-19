@@ -25,6 +25,12 @@ import java.util.UUID;
  * @param awaitingAuthorizationWarning 与信の反映を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに出すか
  * @param authorizationValidity        与信の有効期間（与信の時刻からの時間）。Stripe のカード決済の与信が切れるまでの期間に合わせる
  * @param authorizationWarning         与信期限のどれだけ前から「期限が近い」とするか
+ * @param captureReconcileDelay        売上確定を求めてから、売上確定の結果が分からない支払の照合を始めるまでの時間。
+ *                                     下限は 2 分（mock でも適用する）。Stripe で動かすときは、照合を始めるまでの時間が、Stripe の設定（接続と応答の上限、
+ *                                     再試行の回数と待ち）から決まる売上確定の 1 回の呼び出しの最長の時間に、余裕を加えた時間より長いことを、
+ *                                     起動のときに検証する。
+ *                                     短いと、売上確定の最中の支払を照合し、まだ確定していない状態を読んで、
+ *                                     売上確定を求めた時刻を削除しうる。その後に応答が届かないと、支払は時刻のない与信済みのまま残り、二度と照合されない
  * @param returnUrl                    支払画面から戻る店舗の注文の画面の URL。{@code {orderId}} に注文 ID が入る
  */
 @Validated
@@ -35,6 +41,7 @@ public record PaymentProperties(
         @DefaultValue("1h") @NotNull @DurationMin(millis = 1) Duration awaitingAuthorizationWarning,
         @DefaultValue("7d") @NotNull @DurationMin(millis = 1) Duration authorizationValidity,
         @DefaultValue("2d") @NotNull @DurationMin(nanos = 0) Duration authorizationWarning,
+        @DefaultValue("10m") @NotNull @DurationMin(minutes = 2) Duration captureReconcileDelay,
         @NotBlank String returnUrl) {
 
     /**

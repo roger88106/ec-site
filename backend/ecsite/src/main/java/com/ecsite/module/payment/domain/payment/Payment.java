@@ -99,6 +99,16 @@ public class Payment extends AggregateRoot {
     private Instant awaitingAuthorizationSince;
 
     /**
+     * 売上確定を求めた時刻
+     *
+     * <p>売上確定を決済サービスに求めた時刻。求めていなければ null。
+     * 与信済みのときに付き、遷移で削除されない。照合で、決済サービスが売上を確定していなかったときに {@link #clearCaptureRequest(Instant)} で削除する。
+     */
+    @Nullable
+    @Getter(AccessLevel.NONE)
+    private Instant captureRequestedAt;
+
+    /**
      * バージョン
      *
      * <p>リポジトリが保存するときに上げる。
@@ -111,7 +121,7 @@ public class Payment extends AggregateRoot {
      * 全属性コンストラクタ
      *
      * <p>状態と、与信の参照・与信の時刻の整合を検査する。支払画面と待ち始めた時刻は、未払いのときに付き、遷移で消えないので、
-     * どの状態でも、あってもなくてもよい。
+     * どの状態でも、あってもなくてもよい。売上確定を求めた時刻は、未払いと支払なしでは持たず、他の状態ではあってもなくてもよい。
      *
      * @param id                         支払 ID
      * @param orderId                    注文 ID
@@ -122,12 +132,15 @@ public class Payment extends AggregateRoot {
      * @param authorizationRef           与信の参照
      * @param authorizedAt               与信の時刻
      * @param awaitingAuthorizationSince 与信の反映を待ち始めた時刻
+     * @param captureRequestedAt         売上確定を求めた時刻
      * @param version                    バージョン
      */
     private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
                     @NonNull PaymentStatus status, @Nullable PaymentPage page, @Nullable String authorizationRef,
-                    @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince, long version) {
+                    @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince,
+                    @Nullable Instant captureRequestedAt, long version) {
         verifyAuthorization(status, authorizationRef, authorizedAt);
+        verifyCaptureRequest(status, captureRequestedAt);
         this.id = id;
         this.orderId = orderId;
         this.amount = amount;
@@ -137,6 +150,7 @@ public class Payment extends AggregateRoot {
         this.authorizationRef = authorizationRef;
         this.authorizedAt = authorizedAt;
         this.awaitingAuthorizationSince = awaitingAuthorizationSince;
+        this.captureRequestedAt = captureRequestedAt;
         this.version = version;
     }
 
@@ -150,7 +164,7 @@ public class Payment extends AggregateRoot {
      * @return 支払
      */
     public static Payment create(UUID id, UUID orderId, Money amount, Instant deadline) {
-        return new Payment(id, orderId, amount, deadline, PaymentStatus.UNPAID, null, null, null, null, 0);
+        return new Payment(id, orderId, amount, deadline, PaymentStatus.UNPAID, null, null, null, null, null, 0);
     }
 
 // ============================== ドメインの振る舞い ==============================
@@ -219,7 +233,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 開いた支払画面を覚える。
+     * 開いた支払画面を記録する。
      *
      * <p>次からは同じ画面を使う。
      *
@@ -248,7 +262,7 @@ public class Payment extends AggregateRoot {
     /**
      * 与信を反映する。
      *
-     * <p>未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを現在時刻で登録する。
+     * <p>未払いなら与信済みにして、与信の時刻を記録し、与信の成功のイベントを現在時刻で登録する。
      * 支払なしなら与信の取消待ちにする。それ以外なら何もしない。
      *
      * @param authorizationRef 与信の参照
@@ -296,7 +310,7 @@ public class Payment extends AggregateRoot {
     /**
      * 与信の反映を待つ支払にする。
      *
-     * <p>状態は未払いのまま、待ち始めた時刻を覚える。未払いでないか、すでに待っていれば何もしない。
+     * <p>状態は未払いのまま、待ち始めた時刻を記録する。未払いでないか、すでに待っていれば何もしない。
      *
      * @param now 現在時刻
      * @return 待ち始めたら true
@@ -348,6 +362,48 @@ public class Payment extends AggregateRoot {
         }
         status = PaymentStatus.AUTHORIZATION_EXPIRED;
         return true;
+    }
+
+    /**
+     * 売上確定を求めた時刻を記録する。
+     *
+     * <p>与信済みなら、時刻を現在時刻にする。すでに時刻があれば上書きする（運営者の再実行で、新しい時刻にする）。
+     * 与信済みでなければ何もしない。
+     *
+     * @param now 現在時刻
+     * @return 時刻を記録したら true。与信済みでなければ false
+     */
+    public boolean requestCapture(@NonNull Instant now) {
+        if (status != PaymentStatus.AUTHORIZED) {
+            return false;
+        }
+        captureRequestedAt = now;
+        return true;
+    }
+
+    /**
+     * 売上確定を求めた時刻を削除する。
+     *
+     * <p>与信済みで、記録している時刻が読んだ時刻と等しいときだけ削除する。読んだ後に再実行されて時刻が変わっていれば、削除しない。
+     *
+     * @param readRequestedAt 読んだ売上確定を求めた時刻
+     * @return 削除したら true。与信済みでないか、時刻が違うか、時刻がなければ false
+     */
+    public boolean clearCaptureRequest(@NonNull Instant readRequestedAt) {
+        if (status != PaymentStatus.AUTHORIZED || !readRequestedAt.equals(captureRequestedAt)) {
+            return false;
+        }
+        captureRequestedAt = null;
+        return true;
+    }
+
+    /**
+     * 売上確定を求めた時刻を返す。
+     *
+     * @return 売上確定を求めた時刻。求めていなければ空
+     */
+    public Optional<Instant> captureRequestedAt() {
+        return Optional.ofNullable(captureRequestedAt);
     }
 
     /**
@@ -445,6 +501,20 @@ public class Payment extends AggregateRoot {
     }
 
     /**
+     * 状態と、売上確定を求めた時刻が整合するかを検査し、整合しなければ拒否する。
+     *
+     * <p>メッセージには値を書かない（DB から戻した値が入るため）。
+     *
+     * @param status             状態
+     * @param captureRequestedAt 売上確定を求めた時刻
+     */
+    private static void verifyCaptureRequest(PaymentStatus status, @Nullable Instant captureRequestedAt) {
+        if (captureRequestedAt != null && (status == PaymentStatus.UNPAID || status == PaymentStatus.NOT_PAID)) {
+            throw new IllegalArgumentException("与信のない状態は、売上確定を求めた時刻を持たない");
+        }
+    }
+
+    /**
      * 与信の取消待ちにし、取消の依頼を登録する。
      */
     private void requestVoid(Instant now) {
@@ -474,12 +544,13 @@ public class Payment extends AggregateRoot {
      * @param authorizationRef           与信の参照
      * @param authorizedAt               与信の時刻
      * @param awaitingAuthorizationSince 与信の反映を待ち始めた時刻
+     * @param captureRequestedAt         売上確定を求めた時刻
      * @param version                    バージョン
      */
     public record Snapshot(UUID id, UUID orderId, Money amount, Instant deadline, PaymentStatus status,
                            @Nullable PaymentPage page, @Nullable String authorizationRef,
                            @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince,
-                           long version) {
+                           @Nullable Instant captureRequestedAt, long version) {
     }
 
     /**
@@ -489,7 +560,7 @@ public class Payment extends AggregateRoot {
      */
     public Snapshot toSnapshot() {
         return new Snapshot(id, orderId, amount, deadline, status, page, authorizationRef, authorizedAt,
-                awaitingAuthorizationSince, version);
+                awaitingAuthorizationSince, captureRequestedAt, version);
     }
 
     /**
@@ -501,6 +572,6 @@ public class Payment extends AggregateRoot {
     public static Payment restore(Snapshot snapshot) {
         return new Payment(snapshot.id(), snapshot.orderId(), snapshot.amount(), snapshot.deadline(), snapshot.status(),
                 snapshot.page(), snapshot.authorizationRef(), snapshot.authorizedAt(), snapshot.awaitingAuthorizationSince(),
-                snapshot.version());
+                snapshot.captureRequestedAt(), snapshot.version());
     }
 }

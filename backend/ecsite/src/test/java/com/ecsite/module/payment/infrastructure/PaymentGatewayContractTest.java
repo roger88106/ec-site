@@ -5,6 +5,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
+import com.ecsite.module.payment.application.port.PaymentGateway.CaptureState;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.VoidResult;
@@ -110,6 +111,52 @@ public abstract class PaymentGatewayContractTest {
 
             // 確認：確定済み
             assertThat(result).isEqualTo(CaptureResult.CAPTURED);
+        }
+    }
+
+    @Nested
+    @DisplayName("売上確定の状態の取得")
+    class FetchCaptureState {
+
+        @Test
+        @DisplayName("AC-423-5 与信だけを取った状態は、売上を確定していない")
+        void notCapturedWhenAuthorizedOnly() {
+            // 準備：与信だけを取った状態
+            var authorizationRef = authorized();
+
+            // 操作：売上確定の状態を取得する
+            var state = gateway().fetchCaptureState(authorizationRef);
+
+            // 確認：売上を確定していない
+            assertThat(state).isEqualTo(CaptureState.NOT_CAPTURED);
+        }
+
+        @Test
+        @DisplayName("AC-423-1 売上を確定した状態は、売上確定済み")
+        void capturedWhenCaptured() {
+            // 準備：売上を確定した与信
+            var authorizationRef = authorized();
+            givenCaptured(authorizationRef);
+
+            // 操作：売上確定の状態を取得する
+            var state = gateway().fetchCaptureState(authorizationRef);
+
+            // 確認：売上確定済み
+            assertThat(state).isEqualTo(CaptureState.CAPTURED);
+        }
+
+        @Test
+        @DisplayName("取得は読むだけで、売上を確定しない（重ねて取得しても、売上を確定していない）")
+        void doesNotCapture() {
+            // 準備：与信だけを取った状態で、一度取得している
+            var authorizationRef = authorized();
+            gateway().fetchCaptureState(authorizationRef);
+
+            // 操作：もう一度取得する
+            var state = gateway().fetchCaptureState(authorizationRef);
+
+            // 確認：売上を確定していない
+            assertThat(state).isEqualTo(CaptureState.NOT_CAPTURED);
         }
     }
 

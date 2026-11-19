@@ -206,7 +206,7 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     /**
-     * 変わりうる項目（状態、支払画面、与信の参照、与信の時刻、与信の反映を待ち始めた時刻）をレコードに書く。
+     * 変わりうる項目（状態、支払画面、与信の参照、与信の時刻、与信の反映を待ち始めた時刻、売上確定を求めた時刻）をレコードに書く。
      */
     private static void writeState(PaymentRecord record, Payment.Snapshot snapshot) {
         record.setStatus(snapshot.status().name());
@@ -216,6 +216,7 @@ class JooqPaymentRepository implements PaymentRepository {
         record.setAuthorizationRef(snapshot.authorizationRef());
         record.setAuthorizedAt(snapshot.authorizedAt());
         record.setAwaitingAuthorizationSince(snapshot.awaitingAuthorizationSince());
+        record.setCaptureRequestedAt(snapshot.captureRequestedAt());
     }
 
     /**
@@ -236,6 +237,7 @@ class JooqPaymentRepository implements PaymentRepository {
                     record.getAuthorizationRef(),
                     record.getAuthorizedAt(),
                     record.getAwaitingAuthorizationSince(),
+                    record.getCaptureRequestedAt(),
                     record.getVersion()));
         });
     }

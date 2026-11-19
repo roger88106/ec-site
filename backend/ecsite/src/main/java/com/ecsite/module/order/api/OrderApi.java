@@ -7,6 +7,8 @@ import com.ecsite.module.order.api.model.OrderSnapshot;
 import com.ecsite.module.order.api.model.TaxAmount;
 import com.ecsite.module.order.application.OrderReportQueryService;
 import com.ecsite.module.order.application.model.view.OrderReportView;
+import com.ecsite.module.order.domain.order.Order;
+import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.order.vo.Gender;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import lombok.NonNull;
@@ -29,6 +31,11 @@ public class OrderApi {
     private final OrderReportQueryService orderReportQueryService;
 
     /**
+     * 注文リポジトリ
+     */
+    private final OrderRepository orderRepository;
+
+    /**
      * 注文の今の値を返す。
      *
      * @param orderId 注文 ID
@@ -36,6 +43,18 @@ public class OrderApi {
      */
     public Optional<OrderSnapshot> find(@NonNull UUID orderId) {
         return orderReportQueryService.find(orderId).map(OrderApi::toSnapshot);
+    }
+
+    /**
+     * 注文のメールアドレスを返す。
+     *
+     * <p>注文時に写したメールアドレスで、注文の今の値の計算（送料の消費税など）を使わないので、注文リポジトリから直接読む。
+     *
+     * @param orderId 注文 ID
+     * @return 注文のメールアドレス。注文がなければ空
+     */
+    public Optional<String> findEmail(@NonNull UUID orderId) {
+        return orderRepository.findById(orderId).map(Order::email);
     }
 
     /**

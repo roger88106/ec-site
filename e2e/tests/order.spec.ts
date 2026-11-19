@@ -50,7 +50,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-
 
       await fillShipping(page, '12')
       await placeOrderButton(page).click()
-      await expect(page.getByText('郵便番号は数字 7 桁で入力してください。')).toBeVisible()
+      await expect(page.getByText('郵便番号は数字 7 桁にしてください。')).toBeVisible()
       await expect(page.getByLabel('氏名')).toHaveValue('E2E 太郎')
       await expect(page.getByLabel('郵便番号')).toBeFocused()
 

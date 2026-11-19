@@ -73,7 +73,7 @@ describe('キャンセルの申請', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(requestCancellation).mockResolvedValueOnce({
       ok: false,
-      message: '入力を確かめてください。',
+      message: '入力内容に誤りがあります。',
       errorCode: 'INVALID_REQUEST',
     })
     const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
@@ -81,7 +81,7 @@ describe('キャンセルの申請', () => {
     await user.type(screen.getByLabelText('理由（任意）'), '誤って注文したため')
     await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
 
-    expect(await screen.findByText('入力を確かめてください。')).toBeInTheDocument()
+    expect(await screen.findByText('入力内容に誤りがあります。')).toBeInTheDocument()
     expect(screen.getByLabelText('理由（任意）')).toHaveValue('誤って注文したため')
     // 送った内容も、入力した文字列と同じ
     const formData = vi.mocked(requestCancellation).mock.lastCall?.[1]

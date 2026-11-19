@@ -43,8 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 店舗 API の受け入れテスト
  *
  * <p>商品一覧・キーワード検索・商品の詳細・カテゴリの木を、店舗の API を通して確認する。
- * 一覧と検索の条件と並びの細かい規則（境界の値、同じ並びの基準の順、新着順の基準）は {@code StoreCatalogApiTest}・
- * {@code StoreProductSearchTest}、変更の反映の速さは {@code StorefrontFreshnessTest}、カートの表示は {@code StorefrontCartTest} が確認する。
+ * 一覧と検索の条件と並びの細かい規則（境界の値、同じ並びの基準の順、新着順の基準）は {@code CatalogApiShownProductsTest}・
+ * {@code CatalogApiShownProductSearchTest}、変更の反映の速さは {@code StorefrontFreshnessTest}、カートの表示は {@code StorefrontCartTest} が確認する。
  *
  * <p>商品は B 側の API で作って公開する。バリアントの在庫は、登録と同じトランザクションの中で在庫数 0 で作られるので、
  * 在庫数は在庫モジュールのリポジトリで直接調整する。公開するごとに時計を 1 分進める。

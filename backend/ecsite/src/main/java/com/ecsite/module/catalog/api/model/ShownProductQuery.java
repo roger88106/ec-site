@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * C 側の商品一覧の条件
+ * 店舗に表示される商品の一覧の条件
  *
  * <p>null の項目では絞り込まない。
  *
@@ -16,6 +16,6 @@ import java.util.UUID;
  * @param maxPrice   税込価格の上限（円、この値を含む）
  * @param sort       並び順
  */
-public record StoreProductQuery(@Nullable UUID categoryId, @Nullable Money minPrice, @Nullable Money maxPrice,
-                                @NonNull StoreProductSort sort) {
+public record ShownProductQuery(@Nullable UUID categoryId, @Nullable Money minPrice, @Nullable Money maxPrice,
+                                @NonNull ShownProductSort sort) {
 }

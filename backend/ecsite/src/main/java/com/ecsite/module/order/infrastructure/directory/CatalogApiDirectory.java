@@ -1,7 +1,7 @@
 package com.ecsite.module.order.infrastructure.directory;
 
-import com.ecsite.module.catalog.api.OrderCatalogApi;
-import com.ecsite.module.catalog.api.model.OrderableVariant;
+import com.ecsite.module.catalog.api.CatalogApi;
+import com.ecsite.module.catalog.api.model.VariantDetail;
 import com.ecsite.module.order.application.port.CatalogDirectory;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.VariantInfo;
@@ -23,9 +23,9 @@ import java.util.UUID;
 class CatalogApiDirectory implements CatalogDirectory {
 
     /**
-     * 注文に使うバリアントの API
+     * 商品カタログの API
      */
-    private final OrderCatalogApi orderCatalogApi;
+    private final CatalogApi catalogApi;
 
     /**
      * バリアントの情報を、商品カタログの API から取って変換する。
@@ -33,14 +33,14 @@ class CatalogApiDirectory implements CatalogDirectory {
     @Override
     public Map<UUID, VariantInfo> findVariants(Collection<UUID> variantIds) {
         var result = new LinkedHashMap<UUID, VariantInfo>();
-        orderCatalogApi.findVariants(variantIds).forEach((variantId, variant) -> result.put(variantId, toInfo(variant)));
+        catalogApi.findVariants(variantIds).forEach((variantId, variant) -> result.put(variantId, toInfo(variant)));
         return result;
     }
 
     /**
      * 商品カタログの型を、注文モジュールの型に変換する。
      */
-    private static VariantInfo toInfo(OrderableVariant variant) {
+    private static VariantInfo toInfo(VariantDetail variant) {
         return new VariantInfo(
                 variant.variantId(),
                 variant.productId(),

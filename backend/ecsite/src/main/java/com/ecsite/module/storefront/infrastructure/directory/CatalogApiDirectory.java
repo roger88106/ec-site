@@ -2,12 +2,12 @@ package com.ecsite.module.storefront.infrastructure.directory;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.catalog.api.StoreCatalogApi;
-import com.ecsite.module.catalog.api.model.StoreCategoryNode;
-import com.ecsite.module.catalog.api.model.StoreProductDetail;
-import com.ecsite.module.catalog.api.model.StoreProductQuery;
-import com.ecsite.module.catalog.api.model.StoreProductSort;
-import com.ecsite.module.catalog.api.model.StoreProductSummary;
+import com.ecsite.module.catalog.api.CatalogApi;
+import com.ecsite.module.catalog.api.model.CategoryNode;
+import com.ecsite.module.catalog.api.model.ShownProductDetail;
+import com.ecsite.module.catalog.api.model.ShownProductQuery;
+import com.ecsite.module.catalog.api.model.ShownProductSort;
+import com.ecsite.module.catalog.api.model.ShownProductSummary;
 import com.ecsite.module.storefront.application.model.CatalogCategory;
 import com.ecsite.module.storefront.application.model.CatalogProduct;
 import com.ecsite.module.storefront.application.model.CatalogProductDetail;
@@ -30,18 +30,18 @@ import java.util.UUID;
 class CatalogApiDirectory implements CatalogDirectory {
 
     /**
-     * 店舗向けの商品カタログの API
+     * 商品カタログの API
      */
-    private final StoreCatalogApi storeCatalogApi;
+    private final CatalogApi catalogApi;
 
     /**
      * {@inheritDoc}
      */
     @Override
     public PageResult<CatalogProduct> listProducts(ProductCondition condition, PageRequest request) {
-        var query = new StoreProductQuery(condition.categoryId(), condition.minPrice(), condition.maxPrice(),
+        var query = new ShownProductQuery(condition.categoryId(), condition.minPrice(), condition.maxPrice(),
                 toSort(condition.sort()));
-        return storeCatalogApi.listProducts(query, request).map(CatalogApiDirectory::toProduct);
+        return catalogApi.listShownProducts(query, request).map(CatalogApiDirectory::toProduct);
     }
 
     /**
@@ -49,7 +49,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public PageResult<CatalogProduct> searchProducts(String keyword, PageRequest request) {
-        return storeCatalogApi.searchProducts(keyword, request).map(CatalogApiDirectory::toProduct);
+        return catalogApi.searchShownProducts(keyword, request).map(CatalogApiDirectory::toProduct);
     }
 
     /**
@@ -57,7 +57,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public Optional<CatalogProductDetail> findProduct(UUID productId) {
-        return storeCatalogApi.findProduct(productId).map(CatalogApiDirectory::toDetail);
+        return catalogApi.findShownProduct(productId).map(CatalogApiDirectory::toDetail);
     }
 
     /**
@@ -65,7 +65,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public List<CatalogCategory> categoryTree() {
-        return storeCatalogApi.categoryTree().stream().map(CatalogApiDirectory::toCategory).toList();
+        return catalogApi.categoryTree().stream().map(CatalogApiDirectory::toCategory).toList();
     }
 
 // ============================== プライベートメソッド ==============================
@@ -73,18 +73,18 @@ class CatalogApiDirectory implements CatalogDirectory {
     /**
      * 店舗の並び順を、商品カタログの並び順に変換する。
      */
-    private static StoreProductSort toSort(ProductCondition.Sort sort) {
+    private static ShownProductSort toSort(ProductCondition.Sort sort) {
         return switch (sort) {
-            case NEWEST -> StoreProductSort.NEWEST;
-            case PRICE_ASC -> StoreProductSort.PRICE_ASC;
-            case PRICE_DESC -> StoreProductSort.PRICE_DESC;
+            case NEWEST -> ShownProductSort.NEWEST;
+            case PRICE_ASC -> ShownProductSort.PRICE_ASC;
+            case PRICE_DESC -> ShownProductSort.PRICE_DESC;
         };
     }
 
     /**
      * 商品カタログの一覧の要素を、店舗の型に変換する。
      */
-    private static CatalogProduct toProduct(StoreProductSummary summary) {
+    private static CatalogProduct toProduct(ShownProductSummary summary) {
         return new CatalogProduct(summary.id(), summary.name(), summary.priceInclTax(), summary.priceExclTax(),
                 summary.sellableVariantIds(), summary.imageUrl());
     }
@@ -92,7 +92,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     /**
      * 商品カタログの商品の詳細を、店舗の型に変換する（バリアントを含む）。
      */
-    private static CatalogProductDetail toDetail(StoreProductDetail detail) {
+    private static CatalogProductDetail toDetail(ShownProductDetail detail) {
         return new CatalogProductDetail(detail.id(), detail.name(), detail.description(), detail.priceInclTax(),
                 detail.priceExclTax(), detail.axes(),
                 detail.variants().stream()
@@ -105,7 +105,7 @@ class CatalogApiDirectory implements CatalogDirectory {
     /**
      * 商品カタログのカテゴリを、子孫まで含めて店舗の型に変換する（再帰）。
      */
-    private static CatalogCategory toCategory(StoreCategoryNode node) {
+    private static CatalogCategory toCategory(CategoryNode node) {
         return new CatalogCategory(node.id(), node.name(), node.children().stream().map(CatalogApiDirectory::toCategory).toList());
     }
 }

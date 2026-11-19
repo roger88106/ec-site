@@ -1,8 +1,8 @@
 package com.ecsite.module.catalog.api;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.api.model.OrderableVariant;
-import com.ecsite.module.catalog.api.model.OrderableVariant.AxisValue;
+import com.ecsite.module.catalog.api.model.AxisValue;
+import com.ecsite.module.catalog.api.model.VariantDetail;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;
@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * カート・注文向けの商品カタログの API の統合テスト
+ * 商品カタログの API のバリアントの参照の統合テスト
  *
  * <p>商品は B 側の API で作る。テストごとにロールバックする。
  *
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @IntegrationTest
 @Transactional
-class OrderCatalogApiTest {
+class CatalogApiVariantsTest {
 
     // ============================== 定数 ==============================
 
@@ -91,7 +91,7 @@ class OrderCatalogApiTest {
     // ============================== Bean ==============================
 
     @Autowired
-    OrderCatalogApi api;
+    CatalogApi api;
 
     @Autowired
     MockMvc mockMvc;
@@ -124,7 +124,7 @@ class OrderCatalogApiTest {
     // ============================== テスト ==============================
 
     @Nested
-    @DisplayName("注文に使う情報")
+    @DisplayName("バリアントの詳細")
     class VariantInformation {
 
         @Test
@@ -171,7 +171,7 @@ class OrderCatalogApiTest {
     }
 
     @Nested
-    @DisplayName("C 側に表示されない商品")
+    @DisplayName("店舗に表示されない商品")
     class InvisibleProducts {
 
         @Test
@@ -275,7 +275,7 @@ class OrderCatalogApiTest {
     // ============================== 確認の補助 ==============================
 
     /**
-     * T シャツ（白・M）のバリアントの、注文に使う情報を確認する。
+     * T シャツ（白・M）のバリアントの、バリアントの詳細を確認する。
      *
      * <p>確認すること（期待値は定数、引数と、準備で作った税区分）：
      * <ul>
@@ -298,7 +298,7 @@ class OrderCatalogApiTest {
      * @param productCode 商品品番（補助が実行ごとに振るので、定数にできない）
      * @param variantCode バリアント品番（補助が商品品番から振るので、定数にできない）
      */
-    private void assertWhiteMediumTShirt(OrderableVariant variant, UUID variantId, UUID productId, String productCode,
+    private void assertWhiteMediumTShirt(VariantDetail variant, UUID variantId, UUID productId, String productCode,
                                          String variantCode) {
         assertThat(variant.variantId()).isEqualTo(variantId);
         assertThat(variant.productId()).isEqualTo(productId);

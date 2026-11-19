@@ -18,6 +18,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>エラーの定義（{@link ErrorCodeProvider} の enum の定数）とメッセージのキーが過不足なく対応し、
  * キーが定数の名前から決まり、文の差し込みの名前と定数に書いた値の名前が一致することを確認する。
  * 文に上限などの値を直接書いていないことも確認する（値が変わったときに、文が取り残されないように）。
+ * 文言の書き方の規則で使わないと決めた言い回しが、メールの文を除く文にないことも確認する。
  */
 class MessageContractTest {
 
@@ -53,7 +55,20 @@ class MessageContractTest {
     private static final Pattern COUNTING_WORDS = Pattern.compile("[01０１]");
 
     /**
-     * 数字の検査で見ないキーの接頭辞（メールの文。エラーの文でない）
+     * 文に使わない言い回し（規則の番号は、バックエンドの書き方の「メッセージの文言の書き方」）
+     *
+     * <p>規則 4 の言い換えを求める語は、scripts/ci/ja/ja-text.json で「確認する」に言い換える語と合わせる。
+     * 「形」は、「形式」と、「図形」「変形」などの別の語を除く。「C 側」は、空白の有無と全角の「Ｃ」も含める。
+     */
+    private static final List<Pattern> FORBIDDEN_PHRASES = Stream.of(
+                    "で入力してください", "で指定してください", // 規則 1
+                    "(?<![図変地外])形(?!式)", "確かめ", // 規則 4
+                    "[CＣ]\\s*側") // 規則 5
+            .map(Pattern::compile)
+            .toList();
+
+    /**
+     * 数字の検査と、使わない言い回しの検査で見ないキーの接頭辞（メールの文。画面に表示する文でない）
      */
     private static final String NOTIFICATION_PREFIX = "ecsite.notification.";
 
@@ -161,6 +176,21 @@ class MessageContractTest {
 
         // 確認：ない（上限などの値は、ドメインの定数から {名前} で差し込む）
         assertThat(literal).isEmpty();
+    }
+
+    @Test
+    @DisplayName("エラーの文に、使わない言い回しを書かない")
+    void noForbiddenPhraseInMessage() {
+        // 操作：メールの文を除いた文から、使わない言い回しを含む文を集める
+        List<String> found = MESSAGES.stringPropertyNames().stream()
+                .filter(key -> !key.startsWith(NOTIFICATION_PREFIX))
+                .sorted()
+                .filter(key -> FORBIDDEN_PHRASES.stream().anyMatch(phrase -> phrase.matcher(MESSAGES.getProperty(key)).find()))
+                .map(key -> key + "：" + MESSAGES.getProperty(key))
+                .toList();
+
+        // 確認：ない（書き方は、バックエンドの書き方の「メッセージの文言の書き方」）
+        assertThat(found).isEmpty();
     }
 
     // ============================== 補助 ==============================

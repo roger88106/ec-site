@@ -189,7 +189,7 @@ describe('注文の詳細', () => {
     server.use(
       http.put('/orders/{orderId}/cancel', ({ response }) =>
         response(400).json(
-          problem(400, 'INVALID_CANCELLATION_REASON', 'キャンセルの理由は 500 文字以内で入力してください。'),
+          problem(400, 'INVALID_CANCELLATION_REASON', 'キャンセルの理由は 500 文字以内にしてください。'),
         ),
       ),
     )
@@ -201,7 +201,7 @@ describe('注文の詳細', () => {
     await user.type(within(dialog).getByLabelText('理由（必須）'), '理由')
     await user.click(within(dialog).getByRole('button', { name: 'キャンセルする' }))
 
-    expect(await within(dialog).findByText('キャンセルの理由は 500 文字以内で入力してください。')).toBeInTheDocument()
+    expect(await within(dialog).findByText('キャンセルの理由は 500 文字以内にしてください。')).toBeInTheDocument()
     expect(within(dialog).getByLabelText('理由（必須）')).toHaveValue('理由')
   })
 

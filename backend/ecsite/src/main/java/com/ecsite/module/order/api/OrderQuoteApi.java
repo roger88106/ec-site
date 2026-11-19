@@ -1,11 +1,12 @@
 package com.ecsite.module.order.api;
 
+import com.ecsite.module.order.api.model.Amounts;
+import com.ecsite.module.order.api.model.AxisValue;
 import com.ecsite.module.order.api.model.CartQuote;
+import com.ecsite.module.order.api.model.TaxAmount;
 import com.ecsite.module.order.application.checkout.CheckoutQueryService;
 import com.ecsite.module.order.application.model.view.CartQuoteView;
-import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.QuoteItem;
-import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.UnpurchasableReason;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class OrderQuoteApi {
                 variant.variantId(),
                 variant.productId(),
                 variant.productName(),
-                variant.axisValues().stream().map(axis -> new CartQuote.AxisValue(axis.name(), axis.value())).toList(),
+                variant.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
                 variant.imageUrl(),
                 variant.priceExclTax(),
                 item.unitPriceInclTax(),
@@ -86,8 +87,8 @@ public class OrderQuoteApi {
     /**
      * 金額の内訳を、公開する型に変換する。
      */
-    private static CartQuote.Amounts toAmounts(Amounts amounts) {
-        return new CartQuote.Amounts(
+    private static Amounts toAmounts(com.ecsite.module.order.domain.quote.Amounts amounts) {
+        return new Amounts(
                 amounts.itemsTotal(),
                 amounts.shippingFee(),
                 amounts.total(),
@@ -97,7 +98,7 @@ public class OrderQuoteApi {
     /**
      * 消費税額を、公開する型に変換する。
      */
-    private static CartQuote.TaxAmount toTaxAmount(TaxAmount tax) {
-        return new CartQuote.TaxAmount(tax.ratePercent(), tax.taxableAmount(), tax.taxAmount());
+    private static TaxAmount toTaxAmount(com.ecsite.module.order.domain.quote.TaxAmount tax) {
+        return new TaxAmount(tax.ratePercent(), tax.taxableAmount(), tax.taxAmount());
     }
 }

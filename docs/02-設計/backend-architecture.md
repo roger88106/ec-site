@@ -91,7 +91,8 @@ module/<モジュール>/
 
 | 層 | 依存してよい先 |
 |----|----------------|
-| api・event | application、domain、common |
+| api | application、domain、自分のモジュールの event、common |
+| event | application、domain、common |
 | presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
 | application | domain、common、event（自分のモジュールのイベントを発行する。他のモジュールのイベントを購読する） |
 | domain | common、自分のモジュールの event（レベル A は Spring・jOOQ にも依存しない） |

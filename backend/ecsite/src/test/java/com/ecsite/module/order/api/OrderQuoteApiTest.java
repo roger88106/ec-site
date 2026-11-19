@@ -185,13 +185,13 @@ class OrderQuoteApiTest {
      * @return 期待する公開する型の見積もり
      */
     private static CartQuote expectedCartQuote(UUID cartId, UUID variantId, UUID productId) {
-        var expectedAxes = List.of(new CartQuote.AxisValue("色", "赤"), new CartQuote.AxisValue("サイズ", "M"));
+        var expectedAxes = List.of(new com.ecsite.module.order.api.model.AxisValue("色", "赤"), new com.ecsite.module.order.api.model.AxisValue("サイズ", "M"));
         return new CartQuote(cartId,
                 List.of(new CartQuote.Item(variantId, productId, PRODUCT_NAME, expectedAxes, IMAGE_URL, PRICE_EXCL_TAX,
                                 PRICE_INCL_TAX, 2, new Money(2200), null),
                         new CartQuote.Item(variantId, productId, PRODUCT_NAME, expectedAxes, IMAGE_URL, PRICE_EXCL_TAX,
                                 PRICE_INCL_TAX, 1, new Money(1100), CartQuote.UnpurchasableReason.OUT_OF_STOCK)),
-                new CartQuote.Amounts(ITEMS_TOTAL, SHIPPING_FEE, TOTAL, List.of(new CartQuote.TaxAmount(RATE, TOTAL, TAX))),
+                new com.ecsite.module.order.api.model.Amounts(ITEMS_TOTAL, SHIPPING_FEE, TOTAL, List.of(new com.ecsite.module.order.api.model.TaxAmount(RATE, TOTAL, TAX))),
                 false);
     }
 

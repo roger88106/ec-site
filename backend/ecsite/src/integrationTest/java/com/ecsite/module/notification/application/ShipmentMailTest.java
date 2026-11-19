@@ -1,6 +1,7 @@
 package com.ecsite.module.notification.application;
 
 import com.ecsite.module.notification.application.port.Mailer;
+import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -27,8 +29,10 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * 出荷通知メールの統合テスト
@@ -91,15 +95,22 @@ class ShipmentMailTest {
     @MockitoSpyBean
     Mailer mailer;
 
+    @MockitoBean
+    OrderDirectory orderDirectory;
+
     /**
      * このテストの宛先（テストごとに変える）
      */
     private String email;
 
+    /**
+     * 注文の腐敗防止層は、どの注文にも、このテストの宛先を返す。
+     */
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);
         email = "ship-" + UUID.randomUUID() + "@example.com";
+        when(orderDirectory.email(any())).thenReturn(email);
     }
 
     // ============================== テスト ==============================
@@ -166,6 +177,22 @@ class ShipmentMailTest {
 
             // 確認：メールが 1 通届く
             await().atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).size() == 1);
+        }
+
+        @Test
+        @DisplayName("DC-572-4 注文が見つからなければ、メールを送らず、イベントは未完了のまま残る")
+        void leavesEventIncompleteWhenOrderNotFound() {
+            // 準備：注文の腐敗防止層が、注文を見つけない
+            var event = shipped();
+            when(orderDirectory.email(event.orderId())).thenThrow(new IllegalStateException("注文が見つかりません"));
+
+            // 操作：注文の出荷のイベントを発行する
+            publish(event);
+
+            // 確認：リスナーが失敗して未完了のまま残り、メールは送られず届かない
+            asyncEvents.awaitFailed(event::equals);
+            verify(mailer, never()).send(any());
+            assertThat(mailpit.messagesTo(email)).isEmpty();
         }
 
         @Test

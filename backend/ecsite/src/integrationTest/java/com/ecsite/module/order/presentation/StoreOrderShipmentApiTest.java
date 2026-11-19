@@ -230,7 +230,7 @@ class StoreOrderShipmentApiTest {
      * @param statusName 物流サービスの配送状態の名前
      */
     private void notifyStatus(Carrier carrier, String statusName) throws Exception {
-        new ShippingTestData(mockMvc, mockCarrier, applicationContext).notifyStatus(carrier, TRACKING_NUMBER, statusName);
+        new ShippingTestData(mockMvc, mockCarrier).notifyStatus(carrier, TRACKING_NUMBER, statusName);
     }
 
     /**

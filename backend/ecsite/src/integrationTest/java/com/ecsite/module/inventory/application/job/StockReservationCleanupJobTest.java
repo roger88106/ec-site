@@ -3,6 +3,7 @@ package com.ecsite.module.inventory.application.job;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.application.StockReservationCommandService;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.inventory.support.ReservationTestData;
 import com.ecsite.support.LogCapture;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -21,7 +22,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -89,6 +89,11 @@ class StockReservationCleanupJobTest {
     @Autowired
     TransactionTemplate transactionTemplate;
 
+    /**
+     * 引当を作る補助
+     */
+    private ReservationTestData reservations;
+
     @Autowired
     StockItemRepository stockItemRepository;
 
@@ -105,6 +110,7 @@ class StockReservationCleanupJobTest {
 
     @BeforeEach
     void setUp() {
+        reservations = new ReservationTestData(api, transactionTemplate);
         inventory = new InventoryTestData(stockItemRepository, NOW);
     }
 
@@ -247,19 +253,7 @@ class StockReservationCleanupJobTest {
      */
     private UUID reserve(UUID variant, Instant expiresAt) {
         var holder = UUID.randomUUID();
-        assertThat(reserveInTransaction(holder, Map.of(variant, 1), expiresAt)).isEmpty();
+        assertThat(reservations.reserve(holder, Map.of(variant, 1), expiresAt)).isEmpty();
         return holder;
-    }
-
-    /**
-     * 引当を、トランザクションの中で呼ぶ（引当は呼んだ側のトランザクションに加わる）。
-     *
-     * @param holderId   持ち主 ID
-     * @param quantities バリアント ID → 数量
-     * @param expiresAt  期限
-     * @return 足りないバリアントの ID。引き当てたら空
-     */
-    private Set<UUID> reserveInTransaction(UUID holderId, Map<UUID, Integer> quantities, Instant expiresAt) {
-        return transactionTemplate.execute(status -> api.reserve(holderId, quantities, expiresAt));
     }
 }

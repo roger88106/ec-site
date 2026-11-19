@@ -38,6 +38,7 @@
   - 支払画面（`OrderTestData.openPaymentPage`）：mock の決済で支払画面を作り、`PaymentCommandService.recordPage` で記録する（`PaymentGatewayService.pageUrl` の中の処理を、テストのトランザクションの中で順に呼ぶ）。
   - 商品画像（`CatalogTestData` の画像の追加）：`MediaApi.prepareImage` は DB を読まないので、テストのトランザクションを中断して（`PROPAGATION_NOT_SUPPORTED`）呼び、登録は `ProductImageCommandService` でテストのトランザクションの中で行う。
   - 出荷（`ShippingTestData.ship`）：`OrderPaymentGatewayService.ship` の中の処理（売上確定の対象の取得、mock の決済での売上確定、`PaymentCommandService.markCaptured`、`OrderShipmentCommandService.ship`）を、テストのトランザクションの中で順に呼ぶ。
+  - 売上確定の失敗（`ShippingTestData` の与信期限切れの補助）：出荷と同じ手順（売上確定の対象の取得、mock の決済での売上確定）の後、`PaymentCommandService.markAuthorizationExpired` を呼ぶ。出荷の一覧の表示のテスト（`AdminOrderShipmentViewApiTest`）が、与信期限切れの注文を作るのに使う。エンドポイントの 409 は `ShipmentApiTest` で確認する。
   - エンドポイント自身のテストは、HTTP のまま、コミットするテストで残す。支払画面の URL は `OrderPaymentApiTest`、画像の登録は `ProductImageApiTest` と `ProductImageTransactionApiTest`、出荷の登録は `ShipmentApiTest`。ロールバックするテストでエンドポイントを呼んでいる `ProductImageExternalErrorApiTest` と `ShipmentApiTest` は、コミットするテストに変える。
 - 規則の文書は、バックエンドの書き方の「トランザクションは application」の節を書き換え、上の基準、注釈の場所、Javadoc の文を加える。前提を破る呼び方が例外になることは、メソッドごとの統合テストで確認する。基準を正しく適用しているかは、レビューで確認する。
 
@@ -106,7 +107,7 @@
 
 - **DN-491-1** 消費者・運営者に見える振る舞いを変えない。本番のコードの呼び出し元は変えない（今は全て前提に合っているため）。前提に合わない呼び出し元が見つかったら、変えずに報告する。
 - **DN-491-2** API の契約（OpenAPI）と DB の構造を変えない。
-- **DN-491-3** 既存のテストの期待値を変えない。変えるのは、テストの側でトランザクションを開始する箇所だけである。
+- **DN-491-3** 既存のテストの期待値を変えない。変えるのは、テストの側でトランザクションを開始する箇所と、「スコープ」の決定で HTTP を通らない補助に置き換えた準備の箇所だけである。準備の HTTP の応答の確認は、エンドポイント自身のテストに残す。
 
 ## 依存
 

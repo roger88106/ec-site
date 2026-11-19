@@ -1,9 +1,6 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.payment.application.PaymentCommandService;
-import com.ecsite.module.payment.application.PaymentQueryService;
-import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
@@ -28,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.UUID;
 
 import static com.ecsite.module.order.presentation.AdminOrderLists.idsOf;
@@ -430,25 +426,10 @@ class AdminOrderShipmentViewApiTest {
     private void cancelAfterExpiredCapture() throws Exception {
         clock.setInstant(AUTHORIZATION_DEADLINE.plusSeconds(1));
         gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(accepted)));
-        failCapture();
+        shipping.failCaptureByExpiredAuthorization(accepted);
         mockMvc.perform(put(BASE + "/" + accepted + "/cancel")
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"reason": "与信期限切れ"}"""))
                 .andExpect(status().isNoContent());
-    }
-
-    /**
-     * 受付の注文の売上確定を、与信期限切れで失敗させる。
-     *
-     * <p>出荷の登録のエンドポイントは、トランザクションの外で売上を確定するので、ロールバックするテストでは呼べない。
-     * そのため、HTTP を通らずに、売上確定の処理（{@code PaymentGatewayService.capture}）の中身を、テストのトランザクションの中で順に呼ぶ。
-     * エンドポイント自身は {@code ShipmentApiTest} で確認する。
-     */
-    private void failCapture() {
-        var capture = applicationContext.getBean(PaymentQueryService.class).findForCapture(accepted).orElseThrow();
-        var result = gateway.capture(new PaymentGateway.CaptureRequest(
-                accepted, Objects.requireNonNull(capture.authorizationRef()), capture.amount()));
-        assertThat(result).isEqualTo(PaymentGateway.CaptureResult.AUTHORIZATION_EXPIRED);
-        applicationContext.getBean(PaymentCommandService.class).markAuthorizationExpired(capture.id());
     }
 }

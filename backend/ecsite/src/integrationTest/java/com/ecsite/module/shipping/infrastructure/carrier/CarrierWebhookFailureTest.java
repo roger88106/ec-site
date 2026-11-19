@@ -7,6 +7,7 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
+import com.ecsite.module.shipping.support.ShipmentTestData;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.ShippingTestData;
@@ -74,6 +75,11 @@ class CarrierWebhookFailureTest {
     TransactionTemplate transactionTemplate;
 
     /**
+     * 出荷を作る補助
+     */
+    private ShipmentTestData shipments;
+
+    /**
      * mock の物流サービス（署名付きの通知を作るのに使う）
      */
     @Autowired
@@ -102,6 +108,7 @@ class CarrierWebhookFailureTest {
      */
     @BeforeEach
     void setUp() {
+        shipments = new ShipmentTestData(shippingApi, transactionTemplate);
         clock.setInstant(NOW);
     }
 
@@ -113,7 +120,7 @@ class CarrierWebhookFailureTest {
         // 準備：出荷済みの出荷と配達中の通知、次の配送状態の保存の失敗
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        createShipment(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, NOW);
+        shipments.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, NOW);
         var notification = mockCarrier.notification(Carrier.YAMATO, trackingNumber, "配達中");
         doThrow(new DataAccessResourceFailureException("DB の失敗")).doCallRealMethod()
                 .when(repository).updateProgress(anyCollection());
@@ -170,17 +177,5 @@ class CarrierWebhookFailureTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-Carrier-Signature", notification.signature())
                 .content(notification.body()));
-    }
-
-    /**
-     * 出荷を、トランザクションの中で作る（出荷の作成は呼んだ側のトランザクションに加わる）。
-     *
-     * @param orderId        注文 ID
-     * @param carrier        配送業者
-     * @param trackingNumber 送り状番号
-     * @param shippedAt      出荷日時
-     */
-    private void createShipment(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
-        transactionTemplate.executeWithoutResult(status -> shippingApi.create(orderId, carrier, trackingNumber, shippedAt));
     }
 }

@@ -93,7 +93,7 @@ public class OrderTestData {
     /**
      * Spring のコンテキスト
      *
-     * <p>注文の支払の結果を反映するために使う。
+     * <p>支払画面を HTTP を通らずに開くことと、注文の支払の結果を反映することに使う。
      */
     private final ApplicationContext applicationContext;
 
@@ -116,7 +116,7 @@ public class OrderTestData {
      *
      * @param mockMvc            MockMvc
      * @param gateway            mock の決済サービス
-     * @param applicationContext Spring のコンテキスト（注文の支払の結果を反映するために使う）
+     * @param applicationContext Spring のコンテキスト（支払画面を開き、注文の支払の結果を反映するために使う）
      */
     public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, ApplicationContext applicationContext) {
         this(mockMvc, gateway, applicationContext, request -> request);
@@ -129,7 +129,7 @@ public class OrderTestData {
      *
      * @param mockMvc            MockMvc
      * @param gateway            mock の決済サービス
-     * @param applicationContext Spring のコンテキスト（注文の支払の結果を反映するために使う）
+     * @param applicationContext Spring のコンテキスト（支払画面を開き、注文の支払の結果を反映するために使う）
      * @param member             会員の token などを付ける後処理
      */
     public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, ApplicationContext applicationContext,

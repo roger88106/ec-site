@@ -304,8 +304,16 @@ class StockReservationApiTest {
         @Test
         @DisplayName("引当の解除は、トランザクションの外から呼ぶと失敗する")
         void releaseFailsOutsideTransaction() {
+            // 準備：在庫数 5 のうち 2 を引き当てる
+            var variant = inventory.stockNewVariant(productId, 5);
+            var holder = UUID.randomUUID();
+            assertThat(reserveInTransaction(holder, Map.of(variant, 2), EXPIRES_AT)).isEmpty();
+
             // 操作と確認：トランザクションの外で解除すると失敗する
-            assertThatThrownBy(() -> api.release(UUID.randomUUID())).isInstanceOf(IllegalTransactionStateException.class);
+            assertThatThrownBy(() -> api.release(holder)).isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：引当は解かれず、販売可能数が減ったまま
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
         }
 
         @Test
@@ -317,6 +325,9 @@ class StockReservationApiTest {
             // 操作と確認：トランザクションの外で減算すると失敗する
             assertThatThrownBy(() -> api.commit(UUID.randomUUID(), Map.of(variant, 2), UUID.randomUUID(), "ORD-1"))
                     .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：販売可能数が在庫数のまま（在庫数が減っていない）
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 5);
         }
 
         @Test

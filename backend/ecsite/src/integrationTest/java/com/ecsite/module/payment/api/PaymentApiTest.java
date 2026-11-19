@@ -445,9 +445,15 @@ class PaymentApiTest {
         @Test
         @DisplayName("支払の作成は、トランザクションの外から呼ぶと失敗する")
         void createFailsOutsideTransaction() {
+            // 準備：支払のない注文
+            var orderId = UUID.randomUUID();
+
             // 操作と確認：トランザクションの外で作ると失敗する
-            assertThatThrownBy(() -> paymentApi.create(UUID.randomUUID(), AMOUNT, ORDERED_AT))
+            assertThatThrownBy(() -> paymentApi.create(orderId, AMOUNT, ORDERED_AT))
                     .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：支払の行を作っていない
+            assertThat(dsl.fetchCount(PAYMENT_, PAYMENT_.ORDER_ID.eq(orderId))).isZero();
         }
 
         @Test
@@ -472,6 +478,9 @@ class PaymentApiTest {
             // 操作と確認：トランザクションの中で URL を求めると失敗する
             assertThatThrownBy(() -> transactionTemplate.execute(status -> paymentApi.pageUrl(orderId)))
                     .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：決済サービスで画面を作らない
+            assertThat(gateway.openedPages()).isZero();
         }
 
         @Test

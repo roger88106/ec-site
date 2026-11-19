@@ -530,6 +530,7 @@ public class CatalogTestData {
          * エンドポイント自身は {@code ProductImageApiTest} と {@code ProductImageTransactionApiTest} で確認する。
          */
         public TestProduct image() throws Exception {
+            Objects.requireNonNull(applicationContext, "画像を追加するときは ApplicationContext を渡すコンストラクタで作る");
             var uploadId = UUID.fromString(upload());
             var suspended = new TransactionTemplate(applicationContext.getBean(PlatformTransactionManager.class),
                     new DefaultTransactionDefinition(TransactionDefinition.PROPAGATION_NOT_SUPPORTED));

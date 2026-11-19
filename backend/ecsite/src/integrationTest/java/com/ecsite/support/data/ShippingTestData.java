@@ -3,6 +3,7 @@ package com.ecsite.support.data;
 import com.ecsite.module.order.application.shipment.OrderShipmentCommandService;
 import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentQueryService;
+import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -37,7 +38,7 @@ public class ShippingTestData {
     private final MockCarrier mockCarrier;
 
     /**
-     * Spring のコンテキスト（出荷を HTTP を通らずに登録するために使う）
+     * Spring のコンテキスト（出荷の登録と、その売上確定の失敗を、HTTP を通らずに行うために使う）
      *
      * <p>出荷を登録しないときは null。
      */
@@ -88,12 +89,39 @@ public class ShippingTestData {
      * @param trackingNumber 送り状番号
      */
     public void ship(UUID orderId, Carrier carrier, String trackingNumber) {
+        var capture = capture(orderId, PaymentGateway.CaptureResult.CAPTURED);
+        applicationContext.getBean(PaymentCommandService.class).markCaptured(capture.id());
+        applicationContext.getBean(OrderShipmentCommandService.class).ship(orderId, com.ecsite.module.order.domain.order.Carrier.valueOf(carrier.name()), trackingNumber);
+    }
+
+    /**
+     * 出荷の登録の売上確定を、与信期限切れで失敗させる（注文は出荷済みにならない）。
+     *
+     * <p>与信は、呼ぶ側が先に mock の決済サービスで切らしておく（{@code TestPaymentGateway.expireAuthorization}）。
+     * {@link #ship} と同じ理由で、HTTP を通らずに、売上確定の処理（{@code PaymentGatewayService.capture}）の中身を、
+     * テストのトランザクションの中で順に呼ぶ。
+     *
+     * @param orderId 注文 ID
+     */
+    public void failCaptureByExpiredAuthorization(UUID orderId) {
+        var capture = capture(orderId, PaymentGateway.CaptureResult.AUTHORIZATION_EXPIRED);
+        applicationContext.getBean(PaymentCommandService.class).markAuthorizationExpired(capture.id());
+    }
+
+    /**
+     * 注文の売上確定の対象を取得し、mock の決済サービスで売上を確定して、結果を確認する。
+     *
+     * @param orderId  注文 ID
+     * @param expected 期待する売上確定の結果
+     * @return 売上確定の対象の支払
+     */
+    private PaymentCaptureView capture(UUID orderId, PaymentGateway.CaptureResult expected) {
+        Objects.requireNonNull(applicationContext, "出荷を登録するときは ApplicationContext を渡すコンストラクタで作る");
         var capture = applicationContext.getBean(PaymentQueryService.class).findForCapture(orderId).orElseThrow();
         var result = applicationContext.getBean(TestPaymentGateway.class).capture(new PaymentGateway.CaptureRequest(
                 orderId, Objects.requireNonNull(capture.authorizationRef()), capture.amount()));
-        assertThat(result).isEqualTo(PaymentGateway.CaptureResult.CAPTURED);
-        applicationContext.getBean(PaymentCommandService.class).markCaptured(capture.id());
-        applicationContext.getBean(OrderShipmentCommandService.class).ship(orderId, com.ecsite.module.order.domain.order.Carrier.valueOf(carrier.name()), trackingNumber);
+        assertThat(result).isEqualTo(expected);
+        return capture;
     }
 
     /**

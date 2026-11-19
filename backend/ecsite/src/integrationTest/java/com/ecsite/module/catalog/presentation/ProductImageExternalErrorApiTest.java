@@ -35,6 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>画像の変換（imgproxy）は、待ち受けのないポートに向ける（このクラスだけ。変換が成功するテストは {@link ProductImageApiTest}）。
  * ファイル保存（S3）は、本物のクライアントを包み、接続できない失敗を起こす。
+ *
+ * <p>テストごとに別の ID でデータを作り、コミットする（画像の登録のエンドポイントは、画像の用意をトランザクションの外で行うため、ロールバックできない）。
  */
 @IntegrationTest
 class ProductImageExternalErrorApiTest {

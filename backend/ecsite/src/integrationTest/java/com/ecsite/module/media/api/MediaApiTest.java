@@ -52,6 +52,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * メディアの API の統合テスト
@@ -501,6 +503,9 @@ class MediaApiTest {
             // 操作と確認：トランザクションの中で用意すると失敗する
             assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> media.prepareImage(scope, upload.uploadId())))
                     .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：配信のバケットにファイルを置いていない
+            verify(storage, never()).putPublished(anyString(), any(), anyString());
         }
 
         @Test
@@ -513,6 +518,9 @@ class MediaApiTest {
             // 操作と確認：トランザクションの中で破棄すると失敗する
             assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> media.discardImage(prepared)))
                     .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：配信のファイルが残っている
+            assertThat(getPublished(prepared).statusCode()).isEqualTo(200);
 
             // 後片付け：配信のファイルを削除する
             media.discardImage(prepared);

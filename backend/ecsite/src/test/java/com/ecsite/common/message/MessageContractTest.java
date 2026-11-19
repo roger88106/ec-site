@@ -18,6 +18,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,11 +58,14 @@ class MessageContractTest {
      * 文に使わない言い回し（規則の番号は、バックエンドの書き方の「メッセージの文言の書き方」）
      *
      * <p>規則 4 の言い換えを求める語は、scripts/ci/ja/ja-text.json で「確認する」に言い換える語と合わせる。
+     * 「形」は、「形式」と、「図形」「変形」などの別の語を除く。「C 側」は、空白の有無と全角の「Ｃ」も含める。
      */
-    private static final List<String> FORBIDDEN_PHRASES = List.of(
-            "で入力してください", "で指定してください", // 規則 1
-            "形が", "確かめ", // 規則 4
-            "C 側"); // 規則 5
+    private static final List<Pattern> FORBIDDEN_PHRASES = Stream.of(
+                    "で入力してください", "で指定してください", // 規則 1
+                    "(?<![図変地外])形(?!式)", "確かめ", // 規則 4
+                    "[CＣ]\\s*側") // 規則 5
+            .map(Pattern::compile)
+            .toList();
 
     /**
      * 数字の検査と、使わない言い回しの検査で見ないキーの接頭辞（メールの文。画面に表示する文でない）
@@ -181,7 +185,7 @@ class MessageContractTest {
         List<String> found = MESSAGES.stringPropertyNames().stream()
                 .filter(key -> !key.startsWith(NOTIFICATION_PREFIX))
                 .sorted()
-                .filter(key -> FORBIDDEN_PHRASES.stream().anyMatch(MESSAGES.getProperty(key)::contains))
+                .filter(key -> FORBIDDEN_PHRASES.stream().anyMatch(phrase -> phrase.matcher(MESSAGES.getProperty(key)).find()))
                 .map(key -> key + "：" + MESSAGES.getProperty(key))
                 .toList();
 

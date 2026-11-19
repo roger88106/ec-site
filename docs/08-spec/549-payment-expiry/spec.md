@@ -145,7 +145,7 @@ DN-549-1 の例外は、次の表のとおり。
   - 依存：T549-01-03、T549-01-05
   - 範囲：「変える範囲」の文書
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`
-- [ ] **T549-01-07** `./gradlew check` を通す（DC-549-6）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
+- [x] **T549-01-07** `./gradlew check` を通す（DC-549-6）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T549-01-06
   - 確認方法：`./gradlew check`
 - [ ] **T549-01-08** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。

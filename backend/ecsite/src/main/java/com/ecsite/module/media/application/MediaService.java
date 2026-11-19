@@ -166,7 +166,8 @@ public class MediaService {
      *
      * <p>記録を消し、配信のファイルはコミットの後に消す。すでにないアセットは無視する。
      *
-     * <p>記録の削除と同じトランザクションで、アセット解放のイベントを記録する。配信のファイルはコミットの後に消え、
+     * <p>先に読まず、記録の削除が実際に削除したアセットの分だけイベントを発行する（同時に解放しても、イベントは 1 回だけ）。
+     * 記録の削除と同じトランザクションで、アセット解放のイベントを記録する。配信のファイルはコミットの後に消え、
      * トランザクションが取り消されたときは残る。
      *
      * @param assetIds アセット ID
@@ -177,8 +178,7 @@ public class MediaService {
             return;
         }
         // アセットの記録の削除
-        var assets = assetRepository.findAllById(assetIds);
-        assetRepository.deleteAllById(assets.stream().map(Asset::id).toList());
+        var assets = assetRepository.deleteAllById(assetIds);
 
         // アセット解放の発行 ※配信のファイルはコミットの後に消す
         var now = clock.instant();

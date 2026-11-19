@@ -96,10 +96,11 @@
 
 実装はセッションがサブエージェントの実装役に任せる。文書は、5 行以上の追加は書き手のサブエージェントが、それ以外はセッションが書く。
 
-- [ ] **T616-01-01** Stripe の sandbox で、決定 3 の前提を確認する。与信だけを取った PaymentIntent を 1 つ作り、売上を確定する。別の冪等キーで売上確定を求めると、400 `payment_intent_unexpected_state` になること。次に返金する。別の冪等キーで返金を求めると、400 `charge_already_refunded` になること。API キーは手元の sandbox のものだけを使い、sandbox だけを呼ぶ。作った PaymentIntent の ID を、このタスクの結果に記録する。前提が外れたら、実装を始めず止めて報告する。
+- [x] **T616-01-01** Stripe の sandbox で、決定 3 の前提を確認する。与信だけを取った PaymentIntent を 1 つ作り、売上を確定する。別の冪等キーで売上確定を求めると、400 `payment_intent_unexpected_state` になること。次に返金する。別の冪等キーで返金を求めると、400 `charge_already_refunded` になること。API キーは手元の sandbox のものだけを使い、sandbox だけを呼ぶ。作った PaymentIntent の ID を、このタスクの結果に記録する。前提が外れたら、実装を始めず止めて報告する。
   - 依存：なし
   - 範囲：コードは変えない
   - 確認方法：応答が上のとおりである。
+  - 結果：前提のとおりだった（2026-11-19）。作った PaymentIntent は `pi_3UdWLYCajA2Qja1L0KlLZoZd`（1,000 円、テストのカード）の 1 件。別の冪等キーでの売上確定は 400 `payment_intent_unexpected_state`、別の冪等キーでの返金は 400 `charge_already_refunded` だった。1 回目と同じ冪等キーで売上確定を求めると、1 回目と同じ応答（200、`succeeded`）が返った。
 - [ ] **T616-01-02** [テスト] Stripe の実装の単体テストを書き、レッドを確認する（AC-616-1〜4）。1 回目の売上確定（返金）で 5xx を返し、2 回目で成功（または 400 の拒否と、再取得で `succeeded`）を返し、2 回の冪等キーが違うことと、各回の Stripe の実装の戻り値を確認する。冪等キーが注文 ID から作られることを確認している今のテスト 2 つは、AC のテストに書き換える。
   - 依存：T616-01-01
   - 範囲：`StripePaymentGatewayTest`

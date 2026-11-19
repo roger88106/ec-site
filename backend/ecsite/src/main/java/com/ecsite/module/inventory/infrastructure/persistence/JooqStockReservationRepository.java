@@ -65,7 +65,7 @@ class JooqStockReservationRepository implements StockReservationRepository {
     }
 
     /**
-     * 持ち主の引当を消してから、指定した内容で再作成する。
+     * 持ち主の引当を加える。持ち主の前の引当は消さない。
      *
      * @param holderId              持ち主 ID
      * @param quantitiesByStockItem 在庫 ID → 数量
@@ -73,8 +73,7 @@ class JooqStockReservationRepository implements StockReservationRepository {
      * @param now                   現在時刻
      */
     @Override
-    public void replace(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now) {
-        deleteByHolder(holderId);
+    public void insert(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now) {
         var insert = dsl.insertInto(STOCK_RESERVATION,
                 STOCK_RESERVATION.ID, STOCK_RESERVATION.HOLDER_ID, STOCK_RESERVATION.STOCK_ITEM_ID,
                 STOCK_RESERVATION.QUANTITY, STOCK_RESERVATION.EXPIRES_AT, STOCK_RESERVATION.CREATED_AT);

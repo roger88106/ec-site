@@ -34,14 +34,14 @@ public interface StockReservationRepository {
     Map<UUID, Integer> sumActiveReservations(Collection<UUID> stockItemIds, UUID excludedHolderId, Instant now);
 
     /**
-     * 持ち主の引当を、指定した内容に置き換える。
+     * 持ち主の引当を加える。持ち主の前の引当は、呼ぶ側が先に削除しておく。
      *
      * @param holderId               持ち主 ID
      * @param quantitiesByStockItem  在庫 ID → 数量
      * @param expiresAt              期限
      * @param now                    現在時刻
      */
-    void replace(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now);
+    void insert(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now);
 
     /**
      * 持ち主の引当を消す。

@@ -46,12 +46,14 @@ public class StockReservationApi {
     /**
      * 全品目を引き当てる。
      *
-     * <p>同じ持ち主の引当は置き換える。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
+     * <p>同じ持ち主の引当は置き換える。判定では自分の引当を数えない。
+     * 1 つでも足りなければ何も引き当てずに足りない品目を返すが、持ち主の前の引当は解いたままになる。
+     * 呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param holderId   持ち主 ID（注文手続き）
      * @param quantities バリアント ID → 数量
      * @param expiresAt  期限
-     * @return 足りないバリアントの ID。引き当てたら空（足りなければ何も引き当てない）
+     * @return 足りないバリアントの ID。引き当てたら空
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {

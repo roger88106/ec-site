@@ -221,12 +221,17 @@ dependencies {
 // 単体テストの JVM のヒープ。test と pitest の両方が通る最小の値に余裕を加えた値。ArchUnit のテストは、本番のクラスを補助 ProductionClasses から 1 回だけ読む
 val unitTestMaxHeap = "768m"
 
+// jOOQ の生成の対象にする schema（モジュールごと）。Flyway の履歴（public）は対象外。
+// SchemaOwnershipTest が、モジュールと schema の対応（SCHEMA_BY_MODULE）と照合する。下の「jOOQ コード生成」でも使う
+val jooqSchemas = listOf("common", "tax", "catalog", "media", "inventory", "cart", "ordering", "member", "payment", "shipping", "notification", "reporting", "region")
+
 // 単体テストの JVM の systemProperty。test の task と pitest で同じ値を使う（ないと、設定を読むテストが PIT で失敗する）。
 //   openapi.dir：契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、PackageSizeTest）が、
 //     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
 //   test-classes.dirs：単体テストと統合テストのクラスの置き場所。テストの書き方の検査（TestNameTest など）が読む（TestCodeClasses）
+//   jooq.schemas：jOOQ の schema の一覧（カンマ区切り）。SchemaOwnershipTest が読む
 // API の契約の正本（OpenAPI）の置き場所。テストが読むほか、下の「OpenAPI からのコード生成」でも使う
 val openApiDir = layout.projectDirectory.dir("../../api/openapi")
 val keycloakRealmsDir = file("../../docker/keycloak/realms")
@@ -235,6 +240,7 @@ val unitTestSystemProperties = mapOf(
     "keycloak.realms.dir" to keycloakRealmsDir.absolutePath,
     "repo.root" to file("../..").absolutePath,
     "test-classes.dirs" to (sourceSets.test.get().output.classesDirs + sourceSets["integrationTest"].output.classesDirs).asPath,
+    "jooq.schemas" to jooqSchemas.joinToString(","),
 )
 
 // Error Prone の検査を JVM の中で動かすテスト（CompilationTestHelper）と、javac の内部の API を使う検査の本体のコンパイルに必要な、jdk.compiler のパッケージの export。
@@ -652,8 +658,7 @@ tasks.check { dependsOn("checkLicense") }
 // -----------------------------------------------------------------------------
 val migrationDir = layout.projectDirectory.dir("src/main/resources/db/migration")
 
-// 生成の対象にする schema（モジュールごと）。Flyway の履歴（public）は対象外
-val jooqSchemas = listOf("common", "tax", "catalog", "media", "inventory", "cart", "ordering", "member", "payment", "shipping", "notification", "reporting", "region")
+// 生成の対象にする schema の一覧（jooqSchemas）は、単体テストの system property でも使うので、上の単体テストの設定の前で定義する
 
 jooq {
     version.set(libs.versions.jooq.get())

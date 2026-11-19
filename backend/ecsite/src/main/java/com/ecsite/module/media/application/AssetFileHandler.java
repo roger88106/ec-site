@@ -1,7 +1,7 @@
 package com.ecsite.module.media.application;
 
+import com.ecsite.common.event.ExternalServiceListener;
 import lombok.RequiredArgsConstructor;
-import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 
@@ -24,7 +24,7 @@ class AssetFileHandler {
      *
      * @param event アセット解放
      */
-    @ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)
+    @ExternalServiceListener(propagation = Propagation.NOT_SUPPORTED)
     void on(AssetReleased event) {
         mediaService.deleteReleasedFile(event);
     }

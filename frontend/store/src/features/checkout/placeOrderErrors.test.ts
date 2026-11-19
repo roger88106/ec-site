@@ -60,6 +60,20 @@ describe('注文のエラーの出し方（店舗画面の構成の「結果の�
     )
   })
 
+  test('AC-518-7 総額が範囲外で注文できないときは、カートへのリンクを添え、応答のメッセージを表示する', () => {
+    expect(
+      placeOrderErrors({
+        ok: false,
+        message: '注文できる金額の範囲を超えています',
+        errorCode: 'ORDER_AMOUNT_OUT_OF_RANGE',
+      }),
+    ).toEqual({
+      fields: {},
+      message: '注文できる金額の範囲を超えています',
+      backToCart: true,
+    })
+  })
+
   test('AC-89 総額が変わったときは、メッセージだけを出す（画面は新しい金額で表示し直す）', () => {
     expect(placeOrderErrors({ ok: false, message: '総額が変わりました', errorCode: 'TOTAL_AMOUNT_CHANGED' })).toEqual({
       fields: {},

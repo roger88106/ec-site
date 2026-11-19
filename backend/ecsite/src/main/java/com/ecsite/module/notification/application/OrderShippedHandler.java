@@ -1,8 +1,8 @@
 package com.ecsite.module.notification.application;
 
+import com.ecsite.common.event.ExternalServiceListener;
 import com.ecsite.module.order.event.OrderShipped;
 import lombok.RequiredArgsConstructor;
-import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,7 +24,7 @@ class OrderShippedHandler {
      *
      * @param event 注文の出荷
      */
-    @ApplicationModuleListener
+    @ExternalServiceListener
     void on(OrderShipped event) {
         shipmentMailCommandService.send(event);
     }

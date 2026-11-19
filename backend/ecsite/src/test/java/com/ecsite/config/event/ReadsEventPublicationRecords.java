@@ -34,6 +34,6 @@ public final class ReadsEventPublicationRecords {
      * @return 消した件数
      */
     public static int delete(EventPublicationRecords records) {
-        return records.deleteCompletedBefore(Instant.EPOCH);
+        return records.deleteCompletedBefore(Instant.EPOCH, 1);
     }
 }

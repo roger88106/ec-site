@@ -24,6 +24,13 @@ import java.time.Duration;
 class EventCleanupJob {
 
     /**
+     * 1 回の削除で消す件数の上限
+     *
+     * <p>文の実行のタイムアウトに収まる件数にする。環境で変えない値なので、設定にしない（他の片付けの 1 回の件数の既定と同じ）。
+     */
+    private static final int BATCH_SIZE = 1000;
+
+    /**
      * イベントの記録
      */
     private final EventPublicationRecords publicationRecords;
@@ -46,11 +53,14 @@ class EventCleanupJob {
     // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"
             + "com.ecsite.config.event.EventCleanupJob$Properties'.interval()}")
-    @SchedulerLock(name = "event-cleanup")
+    // ロックを持つ時間の上限は 10 分。DB の削除だけで外部を呼ばず、通常は上限よりずっと短く終わる。止まったインスタンスのロックが長く残らない値にする
+    @SchedulerLock(name = "event-cleanup", lockAtMostFor = "PT10M")
     void cleanUp() {
-        // 処理の済んだイベントは他の操作が読み書きしないので、件数の上限を置かずに 1 文で消す
-        int deleted = publicationRecords.deleteCompletedBefore(clock.instant().minus(properties.retention()));
-        ExpiredDataCleanup.logDeleted(log, "処理の済んだイベント", deleted);
+        // 件数の上限ずつ、残りがなくなるまで消す。1 文で消すと、溜まった行が多いとき（止まっていた後、保存期間を短くした後）に、
+        // 文の実行のタイムアウト（ecsite.db.statement-timeout）で取り消され続け、片付けが止まる
+        var completedBefore = clock.instant().minus(properties.retention());
+        ExpiredDataCleanup.run(log, "処理の済んだイベント", BATCH_SIZE,
+                () -> publicationRecords.deleteCompletedBefore(completedBefore, BATCH_SIZE));
     }
 
     /**

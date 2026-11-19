@@ -106,6 +106,12 @@ class EventCleanupJobTest {
     EventPublicationRegistry registry;
 
     /**
+     * イベントの記録（消す件数の上限を指定して消す）
+     */
+    @Autowired
+    EventPublicationRecords records;
+
+    /**
      * 非同期のリスナーを待つ補助
      */
     @Autowired
@@ -227,6 +233,22 @@ class EventCleanupJobTest {
         // 確認：消す前に数えた件数（このテストのイベントを含むので 1 件以上）をログに出す
         assertThat(expectedDeleted).isPositive();
         assertThat(logs.messages(Level.INFO)).contains("処理の済んだイベントを消した：" + expectedDeleted + " 件");
+    }
+
+    @Test
+    @DisplayName("1 回に消す件数は、指定した上限までである（件数の上限を置かない 1 文で、文の実行のタイムアウトを超えないようにする）")
+    void deletesAtMostBatchSize() {
+        // 準備：NOW に処理を終えたイベントを 3 件
+        publish(new CleanupEvent(UUID.randomUUID(), false));
+        publish(new CleanupEvent(UUID.randomUUID(), false));
+        publish(new CleanupEvent(UUID.randomUUID(), false));
+
+        // 操作：保存期間を過ぎてから、上限 2 件で消す
+        clock.setInstant(CLEANUP_AT);
+        var deleted = records.deleteCompletedBefore(CLEANUP_AT.minus(RETENTION), 2);
+
+        // 確認：消す対象は 3 件以上あるが、消したのは上限の 2 件
+        assertThat(deleted).isEqualTo(2);
     }
 
     // ============================== 準備の補助 ==============================

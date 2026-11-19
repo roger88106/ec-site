@@ -309,7 +309,7 @@ paths:
     post:
       tags: [checkout]
       operationId: startCheckout
-      x-error-codes: [CART_NOT_ORDERABLE, OUT_OF_STOCK, PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDER_LIMIT_EXCEEDED]
+      x-error-codes: [CART_NOT_ORDERABLE, ORDER_AMOUNT_OUT_OF_RANGE, OUT_OF_STOCK, PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDER_LIMIT_EXCEEDED]
       security:
         - memberToken: []
       summary: 注文手続きに進む
@@ -318,6 +318,7 @@ paths:
         会員に支払待ちの注文があるときは、本文の `acknowledgedOrderIds` に、その全ての注文の ID が含まれていなければ 409（`PENDING_ORDER_CONFIRMATION_REQUIRED`）を返す。この場合は、注文手続きを作らず、引当も変えない。判定では品目を比べない。
         全て含まれていても、支払待ちの注文の件数が上限（設定。既定は 3 件）以上なら 409（`PENDING_ORDER_LIMIT_EXCEEDED`）を返す。この判定は確認の判定の後に行い、同じく注文手続きを作らず、引当も変えない。
         上限に達していなければ、そのときの支払待ちの注文の ID の集合を、確認した注文として注文手続きに保存する。本文がないときは、確認した注文は空である。
+        全ての品目が購入できても、見積もりの総額が決済の受け付ける範囲（下限以上、上限以下）の外なら 400（`ORDER_AMOUNT_OUT_OF_RANGE`。文言に下限と上限を示す）を返す。この判定は購入できるかの判定の後に行い、注文手続きを作らず、引当もしない。
       requestBody:
         required: false
         content:
@@ -328,7 +329,7 @@ paths:
         '201':
           $ref: '#/components/responses/Created'
         '400':
-          description: 空のカート、または購入できない品目を含む
+          description: 空のカート、購入できない品目を含む、または総額が決済の受け付ける範囲の外（`ORDER_AMOUNT_OUT_OF_RANGE`）
           content:
             application/problem+json:
               schema:
@@ -374,13 +375,14 @@ paths:
     post:
       tags: [checkout]
       operationId: placeOrder
-      x-error-codes: [INVALID_EMAIL, EMAIL_NOT_VERIFIED, INVALID_RECIPIENT_NAME, INVALID_POSTAL_CODE, INVALID_PREFECTURE, INVALID_MUNICIPALITY, INVALID_ADDRESS, INVALID_PHONE_NUMBER, CART_NOT_ORDERABLE, OUT_OF_STOCK, TOTAL_AMOUNT_CHANGED, CART_CHANGED, PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDER_LIMIT_EXCEEDED]
+      x-error-codes: [INVALID_EMAIL, EMAIL_NOT_VERIFIED, INVALID_RECIPIENT_NAME, INVALID_POSTAL_CODE, INVALID_PREFECTURE, INVALID_MUNICIPALITY, INVALID_ADDRESS, INVALID_PHONE_NUMBER, CART_NOT_ORDERABLE, ORDER_AMOUNT_OUT_OF_RANGE, OUT_OF_STOCK, TOTAL_AMOUNT_CHANGED, CART_CHANGED, PENDING_ORDER_CONFIRMATION_REQUIRED, PENDING_ORDER_LIMIT_EXCEEDED]
       security:
         - memberToken: []
       summary: 注文する
       description: |
         注文と支払を作る。同じ注文手続きでの再送には、作成済みの注文の ID を 200 で返す。
         409 の `errorCode`：`OUT_OF_STOCK`（在庫不足）、`TOTAL_AMOUNT_CHANGED`（確認した総額と違う）、`CART_CHANGED`（注文手続きの後にカートが変わった）、`PENDING_ORDER_CONFIRMATION_REQUIRED`（注文手続きで確認していない支払待ちの注文がある）、`PENDING_ORDER_LIMIT_EXCEEDED`（支払待ちの注文が上限に達している）。
+        400 の `errorCode`：確認した総額と同じでも、総額が決済の受け付ける範囲（下限以上、上限以下）の外なら `ORDER_AMOUNT_OUT_OF_RANGE`（文言に下限と上限を示す）で、注文と支払を作らず、在庫も減らさない。この判定は、確認した総額との比較の後に行う。
         支払待ちの注文の判定は、注文の時点の状態で行う。注文手続きで確認した注文に全て含まれていなければ 409 で、注文を作らず、在庫も減らさない。
         全て含まれていても、支払待ちの注文の件数が上限（設定。既定は 3 件）以上なら 409（`PENDING_ORDER_LIMIT_EXCEEDED`）で、注文を作らず、在庫も減らさない。この判定は確認の判定の後に行う。再送には、上限によらず作成済みの注文を返す。
       requestBody:
@@ -736,7 +738,7 @@ components:
       description: >-
         この API が返しうるエラーのコード（API の規約の「エラーの本文」）。フロントが分岐に使う。
         各操作が返しうる業務のエラーは操作の x-error-codes、全ての操作が返しうるエラーは x-common-error-codes。
-      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
+      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, RESOURCE_BUSY, SYSTEM_ERROR]
       enum:
         - CANCELLATION_NOT_REQUESTABLE
         - CART_CHANGED
@@ -757,12 +759,14 @@ components:
         - INVALID_REQUEST
         - METHOD_NOT_ALLOWED
         - NOT_FOUND
+        - ORDER_AMOUNT_OUT_OF_RANGE
         - ORDER_NOT_PAYABLE
         - OUT_OF_STOCK
         - PAYMENT_GATEWAY_UNAVAILABLE
         - PENDING_ORDER_CONFIRMATION_REQUIRED
         - PENDING_ORDER_LIMIT_EXCEEDED
         - QUANTITY_EXCEEDS_STOCK
+        - RESOURCE_BUSY
         - RESTORE_ERROR
         - SYSTEM_ERROR
         - TOO_MANY_CART_ITEMS

@@ -44,4 +44,19 @@ describe('注文手続きに進む', () => {
     expect(screen.getByRole('status')).toBe(statusRegion)
     expect(statusRegion).toHaveTextContent('在庫が足りません。')
   })
+
+  test('AC-518-6 総額が範囲外で拒否されたときは、カートの画面に拒否のメッセージを表示する', async () => {
+    vi.mocked(startCheckout).mockResolvedValueOnce({
+      ok: false,
+      message: '注文の総額は 50〜99,999,999 円にしてください。カートの商品か数量を変えてください。',
+      errorCode: 'ORDER_AMOUNT_OUT_OF_RANGE',
+    })
+    const { user } = renderInBrowser(<StartCheckoutForm orderable />)
+
+    await user.click(screen.getByRole('button', { name: '注文手続きへ進む' }))
+
+    expect(
+      await screen.findByText('注文の総額は 50〜99,999,999 円にしてください。カートの商品か数量を変えてください。'),
+    ).toBeInTheDocument()
+  })
 })

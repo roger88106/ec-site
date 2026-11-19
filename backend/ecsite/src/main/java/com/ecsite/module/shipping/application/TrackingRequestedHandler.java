@@ -1,7 +1,7 @@
 package com.ecsite.module.shipping.application;
 
+import com.ecsite.common.event.ExternalServiceListener;
 import lombok.RequiredArgsConstructor;
-import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 
@@ -25,7 +25,7 @@ class TrackingRequestedHandler {
      *
      * @param event 追跡の開始の依頼
      */
-    @ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)
+    @ExternalServiceListener(propagation = Propagation.NOT_SUPPORTED)
     void on(TrackingRequested event) {
         shipmentService.startTracking(event);
     }

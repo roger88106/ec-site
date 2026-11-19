@@ -48,7 +48,7 @@ spring:
   datasource:
     hikari:
       data-source-properties:
-        # 全ての DB の接続の初期化で、タイムアウトを置く（値は下の ecsite.db）。PostgreSQL のサーバーの設定で、接続ごとに効く。
+        # 全ての DB の接続の初期化で、タイムアウトを置く（値は下の ecsite.db）。PostgreSQL のサーバーの設定で、接続ごとに有効になる。
         # マイグレーション（Flyway）はプールを使わない別の接続を使うので、この設定は付かない（FlywayConnectionConfig）
         options: -c lock_timeout=${ecsite.db.lock-timeout} -c statement_timeout=${ecsite.db.statement-timeout} -c idle_in_transaction_session_timeout=${ecsite.db.idle-in-transaction-timeout}
   flyway:
@@ -56,6 +56,20 @@ spring:
     # 起動時の実行は local profile でだけ有効にする。
     enabled: false
   task:
+    execution:
+      # 外部サービスを呼ばないリスナーのスレッドプール（applicationTaskExecutor）。外部サービスを呼ぶリスナーは別のスレッドプール（ecsite.async.external-service）
+      # 別のスレッドプールの Bean があると applicationTaskExecutor が作られなくなるので、force で作らせる
+      mode: force
+      pool:
+        core-size: 8
+        max-size: 8
+        # キューに上限がないと、処理が追いつかないときにメモリが増え続ける。
+        # 満杯で拒否されたイベントは、未完了のまま残り、再発行のジョブが処理する
+        queue-capacity: 1000
+      shutdown:
+        # 停止のとき、処理中のリスナーを待つ。上限は、処理中のリクエストを待つ上限（spring.lifecycle.timeout-per-shutdown-phase）と同じ
+        await-termination: true
+        await-termination-period: 30s
     scheduling:
       pool:
         # 定期ジョブの数（6）に合わせる。ジョブが互いを待たないようにする（スレッドが 1 つだと、長いジョブの間、ほかのジョブが始まらない）。
@@ -105,6 +119,13 @@ logging:
       console: ecs
 
 ecsite:
+  async:
+    external-service:
+      # 外部サービス（メール、ファイル保存、決済、物流）を呼ぶリスナーのスレッドプール。外部が遅いとき、外部を呼ばないリスナーを待たせない。
+      # 1 つのインスタンスの、外部への同時の呼び出しの数の上限になる
+      threads: 4
+      # キューに上限がないと、外部が止まったときにメモリが増え続ける。満杯で拒否されたイベントは、未完了のまま残り、再発行のジョブが処理する
+      queue-capacity: 1000
   db:
     # DB の接続のタイムアウト。1 つずつ環境変数（ECSITE_DB_LOCK_TIMEOUT など）で上書きできる。PostgreSQL の時間の書き方（5s、500ms）で書く
     # ロック待ち：消費者・運営者のリクエストが行ロックを待つ上限を、画面の操作が待てる長さにする。超えると 503（RESOURCE_BUSY）

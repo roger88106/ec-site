@@ -31,7 +31,6 @@ import static com.ecsite.module.order.presentation.AdminOrderLists.idsOf;
 import static com.ecsite.module.order.presentation.AdminOrderLists.itemOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -151,7 +150,7 @@ class AdminOrderShipmentViewApiTest {
         clock.setInstant(NOW);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
         lists = new AdminOrderLists(mockMvc);
-        shipping = new ShippingTestData(mockMvc, mockCarrier);
+        shipping = new ShippingTestData(mockMvc, mockCarrier, applicationContext);
         accepted = orders.placeOrder(variantId, 1, "受付 太郎");
         shipped = orders.placeOrder(variantId, 1, "出荷 花子");
         returned = orders.placeOrder(variantId, 1, "返送 次郎");
@@ -422,15 +421,12 @@ class AdminOrderShipmentViewApiTest {
     }
 
     /**
-     * 与信期限を過ぎてから受付の注文の出荷を登録して失敗させ、運営者がキャンセルする。
+     * 与信期限を過ぎてから受付の注文の売上確定を失敗させ、運営者がキャンセルする。
      */
     private void cancelAfterExpiredCapture() throws Exception {
         clock.setInstant(AUTHORIZATION_DEADLINE.plusSeconds(1));
         gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(accepted)));
-        mockMvc.perform(post(BASE + "/" + accepted + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"carrier": "YAMATO", "trackingNumber": "333333333333"}"""))
-                .andExpect(status().isConflict());
+        shipping.failCaptureByExpiredAuthorization(accepted);
         mockMvc.perform(put(BASE + "/" + accepted + "/cancel")
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"reason": "与信期限切れ"}"""))

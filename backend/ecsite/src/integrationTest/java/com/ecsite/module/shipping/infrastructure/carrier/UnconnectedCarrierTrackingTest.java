@@ -5,14 +5,17 @@ import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.TrackingRequests;
 import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.module.shipping.support.ShipmentTestData;
 import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.ShippingTestData;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -47,6 +50,17 @@ class UnconnectedCarrierTrackingTest {
     @Autowired
     ShippingApi shippingApi;
 
+    /**
+     * 出荷の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
+    /**
+     * 出荷を作る補助
+     */
+    private ShipmentTestData shipments;
+
     @Autowired
     AsyncEvents asyncEvents;
 
@@ -58,6 +72,11 @@ class UnconnectedCarrierTrackingTest {
     @MockitoSpyBean
     CarrierTracking tracking;
 
+    @BeforeEach
+    void setUp() {
+        shipments = new ShipmentTestData(shippingApi, transactionTemplate);
+    }
+
     // ============================== テスト ==============================
 
     @Test
@@ -65,7 +84,7 @@ class UnconnectedCarrierTrackingTest {
     void completesTrackingRequest() {
         // 操作：出荷を登録する
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
+        shipments.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
 
         // 確認：依頼の処理が終わる（未完了なら待つ処理が上限の時間で失敗する）
         asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of(trackingNumber)));
@@ -80,7 +99,7 @@ class UnconnectedCarrierTrackingTest {
         // 準備：出荷を登録し、追跡の開始の依頼が処理されるまで待つ
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
+        shipments.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
         asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of(trackingNumber)));
 
         // 操作と確認：出荷があり、出荷済みのまま

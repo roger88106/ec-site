@@ -94,8 +94,9 @@ public class MediaService {
      * 受け付けた画像を用意する。
      *
      * <p>大きさと、先頭のバイトで判定した形式を確認し、WebP に変換して配信のバケットへ置く。
+     * DB を使わない（受付と配信のファイルだけを扱う）。
      *
-     * <p>DB を使わないので、トランザクションを始めない。
+     * <p>トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
      * @param scope    受付の範囲
      * @param uploadId 受付 ID
@@ -105,6 +106,7 @@ public class MediaService {
      * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
+    @Transactional(propagation = Propagation.NEVER)
     public UUID prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
         // 受付の大きさの確認
         var uploadKey = AssetKeys.upload(scope, uploadId);
@@ -129,7 +131,7 @@ public class MediaService {
     /**
      * 用意した画像をアセットとして記録する。
      *
-     * <p>呼んだ側のトランザクションの中で記録する。
+     * <p>呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param assetId 用意した画像のアセット ID
      */
@@ -142,11 +144,13 @@ public class MediaService {
      * 用意した画像の配信のファイルを消す。
      *
      * <p>消すのに失敗しても例外を投げず、警告のログに保存先のキーを出す。
+     * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
      * <p>消せなかったファイルは、だれからも参照されずに残る（登録のないファイルを探して消すことはしない）。
      *
      * @param assetId 用意した画像のアセット ID
      */
+    @Transactional(propagation = Propagation.NEVER)
     public void discardImage(@NonNull UUID assetId) {
         var storageKey = storageKey(assetId);
         // 呼んだ側の元の失敗を隠さないため、消すのに失敗しても例外を投げない

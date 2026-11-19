@@ -3,6 +3,7 @@ package com.ecsite.module.inventory.application.job;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.application.StockReservationCommandService;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.inventory.support.ReservationTestData;
 import com.ecsite.support.LogCapture;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -81,6 +83,17 @@ class StockReservationCleanupJobTest {
     @Autowired
     StockReservationApi api;
 
+    /**
+     * 引当を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
+    /**
+     * 引当を作る補助
+     */
+    private ReservationTestData reservations;
+
     @Autowired
     StockItemRepository stockItemRepository;
 
@@ -97,6 +110,7 @@ class StockReservationCleanupJobTest {
 
     @BeforeEach
     void setUp() {
+        reservations = new ReservationTestData(api, transactionTemplate);
         inventory = new InventoryTestData(stockItemRepository, NOW);
     }
 
@@ -239,7 +253,7 @@ class StockReservationCleanupJobTest {
      */
     private UUID reserve(UUID variant, Instant expiresAt) {
         var holder = UUID.randomUUID();
-        assertThat(api.reserve(holder, Map.of(variant, 1), expiresAt)).isEmpty();
+        assertThat(reservations.reserve(holder, Map.of(variant, 1), expiresAt)).isEmpty();
         return holder;
     }
 }

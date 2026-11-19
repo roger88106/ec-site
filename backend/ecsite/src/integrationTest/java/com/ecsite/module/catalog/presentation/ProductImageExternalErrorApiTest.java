@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -36,9 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>画像の変換（imgproxy）は、待ち受けのないポートに向ける（このクラスだけ。変換が成功するテストは {@link ProductImageApiTest}）。
  * ファイル保存（S3）は、本物のクライアントを包み、接続できない失敗を起こす。
+ *
+ * <p>テストごとに別の ID でデータを作り、コミットする（画像の登録のエンドポイントは、画像の用意をトランザクションの外で行うため、ロールバックできない）。
  */
 @IntegrationTest
-@Transactional
 class ProductImageExternalErrorApiTest {
 
     // ============================== Bean ==============================

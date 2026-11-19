@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -120,6 +121,12 @@ class StorefrontCartTest {
     private InventoryTestData inventory;
 
     /**
+     * Spring のコンテキスト（画像を追加する補助に渡す）
+     */
+    @Autowired
+    ApplicationContext applicationContext;
+
+    /**
      * 税区分・カテゴリ・商品を作る補助
      */
     private CatalogTestData catalog;
@@ -143,7 +150,7 @@ class StorefrontCartTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         ShippingTaxCategory.ensure(dsl);
-        catalog = new CatalogTestData(mockMvc, clock);
+        catalog = new CatalogTestData(mockMvc, clock, applicationContext);
         standard = catalog.taxCategory("標準", "10");
         reduced = catalog.taxCategory("軽減", "8");
         var body = mockMvc.perform(post(CARTS)).andReturn().getResponse().getContentAsString();

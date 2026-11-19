@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -44,7 +45,7 @@ public class ShipmentService {
     /**
      * 出荷を作る。
      *
-     * <p>配送状態は「出荷済み」で、配送状態の変化のイベントを出す。呼んだ側のトランザクションに加わる。
+     * <p>配送状態は「出荷済み」で、配送状態の変化のイベントを出す。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param orderId        注文 ID
      * @param carrier        配送業者
@@ -54,7 +55,7 @@ public class ShipmentService {
      * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
      * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public Shipment create(@NonNull UUID orderId, @NonNull Carrier carrier, @Nullable String trackingNumber,
                            @NonNull Instant shippedAt) {
         // 出荷登録

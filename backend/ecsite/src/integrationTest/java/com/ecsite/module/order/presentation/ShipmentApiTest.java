@@ -12,6 +12,8 @@ import com.ecsite.support.data.CatalogTestData;
 import com.ecsite.support.data.InventoryTestData;
 import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.data.ShippingTaxCategory;
+import com.ecsite.support.data.ShippingTestData;
+import com.ecsite.support.security.TestTokens;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +30,6 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -49,10 +50,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>管理 API で出荷を登録したときの、売上確定と注文の状態、失敗と重ねた登録、入力の検証を確認する。
  * 出荷の可否の判定そのものは {@code OrderShipmentTest}、店舗の注文の出荷の表示は {@code StoreOrderShipmentApiTest} が確認する。
  *
- * <p>売上確定は mock の決済サービスで行う。テストごとにロールバックする。
+ * <p>売上確定は mock の決済サービスで行う。テストごとに別の ID でデータを作り、コミットする（出荷の登録のエンドポイントは、売上の確定をトランザクションの外で行うため、ロールバックできない）。
  */
 @IntegrationTest
-@Transactional
 @RecordApplicationEvents
 class ShipmentApiTest {
 
@@ -84,14 +84,9 @@ class ShipmentApiTest {
     private static final long ORDER_TOTAL = 3200;
 
     /**
-     * 送り状番号（ハイフンなし）
+     * 形の正しい送り状番号（入力の検証で拒否される、または注文がない要求に使う。出荷は保存されない）
      */
-    private static final String TRACKING_NUMBER = "123456789012";
-
-    /**
-     * 送り状番号（ハイフン付き。登録するとハイフンを除いた {@link #TRACKING_NUMBER} になる）
-     */
-    private static final String TRACKING_NUMBER_WITH_HYPHENS = "1234-5678-9012";
+    private static final String UNSAVED_TRACKING_NUMBER = "123456789012";
 
     // ============================== Bean ==============================
 
@@ -125,6 +120,11 @@ class ShipmentApiTest {
     ApplicationEvents events;
 
     /**
+     * 注文する会員（コミットするので、テストごとの会員にする）
+     */
+    private TestTokens.Builder owner;
+
+    /**
      * 注文を作る補助
      */
     private OrderTestData orders;
@@ -139,16 +139,29 @@ class ShipmentApiTest {
      */
     private UUID orderId;
 
+    /**
+     * 送り状番号（ハイフンなし。コミットした出荷が他のテストの通知と重ならないように、テストごとに作る）
+     */
+    private String tracking;
+
+    /**
+     * 送り状番号（ハイフン付き。登録するとハイフンを除いた {@link #tracking} になる）
+     */
+    private String trackingWithHyphens;
+
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         ShippingTaxCategory.ensure(dsl);
         var catalog = new CatalogTestData(mockMvc, clock);
-        var product = catalog.product(catalog.taxCategory("標準", "10"), "商品", UNIT_PRICE_EXCL_TAX).publish();
+        var product = catalog.product(catalog.taxCategory("標準 " + UUID.randomUUID(), "10"), "商品", UNIT_PRICE_EXCL_TAX).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
-        orders = new OrderTestData(mockMvc, gateway, applicationContext);
+        owner = TestTokens.member().subject(UUID.randomUUID());
+        orders = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer());
         orderId = orders.placeOrder(variantId, QUANTITY);
+        tracking = ShippingTestData.trackingNumber();
+        trackingWithHyphens = tracking.substring(0, 4) + "-" + tracking.substring(4, 8) + "-" + tracking.substring(8);
     }
 
     // ============================== テスト ==============================
@@ -164,9 +177,9 @@ class ShipmentApiTest {
             clock.setInstant(NOW.plusSeconds(3600));
 
             // 操作と確認：送り状番号はハイフンを除いて返り、出荷日時は登録の時刻
-            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated())
+            ship("YAMATO", trackingWithHyphens).andExpect(status().isCreated())
                     .andExpect(jsonPath("$.carrier").value("YAMATO"))
-                    .andExpect(jsonPath("$.trackingNumber").value(TRACKING_NUMBER))
+                    .andExpect(jsonPath("$.trackingNumber").value(tracking))
                     .andExpect(jsonPath("$.status").value("SHIPPED"))
                     .andExpect(jsonPath("$.shippedAt").value("2026-10-07T16:00:00Z"));
         }
@@ -175,13 +188,13 @@ class ShipmentApiTest {
         @DisplayName("AC-168 出荷を登録すると、売上を確定し、注文は「出荷済み」になる")
         void capturesAndMarksShipped() throws Exception {
             // 操作：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated());
+            ship("YAMATO", trackingWithHyphens).andExpect(status().isCreated());
 
             // 確認：注文は出荷済みで、支払は売上確定済み、出荷が付いている
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.status").value("SHIPPED"))
                     .andExpect(jsonPath("$.payment.status").value("CAPTURED"))
-                    .andExpect(jsonPath("$.shipment.trackingNumber").value(TRACKING_NUMBER));
+                    .andExpect(jsonPath("$.shipment.trackingNumber").value(tracking));
 
             // 確認：決済サービスで売上を確定したのは、この注文だけ
             assertThat(gateway.captured()).containsExactly(orderId);
@@ -191,7 +204,7 @@ class ShipmentApiTest {
         @DisplayName("AC-168 出荷を登録すると、決済サービスに、注文の総額（送料を含む）を売上確定の額として渡す")
         void capturesOrderTotal() throws Exception {
             // 操作：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated());
+            ship("YAMATO", trackingWithHyphens).andExpect(status().isCreated());
 
             // 確認（前提）：注文の総額は、商品の税込の小計に送料を加えた額
             var total = dsl.select(SALES_ORDER.TOTAL_AMOUNT).from(SALES_ORDER).where(SALES_ORDER.ID.eq(orderId))
@@ -207,7 +220,7 @@ class ShipmentApiTest {
         @DisplayName("AC-170、171 出荷済みの注文の詳細は、出荷の登録もキャンセルもできないことを示す")
         void shippedOrderHasNoActions() throws Exception {
             // 準備：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER_WITH_HYPHENS).andExpect(status().isCreated());
+            ship("YAMATO", trackingWithHyphens).andExpect(status().isCreated());
 
             // 操作と確認：出荷の登録とキャンセルの操作が、どちらもできない
             mockMvc.perform(get("/api/admin/orders/" + orderId))
@@ -242,13 +255,13 @@ class ShipmentApiTest {
         @DisplayName("AC-167 登録した配送業者を、応答と、管理と店舗の注文詳細に同じ業者で返す")
         void showsSameCarrier(String carrier) throws Exception {
             // 操作：配送業者を指定して出荷を登録する
-            ship(carrier, TRACKING_NUMBER).andExpect(status().isCreated())
+            ship(carrier, tracking).andExpect(status().isCreated())
                     .andExpect(jsonPath("$.carrier").value(carrier));
 
             // 確認：管理と店舗の注文詳細の出荷が、登録した業者
             mockMvc.perform(get("/api/admin/orders/" + orderId))
                     .andExpect(jsonPath("$.shipment.carrier").value(carrier));
-            mockMvc.perform(get("/api/store/orders/" + orderId))
+            mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer()))
                     .andExpect(jsonPath("$.shipment.carrier").value(carrier));
         }
 
@@ -257,7 +270,7 @@ class ShipmentApiTest {
         @DisplayName("AC-183 出荷通知に使う注文の出荷のイベントに、登録した配送業者を載せる")
         void publishesSameCarrier(String carrier) throws Exception {
             // 操作：配送業者を指定して出荷を登録する
-            ship(carrier, TRACKING_NUMBER).andExpect(status().isCreated());
+            ship(carrier, tracking).andExpect(status().isCreated());
 
             // 確認：この注文の出荷のイベントが 1 件で、業者が登録した業者
             assertThat(events.stream(OrderShipped.class).filter(event -> event.orderId().equals(orderId)))
@@ -278,7 +291,7 @@ class ShipmentApiTest {
             gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(orderId)));
 
             // 操作と確認：409 の AUTHORIZATION_EXPIRED
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
+            ship("YAMATO", tracking).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("AUTHORIZATION_EXPIRED"));
         }
 
@@ -289,7 +302,7 @@ class ShipmentApiTest {
             gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(orderId)));
 
             // 操作：出荷を登録して失敗する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+            ship("YAMATO", tracking).andExpect(status().isConflict());
 
             // 確認：受付のまま、出荷はなく、支払は与信期限切れ
             mockMvc.perform(get("/api/admin/orders/" + orderId))
@@ -303,7 +316,7 @@ class ShipmentApiTest {
         void expiredOrderIsCancellable() throws Exception {
             // 準備：与信を切らし、出荷の登録に失敗する
             gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(orderId)));
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+            ship("YAMATO", tracking).andExpect(status().isConflict());
 
             // 操作と確認：キャンセルの操作ができる
             mockMvc.perform(get("/api/admin/orders/" + orderId))
@@ -317,7 +330,7 @@ class ShipmentApiTest {
             gateway.failNextCaptures(1);
 
             // 操作と確認：502 の PAYMENT_GATEWAY_UNAVAILABLE
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isBadGateway())
+            ship("YAMATO", tracking).andExpect(status().isBadGateway())
                     .andExpect(jsonPath("$.errorCode").value("PAYMENT_GATEWAY_UNAVAILABLE"));
         }
 
@@ -328,7 +341,7 @@ class ShipmentApiTest {
             gateway.failNextCaptures(1);
 
             // 操作：出荷を登録して失敗する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isBadGateway());
+            ship("YAMATO", tracking).andExpect(status().isBadGateway());
 
             // 確認：受付のまま、支払は与信済み、出荷はない
             mockMvc.perform(get("/api/admin/orders/" + orderId))
@@ -342,10 +355,10 @@ class ShipmentApiTest {
         void shipsOnRetryAfterGatewayUnavailable() throws Exception {
             // 準備：1 回目の売上確定を接続の失敗にし、出荷の登録に失敗する
             gateway.failNextCaptures(1);
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isBadGateway());
+            ship("YAMATO", tracking).andExpect(status().isBadGateway());
 
             // 操作と確認：登録し直すと 201
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+            ship("YAMATO", tracking).andExpect(status().isCreated());
         }
     }
 
@@ -373,7 +386,7 @@ class ShipmentApiTest {
             recoverByJob();
 
             // 操作と確認：出荷済みになる
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated())
+            ship("YAMATO", tracking).andExpect(status().isCreated())
                     .andExpect(jsonPath("$.status").value("SHIPPED"));
         }
 
@@ -384,7 +397,7 @@ class ShipmentApiTest {
             recoverByJob();
 
             // 操作：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+            ship("YAMATO", tracking).andExpect(status().isCreated());
 
             // 確認：この注文だけを、支払画面の与信の参照で売上確定した
             assertThat(gateway.captured()).containsExactly(orderId);
@@ -399,7 +412,7 @@ class ShipmentApiTest {
             recoverByJob();
 
             // 操作：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
+            ship("YAMATO", tracking).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("AUTHORIZATION_EXPIRED"));
 
             // 確認：受付のまま、支払は与信期限切れ
@@ -414,7 +427,7 @@ class ShipmentApiTest {
             // 準備：与信を切らしてからジョブで受付にし、出荷の登録に失敗する
             gateway.expireAuthorization(gateway.authorizationRefOf(pageId));
             recoverByJob();
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+            ship("YAMATO", tracking).andExpect(status().isConflict());
 
             // 確認（前提）：キャンセルの操作ができる
             mockMvc.perform(get("/api/admin/orders/" + orderId))
@@ -434,7 +447,8 @@ class ShipmentApiTest {
         /**
          * 期限を過ぎてから、期限切れのジョブを実行し、注文が受付になったことを確認する。
          *
-         * <p>与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。注文への反映は、リスナーと同じ処理をここで呼ぶ。
+         * <p>ジョブが与信済みにすると、与信の成功のイベントがコミットの後に届き、リスナーが注文を受け付ける。
+         * ここでは、リスナーと同じ処理を同期で呼んで受付にしてから進む（後から届くリスナーは、受付済みなので何も更新しない）。
          *
          * <p>確認すること（前提）：
          * <ul>
@@ -463,7 +477,7 @@ class ShipmentApiTest {
             requestCancellation();
 
             // 操作：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
+            ship("YAMATO", tracking).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_SHIPPABLE"));
 
             // 確認：売上確定を呼ばない
@@ -475,22 +489,22 @@ class ShipmentApiTest {
         void shipsAfterRejectingRequest() throws Exception {
             // 準備：申請中に出荷の登録に失敗してから、申請を却下する
             requestCancellation();
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+            ship("YAMATO", tracking).andExpect(status().isConflict());
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject"))
                     .andExpect(status().isNoContent());
 
             // 操作と確認：201
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+            ship("YAMATO", tracking).andExpect(status().isCreated());
         }
 
         @Test
         @DisplayName("AC-172 出荷済みの注文に重ねて登録すると 409")
         void rejectsShippedOrder() throws Exception {
             // 準備：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+            ship("YAMATO", tracking).andExpect(status().isCreated());
 
             // 操作と確認：別の配送業者で重ねると、409 の ORDER_NOT_SHIPPABLE
-            ship("SAGAWA", "999999999999").andExpect(status().isConflict())
+            ship("SAGAWA", ShippingTestData.trackingNumber()).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_SHIPPABLE"));
         }
 
@@ -498,10 +512,10 @@ class ShipmentApiTest {
         @DisplayName("AC-172 出荷済みの注文に重ねて登録しても、売上確定は 1 回だけで、最初の出荷が残る")
         void keepsFirstShipment() throws Exception {
             // 準備：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+            ship("YAMATO", tracking).andExpect(status().isCreated());
 
             // 操作：別の配送業者で重ねて登録する
-            ship("SAGAWA", "999999999999").andExpect(status().isConflict());
+            ship("SAGAWA", ShippingTestData.trackingNumber()).andExpect(status().isConflict());
 
             // 確認：売上確定は 1 回で、出荷は最初の配送業者のまま
             assertThat(gateway.captureCalls()).isEqualTo(1);
@@ -516,7 +530,7 @@ class ShipmentApiTest {
             requestCancellationDuringNextCapture();
 
             // 操作：出荷を登録する
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict())
+            ship("YAMATO", tracking).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_SHIPPABLE"));
 
             // 確認：申請中で、支払は売上確定済み、出荷はない
@@ -531,12 +545,12 @@ class ShipmentApiTest {
         void shipsWithoutSecondCapture() throws Exception {
             // 準備：売上確定の最中に申請され、出荷の登録に失敗した後、申請を却下する
             requestCancellationDuringNextCapture();
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isConflict());
+            ship("YAMATO", tracking).andExpect(status().isConflict());
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject"))
                     .andExpect(status().isNoContent());
 
             // 操作：出荷を登録し直す
-            ship("YAMATO", TRACKING_NUMBER).andExpect(status().isCreated());
+            ship("YAMATO", tracking).andExpect(status().isCreated());
 
             // 確認：売上確定は最初の 1 回だけ
             assertThat(gateway.captureCalls()).isEqualTo(1);
@@ -554,7 +568,7 @@ class ShipmentApiTest {
          */
         static Stream<Arguments> invalidInputs() {
             return Stream.of(
-                    Arguments.of("一覧にない配送業者", "KURONEKO", TRACKING_NUMBER, null),
+                    Arguments.of("一覧にない配送業者", "KURONEKO", UNSAVED_TRACKING_NUMBER, null),
                     Arguments.of("空の送り状番号", "YAMATO", "", "trackingNumber"),
                     Arguments.of("欠けている送り状番号", "YAMATO", null, "trackingNumber"));
         }
@@ -573,7 +587,7 @@ class ShipmentApiTest {
             // 操作と確認：ない注文 ID には 404
             mockMvc.perform(post("/api/admin/orders/" + UUID.randomUUID() + "/shipment")
                             .contentType(MediaType.APPLICATION_JSON).content("""
-                                    {"carrier": "YAMATO", "trackingNumber": "123456789012"}"""))
+                                    {"carrier": "YAMATO", "trackingNumber": "%s"}""".formatted(UNSAVED_TRACKING_NUMBER)))
                     .andExpect(status().isNotFound());
         }
     }
@@ -597,9 +611,12 @@ class ShipmentApiTest {
         @Test
         @DisplayName("AC-167 上限の 30 文字の送り状番号で出荷を登録できる")
         void acceptsTrackingNumberAtMax() throws Exception {
+            // 準備：テストごとの 12 桁の後に 18 桁を加えた、30 文字の送り状番号
+            var atMax = tracking + "1".repeat(18);
+
             // 操作と確認：30 文字の送り状番号は 201
-            ship("YAMATO", "1".repeat(30)).andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.trackingNumber").value("1".repeat(30)));
+            ship("YAMATO", atMax).andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.trackingNumber").value(atMax));
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -669,7 +686,7 @@ class ShipmentApiTest {
      * 消費者がキャンセルを申請する。
      */
     private void requestCancellation() throws Exception {
-        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
+        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNoContent());
     }

@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -176,12 +177,13 @@ public class CartService {
      * 指定したバリアントの品目を、数量によらず行ごとカートから除く。
      *
      * <p>カートがなければ何もしない。持ち主は確認しない。
+     * 呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds) {
         var now = clock.instant();
         cartRepository.findById(cartId).ifPresent(cart -> {

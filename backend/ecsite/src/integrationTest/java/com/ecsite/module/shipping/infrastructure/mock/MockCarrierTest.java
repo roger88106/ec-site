@@ -3,6 +3,7 @@ package com.ecsite.module.shipping.infrastructure.mock;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.module.shipping.support.ShipmentTestData;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.ShippingTestData;
@@ -15,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
@@ -59,6 +61,17 @@ class MockCarrierTest {
     @Autowired
     ShippingApi shippingApi;
 
+    /**
+     * 出荷の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
+    /**
+     * 出荷を作る補助
+     */
+    private ShipmentTestData shipments;
+
     @Autowired
     MockCarrier mockCarrier;
 
@@ -80,6 +93,7 @@ class MockCarrierTest {
      */
     @BeforeEach
     void setUp() {
+        shipments = new ShipmentTestData(shippingApi, transactionTemplate);
         clock.setInstant(SHIPPED_AT);
     }
 
@@ -352,7 +366,7 @@ class MockCarrierTest {
     private Created shipped(ShipmentSummary.Carrier carrier) {
         var orderId = UUID.randomUUID();
         var trackingNumber = ShippingTestData.trackingNumber();
-        shippingApi.create(orderId, carrier, trackingNumber, SHIPPED_AT);
+        shipments.create(orderId, carrier, trackingNumber, SHIPPED_AT);
         return new Created(orderId, trackingNumber);
     }
 

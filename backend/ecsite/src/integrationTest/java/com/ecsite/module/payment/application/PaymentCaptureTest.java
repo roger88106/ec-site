@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -82,9 +83,15 @@ class PaymentCaptureTest {
      */
     PaymentTestData payments;
 
+    /**
+     * 支払の作成を、呼んだ側のトランザクションに加えるためのテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository, transactionTemplate);
         clock.setInstant(ORDERED_AT);
     }
 

@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
@@ -103,13 +106,19 @@ class PaymentApiTest {
     ApplicationEvents events;
 
     /**
+     * トランザクションの前提を確認するため、呼び出しを包むテンプレート
+     */
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
+    /**
      * 支払を進める補助
      */
     PaymentTestData payments;
 
     @BeforeEach
     void setUp() {
-        payments = new PaymentTestData(paymentApi, gateway, paymentRepository);
+        payments = new PaymentTestData(paymentApi, gateway, paymentRepository, transactionTemplate);
         clock.setInstant(ORDERED_AT);
     }
 
@@ -126,7 +135,7 @@ class PaymentApiTest {
             var orderId = UUID.randomUUID();
 
             // 操作：支払を作る
-            paymentApi.create(orderId, AMOUNT, ORDERED_AT);
+            create(orderId);
 
             // 確認：未払いで、期限は注文日時の 30 分後
             assertThat(paymentApi.find(List.of(orderId))).containsExactly(
@@ -140,8 +149,8 @@ class PaymentApiTest {
             var orderId = UUID.randomUUID();
 
             // 操作：同じ注文で 2 回作る
-            paymentApi.create(orderId, AMOUNT, ORDERED_AT);
-            paymentApi.create(orderId, AMOUNT, ORDERED_AT);
+            create(orderId);
+            create(orderId);
 
             // 確認：支払の行が 1 つで、読める支払も 1 つ
             assertThat(dsl.fetchCount(PAYMENT_, PAYMENT_.ORDER_ID.eq(orderId))).isEqualTo(1);
@@ -429,6 +438,67 @@ class PaymentApiTest {
         }
     }
 
+    @Nested
+    @DisplayName("トランザクションの前提")
+    class TransactionPrecondition {
+
+        @Test
+        @DisplayName("支払の作成は、トランザクションの外から呼ぶと失敗する")
+        void createFailsOutsideTransaction() {
+            // 準備：支払のない注文
+            var orderId = UUID.randomUUID();
+
+            // 操作と確認：トランザクションの外で作ると失敗する
+            assertThatThrownBy(() -> paymentApi.create(orderId, AMOUNT, ORDERED_AT))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：支払の行を作っていない
+            assertThat(dsl.fetchCount(PAYMENT_, PAYMENT_.ORDER_ID.eq(orderId))).isZero();
+        }
+
+        @Test
+        @DisplayName("支払の取消は、トランザクションの外から呼ぶと失敗する")
+        void cancelFailsOutsideTransaction() {
+            // 準備：未払いの支払
+            var orderId = payments.created(ORDERED_AT);
+
+            // 操作と確認：トランザクションの外で取り消すと失敗する
+            assertThatThrownBy(() -> paymentApi.cancel(orderId)).isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：支払は未払いのまま
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
+        }
+
+        @Test
+        @DisplayName("支払画面の URL は、トランザクションの中から呼ぶと失敗する")
+        void pageUrlFailsInsideTransaction() {
+            // 準備：未払いの支払
+            var orderId = payments.created(ORDERED_AT);
+
+            // 操作と確認：トランザクションの中で URL を求めると失敗する
+            assertThatThrownBy(() -> transactionTemplate.execute(status -> paymentApi.pageUrl(orderId)))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：決済サービスで画面を作らない
+            assertThat(gateway.openedPages()).isZero();
+        }
+
+        @Test
+        @DisplayName("売上確定は、トランザクションの中から呼ぶと失敗する")
+        void captureFailsInsideTransaction() {
+            // 準備：与信済みの支払
+            var orderId = payments.authorized(ORDERED_AT);
+
+            // 操作と確認：トランザクションの中で売上を確定すると失敗する
+            assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> paymentApi.capture(orderId)))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+
+            // 確認：決済サービスの売上確定を呼ばず、支払は与信済みのまま
+            assertThat(gateway.captureCallsOf(orderId)).isZero();
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+        }
+    }
+
     // ============================== 確認の補助 ==============================
 
     /**
@@ -451,5 +521,14 @@ class PaymentApiTest {
      */
     private List<PaymentExpired> expiredEvents(UUID orderId) {
         return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(orderId)).toList();
+    }
+
+    /**
+     * 支払を、トランザクションの中で作る（作成は呼んだ側のトランザクションに加わる）。
+     *
+     * @param orderId 注文 ID
+     */
+    private void create(UUID orderId) {
+        transactionTemplate.executeWithoutResult(status -> paymentApi.create(orderId, AMOUNT, ORDERED_AT));
     }
 }

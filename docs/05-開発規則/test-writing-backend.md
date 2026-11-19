@@ -34,7 +34,9 @@
 | `CatalogTestData` | 税区分、カテゴリ、商品（バリアント・画像・公開・販売の終了・公開期間） |
 | `InventoryTestData` | 在庫と、入荷の調整 |
 | `OrderTestData` | カート、注文手続き、注文、支払画面 |
-| `ShippingTestData` | 出荷の登録、配送状態の通知、送り状番号 |
+| `ShippingTestData` | 出荷の登録と売上確定の失敗、配送状態の通知、送り状番号 |
+| `ShipmentTestData`（`module.shipping.support`） | 注文を通さない出荷（出荷の API で作る） |
+| `ReservationTestData`（`module.inventory.support`） | 在庫の引当 |
 | `PaymentTestData` | 支払の作成、与信、売上確定、状態とバージョンの取得 |
 | `TestJson` | 応答の本文から読む ID（作成の応答の ID など） |
 

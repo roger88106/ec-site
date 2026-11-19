@@ -45,6 +45,12 @@ spring:
       mail.smtp.connectiontimeout: 10000
       mail.smtp.timeout: 10000
       mail.smtp.writetimeout: 10000
+  datasource:
+    hikari:
+      data-source-properties:
+        # 全ての DB の接続の初期化で、タイムアウトを置く（値は下の ecsite.db）。PostgreSQL のサーバーの設定で、接続ごとに効く。
+        # マイグレーション（Flyway）はプールを使わない別の接続を使うので、この設定は付かない（FlywayConnectionConfig）
+        options: -c lock_timeout=${ecsite.db.lock-timeout} -c statement_timeout=${ecsite.db.statement-timeout} -c idle_in_transaction_session_timeout=${ecsite.db.idle-in-transaction-timeout}
   flyway:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（バックエンドのアーキテクチャの「水平スケール」）。
     # 起動時の実行は local profile でだけ有効にする。
@@ -93,6 +99,15 @@ logging:
       console: ecs
 
 ecsite:
+  db:
+    # DB の接続のタイムアウト。1 つずつ環境変数（ECSITE_DB_LOCK_TIMEOUT など）で上書きできる。PostgreSQL の時間の書き方（5s、500ms）で書く
+    # ロック待ち：消費者・運営者のリクエストが行ロックを待つ上限を、画面の操作が待てる長さにする。超えると 503（RESOURCE_BUSY）
+    lock-timeout: 5s
+    # 文の実行：1 つの SQL が終わらないまま、スレッドと接続を使い続けないようにする。超えると 500
+    statement-timeout: 30s
+    # トランザクション中のアイドル：トランザクションを開いたまま止まった接続のロックを放す。
+    # メールの送信はトランザクションの中で SMTP を呼び、タイムアウトが接続・読み取り・書き込みで各 10 秒（spring.mail.properties）なので、それより長くする
+    idle-in-transaction-timeout: 60s
   payment:
     stripe:
       # Stripe の秘密の値。Git に入れず、Stripe の名前の環境変数で渡す（決済サービスが stripe のときだけ使う）

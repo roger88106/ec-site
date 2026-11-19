@@ -42,6 +42,10 @@ public enum CommonErrorCode implements ErrorCodeProvider {
      */
     RESTORE_ERROR(ErrorType.RESTORE_ERROR),
     /**
+     * DB のロックを待てなかった（ロック待ちのタイムアウト）。しばらくしてからやり直せる
+     */
+    RESOURCE_BUSY(ErrorType.SERVICE_UNAVAILABLE_ERROR),
+    /**
      * システムエラー
      */
     SYSTEM_ERROR(ErrorType.SYSTEM_ERROR);

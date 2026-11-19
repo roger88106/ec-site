@@ -18,6 +18,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -66,5 +67,29 @@ class MediaServiceReleaseTest {
             assertThat(published.assetId()).isEqualTo(deleted.id());
             assertThat(published.storageKey()).isEqualTo(deleted.storageKey());
         });
+    }
+
+    @Test
+    @DisplayName("DC-489-7 リポジトリが何も削除しなかったと返すとき、アセット解放を発行しない")
+    void publishesNothingWhenNothingDeleted() {
+        // 準備：何も削除しなかったと返すリポジトリ
+        var ids = List.of(UUID.randomUUID());
+        when(assetRepository.deleteAllById(ids)).thenReturn(List.of());
+
+        // 操作：解放する
+        service.release(ids);
+
+        // 確認：発行しない
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("DC-489-7 ID が空のとき、リポジトリを呼ばず、アセット解放を発行しない")
+    void doesNothingForNoIds() {
+        // 操作：空の ID で解放する
+        service.release(List.of());
+
+        // 確認：リポジトリを呼ばず、発行もしない
+        verifyNoInteractions(assetRepository, eventPublisher);
     }
 }

@@ -133,7 +133,7 @@ class JooqAssetRepositoryTest {
             var asset = asset(ImageFormat.PNG);
             repository.insert(asset);
 
-            // 操作：記録した ID と、ない ID を指定して消す
+            // 操作：記録した ID と、記録のない ID を指定して削除する
             repository.deleteAllById(Set.of(asset.id(), UUID.randomUUID()));
 
             // 確認：記録した分が消えている
@@ -148,7 +148,7 @@ class JooqAssetRepositoryTest {
             repository.insert(asset);
             var ids = Set.of(asset.id(), UUID.randomUUID());
 
-            // 操作：記録した ID と、ない ID を指定して 2 回削除する
+            // 操作：記録した ID と、記録のない ID を指定して 2 回削除する
             var first = repository.deleteAllById(ids);
             var second = repository.deleteAllById(ids);
 
@@ -165,9 +165,10 @@ class JooqAssetRepositoryTest {
             repository.insert(kept);
 
             // 操作：空の ID で消す
-            repository.deleteAllById(List.of());
+            var deleted = repository.deleteAllById(List.of());
 
-            // 確認：記録が残る
+            // 確認：何も返さず、記録が残る
+            assertThat(deleted).isEmpty();
             assertThat(repository.findAllById(List.of(kept.id()))).usingRecursiveFieldByFieldElementComparator().containsExactly(kept);
         }
     }

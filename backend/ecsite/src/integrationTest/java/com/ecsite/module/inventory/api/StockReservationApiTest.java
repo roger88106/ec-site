@@ -15,6 +15,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -242,10 +243,75 @@ class StockReservationApiTest {
             reserveInTransaction(holder, Map.of(variant, 2), EXPIRES_AT);
 
             // 操作：引当を解く
-            releaseInTransaction(holder);
+            releaseInTransaction(List.of(holder));
 
             // 確認：販売可能数が在庫数の 2 に戻る
             assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 2);
+        }
+
+        @Test
+        @DisplayName("DC-552-4 複数の持ち主の引当を、まとめて解く")
+        void releasesReservationsOfMultipleHolders() {
+            // 準備：在庫数 5 のうち、2 人が 1 と 2 を引き当てる
+            var variant = inventory.stockNewVariant(productId, 5);
+            var first = UUID.randomUUID();
+            var second = UUID.randomUUID();
+            reserveInTransaction(first, Map.of(variant, 1), EXPIRES_AT);
+            reserveInTransaction(second, Map.of(variant, 2), EXPIRES_AT);
+
+            // 操作：2 人の引当をまとめて解く
+            releaseInTransaction(List.of(first, second));
+
+            // 確認：販売可能数が在庫数の 5 に戻る
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 5);
+        }
+
+        @Test
+        @DisplayName("DC-552-4 渡していない持ち主の引当は残る")
+        void keepsReservationsOfOtherHolders() {
+            // 準備：在庫数 5 のうち、3 人が 1、2、1 を引き当てる
+            var variant = inventory.stockNewVariant(productId, 5);
+            var first = UUID.randomUUID();
+            var second = UUID.randomUUID();
+            var other = UUID.randomUUID();
+            reserveInTransaction(first, Map.of(variant, 1), EXPIRES_AT);
+            reserveInTransaction(second, Map.of(variant, 2), EXPIRES_AT);
+            reserveInTransaction(other, Map.of(variant, 1), EXPIRES_AT);
+
+            // 操作：2 人の引当だけを解く
+            releaseInTransaction(List.of(first, second));
+
+            // 確認：渡していない持ち主の 1 だけが残り、販売可能数が 4
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 4);
+        }
+
+        @Test
+        @DisplayName("DC-552-4 引当のない持ち主を含んでも、他の持ち主の引当を解く")
+        void skipsHoldersWithoutReservations() {
+            // 準備：在庫数 5 のうち 2 を引き当てる
+            var variant = inventory.stockNewVariant(productId, 5);
+            var holder = UUID.randomUUID();
+            reserveInTransaction(holder, Map.of(variant, 2), EXPIRES_AT);
+
+            // 操作：引当のない持ち主を含めて解く
+            releaseInTransaction(List.of(UUID.randomUUID(), holder));
+
+            // 確認：例外にならず、販売可能数が 5 に戻る
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 5);
+        }
+
+        @Test
+        @DisplayName("DC-552-4 空の集まりを渡すと、何も変わらない")
+        void doesNothingForEmptyHolders() {
+            // 準備：在庫数 5 のうち 2 を引き当てる
+            var variant = inventory.stockNewVariant(productId, 5);
+            reserveInTransaction(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
+
+            // 操作：空の集まりを渡して解く
+            releaseInTransaction(List.of());
+
+            // 確認：引当が残り、販売可能数が 3 のまま
+            assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
         }
     }
 
@@ -310,7 +376,7 @@ class StockReservationApiTest {
             assertThat(reserveInTransaction(holder, Map.of(variant, 2), EXPIRES_AT)).isEmpty();
 
             // 操作と確認：トランザクションの外で解除すると失敗する
-            assertThatThrownBy(() -> api.release(holder)).isInstanceOf(IllegalTransactionStateException.class);
+            assertThatThrownBy(() -> api.release(List.of(holder))).isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：引当は解かれず、販売可能数が減ったまま
             assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
@@ -374,9 +440,9 @@ class StockReservationApiTest {
     /**
      * 引当の解除を、トランザクションの中で呼ぶ（解除は呼んだ側のトランザクションに加わる）。
      *
-     * @param holderId 持ち主 ID
+     * @param holderIds 持ち主 ID
      */
-    private void releaseInTransaction(UUID holderId) {
-        transactionTemplate.executeWithoutResult(status -> api.release(holderId));
+    private void releaseInTransaction(Collection<UUID> holderIds) {
+        transactionTemplate.executeWithoutResult(status -> api.release(holderIds));
     }
 }

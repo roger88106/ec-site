@@ -77,6 +77,11 @@ class JooqPaymentRepositoryTest {
     private static final String AUTHORIZATION_REF = "auth-1";
 
     /**
+     * 売上確定を求めた時刻（与信の時刻の後）
+     */
+    private static final Instant CAPTURE_REQUESTED_AT = Instant.parse("2026-10-08T15:25:00Z");
+
+    /**
      * 1 回更新した後のバージョン（作ったときは 0）
      */
     private static final long VERSION_AFTER_UPDATE = 1L;
@@ -235,6 +240,52 @@ class JooqPaymentRepositoryTest {
 
             // 確認：再取得した支払のバージョンが 1 上がっている
             assertThat(repository.findById(payment.id()).orElseThrow().toSnapshot().version()).isEqualTo(VERSION_AFTER_UPDATE);
+        }
+
+        @Test
+        @DisplayName("売上確定を求めた時刻を保存し、消した後は空に戻る")
+        void savesAndClearsCaptureRequest() {
+            // 準備：与信済みで保存した支払
+            var payment = savedPayment();
+            repository.update(authorized(payment));
+
+            // 操作：売上確定を求めて保存する
+            var requested = repository.lockById(payment.id()).orElseThrow();
+            requested.requestCapture(CAPTURE_REQUESTED_AT);
+            repository.update(requested);
+
+            // 確認：再取得した支払が、その時刻を持つ
+            var restored = repository.findById(payment.id()).orElseThrow();
+            assertThat(restored.captureRequestedAt()).contains(CAPTURE_REQUESTED_AT);
+
+            // 操作：時刻を消して保存する
+            var cleared = repository.lockById(payment.id()).orElseThrow();
+            cleared.clearCaptureRequest(CAPTURE_REQUESTED_AT);
+            repository.update(cleared);
+
+            // 確認：再取得した支払に、時刻がない
+            assertThat(repository.findById(payment.id()).orElseThrow().captureRequestedAt()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("売上確定を求めた時刻は、売上確定済みに進んでも保存されたまま")
+        void keepsCaptureRequestAfterCapture() {
+            // 準備：売上確定を求めて保存した与信済みの支払
+            var payment = savedPayment();
+            repository.update(authorized(payment));
+            var requested = repository.lockById(payment.id()).orElseThrow();
+            requested.requestCapture(CAPTURE_REQUESTED_AT);
+            repository.update(requested);
+
+            // 操作：売上確定を反映して保存する
+            var captured = repository.lockById(payment.id()).orElseThrow();
+            captured.capture(CAPTURE_REQUESTED_AT.plusSeconds(1));
+            repository.update(captured);
+
+            // 確認：売上確定済みで、時刻が残る
+            var restored = repository.findById(payment.id()).orElseThrow();
+            assertThat(restored.status()).isEqualTo(PaymentStatus.CAPTURED);
+            assertThat(restored.captureRequestedAt()).contains(CAPTURE_REQUESTED_AT);
         }
 
         @Test
@@ -638,7 +689,7 @@ class JooqPaymentRepositoryTest {
      *   <li>支払 ID と注文 ID が保存したもの</li>
      *   <li>金額が {@link #AMOUNT}、支払の期限が {@link #DEADLINE}</li>
      *   <li>状態が未払い</li>
-     *   <li>支払画面・与信の参照・与信の時刻・与信の反映を待ち始めた時刻がない</li>
+     *   <li>支払画面・与信の参照・与信の時刻・与信の反映を待ち始めた時刻・売上確定を求めた時刻がない</li>
      *   <li>バージョンが 0</li>
      * </ul>
      *
@@ -657,6 +708,7 @@ class JooqPaymentRepositoryTest {
         assertThat(snapshot.authorizationRef()).isNull();
         assertThat(snapshot.authorizedAt()).isNull();
         assertThat(snapshot.awaitingAuthorizationSince()).isNull();
+        assertThat(snapshot.captureRequestedAt()).isNull();
         assertThat(snapshot.version()).isZero();
     }
 

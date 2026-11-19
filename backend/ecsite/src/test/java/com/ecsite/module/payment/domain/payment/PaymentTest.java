@@ -252,7 +252,216 @@ class PaymentTest {
                                                    boolean hasPage, boolean isAwaiting) {
             return new Payment.Snapshot(UUID.randomUUID(), UUID.randomUUID(), AMOUNT, DEADLINE, status,
                     hasPage ? PAGE : null, hasRef ? AUTHORIZATION_REF : null, hasAuthorizedAt ? ORDERED_AT : null,
-                    isAwaiting ? DEADLINE : null, 0);
+                    isAwaiting ? DEADLINE : null, null, 0);
+        }
+    }
+
+    @Nested
+    @DisplayName("売上確定を求めた時刻")
+    class CaptureRequest {
+
+        /**
+         * 売上確定を求めた時刻
+         */
+        private static final Instant REQUESTED_AT = Instant.parse("2026-10-20T01:00:00Z");
+
+        /**
+         * 運営者が再実行した時刻
+         */
+        private static final Instant RETRIED_AT = REQUESTED_AT.plus(Duration.ofHours(1));
+
+        @Test
+        @DisplayName("与信済みの支払に売上確定を求めると、その時刻を持ち、状態は与信済みのまま")
+        void requestsAuthorized() {
+            // 準備：与信済みの支払
+            var payment = authorized();
+
+            // 操作：売上確定を求める
+            var changed = payment.requestCapture(REQUESTED_AT);
+
+            // 確認：時刻を持ち、状態は変わらず、イベントもない
+            assertThat(changed).isTrue();
+            assertThat(payment.captureRequestedAt()).contains(REQUESTED_AT);
+            assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
+            assertThat(payment.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("すでに時刻があれば、新しい時刻に上書きする（運営者の再実行）")
+        void overwritesRequestedAt() {
+            // 準備：売上確定を求めた支払
+            var payment = authorized();
+            payment.requestCapture(REQUESTED_AT);
+
+            // 操作：再実行で、もう一度求める
+            var changed = payment.requestCapture(RETRIED_AT);
+
+            // 確認：新しい時刻になる
+            assertThat(changed).isTrue();
+            assertThat(payment.captureRequestedAt()).contains(RETRIED_AT);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "AUTHORIZED")
+        @DisplayName("与信済み以外は、売上確定を求めても何も変わらない")
+        void requestChangesNothing(PaymentStatus status) {
+            // 準備：その状態の支払
+            var payment = inState(status);
+            var before = payment.toSnapshot();
+
+            // 操作：売上確定を求める
+            var changed = payment.requestCapture(REQUESTED_AT);
+
+            // 確認：false で、変わらない
+            assertThat(changed).isFalse();
+            assertUnchanged(payment, before);
+        }
+
+        @Test
+        @DisplayName("読んだ時刻と同じなら、売上確定を求めた時刻を削除する")
+        void clearsWhenSame() {
+            // 準備：売上確定を求めた支払
+            var payment = authorized();
+            payment.requestCapture(REQUESTED_AT);
+
+            // 操作：読んだ時刻と同じ時刻で削除する
+            var cleared = payment.clearCaptureRequest(REQUESTED_AT);
+
+            // 確認：削除されて、状態は与信済みのまま
+            assertThat(cleared).isTrue();
+            assertThat(payment.captureRequestedAt()).isEmpty();
+            assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
+        }
+
+        @Test
+        @DisplayName("読んだ時刻と違えば（読んだ後に再実行された）、削除しない")
+        void keepsWhenDifferent() {
+            // 準備：読んだ後に再実行で時刻が変わった支払
+            var payment = authorized();
+            payment.requestCapture(REQUESTED_AT);
+            payment.requestCapture(RETRIED_AT);
+            var before = payment.toSnapshot();
+
+            // 操作：最初に読んだ時刻で削除する
+            var cleared = payment.clearCaptureRequest(REQUESTED_AT);
+
+            // 確認：false で、新しい時刻のまま
+            assertThat(cleared).isFalse();
+            assertUnchanged(payment, before);
+        }
+
+        @Test
+        @DisplayName("時刻がなければ、削除することはできない")
+        void clearsNothingWithoutRequest() {
+            // 準備：売上確定を求めていない与信済みの支払
+            var payment = authorized();
+            var before = payment.toSnapshot();
+
+            // 操作：削除する
+            var cleared = payment.clearCaptureRequest(REQUESTED_AT);
+
+            // 確認：false で、変わらない
+            assertThat(cleared).isFalse();
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE,
+                names = {"UNPAID", "NOT_PAID", "AUTHORIZED"})
+        @DisplayName("与信済み以外は、時刻が同じでも削除しない")
+        void clearChangesNothing(PaymentStatus status) {
+            // 準備：売上確定を求めた後に進んだ状態の支払（未払い・支払なしは時刻を持てないので除く）
+            var snapshot = withCaptureRequestedAt(inState(status).toSnapshot(), REQUESTED_AT);
+            var payment = Payment.restore(snapshot);
+            var before = payment.toSnapshot();
+
+            // 操作：同じ時刻で削除する
+            var cleared = payment.clearCaptureRequest(REQUESTED_AT);
+
+            // 確認：false で、変わらない
+            assertThat(cleared).isFalse();
+            assertUnchanged(payment, before);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"UNPAID", "NOT_PAID"})
+        @DisplayName("未払い・支払なし以外は、売上確定を求めた時刻があってもなくても復元でき、同じ値を持つ")
+        void restoresWithOrWithoutRequest(PaymentStatus status) {
+            // 準備：時刻のあるスナップショットと、ないスナップショット
+            var base = inState(status).toSnapshot();
+            var with = withCaptureRequestedAt(base, REQUESTED_AT);
+
+            // 操作と確認：どちらも復元でき、全ての項目が同じ
+            assertThat(Payment.restore(with).toSnapshot()).usingRecursiveComparison().isEqualTo(with);
+            assertThat(Payment.restore(base).toSnapshot()).usingRecursiveComparison().isEqualTo(base);
+            assertThat(Payment.restore(with).captureRequestedAt()).contains(REQUESTED_AT);
+            assertThat(Payment.restore(base).captureRequestedAt()).isEmpty();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(value = PaymentStatus.class, names = {"UNPAID", "NOT_PAID"})
+        @DisplayName("未払い・支払なしが売上確定を求めた時刻を持つと、復元できず、メッセージに値が出ない")
+        void rejectsRequestWithoutAuthorization(PaymentStatus status) {
+            // 準備：時刻を持つ、未払い・支払なしのスナップショット
+            var base = inState(status).toSnapshot();
+            var snapshot = withCaptureRequestedAt(base, REQUESTED_AT);
+
+            // 操作と確認：例外になり、メッセージに時刻がない
+            assertThatThrownBy(() -> Payment.restore(snapshot))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageNotContaining(REQUESTED_AT.toString());
+        }
+
+        @Test
+        @DisplayName("売上確定を求めた時刻は、売上確定済みに進んでも削除されない")
+        void keepsRequestAfterCapture() {
+            // 準備：売上確定を求めた支払
+            var payment = authorized();
+            payment.requestCapture(REQUESTED_AT);
+
+            // 操作：売上確定を反映する
+            payment.capture(RETRIED_AT);
+
+            // 確認：売上確定済みで、時刻は残り、そのまま復元できる
+            assertThat(payment.status()).isEqualTo(PaymentStatus.CAPTURED);
+            assertThat(payment.captureRequestedAt()).contains(REQUESTED_AT);
+            assertThat(Payment.restore(payment.toSnapshot()).captureRequestedAt()).contains(REQUESTED_AT);
+        }
+
+        @Test
+        @DisplayName("売上確定を求めた時刻は、与信期限切れに進んでも削除されない")
+        void keepsRequestAfterExpireAuthorization() {
+            // 準備：売上確定を求めた支払
+            var payment = authorized();
+            payment.requestCapture(REQUESTED_AT);
+
+            // 操作：与信期限切れにする
+            payment.expireAuthorization();
+
+            // 確認：与信期限切れで、時刻は残り、そのまま復元できる
+            assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZATION_EXPIRED);
+            assertThat(payment.captureRequestedAt()).contains(REQUESTED_AT);
+            assertThat(Payment.restore(payment.toSnapshot()).captureRequestedAt()).contains(REQUESTED_AT);
+        }
+
+        @Test
+        @DisplayName("作ったばかりの支払は、売上確定を求めていない")
+        void notRequestedWhenCreated() {
+            // 操作と確認：時刻がない
+            assertThat(unpaid().captureRequestedAt()).isEmpty();
+        }
+
+        /**
+         * スナップショットに、売上確定を求めた時刻を付ける。
+         *
+         * @param base        元のスナップショット
+         * @param requestedAt 売上確定を求めた時刻
+         * @return 時刻を付けたスナップショット
+         */
+        private static Payment.Snapshot withCaptureRequestedAt(Payment.Snapshot base, Instant requestedAt) {
+            return new Payment.Snapshot(base.id(), base.orderId(), base.amount(), base.deadline(), base.status(),
+                    base.page(), base.authorizationRef(), base.authorizedAt(), base.awaitingAuthorizationSince(),
+                    requestedAt, base.version());
         }
     }
 

@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.CatalogApi;
@@ -73,12 +74,8 @@ class CatalogApiDirectory implements CatalogDirectory {
     /**
      * 店舗の並び順を、商品カタログの並び順に変換する。
      */
-    private static ShownProductSort toSort(ProductCondition.Sort sort) {
-        return switch (sort) {
-            case NEWEST -> ShownProductSort.NEWEST;
-            case PRICE_ASC -> ShownProductSort.PRICE_ASC;
-            case PRICE_DESC -> ShownProductSort.PRICE_DESC;
-        };
+    static ShownProductSort toSort(ProductCondition.Sort sort) {
+        return EnumConversion.byName(sort, ShownProductSort.class);
     }
 
     /**

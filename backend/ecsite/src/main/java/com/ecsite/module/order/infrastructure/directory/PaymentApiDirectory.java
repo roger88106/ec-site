@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.model.PaymentAuthorization;
 import com.ecsite.module.order.application.model.PaymentSnapshot;
@@ -96,17 +97,7 @@ class PaymentApiDirectory implements PaymentDirectory {
     /**
      * 決済モジュールの支払の状態を、注文の型にする。
      */
-    private static OrderPayment.Status toStatus(PaymentSummary.Status status) {
-        return switch (status) {
-            case UNPAID -> OrderPayment.Status.UNPAID;
-            case AUTHORIZED -> OrderPayment.Status.AUTHORIZED;
-            case VOID_PENDING -> OrderPayment.Status.VOID_PENDING;
-            case VOIDED -> OrderPayment.Status.VOIDED;
-            case NOT_PAID -> OrderPayment.Status.NOT_PAID;
-            case CAPTURED -> OrderPayment.Status.CAPTURED;
-            case AUTHORIZATION_EXPIRED -> OrderPayment.Status.AUTHORIZATION_EXPIRED;
-            case REFUND_PENDING -> OrderPayment.Status.REFUND_PENDING;
-            case REFUNDED -> OrderPayment.Status.REFUNDED;
-        };
+    static OrderPayment.Status toStatus(PaymentSummary.Status status) {
+        return EnumConversion.byName(status, OrderPayment.Status.class);
     }
 }

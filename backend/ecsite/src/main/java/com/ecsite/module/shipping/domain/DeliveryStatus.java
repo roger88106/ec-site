@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.domain;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import lombok.RequiredArgsConstructor;
 
@@ -65,11 +66,6 @@ public enum DeliveryStatus {
      * @return イベントの配送状態
      */
     public DeliveryStatusChanged.Status toEventStatus() {
-        return switch (this) {
-            case SHIPPED -> DeliveryStatusChanged.Status.SHIPPED;
-            case IN_TRANSIT -> DeliveryStatusChanged.Status.IN_TRANSIT;
-            case DELIVERED -> DeliveryStatusChanged.Status.DELIVERED;
-            case RETURNED -> DeliveryStatusChanged.Status.RETURNED;
-        };
+        return EnumConversion.byName(this, DeliveryStatusChanged.Status.class);
     }
 }

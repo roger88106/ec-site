@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.order.event.OrderStatusChanged;
 
 /**
@@ -45,12 +46,6 @@ public enum OrderStatus {
      * @return イベントの状態
      */
     public OrderStatusChanged.Status toEventStatus() {
-        return switch (this) {
-            case PENDING_PAYMENT -> OrderStatusChanged.Status.PENDING_PAYMENT;
-            case ACCEPTED -> OrderStatusChanged.Status.ACCEPTED;
-            case CANCELLATION_REQUESTED -> OrderStatusChanged.Status.CANCELLATION_REQUESTED;
-            case CANCELLED -> OrderStatusChanged.Status.CANCELLED;
-            case SHIPPED -> OrderStatusChanged.Status.SHIPPED;
-        };
+        return EnumConversion.byName(this, OrderStatusChanged.Status.class);
     }
 }

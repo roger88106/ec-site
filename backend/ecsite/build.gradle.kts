@@ -131,6 +131,9 @@ dependencies {
     // --- モジュラーモノリス（バックエンドのアーキテクチャの「モジュラーモノリス」） ---
     implementation(libs.bundles.spring.modulith)
 
+    // --- メモリのキャッシュ（Caffeine。件数の上限と期限を付けて持つ） ---
+    implementation(libs.caffeine)
+
     // --- 定期ジョブの分散ロック（ShedLock。ロックは PostgreSQL のテーブルに持つ） ---
     implementation(libs.shedlock.spring)
     implementation(libs.shedlock.provider.jdbc.template)

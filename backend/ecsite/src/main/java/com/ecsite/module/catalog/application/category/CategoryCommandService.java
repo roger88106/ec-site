@@ -97,6 +97,8 @@ public class CategoryCommandService {
         }
 
         // 兄弟をロックして取得 ※同時の並び順の変更を直列にする
+        // 確認の後に親が削除されたときは、兄弟は空になる（削除できるのは子のない親だけのため）。
+        // 送る ID はリクエストの検証で 1 つ以上なので、空の兄弟と一致せず、何も変えない。
         var siblings = categoryRepository.lockChildren(command.parentId());
 
         // 並び順変更 ※表示順が変わったカテゴリだけ保存する

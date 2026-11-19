@@ -335,8 +335,8 @@ class PaymentExpiryJobTest {
             clock.setInstant(DEADLINE);
             gatewayService.expire(pastDeadline);
 
-            // 操作：この支払を処理するまでジョブを動かす
-            expireUntil(() -> settled(orderId));
+            // 操作：次のジョブの実行を 1 回
+            job.expire();
 
             // 確認：画面が閉じ、支払なしで、期限切れのイベントが 1 件
             assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.CLOSED);

@@ -73,9 +73,9 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @return 使う支払画面。支払えなければ空
      */
     public Optional<PaymentPage> recordPage(@NonNull UUID orderId, @NonNull PaymentPage opened) {
-        var now = clock.instant();
         return paymentRepository.lockByOrderId(orderId)
-                .filter(payment -> payment.isPayable(now))
+                // 行ロックの待ちで期限を過ぎた支払に記録しないよう、時刻は行ロックの後に取る
+                .filter(payment -> payment.isPayable(clock.instant()))
                 // 同時のリクエストが先に覚えた画面があれば、それを使う
                 .map(payment -> payment.page().orElseGet(() -> {
                     payment.openPage(opened);
@@ -136,10 +136,12 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     public void expire(@NonNull UUID paymentId, @Nullable String readPageId) {
         var now = clock.instant();
         paymentRepository.lockById(paymentId).ifPresent(payment -> {
-            // 未払いでなければ、次の回の検索は読まないので、見送りにしない。
+            // 未払いでなければ、次の回の検索は読まないので、見送りにしない
+            var unpaid = payment.status() == PaymentStatus.UNPAID;
             // 支払画面は一度記録したら変わらないので、画面があって読んだ画面と違えば、読んだ後に記録された
-            if (payment.status() == PaymentStatus.UNPAID && payment.page().filter(page -> !page.id().equals(readPageId)).isPresent()) {
-                log.info("読んだ後に支払画面が記録されたので、支払なしにせず次の回に回す: paymentId={}", paymentId);
+            var pageRecordedAfterRead = payment.page().filter(page -> !page.id().equals(readPageId)).isPresent();
+            if (unpaid && pageRecordedAfterRead) {
+                log.info("読んだ後に支払画面が記録されたので、この回は支払を変えない（次の回で扱う）: paymentId={}", paymentId);
                 return;
             }
             expireIfPastDeadline(payment, now);

@@ -39,11 +39,13 @@ public interface StockDirectory {
     Set<UUID> reserve(UUID holderId, Map<UUID, Integer> quantities, Instant expiresAt);
 
     /**
-     * 持ち主の引当を解く。
+     * 持ち主の引当をまとめて解く。
      *
-     * @param holderId 持ち主 ID
+     * <p>持ち主の数によらず 1 回で解く。空なら何もしない。
+     *
+     * @param holderIds 持ち主 ID（注文手続き）
      */
-    void release(UUID holderId);
+    void release(Collection<UUID> holderIds);
 
     /**
      * 引当を在庫数の減算に置き換える。

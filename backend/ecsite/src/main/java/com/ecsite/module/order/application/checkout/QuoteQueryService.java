@@ -20,11 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 見積もりのサービス
@@ -72,13 +71,9 @@ class QuoteQueryService {
         var sellable = variantIds.isEmpty() ? Map.<UUID, Integer>of()
                 : stockDirectory.sellableQuantities(variantIds, holderId);
 
-        // 税区分ごとの率の取得 ※同じ税区分の品目が多くても、税モジュールには 1 回だけ聞く
-        var rates = new HashMap<UUID, Optional<BigDecimal>>();
-        for (var variant : variants.values()) {
-            if (!rates.containsKey(variant.taxCategoryId())) {
-                rates.put(variant.taxCategoryId(), taxDirectory.rateAt(variant.taxCategoryId(), at));
-            }
-        }
+        // 税区分ごとの率の取得 ※同じ税区分の品目が多くても、税区分を重複なく集めて、税モジュールには 1 回だけ聞く
+        var taxCategoryIds = variants.values().stream().map(VariantInfo::taxCategoryId).collect(Collectors.toSet());
+        var rates = taxCategoryIds.isEmpty() ? Map.<UUID, BigDecimal>of() : taxDirectory.ratesAt(taxCategoryIds, at);
 
         // 品目の組み立て
         var items = new ArrayList<QuoteItem>();
@@ -89,7 +84,7 @@ class QuoteQueryService {
                 missingVariant = true;
                 continue;
             }
-            var rate = rates.getOrDefault(variant.taxCategoryId(), Optional.empty()).orElse(null);
+            var rate = rates.get(variant.taxCategoryId());
             Money unitPrice = rate == null ? null : taxDirectory.priceInclTax(variant.priceExclTax(), rate);
             items.add(QuoteItem.of(variant, line.quantity(), sellable.getOrDefault(line.variantId(), 0), rate, unitPrice));
         }

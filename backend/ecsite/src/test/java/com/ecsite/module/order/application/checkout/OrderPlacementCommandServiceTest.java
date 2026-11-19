@@ -231,21 +231,6 @@ class OrderPlacementCommandServiceTest {
             // 操作と確認：総額が変わったエラー
             assertBusinessError(() -> service.place(command(TOTAL)), OrderErrorCode.TOTAL_AMOUNT_CHANGED);
         }
-
-        @Test
-        @DisplayName("AC-518-3 総額が変わらず、範囲の外なら、範囲の外のエラーで拒否し、在庫と注文と支払に書かない")
-        void rejectsOutOfRangeTotal() {
-            // 準備：見積もりの総額が範囲の上限の外で、確認した総額も同じ
-            when(quoteQueryService.quote(lines, NOW, checkout.id())).thenReturn(quoteWithTotal(OUT_OF_RANGE_TOTAL));
-
-            // 操作と確認：範囲の外のエラー
-            assertBusinessError(() -> service.place(command(Money.of(OUT_OF_RANGE_TOTAL))), OrderErrorCode.ORDER_AMOUNT_OUT_OF_RANGE);
-
-            // 確認：在庫の減算・注文の保存・支払の作成をしない
-            verify(stockDirectory, never()).commit(any(), anyMap(), any(), anyString());
-            verify(orderRepository, never()).insert(any());
-            verify(paymentDirectory, never()).create(any(), any(), any());
-        }
     }
 
     // ============================== 準備の補助 ==============================

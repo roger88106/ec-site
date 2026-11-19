@@ -18,6 +18,11 @@ import java.util.UUID;
 
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
+import static com.ecsite.module.order.presentation.OrderTotalFixture.LOW_ITEMS_TOTAL;
+import static com.ecsite.module.order.presentation.OrderTotalFixture.LOW_QUANTITY;
+import static com.ecsite.module.order.presentation.OrderTotalFixture.OUT_OF_RANGE_ERROR_CODE;
+import static com.ecsite.module.order.presentation.OrderTotalFixture.OUT_OF_RANGE_MESSAGE;
+import static com.ecsite.support.data.InventoryTestData.expectQuantity;
 import static com.ecsite.support.data.OrderTestData.placeOrderRequest;
 import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,24 +45,9 @@ class PlaceOrderAmountRangeApiTest {
     // ============================== 定数 ==============================
 
     /**
-     * 範囲の外のエラーコード
-     */
-    private static final String ERROR_CODE = "ORDER_AMOUNT_OUT_OF_RANGE";
-
-    /**
-     * 範囲の外の文言（値は桁区切りで差し込まれる）
-     */
-    private static final String MESSAGE = "注文の総額は 50〜99,999,999 円にしてください。カートの商品か数量を変えてください。";
-
-    /**
      * 開始の時点の総額（範囲の中）
      */
     private static final long START_TOTAL = 100;
-
-    /**
-     * 品目の小計（税込）。開始の後に送料を変えて、総額を作る。
-     */
-    private static final long ITEMS_TOTAL = 44;
 
     // ============================== Bean ==============================
 
@@ -153,7 +143,7 @@ class PlaceOrderAmountRangeApiTest {
      * <ul>
      *   <li>状態が 400 で、エラーコードと文言が範囲の外のもの</li>
      *   <li>注文と支払が作られない</li>
-     *   <li>販売可能数が変わらない</li>
+     *   <li>在庫数と販売可能数が変わらない</li>
      * </ul>
      *
      * @param newTotal 開始の後の総額
@@ -162,18 +152,19 @@ class PlaceOrderAmountRangeApiTest {
         // 準備：範囲の中の総額で注文手続きを開始し、その後に送料を変えて総額を範囲の外にする
         var variant = totals.fillCartWithTotal(START_TOTAL);
         var checkoutId = fixture.startCheckout(fixture.cartId());
-        doReturn(newTotal - ITEMS_TOTAL).when(properties).shippingFee();
+        doReturn(newTotal - LOW_ITEMS_TOTAL).when(properties).shippingFee();
         var stock = fixture.sellable(variant);
         var payments = dsl.fetchCount(PAYMENT_);
 
         // 操作と確認：新しい総額で注文すると、範囲の外のエラーで拒否される
         mockMvc.perform(placeOrderRequest(checkoutId, newTotal))
                 .andExpect(status().isBadRequest())
-                .andExpectAll(problem(ERROR_CODE, MESSAGE));
+                .andExpectAll(problem(OUT_OF_RANGE_ERROR_CODE, OUT_OF_RANGE_MESSAGE));
 
-        // 確認：注文も支払も作られず、販売可能数も変わらない
+        // 確認：注文も支払も作られず、在庫数も販売可能数も変わらない
         assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isZero();
         assertThat(dsl.fetchCount(PAYMENT_)).isEqualTo(payments);
+        expectQuantity(mockMvc, variant, LOW_QUANTITY);
         assertThat(fixture.sellable(variant)).isEqualTo(stock);
     }
 

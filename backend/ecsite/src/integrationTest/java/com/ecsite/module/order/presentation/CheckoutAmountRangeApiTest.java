@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import static com.ecsite.module.order.presentation.OrderTotalFixture.OUT_OF_RANGE_ERROR_CODE;
+import static com.ecsite.module.order.presentation.OrderTotalFixture.OUT_OF_RANGE_MESSAGE;
 import static com.ecsite.support.data.OrderTestData.startCheckoutRequest;
 import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,18 +32,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @IntegrationTest
 @Transactional
 class CheckoutAmountRangeApiTest {
-
-    // ============================== 定数 ==============================
-
-    /**
-     * 範囲の外のエラーコード
-     */
-    private static final String ERROR_CODE = "ORDER_AMOUNT_OUT_OF_RANGE";
-
-    /**
-     * 範囲の外の文言（値は桁区切りで差し込まれる）
-     */
-    private static final String MESSAGE = "注文の総額は 50〜99,999,999 円にしてください。カートの商品か数量を変えてください。";
 
     // ============================== Bean ==============================
 
@@ -90,37 +80,13 @@ class CheckoutAmountRangeApiTest {
         @Test
         @DisplayName("AC-518-1、AC-518-5 総額が下限の外（49 円）だと、開始は 400 で拒否し、注文手続きも引当も作らない")
         void rejectsBelowMinimum() throws Exception {
-            // 準備：総額 49 円のカート
-            var variant = totals.fillCartWithTotal(49);
-            var stock = fixture.sellable(variant);
-            var checkouts = fixture.checkoutCount();
-
-            // 操作と確認：範囲の外のエラーで拒否される
-            mockMvc.perform(startCheckoutRequest(cartId))
-                    .andExpect(status().isBadRequest())
-                    .andExpectAll(problem(ERROR_CODE, MESSAGE));
-
-            // 確認：注文手続きを作らず、引当もしない
-            assertThat(fixture.checkoutCount()).isEqualTo(checkouts);
-            assertThat(fixture.sellable(variant)).isEqualTo(stock);
+            rejectsAtTotal(49);
         }
 
         @Test
         @DisplayName("AC-518-2、AC-518-5 総額が上限の外（100,000,000 円）だと、開始は 400 で拒否し、注文手続きも引当も作らない")
         void rejectsAboveMaximum() throws Exception {
-            // 準備：総額 100,000,000 円のカート
-            var variant = totals.fillCartWithTotal(100_000_000);
-            var stock = fixture.sellable(variant);
-            var checkouts = fixture.checkoutCount();
-
-            // 操作と確認：範囲の外のエラーで拒否される
-            mockMvc.perform(startCheckoutRequest(cartId))
-                    .andExpect(status().isBadRequest())
-                    .andExpectAll(problem(ERROR_CODE, MESSAGE));
-
-            // 確認：注文手続きを作らず、引当もしない
-            assertThat(fixture.checkoutCount()).isEqualTo(checkouts);
-            assertThat(fixture.sellable(variant)).isEqualTo(stock);
+            rejectsAtTotal(100_000_000);
         }
     }
 
@@ -155,5 +121,35 @@ class CheckoutAmountRangeApiTest {
             // 確認：カートの数量だけ引き当てている
             assertThat(fixture.sellable(variant)).isEqualTo(stock - 10);
         }
+    }
+
+    // ============================== 操作の補助 ==============================
+
+    /**
+     * 指定の総額のカートで注文手続きを開始すると拒否されることを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>状態が 400 で、エラーコードと文言が範囲の外のもの</li>
+     *   <li>注文手続きが作られない</li>
+     *   <li>販売可能数が変わらない（引当をしない）</li>
+     * </ul>
+     *
+     * @param total カートの総額
+     */
+    private void rejectsAtTotal(long total) throws Exception {
+        // 準備：範囲の外の総額のカート
+        var variant = totals.fillCartWithTotal(total);
+        var stock = fixture.sellable(variant);
+        var checkouts = fixture.checkoutCount();
+
+        // 操作と確認：範囲の外のエラーで拒否される
+        mockMvc.perform(startCheckoutRequest(cartId))
+                .andExpect(status().isBadRequest())
+                .andExpectAll(problem(OUT_OF_RANGE_ERROR_CODE, OUT_OF_RANGE_MESSAGE));
+
+        // 確認：注文手続きを作らず、引当もしない
+        assertThat(fixture.checkoutCount()).isEqualTo(checkouts);
+        assertThat(fixture.sellable(variant)).isEqualTo(stock);
     }
 }

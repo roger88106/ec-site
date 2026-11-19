@@ -17,10 +17,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 送料は、注文の設定の {@link org.springframework.test.context.bean.override.mockito.MockitoSpyBean} で差し替える。
  *
  * <p>総額は、税込単価（税抜 × 1.1 の端数切り捨て）× 数量 + 送料。作った後に、カートの応答の総額を読んで確認する。
- * 総額が 99,999,990 円以上のときは、税抜 9,090,909 円（税込 9,999,999 円）の品目を 10 個、そうでなければ税抜 40 円（税込 44 円）の品目を 1 個にして、
- * 残りを送料にする。どちらも、カートの数量（1 品目 10 個）と税抜の価格（9,999,999 円）の上限の中にある。
+ * 総額が大きいとき（大きい品目の小計以上）は、税込の単価が上限に近い品目を、カートの 1 品目の数量の上限まで入れて小計を最大にする。
+ * そうでなければ、範囲の下限に近い小さい総額も作れるよう、税込の小計が小さい品目を 1 個だけ入れる。
+ * 総額と小計の差は送料にする。どちらの品目も、カートの数量と税抜の価格の上限の中にある。
  */
 final class OrderTotalFixture {
+
+    /**
+     * 範囲の外のエラーコード
+     */
+    static final String OUT_OF_RANGE_ERROR_CODE = "ORDER_AMOUNT_OUT_OF_RANGE";
+
+    /**
+     * 範囲の外の文言（値は桁区切りで差し込まれる）
+     */
+    static final String OUT_OF_RANGE_MESSAGE = "注文の総額は 50〜99,999,999 円にしてください。カートの商品か数量を変えてください。";
 
     /**
      * 大きい総額の品目の税抜価格（税込 9,999,999 円）
@@ -45,7 +56,12 @@ final class OrderTotalFixture {
     /**
      * 小さい総額の品目の小計（税込）
      */
-    private static final long LOW_ITEMS_TOTAL = 44L;
+    static final long LOW_ITEMS_TOTAL = 44L;
+
+    /**
+     * 小さい総額の品目の数量（在庫にも同じ数量を入れる）
+     */
+    static final int LOW_QUANTITY = 1;
 
     /**
      * 注文手続きの開始の準備の補助
@@ -86,7 +102,7 @@ final class OrderTotalFixture {
     UUID fillCartWithTotal(long total) throws Exception {
         var high = total >= HIGH_ITEMS_TOTAL;
         var price = high ? HIGH_PRICE_EXCL_TAX : LOW_PRICE_EXCL_TAX;
-        var quantity = high ? HIGH_QUANTITY : 1;
+        var quantity = high ? HIGH_QUANTITY : LOW_QUANTITY;
         var itemsTotal = high ? HIGH_ITEMS_TOTAL : LOW_ITEMS_TOTAL;
         var shippingFee = total - itemsTotal;
         if (shippingFee < 0) {

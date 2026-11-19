@@ -11,10 +11,12 @@ import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,13 +25,16 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * 見積もりのサービスの単体テスト
  *
- * <p>存在しなくなったバリアントの扱いだけを確認する。商品カタログの削除は表示されたことのない商品に限るので、API の統合テストでは
+ * <p>存在しなくなったバリアントの扱いと、税率を税区分ごとにまとめて問い合わせることを確認する。商品カタログの削除は表示されたことのない商品に限るので、API の統合テストでは
  * カートに入った商品のバリアントを消せない。そのため、商品カタログの腐敗防止層を差し替えて確認する。金額の求め方は
  * {@code QuoteTest} が確認する。
  */
@@ -94,6 +99,7 @@ class QuoteQueryServiceTest {
                 Money.of(1000), taxCategoryId, null, true, false);
         when(catalogDirectory.findVariants(anyCollection())).thenReturn(Map.of(remainingId, remaining));
         when(stockDirectory.sellableQuantities(anyCollection(), any())).thenReturn(Map.of(remainingId, 10, missingId, 10));
+        when(taxDirectory.ratesAt(anyCollection(), any())).thenReturn(Map.of(taxCategoryId, RATE));
         when(taxDirectory.rateAt(any(), any())).thenReturn(Optional.of(RATE));
         when(taxDirectory.priceInclTax(any(), any())).thenReturn(Money.of(1100));
         var properties = new OrderProperties(1000, UUID.randomUUID(), Duration.ofMinutes(15), 3);
@@ -130,5 +136,38 @@ class QuoteQueryServiceTest {
 
         // 確認：注文できない
         assertThat(quote.orderable()).isFalse();
+    }
+
+    @Test
+    @DisplayName("税区分が複数あり、同じ税区分の品目が複数あっても、税率は税区分を重複なく集めて 1 回だけ問い合わせる")
+    void asksRatesOnceForDistinctTaxCategories() {
+        // 準備：税区分 2 つに、同じ税区分の品目が 2 つあるカート
+        var standardId = UUID.randomUUID();
+        var reducedId = UUID.randomUUID();
+        var firstId = UUID.randomUUID();
+        var secondId = UUID.randomUUID();
+        var thirdId = UUID.randomUUID();
+        var first = variant(firstId, standardId);
+        var second = variant(secondId, standardId);
+        var third = variant(thirdId, reducedId);
+        when(catalogDirectory.findVariants(anyCollection())).thenReturn(Map.of(firstId, first, secondId, second, thirdId, third));
+        when(taxDirectory.ratesAt(anyCollection(), any())).thenReturn(Map.of(standardId, RATE, reducedId, BigDecimal.valueOf(8)));
+        var lines = List.of(new CartSnapshot.Line(firstId, 1), new CartSnapshot.Line(secondId, 1), new CartSnapshot.Line(thirdId, 1));
+
+        // 操作：見積もる
+        service.quote(lines, NOW, null);
+
+        // 確認：税率は、重複のない税区分で 1 回だけ問い合わせる（送料の税率は 1 件を受け取る操作で取得するので、ここでは数えない）
+        var captor = ArgumentCaptor.<Collection<UUID>>captor();
+        verify(taxDirectory, times(1)).ratesAt(captor.capture(), eq(NOW));
+        assertThat(captor.getValue()).containsExactlyInAnyOrder(standardId, reducedId);
+    }
+
+    /**
+     * 指定した税区分のバリアントを作る。
+     */
+    private VariantInfo variant(UUID variantId, UUID taxCategoryId) {
+        return new VariantInfo(variantId, UUID.randomUUID(), "P-" + variantId, "C-" + variantId, "商品", List.of(),
+                Money.of(1000), taxCategoryId, null, true, false);
     }
 }

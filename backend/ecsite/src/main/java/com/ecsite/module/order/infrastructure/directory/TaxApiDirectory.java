@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,6 +36,14 @@ class TaxApiDirectory implements TaxDirectory {
     @Override
     public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
         return taxRateApi.rateAt(taxCategoryId, instant);
+    }
+
+    /**
+     * 指定した時点の税率を、税区分ごとにまとめて返す。
+     */
+    @Override
+    public Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant) {
+        return taxRateApi.ratesAt(taxCategoryIds, instant);
     }
 
     /**

@@ -128,6 +128,90 @@ class TaxRateApiTest {
     }
 
     @Nested
+    @DisplayName("複数の税区分の指定した時点の率")
+    class RatesAt {
+
+        @Test
+        @DisplayName("1 件の税区分の、指定した時点の率を返す")
+        void returnsRateOfSingleCategory() {
+            // 準備：2027-04-01 に税率が変わる税区分
+            var id = createSwitchingCategory();
+
+            // 操作：切り替えの時点の率をまとめて求める
+            var rates = taxRateApi.ratesAt(List.of(id), APR_2027);
+
+            // 確認：後の率だけが入る
+            assertThat(rates).containsOnlyKeys(id);
+            assertThat(rates.get(id)).isEqualByComparingTo(AFTER_RATE);
+        }
+
+        @Test
+        @DisplayName("複数の税区分の、指定した時点の率を、税区分ごとに返す")
+        void returnsRatesOfMultipleCategories() {
+            // 準備：2027-04-01 に税率が変わる税区分と、率が変わらない税区分
+            var switching = createSwitchingCategory();
+            var fixed = createWithRates(new Rate(null, new BigDecimal("0"), null, null));
+
+            // 操作：切り替えの直前の率をまとめて求める
+            var rates = taxRateApi.ratesAt(List.of(switching, fixed), APR_2027.minusSeconds(1));
+
+            // 確認：税区分ごとに、その時点の率が入る
+            assertThat(rates).containsOnlyKeys(switching, fixed);
+            assertThat(rates.get(switching)).isEqualByComparingTo(BEFORE_RATE);
+            assertThat(rates.get(fixed)).isEqualByComparingTo(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("1 件ずつ求めた率と一致する")
+        void matchesRateAtOfEachCategory() {
+            // 準備：2027-04-01 に税率が変わる税区分と、率が変わらない税区分
+            var switching = createSwitchingCategory();
+            var fixed = createWithRates(new Rate(null, AFTER_RATE, null, null));
+
+            // 操作：切り替えの時点の率を、まとめて求めた率と 1 件ずつ求めた率を比べる
+            var rates = taxRateApi.ratesAt(List.of(switching, fixed), APR_2027);
+
+            // 確認：税区分ごとに、1 件の率と同じ
+            assertThat(rates.get(switching)).isEqualByComparingTo(taxRateApi.rateAt(switching, APR_2027).orElseThrow());
+            assertThat(rates.get(fixed)).isEqualByComparingTo(taxRateApi.rateAt(fixed, APR_2027).orElseThrow());
+        }
+
+        @Test
+        @DisplayName("その時点の税率がない税区分は、結果に含まれない")
+        void excludesCategoryWithoutRateAtInstant() {
+            // 準備：2027-04-01 から始まる税率だけを持つ税区分と、率のある税区分
+            var noRate = createWithRates(new Rate(null, BEFORE_RATE, APR_2027, null));
+            var withRate = createSwitchingCategory();
+
+            // 操作：開始より前の率をまとめて求める
+            var rates = taxRateApi.ratesAt(List.of(noRate, withRate), APR_2027.minusSeconds(1));
+
+            // 確認：率のある税区分だけが入る
+            assertThat(rates).containsOnlyKeys(withRate);
+        }
+
+        @Test
+        @DisplayName("存在しない税区分は、結果に含まれない")
+        void excludesUnknownCategory() {
+            // 準備：登録した税区分と、登録していない ID
+            var id = createSwitchingCategory();
+
+            // 操作：両方の率をまとめて求める
+            var rates = taxRateApi.ratesAt(List.of(id, UUID.randomUUID()), APR_2027);
+
+            // 確認：登録した税区分だけが入る
+            assertThat(rates).containsOnlyKeys(id);
+        }
+
+        @Test
+        @DisplayName("空のコレクションなら、空を返す")
+        void returnsEmptyForEmptyIds() {
+            // 操作と確認：税区分 ID がなければ空
+            assertThat(taxRateApi.ratesAt(List.of(), APR_2027)).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("税額の計算")
     class Calculation {
 

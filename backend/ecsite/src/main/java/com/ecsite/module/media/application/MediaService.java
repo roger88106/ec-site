@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * <p>アセットとして配信するのは、中身を確認して WebP に変換したファイルだけ。アップロードされたファイルはそのまま配信しない。
  *
  * <p>用意した画像は、登録か破棄までの間、仮のアセットとして記録する。登録も破棄もされずに残った仮のアセットは、
- * 保存期間を過ぎたら、片付けのジョブが配信のファイルと共に消す。
+ * 保存期間を過ぎたら、片付けのジョブが配信のファイルと共に削除する。
  */
 @Slf4j
 @Service
@@ -142,7 +142,7 @@ public class MediaService {
         // WebP への変換
         var webp = imageConverter.convertToWebp(uploadKey);
 
-        // 仮のアセットの記録 ※書いた後に処理が止まっても、片付けのジョブがファイルを消せるように、書く前に確定させる
+        // 仮のアセットの記録 ※書いた後にプロセスが停止しても、片付けのジョブがファイルを削除できるように、書く前に確定させる
         var assetId = UUID.randomUUID();
         var storageKey = storageKey(assetId);
         var pending = new PendingAsset(assetId, storageKey, clock.instant());
@@ -156,7 +156,7 @@ public class MediaService {
     /**
      * 用意した画像をアセットとして記録する。
      *
-     * <p>仮のアセットを消してから、アセットを記録する。呼んだ側の保存が取り消されると、仮のアセットは残る。
+     * <p>仮のアセットを削除してから、アセットを記録する。呼んだ側の保存が取り消されると、仮のアセットは残る。
      *
      * <p>呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
@@ -164,7 +164,7 @@ public class MediaService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerImage(@NonNull UUID assetId) {
-        // 仮のアセットの削除 ※片付けのジョブがファイルを消した後の画像を、アセットとして記録しない
+        // 仮のアセットの削除 ※片付けのジョブがファイルを削除した後の画像を、アセットとして記録しない
         if (!pendingAssetRepository.deleteById(assetId)) {
             throw new IllegalStateException("用意した画像の仮のアセットがない：assetId=" + assetId);
         }
@@ -176,8 +176,8 @@ public class MediaService {
     /**
      * 用意した画像の配信のファイルを消す。
      *
-     * <p>ファイルを消してから、仮のアセットを短いトランザクションで消す。ファイルを消せなければ、仮のアセットを残す
-     * （保存期間を過ぎたら、片付けのジョブがファイルと共に消す）。
+     * <p>ファイルを削除してから、仮のアセットを短いトランザクションで削除する。ファイルを削除できなければ、仮のアセットを残す
+     * （保存期間を過ぎたら、片付けのジョブがファイルと共に削除する）。
      *
      * <p>どちらに失敗しても例外を投げず、警告のログに配信のバケットのキーを出す。
      * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
@@ -192,7 +192,7 @@ public class MediaService {
             storage.deletePublished(storageKey);
         } catch (RuntimeException e) {
             log.warn("用意した画像の配信のファイルを消せない：storageKey={}", storageKey, e);
-            // 仮のアセットを残し、保存期間を過ぎたら片付けのジョブがファイルと共に消す
+            // 仮のアセットを残し、保存期間を過ぎたら片付けのジョブがファイルと共に削除する
             return;
         }
 
@@ -200,7 +200,7 @@ public class MediaService {
         try {
             transactionTemplate.executeWithoutResult(status -> pendingAssetRepository.deleteById(assetId));
         } catch (RuntimeException e) {
-            log.warn("用意した画像の仮のアセットを消せない：storageKey={}", storageKey, e);
+            log.warn("用意した画像の仮のアセットを削除できない：storageKey={}", storageKey, e);
         }
     }
 
@@ -229,21 +229,21 @@ public class MediaService {
     }
 
     /**
-     * 用意した時刻が指定した時刻より前の仮のアセットを、件数の上限まで消す。
+     * 用意した時刻が指定した時刻より前の仮のアセットを、件数の上限まで削除する。
      *
-     * <p>消した仮のアセットごとに、記録の削除と同じトランザクションでアセット解放のイベントを記録する。
+     * <p>削除した仮のアセットごとに、記録の削除と同じトランザクションでアセット解放のイベントを記録する。
      * 配信のファイルはコミットの後に削除され、トランザクションが取り消されたときは残る。
      *
-     * @param preparedBefore この時刻より前に用意したものを消す
-     * @param limit          消す件数の上限
-     * @return 消した件数
+     * @param preparedBefore この時刻より前に用意したものを削除する
+     * @param limit          削除する件数の上限
+     * @return 削除した件数
      */
     @Transactional
     public int deleteExpiredPendingAssets(@NonNull Instant preparedBefore, int limit) {
         // 仮のアセットの記録の削除
         var deleted = pendingAssetRepository.deleteExpiredBefore(preparedBefore, limit);
 
-        // アセット解放の発行 ※配信のファイルはコミットの後に消す
+        // アセット解放の発行 ※配信のファイルはコミットの後に削除する
         var now = clock.instant();
         deleted.forEach(pending -> eventPublisher.publishEvent(AssetReleased.of(now, pending)));
         return deleted.size();

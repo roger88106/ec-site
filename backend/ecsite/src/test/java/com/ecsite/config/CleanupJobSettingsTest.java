@@ -62,7 +62,7 @@ class CleanupJobSettingsTest {
     private static final int DEFAULT_BATCH_SIZE = 1000;
 
     /**
-     * 仮のアセットの 1 回に消す件数の上限の既定と最大
+     * 仮のアセットの 1 回に削除する件数の上限の既定と最大
      *
      * <p>500 件。
      */
@@ -131,9 +131,9 @@ class CleanupJobSettingsTest {
         }
 
         @Test
-        @DisplayName("DC-489-4 仮のアセットの片付けの既定は、間隔 1 時間、保存期間 1 日、1 回に消す件数の上限 500")
+        @DisplayName("DC-489-4 仮のアセットの片付けの既定は、間隔 1 時間、保存期間 1 日、1 回に削除する件数の上限 500")
         void pendingAssets() {
-            // 操作：設定ファイルを読んで当てはめる
+            // 操作：設定ファイルを読んでバインドする
             var properties = TestSettings.loadAndBind(PENDING_ASSETS, MediaCleanupProperties.class);
 
             // 確認：既定の値
@@ -183,7 +183,7 @@ class CleanupJobSettingsTest {
         @Test
         @DisplayName("DC-489-4 仮のアセットの片付けの間隔、保存期間、件数の上限は、設定で変えられる")
         void pendingAssets() {
-            // 操作：間隔、保存期間、件数の上限を渡して当てはめる
+            // 操作：間隔、保存期間、件数の上限を渡してバインドする
             var properties = TestSettings.bind(PENDING_ASSETS, MediaCleanupProperties.class,
                     Map.of("interval", "10m", "retention", "3d", "batch-size", "50"));
 
@@ -195,13 +195,13 @@ class CleanupJobSettingsTest {
     }
 
     @Nested
-    @DisplayName("仮のアセットの 1 回に消す件数の上限")
+    @DisplayName("仮のアセットの 1 回に削除する件数の上限")
     class PendingAssetBatchSizeMaximum {
 
         @Test
-        @DisplayName("DC-489-4 仮のアセットの 1 回に消す件数が上限の 500 なら、値の検証を通り、500 件になる")
+        @DisplayName("DC-489-4 仮のアセットの 1 回に削除する件数が上限の 500 なら、値の検証を通り、500 件になる")
         void acceptsMaximum() {
-            // 操作：500 件を検証付きで当てはめる
+            // 操作：500 件を検証付きでバインドする
             var properties = TestSettings.bindValidated(PENDING_ASSETS, MediaCleanupProperties.class,
                     Map.of("batch-size", String.valueOf(PENDING_ASSET_MAX_BATCH_SIZE)));
 
@@ -210,7 +210,7 @@ class CleanupJobSettingsTest {
         }
 
         @Test
-        @DisplayName("DC-489-4 仮のアセットの 1 回に消す件数が上限より 1 大きい 501 なら、値の検証で拒否される")
+        @DisplayName("DC-489-4 仮のアセットの 1 回に削除する件数が上限より 1 大きい 501 なら、値の検証で拒否される")
         void rejectsAboveMaximum() {
             // 操作と確認：501 件は拒否される
             assertThatThrownBy(() -> TestSettings.bindValidated(PENDING_ASSETS, MediaCleanupProperties.class,
@@ -226,7 +226,7 @@ class CleanupJobSettingsTest {
         @Test
         @DisplayName("DC-489-4 仮のアセットの保存期間が下限の 1 分なら、値の検証を通り、1 分になる")
         void acceptsOneMinute() {
-            // 操作：1 分を検証付きで当てはめる
+            // 操作：1 分を検証付きでバインドする
             var properties = TestSettings.bindValidated(PENDING_ASSETS, MediaCleanupProperties.class, Map.of("retention", "1m"));
 
             // 確認：1 分

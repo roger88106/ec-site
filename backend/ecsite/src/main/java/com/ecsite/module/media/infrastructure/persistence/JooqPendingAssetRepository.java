@@ -50,7 +50,7 @@ class JooqPendingAssetRepository implements PendingAssetRepository {
      */
     @Override
     public List<PendingAsset> deleteExpiredBefore(Instant preparedBefore, int limit) {
-        // 選ぶのと消すのを 1 文にし、他のトランザクションがロックしている行は飛ばす（次の回で消す）
+        // 選ぶのと削除するのを 1 文にし、他のトランザクションがロックしている行はスキップする（次の回で削除する）
         return dsl.deleteFrom(PENDING_ASSET)
                 .where(PENDING_ASSET.ID.in(dsl.select(PENDING_ASSET.ID)
                         .from(PENDING_ASSET)

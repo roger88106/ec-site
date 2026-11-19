@@ -50,9 +50,9 @@ class JooqPendingAssetRepositoryTest {
     private static final Instant PREPARED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
     /**
-     * 保存期間を過ぎたものを消すテストの基準の時刻
+     * 保存期間を過ぎたものを削除するテストの基準の時刻
      *
-     * <p>表の全体から消すので、ロールバックしない他のテストが残す仮のアセット（テストの時計の 2026 年）より前の時刻にする。
+     * <p>表の全体から削除するので、ロールバックしない他のテストが残す仮のアセット（テストの時計の 2026 年）より前の時刻にする。
      */
     private static final Instant LONG_AGO = Instant.parse("1980-01-01T00:00:00Z");
 
@@ -107,7 +107,7 @@ class JooqPendingAssetRepositoryTest {
     class Delete {
 
         @Test
-        @DisplayName("ある仮のアセットを消すと、消えたことを返し、他の仮のアセットは残る")
+        @DisplayName("ある仮のアセットを削除すると、削除できたことを返し、他の仮のアセットは残る")
         void deletesPendingAsset() {
             // 準備：2 つの仮のアセット
             var deleted = pending(UUID.randomUUID(), PREPARED_AT);
@@ -115,42 +115,42 @@ class JooqPendingAssetRepositoryTest {
             repository.insert(deleted);
             repository.insert(kept);
 
-            // 操作：1 つを消す
+            // 操作：1 つを削除する
             var result = repository.deleteById(deleted.id());
 
-            // 確認：消えたことを返し、指定しなかった 1 つだけが残る
+            // 確認：削除できたことを返し、指定しなかった 1 つだけが残る
             assertThat(result).isTrue();
             assertThat(exists(deleted.id())).isFalse();
             assertThat(exists(kept.id())).isTrue();
         }
 
         @Test
-        @DisplayName("ない仮のアセットは消せず、消せなかったことを返す")
+        @DisplayName("存在しない仮のアセットは削除できず、削除できなかったことを返す")
         void returnsFalseForMissing() {
             // 準備：1 つの仮のアセット
             var kept = pending(UUID.randomUUID(), PREPARED_AT);
             repository.insert(kept);
 
-            // 操作：ない ID を消す
+            // 操作：存在しない ID を削除する
             var result = repository.deleteById(UUID.randomUUID());
 
-            // 確認：消せなかったことを返し、記録した仮のアセットは残る
+            // 確認：削除できなかったことを返し、記録した仮のアセットは残る
             assertThat(result).isFalse();
             assertThat(exists(kept.id())).isTrue();
         }
 
         @Test
-        @DisplayName("同じ仮のアセットを 2 回消すと、2 回目は消せなかったことを返す")
+        @DisplayName("同じ仮のアセットを 2 回削除すると、2 回目は削除できなかったことを返す")
         void returnsFalseOnSecondDelete() {
             // 準備：1 つの仮のアセット
             var pending = pending(UUID.randomUUID(), PREPARED_AT);
             repository.insert(pending);
 
-            // 操作：2 回消す
+            // 操作：2 回削除する
             var first = repository.deleteById(pending.id());
             var second = repository.deleteById(pending.id());
 
-            // 確認：1 回目だけが消えたことを返す
+            // 確認：1 回目だけが削除できたことを返す
             assertThat(first).isTrue();
             assertThat(second).isFalse();
         }
@@ -161,7 +161,7 @@ class JooqPendingAssetRepositoryTest {
     class DeleteExpired {
 
         @Test
-        @DisplayName("用意した時刻が基準より前のものを、古い順に件数の上限まで消し、消した行を返す")
+        @DisplayName("用意した時刻が基準より前のものを、古い順に件数の上限まで削除し、削除した行を返す")
         void deletesOldestUpToLimit() {
             // 準備：基準より前の 3 つの仮のアセット（古い順に oldest、middle、newest。記録の順は古い順と違える）
             var newest = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
@@ -171,7 +171,7 @@ class JooqPendingAssetRepositoryTest {
             repository.insert(oldest);
             repository.insert(middle);
 
-            // 操作：上限 2 件で消す
+            // 操作：上限 2 件で削除する
             var deleted = repository.deleteExpiredBefore(LONG_AGO, 2);
 
             // 確認：古い 2 つの全ての項目を返し、最も新しいものだけが残る
@@ -182,7 +182,7 @@ class JooqPendingAssetRepositoryTest {
         }
 
         @Test
-        @DisplayName("用意した時刻が同じものは、アセット ID の順に消す")
+        @DisplayName("用意した時刻が同じものは、アセット ID の順に削除する")
         void deletesInIdOrderForSameTime() {
             // 準備：基準より前の同じ時刻の 2 つの仮のアセット（ID の最後のバイトだけが違い、記録の順は ID の順と違える）
             var base = UUID.randomUUID();
@@ -191,16 +191,16 @@ class JooqPendingAssetRepositoryTest {
             repository.insert(larger);
             repository.insert(smaller);
 
-            // 操作：上限 1 件で消す
+            // 操作：上限 1 件で削除する
             var deleted = repository.deleteExpiredBefore(LONG_AGO, 1);
 
-            // 確認：ID の小さいほうを消し、大きいほうが残る
+            // 確認：ID の小さいほうを削除し、大きいほうが残る
             assertThat(deleted).extracting(PendingAsset::id).containsExactly(smaller.id());
             assertThat(exists(larger.id())).isTrue();
         }
 
         @Test
-        @DisplayName("用意した時刻が基準ちょうどのものは消さず、1 マイクロ秒前のものは消す")
+        @DisplayName("用意した時刻が基準ちょうどのものは削除せず、1 マイクロ秒前のものは削除する")
         void keepsPendingAssetAtBoundary() {
             // 準備：基準ちょうどと、1 マイクロ秒前の仮のアセット
             var atBoundary = pending(UUID.randomUUID(), LONG_AGO);
@@ -208,22 +208,22 @@ class JooqPendingAssetRepositoryTest {
             repository.insert(atBoundary);
             repository.insert(justBefore);
 
-            // 操作：消す
+            // 操作：削除する
             var deleted = repository.deleteExpiredBefore(LONG_AGO, 10);
 
-            // 確認：1 マイクロ秒前のものだけを消す
+            // 確認：1 マイクロ秒前のものだけを削除する
             assertThat(deleted).extracting(PendingAsset::id).containsExactly(justBefore.id());
             assertThat(exists(atBoundary.id())).isTrue();
         }
 
         @Test
-        @DisplayName("保存期間を過ぎたものがなければ、何も消さず空を返す")
+        @DisplayName("保存期間を過ぎたものがなければ、何も削除せず空を返す")
         void returnsEmptyWhenNothingExpired() {
             // 準備：基準より後の仮のアセット
             var kept = pending(UUID.randomUUID(), LONG_AGO.plus(Duration.ofHours(1)));
             repository.insert(kept);
 
-            // 操作：消す
+            // 操作：削除する
             var deleted = repository.deleteExpiredBefore(LONG_AGO, 10);
 
             // 確認：空を返し、記録が残る
@@ -238,7 +238,7 @@ class JooqPendingAssetRepositoryTest {
 
         @Test
         @Transactional(propagation = Propagation.NOT_SUPPORTED)
-        @DisplayName("1 件を消したトランザクションのコミットの前は、別のトランザクションの保存期間を過ぎたものの削除が、その行を待たずに飛ばす")
+        @DisplayName("1 件を削除したトランザクションのコミットの前は、別のトランザクションの保存期間を過ぎたものの削除が、その行を待たずにスキップする")
         void expiredDeleteSkipsRowLockedByDelete() {
             // 準備：ロールバックしないので、このテストで作った、保存期間を過ぎた仮のアセットだけを確認する
             var pending = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
@@ -246,7 +246,7 @@ class JooqPendingAssetRepositoryTest {
             var executor = Executors.newSingleThreadExecutor();
             try {
                 transactionTemplate.executeWithoutResult(status -> {
-                    // 操作：1 件を消したまま、別のトランザクションで保存期間を過ぎたものを消す
+                    // 操作：1 件を削除したまま、別のトランザクションで保存期間を過ぎたものを削除する
                     assertThat(repository.deleteById(pending.id())).isTrue();
                     var other = executor.submit(() -> transactionTemplate.execute(inner -> repository.deleteExpiredBefore(LONG_AGO, 10)));
 
@@ -257,13 +257,13 @@ class JooqPendingAssetRepositoryTest {
                 executor.shutdownNow();
             }
 
-            // 確認：1 件の削除のコミットで、行が消えている
+            // 確認：1 件の削除のコミットで、行が削除されている
             assertThat(exists(pending.id())).isFalse();
         }
 
         @Test
         @Transactional(propagation = Propagation.NOT_SUPPORTED)
-        @DisplayName("保存期間を過ぎたものを消したトランザクションのコミットを待ってから、別のトランザクションの 1 件の削除は消せなかったことを返す")
+        @DisplayName("保存期間を過ぎたものを削除したトランザクションのコミットを待ってから、別のトランザクションで 1 件を削除すると、削除できなかったことを返す")
         void deleteWaitsForExpiredDeleteAndReturnsFalse() throws Exception {
             // 準備：ロールバックしないので、このテストで作った、保存期間を過ぎた仮のアセットだけを確認する
             var pending = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
@@ -271,7 +271,7 @@ class JooqPendingAssetRepositoryTest {
             var executor = Executors.newSingleThreadExecutor();
             try {
                 var other = transactionTemplate.execute(status -> {
-                    // 操作：保存期間を過ぎたものを消したまま、別のトランザクションで同じ行を 1 件消す
+                    // 操作：保存期間を過ぎたものを削除したまま、別のトランザクションで同じ行を 1 件削除する
                     assertThat(repository.deleteExpiredBefore(LONG_AGO, 10)).extracting(PendingAsset::id).contains(pending.id());
                     var future = executor.submit(() -> transactionTemplate.execute(inner -> repository.deleteById(pending.id())));
 
@@ -281,7 +281,7 @@ class JooqPendingAssetRepositoryTest {
                     return future;
                 });
 
-                // 確認：コミットの後に終わり、消せなかったことを返す
+                // 確認：コミットの後に終わり、削除できなかったことを返す
                 assertThat(getWithin(Objects.requireNonNull(other))).isFalse();
             } finally {
                 executor.shutdownNow();
@@ -303,7 +303,7 @@ class JooqPendingAssetRepositoryTest {
     // ============================== 確認の補助 ==============================
 
     /**
-     * 別のスレッドの結果を、上限の時間まで待って返す。
+     * 別のスレッドの結果を、タイムアウトまで待って返す。
      *
      * @param future 別のスレッドの処理
      * @param <T>    結果の型

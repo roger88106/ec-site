@@ -140,7 +140,7 @@ class MediaApiTest {
     /**
      * 仮のアセットのリポジトリ
      *
-     * <p>仮のアセットの記録・削除の失敗を起こすため、本物を包む。
+     * <p>仮のアセットの記録・削除の失敗を起こすため、本物をラップする。
      */
     @MockitoSpyBean
     PendingAssetRepository pendingAssets;
@@ -265,7 +265,7 @@ class MediaApiTest {
             assertThat(pending.getStorageKey()).isEqualTo("assets/" + prepared.assetId() + ".webp");
             assertThat(pending.getPreparedAt()).isEqualTo(NOW);
 
-            // 後片付け：配信のファイルを消す
+            // 後片付け：配信のファイルを削除する
             media.discardImage(prepared);
         }
 
@@ -290,7 +290,7 @@ class MediaApiTest {
             // 確認：書き込みは 1 回で、その時に記録が見える
             assertThat(committed).containsExactly(true);
 
-            // 後片付け：配信のファイルを消す
+            // 後片付け：配信のファイルを削除する
             media.discardImage(prepared);
         }
 
@@ -415,7 +415,7 @@ class MediaApiTest {
             // 操作と確認：書き込みの例外がそのまま投げられる
             assertThatThrownBy(() -> media.prepareImage(scope, upload.uploadId())).isInstanceOf(S3Exception.class);
 
-            // 確認：書こうとしたキーの仮のアセットが残る（失敗でもファイルが置かれていることがあり、片付けのジョブが消す）
+            // 確認：書こうとしたキーの仮のアセットが残る（失敗でもファイルが置かれていることがあり、片付けのジョブが削除する）
             assertThat(storageKeys).hasSize(1);
             assertThat(dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.STORAGE_KEY.eq(storageKeys.getFirst()))).isTrue();
         }
@@ -539,7 +539,7 @@ class MediaApiTest {
         }
 
         @Test
-        @DisplayName("DC-489-2 登録すると、仮のアセットの記録が消える")
+        @DisplayName("DC-489-2 登録すると、仮のアセットの記録が削除される")
         void deletesPendingAsset() throws Exception {
             // 準備：PNG をアップロードする
             var scope = scope();
@@ -568,14 +568,14 @@ class MediaApiTest {
             // 確認：仮のアセットの記録が残る
             assertThat(pendingExists(prepared.assetId())).isTrue();
 
-            // 後片付け：配信のファイルを消す
+            // 後片付け：配信のファイルを削除する
             media.discardImage(prepared);
         }
 
         @Test
         @DisplayName("DC-489-5 仮のアセットの記録がない画像は登録できず、呼んだ側のトランザクションも取り消される")
         void rejectsWithoutPendingAsset() throws Exception {
-            // 準備：PNG を用意し、仮のアセットの記録を消す（片付けのジョブが消した後）
+            // 準備：PNG を用意し、仮のアセットの記録を削除する（片付けのジョブが削除した後）
             var scope = scope();
             var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
             dsl.deleteFrom(PENDING_ASSET).where(PENDING_ASSET.ID.eq(prepared.assetId())).execute();
@@ -596,7 +596,7 @@ class MediaApiTest {
             assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
             assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(callerAssetId))).isFalse();
 
-            // 後片付け：配信のファイルを消す
+            // 後片付け：配信のファイルを削除する
             media.discardImage(prepared);
         }
     }
@@ -648,7 +648,7 @@ class MediaApiTest {
         }
 
         @Test
-        @DisplayName("DC-489-3 破棄すると、配信のファイルと仮のアセットの記録が消える")
+        @DisplayName("DC-489-3 破棄すると、配信のファイルと仮のアセットの記録が削除される")
         void deletesPendingAsset() throws Exception {
             // 準備：PNG を用意する
             var scope = scope();
@@ -663,7 +663,7 @@ class MediaApiTest {
         }
 
         @Test
-        @DisplayName("DC-489-3 配信のファイルを消せなければ、仮のアセットの記録が残る")
+        @DisplayName("DC-489-3 配信のファイルを削除できなければ、仮のアセットの記録が残る")
         void keepsPendingAssetWhenDeleteFails() throws Exception {
             // 準備：PNG を用意し、配信のファイルの削除を失敗させる
             var scope = scope();
@@ -673,13 +673,13 @@ class MediaApiTest {
             // 操作：破棄する
             media.discardImage(prepared);
 
-            // 確認：仮のアセットの記録が残り、消さなかった
+            // 確認：仮のアセットの記録が残り、削除しなかった
             assertThat(pendingExists(prepared.assetId())).isTrue();
             verify(pendingAssets, never()).deleteById(any());
         }
 
         @Test
-        @DisplayName("DC-489-3 仮のアセットの記録を消せなくても例外を投げず、警告のログに配信のキーを出す")
+        @DisplayName("DC-489-3 仮のアセットの記録を削除できなくても例外を投げず、警告のログに配信のキーを出す")
         void logsWhenPendingAssetDeleteFails() throws Exception {
             // 準備：PNG を用意し、仮のアセットの記録の削除を失敗させる
             var scope = scope();

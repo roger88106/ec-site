@@ -33,10 +33,10 @@ record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String stor
     }
 
     /**
-     * 消した仮のアセットから、イベントを作る。
+     * 削除した仮のアセットから、イベントを作る。
      *
      * @param occurredAt 発生時刻
-     * @param pending    消した仮のアセット
+     * @param pending    削除した仮のアセット
      * @return イベント
      */
     public static AssetReleased of(Instant occurredAt, PendingAsset pending) {

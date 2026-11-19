@@ -75,9 +75,9 @@ public class TaxCategoryQueryService {
     /**
      * 複数の税区分を、数によらず決まった回数の問い合わせで取得する。
      *
-     * <p>ない税区分は結果に含めない。空の集まりなら、問い合わせをせずに空を返す。
+     * <p>存在しない税区分は結果に含めない。空のコレクションなら、問い合わせをせずに空を返す。
      *
-     * @param ids 税区分 ID の集まり
+     * @param ids 税区分 ID
      * @return 税区分の一覧（現時点の率を含む。税率は適用開始日時の古い順）
      */
     public List<TaxCategoryView> findTaxCategories(@NonNull Collection<UUID> ids) {

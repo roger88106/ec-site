@@ -59,8 +59,8 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
     /**
      * 複数の税区分を、数によらず決まった回数の問い合わせで取得する。
      *
-     * @param ids 税区分 ID の集まり
-     * @return 税区分の一覧（登録の古い順）。ない ID の分は含まない
+     * @param ids 税区分 ID
+     * @return 税区分の一覧（登録の古い順）。存在しない ID の税区分は含まない
      */
     @Override
     public List<StoredTaxCategory> findAllByIds(Collection<UUID> ids) {

@@ -71,7 +71,7 @@ class QuoteQueryService {
         var sellable = variantIds.isEmpty() ? Map.<UUID, Integer>of()
                 : stockDirectory.sellableQuantities(variantIds, holderId);
 
-        // 税区分ごとの率の取得 ※同じ税区分の品目が多くても、税区分を重複なく集めて、税モジュールには 1 回だけ聞く
+        // 税区分ごとの率の取得 ※同じ税区分の品目が多くても、税区分を重複なく集めて、税モジュールには 1 回だけ問い合わせる
         var taxCategoryIds = variants.values().stream().map(VariantInfo::taxCategoryId).collect(Collectors.toSet());
         var rates = taxCategoryIds.isEmpty() ? Map.<UUID, BigDecimal>of() : taxDirectory.ratesAt(taxCategoryIds, at);
 

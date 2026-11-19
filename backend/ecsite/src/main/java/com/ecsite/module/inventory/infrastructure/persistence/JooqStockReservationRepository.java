@@ -96,7 +96,7 @@ class JooqStockReservationRepository implements StockReservationRepository {
     }
 
     /**
-     * 複数の持ち主の引当を、1 回の削除で消す。空の集まりでは SQL を実行しない。
+     * 複数の持ち主の引当を、1 回の削除で消す。空のコレクションでは SQL を実行しない。
      *
      * @param holderIds 持ち主 ID
      */

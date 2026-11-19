@@ -2,9 +2,12 @@ package com.ecsite.module.inventory.api;
 
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.async.Concurrently;
+import com.ecsite.support.async.LockWaits;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.InventoryTestData;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,7 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
+import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -66,6 +75,9 @@ class StockReservationApiTest {
 
     @Autowired
     StockItemRepository stockItemRepository;
+
+    @Autowired
+    DSLContext dsl;
 
     /**
      * 在庫を作る補助
@@ -235,6 +247,26 @@ class StockReservationApiTest {
         }
 
         @Test
+        @DisplayName("AC-84 同じ持ち主が引き当て直して 1 品目でも足りなければ、足りない品目を返し、前の引当は残らない")
+        void releasesPreviousReservationsWhenShort() {
+            // 準備：在庫数 3 と 1 の品目のうち、持ち主が 1 つ目の品目を 2 つ引き当てる
+            var first = inventory.stockNewVariant(productId, 3);
+            var second = inventory.stockNewVariant(productId, 1);
+            var holder = UUID.randomUUID();
+            assertThat(reserveInTransaction(holder, Map.of(first, 2), EXPIRES_AT)).isEmpty();
+
+            // 操作：同じ持ち主で、足りない品目を含めて引き当て直す
+            var shortages = reserveInTransaction(holder, Map.of(first, 1, second, 2), EXPIRES_AT);
+
+            // 確認：足りない品目を返す
+            assertThat(shortages).containsExactly(second);
+
+            // 確認：前の引当は残らず、販売可能数が在庫数のまま
+            assertThat(api.sellableQuantities(List.of(first, second), null))
+                    .containsExactlyInAnyOrderEntriesOf(Map.of(first, 3, second, 1));
+        }
+
+        @Test
         @DisplayName("AC-84 引当を解くと、販売可能数が戻る")
         void releasesReservations() {
             // 準備：在庫数 2 の全てを引き当てる
@@ -252,14 +284,14 @@ class StockReservationApiTest {
         @Test
         @DisplayName("DC-552-4 複数の持ち主の引当を、まとめて解く")
         void releasesReservationsOfMultipleHolders() {
-            // 準備：在庫数 5 のうち、2 人が 1 と 2 を引き当てる
+            // 準備：在庫数 5 のうち、持ち主 2 件が 1 と 2 を引き当てる
             var variant = inventory.stockNewVariant(productId, 5);
             var first = UUID.randomUUID();
             var second = UUID.randomUUID();
             reserveInTransaction(first, Map.of(variant, 1), EXPIRES_AT);
             reserveInTransaction(second, Map.of(variant, 2), EXPIRES_AT);
 
-            // 操作：2 人の引当をまとめて解く
+            // 操作：持ち主 2 件の引当をまとめて解く
             releaseInTransaction(List.of(first, second));
 
             // 確認：販売可能数が在庫数の 5 に戻る
@@ -269,7 +301,7 @@ class StockReservationApiTest {
         @Test
         @DisplayName("DC-552-4 渡していない持ち主の引当は残る")
         void keepsReservationsOfOtherHolders() {
-            // 準備：在庫数 5 のうち、3 人が 1、2、1 を引き当てる
+            // 準備：在庫数 5 のうち、持ち主 3 件が 1、2、1 を引き当てる
             var variant = inventory.stockNewVariant(productId, 5);
             var first = UUID.randomUUID();
             var second = UUID.randomUUID();
@@ -278,7 +310,7 @@ class StockReservationApiTest {
             reserveInTransaction(second, Map.of(variant, 2), EXPIRES_AT);
             reserveInTransaction(other, Map.of(variant, 1), EXPIRES_AT);
 
-            // 操作：2 人の引当だけを解く
+            // 操作：持ち主 2 件の引当だけを解く
             releaseInTransaction(List.of(first, second));
 
             // 確認：渡していない持ち主の 1 だけが残り、販売可能数が 4
@@ -301,17 +333,51 @@ class StockReservationApiTest {
         }
 
         @Test
-        @DisplayName("DC-552-4 空の集まりを渡すと、何も変わらない")
+        @DisplayName("DC-552-4 空のコレクションを渡すと、何も変わらない")
         void doesNothingForEmptyHolders() {
             // 準備：在庫数 5 のうち 2 を引き当てる
             var variant = inventory.stockNewVariant(productId, 5);
             reserveInTransaction(UUID.randomUUID(), Map.of(variant, 2), EXPIRES_AT);
 
-            // 操作：空の集まりを渡して解く
+            // 操作：空のコレクションを渡して解く
             releaseInTransaction(List.of());
 
             // 確認：引当が残り、販売可能数が 3 のまま
             assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
+        }
+    }
+
+    @Nested
+    @DisplayName("引当のロックの順序")
+    class LockOrder {
+
+        @Test
+        @DisplayName("DC-552-1 引当は、持ち主の前の引当の行をロックしてから在庫の行をロックする（減算と同じ順序で、デッドロックにならない）")
+        void locksReservationBeforeStock() throws Exception {
+            // 準備：在庫数 5 のうち、持ち主が 2 を引き当てる
+            var variant = inventory.stockNewVariant(productId, 5);
+            var holder = UUID.randomUUID();
+            assertThat(reserveInTransaction(holder, Map.of(variant, 2), EXPIRES_AT)).isEmpty();
+            var executor = Executors.newSingleThreadExecutor();
+            try {
+                var reserving = new AtomicReference<Future<Set<UUID>>>();
+                transactionTemplate.executeWithoutResult(status -> {
+                    // 操作：テストのトランザクションが在庫の行をロックし、同じ持ち主の引き当て直しを在庫の行で待たせる
+                    dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variant)).forUpdate().fetch();
+                    reserving.set(executor.submit(() -> reserveInTransaction(holder, Map.of(variant, 3), EXPIRES_AT)));
+                    LockWaits.awaitBlockedByThisTransaction(dsl);
+
+                    // 確認：在庫の行を待つ引当が前の引当の行をロックしていれば、その行は読み飛ばされ、行が返らない
+                    assertThat(dsl.selectFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holder))
+                            .forUpdate().skipLocked().fetch()).isEmpty();
+                });
+
+                // 確認：ロックを解くと、引き当て直しが上限の時間までに終わり、新しい内容の引当になる
+                assertThat(reserving.get().get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isEmpty();
+                assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 2);
+            } finally {
+                executor.shutdownNow();
+            }
         }
     }
 

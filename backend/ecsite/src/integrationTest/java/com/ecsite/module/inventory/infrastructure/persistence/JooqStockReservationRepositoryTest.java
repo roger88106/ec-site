@@ -129,7 +129,7 @@ class JooqStockReservationRepositoryTest {
 
         @Test
         @DisplayName("持ち主の前の引当を消してから加えると、前の引当は消えて新しい内容と数量になり、ほかの持ち主の引当は変わらない")
-        void replacesReservationsOfHolder() {
+        void insertsAfterDeletingReservationsOfHolder() {
             // 準備：持ち主の引当（A に 2、B に 1）と、ほかの持ち主の引当（A に 4）
             var stockA = createStock(UUID.randomUUID(), 10);
             var stockB = createStock(UUID.randomUUID(), 10);
@@ -146,7 +146,7 @@ class JooqStockReservationRepositoryTest {
 
         @Test
         @DisplayName("持ち主の前の引当を消してから加えると、新しい期限になる")
-        void replacesExpiresAt() {
+        void insertsWithNewExpiresAt() {
             // 準備：持ち主の引当と、ほかの持ち主の引当（どちらも 60 秒後が期限）
             var stockA = createStock(UUID.randomUUID(), 10);
             var stockB = createStock(UUID.randomUUID(), 10);
@@ -156,7 +156,7 @@ class JooqStockReservationRepositoryTest {
             repository.deleteByHolder(holder);
             repository.insert(holder, Map.of(stockB, 5), NOW.plusSeconds(120), NOW);
 
-            // 確認：90 秒後には、置き換えた引当だけが有効
+            // 確認：90 秒後には、新しく加えた引当だけが有効
             assertThat(repository.sumActiveReservations(List.of(stockB), UUID.randomUUID(), NOW.plusSeconds(90)))
                     .containsOnly(Map.entry(stockB, 5));
         }
@@ -240,13 +240,13 @@ class JooqStockReservationRepositoryTest {
         }
 
         @Test
-        @DisplayName("空の集まりを渡すと、何も消えない")
+        @DisplayName("空のコレクションを渡すと、何も消えない")
         void deletesNothingForEmptyHolders() {
             // 準備：持ち主の引当 2
             var stock = createStock(UUID.randomUUID(), 10);
             repository.insert(UUID.randomUUID(), Map.of(stock, 2), NOW.plusSeconds(60), NOW);
 
-            // 操作：空の集まりを渡す
+            // 操作：空のコレクションを渡す
             repository.deleteByHolders(List.of());
 
             // 確認：合計が 2 のまま

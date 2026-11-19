@@ -29,7 +29,7 @@ public interface StockDirectory {
     /**
      * 全品目を引き当てる。
      *
-     * <p>同じ持ち主の引当は置き換える。
+     * <p>同じ持ち主の引当は置き換える。1 つでも足りなければ何も引き当てず、足りない品目を返す。そのとき前の引当は解いた状態で返る。
      *
      * @param holderId   持ち主 ID（注文手続き）
      * @param quantities バリアント ID → 数量

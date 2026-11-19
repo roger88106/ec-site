@@ -43,7 +43,7 @@ class StockApiDirectory implements StockDirectory {
     }
 
     /**
-     * 引当をまとめて解放する。
+     * 引当をまとめて解く。
      */
     @Override
     public void release(Collection<UUID> holderIds) {

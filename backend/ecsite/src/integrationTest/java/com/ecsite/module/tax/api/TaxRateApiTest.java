@@ -168,7 +168,7 @@ class TaxRateApiTest {
             var switching = createSwitchingCategory();
             var fixed = createWithRates(new Rate(null, AFTER_RATE, null, null));
 
-            // 操作：切り替えの時点の率を、まとめてと 1 件ずつで求める
+            // 操作：切り替えの時点の率を、まとめて求めた率と 1 件ずつ求めた率を比べる
             var rates = taxRateApi.ratesAt(List.of(switching, fixed), APR_2027);
 
             // 確認：税区分ごとに、1 件の率と同じ
@@ -204,7 +204,7 @@ class TaxRateApiTest {
         }
 
         @Test
-        @DisplayName("空の集まりなら、空を返す")
+        @DisplayName("空のコレクションなら、空を返す")
         void returnsEmptyForEmptyIds() {
             // 操作と確認：税区分 ID がなければ空
             assertThat(taxRateApi.ratesAt(List.of(), APR_2027)).isEmpty();

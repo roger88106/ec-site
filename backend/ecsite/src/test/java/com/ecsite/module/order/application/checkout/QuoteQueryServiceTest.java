@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 /**
  * 見積もりのサービスの単体テスト
  *
- * <p>存在しなくなったバリアントの扱いだけを確認する。商品カタログの削除は表示されたことのない商品に限るので、API の統合テストでは
+ * <p>存在しなくなったバリアントの扱いと、税率を税区分ごとにまとめて問い合わせることを確認する。商品カタログの削除は表示されたことのない商品に限るので、API の統合テストでは
  * カートに入った商品のバリアントを消せない。そのため、商品カタログの腐敗防止層を差し替えて確認する。金額の求め方は
  * {@code QuoteTest} が確認する。
  */
@@ -139,7 +139,7 @@ class QuoteQueryServiceTest {
     }
 
     @Test
-    @DisplayName("税区分が複数あり、同じ税区分の品目が複数あっても、税率は税区分を重複なく集めて 1 回だけ聞く")
+    @DisplayName("税区分が複数あり、同じ税区分の品目が複数あっても、税率は税区分を重複なく集めて 1 回だけ問い合わせる")
     void asksRatesOnceForDistinctTaxCategories() {
         // 準備：税区分 2 つに、同じ税区分の品目が 2 つあるカート
         var standardId = UUID.randomUUID();
@@ -157,7 +157,7 @@ class QuoteQueryServiceTest {
         // 操作：見積もる
         service.quote(lines, NOW, null);
 
-        // 確認：税率は、重複のない税区分で 1 回だけ聞く（送料の税率は 1 件の取得）
+        // 確認：税率は、重複のない税区分で 1 回だけ問い合わせる（送料の税率は 1 件を受け取る操作で取得するので、ここでは数えない）
         var captor = ArgumentCaptor.<Collection<UUID>>captor();
         verify(taxDirectory, times(1)).ratesAt(captor.capture(), eq(NOW));
         assertThat(captor.getValue()).containsExactlyInAnyOrder(standardId, reducedId);

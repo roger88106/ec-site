@@ -55,7 +55,7 @@ public interface StockReservationRepository {
     /**
      * 複数の持ち主の引当を、1 回の削除で消す。
      *
-     * <p>集まりが空なら、SQL を実行しない。引当のない持ち主は飛ばす。
+     * <p>空のコレクションなら、SQL を実行しない。引当のない持ち主は飛ばす。
      *
      * @param holderIds 持ち主 ID
      */

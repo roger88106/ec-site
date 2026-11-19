@@ -30,7 +30,7 @@ public interface TaxDirectory {
     /**
      * 指定した時点の率を、税区分ごとにまとめて返す。
      *
-     * <p>税区分がない、またはその時点の税率がない税区分は、結果に含めない。
+     * <p>存在しない税区分と、その時点の税率がない税区分は、結果に含めない。
      *
      * @param taxCategoryIds 税区分 ID
      * @param instant        時点

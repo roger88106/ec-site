@@ -351,7 +351,7 @@ class PaymentTest {
         }
 
         @Test
-        @DisplayName("時刻がなければ、削除することはできない")
+        @DisplayName("時刻がなければ、削除できない")
         void clearsNothingWithoutRequest() {
             // 準備：売上確定を求めていない与信済みの支払
             var payment = authorized();

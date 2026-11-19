@@ -246,7 +246,7 @@ class JooqPaymentRepositoryTest {
         }
 
         @Test
-        @DisplayName("売上確定を求めた時刻を保存し、消した後は空に戻る")
+        @DisplayName("売上確定を求めた時刻を保存し、削除した後は空に戻る")
         void savesAndClearsCaptureRequest() {
             // 準備：与信済みで保存した支払
             var payment = savedPayment();
@@ -261,7 +261,7 @@ class JooqPaymentRepositoryTest {
             var restored = repository.findById(payment.id()).orElseThrow();
             assertThat(restored.captureRequestedAt()).contains(CAPTURE_REQUESTED_AT);
 
-            // 操作：時刻を消して保存する
+            // 操作：時刻を削除して保存する
             var cleared = repository.lockById(payment.id()).orElseThrow();
             cleared.clearCaptureRequest(CAPTURE_REQUESTED_AT);
             repository.update(cleared);

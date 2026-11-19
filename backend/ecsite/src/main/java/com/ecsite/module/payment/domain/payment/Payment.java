@@ -233,7 +233,7 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 開いた支払画面を覚える。
+     * 開いた支払画面を記録する。
      *
      * <p>次からは同じ画面を使う。
      *
@@ -262,7 +262,7 @@ public class Payment extends AggregateRoot {
     /**
      * 与信を反映する。
      *
-     * <p>未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを現在時刻で登録する。
+     * <p>未払いなら与信済みにして、与信の時刻を記録し、与信の成功のイベントを現在時刻で登録する。
      * 支払なしなら与信の取消待ちにする。それ以外なら何もしない。
      *
      * @param authorizationRef 与信の参照
@@ -310,7 +310,7 @@ public class Payment extends AggregateRoot {
     /**
      * 与信の反映を待つ支払にする。
      *
-     * <p>状態は未払いのまま、待ち始めた時刻を覚える。未払いでないか、すでに待っていれば何もしない。
+     * <p>状態は未払いのまま、待ち始めた時刻を記録する。未払いでないか、すでに待っていれば何もしない。
      *
      * @param now 現在時刻
      * @return 待ち始めたら true
@@ -365,13 +365,13 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 売上確定を求めた時刻を覚える。
+     * 売上確定を求めた時刻を記録する。
      *
      * <p>与信済みなら、時刻を現在時刻にする。すでに時刻があれば上書きする（運営者の再実行で、新しい時刻にする）。
      * 与信済みでなければ何もしない。
      *
      * @param now 現在時刻
-     * @return 時刻を覚えたら true。与信済みでなければ false
+     * @return 時刻を記録したら true。与信済みでなければ false
      */
     public boolean requestCapture(@NonNull Instant now) {
         if (status != PaymentStatus.AUTHORIZED) {
@@ -384,7 +384,7 @@ public class Payment extends AggregateRoot {
     /**
      * 売上確定を求めた時刻を削除する。
      *
-     * <p>与信済みで、覚えている時刻が読んだ時刻と等しいときだけ削除する。読んだ後に再実行されて時刻が変わっていれば、削除しない。
+     * <p>与信済みで、記録している時刻が読んだ時刻と等しいときだけ削除する。読んだ後に再実行されて時刻が変わっていれば、削除しない。
      *
      * @param readRequestedAt 読んだ売上確定を求めた時刻
      * @return 削除したら true。与信済みでないか、時刻が違うか、時刻がなければ false

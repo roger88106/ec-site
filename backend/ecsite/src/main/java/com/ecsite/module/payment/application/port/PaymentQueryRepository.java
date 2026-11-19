@@ -38,7 +38,7 @@ public interface PaymentQueryRepository {
     long countUnpaidAwaitingAuthorizationUntil(Instant latestAwaitingSince);
 
     /**
-     * 売上確定を求めた時刻が決めた時刻以前の与信済みの支払を、求めた時刻・支払 ID の順に取得する。
+     * 売上確定を求めた時刻が基準の時刻以前の与信済みの支払を、求めた時刻・支払 ID の順に取得する。
      *
      * @param latestRequestedAt 売上確定を求めた時刻の上限。この時刻以前に求めたものが対象
      * @param limit             取得する数の上限

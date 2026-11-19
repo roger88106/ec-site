@@ -187,7 +187,7 @@ class PaymentExpiryJobTest {
     final LogCapture logs = LogCapture.of(PaymentCommandService.class);
 
     /**
-     * 売上確定の照合が出したログ（ジョブと、ジョブが呼ぶ決済ゲートウェイサービス）
+     * 売上確定の照合が出力したログ（ジョブと、ジョブが呼ぶ決済ゲートウェイサービス）
      */
     @RegisterExtension
     final LogCapture reconcileLogs = LogCapture.of(PaymentExpiryJob.class, PaymentGatewayService.class);
@@ -725,7 +725,7 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("AC-409-10 接続の失敗が 3 件続いたら、その回は取得を打ち切り、4 件とも未払いで待つ支払のまま残る")
+        @DisplayName("AC-409-10 接続の失敗が 3 回続いたら、その回は取得を打ち切り、4 件とも未払いで待つ支払のまま残る")
         void stopsAfterConsecutiveUnavailable() {
             // 準備：支払済みの 4 件のうち、初めの 3 件の取得で接続できない
             var orderIds = fourPaidWithUnavailableFetches();
@@ -903,9 +903,9 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("AC-423-7 照合が読んでいる間に売上確定を再実行し、その応答も届かなかった支払は、売上確定を求めた時刻を削除せず、与信済みのまま残る")
+        @DisplayName("AC-423-7 照合が決済サービスを読んでいる間に売上確定を再実行し、その応答も届かなかった支払は、売上確定を求めた時刻を削除せず、与信済みのまま残る")
         void keepsRequestWhenRetriedDuringFetch() {
-            // 準備：売上を確定していない支払。照合が状態を読んでいる間に、売上確定を再実行して応答が届かない
+            // 準備：売上を確定していない支払。照合が決済サービスの状態を取得する間に、売上確定を再実行して応答が届かない
             clearOtherReconciliation();
             var orderId = captureUnreachableAt(ORDERED_AT);
             var retriedAt = ORDERED_AT.plus(properties.captureReconcileDelay()).plusSeconds(1);
@@ -925,9 +925,9 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("AC-423-7 照合が読んでいる間に再実行した支払は、次のジョブの実行でも照合の対象になり、売上確定済みになる")
+        @DisplayName("AC-423-7 照合が決済サービスを読んでいる間に再実行した支払は、次のジョブの実行でも照合の対象になり、売上確定済みになる")
         void reconcilesRetriedPaymentNextRun() {
-            // 準備：照合が読んでいる間に売上確定を再実行し、その応答も届かなかった支払
+            // 準備：照合が決済サービスを読んでいる間に売上確定を再実行し、その応答も届かなかった支払
             clearOtherReconciliation();
             var orderId = captureUnreachableAt(ORDERED_AT);
             var retriedAt = ORDERED_AT.plus(properties.captureReconcileDelay()).plusSeconds(1);
@@ -948,7 +948,7 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("AC-423-8 状態を取得できない支払は、warn のログに支払 ID を出し、与信済みのまま売上確定を求めた時刻も残す")
+        @DisplayName("AC-423-8 状態を取得できない支払は、warn のログに支払 ID を出力し、与信済みのまま売上確定を求めた時刻も残す")
         void keepsPaymentWhenFetchFails() {
             // 準備：照合の対象が 2 件で、1 件目の状態の取得が接続の失敗になる
             var failing = twoLostCaptures().getFirst();
@@ -991,7 +991,7 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("AC-423-8 接続の失敗が 3 件続いたら、その回は照合を打ち切り、4 件とも与信済みのまま残る")
+        @DisplayName("AC-423-8 接続の失敗が 3 回続いたら、その回は照合を打ち切り、4 件とも与信済みのまま残る")
         void stopsAfterConsecutiveUnavailable() {
             // 準備：照合の対象が 4 件で、初めの 3 件の状態の取得で接続できない
             var orderIds = fourLostCapturesWithUnavailableFetches();
@@ -1096,7 +1096,7 @@ class PaymentExpiryJobTest {
         }
 
         @Test
-        @DisplayName("照合の取得の最中に注文がキャンセルされた支払は、返金待ちにして、返金に進めた文の warn のログを出す")
+        @DisplayName("照合の取得の最中に注文がキャンセルされた支払は、返金待ちにして、返金に進めた文の warn のログを出力する")
         void warnsRefundWhenCancelledDuringFetch() {
             // 準備：売上確定の応答が届かなかった支払。照合が状態を取得する間に、注文がキャンセルされる。
             // 取消の依頼の非同期の処理が先に支払を進めないよう、与信の取消は失敗させる
@@ -1280,8 +1280,8 @@ class PaymentExpiryJobTest {
     }
 
     /**
-     * 他のテストが残した、照合の対象の支払を先に処理し、決済サービスの記録を戻す。<br />
-     * 状態の取得の回数と、取得の最中の処理が、このテストの支払だけに当たるようにする。時計は注文日時になる。
+     * 他のテストが残した、照合の対象の支払を先に処理し、テスト用の決済サービスの呼び出しの記録を初期化する。<br />
+     * 状態の取得の回数と、取得の最中の処理が、このテストの支払だけが対象になるようにする。時計は注文日時になる。
      */
     private void clearOtherReconciliation() {
         clock.setInstant(ORDERED_AT.plus(Duration.ofDays(365)));
@@ -1306,7 +1306,7 @@ class PaymentExpiryJobTest {
     }
 
     /**
-     * 売上確定の応答が届かなかった 4 件の支払を作り、次の状態の取得を 3 件続けて接続の失敗にする。<br />
+     * 売上確定の応答が届かなかった 4 件の支払を作り、次の状態の取得を 3 回続けて接続の失敗にする。<br />
      * 時計は、4 件目の照合を始める時刻になる。
      *
      * @return 注文 ID（求めた時刻の順）
@@ -1441,7 +1441,7 @@ class PaymentExpiryJobTest {
     }
 
     /**
-     * 決済サービスで支払を済ませた 4 件の支払を作り、次の与信の取得を 3 件続けて接続の失敗にする。<br />
+     * 決済サービスで支払を済ませた 4 件の支払を作り、次の与信の取得を 3 回続けて接続の失敗にする。<br />
      * 時計は期限になる。
      *
      * <p>他のテストが残した、与信の反映を待つ支払を先に解消して、取得の呼び出しの回数に影響しないようにする。

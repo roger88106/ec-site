@@ -78,7 +78,7 @@ public interface PaymentGateway {
      * @param authorizationRef 与信の参照
      * @return 売上確定の状態
      * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
-     * @throws SystemException 与信を取った後にならない状態など、売上確定の状態として扱えない状態（予期しないエラー）
+     * @throws SystemException 与信を取った後には現れない状態など、売上確定の状態として扱えない状態（予期しないエラー）
      */
     CaptureState fetchCaptureState(String authorizationRef);
 
@@ -153,7 +153,7 @@ public interface PaymentGateway {
     enum CaptureState {
 
         /**
-         * 売上を確定済み
+         * 売上確定済み
          */
         CAPTURED,
 

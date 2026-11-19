@@ -572,7 +572,7 @@ class StripePaymentGatewayTest {
         @ValueSource(strings = {"requires_payment_method", "processing"})
         @DisplayName("それ以外の状態は、予期しないエラー")
         void rejectsOtherStatus(String intentStatus) {
-            // 準備：与信を取った後にはならない状態の PaymentIntent
+            // 準備：与信を取った後には現れない状態の PaymentIntent
             respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent(intentStatus));
 
             // 操作と確認：予期しないエラー

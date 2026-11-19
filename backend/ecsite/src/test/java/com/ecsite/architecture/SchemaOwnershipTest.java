@@ -34,6 +34,11 @@ class SchemaOwnershipTest {
     // ============================== 定数 ==============================
 
     /**
+     * Gradle が jOOQ の schema の一覧（カンマ区切り）を渡す system property の名前
+     */
+    private static final String JOOQ_SCHEMAS_PROPERTY = "jooq.schemas";
+
+    /**
      * jOOQ を、infrastructure/persistence の外から使ってよいクラス
      *
      * <p>追加するときは、理由をコメントに書き、バックエンドの書き方の「標準の構成」の例外の表にも書く。
@@ -47,7 +52,7 @@ class SchemaOwnershipTest {
      * モジュールの名前から、そのモジュールが持つ schema の名前への対応
      *
      * <p>schema を持たないモジュールは空にする。
-     * common の schema（イベントの永続化の表）は Spring Modulith が JDBC で使うので、どのモジュールにも割り当てない。
+     * モジュールに属さない schema は {@link #SCHEMAS_WITHOUT_MODULE} にある。
      */
     private static final Map<String, Optional<String>> SCHEMA_BY_MODULE = Map.ofEntries(
             Map.entry("cart", Optional.of("cart")),
@@ -189,9 +194,9 @@ class SchemaOwnershipTest {
      * @throws IllegalStateException system property がないとき
      */
     private static List<String> gradleJooqSchemas() {
-        String schemas = System.getProperty("jooq.schemas");
-        if (schemas == null) {
-            throw new IllegalStateException("system property jooq.schemas がない（Gradle の test の task から流す）");
+        String schemas = System.getProperty(JOOQ_SCHEMAS_PROPERTY);
+        if (schemas == null || schemas.isBlank()) {
+            throw new IllegalStateException("system property " + JOOQ_SCHEMAS_PROPERTY + " がない（Gradle の test の task から流す）");
         }
         return List.of(schemas.split(","));
     }

@@ -5,10 +5,8 @@ import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.application.MemberCommandService;
 import com.ecsite.module.member.application.MemberQueryService;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,9 +60,8 @@ public class CurrentMemberIds {
     /**
      * IdP のアカウントの ID から会員 ID を求める。
      */
-    private UUID memberIdOf(@Nullable String subject) {
-        var idpSubject = Objects.requireNonNull(subject, "token に subject がある");
+    private UUID memberIdOf(String subject) {
         // まず読み取り専用のトランザクションで探し、いなければ（初めてのリクエスト）作る
-        return queryService.findMemberId(idpSubject).orElseGet(() -> commandService.create(idpSubject));
+        return queryService.findMemberId(subject).orElseGet(() -> commandService.create(subject));
     }
 }

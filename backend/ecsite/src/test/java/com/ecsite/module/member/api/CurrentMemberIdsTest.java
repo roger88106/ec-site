@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 現在の会員の ID を求める部品の単体テスト
@@ -147,7 +148,35 @@ class CurrentMemberIdsTest {
         }
     }
 
+    @Nested
+    @DisplayName("subject のない token でログインしているとき")
+    class WithoutSubject {
+
+        @Test
+        @DisplayName("require と find は NullPointerException で失敗し、会員を作らない")
+        void failsWithNullPointerAndCreatesNoMember() {
+            // 準備：subject のない token でログインする
+            loginWithoutSubject();
+
+            // 操作と確認：どちらも NullPointerException（メッセージは確認しない）
+            assertThatThrownBy(currentMemberIds::require).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(currentMemberIds::find).isInstanceOf(NullPointerException.class);
+
+            // 確認：会員がない
+            assertThat(members).isEmpty();
+        }
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * subject のない token でログインしている状態にする。
+     */
+    private static void loginWithoutSubject() {
+        var jwt = Jwt.withTokenValue("token").header("alg", "none").claim("scope", "none")
+                .issuedAt(Instant.EPOCH).expiresAt(Instant.EPOCH.plusSeconds(60)).build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+    }
 
     /**
      * 会員の token でログインしている状態にする。

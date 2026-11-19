@@ -93,11 +93,9 @@ class SmtpTimeoutTest {
 
     /**
      * メールの送信の宛先を、応えないサーバーにする（待ち時間の上限などの設定は、アプリの設定のまま）。
-     * 注文の腐敗防止層は、どの注文にも、テストの宛先を返す。
      */
     @BeforeEach
     void pointToSilentServer() {
-        when(orderDirectory.email(any())).thenReturn("timeout@example.com");
         mailSender.setHost("localhost");
         mailSender.setPort(SILENT_SMTP.port());
     }
@@ -181,11 +179,13 @@ class SmtpTimeoutTest {
 
     /**
      * 注文の出荷のイベントをトランザクションの中で発行し、コミットする。
+     * 注文の腐敗防止層は、イベントの注文 ID に、このテストの宛先を返す。
      *
      * @param orderId 注文 ID（テストごとに作り、送ったメールの記録を自分の注文に絞る）
      * @return 発行したイベント
      */
     private OrderShipped publishShipped(UUID orderId) {
+        when(orderDirectory.email(orderId)).thenReturn("timeout-" + orderId + "@example.com");
         var event = OrderShipped.of(SHIPPED_AT, orderId, "20261008-000001",
                 OrderShipped.Carrier.YAMATO, "123456789012");
         transaction.executeWithoutResult(status -> events.publishEvent(event));

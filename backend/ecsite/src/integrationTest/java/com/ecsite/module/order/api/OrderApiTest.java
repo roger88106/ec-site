@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 注文の API の統合テスト
  *
- * <p>注文の状態ごとの項目と、個人の情報を持たないことを確認する。
+ * <p>注文の参照について、状態ごとの項目と、個人の情報を持たないことを確認する。あわせて、注文のメールアドレスの操作を確認する。
  *
  * <p>テストごとにロールバックする。
  */

@@ -104,13 +104,12 @@ class ShipmentMailTest {
     private String email;
 
     /**
-     * 注文の腐敗防止層は、どの注文にも、このテストの宛先を返す。
+     * 注文の腐敗防止層は、イベントの注文 ID に、このテストの宛先を返す（イベントを作る補助で登録する）。
      */
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);
         email = "ship-" + UUID.randomUUID() + "@example.com";
-        when(orderDirectory.email(any())).thenReturn(email);
     }
 
     // ============================== テスト ==============================
@@ -239,13 +238,15 @@ class ShipmentMailTest {
     // ============================== 準備の補助 ==============================
 
     /**
-     * このテストの宛先への、ヤマト運輸の注文の出荷のイベントを作る。
+     * ヤマト運輸の注文の出荷のイベントを作り、その注文 ID に、このテストの宛先を返すようにする。
      *
      * @return 注文の出荷
      */
     private OrderShipped shipped() {
-        return OrderShipped.of(clock.instant(), UUID.randomUUID(), ORDER_NUMBER, OrderShipped.Carrier.YAMATO,
+        var event = OrderShipped.of(clock.instant(), UUID.randomUUID(), ORDER_NUMBER, OrderShipped.Carrier.YAMATO,
                 TRACKING_NUMBER);
+        when(orderDirectory.email(event.orderId())).thenReturn(email);
+        return event;
     }
 
     /**

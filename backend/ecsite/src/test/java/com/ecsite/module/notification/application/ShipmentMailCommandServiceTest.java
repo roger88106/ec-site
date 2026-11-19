@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 出荷通知メールのサービスの単体テスト
  *
  * <p>出荷通知メールの宛先と内容の組み立てだけを確認する。宛先は、注文の腐敗防止層（テスト用の実装）から受ける。
- * 送ったメールの記録は、記録した注文 ID を集めて「まだ送っていない」と答え、送ったメールを受け取って、組み立てた内容を確認する。
+ * 送ったメールの記録は、記録した注文 ID と宛先を集めて「まだ送っていない」と答え、送ったメールを受け取って、組み立てた内容を確認する。
  * 再送と 1 通だけ届くことは、通知の統合テストが確認する。
  */
 class ShipmentMailCommandServiceTest {
@@ -68,9 +68,9 @@ class ShipmentMailCommandServiceTest {
     private final List<Mailer.Mail> sent = new ArrayList<>();
 
     /**
-     * 記録した送ったメールの注文 ID
+     * 送ったメールとして記録した注文 ID と宛先
      */
-    private final List<UUID> recorded = new ArrayList<>();
+    private final Map<UUID, String> recorded = new HashMap<>();
 
     /**
      * 注文の腐敗防止層が宛先を返す注文（注文 ID と宛先）
@@ -101,7 +101,10 @@ class ShipmentMailCommandServiceTest {
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setFallbackToSystemLocale(false);
-        service = new ShipmentMailCommandService((orderId, kind, recipient, sentAt) -> recorded.add(orderId), sent::add,
+        service = new ShipmentMailCommandService((orderId, kind, recipient, sentAt) -> {
+                    recorded.put(orderId, recipient);
+                    return true;
+                }, sent::add,
                 Clock.fixed(SHIPPED_AT, ZoneOffset.UTC),
                 new MessageResolver(messageSource), carrier -> switch (carrier) {
                     case YAMATO -> "ecsite.shipping.carrier.yamato";
@@ -124,6 +127,7 @@ class ShipmentMailCommandServiceTest {
 
             // 確認：注文の腐敗防止層が返した宛先（イベントには宛先がない）
             assertThat(mail.to()).isEqualTo(EMAIL);
+            assertThat(recorded).containsEntry(ORDER_ID, EMAIL);
         }
 
         @Test

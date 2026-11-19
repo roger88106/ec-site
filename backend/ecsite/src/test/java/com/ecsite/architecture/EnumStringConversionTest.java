@@ -24,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 列挙型を名前の文字列から変換する場所の検査
  *
  * <p>根拠はバックエンドの書き方の「他のモジュールは腐敗防止層で包む」。
- * 列挙型の {@code valueOf(String)}、{@code fromValue}、{@code Enum.valueOf(Class, String)} を呼ぶのは、
+ * 列挙型の {@code valueOf(String)}・{@code fromValue}・{@code Enum.valueOf(Class, String)} を呼んでよいのは、次の 4 つだけである。
  * domain、永続化（infrastructure.persistence）、共通の変換のメソッドのクラス（{@link EnumConversion}）、
- * HTTP のクエリの文字列を列挙にする設定の変換（WebMvcConfig の中のクラス）だけである。
+ * HTTP のクエリの文字列を列挙にする設定の変換（WebMvcConfig の中のクラス）。
  * 永続化と設定の変換は、外から来る文字列を読むため。共通の変換のメソッドは、名前が同じ列挙の間の変換を 1 か所にまとめるため。
  * モジュールやレイヤーの間で列挙を文字列で受け渡すと、相手に値を追加したときに気づけないため。
  * 呼び出しとメソッド参照を、クラスファイルから型で探す（呼ぶ先が列挙型かどうかで決めるので、列挙でない型の valueOf は当たらない）。

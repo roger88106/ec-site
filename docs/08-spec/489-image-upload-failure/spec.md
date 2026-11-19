@@ -58,7 +58,7 @@
 
 | まとまり | ファイル |
 |----------|----------|
-| メディアのコード | `module/media/api/MediaApi.java`、`module/media/application/MediaService.java`、`module/media/application/AssetReleased.java`、`module/media/application/port/AssetRepository.java`、`module/media/application/port/PendingAssetRepository.java`（新規）、`module/media/application/job/MediaCleanupJob.java`（新規）、`module/media/application/job/MediaCleanupProperties.java`（新規）、`module/media/infrastructure/persistence/JooqAssetRepository.java`、`module/media/infrastructure/persistence/JooqPendingAssetRepository.java`（新規） |
+| メディアのコード | `module/media/api/MediaApi.java`、`module/media/application/MediaService.java`、`module/media/application/AssetReleased.java`、`module/media/application/port/AssetRepository.java`、`module/media/application/port/PendingAssetRepository.java`（新規）、`module/media/domain/PendingAsset.java`（新規）、`module/media/application/job/MediaCleanupJob.java`（新規）、`module/media/application/job/MediaCleanupProperties.java`（新規）、`module/media/infrastructure/persistence/JooqAssetRepository.java`、`module/media/infrastructure/persistence/JooqPendingAssetRepository.java`（新規） |
 | 商品カタログのコード | `module/catalog/application/product/ProductImageGatewayService.java`、`module/catalog/application/port/MediaDirectory.java`（コメント） |
 | 設定とマイグレーション | `backend/ecsite/src/main/resources/application.yml`、`backend/ecsite/src/main/resources/db/migration/V<日時>__media_create_pending_asset.sql`（新規） |
 | 統合テスト | `module/media/api/MediaApiTest.java`、`module/media/infrastructure/persistence/JooqAssetRepositoryTest.java`、`module/media/infrastructure/persistence/JooqPendingAssetRepositoryTest.java`（新規）、`module/media/application/job/MediaCleanupJobTest.java`（新規） |

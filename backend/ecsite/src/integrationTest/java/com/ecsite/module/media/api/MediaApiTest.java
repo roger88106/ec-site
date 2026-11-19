@@ -4,12 +4,15 @@ import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.MediaService;
 import com.ecsite.module.media.application.port.ObjectStorage;
+import com.ecsite.module.media.application.port.PendingAssetRepository;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import com.ecsite.support.LogCapture;
+import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.config.TestcontainersConfig;
 import com.ecsite.support.data.TestImages;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -42,6 +46,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static com.ecsite.jooq.media.Tables.ASSET;
+import static com.ecsite.jooq.media.Tables.PENDING_ASSET;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,6 +96,13 @@ class MediaApiTest {
     private static final String WEBP_TYPE = "image/webp";
 
     /**
+     * テストの現在時刻
+     *
+     * <p>日本時間の 2026-10-08 00:30。
+     */
+    private static final Instant NOW = Instant.parse("2026-10-07T15:30:00Z");
+
+    /**
      * 署名付き URL や配信の URL を呼ぶ HttpClient
      */
     private final HttpClient http = HttpClient.newHttpClient();
@@ -122,6 +134,22 @@ class MediaApiTest {
      */
     @MockitoSpyBean
     ObjectStorage storage;
+
+    /**
+     * 仮のアセットのリポジトリ
+     *
+     * <p>仮のアセットの記録・削除の失敗を起こすため、本物を包む。
+     */
+    @MockitoSpyBean
+    PendingAssetRepository pendingAssets;
+
+    @Autowired
+    MutableClock clock;
+
+    @BeforeEach
+    void setUp() {
+        clock.setInstant(NOW);
+    }
 
     // ============================== テスト ==============================
 
@@ -217,6 +245,64 @@ class MediaApiTest {
 
             // 後片付け：配信のファイルを消す
             media.discardImage(prepared);
+        }
+
+        @Test
+        @DisplayName("DC-489-1 用意すると、アセット ID・配信のキー・用意した時刻の仮のアセットが記録される")
+        void recordsPendingAsset() throws Exception {
+            // 準備：PNG をアップロードする
+            var scope = scope();
+            var upload = uploaded(scope, PNG_TYPE, TestImages.png());
+
+            // 操作：用意する
+            var prepared = media.prepareImage(scope, upload.uploadId());
+
+            // 確認：配信のキーと用意した時刻を持つ仮のアセットがある
+            var pending = dsl.fetchOne(PENDING_ASSET, PENDING_ASSET.ID.eq(prepared.assetId()));
+            assertThat(pending).isNotNull();
+            assertThat(pending.getStorageKey()).isEqualTo("assets/" + prepared.assetId() + ".webp");
+            assertThat(pending.getPreparedAt()).isEqualTo(NOW);
+
+            // 後片付け：配信のファイルを消す
+            media.discardImage(prepared);
+        }
+
+        @Test
+        @DisplayName("DC-489-1 配信のバケットに書く時には、仮のアセットの記録がコミットされている")
+        void commitsPendingAssetBeforePublishing() throws Exception {
+            // 準備：PNG をアップロードし、配信のバケットに書くときに、仮のアセットの記録が別の接続から見えるかを記録する
+            var scope = scope();
+            var upload = uploaded(scope, PNG_TYPE, TestImages.png());
+            var committed = new CopyOnWriteArrayList<Boolean>();
+            doAnswer(invocation -> {
+                String storageKey = invocation.getArgument(0);
+                committed.add(dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.STORAGE_KEY.eq(storageKey)));
+                return invocation.callRealMethod();
+            }).when(storage).putPublished(anyString(), any(), anyString());
+
+            // 操作：用意する
+            var prepared = media.prepareImage(scope, upload.uploadId());
+
+            // 確認：書き込みは 1 回で、その時に記録が見える
+            assertThat(committed).containsExactly(true);
+
+            // 後片付け：配信のファイルを消す
+            media.discardImage(prepared);
+        }
+
+        @Test
+        @DisplayName("DC-489-1 仮のアセットを記録できなければ、用意は失敗し、配信のバケットに書かない")
+        void doesNotPublishWhenPendingAssetFails() throws Exception {
+            // 準備：PNG をアップロードし、仮のアセットの記録を失敗させる
+            var scope = scope();
+            var upload = uploaded(scope, PNG_TYPE, TestImages.png());
+            doThrow(new DataAccessResourceFailureException("connection refused")).when(pendingAssets).insert(any());
+
+            // 操作と確認：記録の例外がそのまま投げられる
+            assertThatThrownBy(() -> media.prepareImage(scope, upload.uploadId())).isInstanceOf(DataAccessResourceFailureException.class);
+
+            // 確認：配信のバケットに書いていない
+            verify(storage, never()).putPublished(anyString(), any(), anyString());
         }
 
         @Test
@@ -440,6 +526,68 @@ class MediaApiTest {
             // 後片付け：配信のファイルを消す
             media.discardImage(prepared);
         }
+
+        @Test
+        @DisplayName("DC-489-2 登録すると、仮のアセットの記録が消える")
+        void deletesPendingAsset() throws Exception {
+            // 準備：PNG をアップロードする
+            var scope = scope();
+            var upload = uploaded(scope, PNG_TYPE, TestImages.png());
+
+            // 操作：用意して登録する
+            var assetId = confirm(scope, upload.uploadId());
+
+            // 確認：仮のアセットの記録がない
+            assertThat(pendingExists(assetId)).isFalse();
+        }
+
+        @Test
+        @DisplayName("DC-489-2 呼んだ側のトランザクションが取り消されると、仮のアセットの記録が残る")
+        void keepsPendingAssetOnRollback() throws Exception {
+            // 準備：PNG を用意する
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
+
+            // 操作：登録したトランザクションを取り消す
+            transactionTemplate.executeWithoutResult(status -> {
+                media.registerImage(prepared);
+                status.setRollbackOnly();
+            });
+
+            // 確認：仮のアセットの記録が残る
+            assertThat(pendingExists(prepared.assetId())).isTrue();
+
+            // 後片付け：配信のファイルを消す
+            media.discardImage(prepared);
+        }
+
+        @Test
+        @DisplayName("DC-489-5 仮のアセットの記録がない画像は登録できず、呼んだ側のトランザクションも取り消される")
+        void rejectsWithoutPendingAsset() throws Exception {
+            // 準備：PNG を用意し、仮のアセットの記録を消す（片付けのジョブが消した後）
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
+            dsl.deleteFrom(PENDING_ASSET).where(PENDING_ASSET.ID.eq(prepared.assetId())).execute();
+            var callerAssetId = UUID.randomUUID();
+
+            // 操作と確認：呼んだ側が別のアセットを記録してから登録すると、例外になる
+            assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
+                dsl.insertInto(ASSET)
+                        .set(ASSET.ID, callerAssetId)
+                        .set(ASSET.FORMAT, "WEBP")
+                        .set(ASSET.STORAGE_KEY, "assets/" + callerAssetId + ".webp")
+                        .set(ASSET.CREATED_AT, NOW)
+                        .execute();
+                media.registerImage(prepared);
+            })).isInstanceOf(IllegalStateException.class);
+
+            // 確認：用意した画像のアセットも、呼んだ側が記録したアセットも残らない
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(callerAssetId))).isFalse();
+
+            // 後片付け：配信のファイルを消す
+            media.discardImage(prepared);
+        }
     }
 
     @Nested
@@ -485,6 +633,53 @@ class MediaApiTest {
             media.discardImage(prepared);
 
             // 確認：この破棄の後に、保存先のキーを含む警告のログが出ている
+            assertThat(logs.messages(Level.WARN)).anyMatch(message -> message.contains("assets/" + prepared.assetId() + ".webp"));
+        }
+
+        @Test
+        @DisplayName("DC-489-3 破棄すると、配信のファイルと仮のアセットの記録が消える")
+        void deletesPendingAsset() throws Exception {
+            // 準備：PNG を用意する
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
+
+            // 操作：破棄する
+            media.discardImage(prepared);
+
+            // 確認：配信のファイルも、仮のアセットの記録もない
+            assertThat(getPublished(prepared).statusCode()).isEqualTo(404);
+            assertThat(pendingExists(prepared.assetId())).isFalse();
+        }
+
+        @Test
+        @DisplayName("DC-489-3 配信のファイルを消せなければ、仮のアセットの記録が残る")
+        void keepsPendingAssetWhenDeleteFails() throws Exception {
+            // 準備：PNG を用意し、配信のファイルの削除を失敗させる
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
+            doThrow(SdkClientException.create("connection refused")).when(storage).deletePublished(anyString());
+
+            // 操作：破棄する
+            media.discardImage(prepared);
+
+            // 確認：仮のアセットの記録が残り、消さなかった
+            assertThat(pendingExists(prepared.assetId())).isTrue();
+            verify(pendingAssets, never()).deleteById(any());
+        }
+
+        @Test
+        @DisplayName("DC-489-3 仮のアセットの記録を消せなくても例外を投げず、警告のログに配信のキーを出す")
+        void logsWhenPendingAssetDeleteFails() throws Exception {
+            // 準備：PNG を用意し、仮のアセットの記録の削除を失敗させる
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
+            doThrow(new DataAccessResourceFailureException("connection refused")).when(pendingAssets).deleteById(any());
+
+            // 操作と確認：破棄は例外を投げない
+            logs.clear();
+            assertThatCode(() -> media.discardImage(prepared)).doesNotThrowAnyException();
+
+            // 確認：この破棄の後に、配信のキーを含む警告のログが出ている
             assertThat(logs.messages(Level.WARN)).anyMatch(message -> message.contains("assets/" + prepared.assetId() + ".webp"));
         }
     }
@@ -653,6 +848,16 @@ class MediaApiTest {
     private boolean releaseRegistered(UUID assetId) {
         return dsl.fetchExists(EVENT_PUBLICATION, EVENT_PUBLICATION.EVENT_TYPE.endsWith(".AssetReleased")
                 .and(EVENT_PUBLICATION.SERIALIZED_EVENT.contains(assetId.toString())));
+    }
+
+    /**
+     * 仮のアセットの記録があるかを返す。
+     *
+     * @param assetId アセット ID
+     * @return あれば true
+     */
+    private boolean pendingExists(UUID assetId) {
+        return dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.ID.eq(assetId));
     }
 
     // ============================== 準備の補助 ==============================

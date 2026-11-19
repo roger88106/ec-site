@@ -41,7 +41,7 @@
 - 共通の変換のメソッドは、変換するメソッド（今の switch 式を持つメソッド。例：注文の状態をレスポンスの状態にするメソッド、ドメインの列挙の `toEvent`）の本体から呼ぶ。変換するメソッドは残し、呼び出し元は変えない。理由：変換の組を、変換するメソッドの引数と戻り値の型で示せるため。ドメインの列挙からイベントの列挙への変換は、規則でドメインの列挙のメソッドに置くと決まっているため。
 - 単体テストは、組ごとに、変換するメソッドを変換元の全ての値で呼び、同じ名前の定数が返ることを確認する（JUnit の `@EnumSource`）。テストは、変換するクラスのテストのクラスに置く。変換するメソッドが private なら、テストから呼べるよう package-private にする。理由：組の型の検査（変換先の型の誤り）と値の検査を、実際に変換するメソッドで同時に確認できるため。
 - 今ある変換のテスト（`ProductMapperTest`、`InventoryMapperTest`、`StorefrontMapperTest`、`CatalogApiSortTest`、`OrderApiGenderTest`、`OrderQuoteApiTest`、`CarrierTest`、`ShippingApiCarrierNameKeyTest`、notification・reporting・storefront の `ShippingApiDirectoryTest` と `OrderApiDirectoryTest`、`ReportCollectionCommandServiceTest` など。正確な一覧は実装で調べる）は、上の形にそろえる。期待値は変えない（同じ名前の定数が返ること）。switch 式のまま残す組のテストも、全ての値を変換するテストにする。理由：規則は switch 式の組にもテストを求めているため。
-- ArchUnit の `EnumStringConversionTest` は、今の対象（列挙型の `valueOf(String)` と `fromValue`）に加えて、`java.lang.Enum` の `valueOf(Class, String)` も対象にする。許す場所は、domain、永続化（`infrastructure.persistence`）、共通の変換のメソッドのクラス。理由：共通の変換のメソッドは `Enum.valueOf(Class, String)` で書くため、今の検査では検出できない。他の場所に同じ書き方が入っても検出できるようにする。検査の例のクラス（`architecture/sample/enumconversion/`）に、共通の変換のメソッドの外で `Enum.valueOf(Class, String)` を呼ぶ例を加え、検査がそれを検出することをテストで確認する。
+- ArchUnit の `EnumStringConversionTest` は、今の対象（列挙型の `valueOf(String)` と `fromValue`）に加えて、`java.lang.Enum` の `valueOf(Class, String)` も対象にする。許す場所は、domain、永続化（`infrastructure.persistence`）、共通の変換のメソッドのクラス、HTTP のクエリの文字列を列挙にする設定の変換（`config` の `WebMvcConfig` の中のクラス）。設定の変換を許すのは、永続化と同じく外から来る文字列を読む場所で、変換先の型が実行時にしか決まらず switch 式にできないため（2026-11-19 に issue 担当のセッションが利用者の委任で決めた）。規則の文（バックエンドの書き方の、名前の文字列から列挙にしてよい場所）にも、外から来る文字列を読む場所として加える。理由：共通の変換のメソッドは `Enum.valueOf(Class, String)` で書くため、今の検査では検出できない。他の場所に同じ書き方が入っても検出できるようにする。検査の例のクラス（`architecture/sample/enumconversion/`）に、共通の変換のメソッドの外で `Enum.valueOf(Class, String)` を呼ぶ例を加え、検査がそれを検出することをテストで確認する。
 - `java-rules.mjs` の「列挙型の変換に `name()` を渡さない」は、共通の変換のメソッドのファイルだけを除外する。除外は script の先頭の「除外」に書く。script のテストに、除外のファイルでは検出されない例を加える。
 
 ## 目的と完了条件
@@ -54,7 +54,7 @@
 
 ### DS-570-2 変換の書き忘れを、検査とテストで見つけられる（D / P1）
 
-- **DC-570-4** 共通の変換のメソッドの外に、列挙の名前の文字列からの変換（`valueOf`、`fromValue`、`Enum.valueOf(Class, String)`）か、`name()` を渡す変換があると、検査（ArchUnit と `java-rules.mjs`）が失敗する。ただし、domain と永続化の `valueOf`・`fromValue` は除く。
+- **DC-570-4** 共通の変換のメソッドの外に、列挙の名前の文字列からの変換（`valueOf`、`fromValue`、`Enum.valueOf(Class, String)`）か、`name()` を渡す変換があると、検査（ArchUnit と `java-rules.mjs`）が失敗する。ただし、domain と永続化の `valueOf`・`fromValue` と、HTTP のクエリの文字列を列挙にする設定の変換は除く。
 - **DC-570-5** 本番のコードの全ての列挙の変換の組（名前で変換する組も、switch 式の組も）に、変換元の全ての値を変換する単体テストがある。
 
 ### DS-570-3 規則の文書と検査の説明が、変えた検査と合っている（D / P1）
@@ -137,7 +137,7 @@
   - 依存：T570-01-05
   - 範囲：「変える範囲」の腐敗防止層、公開の API、ドメイン、その他と、それらのテスト
   - 確認方法：変えたモジュールのテスト（単体と統合を `--tests` で絞る）が通る
-- [ ] **T570-01-07** 規則の確認方法と検査の説明を修正する（DC-570-6、DC-570-8）。
+- [ ] **T570-01-07** 規則の確認方法と検査の説明を修正し、名前の文字列から列挙にしてよい場所に、外から来る文字列を読む設定の変換を加える（DC-570-6、DC-570-8）。
   - 依存：T570-01-04
   - 範囲：`docs/05-開発規則/backend-coding.md`、`docs/06-手順書/ci-checks.md`
   - 確認方法：文書の検査が通る

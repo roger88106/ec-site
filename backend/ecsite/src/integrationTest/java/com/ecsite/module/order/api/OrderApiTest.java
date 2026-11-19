@@ -16,6 +16,7 @@ import com.ecsite.support.data.InventoryTestData;
 import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.data.ShippingTaxCategory;
 import com.ecsite.support.data.ShippingTestData;
+import com.ecsite.support.security.TestTokens;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -260,6 +261,28 @@ class OrderApiTest {
         void returnsEmptyForUnknownOrder() {
             // 操作と確認：ない注文 ID には空
             assertThat(orderApi.find(UUID.randomUUID())).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("注文のメールアドレス")
+    class FindEmail {
+
+        @Test
+        @DisplayName("DC-572-3 注文時に写した会員のメールアドレスを返す")
+        void returnsEmailOfOrder() throws Exception {
+            // 準備：既定の会員の受付の注文
+            var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
+
+            // 操作と確認：会員のメールアドレス
+            assertThat(orderApi.findEmail(orderId)).contains(TestTokens.MEMBER_EMAIL);
+        }
+
+        @Test
+        @DisplayName("DC-572-3 ない注文は空")
+        void returnsEmptyForUnknownOrder() {
+            // 操作と確認：ない注文 ID には空
+            assertThat(orderApi.findEmail(UUID.randomUUID())).isEmpty();
         }
     }
 

@@ -10,6 +10,7 @@ import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,9 +73,9 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @return 使う支払画面。支払えなければ空
      */
     public Optional<PaymentPage> recordPage(@NonNull UUID orderId, @NonNull PaymentPage opened) {
-        var now = clock.instant();
         return paymentRepository.lockByOrderId(orderId)
-                .filter(payment -> payment.isPayable(now))
+                // 行ロックの待ちで期限を過ぎた支払に記録しないよう、時刻は行ロックの後に取る
+                .filter(payment -> payment.isPayable(clock.instant()))
                 // 同時のリクエストが先に覚えた画面があれば、それを使う
                 .map(payment -> payment.page().orElseGet(() -> {
                     payment.openPage(opened);
@@ -126,12 +127,25 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * 期限を過ぎた未払いの支払を、支払なしにする。
      *
      * <p>期限の前の支払と、未払いでない支払は変えない。
+     * 未払いの支払に、読んだときになかった支払画面が行ロックの後にあれば、開いた画面が残るのを避けるために、
+     * その回は支払を変えない（次の回のジョブが、その画面を読んで閉じる）。
      *
-     * @param paymentId 支払 ID
+     * @param paymentId  支払 ID
+     * @param readPageId 読んだときの支払画面 ID。なければ null
      */
-    public void expire(@NonNull UUID paymentId) {
+    public void expire(@NonNull UUID paymentId, @Nullable String readPageId) {
         var now = clock.instant();
-        paymentRepository.lockById(paymentId).ifPresent(payment -> expireIfPastDeadline(payment, now));
+        paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            // 未払いでなければ、次の回の検索は読まないので、見送りにしない
+            var unpaid = payment.status() == PaymentStatus.UNPAID;
+            // 支払画面は一度記録したら変わらないので、画面があって読んだ画面と違えば、読んだ後に記録された
+            var pageRecordedAfterRead = payment.page().filter(page -> !page.id().equals(readPageId)).isPresent();
+            if (unpaid && pageRecordedAfterRead) {
+                log.info("読んだ後に支払画面が記録されたので、この回は支払を変えない（次の回で扱う）: paymentId={}", paymentId);
+                return;
+            }
+            expireIfPastDeadline(payment, now);
+        });
     }
 
     /**

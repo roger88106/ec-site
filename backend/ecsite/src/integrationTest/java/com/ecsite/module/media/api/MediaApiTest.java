@@ -42,7 +42,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static com.ecsite.jooq.media.Tables.ASSET;
@@ -271,12 +273,14 @@ class MediaApiTest {
         @DisplayName("DC-489-1 配信のバケットに書く時には、仮のアセットの記録がコミットされている")
         void commitsPendingAssetBeforePublishing() throws Exception {
             // 準備：PNG をアップロードし、配信のバケットに書くときに、仮のアセットの記録が別の接続から見えるかを記録する
+            // ※別のスレッドで読む（同じスレッドで読むと、開いたままのトランザクションの接続に加わり、コミット前の行も見えるため）
             var scope = scope();
             var upload = uploaded(scope, PNG_TYPE, TestImages.png());
             var committed = new CopyOnWriteArrayList<Boolean>();
             doAnswer(invocation -> {
                 String storageKey = invocation.getArgument(0);
-                committed.add(dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.STORAGE_KEY.eq(storageKey)));
+                committed.add(CompletableFuture.supplyAsync(() -> dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.STORAGE_KEY.eq(storageKey)))
+                        .get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
                 return invocation.callRealMethod();
             }).when(storage).putPublished(anyString(), any(), anyString());
 
@@ -397,16 +401,23 @@ class MediaApiTest {
         }
 
         @Test
-        @DisplayName("配信のバケットに書けなければ、用意は失敗する")
+        @DisplayName("DC-489-1 配信のバケットに書けなければ、用意は失敗し、仮のアセットが残る")
         void failsWhenPublishingFails() throws Exception {
-            // 準備：PNG をアップロードし、配信のバケットへの書き込みを失敗させる
+            // 準備：PNG をアップロードし、書こうとした配信のキーを記録してから、配信のバケットへの書き込みを失敗させる
             var scope = scope();
             var upload = uploaded(scope, PNG_TYPE, TestImages.png());
-            doThrow(S3Exception.builder().statusCode(404).message("The specified bucket does not exist").build())
-                    .when(storage).putPublished(anyString(), any(), anyString());
+            var storageKeys = new CopyOnWriteArrayList<String>();
+            doAnswer(invocation -> {
+                storageKeys.add(invocation.getArgument(0));
+                throw S3Exception.builder().statusCode(404).message("The specified bucket does not exist").build();
+            }).when(storage).putPublished(anyString(), any(), anyString());
 
             // 操作と確認：書き込みの例外がそのまま投げられる
             assertThatThrownBy(() -> media.prepareImage(scope, upload.uploadId())).isInstanceOf(S3Exception.class);
+
+            // 確認：書こうとしたキーの仮のアセットが残る（失敗でもファイルが置かれていることがあり、片付けのジョブが消す）
+            assertThat(storageKeys).hasSize(1);
+            assertThat(dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.STORAGE_KEY.eq(storageKeys.getFirst()))).isTrue();
         }
 
         @Test

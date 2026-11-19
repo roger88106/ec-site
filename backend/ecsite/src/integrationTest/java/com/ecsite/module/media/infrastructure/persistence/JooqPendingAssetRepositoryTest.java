@@ -2,28 +2,39 @@ package com.ecsite.module.media.infrastructure.persistence;
 
 import com.ecsite.module.media.application.port.PendingAssetRepository;
 import com.ecsite.module.media.domain.PendingAsset;
+import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.ecsite.jooq.media.Tables.PENDING_ASSET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 /**
  * jOOQ の仮のアセットのリポジトリの統合テスト
  *
- * <p>テストごとにロールバックする。
+ * <p>行のロックを確認するテスト以外は、テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional
@@ -52,6 +63,9 @@ class JooqPendingAssetRepositoryTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     // ============================== テスト ==============================
 
@@ -218,7 +232,93 @@ class JooqPendingAssetRepositoryTest {
         }
     }
 
+    @Nested
+    @DisplayName("行のロック")
+    class RowLock {
+
+        @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        @DisplayName("1 件を消したトランザクションのコミットの前は、別のトランザクションの保存期間を過ぎたものの削除が、その行を待たずに飛ばす")
+        void expiredDeleteSkipsRowLockedByDelete() {
+            // 準備：ロールバックしないので、このテストで作った、保存期間を過ぎた仮のアセットだけを確認する
+            var pending = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
+            transactionTemplate.executeWithoutResult(status -> repository.insert(pending));
+            var executor = Executors.newSingleThreadExecutor();
+            try {
+                transactionTemplate.executeWithoutResult(status -> {
+                    // 操作：1 件を消したまま、別のトランザクションで保存期間を過ぎたものを消す
+                    assertThat(repository.deleteById(pending.id())).isTrue();
+                    var other = executor.submit(() -> transactionTemplate.execute(inner -> repository.deleteExpiredBefore(LONG_AGO, 10)));
+
+                    // 確認：待たずに終わり、その行を返さない
+                    assertThat(getWithin(other)).extracting(PendingAsset::id).doesNotContain(pending.id());
+                });
+            } finally {
+                executor.shutdownNow();
+            }
+
+            // 確認：1 件の削除のコミットで、行が消えている
+            assertThat(exists(pending.id())).isFalse();
+        }
+
+        @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        @DisplayName("保存期間を過ぎたものを消したトランザクションのコミットを待ってから、別のトランザクションの 1 件の削除は消せなかったことを返す")
+        void deleteWaitsForExpiredDeleteAndReturnsFalse() throws Exception {
+            // 準備：ロールバックしないので、このテストで作った、保存期間を過ぎた仮のアセットだけを確認する
+            var pending = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
+            transactionTemplate.executeWithoutResult(status -> repository.insert(pending));
+            var executor = Executors.newSingleThreadExecutor();
+            try {
+                var other = transactionTemplate.execute(status -> {
+                    // 操作：保存期間を過ぎたものを消したまま、別のトランザクションで同じ行を 1 件消す
+                    assertThat(repository.deleteExpiredBefore(LONG_AGO, 10)).extracting(PendingAsset::id).contains(pending.id());
+                    var future = executor.submit(() -> transactionTemplate.execute(inner -> repository.deleteById(pending.id())));
+
+                    // 確認（前提）：別のトランザクションが、行のロックを待っている
+                    await().atMost(AsyncEvents.TIMEOUT).until(this::waitingForPendingAssetLock);
+                    assertThat(future).isNotDone();
+                    return future;
+                });
+
+                // 確認：コミットの後に終わり、消せなかったことを返す
+                assertThat(getWithin(Objects.requireNonNull(other))).isFalse();
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        /**
+         * 仮のアセットの表の行のロックを待っている接続があるかを返す。
+         *
+         * @return あれば true
+         */
+        private boolean waitingForPendingAssetLock() {
+            return dsl.fetchExists(DSL.selectOne().from("pg_stat_activity")
+                    .where("wait_event_type = 'Lock'")
+                    .and("query like '%pending_asset%'"));
+        }
+    }
+
     // ============================== 確認の補助 ==============================
+
+    /**
+     * 別のスレッドの結果を、上限の時間まで待って返す。
+     *
+     * @param future 別のスレッドの処理
+     * @param <T>    結果の型
+     * @return 結果
+     */
+    private static <T> T getWithin(Future<T> future) {
+        try {
+            return future.get(AsyncEvents.TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     /**
      * 仮のアセットの記録があるかを返す。

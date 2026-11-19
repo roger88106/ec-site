@@ -12,7 +12,7 @@
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/module/payment/domain/payment/`
   - 確認方法：テストが失敗する
-- [ ] **T518-01-02** T518-01-01 のテストが通る実装を書く。
+- [x] **T518-01-02** T518-01-01 のテストが通る実装を書く。
   - 依存：T518-01-01
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/payment/domain/payment/`
   - 確認方法：T518-01-01 のテストが通る

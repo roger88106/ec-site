@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 支払 1 回の金額の範囲の単体テスト
@@ -42,5 +43,22 @@ class PaymentAmountRangeTest {
     void rejectsAmountOutOfRange(long yen) {
         // 操作と確認：0 円、下限の 1 円下、上限の 1 円上とその次は範囲の外
         assertThat(PaymentAmountRange.STANDARD.contains(Money.of(yen))).isFalse();
+    }
+
+    @Test
+    @DisplayName("下限が上限より大きい範囲は作れない")
+    void rejectsMinGreaterThanMax() {
+        // 操作と確認：下限が上限より 1 円大きいと例外
+        assertThatThrownBy(() -> new PaymentAmountRange(Money.of(101), Money.of(100)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("下限と上限が同じ範囲は作れる")
+    void allowsMinEqualToMax() {
+        // 操作と確認：下限と上限が同じなら、その金額だけが範囲の中
+        var range = new PaymentAmountRange(Money.of(100), Money.of(100));
+        assertThat(range.contains(Money.of(100))).isTrue();
+        assertThat(range.contains(Money.of(101))).isFalse();
     }
 }

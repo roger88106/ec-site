@@ -66,7 +66,8 @@ class EventResubmissionJob {
     // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-resubmission-"
             + "com.ecsite.config.event.EventResubmissionJob$Properties'.interval()}")
-    @SchedulerLock(name = "event-resubmission")
+    // ロックを持つ時間の上限は 5 分。実行の間隔が 1 分なので、止まったインスタンスのロックが長く残らないようにする
+    @SchedulerLock(name = "event-resubmission", lockAtMostFor = "PT5M")
     void resubmit() {
         for (var stopped : publicationRecords.moveStopped(properties.maxAttempts())) {
             log.error("処理の回数が上限に達したイベントの再発行を止めた：種類 {}、イベント ID {}、リスナー {}、処理の回数 {}",

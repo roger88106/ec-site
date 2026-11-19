@@ -54,7 +54,10 @@ class PaymentExpiryJob {
     // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
             + ".expiryInterval()}")
-    @SchedulerLock(name = "payment-expiry")
+    // ロックを持つ時間の上限は 30 分。決済サービスが応答しないと 1 件で最大約 75 秒かかり、1 回は最大 100 件なので、最悪の回は 30 分を超える。
+    // 超えると別のインスタンスで同時に実行されうるが、業務の正しさは行ロックと冪等な状態の遷移で保つ。
+    // 30 分は、通常の回が収まり、止まったインスタンスのロックが長く残らない値として選んだ
+    @SchedulerLock(name = "payment-expiry", lockAtMostFor = "PT30M")
     public void expire() {
         // 期限切れ ※1 つの支払の失敗（例外の種類を問わない）で、ほかの支払を止めない
         for (var payment : queryService.findPastDeadline(BATCH_SIZE)) {

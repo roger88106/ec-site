@@ -55,6 +55,12 @@ spring:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（バックエンドのアーキテクチャの「水平スケール」）。
     # 起動時の実行は local profile でだけ有効にする。
     enabled: false
+  task:
+    scheduling:
+      pool:
+        # 定期ジョブの数（6）に合わせる。ジョブが互いを待たないようにする（スレッドが 1 つだと、長いジョブの間、ほかのジョブが始まらない）。
+        # ジョブを加えたら、この数も増やす
+        size: 6
   lifecycle:
     # graceful shutdown で、処理中のリクエストの完了を待つ上限
     timeout-per-shutdown-phase: 30s

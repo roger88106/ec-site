@@ -46,7 +46,8 @@ class EventCleanupJob {
     // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"
             + "com.ecsite.config.event.EventCleanupJob$Properties'.interval()}")
-    @SchedulerLock(name = "event-cleanup")
+    // ロックを持つ時間の上限は 10 分。DB の削除だけで外部を呼ばず、通常は上限よりずっと短く終わる。止まったインスタンスのロックが長く残らない値にする
+    @SchedulerLock(name = "event-cleanup", lockAtMostFor = "PT10M")
     void cleanUp() {
         // 処理の済んだイベントは他の操作が読み書きしないので、件数の上限を置かずに 1 文で消す
         int deleted = publicationRecords.deleteCompletedBefore(clock.instant().minus(properties.retention()));

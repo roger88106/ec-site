@@ -5,7 +5,6 @@ import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPay
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.model.view.PayablePaymentView;
-import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
@@ -122,22 +121,10 @@ public class PaymentQueryService {
     }
 
     /**
-     * 売上確定に使う、注文の支払を取得する。
-     *
-     * @param orderId 注文 ID
-     * @return 支払。なければ空
-     */
-    public Optional<PaymentCaptureView> findForCapture(@NonNull UUID orderId) {
-        return paymentRepository.findByOrderId(orderId)
-                .map(payment -> new PaymentCaptureView(payment.id(), payment.status(), payment.authorizationRef(),
-                        payment.amount()));
-    }
-
-    /**
      * 売上確定の結果が分からない支払を、売上確定を求めた時刻・支払 ID の順に取得する。
      *
      * <p>状態が与信済みで、売上確定を求めてから決済の設定
-     * {@code ecsite.payment.capture-reconcile-delay} が過ぎた支払。
+     * {@code ecsite.payment.capture-reconcile-delay} の時間が過ぎた支払。
      *
      * @param limit 取得する数の上限
      * @return 支払

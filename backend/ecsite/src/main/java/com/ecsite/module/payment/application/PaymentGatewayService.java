@@ -9,6 +9,7 @@ import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +91,7 @@ public class PaymentGatewayService {
     /**
      * 注文の支払の売上を確定する。
      *
-     * <p>決済サービスを呼ぶ前に、売上確定を求めた時刻を記録する（記録は別のトランザクションでコミットする）。
+     * <p>決済サービスを呼ぶ前に、支払を行ロックして読み、売上確定を求めた時刻を記録する（1 つのトランザクションでコミットする）。
      * 売上確定済みなら、決済サービスを呼ばずに成功する。
      * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
@@ -102,8 +103,9 @@ public class PaymentGatewayService {
      */
     @Transactional(propagation = Propagation.NEVER)
     public void capture(@NonNull UUID orderId) {
-        // 支払取得
-        var payment = queryService.findForCapture(orderId)
+        // 支払取得と、売上確定を求めた時刻の記録 ※支払を行ロックして読み、1 つのトランザクションで記録する。
+        // 決済サービスの呼び出しの前にコミットし、確定の後に止まっても照合の対象に残す
+        var payment = commandService.requestCapture(orderId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         switch (payment.status()) {
             case CAPTURED -> {
@@ -115,10 +117,6 @@ public class PaymentGatewayService {
             }
             default -> throw BusinessException.of(PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
         }
-
-        // 売上確定を求めた時刻の記録 ※決済サービスの呼び出しの前にコミットし、確定の後に止まっても照合の対象に残す。
-        // 読んだ後に与信済みでなくなっていても、決済サービスの売上確定へ進み、その結果の反映で状態を決める
-        commandService.requestCapture(payment.id());
 
         // 売上確定
         var result = gateway.capture(new PaymentGateway.CaptureRequest(orderId,
@@ -177,11 +175,12 @@ public class PaymentGatewayService {
     }
 
     /**
-     * 売上確定の結果が分からない支払について、決済サービスの売上確定の状態を取得し、支払を合わせる。
+     * 売上確定の結果が分からない支払について、決済サービスの売上確定の状態を取得し、支払の状態を決済サービスに合わせる。
      *
      * <p>決済サービスを読むだけで、売上確定を求めない。支払の変え方は、決済サービスの状態で決める。
      * <ul>
-     *   <li>売上確定済み：売上確定済みにし、warn のログに支払 ID を出力する</li>
+     *   <li>売上確定済み：売上確定済みにし、warn のログに支払 ID を出力する
+     *       （読んだ後に注文がキャンセルされて与信の取消待ちになっていれば、返金待ちにして、返金に進めた文の warn のログを出力する）</li>
      *   <li>与信が切れた：与信期限切れにする</li>
      *   <li>売上を確定していない：売上確定を求めた時刻を削除し、与信済みのまま残す
      *       （読んだ後に売上確定が再実行されて時刻が変わっていれば、削除しない）</li>
@@ -197,9 +196,15 @@ public class PaymentGatewayService {
         // 結果の反映
         switch (state) {
             case CAPTURED -> {
-                if (commandService.markCaptured(payment.id())) {
-                    log.warn("売上確定の結果が分からなかった支払を、決済サービスに合わせて売上確定済みにした: paymentId={}", payment.id());
-                }
+                // 読んだ後に注文がキャンセルされていれば、売上確定済みでなく返金待ちになる
+                commandService.markCaptured(payment.id()).ifPresent(changed -> {
+                    if (changed == PaymentStatus.CAPTURED) {
+                        log.warn("売上確定の結果が分からなかった支払を、決済サービスに合わせて売上確定済みにした: paymentId={}", payment.id());
+                    } else {
+                        log.warn("売上確定の結果が分からなかった支払は、注文がキャンセルされていたので、返金に進めた: paymentId={}",
+                                payment.id());
+                    }
+                });
             }
             case AUTHORIZATION_EXPIRED -> commandService.markAuthorizationExpired(payment.id());
             case NOT_CAPTURED -> {

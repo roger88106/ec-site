@@ -2,6 +2,7 @@ package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.model.Authorization;
+import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
@@ -64,9 +65,9 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 決済サービスで開いた支払画面を覚える。
+     * 決済サービスで開いた支払画面を記録する。
      *
-     * <p>先に覚えた画面があれば、その画面を返す。
+     * <p>先に記録した画面があれば、その画面を返す。
      *
      * @param orderId 注文 ID
      * @param opened  開いた支払画面
@@ -76,7 +77,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
         return paymentRepository.lockByOrderId(orderId)
                 // 行ロックの待ちで期限を過ぎた支払に記録しないよう、時刻は行ロックの後に取る
                 .filter(payment -> payment.isPayable(clock.instant()))
-                // 同時のリクエストが先に覚えた画面があれば、それを使う
+                // 同時のリクエストが先に記録した画面があれば、それを使う
                 .map(payment -> payment.page().orElseGet(() -> {
                     payment.openPage(opened);
                     paymentRepository.update(payment);
@@ -173,27 +174,40 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 決済サービスに売上確定を求める前に、求めた時刻を記録する。
+     * 決済サービスに売上確定を求める前に、注文の支払を読み、求めた時刻を記録する。
      *
-     * <p>行ロックして記録し、コミットする。決済サービスを呼ぶ前に別のトランザクションで確定するので、
-     * 決済サービスで売上を確定した後にインスタンスが止まっても、記録が残る。
-     * 与信済みでなければ（読んだ後に状態が変わった）、何もしない。
+     * <p>注文の支払を行ロックして読み、与信済みなら求めた時刻を記録して、1 つのトランザクションでコミットする。
+     * 読みと記録の間に、支払が与信済みでなくなる隙間はない。決済サービスを呼ぶ前にコミットするので、
+     * 決済サービスで売上を確定した後にインスタンスが止まっても、時刻が残る。
+     * 与信済みでなければ、時刻を記録せず、読んだ状態を返す。
      *
-     * @param paymentId 支払 ID
+     * @param orderId 注文 ID
+     * @return 売上確定に使う支払（状態は、行ロックで読んだ時点の値）。支払がなければ空
      */
-    public void requestCapture(@NonNull UUID paymentId) {
-        var now = clock.instant();
-        modify(paymentId, payment -> payment.requestCapture(now));
+    public Optional<PaymentCaptureView> requestCapture(@NonNull UUID orderId) {
+        return paymentRepository.lockByOrderId(orderId).map(payment -> {
+            // 行ロックの待ちで早まらないよう、時刻は行ロックの後に取る
+            if (payment.requestCapture(clock.instant())) {
+                paymentRepository.update(payment);
+            }
+            return new PaymentCaptureView(payment.id(), payment.status(), payment.authorizationRef(), payment.amount());
+        });
     }
 
     /**
      * 決済サービスで売上を確定したことを反映する。
      *
+     * <p>与信済みなら売上確定済みに、与信の取消待ちなら返金待ちにする。変えたときだけ保存する。
+     *
      * @param paymentId 支払 ID
-     * @return 状態を変えたら true（すでに売上確定済みなら false）
+     * @return 変えた後の状態（売上確定済み、または返金待ち）。変えなければ（すでに売上確定済みなど）空
      */
-    public boolean markCaptured(@NonNull UUID paymentId) {
-        return modify(paymentId, payment -> payment.capture(clock.instant()));
+    public Optional<PaymentStatus> markCaptured(@NonNull UUID paymentId) {
+        var now = clock.instant();
+        return paymentRepository.lockById(paymentId).filter(payment -> payment.capture(now)).map(payment -> {
+            paymentRepository.update(payment);
+            return payment.status();
+        });
     }
 
     /**

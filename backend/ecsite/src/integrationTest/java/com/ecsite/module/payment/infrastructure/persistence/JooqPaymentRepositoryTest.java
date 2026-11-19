@@ -535,9 +535,9 @@ class JooqPaymentRepositoryTest {
     class TieOrder {
 
         @Test
-        @DisplayName("DC-549-3 同じ期限の支払は、支払 ID の順に取得する（挿入の順と逆の ID）")
+        @DisplayName("DC-549-3 同じ期限の支払は、支払 ID の順に取得する（挿入の順とは逆の ID の順）")
         void pastDeadlineTiesInIdOrder() {
-            // 準備：同じ期限で、支払 ID が挿入の順と逆（大きい ID から保存する）の 3 件
+            // 準備：同じ期限で、挿入の順とは逆の ID の順（大きい ID から保存する）の 3 件
             var tied = SEARCH_NOW.minusSeconds(500);
             var ids = tiedIds();
             insertAll(paymentWithId(ids.get(2), tied), paymentWithId(ids.get(1), tied), paymentWithId(ids.get(0), tied));
@@ -548,9 +548,9 @@ class JooqPaymentRepositoryTest {
         }
 
         @Test
-        @DisplayName("DC-549-3 同じ時刻から待つ支払は、支払 ID の順に取得する（挿入の順と逆の ID）")
+        @DisplayName("DC-549-3 同じ時刻から待つ支払は、支払 ID の順に取得する（挿入の順とは逆の ID の順）")
         void awaitingTiesInIdOrder() {
-            // 準備：同じ時刻から待つ、支払 ID が挿入の順と逆（大きい ID から保存する）の 3 件
+            // 準備：同じ時刻から待つ、挿入の順とは逆の ID の順（大きい ID から保存する）の 3 件
             var since = SEARCH_NOW.minusSeconds(500);
             var ids = tiedIds();
             var payments = List.of(paymentWithId(ids.get(2), DEADLINE), paymentWithId(ids.get(1), DEADLINE),
@@ -592,7 +592,7 @@ class JooqPaymentRepositoryTest {
                     new JooqPaymentRepository(recording, eventPublisher, clock).findUnpaidPastDeadline(SEARCH_NOW, 10));
 
             // 確認：期限の部分索引の範囲の条件に、期限の列が出る
-            assertThat(plans).as("実行された Query の実行計画").hasSize(1);
+            assertThat(plans).as("実行されたクエリの実行計画").hasSize(1);
             assertThat(plans.get(0))
                     .as("期限切れの支払の検索の実行計画（索引 %s の範囲の条件を使うはず）%n%s", DEADLINE_INDEX, plans.get(0))
                     .containsPattern(QueryPlans.indexRangeCondition(DEADLINE_INDEX, "deadline"));
@@ -606,7 +606,7 @@ class JooqPaymentRepositoryTest {
                     new JooqPaymentQueryRepository(recording).countUnpaidAwaitingAuthorizationUntil(SEARCH_NOW));
 
             // 確認：待ち始めた時刻の部分索引の範囲の条件に、待ち始めた時刻の列が出る
-            assertThat(plans).as("実行された Query の実行計画").hasSize(1);
+            assertThat(plans).as("実行されたクエリの実行計画").hasSize(1);
             assertThat(plans.get(0))
                     .as("件数の集計の実行計画（索引 %s の範囲の条件を使うはず）%n%s", AWAITING_INDEX, plans.get(0))
                     .containsPattern(QueryPlans.indexRangeCondition(AWAITING_INDEX, "awaiting_authorization_since"));
@@ -620,7 +620,7 @@ class JooqPaymentRepositoryTest {
                     new JooqPaymentRepository(recording, eventPublisher, clock).findUnpaidAwaitingAuthorization(10));
 
             // 確認：待ち始めた時刻の部分索引を使い、シーケンシャルスキャンがない
-            assertThat(plans).as("実行された Query の実行計画").hasSize(1);
+            assertThat(plans).as("実行されたクエリの実行計画").hasSize(1);
             assertThat(plans.get(0))
                     .as("与信の反映を待つ支払の検索の実行計画（索引 %s を使うはず）%n%s", AWAITING_INDEX, plans.get(0))
                     .contains(AWAITING_INDEX)

@@ -127,8 +127,8 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * 期限を過ぎた未払いの支払を、支払なしにする。
      *
      * <p>期限の前の支払と、未払いでない支払は変えない。
-     * 行ロックの後に、読んだときになかった支払画面があれば、開いたままの画面を閉じずに支払なしにしないよう、
-     * 何もしない（次の回のジョブが、その画面を読んで閉じる）。
+     * 未払いの支払に、読んだときになかった支払画面が行ロックの後にあれば、開いた画面が残るのを避けるために、
+     * その回は支払を変えない（次の回のジョブが、その画面を読んで閉じる）。
      *
      * @param paymentId  支払 ID
      * @param readPageId 読んだときの支払画面 ID。なければ null
@@ -136,8 +136,9 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     public void expire(@NonNull UUID paymentId, @Nullable String readPageId) {
         var now = clock.instant();
         paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            // 未払いでなければ、次の回の検索は読まないので、見送りにしない。
             // 支払画面は一度記録したら変わらないので、画面があって読んだ画面と違えば、読んだ後に記録された
-            if (payment.page().filter(page -> !page.id().equals(readPageId)).isPresent()) {
+            if (payment.status() == PaymentStatus.UNPAID && payment.page().filter(page -> !page.id().equals(readPageId)).isPresent()) {
                 log.info("読んだ後に支払画面が記録されたので、支払なしにせず次の回に回す: paymentId={}", paymentId);
                 return;
             }

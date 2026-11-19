@@ -16,6 +16,7 @@ import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.LogCapture;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.PaymentTestData;
@@ -23,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -174,6 +177,12 @@ class PaymentExpiryJobTest {
     ApplicationContext context;
 
     /**
+     * 支払の更新のサービスのログ
+     */
+    @RegisterExtension
+    final LogCapture logs = LogCapture.of(PaymentCommandService.class);
+
+    /**
      * 支払を進める補助
      */
     PaymentTestData payments;
@@ -264,7 +273,7 @@ class PaymentExpiryJobTest {
         @Test
         @DisplayName("ジョブが読んだ後に支払画面が記録された支払は、その回では未払いのまま残り、画面も閉じない")
         void keepsUnpaidWhenPageRecordedAfterRead() {
-            // 準備：画面のない一覧を期限の後に読み、その後に期限の前の時刻で画面が記録された
+            // 準備：期限の後に、画面のない支払の一覧を読み、その後に、期限の前の時刻で画面が記録された
             var orderId = payments.created(ORDERED_AT);
             var pastDeadline = readPastDeadlineWithoutPage(orderId);
             var pageId = recordPageBeforeDeadline(orderId);
@@ -277,6 +286,43 @@ class PaymentExpiryJobTest {
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
             assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.OPEN);
             assertThat(expiredEvents(orderId)).isZero();
+        }
+
+        @Test
+        @DisplayName("ジョブが読んだ後に支払画面が記録された支払を見送ったら、その支払 ID を含む info のログが 1 件出る")
+        void logsSkipWhenPageRecordedAfterRead() {
+            // 準備：期限の後に、画面のない支払の一覧を読み、その後に、期限の前の時刻で画面が記録された
+            var orderId = payments.created(ORDERED_AT);
+            var pastDeadline = readPastDeadlineWithoutPage(orderId);
+            recordPageBeforeDeadline(orderId);
+            clock.setInstant(DEADLINE);
+            logs.clear();
+
+            // 操作：読んだ一覧の支払を処理する
+            gatewayService.expire(pastDeadline);
+
+            // 確認：見送った支払の info のログが 1 件
+            assertThat(logs.messages(Level.INFO)).filteredOn(message -> message.contains(pastDeadline.id().toString()))
+                    .hasSize(1);
+        }
+
+        @Test
+        @DisplayName("ジョブが読んだ後に支払画面が記録され、行ロックまでに与信済みになった支払は、見送りのログを出さない")
+        void doesNotLogSkipWhenNoLongerUnpaid() {
+            // 準備：期限の後に、画面のない支払の一覧を読み、その後に、画面が記録されて支払が済んだ
+            var orderId = payments.created(ORDERED_AT);
+            var pastDeadline = readPastDeadlineWithoutPage(orderId);
+            var pageId = recordPageBeforeDeadline(orderId);
+            gateway.pay(pageId);
+            clock.setInstant(DEADLINE);
+            logs.clear();
+
+            // 操作：読んだ一覧の支払を処理する
+            gatewayService.expire(pastDeadline);
+
+            // 確認：その支払 ID を含む info のログがなく、与信済みのまま
+            assertThat(logs.messages(Level.INFO)).noneMatch(message -> message.contains(pastDeadline.id().toString()));
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         }
 
         @Test
@@ -778,7 +824,7 @@ class PaymentExpiryJobTest {
     // ============================== 準備の補助 ==============================
 
     /**
-     * 期限の後の時刻で、ジョブと同じ参照で支払画面のない一覧を読み、指定の注文の支払を返す。<br />
+     * 期限の後の時刻で、ジョブと同じ検索で支払画面のない一覧を読み、指定の注文の支払を返す。<br />
      * 時計は期限の後になる。
      *
      * @param orderId 注文 ID（支払画面はまだない）

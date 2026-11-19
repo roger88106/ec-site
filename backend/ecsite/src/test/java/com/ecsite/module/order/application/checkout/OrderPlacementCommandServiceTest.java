@@ -4,7 +4,6 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.application.model.Municipality;
 import com.ecsite.module.order.application.model.PaymentAmountRange;
 import com.ecsite.module.order.domain.OrderErrorCode;
@@ -43,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -240,10 +238,8 @@ class OrderPlacementCommandServiceTest {
             // 準備：見積もりの総額が範囲の上限の外で、確認した総額も同じ
             when(quoteQueryService.quote(lines, NOW, checkout.id())).thenReturn(quoteWithTotal(OUT_OF_RANGE_TOTAL));
 
-            // 操作と確認：範囲の外のエラー（エラーコードは文字列で比べる）
-            assertThatThrownBy(() -> service.place(command(Money.of(OUT_OF_RANGE_TOTAL))))
-                    .isInstanceOfSatisfying(BusinessException.class, ex ->
-                            assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("ORDER_AMOUNT_OUT_OF_RANGE"));
+            // 操作と確認：範囲の外のエラー
+            assertBusinessError(() -> service.place(command(Money.of(OUT_OF_RANGE_TOTAL))), OrderErrorCode.ORDER_AMOUNT_OUT_OF_RANGE);
 
             // 確認：在庫の減算・注文の保存・支払の作成をしない
             verify(stockDirectory, never()).commit(any(), anyMap(), any(), anyString());

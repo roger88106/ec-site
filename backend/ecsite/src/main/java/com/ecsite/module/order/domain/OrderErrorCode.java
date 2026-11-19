@@ -47,6 +47,10 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     CART_NOT_ORDERABLE(ErrorType.BUSINESS_RULE_ERROR),
     /**
+     * 注文の総額が、決済が受け付ける範囲（{min}〜{max} 円）の外
+     */
+    ORDER_AMOUNT_OUT_OF_RANGE(ErrorType.BUSINESS_RULE_ERROR, "min", "max"),
+    /**
      * 在庫が足りない
      */
     OUT_OF_STOCK(ErrorType.CONFLICT_ERROR),

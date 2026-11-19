@@ -32,7 +32,7 @@
   - 依存：T518-01-05
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/PlaceOrderAmountRangeApiTest.java`（新規）、`backend/ecsite/src/test/java/com/ecsite/module/order/application/checkout/OrderPlacementCommandServiceTest.java`
   - 確認方法：テストが失敗する
-- [ ] **T518-01-07** T518-01-05、T518-01-06 のテストが通る実装を書く。エラーコード、文言、判定、OpenAPI を加える。
+- [x] **T518-01-07** T518-01-05、T518-01-06 のテストが通る実装を書く。エラーコード、文言、判定、OpenAPI を加える。
   - 依存：T518-01-05、T518-01-06
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/order/`、`backend/ecsite/src/main/resources/messages.properties`、`api/openapi/store.yaml`
   - 確認方法：AC-518-1〜5 のテスト、`ErrorCodeContractTest`、`MessageContractTest` が通る

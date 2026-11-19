@@ -21,6 +21,7 @@ import com.ecsite.api.store.model.ShipmentStatus;
 import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
@@ -188,6 +189,49 @@ class StoreOrderMapper {
                 .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
     }
 
+    /**
+     * 注文の状態。
+     */
+    static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
+        return EnumConversion.byName(status, OrderStatus.class);
+    }
+
+    /**
+     * キャンセルの種類。
+     */
+    static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
+        return EnumConversion.byName(kind, CancellationKind.class);
+    }
+
+    /**
+     * 配送業者。
+     */
+    static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
+        return EnumConversion.byName(carrier, Carrier.class);
+    }
+
+    /**
+     * 配送状態。
+     */
+    static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
+        return EnumConversion.byName(status, ShipmentStatus.class);
+    }
+
+    /**
+     * 買えない理由。
+     */
+    static UnpurchasableReason toReason(com.ecsite.module.order.domain.quote.UnpurchasableReason reason) {
+        return EnumConversion.byName(reason, UnpurchasableReason.class);
+    }
+
+    /**
+     * キャンセルの申請の結果。
+     */
+    static CancellationRequest.ResultEnum toResult(
+            com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
+        return EnumConversion.byName(result, CancellationRequest.ResultEnum.class);
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
@@ -290,76 +334,5 @@ class StoreOrderMapper {
             summary.shipmentStatus(toShipmentStatus(shipment.status()));
         }
         return summary;
-    }
-
-    /**
-     * 注文の状態。
-     */
-    private static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
-        return switch (status) {
-            case PENDING_PAYMENT -> OrderStatus.PENDING_PAYMENT;
-            case ACCEPTED -> OrderStatus.ACCEPTED;
-            case CANCELLATION_REQUESTED -> OrderStatus.CANCELLATION_REQUESTED;
-            case CANCELLED -> OrderStatus.CANCELLED;
-            case SHIPPED -> OrderStatus.SHIPPED;
-        };
-    }
-
-    /**
-     * キャンセルの種類。
-     */
-    private static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
-        return switch (kind) {
-            case REQUEST_APPROVED -> CancellationKind.REQUEST_APPROVED;
-            case OPERATOR -> CancellationKind.OPERATOR;
-            case PAYMENT_EXPIRED -> CancellationKind.PAYMENT_EXPIRED;
-        };
-    }
-
-    /**
-     * 配送業者。
-     */
-    private static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> Carrier.YAMATO;
-            case SAGAWA -> Carrier.SAGAWA;
-            case JAPAN_POST -> Carrier.JAPAN_POST;
-        };
-    }
-
-    /**
-     * 配送状態。
-     */
-    private static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
-        return switch (status) {
-            case SHIPPED -> ShipmentStatus.SHIPPED;
-            case IN_TRANSIT -> ShipmentStatus.IN_TRANSIT;
-            case DELIVERED -> ShipmentStatus.DELIVERED;
-            case RETURNED -> ShipmentStatus.RETURNED;
-        };
-    }
-
-    /**
-     * 買えない理由。
-     */
-    private static UnpurchasableReason toReason(com.ecsite.module.order.domain.quote.UnpurchasableReason reason) {
-        return switch (reason) {
-            case NOT_SHOWN -> UnpurchasableReason.NOT_SHOWN;
-            case SALES_SUSPENDED -> UnpurchasableReason.SALES_SUSPENDED;
-            case OUT_OF_STOCK -> UnpurchasableReason.OUT_OF_STOCK;
-            case INSUFFICIENT_STOCK -> UnpurchasableReason.INSUFFICIENT_STOCK;
-        };
-    }
-
-    /**
-     * キャンセルの申請の結果。
-     */
-    private static CancellationRequest.ResultEnum toResult(
-            com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
-        return switch (result) {
-            case PENDING -> CancellationRequest.ResultEnum.PENDING;
-            case APPROVED -> CancellationRequest.ResultEnum.APPROVED;
-            case REJECTED -> CancellationRequest.ResultEnum.REJECTED;
-        };
     }
 }

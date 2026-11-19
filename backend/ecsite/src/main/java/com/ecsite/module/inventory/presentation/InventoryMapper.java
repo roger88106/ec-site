@@ -7,6 +7,7 @@ import com.ecsite.api.admin.model.StockAdjustment;
 import com.ecsite.api.admin.model.StockAdjustmentPage;
 import com.ecsite.api.admin.model.StockSummary;
 import com.ecsite.api.admin.model.StockSummaryList;
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.command.AdjustStockCommand;
@@ -62,14 +63,7 @@ class InventoryMapper {
      * @return レスポンスの調整理由
      */
     static com.ecsite.api.admin.model.StockAdjustmentReason toResponseReason(StockAdjustmentReason reason) {
-        return switch (reason) {
-            case ARRIVAL -> com.ecsite.api.admin.model.StockAdjustmentReason.ARRIVAL;
-            case STOCKTAKE -> com.ecsite.api.admin.model.StockAdjustmentReason.STOCKTAKE;
-            case DAMAGE_OR_LOSS -> com.ecsite.api.admin.model.StockAdjustmentReason.DAMAGE_OR_LOSS;
-            case OTHER -> com.ecsite.api.admin.model.StockAdjustmentReason.OTHER;
-            case ORDER -> com.ecsite.api.admin.model.StockAdjustmentReason.ORDER;
-            case ORDER_CANCELLATION -> com.ecsite.api.admin.model.StockAdjustmentReason.ORDER_CANCELLATION;
-        };
+        return EnumConversion.byName(reason, com.ecsite.api.admin.model.StockAdjustmentReason.class);
     }
 
     /**

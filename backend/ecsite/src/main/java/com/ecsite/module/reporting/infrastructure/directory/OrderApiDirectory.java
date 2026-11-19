@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.api.OrderApi;
 import com.ecsite.module.order.api.model.OrderSnapshot;
@@ -109,13 +110,7 @@ class OrderApiDirectory implements OrderDirectory {
      * @return レポートの注文の状態
      */
     static ReportOrderStatus toStatus(OrderStatusChanged.Status status) {
-        return switch (status) {
-            case PENDING_PAYMENT -> ReportOrderStatus.PENDING_PAYMENT;
-            case ACCEPTED -> ReportOrderStatus.ACCEPTED;
-            case CANCELLATION_REQUESTED -> ReportOrderStatus.CANCELLATION_REQUESTED;
-            case CANCELLED -> ReportOrderStatus.CANCELLED;
-            case SHIPPED -> ReportOrderStatus.SHIPPED;
-        };
+        return EnumConversion.byName(status, ReportOrderStatus.class);
     }
 
     /**
@@ -125,11 +120,7 @@ class OrderApiDirectory implements OrderDirectory {
      * @return レポートのキャンセルの種類
      */
     static ReportCancellationKind toCancellationKind(OrderStatusChanged.CancellationKind kind) {
-        return switch (kind) {
-            case REQUEST_APPROVED -> ReportCancellationKind.REQUEST_APPROVED;
-            case OPERATOR -> ReportCancellationKind.OPERATOR;
-            case PAYMENT_EXPIRED -> ReportCancellationKind.PAYMENT_EXPIRED;
-        };
+        return EnumConversion.byName(kind, ReportCancellationKind.class);
     }
 
     /**
@@ -144,11 +135,6 @@ class OrderApiDirectory implements OrderDirectory {
         if (gender == null) {
             return null;
         }
-        return switch (gender) {
-            case MALE -> ReportBuyerGender.MALE;
-            case FEMALE -> ReportBuyerGender.FEMALE;
-            case OTHER -> ReportBuyerGender.OTHER;
-            case UNDISCLOSED -> ReportBuyerGender.UNDISCLOSED;
-        };
+        return EnumConversion.byName(gender, ReportBuyerGender.class);
     }
 }

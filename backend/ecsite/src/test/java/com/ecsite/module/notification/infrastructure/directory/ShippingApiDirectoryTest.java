@@ -2,6 +2,7 @@ package com.ecsite.module.notification.infrastructure.directory;
 
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.shipping.api.ShippingApi;
+import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.ShipmentService;
 import com.ecsite.module.shipping.domain.Carrier;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +28,14 @@ class ShippingApiDirectoryTest {
     private final ShippingApiDirectory directory = new ShippingApiDirectory(new ShippingApi(mock(ShipmentService.class)));
 
     // ============================== テスト ==============================
+
+    @ParameterizedTest(name = "「{0}」")
+    @EnumSource(OrderShipped.Carrier.class)
+    @DisplayName("AC-277 出荷イベントの配送業者の全ての値を、出荷モジュールの同じ名前の値に写す")
+    void mapsEveryCarrier(OrderShipped.Carrier carrier) {
+        // 操作と確認：同じ名前の値になる
+        assertThat(ShippingApiDirectory.toShippingCarrier(carrier)).isEqualTo(ShipmentSummary.Carrier.valueOf(carrier.name()));
+    }
 
     @ParameterizedTest(name = "「{0}」")
     @EnumSource(OrderShipped.Carrier.class)

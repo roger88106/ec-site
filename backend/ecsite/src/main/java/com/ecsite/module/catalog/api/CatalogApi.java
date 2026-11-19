@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.model.AxisValue;
@@ -187,11 +188,7 @@ public class CatalogApi {
      * 公開する並び順を、application の並び順に変換する。
      */
     static StoreProductListQuery.Sort toSort(ShownProductSort sort) {
-        return switch (sort) {
-            case NEWEST -> StoreProductListQuery.Sort.NEWEST;
-            case PRICE_ASC -> StoreProductListQuery.Sort.PRICE_ASC;
-            case PRICE_DESC -> StoreProductListQuery.Sort.PRICE_DESC;
-        };
+        return EnumConversion.byName(sort, StoreProductListQuery.Sort.class);
     }
 
     /**

@@ -64,7 +64,7 @@
   "permit": [
     { "file": "docs/05-開発規則/writing.md", "heading": "用語の選び方", "reason": "使わない語（造語・直訳・話し言葉）を、避ける書き方の例として書く表がある" },
     { "file": "docs/07-記録/subagents-results.md", "heading": "校閲の評価の結果", "reason": "評価の例として挙げた、使わない語（護り）を引用する" },
-    { "file": "docs/08-spec/502-message-style/spec.md", "heading": "変える文", "reason": "変える前のメッセージの文を引用する。spec をアーカイブに移すときに外す" }
+    { "file": "docs/08-spec/502-message-style/spec.md", "heading": "変える文言", "reason": "変える前のメッセージの文言を引用する。spec をアーカイブに移すときに外す" }
   ],
   "style": {
     "no": 4,

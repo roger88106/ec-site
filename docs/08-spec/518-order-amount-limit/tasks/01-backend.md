@@ -40,7 +40,7 @@
   - 依存：T518-01-02
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/module/payment/infrastructure/stripe/StripePaymentGatewayTest.java`
   - 確認方法：テストが通る
-- [ ] **T518-01-09** 段階の最後のレビュー（厚め）。指摘を修正する。
+- [x] **T518-01-09** 段階の最後のレビュー（厚め）。指摘を修正する。
   - 依存：T518-01-01〜08
   - 確認する項目：変えたコードを[書き方の規則とレビュー](../../../05-開発規則/review.md)と照合する。
   - 結果：

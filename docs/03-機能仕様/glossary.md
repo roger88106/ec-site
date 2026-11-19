@@ -159,6 +159,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 |------|--------|------|
 | 決済サービス | `PaymentGateway` | 支払画面と与信を提供する外部のサービス（Stripe）。mock との選び方は[決済の設計](../02-設計/payment.md)の「port」 |
 | 支払 | `Payment` / `payment` | 1 つの注文の代金の支払。注文に 1 つ |
+| 支払 1 回の金額の範囲 | `PaymentAmountRange` / `ORDER_AMOUNT_OUT_OF_RANGE` | 決済サービスが 1 回の支払で受け付ける金額の範囲（下限と上限を含む）。値は[決済モジュール](payment.md)の「支払（集約）」 |
 | 支払の状態 | `PaymentStatus` / `status` | 未払い（`UNPAID`）、与信済み（`AUTHORIZED`）、与信の取消待ち（`VOID_PENDING`）、与信の取消済み（`VOIDED`）、支払なし（`NOT_PAID`）、売上確定済み（`CAPTURED`）、与信期限切れ（`AUTHORIZATION_EXPIRED`）、返金待ち（`REFUND_PENDING`）、返金済み（`REFUNDED`） |
 | 与信 | `authorization` | カードの利用枠のうち、総額分を確保すること（オーソリ）。売上の確定（出荷の時）までは代金を受け取らない |
 | 与信の取消 | `void` | 確保した与信を解くこと。売上の確定の前なので、返金ではない |

@@ -12,7 +12,7 @@
   - 依存：T518-01-07（新しいエラーコードが OpenAPI にある）
   - 範囲：`frontend/store/src/features/checkout/placeOrderErrors.test.ts`
   - 確認方法：テストが失敗する
-- [ ] **T518-02-02** 型を再生成し、T518-02-01 のテストが通る実装を書く。
+- [x] **T518-02-02** 型を再生成し、T518-02-01 のテストが通る実装を書く。
   - 依存：T518-02-01
   - 範囲：`frontend/store/src/api/generated/`（生成物。git の管理外）、`frontend/store/src/features/checkout/placeOrderErrors.ts`
   - 確認方法：T518-02-01 のテストが通り、型の検査が通る

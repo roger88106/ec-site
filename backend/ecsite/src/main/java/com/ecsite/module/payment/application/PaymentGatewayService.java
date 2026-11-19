@@ -55,6 +55,7 @@ public class PaymentGatewayService {
      * 支払画面の URL を返す。
      *
      * <p>開いている画面があればそれを、なければ決済サービスに作らせる。支払画面は、1 つの支払に同時に 1 つだけ開く。
+     * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
      * @param orderId 注文 ID
      * @return 支払画面の URL。支払がない、支払えない（未払いでない、期限の後）なら空
@@ -89,6 +90,7 @@ public class PaymentGatewayService {
      * 注文の支払の売上を確定する。
      *
      * <p>売上確定済みなら、決済サービスを呼ばずに成功する。
+     * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
      * @param orderId 注文 ID
      * @throws BusinessException 支払がない（{@code NOT_FOUND}）

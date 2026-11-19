@@ -16,8 +16,6 @@ import java.util.UUID;
 
 /**
  * 販売可能数と引当の API
- *
- * <p>書き込みの操作は、呼んだ側のトランザクションに加わる。
  */
 @Component
 @RequiredArgsConstructor
@@ -49,7 +47,7 @@ public class StockReservationApi {
     /**
      * 全品目を引き当てる。
      *
-     * <p>同じ持ち主の引当は置き換える。
+     * <p>同じ持ち主の引当は置き換える。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param holderId   持ち主 ID（注文手続き）
      * @param quantities バリアント ID → 数量
@@ -63,7 +61,7 @@ public class StockReservationApi {
     /**
      * 持ち主の引当を解く。
      *
-     * <p>なければ何もしない。
+     * <p>なければ何もしない。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param holderId 持ち主 ID
      */
@@ -76,6 +74,7 @@ public class StockReservationApi {
      *
      * <p>引当の期限が切れていても、その時点で足りれば減算する。
      * 1 つでも足りなければ在庫数を変えずに足りない品目を返すが、持ち主の引当は解いたままになる。
+     * 呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param holderId    持ち主 ID（注文手続き）
      * @param quantities  バリアント ID → 数量
@@ -91,6 +90,8 @@ public class StockReservationApi {
 
     /**
      * キャンセルした注文の数量を在庫数に戻し、理由「注文のキャンセル」で調整履歴を書く。
+     *
+     * <p>呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param quantities  バリアント ID → 数量
      * @param orderId     注文 ID

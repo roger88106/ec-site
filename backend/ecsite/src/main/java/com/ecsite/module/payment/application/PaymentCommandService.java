@@ -50,7 +50,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     /**
      * 注文の支払を未払いで作る。
      *
-     * <p>同じ注文の支払がすでにあれば何もしない。呼んだ側のトランザクションに加わる。
+     * <p>同じ注文の支払がすでにあれば何もしない。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param orderId   注文 ID
      * @param amount    金額（注文の総額）
@@ -180,7 +180,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * 注文のキャンセルに合わせて支払を取り消す。
      *
      * <p>決済サービスでの取消と返金は、コミットの後に行う。
-     * 支払がなければ何もしない。呼んだ側のトランザクションに加わる。
+     * 支払がなければ何もしない。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param orderId 注文 ID
      */

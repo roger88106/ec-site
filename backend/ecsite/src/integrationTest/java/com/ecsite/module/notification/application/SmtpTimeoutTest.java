@@ -186,7 +186,7 @@ class SmtpTimeoutTest {
      * @return 発行したイベント
      */
     private OrderShipped publishShipped(UUID orderId) {
-        var event = OrderShipped.of(SHIPPED_AT, orderId, "20261008-000001", "timeout-" + orderId + "@example.com",
+        var event = OrderShipped.of(SHIPPED_AT, orderId, "20261008-000001",
                 OrderShipped.Carrier.YAMATO, "123456789012");
         transaction.executeWithoutResult(status -> events.publishEvent(event));
         return event;

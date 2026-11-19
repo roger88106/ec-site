@@ -56,11 +56,6 @@ class ShipmentMailCommandServiceTest {
     private static final String EMAIL = "taro@example.com";
 
     /**
-     * イベントのメールアドレス（宛先にならないことを確認するための、注文のメールアドレスと違う値）
-     */
-    private static final String EVENT_EMAIL = "event@example.com";
-
-    /**
      * 送り状番号
      */
     private static final String TRACKING_NUMBER = "123456789012";
@@ -127,7 +122,7 @@ class ShipmentMailCommandServiceTest {
             // 操作：ヤマト運輸の出荷を渡す
             var mail = sentMailOf(yamatoShipment());
 
-            // 確認：注文の腐敗防止層が返した宛先（イベントのメールアドレスではない）
+            // 確認：注文の腐敗防止層が返した宛先（イベントには宛先がない）
             assertThat(mail.to()).isEqualTo(EMAIL);
         }
 
@@ -206,7 +201,7 @@ class ShipmentMailCommandServiceTest {
      * @return 注文の出荷のイベント
      */
     private static OrderShipped shipment(OrderShipped.Carrier carrier) {
-        return OrderShipped.of(SHIPPED_AT, ORDER_ID, ORDER_NUMBER, EVENT_EMAIL, carrier, TRACKING_NUMBER);
+        return OrderShipped.of(SHIPPED_AT, ORDER_ID, ORDER_NUMBER, carrier, TRACKING_NUMBER);
     }
 
     /**

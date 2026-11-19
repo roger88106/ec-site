@@ -207,11 +207,11 @@ class ShipmentMailTest {
 
             // 操作：同じイベントと、同じ注文の別のイベントを発行する
             publish(event);
-            publish(OrderShipped.of(event.occurredAt(), event.orderId(), event.orderNumber(), event.email(),
+            publish(OrderShipped.of(event.occurredAt(), event.orderId(), event.orderNumber(),
                     event.carrier(), event.trackingNumber()));
 
             // 確認：処理が終わった後も、届いたメールは 1 通
-            asyncEvents.awaitHandled(published -> published instanceof OrderShipped shipped && shipped.email().equals(email));
+            asyncEvents.awaitHandled(published -> published instanceof OrderShipped shipped && shipped.orderId().equals(event.orderId()));
             assertThat(mailpit.messagesTo(email)).hasSize(1);
         }
     }
@@ -244,7 +244,7 @@ class ShipmentMailTest {
      * @return 注文の出荷
      */
     private OrderShipped shipped() {
-        return OrderShipped.of(clock.instant(), UUID.randomUUID(), ORDER_NUMBER, email, OrderShipped.Carrier.YAMATO,
+        return OrderShipped.of(clock.instant(), UUID.randomUUID(), ORDER_NUMBER, OrderShipped.Carrier.YAMATO,
                 TRACKING_NUMBER);
     }
 

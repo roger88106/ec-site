@@ -1,6 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
-import com.ecsite.module.catalog.api.ReportCatalogApi;
+import com.ecsite.module.catalog.api.CatalogApi;
 import com.ecsite.module.reporting.application.model.CatalogProduct;
 import com.ecsite.module.reporting.application.model.CatalogVariant;
 import com.ecsite.module.reporting.application.port.CatalogDirectory;
@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,9 +24,9 @@ import java.util.UUID;
 class CatalogApiDirectory implements CatalogDirectory {
 
     /**
-     * レポート向けの商品カタログの API
+     * 商品カタログの API
      */
-    private final ReportCatalogApi reportCatalogApi;
+    private final CatalogApi catalogApi;
 
     /**
      * バリアントの商品 ID を、商品カタログの API で求める。
@@ -35,7 +36,9 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public Map<UUID, UUID> productIdsOf(Collection<UUID> variantIds) {
-        return reportCatalogApi.productIdsOf(variantIds);
+        var result = new LinkedHashMap<UUID, UUID>();
+        catalogApi.findVariants(variantIds).forEach((variantId, variant) -> result.put(variantId, variant.productId()));
+        return result;
     }
 
     /**
@@ -46,7 +49,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public Optional<CatalogProduct> findProduct(UUID productId) {
-        return reportCatalogApi.findProduct(productId).map(product -> new CatalogProduct(product.productId(), product.name(),
+        return catalogApi.findProduct(productId).map(product -> new CatalogProduct(product.productId(), product.name(),
                 product.variants().stream().map(variant -> new CatalogVariant(variant.variantId(), variant.variantCode(),
                                 variant.axisValues().stream()
                                         .map(axis -> new ReportOrder.AxisValue(axis.name(), axis.value()))

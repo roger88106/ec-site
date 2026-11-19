@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * C 側の商品一覧の 1 件
+ * 店舗に表示される商品の一覧の 1 件
  *
  * <p>価格は表示時刻の税率で計算した税込価格と、税抜価格。
  *
@@ -18,6 +18,6 @@ import java.util.UUID;
  * @param sellableVariantIds 販売中（販売停止でない）のバリアントの ID
  * @param imageUrl           代表画像の URL。画像がなければ null
  */
-public record StoreProductSummary(UUID id, String name, Money priceInclTax, Money priceExclTax,
+public record ShownProductSummary(UUID id, String name, Money priceInclTax, Money priceExclTax,
                                   List<UUID> sellableVariantIds, @Nullable String imageUrl) {
 }

@@ -1,11 +1,11 @@
 package com.ecsite.module.catalog.api.model;
 
 /**
- * C 側の商品一覧の並び順
+ * 店舗に表示される商品の一覧の並び順
  *
  * <p>同じ値なら商品 ID の順。
  */
-public enum StoreProductSort {
+public enum ShownProductSort {
 
     /**
      * 新着順（初回表示日時の新しい順）

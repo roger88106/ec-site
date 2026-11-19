@@ -1,7 +1,10 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
-import com.ecsite.module.order.api.OrderReportApi;
-import com.ecsite.module.order.api.model.OrderReportSnapshot;
+import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.api.OrderApi;
+import com.ecsite.module.order.api.model.OrderSnapshot;
+import com.ecsite.module.order.api.model.TaxAmount;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.reporting.application.port.OrderDirectory;
 import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
@@ -11,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,9 +28,9 @@ import java.util.UUID;
 class OrderApiDirectory implements OrderDirectory {
 
     /**
-     * レポート用の注文の写しの API
+     * 注文の API
      */
-    private final OrderReportApi orderReportApi;
+    private final OrderApi orderApi;
 
     /**
      * 注文の今の写しを、注文の API で読む。
@@ -36,13 +40,14 @@ class OrderApiDirectory implements OrderDirectory {
      */
     @Override
     public Optional<ReportOrder> find(UUID orderId) {
-        return orderReportApi.find(orderId).map(OrderApiDirectory::toReportOrder);
+        return orderApi.find(orderId).map(OrderApiDirectory::toReportOrder);
     }
 
     /**
      * 注文の API の型を、レポートの写しにする。
      */
-    private static ReportOrder toReportOrder(OrderReportSnapshot snapshot) {
+    static ReportOrder toReportOrder(OrderSnapshot snapshot) {
+        var cancellation = snapshot.cancellation();
         return new ReportOrder(
                 snapshot.orderId(),
                 snapshot.orderNumber(),
@@ -51,17 +56,17 @@ class OrderApiDirectory implements OrderDirectory {
                 toStatus(snapshot.status()),
                 null,
                 null,
-                snapshot.cancelledAt(),
-                toCancellationKind(snapshot.cancellationKind()),
-                snapshot.restocked(),
+                cancellation == null ? null : cancellation.cancelledAt(),
+                cancellation == null ? null : toCancellationKind(cancellation.kind()),
+                cancellation == null ? null : cancellation.restocked(),
                 snapshot.postalCode(),
                 // 注文の写しのコードのまま持つ（名前から引き直さない）
                 snapshot.prefectureCode(),
                 snapshot.buyerAge(),
                 toBuyerGender(snapshot.buyerGender()),
-                snapshot.total(),
-                snapshot.shippingFee(),
-                snapshot.taxTotal(),
+                snapshot.amounts().total(),
+                snapshot.amounts().shippingFee(),
+                taxTotal(snapshot.amounts().taxes()),
                 snapshot.shippingTax(),
                 snapshot.lines().stream().map(line -> new ReportOrder.Line(
                         line.lineNo(),
@@ -74,16 +79,36 @@ class OrderApiDirectory implements OrderDirectory {
                         line.quantity(),
                         line.ratePercent(),
                         line.subtotalInclTax(),
-                        line.subtotalExclTax())).toList());
+                        subtotalExclTax(line))).toList());
     }
 
     /**
-     * 注文の API の注文の状態を、レポートの型にする。
+     * 税率ごとの消費税額の合計を求める。
      *
-     * @param status 注文の API の注文の状態
+     * @param taxes 税率ごとの消費税額
+     * @return 消費税の合計
+     */
+    static Money taxTotal(List<TaxAmount> taxes) {
+        return taxes.stream().map(TaxAmount::taxAmount).reduce(Money.ZERO, Money::plus);
+    }
+
+    /**
+     * 明細の税抜小計（税抜単価 × 数量）を求める。
+     *
+     * @param line 明細
+     * @return 税抜小計
+     */
+    static Money subtotalExclTax(OrderSnapshot.Line line) {
+        return line.unitPriceExclTax().times(line.quantity());
+    }
+
+    /**
+     * 注文の状態（注文の API とイベントで共通の列挙）を、レポートの型に変換する。
+     *
+     * @param status 注文の状態
      * @return レポートの注文の状態
      */
-    static ReportOrderStatus toStatus(OrderReportSnapshot.Status status) {
+    static ReportOrderStatus toStatus(OrderStatusChanged.Status status) {
         return switch (status) {
             case PENDING_PAYMENT -> ReportOrderStatus.PENDING_PAYMENT;
             case ACCEPTED -> ReportOrderStatus.ACCEPTED;
@@ -96,13 +121,10 @@ class OrderApiDirectory implements OrderDirectory {
     /**
      * 注文の API のキャンセルの種類を、レポートの型にする。
      *
-     * @param kind キャンセルの種類。キャンセルでなければ null
-     * @return レポートのキャンセルの種類。キャンセルでなければ null
+     * @param kind キャンセルの種類
+     * @return レポートのキャンセルの種類
      */
-    static @Nullable ReportCancellationKind toCancellationKind(OrderReportSnapshot.@Nullable CancellationKind kind) {
-        if (kind == null) {
-            return null;
-        }
+    static ReportCancellationKind toCancellationKind(OrderStatusChanged.CancellationKind kind) {
         return switch (kind) {
             case REQUEST_APPROVED -> ReportCancellationKind.REQUEST_APPROVED;
             case OPERATOR -> ReportCancellationKind.OPERATOR;
@@ -118,7 +140,7 @@ class OrderApiDirectory implements OrderDirectory {
      * @param gender 注文時の性別。分からなければ null
      * @return 写しの性別。分からなければ null
      */
-    static @Nullable ReportBuyerGender toBuyerGender(OrderReportSnapshot.@Nullable Gender gender) {
+    static @Nullable ReportBuyerGender toBuyerGender(OrderSnapshot.@Nullable Gender gender) {
         if (gender == null) {
             return null;
         }

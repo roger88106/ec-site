@@ -10,7 +10,7 @@ import java.util.UUID;
  * @param name      商品名
  * @param variants  バリアント（商品カタログの並びの順）
  */
-public record ReportProduct(UUID productId, String name, List<Variant> variants) {
+public record ProductVariants(UUID productId, String name, List<Variant> variants) {
 
     /**
      * バリアント
@@ -20,14 +20,5 @@ public record ReportProduct(UUID productId, String name, List<Variant> variants)
      * @param axisValues  軸の名前と値
      */
     public record Variant(UUID variantId, String variantCode, List<AxisValue> axisValues) {
-    }
-
-    /**
-     * 軸の名前と値
-     *
-     * @param name  軸の名前（例：色）
-     * @param value 軸の値（例：白）
-     */
-    public record AxisValue(String name, String value) {
     }
 }

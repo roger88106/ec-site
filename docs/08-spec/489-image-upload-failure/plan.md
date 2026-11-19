@@ -57,7 +57,7 @@
 | アセット解放のイベントを、仮の記録からも作れるようにする（アセット ID と配信のキー） | `media/application/AssetReleased` | 上のジョブのテスト |
 | 用意・登録・破棄のコメントを、仮の記録の形に書き換える | `media/api/MediaApi`、`MediaService`、`catalog/application/port/MediaDirectory` | レビュー |
 
-※1：変換と保存の間に DB の接続を持たないため（AC-304）。用意の操作をトランザクションの外で呼ぶ点は、今のまま。
+※1：変換と保存の間に DB の接続を持たないため（AC-304）。用意の操作をトランザクションの外で呼ぶ点は、今のまま。AC-304 の「トランザクションの対象」は画像の追加のトランザクションを指す。用意と破棄の短いトランザクションは、外部の呼び出しの間に DB の接続を持たないので、AC-304 を満たす。
 
 ※2：例外にする理由は、片付けのジョブがファイルを削除した後の画像を、アセットとして記録しないため。保存期間（既定 1 日）は、用意から登録までの時間（1 つのリクエストの中）より十分に長いので、通常は起きない。
 
@@ -80,6 +80,7 @@
 | 「画像のアップロード」の図に仮の記録を加え、片付けのジョブの流れ（図か表）を加える。パッケージの構成に `application/job/` を加える | `docs/02-設計/media.md` |
 | 環境変数 `ECSITE_MEDIA_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` を加える。保存期間の許す範囲（1 分以上）の例外を書く | `docs/06-手順書/environment.md` |
 | 「仮のアセット」（`PendingAsset` / `pending_asset`）を加える | `docs/03-機能仕様/glossary.md` |
+| 「片付け」の表に仮のアセットの行を加え、1 回の実行で件数の上限までにする例外を、メディアの設計を指して書く | `docs/02-設計/backend-architecture.md` |
 
 確認方法：文書を読んで決定と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`。
 
@@ -97,7 +98,7 @@
 | 設定とマイグレーション | `backend/ecsite/src/main/resources/application.yml`、`backend/ecsite/src/main/resources/db/migration/V<日時>__media_create_pending_asset.sql`（新規） |
 | 統合テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/module/media/` の `api/MediaApiTest.java`、`infrastructure/persistence/JooqAssetRepositoryTest.java`、`infrastructure/persistence/JooqPendingAssetRepositoryTest.java`（新規）、`application/job/MediaCleanupJobTest.java`（新規） |
 | 単体テスト | `backend/ecsite/src/test/java/com/ecsite/module/media/application/MediaServiceReleaseTest.java`（新規）、`backend/ecsite/src/test/java/com/ecsite/config/CleanupJobSettingsTest.java`（既存。片付けの設定の既定と上書きのテスト）、`backend/ecsite/src/test/java/com/ecsite/module/catalog/application/product/ProductImageGatewayServiceTest.java`（新規） |
-| 文書 | `docs/03-機能仕様/media.md`、`docs/02-設計/media.md`、`docs/06-手順書/environment.md`、`docs/03-機能仕様/glossary.md` |
+| 文書 | `docs/03-機能仕様/media.md`、`docs/02-設計/media.md`、`docs/06-手順書/environment.md`、`docs/03-機能仕様/glossary.md`、`docs/02-設計/backend-architecture.md` |
 
 ## 利用者に確認すること
 

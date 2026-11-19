@@ -63,7 +63,7 @@
 | 設定とマイグレーション | `backend/ecsite/src/main/resources/application.yml`、`backend/ecsite/src/main/resources/db/migration/V<日時>__media_create_pending_asset.sql`（新規） |
 | 統合テスト | `module/media/api/MediaApiTest.java`、`module/media/infrastructure/persistence/JooqAssetRepositoryTest.java`、`module/media/infrastructure/persistence/JooqPendingAssetRepositoryTest.java`（新規）、`module/media/application/job/MediaCleanupJobTest.java`（新規） |
 | 単体テスト | `module/media/application/MediaServiceReleaseTest.java`（新規）、`config/CleanupJobSettingsTest.java`（既存。片付けの設定の既定と上書きのテスト）、`module/catalog/application/product/ProductImageGatewayServiceTest.java`（新規） |
-| 文書 | `docs/03-機能仕様/media.md`、`docs/02-設計/media.md`、`docs/06-手順書/environment.md`、`docs/03-機能仕様/glossary.md` |
+| 文書 | `docs/03-機能仕様/media.md`、`docs/02-設計/media.md`、`docs/06-手順書/environment.md`、`docs/03-機能仕様/glossary.md`、`docs/02-設計/backend-architecture.md` |
 
 ## 非機能要件
 

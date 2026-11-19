@@ -4,6 +4,7 @@ import com.ecsite.architecture.sample.enumconversion.SampleKind;
 import com.ecsite.architecture.sample.enumconversion.infrastructure.persistence.ReadsEnumFromColumn;
 import com.ecsite.architecture.sample.enumconversion.presentation.ConvertsEnumFromString;
 import com.ecsite.architecture.sample.enumconversion.presentation.OverloadedValueOfKind;
+import com.ecsite.architecture.sample.enumconversion.presentation.QualifiedEnumValueOfKind;
 import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -50,7 +51,8 @@ class EnumStringConversionTest {
             .or(JavaClass.Predicates.belongToAnyOf(EnumConversion.class))
             .or(DescribedPredicate.describe(
                     "WebMvcConfig の文字列から列挙への変換",
-                    javaClass -> javaClass.getName().startsWith(STRING_TO_ENUM_CONVERTER_FACTORY)));
+                    javaClass -> javaClass.getName().equals(STRING_TO_ENUM_CONVERTER_FACTORY)
+                            || javaClass.getName().startsWith(STRING_TO_ENUM_CONVERTER_FACTORY + "$")));
 
     // ============================== テスト ==============================
 
@@ -66,16 +68,17 @@ class EnumStringConversionTest {
     void ruleMatchesOnlyEnumConversions() {
         // 準備：presentation で変換する例と、永続化で変換する例と、共通の変換のメソッド
         var examples = new ClassFileImporter().importClasses(
-                ConvertsEnumFromString.class, OverloadedValueOfKind.class, ReadsEnumFromColumn.class, SampleKind.class,
-                EnumConversion.class);
+                ConvertsEnumFromString.class, OverloadedValueOfKind.class, QualifiedEnumValueOfKind.class,
+                ReadsEnumFromColumn.class, SampleKind.class, EnumConversion.class);
 
-        // 操作と確認：presentation の valueOf の呼び出し、Enum.valueOf の呼び出し（多重定義の valueOf の中も）、
-        // fromValue のメソッド参照だけが違反になる
+        // 操作と確認：presentation の valueOf の呼び出し、Enum.valueOf の呼び出し（多重定義の valueOf の中も、
+        // 列挙型で修飾した形も）、fromValue のメソッド参照だけが違反になる
         assertThat(violations(examples)).containsExactly(
                 ConvertsEnumFromString.class.getName() + " -> Enum.valueOf",
                 ConvertsEnumFromString.class.getName() + " -> SampleKind.fromValue",
                 ConvertsEnumFromString.class.getName() + " -> SampleKind.valueOf",
-                OverloadedValueOfKind.class.getName() + " -> Enum.valueOf");
+                OverloadedValueOfKind.class.getName() + " -> Enum.valueOf",
+                QualifiedEnumValueOfKind.class.getName() + " -> SampleKind.valueOf");
     }
 
     // ============================== 確認の補助 ==============================
@@ -110,6 +113,12 @@ class EnumStringConversionTest {
      */
     private static boolean convertsFromString(JavaAccess<?> access) {
         JavaClass target = access.getTargetOwner();
+        // 列挙型で修飾した Enum.valueOf(Class, String) は、クラスファイルでは呼ぶ先の所有者が列挙型になる
+        if (access.getName().equals("valueOf")
+                && access.getTarget().getFullName().endsWith(".valueOf(java.lang.Class, java.lang.String)")
+                && target.isEnum()) {
+            return true;
+        }
         if (target.isEquivalentTo(Enum.class)) {
             // 列挙型ごとにコンパイラが作る valueOf(String) は、列挙型の定義なので除く（多重定義の valueOf は除かない）
             boolean definesOwnValueOf = access.getOriginOwner().isEnum()

@@ -44,6 +44,26 @@
 - ArchUnit の `EnumStringConversionTest` は、今の対象（列挙型の `valueOf(String)` と `fromValue`）に加えて、`java.lang.Enum` の `valueOf(Class, String)` も対象にする。許す場所は、domain、永続化（`infrastructure.persistence`）、共通の変換のメソッドのクラス、HTTP のクエリの文字列を列挙にする設定の変換（`config` の `WebMvcConfig` の中のクラス）。設定の変換を許すのは、永続化と同じく外から来る文字列を読む場所のため。変換先の型が実行時にしか決まらず、switch 式にもできない（2026-11-19 に issue 担当のセッションが利用者の委任で決めた）。規則の文（バックエンドの書き方の、名前の文字列から列挙にしてよい場所）にも、外から来る文字列を読む場所として加える。理由：共通の変換のメソッドは `Enum.valueOf(Class, String)` で書くため、今の検査では検出できない。他の場所に同じ書き方が入っても検出できるようにする。検査の例のクラス（`architecture/sample/enumconversion/`）に、共通の変換のメソッドの外で `Enum.valueOf(Class, String)` を呼ぶ例を加え、検査がそれを検出することをテストで確認する。
 - `java-rules.mjs` の「列挙型の変換に `name()` を渡さない」は、共通の変換のメソッドのファイルだけを除外する。除外は script の先頭の「除外」に書く。script のテストに、除外のファイルでは検出されない例を加える。
 
+2 つの検査は、形から推定して判定する。検査の例は次の表のとおり。判定の「既知の制限」は、意図して作る回避を対象にしないため、検出しない形（DC-570-9）。
+
+| 書き方 | 検査 | 判定 |
+|--------|------|------|
+| presentation の `Target.valueOf(s)`（`s` は文字列の変数） | ArchUnit | 検出する |
+| presentation の `Target.fromValue(s)`、メソッド参照 `Target::fromValue` | ArchUnit | 検出する |
+| presentation の `Enum.valueOf(Target.class, s)` | ArchUnit | 検出する |
+| presentation の `Other.valueOf(Target.class, s)`（列挙型で修飾した `Enum.valueOf`） | ArchUnit | 検出する |
+| 許す場所の外の列挙が持つ、`valueOf` という名前の多重定義のメソッドの中の `Enum.valueOf` | ArchUnit | 検出する |
+| domain の `Target.valueOf(x.name())`、`Enum.valueOf(Target.class, x.name())`、列挙の中の `Target.valueOf(name())` | `java-rules.mjs` | 検出する |
+| `EnumConversion.byName` の中の `Enum.valueOf(targetType, source.name())` | 両方 | 検出しない |
+| 永続化の `Target.valueOf(column)` | ArchUnit | 検出しない |
+| `WebMvcConfig` の、文字列から列挙への変換 | ArchUnit | 検出しない |
+| 列挙型が自分で持つ `valueOf(String)`（コンパイラが作るもの）と、`fromValue` から自分の `valueOf` を呼ぶもの | ArchUnit | 検出しない |
+| 列挙でない型の `Integer.valueOf(s)` | ArchUnit | 検出しない |
+| `valueOf(x.getName())`、`valueOf(getName())` | `java-rules.mjs` | 検出しない |
+| 許す場所（domain、永続化）の中で、`name()` を変数に入れてから渡す、`toString()` を渡す、`x.name().toUpperCase()` を渡す、`.map(Enum::name).map(Target::valueOf)` のメソッド参照で渡す | 両方 | 既知の制限（検出しない） |
+| `name()` を返すメソッドを持つ、列挙でない型の中の `String.valueOf(name())` | `java-rules.mjs` | 既知の制限（誤って検出する。今のコードに該当はなく、出たら除外を考える） |
+| presentation の下に `domain` という名前のパッケージを作ること（許す場所をパッケージの名前の形で判定するため、検査は通す） | ArchUnit | 既知の制限（検出しない） |
+
 ## 目的と完了条件
 
 ### DS-570-1 同名の列挙の変換が、共通の変換のメソッドの 1 か所にまとまっている（D / P1）
@@ -56,6 +76,7 @@
 
 - **DC-570-4** 決定 6 の許す場所の外に、列挙の名前の文字列からの変換（`valueOf`、`fromValue`、`Enum.valueOf(Class, String)`）があると、ArchUnit が失敗する。共通の変換のメソッドの外に、列挙の変換に `name()` を渡す書き方があると、`java-rules.mjs` が失敗する。
 - **DC-570-5** 本番のコードの全ての列挙の変換の組（名前で変換する組も、switch 式の組も）に、変換元の全ての値を変換する単体テストがある。
+- **DC-570-9** 2 つの検査は、誤って書いた名前の変換を拒否する誤りの防止で、意図して作った回避は対象にしない。検出しない書き方は、「決定」の後の、検査の例の表の「既知の制限」に書く。
 
 ### DS-570-3 規則の文書と検査の説明が、変えた検査と合っている（D / P1）
 
@@ -163,7 +184,19 @@
     - 校閲：spec の最後の差分の追加行（文書、コメント、テスト名）を検出役（汎用）が読み、16 件のうち確認役（高性能）が 4 件を挙げると判定した。4 件とも、リポジトリで定着した言い方（「写す」「受け手」「当たる」）を他の語にする提案なので採らなかった。
     - 文体の警告：差分の追加行の長い文と読点の多い文のうち、spec と検査のテストの Javadoc の長い文を、それぞれ 2 文に分けた。残りは、許す場所の列挙や、問いの列挙の文で、分けると並びが読みにくくなるため残した。
     - 本文の書き手：spec の本文は、要点から書き手（汎用）に書かせた。規則と手順の文書の修正は、各文書の追加が 5 行未満なので、セッションが自分で書いた。
-- [ ] **T570-01-10** pull request の前のレビュー。指摘を修正し、draft を外す。
+- [x] **T570-01-10** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T570-01-09
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | pull request の前 | 組み込み | 組み込み | 1 | — | — | 0 | 0 | 4 | 1 |
+    | pull request の前 | 拒否・判定の回避 | 高性能 | 1 | 101064 | 3m17s | 0 | 2 | 3 | 3 |
+    | pull request の前 | 重複を除く | — | 1 | — | — | 0 | 2 | 6 | 3 |
+
+    - 組み込みのコードレビューは、level に high を指定し、high と表示された。支払のモジュールの公開の API を変えたので、セキュリティのレビューも行い、指摘はなかった（信頼度 8 以上の脆弱性なし）。検査の script を変えたので、文脈を持たないレビュー役（高性能）を加えた。
+    - 修正したもの：ArchUnit が、列挙型で修飾した `Enum.valueOf(Class, String)`（`Other.valueOf(Target.class, s)`）を見つけなかったのを直した。WebMvcConfig の変換の許可を、前方一致から、そのクラスとその中の入れ子のクラスだけにした。spec に、誤りの防止の DC（DC-570-9）と、検査の例の表を加えた（形から推定する検査を拡張する spec に必要な表が、spec を書いたときに抜けていた）。
+    - 残したもの：許す場所の中で `name()` を変数に入れてから渡す・`toString()` を渡すなどの書き方と、`String.valueOf(name())` の誤検出、パッケージの名前の形による許可は、検査の例の表の「既知の制限」に書いた（誤りの防止なので、意図して作る形は対象にしない）。許可するクラスの名前を文字列で持つこと（名前を変えると、検査が失敗して気づける）。
+    - 機械の検査に移したもの：列挙型で修飾した `Enum.valueOf` を、ArchUnit の例に加えた。
 - [ ] **T570-01-11** spec をアーカイブに移す。
   - 依存：T570-01-10

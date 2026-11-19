@@ -2,9 +2,12 @@ package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
+import com.ecsite.module.order.application.model.PaymentAmountRange;
 import com.ecsite.module.order.application.port.CartDirectory;
+import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.checkout.Checkout;
@@ -47,6 +50,11 @@ public class CheckoutCommandService {
     private final StockDirectory stockDirectory;
 
     /**
+     * 決済の腐敗防止層
+     */
+    private final PaymentDirectory paymentDirectory;
+
+    /**
      * 見積もりのサービス
      */
     private final QuoteQueryService quoteQueryService;
@@ -81,6 +89,7 @@ public class CheckoutCommandService {
      * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）
      * @throws BusinessException 注文できないカート（{@code CART_NOT_ORDERABLE}）
+     * @throws BusinessException 総額が決済の範囲の外（{@code ORDER_AMOUNT_OUT_OF_RANGE}）
      */
     public UUID start(@NonNull UUID cartId, @NonNull UUID memberId, @NonNull Set<UUID> acknowledgedOrderIds) {
         var now = clock.instant();
@@ -96,7 +105,10 @@ public class CheckoutCommandService {
 
         // 購入できるかの判定 ※前の注文手続きの引当を解いてから判定する（自分の前の引当で足りなくならないように）
         releaseReservations(cartId);
-        verifyOrderable(quoteQueryService.quote(cart.lines(), now, null));
+        var quote = quoteQueryService.quote(cart.lines(), now, null);
+        verifyOrderable(quote);
+        // 総額の範囲の判定 ※範囲の外なら、注文手続きを作らず、引当もしない
+        verifyAmountInRange(quote.amounts().total(), paymentDirectory.amountRange());
 
         // 注文手続き登録と引当
         var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);
@@ -147,6 +159,20 @@ public class CheckoutCommandService {
             return;
         }
         throw BusinessException.of(quote.shortOfStockOnly() ? OrderErrorCode.OUT_OF_STOCK : OrderErrorCode.CART_NOT_ORDERABLE);
+    }
+
+    /**
+     * 総額が決済の範囲の中であることを確認する。
+     *
+     * @param total 見積もりの総額
+     * @param range 決済が 1 回の支払で受け付ける金額の範囲
+     * @throws BusinessException 総額が範囲の外（{@code ORDER_AMOUNT_OUT_OF_RANGE}。下限と上限を文言に差し込む）
+     */
+    static void verifyAmountInRange(Money total, PaymentAmountRange range) {
+        if (range.contains(total)) {
+            return;
+        }
+        throw BusinessException.of(OrderErrorCode.ORDER_AMOUNT_OUT_OF_RANGE, List.of(range.min().yen(), range.max().yen()));
     }
 
     /**

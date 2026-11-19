@@ -4,12 +4,14 @@ import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.api.model.AmountRange;
 import com.ecsite.module.payment.api.model.AuthorizationDeadline;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
+import com.ecsite.module.payment.domain.payment.PaymentAmountRange;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -142,6 +144,18 @@ public class PaymentApi {
      */
     public List<UUID> findExpiringOrderIds() {
         return queryService.findExpiringOrderIds();
+    }
+
+    /**
+     * 支払 1 回の金額の範囲を返す。
+     *
+     * <p>決済サービスが 1 回の支払で受け付ける金額の範囲で、設定によらず決まっている。
+     *
+     * @return 金額の範囲（下限、上限とも含む）
+     */
+    public AmountRange amountRange() {
+        var range = PaymentAmountRange.STANDARD;
+        return new AmountRange(range.min(), range.max());
     }
 
     /**

@@ -5,11 +5,13 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
 import com.ecsite.module.order.application.model.Municipality;
+import com.ecsite.module.order.application.model.PaymentAmountRange;
 import com.ecsite.module.order.application.model.command.PlaceOrderCommand;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.RegionDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
+import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.Order;
@@ -53,7 +55,7 @@ import static org.mockito.Mockito.when;
 /**
  * 注文の成立のサービスの単体テスト
  *
- * <p>注文番号の衝突の扱いだけを確認する。乱数の 6 桁が重なることは API の統合テストでは起こせないので、注文リポジトリを差し替えて
+ * <p>注文番号の衝突の扱いと、総額の判定の順を確認する。乱数の 6 桁が重なることは API の統合テストでは起こせないので、注文リポジトリを差し替えて
  * 使用済みの番号と保存の失敗を起こす。注文の成立の流れは {@code PlaceOrderPlacementApiTest} などの統合テストが確認する。
  */
 class OrderPlacementCommandServiceTest {
@@ -77,6 +79,11 @@ class OrderPlacementCommandServiceTest {
      */
     private static final int ORDER_NUMBER_ATTEMPTS = 10;
 
+    /**
+     * 範囲の上限（99,999,999 円）の外の総額
+     */
+    private static final long OUT_OF_RANGE_TOTAL = 100_000_000;
+
     // ============================== Bean ==============================
 
     /**
@@ -95,9 +102,24 @@ class OrderPlacementCommandServiceTest {
     private final PaymentDirectory paymentDirectory = mock(PaymentDirectory.class);
 
     /**
+     * 見積もりのサービス（見積もりの総額を差し替える）
+     */
+    private final QuoteQueryService quoteQueryService = mock(QuoteQueryService.class);
+
+    /**
      * 注文の成立のサービス
      */
     private OrderPlacementCommandService service;
+
+    /**
+     * カートの品目のバリアント ID
+     */
+    private UUID variantId;
+
+    /**
+     * カートの品目
+     */
+    private List<CartSnapshot.Line> lines;
 
     /**
      * 注文手続き
@@ -111,7 +133,7 @@ class OrderPlacementCommandServiceTest {
     void setUp() {
         var memberId = UUID.randomUUID();
         var cartId = UUID.randomUUID();
-        var variantId = UUID.randomUUID();
+        variantId = UUID.randomUUID();
         checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, 1, NOW.minus(Duration.ofMinutes(5)), Duration.ofMinutes(15),
                 Set.of());
 
@@ -121,12 +143,12 @@ class OrderPlacementCommandServiceTest {
         when(orderRepository.findPendingIdsByMemberId(memberId)).thenReturn(List.of());
         when(orderRepository.insert(any())).thenReturn(true);
 
-        var lines = List.of(new CartSnapshot.Line(variantId, 1));
+        lines = List.of(new CartSnapshot.Line(variantId, 1));
         var cartDirectory = mock(CartDirectory.class);
         when(cartDirectory.find(cartId)).thenReturn(Optional.of(new CartSnapshot(cartId, memberId, 1, lines)));
 
-        var quoteQueryService = mock(QuoteQueryService.class);
         when(quoteQueryService.quote(lines, NOW, checkout.id())).thenReturn(orderableQuote(variantId));
+        when(paymentDirectory.amountRange()).thenReturn(new PaymentAmountRange(Money.of(50), Money.of(99_999_999)));
 
         when(stockDirectory.commit(eq(checkout.id()), anyMap(), any(), anyString())).thenReturn(Set.of());
 
@@ -196,6 +218,21 @@ class OrderPlacementCommandServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("総額の範囲")
+    class AmountRange {
+
+        @Test
+        @DisplayName("BR-518-2 総額が変わり、かつ新しい総額が範囲の外なら、総額が変わったエラーで拒否する（総額の比較の後に範囲を判定する）")
+        void reportsChangedTotalBeforeRange() {
+            // 準備：見積もりの総額が範囲の上限の外で、確認した総額（TOTAL）と違う
+            when(quoteQueryService.quote(lines, NOW, checkout.id())).thenReturn(quoteWithTotal(OUT_OF_RANGE_TOTAL));
+
+            // 操作と確認：総額が変わったエラー
+            assertBusinessError(() -> service.place(command(TOTAL)), OrderErrorCode.TOTAL_AMOUNT_CHANGED);
+        }
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**
@@ -204,8 +241,18 @@ class OrderPlacementCommandServiceTest {
      * @return 注文のコマンド
      */
     private PlaceOrderCommand command() {
+        return command(TOTAL);
+    }
+
+    /**
+     * 注文手続きの持ち主が、指定の総額を確認して注文するコマンドを作る。
+     *
+     * @param expectedTotal 確認した総額
+     * @return 注文のコマンド
+     */
+    private PlaceOrderCommand command(Money expectedTotal) {
         return new PlaceOrderCommand(checkout.id(), checkout.memberId(), "taro@example.com", true, "山田 太郎", "1000001", "13",
-                "13101", "千代田 1-1", "0312345678", TOTAL, null, null);
+                "13101", "千代田 1-1", "0312345678", expectedTotal, null, null);
     }
 
     /**
@@ -215,10 +262,31 @@ class OrderPlacementCommandServiceTest {
      * @return 見積もり
      */
     private static Quote orderableQuote(UUID variantId) {
+        return quote(variantId, TOTAL);
+    }
+
+    /**
+     * 税込 1,100 円の商品 1 個で、総額を指定した、注文できる見積もりを作る。送料は総額との差。
+     *
+     * @param total 総額（円）
+     * @return 見積もり
+     */
+    private Quote quoteWithTotal(long total) {
+        return quote(variantId, Money.of(total));
+    }
+
+    /**
+     * 税込 1,100 円の商品 1 個の見積もりを、総額を指定して作る。
+     *
+     * @param variantId バリアント ID
+     * @param total     総額
+     * @return 見積もり
+     */
+    private static Quote quote(UUID variantId, Money total) {
         var variant = new VariantInfo(variantId, UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(), Money.of(1000),
                 UUID.randomUUID(), null, true, false);
-        var amounts = new Amounts(Money.of(1100), Money.of(1000), TOTAL,
-                List.of(new TaxAmount(BigDecimal.TEN, TOTAL, Money.of(190))));
+        var amounts = new Amounts(Money.of(1100), Money.of(total.yen() - 1100), total,
+                List.of(new TaxAmount(BigDecimal.TEN, total, Money.of(190))));
         return new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, true);
     }
 }

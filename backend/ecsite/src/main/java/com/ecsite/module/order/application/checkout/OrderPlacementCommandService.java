@@ -110,6 +110,7 @@ public class OrderPlacementCommandService {
      * @throws BusinessException カートが変わった（{@code CART_CHANGED}）
      * @throws BusinessException 在庫が足りない（{@code OUT_OF_STOCK}）
      * @throws BusinessException 総額が変わった（{@code TOTAL_AMOUNT_CHANGED}）
+     * @throws BusinessException 総額が決済の範囲の外（{@code ORDER_AMOUNT_OUT_OF_RANGE}）
      * @throws BusinessException メールアドレスが正しくない（{@code INVALID_EMAIL}）
      * @throws BusinessException 氏名が正しくない（{@code INVALID_RECIPIENT_NAME}）
      * @throws BusinessException 郵便番号が正しくない（{@code INVALID_POSTAL_CODE}）
@@ -143,7 +144,7 @@ public class OrderPlacementCommandService {
         // 会員のロックの中で判定するので、同時の注文でも支払待ちの注文は上限を超えない
         pendingOrderGuard.verifyAcknowledged(checkout);
 
-        // 判定：カートの変更、購入できるか、確認した総額 ※書き込みの前に全ての判定を済ませる
+        // 判定：カートの変更、購入できるか、確認した総額、総額の範囲 ※書き込みの前に全ての判定を済ませる
         var cart = cartDirectory.find(checkout.cartId())
                 .orElseThrow(() -> BusinessException.of(OrderErrorCode.CART_NOT_ORDERABLE));
         if (checkout.cartChangedSince(cart.version())) {
@@ -154,6 +155,7 @@ public class OrderPlacementCommandService {
         if (!quote.amounts().total().equals(command.expectedTotal())) {
             throw BusinessException.of(OrderErrorCode.TOTAL_AMOUNT_CHANGED);
         }
+        CheckoutCommandService.verifyAmountInRange(quote.amounts().total(), paymentDirectory.amountRange());
 
         // 注文作成 ※メールアドレスは、会員の token のもの（確認済み）を写す
         var address = ShippingAddress.of(command.name(), command.postalCode(),

@@ -12,6 +12,7 @@ import com.ecsite.api.admin.model.SalesTrendPoint;
 import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSales;
 import com.ecsite.api.admin.model.VariantSalesReport;
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.module.reporting.application.model.view.ReportSettingsView;
 import com.ecsite.module.reporting.domain.sales.AgeGroup;
 import com.ecsite.module.reporting.domain.sales.Basis;
@@ -51,10 +52,7 @@ class ReportMapper {
         if (basis == null) {
             return Basis.ORDER;
         }
-        return switch (basis) {
-            case ORDER -> Basis.ORDER;
-            case SHIPMENT -> Basis.SHIPMENT;
-        };
+        return EnumConversion.byName(basis, Basis.class);
     }
 
     /**
@@ -64,12 +62,7 @@ class ReportMapper {
      * @return 集計の粒度
      */
     com.ecsite.module.reporting.domain.sales.Granularity toGranularity(Granularity granularity) {
-        return switch (granularity) {
-            case WEEK -> com.ecsite.module.reporting.domain.sales.Granularity.WEEK;
-            case MONTH -> com.ecsite.module.reporting.domain.sales.Granularity.MONTH;
-            case QUARTER -> com.ecsite.module.reporting.domain.sales.Granularity.QUARTER;
-            case YEAR -> com.ecsite.module.reporting.domain.sales.Granularity.YEAR;
-        };
+        return EnumConversion.byName(granularity, com.ecsite.module.reporting.domain.sales.Granularity.class);
     }
 
     /**
@@ -158,27 +151,14 @@ class ReportMapper {
     /**
      * 年齢層を、レスポンスの年齢層に変換する。
      */
-    private static AgeGroupSales.AgeGroupEnum toAgeGroup(AgeGroup ageGroup) {
-        return switch (ageGroup) {
-            case TEENS_OR_YOUNGER -> AgeGroupSales.AgeGroupEnum.TEENS_OR_YOUNGER;
-            case TWENTIES -> AgeGroupSales.AgeGroupEnum.TWENTIES;
-            case THIRTIES -> AgeGroupSales.AgeGroupEnum.THIRTIES;
-            case FORTIES -> AgeGroupSales.AgeGroupEnum.FORTIES;
-            case FIFTIES -> AgeGroupSales.AgeGroupEnum.FIFTIES;
-            case SIXTIES_OR_OLDER -> AgeGroupSales.AgeGroupEnum.SIXTIES_OR_OLDER;
-            case UNKNOWN -> AgeGroupSales.AgeGroupEnum.UNKNOWN;
-        };
+    static AgeGroupSales.AgeGroupEnum toAgeGroup(AgeGroup ageGroup) {
+        return EnumConversion.byName(ageGroup, AgeGroupSales.AgeGroupEnum.class);
     }
 
     /**
      * 性別の区分を、レスポンスの性別に変換する。
      */
-    private static GenderSales.GenderEnum toGender(ReportGender gender) {
-        return switch (gender) {
-            case MALE -> GenderSales.GenderEnum.MALE;
-            case FEMALE -> GenderSales.GenderEnum.FEMALE;
-            case OTHER -> GenderSales.GenderEnum.OTHER;
-            case UNKNOWN -> GenderSales.GenderEnum.UNKNOWN;
-        };
+    static GenderSales.GenderEnum toGender(ReportGender gender) {
+        return EnumConversion.byName(gender, GenderSales.GenderEnum.class);
     }
 }

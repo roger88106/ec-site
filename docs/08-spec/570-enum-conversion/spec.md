@@ -129,7 +129,7 @@
   - 依存：T570-01-02、T570-01-03
   - 範囲：`architecture/EnumStringConversionTest.java`、`scripts/ci/java/java-rules.mjs`
   - 確認方法：`EnumStringConversionTest` と `java-rules.mjs` のテストが通る。`java-rules.mjs` は commit の前の hook がテストを実行するので、T570-01-03 と同じ commit にする（[開発の進め方](../../05-開発規則/workflow.md)の「循環」の例外）
-- [ ] **T570-01-05** presentation の switch 式を置き換え、変換の組のテストを置く（DC-570-1、DC-570-3、DC-570-5）。
+- [x] **T570-01-05** presentation の switch 式を置き換え、変換の組のテストを置く（DC-570-1、DC-570-3、DC-570-5）。
   - 依存：T570-01-04
   - 範囲：5 つのモジュールの presentation の Mapper とテスト
   - 確認方法：変えたモジュールのテスト（単体を `--tests` で絞る）が通る

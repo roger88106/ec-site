@@ -1,6 +1,8 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.api.admin.model.ProductDeleteBlockedReason;
 import com.ecsite.api.admin.model.PublicationStatus;
+import com.ecsite.module.catalog.domain.product.vo.ProductActions.DeleteBlockedReason;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -27,5 +29,14 @@ class ProductMapperTest {
     void mapsEveryDomainStatus(com.ecsite.module.catalog.domain.product.vo.PublicationStatus status) {
         // 操作と確認：同じ名前の値になる
         assertThat(ProductMapper.toResponseStatus(status)).isEqualTo(PublicationStatus.valueOf(status.name()));
+    }
+
+    @ParameterizedTest(name = "「{0}」")
+    @EnumSource(DeleteBlockedReason.class)
+    @DisplayName("AC-277 削除できない理由の全ての値を、レスポンスの同じ名前の値に写す")
+    void mapsEveryDeleteBlockedReason(DeleteBlockedReason reason) {
+        // 操作と確認：同じ名前の値になる
+        assertThat(ProductMapper.toDeleteBlockedReason(reason))
+                .isEqualTo(ProductDeleteBlockedReason.valueOf(reason.name()));
     }
 }

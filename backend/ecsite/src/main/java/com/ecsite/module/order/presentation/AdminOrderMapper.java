@@ -18,6 +18,7 @@ import com.ecsite.api.admin.model.PaymentStatus;
 import com.ecsite.api.admin.model.Shipment;
 import com.ecsite.api.admin.model.ShipmentStatus;
 import com.ecsite.api.admin.model.ShippingAddress;
+import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.order.application.model.view.OrderDetailView;
@@ -125,13 +126,7 @@ class AdminOrderMapper {
      * @return ドメインの注文の状態
      */
     com.ecsite.module.order.domain.order.OrderStatus toDomainStatus(OrderStatus status) {
-        return switch (status) {
-            case PENDING_PAYMENT -> com.ecsite.module.order.domain.order.OrderStatus.PENDING_PAYMENT;
-            case ACCEPTED -> com.ecsite.module.order.domain.order.OrderStatus.ACCEPTED;
-            case CANCELLATION_REQUESTED -> com.ecsite.module.order.domain.order.OrderStatus.CANCELLATION_REQUESTED;
-            case CANCELLED -> com.ecsite.module.order.domain.order.OrderStatus.CANCELLED;
-            case SHIPPED -> com.ecsite.module.order.domain.order.OrderStatus.SHIPPED;
-        };
+        return EnumConversion.byName(status, com.ecsite.module.order.domain.order.OrderStatus.class);
     }
 
     /**
@@ -141,11 +136,7 @@ class AdminOrderMapper {
      * @return ドメインの配送業者
      */
     com.ecsite.module.order.domain.order.Carrier toDomainCarrier(Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> com.ecsite.module.order.domain.order.Carrier.YAMATO;
-            case SAGAWA -> com.ecsite.module.order.domain.order.Carrier.SAGAWA;
-            case JAPAN_POST -> com.ecsite.module.order.domain.order.Carrier.JAPAN_POST;
-        };
+        return EnumConversion.byName(carrier, com.ecsite.module.order.domain.order.Carrier.class);
     }
 
 // ============================== プライベートメソッド ==============================
@@ -275,76 +266,43 @@ class AdminOrderMapper {
     /**
      * 注文の状態。
      */
-    private static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
-        return switch (status) {
-            case PENDING_PAYMENT -> OrderStatus.PENDING_PAYMENT;
-            case ACCEPTED -> OrderStatus.ACCEPTED;
-            case CANCELLATION_REQUESTED -> OrderStatus.CANCELLATION_REQUESTED;
-            case CANCELLED -> OrderStatus.CANCELLED;
-            case SHIPPED -> OrderStatus.SHIPPED;
-        };
+    static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
+        return EnumConversion.byName(status, OrderStatus.class);
     }
 
     /**
      * 支払の状態。
      */
-    private static PaymentStatus toPaymentStatus(OrderPayment.Status status) {
-        return switch (status) {
-            case UNPAID -> PaymentStatus.UNPAID;
-            case AUTHORIZED -> PaymentStatus.AUTHORIZED;
-            case VOID_PENDING -> PaymentStatus.VOID_PENDING;
-            case VOIDED -> PaymentStatus.VOIDED;
-            case NOT_PAID -> PaymentStatus.NOT_PAID;
-            case CAPTURED -> PaymentStatus.CAPTURED;
-            case AUTHORIZATION_EXPIRED -> PaymentStatus.AUTHORIZATION_EXPIRED;
-            case REFUND_PENDING -> PaymentStatus.REFUND_PENDING;
-            case REFUNDED -> PaymentStatus.REFUNDED;
-        };
+    static PaymentStatus toPaymentStatus(OrderPayment.Status status) {
+        return EnumConversion.byName(status, PaymentStatus.class);
     }
 
     /**
      * 配送業者。
      */
-    private static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
-        return switch (carrier) {
-            case YAMATO -> Carrier.YAMATO;
-            case SAGAWA -> Carrier.SAGAWA;
-            case JAPAN_POST -> Carrier.JAPAN_POST;
-        };
+    static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
+        return EnumConversion.byName(carrier, Carrier.class);
     }
 
     /**
      * 配送状態。
      */
-    private static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
-        return switch (status) {
-            case SHIPPED -> ShipmentStatus.SHIPPED;
-            case IN_TRANSIT -> ShipmentStatus.IN_TRANSIT;
-            case DELIVERED -> ShipmentStatus.DELIVERED;
-            case RETURNED -> ShipmentStatus.RETURNED;
-        };
+    static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
+        return EnumConversion.byName(status, ShipmentStatus.class);
     }
 
     /**
      * キャンセルの申請の結果。
      */
-    private static CancellationRequest.ResultEnum toResult(
+    static CancellationRequest.ResultEnum toResult(
             com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
-        return switch (result) {
-            case PENDING -> CancellationRequest.ResultEnum.PENDING;
-            case APPROVED -> CancellationRequest.ResultEnum.APPROVED;
-            case REJECTED -> CancellationRequest.ResultEnum.REJECTED;
-        };
+        return EnumConversion.byName(result, CancellationRequest.ResultEnum.class);
     }
 
     /**
      * キャンセルの種類。
      */
-    private static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
-        return switch (kind) {
-            case REQUEST_APPROVED -> CancellationKind.REQUEST_APPROVED;
-            case OPERATOR -> CancellationKind.OPERATOR;
-            case PAYMENT_EXPIRED -> CancellationKind.PAYMENT_EXPIRED;
-        };
+    static CancellationKind toKind(com.ecsite.module.order.domain.order.vo.CancellationKind kind) {
+        return EnumConversion.byName(kind, CancellationKind.class);
     }
 }

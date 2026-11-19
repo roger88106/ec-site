@@ -154,7 +154,7 @@ issue は、呼ぶ側の形と名前で作られた公開の API として 5 つ
   - 依存：なし
   - 範囲：`docs/02-設計/backend-architecture.md`、`backend/ecsite/src/test/java/com/ecsite/architecture/LayerDependencyTest.java`
   - 確認方法：`LayerDependencyTest` が通る。文書の検査が通る
-- [ ] **T569-01-02** 注文の API を `OrderApi`・`OrderSnapshot` にし、共有の型（`AxisValue`、`Amounts`、`TaxAmount`）を作り、レポート・店舗の腐敗防止層とテストを合わせる（DC-569-1〜4）。
+- [x] **T569-01-02** 注文の API を `OrderApi`・`OrderSnapshot` にし、共有の型（`AxisValue`、`Amounts`、`TaxAmount`）を作り、レポート・店舗の腐敗防止層とテストを合わせる（DC-569-1〜4）。
   - 依存：T569-01-01
   - 範囲：`order/api/`、`reporting`・`storefront` の `infrastructure/directory/`、関係するテスト
   - 確認方法：変えたモジュールのテスト（単体と統合を `--tests` で絞る）が通る

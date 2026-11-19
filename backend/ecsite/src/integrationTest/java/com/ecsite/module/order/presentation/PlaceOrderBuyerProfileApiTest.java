@@ -1,7 +1,7 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.module.order.api.OrderReportApi;
-import com.ecsite.module.order.api.model.OrderReportSnapshot;
+import com.ecsite.module.order.api.OrderApi;
+import com.ecsite.module.order.api.model.OrderSnapshot;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.http.TestJson;
 import com.ecsite.support.security.TestTokens;
@@ -66,7 +66,7 @@ class PlaceOrderBuyerProfileApiTest {
     ApplicationContext applicationContext;
 
     @Autowired
-    OrderReportApi orderReportApi;
+    OrderApi orderApi;
 
     /**
      * 共有の準備
@@ -124,10 +124,10 @@ class PlaceOrderBuyerProfileApiTest {
             var second = placeAs(TestTokens.member().birthdate(CHANGED_BIRTHDATE).gender("male"), first);
 
             // 確認（前提）：2 件目の写しは、変わった値
-            assertThat(reportedBuyer(second)).containsExactly((int) CHANGED_AGE, OrderReportSnapshot.Gender.MALE);
+            assertThat(reportedBuyer(second)).containsExactly((int) CHANGED_AGE, OrderSnapshot.Gender.MALE);
 
             // 確認：1 件目の写しは、注文のときの値のまま
-            assertThat(reportedBuyer(first)).containsExactly((int) AGE, OrderReportSnapshot.Gender.FEMALE);
+            assertThat(reportedBuyer(first)).containsExactly((int) AGE, OrderSnapshot.Gender.FEMALE);
         }
     }
 
@@ -202,7 +202,7 @@ class PlaceOrderBuyerProfileApiTest {
      * @return 年齢と性別の並び
      */
     private List<Object> reportedBuyer(UUID orderId) {
-        var snapshot = orderReportApi.find(orderId).orElseThrow();
+        var snapshot = orderApi.find(orderId).orElseThrow();
         return Arrays.asList(snapshot.buyerAge(), snapshot.buyerGender());
     }
 }

@@ -2,7 +2,10 @@ package com.ecsite.module.order.api;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.api.model.OrderReportSnapshot;
+import com.ecsite.module.order.api.model.AxisValue;
+import com.ecsite.module.order.api.model.OrderSnapshot;
+import com.ecsite.module.order.api.model.TaxAmount;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
@@ -39,7 +42,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文の写しの API の統合テスト
+ * 注文の API の統合テスト
  *
  * <p>注文の状態ごとの写しの項目と、写しが個人の情報を持たないことを確認する。写しを使う集計は、集計のモジュールのテスト（{@code ReportCollectionTest} など）が確認する。
  *
@@ -47,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @Transactional
-class OrderReportApiTest {
+class OrderApiTest {
 
     // ============================== 定数 ==============================
 
@@ -112,7 +115,7 @@ class OrderReportApiTest {
     DSLContext dsl;
 
     @Autowired
-    OrderReportApi orderReportApi;
+    OrderApi orderApi;
 
     /**
      * 注文を作る補助
@@ -150,8 +153,8 @@ class OrderReportApiTest {
             // 準備：支払待ちの注文
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
-            // 操作：写しを読む
-            var snapshot = orderReportApi.find(orderId).orElseThrow();
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
 
             // 確認：注文の見出しの項目
             assertHeader(snapshot, orderId);
@@ -163,8 +166,8 @@ class OrderReportApiTest {
             // 準備：支払待ちの注文（お届け先は注文の補助の既定）
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
-            // 操作：写しを読む
-            var snapshot = orderReportApi.find(orderId).orElseThrow();
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
 
             // 確認：郵便番号はハイフンなし、都道府県はコード
             assertThat(snapshot.postalCode()).isEqualTo("1000001");
@@ -177,8 +180,8 @@ class OrderReportApiTest {
             // 準備：既定の会員（token に生年月日と性別がない）の支払待ちの注文
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
-            // 操作：写しを読む
-            var snapshot = orderReportApi.find(orderId).orElseThrow();
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
 
             // 確認：年齢も性別も空
             assertThat(snapshot.buyerAge()).isNull();
@@ -186,26 +189,26 @@ class OrderReportApiTest {
         }
 
         @Test
-        @DisplayName("総額・送料・消費税の合計・送料の消費税を返す")
+        @DisplayName("総額・送料・税率ごとの消費税額・送料の消費税を返す")
         void returnsAmounts() throws Exception {
             // 準備：税込 1,100 円の商品 2 個の支払待ちの注文
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
-            // 操作：写しを読む
-            var snapshot = orderReportApi.find(orderId).orElseThrow();
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
 
             // 確認：金額の項目
             assertAmounts(snapshot);
         }
 
         @Test
-        @DisplayName("明細の、注文時点の商品と、税込・税抜の小計を返す")
+        @DisplayName("明細の、注文時点の商品と、税抜単価と税込の小計を返す")
         void returnsLine() throws Exception {
             // 準備：税込 1,100 円の商品 2 個の支払待ちの注文
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
-            // 操作：写しを読む
-            var snapshot = orderReportApi.find(orderId).orElseThrow();
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
 
             // 確認：明細が 1 行で、その項目
             assertThat(snapshot.lines()).singleElement()
@@ -225,7 +228,7 @@ class OrderReportApiTest {
             new ShippingTestData(mockMvc, mockCarrier, applicationContext).ship(orderId, Carrier.YAMATO, "123456789012");
 
             // 操作と確認：状態が出荷済み
-            assertThat(orderReportApi.find(orderId).orElseThrow().status()).isEqualTo(OrderReportSnapshot.Status.SHIPPED);
+            assertThat(orderApi.find(orderId).orElseThrow().status()).isEqualTo(OrderStatusChanged.Status.SHIPPED);
         }
 
         @Test
@@ -241,21 +244,22 @@ class OrderReportApiTest {
                                     {"reason": "在庫の誤り"}"""))
                     .andExpect(status().isNoContent());
 
-            // 操作：写しを読む
-            var snapshot = orderReportApi.find(orderId).orElseThrow();
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
 
             // 確認：キャンセルの項目
-            assertThat(snapshot.status()).isEqualTo(OrderReportSnapshot.Status.CANCELLED);
-            assertThat(snapshot.cancelledAt()).isEqualTo(cancelledAt);
-            assertThat(snapshot.cancellationKind()).isEqualTo(OrderReportSnapshot.CancellationKind.OPERATOR);
-            assertThat(snapshot.restocked()).isTrue();
+            assertThat(snapshot.status()).isEqualTo(OrderStatusChanged.Status.CANCELLED);
+            assertThat(snapshot.cancellation()).isNotNull();
+            assertThat(snapshot.cancellation().cancelledAt()).isEqualTo(cancelledAt);
+            assertThat(snapshot.cancellation().kind()).isEqualTo(OrderStatusChanged.CancellationKind.OPERATOR);
+            assertThat(snapshot.cancellation().restocked()).isTrue();
         }
 
         @Test
         @DisplayName("ない注文は空")
         void returnsEmptyForUnknownOrder() {
             // 操作と確認：ない注文 ID には空
-            assertThat(orderReportApi.find(UUID.randomUUID())).isEmpty();
+            assertThat(orderApi.find(UUID.randomUUID())).isEmpty();
         }
     }
 
@@ -268,7 +272,7 @@ class OrderReportApiTest {
         void excludesPersonalInformation() {
             // 準備：写しの全ての項目を、入れ子の record の中まで集める
             var components = new ArrayList<String>();
-            collectRecordComponents(OrderReportSnapshot.class, components);
+            collectRecordComponents(OrderSnapshot.class, components);
 
             // 操作：名前に個人の情報を表す語を含む項目を選ぶ（商品名と軸の名前は、個人の情報ではない）
             var personal = components.stream()
@@ -306,13 +310,13 @@ class OrderReportApiTest {
      * @param snapshot 写し
      * @param orderId  注文 ID（注文のときに作るので、定数にできない）
      */
-    private static void assertHeader(OrderReportSnapshot snapshot, UUID orderId) {
+    private static void assertHeader(OrderSnapshot snapshot, UUID orderId) {
         assertThat(snapshot.orderId()).isEqualTo(orderId);
         assertThat(snapshot.orderNumber()).matches("20261008-\\d{6}");
         assertThat(snapshot.memberId()).isNotNull();
         assertThat(snapshot.orderedAt()).isEqualTo(NOW);
-        assertThat(snapshot.status()).isEqualTo(OrderReportSnapshot.Status.PENDING_PAYMENT);
-        assertThat(snapshot.cancelledAt()).isNull();
+        assertThat(snapshot.status()).isEqualTo(OrderStatusChanged.Status.PENDING_PAYMENT);
+        assertThat(snapshot.cancellation()).isNull();
     }
 
     /**
@@ -322,16 +326,17 @@ class OrderReportApiTest {
      * <ul>
      *   <li>総額が、1,100 円 × 2 ＋ 送料 1,000 円の 3,200 円</li>
      *   <li>送料が 1,000 円（注文の設定の既定）</li>
-     *   <li>消費税の合計が、3,200 × 10 / 110 の切り捨ての 290 円</li>
+     *   <li>税率ごとの消費税額が、3,200 × 10 / 110 の切り捨ての 290 円の 1 つ</li>
      *   <li>送料の消費税が、1,000 × 10 / 110 の切り捨ての 90 円</li>
      * </ul>
      *
      * @param snapshot 写し
      */
-    private static void assertAmounts(OrderReportSnapshot snapshot) {
-        assertThat(snapshot.total()).isEqualTo(Money.of(3200));
-        assertThat(snapshot.shippingFee()).isEqualTo(Money.of(1000));
-        assertThat(snapshot.taxTotal()).isEqualTo(Money.of(290));
+    private static void assertAmounts(OrderSnapshot snapshot) {
+        var amounts = snapshot.amounts();
+        assertThat(amounts.total()).isEqualTo(Money.of(3200));
+        assertThat(amounts.shippingFee()).isEqualTo(Money.of(1000));
+        assertThat(amounts.taxes()).extracting(TaxAmount::taxAmount).containsExactly(Money.of(290));
         assertThat(snapshot.shippingTax()).isEqualTo(Money.of(90));
     }
 
@@ -346,21 +351,21 @@ class OrderReportApiTest {
      *   <li>軸の名前と値</li>
      *   <li>数量</li>
      *   <li>税率が 10%</li>
-     *   <li>税込の小計が 2,200 円、税抜の小計が 2,000 円</li>
+     *   <li>税抜単価が 1,000 円、税込の小計が 2,200 円</li>
      * </ul>
      *
      * @param line      明細
      * @param variantId バリアント ID（商品の登録のときに作るので、定数にできない）
      */
-    private static void assertLine(OrderReportSnapshot.Line line, UUID variantId) {
+    private static void assertLine(OrderSnapshot.Line line, UUID variantId) {
         assertThat(line.lineNo()).isEqualTo(1);
         assertThat(line.variantId()).isEqualTo(variantId);
         assertThat(line.productName()).isEqualTo(PRODUCT_NAME);
-        assertThat(line.axisValues()).containsExactly(new OrderReportSnapshot.AxisValue(AXIS_NAME, AXIS_VALUE));
+        assertThat(line.axisValues()).containsExactly(new AxisValue(AXIS_NAME, AXIS_VALUE));
         assertThat(line.quantity()).isEqualTo(QUANTITY);
         assertThat(line.ratePercent()).isEqualByComparingTo(BigDecimal.TEN);
+        assertThat(line.unitPriceExclTax()).isEqualTo(Money.of(UNIT_PRICE_EXCL_TAX));
         assertThat(line.subtotalInclTax()).isEqualTo(Money.of(2200));
-        assertThat(line.subtotalExclTax()).isEqualTo(Money.of((long) UNIT_PRICE_EXCL_TAX * QUANTITY));
     }
 
     // ============================== 準備の補助 ==============================

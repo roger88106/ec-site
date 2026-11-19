@@ -1,6 +1,7 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
 import com.ecsite.module.order.api.OrderQuoteApi;
+import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.CartQuote;
 import com.ecsite.module.storefront.application.model.CartView;
 import com.ecsite.module.storefront.application.port.OrderDirectory;
@@ -76,7 +77,7 @@ class OrderApiDirectory implements OrderDirectory {
     /**
      * 金額の内訳を変換する。
      */
-    private static CartView.Amounts toAmounts(CartQuote.Amounts amounts) {
+    private static CartView.Amounts toAmounts(Amounts amounts) {
         return new CartView.Amounts(
                 amounts.itemsTotal(),
                 amounts.shippingFee(),

@@ -4,8 +4,11 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderRecord;
 import com.ecsite.module.catalog.api.ReportCatalogApi;
-import com.ecsite.module.order.api.OrderReportApi;
-import com.ecsite.module.order.api.model.OrderReportSnapshot;
+import com.ecsite.module.order.api.OrderApi;
+import com.ecsite.module.order.api.model.Amounts;
+import com.ecsite.module.order.api.model.AxisValue;
+import com.ecsite.module.order.api.model.OrderSnapshot;
+import com.ecsite.module.order.api.model.TaxAmount;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.domain.sales.Basis;
@@ -158,7 +161,7 @@ class ReportCollectionTest {
     SalesTrendQueryService salesTrend;
 
     @MockitoBean
-    OrderReportApi orderReportApi;
+    OrderApi orderApi;
 
     @MockitoBean
     ReportCatalogApi reportCatalogApi;
@@ -197,24 +200,24 @@ class ReportCollectionTest {
         @DisplayName("AC-223 注文の状態の変化を受けると、注文の API から注文の写しを作り、お届け先は都道府県のコードで持つ")
         void createsOrderSnapshotFromOrderApi() {
             // 準備：注文の API が、支払待ちの注文を返す
-            orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
 
             // 操作：注文の成立のイベントを届ける
             publish(placed());
 
             // 確認：注文の写しの項目が、注文の API の値のまま
-            assertOrderCopiedFromSnapshot(awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT));
+            assertOrderCopiedFromSnapshot(awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT));
         }
 
         @Test
         @DisplayName("AC-223 注文の写しを作ると、明細の写しも作り、明細の商品 ID を商品カタログから求める")
         void createsLineSnapshotWithProductId() {
             // 準備：注文の API が、支払待ちの注文を返す
-            orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
 
             // 操作：注文の成立のイベントを届ける
             publish(placed());
-            awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+            awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
 
             // 確認：明細が 1 行で、商品 ID は商品カタログが返したもの
             assertThat(dsl.selectFrom(SALES_ORDER_LINE).where(SALES_ORDER_LINE.ORDER_ID.eq(orderId)).fetch())
@@ -228,16 +231,16 @@ class ReportCollectionTest {
         @DisplayName("AC-223 商品カタログで商品 ID を求められなくなっても、写しを再作成するときは、前の写しの商品 ID を残す")
         void keepsPreviousProductIdWhenCatalogMisses() {
             // 準備：商品 ID を求めて作った写しと、その後に商品 ID を返さなくなった商品カタログ（商品の削除など）
-            orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
             publish(placed());
-            awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+            awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
             when(reportCatalogApi.productIdsOf(anyCollection())).thenReturn(Map.of());
-            orderIs(snapshot(OrderReportSnapshot.Status.ACCEPTED, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.ACCEPTED, null, null));
 
             // 操作：受付のイベントを届ける
             publish(OrderStatusChanged.of(ORDERED_AT.plusSeconds(60), orderId, OrderStatusChanged.Status.PENDING_PAYMENT,
                     OrderStatusChanged.Status.ACCEPTED, null, null));
-            awaitOrder(OrderReportSnapshot.Status.ACCEPTED);
+            awaitOrder(OrderStatusChanged.Status.ACCEPTED);
 
             // 確認：明細の商品 ID は前の写しのまま
             assertThat(lineProductIds()).containsExactly(productId);
@@ -248,11 +251,11 @@ class ReportCollectionTest {
         void leavesProductIdEmptyWhenCatalogMissesFirst() {
             // 準備：商品 ID を返さない商品カタログ
             when(reportCatalogApi.productIdsOf(anyCollection())).thenReturn(Map.of());
-            orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
 
             // 操作：注文の成立のイベントを届ける
             publish(placed());
-            awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+            awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
 
             // 確認：明細は 1 行で、商品 ID は空
             assertThat(lineProductIds()).containsExactly((UUID) null);
@@ -262,11 +265,11 @@ class ReportCollectionTest {
         @DisplayName("AC-224 状態の変化を受けると、出来事・発生日時・前と後の状態を、履歴に 1 行追加する")
         void appendsHistoryRow() {
             // 準備：注文の API が、支払待ちの注文を返す
-            orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
 
             // 操作：注文の成立のイベントを届ける
             publish(placed());
-            awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+            awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
 
             // 確認：注文の状態の「なし → 支払待ち」が、イベントの発生日時で 1 行
             assertThat(history())
@@ -290,7 +293,7 @@ class ReportCollectionTest {
             publish(expired(expiredAt));
 
             // 確認：キャンセルの写しになり、キャンセルの項目が注文の API の値のまま
-            var order = awaitOrder(OrderReportSnapshot.Status.CANCELLED);
+            var order = awaitOrder(OrderStatusChanged.Status.CANCELLED);
             assertThat(order.get(SALES_ORDER.CANCELLED_AT)).isEqualTo(expiredAt);
             assertThat(order.get(SALES_ORDER.CANCELLATION_KIND)).isEqualTo("PAYMENT_EXPIRED");
             assertThat(order.get(SALES_ORDER.RESTOCKED)).isTrue();
@@ -319,14 +322,14 @@ class ReportCollectionTest {
         void collectsReturnedOrder() {
             // 準備：注文の API が、出荷の後にキャンセルになった注文を返す
             var cancelledAt = ORDERED_AT.plus(Duration.ofDays(5));
-            orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, cancelledAt, OrderReportSnapshot.CancellationKind.OPERATOR));
+            orderIs(snapshot(OrderStatusChanged.Status.CANCELLED, cancelledAt, OrderStatusChanged.CancellationKind.OPERATOR));
 
             // 操作：出荷済みからキャンセルへの変化を届ける
             publish(OrderStatusChanged.of(cancelledAt, orderId, OrderStatusChanged.Status.SHIPPED,
                     OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true));
 
             // 確認：キャンセルの写しができ、履歴に「出荷済み → キャンセル」がある
-            awaitOrder(OrderReportSnapshot.Status.CANCELLED);
+            awaitOrder(OrderStatusChanged.Status.CANCELLED);
             assertThat(history()).extracting(row -> row.get(STATUS_HISTORY.FROM_STATUS), row -> row.get(STATUS_HISTORY.TO_STATUS))
                     .containsExactly(tuple("SHIPPED", "CANCELLED"));
         }
@@ -370,13 +373,13 @@ class ReportCollectionTest {
         void snapshotIsCurrentRegardlessOfOrder() {
             // 準備：注文の API が、今の状態として 1 時間後のキャンセルを返す
             var cancelledAt = ORDERED_AT.plus(Duration.ofHours(1));
-            orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, cancelledAt, OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED));
+            orderIs(snapshot(OrderStatusChanged.Status.CANCELLED, cancelledAt, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED));
 
             // 操作：キャンセル、受付の順に届ける
             deliverCancellationBeforeAcceptance(cancelledAt);
 
             // 確認：写しはキャンセルで、キャンセルの日時が注文の API の値
-            var order = awaitOrder(OrderReportSnapshot.Status.CANCELLED);
+            var order = awaitOrder(OrderStatusChanged.Status.CANCELLED);
             assertThat(order.get(SALES_ORDER.CANCELLED_AT)).isEqualTo(cancelledAt);
         }
 
@@ -385,7 +388,7 @@ class ReportCollectionTest {
         void historyInOccurredOrder() {
             // 準備：注文の API が、今の状態として 1 時間後のキャンセルを返す
             var cancelledAt = ORDERED_AT.plus(Duration.ofHours(1));
-            orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, cancelledAt, OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED));
+            orderIs(snapshot(OrderStatusChanged.Status.CANCELLED, cancelledAt, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED));
 
             // 操作：キャンセル、受付の順に届ける
             deliverCancellationBeforeAcceptance(cancelledAt);
@@ -423,7 +426,7 @@ class ReportCollectionTest {
         @DisplayName("AC-224 配達完了が出荷済みより先に届いても、出荷日時と出荷日を、履歴の出荷済みの変化から求める")
         void shippedAtFromHistory() {
             // 準備：注文の API が、出荷済みの注文を返す
-            orderIs(snapshot(OrderReportSnapshot.Status.SHIPPED, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.SHIPPED, null, null));
 
             // 操作：配達完了、出荷済みの順に届ける
             var shippedAt = deliverDeliveredBeforeShipped();
@@ -439,7 +442,7 @@ class ReportCollectionTest {
         @DisplayName("AC-224 配達完了が出荷済みより先に届いても、配送状態は履歴の最も進んだ状態（配達完了）")
         void deliveryStatusFromHistory() {
             // 準備：注文の API が、出荷済みの注文を返す
-            orderIs(snapshot(OrderReportSnapshot.Status.SHIPPED, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.SHIPPED, null, null));
 
             // 操作：配達完了、出荷済みの順に届ける
             deliverDeliveredBeforeShipped();
@@ -453,7 +456,7 @@ class ReportCollectionTest {
         @DisplayName("AC-224 配送状態の変化も、発生日時の順に履歴に入る")
         void deliveryHistoryInOccurredOrder() {
             // 準備：注文の API が、出荷済みの注文を返す
-            orderIs(snapshot(OrderReportSnapshot.Status.SHIPPED, null, null));
+            orderIs(snapshot(OrderStatusChanged.Status.SHIPPED, null, null));
 
             // 操作：配達完了、出荷済みの順に届ける
             deliverDeliveredBeforeShipped();
@@ -469,9 +472,9 @@ class ReportCollectionTest {
     @DisplayName("NFR-14 注文の API が失敗したら写しを作らず、未完了のイベントの再発行で再作成する")
     void retriesFailedEvent() {
         // 準備：注文の API が、1 回目は失敗し、2 回目は支払待ちの注文を返す
-        when(orderReportApi.find(orderId))
+        when(orderApi.find(orderId))
                 .thenThrow(new IllegalStateException("注文の API が失敗した"))
-                .thenReturn(Optional.of(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null)));
+                .thenReturn(Optional.of(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null)));
         var event = placed();
 
         // 操作：注文の成立のイベントを届け、失敗するのを待つ
@@ -487,7 +490,7 @@ class ReportCollectionTest {
         asyncEvents.resubmit(event::equals);
 
         // 確認：写しができ、履歴は 1 行
-        awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+        awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
         assertThat(history()).hasSize(1);
     }
 
@@ -530,12 +533,12 @@ class ReportCollectionTest {
      * @return 期限切れの日時
      */
     private Instant collectPendingOrderThatExpires() {
-        orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+        orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
         publish(placed());
-        awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+        awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
 
         var expiredAt = ORDERED_AT.plus(Duration.ofMinutes(30));
-        orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, expiredAt, OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED));
+        orderIs(snapshot(OrderStatusChanged.Status.CANCELLED, expiredAt, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED));
         return expiredAt;
     }
 
@@ -560,7 +563,7 @@ class ReportCollectionTest {
     private void deliverCancellationBeforeAcceptance(Instant cancelledAt) {
         publish(OrderStatusChanged.of(cancelledAt, orderId, OrderStatusChanged.Status.ACCEPTED,
                 OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true));
-        awaitOrder(OrderReportSnapshot.Status.CANCELLED);
+        awaitOrder(OrderStatusChanged.Status.CANCELLED);
         publish(OrderStatusChanged.of(ORDERED_AT.plusSeconds(30), orderId, OrderStatusChanged.Status.PENDING_PAYMENT,
                 OrderStatusChanged.Status.ACCEPTED, null, null));
         await().atMost(TIMEOUT).until(() -> history().size() == 2);
@@ -570,11 +573,11 @@ class ReportCollectionTest {
      * 同じ成立のイベントを、前の処理が終わってから、もう一度届け、その処理が終わるのを待つ。
      */
     private void deliverPlacedTwice() {
-        orderIs(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null, null));
+        orderIs(snapshot(OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
         var event = placed();
 
         publish(event);
-        awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+        awaitOrder(OrderStatusChanged.Status.PENDING_PAYMENT);
         asyncEvents.awaitHandled(event::equals);
         publish(event);
         asyncEvents.awaitHandled(event::equals);
@@ -604,12 +607,12 @@ class ReportCollectionTest {
      * @return 3 件の注文 ID
      */
     private ThreeOrders collectThreeOrders() {
-        var pendingId = collectOrder(OrderReportSnapshot.Status.PENDING_PAYMENT, null, ORDERED_AT, null,
+        var pendingId = collectOrder(OrderStatusChanged.Status.PENDING_PAYMENT, null, ORDERED_AT, null,
                 OrderStatusChanged.Status.PENDING_PAYMENT, null, null);
-        var acceptedId = collectOrder(OrderReportSnapshot.Status.ACCEPTED, null, ORDERED_AT.plusSeconds(30),
+        var acceptedId = collectOrder(OrderStatusChanged.Status.ACCEPTED, null, ORDERED_AT.plusSeconds(30),
                 OrderStatusChanged.Status.PENDING_PAYMENT, OrderStatusChanged.Status.ACCEPTED, null, null);
         var cancelledAt = ORDERED_AT.plus(Duration.ofMinutes(30));
-        var cancelledId = collectOrder(OrderReportSnapshot.Status.CANCELLED, cancelledAt, cancelledAt,
+        var cancelledId = collectOrder(OrderStatusChanged.Status.CANCELLED, cancelledAt, cancelledAt,
                 OrderStatusChanged.Status.PENDING_PAYMENT, OrderStatusChanged.Status.CANCELLED,
                 OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED, true);
         return new ThreeOrders(pendingId, acceptedId, cancelledId);
@@ -627,11 +630,11 @@ class ReportCollectionTest {
      * @param restocked   在庫に戻したか。キャンセルでなければ null
      * @return 注文 ID
      */
-    private UUID collectOrder(OrderReportSnapshot.Status status, Instant cancelledAt, Instant occurredAt,
+    private UUID collectOrder(OrderStatusChanged.Status status, Instant cancelledAt, Instant occurredAt,
                               OrderStatusChanged.Status from, OrderStatusChanged.Status to,
                               OrderStatusChanged.CancellationKind kind, Boolean restocked) {
         orderId = UUID.randomUUID();
-        orderIs(snapshot(status, cancelledAt, kind == null ? null : OrderReportSnapshot.CancellationKind.valueOf(kind.name())));
+        orderIs(snapshot(status, cancelledAt, kind));
         publish(OrderStatusChanged.of(occurredAt, orderId, from, to, kind, restocked));
         awaitOrder(status);
         return orderId;
@@ -642,8 +645,8 @@ class ReportCollectionTest {
      *
      * @param snapshot 注文の今の写し
      */
-    private void orderIs(OrderReportSnapshot snapshot) {
-        when(orderReportApi.find(orderId)).thenReturn(Optional.of(snapshot));
+    private void orderIs(OrderSnapshot snapshot) {
+        when(orderApi.find(orderId)).thenReturn(Optional.of(snapshot));
     }
 
     /**
@@ -656,15 +659,18 @@ class ReportCollectionTest {
      * @param cancellationKind キャンセルの種類。キャンセルでなければ null
      * @return 注文の写し
      */
-    private OrderReportSnapshot snapshot(OrderReportSnapshot.Status status, Instant cancelledAt,
-                                         OrderReportSnapshot.CancellationKind cancellationKind) {
-        return new OrderReportSnapshot(orderId, ORDER_NUMBER, UUID.randomUUID(), ORDERED_AT, status,
-                cancelledAt, cancellationKind, cancelledAt != null ? Boolean.TRUE : null,
-                POSTAL_CODE, PREFECTURE_CODE, BUYER_AGE, OrderReportSnapshot.Gender.FEMALE,
-                Money.of(TOTAL_AMOUNT), Money.of(SHIPPING_FEE), Money.of(TAX_TOTAL), Money.of(SHIPPING_TAX),
-                List.of(new OrderReportSnapshot.Line(1, variantId, "P-1", "P-1-W", "T シャツ",
-                        List.of(new OrderReportSnapshot.AxisValue("色", "白")), QUANTITY, BigDecimal.TEN,
-                        Money.of(SUBTOTAL_INCL_TAX), Money.of(SUBTOTAL_EXCL_TAX))));
+    private OrderSnapshot snapshot(OrderStatusChanged.Status status, Instant cancelledAt,
+                                   OrderStatusChanged.CancellationKind cancellationKind) {
+        var cancellation = cancelledAt == null ? null
+                : new OrderSnapshot.Cancellation(cancelledAt, cancellationKind, true);
+        var amounts = new Amounts(Money.of(TOTAL_AMOUNT - SHIPPING_FEE), Money.of(SHIPPING_FEE), Money.of(TOTAL_AMOUNT),
+                List.of(new TaxAmount(BigDecimal.TEN, Money.of(TOTAL_AMOUNT), Money.of(TAX_TOTAL))));
+        return new OrderSnapshot(orderId, ORDER_NUMBER, UUID.randomUUID(), ORDERED_AT, status, cancellation,
+                POSTAL_CODE, PREFECTURE_CODE, BUYER_AGE, OrderSnapshot.Gender.FEMALE,
+                amounts, Money.of(SHIPPING_TAX),
+                List.of(new OrderSnapshot.Line(1, variantId, "P-1", "P-1-W", "T シャツ",
+                        List.of(new AxisValue("色", "白")), QUANTITY, BigDecimal.TEN,
+                        Money.of(SUBTOTAL_EXCL_TAX / QUANTITY), Money.of(SUBTOTAL_INCL_TAX))));
     }
 
     /**
@@ -700,7 +706,7 @@ class ReportCollectionTest {
      * @param status 待つ状態
      * @return 注文の写し
      */
-    private Record awaitOrder(OrderReportSnapshot.Status status) {
+    private Record awaitOrder(OrderStatusChanged.Status status) {
         await().atMost(TIMEOUT).until(() -> order().map(row -> status.name().equals(row.get(SALES_ORDER.STATUS))).orElse(false));
         return order().orElseThrow();
     }

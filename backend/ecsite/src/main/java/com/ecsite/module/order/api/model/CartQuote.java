@@ -3,7 +3,6 @@ package com.ecsite.module.order.api.model;
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,36 +33,6 @@ public record CartQuote(UUID cartId, List<Item> items, Amounts amounts, boolean 
     public record Item(UUID variantId, UUID productId, String productName, List<AxisValue> axisValues,
                        @Nullable String imageUrl, Money unitPriceExclTax, Money unitPriceInclTax, int quantity,
                        Money subtotal, @Nullable UnpurchasableReason unpurchasableReason) {
-    }
-
-    /**
-     * 軸の名前と値
-     *
-     * @param name  軸の名前
-     * @param value 軸の値
-     */
-    public record AxisValue(String name, String value) {
-    }
-
-    /**
-     * 金額の内訳
-     *
-     * @param itemsTotal  商品の合計
-     * @param shippingFee 送料
-     * @param total       総額
-     * @param taxes       税率ごとの消費税額（税率の高い順）
-     */
-    public record Amounts(Money itemsTotal, Money shippingFee, Money total, List<TaxAmount> taxes) {
-    }
-
-    /**
-     * 1 つの税率の消費税額
-     *
-     * @param ratePercent   率（%）
-     * @param taxableAmount 対象額（税込）
-     * @param taxAmount     消費税額
-     */
-    public record TaxAmount(BigDecimal ratePercent, Money taxableAmount, Money taxAmount) {
     }
 
     /**

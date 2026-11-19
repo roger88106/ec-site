@@ -118,7 +118,7 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。タスク番号は T502-01-NN。
 
-- [ ] **T502-01-01** 規則を `docs/05-開発規則/backend-coding.md` に書く（DC-502-1）。
+- [x] **T502-01-01** 規則を `docs/05-開発規則/backend-coding.md` に書く（DC-502-1）。
   - 依存：なし
   - 範囲：`docs/05-開発規則/backend-coding.md`
   - 確認方法：文書の検査（`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs`）

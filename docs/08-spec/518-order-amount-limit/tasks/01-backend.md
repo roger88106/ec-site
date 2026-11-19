@@ -24,7 +24,7 @@
   - 依存：T518-01-03
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/payment/api/`、`backend/ecsite/src/main/java/com/ecsite/module/order/application/port/`、`backend/ecsite/src/main/java/com/ecsite/module/order/infrastructure/directory/`
   - 確認方法：T518-01-03 のテストが通る
-- [ ] **T518-01-05** [テスト] 注文手続きの開始の統合テストを書き、レッドを確認する。下限の外と上限の外で拒否し、注文手続きと引当がないことを確認する。下限ちょうどと上限ちょうどで開始でき、拒否の文言に値が差し込まれることを確認する（AC-518-1、2、4、5）。総額を作る準備は、T518-01-06 でも使える形にする。
+- [x] **T518-01-05** [テスト] 注文手続きの開始の統合テストを書き、レッドを確認する。下限の外と上限の外で拒否し、注文手続きと引当がないことを確認する。下限ちょうどと上限ちょうどで開始でき、拒否の文言に値が差し込まれることを確認する（AC-518-1、2、4、5）。総額を作る準備は、T518-01-06 でも使える形にする。
   - 依存：T518-01-04
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/CheckoutAmountRangeApiTest.java`（新規）
   - 確認方法：テストが失敗する

@@ -10,17 +10,20 @@ import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
 import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.persistence.QueryPlans;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -527,6 +530,104 @@ class JooqPaymentRepositoryTest {
         }
     }
 
+    @Nested
+    @DisplayName("同じ期限・同じ待ち始めた時刻の支払の並び順")
+    class TieOrder {
+
+        @Test
+        @DisplayName("DC-549-3 同じ期限の支払は、支払 ID の順に取得する（挿入の順と逆の ID）")
+        void pastDeadlineTiesInIdOrder() {
+            // 準備：同じ期限で、支払 ID が挿入の順と逆（大きい ID から保存する）の 3 件
+            var tied = SEARCH_NOW.minusSeconds(500);
+            var ids = tiedIds();
+            insertAll(paymentWithId(ids.get(2), tied), paymentWithId(ids.get(1), tied), paymentWithId(ids.get(0), tied));
+
+            // 操作と確認：支払 ID の小さい順に並ぶ
+            assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
+                    .containsExactlyElementsOf(ids);
+        }
+
+        @Test
+        @DisplayName("DC-549-3 同じ時刻から待つ支払は、支払 ID の順に取得する（挿入の順と逆の ID）")
+        void awaitingTiesInIdOrder() {
+            // 準備：同じ時刻から待つ、支払 ID が挿入の順と逆（大きい ID から保存する）の 3 件
+            var since = SEARCH_NOW.minusSeconds(500);
+            var ids = tiedIds();
+            var payments = List.of(paymentWithId(ids.get(2), DEADLINE), paymentWithId(ids.get(1), DEADLINE),
+                    paymentWithId(ids.get(0), DEADLINE));
+            payments.forEach(repository::insertIfAbsent);
+            payments.forEach(payment -> awaitAuthorization(payment, since));
+
+            // 操作と確認：待ち始めた時刻が最も古い 3 件が、支払 ID の小さい順に並ぶ
+            assertThat(repository.findUnpaidAwaitingAuthorization(3)).extracting(Payment::id)
+                    .containsExactlyElementsOf(ids);
+        }
+    }
+
+    @Nested
+    @DisplayName("検索が使う索引")
+    class IndexUsage {
+
+        /**
+         * 期限切れの支払の検索用の部分索引の名前
+         */
+        private static final String DEADLINE_INDEX = "payment_unpaid_deadline_id_idx";
+
+        /**
+         * 与信の反映を待つ支払の検索と件数の集計用の部分索引の名前
+         */
+        private static final String AWAITING_INDEX = "payment_unpaid_awaiting_authorization_since_id_idx";
+
+        @Autowired
+        ApplicationEventPublisher eventPublisher;
+
+        @Autowired
+        Clock clock;
+
+        @Test
+        @DisplayName("DC-549-1 期限切れの支払の検索は、期限の部分索引を、範囲の条件で使う")
+        void pastDeadlineUsesDeadlineIndex() {
+            // 操作：期限切れの支払を検索し、実行計画を取る
+            var plans = QueryPlans.capture(dsl, recording ->
+                    new JooqPaymentRepository(recording, eventPublisher, clock).findUnpaidPastDeadline(SEARCH_NOW, 10));
+
+            // 確認：期限の部分索引の範囲の条件に、期限の列が出る
+            assertThat(plans).as("実行された Query の実行計画").hasSize(1);
+            assertThat(plans.get(0))
+                    .as("期限切れの支払の検索の実行計画（索引 %s の範囲の条件を使うはず）%n%s", DEADLINE_INDEX, plans.get(0))
+                    .containsPattern(QueryPlans.indexRangeCondition(DEADLINE_INDEX, "deadline"));
+        }
+
+        @Test
+        @DisplayName("DC-549-2 長く与信の反映を待つ支払の件数の集計は、待ち始めた時刻の部分索引を、範囲の条件で使う")
+        void countUsesAwaitingIndex() {
+            // 操作：件数を集計し、実行計画を取る
+            var plans = QueryPlans.capture(dsl, recording ->
+                    new JooqPaymentQueryRepository(recording).countUnpaidAwaitingAuthorizationUntil(SEARCH_NOW));
+
+            // 確認：待ち始めた時刻の部分索引の範囲の条件に、待ち始めた時刻の列が出る
+            assertThat(plans).as("実行された Query の実行計画").hasSize(1);
+            assertThat(plans.get(0))
+                    .as("件数の集計の実行計画（索引 %s の範囲の条件を使うはず）%n%s", AWAITING_INDEX, plans.get(0))
+                    .containsPattern(QueryPlans.indexRangeCondition(AWAITING_INDEX, "awaiting_authorization_since"));
+        }
+
+        @Test
+        @DisplayName("DC-549-2 与信の反映を待つ支払の検索は、待ち始めた時刻の部分索引を使い、シーケンシャルスキャンにならない")
+        void awaitingSearchUsesAwaitingIndex() {
+            // 操作：与信の反映を待つ支払を検索し、実行計画を取る（範囲の条件はないので、索引の名前だけを見る）
+            var plans = QueryPlans.capture(dsl, recording ->
+                    new JooqPaymentRepository(recording, eventPublisher, clock).findUnpaidAwaitingAuthorization(10));
+
+            // 確認：待ち始めた時刻の部分索引を使い、シーケンシャルスキャンがない
+            assertThat(plans).as("実行された Query の実行計画").hasSize(1);
+            assertThat(plans.get(0))
+                    .as("与信の反映を待つ支払の検索の実行計画（索引 %s を使うはず）%n%s", AWAITING_INDEX, plans.get(0))
+                    .contains(AWAITING_INDEX)
+                    .doesNotContain("Seq Scan");
+        }
+    }
+
     // ============================== 確認の補助 ==============================
 
     /**
@@ -601,6 +702,29 @@ class JooqPaymentRepositoryTest {
      */
     private static Payment payment(UUID orderId, Instant deadline) {
         return Payment.create(UUID.randomUUID(), orderId, AMOUNT, deadline);
+    }
+
+    /**
+     * 指定した支払 ID と期限の未払いの支払を作る。
+     *
+     * @param id       支払 ID
+     * @param deadline 期限
+     * @return 支払
+     */
+    private static Payment paymentWithId(UUID id, Instant deadline) {
+        return Payment.create(id, UUID.randomUUID(), AMOUNT, deadline);
+    }
+
+    /**
+     * 同じ期限（同じ待ち始めた時刻）の支払の並び順を確認するための、小さい順の支払 ID 3 件を返す。
+     *
+     * @return 支払 ID（小さい順）
+     */
+    private static List<UUID> tiedIds() {
+        return List.of(
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                UUID.fromString("00000000-0000-0000-0000-000000000003"));
     }
 
     /**

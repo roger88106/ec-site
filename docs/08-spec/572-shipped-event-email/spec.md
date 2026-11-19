@@ -129,7 +129,7 @@
   - 依存：T572-01-03
   - 範囲：`docs/02-設計/{backend-architecture,notification,order}.md`、`docs/03-機能仕様/{order,notification,glossary}.md`、決定の Javadoc
   - 確認方法：「メールアドレス」と「注文の API は呼ばない」を `git grep` で探し、古い説明がアーカイブの外に残らない。全体構成の依存の図（生成の図）が変わらないことと、用語集に新しい型の行が必要かを確認する。文書の検査が通る
-- [ ] **T572-01-05** `./gradlew check` と統合テストと、E2E の出荷の流れを通す（DC-572-6、DC-572-8）。
+- [x] **T572-01-05** `./gradlew check` と統合テストと、E2E の出荷の流れを通す（DC-572-6、DC-572-8）。
   - 依存：T572-01-04
   - 範囲：`backend/ecsite/`、`e2e/tests/shipping.spec.ts`
   - 確認方法：issue 担当のセッションから重い検査の合図を受けてから実行する

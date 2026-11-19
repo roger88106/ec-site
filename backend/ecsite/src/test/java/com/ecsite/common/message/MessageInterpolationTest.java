@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 規則の値を差し込むメッセージの単体テスト
  *
- * <p>差し込む値をドメインの定数から取り、整理の前（数字を文に書いていたとき）と同じ文になることを確認する。
+ * <p>差し込む値をドメインの定数から取り、期待する文言になることを確認する。
  */
 class MessageInterpolationTest {
 
@@ -34,7 +34,7 @@ class MessageInterpolationTest {
      *
      * @param error    エラーの定義
      * @param values   差し込む値の出どころ（{@code クラスの完全修飾名#定数名}）。MB にする値は {@code #MAX_BYTES/MB}
-     * @param expected 整理の前の文
+     * @param expected 期待する文言
      */
     record Case(ErrorCodeProvider error, List<String> values, String expected) {
 
@@ -72,9 +72,9 @@ class MessageInterpolationTest {
                 new Case(MediaErrorCode.INVALID_IMAGE_FILE, List.of(formats),
                         "ファイルの中身が対応している形式（JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF）の画像ではありません。"),
                 new Case(OrderErrorCode.INVALID_POSTAL_CODE, List.of(address + "POSTAL_CODE_DIGITS"),
-                        "郵便番号は数字 7 桁で入力してください。"),
+                        "郵便番号は数字 7 桁にしてください。"),
                 new Case(OrderErrorCode.INVALID_PHONE_NUMBER, List.of(address + "PHONE_MIN_DIGITS", address + "PHONE_MAX_DIGITS"),
-                        "電話番号は数字 10〜11 桁で入力してください。"),
+                        "電話番号は数字 10〜11 桁にしてください。"),
                 new Case(TaxErrorCode.INVALID_TAX_CATEGORY_NAME, List.of(tax + "TaxCategory#NAME_MAX_LENGTH"),
                         "税区分の名称は 1 文字以上 50 文字以内にしてください。"),
                 new Case(CategoryErrorCode.INVALID_CATEGORY_NAME, List.of(category + "NAME_MAX_LENGTH"),
@@ -91,9 +91,9 @@ class MessageInterpolationTest {
                         "説明は 10,000 文字以内にしてください。"),
                 new Case(ProductErrorCode.INVALID_VARIANT_AXES,
                         List.of(product + "MAX_AXES", product + "AXIS_NAME_MAX_LENGTH"),
-                        "バリアント軸は 3 つまでにし、名前は重複しない 1 文字以上 30 文字以内にしてください。"),
+                        "バリアント軸は 3 つ以内にし、名前は重複しない 1 文字以上 30 文字以内にしてください。"),
                 new Case(ProductErrorCode.INVALID_AXIS_VALUES, List.of(product + "AXIS_VALUE_MAX_LENGTH"),
-                        "軸の値は、商品のすべての軸について、1 文字以上 50 文字以内で指定してください。"),
+                        "軸の値は、商品の全ての軸について、1 文字以上 50 文字以内にしてください。"),
                 new Case(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES,
                         List.of("com.ecsite.module.catalog.domain.product.ProductImages#MAX_IMAGES"),
                         "画像は 1 商品あたり 20 枚まで登録できます。"),
@@ -107,19 +107,19 @@ class MessageInterpolationTest {
                 new Case(CartErrorCode.TOO_MANY_CART_ITEMS, List.of(cart + "MAX_ITEMS"),
                         "カートに入れられるのは 30 品目までです。"),
                 new Case(OrderErrorCode.INVALID_RECIPIENT_NAME, List.of(address + "NAME_MAX_LENGTH"),
-                        "氏名を 50 文字以内で入力してください。"),
+                        "氏名は 1 文字以上 50 文字以内にしてください。"),
                 new Case(OrderErrorCode.INVALID_ADDRESS, List.of(address + "ADDRESS_MAX_LENGTH"),
-                        "住所を 200 文字以内で入力してください。"),
+                        "住所は 1 文字以上 200 文字以内にしてください。"),
                 new Case(OrderErrorCode.INVALID_CANCELLATION_REASON,
                         List.of("com.ecsite.module.order.domain.order.Order#REASON_MAX_LENGTH"),
-                        "キャンセルの理由は 500 文字以内で入力してください。"));
+                        "キャンセルの理由は 500 文字以内にしてください。"));
     }
 
     // ============================== テスト ==============================
 
     @ParameterizedTest(name = "「{0}」")
     @MethodSource("cases")
-    @DisplayName("AC-266 ドメインの定数を差し込んだ文が、整理の前の文と同じになる")
+    @DisplayName("AC-266 ドメインの定数を差し込んだ文が、期待する文言になる")
     void interpolatesDomainConstants(Case example) {
         // 準備：差し込む値を、ドメインの定数から読む
         List<Object> values = example.values().stream().map(MessageInterpolationTest::valueOf).toList();
@@ -127,7 +127,7 @@ class MessageInterpolationTest {
         // 操作：メッセージのファイルの文に差し込む
         var message = resolver().getMessage(ErrorDetail.of(example.error().getCode(), values));
 
-        // 確認：整理の前の文と同じ
+        // 確認：期待する文言と同じ
         assertThat(message).isEqualTo(example.expected());
     }
 

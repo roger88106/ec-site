@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>エラーの定義（{@link ErrorCodeProvider} の enum の定数）とメッセージのキーが過不足なく対応し、
  * キーが定数の名前から決まり、文の差し込みの名前と定数に書いた値の名前が一致することを確認する。
  * 文に上限などの値を直接書いていないことも確認する（値が変わったときに、文が取り残されないように）。
+ * 文言の書き方の規則で使わないと決めた言い回しが、メールの文を除く文にないことも確認する。
  */
 class MessageContractTest {
 
@@ -51,6 +52,14 @@ class MessageContractTest {
      * 文に直接書いてよい数字。「1 文字以上」「0 以外」のように、空でないことや数え方を言う 0 と 1 は、変わる規則の値でないため
      */
     private static final Pattern COUNTING_WORDS = Pattern.compile("[01０１]");
+
+    /**
+     * 文に使わない言い回し（規則の番号は、バックエンドの書き方の「メッセージの文言の書き方」）
+     */
+    private static final List<String> FORBIDDEN_PHRASES = List.of(
+            "で入力してください", "で指定してください", // 規則 1
+            "形が", "確かめ", // 規則 4
+            "C 側"); // 規則 5
 
     /**
      * 数字の検査で見ないキーの接頭辞（メールの文。エラーの文でない）
@@ -161,6 +170,21 @@ class MessageContractTest {
 
         // 確認：ない（上限などの値は、ドメインの定数から {名前} で差し込む）
         assertThat(literal).isEmpty();
+    }
+
+    @Test
+    @DisplayName("エラーの文に、使わない言い回しを書かない")
+    void noForbiddenPhraseInMessage() {
+        // 操作：メールの文を除いた文から、使わない言い回しを含む文を集める
+        List<String> found = MESSAGES.stringPropertyNames().stream()
+                .filter(key -> !key.startsWith(NOTIFICATION_PREFIX))
+                .sorted()
+                .filter(key -> FORBIDDEN_PHRASES.stream().anyMatch(MESSAGES.getProperty(key)::contains))
+                .map(key -> key + "：" + MESSAGES.getProperty(key))
+                .toList();
+
+        // 確認：ない（書き方は、バックエンドの書き方の「メッセージの文言の書き方」）
+        assertThat(found).isEmpty();
     }
 
     // ============================== 補助 ==============================

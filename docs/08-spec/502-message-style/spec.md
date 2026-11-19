@@ -122,7 +122,7 @@
   - 依存：なし
   - 範囲：`docs/05-開発規則/backend-coding.md`
   - 確認方法：文書の検査（`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs`）
-- [ ] **T502-01-02** [テスト] メッセージの単体テストの期待値を、「変える文言」の表の後の文言に変える。使わない言い回しの確認も加える。レッドを確認する（DC-502-3、DC-502-4）。
+- [x] **T502-01-02** [テスト] メッセージの単体テストの期待値を、「変える文言」の表の後の文言に変える。使わない言い回しの確認も加える。レッドを確認する（DC-502-3、DC-502-4）。
   - 依存：T502-01-01
   - 範囲：`MessageInterpolationTest.java`、`MessageContractTest.java`
   - 確認方法：`./gradlew test --tests` で対象のテストが失敗する

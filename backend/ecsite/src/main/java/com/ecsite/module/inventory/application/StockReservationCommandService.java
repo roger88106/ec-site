@@ -63,7 +63,8 @@ public class StockReservationCommandService {
     /**
      * 全品目を引き当てる。
      *
-     * <p>1 つでも足りなければ、何も書かずに足りない品目を返す。同じ持ち主の引当は置き換える。判定では自分の引当を数えない。
+     * <p>同じ持ち主の引当は置き換える。判定では自分の引当を数えない。
+     * 1 つでも足りなければ何も引き当てずに足りない品目を返すが、持ち主の前の引当は解いたままになる。
      * 呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param holderId   持ち主 ID（注文手続き）
@@ -77,31 +78,36 @@ public class StockReservationCommandService {
         verifyPositive(quantities);
         var now = clock.instant();
 
+        // 持ち主の前の引当の削除 ※減算への置き換えと同じく、在庫のロックより先に行い、デッドロックを防ぐ。
+        // 販売可能数は持ち主の引当を数えないので、先に削除しても判定は変わらない
+        reservationRepository.deleteByHolder(holderId);
+
         // 在庫の行ロック ※同じ在庫への引当を 1 つずつ判定するため、判定の前にロックする
         var locked = lockStocks(quantities.keySet());
 
         // 足りるかの判定
         var shortages = StockAllocation.shortages(quantities, sellableOf(locked, holderId, now));
 
-        // 引当の置き換え ※全て足りるときだけ
+        // 引当の追加 ※全て足りるときだけ
         if (shortages.isEmpty()) {
             var byStockItem = locked.values().stream()
                     .collect(Collectors.toMap(LockedStock::stockItemId, stock -> quantities.get(stock.variantId())));
-            reservationRepository.replace(holderId, byStockItem, expiresAt, now);
+            reservationRepository.insert(holderId, byStockItem, expiresAt, now);
         }
         return shortages;
     }
 
     /**
-     * 持ち主の引当を解く。
+     * 複数の持ち主の引当を、まとめて解く。
      *
-     * <p>なければ何もしない。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
+     * <p>持ち主の数によらず、1 回の削除で解く。空のコレクションなら、状態を変えずに終える。
+     * 引当のない持ち主は飛ばす。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
-     * @param holderId 持ち主 ID
+     * @param holderIds 持ち主 ID
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void release(@NonNull UUID holderId) {
-        reservationRepository.deleteByHolder(holderId);
+    public void release(@NonNull Collection<UUID> holderIds) {
+        reservationRepository.deleteByHolders(holderIds);
     }
 
     /**

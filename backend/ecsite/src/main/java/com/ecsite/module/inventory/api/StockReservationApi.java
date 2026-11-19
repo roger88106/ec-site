@@ -46,12 +46,14 @@ public class StockReservationApi {
     /**
      * 全品目を引き当てる。
      *
-     * <p>同じ持ち主の引当は置き換える。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
+     * <p>同じ持ち主の引当は置き換える。判定では自分の引当を数えない。
+     * 1 つでも足りなければ何も引き当てずに足りない品目を返すが、持ち主の前の引当は解いたままになる。
+     * 呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param holderId   持ち主 ID（注文手続き）
      * @param quantities バリアント ID → 数量
      * @param expiresAt  期限
-     * @return 足りないバリアントの ID。引き当てたら空（足りなければ何も引き当てない）
+     * @return 足りないバリアントの ID。引き当てたら空
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {
@@ -59,14 +61,15 @@ public class StockReservationApi {
     }
 
     /**
-     * 持ち主の引当を解く。
+     * 複数の持ち主の引当を、まとめて解く。
      *
-     * <p>なければ何もしない。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
+     * <p>持ち主の数によらず、1 回の削除で解く。空のコレクションなら、状態を変えずに終える。
+     * 引当のない持ち主は飛ばす。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
-     * @param holderId 持ち主 ID
+     * @param holderIds 持ち主 ID
      */
-    public void release(@NonNull UUID holderId) {
-        reservationService.release(holderId);
+    public void release(@NonNull Collection<UUID> holderIds) {
+        reservationService.release(holderIds);
     }
 
     /**

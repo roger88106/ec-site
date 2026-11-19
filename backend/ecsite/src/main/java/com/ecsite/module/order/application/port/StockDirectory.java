@@ -29,7 +29,7 @@ public interface StockDirectory {
     /**
      * 全品目を引き当てる。
      *
-     * <p>同じ持ち主の引当は置き換える。
+     * <p>同じ持ち主の引当は置き換える。1 つでも足りなければ何も引き当てず、足りない品目を返す。そのとき前の引当は解いた状態で返る。
      *
      * @param holderId   持ち主 ID（注文手続き）
      * @param quantities バリアント ID → 数量
@@ -39,11 +39,13 @@ public interface StockDirectory {
     Set<UUID> reserve(UUID holderId, Map<UUID, Integer> quantities, Instant expiresAt);
 
     /**
-     * 持ち主の引当を解く。
+     * 持ち主の引当をまとめて解く。
      *
-     * @param holderId 持ち主 ID
+     * <p>持ち主の数によらず 1 回で解く。空なら何もしない。
+     *
+     * @param holderIds 持ち主 ID（注文手続き）
      */
-    void release(UUID holderId);
+    void release(Collection<UUID> holderIds);
 
     /**
      * 引当を在庫数の減算に置き換える。

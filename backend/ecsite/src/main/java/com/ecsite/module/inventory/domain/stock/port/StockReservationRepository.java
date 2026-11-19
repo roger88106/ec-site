@@ -34,14 +34,14 @@ public interface StockReservationRepository {
     Map<UUID, Integer> sumActiveReservations(Collection<UUID> stockItemIds, UUID excludedHolderId, Instant now);
 
     /**
-     * 持ち主の引当を、指定した内容に置き換える。
+     * 持ち主の引当を加える。持ち主の前の引当は、呼ぶ側が先に削除しておく。
      *
      * @param holderId               持ち主 ID
      * @param quantitiesByStockItem  在庫 ID → 数量
      * @param expiresAt              期限
      * @param now                    現在時刻
      */
-    void replace(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now);
+    void insert(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now);
 
     /**
      * 持ち主の引当を消す。
@@ -51,6 +51,15 @@ public interface StockReservationRepository {
      * @param holderId 持ち主 ID
      */
     void deleteByHolder(UUID holderId);
+
+    /**
+     * 複数の持ち主の引当を、1 回の削除で消す。
+     *
+     * <p>空のコレクションなら、SQL を実行しない。引当のない持ち主は飛ばす。
+     *
+     * @param holderIds 持ち主 ID
+     */
+    void deleteByHolders(Collection<UUID> holderIds);
 
     /**
      * 期限が指定した時刻より前の引当を、件数の上限まで消す。

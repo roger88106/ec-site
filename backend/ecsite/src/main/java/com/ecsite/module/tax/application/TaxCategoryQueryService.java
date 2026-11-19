@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,6 +70,24 @@ public class TaxCategoryQueryService {
     public Optional<TaxCategoryView> findTaxCategory(@NonNull UUID id) {
         return taxCategoryQueryRepository.findById(id)
                 .map(stored -> toView(stored, clock.instant()));
+    }
+
+    /**
+     * 複数の税区分を、数によらず決まった回数の問い合わせで取得する。
+     *
+     * <p>ない税区分は結果に含めない。空の集まりなら、問い合わせをせずに空を返す。
+     *
+     * @param ids 税区分 ID の集まり
+     * @return 税区分の一覧（現時点の率を含む。税率は適用開始日時の古い順）
+     */
+    public List<TaxCategoryView> findTaxCategories(@NonNull Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        var now = clock.instant();
+        return taxCategoryQueryRepository.findAllByIds(ids).stream()
+                .map(stored -> toView(stored, now))
+                .toList();
     }
 
 // ============================== プライベートメソッド ==============================

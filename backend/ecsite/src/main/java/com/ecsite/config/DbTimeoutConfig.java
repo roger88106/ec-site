@@ -30,6 +30,10 @@ class DbTimeoutConfig {
      * <p>プールは最初の接続の取得まで始まらないので、Bean の初期化のときに追加すれば全ての接続に付く。
      * 設定の型は、後処理の作成を早めないよう、使う時点で取る。
      *
+     * <p>既に {@code options}（{@code spring.datasource.hikari.data-source-properties.options}）があるときは、
+     * それを残し、後ろに空白でつないでタイムアウトを追加する。
+     * 接続の URL に {@code options} の引数があると、pgjdbc では URL の値が優先されてタイムアウトが付かないので、URL には {@code options} を書かない。
+     *
      * @param properties タイムアウトの設定
      * @return 後処理
      */
@@ -39,7 +43,11 @@ class DbTimeoutConfig {
             @Override
             public Object postProcessBeforeInitialization(Object bean, String beanName) {
                 if (bean instanceof HikariDataSource dataSource) {
-                    dataSource.addDataSourceProperty("options", properties.getObject().options());
+                    var timeoutOptions = properties.getObject().options();
+                    // 運用で渡された options（例：-c search_path=...）を消さないよう、後ろにつなぐ
+                    var existing = dataSource.getDataSourceProperties().get("options");
+                    dataSource.addDataSourceProperty("options",
+                            existing == null ? timeoutOptions : existing + " " + timeoutOptions);
                 }
                 return bean;
             }

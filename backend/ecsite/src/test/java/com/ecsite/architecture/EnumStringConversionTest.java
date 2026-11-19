@@ -3,12 +3,14 @@ package com.ecsite.architecture;
 import com.ecsite.architecture.sample.enumconversion.SampleKind;
 import com.ecsite.architecture.sample.enumconversion.infrastructure.persistence.ReadsEnumFromColumn;
 import com.ecsite.architecture.sample.enumconversion.presentation.ConvertsEnumFromString;
+import com.ecsite.architecture.sample.enumconversion.presentation.OverloadedValueOfKind;
 import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.support.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -64,13 +66,16 @@ class EnumStringConversionTest {
     void ruleMatchesOnlyEnumConversions() {
         // 準備：presentation で変換する例と、永続化で変換する例と、共通の変換のメソッド
         var examples = new ClassFileImporter().importClasses(
-                ConvertsEnumFromString.class, ReadsEnumFromColumn.class, SampleKind.class, EnumConversion.class);
+                ConvertsEnumFromString.class, OverloadedValueOfKind.class, ReadsEnumFromColumn.class, SampleKind.class,
+                EnumConversion.class);
 
-        // 操作と確認：presentation の valueOf の呼び出し、Enum.valueOf の呼び出し、fromValue のメソッド参照だけが違反になる
+        // 操作と確認：presentation の valueOf の呼び出し、Enum.valueOf の呼び出し（多重定義の valueOf の中も）、
+        // fromValue のメソッド参照だけが違反になる
         assertThat(violations(examples)).containsExactly(
                 ConvertsEnumFromString.class.getName() + " -> Enum.valueOf",
                 ConvertsEnumFromString.class.getName() + " -> SampleKind.fromValue",
-                ConvertsEnumFromString.class.getName() + " -> SampleKind.valueOf");
+                ConvertsEnumFromString.class.getName() + " -> SampleKind.valueOf",
+                OverloadedValueOfKind.class.getName() + " -> Enum.valueOf");
     }
 
     // ============================== 確認の補助 ==============================
@@ -106,8 +111,10 @@ class EnumStringConversionTest {
     private static boolean convertsFromString(JavaAccess<?> access) {
         JavaClass target = access.getTargetOwner();
         if (target.isEquivalentTo(Enum.class)) {
-            // 列挙型ごとにコンパイラが作る valueOf(String) は、列挙型の定義なので除く
-            boolean definesOwnValueOf = access.getOriginOwner().isEnum() && access.getOrigin().getName().equals("valueOf");
+            // 列挙型ごとにコンパイラが作る valueOf(String) は、列挙型の定義なので除く（多重定義の valueOf は除かない）
+            boolean definesOwnValueOf = access.getOriginOwner().isEnum()
+                    && access.getOrigin().getModifiers().contains(JavaModifier.STATIC)
+                    && access.getOrigin().getFullName().equals(access.getOriginOwner().getName() + ".valueOf(java.lang.String)");
             return access.getName().equals("valueOf") && !definesOwnValueOf;
         }
         if (!target.isEnum()) {

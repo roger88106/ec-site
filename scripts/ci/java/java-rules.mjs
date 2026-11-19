@@ -28,8 +28,8 @@ const JAVA_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFix
 /** 列挙型の変換の呼び出しの開き括弧まで */
 const ENUM_CALL = /\b(?:valueOf|fromValue)\(/g
 
-/** 引数（コメントを空白にしたもの）が name() で終わる */
-const ENDS_WITH_NAME = /\.\s*name\(\s*\)\s*$/
+/** 引数（コメントを空白にしたもの）が name() で終わる（x.name() と、列挙の中の受け手のない name()。getName() などは含まない） */
+const ENDS_WITH_NAME = /(?:\.\s*|(?<![\w$]))name\(\s*\)\s*$/
 
 /** @SuppressWarnings の注釈の始まり（行の途中も。@java.lang.SuppressWarnings も） */
 const SUPPRESS_WARNINGS = /@\s*(?:java\s*\.\s*lang\s*\.\s*)?SuppressWarnings\b/g

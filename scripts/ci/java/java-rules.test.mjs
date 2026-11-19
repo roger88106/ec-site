@@ -220,6 +220,17 @@ describe('name() の変換の検査の境界', () => {
     assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [1, 3, 6, 9])
   })
 
+  test('受け手のない name()（列挙の中の呼び出し）も見つける。getName() は見つけない', () => {
+    const text = [
+      'return Status.valueOf(name());',
+      'return Enum.valueOf(X.class, name());',
+      'return Status.valueOf(getName());',
+      'return Status.valueOf(x.getName());',
+      'return Status.valueOf(rename());',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [1, 2])
+  })
+
   test('コメントの中だけにある呼び出しは見つけない。文字列の中の // はコメントにしない', () => {
     const text = [
       '// Status.valueOf(a.name());',

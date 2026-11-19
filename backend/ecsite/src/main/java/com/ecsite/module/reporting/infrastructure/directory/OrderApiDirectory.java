@@ -46,7 +46,7 @@ class OrderApiDirectory implements OrderDirectory {
     /**
      * 注文の API の型を、レポートの写しにする。
      */
-    private static ReportOrder toReportOrder(OrderSnapshot snapshot) {
+    static ReportOrder toReportOrder(OrderSnapshot snapshot) {
         var cancellation = snapshot.cancellation();
         return new ReportOrder(
                 snapshot.orderId(),

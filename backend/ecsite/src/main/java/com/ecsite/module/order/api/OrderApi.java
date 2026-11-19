@@ -93,7 +93,7 @@ public class OrderApi {
     /**
      * 性別を公開の型にする。
      */
-    private static OrderSnapshot.Gender toGender(Gender gender) {
+    static OrderSnapshot.Gender toGender(Gender gender) {
         return switch (gender) {
             case MALE -> OrderSnapshot.Gender.MALE;
             case FEMALE -> OrderSnapshot.Gender.FEMALE;

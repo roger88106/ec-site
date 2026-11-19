@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * C 側向けの商品照会の統合テスト
+ * 店舗に表示される商品の一覧の統合テスト
  *
  * <p>商品は B 側の API で作って公開する。新着順を確認するため、公開するごとに時計を 1 分進める。
  * 税率の一覧のキャッシュは、前のテストのものが残らないよう、テストごとに捨てる。テストごとにロールバックする。
@@ -319,7 +319,7 @@ class CatalogApiShownProductsTest {
     }
 
     @Nested
-    @DisplayName("C 側に表示されない商品")
+    @DisplayName("店舗に表示されない商品")
     class InvisibleProducts {
 
         @Test
@@ -564,7 +564,7 @@ class CatalogApiShownProductsTest {
     }
 
     /**
-     * テストのカテゴリで絞る、C 側の一覧の絞り込みと並び順を作る。
+     * テストのカテゴリで絞る、店舗の一覧の絞り込みと並び順を作る。
      *
      * @param minPrice 税込価格の下限（なければ null）
      * @param maxPrice 税込価格の上限（なければ null）

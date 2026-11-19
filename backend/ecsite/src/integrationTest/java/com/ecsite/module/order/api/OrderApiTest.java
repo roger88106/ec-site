@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 注文の API の統合テスト
  *
- * <p>注文の状態ごとの写しの項目と、写しが個人の情報を持たないことを確認する。写しを使う集計は、集計のモジュールのテスト（{@code ReportCollectionTest} など）が確認する。
+ * <p>注文の状態ごとの項目と、個人の情報を持たないことを確認する。
  *
  * <p>テストごとにロールバックする。
  */
@@ -144,7 +144,7 @@ class OrderApiTest {
     // ============================== テスト ==============================
 
     @Nested
-    @DisplayName("支払待ちの注文の写し")
+    @DisplayName("支払待ちの注文")
     class PendingOrder {
 
         @Test
@@ -202,7 +202,7 @@ class OrderApiTest {
         }
 
         @Test
-        @DisplayName("明細の、注文時点の商品と、税抜単価と税込の小計を返す")
+        @DisplayName("明細の、注文時点の商品・税抜単価・税込小計を返す")
         void returnsLine() throws Exception {
             // 準備：税込 1,100 円の商品 2 個の支払待ちの注文
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
@@ -217,11 +217,11 @@ class OrderApiTest {
     }
 
     @Nested
-    @DisplayName("支払待ちでない注文の写し")
+    @DisplayName("支払待ちでない注文")
     class OtherStatus {
 
         @Test
-        @DisplayName("出荷済みの注文の写しは、状態が出荷済み")
+        @DisplayName("出荷済みの注文は、状態が出荷済み")
         void returnsShippedOrder() throws Exception {
             // 準備：受付の注文を出荷する
             var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
@@ -232,7 +232,7 @@ class OrderApiTest {
         }
 
         @Test
-        @DisplayName("キャンセルの注文の写しは、キャンセル日時、種類、在庫に戻したかを返す")
+        @DisplayName("キャンセルの注文は、キャンセル日時、種類、在庫に戻したかを返す")
         void returnsCancelledOrder() throws Exception {
             // 準備：受付の注文を、1 時間後に運営者がキャンセルする
             var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
@@ -264,13 +264,13 @@ class OrderApiTest {
     }
 
     @Nested
-    @DisplayName("写しの項目の構成")
+    @DisplayName("項目の構成")
     class Structure {
 
         @Test
-        @DisplayName("NFR-16 写しに、氏名・住所・電話番号・メールアドレスの項目を持たない")
+        @DisplayName("NFR-16 注文に、氏名・住所・電話番号・メールアドレスの項目を持たない")
         void excludesPersonalInformation() {
-            // 準備：写しの全ての項目を、入れ子の record の中まで集める
+            // 準備：注文の全ての項目を、入れ子の record の中まで集める
             var components = new ArrayList<String>();
             collectRecordComponents(OrderSnapshot.class, components);
 
@@ -295,7 +295,7 @@ class OrderApiTest {
     // ============================== 確認の補助 ==============================
 
     /**
-     * 支払待ちの注文の写しの、見出しの項目を確認する。
+     * 支払待ちの注文の、見出しの項目を確認する。
      *
      * <p>確認すること：
      * <ul>
@@ -307,7 +307,7 @@ class OrderApiTest {
      *   <li>キャンセル日時が空</li>
      * </ul>
      *
-     * @param snapshot 写し
+     * @param snapshot 注文の今の値
      * @param orderId  注文 ID（注文のときに作るので、定数にできない）
      */
     private static void assertHeader(OrderSnapshot snapshot, UUID orderId) {
@@ -320,17 +320,17 @@ class OrderApiTest {
     }
 
     /**
-     * 税込 1,100 円の商品 2 個の注文の写しの、金額の項目を確認する。
+     * 税込 1,100 円の商品 2 個の注文の、金額の項目を確認する。
      *
      * <p>確認すること：
      * <ul>
      *   <li>総額が、1,100 円 × 2 ＋ 送料 1,000 円の 3,200 円</li>
      *   <li>送料が 1,000 円（注文の設定の既定）</li>
-     *   <li>税率ごとの消費税額が、3,200 × 10 / 110 の切り捨ての 290 円の 1 つ</li>
+     *   <li>税率ごとの消費税額が 1 つだけで、3,200 × 10 / 110 を切り捨てた 290 円</li>
      *   <li>送料の消費税が、1,000 × 10 / 110 の切り捨ての 90 円</li>
      * </ul>
      *
-     * @param snapshot 写し
+     * @param snapshot 注文の今の値
      */
     private static void assertAmounts(OrderSnapshot snapshot) {
         var amounts = snapshot.amounts();
@@ -341,7 +341,7 @@ class OrderApiTest {
     }
 
     /**
-     * 写しの明細が、税込 1,100 円の商品 2 個の注文の写しであることを確認する。
+     * 明細が、税込 1,100 円の商品 2 個の注文であることを確認する。
      *
      * <p>確認すること（期待値は定数）：
      * <ul>

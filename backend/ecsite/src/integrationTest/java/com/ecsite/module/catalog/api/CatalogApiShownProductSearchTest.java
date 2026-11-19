@@ -204,7 +204,7 @@ class CatalogApiShownProductSearchTest {
     }
 
     @Nested
-    @DisplayName("C 側に表示されない商品")
+    @DisplayName("店舗に表示されない商品")
     class InvisibleProducts {
 
         @Test

@@ -1,6 +1,7 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.AxisValue;
 import com.ecsite.module.order.api.model.OrderSnapshot;
 import com.ecsite.module.order.api.model.TaxAmount;
@@ -15,6 +16,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,7 +60,7 @@ class OrderApiDirectoryTest {
     class TaxTotal {
 
         @Test
-        @DisplayName("AC-277 税率ごとの消費税額を合計する")
+        @DisplayName("税率ごとの消費税額を合計する")
         void sumsTaxAmounts() {
             // 準備：10% の 290 円と 8% の 80 円
             var taxes = List.of(
@@ -70,7 +72,17 @@ class OrderApiDirectoryTest {
         }
 
         @Test
-        @DisplayName("AC-277 消費税額がなければ 0 円")
+        @DisplayName("税率 10% の 1 つなら、その消費税額")
+        void returnsSingleTaxAmount() {
+            // 準備：対象額 3,200 円、消費税額 290 円
+            var taxes = List.of(new TaxAmount(BigDecimal.TEN, Money.of(3200), Money.of(290)));
+
+            // 操作と確認：290 円
+            assertThat(OrderApiDirectory.taxTotal(taxes)).isEqualTo(Money.of(290));
+        }
+
+        @Test
+        @DisplayName("消費税額がなければ 0 円")
         void returnsZeroWithoutTaxes() {
             // 操作と確認：0 円
             assertThat(OrderApiDirectory.taxTotal(List.of())).isEqualTo(Money.ZERO);
@@ -82,7 +94,7 @@ class OrderApiDirectoryTest {
     class SubtotalExclTax {
 
         @Test
-        @DisplayName("AC-277 税抜単価 × 数量を求める")
+        @DisplayName("税抜単価 × 数量を求める")
         void multipliesUnitPriceByQuantity() {
             // 準備：税抜単価 1,000 円、数量 2 の明細
             var line = new OrderSnapshot.Line(1, UUID.randomUUID(), "P-1", "V-1", "T シャツ",
@@ -90,6 +102,29 @@ class OrderApiDirectoryTest {
 
             // 操作と確認：2,000 円
             assertThat(OrderApiDirectory.subtotalExclTax(line)).isEqualTo(Money.of(2000));
+        }
+    }
+
+    @Nested
+    @DisplayName("キャンセル")
+    class Cancellation {
+
+        @Test
+        @DisplayName("AC-277 キャンセルでない注文は、キャンセル日時・種類・在庫に戻したかを持たない")
+        void keepsNoCancellationFields() {
+            // 準備：キャンセルのない注文
+            var snapshot = new OrderSnapshot(UUID.randomUUID(), "O-1", UUID.randomUUID(),
+                    Instant.parse("2026-01-01T00:00:00Z"), OrderStatusChanged.Status.ACCEPTED, null, "1000001", "13",
+                    null, null, new Amounts(Money.of(1000), Money.ZERO, Money.of(1000), List.of()), Money.ZERO,
+                    List.of());
+
+            // 操作
+            var order = OrderApiDirectory.toReportOrder(snapshot);
+
+            // 確認：全て null
+            assertThat(order.cancelledAt()).isNull();
+            assertThat(order.cancellationKind()).isNull();
+            assertThat(order.restocked()).isNull();
         }
     }
 

@@ -114,7 +114,7 @@ class PlaceOrderBuyerProfileApiTest {
         }
 
         @Test
-        @DisplayName("AC-212、222 別の生年月日と性別の token で次の注文をしても、注文の写しの API が返す 1 件目の年齢と性別は変わらない")
+        @DisplayName("AC-212、222 別の生年月日と性別の token で次の注文をしても、注文の API が返す 1 件目の年齢と性別は変わらない")
         void keepsReportedProfileAfterNextOrder() throws Exception {
             // 準備：女性の会員として注文し、2 件目のための在庫を加える
             var first = placeAs(TestTokens.member().birthdate(BIRTHDATE).gender("female"));
@@ -123,10 +123,10 @@ class PlaceOrderBuyerProfileApiTest {
             // 操作：生年月日と性別の変わった token で 2 件目を注文する
             var second = placeAs(TestTokens.member().birthdate(CHANGED_BIRTHDATE).gender("male"), first);
 
-            // 確認（前提）：2 件目の写しは、変わった値
+            // 確認（前提）：2 件目の注文は、変わった値
             assertThat(reportedBuyer(second)).containsExactly((int) CHANGED_AGE, OrderSnapshot.Gender.MALE);
 
-            // 確認：1 件目の写しは、注文のときの値のまま
+            // 確認：1 件目の注文は、注文のときの値のまま
             assertThat(reportedBuyer(first)).containsExactly((int) AGE, OrderSnapshot.Gender.FEMALE);
         }
     }
@@ -196,7 +196,7 @@ class PlaceOrderBuyerProfileApiTest {
     }
 
     /**
-     * 注文の写しの API が返す、年齢と性別を返す。
+     * 注文の API が返す、年齢と性別を返す。
      *
      * @param orderId 注文 ID
      * @return 年齢と性別の並び

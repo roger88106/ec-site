@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * バリアントの情報
+ * バリアントの詳細
  *
  * @param variantId      バリアント ID
  * @param productId      商品 ID

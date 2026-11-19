@@ -37,14 +37,14 @@ import java.util.stream.IntStream;
  * 商品カタログの API
  *
  * <p>商品とバリアントの参照は、店舗に表示されない商品・販売停止のバリアントも返す。
- * 名前に「表示」の語（{@code Shown}）を持つメソッドは、店舗に表示される商品だけを返す。
+ * 名前に「表示」の語（{@code Shown}）を含むメソッドは、店舗に表示される商品だけを返す。
  */
 @Component
 @RequiredArgsConstructor
 public class CatalogApi {
 
     /**
-     * バリアントの情報の参照
+     * バリアントの詳細の参照
      */
     private final OrderableVariantQueryService variantQueryService;
 
@@ -64,12 +64,12 @@ public class CatalogApi {
     private final CategoryQueryService categoryQueryService;
 
     /**
-     * 複数のバリアントの情報を返す。
+     * 複数のバリアントの詳細を返す。
      *
      * <p>店舗に表示されない商品・販売停止のバリアントも返す。表示と販売停止の状態は項目で返す。
      *
      * @param variantIds バリアント ID
-     * @return バリアント ID → 情報。存在しないバリアントは含めない
+     * @return バリアント ID → 詳細。存在しないバリアントは含めない
      */
     public Map<UUID, VariantDetail> findVariants(@NonNull Collection<UUID> variantIds) {
         var result = new LinkedHashMap<UUID, VariantDetail>();
@@ -78,7 +78,7 @@ public class CatalogApi {
     }
 
     /**
-     * 商品とバリアントの一覧を返す。表示の状態によらない。
+     * 商品と、その全てのバリアントを返す。表示の状態によらない。
      *
      * @param productId 商品 ID
      * @return 商品。なければ空

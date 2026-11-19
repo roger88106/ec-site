@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * カート・注文向けの商品カタログの API の統合テスト
+ * 商品カタログの API のバリアントの参照の統合テスト
  *
  * <p>商品は B 側の API で作る。テストごとにロールバックする。
  *
@@ -124,7 +124,7 @@ class CatalogApiVariantsTest {
     // ============================== テスト ==============================
 
     @Nested
-    @DisplayName("注文に使う情報")
+    @DisplayName("バリアントの詳細")
     class VariantInformation {
 
         @Test
@@ -171,7 +171,7 @@ class CatalogApiVariantsTest {
     }
 
     @Nested
-    @DisplayName("C 側に表示されない商品")
+    @DisplayName("店舗に表示されない商品")
     class InvisibleProducts {
 
         @Test
@@ -275,7 +275,7 @@ class CatalogApiVariantsTest {
     // ============================== 確認の補助 ==============================
 
     /**
-     * T シャツ（白・M）のバリアントの、注文に使う情報を確認する。
+     * T シャツ（白・M）のバリアントの、バリアントの詳細を確認する。
      *
      * <p>確認すること（期待値は定数、引数と、準備で作った税区分）：
      * <ul>

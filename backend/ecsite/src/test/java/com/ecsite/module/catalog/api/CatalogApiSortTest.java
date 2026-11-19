@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 店舗向けの商品の並び順を、application の並び順に変換するときの単体テスト
+ * 店舗に表示される商品の並び順を、application の並び順に変換するときの単体テスト
  */
 class CatalogApiSortTest {
 

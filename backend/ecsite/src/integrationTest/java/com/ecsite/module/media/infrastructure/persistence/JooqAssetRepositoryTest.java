@@ -141,6 +141,23 @@ class JooqAssetRepositoryTest {
         }
 
         @Test
+        @DisplayName("DC-489-7 渡した ID のうち記録があったものだけを返し、2 回目は空を返す")
+        void returnsOnlyDeletedAssets() {
+            // 準備：1 つのアセットを記録する
+            var asset = asset(ImageFormat.PNG);
+            repository.insert(asset);
+            var ids = Set.of(asset.id(), UUID.randomUUID());
+
+            // 操作：記録した ID と、ない ID を指定して 2 回削除する
+            var first = repository.deleteAllById(ids);
+            var second = repository.deleteAllById(ids);
+
+            // 確認：1 回目は消した 1 つだけを返し、2 回目は空を返す
+            assertThat(first).usingRecursiveFieldByFieldElementComparator().containsExactly(asset);
+            assertThat(second).isEmpty();
+        }
+
+        @Test
         @DisplayName("ID がなければ、何も消さない")
         void deletesNothingForNoIds() {
             // 準備：1 つのアセットを記録する

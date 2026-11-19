@@ -126,7 +126,7 @@
   - 依存：T502-01-01
   - 範囲：`MessageInterpolationTest.java`、`MessageContractTest.java`
   - 確認方法：`./gradlew test --tests` で対象のテストが失敗する
-- [ ] **T502-01-03** `messages.properties` の 14 件の文言を変え、統合テスト・E2E・画面テストのモックを新しい文言に合わせる（DC-502-2、DC-502-4）。
+- [x] **T502-01-03** `messages.properties` の 14 件の文言を変え、統合テスト・E2E・画面テストのモックを新しい文言に合わせる（DC-502-2、DC-502-4）。
   - 依存：T502-01-02
   - 範囲：`messages.properties`、`PlaceOrderAddressApiTest.java`、`e2e/tests/order.spec.ts`、`e2e/tests/stock-hold-race.spec.ts`、`OrderDetailPage.test.tsx`、`ProductEditPage.images.test.tsx`、`OrderForm.test.tsx`、`cart.test.ts`、`checkout.test.ts`
   - 確認方法：`./gradlew check`、フロントの検査、注文と在庫の確保の E2E（重い検査は、issue 担当のセッションの許可の後に実行する）

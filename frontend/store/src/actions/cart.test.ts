@@ -207,13 +207,13 @@ describe('注文手続きに進む', () => {
     server.use(
       memberCart(),
       http.post('/carts/{cartId}/checkouts', ({ response }) =>
-        response(409).json(problem(409, 'OUT_OF_STOCK', '在庫が足りない商品があります。カートを確かめてください。')),
+        response(409).json(problem(409, 'OUT_OF_STOCK', '在庫が足りない商品があります。カートを確認してください。')),
       ),
     )
 
     expect(await startCheckout(null, form({}))).toEqual({
       ok: false,
-      message: '在庫が足りない商品があります。カートを確かめてください。',
+      message: '在庫が足りない商品があります。カートを確認してください。',
       errorCode: 'OUT_OF_STOCK',
     })
     expect(revalidatedPaths).toEqual(['/cart'])

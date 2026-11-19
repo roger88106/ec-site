@@ -194,7 +194,7 @@ describe('商品画像', () => {
           problem(
             400,
             'IMAGE_CONVERSION_FAILED',
-            '画像を変換できませんでした。ファイルが壊れていないか確かめて、もう一度アップロードしてください。',
+            '画像を変換できませんでした。ファイルが壊れていないか確認して、もう一度アップロードしてください。',
           ),
         ),
       ),
@@ -205,7 +205,7 @@ describe('商品画像', () => {
 
     expect(
       await screen.findByText(
-        '画像を変換できませんでした。ファイルが壊れていないか確かめて、もう一度アップロードしてください。',
+        '画像を変換できませんでした。ファイルが壊れていないか確認して、もう一度アップロードしてください。',
       ),
     ).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: '画像 1' })).not.toBeInTheDocument()

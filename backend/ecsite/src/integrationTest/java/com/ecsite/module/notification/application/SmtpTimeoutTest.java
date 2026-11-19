@@ -1,6 +1,7 @@
 package com.ecsite.module.notification.application;
 
 import com.ecsite.module.notification.application.port.Mailer;
+import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -33,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 
 /**
  * SMTP サーバーが応えないときの統合テスト
@@ -84,6 +87,9 @@ class SmtpTimeoutTest {
 
     @MockitoSpyBean
     Mailer mailer;
+
+    @MockitoBean
+    OrderDirectory orderDirectory;
 
     /**
      * メールの送信の宛先を、応えないサーバーにする（待ち時間の上限などの設定は、アプリの設定のまま）。
@@ -173,12 +179,14 @@ class SmtpTimeoutTest {
 
     /**
      * 注文の出荷のイベントをトランザクションの中で発行し、コミットする。
+     * 注文の腐敗防止層は、イベントの注文 ID に、このテストの宛先を返す。
      *
      * @param orderId 注文 ID（テストごとに作り、送ったメールの記録を自分の注文に絞る）
      * @return 発行したイベント
      */
     private OrderShipped publishShipped(UUID orderId) {
-        var event = OrderShipped.of(SHIPPED_AT, orderId, "20261008-000001", "timeout-" + orderId + "@example.com",
+        when(orderDirectory.email(orderId)).thenReturn("timeout-" + orderId + "@example.com");
+        var event = OrderShipped.of(SHIPPED_AT, orderId, "20261008-000001",
                 OrderShipped.Carrier.YAMATO, "123456789012");
         transaction.executeWithoutResult(status -> events.publishEvent(event));
         return event;

@@ -51,6 +51,9 @@ spring:
         # 全ての DB の接続の初期化で、タイムアウトを置く（値は下の ecsite.db）。PostgreSQL のサーバーの設定で、接続ごとに有効になる。
         # マイグレーション（Flyway）はプールを使わない別の接続を使うので、この設定は付かない（FlywayConnectionConfig）
         options: -c lock_timeout=${ecsite.db.lock-timeout} -c statement_timeout=${ecsite.db.statement-timeout} -c idle_in_transaction_session_timeout=${ecsite.db.idle-in-transaction-timeout}
+        # PostgreSQL のエラーの詳細（Key (列)=(値) など、行の値を含む）を、例外の文に入れない。
+        # 想定外のエラーのログは原因の例外の文を出すので、入れると行の値がログに残る（制約名は別に取れるので、制約の違反の変換は働く）
+        logServerErrorDetail: false
   flyway:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（バックエンドのアーキテクチャの「水平スケール」）。
     # 起動時の実行は local profile でだけ有効にする。

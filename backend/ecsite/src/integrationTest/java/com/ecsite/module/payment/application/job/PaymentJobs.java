@@ -42,7 +42,8 @@ public final class PaymentJobs {
     public static void expireUntil(ApplicationContext context, BooleanSupplier done) {
         var queryService = context.getBean(PaymentQueryService.class);
         int maxRuns = queryService.findPastDeadline(Integer.MAX_VALUE).size()
-                + queryService.findAwaitingAuthorization(Integer.MAX_VALUE).size() + 1;
+                + queryService.findAwaitingAuthorization(Integer.MAX_VALUE).size()
+                + queryService.findForCaptureReconcile(Integer.MAX_VALUE).size() + 1;
         var job = context.getBean(PaymentExpiryJob.class);
         for (int run = 0; run < maxRuns && !done.getAsBoolean(); run++) {
             job.expire();

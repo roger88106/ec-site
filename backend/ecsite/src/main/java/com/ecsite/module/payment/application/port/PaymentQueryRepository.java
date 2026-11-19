@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application.port;
 
+import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 
 import java.time.Instant;
@@ -35,4 +36,13 @@ public interface PaymentQueryRepository {
      * @return 支払の数
      */
     long countUnpaidAwaitingAuthorizationUntil(Instant latestAwaitingSince);
+
+    /**
+     * 売上確定を求めた時刻が決めた時刻以前の与信済みの支払を、求めた時刻・支払 ID の順に取得する。
+     *
+     * @param latestRequestedAt 売上確定を求めた時刻の上限。この時刻以前に求めたものが対象
+     * @param limit             取得する数の上限
+     * @return 支払。与信済みで、売上確定を求めた時刻のある支払だけ
+     */
+    List<CaptureReconcileView> findCaptureRequestedUntil(Instant latestRequestedAt, int limit);
 }

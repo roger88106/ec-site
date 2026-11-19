@@ -2,6 +2,7 @@ package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.application.model.view.AuthorizationDeadlineView;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
+import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.model.view.PayablePaymentView;
 import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
@@ -130,6 +131,19 @@ public class PaymentQueryService {
         return paymentRepository.findByOrderId(orderId)
                 .map(payment -> new PaymentCaptureView(payment.id(), payment.status(), payment.authorizationRef(),
                         payment.amount()));
+    }
+
+    /**
+     * 売上確定の結果が分からない支払を、売上確定を求めた時刻・支払 ID の順に取得する。
+     *
+     * <p>状態が与信済みで、売上確定を求めてから決済の設定
+     * {@code ecsite.payment.capture-reconcile-delay} が過ぎた支払。
+     *
+     * @param limit 取得する数の上限
+     * @return 支払
+     */
+    public List<CaptureReconcileView> findForCaptureReconcile(int limit) {
+        return queryRepository.findCaptureRequestedUntil(clock.instant().minus(properties.captureReconcileDelay()), limit);
     }
 
     /**

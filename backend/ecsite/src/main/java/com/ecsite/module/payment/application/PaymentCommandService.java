@@ -173,12 +173,41 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 決済サービスで売上を確定したことを反映する。
+     * 決済サービスに売上確定を求める前に、求めた時刻を記録する。
+     *
+     * <p>行ロックして記録し、コミットする。決済サービスを呼ぶ前に別のトランザクションで確定するので、
+     * 決済サービスで売上を確定した後にインスタンスが止まっても、記録が残る。
+     * 与信済みでなければ（読んだ後に状態が変わった）、何もしない。
      *
      * @param paymentId 支払 ID
      */
-    public void markCaptured(@NonNull UUID paymentId) {
-        modify(paymentId, payment -> payment.capture(clock.instant()));
+    public void requestCapture(@NonNull UUID paymentId) {
+        var now = clock.instant();
+        modify(paymentId, payment -> payment.requestCapture(now));
+    }
+
+    /**
+     * 決済サービスで売上を確定したことを反映する。
+     *
+     * @param paymentId 支払 ID
+     * @return 状態を変えたら true（すでに売上確定済みなら false）
+     */
+    public boolean markCaptured(@NonNull UUID paymentId) {
+        return modify(paymentId, payment -> payment.capture(clock.instant()));
+    }
+
+    /**
+     * 決済サービスで売上を確定していなかったとき、売上確定を求めた時刻を削除する。
+     *
+     * <p>行ロックの後の時刻が、照合で読んだときの時刻と同じときだけ削除する。照合が決済サービスを読む間に
+     * 売上確定が再実行されて時刻が新しくなっていれば、その再実行の結果はまだ分からないので、削除しない。
+     *
+     * @param paymentId       支払 ID
+     * @param readRequestedAt 照合で読んだ売上確定を求めた時刻
+     * @return 削除したら true
+     */
+    public boolean clearCaptureRequest(@NonNull UUID paymentId, @NonNull Instant readRequestedAt) {
+        return modify(paymentId, payment -> payment.clearCaptureRequest(readRequestedAt));
     }
 
     /**
@@ -250,8 +279,12 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param paymentId 支払 ID
      * @param operation 支払への操作。変えたら true を返す
+     * @return 変えて保存したら true
      */
-    private void modify(UUID paymentId, Predicate<Payment> operation) {
-        paymentRepository.lockById(paymentId).filter(operation).ifPresent(paymentRepository::update);
+    private boolean modify(UUID paymentId, Predicate<Payment> operation) {
+        return paymentRepository.lockById(paymentId).filter(operation).map(payment -> {
+            paymentRepository.update(payment);
+            return true;
+        }).orElse(false);
     }
 }

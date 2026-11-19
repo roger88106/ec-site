@@ -8,6 +8,7 @@ import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
+import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
@@ -46,7 +47,9 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
+import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 支払の期限切れのジョブの統合テスト
@@ -181,6 +184,12 @@ class PaymentExpiryJobTest {
      */
     @RegisterExtension
     final LogCapture logs = LogCapture.of(PaymentCommandService.class);
+
+    /**
+     * 売上確定の照合が出したログ（ジョブと、ジョブが呼ぶ決済ゲートウェイサービス）
+     */
+    @RegisterExtension
+    final LogCapture reconcileLogs = LogCapture.of(PaymentExpiryJob.class, PaymentGatewayService.class);
 
     /**
      * 支払を進める補助
@@ -745,7 +754,331 @@ class PaymentExpiryJobTest {
         }
     }
 
+    @Nested
+    @DisplayName("売上確定の結果が分からない支払の照合")
+    class CaptureReconcile {
+
+        @Test
+        @DisplayName("AC-423-1 売上確定の応答が届かなかった支払は、照合を始めるまでの時間が過ぎた後のジョブで、売上確定済みになる")
+        void capturesWhenResponseLost() {
+            // 準備：売上確定の応答が届かなかった支払。照合を始めるまでの時間ちょうどの後にジョブが動く
+            var orderId = captureResponseLostAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+
+            // 操作：この支払を処理するまでジョブを動かす
+            expireUntil(() -> status(orderId) == PaymentStatus.CAPTURED);
+
+            // 確認：売上確定済み
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
+        }
+
+        @Test
+        @DisplayName("AC-423-1 照合は決済サービスに売上確定を求めず、状態を読むだけ")
+        void doesNotRequestCapture() {
+            // 準備：売上確定の応答が届かなかった支払。売上確定の呼び出しは 1 回
+            var orderId = captureResponseLostAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+
+            // 操作：この支払を処理するまでジョブを動かす
+            expireUntil(() -> status(orderId) == PaymentStatus.CAPTURED);
+
+            // 確認：売上確定の呼び出しは、応答が届かなかった 1 回のまま
+            assertThat(gateway.captureCallsOf(orderId)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("AC-423-2 売上確定の後、反映の前にインスタンスが止まった支払も、売上確定済みになる")
+        void capturesWhenStoppedBeforeReflection() {
+            // 準備：決済サービスが確定した後、反映の前に止まった支払
+            var orderId = payments.authorized(ORDERED_AT);
+            gateway.duringNextCapture(() -> {
+                throw new IllegalStateException("インスタンスが止まった");
+            });
+            assertThatThrownBy(() -> paymentApi.capture(orderId)).isInstanceOf(IllegalStateException.class);
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+
+            // 操作：この支払を処理するまでジョブを動かす
+            expireUntil(() -> status(orderId) == PaymentStatus.CAPTURED);
+
+            // 確認：売上確定済み
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
+        }
+
+        @Test
+        @DisplayName("AC-423-3 照合で売上確定済みにしたら、その支払 ID を含む warn のログが 1 件出る")
+        void warnsWhenCaptured() {
+            // 準備：売上確定の応答が届かなかった支払
+            var orderId = captureResponseLostAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            reconcileLogs.clear();
+
+            // 操作：この支払を処理するまでジョブを動かす
+            expireUntil(() -> status(orderId) == PaymentStatus.CAPTURED);
+
+            // 確認：支払 ID を含む warn が 1 件
+            assertThat(warnLinesOf(orderId)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("AC-423-4 照合を始めるまでの時間の前は、その支払を照合しない")
+        void doesNotReconcileBeforeDelay() {
+            // 準備：売上確定の応答が届かなかった支払。照合を始めるまでの時間の 1 秒前にジョブが動く
+            var orderId = captureResponseLostAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()).minusSeconds(1));
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：決済サービスから状態を読まず、与信済みのままで、求めた時刻も残る
+            assertThat(gateway.fetchCaptureStateCallsOf(authorizationRefOf(orderId))).isZero();
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            assertThat(paymentOf(orderId).captureRequestedAt()).contains(ORDERED_AT);
+        }
+
+        @Test
+        @DisplayName("AC-423-5 決済サービスで売上を確定していなかった支払は、与信済みのままで、売上確定を求めた時刻を削除する")
+        void clearsRequestWhenNotCaptured() {
+            // 準備：決済サービスに接続できず、売上を確定していない支払
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+
+            // 操作：この支払を照合するまでジョブを動かす
+            expireUntil(() -> fetched(orderId));
+
+            // 確認：与信済みのままで、売上確定を求めた時刻は削除された。warn のログは出ない
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            assertThat(paymentOf(orderId).captureRequestedAt()).isEmpty();
+            assertThat(warnLinesOf(orderId)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-423-5 決済サービスで売上を確定していなかった支払は、以降のジョブの実行では照合しない")
+        void doesNotReconcileAgainWhenNotCaptured() {
+            // 準備：決済サービスで売上を確定していないと照合された支払
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            expireUntil(() -> fetched(orderId));
+
+            // 操作：時間が過ぎた後に、ジョブをもう一度動かす
+            clock.setInstant(ORDERED_AT.plus(Duration.ofHours(2)));
+            job.expire();
+
+            // 確認：状態を読んだのは 1 回だけ
+            assertThat(gateway.fetchCaptureStateCallsOf(authorizationRefOf(orderId))).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("AC-423-5 決済サービスで売上を確定していなかった支払は、その後の売上確定で確定できる")
+        void capturesAfterNotCaptured() {
+            // 準備：決済サービスで売上を確定していないと照合された支払
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            expireUntil(() -> fetched(orderId));
+
+            // 操作：出荷の登録で売上を確定する
+            paymentApi.capture(orderId);
+
+            // 確認：売上確定済みで、決済サービスで確定した
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
+            assertThat(gateway.captured()).contains(orderId);
+        }
+
+        @Test
+        @DisplayName("AC-423-6 決済サービスで与信が切れていた支払は、与信期限切れになる")
+        void expiresAuthorizationWhenExpired() {
+            // 準備：売上を確定できなかった後、決済サービスで与信が切れた支払
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            gateway.expireAuthorization(authorizationRefOf(orderId));
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+
+            // 操作：この支払を処理するまでジョブを動かす
+            expireUntil(() -> status(orderId) == PaymentStatus.AUTHORIZATION_EXPIRED);
+
+            // 確認：与信期限切れ
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
+        }
+
+        @Test
+        @DisplayName("AC-423-7 照合が読んでいる間に売上確定を再実行し、その応答も届かなかった支払は、売上確定を求めた時刻を削除せず、与信済みのまま残る")
+        void keepsRequestWhenRetriedDuringFetch() {
+            // 準備：売上を確定していない支払。照合が状態を読んでいる間に、売上確定を再実行して応答が届かない
+            clearOtherReconciliation();
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            var retriedAt = ORDERED_AT.plus(properties.captureReconcileDelay()).plusSeconds(1);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            gateway.duringNextCaptureStateFetch(() -> {
+                clock.setInstant(retriedAt);
+                gateway.loseNextCaptureResponses(1);
+                assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            });
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：与信済みのままで、再実行の時刻が残る
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            assertThat(paymentOf(orderId).captureRequestedAt()).contains(retriedAt);
+        }
+
+        @Test
+        @DisplayName("AC-423-7 照合が読んでいる間に再実行した支払は、次のジョブの実行でも照合の対象になり、売上確定済みになる")
+        void reconcilesRetriedPaymentNextRun() {
+            // 準備：照合が読んでいる間に売上確定を再実行し、その応答も届かなかった支払
+            clearOtherReconciliation();
+            var orderId = captureUnreachableAt(ORDERED_AT);
+            var retriedAt = ORDERED_AT.plus(properties.captureReconcileDelay()).plusSeconds(1);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            gateway.duringNextCaptureStateFetch(() -> {
+                clock.setInstant(retriedAt);
+                gateway.loseNextCaptureResponses(1);
+                assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            });
+            job.expire();
+
+            // 操作：再実行から照合を始めるまでの時間が過ぎた後に、ジョブを動かす
+            clock.setInstant(retriedAt.plus(properties.captureReconcileDelay()));
+            expireUntil(() -> status(orderId) == PaymentStatus.CAPTURED);
+
+            // 確認：売上確定済み
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
+        }
+
+        @Test
+        @DisplayName("AC-423-8 状態を取得できない支払は、warn のログに支払 ID を出し、与信済みのまま売上確定を求めた時刻も残す")
+        void keepsPaymentWhenFetchFails() {
+            // 準備：照合の対象が 2 件で、1 件目の状態の取得が接続の失敗になる
+            var failing = twoLostCaptures().getFirst();
+            reconcileLogs.clear();
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：1 件目は与信済みのままで求めた時刻も残り、支払 ID を含む warn が 1 件
+            assertThat(payments.statusOf(failing)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            assertThat(paymentOf(failing).captureRequestedAt()).isPresent();
+            assertThat(warnLinesOf(failing)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("AC-423-8 状態を取得できない支払があっても、残りの支払を照合して売上確定済みにする")
+        void reconcilesOthersWhenFetchFails() {
+            // 準備：照合の対象が 2 件で、1 件目の状態の取得が接続の失敗になる
+            var other = twoLostCaptures().getLast();
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：2 件目は売上確定済み
+            assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.CAPTURED);
+        }
+
+        @Test
+        @DisplayName("AC-423-8 状態を取得できなかった支払は、次のジョブの実行で再試行して売上確定済みになる")
+        void retriesNextRun() {
+            // 準備：1 回目の状態の取得に失敗した支払
+            var failing = twoLostCaptures().getFirst();
+            job.expire();
+
+            // 操作：次のジョブを動かす
+            job.expire();
+
+            // 確認：売上確定済み
+            assertThat(payments.statusOf(failing)).isEqualTo(PaymentSummary.Status.CAPTURED);
+        }
+
+        @Test
+        @DisplayName("AC-423-8 接続の失敗が 3 件続いたら、その回は照合を打ち切り、4 件とも与信済みのまま残る")
+        void stopsAfterConsecutiveUnavailable() {
+            // 準備：照合の対象が 4 件で、初めの 3 件の状態の取得で接続できない
+            var orderIds = fourLostCapturesWithUnavailableFetches();
+            reconcileLogs.clear();
+
+            // 操作：ジョブを 1 回動かす
+            job.expire();
+
+            // 確認：状態の取得は 3 回で、4 件とも与信済み。打ち切りの warn が 1 件
+            assertThat(gateway.fetchCaptureStateCalls()).isEqualTo(UNAVAILABLE_LIMIT);
+            assertThat(paymentApi.find(orderIds)).extracting(PaymentSummary::status)
+                    .containsOnly(PaymentSummary.Status.AUTHORIZED);
+            assertThat(reconcileLogs.messages(Level.WARN).stream()
+                    .filter(line -> line.contains("売上確定の照合を打ち切る") && line.contains("count=3")))
+                    .hasSize(1);
+        }
+
+        @Test
+        @DisplayName("AC-423-8 照合を打ち切った支払は、次のジョブの実行で 4 件とも売上確定済みになる")
+        void retriesAfterStop() {
+            // 準備：照合を打ち切った回の後
+            var orderIds = fourLostCapturesWithUnavailableFetches();
+            job.expire();
+
+            // 操作：次のジョブを動かす
+            job.expire();
+
+            // 確認：4 件とも売上確定済み
+            assertThat(paymentApi.find(orderIds)).extracting(PaymentSummary::status)
+                    .containsOnly(PaymentSummary.Status.CAPTURED);
+        }
+
+        @Test
+        @DisplayName("NFR-423-3 売上確定済みにした支払は、以降のジョブの実行では照合しない")
+        void doesNotReconcileAgainWhenCaptured() {
+            // 準備：照合で売上確定済みにした支払
+            var orderId = captureResponseLostAt(ORDERED_AT);
+            clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+            expireUntil(() -> status(orderId) == PaymentStatus.CAPTURED);
+
+            // 操作：ジョブをもう一度動かす
+            job.expire();
+
+            // 確認：状態を読んだのは 1 回だけ
+            assertThat(gateway.fetchCaptureStateCallsOf(authorizationRefOf(orderId))).isEqualTo(1);
+        }
+    }
+
     // ============================== 確認の補助 ==============================
+
+    /**
+     * 注文の支払の状態（ドメインの状態）を返す。
+     *
+     * @param orderId 注文 ID
+     * @return 状態
+     */
+    private PaymentStatus status(UUID orderId) {
+        return paymentOf(orderId).status();
+    }
+
+    /**
+     * 注文の与信について、決済サービスから売上確定の状態を読んだか。
+     *
+     * @param orderId 注文 ID
+     * @return 読んでいれば true
+     */
+    private boolean fetched(UUID orderId) {
+        return gateway.fetchCaptureStateCallsOf(authorizationRefOf(orderId)) > 0;
+    }
+
+    /**
+     * 注文の与信の参照を返す。
+     *
+     * @param orderId 注文 ID
+     * @return 与信の参照
+     */
+    private String authorizationRefOf(UUID orderId) {
+        return gateway.authorizationRefOf(payments.pageIdOf(orderId));
+    }
+
+    /**
+     * 注文の支払 ID を含む warn のログの文を返す。
+     *
+     * @param orderId 注文 ID
+     * @return 文の一覧
+     */
+    private List<String> warnLinesOf(UUID orderId) {
+        var paymentId = paymentOf(orderId).id().toString();
+        return reconcileLogs.messages(Level.WARN).stream().filter(line -> line.contains(paymentId)).toList();
+    }
 
     /**
      * 指定の注文の支払が、未払いでなくなったか（支払なしか与信済みになったか）を返す。
@@ -822,6 +1155,77 @@ class PaymentExpiryJobTest {
     }
 
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 指定の時刻に売上確定を求め、決済サービスでは売上を確定したが、応答が届かなかった支払を作る。
+     *
+     * @param requestedAt 売上確定を求めた時刻（時計をこの時刻にする）
+     * @return 注文 ID
+     */
+    private UUID captureResponseLostAt(Instant requestedAt) {
+        clock.setInstant(requestedAt);
+        var orderId = payments.authorized(ORDERED_AT);
+        gateway.loseNextCaptureResponses(1);
+        assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        return orderId;
+    }
+
+    /**
+     * 指定の時刻に売上確定を求めたが、決済サービスに接続できず、売上を確定していない支払を作る。
+     *
+     * @param requestedAt 売上確定を求めた時刻（時計をこの時刻にする）
+     * @return 注文 ID
+     */
+    private UUID captureUnreachableAt(Instant requestedAt) {
+        clock.setInstant(requestedAt);
+        var orderId = payments.authorized(ORDERED_AT);
+        gateway.failNextCaptures(1);
+        assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        return orderId;
+    }
+
+    /**
+     * 他のテストが残した、照合の対象の支払を先に処理し、決済サービスの記録を戻す。<br />
+     * 状態の取得の回数と、取得の最中の処理が、このテストの支払だけに当たるようにする。時計は注文日時になる。
+     */
+    private void clearOtherReconciliation() {
+        clock.setInstant(ORDERED_AT.plus(Duration.ofDays(365)));
+        expireUntil(() -> queryService.findForCaptureReconcile(1).isEmpty());
+        gateway.reset();
+        clock.setInstant(ORDERED_AT);
+    }
+
+    /**
+     * 売上確定の応答が届かなかった 2 件の支払を、求めた時刻の順に作り、1 件目の状態の取得を接続の失敗にする。<br />
+     * 時計は、2 件目の照合を始める時刻になる。
+     *
+     * @return 注文 ID（求めた時刻の順）
+     */
+    private List<UUID> twoLostCaptures() {
+        clearOtherReconciliation();
+        var first = captureResponseLostAt(ORDERED_AT);
+        var second = captureResponseLostAt(ORDERED_AT.plusSeconds(1));
+        gateway.failNextCaptureStateFetches(1);
+        clock.setInstant(ORDERED_AT.plusSeconds(1).plus(properties.captureReconcileDelay()));
+        return List.of(first, second);
+    }
+
+    /**
+     * 売上確定の応答が届かなかった 4 件の支払を作り、次の状態の取得を 3 件続けて接続の失敗にする。<br />
+     * 時計は、4 件目の照合を始める時刻になる。
+     *
+     * @return 注文 ID（求めた時刻の順）
+     */
+    private List<UUID> fourLostCapturesWithUnavailableFetches() {
+        clearOtherReconciliation();
+        var orderIds = new ArrayList<UUID>();
+        for (int i = 0; i < 4; i++) {
+            orderIds.add(captureResponseLostAt(ORDERED_AT.plusSeconds(i)));
+        }
+        gateway.failNextCaptureStateFetches(UNAVAILABLE_LIMIT);
+        clock.setInstant(ORDERED_AT.plusSeconds(3).plus(properties.captureReconcileDelay()));
+        return orderIds;
+    }
 
     /**
      * 期限の後の時刻で、ジョブと同じ検索で支払画面のない一覧を読み、指定の注文の支払を返す。<br />

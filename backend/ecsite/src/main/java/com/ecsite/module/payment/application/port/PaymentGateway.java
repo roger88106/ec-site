@@ -70,6 +70,19 @@ public interface PaymentGateway {
     CaptureResult capture(CaptureRequest request);
 
     /**
+     * 与信の売上確定の状態を取得する。
+     *
+     * <p>決済サービスの状態を読むだけで、売上を確定しない（読む操作は何度呼んでも状態を変えない）。
+     * 売上確定の結果が分からない支払を、決済サービスの状態と照合するために使う。
+     *
+     * @param authorizationRef 与信の参照
+     * @return 売上確定の状態
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
+     * @throws SystemException 与信を取った後にならない状態など、売上確定の状態として扱えない状態（予期しないエラー）
+     */
+    CaptureState fetchCaptureState(String authorizationRef);
+
+    /**
      * 確定した売上を返金する。
      *
      * <p>同じ注文で重ねて呼ばれても、決済サービスで返金は 1 回だけ行うようにする。
@@ -132,6 +145,27 @@ public interface PaymentGateway {
          * <p>売上を確定したかは分からない。
          */
         UNREACHABLE,
+    }
+
+    /**
+     * 与信の売上確定の状態
+     */
+    enum CaptureState {
+
+        /**
+         * 売上を確定済み
+         */
+        CAPTURED,
+
+        /**
+         * 売上を確定していない（与信のまま）
+         */
+        NOT_CAPTURED,
+
+        /**
+         * 与信が切れた
+         */
+        AUTHORIZATION_EXPIRED,
     }
 
     /**

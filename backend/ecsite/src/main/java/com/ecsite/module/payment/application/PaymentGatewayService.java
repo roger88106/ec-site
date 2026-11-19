@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
+import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
@@ -89,7 +90,8 @@ public class PaymentGatewayService {
     /**
      * 注文の支払の売上を確定する。
      *
-     * <p>売上確定済みなら、決済サービスを呼ばずに成功する。
+     * <p>決済サービスを呼ぶ前に、売上確定を求めた時刻を記録する（記録は別のトランザクションでコミットする）。
+     * 売上確定済みなら、決済サービスを呼ばずに成功する。
      * トランザクションの外で呼ぶ（トランザクションの中から呼ぶと例外）。
      *
      * @param orderId 注文 ID
@@ -113,6 +115,10 @@ public class PaymentGatewayService {
             }
             default -> throw BusinessException.of(PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
         }
+
+        // 売上確定を求めた時刻の記録 ※決済サービスの呼び出しの前にコミットし、確定の後に止まっても照合の対象に残す。
+        // 読んだ後に与信済みでなくなっていても、決済サービスの売上確定へ進み、その結果の反映で状態を決める
+        commandService.requestCapture(payment.id());
 
         // 売上確定
         var result = gateway.capture(new PaymentGateway.CaptureRequest(orderId,
@@ -167,6 +173,40 @@ public class PaymentGatewayService {
         // 与信の反映
         if (commandService.authorizeFromGateway(payment.id(), authorization)) {
             log.warn("通知より先に、決済サービスから与信を取得して反映した: paymentId={}", payment.id());
+        }
+    }
+
+    /**
+     * 売上確定の結果が分からない支払について、決済サービスの売上確定の状態を取得し、支払を合わせる。
+     *
+     * <p>決済サービスを読むだけで、売上確定を求めない。支払の変え方は、決済サービスの状態で決める。
+     * <ul>
+     *   <li>売上確定済み：売上確定済みにし、warn のログに支払 ID を出力する</li>
+     *   <li>与信が切れた：与信期限切れにする</li>
+     *   <li>売上を確定していない：売上確定を求めた時刻を削除し、与信済みのまま残す
+     *       （読んだ後に売上確定が再実行されて時刻が変わっていれば、削除しない）</li>
+     * </ul>
+     *
+     * @param payment 照合の対象の支払
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
+     */
+    public void reconcileCapture(@NonNull CaptureReconcileView payment) {
+        // 売上確定の状態の取得
+        var state = gateway.fetchCaptureState(payment.authorizationRef());
+
+        // 結果の反映
+        switch (state) {
+            case CAPTURED -> {
+                if (commandService.markCaptured(payment.id())) {
+                    log.warn("売上確定の結果が分からなかった支払を、決済サービスに合わせて売上確定済みにした: paymentId={}", payment.id());
+                }
+            }
+            case AUTHORIZATION_EXPIRED -> commandService.markAuthorizationExpired(payment.id());
+            case NOT_CAPTURED -> {
+                if (commandService.clearCaptureRequest(payment.id(), payment.captureRequestedAt())) {
+                    log.info("決済サービスで売上を確定していなかったので、売上確定を求めた時刻を削除した: paymentId={}", payment.id());
+                }
+            }
         }
     }
 

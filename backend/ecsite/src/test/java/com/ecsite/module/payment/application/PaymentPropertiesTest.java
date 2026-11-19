@@ -92,7 +92,8 @@ class PaymentPropertiesTest {
             "deadline, 0s", "deadline, -1s", "deadline, 999us",
             "expiry-interval, 0s", "expiry-interval, -1s", "expiry-interval, 999us",
             "awaiting-authorization-warning, 0s", "awaiting-authorization-warning, -1s", "awaiting-authorization-warning, 999us",
-            "authorization-validity, 0s", "authorization-validity, -1s", "authorization-validity, 999us"})
+            "authorization-validity, 0s", "authorization-validity, -1s", "authorization-validity, 999us",
+            "capture-reconcile-delay, 0s", "capture-reconcile-delay, -1s", "capture-reconcile-delay, 999us"})
     @DisplayName("下限が 1ms の時間の設定が、0、負の値、1ms 未満（999us）なら、値の検証で拒否される")
     void rejectsDurationBelowMinimum(String name, String value) {
         // 準備：必須の値と、許す範囲の外の値
@@ -106,7 +107,8 @@ class PaymentPropertiesTest {
     }
 
     @ParameterizedTest(name = "「{0}」")
-    @CsvSource({"deadline", "expiry-interval", "awaiting-authorization-warning", "authorization-validity"})
+    @CsvSource({"deadline", "expiry-interval", "awaiting-authorization-warning", "authorization-validity",
+            "capture-reconcile-delay"})
     @DisplayName("下限が 1ms の時間の設定が、下限の 1ms なら、値の検証を通り、その値になる")
     void acceptsDurationAtMinimum(String name) {
         // 操作：必須の値と 1ms を検証付きで当てはめる。与信の有効期間が期限が近いとする期間より長くなるよう、後者を 0 にする
@@ -119,6 +121,7 @@ class PaymentPropertiesTest {
             case "deadline" -> properties.deadline();
             case "expiry-interval" -> properties.expiryInterval();
             case "awaiting-authorization-warning" -> properties.awaitingAuthorizationWarning();
+            case "capture-reconcile-delay" -> properties.captureReconcileDelay();
             default -> properties.authorizationValidity();
         };
         assertThat(actual).isEqualTo(Duration.ofMillis(1));
@@ -143,6 +146,17 @@ class PaymentPropertiesTest {
 
         // 確認：0 になる
         assertThat(properties.authorizationWarning()).isEqualTo(Duration.ZERO);
+    }
+
+    @Test
+    @DisplayName("売上確定の照合を始めるまでの時間は、既定で 10 分")
+    void captureReconcileDelayDefault() {
+        // 操作：必須の値だけを検証付きで当てはめる
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}"));
+
+        // 確認：10 分
+        assertThat(properties.captureReconcileDelay()).isEqualTo(Duration.ofMinutes(10));
     }
 
     // ============================== 準備の補助 ==============================

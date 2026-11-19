@@ -3,9 +3,11 @@ package com.ecsite.module.payment.application.job;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.PaymentCommandService;
+import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.Authorization;
+import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
@@ -116,6 +118,12 @@ class PaymentExpiryJobTest {
      */
     @Autowired
     PaymentRepository paymentRepository;
+
+    /**
+     * 決済ゲートウェイサービス
+     */
+    @Autowired
+    PaymentGatewayService gatewayService;
 
     /**
      * 決済の API
@@ -249,6 +257,43 @@ class PaymentExpiryJobTest {
             expireUntil(() -> settled(orderId));
 
             // 確認：支払なしで、期限切れのイベントが 1 件
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+            assertThat(expiredEvents(orderId)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("ジョブが読んだ後に支払画面が記録された支払は、その回では未払いのまま残り、画面も閉じない")
+        void keepsUnpaidWhenPageRecordedAfterRead() {
+            // 準備：画面のない一覧を期限の後に読み、その後に期限の前の時刻で画面が記録された
+            var orderId = payments.created(ORDERED_AT);
+            var pastDeadline = readPastDeadlineWithoutPage(orderId);
+            var pageId = recordPageBeforeDeadline(orderId);
+
+            // 操作：期限の後に、読んだ一覧の支払を処理する
+            clock.setInstant(DEADLINE);
+            gatewayService.expire(pastDeadline);
+
+            // 確認：未払いのままで、画面は開いたまま、期限切れのイベントもない
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
+            assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.OPEN);
+            assertThat(expiredEvents(orderId)).isZero();
+        }
+
+        @Test
+        @DisplayName("ジョブが読んだ後に支払画面が記録された支払は、次の回で画面を閉じてから支払なしになる")
+        void closesPageAndExpiresNextRun() {
+            // 準備：読んだ後に画面が記録され、その回は見送った支払
+            var orderId = payments.created(ORDERED_AT);
+            var pastDeadline = readPastDeadlineWithoutPage(orderId);
+            var pageId = recordPageBeforeDeadline(orderId);
+            clock.setInstant(DEADLINE);
+            gatewayService.expire(pastDeadline);
+
+            // 操作：この支払を処理するまでジョブを動かす
+            expireUntil(() -> settled(orderId));
+
+            // 確認：画面が閉じ、支払なしで、期限切れのイベントが 1 件
+            assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.CLOSED);
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
             assertThat(expiredEvents(orderId)).isEqualTo(1);
         }
@@ -731,6 +776,34 @@ class PaymentExpiryJobTest {
     }
 
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 期限の後の時刻で、ジョブと同じ参照で支払画面のない一覧を読み、指定の注文の支払を返す。<br />
+     * 時計は期限の後になる。
+     *
+     * @param orderId 注文 ID（支払画面はまだない）
+     * @return 読んだ一覧の中の、指定の注文の支払
+     */
+    private PastDeadlinePaymentView readPastDeadlineWithoutPage(UUID orderId) {
+        clock.setInstant(DEADLINE);
+        var paymentId = paymentOf(orderId).id();
+        var found = queryService.findPastDeadline(Integer.MAX_VALUE).stream()
+                .filter(view -> view.id().equals(paymentId))
+                .findFirst().orElseThrow();
+        assertThat(found.page()).isNull();
+        return found;
+    }
+
+    /**
+     * 期限の前の時刻に戻して支払画面を記録する（記録が、ジョブの読み取りより後にコミットした状態）。
+     *
+     * @param orderId 注文 ID
+     * @return 支払画面 ID
+     */
+    private String recordPageBeforeDeadline(UUID orderId) {
+        clock.setInstant(DEADLINE.minusSeconds(1));
+        return payments.openPage(orderId);
+    }
 
     /**
      * テストの支払が処理されるまで、ジョブを繰り返し実行する（上限つき）。

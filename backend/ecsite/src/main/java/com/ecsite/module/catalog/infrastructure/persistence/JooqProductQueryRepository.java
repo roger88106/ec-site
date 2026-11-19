@@ -105,11 +105,16 @@ class JooqProductQueryRepository implements ProductQueryRepository {
         if (query.code() != null && !query.code().isBlank()) {
             // 英小文字は大文字として扱う。品番は英大文字・数字・ハイフンだけなので、大文字にそろえて比べる
             var code = query.code().toUpperCase(Locale.ROOT);
-            condition = condition.and(PRODUCT.PRODUCT_CODE.startsWith(code)
-                    .or(DSL.exists(DSL.selectOne()
-                            .from(VARIANT)
-                            .where(VARIANT.PRODUCT_ID.eq(PRODUCT.ID))
-                            .and(VARIANT.VARIANT_CODE.startsWith(code)))));
+            // 商品品番とバリアント品番の条件を OR でつなぐと、両方のテーブルを全件走査する。
+            // 条件ごとに索引で探して結果を合わせるため、UNION ALL にする。IN で絞るので、重複は結果に影響せず、UNION で除かなくてよい
+            var matchedProduct = PRODUCT.as("matched_product");
+            var idsByProductCode = DSL.select(matchedProduct.ID)
+                    .from(matchedProduct)
+                    .where(matchedProduct.PRODUCT_CODE.startsWith(code));
+            var idsByVariantCode = DSL.select(VARIANT.PRODUCT_ID)
+                    .from(VARIANT)
+                    .where(VARIANT.VARIANT_CODE.startsWith(code));
+            condition = condition.and(PRODUCT.ID.in(idsByProductCode.unionAll(idsByVariantCode)));
         }
         if (query.name() != null && !query.name().isBlank()) {
             condition = condition.and(PRODUCT.NAME.likeIgnoreCase(LikePatterns.contains(query.name()), LikePatterns.ESCAPE));

@@ -15,10 +15,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -205,6 +207,21 @@ class ProductListApiTest {
             // 操作と確認：バリアント品番が ABC で始まる商品だけが返る
             listInScope("code", "ABC")
                     .andExpect(jsonPath("$.items[*].id", contains(xyz)))
+                    .andExpect(jsonPath("$.totalItems").value(1));
+        }
+
+        @Test
+        @DisplayName("DC-501-4 商品品番とバリアント品番の両方が一致し、複数のバリアントが一致しても、商品は 1 回だけ返る")
+        void returnsProductOnceWhenProductAndVariantsMatch() throws Exception {
+            // 準備：商品品番と 2 つのバリアント品番が、全て ABC で始まる商品と、始まらない商品
+            var abc = catalog.draftWithAxes("ABC-001", taxCategoryId, "商品 1", List.of("色"), scope)
+                    .variantCoded("ABC-001-R", "赤").variantCoded("ABC-001-B", "青").id.toString();
+            catalog.draft("DEF-001", taxCategoryId, "商品 2", scope);
+
+            // 操作と確認：商品が 1 回だけ返り、件数も 1
+            listInScope("code", "ABC")
+                    .andExpect(jsonPath("$.items", hasSize(1)))
+                    .andExpect(jsonPath("$.items[*].id", contains(abc)))
                     .andExpect(jsonPath("$.totalItems").value(1));
         }
 

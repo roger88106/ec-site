@@ -81,7 +81,7 @@ class StripeConfigTest {
     @Test
     @DisplayName("照合を始めるまでの時間が、売上確定の最長の時間に余裕を加えた 145 秒より長ければ、検証を通る")
     void acceptsCaptureReconcileDelayJustOverRequired() {
-        // 準備：最長の時間は (5 + 20) × 3 ＋ 5 × 2（再試行の待ちの最大）＝ 85 秒、余裕 60 秒を加えて 145 秒。それより 1ms 長い値
+        // 準備：最長の時間は (5 + 20) × 3 + 5 × 2（再試行の待ちの最大）= 85 秒、余裕 60 秒を加えて 145 秒。それより 1ms 長い値
         var stripe = stripe("5s", "20s");
         var payment = payment("145001ms");
 
@@ -90,7 +90,7 @@ class StripeConfigTest {
     }
 
     @Test
-    @DisplayName("照合を始めるまでの時間が、145 秒ちょうどなら、検証に失敗し、2 つの設定の名前と値が知らされる")
+    @DisplayName("照合を始めるまでの時間が、145 秒ちょうどなら、検証に失敗し、2 つの設定の名前と値がメッセージに含まれる")
     void rejectsCaptureReconcileDelayExactlyRequired() {
         // 準備：145 秒ちょうど（足りない）
         var stripe = stripe("5s", "20s");
@@ -110,7 +110,7 @@ class StripeConfigTest {
     @Test
     @DisplayName("応答の上限を長くして、照合を始めるまでの時間が足りなくなれば、検証に失敗する")
     void rejectsCaptureReconcileDelayWithLongTimeout() {
-        // 準備：応答 200 秒。(5 + 200) × 3 ＋ 10 ＋ 60 ＝ 685 秒が必要で、既定の 10 分（600 秒）では足りない
+        // 準備：応答 200 秒。(5 + 200) × 3 + 10 + 60 = 685 秒が必要で、既定の 10 分（600 秒）では足りない
         var stripe = stripe("5s", "200s");
         var payment = payment("10m");
 

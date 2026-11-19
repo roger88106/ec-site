@@ -22,14 +22,14 @@ import java.time.Duration;
 class StripeConfig {
 
     /**
-     * 通信の失敗を自動でやり直す回数
+     * 通信の失敗を自動で再試行する回数
      *
-     * <p>やり直しには同じ冪等の鍵が付き、Stripe で二重に作られない。
+     * <p>再試行には同じ冪等の鍵が付き、Stripe で二重に作られない。
      */
     private static final int MAX_NETWORK_RETRIES = 2;
 
     /**
-     * 照合を始めるまでの時間が、売上確定の 1 回の呼び出しの最長の時間より長くなければならない余裕
+     * 照合を始めるまでの時間を、売上確定の 1 回の呼び出しの最長の時間に加える余裕
      *
      * <p>複数のインスタンスの時計のずれと、最長の時間の見積もりに入れていない待ち（接続の確立や名前解決など）のため。
      */
@@ -53,8 +53,8 @@ class StripeConfig {
     /**
      * 照合を始めるまでの時間が、売上確定の 1 回の呼び出しの最長の時間と余裕の合計より長いことを検証する。
      *
-     * <p>最長の時間は、(接続の上限 ＋ 応答の上限) × (自動のやり直しの回数 ＋ 1) に、やり直しの間の待ちの最大
-     * （Stripe の SDK の {@link HttpClient#maxNetworkRetriesDelay} × やり直しの回数）を加えた時間。
+     * <p>最長の時間は、(接続の上限 + 応答の上限) × (自動の再試行の回数 + 1) に、再試行の間の待ちの最大
+     * （Stripe の SDK の {@link HttpClient#maxNetworkRetriesDelay} × 再試行の回数）を加えた時間。
      * 短いと、売上確定の最中の支払を照合し、まだ確定していない状態を読んで、売上確定を求めた時刻を削除しうる。
      *
      * @param paymentProperties 決済の設定
@@ -81,7 +81,7 @@ class StripeConfig {
      * @return Stripe の API のビルダー
      */
     static StripeClient.StripeClientBuilder clientBuilder(StripeProperties properties) {
-        // SDK の既定（応答 80 秒）だと、支払画面を開くリクエストが、やり直しを含めて数分待たせうる
+        // SDK の既定（応答 80 秒）だと、支払画面を開くリクエストが、再試行を含めて数分待たせうる
         return StripeClient.builder()
                 .setApiKey(properties.secretKey())
                 .setMaxNetworkRetries(MAX_NETWORK_RETRIES)

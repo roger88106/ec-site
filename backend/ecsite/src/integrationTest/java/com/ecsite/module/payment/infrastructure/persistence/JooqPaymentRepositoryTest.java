@@ -677,7 +677,7 @@ class JooqPaymentRepositoryTest {
     class AuthorizationRefConstraint {
 
         @Test
-        @DisplayName("与信のない状態以外で、与信の参照が null の行は、DB が拒否する")
+        @DisplayName("未払い・支払なし以外の状態で、与信の参照が null の行は、DB が拒否する")
         void rejectsAuthorizedWithoutRef() {
             // 準備：未払いの支払を保存する
             var payment = savedPayment();

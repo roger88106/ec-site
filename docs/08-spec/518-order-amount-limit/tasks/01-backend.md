@@ -20,7 +20,7 @@
   - 依存：T518-01-02
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/api/PaymentApiTest.java`
   - 確認方法：テストが失敗する
-- [ ] **T518-01-04** T518-01-03 のテストが通る実装を書く。公開の API の型と操作、注文の腐敗防止層（決済）の操作を加える。
+- [x] **T518-01-04** T518-01-03 のテストが通る実装を書く。公開の API の型と操作、注文の腐敗防止層（決済）の操作を加える。
   - 依存：T518-01-03
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/payment/api/`、`backend/ecsite/src/main/java/com/ecsite/module/order/application/port/`、`backend/ecsite/src/main/java/com/ecsite/module/order/infrastructure/directory/`
   - 確認方法：T518-01-03 のテストが通る

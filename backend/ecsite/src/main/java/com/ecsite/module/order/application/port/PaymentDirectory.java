@@ -2,6 +2,7 @@ package com.ecsite.module.order.application.port;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.application.model.PaymentAmountRange;
 import com.ecsite.module.order.application.model.PaymentAuthorization;
 import com.ecsite.module.order.application.model.PaymentSnapshot;
 
@@ -80,4 +81,11 @@ public interface PaymentDirectory {
      * @return 注文 ID
      */
     List<UUID> findExpiringOrderIds();
+
+    /**
+     * 決済が 1 回の支払で受け付ける金額の範囲を返す。
+     *
+     * @return 金額の範囲（下限、上限とも含む）
+     */
+    PaymentAmountRange amountRange();
 }

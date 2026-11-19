@@ -2,6 +2,7 @@ package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.application.model.PaymentAmountRange;
 import com.ecsite.module.order.application.model.PaymentAuthorization;
 import com.ecsite.module.order.application.model.PaymentSnapshot;
 import com.ecsite.module.order.application.model.view.OrderPayment;
@@ -92,6 +93,15 @@ class PaymentApiDirectory implements PaymentDirectory {
     @Override
     public List<UUID> findExpiringOrderIds() {
         return paymentApi.findExpiringOrderIds();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PaymentAmountRange amountRange() {
+        var range = paymentApi.amountRange();
+        return new PaymentAmountRange(range.min(), range.max());
     }
 
     /**

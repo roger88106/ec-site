@@ -11,6 +11,7 @@ import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentGatewayService;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
+import com.ecsite.module.payment.domain.payment.PaymentAmountRange;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -153,8 +154,8 @@ public class PaymentApi {
      * @return 金額の範囲（下限、上限とも含む）
      */
     public AmountRange amountRange() {
-        // レッドの確認のための仮の値
-        return new AmountRange(Money.of(1), Money.of(2));
+        var range = PaymentAmountRange.STANDARD;
+        return new AmountRange(range.min(), range.max());
     }
 
     /**

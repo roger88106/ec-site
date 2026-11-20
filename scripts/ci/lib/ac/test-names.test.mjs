@@ -45,6 +45,17 @@ describe('テスト名の AC 番号', () => {
   test('新しい形の AC 番号の後の数字（本文の数量など）は AC にしない', () => {
     assert.deepEqual(parseAcRefs('AC-7-1 数量を 10 にする').acs, ['7-1'])
   })
+
+  test('AC 番号の直後に空白なしで続く数字は、番号の一部として読む（AC-7-41 回目を AC-7-4 と読まない）', () => {
+    assert.deepEqual(parseAcRefs('AC-7-41 回目の返金'), { acs: ['7-41'], ranges: [] })
+    assert.deepEqual(parseAcRefs('AC-41 回目の返金'), { acs: [41], ranges: [] })
+  })
+
+  test('全角の数字は半角と同じに読む（AC-7-4１回目を AC-7-4 と読まない）', () => {
+    assert.deepEqual(parseAcRefs('AC-7-4１回目の返金'), { acs: ['7-41'], ranges: [] })
+    assert.deepEqual(parseAcRefs('AC-４１ 回目の返金'), { acs: [41], ranges: [] })
+    assert.deepEqual(parseAcRefs('AC-７-１、AC-１２ 並べる').acs, ['7-1', 12])
+  })
 })
 
 describe('テスト名の AC の並べ方の検出', () => {
@@ -52,6 +63,10 @@ describe('テスト名の AC の並べ方の検出', () => {
     assert.deepEqual(findAmbiguousAcLists('AC-7-1、2 注文'), ['AC-7-1、2'])
     assert.deepEqual(findAmbiguousAcLists('AC-7-1、2、3 注文'), ['AC-7-1、2、3'])
     assert.deepEqual(findAmbiguousAcLists('AC-7-1、AC-7-2, 12 並べる'), ['AC-7-1、AC-7-2, 12'])
+  })
+
+  test('全角の数字で書いた曖昧な並べ方も見つける', () => {
+    assert.equal(findAmbiguousAcLists('AC-７-１、２ 注文').length, 1)
   })
 
   test('曖昧でない書き方（AC-7-1、AC-7-2 や AC-1、2）は見つけない', () => {
@@ -65,6 +80,10 @@ describe('テスト名の AC の並べ方の検出', () => {
     assert.deepEqual(findSpacedAcLists('AC-1 AC-2 注文'), ['AC-1 AC-2'])
     assert.deepEqual(findSpacedAcLists('AC-98 AC-187 AC-189 注文'), ['AC-98 AC-187 AC-189'])
     assert.deepEqual(findSpacedAcLists('AC-7-1　AC-7-2 注文'), ['AC-7-1　AC-7-2'])
+  })
+
+  test('全角の数字で書いた、空白で区切った AC の並びも見つける', () => {
+    assert.equal(findSpacedAcLists('AC-１ AC-２ 注文').length, 1)
   })
 
   test('読点で並べた AC と、1 つだけの AC は、空白の並びにしない', () => {

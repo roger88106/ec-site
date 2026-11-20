@@ -16,7 +16,7 @@
 
 テストにも不足が 4 つある。店舗 API の token の検証（audience の違い・期限切れ・署名の誤り）、解釈が分かれうるパス、認可のクラスの単体テスト、token が不要な店舗の操作に無効な token を付けたときである。コードからはどれも拒むと読み取れるが、Spring のバージョンを上げたときの回帰を検出できない。
 
-目的は、設定を誤っても安全側に倒れる（起動で止まる、または拒む）ようにし、回帰をテストで検出できるようにすること。正しい設定のときの、消費者・運営者に見える振る舞いは変えない。例外は 2 つある（DN-477-1）。
+目的は、設定を誤っても安全側に倒れる（起動で止まる、または拒む）ようにし、回帰をテストで検出できるようにすること。正しい設定のときの、消費者・運営者に見える振る舞いは変えない。例外は 3 つある（DN-477-1）。
 
 追跡の issue は #477。#458 の config のレビューで見つかった。全体の issue #544 では、段階 3 の線 C の 5 番目にあたる。関わる文書は、[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「認証・認可」と「公開ネットワークへのデプロイの前提」、[API の規約](../../05-開発規則/api-conventions.md)。業務ルール BR-32（既定で拒み、決めた URL だけを許す）と AC-235〜237 に関わる。
 
@@ -35,14 +35,14 @@
 決定（決定 1〜4、6、7 は issue 担当のセッションが承認した。決定 5 と、決定 7 のエラーコードの追加は利用者が承認した）：
 
 1. 規模は M、種類は整理にする。理由：AC を加えない。変更は認証と認可の設定と、その設定ファイル・テスト・文書の中で閉じる。API の契約と DB の構造を変えず、モジュールをまたぐ設計の決定がないので、plan に書く内容がない。
-   - 種類を整理にする理由：正しい設定のときの振る舞いを変えない。変わるのは、設定を誤ったとき（起動で止まる）と、DN-477-1 の例外 2 つだけで、どちらも安全側に倒す修正である。
+   - 種類を整理にする理由：正しい設定のときの振る舞いを変えない。変わるのは、設定を誤ったとき（起動で止まる）と、DN-477-1 の例外 3 つだけで、どれも安全側に倒す修正である。
    - 決定 2・3・6 は、既存の AC-235・AC-236（業務ポートで公開するもの）にコードを合わせる修正である。今のコードは、次の 3 点で AC より広く許す。
      - 通知のパスの下の全てを許す。
      - mock のフラグを立てていないモジュールの mock のパスも許す。
      - 運用ポートを業務ポートと同じにすると、運用のパスを業務ポートで公開できる。
    - 業務ルール BR-32 は、[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「認証・認可」の「業務のコードとの境界」の最後の箇条にあり、通知のパスを「通知のパスの下の全て」と書いている。AC-235 に合わせて記述を修正する。
-   - AC-245 の後半の文（物流のフラグがないので、物流の mock の画面は見つからない（404））は、決定 3 で 401 になるので、「物流の mock の画面は拒まれる（401）」に書き換える。AC の意図（本番の jar では mock のフラグが読まれない）は変わらず、確認する状態コードだけが変わる。完了した spec の AC の文を変えるのは機能の spec で行う規則（[開発の進め方](../../05-開発規則/workflow.md)の「コードと文書の食い違い」）の特例で、利用者が承認した（2026-11-20）。spec の確定の後、実装の途中で見つけた。
-   - 代わりの案は、BR-32 と AC-245 の記述が変わるので機能の spec にすること。採らない理由：AC の意図を変えず、コードを AC-235・AC-236 に合わせる修正で、追加の機能がないため。
+   - AC-245 の後半の文（物流のフラグがないので、物流の mock の画面は見つからない（404））は、決定 3 で 401 になるので、「物流の mock の画面は拒まれる（401）」に書き換える。AC-229 の後半の文（フラグがなければ、その URL は見つからない（404））も、同じ理由で「拒まれる（401）」に書き換える。どちらも AC の意図（フラグがなければ mock を使わない）は変わらず、確認する状態コードだけが変わる。完了した spec の AC の文を変えるのは機能の spec で行う規則（[開発の進め方](../../05-開発規則/workflow.md)の「コードと文書の食い違い」）の特例で、利用者が承認した（2026-11-20。AC-229 は spec の最後のレビューで見つけ、同じ特例の範囲として issue 担当のセッションが承認した）。どちらも spec の確定の後に見つけた。
+   - 代わりの案は、BR-32 と AC-229・AC-245 の記述が変わるので機能の spec にすること。採らない理由：AC の意図を変えず、コードを AC-235・AC-236 に合わせる修正で、追加の機能がないため。
 2. 運用のパスの扱いは案 A にする。比べた案は次の表。
 
    | 案 | 内容 | 採る理由・採らない理由 |
@@ -121,15 +121,15 @@
 
 | まとまり | ファイル |
 |----------|----------|
-| 認証と認可の設定 | `backend/ecsite/src/main/java/com/ecsite/config/security/` の下（`SecurityConfig`、`SecurityProperties`、起動時に設定を検査するクラス） |
+| 認証と認可の設定 | `backend/ecsite/src/main/java/com/ecsite/config/security/` の下（`SecurityConfig`、`SecurityProperties`、起動時に設定を検査するクラス）、`backend/ecsite/src/main/java/com/ecsite/common/error/handler/GlobalExceptionHandler.java`（通知のパスのコメントだけ） |
 | エラーコード | `backend/ecsite/src/main/java/com/ecsite/common/error/CommonErrorCode.java`、`backend/ecsite/src/main/resources/messages.properties`、`api/openapi/admin.yaml`・`api/openapi/store.yaml`（共通のエラーコードの列挙） |
 | 設定ファイル | `backend/ecsite/src/integrationTest/resources/application-integration-test.yml` |
 | テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/security/`、`backend/ecsite/src/test/java/com/ecsite/config/security/`、`backend/ecsite/src/integrationTest/java/com/ecsite/config/ProductionJarStartupTest.java`（AC-245 の期待値）、`backend/ecsite/src/integrationTest/java/com/ecsite/support/security/TestSecurityConfig.java`（テストだけの通知の Controller を許す） |
-| 文書 | `docs/02-設計/backend-architecture.md`（「認証・認可」の BR-32 の箇条、「公開ネットワークへのデプロイの前提」）、`docs/05-開発規則/api-conventions.md`（エラーの表）、`docs/03-機能仕様/glossary.md`（503 の行）、`docs/03-機能仕様/acceptance-criteria.md`（AC-245 の行） |
+| 文書 | `docs/02-設計/backend-architecture.md`（「認証・認可」の BR-32 の箇条、「公開ネットワークへのデプロイの前提」）、`docs/05-開発規則/api-conventions.md`（エラーの表）、`docs/03-機能仕様/glossary.md`（503 の行）、`docs/03-機能仕様/acceptance-criteria.md` と `docs/03-機能仕様/payment.md`（AC-229・AC-245 の行）、`docs/02-設計/payment.md`（mock の支払画面）、`docs/06-手順書/environment.md`（issuer、運用ポート、mock のフラグの行） |
 
 ## 非機能要件
 
-- **DN-477-1** 正しい設定のときの API の応答と画面を変えない。例外は 2 つ：フラグを立てていない mock の画面のパス（404 から 401。決定 3）と、IdP に届かないときの応答（500 から 503 の Problem Details。決定 7）。
+- **DN-477-1** 正しい設定のときの API の応答と画面を変えない。例外は 3 つ：フラグを立てていない mock の画面のパス（404 から 401。決定 3）、決済と物流のほかの通知のパスの下（404 から 401。決定 6）、IdP に届かないときの応答（500 から 503 の Problem Details。決定 7）。
 - **DN-477-2** API の契約（OpenAPI）は、共通のエラーコードの列挙に 1 つ加えるほかは変えない（決定 7）。DB の構造は変えない。
 - **DN-477-3** ローカル・E2E・統合テストの設定で、今のとおり起動する。
 
@@ -164,7 +164,7 @@
   - 依存：なし
   - 範囲：integrationTest と test の `config/security`
   - 確認方法：加えたテストが通り、期待値を変えると失敗する。
-  - 結果：加えたテストは延べ 45 件で、期待値を変えると全て失敗した。DC-477-6 の 3 つは、既存の統合テスト（AC-137 の、店舗 API の会員向けの操作のテスト）が確認しているので、加えていない。DC-477-7 の符号化した文字とセミコロンを含むパスは、操作に届く前に、Spring Security の既定の検査が 400（本文なし）で拒む。そのほかの形は 401 か 403 で拒む。拒まずに通る形はなかった。
+  - 結果：加えたテストは延べ 40 件で、期待値を変えると全て失敗した。DC-477-6 の 3 つは、既存の統合テスト（AC-137 の、店舗 API の会員向けの操作のテスト）が確認しているので、加えていない。DC-477-7 の符号化した文字とセミコロンを含むパスは、操作に届く前に、Spring Security の既定の検査が 400（本文なし）で拒む。そのほかの形は 401 か 403 で拒む。拒まずに通る形はなかった。
 - [x] **T477-01-02** IdP に届かないときの今の動作を、統合テストで確認する（DC-477-10）。対象は、decoder の初期化の失敗と、鍵の取得の失敗の 2 つ。結果をこのタスクに記録する。背景の 5 の想定のとおりでなければ止めて報告する。
   - 依存：なし
   - 範囲：integrationTest の `config/security`
@@ -187,7 +187,7 @@
   - 確認方法：書いたテストが失敗する。
 - [x] **T477-01-06** T477-01-05 のテストが通る実装を書く。AC-245 のテストの期待値を 401 にし、AC 一覧の AC-245 の文を書き換える（決定 1）。
   - 依存：T477-01-05
-  - 範囲：`config/security`、`ProductionJarStartupTest`、`docs/03-機能仕様/acceptance-criteria.md`
+  - 範囲：`config/security`、`GlobalExceptionHandler`（コメント）、`ProductionJarStartupTest`、`TestSecurityConfig`、`docs/03-機能仕様/acceptance-criteria.md`
   - 確認方法：`./gradlew integrationTest --tests '*config.security*' --tests '*ProductionJarStartupTest'` が通る。
 - [x] **T477-01-07** [テスト] IdP に届かないときの 503（DC-477-11）のテストを書き、レッドを確認する。T477-01-02 のテストの期待値を変える。
   - 依存：T477-01-02
@@ -199,7 +199,7 @@
   - 確認方法：T477-01-07 のテストと、エラーコードの契約のテストが通る。
 - [x] **T477-01-09** 設計の文書、API の規約、用語集、業務ルール BR-32 の記述を更新する。「公開ネットワークへのデプロイの前提」の HTTPS の行に、決定 5 の issuer を加える。
   - 依存：T477-01-04、T477-01-06、T477-01-08
-  - 範囲：`docs/02-設計/backend-architecture.md`、`docs/05-開発規則/api-conventions.md`、`docs/03-機能仕様/glossary.md`
+  - 範囲：`docs/02-設計/backend-architecture.md`、`docs/05-開発規則/api-conventions.md`、`docs/03-機能仕様/glossary.md`、`docs/06-手順書/environment.md`
   - 確認方法：`CI=true bash scripts/ci/check-all.sh` が通る。
 - [ ] **T477-01-10** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T477-01-09

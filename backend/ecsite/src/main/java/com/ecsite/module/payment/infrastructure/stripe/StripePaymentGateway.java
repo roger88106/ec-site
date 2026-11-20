@@ -11,7 +11,6 @@ import com.stripe.exception.ApiException;
 import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.RateLimitException;
 import com.stripe.exception.StripeException;
-import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCaptureParams;
 import com.stripe.param.RefundCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -102,7 +101,7 @@ class StripePaymentGateway implements PaymentGateway {
     /**
      * {@inheritDoc}
      *
-     * <p>Stripe の冪等の鍵は付けない。同じ鍵では、期限の切れた Session も 24 時間返り続けるため。
+     * <p>Stripe の冪等キーは明示しない。同じキーでは、期限の切れた Session も 24 時間返り続けるため。
      */
     @Override
     public PaymentPage openPage(PageRequest request) {
@@ -189,13 +188,15 @@ class StripePaymentGateway implements PaymentGateway {
      *   <li>Stripe が使えない（接続できない、Stripe の側の故障、回数の制限）：接続できない</li>
      *   <li>それ以外：例外</li>
      * </ul>
+     *
+     * <p>Stripe の冪等キーは明示しない。同じキーでは、Stripe の障害の応答が 24 時間返り続けるため。
+     * 二重の確定は、確定済みとして拒否されたら成功とする処理で防ぐ。
      */
     @Override
     public CaptureResult capture(CaptureRequest request) {
         var params = PaymentIntentCaptureParams.builder().setAmountToCapture(request.amount().yen()).build();
-        var options = RequestOptions.builder().setIdempotencyKey("capture-" + request.orderId()).build();
         try {
-            client.v1().paymentIntents().capture(request.authorizationRef(), params, options);
+            client.v1().paymentIntents().capture(request.authorizationRef(), params);
             return CaptureResult.CAPTURED;
         } catch (InvalidRequestException e) {
             // 確定済みと与信の期限切れ（Stripe が取り消している）は、同じ理由で拒否される
@@ -237,6 +238,10 @@ class StripePaymentGateway implements PaymentGateway {
 
     /**
      * {@inheritDoc}
+     *
+     * <p>Stripe の冪等キーは明示しない。同じキーでは、Stripe の障害の応答が 24 時間返り続けるため。
+     * 二重の返金は、返金済みとして拒否されたら成功とする処理で防ぐ。
+     * この処理は、返金の額が売上確定の総額と等しいことを前提にしている。部分返金では、2 回目の返金を Stripe が拒否しない。
      */
     @Override
     public void refund(RefundRequest request) {
@@ -244,9 +249,8 @@ class StripePaymentGateway implements PaymentGateway {
                 .setPaymentIntent(request.authorizationRef())
                 .setAmount(request.amount().yen())
                 .build();
-        var options = RequestOptions.builder().setIdempotencyKey("refund-" + request.orderId()).build();
         try {
-            client.v1().refunds().create(params, options);
+            client.v1().refunds().create(params);
         } catch (InvalidRequestException e) {
             // 返金済みは拒否される。重ねた返金は成功とする
             if (!ALREADY_REFUNDED.equals(e.getCode())) {

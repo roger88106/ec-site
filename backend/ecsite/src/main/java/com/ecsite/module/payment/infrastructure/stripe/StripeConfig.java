@@ -24,7 +24,7 @@ class StripeConfig {
     /**
      * 通信の失敗を自動で再試行する回数
      *
-     * <p>再試行には同じ冪等の鍵が付き、Stripe で二重に作られない。
+     * <p>stripe-java が POST の呼び出しごとに冪等キーを作り、その呼び出しの再試行には同じキーを付けるので、Stripe で二重に作られない。
      */
     private static final int MAX_NETWORK_RETRIES = 2;
 

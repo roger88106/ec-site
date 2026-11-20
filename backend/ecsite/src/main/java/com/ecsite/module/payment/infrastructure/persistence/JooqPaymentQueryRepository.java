@@ -108,8 +108,9 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .orderBy(PAYMENT_.DEADLINE, PAYMENT_.ID)
                 .limit(limit)
                 .fetch(r -> new PastDeadlinePaymentView(r.get(PAYMENT_.ID),
-                        // 支払画面の ID と URL は、DB の制約で両方あるか両方ないか
-                        r.get(PAYMENT_.PAGE_ID) == null
+                        // 支払画面の ID と URL は、DB の制約で両方あるか両方ないか。
+                        // 制約が破られた 1 行で検索の全体が失敗しないように、両方あるときだけ作る
+                        r.get(PAYMENT_.PAGE_ID) == null || r.get(PAYMENT_.PAGE_URL) == null
                                 ? null
                                 : new PaymentPage(r.get(PAYMENT_.PAGE_ID), r.get(PAYMENT_.PAGE_URL))));
     }

@@ -109,6 +109,16 @@ class PaymentExpiryJobTest {
      */
     private static final int UNAVAILABLE_LIMIT = 3;
 
+    /**
+     * 期限切れの処理が 1 件失敗したときの warn の文
+     */
+    private static final String EXPIRE_FAILED_LOG = "支払の期限切れに失敗したので、次の回に回す";
+
+    /**
+     * 与信の取得が 1 件失敗したときの warn の文
+     */
+    private static final String AUTHORIZE_FAILED_LOG = "与信を取得できないので、次の回で再試行する";
+
     // ============================== Bean ==============================
 
     /**
@@ -439,12 +449,12 @@ class PaymentExpiryJobTest {
             clock.setInstant(DEADLINE);
 
             // 操作：普通の支払が処理され、復元できない行の warn が出るまで、ジョブを繰り返す
-            expireUntilSettledAndWarned(other, broken);
+            expireUntilSettledAndWarned(other, broken, EXPIRE_FAILED_LOG);
 
             // 確認：普通の支払は支払なしで、復元できない行は未払いのまま。最後の実行で、復元できない行の支払 ID を含む warn が 1 件出る
             assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.NOT_PAID);
             assertThat(payments.statusOf(broken)).isEqualTo(PaymentSummary.Status.UNPAID);
-            assertThat(reconcileLogs.messages(Level.WARN)).filteredOn(line -> line.contains(rawPaymentIdOf(broken).toString()))
+            assertThat(reconcileLogs.messages(Level.WARN)).filteredOn(line -> line.contains(rawPaymentIdOf(broken).toString()) && line.contains(EXPIRE_FAILED_LOG))
                     .hasSize(1);
         }
 
@@ -459,11 +469,12 @@ class PaymentExpiryJobTest {
             corrupt(broken);
 
             // 操作：普通の支払が与信済みになり、復元できない行の warn が出るまで、ジョブを繰り返す
-            expireUntilSettledAndWarned(other, broken);
+            expireUntilSettledAndWarned(other, broken, AUTHORIZE_FAILED_LOG);
 
-            // 確認：普通の支払は与信済みで、最後の実行で、復元できない行の支払 ID を含む warn が 1 件出る
+            // 確認：普通の支払は与信済みで、復元できない行は未払いのまま。最後の実行で、復元できない行の支払 ID を含む warn が 1 件出る
             assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
-            assertThat(reconcileLogs.messages(Level.WARN)).filteredOn(line -> line.contains(rawPaymentIdOf(broken).toString()))
+            assertThat(payments.statusOf(broken)).isEqualTo(PaymentSummary.Status.UNPAID);
+            assertThat(reconcileLogs.messages(Level.WARN)).filteredOn(line -> line.contains(rawPaymentIdOf(broken).toString()) && line.contains(AUTHORIZE_FAILED_LOG))
                     .hasSize(1);
         }
     }
@@ -1342,11 +1353,12 @@ class PaymentExpiryJobTest {
      *
      * @param other  普通の支払の注文 ID
      * @param broken 復元できない行の注文 ID
+     * @param failedLog 復元できない行が 1 件失敗したときの warn の文
      */
-    private void expireUntilSettledAndWarned(UUID other, UUID broken) {
+    private void expireUntilSettledAndWarned(UUID other, UUID broken, String failedLog) {
         var brokenId = rawPaymentIdOf(broken).toString();
         expireUntil(() -> {
-            if (settled(other) && reconcileLogs.messages(Level.WARN).stream().anyMatch(line -> line.contains(brokenId))) {
+            if (settled(other) && reconcileLogs.messages(Level.WARN).stream().anyMatch(line -> line.contains(brokenId) && line.contains(failedLog))) {
                 return true;
             }
             reconcileLogs.clear();

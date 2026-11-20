@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 class OrderStatusChangedHandler {
 
     /**
-     * 注文したカートの更新のサービス
+     * 注文に使ったカートの更新のサービス
      */
     private final OrderCartCommandService orderCartCommandService;
 

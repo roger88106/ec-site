@@ -62,7 +62,7 @@ test('AC-143、145、146、147、149 注文すると mock の支払画面に移�
   })
 
   await test.step('注文した品目がカートから除かれる（AC-147）', async () => {
-    // 除く処理は受付の後に非同期で動くので、カートの画面を開き直しながら待つ
+    // 除く処理は受付の後に非同期で動くので、カートの画面を再び開きながら待つ
     await reopenUntil(page, `${STORE_URL}/cart`, () =>
       expect(page.getByText('カートに商品がありません。')).toBeVisible({ timeout: CHECK_TIMEOUT }),
     )

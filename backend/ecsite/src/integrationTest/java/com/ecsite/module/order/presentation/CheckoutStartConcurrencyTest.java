@@ -111,7 +111,7 @@ class CheckoutStartConcurrencyTest {
         asyncEvents.awaitCartChanged(cartId);
         var executor = Executors.newFixedThreadPool(2);
         try {
-            // 操作：在庫の行をロックしている間に、同じカートで 2 つの開始を送り、両方が先に進めず待つようにしてからロックを放す
+            // 操作：在庫の行をロックしている間に、同じカートで 2 つの開始を送り、両方が先に進めず待つようにしてからロックを解放する
             var starting = new ArrayList<Future<MockHttpServletResponse>>();
             whileStockLocked(() -> {
                 // 1 つ目は、在庫の行で待つ

@@ -166,7 +166,7 @@ class JooqCartRepositoryTest {
             var memberId = UUID.randomUUID();
             var cart = Cart.createForMember(UUID.randomUUID(), memberId, CREATED_AT);
 
-            // 操作：1 つの文で作って ID を得る
+            // 操作：1 つの SQL の文で作って ID を得る
             var id = repository.createForMemberOrGetId(cart);
 
             // 確認：渡したカートの ID で、会員から引ける

@@ -82,7 +82,7 @@ class JooqMemberRepositoryTest {
         // 準備：会員
         var member = new Member(UUID.randomUUID(), SUBJECT, CREATED_AT);
 
-        // 操作：1 つの文で作って ID を得る
+        // 操作：1 つの SQL の文で作って ID を得る
         var id = repository.createOrGetId(member);
 
         // 確認：渡した会員の ID で、アカウントの ID から探せる

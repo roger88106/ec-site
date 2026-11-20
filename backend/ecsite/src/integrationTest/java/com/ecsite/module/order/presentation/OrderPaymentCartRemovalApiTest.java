@@ -107,7 +107,7 @@ class OrderPaymentCartRemovalApiTest {
     /**
      * このテストの会員
      *
-     * <p>巻き戻さないので、他のテストとカートを共有しないよう、テストごとに変える。
+     * <p>ロールバックしないので、他のテストとカートを共有しないよう、テストごとに変える。
      */
     private TestTokens.Builder owner;
 
@@ -216,7 +216,7 @@ class OrderPaymentCartRemovalApiTest {
         orders.add(orders.cart(), variantId, 1);
         asyncEvents.awaitCartChanged(orders.cart());
 
-        // 操作：除く処理を完了の記録だけが残らなかった状態にして、同じ受付のイベントを再発行する
+        // 操作：除く処理は終わっているが、完了の記録だけが残っていない状態にして、同じ受付のイベントを再発行する
         markRemovalIncomplete(orderId);
         clock.advance(RESUBMIT_AFTER);
         asyncEvents.resubmit(accepted(orderId));

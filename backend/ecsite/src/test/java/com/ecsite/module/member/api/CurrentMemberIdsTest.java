@@ -3,6 +3,9 @@ package com.ecsite.module.member.api;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.application.MemberCommandService;
+import com.ecsite.module.member.application.MemberIdCache;
+import com.ecsite.module.member.application.MemberIdCacheProperties;
+import com.ecsite.module.member.application.MemberIdResolver;
 import com.ecsite.module.member.application.MemberQueryService;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
@@ -15,6 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,12 +27,13 @@ import java.util.UUID;
 
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 現在の会員の ID を求める部品の単体テスト
  *
- * <p>ログインの状態から会員 ID を求めることと、初めての会員を作ることだけを確認する。token の検証と会員の API は、
- * 統合テストが確認する。
+ * <p>ログインの状態（token の subject）から会員 ID を求める呼び出しだけを確認する。キャッシュと
+ * 会員の作成の細部は {@code MemberIdResolverTest}、token の検証と会員の API は統合テストが確認する。
  */
 class CurrentMemberIdsTest {
 
@@ -65,7 +70,9 @@ class CurrentMemberIdsTest {
      * テストの対象
      */
     private final CurrentMemberIds currentMemberIds = new CurrentMemberIds(new CurrentMember(),
-            new MemberQueryService(repository), new MemberCommandService(repository, Clock.systemUTC()));
+            new MemberIdResolver(new MemberQueryService(repository),
+                    new MemberCommandService(repository, Clock.systemUTC()),
+                    new MemberIdCache(new MemberIdCacheProperties(10_000, Duration.ofHours(1)))));
 
     /**
      * ログインの状態を消す
@@ -115,6 +122,21 @@ class CurrentMemberIdsTest {
             // 操作と確認：find も同じ ID
             assertThat(currentMemberIds.find()).contains(id);
         }
+
+        @Test
+        @DisplayName("別のアカウントは、別の会員 ID になる")
+        void otherSubjectGetsOtherMemberId() {
+            // 準備：1 つ目のアカウントで求めた
+            loginAs(SUBJECT);
+            var first = currentMemberIds.require();
+
+            // 操作：別のアカウントで求める
+            loginAs("subject-2");
+            var second = currentMemberIds.require();
+
+            // 確認：別の会員 ID
+            assertThat(second).isNotEqualTo(first);
+        }
     }
 
     @Nested
@@ -147,7 +169,35 @@ class CurrentMemberIdsTest {
         }
     }
 
+    @Nested
+    @DisplayName("subject のない token でログインしているとき")
+    class WithoutSubject {
+
+        @Test
+        @DisplayName("require と find は NullPointerException で失敗し、会員を作らない")
+        void failsWithNullPointerAndCreatesNoMember() {
+            // 準備：subject のない token でログインする
+            loginWithoutSubject();
+
+            // 操作と確認：どちらも NullPointerException（メッセージは確認しない）
+            assertThatThrownBy(currentMemberIds::require).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(currentMemberIds::find).isInstanceOf(NullPointerException.class);
+
+            // 確認：会員がない
+            assertThat(members).isEmpty();
+        }
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * subject のない token でログインしている状態にする。
+     */
+    private static void loginWithoutSubject() {
+        var jwt = Jwt.withTokenValue("token").header("alg", "none").claim("scope", "none")
+                .issuedAt(Instant.EPOCH).expiresAt(Instant.EPOCH.plusSeconds(60)).build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+    }
 
     /**
      * 会員の token でログインしている状態にする。

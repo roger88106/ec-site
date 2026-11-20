@@ -6,13 +6,19 @@ import com.ecsite.support.security.TestTokens;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -202,6 +208,40 @@ class AuthorizationTest {
         void rejectsOperatorToken() throws Exception {
             // 操作と確認：管理者の token で呼ぶと、「ログインが必要」
             mockMvc.perform(get(MEMBER_CART).with(TestTokens.administrator().bearer()))
+                    .andExpect(status().isUnauthorized())
+                    .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
+        }
+    }
+
+    @Nested
+    @DisplayName("token が不要な店舗 API の操作の、無効な token")
+    class PublicStoreOperationWithInvalidToken {
+
+        /**
+         * 無効な token を付ける処理を返す。
+         *
+         * @return テストの入力（ケース名と、token を付ける処理）
+         */
+        static Stream<Arguments> invalidTokens() {
+            return Stream.of(
+                    Arguments.of("署名の誤り", TestTokens.member().signedByUnknownKey().bearer()),
+                    Arguments.of("有効期限切れ", TestTokens.member().expiresAt(Instant.now().minusSeconds(120)).bearer()),
+                    Arguments.of("audience の違い", TestTokens.member().audience("ec-store-web").bearer()),
+                    Arguments.of("運営者の realm の token", TestTokens.administrator().bearer()),
+                    Arguments.of("token の形でない値", (RequestPostProcessor) request -> {
+                        // 既定の会員の token を置き換える
+                        request.removeHeader(HttpHeaders.AUTHORIZATION);
+                        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer not-a-token");
+                        return request;
+                    }));
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @MethodSource("invalidTokens")
+        @DisplayName("DC-477-9 token が不要な店舗 API の操作も、無効な token を付けると 401")
+        void rejectsInvalidToken(String name, RequestPostProcessor token) throws Exception {
+            // 操作と確認：無効な token を付けて商品の一覧を呼ぶと、「ログインが必要」
+            mockMvc.perform(get("/api/store/products").with(token))
                     .andExpect(status().isUnauthorized())
                     .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
         }

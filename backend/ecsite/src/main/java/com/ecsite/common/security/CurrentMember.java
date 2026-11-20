@@ -4,6 +4,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -42,7 +43,7 @@ public class CurrentMember {
      */
     private static AuthenticatedMember toMember(Jwt jwt) {
         return new AuthenticatedMember(
-                jwt.getSubject(),
+                Objects.requireNonNull(jwt.getSubject(), "会員の token には subject がある"),
                 jwt.getClaimAsString("email"),
                 Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
                 jwt.getClaimAsString("family_name"),

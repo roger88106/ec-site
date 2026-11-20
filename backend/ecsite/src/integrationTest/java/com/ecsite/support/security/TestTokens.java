@@ -9,6 +9,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
@@ -240,6 +241,7 @@ public final class TestTokens {
         private String issuer;
         private String audience;
         private RSAKey key;
+        @Nullable
         private UUID subject;
         private String familyName;
         private String givenName;
@@ -267,6 +269,16 @@ public final class TestTokens {
          */
         public Builder subject(UUID subject) {
             this.subject = subject;
+            return this;
+        }
+
+        /**
+         * アカウントの ID（{@code sub}）を載せない。
+         *
+         * @return this
+         */
+        public Builder withoutSubject() {
+            this.subject = null;
             return this;
         }
 
@@ -391,7 +403,7 @@ public final class TestTokens {
             var claims = new JWTClaimsSet.Builder()
                     .issuer(issuer)
                     .audience(audience)
-                    .subject(subject.toString())
+                    .subject(subject == null ? null : subject.toString())
                     .issueTime(Date.from(issuedAt))
                     .expirationTime(Date.from(expiresAt))
                     .claim("typ", "Bearer")

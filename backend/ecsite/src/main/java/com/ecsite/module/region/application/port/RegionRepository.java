@@ -1,12 +1,10 @@
 package com.ecsite.module.region.application.port;
 
-import com.ecsite.module.region.application.model.MunicipalityView;
 import com.ecsite.module.region.domain.vo.Municipality;
 import com.ecsite.module.region.domain.vo.PostalAddress;
 import com.ecsite.module.region.domain.vo.Prefecture;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 地域のマスターデータのリポジトリ
@@ -21,28 +19,11 @@ public interface RegionRepository {
     List<Prefecture> findPrefectures();
 
     /**
-     * 都道府県をコードで引く。
+     * 全ての市区町村を返す。
      *
-     * @param code 都道府県のコード
-     * @return 都道府県。なければ空
+     * @return コードの順の市区町村
      */
-    Optional<Prefecture> findPrefecture(String code);
-
-    /**
-     * 都道府県の市区町村の一覧を返す。
-     *
-     * @param prefectureCode 都道府県のコード
-     * @return コードの順の市区町村。都道府県がなければ空の一覧
-     */
-    List<Municipality> findMunicipalities(String prefectureCode);
-
-    /**
-     * 市区町村と、属する都道府県をコードで引く。
-     *
-     * @param code 市区町村のコード
-     * @return 都道府県と市区町村。なければ空
-     */
-    Optional<MunicipalityView> findMunicipality(String code);
+    List<Municipality> findAllMunicipalities();
 
     /**
      * 郵便番号の住所を返す。

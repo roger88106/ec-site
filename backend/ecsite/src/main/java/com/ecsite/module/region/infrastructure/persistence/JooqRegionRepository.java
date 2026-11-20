@@ -1,6 +1,5 @@
 package com.ecsite.module.region.infrastructure.persistence;
 
-import com.ecsite.module.region.application.model.MunicipalityView;
 import com.ecsite.module.region.application.port.RegionRepository;
 import com.ecsite.module.region.domain.vo.Municipality;
 import com.ecsite.module.region.domain.vo.PostalAddress;
@@ -13,7 +12,6 @@ import org.jooq.SelectField;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.ecsite.jooq.region.Tables.MUNICIPALITY;
 import static com.ecsite.jooq.region.Tables.POSTAL_CODE;
@@ -65,33 +63,9 @@ class JooqRegionRepository implements RegionRepository {
      * {@inheritDoc}
      */
     @Override
-    public Optional<Prefecture> findPrefecture(String code) {
-        return dsl.select(PREFECTURE_ROW).from(PREFECTURE).where(PREFECTURE.CODE.eq(code))
-                .fetchOptional(Record1::value1);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Municipality> findMunicipalities(String prefectureCode) {
-        return dsl.select(MUNICIPALITY_ROW).from(MUNICIPALITY)
-                .where(MUNICIPALITY.PREFECTURE_CODE.eq(prefectureCode))
-                .orderBy(MUNICIPALITY.CODE)
+    public List<Municipality> findAllMunicipalities() {
+        return dsl.select(MUNICIPALITY_ROW).from(MUNICIPALITY).orderBy(MUNICIPALITY.CODE)
                 .fetch(Record1::value1);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Optional<MunicipalityView> findMunicipality(String code) {
-        // 列の並びは MunicipalityView の項目の順にする
-        return dsl.select(PREFECTURE_ROW, MUNICIPALITY_ROW)
-                .from(MUNICIPALITY)
-                .join(PREFECTURE).on(PREFECTURE.CODE.eq(MUNICIPALITY.PREFECTURE_CODE))
-                .where(MUNICIPALITY.CODE.eq(code))
-                .fetchOptional(Records.mapping(MunicipalityView::new));
     }
 
     /**

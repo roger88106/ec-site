@@ -224,7 +224,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * リクエストが、外部のサービスが呼ぶ通知のエンドポイントへのものかを返す。
      *
-     * <p>通知のエンドポイントは、物流と Stripe の 2 つで、どちらも {@code /api/webhooks/} の下にある（認証の設定も同じパスで分けている）。
+     * <p>通知のエンドポイントは、物流と Stripe の 2 つで、どちらも {@code /api/webhooks/} の下にある（認証なしで許すのは、この 2 つのパスだけ）。
      */
     private static boolean isWebhook(WebRequest request) {
         if (request instanceof ServletWebRequest servletRequest) {

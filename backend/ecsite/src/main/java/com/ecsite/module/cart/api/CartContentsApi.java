@@ -37,6 +37,16 @@ public class CartContentsApi {
     }
 
     /**
+     * 会員のカートの ID を返す（作らない）。
+     *
+     * @param memberId 会員 ID
+     * @return カート ID。会員のカートがなければ空
+     */
+    public Optional<UUID> findMemberCartId(@NonNull UUID memberId) {
+        return cartService.findMemberCartId(memberId);
+    }
+
+    /**
      * カートの中身を公開の型にする。
      */
     private static CartContents toContents(CartContentsView view) {

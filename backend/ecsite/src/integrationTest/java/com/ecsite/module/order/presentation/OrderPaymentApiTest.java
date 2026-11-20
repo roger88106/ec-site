@@ -236,8 +236,8 @@ class OrderPaymentApiTest {
             gateway.pay(orders.openPaymentPage(orderId));
             orders.awaitStatus(orderId, "ACCEPTED");
 
-            // 確認：後から追加した品目だけが残る
-            assertThat(cartVariantIds()).containsExactly(addedLater.toString());
+            // 確認：除く処理を待つと、後から追加した品目だけが残る
+            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(cartVariantIds()).containsExactly(addedLater.toString()));
         }
 
         @Test
@@ -252,8 +252,8 @@ class OrderPaymentApiTest {
             gateway.pay(orders.openPaymentPage(orderId));
             orders.awaitStatus(orderId, "ACCEPTED");
 
-            // 確認：カートが空
-            assertThat(cartVariantIds()).isEmpty();
+            // 確認：除く処理を待つと、カートが空になる
+            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(cartVariantIds()).isEmpty());
         }
 
         @Test
@@ -548,8 +548,8 @@ class OrderPaymentApiTest {
             PaymentJobs.expire(applicationContext);
             orders.awaitStatus(orderId, "ACCEPTED");
 
-            // 確認：カートが空
-            assertThat(cartVariantIds()).isEmpty();
+            // 確認：除く処理を待つと、カートが空になる
+            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(cartVariantIds()).isEmpty());
         }
 
         @Test

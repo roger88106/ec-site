@@ -194,6 +194,17 @@ public class CartService {
     }
 
     /**
+     * 会員のカートの ID を返す（作らない）。
+     *
+     * @param memberId 会員 ID
+     * @return カート ID。会員のカートがなければ空
+     */
+    @Transactional(readOnly = true)
+    public Optional<UUID> findMemberCartId(@NonNull UUID memberId) {
+        return cartRepository.findIdByMemberId(memberId);
+    }
+
+    /**
      * 会員のカートの ID を返す。
      *
      * <p>まだなければ空のカートを作る（会員ごとに 1 つ）。

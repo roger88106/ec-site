@@ -34,6 +34,14 @@ class CartApiDirectory implements CartDirectory {
     }
 
     /**
+     * 会員のカートの ID を取る。
+     */
+    @Override
+    public Optional<UUID> findMemberCartId(UUID memberId) {
+        return cartContentsApi.findMemberCartId(memberId);
+    }
+
+    /**
      * 注文した品目をカートから除く。
      */
     @Override

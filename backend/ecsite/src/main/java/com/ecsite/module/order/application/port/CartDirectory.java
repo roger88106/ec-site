@@ -22,6 +22,14 @@ public interface CartDirectory {
     Optional<CartSnapshot> find(UUID cartId);
 
     /**
+     * 会員のカートの ID を返す（作らない）。
+     *
+     * @param memberId 会員 ID
+     * @return カート ID。会員のカートがなければ空
+     */
+    Optional<UUID> findMemberCartId(UUID memberId);
+
+    /**
      * 品目（バリアント）を、数量によらず行ごとカートから除く。
      *
      * <p>カートがなければ何もしない。

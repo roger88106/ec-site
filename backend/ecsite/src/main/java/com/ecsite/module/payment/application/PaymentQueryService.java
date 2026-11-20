@@ -9,6 +9,7 @@ import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.NonNull;
@@ -179,6 +180,19 @@ public class PaymentQueryService {
         return paymentRepository.findById(paymentId)
                 .filter(payment -> payment.status() == PaymentStatus.VOID_PENDING)
                 .map(Payment::authorizationRef);
+    }
+
+    /**
+     * 決済サービスで閉じる支払画面の ID を返す。
+     *
+     * @param paymentId 支払 ID
+     * @return 支払画面 ID。支払なしでない、または支払画面がなければ空
+     */
+    public Optional<String> findPageToClose(@NonNull UUID paymentId) {
+        return paymentRepository.findById(paymentId)
+                .filter(payment -> payment.status() == PaymentStatus.NOT_PAID)
+                .flatMap(Payment::page)
+                .map(PaymentPage::id);
     }
 
     /**

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * 支払の期限切れのジョブ
@@ -57,6 +58,7 @@ class PaymentExpiryJob {
      * 期限を過ぎた未払いの支払を支払なしにし、与信の反映を待つ支払を与信済みにし、売上確定の結果が分からない支払を決済サービスの状態に合わせる。
      *
      * <p>与信の反映を長く待つ支払があれば、warn のログに件数を出す。
+     * 各処理の検索が失敗したら、warn のログに出して次の処理へ進み、その処理は次の回で再試行する。
      */
     // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（設定の型の登録の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
@@ -67,7 +69,9 @@ class PaymentExpiryJob {
     @SchedulerLock(name = "payment-expiry", lockAtMostFor = "PT30M")
     public void expire() {
         // 期限切れ ※1 つの支払の失敗（例外の種類を問わない）で、ほかの支払を止めない
-        for (var payment : queryService.findPastDeadline(BATCH_SIZE)) {
+        var pastDeadline = search(() -> queryService.findPastDeadline(BATCH_SIZE),
+                "期限切れの支払を検索できないので、次の回で再試行する");
+        for (var payment : pastDeadline) {
             try {
                 gatewayService.expire(payment);
             } catch (RuntimeException e) {
@@ -93,7 +97,9 @@ class PaymentExpiryJob {
      * 決済サービスへの接続の失敗が続いたら、その回の取得を打ち切る。
      */
     private void recoverAuthorizations() {
-        processUntilUnavailable(queryService.findAwaitingAuthorization(BATCH_SIZE), gatewayService::recoverAuthorization,
+        processUntilUnavailable(
+                search(() -> queryService.findAwaitingAuthorization(BATCH_SIZE), "与信の取得の対象を検索できないので、次の回で再試行する"),
+                gatewayService::recoverAuthorization,
                 AwaitingAuthorizationPaymentView::id, "与信を取得できないので、次の回で再試行する: paymentId={}",
                 "決済サービスへの接続の失敗が続いたので、この回の与信の取得を打ち切る: count={}");
     }
@@ -105,7 +111,9 @@ class PaymentExpiryJob {
      * 決済サービスへの接続の失敗が続いたら、その回の照合を打ち切る。
      */
     private void reconcileCaptures() {
-        processUntilUnavailable(queryService.findForCaptureReconcile(BATCH_SIZE), gatewayService::reconcileCapture,
+        processUntilUnavailable(
+                search(() -> queryService.findForCaptureReconcile(BATCH_SIZE), "売上確定の照合の対象を検索できないので、次の回で再試行する"),
+                gatewayService::reconcileCapture,
                 CaptureReconcileView::id, "売上確定の結果を照合できないので、次の回で再試行する: paymentId={}",
                 "決済サービスへの接続の失敗が続いたので、この回の売上確定の照合を打ち切る: count={}");
     }
@@ -139,6 +147,24 @@ class PaymentExpiryJob {
     }
 
     /**
+     * 処理の対象を検索する。検索が失敗したら、warn のログに失敗を出し、空の一覧を返して次の処理へ進む。
+     *
+     * <p>その処理は次の回で再試行する。1 件ずつの処理の失敗は捕捉しない（検索の呼び出しだけを囲む）。
+     *
+     * @param query          検索
+     * @param failureMessage 検索が失敗したときの warn のログの文
+     * @param <T>            支払の型
+     */
+    private <T> List<T> search(Supplier<List<T>> query, String failureMessage) {
+        try {
+            return query.get();
+        } catch (RuntimeException e) {
+            log.warn(failureMessage, e);
+            return List.of();
+        }
+    }
+
+    /**
      * 決済サービスへの接続の失敗（外部サービスのエラー）か。
      */
     private static boolean isUnavailable(RuntimeException e) {
@@ -150,7 +176,13 @@ class PaymentExpiryJob {
      * 与信の反映を長く待つ未払いの支払があれば、warn のログに件数を出す。
      */
     private void warnLongAwaitingAuthorization() {
-        long count = queryService.countLongAwaitingAuthorization();
+        long count;
+        try {
+            count = queryService.countLongAwaitingAuthorization();
+        } catch (RuntimeException e) {
+            log.warn("与信の反映を長く待つ支払の件数を集計できないので、次の回で再試行する", e);
+            return;
+        }
         if (count > 0) {
             log.warn("与信の反映を長く待つ支払がある: count={}", count);
         }

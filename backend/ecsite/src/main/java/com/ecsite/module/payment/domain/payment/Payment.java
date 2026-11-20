@@ -410,7 +410,7 @@ public class Payment extends AggregateRoot {
      * 注文のキャンセルに合わせて取り消す。
      *
      * <p>与信済みなら与信の取消待ちに、売上確定済みなら返金待ちに、未払いなら支払なしにする。
-     * それ以外なら何もしない。
+     * 支払画面がある未払いを支払なしにしたときは、支払画面を閉じる依頼を登録する。それ以外なら何もしない。
      *
      * @param now 現在時刻
      * @return 状態を変えたら true。取り消すものがなければ false
@@ -421,9 +421,12 @@ public class Payment extends AggregateRoot {
                 requestVoid(now);
                 yield true;
             }
-            // 未払いは、取り消す与信がない
+            // 未払いは、取り消す与信がない。支払画面があれば、開いたままにしないために閉じる
             case UNPAID -> {
                 status = PaymentStatus.NOT_PAID;
+                if (page != null) {
+                    registerEvent(PageCloseRequested.of(now, id));
+                }
                 yield true;
             }
             case CAPTURED -> {

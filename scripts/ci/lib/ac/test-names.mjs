@@ -2,7 +2,7 @@
 //
 // 読むもの：
 //   - AC：MVP の AC-n と、1→10 の AC-s-n（s は spec の番号、n は連番）。2 つの形は別の AC として扱う。
-//     AC-s-n を AC-s と読まない。番号は、文書の記号と番号の「spec の番号」
+//     AC-s-n を AC-s と読まない。番号は、文書の記号と番号の「spec の番号」。全角の数字は半角と同じに読む
 //   - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）。
 //     Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。Git の対象のファイルだけを読む
 //   - 読まないテスト名：まとまりの名前（describe、クラス）、skip・fixme のテスト、skip・fixme のまとまりの中のテスト。
@@ -20,6 +20,19 @@ const RANGE = '[〜～~]'
 
 /** テスト名の中の AC の並び（`AC-n、m`、`AC-n〜m` など）に合う正規表現の元。1 つ目の括弧が、`AC-` の後の並び全体 */
 const AC_LIST_SOURCE = `AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`
+
+/**
+ * 全角の数字（０〜９）だけを半角にする。
+ *
+ * 理由：日本語の入力のまま、AC 番号の直後に空白なしで `１回目` と打つと、全角の数字の前で番号が終わったと読み、空白の抜けを見逃すため。
+ * NFKC で揃えると全角のチルダ（～）も半角になり、報告する範囲の表記が元の名前と合わなくなるので、数字だけを変える。
+ *
+ * @param {string} name テスト名
+ * @returns {string} 全角の数字を半角にした名前
+ */
+function toHalfwidthDigits(name) {
+  return name.replace(/[０-９]/g, (digit) => String.fromCharCode(digit.charCodeAt(0) - 0xfee0))
+}
 
 /** AC の番号だけに合う正規表現（`AC-` の後の全体） */
 export const AC_NUMBER_ONLY = new RegExp(`^(${AC_NUMBER})$`)
@@ -49,7 +62,7 @@ export function parseAcRefs(name) {
   const ranges = []
   const list = new RegExp(AC_LIST_SOURCE, 'g')
   const item = new RegExp(`(${AC_NUMBER})\\s*(${RANGE})\\s*(${AC_NUMBER})|(${AC_NUMBER})`, 'g')
-  for (const [, numbers] of name.matchAll(list)) {
+  for (const [, numbers] of toHalfwidthDigits(name).matchAll(list)) {
     for (const [, from, sign, to, single] of numbers.matchAll(item)) {
       if (single !== undefined) {
         acs.push(toAcKey(single))
@@ -75,7 +88,7 @@ export function parseAcRefs(name) {
 export function findAmbiguousAcLists(name) {
   const list = new RegExp(AC_LIST_SOURCE, 'g')
   const found = []
-  for (const match of name.matchAll(list)) {
+  for (const match of toHalfwidthDigits(name).matchAll(list)) {
     // 範囲を含まない並びの区切りで分け、AC- が付かない数字だけの項目が、新しい形の直後にあるかを見る
     const items = match[0].split(/\s*[、,]\s*/)
     const bad = items.some((item, i) => i > 0 && /^[0-9]+(?!\d|-)/.test(item) && /^(?:AC-)?[0-9]+-[0-9]+/.test(items[i - 1]))
@@ -94,7 +107,7 @@ export function findAmbiguousAcLists(name) {
  */
 export function findSpacedAcLists(name) {
   const list = new RegExp(`AC-${AC_NUMBER}(?:[\\s\\u3000]+AC-${AC_NUMBER})+`, 'g')
-  return [...name.matchAll(list)].map((match) => match[0])
+  return [...toHalfwidthDigits(name).matchAll(list)].map((match) => match[0])
 }
 
 /**

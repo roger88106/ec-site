@@ -187,6 +187,71 @@ class PaymentExpiryJobLoggingTest {
     }
 
     @Nested
+    @DisplayName("各処理の検索の失敗")
+    class QueryFailure {
+
+        @Test
+        @DisplayName("AC-310 期限切れの支払の検索が失敗しても、後続の処理を行い、warn のログに期限切れの処理の失敗を出す")
+        void continuesAfterExpiryQueryFailure() {
+            // 準備：期限切れの検索が失敗し、与信の取得の対象が 1 件ある
+            when(queryService.findPastDeadline(anyInt())).thenThrow(new CannotAcquireLockException("DB の接続の失敗"));
+            when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(AWAITING_FIRST));
+            when(gateway.fetchAuthorization("page-awaiting-first")).thenReturn(AUTHORIZATION);
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：後続の処理を行い、期限切れの処理の失敗を warn のログに出した
+            verify(commandService).authorizeFromGateway(AWAITING_FIRST.id(), AUTHORIZATION);
+            verify(queryService).findForCaptureReconcile(anyInt());
+            verify(queryService).countLongAwaitingAuthorization();
+            assertThat(warnLinesContaining("期限切れ")).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-310 与信の反映を待つ支払の検索が失敗しても、後続の処理を行い、warn のログに与信の取得の処理の失敗を出す")
+        void continuesAfterAuthorizationQueryFailure() {
+            // 準備：与信の取得の検索が失敗する
+            when(queryService.findAwaitingAuthorization(anyInt())).thenThrow(new CannotAcquireLockException("DB の接続の失敗"));
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：後続の処理を行い、与信の取得の処理の失敗を warn のログに出した
+            verify(queryService).findForCaptureReconcile(anyInt());
+            verify(queryService).countLongAwaitingAuthorization();
+            assertThat(warnLinesContaining("与信の取得")).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-310 照合の検索が失敗しても、後続の処理を行い、warn のログに照合の処理の失敗を出す")
+        void continuesAfterReconcileQueryFailure() {
+            // 準備：照合の検索が失敗する
+            when(queryService.findForCaptureReconcile(anyInt())).thenThrow(new CannotAcquireLockException("DB の接続の失敗"));
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：後続の処理を行い、照合の処理の失敗を warn のログに出した
+            verify(queryService).countLongAwaitingAuthorization();
+            assertThat(warnLinesContaining("照合")).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-310 長く待つ支払の件数の集計が失敗しても、ジョブは例外を投げず、warn のログに失敗を出す")
+        void doesNotThrowWhenCountFails() {
+            // 準備：件数の集計が失敗する
+            when(queryService.countLongAwaitingAuthorization()).thenThrow(new CannotAcquireLockException("DB の接続の失敗"));
+
+            // 操作：ジョブを動かす
+            job.expire();
+
+            // 確認：例外を投げず、失敗を warn のログに出した
+            assertThat(warnLinesContaining("与信の反映を長く待つ")).isNotEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("与信の反映を長く待つ支払の警告")
     class LongAwaitingWarning {
 
@@ -420,6 +485,18 @@ class PaymentExpiryJobLoggingTest {
     private List<String> warnLinesOf(UUID paymentId) {
         return logs.messages(Level.WARN).stream()
                 .filter(line -> line.contains(paymentId.toString()))
+                .toList();
+    }
+
+    /**
+     * 指定の語を含む warn のログの文を返す。
+     *
+     * @param keyword 処理を識別する語
+     * @return 文の一覧
+     */
+    private List<String> warnLinesContaining(String keyword) {
+        return logs.messages(Level.WARN).stream()
+                .filter(line -> line.contains(keyword))
                 .toList();
     }
 

@@ -94,6 +94,9 @@ spring-modulith-events-api = { module = "org.springframework.modulith:spring-mod
 spring-modulith-events-jdbc = { module = "org.springframework.modulith:spring-modulith-events-jdbc" }
 spring-modulith-events-jackson = { module = "org.springframework.modulith:spring-modulith-events-jackson" }
 
+# --- メモリのキャッシュ（Boot BOM 管理。会員 ID の対応と地域の一覧に使う） ---
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
+
 # --- 定期ジョブの分散ロック ---
 shedlock-spring = { module = "net.javacrumbs.shedlock:shedlock-spring", version.ref = "shedlock" }
 shedlock-provider-jdbc-template = { module = "net.javacrumbs.shedlock:shedlock-provider-jdbc-template", version.ref = "shedlock" }

@@ -34,6 +34,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | DB | PostgreSQL の JDBC ドライバー | BSD-2-Clause |
 | API・ストレージ・可観測性 | OpenAPI Generator、AWS SDK、Micrometer | Apache-2.0 |
 | ユーティリティ | Lombok | MIT |
+| キャッシュ | Caffeine | Apache-2.0 |
 | 静的解析・注釈 | Error Prone、NullAway、JSpecify | Apache-2.0（Error Prone、JSpecify）、MIT（NullAway） |
 | 静的解析 | Checker Framework の dataflow（Error Prone と NullAway が使う。`dataflow-errorprone`、`dataflow-nullaway`） | 条件付き（GPL-2.0 with Classpath-exception。コンパイルのときだけ動き、配布物に入らない。改変しない） |
 | mutation testing | PIT（`pitest`）、`gradle-pitest-plugin`、`pitest-junit5-plugin` | Apache-2.0。テストの強さを測るツールで、配布物に入らない ※1 |

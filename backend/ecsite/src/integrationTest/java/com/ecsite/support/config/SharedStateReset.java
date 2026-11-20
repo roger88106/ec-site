@@ -1,6 +1,7 @@
 package com.ecsite.support.config;
 
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
+import com.ecsite.module.member.application.MemberIdCache;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -17,7 +18,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  *   <li>時計：{@link TestClockConfig#INITIAL_INSTANT} に戻す</li>
  *   <li>決済の mock（{@link TestPaymentGateway}）：テストだけで使う状態を空にする。決済の mock を使わない設定では、ないので戻さない</li>
  *   <li>税率のキャッシュ：捨てる（次の取得で税モジュールから取得し直す）</li>
+ *   <li>会員 ID のキャッシュ：捨てる（ロールバックするテストで消えた会員の ID が残らないようにするため）</li>
  * </ul>
+ * 地域のキャッシュは戻さない。地域の行はテストで変えないためである。
  */
 public final class SharedStateReset implements BeforeEachCallback {
 
@@ -27,5 +30,6 @@ public final class SharedStateReset implements BeforeEachCallback {
         applicationContext.getBean(MutableClock.class).setInstant(TestClockConfig.INITIAL_INSTANT);
         applicationContext.getBeanProvider(TestPaymentGateway.class).ifAvailable(TestPaymentGateway::reset);
         TaxRateScheduleCaches.evict(applicationContext);
+        applicationContext.getBean(MemberIdCache.class).evict();
     }
 }

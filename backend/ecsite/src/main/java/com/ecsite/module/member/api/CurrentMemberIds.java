@@ -2,13 +2,10 @@ package com.ecsite.module.member.api;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.security.CurrentMember;
-import com.ecsite.module.member.application.MemberCommandService;
-import com.ecsite.module.member.application.MemberQueryService;
+import com.ecsite.module.member.application.MemberIdResolver;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,44 +24,28 @@ public class CurrentMemberIds {
     private final CurrentMember currentMember;
 
     /**
-     * 会員の参照のサービス
+     * 会員 ID を求める処理
      */
-    private final MemberQueryService queryService;
+    private final MemberIdResolver resolver;
 
     /**
-     * 会員の更新のサービス
-     */
-    private final MemberCommandService commandService;
-
-    /**
-     * ログインが必要な操作の、会員 ID を返す。
+     * ログインが必要な操作の、会員 ID を返し、初めての会員なら会員を作る。
      *
-     * <p>初めてなら会員を作る。
+     * <p>同じアカウントの 2 回目からは、キャッシュから返す。
      *
      * @return 会員 ID
      * @throws BusinessException ログインしていない（{@code UNAUTHENTICATED}）
      */
     public UUID require() {
-        return memberIdOf(currentMember.require().subject());
+        return resolver.resolve(currentMember.require().subject());
     }
 
     /**
-     * ログインが任意の操作の、会員 ID を返す。
-     *
-     * <p>初めてなら会員を作る。
+     * ログインが任意の操作の会員 ID を返し、初めての会員なら会員を作る。
      *
      * @return 会員 ID。ログインしていなければ空
      */
     public Optional<UUID> find() {
-        return currentMember.find().map(member -> memberIdOf(member.subject()));
-    }
-
-    /**
-     * IdP のアカウントの ID から会員 ID を求める。
-     */
-    private UUID memberIdOf(@Nullable String subject) {
-        var idpSubject = Objects.requireNonNull(subject, "token に subject がある");
-        // まず読み取り専用のトランザクションで探し、いなければ（初めてのリクエスト）作る
-        return queryService.findMemberId(idpSubject).orElseGet(() -> commandService.create(idpSubject));
+        return currentMember.find().map(member -> resolver.resolve(member.subject()));
     }
 }

@@ -1,6 +1,7 @@
 package com.ecsite.module.member.api;
 
 import com.ecsite.module.member.application.port.MemberRepository;
+import com.ecsite.module.member.domain.Member;
 import com.ecsite.support.async.Concurrently;
 import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
@@ -15,6 +16,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -149,13 +151,13 @@ class MemberConfirmationTest {
         @Test
         @DisplayName("NFR-25 会員がいるときは、読み取り専用のトランザクションで探して、同じ会員 ID を返す")
         void findsExistingMemberReadOnly() {
-            // 準備：会員を作り、作ったときの呼び出しは数えない
+            // 準備：キャッシュにない会員を DB に作り、作ったときの呼び出しは数えない
             var subject = newSubject();
-            var memberId = memberIdOf(subject);
+            var memberId = insertMemberDirectly(subject);
             clearInvocations(memberRepository);
             var readOnly = recordReadOnly(subject);
 
-            // 操作：同じアカウントで、もう一度求める
+            // 操作：そのアカウントで求める
             var found = memberIdOf(subject);
 
             // 確認：1 回だけ、読み取り専用のトランザクションで探し、同じ会員 ID
@@ -166,12 +168,12 @@ class MemberConfirmationTest {
         @Test
         @DisplayName("NFR-25 会員がいるときは、会員を作る操作を呼ばない")
         void doesNotInsertExistingMember() {
-            // 準備：会員を作り、作ったときの呼び出しは数えない
+            // 準備：キャッシュにない会員を DB に作り、作ったときの呼び出しは数えない
             var subject = newSubject();
-            memberIdOf(subject);
+            insertMemberDirectly(subject);
             clearInvocations(memberRepository);
 
-            // 操作：同じアカウントで、もう一度求める
+            // 操作：そのアカウントで求める
             memberIdOf(subject);
 
             // 確認：会員を作る操作を呼ばない
@@ -220,6 +222,18 @@ class MemberConfirmationTest {
      */
     private static String newSubject() {
         return UUID.randomUUID().toString();
+    }
+
+    /**
+     * 会員を、会員 ID のキャッシュを通さずに DB へ直接作る。
+     *
+     * @param subject IdP のアカウントの ID
+     * @return 作った会員の会員 ID
+     */
+    private UUID insertMemberDirectly(String subject) {
+        var id = UUID.randomUUID();
+        memberRepository.insertIfAbsent(new Member(id, subject, Instant.now()));
+        return id;
     }
 
     /**

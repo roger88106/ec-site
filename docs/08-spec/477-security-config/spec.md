@@ -36,12 +36,13 @@
 
 1. 規模は M、種類は整理にする。理由：AC を加えない。変更は認証と認可の設定と、その設定ファイル・テスト・文書の中で閉じる。API の契約と DB の構造を変えず、モジュールをまたぐ設計の決定がないので、plan に書く内容がない。
    - 種類を整理にする理由：正しい設定のときの振る舞いを変えない。変わるのは、設定を誤ったとき（起動で止まる）と、DN-477-1 の例外 2 つだけで、どちらも安全側に倒す修正である。
-   - 決定 2・3・6 は、既存の AC-235・AC-236（業務ポートで公開するもの）にコードを合わせる修正で、AC は変えない。今のコードは、次の 3 点で AC より広く許す。
+   - 決定 2・3・6 は、既存の AC-235・AC-236（業務ポートで公開するもの）にコードを合わせる修正である。今のコードは、次の 3 点で AC より広く許す。
      - 通知のパスの下の全てを許す。
      - mock のフラグを立てていないモジュールの mock のパスも許す。
      - 運用ポートを業務ポートと同じにすると、運用のパスを業務ポートで公開できる。
    - 業務ルール BR-32 は、[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「認証・認可」の「業務のコードとの境界」の最後の箇条にあり、通知のパスを「通知のパスの下の全て」と書いている。AC-235 に合わせて記述を修正する。
-   - 代わりの案は、BR-32 の記述が変わるので機能の spec にすること。採らない理由：AC を変えず、コードを AC に合わせる修正で、追加の機能がないため。
+   - AC-245 の後半の文（物流のフラグがないので、物流の mock の画面は見つからない（404））は、決定 3 で 401 になるので、「物流の mock の画面は拒まれる（401）」に書き換える。AC の意図（本番の jar では mock のフラグが読まれない）は変わらず、確認する状態コードだけが変わる。完了した spec の AC の文を変えるのは機能の spec で行う規則（[開発の進め方](../../05-開発規則/workflow.md)の「コードと文書の食い違い」）の特例で、利用者が承認した（2026-11-20）。spec の確定の後、実装の途中で見つけた。
+   - 代わりの案は、BR-32 と AC-245 の記述が変わるので機能の spec にすること。採らない理由：AC の意図を変えず、コードを AC-235・AC-236 に合わせる修正で、追加の機能がないため。
 2. 運用のパスの扱いは案 A にする。比べた案は次の表。
 
    | 案 | 内容 | 採る理由・採らない理由 |
@@ -123,8 +124,8 @@
 | 認証と認可の設定 | `backend/ecsite/src/main/java/com/ecsite/config/security/` の下（`SecurityConfig`、`SecurityProperties`、起動時に設定を検査するクラス） |
 | エラーコード | `backend/ecsite/src/main/java/com/ecsite/common/error/CommonErrorCode.java`、`backend/ecsite/src/main/resources/messages.properties` |
 | 設定ファイル | `backend/ecsite/src/integrationTest/resources/application-integration-test.yml` |
-| テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/security/`、`backend/ecsite/src/test/java/com/ecsite/config/security/` |
-| 文書 | `docs/02-設計/backend-architecture.md`（「認証・認可」の BR-32 の箇条、「公開ネットワークへのデプロイの前提」）、`docs/05-開発規則/api-conventions.md`（エラーの表）、`docs/03-機能仕様/glossary.md`（503 の行） |
+| テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/security/`、`backend/ecsite/src/test/java/com/ecsite/config/security/`、`backend/ecsite/src/integrationTest/java/com/ecsite/config/ProductionJarStartupTest.java`（AC-245 の期待値） |
+| 文書 | `docs/02-設計/backend-architecture.md`（「認証・認可」の BR-32 の箇条、「公開ネットワークへのデプロイの前提」）、`docs/05-開発規則/api-conventions.md`（エラーの表）、`docs/03-機能仕様/glossary.md`（503 の行）、`docs/03-機能仕様/acceptance-criteria.md`（AC-245 の行） |
 
 ## 非機能要件
 
@@ -184,10 +185,10 @@
   - 依存：なし
   - 範囲：integrationTest と test の `config/security`
   - 確認方法：書いたテストが失敗する。
-- [ ] **T477-01-06** T477-01-05 のテストが通る実装を書く。
+- [ ] **T477-01-06** T477-01-05 のテストが通る実装を書く。AC-245 のテストの期待値を 401 にし、AC 一覧の AC-245 の文を書き換える（決定 1）。
   - 依存：T477-01-05
-  - 範囲：`config/security`
-  - 確認方法：`./gradlew integrationTest --tests '*config.security*'` が通る。
+  - 範囲：`config/security`、`ProductionJarStartupTest`、`docs/03-機能仕様/acceptance-criteria.md`
+  - 確認方法：`./gradlew integrationTest --tests '*config.security*' --tests '*ProductionJarStartupTest'` が通る。
 - [ ] **T477-01-07** [テスト] IdP に届かないときの 503（DC-477-11）のテストを書き、レッドを確認する。T477-01-02 のテストの期待値を変える。
   - 依存：T477-01-02
   - 範囲：integrationTest の `config/security`

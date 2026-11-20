@@ -57,6 +57,18 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger openFailures = new AtomicInteger();
 
     /**
+     * 画面を閉じる操作に渡された支払画面 ID
+     *
+     * <p>呼ばれた順。失敗と重複を含む。
+     */
+    private final List<String> closedPageCalls = new CopyOnWriteArrayList<>();
+
+    /**
+     * これから接続の失敗にする、画面を閉じる操作の回数
+     */
+    private final AtomicInteger closeFailures = new AtomicInteger();
+
+    /**
      * 与信の取得を呼ばれた回数
      *
      * <p>失敗を含む。
@@ -204,6 +216,11 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public CloseResult closePage(String pageId) {
+        closedPageCalls.add(pageId);
+        if (consume(closeFailures)) {
+            throw SystemException.of("mock：支払画面を閉じる操作を接続の失敗にする: " + pageId, null,
+                    PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        }
         return mock.closePage(pageId);
     }
 
@@ -363,6 +380,15 @@ public class TestPaymentGateway implements PaymentGateway {
      */
     public void failNextOpens(int times) {
         openFailures.set(times);
+    }
+
+    /**
+     * 次の画面を閉じる操作を、指定した回数だけ、接続の失敗（外部サービスのエラー）にする。
+     *
+     * @param times 接続の失敗にする回数
+     */
+    public void failNextCloses(int times) {
+        closeFailures.set(times);
     }
 
     /**
@@ -529,6 +555,18 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 支払画面について、画面を閉じる操作を呼ばれた回数を返す。
+     *
+     * <p>他のテストの画面を数えないように、支払画面 ID で絞る。
+     *
+     * @param pageId 支払画面 ID
+     * @return 画面を閉じる操作を呼ばれた回数（失敗と重複を含む）
+     */
+    public int closeCallsOf(String pageId) {
+        return (int) closedPageCalls.stream().filter(pageId::equals).count();
+    }
+
+    /**
      * 売上確定の状態の取得を呼ばれた回数を返す。
      *
      * @return 売上確定の状態の取得を呼ばれた回数（失敗を含む）
@@ -635,6 +673,8 @@ public class TestPaymentGateway implements PaymentGateway {
         openFailures.set(0);
         voided.clear();
         voidFailures.set(0);
+        closedPageCalls.clear();
+        closeFailures.set(0);
         authorizationFetchCalls.set(0);
         authorizationFetchFailures.set(0);
         rejectedAuthorizationFetches.clear();

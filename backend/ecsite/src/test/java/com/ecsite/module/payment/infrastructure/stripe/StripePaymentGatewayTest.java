@@ -191,6 +191,19 @@ class StripePaymentGatewayTest {
         }
 
         @Test
+        @DisplayName("NFR-616-2 stripe-java の自動の再試行で 5xx の後に成功したら、同じ冪等キーで 2 回送り、確定済みになる")
+        void automaticRetrySendsSameKey() {
+            // 準備：自動の再試行を 1 回にし、1 回目は 5xx、2 回目は成功
+            var retrying = new StripePaymentGateway(stripe.clientWithRetries(1), Clock.fixed(NOW, ZoneOffset.UTC));
+            stripe.respondOnce("POST /v1/payment_intents/" + INTENT_ID + "/capture", 500, StripeApiStub.error("api_error", null));
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 200, intent("succeeded"));
+
+            // 操作と確認：確定済みで、1 回の呼び出しで送られた 2 つの POST が同じ冪等キー
+            assertThat(retrying.capture(captureRequest())).isEqualTo(CaptureResult.CAPTURED);
+            assertSameIdempotencyKeyInOneCall();
+        }
+
+        @Test
         @DisplayName("確定済みで断られたら（状態 succeeded）、成功とする")
         void alreadyCaptured() {
             // 準備：確定は断られ、読み直すと確定済み
@@ -291,6 +304,21 @@ class StripePaymentGatewayTest {
 
             // 確認：冪等キーが 1 回目と異なる
             assertDifferentIdempotencyKeys();
+        }
+
+        @Test
+        @DisplayName("NFR-616-2 stripe-java の自動の再試行で 5xx の後に成功したら、同じ冪等キーで 2 回送り、成功する")
+        void automaticRetrySendsSameKey() {
+            // 準備：自動の再試行を 1 回にし、1 回目は 5xx、2 回目は成功
+            var retrying = new StripePaymentGateway(stripe.clientWithRetries(1), Clock.fixed(NOW, ZoneOffset.UTC));
+            stripe.respondOnce("POST /v1/refunds", 500, StripeApiStub.error("api_error", null));
+            respond("POST /v1/refunds", 200, REFUND_SUCCEEDED);
+
+            // 操作：返金する（例外にならない）
+            retrying.refund(refundRequest());
+
+            // 確認：1 回の呼び出しで送られた 2 つの POST が同じ冪等キー
+            assertSameIdempotencyKeyInOneCall();
         }
 
         @Test
@@ -852,6 +880,19 @@ class StripePaymentGatewayTest {
      */
     private static String intent(String status) {
         return StripeApiStub.intent(INTENT_ID, status);
+    }
+
+    /**
+     * 1 回の呼び出しで、自動の再試行によって送られた 2 つの POST が、同じで空でない冪等キーを付けたことを確認する。
+     */
+    private void assertSameIdempotencyKeyInOneCall() {
+        var keys = requests().stream()
+                .filter(request -> request.key().startsWith("POST "))
+                .map(Request::idempotencyKey)
+                .toList();
+        assertThat(keys).hasSize(2).doesNotContainNull();
+        assertThat(keys.getFirst()).isNotBlank();
+        assertThat(keys.get(1)).isEqualTo(keys.getFirst());
     }
 
     /**

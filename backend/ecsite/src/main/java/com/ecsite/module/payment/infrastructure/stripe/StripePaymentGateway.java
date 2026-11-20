@@ -101,7 +101,7 @@ class StripePaymentGateway implements PaymentGateway {
     /**
      * {@inheritDoc}
      *
-     * <p>Stripe の冪等の鍵は付けない。同じ鍵では、期限の切れた Session も 24 時間返り続けるため。
+     * <p>Stripe の冪等キーは明示しない。同じキーでは、期限の切れた Session も 24 時間返り続けるため。
      */
     @Override
     public PaymentPage openPage(PageRequest request) {
@@ -189,8 +189,8 @@ class StripePaymentGateway implements PaymentGateway {
      *   <li>それ以外：例外</li>
      * </ul>
      *
-     * <p>Stripe の冪等の鍵は明示しない。同じ鍵では、Stripe の障害の応答が 24 時間返り続けるため。
-     * 二重の確定は、確定済みの拒否を成功として扱う処理で防ぐ。
+     * <p>Stripe の冪等キーは明示しない。同じキーでは、Stripe の障害の応答が 24 時間返り続けるため。
+     * 二重の確定は、確定済みとして拒否されたら成功とする処理で防ぐ。
      */
     @Override
     public CaptureResult capture(CaptureRequest request) {
@@ -239,8 +239,8 @@ class StripePaymentGateway implements PaymentGateway {
     /**
      * {@inheritDoc}
      *
-     * <p>Stripe の冪等の鍵は明示しない。同じ鍵では、Stripe の障害の応答が 24 時間返り続けるため。
-     * 二重の返金は、返金済みの拒否を成功として扱う処理で防ぐ。
+     * <p>Stripe の冪等キーは明示しない。同じキーでは、Stripe の障害の応答が 24 時間返り続けるため。
+     * 二重の返金は、返金済みとして拒否されたら成功とする処理で防ぐ。
      */
     @Override
     public void refund(RefundRequest request) {

@@ -1,7 +1,9 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
+import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
@@ -17,14 +19,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -445,7 +445,7 @@ class JooqPaymentRepositoryTest {
             insertAll(older, onDeadline, oldest);
 
             // 操作と確認：3 件が期限の古い順に並ぶ
-            assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(PastDeadlinePaymentView::id)
                     .containsExactly(oldest.id(), older.id(), onDeadline.id());
         }
 
@@ -458,7 +458,7 @@ class JooqPaymentRepositoryTest {
             insertAll(older, payment(UUID.randomUUID(), SEARCH_NOW), oldest);
 
             // 操作と確認：古い 2 件
-            assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 2)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 2)).extracting(PastDeadlinePaymentView::id)
                     .containsExactly(oldest.id(), older.id());
         }
 
@@ -470,7 +470,7 @@ class JooqPaymentRepositoryTest {
             insertAll(past, payment(UUID.randomUUID(), SEARCH_NOW.plusSeconds(1)));
 
             // 操作と確認：期限を過ぎた 1 件だけ
-            assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(PastDeadlinePaymentView::id)
                     .containsExactly(past.id());
         }
 
@@ -484,7 +484,7 @@ class JooqPaymentRepositoryTest {
             repository.update(expired(expired, SEARCH_NOW));
 
             // 操作と確認：期限切れにしていない 1 件だけ
-            assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(PastDeadlinePaymentView::id)
                     .containsExactly(past.id());
         }
 
@@ -502,7 +502,7 @@ class JooqPaymentRepositoryTest {
             awaiting.forEach(payment -> awaitAuthorization(payment, SEARCH_NOW.minusSeconds(10)));
 
             // 操作と確認：待つ支払を除いて、新しい支払を取得する
-            assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 2)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 2)).extracting(PastDeadlinePaymentView::id)
                     .containsExactly(newer.id());
         }
     }
@@ -518,10 +518,10 @@ class JooqPaymentRepositoryTest {
             var waiting = awaitingPayments();
 
             // 操作：待つ支払を、上限なしで取得する
-            var found = repository.findUnpaidAwaitingAuthorization(Integer.MAX_VALUE);
+            var found = queryRepository.findUnpaidAwaitingAuthorization(Integer.MAX_VALUE);
 
             // 確認：このテストの支払のうち、待つ 2 件だけが古い順に
-            assertThat(found).extracting(Payment::id).filteredOn(waiting.mine()::contains)
+            assertThat(found).extracting(AwaitingAuthorizationPaymentView::id).filteredOn(waiting.mine()::contains)
                     .containsExactly(waiting.oldest().id(), waiting.older().id());
         }
 
@@ -532,7 +532,7 @@ class JooqPaymentRepositoryTest {
             var waiting = awaitingPayments();
 
             // 操作と確認：上限 1 件で取得すると、最も古くから待つ 1 件
-            assertThat(repository.findUnpaidAwaitingAuthorization(1)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidAwaitingAuthorization(1)).extracting(AwaitingAuthorizationPaymentView::id)
                     .containsExactly(waiting.oldest().id());
         }
     }
@@ -702,7 +702,7 @@ class JooqPaymentRepositoryTest {
             insertAll(paymentWithId(ids.get(2), tied), paymentWithId(ids.get(1), tied), paymentWithId(ids.get(0), tied));
 
             // 操作と確認：支払 ID の小さい順に並ぶ
-            assertThat(repository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(PastDeadlinePaymentView::id)
                     .containsExactlyElementsOf(ids);
         }
 
@@ -718,7 +718,7 @@ class JooqPaymentRepositoryTest {
             payments.forEach(payment -> awaitAuthorization(payment, since));
 
             // 操作と確認：待ち始めた時刻が最も古い 3 件が、支払 ID の小さい順に並ぶ
-            assertThat(repository.findUnpaidAwaitingAuthorization(3)).extracting(Payment::id)
+            assertThat(queryRepository.findUnpaidAwaitingAuthorization(3)).extracting(AwaitingAuthorizationPaymentView::id)
                     .containsExactlyElementsOf(ids);
         }
     }
@@ -742,18 +742,12 @@ class JooqPaymentRepositoryTest {
          */
         private static final String CAPTURE_REQUESTED_INDEX = "payment_authorized_capture_requested_at_id_idx";
 
-        @Autowired
-        ApplicationEventPublisher eventPublisher;
-
-        @Autowired
-        Clock clock;
-
         @Test
         @DisplayName("DC-549-1 期限切れの支払の検索は、期限の部分索引を、範囲の条件で使う")
         void pastDeadlineUsesDeadlineIndex() {
             // 操作：期限切れの支払を検索し、実行計画を取る
             var plans = QueryPlans.capture(dsl, recording ->
-                    new JooqPaymentRepository(recording, eventPublisher, clock).findUnpaidPastDeadline(SEARCH_NOW, 10));
+                    new JooqPaymentQueryRepository(recording).findUnpaidPastDeadline(SEARCH_NOW, 10));
 
             // 確認：期限の部分索引の範囲の条件に、期限の列が出る
             assertThat(plans).as("実行されたクエリの実行計画").hasSize(1);
@@ -795,7 +789,7 @@ class JooqPaymentRepositoryTest {
         void awaitingSearchUsesAwaitingIndex() {
             // 操作：与信の反映を待つ支払を検索し、実行計画を取る（範囲の条件はないので、索引の名前だけを見る）
             var plans = QueryPlans.capture(dsl, recording ->
-                    new JooqPaymentRepository(recording, eventPublisher, clock).findUnpaidAwaitingAuthorization(10));
+                    new JooqPaymentQueryRepository(recording).findUnpaidAwaitingAuthorization(10));
 
             // 確認：待ち始めた時刻の部分索引を使い、シーケンシャルスキャンがない
             assertThat(plans).as("実行されたクエリの実行計画").hasSize(1);

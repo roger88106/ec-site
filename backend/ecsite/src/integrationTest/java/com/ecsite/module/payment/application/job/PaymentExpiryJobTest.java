@@ -22,6 +22,8 @@ import com.ecsite.support.LogCapture;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.PaymentTestData;
+import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +50,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
+import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -179,6 +182,17 @@ class PaymentExpiryJobTest {
      */
     @Autowired
     ApplicationContext context;
+
+    /**
+     * テストで復元できない形に書き換えた支払の、注文 ID（テストの後に削除する）
+     */
+    final List<UUID> corruptedOrderIds = new ArrayList<>();
+
+    /**
+     * 支払の行を直接書き換えるための jOOQ
+     */
+    @Autowired
+    DSLContext dsl;
 
     /**
      * 支払の更新のサービスのログ
@@ -399,6 +413,60 @@ class PaymentExpiryJobTest {
 
             // 確認：5 分以内
             assertThat(interval).isLessThanOrEqualTo(MAX_INTERVAL);
+        }
+    }
+
+    @Nested
+    @DisplayName("復元できない行がある支払")
+    class UnrestorableRow {
+
+        /**
+         * 他のテストと、後のジョブの実行に影響しないように、復元できない形にした行を削除する。
+         */
+        @AfterEach
+        void deleteCorrupted() {
+            dsl.deleteFrom(PAYMENT_).where(PAYMENT_.ORDER_ID.in(corruptedOrderIds)).execute();
+            corruptedOrderIds.clear();
+        }
+
+        @Test
+        @DisplayName("AC-310 期限切れの支払の検索の対象に復元できない行があっても、他の支払は支払なしになり、その行は未払いのまま残り、支払 ID を含む warn のログが出る")
+        void expiresOthersWhenPastDeadlineRowUnrestorable() {
+            // 準備：期限を過ぎた、支払画面のない未払いの支払が、復元できない形（未払いで与信の参照がある）の 1 件と、普通の 1 件。
+            // 他のテストが残した支払より先に処理されるように、期限を十分に早くする
+            var early = ORDERED_AT.minus(Duration.ofDays(30));
+            var broken = payments.created(early);
+            var other = payments.created(early);
+            corrupt(broken);
+            clock.setInstant(DEADLINE);
+            reconcileLogs.clear();
+
+            // 操作：ジョブを 1 回動かす
+            job.expire();
+
+            // 確認：普通の支払は支払なしで、復元できない行は未払いのまま。復元できない行の支払 ID を含む warn が出る
+            assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+            assertThat(rawStatusOf(broken)).isEqualTo(PaymentStatus.UNPAID.name());
+            assertThat(reconcileLogs.messages(Level.WARN)).anyMatch(line -> line.contains(rawPaymentIdOf(broken).toString()));
+        }
+
+        @Test
+        @DisplayName("AC-310 与信の反映を待つ支払の検索の対象に復元できない行があっても、他の支払は与信済みになり、支払 ID を含む warn のログが出る")
+        void authorizesOthersWhenAwaitingRowUnrestorable() {
+            // 準備：与信の反映を待つ未払いの支払が 2 件。後で与信を取得できるようにし、1 件を復元できない形（未払いで与信の参照がある）にする
+            var broken = awaitingAfterRejectedFetch();
+            clock.setInstant(ORDERED_AT);
+            var other = awaitingAfterRejectedFetch();
+            gateway.reset();
+            corrupt(broken);
+            reconcileLogs.clear();
+
+            // 操作：ジョブを 1 回動かす
+            job.expire();
+
+            // 確認：普通の支払は与信済みになり、復元できない行の支払 ID を含む warn が出る
+            assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            assertThat(reconcileLogs.messages(Level.WARN)).anyMatch(line -> line.contains(rawPaymentIdOf(broken).toString()));
         }
     }
 
@@ -1217,6 +1285,36 @@ class PaymentExpiryJobTest {
         var found = paymentRepository.findByOrderIds(orderIds);
         return found.size() == orderIds.size()
                 && found.stream().allMatch(payment -> payment.status() == PaymentStatus.AUTHORIZED);
+    }
+
+    /**
+     * 注文の支払の行を、復元できない形（未払いで与信の参照がある）に直接書き換える。テストの後に削除する。
+     *
+     * @param orderId 注文 ID（未払い）
+     */
+    private void corrupt(UUID orderId) {
+        corruptedOrderIds.add(orderId);
+        dsl.update(PAYMENT_).set(PAYMENT_.AUTHORIZATION_REF, "pi_corrupted").where(PAYMENT_.ORDER_ID.eq(orderId)).execute();
+    }
+
+    /**
+     * 注文の支払の行から、復元せずに状態を読む。
+     *
+     * @param orderId 注文 ID
+     * @return 状態の列の値
+     */
+    private String rawStatusOf(UUID orderId) {
+        return dsl.select(PAYMENT_.STATUS).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchSingle(PAYMENT_.STATUS);
+    }
+
+    /**
+     * 注文の支払の行から、復元せずに支払 ID を読む。
+     *
+     * @param orderId 注文 ID
+     * @return 支払 ID
+     */
+    private UUID rawPaymentIdOf(UUID orderId) {
+        return dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchSingle(PAYMENT_.ID);
     }
 
     /**

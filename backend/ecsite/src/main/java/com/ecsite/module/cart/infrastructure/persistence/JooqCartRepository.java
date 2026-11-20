@@ -8,6 +8,7 @@ import com.ecsite.module.cart.domain.Cart;
 import com.ecsite.module.cart.domain.CartItem;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
@@ -56,6 +57,31 @@ class JooqCartRepository implements CartRepository {
                 .doNothing()
                 .execute();
         return inserted > 0;
+    }
+
+    /**
+     * 会員のカートを作り、カート ID を返す。
+     *
+     * <p>同じ会員のカートが既にあれば、そのカート ID を返し、他の列（バージョン、作成日時、更新日時）は変えない。
+     *
+     * @param cart 会員の空のカート
+     * @return カート ID
+     */
+    @Override
+    public UUID createForMemberOrGetId(Cart cart) {
+        // 衝突したときは、会員 ID を同じ値で書き換えて RETURNING で既存の行の ID を得る（DO NOTHING では行が返らない）。他の列は書き換えない
+        return dsl.insertInto(CART_)
+                .set(CART_.ID, cart.id())
+                .set(CART_.MEMBER_ID, cart.memberId().orElseThrow())
+                .set(CART_.VERSION, cart.version())
+                .set(CART_.CREATED_AT, clock.instant())
+                .set(CART_.UPDATED_AT, cart.updatedAt())
+                .onConflict(CART_.MEMBER_ID)
+                .doUpdate()
+                .set(CART_.MEMBER_ID, DSL.excluded(CART_.MEMBER_ID))
+                .returning(CART_.ID)
+                .fetchSingle()
+                .getId();
     }
 
     /**

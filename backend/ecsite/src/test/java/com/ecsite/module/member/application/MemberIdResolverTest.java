@@ -62,9 +62,9 @@ class MemberIdResolverTest {
         }
 
         @Override
-        public void insertIfAbsent(Member member) {
+        public UUID createOrGetId(Member member) {
             inserts++;
-            members.putIfAbsent(member.idpSubject(), member.id());
+            return members.computeIfAbsent(member.idpSubject(), key -> member.id());
         }
     };
 

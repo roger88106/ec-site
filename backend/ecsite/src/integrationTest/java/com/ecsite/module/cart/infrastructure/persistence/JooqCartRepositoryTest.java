@@ -5,6 +5,7 @@ import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
 import com.ecsite.module.cart.domain.CartItem;
 import com.ecsite.support.config.IntegrationTest;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,6 +80,9 @@ class JooqCartRepositoryTest {
      */
     @Autowired
     CartRepository repository;
+
+    @Autowired
+    DSLContext dsl;
 
     // ============================== テスト ==============================
 
@@ -177,6 +182,39 @@ class JooqCartRepositoryTest {
 
             // 確認：会員から引くと、先に作ったカート
             assertThat(repository.findIdByMemberId(memberId)).contains(first.id());
+        }
+
+        @Test
+        @DisplayName("AC-121 会員のカートがないときは、作ったカートの ID を返す")
+        void createForMemberOrGetIdReturnsNewId() {
+            // 準備：会員のカート
+            var memberId = UUID.randomUUID();
+            var cart = Cart.createForMember(UUID.randomUUID(), memberId, CREATED_AT);
+
+            // 操作：1 つの文で作って ID を得る
+            var id = repository.createForMemberOrGetId(cart);
+
+            // 確認：渡したカートの ID で、会員から引ける
+            assertThat(id).isEqualTo(cart.id());
+            assertThat(repository.findIdByMemberId(memberId)).contains(cart.id());
+        }
+
+        @Test
+        @DisplayName("AC-121 同じ会員のカートがすでにあれば、先のカートの ID を返し、既存の行の値を変えない")
+        void createForMemberOrGetIdReturnsExistingIdAndKeepsRow() {
+            // 準備：会員のカートを作り、行の全ての値を控える
+            var memberId = UUID.randomUUID();
+            var first = Cart.createForMember(UUID.randomUUID(), memberId, CREATED_AT);
+            repository.createForMemberOrGetId(first);
+            var before = dsl.selectFrom(CART_).where(CART_.ID.eq(first.id())).fetchOne();
+
+            // 操作：同じ会員で、別の ID と別の時刻のカートを渡す（例外にならない）
+            var id = repository.createForMemberOrGetId(Cart.createForMember(UUID.randomUUID(), memberId, CHANGED_AT));
+
+            // 確認：先のカートの ID を返し、行の値（バージョン、作成日時、更新日時を含む）は変わらず、会員のカートは 1 つのまま
+            assertThat(id).isEqualTo(first.id());
+            assertThat(dsl.selectFrom(CART_).where(CART_.ID.eq(first.id())).fetchOne()).isEqualTo(before);
+            assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId))).isEqualTo(1);
         }
     }
 

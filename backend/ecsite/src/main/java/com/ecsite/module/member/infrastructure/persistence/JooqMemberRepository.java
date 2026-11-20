@@ -4,6 +4,7 @@ import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -35,20 +36,25 @@ class JooqMemberRepository implements MemberRepository {
     }
 
     /**
-     * 会員を作る
+     * 会員を作り、会員 ID を返す。
      *
-     * <p>同じ IdP のアカウントの会員が既にいれば、作らない。
+     * <p>同じ IdP のアカウントの会員が既にいれば、その会員 ID を返し、他の列は変えない。
      *
      * @param member 会員
+     * @return 会員 ID
      */
     @Override
-    public void insertIfAbsent(Member member) {
-        dsl.insertInto(MEMBER_)
+    public UUID createOrGetId(Member member) {
+        // 衝突したときは、一意の列を同じ値で書き換えて RETURNING で既存の行の ID を得る（DO NOTHING では行が返らない）。他の列は書き換えない
+        return dsl.insertInto(MEMBER_)
                 .set(MEMBER_.ID, member.id())
                 .set(MEMBER_.IDP_SUBJECT, member.idpSubject())
                 .set(MEMBER_.CREATED_AT, member.createdAt())
-                // IdP のアカウントの ID が重複するときは挿入しない（一意制約の違反でトランザクションを失敗させない）
-                .onConflict(MEMBER_.IDP_SUBJECT).doNothing()
-                .execute();
+                .onConflict(MEMBER_.IDP_SUBJECT)
+                .doUpdate()
+                .set(MEMBER_.IDP_SUBJECT, DSL.excluded(MEMBER_.IDP_SUBJECT))
+                .returning(MEMBER_.ID)
+                .fetchSingle()
+                .getId();
     }
 }

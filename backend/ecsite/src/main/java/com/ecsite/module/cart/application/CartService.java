@@ -208,14 +208,8 @@ public class CartService {
         if (existing.isPresent()) {
             return existing.get();
         }
-        // カートの作成
-        var cart = Cart.createForMember(UUID.randomUUID(), memberId, clock.instant());
-        if (cartRepository.create(cart)) {
-            return cart.id();
-        }
-        // 同じ会員の初回のリクエストが同時に来ると、会員ごとの一意制約で 1 つだけ作られる。作れなかったときは、先に作られたカートを読み直す
-        return cartRepository.findIdByMemberId(memberId)
-                .orElseThrow(() -> SystemException.of("会員のカートを作れない", null));
+        // カートの作成 ※同じ会員の初回のリクエストが同時に来ても、会員ごとの一意制約で 1 つだけ作られ、全てがそのカートの ID を受け取る
+        return cartRepository.createForMemberOrGetId(Cart.createForMember(UUID.randomUUID(), memberId, clock.instant()));
     }
 
     /**

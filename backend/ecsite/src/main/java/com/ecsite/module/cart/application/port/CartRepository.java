@@ -23,6 +23,17 @@ public interface CartRepository {
     boolean create(Cart cart);
 
     /**
+     * 会員のカートを作り、カート ID を返す。
+     *
+     * <p>同じ会員のカートがすでにあれば、何も変えずにそのカート ID を返す。1 つの文で行い、同時に作られたときも、
+     * 先に作られたカートの ID を返す。
+     *
+     * @param cart 会員の空のカート
+     * @return カート ID（作ったとき {@code cart} の ID、すでにあったとき既存のカートの ID）
+     */
+    UUID createForMemberOrGetId(Cart cart);
+
+    /**
      * 会員のカートの ID を探す。
      *
      * @param memberId 会員 ID

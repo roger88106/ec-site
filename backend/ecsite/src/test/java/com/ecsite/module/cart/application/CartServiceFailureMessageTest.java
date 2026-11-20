@@ -12,8 +12,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
-import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -23,9 +21,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * カートを作れないときの例外の単体テスト
+ * ゲストのカートを作れないときの例外の単体テスト
  *
- * <p>カートを作れないときに、例外のメッセージに利用者を指す値が出ないことだけを確認する。ゲストのカートの ID と会員 ID は
+ * <p>ゲストのカートを作れないときに、例外のメッセージに利用者を指す値が出ないことだけを確認する。ゲストのカートの ID と会員 ID は
  * 利用者を指すので、メッセージに入れない。
  */
 class CartServiceFailureMessageTest {
@@ -65,20 +63,5 @@ class CartServiceFailureMessageTest {
         verify(cartRepository).create(cart.capture());
         assertThat(thrown).isInstanceOf(SystemException.class);
         assertThat(thrown.getMessage()).doesNotContain(cart.getValue().id().toString());
-    }
-
-    @Test
-    @DisplayName("会員のカートを作れないとき、例外のメッセージに会員 ID が出ない")
-    void hidesMemberId() {
-        // 準備：作った後も会員のカートが見つからない
-        var memberId = UUID.randomUUID();
-        when(cartRepository.findIdByMemberId(memberId)).thenReturn(Optional.empty());
-
-        // 操作：会員のカートの ID を求める
-        var thrown = catchThrowable(() -> service.memberCartId(memberId));
-
-        // 確認：システムのエラーで、メッセージに会員 ID がない
-        assertThat(thrown).isInstanceOf(SystemException.class);
-        assertThat(thrown.getMessage()).doesNotContain(memberId.toString());
     }
 }

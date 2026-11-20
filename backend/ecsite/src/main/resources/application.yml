@@ -78,9 +78,9 @@ spring:
         await-termination-period: 30s
     scheduling:
       pool:
-        # 定期ジョブの数（6）に合わせる。ジョブが互いを待たないようにする（スレッドが 1 つだと、長いジョブの間、ほかのジョブが始まらない）。
+        # 定期ジョブの数（7）に合わせる。ジョブが互いを待たないようにする（スレッドが 1 つだと、長いジョブの間、ほかのジョブが始まらない）。
         # ジョブを加えたら、この数も増やす
-        size: 6
+        size: 7
   lifecycle:
     # graceful shutdown で、処理中のリクエストの完了を待つ上限
     timeout-per-shutdown-phase: 30s

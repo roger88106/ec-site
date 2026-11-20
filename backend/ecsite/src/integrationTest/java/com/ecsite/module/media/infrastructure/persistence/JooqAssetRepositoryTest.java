@@ -133,11 +133,28 @@ class JooqAssetRepositoryTest {
             var asset = asset(ImageFormat.PNG);
             repository.insert(asset);
 
-            // 操作：記録した ID と、ない ID を指定して消す
+            // 操作：記録した ID と、記録のない ID を指定して削除する
             repository.deleteAllById(Set.of(asset.id(), UUID.randomUUID()));
 
             // 確認：記録した分が消えている
             assertThat(repository.findAllById(List.of(asset.id()))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("DC-489-7 渡した ID のうち記録があったものだけを返し、2 回目は空を返す")
+        void returnsOnlyDeletedAssets() {
+            // 準備：1 つのアセットを記録する
+            var asset = asset(ImageFormat.PNG);
+            repository.insert(asset);
+            var ids = Set.of(asset.id(), UUID.randomUUID());
+
+            // 操作：記録した ID と、記録のない ID を指定して 2 回削除する
+            var first = repository.deleteAllById(ids);
+            var second = repository.deleteAllById(ids);
+
+            // 確認：1 回目は消した 1 つだけを返し、2 回目は空を返す
+            assertThat(first).usingRecursiveFieldByFieldElementComparator().containsExactly(asset);
+            assertThat(second).isEmpty();
         }
 
         @Test
@@ -148,9 +165,10 @@ class JooqAssetRepositoryTest {
             repository.insert(kept);
 
             // 操作：空の ID で消す
-            repository.deleteAllById(List.of());
+            var deleted = repository.deleteAllById(List.of());
 
-            // 確認：記録が残る
+            // 確認：何も返さず、記録が残る
+            assertThat(deleted).isEmpty();
             assertThat(repository.findAllById(List.of(kept.id()))).usingRecursiveFieldByFieldElementComparator().containsExactly(kept);
         }
     }

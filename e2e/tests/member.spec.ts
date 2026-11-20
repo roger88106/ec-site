@@ -28,6 +28,7 @@ import {
   submitOrder,
 } from '../src/store'
 import { STORE_URL } from '../src/urls'
+import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
 test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開いてパスワードを設定すると、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
   page,
@@ -67,6 +68,11 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
 
     await header(page).getByRole('link', { name: 'ご注文履歴' }).click()
     await expect(page.getByRole('link', { name: orderNumber })).toBeVisible()
+
+    // 注文した品目をカートから除く処理は受付の後に非同期で動くので、終わるのを待ってから次のステップに進む
+    await reopenUntil(page, `${STORE_URL}/cart`, () =>
+      expect(page.getByText('カートに商品がありません。')).toBeVisible({ timeout: CHECK_TIMEOUT }),
+    )
   })
 
   await test.step('ログアウトするとカートは空に見え、ログインせずに入れて注文手続きに進むと、ログインの後にカートに戻る（AC-113、124、125）', async () => {

@@ -34,7 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 注文手続きと、カートの変更のイベントの受け入れテスト
  *
- * <p>カートの変更のイベントで、そのカートの注文手続きの引当が解けることだけを確認する。
+ * <p>カートの変更のイベントで、そのカートの注文手続きの引当が解けることを確認する。
+ * 変更の後に始めた注文手続きと、注文手続きの開始のバージョンより古いバージョンのイベントでは解かないこと、バージョンのないイベントでは全て解くことも確認する。
  * 進み直しと期限の経過による引当の解除は {@link CheckoutStartApiTest} が確認する。
  *
  * <p>カートの変更のイベントはコミットの後に非同期で届くので、テストはトランザクションにせず、コミットして処理を待つ。
@@ -121,7 +122,7 @@ class CheckoutCartChangeApiTest {
         // 準備：在庫 3 の品目を 2 個入れて、注文手続きに進む
         var variant = stockedVariant(3);
         orders.add(cartId, variant, 2);
-        // 追加のイベントのリスナーが、次の注文手続きの引当を解かないように、先に処理を待つ
+        // 追加のイベントの処理と注文手続きの開始が重ならないよう、先に処理を待つ（イベントは開始と同じバージョンなので、引当は解かない）
         asyncEvents.awaitCartChanged(cartId);
         orders.startCheckout(cartId);
 

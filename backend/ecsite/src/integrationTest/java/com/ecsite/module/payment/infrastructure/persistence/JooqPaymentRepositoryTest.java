@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
@@ -26,12 +27,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +78,11 @@ class JooqPaymentRepositoryTest {
      * 与信の参照
      */
     private static final String AUTHORIZATION_REF = "auth-1";
+
+    /**
+     * 売上確定を求めた時刻（与信の時刻の後）
+     */
+    private static final Instant CAPTURE_REQUESTED_AT = Instant.parse("2026-10-08T15:25:00Z");
 
     /**
      * 1 回更新した後のバージョン（作ったときは 0）
@@ -235,6 +243,52 @@ class JooqPaymentRepositoryTest {
 
             // 確認：再取得した支払のバージョンが 1 上がっている
             assertThat(repository.findById(payment.id()).orElseThrow().toSnapshot().version()).isEqualTo(VERSION_AFTER_UPDATE);
+        }
+
+        @Test
+        @DisplayName("売上確定を求めた時刻を保存し、削除した後は空に戻る")
+        void savesAndClearsCaptureRequest() {
+            // 準備：与信済みで保存した支払
+            var payment = savedPayment();
+            repository.update(authorized(payment));
+
+            // 操作：売上確定を求めて保存する
+            var requested = repository.lockById(payment.id()).orElseThrow();
+            requested.requestCapture(CAPTURE_REQUESTED_AT);
+            repository.update(requested);
+
+            // 確認：再取得した支払が、その時刻を持つ
+            var restored = repository.findById(payment.id()).orElseThrow();
+            assertThat(restored.captureRequestedAt()).contains(CAPTURE_REQUESTED_AT);
+
+            // 操作：時刻を削除して保存する
+            var cleared = repository.lockById(payment.id()).orElseThrow();
+            cleared.clearCaptureRequest(CAPTURE_REQUESTED_AT);
+            repository.update(cleared);
+
+            // 確認：再取得した支払に、時刻がない
+            assertThat(repository.findById(payment.id()).orElseThrow().captureRequestedAt()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("売上確定を求めた時刻は、売上確定済みに進んでも保存されたまま")
+        void keepsCaptureRequestAfterCapture() {
+            // 準備：売上確定を求めて保存した与信済みの支払
+            var payment = savedPayment();
+            repository.update(authorized(payment));
+            var requested = repository.lockById(payment.id()).orElseThrow();
+            requested.requestCapture(CAPTURE_REQUESTED_AT);
+            repository.update(requested);
+
+            // 操作：売上確定を反映して保存する
+            var captured = repository.lockById(payment.id()).orElseThrow();
+            captured.capture(CAPTURE_REQUESTED_AT.plusSeconds(1));
+            repository.update(captured);
+
+            // 確認：売上確定済みで、時刻が残る
+            var restored = repository.findById(payment.id()).orElseThrow();
+            assertThat(restored.status()).isEqualTo(PaymentStatus.CAPTURED);
+            assertThat(restored.captureRequestedAt()).contains(CAPTURE_REQUESTED_AT);
         }
 
         @Test
@@ -484,6 +538,94 @@ class JooqPaymentRepositoryTest {
     }
 
     @Nested
+    @DisplayName("売上確定の照合の対象の検索")
+    class CaptureReconcile {
+
+        @Test
+        @DisplayName("BR-423-1 売上確定を求めた時刻が基準の時刻以前の与信済みの支払を、求めた時刻の古い順に取得する。基準の時刻ちょうどは含み、1 マイクロ秒後は含まない")
+        void findsInRequestOrder() {
+            // 準備：求めた時刻が古い順に 2 件と、基準ちょうどの 1 件と、基準の 1 マイクロ秒後の 1 件を、順を入れ替えて保存する
+            var oldest = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(300));
+            var older = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(200));
+            var onBoundary = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW);
+            captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.plus(1, ChronoUnit.MICROS));
+
+            // 操作と確認：基準の時刻以前の 3 件が、求めた時刻の古い順に並ぶ
+            assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 10)).extracting(CaptureReconcileView::id)
+                    .containsExactly(oldest.id(), older.id(), onBoundary.id());
+        }
+
+        @Test
+        @DisplayName("BR-423-1 取得する支払は、支払 ID、与信の参照、求めた時刻を持つ")
+        void returnsIdAuthorizationRefAndRequestedAt() {
+            // 準備：売上確定を求めた支払
+            var requested = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(300));
+
+            // 操作と確認：支払 ID、与信の参照、求めた時刻
+            assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 10))
+                    .containsExactly(new CaptureReconcileView(requested.id(), AUTHORIZATION_REF, SEARCH_NOW.minusSeconds(300)));
+        }
+
+        @Test
+        @DisplayName("BR-423-1 上限の件数まで、求めた時刻の古いものから取得する")
+        void findsUpToLimit() {
+            // 準備：求めた時刻の異なる 3 件
+            var oldest = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(300));
+            var older = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(200));
+            captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+
+            // 操作と確認：古い 2 件
+            assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 2)).extracting(CaptureReconcileView::id)
+                    .containsExactly(oldest.id(), older.id());
+        }
+
+        @Test
+        @DisplayName("BR-423-1 求めた時刻のない与信済みの支払と、与信済みでない（売上確定済み、与信期限切れ）支払は取得しない")
+        void excludesOthers() {
+            // 準備：対象の 1 件と、求めていない与信済み、売上確定済み、与信期限切れ
+            var target = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            var notRequested = payment(UUID.randomUUID(), DEADLINE);
+            repository.insertIfAbsent(notRequested);
+            repository.update(authorized(notRequested));
+            var captured = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            progress(captured, payment -> payment.capture(SEARCH_NOW));
+            var expired = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            progress(expired, Payment::expireAuthorization);
+
+            // 操作と確認：対象の 1 件だけ
+            assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 10)).extracting(CaptureReconcileView::id)
+                    .containsExactly(target.id());
+        }
+
+        @Test
+        @DisplayName("求めた時刻を削除した支払は取得しない")
+        void excludesCleared() {
+            // 準備：売上確定を求めた後、記録を削除した支払
+            var cleared = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            progress(cleared, payment -> payment.clearCaptureRequest(SEARCH_NOW.minusSeconds(100)));
+
+            // 操作と確認：取得しない
+            assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 10)).extracting(CaptureReconcileView::id)
+                    .doesNotContain(cleared.id());
+        }
+
+        @Test
+        @DisplayName("同じ時刻に求めた支払は、支払 ID の順に取得する（挿入の順とは逆の ID の順）")
+        void tiesInIdOrder() {
+            // 準備：同じ時刻に求めた 3 件を、ID の大きい順（挿入の順とは逆）に保存する
+            var requestedAt = SEARCH_NOW.minusSeconds(500);
+            var ids = tiedIds();
+            captureRequested(paymentWithId(ids.get(2), DEADLINE), requestedAt);
+            captureRequested(paymentWithId(ids.get(1), DEADLINE), requestedAt);
+            captureRequested(paymentWithId(ids.get(0), DEADLINE), requestedAt);
+
+            // 操作と確認：支払 ID の小さい順に並ぶ
+            assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 3)).extracting(CaptureReconcileView::id)
+                    .containsExactlyElementsOf(ids);
+        }
+    }
+
+    @Nested
     @DisplayName("長く与信の反映を待つ支払の件数")
     class CountAwaitingAuthorization {
 
@@ -527,6 +669,23 @@ class JooqPaymentRepositoryTest {
 
             // 確認：件数は増えない
             assertThat(count).isEqualTo(before);
+        }
+    }
+
+    @Nested
+    @DisplayName("与信の参照の制約")
+    class AuthorizationRefConstraint {
+
+        @Test
+        @DisplayName("未払い・支払なし以外の状態で、与信の参照が null の行は、DB が拒否する")
+        void rejectsAuthorizedWithoutRef() {
+            // 準備：未払いの支払を保存する
+            var payment = savedPayment();
+
+            // 操作と確認：与信の参照のないまま与信済みにする更新は、制約に反して失敗する
+            assertThatThrownBy(() -> dsl.update(PAYMENT_).set(PAYMENT_.STATUS, "AUTHORIZED")
+                    .where(PAYMENT_.ID.eq(payment.id())).execute())
+                    .hasMessageContaining("payment_authorization_ref_check");
         }
     }
 
@@ -578,6 +737,11 @@ class JooqPaymentRepositoryTest {
          */
         private static final String AWAITING_INDEX = "payment_unpaid_awaiting_authorization_since_id_idx";
 
+        /**
+         * 売上確定の照合の対象を検索するための部分索引の名前
+         */
+        private static final String CAPTURE_REQUESTED_INDEX = "payment_authorized_capture_requested_at_id_idx";
+
         @Autowired
         ApplicationEventPublisher eventPublisher;
 
@@ -613,6 +777,20 @@ class JooqPaymentRepositoryTest {
         }
 
         @Test
+        @DisplayName("売上確定の照合の対象の検索は、売上確定を求めた時刻の部分索引を、範囲の条件で使う")
+        void reconcileSearchUsesCaptureRequestedIndex() {
+            // 操作：照合の対象を検索し、実行計画を取る
+            var plans = QueryPlans.capture(dsl, recording ->
+                    new JooqPaymentQueryRepository(recording).findCaptureRequestedUntil(SEARCH_NOW, 10));
+
+            // 確認：売上確定を求めた時刻の部分索引の範囲の条件に、その列が出る
+            assertThat(plans).as("実行されたクエリの実行計画").hasSize(1);
+            assertThat(plans.get(0))
+                    .as("照合の対象の検索の実行計画（索引 %s の範囲の条件を使うはず）%n%s", CAPTURE_REQUESTED_INDEX, plans.get(0))
+                    .containsPattern(QueryPlans.indexRangeCondition(CAPTURE_REQUESTED_INDEX, "capture_requested_at"));
+        }
+
+        @Test
         @DisplayName("DC-549-2 与信の反映を待つ支払の検索は、待ち始めた時刻の部分索引を使い、シーケンシャルスキャンにならない")
         void awaitingSearchUsesAwaitingIndex() {
             // 操作：与信の反映を待つ支払を検索し、実行計画を取る（範囲の条件はないので、索引の名前だけを見る）
@@ -638,7 +816,7 @@ class JooqPaymentRepositoryTest {
      *   <li>支払 ID と注文 ID が保存したもの</li>
      *   <li>金額が {@link #AMOUNT}、支払の期限が {@link #DEADLINE}</li>
      *   <li>状態が未払い</li>
-     *   <li>支払画面・与信の参照・与信の時刻・与信の反映を待ち始めた時刻がない</li>
+     *   <li>支払画面・与信の参照・与信の時刻・与信の反映を待ち始めた時刻・売上確定を求めた時刻がない</li>
      *   <li>バージョンが 0</li>
      * </ul>
      *
@@ -657,6 +835,7 @@ class JooqPaymentRepositoryTest {
         assertThat(snapshot.authorizationRef()).isNull();
         assertThat(snapshot.authorizedAt()).isNull();
         assertThat(snapshot.awaitingAuthorizationSince()).isNull();
+        assertThat(snapshot.captureRequestedAt()).isNull();
         assertThat(snapshot.version()).isZero();
     }
 
@@ -725,6 +904,36 @@ class JooqPaymentRepositoryTest {
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 UUID.fromString("00000000-0000-0000-0000-000000000002"),
                 UUID.fromString("00000000-0000-0000-0000-000000000003"));
+    }
+
+    /**
+     * 支払を保存し、与信を受けて売上確定を求めた形にして更新する。
+     *
+     * @param payment     支払（未保存）
+     * @param requestedAt 売上確定を求めた時刻
+     * @return 保存した支払
+     */
+    private Payment captureRequested(Payment payment, Instant requestedAt) {
+        repository.insertIfAbsent(payment);
+        // 支払画面 ID は支払ごとに一意なので、支払ごとの画面を開く
+        var loaded = repository.lockById(payment.id()).orElseThrow();
+        loaded.openPage(new PaymentPage("page-" + payment.id(), "https://pay.example.com/page-" + payment.id()));
+        loaded.authorize(AUTHORIZATION_REF, AUTHORIZED_AT);
+        assertThat(loaded.requestCapture(requestedAt)).isTrue();
+        repository.update(loaded);
+        return payment;
+    }
+
+    /**
+     * 保存した支払を行ロックして読み、操作を 1 つ呼んで、変わったことを確認して更新する。
+     *
+     * @param payment   保存した支払
+     * @param operation 支払への操作。変えたら true を返す
+     */
+    private void progress(Payment payment, Predicate<Payment> operation) {
+        var loaded = repository.lockById(payment.id()).orElseThrow();
+        assertThat(operation.test(loaded)).isTrue();
+        repository.update(loaded);
     }
 
     /**

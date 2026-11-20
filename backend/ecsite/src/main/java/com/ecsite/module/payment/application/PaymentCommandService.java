@@ -2,6 +2,7 @@ package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.model.Authorization;
+import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
@@ -64,9 +65,9 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
-     * 決済サービスで開いた支払画面を覚える。
+     * 決済サービスで開いた支払画面を記録する。
      *
-     * <p>先に覚えた画面があれば、その画面を返す。
+     * <p>先に記録した画面があれば、その画面を返す。
      *
      * @param orderId 注文 ID
      * @param opened  開いた支払画面
@@ -76,7 +77,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
         return paymentRepository.lockByOrderId(orderId)
                 // 行ロックの待ちで期限を過ぎた支払に記録しないよう、時刻は行ロックの後に取る
                 .filter(payment -> payment.isPayable(clock.instant()))
-                // 同時のリクエストが先に覚えた画面があれば、それを使う
+                // 同時のリクエストが先に記録した画面があれば、それを使う
                 .map(payment -> payment.page().orElseGet(() -> {
                     payment.openPage(opened);
                     paymentRepository.update(payment);
@@ -173,12 +174,54 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     }
 
     /**
+     * 決済サービスに売上確定を求める前に、注文の支払を読み、求めた時刻を記録する。
+     *
+     * <p>注文の支払を行ロックして読み、与信済みなら求めた時刻を記録して、1 つのトランザクションでコミットする。
+     * 読みと記録の間に、支払の状態が変わることがある隙間を作らない。決済サービスを呼ぶ前にコミットするので、
+     * 決済サービスで売上を確定した後にインスタンスが止まっても、時刻が残る。
+     * 与信済みでなければ、時刻を記録せず、読んだ状態を返す。
+     *
+     * @param orderId 注文 ID
+     * @return 売上確定に使う支払（状態は、行ロックで読んだ時点の値）。支払がなければ空
+     */
+    public Optional<PaymentCaptureView> requestCapture(@NonNull UUID orderId) {
+        return paymentRepository.lockByOrderId(orderId).map(payment -> {
+            // 行ロックの待ちで早まらないよう、時刻は行ロックの後に取る
+            if (payment.requestCapture(clock.instant())) {
+                paymentRepository.update(payment);
+            }
+            return new PaymentCaptureView(payment.id(), payment.status(), payment.authorizationRef(), payment.amount());
+        });
+    }
+
+    /**
      * 決済サービスで売上を確定したことを反映する。
      *
+     * <p>与信済みなら売上確定済みに、与信の取消待ちなら返金待ちにする。変えたときだけ保存する。
+     *
      * @param paymentId 支払 ID
+     * @return 変えた後の状態（売上確定済み、または返金待ち）。変えなければ（すでに売上確定済みなど）空
      */
-    public void markCaptured(@NonNull UUID paymentId) {
-        modify(paymentId, payment -> payment.capture(clock.instant()));
+    public Optional<PaymentStatus> markCaptured(@NonNull UUID paymentId) {
+        var now = clock.instant();
+        return paymentRepository.lockById(paymentId).filter(payment -> payment.capture(now)).map(payment -> {
+            paymentRepository.update(payment);
+            return payment.status();
+        });
+    }
+
+    /**
+     * 決済サービスで売上を確定していなかったとき、売上確定を求めた時刻を削除する。
+     *
+     * <p>行ロックの後の時刻が、照合で読んだときの時刻と同じときだけ削除する。照合が決済サービスを読む間に
+     * 売上確定が再実行されて時刻が新しくなっていれば、その再実行の結果はまだ分からないので、削除しない。
+     *
+     * @param paymentId       支払 ID
+     * @param readRequestedAt 照合で読んだ売上確定を求めた時刻
+     * @return 削除したら true
+     */
+    public boolean clearCaptureRequest(@NonNull UUID paymentId, @NonNull Instant readRequestedAt) {
+        return modify(paymentId, payment -> payment.clearCaptureRequest(readRequestedAt));
     }
 
     /**
@@ -250,8 +293,12 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param paymentId 支払 ID
      * @param operation 支払への操作。変えたら true を返す
+     * @return 変えて保存したら true
      */
-    private void modify(UUID paymentId, Predicate<Payment> operation) {
-        paymentRepository.lockById(paymentId).filter(operation).ifPresent(paymentRepository::update);
+    private boolean modify(UUID paymentId, Predicate<Payment> operation) {
+        return paymentRepository.lockById(paymentId).filter(operation).map(payment -> {
+            paymentRepository.update(payment);
+            return true;
+        }).orElse(false);
     }
 }

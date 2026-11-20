@@ -4,10 +4,12 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
+import com.ecsite.module.payment.application.job.PaymentJobs;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
+import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.PaymentTestData;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,14 +17,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
+import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * 売上確定の統合テスト
@@ -77,6 +84,24 @@ class PaymentCaptureTest {
      */
     @Autowired
     MutableClock clock;
+
+    /**
+     * 決済の設定（照合を始めるまでの時間）
+     */
+    @Autowired
+    PaymentProperties properties;
+
+    /**
+     * 期限切れのジョブを実行するための Spring のコンテキスト
+     */
+    @Autowired
+    ApplicationContext context;
+
+    /**
+     * 非同期のイベントの処理を待つ補助
+     */
+    @Autowired
+    AsyncEvents asyncEvents;
 
     /**
      * 支払を進める補助
@@ -305,6 +330,109 @@ class PaymentCaptureTest {
     }
 
     @Nested
+    @DisplayName("売上確定を求めた時刻の記録")
+    class CaptureRequestRecord {
+
+        @Test
+        @DisplayName("売上確定を求めると、決済サービスの応答を待つ間に、求めた時刻がコミットされている")
+        void recordsBeforeGatewayResponse() {
+            // 準備：決済サービスが確定した後、応答を返す前に、別のトランザクションで読む
+            var orderId = payments.authorized(ORDERED_AT);
+            var recordedDuring = new AtomicReference<Optional<Instant>>();
+            gateway.duringNextCapture(() -> recordedDuring.set(captureRequestedAtOf(orderId)));
+
+            // 操作：売上を確定する
+            paymentApi.capture(orderId);
+
+            // 確認：応答を待つ間に、求めた時刻が読めた
+            assertThat(recordedDuring.get()).contains(ORDERED_AT);
+        }
+
+        @Test
+        @DisplayName("決済サービスに接続できずに失敗しても、売上確定を求めた時刻は残る")
+        void keepsRequestWhenUnreachable() {
+            // 準備：次の売上確定で接続できない
+            var orderId = payments.authorized(ORDERED_AT);
+            gateway.failNextCaptures(1);
+
+            // 操作：確定する（システムのエラーになる）
+            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+
+            // 確認：与信済みのままで、求めた時刻は残る
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+            assertThat(captureRequestedAtOf(orderId)).contains(ORDERED_AT);
+        }
+
+        @Test
+        @DisplayName("売上確定済みの支払を重ねて確定しても、求めた時刻は変わらない")
+        void keepsRequestTimeOnRepeat() {
+            // 準備：売上確定済みの支払
+            var orderId = payments.captured(ORDERED_AT);
+
+            // 操作：時間が過ぎた後に、もう一度確定する
+            clock.setInstant(ORDERED_AT.plusSeconds(60));
+            paymentApi.capture(orderId);
+
+            // 確認：最初に求めた時刻のまま
+            assertThat(captureRequestedAtOf(orderId)).contains(ORDERED_AT);
+        }
+
+        @Test
+        @DisplayName("接続できずに失敗した後に確定し直すと、求めた時刻は新しい時刻になる")
+        void updatesRequestTimeOnRetry() {
+            // 準備：1 回目の売上確定が、接続できずに失敗している
+            var orderId = payments.authorized(ORDERED_AT);
+            gateway.failNextCaptures(1);
+            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+
+            // 操作：時間が過ぎた後に、もう一度確定し、また接続できない
+            var retriedAt = ORDERED_AT.plusSeconds(60);
+            clock.setInstant(retriedAt);
+            gateway.failNextCaptures(1);
+            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+
+            // 確認：新しい時刻になる
+            assertThat(captureRequestedAtOf(orderId)).contains(retriedAt);
+        }
+    }
+
+    @Nested
+    @DisplayName("照合で売上確定済みにした支払")
+    class ReconciledCaptured {
+
+        @Test
+        @DisplayName("照合で売上確定済みにした支払は、売上確定が成功し、決済サービスを呼ばない")
+        void capturesWithoutGateway() {
+            // 準備：売上確定の応答が届かず、照合で売上確定済みにした支払
+            var orderId = reconciledCaptured();
+
+            // 操作：売上を確定する（出荷の登録）
+            paymentApi.capture(orderId);
+
+            // 確認：売上確定済みで、決済サービスへの売上確定は、応答が届かなかった 1 回だけ
+            assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
+            assertThat(gateway.captureCallsOf(orderId)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("照合で売上確定済みにした支払を取り消すと、総額を 1 回だけ返金し、与信は取り消さない")
+        void refundsTotalOnce() {
+            // 準備：売上確定の応答が届かず、照合で売上確定済みにした支払
+            var orderId = reconciledCaptured();
+            var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
+
+            // 操作：注文の支払を取り消す（注文のキャンセル）
+            transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId));
+
+            // 確認：返金済みになり、総額が 1 回だけ返金され、確定した与信は取り消さない
+            await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+            assertThat(gateway.refunded()).containsExactly(orderId);
+            assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId)).containsExactly(TOTAL);
+            assertThat(gateway.voidsOf(authorizationRef)).isZero();
+        }
+    }
+
+    @Nested
     @DisplayName("確定できない支払")
     class NotCapturable {
 
@@ -346,7 +474,34 @@ class PaymentCaptureTest {
         }
     }
 
+    // ============================== 確認の補助 ==============================
+
+    /**
+     * 注文の支払の、売上確定を求めた時刻を読む。
+     *
+     * @param orderId 注文 ID
+     * @return 売上確定を求めた時刻。なければ空
+     */
+    private Optional<Instant> captureRequestedAtOf(UUID orderId) {
+        return paymentRepository.findByOrderId(orderId).orElseThrow().captureRequestedAt();
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 売上確定の応答が届かず、照合を始めるまでの時間の後に、期限切れのジョブが売上確定済みにした支払を作る。
+     *
+     * @return 注文 ID
+     */
+    private UUID reconciledCaptured() {
+        var orderId = payments.authorized(ORDERED_AT);
+        gateway.loseNextCaptureResponses(1);
+        assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
+        PaymentJobs.expireUntil(context, () -> payments.statusOf(orderId) == PaymentSummary.Status.CAPTURED);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
+        return orderId;
+    }
 
     /**
      * 与信済みで、決済サービスでは与信が切れている支払を作る。

@@ -74,7 +74,8 @@ class ExternalServiceSelectionTest {
      */
     private final ApplicationContextRunner base = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
-            .withPropertyValues("ecsite.payment.mock.base-url=http://localhost:8080")
+            .withPropertyValues("ecsite.payment.mock.base-url=http://localhost:8080",
+                    "ecsite.payment.return-url=http://store.example/orders/{orderId}?payment=returned")
             .withBean(PaymentNotificationReceiver.class, () -> mock(PaymentNotificationReceiver.class))
             .withBean(Clock.class, Clock::systemUTC)
             .withBean(CarrierSignature.class, () -> new CarrierSignature("test-carrier-webhook-secret"))
@@ -273,7 +274,8 @@ class ExternalServiceSelectionTest {
             "com.ecsite.module.shipping.infrastructure.mock"})
     @ConfigurationPropertiesScan({
             "com.ecsite.module.payment.infrastructure.mock",
-            "com.ecsite.module.payment.infrastructure.stripe"})
+            "com.ecsite.module.payment.infrastructure.stripe",
+            "com.ecsite.module.payment.application"})
     @Import(UnconnectedCarrierTracking.class)
     static class ExternalServices {
     }

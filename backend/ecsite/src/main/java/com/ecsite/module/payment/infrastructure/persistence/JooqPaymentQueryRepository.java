@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
@@ -69,5 +71,23 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
     public long countUnpaidAwaitingAuthorizationUntil(Instant latestAwaitingSince) {
         return dsl.fetchCount(PAYMENT_, PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name())
                 .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.le(latestAwaitingSince)));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<CaptureReconcileView> findCaptureRequestedUntil(Instant latestRequestedAt, int limit) {
+        return dsl.select(PAYMENT_.ID, PAYMENT_.AUTHORIZATION_REF, PAYMENT_.CAPTURE_REQUESTED_AT)
+                .from(PAYMENT_)
+                // 部分索引の条件と同じ（与信済みで、売上確定を求めた時刻がある）
+                .where(PAYMENT_.STATUS.eq(PaymentStatus.AUTHORIZED.name()))
+                .and(PAYMENT_.CAPTURE_REQUESTED_AT.le(latestRequestedAt))
+                .orderBy(PAYMENT_.CAPTURE_REQUESTED_AT, PAYMENT_.ID)
+                .limit(limit)
+                .fetch(r -> new CaptureReconcileView(r.get(PAYMENT_.ID),
+                        // 与信済みの行には与信の参照がある（DB の値の破損は復元の失敗にする）
+                        RestoreGuard.restore("payment", () -> Objects.requireNonNull(r.get(PAYMENT_.AUTHORIZATION_REF))),
+                        r.get(PAYMENT_.CAPTURE_REQUESTED_AT)));
     }
 }

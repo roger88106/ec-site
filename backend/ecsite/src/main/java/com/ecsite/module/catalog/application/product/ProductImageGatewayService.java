@@ -1,10 +1,12 @@
 package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -15,6 +17,7 @@ import java.util.UUID;
  * <p>ファイルの受け付け・検証・配信・削除はメディアモジュールが行い、ここでは商品の規則を扱う。
  * メディアの呼び出しをトランザクションの外で行う受付と追加を受け持ち、保存は {@link ProductImageCommandService} に任せる。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductImageGatewayService {
@@ -83,8 +86,27 @@ public class ProductImageGatewayService {
             return commandService.saveAddedImage(productId, version, prepared);
         } catch (RuntimeException e) {
             // 保存が失敗したら、用意した配信のファイルを消し、元の失敗を投げ直す
-            mediaDirectory.discardImage(prepared);
+            discardAfterFailure(prepared, e);
             throw e;
+        }
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 用意した画像を破棄する。破棄に失敗しても例外を投げない。
+     *
+     * <p>破棄の失敗で元の失敗を隠さない。破棄の失敗は、元の例外に抑制された例外として付け、警告のログにも出力する。
+     *
+     * @param prepared 用意した画像
+     * @param failure  保存の失敗（元の例外）
+     */
+    private void discardAfterFailure(PreparedImage prepared, RuntimeException failure) {
+        try {
+            mediaDirectory.discardImage(prepared);
+        } catch (RuntimeException e) {
+            failure.addSuppressed(e);
+            log.warn("用意した画像を破棄できない：assetId={}", prepared.assetId(), e);
         }
     }
 }

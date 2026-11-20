@@ -107,7 +107,7 @@ public interface PaymentGateway {
     /**
      * 売上確定のリクエスト
      *
-     * @param orderId          注文 ID（決済サービスでの重複を防ぐ鍵に使う）
+     * @param orderId          注文 ID（ログの照合と、テスト用の決済サービスでの重複の判定に使う）
      * @param authorizationRef 与信の参照
      * @param amount           金額（確定する額）
      */
@@ -117,9 +117,9 @@ public interface PaymentGateway {
     /**
      * 返金のリクエスト
      *
-     * @param orderId          注文 ID（決済サービスでの重複を防ぐ鍵に使う）
+     * @param orderId          注文 ID（ログの照合と、テスト用の決済サービスでの重複の判定に使う）
      * @param authorizationRef 与信の参照
-     * @param amount           金額（返金する額）
+     * @param amount           金額（返金する額。売上確定の総額）
      */
     record RefundRequest(UUID orderId, String authorizationRef, Money amount) {
     }

@@ -10,7 +10,9 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -25,6 +27,11 @@ final class StripeApiStub implements AutoCloseable {
      * パス（メソッドとパス）→ 返す応答
      */
     private final Map<String, Response> responses = new ConcurrentHashMap<>();
+
+    /**
+     * パス → 次に 1 回だけ返す応答（先頭から順に使い、空になったら {@link #responses} の応答を返す）
+     */
+    private final Map<String, Queue<Response>> queuedResponses = new ConcurrentHashMap<>();
 
     /**
      * 受けたリクエスト（受けた順）
@@ -50,7 +57,10 @@ final class StripeApiStub implements AutoCloseable {
             requests.add(new Request(key, URLDecoder.decode(body, StandardCharsets.UTF_8),
                     exchange.getRequestHeaders().getFirst("Idempotency-Key"),
                     query == null ? "" : URLDecoder.decode(query, StandardCharsets.UTF_8)));
-            var response = responses.getOrDefault(key, new Response(404, error("invalid_request_error", "resource_missing")));
+            var queued = queuedResponses.get(key);
+            var next = queued == null ? null : queued.poll();
+            var response = next != null ? next
+                    : responses.getOrDefault(key, new Response(404, error("invalid_request_error", "resource_missing")));
             var bytes = response.body().getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(response.status(), bytes.length);
@@ -69,6 +79,17 @@ final class StripeApiStub implements AutoCloseable {
      */
     void respond(String key, int status, String body) {
         responses.put(key, new Response(status, body));
+    }
+
+    /**
+     * リクエストに、次の 1 回だけ返す応答を追加する（追加した順に使い、使い終えたら {@link #respond} の応答を返す）。
+     *
+     * @param key    メソッドとパス（例：{@code POST /v1/refunds}）
+     * @param status HTTP の状態
+     * @param body   本文
+     */
+    void respondOnce(String key, int status, String body) {
+        queuedResponses.computeIfAbsent(key, k -> new ConcurrentLinkedQueue<>()).add(new Response(status, body));
     }
 
     /**
@@ -101,7 +122,29 @@ final class StripeApiStub implements AutoCloseable {
      * @return Stripe の API
      */
     static StripeClient client(String apiBase) {
-        return StripeClient.builder().setApiKey("sk_test_unit").setApiBase(apiBase).setMaxNetworkRetries(0).build();
+        return client(apiBase, 0);
+    }
+
+    /**
+     * 宛先と自動の再試行の回数を指定した Stripe の API。
+     *
+     * @param apiBase           API の宛先
+     * @param maxNetworkRetries 自動の再試行の最大の回数
+     * @return Stripe の API
+     */
+    static StripeClient client(String apiBase, int maxNetworkRetries) {
+        return StripeClient.builder().setApiKey("sk_test_unit").setApiBase(apiBase)
+                .setMaxNetworkRetries(maxNetworkRetries).build();
+    }
+
+    /**
+     * このサーバーを宛先にし、自動の再試行を指定の回数にした Stripe の API を作る。
+     *
+     * @param maxNetworkRetries 自動の再試行の最大の回数
+     * @return Stripe の API
+     */
+    StripeClient clientWithRetries(int maxNetworkRetries) {
+        return client("http://localhost:" + server.getAddress().getPort(), maxNetworkRetries);
     }
 
     /**

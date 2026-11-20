@@ -9,7 +9,6 @@ import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
-import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.NonNull;
@@ -149,28 +148,26 @@ public class PaymentQueryService {
     /**
      * 期限を過ぎた未払いの支払を、期限・支払 ID の順に取得する。
      *
-     * <p>与信の反映を待つ支払は除く。
+     * <p>与信の反映を待つ支払は除く。支払（集約）に復元しないので、復元できない行があっても失敗しない
+     * （その行は、1 件ずつの処理の失敗として扱う）。
      *
      * @param limit 取得する数の上限
      * @return 支払
      */
     public List<PastDeadlinePaymentView> findPastDeadline(int limit) {
-        return paymentRepository.findUnpaidPastDeadline(clock.instant(), limit).stream()
-                .map(payment -> new PastDeadlinePaymentView(payment.id(), payment.page().orElse(null)))
-                .toList();
+        return queryRepository.findUnpaidPastDeadline(clock.instant(), limit);
     }
 
     /**
      * 与信の反映を待つ支払を、待ち始めた時刻・支払 ID の順に取得する。
      *
+     * <p>支払（集約）に復元しないので、復元できない行があっても失敗しない（その行は、1 件ずつの処理の失敗として扱う）。
+     *
      * @param limit 取得する数の上限
      * @return 支払
      */
     public List<AwaitingAuthorizationPaymentView> findAwaitingAuthorization(int limit) {
-        return paymentRepository.findUnpaidAwaitingAuthorization(limit).stream()
-                .map(payment -> new AwaitingAuthorizationPaymentView(payment.id(),
-                        payment.page().map(PaymentPage::id).orElse(null)))
-                .toList();
+        return queryRepository.findUnpaidAwaitingAuthorization(limit);
     }
 
     /**

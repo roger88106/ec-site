@@ -189,7 +189,7 @@
   - 依存：T477-01-05
   - 範囲：`config/security`、`ProductionJarStartupTest`、`docs/03-機能仕様/acceptance-criteria.md`
   - 確認方法：`./gradlew integrationTest --tests '*config.security*' --tests '*ProductionJarStartupTest'` が通る。
-- [ ] **T477-01-07** [テスト] IdP に届かないときの 503（DC-477-11）のテストを書き、レッドを確認する。T477-01-02 のテストの期待値を変える。
+- [x] **T477-01-07** [テスト] IdP に届かないときの 503（DC-477-11）のテストを書き、レッドを確認する。T477-01-02 のテストの期待値を変える。
   - 依存：T477-01-02
   - 範囲：integrationTest の `config/security`
   - 確認方法：変えたテストが失敗する。

@@ -35,9 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>IdP の代わりに、待ち受けのないポートを使う（このクラスだけ）。有効な token を付けたリクエストが、
  * 検証に必要な IdP の設定や署名の鍵を取得できないときの応答と、取得をやり直す回数を確認する。
+ * 応答は、再試行できるエラー（503 の Problem Details）にする。
  *
- * <p>失敗は filter から外に出て、サーブレットのコンテナがエラーの画面に転送する。MockMvc はその転送をしないので、
- * 業務ポートを実際に開き、HTTP で呼ぶ。
+ * <p>失敗が filter の外に出ると、サーブレットのコンテナがエラーの画面に転送する。MockMvc はその転送をせず、
+ * 応答を確認できないので、業務ポートを実際に開き、HTTP で呼ぶ。
  *
  * <p>realm の decoder は、一度作れたら使い続ける。decoder を作れない場合と、作れたが鍵を取得できない場合で、
  * 署名の鍵の差し替えを分けるため、入れ子のクラスごとに Spring のコンテキストを分ける。
@@ -48,10 +49,11 @@ class IdpUnreachableTest {
 
     // ============================== 定数 ==============================
 
+    // 期待するメッセージ（messages.properties）。メッセージを変えたら、ここも合わせる
     /**
-     * サーブレットのコンテナの既定のエラーの本文の項目（Problem Details でない）
+     * IdP に届かず、token を検証できないときのメッセージ
      */
-    private static final String[] CONTAINER_ERROR_FIELDS = {"timestamp", "status", "error", "path"};
+    private static final String AUTHENTICATION_UNAVAILABLE = "ログインの状態を確認できませんでした。しばらくしてから、もう一度お試しください。";
 
     // ============================== Bean ==============================
 
@@ -103,18 +105,18 @@ class IdpUnreachableTest {
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(Api.class)
-        @DisplayName("DC-477-10 有効な token を付けても、500 で、本文は Problem Details でない")
-        void respondsContainerError(Api api) throws Exception {
+        @DisplayName("DC-477-11 有効な token を付けると、IdP に届かないことを示す 503 の Problem Details を返す")
+        void respondsAuthenticationUnavailable(Api api) throws Exception {
             // 操作：有効な token を付けて呼ぶ
             var response = send(api);
 
-            // 確認：コンテナの既定のエラーの応答
-            assertContainerError(response, api);
+            // 確認：IdP に届かないことを示す 503 の Problem Details
+            assertAuthenticationUnavailable(response, api);
         }
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(Api.class)
-        @DisplayName("DC-477-10 リクエストのたびに、decoder を再作成する（IdP の設定を取得し直す）")
+        @DisplayName("DC-477-11 リクエストのたびに、decoder を再作成する（IdP の設定を取得し直す）")
         void recreatesDecoderPerRequest(Api api) throws Exception {
             // 操作：有効な token を付けて 2 回呼ぶ
             send(api);
@@ -176,18 +178,18 @@ class IdpUnreachableTest {
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(Api.class)
-        @DisplayName("DC-477-10 有効な token を付けても、500 で、本文は Problem Details でない")
-        void respondsContainerError(Api api) throws Exception {
+        @DisplayName("DC-477-11 有効な token を付けると、IdP に届かないことを示す 503 の Problem Details を返す")
+        void respondsAuthenticationUnavailable(Api api) throws Exception {
             // 操作：有効な token を付けて呼ぶ
             var response = send(api);
 
-            // 確認：コンテナの既定のエラーの応答
-            assertContainerError(response, api);
+            // 確認：IdP に届かないことを示す 503 の Problem Details
+            assertAuthenticationUnavailable(response, api);
         }
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(Api.class)
-        @DisplayName("DC-477-10 リクエストのたびに署名の鍵を取得し直し、decoder は再作成しない")
+        @DisplayName("DC-477-11 リクエストのたびに署名の鍵を取得し直し、decoder は再作成しない")
         void refetchesKeysPerRequest(Api api) throws Exception {
             // 操作：有効な token を付けて 2 回呼ぶ
             send(api);
@@ -205,25 +207,29 @@ class IdpUnreachableTest {
     // ============================== 確認の補助 ==============================
 
     /**
-     * 応答が、サーブレットのコンテナの既定のエラー（Problem Details でない 500）であることを確認する。
+     * 応答が、IdP に届かないことを示す Problem Details（503）であることを確認する。
      *
      * <ul>
-     *   <li>状態コードが 500</li>
-     *   <li>Content-Type が {@code application/json}（{@code application/problem+json} でない）</li>
-     *   <li>本文の項目が {@link #CONTAINER_ERROR_FIELDS} だけで、状態コードと呼んだパスを持つ（エラーコードがない）</li>
-     *   <li>{@code WWW-Authenticate} がない（認証の失敗の応答でない）</li>
+     *   <li>状態コードが 503</li>
+     *   <li>Content-Type が {@code application/problem+json}</li>
+     *   <li>本文の状態コードが 503、エラーコードが {@code AUTHENTICATION_UNAVAILABLE}、メッセージが
+     *       {@link #AUTHENTICATION_UNAVAILABLE}、{@code instance} が呼んだパスで、トレース ID がある</li>
+     *   <li>{@code WWW-Authenticate} がない（token の誤りでなく、401 でないため）</li>
      * </ul>
      *
      * @param response 応答
      * @param api      呼んだ API
      */
-    private static void assertContainerError(HttpResponse<String> response, Api api) {
-        assertThat(response.statusCode()).isEqualTo(500);
-        assertThat(response.headers().firstValue(HttpHeaders.CONTENT_TYPE)).hasValue(MediaType.APPLICATION_JSON_VALUE);
+    private static void assertAuthenticationUnavailable(HttpResponse<String> response, Api api) {
+        assertThat(response.statusCode()).isEqualTo(503);
+        assertThat(response.headers().firstValue(HttpHeaders.CONTENT_TYPE)).hasValue(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         Map<String, Object> body = JsonPath.read(response.body(), "$");
-        assertThat(body).containsOnlyKeys(CONTAINER_ERROR_FIELDS)
-                .containsEntry("status", 500)
-                .containsEntry("path", api.path);
+        assertThat(body)
+                .containsEntry("status", 503)
+                .containsEntry("errorCode", "AUTHENTICATION_UNAVAILABLE")
+                .containsEntry("message", AUTHENTICATION_UNAVAILABLE)
+                .containsEntry("instance", api.path);
+        assertThat(body.get("traceId")).asString().isNotBlank();
         assertThat(response.headers().firstValue(HttpHeaders.WWW_AUTHENTICATE)).isEmpty();
     }
 

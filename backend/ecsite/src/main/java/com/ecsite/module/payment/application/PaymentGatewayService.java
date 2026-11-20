@@ -245,7 +245,7 @@ public class PaymentGatewayService {
     void closePage(UUID paymentId) {
         queryService.findPageToClose(paymentId).ifPresent(pageId -> {
             if (gateway.closePage(pageId) == PaymentGateway.CloseResult.ALREADY_PAID) {
-                log.info("支払画面を閉じる前に支払が済んでいたので、与信を反映して取り消す: paymentId={}", paymentId);
+                log.warn("支払画面を閉じる前に支払が済んでいたので、与信を反映して取り消す: paymentId={}", paymentId);
                 commandService.authorizeFromGateway(paymentId, gateway.fetchAuthorization(pageId));
             }
         });

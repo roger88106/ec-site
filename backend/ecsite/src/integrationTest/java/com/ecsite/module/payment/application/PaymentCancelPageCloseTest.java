@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,7 +120,7 @@ class PaymentCancelPageCloseTest {
         });
 
         // 確認：コミットの前は開いたままで、コミットの後に閉じ、支払は支払なしのまま
-        asyncEvents.awaitPublishedThenHandled(pageClose(orderId));
+        asyncEvents.awaitPublishedThenHandled(PaymentRequests.pageClose(dsl, orderId));
         assertThat(pageInTransaction.get()).isEqualTo(MockPaymentGateway.PageStatus.OPEN);
         assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.CLOSED);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
@@ -156,16 +155,16 @@ class PaymentCancelPageCloseTest {
         cancel(orderId);
 
         // 確認：閉じる依頼の処理が失敗し、支払は支払なしのままで、画面は開いたまま
-        asyncEvents.awaitFailed(pageClose(orderId));
+        asyncEvents.awaitFailed(PaymentRequests.pageClose(dsl, orderId));
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.OPEN);
 
         // 操作：再発行のジョブと同じく、発行から 5 分を過ぎたこのテストのイベントを再発行する
         clock.advance(PAST_RESUBMIT_AGE);
-        asyncEvents.resubmit(pageClose(orderId));
+        asyncEvents.resubmit(PaymentRequests.pageClose(dsl, orderId));
 
         // 確認：画面が閉じられ、支払は支払なしのまま
-        asyncEvents.awaitHandled(pageClose(orderId));
+        asyncEvents.awaitHandled(PaymentRequests.pageClose(dsl, orderId));
         assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.CLOSED);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
     }
@@ -183,13 +182,13 @@ class PaymentCancelPageCloseTest {
         cancel(orderId);
 
         // 確認：閉じる依頼の処理が失敗し、支払は支払なしのままで、与信は取り消されていない
-        asyncEvents.awaitFailed(pageClose(orderId));
+        asyncEvents.awaitFailed(PaymentRequests.pageClose(dsl, orderId));
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(gateway.voided()).isEmpty();
 
         // 操作：再発行のジョブと同じく、発行から 5 分を過ぎたこのテストのイベントを再発行する
         clock.advance(PAST_RESUBMIT_AGE);
-        asyncEvents.resubmit(pageClose(orderId));
+        asyncEvents.resubmit(PaymentRequests.pageClose(dsl, orderId));
 
         // 確認：与信を取得して取り消し、与信の取消済みになる
         awaitStatus(orderId, PaymentSummary.Status.VOIDED);
@@ -204,7 +203,7 @@ class PaymentCancelPageCloseTest {
         var pageId = payments.openPage(orderId);
         gateway.failNextCloses(1);
         cancel(orderId);
-        asyncEvents.awaitFailed(pageClose(orderId));
+        asyncEvents.awaitFailed(PaymentRequests.pageClose(dsl, orderId));
         gateway.notifyAuthorized(pageId);
         awaitStatus(orderId, PaymentSummary.Status.VOIDED);
         asyncEvents.awaitPublishedThenHandled(PaymentRequests.voidAuthorization(dsl, orderId));
@@ -212,10 +211,10 @@ class PaymentCancelPageCloseTest {
 
         // 操作：再発行のジョブと同じく、閉じる依頼を再発行する
         clock.advance(PAST_RESUBMIT_AGE);
-        asyncEvents.resubmit(pageClose(orderId));
+        asyncEvents.resubmit(PaymentRequests.pageClose(dsl, orderId));
 
         // 確認：依頼の処理は終わり、画面を閉じる操作も与信の取得も呼ばず、与信は 1 回だけ取り消された
-        asyncEvents.awaitHandled(pageClose(orderId));
+        asyncEvents.awaitHandled(PaymentRequests.pageClose(dsl, orderId));
         assertThat(gateway.closeCallsOf(pageId)).isEqualTo(1);
         assertThat(gateway.fetchAuthorizationCalls()).isZero();
         assertThat(gateway.voidsOf(gateway.authorizationRefOf(pageId))).isEqualTo(1);
@@ -223,16 +222,6 @@ class PaymentCancelPageCloseTest {
     }
 
     // ============================== 確認の補助 ==============================
-
-    /**
-     * 注文の支払の、支払画面を閉じる依頼のイベントを選ぶ条件を返す。
-     *
-     * @param orderId 注文 ID
-     * @return イベントの条件
-     */
-    private Predicate<Object> pageClose(UUID orderId) {
-        return PaymentRequests.pageClose(dsl, orderId);
-    }
 
     /**
      * 注文の支払が指定の状態になるまで待つ。

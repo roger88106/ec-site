@@ -31,8 +31,8 @@
 | `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（標準税率） | 必須 |
 | `ECSITE_ORDER_SHIPPING_FEE`、`_RESERVATION_TTL` | 送料（税込、円）、引当の期限 | 1000、15m |
 | `ECSITE_ORDER_PENDING_ORDER_LIMIT` | 会員ごとの支払待ちの注文の上限（件数）。1 以上 | 3 |
-| `ECSITE_MEMBER_ID_CACHE_MAXIMUM_SIZE`、`_EXPIRE_AFTER_WRITE` | 会員 ID のキャッシュの、件数の上限（1 以上）、入れてから消えるまでの時間 | 10000、1h |
-| `ECSITE_REGION_CACHE_EXPIRE_AFTER_WRITE` | 都道府県と市区町村のキャッシュの、読み込んでから再読み込みするまでの時間 | 24h |
+| `ECSITE_MEMBER_ID_CACHE_MAXIMUM_SIZE`、`_EXPIRE_AFTER_WRITE` | 会員 ID のキャッシュの件数の上限（1 以上）、有効期間 | 10000、1h |
+| `ECSITE_REGION_CACHE_EXPIRE_AFTER_WRITE` | 都道府県と市区町村のキャッシュの有効期間（読み込んでから再読み込みするまで） | 24h |
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に表示する） | 必須 |
 | `ECSITE_REPORTING_FISCAL_YEAR_START_MONTH` | 会計年度の始まりの月（1〜12）。売上の推移の四半期と年の区切りに使う | 4 |
 | `ECSITE_PAYMENT_RETURN_URL` | 支払画面からの戻り先（店舗画面の注文の画面）の URL。`{orderId}` に注文 ID が入る | 必須 |

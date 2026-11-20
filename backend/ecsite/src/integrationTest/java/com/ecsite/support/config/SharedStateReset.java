@@ -18,6 +18,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  *   <li>決済の mock（{@link TestPaymentGateway}）：テストだけで使う状態を空にする。決済の mock を使わない設定では、ないので戻さない</li>
  *   <li>税率のキャッシュ：捨てる（次の取得で税モジュールから取得し直す）</li>
  * </ul>
+ * 会員 ID のキャッシュと地域のキャッシュは戻さない。会員 ID は、トランザクションのコミットの後にだけ入れるので、
+ * ロールバックするテストでは入らず、地域の行はテストで変えないためである。
  */
 public final class SharedStateReset implements BeforeEachCallback {
 

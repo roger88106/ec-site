@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 会員 ID のキャッシュの単体テスト
  *
- * <p>期限と件数の上限が守られることを、時計を進めて確認する。追い出しは executor を同期にして確認する。
+ * <p>期限と件数の上限が守られることを、時計を進めて確認する。削除は executor を同期にして確認する。
  */
 class MemberIdCacheTest {
 

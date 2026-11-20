@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 会員 ID を求める処理の単体テスト
  *
- * <p>キャッシュの使い方、会員の作成、確定の後の登録を、Spring を起動せずに確認する。
+ * <p>キャッシュの使い方、会員の作成、コミットの後の登録を、Spring を起動せずに確認する。
  */
 class MemberIdResolverTest {
 
@@ -45,7 +45,7 @@ class MemberIdResolverTest {
     private int lookups;
 
     /**
-     * 会員を記録する呼び出しの回数
+     * 会員を作る呼び出しの回数
      */
     private int inserts;
 
@@ -129,7 +129,7 @@ class MemberIdResolverTest {
         }
 
         @Test
-        @DisplayName("別のアカウントは、キャッシュにあっても別に探す")
+        @DisplayName("別のアカウントは、他のアカウントがキャッシュにあっても、リポジトリで探す")
         void otherSubjectIsLookedUp() {
             // 準備：1 つ目のアカウントで求めた
             var first = resolver.resolve(SUBJECT);
@@ -149,7 +149,7 @@ class MemberIdResolverTest {
     class InTransaction {
 
         @Test
-        @DisplayName("確定の前はキャッシュに入れず、確定の後に入れる")
+        @DisplayName("コミットの前はキャッシュに入れず、コミットの後に入れる")
         void putsAfterCommitOnly() {
             // 準備：トランザクションの同期を有効にする
             TransactionSynchronizationManager.initSynchronization();
@@ -157,14 +157,14 @@ class MemberIdResolverTest {
             // 操作：会員 ID を求める
             var id = resolver.resolve(SUBJECT);
 
-            // 確認：確定の前は、キャッシュにない
+            // 確認：コミットの前は、キャッシュにない
             assertThat(cache.find(SUBJECT)).isEmpty();
 
-            // 操作：確定する
+            // 操作：コミットする
             TransactionSynchronizationManager.getSynchronizations()
                     .forEach(TransactionSynchronization::afterCommit);
 
-            // 確認：確定の後は、キャッシュにある
+            // 確認：コミットの後は、キャッシュにある
             assertThat(cache.find(SUBJECT)).contains(id);
         }
 

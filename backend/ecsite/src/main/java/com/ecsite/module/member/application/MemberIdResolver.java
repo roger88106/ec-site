@@ -55,7 +55,7 @@ public class MemberIdResolver {
     /**
      * 会員 ID をキャッシュに入れる。
      *
-     * <p>トランザクションの同期が有効なときは、確定の後に入れる。ロールバックしたテストで、消えた会員の ID が
+     * <p>トランザクションの同期が有効なときは、コミットの後に入れる。ロールバックしたテストで、消えた会員の ID が
      * キャッシュに残らないようにするため。本番では、トランザクションの外で呼ばれるので、すぐに入れる。
      */
     private void putAfterCommit(String idpSubject, UUID memberId) {

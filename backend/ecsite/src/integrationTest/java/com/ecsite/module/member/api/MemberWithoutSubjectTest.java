@@ -18,8 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * IdP のアカウントの ID（{@code sub}）のない会員の token の統合テスト
  *
- * <p>会員 ID を求める所で失敗し、想定外のエラー（500）になる今の振る舞いを固定する。
- * 会員 ID を求める操作は、店舗 API の会員の操作が使う。ここでは、ログインが必要な操作（カートの取得）と、
+ * <p>会員 ID を求める処理で失敗し、想定外のエラー（500）になる今の振る舞いを固定する。
+ * 会員 ID を求める操作は、店舗 API の会員向けの操作が使う。ここでは、ログインが必要な操作（カートの取得）と、
  * ログインが任意の操作（カートに入れる）を 1 つずつ確認する。
  */
 @IntegrationTest
@@ -42,7 +42,7 @@ class MemberWithoutSubjectTest {
     @Test
     @DisplayName("ログインが必要な操作は、subject のない token で 500（想定外のエラー）になる")
     void requiredOperationFails() throws Exception {
-        // 操作と確認：会員のカートの取得は、会員 ID を求める所で失敗する
+        // 操作と確認：会員のカートの取得は、会員 ID を求める処理で失敗する
         mockMvc.perform(get("/api/store/me/cart").with(TestTokens.member().withoutSubject().bearer()))
                 .andExpect(status().isInternalServerError())
                 .andExpectAll(problem("SYSTEM_ERROR", SYSTEM_ERROR));
@@ -51,7 +51,7 @@ class MemberWithoutSubjectTest {
     @Test
     @DisplayName("ログインが任意の操作も、subject のない token で 500（想定外のエラー）になる")
     void optionalOperationFails() throws Exception {
-        // 操作と確認：カートに入れる操作は、会員 ID を探す所で失敗する
+        // 操作と確認：カートに入れる操作は、会員 ID を求める処理で失敗する
         mockMvc.perform(post("/api/store/carts/" + UUID.randomUUID() + "/items")
                         .with(TestTokens.member().withoutSubject().bearer())
                         .contentType(MediaType.APPLICATION_JSON)

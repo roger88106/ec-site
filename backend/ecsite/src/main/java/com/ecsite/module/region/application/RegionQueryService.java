@@ -21,7 +21,7 @@ import java.util.Optional;
  * 始めない。期限切れの読み込みは、呼ぶ側のトランザクションがあればそれに加わるので、2 本目の接続を取らない
  * （{@code NOT_SUPPORTED} だと、呼ぶ側の接続を保留したまま読み込みの接続を取り、接続が尽きるおそれがある）。
  * 参照のメソッドには伝播を指定しない、という規則（backend-coding.md の「トランザクションは application」）の例外である。
- * {@code readOnly = true} は、クラスの指定と同じにしただけで、新しくトランザクションを始めないので効果はない。
+ * {@code readOnly = true} は、クラスの指定に揃えただけである。この照会は新しくトランザクションを始めないので、効果はない。
  */
 @Service
 @Transactional(readOnly = true)

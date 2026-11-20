@@ -32,7 +32,7 @@ public class RegionMasterCache {
     private final Cache<String, RegionMaster> cache;
 
     /**
-     * 設定と実時間で作る。
+     * 設定と実際の時計で作る。
      *
      * @param loader     読み込みの担当
      * @param properties キャッシュの設定

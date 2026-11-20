@@ -28,31 +28,34 @@ token から会員の情報を取り出すクラスは、会員モジュール�
 sequenceDiagram
     participant P as 呼び出し元の presentation
     participant A as 会員の API
+    participant R as 会員 ID を求める処理
     participant K as 会員 ID のキャッシュ
     participant Q as 会員の参照
     participant C as 会員の更新
     P->>A: 会員 ID を求める
-    A->>K: アカウント ID から会員 ID を探す
+    A->>R: 会員 ID を求める
+    R->>K: アカウント ID から会員 ID を探す
     alt キャッシュにある
-        K-->>A: 会員 ID
+        K-->>R: 会員 ID
     else キャッシュにない
-        A->>Q: アカウント ID から会員 ID を探す
-        Q-->>A: 会員 ID（いなければ空）
-        opt いない（初めてのリクエスト）
-            A->>C: 会員を作る
-            C-->>A: 会員 ID
+        R->>Q: アカウント ID から会員 ID を探す
+        Q-->>R: 会員 ID（いなければ空）
+        opt いない（初回のリクエスト）
+            R->>C: 会員を作る
+            C-->>R: 会員 ID
         end
-        A->>K: 会員 ID を入れる（作ったときは、トランザクションのコミットの後）
+        R->>K: 会員 ID を入れる
     end
+    R-->>A: 会員 ID
     A-->>P: 会員 ID
 ```
 
-キャッシュは、アカウント ID から会員 ID への対応を、件数の上限と期限を付けてメモリに持つ。インスタンスごとに中身が違ってよい。対応は作った後に変わらず、期限があるため。
+キャッシュは、アカウント ID から会員 ID への対応を、件数の上限と期限を付けてメモリに持つ。会員 ID は、見つけたとき、または会員を作ったときに入れる。トランザクションの中では、コミットの後に入れる。インスタンスごとに中身が違ってよい。対応は作った後に変わらず、期限で古い値が残り続けないため。
 
 | 識別子 | 内容 |
 |--------|------|
 | `ecsite.member.id-cache.maximum-size` | キャッシュに持つ件数の上限 |
-| `ecsite.member.id-cache.expire-after-write` | 入れてから消えるまでの時間 |
+| `ecsite.member.id-cache.expire-after-write` | 有効期間 |
 
 既定値は[環境変数](../06-手順書/environment.md)に書く。
 
@@ -65,7 +68,7 @@ sequenceDiagram
 ```
 member/
 ├── api/                    # 会員 ID を求める入口
-├── application/            # 会員の参照、会員の更新、会員 ID のキャッシュ
+├── application/            # 会員 ID を求める処理、参照、更新
 │   └── port/               # リポジトリ
 ├── domain/                 # 会員
 └── infrastructure/

@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 会員 ID のキャッシュの設定の単体テスト
  *
- * <p>設定は Spring を起動せずに確認する。既定は、設定ファイル（{@code application.yml}）の値を含めて、起動したアプリが使う値を確認する。
+ * <p>設定は Spring を起動せずに確認する。既定の値は、設定ファイル（{@code application.yml}）の値を含めて、起動したアプリが使う値と同じになることを確認する。
  */
 class MemberIdCachePropertiesTest {
 
@@ -64,7 +64,7 @@ class MemberIdCachePropertiesTest {
     }
 
     @Nested
-    @DisplayName("件数の上限の下限")
+    @DisplayName("件数の上限の最小値")
     class MaximumSizeMinimum {
 
         @Test

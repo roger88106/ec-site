@@ -16,7 +16,7 @@
 バージョンは設定ファイル（Gradle の version catalog、`package.json`、compose）が正本。フロントの細則は [フロントのアーキテクチャ](02-設計/frontend-architecture.md)。
 
 - 共通・E2E：OpenAPI（API の契約）、Keycloak（OIDC）、Docker Compose、GitHub Actions、Playwright。
-- バックエンド：Java、Spring Boot、Spring Modulith、jMolecules、PostgreSQL、jOOQ、Flyway、S3 互換オブジェクトストレージ、imgproxy、Stripe、SMTP、ShedLock、Gradle Kotlin DSL、Error Prone、NullAway、Checkstyle、Lombok、JUnit 5、Testcontainers、Actuator、Micrometer。ローカルでは Stripe は mock、メールは Mailpit、ストレージは SeaweedFS を使う。
+- バックエンド：Java、Spring Boot、Spring Modulith、jMolecules、PostgreSQL、jOOQ、Flyway、S3 互換オブジェクトストレージ、imgproxy、Stripe、SMTP、ShedLock、Caffeine、Gradle Kotlin DSL、Error Prone、NullAway、Checkstyle、Lombok、JUnit 5、Testcontainers、Actuator、Micrometer。ローカルでは Stripe は mock、メールは Mailpit、ストレージは SeaweedFS を使う。
 - フロントエンド：C 側（`frontend/store`）と B 側（`frontend/admin`）は別のアプリ。TypeScript、pnpm（workspace）、Tailwind CSS、shadcn/ui、`openapi-typescript` + `openapi-fetch`、Biome、Vitest、MSW。C 側は Next.js、B 側は Vite + React。
 
 後から導入する技術は MVP では入れず、導入するときは本節を更新してから spec を書く。検索エンジンは 1 → 10 の段階、Redis はインスタンス間で共有するデータが必要になったとき、メッセージブローカーはモジュールを別プロセスに切り出すときに導入する。

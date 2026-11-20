@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 現在の会員の ID を求める部品の単体テスト
  *
- * <p>ログインの状態（token の subject）から会員 ID を求める呼び出しだけを確認する。キャッシュ、確定の後の登録、
+ * <p>ログインの状態（token の subject）から会員 ID を求める呼び出しだけを確認する。キャッシュ、コミットの後の登録、
  * 会員の作成の細部は {@code MemberIdResolverTest}、token の検証と会員の API は統合テストが確認する。
  */
 class CurrentMemberIdsTest {

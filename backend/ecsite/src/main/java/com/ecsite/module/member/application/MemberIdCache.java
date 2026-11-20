@@ -35,11 +35,11 @@ public class MemberIdCache {
     }
 
     /**
-     * 時計と executor を指定して作る（テストで期限を進め、追い出しを同期にするため）。
+     * 時計と executor を指定して作る（テストで期限を進め、削除を同期にするため）。
      *
      * @param properties キャッシュの設定
      * @param ticker     時計
-     * @param executor   追い出しなどの保守を実行する executor
+     * @param executor   期限切れの削除などの処理を実行する executor
      */
     public MemberIdCache(MemberIdCacheProperties properties, Ticker ticker, Executor executor) {
         this.cache = Caffeine.newBuilder()

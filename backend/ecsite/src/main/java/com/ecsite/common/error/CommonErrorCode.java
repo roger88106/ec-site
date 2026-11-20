@@ -46,6 +46,10 @@ public enum CommonErrorCode implements ErrorCodeProvider {
      */
     RESOURCE_BUSY(ErrorType.SERVICE_UNAVAILABLE_ERROR),
     /**
+     * IdP に届かず、token を検証できなかった。しばらくしてからやり直せる
+     */
+    AUTHENTICATION_UNAVAILABLE(ErrorType.SERVICE_UNAVAILABLE_ERROR),
+    /**
      * システムエラー
      */
     SYSTEM_ERROR(ErrorType.SYSTEM_ERROR);

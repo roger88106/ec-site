@@ -14,12 +14,13 @@
 |----------|------|------|
 | `SPRING_DATASOURCE_URL`、`_USERNAME`、`_PASSWORD` | DB の接続先 | — |
 | `SERVER_PORT` | 業務ポート（Spring Boot の `server.port`）。`slot.mjs run` が設定する（[開発環境の起動](setup.md)の「スロット」） | 8080（E2E は 8090） |
-| `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外部に公開しない | 9080（E2E は 9090） |
+| `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外部に公開しない。業務ポートと同じ設定では、起動に失敗する | 9080（E2E は 9090） |
+| `ECSITE_SECURITY_ALLOW_MANAGEMENT_ON_BUSINESS_PORT` | 運用ポートのパスを業務ポートで公開することを許可する。統合テストだけで `true` にする。本番では有効にしない | false |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` | トレースの送信を有効にする | false（local と E2E は true） |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | 送信を有効にしたときの送信先 | `http://localhost:9411/api/v2/spans`（Spring Boot の既定） |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |
 | `ECSITE_SECURITY_ADMIN_ISSUER_URI`、`_AUDIENCE` | 管理 API が受け付ける token の issuer（運営者の realm）と audience | 必須 |
-| `ECSITE_SECURITY_STORE_ISSUER_URI`、`_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience | 必須 |
+| `ECSITE_SECURITY_STORE_ISSUER_URI`、`_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience。issuer が管理 API と同じなら、起動に失敗する | 必須 |
 | `ECSITE_MEDIA_STORAGE_INCOMING_BUCKET`、`_PUBLIC_BUCKET` | 画像のアップロード（非公開）・配信（公開）のバケット | 必須 |
 | `ECSITE_MEDIA_STORAGE_REGION`、`_PUBLIC_BASE_URL` | バケットのリージョン、配信の基準 URL（CDN） | 必須 |
 | `ECSITE_MEDIA_STORAGE_ENDPOINT`、`_PATH_STYLE_ACCESS` | S3 互換ストレージを使うときだけ（AWS では設定せず、資格情報は IAM ロール） | —、false |
@@ -36,7 +37,7 @@
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に表示する） | 必須 |
 | `ECSITE_REPORTING_FISCAL_YEAR_START_MONTH` | 会計年度の始まりの月（1〜12）。売上の推移の四半期と年の区切りに使う | 4 |
 | `ECSITE_PAYMENT_RETURN_URL` | 支払画面からの戻り先（店舗画面の注文の画面）の URL。`{orderId}` に注文 ID が入る | 必須 |
-| `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では有効にしない | false |
+| `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では有効にしない。有効にすると、起動のときに警告のログを出力する | false |
 | `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔。支払の期限は 30 分を超えると起動に失敗する | 30m、1m |
 | `ECSITE_PAYMENT_AWAITING_AUTHORIZATION_WARNING` | 与信の反映を待つ支払のうち、待ち始めてからこの時間を過ぎたものの件数を、warn のログに出力する | 1h |
 | `ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY` | 売上確定を求めてから、照合を始めるまでの時間。表の下の箇条の条件を満たさないと、起動に失敗する | 10m |
@@ -44,7 +45,7 @@
 | `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払画面を表示するバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを有効にしたら必須 |
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API のシークレットキー、通知の署名鍵。Git にコミットしない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md)の「Stripe で動かす」） | 決済の mock フラグを有効にしなければ必須 |
 | `ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT`、`_READ_TIMEOUT` | Stripe の API への接続、応答のタイムアウト（応答は 1 回の要求ごと。SDK の自動の再試行は別に数える） | 5s、20s |
-| `ECSITE_SHIPPING_MOCK_ENABLED` | 物流の mock フラグ。`true` でなければ、接続していない物流サービスを使う（配送状態は進まない）。本番では有効にしない | false |
+| `ECSITE_SHIPPING_MOCK_ENABLED` | 物流の mock フラグ。`true` でなければ、接続していない物流サービスを使う（配送状態は進まない）。本番では有効にしない。有効にすると、起動のときに警告のログを出力する | false |
 | `ECSITE_SHIPPING_OCCURRED_AT_MAX_AGE`、`ECSITE_SHIPPING_OCCURRED_AT_FUTURE_TOLERANCE` | 物流サービスが通知した発生日時について、古さの上限と未来の許容。範囲の外の通知は 400 で拒否する | 30d、5m |
 | `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名鍵。Git にコミットしない。ローカルと統合テストでは、テスト用の値を設定ファイルに書く。物流サービスを接続していない環境でも必須 | 必須 |
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |

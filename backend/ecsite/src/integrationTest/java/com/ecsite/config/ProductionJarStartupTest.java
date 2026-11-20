@@ -38,8 +38,8 @@ import static org.awaitility.Awaitility.await;
  * 本番の jar には、ローカルの設定ファイルが入らない。
  *
  * <p>ローカルの設定から物流の mock フラグだけを除いて渡し、本番の jar を別のプロセスで起動して、
- * 起動に成功し、物流の mock の画面が見つからないことを確認する。
- * jar の中にローカルの設定が入っていてフラグが読まれれば、画面のエンドポイントができて 404 でなくなり、このテストが失敗する。
+ * 起動に成功し、物流の mock の画面が拒まれる（401）ことを確認する。
+ * jar の中にローカルの設定が入っていてフラグが読まれれば、画面のパスが認証なしで許されて 401 でなくなり、このテストが失敗する。
  *
  * <p>別のプロセスで起動する理由：Spring のコンテキストを 1 つのテストの中で作るテストでは、
  * Bean を作る順と設定の読み方が本番の jar と違い、確認できないため。
@@ -137,22 +137,22 @@ class ProductionJarStartupTest {
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の画面の GET は 404 になる")
-    void mockCarrierPageIsNotFound() throws Exception {
-        // 操作と確認：画面を開くと、見つからない
-        assertThat(send(HttpRequest.newBuilder(businessUri("/mock-carrier")).GET()).statusCode()).isEqualTo(404);
+    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の画面の GET は 401 で拒まれる")
+    void mockCarrierPageIsRejected() throws Exception {
+        // 操作と確認：画面を開くと、拒まれる
+        assertThat(send(HttpRequest.newBuilder(businessUri("/mock-carrier")).GET()).statusCode()).isEqualTo(401);
     }
 
     @Test
-    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の通知の操作の POST は 404 になる")
-    void mockCarrierNotifyIsNotFound() throws Exception {
+    @DisplayName("AC-245 本番の jar を、物流のフラグを除いたローカルの設定で起動すると、mock の配送業者の通知の操作の POST は 401 で拒まれる")
+    void mockCarrierNotifyIsRejected() throws Exception {
         // 準備：通知の操作のリクエスト
         var notify = HttpRequest.newBuilder(businessUri("/mock-carrier/orders/" + UUID.randomUUID() + "/notify"))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString("status=RETURNED"));
 
-        // 操作と確認：送ると、見つからない
-        assertThat(send(notify).statusCode()).isEqualTo(404);
+        // 操作と確認：送ると、拒まれる
+        assertThat(send(notify).statusCode()).isEqualTo(401);
     }
 
     @Test

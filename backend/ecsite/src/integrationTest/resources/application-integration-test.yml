@@ -56,6 +56,9 @@ ecsite:
       # 問い合わせ先（StorefrontShopTest が確認する）
       contact-email: contact@shop.example
   security:
+    # 運用のパスを業務ポートで出すことを許す（上の management.server.port で業務ポートと同じにし、MockMvc で確認するため）。
+    # 許さないと、運用ポートが業務ポートと同じ設定では起動に失敗する
+    allow-management-on-business-port: true
     # IdP は起動せず、テストの鍵で署名した token を使う（TestTokens、TestSecurityConfig）。
     # issuer は TestTokens と同じ値にする
     admin:

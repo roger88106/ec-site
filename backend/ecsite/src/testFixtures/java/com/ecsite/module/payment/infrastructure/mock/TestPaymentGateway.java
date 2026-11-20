@@ -249,7 +249,7 @@ public class TestPaymentGateway implements PaymentGateway {
         }
         var result = mock.capture(request);
         capturedAuthorizationRefs.put(request.orderId(), request.authorizationRef());
-        // 冪等キー（注文 ID）が同じなら、確定は 1 回だけ
+        // 注文 ID が同じなら、確定は 1 回だけ（本番の決済サービスで、確定済みとして拒否されたら成功とする扱いに合わせる）
         captured.addIfAbsent(request.orderId());
         var during = duringNextCapture.getAndSet(null);
         if (during != null) {
@@ -288,7 +288,7 @@ public class TestPaymentGateway implements PaymentGateway {
             throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
         }
         mock.refund(request);
-        // 冪等キー（注文 ID）が同じなら、返金は 1 回だけ
+        // 注文 ID が同じなら、返金は 1 回だけ（本番の決済サービスで、返金済みとして拒否されたら成功とする扱いに合わせる）
         refunded.addIfAbsent(request.orderId());
     }
 

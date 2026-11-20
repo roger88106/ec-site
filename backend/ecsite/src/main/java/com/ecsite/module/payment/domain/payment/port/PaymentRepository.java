@@ -4,7 +4,6 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.payment.domain.payment.Payment;
 import org.jmolecules.ddd.annotation.Repository;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -89,25 +88,4 @@ public interface PaymentRepository {
      * @return 支払。支払のない注文は含まない
      */
     List<Payment> findByOrderIds(Collection<UUID> orderIds);
-
-    /**
-     * 期限を過ぎた未払いの支払を、期限・支払 ID の順に取得する。
-     *
-     * <p>与信の反映を待つ支払は除く。
-     *
-     * @param now   現在時刻
-     * @param limit 取得する数の上限
-     * @return 支払
-     */
-    List<Payment> findUnpaidPastDeadline(Instant now, int limit);
-
-    /**
-     * 与信の反映を待つ支払を、待ち始めた時刻・支払 ID の順に取得する。
-     *
-     * <p>与信の反映を待つ支払は、未払いで、待ち始めた時刻がある支払である。
-     *
-     * @param limit 取得する数の上限
-     * @return 支払
-     */
-    List<Payment> findUnpaidAwaitingAuthorization(int limit);
 }

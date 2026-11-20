@@ -17,7 +17,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -161,34 +160,6 @@ class JooqPaymentRepository implements PaymentRepository {
         }
         return dsl.selectFrom(PAYMENT_)
                 .where(PAYMENT_.ORDER_ID.in(orderIds))
-                .fetch(JooqPaymentRepository::restore);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Payment> findUnpaidPastDeadline(Instant now, int limit) {
-        return dsl.selectFrom(PAYMENT_)
-                .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
-                .and(PAYMENT_.DEADLINE.le(now))
-                // 与信の反映を待つ支払がたまっても、それより新しい支払を処理できるように除く
-                .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNull())
-                .orderBy(PAYMENT_.DEADLINE, PAYMENT_.ID)
-                .limit(limit)
-                .fetch(JooqPaymentRepository::restore);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Payment> findUnpaidAwaitingAuthorization(int limit) {
-        return dsl.selectFrom(PAYMENT_)
-                .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
-                .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNotNull())
-                .orderBy(PAYMENT_.AWAITING_AUTHORIZATION_SINCE, PAYMENT_.ID)
-                .limit(limit)
                 .fetch(JooqPaymentRepository::restore);
     }
 

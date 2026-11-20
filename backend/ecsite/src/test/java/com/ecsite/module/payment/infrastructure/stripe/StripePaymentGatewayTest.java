@@ -98,6 +98,12 @@ class StripePaymentGatewayTest {
      */
     private static final Instant NOW = Instant.parse("2026-10-14T01:00:00Z");
 
+    /**
+     * 返金に成功した応答
+     */
+    private static final String REFUND_SUCCEEDED = """
+            {"id": "re_test", "object": "refund", "status": "succeeded", "amount": 6940}""";
+
     // ============================== 対象 ==============================
 
     /**
@@ -138,7 +144,7 @@ class StripePaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("PaymentIntent を総額で確定し、冪等キーは注文 ID から作る")
+        @DisplayName("PaymentIntent を総額で確定し、冪等キーを付ける")
         void sendsCaptureRequest() {
             // 準備：確定に成功する
             respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 200, intent("succeeded"));
@@ -146,10 +152,55 @@ class StripePaymentGatewayTest {
             // 操作：売上を確定する
             gateway.capture(captureRequest());
 
-            // 確認：総額と冪等キー
+            // 確認：総額と、冪等キーが付いていること
             var request = requests().getFirst();
             assertThat(request.body()).contains("amount_to_capture=" + AMOUNT_YEN);
-            assertThat(request.idempotencyKey()).isEqualTo("capture-" + ORDER_ID);
+            assertThat(request.idempotencyKey()).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("AC-616-1 5xx で失敗した後の再実行は、別の冪等キーで確定し、確定済みになる")
+        void retriesWithDifferentKeyAfterServerError() {
+            // 準備：1 回目は Stripe の側の故障
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 500, StripeApiStub.error("api_error", null));
+            assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.UNREACHABLE);
+
+            // 準備：2 回目までに Stripe が回復する
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 200, intent("succeeded"));
+
+            // 操作と確認：2 回目は確定済みで、冪等キーが 1 回目と異なる
+            assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.CAPTURED);
+            assertDifferentIdempotencyKeys();
+        }
+
+        @Test
+        @DisplayName("AC-616-3 1 回目が完了していて応答だけ 5xx のとき、再実行で断られても（状態 succeeded）、別の冪等キーで確定済みになる")
+        void treatsUnexpectedStateAfterServerErrorAsCaptured() {
+            // 準備：1 回目は 5xx
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 500, StripeApiStub.error("api_error", null));
+            assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.UNREACHABLE);
+
+            // 準備：2 回目は、確定済みのため断られ、再取得すると確定済み
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 400,
+                    StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
+            respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("succeeded"));
+
+            // 操作と確認：2 回目は確定済みで、冪等キーが 1 回目と異なる
+            assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.CAPTURED);
+            assertDifferentIdempotencyKeys();
+        }
+
+        @Test
+        @DisplayName("NFR-616-2 stripe-java の自動の再試行で 5xx の後に成功したら、同じ冪等キーで 2 回送り、確定済みになる")
+        void automaticRetrySendsSameKey() {
+            // 準備：自動の再試行を 1 回にし、1 回目は 5xx、2 回目は成功
+            var retrying = new StripePaymentGateway(stripe.clientWithRetries(1), Clock.fixed(NOW, ZoneOffset.UTC));
+            stripe.respondOnce("POST /v1/payment_intents/" + INTENT_ID + "/capture", 500, StripeApiStub.error("api_error", null));
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 200, intent("succeeded"));
+
+            // 操作と確認：確定済みで、1 回の呼び出しで送られた 2 つの POST が同じ冪等キー
+            assertThat(retrying.capture(captureRequest())).isEqualTo(CaptureResult.CAPTURED);
+            assertSameIdempotencyKeyInOneCall();
         }
 
         @Test
@@ -224,19 +275,67 @@ class StripePaymentGatewayTest {
     class Refund {
 
         @Test
-        @DisplayName("PaymentIntent の総額を返金し、冪等キーは注文 ID から作る")
+        @DisplayName("PaymentIntent の総額を返金し、冪等キーを付ける")
         void refunds() {
             // 準備：返金に成功する
-            respond("POST /v1/refunds", 200, """
-                    {"id": "re_test", "object": "refund", "status": "succeeded", "amount": 6940}""");
+            respond("POST /v1/refunds", 200, REFUND_SUCCEEDED);
 
             // 操作：返金する
             gateway.refund(refundRequest());
 
-            // 確認：PaymentIntent・総額と冪等キー
+            // 確認：PaymentIntent・総額と、冪等キーが付いていること
             var request = requests().getFirst();
             assertThat(request.body()).contains("payment_intent=" + INTENT_ID, "amount=" + AMOUNT_YEN);
-            assertThat(request.idempotencyKey()).isEqualTo("refund-" + ORDER_ID);
+            assertThat(request.idempotencyKey()).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("AC-616-2 5xx で失敗した後の再実行は、別の冪等キーで返金し、成功する")
+        void retriesWithDifferentKeyAfterServerError() {
+            // 準備：1 回目は Stripe の側の故障（外部サービスのエラー）
+            respond("POST /v1/refunds", 500, StripeApiStub.error("api_error", null));
+            assertSystemError(() -> gateway.refund(refundRequest()), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+
+            // 準備：2 回目までに Stripe が回復する
+            respond("POST /v1/refunds", 200, REFUND_SUCCEEDED);
+
+            // 操作：返金する（例外にならない）
+            gateway.refund(refundRequest());
+
+            // 確認：冪等キーが 1 回目と異なる
+            assertDifferentIdempotencyKeys();
+        }
+
+        @Test
+        @DisplayName("NFR-616-2 stripe-java の自動の再試行で 5xx の後に成功したら、同じ冪等キーで 2 回送り、成功する")
+        void automaticRetrySendsSameKey() {
+            // 準備：自動の再試行を 1 回にし、1 回目は 5xx、2 回目は成功
+            var retrying = new StripePaymentGateway(stripe.clientWithRetries(1), Clock.fixed(NOW, ZoneOffset.UTC));
+            stripe.respondOnce("POST /v1/refunds", 500, StripeApiStub.error("api_error", null));
+            respond("POST /v1/refunds", 200, REFUND_SUCCEEDED);
+
+            // 操作：返金する（例外にならない）
+            retrying.refund(refundRequest());
+
+            // 確認：1 回の呼び出しで送られた 2 つの POST が同じ冪等キー
+            assertSameIdempotencyKeyInOneCall();
+        }
+
+        @Test
+        @DisplayName("AC-616-4 1 回目が完了していて応答だけ 5xx のとき、再実行で断られても（charge_already_refunded）、別の冪等キーで成功する")
+        void treatsAlreadyRefundedAfterServerErrorAsSuccess() {
+            // 準備：1 回目は 5xx
+            respond("POST /v1/refunds", 500, StripeApiStub.error("api_error", null));
+            assertSystemError(() -> gateway.refund(refundRequest()), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+
+            // 準備：2 回目は、返金済みで断られる
+            respond("POST /v1/refunds", 400, StripeApiStub.error("invalid_request_error", "charge_already_refunded"));
+
+            // 操作：返金する（例外にならない）
+            gateway.refund(refundRequest());
+
+            // 確認：冪等キーが 1 回目と異なる
+            assertDifferentIdempotencyKeys();
         }
 
         @Test
@@ -781,5 +880,33 @@ class StripePaymentGatewayTest {
      */
     private static String intent(String status) {
         return StripeApiStub.intent(INTENT_ID, status);
+    }
+
+    /**
+     * 1 回の呼び出しで、自動の再試行によって送られた 2 つの POST が、同じで空でない冪等キーを付けたことを確認する。
+     */
+    private void assertSameIdempotencyKeyInOneCall() {
+        var keys = requests().stream()
+                .filter(request -> request.key().startsWith("POST "))
+                .map(Request::idempotencyKey)
+                .toList();
+        assertThat(keys).hasSize(2).doesNotContainNull();
+        assertThat(keys.getFirst()).isNotBlank();
+        assertThat(keys.get(1)).isEqualTo(keys.getFirst());
+    }
+
+    /**
+     * 売上確定または返金の 2 回の呼び出しが、別の冪等キーを付けたことを確認する。
+     *
+     * <p>自動の再試行は切ってある（{@link StripeApiStub#client(String)}）。
+     * そのため、売上確定と返金のリクエストの 1 つ目が 1 回目、最後が 2 回目の呼び出しになる。
+     * PaymentIntent の再取得（GET）は、冪等キーを付けないので数えない。
+     */
+    private void assertDifferentIdempotencyKeys() {
+        var keys = requests().stream()
+                .filter(request -> request.key().startsWith("POST "))
+                .map(Request::idempotencyKey)
+                .toList();
+        assertThat(keys).hasSize(2).doesNotContainNull().doesNotHaveDuplicates();
     }
 }

@@ -1,9 +1,12 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
+import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
+import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -89,5 +92,40 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                         // 与信済みの行には与信の参照がある（DB の値の破損は復元の失敗にする）
                         RestoreGuard.restore("payment", () -> Objects.requireNonNull(r.get(PAYMENT_.AUTHORIZATION_REF))),
                         r.get(PAYMENT_.CAPTURE_REQUESTED_AT)));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<PastDeadlinePaymentView> findUnpaidPastDeadline(Instant now, int limit) {
+        return dsl.select(PAYMENT_.ID, PAYMENT_.PAGE_ID, PAYMENT_.PAGE_URL)
+                .from(PAYMENT_)
+                .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
+                .and(PAYMENT_.DEADLINE.le(now))
+                // 与信の反映を待つ支払がたまっても、それより新しい支払を処理できるように除く
+                .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNull())
+                .orderBy(PAYMENT_.DEADLINE, PAYMENT_.ID)
+                .limit(limit)
+                .fetch(r -> new PastDeadlinePaymentView(r.get(PAYMENT_.ID),
+                        // 支払画面の ID と URL は、DB の制約で両方あるか両方ないか。
+                        // 制約が破られた 1 行で検索の全体が失敗しないように、両方あるときだけ作る
+                        r.get(PAYMENT_.PAGE_ID) == null || r.get(PAYMENT_.PAGE_URL) == null
+                                ? null
+                                : new PaymentPage(r.get(PAYMENT_.PAGE_ID), r.get(PAYMENT_.PAGE_URL))));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<AwaitingAuthorizationPaymentView> findUnpaidAwaitingAuthorization(int limit) {
+        return dsl.select(PAYMENT_.ID, PAYMENT_.PAGE_ID)
+                .from(PAYMENT_)
+                .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
+                .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNotNull())
+                .orderBy(PAYMENT_.AWAITING_AUTHORIZATION_SINCE, PAYMENT_.ID)
+                .limit(limit)
+                .fetch(r -> new AwaitingAuthorizationPaymentView(r.get(PAYMENT_.ID), r.get(PAYMENT_.PAGE_ID)));
     }
 }

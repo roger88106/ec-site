@@ -197,7 +197,7 @@
   - 依存：T477-01-07
   - 範囲：`config/security`、`CommonErrorCode`、`messages.properties`、`api/openapi/admin.yaml`、`api/openapi/store.yaml`、フロントの生成する型
   - 確認方法：T477-01-07 のテストと、エラーコードの契約のテストが通る。
-- [ ] **T477-01-09** 設計の文書、API の規約、用語集、業務ルール BR-32 の記述を更新する。「公開ネットワークへのデプロイの前提」の HTTPS の行に、決定 5 の issuer を加える。
+- [x] **T477-01-09** 設計の文書、API の規約、用語集、業務ルール BR-32 の記述を更新する。「公開ネットワークへのデプロイの前提」の HTTPS の行に、決定 5 の issuer を加える。
   - 依存：T477-01-04、T477-01-06、T477-01-08
   - 範囲：`docs/02-設計/backend-architecture.md`、`docs/05-開発規則/api-conventions.md`、`docs/03-機能仕様/glossary.md`
   - 確認方法：`CI=true bash scripts/ci/check-all.sh` が通る。

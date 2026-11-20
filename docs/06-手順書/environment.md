@@ -19,7 +19,7 @@
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | 送信を有効にしたときの送信先 | `http://localhost:9411/api/v2/spans`（Spring Boot の既定） |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |
 | `ECSITE_SECURITY_ADMIN_ISSUER_URI`、`_AUDIENCE` | 管理 API が受け付ける token の issuer（運営者の realm）と audience | 必須 |
-| `ECSITE_SECURITY_STORE_ISSUER_URI`、`_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience | 必須 |
+| `ECSITE_SECURITY_STORE_ISSUER_URI`、`_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience。issuer が管理 API と同じなら、起動に失敗する | 必須 |
 | `ECSITE_MEDIA_STORAGE_INCOMING_BUCKET`、`_PUBLIC_BUCKET` | 画像のアップロード（非公開）・配信（公開）のバケット | 必須 |
 | `ECSITE_MEDIA_STORAGE_REGION`、`_PUBLIC_BASE_URL` | バケットのリージョン、配信の基準 URL（CDN） | 必須 |
 | `ECSITE_MEDIA_STORAGE_ENDPOINT`、`_PATH_STYLE_ACCESS` | S3 互換ストレージを使うときだけ（AWS では設定せず、資格情報は IAM ロール） | —、false |

@@ -96,7 +96,7 @@ class SecurityConfig {
      * 認証・認可の失敗を Problem Details で返す。
      *
      * @param resolver Spring MVC の例外の解決
-     * @return 401・403 の応答
+     * @return 401・403・503 の Problem Details を返す応答
      */
     @Bean
     SecurityProblemResponder securityProblemResponder(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {

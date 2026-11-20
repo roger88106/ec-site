@@ -37,8 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 検証に必要な IdP の設定や署名の鍵を取得できないときの応答と、取得をやり直す回数を確認する。
  * 応答は、再試行できるエラー（503 の Problem Details）にする。
  *
- * <p>失敗が filter の外に出ると、サーブレットのコンテナがエラーの画面に転送する。MockMvc はその転送をせず、
- * 応答を確認できないので、業務ポートを実際に開き、HTTP で呼ぶ。
+ * <p>業務ポートを実際に開き、HTTP で呼ぶ。失敗が filter の外に出る回帰があると、サーブレットのコンテナが
+ * エラーの画面に転送した応答になる。MockMvc はその転送をしないので、コンテナの応答として確認できるのは
+ * 実際の HTTP だけである。
  *
  * <p>realm の decoder は、一度作れたら使い続ける。decoder を作れない場合と、作れたが鍵を取得できない場合で、
  * 署名の鍵の差し替えを分けるため、入れ子のクラスごとに Spring のコンテキストを分ける。
@@ -116,7 +117,7 @@ class IdpUnreachableTest {
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(Api.class)
-        @DisplayName("DC-477-11 リクエストのたびに、decoder を再作成する（IdP の設定を取得し直す）")
+        @DisplayName("DC-477-10 リクエストのたびに、decoder を再作成する（IdP の設定を取得し直す）")
         void recreatesDecoderPerRequest(Api api) throws Exception {
             // 操作：有効な token を付けて 2 回呼ぶ
             send(api);
@@ -189,7 +190,7 @@ class IdpUnreachableTest {
 
         @ParameterizedTest(name = "「{0}」")
         @EnumSource(Api.class)
-        @DisplayName("DC-477-11 リクエストのたびに署名の鍵を取得し直し、decoder は再作成しない")
+        @DisplayName("DC-477-10 リクエストのたびに署名の鍵を取得し直し、decoder は再作成しない")
         void refetchesKeysPerRequest(Api api) throws Exception {
             // 操作：有効な token を付けて 2 回呼ぶ
             send(api);

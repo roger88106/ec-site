@@ -15,10 +15,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -34,6 +34,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "ecsite.payment.stripe.secret-key=sk_test_dummy",
         "ecsite.payment.stripe.webhook-secret=whsec_test_dummy"})
 class MockFlagOffAccessTest {
+
+    // ============================== 定数 ==============================
+
+    /**
+     * 「ログインが必要」のメッセージ（messages.properties）。メッセージを変えたら、ここも合わせる
+     */
+    private static final String UNAUTHENTICATED = "ログインしてください。";
 
     // ============================== Bean ==============================
 
@@ -66,7 +73,7 @@ class MockFlagOffAccessTest {
         // 操作と確認：認証なしで開くと、見つからない（404）でなく、「ログインが必要」の Problem Details
         mockMvc.perform(request)
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorCode").value("UNAUTHENTICATED"));
+                .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
     }
 
     @Test

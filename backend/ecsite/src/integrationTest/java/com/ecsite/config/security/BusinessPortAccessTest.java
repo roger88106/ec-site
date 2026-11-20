@@ -12,10 +12,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.ecsite.support.http.ProblemAssertions.problem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -28,6 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BusinessPortAccessTest {
 
     // ============================== 定数 ==============================
+
+    /**
+     * 「ログインが必要」のメッセージ（messages.properties）。メッセージを変えたら、ここも合わせる
+     */
+    private static final String UNAUTHENTICATED = "ログインしてください。";
 
     /**
      * 統合テストの設定の、物流サービスの通知の署名の鍵
@@ -50,7 +55,7 @@ class BusinessPortAccessTest {
         // 操作と確認：決めていない URL を開くと、「ログインが必要」の Problem Details
         mockMvc.perform(get("/undecided"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorCode").value("UNAUTHENTICATED"));
+                .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
     }
 
     @Test
@@ -73,7 +78,7 @@ class BusinessPortAccessTest {
         // 操作と確認：認証なしで送ると、「ログインが必要」の Problem Details
         mockMvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorCode").value("UNAUTHENTICATED"));
+                .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
     }
 
     @Test

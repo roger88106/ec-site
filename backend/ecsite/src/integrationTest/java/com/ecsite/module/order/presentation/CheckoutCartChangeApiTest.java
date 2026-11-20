@@ -16,12 +16,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -63,6 +69,12 @@ class CheckoutCartChangeApiTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    ApplicationEventPublisher publisher;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     /**
      * 税区分・カテゴリ・商品を作る補助
@@ -129,7 +141,76 @@ class CheckoutCartChangeApiTest {
         assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
     }
 
+    @Test
+    @DisplayName("カートの変更の後に始めた注文手続きの引当は、遅れて届いた変更のイベントで解かれない")
+    void keepsReservationStartedAfterChangeWhenEventArrivesLate() throws Exception {
+        // 準備：在庫 3 の品目を 2 個入れて、注文手続きに進む
+        var variant = stockedVariant(3);
+        orders.add(cartId, variant, 2);
+        awaitCartChanged();
+        orders.startCheckout(cartId);
+        var startedVersion = startedCartVersion();
+
+        // 操作：開始の時点のバージョンのイベント（開始の前の変更で、処理が遅れたもの）が届く
+        publishAndAwait(startedVersion);
+
+        // 確認：引当が残っている
+        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
+    }
+
+    @Test
+    @DisplayName("注文手続きの開始より新しいバージョンの変更のイベントで、引当が解かれる")
+    void releasesReservationWhenEventIsNewerThanStartedVersion() throws Exception {
+        // 準備
+        var variant = stockedVariant(3);
+        orders.add(cartId, variant, 2);
+        awaitCartChanged();
+        orders.startCheckout(cartId);
+        var startedVersion = startedCartVersion();
+
+        // 操作：開始の後の変更のイベントが届く
+        publishAndAwait(startedVersion + 1);
+
+        // 確認
+        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
+    }
+
+    @Test
+    @DisplayName("バージョンを持たない変更のイベントでは、全ての注文手続きの引当が解かれる")
+    void releasesReservationWhenEventHasNoVersion() throws Exception {
+        // 準備
+        var variant = stockedVariant(3);
+        orders.add(cartId, variant, 2);
+        awaitCartChanged();
+        orders.startCheckout(cartId);
+
+        // 操作：変更の前に発行されたイベント（バージョンなし）が届く
+        publishAndAwait(null);
+
+        // 確認
+        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
+    }
+
     // ============================== 準備の補助 ==============================
+
+    /**
+     * このカートの最新の注文手続きを始めたときの、カートのバージョンを返す。
+     */
+    private long startedCartVersion() {
+        return dsl.select(CHECKOUT.CART_VERSION).from(CHECKOUT).where(CHECKOUT.CART_ID.eq(cartId))
+                .orderBy(CHECKOUT.CREATED_AT.desc()).limit(1).fetchOne(CHECKOUT.CART_VERSION);
+    }
+
+    /**
+     * カート変更のイベントをコミットして発行し、その処理を待つ。
+     *
+     * @param cartVersion カートのバージョン。バージョンを持たないイベントは null
+     */
+    private void publishAndAwait(@Nullable Long cartVersion) {
+        var event = new CartChanged(UUID.randomUUID(), Instant.now(), cartId, cartVersion);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> publisher.publishEvent(event));
+        asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.eventId().equals(event.eventId()));
+    }
 
     /**
      * このカートの変更のイベントの処理が終わるのを待つ。

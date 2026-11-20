@@ -48,6 +48,15 @@ public interface CheckoutRepository {
     List<UUID> findIdsByCartId(UUID cartId);
 
     /**
+     * カートの注文手続きのうち、指定したバージョンより古いカートのバージョンで始めたものの ID を返す。
+     *
+     * @param cartId      カート ID
+     * @param cartVersion このバージョンより古いカートのバージョンで始めたものを返す
+     * @return 注文手続き ID
+     */
+    List<UUID> findIdsByCartIdStartedBefore(UUID cartId, long cartVersion);
+
+    /**
      * カートの最新の注文手続きの ID を返す。
      *
      * @param cartId カート ID

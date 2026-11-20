@@ -91,6 +91,16 @@ class JooqCheckoutRepository implements CheckoutRepository {
     }
 
     /**
+     * カートの注文手続きのうち、指定したバージョンより古いカートのバージョンで始めたものの ID を返す。
+     */
+    @Override
+    public List<UUID> findIdsByCartIdStartedBefore(UUID cartId, long cartVersion) {
+        return dsl.select(CHECKOUT.ID).from(CHECKOUT)
+                .where(CHECKOUT.CART_ID.eq(cartId).and(CHECKOUT.CART_VERSION.lt(cartVersion)))
+                .fetch(CHECKOUT.ID);
+    }
+
+    /**
      * カートの最新の注文手続きの ID を返す。
      *
      * <p>同時刻なら ID の順で決める。

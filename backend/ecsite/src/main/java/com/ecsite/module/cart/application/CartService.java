@@ -282,7 +282,7 @@ public class CartService {
     private void saveIfChanged(Cart cart, long versionBefore, Instant now) {
         if (cart.version() != versionBefore) {
             cartRepository.save(cart);
-            eventPublisher.publishEvent(CartChanged.of(now, cart.id()));
+            eventPublisher.publishEvent(CartChanged.of(now, cart.id(), cart.version()));
         }
     }
 

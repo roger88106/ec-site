@@ -145,6 +145,18 @@ public class CheckoutCommandService {
     }
 
     /**
+     * カートの注文手続きのうち、指定したバージョンより古いカートのバージョンで始めたものの引当を解く。
+     *
+     * <p>カートの変更の後に始めた注文手続きの引当は解かない。何度呼んでも結果は同じ。
+     *
+     * @param cartId      カート ID
+     * @param cartVersion このバージョンより古いカートのバージョンで始めた注文手続きを対象にする
+     */
+    public void releaseReservationsStartedBefore(@NonNull UUID cartId, long cartVersion) {
+        stockDirectory.release(checkoutRepository.findIdsByCartIdStartedBefore(cartId, cartVersion));
+    }
+
+    /**
      * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。
      *
      * <p>注文になったものも消す。

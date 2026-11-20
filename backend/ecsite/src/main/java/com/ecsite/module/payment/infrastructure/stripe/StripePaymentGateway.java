@@ -241,6 +241,7 @@ class StripePaymentGateway implements PaymentGateway {
      *
      * <p>Stripe の冪等キーは明示しない。同じキーでは、Stripe の障害の応答が 24 時間返り続けるため。
      * 二重の返金は、返金済みとして拒否されたら成功とする処理で防ぐ。
+     * この処理は、返金の額が売上確定の総額と等しいことを前提にしている。部分返金では、2 回目の返金を Stripe が拒否しない。
      */
     @Override
     public void refund(RefundRequest request) {

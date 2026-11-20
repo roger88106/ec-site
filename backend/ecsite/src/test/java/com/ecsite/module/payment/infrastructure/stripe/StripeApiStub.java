@@ -10,8 +10,8 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -122,7 +122,19 @@ final class StripeApiStub implements AutoCloseable {
      * @return Stripe の API
      */
     static StripeClient client(String apiBase) {
-        return StripeClient.builder().setApiKey("sk_test_unit").setApiBase(apiBase).setMaxNetworkRetries(0).build();
+        return client(apiBase, 0);
+    }
+
+    /**
+     * 宛先と自動の再試行の回数を指定した Stripe の API。
+     *
+     * @param apiBase           API の宛先
+     * @param maxNetworkRetries 自動の再試行の最大の回数
+     * @return Stripe の API
+     */
+    static StripeClient client(String apiBase, int maxNetworkRetries) {
+        return StripeClient.builder().setApiKey("sk_test_unit").setApiBase(apiBase)
+                .setMaxNetworkRetries(maxNetworkRetries).build();
     }
 
     /**
@@ -132,9 +144,7 @@ final class StripeApiStub implements AutoCloseable {
      * @return Stripe の API
      */
     StripeClient clientWithRetries(int maxNetworkRetries) {
-        return StripeClient.builder().setApiKey("sk_test_unit")
-                .setApiBase("http://localhost:" + server.getAddress().getPort())
-                .setMaxNetworkRetries(maxNetworkRetries).build();
+        return client("http://localhost:" + server.getAddress().getPort(), maxNetworkRetries);
     }
 
     /**

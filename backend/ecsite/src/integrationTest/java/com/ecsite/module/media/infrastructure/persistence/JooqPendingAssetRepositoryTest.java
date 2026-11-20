@@ -174,7 +174,8 @@ class JooqPendingAssetRepositoryTest {
             // 操作：上限 2 件で削除する
             var deleted = repository.deleteExpiredBefore(LONG_AGO, 2);
 
-            // 確認：古い 2 つの全ての項目を返し、最も新しいものだけが残る
+            // 確認：古い 2 つの全ての項目を返し（上限より多く削除しない）、最も新しいものだけが残る
+            // ※上限より多く削除する誤りは、選ぶ行を繰り返し評価する実行計画のときだけ起き、計画は表の行数や統計で変わるので、毎回は再現しない
             assertThat(deleted).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(oldest, middle);
             assertThat(exists(oldest.id())).isFalse();
             assertThat(exists(middle.id())).isFalse();

@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.jooq.media.Tables.PENDING_ASSET;
+import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.select;
 
 /**
  * jOOQ の仮のアセットのリポジトリ
@@ -51,14 +53,18 @@ class JooqPendingAssetRepository implements PendingAssetRepository {
     @Override
     public List<PendingAsset> deleteExpiredBefore(Instant preparedBefore, int limit) {
         // 選ぶのと削除するのを 1 文にし、他のトランザクションがロックしている行はスキップする（次の回で削除する）
-        return dsl.deleteFrom(PENDING_ASSET)
-                .where(PENDING_ASSET.ID.in(dsl.select(PENDING_ASSET.ID)
-                        .from(PENDING_ASSET)
-                        .where(PENDING_ASSET.PREPARED_AT.lt(preparedBefore))
-                        .orderBy(PENDING_ASSET.PREPARED_AT, PENDING_ASSET.ID)
-                        .limit(limit)
-                        .forUpdate()
-                        .skipLocked()))
+        // ※選ぶ行は MATERIALIZED の CTE で 1 回だけ確定させる。IN の副問い合わせに直接書くと、実行計画によっては
+        //   1 文の中で繰り返し評価され、前の評価でロックした行をスキップして次の行を選ぶので、件数の上限より多く削除しうる
+        var targets = name("targets").fields("id").asMaterialized(select(PENDING_ASSET.ID)
+                .from(PENDING_ASSET)
+                .where(PENDING_ASSET.PREPARED_AT.lt(preparedBefore))
+                .orderBy(PENDING_ASSET.PREPARED_AT, PENDING_ASSET.ID)
+                .limit(limit)
+                .forUpdate()
+                .skipLocked());
+        return dsl.with(targets)
+                .delete(PENDING_ASSET)
+                .where(PENDING_ASSET.ID.in(select(targets.field("id", UUID.class)).from(targets)))
                 .returning()
                 .fetch(JooqPendingAssetRepository::toPendingAsset);
     }

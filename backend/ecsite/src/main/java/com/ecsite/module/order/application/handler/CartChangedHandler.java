@@ -22,12 +22,20 @@ class CartChangedHandler {
     private final CheckoutCommandService checkoutCommandService;
 
     /**
-     * カート変更：そのカートのすべての注文手続きの引当を解く。
+     * カート変更：イベントのバージョンより古いバージョンで始めた注文手続きの引当を解く。
+     *
+     * <p>変更の後に始めた注文手続きの引当は、遅れて届いたイベントで解かない。バージョンがないイベントは、すべて解く。
      *
      * @param event カート変更
      */
     @ApplicationModuleListener
     void on(CartChanged event) {
-        checkoutCommandService.releaseReservations(event.cartId());
+        var cartVersion = event.cartVersion();
+        if (cartVersion == null) {
+            // 変更の前に発行されたイベント ※開始の前後を区別できないので、すべて解く
+            checkoutCommandService.releaseReservations(event.cartId());
+            return;
+        }
+        checkoutCommandService.releaseReservationsStartedBefore(event.cartId(), cartVersion);
     }
 }

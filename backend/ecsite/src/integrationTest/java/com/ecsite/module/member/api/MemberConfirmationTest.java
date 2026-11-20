@@ -177,7 +177,7 @@ class MemberConfirmationTest {
             memberIdOf(subject);
 
             // 確認：会員を作る操作を呼ばない
-            verify(memberRepository, never()).insertIfAbsent(any());
+            verify(memberRepository, never()).createOrGetId(any());
         }
 
         @Test
@@ -203,7 +203,7 @@ class MemberConfirmationTest {
             doAnswer(invocation -> {
                 insertReadOnly.add(currentTransactionReadOnly());
                 return invocation.callRealMethod();
-            }).when(memberRepository).insertIfAbsent(any());
+            }).when(memberRepository).createOrGetId(any());
 
             // 操作：初めてのアカウントで会員 ID を求める
             memberIdOf(subject);
@@ -232,7 +232,7 @@ class MemberConfirmationTest {
      */
     private UUID insertMemberDirectly(String subject) {
         var id = UUID.randomUUID();
-        memberRepository.insertIfAbsent(new Member(id, subject, Instant.now()));
+        memberRepository.createOrGetId(new Member(id, subject, Instant.now()));
         return id;
     }
 

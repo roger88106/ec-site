@@ -1,5 +1,6 @@
 package com.ecsite.support.async;
 
+import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.support.config.IntegrationTest;
 import org.springframework.modulith.events.CompletedEventPublications;
 import org.springframework.modulith.events.EventPublication;
@@ -9,6 +10,7 @@ import org.springframework.modulith.events.core.TargetEventPublication;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -104,6 +106,18 @@ public class AsyncEvents {
     public void awaitHandled(Predicate<Object> event) {
         await().atMost(TIMEOUT).until(() -> registry.findIncompletePublications().stream()
                 .noneMatch(publication -> event.test(publication.getEvent())));
+    }
+
+    /**
+     * このカートの変更のイベントの処理が、全て終わるまで待つ。
+     *
+     * <p>カートを変えた後に、カート変更のリスナー（注文手続きの引当を解く処理など）が、続く注文手続きや、カートから除く処理と重ならないようにするために使う。
+     * 条件に合うイベントがなければ、すぐに戻る。
+     *
+     * @param cartId カート ID
+     */
+    public void awaitCartChanged(UUID cartId) {
+        awaitHandled(event -> event instanceof CartChanged changed && changed.cartId().equals(cartId));
     }
 
     /**

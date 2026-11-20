@@ -264,14 +264,18 @@ public class Cart {
     /**
      * 複数の品目を一度に削除する。
      *
-     * <p>カートにない品目は無視する。1 つの変更として記録し、バージョンは 1 だけ上げる。
+     * <p>入れた日時が指定した時刻より後の品目は削除しない。数量を変えても入れた日時は変わらないので、
+     * その時刻以前に入れた品目は、数量を変えていても削除する。
+     * カートにない品目は無視する。1 つの変更として記録し、バージョンは 1 だけ上げる。
      *
      * @param variantIds 削除するバリアントの ID
+     * @param addedUntil 削除する品目を入れた日時の上限（この時刻に入れた品目は削除する）
      * @param now        現在時刻
      */
-    public void removeAll(@NonNull Collection<UUID> variantIds, @NonNull Instant now) {
+    public void removeAll(@NonNull Collection<UUID> variantIds, @NonNull Instant addedUntil, @NonNull Instant now) {
         // 保存の楽観ロックは 1 つ前のバージョンと比べるので、何品目を消してもバージョンは 1 だけ上げる
-        if (!isExpiredAt(now) && items.removeIf(item -> variantIds.contains(item.variantId()))) {
+        if (!isExpiredAt(now)
+                && items.removeIf(item -> variantIds.contains(item.variantId()) && !item.addedAt().isAfter(addedUntil))) {
             touch(now);
         }
     }

@@ -8,6 +8,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +38,16 @@ public class CartContentsApi {
     }
 
     /**
+     * 会員のカートの ID を返す（作らない）。
+     *
+     * @param memberId 会員 ID
+     * @return カート ID。会員のカートがなければ空
+     */
+    public Optional<UUID> findMemberCartId(UUID memberId) {
+        return cartService.findMemberCartId(memberId);
+    }
+
+    /**
      * カートの中身を公開の型にする。
      */
     private static CartContents toContents(CartContentsView view) {
@@ -47,14 +58,15 @@ public class CartContentsApi {
     /**
      * 指定したバリアントの品目を、数量によらず行ごとカートから除く。
      *
-     * <p>変わったらカート変更のイベントを発行する。カートがなければ何もしない。持ち主は確認しない。
+     * <p>入れた日時が指定した時刻より後の品目は除かない。変わったらカート変更のイベントを発行する。カートがなければ何もしない。持ち主は確認しない。
      * 呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
+     * @param addedUntil 除く品目を入れた日時の上限
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
-    public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds) {
-        cartService.removeItems(cartId, variantIds);
+    public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds, Instant addedUntil) {
+        cartService.removeItems(cartId, variantIds, addedUntil);
     }
 }

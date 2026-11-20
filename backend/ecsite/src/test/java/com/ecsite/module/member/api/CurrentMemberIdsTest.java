@@ -61,8 +61,8 @@ class CurrentMemberIdsTest {
         }
 
         @Override
-        public void insertIfAbsent(Member member) {
-            members.putIfAbsent(member.idpSubject(), member.id());
+        public UUID createOrGetId(Member member) {
+            return members.computeIfAbsent(member.idpSubject(), key -> member.id());
         }
     };
 

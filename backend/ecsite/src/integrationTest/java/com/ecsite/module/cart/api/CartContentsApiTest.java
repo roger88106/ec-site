@@ -8,6 +8,7 @@ import com.ecsite.support.data.CatalogTestData;
 import com.ecsite.support.data.InventoryTestData;
 import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.security.TestTokens;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.springframework.transaction.IllegalTransactionStateException;
 import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.jooq.cart.Tables.CART_;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -44,7 +46,39 @@ class CartContentsApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    @Autowired
+    DSLContext dsl;
+
     // ============================== テスト ==============================
+
+    @Nested
+    @DisplayName("会員のカートの ID の照会")
+    class FindMemberCartId {
+
+        @Test
+        @DisplayName("会員のカートがあれば、その ID を返す")
+        void returnsIdOfExistingCart() throws Exception {
+            // 準備：会員のカートを作る
+            var cartId = new OrderTestData(mockMvc).cart(TestTokens.member().subject(UUID.randomUUID()).bearer());
+            var memberId = api.find(cartId).orElseThrow().memberId();
+
+            // 操作と確認：カートの ID を返す
+            assertThat(api.findMemberCartId(memberId)).contains(cartId);
+        }
+
+        @Test
+        @DisplayName("会員のカートがなければ空を返し、呼んだ後もカートは作られない")
+        void returnsEmptyWithoutCreatingCart() {
+            // 準備：カートを持たない会員
+            var memberId = UUID.randomUUID();
+
+            // 操作と確認：空を返す
+            assertThat(api.findMemberCartId(memberId)).isEmpty();
+
+            // 確認：カートは作られていない
+            assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId))).isZero();
+        }
+    }
 
     @Nested
     @DisplayName("トランザクションの前提")
@@ -63,7 +97,7 @@ class CartContentsApiTest {
             orders.add(cartId, variantId, 1, member);
 
             // 操作と確認：トランザクションの外で除くと失敗する
-            assertThatThrownBy(() -> api.removeItems(cartId, List.of(variantId)))
+            assertThatThrownBy(() -> api.removeItems(cartId, List.of(variantId), clock.instant()))
                     .isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：品目は除かれずに残る

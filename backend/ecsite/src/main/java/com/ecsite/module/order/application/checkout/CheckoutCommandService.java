@@ -12,6 +12,7 @@ import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
+import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.quote.Quote;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,11 @@ public class CheckoutCommandService {
      * 注文手続きリポジトリ
      */
     private final CheckoutRepository checkoutRepository;
+
+    /**
+     * 注文リポジトリ（会員のロック）
+     */
+    private final OrderRepository orderRepository;
 
     /**
      * カートの腐敗防止層
@@ -80,6 +86,8 @@ public class CheckoutCommandService {
      * <p>全品目をカートの数量だけ引き当てる。同じカートの前の注文手続きの引当は解く（進み直し）。
      * 1 品目でも引き当てられなければ何も引き当てない。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
      *
+     * <p>同じ会員の開始と注文は、会員のロックで 1 つずつ処理する。
+     *
      * @param cartId               カート ID
      * @param memberId             会員 ID
      * @param acknowledgedOrderIds 確認した注文の ID（確認の画面で表示した注文。確認していなければ空）
@@ -92,6 +100,9 @@ public class CheckoutCommandService {
      * @throws BusinessException 総額が決済の範囲の外（{@code ORDER_AMOUNT_OUT_OF_RANGE}）
      */
     public UUID start(@NonNull UUID cartId, @NonNull UUID memberId, @NonNull Set<UUID> acknowledgedOrderIds) {
+        // 会員のロック ※同じ会員の開始と注文を 1 つずつ処理し、同じカートの引当が二重に残らないようにする。カートや前の引当を読む前に取るので、ロックを待った後の読み取りに先の開始が見える
+        orderRepository.lockForMember(memberId);
+        // 時刻はロックを待った後に取る
         var now = clock.instant();
         // カート取得 ※始められるのは会員の自分のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは、ないときと同じにする
         var cart = cartDirectory.find(cartId)
@@ -130,6 +141,18 @@ public class CheckoutCommandService {
      */
     public void releaseReservations(@NonNull UUID cartId) {
         stockDirectory.release(checkoutRepository.findIdsByCartId(cartId));
+    }
+
+    /**
+     * カートの注文手続きのうち、指定したバージョンより古いカートのバージョンで始めたものの引当を解く。
+     *
+     * <p>カートの変更の後に始めた注文手続きの引当は解かない。何度呼んでも結果は同じ。
+     *
+     * @param cartId      カート ID
+     * @param cartVersion このバージョンより古いカートのバージョンで始めた注文手続きを対象にする
+     */
+    public void releaseReservationsStartedBefore(UUID cartId, long cartVersion) {
+        stockDirectory.release(checkoutRepository.findIdsByCartIdStartedBefore(cartId, cartVersion));
     }
 
     /**

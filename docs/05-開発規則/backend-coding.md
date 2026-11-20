@@ -223,8 +223,11 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 |------------|--------|
 | 業務のエラーにする（同じ品番の登録など） | `ConstraintViolationTranslator` で業務のエラーに変える。制約名とエラーの対応は、各リポジトリの `CONSTRAINTS` に置く |
 | 吸収する（同じ通知の受け取り、同じメールの送信の記録など、冪等にする）か、同じトランザクションで処理を続ける | 重複を無視する挿入（`ON CONFLICT DO NOTHING`）にし、挿入したかを真偽値で返す。呼び出し元が真偽値で分ける |
+| 作るか、既存の ID を得る（会員、会員のカートなど） | `ON CONFLICT (一意の列) DO UPDATE SET 一意の列 = excluded.一意の列 RETURNING id` の 1 文にし ※3、他の列は書き換えない。衝突したときは、既存の行をトランザクションの終わりまでロックする |
 
 理由：制約の違反を 500 にせず、違反でトランザクション全体を失敗させる PostgreSQL でも処理を続けられるようにするため。
+
+※3：`DO NOTHING` では衝突したときに行が返らず、挿入の後に再取得すると、同時の挿入と削除で見つからないことがあるため（#462）。
 
 確認方法：自動（リポジトリの統合テスト）、扱い方の選び方はレビュー
 
@@ -332,7 +335,7 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 | リポジトリの port（domain） | `XxxRepository` | `OrderRepository` |
 | 参照用のリポジトリの port（application） | `XxxQueryRepository` | `OrderQueryRepository` |
 | jOOQ の実装 | `JooqXxxRepository` | `JooqOrderRepository` |
-| service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` ※3 | `OrderQueryService`、`OrderPlacementCommandService` |
+| service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` ※4 | `OrderQueryService`、`OrderPlacementCommandService` |
 | service（外部の呼び出し） | `XxxGatewayService` | `PaymentGatewayService` |
 | イベントのハンドラー | `XxxHandler` | `CartChangedHandler` |
 | ジョブ | `XxxJob`（設定の型も `application/job/`） | `CartCleanupJob`、`CartCleanupProperties` |
@@ -342,7 +345,7 @@ entity と集約の `equals` と `hashCode` は、識別子だけで比べる。
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `OrderApiDirectory` |
 | イベント | 過去形 | `OrderShipped` |
 
-※3：レベル A の service は、名前を参照・更新・外部の呼び出しのどれかで終える。用途の名前は前に付けてよい（例：`QuoteQueryService`）。外部の呼び出しには、他のモジュールを経て外部のサービスを呼ぶもの（商品画像の変換・保存）も含む。レベル B も、参照だけか更新だけと決まっている service は同じ形にし、読み書きが混ざる service だけを `XxxService` にする。
+※4：レベル A の service は、名前を参照・更新・外部の呼び出しのどれかで終える。用途の名前は前に付けてよい（例：`QuoteQueryService`）。外部の呼び出しには、他のモジュールを経て外部のサービスを呼ぶもの（商品画像の変換・保存）も含む。レベル B も、参照だけか更新だけと決まっている service は同じ形にし、読み書きが混ざる service だけを `XxxService` にする。
 
 ハンドラーは、受けて service を呼ぶだけにし、処理は application の service に置く（置き場所は[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「層とパッケージ」）。
 
@@ -408,7 +411,7 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 
 - 設定は `@ConfigurationProperties` の record で受け、`@Validated` を付ける。型は使う層に置く（画像の変換の設定は `infrastructure/converter/` など）。
 - 接頭辞は `ecsite.<モジュール>`、まとまりを分けるときは `ecsite.<モジュール>.<範囲>`（`ecsite.media.storage` など）、モジュールでない共通の設定は `ecsite.<範囲>`（`ecsite.security` など）。
-- 環境で変わる値（接続先・資格情報・ID・バケット名）は既定値を持たず必須にし（BR-31）、環境によらない値（上限、時間など）だけ既定値を持つ ※4。
+- 環境で変わる値（接続先・資格情報・ID・バケット名）は既定値を持たず必須にし（BR-31）、環境によらない値（上限、時間など）だけ既定値を持つ ※5。
 - 外部のクライアント（`RestClient` など）は、Config の `@Bean` で作り、使うクラスにコンストラクターで注入する。
   - テストは、Config の static メソッドで同じ設定を作る。
   - 外部のクライアントを使う実装のクラスは、public にしない（port を通さず具象に依存させないため）。設定の切り替えのテストが具象を見るなら、public にしてよい。
@@ -421,7 +424,7 @@ import は次のグループの順に並べ、グループの間は空行 1 行�
 - 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きして秘密の値を `***` にする（`StripeProperties` の形。項目の決め方は `ConfigurationPropertiesTest`）。理由：record の既定の `toString` は全ての項目を出し、ログから秘密の値が漏れるため。
 - 設定の型では、Lombok の `@ToString`・`@Data`・`@Value` を使わず、`toString` を手動で書く。理由：Lombok の注釈はクラスファイルに残らないので、構成の検査が、値を出力する `toString` を見逃すため。
 
-※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
+※5：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
 
 理由：設定を忘れたまま、別の環境の値で動き出さないようにするため（足りなければ起動に失敗する）。
 
@@ -526,21 +529,21 @@ public record SignedNotification(byte[] body, String signature) {
 
 マイグレーションはデプロイごとに 1 回適用し、起動時には適用しない。適用してからアプリを入れ替えるまでは、前のバージョンのアプリが新しいスキーマで動く。そのため、前のリリースのアプリが動き続けられる変更だけにする。次の変更は 1 つのリリースでせず、下の 3 段に分ける。
 
-- 表・列の削除、改名、列の型の変更（型と長さを変えずに、照合順序だけを変えるときを除く ※5）
+- 表・列の削除、改名、列の型の変更（型と長さを変えずに、照合順序だけを変えるときを除く ※6）
 - 既存の列を NOT NULL にすること、既定値のない NOT NULL の列の追加
-- 既存の列の既定値の削除（IDENTITY の解除 `DROP IDENTITY` と生成列の解除 `DROP EXPRESSION` を含む） ※6
+- 既存の列の既定値の削除（IDENTITY の解除 `DROP IDENTITY` と生成列の解除 `DROP EXPRESSION` を含む） ※7
 
 | 段 | リリース | すること |
 |----|----------|----------|
 | 1 | 最初 | 新しい表・列を追加する（前のバージョンのアプリは使わない） |
 | 2 | 次 | アプリを新しい表・列に切り替えてリリースする |
-| 3 | その次 | 使わなくなった表・列を削除する ※7 |
+| 3 | その次 | 使わなくなった表・列を削除する ※8 |
 
-※5：照合順序だけを変えても、前のリリースのアプリが実行する SQL は、そのまま動くため。
+※6：照合順序だけを変えても、前のリリースのアプリが実行する SQL は、そのまま動くため。
 
-※6：前のリリースのアプリは既定値を前提に列を指定せずに INSERT するので、NOT NULL の列では失敗し、NULL を許す列では値が NULL に変わるため。既定値の削除は段 1 がなく、段 2 でアプリが列に値を必ず書くようにし、段 3 で既定値を削除する。IDENTITY の解除と生成列の解除も、列が自動で値を持たなくなるので、同じ扱いにする。
+※7：前のリリースのアプリは既定値を前提に列を指定せずに INSERT するので、NOT NULL の列では失敗し、NULL を許す列では値が NULL に変わるため。既定値の削除は段 1 がなく、段 2 でアプリが列に値を必ず書くようにし、段 3 で既定値を削除する。IDENTITY の解除と生成列の解除も、列が自動で値を持たなくなるので、同じ扱いにする。
 
-※7：段 3 の削除（既定値の削除を含む）のマイグレーションには、どのリリースで使わなくなったかをコメントに書く。
+※8：段 3 の削除（既定値の削除を含む）のマイグレーションには、どのリリースで使わなくなったかをコメントに書く。
 
 理由：前のバージョンのアプリが、新しいスキーマで失敗しないため。
 

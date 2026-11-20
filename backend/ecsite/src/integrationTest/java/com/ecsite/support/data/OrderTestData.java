@@ -171,6 +171,17 @@ public class OrderTestData {
     }
 
     /**
+     * 会員のカートの品目のバリアント ID を読む。
+     *
+     * @return バリアント ID の一覧（入れた順）
+     */
+    public List<String> cartVariantIds() throws Exception {
+        var body = mockMvc.perform(get("/api/store/carts/" + cart()).with(member)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(body, "$.items[*].variantId");
+    }
+
+    /**
      * 会員のカートに入れ、204 を確認する。
      *
      * @param cartId    カート ID
@@ -377,8 +388,10 @@ public class OrderTestData {
     /**
      * 支払画面を開いて支払い、注文を「受付」にする。
      *
-     * <p>与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。
-     * そのため、リスナーと同じ処理をここで呼ぶ（冪等なので、コミットするテストで後からイベントが届いても変わらない）。
+     * <p>受付にする処理（与信の成功のリスナー）と、注文した品目をカートから除く処理（支払待ちから受付への遷移のリスナー）は、
+     * 別のリスナーで、どちらもイベントがコミットの後に届くので、ロールバックするテストでは届かない。
+     * そのため、ロールバックするテストでは、補助が両方の処理を呼ぶ（冪等なので、後からイベントが届いても変わらない）。
+     * コミットするテストでは、受付だけを呼び、カートから除く処理はリスナーの完了を待つ。
      *
      * @param orderId 注文 ID
      */

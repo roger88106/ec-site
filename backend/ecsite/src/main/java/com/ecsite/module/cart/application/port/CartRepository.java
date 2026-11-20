@@ -13,14 +13,25 @@ import java.util.UUID;
 public interface CartRepository {
 
     /**
-     * カートを作る。
+     * ログインせずに使うカート（会員を持たない空のカート）を作る。
      *
-     * <p>会員のカートは、同じ会員のカートがすでにあれば何も保存せずに false を返す。トランザクションは壊さない。
+     * <p>会員のカートは {@link #createForMemberOrGetId} で作る。
      *
-     * @param cart 空のカート
-     * @return 保存したら true
+     * @param cart 会員を持たない空のカート
+     * @throws IllegalArgumentException 会員を持つカートを渡したとき
      */
-    boolean create(Cart cart);
+    void create(Cart cart);
+
+    /**
+     * 会員のカートを作り、カート ID を返す。
+     *
+     * <p>同じ会員のカートがすでにあれば、何も変えずにそのカート ID を返す。1 つの文で行い、同時に作られたときも、
+     * 先に作られたカートの ID を返す。
+     *
+     * @param cart 会員の空のカート
+     * @return カート ID（作ったとき {@code cart} の ID、すでにあったとき既存のカートの ID）
+     */
+    UUID createForMemberOrGetId(Cart cart);
 
     /**
      * 会員のカートの ID を探す。

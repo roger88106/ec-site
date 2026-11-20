@@ -27,7 +27,7 @@ class PaymentEventHandler {
     private final OrderCancellationCommandService orderCancellationCommandService;
 
     /**
-     * 与信の成功：注文を受付にし、注文した品目をカートから除く。
+     * 与信の成功：注文を受付にする。
      *
      * @param event 与信の成功
      */

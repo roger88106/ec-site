@@ -19,11 +19,13 @@ public interface MemberRepository {
     Optional<UUID> findIdByIdpSubject(String idpSubject);
 
     /**
-     * 会員を作る。
+     * 会員を作り、会員 ID を返す。
      *
-     * <p>同じ IdP のアカウントの会員がすでにいれば、何もしない（一意制約の違反でトランザクションを失敗させない）。
+     * <p>同じ IdP のアカウントの会員がすでにいれば、何も変えずにその会員 ID を返す（一意制約の違反でトランザクションを失敗させない）。
+     * 1 つの文で行い、同時に作られたときも、先に作られた会員 ID を返す。
      *
      * @param member 会員
+     * @return 会員 ID（作ったとき {@code member} の ID、すでにいたとき既存の会員の ID）
      */
-    void insertIfAbsent(Member member);
+    UUID createOrGetId(Member member);
 }

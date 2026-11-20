@@ -335,7 +335,7 @@ class CartTest {
             addThree(cart, other);
 
             // 操作：白と黒を一度に除く
-            cart.removeAll(List.of(WHITE, BLACK), NOW);
+            cart.removeAll(List.of(WHITE, BLACK), NOW, NOW);
 
             // 確認：他の品目だけ
             assertThat(cart.itemsAt(NOW)).extracting(CartItem::variantId).containsExactly(other);
@@ -349,7 +349,7 @@ class CartTest {
             addThree(cart, UUID.randomUUID());
 
             // 操作：白と黒を一度に除く
-            cart.removeAll(List.of(WHITE, BLACK), NOW);
+            cart.removeAll(List.of(WHITE, BLACK), NOW, NOW);
 
             // 確認：1 だけ上がる（保存の楽観ロックは、1 つ前のバージョンと比べるため）
             assertThat(cart.version()).isEqualTo(4);
@@ -361,13 +361,43 @@ class CartTest {
             // 準備：白と黒を除いて、バージョンが 4 のカート
             var cart = newCart();
             addThree(cart, UUID.randomUUID());
-            cart.removeAll(List.of(WHITE, BLACK), NOW);
+            cart.removeAll(List.of(WHITE, BLACK), NOW, NOW);
 
             // 操作：もうない白と、入れていないバリアントを除く
-            cart.removeAll(List.of(WHITE, UUID.randomUUID()), NOW);
+            cart.removeAll(List.of(WHITE, UUID.randomUUID()), NOW, NOW);
 
             // 確認：4 のまま
             assertThat(cart.version()).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("入れた日時が上限より後の品目は除かず、上限と同じ時刻の品目は除く")
+        void keepsItemsAddedAfterLimit() {
+            // 準備：NOW に白、1 秒後に黒を入れたカート
+            var cart = newCart();
+            cart.add(WHITE, 1, NOW);
+            cart.add(BLACK, 1, NOW.plusSeconds(1));
+
+            // 操作：上限を NOW にして、白と黒を除く
+            cart.removeAll(List.of(WHITE, BLACK), NOW, NOW.plusSeconds(2));
+
+            // 確認：上限と同じ時刻の白は除かれ、後に入れた黒は残る
+            assertThat(cart.itemsAt(NOW.plusSeconds(2))).extracting(CartItem::variantId).containsExactly(BLACK);
+        }
+
+        @Test
+        @DisplayName("上限より前に入れた品目は、上限の後に数量を変えていても除く")
+        void removesItemWhoseQuantityChangedAfterLimit() {
+            // 準備：NOW に白を入れ、1 秒後に数量を変えたカート
+            var cart = newCart();
+            cart.add(WHITE, 1, NOW);
+            cart.changeQuantity(WHITE, 3, NOW.plusSeconds(1));
+
+            // 操作：上限を NOW にして、白を除く
+            cart.removeAll(List.of(WHITE), NOW, NOW.plusSeconds(2));
+
+            // 確認：入れた日時は変わらないので、除かれる
+            assertThat(cart.itemsAt(NOW.plusSeconds(2))).isEmpty();
         }
     }
 
@@ -513,7 +543,7 @@ class CartTest {
             var cart = whiteAndBlack();
 
             // 操作：30 日たってから白と黒を一度に除く
-            cart.removeAll(List.of(WHITE, BLACK), NOW.plus(EXPIRY));
+            cart.removeAll(List.of(WHITE, BLACK), NOW, NOW.plus(EXPIRY));
 
             // 確認：期限の前から見た品目は白・黒のままで、バージョンは 2 のまま
             assertThat(cart.itemsAt(NOW)).extracting(CartItem::variantId).containsExactly(WHITE, BLACK);

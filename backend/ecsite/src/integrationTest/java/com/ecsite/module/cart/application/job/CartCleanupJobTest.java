@@ -369,7 +369,7 @@ class CartCleanupJobTest {
      */
     private UUID cartWithItem(Instant changedAt) {
         var cart = Cart.create(UUID.randomUUID(), changedAt);
-        assertThat(cartRepository.create(cart)).isTrue();
+        cartRepository.create(cart);
         cart.add(UUID.randomUUID(), 1, changedAt);
         cartRepository.save(cart);
         return cart.id();

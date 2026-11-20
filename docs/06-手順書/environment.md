@@ -15,6 +15,7 @@
 | `SPRING_DATASOURCE_URL`、`_USERNAME`、`_PASSWORD` | DB の接続先 | — |
 | `SERVER_PORT` | 業務ポート（Spring Boot の `server.port`）。`slot.mjs run` が設定する（[開発環境の起動](setup.md)の「スロット」） | 8080（E2E は 8090） |
 | `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外部に公開しない。業務ポートと同じ設定では、起動に失敗する | 9080（E2E は 9090） |
+| `ECSITE_SECURITY_ALLOW_MANAGEMENT_ON_BUSINESS_PORT` | 運用ポートのパスを業務ポートで公開することを許可する。統合テストだけで `true` にする。本番では有効にしない | false |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` | トレースの送信を有効にする | false（local と E2E は true） |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | 送信を有効にしたときの送信先 | `http://localhost:9411/api/v2/spans`（Spring Boot の既定） |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |

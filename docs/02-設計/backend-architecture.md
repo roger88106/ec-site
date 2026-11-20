@@ -277,7 +277,7 @@ module/<モジュール>/
 
 - IdP の本番の構成：管理画面の保護、realm の設定の反映方法、client の戻り先と店舗の URL、メールの送信元
 - secret の管理：client の secret、店舗画面の Cookie の鍵、物流サービスの通知の署名の鍵（ローカル用の値を使わない）
-- HTTPS（店舗画面の Cookie は本番で `Secure`。IdP の issuer（`ECSITE_SECURITY_ADMIN_ISSUER_URI`、`ECSITE_SECURITY_STORE_ISSUER_URI`）も https にする。コードでは確認しない）
+- HTTPS：店舗画面の Cookie は本番で `Secure` にする。IdP の issuer の 2 つの環境変数（`ECSITE_SECURITY_ADMIN_ISSUER_URI`、`ECSITE_SECURITY_STORE_ISSUER_URI`）も https にする。issuer が https かは、コードでは確認しない
 - 運用ポート（既定 9080。死活監視とメトリクス）を外に出さない。業務ポート（8080）だけを公開する。運用ポートが業務ポートと同じ設定では起動に失敗する
 - mock の画面は認証なしで使えるので、mock フラグ（`ecsite.<モジュール>.mock.enabled`）を立てない。立てると、起動のときにモジュールごとに警告のログを出力する。店舗画面にも `STORE_MOCK_PAYMENT_ORIGIN` を設定しない（店舗画面の CSP が、そのオリジンへのフォームの送信を許すため。[店舗画面の構成](apps/store.md)の「セキュリティヘッダー」）。ローカル・E2E・Stripe の sandbox の設定ファイルは本番の jar に入らない（「外部連携」）
 - 店舗画面を公開する URL（`AUTH_URL`）を渡す。ログインとログアウトの戻り先は、この URL から作る（[店舗画面の構成](apps/store.md)の「ログイン」）

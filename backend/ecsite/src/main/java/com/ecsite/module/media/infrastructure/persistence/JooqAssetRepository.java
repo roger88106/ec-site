@@ -56,16 +56,17 @@ class JooqAssetRepository implements AssetRepository {
     /**
      * アセットの記録をまとめて消す。
      *
-     * <p>ないものは無視する。
+     * <p>ないものは無視する。削除した行を {@code DELETE ... RETURNING} で受け取り、実際に削除したアセットだけを返す。
      *
      * @param ids アセット ID
+     * @return 実際に削除したアセット。ないものは含めない
      */
     @Override
-    public void deleteAllById(Collection<UUID> ids) {
+    public List<Asset> deleteAllById(Collection<UUID> ids) {
         if (ids.isEmpty()) {
-            return;
+            return List.of();
         }
-        dsl.deleteFrom(ASSET).where(ASSET.ID.in(ids)).execute();
+        return dsl.deleteFrom(ASSET).where(ASSET.ID.in(ids)).returning().fetch(JooqAssetRepository::toAsset);
     }
 
 // ============================== プライベートメソッド ==============================

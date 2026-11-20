@@ -29,9 +29,10 @@ public interface AssetRepository {
     /**
      * アセットの記録をまとめて消す。
      *
-     * <p>ないものは無視する。
+     * <p>ないものは無視する。同時に同じアセットを削除したときは、実際に削除した呼び出しの戻り値にだけ、そのアセットが含まれる。
      *
      * @param ids アセット ID
+     * @return 実際に削除したアセット。ないものは含まない
      */
-    void deleteAllById(Collection<UUID> ids);
+    List<Asset> deleteAllById(Collection<UUID> ids);
 }

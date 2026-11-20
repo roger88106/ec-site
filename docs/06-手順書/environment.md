@@ -57,9 +57,13 @@
 | `ECSITE_INVENTORY_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの引当を削除する間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、1d、1000 |
 | `ECSITE_ORDER_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの注文手続きを削除する間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、1d、1000 |
 | `ECSITE_CART_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れのカートを削除する間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、0d、1000 |
+| `ECSITE_MEDIA_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 仮のアセットを削除する間隔、保存期間（用意した時刻から）、1 回に削除する件数の上限（1 以上 500 以下） | 1h、1d、500 |
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省略したもの（`SPRING_DATASOURCE_USERNAME` など）。
-- 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）だけは 0 以上。照合を始めるまでの時間（`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY`）は 2 分以上。
+- 時間の値は、許す範囲の外だと起動に失敗する。許す範囲は 1ms 以上（`ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` は 1 秒以上）で、例外は次の 3 つ。
+  - 保存期間（`ECSITE_*_CLEANUP_RETENTION`、`ECSITE_SCHEDULING_EVENT_CLEANUP_RETENTION`。`ECSITE_MEDIA_CLEANUP_RETENTION` を除く）と、「期限が近い」とする期間（`ECSITE_PAYMENT_AUTHORIZATION_WARNING`）は 0 以上。
+  - `ECSITE_MEDIA_CLEANUP_RETENTION` は 1 分以上。理由は[メディアモジュール](../03-機能仕様/media.md)の「仮のアセットの片付け」。
+  - 照合を始めるまでの時間（`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY`）は 2 分以上。
 - Stripe を使うとき、`ECSITE_PAYMENT_CAPTURE_RECONCILE_DELAY` は、売上確定の呼び出しの最長の時間に 1 分を加えた時間より長くないと起動に失敗する。最長の時間は、`ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT` と `_READ_TIMEOUT` と、SDK の再試行から決まる（計算は `StripeConfig`）。既定の値では約 2 分 25 秒。理由：照合が、売上確定の最中の支払の、売上確定を求めた時刻を削除しないようにするため。
 - `ECSITE_PAYMENT_AUTHORIZATION_WARNING` は、`ECSITE_PAYMENT_AUTHORIZATION_VALIDITY` より短くないと起動に失敗する。
 - マイグレーションの適用は [バックエンドの書き方](../05-開発規則/backend-coding.md)の「マイグレーション」。

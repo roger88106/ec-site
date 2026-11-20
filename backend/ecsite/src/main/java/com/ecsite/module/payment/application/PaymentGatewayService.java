@@ -234,6 +234,24 @@ public class PaymentGatewayService {
     }
 
     /**
+     * 支払なしの支払について、その支払画面を決済サービスで閉じる。
+     *
+     * <p>支払なし以外の状態、または支払画面がなければ何もしない。
+     * 閉じる前に支払が済んでいたら、決済サービスから与信を取得して反映する（与信の取消待ちになり、与信の取消の依頼を登録する）。
+     *
+     * @param paymentId 支払 ID
+     * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
+     */
+    void closePage(UUID paymentId) {
+        queryService.findPageToClose(paymentId).ifPresent(pageId -> {
+            if (gateway.closePage(pageId) == PaymentGateway.CloseResult.ALREADY_PAID) {
+                log.warn("支払画面を閉じる前に支払が済んでいたので、与信を反映して取り消す: paymentId={}", paymentId);
+                commandService.authorizeFromGateway(paymentId, gateway.fetchAuthorization(pageId));
+            }
+        });
+    }
+
+    /**
      * 決済サービスで返金してから、返金済みにする。
      *
      * <p>返金待ちでなければ何もしない。

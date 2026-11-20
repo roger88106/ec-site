@@ -47,6 +47,7 @@ class ListenerExecutorTest {
             "AssetFileHandler#AssetReleased",
             "PaymentReversalHandler#VoidRequested",
             "PaymentReversalHandler#RefundRequested",
+            "PaymentReversalHandler#PageCloseRequested",
             "TrackingRequestedHandler#TrackingRequested");
 
     // ============================== 依存 ==============================

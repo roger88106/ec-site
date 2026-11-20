@@ -10,6 +10,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,10 +20,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -234,7 +238,15 @@ class SecurityConfig {
                                 .decoder(decoder(realm, keys))
                                 .jwtAuthenticationConverter(authenticationConverter))
                         .authenticationEntryPoint(responder)
-                        .accessDeniedHandler(responder))
+                        .accessDeniedHandler(responder)
+                        // 既定の失敗の処理は、IdP に届かないときの失敗を投げ直して 500 にする。configurer に設定のメソッドがないので、filter を作った後に差し替える
+                        .withObjectPostProcessor(new ObjectPostProcessor<BearerTokenAuthenticationFilter>() {
+                            @Override
+                            public <O extends BearerTokenAuthenticationFilter> O postProcess(O filter) {
+                                filter.setAuthenticationFailureHandler(responder);
+                                return filter;
+                            }
+                        }))
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().access(authorizationManager))
                 .build();
     }
@@ -243,14 +255,15 @@ class SecurityConfig {
      * realm の token の decoder を作る。
      *
      * <p>署名に加え、issuer・audience・有効期限を確認する。鍵は最初の検証のときに取る。
+     * IdP の設定を取得できず decoder を作れないときは、鍵を取得できないときと同じ検証の処理の失敗（{@link JwtException}）にする。
      *
      * @param realm realm の設定
      * @param keys  realm の署名の鍵
      * @return decoder
      */
     private static JwtDecoder decoder(SecurityProperties.Realm realm, RealmKeys keys) {
-        // 起動のときに IdP が動いていなくてもよいように、鍵は最初の検証のときに取る
-        return new SupplierJwtDecoder(() -> {
+        // 起動のときに IdP が動いていなくてもよいように、鍵は最初の検証のときに取る。作れなければ、次のリクエストで再作成する
+        var lazy = new SupplierJwtDecoder(() -> {
             var decoder = keys.decoder(realm.issuerUri());
             decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
                     JwtValidators.createDefaultWithIssuer(realm.issuerUri()),
@@ -258,5 +271,13 @@ class SecurityConfig {
                             audience -> audience != null && audience.contains(realm.audience()))));
             return decoder;
         });
+        return token -> {
+            try {
+                return lazy.decode(token);
+            } catch (JwtDecoderInitializationException e) {
+                // 認証の処理は JwtException だけを認証の失敗に変える。ほかの例外は filter の外に出て 500 になる
+                throw new JwtException("IdP の設定を取得できず、decoder を作れない", e);
+            }
+        };
     }
 }

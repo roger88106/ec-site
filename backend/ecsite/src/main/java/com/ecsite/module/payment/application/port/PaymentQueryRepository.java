@@ -1,6 +1,8 @@
 package com.ecsite.module.payment.application.port;
 
+import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
+import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 
 import java.time.Instant;
@@ -45,4 +47,28 @@ public interface PaymentQueryRepository {
      * @return 支払。与信済みで、売上確定を求めた時刻のある支払だけ
      */
     List<CaptureReconcileView> findCaptureRequestedUntil(Instant latestRequestedAt, int limit);
+
+    /**
+     * 期限を過ぎた未払いの支払を、期限・支払 ID の順に取得する。
+     *
+     * <p>与信の反映を待つ支払は除く。支払（集約）に復元せず、支払 ID と支払画面の列だけを読む。
+     * 行が支払の不変条件を満たさなくても、検索は失敗しない。
+     *
+     * @param now   現在時刻
+     * @param limit 取得する数の上限
+     * @return 支払
+     */
+    List<PastDeadlinePaymentView> findUnpaidPastDeadline(Instant now, int limit);
+
+    /**
+     * 与信の反映を待つ支払を、待ち始めた時刻・支払 ID の順に取得する。
+     *
+     * <p>与信の反映を待つ支払は、未払いで、待ち始めた時刻がある支払である。
+     * 支払（集約）に復元せず、支払 ID と支払画面の列だけを読む。
+     * 行が支払の不変条件を満たさなくても、検索は失敗しない。
+     *
+     * @param limit 取得する数の上限
+     * @return 支払
+     */
+    List<AwaitingAuthorizationPaymentView> findUnpaidAwaitingAuthorization(int limit);
 }

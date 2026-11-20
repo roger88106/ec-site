@@ -2,8 +2,6 @@ package com.ecsite.module.member.application;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.UUID;
 
@@ -35,7 +33,7 @@ public class MemberIdResolver {
     /**
      * IdP のアカウントの ID から会員 ID を求め、いなければ会員を作る。
      *
-     * <p>同じアカウントの 2 回目からは、キャッシュから返す。
+     * <p>見つけた、または作った会員 ID は、すぐにキャッシュに入れる。同じアカウントの 2 回目からは、キャッシュから返す。
      *
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID
@@ -48,26 +46,7 @@ public class MemberIdResolver {
         }
         // なければ、読み取り専用のトランザクションで探し、いなければ（初めてのリクエスト）作る
         var memberId = queryService.findMemberId(idpSubject).orElseGet(() -> commandService.create(idpSubject));
-        putAfterCommit(idpSubject, memberId);
+        cache.put(idpSubject, memberId);
         return memberId;
-    }
-
-    /**
-     * 会員 ID をキャッシュに入れる。
-     *
-     * <p>トランザクションの同期が有効なときは、コミットの後に入れる。ロールバックしたテストで、消えた会員の ID が
-     * キャッシュに残らないようにするため。本番では、トランザクションの外で呼ばれるので、すぐに入れる。
-     */
-    private void putAfterCommit(String idpSubject, UUID memberId) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            cache.put(idpSubject, memberId);
-            return;
-        }
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                cache.put(idpSubject, memberId);
-            }
-        });
     }
 }

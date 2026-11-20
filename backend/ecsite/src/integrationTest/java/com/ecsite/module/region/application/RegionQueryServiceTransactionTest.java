@@ -5,7 +5,6 @@ import com.ecsite.module.region.domain.vo.Municipality;
 import com.ecsite.module.region.domain.vo.PostalAddress;
 import com.ecsite.module.region.domain.vo.Prefecture;
 import com.ecsite.support.config.IntegrationTest;
-import com.github.benmanes.caffeine.cache.Ticker;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.framework.ProxyFactory;
@@ -16,6 +15,7 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +54,12 @@ class RegionQueryServiceTransactionTest {
      */
     @Autowired
     RegionRepository repository;
+
+    /**
+     * 時計
+     */
+    @Autowired
+    Clock clock;
 
     // ============================== テスト ==============================
 
@@ -132,8 +138,7 @@ class RegionQueryServiceTransactionTest {
             }
         };
         var loader = transactional(new RegionMasterQueryService(recording), RegionMasterQueryService.class);
-        var cache = new RegionMasterCache(loader, new RegionCacheProperties(Duration.ofHours(1)),
-                Ticker.systemTicker());
+        var cache = new RegionMasterCache(loader, new RegionCacheProperties(Duration.ofHours(1)), clock);
         return transactional(new RegionQueryService(cache, recording), RegionQueryService.class);
     }
 

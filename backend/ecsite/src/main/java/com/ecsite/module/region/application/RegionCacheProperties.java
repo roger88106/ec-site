@@ -13,7 +13,7 @@ import java.time.Duration;
  *
  * <p>環境変数で上書きする（例：ECSITE_REGION_CACHE_EXPIRE_AFTER_WRITE）。
  *
- * @param expireAfterWrite 読み込んでから読み直すまでの時間
+ * @param expireAfterWrite 読み込んでからの有効期間
  */
 @Validated
 @ConfigurationProperties("ecsite.region.cache")

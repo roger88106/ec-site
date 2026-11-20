@@ -1,25 +1,23 @@
 package com.ecsite.module.region.application;
 
 import com.ecsite.module.region.application.model.RegionMaster;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Ticker;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 地域のマスターデータを、メモリに持つキャッシュ
  *
- * <p>全件を 1 つの値として持つ。最初に使うときに読み、期限が切れた後の最初の使用で読み直す。
+ * <p>全件を 1 つの値として持つ。最初に使うときに読み、有効期間を過ぎた後の最初の使用で再読み込みする。有効期間は注入した時計で測る。
+ * 再読み込みの間も、他の照会を待たせない（複数の照会が同時に再読み込みすることがある）。
  * 読み込みは {@link RegionMasterQueryService} に任せ、このクラスはトランザクションを持たない。
  */
 @Component
 public class RegionMasterCache {
-
-    /**
-     * 値を 1 つだけ持つためのキー
-     */
-    private static final String KEY = "region-master";
 
     /**
      * 読み込みの担当
@@ -27,42 +25,59 @@ public class RegionMasterCache {
     private final RegionMasterQueryService loader;
 
     /**
-     * キー → 地域のマスターデータ
+     * 有効期間
      */
-    private final Cache<String, RegionMaster> cache;
+    private final Duration expireAfterWrite;
 
     /**
-     * 設定と実際の時計で作る。
+     * 時計
+     */
+    private final Clock clock;
+
+    /**
+     * キャッシュの中身
+     *
+     * <p>まだ読み込んでいなければ null。
+     */
+    private final AtomicReference<@Nullable Entry> entry = new AtomicReference<>();
+
+    /**
+     * 設定と時計で作る。
      *
      * @param loader     読み込みの担当
      * @param properties キャッシュの設定
+     * @param clock      時計
      */
-    @Autowired
-    public RegionMasterCache(RegionMasterQueryService loader, RegionCacheProperties properties) {
-        this(loader, properties, Ticker.systemTicker());
-    }
-
-    /**
-     * 時計を指定して作る（テストで期限を進めるため）。
-     *
-     * @param loader     読み込みの担当
-     * @param properties キャッシュの設定
-     * @param ticker     時計
-     */
-    public RegionMasterCache(RegionMasterQueryService loader, RegionCacheProperties properties, Ticker ticker) {
+    public RegionMasterCache(RegionMasterQueryService loader, RegionCacheProperties properties, Clock clock) {
         this.loader = loader;
-        this.cache = Caffeine.newBuilder()
-                .expireAfterWrite(properties.expireAfterWrite())
-                .ticker(ticker)
-                .build();
+        this.expireAfterWrite = properties.expireAfterWrite();
+        this.clock = clock;
     }
 
     /**
-     * 地域のマスターデータを返す。なければ、または期限が切れていれば読む。
+     * 地域のマスターデータを返す。
+     *
+     * <p>まだ読み込んでいなければ、または有効期間を過ぎていれば、再読み込みする。
      *
      * @return 地域のマスターデータ
      */
     public RegionMaster get() {
-        return cache.get(KEY, key -> loader.load());
+        var now = clock.instant();
+        var current = entry.get();
+        // 複数のスレッドが同時に再読み込みすることがあるが、結果は同じなので排他しない
+        if (current == null || !now.isBefore(current.fetchedAt().plus(expireAfterWrite))) {
+            current = new Entry(loader.load(), now);
+            entry.set(current);
+        }
+        return current.master();
+    }
+
+    /**
+     * キャッシュの中身
+     *
+     * @param master    地域のマスターデータ
+     * @param fetchedAt 読み込んだ時刻
+     */
+    private record Entry(RegionMaster master, Instant fetchedAt) {
     }
 }

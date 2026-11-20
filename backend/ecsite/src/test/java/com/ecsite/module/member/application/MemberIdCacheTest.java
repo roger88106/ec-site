@@ -93,6 +93,27 @@ class MemberIdCacheTest {
         }
     }
 
+    @Nested
+    @DisplayName("捨てる")
+    class Evict {
+
+        @Test
+        @DisplayName("入れた後に捨てると、空になる")
+        void emptyAfterEvict() {
+            // 準備：2 件入れる
+            var cache = newCache(10, EXPIRE);
+            cache.put("a", UUID.randomUUID());
+            cache.put("b", UUID.randomUUID());
+
+            // 操作：捨てる
+            cache.evict();
+
+            // 確認：どちらも空
+            assertThat(cache.find("a")).isEmpty();
+            assertThat(cache.find("b")).isEmpty();
+        }
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**

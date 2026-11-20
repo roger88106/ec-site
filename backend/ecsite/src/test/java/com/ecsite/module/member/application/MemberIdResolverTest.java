@@ -2,12 +2,9 @@ package com.ecsite.module.member.application;
 
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -21,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 会員 ID を求める処理の単体テスト
  *
- * <p>キャッシュの使い方、会員の作成、コミットの後の登録を、Spring を起動せずに確認する。
+ * <p>キャッシュの使い方と会員の作成を、Spring を起動せずに確認する。
  */
 class MemberIdResolverTest {
 
@@ -77,16 +74,6 @@ class MemberIdResolverTest {
     private final MemberIdResolver resolver = new MemberIdResolver(new MemberQueryService(repository),
             new MemberCommandService(repository, Clock.systemUTC()), cache);
 
-    /**
-     * トランザクションの同期を無効に戻す
-     */
-    @AfterEach
-    void clearSynchronization() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
-    }
-
     // ============================== テスト ==============================
 
     @Nested
@@ -141,46 +128,6 @@ class MemberIdResolverTest {
             // 確認：別の会員 ID で、リポジトリを呼んでいる
             assertThat(second).isNotEqualTo(first);
             assertThat(lookups).isGreaterThan(lookupsAfterFirst);
-        }
-    }
-
-    @Nested
-    @DisplayName("トランザクションの同期が有効なとき")
-    class InTransaction {
-
-        @Test
-        @DisplayName("コミットの前はキャッシュに入れず、コミットの後に入れる")
-        void putsAfterCommitOnly() {
-            // 準備：トランザクションの同期を有効にする
-            TransactionSynchronizationManager.initSynchronization();
-
-            // 操作：会員 ID を求める
-            var id = resolver.resolve(SUBJECT);
-
-            // 確認：コミットの前は、キャッシュにない
-            assertThat(cache.find(SUBJECT)).isEmpty();
-
-            // 操作：コミットする
-            TransactionSynchronizationManager.getSynchronizations()
-                    .forEach(TransactionSynchronization::afterCommit);
-
-            // 確認：コミットの後は、キャッシュにある
-            assertThat(cache.find(SUBJECT)).contains(id);
-        }
-
-        @Test
-        @DisplayName("ロールバックしたときは、キャッシュに入れない")
-        void doesNotPutOnRollback() {
-            // 準備：トランザクションの同期を有効にする
-            TransactionSynchronizationManager.initSynchronization();
-
-            // 操作：会員 ID を求め、ロールバックする
-            resolver.resolve(SUBJECT);
-            TransactionSynchronizationManager.getSynchronizations()
-                    .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
-
-            // 確認：キャッシュにない
-            assertThat(cache.find(SUBJECT)).isEmpty();
         }
     }
 }

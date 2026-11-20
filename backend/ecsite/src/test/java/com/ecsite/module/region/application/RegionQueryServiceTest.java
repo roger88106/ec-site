@@ -6,22 +6,22 @@ import com.ecsite.module.region.application.port.RegionRepository;
 import com.ecsite.module.region.domain.vo.Municipality;
 import com.ecsite.module.region.domain.vo.PostalAddress;
 import com.ecsite.module.region.domain.vo.Prefecture;
-import com.github.benmanes.caffeine.cache.Ticker;
+import com.ecsite.support.MutableClock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 地域の参照のサービスの単体テスト
  *
- * <p>リポジトリは、呼び出しの回数を数えるテスト用のリポジトリにする。時間は、進められる Ticker で動かす。
+ * <p>リポジトリは、呼び出しの回数を数えるテスト用のリポジトリにする。時間は、進められる時計で動かす。
  */
 class RegionQueryServiceTest {
 
@@ -70,9 +70,9 @@ class RegionQueryServiceTest {
     private FakeRegionRepository repository;
 
     /**
-     * 進められる時計（ナノ秒）
+     * 進められる時計
      */
-    private AtomicLong nanos;
+    private MutableClock clock;
 
     /**
      * テスト対象
@@ -82,9 +82,8 @@ class RegionQueryServiceTest {
     @BeforeEach
     void setUp() {
         repository = new FakeRegionRepository();
-        nanos = new AtomicLong();
-        Ticker ticker = nanos::get;
-        var cache = new RegionMasterCache(new RegionMasterQueryService(repository), new RegionCacheProperties(EXPIRATION), ticker);
+        clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
+        var cache = new RegionMasterCache(new RegionMasterQueryService(repository), new RegionCacheProperties(EXPIRATION), clock);
         service = new RegionQueryService(cache, repository);
     }
 
@@ -181,7 +180,7 @@ class RegionQueryServiceTest {
             service.prefectures();
 
             // 操作：期限の 1 ナノ秒前まで進めて照会する
-            nanos.addAndGet(EXPIRATION.toNanos() - 1);
+            clock.advance(EXPIRATION.minusNanos(1));
             service.prefectures();
 
             // 確認：読み直さない
@@ -197,7 +196,7 @@ class RegionQueryServiceTest {
             repository.prefectures = List.of(TOKYO);
 
             // 操作：期限まで進めて照会する
-            nanos.addAndGet(EXPIRATION.toNanos());
+            clock.advance(EXPIRATION);
             var prefectures = service.prefectures();
 
             // 確認：2 回目の読み込みをして、新しい内容を返す

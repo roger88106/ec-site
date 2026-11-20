@@ -15,7 +15,7 @@ import java.time.Duration;
  * <p>環境変数で上書きする（例：ECSITE_MEMBER_ID_CACHE_EXPIRE_AFTER_WRITE）。
  *
  * @param maximumSize      キャッシュに持つ件数の上限
- * @param expireAfterWrite 入れてから消えるまでの時間
+ * @param expireAfterWrite 入れてからの有効期間
  */
 @Validated
 @ConfigurationProperties("ecsite.member.id-cache")

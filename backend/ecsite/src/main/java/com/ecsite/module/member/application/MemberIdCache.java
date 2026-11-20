@@ -69,4 +69,13 @@ public class MemberIdCache {
     public void put(String idpSubject, UUID memberId) {
         cache.put(idpSubject, memberId);
     }
+
+    /**
+     * キャッシュを捨てる。
+     *
+     * <p>次の照会では DB から求める。
+     */
+    public void evict() {
+        cache.invalidateAll();
+    }
 }

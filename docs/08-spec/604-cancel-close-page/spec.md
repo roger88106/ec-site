@@ -139,7 +139,7 @@ DN-604-1 の例外は、次の表のとおり。
   - 依存：T604-01-03
   - 範囲：サービスとリスナー
   - 確認方法：T604-01-03 のテストが通る。支払のモジュールの統合テスト（`./gradlew integrationTest --tests 'com.ecsite.module.payment.*'`）
-- [ ] **T604-01-05** 文書を修正する（決定 4。DC-604-7）。
+- [x] **T604-01-05** 文書を修正する（決定 4。DC-604-7）。
   - 依存：T604-01-04
   - 範囲：「変える範囲」の文書
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`

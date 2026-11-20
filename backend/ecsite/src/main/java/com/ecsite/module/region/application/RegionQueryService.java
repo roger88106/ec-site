@@ -8,6 +8,7 @@ import com.ecsite.module.region.domain.vo.Prefecture;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -22,7 +23,12 @@ import java.util.Optional;
 public class RegionQueryService {
 
     /**
-     * 地域のマスターデータのリポジトリ
+     * 地域のマスターデータのキャッシュ
+     */
+    private final RegionMasterCache cache;
+
+    /**
+     * 地域のマスターデータのリポジトリ（郵便番号の検索で使う）
      */
     private final RegionRepository repository;
 
@@ -31,8 +37,9 @@ public class RegionQueryService {
      *
      * @return コードの順の都道府県
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public List<Prefecture> prefectures() {
-        return repository.findPrefectures();
+        return cache.get().prefectures();
     }
 
     /**
@@ -41,8 +48,9 @@ public class RegionQueryService {
      * @param code 都道府県のコード
      * @return 都道府県。なければ空
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<Prefecture> findPrefecture(@NonNull String code) {
-        return repository.findPrefecture(code);
+        return cache.get().findPrefecture(code);
     }
 
     /**
@@ -51,11 +59,9 @@ public class RegionQueryService {
      * @param prefectureCode 都道府県のコード
      * @return 都道府県と、コードの順の市区町村。都道府県がなければ空
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<PrefectureMunicipalitiesView> municipalitiesOf(@NonNull String prefectureCode) {
-        // 都道府県の取得と、その市区町村の取得
-        return repository.findPrefecture(prefectureCode)
-                .map(prefecture -> new PrefectureMunicipalitiesView(prefecture,
-                        repository.findMunicipalities(prefectureCode)));
+        return cache.get().municipalitiesOf(prefectureCode);
     }
 
     /**
@@ -64,8 +70,9 @@ public class RegionQueryService {
      * @param code 市区町村のコード
      * @return 都道府県と市区町村。なければ空
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<MunicipalityView> findMunicipality(@NonNull String code) {
-        return repository.findMunicipality(code);
+        return cache.get().findMunicipality(code);
     }
 
     /**

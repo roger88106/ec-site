@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,7 +84,7 @@ class RegionQueryServiceTest {
         repository = new FakeRegionRepository();
         nanos = new AtomicLong();
         Ticker ticker = nanos::get;
-        var cache = new RegionMasterCache(repository, new RegionCacheProperties(EXPIRATION), ticker);
+        var cache = new RegionMasterCache(new RegionMasterQueryService(repository), new RegionCacheProperties(EXPIRATION), ticker);
         service = new RegionQueryService(cache, repository);
     }
 
@@ -106,10 +105,10 @@ class RegionQueryServiceTest {
                 service.findMunicipality("13101");
             }
 
-            // 確認：都道府県の一覧と全ての市区町村を 1 回ずつ読み、他に問い合わせない
+            // 確認：都道府県の一覧と全ての市区町村を 1 回ずつ読み、郵便番号の検索はしない
             assertThat(repository.prefecturesCalls).isEqualTo(1);
             assertThat(repository.allMunicipalitiesCalls).isEqualTo(1);
-            assertThat(repository.otherCalls).isZero();
+            assertThat(repository.postalCalls).isZero();
         }
 
         @Test
@@ -226,11 +225,6 @@ class RegionQueryServiceTest {
         int allMunicipalitiesCalls;
 
         /**
-         * マスターの読み込みに使わない問い合わせの回数
-         */
-        int otherCalls;
-
-        /**
          * 郵便番号の検索の回数
          */
         int postalCalls;
@@ -250,24 +244,6 @@ class RegionQueryServiceTest {
         public List<Municipality> findAllMunicipalities() {
             allMunicipalitiesCalls++;
             return List.of(CHIYODA, CHUO, OSAKA_KITA);
-        }
-
-        @Override
-        public Optional<Prefecture> findPrefecture(String code) {
-            otherCalls++;
-            return Optional.empty();
-        }
-
-        @Override
-        public List<Municipality> findMunicipalities(String prefectureCode) {
-            otherCalls++;
-            return List.of();
-        }
-
-        @Override
-        public Optional<MunicipalityView> findMunicipality(String code) {
-            otherCalls++;
-            return Optional.empty();
         }
 
         @Override

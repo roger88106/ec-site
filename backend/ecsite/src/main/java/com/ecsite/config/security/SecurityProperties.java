@@ -28,7 +28,7 @@ public record SecurityProperties(
     /**
      * 運営者と消費者の realm の issuer が違うかを返す。
      *
-     * <p>値の検証で検査し、同じなら起動に失敗させる（会員の token で、管理 API の認証を通れるようになるため）。
+     * <p>値の検証で、同じなら起動に失敗させる（会員の token で、管理 API の認証を通れるようになるため）。
      * token の issuer は文字列の完全な一致で確認されるので、ここも完全な一致で比べる。
      *
      * @return 違うか、項目の検証で失敗するなら true

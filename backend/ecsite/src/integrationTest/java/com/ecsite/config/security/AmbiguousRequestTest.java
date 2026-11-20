@@ -109,9 +109,9 @@ class AmbiguousRequestTest {
     class EncodedCharacters {
 
         /**
-         * 符号化した点・スラッシュと、セミコロンを含むパスを返す。
+         * 符号化したドット・スラッシュと、セミコロンを含むパスを返す。
          *
-         * @return 場合の名前とパス（符号化したまま送る）
+         * @return テストの入力（ケース名とパス。符号化したまま送る）
          */
         static Stream<Arguments> ambiguousPaths() {
             return Stream.of(
@@ -125,7 +125,7 @@ class AmbiguousRequestTest {
 
         @ParameterizedTest(name = "「{0}」")
         @MethodSource("ambiguousPaths")
-        @DisplayName("DC-477-7 符号化した点・スラッシュとセミコロンを含むパスは、token があっても、操作に届く前に 400 で拒む")
+        @DisplayName("DC-477-7 符号化したドット・スラッシュと、セミコロンを含むパスは、token があっても、操作に届く前に 400 で拒む")
         void rejectsBeforeReachingOperation(String name, String path) throws Exception {
             // 操作と確認：既定の token を付けて、符号化したままのパスで呼ぶと、400 で、操作の応答の本文がない
             mockMvc.perform(get(URI.create(path)))
@@ -173,7 +173,7 @@ class AmbiguousRequestTest {
         }
 
         @Test
-        @DisplayName("DC-477-7 管理 API の接頭辞から大文字にすると、管理者の token があっても 401")
+        @DisplayName("DC-477-7 管理 API の接頭辞も含めて大文字にすると、管理者の token があっても 401")
         void rejectsAdminPrefix() throws Exception {
             // 操作と確認：管理者の token で、全体を大文字にした税区分の一覧のパスを呼ぶと、「ログインが必要」
             mockMvc.perform(get("/API/ADMIN/TAX-CATEGORIES").with(TestTokens.administrator().bearer()))
@@ -191,7 +191,7 @@ class AmbiguousRequestTest {
         }
 
         @Test
-        @DisplayName("DC-477-7 店舗 API の接頭辞から大文字にすると、会員の token があっても 401")
+        @DisplayName("DC-477-7 店舗 API の接頭辞も含めて大文字にすると、会員の token があっても 401")
         void rejectsStorePrefix() throws Exception {
             // 操作と確認：会員の token で、全体を大文字にしたカートのパスを呼ぶと、「ログインが必要」
             mockMvc.perform(get("/API/STORE/ME/CART").with(TestTokens.member().bearer()))
@@ -224,13 +224,13 @@ class AmbiguousRequestTest {
     }
 
     @Nested
-    @DisplayName("エラーのパス")
+    @DisplayName("エラーの画面のパス（/error）")
     class ErrorPath {
 
         @Test
-        @DisplayName("DC-477-7 エラーのパスへの直接のリクエストは、管理者の token があっても 401")
+        @DisplayName("DC-477-7 /error への直接のリクエストは、管理者の token があっても 401")
         void rejectsDirectRequest() throws Exception {
-            // 操作と確認：管理者の token で、エラーのパスを直接呼ぶと、「ログインが必要」
+            // 操作と確認：管理者の token で、/error を直接呼ぶと、「ログインが必要」
             mockMvc.perform(get("/error").with(TestTokens.administrator().bearer()))
                     .andExpect(status().isUnauthorized())
                     .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));

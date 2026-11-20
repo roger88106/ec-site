@@ -32,9 +32,9 @@ class ManagementPortCheckTest {
     // ============================== テスト ==============================
 
     /**
-     * 運用のパスが業務ポートで出る設定の、場合の名前と設定の値を返す。
+     * 運用のパスが業務ポートで公開される設定の、ケース名と設定の値を返す。
      *
-     * @return 見本
+     * @return テストの入力（ケース名と設定の値）
      */
     static Stream<Arguments> sameCases() {
         return Stream.of(
@@ -46,7 +46,7 @@ class ManagementPortCheckTest {
 
     @ParameterizedTest(name = "「{0}」")
     @MethodSource("sameCases")
-    @DisplayName("DC-477-1 運用のパスが業務ポートで出る設定なら、起動に失敗し、ポートを分けるか、許す設定を使うことが知らされる")
+    @DisplayName("DC-477-1 運用のパスが業務ポートで公開される設定なら、起動に失敗し、ポートを分けるか、許す設定にすることが、メッセージで分かる")
     void failsWhenManagementOnBusinessPort(String name, String[] ports) {
         // 操作と確認：起動に失敗し、原因に運用ポートの設定と、許す設定の名前がある
         runner.withPropertyValues(ports)

@@ -53,9 +53,9 @@ class MockFlagOffAccessTest {
     // ============================== テスト ==============================
 
     /**
-     * mock の画面のリクエストの、場合の名前とリクエストを返す。
+     * mock の画面のリクエストの、ケース名とリクエストを返す。
      *
-     * @return 見本
+     * @return テストの入力（ケース名とリクエスト）
      */
     static Stream<Arguments> mockPageRequests() {
         return Stream.of(
@@ -77,9 +77,9 @@ class MockFlagOffAccessTest {
     }
 
     @Test
-    @DisplayName("DC-477-5 決済の通知のパスは、認証なしで口の中まで届く")
+    @DisplayName("DC-477-5 決済の通知のパスは、認証なしで Controller まで届く")
     void acceptsStripeWebhook() throws Exception {
-        // 操作と確認：署名なしで送ると、口の中の署名の確認まで届き、本文のない 400 が返る
+        // 操作と確認：署名なしで送ると、Controller の署名の確認まで届き、本文のない 400 が返る
         // （認可で拒まれた応答は、Problem Details の本文を持つ）
         mockMvc.perform(post("/api/webhooks/stripe").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest())

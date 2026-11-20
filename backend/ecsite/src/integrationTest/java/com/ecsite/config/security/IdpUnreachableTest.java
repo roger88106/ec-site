@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 実際の HTTP だけである。
  *
  * <p>realm の decoder は、一度作れたら使い続ける。decoder を作れない場合と、作れたが鍵を取得できない場合で、
- * 署名の鍵の差し替えを分けるため、入れ子のクラスごとに Spring のコンテキストを分ける。
+ * 署名の鍵の差し替え方が違うので、入れ子のクラスごとに Spring のコンテキストを分ける。
  */
 @IntegrationTest
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

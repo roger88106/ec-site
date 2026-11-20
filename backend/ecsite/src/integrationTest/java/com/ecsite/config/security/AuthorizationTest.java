@@ -218,9 +218,9 @@ class AuthorizationTest {
     class PublicStoreOperationWithInvalidToken {
 
         /**
-         * 無効な token を付ける加工を返す。
+         * 無効な token を付ける処理を返す。
          *
-         * @return 場合の名前とリクエストの加工
+         * @return テストの入力（ケース名と、token を付ける処理）
          */
         static Stream<Arguments> invalidTokens() {
             return Stream.of(

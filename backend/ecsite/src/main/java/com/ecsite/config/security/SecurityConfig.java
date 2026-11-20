@@ -239,7 +239,7 @@ class SecurityConfig {
                                 .jwtAuthenticationConverter(authenticationConverter))
                         .authenticationEntryPoint(responder)
                         .accessDeniedHandler(responder)
-                        // 既定の失敗の処理は、IdP に届かないときの失敗を投げ直して 500 にする。configurer に設定のメソッドがないので、filter を作った後に差し替える
+                        // 既定の失敗の処理は、IdP に届かないときの失敗を投げ直して 500 にする。configurer に失敗の処理を設定するメソッドがないので、filter を作った後に差し替える
                         .withObjectPostProcessor(new ObjectPostProcessor<BearerTokenAuthenticationFilter>() {
                             @Override
                             public <O extends BearerTokenAuthenticationFilter> O postProcess(O filter) {

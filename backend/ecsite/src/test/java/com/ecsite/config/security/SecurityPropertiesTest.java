@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 認証の設定の検証
  *
- * <p>運営者と消費者の realm の issuer が同じなら起動に失敗し、2 つの設定の名前が知らされることを確認する。
+ * <p>運営者と消費者の realm の issuer が同じなら起動に失敗し、2 つの設定の名前が、メッセージに含まれることを確認する。
  */
 class SecurityPropertiesTest {
 
@@ -30,7 +30,7 @@ class SecurityPropertiesTest {
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("DC-477-2 運営者と消費者の realm の issuer が同じなら、起動に失敗し、2 つの設定の名前が知らされる")
+    @DisplayName("DC-477-2 運営者と消費者の realm の issuer が同じなら、起動に失敗し、2 つの設定の名前が、メッセージに含まれる")
     void failsWithSameIssuer() {
         // 操作と確認：同じ issuer では起動に失敗し、原因に 2 つの設定の名前がある
         runner.withPropertyValues(

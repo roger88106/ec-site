@@ -41,9 +41,9 @@ class MockFlagWarningTest {
     // ============================== テスト ==============================
 
     /**
-     * 1 つのモジュールだけフラグを立てる場合の、場合の名前と、立てるフラグと、立てないフラグを返す。
+     * 1 つのモジュールだけフラグを立てる場合の、ケース名と、立てるフラグと、立てないフラグを返す。
      *
-     * @return 見本
+     * @return テストの入力
      */
     static Stream<Arguments> singleFlagCases() {
         return Stream.of(
@@ -84,9 +84,9 @@ class MockFlagWarningTest {
     }
 
     /**
-     * フラグを立てない場合の、場合の名前と設定の値を返す。
+     * フラグを立てない場合の、ケース名と設定の値を返す。
      *
-     * @return 見本
+     * @return テストの入力
      */
     static Stream<Arguments> noFlagCases() {
         return Stream.of(

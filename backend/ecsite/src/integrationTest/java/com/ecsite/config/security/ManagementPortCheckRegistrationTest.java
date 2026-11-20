@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 起動時に運用ポートを検査する Bean が登録されていることの検査
  *
- * <p>判定は単体テスト（{@code ManagementPortCheckTest}）が確認する。ここでは、アプリの起動で検査が動くことを確認する。
+ * <p>判定は単体テスト（{@code ManagementPortCheckTest}）が確認する。ここでは、アプリの起動で検査の Bean が登録されることを確認する。
  */
 @IntegrationTest
 class ManagementPortCheckRegistrationTest {
@@ -29,9 +29,9 @@ class ManagementPortCheckRegistrationTest {
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("DC-477-1 アプリの起動で運用ポートの検査が動き、運用のパスを業務ポートで公開する統合テストの設定は、許す設定で起動する")
+    @DisplayName("DC-477-1 アプリの起動で運用ポートの検査の Bean が登録される。統合テストは、運用のパスを業務ポートで公開するので、それを許す設定で起動する")
     void checkIsRegistered() {
-        // 確認（前提）：統合テストの設定は、運用のパスが業務ポートで出る
+        // 確認（前提）：統合テストの設定は、運用のパスが業務ポートで公開される
         assertThat(ManagementPortType.get(environment)).isEqualTo(ManagementPortType.SAME);
 
         // 確認：検査の Bean があり、業務ポートで公開することを許している

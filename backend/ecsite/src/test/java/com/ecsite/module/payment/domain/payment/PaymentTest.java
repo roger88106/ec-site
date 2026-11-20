@@ -787,9 +787,9 @@ class PaymentTest {
         }
 
         @Test
-        @DisplayName("未払い → 支払なし。取り消す与信はないので、取消の依頼は出ない")
+        @DisplayName("DC-604-2 支払画面のない未払い → 支払なし。取り消す与信も閉じる画面もないので、イベントは出ない")
         void cancelsUnpaid() {
-            // 準備：未払いの支払
+            // 準備：支払画面のない未払いの支払
             var payment = unpaid();
 
             // 操作：取り消す
@@ -799,6 +799,26 @@ class PaymentTest {
             assertThat(changed).isTrue();
             assertThat(payment.status()).isEqualTo(PaymentStatus.NOT_PAID);
             assertThat(payment.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("DC-604-1 支払画面のある未払い → 支払なし。支払画面を閉じる依頼が登録される")
+        void requestsPageCloseOfUnpaidWithPage() {
+            // 準備：支払画面を記録した未払いの支払
+            var payment = unpaid();
+            payment.openPage(PAGE);
+
+            // 操作：取り消す
+            var changed = payment.cancel(ORDERED_AT);
+
+            // 確認：状態を変えたので true。支払なしで、この支払の支払画面を閉じる依頼が、取消の時刻で 1 件
+            assertThat(changed).isTrue();
+            assertThat(payment.status()).isEqualTo(PaymentStatus.NOT_PAID);
+            assertThat(payment.pullEvents()).singleElement().isInstanceOfSatisfying(PageCloseRequested.class,
+                    event -> {
+                        assertThat(event.paymentId()).isEqualTo(payment.id());
+                        assertThat(event.occurredAt()).isEqualTo(ORDERED_AT);
+                    });
         }
 
         @Test

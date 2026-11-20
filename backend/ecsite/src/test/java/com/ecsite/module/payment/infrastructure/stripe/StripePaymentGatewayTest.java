@@ -180,7 +180,7 @@ class StripePaymentGatewayTest {
             respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 500, StripeApiStub.error("api_error", null));
             assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.UNREACHABLE);
 
-            // 準備：2 回目は、確定済みのため断られ、読み直すと確定済み
+            // 準備：2 回目は、確定済みのため断られ、再取得すると確定済み
             respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 400,
                     StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
             respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("succeeded"));
@@ -857,9 +857,9 @@ class StripePaymentGatewayTest {
     /**
      * 売上確定または返金の 2 回の呼び出しが、別の冪等キーを付けたことを確認する。
      *
-     * <p>呼び出しの中の自動の再試行は切ってあるので（{@link StripeApiStub#client(String)}）、
-     * 売上確定と返金のリクエストの 1 つ目が 1 回目、最後が 2 回目の呼び出しになる。
-     * PaymentIntent の読み直し（GET）は、冪等キーを付けないので数えない。
+     * <p>自動の再試行は切ってある（{@link StripeApiStub#client(String)}）。
+     * そのため、売上確定と返金のリクエストの 1 つ目が 1 回目、最後が 2 回目の呼び出しになる。
+     * PaymentIntent の再取得（GET）は、冪等キーを付けないので数えない。
      */
     private void assertDifferentIdempotencyKeys() {
         var keys = requests().stream()

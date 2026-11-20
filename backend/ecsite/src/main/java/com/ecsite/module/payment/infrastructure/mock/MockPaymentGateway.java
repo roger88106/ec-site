@@ -139,7 +139,7 @@ public class MockPaymentGateway implements PaymentGateway {
      */
     @Override
     public void refund(RefundRequest request) {
-        // mock は返金を受け付けるだけ（冪等キーが同じでも、何度でも受け付ける）
+        // mock は返金を受け付けるだけ（同じ注文でも、何度でも受け付ける）
     }
 
 // ============================== 支払画面の操作 ==============================

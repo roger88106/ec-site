@@ -33,8 +33,7 @@ public abstract class PaymentGatewayContractTest {
     // ============================== 定数 ==============================
 
     /**
-     * テストの注文 ID（冪等キーの元）
-     */
+     * テストの注文 ID     */
     protected static final UUID ORDER_ID = UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0101");
 
     /**

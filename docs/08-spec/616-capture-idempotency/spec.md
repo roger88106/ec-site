@@ -105,7 +105,7 @@
   - 依存：T616-01-01
   - 範囲：`StripePaymentGatewayTest`
   - 確認方法：`./gradlew test --tests '*StripePaymentGatewayTest'` で、加えたテストが失敗する。
-- [ ] **T616-01-03** T616-01-02 のテストが通る実装を書く。冪等キーを説明するコメント（port の注文 ID の説明、テスト用の決済サービス、契約テスト、`StripeConfig` の再試行の説明）を合わせる。
+- [x] **T616-01-03** T616-01-02 のテストが通る実装を書く。冪等キーを説明するコメント（port の注文 ID の説明、テスト用の決済サービス、契約テスト、`StripeConfig` の再試行の説明）を合わせる。
   - 依存：T616-01-02
   - 範囲：`StripePaymentGateway`、`PaymentGateway`、`TestPaymentGateway`、`PaymentGatewayContractTest`、`StripeConfig`（コメントだけ）
   - 確認方法：`./gradlew test` が通る。

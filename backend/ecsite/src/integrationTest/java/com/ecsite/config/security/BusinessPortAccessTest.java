@@ -4,6 +4,8 @@ import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
 import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,7 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 店舗 API・管理 API 以外の URL の認可の検査
  *
- * <p>既定で拒み、決めた口（通知の口、mock の口、運用の口）だけを許す。統合テストの設定は mock フラグを立てている。
+ * <p>既定で拒み、決めた口（通知の口、mock の口、運用の口）だけを許す。通知の口は、決済と物流の通知の 2 つだけを許す。
+ * 統合テストの設定は mock フラグを立てている。
  */
 @IntegrationTest
 class BusinessPortAccessTest {
@@ -61,6 +64,16 @@ class BusinessPortAccessTest {
         mockMvc.perform(post("/api/webhooks/carrier").contentType(MediaType.APPLICATION_JSON).content(body)
                         .header(CarrierSignature.HEADER, signature))
                 .andExpect(result -> assertThat(result.getResponse().getStatus()).isEqualTo(400));
+    }
+
+    @ParameterizedTest(name = "「{0}」")
+    @ValueSource(strings = {"/api/webhooks/unknown", "/api/webhooks/carrier/unknown", "/api/webhooks"})
+    @DisplayName("DC-477-5 決済と物流の通知のパスでない、通知のパスの下は、401（Problem Details）で拒む")
+    void rejectsOtherWebhookPath(String path) throws Exception {
+        // 操作と確認：認証なしで送ると、「ログインが必要」の Problem Details
+        mockMvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("UNAUTHENTICATED"));
     }
 
     @Test

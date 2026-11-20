@@ -180,7 +180,7 @@
   - 依存：T477-01-03
   - 範囲：`config/security` と `application-integration-test.yml`
   - 確認方法：`./gradlew test` が通る。
-- [ ] **T477-01-05** [テスト] 許すパスの絞り込み（DC-477-3〜5）のテストを書き、レッドを確認する。
+- [x] **T477-01-05** [テスト] 許すパスの絞り込み（DC-477-3〜5）のテストを書き、レッドを確認する。
   - 依存：なし
   - 範囲：integrationTest と test の `config/security`
   - 確認方法：書いたテストが失敗する。

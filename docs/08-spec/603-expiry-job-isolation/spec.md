@@ -148,7 +148,7 @@
   - 依存：T603-01-04
   - 範囲：`PaymentExpiryJob.java`
   - 確認方法：`./gradlew test` と、支払のモジュールの統合テストが通る
-- [ ] **T603-01-06** 決済の設計を修正する（決定 3。DC-603-6）。
+- [x] **T603-01-06** 決済の設計を修正する（決定 3。DC-603-6）。
   - 依存：T603-01-03、T603-01-05
   - 範囲：`docs/02-設計/payment.md`
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs` と `node scripts/ci/ja/ja-text.mjs --warning` を実行する

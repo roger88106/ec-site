@@ -96,9 +96,6 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
 
     /**
      * {@inheritDoc}
-     *
-     * <p>支払（集約）に復元せず、支払 ID と支払画面の列だけを読む。
-     * 復元できない行があっても検索を失敗させず、1 件ずつの処理の失敗として扱うためである。
      */
     @Override
     public List<PastDeadlinePaymentView> findUnpaidPastDeadline(Instant now, int limit) {
@@ -119,9 +116,6 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
 
     /**
      * {@inheritDoc}
-     *
-     * <p>支払（集約）に復元せず、支払 ID と支払画面の ID だけを読む。
-     * 復元できない行があっても検索を失敗させず、1 件ずつの処理の失敗として扱うためである。
      */
     @Override
     public List<AwaitingAuthorizationPaymentView> findUnpaidAwaitingAuthorization(int limit) {

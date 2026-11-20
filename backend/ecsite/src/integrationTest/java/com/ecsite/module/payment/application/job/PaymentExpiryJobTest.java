@@ -421,7 +421,7 @@ class PaymentExpiryJobTest {
     class UnrestorableRow {
 
         /**
-         * 他のテストと、後のジョブの実行に影響しないように、復元できない形にした行を削除する。
+         * 他のテストにも、後のジョブの実行にも影響しないように、復元できない形にした行を削除する。
          */
         @AfterEach
         void deleteCorrupted() {
@@ -432,22 +432,20 @@ class PaymentExpiryJobTest {
         @Test
         @DisplayName("AC-310 期限切れの支払の検索の対象に復元できない行があっても、他の支払は支払なしになり、その行は未払いのまま残り、支払 ID を含む warn のログが出る")
         void expiresOthersWhenPastDeadlineRowUnrestorable() {
-            // 準備：期限を過ぎた、支払画面のない未払いの支払が、復元できない形（未払いで与信の参照がある）の 1 件と、普通の 1 件。
-            // 他のテストが残した支払より先に処理されるように、期限を十分に早くする
-            var early = ORDERED_AT.minus(Duration.ofDays(30));
-            var broken = payments.created(early);
-            var other = payments.created(early);
+            // 準備：期限を過ぎた、支払画面のない未払いの支払を 2 件作る。1 件は復元できない形（未払いで与信の参照がある）にし、もう 1 件は普通のままにする
+            var broken = payments.created(ORDERED_AT);
+            var other = payments.created(ORDERED_AT);
             corrupt(broken);
             clock.setInstant(DEADLINE);
-            reconcileLogs.clear();
 
-            // 操作：ジョブを 1 回動かす
-            job.expire();
+            // 操作：普通の支払が処理され、復元できない行の warn が出るまで、ジョブを繰り返す
+            expireUntilSettledAndWarned(other, broken);
 
-            // 確認：普通の支払は支払なしで、復元できない行は未払いのまま。復元できない行の支払 ID を含む warn が出る
+            // 確認：普通の支払は支払なしで、復元できない行は未払いのまま。最後の実行で、復元できない行の支払 ID を含む warn が 1 件出る
             assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.NOT_PAID);
-            assertThat(rawStatusOf(broken)).isEqualTo(PaymentStatus.UNPAID.name());
-            assertThat(reconcileLogs.messages(Level.WARN)).anyMatch(line -> line.contains(rawPaymentIdOf(broken).toString()));
+            assertThat(payments.statusOf(broken)).isEqualTo(PaymentSummary.Status.UNPAID);
+            assertThat(reconcileLogs.messages(Level.WARN)).filteredOn(line -> line.contains(rawPaymentIdOf(broken).toString()))
+                    .hasSize(1);
         }
 
         @Test
@@ -459,14 +457,14 @@ class PaymentExpiryJobTest {
             var other = awaitingAfterRejectedFetch();
             gateway.reset();
             corrupt(broken);
-            reconcileLogs.clear();
 
-            // 操作：ジョブを 1 回動かす
-            job.expire();
+            // 操作：普通の支払が与信済みになり、復元できない行の warn が出るまで、ジョブを繰り返す
+            expireUntilSettledAndWarned(other, broken);
 
-            // 確認：普通の支払は与信済みになり、復元できない行の支払 ID を含む warn が出る
+            // 確認：普通の支払は与信済みで、最後の実行で、復元できない行の支払 ID を含む warn が 1 件出る
             assertThat(payments.statusOf(other)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
-            assertThat(reconcileLogs.messages(Level.WARN)).anyMatch(line -> line.contains(rawPaymentIdOf(broken).toString()));
+            assertThat(reconcileLogs.messages(Level.WARN)).filteredOn(line -> line.contains(rawPaymentIdOf(broken).toString()))
+                    .hasSize(1);
         }
     }
 
@@ -1288,26 +1286,6 @@ class PaymentExpiryJobTest {
     }
 
     /**
-     * 注文の支払の行を、復元できない形（未払いで与信の参照がある）に直接書き換える。テストの後に削除する。
-     *
-     * @param orderId 注文 ID（未払い）
-     */
-    private void corrupt(UUID orderId) {
-        corruptedOrderIds.add(orderId);
-        dsl.update(PAYMENT_).set(PAYMENT_.AUTHORIZATION_REF, "pi_corrupted").where(PAYMENT_.ORDER_ID.eq(orderId)).execute();
-    }
-
-    /**
-     * 注文の支払の行から、復元せずに状態を読む。
-     *
-     * @param orderId 注文 ID
-     * @return 状態の列の値
-     */
-    private String rawStatusOf(UUID orderId) {
-        return dsl.select(PAYMENT_.STATUS).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchSingle(PAYMENT_.STATUS);
-    }
-
-    /**
      * 注文の支払の行から、復元せずに支払 ID を読む。
      *
      * @param orderId 注文 ID
@@ -1348,6 +1326,33 @@ class PaymentExpiryJobTest {
     }
 
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 注文の支払の行を、復元できない形（未払いで与信の参照がある）に直接書き換える。テストの後に削除する。
+     *
+     * @param orderId 注文 ID（未払い）
+     */
+    private void corrupt(UUID orderId) {
+        corruptedOrderIds.add(orderId);
+        dsl.update(PAYMENT_).set(PAYMENT_.AUTHORIZATION_REF, "pi_corrupted").where(PAYMENT_.ORDER_ID.eq(orderId)).execute();
+    }
+
+    /**
+     * 普通の支払が処理され、復元できない行の warn が出るまで、ジョブを繰り返す。warn の確認は最後の実行のログだけを対象にするので、実行の前にログを消す。
+     *
+     * @param other  普通の支払の注文 ID
+     * @param broken 復元できない行の注文 ID
+     */
+    private void expireUntilSettledAndWarned(UUID other, UUID broken) {
+        var brokenId = rawPaymentIdOf(broken).toString();
+        expireUntil(() -> {
+            if (settled(other) && reconcileLogs.messages(Level.WARN).stream().anyMatch(line -> line.contains(brokenId))) {
+                return true;
+            }
+            reconcileLogs.clear();
+            return false;
+        });
+    }
 
     /**
      * 指定の時刻に売上確定を求め、決済サービスでは売上を確定したが、応答が届かなかった支払を作る。

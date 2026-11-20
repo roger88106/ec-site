@@ -422,7 +422,7 @@ class PaymentExpiryJobLoggingTest {
             job.expire();
 
             // 確認：支払 ID を含む warn が 1 行で、取得して反映したと書いてある
-            assertThat(warnLinesOf(AWAITING_FIRST.id())).singleElement()
+            assertThat(warnLinesContaining(AWAITING_FIRST.id().toString())).singleElement()
                     .satisfies(line -> assertThat(line).contains("通知より先に、決済サービスから与信を取得して反映した"));
         }
 
@@ -438,7 +438,7 @@ class PaymentExpiryJobLoggingTest {
             job.expire();
 
             // 確認：支払 ID を含む warn がない
-            assertThat(warnLinesOf(AWAITING_FIRST.id())).isEmpty();
+            assertThat(warnLinesContaining(AWAITING_FIRST.id().toString())).isEmpty();
         }
     }
 
@@ -455,7 +455,7 @@ class PaymentExpiryJobLoggingTest {
      */
     private void assertSkippedAndContinued() {
         verify(commandService).expire(SECOND.id(), "page-second");
-        assertThat(warnLinesOf(FIRST.id())).hasSize(1);
+        assertThat(warnLinesContaining(FIRST.id().toString())).hasSize(1);
     }
 
     /**
@@ -473,25 +473,13 @@ class PaymentExpiryJobLoggingTest {
     private void assertFetchSkippedAndContinued(UUID skippedId) {
         verify(commandService, never()).authorizeFromGateway(eq(skippedId), any());
         verify(commandService).authorizeFromGateway(AWAITING_SECOND.id(), AUTHORIZATION);
-        assertThat(warnLinesOf(skippedId)).hasSize(1);
+        assertThat(warnLinesContaining(skippedId.toString())).hasSize(1);
     }
 
     /**
-     * 支払 ID を含む warn のログの文を返す。
+     * 指定の語（処理を識別する語、または支払 ID）を含む warn のログの文を返す。
      *
-     * @param paymentId 支払 ID
-     * @return 文の一覧
-     */
-    private List<String> warnLinesOf(UUID paymentId) {
-        return logs.messages(Level.WARN).stream()
-                .filter(line -> line.contains(paymentId.toString()))
-                .toList();
-    }
-
-    /**
-     * 指定の語を含む warn のログの文を返す。
-     *
-     * @param keyword 処理を識別する語
+     * @param keyword 語
      * @return 文の一覧
      */
     private List<String> warnLinesContaining(String keyword) {

@@ -45,7 +45,7 @@
 | 決定 | 識別子 | 指すもの |
 |------|--------|----------|
 | 1 | `Payment.cancel`、`PaymentCommandService.cancel` | 支払の取消（集約の操作と、注文から呼ばれる更新） |
-| 1 | `PageCloseRequested`（仮の名前） | 加えるイベント「支払画面を閉じる依頼」 |
+| 1 | `PageCloseRequested` | 加えるイベント「支払画面を閉じる依頼」 |
 | 1 | `PaymentReversalHandler` | 与信の取消と返金の依頼のリスナー（ここに受ける処理を加える） |
 | 1、2、3 | `PaymentGatewayService`、`PaymentQueryService` | 決済サービスを呼ぶ処理と、閉じる支払画面の取得 |
 | 1、2 | `PaymentGateway.closePage`、`PaymentGateway.fetchAuthorization` | 決済サービスの port の、画面を閉じる操作と与信の取得 |
@@ -76,10 +76,11 @@
 
 | まとまり | ファイル |
 |----------|----------|
-| 集約とイベント | `module/payment/domain/payment/Payment.java`、`module/payment/domain/payment/PageCloseRequested.java`（新規。名前は仮） |
+| 集約とイベント | `module/payment/domain/payment/Payment.java`、`module/payment/domain/payment/PageCloseRequested.java`（新規） |
 | サービスとリスナー | `module/payment/application/PaymentGatewayService.java`、`module/payment/application/PaymentQueryService.java`、`module/payment/application/PaymentReversalHandler.java` |
 | 単体テスト | `backend/ecsite/src/test/java/com/ecsite/module/payment/domain/payment/PaymentTest.java` |
-| 統合テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/application/PaymentCancelPageCloseTest.java`（新規。名前は仮） |
+| 統合テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/application/PaymentCancelPageCloseTest.java`（新規）、`backend/ecsite/src/integrationTest/java/com/ecsite/config/async/ListenerExecutorTest.java`（外部サービスを呼ぶリスナーの一覧に加える） |
+| テスト用の決済サービス | `backend/ecsite/src/testFixtures/java/com/ecsite/module/payment/infrastructure/mock/TestPaymentGateway.java`（画面を閉じる操作の失敗と、呼ばれた回数） |
 | 文書 | `docs/02-設計/payment.md`、`docs/03-機能仕様/payment.md`、`docs/03-機能仕様/glossary.md` |
 
 ## 非機能要件
@@ -143,7 +144,7 @@ DN-604-1 の例外は、次の表のとおり。
   - 依存：T604-01-04
   - 範囲：「変える範囲」の文書
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs`、`node scripts/ci/ja/ja-text.mjs --warning`
-- [ ] **T604-01-06** `./gradlew check` を通す（DC-604-8）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
+- [x] **T604-01-06** `./gradlew check` を通す（DC-604-8）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T604-01-05
   - 確認方法：`./gradlew check`
 - [ ] **T604-01-07** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。

@@ -37,26 +37,21 @@ class JooqCartRepository implements CartRepository {
     private final Clock clock;
 
     /**
-     * カートを作る。
+     * ログインせずに使うカートを作る。
      *
-     * <p>会員ごとの一意制約に当たったら、何もせずに false を返す。
-     *
-     * @param cart 空のカート
-     * @return 保存したら true
+     * @param cart 会員を持たない空のカート
      */
     @Override
-    public boolean create(Cart cart) {
-        // 同じ会員のカートの重複は、例外にせず（トランザクションを壊さず）挿入されなかったことで知る
-        int inserted = dsl.insertInto(CART_)
+    public void create(Cart cart) {
+        if (cart.memberId().isPresent()) {
+            throw new IllegalArgumentException("会員のカートは createForMemberOrGetId で作る");
+        }
+        dsl.insertInto(CART_)
                 .set(CART_.ID, cart.id())
-                .set(CART_.MEMBER_ID, cart.memberId().orElse(null))
                 .set(CART_.VERSION, cart.version())
                 .set(CART_.CREATED_AT, clock.instant())
                 .set(CART_.UPDATED_AT, cart.updatedAt())
-                .onConflict(CART_.MEMBER_ID)
-                .doNothing()
                 .execute();
-        return inserted > 0;
     }
 
     /**

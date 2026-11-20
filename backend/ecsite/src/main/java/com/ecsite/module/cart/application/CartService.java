@@ -2,7 +2,6 @@ package com.ecsite.module.cart.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.cart.application.model.CartContentsView;
 import com.ecsite.module.cart.application.model.MergedCart;
 import com.ecsite.module.cart.application.port.CartRepository;
@@ -79,10 +78,7 @@ public class CartService {
     @Transactional
     public UUID createCart() {
         var cart = Cart.create(UUID.randomUUID(), clock.instant());
-        // 会員を持たないカートは、会員ごとの一意制約に当たらないので、保存されないのは想定外
-        if (!cartRepository.create(cart)) {
-            throw SystemException.of("カートを作れない", null);
-        }
+        cartRepository.create(cart);
         return cart.id();
     }
 
@@ -176,19 +172,20 @@ public class CartService {
     /**
      * 指定したバリアントの品目を、数量によらず行ごとカートから除く。
      *
-     * <p>カートがなければ何もしない。持ち主は確認しない。
+     * <p>入れた日時が指定した時刻より後の品目は除かない。カートがなければ何もしない。持ち主は確認しない。
      * 呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
+     * @param addedUntil 除く品目を入れた日時の上限
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds) {
+    public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds, Instant addedUntil) {
         var now = clock.instant();
         cartRepository.findById(cartId).ifPresent(cart -> {
             var version = cart.version();
-            cart.removeAll(variantIds, now);
+            cart.removeAll(variantIds, addedUntil, now);
             saveIfChanged(cart, version, now);
         });
     }
@@ -200,7 +197,7 @@ public class CartService {
      * @return カート ID。会員のカートがなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<UUID> findMemberCartId(@NonNull UUID memberId) {
+    public Optional<UUID> findMemberCartId(UUID memberId) {
         return cartRepository.findIdByMemberId(memberId);
     }
 

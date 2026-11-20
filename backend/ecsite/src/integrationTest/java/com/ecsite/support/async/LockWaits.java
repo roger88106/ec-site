@@ -34,6 +34,24 @@ public final class LockWaits {
     }
 
     /**
+     * このトランザクションのロックを、別のセッションが直接か、待っているセッションを通して、指定の数だけ待ち始めるまで待つ
+     *
+     * <p>別のテストのセッションの待ちは数えない。同じ会員のロックを取る処理が、先に在庫の行を待つ処理の後ろに並ぶ場合も数えられる。
+     *
+     * @param dsl      このトランザクションの接続で動く DSLContext
+     * @param sessions 待つセッションの数
+     */
+    public static void awaitBlockedByThisTransaction(DSLContext dsl, int sessions) {
+        var pid = dsl.fetchValue("select pg_backend_pid()");
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchValue("""
+                select count(distinct l.pid) from pg_locks l
+                where not l.granted and (? = any(pg_blocking_pids(l.pid))
+                    or exists (select 1 from pg_locks m
+                               where not m.granted and ? = any(pg_blocking_pids(m.pid)) and m.pid = any(pg_blocking_pids(l.pid))))""",
+                pid, pid) instanceof Number waiting && waiting.intValue() >= sessions);
+    }
+
+    /**
      * 会員のアドバイザリロック（JooqOrderRepository.lockForMember と同じキー）を、未取得のまま待つセッションが現れるまで待つ
      *
      * @param dsl      DSLContext

@@ -1,6 +1,5 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -33,7 +32,6 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.support.data.OrderTestData.startCheckoutRequest;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.jooq.impl.DSL.sum;
 
 /**
@@ -104,13 +102,13 @@ class CheckoutStartConcurrencyTest {
     @Test
     @DisplayName("同じカートで注文手続きを同時に開始しても、有効な引当は 1 つの注文手続きの分だけである")
     void keepsOnlyOneReservationForConcurrentStarts() throws Exception {
-        // 準備：在庫数 5 に、2 個のカートを作る
+        // 準備：在庫数 5 に、数量 2 のカートを作る
         inventory.stock(product.variantIds.getFirst(), product.id, 5);
         var owner = TestTokens.member().subject(UUID.randomUUID());
         var cartId = orders.cart(owner.bearer());
         orders.add(cartId, product.variantIds.getFirst(), 2, owner.bearer());
         // カートの変更の処理が、注文手続きと重ならないように待つ
-        asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.cartId().equals(cartId));
+        asyncEvents.awaitCartChanged(cartId);
         var executor = Executors.newFixedThreadPool(2);
         try {
             // 操作：在庫の行をロックしている間に、同じカートで 2 つの開始を送り、両方が先に進めず待つようにしてからロックを放す
@@ -121,7 +119,7 @@ class CheckoutStartConcurrencyTest {
                 LockWaits.awaitBlockedByThisTransaction(dsl);
                 // 2 つ目は、1 つ目と並んで在庫の行で待つか、会員のロックで待つ
                 starting.add(executor.submit(() -> start(cartId, owner)));
-                awaitWaitingSessions(2);
+                LockWaits.awaitBlockedByThisTransaction(dsl, 2);
             });
             for (var future : starting) {
                 assertThat(future.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS).getStatus()).isEqualTo(201);
@@ -130,7 +128,7 @@ class CheckoutStartConcurrencyTest {
             executor.shutdownNow();
         }
 
-        // 確認：カートの注文手続きの引当の数量の合計が、カートの数量 1 つ分
+        // 確認：カートの注文手続きの引当の数量の合計が、カートの数量の 1 回分（2）
         var reserved = dsl.select(sum(STOCK_RESERVATION.QUANTITY)).from(STOCK_RESERVATION)
                 .where(STOCK_RESERVATION.HOLDER_ID.in(
                         dsl.select(CHECKOUT.ID).from(CHECKOUT).where(CHECKOUT.CART_ID.eq(cartId))))
@@ -150,15 +148,6 @@ class CheckoutStartConcurrencyTest {
             dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(product.variantIds.getFirst())).forUpdate().fetch();
             body.run();
         });
-    }
-
-    /**
-     * ロックを取れずに待つセッションが、指定の数になるまで待つ
-     */
-    private void awaitWaitingSessions(int count) {
-        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchValue(
-                "select count(distinct pid) from pg_locks where not granted") instanceof Number waiting
-                && waiting.intValue() >= count);
     }
 
     /**

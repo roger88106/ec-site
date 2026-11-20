@@ -3,11 +3,11 @@ package com.ecsite.module.order.application;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -33,15 +33,18 @@ public class OrderCartCommandService {
     /**
      * 注文した品目（バリアント）を、注文した会員のカートから、数量によらず行ごと除く。
      *
-     * <p>注文または会員のカートがなければ何もしない。除く品目がなければ、カートは変わらない。何度呼んでも結果は同じ。
+     * <p>受付にした時刻より後に入れた行は除かない（同じイベントを受け直しても、除いた後に入れ直した行を除かない）。
+     * 数量を変えても入れた日時は変わらないので、受付の前に入れた行は、受付の後に数量を変えていても除く。
+     * 注文または会員のカートがなければ何もしない。除く品目がなければ、カートは変わらない。
      *
-     * @param orderId 注文 ID
+     * @param orderId    注文 ID
+     * @param acceptedAt 受付にした時刻（注文の状態の変化のイベントの発生時刻）
      */
-    public void removeOrderedItems(@NonNull UUID orderId) {
+    public void removeOrderedItems(UUID orderId, Instant acceptedAt) {
         orderRepository.findById(orderId).ifPresent(order -> {
             var variantIds = order.lines().stream().map(OrderLine::variantId).distinct().toList();
             cartDirectory.findMemberCartId(order.memberId())
-                    .ifPresent(cartId -> cartDirectory.removeItems(cartId, variantIds));
+                    .ifPresent(cartId -> cartDirectory.removeItems(cartId, variantIds, acceptedAt));
         });
     }
 }

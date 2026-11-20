@@ -171,6 +171,17 @@ public class OrderTestData {
     }
 
     /**
+     * 会員のカートの品目のバリアント ID を読む。
+     *
+     * @return バリアント ID の一覧（入れた順）
+     */
+    public List<String> cartVariantIds() throws Exception {
+        var body = mockMvc.perform(get("/api/store/carts/" + cart()).with(member)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(body, "$.items[*].variantId");
+    }
+
+    /**
      * 会員のカートに入れ、204 を確認する。
      *
      * @param cartId    カート ID

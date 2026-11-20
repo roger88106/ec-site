@@ -1,6 +1,5 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
@@ -338,7 +337,7 @@ class PlaceOrderConcurrencyTest {
         owners.put(cartId, owner);
         orders.add(cartId, product.variantIds.getFirst(), quantity, owner.bearer());
         // カートの変更の処理が、注文手続きや注文と重ならないように待つ
-        asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.cartId().equals(cartId));
+        asyncEvents.awaitCartChanged(cartId);
         return cartId;
     }
 

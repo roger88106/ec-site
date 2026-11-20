@@ -47,6 +47,7 @@ sequenceDiagram
     participant I as 在庫
     participant P as 決済
     U->>O: 注文手続きを始める
+    O->>O: 会員をロック
     O->>O: 未確認の注文を判定
     alt 未確認の注文がある
         O-->>U: 409（確認が必要）

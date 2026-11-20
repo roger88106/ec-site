@@ -9,6 +9,7 @@ import com.ecsite.support.async.AsyncEvents;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Clock;
 import java.util.UUID;
 
 import static org.awaitility.Awaitility.await;
@@ -47,7 +48,7 @@ public final class OrderPayments {
         context.getBean(OrderPaymentCommandService.class).accept(orderId);
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             if (wasPending) {
-                context.getBean(OrderCartCommandService.class).removeOrderedItems(orderId);
+                context.getBean(OrderCartCommandService.class).removeOrderedItems(orderId, context.getBean(Clock.class).instant());
             }
             return;
         }

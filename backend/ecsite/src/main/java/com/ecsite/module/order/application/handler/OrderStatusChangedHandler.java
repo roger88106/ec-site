@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 /**
  * 注文の状態の変化のリスナー
  *
- * <p>コミット後に非同期で、別のトランザクションで動く。何度届いても結果は同じ。
+ * <p>コミット後に非同期で、別のトランザクションで動く。同じイベントが何度届いても、受付の後に入れた行は除かない。
  * 処理に失敗したら、自分では再試行せず、未完了のイベントの再発行でやり直す。
  */
 @Component
@@ -31,7 +31,7 @@ class OrderStatusChangedHandler {
     @ApplicationModuleListener
     void on(OrderStatusChanged event) {
         if (event.from() == OrderStatusChanged.Status.PENDING_PAYMENT && event.to() == OrderStatusChanged.Status.ACCEPTED) {
-            orderCartCommandService.removeOrderedItems(event.orderId());
+            orderCartCommandService.removeOrderedItems(event.orderId(), event.occurredAt());
         }
     }
 }

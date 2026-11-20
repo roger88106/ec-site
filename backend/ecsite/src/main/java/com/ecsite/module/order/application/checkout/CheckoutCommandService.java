@@ -86,10 +86,9 @@ public class CheckoutCommandService {
      * <p>全品目をカートの数量だけ引き当てる。同じカートの前の注文手続きの引当は解く（進み直し）。
      * 1 品目でも引き当てられなければ何も引き当てない。注文手続きには、受けた一覧でなく、その時点の支払待ちの注文を保存する。
      *
-     * <p>同じ会員の開始と注文は、会員のロックで 1 つずつ処理する。同じカートの開始が重なって、前の引当を解く処理と引き当てる処理が入り混じり、
-     * 引当が二重に残ることを防ぐ。
+     * <p>同じ会員の開始と注文は、会員のロックで 1 つずつ処理する。
      *
-     * @param cartId             カート ID
+     * @param cartId               カート ID
      * @param memberId             会員 ID
      * @param acknowledgedOrderIds 確認した注文の ID（確認の画面で表示した注文。確認していなければ空）
      * @return 注文手続き ID
@@ -101,7 +100,7 @@ public class CheckoutCommandService {
      * @throws BusinessException 総額が決済の範囲の外（{@code ORDER_AMOUNT_OUT_OF_RANGE}）
      */
     public UUID start(@NonNull UUID cartId, @NonNull UUID memberId, @NonNull Set<UUID> acknowledgedOrderIds) {
-        // 会員のロック ※同じ会員の開始と注文を 1 つずつ処理する。カートや前の引当を読む前に取るので、ロックを待った後の読み取りに先の開始が見える
+        // 会員のロック ※同じ会員の開始と注文を 1 つずつ処理し、同じカートの引当が二重に残らないようにする。カートや前の引当を読む前に取るので、ロックを待った後の読み取りに先の開始が見える
         orderRepository.lockForMember(memberId);
         // 時刻はロックを待った後に取る
         var now = clock.instant();
@@ -152,7 +151,7 @@ public class CheckoutCommandService {
      * @param cartId      カート ID
      * @param cartVersion このバージョンより古いカートのバージョンで始めた注文手続きを対象にする
      */
-    public void releaseReservationsStartedBefore(@NonNull UUID cartId, long cartVersion) {
+    public void releaseReservationsStartedBefore(UUID cartId, long cartVersion) {
         stockDirectory.release(checkoutRepository.findIdsByCartIdStartedBefore(cartId, cartVersion));
     }
 

@@ -27,7 +27,6 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
@@ -190,7 +189,7 @@ class OrderPaymentApiTest {
             pending(2);
 
             // 確認：注文した品目がカートに残る
-            assertThat(cartVariantIds()).contains(variantId.toString());
+            assertThat(orders.cartVariantIds()).contains(variantId.toString());
         }
 
         @Test
@@ -237,7 +236,7 @@ class OrderPaymentApiTest {
             orders.awaitStatus(orderId, "ACCEPTED");
 
             // 確認：除く処理を待つと、後から追加した品目だけが残る
-            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(cartVariantIds()).containsExactly(addedLater.toString()));
+            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(orders.cartVariantIds()).containsExactly(addedLater.toString()));
         }
 
         @Test
@@ -253,7 +252,7 @@ class OrderPaymentApiTest {
             orders.awaitStatus(orderId, "ACCEPTED");
 
             // 確認：除く処理を待つと、カートが空になる
-            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(cartVariantIds()).isEmpty());
+            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(orders.cartVariantIds()).isEmpty());
         }
 
         @Test
@@ -549,7 +548,7 @@ class OrderPaymentApiTest {
             orders.awaitStatus(orderId, "ACCEPTED");
 
             // 確認：除く処理を待つと、カートが空になる
-            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(cartVariantIds()).isEmpty());
+            await().atMost(TIMEOUT).untilAsserted(() -> assertThat(orders.cartVariantIds()).isEmpty());
         }
 
         @Test
@@ -800,16 +799,6 @@ class OrderPaymentApiTest {
     private ResultActions listPending(UUID orderId) throws Exception {
         return mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("orderNumber", orderNumber(orderId)))
                 .andExpect(status().isOk());
-    }
-
-    /**
-     * 会員のカートの品目のバリアント ID を読む。
-     *
-     * @return バリアント ID の一覧
-     */
-    private List<String> cartVariantIds() throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + orders.cart()).with(owner.bearer())).andReturn().getResponse().getContentAsString(),
-                "$.items[*].variantId");
     }
 
     /**

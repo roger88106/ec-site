@@ -14,8 +14,8 @@ import com.ecsite.support.data.InventoryTestData;
 import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.data.ShippingTaxCategory;
 import com.ecsite.support.security.TestTokens;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,10 +26,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
-import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+import static com.ecsite.jooq.cart.Tables.CART_;
+import static com.ecsite.jooq.cart.Tables.CART_ITEM;
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.support.async.AsyncEvents.TIMEOUT;
@@ -37,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -111,6 +112,11 @@ class OrderPaymentCartRemovalApiTest {
     private TestTokens.Builder owner;
 
     /**
+     * このテストの会員の ID
+     */
+    private UUID memberId;
+
+    /**
      * 注文する商品のバリアント ID（在庫は {@link #STOCKED}）
      */
     private UUID variantId;
@@ -122,7 +128,8 @@ class OrderPaymentCartRemovalApiTest {
         var catalog = new CatalogTestData(mockMvc, clock);
         var taxCategoryId = catalog.taxCategory("カート除去-" + UUID.randomUUID().toString().substring(0, 8), "10");
         variantId = inventory.stockedVariant(catalog, taxCategoryId, "カート除去の商品", STOCKED);
-        owner = TestTokens.member().subject(UUID.randomUUID());
+        memberId = UUID.randomUUID();
+        owner = TestTokens.member().subject(memberId);
         orders = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer());
     }
 
@@ -141,7 +148,7 @@ class OrderPaymentCartRemovalApiTest {
         // 確認：除く処理が失敗した後も、注文は受付で、品目はカートに残る
         asyncEvents.awaitFailed(accepted(orderId));
         orders.awaitStatus(orderId, "ACCEPTED");
-        assertThat(cartVariantIds()).containsExactly(variantId.toString());
+        assertThat(orders.cartVariantIds()).containsExactly(variantId.toString());
     }
 
     @Test
@@ -197,6 +204,87 @@ class OrderPaymentCartRemovalApiTest {
         awaitCartEmpty();
     }
 
+    @Test
+    @DisplayName("同じ受付のイベントをもう一度処理しても、受付の後に入れ直した同じバリアントの行は除かない")
+    void keepsRowAddedAfterAcceptanceWhenEventIsHandledAgain() throws Exception {
+        // 準備：注文して支払い、受付の処理で品目が除かれた後、時計を進めて、会員が同じバリアントを入れ直す
+        var orderId = orders.placePendingOrder(variantId, 1);
+        gateway.pay(orders.openPaymentPage(orderId));
+        orders.awaitStatus(orderId, "ACCEPTED");
+        awaitCartEmpty();
+        clock.advance(Duration.ofSeconds(1));
+        orders.add(orders.cart(), variantId, 1);
+        asyncEvents.awaitCartChanged(orders.cart());
+
+        // 操作：除く処理を完了の記録だけが残らなかった状態にして、同じ受付のイベントを再発行する
+        markRemovalIncomplete(orderId);
+        clock.advance(RESUBMIT_AFTER);
+        asyncEvents.resubmit(accepted(orderId));
+        asyncEvents.awaitHandled(accepted(orderId));
+
+        // 確認：入れ直した行は残る
+        assertThat(orders.cartVariantIds()).containsExactly(variantId.toString());
+    }
+
+    @Test
+    @DisplayName("同じバリアントを追加して数量が加わった行も、与信の成功の処理が遅れた間の変更なら除かれる")
+    void removesRowMergedByAddingBeforeRemoval() throws Exception {
+        // 準備：注文の後、与信の成功の処理の前に、会員が同じバリアントを追加して数量を合算する
+        var orderId = orders.placePendingOrder(variantId, 1);
+        orders.add(orders.cart(), variantId, 2);
+
+        // 操作：決済サービスで支払う
+        gateway.pay(orders.openPaymentPage(orderId));
+
+        // 確認：合算した行も除かれる
+        orders.awaitStatus(orderId, "ACCEPTED");
+        awaitCartEmpty();
+    }
+
+    @Test
+    @DisplayName("キャンセル申請を却下して受付に戻っても、会員が入れ直した行はカートから除かれない")
+    void keepsRowWhenCancellationRequestIsRejected() throws Exception {
+        // 準備：注文して支払い、受付の処理で品目が除かれた後、会員が同じバリアントを入れ直してキャンセルを申請する
+        var orderId = orders.placePendingOrder(variantId, 1);
+        gateway.pay(orders.openPaymentPage(orderId));
+        orders.awaitStatus(orderId, "ACCEPTED");
+        awaitCartEmpty();
+        orders.add(orders.cart(), variantId, 1);
+        asyncEvents.awaitCartChanged(orders.cart());
+        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isNoContent());
+
+        // 操作：運営者が申請を却下して、受付に戻す
+        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject")).andExpect(status().isNoContent());
+
+        // 確認：受付に戻った変化のリスナーが終わっても、入れ直した行は残る
+        asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
+                && changed.orderId().equals(orderId)
+                && changed.from() == OrderStatusChanged.Status.CANCELLATION_REQUESTED
+                && changed.to() == OrderStatusChanged.Status.ACCEPTED);
+        assertThat(orders.cartVariantIds()).containsExactly(variantId.toString());
+    }
+
+    @Test
+    @DisplayName("会員のカートがない注文に与信の成功が届いても、注文は受付になり、カートは作られない")
+    void acceptsOrderWithoutMemberCartAndCreatesNoCart() throws Exception {
+        // 準備：注文し、会員のカートを消す（期限切れの片付けで消えた状態）
+        var orderId = orders.placePendingOrder(variantId, 1);
+        var cartId = orders.cart();
+        dsl.deleteFrom(CART_ITEM).where(CART_ITEM.CART_ID.eq(cartId)).execute();
+        dsl.deleteFrom(CART_).where(CART_.ID.eq(cartId)).execute();
+
+        // 操作：決済サービスで支払う
+        gateway.pay(orders.openPaymentPage(orderId));
+
+        // 確認：受付になり、除く処理は失敗せずに終わり、会員のカートは作られない
+        orders.awaitStatus(orderId, "ACCEPTED");
+        asyncEvents.awaitPublishedThenHandled(accepted(orderId));
+        assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId))).isZero();
+    }
+
     // ============================== 準備の補助 ==============================
 
     /**
@@ -205,7 +293,24 @@ class OrderPaymentCartRemovalApiTest {
     private void failRemovalOnce() {
         doThrow(BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION))
                 .doCallRealMethod()
-                .when(cartDirectory).removeItems(any(), any());
+                .when(cartDirectory).removeItems(any(), any(), any());
+    }
+
+    /**
+     * 受付のイベントの、カートから除くリスナーの完了の記録を消して、未完了に戻す（完了の記録に失敗した状態にする）。
+     *
+     * @param orderId 注文 ID
+     */
+    private void markRemovalIncomplete(UUID orderId) {
+        var table = DSL.table(DSL.name("common", "event_publication"));
+        var serializedEvent = DSL.field(DSL.name("serialized_event"), String.class);
+        var updated = dsl.update(table)
+                .set(DSL.field(DSL.name("completion_date"), Instant.class), (Instant) null)
+                .set(DSL.field(DSL.name("status"), String.class), "PUBLISHED")
+                .where(DSL.field(DSL.name("listener_id"), String.class).contains("OrderStatusChangedHandler"),
+                        serializedEvent.contains(orderId.toString()), serializedEvent.contains("ACCEPTED"))
+                .execute();
+        assertThat(updated).isEqualTo(1);
     }
 
     /**
@@ -222,19 +327,9 @@ class OrderPaymentCartRemovalApiTest {
     // ============================== 確認の補助 ==============================
 
     /**
-     * 会員のカートの品目のバリアント ID を読む。
-     *
-     * @return バリアント ID の一覧
-     */
-    private List<String> cartVariantIds() throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + orders.cart()).with(owner.bearer())).andReturn().getResponse().getContentAsString(),
-                "$.items[*].variantId");
-    }
-
-    /**
      * 会員のカートが空になるのを待つ。
      */
     private void awaitCartEmpty() {
-        await().atMost(TIMEOUT).until(() -> cartVariantIds().isEmpty());
+        await().atMost(TIMEOUT).until(() -> orders.cartVariantIds().isEmpty());
     }
 }

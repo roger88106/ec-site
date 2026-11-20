@@ -1,6 +1,5 @@
 package com.ecsite.module.cart.presentation;
 
-import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
@@ -33,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * カートの追加・増量が、自分の注文手続きの引当も数えて販売可能数を判定することの受け入れテスト
  *
  * <p>カートは、除く引当の持ち主を指定せずに販売可能数を読むので、同じ会員が注文手続きを始めて引き当てた数量も差し引かれる。
- * この振る舞いは意図したもので（カートの機能仕様の「品目の追加と変更」）、ここで固定する。
+ * この振る舞いは意図したもので、ここで固定する。
  *
  * <p>カートの変更のイベントはコミットの後に非同期で届くので、テストはトランザクションにせず、コミットして処理を待つ。
  * 作ったデータは消さない。他のテストは、一覧の全体ではなく自分のデータだけを確認する。
@@ -112,7 +111,7 @@ class CartOwnReservationApiTest {
         // 準備：在庫 5 の品目を 3 個入れて、注文手続きに進み、3 個を引き当てる（販売可能数は 2）
         var variant = stockedVariant(5);
         orders.add(cartId, variant, 3);
-        awaitCartChanged();
+        asyncEvents.awaitCartChanged(cartId);
         orders.startCheckout(cartId);
         assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 2);
 
@@ -130,7 +129,7 @@ class CartOwnReservationApiTest {
         // 準備：在庫 5 の品目を 3 個入れて、注文手続きに進み、3 個を引き当てる（販売可能数は 2）
         var variant = stockedVariant(5);
         orders.add(cartId, variant, 3);
-        awaitCartChanged();
+        asyncEvents.awaitCartChanged(cartId);
         orders.startCheckout(cartId);
 
         // 操作：もう 1 個追加する（合算で 4）
@@ -150,7 +149,7 @@ class CartOwnReservationApiTest {
         // 準備：在庫 5 の品目を 3 個入れる（注文手続きは始めない）
         var variant = stockedVariant(5);
         orders.add(cartId, variant, 3);
-        awaitCartChanged();
+        asyncEvents.awaitCartChanged(cartId);
 
         // 操作：4 個に増やす
         var result = change(variant, 4);
@@ -169,15 +168,6 @@ class CartOwnReservationApiTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"quantity": %d}""".formatted(quantity)));
-    }
-
-    /**
-     * このカートの変更のイベントの処理が終わるのを待つ。
-     *
-     * <p>追加のイベントのリスナーが、次の注文手続きの引当を解かないようにする。
-     */
-    private void awaitCartChanged() {
-        asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.cartId().equals(cartId));
     }
 
     /**

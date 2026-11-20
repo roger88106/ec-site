@@ -27,7 +27,7 @@
 | 起動のときの設定の確認（運用ポート、issuer） | 本番を見分ける設定（profile など）の追加 |
 | 許すパスの絞り込み（mock、通知） | IdP の本番の構成と、運用の方針（https を求めるか）の実装 ※1 |
 | IdP に届かないときの応答の確認と修正 | 店舗画面・管理画面の変更 |
-| 回帰のテスト | API の契約（OpenAPI）と DB の構造の変更 |
+| 回帰のテスト | API の契約（OpenAPI）の変更（共通のエラーコードの列挙への 1 つの追加を除く）と、DB の構造の変更 |
 | 関わる設計の文書と業務ルールの記述の修正 | |
 
 ※1：https の要否は決定 5 で決めた。
@@ -83,7 +83,7 @@
    - 先に、統合テストで今の動作を確認し、結果を tasks に記録する（decoder の初期化の失敗と、鍵の取得の失敗の 2 つ）。背景の 5 の想定のとおりでなければ、実装を始めず、issue 担当のセッションに報告する。
    - 想定のとおり 500 なら、503 の Problem Details にする。エラーコードは common に新しく加える（`AUTHENTICATION_UNAVAILABLE`。再試行できる）。画面の文は、今の 503 の文の書き方にそろえて「ログインの状態を確認できませんでした。しばらくしてから、もう一度お試しください。」にする。利用者は、文の確認は不要とした。今の 503 のエラーコード（ロックを待てない）は意味が違うので使わない。
    - リクエストのたびに IdP から設定と鍵を取得することは変えない。理由：IdP が回復したら、すぐに検証できるようにするため。
-   - 応答が 500 から 503 に変わる（DN-477-1 の例外 2）。API の契約（OpenAPI）は、共通の 503 を操作ごとに書いていないので変えない。エラーコードの一覧の文書とメッセージを加える。
+   - 応答が 500 から 503 に変わる（DN-477-1 の例外 2）。API の契約（OpenAPI）は、共通のエラーコードの列挙（管理 API と店舗 API の 2 つ）にこのコードを加える。共通のエラーコードは契約の列挙に載せる仕組みで、前例は spec 556 の `RESOURCE_BUSY`。操作ごとの応答には書かない。契約への追加は、spec の確定の後、実装の途中で見つけ、利用者が承認した新しいエラーコードの範囲の内として issue 担当のセッションが承認した（2026-11-20）。エラーコードの一覧の文書とメッセージも加える。
 
 ## 目的と完了条件
 
@@ -122,7 +122,7 @@
 | まとまり | ファイル |
 |----------|----------|
 | 認証と認可の設定 | `backend/ecsite/src/main/java/com/ecsite/config/security/` の下（`SecurityConfig`、`SecurityProperties`、起動時に設定を検査するクラス） |
-| エラーコード | `backend/ecsite/src/main/java/com/ecsite/common/error/CommonErrorCode.java`、`backend/ecsite/src/main/resources/messages.properties` |
+| エラーコード | `backend/ecsite/src/main/java/com/ecsite/common/error/CommonErrorCode.java`、`backend/ecsite/src/main/resources/messages.properties`、`api/openapi/admin.yaml`・`api/openapi/store.yaml`（共通のエラーコードの列挙） |
 | 設定ファイル | `backend/ecsite/src/integrationTest/resources/application-integration-test.yml` |
 | テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/security/`、`backend/ecsite/src/test/java/com/ecsite/config/security/`、`backend/ecsite/src/integrationTest/java/com/ecsite/config/ProductionJarStartupTest.java`（AC-245 の期待値）、`backend/ecsite/src/integrationTest/java/com/ecsite/support/security/TestSecurityConfig.java`（テストだけの通知の Controller を許す） |
 | 文書 | `docs/02-設計/backend-architecture.md`（「認証・認可」の BR-32 の箇条、「公開ネットワークへのデプロイの前提」）、`docs/05-開発規則/api-conventions.md`（エラーの表）、`docs/03-機能仕様/glossary.md`（503 の行）、`docs/03-機能仕様/acceptance-criteria.md`（AC-245 の行） |
@@ -130,7 +130,7 @@
 ## 非機能要件
 
 - **DN-477-1** 正しい設定のときの API の応答と画面を変えない。例外は 2 つ：フラグを立てていない mock の画面のパス（404 から 401。決定 3）と、IdP に届かないときの応答（500 から 503 の Problem Details。決定 7）。
-- **DN-477-2** API の契約（OpenAPI）と DB の構造を変えない。
+- **DN-477-2** API の契約（OpenAPI）は、共通のエラーコードの列挙に 1 つ加えるほかは変えない（決定 7）。DB の構造は変えない。
 - **DN-477-3** ローカル・E2E・統合テストの設定で、今のとおり起動する。
 
 ## 依存
@@ -193,10 +193,10 @@
   - 依存：T477-01-02
   - 範囲：integrationTest の `config/security`
   - 確認方法：変えたテストが失敗する。
-- [ ] **T477-01-08** T477-01-07 のテストが通る実装を書く。エラーコードとメッセージを加える。
+- [ ] **T477-01-08** T477-01-07 のテストが通る実装を書く。共通のエラーコードの列挙（管理 API と店舗 API の契約）にエラーコードを加え、フロントの型を再生成する。フロントにエラーコードで分岐する処理がなく、追加の分岐が不要なことを確認する。
   - 依存：T477-01-07
-  - 範囲：`config/security`、`CommonErrorCode`、`messages.properties`
-  - 確認方法：T477-01-07 のテストが通る。
+  - 範囲：`config/security`、`CommonErrorCode`、`messages.properties`、`api/openapi/admin.yaml`、`api/openapi/store.yaml`、フロントの生成する型
+  - 確認方法：T477-01-07 のテストと、エラーコードの契約のテストが通る。
 - [ ] **T477-01-09** 設計の文書、API の規約、用語集、業務ルール BR-32 の記述を更新する。「公開ネットワークへのデプロイの前提」の HTTPS の行に、決定 5 の issuer を加える。
   - 依存：T477-01-04、T477-01-06、T477-01-08
   - 範囲：`docs/02-設計/backend-architecture.md`、`docs/05-開発規則/api-conventions.md`、`docs/03-機能仕様/glossary.md`

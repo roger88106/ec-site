@@ -41,6 +41,16 @@ import java.util.List;
 class SecurityConfig {
 
     /**
+     * 決済の通知（Stripe）を受ける Controller のパス
+     */
+    private static final String PAYMENT_WEBHOOK_PATH = "/api/webhooks/stripe";
+
+    /**
+     * 物流サービスの配送状態の通知を受ける Controller のパス
+     */
+    private static final String SHIPPING_WEBHOOK_PATH = "/api/webhooks/carrier";
+
+    /**
      * realm の署名の鍵を作る。
      *
      * <p>issuer の OpenID Connect の設定から公開鍵の URL を求める（最初の検証のときに IdP から取る）。
@@ -102,6 +112,17 @@ class SecurityConfig {
     }
 
     /**
+     * mock のフラグを、起動のときに警告する。
+     *
+     * @param environment 設定
+     * @return mock のフラグの警告
+     */
+    @Bean
+    MockFlagWarning mockFlagWarning(Environment environment) {
+        return new MockFlagWarning(environment);
+    }
+
+    /**
      * 管理 API の filter chain を作る。
      *
      * <p>運営者の realm の token と、{@code admin.yaml} の権限が必須。
@@ -144,23 +165,31 @@ class SecurityConfig {
     /**
      * 管理 API と店舗 API 以外のパスの filter chain を作る。
      *
-     * <p>既定で拒み、決めたパスだけを許す。
+     * <p>既定で拒み、決めたパスだけを許す。mock の画面のパスは、そのモジュールの mock のフラグを立てたときだけ許す。
      *
-     * @param http      HttpSecurity
-     * @param responder 認証・認可の失敗の応答
+     * @param http        HttpSecurity
+     * @param responder   認証・認可の失敗の応答
+     * @param environment 設定
      * @return filter chain
      */
     @Bean
     @Order(3)
-    SecurityFilterChain defaultFilterChain(HttpSecurity http, SecurityProblemResponder responder) throws Exception {
+    SecurityFilterChain defaultFilterChain(HttpSecurity http, SecurityProblemResponder responder, Environment environment) throws Exception {
+        var mockPagePaths = MockPage.enabled(environment).stream().map(MockPage::getPathPattern).toArray(String[]::new);
         return stateless(http, responder)
-                .authorizeHttpRequests(authorize -> authorize
-                        // エラーの画面への転送を許さないと、許したパスの 404 が 401 に変わる
-                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        // 通知のパスは署名で、mock の画面のパスは mock フラグ（フラグがなければ Controller がなく 404）で守る。
-                        // 運用のパスは運用ポートで公開する（業務ポートで公開される設定は、許していなければ起動に失敗する）
-                        .requestMatchers("/api/webhooks/**", "/mock-payment/**", "/mock-carrier/**", "/actuator/**").permitAll()
-                        .anyRequest().denyAll())
+                .authorizeHttpRequests(authorize -> {
+                    // エラーの画面への転送を許さないと、許したパスの 404 が 401 に変わる
+                    authorize.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                            // 通知のパスは署名で守る。通知の Controller のパスだけを許し、通知のパスの下のほかのパスは拒む
+                            .requestMatchers(PAYMENT_WEBHOOK_PATH, SHIPPING_WEBHOOK_PATH).permitAll()
+                            // 運用のパスは運用ポートで公開する（業務ポートで公開される設定は、許していなければ起動に失敗する）
+                            .requestMatchers("/actuator/**").permitAll();
+                    // フラグを立てたモジュールがなければ、許す mock の画面のパスもない
+                    if (mockPagePaths.length > 0) {
+                        authorize.requestMatchers(mockPagePaths).permitAll();
+                    }
+                    authorize.anyRequest().denyAll();
+                })
                 .build();
     }
 

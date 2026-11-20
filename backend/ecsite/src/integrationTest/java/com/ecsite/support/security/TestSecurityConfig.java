@@ -46,7 +46,10 @@ public class TestSecurityConfig {
     /**
      * テストだけの Controller（{@code /api/test-*}。エラーの応答の形などを確認する）を、認証なしで使えるようにする。
      *
+     * <p>通知のエンドポイントの扱いを確認する、通知のパスの下のテストだけの Controller（{@code /api/webhooks/test-*}）も含む。
+     *
      * <p>本番の filter chain は、決めていない URL を拒むため（バックエンドのアーキテクチャの「業務のコードとの境界」）。
+     * 通知のパスの下も、決済と物流の通知のパスのほかは拒む。
      *
      * @param http HTTP の設定
      * @return テストだけの Controller の filter chain
@@ -55,7 +58,7 @@ public class TestSecurityConfig {
     @Order(0)
     SecurityFilterChain testControllerFilterChain(HttpSecurity http) throws Exception {
         return http
-                .securityMatcher("/api/test-*/**")
+                .securityMatcher("/api/test-*/**", "/api/webhooks/test-*/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
                 .build();

@@ -124,7 +124,7 @@
 | 認証と認可の設定 | `backend/ecsite/src/main/java/com/ecsite/config/security/` の下（`SecurityConfig`、`SecurityProperties`、起動時に設定を検査するクラス） |
 | エラーコード | `backend/ecsite/src/main/java/com/ecsite/common/error/CommonErrorCode.java`、`backend/ecsite/src/main/resources/messages.properties` |
 | 設定ファイル | `backend/ecsite/src/integrationTest/resources/application-integration-test.yml` |
-| テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/security/`、`backend/ecsite/src/test/java/com/ecsite/config/security/`、`backend/ecsite/src/integrationTest/java/com/ecsite/config/ProductionJarStartupTest.java`（AC-245 の期待値） |
+| テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/security/`、`backend/ecsite/src/test/java/com/ecsite/config/security/`、`backend/ecsite/src/integrationTest/java/com/ecsite/config/ProductionJarStartupTest.java`（AC-245 の期待値）、`backend/ecsite/src/integrationTest/java/com/ecsite/support/security/TestSecurityConfig.java`（テストだけの通知の Controller を許す） |
 | 文書 | `docs/02-設計/backend-architecture.md`（「認証・認可」の BR-32 の箇条、「公開ネットワークへのデプロイの前提」）、`docs/05-開発規則/api-conventions.md`（エラーの表）、`docs/03-機能仕様/glossary.md`（503 の行）、`docs/03-機能仕様/acceptance-criteria.md`（AC-245 の行） |
 
 ## 非機能要件
@@ -185,7 +185,7 @@
   - 依存：なし
   - 範囲：integrationTest と test の `config/security`
   - 確認方法：書いたテストが失敗する。
-- [ ] **T477-01-06** T477-01-05 のテストが通る実装を書く。AC-245 のテストの期待値を 401 にし、AC 一覧の AC-245 の文を書き換える（決定 1）。
+- [x] **T477-01-06** T477-01-05 のテストが通る実装を書く。AC-245 のテストの期待値を 401 にし、AC 一覧の AC-245 の文を書き換える（決定 1）。
   - 依存：T477-01-05
   - 範囲：`config/security`、`ProductionJarStartupTest`、`docs/03-機能仕様/acceptance-criteria.md`
   - 確認方法：`./gradlew integrationTest --tests '*config.security*' --tests '*ProductionJarStartupTest'` が通る。

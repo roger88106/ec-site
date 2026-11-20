@@ -8,7 +8,9 @@
 
 与信の成功の通知が届けば、支払は与信の取消待ちになる（今の規則：支払なしの支払に届いた与信は取り消す）。通知が届かなければ、与信は取り消されない。#549 の pull request #602 の draft を外す前のレビュー（組み込みのコードレビュー）で見つけた。コードを読んでの判断で、実行は未確認である。
 
-期限切れのジョブで同種の問題（#545）があり、#549 で修正した。この spec は、注文の取消の経路で、支払画面を閉じるようにする。消費者・運営者に見える振る舞いは、この不具合の修正の 1 点だけ変わる（DN-604-1）。追跡の issue は #604。#544（リリースの前の整理）の段階 3 の線 A（支払と注文）の spec である。
+ただし、今の注文の規則では起きない。取消が未払いの支払に届く経路がないためである。支払待ちの注文は、運営者のキャンセルも申請もできず、支払の期限切れのキャンセルは、支払が先に支払なしになった後に届く（[注文モジュール](../../03-機能仕様/order.md)の「状態の遷移」、AC-158）。spec の最後のレビューで分かった。利用者は、支払待ちのキャンセルを加えたときの備え（防御のコード）として残すと決めた（2026-11-20）。
+
+期限切れのジョブで同種の問題（#545）があり、#549 で修正した。この spec は、注文の取消の経路で、支払画面を閉じるようにする。今の注文の規則では、消費者・運営者に見える振る舞いは変わらない。変わるのは、取消が未払いの支払に届いたときの 1 点だけである（DN-604-1）。追跡の issue は #604。#544（リリースの前の整理）の段階 3 の線 A（支払と注文）の spec である。
 
 ## スコープ
 
@@ -77,15 +79,15 @@
 | まとまり | ファイル |
 |----------|----------|
 | 集約とイベント | `module/payment/domain/payment/Payment.java`、`module/payment/domain/payment/PageCloseRequested.java`（新規） |
-| サービスとリスナー | `module/payment/application/PaymentGatewayService.java`、`module/payment/application/PaymentQueryService.java`、`module/payment/application/PaymentReversalHandler.java` |
+| サービスとリスナー | `module/payment/api/PaymentApi.java`（Javadoc）、`module/payment/application/PaymentCommandService.java`（Javadoc）、`module/payment/application/PaymentGatewayService.java`、`module/payment/application/PaymentQueryService.java`、`module/payment/application/PaymentReversalHandler.java` |
 | 単体テスト | `backend/ecsite/src/test/java/com/ecsite/module/payment/domain/payment/PaymentTest.java` |
-| 統合テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/application/PaymentCancelPageCloseTest.java`（新規）、`backend/ecsite/src/integrationTest/java/com/ecsite/config/async/ListenerExecutorTest.java`（外部サービスを呼ぶリスナーの一覧に加える） |
+| 統合テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/application/PaymentCancelPageCloseTest.java`（新規）、`backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/application/PaymentRequests.java`（閉じる依頼の条件を移す）、`backend/ecsite/src/integrationTest/java/com/ecsite/module/payment/application/PaymentVoidTest.java`（表示名）、`backend/ecsite/src/integrationTest/java/com/ecsite/config/async/ListenerExecutorTest.java`（外部サービスを呼ぶリスナーの一覧に加える） |
 | テスト用の決済サービス | `backend/ecsite/src/testFixtures/java/com/ecsite/module/payment/infrastructure/mock/TestPaymentGateway.java`（画面を閉じる操作の失敗と、呼ばれた回数） |
-| 文書 | `docs/02-設計/payment.md`、`docs/03-機能仕様/payment.md`、`docs/03-機能仕様/glossary.md` |
+| 文書 | `docs/02-設計/payment.md`、`docs/03-機能仕様/payment.md`、`docs/03-機能仕様/glossary.md`、`docs/03-機能仕様/order.md`（最後のレビューで、古くなった 1 行を修正する） |
 
 ## 非機能要件
 
-- **DN-604-1** 消費者・運営者に見える振る舞いを変えない。例外は、DN-604-4 の後の表の 1 件である。理由：レビューで見つけた不具合の修正のため（[開発の進め方](../../05-開発規則/workflow.md)の「コードと文書の食い違い」）。前例は spec 549 の DN-549-1 である。
+- **DN-604-1** 消費者・運営者に見える振る舞いを変えない。例外は、DN-604-4 の後の表の 1 件である。理由：今の注文の規則では起きないが、支払待ちのキャンセルを加えたときの備えとして修正するため（[開発の進め方](../../05-開発規則/workflow.md)の「コードと文書の食い違い」）。前例は spec 549 の DN-549-1 である。
 - **DN-604-2** 例外の 1 件は、テストを先に書いて失敗（レッド）を確認してから修正する。
 - **DN-604-3** API の契約（OpenAPI）、AC、他のモジュールに公開するイベント、支払の表の列を変えない。
 - **DN-604-4** アーカイブした spec と、適用済みのマイグレーションを変えない。
@@ -94,7 +96,7 @@ DN-604-1 の例外は、次の表のとおり。
 
 | 修正 | 今 | 修正した後 |
 |------|-----|------------|
-| 注文の取消で、未払いから支払なしにした支払の支払画面 | 閉じない（消費者は取り消した注文の代金を払える。与信の成功の通知が届かなければ、与信は取り消されない） | コミットの後に閉じる。閉じる前に支払が済んでいたら、与信を取得して取り消す |
+| 注文の取消で、未払いから支払なしにした支払の支払画面 | 閉じない（今の注文の規則では起きない。支払待ちのキャンセルを加えると、取り消された注文の代金を消費者が払えてしまい、与信の成功の通知が届かなければ、与信は取り消されない） | コミットの後に閉じる。閉じる前に支払が済んでいたら、与信を取得して取り消す |
 
 ## 依存
 
@@ -147,8 +149,22 @@ DN-604-1 の例外は、次の表のとおり。
 - [x] **T604-01-06** `./gradlew check` を通す（DC-604-8）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T604-01-05
   - 確認方法：`./gradlew check`
-- [ ] **T604-01-07** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
+- [x] **T604-01-07** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T604-01-06
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | 段階をまたぐ影響、ファイルをまたぐ影響、spec との一致 | 高性能 | 1 | 179539 | 4m48s | 0 | 3 | 3 | 6 |
+
+    - 必須の 1 件目：取消が未払いの支払に届く経路が、今の注文の規則にない（支払待ちの注文はキャンセルできない）。作業を止めて報告し、利用者は防御のコードとして残すと決めた。背景、DN-604-1、決済の機能仕様の理由を、今の規則では起きず、支払待ちのキャンセルを加えたときの備えだと書き換えた。
+    - 残りの必須の 2 件：設計で、モジュールの中だけで使うイベントの一覧に「支払画面を閉じる依頼」を加えた。機能仕様の状態の遷移の図で、支払なしから与信の取消待ちへのラベルに、与信の取得を加えた。
+    - 採用した推奨の 3 件：古くなった同じ事実の記述（機能仕様の通知と通信の節、注文の機能仕様、設計のテスト用の実装）、取消の Javadoc とテストの表示名を修正した。閉じる依頼の条件を `PaymentRequests` に移し、取消の後の全ての依頼を待つ条件に含めた。
+    - 検証役（高性能、65015 token、1m31s）は 6 件とも真と判定した。級は 2〜4 件目を軽微、由来は 1 件目と 6 件目を今回、他を既存とした。重要度は定義で決めるので、変えていない。
+    - 機械の検査に移すもの：なし。2 件目（用語集と、設計の内部のイベントの一覧との照合）は一部移せるが、1 例目なので提案しない。
+    - 文書のレビュー（汎用）の候補は 10 件で、全て採用した。ただし、設計の図の自分への矢印を 12 字に縮める部分は、1 本だけ縮め、残りは上の図の既存の矢印と長さを揃えて残した。
+    - 校閲（ja-proofreader 汎用、ja-proof-verifier 高性能）で「挙げる」と判定したものは 10 件で、全て採用した。
+    - 本文の書き手：修正は各 1〜2 行で、セッションが自分で書いた。
 - [ ] **T604-01-08** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T604-01-07
 - [ ] **T604-01-09** spec をアーカイブに移す。

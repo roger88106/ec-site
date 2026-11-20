@@ -2,7 +2,6 @@ package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
-import com.ecsite.module.payment.domain.payment.PageCloseRequested;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -45,7 +44,7 @@ class PaymentCancelPageCloseTest {
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
     /**
-     * 再発行のジョブが再発行する、発行からの経過時間（5 分）を超える長さ
+     * 再発行のジョブが対象にする、発行からの経過時間（5 分）を超える長さ
      */
     private static final Duration PAST_RESUBMIT_AGE = Duration.ofMinutes(6);
 
@@ -161,7 +160,7 @@ class PaymentCancelPageCloseTest {
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.OPEN);
 
-        // 操作：再発行のジョブと同じく、発行から 5 分より前のこのテストのイベントを再発行する
+        // 操作：再発行のジョブと同じく、発行から 5 分を過ぎたこのテストのイベントを再発行する
         clock.advance(PAST_RESUBMIT_AGE);
         asyncEvents.resubmit(pageClose(orderId));
 
@@ -188,7 +187,7 @@ class PaymentCancelPageCloseTest {
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(gateway.voided()).isEmpty();
 
-        // 操作：再発行のジョブと同じく、発行から 5 分より前のこのテストのイベントを再発行する
+        // 操作：再発行のジョブと同じく、発行から 5 分を過ぎたこのテストのイベントを再発行する
         clock.advance(PAST_RESUBMIT_AGE);
         asyncEvents.resubmit(pageClose(orderId));
 
@@ -198,7 +197,7 @@ class PaymentCancelPageCloseTest {
     }
 
     @Test
-    @DisplayName("DC-604-6 受け取る前に与信の成功の通知が先に届いて与信の取消待ちになっていれば、決済サービスの画面を閉じる操作も与信の取得も呼ばない")
+    @DisplayName("DC-604-6 リスナーが受け取る前に与信の成功の通知が届いて与信の取消待ちになっていれば、決済サービスの画面を閉じる操作も与信の取得も呼ばない")
     void doesNotCallGatewayWhenNoLongerNotPaid() {
         // 準備：最初の閉じる操作が失敗して、閉じる依頼が未完了で残り、その後に通知が届いて与信の取消済みになった支払
         var orderId = payments.created(ORDERED_AT);
@@ -232,8 +231,7 @@ class PaymentCancelPageCloseTest {
      * @return イベントの条件
      */
     private Predicate<Object> pageClose(UUID orderId) {
-        var paymentId = PaymentRequests.paymentIdOf(dsl, orderId);
-        return event -> event instanceof PageCloseRequested requested && requested.paymentId().equals(paymentId);
+        return PaymentRequests.pageClose(dsl, orderId);
     }
 
     /**

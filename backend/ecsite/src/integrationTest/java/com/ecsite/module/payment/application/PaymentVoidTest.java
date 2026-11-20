@@ -178,7 +178,7 @@ class PaymentVoidTest {
         }
 
         @Test
-        @DisplayName("未払いの支払を取り消すと支払なしになり、決済サービスは呼ばない")
+        @DisplayName("支払画面のない未払いの支払を取り消すと支払なしになり、決済サービスは呼ばない")
         void cancelsUnpaidWithoutVoid() {
             // 準備：未払いの支払
             var orderId = payments.created(ORDERED_AT);

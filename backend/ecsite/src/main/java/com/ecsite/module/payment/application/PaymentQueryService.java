@@ -186,7 +186,7 @@ public class PaymentQueryService {
      * 決済サービスで閉じる支払画面の ID を返す。
      *
      * @param paymentId 支払 ID
-     * @return 支払画面 ID。支払なしでない、または支払画面がなければ空
+     * @return 支払画面 ID。支払なし以外の状態、または支払画面がなければ空
      */
     public Optional<String> findPageToClose(@NonNull UUID paymentId) {
         return paymentRepository.findById(paymentId)

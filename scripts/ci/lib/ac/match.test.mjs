@@ -208,6 +208,15 @@ describe('1→10 の AC（AC-n-m）の照合', () => {
     assert.deepEqual(result.unknown, [{ file: 'X.test.ts', name: 'AC-7-9 b', ac: '7-9' }])
   })
 
+  test('AC 番号の後の空白が抜けたテスト名（AC-7-41 回目、AC-7-4１回目）は、AC-7-4 のテストとして数えず、検査が失敗する', () => {
+    for (const name of ['AC-7-41 回目 a', 'AC-7-4１回目 a']) {
+      const result = check({ specAcs: new Set(['7-4']), tests: tests(name), exclusions: {} })
+      assert.equal(result.ok, false)
+      assert.deepEqual(result.unknown, [{ file: 'X.test.ts', name, ac: '7-41' }])
+      assert.deepEqual(result.missing, ['7-4'])
+    }
+  })
+
   test('除外の一覧は新しい形の AC も扱う', () => {
     const specAcs = new Set(['7-1', '7-2'])
     assert.equal(check({ specAcs, tests: tests('AC-7-1 a'), exclusions: { 'AC-7-2': '手で確認する' } }).ok, true)

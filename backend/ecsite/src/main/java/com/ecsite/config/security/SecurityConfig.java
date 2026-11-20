@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -89,6 +90,18 @@ class SecurityConfig {
     }
 
     /**
+     * 運用ポートの設定を、起動のときに検査する。
+     *
+     * @param environment 設定
+     * @param properties  認証の設定
+     * @return 運用ポートの検査
+     */
+    @Bean
+    ManagementPortCheck managementPortCheck(Environment environment, SecurityProperties properties) {
+        return new ManagementPortCheck(environment, properties);
+    }
+
+    /**
      * 管理 API の filter chain を作る。
      *
      * <p>運営者の realm の token と、{@code admin.yaml} の権限が必須。
@@ -145,7 +158,7 @@ class SecurityConfig {
                         // エラーの画面への転送を許さないと、許したパスの 404 が 401 に変わる
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // 通知のパスは署名で、mock の画面のパスは mock フラグ（フラグがなければ Controller がなく 404）で守る。
-                        // 運用のパスは運用ポートで出す
+                        // 運用のパスは運用ポートで公開する（業務ポートで公開される設定は、許していなければ起動に失敗する）
                         .requestMatchers("/api/webhooks/**", "/mock-payment/**", "/mock-carrier/**", "/actuator/**").permitAll()
                         .anyRequest().denyAll())
                 .build();

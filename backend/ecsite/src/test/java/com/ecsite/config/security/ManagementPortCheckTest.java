@@ -25,7 +25,7 @@ class ManagementPortCheckTest {
     // ============================== 定数 ==============================
 
     /**
-     * 運用のパスを業務ポートで出すことを許す設定の名前
+     * 運用のパスを業務ポートで公開することを許す設定の名前
      */
     private static final String ALLOW = "ecsite.security.allow-management-on-business-port";
 
@@ -76,7 +76,7 @@ class ManagementPortCheckTest {
     }
 
     @Test
-    @DisplayName("DC-477-1 運用のパスを業務ポートで出すことを設定で許せば、同じポートでも起動できる")
+    @DisplayName("DC-477-1 運用のパスを業務ポートで公開することを設定で許せば、同じポートでも起動できる")
     void startsWhenAllowed() {
         // 操作と確認：同じポートで、許す設定を立てると起動できる
         runner.withPropertyValues("management.server.port=8080", "server.port=8080", ALLOW + "=true")

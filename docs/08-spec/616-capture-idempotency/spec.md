@@ -109,7 +109,7 @@
   - 依存：T616-01-02
   - 範囲：`StripePaymentGateway`、`PaymentGateway`、`TestPaymentGateway`、`PaymentGatewayContractTest`、`StripeConfig`（コメントだけ）
   - 確認方法：`./gradlew test` が通る。
-- [ ] **T616-01-04** 設計と機能仕様の文書、AC 一覧を更新する。
+- [x] **T616-01-04** 設計と機能仕様の文書、AC 一覧を更新する。
   - 依存：T616-01-03
   - 範囲：`docs/02-設計/payment.md`（「Stripe」の表、「売上確定と返金の応答」の表）、`docs/02-設計/order.md`（売上確定の図の 1 行）、`docs/03-機能仕様/payment.md`（今有効な AC）、`docs/03-機能仕様/acceptance-criteria.md`
   - 確認方法：`node scripts/ci/spec/ac-check.mjs` と `CI=true bash scripts/ci/check-all.sh` が通る。

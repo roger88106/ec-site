@@ -85,7 +85,7 @@ Stripe の API のバージョンは、`stripe-java` のものに固定される
 |------|------|
 | 支払画面 | Checkout Session（`mode=payment`、`capture_method=manual`、通貨 JPY、金額は総額の 1 行）。支払画面 ID は Session の ID |
 | 画面の期限 | 作ってから 31 分（Stripe の最短の 30 分に、時計のずれの余裕を加える） |
-| タイムアウトと再試行 | 上限は[環境変数](../06-手順書/environment.md)の「バックエンド」。通信の失敗は、`stripe-java` が同じ冪等キーで 2 回まで再試行する |
+| タイムアウトと再試行 | 上限は[環境変数](../06-手順書/environment.md)の「バックエンド」。通信の失敗は、`stripe-java` が 2 回まで再試行する。冪等キーは `stripe-java` が呼び出しごとに作り、その呼び出しの再試行には同じキーを付ける |
 | 支払の方法 | Session では指定しない。ダッシュボードの設定で、カードだけを有効にする ※3 |
 | 通知のエンドポイント | `POST /api/webhooks/stripe`。認証は付けず、署名で確認する。署名が合わない・古い通知は 400 で拒否する ※4 |
 | 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../06-手順書/environment.md)） |
@@ -112,13 +112,15 @@ Stripe の API のバージョンは、`stripe-java` のものに固定される
 
 | 操作 | 呼ぶもの | 応答と結果 |
 |------|----------|------------|
-| 売上確定 | PaymentIntent の capture（総額。冪等キー `capture-<注文 ID>`） | 成功なら PaymentIntent は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
-| 売上確定済みの PaymentIntent の売上確定 | 同上（冪等キーが違う） | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`succeeded` なら成功とする |
+| 売上確定 | PaymentIntent の capture（総額。冪等キーは明示しない） | 成功なら PaymentIntent は `succeeded` |
+| 売上確定済みの PaymentIntent の売上確定 | 同上 | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`succeeded` なら成功とする |
 | 与信が切れた PaymentIntent の売上確定 | 同上 | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`canceled` なら与信期限切れとする ※5 |
-| 返金 | Refund（PaymentIntent の総額。冪等キー `refund-<注文 ID>`） | 成功なら Refund は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
-| 返金済みの PaymentIntent の返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
+| 返金 | Refund（PaymentIntent の総額。冪等キーは明示しない） | 成功なら Refund は `succeeded` |
+| 返金済みの PaymentIntent の返金 | 同上 | 400 `charge_already_refunded`。成功とする |
 
 ※5：与信が切れると、Stripe が PaymentIntent を取り消す（`canceled`）。
+
+- 売上確定と返金では、冪等キーを明示せず、`stripe-java` が呼び出しごとに作るキーを使う。理由：Stripe は、同じ冪等キーのリクエストに最初の応答（障害の応答を含む）を 24 時間返すため。キーを注文ごとに固定すると、1 回目が Stripe の障害で終わったとき、その間は再実行しても同じ障害の応答が返る。再実行での二重の売上確定と返金は、上の表の 400 を成功として扱うことで防ぐ。
 
 ## 処理の流れ
 

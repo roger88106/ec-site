@@ -3,6 +3,7 @@ package com.ecsite.config.security;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.security.TestTokens;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,6 +24,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * IdP に届かないときの、token の検証の応答
  *
- * <p>IdP の代わりに、待ち受けのないポートを使う（このクラスだけ）。有効な token を付けたリクエストが、
+ * <p>IdP の代わりに、待ち受けのないポートと、接続を受けて応答しないポートを使う（このクラスだけ）。有効な token を付けたリクエストが、
  * 検証に必要な IdP の設定や署名の鍵を取得できないときの応答と、取得をやり直す回数を確認する。
  * 応答は、再試行できるエラー（503 の Problem Details）にする。
  *
@@ -55,6 +57,13 @@ class IdpUnreachableTest {
      * IdP に届かず、token を検証できないときのメッセージ
      */
     private static final String AUTHENTICATION_UNAVAILABLE = "ログインの状態を確認できませんでした。しばらくしてから、もう一度お試しください。";
+
+    /**
+     * 業務ポートの応答を待つ時間の上限
+     *
+     * <p>テストで短くした IdP の時間の上限より十分に長く、Spring Security の既定の時間の上限（IdP への接続と応答で各 30 秒）より短い。
+     */
+    private static final Duration RESPONSE_TIMEOUT = Duration.ofSeconds(10);
 
     // ============================== Bean ==============================
 
@@ -205,6 +214,63 @@ class IdpUnreachableTest {
         }
     }
 
+    @Nested
+    @DisplayName("IdP が接続を受けたまま応答しないとき")
+    class IdpNotResponding {
+
+        /**
+         * IdP への接続と応答を待つ時間の上限
+         *
+         * <p>テストの時間を短くするため、本番より短くする。
+         */
+        private static final Duration IDP_TIMEOUT = Duration.ofSeconds(1);
+
+        /**
+         * 接続を受けて応答しない IdP
+         *
+         * <p>接続の待ち受けだけをして受け取らないので、接続は OS が受け、要求には応答しない。
+         */
+        private static final ServerSocket SILENT_IDP = listen();
+
+        /**
+         * realm の署名の鍵（応答しない IdP に向けた、本番の作り方に差し替える）
+         */
+        @TestBean
+        RealmKeys realmKeys;
+
+        /**
+         * 本番の作り方で、時間の上限を短くし、応答しない IdP の issuer の decoder を作る署名の鍵を作る。
+         *
+         * @return realm の署名の鍵
+         */
+        static RealmKeys realmKeys() {
+            var silentIssuer = "http://127.0.0.1:" + SILENT_IDP.getLocalPort() + "/realms/silent";
+            var production = SecurityConfig.realmKeys(IDP_TIMEOUT, IDP_TIMEOUT);
+            return issuerUri -> production.decoder(silentIssuer);
+        }
+
+        @AfterAll
+        static void closeIdp() throws IOException {
+            SILENT_IDP.close();
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @EnumSource(Api.class)
+        @DisplayName("DC-477-11 有効な token を付けると、IdP の応答を待つ時間の上限の後に、IdP に届かないことを示す 503 の Problem Details を返す")
+        void respondsAuthenticationUnavailableAfterTimeout(Api api) throws Exception {
+            // 操作：有効な token を付けて呼び、応答までの時間を測る
+            var started = System.nanoTime();
+            var response = send(api);
+            var elapsed = Duration.ofNanos(System.nanoTime() - started);
+
+            // 確認：IdP の応答を待つ時間の上限まで待った
+            assertThat(elapsed).isGreaterThanOrEqualTo(IDP_TIMEOUT);
+
+            // 確認：IdP に届かないことを示す 503 の Problem Details
+            assertAuthenticationUnavailable(response, api);
+        }
+    }
+
     // ============================== 確認の補助 ==============================
 
     /**
@@ -290,12 +356,15 @@ class IdpUnreachableTest {
     /**
      * 有効な token を付けて、業務ポートの API を GET で呼ぶ。
      *
+     * <p>応答は {@link #RESPONSE_TIMEOUT} まで待ち、超えたら失敗する。
+     *
      * @param api 呼ぶ API
      * @return 応答
      */
     private HttpResponse<String> send(Api api) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + api.path))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + api.token.get())
+                .timeout(RESPONSE_TIMEOUT)
                 .GET()
                 .build();
         return http.send(request, HttpResponse.BodyHandlers.ofString());
@@ -309,6 +378,19 @@ class IdpUnreachableTest {
     private static int unusedPort() {
         try (var socket = new ServerSocket(0)) {
             return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * 空いているポートで、接続の待ち受けを始める。
+     *
+     * @return 待ち受けのソケット（接続を受け取らない）
+     */
+    private static ServerSocket listen() {
+        try {
+            return new ServerSocket(0);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -19,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 運用ポートの起動時の検査の単体テスト
  *
  * <p>認証の設定と運用ポートの検査だけを読み込み、運用ポートと業務ポートの設定で、起動の成否を確認する。
+ * Bean を遅延して作る設定でも検査が動くことは、本番の設定で検査を登録して確認する。
  */
 class ManagementPortCheckTest {
 
@@ -60,6 +62,19 @@ class ManagementPortCheckTest {
     }
 
     @Test
+    @DisplayName("DC-477-1 Bean を遅延して作る設定でも、運用ポートが業務ポートと同じなら、起動に失敗する")
+    void failsWhenManagementOnBusinessPortWithLazyInitialization() {
+        // 操作と確認：本番の設定で検査を登録し、Bean を遅延して作る設定で同じポートにすると、起動に失敗する
+        lazyRunner.withPropertyValues("management.server.port=8080", "server.port=8080")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure()).rootCause()
+                            .isInstanceOf(IllegalStateException.class)
+                            .hasMessageContaining("management.server.port");
+                });
+    }
+
+    @Test
     @DisplayName("DC-477-1 運用ポートが業務ポートと違えば、起動できる")
     void startsWhenPortsDiffer() {
         // 操作と確認：9080 と 8080 で起動できる
@@ -86,17 +101,31 @@ class ManagementPortCheckTest {
     // ============================== 準備の補助 ==============================
 
     /**
-     * 認証の設定と運用ポートの検査だけを読む Spring のコンテキスト
+     * 認証の設定だけを読む Spring のコンテキスト
      *
      * <p>認証の設定の必須の値には、起動できる値を渡す。
      */
-    private final ApplicationContextRunner runner = new ApplicationContextRunner()
+    private final ApplicationContextRunner settings = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
             .withUserConfiguration(Security.class)
-            .withBean(ManagementPortCheck.class)
             .withPropertyValues(
                     "ecsite.security.admin.issuer-uri=http://idp.test/realms/ec-admin", "ecsite.security.admin.audience=ec-admin-api",
                     "ecsite.security.store.issuer-uri=http://idp.test/realms/ec-store", "ecsite.security.store.audience=ec-store-api");
+
+    /**
+     * 認証の設定と運用ポートの検査だけを読む Spring のコンテキスト
+     */
+    private final ApplicationContextRunner runner = settings.withBean(ManagementPortCheck.class);
+
+    /**
+     * 本番の設定（{@link SecurityConfig}）で検査を登録し、全ての Bean を遅延して作る Spring のコンテキスト
+     *
+     * <p>{@code spring.main.lazy-initialization=true} と同じく、遅延を明示していない Bean を、必要になるまで作らない。
+     * 検査はどこにも注入されないので、遅延から除いていなければ作られない。
+     */
+    private final ApplicationContextRunner lazyRunner = settings
+            .withUserConfiguration(SecurityConfig.class)
+            .withBean(LazyInitializationBeanFactoryPostProcessor.class);
 
     /**
      * 認証の設定を有効にする

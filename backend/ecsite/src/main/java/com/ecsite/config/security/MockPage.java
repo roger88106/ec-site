@@ -46,14 +46,16 @@ enum MockPage {
     /**
      * mock のフラグを立てたモジュールの画面を返す。
      *
-     * <p>フラグは、mock の実装を選ぶときと同じく、{@code true} のときだけ立てたとみなす。
+     * <p>フラグは、mock の実装を選ぶとき（{@code @ConditionalOnBooleanProperty}）と同じく、値が {@code true} と等しいとき
+     * （大文字と小文字は区別しない）だけ立てたとみなす。{@code yes}・{@code on}・{@code 1} や真偽値でない値は、立てていないとみなす。
      *
      * @param environment 設定
      * @return フラグを立てた画面（宣言の順）
      */
     static List<MockPage> enabled(Environment environment) {
         return Arrays.stream(values())
-                .filter(page -> environment.getProperty(page.flag, Boolean.class, false))
+                // 真偽値への変換は yes・on・1 も true にし、mock の実装を選ぶ判定とずれるので、文字列で比べる
+                .filter(page -> "true".equalsIgnoreCase(environment.getProperty(page.flag)))
                 .toList();
     }
 }

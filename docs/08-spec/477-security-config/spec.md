@@ -202,7 +202,7 @@
   - 依存：T477-01-04、T477-01-06、T477-01-08
   - 範囲：`docs/02-設計/backend-architecture.md`、`docs/05-開発規則/api-conventions.md`、`docs/03-機能仕様/glossary.md`、`docs/06-手順書/environment.md`
   - 確認方法：`CI=true bash scripts/ci/check-all.sh` が通る。
-- [ ] **T477-01-10** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
+- [x] **T477-01-10** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T477-01-09
   - 結果：
 

@@ -3,14 +3,15 @@ package com.ecsite.config.security;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
+import com.nimbusds.jose.KeySourceException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -48,7 +49,8 @@ class SecurityProblemResponder implements AuthenticationEntryPoint, AccessDenied
     /**
      * token の検証の失敗を返す。
      *
-     * <p>IdP に届かず検証できないときは、再試行できる 503 を返す。token が無効なときは、{@link #commence} と同じ 401 を返す。
+     * <p>IdP に届かず検証できない（IdP の設定や署名の鍵を取得できない）ときは、再試行できる 503 を返す。
+     * それ以外の失敗（token が無効、鍵は取得できたが署名を確認できないなど）は、{@link #commence} と同じ 401 を返す。
      *
      * @param request   リクエスト
      * @param response  応答
@@ -56,13 +58,31 @@ class SecurityProblemResponder implements AuthenticationEntryPoint, AccessDenied
      */
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) {
-        // token の誤りでなく、検証の処理の失敗（IdP の設定や署名の鍵を取得できない）。token は直さなくてよいので、WWW-Authenticate を付けない
-        if (exception instanceof AuthenticationServiceException) {
+        // token の誤りでなく、IdP に届かない失敗。token は直さなくてよいので、WWW-Authenticate を付けない
+        if (isIdpUnreachable(exception)) {
             resolver.resolveException(request, response, null,
                     SystemException.of("IdP に届かず、token を検証できない", exception, CommonErrorCode.AUTHENTICATION_UNAVAILABLE));
             return;
         }
         commence(request, response, exception);
+    }
+
+    /**
+     * 認証の失敗が、IdP に届かないこと（IdP の設定や署名の鍵を取得できない）によるかを返す。
+     *
+     * <p>原因の連鎖に、decoder の初期化の失敗（IdP の設定を取得できない）か、鍵の取得の失敗があれば、IdP に届かないとみなす。
+     * 鍵の取得の失敗は、取得の失敗と、ほかのリクエストの取得を待ちきれないことを含む。
+     *
+     * @param exception 認証の失敗
+     * @return IdP に届かないことによるなら true
+     */
+    private static boolean isIdpUnreachable(AuthenticationException exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof JwtDecoderInitializationException || cause instanceof KeySourceException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

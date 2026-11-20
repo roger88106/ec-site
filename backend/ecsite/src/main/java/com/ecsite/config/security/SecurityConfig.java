@@ -5,10 +5,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,8 +31,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 
@@ -55,6 +59,19 @@ class SecurityConfig {
     private static final String SHIPPING_WEBHOOK_PATH = "/api/webhooks/carrier";
 
     /**
+     * IdP への接続を待つ時間の上限（IdP の設定と鍵の取得の 1 回ごと）
+     */
+    private static final Duration IDP_CONNECT_TIMEOUT = Duration.ofSeconds(5);
+
+    /**
+     * IdP の応答を待つ時間の上限（IdP の設定と鍵の取得の 1 回ごと）
+     *
+     * <p>検証の間、リクエストは IdP の応答を待つ。応答は小さい文書なので、長く待たない。
+     * 接続と合わせても、ほかのリクエストの鍵の取得を Nimbus が待つ上限（15 秒）より短くし、待つ側が先に失敗しないようにする。
+     */
+    private static final Duration IDP_READ_TIMEOUT = Duration.ofSeconds(5);
+
+    /**
      * realm の署名の鍵を作る。
      *
      * <p>issuer の OpenID Connect の設定から公開鍵の URL を求める（最初の検証のときに IdP から取る）。
@@ -63,7 +80,25 @@ class SecurityConfig {
      */
     @Bean
     RealmKeys realmKeys() {
-        return issuerUri -> NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
+        return realmKeys(IDP_CONNECT_TIMEOUT, IDP_READ_TIMEOUT);
+    }
+
+    /**
+     * realm の署名の鍵を、IdP を待つ時間の上限を設定して作る。
+     *
+     * <p>IdP の設定と鍵の取得の 1 回ごとに、接続と応答を待つ時間に上限を付ける。
+     *
+     * @param connectTimeout IdP への接続を待つ時間の上限
+     * @param readTimeout    IdP の応答を待つ時間の上限
+     * @return realm の署名の鍵
+     */
+    static RealmKeys realmKeys(Duration connectTimeout, Duration readTimeout) {
+        // Spring Security の既定と同じ request factory で、時間の上限だけを変える
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(connectTimeout);
+        requestFactory.setReadTimeout(readTimeout);
+        var rest = new RestTemplate(requestFactory);
+        return issuerUri -> NimbusJwtDecoder.withIssuerLocation(issuerUri).restOperations(rest).build();
     }
 
     /**
@@ -106,11 +141,15 @@ class SecurityConfig {
     /**
      * 運用ポートの設定を、起動のときに検査する。
      *
+     * <p>Bean を遅延して作る設定（{@code spring.main.lazy-initialization}）でも、起動のときに作る。
+     * 検査はどこにも注入されないので、遅延して作ると最後まで作られず、検査が動かないため。
+     *
      * @param environment 設定
      * @param properties  認証の設定
      * @return 運用ポートの検査
      */
     @Bean
+    @Lazy(false)
     ManagementPortCheck managementPortCheck(Environment environment, SecurityProperties properties) {
         return new ManagementPortCheck(environment, properties);
     }
@@ -118,10 +157,14 @@ class SecurityConfig {
     /**
      * mock のフラグを、起動のときに警告する。
      *
+     * <p>Bean を遅延して作る設定（{@code spring.main.lazy-initialization}）でも、起動のときに作る。
+     * 警告はどこにも注入されないので、遅延して作ると最後まで作られず、警告が出ないため。
+     *
      * @param environment 設定
      * @return mock のフラグの警告
      */
     @Bean
+    @Lazy(false)
     MockFlagWarning mockFlagWarning(Environment environment) {
         return new MockFlagWarning(environment);
     }

@@ -109,6 +109,8 @@ class JooqOrderRepository implements OrderRepository {
         record.setItemsTotal(snapshot.amounts().itemsTotal().yen());
         record.setShippingFee(snapshot.amounts().shippingFee().yen());
         record.setTotalAmount(snapshot.amounts().total().yen());
+        var shippingTax = snapshot.shippingTax();
+        record.setShippingTax(shippingTax == null ? null : shippingTax.yen());
         record.setEmail(snapshot.email());
 
         var address = snapshot.shippingAddress();
@@ -347,6 +349,7 @@ class JooqOrderRepository implements OrderRepository {
                     OrderStatus.valueOf(record.getStatus()),
                     lineRecords.map(this::restoreLine),
                     restoreAmounts(record, taxRecords),
+                    restoreShippingTax(record),
                     record.getEmail(),
                     address,
                     restoreBuyer(record),
@@ -386,6 +389,16 @@ class JooqOrderRepository implements OrderRepository {
                 .toList();
         return new Amounts(Money.of(record.getItemsTotal()), Money.of(record.getShippingFee()),
                 Money.of(record.getTotalAmount()), taxes);
+    }
+
+    /**
+     * 送料の消費税を読む。
+     *
+     * <p>送料の消費税を保存する前に成立した注文は null。
+     */
+    private static @Nullable Money restoreShippingTax(SalesOrderRecord record) {
+        var shippingTax = record.getShippingTax();
+        return shippingTax == null ? null : Money.of(shippingTax);
     }
 
     /**

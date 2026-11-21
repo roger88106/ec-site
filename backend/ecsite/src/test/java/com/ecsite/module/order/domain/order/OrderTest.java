@@ -142,6 +142,31 @@ class OrderTest {
             // 確認：この注文の「なし → 支払待ち」のイベントだけが登録されている
             assertPlacedEventOnly(order);
         }
+
+        @Test
+        @DisplayName("DC-484-1 成立した注文は、見積もりの送料の消費税を持つ")
+        void keepsShippingTaxOfQuote() {
+            // 操作：送料の消費税が 90 円の見積もりから注文を作る
+            var order = place(quote());
+
+            // 確認：送料の消費税が 90 円
+            assertThat(order.shippingTax()).isEqualTo(Money.of(90));
+        }
+
+        @Test
+        @DisplayName("DC-484-3 送料の消費税が 0 の見積もりから作った注文は、送料の消費税を 0 で持つ（null でない）")
+        void keepsZeroShippingTax() {
+            // 準備：送料の消費税が 0 円の見積もり
+            var item = QuoteItem.of(tShirt(), QUANTITY, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX);
+            var amounts = new Amounts(SUBTOTAL, Money.ZERO, SUBTOTAL, List.of(new TaxAmount(RATE_PERCENT, SUBTOTAL, Money.of(540))));
+            var freeShipping = new Quote(List.of(item), amounts, Money.ZERO, true);
+
+            // 操作：注文を作る
+            var order = place(freeShipping);
+
+            // 確認：送料の消費税が 0 円
+            assertThat(order.shippingTax()).isEqualTo(Money.ZERO);
+        }
     }
 
     @Nested
@@ -218,7 +243,7 @@ class OrderTest {
         @DisplayName("AC-88 空の見積もりからは注文を作れない")
         void rejectsEmptyQuote() {
             // 準備：品目のない見積もり
-            var empty = new Quote(List.of(), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), false);
+            var empty = new Quote(List.of(), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), Money.ZERO, false);
 
             // 操作と確認：プログラムの誤りとして拒否される
             assertThatThrownBy(() -> place(empty)).isInstanceOf(IllegalArgumentException.class);
@@ -336,7 +361,8 @@ class OrderTest {
         private Order.Snapshot snapshotWithEmail(@Nullable String email) {
             var base = place(quote()).toSnapshot();
             return new Order.Snapshot(base.id(), base.orderNumber(), base.checkoutId(), base.memberId(), base.orderedAt(),
-                    base.status(), base.lines(), base.amounts(), email, base.shippingAddress(), base.buyerProfile(),
+                    base.status(), base.lines(), base.amounts(), base.shippingTax(), email, base.shippingAddress(),
+                    base.buyerProfile(),
                     base.cancellationRequest(), base.cancellation(), base.version());
         }
 
@@ -451,7 +477,8 @@ class OrderTest {
                     : requestOf(CancellationRequest.Result.valueOf(request));
             var cancellation = cancelled ? new Cancellation(DECIDED_AT, CancellationKind.OPERATOR, REASON, null) : null;
             return new Order.Snapshot(base.id(), base.orderNumber(), base.checkoutId(), base.memberId(), base.orderedAt(),
-                    status, base.lines(), base.amounts(), base.email(), base.shippingAddress(), base.buyerProfile(),
+                    status, base.lines(), base.amounts(), base.shippingTax(), base.email(), base.shippingAddress(),
+                    base.buyerProfile(),
                     cancellationRequest, cancellation, base.version());
         }
 
@@ -668,7 +695,7 @@ class OrderTest {
         var item = QuoteItem.of(tShirt(), QUANTITY, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX);
         var amounts = new Amounts(SUBTOTAL, Money.of(1000), Money.of(6940),
                 List.of(new TaxAmount(RATE_PERCENT, Money.of(6940), Money.of(630))));
-        return new Quote(List.of(item), amounts, true);
+        return new Quote(List.of(item), amounts, Money.of(90), true);
     }
 
     /**
@@ -684,7 +711,7 @@ class OrderTest {
                 .map(code -> QuoteItem.of(new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), PRODUCT_CODE, code, PRODUCT_NAME,
                         AXIS_VALUES, UNIT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false), 1, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX))
                 .toList();
-        return new Quote(items, quote().amounts(), true);
+        return new Quote(items, quote().amounts(), quote().shippingTax(), true);
     }
 
     /**
@@ -696,7 +723,7 @@ class OrderTest {
      */
     private static Quote quoteWithOutOfStockItem() {
         var item = QuoteItem.of(tShirt(), 1, 0, RATE_PERCENT, UNIT_PRICE_INCL_TAX);
-        return new Quote(List.of(item), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), false);
+        return new Quote(List.of(item), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), Money.ZERO, false);
     }
 
     /**

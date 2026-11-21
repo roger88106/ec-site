@@ -3,6 +3,7 @@ package com.ecsite.module.order.domain.order;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
@@ -106,6 +107,14 @@ public class Order extends AggregateRoot {
     private final Amounts amounts;
 
     /**
+     * 送料の消費税
+     *
+     * <p>注文の成立のときに、送料だけを課税対象として求めた額。送料の消費税を保存する前に成立した注文は null。
+     */
+    @Nullable
+    private final Money shippingTax;
+
+    /**
      * メールアドレス
      */
     private final String email;
@@ -158,6 +167,7 @@ public class Order extends AggregateRoot {
      * @param status              状態
      * @param lines               明細
      * @param amounts             金額の内訳
+     * @param shippingTax         送料の消費税（保存する前に成立した注文は null）
      * @param email               メールアドレス（null なら拒否する）
      * @param shippingAddress     お届け先
      * @param buyerProfile        注文時の年齢と性別
@@ -168,7 +178,8 @@ public class Order extends AggregateRoot {
      */
     private Order(@NonNull UUID id, @NonNull OrderNumber orderNumber, @NonNull UUID checkoutId, @NonNull UUID memberId,
                   @NonNull Instant orderedAt, @NonNull OrderStatus status, @NonNull List<OrderLine> lines,
-                  @NonNull Amounts amounts, @Nullable String email, @NonNull ShippingAddress shippingAddress,
+                  @NonNull Amounts amounts, @Nullable Money shippingTax, @Nullable String email,
+                  @NonNull ShippingAddress shippingAddress,
                   @NonNull BuyerProfile buyerProfile, @Nullable CancellationRequest cancellationRequest,
                   @Nullable Cancellation cancellation, long version) {
         // メールアドレスは、空でなく、長さの上限以内で、形式に合うこと
@@ -184,6 +195,7 @@ public class Order extends AggregateRoot {
         this.status = status;
         this.lines = List.copyOf(lines);
         this.amounts = amounts;
+        this.shippingTax = shippingTax;
         this.email = email;
         this.shippingAddress = shippingAddress;
         this.buyerProfile = buyerProfile;
@@ -221,7 +233,7 @@ public class Order extends AggregateRoot {
             lines.add(toLine(lines.size() + 1, item));
         }
         var order = new Order(id, orderNumber, checkoutId, memberId, orderedAt, OrderStatus.PENDING_PAYMENT, lines, quote.amounts(),
-                email, shippingAddress, buyerProfile, null, null, 0);
+                quote.shippingTax(), email, shippingAddress, buyerProfile, null, null, 0);
         order.registerEvent(OrderStatusChanged.of(orderedAt, id, null, OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
         return order;
     }
@@ -596,6 +608,7 @@ public class Order extends AggregateRoot {
      * @param status              状態
      * @param lines               明細
      * @param amounts             金額の内訳
+     * @param shippingTax         送料の消費税（保存する前に成立した注文は null）
      * @param email               メールアドレス
      * @param shippingAddress     お届け先
      * @param buyerProfile        注文時の年齢と性別
@@ -604,7 +617,8 @@ public class Order extends AggregateRoot {
      * @param version             バージョン
      */
     public record Snapshot(UUID id, OrderNumber orderNumber, UUID checkoutId, UUID memberId, Instant orderedAt, OrderStatus status,
-                           List<OrderLine> lines, Amounts amounts, String email, ShippingAddress shippingAddress,
+                           List<OrderLine> lines, Amounts amounts, @Nullable Money shippingTax, String email,
+                           ShippingAddress shippingAddress,
                            BuyerProfile buyerProfile, @Nullable CancellationRequest cancellationRequest, @Nullable Cancellation cancellation,
                            long version) {
     }
@@ -615,8 +629,8 @@ public class Order extends AggregateRoot {
      * @return 注文のスナップショット
      */
     public Snapshot toSnapshot() {
-        return new Snapshot(id, orderNumber, checkoutId, memberId, orderedAt, status, lines, amounts, email, shippingAddress,
-                buyerProfile, cancellationRequest, cancellation, version);
+        return new Snapshot(id, orderNumber, checkoutId, memberId, orderedAt, status, lines, amounts, shippingTax, email,
+                shippingAddress, buyerProfile, cancellationRequest, cancellation, version);
     }
 
     /**
@@ -627,7 +641,8 @@ public class Order extends AggregateRoot {
      */
     public static Order restore(Snapshot snapshot) {
         return new Order(snapshot.id(), snapshot.orderNumber(), snapshot.checkoutId(), snapshot.memberId(), snapshot.orderedAt(),
-                snapshot.status(), snapshot.lines(), snapshot.amounts(), snapshot.email(), snapshot.shippingAddress(), snapshot.buyerProfile(),
+                snapshot.status(), snapshot.lines(), snapshot.amounts(), snapshot.shippingTax(), snapshot.email(),
+                snapshot.shippingAddress(), snapshot.buyerProfile(),
                 snapshot.cancellationRequest(), snapshot.cancellation(), snapshot.version());
     }
 }

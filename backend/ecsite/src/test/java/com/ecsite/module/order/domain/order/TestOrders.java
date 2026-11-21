@@ -42,7 +42,7 @@ public final class TestOrders {
                 Money.of(1000), UUID.randomUUID(), null, true, false);
         var amounts = new Amounts(Money.of(1100), Money.of(1000), Money.of(2100),
                 List.of(new TaxAmount(BigDecimal.TEN, Money.of(2100), Money.of(190))));
-        var quote = new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, true);
+        var quote = new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, Money.of(90), true);
         var order = Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
                 orderedAt, quote, "taro@example.com",
                 ShippingAddress.of("山田 太郎", "1000001", TestAreas.CHIYODA, "千代田 1-1", "0312345678"), BuyerProfile.UNKNOWN);

@@ -243,6 +243,11 @@ class JooqOrderRepositoryTest {
             new TaxAmount(new BigDecimal("8"), Money.of(1332), Money.of(98))));
 
     /**
+     * 注文の送料の消費税（送料 1,000 円・標準税率の消費税額）
+     */
+    private static final Money SHIPPING_TAX = Money.of(90);
+
+    /**
      * 上限の注文のメールアドレス（254 文字）
      */
     private static final String MAX_EMAIL = "a".repeat(254 - "@example.com".length()) + "@example.com";
@@ -304,6 +309,35 @@ class JooqOrderRepositoryTest {
             // 確認：読み直した注文の全ての項目が、準備の定数のまま
             var restored = repository.findById(order.id()).orElseThrow();
             assertPlacedStandardOrder(restored.toSnapshot(), order.id(), checkoutId, orderNumber);
+        }
+
+        @Test
+        @DisplayName("DC-484-4 送料の消費税が保存されていない注文（列の追加の前に成立した注文）は、null のまま読み直せる")
+        void restoresNullShippingTax() {
+            // 準備：注文を保存し、送料の消費税の列を null にする（列の追加の前に成立した注文の状態）
+            var order = order(UUID.randomUUID(), orderNumber());
+            repository.insert(order);
+            dsl.update(SALES_ORDER).setNull(SALES_ORDER.SHIPPING_TAX).where(SALES_ORDER.ID.eq(order.id())).execute();
+
+            // 操作：読み直す
+            var restored = repository.findById(order.id()).orElseThrow();
+
+            // 確認：送料の消費税が null（0 に変わらない）
+            assertThat(restored.toSnapshot().shippingTax()).isNull();
+        }
+
+        @Test
+        @DisplayName("DC-484-3 送料の消費税が 0 円の注文は、0 円のまま読み直せる（null にならない）")
+        void restoresZeroShippingTax() {
+            // 準備：送料の消費税が 0 円の注文を保存する
+            var order = order(UUID.randomUUID(), orderNumber(), Money.ZERO);
+            repository.insert(order);
+
+            // 操作：読み直す
+            var restored = repository.findById(order.id()).orElseThrow();
+
+            // 確認：送料の消費税が 0 円
+            assertThat(restored.toSnapshot().shippingTax()).isEqualTo(Money.ZERO);
         }
 
         @Test
@@ -679,6 +713,7 @@ class JooqOrderRepositoryTest {
      *   <li>注文 ID、注文番号、注文手続き ID、会員 ID、注文日時</li>
      *   <li>明細の全ての項目と並び（{@link #LINES}）</li>
      *   <li>金額の内訳（{@link #AMOUNTS}）</li>
+     *   <li>送料の消費税（{@link #SHIPPING_TAX}）</li>
      *   <li>メールアドレス、お届け先、注文時の年齢と性別</li>
      * </ul>
      *
@@ -691,6 +726,7 @@ class JooqOrderRepositoryTest {
         assertOrderIdentity(restored, orderId, checkoutId, orderNumber);
         assertThat(restored.lines()).containsExactlyElementsOf(LINES);
         assertThat(restored.amounts()).isEqualTo(AMOUNTS);
+        assertThat(restored.shippingTax()).isEqualTo(SHIPPING_TAX);
         assertThat(restored.email()).isEqualTo(EMAIL);
         assertThat(restored.shippingAddress()).isEqualTo(ADDRESS);
         assertThat(restored.buyerProfile()).isEqualTo(BUYER_PROFILE);
@@ -704,6 +740,7 @@ class JooqOrderRepositoryTest {
      *   <li>注文 ID、注文番号、注文手続き ID、会員 ID、注文日時</li>
      *   <li>明細（{@link #MAX_LINE} の 1 行）</li>
      *   <li>金額の内訳（{@link #MAX_AMOUNTS}）</li>
+     *   <li>送料の消費税（{@link #SHIPPING_TAX}）</li>
      *   <li>254 文字のメールアドレス、上限の長さのお届け先、120 歳の年齢と性別</li>
      * </ul>
      *
@@ -716,6 +753,7 @@ class JooqOrderRepositoryTest {
         assertOrderIdentity(restored, orderId, checkoutId, orderNumber);
         assertThat(restored.lines()).containsExactly(MAX_LINE);
         assertThat(restored.amounts()).isEqualTo(MAX_AMOUNTS);
+        assertThat(restored.shippingTax()).isEqualTo(SHIPPING_TAX);
         assertThat(restored.email()).isEqualTo(MAX_EMAIL);
         assertThat(restored.shippingAddress()).isEqualTo(MAX_ADDRESS);
         assertThat(restored.buyerProfile()).isEqualTo(MAX_BUYER_PROFILE);
@@ -823,6 +861,18 @@ class JooqOrderRepositoryTest {
      * @return 注文（支払待ち）
      */
     private static Order order(UUID checkoutId, String orderNumber) {
+        return order(checkoutId, orderNumber, SHIPPING_TAX);
+    }
+
+    /**
+     * 2 つの税率の品目を持ち、送料の消費税を指定する注文を作る。
+     *
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
+     * @param shippingTax 送料の消費税
+     * @return 注文（支払待ち）
+     */
+    private static Order order(UUID checkoutId, String orderNumber, Money shippingTax) {
         var shirt = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), SHIRT_PRODUCT_CODE, SHIRT_VARIANT_CODE, SHIRT_NAME,
                 SHIRT_AXES, SHIRT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
         var tea = new VariantInfo(TEA_VARIANT_ID, UUID.randomUUID(), TEA_CODE, TEA_CODE, TEA_NAME, List.of(),
@@ -831,7 +881,7 @@ class JooqOrderRepositoryTest {
                 QuoteItem.of(shirt, 1, 10, STANDARD_RATE, SHIRT_PRICE_INCL_TAX),
                 QuoteItem.of(tea, 1, 10, REDUCED_RATE, TEA_PRICE_INCL_TAX));
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
-                new Quote(items, AMOUNTS, true), EMAIL, ADDRESS, BUYER_PROFILE);
+                new Quote(items, AMOUNTS, shippingTax, true), EMAIL, ADDRESS, BUYER_PROFILE);
     }
 
     /**
@@ -848,6 +898,6 @@ class JooqOrderRepositoryTest {
                 MAX_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
         var item = QuoteItem.of(variant, MAX_QUANTITY, MAX_QUANTITY, STANDARD_RATE, MAX_PRICE_INCL_TAX);
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
-                new Quote(List.of(item), MAX_AMOUNTS, true), MAX_EMAIL, MAX_ADDRESS, MAX_BUYER_PROFILE);
+                new Quote(List.of(item), MAX_AMOUNTS, SHIPPING_TAX, true), MAX_EMAIL, MAX_ADDRESS, MAX_BUYER_PROFILE);
     }
 }

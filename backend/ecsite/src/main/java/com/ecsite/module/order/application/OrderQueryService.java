@@ -6,6 +6,7 @@ import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.model.view.OrderDetailView;
+import com.ecsite.module.order.application.model.view.OrderListItemView;
 import com.ecsite.module.order.application.model.view.OrderPayment;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.model.view.OrderSummaryView;
@@ -98,8 +99,9 @@ public class OrderQueryService {
      * @param request  ページの指定
      * @return 注文の一覧
      */
-    public PageResult<OrderSummaryView> listForMember(@NonNull UUID memberId, @NonNull PageRequest request) {
-        return orderQueryRepository.findOrders(OrderQueryRepository.Filter.ofMember(memberId), request);
+    public PageResult<OrderListItemView> listForMember(@NonNull UUID memberId, @NonNull PageRequest request) {
+        return withPaymentsAndShipments(
+                orderQueryRepository.findOrders(OrderQueryRepository.Filter.ofMember(memberId), request));
     }
 
     /**
@@ -140,15 +142,15 @@ public class OrderQueryService {
      * @param request               ページの指定
      * @return 注文の一覧
      */
-    public PageResult<OrderSummaryView> list(@Nullable String orderNumberPrefix,
-                                             @Nullable OrderStatus status,
-                                             @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
-                                             boolean authorizationExpiring, boolean returned,
-                                             @NonNull PageRequest request) {
+    public PageResult<OrderListItemView> list(@Nullable String orderNumberPrefix,
+                                              @Nullable OrderStatus status,
+                                              @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
+                                              boolean authorizationExpiring, boolean returned,
+                                              @NonNull PageRequest request) {
         // 与信期限が近い・返送の絞り込み ※決済・出荷の API から注文 ID を受け取り、ID の条件にする（他のモジュールのテーブルは結合しない）
         Set<UUID> orderIds = null;
         if (authorizationExpiring) {
-            // 与信期限が近いのは「受付」の注文だけ（キャンセル済みの注文は、与信期限切れの支払が残っても除く）
+            // 与信期限が近いのは「受付」の注文だけ（キャンセル済みの注文は、与信期限切れの支払が残っても除く）※印の判定 isAuthorizationExpiring と同じ規則
             orderIds = status == null || status == OrderStatus.ACCEPTED
                     ? new HashSet<>(paymentDirectory.findExpiringOrderIds())
                     : new HashSet<>();
@@ -166,7 +168,7 @@ public class OrderQueryService {
         // 注文の検索
         var filter = new OrderQueryRepository.Filter(null, orderNumberPrefix, status, startOf(orderedFrom),
                 orderedTo == null ? null : startOf(orderedTo.plusDays(1)), orderIds);
-        return orderQueryRepository.findOrders(filter, request);
+        return withPaymentsAndShipments(orderQueryRepository.findOrders(filter, request));
     }
 
     /**
@@ -177,7 +179,7 @@ public class OrderQueryService {
      * @param orderIds 注文 ID
      * @return 注文 ID → 支払。支払のない注文（決済を入れる前の注文）は含まない
      */
-    public Map<UUID, OrderPayment> findPayments(@NonNull Collection<UUID> orderIds) {
+    private Map<UUID, OrderPayment> findPayments(@NonNull Collection<UUID> orderIds) {
         var authorizations = paymentDirectory.findAuthorizations(orderIds);
         var payments = new HashMap<UUID, OrderPayment>();
         paymentDirectory.find(orderIds).forEach((orderId, payment) -> {
@@ -195,8 +197,32 @@ public class OrderQueryService {
      * @param orderIds 注文 ID
      * @return 注文 ID → 出荷。出荷のない注文は含まない
      */
-    public Map<UUID, OrderShipment> findShipments(@NonNull Collection<UUID> orderIds) {
+    private Map<UUID, OrderShipment> findShipments(@NonNull Collection<UUID> orderIds) {
         return shippingDirectory.find(orderIds);
+    }
+
+    /**
+     * 注文の一覧の各件に、支払と出荷を合わせる。
+     */
+    private PageResult<OrderListItemView> withPaymentsAndShipments(PageResult<OrderSummaryView> page) {
+        var orderIds = page.items().stream().map(OrderSummaryView::id).toList();
+        var payments = findPayments(orderIds);
+        var shipments = findShipments(orderIds);
+        return page.map(order -> {
+            var payment = payments.get(order.id());
+            return new OrderListItemView(order, payment, shipments.get(order.id()),
+                    isAuthorizationExpiring(order.status(), payment));
+        });
+    }
+
+    /**
+     * 与信期限が近い印を付けるか。
+     *
+     * <p>「受付」の注文だけに付ける（キャンセル済みの注文は、与信期限切れのままでも付けない）。
+     * 一覧の絞り込み（{@link #list}）も、同じ規則で受付の注文だけに絞る。
+     */
+    private static boolean isAuthorizationExpiring(OrderStatus status, @Nullable OrderPayment payment) {
+        return status == OrderStatus.ACCEPTED && payment != null && payment.authorizationExpiring();
     }
 
     /**
@@ -219,7 +245,8 @@ public class OrderQueryService {
                 order.isCancellableByOperator(returned), order.isShippable(), order.asksRestockOnCancel(returned));
         return new OrderDetailView(order.id(), order.orderNumber(), order.orderedAt(), order.status(), order.lines(),
                 order.amounts(), order.email(), order.shippingAddress(), order.cancellationRequest(),
-                order.cancellation(), payment, shipment, awaitingPayment, actions);
+                order.cancellation(), payment, shipment, awaitingPayment,
+                isAuthorizationExpiring(order.status(), payment), actions);
     }
 
     /**

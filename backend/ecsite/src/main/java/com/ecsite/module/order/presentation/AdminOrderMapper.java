@@ -22,15 +22,11 @@ import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.order.application.model.view.OrderDetailView;
+import com.ecsite.module.order.application.model.view.OrderListItemView;
 import com.ecsite.module.order.application.model.view.OrderPayment;
 import com.ecsite.module.order.application.model.view.OrderShipment;
-import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.domain.quote.Amounts;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * 管理の注文 API のマッパー
@@ -43,19 +39,16 @@ class AdminOrderMapper {
     /**
      * 注文一覧のページのレスポンスに変換する。
      *
-     * @param page      注文一覧のページ
-     * @param payments  注文 ID → 支払
-     * @param shipments 注文 ID → 出荷
+     * @param page 注文一覧のページ
      * @return 注文一覧のページのレスポンス
      */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
-                                        Map<UUID, OrderShipment> shipments) {
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderListItemView> page) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
                 .totalItems(page.totalItems())
                 .totalPages(page.totalPages())
-                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
+                .items(page.items().stream().map(AdminOrderMapper::toSummary).toList());
     }
 
     /**
@@ -97,7 +90,7 @@ class AdminOrderMapper {
                     .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline()))
                     .authorizationDeadline(payment.authorizationDeadline() == null ? null
                             : ApiDateTimes.toOffsetDateTime(payment.authorizationDeadline()))
-                    .authorizationExpiring(isAuthorizationExpiring(view.status(), payment)));
+                    .authorizationExpiring(view.authorizationExpiring()));
         }
         if (shipment != null) {
             detail.shipment(toShipment(shipment));
@@ -189,8 +182,10 @@ class AdminOrderMapper {
      *
      * <p>支払のない注文（決済を入れる前の注文）は支払の状態を、出荷していない注文は配送状態を返さない。
      */
-    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
-                                          @Nullable OrderShipment shipment) {
+    private static OrderSummary toSummary(OrderListItemView item) {
+        var view = item.order();
+        var payment = item.payment();
+        var shipment = item.shipment();
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())
@@ -198,7 +193,7 @@ class AdminOrderMapper {
                 .customerName(view.customerName())
                 .total(view.total().yen())
                 .status(toStatus(view.status()))
-                .authorizationExpiring(isAuthorizationExpiring(view.status(), payment));
+                .authorizationExpiring(item.authorizationExpiring());
         if (payment != null) {
             summary.paymentStatus(toPaymentStatus(payment.status()));
         }
@@ -293,16 +288,5 @@ class AdminOrderMapper {
         return new OrderAxisValue()
                 .name(axis.name())
                 .value(axis.value());
-    }
-
-    /**
-     * 与信期限が近い印を付けるか。
-     *
-     * <p>「受付」の注文だけに付ける（キャンセル済みの注文は、与信期限切れのままでも付けない）。
-     */
-    private static boolean isAuthorizationExpiring(com.ecsite.module.order.domain.order.OrderStatus status,
-                                                   @Nullable OrderPayment payment) {
-        return status == com.ecsite.module.order.domain.order.OrderStatus.ACCEPTED
-                && payment != null && payment.authorizationExpiring();
     }
 }

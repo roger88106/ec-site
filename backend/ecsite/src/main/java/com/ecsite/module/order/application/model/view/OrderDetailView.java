@@ -29,13 +29,14 @@ import java.util.UUID;
  * @param payment             注文の支払。決済を入れる前の注文は null
  * @param shipment            注文の出荷。出荷していなければ null
  * @param awaitingPayment     支払待ちで、支払がある
+ * @param authorizationExpiring 与信期限が近い印を付ける（受付の注文で、支払の与信期限が近い）
  * @param actions             画面の操作の可否
  */
 public record OrderDetailView(UUID id, OrderNumber orderNumber, Instant orderedAt, OrderStatus status,
                               List<OrderLine> lines, Amounts amounts, String email, ShippingAddress shippingAddress,
                               @Nullable CancellationRequest cancellationRequest, @Nullable Cancellation cancellation,
                               @Nullable OrderPayment payment, @Nullable OrderShipment shipment,
-                              boolean awaitingPayment, Actions actions) {
+                              boolean awaitingPayment, boolean authorizationExpiring, Actions actions) {
 
     /**
      * 画面の操作の可否

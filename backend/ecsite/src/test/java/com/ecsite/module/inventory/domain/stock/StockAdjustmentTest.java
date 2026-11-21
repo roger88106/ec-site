@@ -41,6 +41,11 @@ class StockAdjustmentTest {
     private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
 
     /**
+     * 作る調整の ID
+     */
+    private static final UUID ADJUSTMENT_ID = UUID.fromString("00000000-0000-0000-0000-0000000000e1");
+
+    /**
      * 入荷の増減量
      */
     private static final int ARRIVAL_DELTA = 10;
@@ -80,7 +85,7 @@ class StockAdjustmentTest {
         @DisplayName("AC-42 増減量と理由で、運営者の調整を作れる")
         void creates() {
             // 操作：入荷の調整を作る
-            var adjustment = StockAdjustment.create(UUID.randomUUID(), ARRIVAL_DELTA, StockAdjustmentReason.ARRIVAL, ARRIVAL_MEMO, OPERATOR, NOW);
+            var adjustment = StockAdjustment.create(ADJUSTMENT_ID, ARRIVAL_DELTA, StockAdjustmentReason.ARRIVAL, ARRIVAL_MEMO, OPERATOR, NOW);
 
             // 確認：渡した値を持つ
             assertArrivalAdjustment(adjustment);
@@ -205,7 +210,7 @@ class StockAdjustmentTest {
             var orderId = UUID.randomUUID();
 
             // 操作：注文による減算の調整を作る
-            var adjustment = StockAdjustment.forOrder(UUID.randomUUID(), ORDER_DELTA, StockAdjustmentReason.ORDER, orderId, ORDER_NUMBER, NOW);
+            var adjustment = StockAdjustment.forOrder(ADJUSTMENT_ID, ORDER_DELTA, StockAdjustmentReason.ORDER, orderId, ORDER_NUMBER, NOW);
 
             // 確認：注文の写しを持ち、メモを持たない
             assertOrderAdjustment(adjustment, orderId, ORDER_DELTA, StockAdjustmentReason.ORDER);
@@ -218,7 +223,7 @@ class StockAdjustmentTest {
             var orderId = UUID.randomUUID();
 
             // 操作：注文のキャンセルで 2 個戻す調整を作る
-            var adjustment = StockAdjustment.forOrder(UUID.randomUUID(), -ORDER_DELTA, StockAdjustmentReason.ORDER_CANCELLATION, orderId,
+            var adjustment = StockAdjustment.forOrder(ADJUSTMENT_ID, -ORDER_DELTA, StockAdjustmentReason.ORDER_CANCELLATION, orderId,
                     ORDER_NUMBER, NOW);
 
             // 確認：増える調整で、理由が注文のキャンセルで、注文の写しを持ち、メモを持たない
@@ -385,7 +390,7 @@ class StockAdjustmentTest {
      *
      * <p>確認すること（期待値は定数）：
      * <ul>
-     *   <li>ID がある</li>
+     *   <li>渡した ID</li>
      *   <li>増減量</li>
      *   <li>理由が「入荷」</li>
      *   <li>運営者</li>
@@ -396,7 +401,7 @@ class StockAdjustmentTest {
      * @param adjustment 確認する調整
      */
     private static void assertArrivalAdjustment(StockAdjustment adjustment) {
-        assertThat(adjustment.id()).isNotNull();
+        assertThat(adjustment.id()).isEqualTo(ADJUSTMENT_ID);
         assertThat(adjustment.delta()).isEqualTo(ARRIVAL_DELTA);
         assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ARRIVAL);
         assertThat(adjustment.operator()).isEqualTo(OPERATOR);
@@ -409,6 +414,7 @@ class StockAdjustmentTest {
      *
      * <p>確認すること：
      * <ul>
+     *   <li>調整 ID（渡した ID）</li>
      *   <li>増減量</li>
      *   <li>理由</li>
      *   <li>メモがない</li>
@@ -422,6 +428,7 @@ class StockAdjustmentTest {
      * @param reason     期待する理由
      */
     private static void assertOrderAdjustment(StockAdjustment adjustment, UUID orderId, int delta, StockAdjustmentReason reason) {
+        assertThat(adjustment.id()).isEqualTo(ADJUSTMENT_ID);
         assertThat(adjustment.delta()).isEqualTo(delta);
         assertThat(adjustment.reason()).isEqualTo(reason);
         assertThat(adjustment.memo()).isNull();

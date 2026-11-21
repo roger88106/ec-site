@@ -65,6 +65,16 @@ class TaxCategoryTest {
     private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     /**
+     * 登録する税区分の ID
+     */
+    private static final UUID NEW_ID = UUID.fromString("00000000-0000-0000-0000-0000000000d1");
+
+    /**
+     * 新しい税率に使う ID
+     */
+    private static final UUID NEW_RATE_ID = UUID.fromString("00000000-0000-0000-0000-0000000000d2");
+
+    /**
      * 税区分の名称
      */
     private static final String NAME = "標準";
@@ -99,10 +109,10 @@ class TaxCategoryTest {
         @DisplayName("AC-1 名称で登録できる")
         void createsWithName() {
             // 操作：名称で登録する
-            var category = factory.create(UUID.randomUUID(), NAME);
+            var category = factory.create(NEW_ID, NAME);
 
-            // 確認：ID が振られ、名称を持つ
-            assertThat(category.id()).isNotNull();
+            // 確認：渡した ID と名称を持つ
+            assertThat(category.id()).isEqualTo(NEW_ID);
             assertThat(category.name()).isEqualTo(NAME);
         }
 
@@ -166,10 +176,23 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：期間が連続し、最後が無期限の一覧は拒否されない
-            assertThatCode(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertThatCode(() -> category.replaceRates(List.of(
                     newDraft("10", null, APR_2027),
                     newDraft("8", APR_2027, APR_2028),
                     newDraft("10", APR_2028, null)), NOW)).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("AC-3 ID のない税率は、案が持つ新しい ID で加わる")
+        void usesNewIdOfDraft() {
+            // 準備：税率のない税区分
+            var category = factory.create(UUID.randomUUID(), NAME);
+
+            // 操作：新しい ID を決めた、ID のない税率で置き換える
+            category.replaceRates(List.of(newDraft(NEW_RATE_ID, "10", null, null)), NOW);
+
+            // 確認：税率の ID が案の新しい ID
+            assertThat(category.rates()).extracting(TaxRate::id).containsExactly(NEW_RATE_ID);
         }
 
         @Test
@@ -179,7 +202,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作：開始の新しい順に並べた一覧で置き換える
-            category.replaceRates(UUID::randomUUID, List.of(
+            category.replaceRates(List.of(
                     newDraft("10", APR_2028, null),
                     newDraft("8", APR_2027, APR_2028),
                     newDraft("10", null, APR_2027)), NOW);
@@ -196,7 +219,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, APR_2028),
                     newDraft("8", APR_2027, null)), NOW), TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);
         }
@@ -208,7 +231,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, APR_2027),
                     newDraft("8", null, null)), NOW), TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);
         }
@@ -220,7 +243,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：無期限の税率と、2027-04-01 からの税率は、業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, null),
                     newDraft("8", APR_2027, null)), NOW), TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);
         }
@@ -232,7 +255,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：1 分の途切れがあれば、業務のエラー TAX_RATE_PERIODS_GAP で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, APR_2027),
                     newDraft("8", APR_2027.plus(ONE_MINUTE), null)), NOW), TaxErrorCode.TAX_RATE_PERIODS_GAP);
         }
@@ -244,7 +267,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, APR_2027),
                     newDraft("8", APR_2027, APR_2028)), NOW), TaxErrorCode.TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED);
         }
@@ -256,7 +279,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：業務のエラー TAX_RATES_REQUIRED で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(), NOW), TaxErrorCode.TAX_RATES_REQUIRED);
+            assertBusinessError(() -> category.replaceRates(List.of(), NOW), TaxErrorCode.TAX_RATES_REQUIRED);
         }
 
         @Test
@@ -267,7 +290,7 @@ class TaxCategoryTest {
             var category = restore(existing);
 
             // 操作：既存の税率の終了の変更を含み、最後が無期限でない一覧で置き換え、拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(existing.id(), "10", null, APR_2027),
                     newDraft("8", APR_2027, APR_2028)), NOW), TaxErrorCode.TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED);
 
@@ -313,7 +336,7 @@ class TaxCategoryTest {
         void noRateWhenNotCovered() {
             // 準備：2027-04-01 から始まる税率だけを持つ税区分
             var category = factory.create(UUID.randomUUID(), NAME);
-            category.replaceRates(UUID::randomUUID, List.of(newDraft("10", APR_2027, null)), NOW);
+            category.replaceRates(List.of(newDraft("10", APR_2027, null)), NOW);
 
             // 確認（前提）：開始の時点には税率がある
             assertThat(category.rateAt(APR_2027)).isPresent();
@@ -341,7 +364,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PAST_DATETIME で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }
 
@@ -352,7 +375,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：一覧の形の誤り（最後が無期限でない）より先に、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, APR_2026)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }
 
@@ -363,7 +386,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PAST_DATETIME で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", NOW, null)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }
 
@@ -374,7 +397,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：一覧の形の誤り（最後が無期限でない）より先に、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, NOW)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }
 
@@ -385,7 +408,7 @@ class TaxCategoryTest {
             var category = factory.create(UUID.randomUUID(), NAME);
 
             // 操作と確認：開始・終了とも空白の税率は拒否されない
-            assertThatCode(() -> category.replaceRates(UUID::randomUUID, List.of(newDraft("10", null, null)), NOW))
+            assertThatCode(() -> category.replaceRates(List.of(newDraft("10", null, null)), NOW))
                     .doesNotThrowAnyException();
         }
     }
@@ -402,7 +425,7 @@ class TaxCategoryTest {
             var category = restore(started);
 
             // 操作と確認：率を 8% に変えると、業務のエラー TAX_RATE_STARTED_UNCHANGEABLE で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(started.id(), "8", null, null)), NOW), TaxErrorCode.TAX_RATE_STARTED_UNCHANGEABLE);
         }
 
@@ -414,7 +437,7 @@ class TaxCategoryTest {
             var category = restore(started);
 
             // 操作と確認：開始を 2027-04-01 に変えると、業務のエラー TAX_RATE_STARTED_UNCHANGEABLE で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(started.id(), "10", APR_2027, null)), NOW), TaxErrorCode.TAX_RATE_STARTED_UNCHANGEABLE);
         }
 
@@ -426,7 +449,7 @@ class TaxCategoryTest {
             var category = restore(started);
 
             // 操作と確認：既存の税率を外した一覧は、業務のエラー TAX_RATE_STARTED_UNCHANGEABLE で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     newDraft("10", null, null)), NOW), TaxErrorCode.TAX_RATE_STARTED_UNCHANGEABLE);
         }
 
@@ -439,7 +462,7 @@ class TaxCategoryTest {
             var category = restore(started, following);
 
             // 操作：開始済みの税率の終了を 2027-04-01 に早める
-            category.replaceRates(UUID::randomUUID, List.of(
+            category.replaceRates(List.of(
                     draft(started.id(), "10", null, APR_2027),
                     draft(following.id(), "8", APR_2027, null)), NOW);
 
@@ -456,7 +479,7 @@ class TaxCategoryTest {
             var category = restore(started, following);
 
             // 操作：開始済みの税率の終了を空白にし、後の税率を削除する
-            category.replaceRates(UUID::randomUUID, List.of(draft(started.id(), "10", null, null)), NOW);
+            category.replaceRates(List.of(draft(started.id(), "10", null, null)), NOW);
 
             // 確認：2028-04-01 も開始済みの税率のまま
             assertThat(rateAt(category, APR_2028)).isEqualTo("10");
@@ -470,7 +493,7 @@ class TaxCategoryTest {
             var category = restore(started);
 
             // 操作と確認：終了を 2026-04-01 にすると、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(started.id(), "10", null, APR_2026),
                     newDraft("8", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }
@@ -489,7 +512,7 @@ class TaxCategoryTest {
             var category = restore(ended, current);
 
             // 操作と確認：終了済みの率を 5% に変えると、業務のエラー TAX_RATE_ENDED_UNCHANGEABLE で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(ended.id(), "5", null, APR_2026),
                     draft(current.id(), "10", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_ENDED_UNCHANGEABLE);
         }
@@ -503,7 +526,7 @@ class TaxCategoryTest {
             var category = restore(ended, current);
 
             // 操作と確認：率は 8% のまま終了を 2027-04-01 に延ばすと、業務のエラー TAX_RATE_ENDED_UNCHANGEABLE で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(ended.id(), "8", null, APR_2027),
                     draft(current.id(), "10", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_ENDED_UNCHANGEABLE);
         }
@@ -517,7 +540,7 @@ class TaxCategoryTest {
             var category = restore(ended, current);
 
             // 操作と確認：終了済みの税率を外した一覧は、業務のエラー TAX_RATE_ENDED_UNCHANGEABLE で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(current.id(), "10", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_ENDED_UNCHANGEABLE);
         }
 
@@ -530,7 +553,7 @@ class TaxCategoryTest {
             var category = restore(ended, current);
 
             // 操作：終了済みの税率はそのまま、今の税率に終了を入れ、新しい税率を追加する
-            category.replaceRates(UUID::randomUUID, List.of(
+            category.replaceRates(List.of(
                     draft(ended.id(), "8", null, APR_2026),
                     draft(current.id(), "10", APR_2026, APR_2027),
                     newDraft("12", APR_2027, null)), NOW);
@@ -553,7 +576,7 @@ class TaxCategoryTest {
             var category = restore(started, future);
 
             // 操作：未開始の税率の開始を 2028-04-01、率を 12% に変える
-            category.replaceRates(UUID::randomUUID, List.of(
+            category.replaceRates(List.of(
                     draft(started.id(), "10", null, APR_2028),
                     draft(future.id(), "12", APR_2028, null)), NOW);
 
@@ -571,7 +594,7 @@ class TaxCategoryTest {
             var category = restore(started, future);
 
             // 操作：未開始の税率を外し、開始済みの税率の終了を空白にする
-            category.replaceRates(UUID::randomUUID, List.of(draft(started.id(), "10", null, null)), NOW);
+            category.replaceRates(List.of(draft(started.id(), "10", null, null)), NOW);
 
             // 確認：開始済みの税率だけが残る
             assertThat(category.rates()).extracting(TaxRate::id).containsExactly(started.id());
@@ -586,7 +609,7 @@ class TaxCategoryTest {
             var category = restore(started, future);
 
             // 操作と確認：未開始の税率の開始を 2026-04-01 に変えると、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(started.id(), "10", null, APR_2027),
                     draft(future.id(), "8", APR_2026, null)), NOW), TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }
@@ -603,7 +626,7 @@ class TaxCategoryTest {
             var category = restore(rate("10", null, null));
 
             // 操作と確認：業務のエラー INVALID_TAX_RATE_ID で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(UUID.randomUUID(), "10", null, null)), NOW), TaxErrorCode.INVALID_TAX_RATE_ID);
         }
 
@@ -615,7 +638,7 @@ class TaxCategoryTest {
             var category = restore(started);
 
             // 操作と確認：業務のエラー INVALID_TAX_RATE_ID で拒否される
-            assertBusinessError(() -> category.replaceRates(UUID::randomUUID, List.of(
+            assertBusinessError(() -> category.replaceRates(List.of(
                     draft(started.id(), "10", null, APR_2027),
                     draft(started.id(), "10", APR_2027, null)), NOW), TaxErrorCode.INVALID_TAX_RATE_ID);
         }
@@ -675,7 +698,7 @@ class TaxCategoryTest {
      * @param baseId   基本の税率の ID
      */
     private static void switchToLimitedTimeRate(TaxCategory category, UUID baseId) {
-        category.replaceRates(UUID::randomUUID, List.of(
+        category.replaceRates(List.of(
                 draft(baseId, BASE_RATE, null, APR_2027),
                 newDraft(LIMITED_RATE, APR_2027, APR_2028),
                 newDraft(BASE_RATE, APR_2028, null)), NOW);

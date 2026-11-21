@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -127,8 +126,7 @@ public class TaxCategory extends AggregateRoot {
      *
      * <p>検証に合わないときは、一覧を変えない。
      *
-     * @param newRateId 新しい税率の ID を作る関数（ID のない税率ごとに呼ぶ）
-     * @param drafts    置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する
+     * @param drafts    置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する。新しい税率は {@code newId} を付ける
      * @param now       現在時刻
      * @throws BusinessException 置き換え後の一覧が空（{@code TAX_RATES_REQUIRED}）
      * @throws BusinessException 税区分にない税率、または重複した税率を指定した（{@code INVALID_TAX_RATE_ID}）
@@ -139,7 +137,7 @@ public class TaxCategory extends AggregateRoot {
      * @throws BusinessException 適用期間の間に途切れがある（{@code TAX_RATE_PERIODS_GAP}）
      * @throws BusinessException 最後の税率の適用終了日時が空白でない（{@code TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED}）
      */
-    public void replaceRates(@NonNull Supplier<UUID> newRateId, @NonNull List<TaxRateDraft> drafts, @NonNull Instant now) {
+    public void replaceRates(@NonNull List<TaxRateDraft> drafts, @NonNull Instant now) {
         if (drafts.isEmpty()) {
             throw BusinessException.of(TaxErrorCode.TAX_RATES_REQUIRED);
         }
@@ -150,9 +148,9 @@ public class TaxCategory extends AggregateRoot {
         rates.list().forEach(current -> verifyChangeable(current, draftsById.get(current.id()), now));
         drafts.forEach(draft -> verifyNoPastDateTime(draft, currentById.get(draft.id()), now));
 
-        // ID のない新しい税率には ID を振り、一覧の形（期間の連続）を検証する
+        // ID のない新しい税率には案が持つ新しい ID を使い、一覧の形（期間の連続）を検証する
         var replaced = drafts.stream()
-                .map(draft -> new TaxRate(Objects.requireNonNullElseGet(draft.id(), newRateId),
+                .map(draft -> new TaxRate(Objects.requireNonNullElse(draft.id(), draft.newId()),
                         draft.ratePercent(), draft.period()))
                 .toList();
         this.rates = new TaxRates(replaced);

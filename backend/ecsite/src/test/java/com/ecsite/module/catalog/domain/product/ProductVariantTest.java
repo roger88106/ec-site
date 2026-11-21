@@ -53,6 +53,16 @@ class ProductVariantTest {
     private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     /**
+     * 白・M のバリアントの ID
+     */
+    private static final UUID WHITE_M_ID = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
+
+    /**
+     * 黒・M のバリアントの ID
+     */
+    private static final UUID BLACK_M_ID = UUID.fromString("00000000-0000-0000-0000-0000000000a2");
+
+    /**
      * 白・M のバリアント品番
      */
     private static final String WHITE_M_CODE = "ABC-001-WH-M";
@@ -90,10 +100,12 @@ class ProductVariantTest {
             var product = productWithAxes("色", "サイズ");
 
             // 操作：白・M のバリアントを登録する
-            product.addVariant(UUID.randomUUID(), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
+            var added = product.addVariant(WHITE_M_ID, VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
 
-            // 確認：指定した品番と軸の値を持つ
+            // 確認：渡した ID と、指定した品番と軸の値を持つ
+            assertThat(added).isEqualTo(WHITE_M_ID);
             assertThat(product.variants()).singleElement().satisfies(variant -> {
+                assertThat(variant.id()).isEqualTo(WHITE_M_ID);
                 assertThat(variant.variantCode()).isEqualTo(VariantCode.of(WHITE_M_CODE));
                 assertThat(variant.axisValues()).containsExactlyElementsOf(WHITE_M);
             });
@@ -106,11 +118,11 @@ class ProductVariantTest {
             var product = productWithAxes("色", "サイズ");
 
             // 操作：白・M、黒・M の順に登録する
-            var first = product.addVariant(UUID.randomUUID(), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
-            var second = product.addVariant(UUID.randomUUID(), VariantCode.of(BLACK_M_CODE), BLACK_M, NOW);
+            product.addVariant(WHITE_M_ID, VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
+            product.addVariant(BLACK_M_ID, VariantCode.of(BLACK_M_CODE), BLACK_M, NOW);
 
-            // 確認：登録した順に並ぶ
-            assertThat(product.variants()).extracting(Variant::id).containsExactly(first, second);
+            // 確認：渡した ID で、登録した順に並ぶ
+            assertThat(product.variants()).extracting(Variant::id).containsExactly(WHITE_M_ID, BLACK_M_ID);
         }
 
         @Test

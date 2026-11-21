@@ -48,6 +48,19 @@ public final class TestTaxRates {
     }
 
     /**
+     * 新しい税率（ID なし）の置き換えの要素を、使う ID を決めて作る。
+     *
+     * @param newId   新しい税率に使う ID
+     * @param percent 税率（%）
+     * @param from    適用の開始
+     * @param to      適用の終了
+     * @return 置き換えの要素
+     */
+    public static TaxRateDraft newDraft(UUID newId, String percent, Instant from, Instant to) {
+        return new TaxRateDraft(null, newId, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
+    }
+
+    /**
      * 置き換えの要素を作る。
      *
      * <p>既存の税率を残すなら、その ID を渡す。
@@ -59,6 +72,6 @@ public final class TestTaxRates {
      * @return 置き換えの要素
      */
     public static TaxRateDraft draft(UUID id, String percent, Instant from, Instant to) {
-        return new TaxRateDraft(id, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
+        return new TaxRateDraft(id, id == null ? UUID.randomUUID() : null, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
     }
 }

@@ -148,7 +148,7 @@ class JooqTaxCategoryRepositoryTest {
             var base = category.rates().getFirst();
 
             // 操作：1 件目の終了を延ばし、2 件目を外して 12% を加え、保存して再取得する
-            category.replaceRates(UUID::randomUUID, extendFirstAndReplaceSecond(base.id()), NOW);
+            category.replaceRates(extendFirstAndReplaceSecond(base.id()), NOW);
             var added = idsOf(category).get(1);
             var restored = saveAndReload(category);
 
@@ -167,7 +167,7 @@ class JooqTaxCategoryRepositoryTest {
             var second = category.rates().get(1);
 
             // 操作：1 件目の終了を先に延ばす（2 件目を書き換えるまでの間、期間が重なる）一覧を保存して再取得する
-            category.replaceRates(UUID::randomUUID, List.of(
+            category.replaceRates(List.of(
                     draft(first.id(), "10", null, APR_2028),
                     draft(second.id(), "8", APR_2028, null)), NOW);
             var restored = saveAndReload(category);
@@ -203,7 +203,7 @@ class JooqTaxCategoryRepositoryTest {
             var category = savedWithTwoRates();
 
             // 操作：もう一度置き換えを保存して再取得する
-            category.replaceRates(UUID::randomUUID, extendFirstAndReplaceSecond(category.rates().getFirst().id()), NOW);
+            category.replaceRates(extendFirstAndReplaceSecond(category.rates().getFirst().id()), NOW);
             var restored = saveAndReload(category);
 
             // 確認：1 から 2 に上がる
@@ -218,11 +218,11 @@ class JooqTaxCategoryRepositoryTest {
             var mine = repository.findById(saved.id()).orElseThrow();
             var theirs = repository.findById(saved.id()).orElseThrow();
             var rateId = theirs.rates().getFirst().id();
-            theirs.replaceRates(UUID::randomUUID, List.of(draft(rateId, "10", null, APR_2027), newDraft("8", APR_2027, null)), NOW);
+            theirs.replaceRates(List.of(draft(rateId, "10", null, APR_2027), newDraft("8", APR_2027, null)), NOW);
             repository.save(theirs);
 
             // 準備：もう一方を、取得したときのバージョンのまま置き換える
-            mine.replaceRates(UUID::randomUUID, List.of(draft(rateId, "10", null, APR_2028), newDraft("8", APR_2028, null)), NOW);
+            mine.replaceRates(List.of(draft(rateId, "10", null, APR_2028), newDraft("8", APR_2028, null)), NOW);
 
             // 操作と確認：保存すると、業務のエラー CONCURRENT_MODIFICATION で拒否される
             assertBusinessError(() -> repository.save(mine), CommonErrorCode.CONCURRENT_MODIFICATION);
@@ -320,7 +320,7 @@ class JooqTaxCategoryRepositoryTest {
     private TaxCategory saved(TaxRateDraft... drafts) {
         var category = factory.create(UUID.randomUUID(), NAME);
         repository.add(category);
-        category.replaceRates(UUID::randomUUID, List.of(drafts), NOW);
+        category.replaceRates(List.of(drafts), NOW);
         return saveAndReload(category);
     }
 
@@ -345,7 +345,7 @@ class JooqTaxCategoryRepositoryTest {
     private TaxCategory addedWithContinuousRates() {
         var category = factory.create(UUID.randomUUID(), NAME);
         repository.add(category);
-        category.replaceRates(UUID::randomUUID, List.of(
+        category.replaceRates(List.of(
                 newDraft("10", null, APR_2027),
                 newDraft("8", APR_2027, APR_2028),
                 newDraft("10", APR_2028, null)), NOW);

@@ -45,6 +45,11 @@ class CategoryTest {
     private static final int NAME_MAX_LENGTH = 50;
 
     /**
+     * 登録するカテゴリの ID
+     */
+    private static final UUID NEW_ID = UUID.fromString("00000000-0000-0000-0000-0000000000c1");
+
+    /**
      * 復元するカテゴリの ID
      */
     private static final UUID RESTORED_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
@@ -103,13 +108,13 @@ class CategoryTest {
         }
 
         @Test
-        @DisplayName("登録すると ID が振られる")
+        @DisplayName("登録すると、渡した ID を持つ")
         void assignsId() {
             // 操作：登録する
-            var root = factory.create(UUID.randomUUID(), null, ROOT_NAME, 1);
+            var root = factory.create(NEW_ID, null, ROOT_NAME, 1);
 
-            // 確認：ID がある
-            assertThat(root.id()).isNotNull();
+            // 確認：渡した ID を持つ
+            assertThat(root.id()).isEqualTo(NEW_ID);
         }
 
         @Test

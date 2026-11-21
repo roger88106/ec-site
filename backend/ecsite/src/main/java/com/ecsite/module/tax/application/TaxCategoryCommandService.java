@@ -90,13 +90,15 @@ public class TaxCategoryCommandService {
         taxCategory.requireVersion(command.version());
 
         // 税率の一覧の置き換え
+        // ※ID のない税率（新しい税率）には、ここで ID を付ける
         var drafts = command.rates().stream()
                 .map(rate -> new TaxRateDraft(
                         rate.id(),
+                        rate.id() == null ? idGenerator.generate() : null,
                         RatePercent.of(rate.ratePercent()),
                         EffectivePeriod.of(rate.effectiveFrom(), rate.effectiveTo())))
                 .toList();
-        taxCategory.replaceRates(idGenerator::generate, drafts, clock.instant());
+        taxCategory.replaceRates(drafts, clock.instant());
 
         // 税区分保存
         taxCategoryRepository.save(taxCategory);

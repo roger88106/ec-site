@@ -58,6 +58,11 @@ class ProductTest {
     private static final UUID OTHER_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000001002");
 
     /**
+     * 登録する商品の ID
+     */
+    private static final UUID PRODUCT_ID = UUID.fromString("00000000-0000-0000-0000-0000000000b1");
+
+    /**
      * 商品品番
      */
     private static final String PRODUCT_CODE = "ABC-001";
@@ -155,6 +160,7 @@ class ProductTest {
             var product = registered();
 
             // 確認：指定した内容を持つ
+            assertThat(product.id()).isEqualTo(PRODUCT_ID);
             assertRegisteredAsSpecified(product);
         }
 
@@ -498,7 +504,6 @@ class ProductTest {
      *
      * <p>確認すること（期待値は定数）：
      * <ul>
-     *   <li>ID が振られている</li>
      *   <li>商品品番</li>
      *   <li>商品名</li>
      *   <li>説明</li>
@@ -511,7 +516,6 @@ class ProductTest {
      * @param product 確認する商品
      */
     private static void assertRegisteredAsSpecified(Product product) {
-        assertThat(product.id()).isNotNull();
         assertThat(product.productCode()).isEqualTo(ProductCode.of(PRODUCT_CODE));
         assertThat(product.name()).isEqualTo(NAME);
         assertThat(product.description()).isEqualTo(DESCRIPTION);
@@ -618,7 +622,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product registered() {
-        return factory.create(UUID.randomUUID(), ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
+        return factory.create(PRODUCT_ID, ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
                 Set.of(CATEGORY_ID), AXES);
     }
 

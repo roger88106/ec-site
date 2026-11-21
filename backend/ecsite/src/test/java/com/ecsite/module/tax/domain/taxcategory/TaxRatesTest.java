@@ -127,7 +127,7 @@ class TaxRatesTest {
 
         // 操作：復元と、置き換え
         var restored = factory.restore(new TaxCategory.Snapshot(created.id(), "標準", rates, 0));
-        created.replaceRates(UUID::randomUUID, List.of(TestTaxRates.newDraft("10", T1, null)), Instant.parse("2026-10-07T15:00:00Z"));
+        created.replaceRates(List.of(TestTaxRates.newDraft("10", T1, null)), Instant.parse("2026-10-07T15:00:00Z"));
 
         // 確認：どちらも一覧を持つ
         assertThat(restored.rates()).hasSize(2);

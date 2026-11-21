@@ -55,8 +55,8 @@ import static org.mockito.Mockito.when;
 /**
  * 注文の成立のサービスの単体テスト
  *
- * <p>注文番号の衝突の扱いと、総額の判定の順を確認する。乱数の 6 桁が重なることは API の統合テストでは起こせないので、注文リポジトリを差し替えて
- * 使用済みの番号と保存の失敗を起こす。注文の成立の流れは {@code PlaceOrderPlacementApiTest} などの統合テストが確認する。
+ * <p>注文番号の衝突の扱いと、総額の判定の順を確認する。乱数の 6 桁が重なることは API の統合テストでは起こせないので、乱数を決めた値に固定し、
+ * 注文リポジトリを差し替えて使用済みの番号と保存の失敗を起こす。注文の成立の流れは {@code PlaceOrderPlacementApiTest} などの統合テストが確認する。
  */
 class OrderPlacementCommandServiceTest {
 
@@ -229,7 +229,7 @@ class OrderPlacementCommandServiceTest {
             // 操作と確認：共通のシステムのエラー
             assertSystemError(() -> service.place(command()), CommonErrorCode.SYSTEM_ERROR);
 
-            // 確認：上限の回数だけ乱数を引いて番号を確認し（最初の 2 回は決めた番号）、在庫の減算・注文の保存・支払の作成をしない
+            // 確認：上限の回数だけ乱数を引いて番号を確認し（乱数は 1 回目だけ 123456、残りは 654321 を返すので、番号は 1 回目の 1 件と 2 回目の 9 件）、在庫の減算・注文の保存・支払の作成をしない
             verify(random, times(ORDER_NUMBER_ATTEMPTS)).nextInt(RANDOM_BOUND);
             verify(orderRepository, times(ORDER_NUMBER_ATTEMPTS)).existsByOrderNumber(any());
             verify(orderRepository).existsByOrderNumber(OrderNumber.of(FIRST_NUMBER));

@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.common.model.id.OperatorId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
@@ -506,7 +507,7 @@ class OrderTest {
         /**
          * 申請を決定し、キャンセルする運営者
          */
-        private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
+        private static final Operator OPERATOR = new Operator(new OperatorId(UUID.randomUUID()), "管理 花子");
 
         /**
          * 申請と運営者のキャンセルの理由

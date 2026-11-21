@@ -1,5 +1,6 @@
 package com.ecsite.module.tax.api;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.api.model.ConsumptionTaxAmount;
 import com.ecsite.module.tax.api.model.TaxRateSchedule;
@@ -19,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税モジュールの公開の API
@@ -49,7 +49,7 @@ public class TaxRateApi {
      * @param instant       時点
      * @return 率（%）。税区分がない、またはその時点の税率がなければ空
      */
-    public Optional<BigDecimal> rateAt(@NonNull UUID taxCategoryId, @NonNull Instant instant) {
+    public Optional<BigDecimal> rateAt(@NonNull TaxCategoryId taxCategoryId, @NonNull Instant instant) {
         return queryService.findTaxCategory(taxCategoryId).flatMap(view -> toSchedule(view).rateAt(instant));
     }
 
@@ -63,8 +63,8 @@ public class TaxRateApi {
      * @param instant        時点
      * @return 税区分 ID から率（%）への対応（変更不可）
      */
-    public Map<UUID, BigDecimal> ratesAt(@NonNull Collection<UUID> taxCategoryIds, @NonNull Instant instant) {
-        var result = new HashMap<UUID, BigDecimal>();
+    public Map<TaxCategoryId, BigDecimal> ratesAt(@NonNull Collection<TaxCategoryId> taxCategoryIds, @NonNull Instant instant) {
+        var result = new HashMap<TaxCategoryId, BigDecimal>();
         for (var view : queryService.findTaxCategories(taxCategoryIds)) {
             toSchedule(view).rateAt(instant).ifPresent(rate -> result.put(view.id(), rate));
         }

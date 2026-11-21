@@ -6,10 +6,12 @@ import com.ecsite.api.admin.model.TaxCategory;
 import com.ecsite.api.admin.model.TaxCategoryList;
 import com.ecsite.api.admin.model.TaxRate;
 import com.ecsite.api.admin.model.TaxRateDraft;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -40,7 +42,7 @@ class TaxCategoryMapper {
      */
     ReplaceTaxRatesCommand toReplaceTaxRatesCommand(UUID taxCategoryId, ReplaceTaxRatesRequest request) {
         return new ReplaceTaxRatesCommand(
-                taxCategoryId,
+                new TaxCategoryId(taxCategoryId),
                 request.getVersion(),
                 request.getRates().stream().map(TaxCategoryMapper::toRate).toList());
     }
@@ -53,7 +55,7 @@ class TaxCategoryMapper {
      */
     TaxCategory toTaxCategory(TaxCategoryView view) {
         return new TaxCategory()
-                .id(view.id())
+                .id(view.id().value())
                 .name(view.name())
                 .currentRatePercent(view.currentRatePercent())
                 .rates(view.rates().stream().map(TaxCategoryMapper::toTaxRate).toList())
@@ -77,7 +79,7 @@ class TaxCategoryMapper {
      */
     private static ReplaceTaxRatesCommand.Rate toRate(TaxRateDraft draft) {
         return new ReplaceTaxRatesCommand.Rate(
-                draft.getId().orElse(null),
+                draft.getId().map(TaxRateId::new).orElse(null),
                 draft.getRatePercent(),
                 ApiDateTimes.toInstant(draft.getEffectiveFrom().orElse(null)),
                 ApiDateTimes.toInstant(draft.getEffectiveTo().orElse(null)));
@@ -88,7 +90,7 @@ class TaxCategoryMapper {
      */
     private static TaxRate toTaxRate(TaxCategoryView.TaxRateView view) {
         return new TaxRate()
-                .id(view.id())
+                .id(view.id().value())
                 .ratePercent(view.ratePercent())
                 .effectiveFrom(ApiDateTimes.toOffsetDateTime(view.effectiveFrom()))
                 .effectiveTo(ApiDateTimes.toOffsetDateTime(view.effectiveTo()));

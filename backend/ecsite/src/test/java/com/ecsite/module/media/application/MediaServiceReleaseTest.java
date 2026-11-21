@@ -1,5 +1,6 @@
 package com.ecsite.module.media.application;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
@@ -54,8 +55,8 @@ class MediaServiceReleaseTest {
     @DisplayName("DC-489-7 リポジトリが渡された ID の一部だけを返すとき、返した分だけアセット解放を発行する")
     void publishesOnlyForDeletedAssets() {
         // 準備：2 つの ID のうち、1 つだけ削除したと返すリポジトリ
-        var deleted = new Asset(UUID.randomUUID(), ImageFormat.WEBP, "images/deleted.webp", Instant.parse("2026-10-07T15:30:00Z"));
-        var alreadyReleased = UUID.randomUUID();
+        var deleted = new Asset(new AssetId(UUID.randomUUID()), ImageFormat.WEBP, "images/deleted.webp", Instant.parse("2026-10-07T15:30:00Z"));
+        var alreadyReleased = new AssetId(UUID.randomUUID());
         var ids = List.of(deleted.id(), alreadyReleased);
         when(assetRepository.deleteAllById(ids)).thenReturn(List.of(deleted));
 
@@ -75,7 +76,7 @@ class MediaServiceReleaseTest {
     @DisplayName("DC-489-7 リポジトリが何も削除しなかったと返すとき、アセット解放を発行しない")
     void publishesNothingWhenNothingDeleted() {
         // 準備：何も削除しなかったと返すリポジトリ
-        var ids = List.of(UUID.randomUUID());
+        var ids = List.of(new AssetId(UUID.randomUUID()));
         when(assetRepository.deleteAllById(ids)).thenReturn(List.of());
 
         // 操作：解放する

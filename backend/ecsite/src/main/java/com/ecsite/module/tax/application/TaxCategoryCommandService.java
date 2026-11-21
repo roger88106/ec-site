@@ -3,6 +3,7 @@ package com.ecsite.module.tax.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
@@ -10,13 +11,13 @@ import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.UUID;
 
 /**
  * 税区分のコマンドサービス
@@ -54,9 +55,9 @@ public class TaxCategoryCommandService {
      * @throws BusinessException 名称の長さが範囲の外（{@code INVALID_TAX_CATEGORY_NAME}）
      * @throws BusinessException 名称が重複している（{@code TAX_CATEGORY_NAME_ALREADY_EXISTS}）
      */
-    public UUID createTaxCategory(@NonNull CreateTaxCategoryCommand command) {
+    public TaxCategoryId createTaxCategory(@NonNull CreateTaxCategoryCommand command) {
         // 税区分作成
-        var taxCategory = taxCategoryFactory.create(idGenerator.generate(), command.name());
+        var taxCategory = taxCategoryFactory.create(new TaxCategoryId(idGenerator.generate()), command.name());
 
         // 税区分登録 ※名称の重複は DB の一意制約で検出する
         taxCategoryRepository.add(taxCategory);
@@ -94,7 +95,7 @@ public class TaxCategoryCommandService {
         var drafts = command.rates().stream()
                 .map(rate -> new TaxRateDraft(
                         rate.id(),
-                        rate.id() == null ? idGenerator.generate() : null,
+                        rate.id() == null ? new TaxRateId(idGenerator.generate()) : null,
                         RatePercent.of(rate.ratePercent()),
                         EffectivePeriod.of(rate.effectiveFrom(), rate.effectiveTo())))
                 .toList();

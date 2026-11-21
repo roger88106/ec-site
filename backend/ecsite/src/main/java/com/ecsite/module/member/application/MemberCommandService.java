@@ -1,6 +1,7 @@
 package com.ecsite.module.member.application;
 
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
 import lombok.NonNull;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.UUID;
 
 /**
  * 会員の更新のサービス
@@ -43,8 +43,8 @@ public class MemberCommandService {
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID
      */
-    public UUID create(@NonNull String idpSubject) {
+    public MemberId create(@NonNull String idpSubject) {
         // 会員登録と会員 ID 取得 ※同じアカウントの会員がいれば作らず、その会員 ID を返す
-        return memberRepository.createOrGetId(new Member(idGenerator.generate(), idpSubject, clock.instant()));
+        return memberRepository.createOrGetId(new Member(new MemberId(idGenerator.generate()), idpSubject, clock.instant()));
     }
 }

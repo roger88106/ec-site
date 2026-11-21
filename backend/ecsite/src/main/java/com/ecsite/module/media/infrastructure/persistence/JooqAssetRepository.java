@@ -1,6 +1,7 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.jooq.media.tables.records.AssetRecord;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.domain.Asset;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 import static com.ecsite.jooq.media.Tables.ASSET;
 
@@ -35,7 +35,7 @@ class JooqAssetRepository implements AssetRepository {
     @Override
     public void insert(Asset asset) {
         dsl.insertInto(ASSET)
-                .set(ASSET.ID, asset.id())
+                .set(ASSET.ID, asset.id().value())
                 .set(ASSET.FORMAT, asset.format().name())
                 .set(ASSET.STORAGE_KEY, asset.storageKey())
                 .set(ASSET.CREATED_AT, asset.createdAt())
@@ -49,8 +49,8 @@ class JooqAssetRepository implements AssetRepository {
      * @return アセット。ないものは含めない
      */
     @Override
-    public List<Asset> findAllById(Collection<UUID> ids) {
-        return dsl.selectFrom(ASSET).where(ASSET.ID.in(ids)).fetch(JooqAssetRepository::toAsset);
+    public List<Asset> findAllById(Collection<AssetId> ids) {
+        return dsl.selectFrom(ASSET).where(ASSET.ID.in(ids.stream().map(AssetId::value).toList())).fetch(JooqAssetRepository::toAsset);
     }
 
     /**
@@ -62,11 +62,11 @@ class JooqAssetRepository implements AssetRepository {
      * @return 実際に削除したアセット。ないものは含めない
      */
     @Override
-    public List<Asset> deleteAllById(Collection<UUID> ids) {
+    public List<Asset> deleteAllById(Collection<AssetId> ids) {
         if (ids.isEmpty()) {
             return List.of();
         }
-        return dsl.deleteFrom(ASSET).where(ASSET.ID.in(ids)).returning().fetch(JooqAssetRepository::toAsset);
+        return dsl.deleteFrom(ASSET).where(ASSET.ID.in(ids.stream().map(AssetId::value).toList())).returning().fetch(JooqAssetRepository::toAsset);
     }
 
 // ============================== プライベートメソッド ==============================
@@ -76,7 +76,7 @@ class JooqAssetRepository implements AssetRepository {
      */
     private static Asset toAsset(AssetRecord record) {
         return new Asset(
-                record.getId(),
+                new AssetId(record.getId()),
                 RestoreGuard.restore("asset", () -> ImageFormat.valueOf(record.getFormat())),
                 record.getStorageKey(),
                 record.getCreatedAt());

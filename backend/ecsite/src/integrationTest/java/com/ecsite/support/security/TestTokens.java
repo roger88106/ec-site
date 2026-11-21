@@ -1,5 +1,6 @@
 package com.ecsite.support.security;
 
+import com.ecsite.common.model.id.OperatorId;
 import com.ecsite.common.model.value.Operator;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -68,7 +69,7 @@ public final class TestTokens {
      *
      * <p>{@link #operator} の token の運営者。氏名は「姓 名」。テストのデータを運営者の操作として作るときに使う。
      */
-    public static final Operator OPERATOR = new Operator(OPERATOR_SUBJECT, "管理 花子");
+    public static final Operator OPERATOR = new Operator(new OperatorId(OPERATOR_SUBJECT), "管理 花子");
 
     /**
      * 既定の会員の IdP のアカウントの ID

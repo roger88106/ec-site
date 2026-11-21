@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order.vo;
 
+import com.ecsite.common.model.id.OperatorId;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest.Result;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +37,7 @@ class CancellationRequestTest {
     /**
      * 決定した運営者
      */
-    private static final Operator OPERATOR = new Operator(UUID.fromString("00000000-0000-0000-0000-000000000001"), "管理 花子");
+    private static final Operator OPERATOR = new Operator(new OperatorId(UUID.fromString("00000000-0000-0000-0000-000000000001")), "管理 花子");
 
     // ============================== テスト ==============================
 

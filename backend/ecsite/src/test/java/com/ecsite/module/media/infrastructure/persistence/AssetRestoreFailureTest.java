@@ -1,5 +1,6 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,11 +27,12 @@ class AssetRestoreFailureTest {
         // 準備：形式の列に、列挙にない値を持つアセットの行を返すリポジトリ
         var value = RestoreFailures.value();
         var asset = RECORDS.newRecord(ASSET);
+        asset.setId(UUID.randomUUID());
         asset.setFormat(value);
         var repository = new JooqAssetRepository(new RestoreFailures().with("asset", asset).dsl());
 
         // 操作と確認：復元に失敗し、例外の出力にその値が出ない
-        assertValueIsHidden(() -> repository.findAllById(List.of(UUID.randomUUID())), value);
+        assertValueIsHidden(() -> repository.findAllById(List.of(new AssetId(UUID.randomUUID()))), value);
     }
 
     @Test
@@ -39,10 +41,11 @@ class AssetRestoreFailureTest {
         // 準備：形式の列に、列挙にない値を持つアセットの行を返すリポジトリ
         var value = RestoreFailures.value();
         var asset = RECORDS.newRecord(ASSET);
+        asset.setId(UUID.randomUUID());
         asset.setFormat(value);
         var repository = new JooqAssetRepository(new RestoreFailures().with("asset", asset).dsl());
 
         // 操作と確認：復元に失敗し、例外の出力にその値が出ない
-        assertValueIsHidden(() -> repository.deleteAllById(List.of(UUID.randomUUID())), value);
+        assertValueIsHidden(() -> repository.deleteAllById(List.of(new AssetId(UUID.randomUUID()))), value);
     }
 }

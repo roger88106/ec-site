@@ -249,7 +249,7 @@ class JooqStockItemRepository implements StockItemRepository {
                 DSL.val(adjustment.orderId(), STOCK_ADJUSTMENT.ORDER_ID),
                 DSL.val(adjustment.orderNumber(), STOCK_ADJUSTMENT.ORDER_NUMBER),
                 DSL.val(adjustment.adjustedAt(), STOCK_ADJUSTMENT.ADJUSTED_AT),
-                DSL.val(operator == null ? null : operator.id(), STOCK_ADJUSTMENT.ACTOR_ID),
+                DSL.val(operator == null ? null : operator.id().value(), STOCK_ADJUSTMENT.ACTOR_ID),
                 DSL.val(operator == null ? null : operator.name(), STOCK_ADJUSTMENT.ACTOR_NAME)});
     }
 

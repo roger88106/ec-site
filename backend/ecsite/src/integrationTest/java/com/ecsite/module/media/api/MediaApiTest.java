@@ -1,5 +1,7 @@
 package com.ecsite.module.media.api;
 
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.MediaService;
@@ -243,7 +245,7 @@ class MediaApiTest {
             var prepared = media.prepareImage(scope, upload.uploadId());
 
             // 確認：アセットの記録がない
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId().value()))).isFalse();
 
             // 後片付け：配信のファイルを消す
             media.discardImage(prepared);
@@ -260,9 +262,9 @@ class MediaApiTest {
             var prepared = media.prepareImage(scope, upload.uploadId());
 
             // 確認：配信のキーと用意した時刻を持つ仮のアセットがある
-            var pending = dsl.fetchOne(PENDING_ASSET, PENDING_ASSET.ID.eq(prepared.assetId()));
+            var pending = dsl.fetchOne(PENDING_ASSET, PENDING_ASSET.ID.eq(prepared.assetId().value()));
             assertThat(pending).isNotNull();
-            assertThat(pending.getStorageKey()).isEqualTo("assets/" + prepared.assetId() + ".webp");
+            assertThat(pending.getStorageKey()).isEqualTo("assets/" + prepared.assetId().value() + ".webp");
             assertThat(pending.getPreparedAt()).isEqualTo(NOW);
 
             // 後片付け：配信のファイルを削除する
@@ -436,11 +438,11 @@ class MediaApiTest {
         void rejectsOversizedFile() {
             // 準備：PNG で始まる、上限より 1 バイト大きいファイルを、アップロードのバケットに直接置く
             var scope = scope();
-            var uploadId = UUID.randomUUID();
+            var uploadId = new UploadId(UUID.randomUUID());
             var body = new byte[MAX_BYTES + 1];
             var png = TestImages.png();
             System.arraycopy(png, 0, body, 0, png.length);
-            s3.putObject(request -> request.bucket(TestcontainersConfig.INCOMING_BUCKET).key(scope + "/" + uploadId),
+            s3.putObject(request -> request.bucket(TestcontainersConfig.INCOMING_BUCKET).key(scope + "/" + uploadId.value()),
                     RequestBody.fromBytes(body));
 
             // 操作と確認：業務のエラー IMAGE_TOO_LARGE で拒否される
@@ -451,7 +453,7 @@ class MediaApiTest {
         @DisplayName("アップロードのない uploadId は拒否する")
         void rejectsUnknownUploadId() {
             // 操作と確認：業務のエラー IMAGE_UPLOAD_NOT_FOUND で拒否される
-            assertBusinessError(() -> media.prepareImage(scope(), UUID.randomUUID()), MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND);
+            assertBusinessError(() -> media.prepareImage(scope(), new UploadId(UUID.randomUUID())), MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND);
         }
 
         @Test
@@ -480,8 +482,8 @@ class MediaApiTest {
             var assetId = confirm(scope, upload.uploadId());
 
             // 確認：形式が WebP のアセットが記録されている
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isTrue();
-            assertThat(dsl.fetchValue(ASSET.FORMAT, ASSET.ID.eq(assetId))).isEqualTo("WEBP");
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId.value()))).isTrue();
+            assertThat(dsl.fetchValue(ASSET.FORMAT, ASSET.ID.eq(assetId.value()))).isEqualTo("WEBP");
         }
 
         @Test
@@ -496,7 +498,7 @@ class MediaApiTest {
 
             // 確認：配信の URL がアセット ID の WebP を指し、取得できる
             var url = media.urls(List.of(assetId)).get(assetId);
-            assertThat(url.toString()).endsWith("/assets/" + assetId + ".webp");
+            assertThat(url.toString()).endsWith("/assets/" + assetId.value() + ".webp");
             assertThat(get(url).statusCode()).isEqualTo(200);
         }
 
@@ -511,7 +513,7 @@ class MediaApiTest {
             assertThatThrownBy(() -> media.registerImage(prepared)).isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：アセットは記録されない
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId().value()))).isFalse();
 
             // 後片付け：配信のファイルを消す
             media.discardImage(prepared);
@@ -531,7 +533,7 @@ class MediaApiTest {
             });
 
             // 確認：アセットの記録も、配信の URL も残らない
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId().value()))).isFalse();
             assertThat(media.urls(List.of(prepared.assetId()))).isEmpty();
 
             // 後片付け：配信のファイルを消す
@@ -578,7 +580,7 @@ class MediaApiTest {
             // 準備：PNG を用意し、仮のアセットの記録を削除する（片付けのジョブが削除した後）
             var scope = scope();
             var prepared = media.prepareImage(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
-            dsl.deleteFrom(PENDING_ASSET).where(PENDING_ASSET.ID.eq(prepared.assetId())).execute();
+            dsl.deleteFrom(PENDING_ASSET).where(PENDING_ASSET.ID.eq(prepared.assetId().value())).execute();
             var callerAssetId = UUID.randomUUID();
 
             // 操作と確認：呼んだ側が別のアセットを記録してから登録すると、例外になる
@@ -593,7 +595,7 @@ class MediaApiTest {
             })).isInstanceOf(IllegalStateException.class);
 
             // 確認：用意した画像のアセットも、呼んだ側が記録したアセットも残らない
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId().value()))).isFalse();
             assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(callerAssetId))).isFalse();
 
             // 後片付け：配信のファイルを削除する
@@ -644,7 +646,7 @@ class MediaApiTest {
             media.discardImage(prepared);
 
             // 確認：この破棄の後に、保存先のキーを含む警告のログが出ている
-            assertThat(logs.messages(Level.WARN)).anyMatch(message -> message.contains("assets/" + prepared.assetId() + ".webp"));
+            assertThat(logs.messages(Level.WARN)).anyMatch(message -> message.contains("assets/" + prepared.assetId().value() + ".webp"));
         }
 
         @Test
@@ -691,7 +693,7 @@ class MediaApiTest {
             assertThatCode(() -> media.discardImage(prepared)).doesNotThrowAnyException();
 
             // 確認：この破棄の後に、配信のキーを含む警告のログが出ている
-            assertThat(logs.messages(Level.WARN)).anyMatch(message -> message.contains("assets/" + prepared.assetId() + ".webp"));
+            assertThat(logs.messages(Level.WARN)).anyMatch(message -> message.contains("assets/" + prepared.assetId().value() + ".webp"));
         }
     }
 
@@ -747,7 +749,7 @@ class MediaApiTest {
             transactionTemplate.executeWithoutResult(status -> media.release(List.of(assetId)));
 
             // 確認：記録も、配信の URL も残らない
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isFalse();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId.value()))).isFalse();
             assertThat(media.urls(List.of(assetId))).isEmpty();
         }
 
@@ -801,7 +803,7 @@ class MediaApiTest {
             });
 
             // 確認：記録が残る
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isTrue();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId.value()))).isTrue();
 
             // 確認：ファイルを消すイベントが登録されず、配信のファイルが残る（登録がないので、待たずに確認できる）
             assertThat(releaseRegistered(assetId)).isFalse();
@@ -817,7 +819,7 @@ class MediaApiTest {
 
             // 操作と確認：手放したアセットと、ないアセットを手放しても例外にならない
             assertThatCode(() -> transactionTemplate.executeWithoutResult(status ->
-                    media.release(List.of(assetId, UUID.randomUUID())))).doesNotThrowAnyException();
+                    media.release(List.of(assetId, new AssetId(UUID.randomUUID()))))).doesNotThrowAnyException();
         }
     }
 
@@ -831,7 +833,7 @@ class MediaApiTest {
             // 準備：登録した 2 つのアセットと、ないアセット ID
             var first = confirmed();
             var second = confirmed();
-            var unknown = UUID.randomUUID();
+            var unknown = new AssetId(UUID.randomUUID());
 
             // 操作：まとめて URL を引く
             var urls = media.urls(List.of(first, second, unknown));
@@ -856,9 +858,9 @@ class MediaApiTest {
      * @param assetId アセット ID
      * @return 登録されていれば true
      */
-    private boolean releaseRegistered(UUID assetId) {
+    private boolean releaseRegistered(AssetId assetId) {
         return dsl.fetchExists(EVENT_PUBLICATION, EVENT_PUBLICATION.EVENT_TYPE.endsWith(".AssetReleased")
-                .and(EVENT_PUBLICATION.SERIALIZED_EVENT.contains(assetId.toString())));
+                .and(EVENT_PUBLICATION.SERIALIZED_EVENT.contains(assetId.value().toString())));
     }
 
     /**
@@ -867,8 +869,8 @@ class MediaApiTest {
      * @param assetId アセット ID
      * @return あれば true
      */
-    private boolean pendingExists(UUID assetId) {
-        return dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.ID.eq(assetId));
+    private boolean pendingExists(AssetId assetId) {
+        return dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.ID.eq(assetId.value()));
     }
 
     // ============================== 準備の補助 ==============================
@@ -904,7 +906,7 @@ class MediaApiTest {
      * @param uploadId 受付 ID
      * @return アセット ID
      */
-    private UUID confirm(String scope, UUID uploadId) {
+    private AssetId confirm(String scope, UploadId uploadId) {
         var prepared = media.prepareImage(scope, uploadId);
         transactionTemplate.executeWithoutResult(status -> media.registerImage(prepared));
         return prepared.assetId();
@@ -916,7 +918,7 @@ class MediaApiTest {
      * @return アセット ID
      * @throws Exception PUT できない
      */
-    private UUID confirmed() throws Exception {
+    private AssetId confirmed() throws Exception {
         var scope = scope();
         return confirm(scope, uploaded(scope, PNG_TYPE, TestImages.png()).uploadId());
     }
@@ -959,6 +961,6 @@ class MediaApiTest {
      * @throws InterruptedException 待つ間に割り込まれた
      */
     private HttpResponse<byte[]> getPublished(PreparedImage prepared) throws IOException, InterruptedException {
-        return get(storage.publicUrl("assets/" + prepared.assetId() + ".webp"));
+        return get(storage.publicUrl("assets/" + prepared.assetId().value() + ".webp"));
     }
 }

@@ -1,6 +1,7 @@
 package com.ecsite.module.member.api;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.application.MemberCommandService;
 import com.ecsite.module.member.application.MemberIdCache;
@@ -49,19 +50,19 @@ class CurrentMemberIdsTest {
     /**
      * 会員の記録（IdP の subject → 会員 ID）を持つだけのリポジトリの中身
      */
-    private final Map<String, UUID> members = new HashMap<>();
+    private final Map<String, MemberId> members = new HashMap<>();
 
     /**
      * 会員の記録を読み書きするリポジトリ
      */
     private final MemberRepository repository = new MemberRepository() {
         @Override
-        public Optional<UUID> findIdByIdpSubject(String idpSubject) {
+        public Optional<MemberId> findIdByIdpSubject(String idpSubject) {
             return Optional.ofNullable(members.get(idpSubject));
         }
 
         @Override
-        public UUID createOrGetId(Member member) {
+        public MemberId createOrGetId(Member member) {
             return members.computeIfAbsent(member.idpSubject(), key -> member.id());
         }
     };

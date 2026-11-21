@@ -1,5 +1,6 @@
 package com.ecsite.module.tax.api;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.api.model.ConsumptionTaxAmount;
 import com.ecsite.module.tax.api.model.TaxRateSchedule;
@@ -123,7 +124,7 @@ class TaxRateApiTest {
         @DisplayName("存在しない税区分は、率が空になる")
         void returnsEmptyForUnknownCategory() {
             // 操作と確認：登録していない ID の率は空
-            assertThat(taxRateApi.rateAt(UUID.randomUUID(), APR_2027)).isEmpty();
+            assertThat(taxRateApi.rateAt(new TaxCategoryId(UUID.randomUUID()), APR_2027)).isEmpty();
         }
     }
 
@@ -197,7 +198,7 @@ class TaxRateApiTest {
             var id = createSwitchingCategory();
 
             // 操作：両方の率をまとめて求める
-            var rates = taxRateApi.ratesAt(List.of(id, UUID.randomUUID()), APR_2027);
+            var rates = taxRateApi.ratesAt(List.of(id, new TaxCategoryId(UUID.randomUUID())), APR_2027);
 
             // 確認：登録した税区分だけが入る
             assertThat(rates).containsOnlyKeys(id);
@@ -250,7 +251,7 @@ class TaxRateApiTest {
      *
      * @return 税区分 ID
      */
-    private UUID createSwitchingCategory() {
+    private TaxCategoryId createSwitchingCategory() {
         return createWithRates(new Rate(null, BEFORE_RATE, null, APR_2027), new Rate(null, AFTER_RATE, APR_2027, null));
     }
 
@@ -262,7 +263,7 @@ class TaxRateApiTest {
      * @param rates 税率の一覧
      * @return 税区分 ID
      */
-    private UUID createWithRates(Rate... rates) {
+    private TaxCategoryId createWithRates(Rate... rates) {
         var id = commandService.createTaxCategory(new CreateTaxCategoryCommand("標準 " + UUID.randomUUID().toString().substring(0, 8)));
         commandService.replaceTaxRates(new ReplaceTaxRatesCommand(id, 0, List.of(rates)));
         return id;
@@ -276,7 +277,7 @@ class TaxRateApiTest {
      * @param id 税区分 ID
      * @return 税区分の税率の一覧
      */
-    private TaxRateSchedule scheduleOf(UUID id) {
+    private TaxRateSchedule scheduleOf(TaxCategoryId id) {
         return taxRateApi.listRateSchedules().stream()
                 .filter(s -> s.taxCategoryId().equals(id))
                 .findFirst().orElseThrow();

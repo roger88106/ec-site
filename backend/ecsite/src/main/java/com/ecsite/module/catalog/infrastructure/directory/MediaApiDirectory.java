@@ -1,6 +1,8 @@
 package com.ecsite.module.catalog.infrastructure.directory;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
@@ -12,6 +14,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * メディアの腐敗防止層
@@ -40,7 +43,7 @@ class MediaApiDirectory implements MediaDirectory {
     @Override
     public ImageUploadView requestImageUpload(UUID productId, String contentType, long contentLength) {
         var upload = mediaApi.requestImageUpload(scope(productId), contentType, contentLength);
-        return new ImageUploadView(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
+        return new ImageUploadView(upload.uploadId().value(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
     }
 
     /**
@@ -56,7 +59,7 @@ class MediaApiDirectory implements MediaDirectory {
      */
     @Override
     public PreparedImage prepareImage(UUID productId, UUID uploadId) {
-        return new PreparedImage(mediaApi.prepareImage(scope(productId), uploadId).assetId());
+        return new PreparedImage(mediaApi.prepareImage(scope(productId), new UploadId(uploadId)).assetId().value());
     }
 
     /**
@@ -88,7 +91,7 @@ class MediaApiDirectory implements MediaDirectory {
      */
     @Override
     public void release(Collection<UUID> assetIds) {
-        mediaApi.release(assetIds);
+        mediaApi.release(assetIds.stream().map(AssetId::new).toList());
     }
 
     /**
@@ -99,7 +102,8 @@ class MediaApiDirectory implements MediaDirectory {
      */
     @Override
     public Map<UUID, URI> urls(Collection<UUID> assetIds) {
-        return mediaApi.urls(assetIds);
+        return mediaApi.urls(assetIds.stream().map(AssetId::new).toList()).entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(entry -> entry.getKey().value(), Map.Entry::getValue));
     }
 
 // ============================== プライベートメソッド ==============================
@@ -117,6 +121,6 @@ class MediaApiDirectory implements MediaDirectory {
      * 用意した画像を、メディアモジュールの型に変換する。
      */
     private static com.ecsite.module.media.api.model.PreparedImage toMedia(PreparedImage prepared) {
-        return new com.ecsite.module.media.api.model.PreparedImage(prepared.assetId());
+        return new com.ecsite.module.media.api.model.PreparedImage(new AssetId(prepared.assetId()));
     }
 }

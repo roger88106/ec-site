@@ -3,6 +3,7 @@ package com.ecsite.module.tax.domain.taxcategory;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import lombok.NonNull;
 
 import java.time.Instant;
@@ -10,7 +11,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -64,7 +64,7 @@ record TaxRates(List<TaxRate> list) {
      *
      * @return 税率（ID → 税率）
      */
-    Map<UUID, TaxRate> byId() {
+    Map<TaxRateId, TaxRate> byId() {
         return list.stream().collect(Collectors.toMap(TaxRate::id, Function.identity()));
     }
 

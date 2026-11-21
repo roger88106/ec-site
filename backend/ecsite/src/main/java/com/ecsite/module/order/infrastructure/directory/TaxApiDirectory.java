@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 税の腐敗防止層
@@ -35,7 +37,7 @@ class TaxApiDirectory implements TaxDirectory {
      */
     @Override
     public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
-        return taxRateApi.rateAt(taxCategoryId, instant);
+        return taxRateApi.rateAt(new TaxCategoryId(taxCategoryId), instant);
     }
 
     /**
@@ -43,7 +45,8 @@ class TaxApiDirectory implements TaxDirectory {
      */
     @Override
     public Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant) {
-        return taxRateApi.ratesAt(taxCategoryIds, instant);
+        return taxRateApi.ratesAt(taxCategoryIds.stream().map(TaxCategoryId::new).toList(), instant).entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(entry -> entry.getKey().value(), Map.Entry::getValue));
     }
 
     /**

@@ -1,10 +1,10 @@
 package com.ecsite.module.media.application.port;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.domain.Asset;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * アセットのリポジトリ
@@ -24,7 +24,7 @@ public interface AssetRepository {
      * @param ids アセット ID
      * @return アセット。ないものは含まない
      */
-    List<Asset> findAllById(Collection<UUID> ids);
+    List<Asset> findAllById(Collection<AssetId> ids);
 
     /**
      * アセットの記録をまとめて消す。
@@ -34,5 +34,5 @@ public interface AssetRepository {
      * @param ids アセット ID
      * @return 実際に削除したアセット。ないものは含まない
      */
-    List<Asset> deleteAllById(Collection<UUID> ids);
+    List<Asset> deleteAllById(Collection<AssetId> ids);
 }

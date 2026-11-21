@@ -1,6 +1,7 @@
 package com.ecsite.module.media.application;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.PendingAsset;
 
@@ -19,7 +20,7 @@ import java.util.UUID;
  * @param assetId    アセット ID
  * @param storageKey 配信のバケットのキー
  */
-record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String storageKey) implements DomainEvent {
+record AssetReleased(UUID eventId, Instant occurredAt, AssetId assetId, String storageKey) implements DomainEvent {
 
     /**
      * イベントを作る。

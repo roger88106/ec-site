@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.api.model.ShownProductQuery;
@@ -163,7 +164,7 @@ class CatalogApiShownProductsTest {
             var odd = catalog.taxCategory("端数", ODD_RATE);
             var expected = new ArrayList<Long>();
             for (var taxCategory : List.of(standard, reduced, odd)) {
-                var rate = taxRateApi.rateAt(taxCategory, NOW).orElseThrow();
+                var rate = taxRateApi.rateAt(new TaxCategoryId(taxCategory), NOW).orElseThrow();
                 for (var price : BOUNDARY_PRICES) {
                     published(taxCategory, price);
                     expected.add(javaPriceInclTax(price, rate));

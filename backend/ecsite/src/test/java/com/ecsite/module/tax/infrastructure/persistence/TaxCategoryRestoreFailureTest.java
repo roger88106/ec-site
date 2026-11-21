@@ -1,6 +1,7 @@
 package com.ecsite.module.tax.infrastructure.persistence;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
 import com.ecsite.support.RestoreFailures;
@@ -65,7 +66,7 @@ class TaxCategoryRestoreFailureTest {
     void hidesRatePercentOfCategory() {
         // 操作と確認：率を範囲の外にした行を読む
         var repository = repositoryWith(rate -> rate.setRatePercent(OUT_OF_RANGE_PERCENT));
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), OUT_OF_RANGE_PERCENT.toPlainString(), BusinessException.class);
+        assertValueIsHidden(() -> repository.findById(new TaxCategoryId(UUID.randomUUID())), OUT_OF_RANGE_PERCENT.toPlainString(), BusinessException.class);
     }
 
     @Test
@@ -73,7 +74,7 @@ class TaxCategoryRestoreFailureTest {
     void hidesClosedLastPeriod() {
         // 操作と確認：終了のある 1 件だけの税率を読む
         var repository = repositoryWith(rate -> rate.setEffectiveTo(EFFECTIVE_TO));
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), EFFECTIVE_TO.toString(), BusinessException.class);
+        assertValueIsHidden(() -> repository.findById(new TaxCategoryId(UUID.randomUUID())), EFFECTIVE_TO.toString(), BusinessException.class);
     }
 
     @Test
@@ -85,7 +86,7 @@ class TaxCategoryRestoreFailureTest {
         var repository = new JooqTaxCategoryRepository(dslWith(value, List.of(first, second)), new TaxCategoryFactory(), Clock.systemUTC());
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, BusinessException.class);
+        assertValueIsHidden(() -> repository.findById(new TaxCategoryId(UUID.randomUUID())), value, BusinessException.class);
     }
 
     @Test
@@ -97,7 +98,7 @@ class TaxCategoryRestoreFailureTest {
         var repository = new JooqTaxCategoryRepository(dslWith(value, List.of(first, second)), new TaxCategoryFactory(), Clock.systemUTC());
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, BusinessException.class);
+        assertValueIsHidden(() -> repository.findById(new TaxCategoryId(UUID.randomUUID())), value, BusinessException.class);
     }
 
     @Test
@@ -112,7 +113,7 @@ class TaxCategoryRestoreFailureTest {
         var repository = new JooqTaxCategoryRepository(dsl, new TaxCategoryFactory(), Clock.systemUTC());
 
         // 操作と確認：DB の失敗のまま出る
-        assertDatabaseFailurePropagates(() -> repository.findById(UUID.randomUUID()));
+        assertDatabaseFailurePropagates(() -> repository.findById(new TaxCategoryId(UUID.randomUUID())));
     }
 
     @Test

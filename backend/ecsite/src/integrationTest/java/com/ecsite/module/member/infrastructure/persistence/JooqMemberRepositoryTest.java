@@ -1,5 +1,6 @@
 package com.ecsite.module.member.infrastructure.persistence;
 
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
 import com.ecsite.support.config.IntegrationTest;
@@ -57,7 +58,7 @@ class JooqMemberRepositoryTest {
     @DisplayName("会員を作ると、IdP のアカウントの ID から会員 ID を探せる")
     void createsAndFindsMember() {
         // 準備：会員
-        var member = new Member(UUID.randomUUID(), SUBJECT, CREATED_AT);
+        var member = new Member(new MemberId(UUID.randomUUID()), SUBJECT, CREATED_AT);
 
         // 操作：保存する
         repository.createOrGetId(member);
@@ -70,7 +71,7 @@ class JooqMemberRepositoryTest {
     @DisplayName("会員のいない IdP のアカウントの ID には、空を返す")
     void findsNothingForUnknownSubject() {
         // 準備：別のアカウントの会員を保存する
-        repository.createOrGetId(new Member(UUID.randomUUID(), SUBJECT, CREATED_AT));
+        repository.createOrGetId(new Member(new MemberId(UUID.randomUUID()), SUBJECT, CREATED_AT));
 
         // 操作と確認：空
         assertThat(repository.findIdByIdpSubject(UNKNOWN_SUBJECT)).isEmpty();
@@ -80,7 +81,7 @@ class JooqMemberRepositoryTest {
     @DisplayName("会員がいないときは、作った会員の ID を返し、IdP のアカウントの ID から探せる")
     void createOrGetIdReturnsNewId() {
         // 準備：会員
-        var member = new Member(UUID.randomUUID(), SUBJECT, CREATED_AT);
+        var member = new Member(new MemberId(UUID.randomUUID()), SUBJECT, CREATED_AT);
 
         // 操作：1 つの SQL の文で作って ID を得る
         var id = repository.createOrGetId(member);
@@ -94,16 +95,16 @@ class JooqMemberRepositoryTest {
     @DisplayName("同じ IdP のアカウントの会員がすでにいれば、先の会員 ID を返し、既存の行の値を変えない")
     void createOrGetIdReturnsExistingIdAndKeepsRow() {
         // 準備：会員を作り、行の全ての値を控える
-        var first = new Member(UUID.randomUUID(), SUBJECT, CREATED_AT);
+        var first = new Member(new MemberId(UUID.randomUUID()), SUBJECT, CREATED_AT);
         repository.createOrGetId(first);
-        var before = dsl.selectFrom(MEMBER_).where(MEMBER_.ID.eq(first.id())).fetchOne();
+        var before = dsl.selectFrom(MEMBER_).where(MEMBER_.ID.eq(first.id().value())).fetchOne();
 
         // 操作：同じアカウントで、別の ID と別の作成日時の会員を渡す（例外にならない）
-        var id = repository.createOrGetId(new Member(UUID.randomUUID(), SUBJECT, CREATED_AT.plusSeconds(60)));
+        var id = repository.createOrGetId(new Member(new MemberId(UUID.randomUUID()), SUBJECT, CREATED_AT.plusSeconds(60)));
 
         // 確認：先の会員 ID を返し、行の値（作成日時を含む）は変わらず、行は 1 つのまま
         assertThat(id).isEqualTo(first.id());
-        assertThat(dsl.selectFrom(MEMBER_).where(MEMBER_.ID.eq(first.id())).fetchOne()).isEqualTo(before);
+        assertThat(dsl.selectFrom(MEMBER_).where(MEMBER_.ID.eq(first.id().value())).fetchOne()).isEqualTo(before);
         assertThat(dsl.fetchCount(MEMBER_, MEMBER_.IDP_SUBJECT.eq(SUBJECT))).isEqualTo(1);
     }
 }

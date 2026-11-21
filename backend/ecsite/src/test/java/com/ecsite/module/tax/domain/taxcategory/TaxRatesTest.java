@@ -1,6 +1,7 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -112,7 +113,7 @@ class TaxRatesTest {
     @DisplayName("税区分の復元で期間が途切れていると、復元のエラーになる")
     void restoreRejectsGap() {
         // 準備：期間が途切れる税率の一覧のスナップショット
-        var snapshot = new TaxCategory.Snapshot(UUID.randomUUID(), "標準", List.of(rate("8", null, T1), rate("10", T2, null)), 0);
+        var snapshot = new TaxCategory.Snapshot(new TaxCategoryId(UUID.randomUUID()), "標準", List.of(rate("8", null, T1), rate("10", T2, null)), 0);
 
         // 操作と確認：復元のエラーで拒否される
         assertSystemError(() -> factory.restore(snapshot), CommonErrorCode.RESTORE_ERROR);
@@ -122,7 +123,7 @@ class TaxRatesTest {
     @DisplayName("税区分の作成・復元・置き換えのどれでも、正しい税率の一覧が通る")
     void validRatesPassEveryPath() {
         // 準備：途切れず、最後の終了が空白の税率
-        var created = factory.create(UUID.randomUUID(), "標準");
+        var created = factory.create(new TaxCategoryId(UUID.randomUUID()), "標準");
         var rates = List.of(rate("8", null, T1), rate("10", T1, null));
 
         // 操作：復元と、置き換え

@@ -2,6 +2,7 @@ package com.ecsite.module.tax.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.application.model.StoredTaxCategory;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
@@ -16,7 +17,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税区分のクエリサービス
@@ -55,7 +55,7 @@ public class TaxCategoryQueryService {
      * @return 税区分（現時点の率を含む。税率は適用開始日時の古い順）
      * @throws BusinessException 税区分がない（{@code NOT_FOUND}）
      */
-    public TaxCategoryView getTaxCategory(@NonNull UUID id) {
+    public TaxCategoryView getTaxCategory(@NonNull TaxCategoryId id) {
         return findTaxCategory(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
@@ -67,7 +67,7 @@ public class TaxCategoryQueryService {
      * @param id 税区分 ID
      * @return 税区分（現時点の率を含む。税率は適用開始日時の古い順）。なければ空
      */
-    public Optional<TaxCategoryView> findTaxCategory(@NonNull UUID id) {
+    public Optional<TaxCategoryView> findTaxCategory(@NonNull TaxCategoryId id) {
         return taxCategoryQueryRepository.findById(id)
                 .map(stored -> toView(stored, clock.instant()));
     }
@@ -80,7 +80,7 @@ public class TaxCategoryQueryService {
      * @param ids 税区分 ID
      * @return 税区分の一覧（現時点の率を含む。税率は適用開始日時の古い順）
      */
-    public List<TaxCategoryView> findTaxCategories(@NonNull Collection<UUID> ids) {
+    public List<TaxCategoryView> findTaxCategories(@NonNull Collection<TaxCategoryId> ids) {
         if (ids.isEmpty()) {
             return List.of();
         }

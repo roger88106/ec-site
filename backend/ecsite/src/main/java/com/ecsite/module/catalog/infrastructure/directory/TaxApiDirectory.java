@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.directory;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.tax.api.TaxRateApi;
@@ -50,7 +51,7 @@ class TaxApiDirectory implements TaxDirectory {
      */
     @Override
     public boolean hasRateAt(UUID taxCategoryId, Instant instant) {
-        return taxRateApi.rateAt(taxCategoryId, instant).isPresent();
+        return taxRateApi.rateAt(new TaxCategoryId(taxCategoryId), instant).isPresent();
     }
 
     /**
@@ -63,7 +64,7 @@ class TaxApiDirectory implements TaxDirectory {
      */
     @Override
     public Optional<Money> priceInclTaxAt(UUID taxCategoryId, Money priceExclTax, Instant instant) {
-        return taxRateApi.rateAt(taxCategoryId, instant)
+        return taxRateApi.rateAt(new TaxCategoryId(taxCategoryId), instant)
                 .map(ratePercent -> taxRateApi.priceInclTax(priceExclTax, ratePercent));
     }
 
@@ -77,7 +78,7 @@ class TaxApiDirectory implements TaxDirectory {
     public Map<UUID, BigDecimal> ratesAt(Instant instant) {
         var rates = new HashMap<UUID, BigDecimal>();
         for (var schedule : taxRateScheduleCache.schedules()) {
-            schedule.rateAt(instant).ifPresent(rate -> rates.put(schedule.taxCategoryId(), rate));
+            schedule.rateAt(instant).ifPresent(rate -> rates.put(schedule.taxCategoryId().value(), rate));
         }
         return rates;
     }

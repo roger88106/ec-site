@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.OperatorId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
@@ -492,7 +493,7 @@ class JooqOrderRepositoryTest {
             var requested = repository.findById(orderId).orElseThrow();
             requested.requestCancellation(REQUEST_REASON, REQUESTED_AT);
             repository.update(requested);
-            var operator = new Operator(UUID.randomUUID(), "管理者 花子");
+            var operator = new Operator(new OperatorId(UUID.randomUUID()), "管理者 花子");
             var pending = repository.lockById(orderId).orElseThrow();
             assertThat(pending.approveCancellation(operator, DECIDED_AT)).isTrue();
 
@@ -559,7 +560,7 @@ class JooqOrderRepositoryTest {
             var requested = repository.findById(order.id()).orElseThrow();
             requested.requestCancellation(MAX_REASON, REQUESTED_AT);
             repository.update(requested);
-            var operator = new Operator(UUID.randomUUID(), "管".repeat(255));
+            var operator = new Operator(new OperatorId(UUID.randomUUID()), "管".repeat(255));
             var cancelled = repository.findById(order.id()).orElseThrow();
             cancelled.cancelByOperator(MAX_REASON, true, false, operator, DECIDED_AT);
 

@@ -7,6 +7,7 @@ import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.MemberCart;
 import com.ecsite.api.store.model.MergeCartRequest;
 import com.ecsite.api.store.model.MergeCartResult;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.cart.application.CartService;
 import com.ecsite.module.member.api.CurrentMemberIds;
@@ -62,7 +63,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> addCartItem(UUID cartId, AddCartItemRequest request) {
-        cartService.addItem(cartId, currentMemberIds.find().orElse(null), request.getVariantId(), request.getQuantity());
+        cartService.addItem(cartId, currentMemberIds.find().map(MemberId::value).orElse(null), request.getVariantId(), request.getQuantity());
         // 品目はカートの一部で単独の URL を持たないので、Location は返さない
         return ResponseEntity.noContent().build();
     }
@@ -77,7 +78,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> changeCartItemQuantity(UUID cartId, UUID variantId, ChangeCartItemQuantityRequest request) {
-        cartService.changeQuantity(cartId, currentMemberIds.find().orElse(null), variantId, request.getQuantity());
+        cartService.changeQuantity(cartId, currentMemberIds.find().map(MemberId::value).orElse(null), variantId, request.getQuantity());
         return ResponseEntity.noContent().build();
     }
 
@@ -90,7 +91,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> removeCartItem(UUID cartId, UUID variantId) {
-        cartService.removeItem(cartId, currentMemberIds.find().orElse(null), variantId);
+        cartService.removeItem(cartId, currentMemberIds.find().map(MemberId::value).orElse(null), variantId);
         return ResponseEntity.noContent().build();
     }
 
@@ -103,7 +104,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<MemberCart> getMemberCart() {
-        return ResponseEntity.ok(mapper.toMemberCart(cartService.memberCartId(currentMemberIds.require())));
+        return ResponseEntity.ok(mapper.toMemberCart(cartService.memberCartId(currentMemberIds.require().value())));
     }
 
     /**
@@ -114,7 +115,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<MergeCartResult> mergeCart(MergeCartRequest request) {
-        var merged = cartService.merge(currentMemberIds.require(), request.getCartId());
+        var merged = cartService.merge(currentMemberIds.require().value(), request.getCartId());
         return ResponseEntity.ok(mapper.toMergeCartResult(merged));
     }
 }

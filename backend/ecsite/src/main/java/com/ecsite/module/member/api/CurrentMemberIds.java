@@ -1,13 +1,13 @@
 package com.ecsite.module.member.api;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.application.MemberIdResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * リクエストした会員の会員 ID
@@ -36,7 +36,7 @@ public class CurrentMemberIds {
      * @return 会員 ID
      * @throws BusinessException ログインしていない（{@code UNAUTHENTICATED}）
      */
-    public UUID require() {
+    public MemberId require() {
         return resolver.resolve(currentMember.require().subject());
     }
 
@@ -45,7 +45,7 @@ public class CurrentMemberIds {
      *
      * @return 会員 ID。ログインしていなければ空
      */
-    public Optional<UUID> find() {
+    public Optional<MemberId> find() {
         return currentMember.find().map(member -> resolver.resolve(member.subject()));
     }
 }

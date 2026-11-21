@@ -1,12 +1,14 @@
 package com.ecsite.module.tax.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.application.model.StoredTaxCategory;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView.TaxRateView;
 import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -52,8 +54,8 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
      * @return 税区分
      */
     @Override
-    public Optional<StoredTaxCategory> findById(UUID id) {
-        return find(TAX_CATEGORY.ID.eq(id)).stream().findFirst();
+    public Optional<StoredTaxCategory> findById(TaxCategoryId id) {
+        return find(TAX_CATEGORY.ID.eq(id.value())).stream().findFirst();
     }
 
     /**
@@ -63,11 +65,11 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
      * @return 税区分の一覧（登録の古い順）。存在しない ID の税区分は含まない
      */
     @Override
-    public List<StoredTaxCategory> findAllByIds(Collection<UUID> ids) {
+    public List<StoredTaxCategory> findAllByIds(Collection<TaxCategoryId> ids) {
         if (ids.isEmpty()) {
             return List.of();
         }
-        return find(TAX_CATEGORY.ID.in(ids));
+        return find(TAX_CATEGORY.ID.in(ids.stream().map(TaxCategoryId::value).toList()));
     }
 
 // ============================== プライベートメソッド ==============================
@@ -97,7 +99,7 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
                         Collectors.mapping(JooqTaxCategoryQueryRepository::toView, Collectors.toList())));
 
         return categories.map(category -> new StoredTaxCategory(
-                category.getId(),
+                new TaxCategoryId(category.getId()),
                 category.getName(),
                 ratesByCategory.getOrDefault(category.getId(), List.of()),
                 category.getVersion()));
@@ -111,7 +113,7 @@ class JooqTaxCategoryQueryRepository implements TaxCategoryQueryRepository {
      */
     private static TaxRateView toView(TaxRateRecord record) {
         return new TaxRateView(
-                record.getId(),
+                new TaxRateId(record.getId()),
                 // numeric(4,2) の末尾の 0 を除いた形にそろえる（10.00 → 10）。DB の値から作るので、失敗の扱いの中で行う
                 RestoreGuard.restore("tax rate", () -> RatePercent.of(record.getRatePercent())).value(),
                 record.getEffectiveFrom(),

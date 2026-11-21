@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.domain.stock;
 
+import com.ecsite.common.model.id.OperatorId;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +39,7 @@ class StockAdjustmentTest {
     /**
      * 調整した運営者
      */
-    private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
+    private static final Operator OPERATOR = new Operator(new OperatorId(UUID.randomUUID()), "管理 花子");
 
     /**
      * 作る調整の ID

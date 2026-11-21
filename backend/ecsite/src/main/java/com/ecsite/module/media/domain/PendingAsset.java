@@ -1,5 +1,6 @@
 package com.ecsite.module.media.domain;
 
+import com.ecsite.common.model.id.AssetId;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -9,7 +10,6 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 仮のアセット
@@ -29,7 +29,7 @@ public final class PendingAsset {
     @Identity
     @EqualsAndHashCode.Include
     @NonNull
-    private final UUID id;
+    private final AssetId id;
 
     /**
      * 配信のバケットのキー

@@ -2,9 +2,11 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -19,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ public class TaxCategory extends AggregateRoot {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final TaxCategoryId id;
 
     /**
      * 名称
@@ -76,7 +77,7 @@ public class TaxCategory extends AggregateRoot {
      * @param rates   税率の一覧
      * @param version バージョン
      */
-    private TaxCategory(@NonNull UUID id, String name, @NonNull List<TaxRate> rates, long version) {
+    private TaxCategory(@NonNull TaxCategoryId id, String name, @NonNull List<TaxRate> rates, long version) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(TaxErrorCode.INVALID_TAX_CATEGORY_NAME, List.of(NAME_MAX_LENGTH));
         }
@@ -94,7 +95,7 @@ public class TaxCategory extends AggregateRoot {
      * @return 税区分
      * @throws BusinessException 名称が 1 文字以上 {@value #NAME_MAX_LENGTH} 文字以内でない（{@code INVALID_TAX_CATEGORY_NAME}）
      */
-    static TaxCategory create(UUID id, String name) {
+    static TaxCategory create(TaxCategoryId id, String name) {
         return new TaxCategory(id, name, List.of(), 0);
     }
 
@@ -165,8 +166,8 @@ public class TaxCategory extends AggregateRoot {
      * @param currentById 既存の税率
      * @return 既存の税率を指定した要素（ID → 要素）
      */
-    private static Map<UUID, TaxRateDraft> verifyReferences(List<TaxRateDraft> drafts, Map<UUID, TaxRate> currentById) {
-        var seen = new HashSet<UUID>();
+    private static Map<TaxRateId, TaxRateDraft> verifyReferences(List<TaxRateDraft> drafts, Map<TaxRateId, TaxRate> currentById) {
+        var seen = new HashSet<TaxRateId>();
         for (var draft : drafts) {
             // ID のある税率（今の税率の変更）は、税区分にあって重複しないこと。新しい税率は ID を持たない
             if (draft.id() != null && (!currentById.containsKey(draft.id()) || !seen.add(draft.id()))) {
@@ -248,7 +249,7 @@ public class TaxCategory extends AggregateRoot {
      * @param rates   税率の一覧
      * @param version バージョン
      */
-    public record Snapshot(UUID id, String name, List<TaxRate> rates, long version) {
+    public record Snapshot(TaxCategoryId id, String name, List<TaxRate> rates, long version) {
     }
 
     /**

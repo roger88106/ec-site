@@ -56,19 +56,15 @@ class IdentifierTypeTest {
      * 一覧の全てのパッケージに UUID の使用が残っていること（除き忘れていないこと）は、別のテストが確認する。
      */
     private static final List<String> UNCONVERTED_PACKAGES = List.of(
-            "com.ecsite.common.model",
             "com.ecsite.module.cart",
             "com.ecsite.module.catalog",
             "com.ecsite.module.inventory",
-            "com.ecsite.module.media",
-            "com.ecsite.module.member",
             "com.ecsite.module.notification",
             "com.ecsite.module.order",
             "com.ecsite.module.payment",
             "com.ecsite.module.reporting",
             "com.ecsite.module.shipping",
-            "com.ecsite.module.storefront",
-            "com.ecsite.module.tax");
+            "com.ecsite.module.storefront");
 
     /**
      * 検査の対象のパッケージ（モジュールの domain・application・api・event と、共通のモデル。それぞれの下を含む）の形

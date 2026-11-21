@@ -68,7 +68,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<CreatedId> startCheckout(UUID cartId, @Nullable StartCheckoutRequest request) {
-        var id = checkoutCommandService.start(cartId, currentMemberIds.require(), acknowledgedOrderIds(request));
+        var id = checkoutCommandService.start(cartId, currentMemberIds.require().value(), acknowledgedOrderIds(request));
         // ロケーション：作った注文手続きの URL
         return CreatedResponses.storeAt("/api/store/checkouts/{id}", id);
     }
@@ -97,7 +97,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<Checkout> getCheckout(UUID checkoutId) {
-        return ResponseEntity.ok(mapper.toCheckout(checkoutQueryService.get(checkoutId, currentMemberIds.require())));
+        return ResponseEntity.ok(mapper.toCheckout(checkoutQueryService.get(checkoutId, currentMemberIds.require().value())));
     }
 
     /**
@@ -113,7 +113,7 @@ class StoreCheckoutController implements CheckoutApi {
     public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
         var member = currentMember.require();
         var result = orderPlacementCommandService.place(mapper.toPlaceOrderCommand(checkoutId, request,
-                currentMemberIds.require(), member));
+                currentMemberIds.require().value(), member));
         if (!result.created()) {
             return ResponseEntity.ok(CreatedResponses.storeId(result.orderId()));
         }

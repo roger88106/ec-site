@@ -2,9 +2,8 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.TaxCategoryId;
 import org.jmolecules.ddd.annotation.Factory;
-
-import java.util.UUID;
 
 /**
  * 税区分のファクトリー
@@ -20,7 +19,7 @@ public class TaxCategoryFactory {
      * @return 税区分
      * @throws BusinessException 名称が 1 文字以上 {@value TaxCategory#NAME_MAX_LENGTH} 文字以内でない（{@code INVALID_TAX_CATEGORY_NAME}）
      */
-    public TaxCategory create(UUID id, String name) {
+    public TaxCategory create(TaxCategoryId id, String name) {
         return TaxCategory.create(id, name);
     }
 

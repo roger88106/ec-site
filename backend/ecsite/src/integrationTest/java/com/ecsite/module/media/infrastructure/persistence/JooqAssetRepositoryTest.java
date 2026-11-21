@@ -1,5 +1,6 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.ImageFormat;
@@ -69,7 +70,7 @@ class JooqAssetRepositoryTest {
             repository.insert(first);
 
             // 操作と確認：ID が違っても、保存先のキーが同じなら一意の制約で拒否される
-            assertThatThrownBy(() -> repository.insert(new Asset(UUID.randomUUID(), ImageFormat.PNG, first.storageKey(), CREATED_AT)))
+            assertThatThrownBy(() -> repository.insert(new Asset(new AssetId(UUID.randomUUID()), ImageFormat.PNG, first.storageKey(), CREATED_AT)))
                     .isInstanceOf(DuplicateKeyException.class);
         }
     }
@@ -90,7 +91,7 @@ class JooqAssetRepositoryTest {
             repository.insert(other);
 
             // 操作：2 つと、ない ID を指定して取得する
-            var found = repository.findAllById(List.of(first.id(), second.id(), UUID.randomUUID()));
+            var found = repository.findAllById(List.of(first.id(), second.id(), new AssetId(UUID.randomUUID())));
 
             // 確認：指定した 2 つだけ
             assertThat(found).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(first, second);
@@ -134,7 +135,7 @@ class JooqAssetRepositoryTest {
             repository.insert(asset);
 
             // 操作：記録した ID と、記録のない ID を指定して削除する
-            repository.deleteAllById(Set.of(asset.id(), UUID.randomUUID()));
+            repository.deleteAllById(Set.of(asset.id(), new AssetId(UUID.randomUUID())));
 
             // 確認：記録した分が消えている
             assertThat(repository.findAllById(List.of(asset.id()))).isEmpty();
@@ -146,7 +147,7 @@ class JooqAssetRepositoryTest {
             // 準備：1 つのアセットを記録する
             var asset = asset(ImageFormat.PNG);
             repository.insert(asset);
-            var ids = Set.of(asset.id(), UUID.randomUUID());
+            var ids = Set.of(asset.id(), new AssetId(UUID.randomUUID()));
 
             // 操作：記録した ID と、記録のない ID を指定して 2 回削除する
             var first = repository.deleteAllById(ids);
@@ -184,7 +185,7 @@ class JooqAssetRepositoryTest {
      * @return アセット
      */
     private static Asset asset(ImageFormat format) {
-        var id = UUID.randomUUID();
-        return new Asset(id, format, "images/" + id + ".img", CREATED_AT);
+        var id = new AssetId(UUID.randomUUID());
+        return new Asset(id, format, "images/" + id.value() + ".img", CREATED_AT);
     }
 }

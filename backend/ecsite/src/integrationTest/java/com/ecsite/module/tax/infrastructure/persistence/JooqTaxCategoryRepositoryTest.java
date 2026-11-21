@@ -1,12 +1,14 @@
 package com.ecsite.module.tax.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
 import com.ecsite.module.tax.domain.taxcategory.TaxRate;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import com.ecsite.support.config.IntegrationTest;
 import org.assertj.core.groups.Tuple;
 import org.jooq.DSLContext;
@@ -89,7 +91,7 @@ class JooqTaxCategoryRepositoryTest {
         @DisplayName("登録した税区分を再構築できる")
         void addsAndRestores() {
             // 準備：税率のない税区分
-            var category = factory.create(UUID.randomUUID(), NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作：登録して再取得する
             repository.add(category);
@@ -105,17 +107,17 @@ class JooqTaxCategoryRepositoryTest {
         @DisplayName("存在しない税区分は見つからない")
         void returnsEmptyForUnknownId() {
             // 操作と確認：登録していない ID は空
-            assertThat(repository.findById(UUID.randomUUID())).isEmpty();
+            assertThat(repository.findById(new TaxCategoryId(UUID.randomUUID()))).isEmpty();
         }
 
         @Test
         @DisplayName("AC-1 名称が重複する税区分は登録できない")
         void rejectsDuplicatedName() {
             // 準備：同じ名称の税区分を登録済み
-            repository.add(factory.create(UUID.randomUUID(), NAME));
+            repository.add(factory.create(new TaxCategoryId(UUID.randomUUID()), NAME));
 
             // 操作と確認：業務のエラー TAX_CATEGORY_NAME_ALREADY_EXISTS で拒否される
-            assertBusinessError(() -> repository.add(factory.create(UUID.randomUUID(), NAME)), TaxErrorCode.TAX_CATEGORY_NAME_ALREADY_EXISTS);
+            assertBusinessError(() -> repository.add(factory.create(new TaxCategoryId(UUID.randomUUID()), NAME)), TaxErrorCode.TAX_CATEGORY_NAME_ALREADY_EXISTS);
         }
     }
 
@@ -237,7 +239,7 @@ class JooqTaxCategoryRepositoryTest {
         @DisplayName("期間が重なる税率は、排他制約で拒否され、業務のエラーになる（500 にならない）")
         void rejectsOverlapByExclusionConstraint() {
             // 準備：ドメインの検証を通らない状態（期間の重複）を、スナップショットを差し替えて作る（税区分は作る時点で検証する）
-            var category = factory.create(UUID.randomUUID(), NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
             repository.add(category);
             var overlapping = spy(category);
             doReturn(new TaxCategory.Snapshot(category.id(), category.name(), List.of(
@@ -318,7 +320,7 @@ class JooqTaxCategoryRepositoryTest {
      * @return 再取得した税区分
      */
     private TaxCategory saved(TaxRateDraft... drafts) {
-        var category = factory.create(UUID.randomUUID(), NAME);
+        var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
         repository.add(category);
         category.replaceRates(List.of(drafts), NOW);
         return saveAndReload(category);
@@ -343,7 +345,7 @@ class JooqTaxCategoryRepositoryTest {
      * @return 置き換えた税区分
      */
     private TaxCategory addedWithContinuousRates() {
-        var category = factory.create(UUID.randomUUID(), NAME);
+        var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
         repository.add(category);
         category.replaceRates(List.of(
                 newDraft("10", null, APR_2027),
@@ -358,7 +360,7 @@ class JooqTaxCategoryRepositoryTest {
      * @param firstId 1 件目の税率の ID（保存のときに振られるので、定数にできない）
      * @return 置き換えの一覧
      */
-    private static List<TaxRateDraft> extendFirstAndReplaceSecond(UUID firstId) {
+    private static List<TaxRateDraft> extendFirstAndReplaceSecond(TaxRateId firstId) {
         return List.of(
                 draft(firstId, "10", null, APR_2028),
                 newDraft("12", APR_2028, null));
@@ -381,7 +383,7 @@ class JooqTaxCategoryRepositoryTest {
      * @param category 税区分
      * @return 税率の ID（保存や置き換えのときに振られるので、定数にできない）
      */
-    private static List<UUID> idsOf(TaxCategory category) {
+    private static List<TaxRateId> idsOf(TaxCategory category) {
         return category.rates().stream().map(TaxRate::id).toList();
     }
 }

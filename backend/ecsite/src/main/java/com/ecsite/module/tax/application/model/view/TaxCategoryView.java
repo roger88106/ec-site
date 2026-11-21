@@ -1,12 +1,13 @@
 package com.ecsite.module.tax.application.model.view;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 税区分のビュー
@@ -17,7 +18,7 @@ import java.util.UUID;
  * @param rates              税率の一覧
  * @param version            バージョン
  */
-public record TaxCategoryView(UUID id, String name, @Nullable BigDecimal currentRatePercent,
+public record TaxCategoryView(TaxCategoryId id, String name, @Nullable BigDecimal currentRatePercent,
                               List<TaxRateView> rates, long version) {
 
     /**
@@ -28,7 +29,7 @@ public record TaxCategoryView(UUID id, String name, @Nullable BigDecimal current
      * @param effectiveFrom 適用開始日時。null は過去すべて
      * @param effectiveTo   適用終了日時。null は無期限
      */
-    public record TaxRateView(UUID id, BigDecimal ratePercent,
+    public record TaxRateView(TaxRateId id, BigDecimal ratePercent,
                               @Nullable Instant effectiveFrom, @Nullable Instant effectiveTo) {
 
         /**

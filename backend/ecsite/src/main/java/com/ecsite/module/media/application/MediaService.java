@@ -2,6 +2,8 @@ package com.ecsite.module.media.application;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.media.application.model.ImageUploadView;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.application.port.ImageConverter;
@@ -28,7 +30,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -100,7 +101,7 @@ public class MediaService {
      */
     public ImageUploadView requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
         // 受付のキー作成
-        var uploadId = idGenerator.generate();
+        var uploadId = new UploadId(idGenerator.generate());
         var uploadKey = AssetKeys.upload(scope, uploadId);
 
         // 形式と大きさの確認（申告の値）
@@ -133,7 +134,7 @@ public class MediaService {
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
     @Transactional(propagation = Propagation.NEVER)
-    public UUID prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
+    public AssetId prepareImage(@NonNull String scope, @NonNull UploadId uploadId) {
         // 受付の大きさの確認
         var uploadKey = AssetKeys.upload(scope, uploadId);
         var size = storage.findUploadSize(uploadKey)
@@ -149,7 +150,7 @@ public class MediaService {
         var webp = imageConverter.convertToWebp(uploadKey);
 
         // 仮のアセットの記録 ※書いた後にプロセスが停止しても、片付けのジョブがファイルを削除できるように、書く前に確定させる
-        var assetId = idGenerator.generate();
+        var assetId = new AssetId(idGenerator.generate());
         var storageKey = storageKey(assetId);
         var pending = new PendingAsset(assetId, storageKey, clock.instant());
         transactionTemplate.executeWithoutResult(status -> pendingAssetRepository.insert(pending));
@@ -169,10 +170,10 @@ public class MediaService {
      * @param assetId 用意した画像のアセット ID
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void registerImage(@NonNull UUID assetId) {
+    public void registerImage(@NonNull AssetId assetId) {
         // 仮のアセットの削除 ※片付けのジョブがファイルを削除した後の画像を、アセットとして記録しない
         if (!pendingAssetRepository.deleteById(assetId)) {
-            throw new IllegalStateException("用意した画像の仮のアセットがない：assetId=" + assetId);
+            throw new IllegalStateException("用意した画像の仮のアセットがない：assetId=" + assetId.value());
         }
 
         // アセットの記録
@@ -191,7 +192,7 @@ public class MediaService {
      * @param assetId 用意した画像のアセット ID
      */
     @Transactional(propagation = Propagation.NEVER)
-    public void discardImage(@NonNull UUID assetId) {
+    public void discardImage(@NonNull AssetId assetId) {
         var storageKey = storageKey(assetId);
         // 呼んだ側の元の失敗を隠さないため、消すのに失敗しても例外を投げない
         try {
@@ -222,7 +223,7 @@ public class MediaService {
      * @param assetIds アセット ID
      */
     @Transactional
-    public void release(@NonNull Collection<UUID> assetIds) {
+    public void release(@NonNull Collection<AssetId> assetIds) {
         if (assetIds.isEmpty()) {
             return;
         }
@@ -264,7 +265,7 @@ public class MediaService {
      * @return アセット ID → 配信の URL。ないアセットは含まない
      */
     @Transactional(readOnly = true)
-    public Map<UUID, URI> urls(@NonNull Collection<UUID> assetIds) {
+    public Map<AssetId, URI> urls(@NonNull Collection<AssetId> assetIds) {
         if (assetIds.isEmpty()) {
             return Map.of();
         }
@@ -292,7 +293,7 @@ public class MediaService {
      *
      * <p>アセット ID と WebP で決まる。
      */
-    private static String storageKey(UUID assetId) {
+    private static String storageKey(AssetId assetId) {
         return AssetKeys.published(assetId, ImageFormat.WEBP);
     }
 

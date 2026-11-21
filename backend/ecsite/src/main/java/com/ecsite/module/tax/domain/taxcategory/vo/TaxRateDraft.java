@@ -4,8 +4,6 @@ import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.jspecify.annotations.Nullable;
 
-import java.util.UUID;
-
 /**
  * 置き換え後の税率の内容
  *
@@ -17,7 +15,7 @@ import java.util.UUID;
  * @param period      適用期間
  */
 @ValueObject
-public record TaxRateDraft(@Nullable UUID id, @Nullable UUID newId, @NonNull RatePercent ratePercent, @NonNull EffectivePeriod period) {
+public record TaxRateDraft(@Nullable TaxRateId id, @Nullable TaxRateId newId, @NonNull RatePercent ratePercent, @NonNull EffectivePeriod period) {
 
     /**
      * 新しい税率の ID を持たない案を作る。
@@ -26,7 +24,7 @@ public record TaxRateDraft(@Nullable UUID id, @Nullable UUID newId, @NonNull Rat
      * @param ratePercent 率
      * @param period      適用期間
      */
-    public TaxRateDraft(@Nullable UUID id, @NonNull RatePercent ratePercent, @NonNull EffectivePeriod period) {
+    public TaxRateDraft(@Nullable TaxRateId id, @NonNull RatePercent ratePercent, @NonNull EffectivePeriod period) {
         this(id, null, ratePercent, period);
     }
 }

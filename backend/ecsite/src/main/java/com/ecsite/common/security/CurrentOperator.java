@@ -1,6 +1,7 @@
 package com.ecsite.common.security;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OperatorId;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.common.model.value.Operator;
 import org.springframework.stereotype.Component;
@@ -43,6 +44,6 @@ public class CurrentOperator {
                 .filter(Objects::nonNull)
                 .filter(part -> !part.isBlank())
                 .collect(Collectors.joining(" "));
-        return new Operator(UUID.fromString(jwt.getSubject()), BoundedText.truncate(name, MAX_NAME_LENGTH));
+        return new Operator(new OperatorId(UUID.fromString(jwt.getSubject())), BoundedText.truncate(name, MAX_NAME_LENGTH));
     }
 }

@@ -6,6 +6,7 @@ import com.ecsite.api.admin.model.CreatedId;
 import com.ecsite.api.admin.model.ReplaceTaxRatesRequest;
 import com.ecsite.api.admin.model.TaxCategory;
 import com.ecsite.api.admin.model.TaxCategoryList;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.tax.application.TaxCategoryCommandService;
 import com.ecsite.module.tax.application.TaxCategoryQueryService;
@@ -59,7 +60,7 @@ class TaxCategoryController implements TaxApi {
      */
     @Override
     public ResponseEntity<TaxCategory> getTaxCategory(UUID taxCategoryId) {
-        return ResponseEntity.ok(mapper.toTaxCategory(queryService.getTaxCategory(taxCategoryId)));
+        return ResponseEntity.ok(mapper.toTaxCategory(queryService.getTaxCategory(new TaxCategoryId(taxCategoryId))));
     }
 
 // ============================== POST ==============================
@@ -73,10 +74,10 @@ class TaxCategoryController implements TaxApi {
     @Override
     public ResponseEntity<CreatedId> createTaxCategory(CreateTaxCategoryRequest request) {
         // 税区分登録
-        UUID id = commandService.createTaxCategory(mapper.toCreateTaxCategoryCommand(request));
+        TaxCategoryId id = commandService.createTaxCategory(mapper.toCreateTaxCategoryCommand(request));
 
         // ロケーション：登録した税区分の URL
-        return CreatedResponses.admin(id);
+        return CreatedResponses.admin(id.value());
     }
 
 // ============================== PUT ==============================

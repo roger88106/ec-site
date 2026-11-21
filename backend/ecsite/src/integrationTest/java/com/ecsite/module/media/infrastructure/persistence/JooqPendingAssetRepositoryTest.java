@@ -1,5 +1,6 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.application.port.PendingAssetRepository;
 import com.ecsite.module.media.domain.PendingAsset;
 import com.ecsite.support.async.AsyncEvents;
@@ -77,13 +78,13 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("仮のアセットを記録すると、アセット ID・配信のキー・用意した時刻が保存される")
         void insertsPendingAsset() {
             // 準備：仮のアセット
-            var pending = pending(UUID.randomUUID(), PREPARED_AT);
+            var pending = pending(new AssetId(UUID.randomUUID()), PREPARED_AT);
 
             // 操作：記録する
             repository.insert(pending);
 
             // 確認：全ての項目が保存されている
-            var record = dsl.fetchOne(PENDING_ASSET, PENDING_ASSET.ID.eq(pending.id()));
+            var record = dsl.fetchOne(PENDING_ASSET, PENDING_ASSET.ID.eq(pending.id().value()));
             assertThat(record).isNotNull();
             assertThat(record.getStorageKey()).isEqualTo(pending.storageKey());
             assertThat(record.getPreparedAt()).isEqualTo(PREPARED_AT);
@@ -93,11 +94,11 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("同じ配信のキーの仮のアセットは記録できない")
         void rejectsDuplicateStorageKey() {
             // 準備：記録した仮のアセット
-            var first = pending(UUID.randomUUID(), PREPARED_AT);
+            var first = pending(new AssetId(UUID.randomUUID()), PREPARED_AT);
             repository.insert(first);
 
             // 操作と確認：ID が違っても、配信のキーが同じなら一意の制約で拒否される
-            assertThatThrownBy(() -> repository.insert(new PendingAsset(UUID.randomUUID(), first.storageKey(), PREPARED_AT)))
+            assertThatThrownBy(() -> repository.insert(new PendingAsset(new AssetId(UUID.randomUUID()), first.storageKey(), PREPARED_AT)))
                     .isInstanceOf(DuplicateKeyException.class);
         }
     }
@@ -110,8 +111,8 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("ある仮のアセットを削除すると、削除できたことを返し、他の仮のアセットは残る")
         void deletesPendingAsset() {
             // 準備：2 つの仮のアセット
-            var deleted = pending(UUID.randomUUID(), PREPARED_AT);
-            var kept = pending(UUID.randomUUID(), PREPARED_AT);
+            var deleted = pending(new AssetId(UUID.randomUUID()), PREPARED_AT);
+            var kept = pending(new AssetId(UUID.randomUUID()), PREPARED_AT);
             repository.insert(deleted);
             repository.insert(kept);
 
@@ -128,11 +129,11 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("存在しない仮のアセットは削除できず、削除できなかったことを返す")
         void returnsFalseForMissing() {
             // 準備：1 つの仮のアセット
-            var kept = pending(UUID.randomUUID(), PREPARED_AT);
+            var kept = pending(new AssetId(UUID.randomUUID()), PREPARED_AT);
             repository.insert(kept);
 
             // 操作：存在しない ID を削除する
-            var result = repository.deleteById(UUID.randomUUID());
+            var result = repository.deleteById(new AssetId(UUID.randomUUID()));
 
             // 確認：削除できなかったことを返し、記録した仮のアセットは残る
             assertThat(result).isFalse();
@@ -143,7 +144,7 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("同じ仮のアセットを 2 回削除すると、2 回目は削除できなかったことを返す")
         void returnsFalseOnSecondDelete() {
             // 準備：1 つの仮のアセット
-            var pending = pending(UUID.randomUUID(), PREPARED_AT);
+            var pending = pending(new AssetId(UUID.randomUUID()), PREPARED_AT);
             repository.insert(pending);
 
             // 操作：2 回削除する
@@ -164,9 +165,9 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("用意した時刻が基準より前のものを、古い順に件数の上限まで削除し、削除した行を返す")
         void deletesOldestUpToLimit() {
             // 準備：基準より前の 3 つの仮のアセット（古い順に oldest、middle、newest。記録の順は古い順と違える）
-            var newest = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
-            var oldest = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(3)));
-            var middle = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(2)));
+            var newest = pending(new AssetId(UUID.randomUUID()), LONG_AGO.minus(Duration.ofHours(1)));
+            var oldest = pending(new AssetId(UUID.randomUUID()), LONG_AGO.minus(Duration.ofHours(3)));
+            var middle = pending(new AssetId(UUID.randomUUID()), LONG_AGO.minus(Duration.ofHours(2)));
             repository.insert(newest);
             repository.insert(oldest);
             repository.insert(middle);
@@ -187,8 +188,8 @@ class JooqPendingAssetRepositoryTest {
         void deletesInIdOrderForSameTime() {
             // 準備：基準より前の同じ時刻の 2 つの仮のアセット（ID の最後のバイトだけが違い、記録の順は ID の順と違える）
             var base = UUID.randomUUID();
-            var smaller = pending(new UUID(base.getMostSignificantBits(), base.getLeastSignificantBits() & ~0xFFL), LONG_AGO.minus(Duration.ofHours(1)));
-            var larger = pending(new UUID(base.getMostSignificantBits(), (base.getLeastSignificantBits() & ~0xFFL) | 1L), LONG_AGO.minus(Duration.ofHours(1)));
+            var smaller = pending(new AssetId(new UUID(base.getMostSignificantBits(), base.getLeastSignificantBits() & ~0xFFL)), LONG_AGO.minus(Duration.ofHours(1)));
+            var larger = pending(new AssetId(new UUID(base.getMostSignificantBits(), (base.getLeastSignificantBits() & ~0xFFL) | 1L)), LONG_AGO.minus(Duration.ofHours(1)));
             repository.insert(larger);
             repository.insert(smaller);
 
@@ -204,8 +205,8 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("用意した時刻が基準ちょうどのものは削除せず、1 マイクロ秒前のものは削除する")
         void keepsPendingAssetAtBoundary() {
             // 準備：基準ちょうどと、1 マイクロ秒前の仮のアセット
-            var atBoundary = pending(UUID.randomUUID(), LONG_AGO);
-            var justBefore = pending(UUID.randomUUID(), LONG_AGO.minus(1, ChronoUnit.MICROS));
+            var atBoundary = pending(new AssetId(UUID.randomUUID()), LONG_AGO);
+            var justBefore = pending(new AssetId(UUID.randomUUID()), LONG_AGO.minus(1, ChronoUnit.MICROS));
             repository.insert(atBoundary);
             repository.insert(justBefore);
 
@@ -221,7 +222,7 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("保存期間を過ぎたものがなければ、何も削除せず空を返す")
         void returnsEmptyWhenNothingExpired() {
             // 準備：基準より後の仮のアセット
-            var kept = pending(UUID.randomUUID(), LONG_AGO.plus(Duration.ofHours(1)));
+            var kept = pending(new AssetId(UUID.randomUUID()), LONG_AGO.plus(Duration.ofHours(1)));
             repository.insert(kept);
 
             // 操作：削除する
@@ -242,7 +243,7 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("1 件を削除したトランザクションのコミットの前は、別のトランザクションの保存期間を過ぎたものの削除が、その行を待たずにスキップする")
         void expiredDeleteSkipsRowLockedByDelete() {
             // 準備：ロールバックしないので、このテストで作った、保存期間を過ぎた仮のアセットだけを確認する
-            var pending = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
+            var pending = pending(new AssetId(UUID.randomUUID()), LONG_AGO.minus(Duration.ofHours(1)));
             transactionTemplate.executeWithoutResult(status -> repository.insert(pending));
             var executor = Executors.newSingleThreadExecutor();
             try {
@@ -267,7 +268,7 @@ class JooqPendingAssetRepositoryTest {
         @DisplayName("保存期間を過ぎたものを削除したトランザクションのコミットを待ってから、別のトランザクションで 1 件を削除すると、削除できなかったことを返す")
         void deleteWaitsForExpiredDeleteAndReturnsFalse() throws Exception {
             // 準備：ロールバックしないので、このテストで作った、保存期間を過ぎた仮のアセットだけを確認する
-            var pending = pending(UUID.randomUUID(), LONG_AGO.minus(Duration.ofHours(1)));
+            var pending = pending(new AssetId(UUID.randomUUID()), LONG_AGO.minus(Duration.ofHours(1)));
             transactionTemplate.executeWithoutResult(status -> repository.insert(pending));
             var executor = Executors.newSingleThreadExecutor();
             try {
@@ -327,8 +328,8 @@ class JooqPendingAssetRepositoryTest {
      * @param id アセット ID
      * @return あれば true
      */
-    private boolean exists(UUID id) {
-        return dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.ID.eq(id));
+    private boolean exists(AssetId id) {
+        return dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.ID.eq(id.value()));
     }
 
     // ============================== 準備の補助 ==============================
@@ -342,7 +343,7 @@ class JooqPendingAssetRepositoryTest {
      * @param preparedAt 用意した時刻
      * @return 仮のアセット
      */
-    private static PendingAsset pending(UUID id, Instant preparedAt) {
-        return new PendingAsset(id, "assets/" + id + ".webp", preparedAt);
+    private static PendingAsset pending(AssetId id, Instant preparedAt) {
+        return new PendingAsset(id, "assets/" + id.value() + ".webp", preparedAt);
     }
 }

@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.DomainEvents;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.OperatorId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
@@ -273,7 +274,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setCancellationRequestResult(request == null ? null : request.result().name());
         record.setCancellationDecidedAt(request == null ? null : request.decidedAt());
         var decidedBy = request == null ? null : request.decidedBy();
-        record.setCancellationDecidedById(decidedBy == null ? null : decidedBy.id());
+        record.setCancellationDecidedById(decidedBy == null ? null : decidedBy.id().value());
         record.setCancellationDecidedByName(decidedBy == null ? null : decidedBy.name());
     }
 
@@ -288,7 +289,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setCancellationReason(cancellation == null ? null : cancellation.reason());
         record.setCancellationRestocked(cancellation == null ? null : cancellation.restocked());
         var cancelledBy = cancellation == null ? null : cancellation.cancelledBy();
-        record.setCancelledById(cancelledBy == null ? null : cancelledBy.id());
+        record.setCancelledById(cancelledBy == null ? null : cancelledBy.id().value());
         record.setCancelledByName(cancelledBy == null ? null : cancelledBy.name());
     }
 
@@ -460,6 +461,6 @@ class JooqOrderRepository implements OrderRepository {
      * <p>記録を始める前の行は空なので null。
      */
     private static @Nullable Operator operatorOf(@Nullable UUID id, String name) {
-        return id == null ? null : new Operator(id, name);
+        return id == null ? null : new Operator(new OperatorId(id), name);
     }
 }

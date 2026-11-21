@@ -327,6 +327,20 @@ class JooqOrderRepositoryTest {
         }
 
         @Test
+        @DisplayName("DC-484-3 送料の消費税が 0 円の注文は、0 円のまま読み直せる（null にならない）")
+        void restoresZeroShippingTax() {
+            // 準備：送料の消費税が 0 円の注文を保存する
+            var order = order(UUID.randomUUID(), orderNumber(), Money.ZERO);
+            repository.insert(order);
+
+            // 操作：読み直す
+            var restored = repository.findById(order.id()).orElseThrow();
+
+            // 確認：送料の消費税が 0 円
+            assertThat(restored.toSnapshot().shippingTax()).isEqualTo(Money.ZERO);
+        }
+
+        @Test
         @DisplayName("注文を保存すると、注文の状態の変化（支払待ち）のイベントが発行される")
         void publishesPlacedEvent() {
             // 準備：注文
@@ -847,6 +861,18 @@ class JooqOrderRepositoryTest {
      * @return 注文（支払待ち）
      */
     private static Order order(UUID checkoutId, String orderNumber) {
+        return order(checkoutId, orderNumber, SHIPPING_TAX);
+    }
+
+    /**
+     * 2 つの税率の品目を持ち、送料の消費税を指定する注文を作る。
+     *
+     * @param checkoutId  注文手続き ID
+     * @param orderNumber 注文番号
+     * @param shippingTax 送料の消費税
+     * @return 注文（支払待ち）
+     */
+    private static Order order(UUID checkoutId, String orderNumber, Money shippingTax) {
         var shirt = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), SHIRT_PRODUCT_CODE, SHIRT_VARIANT_CODE, SHIRT_NAME,
                 SHIRT_AXES, SHIRT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
         var tea = new VariantInfo(TEA_VARIANT_ID, UUID.randomUUID(), TEA_CODE, TEA_CODE, TEA_NAME, List.of(),
@@ -855,7 +881,7 @@ class JooqOrderRepositoryTest {
                 QuoteItem.of(shirt, 1, 10, STANDARD_RATE, SHIRT_PRICE_INCL_TAX),
                 QuoteItem.of(tea, 1, 10, REDUCED_RATE, TEA_PRICE_INCL_TAX));
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
-                new Quote(items, AMOUNTS, SHIPPING_TAX, true), EMAIL, ADDRESS, BUYER_PROFILE);
+                new Quote(items, AMOUNTS, shippingTax, true), EMAIL, ADDRESS, BUYER_PROFILE);
     }
 
     /**

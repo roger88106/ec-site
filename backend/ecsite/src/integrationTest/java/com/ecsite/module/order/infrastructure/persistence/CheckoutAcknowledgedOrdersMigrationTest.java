@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>適用の時点の支払待ちの注文と、進行中の注文手続きの扱いを確認する。適用の後の開始と注文の判定は、
  * {@code CheckoutPendingOrderConfirmationApiTest}・{@code PlaceOrderPendingConfirmationApiTest} が確認する。
+ * 後のマイグレーションが既存の注文の送料の消費税を埋めないことも確認する。
  *
  * <p>テストごとに別のデータベースを作り、マイグレーションの前のバージョンまで流してから、適用の時点のデータを入れ、残りを流す。
  */
@@ -73,14 +74,31 @@ class CheckoutAcknowledgedOrdersMigrationTest {
         // 操作：残りのマイグレーションを流す
         var result = database.flyway().migrate();
 
-        // 確認：適用が成功し、注文の適用の前にあった全ての列が適用の前と同じで、後のマイグレーションで追加した送料の消費税の列は null のまま（既存の注文を埋めない）
+        // 確認：適用が成功し、マイグレーションの前からあった注文の列が、全て前と同じ値
         assertThat(result.success).isTrue();
         var ordersAfter = orders(memberId);
         assertThat(ordersAfter).hasSameSizeAs(ordersBefore);
         for (var i = 0; i < ordersBefore.size(); i++) {
             assertThat(ordersAfter.get(i)).containsAllEntriesOf(ordersBefore.get(i));
-            assertThat(ordersAfter.get(i)).containsEntry("shipping_tax", null);
         }
+    }
+
+    @Test
+    @DisplayName("DN-484-2 送料の消費税の列を追加するマイグレーションは、既存の注文の送料の消費税を埋めない")
+    void leavesShippingTaxOfExistingOrdersNull() {
+        // 準備：同じ会員の支払待ちの注文 2 件と、進行中の注文手続き
+        var memberId = UUID.randomUUID();
+        insertPendingOrdersAndCheckout(memberId);
+
+        // 確認（前提）：注文が 2 件ある
+        assertThat(orders(memberId)).hasSize(2);
+
+        // 操作：残りのマイグレーションを流す
+        database.flyway().migrate();
+
+        // 確認：既存の全ての注文の送料の消費税が null（埋めない）
+        assertThat(orders(memberId)).hasSize(2)
+                .allSatisfy(order -> assertThat(order).containsEntry("shipping_tax", null));
     }
 
     @Test

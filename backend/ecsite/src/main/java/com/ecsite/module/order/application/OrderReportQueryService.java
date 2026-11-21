@@ -71,7 +71,7 @@ public class OrderReportQueryService {
         if (fee.yen() == 0) {
             return Money.ZERO;
         }
-        // 送料の消費税を保存する前に成立した注文のための計算。今の設定の送料の税区分の、注文日時の税率で求める
+        // 送料の消費税を保存する前に成立した注文のための計算。税率は、設定にある今の送料の税区分から、注文日時のものを使う
         // ※税区分の設定や税率のマスターを変えると、値が変わる
         var rate = taxDirectory.rateAt(properties.shippingTaxCategoryId(), order.orderedAt())
                 .orElseThrow(() -> SystemException.of("送料の税区分に、注文日時の税率がありません: " + order.id(), null));

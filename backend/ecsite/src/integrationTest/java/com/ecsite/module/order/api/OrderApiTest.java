@@ -356,7 +356,7 @@ class OrderApiTest {
         @Test
         @DisplayName("DC-484-4 送料の消費税を保存していない注文は、注文日時の送料の税区分の税率から求める")
         void computesShippingTaxForOrderWithoutSavedTax() throws Exception {
-            // 準備：送料の消費税を保存していない注文（列を追加する前の注文）にし、送料の税区分の税率を 8% に直す
+            // 準備：送料の消費税を保存していない注文（送料の消費税を保存する前のアプリが成立させた注文）にし、送料の税区分の税率を 8% に直す
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
             dsl.update(SALES_ORDER).setNull(SALES_ORDER.SHIPPING_TAX)
                     .where(SALES_ORDER.ID.eq(orderId))
@@ -368,6 +368,26 @@ class OrderApiTest {
 
             // 確認：直した税率 8% で求めた、1,000 × 8 / 108 の切り捨ての 74 円
             assertThat(snapshot.shippingTax()).isEqualTo(Money.of(74));
+        }
+
+        @Test
+        @DisplayName("DC-484-4 送料の消費税を保存していない注文で、送料が 0 円のときは、送料の消費税は 0 円")
+        void returnsZeroShippingTaxForFreeShippingOrderWithoutSavedTax() throws Exception {
+            // 準備：送料が 0 円の注文を、送料の消費税を保存していない注文にする
+            doReturn(0L).when(properties).shippingFee();
+            var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
+            dsl.update(SALES_ORDER).setNull(SALES_ORDER.SHIPPING_TAX)
+                    .where(SALES_ORDER.ID.eq(orderId))
+                    .execute();
+
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
+
+            // 確認（前提）：送料が 0 円
+            assertThat(snapshot.amounts().shippingFee()).isEqualTo(Money.ZERO);
+
+            // 確認：送料の消費税が 0 円
+            assertThat(snapshot.shippingTax()).isEqualTo(Money.ZERO);
         }
 
         /**

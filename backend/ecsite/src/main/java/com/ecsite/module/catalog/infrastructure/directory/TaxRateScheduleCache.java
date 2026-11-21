@@ -65,7 +65,7 @@ class TaxRateScheduleCache {
     /**
      * キャッシュを捨てる。
      *
-     * <p>次の取得で税モジュールから取得し直す。
+     * <p>次の取得で税モジュールから取得し直す。統合テストで共有する状態の初期化で使う。
      */
     void evict() {
         entry.set(null);

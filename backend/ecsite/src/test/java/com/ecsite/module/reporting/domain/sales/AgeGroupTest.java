@@ -42,6 +42,18 @@ class AgeGroupTest {
     }
 
     @Test
+    @DisplayName("BR-27 全ての年齢層で、下限の年齢を渡すとその年齢層になる（宣言の順に頼らない）")
+    void minAgeReturnsItself() {
+        // 操作と確認：不明を除く全ての要素で、下限の年齢からその要素自身が返る
+        for (var group : AgeGroup.values()) {
+            if (group == AgeGroup.UNKNOWN) {
+                continue;
+            }
+            assertThat(AgeGroup.of(group.minAge())).isEqualTo(group);
+        }
+    }
+
+    @Test
     @DisplayName("BR-27 年齢層の並びは、若い順で、不明が最後")
     void order() {
         // 確認：列挙の並びが、若い順の後に「不明」

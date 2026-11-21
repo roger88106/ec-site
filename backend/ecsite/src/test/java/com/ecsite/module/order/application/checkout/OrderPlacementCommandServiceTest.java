@@ -75,6 +75,11 @@ class OrderPlacementCommandServiceTest {
     private static final Money TOTAL = Money.of(2100);
 
     /**
+     * 見積もりの送料の消費税（送料 1,000 円、標準税率）
+     */
+    private static final Money SHIPPING_TAX = Money.of(90);
+
+    /**
      * 空いている注文番号を探す回数の上限（{@code OrderPlacementCommandService.ORDER_NUMBER_ATTEMPTS}）
      */
     private static final int ORDER_NUMBER_ATTEMPTS = 10;
@@ -266,7 +271,7 @@ class OrderPlacementCommandServiceTest {
     }
 
     /**
-     * 税込 1,100 円の商品 1 個で、総額を指定した、注文できる見積もりを作る。送料は総額との差。
+     * 税込 1,100 円の商品 1 個で、総額を指定した、注文できる見積もりを作る。送料は総額との差。送料の消費税は、総額によらず 90 円（範囲外の総額のテストは、送料の消費税を使わない）。
      *
      * @param total 総額（円）
      * @return 見積もり
@@ -288,6 +293,6 @@ class OrderPlacementCommandServiceTest {
         var amounts = new Amounts(Money.of(1100), Money.of(total.yen() - 1100), total,
                 List.of(new TaxAmount(BigDecimal.TEN, total, Money.of(190))));
         return new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts,
-                Money.of((total.yen() - 1100) * 10 / 110), true);
+                SHIPPING_TAX, true);
     }
 }

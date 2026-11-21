@@ -159,13 +159,27 @@ class QuoteTest {
     class ShippingTax {
 
         @Test
-        @DisplayName("DC-484-3 送料があれば、送料の消費税は、送料だけを課税対象として求めた額")
+        @DisplayName("DC-484-1 送料があれば、送料の消費税は、送料だけを課税対象として求めた額")
         void calculatesFromShippingFeeOnly() {
             // 操作：シャツ 2 枚とお茶 1 個と、送料 1,000 円（標準税率）の見積もりを作る
             var quote = shirtsAndTea();
 
             // 確認：品目を含めず、送料 1,000 円だけの消費税額（1,000 × 10 / 110 の切り捨て）
             assertThat(quote.shippingTax()).isEqualTo(Money.of(90));
+        }
+
+        @Test
+        @DisplayName("DC-484-1 送料の税率が軽減税率なら、送料の消費税は、その率で求めた額")
+        void calculatesWithReducedRateOfShipping() {
+            // 準備：購入できる品目と、1,000 円の送料（軽減税率）
+            var ok = item(variant(1000, true, false), 1, 10, STANDARD);
+            var reducedShipping = new Shipping(Money.of(1000), REDUCED);
+
+            // 操作：見積もりを作る
+            var quote = Quote.of(List.of(ok), false, reducedShipping, TAX);
+
+            // 確認：送料 1,000 円だけの消費税額（1,000 × 8 / 108 の切り捨て）
+            assertThat(quote.shippingTax()).isEqualTo(Money.of(74));
         }
 
         @Test

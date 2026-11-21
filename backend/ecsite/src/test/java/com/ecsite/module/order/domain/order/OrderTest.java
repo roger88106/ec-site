@@ -142,6 +142,31 @@ class OrderTest {
             // 確認：この注文の「なし → 支払待ち」のイベントだけが登録されている
             assertPlacedEventOnly(order);
         }
+
+        @Test
+        @DisplayName("DC-484-1 成立した注文は、見積もりの送料の消費税を持つ")
+        void keepsShippingTaxOfQuote() {
+            // 操作：送料の消費税が 90 円の見積もりから注文を作る
+            var order = place(quote());
+
+            // 確認：送料の消費税が 90 円
+            assertThat(order.shippingTax()).isEqualTo(Money.of(90));
+        }
+
+        @Test
+        @DisplayName("DC-484-3 送料の消費税が 0 の見積もりから作った注文は、送料の消費税を 0 で持つ（null でない）")
+        void keepsZeroShippingTax() {
+            // 準備：送料の消費税が 0 円の見積もり
+            var item = QuoteItem.of(tShirt(), QUANTITY, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX);
+            var amounts = new Amounts(SUBTOTAL, Money.ZERO, SUBTOTAL, List.of(new TaxAmount(RATE_PERCENT, SUBTOTAL, Money.of(540))));
+            var freeShipping = new Quote(List.of(item), amounts, Money.ZERO, true);
+
+            // 操作：注文を作る
+            var order = place(freeShipping);
+
+            // 確認：送料の消費税が 0 円
+            assertThat(order.shippingTax()).isEqualTo(Money.ZERO);
+        }
     }
 
     @Nested

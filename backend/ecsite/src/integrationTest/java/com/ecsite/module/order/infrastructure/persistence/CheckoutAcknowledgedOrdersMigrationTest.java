@@ -73,12 +73,13 @@ class CheckoutAcknowledgedOrdersMigrationTest {
         // 操作：残りのマイグレーションを流す
         var result = database.flyway().migrate();
 
-        // 確認：適用が成功し、注文の適用の前にあった全ての列が適用の前と同じ ※後のマイグレーションで追加した列は比べない
+        // 確認：適用が成功し、注文の適用の前にあった全ての列が適用の前と同じで、後のマイグレーションで追加した送料の消費税の列は null のまま（既存の注文を埋めない）
         assertThat(result.success).isTrue();
         var ordersAfter = orders(memberId);
         assertThat(ordersAfter).hasSameSizeAs(ordersBefore);
         for (var i = 0; i < ordersBefore.size(); i++) {
             assertThat(ordersAfter.get(i)).containsAllEntriesOf(ordersBefore.get(i));
+            assertThat(ordersAfter.get(i)).containsEntry("shipping_tax", null);
         }
     }
 

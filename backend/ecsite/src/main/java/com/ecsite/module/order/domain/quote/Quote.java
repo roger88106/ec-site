@@ -53,24 +53,23 @@ public record Quote(List<QuoteItem> items, Amounts amounts, Money shippingTax, b
         var amounts = new Amounts(itemsTotal, shippingFee, itemsTotal.plus(shippingFee), taxes);
         // 品目があり、なくなったバリアントがなく、すべての品目が買えるときだけ注文できる
         var orderable = !items.isEmpty() && !missingVariant && purchasable.size() == items.size();
-        return new Quote(List.copyOf(items), amounts, shippingTax(shippingFee, shipping.ratePercent(), tax), orderable);
+        return new Quote(List.copyOf(items), amounts, shippingTaxOf(shippingFee, shipping.ratePercent(), tax), orderable);
     }
 
     /**
-     * 送料の消費税を求める。
-     *
-     * <p>送料が 0 なら 0。税率ごとの消費税額は品目と送料を合算して求めるので、そこから送料の分は取り出せない。
-     * そのため、送料だけを課税対象として求める。
+     * 送料の消費税を求める。送料が 0 なら 0、それ以外は送料だけを課税対象として求めた額。
      *
      * @param shippingFee 送料（税込）
      * @param ratePercent 送料に適用する率（%）
      * @param tax         税の腐敗防止層（消費税額の計算）
      * @return 送料の消費税
      */
-    private static Money shippingTax(Money shippingFee, BigDecimal ratePercent, TaxDirectory tax) {
+    public static Money shippingTaxOf(@NonNull Money shippingFee, @NonNull BigDecimal ratePercent,
+                                      @NonNull TaxDirectory tax) {
         if (shippingFee.yen() == 0) {
             return Money.ZERO;
         }
+        // 税率ごとの消費税額は品目と送料を合算して求め、送料の分を取り出せないので、送料だけで求める
         return tax.consumptionTaxes(List.of(new TaxDirectory.Taxable(ratePercent, shippingFee))).stream()
                 .map(TaxAmount::taxAmount)
                 .reduce(Money.ZERO, Money::plus);

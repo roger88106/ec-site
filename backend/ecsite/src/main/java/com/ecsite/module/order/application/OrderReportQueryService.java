@@ -5,14 +5,13 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.model.view.OrderReportView;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
-import com.ecsite.module.order.domain.quote.TaxAmount;
+import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,7 +60,7 @@ public class OrderReportQueryService {
     /**
      * 送料の消費税を求める。
      *
-     * <p>注文の成立のときに保存した額があれば、それを返す。送料がなければ 0。
+     * <p>注文の成立のときに保存した額があれば返し、なければ求める。求めるときは、送料がなければ 0。
      */
     private Money shippingTax(Order order) {
         var saved = order.shippingTax();
@@ -76,8 +75,6 @@ public class OrderReportQueryService {
         // ※税区分の設定や税率のマスターを変えると、値が変わる
         var rate = taxDirectory.rateAt(properties.shippingTaxCategoryId(), order.orderedAt())
                 .orElseThrow(() -> SystemException.of("送料の税区分に、注文日時の税率がありません: " + order.id(), null));
-        return taxDirectory.consumptionTaxes(List.of(new TaxDirectory.Taxable(rate, fee))).stream()
-                .map(TaxAmount::taxAmount)
-                .reduce(Money.ZERO, Money::plus);
+        return Quote.shippingTaxOf(fee, rate, taxDirectory);
     }
 }

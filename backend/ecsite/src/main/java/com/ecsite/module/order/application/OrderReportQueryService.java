@@ -61,14 +61,19 @@ public class OrderReportQueryService {
     /**
      * 送料の消費税を求める。
      *
-     * <p>送料がなければ 0。
+     * <p>注文の成立のときに保存した額があれば、それを返す。送料がなければ 0。
      */
     private Money shippingTax(Order order) {
+        var saved = order.shippingTax();
+        if (saved != null) {
+            return saved;
+        }
         var fee = order.amounts().shippingFee();
         if (fee.yen() == 0) {
             return Money.ZERO;
         }
-        // 送料の消費税は注文に持たない（税率ごとの消費税額は、明細と送料を合わせて求めている）ので、注文日時の送料の税区分の税率で求める
+        // 送料の消費税を保存する前に成立した注文のための計算。今の設定の送料の税区分の、注文日時の税率で求める
+        // ※税区分の設定や税率のマスターを変えると、値が変わる
         var rate = taxDirectory.rateAt(properties.shippingTaxCategoryId(), order.orderedAt())
                 .orElseThrow(() -> SystemException.of("送料の税区分に、注文日時の税率がありません: " + order.id(), null));
         return taxDirectory.consumptionTaxes(List.of(new TaxDirectory.Taxable(rate, fee))).stream()

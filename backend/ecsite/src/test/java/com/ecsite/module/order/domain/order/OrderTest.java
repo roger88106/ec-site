@@ -336,7 +336,8 @@ class OrderTest {
         private Order.Snapshot snapshotWithEmail(@Nullable String email) {
             var base = place(quote()).toSnapshot();
             return new Order.Snapshot(base.id(), base.orderNumber(), base.checkoutId(), base.memberId(), base.orderedAt(),
-                    base.status(), base.lines(), base.amounts(), email, base.shippingAddress(), base.buyerProfile(),
+                    base.status(), base.lines(), base.amounts(), base.shippingTax(), email, base.shippingAddress(),
+                    base.buyerProfile(),
                     base.cancellationRequest(), base.cancellation(), base.version());
         }
 
@@ -451,7 +452,8 @@ class OrderTest {
                     : requestOf(CancellationRequest.Result.valueOf(request));
             var cancellation = cancelled ? new Cancellation(DECIDED_AT, CancellationKind.OPERATOR, REASON, null) : null;
             return new Order.Snapshot(base.id(), base.orderNumber(), base.checkoutId(), base.memberId(), base.orderedAt(),
-                    status, base.lines(), base.amounts(), base.email(), base.shippingAddress(), base.buyerProfile(),
+                    status, base.lines(), base.amounts(), base.shippingTax(), base.email(), base.shippingAddress(),
+                    base.buyerProfile(),
                     cancellationRequest, cancellation, base.version());
         }
 

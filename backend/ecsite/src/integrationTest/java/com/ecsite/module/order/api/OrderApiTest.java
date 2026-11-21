@@ -5,6 +5,7 @@ import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.api.model.AxisValue;
 import com.ecsite.module.order.api.model.OrderSnapshot;
 import com.ecsite.module.order.api.model.TaxAmount;
+import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,14 +40,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
+import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 注文の API の統合テスト
  *
- * <p>注文の参照について、状態ごとの項目と、個人の情報を持たないことを確認する。あわせて、注文のメールアドレスの操作を確認する。
+ * <p>注文の参照について、状態ごとの項目と、個人の情報を持たないことを確認する。あわせて、注文のメールアドレスの操作と、
+ * 注文の成立で保存した送料の消費税を返すことを確認する。
  *
  * <p>テストごとにロールバックする。
  */
@@ -108,6 +114,14 @@ class OrderApiTest {
     StockItemRepository stockItemRepository;
 
     /**
+     * 注文の設定
+     *
+     * <p>送料の消費税のテストだけ、注文の後に送料の税区分を差し替える。
+     */
+    @MockitoSpyBean
+    OrderProperties properties;
+
+    /**
      * 在庫を作る補助
      */
     private InventoryTestData inventory;
@@ -124,6 +138,11 @@ class OrderApiTest {
     private OrderTestData orders;
 
     /**
+     * 商品と税区分を作る補助
+     */
+    private CatalogTestData catalog;
+
+    /**
      * 商品（T シャツ・白）
      */
     private CatalogTestData.TestProduct shirt;
@@ -132,7 +151,7 @@ class OrderApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         ShippingTaxCategory.ensure(dsl);
-        var catalog = new CatalogTestData(mockMvc, clock);
+        catalog = new CatalogTestData(mockMvc, clock);
         shirt = catalog.product(catalog.taxCategory("標準", "10"), PRODUCT_NAME, UNIT_PRICE_EXCL_TAX, AXIS_NAME)
                 .variant(AXIS_VALUE).publish();
         var variantId = shirt.variantIds.getFirst();
@@ -283,6 +302,85 @@ class OrderApiTest {
         void returnsEmptyForUnknownOrder() {
             // 操作と確認：ない注文 ID には空
             assertThat(orderApi.findEmail(UUID.randomUUID())).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("送料の消費税")
+    class ShippingTax {
+
+        @Test
+        @DisplayName("DC-484-1 注文が成立すると、送料の消費税の額を注文に保存する")
+        void savesShippingTaxOnPlacement() throws Exception {
+            // 準備：送料 1,000 円の支払待ちの注文（送料の税区分は 10%）
+            var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
+
+            // 操作：注文の行の送料の消費税を読む
+            var saved = dsl.select(SALES_ORDER.SHIPPING_TAX).from(SALES_ORDER)
+                    .where(SALES_ORDER.ID.eq(orderId))
+                    .fetchOne(SALES_ORDER.SHIPPING_TAX);
+
+            // 確認：1,000 × 10 / 110 の切り捨ての 90 円
+            assertThat(saved).isEqualTo(90L);
+        }
+
+        @Test
+        @DisplayName("DC-484-2 注文の後に送料の税区分の設定を変えても、送料の消費税は注文のときの額のまま")
+        void keepsShippingTaxAfterCategoryChange() throws Exception {
+            // 準備：送料の税区分が 10% のときの注文の後に、設定の送料の税区分を 8% の税区分に変える
+            var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
+            var reduced = catalog.taxCategory("軽減", "8");
+            doReturn(reduced).when(properties).shippingTaxCategoryId();
+
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
+
+            // 確認：注文のときの 90 円（8% で求めると 74 円）
+            assertThat(snapshot.shippingTax()).isEqualTo(Money.of(90));
+        }
+
+        @Test
+        @DisplayName("DC-484-2 注文の後に送料の税区分の税率を直しても、送料の消費税は注文のときの額のまま")
+        void keepsShippingTaxAfterRateCorrection() throws Exception {
+            // 準備：送料の税区分が 10% のときの注文の後に、その税率を 8% に直す
+            var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
+            correctShippingRate("8");
+
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
+
+            // 確認：注文のときの 90 円（8% で求めると 74 円）
+            assertThat(snapshot.shippingTax()).isEqualTo(Money.of(90));
+        }
+
+        @Test
+        @DisplayName("DC-484-4 送料の消費税を保存していない注文は、注文日時の送料の税区分の税率から求める")
+        void computesShippingTaxForOrderWithoutSavedTax() throws Exception {
+            // 準備：送料の消費税を保存していない注文（列を追加する前の注文）にし、送料の税区分の税率を 8% に直す
+            var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
+            dsl.update(SALES_ORDER).setNull(SALES_ORDER.SHIPPING_TAX)
+                    .where(SALES_ORDER.ID.eq(orderId))
+                    .execute();
+            correctShippingRate("8");
+
+            // 操作：注文を読む
+            var snapshot = orderApi.find(orderId).orElseThrow();
+
+            // 確認：直した税率 8% で求めた、1,000 × 8 / 108 の切り捨ての 74 円
+            assertThat(snapshot.shippingTax()).isEqualTo(Money.of(74));
+        }
+
+        /**
+         * 送料の税区分の税率（開始・終了とも空白の 1 つ）の率を、DB で直接直す。
+         *
+         * <p>開始済みの税率の率は管理の API では変えられないので、マスターの誤りを直した状態を DB で作る。
+         *
+         * @param ratePercent 直した後の率（%）
+         */
+        private void correctShippingRate(String ratePercent) {
+            dsl.update(TAX_RATE).set(TAX_RATE.RATE_PERCENT, new BigDecimal(ratePercent))
+                    .where(TAX_RATE.TAX_CATEGORY_ID.eq(ShippingTaxCategory.ID))
+                    .execute();
         }
     }
 

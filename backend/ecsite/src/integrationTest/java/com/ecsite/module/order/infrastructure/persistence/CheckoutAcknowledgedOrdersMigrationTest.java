@@ -73,9 +73,13 @@ class CheckoutAcknowledgedOrdersMigrationTest {
         // 操作：残りのマイグレーションを流す
         var result = database.flyway().migrate();
 
-        // 確認：適用が成功し、注文の全ての列が適用の前と同じ
+        // 確認：適用が成功し、注文の適用の前にあった全ての列が適用の前と同じ ※後のマイグレーションで追加した列は比べない
         assertThat(result.success).isTrue();
-        assertThat(orders(memberId)).isEqualTo(ordersBefore);
+        var ordersAfter = orders(memberId);
+        assertThat(ordersAfter).hasSameSizeAs(ordersBefore);
+        for (var i = 0; i < ordersBefore.size(); i++) {
+            assertThat(ordersAfter.get(i)).containsAllEntriesOf(ordersBefore.get(i));
+        }
     }
 
     @Test

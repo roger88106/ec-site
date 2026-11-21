@@ -109,7 +109,7 @@ class OrderQuoteApiTest {
             var purchasable = new QuoteItem(variant, 2, RATE, PRICE_INCL_TAX, new Money(2200), null);
             var unpurchasable = new QuoteItem(variant, 1, RATE, PRICE_INCL_TAX, new Money(1100), UnpurchasableReason.OUT_OF_STOCK);
             var amounts = new Amounts(ITEMS_TOTAL, SHIPPING_FEE, TOTAL, List.of(new TaxAmount(RATE, TOTAL, TAX)));
-            var quote = new Quote(List.of(purchasable, unpurchasable), amounts, false);
+            var quote = new Quote(List.of(purchasable, unpurchasable), amounts, Money.of(45), false);
 
             // 操作：公開する型に変換する
             var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(cartId, quote));
@@ -206,6 +206,6 @@ class OrderQuoteApiTest {
         var variant = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "P-2", "V-2", "靴",
                 List.of(), new Money(3000), UUID.randomUUID(), null, true, false);
         var item = new QuoteItem(variant, 1, new BigDecimal("8"), new Money(3240), new Money(3240), null);
-        return new Quote(List.of(item), new Amounts(new Money(3240), Money.ZERO, new Money(3240), List.of()), true);
+        return new Quote(List.of(item), new Amounts(new Money(3240), Money.ZERO, new Money(3240), List.of()), Money.ZERO, true);
     }
 }

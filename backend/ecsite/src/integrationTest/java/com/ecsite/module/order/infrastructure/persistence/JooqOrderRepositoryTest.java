@@ -831,7 +831,7 @@ class JooqOrderRepositoryTest {
                 QuoteItem.of(shirt, 1, 10, STANDARD_RATE, SHIRT_PRICE_INCL_TAX),
                 QuoteItem.of(tea, 1, 10, REDUCED_RATE, TEA_PRICE_INCL_TAX));
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
-                new Quote(items, AMOUNTS, true), EMAIL, ADDRESS, BUYER_PROFILE);
+                new Quote(items, AMOUNTS, Money.of(90), true), EMAIL, ADDRESS, BUYER_PROFILE);
     }
 
     /**
@@ -848,6 +848,6 @@ class JooqOrderRepositoryTest {
                 MAX_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
         var item = QuoteItem.of(variant, MAX_QUANTITY, MAX_QUANTITY, STANDARD_RATE, MAX_PRICE_INCL_TAX);
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
-                new Quote(List.of(item), MAX_AMOUNTS, true), MAX_EMAIL, MAX_ADDRESS, MAX_BUYER_PROFILE);
+                new Quote(List.of(item), MAX_AMOUNTS, Money.of(90), true), MAX_EMAIL, MAX_ADDRESS, MAX_BUYER_PROFILE);
     }
 }

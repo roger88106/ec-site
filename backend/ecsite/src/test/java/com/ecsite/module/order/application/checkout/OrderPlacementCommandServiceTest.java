@@ -287,6 +287,7 @@ class OrderPlacementCommandServiceTest {
                 UUID.randomUUID(), null, true, false);
         var amounts = new Amounts(Money.of(1100), Money.of(total.yen() - 1100), total,
                 List.of(new TaxAmount(BigDecimal.TEN, total, Money.of(190))));
-        return new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, true);
+        return new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts,
+                Money.of((total.yen() - 1100) * 10 / 110), true);
     }
 }

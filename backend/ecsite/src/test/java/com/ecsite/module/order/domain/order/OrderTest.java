@@ -218,7 +218,7 @@ class OrderTest {
         @DisplayName("AC-88 空の見積もりからは注文を作れない")
         void rejectsEmptyQuote() {
             // 準備：品目のない見積もり
-            var empty = new Quote(List.of(), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), false);
+            var empty = new Quote(List.of(), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), Money.ZERO, false);
 
             // 操作と確認：プログラムの誤りとして拒否される
             assertThatThrownBy(() -> place(empty)).isInstanceOf(IllegalArgumentException.class);
@@ -668,7 +668,7 @@ class OrderTest {
         var item = QuoteItem.of(tShirt(), QUANTITY, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX);
         var amounts = new Amounts(SUBTOTAL, Money.of(1000), Money.of(6940),
                 List.of(new TaxAmount(RATE_PERCENT, Money.of(6940), Money.of(630))));
-        return new Quote(List.of(item), amounts, true);
+        return new Quote(List.of(item), amounts, Money.of(90), true);
     }
 
     /**
@@ -684,7 +684,7 @@ class OrderTest {
                 .map(code -> QuoteItem.of(new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), PRODUCT_CODE, code, PRODUCT_NAME,
                         AXIS_VALUES, UNIT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false), 1, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX))
                 .toList();
-        return new Quote(items, quote().amounts(), true);
+        return new Quote(items, quote().amounts(), quote().shippingTax(), true);
     }
 
     /**
@@ -696,7 +696,7 @@ class OrderTest {
      */
     private static Quote quoteWithOutOfStockItem() {
         var item = QuoteItem.of(tShirt(), 1, 0, RATE_PERCENT, UNIT_PRICE_INCL_TAX);
-        return new Quote(List.of(item), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), false);
+        return new Quote(List.of(item), new Amounts(Money.ZERO, Money.ZERO, Money.ZERO, List.of()), Money.ZERO, false);
     }
 
     /**

@@ -155,6 +155,45 @@ class QuoteTest {
     }
 
     @Nested
+    @DisplayName("送料の消費税")
+    class ShippingTax {
+
+        @Test
+        @DisplayName("DC-484-3 送料があれば、送料の消費税は、送料だけを課税対象として求めた額")
+        void calculatesFromShippingFeeOnly() {
+            // 操作：シャツ 2 枚とお茶 1 個と、送料 1,000 円（標準税率）の見積もりを作る
+            var quote = shirtsAndTea();
+
+            // 確認：品目を含めず、送料 1,000 円だけの消費税額（1,000 × 10 / 110 の切り捨て）
+            assertThat(quote.shippingTax()).isEqualTo(Money.of(90));
+        }
+
+        @Test
+        @DisplayName("DC-484-3 設定の送料が 0 なら、購入できる品目があっても、送料の消費税は 0")
+        void zeroWhenShippingFeeIsZero() {
+            // 準備：購入できる品目と、0 円の送料
+            var ok = item(variant(1000, true, false), 1, 10, STANDARD);
+            var free = new Shipping(Money.ZERO, STANDARD);
+
+            // 操作：見積もりを作る
+            var quote = Quote.of(List.of(ok), false, free, TAX);
+
+            // 確認：送料の消費税が 0
+            assertThat(quote.shippingTax()).isEqualTo(Money.ZERO);
+        }
+
+        @Test
+        @DisplayName("DC-484-3 購入できる品目がなく送料をかけないなら、送料の消費税は 0")
+        void zeroWithoutPurchasableItems() {
+            // 操作：在庫切れの品目だけの見積もりを作る
+            var allSoldOut = Quote.of(List.of(item(variant(1000, true, false), 1, 0, STANDARD)), false, SHIPPING, TAX);
+
+            // 確認：送料の消費税が 0
+            assertThat(allSoldOut.shippingTax()).isEqualTo(Money.ZERO);
+        }
+    }
+
+    @Nested
     @DisplayName("購入できない品目の理由")
     class UnpurchasableReasons {
 

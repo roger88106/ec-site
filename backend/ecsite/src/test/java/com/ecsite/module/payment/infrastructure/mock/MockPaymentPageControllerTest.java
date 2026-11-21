@@ -58,7 +58,7 @@ class MockPaymentPageControllerTest {
      * 画面の状態を持つ本番の mock
      */
     private final MockPaymentGateway gateway = new MockPaymentGateway(receiver, new MockPaymentProperties("http://localhost:8080"),
-            Clock.systemUTC());
+            Clock.systemUTC(), UUID::randomUUID);
 
     /**
      * 画面を呼ぶ MockMvc

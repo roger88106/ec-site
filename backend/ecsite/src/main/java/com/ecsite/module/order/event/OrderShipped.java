@@ -33,7 +33,7 @@ public record OrderShipped(UUID eventId, Instant occurredAt, UUID orderId, Strin
      */
     public static OrderShipped of(Instant occurredAt, UUID orderId, String orderNumber, Carrier carrier,
                                   String trackingNumber) {
-        return new OrderShipped(UUID.randomUUID(), occurredAt, orderId, orderNumber, carrier, trackingNumber);
+        return new OrderShipped(DomainEvent.newEventId(), occurredAt, orderId, orderNumber, carrier, trackingNumber);
     }
 
     /**

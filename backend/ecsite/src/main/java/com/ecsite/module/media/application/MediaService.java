@@ -1,6 +1,7 @@
 package com.ecsite.module.media.application;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.media.application.model.ImageUploadView;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.application.port.ImageConverter;
@@ -81,6 +82,11 @@ public class MediaService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 画像のアップロードの受付を始める。
      *
      * <p>形式と大きさを確認し、アップロードのバケットへの署名付き URL を発行する。
@@ -94,7 +100,7 @@ public class MediaService {
      */
     public ImageUploadView requestImageUpload(@NonNull String scope, @NonNull String contentType, long contentLength) {
         // 受付のキー作成
-        var uploadId = UUID.randomUUID();
+        var uploadId = idGenerator.generate();
         var uploadKey = AssetKeys.upload(scope, uploadId);
 
         // 形式と大きさの確認（申告の値）
@@ -143,7 +149,7 @@ public class MediaService {
         var webp = imageConverter.convertToWebp(uploadKey);
 
         // 仮のアセットの記録 ※書いた後にプロセスが停止しても、片付けのジョブがファイルを削除できるように、書く前に確定させる
-        var assetId = UUID.randomUUID();
+        var assetId = idGenerator.generate();
         var storageKey = storageKey(assetId);
         var pending = new PendingAsset(assetId, storageKey, clock.instant());
         transactionTemplate.executeWithoutResult(status -> pendingAssetRepository.insert(pending));

@@ -21,6 +21,7 @@ public class ProductFactory {
      *
      * <p>登録直後は非公開で、バリアントはない。
      *
+     * @param id            商品 ID
      * @param productCode   商品品番
      * @param name          商品名
      * @param description   説明
@@ -33,9 +34,9 @@ public class ProductFactory {
      * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
-    public Product create(ProductCode productCode, String name, String description, UUID taxCategoryId,
+    public Product create(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
                           PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {
-        return Product.create(UUID.randomUUID(), productCode, name, description, taxCategoryId, priceExclTax,
+        return Product.create(id, productCode, name, description, taxCategoryId, priceExclTax,
                 categoryIds, axes);
     }
 

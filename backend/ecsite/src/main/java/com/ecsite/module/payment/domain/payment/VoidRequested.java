@@ -25,6 +25,6 @@ public record VoidRequested(UUID eventId, Instant occurredAt, UUID paymentId) im
      * @return イベント
      */
     public static VoidRequested of(Instant occurredAt, UUID paymentId) {
-        return new VoidRequested(UUID.randomUUID(), occurredAt, paymentId);
+        return new VoidRequested(DomainEvent.newEventId(), occurredAt, paymentId);
     }
 }

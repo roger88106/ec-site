@@ -2,6 +2,7 @@ package com.ecsite.module.tax.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
@@ -41,6 +42,11 @@ public class TaxCategoryCommandService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 税区分を登録する。
      *
      * @param command 税区分の登録コマンド
@@ -50,7 +56,7 @@ public class TaxCategoryCommandService {
      */
     public UUID createTaxCategory(@NonNull CreateTaxCategoryCommand command) {
         // 税区分作成
-        var taxCategory = taxCategoryFactory.create(command.name());
+        var taxCategory = taxCategoryFactory.create(idGenerator.generate(), command.name());
 
         // 税区分登録 ※名称の重複は DB の一意制約で検出する
         taxCategoryRepository.add(taxCategory);
@@ -90,7 +96,7 @@ public class TaxCategoryCommandService {
                         RatePercent.of(rate.ratePercent()),
                         EffectivePeriod.of(rate.effectiveFrom(), rate.effectiveTo())))
                 .toList();
-        taxCategory.replaceRates(drafts, clock.instant());
+        taxCategory.replaceRates(idGenerator::generate, drafts, clock.instant());
 
         // 税区分保存
         taxCategoryRepository.save(taxCategory);

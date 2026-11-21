@@ -22,6 +22,6 @@ public record PaymentExpired(UUID eventId, Instant occurredAt, UUID orderId) imp
      * @return イベント
      */
     public static PaymentExpired of(Instant occurredAt, UUID orderId) {
-        return new PaymentExpired(UUID.randomUUID(), occurredAt, orderId);
+        return new PaymentExpired(DomainEvent.newEventId(), occurredAt, orderId);
     }
 }

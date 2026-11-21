@@ -26,6 +26,6 @@ public record VariantDeleted(UUID eventId, Instant occurredAt, UUID productId, U
      * @return イベント
      */
     public static VariantDeleted of(Instant occurredAt, UUID productId, UUID variantId) {
-        return new VariantDeleted(UUID.randomUUID(), occurredAt, productId, variantId);
+        return new VariantDeleted(DomainEvent.newEventId(), occurredAt, productId, variantId);
     }
 }

@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
@@ -50,6 +51,11 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 注文の支払を未払いで作る。
      *
      * <p>同じ注文の支払がすでにあれば何もしない。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
@@ -60,7 +66,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void create(@NonNull UUID orderId, @NonNull Money amount, @NonNull Instant orderedAt) {
-        var payment = Payment.create(UUID.randomUUID(), orderId, amount, orderedAt.plus(properties.deadline()));
+        var payment = Payment.create(idGenerator.generate(), orderId, amount, orderedAt.plus(properties.deadline()));
         paymentRepository.insertIfAbsent(payment);
     }
 

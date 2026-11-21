@@ -193,7 +193,7 @@ class OrderPlacementCommandServiceTest {
 
         var properties = new OrderProperties(1000, UUID.randomUUID(), Duration.ofMinutes(15), 3);
         service = new OrderPlacementCommandService(checkoutRepository, orderRepository, new PendingOrderGuard(orderRepository, properties),
-                cartDirectory, stockDirectory, paymentDirectory, regionDirectory, quoteQueryService, Clock.fixed(NOW, ZoneOffset.UTC),
+                cartDirectory, stockDirectory, paymentDirectory, regionDirectory, quoteQueryService, Clock.fixed(NOW, ZoneOffset.UTC), UUID::randomUUID,
                 random);
     }
 

@@ -36,7 +36,7 @@ public record OrderStatusChanged(UUID eventId, Instant occurredAt, UUID orderId,
      */
     public static OrderStatusChanged of(Instant occurredAt, UUID orderId, @Nullable Status from, Status to,
                                         @Nullable CancellationKind cancellationKind, @Nullable Boolean restocked) {
-        return new OrderStatusChanged(UUID.randomUUID(), occurredAt, orderId, from, to, cancellationKind, restocked);
+        return new OrderStatusChanged(DomainEvent.newEventId(), occurredAt, orderId, from, to, cancellationKind, restocked);
     }
 
     /**

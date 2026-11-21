@@ -46,7 +46,7 @@ class MediaServiceReleaseTest {
      * メディアのサービス
      */
     private final MediaService service = new MediaService(assetRepository, mock(PendingAssetRepository.class),
-            mock(ObjectStorage.class), mock(ImageConverter.class), eventPublisher, mock(TransactionTemplate.class), Clock.systemUTC());
+            mock(ObjectStorage.class), mock(ImageConverter.class), eventPublisher, mock(TransactionTemplate.class), Clock.systemUTC(), UUID::randomUUID);
 
     // ============================== テスト ==============================
 

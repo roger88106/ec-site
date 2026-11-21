@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
@@ -39,6 +40,11 @@ public class ProductImageCommandService {
     private final ProductLoader productLoader;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 用意した画像をアセットとして登録し、商品の画像の最後に加える。
      *
      * @param productId 商品 ID
@@ -58,7 +64,7 @@ public class ProductImageCommandService {
         mediaDirectory.registerImage(prepared);
 
         // 画像の追加と商品保存
-        var imageId = UUID.randomUUID();
+        var imageId = idGenerator.generate();
         product.addImage(imageId, prepared.assetId());
         productRepository.save(product);
         return imageId;

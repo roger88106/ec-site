@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.application;
 
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
@@ -48,6 +49,11 @@ public class StockReservationCommandService {
      * 時計
      */
     private final Clock clock;
+
+    /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
 
     /**
      * 期限が指定した時刻より前の引当を、件数の上限まで消す。
@@ -148,7 +154,7 @@ public class StockReservationCommandService {
         var adjustments = new HashMap<UUID, StockAdjustment>();
         for (var variantId : locked.keySet()) {
             var quantity = Objects.requireNonNull(quantities.get(variantId), "ロックした在庫は数量を指定したバリアントのもの");
-            adjustments.put(variantId, StockAdjustment.forOrder(-quantity, StockAdjustmentReason.ORDER, orderId, orderNumber, now));
+            adjustments.put(variantId, StockAdjustment.forOrder(idGenerator.generate(), -quantity, StockAdjustmentReason.ORDER, orderId, orderNumber, now));
         }
         stockItemRepository.adjustAll(adjustments);
         return Set.of();
@@ -182,7 +188,7 @@ public class StockReservationCommandService {
                 log.warn("在庫がないため、注文のキャンセルの数量を戻せません: orderId={}, variantId={}", orderId, variantId);
                 continue;
             }
-            adjustments.put(variantId, StockAdjustment.forOrder(
+            adjustments.put(variantId, StockAdjustment.forOrder(idGenerator.generate(),
                     entry.getValue(), StockAdjustmentReason.ORDER_CANCELLATION, orderId, orderNumber, now));
         }
         stockItemRepository.adjustAll(adjustments);

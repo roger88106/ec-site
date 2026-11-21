@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
 import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
@@ -66,6 +67,11 @@ public class ProductCommandService {
     private final ProductLoader productLoader;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 商品を登録する。
      *
      * @param command 商品の登録コマンド
@@ -88,6 +94,7 @@ public class ProductCommandService {
 
         // 商品作成
         var product = productFactory.create(
+                idGenerator.generate(),
                 ProductCode.of(command.productCode()),
                 command.name(),
                 command.description(),

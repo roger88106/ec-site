@@ -51,7 +51,7 @@ class MockPaymentGatewayContractTest extends PaymentGatewayContractTest {
      * 確認する本番の mock
      */
     private final MockPaymentGateway gateway = new MockPaymentGateway(
-            mock(PaymentNotificationReceiver.class), new MockPaymentProperties("http://localhost:8080"), clock);
+            mock(PaymentNotificationReceiver.class), new MockPaymentProperties("http://localhost:8080"), clock, UUID::randomUUID);
 
     // ============================== テスト ==============================
 

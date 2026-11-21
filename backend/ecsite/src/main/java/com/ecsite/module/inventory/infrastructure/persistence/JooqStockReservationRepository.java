@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,11 @@ class JooqStockReservationRepository implements StockReservationRepository {
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
+
+    /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
 
     /**
      * バリアントの在庫を、バリアント ID の順に行ロックして読み込む。
@@ -78,7 +84,7 @@ class JooqStockReservationRepository implements StockReservationRepository {
                 STOCK_RESERVATION.ID, STOCK_RESERVATION.HOLDER_ID, STOCK_RESERVATION.STOCK_ITEM_ID,
                 STOCK_RESERVATION.QUANTITY, STOCK_RESERVATION.EXPIRES_AT, STOCK_RESERVATION.CREATED_AT);
         for (var entry : quantitiesByStockItem.entrySet()) {
-            insert = insert.values(UUID.randomUUID(), holderId, entry.getKey(), entry.getValue(), expiresAt, now);
+            insert = insert.values(idGenerator.generate(), holderId, entry.getKey(), entry.getValue(), expiresAt, now);
         }
         if (!quantitiesByStockItem.isEmpty()) {
             insert.execute();

@@ -2,6 +2,7 @@ package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -54,6 +55,11 @@ class JooqStockItemRepository implements StockItemRepository {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 在庫数 0 の在庫を作る。
      *
      * <p>バリアントの一意制約で、すでにあれば何もしない。
@@ -65,7 +71,7 @@ class JooqStockItemRepository implements StockItemRepository {
     public void createIfAbsent(UUID variantId, UUID productId) {
         var now = clock.instant();
         dsl.insertInto(STOCK_ITEM)
-                .set(STOCK_ITEM.ID, UUID.randomUUID())
+                .set(STOCK_ITEM.ID, idGenerator.generate())
                 .set(STOCK_ITEM.VARIANT_ID, variantId)
                 .set(STOCK_ITEM.PRODUCT_ID, productId)
                 .set(STOCK_ITEM.QUANTITY, 0)

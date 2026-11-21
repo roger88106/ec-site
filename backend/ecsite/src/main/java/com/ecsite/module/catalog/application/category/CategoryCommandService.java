@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application.category;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.catalog.application.model.command.CreateCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.RenameCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderCategoriesCommand;
@@ -35,6 +36,11 @@ public class CategoryCommandService {
     private final CategoryFactory categoryFactory;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * カテゴリを登録する。
      *
      * <p>兄弟の最後に並べる。
@@ -52,7 +58,7 @@ public class CategoryCommandService {
 
         // カテゴリ作成
         int displayOrder = categoryRepository.nextDisplayOrder(command.parentId());
-        var category = categoryFactory.create(parent, command.name(), displayOrder);
+        var category = categoryFactory.create(idGenerator.generate(), parent, command.name(), displayOrder);
 
         // カテゴリ登録 ※名称の重複は DB の一意制約で検出する
         categoryRepository.add(category);

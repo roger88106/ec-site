@@ -31,6 +31,6 @@ record TrackingRequested(UUID eventId, Instant occurredAt, UUID shipmentId, Carr
      * @return イベント
      */
     static TrackingRequested of(Instant occurredAt, UUID shipmentId, Carrier carrier, String trackingNumber) {
-        return new TrackingRequested(UUID.randomUUID(), occurredAt, shipmentId, carrier, trackingNumber);
+        return new TrackingRequested(DomainEvent.newEventId(), occurredAt, shipmentId, carrier, trackingNumber);
     }
 }

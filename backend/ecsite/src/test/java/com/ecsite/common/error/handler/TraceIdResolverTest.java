@@ -12,6 +12,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -43,7 +44,7 @@ class TraceIdResolverTest {
     @DisplayName("トレースの span があれば、その span のトレース ID を返す")
     void returnsSpanTraceId() {
         // 準備：トレース ID を持つ span のあるトレーサー
-        var resolver = new TraceIdResolver(provider(tracerWithTraceId(SPAN_TRACE_ID)));
+        var resolver = new TraceIdResolver(provider(tracerWithTraceId(SPAN_TRACE_ID)), UUID::randomUUID);
 
         // 操作と確認：span のトレース ID
         assertThat(resolver.resolve()).isEqualTo(SPAN_TRACE_ID);
@@ -57,7 +58,7 @@ class TraceIdResolverTest {
         @DisplayName("トレーサーがなければ（トレーシングが無効）、32 桁の 16 進数を新しく作り、呼ぶたびに違う")
         void createsWithoutTracer() {
             // 準備：トレーサーのない resolver
-            var resolver = new TraceIdResolver(provider(null));
+            var resolver = new TraceIdResolver(provider(null), UUID::randomUUID);
 
             // 操作と確認：新しい ID
             assertNewTraceIds(resolver);
@@ -68,7 +69,7 @@ class TraceIdResolverTest {
         void createsWithoutCurrentSpan() {
             // 準備：今の span を返さないトレーサー
             var tracer = mock(Tracer.class);
-            var resolver = new TraceIdResolver(provider(tracer));
+            var resolver = new TraceIdResolver(provider(tracer), UUID::randomUUID);
 
             // 操作と確認：新しい ID
             assertNewTraceIds(resolver);
@@ -79,7 +80,7 @@ class TraceIdResolverTest {
         @DisplayName("span のトレース ID が空白なら、32 桁の 16 進数を新しく作り、呼ぶたびに違う")
         void createsForBlankTraceId(String blank) {
             // 準備：空白のトレース ID の span のあるトレーサー
-            var resolver = new TraceIdResolver(provider(tracerWithTraceId(blank)));
+            var resolver = new TraceIdResolver(provider(tracerWithTraceId(blank)), UUID::randomUUID);
 
             // 操作と確認：新しい ID
             assertNewTraceIds(resolver);

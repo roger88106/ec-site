@@ -2,6 +2,7 @@ package com.ecsite.module.cart.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.cart.application.model.CartContentsView;
 import com.ecsite.module.cart.application.model.MergedCart;
 import com.ecsite.module.cart.application.port.CartRepository;
@@ -59,6 +60,11 @@ public class CartService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 期限が指定した時刻より前に切れたカートを、品目と共に、件数の上限まで消す。
      *
      * @param expiredBefore この時刻より前に期限が切れたカートを消す
@@ -77,7 +83,7 @@ public class CartService {
      */
     @Transactional
     public UUID createCart() {
-        var cart = Cart.create(UUID.randomUUID(), clock.instant());
+        var cart = Cart.create(idGenerator.generate(), clock.instant());
         cartRepository.create(cart);
         return cart.id();
     }
@@ -217,7 +223,7 @@ public class CartService {
             return existing.get();
         }
         // カートの作成 ※同じ会員の初回のリクエストが同時に来ても、会員ごとの一意制約で 1 つだけ作られ、全てがそのカートの ID を受け取る
-        return cartRepository.createForMemberOrGetId(Cart.createForMember(UUID.randomUUID(), memberId, clock.instant()));
+        return cartRepository.createForMemberOrGetId(Cart.createForMember(idGenerator.generate(), memberId, clock.instant()));
     }
 
     /**

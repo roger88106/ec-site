@@ -135,7 +135,7 @@
   - 範囲：共通のクラスのテスト、`src/test/java/com/ecsite/architecture/`、`OrderPlacementCommandServiceTest`、`docs/05-開発規則/backend-coding.md`
   - 確認方法：今のコードでテストが失敗する（コンパイルの失敗を含む）
   - 備考：識別子の型の JSON のテストは、テストの中だけの型（`EntityId` を実装する record）で確認する。
-- [ ] **T554-01-02** T554-01-01 のテストが通る実装を書く（決定 1、5 の JSON、6、7）。全てのモジュールの `UUID.randomUUID()` を `IdGenerator` に替える（識別子の型はまだ UUID）。イベント ID は共通のメソッドで作る。
+- [x] **T554-01-02** T554-01-01 のテストが通る実装を書く（決定 1、5 の JSON、6、7）。全てのモジュールの `UUID.randomUUID()` を `IdGenerator` に替える（識別子の型はまだ UUID）。イベント ID は共通のメソッドで作る。
   - 依存：T554-01-01
   - 範囲：共通のクラス、設定、`UUID.randomUUID()` を呼ぶクラス、domain のファクトリと生成のメソッドの引数、呼び出し元、それらのテスト
   - 確認方法：T554-01-01 のテストと、既存のテストが通る

@@ -71,7 +71,7 @@ class CurrentMemberIdsTest {
      */
     private final CurrentMemberIds currentMemberIds = new CurrentMemberIds(new CurrentMember(),
             new MemberIdResolver(new MemberQueryService(repository),
-                    new MemberCommandService(repository, Clock.systemUTC()),
+                    new MemberCommandService(repository, Clock.systemUTC(), UUID::randomUUID),
                     new MemberIdCache(new MemberIdCacheProperties(10_000, Duration.ofHours(1)))));
 
     /**

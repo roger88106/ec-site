@@ -15,12 +15,13 @@ public class TaxCategoryFactory {
     /**
      * 税率のない税区分を作る。
      *
+     * @param id   税区分 ID
      * @param name 名称
      * @return 税区分
      * @throws BusinessException 名称が 1 文字以上 {@value TaxCategory#NAME_MAX_LENGTH} 文字以内でない（{@code INVALID_TAX_CATEGORY_NAME}）
      */
-    public TaxCategory create(String name) {
-        return TaxCategory.create(UUID.randomUUID(), name);
+    public TaxCategory create(UUID id, String name) {
+        return TaxCategory.create(id, name);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
@@ -81,6 +82,11 @@ public class CheckoutCommandService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 注文手続きに進む。
      *
      * <p>全品目をカートの数量だけ引き当てる。同じカートの前の注文手続きの引当は解く（進み直し）。
@@ -122,7 +128,7 @@ public class CheckoutCommandService {
         verifyAmountInRange(quote.amounts().total(), paymentDirectory.amountRange());
 
         // 注文手続き登録と引当
-        var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);
+        var checkout = Checkout.start(idGenerator.generate(), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);
         checkoutRepository.insert(checkout);
         var shortages = stockDirectory.reserve(checkout.id(), quantities(cart.lines()), checkout.expiresAt());
         if (!shortages.isEmpty()) {

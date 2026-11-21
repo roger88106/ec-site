@@ -122,12 +122,12 @@ class TaxRatesTest {
     @DisplayName("税区分の作成・復元・置き換えのどれでも、正しい税率の一覧が通る")
     void validRatesPassEveryPath() {
         // 準備：途切れず、最後の終了が空白の税率
-        var created = factory.create("標準");
+        var created = factory.create(UUID.randomUUID(), "標準");
         var rates = List.of(rate("8", null, T1), rate("10", T1, null));
 
         // 操作：復元と、置き換え
         var restored = factory.restore(new TaxCategory.Snapshot(created.id(), "標準", rates, 0));
-        created.replaceRates(List.of(TestTaxRates.newDraft("10", T1, null)), Instant.parse("2026-10-07T15:00:00Z"));
+        created.replaceRates(UUID::randomUUID, List.of(TestTaxRates.newDraft("10", T1, null)), Instant.parse("2026-10-07T15:00:00Z"));
 
         // 確認：どちらも一覧を持つ
         assertThat(restored.rates()).hasSize(2);

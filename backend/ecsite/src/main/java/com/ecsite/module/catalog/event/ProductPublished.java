@@ -24,6 +24,6 @@ public record ProductPublished(UUID eventId, Instant occurredAt, UUID productId)
      * @return イベント
      */
     public static ProductPublished of(Instant occurredAt, UUID productId) {
-        return new ProductPublished(UUID.randomUUID(), occurredAt, productId);
+        return new ProductPublished(DomainEvent.newEventId(), occurredAt, productId);
     }
 }

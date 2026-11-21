@@ -113,7 +113,7 @@ class JooqStockItemRepositoryTest {
         @DisplayName("在庫が作られていないバリアントへの調整は見つからない")
         void rejectsUnknownVariant() {
             // 準備：運営者の調整
-            var adjustment = StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW);
+            var adjustment = StockAdjustment.create(UUID.randomUUID(), 1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW);
 
             // 操作と確認：在庫のないバリアントへの調整は NOT_FOUND
             assertBusinessError(() -> transactionTemplate.executeWithoutResult(
@@ -312,7 +312,7 @@ class JooqStockItemRepositoryTest {
      */
     private int adjust(int delta, StockAdjustmentReason reason) {
         var memo = reason == StockAdjustmentReason.OTHER ? MEMO : null;
-        var adjustment = StockAdjustment.create(delta, reason, memo, TestTokens.OPERATOR, NOW);
+        var adjustment = StockAdjustment.create(UUID.randomUUID(), delta, reason, memo, TestTokens.OPERATOR, NOW);
         return transactionTemplate.execute(status -> repository.adjust(variantId, adjustment));
     }
 
@@ -323,7 +323,7 @@ class JooqStockItemRepositoryTest {
      * @param adjustedAt 調整日時
      */
     private void adjustAt(int delta, Instant adjustedAt) {
-        var adjustment = StockAdjustment.create(delta, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, adjustedAt);
+        var adjustment = StockAdjustment.create(UUID.randomUUID(), delta, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, adjustedAt);
         transactionTemplate.execute(status -> repository.adjust(variantId, adjustment));
     }
 

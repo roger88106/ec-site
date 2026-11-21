@@ -24,6 +24,6 @@ public record ProductUnpublished(UUID eventId, Instant occurredAt, UUID productI
      * @return イベント
      */
     public static ProductUnpublished of(Instant occurredAt, UUID productId) {
-        return new ProductUnpublished(UUID.randomUUID(), occurredAt, productId);
+        return new ProductUnpublished(DomainEvent.newEventId(), occurredAt, productId);
     }
 }

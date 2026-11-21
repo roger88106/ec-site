@@ -78,7 +78,7 @@ public class InventoryTestData {
         stockItemRepository.createIfAbsent(variantId, productId);
         if (quantity != 0) {
             stockItemRepository.adjust(variantId,
-                    StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+                    StockAdjustment.create(UUID.randomUUID(), quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
         }
     }
 
@@ -91,7 +91,7 @@ public class InventoryTestData {
      */
     public void adjust(UUID variantId, int delta) {
         var reason = delta > 0 ? StockAdjustmentReason.ARRIVAL : StockAdjustmentReason.DAMAGE_OR_LOSS;
-        stockItemRepository.adjust(variantId, StockAdjustment.create(delta, reason, null, TestTokens.OPERATOR, clock.instant()));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(UUID.randomUUID(), delta, reason, null, TestTokens.OPERATOR, clock.instant()));
     }
 
     /**

@@ -27,6 +27,6 @@ public record CartChanged(UUID eventId, Instant occurredAt, UUID cartId, @Nullab
      * @return イベント
      */
     public static CartChanged of(Instant occurredAt, UUID cartId, long cartVersion) {
-        return new CartChanged(UUID.randomUUID(), occurredAt, cartId, cartVersion);
+        return new CartChanged(DomainEvent.newEventId(), occurredAt, cartId, cartVersion);
     }
 }

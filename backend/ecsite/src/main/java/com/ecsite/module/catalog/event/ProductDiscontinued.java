@@ -24,6 +24,6 @@ public record ProductDiscontinued(UUID eventId, Instant occurredAt, UUID product
      * @return イベント
      */
     public static ProductDiscontinued of(Instant occurredAt, UUID productId) {
-        return new ProductDiscontinued(UUID.randomUUID(), occurredAt, productId);
+        return new ProductDiscontinued(DomainEvent.newEventId(), occurredAt, productId);
     }
 }

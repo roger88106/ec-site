@@ -166,8 +166,8 @@ class JooqProductRepositoryTest {
 
     @BeforeEach
     void createCategories() {
-        var clothingCategory = categoryFactory.create(null, "衣類", 1);
-        var foodCategory = categoryFactory.create(null, "食品", 2);
+        var clothingCategory = categoryFactory.create(UUID.randomUUID(), null, "衣類", 1);
+        var foodCategory = categoryFactory.create(UUID.randomUUID(), null, "食品", 2);
         categoryRepository.add(clothingCategory);
         categoryRepository.add(foodCategory);
         clothing = clothingCategory.id();
@@ -185,8 +185,8 @@ class JooqProductRepositoryTest {
         void addsAndRestores() {
             // 準備：軸 2 つとバリアント 2 つを持つ商品
             var product = newProduct(PRODUCT_CODE, "色", "サイズ");
-            var white = product.addVariant(VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
-            var black = product.addVariant(VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), NOW);
+            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
+            var black = product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001-BK-M"), List.of("黒", "M"), NOW);
 
             // 操作：保存する
             repository.add(product);
@@ -247,12 +247,12 @@ class JooqProductRepositoryTest {
         void savesVariantChanges() {
             // 準備：白・黒のバリアントを持つ商品を読み、白を削除し、赤を加え、赤・黒の順に並べ替える
             var product = newProduct("ABC-001", "色");
-            var white = product.addVariant(VariantCode.of("V-WH"), List.of("白"), NOW);
-            var black = product.addVariant(VariantCode.of("V-BK"), List.of("黒"), NOW);
+            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V-WH"), List.of("白"), NOW);
+            var black = product.addVariant(UUID.randomUUID(), VariantCode.of("V-BK"), List.of("黒"), NOW);
             repository.add(product);
             var loaded = repository.findById(product.id()).orElseThrow();
             loaded.deleteVariant(white, NOW);
-            var red = loaded.addVariant(VariantCode.of("V-RD"), List.of("赤"), NOW);
+            var red = loaded.addVariant(UUID.randomUUID(), VariantCode.of("V-RD"), List.of("赤"), NOW);
             loaded.reorderVariants(List.of(red, black));
 
             // 操作：保存する
@@ -269,7 +269,7 @@ class JooqProductRepositoryTest {
         void savesPublication() {
             // 準備：バリアントを持つ非公開の商品を読み、公開する
             var product = newProduct("ABC-001");
-            product.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of(), NOW);
             repository.add(product);
             var loaded = repository.findById(product.id()).orElseThrow();
             loaded.publish(NOW);
@@ -288,11 +288,11 @@ class JooqProductRepositoryTest {
         void incrementsVersion() {
             // 準備：保存した商品（バージョン 0）を読み、基本情報を変え、バリアントを入れ替えて、公開する
             var product = newProduct("ABC-001", "色");
-            var white = product.addVariant(VariantCode.of("V-WH"), List.of("白"), NOW);
+            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V-WH"), List.of("白"), NOW);
             repository.add(product);
             var loaded = repository.findById(product.id()).orElseThrow();
             loaded.update(UPDATED_NAME, UPDATED_DESCRIPTION, TAX_CATEGORY_ID, UPDATED_PRICE, Set.of(food), NOW);
-            loaded.addVariant(VariantCode.of("V-RD"), List.of("赤"), NOW);
+            loaded.addVariant(UUID.randomUUID(), VariantCode.of("V-RD"), List.of("赤"), NOW);
             loaded.deleteVariant(white, NOW);
             loaded.publish(NOW);
 
@@ -311,7 +311,7 @@ class JooqProductRepositoryTest {
             repository.add(product);
             var mine = repository.findById(product.id()).orElseThrow();
             var theirs = repository.findById(product.id()).orElseThrow();
-            theirs.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            theirs.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of(), NOW);
             repository.save(theirs);
             mine.update(UPDATED_NAME, "", TAX_CATEGORY_ID, UPDATED_PRICE, Set.of(), NOW);
 
@@ -339,11 +339,11 @@ class JooqProductRepositoryTest {
         void rejectsDuplicatedVariantCodeAcrossProducts() {
             // 準備：バリアント品番 V1 を持つ商品と、別の商品に同じ品番のバリアントを加えたもの
             var first = newProduct("ABC-001");
-            first.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            first.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of(), NOW);
             repository.add(first);
             var second = newProduct("ABC-002");
             repository.add(second);
-            second.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            second.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of(), NOW);
 
             // 操作と確認：業務のエラー VARIANT_CODE_ALREADY_EXISTS で拒否される
             assertBusinessError(() -> repository.save(second), ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
@@ -353,7 +353,7 @@ class JooqProductRepositoryTest {
         @DisplayName("存在しないカテゴリへの所属は、外部キーの違反が業務のエラーになる")
         void rejectsUnknownCategory() {
             // 準備：存在しないカテゴリに所属する商品
-            var product = factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+            var product = factory.create(UUID.randomUUID(), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                     Set.of(UUID.randomUUID()), List.of());
 
             // 操作と確認：業務のエラー INVALID_CATEGORY_ID で拒否される
@@ -370,7 +370,7 @@ class JooqProductRepositoryTest {
         void deletesProduct() {
             // 準備：バリアントを持つ商品を保存し、削除の操作をする
             var product = newProduct("ABC-001", "色");
-            product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
             repository.add(product);
             product.delete(NOW);
 
@@ -386,14 +386,14 @@ class JooqProductRepositoryTest {
         void deletesParts() {
             // 準備：バリアント品番 V1 を持つ商品を保存して削除する
             var product = newProduct("ABC-001", "色");
-            product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
             repository.add(product);
             product.delete(NOW);
             repository.delete(product);
 
             // 操作：同じバリアント品番を持つ、別の商品を保存する
             var other = newProduct("ABC-002", "色");
-            other.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            other.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
             repository.add(other);
 
             // 確認：一意制約の違反にならず、保存されている
@@ -428,10 +428,10 @@ class JooqProductRepositoryTest {
         @DisplayName("文字数と品番の上限の値（サロゲートペアを含む）を保存して、同じ値で読み戻せる")
         void savesMaxValues() {
             // 準備：商品名・説明・軸の名前・軸の値・商品品番・バリアント品番が、どれも上限ちょうどの商品
-            var product = factory.create(ProductCode.of(MAX_PRODUCT_CODE), "𩸽".repeat(NAME_MAX_LENGTH),
+            var product = factory.create(UUID.randomUUID(), ProductCode.of(MAX_PRODUCT_CODE), "𩸽".repeat(NAME_MAX_LENGTH),
                     "𩸽".repeat(DESCRIPTION_MAX_LENGTH), TAX_CATEGORY_ID, PriceExclTax.of(1000), Set.of(clothing),
                     List.of("𩸽".repeat(AXIS_NAME_MAX_LENGTH)));
-            product.addVariant(VariantCode.of(MAX_VARIANT_CODE), List.of("𩸽".repeat(AXIS_VALUE_MAX_LENGTH)), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of(MAX_VARIANT_CODE), List.of("𩸽".repeat(AXIS_VALUE_MAX_LENGTH)), NOW);
 
             // 操作：保存して再構築する
             repository.add(product);
@@ -469,7 +469,7 @@ class JooqProductRepositoryTest {
         void savesImageChanges() {
             // 準備：画像 2 枚を持つ商品を保存して読み、3 枚目を加え、3・2・1 枚目の順に並べ替え、2 枚目を削除する
             var product = newProduct("ABC-001", "色");
-            product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
             var first = UUID.randomUUID();
             var firstAsset = UUID.randomUUID();
             var second = UUID.randomUUID();
@@ -519,7 +519,7 @@ class JooqProductRepositoryTest {
         void publishesVariantRegistered() {
             // 準備：バリアントを加えた商品
             var product = newProduct("ABC-001");
-            var variantId = product.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            var variantId = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of(), NOW);
 
             // 操作：保存する
             repository.add(product);
@@ -538,7 +538,7 @@ class JooqProductRepositoryTest {
         void publishesProductDeleted() {
             // 準備：保存した商品に、削除の操作をする
             var product = newProduct("ABC-001");
-            product.addVariant(VariantCode.of("V1"), List.of(), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of(), NOW);
             repository.add(product);
             product.delete(NOW);
 
@@ -624,7 +624,7 @@ class JooqProductRepositoryTest {
      * @return 商品
      */
     private Product newProduct(String code, String... axes) {
-        return factory.create(ProductCode.of(code), NAME, DESCRIPTION, TAX_CATEGORY_ID, PRICE, Set.of(clothing), List.of(axes));
+        return factory.create(UUID.randomUUID(), ProductCode.of(code), NAME, DESCRIPTION, TAX_CATEGORY_ID, PRICE, Set.of(clothing), List.of(axes));
     }
 
     /**
@@ -638,7 +638,7 @@ class JooqProductRepositoryTest {
      */
     private Product withVariantImage(UUID firstImageId, UUID secondImageId) {
         var product = newProduct(PRODUCT_CODE, "色");
-        var variantId = product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+        var variantId = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
         product.addImage(firstImageId, FIRST_ASSET_ID);
         product.addImage(secondImageId, SECOND_ASSET_ID);
         product.setVariantImage(variantId, secondImageId);

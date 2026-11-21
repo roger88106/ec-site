@@ -26,6 +26,6 @@ public record VariantRegistered(UUID eventId, Instant occurredAt, UUID productId
      * @return イベント
      */
     public static VariantRegistered of(Instant occurredAt, UUID productId, UUID variantId) {
-        return new VariantRegistered(UUID.randomUUID(), occurredAt, productId, variantId);
+        return new VariantRegistered(DomainEvent.newEventId(), occurredAt, productId, variantId);
     }
 }

@@ -25,6 +25,6 @@ public record RefundRequested(UUID eventId, Instant occurredAt, UUID paymentId) 
      * @return イベント
      */
     public static RefundRequested of(Instant occurredAt, UUID paymentId) {
-        return new RefundRequested(UUID.randomUUID(), occurredAt, paymentId);
+        return new RefundRequested(DomainEvent.newEventId(), occurredAt, paymentId);
     }
 }

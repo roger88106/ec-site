@@ -189,7 +189,7 @@ class ProductActionsTest {
         void withAxesAndVariant() {
             // 準備：軸が色で、バリアントを 1 つ持つ商品
             var product = productWithAxes("色");
-            product.addVariant(VariantCode.of("ABC-001-BK"), List.of("黒"), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001-BK"), List.of("黒"), NOW);
 
             // 操作と確認：追加のフラグが立つ
             assertThat(product.actions(NOW).addVariant()).isTrue();
@@ -210,13 +210,13 @@ class ProductActionsTest {
         void withoutAxesAndVariant() {
             // 準備：軸がなく、バリアントを 1 つ持つ商品
             var product = productWithAxes();
-            product.addVariant(VariantCode.of("ABC-001"), List.of(), NOW);
+            product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001"), List.of(), NOW);
 
             // 確認：追加のフラグが立たない
             assertThat(product.actions(NOW).addVariant()).isFalse();
 
             // 操作と確認：集約も、業務のエラー SINGLE_VARIANT_ONLY で追加を拒む
-            assertBusinessError(() -> product.addVariant(VariantCode.of("ABC-002"), List.of(), NOW),
+            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-002"), List.of(), NOW),
                     ProductErrorCode.SINGLE_VARIANT_ONLY);
         }
     }
@@ -253,7 +253,7 @@ class ProductActionsTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productWithAxes(String... axes) {
-        return factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+        return factory.create(UUID.randomUUID(), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of(axes));
     }
 
@@ -264,7 +264,7 @@ class ProductActionsTest {
      */
     private Product productWithVariant() {
         var product = productWithAxes();
-        product.addVariant(VariantCode.of("ABC-001"), List.of(), NOW.minus(Duration.ofDays(1)));
+        product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001"), List.of(), NOW.minus(Duration.ofDays(1)));
         return product;
     }
 

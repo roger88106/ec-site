@@ -1,6 +1,7 @@
 package com.ecsite.module.inventory.application;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.inventory.application.model.command.AdjustStockCommand;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
@@ -32,6 +33,11 @@ public class StockCommandService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 在庫を調整する。
      *
      * @param command 在庫の調整コマンド
@@ -46,7 +52,7 @@ public class StockCommandService {
      */
     public StockAdjustmentView adjustStock(@NonNull AdjustStockCommand command) {
         // 在庫調整作成 ※増減量とメモの検証
-        var adjustment = StockAdjustment.create(command.delta(), command.reason(),
+        var adjustment = StockAdjustment.create(idGenerator.generate(), command.delta(), command.reason(),
                 command.memo(), command.operator(), clock.instant());
 
         // 差分の加算と履歴の記録 ※負になる、上限を超える、在庫がないなら例外

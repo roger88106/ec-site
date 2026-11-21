@@ -452,9 +452,9 @@ class ProductImageTest {
      * @return 非公開の商品
      */
     private Product productWithVariant() {
-        var product = factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+        var product = factory.create(UUID.randomUUID(), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of());
-        product.addVariant(VariantCode.of("ABC-001"), List.of(), NOW);
+        product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001"), List.of(), NOW);
         product.pullEvents();
         return product;
     }

@@ -24,6 +24,6 @@ public record PaymentAuthorized(UUID eventId, Instant occurredAt, UUID orderId) 
      * @return イベント
      */
     public static PaymentAuthorized of(Instant occurredAt, UUID orderId) {
-        return new PaymentAuthorized(UUID.randomUUID(), occurredAt, orderId);
+        return new PaymentAuthorized(DomainEvent.newEventId(), occurredAt, orderId);
     }
 }

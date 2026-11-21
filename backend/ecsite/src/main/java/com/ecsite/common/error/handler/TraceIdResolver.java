@@ -1,5 +1,7 @@
 package com.ecsite.common.error.handler;
 
+import com.ecsite.common.id.IdGenerator;
+
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.TraceContext;
 import io.micrometer.tracing.Tracer;
@@ -8,7 +10,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * エラーレスポンスのトレース ID の解決
@@ -28,6 +29,11 @@ class TraceIdResolver {
     private final ObjectProvider<Tracer> tracer;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * トレース ID を返す。
      *
      * @return トレース ID（16 進数の文字列）
@@ -38,7 +44,7 @@ class TraceIdResolver {
                 .map(Span::context)
                 .map(TraceContext::traceId)
                 .filter(traceId -> !traceId.isBlank())
-                .orElseGet(TraceIdResolver::newTraceId);
+                .orElseGet(this::newTraceId);
     }
 
     /**
@@ -48,7 +54,7 @@ class TraceIdResolver {
      *
      * @return トレース ID
      */
-    private static String newTraceId() {
-        return UUID.randomUUID().toString().replace("-", "");
+    private String newTraceId() {
+        return idGenerator.generate().toString().replace("-", "");
     }
 }

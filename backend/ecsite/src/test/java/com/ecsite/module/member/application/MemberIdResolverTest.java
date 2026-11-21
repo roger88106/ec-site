@@ -72,7 +72,7 @@ class MemberIdResolverTest {
      * テストの対象
      */
     private final MemberIdResolver resolver = new MemberIdResolver(new MemberQueryService(repository),
-            new MemberCommandService(repository, Clock.systemUTC()), cache);
+            new MemberCommandService(repository, Clock.systemUTC(), UUID::randomUUID), cache);
 
     // ============================== テスト ==============================
 

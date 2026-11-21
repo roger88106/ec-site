@@ -163,7 +163,7 @@ class ProductVisibilityTest {
      * @return 商品
      */
     private Product restored(int sequence, PublicationStatus status, PublicationPeriod period) {
-        var created = factory.create(ProductCode.of("VIS-" + sequence), "商品 " + sequence, "",
+        var created = factory.create(UUID.randomUUID(), ProductCode.of("VIS-" + sequence), "商品 " + sequence, "",
                 UUID.randomUUID(), PriceExclTax.of(1000), Set.of(), List.of());
         var snapshot = created.toSnapshot();
         return factory.restore(new Product.Snapshot(snapshot.id(), snapshot.productCode(), snapshot.name(),

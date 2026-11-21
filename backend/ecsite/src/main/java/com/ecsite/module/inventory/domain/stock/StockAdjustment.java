@@ -134,6 +134,7 @@ public final class StockAdjustment {
      *
      * <p>空白だけのメモは、メモなしとして扱う。
      *
+     * @param id       在庫調整 ID
      * @param delta    増減量（0 以外、±{@value #MAX_MANUAL_DELTA} 以内）
      * @param reason   調整理由
      * @param memo     メモ。理由が「その他」なら必須
@@ -145,7 +146,7 @@ public final class StockAdjustment {
      * @throws BusinessException 理由が「その他」でメモがない（{@code STOCK_MEMO_REQUIRED}）
      * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
      */
-    public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
+    public static StockAdjustment create(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
         // 0 と、絶対値が上限を超える増減量は、他の条件より先に検査して拒否する（エラーの順を保つ）
         verifyDeltaNotZero(delta);
@@ -159,12 +160,13 @@ public final class StockAdjustment {
         if (reason == StockAdjustmentReason.OTHER && normalizedMemo == null) {
             throw BusinessException.of(InventoryErrorCode.STOCK_MEMO_REQUIRED);
         }
-        return new StockAdjustment(UUID.randomUUID(), delta, reason, normalizedMemo, null, null, now, operator);
+        return new StockAdjustment(id, delta, reason, normalizedMemo, null, null, now, operator);
     }
 
     /**
      * 注文による在庫調整を作る。
      *
+     * @param id          在庫調整 ID
      * @param delta       増減量（注文は負、キャンセルは正）
      * @param reason      調整理由（注文・注文のキャンセル）
      * @param orderId     注文 ID
@@ -174,7 +176,7 @@ public final class StockAdjustment {
      * @throws BusinessException        増減量が 0（{@code INVALID_STOCK_DELTA}）
      * @throws IllegalArgumentException 理由が注文に由来しない。理由が注文で増減量が正、または注文のキャンセルで増減量が負
      */
-    public static StockAdjustment forOrder(int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
+    public static StockAdjustment forOrder(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
                                            @NonNull String orderNumber, @NonNull Instant now) {
         verifyDeltaNotZero(delta);
         if (!reason.isFromOrder()) {
@@ -185,7 +187,7 @@ public final class StockAdjustment {
                 || (reason == StockAdjustmentReason.ORDER_CANCELLATION && delta < 0)) {
             throw new IllegalArgumentException("理由と増減量の符号が合いません: reason=" + reason + ", delta=" + delta);
         }
-        return new StockAdjustment(UUID.randomUUID(), delta, reason, null, orderId, orderNumber, now, null);
+        return new StockAdjustment(id, delta, reason, null, orderId, orderNumber, now, null);
     }
 
     /**

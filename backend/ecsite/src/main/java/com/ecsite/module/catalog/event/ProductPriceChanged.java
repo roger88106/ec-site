@@ -27,6 +27,6 @@ public record ProductPriceChanged(UUID eventId, Instant occurredAt, UUID product
      * @return イベント
      */
     public static ProductPriceChanged of(Instant occurredAt, UUID productId, Money priceExclTax) {
-        return new ProductPriceChanged(UUID.randomUUID(), occurredAt, productId, priceExclTax);
+        return new ProductPriceChanged(DomainEvent.newEventId(), occurredAt, productId, priceExclTax);
     }
 }

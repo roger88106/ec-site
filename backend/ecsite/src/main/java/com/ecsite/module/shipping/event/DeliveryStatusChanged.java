@@ -30,7 +30,7 @@ public record DeliveryStatusChanged(UUID eventId, Instant occurredAt, UUID order
      * @return イベント
      */
     public static DeliveryStatusChanged of(Instant occurredAt, UUID orderId, @Nullable Status from, Status to) {
-        return new DeliveryStatusChanged(UUID.randomUUID(), occurredAt, orderId, from, to);
+        return new DeliveryStatusChanged(DomainEvent.newEventId(), occurredAt, orderId, from, to);
     }
 
     /**

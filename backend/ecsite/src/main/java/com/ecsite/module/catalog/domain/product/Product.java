@@ -374,6 +374,7 @@ public class Product extends AggregateRoot {
      *
      * <p>並びの最後に加える。
      *
+     * @param variantId   バリアント ID
      * @param variantCode バリアント品番
      * @param axisValues  軸の値（商品の軸と同じ並び）
      * @param now         現在時刻
@@ -383,7 +384,7 @@ public class Product extends AggregateRoot {
      * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
      * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      */
-    public UUID addVariant(@NonNull VariantCode variantCode, @NonNull List<String> axisValues, @NonNull Instant now) {
+    public UUID addVariant(@NonNull UUID variantId, @NonNull VariantCode variantCode, @NonNull List<String> axisValues, @NonNull Instant now) {
         verifyAxisValues(axisValues);
         if (!canAddVariant(axes.size(), variants.size())) {
             throw BusinessException.of(ProductErrorCode.SINGLE_VARIANT_ONLY);
@@ -391,7 +392,7 @@ public class Product extends AggregateRoot {
         if (variants.containsCode(variantCode)) {
             throw BusinessException.of(ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
         }
-        var variant = new Variant(UUID.randomUUID(), variantCode, axisValues, variants.nextDisplayOrder(), false, null);
+        var variant = new Variant(variantId, variantCode, axisValues, variants.nextDisplayOrder(), false, null);
         if (variants.containsAxisKey(variant.axisKey())) {
             throw BusinessException.of(ProductErrorCode.VARIANT_AXIS_VALUES_ALREADY_EXISTS);
         }

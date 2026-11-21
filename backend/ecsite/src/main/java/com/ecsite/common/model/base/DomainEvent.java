@@ -21,6 +21,17 @@ public interface DomainEvent extends org.jmolecules.event.types.DomainEvent {
     UUID eventId();
 
     /**
+     * 新しいイベント ID を作る。
+     *
+     * <p>各イベントの作成のメソッドが呼ぶ。{@code UUID.randomUUID()} を直接呼んでよい、{@code IdGenerator} の実装以外の唯一の場所。
+     *
+     * @return イベント ID
+     */
+    static UUID newEventId() {
+        return UUID.randomUUID();
+    }
+
+    /**
      * イベントの発生時刻を返す。
      *
      * @return イベント発生時刻

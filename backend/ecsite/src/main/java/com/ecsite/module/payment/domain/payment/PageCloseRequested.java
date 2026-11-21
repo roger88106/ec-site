@@ -25,6 +25,6 @@ public record PageCloseRequested(UUID eventId, Instant occurredAt, UUID paymentI
      * @return イベント
      */
     public static PageCloseRequested of(Instant occurredAt, UUID paymentId) {
-        return new PageCloseRequested(UUID.randomUUID(), occurredAt, paymentId);
+        return new PageCloseRequested(DomainEvent.newEventId(), occurredAt, paymentId);
     }
 }

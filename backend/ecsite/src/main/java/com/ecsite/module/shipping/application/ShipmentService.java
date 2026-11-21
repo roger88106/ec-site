@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.application;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -43,6 +44,11 @@ public class ShipmentService {
     private final ApplicationEventPublisher events;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 出荷を作る。
      *
      * <p>配送状態は「出荷済み」で、配送状態の変化のイベントを出す。呼んだ側のトランザクションに加わる（トランザクションの外から呼ぶと例外）。
@@ -59,7 +65,7 @@ public class ShipmentService {
     public Shipment create(@NonNull UUID orderId, @NonNull Carrier carrier, @Nullable String trackingNumber,
                            @NonNull Instant shippedAt) {
         // 出荷登録
-        var shipment = Shipment.create(UUID.randomUUID(), orderId, carrier, TrackingNumber.of(trackingNumber), shippedAt);
+        var shipment = Shipment.create(idGenerator.generate(), orderId, carrier, TrackingNumber.of(trackingNumber), shippedAt);
         shipmentRepository.insert(shipment);
 
         // 配送状態の変化の発行

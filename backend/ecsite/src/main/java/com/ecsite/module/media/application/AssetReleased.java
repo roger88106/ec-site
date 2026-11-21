@@ -29,7 +29,7 @@ record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String stor
      * @return イベント
      */
     public static AssetReleased of(Instant occurredAt, Asset asset) {
-        return new AssetReleased(UUID.randomUUID(), occurredAt, asset.id(), asset.storageKey());
+        return new AssetReleased(DomainEvent.newEventId(), occurredAt, asset.id(), asset.storageKey());
     }
 
     /**
@@ -40,6 +40,6 @@ record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String stor
      * @return イベント
      */
     public static AssetReleased of(Instant occurredAt, PendingAsset pending) {
-        return new AssetReleased(UUID.randomUUID(), occurredAt, pending.id(), pending.storageKey());
+        return new AssetReleased(DomainEvent.newEventId(), occurredAt, pending.id(), pending.storageKey());
     }
 }

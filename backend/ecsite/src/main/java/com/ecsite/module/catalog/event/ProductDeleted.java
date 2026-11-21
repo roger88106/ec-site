@@ -24,6 +24,6 @@ public record ProductDeleted(UUID eventId, Instant occurredAt, UUID productId) i
      * @return イベント
      */
     public static ProductDeleted of(Instant occurredAt, UUID productId) {
-        return new ProductDeleted(UUID.randomUUID(), occurredAt, productId);
+        return new ProductDeleted(DomainEvent.newEventId(), occurredAt, productId);
     }
 }

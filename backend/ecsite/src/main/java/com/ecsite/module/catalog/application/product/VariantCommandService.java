@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.module.catalog.application.model.command.AddVariantCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderVariantsCommand;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
@@ -37,6 +38,11 @@ public class VariantCommandService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * バリアントを登録する。
      *
      * @param command バリアントの登録コマンド
@@ -54,7 +60,7 @@ public class VariantCommandService {
         var product = productLoader.get(command.productId(), command.version());
 
         // バリアント登録
-        var variantId = product.addVariant(VariantCode.of(command.variantCode()), command.axisValues(), clock.instant());
+        var variantId = product.addVariant(idGenerator.generate(), VariantCode.of(command.variantCode()), command.axisValues(), clock.instant());
 
         // 商品保存 ※別の商品とのバリアント品番の重複は DB の一意制約で検出する
         productRepository.save(product);

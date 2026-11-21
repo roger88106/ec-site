@@ -162,7 +162,7 @@ class ProductTest {
         @DisplayName("AC-13 所属カテゴリが 0 個でも登録できる")
         void acceptsNoCategory() {
             // 操作：所属カテゴリを指定せずに登録する
-            var product = factory.create(ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
+            var product = factory.create(UUID.randomUUID(), ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
                     PriceExclTax.of(PRICE_YEN), Set.of(), AXES);
 
             // 確認：所属カテゴリがない
@@ -173,7 +173,7 @@ class ProductTest {
         @DisplayName("AC-13 所属カテゴリを複数指定して登録できる")
         void acceptsMultipleCategories() {
             // 操作：所属カテゴリを 2 つ指定して登録する
-            var product = factory.create(ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
+            var product = factory.create(UUID.randomUUID(), ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
                     PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID, OTHER_CATEGORY_ID), AXES);
 
             // 確認：指定した 2 つのカテゴリに所属する
@@ -618,7 +618,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product registered() {
-        return factory.create(ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
+        return factory.create(UUID.randomUUID(), ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
                 Set.of(CATEGORY_ID), AXES);
     }
 
@@ -658,7 +658,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productWithAxes(String... axes) {
-        return factory.create(ProductCode.of(PRODUCT_CODE), NAME, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
+        return factory.create(UUID.randomUUID(), ProductCode.of(PRODUCT_CODE), NAME, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
                 Set.of(), List.of(axes));
     }
 
@@ -669,7 +669,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productNamed(String name) {
-        return factory.create(ProductCode.of(PRODUCT_CODE), name, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(), List.of());
+        return factory.create(UUID.randomUUID(), ProductCode.of(PRODUCT_CODE), name, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(), List.of());
     }
 
     /**
@@ -679,7 +679,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productDescribed(String description) {
-        return factory.create(ProductCode.of(PRODUCT_CODE), NAME, description, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
+        return factory.create(UUID.randomUUID(), ProductCode.of(PRODUCT_CODE), NAME, description, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
                 Set.of(), List.of());
     }
 
@@ -690,7 +690,7 @@ class ProductTest {
      */
     private Product publishedWithVariant() {
         var product = registered();
-        product.addVariant(VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
+        product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
         product.publish(NOW);
         return product;
     }

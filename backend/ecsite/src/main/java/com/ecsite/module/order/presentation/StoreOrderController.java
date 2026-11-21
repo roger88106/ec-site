@@ -11,7 +11,6 @@ import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.OrderCancellationCommandService;
 import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
-import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -117,8 +116,6 @@ class StoreOrderController implements OrderApi {
     @Override
     public ResponseEntity<OrderSummaryPage> listMemberOrders(Integer page, Integer size) {
         var result = orderQueryService.listForMember(currentMemberIds.require(), PageRequest.of(page, size));
-        var orderIds = result.items().stream().map(OrderSummaryView::id).toList();
-        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, orderQueryService.findPayments(orderIds),
-                orderQueryService.findShipments(orderIds)));
+        return ResponseEntity.ok(mapper.toOrderSummaryPage(result));
     }
 }

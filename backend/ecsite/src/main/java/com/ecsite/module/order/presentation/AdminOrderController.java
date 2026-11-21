@@ -12,7 +12,6 @@ import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationCommandService;
 import com.ecsite.module.order.application.OrderPaymentGatewayService;
 import com.ecsite.module.order.application.OrderQueryService;
-import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -80,9 +79,7 @@ class AdminOrderController implements OrderApi {
                 status == null ? null : mapper.toDomainStatus(status),
                 orderedFrom, orderedTo, Boolean.TRUE.equals(authorizationExpiring), Boolean.TRUE.equals(returned),
                 PageRequest.of(page, size));
-        var orderIds = result.items().stream().map(OrderSummaryView::id).toList();
-        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, orderQueryService.findPayments(orderIds),
-                orderQueryService.findShipments(orderIds)));
+        return ResponseEntity.ok(mapper.toOrderSummaryPage(result));
     }
 
     /**

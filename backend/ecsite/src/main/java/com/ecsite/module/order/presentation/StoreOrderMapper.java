@@ -30,15 +30,12 @@ import com.ecsite.common.security.AuthenticatedMember;
 import com.ecsite.module.order.application.model.command.PlaceOrderCommand;
 import com.ecsite.module.order.application.model.view.CheckoutView;
 import com.ecsite.module.order.application.model.view.OrderDetailView;
-import com.ecsite.module.order.application.model.view.OrderPayment;
+import com.ecsite.module.order.application.model.view.OrderListItemView;
 import com.ecsite.module.order.application.model.view.OrderShipment;
-import com.ecsite.module.order.application.model.view.OrderSummaryView;
 import com.ecsite.module.order.domain.quote.Quote;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -174,19 +171,16 @@ class StoreOrderMapper {
     /**
      * 自分の注文の一覧のレスポンスに変換する。
      *
-     * @param page      注文の一覧
-     * @param payments  注文 ID → 支払
-     * @param shipments 注文 ID → 出荷
+     * @param page 注文の一覧
      * @return 注文の一覧のレスポンス
      */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
-                                        Map<UUID, OrderShipment> shipments) {
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderListItemView> page) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
                 .totalItems(page.totalItems())
                 .totalPages(page.totalPages())
-                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
+                .items(page.items().stream().map(StoreOrderMapper::toSummary).toList());
     }
 
     /**
@@ -319,8 +313,10 @@ class StoreOrderMapper {
      *
      * <p>支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
      */
-    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
-                                          @Nullable OrderShipment shipment) {
+    private static OrderSummary toSummary(OrderListItemView item) {
+        var view = item.order();
+        var payment = item.payment();
+        var shipment = item.shipment();
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())

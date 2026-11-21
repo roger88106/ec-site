@@ -307,6 +307,15 @@ DB の競合（PostgreSQL のデッドロック、ロック取得の失敗）は
 
 確認方法：自動（ArchUnit）
 
+### 識別子と乱数は注入する
+
+- 識別子（UUID）は、注入した `IdGenerator`（`common.id`）で作り、`UUID.randomUUID()` を直接呼ばない。domain には識別子を引数で渡す（時刻の `Instant` と同じ）。`UUID.randomUUID()` を呼んでよいのは、`IdGenerator` の実装（`RandomIdGenerator`）と、イベント ID を作る `DomainEvent` の静的メソッドだけ。
+- 乱数は、注入した `RandomGenerator` の Bean（`RandomConfig` が `SecureRandom` で作る）を使い、`new SecureRandom()`・`new Random()` を直接書かない。
+
+理由：テストで識別子と乱数を固定し、乱数に左右される処理（注文番号の衝突など）を、固定した値で確認するため。
+
+確認方法：自動（ArchUnit。`IdGenerationTest`）
+
 ### ローカルキャッシュには期限を付ける
 
 - Caffeine のキャッシュを作るときは、期限を条件なしで指定する。認める指定は `expireAfterWrite`、`expireAfterAccess`、`expireAfter`。

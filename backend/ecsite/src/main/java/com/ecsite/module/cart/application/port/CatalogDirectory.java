@@ -1,6 +1,6 @@
 package com.ecsite.module.cart.application.port;
 
-import java.util.UUID;
+import com.ecsite.common.model.id.VariantId;
 
 /**
  * 商品カタログの腐敗防止層の port
@@ -17,5 +17,5 @@ public interface CatalogDirectory {
      * @param variantId バリアント ID
      * @return 選べれば true。存在しないバリアントは false
      */
-    boolean isSelectable(UUID variantId);
+    boolean isSelectable(VariantId variantId);
 }

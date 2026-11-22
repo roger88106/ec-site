@@ -1,5 +1,8 @@
 package com.ecsite.module.cart.domain;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,17 +46,17 @@ class CartMergeTest {
     /**
      * 白のバリアント ID
      */
-    private static final UUID WHITE = UUID.randomUUID();
+    private static final VariantId WHITE = new VariantId(UUID.randomUUID());
 
     /**
      * 黒のバリアント ID
      */
-    private static final UUID BLACK = UUID.randomUUID();
+    private static final VariantId BLACK = new VariantId(UUID.randomUUID());
 
     /**
      * 赤のバリアント ID
      */
-    private static final UUID RED = UUID.randomUUID();
+    private static final VariantId RED = new VariantId(UUID.randomUUID());
 
     // ============================== テスト ==============================
 
@@ -406,17 +409,17 @@ class CartMergeTest {
         @DisplayName("会員のカートは会員を持つ")
         void memberCartHasMember() {
             // 準備：会員 ID
-            var memberId = UUID.randomUUID();
+            var memberId = new MemberId(UUID.randomUUID());
 
             // 操作と確認：会員のカートはその会員を持つ
-            assertThat(Cart.createForMember(UUID.randomUUID(), memberId, NOW).memberId()).contains(memberId);
+            assertThat(Cart.createForMember(new CartId(UUID.randomUUID()), memberId, NOW).memberId()).contains(memberId);
         }
 
         @Test
         @DisplayName("ログインせずに作ったカートは会員を持たない")
         void guestCartHasNoMember() {
             // 操作と確認：会員がない
-            assertThat(Cart.create(UUID.randomUUID(), NOW).memberId()).isEmpty();
+            assertThat(Cart.create(new CartId(UUID.randomUUID()), NOW).memberId()).isEmpty();
         }
     }
 
@@ -430,7 +433,7 @@ class CartMergeTest {
      * @return 会員のカート
      */
     private static Cart memberCart() {
-        return Cart.createForMember(UUID.randomUUID(), UUID.randomUUID(), EARLIER.minus(Duration.ofDays(40)));
+        return Cart.createForMember(new CartId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), EARLIER.minus(Duration.ofDays(40)));
     }
 
     /**
@@ -441,7 +444,7 @@ class CartMergeTest {
      * @return ブラウザーのカート
      */
     private static Cart guestCart() {
-        return Cart.create(UUID.randomUUID(), EARLIER.minus(Duration.ofDays(40)));
+        return Cart.create(new CartId(UUID.randomUUID()), EARLIER.minus(Duration.ofDays(40)));
     }
 
     /**
@@ -480,8 +483,8 @@ class CartMergeTest {
      * @param count 入れる品目の数
      * @return 入れたバリアント ID（入れた順）
      */
-    private static List<UUID> addItems(Cart cart, int count) {
-        var variants = IntStream.range(0, count).mapToObj(i -> UUID.randomUUID()).toList();
+    private static List<VariantId> addItems(Cart cart, int count) {
+        var variants = IntStream.range(0, count).mapToObj(i -> new VariantId(UUID.randomUUID())).toList();
         variants.forEach(variantId -> cart.add(variantId, 1, EARLIER));
         return variants;
     }
@@ -492,8 +495,8 @@ class CartMergeTest {
      * @param cart 入れるカート
      * @return 入れたバリアント ID（入れた順。実行ごとに作るので、定数にできない）
      */
-    private static List<UUID> addFour(Cart cart) {
-        var variants = IntStream.range(0, 4).mapToObj(i -> UUID.randomUUID()).toList();
+    private static List<VariantId> addFour(Cart cart) {
+        var variants = IntStream.range(0, 4).mapToObj(i -> new VariantId(UUID.randomUUID())).toList();
         for (int i = 0; i < variants.size(); i++) {
             cart.add(variants.get(i), i + 1, EARLIER);
         }

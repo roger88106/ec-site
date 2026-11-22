@@ -75,7 +75,7 @@ class ReportCollectionCommandService {
      * @param event 配送状態の変化
      */
     public void record(@NonNull DeliveryStatusChanged event) {
-        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.DELIVERY_STATUS,
+        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId().value(), HistoryKind.DELIVERY_STATUS,
                 event.from() == null ? null : toDeliveryStatus(event.from()), toDeliveryStatus(event.to()),
                 event.occurredAt(), null, null));
     }

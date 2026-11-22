@@ -1,6 +1,8 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.jooq.payment.tables.records.PaymentRecord;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +53,7 @@ class PaymentRestoreFailureTest {
         }
 
         // 操作と確認：支払を読むと、その状態で戻る（他のテストの失敗が、準備の行のせいでないことの前提）
-        assertThat(repositoryReturning(payment).findById(UUID.randomUUID()))
+        assertThat(repositoryReturning(payment).findById(new PaymentId(UUID.randomUUID())))
                 .hasValueSatisfying(restored -> assertThat(restored.status()).isEqualTo(status));
     }
 
@@ -64,7 +66,7 @@ class PaymentRestoreFailureTest {
         payment.setStatus(value);
 
         // 操作と確認：支払を読むと失敗し、出力に値がない
-        assertValueIsHidden(() -> repositoryReturning(payment).findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repositoryReturning(payment).findById(new PaymentId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -77,7 +79,7 @@ class PaymentRestoreFailureTest {
         payment.setAuthorizationRef(value);
 
         // 操作と確認：支払を読むと失敗し、出力に値がない
-        assertValueIsHidden(() -> repositoryReturning(payment).findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repositoryReturning(payment).findById(new PaymentId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -89,7 +91,7 @@ class PaymentRestoreFailureTest {
         payment.setAuthorizedAt(AUTHORIZED_AT);
 
         // 操作と確認：支払を読むと失敗し、出力に時刻がない
-        assertValueIsHidden(() -> repositoryReturning(payment).findById(UUID.randomUUID()), AUTHORIZED_AT.toString(),
+        assertValueIsHidden(() -> repositoryReturning(payment).findById(new PaymentId(UUID.randomUUID())), AUTHORIZED_AT.toString(),
                 IllegalArgumentException.class);
     }
 
@@ -105,7 +107,7 @@ class PaymentRestoreFailureTest {
         payment.setAuthorizedAt(AUTHORIZED_AT);
 
         // 操作と確認：支払を読むと失敗し、出力に値がない
-        assertValueIsHidden(() -> repositoryReturning(payment).findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repositoryReturning(payment).findById(new PaymentId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -118,7 +120,7 @@ class PaymentRestoreFailureTest {
         payment.setAuthorizationRef(value);
 
         // 操作と確認：支払を読むと失敗し、出力に値がない
-        assertValueIsHidden(() -> repositoryReturning(payment).findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repositoryReturning(payment).findById(new PaymentId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @Test
@@ -130,7 +132,7 @@ class PaymentRestoreFailureTest {
         payment.setPageId(value);
 
         // 操作と確認：支払を読むと失敗し、出力に値がない
-        assertValueIsHidden(() -> repositoryReturning(payment).findById(UUID.randomUUID()), value, NullPointerException.class);
+        assertValueIsHidden(() -> repositoryReturning(payment).findById(new PaymentId(UUID.randomUUID())), value, NullPointerException.class);
     }
 
     @Test
@@ -142,7 +144,7 @@ class PaymentRestoreFailureTest {
         var dsl = new RestoreFailures().with("payment", row).dsl();
 
         // 操作と確認：概要を読むと失敗し、出力に値がない
-        assertValueIsHidden(() -> new JooqPaymentQueryRepository(dsl).findSummaries(List.of(UUID.randomUUID())), value,
+        assertValueIsHidden(() -> new JooqPaymentQueryRepository(dsl).findSummaries(List.of(new OrderId(UUID.randomUUID()))), value,
                 IllegalArgumentException.class);
     }
 

@@ -1,5 +1,6 @@
 package com.ecsite.architecture.sample.testcode;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
@@ -50,6 +51,6 @@ public final class CreatesTestData {
      * @param amount   金額
      */
     static void createPayment(PaymentApi payments, Money amount) {
-        payments.create(UUID.randomUUID(), amount, Instant.EPOCH);
+        payments.create(new OrderId(UUID.randomUUID()), amount, Instant.EPOCH);
     }
 }

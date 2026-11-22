@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.carrier;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.TrackingRequests;
@@ -84,7 +85,7 @@ class UnconnectedCarrierTrackingTest {
     void completesTrackingRequest() {
         // 操作：出荷を登録する
         var trackingNumber = ShippingTestData.trackingNumber();
-        shipments.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
+        shipments.create(new OrderId(UUID.randomUUID()), ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
 
         // 確認：依頼の処理が終わる（未完了なら待つ処理が上限の時間で失敗する）
         asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of(trackingNumber)));
@@ -97,7 +98,7 @@ class UnconnectedCarrierTrackingTest {
     @DisplayName("AC-410-1 物流のフラグを下ろしても出荷を登録でき、配送状態は出荷済みのまま")
     void staysShipped() {
         // 準備：出荷を登録し、追跡の開始の依頼が処理されるまで待つ
-        var orderId = UUID.randomUUID();
+        var orderId = new OrderId(UUID.randomUUID());
         var trackingNumber = ShippingTestData.trackingNumber();
         shipments.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, SHIPPED_AT);
         asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of(trackingNumber)));

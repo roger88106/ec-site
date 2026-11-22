@@ -86,7 +86,7 @@ public class MockPaymentGateway implements PaymentGateway {
     @Override
     public PaymentPage openPage(PageRequest request) {
         var id = PAGE_ID_PREFIX + idGenerator.generate();
-        pages.put(id, new Page(request.orderId(), request.amount(), request.returnUrl(), PageStatus.OPEN, null));
+        pages.put(id, new Page(request.orderId().value(), request.amount(), request.returnUrl(), PageStatus.OPEN, null));
         return new PaymentPage(id, properties.baseUrl() + "/mock-payment/" + id);
     }
 

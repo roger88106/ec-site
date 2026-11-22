@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 在庫の腐敗防止層
@@ -32,9 +31,8 @@ class StockApiDirectory implements StockDirectory {
      * @return 販売可能数。在庫がなければ 0
      */
     @Override
-    public int sellableQuantity(UUID variantId) {
+    public int sellableQuantity(VariantId variantId) {
         // カートは注文手続き（引当の持ち主）を知らないので、除く持ち主を指定せず（null）、全ての引当を差し引く
-        var id = new VariantId(variantId);
-        return stockReservationApi.sellableQuantities(List.of(id), null).getOrDefault(id, 0);
+        return stockReservationApi.sellableQuantities(List.of(variantId), null).getOrDefault(variantId, 0);
     }
 }

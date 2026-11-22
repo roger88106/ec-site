@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
@@ -225,7 +226,7 @@ class CheckoutCartChangeApiTest {
      * @param cartVersion カートのバージョン。バージョンを持たないイベントは null
      */
     private void publishAndAwait(@Nullable Long cartVersion) {
-        var event = new CartChanged(UUID.randomUUID(), clock.instant(), cartId, cartVersion);
+        var event = new CartChanged(UUID.randomUUID(), clock.instant(), new CartId(cartId), cartVersion);
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> publisher.publishEvent(event));
         asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.eventId().equals(event.eventId()));
     }

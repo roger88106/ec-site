@@ -2,6 +2,7 @@ package com.ecsite.module.shipping.application;
 
 import com.ecsite.common.model.base.DomainEvent;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.module.shipping.domain.ShipmentId;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,7 +19,7 @@ import java.util.UUID;
  * @param carrier        配送業者
  * @param trackingNumber 送り状番号（ハイフンを除いた数字）
  */
-record TrackingRequested(UUID eventId, Instant occurredAt, UUID shipmentId, Carrier carrier, String trackingNumber)
+record TrackingRequested(UUID eventId, Instant occurredAt, ShipmentId shipmentId, Carrier carrier, String trackingNumber)
         implements DomainEvent {
 
     /**
@@ -30,7 +31,7 @@ record TrackingRequested(UUID eventId, Instant occurredAt, UUID shipmentId, Carr
      * @param trackingNumber 送り状番号（ハイフンを除いた数字）
      * @return イベント
      */
-    static TrackingRequested of(Instant occurredAt, UUID shipmentId, Carrier carrier, String trackingNumber) {
+    static TrackingRequested of(Instant occurredAt, ShipmentId shipmentId, Carrier carrier, String trackingNumber) {
         return new TrackingRequested(DomainEvent.newEventId(), occurredAt, shipmentId, carrier, trackingNumber);
     }
 }

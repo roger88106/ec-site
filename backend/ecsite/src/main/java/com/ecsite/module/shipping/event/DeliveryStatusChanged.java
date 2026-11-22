@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.OrderId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -17,7 +18,7 @@ import java.util.UUID;
  * @param from       前の配送状態。出荷を作ったときは null
  * @param to         後の配送状態
  */
-public record DeliveryStatusChanged(UUID eventId, Instant occurredAt, UUID orderId, @Nullable Status from, Status to)
+public record DeliveryStatusChanged(UUID eventId, Instant occurredAt, OrderId orderId, @Nullable Status from, Status to)
         implements DomainEvent {
 
     /**
@@ -29,7 +30,7 @@ public record DeliveryStatusChanged(UUID eventId, Instant occurredAt, UUID order
      * @param to         後の配送状態
      * @return イベント
      */
-    public static DeliveryStatusChanged of(Instant occurredAt, UUID orderId, @Nullable Status from, Status to) {
+    public static DeliveryStatusChanged of(Instant occurredAt, OrderId orderId, @Nullable Status from, Status to) {
         return new DeliveryStatusChanged(DomainEvent.newEventId(), occurredAt, orderId, from, to);
     }
 

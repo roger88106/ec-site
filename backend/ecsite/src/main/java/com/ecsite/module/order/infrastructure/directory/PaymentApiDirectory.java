@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.model.PaymentAmountRange;
 import com.ecsite.module.order.application.model.PaymentAuthorization;
@@ -8,7 +9,6 @@ import com.ecsite.module.order.application.model.PaymentSnapshot;
 import com.ecsite.module.order.application.model.view.OrderPayment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.payment.api.PaymentApi;
-import com.ecsite.module.payment.api.model.AuthorizationDeadline;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -40,7 +40,7 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     @Override
     public void create(UUID orderId, Money amount, Instant orderedAt) {
-        paymentApi.create(orderId, amount, orderedAt);
+        paymentApi.create(new OrderId(orderId), amount, orderedAt);
     }
 
     /**
@@ -48,7 +48,7 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     @Override
     public Optional<String> pageUrl(UUID orderId) {
-        return paymentApi.pageUrl(orderId);
+        return paymentApi.pageUrl(new OrderId(orderId));
     }
 
     /**
@@ -56,7 +56,7 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     @Override
     public void capture(UUID orderId) {
-        paymentApi.capture(orderId);
+        paymentApi.capture(new OrderId(orderId));
     }
 
     /**
@@ -64,7 +64,7 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     @Override
     public void cancel(UUID orderId) {
-        paymentApi.cancel(orderId);
+        paymentApi.cancel(new OrderId(orderId));
     }
 
     /**
@@ -72,8 +72,9 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     @Override
     public Map<UUID, PaymentSnapshot> find(Collection<UUID> orderIds) {
-        var payable = paymentApi.findPayableOrderIds(orderIds);
-        return paymentApi.find(orderIds).stream().collect(Collectors.toMap(PaymentSummary::orderId,
+        var ids = orderIds.stream().map(OrderId::new).toList();
+        var payable = paymentApi.findPayableOrderIds(ids);
+        return paymentApi.find(ids).stream().collect(Collectors.toMap(summary -> summary.orderId().value(),
                 summary -> new PaymentSnapshot(toStatus(summary.status()), summary.deadline(),
                         payable.contains(summary.orderId()))));
     }
@@ -83,8 +84,9 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     @Override
     public Map<UUID, PaymentAuthorization> findAuthorizations(Collection<UUID> orderIds) {
-        return paymentApi.findAuthorizationDeadlines(orderIds).stream().collect(Collectors.toMap(AuthorizationDeadline::orderId,
-                deadline -> new PaymentAuthorization(deadline.deadline(), deadline.expiring())));
+        return paymentApi.findAuthorizationDeadlines(orderIds.stream().map(OrderId::new).toList()).stream()
+                .collect(Collectors.toMap(deadline -> deadline.orderId().value(),
+                        deadline -> new PaymentAuthorization(deadline.deadline(), deadline.expiring())));
     }
 
     /**
@@ -92,7 +94,7 @@ class PaymentApiDirectory implements PaymentDirectory {
      */
     @Override
     public List<UUID> findExpiringOrderIds() {
-        return paymentApi.findExpiringOrderIds();
+        return paymentApi.findExpiringOrderIds().stream().map(OrderId::value).toList();
     }
 
     /**

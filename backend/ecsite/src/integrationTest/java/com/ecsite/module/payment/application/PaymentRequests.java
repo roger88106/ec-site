@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.domain.payment.PageCloseRequested;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.RefundRequested;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.support.async.AsyncEvents;
@@ -79,7 +80,7 @@ public final class PaymentRequests {
      * @param orderId 注文 ID
      * @return 支払 ID
      */
-    public static UUID paymentIdOf(DSLContext dsl, UUID orderId) {
-        return dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchOne(PAYMENT_.ID);
+    public static PaymentId paymentIdOf(DSLContext dsl, UUID orderId) {
+        return dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchOne(record -> new PaymentId(record.get(PAYMENT_.ID)));
     }
 }

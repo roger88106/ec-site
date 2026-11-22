@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Shipment;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ class MockShipmentQuery {
                 .from(SHIPMENT)
                 .orderBy(SHIPMENT.SHIPPED_AT.desc(), SHIPMENT.ID)
                 .limit(limit)
-                .fetch(SHIPMENT.ORDER_ID);
+                .fetch(r -> new OrderId(r.get(SHIPMENT.ORDER_ID)));
         // 出荷の組み立て直し（列挙型への変換を含む）は、出荷のリポジトリに任せる
         var byOrderId = shipmentRepository.findAllByOrderIds(orderIds).stream()
                 .collect(Collectors.toMap(Shipment::orderId, Function.identity()));

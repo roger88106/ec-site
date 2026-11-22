@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.payment.domain.payment.AuthorizationTerm;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +12,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
-import java.util.UUID;
 
 /**
  * 決済の設定
@@ -67,7 +67,7 @@ public record PaymentProperties(
      * @param orderId 注文 ID
      * @return 戻る先の URL
      */
-    public String returnUrlOf(UUID orderId) {
+    public String returnUrlOf(OrderId orderId) {
         return returnUrl.replace("{orderId}", orderId.toString());
     }
 

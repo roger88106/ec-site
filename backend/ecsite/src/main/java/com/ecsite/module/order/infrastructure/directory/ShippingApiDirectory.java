@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
@@ -35,7 +36,7 @@ class ShippingApiDirectory implements ShippingDirectory {
      */
     @Override
     public OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
-        return toShipment(shippingApi.create(orderId, toShippingCarrier(carrier), trackingNumber, shippedAt));
+        return toShipment(shippingApi.create(new OrderId(orderId), toShippingCarrier(carrier), trackingNumber, shippedAt));
     }
 
     /**
@@ -43,8 +44,8 @@ class ShippingApiDirectory implements ShippingDirectory {
      */
     @Override
     public Map<UUID, OrderShipment> find(Collection<UUID> orderIds) {
-        return shippingApi.find(orderIds).stream()
-                .collect(Collectors.toMap(ShipmentSummary::orderId, ShippingApiDirectory::toShipment));
+        return shippingApi.find(orderIds.stream().map(OrderId::new).toList()).stream()
+                .collect(Collectors.toMap(summary -> summary.orderId().value(), ShippingApiDirectory::toShipment));
     }
 
     /**
@@ -52,7 +53,7 @@ class ShippingApiDirectory implements ShippingDirectory {
      */
     @Override
     public List<UUID> returnedOrderIds() {
-        return shippingApi.returnedOrderIds();
+        return shippingApi.returnedOrderIds().stream().map(OrderId::value).toList();
     }
 
     /**

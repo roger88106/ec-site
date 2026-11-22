@@ -1,6 +1,8 @@
 package com.ecsite.config.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.cart.event.CartChanged;
@@ -96,16 +98,16 @@ class EventRecordJsonTest {
     static Stream<Arguments> events() {
         String targetId = "\"22222222-2222-4222-8222-222222222222\"";
         return Stream.of(
-                row("CartChanged", new CartChanged(EVENT_ID, OCCURRED_AT, TARGET_ID, 7L),
+                row("CartChanged", new CartChanged(EVENT_ID, OCCURRED_AT, new CartId(TARGET_ID), 7L),
                         COMMON + "\"cartId\":" + targetId + ",\"cartVersion\":7}"),
                 row("ProductPriceChanged", new ProductPriceChanged(EVENT_ID, OCCURRED_AT, new ProductId(TARGET_ID), Money.of(1000)),
                         COMMON + "\"productId\":" + targetId + ",\"priceExclTax\":{\"yen\":1000}}"),
                 row("OrderStatusChanged", new OrderStatusChanged(EVENT_ID, OCCURRED_AT, TARGET_ID, null,
                                 OrderStatusChanged.Status.ACCEPTED, null, null),
                         COMMON + "\"orderId\":" + targetId + ",\"from\":null,\"to\":\"ACCEPTED\",\"cancellationKind\":null,\"restocked\":null}"),
-                row("PaymentAuthorized", new PaymentAuthorized(EVENT_ID, OCCURRED_AT, TARGET_ID),
+                row("PaymentAuthorized", new PaymentAuthorized(EVENT_ID, OCCURRED_AT, new OrderId(TARGET_ID)),
                         COMMON + "\"orderId\":" + targetId + "}"),
-                row("DeliveryStatusChanged", new DeliveryStatusChanged(EVENT_ID, OCCURRED_AT, TARGET_ID,
+                row("DeliveryStatusChanged", new DeliveryStatusChanged(EVENT_ID, OCCURRED_AT, new OrderId(TARGET_ID),
                                 DeliveryStatusChanged.Status.SHIPPED, DeliveryStatusChanged.Status.IN_TRANSIT),
                         COMMON + "\"orderId\":" + targetId + ",\"from\":\"SHIPPED\",\"to\":\"IN_TRANSIT\"}"));
     }

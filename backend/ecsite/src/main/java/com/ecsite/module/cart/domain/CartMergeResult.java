@@ -1,7 +1,8 @@
 package com.ecsite.module.cart.domain;
 
+import com.ecsite.common.model.id.VariantId;
+
 import java.util.List;
-import java.util.UUID;
 
 /**
  * カートを移した結果
@@ -37,6 +38,6 @@ public record CartMergeResult(List<Item> truncatedItems, List<Item> skippedItems
      * @param variantId バリアント ID
      * @param quantity  数量
      */
-    public record Item(UUID variantId, int quantity) {
+    public record Item(VariantId variantId, int quantity) {
     }
 }

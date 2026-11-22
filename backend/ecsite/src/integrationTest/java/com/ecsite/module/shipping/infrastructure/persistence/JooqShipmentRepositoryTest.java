@@ -1,9 +1,11 @@
 package com.ecsite.module.shipping.infrastructure.persistence;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
+import com.ecsite.module.shipping.domain.ShipmentId;
 import com.ecsite.module.shipping.domain.ShippingErrorCode;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 import com.ecsite.support.config.IntegrationTest;
@@ -69,15 +71,15 @@ class JooqShipmentRepositoryTest {
         @DisplayName("BR-19 出荷を保存すると、注文 ID で再取得でき、配送状態は出荷済みで、通知を反映した日時はまだない")
         void savesAndFindsByOrderId() {
             // 準備：ハイフンを含む送り状番号の出荷
-            var orderId = UUID.randomUUID();
-            var shipment = Shipment.create(UUID.randomUUID(), orderId, Carrier.YAMATO, TrackingNumber.of(HYPHENATED_TRACKING_NUMBER),
+            var orderId = new OrderId(UUID.randomUUID());
+            var shipment = Shipment.create(new ShipmentId(UUID.randomUUID()), orderId, Carrier.YAMATO, TrackingNumber.of(HYPHENATED_TRACKING_NUMBER),
                     SHIPPED_AT);
 
             // 操作：保存する
             repository.insert(shipment);
 
             // 確認：出荷のない注文 ID と一緒に読んでも、保存した出荷だけが元の値で読める
-            assertThat(repository.findAllByOrderIds(List.of(orderId, UUID.randomUUID())))
+            assertThat(repository.findAllByOrderIds(List.of(orderId, new OrderId(UUID.randomUUID()))))
                     .singleElement()
                     .satisfies(found -> assertSavedShipment(found, shipment.id(), orderId));
         }
@@ -86,7 +88,7 @@ class JooqShipmentRepositoryTest {
         @DisplayName("BR-23 同じ注文に出荷を重ねて保存すると、業務のエラーになる")
         void rejectsSecondShipmentForOrder() {
             // 準備：出荷を保存する
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             repository.insert(shipment(orderId, Carrier.YAMATO, ShippingTestData.trackingNumber()));
 
             // 操作と確認：同じ注文の 2 つ目は、業務のエラー SHIPMENT_ALREADY_EXISTS
@@ -104,9 +106,9 @@ class JooqShipmentRepositoryTest {
         void findsByCarrierAndTrackingNumber() {
             // 準備：引く出荷と、同じ配送業者で別の番号の出荷
             var digits = ShippingTestData.trackingNumber();
-            var target = shipment(UUID.randomUUID(), Carrier.YAMATO, digits);
+            var target = shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, digits);
             repository.insert(target);
-            repository.insert(shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber()));
+            repository.insert(shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, ShippingTestData.trackingNumber()));
 
             // 操作と確認：引く出荷だけ
             assertThat(repository.findAllByTrackingForUpdate(Carrier.YAMATO, TrackingNumber.of(digits)))
@@ -119,19 +121,19 @@ class JooqShipmentRepositoryTest {
             // 準備：出荷 ID が挿入の順と逆になるように、大きい ID から挿入する
             var digits = ShippingTestData.trackingNumber();
             var ids = List.of(
-                    UUID.fromString("00000000-0000-0000-0000-000000000003"),
-                    UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                    UUID.fromString("00000000-0000-0000-0000-000000000002"));
+                    new ShipmentId(UUID.fromString("00000000-0000-0000-0000-000000000003")),
+                    new ShipmentId(UUID.fromString("00000000-0000-0000-0000-000000000001")),
+                    new ShipmentId(UUID.fromString("00000000-0000-0000-0000-000000000002")));
             ids.forEach(id -> repository.insert(
-                    Shipment.create(id, UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of(digits), SHIPPED_AT)));
+                    Shipment.create(id, new OrderId(UUID.randomUUID()), Carrier.YAMATO, TrackingNumber.of(digits), SHIPPED_AT)));
 
             // 操作と確認：出荷 ID の昇順
             assertThat(repository.findAllByTrackingForUpdate(Carrier.YAMATO, TrackingNumber.of(digits)))
                     .extracting(Shipment::id)
                     .containsExactly(
-                            UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                            UUID.fromString("00000000-0000-0000-0000-000000000002"),
-                            UUID.fromString("00000000-0000-0000-0000-000000000003"));
+                            new ShipmentId(UUID.fromString("00000000-0000-0000-0000-000000000001")),
+                            new ShipmentId(UUID.fromString("00000000-0000-0000-0000-000000000002")),
+                            new ShipmentId(UUID.fromString("00000000-0000-0000-0000-000000000003")));
         }
 
         @Test
@@ -139,7 +141,7 @@ class JooqShipmentRepositoryTest {
         void doesNotFindByOtherCarrier() {
             // 準備：ヤマト運輸の出荷
             var digits = ShippingTestData.trackingNumber();
-            repository.insert(shipment(UUID.randomUUID(), Carrier.YAMATO, digits));
+            repository.insert(shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, digits));
 
             // 操作と確認：佐川急便では空
             assertThat(repository.findAllByTrackingForUpdate(Carrier.SAGAWA, TrackingNumber.of(digits))).isEmpty();
@@ -149,7 +151,7 @@ class JooqShipmentRepositoryTest {
         @DisplayName("AC-174 保存していない送り状番号では引けない")
         void doesNotFindByOtherNumber() {
             // 準備：ヤマト運輸の出荷
-            repository.insert(shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber()));
+            repository.insert(shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, ShippingTestData.trackingNumber()));
 
             // 操作と確認：別の番号では空
             assertThat(repository.findAllByTrackingForUpdate(Carrier.YAMATO, TrackingNumber.of(ShippingTestData.trackingNumber())))
@@ -165,7 +167,7 @@ class JooqShipmentRepositoryTest {
         @DisplayName("AC-174 進めた配送状態と通知を反映した日時を保存すると、再取得しても残る")
         void savesProgress() {
             // 準備：保存した出荷を、配達完了に進める
-            var shipment = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
+            var shipment = shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, ShippingTestData.trackingNumber());
             repository.insert(shipment);
             shipment.advanceTo(DeliveryStatus.DELIVERED, NOTIFIED_AT, NOTIFIED_AT);
 
@@ -190,9 +192,9 @@ class JooqShipmentRepositoryTest {
         @DisplayName("AC-189 配送状態が返送の出荷の注文 ID を返し、配達完了と出荷済みの注文 ID は返さない")
         void findsReturnedOrderIds() {
             // 準備：返送、配達完了、出荷済みの出荷
-            var returned = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
-            var delivered = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
-            var shipped = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
+            var returned = shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, ShippingTestData.trackingNumber());
+            var delivered = shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, ShippingTestData.trackingNumber());
+            var shipped = shipment(new OrderId(UUID.randomUUID()), Carrier.YAMATO, ShippingTestData.trackingNumber());
             repository.insert(returned);
             repository.insert(delivered);
             repository.insert(shipped);
@@ -227,7 +229,7 @@ class JooqShipmentRepositoryTest {
      * @param shipmentId 保存した出荷 ID（実行ごとに作るので、定数にできない）
      * @param orderId    保存した注文 ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertSavedShipment(Shipment found, UUID shipmentId, UUID orderId) {
+    private static void assertSavedShipment(Shipment found, ShipmentId shipmentId, OrderId orderId) {
         assertThat(found.id()).isEqualTo(shipmentId);
         assertThat(found.orderId()).isEqualTo(orderId);
         assertThat(found.carrier()).isEqualTo(Carrier.YAMATO);
@@ -247,7 +249,7 @@ class JooqShipmentRepositoryTest {
      * @param trackingNumber 送り状番号
      * @return 出荷
      */
-    private static Shipment shipment(UUID orderId, Carrier carrier, String trackingNumber) {
-        return Shipment.create(UUID.randomUUID(), orderId, carrier, TrackingNumber.of(trackingNumber), SHIPPED_AT);
+    private static Shipment shipment(OrderId orderId, Carrier carrier, String trackingNumber) {
+        return Shipment.create(new ShipmentId(UUID.randomUUID()), orderId, carrier, TrackingNumber.of(trackingNumber), SHIPPED_AT);
     }
 }

@@ -15,7 +15,7 @@ import java.util.UUID;
  * @param occurredAt 発生時刻
  * @param paymentId  支払 ID
  */
-public record PageCloseRequested(UUID eventId, Instant occurredAt, UUID paymentId) implements DomainEvent {
+public record PageCloseRequested(UUID eventId, Instant occurredAt, PaymentId paymentId) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -24,7 +24,7 @@ public record PageCloseRequested(UUID eventId, Instant occurredAt, UUID paymentI
      * @param paymentId  支払 ID
      * @return イベント
      */
-    public static PageCloseRequested of(Instant occurredAt, UUID paymentId) {
+    public static PageCloseRequested of(Instant occurredAt, PaymentId paymentId) {
         return new PageCloseRequested(DomainEvent.newEventId(), occurredAt, paymentId);
     }
 }

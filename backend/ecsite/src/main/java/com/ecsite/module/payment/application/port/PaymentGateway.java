@@ -1,11 +1,11 @@
 package com.ecsite.module.payment.application.port;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.model.Authorization;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
-
-import java.util.UUID;
 
 /**
  * 決済サービスの port
@@ -101,7 +101,7 @@ public interface PaymentGateway {
      * @param amount    金額（与信を取る額）
      * @param returnUrl 支払を終える・やめるときに戻る URL
      */
-    record PageRequest(UUID paymentId, UUID orderId, Money amount, String returnUrl) {
+    record PageRequest(PaymentId paymentId, OrderId orderId, Money amount, String returnUrl) {
     }
 
     /**
@@ -111,7 +111,7 @@ public interface PaymentGateway {
      * @param authorizationRef 与信の参照
      * @param amount           金額（確定する額）
      */
-    record CaptureRequest(UUID orderId, String authorizationRef, Money amount) {
+    record CaptureRequest(OrderId orderId, String authorizationRef, Money amount) {
     }
 
     /**
@@ -121,7 +121,7 @@ public interface PaymentGateway {
      * @param authorizationRef 与信の参照
      * @param amount           金額（返金する額。売上確定の総額）
      */
-    record RefundRequest(UUID orderId, String authorizationRef, Money amount) {
+    record RefundRequest(OrderId orderId, String authorizationRef, Money amount) {
     }
 
     /**

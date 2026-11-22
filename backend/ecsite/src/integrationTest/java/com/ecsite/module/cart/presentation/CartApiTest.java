@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.presentation;
 
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.common.model.id.ReservationHolderId;
 import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.event.CartChanged;
@@ -175,7 +176,7 @@ class CartApiTest {
             add(cartId, variant, 2).andExpect(status().isNoContent());
 
             // 確認：このカートの変更のイベントだけが発行されている
-            assertThat(events.stream(CartChanged.class)).extracting(CartChanged::cartId).containsExactly(cartId);
+            assertThat(events.stream(CartChanged.class)).extracting(CartChanged::cartId).containsExactly(new CartId(cartId));
         }
 
         @Test

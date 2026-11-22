@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.domain.payment;
 
 import com.ecsite.common.model.base.AggregateRoot;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
@@ -14,7 +15,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 支払
@@ -36,13 +36,13 @@ public class Payment extends AggregateRoot {
     @Identity
     @EqualsAndHashCode.Include
     @NonNull
-    private final UUID id;
+    private final PaymentId id;
 
     /**
      * 注文 ID（注文 1 つにつき支払は 1 つ）
      */
     @NonNull
-    private final UUID orderId;
+    private final OrderId orderId;
 
     /**
      * 金額（注文の総額）
@@ -135,7 +135,7 @@ public class Payment extends AggregateRoot {
      * @param captureRequestedAt         売上確定を求めた時刻
      * @param version                    バージョン
      */
-    private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
+    private Payment(@NonNull PaymentId id, @NonNull OrderId orderId, @NonNull Money amount, @NonNull Instant deadline,
                     @NonNull PaymentStatus status, @Nullable PaymentPage page, @Nullable String authorizationRef,
                     @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince,
                     @Nullable Instant captureRequestedAt, long version) {
@@ -163,7 +163,7 @@ public class Payment extends AggregateRoot {
      * @param deadline 支払の期限
      * @return 支払
      */
-    public static Payment create(UUID id, UUID orderId, Money amount, Instant deadline) {
+    public static Payment create(PaymentId id, OrderId orderId, Money amount, Instant deadline) {
         return new Payment(id, orderId, amount, deadline, PaymentStatus.UNPAID, null, null, null, null, null, 0);
     }
 
@@ -550,7 +550,7 @@ public class Payment extends AggregateRoot {
      * @param captureRequestedAt         売上確定を求めた時刻
      * @param version                    バージョン
      */
-    public record Snapshot(UUID id, UUID orderId, Money amount, Instant deadline, PaymentStatus status,
+    public record Snapshot(PaymentId id, OrderId orderId, Money amount, Instant deadline, PaymentStatus status,
                            @Nullable PaymentPage page, @Nullable String authorizationRef,
                            @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince,
                            @Nullable Instant captureRequestedAt, long version) {

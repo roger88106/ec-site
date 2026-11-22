@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.domain.payment;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
@@ -75,10 +76,10 @@ class PaymentTest {
         @DisplayName("BR-15 支払は「未払い」で作られ、支払画面はまだない")
         void createsUnpaid() {
             // 準備：注文 ID
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
 
             // 操作：支払を作る
-            var payment = Payment.create(UUID.randomUUID(), orderId, AMOUNT, DEADLINE);
+            var payment = Payment.create(new PaymentId(UUID.randomUUID()), orderId, AMOUNT, DEADLINE);
 
             // 確認：未払いで、渡した値を持ち、画面もイベントもない
             assertCreatedUnpaid(payment, orderId);
@@ -250,7 +251,7 @@ class PaymentTest {
          */
         private static Payment.Snapshot snapshotOf(PaymentStatus status, boolean hasRef, boolean hasAuthorizedAt,
                                                    boolean hasPage, boolean isAwaiting) {
-            return new Payment.Snapshot(UUID.randomUUID(), UUID.randomUUID(), AMOUNT, DEADLINE, status,
+            return new Payment.Snapshot(new PaymentId(UUID.randomUUID()), new OrderId(UUID.randomUUID()), AMOUNT, DEADLINE, status,
                     hasPage ? PAGE : null, hasRef ? AUTHORIZATION_REF : null, hasAuthorizedAt ? ORDERED_AT : null,
                     isAwaiting ? DEADLINE : null, null, 0);
         }
@@ -1438,7 +1439,7 @@ class PaymentTest {
      * @param payment 確認する支払
      * @param orderId 渡した注文 ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertCreatedUnpaid(Payment payment, UUID orderId) {
+    private static void assertCreatedUnpaid(Payment payment, OrderId orderId) {
         assertThat(payment.status()).isEqualTo(PaymentStatus.UNPAID);
         assertThat(payment.orderId()).isEqualTo(orderId);
         assertThat(payment.amount()).isEqualTo(AMOUNT);
@@ -1471,7 +1472,7 @@ class PaymentTest {
      * @return 支払
      */
     private static Payment unpaid() {
-        return Payment.create(UUID.randomUUID(), UUID.randomUUID(), AMOUNT, DEADLINE);
+        return Payment.create(new PaymentId(UUID.randomUUID()), new OrderId(UUID.randomUUID()), AMOUNT, DEADLINE);
     }
 
     /**

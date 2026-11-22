@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
@@ -133,7 +134,7 @@ class PaymentCaptureTest {
             var orderId = payments.authorized(ORDERED_AT);
 
             // 操作：売上を確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：売上確定済み
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
@@ -146,7 +147,7 @@ class PaymentCaptureTest {
             var orderId = payments.authorized(ORDERED_AT);
 
             // 操作：売上を確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：決済サービスで、この注文の売上だけが確定している
             assertThat(gateway.captured()).containsExactly(orderId);
@@ -159,7 +160,7 @@ class PaymentCaptureTest {
             var orderId = payments.authorized(ORDERED_AT);
 
             // 操作：売上を確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：決済サービスで確定した額は、支払の総額の 1 件
             assertThat(gateway.amountsOf(TestPaymentGateway.Operation.CAPTURE, orderId)).containsExactly(TOTAL);
@@ -175,10 +176,10 @@ class PaymentCaptureTest {
         void staysCaptured() {
             // 準備：売上確定済みの支払
             var orderId = payments.authorized(ORDERED_AT);
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 操作：もう一度確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：売上確定済みのまま
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
@@ -189,10 +190,10 @@ class PaymentCaptureTest {
         void callsGatewayOnce() {
             // 準備：売上確定済みの支払
             var orderId = payments.authorized(ORDERED_AT);
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 操作：もう一度確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：決済サービスの呼び出しは、1 回目の確定の 1 回だけ
             assertThat(gateway.captureCallsOf(orderId)).isEqualTo(1);
@@ -203,7 +204,7 @@ class PaymentCaptureTest {
         void keepsVersionOnRepeatedMarkCaptured() {
             // 準備：売上確定済みの支払と、そのときの支払のバージョン
             var orderId = payments.captured(ORDERED_AT);
-            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+            var payment = paymentRepository.findByOrderId(new OrderId(orderId)).orElseThrow();
             var versionAfterCapture = payment.version();
 
             // 操作：売上確定の反映がもう一度届く
@@ -224,7 +225,7 @@ class PaymentCaptureTest {
         void keepsVersionWhenNotAuthorized() {
             // 準備：売上確定済みの支払と、そのときの支払のバージョン
             var orderId = payments.captured(ORDERED_AT);
-            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+            var payment = paymentRepository.findByOrderId(new OrderId(orderId)).orElseThrow();
             var versionAfterCapture = payment.version();
 
             // 操作：与信期限切れの反映が届く
@@ -242,7 +243,7 @@ class PaymentCaptureTest {
             var orderId = withExpiredAuthorization();
 
             // 操作と確認：与信期限切れの業務のエラー
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.AUTHORIZATION_EXPIRED);
         }
 
         @Test
@@ -252,7 +253,7 @@ class PaymentCaptureTest {
             var orderId = withExpiredAuthorization();
 
             // 操作：確定する（業務のエラーになる）
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
             // 確認：与信期限切れで、決済サービスで確定した売上はない
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
@@ -266,7 +267,7 @@ class PaymentCaptureTest {
             var orderId = authorizationExpired();
 
             // 操作と確認：もう一度確定すると、同じ与信期限切れの業務のエラー
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.AUTHORIZATION_EXPIRED);
         }
 
         @Test
@@ -276,7 +277,7 @@ class PaymentCaptureTest {
             var orderId = authorizationExpired();
 
             // 操作：もう一度確定する（業務のエラーになる）
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
             // 確認：決済サービスの呼び出しは、1 回目の確定の 1 回だけ
             assertThat(gateway.captureCallsOf(orderId)).isEqualTo(1);
@@ -295,7 +296,7 @@ class PaymentCaptureTest {
             gateway.failNextCaptures(1);
 
             // 操作と確認：接続できないシステムのエラー
-            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
 
         @Test
@@ -306,7 +307,7 @@ class PaymentCaptureTest {
             gateway.failNextCaptures(1);
 
             // 操作：確定する（システムのエラーになる）
-            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
 
             // 確認：与信済みのまま
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
@@ -318,10 +319,10 @@ class PaymentCaptureTest {
             // 準備：1 回目の売上確定が、接続できずに失敗している
             var orderId = payments.authorized(ORDERED_AT);
             gateway.failNextCaptures(1);
-            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
 
             // 操作：もう一度確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：売上確定済みになり、決済サービスで確定した
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
@@ -342,7 +343,7 @@ class PaymentCaptureTest {
             gateway.duringNextCapture(() -> recordedDuring.set(captureRequestedAtOf(orderId)));
 
             // 操作：売上を確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：応答を待つ間に、求めた時刻が読めた
             assertThat(recordedDuring.get()).contains(ORDERED_AT);
@@ -356,7 +357,7 @@ class PaymentCaptureTest {
             gateway.failNextCaptures(1);
 
             // 操作：確定する（システムのエラーになる）
-            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
 
             // 確認：与信済みのままで、求めた時刻は残る
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
@@ -371,7 +372,7 @@ class PaymentCaptureTest {
 
             // 操作：時間が過ぎた後に、もう一度確定する
             clock.setInstant(ORDERED_AT.plusSeconds(60));
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：最初に求めた時刻のまま
             assertThat(captureRequestedAtOf(orderId)).contains(ORDERED_AT);
@@ -383,13 +384,13 @@ class PaymentCaptureTest {
             // 準備：1 回目の売上確定が、接続できずに失敗している
             var orderId = payments.authorized(ORDERED_AT);
             gateway.failNextCaptures(1);
-            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
 
             // 操作：時間が過ぎた後に、もう一度確定し、また接続できない
             var retriedAt = ORDERED_AT.plusSeconds(60);
             clock.setInstant(retriedAt);
             gateway.failNextCaptures(1);
-            assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+            assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
 
             // 確認：新しい時刻になる
             assertThat(captureRequestedAtOf(orderId)).contains(retriedAt);
@@ -407,7 +408,7 @@ class PaymentCaptureTest {
             var orderId = reconciledCaptured();
 
             // 操作：売上を確定する（出荷の登録）
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：売上確定済みで、決済サービスへの売上確定は、応答が届かなかった 1 回だけ
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
@@ -422,7 +423,7 @@ class PaymentCaptureTest {
             var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
 
             // 操作：注文の支払を取り消す（注文のキャンセル）
-            transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId));
+            transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(new OrderId(orderId)));
 
             // 確認：返金済みになり、総額が 1 回だけ返金され、確定した与信は取り消さない
             await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
@@ -443,7 +444,7 @@ class PaymentCaptureTest {
             var orderId = payments.created(ORDERED_AT);
 
             // 操作と確認：確定できない業務のエラー
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
         }
 
         @Test
@@ -453,7 +454,7 @@ class PaymentCaptureTest {
             var orderId = payments.created(ORDERED_AT);
 
             // 操作：確定する（業務のエラーになる）
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
 
             // 確認：未払いのままで、決済サービスの売上確定を呼ばない
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
@@ -467,7 +468,7 @@ class PaymentCaptureTest {
             var orderId = UUID.randomUUID();
 
             // 操作と確認：見つからないエラー
-            assertBusinessError(() -> paymentApi.capture(orderId), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), CommonErrorCode.NOT_FOUND);
 
             // 確認：決済サービスの売上確定を呼ばない
             assertThat(gateway.captureCallsOf(orderId)).isZero();
@@ -483,7 +484,7 @@ class PaymentCaptureTest {
      * @return 売上確定を求めた時刻。なければ空
      */
     private Optional<Instant> captureRequestedAtOf(UUID orderId) {
-        return paymentRepository.findByOrderId(orderId).orElseThrow().captureRequestedAt();
+        return paymentRepository.findByOrderId(new OrderId(orderId)).orElseThrow().captureRequestedAt();
     }
 
     // ============================== 準備の補助 ==============================
@@ -496,7 +497,7 @@ class PaymentCaptureTest {
     private UUID reconciledCaptured() {
         var orderId = payments.authorized(ORDERED_AT);
         gateway.loseNextCaptureResponses(1);
-        assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
         PaymentJobs.expireUntil(context, () -> payments.statusOf(orderId) == PaymentSummary.Status.CAPTURED);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
@@ -521,7 +522,7 @@ class PaymentCaptureTest {
      */
     private UUID authorizationExpired() {
         var orderId = withExpiredAuthorization();
-        assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+        assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.AUTHORIZATION_EXPIRED);
         return orderId;
     }
 }

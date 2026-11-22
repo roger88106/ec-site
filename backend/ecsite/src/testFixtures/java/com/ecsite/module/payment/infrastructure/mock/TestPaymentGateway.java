@@ -200,7 +200,7 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public PaymentPage openPage(PageRequest request) {
-        amountCalls.add(new AmountCall(Operation.OPEN_PAGE, request.orderId(), request.amount()));
+        amountCalls.add(new AmountCall(Operation.OPEN_PAGE, request.orderId().value(), request.amount()));
         if (consume(openFailures)) {
             throw SystemException.of("mock：支払画面を作れなくする: " + request.paymentId(), null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
@@ -257,7 +257,7 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public CaptureResult capture(CaptureRequest request) {
         captureCalls.incrementAndGet();
-        amountCalls.add(new AmountCall(Operation.CAPTURE, request.orderId(), request.amount()));
+        amountCalls.add(new AmountCall(Operation.CAPTURE, request.orderId().value(), request.amount()));
         if (consume(captureFailures)) {
             return CaptureResult.UNREACHABLE;
         }
@@ -265,9 +265,9 @@ public class TestPaymentGateway implements PaymentGateway {
             return CaptureResult.AUTHORIZATION_EXPIRED;
         }
         var result = mock.capture(request);
-        capturedAuthorizationRefs.put(request.orderId(), request.authorizationRef());
+        capturedAuthorizationRefs.put(request.orderId().value(), request.authorizationRef());
         // 注文 ID が同じなら、確定は 1 回だけ（本番の決済サービスで、確定済みとして拒否されたら成功とする扱いに合わせる）
-        captured.addIfAbsent(request.orderId());
+        captured.addIfAbsent(request.orderId().value());
         var during = duringNextCapture.getAndSet(null);
         if (during != null) {
             during.run();
@@ -299,14 +299,14 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public void refund(RefundRequest request) {
-        amountCalls.add(new AmountCall(Operation.REFUND, request.orderId(), request.amount()));
+        amountCalls.add(new AmountCall(Operation.REFUND, request.orderId().value(), request.amount()));
         runOnRefundOrVoid();
         if (consume(refundFailures)) {
             throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
         }
         mock.refund(request);
         // 注文 ID が同じなら、返金は 1 回だけ（本番の決済サービスで、返金済みとして拒否されたら成功とする扱いに合わせる）
-        refunded.addIfAbsent(request.orderId());
+        refunded.addIfAbsent(request.orderId().value());
     }
 
     // ============================== 支払画面の操作（本番の mock に渡す） ==============================

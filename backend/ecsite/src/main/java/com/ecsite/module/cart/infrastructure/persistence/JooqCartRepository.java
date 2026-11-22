@@ -2,6 +2,9 @@ package com.ecsite.module.cart.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.jooq.cart.tables.records.CartRecord;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
@@ -14,7 +17,6 @@ import org.springframework.stereotype.Repository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.cart.Tables.CART_ITEM;
@@ -47,7 +49,7 @@ class JooqCartRepository implements CartRepository {
             throw new IllegalArgumentException("会員のカートは createForMemberOrGetId で作る");
         }
         dsl.insertInto(CART_)
-                .set(CART_.ID, cart.id())
+                .set(CART_.ID, cart.id().value())
                 .set(CART_.VERSION, cart.version())
                 .set(CART_.CREATED_AT, clock.instant())
                 .set(CART_.UPDATED_AT, cart.updatedAt())
@@ -63,11 +65,11 @@ class JooqCartRepository implements CartRepository {
      * @return カート ID
      */
     @Override
-    public UUID createForMemberOrGetId(Cart cart) {
+    public CartId createForMemberOrGetId(Cart cart) {
         // 衝突したときは、会員 ID を同じ値で書き換えて RETURNING で既存の行の ID を得る（DO NOTHING では行が返らない）。他の列は書き換えない
-        return dsl.insertInto(CART_)
-                .set(CART_.ID, cart.id())
-                .set(CART_.MEMBER_ID, cart.memberId().orElseThrow())
+        var id = dsl.insertInto(CART_)
+                .set(CART_.ID, cart.id().value())
+                .set(CART_.MEMBER_ID, cart.memberId().orElseThrow().value())
                 .set(CART_.VERSION, cart.version())
                 .set(CART_.CREATED_AT, clock.instant())
                 .set(CART_.UPDATED_AT, cart.updatedAt())
@@ -77,6 +79,7 @@ class JooqCartRepository implements CartRepository {
                 .returning(CART_.ID)
                 .fetchSingle()
                 .getId();
+        return new CartId(id);
     }
 
     /**
@@ -86,8 +89,9 @@ class JooqCartRepository implements CartRepository {
      * @return カート ID。なければ空
      */
     @Override
-    public Optional<UUID> findIdByMemberId(UUID memberId) {
-        return dsl.select(CART_.ID).from(CART_).where(CART_.MEMBER_ID.eq(memberId)).fetchOptional(CART_.ID);
+    public Optional<CartId> findIdByMemberId(MemberId memberId) {
+        return dsl.select(CART_.ID).from(CART_).where(CART_.MEMBER_ID.eq(memberId.value())).fetchOptional(CART_.ID)
+                .map(CartId::new);
     }
 
     /**
@@ -99,8 +103,8 @@ class JooqCartRepository implements CartRepository {
      * @return カート。なければ空
      */
     @Override
-    public Optional<Cart> findById(UUID id) {
-        return dsl.selectFrom(CART_).where(CART_.ID.eq(id)).fetchOptional().map(this::toCart);
+    public Optional<Cart> findById(CartId id) {
+        return dsl.selectFrom(CART_).where(CART_.ID.eq(id.value())).fetchOptional().map(this::toCart);
     }
 
     /**
@@ -116,18 +120,18 @@ class JooqCartRepository implements CartRepository {
         int updated = dsl.update(CART_)
                 .set(CART_.VERSION, cart.version())
                 .set(CART_.UPDATED_AT, cart.updatedAt())
-                .where(CART_.ID.eq(cart.id()))
+                .where(CART_.ID.eq(cart.id().value()))
                 .and(CART_.VERSION.eq(cart.version() - 1))
                 .execute();
         if (updated == 0) {
             throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
         }
-        dsl.deleteFrom(CART_ITEM).where(CART_ITEM.CART_ID.eq(cart.id())).execute();
+        dsl.deleteFrom(CART_ITEM).where(CART_ITEM.CART_ID.eq(cart.id().value())).execute();
         var items = cart.itemsAt(cart.updatedAt());
         if (!items.isEmpty()) {
             var insert = dsl.insertInto(CART_ITEM, CART_ITEM.CART_ID, CART_ITEM.VARIANT_ID, CART_ITEM.QUANTITY, CART_ITEM.ADDED_AT);
             for (var item : items) {
-                insert = insert.values(cart.id(), item.variantId(), item.quantity(), item.addedAt());
+                insert = insert.values(cart.id().value(), item.variantId().value(), item.quantity(), item.addedAt());
             }
             insert.execute();
         }
@@ -164,7 +168,8 @@ class JooqCartRepository implements CartRepository {
         var items = dsl.selectFrom(CART_ITEM)
                 .where(CART_ITEM.CART_ID.eq(cart.getId()))
                 .orderBy(CART_ITEM.SEQUENCE_NO)
-                .fetch(item -> new CartItem(item.getVariantId(), item.getQuantity(), item.getAddedAt()));
-        return new Cart(cart.getId(), cart.getMemberId(), items, cart.getVersion(), cart.getUpdatedAt());
+                .fetch(item -> new CartItem(new VariantId(item.getVariantId()), item.getQuantity(), item.getAddedAt()));
+        var memberId = cart.getMemberId() == null ? null : new MemberId(cart.getMemberId());
+        return new Cart(new CartId(cart.getId()), memberId, items, cart.getVersion(), cart.getUpdatedAt());
     }
 }

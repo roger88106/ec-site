@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application.job;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.application.PaymentCommandService;
@@ -567,7 +568,7 @@ class PaymentExpiryJobTest {
             expireUntil(() -> settled(orderId));
 
             // 確認：与信の成功のイベントがこの支払に 1 件で、時刻がジョブの時刻
-            assertThat(events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(orderId)))
+            assertThat(events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(new OrderId(orderId))))
                     .singleElement().satisfies(event -> assertThat(event.occurredAt()).isEqualTo(JOB_TIME));
         }
 
@@ -813,7 +814,7 @@ class PaymentExpiryJobTest {
             // 確認：取得の呼び出しは 3 回で、4 件とも待つ支払
             assertThat(gateway.fetchAuthorizationCalls()).isEqualTo(UNAVAILABLE_LIMIT);
             assertThat(allAwaitingAuthorization(orderIds)).isTrue();
-            assertThat(paymentApi.find(orderIds)).extracting(PaymentSummary::status)
+            assertThat(paymentApi.find(orderIds.stream().map(OrderId::new).toList())).extracting(PaymentSummary::status)
                     .containsOnly(PaymentSummary.Status.UNPAID);
         }
 
@@ -872,7 +873,7 @@ class PaymentExpiryJobTest {
             gateway.duringNextCapture(() -> {
                 throw new IllegalStateException("インスタンスが止まった");
             });
-            assertThatThrownBy(() -> paymentApi.capture(orderId)).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> paymentApi.capture(new OrderId(orderId))).isInstanceOf(IllegalStateException.class);
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
             clock.setInstant(ORDERED_AT.plus(properties.captureReconcileDelay()));
 
@@ -957,7 +958,7 @@ class PaymentExpiryJobTest {
             expireUntil(() -> fetched(orderId));
 
             // 操作：出荷の登録で売上を確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：売上確定済みで、決済サービスで確定した
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.CAPTURED);
@@ -990,7 +991,7 @@ class PaymentExpiryJobTest {
             gateway.duringNextCaptureStateFetch(() -> {
                 clock.setInstant(retriedAt);
                 gateway.loseNextCaptureResponses(1);
-                assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+                assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
             });
 
             // 操作：ジョブを動かす
@@ -1012,7 +1013,7 @@ class PaymentExpiryJobTest {
             gateway.duringNextCaptureStateFetch(() -> {
                 clock.setInstant(retriedAt);
                 gateway.loseNextCaptureResponses(1);
-                assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+                assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
             });
             job.expire();
 
@@ -1079,7 +1080,7 @@ class PaymentExpiryJobTest {
 
             // 確認：状態の取得は 3 回で、4 件とも与信済み。打ち切りの warn が 1 件
             assertThat(gateway.fetchCaptureStateCalls()).isEqualTo(UNAVAILABLE_LIMIT);
-            assertThat(paymentApi.find(orderIds)).extracting(PaymentSummary::status)
+            assertThat(paymentApi.find(orderIds.stream().map(OrderId::new).toList())).extracting(PaymentSummary::status)
                     .containsOnly(PaymentSummary.Status.AUTHORIZED);
             assertThat(reconcileLogs.messages(Level.WARN).stream()
                     .filter(line -> line.contains("売上確定の照合を打ち切る") && line.contains("count=3")))
@@ -1097,7 +1098,7 @@ class PaymentExpiryJobTest {
             job.expire();
 
             // 確認：4 件とも売上確定済み
-            assertThat(paymentApi.find(orderIds)).extracting(PaymentSummary::status)
+            assertThat(paymentApi.find(orderIds.stream().map(OrderId::new).toList())).extracting(PaymentSummary::status)
                     .containsOnly(PaymentSummary.Status.CAPTURED);
         }
 
@@ -1183,7 +1184,7 @@ class PaymentExpiryJobTest {
             var target = reconcileTargetOf(orderId);
             gateway.failNextVoids(1);
             gateway.duringNextCaptureStateFetch(
-                    () -> transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId)));
+                    () -> transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(new OrderId(orderId))));
             reconcileLogs.clear();
 
             // 操作：照合する
@@ -1279,7 +1280,7 @@ class PaymentExpiryJobTest {
      * @return 全て待っていれば true
      */
     private boolean allAwaitingAuthorization(List<UUID> orderIds) {
-        var found = paymentRepository.findByOrderIds(orderIds);
+        var found = paymentRepository.findByOrderIds(orderIds.stream().map(OrderId::new).toList());
         return found.size() == orderIds.size()
                 && found.stream().allMatch(payment -> payment.awaitingAuthorizationSince().isPresent());
     }
@@ -1291,7 +1292,7 @@ class PaymentExpiryJobTest {
      * @return 全て与信済みなら true
      */
     private boolean allAuthorized(List<UUID> orderIds) {
-        var found = paymentRepository.findByOrderIds(orderIds);
+        var found = paymentRepository.findByOrderIds(orderIds.stream().map(OrderId::new).toList());
         return found.size() == orderIds.size()
                 && found.stream().allMatch(payment -> payment.status() == PaymentStatus.AUTHORIZED);
     }
@@ -1313,7 +1314,7 @@ class PaymentExpiryJobTest {
      * @return 支払
      */
     private Payment paymentOf(UUID orderId) {
-        return paymentRepository.findByOrderId(orderId).orElseThrow();
+        return paymentRepository.findByOrderId(new OrderId(orderId)).orElseThrow();
     }
 
     /**
@@ -1323,7 +1324,7 @@ class PaymentExpiryJobTest {
      * @return イベントの数
      */
     private long authorizedEvents(UUID orderId) {
-        return events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(orderId)).count();
+        return events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(new OrderId(orderId))).count();
     }
 
     /**
@@ -1333,7 +1334,7 @@ class PaymentExpiryJobTest {
      * @return イベントの数
      */
     private long expiredEvents(UUID orderId) {
-        return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(orderId)).count();
+        return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(new OrderId(orderId))).count();
     }
 
     // ============================== 準備の補助 ==============================
@@ -1376,7 +1377,7 @@ class PaymentExpiryJobTest {
         clock.setInstant(requestedAt);
         var orderId = payments.authorized(ORDERED_AT);
         gateway.loseNextCaptureResponses(1);
-        assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         return orderId;
     }
 
@@ -1390,7 +1391,7 @@ class PaymentExpiryJobTest {
         clock.setInstant(requestedAt);
         var orderId = payments.authorized(ORDERED_AT);
         gateway.failNextCaptures(1);
-        assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         return orderId;
     }
 

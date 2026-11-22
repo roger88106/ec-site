@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品カタログの腐敗防止層
@@ -32,9 +31,8 @@ class CatalogApiDirectory implements CatalogDirectory {
      * @return 選べれば true。存在しないバリアントは false
      */
     @Override
-    public boolean isSelectable(UUID variantId) {
-        var id = new VariantId(variantId);
-        var variant = catalogApi.findVariants(List.of(id)).get(id);
+    public boolean isSelectable(VariantId variantId) {
+        var variant = catalogApi.findVariants(List.of(variantId)).get(variantId);
         return variant != null && variant.visible() && !variant.salesSuspended();
     }
 }

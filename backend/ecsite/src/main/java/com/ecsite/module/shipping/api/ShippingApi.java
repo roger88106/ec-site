@@ -2,6 +2,7 @@ package com.ecsite.module.shipping.api;
 
 import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.ShipmentService;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 出荷の API
@@ -42,7 +42,7 @@ public class ShippingApi {
      * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
      * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
-    public ShipmentSummary create(@NonNull UUID orderId, @NonNull ShipmentSummary.Carrier carrier, @Nullable String trackingNumber,
+    public ShipmentSummary create(@NonNull OrderId orderId, @NonNull ShipmentSummary.Carrier carrier, @Nullable String trackingNumber,
                                   @NonNull Instant shippedAt) {
         return toSummary(shipmentService.create(orderId, toCarrier(carrier), trackingNumber, shippedAt));
     }
@@ -53,7 +53,7 @@ public class ShippingApi {
      * @param orderIds 注文 ID
      * @return 出荷。出荷のない注文は含まない
      */
-    public List<ShipmentSummary> find(@NonNull Collection<UUID> orderIds) {
+    public List<ShipmentSummary> find(@NonNull Collection<OrderId> orderIds) {
         return shipmentService.find(orderIds).stream().map(ShippingApi::toSummary).toList();
     }
 
@@ -62,7 +62,7 @@ public class ShippingApi {
      *
      * @return 注文 ID
      */
-    public List<UUID> returnedOrderIds() {
+    public List<OrderId> returnedOrderIds() {
         return shipmentService.returnedOrderIds();
     }
 

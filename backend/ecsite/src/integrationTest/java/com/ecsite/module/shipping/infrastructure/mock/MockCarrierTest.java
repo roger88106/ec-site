@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -343,7 +344,7 @@ class MockCarrierTest {
      * @param orderId        注文 ID
      * @param trackingNumber 送り状番号
      */
-    private record Created(UUID orderId, String trackingNumber) {
+    private record Created(OrderId orderId, String trackingNumber) {
     }
 
     /**
@@ -364,7 +365,7 @@ class MockCarrierTest {
      * @return 作った出荷
      */
     private Created shipped(ShipmentSummary.Carrier carrier) {
-        var orderId = UUID.randomUUID();
+        var orderId = new OrderId(UUID.randomUUID());
         var trackingNumber = ShippingTestData.trackingNumber();
         shipments.create(orderId, carrier, trackingNumber, SHIPPED_AT);
         return new Created(orderId, trackingNumber);

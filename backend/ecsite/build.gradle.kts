@@ -191,6 +191,8 @@ dependencies {
     testFixturesImplementation(libs.json.path)
     testFixturesImplementation(libs.snakeyaml)
     testFixturesImplementation(libs.jspecify)
+    // テスト用の実装が識別子の型を使う。その共通の interface は jMolecules の Identifier を継承するので、コンパイルに必要
+    testFixturesImplementation(libs.jmolecules.ddd)
 
     // --- テスト：単体 ---
     testImplementation(libs.spring.boot.starter.test)

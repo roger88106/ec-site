@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.carrier;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
@@ -264,7 +265,7 @@ class CarrierWebhookTest {
         void advancesAllShipmentsWithSameTrackingNumber() throws Exception {
             // 準備：同じ送り状番号の、別の注文の出荷を 2 つ
             var first = shipped();
-            var second = new Created(UUID.randomUUID(), first.trackingNumber());
+            var second = new Created(new OrderId(UUID.randomUUID()), first.trackingNumber());
             shipments.create(second.orderId(), ShipmentSummary.Carrier.YAMATO, second.trackingNumber(), NOW);
 
             // 操作：配達中を 1 回送る
@@ -321,7 +322,7 @@ class CarrierWebhookTest {
         void advancesOnlyShipmentShippedBeforeOccurredAt() throws Exception {
             // 準備：同じ送り状番号の、出荷日時が 1 時間違う出荷（古い出荷と、送り状番号を再利用した新しい出荷）
             var older = shipped();
-            var newer = new Created(UUID.randomUUID(), older.trackingNumber());
+            var newer = new Created(new OrderId(UUID.randomUUID()), older.trackingNumber());
             shipments.create(newer.orderId(), ShipmentSummary.Carrier.YAMATO, newer.trackingNumber(), NOW.plus(Duration.ofHours(1)));
             clock.setInstant(NOW.plus(Duration.ofHours(1)));
 
@@ -600,7 +601,7 @@ class CarrierWebhookTest {
      * @param orderId        注文 ID
      * @param trackingNumber 送り状番号
      */
-    private record Created(UUID orderId, String trackingNumber) {
+    private record Created(OrderId orderId, String trackingNumber) {
     }
 
     /**
@@ -621,7 +622,7 @@ class CarrierWebhookTest {
      * @return 作った出荷
      */
     private Created shippedAt(Instant shippedAt) {
-        var orderId = UUID.randomUUID();
+        var orderId = new OrderId(UUID.randomUUID());
         var trackingNumber = ShippingTestData.trackingNumber();
         shipments.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, shippedAt);
         return new Created(orderId, trackingNumber);

@@ -1,5 +1,8 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.api.CartContentsApi;
 import com.ecsite.module.order.application.model.CartSnapshot;
 import com.ecsite.module.order.application.port.CartDirectory;
@@ -30,8 +33,9 @@ class CartApiDirectory implements CartDirectory {
      */
     @Override
     public Optional<CartSnapshot> find(UUID cartId) {
-        return cartContentsApi.find(cartId).map(contents -> new CartSnapshot(contents.cartId(), contents.memberId(), contents.version(),
-                contents.items().stream().map(item -> new CartSnapshot.Line(item.variantId(), item.quantity())).toList()));
+        return cartContentsApi.find(new CartId(cartId)).map(contents -> new CartSnapshot(contents.cartId().value(),
+                contents.memberId() == null ? null : contents.memberId().value(), contents.version(),
+                contents.items().stream().map(item -> new CartSnapshot.Line(item.variantId().value(), item.quantity())).toList()));
     }
 
     /**
@@ -39,7 +43,7 @@ class CartApiDirectory implements CartDirectory {
      */
     @Override
     public Optional<UUID> findMemberCartId(UUID memberId) {
-        return cartContentsApi.findMemberCartId(memberId);
+        return cartContentsApi.findMemberCartId(new MemberId(memberId)).map(CartId::value);
     }
 
     /**
@@ -47,6 +51,6 @@ class CartApiDirectory implements CartDirectory {
      */
     @Override
     public void removeItems(UUID cartId, Collection<UUID> variantIds, Instant addedUntil) {
-        cartContentsApi.removeItems(cartId, variantIds, addedUntil);
+        cartContentsApi.removeItems(new CartId(cartId), variantIds.stream().map(VariantId::new).toList(), addedUntil);
     }
 }

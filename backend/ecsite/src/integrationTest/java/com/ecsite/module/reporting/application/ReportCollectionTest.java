@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.id.VariantId;
@@ -598,10 +599,10 @@ class ReportCollectionTest {
         var shippedAt = ORDERED_AT.plus(Duration.ofDays(1));
         var deliveredAt = shippedAt.plus(Duration.ofDays(1));
 
-        publish(DeliveryStatusChanged.of(deliveredAt, orderId, DeliveryStatusChanged.Status.SHIPPED,
+        publish(DeliveryStatusChanged.of(deliveredAt, new OrderId(orderId), DeliveryStatusChanged.Status.SHIPPED,
                 DeliveryStatusChanged.Status.DELIVERED));
         await().atMost(TIMEOUT).until(() -> "DELIVERED".equals(order().map(row -> row.get(SALES_ORDER.DELIVERY_STATUS)).orElse(null)));
-        publish(DeliveryStatusChanged.of(shippedAt, orderId, null, DeliveryStatusChanged.Status.SHIPPED));
+        publish(DeliveryStatusChanged.of(shippedAt, new OrderId(orderId), null, DeliveryStatusChanged.Status.SHIPPED));
         return shippedAt;
     }
 

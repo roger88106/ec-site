@@ -3,6 +3,9 @@ package com.ecsite.module.cart.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.application.model.CartContentsView;
 import com.ecsite.module.cart.application.model.MergedCart;
 import com.ecsite.module.cart.application.port.CartRepository;
@@ -23,7 +26,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * カートのサービス
@@ -82,8 +84,8 @@ public class CartService {
      * @return カート ID
      */
     @Transactional
-    public UUID createCart() {
-        var cart = Cart.create(idGenerator.generate(), clock.instant());
+    public CartId createCart() {
+        var cart = Cart.create(new CartId(idGenerator.generate()), clock.instant());
         cartRepository.create(cart);
         return cart.id();
     }
@@ -105,7 +107,7 @@ public class CartService {
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public void addItem(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId, int quantity) {
+    public void addItem(@NonNull CartId cartId, @Nullable MemberId requester, @NonNull VariantId variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
             // 選べるバリアントかの確認
             if (!catalogDirectory.isSelectable(variantId)) {
@@ -133,7 +135,7 @@ public class CartService {
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public void changeQuantity(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId, int quantity) {
+    public void changeQuantity(@NonNull CartId cartId, @Nullable MemberId requester, @NonNull VariantId variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
             // 今の数量より増やすときだけ、在庫を確認する（減らす操作は、在庫が減っていても受け付ける）
             var current = cart.quantityOf(variantId, now);
@@ -157,7 +159,7 @@ public class CartService {
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public void removeItem(@NonNull UUID cartId, @Nullable UUID requester, @NonNull UUID variantId) {
+    public void removeItem(@NonNull CartId cartId, @Nullable MemberId requester, @NonNull VariantId variantId) {
         change(cartId, requester, (cart, now) -> cart.remove(variantId, now));
     }
 
@@ -170,7 +172,7 @@ public class CartService {
      * @return カートの中身。カートがなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<CartContentsView> findContents(@NonNull UUID cartId) {
+    public Optional<CartContentsView> findContents(@NonNull CartId cartId) {
         var now = clock.instant();
         return cartRepository.findById(cartId).map(cart -> toView(cart, now));
     }
@@ -187,7 +189,7 @@ public class CartService {
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds, Instant addedUntil) {
+    public void removeItems(@NonNull CartId cartId, @NonNull Collection<VariantId> variantIds, Instant addedUntil) {
         var now = clock.instant();
         cartRepository.findById(cartId).ifPresent(cart -> {
             var version = cart.version();
@@ -203,7 +205,7 @@ public class CartService {
      * @return カート ID。会員のカートがなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<UUID> findMemberCartId(UUID memberId) {
+    public Optional<CartId> findMemberCartId(MemberId memberId) {
         return cartRepository.findIdByMemberId(memberId);
     }
 
@@ -216,14 +218,14 @@ public class CartService {
      * @return カート ID
      */
     @Transactional
-    public UUID memberCartId(@NonNull UUID memberId) {
+    public CartId memberCartId(@NonNull MemberId memberId) {
         // 既存のカートの検索
         var existing = cartRepository.findIdByMemberId(memberId);
         if (existing.isPresent()) {
             return existing.get();
         }
         // カートの作成 ※同じ会員の初回のリクエストが同時に来ても、会員ごとの一意制約で 1 つだけ作られ、全てがそのカートの ID を受け取る
-        return cartRepository.createForMemberOrGetId(Cart.createForMember(idGenerator.generate(), memberId, clock.instant()));
+        return cartRepository.createForMemberOrGetId(Cart.createForMember(new CartId(idGenerator.generate()), memberId, clock.instant()));
     }
 
     /**
@@ -241,7 +243,7 @@ public class CartService {
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
     @Transactional
-    public MergedCart merge(@NonNull UUID memberId, @NonNull UUID sourceCartId) {
+    public MergedCart merge(@NonNull MemberId memberId, @NonNull CartId sourceCartId) {
         // 移す元の取得 ※会員のカートは移す元にできない（ないカートと同じく NOT_FOUND にする）
         var source = load(sourceCartId);
         if (source.memberId().isPresent()) {
@@ -269,7 +271,7 @@ public class CartService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @param change    変更（カートと現在時刻を受け取る）
      */
-    private void change(UUID cartId, @Nullable UUID requester, CartChange change) {
+    private void change(CartId cartId, @Nullable MemberId requester, CartChange change) {
         var now = clock.instant();
         var cart = load(cartId);
         // 会員のカートは持ち主だけが変えられる。ほかの人には、ないカートと同じく NOT_FOUND にする
@@ -286,7 +288,7 @@ public class CartService {
      *
      * <p>なければ {@code NOT_FOUND}。
      */
-    private Cart load(UUID cartId) {
+    private Cart load(CartId cartId) {
         return cartRepository.findById(cartId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
@@ -303,7 +305,7 @@ public class CartService {
     /**
      * 数量が販売可能数を超えないことを確認する。
      */
-    private void verifyStock(UUID variantId, int quantity) {
+    private void verifyStock(VariantId variantId, int quantity) {
         if (quantity > stockDirectory.sellableQuantity(variantId)) {
             throw BusinessException.of(CartErrorCode.QUANTITY_EXCEEDS_STOCK);
         }

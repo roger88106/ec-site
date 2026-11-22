@@ -1,7 +1,8 @@
 package com.ecsite.module.payment.api.model;
 
+import com.ecsite.common.model.id.OrderId;
+
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 注文の支払の状態
@@ -10,7 +11,7 @@ import java.util.UUID;
  * @param status   支払の状態
  * @param deadline 支払の期限
  */
-public record PaymentSummary(UUID orderId, Status status, Instant deadline) {
+public record PaymentSummary(OrderId orderId, Status status, Instant deadline) {
 
     /**
      * 支払の状態

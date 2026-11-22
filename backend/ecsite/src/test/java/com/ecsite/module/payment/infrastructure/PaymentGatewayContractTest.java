@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
@@ -35,7 +36,7 @@ public abstract class PaymentGatewayContractTest {
     /**
      * テストの注文 ID
      */
-    protected static final UUID ORDER_ID = UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0101");
+    protected static final OrderId ORDER_ID = new OrderId(UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0101"));
 
     /**
      * テストの総額

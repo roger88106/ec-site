@@ -3,11 +3,13 @@ package com.ecsite.module.payment.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import lombok.NonNull;
@@ -19,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 決済ゲートウェイサービス
@@ -64,7 +65,7 @@ public class PaymentGatewayService {
      * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
     @Transactional(propagation = Propagation.NEVER)
-    public Optional<String> pageUrl(@NonNull UUID orderId) {
+    public Optional<String> pageUrl(@NonNull OrderId orderId) {
         // 支払取得
         var payable = queryService.findPayable(orderId);
         if (payable.isEmpty()) {
@@ -102,7 +103,7 @@ public class PaymentGatewayService {
      * @throws SystemException   決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）。支払は与信済みのまま残る
      */
     @Transactional(propagation = Propagation.NEVER)
-    public void capture(@NonNull UUID orderId) {
+    public void capture(@NonNull OrderId orderId) {
         // 支払取得と、売上確定を求めた時刻の記録 ※支払を行ロックして読み、1 つのトランザクションで記録する。
         // 決済サービスの呼び出しの前にコミットし、確定の後に止まっても照合の対象に残す
         var payment = commandService.requestCapture(orderId)
@@ -223,7 +224,7 @@ public class PaymentGatewayService {
      *
      * @param paymentId 支払 ID
      */
-    void voidAuthorization(UUID paymentId) {
+    void voidAuthorization(PaymentId paymentId) {
         queryService.findAuthorizationToVoid(paymentId).ifPresent(authorizationRef -> {
             switch (gateway.voidAuthorization(authorizationRef)) {
                 case VOIDED -> commandService.markVoided(paymentId);
@@ -242,7 +243,7 @@ public class PaymentGatewayService {
      * @param paymentId 支払 ID
      * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
-    void closePage(UUID paymentId) {
+    void closePage(PaymentId paymentId) {
         queryService.findPageToClose(paymentId).ifPresent(pageId -> {
             if (gateway.closePage(pageId) == PaymentGateway.CloseResult.ALREADY_PAID) {
                 log.warn("支払画面を閉じる前に支払が済んでいたので、与信を反映して取り消す: paymentId={}", paymentId);
@@ -258,7 +259,7 @@ public class PaymentGatewayService {
      *
      * @param paymentId 支払 ID
      */
-    void refund(UUID paymentId) {
+    void refund(PaymentId paymentId) {
         queryService.findRefundRequest(paymentId).ifPresent(request -> {
             gateway.refund(request);
             commandService.markRefunded(paymentId);

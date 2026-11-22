@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.payment.application.model.view.AuthorizationDeadlineView;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
@@ -9,6 +10,7 @@ import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -23,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -60,7 +61,7 @@ public class PaymentQueryService {
      * @param orderIds 注文 ID
      * @return 支払の状態。支払のない注文は含まない
      */
-    public List<PaymentSummaryView> findSummaries(@NonNull Collection<UUID> orderIds) {
+    public List<PaymentSummaryView> findSummaries(@NonNull Collection<OrderId> orderIds) {
         return queryRepository.findSummaries(orderIds);
     }
 
@@ -70,7 +71,7 @@ public class PaymentQueryService {
      * @param orderIds 注文 ID
      * @return 与信期限。与信を受けていない注文は含まない
      */
-    public List<AuthorizationDeadlineView> findAuthorizationDeadlines(@NonNull Collection<UUID> orderIds) {
+    public List<AuthorizationDeadlineView> findAuthorizationDeadlines(@NonNull Collection<OrderId> orderIds) {
         var term = properties.authorizationTerm();
         var now = clock.instant();
         // 期限と近いかの判定は、支払の集約に任せる
@@ -88,7 +89,7 @@ public class PaymentQueryService {
      *
      * @return 注文 ID
      */
-    public List<UUID> findExpiringOrderIds() {
+    public List<OrderId> findExpiringOrderIds() {
         var latest = properties.authorizationTerm().latestExpiringAuthorizedAt(clock.instant());
         return queryRepository.findOrderIdsAuthorizedUntil(latest);
     }
@@ -99,7 +100,7 @@ public class PaymentQueryService {
      * @param orderId 注文 ID
      * @return 支払。支払えなければ空
      */
-    public Optional<PayablePaymentView> findPayable(@NonNull UUID orderId) {
+    public Optional<PayablePaymentView> findPayable(@NonNull OrderId orderId) {
         var now = clock.instant();
         return paymentRepository.findByOrderId(orderId)
                 .filter(payment -> payment.isPayable(now))
@@ -112,7 +113,7 @@ public class PaymentQueryService {
      * @param orderIds 注文 ID
      * @return 支払える注文 ID
      */
-    public Set<UUID> findPayableOrderIds(@NonNull Collection<UUID> orderIds) {
+    public Set<OrderId> findPayableOrderIds(@NonNull Collection<OrderId> orderIds) {
         var now = clock.instant();
         return paymentRepository.findByOrderIds(orderIds).stream()
                 .filter(payment -> payment.isPayable(now))
@@ -176,7 +177,7 @@ public class PaymentQueryService {
      * @param paymentId 支払 ID
      * @return 与信の参照。与信の取消待ちでなければ空（取消済みなど）
      */
-    public Optional<String> findAuthorizationToVoid(@NonNull UUID paymentId) {
+    public Optional<String> findAuthorizationToVoid(@NonNull PaymentId paymentId) {
         return paymentRepository.findById(paymentId)
                 .filter(payment -> payment.status() == PaymentStatus.VOID_PENDING)
                 .map(Payment::authorizationRef);
@@ -188,7 +189,7 @@ public class PaymentQueryService {
      * @param paymentId 支払 ID
      * @return 支払画面 ID。支払なし以外の状態、または支払画面がなければ空
      */
-    public Optional<String> findPageToClose(@NonNull UUID paymentId) {
+    public Optional<String> findPageToClose(@NonNull PaymentId paymentId) {
         return paymentRepository.findById(paymentId)
                 .filter(payment -> payment.status() == PaymentStatus.NOT_PAID)
                 .flatMap(Payment::page)
@@ -201,7 +202,7 @@ public class PaymentQueryService {
      * @param paymentId 支払 ID
      * @return 返金のリクエスト。返金待ちでなければ空（返金済みなど）
      */
-    public Optional<PaymentGateway.RefundRequest> findRefundRequest(@NonNull UUID paymentId) {
+    public Optional<PaymentGateway.RefundRequest> findRefundRequest(@NonNull PaymentId paymentId) {
         return paymentRepository.findById(paymentId)
                 .filter(payment -> payment.status() == PaymentStatus.REFUND_PENDING)
                 .map(payment -> new PaymentGateway.RefundRequest(

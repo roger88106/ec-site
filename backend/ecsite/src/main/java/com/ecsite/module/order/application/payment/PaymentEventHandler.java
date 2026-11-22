@@ -33,7 +33,7 @@ class PaymentEventHandler {
      */
     @ApplicationModuleListener
     void on(PaymentAuthorized event) {
-        orderPaymentCommandService.accept(event.orderId());
+        orderPaymentCommandService.accept(event.orderId().value());
     }
 
     /**
@@ -43,6 +43,6 @@ class PaymentEventHandler {
      */
     @ApplicationModuleListener
     void on(PaymentExpired event) {
-        orderCancellationCommandService.expirePayment(event.orderId());
+        orderCancellationCommandService.expirePayment(event.orderId().value());
     }
 }

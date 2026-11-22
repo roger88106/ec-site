@@ -1,6 +1,9 @@
 package com.ecsite.module.cart.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
 import com.ecsite.module.cart.domain.CartItem;
@@ -52,17 +55,17 @@ class JooqCartRepositoryTest {
     /**
      * シャツのバリアント ID（カートの ID はテストごとに作るので、品目のバリアント ID は固定でよい）
      */
-    private static final UUID SHIRT = UUID.fromString("00000000-0000-0000-0000-00000000c001");
+    private static final VariantId SHIRT = new VariantId(UUID.fromString("00000000-0000-0000-0000-00000000c001"));
 
     /**
      * お茶のバリアント ID
      */
-    private static final UUID TEA = UUID.fromString("00000000-0000-0000-0000-00000000c002");
+    private static final VariantId TEA = new VariantId(UUID.fromString("00000000-0000-0000-0000-00000000c002"));
 
     /**
      * カップのバリアント ID
      */
-    private static final UUID CUP = UUID.fromString("00000000-0000-0000-0000-00000000c003");
+    private static final VariantId CUP = new VariantId(UUID.fromString("00000000-0000-0000-0000-00000000c003"));
 
     /**
      * 品目の変更を 5 回保存した後のバージョン（作った直後は 0 で、変更ごとに 1 つ上がる）
@@ -95,7 +98,7 @@ class JooqCartRepositoryTest {
         @DisplayName("保存すると、会員を持たない空のカートとして、バージョンと最終更新日時を含めて再構築できる")
         void createsAndRestoresGuestCart() {
             // 準備：ログインせずに作ったカート
-            var cart = Cart.create(UUID.randomUUID(), CREATED_AT);
+            var cart = Cart.create(new CartId(UUID.randomUUID()), CREATED_AT);
 
             // 操作：保存する
             repository.create(cart);
@@ -108,7 +111,7 @@ class JooqCartRepositoryTest {
         @DisplayName("会員のカートを渡すと、保存せずに例外にする")
         void rejectsMemberCart() {
             // 準備：会員のカート
-            var cart = Cart.createForMember(UUID.randomUUID(), UUID.randomUUID(), CREATED_AT);
+            var cart = Cart.createForMember(new CartId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), CREATED_AT);
 
             // 操作と確認：ログインせずに使うカートの作成には使えない
             assertThatThrownBy(() -> repository.create(cart)).isInstanceOf(IllegalArgumentException.class);
@@ -124,8 +127,8 @@ class JooqCartRepositoryTest {
         @DisplayName("AC-121 保存すると、会員からカートを引ける")
         void findsCartByMember() {
             // 準備：会員のカート
-            var memberId = UUID.randomUUID();
-            var cart = Cart.createForMember(UUID.randomUUID(), memberId, CREATED_AT);
+            var memberId = new MemberId(UUID.randomUUID());
+            var cart = Cart.createForMember(new CartId(UUID.randomUUID()), memberId, CREATED_AT);
 
             // 操作：保存する
             repository.createForMemberOrGetId(cart);
@@ -138,18 +141,18 @@ class JooqCartRepositoryTest {
         @DisplayName("AC-121 ほかの会員からは、カートを引けない")
         void doesNotFindCartByOtherMember() {
             // 準備：会員のカートを保存する
-            repository.createForMemberOrGetId(Cart.createForMember(UUID.randomUUID(), UUID.randomUUID(), CREATED_AT));
+            repository.createForMemberOrGetId(Cart.createForMember(new CartId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), CREATED_AT));
 
             // 操作と確認：別の会員からは何も引けない
-            assertThat(repository.findIdByMemberId(UUID.randomUUID())).isEmpty();
+            assertThat(repository.findIdByMemberId(new MemberId(UUID.randomUUID()))).isEmpty();
         }
 
         @Test
         @DisplayName("AC-121 保存すると、会員を持つカートとして再構築できる")
         void restoresMemberOfCart() {
             // 準備：会員のカートを保存する
-            var memberId = UUID.randomUUID();
-            var cart = Cart.createForMember(UUID.randomUUID(), memberId, CREATED_AT);
+            var memberId = new MemberId(UUID.randomUUID());
+            var cart = Cart.createForMember(new CartId(UUID.randomUUID()), memberId, CREATED_AT);
             repository.createForMemberOrGetId(cart);
 
             // 操作：読み直す
@@ -163,8 +166,8 @@ class JooqCartRepositoryTest {
         @DisplayName("AC-121 会員のカートがないときは、作ったカートの ID を返す")
         void createForMemberOrGetIdReturnsNewId() {
             // 準備：会員のカート
-            var memberId = UUID.randomUUID();
-            var cart = Cart.createForMember(UUID.randomUUID(), memberId, CREATED_AT);
+            var memberId = new MemberId(UUID.randomUUID());
+            var cart = Cart.createForMember(new CartId(UUID.randomUUID()), memberId, CREATED_AT);
 
             // 操作：1 つの SQL の文で作って ID を得る
             var id = repository.createForMemberOrGetId(cart);
@@ -178,20 +181,20 @@ class JooqCartRepositoryTest {
         @DisplayName("AC-121 同じ会員のカートがすでにあれば、先のカートの ID を返し、既存の行の値を変えない")
         void createForMemberOrGetIdReturnsExistingIdAndKeepsRow() {
             // 準備：会員のカートを作り、品目を入れて保存してバージョンを 1 にし、行の全ての値を控える
-            var memberId = UUID.randomUUID();
-            var first = Cart.createForMember(UUID.randomUUID(), memberId, CREATED_AT);
+            var memberId = new MemberId(UUID.randomUUID());
+            var first = Cart.createForMember(new CartId(UUID.randomUUID()), memberId, CREATED_AT);
             repository.createForMemberOrGetId(first);
             first.add(SHIRT, 1, ADDED_AT);
             repository.save(first);
-            var before = dsl.selectFrom(CART_).where(CART_.ID.eq(first.id())).fetchOne();
+            var before = dsl.selectFrom(CART_).where(CART_.ID.eq(first.id().value())).fetchOne();
 
             // 操作：同じ会員で、別の ID、バージョン 0、別の時刻のカートを渡す（例外にならない）
-            var id = repository.createForMemberOrGetId(Cart.createForMember(UUID.randomUUID(), memberId, CHANGED_AT));
+            var id = repository.createForMemberOrGetId(Cart.createForMember(new CartId(UUID.randomUUID()), memberId, CHANGED_AT));
 
             // 確認：先のカートの ID を返し、行の値（バージョン、作成日時、更新日時を含む）は変わらず、会員のカートは 1 つのまま
             assertThat(id).isEqualTo(first.id());
-            assertThat(dsl.selectFrom(CART_).where(CART_.ID.eq(first.id())).fetchOne()).isEqualTo(before);
-            assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId))).isEqualTo(1);
+            assertThat(dsl.selectFrom(CART_).where(CART_.ID.eq(first.id().value())).fetchOne()).isEqualTo(before);
+            assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId.value()))).isEqualTo(1);
         }
     }
 
@@ -276,7 +279,7 @@ class JooqCartRepositoryTest {
      * @param restored 読み直したカート
      * @param cartId   保存したカートの ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertRestoredAsNewGuestCart(Cart restored, UUID cartId) {
+    private static void assertRestoredAsNewGuestCart(Cart restored, CartId cartId) {
         assertThat(restored.id()).isEqualTo(cartId);
         assertThat(restored.memberId()).isEmpty();
         assertThat(restored.itemsAt(CREATED_AT)).isEmpty();
@@ -292,7 +295,7 @@ class JooqCartRepositoryTest {
      * @param id    カート ID
      * @param stale 古い読み込み（他の読み込みの保存の後に、品目を変えたもの）
      */
-    private record StaleCart(UUID id, Cart stale) {
+    private record StaleCart(CartId id, Cart stale) {
     }
 
     /**
@@ -303,8 +306,8 @@ class JooqCartRepositoryTest {
      *
      * @return カート ID
      */
-    private UUID cartChangedFiveTimes() {
-        var cart = Cart.create(UUID.randomUUID(), CREATED_AT);
+    private CartId cartChangedFiveTimes() {
+        var cart = Cart.create(new CartId(UUID.randomUUID()), CREATED_AT);
         repository.create(cart);
         cart.add(SHIRT, 1, ADDED_AT);
         repository.save(cart);
@@ -327,13 +330,13 @@ class JooqCartRepositoryTest {
      * @return カート ID と、古い読み込み
      */
     private StaleCart cartWithStaleCopy() {
-        var cart = Cart.create(UUID.randomUUID(), CREATED_AT);
+        var cart = Cart.create(new CartId(UUID.randomUUID()), CREATED_AT);
         repository.create(cart);
         var first = repository.findById(cart.id()).orElseThrow();
         var stale = repository.findById(cart.id()).orElseThrow();
         first.add(SHIRT, 1, ADDED_AT);
         repository.save(first);
-        stale.add(UUID.randomUUID(), 3, CHANGED_AT);
+        stale.add(new VariantId(UUID.randomUUID()), 3, CHANGED_AT);
         return new StaleCart(cart.id(), stale);
     }
 }

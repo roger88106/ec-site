@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.api;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.model.AmountRange;
 import com.ecsite.module.payment.api.model.PaymentSummary;
@@ -140,8 +141,8 @@ class PaymentApiTest {
             create(orderId);
 
             // 確認：未払いで、期限は注文日時の 30 分後
-            assertThat(paymentApi.find(List.of(orderId))).containsExactly(
-                    new PaymentSummary(orderId, PaymentSummary.Status.UNPAID, DEADLINE));
+            assertThat(paymentApi.find(List.of(new OrderId(orderId)))).containsExactly(
+                    new PaymentSummary(new OrderId(orderId), PaymentSummary.Status.UNPAID, DEADLINE));
         }
 
         @Test
@@ -156,8 +157,8 @@ class PaymentApiTest {
 
             // 確認：支払の行が 1 つで、読める支払も 1 つ
             assertThat(dsl.fetchCount(PAYMENT_, PAYMENT_.ORDER_ID.eq(orderId))).isEqualTo(1);
-            assertThat(paymentApi.find(List.of(orderId))).containsExactly(
-                    new PaymentSummary(orderId, PaymentSummary.Status.UNPAID, DEADLINE));
+            assertThat(paymentApi.find(List.of(new OrderId(orderId)))).containsExactly(
+                    new PaymentSummary(new OrderId(orderId), PaymentSummary.Status.UNPAID, DEADLINE));
         }
     }
 
@@ -172,8 +173,8 @@ class PaymentApiTest {
             var orderId = payments.created(ORDERED_AT);
 
             // 操作：URL を 2 回求める
-            var first = paymentApi.pageUrl(orderId);
-            var second = paymentApi.pageUrl(orderId);
+            var first = paymentApi.pageUrl(new OrderId(orderId));
+            var second = paymentApi.pageUrl(new OrderId(orderId));
 
             // 確認：同じ画面
             assertThat(first).isPresent();
@@ -187,8 +188,8 @@ class PaymentApiTest {
             var orderId = payments.created(ORDERED_AT);
 
             // 操作：URL を 2 回求める
-            paymentApi.pageUrl(orderId);
-            paymentApi.pageUrl(orderId);
+            paymentApi.pageUrl(new OrderId(orderId));
+            paymentApi.pageUrl(new OrderId(orderId));
 
             // 確認：決済サービスで作った画面は 1 つ
             assertThat(gateway.openedPages()).isEqualTo(1);
@@ -202,7 +203,7 @@ class PaymentApiTest {
             clock.setInstant(DEADLINE);
 
             // 操作：支払画面の URL を求める
-            var url = paymentApi.pageUrl(orderId);
+            var url = paymentApi.pageUrl(new OrderId(orderId));
 
             // 確認：URL を返さず、決済サービスで画面を作らない
             assertThat(url).isEmpty();
@@ -215,10 +216,10 @@ class PaymentApiTest {
             // 準備：未払いの支払と、画面の作成の最中に同じ注文の画面を求めるリクエスト
             var orderId = payments.created(ORDERED_AT);
             var concurrent = new AtomicReference<Optional<String>>();
-            gateway.duringNextOpen(() -> concurrent.set(paymentApi.pageUrl(orderId)));
+            gateway.duringNextOpen(() -> concurrent.set(paymentApi.pageUrl(new OrderId(orderId))));
 
             // 操作：支払画面の URL を求める
-            var url = paymentApi.pageUrl(orderId);
+            var url = paymentApi.pageUrl(new OrderId(orderId));
 
             // 確認：両方が先に覚えた画面を返し、後から覚えようとした画面は閉じている
             var lost = gateway.openedPageIds().getFirst();
@@ -237,7 +238,7 @@ class PaymentApiTest {
             gateway.duringNextOpen(() -> clock.setInstant(DEADLINE));
 
             // 操作：支払画面の URL を求める
-            var url = paymentApi.pageUrl(orderId);
+            var url = paymentApi.pageUrl(new OrderId(orderId));
 
             // 確認：URL を返さず、作った画面は閉じている
             assertThat(url).isEmpty();
@@ -249,7 +250,7 @@ class PaymentApiTest {
         @DisplayName("支払のない注文には、支払画面の URL を返さない")
         void noPageForUnknownOrder() {
             // 操作と確認：支払のない注文の URL を求めると、ない
-            assertThat(paymentApi.pageUrl(UUID.randomUUID())).isEmpty();
+            assertThat(paymentApi.pageUrl(new OrderId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -283,7 +284,7 @@ class PaymentApiTest {
 
             // 確認：与信の成功のイベントが、この注文に 1 件
             assertThat(authorizedEvents(orderId)).singleElement()
-                    .satisfies(event -> assertThat(event.orderId()).isEqualTo(orderId));
+                    .satisfies(event -> assertThat(event.orderId()).isEqualTo(new OrderId(orderId)));
         }
 
         @Test
@@ -431,12 +432,12 @@ class PaymentApiTest {
             payments.pay(authorized);
 
             // 操作：支払のない注文を加えて読む
-            var summaries = paymentApi.find(List.of(unpaid, authorized, UUID.randomUUID()));
+            var summaries = paymentApi.find(List.of(new OrderId(unpaid), new OrderId(authorized), new OrderId(UUID.randomUUID())));
 
             // 確認：支払のある 2 件だけ
             assertThat(summaries).extracting(PaymentSummary::orderId, PaymentSummary::status).containsExactlyInAnyOrder(
-                    tuple(unpaid, PaymentSummary.Status.UNPAID),
-                    tuple(authorized, PaymentSummary.Status.AUTHORIZED));
+                    tuple(new OrderId(unpaid), PaymentSummary.Status.UNPAID),
+                    tuple(new OrderId(authorized), PaymentSummary.Status.AUTHORIZED));
         }
     }
 
@@ -468,7 +469,7 @@ class PaymentApiTest {
             var orderId = UUID.randomUUID();
 
             // 操作と確認：トランザクションの外で作ると失敗する
-            assertThatThrownBy(() -> paymentApi.create(orderId, AMOUNT, ORDERED_AT))
+            assertThatThrownBy(() -> paymentApi.create(new OrderId(orderId), AMOUNT, ORDERED_AT))
                     .isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：支払の行を作っていない
@@ -482,7 +483,7 @@ class PaymentApiTest {
             var orderId = payments.created(ORDERED_AT);
 
             // 操作と確認：トランザクションの外で取り消すと失敗する
-            assertThatThrownBy(() -> paymentApi.cancel(orderId)).isInstanceOf(IllegalTransactionStateException.class);
+            assertThatThrownBy(() -> paymentApi.cancel(new OrderId(orderId))).isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：支払は未払いのまま
             assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
@@ -495,7 +496,7 @@ class PaymentApiTest {
             var orderId = payments.created(ORDERED_AT);
 
             // 操作と確認：トランザクションの中で URL を求めると失敗する
-            assertThatThrownBy(() -> transactionTemplate.execute(status -> paymentApi.pageUrl(orderId)))
+            assertThatThrownBy(() -> transactionTemplate.execute(status -> paymentApi.pageUrl(new OrderId(orderId))))
                     .isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：決済サービスで画面を作らない
@@ -509,7 +510,7 @@ class PaymentApiTest {
             var orderId = payments.authorized(ORDERED_AT);
 
             // 操作と確認：トランザクションの中で売上を確定すると失敗する
-            assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> paymentApi.capture(orderId)))
+            assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> paymentApi.capture(new OrderId(orderId))))
                     .isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：決済サービスの売上確定を呼ばず、支払は与信済みのまま
@@ -528,7 +529,7 @@ class PaymentApiTest {
      * @return イベント
      */
     private List<PaymentAuthorized> authorizedEvents(UUID orderId) {
-        return events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(orderId)).toList();
+        return events.stream(PaymentAuthorized.class).filter(event -> event.orderId().equals(new OrderId(orderId))).toList();
     }
 
     /**
@@ -539,7 +540,7 @@ class PaymentApiTest {
      * @return イベント
      */
     private List<PaymentExpired> expiredEvents(UUID orderId) {
-        return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(orderId)).toList();
+        return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(new OrderId(orderId))).toList();
     }
 
     /**
@@ -548,6 +549,6 @@ class PaymentApiTest {
      * @param orderId 注文 ID
      */
     private void create(UUID orderId) {
-        transactionTemplate.executeWithoutResult(status -> paymentApi.create(orderId, AMOUNT, ORDERED_AT));
+        transactionTemplate.executeWithoutResult(status -> paymentApi.create(new OrderId(orderId), AMOUNT, ORDERED_AT));
     }
 }

@@ -1,11 +1,13 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.model.view.PaymentCaptureView;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -20,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
@@ -65,8 +66,8 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param orderedAt 注文日時（支払の期限の起点）
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void create(@NonNull UUID orderId, @NonNull Money amount, @NonNull Instant orderedAt) {
-        var payment = Payment.create(idGenerator.generate(), orderId, amount, orderedAt.plus(properties.deadline()));
+    public void create(@NonNull OrderId orderId, @NonNull Money amount, @NonNull Instant orderedAt) {
+        var payment = Payment.create(new PaymentId(idGenerator.generate()), orderId, amount, orderedAt.plus(properties.deadline()));
         paymentRepository.insertIfAbsent(payment);
     }
 
@@ -79,7 +80,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param opened  開いた支払画面
      * @return 使う支払画面。支払えなければ空
      */
-    public Optional<PaymentPage> recordPage(@NonNull UUID orderId, @NonNull PaymentPage opened) {
+    public Optional<PaymentPage> recordPage(@NonNull OrderId orderId, @NonNull PaymentPage opened) {
         return paymentRepository.lockByOrderId(orderId)
                 // 行ロックの待ちで期限を過ぎた支払に記録しないよう、時刻は行ロックの後に取る
                 .filter(payment -> payment.isPayable(clock.instant()))
@@ -118,7 +119,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param authorization 取得した与信
      * @return 与信済みにしたら true（先に通知が届いていれば false。支払なし（NOT_PAID）の支払に反映して与信の取消待ちにしたときも false）
      */
-    public boolean authorizeFromGateway(@NonNull UUID paymentId, @NonNull Authorization authorization) {
+    public boolean authorizeFromGateway(@NonNull PaymentId paymentId, @NonNull Authorization authorization) {
         var now = clock.instant();
         return paymentRepository.lockById(paymentId).map(payment -> {
             var changed = payment.authorize(authorization.authorizationRef(), authorization.authorizedAt(), now);
@@ -140,7 +141,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param paymentId  支払 ID
      * @param readPageId 読んだときの支払画面 ID。なければ null
      */
-    public void expire(@NonNull UUID paymentId, @Nullable String readPageId) {
+    public void expire(@NonNull PaymentId paymentId, @Nullable String readPageId) {
         var now = clock.instant();
         paymentRepository.lockById(paymentId).ifPresent(payment -> {
             // 未払いでなければ、次の回の検索は読まないので、見送りにしない
@@ -173,7 +174,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param paymentId 支払 ID
      */
-    public void awaitAuthorization(@NonNull UUID paymentId) {
+    public void awaitAuthorization(@NonNull PaymentId paymentId) {
         var now = clock.instant();
         // 行ロックの後に確認し直し、読んでから通知が届いて与信済みになった支払を変えない
         modify(paymentId, payment -> payment.awaitAuthorization(now));
@@ -190,7 +191,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param orderId 注文 ID
      * @return 売上確定に使う支払（状態は、行ロックで読んだ時点の値）。支払がなければ空
      */
-    public Optional<PaymentCaptureView> requestCapture(@NonNull UUID orderId) {
+    public Optional<PaymentCaptureView> requestCapture(@NonNull OrderId orderId) {
         return paymentRepository.lockByOrderId(orderId).map(payment -> {
             // 行ロックの待ちで早まらないよう、時刻は行ロックの後に取る
             if (payment.requestCapture(clock.instant())) {
@@ -208,7 +209,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param paymentId 支払 ID
      * @return 変えた後の状態（売上確定済み、または返金待ち）。変えなければ（すでに売上確定済みなど）空
      */
-    public Optional<PaymentStatus> markCaptured(@NonNull UUID paymentId) {
+    public Optional<PaymentStatus> markCaptured(@NonNull PaymentId paymentId) {
         var now = clock.instant();
         return paymentRepository.lockById(paymentId).filter(payment -> payment.capture(now)).map(payment -> {
             paymentRepository.update(payment);
@@ -226,7 +227,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param readRequestedAt 照合で読んだ売上確定を求めた時刻
      * @return 削除したら true
      */
-    public boolean clearCaptureRequest(@NonNull UUID paymentId, @NonNull Instant readRequestedAt) {
+    public boolean clearCaptureRequest(@NonNull PaymentId paymentId, @NonNull Instant readRequestedAt) {
         return modify(paymentId, payment -> payment.clearCaptureRequest(readRequestedAt));
     }
 
@@ -235,7 +236,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param paymentId 支払 ID
      */
-    public void markAuthorizationExpired(@NonNull UUID paymentId) {
+    public void markAuthorizationExpired(@NonNull PaymentId paymentId) {
         modify(paymentId, Payment::expireAuthorization);
     }
 
@@ -248,7 +249,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param orderId 注文 ID
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void cancel(@NonNull UUID orderId) {
+    public void cancel(@NonNull OrderId orderId) {
         // 支払のない注文（決済を入れる前の注文）は、取り消すものがない
         paymentRepository.lockByOrderId(orderId).ifPresentOrElse(payment -> {
             // 変えたときだけ保存する
@@ -263,7 +264,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param paymentId 支払 ID
      */
-    public void markVoided(@NonNull UUID paymentId) {
+    public void markVoided(@NonNull PaymentId paymentId) {
         modify(paymentId, Payment::markVoided);
     }
 
@@ -272,7 +273,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      *
      * @param paymentId 支払 ID
      */
-    public void markRefunded(@NonNull UUID paymentId) {
+    public void markRefunded(@NonNull PaymentId paymentId) {
         modify(paymentId, Payment::markRefunded);
     }
 
@@ -301,7 +302,7 @@ public class PaymentCommandService implements PaymentNotificationReceiver {
      * @param operation 支払への操作。変えたら true を返す
      * @return 変えて保存したら true
      */
-    private boolean modify(UUID paymentId, Predicate<Payment> operation) {
+    private boolean modify(PaymentId paymentId, Predicate<Payment> operation) {
         return paymentRepository.lockById(paymentId).filter(operation).map(payment -> {
             paymentRepository.update(payment);
             return true;

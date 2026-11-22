@@ -15,7 +15,7 @@ import java.util.UUID;
  * @param occurredAt 発生時刻
  * @param paymentId  支払 ID
  */
-public record RefundRequested(UUID eventId, Instant occurredAt, UUID paymentId) implements DomainEvent {
+public record RefundRequested(UUID eventId, Instant occurredAt, PaymentId paymentId) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -24,7 +24,7 @@ public record RefundRequested(UUID eventId, Instant occurredAt, UUID paymentId) 
      * @param paymentId  支払 ID
      * @return イベント
      */
-    public static RefundRequested of(Instant occurredAt, UUID paymentId) {
+    public static RefundRequested of(Instant occurredAt, PaymentId paymentId) {
         return new RefundRequested(DomainEvent.newEventId(), occurredAt, paymentId);
     }
 }

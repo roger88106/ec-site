@@ -2,7 +2,6 @@ package com.ecsite.module.catalog.api;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.catalog.api.model.ShownProductSummary;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;

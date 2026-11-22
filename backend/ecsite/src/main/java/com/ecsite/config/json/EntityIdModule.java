@@ -83,6 +83,9 @@ class EntityIdModule extends SimpleModule {
      */
     private static final class EntityIdSerializer extends StdSerializer<EntityId> {
 
+        /**
+         * 書き方を作る。
+         */
         EntityIdSerializer() {
             super(EntityId.class);
         }
@@ -121,7 +124,14 @@ class EntityIdModule extends SimpleModule {
     @RequiredArgsConstructor
     private static final class EntityIdDeserializer extends ValueDeserializer<Object> {
 
+        /**
+         * 作る型
+         */
         private final Class<?> type;
+
+        /**
+         * 作る型の、UUID 1 つのコンストラクター
+         */
         private final Constructor<?> constructor;
 
         @Override

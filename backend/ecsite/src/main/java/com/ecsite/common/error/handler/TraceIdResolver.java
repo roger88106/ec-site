@@ -1,7 +1,6 @@
 package com.ecsite.common.error.handler;
 
 import com.ecsite.common.id.IdGenerator;
-
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.TraceContext;
 import io.micrometer.tracing.Tracer;

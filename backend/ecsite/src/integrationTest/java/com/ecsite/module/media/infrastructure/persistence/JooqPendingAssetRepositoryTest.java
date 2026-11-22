@@ -5,6 +5,7 @@ import com.ecsite.module.media.application.port.PendingAssetRepository;
 import com.ecsite.module.media.domain.PendingAsset;
 import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.persistence.QueryPlans;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.DisplayName;
@@ -176,11 +177,24 @@ class JooqPendingAssetRepositoryTest {
             var deleted = repository.deleteExpiredBefore(LONG_AGO, 2);
 
             // 確認：古い 2 つの全ての項目を返し（上限より多く削除しない）、最も新しいものだけが残る
-            // ※上限より多く削除する誤りは、選ぶ行を繰り返し評価する実行計画のときだけ起き、計画は表の行数や統計で変わるので、毎回は再現しない
+            // ※上限より多く削除する誤りは、選ぶ行を再評価する実行計画のときだけ起きる。計画を強制して確認するのは、次のテスト
             assertThat(deleted).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(oldest, middle);
             assertThat(exists(oldest.id())).isFalse();
             assertThat(exists(middle.id())).isFalse();
             assertThat(exists(newest.id())).isTrue();
+        }
+
+        @Test
+        @DisplayName("選ぶ行を再評価する計画でも、件数の上限までしか削除しない")
+        void deletesUpToLimitEvenIfSubqueryIsRescanned() {
+            // 準備：基準より前の 3 つの仮のアセットと、選ぶ行を外側の行ごとに再評価する計画
+            for (int i = 1; i <= 3; i++) {
+                repository.insert(pending(new AssetId(UUID.randomUUID()), LONG_AGO.minus(Duration.ofHours(i))));
+            }
+            QueryPlans.forceSubqueryRescan(dsl);
+
+            // 操作と確認：上限 2 件で削除すると、2 件だけ返す
+            assertThat(repository.deleteExpiredBefore(LONG_AGO, 2)).hasSize(2);
         }
 
         @Test

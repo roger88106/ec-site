@@ -191,6 +191,37 @@ class EventPublicationRecords {
     }
 
     /**
+     * 再発行するイベントの記録の ID を選ぶ。
+     *
+     * <p>条件は、次を全て満たす行。
+     * <ul>
+     *   <li>状態が失敗で、完了日時が空（未完了）</li>
+     *   <li>発行の時刻が publishedBefore より前</li>
+     *   <li>最後の試行（最後の再発行の時刻。なければ発行の時刻）が lastTriedBy 以前</li>
+     *   <li>処理の回数が maxAttempts より少ない</li>
+     * </ul>
+     * 並びは、最後の試行の古い順。同じなら ID の順。limit 件まで返す。
+     *
+     * @param publishedBefore 発行の時刻の上限（この時刻より前に発行したものだけを選ぶ）
+     * @param lastTriedBy     最後の試行の時刻の上限（この時刻以前に最後に試行したものだけを選ぶ）
+     * @param maxAttempts     処理の回数の上限（これより少ないものだけを選ぶ）
+     * @param limit           選ぶ件数の上限
+     * @return 再発行するイベントの記録の ID（最後の試行の古い順）
+     */
+    List<UUID> findResubmissionTargets(Instant publishedBefore, Instant lastTriedBy, int maxAttempts, int limit) {
+        throw new UnsupportedOperationException("まだ実装していない");
+    }
+
+    /**
+     * 再発行中（状態が RESUBMITTED）の記録の件数を数える。
+     *
+     * @return 再発行中の記録の件数
+     */
+    int countResubmitted() {
+        throw new UnsupportedOperationException("まだ実装していない");
+    }
+
+    /**
      * 止めたイベントのテーブルで修飾した列を返す。
      *
      * @param field 列

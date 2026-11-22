@@ -71,6 +71,11 @@ class EventPublications {
     private static final Field<String> EVENT_TYPE = DSL.field(DSL.name("event_type"), String.class);
 
     /**
+     * 発行の時刻
+     */
+    private static final Field<Instant> PUBLICATION_DATE = DSL.field(DSL.name("publication_date"), Instant.class);
+
+    /**
      * 最後の再発行の時刻
      */
     private static final Field<Instant> LAST_RESUBMISSION_DATE = DSL.field(DSL.name("last_resubmission_date"), Instant.class);
@@ -243,6 +248,68 @@ class EventPublications {
      */
     void deleteAll(UUID eventId) {
         dsl.deleteFrom(EVENT_PUBLICATION).where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
+    }
+
+    /**
+     * イベント ID を含む記録を、全て、指定の状態にする（再発行中に見せるときなどに使う）。
+     *
+     * @param eventId イベントを見分ける ID
+     * @param status  処理の状態
+     */
+    void markStatusAll(UUID eventId, String status) {
+        dsl.update(EVENT_PUBLICATION).set(STATUS, status)
+                .where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
+    }
+
+    /**
+     * イベント ID を含む記録のうち、指定の状態と処理の回数のものの数。
+     *
+     * @param eventId  イベントを見分ける ID
+     * @param status   処理の状態
+     * @param attempts 処理の回数
+     * @return 記録の数
+     */
+    int count(UUID eventId, String status, int attempts) {
+        return dsl.fetchCount(EVENT_PUBLICATION, SERIALIZED_EVENT.contains(eventId.toString())
+                .and(STATUS.eq(status)).and(COMPLETION_ATTEMPTS.eq(attempts)));
+    }
+
+    /**
+     * 最後の再発行の時刻が指定の時刻の記録の数（ほかのテストの行を含む）。
+     *
+     * @param resubmittedAt 最後の再発行の時刻
+     * @param status        処理の状態（絞らないときは null）
+     * @return 記録の数
+     */
+    int countResubmittedAt(Instant resubmittedAt, String status) {
+        var condition = LAST_RESUBMISSION_DATE.eq(resubmittedAt);
+        return dsl.fetchCount(EVENT_PUBLICATION, status == null ? condition : condition.and(STATUS.eq(status)));
+    }
+
+    /**
+     * 記録の行を、リスナーを介さずに 1 行直接入れる（選び方の SQL のテスト用）。
+     *
+     * <p>イベントの JSON はマーカーの ID だけを持つ。マーカーの ID で {@link #deleteAll(UUID)} が使える。
+     * リスナーが受けられる形ではないので、再発行のジョブには使わない。
+     *
+     * @param marker               記録を見分けるマーカーの ID
+     * @param status               処理の状態
+     * @param attempts             処理の回数
+     * @param publicationDate      発行の時刻
+     * @param lastResubmissionDate 最後の再発行の時刻（なければ null）
+     * @param completionDate       処理を終えた時刻（未完了なら null）
+     * @return 入れた行の ID
+     */
+    UUID insertRecord(UUID marker, String status, int attempts, Instant publicationDate,
+                      Instant lastResubmissionDate, Instant completionDate) {
+        var id = UUID.randomUUID();
+        dsl.insertInto(EVENT_PUBLICATION)
+                .columns(ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE, COMPLETION_DATE, STATUS,
+                        COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE)
+                .values(id, "test-listener", "test.UnknownEvent", "{\"marker\":\"" + marker + "\"}", publicationDate,
+                        completionDate, status, attempts, lastResubmissionDate)
+                .execute();
+        return id;
     }
 
     /**

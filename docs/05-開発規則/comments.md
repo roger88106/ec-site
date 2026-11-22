@@ -66,14 +66,14 @@ class CartService {
      * <p>数量が上限を超えるときは、上限に切り詰める。
      *
      * @param cartId カートの ID
-     * @param itemId 品目の ID
+     * @param variantId 品目のバリエーションの ID
      * @param quantity 新しい数量
      * @return 変えた後のカート
      * @throws BusinessException カートがない、カートの持ち主でない、またはカートにない品目を指定した（{@code NOT_FOUND}）
      * @throws BusinessException 数量が 1 未満（{@code INVALID_REQUEST}）
      */
     @Transactional
-    public CartView changeQuantity(UUID cartId, UUID itemId, int quantity) {
+    public CartView changeQuantity(CartId cartId, VariantId variantId, int quantity) {
         // …
     }
 }

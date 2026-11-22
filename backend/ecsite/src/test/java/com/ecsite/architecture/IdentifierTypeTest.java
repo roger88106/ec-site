@@ -1,5 +1,6 @@
 package com.ecsite.architecture;
 
+import com.ecsite.architecture.sample.identifier.common.model.UuidInCommonModel;
 import com.ecsite.architecture.sample.identifier.module.sample.api.ExampleApi;
 import com.ecsite.architecture.sample.identifier.module.sample.application.ExampleProperties;
 import com.ecsite.architecture.sample.identifier.module.sample.application.model.ExampleCommand;
@@ -78,7 +79,7 @@ class IdentifierTypeTest {
         JavaClasses examples = new ClassFileImporter().importClasses(
                 UuidField.class, UuidMethod.class, UuidConstructor.class, UuidTypeArguments.class,
                 ExampleId.class, ExampleIdWithOther.class, ExampleEvent.class, EventIdCopy.class, ExampleCommand.class, ExampleApi.class,
-                ExampleProperties.class, UsesUuid.class);
+                ExampleProperties.class, UuidInCommonModel.class, UsesUuid.class);
 
         // 操作と確認：違反の例の UUID だけが違反になる
         assertThat(violations(examples).keySet()).containsExactlyInAnyOrder(
@@ -98,7 +99,10 @@ class IdentifierTypeTest {
                 ExampleCommand.class.getName() + ".productId",
                 ExampleCommand.class.getName() + ".productId()",
                 ExampleCommand.class.getName() + ".<init>(java.util.UUID)",
-                ExampleApi.class.getName() + ".memberId");
+                ExampleApi.class.getName() + ".memberId",
+                UuidInCommonModel.class.getName() + ".ownerId",
+                UuidInCommonModel.class.getName() + ".ownerId()",
+                UuidInCommonModel.class.getName() + ".<init>(java.util.UUID)");
     }
 
     // ============================== 補助 ==============================

@@ -26,6 +26,12 @@ import java.util.regex.Pattern;
 public final class QueryPlans {
 
     /**
+     * 副問い合わせを再評価する計画を選ばせるために無効にする、プランナーの設定
+     */
+    public static final List<String> RESCAN_DISABLED_SETTINGS =
+            List.of("enable_hashjoin", "enable_mergejoin", "enable_hashagg", "enable_sort", "enable_material");
+
+    /**
      * インスタンスを作らない。
      */
     private QueryPlans() {
@@ -51,6 +57,24 @@ public final class QueryPlans {
         }).dsl();
         action.accept(recording);
         return executed.stream().map(query -> dsl.explain(query).plan()).toList();
+    }
+
+    /**
+     * 副問い合わせを、外側の行ごとに再評価する計画を選ばせる
+     *
+     * <p>{@link #RESCAN_DISABLED_SETTINGS} を無効にすると、{@code IN} の副問い合わせは入れ子のループ（Nested Loop Semi Join）の
+     * 内側に置かれ、外側の行ごとに再評価される。副問い合わせが {@code LIMIT} と {@code FOR UPDATE SKIP LOCKED} を持つと、
+     * 再評価のたびに、同じ文で削除した行をスキップして次の行を選ぶ。そのため、件数の上限より多く削除する。
+     * 自然な計画では起きにくく、毎回は再現しないので、件数の上限を確認するテストで、この計画を強制する。
+     *
+     * <p>設定は {@code SET LOCAL} で、トランザクションの終わりに元に戻る。テストごとにロールバックするテストで使う。
+     *
+     * @param dsl トランザクションの接続で動く DSLContext
+     */
+    public static void forceSubqueryRescan(DSLContext dsl) {
+        for (var setting : RESCAN_DISABLED_SETTINGS) {
+            dsl.execute("SET LOCAL " + setting + " = off");
+        }
     }
 
     /**
